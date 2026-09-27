@@ -157,4 +157,14 @@ live.reconcile({ powerState: null });
 assert.strictEqual(live.state.snapshot().power.systemOn, true);
 console.log('  ✓ a power reply or stats read without a state does not switch the TV off');
 
+// A live event names its group, so only the reads it bears on are dropped.
+var stale = [];
+var scoped = stateModule.init({ mapPowerState: mapPowerState, clearCache: function (g) { stale.push(g); } });
+scoped.groups.audio.subscription.handlers.message({ returnValue: true, volume: 12, muted: false, scenario: 'mastervolume_tv_speaker' });
+scoped.groups.application.subscription.handlers.message({ returnValue: true, appId: 'netflix' });
+scoped.groups.picture.subscription.handlers.message({ returnValue: true, settings: { backlight: '80' } });
+scoped.groups.power.subscription.handlers.message({ returnValue: true, state: 'Active' });
+assert.deepEqual(stale, ['audio', 'application', 'picture']);
+console.log('  ✓ a live event names the group that changed');
+
 console.log('ALL test-power-state.js assertions passed!');

@@ -244,32 +244,26 @@ var TOAST_SOURCE = 'com.webos.app.home';
 var BROWSER_APP = 'com.webos.app.browser';
 
 /*
-/*
- * Cache for luna reads whose answers do not change between dashboard ticks.
- * Every luna() call is a fork+exec, and telemetry made ten of them per
- * collection at a 2s tick - roughly five forks a second with the dashboard
- * open. Node 0.12's spawn path can deadlock under that (see the watchdog note
- * in tvwebctl), so set-and-forget settings are now read once per TTL.
- *
- * Any successful control clears the lot, so a setting the user just changed is
- * never served from cache.
+ * Cached luna reads: see createCache in lib/luna.js. Any successful control
+ * clears the lot, so a setting the user just changed is never served from
+ * cache; a live event clears only the reads it bears on (LIVE_STALE).
  */
-var lunaCache = {};
+var lunaCacheObj = lunaTransport.createCache(luna);
 
-function lunaCached(uri, payload, ttlMs, cb) {
-  var key = uri + '|' + JSON.stringify(payload || {});
-  var hit = lunaCache[key];
-  // A negative age is a clock that stepped back: treat the entry as stale.
-  var age = hit ? Date.now() - hit.t : -1;
-  if (hit && age >= 0 && age < ttlMs) return cb(hit.v, hit.raw);
-  luna(uri, payload, function (parsed, raw) {
-    // Only a real answer is worth pinning; a failed read should be retried.
-    if (parsed) lunaCache[key] = { t: Date.now(), v: parsed, raw: raw };
-    cb(parsed, raw);
-  });
-}
+function lunaCached(uri, payload, ttlMs, cb) { lunaCacheObj.get(uri, payload, ttlMs, cb); }
 
-function clearLunaCache() { lunaCache = {}; }
+function clearLunaCache(match) { lunaCacheObj.forget(match); }
+
+/*
+ * The cached reads each live subscription makes stale, by substring of the
+ * cache key. A source change also moves the picture settings' dimension and
+ * the picture modes on offer, which follow the dynamic range of what is on.
+ */
+var LIVE_STALE = {
+  audio: ['com.webos.audio/', '"category":"sound"'],
+  application: ['getForegroundAppInfo', '"category":"picture"'],
+  picture: ['"category":"picture"']
+};
 
 /*
  * Power state. tvpower reports the panel separately from the system: a set can
@@ -348,9 +342,9 @@ var liveState = stateModule.init({
   inputNameMap: telemetry.inputNameMap,
   mapPowerState: mapPowerState,
   formatSoundOutput: ha.formatSoundOutput,
-  clearCache: function () {
-    telemetry.clearCache();
-    clearLunaCache();
+  clearCache: function (group) {
+    telemetry.expireStats();
+    clearLunaCache(LIVE_STALE[group]);
   }
 });
 
@@ -916,9 +910,17 @@ function setupHomeAssistant() {
         if (!s.app && lastApp) s.app = lastApp;
         if (!s.app_id && lastAppId) s.app_id = lastAppId;
       }
-      // Retained, so Home Assistant restarting reads the TV as it last was
-      // rather than every entity as unknown.
-      mqttClient.publish(telemetryTopic, JSON.stringify(s), true);
+      /*
+       * Retained, so Home Assistant restarting reads the TV as it last was
+       * rather than every entity as unknown. Without the installed apps or
+       * the temperature history: no entity reads either, the app select's
+       * options travel in discovery, and Home Assistant runs every entity's
+       * template over the whole message, so its size is paid for once per
+       * entity on each publish.
+       */
+      var pub = {};
+      for (var pk in s) if (pk !== 'apps' && pk !== 'temps') pub[pk] = s[pk];
+      mqttClient.publish(telemetryTopic, JSON.stringify(pub), true);
       MQTT_STATUS.lastPublish = Date.now();
       /*
        * The picture modes a set will accept change with the source's dynamic

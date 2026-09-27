@@ -954,6 +954,15 @@ function clearCache() {
   lastLightSensorProbe = 0;
 }
 
+/*
+ * For a live event, which makes the next stats read fresh but leaves what
+ * clearCache resets: a volume step or a source change installs no app, and
+ * the light sensor's backoff has nothing to do with either.
+ */
+function expireStats() {
+  lastStats = null;
+}
+
 function collectStats(cb) {
   var now = Date.now();
   if (lastStats && now >= lastStatsTime && now - lastStatsTime < 1500) {
@@ -1417,5 +1426,6 @@ module.exports = {
   detectLogoLight: detectFrontLights,
   collectStats: collectStats,
   clearCache: clearCache,
+  expireStats: expireStats,
   getCapabilities: getCapabilities
 };

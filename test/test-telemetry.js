@@ -205,6 +205,16 @@ telemetry.refreshInstalledApps(function (apps) {
     assert.strictEqual(lpApps[1].id, 'netflix');
     console.log('  ✓ refreshInstalledApps parses launchPoints array (webOS 6+ / issue #145)');
 
+    // A live event expires the stats but keeps the app list: the next read
+    // does not scan the apps again.
+    telemetry.expireStats();
+    mockEnv.luna['com.webos.applicationManager/listApps'] = { returnValue: true, launchPoints: [{ id: 'other', title: 'Other' }] };
+    telemetry.refreshInstalledApps(function (kept) {
+      assert.strictEqual(kept.length, 2);
+      assert.strictEqual(kept[1].id, 'netflix');
+      console.log('  ✓ expireStats keeps the installed app list');
+    });
+
     // Test fallback to listLaunchPoints when listApps returns empty/fails
     telemetry.clearCache();
     mockEnv.luna['com.webos.applicationManager/listApps'] = { returnValue: false };

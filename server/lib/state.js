@@ -133,7 +133,7 @@ function init(opts) {
     'com.webos.service.settings/getSystemSettings',
     { category: 'picture', keys: pictureKeys, subscribe: true }, null
   ), function (response) {
-    clearCache();
+    clearCache('picture');
     return response.settings;
   });
   groups.power = new StateGroup('power', new luna.Subscription(
@@ -151,13 +151,13 @@ function init(opts) {
   groups.application = new StateGroup('application', new luna.Subscription(
     'com.webos.applicationManager/getForegroundAppInfo', { subscribe: true }, null
   ), function (response) {
-    clearCache();
+    clearCache('application');
     return response.appId ? applicationValues(response.appId, inputNames) : null;
   });
   groups.audio = new StateGroup('audio', new luna.Subscription(
     'com.webos.audio/getVolume', { subscribe: true }, null
   ), function (response) {
-    clearCache();
+    clearCache('audio');
     return audioValues(response, opts.formatSoundOutput || function (value) { return value; });
   });
 

@@ -905,7 +905,8 @@ function handleRequest(req, res) {
       // The TV dashboard's System page, which reads one endpoint, also lists
       // the sound and SIMPLINK settings. Copied, since s is telemetry's cache.
       lgSettingsModule.collect(['sound', 'hdmi', 'devices'], function (ls) {
-        var copy = JSON.parse(JSON.stringify(s));
+        var copy = {};
+        for (var k in s) copy[k] = s[k];
         copy.lgSettings = ls.rows;
         send(res, 200, JSON.stringify(copy));
       });
