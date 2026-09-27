@@ -70,6 +70,10 @@ console.log('Running test-controls.js ...');
     assert.strictEqual(res.ok, false);
     assert.strictEqual(res.error, 'unknown action');
   });
+  controls.doControl('piccapPower', true, function (res) {
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.error, 'unknown action', 'PicCap control is MQTT-only');
+  });
 
   // Invalid sleep timer (e.g. 15 is not supported by LG firmware)
   controls.doControl('sleepTimer', '15', function (res) {

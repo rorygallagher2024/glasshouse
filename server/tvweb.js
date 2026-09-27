@@ -39,6 +39,7 @@ var lunaTransport = require('./lib/luna');
 var say = require('./lib/say');
 var lgSettings = require('./lib/lgsettings');
 var game = require('./lib/game');
+var piccapTransport = require('./lib/piccap');
 var msg = say.msg;
 var luna = lunaTransport.call;
 
@@ -353,6 +354,8 @@ var liveState = stateModule.init({
     clearLunaCache();
   }
 });
+
+var piccap = piccapTransport.init({ luna: luna });
 
 var notificationState = notifications.init({ luna: luna });
 
@@ -703,6 +706,7 @@ function setupHomeAssistant() {
       retain: true
     }
   });
+  piccap.attachMqtt({ client: mqttClient, prefix: pfx, allowControl: CONFIG.allowControl });
 
   MQTT_STATUS.broker = CONFIG.mqtt.host + ':' + mqttClient.opts.port;
   MQTT_STATUS.tls = useTls;
@@ -783,12 +787,6 @@ function setupHomeAssistant() {
     console.log('mqtt: published ' + entities.length + ' Home Assistant discovery entities');
   }
 
-  /*
-   * Retained and on its own topic rather than folded into the telemetry
-   * payload: Home Assistant's update entity reads the whole message as its
-   * state, and this changes once a day at most while telemetry goes out every
-   * few seconds.
-   */
   function publishUpdate() {
     if (!mqttClient.connected) return;
     var upd = updater.UPDATE;
@@ -864,15 +862,12 @@ function setupHomeAssistant() {
   } catch (e) {}
   var lastPublish = 0;
   function tickTelemetry() {
+    if (!mqttClient.connected) return;
     if (tvOff && Date.now() - lastPublish < OFF_INTERVAL_MS) return;
-    publishTelemetry();
+    piccap.poll(function () { publishTelemetry(); });
   }
 
-  /*
-   * LG's own settings for Home Assistant, from lgsettings.js. An HDMI input's
-   * are not published (see ha.js). The rows decide which entities exist and
-   * a select's options, so a change in them means republishing discovery.
-   */
+  /* LG's own settings for Home Assistant, from lgsettings.js. */
   var LGS_SECTIONS = ['sound', 'devices', 'game', 'promotions'];
   var lgsRows = [];
   var lastLgsSig = '';
@@ -904,6 +899,7 @@ function setupHomeAssistant() {
        * instead, as the TV itself does when it comes back on. Only the
        * published copy is filled in: the state cache above stays as reported.
        */
+      piccap.addToTelemetry(s);
       if (!tvOff) {
         if ((s.app && s.app !== lastApp) || (s.app_id && s.app_id !== lastAppId)) {
           lastApp = s.app || lastApp;
@@ -916,8 +912,7 @@ function setupHomeAssistant() {
         if (!s.app && lastApp) s.app = lastApp;
         if (!s.app_id && lastAppId) s.app_id = lastAppId;
       }
-      // Retained, so Home Assistant restarting reads the TV as it last was
-      // rather than every entity as unknown.
+      // Retained, so MQTT consumers receive the latest telemetry after reconnect.
       mqttClient.publish(telemetryTopic, JSON.stringify(s), true);
       MQTT_STATUS.lastPublish = Date.now();
       /*
@@ -975,13 +970,13 @@ function setupHomeAssistant() {
     // first connect it would otherwise still be undetermined.
     // The app select's options come from listApps, which on a first connect
     // has not been scanned yet - without this it publishes the fallback list.
+    piccap.poll(function () { publishTelemetry(); });
     oled.detectOled(function () {
       telemetry.detectLogoLight(function () {
         telemetry.refreshInstalledApps(function () { publishDiscovery(); });
       });
     });
     mqttClient.subscribe(pfx + '/command/#');
-    publishTelemetry();
     publishUpdate();
   });
 
@@ -991,6 +986,8 @@ function setupHomeAssistant() {
     var action = topic.substring(prefix.length);
     var val = payload ? payload.trim() : '';
     console.log('mqtt: command received: ' + action + ' -> ' + val);
+
+    if (piccap.handleMqttCommand(action, val)) return;
 
     if (action === 'screen') {
       var turnOff = (val.toUpperCase() === 'OFF');

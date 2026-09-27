@@ -31,6 +31,18 @@ for (var i = 0; i < args.length; i++) {
 }
 
 var res = mock.luna[uri];
+if (uri === 'org.webosbrew.piccap.service/status' && process.env.FAKE_PICCAP === '1') {
+  res = {
+    returnValue: true,
+    isRunning: true,
+    connected: true,
+    videoRunning: true,
+    uiRunning: true,
+    videoBackend: 'vtcapture',
+    uiBackend: 'halgal',
+    framerate: 59.9
+  };
+}
 if (typeof res === 'function') res = res(payload);
 if (!res) res = { returnValue: false, errorText: 'Unknown method "' + uri + '"' };
 if (res.returnValue === undefined) res.returnValue = true;

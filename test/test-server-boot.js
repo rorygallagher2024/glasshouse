@@ -7,8 +7,8 @@
  * test/mocks/fake-luna-send.js, and an MQTT broker faked here. Each phase
  * checks that the dashboard answers promptly throughout, the heartbeat is
  * written, telemetry keeps reaching the broker, and SIGTERM stops the server
- * cleanly. The phases run side by side; BOOT_TEST_SECS sets how long each
- * runs (default 15, seven telemetry rounds).
+ * cleanly. The phases run one TV with PicCap and one without it. BOOT_TEST_SECS
+ * sets how long each runs (default 15, seven telemetry rounds).
  *
  * Strict ES5: runs on node 0.12, the B8's version.
  */
@@ -79,7 +79,11 @@ function Broker(cb) {
         else if (type === 14) self.disconnects++;
         else if (type === 3) {
           var tl = (body[0] << 8) | body[1];
-          self.published.push({ topic: body.slice(2, 2 + tl).toString(), at: Date.now() });
+          self.published.push({
+            topic: body.slice(2, 2 + tl).toString(),
+            payload: body.slice(2 + tl).toString(),
+            at: Date.now()
+          });
         }
       }
     });
@@ -111,7 +115,7 @@ function waitFor(what, test, ms, cb, fail) {
   })();
 }
 
-function phase(name, chaos, next) {
+function phase(name, chaos, hasPiccap, next) {
   var root = path.join(os.tmpdir(), 'tvweb-boot-' + process.pid + '-' + (chaos ? 'chaos' : 'steady'));
   Object.keys(mockFiles).forEach(function (f) {
     if (mockFiles[f] === null) return;
@@ -135,6 +139,9 @@ function phase(name, chaos, next) {
       env.FAKE_ROOT = root;
       env.TVWEB_LUNA_SEND = FAKE_LUNA;
       if (chaos) env.FAKE_LUNA_CHAOS = '1';
+      else delete env.FAKE_LUNA_CHAOS;
+      if (hasPiccap) env.FAKE_PICCAP = '1';
+      else delete env.FAKE_PICCAP;
 
       var out = '';
       var srv = child.spawn(process.execPath, [path.join(__dirname, 'mocks', 'boot-server.js'), '--config', cfg], { env: env });
@@ -163,6 +170,16 @@ function phase(name, chaos, next) {
         waitFor('the heartbeat', function () { return fs.existsSync(beat); }, 5000, function () {
           waitFor('telemetry at the broker', function () { return broker.last(/^boot\/telemetry$/); }, 20000, function () {
             waitFor('discovery at the broker', function () { return broker.last(/^homeassistant\/.*\/config$/); }, 20000, function () {
+            var piccapState = broker.last(/^boot\/state\/piccap\/isRunning$/);
+            if (!piccapState || piccapState.payload !== (hasPiccap ? 'true' : '')) {
+              return fail(hasPiccap ? 'PicCap state was not published' : 'stale PicCap state was not cleared');
+            }
+            if (hasPiccap) {
+              var telemetry = JSON.parse(broker.last(/^boot\/telemetry$/).payload);
+              if (!telemetry.piccap || telemetry.piccap.isRunning !== true) {
+                return fail('PicCap status was not included in telemetry');
+              }
+            }
 
             /*
              * Steady use: the dashboard asked once a second, telemetry every 2s.
@@ -223,5 +240,5 @@ function phaseDone() {
   console.log('ALL test-server-boot.js assertions passed!\n');
   process.exit(0);
 }
-phase('steady TV', false, phaseDone);
-phase('unreliable TV', true, phaseDone);
+phase('TV with PicCap', false, true, phaseDone);
+phase('unreliable TV without PicCap', true, false, phaseDone);
