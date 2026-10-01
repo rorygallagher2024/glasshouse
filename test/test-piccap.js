@@ -3,6 +3,26 @@ var assert = require('assert');
 var piccapModule = require('../server/lib/piccap');
 
 console.log('Running test-piccap.js ...');
+var noopPublishes = [];
+var noopClient = {
+  connected: true,
+  publish: function () { noopPublishes.push(Array.prototype.slice.call(arguments)); }
+};
+var noopPiccap = piccapModule.initNoop();
+noopPiccap.attachMqtt({ client: noopClient, prefix: 'room/tv', allowControl: true });
+var noopStats = {};
+noopPiccap.addToTelemetry(noopStats);
+var noopPollReturned = false;
+noopPiccap.poll(function (state) {
+  noopPollReturned = true;
+  assert.strictEqual(state.available, false);
+  assert.strictEqual(state.isRunning, null);
+});
+assert.strictEqual(noopPollReturned, true, 'no-op polling does not delay its caller');
+assert.strictEqual(noopPiccap.handleMqttCommand('piccap/power', 'ON'), false, 'no-op control is not handled');
+assert.strictEqual(noopPublishes.length, 0, 'no-op PicCap publishes no MQTT state');
+assert.strictEqual(noopStats.piccap, undefined, 'no-op PicCap is omitted from telemetry');
+
 var replies = [];
 var calls = [];
 var publishes = [];

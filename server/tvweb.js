@@ -74,6 +74,9 @@ var CONFIG = {
   // ?k=<token>. Keeps casual LAN devices out.
   token: '',
 
+  // PicCap status checks start a process on the TV, so this stays opt-in.
+  piccap: { enabled: false },
+
   // Home Assistant & MQTT Integration
   mqtt: {
     // Off until a broker is configured. Shipping an address here would point
@@ -355,7 +358,9 @@ var liveState = stateModule.init({
   }
 });
 
-var piccap = piccapTransport.init({ luna: luna });
+var piccap = CONFIG.piccap && CONFIG.piccap.enabled === true
+  ? piccapTransport.init({ luna: luna })
+  : piccapTransport.initNoop();
 
 var notificationState = notifications.init({ luna: luna });
 

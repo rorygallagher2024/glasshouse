@@ -7,6 +7,9 @@
   "allowControl": true,
   "allowPower": true,
   "token": "",
+  "piccap": {
+    "enabled": false
+  },
   "mqtt": {
     "enabled": false,
     "host": "",

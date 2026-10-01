@@ -148,4 +148,16 @@ function init(opts) {
   };
 }
 
-module.exports = { init: init };
+function initNoop() {
+  return {
+    attachMqtt: function () {},
+    poll: function (cb) {
+      // Telemetry waits for poll, so disabled PicCap must call back at once.
+      if (cb) cb({ available: false, isRunning: null });
+    },
+    addToTelemetry: function () {},
+    handleMqttCommand: function () { return false; }
+  };
+}
+
+module.exports = { init: init, initNoop: initNoop };
