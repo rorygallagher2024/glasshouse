@@ -2843,6 +2843,14 @@
   "text": "acciones de energía desactivadas (define allowPower)",
   "from": "power actions disabled (set allowPower)"
  },
+ "srv.piccap.refused": {
+  "text": "PicCap rechazó la solicitud",
+  "from": "PicCap refused the request"
+ },
+ "srv.piccap.unavailable": {
+  "text": "PicCap no está disponible",
+  "from": "PicCap is not available"
+ },
  "srv.privacy.acr": {
   "text": "Reconocimiento del contenido de pantalla",
   "from": "Screen content recognition"
