@@ -787,6 +787,12 @@ function setupHomeAssistant() {
     console.log('mqtt: published ' + entities.length + ' Home Assistant discovery entities');
   }
 
+  /*
+   * Retained and on its own topic rather than folded into the telemetry
+   * payload: Home Assistant's update entity reads the whole message as its
+   * state, and this changes once a day at most while telemetry goes out every
+   * few seconds.
+   */
   function publishUpdate() {
     if (!mqttClient.connected) return;
     var upd = updater.UPDATE;
@@ -867,7 +873,11 @@ function setupHomeAssistant() {
     piccap.poll(function () { publishTelemetry(); });
   }
 
-  /* LG's own settings for Home Assistant, from lgsettings.js. */
+  /*
+   * LG's own settings for Home Assistant, from lgsettings.js. An HDMI input's
+   * are not published (see ha.js). The rows decide which entities exist and
+   * a select's options, so a change in them means republishing discovery.
+   */
   var LGS_SECTIONS = ['sound', 'devices', 'game', 'promotions'];
   var lgsRows = [];
   var lastLgsSig = '';
@@ -912,7 +922,8 @@ function setupHomeAssistant() {
         if (!s.app && lastApp) s.app = lastApp;
         if (!s.app_id && lastAppId) s.app_id = lastAppId;
       }
-      // Retained, so MQTT consumers receive the latest telemetry after reconnect.
+      // Retained, so Home Assistant restarting reads the TV as it last was
+      // rather than every entity as unknown.
       mqttClient.publish(telemetryTopic, JSON.stringify(s), true);
       MQTT_STATUS.lastPublish = Date.now();
       /*
