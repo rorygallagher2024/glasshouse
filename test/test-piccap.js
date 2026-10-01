@@ -10,13 +10,7 @@ var noopClient = {
 };
 var noopPiccap = piccapModule.initNoop();
 noopPiccap.attachMqtt({ client: noopClient, prefix: 'room/tv', allowControl: true });
-var noopPollReturned = false;
-noopPiccap.poll(function (state) {
-  noopPollReturned = true;
-  assert.strictEqual(state.available, false);
-  assert.strictEqual(state.isRunning, null);
-});
-assert.strictEqual(noopPollReturned, true, 'no-op polling does not delay its caller');
+noopPiccap.refreshAndPublishState();
 assert.strictEqual(noopPiccap.handleMqttCommand('piccap/power', 'ON'), false, 'no-op control is not handled');
 assert.strictEqual(noopPublishes.length, 0, 'no-op PicCap publishes no MQTT state');
 assert.strictEqual(noopPiccap.getState(), null, 'no-op PicCap has no telemetry state');
@@ -32,18 +26,18 @@ var client = {
     publishes.push({ topic: topic, payload: payload, retain: retain });
   }
 };
-var piccap = piccapModule.init({
-  luna: function (uri, payload, cb) {
-    calls.push({ uri: uri, payload: payload });
-    if (holdNextStatus && uri === 'org.webosbrew.piccap.service/status') {
-      holdNextStatus = false;
-      heldStatus = cb;
-      return;
-    }
-    var response = replies.shift();
-    process.nextTick(function () { cb(response || null, JSON.stringify(response || {})); });
+function luna(uri, payload, cb) {
+  calls.push({ uri: uri, payload: payload });
+  if (holdNextStatus && uri === 'org.webosbrew.piccap.service/status') {
+    holdNextStatus = false;
+    heldStatus = cb;
+    return;
   }
-});
+  var response = replies.shift();
+  process.nextTick(function () { cb(response || null, JSON.stringify(response || {})); });
+}
+
+var piccap = piccapModule.init({ luna: luna });
 piccap.attachMqtt({ client: client, prefix: 'room/tv', allowControl: true });
 
 function status(isRunning) {
@@ -54,71 +48,69 @@ function lastState() {
   return publishes[publishes.length - 1];
 }
 
-function testMissingService(result) {
-  assert.strictEqual(result.available, false, 'missing service is not available');
-  assert.strictEqual(result.isRunning, null);
+function pollThen(callback, forcePublish) {
+  piccap.refreshAndPublishState(forcePublish);
+  process.nextTick(callback);
+}
+
+function testMissingService() {
   assert.strictEqual(lastState().payload, '', 'missing PicCap clears retained state');
   assert.strictEqual(piccap.getState(), null, 'missing PicCap has no telemetry state');
   replies.push(status(false));
-  piccap.poll(testInitialStatus);
+  pollThen(testInitialStatus);
 }
 
-function testInitialStatus(result) {
-  assert.strictEqual(result.available, true, 'a valid status discovers PicCap');
-  assert.strictEqual(result.isRunning, false);
+function testInitialStatus() {
   assert.strictEqual(lastState().topic, 'room/tv/state/piccap/power');
   assert.strictEqual(lastState().payload, 'OFF');
   assert.strictEqual(lastState().retain, true);
-  assert.deepEqual(piccap.getState(), { isRunning: false });
+  assert.deepEqual(piccap.getState(), { isRunning: false }, 'a valid status discovers PicCap');
   var publishedCount = publishes.length;
   replies.push(status(false));
-  piccap.poll(function () {
+  pollThen(function () {
     assert.strictEqual(publishes.length, publishedCount, 'unchanged state is not republished');
     publishedCount = publishes.length;
     replies.push(status(false));
-    piccap.poll(function (reconnected) {
-      assert.strictEqual(reconnected.isRunning, false);
+    pollThen(function () {
+      assert.deepEqual(piccap.getState(), { isRunning: false });
       assert.strictEqual(publishes.length, publishedCount + 1, 'MQTT reconnect republishes state once');
       replies.push(status(true));
-      piccap.poll(testChangedStatus);
+      pollThen(testChangedStatus);
     }, true);
   });
 }
 
-function testChangedStatus(result) {
-  assert.strictEqual(result.isRunning, true, 'poll reads changed capture state');
+function testChangedStatus() {
+  assert.deepEqual(piccap.getState(), { isRunning: true }, 'poll reads changed capture state');
   assert.strictEqual(lastState().payload, 'ON');
   var publishedCount = publishes.length;
   replies.push({ returnValue: false, errorText: 'temporary service error' });
-  piccap.poll(function (state) {
+  pollThen(function () {
     assert.strictEqual(publishes.length, publishedCount, 'transient errors do not republish unchanged state');
-    testTransientError(state);
+    testTransientError();
   });
 }
 
-function testTransientError(result) {
-  assert.strictEqual(result.available, true, 'a transient error does not hide PicCap');
-  assert.strictEqual(result.isRunning, true, 'a transient error keeps the last known state');
+function testTransientError() {
+  assert.deepEqual(piccap.getState(), { isRunning: true }, 'a transient error keeps the last known state');
   replies.push({ returnValue: false, errorText: 'Service does not exist' });
-  piccap.poll(testRemovedService);
+  pollThen(testRemovedService);
 }
 
-function testRemovedService(result) {
-  assert.strictEqual(result.available, false, 'an unregistered service is unavailable');
-  assert.strictEqual(result.isRunning, null);
+function testRemovedService() {
   assert.strictEqual(lastState().payload, '', 'service removal clears retained state');
+  assert.strictEqual(piccap.getState(), null, 'an unregistered service is unavailable');
   var publishedCount = publishes.length;
   replies.push({ returnValue: false, errorText: 'Service does not exist' });
-  piccap.poll(function () {
+  pollThen(function () {
     assert.strictEqual(publishes.length, publishedCount, 'unavailable state is not republished');
     replies.push(status(false));
-    piccap.poll(testReadyForStart);
+    pollThen(testReadyForStart);
   });
 }
 
-function testReadyForStart(result) {
-  assert.strictEqual(result.available, true);
-  assert.strictEqual(result.isRunning, false);
+function testReadyForStart() {
+  assert.deepEqual(piccap.getState(), { isRunning: false });
   replies.push({ returnValue: true });
   replies.push(status(true));
   assert.strictEqual(piccap.handleMqttCommand('piccap/power', 'ON', testStarted), true);
@@ -167,28 +159,37 @@ function testControlsDisabled(result) {
   assert.strictEqual(result.error, 'controls disabled in config');
   piccap.attachMqtt({ client: client, prefix: 'room/tv', allowControl: true });
   holdNextStatus = true;
-  var firstDone = false;
-  var forcedDone = false;
-  piccap.poll(function () { firstDone = true; });
-  piccap.poll(function (latest) {
-    forcedDone = true;
-    assert.strictEqual(firstDone, true);
-    assert.strictEqual(latest.isRunning, true, 'forced polls wait for a fresh status');
-    assert.strictEqual(forcedDone, true);
-    assert.deepEqual(piccap.getState(), { isRunning: true }, 'getter returns the latest observed state');
-    console.log('  ✓ PicCap detection, MQTT commands, telemetry, and retained state');
-    console.log('ALL test-piccap.js assertions passed!\n');
-    process.exit(0);
-  });
-  var callsBeforeGet = calls.length;
-  assert.deepEqual(piccap.getState(), { isRunning: false }, 'getter returns cached state during a poll');
-  assert.strictEqual(calls.length, callsBeforeGet, 'getter does not poll Luna');
+  var callsBeforeRefresh = calls.length;
+  piccap.refreshAndPublishState();
+  piccap.refreshAndPublishState();
+  assert.strictEqual(calls.length, callsBeforeRefresh + 1, 'overlapping refreshes share the in-flight request');
+  assert.deepEqual(piccap.getState(), { isRunning: false }, 'getter returns cached state during a refresh');
+  assert.strictEqual(calls.length, callsBeforeRefresh + 1, 'getter does not poll Luna');
   assert.ok(heldStatus, 'first status request is held');
   replies.push(status(true));
   heldStatus(status(false), JSON.stringify(status(false)));
-  assert.strictEqual(firstDone, true);
-  assert.strictEqual(forcedDone, false, 'forced poll does not reuse an in-flight result');
+  assert.deepEqual(piccap.getState(), { isRunning: false }, 'first refresh applies its result');
+  assert.strictEqual(calls.length, callsBeforeRefresh + 2, 'overlapping forced refresh requests a fresh status');
+  process.nextTick(function () {
+    assert.deepEqual(piccap.getState(), { isRunning: true }, 'forced refresh applies the fresh result');
+    assert.strictEqual(lastState().payload, 'ON');
+    testPollingTimer();
+  });
+}
+
+function testPollingTimer() {
+  var callsBeforeTimer = calls.length;
+  replies.push(status(true));
+  piccapModule.init({ luna: luna, pollIntervalMs: 1000 });
+  piccap.attachMqtt({ client: client, prefix: 'room/tv', allowControl: true });
+  setTimeout(function () {
+    assert.strictEqual(calls.length, callsBeforeTimer + 1, 'periodic refresh checks PicCap status');
+    assert.strictEqual(calls[callsBeforeTimer].uri, 'org.webosbrew.piccap.service/status');
+    console.log('  ✓ PicCap detection, MQTT commands, telemetry, and retained state');
+    console.log('ALL test-piccap.js assertions passed!\n');
+    process.exit(0);
+  }, 1200);
 }
 
 replies.push({ returnValue: false, errorText: 'Unknown method "org.webosbrew.piccap.service/status"' });
-piccap.poll(testMissingService);
+pollThen(testMissingService);

@@ -102,10 +102,9 @@ function publishState(state, force) {
   lastPublishedState = payload;
 }
 
-function poll(cb, forcePublish) {
+function refreshAndPublishState(forcePublish) {
   getStatus(function (state) {
     publishState(state, forcePublish === true);
-    if (cb) cb(state);
   }, true);
 }
 
@@ -121,7 +120,7 @@ function attachMqtt(opts) {
   if (pollTimer) clearInterval(pollTimer);
   // Poll independently of telemetry, and only while MQTT can receive the state.
   pollTimer = setInterval(function () {
-    if (mqttClient && mqttClient.connected) poll();
+    if (mqttClient && mqttClient.connected) refreshAndPublishState();
   }, pollIntervalMs);
 }
 
@@ -153,7 +152,7 @@ function init(opts) {
   pollIntervalMs = interval >= 1000 && interval <= 600000 ? interval : 30000;
   return {
     attachMqtt: attachMqtt,
-    poll: poll,
+    refreshAndPublishState: refreshAndPublishState,
     getState: getState,
     handleMqttCommand: handleMqttCommand
   };
@@ -162,10 +161,7 @@ function init(opts) {
 function initNoop() {
   return {
     attachMqtt: function () {},
-    poll: function (cb) {
-      // Telemetry waits for poll, so disabled PicCap must call back at once.
-      if (cb) cb({ available: false, isRunning: null });
-    },
+    refreshAndPublishState: function () {},
     getState: function () { return null; },
     handleMqttCommand: function () { return false; }
   };

@@ -851,7 +851,7 @@ function setupHomeAssistant() {
     if (mqttClient.connected) {
       mqttClient.publish(statusTopic, statusPayload(), true);
       publishTelemetry();
-      piccap.poll();
+      piccap.refreshAndPublishState();
     }
     // After the publishes above: on a B8 the TV can be asleep within 5s.
     mqttClient.setWill(off ? 'asleep' : 'offline');
@@ -991,14 +991,14 @@ function setupHomeAssistant() {
     // first connect it would otherwise still be undetermined.
     // The app select's options come from listApps, which on a first connect
     // has not been scanned yet - without this it publishes the fallback list.
-    publishTelemetry();
-    piccap.poll(null, true);
     oled.detectOled(function () {
       telemetry.detectLogoLight(function () {
         telemetry.refreshInstalledApps(function () { publishDiscovery(); });
       });
     });
     mqttClient.subscribe(pfx + '/command/#');
+    publishTelemetry();
+    piccap.refreshAndPublishState(true);
     publishUpdate();
   });
 
