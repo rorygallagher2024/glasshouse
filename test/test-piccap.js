@@ -66,8 +66,8 @@ function testMissingService(result) {
 function testInitialStatus(result) {
   assert.strictEqual(result.available, true, 'a valid status discovers PicCap');
   assert.strictEqual(result.isRunning, false);
-  assert.strictEqual(lastState().topic, 'room/tv/state/piccap/isRunning');
-  assert.strictEqual(lastState().payload, 'false');
+  assert.strictEqual(lastState().topic, 'room/tv/state/piccap/power');
+  assert.strictEqual(lastState().payload, 'OFF');
   assert.strictEqual(lastState().retain, true);
   assert.deepEqual(piccap.getState(), { isRunning: false });
   var publishedCount = publishes.length;
@@ -87,7 +87,7 @@ function testInitialStatus(result) {
 
 function testChangedStatus(result) {
   assert.strictEqual(result.isRunning, true, 'poll reads changed capture state');
-  assert.strictEqual(lastState().payload, 'true');
+  assert.strictEqual(lastState().payload, 'ON');
   var publishedCount = publishes.length;
   replies.push({ returnValue: false, errorText: 'temporary service error' });
   piccap.poll(function (state) {
@@ -140,7 +140,7 @@ function testReadyForStart(result) {
 function testStarted(result) {
   assert.strictEqual(result.ok, true);
   assert.strictEqual(result.isRunning, true, 'power command refreshes status');
-  assert.strictEqual(lastState().payload, 'true', 'power command publishes refreshed state');
+  assert.strictEqual(lastState().payload, 'ON', 'power command publishes refreshed state');
   assert.ok(calls.some(function (call) {
     return call.uri === 'org.webosbrew.piccap.service/start';
   }), 'ON calls PicCap start');
@@ -152,7 +152,7 @@ function testStarted(result) {
 function testStopped(result) {
   assert.strictEqual(result.ok, true);
   assert.strictEqual(result.isRunning, false);
-  assert.strictEqual(lastState().payload, 'false', 'stop publishes refreshed state');
+  assert.strictEqual(lastState().payload, 'OFF', 'stop publishes refreshed state');
   assert.ok(calls.some(function (call) {
     return call.uri === 'org.webosbrew.piccap.service/stop';
   }), 'OFF calls PicCap stop');

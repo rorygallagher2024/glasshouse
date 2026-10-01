@@ -919,7 +919,7 @@ function setupHomeAssistant() {
        * published copy is filled in: the state cache above stays as reported.
        */
       var piccapState = piccap.getState();
-      if (piccapState) s.piccap = piccapState;
+      if (piccapState) s.piccap = { power: piccapState.isRunning };
       if (!tvOff) {
         if ((s.app && s.app !== lastApp) || (s.app_id && s.app_id !== lastAppId)) {
           lastApp = s.app || lastApp;

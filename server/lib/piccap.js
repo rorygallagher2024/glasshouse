@@ -96,7 +96,7 @@ function setPower(on, cb) {
 function publishState(state, force) {
   if (!mqttClient || !mqttClient.connected) return;
   if (!state || typeof state.available !== 'boolean') state = current();
-  var payload = state.available ? String(state.isRunning) : '';
+  var payload = state.available ? (state.isRunning ? 'ON' : 'OFF') : '';
   if (!force && payload === lastPublishedState) return;
   mqttClient.publish(stateTopic, payload, true);
   lastPublishedState = payload;
@@ -116,7 +116,7 @@ function getState() {
 function attachMqtt(opts) {
   opts = opts || {};
   mqttClient = opts.client || null;
-  stateTopic = (opts.prefix || 'lgtv') + '/state/piccap/isRunning';
+  stateTopic = (opts.prefix || 'lgtv') + '/state/piccap/power';
   allowControl = opts.allowControl === true;
   if (pollTimer) clearInterval(pollTimer);
   // Poll independently of telemetry, and only while MQTT can receive the state.
