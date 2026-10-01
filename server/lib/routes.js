@@ -2,6 +2,7 @@
 var fs = require('fs');
 var path = require('path');
 var os = require('os');
+var net = require('net');
 var url = require('url');
 var zlib = require('zlib');
 var crypto = require('crypto');
@@ -52,6 +53,8 @@ var screensaversModule = null;
 var updaterModule = null;
 var tvAppFn = null;
 var restartSelfFn = null;
+var repoModule = null;
+var installerModule = null;
 var fromHbcFn = null;
 var tileHidingOffMsg = '';
 var assetPathFn = null;
@@ -91,6 +94,18 @@ function assetPath(rel) { return assetPathFn(rel); }
 function fromHomebrewChannel() { return fromHbcFn(); }
 function tvApp(action, cb) { return tvAppFn(action, cb); }
 function restartSelf() { return restartSelfFn(); }
+
+/*
+ * The restart paths below write the config and answer before restarting, so
+ * a busy install has to be refused before the write; restartSelf in tvweb.js
+ * refuses too, for the callers that do not come through here.
+ */
+function installBusyError() {
+  if (installerModule && installerModule.isBusy()) {
+    return msg('srv.install.busy.restart', 'an install is in progress; restart when it has finished');
+  }
+  return null;
+}
 function doControl(action, value, cb) { return controlsModule.doControl(action, value, cb); }
 function luna(uri, payload, cb) { return lunaFn(uri, payload, cb); }
 function getMqttStatus() { return getMqttStatusFn(); }
@@ -356,6 +371,8 @@ function startHandoff(cb) {
         if (v.errors.length) {
           return send(res, 400, JSON.stringify({ ok: false, error: v.errors.join('; ') }));
         }
+        var hoBusy = installBusyError();
+        if (hoBusy) return send(res, 409, JSON.stringify({ ok: false, error: hoBusy }));
         writeSettings(v.value, function (err) {
           if (err) return send(res, 500, JSON.stringify({ ok: false, error: msg('srv.saveSettingsFailed', 'could not save the settings') }));
           console.log('setup: Home Assistant broker set from a phone, restarting to connect');
@@ -529,6 +546,92 @@ function readJsonBody(req, res, cb) {
   });
 }
 
+/*
+ * Installing a package is the most powerful thing the dashboard does, so the
+ * Host header is checked before anything else. A page reached through a
+ * rebinding name (attacker.example resolving to the TV's address) passes the
+ * Origin == Host check and looks like a request from the TV itself; only a
+ * name the owner listed in apps.hosts, an IP literal or localhost is served.
+ */
+function hostName(req) {
+  var h = String((req.headers && req.headers.host) || '').toLowerCase();
+  var m = /^\[([^\]]*)\](:\d*)?$/.exec(h);
+  if (m) return m[1];
+  var i = h.lastIndexOf(':');
+  if (i !== -1 && h.indexOf(':') === i) h = h.slice(0, i);
+  return h.replace(/\.$/, '');
+}
+
+function hostAllowed(req) {
+  var h = hostName(req);
+  if (!h) return false;
+  if (net.isIP(h) || h === 'localhost') return true;
+  var list = config.apps && config.apps.hosts;
+  if (Object.prototype.toString.call(list) !== '[object Array]') return false;
+  for (var i = 0; i < list.length; i++) {
+    if (typeof list[i] === 'string' && list[i].toLowerCase().replace(/\.$/, '') === h) return true;
+  }
+  return false;
+}
+
+function isInstallRoute(pathname) {
+  return pathname === '/api/apps/catalog' || pathname.indexOf('/api/apps/install/') === 0;
+}
+
+function installError(res, text, status) {
+  send(res, status || 400, JSON.stringify({ ok: false, error: text }));
+}
+
+function installReply(res) {
+  return function (err, snap) {
+    if (err) return installError(res, String(err));
+    send(res, 200, JSON.stringify({ ok: true, install: snap }));
+  };
+}
+
+function handleInstallRoute(req, res, u, pathname) {
+  if (!config.allowControl) return installError(res, msg('srv.controlsOff', 'controls disabled in config'), 403);
+
+  if (pathname === '/api/apps/catalog' && req.method === 'GET') {
+    return repoModule.getCatalog(!!(u.query && u.query.force), function (r) {
+      send(res, 200, JSON.stringify(r));
+    });
+  }
+  if (pathname === '/api/apps/install/status' && req.method === 'GET') {
+    var st = installerModule.status();
+    st.ok = true;
+    st.writable = !!config.allowControl;
+    return send(res, 200, JSON.stringify(st));
+  }
+  if (req.method !== 'POST') return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+
+  if (pathname === '/api/apps/install/fetch') {
+    return readJsonBody(req, res, function (body) {
+      if (typeof body.id !== 'string' || !body.id) return installError(res, 'an app id is required');
+      repoModule.findPackage(body.id, function (err, pkg) {
+        if (err) return installError(res, err.message);
+        installerModule.start({ source: 'catalog', pkg: pkg }, installReply(res));
+      });
+    });
+  }
+  if (pathname === '/api/apps/install/confirm') {
+    return readJsonBody(req, res, function (body) {
+      installerModule.confirm({
+        jobId: body.jobId, elevate: body.elevate === true, replaceStore: body.replaceStore === true
+      }, installReply(res));
+    });
+  }
+  if (pathname === '/api/apps/install/cancel') {
+    return readJsonBody(req, res, function (body) {
+      installerModule.cancel(body.jobId, function (err) {
+        if (err) return installError(res, String(err));
+        send(res, 200, JSON.stringify({ ok: true }));
+      });
+    });
+  }
+  return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+}
+
 function handleRequest(req, res) {
   var u = parseUrl(req.url);
   var pathname = u.pathname;
@@ -587,6 +690,13 @@ function handleRequest(req, res) {
       ASSET_CACHE[file] = buf;
       respondWithBuf(buf);
     });
+  }
+
+  if (isInstallRoute(pathname) && !hostAllowed(req)) {
+    return send(res, 403, JSON.stringify({
+      ok: false,
+      error: msg('srv.install.hostRefused', 'this address is not allowed to install apps; add the name to apps.hosts in config.json, or use the TV\'s IP address')
+    }));
   }
 
   if (pathname.indexOf('/api/') === 0 && !authed(u.query, req)) {
@@ -650,6 +760,8 @@ function handleRequest(req, res) {
         return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
       }
       if (a.action === 'network') {
+        var netBusy = installBusyError();
+        if (netBusy) return send(res, 409, JSON.stringify({ ok: false, error: netBusy }));
         var open = !!a.open;
         if (open === networkOpen()) return send(res, 200, JSON.stringify({ ok: true, restarting: false }));
         return setNetworkAccess(open, function (err) {
@@ -777,6 +889,8 @@ function handleRequest(req, res) {
   if (pathname === '/api/privacy') {
     return privacyModule.collectPrivacy(function (pv) { send(res, 200, JSON.stringify(pv)); });
   }
+
+  if (isInstallRoute(pathname)) return handleInstallRoute(req, res, u, pathname);
 
   if (pathname === '/api/apps' && req.method === 'GET') {
     return appsModule.getApps(function (d) {
@@ -993,6 +1107,8 @@ function handleRequest(req, res) {
       if (v.errors.length) {
         return send(res, 400, JSON.stringify({ ok: false, error: v.errors.join('; ') }));
       }
+      var setBusy = installBusyError();
+      if (setBusy) return send(res, 409, JSON.stringify({ ok: false, error: setBusy }));
       writeSettings(v.value, function (err) {
         if (err) {
           return send(res, 500, JSON.stringify({ ok: false, error: 'could not write ' + configFilePath + ': ' + err.message }));
@@ -1059,6 +1175,8 @@ function init(opts) {
   if (opts.updater) updaterModule = opts.updater;
   if (opts.tvApp) tvAppFn = opts.tvApp;
   if (opts.restartSelf) restartSelfFn = opts.restartSelf;
+  if (opts.repo) repoModule = opts.repo;
+  if (opts.installer) installerModule = opts.installer;
   if (opts.fromHomebrewChannel) fromHbcFn = opts.fromHomebrewChannel;
   if (opts.tileHidingOff) tileHidingOffMsg = opts.tileHidingOff;
   if (opts.assetPath) assetPathFn = opts.assetPath;

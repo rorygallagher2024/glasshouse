@@ -1,0 +1,18 @@
+{
+  "paging": { "page": 2, "count": 1, "maxPage": 2, "itemsTotal": 4 },
+  "packages": [
+    {
+      "id": "com.example.tool",
+      "title": "Example Tool",
+      "iconUri": "https://example.org/tool/icon.png",
+      "manifestUrl": "https://example.org/tool/manifest.json",
+      "manifest": {
+        "id": "com.example.tool",
+        "version": "2.0.1",
+        "ipkUrl": "com.example.tool_2.0.1_all.ipk",
+        "ipkHash": { "sha256": "2222222222222222222222222222222222222222222222222222222222222222" },
+        "rootRequired": true
+      }
+    }
+  ]
+}

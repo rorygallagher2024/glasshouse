@@ -425,4 +425,154 @@ function createMockRes(cb) {
   console.log('  ✓ handleRequest dispatches endpoints, auth guards, and 404 handling');
 })();
 
+// 6. Install routes: Host check, controls switch, catalog, install flow, restart refusal
+(function testInstallRoutes() {
+  var calls = [];
+  var busy = false;
+  var pkg = { id: 'org.example.app', title: 'Example', version: '1.0.0', ipkUrl: 'https://example.org/a.ipk', sha256: new Array(65).join('a') };
+  var repoStub = {
+    getCatalog: function (force, cb) { calls.push(['catalog', force]); cb({ ok: true, apps: [pkg], fetchedAt: 1 }); },
+    findPackage: function (id, cb) { calls.push(['find', id]); id === pkg.id ? cb(null, pkg) : cb(new Error('not in the catalog: ' + id)); }
+  };
+  var snap = { state: 'downloading', jobId: 'j1', progress: { bytes: 0, total: null }, preview: null, error: null, result: null };
+  var installerStub = {
+    start: function (r, cb) { calls.push(['start', r]); cb(null, snap); },
+    confirm: function (r, cb) { calls.push(['confirm', r]); cb(null, snap); },
+    cancel: function (id, cb) { calls.push(['cancel', id]); cb(null); },
+    status: function () { return { state: busy ? 'installing' : 'idle', jobId: null, progress: null, preview: null, error: null, result: null }; },
+    isBusy: function () { return busy; }
+  };
+  var restarts = 0;
+  var written = 0;
+  var cfgFile = path.join(require('os').tmpdir(), 'tvweb-routes-test-' + process.pid + '.json');
+  function setup(conf) {
+    calls = [];
+    routes.init({
+      config: conf, configFile: cfgFile, repo: repoStub, installer: installerStub,
+      restartSelf: function () { restarts++; return true; }
+    });
+  }
+  var checks = 0;
+  function call(method, url, host, body, cb, remote) {
+    var req = createMockReq({
+      url: url, method: method, remoteAddress: remote || '192.168.1.50',
+      headers: { 'content-type': 'application/json', host: host }
+    });
+    var res = createMockRes(function (r) { checks++; cb(r, r.body ? JSON.parse(r.body) : null); });
+    routes.handleRequest(req, res);
+    if (method === 'POST') {
+      req.emit('data', JSON.stringify(body || {}));
+      req.emit('end');
+    }
+  }
+  var base = { allowControl: true, token: '', web: { enabled: false } };
+  var HOST = '192.168.1.131:8080';
+
+  // Host check: refused names, accepted literals, localhost and listed names
+  setup({ allowControl: true, token: '', web: { enabled: false }, apps: { hosts: ['lgtv.local'] } });
+  var paths = ['/api/apps/catalog', '/api/apps/install/status'];
+  ['evil.example', 'evil.example:8080', 'lgtv.local.evil.example', '', 'lgtv.localx'].forEach(function (h) {
+    paths.forEach(function (u) {
+      call('GET', u, h, null, function (r, b) {
+        assert.strictEqual(r.statusCode, 403, 'host "' + h + '" must be refused');
+        assert.ok(/apps\.hosts/.test(b.error), 'the refusal names apps.hosts');
+      });
+    });
+  });
+  call('POST', '/api/apps/install/fetch', 'evil.example', { id: pkg.id }, function (r) {
+    assert.strictEqual(r.statusCode, 403);
+  });
+  assert.strictEqual(calls.length, 0, 'a refused host reaches neither repo nor installer');
+  ['192.168.1.131', HOST, '[::1]:8080', '[fe80::1]', 'localhost:8080', 'LOCALHOST', 'lgtv.local', 'LGTV.local:8080', 'lgtv.local.'].forEach(function (h) {
+    call('GET', '/api/apps/install/status', h, null, function (r, b) {
+      assert.strictEqual(r.statusCode, 200, 'host "' + h + '" must be accepted');
+      assert.strictEqual(b.state, 'idle');
+    });
+  });
+
+  // The Host check comes before the token check
+  setup({ allowControl: true, token: 'tok', web: { enabled: false }, apps: {} });
+  call('GET', '/api/apps/catalog', 'evil.example', null, function (r) { assert.strictEqual(r.statusCode, 403); });
+  call('GET', '/api/apps/catalog', HOST, null, function (r) { assert.strictEqual(r.statusCode, 401); });
+  call('GET', '/api/apps/catalog?k=tok', HOST, null, function (r) { assert.strictEqual(r.statusCode, 200); });
+
+  // Controls off
+  setup({ allowControl: false, token: '', web: { enabled: false } });
+  call('GET', '/api/apps/catalog', HOST, null, function (r) { assert.strictEqual(r.statusCode, 403); });
+  call('POST', '/api/apps/install/fetch', HOST, { id: pkg.id }, function (r) { assert.strictEqual(r.statusCode, 403); });
+  call('POST', '/api/apps/install/confirm', HOST, { jobId: 'j1' }, function (r) { assert.strictEqual(r.statusCode, 403); });
+  assert.strictEqual(calls.length, 0);
+
+  // Catalog and install flow
+  setup(base);
+  call('GET', '/api/apps/catalog?force=1', HOST, null, function (r, b) {
+    assert.strictEqual(r.statusCode, 200);
+    assert.strictEqual(b.apps[0].id, pkg.id);
+    assert.deepEqual(calls.pop(), ['catalog', true]);
+  });
+  call('GET', '/api/apps/catalog', HOST, null, function () { assert.deepEqual(calls.pop(), ['catalog', false]); });
+  call('GET', '/api/apps/install/status', HOST, null, function (r, b) {
+    assert.strictEqual(b.writable, true);
+    assert.strictEqual(b.state, 'idle');
+  });
+  call('POST', '/api/apps/install/fetch', HOST, { id: pkg.id }, function (r, b) {
+    assert.strictEqual(r.statusCode, 200);
+    assert.strictEqual(b.install.jobId, 'j1');
+    var start = calls.pop();
+    assert.strictEqual(start[0], 'start');
+    assert.strictEqual(start[1].source, 'catalog');
+    assert.strictEqual(start[1].pkg.id, pkg.id);
+  });
+  call('POST', '/api/apps/install/fetch', HOST, { id: 'nope' }, function (r, b) {
+    assert.strictEqual(r.statusCode, 400);
+    assert.ok(/not in the catalog/.test(b.error));
+  });
+  call('POST', '/api/apps/install/fetch', HOST, {}, function (r) { assert.strictEqual(r.statusCode, 400); });
+  calls = [];
+  call('POST', '/api/apps/install/confirm', HOST, { jobId: 'j1', elevate: true, replaceStore: 'yes' }, function (r) {
+    assert.strictEqual(r.statusCode, 200);
+    assert.deepEqual(calls.pop(), ['confirm', { jobId: 'j1', elevate: true, replaceStore: false }]);
+  });
+  call('POST', '/api/apps/install/cancel', HOST, { jobId: 'j1' }, function (r, b) {
+    assert.strictEqual(r.statusCode, 200);
+    assert.strictEqual(b.ok, true);
+    assert.deepEqual(calls.pop(), ['cancel', 'j1']);
+  });
+  // An installer refusal is reported as an error, not a success
+  var realStart = installerStub.start;
+  installerStub.start = function (r, cb) { cb('an install is already in progress'); };
+  call('POST', '/api/apps/install/fetch', HOST, { id: pkg.id }, function (r, b) {
+    assert.strictEqual(r.statusCode, 400);
+    assert.strictEqual(b.error, 'an install is already in progress');
+  });
+  installerStub.start = realStart;
+  // Wrong method and content type
+  call('GET', '/api/apps/install/fetch', HOST, null, function (r) { assert.strictEqual(r.statusCode, 404); });
+  var badType = createMockReq({ url: '/api/apps/install/fetch', method: 'POST', headers: { host: HOST, 'content-type': 'text/plain' } });
+  routes.handleRequest(badType, createMockRes(function (r) { checks++; assert.strictEqual(r.statusCode, 415); }));
+
+  // apps.* is file-only: the settings form cannot write it
+  var v = routes.validateSettings({ mqtt: { telemetryIntervalMs: 10000 }, device: { id: 'lg' }, apps: { hosts: ['evil.example'], repos: ['http://x'] } });
+  assert.strictEqual(v.value.apps, undefined);
+  assert.deepEqual(Object.keys(v.value).sort(), ['device', 'mqtt']);
+
+  // Restart paths refuse while an install runs, before anything is written
+  setup(base);
+  busy = true;
+  call('POST', '/api/settings', HOST, { mqtt: { telemetryIntervalMs: 10000 }, device: { id: 'lg' } }, function (r, b) {
+    assert.strictEqual(r.statusCode, 409);
+    assert.ok(/install is in progress/.test(b.error));
+  });
+  call('POST', '/api/setup', HOST, { action: 'network', open: true }, function (r, b) {
+    assert.strictEqual(r.statusCode, 409);
+  }, '127.0.0.1');
+  assert.ok(!fs.existsSync(cfgFile), 'a refused settings save writes nothing');
+  assert.strictEqual(restarts, 0);
+  busy = false;
+
+  assert.strictEqual(checks, 39, 'every callback ran');
+  try { fs.unlinkSync(cfgFile); } catch (e) {}
+  console.log('  ✓ install routes: Host check, controls switch, catalog, install flow, restart refusal');
+})();
+
 console.log('ALL test-routes.js assertions passed!');

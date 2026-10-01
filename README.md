@@ -21,7 +21,7 @@
 
 **Glasshouse** is a server that runs directly on a rooted LG webOS TV, providing both a live browser dashboard and a dashboard app.
 
-Use it for remote control, app management and removal, OLED panel care, privacy controls, service menu access, and hardware telemetry. It also includes an MQTT bridge for integrating the TV with Home Assistant and other smart-home software.
+Use it for remote control, app installation and removal, OLED panel care, privacy controls, service menu access, and hardware telemetry. It also includes an MQTT bridge for integrating the TV with Home Assistant and other smart-home software.
 
 ### Compatibility at a glance
 
@@ -55,7 +55,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 2. **[Seeing what the TV is configured to collect, and switching it off](#privacy-and-data-collection).** Whether LG's content-recognition engine is running and sampling the screen, the advertising identifier and whether ad tracking is limited, and every data agreement recorded on the TV with most of them switchable from the dashboard. Includes an on-TV blocker for LG's ad and telemetry endpoints, and a switch for the two diagnostics services that upload to LG.
 
-3. **[App management, debloating and home screen cleanup](#apps-and-home-screen-launcher).** Permanently uninstall apps to reclaim internal flash storage, disable unnecessary background system services to free up RAM and CPU cycles, and hide non-removable built-in LG system apps from the home launcher.
+3. **[App management, debloating and home screen cleanup](#apps-and-home-screen-launcher).** Install apps from the Homebrew Channel catalog, permanently uninstall apps to reclaim internal flash storage, disable unnecessary background system services to free up RAM and CPU cycles, and hide non-removable built-in LG system apps from the home launcher.
 
 4. **[Replacing the screen saver](#screen-savers).** A clock, a starfield, fireworks, or the TV's own readings, each dim or bright, in place of LG's.
 
@@ -150,15 +150,18 @@ This is useful both for monitoring and for troubleshooting. It shows whether a h
 
 ### Apps and home screen launcher
 
-The **Apps** tab, `/?tab=apps`, offers three different ways to manage software on the TV.
+The **Apps** tab, `/?tab=apps`, offers four different ways to manage software on the TV.
 
-**Uninstall** removes an application completely and frees its storage. **Disable** stops selected background services without deleting them. **Hide** removes built-in LG system apps from the home launcher without touching the underlying application.
+**Install** adds an app from the Homebrew Channel catalog. **Uninstall** removes an application completely and frees its storage. **Disable** stops selected background services without deleting them. **Hide** removes built-in LG system apps from the home launcher without touching the underlying application.
 
+* **Install apps from the catalog:** The **Install apps** section lists the Homebrew Channel catalog and marks what is installed and what has an update. Choosing an app downloads it, checks it against the catalog's sha256 hash and shows a preview (name, version, whether it is an upgrade or a downgrade, the services it adds, free space) before anything is installed. Root access for an app's services is off unless ticked, and needs the Homebrew Channel; it is applied again after each update. The Homebrew Channel and the dashboard's own package are left to the Homebrew Channel to update. Only one install runs at a time, and restarts and server updates wait until it has finished.
 * **Uninstall applications:** Store downloads and sideloaded packages with version and vendor details, and a one-click uninstall action to permanently delete apps and free up internal eMMC flash storage.
 * **Turn off background services:** Safely disable unnecessary background services and daemons that consume RAM and CPU cycles (such as USB camera watcher, Connected Car listeners, and browser preloading). Only services actually present on the TV are displayed, and disabled states are persisted across reboots.
 * **Hide home screen system apps:** Hide non-removable LG system apps (Gallery, Music, Sports, Always Ready, Camera, User Guide, Device Connector, Alexa, Google Assistant, etc.) from the home launcher ribbon. Operates non-destructively via reversible `appinfo.json` bind-mounts. Includes a master toggle to instantly return to stock behavior.
 * **Strict system safeguards:** Core TV services (`Live TV`, `Settings`, `Launcher`, input switchers, and the dashboard itself) are strictly protected and can never be hidden or uninstalled.
-* **Available on TV and Web:** Manage apps from any browser or directly on the TV using the remote control in the on-TV dashboard app.
+* **Available on TV and Web:** Uninstalling, services and hiding work from any browser or from the on-TV dashboard app. Installing is in the browser dashboard only.
+
+Apps that check for an installation from the LG store may refuse to run when installed this way, and apps built for a newer webOS than the TV runs may not launch.
 
 <p align="center">
   <a href="docs/screenshots/apps.png"><img src="docs/screenshots/apps.png" alt="Apps tab: installed applications with uninstall actions, background services switched off, and saved web pages" width="700"></a>
@@ -456,6 +459,8 @@ The dashboard can change the broker, credentials, topic prefix and device identi
 
 Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart.
 
+`apps.hosts` and `apps.repos` are file-only as well. `apps.hosts` lists the names, beyond IP addresses and `localhost`, that may be used to reach the dashboard when installing apps, for example `"apps": { "hosts": ["lgtv.local"] }`. `apps.repos` lists further catalogs, served over https in the Homebrew Channel format, to show beside the default one.
+
 `allowPower` is on, like the other controls: who on the network can use them is decided by opening the dashboard to the network in setup, and by `token`. `"allowPower": false` hides and refuses power off, power on and reboot, in the dashboard and in Home Assistant.
 
 > [!NOTE]
@@ -591,6 +596,8 @@ The MQTT settings panel is part of that surface: on a default install, anyone wh
 It is gated by `token` and by `allowControl` like the rest of the controls, and it cannot change `port`, `host`, `allowControl`, `allowPower` or `token` themselves — those stay file-only so the UI cannot widen its own exposure.
 
 The stored broker password is never sent to the browser.
+
+Installing apps runs code on the TV, so the install routes also refuse a request whose address is not an IP address, `localhost` or a name in `apps.hosts`. Catalog downloads must use https and match the catalog's sha256 hash, and root access for an app is never on by default. Details are in [docs/SECURITY.md](docs/SECURITY.md).
 
 Setting a token affects the dashboard only. MQTT is a separate channel.
 

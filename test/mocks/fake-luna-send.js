@@ -8,6 +8,12 @@
  * answer, answer with rubbish or an error, or die before answering; some
  * subscriptions drop after a few seconds.
  *
+ * FAKE_LUNA_SCRIPT names a JSON file { "<uri>": { steps: [{ delay: ms, out:
+ * object | raw: string }], end: "hold" | "exit" | "fail" } }. A call to a
+ * listed uri sends those lines in turn, as a streamed subscription does, then
+ * holds the stream open, exits 0, or exits 1. FAKE_LUNA_LOG names a file that
+ * gets each call's arguments, one JSON array per line.
+ *
  * Strict ES5: the test runs on node 0.12.
  */
 var mock = require('./mock-env').createMockEnv({ luna: {
@@ -28,6 +34,32 @@ for (var i = 0; i < args.length; i++) {
   if (a === '-i') { subscribe = true; continue; }
   if (a === '-f') continue;
   if (a.indexOf('luna://') === 0) { uri = a.slice(7); try { payload = JSON.parse(args[i + 1] || '{}'); } catch (e) {} i++; }
+}
+
+if (process.env.FAKE_LUNA_LOG) {
+  try { require('fs').appendFileSync(process.env.FAKE_LUNA_LOG, JSON.stringify(args) + '\n'); } catch (e) {}
+}
+
+var scripted = null;
+if (process.env.FAKE_LUNA_SCRIPT) {
+  try { scripted = JSON.parse(require('fs').readFileSync(process.env.FAKE_LUNA_SCRIPT, 'utf8'))[uri] || null; } catch (e) {}
+}
+if (scripted) {
+  process.stdin.on('end', function () { process.exit(0); });
+  process.stdin.resume();
+  var at = 0;
+  (scripted.steps || []).forEach(function (step) {
+    at += step.delay || 0;
+    setTimeout(function () {
+      process.stdout.write(step.raw !== undefined ? step.raw : JSON.stringify(step.out) + '\n');
+    }, at);
+  });
+  setTimeout(function () {
+    if (scripted.end === 'exit') process.exit(0);
+    if (scripted.end === 'fail') process.exit(1);
+  }, at + 20);
+  if (scripted.end !== 'exit' && scripted.end !== 'fail') setInterval(function () {}, 60000);
+  return;
 }
 
 var res = mock.luna[uri];

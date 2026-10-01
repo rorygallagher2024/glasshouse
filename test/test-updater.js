@@ -53,4 +53,22 @@ console.log('Running test-updater.js ...');
   console.log('  ✓ updateSummary accurately reports writable=false when controls are disabled');
 })();
 
+// 99. An app install in progress holds off updates
+(function testInstallerBusy() {
+  var busy = true;
+  updater.init({
+    config: { allowControl: true, update: { check: true } },
+    version: '0.39.1',
+    installDir: path.resolve(__dirname, '..'),
+    installerBusy: function () { return busy; }
+  });
+  var refused = 0;
+  updater.installUpdate(function (r) { refused++; assert.strictEqual(r.ok, false); assert.ok(/install is in progress/.test(r.error)); });
+  updater.rollbackUpdate(function (r) { refused++; assert.strictEqual(r.ok, false); assert.ok(/install is in progress/.test(r.error)); });
+  assert.strictEqual(refused, 2);
+  assert.strictEqual(updater.isBusy(), false);
+  busy = false;
+  console.log('  \u2713 installUpdate and rollbackUpdate refuse while an app install runs');
+})();
+
 console.log('ALL test-updater.js assertions passed!\n');

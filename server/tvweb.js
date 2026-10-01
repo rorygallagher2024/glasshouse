@@ -24,6 +24,9 @@ var zlib = require('zlib');
 var MiniMQTT = require('./lib/mqtt');
 var ha = require('./lib/ha');
 var updater = require('./lib/updater');
+var fetchLib = require('./lib/fetch');
+var repo = require('./lib/repo');
+var installer = require('./lib/installer');
 var privacy = require('./lib/privacy');
 var oled = require('./lib/oled');
 var screensavers = require('./lib/screensavers');
@@ -506,6 +509,9 @@ function checkHomebrewChannelApp() {
 }
 
 function tvApp(action, cb) {
+  if (installer.isBusy()) {
+    return cb({ ok: false, error: msg('srv.install.busy.tvApp', 'an install is in progress; try again when it has finished') });
+  }
   var script = assetPath('dashboard-app/install-app.sh');
   if (!script) return cb({ ok: true, supported: false, installed: false });
   execFile('/bin/sh', [script, action], { timeout: 90000 }, function (err, stdout) {
@@ -530,6 +536,12 @@ function tvApp(action, cb) {
  * cannot leave a half-migrated bridge behind.
  */
 function restartSelf() {
+  // Every restart path ends here. A restart mid-install would leave the
+  // package half-written and the job unreported.
+  if (installer.isBusy()) {
+    console.error('restart refused: ' + msg('srv.install.busy.restart', 'an install is in progress; restart when it has finished'));
+    return false;
+  }
   var ctl = [path.join(__dirname, 'tvwebctl'), '/var/lib/tvweb/tvwebctl'];
   for (var i = 0; i < ctl.length; i++) {
     if (!fs.existsSync(ctl[i])) continue;
@@ -550,11 +562,25 @@ updater.init({
   version: TVWEB_VERSION,
   installDir: __dirname,
   writeSettings: routes.writeSettings,
-  viaHomebrewChannel: fromHomebrewChannel
+  viaHomebrewChannel: fromHomebrewChannel,
+  installerBusy: installer.isBusy
 });
+
+fetchLib.init({ config: CONFIG, version: TVWEB_VERSION });
+repo.init({ config: CONFIG, luna: luna, fetch: fetchLib });
+installer.init({
+  config: CONFIG,
+  luna: luna,
+  apps: appsModule,
+  fetch: fetchLib,
+  updaterBusy: updater.isBusy
+});
+if (!CLI_MODE) installer.recover();
 
 routes.init({
   config: CONFIG,
+  repo: repo,
+  installer: installer,
   configFile: CONFIG_FILE,
   controls: controls,
   telemetry: telemetry,

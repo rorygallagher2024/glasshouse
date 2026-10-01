@@ -758,6 +758,11 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
   max-width:62ch;
 }
 .prot-status{flex-shrink:0}
+/* The disabled "Updates through Homebrew Channel" button is wider than a phone's spare width. */
+#apps-catalog-list .prot-row{flex-wrap:wrap}
+#apps-catalog-list .prot-main{flex:1 1 160px}
+#apps-catalog-list .prot-status{max-width:100%}
+#apps-catalog-list .prot-status button{max-width:100%;white-space:normal}
 /* Renaming a saved page happens in its own row: the name becomes the field. */
 .page-edit{display:flex;gap:8px;margin:0}
 .page-edit{flex-wrap:wrap}
@@ -1265,6 +1270,39 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
 <section class="priv panel" id="appspane" role="tabpanel" hidden>
   <div class="lbl" data-t="apps.heading">Apps &amp; Home Screen Launcher</div>
 
+
+  <details class="pv-d" id="disc-install-apps" open>
+    <summary><span data-t="apps.install">Install apps</span> <span class="cur" id="apps-catalog-summary"></span></summary>
+    <div class="pv-sub" data-t="apps.install.desc">Apps from the Homebrew Channel catalog. Each is downloaded to the TV and checked against its published hash, and its contents are shown here before anything is installed.</div>
+    <form class="toast-form" onsubmit="event.preventDefault();">
+      <input type="search" id="catalog-search" placeholder="Search apps" data-t-placeholder="apps.install.search" maxlength="60"
+        autocomplete="off" spellcheck="false" oninput="renderCatalog()">
+    </form>
+    <div class="sub page-add-msg" id="catalog-msg" role="alert"></div>
+    <div class="pv-note" id="install-status" hidden></div>
+    <div class="pv-note" id="install-panel" hidden>
+      <div class="prot-title" id="inst-title">&mdash;</div>
+      <div class="prot-desc" id="inst-meta">&mdash;</div>
+      <div class="prot-desc" id="inst-apps"></div>
+      <div id="inst-services-row" hidden>
+        <div class="prot-desc" id="inst-services"></div>
+        <label class="cfg-ent-chk"><input type="checkbox" id="inst-root"><span data-t="apps.install.root">Run services as root (needs the Homebrew Channel)</span></label>
+      </div>
+      <div class="prot-desc" id="inst-cpu" hidden></div>
+      <div class="prot-desc" id="inst-space"></div>
+      <div id="inst-store-row" hidden>
+        <div class="prot-desc" data-t="apps.install.store.warn">This app was installed from the LG store. Replacing it stops store updates for it.</div>
+        <label class="cfg-ent-chk"><input type="checkbox" id="inst-replace"><span data-t="apps.install.store.replace">Replace the store version</span></label>
+      </div>
+      <div class="btns" style="margin-top:14px;max-width:420px">
+        <button type="button" id="inst-confirm" onclick="confirmInstall()" data-t="apps.install.confirm">Install</button>
+        <button type="button" id="inst-cancel" onclick="cancelInstall()" data-t="common.cancel">Cancel</button>
+      </div>
+    </div>
+    <div class="prot-table" id="apps-catalog-list">
+      <div class="sub" style="padding:16px 0" data-t="apps.install.loading">Loading the catalog&hellip;</div>
+    </div>
+  </details>
 
   <details class="pv-d" id="disc-installed-apps" open>
     <summary><span data-t="apps.uninstall">Uninstall applications</span> <span class="cur" id="apps-installed-summary"></span></summary>
@@ -3040,8 +3078,24 @@ async function openUrl() {
 // panel compensation. The power button then turns it back on instead.
 let pwStandby = false;
 
-function pw(a) {
+// installSnap is only set once the Apps tab has polled, so ask the server when
+// it is unknown. An unreachable server counts as no install: the warning must
+// not stand in the way of a reboot.
+async function installRunning() {
+  let s = installSnap;
+  if (!s) {
+    try {
+      const r = await fetch(api('/api/apps/install/status'), { cache: 'no-store' });
+      s = await r.json();
+    } catch (e) { return false; }
+  }
+  return !!(s && INSTALL_BUSY[s.state]);
+}
+
+async function pw(a) {
   if (a === 'powerOn') return c(a);
+  if (await installRunning() &&
+      !confirm(t('ctl.power.installBusy', 'An app install is in progress. Interrupting it may leave the app half-installed. Continue anyway?'))) return;
   const msg = a === 'reboot'
     ? t('ctl.reboot.confirm', 'Reboot the TV now? It will be unavailable for about a minute.')
     : t('ctl.powerOff.confirm', 'Power off the TV now?');
@@ -3705,6 +3759,260 @@ async function loadApps() {
   }
 }
 
+/* ---- Install apps (Homebrew Channel catalog) ---- */
+let catalogData = null;
+let catalogLoading = false;
+let installSnap = null;     // last status from the server
+let installTimer = null;
+let installOwn = false;     // this page started or resumed the job, so it reports how it ended
+const INSTALL_BUSY = { downloading: 1, verifying: 1, installing: 1, elevating: 1 };
+
+async function loadCatalog(force) {
+  if (catalogLoading) return;
+  catalogLoading = true;
+  try {
+    const r = await fetch(api('/api/apps/catalog' + (force ? '?force=1' : '')), { cache: 'no-store' });
+    const d = await r.json().catch(() => ({}));
+    catalogData = d;
+    if (!r.ok && d.error) showErr(d.error);
+  } catch (e) {
+    catalogData = { ok: false, apps: [], error: e.message };
+  } finally {
+    catalogLoading = false;
+  }
+  renderCatalog();
+}
+
+// Error text starts lower-case; a host name at the start keeps its case.
+function sentence(text) {
+  text = String(text || '');
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(?![\w-])/i.test(text)) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function installIdle() {
+  return !installSnap || !(INSTALL_BUSY[installSnap.state] || installSnap.state === 'awaiting-confirm');
+}
+
+function renderCatalog() {
+  const list = q('apps-catalog-list');
+  if (!list || !catalogData) return;
+  const d = catalogData;
+  const apps = d.apps || [];
+  const writable = !appsData || appsData.writable !== false;
+  q('apps-catalog-summary').textContent = d.ok ? t('apps.count', '{n} apps', { n: apps.length }) : '';
+  const msgEl = q('catalog-msg');
+  msgEl.textContent = sentence(d.error);
+  if (!d.ok) {
+    list.innerHTML = `<div class="sub" style="padding:16px 0">${esc(t('apps.install.unavailable', 'The catalog could not be loaded. The TV needs internet access to reach it.'))}</div>`;
+    return;
+  }
+  const term = q('catalog-search').value.trim().toLowerCase();
+  const shown = apps.filter(a => !term ||
+    (a.title || '').toLowerCase().includes(term) || (a.id || '').toLowerCase().includes(term) ||
+    (a.description || '').toLowerCase().includes(term));
+  if (!shown.length) {
+    list.innerHTML = `<div class="sub" style="padding:16px 0">${esc(t('apps.install.noMatch', 'No apps match.'))}</div>`;
+    return;
+  }
+  const idle = installIdle();
+  list.innerHTML = shown.map(a => {
+    const id = esc(a.id);
+    let label, cls = 'idle', off = !writable || !idle;
+    if (a.state === 'hbc') { label = t('apps.install.viaHbc', 'Updates through Homebrew Channel'); off = true; }
+    else if (a.state === 'installed') { label = t('apps.install.installed', 'Installed'); off = true; }
+    else if (a.state === 'update') { label = t('apps.install.update', 'Update'); cls = 'warn'; }
+    else { label = t('apps.install.button', 'Install'); cls = 'good'; }
+    const icon = a.iconUri
+      ? `<img src="${esc(a.iconUri)}" width="38" height="38" loading="lazy" referrerpolicy="no-referrer" alt="" style="border-radius:8px;object-fit:contain;background:var(--w06);flex-shrink:0" onerror="this.style.visibility='hidden'">`
+      : '<span style="width:38px;height:38px;flex-shrink:0"></span>';
+    const meta = [a.version ? 'v' + a.version : '',
+      a.state === 'update' && a.installedVersion ? t('apps.install.have', 'installed: v{version}', { version: a.installedVersion }) : ''
+    ].filter(Boolean).join(' · ');
+    const root = a.rootRequired ? ` <span class="pill warn" style="padding:1px 8px">${esc(t('apps.install.rootBadge', 'root'))}</span>` : '';
+    return `<div class="prot-row">
+      ${icon}
+      <div class="prot-main">
+        <div class="prot-title">${esc(a.title || a.id)}${root} <span class="prot-sub">&middot; ${esc(meta)}</span></div>
+        <div class="prot-desc">${esc(a.description || a.id)}</div>
+      </div>
+      <div class="prot-status">
+        <button type="button" class="pill ${cls}" onclick="startInstall('${id}')" ${off ? 'disabled' : ''}>${esc(label)}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function fmtMb(n) { return t('apps.install.mb', '{n} MB', { n: Math.round(n / 1048576) }); }
+
+function setInstallStatus(text) {
+  const el = q('install-status');
+  el.hidden = !text;
+  el.textContent = text || '';
+}
+
+function progressText(s) {
+  const p = s.progress || {};
+  switch (s.state) {
+    case 'downloading':
+      return p.total ? t('apps.install.downloading.of', 'Downloading {done} of {total}', { done: fmtMb(p.bytes || 0), total: fmtMb(p.total) })
+        : t('apps.install.downloading', 'Downloading… {done}', { done: fmtMb(p.bytes || 0) });
+    case 'verifying': return t('apps.install.verifying', 'Checking the package…');
+    case 'installing': return t('apps.install.installing', 'Installing…');
+    case 'elevating': return t('apps.install.elevating', 'Setting up root access…');
+    default: return '';
+  }
+}
+
+function renderPreview(pv) {
+  const dir = pv.direction;
+  const ver = pv.version, from = pv.installedVersion;
+  q('inst-title').textContent = (pv.apps && pv.apps[0] && pv.apps[0].title) || pv.package;
+  q('inst-meta').textContent = pv.package + ' · ' + (
+    dir === 'up' ? t('apps.install.dir.up', 'upgrade from v{from} to v{version}', { from, version: ver })
+    : dir === 'down' ? t('apps.install.dir.down', 'downgrade from v{from} to v{version}', { from, version: ver })
+    : dir === 'same' ? t('apps.install.dir.same', 'reinstall of v{version}', { version: ver })
+    : t('apps.install.dir.new', 'new install of v{version}', { version: ver }));
+  const apps = (pv.apps || []).map(a => a.id);
+  q('inst-apps').textContent = apps.length > 1 ? t('apps.install.apps', 'Apps: {list}', { list: apps.join(', ') }) : '';
+  const svc = pv.services || [];
+  q('inst-services-row').hidden = !svc.length;
+  q('inst-services').textContent = svc.length ? t('apps.install.services', 'Background services: {list}', { list: svc.join(', ') }) : '';
+  q('inst-root').checked = false;
+  q('inst-cpu').hidden = !pv.cpuMismatch;
+  q('inst-cpu').textContent = pv.cpuMismatch
+    ? t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.') : '';
+  q('inst-space').textContent = pv.freeBytes === null || pv.freeBytes === undefined ? ''
+    : t('apps.install.space', 'Free space: {free}. Needed: about {need}.', { free: fmtMb(pv.freeBytes), need: fmtMb(pv.needBytes) });
+  q('inst-store-row').hidden = !pv.storeInstalled;
+  q('inst-replace').checked = false;
+}
+
+function renderInstall() {
+  const s = installSnap;
+  const panel = q('install-panel');
+  if (!s) return;
+  if (s.state === 'awaiting-confirm' && s.preview) {
+    if (panel.hidden || panel.dataset.job !== s.jobId) {
+      panel.dataset.job = s.jobId;
+      renderPreview(s.preview);
+    }
+    panel.hidden = false;
+    q('inst-confirm').disabled = false;
+    q('inst-cancel').disabled = false;
+    setInstallStatus('');
+  } else {
+    panel.hidden = true;
+    delete panel.dataset.job;
+    setInstallStatus(progressText(s));
+  }
+}
+
+function installEnded(s) {
+  if (s.state === 'installed') {
+    const r = s.result || {};
+    setInstallStatus(t('apps.install.done', 'Installed {name} v{version}.', { name: r.package || '', version: r.version || '' }));
+    setTimeout(() => { if (installIdle()) setInstallStatus(''); }, 8000);
+  } else if (s.state === 'error' || s.state === 'interrupted') {
+    showErr(s.error || t('common.unknownError', 'unknown error'));
+    setInstallStatus(sentence(s.error));
+  }
+  loadApps();
+  loadCatalog(true);
+}
+
+async function pollInstall() {
+  clearTimeout(installTimer);
+  installTimer = null;
+  let s;
+  try {
+    const r = await fetch(api('/api/apps/install/status'), { cache: 'no-store' });
+    s = await r.json();
+    if (!r.ok || !s.ok) throw new Error(s.error || 'HTTP ' + r.status);
+  } catch (e) {
+    // The server may be restarting; keep asking while a job was ours.
+    if (installOwn) installTimer = setTimeout(pollInstall, 2000);
+    return;
+  }
+  const was = installSnap;
+  const wasIdle = installIdle();
+  installSnap = s;
+  if (INSTALL_BUSY[s.state] || s.state === 'awaiting-confirm') installOwn = true;
+  renderInstall();
+  if (INSTALL_BUSY[s.state]) installTimer = setTimeout(pollInstall, 1000);
+  else if (s.state === 'awaiting-confirm') installTimer = setTimeout(pollInstall, 5000);   // the preview expires
+  const finished = s.state === 'installed' || s.state === 'error' || s.state === 'interrupted' || s.state === 'idle';
+  if (installOwn && finished && (!was || was.state !== s.state || was.jobId !== s.jobId)) {
+    installOwn = false;
+    if (s.state !== 'idle') installEnded(s);
+  }
+  if (wasIdle !== installIdle()) renderCatalog();
+}
+
+async function installPost(path, body) {
+  const r = await fetch(api(path), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) throw new Error(j.error || t('apps.install.failed', 'The install could not be started'));
+  return j;
+}
+
+async function startInstall(appId) {
+  if (!installIdle()) return;
+  q('catalog-msg').textContent = '';
+  installOwn = true;
+  try {
+    const j = await installPost('/api/apps/install/fetch', { id: appId });
+    installSnap = j.install;
+    renderInstall();
+    renderCatalog();
+    pollInstall();
+  } catch (e) {
+    installOwn = false;
+    showErr(e.message);
+    q('catalog-msg').textContent = sentence(e.message);
+  }
+}
+
+async function confirmInstall() {
+  const s = installSnap;
+  if (!s || s.state !== 'awaiting-confirm') return;
+  const pv = s.preview;
+  if (pv.storeInstalled && !q('inst-replace').checked) {
+    showErr(t('apps.install.store.needTick', 'Tick the box to replace the store version.'));
+    return;
+  }
+  q('inst-confirm').disabled = true;
+  q('inst-cancel').disabled = true;
+  try {
+    const j = await installPost('/api/apps/install/confirm', {
+      jobId: s.jobId, elevate: q('inst-root').checked, replaceStore: q('inst-replace').checked
+    });
+    installSnap = j.install;
+    renderInstall();
+    renderCatalog();
+    pollInstall();
+  } catch (e) {
+    showErr(e.message);
+    pollInstall();
+  }
+}
+
+async function cancelInstall() {
+  const s = installSnap;
+  if (!s) return;
+  try {
+    await installPost('/api/apps/install/cancel', { jobId: s.jobId });
+    installOwn = false;
+  } catch (e) { showErr(e.message); }
+  installSnap = null;
+  q('install-panel').hidden = true;
+  setInstallStatus('');
+  renderCatalog();
+  pollInstall();
+}
+
 // The address without its scheme, as a reminder of which page a tile opens.
 function pageHost(url) {
   try { return new URL(url).host.replace(/^www\./, ''); } catch (e) { return url || ''; }
@@ -4177,7 +4485,7 @@ function showTab(name) {
   relayout(false);   // the panel just became measurable
   cfgPollStatus(name === 'mqtt');
   if (name === 'metrics') loadHdmiOnce();
-  if (name === 'apps') loadApps();
+  if (name === 'apps') { loadApps(); loadCatalog(false); pollInstall(); }
   if (name === 'server') checkOnOpen();
   if (name === 'server') loadTvApp();
   if (name === 'oledcare') loadOledCare();

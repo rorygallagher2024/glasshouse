@@ -4,6 +4,9 @@ var fs = require('fs');
 var path = require('path');
 var zlib = require('zlib');
 var execFile = require('child_process').execFile;
+var fetch = require('./fetch');
+var probeFetch = fetch.probeFetch;
+var execErr = fetch.execErr;
 
 var UPDATE_REPO = 'rorygallagher2024/lg-webos-dashboard';
 var UPDATE_API = 'https://api.github.com/repos/' + UPDATE_REPO + '/releases/latest';
@@ -13,12 +16,6 @@ var BOOT_HOOK = '/var/lib/webosbrew/init.d/50-tvweb';
 var installDir = path.resolve(__dirname, '..');
 var stageDir = path.join(installDir, '.update');
 var prevDir = path.join(installDir, '.previous');
-
-var clientDirs = [
-  '/media/developer/bin', '/usr/local/bin', '/opt/bin', '/opt/usr/bin',
-  '/var/lib/webosbrew/bin', '/home/root/bin', '/usr/bin', '/bin'
-];
-var fetchClient = null;
 
 var UPDATE = {
   state: 'idle',   // idle | checking | available | current | downloading | installing | installed | offline | error
@@ -39,6 +36,7 @@ var publishDiscoveryFn = null;
 // True when the Homebrew Channel installed the server. It updates it then: a
 // release installed here would be taken back to the app's own copy.
 var viaHomebrewChannel = function () { return false; };
+var installerBusy = function () { return false; };
 var updateFirstTimer = null;
 var updateEveryTimer = null;
 
@@ -61,12 +59,12 @@ function setUpdateState(state, err) {
 
 function verParts(v) {
   var a = String(v || '').replace(/^v/i, '').split('.');
-  return [num(a[0], 0), num(a[1], 0), num(a[2], 0)];
+  return [num(a[0], 0), num(a[1], 0), num(a[2], 0), num(a[3], 0)];
 }
 
 function verNewer(a, b) {
   var x = verParts(a), y = verParts(b);
-  for (var i = 0; i < 3; i++) {
+  for (var i = 0; i < 4; i++) {
     if (x[i] !== y[i]) return x[i] > y[i];
   }
   return false;
@@ -95,7 +93,7 @@ function updateSummary() {
     url: UPDATE.url,
     notes: UPDATE.notes,
     error: UPDATE.error,
-    client: fetchClient,
+    client: fetch.client(),
     autoCheck: !!(config.update && config.update.check),
     rollbackTo: viaHomebrewChannel() ? null : rollbackVersion(),
     writable: config.allowControl,
@@ -106,114 +104,12 @@ function updateSummary() {
 }
 
 function findBin(name) {
-  for (var i = 0; i < clientDirs.length; i++) {
-    var full = clientDirs[i] + '/' + name;
+  var dirs = fetch.clientDirs();
+  for (var i = 0; i < dirs.length; i++) {
+    var full = dirs[i] + '/' + name;
     if (fs.existsSync(full)) return full;
   }
   return null;
-}
-
-function execErr(err, stderr) {
-  if (err && err.killed) return 'timed out';
-  var m = String(stderr || '').split('\n')[0].trim();
-  if (!m && err && err.code) return 'exited ' + err.code;
-  return m || (err && err.message) || 'failed';
-}
-
-/*
- * A failure that says nothing about the client: the name did not resolve,
- * nothing answered, or time ran out. Every client shares the TV's network, so
- * the next would fail the same way, and blaming the client would send someone
- * off installing curl on a TV that is simply offline.
- *   curl      6 unresolved, 7 no connection, 28 timed out
- *   GNU wget  4 network failure
- *   busybox   exits 1 for everything, so only its message tells
- */
-function networkFailure(bin, err, stderr) {
-  if (!err) return false;
-  if (err.killed) return true;
-  if (/wget$/.test(bin)) {
-    return err.code === 4 || /bad address|can't connect|timed out|unreachable/i.test(String(stderr || ''));
-  }
-  return err.code === 6 || err.code === 7 || err.code === 28;
-}
-
-function httpErrorStatus(err, stderr) {
-  var text = String(stderr || '');
-  var m = /returned error:?\s*(?:HTTP\/[\d.]+\s+)?([1-5]\d\d)/i.exec(text) ||
-          /\bERROR\s+([1-5]\d\d)\b/i.exec(text);
-  if (m) return parseInt(m[1], 10);
-  if (err && (err.code === 22 || err.code === 8)) return -1;
-  return 0;
-}
-
-function githubSaid(status, url) {
-  var where = String(url).replace(/^https?:\/\/[^\/]+/, '');
-  if (status === 404) {
-    return 'GitHub returned 404 for ' + where +
-           ' - no release published yet, or the repository is not visible';
-  }
-  if (status === 403 || status === 429) {
-    return status + ' for ' + where +
-           ' - either the API rate limit for this address is spent (60 an hour ' +
-           'unauthenticated), or something on the network refused the request';
-  }
-  if (status > 0) return 'GitHub returned ' + status + ' for ' + where;
-  return 'GitHub answered with an error for ' + where;
-}
-
-function fetchArgs(bin, url, outFile) {
-  var ua = 'tvweb/' + currentVersion;
-  // The check is a few kilobytes and someone may be watching the tab, so an
-  // offline TV says so in seconds. The download gets longer.
-  var secs = outFile ? '30' : '10';
-  if (/wget$/.test(bin)) return ['-q', '-T', secs, '-U', ua, '-O', outFile || '-', url];
-  return ['-fsSL', '--max-time', secs, '-A', ua, '-o', outFile || '-', url];
-}
-
-function probeFetch(url, outFile, cb) {
-  var list = [];
-  var configured = (config.update && config.update.client) || '';
-  if (fetchClient) list.push(fetchClient);
-  if (configured) list.push(configured);
-  for (var d = 0; d < clientDirs.length; d++) {
-    list.push(clientDirs[d] + '/curl');
-    list.push(clientDirs[d] + '/wget');
-  }
-
-  var i = 0, last = '', seen = {};
-  (function next() {
-    if (i >= list.length) {
-      return cb(new Error('no HTTP client on this TV could reach GitHub' +
-                          (last ? ' (' + last + ')' : '') +
-                          '. Install a current curl or wget.'));
-    }
-    var bin = list[i++];
-    if (seen[bin] || !fs.existsSync(bin)) return next();
-    seen[bin] = 1;
-    execFile(bin, fetchArgs(bin, url, outFile),
-             { timeout: outFile ? 180000 : 15000, maxBuffer: 1024 * 1024 },
-             function (err, stdout, stderr) {
-      if (err) {
-        var status = httpErrorStatus(err, stderr);
-        if (status) {
-          fetchClient = bin;
-          return cb(new Error(githubSaid(status, url)));
-        }
-        if (networkFailure(bin, err, stderr)) {
-          console.error('update: ' + path.basename(bin) + ': ' + execErr(err, stderr));
-          /** @type {any} */
-          var off = new Error('The TV could not reach GitHub. Check it is connected to the internet.');
-          off.offline = true;
-          return cb(off);
-        }
-        last = path.basename(bin) + ': ' + execErr(err, stderr);
-        return next();
-      }
-      fetchClient = bin;
-      cb(null, String(stdout || ''), bin);
-    });
-  })();
 }
 
 /*
@@ -250,7 +146,7 @@ function checkForUpdate(force, cb) {
     UPDATE.checked = Date.now();
     setUpdateState(verNewer(UPDATE.latest, currentVersion) ? 'available' : 'current');
     console.log('update: installed v' + currentVersion + ', latest v' + UPDATE.latest +
-                ' (' + UPDATE.state + ', via ' + fetchClient + ')');
+                ' (' + UPDATE.state + ', via ' + fetch.client() + ')');
     cb(null, updateSummary());
   });
 }
@@ -337,7 +233,10 @@ function isExecutable(rel) {
   return rel === 'tvwebctl' || /\.sh$/.test(rel);
 }
 
+function isBusy() { return !!UPDATE.busy; }
+
 function installUpdate(cb) {
+  if (installerBusy()) return cb({ ok: false, error: msg('srv.install.busy.update', 'an app install is in progress; update when it has finished') });
   if (UPDATE.busy) return cb({ ok: false, error: msg('srv.update.busy', 'an update is already running') });
   if (viaHomebrewChannel()) return cb({ ok: false, error: msg('srv.update.viaHbc', 'updates for this install come from the Homebrew Channel') });
 
@@ -449,6 +348,7 @@ function installUpdate(cb) {
 }
 
 function rollbackUpdate(cb) {
+  if (installerBusy()) return cb({ ok: false, error: msg('srv.install.busy.update', 'an app install is in progress; update when it has finished') });
   if (viaHomebrewChannel()) return cb({ ok: false, error: msg('srv.update.viaHbc', 'updates for this install come from the Homebrew Channel') });
   var was = rollbackVersion();
   if (!was) return cb({ ok: false, error: msg('srv.update.noRollback', 'nothing to roll back to') });
@@ -469,6 +369,7 @@ function init(opts) {
   opts = opts || {};
   if (opts.config) config = opts.config;
   if (opts.version) currentVersion = opts.version;
+  fetch.init({ config: opts.config, version: opts.version });
   if (opts.installDir) {
     installDir = opts.installDir;
     stageDir = path.join(installDir, '.update');
@@ -478,6 +379,7 @@ function init(opts) {
   if (opts.onUpdateChange) publishUpdateFn = opts.onUpdateChange;
   if (opts.onDiscoveryChange) publishDiscoveryFn = opts.onDiscoveryChange;
   if (opts.viaHomebrewChannel) viaHomebrewChannel = opts.viaHomebrewChannel;
+  if (opts.installerBusy) installerBusy = opts.installerBusy;
 }
 
 function setPublishHandler(pubUpdate, pubDiscovery) {
@@ -492,8 +394,10 @@ module.exports = {
   updateSummary: updateSummary,
   checkForUpdate: checkForUpdate,
   installUpdate: installUpdate,
+  isBusy: isBusy,
   rollbackUpdate: rollbackUpdate,
   scheduleUpdateChecks: scheduleUpdateChecks,
   setAutoCheck: setAutoCheck,
-  verNewer: verNewer
+  verNewer: verNewer,
+  verParts: verParts
 };

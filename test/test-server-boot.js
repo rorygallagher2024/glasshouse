@@ -175,7 +175,7 @@ function phase(name, chaos, next) {
             // are read a group at a time, and each call that never answers is
             // cut off at 3.5s. CI on node 8.12 saw a 12s gap.
             var gapLimit = chaos ? 25000 : 12000;
-            var until = Date.now() + SECS * 1000, worst = 0, worstPage = 0, pending = false;
+            var until = Date.now() + SECS * 1000, worst = 0, worstPage = 0, pending = false, installChecked = false;
             var probe = setInterval(function () {
               if (exited) { clearInterval(probe); return fail('server exited: ' + JSON.stringify(exited)); }
               if (pending) return;
@@ -184,6 +184,19 @@ function phase(name, chaos, next) {
                 pending = false;
                 if (code !== 200) { clearInterval(probe); return fail('dashboard answered ' + code + ' after ' + ms + 'ms'); }
                 worst = Math.max(worst, ms);
+                if (!installChecked) {
+                  installChecked = true;
+                  // Wiring: the installer, repo and Host check are reachable in the real process.
+                  get(port, '/api/apps/install/status', function (ic, ib) {
+                    var st = null;
+                    try { st = JSON.parse(ib); } catch (e) {}
+                    if (ic !== 200 || !st || st.state !== 'idle') fail('install status answered ' + ic + ': ' + ib);
+                  });
+                  http.get({ host: '127.0.0.1', port: port, path: '/api/apps/catalog', headers: { host: 'evil.example' } }, function (hr) {
+                    hr.resume();
+                    if (hr.statusCode !== 403) fail('a foreign Host reached the catalog route: ' + hr.statusCode);
+                  }).on('error', function () {});
+                }
                 get(port, '/', function (pc, pb, pms) {
                   if (stopping) return;
                   if (pc !== 200 || pms > 2000) fail('the page answered ' + pc + ' after ' + pms + 'ms');

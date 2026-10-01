@@ -17,11 +17,28 @@ it before exposing it more widely.
   token. An MQTT-only install has no reason to expose one. The on-TV app runs on
   the same server, so it stops working too; a first install in this state does
   not add it.
-- **The upgrade endpoint installs code.** `allowControl` gates it along with
-  everything else, so on a default install anyone who can reach the port can
-  move the TV to the current release. It is a fixed repository over verified
-  TLS, so that is the whole of what they can do; `token` or
-  `"allowControl": false` closes it.
+- **The upgrade and install endpoints install code.** `allowControl` gates
+  them along with everything else, so on a default install anyone who can reach
+  the port can move the TV to the current release, and can install any app in
+  the Homebrew Channel catalog. The upgrade comes from a fixed repository over
+  verified TLS. A catalog install must use https and match the sha256 hash the
+  catalog lists, and the package must keep to its own ids: nothing under
+  `com.webos.`, `com.palm.` or `com.lge.`, nothing already on the TV's system
+  partition, and not the Homebrew Channel or the dashboard's own package. That
+  still lets a reachable client choose which catalog app runs on the TV, so
+  `token` or `"allowControl": false` closes it.
+- **Root access for an installed app is never on by default.** It is a separate
+  option per install, it needs the Homebrew Channel, and an app that was given
+  it is elevated again after each update, since a reinstall undoes it.
+- **The install routes check the Host header.** A page on an attacker's domain
+  that resolves to the TV's address (DNS rebinding) passes the same-origin
+  check on `POST`s and looks like a request from the TV itself. The routes
+  therefore answer only to an IP address, `localhost` or a name listed in
+  `apps.hosts` in `config.json`, which is file-only. A name such as `lgtv.local`
+  has to be added there to install from it.
+- **`apps.repos` adds trust.** Each extra catalog listed there can offer
+  packages for installation, with their hashes. It is file-only and every entry
+  must be served over https.
 - **Never port-forward this.** It is designed for a trusted LAN.
 - **Bind to `127.0.0.1` to keep the on-TV app but close the port.** With
   `"host": "127.0.0.1"` nothing on the network can connect to port 8080, while

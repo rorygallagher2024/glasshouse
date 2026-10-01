@@ -1,0 +1,47 @@
+{
+  "paging": { "page": 1, "count": 3, "maxPage": 2, "itemsTotal": 4 },
+  "packages": [
+    {
+      "id": "org.webosbrew.hbchannel",
+      "title": "Homebrew Channel",
+      "iconUri": "https://raw.githubusercontent.com/webosbrew/webos-homebrew-channel/main/assets/icon160.png",
+      "manifestUrl": "https://github.com/webosbrew/webos-homebrew-channel/releases/latest/download/org.webosbrew.hbchannel.manifest.json",
+      "shortDescription": "webOS Homebrew installer",
+      "manifest": {
+        "id": "org.webosbrew.hbchannel",
+        "version": "0.7.3",
+        "type": "web",
+        "title": "Homebrew Channel",
+        "appDescription": "webOS Homebrew installer",
+        "iconUri": "https://raw.githubusercontent.com/webosbrew/webos-homebrew-channel/main/assets/icon160.png",
+        "sourceUrl": "https://github.com/webosbrew/webos-homebrew-channel",
+        "rootRequired": false,
+        "ipkUrl": "org.webosbrew.hbchannel_0.7.3_all.ipk",
+        "ipkHash": { "sha256": "d10bf3c753551d7c72fb7a92b20fcd2317e502a220ac668ba8e76f6ea78b363c" }
+      }
+    },
+    {
+      "id": "com.example.player",
+      "title": "Example Player",
+      "iconUri": "https://example.org/player/icon.png",
+      "manifestUrl": "https://example.org/player/manifest.json",
+      "shortDescription": "A video player",
+      "manifest": {
+        "id": "com.example.player",
+        "version": "1.4.0",
+        "ipkUrl": "https://example.org/player/com.example.player_1.4.0_arm.ipk",
+        "ipkHash": { "sha256": "1111111111111111111111111111111111111111111111111111111111111111" },
+        "rootRequired": "optional"
+      }
+    },
+    {
+      "id": "com.example.nohash",
+      "title": "No Hash",
+      "manifest": {
+        "id": "com.example.nohash",
+        "version": "1.0.0",
+        "ipkUrl": "https://example.org/nohash.ipk"
+      }
+    }
+  ]
+}

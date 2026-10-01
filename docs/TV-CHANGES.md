@@ -13,6 +13,8 @@ riskier controls ask for confirmation in the dashboard first.
 | Boot log | `/var/lib/webosbrew/tvweb-boot.log`, kept under 32 KB | Uninstalling |
 | Boot hook that holds switched-off services down | `/var/lib/webosbrew/init.d/20-tvweb-services`, only once a service is switched off | Switching the services back on, or uninstalling |
 | Home-screen tile | The Homebrew Channel app, or with `deploy.sh` a developer app | Removing the app |
+| Packages being installed | `/media/developer/temp/glasshouse-install`, deleted when the install ends or at the next start | Itself |
+| Install job and services run as root | `install-job.json` and `elevated.json` in `/var/lib/tvweb` | Uninstalling |
 
 Installed from the Homebrew Channel, uninstalling the app stops the server
 starting at boot straight away, and within a few minutes the server removes the
@@ -39,6 +41,7 @@ menus. Uninstalling the dashboard leaves them as they are.
 | Change | Note |
 | :----- | :--- |
 | Uninstalling an app | Permanent; reinstall it from the LG Content Store |
+| Installing an app | Installed as a developer app; remove it from the Apps tab or the Homebrew Channel. Its services stay elevated to root if that was chosen |
 | Picture mode, energy saving, sound output, Quick Start+, sleep timer | Ordinary TV settings |
 | Screen Shift, Logo Luminance Adjustment | OLED panel settings in the TV's own menus |
 | Global Stress Reduction and Temporal Peak Control | OLED burn-in protections. Switching one off asks for confirmation, and neither is exposed to Home Assistant. Not switched back on by uninstalling |
