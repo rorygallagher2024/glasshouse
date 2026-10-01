@@ -75,7 +75,7 @@ var CONFIG = {
   token: '',
 
   // PicCap status checks start a process on the TV, so this stays opt-in.
-  piccap: { enabled: false },
+  piccap: { enabled: false, pollIntervalMs: 30000 },
 
   // Home Assistant & MQTT Integration
   mqtt: {
@@ -359,7 +359,10 @@ var liveState = stateModule.init({
 });
 
 var piccap = CONFIG.piccap && CONFIG.piccap.enabled === true
-  ? piccapTransport.init({ luna: luna })
+  ? piccapTransport.init({
+      luna: luna,
+      pollIntervalMs: CONFIG.piccap.pollIntervalMs
+    })
   : piccapTransport.initNoop();
 
 var notificationState = notifications.init({ luna: luna });
@@ -848,6 +851,7 @@ function setupHomeAssistant() {
     if (mqttClient.connected) {
       mqttClient.publish(statusTopic, statusPayload(), true);
       publishTelemetry();
+      piccap.poll();
     }
     // After the publishes above: on a B8 the TV can be asleep within 5s.
     mqttClient.setWill(off ? 'asleep' : 'offline');
@@ -875,7 +879,7 @@ function setupHomeAssistant() {
   function tickTelemetry() {
     if (!mqttClient.connected) return;
     if (tvOff && Date.now() - lastPublish < OFF_INTERVAL_MS) return;
-    piccap.poll(function () { publishTelemetry(); });
+    publishTelemetry();
   }
 
   /*
@@ -914,7 +918,8 @@ function setupHomeAssistant() {
        * instead, as the TV itself does when it comes back on. Only the
        * published copy is filled in: the state cache above stays as reported.
        */
-      piccap.addToTelemetry(s);
+      var piccapState = piccap.getState();
+      if (piccapState) s.piccap = piccapState;
       if (!tvOff) {
         if ((s.app && s.app !== lastApp) || (s.app_id && s.app_id !== lastAppId)) {
           lastApp = s.app || lastApp;
@@ -986,7 +991,8 @@ function setupHomeAssistant() {
     // first connect it would otherwise still be undetermined.
     // The app select's options come from listApps, which on a first connect
     // has not been scanned yet - without this it publishes the fallback list.
-    piccap.poll(function () { publishTelemetry(); });
+    publishTelemetry();
+    piccap.poll(null, true);
     oled.detectOled(function () {
       telemetry.detectLogoLight(function () {
         telemetry.refreshInstalledApps(function () { publishDiscovery(); });

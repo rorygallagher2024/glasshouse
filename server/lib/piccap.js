@@ -11,7 +11,10 @@ var waiters = [];
 var forceWaiters = [];
 var mqttClient = null;
 var stateTopic = '';
+var lastPublishedState = null;
 var allowControl = false;
+var pollTimer = null;
+var pollIntervalMs = 30000;
 
 function current() {
   return { available: available, isRunning: isRunning };
@@ -90,23 +93,24 @@ function setPower(on, cb) {
   });
 }
 
-function publishState(state) {
+function publishState(state, force) {
   if (!mqttClient || !mqttClient.connected) return;
   if (!state || typeof state.available !== 'boolean') state = current();
-  mqttClient.publish(stateTopic, state.available ? String(state.isRunning) : '', true);
+  var payload = state.available ? String(state.isRunning) : '';
+  if (!force && payload === lastPublishedState) return;
+  mqttClient.publish(stateTopic, payload, true);
+  lastPublishedState = payload;
 }
 
-function poll(cb) {
+function poll(cb, forcePublish) {
   getStatus(function (state) {
-    publishState(state);
+    publishState(state, forcePublish === true);
     if (cb) cb(state);
   }, true);
 }
 
-function addToTelemetry(stats) {
-  var state = current();
-  if (state.available && typeof state.isRunning === 'boolean') stats.piccap = { isRunning: state.isRunning };
-  else delete stats.piccap;
+function getState() {
+  return available && typeof isRunning === 'boolean' ? { isRunning: isRunning } : null;
 }
 
 function attachMqtt(opts) {
@@ -114,6 +118,11 @@ function attachMqtt(opts) {
   mqttClient = opts.client || null;
   stateTopic = (opts.prefix || 'lgtv') + '/state/piccap/isRunning';
   allowControl = opts.allowControl === true;
+  if (pollTimer) clearInterval(pollTimer);
+  // Poll independently of telemetry, and only while MQTT can receive the state.
+  pollTimer = setInterval(function () {
+    if (mqttClient && mqttClient.connected) poll();
+  }, pollIntervalMs);
 }
 
 function handleMqttCommand(action, value, cb) {
@@ -140,10 +149,12 @@ function handleMqttCommand(action, value, cb) {
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
+  var interval = parseInt(opts.pollIntervalMs, 10);
+  pollIntervalMs = interval >= 1000 && interval <= 600000 ? interval : 30000;
   return {
     attachMqtt: attachMqtt,
     poll: poll,
-    addToTelemetry: addToTelemetry,
+    getState: getState,
     handleMqttCommand: handleMqttCommand
   };
 }
@@ -155,7 +166,7 @@ function initNoop() {
       // Telemetry waits for poll, so disabled PicCap must call back at once.
       if (cb) cb({ available: false, isRunning: null });
     },
-    addToTelemetry: function () {},
+    getState: function () { return null; },
     handleMqttCommand: function () { return false; }
   };
 }
