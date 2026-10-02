@@ -1,6 +1,7 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
 // The Homebrew Channel catalog, merged with what is installed on the TV.
 var url = require('url');
+var msg = require('./say').msg;
 var updater = require('./updater');
 var PROTECTED_APP_IDS = require('./apps').PROTECTED_APP_IDS;
 var SELF_UPDATING = require('./installer').SELF_UPDATING;
@@ -8,11 +9,15 @@ var SELF_UPDATING = require('./installer').SELF_UPDATING;
 var DEFAULT_REPO = 'https://repo.webosbrew.org/api/apps.json';
 var MAX_PAGES = 50;
 var CACHE_MS = 3600000;
+// A failure is never remembered for longer than this, whatever the cache age,
+// so one timeout does not leave the tab saying "unavailable" for an hour.
+var RETRY_MS = 10000;
 var config = {};
 var lunaFn = null;
 var fetchLib = null;
 var cache = null;       // { apps: [...], fetchedAt, error }
-var attempted = 0;
+var attempted = 0;      // when the last fetch ended
+var clock = Date.now;
 var waiting = null;     // callbacks for the fetch in flight
 
 function init(opts) {
@@ -20,6 +25,7 @@ function init(opts) {
   if (opts.config) config = opts.config;
   if (opts.luna) lunaFn = opts.luna;
   if (opts.fetch) fetchLib = opts.fetch;
+  clock = opts.now || Date.now;
   cache = null;
   attempted = 0;
 }
@@ -76,7 +82,7 @@ function fetchRepo(base, cb) {
       if (err) return cb(err);
       var list = doc && doc.packages;
       if (!doc || Object.prototype.toString.call(list) !== '[object Array]') {
-        return cb(new Error('not a package catalog: ' + u));
+        return cb(new Error(msg('srv.repo.notCatalog', 'not a package catalog: {url}', { url: u })));
       }
       for (var i = 0; i < list.length; i++) {
         var p = parsePackage(list[i], u);
@@ -158,22 +164,24 @@ function reply(cb) {
  */
 function getCatalog(force, cb) {
   var minAge = typeof force === 'number' ? force : force ? 10000 : CACHE_MS;
-  var now = Date.now();
-  if (cache && cache.apps && now - cache.fetchedAt < minAge) return reply(cb);
+  var now = clock();
+  // No list, or the last attempt failed in whole or in part: retry soon.
+  var failed = !cache || !cache.apps || !!cache.error;
+  if (!failed && now - cache.fetchedAt < minAge) return reply(cb);
   if (waiting) { waiting.push(cb); return; }
-  // A failed attempt stands for the same time, so an offline TV is not retried per request.
-  if (attempted && now - attempted < minAge && cache) return reply(cb);
+  // A failed attempt stands for a short time, so an offline TV is not retried per request.
+  if (cache && attempted && now - attempted < Math.min(minAge, failed ? RETRY_MS : minAge)) return reply(cb);
   if (!fetchLib) return cb({ ok: false, apps: [], fetchedAt: 0, error: 'no fetch module configured' });
 
   waiting = [cb];
-  attempted = now;
   fetchAll(function (err, apps, partial) {
+    attempted = clock();
     if (err) {
       // Keep the last good list, if there is one, and say why it is old.
       cache = cache && cache.apps ? { apps: cache.apps, fetchedAt: cache.fetchedAt, error: err.message }
                                   : { apps: null, fetchedAt: 0, error: err.message };
     } else {
-      cache = { apps: apps, fetchedAt: Date.now(), error: partial };
+      cache = { apps: apps, fetchedAt: attempted, error: partial };
     }
     var cbs = waiting;
     waiting = null;
@@ -188,11 +196,11 @@ function getCatalog(force, cb) {
 
 function findPackage(id, cb) {
   getCatalog(false, function (r) {
-    if (!r.ok) return cb(new Error(r.error || 'catalog unavailable'));
+    if (!r.ok) return cb(new Error(r.error || msg('srv.repo.unavailable', 'catalog unavailable')));
     for (var i = 0; i < r.apps.length; i++) {
       if (r.apps[i].id === id) return cb(null, r.apps[i]);
     }
-    cb(new Error('not in the catalog: ' + id));
+    cb(new Error(msg('srv.repo.notInCatalog', 'not in the catalog: {id}', { id: id })));
   });
 }
 

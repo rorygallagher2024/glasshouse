@@ -464,6 +464,8 @@ Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` o
 
 `apps.hosts`, `apps.repos` and `apps.sideload` are file-only as well. `apps.hosts` lists the names, beyond IP addresses and `localhost`, that may be used to reach the dashboard when installing apps, for example `"apps": { "hosts": ["lgtv.local"] }`. `apps.repos` lists further catalogs, served over https in the Homebrew Channel format, to show beside the default one. `apps.sideload: true` allows installing from a URL or an uploaded file without a token; with a token set, or for a request from the TV itself, it is allowed already.
 
+`fetch.ip` is file-only too: `"fetch": { "ip": "4" }` or `"6"` makes the TV's curl use that address family first. Without it, a connection that fails is retried with `-6`, then `-4`, which covers networks where only one family reaches the catalog.
+
 `allowPower` is on, like the other controls: who on the network can use them is decided by opening the dashboard to the network in setup, and by `token`. `"allowPower": false` hides and refuses power off, power on and reboot, in the dashboard and in Home Assistant.
 
 > [!NOTE]
