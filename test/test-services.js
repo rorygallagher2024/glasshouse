@@ -63,13 +63,16 @@ console.log('Running test-services.js ...');
   assert.strictEqual(ids.indexOf('alwaysready'), -1);
   assert.strictEqual(ids.indexOf('tvdataexchanger'), -1);
 
-  var dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tvweb-services-'));
+  var dir = path.join(os.tmpdir(), 'tvweb-services-' + process.pid);
+  fs.mkdirSync(dir);
   fs.writeFileSync(path.join(dir, 'disabled_services.json'),
                    JSON.stringify(['alwaysready', 'mycar', 'tvdataexchanger']));
   services.init({ stateDir: dir });
   var left = JSON.parse(fs.readFileSync(path.join(dir, 'disabled_services.json'), 'utf8'));
   assert.deepEqual(left, ['mycar']);
   assert.strictEqual(services.isDisabled('alwaysready'), false);
+  fs.unlinkSync(path.join(dir, 'disabled_services.json'));
+  fs.rmdirSync(dir);
   console.log('  ✓ init drops retired services from the switched-off list');
 })();
 
