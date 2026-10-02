@@ -340,8 +340,7 @@ telemetry.init({
   screensavers: screensavers,
   tvwebVersion: TVWEB_VERSION,
   mapPowerState: mapPowerState,
-  isScreenSaver: isScreenSaver,
-  services: servicesModule
+  isScreenSaver: isScreenSaver
 });
 
 var liveState = stateModule.init({

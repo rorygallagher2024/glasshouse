@@ -35,7 +35,6 @@ telemetry.init({
   oled: oledMock,
   privacy: privacyMock,
   screensavers: screensaversMock,
-  services: { isDisabled: function () { return false; } },
   tvwebVersion: '0.36.0',
   mapPowerState: function (raw) {
     return { raw: raw, label: 'On', systemOn: true, screenOn: true };

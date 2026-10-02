@@ -3007,14 +3007,6 @@
   "text": "Las lecturas de la TV: horas de panel, cuenta atrás del refrescado y temperatura.",
   "from": "The TV's own readings - panel hours, pixel refresher countdown, temperature."
  },
- "srv.service.alwaysready": {
-  "text": "Always Ready Ambient Mode",
-  "from": "Always Ready Ambient Mode"
- },
- "srv.service.alwaysready.desc": {
-  "text": "Muestra la pantalla Always Ready de LG, como un reloj, cuando la TV está apagada. Desactivarla aquí también detiene Always Ready en Avanzado.",
-  "from": "Shows LG's Always Ready screen, such as a clock, when the TV is switched off. Turning it off here also stops Always Ready under Advanced."
- },
  "srv.service.badge.flashWrites": {
   "text": "Escrituras en flash",
   "from": "Flash writes"
