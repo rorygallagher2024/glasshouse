@@ -98,11 +98,12 @@ function restartSelf() { return restartSelfFn(); }
 
 /*
  * The restart paths below write the config and answer before restarting, so
- * a busy install has to be refused before the write; restartSelf in tvweb.js
- * refuses too, for the callers that do not come through here.
+ * an install at work has to be refused before the write; restartSelf in
+ * tvweb.js refuses too, for the callers that do not come through here. A
+ * preview waiting for confirmation is not at work.
  */
 function installBusyRefusal(res) {
-  if (!installerModule || !installerModule.isBusy()) return false;
+  if (!installerModule || !installerModule.isWorking()) return false;
   send(res, 409, JSON.stringify({
     ok: false,
     error: msg('srv.install.busy.restart', 'an install is in progress; restart when it has finished')
@@ -614,7 +615,7 @@ function sideloadVia(req) {
 
 function sideloadRefused(res) {
   installError(res, msg('srv.install.sideloadOff',
-    'installing from a URL or a file is off; set "apps": {"sideload": true} in config.json, set a token, or use the app on the TV'), 403);
+    'installing from a URL or a file is off; set "apps": {"sideload": true} in config.json, set a token, or use the TV\'s web browser'), 403);
 }
 
 // Refused before the body is read, so the connection is closed rather than
@@ -654,6 +655,7 @@ function handleUpload(req, res) {
     }
     req.on('data', function (chunk) {
       if (done) return;
+      installerModule.touchUpload();
       got += chunk.length;
       if (got > len) return failWith(sizeText, 400);
       if (!ws.write(chunk) && typeof req.pause === 'function') {
@@ -704,7 +706,7 @@ function handleInstallRoute(req, res, u, pathname) {
 
   if (pathname === '/api/apps/install/fetch') {
     return readJsonBody(req, res, function (body) {
-      if (typeof body.id !== 'string' || !body.id) return installError(res, 'an app id is required');
+      if (typeof body.id !== 'string' || !body.id) return installError(res, msg('srv.install.idRequired', 'an app id is required'));
       repoModule.findPackage(body.id, function (err, pkg) {
         if (err) return installError(res, err.message);
         installerModule.start({ source: 'catalog', pkg: pkg }, installReply(res));
@@ -730,7 +732,8 @@ function handleInstallRoute(req, res, u, pathname) {
   if (pathname === '/api/apps/install/confirm') {
     return readJsonBody(req, res, function (body) {
       installerModule.confirm({
-        jobId: body.jobId, elevate: body.elevate === true, replaceStore: body.replaceStore === true
+        jobId: body.jobId, elevate: body.elevate === true, confirmRoot: body.confirmRoot,
+        replaceStore: body.replaceStore === true
       }, installReply(res));
     });
   }

@@ -1312,9 +1312,13 @@ function previewRows(pv) {
   if (svc.length) {
     r.push({ label: t('tv.apps.install.pv.services', 'Services'), value: String(svc.length), key: 'pv:services',
              hint: t('apps.install.services', 'Background services: {list}', { list: svc.join(', ') }) });
-    r.push(toggleRow(t('apps.install.root', 'Run services as root (needs the Homebrew Channel)'), instRoot, 'instRoot', 'pv:root',
-             pv.rootRequired ? t('tv.apps.install.root.needed', 'This app asks for its services to run as root, and may not work without it.')
-                                   : t('tv.apps.install.root.hint', 'Off unless the app needs it. Root access is set up through the Homebrew Channel.')));
+    // Root for a package from outside the catalog is only offered where it
+    // can be confirmed by name, which the remote cannot do.
+    if (pv.source === 'catalog') {
+      r.push(toggleRow(t('apps.install.root', 'Run services as root (needs the Homebrew Channel)'), instRoot, 'instRoot', 'pv:root',
+               pv.rootRequired ? t('tv.apps.install.root.needed', 'This app asks for its services to run as root, and may not work without it.')
+                                     : t('tv.apps.install.root.hint', 'Off unless the app needs it. Root access is set up through the Homebrew Channel.')));
+    }
   }
   if (pv.cpuMismatch) {
     r.push({ label: t('tv.apps.install.pv.cpu', 'Processor'), value: t('tv.apps.install.pv.mismatch', 'Mismatch'), cls: 'warn', key: 'pv:cpu',
@@ -1362,7 +1366,7 @@ function confirmInstall() {
     return;
   }
   busy = true;
-  installPost('/api/apps/install/confirm', { jobId: inst.jobId, elevate: instRoot, replaceStore: instReplace }, function (err, j) {
+  installPost('/api/apps/install/confirm', { jobId: inst.jobId, elevate: instRoot && inst.preview.source === 'catalog', replaceStore: instReplace }, function (err, j) {
     busy = false;
     if (err) { flash(sentence(err.message)); pollInstall(); return; }
     adoptInstall(j.install);

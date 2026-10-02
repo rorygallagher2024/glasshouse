@@ -74,7 +74,9 @@ function elf(machine) {
 /*
  * o.pkg, o.version, o.apps (ids), o.services (names), o.machine, o.extra
  * (more data.tar entries), o.control (replaces the control file), o.members
- * (extra ar members), o.oddControl (pick a control text whose gzip is odd).
+ * (extra ar members), o.oddControl (pick a control text whose gzip is odd),
+ * o.appVersion (the version in appinfo.json), o.tail (bytes after the data
+ * tar's end blocks), o.emptyMember (an ar member with no body).
  */
 function makeIpk(o) {
   o = o || {};
@@ -86,7 +88,7 @@ function makeIpk(o) {
   appIds.forEach(function (id) {
     entries.push(tarEntry('./usr/palm/applications/' + id + '/', undefined, { type: '5' }));
     entries.push(tarEntry('./usr/palm/applications/' + id + '/appinfo.json',
-      JSON.stringify({ id: id, title: 'Title of ' + id, version: version, icon: 'icon.png' })));
+      JSON.stringify({ id: id, title: 'Title of ' + id, version: o.appVersion || version, icon: 'icon.png' })));
   });
   services.forEach(function (s) {
     entries.push(tarEntry('./usr/palm/services/' + s + '/', undefined, { type: '5' }));
@@ -102,7 +104,9 @@ function makeIpk(o) {
     ctl = zlib.gzipSync(tar([tarEntry('./control', text)]));
     if (!o.oddControl || ctl.length % 2 === 1) break;
   }
-  var dat = zlib.gzipSync(tar(entries));
+  var dat = zlib.gzipSync(Buffer.concat([tar(entries), o.tail || alloc(0)]));
+  if (o.emptyMember === 'control.tar.gz') ctl = alloc(0);
+  if (o.emptyMember === 'data.tar.gz') dat = alloc(0);
   var parts = [buf('!<arch>\n'), arMember('debian-binary', buf('2.0\n')), arMember('control.tar.gz', ctl),
                arMember('data.tar.gz', dat)];
   (o.members || []).forEach(function (m) { parts.push(arMember(m, buf('x'))); });
@@ -362,6 +366,68 @@ test('inspectIpk rejects paths that leave the package and absolute links', funct
     assert.ok(/unsafe path/.test(err), err);
     inspect(makeIpk({ extra: [tarEntry('./usr/palm/applications/com.example.app/ln', undefined, { type: '2', link: '/etc' })] }), function (err2) {
       assert.ok(/unsafe path/.test(err2), err2);
+      done();
+    });
+  });
+});
+
+test('inspectIpk refuses a link that leads out of its package directory', function (done) {
+  var base = './usr/palm/applications/com.example.app/';
+  var bad = [
+    // A link at the top, then a file written through it.
+    [tarEntry('./x', undefined, { type: '2', link: 'usr/palm/services' }),
+     tarEntry('./x/org.webosbrew.hbchannel.service/elevate-service', 'x')],
+    [tarEntry('./usr/palm/x', undefined, { type: '2', link: 'services' })],
+    [tarEntry(base + 'ln', undefined, { type: '2', link: '../../../services/com.example.app.service' })],
+    [tarEntry(base + 'ln', undefined, { type: '1', link: 'usr/palm/services/org.webosbrew.hbchannel.service/run' })],
+    [tarEntry(base + 'ln', undefined, { type: '2', link: '/usr/palm/services' })],
+    // A file through an earlier link, the link inside its own directory.
+    [tarEntry(base + 'ln', undefined, { type: '2', link: 'sub' }), tarEntry(base + 'ln/file', 'x')],
+    [tarEntry(base + 'ln', undefined, { type: '2', link: 'sub' }), tarEntry(base + 'ln', 'x')]
+  ];
+  (function next() {
+    if (!bad.length) return done();
+    var extra = bad.shift();
+    inspect(makeIpk({ extra: extra }), function (err) {
+      assert.ok(/unsafe path/.test(err), JSON.stringify(err));
+      next();
+    });
+  })();
+});
+
+test('inspectIpk accepts links that stay inside their own id directory', function (done) {
+  var base = './usr/palm/applications/com.example.app/';
+  inspect(makeIpk({ extra: [
+    tarEntry(base + 'lib/', undefined, { type: '5' }),
+    tarEntry(base + 'lib/a.so.1', 'x'),
+    tarEntry(base + 'lib/a.so', undefined, { type: '2', link: 'a.so.1' }),
+    tarEntry(base + 'bin', undefined, { type: '2', link: 'lib/../lib' }),
+    tarEntry(base + 'copy', undefined, { type: '1', link: 'usr/palm/applications/com.example.app/lib/a.so.1' })
+  ] }), function (err, info) {
+    assert.ifError(err);
+    assert.strictEqual(info.package, 'com.example.app');
+    done();
+  });
+});
+
+test('inspectIpk refuses an ar member too short to hold gzip', function (done) {
+  var kinds = ['control.tar.gz', 'data.tar.gz'];
+  (function next() {
+    if (!kinds.length) return done();
+    var k = kinds.shift();
+    inspect(makeIpk({ emptyMember: k }), function (err) {
+      assert.ok(/damaged/.test(err), k + ': ' + err);
+      next();
+    });
+  })();
+});
+
+test('inspectIpk refuses data after the end of the tar and accepts zero padding', function (done) {
+  inspect(makeIpk({ tail: tarEntry('./usr/palm/applications/com.example.app/late', 'x') }), function (err) {
+    assert.ok(/damaged/.test(err), err);
+    inspect(makeIpk({ tail: alloc(9000) }), function (err2, info) {
+      assert.ifError(err2);
+      assert.strictEqual(info.package, 'com.example.app');
       done();
     });
   });
@@ -971,6 +1037,175 @@ test('releasing an upload deletes the file and frees the hold', function (done) 
     installer.releaseUpload(file);
     assert.ok(!fs.existsSync(file));
     installer.prepareUpload(100, function (err2) { assert.ifError(err2); done(); });
+  });
+});
+
+test('a silent install is accepted when the app list shows the appinfo version', function (done) {
+  var ctx = setup({ installTimeoutMs: 300 });
+  ctx.script([], 'hold');
+  startOk(ctx.pkg(makeIpk({ appVersion: '1.0.0-b2' })), function () {
+    expectState('awaiting-confirm', function (s) {
+      ctx.installed = [{ id: 'com.example.app', version: '1.0.0-b2' }];
+      installer.confirm({ jobId: s.jobId }, function () {
+        expectState('installed', function () { done(); });
+      });
+    });
+  });
+});
+
+test('an upload checks free space even when the staging directory does not exist yet', function (done) {
+  var ctx = setup();
+  var df = path.join(ctx.dir, 'df');
+  shell(df, '[ -d "$2" ] || exit 1\nprintf \'Filesystem 1K-blocks Used Available Use%% Mounted on\\n/dev/x 100 99 1 99%% /\\n\'');
+  ctx.init({ dfPath: df });
+  fs.rmdirSync(ctx.staging);
+  installer.prepareUpload(500, function (err, file, status) {
+    assert.ok(/not enough free space/.test(err), err);
+    assert.strictEqual(status, 507);
+    done();
+  });
+});
+
+test('upload data keeps the hold past its first 30 minutes', function (done) {
+  var ctx = setup();
+  var realNow = Date.now;
+  var at = realNow.call(Date);
+  Date.now = function () { return at; };
+  installer.prepareUpload(100, function (err) {
+    assert.ifError(err);
+    at += 20 * 60 * 1000;
+    installer.touchUpload();
+    at += 20 * 60 * 1000;
+    installer.start(ctx.pkg(makeIpk()), function (err2) {
+      Date.now = realNow;
+      assert.ok(/upload is in progress/.test(err2), err2);
+      done();
+    });
+  });
+});
+
+test('an upload that sends nothing for 30 minutes lets the hold lapse', function (done) {
+  var ctx = setup();
+  var realNow = Date.now;
+  var at = realNow.call(Date);
+  Date.now = function () { return at; };
+  installer.prepareUpload(100, function (err) {
+    assert.ifError(err);
+    at += 31 * 60 * 1000;
+    installer.touchUpload();
+    installer.start(ctx.pkg(makeIpk()), function (err2) {
+      Date.now = realNow;
+      assert.ifError(err2);
+      done();
+    });
+  });
+});
+
+test('recover clears leftover uploads when no job is on file or the job finished', function (done) {
+  var ctx = setup();
+  fs.writeFileSync(path.join(ctx.staging, 'upload-abc.ipk'), 'partial');
+  installer.recover();
+  assert.deepEqual(fs.readdirSync(ctx.staging), []);
+  fs.writeFileSync(path.join(ctx.staging, 'upload-def.ipk'), 'partial');
+  fs.writeFileSync(path.join(ctx.state, 'install-job.json'), JSON.stringify({ jobId: 'abc', state: 'installed' }));
+  installer.recover();
+  assert.deepEqual(fs.readdirSync(ctx.staging), []);
+  assert.strictEqual(installer.status().state, 'idle');
+  done();
+});
+
+test('a preview waiting for confirmation is busy for installs but not working', function (done) {
+  var ctx = setup();
+  ctx.script([{ out: PROGRESS }], 'hold');
+  assert.strictEqual(installer.isWorking(), false);
+  startOk(ctx.pkg(makeIpk()), function () {
+    assert.strictEqual(installer.isWorking(), true, 'downloading is work');
+    expectState('awaiting-confirm', function (s) {
+      assert.strictEqual(installer.isBusy(), true);
+      assert.strictEqual(installer.isWorking(), false);
+      installer.confirm({ jobId: s.jobId }, function () {
+        assert.strictEqual(installer.isWorking(), true, 'installing is work');
+        done();
+      });
+    });
+  });
+});
+
+test('confirm waits for a running dashboard update', function (done) {
+  var updating = false;
+  var ctx = setup({ init: { updaterBusy: function () { return updating; } } });
+  startOk(ctx.pkg(makeIpk()), function () {
+    expectState('awaiting-confirm', function (s) {
+      updating = true;
+      installer.confirm({ jobId: s.jobId }, function (err) {
+        assert.ok(/update is running/.test(err), err);
+        assert.strictEqual(installer.status().state, 'awaiting-confirm');
+        done();
+      });
+    });
+  });
+});
+
+test('root for a package from a URL or file needs the services named in the request', function (done) {
+  var ctx = setup();
+  ctx.script([{ out: DONE }]);
+  var ipk = makeIpk({ services: ['com.example.app.one', 'com.example.app.two'] });
+  startOk({ source: 'file', path: ctx.ipkFile(ipk) }, function () {
+    expectState('awaiting-confirm', function (s) {
+      assert.strictEqual(s.preview.willElevate, false);
+      installer.confirm({ jobId: s.jobId, elevate: true }, function (e1) {
+        assert.ok(/must be confirmed/.test(e1), e1);
+        installer.confirm({ jobId: s.jobId, elevate: true, confirmRoot: ['com.example.app.one'] }, function (e2) {
+          assert.ok(/must be confirmed/.test(e2), e2);
+          installer.confirm({ jobId: s.jobId, elevate: true, confirmRoot: 'com.example.app.one' }, function (e3) {
+            assert.ok(/must be confirmed/.test(e3), e3);
+            assert.strictEqual(installer.status().state, 'awaiting-confirm');
+            installer.confirm({ jobId: s.jobId, elevate: true, confirmRoot: ['com.example.app.two', 'com.example.app.one'] }, function (e4) {
+              assert.ifError(e4);
+              expectState('installed', function (r) {
+                assert.deepEqual(r.result.elevation.done, ['com.example.app.one', 'com.example.app.two']);
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+test('a package from a URL or file is not elevated again from elevated.json', function (done) {
+  var ctx = setup();
+  ctx.script([{ out: DONE }]);
+  fs.writeFileSync(path.join(ctx.state, 'elevated.json'), JSON.stringify({ 'com.example.app': ['com.example.app.service'] }));
+  startOk({ source: 'file', path: ctx.ipkFile(makeIpk()) }, function () {
+    expectState('awaiting-confirm', function (s) {
+      assert.strictEqual(s.preview.willElevate, false);
+      installer.confirm({ jobId: s.jobId }, function () {
+        expectState('installed', function (r) {
+          assert.deepEqual(logLines(ctx.elevLog), []);
+          assert.strictEqual(r.result.elevation, null);
+          done();
+        });
+      });
+    });
+  });
+});
+
+test('a catalog update is elevated again only for the services recorded', function (done) {
+  var ctx = setup();
+  ctx.script([{ out: DONE }]);
+  fs.writeFileSync(path.join(ctx.state, 'elevated.json'), JSON.stringify({ 'com.example.app': ['com.example.app.one', 'com.example.app.gone'] }));
+  startOk(ctx.pkg(makeIpk({ services: ['com.example.app.one', 'com.example.app.two'] })), function () {
+    expectState('awaiting-confirm', function (s) {
+      assert.strictEqual(s.preview.willElevate, true);
+      installer.confirm({ jobId: s.jobId }, function () {
+        expectState('installed', function () {
+          assert.deepEqual(logLines(ctx.elevLog), ['com.example.app.one']);
+          done();
+        });
+      });
+    });
   });
 });
 

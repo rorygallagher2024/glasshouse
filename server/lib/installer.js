@@ -29,6 +29,10 @@ var DEFAULT_CAPS = {
 var SELF_UPDATING = ['org.webosbrew.hbchannel', 'io.github.rorygallagher2024.lg-webos-dashboard'];
 var SYSTEM_PREFIXES = ['com.webos.', 'com.palm.', 'com.lge.'];
 var UNFINISHED = { downloading: 1, verifying: 1, 'awaiting-confirm': 1, installing: 1, elevating: 1 };
+// An open preview only holds a staged file; what must not be interrupted is
+// work in progress.
+var WORKING = { downloading: 1, verifying: 1, installing: 1, elevating: 1 };
+var GZIP_MIN = 18;
 var NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$/;
 var VERSION_RE = /^[A-Za-z0-9][A-Za-z0-9.+~:_-]{0,63}$/;
 var ELF_MACHINES = { 3: 'x86', 8: 'mips', 40: 'arm', 62: 'x86_64', 183: 'aarch64', 243: 'riscv' };
@@ -73,7 +77,7 @@ function mkdirp(dir) {
 }
 
 function errText(e) {
-  return (e && e.message) || String(e || 'failed');
+  return (e && e.message) || String(e || '') || unknownError();
 }
 
 // A failure with text the page may show, thrown through the walkers.
@@ -90,6 +94,10 @@ function userText(e, fallback) {
 
 function unreadable(e) {
   return msg('srv.install.ipk.unreadable', 'the ipk could not be read: {error}', { error: errText(e) });
+}
+
+function unknownError() {
+  return msg('srv.install.unknownError', 'unknown error');
 }
 
 function installFailed(text) {
@@ -181,7 +189,7 @@ function tarWalker(maxEntries, onEntry, onFile) {
   var hdrLen = 0;
   var mode = 'header';          // header | body | pad | end
   var entries = 0;
-  var entry = null, left = 0, padLeft = 0, keep = null, keepLen = 0;
+  var entry = null, left = 0, padLeft = 0, keep = null, keepLen = 0, junk = false;
 
   function zeroBlock() {
     for (var i = 0; i < 512; i++) if (hdr[i] !== 0) return false;
@@ -233,7 +241,14 @@ function tarWalker(maxEntries, onEntry, onFile) {
     push: function (chunk) {
       var pos = 0, n;
       while (pos < chunk.length) {
-        if (mode === 'end') return;
+        if (mode === 'end') {
+          // Nothing but zero bytes may follow the end-of-archive blocks; a
+          // reader that stops here must not hide a second archive.
+          for (var z = pos; z < chunk.length; z++) {
+            if (chunk[z] !== 0) { junk = true; break; }
+          }
+          return;
+        }
         if (mode === 'header') {
           n = Math.min(512 - hdrLen, chunk.length - pos);
           chunk.copy(hdr, hdrLen, pos, pos + n);
@@ -256,6 +271,9 @@ function tarWalker(maxEntries, onEntry, onFile) {
       }
     },
     finish: function () {
+      if (junk) {
+        throw reject(msg('srv.install.ipk.badTar', 'the ipk holds a damaged package archive'));
+      }
       if (mode === 'body' || mode === 'pad' || (mode === 'header' && hdrLen > 0)) {
         throw reject(msg('srv.install.ipk.truncated', 'the ipk is truncated'));
       }
@@ -351,6 +369,11 @@ function readMembers(fd, fileSize, cb) {
         }
         var body = pos + 60;
         if (body + size > fileSize) return cb(reject(msg('srv.install.ipk.truncated', 'the ipk is truncated')));
+        // A gzip stream is at least 18 bytes; reading an empty region would
+        // ask the file stream for end < start, which throws inside node.
+        if (name !== 'debian-binary' && size < GZIP_MIN) {
+          return cb(reject(msg('srv.install.ipk.badTar', 'the ipk holds a damaged package archive')));
+        }
         members[name] = { start: body, size: size };
         // Members are padded to an even length; a last member may omit it.
         pos = body + size + (size % 2);
@@ -377,6 +400,28 @@ function short(v, n) {
   return typeof v === 'string' ? v.slice(0, n || 200) : '';
 }
 
+/*
+ * A link is accepted only inside usr/palm/{applications,services}/<id>/, at
+ * least one level below it, and only when its target stays in that <id>
+ * directory. A symlink target is relative to the link's directory, a hard
+ * link target to the package root.
+ */
+function linkInsideOwnId(segs, type, target) {
+  if (segs.length < 5 || segs[0] !== 'usr' || segs[1] !== 'palm') return false;
+  if (segs[2] !== 'applications' && segs[2] !== 'services') return false;
+  if (!NAME_RE.test(segs[3])) return false;
+  if (typeof target !== 'string' || target.charAt(0) === '/') return false;
+  var parts = target.split('/');
+  var out = type === '2' ? segs.slice(0, -1) : [];
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i] === '' || parts[i] === '.') continue;
+    if (parts[i] === '..') { if (!out.length) return false; out.pop(); } else out.push(parts[i]);
+  }
+  if (out.length < 4) return false;
+  for (var k = 0; k < 4; k++) if (out[k] !== segs[k]) return false;
+  return true;
+}
+
 function inspectData(file, member, cb) {
   var apps = {}, appOrder = [], services = [], machines = [];
 
@@ -385,15 +430,25 @@ function inspectData(file, member, cb) {
     return apps[id];
   }
 
+  var links = {};   // joined paths of the link entries seen so far
+
   var walker = tarWalker(caps.entries, function (e) {
     var segs = cleanPath(e.name);
     if (!segs) {
       throw reject(msg('srv.install.ipk.unsafePath', 'the ipk holds an unsafe path: {path}', { path: short(e.name, 80) }));
     }
-    if (e.type === '1' || e.type === '2') {
-      if (!cleanPath(e.link)) {
-        throw reject(msg('srv.install.ipk.unsafePath', 'the ipk holds an unsafe path: {path}', { path: short(e.link, 80) }));
+    // The rules below look at names, so an entry reached through an earlier
+    // link would land somewhere they never saw.
+    for (var n = 1; n <= segs.length; n++) {
+      if (links['/' + segs.slice(0, n).join('/')]) {
+        throw reject(msg('srv.install.ipk.unsafePath', 'the ipk holds an unsafe path: {path}', { path: short(e.name, 80) }));
       }
+    }
+    if (e.type === '1' || e.type === '2') {
+      if (!linkInsideOwnId(segs, e.type, e.link)) {
+        throw reject(msg('srv.install.ipk.unsafePath', 'the ipk holds an unsafe path: {path}', { path: short(e.name, 80) }));
+      }
+      links['/' + segs.join('/')] = true;
     } else if (e.type !== '0' && e.type !== '5') {
       throw reject(msg('srv.install.ipk.unsupported', 'the ipk uses a file format this installer does not read'));
     }
@@ -664,8 +719,15 @@ function snapshot() {
   };
 }
 
+// Another install may not start: a job is working or waiting for confirmation.
 function isBusy() {
   return !!(job && UNFINISHED[job.state]);
+}
+
+// Something is being downloaded, verified or installed: settings saves,
+// restarts and updates wait; an unconfirmed preview does not hold them.
+function isWorking() {
+  return !!(job && WORKING[job.state]);
 }
 
 /* -------------------------------------------------------------- start */
@@ -742,6 +804,7 @@ function buildPreview(j) {
         apps: info.apps,
         services: info.services,
         rootRequired: !!(j.pkg && j.pkg.rootRequired),
+        willElevate: reelevated(j).length > 0,
         cpuMismatch: info.cpuMismatch,
         storeInstalled: store,
         source: j.source,
@@ -812,7 +875,7 @@ function start(req, cb) {
     pkg = req.pkg || {};
     if (typeof pkg.id !== 'string' || typeof pkg.version !== 'string' ||
         typeof pkg.ipkUrl !== 'string' || !/^[0-9a-f]{64}$/i.test(pkg.sha256 || '')) {
-      return cb('the catalog entry is incomplete');
+      return cb(msg('srv.install.catalogIncomplete', 'the catalog entry is incomplete'));
     }
     if (!/^https:\/\//i.test(pkg.ipkUrl)) return cb(msg('srv.install.needHttps', 'the download must use https'));
     err = fetchMod.validateUrl(pkg.ipkUrl);
@@ -823,16 +886,16 @@ function start(req, cb) {
   } else if (req.source === 'url') {
     err = fetchMod.validateUrl(req.url);
     if (err) return cb(err);
-    if (req.sha256 && !/^[0-9a-f]{64}$/i.test(req.sha256)) return cb('the sha256 hash is malformed');
+    if (req.sha256 && !/^[0-9a-f]{64}$/i.test(req.sha256)) return cb(msg('srv.install.badHash', 'the sha256 hash must be 64 hexadecimal digits'));
     url = req.url;
     sha = req.sha256 || null;
   } else if (req.source === 'file') {
     file = typeof req.path === 'string' ? path.resolve(req.path) : '';
     // The staged file is deleted afterwards, so only the staging directory is accepted.
-    if (!file || path.dirname(file) !== path.resolve(stagingDir)) return cb('the file is not in the staging directory');
+    if (!file || path.dirname(file) !== path.resolve(stagingDir)) return cb(msg('srv.install.notStaged', 'the file is not in the staging directory'));
     uploadHeld = 0;
   } else {
-    return cb('unknown install source');
+    return cb(msg('srv.install.badSource', 'unknown install source'));
   }
 
   mkdirp(stagingDir);
@@ -870,15 +933,21 @@ function prepareUpload(len, cb) {
   var busy = busyText() || (held ? msg('srv.install.busy', 'an install is already in progress') : null);
   if (busy) return cb(busy, null, 409);
   uploadHeld = Date.now();
+  // df reads the directory, so it has to exist before the first upload too.
+  mkdirp(stagingDir);
   freeBytes(function (free) {
     if (free !== null && free < len * 3) {
       uploadHeld = 0;
       return cb(noSpace(len * 3, free), null, 507);
     }
-    mkdirp(stagingDir);
     clearStaging();
     cb(null, path.join(stagingDir, 'upload-' + crypto.randomBytes(8).toString('hex') + '.ipk'));
   });
+}
+
+/** Called as upload data arrives, so a slow upload keeps its hold. */
+function touchUpload() {
+  if (uploadHeld && Date.now() - uploadHeld < UPLOAD_HOLD_MS) uploadHeld = Date.now();
 }
 
 /** Drops a reserved upload file, finished or not. */
@@ -906,6 +975,23 @@ function hookExit() {
  * luna.Subscription: its close handler reconnects, which would issue the
  * install again. cb(errText|null).
  */
+/*
+ * The app list shows the package at the new version. The version an app lists
+ * is the one in its appinfo.json, which need not equal the control file's.
+ */
+function installedAtVersion(list, info) {
+  for (var i = 0; list && i < list.length; i++) {
+    var item = list[i];
+    if (!item || typeof item.version !== 'string') continue;
+    if (item.id === info.package && item.version === info.version) return true;
+    for (var k = 0; k < info.apps.length; k++) {
+      var a = info.apps[k];
+      if (a.id === item.id && (item.version === info.version || (a.version && item.version === a.version))) return true;
+    }
+  }
+  return false;
+}
+
 function runInstall(j, cb) {
   var info = j.info;
   var settled = false, finishing = false, buf = '', timer = null, child;
@@ -925,12 +1011,7 @@ function runInstall(j, cb) {
     finishing = true;
     killChild();
     listInstalled(function (list) {
-      var ok = false;
-      for (var i = 0; list && i < list.length; i++) {
-        if (list[i] && list[i].version === info.version &&
-            (list[i].id === info.package || info.apps.some(function (a) { return a.id === list[i].id; }))) ok = true;
-      }
-      end(ok ? null : text);
+      end(installedAtVersion(list, info) ? null : text);
     });
   }
 
@@ -940,7 +1021,7 @@ function runInstall(j, cb) {
     if (!r || typeof r !== 'object' || settled || finishing) return;
     var d = r.details && typeof r.details === 'object' ? r.details : {};
     if (r.returnValue === false) {
-      return end(installFailed(short(r.errorText) || short(d.reason) || 'unknown error'));
+      return end(installFailed(short(r.errorText) || short(d.reason) || unknownError()));
     }
     if (d.errorCode) {
       return end(installFailed(short(d.reason) || short(r.errorText) || String(d.errorCode)));
@@ -977,10 +1058,27 @@ function runInstall(j, cb) {
   }, installTimeoutMs);
 }
 
-function elevateAll(j, cb) {
-  var services = j.info.services.filter(function (s) {
-    return s === j.info.package || s.indexOf(j.info.package + '.') === 0;
-  });
+/*
+ * Services that get root again without being asked: only for a catalog
+ * package, and only those recorded the last time it was elevated. A package
+ * from a URL or a file never gets root unless confirmed for that install.
+ */
+function reelevated(j) {
+  if (j.source !== 'catalog' || !fs.existsSync(elevatePath)) return [];
+  var rec = readJson(elevatedFile()) || {};
+  var was = Object.prototype.hasOwnProperty.call(rec, j.info.package) ? rec[j.info.package] : null;
+  if (!(was instanceof Array)) return [];
+  return j.info.services.filter(function (s) { return was.indexOf(s) >= 0; });
+}
+
+function sameNames(a, b) {
+  if (!(a instanceof Array) || a.length !== b.length) return false;
+  var x = a.slice().sort(), y = b.slice().sort();
+  for (var i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+  return true;
+}
+
+function elevateAll(services, cb) {
   var done = [], failed = [];
   (function next() {
     if (!services.length) return cb({ done: done, failed: failed });
@@ -1026,13 +1124,18 @@ function confirm(req, cb) {
   if (j.preview.storeInstalled && !req.replaceStore) {
     return cb(msg('srv.install.storeReplace', 'this app came from the LG store; replacing it stops store updates and needs separate confirmation'));
   }
-  var elevated = readJson(elevatedFile()) || {};
-  var hasElevate = fs.existsSync(elevatePath);
-  if (req.elevate && !hasElevate) {
+  if (updaterBusy()) return cb(msg('srv.install.busy.updater', 'a dashboard update is running; install when it has finished'));
+  var wantRoot = req.elevate === true;
+  if (wantRoot && !fs.existsSync(elevatePath)) {
     return cb(msg('srv.install.noElevate', 'root access needs the Homebrew Channel, which is not installed'));
   }
+  // Root for a package nobody vetted has to be confirmed for the services the
+  // preview listed, so a client cannot ask for it blind.
+  if (wantRoot && j.source !== 'catalog' && !sameNames(req.confirmRoot, j.info.services)) {
+    return cb(msg('srv.install.rootConfirm', 'root access for a package from outside the catalog must be confirmed for the services listed in its preview'));
+  }
   // A reinstall rewrites the service files that elevation changed.
-  var elevate = hasElevate && (!!req.elevate || !!elevated[j.info.package]);
+  var services = wantRoot ? j.info.services.slice() : reelevated(j);
 
   if (j.timer) { clearTimeout(j.timer); j.timer = null; }
   setState(j, 'installing');
@@ -1041,9 +1144,9 @@ function confirm(req, cb) {
   runInstall(j, function (err) {
     if (!live(j)) return;
     if (err) return fail(j, err);
-    if (!elevate || !j.info.services.length) return finishJob(j, null);
+    if (!services.length) return finishJob(j, null);
     setState(j, 'elevating');
-    elevateAll(j, function (res) {
+    elevateAll(services, function (res) {
       if (!live(j)) return;
       if (res.done.length) {
         var rec = readJson(elevatedFile()) || {};
@@ -1074,9 +1177,10 @@ function cancel(jobId, cb) {
 
 /** At boot: a job the last run left unfinished is reported, not resumed. */
 function recover() {
+  // Leftovers from an upload or a job that ended in a restart.
+  clearStaging();
   var rec = readJson(jobFile());
   if (!rec || !UNFINISHED[rec.state]) return;
-  clearStaging();
   job = {
     id: rec.jobId || '', state: 'interrupted',
     error: msg('srv.install.interrupted', 'the TV restarted during an install; check the app list'),
@@ -1121,8 +1225,10 @@ module.exports = {
   cancel: cancel,
   status: snapshot,
   isBusy: isBusy,
+  isWorking: isWorking,
   prepareUpload: prepareUpload,
   releaseUpload: releaseUpload,
+  touchUpload: touchUpload,
   recover: recover,
   SELF_UPDATING: SELF_UPDATING,
   hashFile: hashFile,

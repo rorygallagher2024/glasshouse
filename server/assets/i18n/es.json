@@ -5032,8 +5032,8 @@
   "from": "Upload .ipk"
  },
  "apps.sideload.off.desc": {
-  "text": "Está desactivado, porque un paquete de fuera del catálogo puede ejecutar cualquier cosa en la TV. Para activarlo, añade \"apps\": {\"sideload\": true} a config.json en la TV, o define un token, o usa la app de la propia TV.",
-  "from": "This is off, because a package from outside the catalog can run anything on the TV. To turn it on, set \"apps\": {\"sideload\": true} in config.json on the TV, or set a token, or use the app on the TV itself."
+  "text": "Está desactivado, porque un paquete de fuera del catálogo puede ejecutar cualquier cosa en la TV. Para activarlo, añade \"apps\": {\"sideload\": true} a config.json en la TV, o define un token, o abre esta página en el navegador web de la TV.",
+  "from": "This is off, because a package from outside the catalog can run anything on the TV. To turn it on, set \"apps\": {\"sideload\": true} in config.json on the TV, or set a token, or open this page in the TV's web browser."
  },
  "apps.sideload.off.title": {
   "text": "Instalar desde una URL o un archivo",
@@ -5064,8 +5064,8 @@
   "from": "an upload is in progress"
  },
  "srv.install.sideloadOff": {
-  "text": "instalar desde una URL o un archivo está desactivado; añade \"apps\": {\"sideload\": true} a config.json, define un token o usa la app de la TV",
-  "from": "installing from a URL or a file is off; set \"apps\": {\"sideload\": true} in config.json, set a token, or use the app on the TV"
+  "text": "instalar desde una URL o un archivo está desactivado; añade \"apps\": {\"sideload\": true} a config.json, define un token o usa el navegador web de la TV",
+  "from": "installing from a URL or a file is off; set \"apps\": {\"sideload\": true} in config.json, set a token, or use the TV's web browser"
  },
  "srv.install.upload.empty": {
   "text": "la subida está vacía o su tamaño no es válido",
@@ -5082,5 +5082,29 @@
  "srv.install.upload.size": {
   "text": "la subida no coincide con el tamaño indicado",
   "from": "the upload does not match its stated size"
+ },
+ "srv.install.catalogIncomplete": {
+  "text": "la entrada del catálogo está incompleta",
+  "from": "the catalog entry is incomplete"
+ },
+ "srv.install.notStaged": {
+  "text": "el archivo no está en el directorio de preparación",
+  "from": "the file is not in the staging directory"
+ },
+ "srv.install.badSource": {
+  "text": "origen de instalación desconocido",
+  "from": "unknown install source"
+ },
+ "srv.install.unknownError": {
+  "text": "error desconocido",
+  "from": "unknown error"
+ },
+ "srv.install.idRequired": {
+  "text": "se necesita el id de una app",
+  "from": "an app id is required"
+ },
+ "srv.install.rootConfirm": {
+  "text": "el acceso root para un paquete de fuera del catálogo debe confirmarse para los servicios que figuran en su vista previa",
+  "from": "root access for a package from outside the catalog must be confirmed for the services listed in its preview"
  }
 }

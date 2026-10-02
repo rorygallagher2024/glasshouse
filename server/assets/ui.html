@@ -1308,7 +1308,7 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
     </div>
     <div class="pv-note" id="sideload-off" hidden>
       <div class="prot-title" data-t="apps.sideload.off.title">Install from a URL or a file</div>
-      <div class="prot-desc" data-t="apps.sideload.off.desc">This is off, because a package from outside the catalog can run anything on the TV. To turn it on, set "apps": {"sideload": true} in config.json on the TV, or set a token, or use the app on the TV itself.</div>
+      <div class="prot-desc" data-t="apps.sideload.off.desc">This is off, because a package from outside the catalog can run anything on the TV. To turn it on, set "apps": {"sideload": true} in config.json on the TV, or set a token, or open this page in the TV's web browser.</div>
     </div>
     <div id="sideload-box" hidden>
       <div class="prot-title" data-t="apps.sideload.url.title">From URL&hellip;</div>
@@ -4088,7 +4088,10 @@ async function confirmInstall() {
   q('inst-cancel').disabled = true;
   try {
     const j = await installPost('/api/apps/install/confirm', {
-      jobId: s.jobId, elevate, replaceStore: q('inst-replace').checked
+      jobId: s.jobId, elevate, replaceStore: q('inst-replace').checked,
+      // The server asks for the services shown in the preview before it gives
+      // root to a package from outside the catalog.
+      confirmRoot: elevate && pv.source !== 'catalog' ? (pv.services || []) : undefined
     });
     installSnap = j.install;
     renderInstall();
