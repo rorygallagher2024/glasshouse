@@ -48,7 +48,7 @@ function execErr(err, stderr) {
 function networkFailure(bin, err, stderr) {
   if (!err) return false;
   if (err.killed) return true;
-  if (/wget$/.test(bin)) {
+  if (isWget(bin)) {
     return err.code === 4 || /bad address|can't connect|timed out|unreachable/i.test(String(stderr || ''));
   }
   return err.code === 6 || err.code === 7 || err.code === 28;
@@ -62,6 +62,8 @@ function httpErrorStatus(err, stderr) {
   if (err && (err.code === 22 || err.code === 8)) return -1;
   return 0;
 }
+
+function isWget(bin) { return /wget$/.test(bin); }
 
 function hostOf(url) {
   var m = /^https?:\/\/(?:[^\/@]*@)?([^\/:?#]+)/i.exec(String(url));
@@ -83,12 +85,11 @@ function githubSaid(status, url) {
            ' - either the API rate limit for this address is spent (60 an hour ' +
            'unauthenticated), or something on the network refused the request';
   }
-  if (status > 0) return 'GitHub returned ' + status + ' for ' + where;
-  return 'GitHub answered with an error for ' + where;
+  return hostSaid(status, url, 'GitHub');
 }
 
-function hostSaid(status, url) {
-  var host = hostOf(url);
+function hostSaid(status, url, name) {
+  var host = name || hostOf(url);
   var where = String(url).replace(/^https?:\/\/[^\/]+/, '');
   if (status > 0) return host + ' returned ' + status + ' for ' + where;
   return host + ' answered with an error for ' + where;
@@ -117,7 +118,7 @@ function validateUrl(url) {
 function fetchArgs(bin, url, outFile, mode) {
   var ua = 'tvweb/' + currentVersion;
   mode = mode || (outFile ? 'file' : 'text');
-  var wget = /wget$/.test(bin);
+  var wget = isWget(bin);
   if (mode === 'big') {
     // curl's speed limit measures the whole transfer; busybox wget's -T is per
     // read, which comes to the same thing for a stalled connection.
@@ -199,7 +200,7 @@ function run(url, outFile, mode, opts, cb) {
           fetchClient = bin;
           return finish(new Error(github ? githubSaid(status, url) : hostSaid(status, url)));
         }
-        if (big && (err.killed || (err.code === 28 && !/wget$/.test(bin)))) {
+        if (big && (err.killed || (err.code === 28 && !isWget(bin)))) {
           fetchClient = bin;
           return finish(new Error('the download from ' + host + ' stalled or ran past ' +
                                   (DOWNLOAD_CEILING_MS / 60000) + ' minutes'));

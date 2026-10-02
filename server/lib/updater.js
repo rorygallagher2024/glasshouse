@@ -235,8 +235,14 @@ function isExecutable(rel) {
 
 function isBusy() { return !!UPDATE.busy; }
 
+function installBusy(cb) {
+  if (!installerBusy()) return false;
+  cb({ ok: false, error: msg('srv.install.busy.update', 'an app install is in progress; update when it has finished') });
+  return true;
+}
+
 function installUpdate(cb) {
-  if (installerBusy()) return cb({ ok: false, error: msg('srv.install.busy.update', 'an app install is in progress; update when it has finished') });
+  if (installBusy(cb)) return;
   if (UPDATE.busy) return cb({ ok: false, error: msg('srv.update.busy', 'an update is already running') });
   if (viaHomebrewChannel()) return cb({ ok: false, error: msg('srv.update.viaHbc', 'updates for this install come from the Homebrew Channel') });
 
@@ -348,7 +354,7 @@ function installUpdate(cb) {
 }
 
 function rollbackUpdate(cb) {
-  if (installerBusy()) return cb({ ok: false, error: msg('srv.install.busy.update', 'an app install is in progress; update when it has finished') });
+  if (installBusy(cb)) return;
   if (viaHomebrewChannel()) return cb({ ok: false, error: msg('srv.update.viaHbc', 'updates for this install come from the Homebrew Channel') });
   var was = rollbackVersion();
   if (!was) return cb({ ok: false, error: msg('srv.update.noRollback', 'nothing to roll back to') });
@@ -398,6 +404,5 @@ module.exports = {
   rollbackUpdate: rollbackUpdate,
   scheduleUpdateChecks: scheduleUpdateChecks,
   setAutoCheck: setAutoCheck,
-  verNewer: verNewer,
-  verParts: verParts
+  verNewer: verNewer
 };

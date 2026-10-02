@@ -3,17 +3,11 @@
 var url = require('url');
 var updater = require('./updater');
 var PROTECTED_APP_IDS = require('./apps').PROTECTED_APP_IDS;
+var SELF_UPDATING = require('./installer').SELF_UPDATING;
 
 var DEFAULT_REPO = 'https://repo.webosbrew.org/api/apps.json';
 var MAX_PAGES = 50;
 var CACHE_MS = 3600000;
-// The Homebrew Channel and this server's own package update themselves: an
-// install here would kill their services and drop their root.
-var HBC_IDS = {
-  'org.webosbrew.hbchannel': true,
-  'io.github.rorygallagher2024.lg-webos-dashboard': true
-};
-
 var config = {};
 var lunaFn = null;
 var fetchLib = null;
@@ -120,7 +114,7 @@ function fetchAll(cb) {
 }
 
 function isHbc(id) {
-  return !!(HBC_IDS[id] || PROTECTED_APP_IDS[id]);
+  return SELF_UPDATING.indexOf(id) >= 0 || !!PROTECTED_APP_IDS[id];
 }
 
 function withInstalled(apps, installed) {

@@ -29,7 +29,6 @@ var DEFAULT_CAPS = {
 var SELF_UPDATING = ['org.webosbrew.hbchannel', 'io.github.rorygallagher2024.lg-webos-dashboard'];
 var SYSTEM_PREFIXES = ['com.webos.', 'com.palm.', 'com.lge.'];
 var UNFINISHED = { downloading: 1, verifying: 1, 'awaiting-confirm': 1, installing: 1, elevating: 1 };
-var BUSY = UNFINISHED;
 var NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$/;
 var VERSION_RE = /^[A-Za-z0-9][A-Za-z0-9.+~:_-]{0,63}$/;
 var ELF_MACHINES = { 3: 'x86', 8: 'mips', 40: 'arm', 62: 'x86_64', 183: 'aarch64', 243: 'riscv' };
@@ -87,6 +86,29 @@ function reject(text) {
 
 function userText(e, fallback) {
   return (e && e.userMessage) || fallback;
+}
+
+function unreadable(e) {
+  return msg('srv.install.ipk.unreadable', 'the ipk could not be read: {error}', { error: errText(e) });
+}
+
+function installFailed(text) {
+  return msg('srv.install.failed', 'the install failed: {error}', { error: text });
+}
+
+function noSpace(need, free) {
+  return msg('srv.install.noSpace', 'not enough free space: {need} needed, {free} free', { need: mb(need), free: mb(free) });
+}
+
+function tooBig() {
+  return msg('srv.install.tooBig', 'the package is larger than the {limit} limit', { limit: mb(caps.uploadBytes) });
+}
+
+// Why nothing else may start now, or null.
+function busyText() {
+  if (isBusy()) return msg('srv.install.busy', 'an install is already in progress');
+  if (updaterBusy()) return msg('srv.install.busy.updater', 'a dashboard update is running; install when it has finished');
+  return null;
 }
 
 function mb(n) {
@@ -261,7 +283,7 @@ function streamTar(file, start, len, cap, walker, cb) {
   }
 
   rs.on('error', function (e) {
-    done(reject(msg('srv.install.ipk.unreadable', 'the ipk could not be read: {error}', { error: errText(e) })));
+    done(reject(unreadable(e)));
   });
   gz.on('error', function () {
     done(reject(msg('srv.install.ipk.truncated', 'the ipk is truncated')));
@@ -430,12 +452,12 @@ function inspectIpk(file, cb) {
     if (closed) return;
     closed = true;
     if (fd !== null) { try { fs.closeSync(fd); } catch (e) {} }
-    if (err) return cb(userText(err, msg('srv.install.ipk.unreadable', 'the ipk could not be read: {error}', { error: errText(err) })));
+    if (err) return cb(userText(err, unreadable(err)));
     cb(null, info);
   }
 
   fs.open(file, 'r', function (err, handle) {
-    if (err) return finish(reject(msg('srv.install.ipk.unreadable', 'the ipk could not be read: {error}', { error: errText(err) })));
+    if (err) return finish(reject(unreadable(err)));
     fd = handle;
     fs.fstat(fd, function (err2, st) {
       if (err2) return finish(err2);
@@ -643,7 +665,7 @@ function snapshot() {
 }
 
 function isBusy() {
-  return !!(job && BUSY[job.state]);
+  return !!(job && UNFINISHED[job.state]);
 }
 
 /* -------------------------------------------------------------- start */
@@ -652,14 +674,14 @@ function proceedVerify(j) {
   setState(j, 'verifying');
   fs.stat(j.file, function (err, st) {
     if (!live(j)) return;
-    if (err) return fail(j, msg('srv.install.ipk.unreadable', 'the ipk could not be read: {error}', { error: errText(err) }));
+    if (err) return fail(j, unreadable(err));
     if (st.size > caps.uploadBytes) {
-      return fail(j, msg('srv.install.tooBig', 'the package is larger than the {limit} limit', { limit: mb(caps.uploadBytes) }));
+      return fail(j, tooBig());
     }
     j.size = st.size;
     hashFile(j.file, function (err2, digest) {
       if (!live(j)) return;
-      if (err2) return fail(j, msg('srv.install.ipk.unreadable', 'the ipk could not be read: {error}', { error: errText(err2) }));
+      if (err2) return fail(j, unreadable(err2));
       if (j.sha256 && digest.toLowerCase() !== j.sha256.toLowerCase()) {
         return fail(j, msg('srv.install.hashMismatch', 'the download does not match its sha256 hash'));
       }
@@ -709,7 +731,7 @@ function buildPreview(j) {
       // still need room.
       var need = j.size * 2;
       if (free !== null && free < need) {
-        return fail(j, msg('srv.install.noSpace', 'not enough free space: {need} needed, {free} free', { need: mb(need), free: mb(free) }));
+        return fail(j, noSpace(need, free));
       }
       j.preview = {
         jobId: j.id,
@@ -755,7 +777,7 @@ function startDownload(j, url, size, free) {
       if (why || bytes <= limit) return;
       why = limit < caps.uploadBytes
         ? msg('srv.install.noSpace.download', 'not enough free space for this download: {free} free, and the package needs about three times its size', { free: mb(free) })
-        : msg('srv.install.tooBig', 'the package is larger than the {limit} limit', { limit: mb(caps.uploadBytes) });
+        : tooBig();
       var d = j.dl;
       if (d) d.cancel();
       fail(j, why);
@@ -776,8 +798,8 @@ function startDownload(j, url, size, free) {
 function start(req, cb) {
   cb = cb || noop;
   req = req || {};
-  if (isBusy()) return cb(msg('srv.install.busy', 'an install is already in progress'));
-  if (updaterBusy()) return cb(msg('srv.install.busy.updater', 'a dashboard update is running; install when it has finished'));
+  var busy = busyText();
+  if (busy) return cb(busy);
   if (req.source !== 'file' && uploadHeld && Date.now() - uploadHeld < UPLOAD_HOLD_MS) {
     return cb(msg('srv.install.busy.upload', 'an upload is in progress'));
   }
@@ -828,7 +850,7 @@ function start(req, cb) {
   freeBytes(function (free) {
     if (!live(j)) return;
     if (size && free !== null && free < size * 3) {
-      return fail(j, msg('srv.install.noSpace', 'not enough free space: {need} needed, {free} free', { need: mb(size * 3), free: mb(free) }));
+      return fail(j, noSpace(size * 3, free));
     }
     startDownload(j, url, size, free);
   });
@@ -842,19 +864,16 @@ function start(req, cb) {
  */
 function prepareUpload(len, cb) {
   if (len > caps.uploadBytes) {
-    return cb(msg('srv.install.tooBig', 'the package is larger than the {limit} limit', { limit: mb(caps.uploadBytes) }), null, 413);
+    return cb(tooBig(), null, 413);
   }
-  if (isBusy() || (uploadHeld && Date.now() - uploadHeld < UPLOAD_HOLD_MS)) {
-    return cb(msg('srv.install.busy', 'an install is already in progress'), null, 409);
-  }
-  if (updaterBusy()) {
-    return cb(msg('srv.install.busy.updater', 'a dashboard update is running; install when it has finished'), null, 409);
-  }
+  var held = uploadHeld && Date.now() - uploadHeld < UPLOAD_HOLD_MS;
+  var busy = busyText() || (held ? msg('srv.install.busy', 'an install is already in progress') : null);
+  if (busy) return cb(busy, null, 409);
   uploadHeld = Date.now();
   freeBytes(function (free) {
     if (free !== null && free < len * 3) {
       uploadHeld = 0;
-      return cb(msg('srv.install.noSpace', 'not enough free space: {need} needed, {free} free', { need: mb(len * 3), free: mb(free) }), null, 507);
+      return cb(noSpace(len * 3, free), null, 507);
     }
     mkdirp(stagingDir);
     clearStaging();
@@ -879,9 +898,7 @@ function killChild() {
 function hookExit() {
   if (exitHooked) return;
   exitHooked = true;
-  process.on('exit', function () {
-    if (installChild) { try { installChild.kill(); } catch (e) {} }
-  });
+  process.on('exit', killChild);
 }
 
 /*
@@ -923,10 +940,10 @@ function runInstall(j, cb) {
     if (!r || typeof r !== 'object' || settled || finishing) return;
     var d = r.details && typeof r.details === 'object' ? r.details : {};
     if (r.returnValue === false) {
-      return end(msg('srv.install.failed', 'the install failed: {error}', { error: short(r.errorText) || short(d.reason) || 'unknown error' }));
+      return end(installFailed(short(r.errorText) || short(d.reason) || 'unknown error'));
     }
     if (d.errorCode) {
-      return end(msg('srv.install.failed', 'the install failed: {error}', { error: short(d.reason) || short(r.errorText) || String(d.errorCode) }));
+      return end(installFailed(short(d.reason) || short(r.errorText) || String(d.errorCode)));
     }
     var sv = r.statusValue !== undefined ? r.statusValue : d.statusValue;
     if ((sv === 30 && d.packageId) || r.state === 'installed' || d.state === 'installed') end(null);
@@ -937,7 +954,7 @@ function runInstall(j, cb) {
     child = childProcess.spawn(lunaSendPath, ['-i', 'luna://com.webos.appInstallService/dev/install',
       JSON.stringify({ id: info.package, ipkUrl: j.file, subscribe: true })]);
   } catch (e) {
-    return end(msg('srv.install.failed', 'the install failed: {error}', { error: errText(e) }));
+    return end(installFailed(errText(e)));
   }
   installChild = child;
   child.stdout.on('data', function (chunk) {
@@ -948,7 +965,7 @@ function runInstall(j, cb) {
   });
   child.stderr.on('data', noop);
   child.on('error', function (e) {
-    end(msg('srv.install.failed', 'the install failed: {error}', { error: errText(e) }));
+    end(installFailed(errText(e)));
   });
   child.on('close', function () {
     if (buf) handle(buf);
@@ -1107,6 +1124,7 @@ module.exports = {
   prepareUpload: prepareUpload,
   releaseUpload: releaseUpload,
   recover: recover,
+  SELF_UPDATING: SELF_UPDATING,
   hashFile: hashFile,
   parseDf: parseDf
 };

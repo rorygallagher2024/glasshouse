@@ -1188,17 +1188,17 @@ function refreshApps() {
    row while the screen is the same, and starts at the useful row when it changes. */
 function refreshCatalogView() {
   if (sub !== 'catalog' || T().key !== 'apps') return;
-  var keep = rows[sel] && rows[sel].key, before = instView, i;
+  var keep = rows[sel] && rows[sel].key, before = instView;
   rows = catalogRows();
-  sel = -1;
-  if (instView === before && keep) {
-    for (i = 0; i < rows.length; i++) if (rows[i].key === keep) { sel = i; break; }
-  }
-  if (sel < 0 && instView === 'preview') {
-    for (i = 0; i < rows.length; i++) if (rows[i].key === 'pv:go') { sel = i; break; }
-  }
+  sel = (instView === before && keep) ? rowIndex(keep) : -1;
+  if (sel < 0 && instView === 'preview') sel = rowIndex('pv:go');
   if (sel < 0) sel = nextRow(firstSel());
   render();
+}
+
+function rowIndex(key) {
+  for (var i = 0; i < rows.length; i++) if (rows[i].key === key) return i;
+  return -1;
 }
 
 function titleSort(a, b) {
@@ -1287,6 +1287,12 @@ function resultRows(s) {
             hint: sentence(s.error || t('common.unknownError', 'unknown error')) }];
 }
 
+function toggleRow(label, on, act, key, hint) {
+  return { label: label, value: on ? t('common.on', 'On') : t('common.off', 'Off'), cls: on ? 'on' : 'off', act: act, key: key,
+           press: on ? t('tv.apps.install.press.off', 'Press OK to switch off') : t('tv.apps.install.press.on', 'Press OK to switch on'),
+           hint: hint };
+}
+
 function previewRows(pv) {
   var dir = pv.direction, ver = pv.version, from = pv.installedVersion, r = [];
   var first = pv.apps && pv.apps[0] && pv.apps[0].title;
@@ -1306,11 +1312,9 @@ function previewRows(pv) {
   if (svc.length) {
     r.push({ label: t('tv.apps.install.pv.services', 'Services'), value: String(svc.length), key: 'pv:services',
              hint: t('apps.install.services', 'Background services: {list}', { list: svc.join(', ') }) });
-    r.push({ label: t('apps.install.root', 'Run services as root (needs the Homebrew Channel)'),
-             value: instRoot ? t('common.on', 'On') : t('common.off', 'Off'), cls: instRoot ? 'on' : 'off', act: 'instRoot', key: 'pv:root',
-             press: instRoot ? t('tv.apps.install.press.off', 'Press OK to switch off') : t('tv.apps.install.press.on', 'Press OK to switch on'),
-             hint: pv.rootRequired ? t('tv.apps.install.root.needed', 'This app asks for its services to run as root, and may not work without it.')
-                                   : t('tv.apps.install.root.hint', 'Off unless the app needs it. Root access is set up through the Homebrew Channel.') });
+    r.push(toggleRow(t('apps.install.root', 'Run services as root (needs the Homebrew Channel)'), instRoot, 'instRoot', 'pv:root',
+             pv.rootRequired ? t('tv.apps.install.root.needed', 'This app asks for its services to run as root, and may not work without it.')
+                                   : t('tv.apps.install.root.hint', 'Off unless the app needs it. Root access is set up through the Homebrew Channel.')));
   }
   if (pv.cpuMismatch) {
     r.push({ label: t('tv.apps.install.pv.cpu', 'Processor'), value: t('tv.apps.install.pv.mismatch', 'Mismatch'), cls: 'warn', key: 'pv:cpu',
@@ -1321,10 +1325,8 @@ function previewRows(pv) {
              hint: t('apps.install.space', 'Free space: {free}. Needed: about {need}.', { free: fmtMb(pv.freeBytes), need: fmtMb(pv.needBytes) }) });
   }
   if (pv.storeInstalled) {
-    r.push({ label: t('apps.install.store.replace', 'Replace the store version'),
-             value: instReplace ? t('common.on', 'On') : t('common.off', 'Off'), cls: instReplace ? 'on' : 'off', act: 'instReplace', key: 'pv:replace',
-             press: instReplace ? t('tv.apps.install.press.off', 'Press OK to switch off') : t('tv.apps.install.press.on', 'Press OK to switch on'),
-             hint: t('apps.install.store.warn', 'This app was installed from the LG store. Replacing it stops store updates for it.') });
+    r.push(toggleRow(t('apps.install.store.replace', 'Replace the store version'), instReplace, 'instReplace', 'pv:replace',
+             t('apps.install.store.warn', 'This app was installed from the LG store. Replacing it stops store updates for it.')));
   }
   r.push({ label: t('apps.install.confirm', 'Install'), value: '', cls: 'act', act: 'instConfirm', key: 'pv:go',
            press: t('tv.apps.install.press.go', 'Press OK to install now'),
@@ -1335,6 +1337,12 @@ function previewRows(pv) {
   return r;
 }
 
+function adoptInstall(status) {
+  inst = status;
+  refreshCatalogView();
+  pollInstall();
+}
+
 function startInstall(id) {
   if (busy || currentView() !== 'list') return;
   busy = true;
@@ -1343,9 +1351,7 @@ function startInstall(id) {
   installPost('/api/apps/install/fetch', { id: id }, function (err, j) {
     busy = false;
     if (err) { instOwn = false; flash(sentence(err.message)); return; }
-    inst = j.install;
-    refreshCatalogView();
-    pollInstall();
+    adoptInstall(j.install);
   });
 }
 
@@ -1359,9 +1365,7 @@ function confirmInstall() {
   installPost('/api/apps/install/confirm', { jobId: inst.jobId, elevate: instRoot, replaceStore: instReplace }, function (err, j) {
     busy = false;
     if (err) { flash(sentence(err.message)); pollInstall(); return; }
-    inst = j.install;
-    refreshCatalogView();
-    pollInstall();
+    adoptInstall(j.install);
   });
 }
 

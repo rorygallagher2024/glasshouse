@@ -3902,12 +3902,13 @@ function renderPreview(pv) {
   q('inst-services').textContent = svc.length ? t('apps.install.services', 'Background services: {list}', { list: svc.join(', ') }) : '';
   q('inst-root').checked = false;
   q('inst-cpu').hidden = !pv.cpuMismatch;
-  q('inst-cpu').textContent = pv.cpuMismatch
-    ? t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.') : '';
+  q('inst-cpu').textContent = !pv.cpuMismatch ? ''
+    : t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.');
   q('inst-space').textContent = pv.freeBytes === null || pv.freeBytes === undefined ? ''
     : t('apps.install.space', 'Free space: {free}. Needed: about {need}.', { free: fmtMb(pv.freeBytes), need: fmtMb(pv.needBytes) });
-  q('inst-hash').hidden = pv.source === 'catalog' || !pv.sha256;
-  q('inst-hash').textContent = pv.source === 'catalog' || !pv.sha256 ? '' : 'sha256: ' + pv.sha256;
+  const showHash = pv.source !== 'catalog' && !!pv.sha256;
+  q('inst-hash').hidden = !showHash;
+  q('inst-hash').textContent = showHash ? 'sha256: ' + pv.sha256 : '';
   q('inst-store-row').hidden = !pv.storeInstalled;
   q('inst-replace').checked = false;
 }
@@ -3991,11 +3992,11 @@ async function installPost(path, body) {
   return j;
 }
 
-async function startInstall(appId) {
+function startInstall(appId) {
   startJob('/api/apps/install/fetch', { id: appId });
 }
 
-async function startUrlInstall() {
+function startUrlInstall() {
   const url = q('sl-url').value.trim();
   if (!url) return;
   startJob('/api/apps/install/url', { url, sha256: q('sl-sha').value.trim() });
@@ -4013,9 +4014,13 @@ async function startJob(path, body) {
     pollInstall();
   } catch (e) {
     installOwn = false;
-    showErr(e.message);
-    q('catalog-msg').textContent = sentence(e.message);
+    installFailed(e.message);
   }
+}
+
+function installFailed(text) {
+  showErr(text);
+  q('catalog-msg').textContent = sentence(text);
 }
 
 // The browser sends the file as it is: application/octet-stream is the one
@@ -4030,15 +4035,14 @@ function uploadIpk() {
     uploading = false;
     renderSideload();
     setInstallStatus('');
-    showErr(text);
-    q('catalog-msg').textContent = sentence(text);
+    installFailed(text);
   };
   const xhr = new XMLHttpRequest();
   xhr.open('POST', api('/api/apps/install/upload'));
   xhr.setRequestHeader('Content-Type', 'application/octet-stream');
   xhr.upload.onprogress = ev => {
     if (!ev.lengthComputable) return;
-    setInstallStatus(t('apps.install.uploading', 'Uploading… {done} of {total}', { done: fmtMb(ev.loaded), total: fmtMb(ev.total) }));
+    uploadStatus(ev.loaded, ev.total);
   };
   xhr.onerror = () => fail(t('apps.install.uploadFailed', 'The upload did not finish'));
   xhr.onload = () => {
@@ -4053,8 +4057,12 @@ function uploadIpk() {
     renderCatalog();
     pollInstall();
   };
-  setInstallStatus(t('apps.install.uploading', 'Uploading… {done} of {total}', { done: fmtMb(0), total: fmtMb(f.size) }));
+  uploadStatus(0, f.size);
   xhr.send(f);
+}
+
+function uploadStatus(done, total) {
+  setInstallStatus(t('apps.install.uploading', 'Uploading… {done} of {total}', { done: fmtMb(done), total: fmtMb(total) }));
 }
 
 async function confirmInstall() {

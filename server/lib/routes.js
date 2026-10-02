@@ -101,11 +101,13 @@ function restartSelf() { return restartSelfFn(); }
  * a busy install has to be refused before the write; restartSelf in tvweb.js
  * refuses too, for the callers that do not come through here.
  */
-function installBusyError() {
-  if (installerModule && installerModule.isBusy()) {
-    return msg('srv.install.busy.restart', 'an install is in progress; restart when it has finished');
-  }
-  return null;
+function installBusyRefusal(res) {
+  if (!installerModule || !installerModule.isBusy()) return false;
+  send(res, 409, JSON.stringify({
+    ok: false,
+    error: msg('srv.install.busy.restart', 'an install is in progress; restart when it has finished')
+  }));
+  return true;
 }
 function doControl(action, value, cb) { return controlsModule.doControl(action, value, cb); }
 function luna(uri, payload, cb) { return lunaFn(uri, payload, cb); }
@@ -372,8 +374,7 @@ function startHandoff(cb) {
         if (v.errors.length) {
           return send(res, 400, JSON.stringify({ ok: false, error: v.errors.join('; ') }));
         }
-        var hoBusy = installBusyError();
-        if (hoBusy) return send(res, 409, JSON.stringify({ ok: false, error: hoBusy }));
+        if (installBusyRefusal(res)) return;
         writeSettings(v.value, function (err) {
           if (err) return send(res, 500, JSON.stringify({ ok: false, error: msg('srv.saveSettingsFailed', 'could not save the settings') }));
           console.log('setup: Home Assistant broker set from a phone, restarting to connect');
@@ -637,6 +638,7 @@ function handleUpload(req, res) {
     if (err) return refuseUpload(req, res, err, status || 400);
     var ws = fs.createWriteStream(file, { flags: 'wx', mode: parseInt('600', 8) });
     var got = 0, done = false;
+    var sizeText = msg('srv.install.upload.size', 'the upload does not match its stated size');
     function discard() {
       if (done) return false;
       done = true;
@@ -653,7 +655,7 @@ function handleUpload(req, res) {
     req.on('data', function (chunk) {
       if (done) return;
       got += chunk.length;
-      if (got > len) return failWith(msg('srv.install.upload.size', 'the upload does not match its stated size'), 400);
+      if (got > len) return failWith(sizeText, 400);
       if (!ws.write(chunk) && typeof req.pause === 'function') {
         req.pause();
         ws.once('drain', function () { if (!done) req.resume(); });
@@ -661,18 +663,15 @@ function handleUpload(req, res) {
     });
     req.on('end', function () {
       if (done) return;
-      if (got !== len) return failWith(msg('srv.install.upload.size', 'the upload does not match its stated size'), 400);
+      if (got !== len) return failWith(sizeText, 400);
       ws.end();
     });
     ws.on('finish', function () {
       if (done) return;
       done = true;
       installerModule.start({ source: 'file', path: file }, function (e2, snap) {
-        if (e2) {
-          installerModule.releaseUpload(file);
-          return installError(res, String(e2));
-        }
-        send(res, 200, JSON.stringify({ ok: true, install: snap }));
+        if (e2) installerModule.releaseUpload(file);
+        installReply(res)(e2, snap);
       });
     });
     ws.on('error', function () {
@@ -874,8 +873,7 @@ function handleRequest(req, res) {
         return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
       }
       if (a.action === 'network') {
-        var netBusy = installBusyError();
-        if (netBusy) return send(res, 409, JSON.stringify({ ok: false, error: netBusy }));
+        if (installBusyRefusal(res)) return;
         var open = !!a.open;
         if (open === networkOpen()) return send(res, 200, JSON.stringify({ ok: true, restarting: false }));
         return setNetworkAccess(open, function (err) {
@@ -1221,8 +1219,7 @@ function handleRequest(req, res) {
       if (v.errors.length) {
         return send(res, 400, JSON.stringify({ ok: false, error: v.errors.join('; ') }));
       }
-      var setBusy = installBusyError();
-      if (setBusy) return send(res, 409, JSON.stringify({ ok: false, error: setBusy }));
+      if (installBusyRefusal(res)) return;
       writeSettings(v.value, function (err) {
         if (err) {
           return send(res, 500, JSON.stringify({ ok: false, error: 'could not write ' + configFilePath + ': ' + err.message }));
