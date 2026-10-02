@@ -170,6 +170,86 @@ function pages() {
     assert.strictEqual(r.ok, true);
     assert.strictEqual(fetched.length, 50);
     console.log('  ✓ paging stops at 50 pages');
-    console.log('ALL test-repo.js assertions passed!\n');
+    failures();
   });
+}
+
+// A failure is retried after 10 s even though a good list is kept for an hour.
+function failures() {
+  var clock = 1000000, down = true, partial = false;
+  var EXTRA = 'https://repos.example.net/apps.json';
+  var calls;
+  function start(config) {
+    calls = 0;
+    repo.init({
+      config: config || {}, now: function () { return clock; }, luna: function (x, p, cb) { cb({}); },
+      fetch: { getJson: function (u, cb) {
+        calls++;
+        if (u === EXTRA && partial) return cb(new Error('extra down'));
+        if (down) return cb(new Error('offline'));
+        cb(null, u === BASE ? PAGE1 : u === EXTRA ? { paging: { maxPage: 1 }, packages: [] } : PAGE2);
+      } }
+    });
+  }
+  start();
+  repo.getCatalog(false, function (r) {
+    assert.strictEqual(r.ok, false);
+    var n = calls;
+    clock += 5000;
+    repo.getCatalog(false, function () {
+      assert.strictEqual(calls, n, 'a failure within 10 s is not retried');
+      clock += 6000;
+      down = false;
+      repo.getCatalog(false, function (r2) {
+        assert.ok(calls > n, 'a failure is retried after 10 s although the age is an hour');
+        assert.strictEqual(r2.ok, true);
+        console.log('  ✓ a failed fetch is retried after 10 s, not after an hour');
+
+        var m = calls;
+        clock += 20000;
+        repo.getCatalog(false, function (r3) {
+          assert.strictEqual(calls, m, 'a good list stands for an hour');
+          assert.strictEqual(r3.ok, true);
+          clock += 3600000;
+          down = true;
+          repo.getCatalog(false, function (r4) {
+            assert.strictEqual(r4.ok, true, 'the stale list is kept');
+            assert.ok(r4.error);
+            var k = calls;
+            clock += 11000;
+            down = false;
+            repo.getCatalog(false, function (r5) {
+              assert.ok(calls > k, 'a stale list is refreshed after 10 s');
+              assert.ok(!r5.error);
+              console.log('  ✓ a stale list is shown with the error and refreshed on the next open after 10 s');
+              partialFailure();
+            });
+          });
+        });
+      });
+    });
+  });
+
+  function partialFailure() {
+    down = false;
+    partial = true;
+    start({ apps: { repos: [EXTRA] } });
+    repo.getCatalog(false, function (r) {
+      assert.strictEqual(r.ok, true);
+      assert.ok(/extra down/.test(r.error));
+      var n = calls;
+      clock += 5000;
+      repo.getCatalog(false, function () {
+        assert.strictEqual(calls, n, 'within 10 s the partial result stands');
+        clock += 6000;
+        partial = false;
+        repo.getCatalog(false, function (r2) {
+          assert.ok(calls > n, 'a partly failed catalog is retried after 10 s');
+          assert.ok(!r2.error);
+          console.log('  ✓ a partly failed catalog keeps its list and is retried after 10 s');
+          console.log('ALL test-repo.js assertions passed!\n');
+        });
+      });
+    });
+  }
 }

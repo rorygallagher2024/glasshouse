@@ -4651,6 +4651,54 @@
   "text": "la dirección tiene más de {max} caracteres",
   "from": "the address is longer than {max} characters"
  },
+ "srv.fetch.github404": {
+  "text": "GitHub devolvió 404 para {where}: aún no hay ninguna versión publicada, o el repositorio no es visible",
+  "from": "GitHub returned 404 for {where} - no release published yet, or the repository is not visible"
+ },
+ "srv.fetch.githubLimit": {
+  "text": "{status} para {where}: se ha agotado el límite de la API para esta dirección (60 por hora sin autenticar), o algo de la red rechazó la petición",
+  "from": "{status} for {where} - either the API rate limit for this address is spent (60 an hour unauthenticated), or something on the network refused the request"
+ },
+ "srv.fetch.hostStatus": {
+  "text": "{host} devolvió {status} para {where}",
+  "from": "{host} returned {status} for {where}"
+ },
+ "srv.fetch.hostError": {
+  "text": "{host} respondió con un error para {where}",
+  "from": "{host} answered with an error for {where}"
+ },
+ "srv.fetch.stalled": {
+  "text": "la descarga desde {host} se detuvo o superó los {minutes} minutos",
+  "from": "the download from {host} stalled or ran past {minutes} minutes"
+ },
+ "srv.fetch.offline": {
+  "text": "El televisor no pudo conectar con {host}. Comprueba que tiene conexión a internet.",
+  "from": "The TV could not reach {host}. Check it is connected to the internet."
+ },
+ "srv.fetch.noClient": {
+  "text": "ningún cliente HTTP de este televisor pudo conectar con {host}{detail}. Instala una versión actual de curl o wget.",
+  "from": "no HTTP client on this TV could reach {host}{detail}. Install a current curl or wget."
+ },
+ "srv.fetch.wrongSize": {
+  "text": "la descarga desde {host} terminó en {size} bytes, se esperaban {expected}",
+  "from": "the download from {host} ended at {size} bytes, expected {expected}"
+ },
+ "srv.fetch.notJson": {
+  "text": "{host} no devolvió JSON",
+  "from": "{host} did not return JSON"
+ },
+ "srv.repo.notCatalog": {
+  "text": "no es un catálogo de paquetes: {url}",
+  "from": "not a package catalog: {url}"
+ },
+ "srv.repo.unavailable": {
+  "text": "catálogo no disponible",
+  "from": "catalog unavailable"
+ },
+ "srv.repo.notInCatalog": {
+  "text": "no está en el catálogo: {id}",
+  "from": "not in the catalog: {id}"
+ },
  "srv.install.busy": {
   "text": "ya hay una instalación en curso",
   "from": "an install is already in progress"

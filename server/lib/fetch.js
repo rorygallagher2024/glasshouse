@@ -77,13 +77,12 @@ function isGithub(url) {
 function githubSaid(status, url) {
   var where = String(url).replace(/^https?:\/\/[^\/]+/, '');
   if (status === 404) {
-    return 'GitHub returned 404 for ' + where +
-           ' - no release published yet, or the repository is not visible';
+    return msg('srv.fetch.github404', 'GitHub returned 404 for {where} - no release published yet, or the repository is not visible',
+               { where: where });
   }
   if (status === 403 || status === 429) {
-    return status + ' for ' + where +
-           ' - either the API rate limit for this address is spent (60 an hour ' +
-           'unauthenticated), or something on the network refused the request';
+    return msg('srv.fetch.githubLimit', '{status} for {where} - either the API rate limit for this address is spent (60 an hour unauthenticated), or something on the network refused the request',
+               { status: status, where: where });
   }
   return hostSaid(status, url, 'GitHub');
 }
@@ -91,8 +90,10 @@ function githubSaid(status, url) {
 function hostSaid(status, url, name) {
   var host = name || hostOf(url);
   var where = String(url).replace(/^https?:\/\/[^\/]+/, '');
-  if (status > 0) return host + ' returned ' + status + ' for ' + where;
-  return host + ' answered with an error for ' + where;
+  if (status > 0) {
+    return msg('srv.fetch.hostStatus', '{host} returned {status} for {where}', { host: host, status: status, where: where });
+  }
+  return msg('srv.fetch.hostError', '{host} answered with an error for {where}', { host: host, where: where });
 }
 
 /* null when the URL is acceptable to hand to a client, else the reason. */
@@ -114,23 +115,26 @@ function validateUrl(url) {
  *               TV says so in seconds
  *       'file'  a small file, longer limit
  *       'big'   a package: a stall ends it, not the total time
+ * ipFlag: '-4' or '-6' to pin curl to one address family (busybox wget has no
+ * such flag).
  */
-function fetchArgs(bin, url, outFile, mode) {
+function fetchArgs(bin, url, outFile, mode, ipFlag) {
   var ua = 'tvweb/' + currentVersion;
   mode = mode || (outFile ? 'file' : 'text');
   var wget = isWget(bin);
+  var ip = !wget && ipFlag ? [ipFlag] : [];
   if (mode === 'big') {
     // curl's speed limit measures the whole transfer; busybox wget's -T is per
     // read, which comes to the same thing for a stalled connection.
     if (wget) return ['-q', '-T', '30', '-U', ua, '-O', outFile, '--', url];
-    return ['-fsSL', '--proto', '=http,https', '--proto-redir', '=http,https',
+    return ['-fsSL'].concat(ip, ['--proto', '=http,https', '--proto-redir', '=http,https',
             '--connect-timeout', '30', '--speed-limit', '1024', '--speed-time', '30',
-            '-A', ua, '-o', outFile, '--', url];
+            '-A', ua, '-o', outFile, '--', url]);
   }
   var secs = mode === 'file' ? '30' : '10';
   if (wget) return ['-q', '-T', secs, '-U', ua, '-O', outFile || '-', '--', url];
-  return ['-fsSL', '--proto', '=http,https', '--proto-redir', '=http,https',
-          '--max-time', secs, '-A', ua, '-o', outFile || '-', '--', url];
+  return ['-fsSL'].concat(ip, ['--proto', '=http,https', '--proto-redir', '=http,https',
+          '--connect-timeout', '5', '--max-time', secs, '-A', ua, '-o', outFile || '-', '--', url]);
 }
 
 function clientList() {
@@ -143,6 +147,25 @@ function clientList() {
     list.push(clientDirs[d] + '/wget');
   }
   return list;
+}
+
+/*
+ * The address families to try with one curl, in order. The TV's curl 7.53.1
+ * picks IPv4 or IPv6 at random where both resolve, and on some networks one of
+ * them never connects (exit 7), so about half of the requests failed. Naming
+ * the family on a retry gets the other one. `fetch.ip` ("4" or "6", file-only)
+ * names the first to use.
+ */
+function ipTries(bin) {
+  if (isWget(bin)) return [null];
+  var ip = String(config.fetch && config.fetch.ip || '');
+  if (ip === '4') return ['-4', '-6'];
+  if (ip === '6') return ['-6', '-4'];
+  return [null, '-6', '-4'];
+}
+
+function fileEmpty(file) {
+  try { return fs.statSync(file).size === 0; } catch (e) { return true; }
 }
 
 function rmQuiet(file) {
@@ -180,21 +203,30 @@ function run(url, outFile, mode, opts, cb) {
   function next() {
     if (cancelled) return;
     if (i >= list.length) {
-      return finish(new Error('no HTTP client on this TV could reach ' + (github ? 'GitHub' : host) +
-                              (last ? ' (' + last + ')' : '') +
-                              '. Install a current curl or wget.'));
+      return finish(new Error(msg('srv.fetch.noClient', 'no HTTP client on this TV could reach {host}{detail}. Install a current curl or wget.',
+                                  { host: github ? 'GitHub' : host, detail: last ? ' (' + last + ')' : '' })));
     }
     var bin = list[i++];
     if (seen[bin] || !fs.existsSync(bin)) return next();
     seen[bin] = 1;
+    attempt(bin, ipTries(bin), 0);
+  }
+
+  function attempt(bin, tries, t) {
     if (big) rmQuiet(outFile);
-    child = execFile(bin, fetchArgs(bin, url, outFile, mode),
+    child = execFile(bin, fetchArgs(bin, url, outFile, mode, tries[t]),
                      { timeout: big ? DOWNLOAD_CEILING_MS : (mode === 'file' ? 180000 : 15000),
                        maxBuffer: opts.maxBuffer || 1024 * 1024 },
                      function (err, stdout, stderr) {
       child = null;
       if (cancelled) return;
       if (err) {
+        // Not our own timeout; a download that has already started is not
+        // restarted on the other family.
+        if (t + 1 < tries.length && !err.killed && (err.code === 7 || err.code === 28) &&
+            (!big || fileEmpty(outFile))) {
+          return attempt(bin, tries, t + 1);
+        }
         var status = httpErrorStatus(err, stderr);
         if (status) {
           fetchClient = bin;
@@ -202,14 +234,14 @@ function run(url, outFile, mode, opts, cb) {
         }
         if (big && (err.killed || (err.code === 28 && !isWget(bin)))) {
           fetchClient = bin;
-          return finish(new Error('the download from ' + host + ' stalled or ran past ' +
-                                  (DOWNLOAD_CEILING_MS / 60000) + ' minutes'));
+          return finish(new Error(msg('srv.fetch.stalled', 'the download from {host} stalled or ran past {minutes} minutes',
+                                      { host: host, minutes: DOWNLOAD_CEILING_MS / 60000 })));
         }
         if (networkFailure(bin, err, stderr)) {
           console.error('fetch: ' + path.basename(bin) + ': ' + execErr(err, stderr));
           /** @type {any} */
-          var off = new Error('The TV could not reach ' + (github ? 'GitHub' : host) +
-                              '. Check it is connected to the internet.');
+          var off = new Error(msg('srv.fetch.offline', 'The TV could not reach {host}. Check it is connected to the internet.',
+                                  { host: github ? 'GitHub' : host }));
           off.offline = true;
           return finish(off);
         }
@@ -221,8 +253,8 @@ function run(url, outFile, mode, opts, cb) {
         var size = -1;
         try { size = fs.statSync(outFile).size; } catch (e) {}
         if (size !== opts.expectedSize) {
-          return finish(new Error('the download from ' + host + ' ended at ' + size +
-                                  ' bytes, expected ' + opts.expectedSize));
+          return finish(new Error(msg('srv.fetch.wrongSize', 'the download from {host} ended at {size} bytes, expected {expected}',
+                                      { host: host, size: size, expected: opts.expectedSize })));
         }
       }
       finish(null, String(stdout || ''), bin);
@@ -273,7 +305,7 @@ function getJson(url, cb) {
     if (err) return cb(err);
     var doc;
     try { doc = JSON.parse(body); } catch (e) {
-      return cb(new Error(hostOf(url) + ' did not return JSON'));
+      return cb(new Error(msg('srv.fetch.notJson', '{host} did not return JSON', { host: hostOf(url) })));
     }
     cb(null, doc);
   });
