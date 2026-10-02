@@ -27,6 +27,16 @@ it before exposing it more widely.
   partition, and not the Homebrew Channel or the dashboard's own package. That
   still lets a reachable client choose which catalog app runs on the TV, so
   `token` or `"allowControl": false` closes it.
+- **Installing from a URL or an uploaded file is opt-in.** Such a package has
+  no catalog behind it, so the routes refuse unless `"apps": {"sideload": true}`
+  is set in `config.json` (file-only; the settings form cannot write it), a
+  `token` is set, or the request comes from the TV itself. The package is held
+  to the same id rules as a catalog one, and an optional sha256 is checked when
+  given, but nothing vouches for what it does. An upload must be sent as
+  `application/octet-stream` with a `Content-Length`, because a form post is a
+  request a page on another site can send without a preflight. Once sideloading
+  is on, a client that can reach the port can run any package on the TV, so
+  turn it on only with a token or a closed port.
 - **Root access for an installed app is never on by default.** It is a separate
   option per install, it needs the Homebrew Channel, and an app that was given
   it is elevated again after each update, since a reinstall undoes it.

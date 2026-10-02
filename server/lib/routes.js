@@ -10,6 +10,7 @@ var http = require('http');
 var say = require('./say');
 var msg = say.msg;
 var ha = require('./ha');
+var fetchLib = require('./fetch');
 
 var HA_CATEGORIES = ha.HA_CATEGORIES;
 var HA_ENTITIES = ha.HA_ENTITIES;
@@ -507,28 +508,36 @@ function fromTV(req) {
   return ra === '127.0.0.1' || ra === '::1' || ra === '::ffff:127.0.0.1';
 }
 
-function readJsonBody(req, res, cb) {
-  /*
-   * CSRF guard. No CORS grant is sent, so another site cannot read the
-   * reply - but a POST with a "simple" content type (text/plain,
-   * form-urlencoded) is still *delivered* without a preflight, and the TV
-   * has acted on it by the time the response is discarded. Requiring
-   * application/json forces a preflight, which this server never approves,
-   * and rejecting cross-site Origins closes the gap for anything that does
-   * slip through.
-   */
+/*
+ * CSRF guard shared by every POST that changes something. No CORS grant is
+ * sent, so another site cannot read the reply - but a POST with a "simple"
+ * content type (text/plain, form-urlencoded, multipart/form-data) is still
+ * *delivered* without a preflight, and the TV has acted on it by the time the
+ * response is discarded. Requiring a type outside that list forces a
+ * preflight, which this server never approves, and rejecting cross-site
+ * Origins closes the gap for anything that does slip through. `exact` demands
+ * the type with no parameters. Sends the refusal and returns false.
+ */
+function postGuard(req, res, wantType, exact) {
   var ctype = String(req.headers['content-type'] || '').toLowerCase();
-  if (ctype.indexOf('application/json') !== 0) {
-    return send(res, 415, JSON.stringify({ ok: false, error: 'Content-Type must be application/json' }));
+  if (exact ? ctype !== wantType : ctype.indexOf(wantType) !== 0) {
+    send(res, 415, JSON.stringify({ ok: false, error: 'Content-Type must be ' + wantType }));
+    return false;
   }
   var origin = req.headers.origin;
   if (origin) {
     var hostHdr = String(req.headers.host || '');
     var oHost = String(origin).replace(/^https?:\/\//, '');
     if (oHost !== hostHdr) {
-      return send(res, 403, JSON.stringify({ ok: false, error: 'cross-origin request refused' }));
+      send(res, 403, JSON.stringify({ ok: false, error: 'cross-origin request refused' }));
+      return false;
     }
   }
+  return true;
+}
+
+function readJsonBody(req, res, cb) {
+  if (!postGuard(req, res, 'application/json', false)) return;
   var body = '';
   req.on('data', function (d) {
     body += d;
@@ -589,6 +598,92 @@ function installReply(res) {
   };
 }
 
+/*
+ * URL and upload installs take a package from anywhere, so they are off unless
+ * the owner opted in: apps.sideload in config.json (file-only), a token (the
+ * owner has taken on access control), or a request from the TV itself. The
+ * answer says which, so the page can explain how to turn it on.
+ */
+function sideloadVia(req) {
+  if (config.apps && config.apps.sideload === true) return 'config';
+  if (config.token) return 'token';
+  if (fromTV(req)) return 'tv';
+  return null;
+}
+
+function sideloadRefused(res) {
+  installError(res, msg('srv.install.sideloadOff',
+    'installing from a URL or a file is off; set "apps": {"sideload": true} in config.json, set a token, or use the app on the TV'), 403);
+}
+
+// Refused before the body is read, so the connection is closed rather than
+// left to carry up to 512 MB that nobody wants.
+function refuseUpload(req, res, text, status) {
+  installError(res, text, status);
+  if (typeof res.on === 'function') res.on('finish', function () { req.destroy(); });
+}
+
+function handleUpload(req, res) {
+  if (!postGuard(req, res, 'application/octet-stream', true)) return;
+  var cl = req.headers['content-length'];
+  if (req.headers['transfer-encoding'] || cl === undefined) {
+    return refuseUpload(req, res, msg('srv.install.upload.length', 'the upload must state its size in advance'), 411);
+  }
+  if (!/^\d{1,15}$/.test(String(cl)) || parseInt(cl, 10) <= 0) {
+    return refuseUpload(req, res, msg('srv.install.upload.empty', 'the upload is empty or its size is not valid'), 400);
+  }
+  var len = parseInt(cl, 10);
+  installerModule.prepareUpload(len, function (err, file, status) {
+    if (err) return refuseUpload(req, res, err, status || 400);
+    var ws = fs.createWriteStream(file, { flags: 'wx', mode: parseInt('600', 8) });
+    var got = 0, done = false;
+    function discard() {
+      if (done) return false;
+      done = true;
+      // A stream destroyed before its file has opened creates the file
+      // afterwards, so it is removed again once the stream has closed.
+      ws.once('close', function () { fs.unlink(file, function () {}); });
+      try { ws.destroy(); } catch (e) {}
+      installerModule.releaseUpload(file);
+      return true;
+    }
+    function failWith(text, code) {
+      if (discard()) refuseUpload(req, res, text, code);
+    }
+    req.on('data', function (chunk) {
+      if (done) return;
+      got += chunk.length;
+      if (got > len) return failWith(msg('srv.install.upload.size', 'the upload does not match its stated size'), 400);
+      if (!ws.write(chunk) && typeof req.pause === 'function') {
+        req.pause();
+        ws.once('drain', function () { if (!done) req.resume(); });
+      }
+    });
+    req.on('end', function () {
+      if (done) return;
+      if (got !== len) return failWith(msg('srv.install.upload.size', 'the upload does not match its stated size'), 400);
+      ws.end();
+    });
+    ws.on('finish', function () {
+      if (done) return;
+      done = true;
+      installerModule.start({ source: 'file', path: file }, function (e2, snap) {
+        if (e2) {
+          installerModule.releaseUpload(file);
+          return installError(res, String(e2));
+        }
+        send(res, 200, JSON.stringify({ ok: true, install: snap }));
+      });
+    });
+    ws.on('error', function () {
+      failWith(msg('srv.install.upload.failed', 'the upload could not be saved'), 500);
+    });
+    // A dropped connection ends the stream without 'end'.
+    req.on('aborted', discard);
+    req.on('close', function () { if (got !== len) discard(); });
+  });
+}
+
 function handleInstallRoute(req, res, u, pathname) {
   if (!config.allowControl) return installError(res, msg('srv.controlsOff', 'controls disabled in config'), 403);
 
@@ -601,6 +696,9 @@ function handleInstallRoute(req, res, u, pathname) {
     var st = installerModule.status();
     st.ok = true;
     st.writable = !!config.allowControl;
+    var via = sideloadVia(req);
+    st.sideload = via !== null;
+    st.sideloadVia = via;
     return send(res, 200, JSON.stringify(st));
   }
   if (req.method !== 'POST') return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
@@ -613,6 +711,22 @@ function handleInstallRoute(req, res, u, pathname) {
         installerModule.start({ source: 'catalog', pkg: pkg }, installReply(res));
       });
     });
+  }
+  if (pathname === '/api/apps/install/url') {
+    if (!sideloadVia(req)) return sideloadRefused(res);
+    return readJsonBody(req, res, function (body) {
+      var err = fetchLib.validateUrl(body.url);
+      if (err) return installError(res, err);
+      var sha = body.sha256;
+      if (sha !== undefined && sha !== null && sha !== '' && !/^[0-9a-f]{64}$/i.test(String(sha))) {
+        return installError(res, msg('srv.install.badHash', 'the sha256 hash must be 64 hexadecimal digits'));
+      }
+      installerModule.start({ source: 'url', url: body.url, sha256: sha || null }, installReply(res));
+    });
+  }
+  if (pathname === '/api/apps/install/upload') {
+    if (!sideloadVia(req)) return sideloadRefused(res);
+    return handleUpload(req, res);
   }
   if (pathname === '/api/apps/install/confirm') {
     return readJsonBody(req, res, function (body) {

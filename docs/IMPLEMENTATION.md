@@ -591,6 +591,22 @@ The package is hashed as a stream and read as a stream; it is never held in memo
 
 The job state (`downloading`, `verifying`, `awaiting-confirm`, `installing`, `elevating`, `installed`, `error`) is written to `/var/lib/tvweb/install-job.json` at every step. At boot, a job file in one of the unfinished states clears the staging directory and reports `interrupted`, which tells the owner to check the app list. The job is not resumed, since whether `dev/install` completed is unknown. An unconfirmed preview expires after ten minutes and its staged file is deleted. An app that came from the LG store (under `/media/cryptofs/apps`) is replaced only with a separate confirmation, since store updates stop afterwards.
 
+### Installing from a URL or a file
+
+`POST /api/apps/install/url` takes `{url, sha256?}` and `POST /api/apps/install/upload` takes the package as the request body. Both come after the Host check and the token check, and both are refused with 403 unless `sideloadVia()` in `routes.js` finds a reason: `apps.sideload === true` (file-only, and `validateSettings` drops the whole `apps` section), a configured token, or a loopback remote address. `GET /api/apps/install/status` reports `sideload` and `sideloadVia` (`config`, `token`, `tv` or `null`) so the page can explain how to enable it.
+
+A URL goes through `fetch.validateUrl` (http or https, 2048 characters, no whitespace or control characters) and an optional 64-digit sha256, then `installer.start({source: 'url'})`.
+
+An upload is refused before any of it is read unless:
+
+* the type is exactly `application/octet-stream`, since `multipart/form-data` is a simple request that needs no preflight (415);
+* `Content-Length` is present and `Transfer-Encoding` is not (411), and the length is a positive integer (400);
+* the length is within the 512 MB cap (413), no job or other upload is running (409) and three times the length is free on the staging directory, when `df` can be read (507).
+
+`postGuard` holds the content type and Origin checks that `readJsonBody` shares. `installer.prepareUpload` makes the checks above, clears leftovers from the staging directory and reserves `upload-<random>.ipk` there; a reservation also makes other installs refuse, since a job's cleanup empties the directory, and lapses after 30 minutes. The route writes the stream with `req.on('data')` and a `fs.createWriteStream`, pausing the request until `drain`. The file is deleted when the connection aborts or closes early, on a write error, and when the byte count differs from `Content-Length`. A complete upload is handed over as `installer.start({source: 'file', path})`, which accepts only a path directly inside the staging directory.
+
+The preview carries `source` (`catalog`, `url` or `file`) and the package's sha256. For a `url` or `file` source the page asks again before elevating, naming each service that would run as root.
+
 ### Exclusion
 
 While a job is in a running state, `restartSelf` in `tvweb.js` refuses, which covers every restart path including `controls.doRestartSelf` over HTTP and MQTT. The routes that write the config and then restart (settings save, network access, phone setup) check first, so that nothing is written for a restart that will not happen. The updater, its rollback and `install-app.sh` refuse as well, and a new job refuses while the updater is downloading or installing.

@@ -912,6 +912,68 @@ test('recover ignores a finished job', function (done) {
   done();
 });
 
+test('the preview names where the package came from', function (done) {
+  var ctx = setup();
+  startOk({ source: 'file', path: ctx.ipkFile(makeIpk()) }, function () {
+    expectState('awaiting-confirm', function (s) {
+      assert.strictEqual(s.preview.source, 'file');
+      done();
+    });
+  });
+});
+
+test('an upload is checked for size, space and a running job before it is read', function (done) {
+  var ctx = setup({ init: { caps: { uploadBytes: 1000 } } });
+  var df = path.join(ctx.dir, 'df');
+  shell(df, "printf 'Filesystem 1K-blocks Used Available Use%% Mounted on\\n/dev/x 100 99 1 99%% /\\n'");
+  installer.prepareUpload(1001, function (err, file, status) {
+    assert.ok(/larger than/.test(err), err);
+    assert.strictEqual(status, 413);
+    ctx.init({ caps: { uploadBytes: 1000 }, dfPath: df });
+    installer.prepareUpload(500, function (err2, file2, status2) {
+      assert.ok(/not enough free space/.test(err2), err2);
+      assert.strictEqual(status2, 507);
+      assert.strictEqual(installer.isBusy(), false);
+      installer.start({ source: 'url', url: 'https://example.org/a.ipk' }, function (err3) {
+        assert.ifError(err3);   // a refused upload holds nothing
+        done();
+      });
+    });
+  });
+});
+
+test('a reserved upload blocks other installs until it is started or released', function (done) {
+  var ctx = setup();
+  fs.writeFileSync(path.join(ctx.staging, 'upload-stale.ipk'), 'x');
+  installer.prepareUpload(100, function (err, file, status) {
+    assert.ifError(err);
+    assert.strictEqual(path.dirname(file), ctx.staging);
+    assert.deepEqual(fs.readdirSync(ctx.staging), [], 'a stale upload is cleared');
+    installer.prepareUpload(100, function (err2, f2, st2) {
+      assert.strictEqual(st2, 409, 'one upload at a time');
+      installer.start(ctx.pkg(makeIpk()), function (err3) {
+        assert.ok(/upload is in progress/.test(err3), err3);
+        fs.writeFileSync(file, makeIpk());
+        installer.start({ source: 'file', path: file }, function (err4) {
+          assert.ifError(err4);
+          expectState('awaiting-confirm', function () { done(); });
+        });
+      });
+    });
+  });
+});
+
+test('releasing an upload deletes the file and frees the hold', function (done) {
+  var ctx = setup();
+  installer.prepareUpload(100, function (err, file) {
+    assert.ifError(err);
+    fs.writeFileSync(file, 'partial');
+    installer.releaseUpload(file);
+    assert.ok(!fs.existsSync(file));
+    installer.prepareUpload(100, function (err2) { assert.ifError(err2); done(); });
+  });
+});
+
 /* ---------------------------------------------------------------- runner */
 
 var failures = 0;

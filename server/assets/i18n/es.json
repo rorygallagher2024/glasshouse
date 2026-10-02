@@ -4814,5 +4814,81 @@
  "srv.install.noSpace.download": {
   "text": "no hay espacio libre suficiente para esta descarga: hay {free} libres y el paquete necesita unas tres veces su tamaño",
   "from": "not enough free space for this download: {free} free, and the package needs about three times its size"
+ },
+ "apps.install.root.confirm": {
+  "text": "¿Ejecutar estos servicios como root?\n\n{list}\n\nRoot da a un servicio control total de la TV. Continúa solo si el paquete viene de alguien de confianza.",
+  "from": "Run these services as root?\n\n{list}\n\nRoot gives a service full control of the TV. Only continue if the package comes from someone trusted."
+ },
+ "apps.install.uploadFailed": {
+  "text": "La subida no terminó",
+  "from": "The upload did not finish"
+ },
+ "apps.install.uploading": {
+  "text": "Subiendo… {done} de {total}",
+  "from": "Uploading… {done} of {total}"
+ },
+ "apps.sideload.file.go": {
+  "text": "Subir y comprobar",
+  "from": "Upload and check"
+ },
+ "apps.sideload.file.label": {
+  "text": "Archivo del paquete",
+  "from": "Package file"
+ },
+ "apps.sideload.file.title": {
+  "text": "Subir .ipk",
+  "from": "Upload .ipk"
+ },
+ "apps.sideload.off.desc": {
+  "text": "Está desactivado, porque un paquete de fuera del catálogo puede ejecutar cualquier cosa en la TV. Para activarlo, añade \"apps\": {\"sideload\": true} a config.json en la TV, o define un token, o usa la app de la propia TV.",
+  "from": "This is off, because a package from outside the catalog can run anything on the TV. To turn it on, set \"apps\": {\"sideload\": true} in config.json on the TV, or set a token, or use the app on the TV itself."
+ },
+ "apps.sideload.off.title": {
+  "text": "Instalar desde una URL o un archivo",
+  "from": "Install from a URL or a file"
+ },
+ "apps.sideload.sha.placeholder": {
+  "text": "sha256 (opcional)",
+  "from": "sha256 (optional)"
+ },
+ "apps.sideload.url.go": {
+  "text": "Descargar y comprobar",
+  "from": "Download and check"
+ },
+ "apps.sideload.url.placeholder": {
+  "text": "Dirección de un .ipk, como https://example.org/app.ipk",
+  "from": "Address of an .ipk, such as https://example.org/app.ipk"
+ },
+ "apps.sideload.url.title": {
+  "text": "Desde URL…",
+  "from": "From URL…"
+ },
+ "srv.install.badHash": {
+  "text": "el hash sha256 debe tener 64 dígitos hexadecimales",
+  "from": "the sha256 hash must be 64 hexadecimal digits"
+ },
+ "srv.install.busy.upload": {
+  "text": "hay una subida en curso",
+  "from": "an upload is in progress"
+ },
+ "srv.install.sideloadOff": {
+  "text": "instalar desde una URL o un archivo está desactivado; añade \"apps\": {\"sideload\": true} a config.json, define un token o usa la app de la TV",
+  "from": "installing from a URL or a file is off; set \"apps\": {\"sideload\": true} in config.json, set a token, or use the app on the TV"
+ },
+ "srv.install.upload.empty": {
+  "text": "la subida está vacía o su tamaño no es válido",
+  "from": "the upload is empty or its size is not valid"
+ },
+ "srv.install.upload.failed": {
+  "text": "no se pudo guardar la subida",
+  "from": "the upload could not be saved"
+ },
+ "srv.install.upload.length": {
+  "text": "la subida debe indicar su tamaño de antemano",
+  "from": "the upload must state its size in advance"
+ },
+ "srv.install.upload.size": {
+  "text": "la subida no coincide con el tamaño indicado",
+  "from": "the upload does not match its stated size"
  }
 }

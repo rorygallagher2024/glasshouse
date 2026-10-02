@@ -1290,6 +1290,7 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
       </div>
       <div class="prot-desc" id="inst-cpu" hidden></div>
       <div class="prot-desc" id="inst-space"></div>
+      <div class="prot-desc" id="inst-hash" hidden></div>
       <div id="inst-store-row" hidden>
         <div class="prot-desc" data-t="apps.install.store.warn">This app was installed from the LG store. Replacing it stops store updates for it.</div>
         <label class="cfg-ent-chk"><input type="checkbox" id="inst-replace"><span data-t="apps.install.store.replace">Replace the store version</span></label>
@@ -1298,6 +1299,25 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
         <button type="button" id="inst-confirm" onclick="confirmInstall()" data-t="apps.install.confirm">Install</button>
         <button type="button" id="inst-cancel" onclick="cancelInstall()" data-t="common.cancel">Cancel</button>
       </div>
+    </div>
+    <div class="pv-note" id="sideload-off" hidden>
+      <div class="prot-title" data-t="apps.sideload.off.title">Install from a URL or a file</div>
+      <div class="prot-desc" data-t="apps.sideload.off.desc">This is off, because a package from outside the catalog can run anything on the TV. To turn it on, set "apps": {"sideload": true} in config.json on the TV, or set a token, or use the app on the TV itself.</div>
+    </div>
+    <div id="sideload-box" hidden>
+      <div class="prot-title" data-t="apps.sideload.url.title">From URL&hellip;</div>
+      <form class="toast-form page-add" id="sl-url-form" onsubmit="event.preventDefault();startUrlInstall();">
+        <input type="text" id="sl-url" placeholder="Address of an .ipk, such as https://example.org/app.ipk" data-t-placeholder="apps.sideload.url.placeholder" maxlength="2048"
+          autocomplete="off" spellcheck="false">
+        <input type="text" id="sl-sha" placeholder="sha256 (optional)" data-t-placeholder="apps.sideload.sha.placeholder" maxlength="64"
+          autocomplete="off" spellcheck="false">
+        <button type="submit" id="sl-url-btn" data-t="apps.sideload.url.go">Download and check</button>
+      </form>
+      <div class="prot-title" data-t="apps.sideload.file.title">Upload .ipk</div>
+      <form class="toast-form page-add" id="sl-file-form" onsubmit="event.preventDefault();uploadIpk();">
+        <input type="file" id="sl-file" accept=".ipk" aria-label="Package file" data-t-aria-label="apps.sideload.file.label">
+        <button type="submit" id="sl-file-btn" data-t="apps.sideload.file.go">Upload and check</button>
+      </form>
     </div>
     <div class="prot-table" id="apps-catalog-list">
       <div class="sub" style="padding:16px 0" data-t="apps.install.loading">Loading the catalog&hellip;</div>
@@ -3765,6 +3785,8 @@ let catalogLoading = false;
 let installSnap = null;     // last status from the server
 let installTimer = null;
 let installOwn = false;     // this page started or resumed the job, so it reports how it ended
+let installSideload = null; // whether the server takes URL and upload installs; null until known
+let uploading = false;
 const INSTALL_BUSY = { downloading: 1, verifying: 1, installing: 1, elevating: 1 };
 
 async function loadCatalog(force) {
@@ -3884,13 +3906,23 @@ function renderPreview(pv) {
     ? t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.') : '';
   q('inst-space').textContent = pv.freeBytes === null || pv.freeBytes === undefined ? ''
     : t('apps.install.space', 'Free space: {free}. Needed: about {need}.', { free: fmtMb(pv.freeBytes), need: fmtMb(pv.needBytes) });
+  q('inst-hash').hidden = pv.source === 'catalog' || !pv.sha256;
+  q('inst-hash').textContent = pv.source === 'catalog' || !pv.sha256 ? '' : 'sha256: ' + pv.sha256;
   q('inst-store-row').hidden = !pv.storeInstalled;
   q('inst-replace').checked = false;
+}
+
+function renderSideload() {
+  q('sideload-off').hidden = installSideload !== false;
+  q('sideload-box').hidden = installSideload !== true;
+  const off = !installIdle() || uploading;
+  ['sl-url', 'sl-sha', 'sl-url-btn', 'sl-file', 'sl-file-btn'].forEach(id => { q(id).disabled = off; });
 }
 
 function renderInstall() {
   const s = installSnap;
   const panel = q('install-panel');
+  renderSideload();
   if (!s) return;
   if (s.state === 'awaiting-confirm' && s.preview) {
     if (panel.hidden || panel.dataset.job !== s.jobId) {
@@ -3937,6 +3969,7 @@ async function pollInstall() {
   const was = installSnap;
   const wasIdle = installIdle();
   installSnap = s;
+  if (typeof s.sideload === 'boolean') installSideload = s.sideload;
   if (INSTALL_BUSY[s.state] || s.state === 'awaiting-confirm') installOwn = true;
   renderInstall();
   if (INSTALL_BUSY[s.state]) installTimer = setTimeout(pollInstall, 1000);
@@ -3959,11 +3992,21 @@ async function installPost(path, body) {
 }
 
 async function startInstall(appId) {
-  if (!installIdle()) return;
+  startJob('/api/apps/install/fetch', { id: appId });
+}
+
+async function startUrlInstall() {
+  const url = q('sl-url').value.trim();
+  if (!url) return;
+  startJob('/api/apps/install/url', { url, sha256: q('sl-sha').value.trim() });
+}
+
+async function startJob(path, body) {
+  if (!installIdle() || uploading) return;
   q('catalog-msg').textContent = '';
   installOwn = true;
   try {
-    const j = await installPost('/api/apps/install/fetch', { id: appId });
+    const j = await installPost(path, body);
     installSnap = j.install;
     renderInstall();
     renderCatalog();
@@ -3975,6 +4018,45 @@ async function startInstall(appId) {
   }
 }
 
+// The browser sends the file as it is: application/octet-stream is the one
+// body type the server accepts for an upload, and XHR reports progress.
+function uploadIpk() {
+  const f = q('sl-file').files[0];
+  if (!f || !installIdle() || uploading) return;
+  q('catalog-msg').textContent = '';
+  uploading = true;
+  renderSideload();
+  const fail = text => {
+    uploading = false;
+    renderSideload();
+    setInstallStatus('');
+    showErr(text);
+    q('catalog-msg').textContent = sentence(text);
+  };
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', api('/api/apps/install/upload'));
+  xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+  xhr.upload.onprogress = ev => {
+    if (!ev.lengthComputable) return;
+    setInstallStatus(t('apps.install.uploading', 'Uploading… {done} of {total}', { done: fmtMb(ev.loaded), total: fmtMb(ev.total) }));
+  };
+  xhr.onerror = () => fail(t('apps.install.uploadFailed', 'The upload did not finish'));
+  xhr.onload = () => {
+    let j = {};
+    try { j = JSON.parse(xhr.responseText); } catch (e) {}
+    if (xhr.status !== 200 || !j.ok) return fail(j.error || t('apps.install.failed', 'The install could not be started'));
+    uploading = false;
+    installOwn = true;
+    installSnap = j.install;
+    q('sl-file').value = '';
+    renderInstall();
+    renderCatalog();
+    pollInstall();
+  };
+  setInstallStatus(t('apps.install.uploading', 'Uploading… {done} of {total}', { done: fmtMb(0), total: fmtMb(f.size) }));
+  xhr.send(f);
+}
+
 async function confirmInstall() {
   const s = installSnap;
   if (!s || s.state !== 'awaiting-confirm') return;
@@ -3983,11 +4065,16 @@ async function confirmInstall() {
     showErr(t('apps.install.store.needTick', 'Tick the box to replace the store version.'));
     return;
   }
+  const elevate = q('inst-root').checked;
+  // A package from a URL or a file has not been vetted by the catalog, so root
+  // for its services is confirmed a second time, naming each one.
+  if (elevate && pv.source !== 'catalog' &&
+      !confirm(t('apps.install.root.confirm', 'Run these services as root?\n\n{list}\n\nRoot gives a service full control of the TV. Only continue if the package comes from someone trusted.', { list: (pv.services || []).join('\n') }))) return;
   q('inst-confirm').disabled = true;
   q('inst-cancel').disabled = true;
   try {
     const j = await installPost('/api/apps/install/confirm', {
-      jobId: s.jobId, elevate: q('inst-root').checked, replaceStore: q('inst-replace').checked
+      jobId: s.jobId, elevate, replaceStore: q('inst-replace').checked
     });
     installSnap = j.install;
     renderInstall();

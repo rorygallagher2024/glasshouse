@@ -155,6 +155,7 @@ The **Apps** tab, `/?tab=apps`, offers four different ways to manage software on
 **Install** adds an app from the Homebrew Channel catalog. **Uninstall** removes an application completely and frees its storage. **Disable** stops selected background services without deleting them. **Hide** removes built-in LG system apps from the home launcher without touching the underlying application.
 
 * **Install apps from the catalog:** The **Install apps** section lists the Homebrew Channel catalog and marks what is installed and what has an update. Choosing an app downloads it, checks it against the catalog's sha256 hash and shows a preview (name, version, whether it is an upgrade or a downgrade, the services it adds, free space) before anything is installed. Root access for an app's services is off unless ticked, and needs the Homebrew Channel; it is applied again after each update. The Homebrew Channel and the dashboard's own package are left to the Homebrew Channel to update. Only one install runs at a time, and restarts and server updates wait until it has finished.
+* **Install from a URL or a file:** **From URL...** downloads an `.ipk` from an http or https address, with an optional sha256 to check it against, and **Upload .ipk** sends one from the browser. Both show the same preview as a catalog install. They are off until `"apps": { "sideload": true }` is set in `config.json`, a token is set, or the request comes from the TV itself; the section says so while they are off. Root access for such a package asks for a second confirmation naming each service, and replacing an app that came from the LG store needs its own tick, since store updates stop afterwards.
 * **Uninstall applications:** Store downloads and sideloaded packages with version and vendor details, and a one-click uninstall action to permanently delete apps and free up internal eMMC flash storage.
 * **Turn off background services:** Safely disable unnecessary background services and daemons that consume RAM and CPU cycles (such as USB camera watcher, Connected Car listeners, and browser preloading). Only services actually present on the TV are displayed, and disabled states are persisted across reboots.
 * **Hide home screen system apps:** Hide non-removable LG system apps (Gallery, Music, Sports, Always Ready, Camera, User Guide, Device Connector, Alexa, Google Assistant, etc.) from the home launcher ribbon. Operates non-destructively via reversible `appinfo.json` bind-mounts. Includes a master toggle to instantly return to stock behavior.
@@ -459,7 +460,7 @@ The dashboard can change the broker, credentials, topic prefix and device identi
 
 Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart.
 
-`apps.hosts` and `apps.repos` are file-only as well. `apps.hosts` lists the names, beyond IP addresses and `localhost`, that may be used to reach the dashboard when installing apps, for example `"apps": { "hosts": ["lgtv.local"] }`. `apps.repos` lists further catalogs, served over https in the Homebrew Channel format, to show beside the default one.
+`apps.hosts`, `apps.repos` and `apps.sideload` are file-only as well. `apps.hosts` lists the names, beyond IP addresses and `localhost`, that may be used to reach the dashboard when installing apps, for example `"apps": { "hosts": ["lgtv.local"] }`. `apps.repos` lists further catalogs, served over https in the Homebrew Channel format, to show beside the default one. `apps.sideload: true` allows installing from a URL or an uploaded file without a token; with a token set, or for a request from the TV itself, it is allowed already.
 
 `allowPower` is on, like the other controls: who on the network can use them is decided by opening the dashboard to the network in setup, and by `token`. `"allowPower": false` hides and refuses power off, power on and reboot, in the dashboard and in Home Assistant.
 
@@ -597,7 +598,7 @@ It is gated by `token` and by `allowControl` like the rest of the controls, and 
 
 The stored broker password is never sent to the browser.
 
-Installing apps runs code on the TV, so the install routes also refuse a request whose address is not an IP address, `localhost` or a name in `apps.hosts`. Catalog downloads must use https and match the catalog's sha256 hash, and root access for an app is never on by default. Details are in [docs/SECURITY.md](docs/SECURITY.md).
+Installing apps runs code on the TV, so the install routes also refuse a request whose address is not an IP address, `localhost` or a name in `apps.hosts`. Catalog downloads must use https and match the catalog's sha256 hash. Installing from a URL or an uploaded file is off unless `apps.sideload` is set, a token is set, or the request comes from the TV. Root access for an app is never on by default. Details are in [docs/SECURITY.md](docs/SECURITY.md).
 
 Setting a token affects the dashboard only. MQTT is a separate channel.
 

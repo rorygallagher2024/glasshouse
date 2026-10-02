@@ -52,6 +52,9 @@ var installTimeoutMs = 120000;
 var elevateTimeoutMs = 60000;
 
 var job = null;
+// An upload is streaming into the staging directory; a job's cleanup must not touch it.
+var uploadHeld = 0;
+var UPLOAD_HOLD_MS = 30 * 60 * 1000;
 var installChild = null;
 var exitHooked = false;
 
@@ -719,6 +722,7 @@ function buildPreview(j) {
         rootRequired: !!(j.pkg && j.pkg.rootRequired),
         cpuMismatch: info.cpuMismatch,
         storeInstalled: store,
+        source: j.source,
         freeBytes: free,
         needBytes: need,
         sha256: j.digest
@@ -774,6 +778,9 @@ function start(req, cb) {
   req = req || {};
   if (isBusy()) return cb(msg('srv.install.busy', 'an install is already in progress'));
   if (updaterBusy()) return cb(msg('srv.install.busy.updater', 'a dashboard update is running; install when it has finished'));
+  if (req.source !== 'file' && uploadHeld && Date.now() - uploadHeld < UPLOAD_HOLD_MS) {
+    return cb(msg('srv.install.busy.upload', 'an upload is in progress'));
+  }
 
   var url = null, sha = null, size = 0, pkg = null, file = null;
   var id = crypto.randomBytes(8).toString('hex');
@@ -801,6 +808,7 @@ function start(req, cb) {
     file = typeof req.path === 'string' ? path.resolve(req.path) : '';
     // The staged file is deleted afterwards, so only the staging directory is accepted.
     if (!file || path.dirname(file) !== path.resolve(stagingDir)) return cb('the file is not in the staging directory');
+    uploadHeld = 0;
   } else {
     return cb('unknown install source');
   }
@@ -824,6 +832,40 @@ function start(req, cb) {
     }
     startDownload(j, url, size, free);
   });
+}
+
+/*
+ * Checks an upload of `len` bytes before any of it is read, and reserves a
+ * file for it in the staging directory. cb(errText, null, httpStatus) or
+ * cb(null, path). Three times the size must be free: the staged file, its
+ * unpacked copy and the installed copy.
+ */
+function prepareUpload(len, cb) {
+  if (len > caps.uploadBytes) {
+    return cb(msg('srv.install.tooBig', 'the package is larger than the {limit} limit', { limit: mb(caps.uploadBytes) }), null, 413);
+  }
+  if (isBusy() || (uploadHeld && Date.now() - uploadHeld < UPLOAD_HOLD_MS)) {
+    return cb(msg('srv.install.busy', 'an install is already in progress'), null, 409);
+  }
+  if (updaterBusy()) {
+    return cb(msg('srv.install.busy.updater', 'a dashboard update is running; install when it has finished'), null, 409);
+  }
+  uploadHeld = Date.now();
+  freeBytes(function (free) {
+    if (free !== null && free < len * 3) {
+      uploadHeld = 0;
+      return cb(msg('srv.install.noSpace', 'not enough free space: {need} needed, {free} free', { need: mb(len * 3), free: mb(free) }), null, 507);
+    }
+    mkdirp(stagingDir);
+    clearStaging();
+    cb(null, path.join(stagingDir, 'upload-' + crypto.randomBytes(8).toString('hex') + '.ipk'));
+  });
+}
+
+/** Drops a reserved upload file, finished or not. */
+function releaseUpload(file) {
+  uploadHeld = 0;
+  try { fs.unlinkSync(file); } catch (e) {}
 }
 
 /* ------------------------------------------------------------ confirm */
@@ -1033,6 +1075,7 @@ function init(opts) {
   if (job && job.timer) clearTimeout(job.timer);
   killChild();
   job = null;
+  uploadHeld = 0;
   lunaFn = opts.luna || null;
   appsMod = opts.apps || require('./apps');
   fetchMod = opts.fetch || null;
@@ -1061,6 +1104,8 @@ module.exports = {
   cancel: cancel,
   status: snapshot,
   isBusy: isBusy,
+  prepareUpload: prepareUpload,
+  releaseUpload: releaseUpload,
   recover: recover,
   hashFile: hashFile,
   parseDf: parseDf
