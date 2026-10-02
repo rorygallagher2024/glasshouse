@@ -160,7 +160,7 @@ The **Apps** tab, `/?tab=apps`, offers four different ways to manage software on
 * **Turn off background services:** Safely disable unnecessary background services and daemons that consume RAM and CPU cycles (such as USB camera watcher, Connected Car listeners, and browser preloading). Only services actually present on the TV are displayed, and disabled states are persisted across reboots.
 * **Hide home screen system apps:** Hide non-removable LG system apps (Gallery, Music, Sports, Always Ready, Camera, User Guide, Device Connector, Alexa, Google Assistant, etc.) from the home launcher ribbon. Operates non-destructively via reversible `appinfo.json` bind-mounts. Includes a master toggle to instantly return to stock behavior.
 * **Strict system safeguards:** Core TV services (`Live TV`, `Settings`, `Launcher`, input switchers, and the dashboard itself) are strictly protected and can never be hidden or uninstalled.
-* **Available on TV and Web:** Uninstalling, services and hiding work from any browser or from the on-TV dashboard app. Installing is in the browser dashboard only.
+* **Available on TV and Web:** Catalog installs, uninstalling, services and hiding work from any browser or from the on-TV dashboard app. Installing from a URL or a file is in the browser dashboard only.
 
 Apps that check for an installation from the LG store may refuse to run when installed this way, and apps built for a newer webOS than the TV runs may not launch.
 
@@ -269,6 +269,8 @@ A firmware update restores the LG default.
 ### The dashboard on the TV
 
 The dashboard can also run directly on the TV's home screen, driven by the remote, for when there is no phone or laptop to hand.
+
+The **Apps** tab there can install from the Homebrew Channel catalog: **Install apps** lists it by title, with updates first, and the preview with its services, root access switch and free space is read and confirmed with the remote.
 
 A first install adds it; updating an existing one leaves the home screen alone. It can be added or removed at any time from the **Server** tab, which is also where it turns up for anyone who updated in place rather than re-running the installer.
 

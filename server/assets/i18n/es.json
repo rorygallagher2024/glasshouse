@@ -4815,6 +4815,150 @@
   "text": "no hay espacio libre suficiente para esta descarga: hay {free} libres y el paquete necesita unas tres veces su tamaño",
   "from": "not enough free space for this download: {free} free, and the package needs about three times its size"
  },
+ "tv.apps.head.installApplications": {
+  "text": "Instalar aplicaciones",
+  "from": "Install Applications"
+ },
+ "tv.apps.install.browse": {
+  "text": "Ver",
+  "from": "Browse"
+ },
+ "tv.apps.install.busy.hint": {
+  "text": "Puede tardar uno o dos minutos. Atrás vuelve a funcionar al terminar.",
+  "from": "This can take a minute or two. Back works again when it finishes."
+ },
+ "tv.apps.install.cancel.hint": {
+  "text": "El paquete descargado se elimina.",
+  "from": "The downloaded package is deleted."
+ },
+ "tv.apps.install.dismiss.done": {
+  "text": "Hecho",
+  "from": "Done"
+ },
+ "tv.apps.install.dismiss.error": {
+  "text": "Cerrar",
+  "from": "Dismiss"
+ },
+ "tv.apps.install.done.hint": {
+  "text": "La app ya está en la TV.",
+  "from": "The app is on the TV now."
+ },
+ "tv.apps.install.entry.hint": {
+  "text": "Apps del catálogo de Homebrew Channel. Cada una se comprueba con su hash publicado y se muestra su contenido antes de instalar nada.",
+  "from": "Apps from the Homebrew Channel catalog. Each is checked against its published hash, and its contents are shown before anything is installed."
+ },
+ "tv.apps.install.error": {
+  "text": "La instalación falló",
+  "from": "The install failed"
+ },
+ "tv.apps.install.go.hint": {
+  "text": "No se instala nada hasta pulsar OK aquí.",
+  "from": "Nothing is installed until OK is pressed here."
+ },
+ "tv.apps.install.head.all": {
+  "text": "Todas las apps",
+  "from": "All apps"
+ },
+ "tv.apps.install.head.updates": {
+  "text": "Actualizaciones disponibles",
+  "from": "Updates available"
+ },
+ "tv.apps.install.loading.hint": {
+  "text": "La TV está obteniendo la lista. Hace falta acceso a internet.",
+  "from": "The TV is fetching the list. This needs internet access."
+ },
+ "tv.apps.install.press.cancel": {
+  "text": "Pulsa OK para descartar la descarga",
+  "from": "Press OK to discard the download"
+ },
+ "tv.apps.install.press.done": {
+  "text": "Pulsa OK para volver al catálogo",
+  "from": "Press OK to return to the catalog"
+ },
+ "tv.apps.install.press.go": {
+  "text": "Pulsa OK para instalar ahora",
+  "from": "Press OK to install now"
+ },
+ "tv.apps.install.press.install": {
+  "text": "Pulsa OK para revisar e instalar",
+  "from": "Press OK to review and install"
+ },
+ "tv.apps.install.press.off": {
+  "text": "Pulsa OK para desactivar",
+  "from": "Press OK to switch off"
+ },
+ "tv.apps.install.press.on": {
+  "text": "Pulsa OK para activar",
+  "from": "Press OK to switch on"
+ },
+ "tv.apps.install.press.open": {
+  "text": "Pulsa OK para abrir el catálogo",
+  "from": "Press OK to open the catalog"
+ },
+ "tv.apps.install.press.retry": {
+  "text": "Pulsa OK para reintentar",
+  "from": "Press OK to try again"
+ },
+ "tv.apps.install.press.update": {
+  "text": "Pulsa OK para revisar y actualizar",
+  "from": "Press OK to review and update"
+ },
+ "tv.apps.install.pv.apps": {
+  "text": "Apps",
+  "from": "Apps"
+ },
+ "tv.apps.install.pv.change": {
+  "text": "Cambio",
+  "from": "Change"
+ },
+ "tv.apps.install.pv.cpu": {
+  "text": "Procesador",
+  "from": "Processor"
+ },
+ "tv.apps.install.pv.mismatch": {
+  "text": "No coincide",
+  "from": "Mismatch"
+ },
+ "tv.apps.install.pv.services": {
+  "text": "Servicios",
+  "from": "Services"
+ },
+ "tv.apps.install.pv.space": {
+  "text": "Espacio libre",
+  "from": "Free space"
+ },
+ "tv.apps.install.retry": {
+  "text": "Reintentar",
+  "from": "Retry"
+ },
+ "tv.apps.install.root.hint": {
+  "text": "Desactivado salvo que la app lo necesite. El acceso root se configura mediante Homebrew Channel.",
+  "from": "Off unless the app needs it. Root access is set up through the Homebrew Channel."
+ },
+ "tv.apps.install.root.needed": {
+  "text": "Esta app pide que sus servicios se ejecuten como root y puede que no funcione sin ello.",
+  "from": "This app asks for its services to run as root, and may not work without it."
+ },
+ "tv.apps.install.store.needOn": {
+  "text": "Activa primero Reemplazar la versión de la tienda.",
+  "from": "Switch on Replace the store version first."
+ },
+ "tv.apps.install.unavailable": {
+  "text": "Catálogo no disponible",
+  "from": "Catalog unavailable"
+ },
+ "tv.apps.install.wait": {
+  "text": "Hay una instalación en curso. Espera.",
+  "from": "An install is running. Please wait."
+ },
+ "tv.backRow.apps": {
+  "text": "‹ Apps",
+  "from": "‹ Apps"
+ },
+ "tv.backRow.apps.hint": {
+  "text": "Volver a la pestaña Apps.",
+  "from": "Back to the Apps tab."
+ },
  "apps.install.root.confirm": {
   "text": "¿Ejecutar estos servicios como root?\n\n{list}\n\nRoot da a un servicio control total de la TV. Continúa solo si el paquete viene de alguien de confianza.",
   "from": "Run these services as root?\n\n{list}\n\nRoot gives a service full control of the TV. Only continue if the package comes from someone trusted."

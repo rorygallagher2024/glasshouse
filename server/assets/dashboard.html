@@ -91,6 +91,16 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 .val{font-family:'Manrope',sans-serif;font-weight:400;font-size:3.1vh;color:rgba(255,255,255,.75);
   text-align:right;white-space:nowrap;padding-left:2vw}
 .row.sel .val{font-weight:600;color:rgba(255,255,255,.90)}
+/* Catalog rows: an icon, a version and a root badge beside the title. The
+   title gives way with an ellipsis rather than pushing the state off the row. */
+.row.cat .lbl{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row.cat .val{font-size:2.6vh}
+.lbl .ic{width:4.4vh;height:4.4vh;border-radius:.8vh;object-fit:contain;background:rgba(255,255,255,.08);
+  vertical-align:middle;margin-right:1.4vh}
+.lbl .ic.none{display:inline-block}
+.lbl .ver{font-weight:400;font-size:2.2vh;color:rgba(255,255,255,.55);margin-left:1.2vh}
+.lbl .bdg{font-weight:600;font-size:1.5vh;letter-spacing:.14em;text-transform:uppercase;color:#ff9800;
+  border:1px solid currentColor;border-radius:.6vh;padding:.2vh .8vh;margin-left:1.2vh;vertical-align:middle}
 .val.on{color:#1ec15f}
 .val.off{color:rgba(255,255,255,.45)}
 .val.bad{color:#e65050}
@@ -178,6 +188,9 @@ body.light .row.sel .val.bad{color:#dc2626}
 body.light .row.sel .val.warn{color:#b45309}
 body.light .row.doable .lbl::before{background:rgba(0,0,0,.38)}
 body.light .row.doable.sel .lbl::before{background:#15803d}
+body.light .lbl .ic{background:rgba(0,0,0,.08)}
+body.light .lbl .ver{color:rgba(0,0,0,.55)}
+body.light .lbl .bdg{color:#b45309}
 body.light .row.head .lbl{color:rgba(0,0,0,.62)}
 body.light #msg{color:rgba(0,0,0,.8)}
 body.light #msg .msg-detail{color:rgba(0,0,0,.65)}
@@ -587,6 +600,17 @@ function appsRows(d) {
   if (!d || !d.ok) return [];
   var r = [];
 
+  if (d.writable !== false) {
+    r.push(head(t('tv.apps.head.installApplications', 'Install Applications')));
+    r.push({
+      label: t('apps.install', 'Install apps'),
+      value: t('tv.apps.install.browse', 'Browse'),
+      cls: 'act', act: 'open', key: 'catalog',
+      press: t('tv.apps.install.press.open', 'Press OK to open the catalog'),
+      hint: t('tv.apps.install.entry.hint', 'Apps from the Homebrew Channel catalog. Each is checked against its published hash, and its contents are shown before anything is installed.')
+    });
+  }
+
   var inst = d.installed || [];
   if (inst.length > 0) {
     r.push(head(t('tv.apps.head.uninstallApplications', 'Uninstall Applications')));
@@ -789,22 +813,25 @@ function privacyRows(d) {
  * the first row, returns to it. A switch that changes the TV reloads the list,
  * since LG ties some consents together and one can take others with it.
  */
-var SUBLISTS = { consents: consentRows, services: serviceRows };
+var SUBLISTS = { consents: consentRows, services: serviceRows, catalog: catalogRows };
+var SUBTAB = { consents: 'privacy', services: 'privacy', catalog: 'apps' };
 var sub = null, subFrom = 0;
 
 function buildRows(section, d) {
-  return (sub && section.key === 'privacy') ? SUBLISTS[sub](d) : (section.build(d) || []);
+  return (sub && SUBTAB[sub] === section.key) ? SUBLISTS[sub](d) : (section.build(d) || []);
 }
 
 function openSub(key) {
   subFrom = sel;
   sub = key;
+  if (key === 'catalog') enterCatalog();
   rows = buildRows(T(), data[T().key]);
   sel = nextRow(firstSel());           // the first entry, past the way back
   render();
 }
 
 function closeSub() {
+  if (sub === 'catalog') stopInstallPoll();
   sub = null;
   rows = T().build(data[T().key]) || [];
   sel = subFrom < rows.length ? subFrom : firstSel();
@@ -819,6 +846,11 @@ function nextRow(i) {
 function backRow() {
   return { label: t('tv.backRow.privacy', '‹ Privacy'), value: '', act: 'close', press: t('tv.backRow.privacy.press', 'Press OK or Back to return'),
            hint: t('tv.backRow.privacy.hint', 'Back to the Privacy tab.') };
+}
+
+function backRowApps() {
+  return { label: t('tv.backRow.apps', '‹ Apps'), value: '', act: 'close', press: t('tv.backRow.privacy.press', 'Press OK or Back to return'),
+           hint: t('tv.backRow.apps.hint', 'Back to the Apps tab.') };
 }
 
 // Only the supervised services: an on-demand one starts whenever anything asks
@@ -1057,6 +1089,312 @@ function updateRows(d) {
   return r;
 }
 
+// ---- install apps (Homebrew Channel catalog) ----
+
+/* The same flow as the browser dashboard: pick an app, the server downloads and
+   checks it, the facts are shown here, and only OK on Install changes the TV.
+   Each screen is a set of rows, so the remote moves through it like any list. */
+var cat = { data: null, loading: false };
+var inst = null;                 // the last status from the server
+var instTimer = null, instOwn = false, instDismissed = null, instJob = null;
+var instRoot = false, instReplace = false, instView = 'list';
+var INST_BUSY = { downloading: 1, verifying: 1, installing: 1, elevating: 1 };
+
+// Server errors start lower-case; a host name at the start keeps its case.
+function sentence(text) {
+  text = String(text || '');
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(?![\w-])/i.test(text)) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function fmtMb(n) { return t('apps.install.mb', '{n} MB', { n: Math.round(n / 1048576) }); }
+
+function stopInstallPoll() {
+  if (instTimer) { clearTimeout(instTimer); instTimer = null; }
+}
+
+function enterCatalog() {
+  loadCatalog(false);
+  pollInstall();
+}
+
+function loadCatalog(force) {
+  if (cat.loading) return;
+  cat.loading = true;
+  fetch('/api/apps/catalog' + (force ? '?force=1' : ''), { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (d) { cat.data = d; })
+    .catch(function (e) { cat.data = { ok: false, apps: [], error: String((e && e.message) || e) }; })
+    .then(function () { cat.loading = false; refreshCatalogView(); });
+}
+
+function installPost(path, body, done) {
+  fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok || !j.ok) throw new Error(j.error || t('apps.install.failed', 'The install could not be started'));
+        return j;
+      });
+    })
+    .then(function (j) { done(null, j); })
+    .catch(function (e) { done(e); });
+}
+
+function currentView() {
+  if (!inst) return 'list';
+  if (INST_BUSY[inst.state]) return 'busy';
+  if (inst.state === 'awaiting-confirm' && inst.preview) return 'preview';
+  if ((inst.state === 'installed' || inst.state === 'error' || inst.state === 'interrupted') &&
+      instOwn && inst.jobId !== instDismissed) return 'result';
+  return 'list';
+}
+
+function pollInstall() {
+  stopInstallPoll();
+  fetch('/api/apps/install/status', { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (s) {
+      if (sub !== 'catalog') return;
+      if (!s || !s.ok) throw new Error('status');
+      var was = inst;
+      inst = s;
+      if (INST_BUSY[s.state] || s.state === 'awaiting-confirm') instOwn = true;
+      if (s.state === 'awaiting-confirm' && s.jobId !== instJob) { instJob = s.jobId; instRoot = false; instReplace = false; }
+      refreshCatalogView();
+      if (INST_BUSY[s.state]) instTimer = setTimeout(pollInstall, 1000);
+      else if (s.state === 'awaiting-confirm') instTimer = setTimeout(pollInstall, 5000);   // the preview expires
+      if (was && (INST_BUSY[was.state] || was.state === 'awaiting-confirm') &&
+          !INST_BUSY[s.state] && s.state !== 'awaiting-confirm') {
+        loadCatalog(true);
+        refreshApps();
+      }
+    })
+    .catch(function () {
+      // The server may be restarting; keep asking while a job was ours.
+      if (sub === 'catalog' && instOwn) instTimer = setTimeout(pollInstall, 2000);
+    });
+}
+
+// The Apps tab's own list changes once an app is installed, so its data is
+// reloaded for when the catalog is left.
+function refreshApps() {
+  fetch('/api/apps', { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (d) { data.apps = d; })
+    .catch(function () {});
+}
+
+/* Rebuild the catalog screens after new data. The selection stays on the same
+   row while the screen is the same, and starts at the useful row when it changes. */
+function refreshCatalogView() {
+  if (sub !== 'catalog' || T().key !== 'apps') return;
+  var keep = rows[sel] && rows[sel].key, before = instView, i;
+  rows = catalogRows();
+  sel = -1;
+  if (instView === before && keep) {
+    for (i = 0; i < rows.length; i++) if (rows[i].key === keep) { sel = i; break; }
+  }
+  if (sel < 0 && instView === 'preview') {
+    for (i = 0; i < rows.length; i++) if (rows[i].key === 'pv:go') { sel = i; break; }
+  }
+  if (sel < 0) sel = nextRow(firstSel());
+  render();
+}
+
+function titleSort(a, b) {
+  var x = String(a.title || a.id).toLowerCase(), y = String(b.title || b.id).toLowerCase();
+  return x < y ? -1 : x > y ? 1 : 0;
+}
+
+function catalogRow(a) {
+  var row = { label: a.title || a.id, cat: true, key: a.id, icon: a.iconUri || '',
+              ver: a.version ? 'v' + a.version : '', badge: a.rootRequired ? t('apps.install.rootBadge', 'root') : '',
+              hint: a.description || a.id };
+  if (a.state === 'hbc') {
+    row.value = t('apps.install.viaHbc', 'Updates through Homebrew Channel'); row.cls = 'off'; row.plain = true;
+  } else if (a.state === 'installed') {
+    row.value = t('apps.install.installed', 'Installed'); row.cls = 'on';
+  } else if (a.state === 'update') {
+    row.value = t('apps.install.update', 'Update'); row.cls = 'warn'; row.act = 'catalogInstall';
+    row.press = t('tv.apps.install.press.update', 'Press OK to review and update');
+    if (a.installedVersion) row.hint += ' (' + t('apps.install.have', 'installed: v{version}', { version: a.installedVersion }) + ')';
+  } else {
+    row.value = t('apps.install.button', 'Install'); row.cls = 'act'; row.act = 'catalogInstall';
+    row.press = t('tv.apps.install.press.install', 'Press OK to review and install');
+  }
+  return row;
+}
+
+function catalogRows() {
+  instView = currentView();
+  if (instView === 'preview') return previewRows(inst.preview);
+  if (instView === 'busy') return progressRows(inst);
+  if (instView === 'result') return resultRows(inst);
+  var r = [backRowApps()];
+  var d = cat.data;
+  if (!d) {
+    r.push({ label: t('apps.install.loading', 'Loading the catalog…'), value: '', key: 'status',
+             hint: t('tv.apps.install.loading.hint', 'The TV is fetching the list. This needs internet access.') });
+    return r;
+  }
+  if (!d.ok) {
+    r.push({ label: t('tv.apps.install.unavailable', 'Catalog unavailable'), value: t('tv.apps.install.retry', 'Retry'), cls: 'act',
+             act: 'catalogRetry', key: 'retry', press: t('tv.apps.install.press.retry', 'Press OK to try again'),
+             hint: t('apps.install.unavailable', 'The catalog could not be loaded. The TV needs internet access to reach it.') +
+                   (d.error ? ' ' + sentence(d.error) : '') });
+    return r;
+  }
+  var apps = (d.apps || []).slice().sort(titleSort), ups = [], rest = [], i;
+  for (i = 0; i < apps.length; i++) (apps[i].state === 'update' ? ups : rest).push(apps[i]);
+  if (ups.length) {
+    r.push(head(t('tv.apps.install.head.updates', 'Updates available')));
+    for (i = 0; i < ups.length; i++) r.push(catalogRow(ups[i]));
+    r.push(head(t('tv.apps.install.head.all', 'All apps')));
+  }
+  for (i = 0; i < rest.length; i++) r.push(catalogRow(rest[i]));
+  return r;
+}
+
+function progressText(s) {
+  var p = s.progress || {};
+  switch (s.state) {
+    case 'downloading':
+      return p.total ? t('apps.install.downloading.of', 'Downloading {done} of {total}', { done: fmtMb(p.bytes || 0), total: fmtMb(p.total) })
+        : t('apps.install.downloading', 'Downloading… {done}', { done: fmtMb(p.bytes || 0) });
+    case 'verifying': return t('apps.install.verifying', 'Checking the package…');
+    case 'installing': return t('apps.install.installing', 'Installing…');
+    case 'elevating': return t('apps.install.elevating', 'Setting up root access…');
+  }
+  return '';
+}
+
+function progressRows(s) {
+  return [{ label: progressText(s), value: '', key: 'busy',
+            hint: t('tv.apps.install.busy.hint', 'This can take a minute or two. Back works again when it finishes.') }];
+}
+
+function resultRows(s) {
+  var r = s.result || {};
+  if (s.state === 'installed') {
+    return [{ label: t('apps.install.done', 'Installed {name} v{version}.', { name: r.package || '', version: r.version || '' }),
+              value: t('tv.apps.install.dismiss.done', 'Done'), cls: 'act', act: 'instDone', key: 'done',
+              press: t('tv.apps.install.press.done', 'Press OK to return to the catalog'),
+              hint: t('tv.apps.install.done.hint', 'The app is on the TV now.') }];
+  }
+  return [{ label: t('tv.apps.install.error', 'The install failed'),
+            value: t('tv.apps.install.dismiss.error', 'Dismiss'), cls: 'bad', act: 'instDone', key: 'done',
+            press: t('tv.apps.install.press.done', 'Press OK to return to the catalog'),
+            hint: sentence(s.error || t('common.unknownError', 'unknown error')) }];
+}
+
+function previewRows(pv) {
+  var dir = pv.direction, ver = pv.version, from = pv.installedVersion, r = [];
+  var first = pv.apps && pv.apps[0] && pv.apps[0].title;
+  r.push(head(first || pv.package));
+  r.push({ label: t('tv.apps.install.pv.change', 'Change'), key: 'pv:change', hint: pv.package,
+    value: dir === 'up' ? t('apps.install.dir.up', 'upgrade from v{from} to v{version}', { from: from, version: ver })
+      : dir === 'down' ? t('apps.install.dir.down', 'downgrade from v{from} to v{version}', { from: from, version: ver })
+      : dir === 'same' ? t('apps.install.dir.same', 'reinstall of v{version}', { version: ver })
+      : t('apps.install.dir.new', 'new install of v{version}', { version: ver }) });
+  var ids = [], i;
+  for (i = 0; i < (pv.apps || []).length; i++) ids.push(pv.apps[i].id);
+  if (ids.length > 1) {
+    r.push({ label: t('tv.apps.install.pv.apps', 'Apps'), value: String(ids.length), key: 'pv:apps',
+             hint: t('apps.install.apps', 'Apps: {list}', { list: ids.join(', ') }) });
+  }
+  var svc = pv.services || [];
+  if (svc.length) {
+    r.push({ label: t('tv.apps.install.pv.services', 'Services'), value: String(svc.length), key: 'pv:services',
+             hint: t('apps.install.services', 'Background services: {list}', { list: svc.join(', ') }) });
+    r.push({ label: t('apps.install.root', 'Run services as root (needs the Homebrew Channel)'),
+             value: instRoot ? t('common.on', 'On') : t('common.off', 'Off'), cls: instRoot ? 'on' : 'off', act: 'instRoot', key: 'pv:root',
+             press: instRoot ? t('tv.apps.install.press.off', 'Press OK to switch off') : t('tv.apps.install.press.on', 'Press OK to switch on'),
+             hint: pv.rootRequired ? t('tv.apps.install.root.needed', 'This app asks for its services to run as root, and may not work without it.')
+                                   : t('tv.apps.install.root.hint', 'Off unless the app needs it. Root access is set up through the Homebrew Channel.') });
+  }
+  if (pv.cpuMismatch) {
+    r.push({ label: t('tv.apps.install.pv.cpu', 'Processor'), value: t('tv.apps.install.pv.mismatch', 'Mismatch'), cls: 'warn', key: 'pv:cpu',
+             hint: t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.') });
+  }
+  if (pv.freeBytes !== null && pv.freeBytes !== undefined) {
+    r.push({ label: t('tv.apps.install.pv.space', 'Free space'), value: fmtMb(pv.freeBytes), key: 'pv:space',
+             hint: t('apps.install.space', 'Free space: {free}. Needed: about {need}.', { free: fmtMb(pv.freeBytes), need: fmtMb(pv.needBytes) }) });
+  }
+  if (pv.storeInstalled) {
+    r.push({ label: t('apps.install.store.replace', 'Replace the store version'),
+             value: instReplace ? t('common.on', 'On') : t('common.off', 'Off'), cls: instReplace ? 'on' : 'off', act: 'instReplace', key: 'pv:replace',
+             press: instReplace ? t('tv.apps.install.press.off', 'Press OK to switch off') : t('tv.apps.install.press.on', 'Press OK to switch on'),
+             hint: t('apps.install.store.warn', 'This app was installed from the LG store. Replacing it stops store updates for it.') });
+  }
+  r.push({ label: t('apps.install.confirm', 'Install'), value: '', cls: 'act', act: 'instConfirm', key: 'pv:go',
+           press: t('tv.apps.install.press.go', 'Press OK to install now'),
+           hint: t('tv.apps.install.go.hint', 'Nothing is installed until OK is pressed here.') });
+  r.push({ label: t('common.cancel', 'Cancel'), value: '', cls: 'act', act: 'instCancel', key: 'pv:cancel',
+           press: t('tv.apps.install.press.cancel', 'Press OK to discard the download'),
+           hint: t('tv.apps.install.cancel.hint', 'The downloaded package is deleted.') });
+  return r;
+}
+
+function startInstall(id) {
+  if (busy || currentView() !== 'list') return;
+  busy = true;
+  instOwn = true;
+  instDismissed = null;
+  installPost('/api/apps/install/fetch', { id: id }, function (err, j) {
+    busy = false;
+    if (err) { instOwn = false; flash(sentence(err.message)); return; }
+    inst = j.install;
+    refreshCatalogView();
+    pollInstall();
+  });
+}
+
+function confirmInstall() {
+  if (busy || !inst || inst.state !== 'awaiting-confirm' || !inst.preview) return;
+  if (inst.preview.storeInstalled && !instReplace) {
+    flash(t('tv.apps.install.store.needOn', 'Switch on Replace the store version first.'));
+    return;
+  }
+  busy = true;
+  installPost('/api/apps/install/confirm', { jobId: inst.jobId, elevate: instRoot, replaceStore: instReplace }, function (err, j) {
+    busy = false;
+    if (err) { flash(sentence(err.message)); pollInstall(); return; }
+    inst = j.install;
+    refreshCatalogView();
+    pollInstall();
+  });
+}
+
+function cancelInstall() {
+  if (busy || !inst) return;
+  busy = true;
+  installPost('/api/apps/install/cancel', { jobId: inst.jobId }, function (err) {
+    busy = false;
+    if (err) flash(sentence(err.message));
+    instOwn = false;
+    inst = null;
+    refreshCatalogView();
+    pollInstall();
+  });
+}
+
+function dismissResult() {
+  instDismissed = inst && inst.jobId;
+  instOwn = false;
+  refreshCatalogView();
+}
+
+/* Back and Left: on the preview they discard it, while an install runs they
+   do nothing (it cannot be stopped), and elsewhere they step out as usual. */
+function backOut() {
+  if (sub !== 'catalog') return closeSub();
+  var v = currentView();
+  if (v === 'preview') return cancelInstall();
+  if (v === 'busy') return flash(t('tv.apps.install.wait', 'An install is running. Please wait.'));
+  if (v === 'result') return dismissResult();
+  closeSub();
+}
+
 // ---- rendering ----
 
 function rowHeight(r) { return (r && r.head ? HEAD_VH : ROW_VH) * window.innerHeight / 100; }
@@ -1083,13 +1421,29 @@ function render() {
   msg.style.display = 'none';
   box.innerHTML = rows.map(function (r, i) {
     if (r.head) return '<div class="row head"><span class="lbl">' + esc(r.label) + '</span></div>';
-    return '<div class="row' + (i === sel ? ' sel' : '') + (r.act ? ' doable' : '') + '" onclick="pickRow(' + i + ')">' +
-             '<span class="lbl">' + esc(r.label) + '</span>' +
+    return '<div class="row' + (i === sel ? ' sel' : '') + (r.act ? ' doable' : '') + (r.cat ? ' cat' : '') + '" onclick="pickRow(' + i + ')">' +
+             '<span class="lbl">' + labelHtml(r, i) + '</span>' +
              '<span class="val' + valClass(r) + '">' + esc(r.value) + '</span>' +
            '</div>';
   }).join('');
   position();
   renderHint();
+}
+
+/* Catalog rows add an icon, version and badge to the label. The icon is only
+   drawn near the selection, so moving through a long catalog does not reload
+   hundreds of remote images each time the list is redrawn. */
+function labelHtml(r, i) {
+  var h = '';
+  if (r.cat) {
+    h += (r.icon && Math.abs(i - sel) <= 10)
+      ? '<img class="ic" src="' + esc(r.icon) + '" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility=\'hidden\'">'
+      : '<span class="ic none"></span>';
+  }
+  h += esc(r.label);
+  if (r.ver) h += '<span class="ver">' + esc(r.ver) + '</span>';
+  if (r.badge) h += '<span class="bdg">' + esc(r.badge) + '</span>';
+  return h;
 }
 
 /*
@@ -1243,6 +1597,7 @@ function fetchTab(keepSel) {
 
 function openTab(i, keepSel) {
   if (timer) { clearInterval(timer); timer = null; }
+  stopInstallPoll();
   tab = i;
   sub = null;
   if (!keepSel) sel = 0;
@@ -1473,6 +1828,24 @@ function activate() {
       return send({ action: 'acr', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'open':
       return openSub(r.key);
+    case 'catalogInstall':
+      return startInstall(r.key);
+    case 'catalogRetry':
+      cat.data = null;
+      refreshCatalogView();
+      return loadCatalog(true);
+    case 'instRoot':
+      instRoot = !instRoot;
+      return refreshCatalogView();
+    case 'instReplace':
+      instReplace = !instReplace;
+      return refreshCatalogView();
+    case 'instConfirm':
+      return confirmInstall();
+    case 'instCancel':
+      return cancelInstall();
+    case 'instDone':
+      return dismissResult();
     case 'close':
       return closeSub();
     case 'consent':
@@ -1661,12 +2034,12 @@ document.addEventListener('keydown', function (e) {
 
   // Inside a list opened from a row, Left goes back up to it rather than to
   // another tab, and Right has nowhere to go.
-  if      (c === 37 || k === 'ArrowLeft')  { if (sub) closeSub(); else switchTab(-1); e.preventDefault(); }
+  if      (c === 37 || k === 'ArrowLeft')  { if (sub) backOut(); else switchTab(-1); e.preventDefault(); }
   else if (c === 39 || k === 'ArrowRight') { if (!sub) switchTab(1); e.preventDefault(); }
   else if (c === 38 || k === 'ArrowUp')    { move(-1);      e.preventDefault(); }
   else if (c === 40 || k === 'ArrowDown')  { move(1);       e.preventDefault(); }
   else if (c === 13 || k === 'Enter')      { activate();    e.preventDefault(); }
-  else if (c === 461 || k === 'GoBack' || k === 'BrowserBack') { if (sub) closeSub(); else leaveApp(); e.preventDefault(); }
+  else if (c === 461 || k === 'GoBack' || k === 'BrowserBack') { if (sub) backOut(); else leaveApp(); e.preventDefault(); }
 });
 window.addEventListener('resize', function () { if (rows.length) position(); });
 
