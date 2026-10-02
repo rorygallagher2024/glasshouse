@@ -428,7 +428,8 @@ function createMockRes(cb) {
 // 6. Install routes: Host check, controls switch, catalog, install flow, restart refusal
 (function testInstallRoutes() {
   var calls = [];
-  var busy = false;
+  var busy = false;      // a job is downloading or installing
+  var waiting = false;   // a preview is waiting for confirmation
   var pkg = { id: 'org.example.app', title: 'Example', version: '1.0.0', ipkUrl: 'https://example.org/a.ipk', sha256: new Array(65).join('a') };
   var repoStub = {
     getCatalog: function (force, cb) { calls.push(['catalog', force]); cb({ ok: true, apps: [pkg], fetchedAt: 1 }); },
@@ -440,7 +441,8 @@ function createMockRes(cb) {
     confirm: function (r, cb) { calls.push(['confirm', r]); cb(null, snap); },
     cancel: function (id, cb) { calls.push(['cancel', id]); cb(null); },
     status: function () { return { state: busy ? 'installing' : 'idle', jobId: null, progress: null, preview: null, error: null, result: null }; },
-    isBusy: function () { return busy; }
+    isBusy: function () { return busy || waiting; },
+    isWorking: function () { return busy; }
   };
   var restarts = 0;
   var written = 0;
@@ -527,11 +529,14 @@ function createMockRes(cb) {
     assert.strictEqual(r.statusCode, 400);
     assert.ok(/not in the catalog/.test(b.error));
   });
-  call('POST', '/api/apps/install/fetch', HOST, {}, function (r) { assert.strictEqual(r.statusCode, 400); });
+  call('POST', '/api/apps/install/fetch', HOST, {}, function (r, b) {
+    assert.strictEqual(r.statusCode, 400);
+    assert.ok(/app id is required/.test(b.error));
+  });
   calls = [];
-  call('POST', '/api/apps/install/confirm', HOST, { jobId: 'j1', elevate: true, replaceStore: 'yes' }, function (r) {
+  call('POST', '/api/apps/install/confirm', HOST, { jobId: 'j1', elevate: true, confirmRoot: ['a.service'], replaceStore: 'yes' }, function (r) {
     assert.strictEqual(r.statusCode, 200);
-    assert.deepEqual(calls.pop(), ['confirm', { jobId: 'j1', elevate: true, replaceStore: false }]);
+    assert.deepEqual(calls.pop(), ['confirm', { jobId: 'j1', elevate: true, confirmRoot: ['a.service'], replaceStore: false }]);
   });
   call('POST', '/api/apps/install/cancel', HOST, { jobId: 'j1' }, function (r, b) {
     assert.strictEqual(r.statusCode, 200);
@@ -570,7 +575,16 @@ function createMockRes(cb) {
   assert.strictEqual(restarts, 0);
   busy = false;
 
-  assert.strictEqual(checks, 39, 'every callback ran');
+  // A preview waiting for confirmation does not hold the network switch
+  // (already open here, so nothing is written or restarted)
+  waiting = true;
+  call('POST', '/api/setup', HOST, { action: 'network', open: true }, function (r, b) {
+    assert.strictEqual(r.statusCode, 200, JSON.stringify(b));
+    assert.strictEqual(b.restarting, false);
+  }, '127.0.0.1');
+  waiting = false;
+
+  assert.strictEqual(checks, 40, 'every callback ran');
   try { fs.unlinkSync(cfgFile); } catch (e) {}
   console.log('  ✓ install routes: Host check, controls switch, catalog, install flow, restart refusal');
 })();
@@ -591,6 +605,7 @@ function createMockRes(cb) {
     fs.chmodSync(df, parseInt('755', 8));
   }
   var started = [];
+  var touched = 0;
   var realStart = installer.start;
   // Records what the route handed over, and the staged file as it was at that moment.
   var wrapper = {
@@ -605,7 +620,8 @@ function createMockRes(cb) {
       realStart(r, cb);
     },
     confirm: installer.confirm, cancel: installer.cancel, status: installer.status, isBusy: installer.isBusy,
-    prepareUpload: installer.prepareUpload, releaseUpload: installer.releaseUpload
+    isWorking: installer.isWorking, prepareUpload: installer.prepareUpload, releaseUpload: installer.releaseUpload,
+    touchUpload: function () { touched++; installer.touchUpload(); }
   };
   function initInstaller(caps) {
     installer.init({
@@ -616,6 +632,7 @@ function createMockRes(cb) {
   }
   function init(conf, avail, caps) {
     started = [];
+    touched = 0;
     fakeDf(avail === undefined ? 9999999 : avail);
     initInstaller(caps);
     routes.init({
@@ -813,6 +830,7 @@ function createMockRes(cb) {
     upload({ type: 'Application/Octet-Stream', length: 10, chunks: [FILE.slice(0, 4), FILE.slice(4)] }, function (r, b) {
       assert.strictEqual(r.statusCode, 200, 'the type is case-insensitive');
       assert.strictEqual(b.ok, true);
+      assert.strictEqual(touched, 2, 'each chunk refreshes the upload hold');
       assert.strictEqual(started.length, 1);
       var s = started[0];
       assert.strictEqual(s.req.source, 'file');

@@ -509,7 +509,7 @@ function checkHomebrewChannelApp() {
 }
 
 function tvApp(action, cb) {
-  if (installer.isBusy()) {
+  if (installer.isWorking()) {
     return cb({ ok: false, error: msg('srv.install.busy.tvApp', 'an install is in progress; try again when it has finished') });
   }
   var script = assetPath('dashboard-app/install-app.sh');
@@ -538,7 +538,7 @@ function tvApp(action, cb) {
 function restartSelf() {
   // Every restart path ends here. A restart mid-install would leave the
   // package half-written and the job unreported.
-  if (installer.isBusy()) {
+  if (installer.isWorking()) {
     console.error('restart refused: ' + msg('srv.install.busy.restart', 'an install is in progress; restart when it has finished'));
     return false;
   }
@@ -563,7 +563,7 @@ updater.init({
   installDir: __dirname,
   writeSettings: routes.writeSettings,
   viaHomebrewChannel: fromHomebrewChannel,
-  installerBusy: installer.isBusy
+  installerBusy: installer.isWorking
 });
 
 fetchLib.init({ config: CONFIG, version: TVWEB_VERSION });
@@ -633,6 +633,10 @@ if (CLI_MODE) {
     console.log('tvweb listening on ' + CONFIG.host + ':' + CONFIG.port +
                 '  control=' + CONFIG.allowControl + '  power=' + CONFIG.allowPower +
                 '  auth=' + (CONFIG.token ? 'token' : 'none'));
+    if (CONFIG.apps && CONFIG.apps.sideload === true && !CONFIG.token) {
+      console.error('warning: apps.sideload is on and no token is set; anyone who can reach port ' +
+                    CONFIG.port + ' can install a package from a URL or a file');
+    }
     oled.detectOled(function () {});   // resolve and log panel type up front
     telemetry.detectLogoLight(function () {});
     if (fromHomebrewChannel()) {

@@ -36,10 +36,13 @@ it before exposing it more widely.
   `application/octet-stream` with a `Content-Length`, because a form post is a
   request a page on another site can send without a preflight. Once sideloading
   is on, a client that can reach the port can run any package on the TV, so
-  turn it on only with a token or a closed port.
+  turn it on only with a token or a closed port. `apps.sideload` without a
+  token opens exactly that, and the server logs a warning at start.
 - **Root access for an installed app is never on by default.** It is a separate
-  option per install, it needs the Homebrew Channel, and an app that was given
-  it is elevated again after each update, since a reinstall undoes it.
+  option per install, it needs the Homebrew Channel, and a catalog app that was
+  given it is elevated again after each update, since a reinstall undoes it. A
+  package from a URL or a file is never elevated automatically: the request
+  must name the services listed in its preview, and a later update asks again.
 - **The install routes check the Host header.** A page on an attacker's domain
   that resolves to the TV's address (DNS rebinding) passes the same-origin
   check on `POST`s and looks like a request from the TV itself. The routes
