@@ -564,9 +564,16 @@ function parseAppList(raw) {
   return list;
 }
 
+/*
+ * A minute, not longer: an app removed from LG's own menu sends no event, and
+ * the list is what Home Assistant's Launch App offers. At five minutes, an
+ * uninstalled Spotify stayed on offer on a B8.
+ */
+var APPS_SCAN_MS = 60000;
+
 function refreshInstalledApps(cb) {
   var now = Date.now();
-  if (installedApps.length > 0 && (now - lastAppsScan < 300000)) {
+  if (installedApps.length > 0 && now >= lastAppsScan && now - lastAppsScan < APPS_SCAN_MS) {
     if (cb) cb(installedApps);
     return;
   }

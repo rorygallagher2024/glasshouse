@@ -813,6 +813,7 @@ function setupHomeAssistant() {
   };
 
   var lastPicSig = '';
+  var lastAppSig = '';
   var lastCapSig = '';
 
   /*
@@ -936,6 +937,16 @@ function setupHomeAssistant() {
         lastPicSig = sig;
         console.log('mqtt: picture modes changed (' + sig + ') - republishing discovery');
         publishDiscovery();
+      }
+      // Launch App's options are the installed apps, and live in discovery too.
+      var appSig = telemetry.getInstalledApps().map(function (a) { return a.id; }).sort().join(',');
+      if (appSig && appSig !== lastAppSig) {
+        var hadApps = lastAppSig;
+        lastAppSig = appSig;
+        if (hadApps) {
+          console.log('mqtt: installed apps changed (' + telemetry.getInstalledApps().length + ') - republishing discovery');
+          publishDiscovery();
+        }
       }
       /*
        * The HDMI diagnostics and the play state only appear once a source has

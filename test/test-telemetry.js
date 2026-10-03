@@ -213,6 +213,17 @@ telemetry.refreshInstalledApps(function (apps) {
       assert.strictEqual(kept.length, 2);
       assert.strictEqual(kept[1].id, 'netflix');
       console.log('  ✓ expireStats keeps the installed app list');
+
+      // ...until a minute has passed, when an app removed without an event
+      // drops off the list.
+      var realNow = Date.now;
+      Date.now = function () { return realNow() + 61000; };
+      telemetry.refreshInstalledApps(function (rescanned) {
+        Date.now = realNow;
+        assert.strictEqual(rescanned.length, 1);
+        assert.strictEqual(rescanned[0].id, 'other');
+        console.log('  ✓ the installed app list is read again after a minute');
+      });
     });
 
     // Test fallback to listLaunchPoints when listApps returns empty/fails
