@@ -966,9 +966,10 @@ function uninstallApp(appId, cb) {
     return cb({ ok: false, error: 'Luna service not available' });
   }
 
-  // Close the app and any screensaver overlay before removing its files
+  // Close the app and any screensaver overlay before removing its files. The
+  // mount is left alone when it is ours: the app going may not be the one in use.
   lunaFn('com.webos.applicationManager/closeByAppId', { id: appId }, function () {});
-  if (/screensaver/i.test(appId)) {
+  if (/screensaver/i.test(appId) && screensavers.detectExternal().active) {
     lunaFn('com.webos.applicationManager/closeByAppId', { id: 'com.webos.app.screensaver' }, function () {});
     screensavers.unmountScreensaver();
   }
