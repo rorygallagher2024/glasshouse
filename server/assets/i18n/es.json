@@ -5130,5 +5130,21 @@
  "srv.install.rootConfirm": {
   "text": "el acceso root para un paquete de fuera del catálogo debe confirmarse para los servicios que figuran en su vista previa",
   "from": "root access for a package from outside the catalog must be confirmed for the services listed in its preview"
+ },
+ "apps.install.root.restored": {
+  "text": "Tras esta actualización se vuelve a dar root a {list}, como antes.",
+  "from": "Root is given back to {list} after this update, as before."
+ },
+ "apps.install.root.needed": {
+  "text": "Esta app pide que sus servicios se ejecuten como root y puede que no funcione sin ello.",
+  "from": "This app asks for its services to run as root, and may not work without it."
+ },
+ "tv.apps.install.pv.root": {
+  "text": "Root",
+  "from": "Root"
+ },
+ "tv.apps.install.pv.rootBack": {
+  "text": "Se devuelve",
+  "from": "Given back"
  }
 }

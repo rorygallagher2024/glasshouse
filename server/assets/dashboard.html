@@ -1330,6 +1330,11 @@ function previewRows(pv) {
                pv.rootRequired ? t('tv.apps.install.root.needed', 'This app asks for its services to run as root, and may not work without it.')
                                      : t('tv.apps.install.root.hint', 'Off unless the app needs it. Root access is set up through the Homebrew Channel.')));
     }
+    // An update to an app that had root gets it back without the toggle on.
+    if ((pv.reelevate || []).length) {
+      r.push({ label: t('tv.apps.install.pv.root', 'Root'), value: t('tv.apps.install.pv.rootBack', 'Given back'), cls: 'warn', key: 'pv:rootback',
+               hint: t('apps.install.root.restored', 'Root is given back to {list} after this update, as before.', { list: pv.reelevate.join(', ') }) });
+    }
   }
   if (pv.cpuMismatch) {
     r.push({ label: t('tv.apps.install.pv.cpu', 'Processor'), value: t('tv.apps.install.pv.mismatch', 'Mismatch'), cls: 'warn', key: 'pv:cpu',

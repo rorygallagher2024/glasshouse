@@ -1293,6 +1293,7 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
       <div id="inst-services-row" hidden>
         <div class="prot-desc" id="inst-services"></div>
         <label class="cfg-ent-chk"><input type="checkbox" id="inst-root"><span data-t="apps.install.root">Run services as root (needs the Homebrew Channel)</span></label>
+        <div class="prot-desc" id="inst-root-note" hidden></div>
       </div>
       <div class="prot-desc" id="inst-cpu" hidden></div>
       <div class="prot-desc" id="inst-space"></div>
@@ -3928,6 +3929,12 @@ function renderPreview(pv) {
   q('inst-services-row').hidden = !svc.length;
   q('inst-services').textContent = svc.length ? t('apps.install.services', 'Background services: {list}', { list: svc.join(', ') }) : '';
   q('inst-root').checked = false;
+  // An update to an app that had root gets it back without the box ticked.
+  const back = pv.reelevate || [];
+  const rootNote = back.length ? t('apps.install.root.restored', 'Root is given back to {list} after this update, as before.', { list: back.join(', ') })
+    : pv.rootRequired ? t('apps.install.root.needed', 'This app asks for its services to run as root, and may not work without it.') : '';
+  q('inst-root-note').hidden = !rootNote;
+  q('inst-root-note').textContent = rootNote;
   q('inst-cpu').hidden = !pv.cpuMismatch;
   q('inst-cpu').textContent = !pv.cpuMismatch ? ''
     : t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.');

@@ -805,6 +805,9 @@ function buildPreview(j) {
         services: info.services,
         rootRequired: !!(j.pkg && j.pkg.rootRequired),
         willElevate: reelevated(j).length > 0,
+        // The services that get root back whether or not root is ticked, so
+        // the dashboards can say so before anything is installed.
+        reelevate: reelevated(j),
         cpuMismatch: info.cpuMismatch,
         storeInstalled: store,
         source: j.source,

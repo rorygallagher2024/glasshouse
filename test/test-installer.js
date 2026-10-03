@@ -896,6 +896,8 @@ test('an update of an elevated package elevates again without being asked', func
   fs.writeFileSync(path.join(ctx.state, 'elevated.json'), JSON.stringify({ 'com.example.app': ['com.example.app.service'] }));
   startOk(ctx.pkg(makeIpk({ version: '1.1.0' }), 'com.example.app', '1.1.0'), function () {
     expectState('awaiting-confirm', function (s) {
+      // The preview names what gets root back, so the dashboards can say so.
+      assert.deepEqual(s.preview.reelevate, ['com.example.app.service']);
       installer.confirm({ jobId: s.jobId, elevate: false }, function () {
         expectState('installed', function () {
           assert.deepEqual(logLines(ctx.elevLog), ['com.example.app.service']);
