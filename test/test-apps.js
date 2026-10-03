@@ -335,7 +335,8 @@ test('setTileHidingEnabled toggles flag file and requires allowControl', functio
     // Enabled when allowControl is true
     apps.init({
       config: { allowControl: true },
-      luna: function (uri, params, cb) { cb({ returnValue: true }); }
+      // A home screen list, so each sam restart settles instead of polling out.
+      luna: function (uri, params, cb) { cb({ returnValue: true, launchPoints: [{ id: 'netflix' }] }); }
     });
 
     apps.setTileHidingEnabled(true, function (r1) {
@@ -434,36 +435,35 @@ test('restartSam waits for sam to finish loading, then relaunches the foreground
 });
 
 var failures = 0;
-var asyncRemaining = 0;
 
-tests.forEach(function (t) {
-  if (t[1].length > 0) asyncRemaining++;
-});
-
-tests.forEach(function (t) {
-  if (t[1].length > 0) {
-    try {
-      t[1](function () {
-        console.log('  ✓ ' + t[0]);
-        asyncRemaining--;
-        if (asyncRemaining === 0) finish();
-      });
-    } catch (e) {
-      failures++;
-      console.log('  ✗ ' + t[0] + '\n      ' + e.message);
-      asyncRemaining--;
-      if (asyncRemaining === 0) finish();
-    }
-  } else {
+/*
+ * One at a time: the tests share the apps module, and an uninstall can now
+ * restart sam, which would join a restart test's shared restart.
+ */
+(function next(i) {
+  if (i === tests.length) return finish();
+  var t = tests[i];
+  function fail(e) {
+    failures++;
+    console.log('  \u2717 ' + t[0] + '\n      ' + e.message);
+  }
+  if (t[1].length === 0) {
     try {
       t[1]();
-      console.log('  ✓ ' + t[0]);
-    } catch (e) {
-      failures++;
-      console.log('  ✗ ' + t[0] + '\n      ' + e.message);
-    }
+      console.log('  \u2713 ' + t[0]);
+    } catch (e) { fail(e); }
+    return next(i + 1);
   }
-});
+  try {
+    t[1](function () {
+      console.log('  \u2713 ' + t[0]);
+      next(i + 1);
+    });
+  } catch (e) {
+    fail(e);
+    next(i + 1);
+  }
+})(0);
 
 function finish() {
   mockEnv.restore();
@@ -472,5 +472,3 @@ function finish() {
   }
   process.exit(failures ? 1 : 0);
 }
-
-if (asyncRemaining === 0) finish();
