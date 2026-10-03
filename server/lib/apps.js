@@ -274,6 +274,28 @@ function setTileHidingEnabled(enabled, cb) {
  * after 12s. It also keeps a run of hides from stacking restarts on a sam
  * still starting.
  */
+// sam and every unit that requires it, as systemctl lists them on the TV.
+var SAM_UNITS = 'sam.service $(systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null | ' +
+                'sed -n "s/^[^A-Za-z0-9]*\\([A-Za-z0-9@._-]*\\.service\\)$/\\1/p")';
+
+/*
+ * Once sam is back, a unit that requires it and was still refused - its own
+ * restart limit hit before the counters were cleared - is started again, so
+ * the TV is never left without its inputs.
+ */
+function startFailedDependents(cb) {
+  var cmd = 'command -v systemctl >/dev/null 2>&1 || exit 0; ' +
+            'for u in ' + SAM_UNITS + '; do ' +
+            'if systemctl is-failed --quiet "$u"; then ' +
+            'echo "$u"; systemctl reset-failed "$u"; systemctl start --no-block "$u"; ' +
+            'fi; done';
+  execFile('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err, out) {
+    var started = String(out || '').trim();
+    if (started) console.log('apps: started again after sam restarted: ' + started.split(/\s+/).join(', '));
+    cb();
+  });
+}
+
 var SAM_SETTLE_POLL_MS = 500;
 var SAM_SETTLE_POLLS = 24;
 
@@ -328,13 +350,17 @@ function restartSam(cb) {
   function executeRestart(savedAppId) {
     /*
      * systemd rate-limits on-failure restarts - StartLimitBurst=5 inside
-     * StartLimitIntervalSec=10s on a webOS 5 set. Hiding a run of tiles SIGKILLs
-     * sam once per tile, so from the sixth restart on systemd refuses and leaves
-     * the unit failed: no home screen, and the next launch lands on the last
-     * input. Clearing the counter first makes each kill look like the first.
+     * StartLimitIntervalSec=10s on webOS 5 and webOS 22 TVs. Hiding a run of
+     * tiles restarts sam once each, so from the sixth restart on systemd refuses
+     * and leaves the unit failed: no home screen, and the next launch lands on
+     * the last input. Clearing the counter first makes each kill look like the
+     * first. The units that require sam restart with it and have the same
+     * limit - on a C2, eim (the inputs), homelaunchpoints and criu - so theirs
+     * are cleared too: a quick run of hides left eim failed and the TV with no
+     * HDMI inputs until it was started by hand.
      */
     var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
-              'systemctl reset-failed sam.service >/dev/null 2>&1 || true; ' +
+              'systemctl reset-failed ' + SAM_UNITS + ' >/dev/null 2>&1 || true; ' +
               'killall -9 LunaExecutable >/dev/null 2>&1 || true; ' +
               'systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true; ' +
               'elif command -v initctl >/dev/null 2>&1; then ' +
@@ -344,7 +370,7 @@ function restartSam(cb) {
               'fi';
     execFile('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err) {
       if (err) console.error('apps: restartSam error: ' + err.message);
-      waitForSam(function () { restoreApp(err); });
+      waitForSam(function () { startFailedDependents(function () { restoreApp(err); }); });
     });
 
     function restoreApp(err) {
