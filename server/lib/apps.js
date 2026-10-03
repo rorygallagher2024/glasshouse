@@ -266,6 +266,34 @@ function setTileHidingEnabled(enabled, cb) {
  * If a non-home app (like an active HDMI port or Live TV) was in the foreground,
  * it is automatically relaunched so the user is never stranded on the Home screen.
  */
+/*
+ * sam answers while it is still loading the home screen's tiles, and a list
+ * read then is short: straight after a hide, a C2's Apps tab showed "5 hidden
+ * of 5 apps", then "4 hidden of 9". So a restart counts as done only once the
+ * launch points read the same three times running, half a second apart, or
+ * after 12s. It also keeps a run of hides from stacking restarts on a sam
+ * still starting.
+ */
+var SAM_SETTLE_POLL_MS = 500;
+var SAM_SETTLE_POLLS = 24;
+
+function waitForSam(cb) {
+  if (!lunaFn) return cb();
+  var polls = 0, last = null, same = 0;
+  (function poll() {
+    polls++;
+    lunaFn('com.webos.applicationManager/listLaunchPoints', {}, function (r) {
+      var lps = r && r.returnValue !== false && (r.launchPoints || r.apps);
+      var sig = Array.isArray(lps) && lps.length
+        ? lps.map(function (a) { return a.launchPointId || a.id; }).sort().join(',') : null;
+      same = sig && sig === last ? same + 1 : 0;
+      last = sig;
+      if (same >= 2 || polls >= SAM_SETTLE_POLLS) return cb();
+      setTimeout(poll, SAM_SETTLE_POLL_MS);
+    });
+  })();
+}
+
 function restartSam(cb) {
   // Where tile hiding is held back, turning it off still unmounts the overrides
   // and the tiles come back at the next full restart.
@@ -293,6 +321,10 @@ function restartSam(cb) {
               'fi';
     execFile('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err) {
       if (err) console.error('apps: restartSam error: ' + err.message);
+      waitForSam(function () { restoreApp(err); });
+    });
+
+    function restoreApp(err) {
       if (savedAppId && savedAppId !== 'com.webos.app.home' && lunaFn) {
         var attempts = 0;
         function tryRestore() {
@@ -313,7 +345,7 @@ function restartSam(cb) {
       } else {
         if (cb) cb(!err);
       }
-    });
+    }
   }
 
   if (lunaFn) {
