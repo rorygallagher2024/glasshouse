@@ -262,7 +262,15 @@ function setTileHidingEnabled(enabled, cb) {
  */
 function restartSam(cb) {
   function executeRestart(savedAppId) {
+    /*
+     * systemd rate-limits on-failure restarts - StartLimitBurst=5 inside
+     * StartLimitIntervalSec=10s on a webOS 5 set. Hiding a run of tiles SIGKILLs
+     * sam once per tile, so from the sixth restart on systemd refuses and leaves
+     * the unit failed: no home screen, and the next launch lands on the last
+     * input. Clearing the counter first makes each kill look like the first.
+     */
     var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
+              'systemctl reset-failed sam.service >/dev/null 2>&1 || true; ' +
               'killall -9 LunaExecutable >/dev/null 2>&1 || true; ' +
               'systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true; ' +
               'elif command -v initctl >/dev/null 2>&1; then ' +
