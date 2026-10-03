@@ -189,7 +189,8 @@ function setup(over) {
   ctx.pkg = function (ipk, id, version, extra) {
     var url = 'https://repo.example/' + (++seq) + '.ipk';
     ctx.files[url] = ipk;
-    var p = { id: id || 'com.example.app', version: version || '1.0.0', ipkUrl: url, sha256: sha(ipk), size: ipk.length };
+    // From the Homebrew Channel's own catalog unless extra says otherwise.
+    var p = { id: id || 'com.example.app', version: version || '1.0.0', ipkUrl: url, sha256: sha(ipk), size: ipk.length, vetted: true };
     for (var k in extra || {}) p[k] = extra[k];
     return { source: 'catalog', pkg: p };
   };
@@ -1186,6 +1187,31 @@ test('a package from a URL or file is not elevated again from elevated.json', fu
           assert.deepEqual(logLines(ctx.elevLog), []);
           assert.strictEqual(r.result.elevation, null);
           done();
+        });
+      });
+    });
+  });
+});
+
+test('a package from an added catalog is treated like a URL for root', function (done) {
+  var ctx = setup();
+  ctx.script([{ out: DONE }]);
+  fs.writeFileSync(path.join(ctx.state, 'elevated.json'), JSON.stringify({ 'com.example.app': ['com.example.app.service'] }));
+  startOk(ctx.pkg(makeIpk(), null, null, { vetted: false }), function () {
+    expectState('awaiting-confirm', function (s) {
+      assert.strictEqual(s.preview.vetted, false);
+      // Never given root back from elevated.json...
+      assert.strictEqual(s.preview.willElevate, false);
+      // ...and asking for it needs the services named.
+      installer.confirm({ jobId: s.jobId, elevate: true }, function (e1) {
+        assert.ok(/must be confirmed/.test(e1), e1);
+        installer.confirm({ jobId: s.jobId }, function (e2) {
+          assert.ifError(e2);
+          expectState('installed', function (r) {
+            assert.deepEqual(logLines(ctx.elevLog), []);
+            assert.strictEqual(r.result.elevation, null);
+            done();
+          });
         });
       });
     });

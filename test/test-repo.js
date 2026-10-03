@@ -141,6 +141,9 @@ function part3() {
     assert.strictEqual(a['io.github.rorygallagher2024.lg-webos-dashboard'].state, 'hbc');
     assert.strictEqual(a['com.tvweb.dashboard'].state, 'hbc');
     assert.ok(a['com.example.player'], 'default repo is always included');
+    // Only the Homebrew Channel's catalog is vetted for root; an added one is not.
+    assert.strictEqual(a['com.example.player'].vetted, true);
+    assert.strictEqual(a['com.x.ok'].vetted, false);
     assert.ok(/no such page https:\/\/broken\.example/.test(r.error), 'a failing extra repo is reported');
     assert.strictEqual(fetched.filter(function (u) { return u === BASE; }).length, 1, 'a repo listed twice is read once');
     console.log('  ✓ extra repos merge, invalid entries drop, protected ids show as hbc, a failing repo is reported');

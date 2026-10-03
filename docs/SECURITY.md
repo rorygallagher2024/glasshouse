@@ -39,11 +39,16 @@ it before exposing it more widely.
   is on, a client that can reach the port can run any package on the TV, so
   turn it on only with a token or a closed port. `apps.sideload` without a
   token opens exactly that, and the server logs a warning at start.
-- **Root access for an installed app is never on by default.** It is a separate
-  option per install, it needs the Homebrew Channel, and a catalog app that was
-  given it is elevated again after each update, since a reinstall undoes it. A
-  package from a URL or a file is never elevated automatically: the request
-  must name the services listed in its preview, and a later update asks again.
+- **A catalog app can be given root.** On a default install, a client that can
+  reach the port can install an app from the Homebrew Channel catalog and run
+  its services as root, as the Homebrew Channel itself would. Root is a
+  separate option per install and needs the Homebrew Channel, and an app given
+  it gets it again after each update, since a reinstall undoes it. `token` or
+  `"allowControl": false` closes this too. A package from a URL, a file or an
+  `apps.repos` catalog is never elevated automatically: the request must name
+  the services listed in its preview, and a later update asks again. The TV's
+  own dashboard offers root only for the Homebrew Channel's catalog, since the
+  remote cannot name services.
 - **The install routes check the Host header.** A page on an attacker's domain
   that resolves to the TV's address (DNS rebinding) passes the same-origin
   check on `POST`s and looks like a request from the TV itself. The routes
@@ -51,8 +56,10 @@ it before exposing it more widely.
   `apps.hosts` in `config.json`, which is file-only. A name such as `lgtv.local`
   has to be added there to install from it.
 - **`apps.repos` adds trust.** Each extra catalog listed there can offer
-  packages for installation, with their hashes. It is file-only and every entry
-  must be served over https.
+  packages for installation, with their hashes. Its packages are not treated
+  as vetted: root for them is confirmed service by service, as for a URL, and
+  is never given back on an update. It is file-only and every entry must be
+  served over https.
 - **Never port-forward this.** It is designed for a trusted LAN.
 - **Bind to `127.0.0.1` to keep the on-TV app but close the port.** With
   `"host": "127.0.0.1"` nothing on the network can connect to port 8080, while

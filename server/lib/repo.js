@@ -90,7 +90,9 @@ function fetchRepo(base, cb) {
       }
       for (var i = 0; i < list.length; i++) {
         var p = parsePackage(list[i], u);
-        if (p) apps.push(p);
+        // Only the Homebrew Channel's own catalog is vetted. An apps.repos
+        // catalog is trusted to list packages, not to have them run as root.
+        if (p) { p.vetted = base === DEFAULT_REPO; apps.push(p); }
       }
       var max = parseInt(doc.paging && doc.paging.maxPage, 10) || 1;
       if (n < max && n < MAX_PAGES) return page(n + 1);

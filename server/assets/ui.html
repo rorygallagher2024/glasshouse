@@ -4101,9 +4101,10 @@ async function confirmInstall() {
     return;
   }
   const elevate = q('inst-root').checked;
-  // A package from a URL or a file has not been vetted by the catalog, so root
-  // for its services is confirmed a second time, naming each one.
-  if (elevate && pv.source !== 'catalog' &&
+  // A package from a URL, a file or an added catalog has not been vetted by the
+  // Homebrew Channel, so root for its services is confirmed a second time,
+  // naming each one.
+  if (elevate && !pv.vetted &&
       !confirm(t('apps.install.root.confirm', 'Run these services as root?\n\n{list}\n\nRoot gives a service full control of the TV. Only continue if the package comes from someone trusted.', { list: (pv.services || []).join('\n') }))) return;
   q('inst-confirm').disabled = true;
   q('inst-cancel').disabled = true;
@@ -4111,8 +4112,8 @@ async function confirmInstall() {
     const j = await installPost('/api/apps/install/confirm', {
       jobId: s.jobId, elevate, replaceStore: q('inst-replace').checked,
       // The server asks for the services shown in the preview before it gives
-      // root to a package from outside the catalog.
-      confirmRoot: elevate && pv.source !== 'catalog' ? (pv.services || []) : undefined
+      // root to a package the Homebrew Channel has not vetted.
+      confirmRoot: elevate && !pv.vetted ? (pv.services || []) : undefined
     });
     installSnap = j.install;
     renderInstall();

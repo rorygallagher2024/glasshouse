@@ -808,6 +808,7 @@ function buildPreview(j) {
         cpuMismatch: info.cpuMismatch,
         storeInstalled: store,
         source: j.source,
+        vetted: vetted(j),
         freeBytes: free,
         needBytes: need,
         sha256: j.digest
@@ -1059,12 +1060,20 @@ function runInstall(j, cb) {
 }
 
 /*
- * Services that get root again without being asked: only for a catalog
- * package, and only those recorded the last time it was elevated. A package
- * from a URL or a file never gets root unless confirmed for that install.
+ * A package from the Homebrew Channel's own catalog. Anything else - a URL, a
+ * file, or a catalog added under apps.repos - has root confirmed service by
+ * service, and never gets it back on its own.
+ */
+function vetted(j) {
+  return j.source === 'catalog' && !!(j.pkg && j.pkg.vetted);
+}
+
+/*
+ * Services that get root again without being asked: only for a vetted
+ * package, and only those recorded the last time it was elevated.
  */
 function reelevated(j) {
-  if (j.source !== 'catalog' || !fs.existsSync(elevatePath)) return [];
+  if (!vetted(j) || !fs.existsSync(elevatePath)) return [];
   var rec = readJson(elevatedFile()) || {};
   var was = Object.prototype.hasOwnProperty.call(rec, j.info.package) ? rec[j.info.package] : null;
   if (!(was instanceof Array)) return [];
@@ -1131,7 +1140,7 @@ function confirm(req, cb) {
   }
   // Root for a package nobody vetted has to be confirmed for the services the
   // preview listed, so a client cannot ask for it blind.
-  if (wantRoot && j.source !== 'catalog' && !sameNames(req.confirmRoot, j.info.services)) {
+  if (wantRoot && !vetted(j) && !sameNames(req.confirmRoot, j.info.services)) {
     return cb(msg('srv.install.rootConfirm', 'root access for a package from outside the catalog must be confirmed for the services listed in its preview'));
   }
   // A reinstall rewrites the service files that elevation changed.
