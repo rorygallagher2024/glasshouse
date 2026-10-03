@@ -329,10 +329,28 @@ function waitForSam(cb) {
  */
 var samRestartRunning = false;
 var samRestartWaiting = [];
-/** After an install or uninstall: cb(restarted). */
+var samRestartedThisRun = false;
+var FROM_HBC_FILE = '/var/lib/tvweb/.from-homebrew-channel';
+
+/*
+ * Once sam has been restarted, the home launcher stops taking in new launch
+ * points: on a B8 (webOS 4.4.3) an app installed afterwards was in
+ * listLaunchPoints but not on the ribbon until sam was restarted again. The
+ * boot hook restarts sam when tile hiding is on with apps hidden (except on a
+ * Homebrew Channel install), and the server does on each hide and unhide.
+ */
+function launcherNeedsRestart() {
+  if (samRestartedThisRun) return true;
+  if (fs.existsSync(FROM_HBC_FILE)) return false;
+  return isTileHidingEnabled() && Object.keys(readHiddenAppsList()).length > 0;
+}
+
+/** After an install or uninstall: restarts sam if the launcher would otherwise miss the change. cb(restarted). */
 function refreshLauncher(cb) {
   cb = cb || function () {};
-  cb(false);
+  if (!launcherNeedsRestart() || screensavers.held()) return cb(false);
+  console.log('apps: restarting sam so the home screen updates');
+  restartSamShared(cb);
 }
 
 function restartSamShared(cb) {
@@ -969,7 +987,9 @@ function uninstallApp(appId, cb) {
           }
         }
         if (!stillThere || (Date.now() - start) >= 3000) {
-          return cb({ ok: true, id: appId });
+          return refreshLauncher(function () {
+            cb({ ok: true, id: appId });
+          });
         }
         setTimeout(poll, 300);
       });
