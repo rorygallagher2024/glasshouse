@@ -293,7 +293,6 @@ function startFailedDependents(cb) {
             'fi; done; ' +
             'elif command -v initctl >/dev/null 2>&1; then ' +
             'initctl restart eim >/dev/null 2>&1 && echo "eim" || true; ' +
-            'initctl start com.webos.app.inputcommon >/dev/null 2>&1 || true; ' +
             'fi';
   execFile('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err, out) {
     var started = String(out || '').trim();
@@ -330,28 +329,10 @@ function waitForSam(cb) {
  */
 var samRestartRunning = false;
 var samRestartWaiting = [];
-var samRestartedThisRun = false;
-var FROM_HBC_FILE = '/var/lib/tvweb/.from-homebrew-channel';
-
-/*
- * Once sam has been restarted, the home launcher stops taking in new launch
- * points: on a B8 (webOS 4.4.3) an app installed afterwards was in
- * listLaunchPoints but not on the ribbon until sam was restarted again. The
- * boot hook restarts sam when tile hiding is on with apps hidden (except on a
- * Homebrew Channel install), and the server does on each hide and unhide.
- */
-function launcherNeedsRestart() {
-  if (samRestartedThisRun) return true;
-  if (fs.existsSync(FROM_HBC_FILE)) return false;
-  return isTileHidingEnabled() && Object.keys(readHiddenAppsList()).length > 0;
-}
-
-/** After an install or uninstall: restarts sam if the launcher would otherwise miss the change. cb(restarted). */
+/** After an install or uninstall: cb(restarted). */
 function refreshLauncher(cb) {
   cb = cb || function () {};
-  if (!launcherNeedsRestart() || screensavers.held()) return cb(false);
-  console.log('apps: restarting sam so the home screen updates');
-  restartSamShared(cb);
+  cb(false);
 }
 
 function restartSamShared(cb) {
@@ -394,7 +375,6 @@ function restartSam(cb) {
               'systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true; ' +
               'elif command -v initctl >/dev/null 2>&1; then ' +
               'initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true; ' +
-              'pkill -9 -f "@system_native_app" >/dev/null 2>&1 || true; ' +
               'else ' +
               'pkill -9 -x sam >/dev/null 2>&1 || true; ' +
               'fi';
@@ -989,9 +969,7 @@ function uninstallApp(appId, cb) {
           }
         }
         if (!stillThere || (Date.now() - start) >= 3000) {
-          return refreshLauncher(function () {
-            cb({ ok: true, id: appId });
-          });
+          return cb({ ok: true, id: appId });
         }
         setTimeout(poll, 300);
       });

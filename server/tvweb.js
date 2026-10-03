@@ -585,7 +585,6 @@ installer.init({
   updaterBusy: updater.isBusy,
   onInstalled: function () {
     appsChanged();
-    appsModule.refreshLauncher();
   }
 });
 if (!CLI_MODE) installer.recover();
