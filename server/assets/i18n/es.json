@@ -5147,6 +5147,14 @@
   "text": "Esta aplicación instala un salvapantallas personalizado, que reemplazará a los salvapantallas de Glasshouse.",
   "from": "This app installs a custom screen saver, which will replace Glasshouse’s own screen savers."
  },
+ "apps.sideload.desc": {
+  "text": "Instala un paquete de aplicación (.ipk) directamente desde un enlace de descarga o subiendo un archivo desde tu ordenador.",
+  "from": "Install an application package (.ipk) directly from a download link or by uploading a file from your computer."
+ },
+ "apps.sideload.heading": {
+  "text": "Instalar desde una URL o archivo",
+  "from": "Install from a URL or file"
+ },
  "apps.sideload.disable": {
   "text": "Desactivar instalación desde URL o archivo",
   "from": "Turn off install from URL or file"

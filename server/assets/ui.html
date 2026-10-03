@@ -1309,27 +1309,6 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
         <button type="button" id="inst-cancel" onclick="cancelInstall()" data-t="common.cancel">Cancel</button>
       </div>
     </div>
-    <div class="pv-note" id="sideload-off" hidden>
-      <div class="prot-title" data-t="apps.sideload.off.title">Install from a URL or a file</div>
-      <div class="prot-desc" data-t="apps.sideload.off.desc">This is off, because a package from outside the catalog can run anything on the TV. You can turn it on below, or by setting a token.</div>
-      <div style="margin-top:10px"><button type="button" class="pill warn" id="btn-sideload-enable" onclick="toggleSideload(true)" data-t="apps.sideload.enable">Turn on install from URL or file&hellip;</button></div>
-    </div>
-    <div id="sideload-box" hidden>
-      <div class="prot-title" data-t="apps.sideload.url.title">From URL&hellip;</div>
-      <form class="toast-form page-add" id="sl-url-form" onsubmit="event.preventDefault();startUrlInstall();">
-        <input type="text" id="sl-url" placeholder="Address of an .ipk, such as https://example.org/app.ipk" data-t-placeholder="apps.sideload.url.placeholder" maxlength="2048"
-          autocomplete="off" spellcheck="false">
-        <input type="text" id="sl-sha" placeholder="sha256 (optional)" data-t-placeholder="apps.sideload.sha.placeholder" maxlength="64"
-          autocomplete="off" spellcheck="false">
-        <button type="submit" id="sl-url-btn" data-t="apps.sideload.url.go">Download and check</button>
-      </form>
-      <div class="prot-title" data-t="apps.sideload.file.title">Upload .ipk</div>
-      <form class="toast-form page-add" id="sl-file-form" onsubmit="event.preventDefault();uploadIpk();">
-        <input type="file" id="sl-file" accept=".ipk" aria-label="Package file" data-t-aria-label="apps.sideload.file.label">
-        <button type="submit" id="sl-file-btn" data-t="apps.sideload.file.go">Upload and check</button>
-      </form>
-      <div style="margin-top:12px"><button type="button" class="pill idle" id="btn-sideload-disable" onclick="toggleSideload(false)" data-t="apps.sideload.disable">Turn off install from URL or file</button></div>
-    </div>
     <div class="prot-table" id="apps-catalog-list">
       <div class="sub" style="padding:16px 0" data-t="apps.install.loading">Loading the catalog&hellip;</div>
     </div>
@@ -1380,6 +1359,32 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
       <button type="submit" id="page-add-btn" data-t="apps.pages.add">Add to home screen</button>
     </form>
     <div class="sub page-add-msg" id="page-add-msg" role="alert"></div>
+  </details>
+
+  <details class="pv-d" id="disc-sideload-apps">
+    <summary><span data-t="apps.sideload.heading">Install from a URL or file</span> <span class="cur" id="apps-sideload-summary"></span></summary>
+    <div class="pv-sub" data-t="apps.sideload.desc">Install an application package (.ipk) directly from a download link or by uploading a file from your computer.</div>
+    <div class="pv-note" id="sideload-off" hidden>
+      <div class="prot-title" data-t="apps.sideload.off.title">Install from a URL or a file</div>
+      <div class="prot-desc" data-t="apps.sideload.off.desc">This is off, because a package from outside the catalog can run anything on the TV. You can turn it on below, or by setting a token.</div>
+      <div style="margin-top:10px"><button type="button" class="pill warn" id="btn-sideload-enable" onclick="toggleSideload(true)" data-t="apps.sideload.enable">Turn on install from URL or file&hellip;</button></div>
+    </div>
+    <div id="sideload-box" hidden>
+      <div class="prot-title" data-t="apps.sideload.url.title">From URL&hellip;</div>
+      <form class="toast-form page-add" id="sl-url-form" onsubmit="event.preventDefault();startUrlInstall();">
+        <input type="text" id="sl-url" placeholder="Address of an .ipk, such as https://example.org/app.ipk" data-t-placeholder="apps.sideload.url.placeholder" maxlength="2048"
+          autocomplete="off" spellcheck="false">
+        <input type="text" id="sl-sha" placeholder="sha256 (optional)" data-t-placeholder="apps.sideload.sha.placeholder" maxlength="64"
+          autocomplete="off" spellcheck="false">
+        <button type="submit" id="sl-url-btn" data-t="apps.sideload.url.go">Download and check</button>
+      </form>
+      <div class="prot-title" data-t="apps.sideload.file.title">Upload .ipk</div>
+      <form class="toast-form page-add" id="sl-file-form" onsubmit="event.preventDefault();uploadIpk();">
+        <input type="file" id="sl-file" accept=".ipk" aria-label="Package file" data-t-aria-label="apps.sideload.file.label">
+        <button type="submit" id="sl-file-btn" data-t="apps.sideload.file.go">Upload and check</button>
+      </form>
+      <div style="margin-top:12px"><button type="button" class="pill idle" id="btn-sideload-disable" onclick="toggleSideload(false)" data-t="apps.sideload.disable">Turn off install from URL or file</button></div>
+    </div>
   </details>
 </section>
 
@@ -3972,6 +3977,8 @@ function renderSideload() {
   ['sl-url', 'sl-sha', 'sl-url-btn', 'sl-file', 'sl-file-btn'].forEach(id => { q(id).disabled = off; });
   const disableBtn = q('btn-sideload-disable');
   if (disableBtn) disableBtn.hidden = !installSnap || installSnap.sideloadVia !== 'config';
+  const cur = q('apps-sideload-summary');
+  if (cur) cur.textContent = installSideload ? t('common.on', 'On') : t('common.off', 'Off');
 }
 
 async function toggleSideload(enable) {
@@ -3994,12 +4001,31 @@ async function toggleSideload(enable) {
   }
 }
 
+function prepareInstallTarget(source) {
+  const isSideload = source === 'url' || source === 'file';
+  const targetDisc = isSideload ? q('disc-sideload-apps') : q('disc-install-apps');
+  const targetAnchor = isSideload
+    ? (installSideload ? q('sideload-box') : q('sideload-off'))
+    : q('apps-catalog-list');
+  const panel = q('install-panel');
+  const statusEl = q('install-status');
+  if (targetDisc && targetAnchor && panel && statusEl) {
+    if (panel.parentElement !== targetDisc || statusEl.parentElement !== targetDisc) {
+      targetDisc.insertBefore(statusEl, targetAnchor);
+      targetDisc.insertBefore(panel, targetAnchor);
+    }
+  }
+  return targetDisc;
+}
+
 function renderInstall() {
   const s = installSnap;
   const panel = q('install-panel');
   renderSideload();
   if (!s) return;
+  const targetDisc = prepareInstallTarget(s.source);
   if (s.state === 'awaiting-confirm' && s.preview) {
+    if (targetDisc) targetDisc.open = true;
     if (panel.hidden || panel.dataset.job !== s.jobId) {
       panel.dataset.job = s.jobId;
       renderPreview(s.preview);
@@ -4067,6 +4093,7 @@ async function installPost(path, body) {
 }
 
 function startInstall(appId) {
+  prepareInstallTarget('catalog');
   // The server goes straight on to install unless the preview has a choice or a warning in it.
   startJob('/api/apps/install/fetch', { id: appId, auto: true });
 }
@@ -4074,6 +4101,7 @@ function startInstall(appId) {
 function startUrlInstall() {
   const url = q('sl-url').value.trim();
   if (!url) return;
+  prepareInstallTarget('url');
   startJob('/api/apps/install/url', { url, sha256: q('sl-sha').value.trim() });
 }
 
@@ -4103,6 +4131,7 @@ function installFailed(text) {
 function uploadIpk() {
   const f = q('sl-file').files[0];
   if (!f || !installIdle() || uploading) return;
+  prepareInstallTarget('file');
   q('catalog-msg').textContent = '';
   uploading = true;
   renderSideload();
