@@ -156,6 +156,8 @@ function setup(over) {
         if (!data) return cb(new Error('404'));
         fs.writeFileSync(out, data);
         if (opts.onProgress) opts.onProgress(data.length);
+        // As fetch.js does when given a size.
+        if (opts.expectedSize && opts.expectedSize !== data.length) return cb(new Error('wrong size'));
         cb(null);
       }, 5);
       return { cancel: function () { ctx.cancelled++; clearTimeout(timer); } };
@@ -1251,6 +1253,17 @@ test('a catalog update is elevated again only for the services recorded', functi
         });
       });
     });
+  });
+});
+
+test('a catalog size that is slightly off does not fail the download: the hash decides', function (done) {
+  var ctx = setup();
+  ctx.script([{ out: DONE }]);
+  var ipk = makeIpk();
+  var req = ctx.pkg(ipk, 'com.example.app', '1.0.0', { size: ipk.length + 100 });
+  req.auto = true;
+  startOk(req, function () {
+    expectState('installed', function () { done(); });
   });
 });
 

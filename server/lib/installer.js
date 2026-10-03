@@ -864,14 +864,13 @@ function needsReview(pv) {
 /*
  * The download is cut off once it passes a third of the free space (the
  * staged file, its unpacked copy and the installed copy all need room) or the
- * upload cap.
+ * upload cap. The catalog's size is not held to exactly: it is the listing's
+ * figure, not the server's, and the hash already decides.
  */
-function startDownload(j, url, size, free) {
-  var expected = size > 0 ? size : undefined;
+function startDownload(j, url, free) {
   var limit = caps.uploadBytes, why = null;
   if (free !== null && free / 3 < limit) limit = free / 3;
   j.dl = fetchMod.download(url, j.file, {
-    expectedSize: expected,
     onProgress: function (bytes) {
       if (!live(j)) return;
       j.progress.bytes = bytes;
@@ -956,7 +955,7 @@ function start(req, cb) {
     if (size && free !== null && free < size * 3) {
       return fail(j, noSpace(size * 3, free));
     }
-    startDownload(j, url, size, free);
+    startDownload(j, url, free);
   });
 }
 
