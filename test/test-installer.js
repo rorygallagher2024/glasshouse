@@ -1244,6 +1244,36 @@ test('a catalog update is elevated again only for the services recorded', functi
   });
 });
 
+test('a catalog install with auto=true proceeds directly to install if nothing needs review', function (done) {
+  var ctx = setup();
+  ctx.script([{ out: DONE }]);
+  var req = ctx.pkg(makeIpk());
+  req.auto = true;
+  startOk(req, function () {
+    expectState('installed', function (s) {
+      assert.strictEqual(s.result.package, 'com.example.app');
+      done();
+    });
+  });
+});
+
+test('a screensaver package marks isScreensaver in preview and requires review even with auto=true', function (done) {
+  var ctx = setup();
+  ctx.script([{ out: DONE }]);
+  var req = ctx.pkg(makeIpk({ pkg: 'org.example.custom-screensaver' }), 'org.example.custom-screensaver');
+  req.auto = true;
+  startOk(req, function () {
+    expectState('awaiting-confirm', function (s) {
+      assert.strictEqual(s.preview.isScreensaver, true);
+      installer.confirm({ jobId: s.jobId }, function () {
+        expectState('installed', function () {
+          done();
+        });
+      });
+    });
+  });
+});
+
 /* ---------------------------------------------------------------- runner */
 
 var failures = 0;

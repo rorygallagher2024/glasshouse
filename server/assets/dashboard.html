@@ -569,6 +569,10 @@ function saverRows(d) {
     r.push({ label: t('tv.saver.held', 'Custom screen savers'), value: t('common.off', 'Off'), cls: 'off',
              hint: t('ss.held', 'Custom screen savers are turned off on this TV for now. On webOS 10 and later they can leave the picture, the sound and HDMI control off until the TV is unplugged. Switch to LG\'s screen saver to stop using this one now; otherwise it goes when the TV is next fully restarted.') });
   }
+  if (d.external && d.external.active) {
+    r.push({ label: t('tv.saver.external', 'Homebrew screen saver'), value: t('apps.service.active', 'Active'), cls: 'warn',
+             hint: t('ss.external.active', 'A third-party homebrew screen saver is currently active on the TV. Selecting a Glasshouse screen saver will replace it.') });
+  }
   d.modes.filter(function (m) { return m.available || (d.held && m.active); }).forEach(function (m) {
     r.push({ label: m.label, value: m.active ? t('ss.inUse', 'In use') : '', cls: m.active ? 'on' : '',
              act: d.writable && !busy ? 'saver' : null, key: m.id,
@@ -609,9 +613,9 @@ function appsRows(d) {
   var r = [];
 
   if (d.writable !== false) {
-    r.push(head(t('tv.apps.head.installApplications', 'Install Applications')));
+    r.push(head(t('tv.apps.head.installHomebrewApps', 'Install Homebrew Applications')));
     r.push({
-      label: t('apps.install', 'Install apps'),
+      label: t('apps.install', 'Install homebrew apps'),
       value: t('tv.apps.install.browse', 'Browse'),
       cls: 'act', act: 'open', key: 'catalog',
       press: t('tv.apps.install.press.open', 'Press OK to open the catalog'),
@@ -1224,7 +1228,10 @@ function catalogRow(a) {
   if (a.state === 'hbc') {
     row.value = t('apps.install.viaHbc', 'Updates through Homebrew Channel'); row.cls = 'off'; row.plain = true;
   } else if (a.state === 'installed') {
-    row.value = t('apps.install.installed', 'Installed'); row.cls = 'on';
+    row.value = t('apps.uninstall.button', 'Uninstall'); row.cls = 'bad'; row.act = 'uninstall';
+    row.title = a.title || a.id;
+    row.key = a.id;
+    row.press = t('tv.apps.uninstall.press', 'Press OK to uninstall app');
   } else if (a.state === 'update') {
     row.value = t('apps.install.update', 'Update'); row.cls = 'warn'; row.act = 'catalogInstall';
     row.press = t('tv.apps.install.press.update', 'Press OK to review and update');
@@ -1340,6 +1347,10 @@ function previewRows(pv) {
     r.push({ label: t('tv.apps.install.pv.cpu', 'Processor'), value: t('tv.apps.install.pv.mismatch', 'Mismatch'), cls: 'warn', key: 'pv:cpu',
              hint: t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.') });
   }
+  if (pv.isScreensaver) {
+    r.push({ label: t('tv.apps.install.pv.screensaver', 'Screen saver'), value: t('common.replaces', 'Replaces ours'), cls: 'warn', key: 'pv:screensaver',
+             hint: t('apps.install.screensaver.warn', 'This app installs a custom screen saver, which will replace Glasshouse’s own screen savers.') });
+  }
   if (pv.freeBytes !== null && pv.freeBytes !== undefined) {
     r.push({ label: t('tv.apps.install.pv.space', 'Free space'), value: fmtMb(pv.freeBytes), key: 'pv:space',
              hint: t('apps.install.space', 'Free space: {free}. Needed: about {need}.', { free: fmtMb(pv.freeBytes), need: fmtMb(pv.needBytes) }) });
@@ -1368,7 +1379,7 @@ function startInstall(id) {
   busy = true;
   instOwn = true;
   instDismissed = null;
-  installPost('/api/apps/install/fetch', { id: id }, function (err, j) {
+  installPost('/api/apps/install/fetch', { id: id, auto: true }, function (err, j) {
     busy = false;
     if (err) { instOwn = false; flash(sentence(err.message)); return; }
     adoptInstall(j.install);
@@ -1722,6 +1733,7 @@ function sendPost(url, body, note) {
       busy = false;
       if (res && res.ok === false) { flash(res.error || t('tv.failed', 'That did not work')); return fetchTab(true); }
       if (note) flash(note);
+      if (sub === 'catalog') loadCatalog(true);
       fetchTab(true);
     })
     .catch(function () { busy = false; flash(t('tv.failed', 'That did not work')); });

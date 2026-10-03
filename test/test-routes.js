@@ -574,6 +574,21 @@ function createMockRes(cb) {
     assert.strictEqual(b.ok, true);
     assert.deepEqual(calls.pop(), ['cancel', 'j1']);
   });
+  call('POST', '/api/apps/install/fetch', HOST, { id: pkg.id, auto: true }, function (r) {
+    assert.strictEqual(r.statusCode, 200);
+    var start = calls.pop();
+    assert.strictEqual(start[1].auto, true);
+  });
+  call('POST', '/api/apps/install/sideload', HOST, { enabled: true }, function (r, b) {
+    assert.strictEqual(r.statusCode, 200);
+    assert.strictEqual(b.ok, true);
+    assert.strictEqual(b.sideload, true);
+  });
+  call('POST', '/api/apps/install/sideload', HOST, { enabled: false }, function (r, b) {
+    assert.strictEqual(r.statusCode, 200);
+    assert.strictEqual(b.ok, true);
+    assert.strictEqual(b.sideload, false);
+  });
   // An installer refusal is reported as an error, not a success
   var realStart = installerStub.start;
   installerStub.start = function (r, cb) { cb('an install is already in progress'); };
@@ -594,6 +609,7 @@ function createMockRes(cb) {
 
   // Restart paths refuse while an install runs, before anything is written
   setup(base);
+  try { fs.unlinkSync(cfgFile); } catch (e) {}
   busy = true;
   call('POST', '/api/settings', HOST, { mqtt: { telemetryIntervalMs: 10000 }, device: { id: 'lg' } }, function (r, b) {
     assert.strictEqual(r.statusCode, 409);
@@ -615,7 +631,7 @@ function createMockRes(cb) {
   }, '127.0.0.1');
   waiting = false;
 
-  assert.strictEqual(checks, 40, 'every callback ran');
+  assert.strictEqual(checks, 43, 'every callback ran');
   try { fs.unlinkSync(cfgFile); } catch (e) {}
   console.log('  ✓ install routes: Host check, controls switch, catalog, install flow, restart refusal');
 })();

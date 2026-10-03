@@ -797,6 +797,10 @@ function buildPreview(j) {
       if (free !== null && free < need) {
         return fail(j, noSpace(need, free));
       }
+      var isSaver = isScreensaverPackage(info.package);
+      for (var sIdx = 0; sIdx < info.apps.length; sIdx++) {
+        if (isScreensaverPackage(info.apps[sIdx].id)) isSaver = true;
+      }
       j.preview = {
         jobId: j.id,
         package: info.package,
@@ -812,6 +816,7 @@ function buildPreview(j) {
         reelevate: reelevated(j),
         cpuMismatch: info.cpuMismatch,
         storeInstalled: store,
+        isScreensaver: isSaver,
         source: j.source,
         vetted: vetted(j),
         freeBytes: free,
@@ -819,6 +824,12 @@ function buildPreview(j) {
         sha256: j.digest
       };
       setState(j, 'awaiting-confirm');
+      if (j.auto && !needsReview(j.preview)) {
+        var autoErr = null;
+        // confirm() answers synchronously; if it refuses, the preview stays up.
+        confirm({ jobId: j.id }, function (e) { autoErr = e; });
+        if (!autoErr) return;
+      }
       j.timer = setTimeout(function () {
         j.timer = null;
         fail(j, msg('srv.install.expired', 'the preview expired; start the install again'));
@@ -826,6 +837,22 @@ function buildPreview(j) {
       if (j.timer.unref) j.timer.unref();
     });
   });
+}
+
+function isScreensaverPackage(id) {
+  if (!id || typeof id !== 'string') return false;
+  return /screensaver/i.test(id);
+}
+
+/*
+ * What a one-click catalog install still stops for: a choice to make (root for
+ * services the app says need it, replacing an LG store copy) or a warning to
+ * read (a different processor, an older version, or a custom screensaver).
+ */
+function needsReview(pv) {
+  return !!((pv.rootRequired && pv.services.length && fs.existsSync(elevatePath)) ||
+            pv.storeInstalled || pv.cpuMismatch || pv.direction === 'down' ||
+            pv.isScreensaver);
 }
 
 /*
@@ -861,8 +888,9 @@ function startDownload(j, url, size, free) {
 
 /**
  * Starts a job and calls back at once with its snapshot; later steps show in
- * status(). Sources: { source: 'catalog', pkg }, { source: 'url', url, sha256? },
+ * status(). Sources: { source: 'catalog', pkg, auto? }, { source: 'url', url, sha256? },
  * { source: 'file', path } (a file already inside the staging directory).
+ * With auto, a catalog install whose preview needs no review installs at once.
  */
 function start(req, cb) {
   cb = cb || noop;
@@ -909,7 +937,9 @@ function start(req, cb) {
     id: id, state: url ? 'downloading' : 'verifying', source: req.source, pkg: pkg, sha256: sha,
     file: file || path.join(stagingDir, id + '.ipk'), progress: { bytes: 0, total: size || null },
     preview: null, error: null, result: null, cancelled: false, dl: null, timer: null, info: null,
-    size: 0, digest: null
+    size: 0, digest: null,
+    // URL and file installs always stop at the preview: nothing else vouches for them.
+    auto: req.source === 'catalog' && req.auto === true
   };
   job = j;
   persist(j);

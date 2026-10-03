@@ -93,6 +93,9 @@ console.log('Running test-screensavers.js ...');
   assert.strictEqual(list.level, 'dim');
   assert.strictEqual(list.writable, true);
   assert.ok(Array.isArray(list.modes));
+  assert.ok(list.external, 'list.external must exist');
+  assert.strictEqual(typeof list.external.active, 'boolean');
+  assert.strictEqual(typeof list.external.hook, 'boolean');
 
   // stock is always available
   var stock = list.modes.filter(function (m) { return m.id === 'stock'; })[0];

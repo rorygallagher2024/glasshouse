@@ -1277,8 +1277,8 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
   <div class="lbl" data-t="apps.heading">Apps &amp; Home Screen Launcher</div>
 
 
-  <details class="pv-d" id="disc-install-apps" open>
-    <summary><span data-t="apps.install">Install apps</span> <span class="cur" id="apps-catalog-summary"></span></summary>
+  <details class="pv-d" id="disc-install-apps">
+    <summary><span data-t="apps.install">Install homebrew apps</span> <span class="cur" id="apps-catalog-summary"></span></summary>
     <div class="pv-sub" data-t="apps.install.desc">Apps from the Homebrew Channel catalog. Each is downloaded to the TV and checked against its published hash, and its contents are shown here before anything is installed.</div>
     <form class="toast-form" onsubmit="event.preventDefault();">
       <input type="search" id="catalog-search" placeholder="Search apps" data-t-placeholder="apps.install.search" maxlength="60"
@@ -1296,6 +1296,7 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
         <div class="prot-desc" id="inst-root-note" hidden></div>
       </div>
       <div class="prot-desc" id="inst-cpu" hidden></div>
+      <div class="prot-desc" id="inst-screensaver" hidden></div>
       <div class="prot-desc" id="inst-space"></div>
       <div class="prot-desc" id="inst-hash" hidden></div>
       <div id="inst-store-row" hidden>
@@ -1309,7 +1310,8 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
     </div>
     <div class="pv-note" id="sideload-off" hidden>
       <div class="prot-title" data-t="apps.sideload.off.title">Install from a URL or a file</div>
-      <div class="prot-desc" data-t="apps.sideload.off.desc">This is off, because a package from outside the catalog can run anything on the TV. To turn it on, set "apps": {"sideload": true} in config.json on the TV, or set a token, or open this page in the TV's web browser.</div>
+      <div class="prot-desc" data-t="apps.sideload.off.desc">This is off, because a package from outside the catalog can run anything on the TV. You can turn it on below, or by setting a token.</div>
+      <div style="margin-top:10px"><button type="button" class="pill warn" id="btn-sideload-enable" onclick="toggleSideload(true)" data-t="apps.sideload.enable">Turn on install from URL or file&hellip;</button></div>
     </div>
     <div id="sideload-box" hidden>
       <div class="prot-title" data-t="apps.sideload.url.title">From URL&hellip;</div>
@@ -1325,13 +1327,14 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
         <input type="file" id="sl-file" accept=".ipk" aria-label="Package file" data-t-aria-label="apps.sideload.file.label">
         <button type="submit" id="sl-file-btn" data-t="apps.sideload.file.go">Upload and check</button>
       </form>
+      <div style="margin-top:12px"><button type="button" class="pill idle" id="btn-sideload-disable" onclick="toggleSideload(false)" data-t="apps.sideload.disable">Turn off install from URL or file</button></div>
     </div>
     <div class="prot-table" id="apps-catalog-list">
       <div class="sub" style="padding:16px 0" data-t="apps.install.loading">Loading the catalog&hellip;</div>
     </div>
   </details>
 
-  <details class="pv-d" id="disc-installed-apps" open>
+  <details class="pv-d" id="disc-installed-apps">
     <summary><span data-t="apps.uninstall">Uninstall applications</span> <span class="cur" id="apps-installed-summary"></span></summary>
     <div class="pv-sub" data-t="apps.uninstall.desc">Store downloads and user-installed applications. Click Uninstall to permanently remove the application and free up internal eMMC flash storage space.</div>
     <div class="prot-table" id="apps-installed-list">
@@ -1355,7 +1358,7 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
     </div>
   </details>
 
-  <details class="pv-d" id="disc-system-services" open hidden>
+  <details class="pv-d" id="disc-system-services" hidden>
     <summary><span data-t="apps.services">Turn off background services</span> <span class="cur" id="apps-services-summary"></span></summary>
     <div class="pv-sub" data-t="apps.services.desc">Non-essential background services discovered on this TV. Disable unnecessary services to reduce memory usage, eliminate background telemetry, and speed up boot times.</div>
     <div class="prot-table" id="apps-services-list">
@@ -1363,7 +1366,7 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
     </div>
   </details>
 
-  <details class="pv-d" id="disc-saved-pages" open>
+  <details class="pv-d" id="disc-saved-pages">
     <summary><span data-t="apps.pages">Saved web pages</span> <span class="cur" id="apps-pages-summary"></span></summary>
     <div class="pv-sub" data-t="apps.pages.desc">Web pages on the TV's home screen, each opening in its browser. A page saved
       from the browser takes its whole title as its name, so a long one can be given a shorter name
@@ -3868,9 +3871,9 @@ function renderCatalog() {
   }
   const idle = installIdle();
   list.innerHTML = shown.map(a => {
-    let label, cls = 'idle', off = !writable || !idle;
+    let label, cls = 'idle', off = !writable || !idle, isInstalled = false;
     if (a.state === 'hbc') { label = t('apps.install.viaHbc', 'Updates through Homebrew Channel'); off = true; }
-    else if (a.state === 'installed') { label = t('apps.install.installed', 'Installed'); off = true; }
+    else if (a.state === 'installed') { label = t('apps.uninstall.button', 'Uninstall'); cls = 'bad'; isInstalled = true; }
     else if (a.state === 'update') { label = t('apps.install.update', 'Update'); cls = 'warn'; }
     else { label = t('apps.install.button', 'Install'); cls = 'good'; }
     const icon = a.iconUri
@@ -3880,6 +3883,9 @@ function renderCatalog() {
       a.state === 'update' && a.installedVersion ? t('apps.install.have', 'installed: v{version}', { version: a.installedVersion }) : ''
     ].filter(Boolean).join(' · ');
     const root = a.rootRequired ? ` <span class="pill warn" style="padding:1px 8px">${esc(t('apps.install.rootBadge', 'root'))}</span>` : '';
+    const clickFn = isInstalled
+      ? `confirmUninstall('${jsq(a.id)}', '${jsq(a.title || a.id)}');`
+      : `startInstall('${jsq(a.id)}');`;
     return `<div class="prot-row">
       ${icon}
       <div class="prot-main">
@@ -3887,7 +3893,7 @@ function renderCatalog() {
         <div class="prot-desc">${esc(a.description || a.id)}</div>
       </div>
       <div class="prot-status">
-        <button type="button" class="pill ${cls}" onclick="startInstall('${jsq(a.id)}')" ${off ? 'disabled' : ''}>${esc(label)}</button>
+        <button type="button" class="pill ${cls}" onclick="${clickFn}" ${off ? 'disabled' : ''}>${esc(label)}</button>
       </div>
     </div>`;
   }).join('');
@@ -3938,6 +3944,9 @@ function renderPreview(pv) {
   q('inst-cpu').hidden = !pv.cpuMismatch;
   q('inst-cpu').textContent = !pv.cpuMismatch ? ''
     : t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.');
+  q('inst-screensaver').hidden = !pv.isScreensaver;
+  q('inst-screensaver').textContent = pv.isScreensaver
+    ? t('apps.install.screensaver.warn', 'This app installs a custom screen saver, which will replace Glasshouse’s own screen savers.') : '';
   q('inst-space').textContent = pv.freeBytes === null || pv.freeBytes === undefined ? ''
     : t('apps.install.space', 'Free space: {free}. Needed: about {need}.', { free: fmtMb(pv.freeBytes), need: fmtMb(pv.needBytes) });
   const showHash = pv.source !== 'catalog' && !!pv.sha256;
@@ -3952,6 +3961,28 @@ function renderSideload() {
   q('sideload-box').hidden = installSideload !== true;
   const off = !installIdle() || uploading;
   ['sl-url', 'sl-sha', 'sl-url-btn', 'sl-file', 'sl-file-btn'].forEach(id => { q(id).disabled = off; });
+  const disableBtn = q('btn-sideload-disable');
+  if (disableBtn) disableBtn.hidden = !installSnap || installSnap.sideloadVia !== 'config';
+}
+
+async function toggleSideload(enable) {
+  if (enable) {
+    if (!confirm(t('apps.sideload.enable.confirm', 'Allow installing apps from a URL or an uploaded file?\n\nPackages from outside the catalog are unvetted and can run anything on the TV. Only install packages you trust.'))) return;
+  }
+  try {
+    const r = await fetch(api('/api/apps/install/sideload'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: enable })
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) throw new Error(d.error || t('apps.sideload.failed', 'Could not update sideload setting'));
+    installSideload = !!d.sideload;
+    if (installSnap) installSnap.sideloadVia = d.sideloadVia;
+    renderSideload();
+  } catch (e) {
+    showErr(e.message);
+  }
 }
 
 function renderInstall() {
@@ -4027,7 +4058,8 @@ async function installPost(path, body) {
 }
 
 function startInstall(appId) {
-  startJob('/api/apps/install/fetch', { id: appId });
+  // The server goes straight on to install unless the preview has a choice or a warning in it.
+  startJob('/api/apps/install/fetch', { id: appId, auto: true });
 }
 
 function startUrlInstall() {
@@ -4307,7 +4339,6 @@ function renderAppsPanel() {
 
   if (tilesDisc) {
     tilesDisc.hidden = d.tileHidingAvailable === false;
-    tilesDisc.open = tileHidingEnabled;
   }
 
   if (btnOff && btnOn) {
@@ -4481,6 +4512,7 @@ async function confirmUninstall(appId, appTitle) {
         renderAppsPanel();
       }
       await loadApps();
+      await loadCatalog(true);
     } else {
       if (btn) {
         btn.disabled = false;
@@ -4943,13 +4975,16 @@ async function loadScreensavers() {
   /* Where LG's screen saver is built differently from ours, the TV has to
      restart its app manager to move between them, and nothing answers until it
      is back. Say so before, and hold the controls while it happens. */
-  q('ss-note').textContent = !d.writable
+  const extNote = (d.external && d.external.active)
+    ? (t('ss.external.active', 'A third-party homebrew screen saver is currently active on the TV. Selecting a Glasshouse screen saver will replace it.') + ' ')
+    : '';
+  q('ss-note').textContent = extNote + (!d.writable
     ? t('ss.controlsOff', 'Controls are disabled in config.json, so the screen saver cannot be changed from here.')
     : ssSwitching ? SS_SWITCHING
     : d.held ? t('ss.held', 'Custom screen savers are turned off on this TV for now. On webOS 10 and later they can leave the picture, the sound and HDMI control off until the TV is unplugged. Switch to LG\'s screen saver to stop using this one now; otherwise it goes when the TV is next fully restarted.')
     : d.heldOverridden ? t('common.heldOverridden', 'Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged (#366).')
     : (d.slowSwitch ? t('ss.slowSwitch', 'On this TV, switching to or from the LG default takes about a minute, and the screen goes dark while it does.') + ' ' : '')
-      + t('ss.firmwareNote', 'Note: if a firmware update is applied, the screen saver will be restored to the LG default.');
+      + t('ss.firmwareNote', 'Note: if a firmware update is applied, the screen saver will be restored to the LG default.'));
   ssWritable = d.writable;
   // The status poll sets it from here on; this just saves waiting for it.
   if (ssSwitching) refuseScreensaver(q('ss-toggle'), SS_SWITCHING);

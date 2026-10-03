@@ -217,6 +217,49 @@ function screensaverMode() {
   return 'stock';
 }
 
+function detectExternal() {
+  var active = false;
+  var hook = false;
+  try {
+    var info = fs.readFileSync('/proc/self/mountinfo', 'utf8').split('\n');
+    for (var i = 0; i < info.length; i++) {
+      var parts = info[i].split(' ');
+      if (parts.length >= 5) {
+        var root = parts[3];
+        var target = parts[4];
+        if (target.indexOf(SCREENSAVER_APP_DIR) === 0 && root.indexOf('/var/lib/tvweb/screensaver') === -1) {
+          active = true;
+          break;
+        }
+      }
+    }
+  } catch (e) {}
+  if (!active) {
+    try {
+      var mounts = fs.readFileSync('/proc/mounts', 'utf8').split('\n');
+      for (var m = 0; m < mounts.length; m++) {
+        var mparts = mounts[m].split(' ');
+        if (mparts.length >= 2 && mparts[1].indexOf(SCREENSAVER_APP_DIR) === 0) {
+          if (mparts[0].indexOf('/var/lib/tvweb/screensaver') === -1 && mparts[1] !== SCREENSAVER_APP_DIR) {
+            active = true;
+            break;
+          }
+        }
+      }
+    } catch (e2) {}
+  }
+  try {
+    var initFiles = fs.readdirSync('/var/lib/webosbrew/init.d');
+    for (var j = 0; j < initFiles.length; j++) {
+      if (/screensaver/i.test(initFiles[j])) {
+        hook = true;
+        break;
+      }
+    }
+  } catch (e3) {}
+  return { active: active, hook: hook };
+}
+
 function screensaverList() {
   var cur = screensaverMode();
   var out = [];
@@ -242,7 +285,8 @@ function screensaverList() {
     available: !held() || cur !== 'stock',
     held: held(),
     heldOverridden: heldOverridden(),
-    switching: switching()
+    switching: switching(),
+    external: detectExternal()
   };
 }
 
@@ -443,6 +487,7 @@ module.exports = {
   screensaverMode: screensaverMode,
   screensaverList: screensaverList,
   switching: switching,
+  detectExternal: detectExternal,
   held: held,
   heldOverridden: heldOverridden,
   setScreensaver: setScreensaver,

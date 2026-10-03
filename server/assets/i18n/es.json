@@ -4528,8 +4528,8 @@
   "from": "View only"
  },
  "apps.install": {
-  "text": "Instalar apps",
-  "from": "Install apps"
+  "text": "Instalar aplicaciones homebrew",
+  "from": "Install homebrew apps"
  },
  "apps.install.apps": {
   "text": "Apps: {list}",
@@ -4590,10 +4590,6 @@
  "apps.install.have": {
   "text": "instalada: v{version}",
   "from": "installed: v{version}"
- },
- "apps.install.installed": {
-  "text": "Instalada",
-  "from": "Installed"
  },
  "apps.install.installing": {
   "text": "Instalando…",
@@ -4887,10 +4883,6 @@
   "text": "no hay espacio libre suficiente para esta descarga: hay {free} libres y el paquete necesita unas tres veces su tamaño",
   "from": "not enough free space for this download: {free} free, and the package needs about three times its size"
  },
- "tv.apps.head.installApplications": {
-  "text": "Instalar aplicaciones",
-  "from": "Install Applications"
- },
  "tv.apps.install.browse": {
   "text": "Ver",
   "from": "Browse"
@@ -5056,8 +5048,8 @@
   "from": "Upload .ipk"
  },
  "apps.sideload.off.desc": {
-  "text": "Está desactivado, porque un paquete de fuera del catálogo puede ejecutar cualquier cosa en la TV. Para activarlo, añade \"apps\": {\"sideload\": true} a config.json en la TV, o define un token, o abre esta página en el navegador web de la TV.",
-  "from": "This is off, because a package from outside the catalog can run anything on the TV. To turn it on, set \"apps\": {\"sideload\": true} in config.json on the TV, or set a token, or open this page in the TV's web browser."
+  "text": "Esto está desactivado porque un paquete fuera del catálogo puede ejecutar cualquier cosa en la TV. Puede activarlo abajo o configurando un token.",
+  "from": "This is off, because a package from outside the catalog can run anything on the TV. You can turn it on below, or by setting a token."
  },
  "apps.sideload.off.title": {
   "text": "Instalar desde una URL o un archivo",
@@ -5146,5 +5138,45 @@
  "tv.apps.install.pv.rootBack": {
   "text": "Se devuelve",
   "from": "Given back"
+ },
+ "apps.install.screensaver.warn": {
+  "text": "Esta aplicación instala un salvapantallas personalizado, que reemplazará a los salvapantallas de Glasshouse.",
+  "from": "This app installs a custom screen saver, which will replace Glasshouse’s own screen savers."
+ },
+ "apps.sideload.disable": {
+  "text": "Desactivar instalación desde URL o archivo",
+  "from": "Turn off install from URL or file"
+ },
+ "apps.sideload.enable": {
+  "text": "Activar instalación desde URL o archivo…",
+  "from": "Turn on install from URL or file…"
+ },
+ "apps.sideload.enable.confirm": {
+  "text": "¿Permitir instalar aplicaciones desde una URL o un archivo subido?\n\nLos paquetes fuera del catálogo no están revisados y pueden ejecutar cualquier cosa en la TV. Instale únicamente paquetes de confianza.",
+  "from": "Allow installing apps from a URL or an uploaded file?\n\nPackages from outside the catalog are unvetted and can run anything on the TV. Only install packages you trust."
+ },
+ "apps.sideload.failed": {
+  "text": "No se pudo actualizar la configuración de instalación externa",
+  "from": "Could not update sideload setting"
+ },
+ "common.replaces": {
+  "text": "Reemplaza el nuestro",
+  "from": "Replaces ours"
+ },
+ "ss.external.active": {
+  "text": "Un salvapantallas homebrew de terceros está activo actualmente en la TV. Seleccionar un salvapantallas de Glasshouse lo reemplazará.",
+  "from": "A third-party homebrew screen saver is currently active on the TV. Selecting a Glasshouse screen saver will replace it."
+ },
+ "tv.apps.head.installHomebrewApps": {
+  "text": "Instalar aplicaciones homebrew",
+  "from": "Install Homebrew Applications"
+ },
+ "tv.apps.install.pv.screensaver": {
+  "text": "Salvapantallas",
+  "from": "Screen saver"
+ },
+ "tv.saver.external": {
+  "text": "Salvapantallas homebrew",
+  "from": "Homebrew screen saver"
  }
 }

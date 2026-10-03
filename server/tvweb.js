@@ -583,7 +583,10 @@ installer.init({
   apps: appsModule,
   fetch: fetchLib,
   updaterBusy: updater.isBusy,
-  onInstalled: function () { appsChanged(); }
+  onInstalled: function () {
+    appsChanged();
+    appsModule.refreshLauncher();
+  }
 });
 if (!CLI_MODE) installer.recover();
 

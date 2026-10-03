@@ -727,7 +727,7 @@ function handleInstallRoute(req, res, u, pathname) {
       if (typeof body.id !== 'string' || !body.id) return installError(res, msg('srv.install.idRequired', 'an app id is required'));
       repoModule.findPackage(body.id, function (err, pkg) {
         if (err) return installError(res, err.message);
-        installerModule.start({ source: 'catalog', pkg: pkg }, installReply(res));
+        installerModule.start({ source: 'catalog', pkg: pkg, auto: body.auto === true }, installReply(res));
       });
     });
   }
@@ -760,6 +760,22 @@ function handleInstallRoute(req, res, u, pathname) {
       installerModule.cancel(body.jobId, function (err) {
         if (err) return installError(res, String(err));
         send(res, 200, JSON.stringify({ ok: true }));
+      });
+    });
+  }
+  if (pathname === '/api/apps/install/sideload') {
+    return readJsonBody(req, res, function (body) {
+      var enable = body.enabled === true;
+      config.apps = config.apps || {};
+      config.apps.sideload = enable;
+      writeSettings({ apps: { sideload: enable } }, function (err) {
+        if (err) return installError(res, err.message);
+        if (enable) {
+          console.error('warning: apps.sideload enabled from dashboard; arbitrary IPK installations allowed');
+        } else {
+          console.log('apps: apps.sideload disabled');
+        }
+        send(res, 200, JSON.stringify({ ok: true, sideload: enable, sideloadVia: sideloadVia(req) }));
       });
     });
   }
