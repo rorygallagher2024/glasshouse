@@ -909,14 +909,18 @@ test('an update of an elevated package elevates again without being asked', func
 });
 
 test('no elevation without the request, and none for a package never elevated', function (done) {
-  var ctx = setup();
+  var told = 0;
+  var ctx = setup({ init: { onInstalled: function () { told++; } } });
   ctx.script([{ out: DONE }]);
   startOk(ctx.pkg(makeIpk()), function () {
     expectState('awaiting-confirm', function (s) {
+      assert.strictEqual(told, 0);
       installer.confirm({ jobId: s.jobId }, function () {
         expectState('installed', function (r) {
           assert.deepEqual(logLines(ctx.elevLog), []);
           assert.strictEqual(r.result.elevation, null);
+          // The server is told, and reads the app list again at once.
+          assert.strictEqual(told, 1);
           done();
         });
       });

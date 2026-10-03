@@ -50,6 +50,8 @@ var storeAppsDir = '/media/cryptofs/apps/usr/palm/applications';
 var dfPath = 'df';
 var tvMachine = null;
 var updaterBusy = function () { return false; };
+// Told when an install finishes, so the app list is read again at once.
+var onInstalled = function () {};
 var previewMs = 10 * 60 * 1000;
 var installTimeoutMs = 120000;
 var elevateTimeoutMs = 60000;
@@ -1120,6 +1122,7 @@ function finishJob(j, elevation) {
     elevation: elevation
   };
   setState(j, 'installed');
+  onInstalled();
 }
 
 /**
@@ -1228,6 +1231,7 @@ function init(opts) {
   for (var k in DEFAULT_CAPS) caps[k] = (opts.caps && opts.caps[k]) || DEFAULT_CAPS[k];
   tvMachine = opts.tvMachine || detectTvMachine();
   updaterBusy = opts.updaterBusy || function () { return false; };
+  onInstalled = opts.onInstalled || function () {};
 }
 
 module.exports = {

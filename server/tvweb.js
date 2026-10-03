@@ -582,7 +582,8 @@ installer.init({
   luna: luna,
   apps: appsModule,
   fetch: fetchLib,
-  updaterBusy: updater.isBusy
+  updaterBusy: updater.isBusy,
+  onInstalled: function () { appsChanged(); }
 });
 if (!CLI_MODE) installer.recover();
 
