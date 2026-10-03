@@ -293,6 +293,7 @@ function startFailedDependents(cb) {
             'fi; done; ' +
             'elif command -v initctl >/dev/null 2>&1; then ' +
             'initctl restart eim >/dev/null 2>&1 && echo "eim" || true; ' +
+            'initctl start com.webos.app.inputcommon >/dev/null 2>&1 || true; ' +
             'fi';
   execFile('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err, out) {
     var started = String(out || '').trim();
@@ -345,11 +346,11 @@ function launcherNeedsRestart() {
   return isTileHidingEnabled() && Object.keys(readHiddenAppsList()).length > 0;
 }
 
-/** After an install: restarts sam if the launcher would otherwise miss the app. cb(restarted). */
+/** After an install or uninstall: restarts sam if the launcher would otherwise miss the change. cb(restarted). */
 function refreshLauncher(cb) {
   cb = cb || function () {};
   if (!launcherNeedsRestart() || screensavers.held()) return cb(false);
-  console.log('apps: restarting sam so the home screen shows the new app');
+  console.log('apps: restarting sam so the home screen updates');
   restartSamShared(cb);
 }
 
@@ -393,6 +394,7 @@ function restartSam(cb) {
               'systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true; ' +
               'elif command -v initctl >/dev/null 2>&1; then ' +
               'initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true; ' +
+              'pkill -9 -f "@system_native_app" >/dev/null 2>&1 || true; ' +
               'else ' +
               'pkill -9 -x sam >/dev/null 2>&1 || true; ' +
               'fi';
@@ -966,6 +968,13 @@ function uninstallApp(appId, cb) {
     return cb({ ok: false, error: 'Luna service not available' });
   }
 
+  // Close the app and any screensaver overlay before removing its files
+  lunaFn('com.webos.applicationManager/closeByAppId', { id: appId }, function () {});
+  if (/screensaver/i.test(appId)) {
+    lunaFn('com.webos.applicationManager/closeByAppId', { id: 'com.webos.app.screensaver' }, function () {});
+    screensavers.unmountScreensaver();
+  }
+
   var handleSuccess = function () {
     // Wait for the app removal to complete asynchronously in SAM / appInstallService
     var start = Date.now();
@@ -980,7 +989,9 @@ function uninstallApp(appId, cb) {
           }
         }
         if (!stillThere || (Date.now() - start) >= 3000) {
-          return cb({ ok: true, id: appId });
+          return refreshLauncher(function () {
+            cb({ ok: true, id: appId });
+          });
         }
         setTimeout(poll, 300);
       });

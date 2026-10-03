@@ -96,13 +96,17 @@ function clearStagedScreensaver() {
 }
 
 function unmountScreensaver(cb) {
-  execFile('/bin/umount', [SCREENSAVER_APP_DIR], { timeout: 4000 }, function (err) {
-    if (err) {
-      return execFile('/bin/umount', ['-l', SCREENSAVER_APP_DIR], { timeout: 4000 }, function () {
-        cb();
-      });
-    }
-    cb();
+  cb = cb || function () {};
+  var qmlFile = path.join(SCREENSAVER_APP_DIR, 'qml', 'main.qml');
+  execFile('/bin/umount', ['-l', qmlFile], { timeout: 4000 }, function () {
+    execFile('/bin/umount', [SCREENSAVER_APP_DIR], { timeout: 4000 }, function (err) {
+      if (err) {
+        return execFile('/bin/umount', ['-l', SCREENSAVER_APP_DIR], { timeout: 4000 }, function () {
+          cb();
+        });
+      }
+      cb();
+    });
   });
 }
 
