@@ -781,6 +781,29 @@ function createMockRes(cb) {
     assert.strictEqual(r.statusCode, 403);
     assert.ok(/apps\.hosts/.test(b.error));
   });
+  // The Apps tab's switch opens and closes it, and is saved to config.json
+  try { fs.unlinkSync(cfgFile); } catch (e) {}
+  init({ allowControl: true, token: '', web: { enabled: false } });
+  postJson('/api/apps/install/sideload', { enabled: true }, REMOTE, function (r, b) {
+    assert.strictEqual(r.statusCode, 200);
+    assert.strictEqual(b.sideloadVia, 'config');
+  });
+  assert.strictEqual(JSON.parse(fs.readFileSync(cfgFile, 'utf8')).apps.sideload, true);
+  postJson('/api/apps/install/url', ok, REMOTE, function (r) { assert.strictEqual(r.statusCode, 200, 'the switch opens it'); });
+  postJson('/api/apps/install/sideload', { enabled: 'yes' }, REMOTE, function (r, b) { assert.strictEqual(b.sideload, false, 'only boolean true turns it on'); });
+  postJson('/api/apps/install/url', ok, REMOTE, function (r) { assert.strictEqual(r.statusCode, 403, 'and switching off closes it'); });
+  assert.strictEqual(JSON.parse(fs.readFileSync(cfgFile, 'utf8')).apps.sideload, false);
+  postJson('/api/apps/install/sideload', { enabled: true }, REMOTE, function (r, b) {
+    assert.strictEqual(r.statusCode, 403);
+    assert.ok(/apps\.hosts/.test(b.error), 'a rebinding page cannot flip it');
+  }, 'evil.example');
+  init({ allowControl: true, token: 'tok', web: { enabled: false } });
+  postJson('/api/apps/install/sideload', { enabled: true }, REMOTE, function (r) { assert.strictEqual(r.statusCode, 401, 'a token guards it'); });
+  init({ allowControl: false, token: '', web: { enabled: false } });
+  postJson('/api/apps/install/sideload', { enabled: true }, REMOTE, function (r) { assert.strictEqual(r.statusCode, 403, 'so does allowControl'); });
+  assert.strictEqual(JSON.parse(fs.readFileSync(cfgFile, 'utf8')).apps.sideload, false, 'refused requests change nothing');
+  fs.unlinkSync(cfgFile);
+
   init({ allowControl: false, token: '', web: { enabled: false }, apps: { sideload: true } });
   postJson('/api/apps/install/url', ok, REMOTE, function (r) { assert.strictEqual(r.statusCode, 403); });
   upload({ length: 10, chunks: [FILE] }, function (r) { assert.strictEqual(r.statusCode, 403); });
