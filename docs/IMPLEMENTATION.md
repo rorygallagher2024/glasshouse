@@ -47,6 +47,17 @@ Older Linux kernels and Node 0.12 can encounter process deadlocks or child leaks
 4. **Memory Caching**: Telemetry is cached for 1.5 seconds, delivering sub-20ms HTTP responses with zero subprocess spawning during rapid UI updates.
 5. **Deterministic MQTT Client Session**: Uses a static client ID and periodic availability reaffirmation so TV reboots or network reconnects never leave entities trapped in an "Unavailable" state.
 
+### What it costs the TV
+
+Measured with `scripts/footprint.sh` on 2026-10-03, over a minute each, with MQTT publishing every 10s and no dashboard open:
+
+| TV | Server CPU (one core) | Server memory | luna-send children | TV memory available |
+| :-- | :-- | :-- | :-- | :-- |
+| OLED65B8SLC (webOS 4) | 1.4–1.7% | 29–42 MB | 5, 6 MB | 432–445 of 1976 MB |
+| OLED42C24LA (webOS 22) | 1.2–1.3% | 35–38 MB | 5, 10 MB | 525–535 of 1996 MB |
+
+The children are the five subscriptions held open for live state. Memory is the lower figure just after a start and grows towards the higher one. An open dashboard adds the reads behind each refresh; `./scripts/footprint.sh <tv-ip>` measures it for any TV.
+
 ---
 
 ---
