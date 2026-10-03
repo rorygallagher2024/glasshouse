@@ -558,6 +558,7 @@ button.pill[disabled], button.pill-toggle[disabled]{cursor:default;opacity:.45}
 .pv-d>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:16px;
   font-family:'Outfit';font-weight:300;font-size:clamp(20px,2.4vw,26px);color:var(--w100);
   margin:0;padding:20px 0 14px;min-height:44px;border-top:1px solid var(--w12)}
+#disc-install-apps>summary,#appspane>.pv-d:first-of-type>summary{border-top:0;padding-top:0}
 .pv-d>summary:hover .cur{color:var(--w80)}
 .pv-d>summary::-webkit-details-marker{display:none}
 .pv-d>summary::after{content:'+';font-family:'Manrope';font-size:20px;line-height:1;color:var(--w60)}
@@ -1279,7 +1280,7 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
 
   <details class="pv-d" id="disc-install-apps">
     <summary><span data-t="apps.install">Install homebrew apps</span> <span class="cur" id="apps-catalog-summary"></span></summary>
-    <div class="pv-sub" data-t="apps.install.desc">Apps from the Homebrew Channel catalog. Each is downloaded to the TV and checked against its published hash, and its contents are shown here before anything is installed.</div>
+    <div class="pv-sub" data-t="apps.install.desc">Apps from the Homebrew Channel catalog.</div>
     <form class="toast-form" onsubmit="event.preventDefault();">
       <input type="search" id="catalog-search" placeholder="Search apps" data-t-placeholder="apps.install.search" maxlength="60"
         autocomplete="off" spellcheck="false" oninput="renderCatalog()">

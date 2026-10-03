@@ -4548,8 +4548,8 @@
   "from": "Its programs are built for a different processor than this TV's and may not run."
  },
  "apps.install.desc": {
-  "text": "Apps del catálogo de Homebrew Channel. Cada una se descarga en la TV y se comprueba con su hash publicado, y su contenido se muestra aquí antes de instalar nada.",
-  "from": "Apps from the Homebrew Channel catalog. Each is downloaded to the TV and checked against its published hash, and its contents are shown here before anything is installed."
+  "text": "Apps del catálogo de Homebrew Channel.",
+  "from": "Apps from the Homebrew Channel catalog."
  },
  "apps.install.dir.down": {
   "text": "versión anterior: de v{from} a v{version}",
@@ -4912,8 +4912,8 @@
   "from": "The app is on the TV now."
  },
  "tv.apps.install.entry.hint": {
-  "text": "Apps del catálogo de Homebrew Channel. Cada una se comprueba con su hash publicado y se muestra su contenido antes de instalar nada.",
-  "from": "Apps from the Homebrew Channel catalog. Each is checked against its published hash, and its contents are shown before anything is installed."
+  "text": "Apps del catálogo de Homebrew Channel.",
+  "from": "Apps from the Homebrew Channel catalog."
  },
  "tv.apps.install.error": {
   "text": "La instalación falló",
