@@ -547,6 +547,17 @@ updater.init({
   viaHomebrewChannel: fromHomebrewChannel
 });
 
+/*
+ * An app removed from the dashboard is read off the list at once rather than
+ * at the next minute's scan, and with MQTT on the next publish carries it to
+ * Home Assistant's Launch App. publishNow is set once MQTT is up.
+ */
+var publishNow = function () {};
+function appsChanged() {
+  telemetry.clearCache();
+  telemetry.refreshInstalledApps(function () { publishNow(); });
+}
+
 routes.init({
   config: CONFIG,
   configFile: CONFIG_FILE,
@@ -568,6 +579,7 @@ routes.init({
   assetDirs: ASSET_DIRS,
   luna: luna,
   getMqttStatus: function () { return MQTT_STATUS; },
+  appsChanged: appsChanged,
   version: TVWEB_VERSION
 });
 
@@ -813,6 +825,7 @@ function setupHomeAssistant() {
   };
 
   var lastPicSig = '';
+  publishNow = function () { publishTelemetry(); };
   var lastAppSig = '';
   var lastCapSig = '';
 
