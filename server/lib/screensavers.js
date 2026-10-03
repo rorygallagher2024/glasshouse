@@ -464,6 +464,15 @@ function trigger(cb) {
       }
       lunaFn('com.webos.service.tvpower/power/turnOnScreenSaver', {}, function (r) {
         if (r && r.returnValue) return cb({ ok: true });
+        if (r && r.errorText === 'Invalid State change Request') {
+          return lunaFn('com.webos.applicationManager/launch', { id: 'com.webos.app.screensaver' }, function (lr) {
+            if (lr && lr.returnValue) return cb({ ok: true });
+            cb({
+              ok: false,
+              error: msg('srv.saver.refused', 'the TV would not start a screen saver here: {error}', { error: r.errorText })
+            });
+          });
+        }
         cb({
           ok: false,
           error: (r && r.errorText)

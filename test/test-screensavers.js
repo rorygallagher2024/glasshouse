@@ -215,6 +215,37 @@ console.log('Running test-screensavers.js ...');
       console.log('  ✓ Home Assistant offers every screen saver in the catalog');
     })();
 
+    // 12. trigger falls back to applicationManager/launch when tvpower returns Invalid State change Request
+    (function testTriggerFallbackInvalidState() {
+      var appLaunched = null;
+      var fallbackLuna = function (uri, params, cb) {
+        if (uri === 'com.webos.service.tvpower/power/getPowerState') return cb({ returnValue: true, state: 'Active' });
+        if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'netflix' });
+        if (uri === 'com.webos.service.tvpower/power/turnOnScreenSaver') {
+          return cb({ returnValue: false, errorText: 'Invalid State change Request' });
+        }
+        if (uri === 'com.webos.applicationManager/launch') {
+          appLaunched = params && params.id;
+          return cb({ returnValue: true });
+        }
+        cb({ returnValue: true });
+      };
+      screensavers.init({
+        luna: fallbackLuna,
+        assetPath: null,
+        config: {},
+        injectKey: function () {},
+        KEY_BACK: 412,
+        mapPowerState: function (s) { return { raw: s }; },
+        isScreenSaver: function () { return false; }
+      });
+      screensavers.trigger(function (result) {
+        assert.strictEqual(result.ok, true);
+        assert.strictEqual(appLaunched, 'com.webos.app.screensaver');
+        console.log('  ✓ trigger falls back to launching screensaver when tvpower returns Invalid State change Request');
+      });
+    })();
+
     console.log('ALL test-screensavers.js assertions passed!\n');
     env.restore();
   });
