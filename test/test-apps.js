@@ -388,7 +388,31 @@ test('restartSam waits for sam to finish loading, then relaunches the foreground
     assert.strictEqual(launchedApp, 'com.webos.app.hdmi2', 'Must relaunch saved HDMI foreground app');
     // Not on the partial list: only once the full one has read the same three times.
     assert.ok(fullReadsAtLaunch >= 3, 'relaunched after ' + fullReadsAtLaunch + ' full reads');
-    if (done) done();
+
+    // Three asking at once share restarts: the first runs alone, and the other
+    // two wait for one more between them, so they are answered together.
+    apps.init({
+      luna: function (uri, params, cb) {
+        if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.home' });
+        if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: full });
+        cb({ returnValue: true });
+      },
+      config: { allowControl: true }
+    });
+    var answeredIn = [], mark = {};
+    var answer = function (k) {
+      return function () {
+        answeredIn[k] = mark;
+        process.nextTick(function () { mark = {}; });
+        if (answeredIn.filter(Boolean).length < 3) return;
+        assert.notStrictEqual(answeredIn[0], answeredIn[1], 'the first restart is its own');
+        assert.strictEqual(answeredIn[1], answeredIn[2], 'the next two share one restart');
+        if (done) done();
+      };
+    };
+    apps.restartSamShared(answer(0));
+    apps.restartSamShared(answer(1));
+    apps.restartSamShared(answer(2));
   });
 });
 

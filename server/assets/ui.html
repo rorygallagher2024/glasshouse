@@ -3701,6 +3701,12 @@ function onProcToggle(el) {
 })();
 
 let appsData = null;
+/*
+ * Tiles with a hide or unhide on its way, by id: true to hide. Kept across
+ * redraws, and the list is read from the server again only once none are left,
+ * so a quick run of clicks never shows a count part of the way through.
+ */
+const tilePending = {};
 let appsLoading = false;
 
 async function loadApps() {
@@ -3876,7 +3882,9 @@ function renderAppsPanel() {
   const btnOff = q('tile-hiding-off');
   const btnOn = q('tile-hiding-on');
   const tiles = d.systemTiles || [];
-  const numHidden = d.hiddenCount || 0;
+  // A tile with a hide or unhide on its way counts as it will be.
+  const willHide = tile => tilePending.hasOwnProperty(tile.id) ? tilePending[tile.id] : !!tile.hidden;
+  const numHidden = tiles.filter(willHide).length;
 
   if (tilesDisc) {
     tilesDisc.hidden = d.tileHidingAvailable === false;
@@ -3924,7 +3932,8 @@ function renderAppsPanel() {
         const title = esc(tile.title || tile.id);
         const id = esc(tile.id);
         const iconUrl = api('/api/apps/icon?id=' + encodeURIComponent(tile.id));
-        const isHidden = !!tile.hidden;
+        const pending = tilePending.hasOwnProperty(tile.id);
+        const isHidden = willHide(tile);
         return `<div class="prot-row">
           <img src="${iconUrl}" width="38" height="38" style="border-radius:8px;object-fit:contain;background:var(--w06);flex-shrink:0" onerror="this.style.display='none'">
           <div class="prot-main">
@@ -3935,8 +3944,9 @@ function renderAppsPanel() {
             ${renderToggle({
               id: 'btn-tile-' + id,
               cls: isHidden ? 'warn' : 'good',
-              label: isHidden ? t('apps.tile.hidden', 'Hidden') : t('apps.tile.visible', 'Visible'),
-              disabled: !d.writable,
+              label: pending ? (isHidden ? t('apps.tile.hiding', 'Hiding\u2026') : t('apps.tile.restoring', 'Restoring\u2026'))
+                : isHidden ? t('apps.tile.hidden', 'Hidden') : t('apps.tile.visible', 'Visible'),
+              disabled: !d.writable || pending,
               onclick: "toggleTileVisibility('" + id + "', " + (!isHidden) + ")"
             })}
           </div>
@@ -4069,12 +4079,11 @@ async function confirmUninstall(appId, appTitle) {
 }
 
 async function toggleTileVisibility(appId, makeHidden) {
+  if (tilePending.hasOwnProperty(appId)) return;
+  tilePending[appId] = makeHidden;
+  renderAppsPanel();
   const ep = makeHidden ? '/api/apps/hide' : '/api/apps/unhide';
-  const btn = document.getElementById('btn-tile-' + appId);
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = makeHidden ? t('apps.tile.hiding', 'Hiding\u2026') : t('apps.tile.restoring', 'Restoring\u2026');
-  }
+  let error = null;
   try {
     const res = await fetch(api(ep), {
       method: 'POST',
@@ -4082,33 +4091,16 @@ async function toggleTileVisibility(appId, makeHidden) {
       body: JSON.stringify({ id: appId })
     });
     const d = await res.json();
-    if (d && d.ok) {
-      // Optimistically update local tile state
-      if (appsData && appsData.systemTiles) {
-        for (let i = 0; i < appsData.systemTiles.length; i++) {
-          if (appsData.systemTiles[i].id === appId) {
-            appsData.systemTiles[i].hidden = makeHidden;
-            break;
-          }
-        }
-        appsData.hiddenCount = appsData.systemTiles.filter(tile => tile.hidden).length;
-        renderAppsPanel();
-      }
-      await loadApps();
-    } else {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = makeHidden ? t('apps.tile.visible', 'Visible') : t('apps.tile.hidden', 'Hidden');
-      }
-      alert(t('apps.tile.failed', 'Could not update tile: {error}', { error: (d && d.error) || t('common.unknownError', 'unknown error') }));
-    }
+    if (!d || !d.ok) error = (d && d.error) || t('common.unknownError', 'unknown error');
   } catch (e) {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = makeHidden ? t('apps.tile.visible', 'Visible') : t('apps.tile.hidden', 'Hidden');
-    }
-    alert(t('apps.tile.failed', 'Could not update tile: {error}', { error: e.message }));
+    error = e.message;
   }
+  delete tilePending[appId];
+  const tile = !error && appsData && (appsData.systemTiles || []).find(x => x.id === appId);
+  if (tile) tile.hidden = makeHidden;
+  if (Object.keys(tilePending).length) renderAppsPanel();
+  else await loadApps();
+  if (error) alert(t('apps.tile.failed', 'Could not update tile: {error}', { error }));
 }
 
 async function setTileHiding(enabled) {

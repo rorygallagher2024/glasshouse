@@ -294,6 +294,29 @@ function waitForSam(cb) {
   })();
 }
 
+/*
+ * Hides and unhides each need sam restarted. Several in quick succession share
+ * one: those that ask while a restart is running wait for a single next one,
+ * and all are answered when it is done. Hiding six tiles on a C2 otherwise ran
+ * six restarts back to back, and the Apps tab reloaded between them.
+ */
+var samRestartRunning = false;
+var samRestartWaiting = [];
+
+function restartSamShared(cb) {
+  samRestartWaiting.push(cb);
+  if (samRestartRunning) return;
+  samRestartRunning = true;
+  (function run() {
+    var batch = samRestartWaiting.splice(0, samRestartWaiting.length);
+    restartSam(function (restarted) {
+      batch.forEach(function (f) { f(restarted); });
+      if (samRestartWaiting.length) return run();
+      samRestartRunning = false;
+    });
+  })();
+}
+
 function restartSam(cb) {
   // Where tile hiding is held back, turning it off still unmounts the overrides
   // and the tiles come back at the next full restart.
@@ -664,7 +687,7 @@ function hideTile(appId, cb) {
           fs.writeFileSync(TILE_HIDING_FLAG_FILE, '1\n', 'utf8');
         } catch (e) {}
 
-        return restartSam(function (restarted) {
+        return restartSamShared(function (restarted) {
           cb({
             ok: true,
             id: appId,
@@ -703,7 +726,7 @@ function unhideTile(appId, cb) {
     delete hiddenMap[appId];
     writeHiddenAppsList(hiddenMap);
 
-    restartSam(function (restarted) {
+    restartSamShared(function (restarted) {
       cb({
         ok: true,
         id: appId,
@@ -944,6 +967,7 @@ module.exports = {
   addSavedPage: addSavedPage,
   isWebHost: isWebHost,
   restartSam: restartSam,
+  restartSamShared: restartSamShared,
   readHiddenAppsList: readHiddenAppsList,
   writeHiddenAppsList: writeHiddenAppsList,
   isTileHidingEnabled: isTileHidingEnabled,
