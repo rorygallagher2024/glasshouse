@@ -28,7 +28,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 3.4 through 26 confirmed; tested across 2016–2025 models. Other versions likely work as well
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 27 models verified so far (UH6030, UH610V, B7, B8, C8, C9, CX, C1, UP81, QNED82, C2, C3, B4, G3, C4, G4, UT81, C5, G5, CS, LX3). Other rooted models should work; [see full table](#tested-tvs)
+* **Tested hardware**: 28 models verified so far (UH6030, UH610V, UH635V, B7, B8, C8, C9, CX, C1, UP81, QNED82, C2, C3, B4, G3, C4, G4, UT81, C5, G5, CS, LX3). Other rooted models should work; [see full table](#tested-tvs)
 
 [Quick start](#quick-start) • [What it's for](#what-its-for) • [Screenshots](#screenshots) • [Features](#features) • [Installation](#installation) • [Tested TVs](#tested-tvs) • [Known issues](#known-issues) • [Home Assistant](#home-assistant--mqtt) • [Managing the server](#managing-the-server) • [Security](#security)
 
@@ -335,6 +335,7 @@ Tested across the following TVs so far. The Luna service names and `/proc/lg` pa
 | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
 | 43UH610V-ZB | 3.4.3        | 05.70.50 | LCD   | No SoC temp, eMMC wear, or OLED metrics by hardware design     |
 | 55UH6030-UC | 3.4.3        | —        | LCD   |                                                                |
+| 58UH635V    | 3.x          | 05.70.40 | LCD   | Dashboard unreachable while live satellite TV plays (#379)     |
 | OLED65B7V-Z | 3.9.3        | 06.10.65 | OLED  | No SoC temperature or eMMC wear readings                       |
 | OLED65C8PUA | 4.4.0        | 05.50.15 | OLED  | No `getAdid` on this firmware                                  |
 | OLED65B8SLC | 4.4.3        | 05.50.70 | OLED  | Everything works. Misses a few metrics found on newer versions |
