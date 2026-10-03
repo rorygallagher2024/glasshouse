@@ -856,7 +856,6 @@ function needsReview(pv) {
 }
 
 /*
- * The catalog gives no size, so the pre-download check cannot run for it.
  * The download is cut off once it passes a third of the free space (the
  * staged file, its unpacked copy and the installed copy all need room) or the
  * upload cap.

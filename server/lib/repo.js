@@ -64,6 +64,10 @@ function parsePackage(item, pageBase) {
   var ipkUrl = url.resolve(str(item.manifestUrl) || pageBase, str(m.ipkUrl));
   if (!/^https:\/\//i.test(ipkUrl)) return null;
   var icon = str(item.iconUri) || str(m.iconUri);
+  var size = (typeof m.ipkSize === 'number' && m.ipkSize > 0) ? m.ipkSize
+           : (typeof item.ipkSize === 'number' && item.ipkSize > 0) ? item.ipkSize
+           : (typeof m.size === 'number' && m.size > 0) ? m.size
+           : null;
   return {
     id: id,
     title: str(item.title) || str(m.title) || id,
@@ -72,7 +76,7 @@ function parsePackage(item, pageBase) {
     version: version,
     ipkUrl: ipkUrl,
     sha256: hash,
-    size: null,
+    size: size,
     rootRequired: m.rootRequired === true ? true : m.rootRequired === 'optional' ? 'optional' : false
   };
 }

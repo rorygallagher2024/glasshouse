@@ -1122,6 +1122,13 @@ function sentence(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+function fmtSize(n) {
+  if (typeof n !== 'number' || n <= 0) return '';
+  if (n < 1048576) return t('apps.install.kb', '{n} KB', { n: Math.round(n / 1024) });
+  var mb = n / 1048576;
+  return t('apps.install.mb', '{n} MB', { n: mb >= 10 ? Math.round(mb) : Math.round(mb * 10) / 10 });
+}
+
 function fmtMb(n) { return t('apps.install.mb', '{n} MB', { n: Math.round(n / 1048576) }); }
 
 function stopInstallPoll() {
@@ -1222,8 +1229,12 @@ function titleSort(a, b) {
 }
 
 function catalogRow(a) {
+  var sz = a.size ? fmtSize(a.size) : '';
+  var verText = a.version ? 'v' + a.version : '';
+  if (verText && sz) verText += ' · ' + sz;
+  else if (sz) verText = sz;
   var row = { label: a.title || a.id, cat: true, key: a.id, icon: a.iconUri || '',
-              ver: a.version ? 'v' + a.version : '', badge: a.rootRequired ? t('apps.install.rootBadge', 'root') : '',
+              ver: verText, badge: a.rootRequired ? t('apps.install.rootBadge', 'root') : '',
               hint: a.description || a.id };
   if (a.state === 'hbc') {
     row.value = t('apps.install.viaHbc', 'Updates through Homebrew Channel'); row.cls = 'off'; row.plain = true;

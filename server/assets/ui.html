@@ -3880,6 +3880,7 @@ function renderCatalog() {
       ? `<img src="${esc(a.iconUri)}" width="38" height="38" loading="lazy" referrerpolicy="no-referrer" alt="" style="border-radius:8px;object-fit:contain;background:var(--w06);flex-shrink:0" onerror="this.style.visibility='hidden'">`
       : '<span style="width:38px;height:38px;flex-shrink:0"></span>';
     const meta = [a.version ? 'v' + a.version : '',
+      a.size ? fmtSize(a.size) : '',
       a.state === 'update' && a.installedVersion ? t('apps.install.have', 'installed: v{version}', { version: a.installedVersion }) : ''
     ].filter(Boolean).join(' · ');
     const root = a.rootRequired ? ` <span class="pill warn" style="padding:1px 8px">${esc(t('apps.install.rootBadge', 'root'))}</span>` : '';
@@ -3897,6 +3898,13 @@ function renderCatalog() {
       </div>
     </div>`;
   }).join('');
+}
+
+function fmtSize(n) {
+  if (typeof n !== 'number' || n <= 0) return '';
+  if (n < 1048576) return t('apps.install.kb', '{n} KB', { n: Math.round(n / 1024) });
+  const mb = n / 1048576;
+  return t('apps.install.mb', '{n} MB', { n: mb >= 10 ? Math.round(mb) : Math.round(mb * 10) / 10 });
 }
 
 function fmtMb(n) { return t('apps.install.mb', '{n} MB', { n: Math.round(n / 1048576) }); }

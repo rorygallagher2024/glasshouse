@@ -4595,6 +4595,10 @@
   "text": "Instalando…",
   "from": "Installing…"
  },
+ "apps.install.kb": {
+  "text": "{n} KB",
+  "from": "{n} KB"
+ },
  "apps.install.loading": {
   "text": "Cargando el catálogo…",
   "from": "Loading the catalog…"

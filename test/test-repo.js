@@ -67,11 +67,14 @@ repo.getCatalog(false, function (r) {
 
   // An id the installer would refuse never reaches the dashboard, where it is
   // put into an onclick: a quote in it would have run as script there.
-  var entry = function (id) {
-    return { id: id, manifest: { version: '1.0.0', ipkUrl: 'https://example.org/a.ipk',
-      ipkHash: { sha256: new Array(65).join('a') } } };
+  var entry = function (id, extra) {
+    var m = { version: '1.0.0', ipkUrl: 'https://example.org/a.ipk',
+      ipkHash: { sha256: new Array(65).join('a') } };
+    if (extra) for (var k in extra) m[k] = extra[k];
+    return { id: id, manifest: m };
   };
   assert.ok(repo._parsePackage(entry('org.example.app'), 'https://example.org/'));
+  assert.strictEqual(repo._parsePackage(entry('org.example.app', { ipkSize: 7465122 }), 'https://example.org/').size, 7465122);
   ["x');alert(1);//", 'a b', '../evil', '-leading', ''].forEach(function (id) {
     assert.strictEqual(repo._parsePackage(entry(id), 'https://example.org/'), null, JSON.stringify(id));
   });
