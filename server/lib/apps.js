@@ -281,14 +281,19 @@ var SAM_UNITS = 'sam.service $(systemctl list-dependencies --reverse --plain --n
 /*
  * Once sam is back, a unit that requires it and was still refused - its own
  * restart limit hit before the counters were cleared - is started again, so
- * the TV is never left without its inputs.
+ * the TV is never left without its inputs. On Upstart TVs (webOS 4), Upstart
+ * does not restart dependent jobs when sam restarts, so eim (the input manager)
+ * is restarted here to restore its connection to sam.
  */
 function startFailedDependents(cb) {
-  var cmd = 'command -v systemctl >/dev/null 2>&1 || exit 0; ' +
+  var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
             'for u in ' + SAM_UNITS + '; do ' +
             'if systemctl is-failed --quiet "$u"; then ' +
             'echo "$u"; systemctl reset-failed "$u"; systemctl start --no-block "$u"; ' +
-            'fi; done';
+            'fi; done; ' +
+            'elif command -v initctl >/dev/null 2>&1; then ' +
+            'initctl restart eim >/dev/null 2>&1 && echo "eim" || true; ' +
+            'fi';
   execFile('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err, out) {
     var started = String(out || '').trim();
     if (started) console.log('apps: started again after sam restarted: ' + started.split(/\s+/).join(', '));
@@ -398,7 +403,7 @@ function restartSam(cb) {
     });
 
     function restoreApp(err) {
-      if (savedAppId && savedAppId !== 'com.webos.app.home' && lunaFn) {
+      if (savedAppId && savedAppId !== 'com.webos.app.home' && savedAppId !== 'com.webos.app.screensaver' && lunaFn) {
         var attempts = 0;
         function tryRestore() {
           attempts++;

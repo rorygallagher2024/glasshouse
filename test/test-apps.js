@@ -407,7 +407,24 @@ test('restartSam waits for sam to finish loading, then relaunches the foreground
         if (answeredIn.filter(Boolean).length < 3) return;
         assert.notStrictEqual(answeredIn[0], answeredIn[1], 'the first restart is its own');
         assert.strictEqual(answeredIn[1], answeredIn[2], 'the next two share one restart');
-        if (done) done();
+
+        var saverLaunched = false;
+        apps.init({
+          luna: function (uri, params, cb) {
+            if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.screensaver' });
+            if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: full });
+            if (uri === 'com.webos.applicationManager/launch') {
+              saverLaunched = true;
+              return cb({ returnValue: true });
+            }
+            cb({ returnValue: true });
+          },
+          config: { allowControl: true }
+        });
+        apps.restartSam(function () {
+          assert.strictEqual(saverLaunched, false, 'must not relaunch screensaver');
+          if (done) done();
+        });
       };
     };
     apps.restartSamShared(answer(0));
