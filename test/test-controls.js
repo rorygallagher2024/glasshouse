@@ -70,6 +70,7 @@ console.log('Running test-controls.js ...');
     assert.strictEqual(res.ok, false);
     assert.strictEqual(res.error, 'unknown action');
   });
+
   // Invalid sleep timer (e.g. 15 is not supported by LG firmware)
   controls.doControl('sleepTimer', '15', function (res) {
     assert.strictEqual(res.ok, false);

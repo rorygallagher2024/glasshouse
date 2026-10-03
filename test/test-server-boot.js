@@ -79,10 +79,7 @@ function Broker(cb) {
         else if (type === 14) self.disconnects++;
         else if (type === 3) {
           var tl = (body[0] << 8) | body[1];
-          self.published.push({
-            topic: body.slice(2, 2 + tl).toString(),
-            at: Date.now()
-          });
+          self.published.push({ topic: body.slice(2, 2 + tl).toString(), at: Date.now() });
         }
       }
     });
@@ -166,6 +163,7 @@ function phase(name, chaos, next) {
         waitFor('the heartbeat', function () { return fs.existsSync(beat); }, 5000, function () {
           waitFor('telemetry at the broker', function () { return broker.last(/^boot\/telemetry$/); }, 20000, function () {
             waitFor('discovery at the broker', function () { return broker.last(/^homeassistant\/.*\/config$/); }, 20000, function () {
+
             /*
              * Steady use: the dashboard asked once a second, telemetry every 2s.
              * Stats wait on the TV, and a TV call that never answers is cut off
