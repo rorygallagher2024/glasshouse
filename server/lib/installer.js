@@ -1246,6 +1246,7 @@ module.exports = {
   recover: recover,
   SELF_UPDATING: SELF_UPDATING,
   NAME_RE: NAME_RE,
+  cmpVer: cmpVer,
   hashFile: hashFile,
   parseDf: parseDf
 };

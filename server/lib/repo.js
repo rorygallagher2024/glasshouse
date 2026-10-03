@@ -2,10 +2,10 @@
 // The Homebrew Channel catalog, merged with what is installed on the TV.
 var url = require('url');
 var msg = require('./say').msg;
-var updater = require('./updater');
 var PROTECTED_APP_IDS = require('./apps').PROTECTED_APP_IDS;
 var SELF_UPDATING = require('./installer').SELF_UPDATING;
 var NAME_RE = require('./installer').NAME_RE;
+var cmpVer = require('./installer').cmpVer;
 
 var DEFAULT_REPO = 'https://repo.webosbrew.org/api/apps.json';
 var MAX_PAGES = 50;
@@ -138,7 +138,9 @@ function withInstalled(apps, installed) {
     a.installedVersion = have === undefined ? null : have;
     if (isHbc(a.id)) a.state = 'hbc';
     else if (have === undefined) a.state = 'none';
-    else a.state = updater.verNewer(a.version, have) ? 'update' : 'installed';
+    // The preview's own comparison, so the list and the preview agree: the
+    // updater's stops at four parts and drops anything after a hyphen.
+    else a.state = cmpVer(a.version, have) > 0 ? 'update' : 'installed';
     out.push(a);
   }
   return out;

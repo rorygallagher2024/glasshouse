@@ -124,6 +124,7 @@ function part3() {
   var bad = { paging: { page: 1, maxPage: 1 }, packages: [
     { id: 'com.x.http', manifest: { version: '1', ipkUrl: 'http://x.example/a.ipk', ipkHash: { sha256: new Array(65).join('a') } } },
     { id: 'com.x.ok', title: 'Ok', manifest: { version: '1', ipkUrl: 'https://x.example/a.ipk', ipkHash: { sha256: new Array(65).join('A') } } },
+    { id: 'com.x.five', manifest: { version: '1.0.0.0.1', ipkUrl: 'https://x.example/f.ipk', ipkHash: { sha256: new Array(65).join('e') } } },
     { id: 'com.x.shorthash', manifest: { version: '1', ipkUrl: 'https://x.example/b.ipk', ipkHash: { sha256: 'abc' } } },
     { manifest: { version: '1', ipkUrl: 'https://x.example/c.ipk', ipkHash: { sha256: new Array(65).join('b') } } },
     { id: 'io.github.rorygallagher2024.lg-webos-dashboard', manifest: { version: '9', ipkUrl: 'https://x.example/d.ipk', ipkHash: { sha256: new Array(65).join('c') } } },
@@ -133,6 +134,7 @@ function part3() {
   var cfg = { apps: { repos: [extra, 'https://broken.example/apps.json', BASE] } };
   setup(cfg, {});
   docs[extra] = bad;
+  installed = [{ id: 'com.x.five', version: '1.0.0.0' }];
   repo.getCatalog(false, function (r) {
     assert.strictEqual(r.ok, true);
     var a = byId(r.apps);
@@ -144,6 +146,8 @@ function part3() {
     // Only the Homebrew Channel's catalog is vetted for root; an added one is not.
     assert.strictEqual(a['com.example.player'].vetted, true);
     assert.strictEqual(a['com.x.ok'].vetted, false);
+    // Compared as the preview compares it, past four parts.
+    assert.strictEqual(a['com.x.five'].state, 'update');
     assert.ok(/no such page https:\/\/broken\.example/.test(r.error), 'a failing extra repo is reported');
     assert.strictEqual(fetched.filter(function (u) { return u === BASE; }).length, 1, 'a repo listed twice is read once');
     console.log('  ✓ extra repos merge, invalid entries drop, protected ids show as hbc, a failing repo is reported');
