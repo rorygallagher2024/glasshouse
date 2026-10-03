@@ -973,11 +973,14 @@ test('recover reports an unfinished job and clears the staging directory', funct
   done();
 });
 
-test('recover ignores a finished job', function (done) {
+test('recover ignores a finished job and a preview that was never confirmed', function (done) {
   var ctx = setup();
   fs.writeFileSync(path.join(ctx.state, 'install-job.json'), JSON.stringify({ jobId: 'abc', state: 'installed' }));
   installer.recover();
   assert.strictEqual(installer.status().state, 'idle');
+  fs.writeFileSync(path.join(ctx.state, 'install-job.json'), JSON.stringify({ jobId: 'abc', state: 'awaiting-confirm' }));
+  installer.recover();
+  assert.strictEqual(installer.status().state, 'idle', 'a restart during a preview is not an interrupted install');
   done();
 });
 

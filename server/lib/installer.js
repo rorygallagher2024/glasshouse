@@ -1192,7 +1192,9 @@ function recover() {
   // Leftovers from an upload or a job that ended in a restart.
   clearStaging();
   var rec = readJson(jobFile());
-  if (!rec || !UNFINISHED[rec.state]) return;
+  // A preview waiting for confirmation had installed nothing, and a restart may
+  // come during one, so it is not reported as an interrupted install.
+  if (!rec || !WORKING[rec.state]) return;
   job = {
     id: rec.jobId || '', state: 'interrupted',
     error: msg('srv.install.interrupted', 'the TV restarted during an install; check the app list'),
