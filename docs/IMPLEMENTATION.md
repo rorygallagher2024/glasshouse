@@ -607,7 +607,7 @@ The job state (`downloading`, `verifying`, `awaiting-confirm`, `installing`, `el
 
 ### Installing from a URL or a file
 
-`POST /api/apps/install/url` takes `{url, sha256?}` and `POST /api/apps/install/upload` takes the package as the request body. Both come after the Host check and the token check, and both are refused with 403 unless `sideloadVia()` in `routes.js` finds a reason: `apps.sideload === true` (file-only, and `validateSettings` drops the whole `apps` section), a configured token, or a loopback remote address. `GET /api/apps/install/status` reports `sideload` and `sideloadVia` (`config`, `token`, `tv` or `null`) so the page can explain how to enable it.
+`POST /api/apps/install/url` takes `{url, sha256?}` and `POST /api/apps/install/upload` takes the package as the request body. Both come after the Host check and the token check, and both are refused with 403 unless `sideloadVia()` in `routes.js` finds a reason: `apps.sideload === true` (`validateSettings` drops the whole `apps` section, so only `POST /api/apps/install/sideload {enabled}`, the Apps tab's switch, or the file sets it), a configured token, or a loopback remote address. `GET /api/apps/install/status` reports `sideload` and `sideloadVia` (`config`, `token`, `tv` or `null`) so the page can explain how to enable it.
 
 A URL goes through `fetch.validateUrl` (http or https, 2048 characters, no whitespace or control characters) and an optional 64-digit sha256, then `installer.start({source: 'url'})`.
 

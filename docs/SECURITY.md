@@ -30,8 +30,10 @@ it before exposing it more widely.
   `token` or `"allowControl": false` closes it.
 - **Installing from a URL or an uploaded file is opt-in.** Such a package has
   no catalog behind it, so the routes refuse unless `"apps": {"sideload": true}`
-  is set in `config.json` (file-only; the settings form cannot write it), a
-  `token` is set, or the request comes from the TV itself. The package is held
+  is set (by the switch on the Apps tab, after a warning, or in `config.json`),
+  a `token` is set, or the request comes from the TV itself. The switch answers
+  to any client that can reach the port, so on a default install it is a
+  speed bump, not a lock; a `token` is what keeps others from turning it on. The package is held
   to the same id rules as a catalog one, and an optional sha256 is checked when
   given, but nothing vouches for what it does. An upload must be sent as
   `application/octet-stream` with a `Content-Length`, because a form post is a
@@ -41,9 +43,11 @@ it before exposing it more widely.
   token opens exactly that, and the server logs a warning at start.
 - **A catalog app can be given root.** On a default install, a client that can
   reach the port can install an app from the Homebrew Channel catalog and run
-  its services as root, as the Homebrew Channel itself would. Root is a
-  separate option per install and needs the Homebrew Channel, and an app given
-  it gets it again after each update, since a reinstall undoes it. `token` or
+  its services as root, as the Homebrew Channel itself would. An app from the
+  Homebrew Channel's catalog whose services need root gets it on install
+  without a separate prompt, as it would through the Homebrew Channel, and
+  gets it again after each update, since a reinstall undoes it. Root needs
+  the Homebrew Channel. `token` or
   `"allowControl": false` closes this too. A package from a URL, a file or an
   `apps.repos` catalog is never elevated automatically: the request must name
   the services listed in its preview, and a later update asks again. The TV's
