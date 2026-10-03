@@ -65,6 +65,18 @@ repo.getCatalog(false, function (r) {
     'https://github.com/webosbrew/webos-homebrew-channel/releases/latest/download/org.webosbrew.hbchannel_0.7.3_all.ipk');
   console.log('  ✓ a manifest-relative ipkUrl is resolved');
 
+  // An id the installer would refuse never reaches the dashboard, where it is
+  // put into an onclick: a quote in it would have run as script there.
+  var entry = function (id) {
+    return { id: id, manifest: { version: '1.0.0', ipkUrl: 'https://example.org/a.ipk',
+      ipkHash: { sha256: new Array(65).join('a') } } };
+  };
+  assert.ok(repo._parsePackage(entry('org.example.app'), 'https://example.org/'));
+  ["x');alert(1);//", 'a b', '../evil', '-leading', ''].forEach(function (id) {
+    assert.strictEqual(repo._parsePackage(entry(id), 'https://example.org/'), null, JSON.stringify(id));
+  });
+  console.log('  ✓ catalog entries whose id breaks the package name rule are dropped');
+
   assert.strictEqual(a['org.webosbrew.hbchannel'].state, 'hbc');
   assert.strictEqual(a['com.example.player'].state, 'none');
   assert.strictEqual(a['com.example.player'].installedVersion, null);

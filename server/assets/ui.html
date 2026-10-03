@@ -3867,7 +3867,6 @@ function renderCatalog() {
   }
   const idle = installIdle();
   list.innerHTML = shown.map(a => {
-    const id = esc(a.id);
     let label, cls = 'idle', off = !writable || !idle;
     if (a.state === 'hbc') { label = t('apps.install.viaHbc', 'Updates through Homebrew Channel'); off = true; }
     else if (a.state === 'installed') { label = t('apps.install.installed', 'Installed'); off = true; }
@@ -3887,7 +3886,7 @@ function renderCatalog() {
         <div class="prot-desc">${esc(a.description || a.id)}</div>
       </div>
       <div class="prot-status">
-        <button type="button" class="pill ${cls}" onclick="startInstall('${id}')" ${off ? 'disabled' : ''}>${esc(label)}</button>
+        <button type="button" class="pill ${cls}" onclick="startInstall('${jsq(a.id)}')" ${off ? 'disabled' : ''}>${esc(label)}</button>
       </div>
     </div>`;
   }).join('');

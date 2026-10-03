@@ -5,6 +5,7 @@ var msg = require('./say').msg;
 var updater = require('./updater');
 var PROTECTED_APP_IDS = require('./apps').PROTECTED_APP_IDS;
 var SELF_UPDATING = require('./installer').SELF_UPDATING;
+var NAME_RE = require('./installer').NAME_RE;
 
 var DEFAULT_REPO = 'https://repo.webosbrew.org/api/apps.json';
 var MAX_PAGES = 50;
@@ -55,7 +56,10 @@ function parsePackage(item, pageBase) {
   var id = str(item.id) || str(m.id);
   var version = str(m.version);
   var hash = m.ipkHash && str(m.ipkHash.sha256).toLowerCase();
-  if (!id || !version || !m.ipkUrl || !hash || !/^[0-9a-f]{64}$/.test(hash)) return null;
+  // The installer's own rule for a package name: an id it would refuse, or one
+  // carrying characters the dashboards would have to escape, is not listed.
+  if (!NAME_RE.test(id)) return null;
+  if (!version || !m.ipkUrl || !hash || !/^[0-9a-f]{64}$/.test(hash)) return null;
   // The manifest's own ipkUrl may be a file name beside the manifest.
   var ipkUrl = url.resolve(str(item.manifestUrl) || pageBase, str(m.ipkUrl));
   if (!/^https:\/\//i.test(ipkUrl)) return null;

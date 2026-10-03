@@ -1231,6 +1231,7 @@ module.exports = {
   touchUpload: touchUpload,
   recover: recover,
   SELF_UPDATING: SELF_UPDATING,
+  NAME_RE: NAME_RE,
   hashFile: hashFile,
   parseDf: parseDf
 };
