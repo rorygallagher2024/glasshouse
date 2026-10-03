@@ -603,7 +603,7 @@ The request says nothing about the TV beyond the address any HTTP request reveal
 ```bash
 ssh root@<tv-ip>
 /var/lib/tvweb/tvwebctl stop
-rm -rf /var/lib/tvweb
+rm -rf /var/lib/tvweb /media/developer/temp/glasshouse-install
 rm -f /var/lib/webosbrew/init.d/50-tvweb* /var/lib/webosbrew/init.d/20-tvweb-services /var/lib/webosbrew/init.d/20-services.sh
 rm -f /var/lib/webosbrew/tvweb-boot.log*
 ```

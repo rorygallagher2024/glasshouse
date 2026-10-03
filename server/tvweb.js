@@ -509,7 +509,7 @@ function checkHomebrewChannelApp() {
     // the dashboard, and they come back once it goes.
     forgetHomeAssistant(function () {
       child_process.spawn('/bin/sh', ['-c',
-        '/var/lib/tvweb/tvwebctl stop >/dev/null 2>&1; rm -rf /var/lib/tvweb; ' +
+        '/var/lib/tvweb/tvwebctl stop >/dev/null 2>&1; rm -rf /var/lib/tvweb /media/developer/temp/glasshouse-install; ' +
         'cd /var/lib/webosbrew/init.d && rm -f 50-tvweb 20-services.sh 20-tvweb-services; ' +
         'rm -f /var/lib/webosbrew/tvweb-boot.log /var/lib/webosbrew/tvweb-boot.log.old'
       ], { detached: true, stdio: 'ignore' }).unref();
