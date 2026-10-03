@@ -103,6 +103,23 @@ function restartSelf() { return restartSelfFn(); }
  * tvweb.js refuses too, for the callers that do not come through here. A
  * preview waiting for confirmation is not at work.
  */
+/*
+ * Restarts after the answer has gone out. An install can start in the moment
+ * between the check above and the restart, which would then be refused and the
+ * saved settings never applied, so the restart waits for it instead.
+ */
+function restartSoon(ms, what) {
+  var told = false;
+  setTimeout(function again() {
+    if (installerModule && installerModule.isWorking()) {
+      if (!told) console.log(what + ': restart waits for the install to finish');
+      told = true;
+      return setTimeout(again, 2000);
+    }
+    if (!restartSelf()) console.error(what + ': could not restart - restart manually to apply');
+  }, ms);
+}
+
 function installBusyRefusal(res) {
   if (!installerModule || !installerModule.isWorking()) return false;
   send(res, 409, JSON.stringify({
@@ -382,7 +399,7 @@ function startHandoff(cb) {
           console.log('setup: Home Assistant broker set from a phone, restarting to connect');
           send(res, 200, JSON.stringify({ ok: true }));
           stopHandoff();   // the code is spent
-          setTimeout(function () { restartSelf(); }, 300);
+          restartSoon(300, 'setup');
         });
       });
       return;
@@ -888,7 +905,7 @@ function handleRequest(req, res) {
            * browser needs the result to know the save itself succeeded.
            */
           send(res, 200, JSON.stringify({ ok: true, restarting: true }));
-          setTimeout(function () { restartSelf(); }, 250);
+          restartSoon(250, 'setup');
         });
       }
       if (a.action === 'alwaysReady') {
@@ -1234,9 +1251,7 @@ function handleRequest(req, res) {
         }
         console.log('settings: saved to ' + configFilePath + ', restarting to apply');
         send(res, 200, JSON.stringify({ ok: true, restarting: true }));
-        setTimeout(function () {
-          if (!restartSelf()) console.error('settings: no tvwebctl found - restart manually to apply');
-        }, 250);
+        restartSoon(250, 'settings');
       });
     });
     return;
