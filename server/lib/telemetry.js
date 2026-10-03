@@ -30,7 +30,6 @@ var oledModule = null;
 var privacyModule = null;
 var screensaversModule = null;
 var alwaysReadyScreenOn = false;
-var servicesModule = null;
 var tvwebVersionStr = '0.0.0';
 var mapPowerStateFn = null;
 var isScreenSaverFn = null;
@@ -130,7 +129,6 @@ function init(opts) {
   oledModule = opts.oled;
   privacyModule = opts.privacy;
   screensaversModule = opts.screensavers;
-  servicesModule = opts.services;
   tvwebVersionStr = opts.tvwebVersion || '0.0.0';
   mapPowerStateFn = opts.mapPowerState;
   isScreenSaverFn = opts.isScreenSaver;
@@ -564,9 +562,16 @@ function parseAppList(raw) {
   return list;
 }
 
+/*
+ * A minute, not longer: an app removed from LG's own menu sends no event, and
+ * the list is what Home Assistant's Launch App offers. At five minutes, an
+ * uninstalled Spotify stayed on offer on a B8.
+ */
+var APPS_SCAN_MS = 60000;
+
 function refreshInstalledApps(cb) {
   var now = Date.now();
-  if (installedApps.length > 0 && (now - lastAppsScan < 300000)) {
+  if (installedApps.length > 0 && now >= lastAppsScan && now - lastAppsScan < APPS_SCAN_MS) {
     if (cb) cb(installedApps);
     return;
   }
@@ -954,6 +959,15 @@ function clearCache() {
   lastLightSensorProbe = 0;
 }
 
+/*
+ * For a live event, which makes the next stats read fresh but leaves what
+ * clearCache resets: a volume step or a source change installs no app, and
+ * the light sensor's backoff has nothing to do with either.
+ */
+function expireStats() {
+  lastStats = null;
+}
+
 function collectStats(cb) {
   var now = Date.now();
   if (lastStats && now >= lastStatsTime && now - lastStatsTime < 1500) {
@@ -1179,9 +1193,7 @@ function collectStats(cb) {
   lunaCachedFn('com.webos.service.settings/getSystemSettings',
        { category: 'general', keys: ['lifeOnScreenMode'] }, 60000, function (lo) {
     var los = lo && lo.returnValue !== false && lo.settings && lo.settings.lifeOnScreenMode;
-    // Off as well while its service is on the Apps tab's list to keep off,
-    // since nothing is shown then.
-    if (los) out.alwaysReadyScreen = alwaysReadyScreenOn = los !== 'off' && !servicesModule.isDisabled('alwaysready');
+    if (los) out.alwaysReadyScreen = alwaysReadyScreenOn = los !== 'off';
 
   lunaCachedFn('com.palm.connectionmanager/getStatus', {}, 60000, function (cm) {
     var w = cm && cm.wifi;
@@ -1417,5 +1429,6 @@ module.exports = {
   detectLogoLight: detectFrontLights,
   collectStats: collectStats,
   clearCache: clearCache,
+  expireStats: expireStats,
   getCapabilities: getCapabilities
 };

@@ -14,6 +14,7 @@ var msg = require('./say').msg;
 var fs = require('fs');
 var path = require('path');
 var execFile = require('child_process').execFile;
+var screensavers = require('./screensavers');
 
 var OVERRIDE_DIR = '/var/lib/tvweb/appinfo-overrides';
 var HIDDEN_APPS_FILE = '/var/lib/tvweb/hidden_apps';
@@ -22,6 +23,7 @@ var HIDDEN_APPS_FILE = '/var/lib/tvweb/hidden_apps';
 var PAGE_TITLES_FILE = '/var/lib/tvweb/saved_page_titles.json';
 var BROWSER_ID = 'com.webos.app.browser';
 var TILE_HIDING_FLAG_FILE = '/var/lib/tvweb/tile_hiding_enabled';
+var TILES_HELD_ERROR = msg('srv.apps.tilesHeld', 'Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.');
 
 var APP_BASES = [
   '/media/system/apps/usr/palm/applications',
@@ -198,6 +200,10 @@ function setTileHidingEnabled(enabled, cb) {
     return;
   }
   enabled = !!enabled;
+  if (enabled && screensavers.held()) {
+    if (cb) cb({ ok: false, error: TILES_HELD_ERROR });
+    return;
+  }
   try {
     mkdirp(path.dirname(TILE_HIDING_FLAG_FILE));
     fs.writeFileSync(TILE_HIDING_FLAG_FILE, enabled ? '1\n' : '0\n', 'utf8');
@@ -260,9 +266,75 @@ function setTileHidingEnabled(enabled, cb) {
  * If a non-home app (like an active HDMI port or Live TV) was in the foreground,
  * it is automatically relaunched so the user is never stranded on the Home screen.
  */
+/*
+ * sam answers while it is still loading the home screen's tiles, and a list
+ * read then is short: straight after a hide, a C2's Apps tab showed "5 hidden
+ * of 5 apps", then "4 hidden of 9". So a restart counts as done only once the
+ * launch points read the same three times running, half a second apart, or
+ * after 12s. It also keeps a run of hides from stacking restarts on a sam
+ * still starting.
+ */
+var SAM_SETTLE_POLL_MS = 500;
+var SAM_SETTLE_POLLS = 24;
+
+function waitForSam(cb) {
+  if (!lunaFn) return cb();
+  var polls = 0, last = null, same = 0;
+  (function poll() {
+    polls++;
+    lunaFn('com.webos.applicationManager/listLaunchPoints', {}, function (r) {
+      var lps = r && r.returnValue !== false && (r.launchPoints || r.apps);
+      var sig = Array.isArray(lps) && lps.length
+        ? lps.map(function (a) { return a.launchPointId || a.id; }).sort().join(',') : null;
+      same = sig && sig === last ? same + 1 : 0;
+      last = sig;
+      if (same >= 2 || polls >= SAM_SETTLE_POLLS) return cb();
+      setTimeout(poll, SAM_SETTLE_POLL_MS);
+    });
+  })();
+}
+
+/*
+ * Hides and unhides each need sam restarted. Several in quick succession share
+ * one: those that ask while a restart is running wait for a single next one,
+ * and all are answered when it is done. Hiding six tiles on a C2 otherwise ran
+ * six restarts back to back, and the Apps tab reloaded between them.
+ */
+var samRestartRunning = false;
+var samRestartWaiting = [];
+
+function restartSamShared(cb) {
+  samRestartWaiting.push(cb);
+  if (samRestartRunning) return;
+  samRestartRunning = true;
+  (function run() {
+    var batch = samRestartWaiting.splice(0, samRestartWaiting.length);
+    restartSam(function (restarted) {
+      batch.forEach(function (f) { f(restarted); });
+      if (samRestartWaiting.length) return run();
+      samRestartRunning = false;
+    });
+  })();
+}
+
 function restartSam(cb) {
+  // Where tile hiding is held back, turning it off still unmounts the overrides
+  // and the tiles come back at the next full restart.
+  if (screensavers.held()) {
+    console.log('apps: sam not restarted - tile hiding is held back on this TV (#366)');
+    if (cb) cb(false);
+    return;
+  }
   function executeRestart(savedAppId) {
+    /*
+     * systemd rate-limits on-failure restarts - StartLimitBurst=5 inside
+     * StartLimitIntervalSec=10s on a webOS 5 set. Hiding a run of tiles SIGKILLs
+     * sam once per tile, so from the sixth restart on systemd refuses and leaves
+     * the unit failed: no home screen, and the next launch lands on the last
+     * input. Clearing the counter first makes each kill look like the first.
+     */
     var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
+              'systemctl reset-failed sam.service >/dev/null 2>&1 || true; ' +
               'killall -9 LunaExecutable >/dev/null 2>&1 || true; ' +
               'systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true; ' +
               'elif command -v initctl >/dev/null 2>&1; then ' +
@@ -272,6 +344,10 @@ function restartSam(cb) {
               'fi';
     execFile('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err) {
       if (err) console.error('apps: restartSam error: ' + err.message);
+      waitForSam(function () { restoreApp(err); });
+    });
+
+    function restoreApp(err) {
       if (savedAppId && savedAppId !== 'com.webos.app.home' && lunaFn) {
         var attempts = 0;
         function tryRestore() {
@@ -292,7 +368,7 @@ function restartSam(cb) {
       } else {
         if (cb) cb(!err);
       }
-    });
+    }
   }
 
   if (lunaFn) {
@@ -571,6 +647,7 @@ function hideTile(appId, cb) {
   if (isProtected(appId)) {
     return cb({ ok: false, error: msg('srv.apps.protectedHide', 'Protected core system app cannot be hidden') });
   }
+  if (screensavers.held()) return cb({ ok: false, error: TILES_HELD_ERROR });
 
   var tgts = findAllAppinfoPaths(appId);
   if (tgts.length === 0) {
@@ -610,7 +687,7 @@ function hideTile(appId, cb) {
           fs.writeFileSync(TILE_HIDING_FLAG_FILE, '1\n', 'utf8');
         } catch (e) {}
 
-        return restartSam(function (restarted) {
+        return restartSamShared(function (restarted) {
           cb({
             ok: true,
             id: appId,
@@ -649,7 +726,7 @@ function unhideTile(appId, cb) {
     delete hiddenMap[appId];
     writeHiddenAppsList(hiddenMap);
 
-    restartSam(function (restarted) {
+    restartSamShared(function (restarted) {
       cb({
         ok: true,
         id: appId,
@@ -890,6 +967,7 @@ module.exports = {
   addSavedPage: addSavedPage,
   isWebHost: isWebHost,
   restartSam: restartSam,
+  restartSamShared: restartSamShared,
   readHiddenAppsList: readHiddenAppsList,
   writeHiddenAppsList: writeHiddenAppsList,
   isTileHidingEnabled: isTileHidingEnabled,

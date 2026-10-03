@@ -327,6 +327,10 @@
   "text": "No se pudo actualizar la ocultación de mosaicos: {error}",
   "from": "Could not update tile hiding: {error}"
  },
+ "apps.tiles.held": {
+  "text": "Ocultar aplicaciones del sistema está desactivado en esta TV por ahora. En webOS 10 y posteriores puede dejar sin imagen, sin sonido y sin control HDMI hasta que se desenchufa la TV. Las aplicaciones ya ocultas vuelven a aparecer tras el próximo reinicio completo de la TV.",
+  "from": "Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted."
+ },
  "apps.tiles.hidden": {
   "text": "{n} ocultos",
   "from": "{n} hidden"
@@ -394,6 +398,10 @@
  "common.controlsOff": {
   "text": "Los controles están desactivados en config.json.",
   "from": "Controls are disabled in config.json."
+ },
+ "common.heldOverridden": {
+  "text": "Reactivado con allowOnWebos10 en config.json. En webOS 10 y posteriores, los salvapantallas personalizados y el ocultado de aplicaciones han dejado la TV sin imagen, sin sonido y sin control HDMI hasta desenchufarla (#366).",
+  "from": "Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged (#366)."
  },
  "common.off": {
   "text": "Desactivado",
@@ -2091,6 +2099,10 @@
   "text": "la TV no quiso quitarla",
   "from": "the TV would not remove it"
  },
+ "srv.apps.tilesHeld": {
+  "text": "Ocultar aplicaciones del sistema está desactivado en esta TV por ahora. En webOS 10 y posteriores puede dejar sin imagen, sin sonido y sin control HDMI hasta que se desenchufa la TV. Las aplicaciones ya ocultas vuelven a aparecer tras el próximo reinicio completo de la TV.",
+  "from": "Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted."
+ },
  "srv.arOff.badHour": {
   "text": "el inicio debe ser una hora de 0 a 23",
   "from": "the start must be an hour from 0 to 23"
@@ -2843,6 +2855,14 @@
   "text": "acciones de energía desactivadas (define allowPower)",
   "from": "power actions disabled (set allowPower)"
  },
+ "srv.piccap.refused": {
+  "text": "PicCap rechazó la solicitud",
+  "from": "PicCap refused the request"
+ },
+ "srv.piccap.unavailable": {
+  "text": "PicCap no está disponible",
+  "from": "PicCap is not available"
+ },
  "srv.privacy.acr": {
   "text": "Reconocimiento del contenido de pantalla",
   "from": "Screen content recognition"
@@ -2955,6 +2975,10 @@
   "text": "Estallidos de color sobre negro, cada pocos segundos.",
   "from": "Bursts of colour on black, a few seconds apart."
  },
+ "srv.saver.held": {
+  "text": "Los salvapantallas personalizados están desactivados en esta TV por ahora. En webOS 10 y posteriores pueden dejar sin imagen, sin sonido y sin control HDMI hasta que se desenchufa la TV. Uno que ya esté en uso se mantiene hasta el próximo reinicio completo de la TV.",
+  "from": "Custom screen savers are turned off on this TV for now. On webOS 10 and later they can leave the picture, the sound and HDMI control off until the TV is unplugged. One already in use stays until the TV is next fully restarted."
+ },
  "srv.saver.noRemote": {
   "text": "no se pudo alcanzar el dispositivo de entrada del mando",
   "from": "could not reach the remote input device"
@@ -3006,14 +3030,6 @@
  "srv.saver.vitals.desc": {
   "text": "Las lecturas de la TV: horas de panel, cuenta atrás del refrescado y temperatura.",
   "from": "The TV's own readings - panel hours, pixel refresher countdown, temperature."
- },
- "srv.service.alwaysready": {
-  "text": "Always Ready Ambient Mode",
-  "from": "Always Ready Ambient Mode"
- },
- "srv.service.alwaysready.desc": {
-  "text": "Muestra la pantalla Always Ready de LG, como un reloj, cuando la TV está apagada. Desactivarla aquí también detiene Always Ready en Avanzado.",
-  "from": "Shows LG's Always Ready screen, such as a clock, when the TV is switched off. Turning it off here also stops Always Ready under Advanced."
  },
  "srv.service.badge.flashWrites": {
   "text": "Escrituras en flash",
@@ -3154,6 +3170,10 @@
  "ss.firmwareNote": {
   "text": "Nota: si se actualiza el firmware, el salvapantallas volverá al de LG por defecto.",
   "from": "Note: if a firmware update is applied, the screen saver will be restored to the LG default."
+ },
+ "ss.held": {
+  "text": "Los salvapantallas personalizados están desactivados en esta TV por ahora. En webOS 10 y posteriores pueden dejar sin imagen, sin sonido y sin control HDMI hasta que se desenchufa la TV. Cambia al salvapantallas de LG para dejar de usar este ahora; si no, desaparece tras el próximo reinicio completo de la TV.",
+  "from": "Custom screen savers are turned off on this TV for now. On webOS 10 and later they can leave the picture, the sound and HDMI control off until the TV is unplugged. Switch to LG's screen saver to stop using this one now; otherwise it goes when the TV is next fully restarted."
  },
  "ss.inUse": {
   "text": "En uso",
@@ -4010,6 +4030,10 @@
  "tv.saver.head.screenSaver": {
   "text": "Salvapantallas",
   "from": "Screen saver"
+ },
+ "tv.saver.held": {
+  "text": "Salvapantallas personalizados",
+  "from": "Custom screen savers"
  },
  "tv.saver.ours.hint": {
   "text": "Sustituye al salvapantallas de LG. Todo en él se desplaza lentamente para que ningún píxel mantenga la misma imagen.",

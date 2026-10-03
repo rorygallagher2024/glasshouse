@@ -47,6 +47,17 @@ Older Linux kernels and Node 0.12 can encounter process deadlocks or child leaks
 4. **Memory Caching**: Telemetry is cached for 1.5 seconds, delivering sub-20ms HTTP responses with zero subprocess spawning during rapid UI updates.
 5. **Deterministic MQTT Client Session**: Uses a static client ID and periodic availability reaffirmation so TV reboots or network reconnects never leave entities trapped in an "Unavailable" state.
 
+### What it costs the TV
+
+Measured with `scripts/footprint.sh` on 2026-10-03, over a minute each, with MQTT publishing every 10s and no dashboard open:
+
+| TV | Server CPU (one core) | Server memory | luna-send children | TV memory available |
+| :-- | :-- | :-- | :-- | :-- |
+| OLED65B8SLC (webOS 4) | 1.4–1.7% | 29–42 MB | 5, 6 MB | 432–445 of 1976 MB |
+| OLED42C24LA (webOS 22) | 1.2–1.3% | 35–38 MB | 5, 10 MB | 525–535 of 1996 MB |
+
+The children are the five subscriptions held open for live state. Memory is the lower figure just after a start and grows towards the higher one. An open dashboard adds the reads behind each refresh; `./scripts/footprint.sh <tv-ip>` measures it for any TV.
+
 ---
 
 ---
@@ -144,8 +155,10 @@ against a `panelUsageTime` of 28614 (÷6 = 4769).
 ## Panel detection
 
 Panel-lifecycle features are gated on panel type, detected once via
-model name matching (`OLED...`), `/var/luna/preferences/paneltype_oled`, or pnwash filesystem
-records. `panelUsageTime` is not a signal: LCD TVs report it too. On an LCD/QNED TV they are
+`/var/luna/preferences/paneltype_oled`, the model name (`OLED...`, or one of the OLED lines
+whose model numbers lack the prefix: Flex and Objet Posé `LX`, Easel `ART9x`), or pnwash
+filesystem records. The pnwash check also runs when the model name is known, so an unlisted
+OLED without the prefix is still found. `panelUsageTime` is not a signal: LCD TVs report it too. On an LCD/QNED TV they are
 omitted from the dashboard and withheld from MQTT discovery, with retained discovery configs
 cleared so they do not linger in Home Assistant as orphans. Reporting `0 hours` would read as a real
 measurement.
@@ -647,6 +660,14 @@ The debloating engine (`server/lib/services.js`) manages background system daemo
   5. As a result, `videooutputd` never receives a matching `vssForegroundAppId` from `getForegroundApps`. In `videooutputd`, the `MAIN` sink starts muted at boot and only unmutes when the connecting app matches `vssForegroundAppId`. With the foreground state stalled at `unknown`, `videooutputd` holds `muted: true` indefinitely.
 * **Why Disabling Offers No Benefit**: On consumer/retail TVs where Hotel Mode is disabled (`enableHotelMode == 0`), `tvdataexchanger`'s power-on handlers (`CHotel::loadAvSettings()` and `CHotel::runAspectRatio()`) abort immediately. It does not touch AV settings or display configurations on consumer sets, uses negligible RAM (~1.8 MB), and consumes 0% CPU after boot.
 
+
+### Forbidden Service: `alwaysready` (Always Ready Ambient Mode)
+
+`alwaysready` (`alwaysready.service`) was on the list until 0.73.2 and is now retired the same way.
+
+* **Symptom When Disabled**: On an OLED65C4PUA (webOS 10.3.1, firmware 33.31.68), the native Plex app showed video stretched vertically. Switching the service back on and rebooting restored the aspect ratio (#374).
+* **Why Disabling Offers No Benefit**: It saves about 3 MB of RAM. The Always Ready screen itself is switched off with the **Always Ready** setting under **Advanced &rarr; Power** (`lifeOnScreenMode`), which leaves the daemon in place.
+* **Migration**: `services.init()` drops both retired IDs (`RETIRED`) from `disabled_services.json`, removes their masks under `/run/systemd/transient`, starts them and rewrites the boot hook. The reported Plex fault cleared only after a reboot with the service running.
 ---
 
 ## Screensaver Staging & Boot Persistence
@@ -656,5 +677,10 @@ Custom QML screensavers are staged in `/var/lib/tvweb/screensaver` and bind-moun
 * **Cold Boot vs Quick Start+**: On Quick Start+ suspend-to-RAM, active bind-mounts persist in memory. On a cold boot (such as after the 4-hour OLED Pixel Cleaning cycle or extended standby on webOS 24/25), `/var/lib/webosbrew/init.d/50-tvweb` re-applies the bind-mount if `/var/lib/tvweb/screensaver/.tvweb-screensaver` is present.
 * **Reverting to Stock**: When the user selects "LG default" (`stock`), `screensavers.setScreensaver('stock')` unmounts the live overlay and deletes `.tvweb-screensaver` along with all staged files. Without this cleanup, the boot hook would see the stale marker file on cold boot and re-mount the previously staged screensaver. `screensavers.init()` also auto-heals any orphaned marker files if the live screensaver is currently stock.
 
+---
+
+## Optional PicCap MQTT control
+
+PicCap MQTT support is off by default and runs only when `piccap.enabled` is `true`. It polls independently of telemetry, every `piccap.pollIntervalMs` milliseconds (30 seconds by default). When PicCap is available, telemetry includes boolean `piccap.power`; the bridge publishes retained `ON` or `OFF` to `<prefix>/state/piccap/power`. The `<prefix>/command/piccap/power` topic accepts `ON` or `OFF` when `allowControl` is enabled. The bridge refreshes state after commands and on each MQTT connection.
 
 

@@ -212,7 +212,49 @@ Subscription.prototype._consume = function (chunk) {
   }
 };
 
+/*
+ * A cache for one-shot reads whose answers do not change between dashboard
+ * ticks. Every call is a fork+exec of luna-send, and telemetry made a dozen of
+ * them per collection at a 2s tick; node 0.12's spawn path can deadlock under
+ * that (see the watchdog note in tvwebctl), so set-and-forget settings are
+ * read once per TTL.
+ *
+ * forget() with no argument drops everything, for a control that has just
+ * changed a setting. With a list of substrings it drops only the entries whose
+ * key (uri|payload) contains one of them: a live event, such as a volume step,
+ * makes the sound reads stale and nothing else. Dropping the lot there had
+ * every step - and a held key sends one per repeat - fork the whole set of
+ * settings again on the next read.
+ */
+function createCache(callFn) {
+  var entries = {};
+  return {
+    get: function (uri, payload, ttlMs, cb) {
+      var key = uri + '|' + JSON.stringify(payload || {});
+      var hit = entries[key];
+      // A negative age is a clock that stepped back: treat the entry as stale.
+      var age = hit ? Date.now() - hit.t : -1;
+      if (hit && age >= 0 && age < ttlMs) return cb(hit.v, hit.raw);
+      callFn(uri, payload, function (parsed, raw) {
+        // Only a real answer is worth pinning; a failed read should be retried.
+        if (parsed) entries[key] = { t: Date.now(), v: parsed, raw: raw };
+        cb(parsed, raw);
+      });
+    },
+    forget: function (match) {
+      if (!match) { entries = {}; return; }
+      for (var key in entries) {
+        for (var i = 0; i < match.length; i++) {
+          if (key.indexOf(match[i]) !== -1) { delete entries[key]; break; }
+        }
+      }
+    },
+    size: function () { return Object.keys(entries).length; }
+  };
+}
+
 module.exports = {
   call: call,
-  Subscription: Subscription
+  Subscription: Subscription,
+  createCache: createCache
 };

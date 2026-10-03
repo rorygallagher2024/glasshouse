@@ -27,6 +27,7 @@ var SWITCH_POLL_MS = 3000;
 var SWITCH_SETTLE_MS = 5000;
 var SWITCH_TIMEOUT_MS = 150000;
 var SWITCHING_ERROR = msg('srv.saver.switching', 'The TV is still switching screen savers. Try again in a minute.');
+var HELD_ERROR = msg('srv.saver.held', 'Custom screen savers are turned off on this TV for now. On webOS 10 and later they can leave the picture, the sound and HDMI control off until the TV is unplugged. One already in use stays until the TV is next fully restarted.');
 
 var SCREENSAVERS = {
   stock: {
@@ -148,6 +149,26 @@ function slowSwitch() {
   return false;
 }
 
+// Where the stock screen saver is not QML (Flutter on webOS 10 and 11), custom
+// screen savers and tile hiding have each been followed by the picture muted,
+// HDMI-CEC and ARC dead and sound on the TV speakers only, until a power cut
+// (#366). Both make sam reread its manifests. Held back there until the cause
+// is found: the boot hook stops applying them, and nothing here restarts sam to
+// undo one already in use. "allowOnWebos10": true in config.json, file-only,
+// turns them back on.
+function held() {
+  return slowSwitch() && !allowedAnyway();
+}
+
+function allowedAnyway() {
+  return !!(configObj && configObj.allowOnWebos10);
+}
+
+// Held back but turned back on, so the dashboards can say so.
+function heldOverridden() {
+  return slowSwitch() && allowedAnyway();
+}
+
 function switching() {
   if (switchingSince && Date.now() - switchingSince > SWITCH_TIMEOUT_MS) switchingSince = 0;
   return !!switchingSince;
@@ -205,7 +226,7 @@ function screensaverList() {
       label: SCREENSAVERS[k].label,
       description: SCREENSAVERS[k].description,
       active: k === cur,
-      available: k === 'stock' || !!(assetPathFn && assetPathFn(SCREENSAVERS[k].qml))
+      available: k === 'stock' || (!held() && !!(assetPathFn && assetPathFn(SCREENSAVERS[k].qml)))
     });
   }
   return {
@@ -215,6 +236,12 @@ function screensaverList() {
     modes: out,
     writable: !!(configObj && configObj.allowControl),
     slowSwitch: slowSwitch(),
+    // Held back, there is nothing to choose once LG's is in use, so both
+    // dashboards drop the tab; while one of ours still is, it stays so the
+    // owner can switch back without waiting for a full restart.
+    available: !held() || cur !== 'stock',
+    held: held(),
+    heldOverridden: heldOverridden(),
     switching: switching()
   };
 }
@@ -291,6 +318,7 @@ function writeScreensaverQml(src, level) {
 function setScreensaver(mode, level, cb) {
   if (!SCREENSAVERS[mode]) return cb({ ok: false, error: 'unknown screen saver: ' + mode });
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
+  if (mode !== 'stock' && held()) return cb({ ok: false, error: HELD_ERROR });
   level = (level === 'bright') ? 'bright' : 'dim';
 
   unmountScreensaver(function () {
@@ -415,6 +443,8 @@ module.exports = {
   screensaverMode: screensaverMode,
   screensaverList: screensaverList,
   switching: switching,
+  held: held,
+  heldOverridden: heldOverridden,
   setScreensaver: setScreensaver,
   restageScreensaver: restageScreensaver,
   trigger: trigger

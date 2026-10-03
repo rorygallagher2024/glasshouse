@@ -235,7 +235,7 @@ var TABS = [
   { key: 'apps',    label: t('tab.apps', 'Apps'),         url: '/api/apps',        build: appsRows },
   { key: 'oled',    label: t('tab.oledCare', 'OLED Care'),    url: '/api/oledcare',    build: oledRows },
   { key: 'game',    label: t('tab.game', 'Game'),         url: '/api/game',        build: gameRows, optional: true },
-  { key: 'saver',   label: t('tv.tab.screenSaver', 'Screen Saver'), url: '/api/screensaver', build: saverRows },
+  { key: 'saver',   label: t('tv.tab.screenSaver', 'Screen Saver'), url: '/api/screensaver', build: saverRows, optional: true },
   { key: 'privacy', label: t('tab.privacy', 'Privacy'),      url: '/api/privacy',     build: privacyRows },
   { key: 'service', label: t('tv.tab.serviceMenu', 'Service Menu'), url: '/api/servicemenu', build: svcRows },
   { key: 'options', label: t('tv.tab.system', 'System'),       url: '/api/stats?with=settings', build: optionRows, poll: 5000 },
@@ -561,7 +561,15 @@ function saverRows(d) {
   var slow = d.slowSwitch && d.current === 'stock' ? function (m) { return m.id !== 'stock'; }
            : d.slowSwitch ? function (m) { return m.id === 'stock'; }
            : function () { return false; };
-  d.modes.filter(function (m) { return m.available; }).forEach(function (m) {
+  if (d.heldOverridden) {
+    r.push({ label: t('tv.saver.held', 'Custom screen savers'), value: t('common.on', 'On'), cls: 'on',
+             hint: t('common.heldOverridden', 'Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged (#366).') });
+  }
+  if (d.held) {
+    r.push({ label: t('tv.saver.held', 'Custom screen savers'), value: t('common.off', 'Off'), cls: 'off',
+             hint: t('ss.held', 'Custom screen savers are turned off on this TV for now. On webOS 10 and later they can leave the picture, the sound and HDMI control off until the TV is unplugged. Switch to LG\'s screen saver to stop using this one now; otherwise it goes when the TV is next fully restarted.') });
+  }
+  d.modes.filter(function (m) { return m.available || (d.held && m.active); }).forEach(function (m) {
     r.push({ label: m.label, value: m.active ? t('ss.inUse', 'In use') : '', cls: m.active ? 'on' : '',
              act: d.writable && !busy ? 'saver' : null, key: m.id,
              press: m.active ? t('tv.saver.alreadyInUse', 'Already in use')
@@ -635,18 +643,21 @@ function appsRows(d) {
   if (sys.length > 0) {
     r.push(head(t('tv.apps.head.hideHomeScreenSystem', 'Hide Home Screen System Apps')));
     var tileHidingEnabled = !!d.tileHidingEnabled;
+    var tilesHeld = !!d.tileHidingHeld;
     r.push({
       label: t('tv.apps.systemAppHiding', 'System App Hiding'),
       value: tileHidingEnabled ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled'),
       cls: tileHidingEnabled ? 'on' : 'off',
-      act: 'tileHiding',
+      act: tilesHeld && !tileHidingEnabled ? null : 'tileHiding',
       on: tileHidingEnabled,
       press: tileHidingEnabled ? t('tv.apps.tiles.disable', 'Press OK to disable tile hiding') : t('tv.apps.tiles.enable', 'Press OK to enable tile hiding'),
-      hint: tileHidingEnabled
+      hint: d.tileHidingOverridden ? t('common.heldOverridden', 'Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged (#366).')
+        : tilesHeld ? t('apps.tiles.held', 'Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.')
+        : tileHidingEnabled
         ? t('tv.apps.tiles.on.hint', 'When enabled: On each cold boot of your TV, this can cause a brief 1-second blank screen or input refresh before returning to your active HDMI source.')
         : t('tv.apps.tiles.off.hint', 'Stock behavior active. Press OK to enable system app hiding.')
     });
-    if (tileHidingEnabled) {
+    if (tileHidingEnabled && !tilesHeld) {
       for (var i = 0; i < sys.length; i++) {
         var tile = sys[i];
         var isVisible = !tile.hidden;
@@ -2071,7 +2082,8 @@ if (selMatch) {
 openTab(initTab, initialSel !== null);
 
 /* A section the TV may not have is dropped once its endpoint says so, as the
-   browser dashboard hides its tab: a B8 has no Game Optimizer. */
+   browser dashboard hides its tab: a B8 has no Game Optimizer, and a TV
+   holding custom screen savers back (#366) has none to offer. */
 TABS.forEach(function (section) {
   if (!section.optional) return;
   fetch(section.url, { cache: 'no-store' })

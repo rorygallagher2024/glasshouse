@@ -425,6 +425,37 @@ function createMockRes(cb) {
   console.log('  ✓ handleRequest dispatches endpoints, auth guards, and 404 handling');
 })();
 
+// A dashboard uninstall that succeeds tells the server the apps changed; one
+// that fails does not.
+(function () {
+  var changed = 0;
+  routes.init({
+    config: { web: { enabled: false }, allowControl: true, token: 'test-token', port: 8080, host: '0.0.0.0' },
+    apps: { uninstallApp: function (id, cb) { cb({ ok: id === 'spotify-beehive' }); } },
+    appsChanged: function () { changed++; }
+  });
+  function uninstall(id, expectCode, then) {
+    var req = createMockReq({
+      url: '/api/apps/uninstall?k=test-token', method: 'POST', remoteAddress: '192.168.1.50',
+      headers: { 'content-type': 'application/json', 'host': '192.168.1.131:8080' }
+    });
+    var res = createMockRes(function (r) {
+      assert.strictEqual(r.statusCode, expectCode);
+      then();
+    });
+    routes.handleRequest(req, res);
+    req.emit('data', JSON.stringify({ id: id }));
+    req.emit('end');
+  }
+  uninstall('spotify-beehive', 200, function () {
+    assert.strictEqual(changed, 1);
+    uninstall('com.webos.app.livetv', 400, function () {
+      assert.strictEqual(changed, 1);
+      console.log('  ✓ a dashboard uninstall refreshes the app list only when it succeeds');
+    });
+  });
+})();
+
 // 6. Install routes: Host check, controls switch, catalog, install flow, restart refusal
 (function testInstallRoutes() {
   var calls = [];

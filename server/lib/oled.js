@@ -28,6 +28,26 @@ function getIsOled() {
   return isOled;
 }
 
+// OLED sets whose model number does not start with "OLED": the Flex
+// (42LX3Q6LA, 42LX3QPUA), the Objet Pose (42/48/55LX1QPUA) and the Easel
+// (65ART90E6QA, 65ART90EPUA). The ART10 StanbyME is LCD, hence ART9 only.
+var OLED_MODELS = [/^\d{2}LX\d/i, /^\d{2}ART9\d/i];
+
+function oledByModel(model) {
+  if (/oled/i.test(model)) return true;
+  for (var i = 0; i < OLED_MODELS.length; i++) {
+    if (OLED_MODELS[i].test(model)) return true;
+  }
+  return false;
+}
+
+// Pixel refresher records exist only on OLED. Panel usage time is no
+// evidence either way: an LCD 50UP81006LR (webOS 6.5.0) reports it too.
+function hasPnwashRecords() {
+  return fs.existsSync('/mnt/lg/cmn_data/pnwash/autoOffRsLastTime') ||
+         fs.existsSync('/mnt/lg/cmn_data/pnwash/autoOffRsTime');
+}
+
 // As telemetry's device detection: a lost answer at start should not settle
 // the panel type for the life of the process.
 var MODEL_TRIES = 3;
@@ -60,23 +80,21 @@ function detectOled(cb, triesLeft) {
       if (!model && !(res && res.returnValue) && triesLeft > 0) {
         return setTimeout(function () { detectOled(cb, triesLeft - 1); }, MODEL_RETRY_MS);
       }
-      if (model) {
-        isOled = /oled/i.test(model);
-        console.log('panel: ' + (isOled ? 'OLED' : 'not OLED - panel features disabled') +
-                    ' (model ' + model + ')');
-        return cb(isOled);
-      }
-      // Pixel refresher records exist only on OLED. Panel usage time is no
-      // evidence either way: an LCD 50UP81006LR (webOS 6.5.0) reports it too.
-      if (fs.existsSync('/mnt/lg/cmn_data/pnwash/autoOffRsLastTime') ||
-          fs.existsSync('/mnt/lg/cmn_data/pnwash/autoOffRsTime')) {
+      if (model && oledByModel(model)) {
         isOled = true;
-        console.log('panel: OLED (detected via pnwash records)');
+        console.log('panel: OLED (model ' + model + ')');
+        return cb(true);
+      }
+      // Checked for a named model too: not every OLED has a model number
+      // that says so, and the list above only covers the ones reported.
+      if (hasPnwashRecords()) {
+        isOled = true;
+        console.log('panel: OLED (detected via pnwash records' + (model ? ', model ' + model : '') + ')');
         return cb(true);
       }
       isOled = false;
-      console.log('panel: model unknown and no OLED records - panel features disabled' +
-                  ' (set "panel" in config.json to override)');
+      console.log('panel: ' + (model ? 'not OLED (model ' + model + ')' : 'model unknown and no OLED records') +
+                  ' - panel features disabled (set "panel" in config.json to override)');
       cb(false);
     });
 }

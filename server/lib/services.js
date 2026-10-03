@@ -70,15 +70,6 @@ var CATALOG = [
     desc: msg('srv.service.nudge.desc', 'Pushes marketing notifications, promotional popups, and feature tips to the TV interface.')
   },
   {
-    id: 'alwaysready',
-    bin: 'alwaysready',
-    title: msg('srv.service.alwaysready', 'Always Ready Ambient Mode'),
-    unit: 'alwaysready.service',
-    upstart: null,
-    badge: msg('srv.service.badge.ram', '{mb} MB RAM', { mb: '3.1' }),
-    desc: msg('srv.service.alwaysready.desc', 'Shows LG\'s Always Ready screen, such as a clock, when the TV is switched off. Turning it off here also stops Always Ready under Advanced.')
-  },
-  {
     id: 'remotelogger',
     bin: 'remotelogger',
     title: msg('srv.service.remotelogger', 'Remote Logging Daemon'),
@@ -88,6 +79,16 @@ var CATALOG = [
     desc: msg('srv.service.remotelogger.desc', 'Ships system log messages to remote servers.')
   }
 ];
+
+/*
+ * Once on the list, now never to be switched off; init() switches them back on
+ * for anyone who had. tvdataexchanger left the video plane muted after power
+ * on (docs/IMPLEMENTATION.md). Without alwaysready, Plex showed video stretched
+ * vertically on an OLED65C4PUA (webOS 10.3.1, firmware 33.31.68) until the
+ * service was back and the TV rebooted; Always Ready itself is switched off
+ * under Advanced.
+ */
+var RETIRED = ['tvdataexchanger', 'alwaysready'];
 
 var stateDir = '/var/lib/tvweb';
 var disabledFilePath = null;
@@ -250,8 +251,9 @@ function init(options) {
   }
 
   var disabled = readDisabledList();
-  if (disabled.indexOf('tvdataexchanger') !== -1) {
-    disabled = disabled.filter(function (id) { return id !== 'tvdataexchanger'; });
+  var kept = disabled.filter(function (id) { return RETIRED.indexOf(id) === -1; });
+  if (kept.length !== disabled.length) {
+    disabled = kept;
     writeDisabledList(disabled);
   }
   try {
@@ -268,15 +270,15 @@ function init(options) {
       if (!fs.existsSync(transientDir)) {
         fs.mkdirSync(transientDir, 493);
       }
-      var reloaded = false;
+      var reloaded = false, unmasked = [];
 
-      // Unmask any deprecated units that should never be masked
-      var deprecatedUnits = ['tvdataexchanger.service'];
-      for (var d = 0; d < deprecatedUnits.length; d++) {
-        var depMask = path.join(transientDir, deprecatedUnits[d]);
+      // Unmask the retired units, which an earlier version may have masked
+      for (var d = 0; d < RETIRED.length; d++) {
+        var depMask = path.join(transientDir, RETIRED[d] + '.service');
         if (fs.existsSync(depMask)) {
           try {
             fs.unlinkSync(depMask);
+            unmasked.push(RETIRED[d] + '.service');
             reloaded = true;
           } catch (e) {}
         }
@@ -295,7 +297,9 @@ function init(options) {
         }
       }
       if (reloaded) {
-        execFile(systemctl, ['daemon-reload'], function () {});
+        execFile(systemctl, ['daemon-reload'], function () {
+          if (unmasked.length) execFile(systemctl, ['start'].concat(unmasked), function () {});
+        });
       }
     } catch (e) {}
   }

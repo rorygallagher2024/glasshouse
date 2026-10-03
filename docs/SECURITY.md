@@ -6,8 +6,9 @@ use every enabled control. On a home LAN that is usually the point; understand
 it before exposing it more widely.
 
 - **Set a token.** Put `"token": "something-long"` in `config.json` and every
-  `/api/` request must carry `?k=something-long`. Bookmark the dashboard with
-  the token in the URL. This gates the HTTP API only &mdash; **MQTT and the Home
+  `/api/` request must carry `?k=something-long`. Open the dashboard once with
+  the token in the URL; the browser remembers it and the page takes it out of
+  the address bar, so it stays out of history and shared links. This gates the HTTP API only &mdash; **MQTT and the Home
   Assistant integration are unaffected**, since they use a separate channel.
 - **`"allowPower": false`** hides and refuses power off, power on and reboot,
   in the dashboard and in Home Assistant, for a TV that should never be

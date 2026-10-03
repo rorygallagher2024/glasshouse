@@ -489,20 +489,12 @@ function doControl(action, value, cb) {
      */
     case 'alwaysReadyScreen':
       var arsOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
-      var setMode = function () {
-        luna('com.webos.service.settings/setSystemSettings',
-             { category: 'general', settings: { lifeOnScreenMode: arsOn ? 'allEnabled' : 'off' } },
-             function (r) {
-               telemetry.clearCache();
-               cb({ ok: !!(r && r.returnValue) });
-             });
-      };
-      // LG's alwaysready service draws the screen. It can be on the Apps
-      // tab's list of background services to keep off, and then nothing shows.
-      if (arsOn && servicesModule.isDisabled('alwaysready')) {
-        return servicesModule.toggleService('alwaysready', false, setMode);
-      }
-      return setMode();
+      return luna('com.webos.service.settings/setSystemSettings',
+                  { category: 'general', settings: { lifeOnScreenMode: arsOn ? 'allEnabled' : 'off' } },
+                  function (r) {
+                    telemetry.clearCache();
+                    cb({ ok: !!(r && r.returnValue) });
+                  });
 
     /*
      * The five nightly hours when LG suspends Always-on, and a switched-off

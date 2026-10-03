@@ -28,9 +28,9 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 3.4 through 26 confirmed; tested across 2016–2025 models. Other versions likely work as well
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 24 models verified so far (UH6030, UH610V, B7, B8, C8, C9, CX, C1, UP81, QNED82, C2, C3, B4, G3, C4, G4, UT81, C5, CS). Other rooted models should work; [see full table](#tested-tvs)
+* **Tested hardware**: 26 models verified so far (UH6030, UH610V, B7, B8, C8, C9, CX, C1, UP81, QNED82, C2, C3, B4, G3, C4, G4, UT81, C5, G5, CS, LX3). Other rooted models should work; [see full table](#tested-tvs)
 
-[Quick start](#quick-start) • [What it's for](#what-its-for) • [Screenshots](#screenshots) • [Features](#features) • [Installation](#installation) • [Tested TVs](#tested-tvs) • [Home Assistant](#home-assistant--mqtt) • [Managing the server](#managing-the-server) • [Security](#security)
+[Quick start](#quick-start) • [What it's for](#what-its-for) • [Screenshots](#screenshots) • [Features](#features) • [Installation](#installation) • [Tested TVs](#tested-tvs) • [Known issues](#known-issues) • [Home Assistant](#home-assistant--mqtt) • [Managing the server](#managing-the-server) • [Security](#security)
 
 ---
 
@@ -158,7 +158,7 @@ The **Apps** tab, `/?tab=apps`, offers four different ways to manage software on
 * **Install from a URL or a file:** **From URL...** downloads an `.ipk` from an http or https address, with an optional sha256 to check it against, and **Upload .ipk** sends one from the browser. Both show the same preview as a catalog install. They are off until `"apps": { "sideload": true }` is set in `config.json`, a token is set, or the request comes from the TV itself; the section says so while they are off. Root access for such a package asks for a second confirmation naming each service, is never applied again by an update, and replacing an app that came from the LG store needs its own tick, since store updates stop afterwards.
 * **Uninstall applications:** Store downloads and sideloaded packages with version and vendor details, and a one-click uninstall action to permanently delete apps and free up internal eMMC flash storage.
 * **Turn off background services:** Safely disable unnecessary background services and daemons that consume RAM and CPU cycles (such as USB camera watcher, Connected Car listeners, and browser preloading). Only services actually present on the TV are displayed, and disabled states are persisted across reboots.
-* **Hide home screen system apps:** Hide non-removable LG system apps (Gallery, Music, Sports, Always Ready, Camera, User Guide, Device Connector, Alexa, Google Assistant, etc.) from the home launcher ribbon. Operates non-destructively via reversible `appinfo.json` bind-mounts. Includes a master toggle to instantly return to stock behavior.
+* **Hide home screen system apps:** Hide non-removable LG system apps (Gallery, Music, Sports, Always Ready, Camera, User Guide, Device Connector, Alexa, Google Assistant, etc.) from the home launcher ribbon. Operates non-destructively via reversible `appinfo.json` bind-mounts. Includes a master toggle to instantly return to stock behavior. Not available on webOS 10 and later for now; see [Known issues](#known-issues).
 * **Strict system safeguards:** Core TV services (`Live TV`, `Settings`, `Launcher`, input switchers, and the dashboard itself) are strictly protected and can never be hidden or uninstalled.
 * **Available on TV and Web:** Catalog installs, uninstalling, services and hiding work from any browser or from the on-TV dashboard app. Installing from a URL or a file is in the browser dashboard only.
 
@@ -253,6 +253,8 @@ The **Screensaver** tab, `/?tab=screensaver`, provides five alternatives to LG's
 Each mode offers dim and bright variants, and visual elements continuously drift across the screen to prevent OLED burn-in or image retention.
 
 A firmware update restores the LG default.
+
+Not available on webOS 10 and later for now; see [Known issues](#known-issues).
 
 <p align="center">
   <a href="docs/screenshots/screensaver.png"><img src="docs/screenshots/screensaver.png" alt="Screensaver tab: LG default, Clock, Starfield, Fireworks, Bokeh and Panel vitals, with brightness and a start button beside them" width="700"></a>
@@ -354,9 +356,25 @@ Tested across the following TVs so far. The Luna service names and `/proc/lg` pa
 | OLED77C4PSA | 25 (10.3.1)  | 33.31.68 | OLED  | Rooted with Dangbro; resolution reported stuck at 1920x1081    |
 | OLED48C55LA | 25 (10.3.1)  | 33.31.68 | OLED  | Installed over telnet; in-app update to 0.37.2 confirmed       |
 | OLED77C57LA | 25 (10.3.1)  | 33.31.68 | OLED  | MQTT, privacy, screen saver and web dashboard confirmed        |
+| 42LX3Q6LA   | —            | 33.31.68 | OLED  | Flex; model number has no OLED prefix                          |
 | OLED65G36LA | 26 (11.2.0)  | 43.21.71 | OLED  | Rooted with DualBro; privacy and app installs confirmed        |
+| OLED83G5WUA | 26 (11.2.0)  | 43.21.71 | OLED  | Rooted with DualBro; runs with internet access blocked         |
 
 **Tested on another model?** Please [open an issue](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/new) with the TV model, webOS version, and the contents of `/var/lib/tvweb/tvweb.log` — whether everything worked or something broke — and we will add a row.
+
+### Known issues
+
+**Black picture and no sound on webOS 10 and later ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)).** On webOS 10 and 11, after a custom screen saver or tile hiding has been used, apps and HDMI inputs can show a black picture with no sound. HDMI-CEC stops working and sound plays only through the TV's own speakers. Standby does not clear it; unplugging the TV does. The cause is not yet known.
+
+Both features are turned off on these TVs. One already in use stays until the TV is next fully restarted, then the TV goes back to stock. They can be turned back on, for example to help test a fix, by adding `"allowOnWebos10": true` to `/var/lib/tvweb/config.json` and fully restarting the TV. The dashboard then notes that they were turned back on.
+
+If it happens, please add to [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366) rather than opening a new issue, with the output of these, run before restarting the TV:
+
+```sh
+luna-send -n 1 -f luna://com.webos.service.tvpower/power/getPowerState '{}'
+luna-send -n 1 -f luna://com.webos.service.videooutput/getStatus '{}'
+cat /var/lib/webosbrew/tvweb-boot.log
+```
 
 ### 1. Get the files
 
@@ -458,7 +476,7 @@ To replace an existing config, edit it through the dashboard or remove `/var/lib
 
 The dashboard can change the broker, credentials, topic prefix and device identity — the things that decide *where* telemetry goes.
 
-`port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them.
+`port`, `host`, `allowControl`, `allowPower`, `token` and `allowOnWebos10` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them.
 
 Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart.
 
@@ -472,6 +490,22 @@ Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` o
 > Give the TV its own MQTT user with a restricted topic ACL rather than reusing the main Home Assistant credentials. See [docs/SECURITY.md](docs/SECURITY.md).
 
 </details>
+
+### Optional PicCap control
+
+PicCap is an app capturing the TV's screen and sending it to a Hyperion client that transforms it into an ambient-light system. PicCap MQTT control is off by default. It can be enabled via config in `/var/lib/tvweb/config.json`
+
+```
+"piccap": {
+  "enabled": true,
+  "pollIntervalMs": 30000
+}
+``` 
+
+Polling interval is optional, and defaults to 30 seconds. 
+The retained state topic `<topicPrefix>/state/piccap/power` carries `ON` or `OFF`; 
+the command topic `<topicPrefix>/command/piccap/power` accepts `ON` to start PicCap capturing and `OFF` to stop it. 
+Commands require `allowControl` to be `true`. Telemetry includes boolean `piccap.power` when PicCap is available. 
 
 ### Using MQTT without Home Assistant
 

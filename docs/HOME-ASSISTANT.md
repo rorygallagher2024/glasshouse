@@ -149,6 +149,14 @@ The TV's own settings that the dashboard's Advanced, Game and Privacy tabs chang
 
 ---
 
+## PicCap
+
+The optional PicCap is not auto-discovered as a Home Assistant entity. 
+A manually configured MQTT entity can be added, using `<topicPrefix>/state/piccap/power` for state
+and `<topicPrefix>/command/piccap/power` for control; both having `ON` or `OFF` payloads.
+
+---
+
 ## Multiple TVs
 
 Each TV on the same broker needs a unique `topicPrefix` and `device.id` in its

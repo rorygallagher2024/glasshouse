@@ -36,6 +36,36 @@ console.log('Running test-luna.js ...');
 var errors = [];
 console.error = function (m) { errors.push(String(m)); };
 
+// 0. The read cache answers from memory within the TTL, and forgets by key
+var reads = 0;
+var cache = luna.createCache(function (uri, payload, cb) {
+  reads++;
+  cb({ returnValue: true, uri: uri }, '');
+});
+var SOUND = 'com.webos.service.settings/getSystemSettings';
+cache.get(SOUND, { category: 'sound', keys: ['soundOutput'] }, 60000, function () {});
+cache.get(SOUND, { category: 'sound', keys: ['soundOutput'] }, 60000, function () {});
+cache.get(SOUND, { category: 'option', keys: ['standByLight'] }, 60000, function () {});
+cache.get('com.webos.audio/getSoundOut', {}, 60000, function () {});
+assert.strictEqual(reads, 3, 'a second read within the TTL forked luna-send again');
+assert.strictEqual(cache.size(), 3);
+// A volume step drops the sound reads and nothing else
+cache.forget(['com.webos.audio/', '"category":"sound"']);
+assert.strictEqual(cache.size(), 1);
+cache.get(SOUND, { category: 'option', keys: ['standByLight'] }, 60000, function () {});
+assert.strictEqual(reads, 3, 'the option read was dropped with the sound ones');
+cache.get('com.webos.audio/getSoundOut', {}, 60000, function () {});
+assert.strictEqual(reads, 4);
+// A control drops everything
+cache.forget();
+assert.strictEqual(cache.size(), 0);
+// A failed read is not pinned
+var failing = luna.createCache(function (uri, payload, cb) { reads++; cb(null, ''); });
+failing.get(SOUND, {}, 60000, function () {});
+failing.get(SOUND, {}, 60000, function () {});
+assert.strictEqual(reads, 6);
+console.log('  ✓ cached reads are served within the TTL and forgotten by key');
+
 // 1. A child that aborted is run again, and the second answer is used
 script = [{ err: aborted() }, { out: '{"returnValue":true,"modelName":"50UP81006LR"}' }];
 luna.call('com.webos.service.tv.systemproperty/getSystemProperties', { keys: ['modelName'] }, function (r) {

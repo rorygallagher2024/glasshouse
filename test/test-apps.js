@@ -353,14 +353,27 @@ test('setTileHidingEnabled toggles flag file and requires allowControl', functio
   });
 });
 
-test('restartSam preserves and relaunches active foreground app', function (done) {
+test('restartSam waits for sam to finish loading, then relaunches the foreground app', function (done) {
   var launchedApp = null;
+  // sam comes back with part of the home screen first, then all of it.
+  var partial = [{ id: 'netflix' }, { id: 'youtube.leanback.v4' }];
+  var full = partial.concat([{ id: 'com.webos.app.browser' }, { id: 'com.webos.app.camera' }]);
+  var reads = [null, partial, partial, full, full, full, full];
+  var fullReadsAtLaunch = null;
+  var fullReads = 0;
+  var lpReads = 0;
   var mockLuna = function (uri, params, cb) {
     if (uri === 'com.webos.applicationManager/getForegroundAppInfo') {
       return cb({ returnValue: true, appId: 'com.webos.app.hdmi2' });
     }
+    if (uri === 'com.webos.applicationManager/listLaunchPoints') {
+      var lps = reads[Math.min(lpReads++, reads.length - 1)];
+      if (lps === full) fullReads++;
+      return cb(lps ? { returnValue: true, launchPoints: lps } : { returnValue: false });
+    }
     if (uri === 'com.webos.applicationManager/launch') {
       launchedApp = params.id;
+      fullReadsAtLaunch = fullReads;
       return cb({ returnValue: true });
     }
     cb({ returnValue: true });
@@ -373,7 +386,33 @@ test('restartSam preserves and relaunches active foreground app', function (done
 
   apps.restartSam(function () {
     assert.strictEqual(launchedApp, 'com.webos.app.hdmi2', 'Must relaunch saved HDMI foreground app');
-    if (done) done();
+    // Not on the partial list: only once the full one has read the same three times.
+    assert.ok(fullReadsAtLaunch >= 3, 'relaunched after ' + fullReadsAtLaunch + ' full reads');
+
+    // Three asking at once share restarts: the first runs alone, and the other
+    // two wait for one more between them, so they are answered together.
+    apps.init({
+      luna: function (uri, params, cb) {
+        if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.home' });
+        if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: full });
+        cb({ returnValue: true });
+      },
+      config: { allowControl: true }
+    });
+    var answeredIn = [], mark = {};
+    var answer = function (k) {
+      return function () {
+        answeredIn[k] = mark;
+        process.nextTick(function () { mark = {}; });
+        if (answeredIn.filter(Boolean).length < 3) return;
+        assert.notStrictEqual(answeredIn[0], answeredIn[1], 'the first restart is its own');
+        assert.strictEqual(answeredIn[1], answeredIn[2], 'the next two share one restart');
+        if (done) done();
+      };
+    };
+    apps.restartSamShared(answer(0));
+    apps.restartSamShared(answer(1));
+    apps.restartSamShared(answer(2));
   });
 });
 

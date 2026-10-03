@@ -42,6 +42,7 @@ var lunaTransport = require('./lib/luna');
 var say = require('./lib/say');
 var lgSettings = require('./lib/lgsettings');
 var game = require('./lib/game');
+var piccapTransport = require('./lib/piccap');
 var msg = say.msg;
 var luna = lunaTransport.call;
 
@@ -75,6 +76,14 @@ var CONFIG = {
   // Optional shared secret. If non-empty, every /api/ request must carry
   // ?k=<token>. Keeps casual LAN devices out.
   token: '',
+
+  // Custom screen savers and tile hiding are held back on webOS 10 and later,
+  // where they have left the picture, sound and HDMI control off until a power
+  // cut (#366). File-only, like the settings above.
+  allowOnWebos10: false,
+
+  // PicCap status checks start a process on the TV, so this stays opt-in.
+  piccap: { enabled: false, pollIntervalMs: 30000 },
 
   // Home Assistant & MQTT Integration
   mqtt: {
@@ -247,32 +256,26 @@ var TOAST_SOURCE = 'com.webos.app.home';
 var BROWSER_APP = 'com.webos.app.browser';
 
 /*
-/*
- * Cache for luna reads whose answers do not change between dashboard ticks.
- * Every luna() call is a fork+exec, and telemetry made ten of them per
- * collection at a 2s tick - roughly five forks a second with the dashboard
- * open. Node 0.12's spawn path can deadlock under that (see the watchdog note
- * in tvwebctl), so set-and-forget settings are now read once per TTL.
- *
- * Any successful control clears the lot, so a setting the user just changed is
- * never served from cache.
+ * Cached luna reads: see createCache in lib/luna.js. Any successful control
+ * clears the lot, so a setting the user just changed is never served from
+ * cache; a live event clears only the reads it bears on (LIVE_STALE).
  */
-var lunaCache = {};
+var lunaCacheObj = lunaTransport.createCache(luna);
 
-function lunaCached(uri, payload, ttlMs, cb) {
-  var key = uri + '|' + JSON.stringify(payload || {});
-  var hit = lunaCache[key];
-  // A negative age is a clock that stepped back: treat the entry as stale.
-  var age = hit ? Date.now() - hit.t : -1;
-  if (hit && age >= 0 && age < ttlMs) return cb(hit.v, hit.raw);
-  luna(uri, payload, function (parsed, raw) {
-    // Only a real answer is worth pinning; a failed read should be retried.
-    if (parsed) lunaCache[key] = { t: Date.now(), v: parsed, raw: raw };
-    cb(parsed, raw);
-  });
-}
+function lunaCached(uri, payload, ttlMs, cb) { lunaCacheObj.get(uri, payload, ttlMs, cb); }
 
-function clearLunaCache() { lunaCache = {}; }
+function clearLunaCache(match) { lunaCacheObj.forget(match); }
+
+/*
+ * The cached reads each live subscription makes stale, by substring of the
+ * cache key. A source change also moves the picture settings' dimension and
+ * the picture modes on offer, which follow the dynamic range of what is on.
+ */
+var LIVE_STALE = {
+  audio: ['com.webos.audio/', '"category":"sound"'],
+  application: ['getForegroundAppInfo', '"category":"picture"'],
+  picture: ['"category":"picture"']
+};
 
 /*
  * Power state. tvpower reports the panel separately from the system: a set can
@@ -343,19 +346,25 @@ telemetry.init({
   screensavers: screensavers,
   tvwebVersion: TVWEB_VERSION,
   mapPowerState: mapPowerState,
-  isScreenSaver: isScreenSaver,
-  services: servicesModule
+  isScreenSaver: isScreenSaver
 });
 
 var liveState = stateModule.init({
   inputNameMap: telemetry.inputNameMap,
   mapPowerState: mapPowerState,
   formatSoundOutput: ha.formatSoundOutput,
-  clearCache: function () {
-    telemetry.clearCache();
-    clearLunaCache();
+  clearCache: function (group) {
+    telemetry.expireStats();
+    clearLunaCache(LIVE_STALE[group]);
   }
 });
+
+var piccap = CONFIG.piccap && CONFIG.piccap.enabled === true
+  ? piccapTransport.init({
+      luna: luna,
+      pollIntervalMs: CONFIG.piccap.pollIntervalMs
+    })
+  : piccapTransport.initNoop();
 
 var notificationState = notifications.init({ luna: luna });
 
@@ -577,6 +586,17 @@ installer.init({
 });
 if (!CLI_MODE) installer.recover();
 
+/*
+ * An app removed from the dashboard is read off the list at once rather than
+ * at the next minute's scan, and with MQTT on the next publish carries it to
+ * Home Assistant's Launch App. publishNow is set once MQTT is up.
+ */
+var publishNow = function () {};
+function appsChanged() {
+  telemetry.clearCache();
+  telemetry.refreshInstalledApps(function () { publishNow(); });
+}
+
 routes.init({
   config: CONFIG,
   repo: repo,
@@ -600,6 +620,7 @@ routes.init({
   assetDirs: ASSET_DIRS,
   luna: luna,
   getMqttStatus: function () { return MQTT_STATUS; },
+  appsChanged: appsChanged,
   version: TVWEB_VERSION
 });
 
@@ -733,6 +754,7 @@ function setupHomeAssistant() {
       retain: true
     }
   });
+  piccap.attachMqtt({ client: mqttClient, prefix: pfx, allowControl: CONFIG.allowControl });
 
   MQTT_STATUS.broker = CONFIG.mqtt.host + ':' + mqttClient.opts.port;
   MQTT_STATUS.tls = useTls;
@@ -849,6 +871,8 @@ function setupHomeAssistant() {
   };
 
   var lastPicSig = '';
+  publishNow = function () { publishTelemetry(); };
+  var lastAppSig = '';
   var lastCapSig = '';
 
   /*
@@ -869,6 +893,7 @@ function setupHomeAssistant() {
     if (mqttClient.connected) {
       mqttClient.publish(statusTopic, statusPayload(), true);
       publishTelemetry();
+      piccap.refreshAndPublishState();
     }
     // After the publishes above: on a B8 the TV can be asleep within 5s.
     mqttClient.setWill(off ? 'asleep' : 'offline');
@@ -894,6 +919,7 @@ function setupHomeAssistant() {
   } catch (e) {}
   var lastPublish = 0;
   function tickTelemetry() {
+    if (!mqttClient.connected) return;
     if (tvOff && Date.now() - lastPublish < OFF_INTERVAL_MS) return;
     publishTelemetry();
   }
@@ -934,6 +960,8 @@ function setupHomeAssistant() {
        * instead, as the TV itself does when it comes back on. Only the
        * published copy is filled in: the state cache above stays as reported.
        */
+      var piccapState = piccap.getState();
+      if (piccapState) s.piccap = { power: piccapState.isRunning };
       if (!tvOff) {
         if ((s.app && s.app !== lastApp) || (s.app_id && s.app_id !== lastAppId)) {
           lastApp = s.app || lastApp;
@@ -946,9 +974,17 @@ function setupHomeAssistant() {
         if (!s.app && lastApp) s.app = lastApp;
         if (!s.app_id && lastAppId) s.app_id = lastAppId;
       }
-      // Retained, so Home Assistant restarting reads the TV as it last was
-      // rather than every entity as unknown.
-      mqttClient.publish(telemetryTopic, JSON.stringify(s), true);
+      /*
+       * Retained, so Home Assistant restarting reads the TV as it last was
+       * rather than every entity as unknown. Without the installed apps or
+       * the temperature history: no entity reads either, the app select's
+       * options travel in discovery, and Home Assistant runs every entity's
+       * template over the whole message, so its size is paid for once per
+       * entity on each publish.
+       */
+      var pub = {};
+      for (var pk in s) if (pk !== 'apps' && pk !== 'temps') pub[pk] = s[pk];
+      mqttClient.publish(telemetryTopic, JSON.stringify(pub), true);
       MQTT_STATUS.lastPublish = Date.now();
       /*
        * The picture modes a set will accept change with the source's dynamic
@@ -964,6 +1000,16 @@ function setupHomeAssistant() {
         lastPicSig = sig;
         console.log('mqtt: picture modes changed (' + sig + ') - republishing discovery');
         publishDiscovery();
+      }
+      // Launch App's options are the installed apps, and live in discovery too.
+      var appSig = telemetry.getInstalledApps().map(function (a) { return a.id; }).sort().join(',');
+      if (appSig && appSig !== lastAppSig) {
+        var hadApps = lastAppSig;
+        lastAppSig = appSig;
+        if (hadApps) {
+          console.log('mqtt: installed apps changed (' + telemetry.getInstalledApps().length + ') - republishing discovery');
+          publishDiscovery();
+        }
       }
       /*
        * The HDMI diagnostics and the play state only appear once a source has
@@ -1012,6 +1058,7 @@ function setupHomeAssistant() {
     });
     mqttClient.subscribe(pfx + '/command/#');
     publishTelemetry();
+    piccap.refreshAndPublishState(true);
     publishUpdate();
   });
 
@@ -1021,6 +1068,8 @@ function setupHomeAssistant() {
     var action = topic.substring(prefix.length);
     var val = payload ? payload.trim() : '';
     console.log('mqtt: command received: ' + action + ' -> ' + val);
+
+    if (piccap.handleMqttCommand(action, val)) return;
 
     if (action === 'screen') {
       var turnOff = (val.toUpperCase() === 'OFF');
