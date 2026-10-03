@@ -542,8 +542,8 @@ function inspectIpk(file, cb) {
             }
             var tv = tvMachine;
             var mismatch = false;
-            for (var i = 0; tv && i < data.machines.length; i++) {
-              if (data.machines[i] !== tv) mismatch = true;
+            if (tv && data.machines.length > 0) {
+              mismatch = data.machines.indexOf(tv) < 0;
             }
             finish(null, {
               package: control.Package,
@@ -826,8 +826,12 @@ function buildPreview(j) {
       setState(j, 'awaiting-confirm');
       if (j.auto && !needsReview(j.preview)) {
         var autoErr = null;
+        var autoReq = { jobId: j.id };
+        if (j.preview.rootRequired && fs.existsSync(elevatePath)) {
+          autoReq.elevate = true;
+        }
         // confirm() answers synchronously; if it refuses, the preview stays up.
-        confirm({ jobId: j.id }, function (e) { autoErr = e; });
+        confirm(autoReq, function (e) { autoErr = e; });
         if (!autoErr) return;
       }
       j.timer = setTimeout(function () {
@@ -846,11 +850,13 @@ function isScreensaverPackage(id) {
 
 /*
  * What a one-click catalog install still stops for: a choice to make (root for
- * services the app says need it, replacing an LG store copy) or a warning to
+ * an unvetted package's services, replacing an LG store copy) or a warning to
  * read (a different processor, an older version, or a custom screensaver).
+ * Vetted catalog packages with root services auto-elevate on single-click.
  */
 function needsReview(pv) {
-  return !!((pv.rootRequired && pv.services.length && fs.existsSync(elevatePath)) ||
+  var unvettedRoot = !pv.vetted && pv.rootRequired && pv.services && pv.services.length && fs.existsSync(elevatePath);
+  return !!(unvettedRoot ||
             pv.storeInstalled || pv.cpuMismatch || pv.direction === 'down' ||
             pv.isScreensaver);
 }

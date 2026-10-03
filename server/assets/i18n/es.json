@@ -5152,8 +5152,8 @@
   "from": "Install an application package (.ipk) directly from a download link or by uploading a file from your computer."
  },
  "apps.sideload.heading": {
-  "text": "Instalar desde una URL o archivo",
-  "from": "Install from a URL or file"
+  "text": "Instalar app desde una URL o archivo",
+  "from": "Install app from a URL or file"
  },
  "apps.sideload.disable": {
   "text": "Desactivar instalación desde URL o archivo",

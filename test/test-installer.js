@@ -288,6 +288,16 @@ test('inspectIpk flags a CPU other than the TV\'s', function (done) {
   });
 });
 
+test('inspectIpk accepts a multi-arch package containing the TV\'s CPU', function (done) {
+  var extra = [tarEntry('./usr/palm/services/com.example.app.service/ptybridge-aarch64', elf(183))];
+  inspect(makeIpk({ machine: 40, extra: extra }), function (err, info) {
+    assert.ifError(err);
+    assert.deepEqual(info.machines, ['arm', 'aarch64']);
+    assert.strictEqual(info.cpuMismatch, false);
+    done();
+  });
+});
+
 test('inspectIpk rejects a truncated file at any cut', function (done) {
   var ipk = makeIpk();
   var cuts = [4, 20, 70, 100, ipk.length - 30, ipk.length - 3];
@@ -1252,6 +1262,20 @@ test('a catalog install with auto=true proceeds directly to install if nothing n
   startOk(req, function () {
     expectState('installed', function (s) {
       assert.strictEqual(s.result.package, 'com.example.app');
+      done();
+    });
+  });
+});
+
+test('a vetted catalog package with root services auto-elevates and installs with auto=true', function (done) {
+  var ctx = setup();
+  ctx.script([{ out: DONE }]);
+  var req = ctx.pkg(makeIpk({ services: ['com.example.app.service'] }), 'com.example.app', '1.0.0', { rootRequired: true });
+  req.auto = true;
+  startOk(req, function () {
+    expectState('installed', function (s) {
+      assert.strictEqual(s.result.package, 'com.example.app');
+      assert.deepEqual(logLines(ctx.elevLog), ['com.example.app.service']);
       done();
     });
   });

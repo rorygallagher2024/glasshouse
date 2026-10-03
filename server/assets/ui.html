@@ -554,6 +554,12 @@ button.pill[disabled], button.pill-toggle[disabled]{cursor:default;opacity:.45}
 /* Collapsible privacy sections. The consent list alone runs to 21 rows, so the
    long sections fold. The summary keeps the pv-h size rather than borrowing the
    control column's small caps, so folding a section does not demote it. */
+/* Install confirmation modal popup */
+.modal-backdrop{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.65);
+  display:flex;align-items:center;justify-content:center;z-index:999;padding:20px}
+.modal-card{background:var(--bg);border:1px solid var(--w20);border-radius:10px;
+  padding:24px 28px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;
+  box-shadow:0 16px 40px rgba(0,0,0,0.6)}
 .pv-d{border:0;margin:0}
 .pv-d>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:16px;
   font-family:'Outfit';font-weight:300;font-size:clamp(20px,2.4vw,26px);color:var(--w100);
@@ -1287,26 +1293,28 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
     </form>
     <div class="sub page-add-msg" id="catalog-msg" role="alert"></div>
     <div class="pv-note" id="install-status" hidden></div>
-    <div class="pv-note" id="install-panel" hidden>
-      <div class="prot-title" id="inst-title">&mdash;</div>
-      <div class="prot-desc" id="inst-meta">&mdash;</div>
-      <div class="prot-desc" id="inst-apps"></div>
-      <div id="inst-services-row" hidden>
-        <div class="prot-desc" id="inst-services"></div>
-        <label class="cfg-ent-chk"><input type="checkbox" id="inst-root"><span data-t="apps.install.root">Run services as root (needs the Homebrew Channel)</span></label>
-        <div class="prot-desc" id="inst-root-note" hidden></div>
-      </div>
-      <div class="prot-desc" id="inst-cpu" hidden></div>
-      <div class="prot-desc" id="inst-screensaver" hidden></div>
-      <div class="prot-desc" id="inst-space"></div>
-      <div class="prot-desc" id="inst-hash" hidden></div>
-      <div id="inst-store-row" hidden>
-        <div class="prot-desc" data-t="apps.install.store.warn">This app was installed from the LG store. Replacing it stops store updates for it.</div>
-        <label class="cfg-ent-chk"><input type="checkbox" id="inst-replace"><span data-t="apps.install.store.replace">Replace the store version</span></label>
-      </div>
-      <div class="btns" style="margin-top:14px;max-width:420px">
-        <button type="button" id="inst-confirm" onclick="confirmInstall()" data-t="apps.install.confirm">Install</button>
-        <button type="button" id="inst-cancel" onclick="cancelInstall()" data-t="common.cancel">Cancel</button>
+    <div id="install-modal" class="modal-backdrop" hidden onclick="if(event.target===this)cancelInstall()">
+      <div class="modal-card" id="install-panel" hidden>
+        <div class="prot-title" id="inst-title">&mdash;</div>
+        <div class="prot-desc" id="inst-meta">&mdash;</div>
+        <div class="prot-desc" id="inst-apps"></div>
+        <div id="inst-services-row" hidden>
+          <div class="prot-desc" id="inst-services"></div>
+          <label class="cfg-ent-chk"><input type="checkbox" id="inst-root"><span data-t="apps.install.root">Run services as root (needs the Homebrew Channel)</span></label>
+          <div class="prot-desc" id="inst-root-note" hidden></div>
+        </div>
+        <div class="prot-desc" id="inst-cpu" hidden></div>
+        <div class="prot-desc" id="inst-screensaver" hidden></div>
+        <div class="prot-desc" id="inst-space"></div>
+        <div class="prot-desc" id="inst-hash" hidden></div>
+        <div id="inst-store-row" hidden>
+          <div class="prot-desc" data-t="apps.install.store.warn">This app was installed from the LG store. Replacing it stops store updates for it.</div>
+          <label class="cfg-ent-chk"><input type="checkbox" id="inst-replace"><span data-t="apps.install.store.replace">Replace the store version</span></label>
+        </div>
+        <div class="btns" style="margin-top:16px;max-width:420px">
+          <button type="button" id="inst-confirm" onclick="confirmInstall()" data-t="apps.install.confirm">Install</button>
+          <button type="button" id="inst-cancel" onclick="cancelInstall()" data-t="common.cancel">Cancel</button>
+        </div>
       </div>
     </div>
     <div class="prot-table" id="apps-catalog-list">
@@ -1362,7 +1370,7 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
   </details>
 
   <details class="pv-d" id="disc-sideload-apps">
-    <summary><span data-t="apps.sideload.heading">Install from a URL or file</span> <span class="cur" id="apps-sideload-summary"></span></summary>
+    <summary><span data-t="apps.sideload.heading">Install app from a URL or file</span> <span class="cur" id="apps-sideload-summary"></span></summary>
     <div class="pv-sub" data-t="apps.sideload.desc">Install an application package (.ipk) directly from a download link or by uploading a file from your computer.</div>
     <div class="pv-note" id="sideload-off" hidden>
       <div class="prot-title" data-t="apps.sideload.off.title">Install from a URL or a file</div>
@@ -4007,12 +4015,10 @@ function prepareInstallTarget(source) {
   const targetAnchor = isSideload
     ? (installSideload ? q('sideload-box') : q('sideload-off'))
     : q('apps-catalog-list');
-  const panel = q('install-panel');
   const statusEl = q('install-status');
-  if (targetDisc && targetAnchor && panel && statusEl) {
-    if (panel.parentElement !== targetDisc || statusEl.parentElement !== targetDisc) {
+  if (targetDisc && targetAnchor && statusEl) {
+    if (statusEl.parentElement !== targetDisc) {
       targetDisc.insertBefore(statusEl, targetAnchor);
-      targetDisc.insertBefore(panel, targetAnchor);
     }
   }
   return targetDisc;
@@ -4021,21 +4027,26 @@ function prepareInstallTarget(source) {
 function renderInstall() {
   const s = installSnap;
   const panel = q('install-panel');
+  const modal = q('install-modal');
   renderSideload();
   if (!s) return;
   const targetDisc = prepareInstallTarget(s.source);
   if (s.state === 'awaiting-confirm' && s.preview) {
     if (targetDisc) targetDisc.open = true;
-    if (panel.hidden || panel.dataset.job !== s.jobId) {
+    if (panel.dataset.job !== s.jobId) {
       panel.dataset.job = s.jobId;
       renderPreview(s.preview);
     }
+    const wasHidden = modal ? modal.hidden : panel.hidden;
     panel.hidden = false;
+    if (modal) modal.hidden = false;
     q('inst-confirm').disabled = false;
     q('inst-cancel').disabled = false;
+    if (wasHidden) q('inst-confirm').focus();
     setInstallStatus('');
   } else {
     panel.hidden = true;
+    if (modal) modal.hidden = true;
     delete panel.dataset.job;
     setInstallStatus(progressText(s));
   }
@@ -4185,6 +4196,7 @@ async function confirmInstall() {
       !confirm(t('apps.install.root.confirm', 'Run these services as root?\n\n{list}\n\nRoot gives a service full control of the TV. Only continue if the package comes from someone trusted.', { list: (pv.services || []).join('\n') }))) return;
   q('inst-confirm').disabled = true;
   q('inst-cancel').disabled = true;
+  if (q('install-modal')) q('install-modal').hidden = true;
   try {
     const j = await installPost('/api/apps/install/confirm', {
       jobId: s.jobId, elevate, replaceStore: q('inst-replace').checked,
@@ -4210,11 +4222,19 @@ async function cancelInstall() {
     installOwn = false;
   } catch (e) { showErr(e.message); }
   installSnap = null;
+  if (q('install-modal')) q('install-modal').hidden = true;
   q('install-panel').hidden = true;
   setInstallStatus('');
   renderCatalog();
   pollInstall();
 }
+
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const modal = q('install-modal');
+    if (modal && !modal.hidden) cancelInstall();
+  }
+});
 
 // The address without its scheme, as a reminder of which page a tile opens.
 function pageHost(url) {
