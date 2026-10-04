@@ -13,7 +13,7 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The TV runs node 0.12, where an ES6 construct is a parse error rather
       # than a degraded feature - the server simply never starts.
@@ -62,8 +62,8 @@ jobs:
         node: ['0.12', '8.12', '16']
     name: unit tests on node ${{ matrix.node }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
       - run: node --version && node test/run-all.js
