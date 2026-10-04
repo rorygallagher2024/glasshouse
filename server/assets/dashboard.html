@@ -226,6 +226,36 @@ body.light #flash{color:rgba(0,0,0,.88)}
 <script src="/assets/qr.js"></script>
 <script src="/assets/i18n.js"></script>
 <script>
+/* webOS 3.x runs Chromium 38, which has Promise but not fetch (Chrome 42): on a
+   58UH635V the page drew its header and loaded nothing. This covers what the
+   page asks of fetch, over XMLHttpRequest, which i18n.js already tags with the
+   page's language. */
+if (!window.fetch) {
+  window.fetch = function (url, opts) {
+    opts = opts || {};
+    return new Promise(function (resolve, reject) {
+      var x = new XMLHttpRequest();
+      x.open(opts.method || 'GET', url, true);
+      var h = opts.headers || {};
+      for (var k in h) {
+        if (Object.prototype.hasOwnProperty.call(h, k)) x.setRequestHeader(k, h[k]);
+      }
+      if (opts.cache === 'no-store') x.setRequestHeader('Cache-Control', 'no-cache');
+      x.onload = function () {
+        var text = x.responseText;
+        resolve({
+          ok: x.status >= 200 && x.status < 300,
+          status: x.status,
+          text: function () { return Promise.resolve(text); },
+          json: function () { return new Promise(function (ok) { ok(JSON.parse(text)); }); }
+        });
+      };
+      x.onerror = x.ontimeout = function () { reject(new TypeError('network request failed')); };
+      x.send(opts.body === undefined ? null : opts.body);
+    });
+  };
+}
+
 /* Every section reads an endpoint the server already serves to the browser
    dashboard, so nothing here needs its own API. A section is a tab; its rows
    are built from that payload by its own builder below. */
