@@ -400,9 +400,15 @@ async function tick() {
     if (!volDragging) {
       const vLeased = getLease('volume', d.volume);
       const v = vLeased !== undefined ? vLeased : (typeof d.volume === 'number' ? d.volume : 0);
-      if (q('vol-slider')) q('vol-slider').value = v;
-      if (q('vol-fill')) q('vol-fill').style.width = v + '%';
-      q('vol').textContent = muted ? t('ctl.muted', 'MUTED') : v;
+      // No level: the sound device on the other end of the cable sets it.
+      const external = d.volume === null;
+      if (q('vol-slider')) {
+        q('vol-slider').value = v;
+        q('vol-slider').disabled = external;
+        q('vol-slider').title = external ? t('ctl.volumeExternal', 'The volume is set on the sound device') : '';
+      }
+      if (q('vol-fill')) q('vol-fill').style.width = (external ? 0 : v) + '%';
+      q('vol').textContent = muted ? t('ctl.muted', 'MUTED') : external ? '—' : v;
       if (q('vol-wrap')) q('vol-wrap').classList.toggle('muted', muted);
     }
     q('mute').classList.toggle('on', muted);

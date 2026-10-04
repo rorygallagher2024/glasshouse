@@ -48,6 +48,7 @@ var SOUND_OUTPUT_MAP = {
   external_arc: 'HDMI ARC',
   optical: 'Optical',
   external_optical: 'Optical',
+  ext_speaker_optical: 'Optical',
   headphone: 'Headphone / AUX',
   bt_soundbar: 'Bluetooth',
   external_speaker: 'External Speaker',

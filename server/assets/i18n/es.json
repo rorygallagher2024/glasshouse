@@ -151,6 +151,14 @@
   "text": "Apps y lanzador de la pantalla de inicio",
   "from": "Apps & Home Screen Launcher"
  },
+ "apps.install": {
+  "text": "Instalar aplicaciones homebrew",
+  "from": "Install homebrew apps"
+ },
+ "apps.install.apps": {
+  "text": "Apps: {list}",
+  "from": "Apps: {list}"
+ },
  "apps.install.btn.checking": {
   "text": "Comprobando…",
   "from": "Checking…"
@@ -167,9 +175,157 @@
   "text": "Revisar…",
   "from": "Review…"
  },
+ "apps.install.button": {
+  "text": "Instalar",
+  "from": "Install"
+ },
+ "apps.install.confirm": {
+  "text": "Instalar",
+  "from": "Install"
+ },
+ "apps.install.cpu": {
+  "text": "Sus programas están compilados para un procesador distinto al de esta TV y puede que no funcionen.",
+  "from": "Its programs are built for a different processor than this TV's and may not run."
+ },
+ "apps.install.desc": {
+  "text": "Apps del catálogo de Homebrew Channel.",
+  "from": "Apps from the Homebrew Channel catalog."
+ },
+ "apps.install.dir.down": {
+  "text": "versión anterior: de v{from} a v{version}",
+  "from": "downgrade from v{from} to v{version}"
+ },
+ "apps.install.dir.new": {
+  "text": "instalación nueva de v{version}",
+  "from": "new install of v{version}"
+ },
+ "apps.install.dir.same": {
+  "text": "reinstalación de v{version}",
+  "from": "reinstall of v{version}"
+ },
+ "apps.install.dir.up": {
+  "text": "actualización de v{from} a v{version}",
+  "from": "upgrade from v{from} to v{version}"
+ },
+ "apps.install.done": {
+  "text": "{name} v{version} instalada.",
+  "from": "Installed {name} v{version}."
+ },
+ "apps.install.downloading": {
+  "text": "Descargando… {done}",
+  "from": "Downloading… {done}"
+ },
+ "apps.install.downloading.of": {
+  "text": "Descargando {done} de {total}",
+  "from": "Downloading {done} of {total}"
+ },
+ "apps.install.elevating": {
+  "text": "Configurando el acceso root…",
+  "from": "Setting up root access…"
+ },
+ "apps.install.failed": {
+  "text": "No se pudo iniciar la instalación",
+  "from": "The install could not be started"
+ },
+ "apps.install.have": {
+  "text": "instalada: v{version}",
+  "from": "installed: v{version}"
+ },
  "apps.install.installed": {
   "text": "Instalada",
   "from": "Installed"
+ },
+ "apps.install.installing": {
+  "text": "Instalando…",
+  "from": "Installing…"
+ },
+ "apps.install.kb": {
+  "text": "{n} KB",
+  "from": "{n} KB"
+ },
+ "apps.install.loading": {
+  "text": "Cargando el catálogo…",
+  "from": "Loading the catalog…"
+ },
+ "apps.install.mb": {
+  "text": "{n} MB",
+  "from": "{n} MB"
+ },
+ "apps.install.noMatch": {
+  "text": "Ninguna app coincide.",
+  "from": "No apps match."
+ },
+ "apps.install.root": {
+  "text": "Ejecutar los servicios como root (requiere Homebrew Channel)",
+  "from": "Run services as root (needs the Homebrew Channel)"
+ },
+ "apps.install.root.confirm": {
+  "text": "¿Ejecutar estos servicios como root?\n\n{list}\n\nRoot da a un servicio control total de la TV. Continúa solo si el paquete viene de alguien de confianza.",
+  "from": "Run these services as root?\n\n{list}\n\nRoot gives a service full control of the TV. Only continue if the package comes from someone trusted."
+ },
+ "apps.install.root.needed": {
+  "text": "Esta app pide que sus servicios se ejecuten como root y puede que no funcione sin ello.",
+  "from": "This app asks for its services to run as root, and may not work without it."
+ },
+ "apps.install.root.restored": {
+  "text": "Tras esta actualización se vuelve a dar root a {list}, como antes.",
+  "from": "Root is given back to {list} after this update, as before."
+ },
+ "apps.install.rootBadge": {
+  "text": "root",
+  "from": "root"
+ },
+ "apps.install.screensaver.warn": {
+  "text": "Esta aplicación instala un salvapantallas personalizado, que reemplazará a los salvapantallas de Glasshouse.",
+  "from": "This app installs a custom screen saver, which will replace Glasshouse’s own screen savers."
+ },
+ "apps.install.search": {
+  "text": "Buscar apps",
+  "from": "Search apps"
+ },
+ "apps.install.services": {
+  "text": "Servicios en segundo plano: {list}",
+  "from": "Background services: {list}"
+ },
+ "apps.install.space": {
+  "text": "Espacio libre: {free}. Necesario: unos {need}.",
+  "from": "Free space: {free}. Needed: about {need}."
+ },
+ "apps.install.store.needTick": {
+  "text": "Marca la casilla para reemplazar la versión de la tienda.",
+  "from": "Tick the box to replace the store version."
+ },
+ "apps.install.store.replace": {
+  "text": "Reemplazar la versión de la tienda",
+  "from": "Replace the store version"
+ },
+ "apps.install.store.warn": {
+  "text": "Esta app se instaló desde la tienda de LG. Reemplazarla detiene sus actualizaciones desde la tienda.",
+  "from": "This app was installed from the LG store. Replacing it stops store updates for it."
+ },
+ "apps.install.unavailable": {
+  "text": "No se pudo cargar el catálogo. La TV necesita acceso a internet para llegar a él.",
+  "from": "The catalog could not be loaded. The TV needs internet access to reach it."
+ },
+ "apps.install.update": {
+  "text": "Actualizar",
+  "from": "Update"
+ },
+ "apps.install.uploadFailed": {
+  "text": "La subida no terminó",
+  "from": "The upload did not finish"
+ },
+ "apps.install.uploading": {
+  "text": "Subiendo… {done} de {total}",
+  "from": "Uploading… {done} of {total}"
+ },
+ "apps.install.verifying": {
+  "text": "Comprobando el paquete…",
+  "from": "Checking the package…"
+ },
+ "apps.install.viaHbc": {
+  "text": "Se actualiza desde Homebrew Channel",
+  "from": "Updates through Homebrew Channel"
  },
  "apps.installed.app": {
   "text": "App instalada",
@@ -315,6 +471,66 @@
   "text": "1 servicio",
   "from": "1 service"
  },
+ "apps.sideload.desc": {
+  "text": "Instala un paquete de aplicación (.ipk) directamente desde un enlace de descarga o subiendo un archivo desde tu ordenador.",
+  "from": "Install an application package (.ipk) directly from a download link or by uploading a file from your computer."
+ },
+ "apps.sideload.disable": {
+  "text": "Desactivar instalación desde URL o archivo",
+  "from": "Turn off install from URL or file"
+ },
+ "apps.sideload.enable": {
+  "text": "Activar instalación desde URL o archivo…",
+  "from": "Turn on install from URL or file…"
+ },
+ "apps.sideload.enable.confirm": {
+  "text": "¿Permitir instalar aplicaciones desde una URL o un archivo subido?\n\nLos paquetes fuera del catálogo no están revisados y pueden ejecutar cualquier cosa en la TV. Instale únicamente paquetes de confianza.",
+  "from": "Allow installing apps from a URL or an uploaded file?\n\nPackages from outside the catalog are unvetted and can run anything on the TV. Only install packages you trust."
+ },
+ "apps.sideload.failed": {
+  "text": "No se pudo actualizar la configuración de instalación externa",
+  "from": "Could not update sideload setting"
+ },
+ "apps.sideload.file.go": {
+  "text": "Subir y comprobar",
+  "from": "Upload and check"
+ },
+ "apps.sideload.file.label": {
+  "text": "Archivo del paquete",
+  "from": "Package file"
+ },
+ "apps.sideload.file.title": {
+  "text": "Subir .ipk",
+  "from": "Upload .ipk"
+ },
+ "apps.sideload.heading": {
+  "text": "Instalar app desde una URL o archivo",
+  "from": "Install app from a URL or file"
+ },
+ "apps.sideload.off.desc": {
+  "text": "Esto está desactivado porque un paquete fuera del catálogo puede ejecutar cualquier cosa en la TV. Puede activarlo abajo o configurando un token.",
+  "from": "This is off, because a package from outside the catalog can run anything on the TV. You can turn it on below, or by setting a token."
+ },
+ "apps.sideload.off.title": {
+  "text": "Instalar desde una URL o un archivo",
+  "from": "Install from a URL or a file"
+ },
+ "apps.sideload.sha.placeholder": {
+  "text": "sha256 (opcional)",
+  "from": "sha256 (optional)"
+ },
+ "apps.sideload.url.go": {
+  "text": "Descargar y comprobar",
+  "from": "Download and check"
+ },
+ "apps.sideload.url.placeholder": {
+  "text": "Dirección de un .ipk, como https://example.org/app.ipk",
+  "from": "Address of an .ipk, such as https://example.org/app.ipk"
+ },
+ "apps.sideload.url.title": {
+  "text": "Desde URL…",
+  "from": "From URL…"
+ },
  "apps.tile.failed": {
   "text": "No se pudo actualizar el tile: {error}",
   "from": "Could not update tile: {error}"
@@ -407,13 +623,13 @@
   "text": "¿Desinstalar \"{name}\" de la TV? Esto borrará permanentemente la aplicación y sus datos guardados.",
   "from": "Uninstall \"{name}\" from the TV?\n\nThis will permanently delete the application and its stored data."
  },
- "apps.uninstall.done": {
-  "text": "Se ha desinstalado {name}.",
-  "from": "Uninstalled {name}."
- },
  "apps.uninstall.desc": {
   "text": "Descargas de la tienda y aplicaciones instaladas por el usuario. Pulsa Desinstalar para eliminar la aplicación de forma permanente y liberar espacio en la memoria flash eMMC interna.",
   "from": "Store downloads and user-installed applications. Click Uninstall to permanently remove the application and free up internal eMMC flash storage space."
+ },
+ "apps.uninstall.done": {
+  "text": "Se ha desinstalado {name}.",
+  "from": "Uninstalled {name}."
  },
  "apps.uninstall.failed": {
   "text": "No se pudo desinstalar {name}: {error}",
@@ -451,6 +667,10 @@
   "text": "Activado",
   "from": "On"
  },
+ "common.replaces": {
+  "text": "Reemplaza el nuestro",
+  "from": "Replaces ours"
+ },
  "common.unauthorised": {
   "text": "No autorizado: falta el token o es incorrecto",
   "from": "Unauthorised — token missing or wrong"
@@ -475,6 +695,10 @@
   "text": "Atrás",
   "from": "Back"
  },
+ "ctl.backlight": {
+  "text": "Retroiluminación",
+  "from": "Backlight"
+ },
  "ctl.down": {
   "text": "Abajo",
   "from": "Down"
@@ -490,14 +714,6 @@
  "ctl.energySaving": {
   "text": "Ahorro de energía",
   "from": "Energy saving"
- },
- "ctl.backlight": {
-  "text": "Retroiluminación",
-  "from": "Backlight"
- },
- "ctl.oledLight": {
-  "text": "Luz OLED",
-  "from": "OLED light"
  },
  "ctl.fastForward": {
   "text": "Avance rápido",
@@ -522,6 +738,10 @@
  "ctl.muted": {
   "text": "SILENCIADO",
   "from": "MUTED"
+ },
+ "ctl.oledLight": {
+  "text": "Luz OLED",
+  "from": "OLED light"
  },
  "ctl.openUrl": {
   "text": "Abrir una página web",
@@ -554,6 +774,10 @@
  "ctl.playback": {
   "text": "Reproducción",
   "from": "Playback"
+ },
+ "ctl.power.installBusy": {
+  "text": "Hay una instalación de app en curso. Interrumpirla puede dejar la app a medio instalar. ¿Continuar de todos modos?",
+  "from": "An app install is in progress. Interrupting it may leave the app half-installed. Continue anyway?"
  },
  "ctl.powerOff": {
   "text": "Apagar",
@@ -662,6 +886,10 @@
  "ctl.volume": {
   "text": "Volumen",
   "from": "Volume"
+ },
+ "ctl.volumeExternal": {
+  "text": "El volumen se ajusta en el dispositivo de sonido",
+  "from": "The volume is set on the sound device"
  },
  "energy.auto": {
   "text": "Auto",
@@ -2415,6 +2643,58 @@
   "text": "Envía datos de diagnóstico a LG",
   "from": "Sends diagnostic data to LG"
  },
+ "srv.fetch.badChars": {
+  "text": "la dirección contiene espacios o caracteres de control",
+  "from": "the address contains spaces or control characters"
+ },
+ "srv.fetch.badScheme": {
+  "text": "la dirección debe empezar por http:// o https://",
+  "from": "the address must start with http:// or https://"
+ },
+ "srv.fetch.github404": {
+  "text": "GitHub devolvió 404 para {where}: aún no hay ninguna versión publicada, o el repositorio no es visible",
+  "from": "GitHub returned 404 for {where} - no release published yet, or the repository is not visible"
+ },
+ "srv.fetch.githubLimit": {
+  "text": "{status} para {where}: se ha agotado el límite de la API para esta dirección (60 por hora sin autenticar), o algo de la red rechazó la petición",
+  "from": "{status} for {where} - either the API rate limit for this address is spent (60 an hour unauthenticated), or something on the network refused the request"
+ },
+ "srv.fetch.hostError": {
+  "text": "{host} respondió con un error para {where}",
+  "from": "{host} answered with an error for {where}"
+ },
+ "srv.fetch.hostStatus": {
+  "text": "{host} devolvió {status} para {where}",
+  "from": "{host} returned {status} for {where}"
+ },
+ "srv.fetch.needHttps": {
+  "text": "la dirección debe empezar por https://",
+  "from": "the address must start with https://"
+ },
+ "srv.fetch.noClient": {
+  "text": "ningún cliente HTTP de este televisor pudo conectar con {host}{detail}. Instala una versión actual de curl o wget.",
+  "from": "no HTTP client on this TV could reach {host}{detail}. Install a current curl or wget."
+ },
+ "srv.fetch.notJson": {
+  "text": "{host} no devolvió JSON",
+  "from": "{host} did not return JSON"
+ },
+ "srv.fetch.offline": {
+  "text": "El televisor no pudo conectar con {host}. Comprueba que tiene conexión a internet.",
+  "from": "The TV could not reach {host}. Check it is connected to the internet."
+ },
+ "srv.fetch.stalled": {
+  "text": "la descarga desde {host} se detuvo o superó los {minutes} minutos",
+  "from": "the download from {host} stalled or ran past {minutes} minutes"
+ },
+ "srv.fetch.tooLong": {
+  "text": "la dirección tiene más de {max} caracteres",
+  "from": "the address is longer than {max} characters"
+ },
+ "srv.fetch.wrongSize": {
+  "text": "la descarga desde {host} terminó en {size} bytes, se esperaban {expected}",
+  "from": "the download from {host} ended at {size} bytes, expected {expected}"
+ },
  "srv.ha.cat.controls": {
   "text": "Controles y multimedia",
   "from": "Controls & Media"
@@ -2454,6 +2734,218 @@
  "srv.ha.cat.video.desc": {
   "text": "Modo de imagen activo, rango dinámico, tasa de refresco, VRR, ALLM y modo de enlace.",
   "from": "Active picture mode, dynamic range, refresh rate, VRR, ALLM, and link mode."
+ },
+ "srv.install.badHash": {
+  "text": "el hash sha256 debe tener 64 dígitos hexadecimales",
+  "from": "the sha256 hash must be 64 hexadecimal digits"
+ },
+ "srv.install.badSource": {
+  "text": "origen de instalación desconocido",
+  "from": "unknown install source"
+ },
+ "srv.install.busy": {
+  "text": "ya hay una instalación en curso",
+  "from": "an install is already in progress"
+ },
+ "srv.install.busy.restart": {
+  "text": "hay una instalación en curso; reinicia cuando termine",
+  "from": "an install is in progress; restart when it has finished"
+ },
+ "srv.install.busy.tvApp": {
+  "text": "hay una instalación en curso; inténtalo de nuevo cuando termine",
+  "from": "an install is in progress; try again when it has finished"
+ },
+ "srv.install.busy.update": {
+  "text": "hay una instalación de apps en curso; actualiza cuando termine",
+  "from": "an app install is in progress; update when it has finished"
+ },
+ "srv.install.busy.updater": {
+  "text": "se está actualizando el panel; instala cuando termine",
+  "from": "a dashboard update is running; install when it has finished"
+ },
+ "srv.install.busy.upload": {
+  "text": "hay una subida en curso",
+  "from": "an upload is in progress"
+ },
+ "srv.install.cannotCancel": {
+  "text": "la instalación ya está en marcha y no se puede cancelar",
+  "from": "the install is already running and cannot be cancelled"
+ },
+ "srv.install.catalogIncomplete": {
+  "text": "la entrada del catálogo está incompleta",
+  "from": "the catalog entry is incomplete"
+ },
+ "srv.install.closed": {
+  "text": "el servicio de instalación dejó de responder",
+  "from": "the install service stopped answering"
+ },
+ "srv.install.downloadFailed": {
+  "text": "la descarga falló: {error}",
+  "from": "the download failed: {error}"
+ },
+ "srv.install.elevateFailed": {
+  "text": "no se pudo dar acceso root a {service}: {error}",
+  "from": "could not give {service} root access: {error}"
+ },
+ "srv.install.expired": {
+  "text": "la vista previa caducó; inicia la instalación de nuevo",
+  "from": "the preview expired; start the install again"
+ },
+ "srv.install.failed": {
+  "text": "la instalación falló: {error}",
+  "from": "the install failed: {error}"
+ },
+ "srv.install.hashMismatch": {
+  "text": "la descarga no coincide con su hash sha256",
+  "from": "the download does not match its sha256 hash"
+ },
+ "srv.install.hostRefused": {
+  "text": "esta dirección no puede instalar apps; añade el nombre a apps.hosts en config.json, o usa la dirección IP de la TV",
+  "from": "this address is not allowed to install apps; add the name to apps.hosts in config.json, or use the TV's IP address"
+ },
+ "srv.install.id.exists": {
+  "text": "{id} ya forma parte del sistema de la TV",
+  "from": "{id} is already part of the TV system"
+ },
+ "srv.install.id.prefix": {
+  "text": "{id} no empieza por el nombre del paquete {package}",
+  "from": "{id} does not begin with the package name {package}"
+ },
+ "srv.install.id.protected": {
+  "text": "{id} pertenece al sistema de la TV y no se puede instalar",
+  "from": "{id} belongs to the TV system and cannot be installed"
+ },
+ "srv.install.id.self": {
+  "text": "{id} debe actualizarse desde Homebrew Channel",
+  "from": "{id} must be updated from the Homebrew Channel"
+ },
+ "srv.install.idMismatch": {
+  "text": "el paquete es {found}, no {expected}",
+  "from": "the package is {found}, not {expected}"
+ },
+ "srv.install.idRequired": {
+  "text": "se necesita el id de una app",
+  "from": "an app id is required"
+ },
+ "srv.install.interrupted": {
+  "text": "la TV se reinició durante una instalación; revisa la lista de apps",
+  "from": "the TV restarted during an install; check the app list"
+ },
+ "srv.install.ipk.badAppinfo": {
+  "text": "el ipk contiene un appinfo.json ilegible para {id}",
+  "from": "the ipk holds an unreadable appinfo.json for {id}"
+ },
+ "srv.install.ipk.badTar": {
+  "text": "el ipk contiene un archivo de paquete dañado",
+  "from": "the ipk holds a damaged package archive"
+ },
+ "srv.install.ipk.empty": {
+  "text": "el ipk no contiene ninguna app ni servicio",
+  "from": "the ipk contains no app or service"
+ },
+ "srv.install.ipk.member": {
+  "text": "el ipk contiene una parte inesperada: {name}",
+  "from": "the ipk holds an unexpected part: {name}"
+ },
+ "srv.install.ipk.noControl": {
+  "text": "el ipk no tiene un archivo control utilizable",
+  "from": "the ipk has no usable control file"
+ },
+ "srv.install.ipk.notAr": {
+  "text": "el archivo no es un ipk",
+  "from": "the file is not an ipk archive"
+ },
+ "srv.install.ipk.parts": {
+  "text": "al ipk le falta una parte",
+  "from": "the ipk is missing a part"
+ },
+ "srv.install.ipk.tooBig": {
+  "text": "el ipk ocupa al descomprimirse más de lo permitido",
+  "from": "the ipk unpacks to more than it may"
+ },
+ "srv.install.ipk.tooMany": {
+  "text": "el ipk contiene demasiados archivos",
+  "from": "the ipk holds too many files"
+ },
+ "srv.install.ipk.truncated": {
+  "text": "el ipk está incompleto",
+  "from": "the ipk is truncated"
+ },
+ "srv.install.ipk.unreadable": {
+  "text": "no se pudo leer el ipk: {error}",
+  "from": "the ipk could not be read: {error}"
+ },
+ "srv.install.ipk.unsafePath": {
+  "text": "el ipk contiene una ruta no segura: {path}",
+  "from": "the ipk holds an unsafe path: {path}"
+ },
+ "srv.install.ipk.unsupported": {
+  "text": "el ipk usa un formato de archivo que este instalador no lee",
+  "from": "the ipk uses a file format this installer does not read"
+ },
+ "srv.install.needHttps": {
+  "text": "la descarga debe usar https",
+  "from": "the download must use https"
+ },
+ "srv.install.noElevate": {
+  "text": "el acceso root requiere Homebrew Channel, que no está instalado",
+  "from": "root access needs the Homebrew Channel, which is not installed"
+ },
+ "srv.install.noJob": {
+  "text": "no hay ninguna instalación esperando confirmación",
+  "from": "there is no install waiting for confirmation"
+ },
+ "srv.install.noSpace": {
+  "text": "no hay espacio libre suficiente: hacen falta {need} y hay {free}",
+  "from": "not enough free space: {need} needed, {free} free"
+ },
+ "srv.install.noSpace.download": {
+  "text": "no hay espacio libre suficiente para esta descarga: hay {free} libres y el paquete necesita unas tres veces su tamaño",
+  "from": "not enough free space for this download: {free} free, and the package needs about three times its size"
+ },
+ "srv.install.notStaged": {
+  "text": "el archivo no está en el directorio de preparación",
+  "from": "the file is not in the staging directory"
+ },
+ "srv.install.rootConfirm": {
+  "text": "el acceso root para un paquete de fuera del catálogo debe confirmarse para los servicios que figuran en su vista previa",
+  "from": "root access for a package from outside the catalog must be confirmed for the services listed in its preview"
+ },
+ "srv.install.sideloadOff": {
+  "text": "instalar desde una URL o un archivo está desactivado; añade \"apps\": {\"sideload\": true} a config.json, define un token o usa el navegador web de la TV",
+  "from": "installing from a URL or a file is off; set \"apps\": {\"sideload\": true} in config.json, set a token, or use the TV's web browser"
+ },
+ "srv.install.storeReplace": {
+  "text": "esta app vino de la tienda de LG; reemplazarla detiene sus actualizaciones y requiere una confirmación aparte",
+  "from": "this app came from the LG store; replacing it stops store updates and needs separate confirmation"
+ },
+ "srv.install.timeout": {
+  "text": "la instalación no terminó a tiempo; revisa la lista de apps",
+  "from": "the install did not finish in time; check the app list"
+ },
+ "srv.install.tooBig": {
+  "text": "el paquete supera el límite de {limit}",
+  "from": "the package is larger than the {limit} limit"
+ },
+ "srv.install.unknownError": {
+  "text": "error desconocido",
+  "from": "unknown error"
+ },
+ "srv.install.upload.empty": {
+  "text": "la subida está vacía o su tamaño no es válido",
+  "from": "the upload is empty or its size is not valid"
+ },
+ "srv.install.upload.failed": {
+  "text": "no se pudo guardar la subida",
+  "from": "the upload could not be saved"
+ },
+ "srv.install.upload.length": {
+  "text": "la subida debe indicar su tamaño de antemano",
+  "from": "the upload must state its size in advance"
+ },
+ "srv.install.upload.size": {
+  "text": "la subida no coincide con el tamaño indicado",
+  "from": "the upload does not match its stated size"
  },
  "srv.lgs.aiNudge": {
   "text": "Consejos inteligentes",
@@ -2871,6 +3363,14 @@
   "text": "esta TV no ofrece el control",
   "from": "this TV does not offer the control"
  },
+ "srv.piccap.refused": {
+  "text": "PicCap rechazó la solicitud",
+  "from": "PicCap refused the request"
+ },
+ "srv.piccap.unavailable": {
+  "text": "PicCap no está disponible",
+  "from": "PicCap is not available"
+ },
  "srv.power.alwaysReady": {
   "text": "Always Ready",
   "from": "Always Ready"
@@ -2902,14 +3402,6 @@
  "srv.powerOff": {
   "text": "acciones de energía desactivadas (define allowPower)",
   "from": "power actions disabled (set allowPower)"
- },
- "srv.piccap.refused": {
-  "text": "PicCap rechazó la solicitud",
-  "from": "PicCap refused the request"
- },
- "srv.piccap.unavailable": {
-  "text": "PicCap no está disponible",
-  "from": "PicCap is not available"
  },
  "srv.privacy.acr": {
   "text": "Reconocimiento del contenido de pantalla",
@@ -2986,6 +3478,18 @@
  "srv.processes.failed": {
   "text": "no se pudo leer la lista de procesos",
   "from": "could not read process list"
+ },
+ "srv.repo.notCatalog": {
+  "text": "no es un catálogo de paquetes: {url}",
+  "from": "not a package catalog: {url}"
+ },
+ "srv.repo.notInCatalog": {
+  "text": "no está en el catálogo: {id}",
+  "from": "not in the catalog: {id}"
+ },
+ "srv.repo.unavailable": {
+  "text": "catálogo no disponible",
+  "from": "catalog unavailable"
  },
  "srv.saveSettingFailed": {
   "text": "no se pudo guardar el ajuste: {error}",
@@ -3215,6 +3719,10 @@
   "text": "Desactivar salvapantallas",
   "from": "Dismiss screen saver"
  },
+ "ss.external.active": {
+  "text": "Un salvapantallas homebrew de terceros está activo actualmente en la TV. Seleccionar un salvapantallas de Glasshouse lo reemplazará.",
+  "from": "A third-party homebrew screen saver is currently active on the TV. Selecting a Glasshouse screen saver will replace it."
+ },
  "ss.firmwareNote": {
   "text": "Nota: si se actualiza el firmware, el salvapantallas volverá al de LG por defecto.",
   "from": "Note: if a firmware update is applied, the screen saver will be restored to the LG default."
@@ -3407,6 +3915,10 @@
   "text": "Ocultar apps de sistema de la pantalla de inicio",
   "from": "Hide Home Screen System Apps"
  },
+ "tv.apps.head.installHomebrewApps": {
+  "text": "Instalar aplicaciones homebrew",
+  "from": "Install Homebrew Applications"
+ },
  "tv.apps.head.turnOffBackgroundServices": {
   "text": "Apagar servicios en segundo plano",
   "from": "Turn Off Background Services"
@@ -3414,6 +3926,150 @@
  "tv.apps.head.uninstallApplications": {
   "text": "Desinstalar aplicaciones",
   "from": "Uninstall Applications"
+ },
+ "tv.apps.install.browse": {
+  "text": "Ver",
+  "from": "Browse"
+ },
+ "tv.apps.install.busy.hint": {
+  "text": "Puede tardar uno o dos minutos. Atrás vuelve a funcionar al terminar.",
+  "from": "This can take a minute or two. Back works again when it finishes."
+ },
+ "tv.apps.install.cancel.hint": {
+  "text": "El paquete descargado se elimina.",
+  "from": "The downloaded package is deleted."
+ },
+ "tv.apps.install.dismiss.done": {
+  "text": "Hecho",
+  "from": "Done"
+ },
+ "tv.apps.install.dismiss.error": {
+  "text": "Cerrar",
+  "from": "Dismiss"
+ },
+ "tv.apps.install.done.hint": {
+  "text": "La app ya está en la TV.",
+  "from": "The app is on the TV now."
+ },
+ "tv.apps.install.entry.hint": {
+  "text": "Apps del catálogo de Homebrew Channel.",
+  "from": "Apps from the Homebrew Channel catalog."
+ },
+ "tv.apps.install.error": {
+  "text": "La instalación falló",
+  "from": "The install failed"
+ },
+ "tv.apps.install.go.hint": {
+  "text": "No se instala nada hasta pulsar OK aquí.",
+  "from": "Nothing is installed until OK is pressed here."
+ },
+ "tv.apps.install.head.all": {
+  "text": "Todas las apps",
+  "from": "All apps"
+ },
+ "tv.apps.install.head.updates": {
+  "text": "Actualizaciones disponibles",
+  "from": "Updates available"
+ },
+ "tv.apps.install.loading.hint": {
+  "text": "La TV está obteniendo la lista. Hace falta acceso a internet.",
+  "from": "The TV is fetching the list. This needs internet access."
+ },
+ "tv.apps.install.press.cancel": {
+  "text": "Pulsa OK para descartar la descarga",
+  "from": "Press OK to discard the download"
+ },
+ "tv.apps.install.press.done": {
+  "text": "Pulsa OK para volver al catálogo",
+  "from": "Press OK to return to the catalog"
+ },
+ "tv.apps.install.press.go": {
+  "text": "Pulsa OK para instalar ahora",
+  "from": "Press OK to install now"
+ },
+ "tv.apps.install.press.install": {
+  "text": "Pulsa OK para revisar e instalar",
+  "from": "Press OK to review and install"
+ },
+ "tv.apps.install.press.off": {
+  "text": "Pulsa OK para desactivar",
+  "from": "Press OK to switch off"
+ },
+ "tv.apps.install.press.on": {
+  "text": "Pulsa OK para activar",
+  "from": "Press OK to switch on"
+ },
+ "tv.apps.install.press.open": {
+  "text": "Pulsa OK para abrir el catálogo",
+  "from": "Press OK to open the catalog"
+ },
+ "tv.apps.install.press.retry": {
+  "text": "Pulsa OK para reintentar",
+  "from": "Press OK to try again"
+ },
+ "tv.apps.install.press.update": {
+  "text": "Pulsa OK para revisar y actualizar",
+  "from": "Press OK to review and update"
+ },
+ "tv.apps.install.pv.apps": {
+  "text": "Apps",
+  "from": "Apps"
+ },
+ "tv.apps.install.pv.change": {
+  "text": "Cambio",
+  "from": "Change"
+ },
+ "tv.apps.install.pv.cpu": {
+  "text": "Procesador",
+  "from": "Processor"
+ },
+ "tv.apps.install.pv.mismatch": {
+  "text": "No coincide",
+  "from": "Mismatch"
+ },
+ "tv.apps.install.pv.root": {
+  "text": "Root",
+  "from": "Root"
+ },
+ "tv.apps.install.pv.rootBack": {
+  "text": "Se devuelve",
+  "from": "Given back"
+ },
+ "tv.apps.install.pv.screensaver": {
+  "text": "Salvapantallas",
+  "from": "Screen saver"
+ },
+ "tv.apps.install.pv.services": {
+  "text": "Servicios",
+  "from": "Services"
+ },
+ "tv.apps.install.pv.space": {
+  "text": "Espacio libre",
+  "from": "Free space"
+ },
+ "tv.apps.install.retry": {
+  "text": "Reintentar",
+  "from": "Retry"
+ },
+ "tv.apps.install.root.hint": {
+  "text": "Desactivado salvo que la app lo necesite. El acceso root se configura mediante Homebrew Channel.",
+  "from": "Off unless the app needs it. Root access is set up through the Homebrew Channel."
+ },
+ "tv.apps.install.root.needed": {
+  "text": "Esta app pide que sus servicios se ejecuten como root y puede que no funcione sin ello.",
+  "from": "This app asks for its services to run as root, and may not work without it."
+ },
+ "tv.apps.install.store.needOn": {
+  "text": "Activa primero Reemplazar la versión de la tienda.",
+  "from": "Switch on Replace the store version first."
+ },
+ "tv.apps.install.unavailable": {
+  "text": "Catálogo no disponible",
+  "from": "Catalog unavailable"
+ },
+ "tv.apps.install.wait": {
+  "text": "Hay una instalación en curso. Espera.",
+  "from": "An install is running. Please wait."
  },
  "tv.apps.service.disable": {
   "text": "Pulsa OK para desactivar el servicio",
@@ -3534,6 +4190,14 @@
  "tv.apps.uninstalling": {
   "text": "Desinstalando {name}…",
   "from": "Uninstalling {name}…"
+ },
+ "tv.backRow.apps": {
+  "text": "‹ Apps",
+  "from": "‹ Apps"
+ },
+ "tv.backRow.apps.hint": {
+  "text": "Volver a la pestaña Apps.",
+  "from": "Back to the Apps tab."
  },
  "tv.backRow.privacy": {
   "text": "‹ Privacidad",
@@ -4063,6 +4727,10 @@
   "text": "Oscuro va mejor en una habitación a oscuras y cuida más el panel; brillante, en una iluminada.",
   "from": "Dim suits a dark room and is kinder to the panel; bright suits a lit one."
  },
+ "tv.saver.external": {
+  "text": "Salvapantallas homebrew",
+  "from": "Homebrew screen saver"
+ },
  "tv.saver.head.aFirmwareUpdatePuts": {
   "text": "Una actualización de firmware devuelve el de LG",
   "from": "A firmware update puts LG’s own back"
@@ -4570,669 +5238,5 @@
  "tv.viewOnly": {
   "text": "Solo visualización",
   "from": "View only"
- },
- "apps.install": {
-  "text": "Instalar aplicaciones homebrew",
-  "from": "Install homebrew apps"
- },
- "apps.install.apps": {
-  "text": "Apps: {list}",
-  "from": "Apps: {list}"
- },
- "apps.install.button": {
-  "text": "Instalar",
-  "from": "Install"
- },
- "apps.install.confirm": {
-  "text": "Instalar",
-  "from": "Install"
- },
- "apps.install.cpu": {
-  "text": "Sus programas están compilados para un procesador distinto al de esta TV y puede que no funcionen.",
-  "from": "Its programs are built for a different processor than this TV's and may not run."
- },
- "apps.install.desc": {
-  "text": "Apps del catálogo de Homebrew Channel.",
-  "from": "Apps from the Homebrew Channel catalog."
- },
- "apps.install.dir.down": {
-  "text": "versión anterior: de v{from} a v{version}",
-  "from": "downgrade from v{from} to v{version}"
- },
- "apps.install.dir.new": {
-  "text": "instalación nueva de v{version}",
-  "from": "new install of v{version}"
- },
- "apps.install.dir.same": {
-  "text": "reinstalación de v{version}",
-  "from": "reinstall of v{version}"
- },
- "apps.install.dir.up": {
-  "text": "actualización de v{from} a v{version}",
-  "from": "upgrade from v{from} to v{version}"
- },
- "apps.install.done": {
-  "text": "{name} v{version} instalada.",
-  "from": "Installed {name} v{version}."
- },
- "apps.install.downloading": {
-  "text": "Descargando… {done}",
-  "from": "Downloading… {done}"
- },
- "apps.install.downloading.of": {
-  "text": "Descargando {done} de {total}",
-  "from": "Downloading {done} of {total}"
- },
- "apps.install.elevating": {
-  "text": "Configurando el acceso root…",
-  "from": "Setting up root access…"
- },
- "apps.install.failed": {
-  "text": "No se pudo iniciar la instalación",
-  "from": "The install could not be started"
- },
- "apps.install.have": {
-  "text": "instalada: v{version}",
-  "from": "installed: v{version}"
- },
- "apps.install.installing": {
-  "text": "Instalando…",
-  "from": "Installing…"
- },
- "apps.install.kb": {
-  "text": "{n} KB",
-  "from": "{n} KB"
- },
- "apps.install.loading": {
-  "text": "Cargando el catálogo…",
-  "from": "Loading the catalog…"
- },
- "apps.install.mb": {
-  "text": "{n} MB",
-  "from": "{n} MB"
- },
- "apps.install.noMatch": {
-  "text": "Ninguna app coincide.",
-  "from": "No apps match."
- },
- "apps.install.root": {
-  "text": "Ejecutar los servicios como root (requiere Homebrew Channel)",
-  "from": "Run services as root (needs the Homebrew Channel)"
- },
- "apps.install.rootBadge": {
-  "text": "root",
-  "from": "root"
- },
- "apps.install.search": {
-  "text": "Buscar apps",
-  "from": "Search apps"
- },
- "apps.install.services": {
-  "text": "Servicios en segundo plano: {list}",
-  "from": "Background services: {list}"
- },
- "apps.install.space": {
-  "text": "Espacio libre: {free}. Necesario: unos {need}.",
-  "from": "Free space: {free}. Needed: about {need}."
- },
- "apps.install.store.needTick": {
-  "text": "Marca la casilla para reemplazar la versión de la tienda.",
-  "from": "Tick the box to replace the store version."
- },
- "apps.install.store.replace": {
-  "text": "Reemplazar la versión de la tienda",
-  "from": "Replace the store version"
- },
- "apps.install.store.warn": {
-  "text": "Esta app se instaló desde la tienda de LG. Reemplazarla detiene sus actualizaciones desde la tienda.",
-  "from": "This app was installed from the LG store. Replacing it stops store updates for it."
- },
- "apps.install.unavailable": {
-  "text": "No se pudo cargar el catálogo. La TV necesita acceso a internet para llegar a él.",
-  "from": "The catalog could not be loaded. The TV needs internet access to reach it."
- },
- "apps.install.update": {
-  "text": "Actualizar",
-  "from": "Update"
- },
- "apps.install.verifying": {
-  "text": "Comprobando el paquete…",
-  "from": "Checking the package…"
- },
- "apps.install.viaHbc": {
-  "text": "Se actualiza desde Homebrew Channel",
-  "from": "Updates through Homebrew Channel"
- },
- "srv.fetch.badChars": {
-  "text": "la dirección contiene espacios o caracteres de control",
-  "from": "the address contains spaces or control characters"
- },
- "srv.fetch.badScheme": {
-  "text": "la dirección debe empezar por http:// o https://",
-  "from": "the address must start with http:// or https://"
- },
- "srv.fetch.needHttps": {
-  "text": "la dirección debe empezar por https://",
-  "from": "the address must start with https://"
- },
- "srv.fetch.tooLong": {
-  "text": "la dirección tiene más de {max} caracteres",
-  "from": "the address is longer than {max} characters"
- },
- "srv.fetch.github404": {
-  "text": "GitHub devolvió 404 para {where}: aún no hay ninguna versión publicada, o el repositorio no es visible",
-  "from": "GitHub returned 404 for {where} - no release published yet, or the repository is not visible"
- },
- "srv.fetch.githubLimit": {
-  "text": "{status} para {where}: se ha agotado el límite de la API para esta dirección (60 por hora sin autenticar), o algo de la red rechazó la petición",
-  "from": "{status} for {where} - either the API rate limit for this address is spent (60 an hour unauthenticated), or something on the network refused the request"
- },
- "srv.fetch.hostStatus": {
-  "text": "{host} devolvió {status} para {where}",
-  "from": "{host} returned {status} for {where}"
- },
- "srv.fetch.hostError": {
-  "text": "{host} respondió con un error para {where}",
-  "from": "{host} answered with an error for {where}"
- },
- "srv.fetch.stalled": {
-  "text": "la descarga desde {host} se detuvo o superó los {minutes} minutos",
-  "from": "the download from {host} stalled or ran past {minutes} minutes"
- },
- "srv.fetch.offline": {
-  "text": "El televisor no pudo conectar con {host}. Comprueba que tiene conexión a internet.",
-  "from": "The TV could not reach {host}. Check it is connected to the internet."
- },
- "srv.fetch.noClient": {
-  "text": "ningún cliente HTTP de este televisor pudo conectar con {host}{detail}. Instala una versión actual de curl o wget.",
-  "from": "no HTTP client on this TV could reach {host}{detail}. Install a current curl or wget."
- },
- "srv.fetch.wrongSize": {
-  "text": "la descarga desde {host} terminó en {size} bytes, se esperaban {expected}",
-  "from": "the download from {host} ended at {size} bytes, expected {expected}"
- },
- "srv.fetch.notJson": {
-  "text": "{host} no devolvió JSON",
-  "from": "{host} did not return JSON"
- },
- "srv.repo.notCatalog": {
-  "text": "no es un catálogo de paquetes: {url}",
-  "from": "not a package catalog: {url}"
- },
- "srv.repo.unavailable": {
-  "text": "catálogo no disponible",
-  "from": "catalog unavailable"
- },
- "srv.repo.notInCatalog": {
-  "text": "no está en el catálogo: {id}",
-  "from": "not in the catalog: {id}"
- },
- "srv.install.busy": {
-  "text": "ya hay una instalación en curso",
-  "from": "an install is already in progress"
- },
- "srv.install.busy.restart": {
-  "text": "hay una instalación en curso; reinicia cuando termine",
-  "from": "an install is in progress; restart when it has finished"
- },
- "srv.install.busy.tvApp": {
-  "text": "hay una instalación en curso; inténtalo de nuevo cuando termine",
-  "from": "an install is in progress; try again when it has finished"
- },
- "srv.install.busy.update": {
-  "text": "hay una instalación de apps en curso; actualiza cuando termine",
-  "from": "an app install is in progress; update when it has finished"
- },
- "srv.install.busy.updater": {
-  "text": "se está actualizando el panel; instala cuando termine",
-  "from": "a dashboard update is running; install when it has finished"
- },
- "srv.install.cannotCancel": {
-  "text": "la instalación ya está en marcha y no se puede cancelar",
-  "from": "the install is already running and cannot be cancelled"
- },
- "srv.install.closed": {
-  "text": "el servicio de instalación dejó de responder",
-  "from": "the install service stopped answering"
- },
- "srv.install.downloadFailed": {
-  "text": "la descarga falló: {error}",
-  "from": "the download failed: {error}"
- },
- "srv.install.elevateFailed": {
-  "text": "no se pudo dar acceso root a {service}: {error}",
-  "from": "could not give {service} root access: {error}"
- },
- "srv.install.expired": {
-  "text": "la vista previa caducó; inicia la instalación de nuevo",
-  "from": "the preview expired; start the install again"
- },
- "srv.install.failed": {
-  "text": "la instalación falló: {error}",
-  "from": "the install failed: {error}"
- },
- "srv.install.hashMismatch": {
-  "text": "la descarga no coincide con su hash sha256",
-  "from": "the download does not match its sha256 hash"
- },
- "srv.install.hostRefused": {
-  "text": "esta dirección no puede instalar apps; añade el nombre a apps.hosts en config.json, o usa la dirección IP de la TV",
-  "from": "this address is not allowed to install apps; add the name to apps.hosts in config.json, or use the TV's IP address"
- },
- "srv.install.id.exists": {
-  "text": "{id} ya forma parte del sistema de la TV",
-  "from": "{id} is already part of the TV system"
- },
- "srv.install.id.prefix": {
-  "text": "{id} no empieza por el nombre del paquete {package}",
-  "from": "{id} does not begin with the package name {package}"
- },
- "srv.install.id.protected": {
-  "text": "{id} pertenece al sistema de la TV y no se puede instalar",
-  "from": "{id} belongs to the TV system and cannot be installed"
- },
- "srv.install.id.self": {
-  "text": "{id} debe actualizarse desde Homebrew Channel",
-  "from": "{id} must be updated from the Homebrew Channel"
- },
- "srv.install.idMismatch": {
-  "text": "el paquete es {found}, no {expected}",
-  "from": "the package is {found}, not {expected}"
- },
- "srv.install.interrupted": {
-  "text": "la TV se reinició durante una instalación; revisa la lista de apps",
-  "from": "the TV restarted during an install; check the app list"
- },
- "srv.install.ipk.badAppinfo": {
-  "text": "el ipk contiene un appinfo.json ilegible para {id}",
-  "from": "the ipk holds an unreadable appinfo.json for {id}"
- },
- "srv.install.ipk.badTar": {
-  "text": "el ipk contiene un archivo de paquete dañado",
-  "from": "the ipk holds a damaged package archive"
- },
- "srv.install.ipk.empty": {
-  "text": "el ipk no contiene ninguna app ni servicio",
-  "from": "the ipk contains no app or service"
- },
- "srv.install.ipk.member": {
-  "text": "el ipk contiene una parte inesperada: {name}",
-  "from": "the ipk holds an unexpected part: {name}"
- },
- "srv.install.ipk.noControl": {
-  "text": "el ipk no tiene un archivo control utilizable",
-  "from": "the ipk has no usable control file"
- },
- "srv.install.ipk.notAr": {
-  "text": "el archivo no es un ipk",
-  "from": "the file is not an ipk archive"
- },
- "srv.install.ipk.parts": {
-  "text": "al ipk le falta una parte",
-  "from": "the ipk is missing a part"
- },
- "srv.install.ipk.tooBig": {
-  "text": "el ipk ocupa al descomprimirse más de lo permitido",
-  "from": "the ipk unpacks to more than it may"
- },
- "srv.install.ipk.tooMany": {
-  "text": "el ipk contiene demasiados archivos",
-  "from": "the ipk holds too many files"
- },
- "srv.install.ipk.truncated": {
-  "text": "el ipk está incompleto",
-  "from": "the ipk is truncated"
- },
- "srv.install.ipk.unreadable": {
-  "text": "no se pudo leer el ipk: {error}",
-  "from": "the ipk could not be read: {error}"
- },
- "srv.install.ipk.unsafePath": {
-  "text": "el ipk contiene una ruta no segura: {path}",
-  "from": "the ipk holds an unsafe path: {path}"
- },
- "srv.install.ipk.unsupported": {
-  "text": "el ipk usa un formato de archivo que este instalador no lee",
-  "from": "the ipk uses a file format this installer does not read"
- },
- "srv.install.needHttps": {
-  "text": "la descarga debe usar https",
-  "from": "the download must use https"
- },
- "srv.install.noElevate": {
-  "text": "el acceso root requiere Homebrew Channel, que no está instalado",
-  "from": "root access needs the Homebrew Channel, which is not installed"
- },
- "srv.install.noJob": {
-  "text": "no hay ninguna instalación esperando confirmación",
-  "from": "there is no install waiting for confirmation"
- },
- "srv.install.noSpace": {
-  "text": "no hay espacio libre suficiente: hacen falta {need} y hay {free}",
-  "from": "not enough free space: {need} needed, {free} free"
- },
- "srv.install.storeReplace": {
-  "text": "esta app vino de la tienda de LG; reemplazarla detiene sus actualizaciones y requiere una confirmación aparte",
-  "from": "this app came from the LG store; replacing it stops store updates and needs separate confirmation"
- },
- "srv.install.timeout": {
-  "text": "la instalación no terminó a tiempo; revisa la lista de apps",
-  "from": "the install did not finish in time; check the app list"
- },
- "srv.install.tooBig": {
-  "text": "el paquete supera el límite de {limit}",
-  "from": "the package is larger than the {limit} limit"
- },
- "ctl.power.installBusy": {
-  "text": "Hay una instalación de app en curso. Interrumpirla puede dejar la app a medio instalar. ¿Continuar de todos modos?",
-  "from": "An app install is in progress. Interrupting it may leave the app half-installed. Continue anyway?"
- },
- "srv.install.noSpace.download": {
-  "text": "no hay espacio libre suficiente para esta descarga: hay {free} libres y el paquete necesita unas tres veces su tamaño",
-  "from": "not enough free space for this download: {free} free, and the package needs about three times its size"
- },
- "tv.apps.install.browse": {
-  "text": "Ver",
-  "from": "Browse"
- },
- "tv.apps.install.busy.hint": {
-  "text": "Puede tardar uno o dos minutos. Atrás vuelve a funcionar al terminar.",
-  "from": "This can take a minute or two. Back works again when it finishes."
- },
- "tv.apps.install.cancel.hint": {
-  "text": "El paquete descargado se elimina.",
-  "from": "The downloaded package is deleted."
- },
- "tv.apps.install.dismiss.done": {
-  "text": "Hecho",
-  "from": "Done"
- },
- "tv.apps.install.dismiss.error": {
-  "text": "Cerrar",
-  "from": "Dismiss"
- },
- "tv.apps.install.done.hint": {
-  "text": "La app ya está en la TV.",
-  "from": "The app is on the TV now."
- },
- "tv.apps.install.entry.hint": {
-  "text": "Apps del catálogo de Homebrew Channel.",
-  "from": "Apps from the Homebrew Channel catalog."
- },
- "tv.apps.install.error": {
-  "text": "La instalación falló",
-  "from": "The install failed"
- },
- "tv.apps.install.go.hint": {
-  "text": "No se instala nada hasta pulsar OK aquí.",
-  "from": "Nothing is installed until OK is pressed here."
- },
- "tv.apps.install.head.all": {
-  "text": "Todas las apps",
-  "from": "All apps"
- },
- "tv.apps.install.head.updates": {
-  "text": "Actualizaciones disponibles",
-  "from": "Updates available"
- },
- "tv.apps.install.loading.hint": {
-  "text": "La TV está obteniendo la lista. Hace falta acceso a internet.",
-  "from": "The TV is fetching the list. This needs internet access."
- },
- "tv.apps.install.press.cancel": {
-  "text": "Pulsa OK para descartar la descarga",
-  "from": "Press OK to discard the download"
- },
- "tv.apps.install.press.done": {
-  "text": "Pulsa OK para volver al catálogo",
-  "from": "Press OK to return to the catalog"
- },
- "tv.apps.install.press.go": {
-  "text": "Pulsa OK para instalar ahora",
-  "from": "Press OK to install now"
- },
- "tv.apps.install.press.install": {
-  "text": "Pulsa OK para revisar e instalar",
-  "from": "Press OK to review and install"
- },
- "tv.apps.install.press.off": {
-  "text": "Pulsa OK para desactivar",
-  "from": "Press OK to switch off"
- },
- "tv.apps.install.press.on": {
-  "text": "Pulsa OK para activar",
-  "from": "Press OK to switch on"
- },
- "tv.apps.install.press.open": {
-  "text": "Pulsa OK para abrir el catálogo",
-  "from": "Press OK to open the catalog"
- },
- "tv.apps.install.press.retry": {
-  "text": "Pulsa OK para reintentar",
-  "from": "Press OK to try again"
- },
- "tv.apps.install.press.update": {
-  "text": "Pulsa OK para revisar y actualizar",
-  "from": "Press OK to review and update"
- },
- "tv.apps.install.pv.apps": {
-  "text": "Apps",
-  "from": "Apps"
- },
- "tv.apps.install.pv.change": {
-  "text": "Cambio",
-  "from": "Change"
- },
- "tv.apps.install.pv.cpu": {
-  "text": "Procesador",
-  "from": "Processor"
- },
- "tv.apps.install.pv.mismatch": {
-  "text": "No coincide",
-  "from": "Mismatch"
- },
- "tv.apps.install.pv.services": {
-  "text": "Servicios",
-  "from": "Services"
- },
- "tv.apps.install.pv.space": {
-  "text": "Espacio libre",
-  "from": "Free space"
- },
- "tv.apps.install.retry": {
-  "text": "Reintentar",
-  "from": "Retry"
- },
- "tv.apps.install.root.hint": {
-  "text": "Desactivado salvo que la app lo necesite. El acceso root se configura mediante Homebrew Channel.",
-  "from": "Off unless the app needs it. Root access is set up through the Homebrew Channel."
- },
- "tv.apps.install.root.needed": {
-  "text": "Esta app pide que sus servicios se ejecuten como root y puede que no funcione sin ello.",
-  "from": "This app asks for its services to run as root, and may not work without it."
- },
- "tv.apps.install.store.needOn": {
-  "text": "Activa primero Reemplazar la versión de la tienda.",
-  "from": "Switch on Replace the store version first."
- },
- "tv.apps.install.unavailable": {
-  "text": "Catálogo no disponible",
-  "from": "Catalog unavailable"
- },
- "tv.apps.install.wait": {
-  "text": "Hay una instalación en curso. Espera.",
-  "from": "An install is running. Please wait."
- },
- "tv.backRow.apps": {
-  "text": "‹ Apps",
-  "from": "‹ Apps"
- },
- "tv.backRow.apps.hint": {
-  "text": "Volver a la pestaña Apps.",
-  "from": "Back to the Apps tab."
- },
- "apps.install.root.confirm": {
-  "text": "¿Ejecutar estos servicios como root?\n\n{list}\n\nRoot da a un servicio control total de la TV. Continúa solo si el paquete viene de alguien de confianza.",
-  "from": "Run these services as root?\n\n{list}\n\nRoot gives a service full control of the TV. Only continue if the package comes from someone trusted."
- },
- "apps.install.uploadFailed": {
-  "text": "La subida no terminó",
-  "from": "The upload did not finish"
- },
- "apps.install.uploading": {
-  "text": "Subiendo… {done} de {total}",
-  "from": "Uploading… {done} of {total}"
- },
- "apps.sideload.file.go": {
-  "text": "Subir y comprobar",
-  "from": "Upload and check"
- },
- "apps.sideload.file.label": {
-  "text": "Archivo del paquete",
-  "from": "Package file"
- },
- "apps.sideload.file.title": {
-  "text": "Subir .ipk",
-  "from": "Upload .ipk"
- },
- "apps.sideload.off.desc": {
-  "text": "Esto está desactivado porque un paquete fuera del catálogo puede ejecutar cualquier cosa en la TV. Puede activarlo abajo o configurando un token.",
-  "from": "This is off, because a package from outside the catalog can run anything on the TV. You can turn it on below, or by setting a token."
- },
- "apps.sideload.off.title": {
-  "text": "Instalar desde una URL o un archivo",
-  "from": "Install from a URL or a file"
- },
- "apps.sideload.sha.placeholder": {
-  "text": "sha256 (opcional)",
-  "from": "sha256 (optional)"
- },
- "apps.sideload.url.go": {
-  "text": "Descargar y comprobar",
-  "from": "Download and check"
- },
- "apps.sideload.url.placeholder": {
-  "text": "Dirección de un .ipk, como https://example.org/app.ipk",
-  "from": "Address of an .ipk, such as https://example.org/app.ipk"
- },
- "apps.sideload.url.title": {
-  "text": "Desde URL…",
-  "from": "From URL…"
- },
- "srv.install.badHash": {
-  "text": "el hash sha256 debe tener 64 dígitos hexadecimales",
-  "from": "the sha256 hash must be 64 hexadecimal digits"
- },
- "srv.install.busy.upload": {
-  "text": "hay una subida en curso",
-  "from": "an upload is in progress"
- },
- "srv.install.sideloadOff": {
-  "text": "instalar desde una URL o un archivo está desactivado; añade \"apps\": {\"sideload\": true} a config.json, define un token o usa el navegador web de la TV",
-  "from": "installing from a URL or a file is off; set \"apps\": {\"sideload\": true} in config.json, set a token, or use the TV's web browser"
- },
- "srv.install.upload.empty": {
-  "text": "la subida está vacía o su tamaño no es válido",
-  "from": "the upload is empty or its size is not valid"
- },
- "srv.install.upload.failed": {
-  "text": "no se pudo guardar la subida",
-  "from": "the upload could not be saved"
- },
- "srv.install.upload.length": {
-  "text": "la subida debe indicar su tamaño de antemano",
-  "from": "the upload must state its size in advance"
- },
- "srv.install.upload.size": {
-  "text": "la subida no coincide con el tamaño indicado",
-  "from": "the upload does not match its stated size"
- },
- "srv.install.catalogIncomplete": {
-  "text": "la entrada del catálogo está incompleta",
-  "from": "the catalog entry is incomplete"
- },
- "srv.install.notStaged": {
-  "text": "el archivo no está en el directorio de preparación",
-  "from": "the file is not in the staging directory"
- },
- "srv.install.badSource": {
-  "text": "origen de instalación desconocido",
-  "from": "unknown install source"
- },
- "srv.install.unknownError": {
-  "text": "error desconocido",
-  "from": "unknown error"
- },
- "srv.install.idRequired": {
-  "text": "se necesita el id de una app",
-  "from": "an app id is required"
- },
- "srv.install.rootConfirm": {
-  "text": "el acceso root para un paquete de fuera del catálogo debe confirmarse para los servicios que figuran en su vista previa",
-  "from": "root access for a package from outside the catalog must be confirmed for the services listed in its preview"
- },
- "apps.install.root.restored": {
-  "text": "Tras esta actualización se vuelve a dar root a {list}, como antes.",
-  "from": "Root is given back to {list} after this update, as before."
- },
- "apps.install.root.needed": {
-  "text": "Esta app pide que sus servicios se ejecuten como root y puede que no funcione sin ello.",
-  "from": "This app asks for its services to run as root, and may not work without it."
- },
- "tv.apps.install.pv.root": {
-  "text": "Root",
-  "from": "Root"
- },
- "tv.apps.install.pv.rootBack": {
-  "text": "Se devuelve",
-  "from": "Given back"
- },
- "apps.install.screensaver.warn": {
-  "text": "Esta aplicación instala un salvapantallas personalizado, que reemplazará a los salvapantallas de Glasshouse.",
-  "from": "This app installs a custom screen saver, which will replace Glasshouse’s own screen savers."
- },
- "apps.sideload.desc": {
-  "text": "Instala un paquete de aplicación (.ipk) directamente desde un enlace de descarga o subiendo un archivo desde tu ordenador.",
-  "from": "Install an application package (.ipk) directly from a download link or by uploading a file from your computer."
- },
- "apps.sideload.heading": {
-  "text": "Instalar app desde una URL o archivo",
-  "from": "Install app from a URL or file"
- },
- "apps.sideload.disable": {
-  "text": "Desactivar instalación desde URL o archivo",
-  "from": "Turn off install from URL or file"
- },
- "apps.sideload.enable": {
-  "text": "Activar instalación desde URL o archivo…",
-  "from": "Turn on install from URL or file…"
- },
- "apps.sideload.enable.confirm": {
-  "text": "¿Permitir instalar aplicaciones desde una URL o un archivo subido?\n\nLos paquetes fuera del catálogo no están revisados y pueden ejecutar cualquier cosa en la TV. Instale únicamente paquetes de confianza.",
-  "from": "Allow installing apps from a URL or an uploaded file?\n\nPackages from outside the catalog are unvetted and can run anything on the TV. Only install packages you trust."
- },
- "apps.sideload.failed": {
-  "text": "No se pudo actualizar la configuración de instalación externa",
-  "from": "Could not update sideload setting"
- },
- "common.replaces": {
-  "text": "Reemplaza el nuestro",
-  "from": "Replaces ours"
- },
- "ss.external.active": {
-  "text": "Un salvapantallas homebrew de terceros está activo actualmente en la TV. Seleccionar un salvapantallas de Glasshouse lo reemplazará.",
-  "from": "A third-party homebrew screen saver is currently active on the TV. Selecting a Glasshouse screen saver will replace it."
- },
- "tv.apps.head.installHomebrewApps": {
-  "text": "Instalar aplicaciones homebrew",
-  "from": "Install Homebrew Applications"
- },
- "tv.apps.install.pv.screensaver": {
-  "text": "Salvapantallas",
-  "from": "Screen saver"
- },
- "tv.saver.external": {
-  "text": "Salvapantallas homebrew",
-  "from": "Homebrew screen saver"
  }
 }

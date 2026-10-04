@@ -511,7 +511,10 @@ function getPictureEngineInfo() {
 
 function formatSoundOutput(so) {
   if (!so) return 'TV Speaker';
-  return SOUND_OUTPUT_MAP[so] || so;
+  if (SOUND_OUTPUT_MAP[so]) return SOUND_OUTPUT_MAP[so];
+  // A name not in the map is still shown readably: ext_speaker_arc reads as
+  // "Ext Speaker Arc" rather than as the raw key.
+  return String(so).replace(/_/g, ' ').replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); });
 }
 
 function formatPicMode(mode) {
@@ -1292,6 +1295,9 @@ function collectStats(cb) {
       if (typeof vs.volume === 'number') out.volume = vs.volume;
       if (typeof vs.muteStatus === 'boolean') out.muted = vs.muteStatus;
     }
+    // -1 when the sound goes out over optical and the device on the other end
+    // sets the level (58UH635V, webOS 3.x): there is no level to show.
+    if (typeof out.volume === 'number' && out.volume < 0) out.volume = null;
     lunaCachedFn('com.webos.service.settings/getSystemSettings',
       { category: 'sound', keys: ['soundOutput', 'soundMode'] }, 15000,
       function (snd) {

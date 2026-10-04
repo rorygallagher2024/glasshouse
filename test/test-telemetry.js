@@ -200,6 +200,8 @@ console.log('Running test-telemetry.js ...');
 (function testFormatters() {
   assert.strictEqual(telemetry.formatPicMode('expert1'), 'ISF Expert (Bright)');
   assert.strictEqual(telemetry.formatSoundOutput('tv_speaker'), 'TV Speaker');
+  assert.strictEqual(telemetry.formatSoundOutput('ext_speaker_optical'), 'Optical');
+  assert.strictEqual(telemetry.formatSoundOutput('ext_speaker_arc'), 'Ext Speaker Arc');
   assert.strictEqual(telemetry.formatDynamicRange('hdr10'), 'HDR10');
   console.log('  ✓ formatters map modes and dynamic ranges');
 })();

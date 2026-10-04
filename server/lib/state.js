@@ -123,18 +123,23 @@ function applicationValues(appId, inputNames) {
  * when sound goes to an eARC soundbar that controls the volume, the older one
  * reports 0 instead of the soundbar's level (#406).
  */
+// -1 means the TV is not setting the level - see telemetry's sound read.
+function level(v) {
+  return typeof v === 'number' && v >= 0 ? v : null;
+}
+
 function audioValues(response, formatSoundOutput) {
   var vs = response && response.volumeStatus;
   if (vs && typeof vs === 'object') {
     return {
-      volume: typeof vs.volume === 'number' ? vs.volume : null,
+      volume: level(vs.volume),
       muted: typeof vs.muteStatus === 'boolean' ? vs.muteStatus : null,
       output: vs.soundOutput ? formatSoundOutput(String(vs.soundOutput)) : null
     };
   }
   var scenario = response && response.scenario ? String(response.scenario).replace(/^mastervolume_/, '') : null;
   return {
-    volume: response && typeof response.volume !== 'undefined' ? response.volume : null,
+    volume: level(response && response.volume),
     muted: response && typeof response.muted !== 'undefined' ? !!response.muted : null,
     output: scenario ? formatSoundOutput(scenario) : null
   };

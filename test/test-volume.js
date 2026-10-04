@@ -23,7 +23,8 @@ assert.deepEqual(state.audioValues({ returnValue: true, volumeStatus: { volume: 
   { volume: 23, muted: true, output: 'fmt:external_arc' });
 assert.deepEqual(state.audioValues({ returnValue: true, volume: 4, muted: false, scenario: 'mastervolume_headphone' }, fmt),
   { volume: 4, muted: false, output: 'fmt:headphone' });
-console.log('  ✓ the newer volumeStatus reply and the older flat one are both read');
+assert.strictEqual(state.audioValues({ returnValue: true, volume: -1, muted: false, scenario: 'mastervolume_ext_speaker_optical' }, fmt).volume, null);
+console.log('  ✓ the newer volumeStatus reply and the older flat one are both read, and -1 is no level');
 
 telemetry.init({
   luna: mockEnv.mockLuna,
@@ -73,9 +74,19 @@ telemetry.collectStats(checked(function (s) {
       assert.strictEqual(s3.volume, 4);
       assert.strictEqual(asked, 1, 'asked once, not on every collection');
       console.log('  ✓ stats report a soundbar\'s volume, and a TV without the newer service is asked once');
-      mockEnv.restore();
-      console.log('ALL test-volume.js assertions passed!\n');
-      process.exit(0);
+
+      // 4. Optical on webOS 3.x: the device on the other end sets the level
+      mockEnv.luna['com.webos.audio/getSoundOut'] = { returnValue: true, volume: -1, muted: false, scenario: 'mastervolume_ext_speaker_optical' };
+      telemetry.expireStats();
+      telemetry.clearCache();
+      telemetry.collectStats(checked(function (s4) {
+        assert.strictEqual(s4.volume, null, 'no level rather than -1');
+        assert.strictEqual(s4.audio_output, 'Optical');
+        console.log('  ✓ an optical output reports no level and a readable name');
+        mockEnv.restore();
+        console.log('ALL test-volume.js assertions passed!\n');
+        process.exit(0);
+      }));
     }));
   }));
 }));
