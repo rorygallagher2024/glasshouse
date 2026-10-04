@@ -54,7 +54,19 @@ var hasLogoLight = null;   // null = not yet determined
 var hasLightSensor = false;
 var lightSensorFailures = 0;
 var lastLightSensorProbe = 0;
+/*
+ * Whether the TV has reported a playback state, kept across restarts as the
+ * HDMI fields are: Player State is withheld until it has, and while it lived
+ * only in memory, each restart (a B8 waking from deep standby, say) took the
+ * entity out of Home Assistant until something next played.
+ */
+var MEDIA_SEEN_FILE = '/var/lib/tvweb/media_seen';
 var hasMediaState = false;
+function noteMediaSeen() {
+  if (hasMediaState) return;
+  hasMediaState = true;
+  try { fs.writeFileSync(MEDIA_SEEN_FILE, '1\n', 'utf8'); } catch (e) {}
+}
 
 // HDMI fields the TV has reported. Home Assistant only gets the entities for
 // these, and withholding one deletes it there, so the set is kept across
@@ -139,6 +151,7 @@ function init(opts) {
   mapPowerStateFn = opts.mapPowerState;
   isScreenSaverFn = opts.isScreenSaver;
   loadHdmiSeen();
+  hasMediaState = readTrimmed(MEDIA_SEEN_FILE) !== null;
 }
 
 function meminfo() {
@@ -1350,7 +1363,11 @@ function collectStats(cb) {
             playerType: pipe.playerType || null,
             fullScreen: pipe.isFullScreen !== false
           };
-          hasMediaState = true;
+          noteMediaSeen();
+        } else if (acb && acb.returnValue !== false && Array.isArray(acb.acbs) && hasMediaState) {
+          // The media service answered with nothing playing (a screen saver,
+          // the home screen): idle, where no answer at all stays unknown.
+          out.media = { state: 'idle', playerType: null, fullScreen: false };
         }
 
         lunaCachedFn('com.webos.applicationManager/getForegroundAppInfo', {}, 4000, function (app) {

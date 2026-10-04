@@ -473,9 +473,9 @@ function buildEntities(opts) {
         payload: {
           name: 'Player State',
           state_topic: topic.telemetry,
-          // Absent on a set whose media service does not answer, rather than
-          // reported as stopped - nothing playing and nothing to ask are
-          // different things. On an external input this tracks the HDMI
+          // idle when the media service answers with nothing playing, and
+          // absent when it does not answer: nothing playing and nothing to ask
+          // are different things. On an external input this tracks the HDMI
           // pipeline rather than the source's own transport state.
           value_template: '{{ value_json.media.state if value_json.media else None }}',
           icon: 'mdi:play-pause'
