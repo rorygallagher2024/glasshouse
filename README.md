@@ -47,6 +47,32 @@ The [installation guide](https://rorygallagher2024.github.io/lg-webos-dashboard/
 
 ---
 
+## What it's for
+
+This project is intended to give a rooted webOS TV a useful local control surface instead of requiring the owner to work around the TV's built-in menus, vendor services and cloud dependencies.
+
+1. **[Controlling the TV without the cloud](https://rorygallagher2024.github.io/lg-webos-dashboard/dashboard/control/).** A D-pad to navigate the TV itself, volume, mute, media playback keys (play, pause, stop, skip), app launcher, picture presets, sound output routing, power and reboot.
+
+2. **[Seeing what the TV is configured to collect, and switching it off](https://rorygallagher2024.github.io/lg-webos-dashboard/dashboard/privacy/).** Whether LG's content-recognition engine is running and sampling the screen, the advertising identifier and whether ad tracking is limited, and every data agreement recorded on the TV with most of them switchable from the dashboard. Includes an on-TV blocker for LG's ad and telemetry endpoints, and a switch for the two diagnostics services that upload to LG.
+
+3. **[App management, debloating and home screen cleanup](https://rorygallagher2024.github.io/lg-webos-dashboard/dashboard/apps/).** Install apps from the Homebrew Channel catalog, permanently uninstall apps to reclaim internal flash storage, disable unnecessary background system services to free up RAM and CPU cycles, and hide non-removable built-in LG system apps from the home launcher.
+
+4. **[Replacing the screen saver](https://rorygallagher2024.github.io/lg-webos-dashboard/dashboard/screen-savers/).** A clock, a starfield, fireworks, or the TV's own readings, each dim or bright, in place of LG's.
+
+5. **[Integrating the TV with a smart home](https://rorygallagher2024.github.io/lg-webos-dashboard/HOME-ASSISTANT/).** The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients.
+
+6. **[Seeing what the TV is actually doing](https://rorygallagher2024.github.io/lg-webos-dashboard/dashboard/metrics/).** SoC temperature, per-core CPU load, memory, swap, current draw, Wi-Fi signal and throughput.
+
+7. **[Observing OLED panel wear](https://rorygallagher2024.github.io/lg-webos-dashboard/dashboard/oled-care/).** Cumulative panel hours, compensation cycle progress, Pixel Refresher countdown with scheduling, completed cycle counters and refresher failure alerts.
+
+8. **[Controlling the OLED burn-in protections](https://rorygallagher2024.github.io/lg-webos-dashboard/dashboard/oled-care/).** What each one does and a switch for it: screen shift and logo dimming on any OLED, and on TVs that expose them, ASBL and Global Stress Reduction (normally reachable only from the TV's service menu, with a service remote and a PIN).
+
+9. **[Opening the service menu, and unlocking it where it is locked](https://rorygallagher2024.github.io/lg-webos-dashboard/dashboard/service-menu/).** LG's own engineering menu, put on the TV screen from a browser which means no service remote is needed. Newer firmware shows a cut-down version of it until it is unlocked, which the dashboard can do as well.
+
+10. **[Reading all of it on the TV itself](https://rorygallagher2024.github.io/lg-webos-dashboard/dashboard/tv-app/).** An optional app on the home screen puts the same readings and controls on the TV, driven by the remote, for when there is no phone or laptop to hand.
+
+---
+
 ## Screenshots
 
 <p align="center">
