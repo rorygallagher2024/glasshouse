@@ -94,3 +94,7 @@
 }
 [data-md-color-scheme="default"] .md-search__input::placeholder,
 [data-md-color-scheme="default"] .md-search__icon { color: rgba(0, 0, 0, 0.55); }
+
+/* An entity id broken across lines cannot be read or copied whole. A table
+   wider than the page scrolls on its own instead. */
+.md-typeset table:not([class]) code { white-space: nowrap; }
