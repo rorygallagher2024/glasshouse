@@ -81,6 +81,19 @@ it before exposing it more widely.
 
 ---
 
+
+## Narrowing access
+
+| Setting                        | Browser on the network                  | App on the TV | MQTT  |
+| :----------------------------- | :-------------------------------------- | :------------ | :---- |
+| `"token": "your-secret-token"` | with `?k=your-secret-token`             | works         | works |
+| `"host": "127.0.0.1"`          | no — port 8080 is closed to the network | works         | works |
+| `"web": { "enabled": false }`  | no                                      | does not work | works |
+
+`"host": "127.0.0.1"` is the one to use to keep the on-TV app while closing the port to everything else.
+
+The app runs on the same server, so switching the web server off entirely leaves its tile with nothing to open — remove it from the **Server** tab first; a first install with the web server off does not add it.
+
 ## Moving from telnet to SSH
 
 A rooted webOS TV exposes an **unauthenticated root shell on port 23**. Anyone

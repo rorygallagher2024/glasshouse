@@ -1,7 +1,7 @@
 # Implementation notes
 
 How this works on the inside, and the platform quirks that shaped it. Nothing
-here is needed to use the project - see the [README](../README.md) for that.
+here is needed to use the project - see [Installing](install.md) and [the dashboard](dashboard/index.md) for that.
 
 ---
 

@@ -19,7 +19,7 @@ riskier controls ask for confirmation in the dashboard first.
 Installed from the Homebrew Channel, uninstalling the app stops the server
 starting at boot straight away, and within a few minutes the server removes the
 rest, including its Home Assistant entities. Installed with `deploy.sh`, see
-[Uninstalling](../README.md#uninstalling).
+[Uninstalling](managing.md#uninstalling).
 
 ## Features that change how the TV runs
 

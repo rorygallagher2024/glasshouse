@@ -1,0 +1,50 @@
+name: docs
+
+# The site at rorygallagher2024.github.io/lg-webos-dashboard, built from docs/.
+# A pull request only builds it, in strict mode, so a broken link fails there.
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', 'mkdocs.yml', '.github/workflows/docs.yml']
+  pull_request:
+    paths: ['docs/**', 'mkdocs.yml', '.github/workflows/docs.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      # MkDocs 2 drops the theme and plugin system Material is built on.
+      - run: pip install 'mkdocs>=1.6,<2' 'mkdocs-material>=9.7,<10' 'markdown-callouts>=0.4,<0.5'
+      - run: mkdocs build
+        env:
+          NO_MKDOCS_2_WARNING: '1'
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

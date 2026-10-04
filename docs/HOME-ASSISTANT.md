@@ -204,7 +204,7 @@ of Unknowns.
 | `sensor` | `sensor.lg_tv_mac_address` | MAC Address | MAC address of the interface the TV is using (diagnostic) |
 | `sensor` | `sensor.lg_tv_uptime` | Uptime | When the TV's processor last booted; standby does not reset it (diagnostic) |
 | `sensor` | `sensor.lg_tv_tvweb_version` | Server Version | Version of this server, not TV firmware (diagnostic) |
-| `update` | `update.lg_tv_server_update` | Server Update | Latest release, its notes and an install button. Published only while **Check daily** is on in the dashboard's Server tab &mdash; see [Updating](../README.md#updating) |
+| `update` | `update.lg_tv_server_update` | Server Update | Latest release, its notes and an install button. Published only while **Check daily** is on in the dashboard's Server tab &mdash; see [Updating](managing.md#updating) |
 
 ### LG settings
 

@@ -1,0 +1,82 @@
+site_name: Glasshouse
+site_description: A dashboard, privacy controls and Home Assistant bridge for rooted LG webOS TVs.
+site_url: https://rorygallagher2024.github.io/lg-webos-dashboard/
+repo_url: https://github.com/rorygallagher2024/lg-webos-dashboard
+repo_name: lg-webos-dashboard
+edit_uri: edit/main/docs/
+strict: true
+
+theme:
+  name: material
+  logo: logo/glasshouse.svg
+  favicon: logo/glasshouse-512.png
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: white
+      toggle: { icon: material/brightness-4, name: Light theme }
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: black
+      toggle: { icon: material/brightness-7, name: Dark theme }
+  font:
+    text: Manrope
+    code: JetBrains Mono
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - search.highlight
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installing: install.md
+      - Tested TVs: tested-tvs.md
+  - The dashboard:
+      - dashboard/index.md
+      - Control and Advanced: dashboard/control.md
+      - Metrics: dashboard/metrics.md
+      - Apps: dashboard/apps.md
+      - Privacy: dashboard/privacy.md
+      - OLED Care: dashboard/oled-care.md
+      - Game: dashboard/game.md
+      - Service menu: dashboard/service-menu.md
+      - Screen savers: dashboard/screen-savers.md
+      - On the TV: dashboard/tv-app.md
+      - Power and standby: dashboard/power.md
+      - Server: dashboard/server.md
+  - Home Assistant: HOME-ASSISTANT.md
+  - Running it:
+      - Updating and uninstalling: managing.md
+      - Experimental features: experimental.md
+      - Security: SECURITY.md
+      - What it changes on the TV: TV-CHANGES.md
+  - Reference:
+      - What LG's ACR does: ACR.md
+      - TV specifications: TV-SPECS.md
+      - How it works: IMPLEMENTATION.md
+      - Translating the dashboards: STRINGS.md
+
+# Kept until the Homebrew Channel listing is live (webosbrew/apps-repo#261).
+not_in_nav: |
+  /install-homebrew-channel.md
+
+markdown_extensions:
+  - github-callouts
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.highlight
+
+validation:
+  anchors: warn
+  unrecognized_links: warn
