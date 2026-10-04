@@ -193,11 +193,19 @@ function doControl(action, value, cb) {
       if (step === -1) {
         return luna('com.webos.audio/volumeDown', {}, function (r) { cb({ ok: !!(r && r.returnValue) }); });
       }
-      return luna('com.webos.audio/getVolume', {}, function (cur) {
-        var curVol = (cur && typeof cur.volume === 'number') ? cur.volume : 10;
+      var stepFrom = function (curVol) {
         var target = Math.max(0, Math.min(100, curVol + step));
         luna('com.webos.audio/setVolume', { volume: target }, function (r) {
           cb({ ok: !!(r && r.returnValue) });
+        });
+      };
+      // The newer service first: with an eARC soundbar holding the volume, the
+      // older one reads 0 (#406). A B8 has only the older one.
+      return luna('com.webos.service.audio/master/getVolume', {}, function (m) {
+        var vs = m && m.volumeStatus;
+        if (vs && typeof vs.volume === 'number') return stepFrom(vs.volume);
+        luna('com.webos.audio/getVolume', {}, function (cur) {
+          stepFrom((cur && typeof cur.volume === 'number') ? cur.volume : 10);
         });
       });
 

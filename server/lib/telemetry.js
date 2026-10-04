@@ -1287,6 +1287,12 @@ function collectStats(cb) {
       out.audio_output = sound.scenario ?
         formatSoundOutput(String(sound.scenario).replace(/^mastervolume_/, '')) : 'Internal';
     }
+  masterVolume(function (vs) {
+    // The soundbar's volume where one holds it (#406); getSoundOut reads 0 then.
+    if (vs) {
+      if (typeof vs.volume === 'number') out.volume = vs.volume;
+      if (typeof vs.muteStatus === 'boolean') out.muted = vs.muteStatus;
+    }
     lunaCachedFn('com.webos.service.settings/getSystemSettings',
       { category: 'sound', keys: ['soundOutput', 'soundMode'] }, 15000,
       function (snd) {
@@ -1392,6 +1398,24 @@ function collectStats(cb) {
   });
   });
   });
+  });
+  });
+}
+
+/*
+ * The newer audio service's volumeStatus, cached like the other reads. A TV
+ * without it (a B8, webOS 4, says "Unknown method") is not asked again: each
+ * question starts a luna-send.
+ */
+var masterVolumeSupported = null;
+function masterVolume(cb) {
+  if (masterVolumeSupported === false) return cb(null);
+  lunaCachedFn('com.webos.service.audio/master/getVolume', {}, 10000, function (r, raw) {
+    // A refusal can arrive unparsed, as luna-send's text only.
+    if (/unknown (method|service)/i.test(String((r && r.errorText) || raw || ''))) masterVolumeSupported = false;
+    var vs = r && r.returnValue !== false && r.volumeStatus;
+    if (vs && typeof vs === 'object') masterVolumeSupported = true;
+    cb(vs && typeof vs === 'object' ? vs : null);
   });
 }
 
