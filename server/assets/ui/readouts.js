@@ -145,6 +145,16 @@ function row(k, val, pct, sub, warn) {
 // For the Game tab, which names inputs as the TV does.
 let lastInputNames = {};
 
+/* The HDMI cards come from /api/hdmi, which asks the TV's input service, so
+   they are not refreshed on every tick. They are when what is on screen
+   changes: an input chosen, the TV switched on, a source starting to send.
+   Loaded once only, they kept "Device seen, no signal" from a page opened
+   while the TV was in standby. */
+let lastHdmiKey = null;
+function hdmiKey(d) {
+  return [d.app_id || '', (d.powerState && d.powerState.raw) || '', d.signal || '', !!d.screenSaver].join('|');
+}
+
 async function tick() {
   try {
     const r = await fetch(api('/api/stats'), { cache: 'no-store' });
@@ -158,6 +168,10 @@ async function tick() {
     }
     const firstData = !lastOk;
     lastOk = Date.now();
+
+    const hk = hdmiKey(d);
+    if (lastHdmiKey !== null && hk !== lastHdmiKey && hdmiLoaded) loadHdmi();
+    lastHdmiKey = hk;
 
     const model = (d.device && d.device.model) || '';
     q('model').textContent = model;
