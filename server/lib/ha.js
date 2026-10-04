@@ -77,6 +77,13 @@ var HA_ENTITIES = [
   { id: 'app', type: 'select', name: 'Application', cat: 'controls' },
   { id: 'active_app', type: 'sensor', name: 'Active App', cat: 'controls' },
   { id: 'play_state', type: 'sensor', name: 'Player State', cat: 'controls' },
+  { id: 'remote_up', type: 'button', name: 'Remote Up', cat: 'controls' },
+  { id: 'remote_down', type: 'button', name: 'Remote Down', cat: 'controls' },
+  { id: 'remote_left', type: 'button', name: 'Remote Left', cat: 'controls' },
+  { id: 'remote_right', type: 'button', name: 'Remote Right', cat: 'controls' },
+  { id: 'remote_ok', type: 'button', name: 'Remote OK', cat: 'controls' },
+  { id: 'remote_back', type: 'button', name: 'Remote Back', cat: 'controls' },
+  { id: 'remote_home', type: 'button', name: 'Remote Home', cat: 'controls' },
   { id: 'play', type: 'button', name: 'Play', cat: 'controls' },
   { id: 'pause', type: 'button', name: 'Pause', cat: 'controls' },
   { id: 'play_pause', type: 'button', name: 'Play / Pause', cat: 'controls' },
@@ -110,7 +117,7 @@ var HA_ENTITIES = [
   // Video & HDMI Signal
   { id: 'dynamic_range', type: 'sensor', name: 'Dynamic Range', cat: 'video' },
   { id: 'picture_mode', type: 'sensor', name: 'Picture Mode', cat: 'video' },
-  { id: 'oled_light', type: 'sensor', name: 'OLED Light', cat: 'video' },
+  { id: 'oled_light', type: 'number', name: 'OLED Light', cat: 'video' },
   { id: 'video_signal', type: 'sensor', name: 'Video Signal', cat: 'video' },
   { id: 'hdmi_link_mode', type: 'sensor', name: 'HDMI Link Mode', cat: 'video' },
   { id: 'hdmi_chroma', type: 'sensor', name: 'HDMI Chroma', cat: 'video' },
@@ -318,7 +325,9 @@ function selectState(expr, options) {
 
 var RETIRED_ENTITIES = [
     { type: 'sensor', id: 'oled_screen_shift' },
-    { type: 'sensor', id: 'oled_logo_dimming' }
+    { type: 'sensor', id: 'oled_logo_dimming' },
+    // Now a number, which sets it as well as showing it.
+    { type: 'sensor', id: 'oled_light' }
   ];
 
 var HDMI_DIAG_ONLY = {
@@ -501,11 +510,20 @@ function buildEntities(opts) {
         }
       },
       {
-        type: 'sensor', id: 'oled_light',
+        /*
+         * The current picture mode's light: the TV keeps one per mode, so
+         * switching mode moves it. The live picture topic follows the remote
+         * and mode changes as they happen, not on the telemetry interval.
+         */
+        type: 'number', id: 'oled_light',
         payload: {
-          name: 'OLED Light',
-          state_topic: telemetryTopic,
-          value_template: '{{ value_json.picture.backlight if value_json.picture else 0 }}',
+          name: opts.isOled === false ? 'Backlight' : 'OLED Light',
+          command_topic: pfx + '/command/backlight',
+          state_topic: pfx + '/state/picture/backlight',
+          min: 0,
+          max: 100,
+          step: 1,
+          mode: 'slider',
           unit_of_measurement: '%',
           icon: 'mdi:brightness-6'
         }
@@ -1086,6 +1104,70 @@ function buildEntities(opts) {
           payload_on: 'ON',
           payload_off: 'OFF',
           icon: 'mdi:shield-check'
+        }
+      },
+      // The remote's D-pad, Back and Home, as the dashboard's remote sends them.
+      {
+        type: 'button', id: 'remote_up',
+        payload: {
+          name: 'Remote Up',
+          command_topic: pfx + '/command/rcu',
+          payload_press: 'up',
+          icon: 'mdi:chevron-up'
+        }
+      },
+      {
+        type: 'button', id: 'remote_down',
+        payload: {
+          name: 'Remote Down',
+          command_topic: pfx + '/command/rcu',
+          payload_press: 'down',
+          icon: 'mdi:chevron-down'
+        }
+      },
+      {
+        type: 'button', id: 'remote_left',
+        payload: {
+          name: 'Remote Left',
+          command_topic: pfx + '/command/rcu',
+          payload_press: 'left',
+          icon: 'mdi:chevron-left'
+        }
+      },
+      {
+        type: 'button', id: 'remote_right',
+        payload: {
+          name: 'Remote Right',
+          command_topic: pfx + '/command/rcu',
+          payload_press: 'right',
+          icon: 'mdi:chevron-right'
+        }
+      },
+      {
+        type: 'button', id: 'remote_ok',
+        payload: {
+          name: 'Remote OK',
+          command_topic: pfx + '/command/rcu',
+          payload_press: 'ok',
+          icon: 'mdi:circle-medium'
+        }
+      },
+      {
+        type: 'button', id: 'remote_back',
+        payload: {
+          name: 'Remote Back',
+          command_topic: pfx + '/command/rcu',
+          payload_press: 'back',
+          icon: 'mdi:keyboard-return'
+        }
+      },
+      {
+        type: 'button', id: 'remote_home',
+        payload: {
+          name: 'Remote Home',
+          command_topic: pfx + '/command/rcu',
+          payload_press: 'home',
+          icon: 'mdi:home'
         }
       },
       {

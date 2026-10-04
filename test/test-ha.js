@@ -259,4 +259,28 @@ console.log('Running test-ha.js ...');
   console.log('  ✓ PicCap Capture is a switch only while PicCap answers');
 })();
 
+// OLED Light as a slider, and the remote's D-pad as buttons
+(function testBacklightAndRemote() {
+  var by = {};
+  ha.buildEntities({ pfx: 'test/tv', isOled: true }).forEach(function (e) { by[e.type + '.' + e.id] = e; });
+  var light = by['number.oled_light'];
+  assert.ok(light && !by['sensor.oled_light'], 'a number, no longer a sensor');
+  assert.strictEqual(light.payload.name, 'OLED Light');
+  assert.strictEqual(light.payload.command_topic, 'test/tv/command/backlight');
+  assert.strictEqual(light.payload.state_topic, 'test/tv/state/picture/backlight', 'the live topic, not telemetry');
+  assert.strictEqual(light.payload.min, 0);
+  assert.strictEqual(light.payload.max, 100);
+  assert.ok(ha.RETIRED_ENTITIES.some(function (r) { return r.type === 'sensor' && r.id === 'oled_light'; }), 'the old sensor is cleared');
+  var lcd = ha.buildEntities({ pfx: 'test/tv', isOled: false }).filter(function (e) { return e.id === 'oled_light'; })[0];
+  assert.strictEqual(lcd.payload.name, 'Backlight', 'named as LG names it on an LCD');
+  ['up', 'down', 'left', 'right', 'ok', 'back', 'home'].forEach(function (k) {
+    var b = by['button.remote_' + k];
+    assert.ok(b, k);
+    assert.strictEqual(b.payload.command_topic, 'test/tv/command/rcu');
+    assert.strictEqual(b.payload.payload_press, k);
+    assert.ok(ha.HA_ENTITIES.some(function (e) { return e.id === 'remote_' + k && e.cat === 'controls'; }));
+  });
+  console.log('  ✓ OLED Light is a slider on the live topic, and the D-pad, Back and Home are buttons');
+})();
+
 console.log('ALL test-ha.js assertions passed!\n');

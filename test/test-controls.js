@@ -274,4 +274,33 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ Tile hiding is refused with the reason tvweb.js gives');
 })();
 
+// The OLED Light, or Backlight, of the current picture mode
+(function testBacklight() {
+  var sets = [];
+  controls.init({
+    config: { allowControl: true },
+    telemetry: { clearCache: function () {} },
+    luna: function (uri, payload, cb) {
+      if (uri === 'com.webos.service.settings/setSystemSettings') sets.push(payload);
+      if (cb) cb({ returnValue: true });
+    }
+  });
+  controls.doControl('backlight', '40', function (res) { assert.strictEqual(res.ok, true); });
+  controls.doControl('backlight', '72.0', function (res) { assert.strictEqual(res.ok, true); });
+  controls.doControl('backlight', 0, function (res) { assert.strictEqual(res.ok, true); });
+  assert.deepEqual(sets, [
+    { category: 'picture', settings: { backlight: '40' } },
+    { category: 'picture', settings: { backlight: '72' } },
+    { category: 'picture', settings: { backlight: '0' } }
+  ], 'written as the settings service stores it, for the current mode');
+  ['101', '-1', 'bright', '', null].forEach(function (v) {
+    controls.doControl('backlight', v, function (res) {
+      assert.strictEqual(res.ok, false, String(v) + ' is refused');
+      assert.ok(/between 0 and 100/.test(res.error));
+    });
+  });
+  assert.strictEqual(sets.length, 3, 'nothing out of range reaches the TV');
+  console.log('  ✓ Backlight sets the current picture mode\'s level, 0 to 100');
+})();
+
 console.log('ALL test-controls.js assertions passed!\n');

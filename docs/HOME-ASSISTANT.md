@@ -36,6 +36,13 @@ Categories:
 | `select` | `select.lg_tv_energy_saving` | Energy Saving Step | Auto, Off, Minimum, Medium, Maximum, Screen off |
 | `select` | `select.lg_tv_sound_output` | Sound Output | Switch outputs (TV Speaker, HDMI ARC, Optical, Headphone) |
 | `select` | `select.lg_tv_sleep_timer` | Sleep Timer | Off, 10, 30, 60, 90, 120 minutes |
+| `button` | `button.lg_tv_remote_up` | Remote Up | Presses Up on the remote |
+| `button` | `button.lg_tv_remote_down` | Remote Down | Presses Down on the remote |
+| `button` | `button.lg_tv_remote_left` | Remote Left | Presses Left on the remote |
+| `button` | `button.lg_tv_remote_right` | Remote Right | Presses Right on the remote |
+| `button` | `button.lg_tv_remote_ok` | Remote OK | Presses OK on the remote |
+| `button` | `button.lg_tv_remote_back` | Remote Back | Presses Back on the remote |
+| `button` | `button.lg_tv_remote_home` | Remote Home | Presses Home on the remote |
 | `button` | `button.lg_tv_play` | Play | Resume media playback |
 | `button` | `button.lg_tv_pause` | Pause | Pause media playback |
 | `button` | `button.lg_tv_play_pause` | Play / Pause | Toggle media playback |
@@ -81,7 +88,7 @@ Playback reaches an HDMI source over CEC, where the TV has only one key for both
 | `sensor` | `sensor.lg_tv_video_colorimetry` | Video Colorimetry | Color space standard (e.g. `BT.709`, `BT.2020`) |
 | `sensor` | `sensor.lg_tv_dynamic_range` | Dynamic Range | **Dolby Vision**, **HDR**, or **SDR** |
 | `sensor` | `sensor.lg_tv_picture_mode` | Picture Mode | Current profile (e.g. *Dolby Vision Cinema*, *Game*) |
-| `sensor` | `sensor.lg_tv_oled_light` | OLED Light | OLED panel backlight level (`0–100%`) |
+| `number` | `number.lg_tv_oled_light` | OLED Light | Sets the current picture mode's OLED Light (`0–100`); **Backlight** on an LCD. Follows the remote and mode changes as they happen |
 | `sensor` | `sensor.lg_tv_panel_dimming` | Panel Dimming | Dynamic backlight/panel dimming state |
 | `sensor` | `sensor.lg_tv_audio_output` | Audio Output | Output the audio service is driving (e.g. *HDMI ARC*, *Headphone / AUX*) |
 | `sensor` | `sensor.lg_tv_active_app` | Active App | Current foreground app or friendly CEC device |

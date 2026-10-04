@@ -284,6 +284,22 @@ function doControl(action, value, cb) {
         settings: { energySaving: energySaving, energySavingModified: 'true' }
       }, function (r) { cb({ ok: !!(r && r.returnValue) }); });
 
+    case 'backlight':
+      // OLED Light, or Backlight on an LCD: the current picture mode's own,
+      // since the settings service keeps one per mode and input. Home
+      // Assistant's number entity may send "40.0".
+      var backlight = Math.round(parseFloat(value));
+      if (!(backlight >= 0 && backlight <= 100)) {
+        return cb({ ok: false, error: 'backlight must be between 0 and 100' });
+      }
+      return luna('com.webos.service.settings/setSystemSettings', {
+        category: 'picture',
+        settings: { backlight: String(backlight) }
+      }, function (r) {
+        telemetry.clearCache();
+        cb({ ok: !!(r && r.returnValue) });
+      });
+
     case 'sound_output':
     case 'soundOutput':
       var sOut = String(value || '').trim();
