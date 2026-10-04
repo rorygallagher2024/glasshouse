@@ -1,0 +1,48 @@
+name: traffic
+
+# GitHub keeps clone and view counts for 14 days. This adds them to
+# traffic.csv on the traffic-data branch each day, so the history outlasts
+# that, with this repository's own CI checkouts counted out (scripts/traffic.py).
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # the traffic-data branch
+  actions: read     # counting CI jobs
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Its own branch, so a daily commit never touches main.
+      - name: traffic-data branch
+        run: |
+          if git fetch -q origin traffic-data; then
+            git worktree add -q data FETCH_HEAD
+            git -C data checkout -q -B traffic-data
+          else
+            git worktree add -q --detach data
+            git -C data checkout -q --orphan traffic-data
+            git -C data rm -rfq .
+          fi
+
+      - name: record the last 14 days
+        env:
+          TRAFFIC_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: python3 scripts/traffic.py data/traffic.csv
+
+      - name: save
+        working-directory: data
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add traffic.csv
+          if git diff --cached --quiet; then echo 'no change'; exit 0; fi
+          git commit -q -m "Traffic to $(tail -1 traffic.csv | cut -d, -f1)"
+          git push -q origin traffic-data
