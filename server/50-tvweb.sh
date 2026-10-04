@@ -72,9 +72,11 @@ fi
 # Not on a Homebrew Channel install, which does not offer it: restarting the app
 # manager mid-boot is a risk that store asks its apps not to take.
 #
-# Tile hiding is experimental across all webOS versions: restarting sam mid-boot
-# can collide with HDMI timing / driver state, locking up the display engine
-# (#366). Requires "allowTileHiding": true in config.json.
+# Tile hiding is experimental on every webOS version and takes
+# "allowTileHiding": true in config.json. On a B8 (webOS 4) the kernel log
+# showed tvservice faulting in the display engine driver and holding
+# kadp-de-mtx for good, so live TV and HDMI stayed black until a reboot, while
+# this restart coincided with an Apple TV switching to 4K Dolby Vision (#366).
 # Before the server first writes the key, an install that had tile hiding on
 # keeps it - except on webOS 10 and later (a Flutter stock screen saver), where
 # it was already held back.

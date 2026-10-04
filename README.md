@@ -368,21 +368,19 @@ Tested across the following TVs so far. The Luna service names and `/proc/lg` pa
 
 ### Experimental features
 
-Features with known hardware-level quirks or driver interactions are categorized as experimental and disabled by default on affected platforms. They can be activated directly from the **Server** tab (`/?tab=server`) under **Experimental features**, or via `config.json`.
+Two features restart the TV's app manager (sam) at boot, and that restart has been followed by a black picture that only a full reboot clears ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)). Both are off by default.
 
-* **Home screen tile hiding:** Hiding built-in system tiles operates via reversible `appinfo.json` bind-mounts and requires restarting the application manager (`sam`) at boot to apply changes.
-  * **Known issue & Display Lockup:** Restarting `sam` mid-boot can collide with display driver initialization and HDMI timing renegotiation (e.g. 4K 60Hz Dolby Vision on HDMI 2), causing an unhandled kernel page domain fault in `tvservice`'s video processing pipeline, deadlocking display mutexes (`kadp-de-mtx`), and leaving HDMI or Live TV video black until reboot ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)).
-  * **Activation:** Because of this risk across webOS versions, tile hiding is disabled by default on new installations and completely hidden from the Apps tab and TV app. To use it, turn on **Home screen tile hiding** under **Server** → **Experimental features** (or set `"allowTileHiding": true` in `/var/lib/tvweb/config.json`). The tile hiding controls will then appear in the Apps tab. Existing installations that already had tile hiding actively enabled are migrated automatically upon upgrade.
-  * **Troubleshooting:** If a black screen or mute occurs after cold booting with tile hiding enabled, please run the following before restarting the TV and report the output to [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366):
-    ```sh
-    luna-send -n 1 -f luna://com.webos.service.tvpower/power/getPowerState '{}'
-    luna-send -n 1 -f luna://com.webos.service.videooutput/getStatus '{}'
-    cat /var/lib/webosbrew/tvweb-boot.log
-    ```
+* **Hiding home screen system apps**, on every webOS version. On a B8 (webOS 4), the kernel log showed the TV's video pipeline crashing and locking up during boot while the restart coincided with an HDMI source changing mode, leaving live TV and HDMI black. On webOS 10 and 11, picture, sound over ARC and HDMI-CEC have been lost instead. Turn it on under **Server** → **Experimental features**, or with `"allowTileHiding": true` in `/var/lib/tvweb/config.json`; its controls then appear on the Apps tab. An install that already had it on keeps it on webOS 9 and earlier, and needs it turned on again on webOS 10 and later.
+* **Custom screen savers on webOS 10 and later**, where LG's own screen saver is a Flutter app and replacing it needs the same restart. They are unaffected on webOS 9 and earlier. Turn them on with `"allowOnWebos10": true` in `/var/lib/tvweb/config.json`.
 
-* **Custom screen savers on webOS 10 and later:** On webOS 10 and 11, LG's stock screen saver runner is Flutter rather than QML. Using custom QML screen savers requires restarting `sam` at boot to register the runner type, which can mute picture, audio, or HDMI-CEC on these sets ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)).
-  * Screen savers remain fully supported on webOS 3–9 (which use native QML runners and never restart `sam` on boot).
-  * On webOS 10 and later, custom screen savers are held back by default. They can be enabled under **Server** → **Experimental features** → **Custom screen savers (webOS 10+)** (or by setting `"allowOnWebos10": true` in `/var/lib/tvweb/config.json`).
+If the picture or sound goes with either on, please add to [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366) rather than opening a new issue, with the output of these, run before restarting the TV:
+
+```sh
+dmesg | grep -i -E "Unhandled fault|blocked!!|kadp"
+luna-send -n 1 -f luna://com.webos.service.videooutput/getStatus '{}'
+cat /var/lib/webosbrew/tvweb-boot.log
+```
+
 ### Install Steps
 
 #### 1. Get the files
@@ -485,9 +483,9 @@ To replace an existing config, edit it through the dashboard or remove `/var/lib
 
 The dashboard can change the broker, credentials, topic prefix and device identity — the things that decide *where* telemetry goes.
 
-`port`, `host`, `allowControl`, `allowPower`, `token`, `allowOnWebos10` and `allowTileHiding` are file-only. They decide *who can reach the server at all* and gate experimental features, and a web UI able to widen its own exposure would defeat the point of setting them.
+`port`, `host`, `allowControl`, `allowPower`, `token` and `allowOnWebos10` are file-only. The first five decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `allowOnWebos10` turns custom screen savers back on where they have been followed by [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366), so it takes a deliberate edit too. `allowTileHiding` can be set here or from the Server tab.
 
-Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart. `"allowOnWebos10": true` re-enables custom screen savers on webOS 10 and later. `"allowTileHiding": true` enables experimental home screen system tile hiding.
+Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart.
 
 `apps.hosts` and `apps.repos` are file-only as well. `apps.hosts` lists the names, beyond IP addresses and `localhost`, that may be used to reach the dashboard when installing apps, for example `"apps": { "hosts": ["lgtv.local"] }`. `apps.repos` lists further catalogs, served over https in the Homebrew Channel format, to show beside the default one. `apps.sideload: true` allows installing from a URL or an uploaded file without a token; with a token set, or for a request from the TV itself, it is allowed already. The switch on the Apps tab sets it too.
 
