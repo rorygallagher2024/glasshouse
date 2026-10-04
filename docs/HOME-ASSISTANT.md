@@ -1,6 +1,6 @@
 # Home Assistant
 
-Entity reference and example automations.
+Setting up the MQTT bridge, and example automations. Every entity it publishes is listed in [Entities](HOME-ASSISTANT-ENTITIES.md).
 
 ---
 
