@@ -10,3 +10,87 @@
     margin-top: 1.1em;
   }
 }
+
+/* The dashboard's own black and white: #000 with white in the dark theme,
+   #f5f5f5 with black in the light one (server/assets/ui/ui.css), in place of
+   Material's navy and indigo. */
+[data-md-color-scheme="slate"] {
+  --md-hue: 0;
+  --md-default-bg-color: #000;
+  --md-default-fg-color: rgba(255, 255, 255, 0.9);
+  --md-default-fg-color--light: rgba(255, 255, 255, 0.6);
+  --md-default-fg-color--lighter: rgba(255, 255, 255, 0.32);
+  --md-default-fg-color--lightest: rgba(255, 255, 255, 0.12);
+  --md-primary-fg-color: #000;
+  --md-primary-bg-color: #fff;
+  --md-accent-fg-color: #fff;
+  --md-typeset-color: rgba(255, 255, 255, 0.82);
+  --md-typeset-a-color: #fff;
+  --md-code-bg-color: rgba(255, 255, 255, 0.06);
+  --md-footer-bg-color: #000;
+  --md-footer-bg-color--dark: #000;
+}
+[data-md-color-scheme="default"] {
+  --md-default-bg-color: #f5f5f5;
+  --md-primary-fg-color: #f5f5f5;
+  --md-primary-bg-color: #000;
+  --md-accent-fg-color: #000;
+  --md-typeset-a-color: #000;
+  --md-code-bg-color: rgba(0, 0, 0, 0.05);
+  --md-footer-bg-color: #f5f5f5;
+  --md-footer-fg-color: #000;
+  --md-footer-fg-color--light: rgba(0, 0, 0, 0.6);
+  --md-footer-fg-color--lighter: rgba(0, 0, 0, 0.4);
+  --md-footer-bg-color--dark: #ebebeb;
+}
+.md-header, .md-tabs { border-bottom: 1px solid var(--md-default-fg-color--lightest); }
+.md-footer { border-top: 1px solid var(--md-default-fg-color--lightest); }
+
+/* Links in white or black need more than colour to be told from the text. */
+.md-typeset a {
+  text-decoration: underline;
+  text-decoration-color: var(--md-default-fg-color--lighter);
+  text-underline-offset: 0.2em;
+}
+.md-typeset a:hover { text-decoration-color: currentColor; }
+.md-typeset a.headerlink, .md-typeset a.md-button { text-decoration: none; }
+
+.md-typeset .md-button {
+  color: var(--md-default-fg-color);
+  border-color: var(--md-default-fg-color--lighter);
+  border-radius: 0;
+}
+.md-typeset .md-button--primary, .md-typeset .md-button:hover {
+  background-color: var(--md-default-fg-color);
+  border-color: var(--md-default-fg-color);
+  color: var(--md-default-bg-color);
+}
+
+/* Notes and tips in the same greys, as the dashboard's own notices are. */
+.md-typeset .admonition, .md-typeset details {
+  border-color: var(--md-default-fg-color--lighter) !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+.md-typeset .admonition-title, .md-typeset summary {
+  background-color: var(--md-default-fg-color--lightest) !important;
+}
+.md-typeset .admonition-title::before, .md-typeset summary::before {
+  background-color: var(--md-default-fg-color) !important;
+}
+
+/* A screenshot of the dashboard's black page would otherwise have no edge
+   against the black site. The logo keeps its own shape. */
+.md-typeset img:not([src*="logo/"]) {
+  border: 1px solid var(--md-default-fg-color--lighter);
+}
+/* The form behind the field is tinted too; over a light header that reads
+   as a heavy grey bar. */
+[data-md-color-scheme="default"] .md-search__form { background-color: rgba(0, 0, 0, 0.06); }
+[data-md-color-scheme="slate"] .md-search__form { background-color: rgba(255, 255, 255, 0.08); }
+[data-md-color-scheme="default"] .md-search__input {
+  background-color: transparent;
+  color: #000;
+}
+[data-md-color-scheme="default"] .md-search__input::placeholder,
+[data-md-color-scheme="default"] .md-search__icon { color: rgba(0, 0, 0, 0.55); }

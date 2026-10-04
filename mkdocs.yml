@@ -13,13 +13,13 @@ theme:
   palette:
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: black
-      accent: white
+      primary: custom
+      accent: custom
       toggle: { icon: material/brightness-4, name: Light theme }
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: black
-      accent: black
+      primary: custom
+      accent: custom
       toggle: { icon: material/brightness-7, name: Dark theme }
   font:
     text: Manrope
