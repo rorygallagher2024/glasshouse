@@ -79,10 +79,15 @@ var CONFIG = {
   // ?k=<token>. Keeps casual LAN devices out.
   token: '',
 
-  // Custom screen savers and tile hiding are held back on webOS 10 and later,
-  // where they have left the picture, sound and HDMI control off until a power
-  // cut (#366). File-only, like the settings above.
+  // Custom screen savers are held back on webOS 10 and later, where they have
+  // left the picture, sound and HDMI control off until a power cut (#366).
+  // File-only, like the settings above.
   allowOnWebos10: false,
+
+  // Hiding built-in system tiles is experimental: restarting the app manager
+  // mid-boot can lock up the display engine on some TVs, leaving the picture
+  // black (#366). Off by default; file-only.
+  allowTileHiding: false,
 
   // PicCap is offered where it is installed; its Home Assistant entity is
   // switched off like any other.
@@ -214,17 +219,26 @@ function loadConfig() {
 }
 loadConfig();
 
-// The old piccap.enabled, folded into the entity setting it duplicated.
+// Old config keys folded or preserved on upgrade.
 (function migrateConfigFile() {
   try {
     var raw = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-    if (!piccapTransport.migrateConfig(raw)) return;
+    var changed = false;
+    if (piccapTransport.migrateConfig(raw)) {
+      changed = true;
+      piccapTransport.migrateConfig(CONFIG);
+      console.log('config: piccap.enabled replaced by the PicCap Capture entity setting');
+    }
+    if (appsModule.migrateConfig(raw)) {
+      changed = true;
+      CONFIG.allowTileHiding = true;
+      console.log('config: existing tile hiding preserved (allowTileHiding: true)');
+    }
+    if (!changed) return;
     var tmp = CONFIG_FILE + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(raw, null, 2), 'utf8');
     fs.chmodSync(tmp, parseInt('600', 8));
     fs.renameSync(tmp, CONFIG_FILE);
-    piccapTransport.migrateConfig(CONFIG);
-    console.log('config: piccap.enabled replaced by the PicCap Capture entity setting');
   } catch (e) {}
 })();
 

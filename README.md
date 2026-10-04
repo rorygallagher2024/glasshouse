@@ -368,9 +368,11 @@ Tested across the following TVs so far. The Luna service names and `/proc/lg` pa
 
 ### Known issues
 
-**Black picture and no sound on webOS 10 and later ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)).** On webOS 10 and 11, after a custom screen saver or tile hiding has been used, apps and HDMI inputs can show a black picture with no sound. HDMI-CEC stops working and sound plays only through the TV's own speakers. Standby does not clear it; unplugging the TV does. The cause is not yet known.
+**Black picture and no sound after mid-boot app manager restart ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)).** Restarting the application manager (`sam`) mid-boot can collide with HDMI handshake / display driver initialization, locking up the display engine and muting HDMI and live TV inputs.
 
-Both features are turned off on these TVs. One already in use stays until the TV is next fully restarted, then the TV goes back to stock. They can be turned back on, for example to help test a fix, by adding `"allowOnWebos10": true` to `/var/lib/tvweb/config.json` and fully restarting the TV. The dashboard then notes that they were turned back on. With tile hiding on, installing an app from the dashboard then also restarts the app manager, which is the step suspected of causing this.
+This affects two features:
+- **Custom screen savers on webOS 10 and later:** On webOS 10 and 11 (where LG's stock screen saver runner is Flutter rather than QML), custom screen savers require restarting `sam` to register the runner type. They are held back by default on these TVs. Setting `"allowOnWebos10": true` in `/var/lib/tvweb/config.json` turns them back on.
+- **Home screen tile hiding (experimental across all webOS versions):** Hiding built-in system tiles bind-mounts modified `appinfo.json` manifests and restarts `sam` at boot. Because this restart can cause display lockups across webOS versions (including webOS 4 and webOS 10+), tile hiding is disabled by default and hidden from the dashboard and TV app until explicitly enabled with `"allowTileHiding": true` in `/var/lib/tvweb/config.json`. Existing installations that already had tile hiding enabled are migrated automatically.
 
 If it happens, please add to [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366) rather than opening a new issue, with the output of these, run before restarting the TV:
 
@@ -481,9 +483,9 @@ To replace an existing config, edit it through the dashboard or remove `/var/lib
 
 The dashboard can change the broker, credentials, topic prefix and device identity — the things that decide *where* telemetry goes.
 
-`port`, `host`, `allowControl`, `allowPower`, `token` and `allowOnWebos10` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them.
+`port`, `host`, `allowControl`, `allowPower`, `token`, `allowOnWebos10` and `allowTileHiding` are file-only. They decide *who can reach the server at all* and gate experimental features, and a web UI able to widen its own exposure would defeat the point of setting them.
 
-Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart.
+Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart. `"allowOnWebos10": true` re-enables custom screen savers on webOS 10 and later. `"allowTileHiding": true` enables experimental home screen system tile hiding.
 
 `apps.hosts` and `apps.repos` are file-only as well. `apps.hosts` lists the names, beyond IP addresses and `localhost`, that may be used to reach the dashboard when installing apps, for example `"apps": { "hosts": ["lgtv.local"] }`. `apps.repos` lists further catalogs, served over https in the Homebrew Channel format, to show beside the default one. `apps.sideload: true` allows installing from a URL or an uploaded file without a token; with a token set, or for a request from the TV itself, it is allowed already. The switch on the Apps tab sets it too.
 

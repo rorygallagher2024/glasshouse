@@ -332,9 +332,9 @@ test('setTileHidingEnabled toggles flag file and requires allowControl', functio
     assert.strictEqual(res.ok, false);
     assert.ok(res.error.indexOf('disabled') !== -1);
 
-    // Enabled when allowControl is true
+    // Enabled when allowControl and allowTileHiding are true
     apps.init({
-      config: { allowControl: true },
+      config: { allowControl: true, allowTileHiding: true },
       // A home screen list, so each sam restart settles instead of polling out.
       luna: function (uri, params, cb) { cb({ returnValue: true, launchPoints: [{ id: 'netflix' }] }); }
     });
@@ -382,7 +382,7 @@ test('restartSam waits for sam to finish loading, then relaunches the foreground
 
   apps.init({
     luna: mockLuna,
-    config: { allowControl: true }
+    config: { allowControl: true, allowTileHiding: true }
   });
 
   apps.restartSam(function () {
@@ -398,7 +398,7 @@ test('restartSam waits for sam to finish loading, then relaunches the foreground
         if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: full });
         cb({ returnValue: true });
       },
-      config: { allowControl: true }
+      config: { allowControl: true, allowTileHiding: true }
     });
     var answeredIn = [], mark = {};
     var answer = function (k) {
@@ -420,7 +420,7 @@ test('restartSam waits for sam to finish loading, then relaunches the foreground
             }
             cb({ returnValue: true });
           },
-          config: { allowControl: true }
+          config: { allowControl: true, allowTileHiding: true }
         });
         apps.restartSam(function () {
           assert.strictEqual(saverLaunched, false, 'must not relaunch screensaver');

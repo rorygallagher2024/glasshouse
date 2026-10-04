@@ -34,7 +34,7 @@ apps.init({
     if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: tiles });
     cb({ returnValue: true });
   },
-  config: { allowControl: true }
+  config: { allowControl: true, allowTileHiding: true }
 });
 
 function refresh(want, why, next) {

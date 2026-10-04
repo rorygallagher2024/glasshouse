@@ -30,19 +30,19 @@ if [ -f /var/lib/tvweb/adblock_enabled ] && [ -f /var/lib/tvweb/adblock_hosts ];
 fi
 
 # LG's screen saver ships as QML up to webOS 9 and as Flutter from webOS 10.
-# On the Flutter TVs, the two things here that make sam reread its manifests -
-# a custom screen saver and tile hiding - have each been followed by the picture
-# muted, HDMI-CEC and ARC dead and sound on the TV speakers only, until a power
-# cut (#366). Both are held back there until the cause is found, unless
-# config.json has "allowOnWebos10": true. The type is recorded for the server,
-# which cannot read the stock manifest while one of ours is mounted over it.
+# On the Flutter TVs, custom screen savers making sam reread its manifests
+# have been followed by the picture muted, HDMI-CEC and ARC dead and sound on
+# the TV speakers only, until a power cut (#366). Held back there until the
+# cause is found, unless config.json has "allowOnWebos10": true. The type is
+# recorded for the server, which cannot read the stock manifest while one of
+# ours is mounted over it.
 ssapp=/usr/palm/applications/com.webos.app.screensaver
 stock_type=$(sed -n 's/.*"type"[^"]*"\([^"]*\)".*/\1/p' "$ssapp/appinfo.json" 2>/dev/null)
 [ -n "$stock_type" ] && echo "$stock_type" > /var/lib/tvweb/screensaver-stock-type
 held=0
 if [ -n "$stock_type" ] && [ "$stock_type" != "qml" ]; then
   if grep -q '"allowOnWebos10"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null; then
-    echo "$(date): allowOnWebos10 set - custom screen saver and tile hiding not held back"
+    echo "$(date): allowOnWebos10 set - custom screen saver not held back"
   else
     held=1
   fi
@@ -68,12 +68,23 @@ if [ -f /var/lib/tvweb/screensaver/.tvweb-screensaver ]; then
   fi
 fi
 
-# Restore hidden built-in app overrides if tile hiding is enabled. Not on a
-# Homebrew Channel install, which does not offer it: restarting the app
+# Restore hidden built-in app overrides if tile hiding is enabled and allowed.
+# Not on a Homebrew Channel install, which does not offer it: restarting the app
 # manager mid-boot is a risk that store asks its apps not to take.
-if [ "$held" -eq 1 ] && [ "$(cat /var/lib/tvweb/tile_hiding_enabled 2>/dev/null)" = "1" ]; then
-  echo "$(date): tile hiding held back (stock screen saver $stock_type)"
-elif [ ! -f /var/lib/tvweb/.from-homebrew-channel ] && [ -f /var/lib/tvweb/tile_hiding_enabled ] && [ "$(cat /var/lib/tvweb/tile_hiding_enabled 2>/dev/null)" = "1" ] && [ -f /var/lib/tvweb/hidden_apps ]; then
+#
+# Tile hiding is experimental across all webOS versions: restarting sam mid-boot
+# can collide with HDMI timing / driver state, locking up the display engine
+# (#366). Requires "allowTileHiding": true in config.json.
+tile_hiding_allowed=0
+if grep -q '"allowTileHiding"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null; then
+  tile_hiding_allowed=1
+elif ! grep -q '"allowTileHiding"' /var/lib/tvweb/config.json 2>/dev/null && [ "$(cat /var/lib/tvweb/tile_hiding_enabled 2>/dev/null)" = "1" ]; then
+  tile_hiding_allowed=1
+fi
+
+if [ "$tile_hiding_allowed" -ne 1 ] && [ "$(cat /var/lib/tvweb/tile_hiding_enabled 2>/dev/null)" = "1" ]; then
+  echo "$(date): tile hiding disabled in config (allowTileHiding not true)"
+elif [ "$tile_hiding_allowed" -eq 1 ] && [ ! -f /var/lib/tvweb/.from-homebrew-channel ] && [ -f /var/lib/tvweb/tile_hiding_enabled ] && [ "$(cat /var/lib/tvweb/tile_hiding_enabled 2>/dev/null)" = "1" ] && [ -f /var/lib/tvweb/hidden_apps ]; then
   mounted=0
   while read -r app; do
     [ -z "$app" ] && continue

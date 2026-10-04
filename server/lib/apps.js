@@ -189,13 +189,27 @@ function isTileHidingEnabled() {
   return false;
 }
 
+function tileHidingAllowed() {
+  if (configObj && configObj.allowTileHiding === true) return true;
+  if (configObj && configObj.allowTileHiding === false) return false;
+  return isTileHidingEnabled();
+}
+
+function migrateConfig(cfg) {
+  if (!cfg || typeof cfg !== 'object') return false;
+  if ('allowTileHiding' in cfg) return false;
+  if (!isTileHidingEnabled()) return false;
+  cfg.allowTileHiding = true;
+  return true;
+}
+
 function setTileHidingEnabled(enabled, cb) {
   if (!configObj || !configObj.allowControl) {
     if (cb) cb({ ok: false, error: msg('srv.controlsOff.apps', 'Control is disabled in server configuration') });
     return;
   }
   enabled = !!enabled;
-  if (enabled && screensavers.heldBack()) {
+  if (enabled && !tileHidingAllowed()) {
     if (cb) cb({ ok: false, error: TILES_HELD_ERROR });
     return;
   }
@@ -343,7 +357,7 @@ function launcherNeedsRestart() {
 /** After an install or uninstall: restarts sam if the launcher would otherwise miss the change. cb(restarted). */
 function refreshLauncher(cb) {
   cb = cb || function () {};
-  if (!launcherNeedsRestart() || screensavers.heldBack()) return cb(false);
+  if (!launcherNeedsRestart() || !tileHidingAllowed()) return cb(false);
   console.log('apps: restarting sam so the home screen updates');
   restartSamShared(cb);
 }
@@ -363,10 +377,10 @@ function restartSamShared(cb) {
 }
 
 function restartSam(cb) {
-  // Where tile hiding is held back, turning it off still unmounts the overrides
+  // Where tile hiding is not allowed, turning it off still unmounts the overrides
   // and the tiles come back at the next full restart.
-  if (screensavers.heldBack()) {
-    console.log('apps: sam not restarted - tile hiding is held back on this TV (#366)');
+  if (!tileHidingAllowed()) {
+    console.log('apps: sam not restarted - tile hiding is disabled in configuration (#366)');
     if (cb) cb(false);
     return;
   }
@@ -697,7 +711,7 @@ function hideTile(appId, cb) {
   if (isProtected(appId)) {
     return cb({ ok: false, error: msg('srv.apps.protectedHide', 'Protected core system app cannot be hidden') });
   }
-  if (screensavers.heldBack()) return cb({ ok: false, error: TILES_HELD_ERROR });
+  if (!tileHidingAllowed()) return cb({ ok: false, error: TILES_HELD_ERROR });
 
   var tgts = findAllAppinfoPaths(appId);
   if (tgts.length === 0) {
@@ -1033,5 +1047,7 @@ module.exports = {
   writeHiddenAppsList: writeHiddenAppsList,
   isTileHidingEnabled: isTileHidingEnabled,
   setTileHidingEnabled: setTileHidingEnabled,
+  tileHidingAllowed: tileHidingAllowed,
+  migrateConfig: migrateConfig,
   PROTECTED_APP_IDS: PROTECTED_APP_IDS
 };

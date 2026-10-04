@@ -155,12 +155,11 @@ function slowSwitch() {
 }
 
 // Where the stock screen saver is not QML (Flutter on webOS 10 and 11), custom
-// screen savers and tile hiding have each been followed by the picture muted,
-// HDMI-CEC and ARC dead and sound on the TV speakers only, until a power cut
-// (#366). Both make sam reread its manifests. Held back there until the cause
-// is found: the boot hook stops applying them, and nothing here restarts sam to
-// undo one already in use. "allowOnWebos10": true in config.json, file-only,
-// turns them back on.
+// screen savers have been followed by the picture muted, HDMI-CEC and ARC dead
+// and sound on the TV speakers only, until a power cut (#366). Held back there
+// until the cause is found: the boot hook stops applying them, and nothing here
+// restarts sam to undo one already in use. "allowOnWebos10": true in config.json,
+// file-only, turns them back on.
 function heldBack() {
   return slowSwitch() && !allowedAnyway();
 }
