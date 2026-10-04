@@ -81,12 +81,12 @@ var CONFIG = {
 
   // Custom screen savers are held back on webOS 10 and later, where they have
   // left the picture, sound and HDMI control off until a power cut (#366).
-  // File-only, like the settings above.
+  // Set here or from the Server tab.
   allowOnWebos10: false,
 
   // Hiding built-in system tiles is experimental: restarting the app manager
   // mid-boot can lock up the display engine on some TVs, leaving the picture
-  // black (#366). Off by default; file-only.
+  // black (#366). Off by default; set here or from the Server tab.
   allowTileHiding: false,
 
   // PicCap is offered where it is installed; its Home Assistant entity is

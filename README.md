@@ -370,8 +370,8 @@ Tested across the following TVs so far. The Luna service names and `/proc/lg` pa
 
 Two features restart the TV's app manager (sam) at boot, and that restart has been followed by a black picture that only a full reboot clears ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)). Both are off by default.
 
-* **Hiding home screen system apps**, on every webOS version. On a B8 (webOS 4), the kernel log showed the TV's video pipeline crashing and locking up during boot while the restart coincided with an HDMI source changing mode, leaving live TV and HDMI black. On webOS 10 and 11, picture, sound over ARC and HDMI-CEC have been lost instead. Turn it on under **Server** → **Experimental features**, or with `"allowTileHiding": true` in `/var/lib/tvweb/config.json`; its controls then appear on the Apps tab. An install that already had it on keeps it on webOS 9 and earlier, and needs it turned on again on webOS 10 and later.
-* **Custom screen savers on webOS 10 and later**, where LG's own screen saver is a Flutter app and replacing it needs the same restart. They are unaffected on webOS 9 and earlier. Turn them on with `"allowOnWebos10": true` in `/var/lib/tvweb/config.json`.
+* **Hiding home screen system apps**, on every webOS version. On a B8 (webOS 4), the kernel log showed the TV's video pipeline crashing and locking up during boot while the restart coincided with an HDMI source changing mode, leaving live TV and HDMI black. On webOS 10 and 11, picture, sound over ARC and HDMI-CEC have been lost instead. Turn it on under **Server** → **Experimental features**, or with `"allowTileHiding": true` in `/var/lib/tvweb/config.json`; its controls then appear on the Apps tab. An install where it was already running keeps it.
+* **Custom screen savers on webOS 10 and later**, where LG's own screen saver is a Flutter app and replacing it needs the same restart. They are unaffected on webOS 9 and earlier. Turn them on under **Server** → **Experimental features**, or with `"allowOnWebos10": true` in `/var/lib/tvweb/config.json`.
 
 If the picture or sound goes with either on, please add to [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366) rather than opening a new issue, with the output of these, run before restarting the TV:
 
@@ -483,7 +483,7 @@ To replace an existing config, edit it through the dashboard or remove `/var/lib
 
 The dashboard can change the broker, credentials, topic prefix and device identity — the things that decide *where* telemetry goes.
 
-`port`, `host`, `allowControl`, `allowPower`, `token` and `allowOnWebos10` are file-only. The first five decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `allowOnWebos10` turns custom screen savers back on where they have been followed by [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366), so it takes a deliberate edit too. `allowTileHiding` can be set here or from the Server tab.
+`port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `allowTileHiding` and `allowOnWebos10` can be set here or from the Server tab.
 
 Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart.
 

@@ -195,9 +195,13 @@ function tileHidingAllowed() {
   return isTileHidingEnabled();
 }
 
+// Keeps tile hiding where an upgrade finds it running, so nothing changes for
+// the user. On webOS 10 and later #381 already held it back unless
+// allowOnWebos10 was set, so there it carries over only with that set.
 function migrateConfig(cfg) {
   if (!cfg || typeof cfg !== 'object') return false;
   if ('allowTileHiding' in cfg) return false;
+  if (screensavers.slowSwitch() && cfg.allowOnWebos10 !== true) return false;
   if (!isTileHidingEnabled()) return false;
   cfg.allowTileHiding = true;
   return true;
