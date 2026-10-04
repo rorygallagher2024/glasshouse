@@ -1289,6 +1289,7 @@ test('a vetted catalog package with root services auto-elevates and installs wit
     expectState('installed', function (s) {
       assert.strictEqual(s.result.package, 'com.example.app');
       assert.deepEqual(logLines(ctx.elevLog), ['com.example.app.service']);
+      assert.strictEqual(s.preview.willElevate, true, 'the preview says so');
       done();
     });
   });

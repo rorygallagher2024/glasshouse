@@ -827,12 +827,15 @@ function buildPreview(j) {
       if (j.auto && !needsReview(j.preview)) {
         var autoErr = null;
         var autoReq = { jobId: j.id };
+        var asked = j.preview.willElevate;
         if (j.preview.rootRequired && fs.existsSync(elevatePath)) {
           autoReq.elevate = true;
+          j.preview.willElevate = true;
         }
         // confirm() answers synchronously; if it refuses, the preview stays up.
         confirm(autoReq, function (e) { autoErr = e; });
         if (!autoErr) return;
+        j.preview.willElevate = asked;
       }
       j.timer = setTimeout(function () {
         j.timer = null;
