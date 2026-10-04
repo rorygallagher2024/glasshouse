@@ -151,13 +151,12 @@ function setupPending() {
 }
 
 /*
- * Settings the dashboard is allowed to write. Everything else in config.json
- * (port, host, allowControl, allowPower, token, allowOnWebos10) stays file-only:
- * the first five decide who may reach this server at all, and a UI that can
- * widen its own exposure defeats the point of setting them; allowOnWebos10
- * re-arms #366 on the TVs that reported it, so turning it on stays deliberate.
- * The exceptions are host, from the TV itself during setup - see
- * setNetworkAccess - and allowTileHiding, from the Server tab.
+ * Settings the dashboard is allowed to write. Security-sensitive settings in
+ * config.json (port, host, allowControl, allowPower, token) stay file-only:
+ * those decide who may reach this server at all, and a UI that can widen its
+ * own exposure defeats the point of setting them. The one exception is host,
+ * from the TV itself during setup - see setNetworkAccess. Experimental feature
+ * toggles (allowTileHiding, allowOnWebos10) are writable from the Server tab.
  */
 function readConfigFile() {
   try {
@@ -546,6 +545,8 @@ function updateSummary() {
   var s = updaterModule.updateSummary();
   s.tvUpdatesBlocked = privacyModule.tvUpdatesBlocked();
   s.allowTileHiding = !!(appsModule && appsModule.tileHidingAllowed && appsModule.tileHidingAllowed());
+  s.allowOnWebos10 = !!(screensaversModule && screensaversModule.allowedAnyway && screensaversModule.allowedAnyway());
+  s.isWebos10 = !!(screensaversModule && screensaversModule.slowSwitch && screensaversModule.slowSwitch());
   return s;
 }
 

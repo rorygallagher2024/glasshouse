@@ -778,6 +778,15 @@ function doControl(action, value, cb) {
         cb(getUpdateSummary());
       });
 
+    case 'setWebos10ScreensaversAllowed':
+      var allowSs = (value === true || value === 'on' || value === 'true');
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ allowOnWebos10: allowSs }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        if (config) config.allowOnWebos10 = allowSs;
+        cb(getUpdateSummary());
+      });
+
     default:
       return cb({ ok: false, error: 'unknown action' });
   }

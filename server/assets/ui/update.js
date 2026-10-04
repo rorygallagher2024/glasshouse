@@ -76,6 +76,19 @@ function renderUpdate(d) {
     });
   }
 
+  const ssRow = q('exp-screensaver-row');
+  if (ssRow) {
+    ssRow.hidden = !d.isWebos10;
+    if (typeof d.allowOnWebos10 === 'boolean') {
+      updateToggle('exp-screensaver', {
+        cls: d.allowOnWebos10 ? 'good' : 'idle',
+        label: d.allowOnWebos10 ? t('common.on', 'On') : t('common.off', 'Off'),
+        on: d.allowOnWebos10,
+        disabled: !d.writable
+      });
+    }
+  }
+
   msg.textContent = (d.state === 'error' || d.state === 'offline') ? (d.error || t('server.checkFailed', 'the check failed'))
     : d.state === 'installed' ? t('server.installed', 'Installed. The server is restarting - this page reconnects on its own.')
     : updArrival;
@@ -299,6 +312,13 @@ async function toggleExpTileHiding() {
   const b = q('exp-tilehiding');
   b.disabled = true;
   const r = await sendCommand('setTileHidingAllowed', !b.dataset.on);
+  if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
+async function toggleExpScreensaver() {
+  const b = q('exp-screensaver');
+  b.disabled = true;
+  const r = await sendCommand('setWebos10ScreensaversAllowed', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
 

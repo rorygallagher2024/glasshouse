@@ -1967,6 +1967,14 @@
   "text": "Funciones experimentales",
   "from": "Experimental features"
  },
+ "server.experimental.screensaver": {
+  "text": "Salvapantallas personalizados (webOS 10+)",
+  "from": "Custom screen savers (webOS 10+)"
+ },
+ "server.experimental.screensaver.desc": {
+  "text": "Permite usar salvapantallas personalizados en webOS 10 y posteriores. Reemplazar el salvapantallas de Flutter requiere reiniciar el administrador de aplicaciones al iniciar, lo que puede silenciar la salida de vídeo o audio.",
+  "from": "Enables custom screen savers on webOS 10 and later. Replacing the Flutter screen saver requires restarting the application manager at boot, which can mute video or audio output."
+ },
  "server.experimental.tileHiding": {
   "text": "Ocultación de iconos de la pantalla de inicio",
   "from": "Home screen tile hiding"

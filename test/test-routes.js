@@ -212,13 +212,16 @@ function createMockRes(cb) {
   // Check updateSummary reporting
   var summary = routes.updateSummary();
   assert.strictEqual(summary.allowTileHiding, true);
+  assert.strictEqual(summary.allowOnWebos10, true);
+  assert.strictEqual(summary.isWebos10, true);
 
   // Write top-level primitive values along with section updates
-  routes.writeSettings({ allowTileHiding: false, mqtt: { port: 1883 } }, function (err) {
+  routes.writeSettings({ allowTileHiding: false, allowOnWebos10: true, mqtt: { port: 1883 } }, function (err) {
     assert.ifError(err);
     var saved = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
     assert.strictEqual(saved.port, 8080);
     assert.strictEqual(saved.allowTileHiding, false);
+    assert.strictEqual(saved.allowOnWebos10, true);
     assert.strictEqual(saved.mqtt.enabled, true);
     assert.strictEqual(saved.mqtt.port, 1883);
 
