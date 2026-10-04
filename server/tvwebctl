@@ -104,13 +104,25 @@ trim_logs() {
   fi
 }
 
+# Every watchdog of this install, by command line. Two starts at the same
+# moment can each start one, and the pid file names only the last.
+watch_pids() {
+  # shellcheck disable=SC2009  # busybox pgrep has no -f, so ps is the only way
+  ps -eo pid,args 2>/dev/null | grep "$SELF watch" | grep -v grep | awk '{print $1}'
+}
+
 stop_watch() {
   start-stop-daemon -K -q -p "$WATCHPID" 2>/dev/null
+  for p in $(watch_pids); do
+    [ "$p" = "$$" ] || kill -9 "$p" 2>/dev/null
+  done
   rm -f "$WATCHPID"
 }
 
-# -o: a watchdog already running is not a failure, so a repeated start exits 0.
+# A watchdog already running is left as the only one, as start_app does for
+# the server; -o makes the start-stop-daemon side of that exit 0 too.
 start_watch() {
+  [ -n "$(watch_pids)" ] && return 0
   start-stop-daemon -S -o -b -m -p "$WATCHPID" -x /bin/sh -- -c "exec $SELF watch"
 }
 
