@@ -182,6 +182,7 @@ async function sendCommand(action, value) {
     showErr(e.message);
     setTimeout(tick, 0);
   } finally {
+    if (action === 'soundOutput') volSettleUntil = 0;
     setBusy(false);
   }
 }
@@ -273,12 +274,13 @@ function initBacklightSlider() {
 
 let volDragging = false;
 let volActive = false;
-// Until the new sound output has settled: the server reads it again 3s after
-// the change, and until then the volume and mute may be refused.
+// While a sound output change settles: the server answers once the TV has
+// moved the sound over, and until then the volume and mute may be refused.
+// The time limit only covers an answer that never comes.
 let volSettleUntil = 0;
 
 function holdVolumeControls() {
-  volSettleUntil = Date.now() + 4500;
+  volSettleUntil = Date.now() + 10000;
   if (q('vol-slider')) q('vol-slider').disabled = true;
   if (q('vol-wrap')) q('vol-wrap').classList.add('off');
   if (q('mute')) q('mute').disabled = true;
