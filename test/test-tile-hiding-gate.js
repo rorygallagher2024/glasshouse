@@ -189,13 +189,10 @@ apps.setTileHidingEnabled(true, function (res) {
                   assert.strictEqual(config.allowTileHiding, true);
                   assert.strictEqual(summaryOn.allowTileHiding, true);
 
-                  // Toggle webOS 10 screensavers via controls
-                  controls.doControl('setWebos10ScreensaversAllowed', true, function (summarySs) {
-                    assert.deepEqual(writtenSettings, { allowOnWebos10: true });
-                    assert.strictEqual(config.allowOnWebos10, true);
-                    assert.strictEqual(summarySs.allowOnWebos10, true);
-                    assert.strictEqual(summarySs.isWebos10, true);
-                    console.log('  ✓ controls toggle experimental features and update config and summary');
+                  // allowOnWebos10 stays file-only
+                  controls.doControl('setWebos10ScreensaversAllowed', true, function (rSs) {
+                    assert.strictEqual(rSs.ok, false);
+                    console.log('  ✓ tile hiding is toggled from the Server tab; allowOnWebos10 is not');
 
                     console.log('ALL test-tile-hiding-gate.js assertions passed!\n');
                     env.restore();
