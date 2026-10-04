@@ -2,6 +2,7 @@
 var assert = require('assert');
 var events = require('events');
 var fs = require('fs');
+var os = require('os');
 var path = require('path');
 var routes = require('../server/lib/routes');
 
@@ -185,6 +186,50 @@ function createMockRes(cb) {
   assert.ok(v7.errors.length > 0);
 
   console.log('  ✓ validateSettings strictly validates broker, ports, topics, and device IDs');
+})();
+
+// 4b. Settings Persistence (writeSettings) and Update Summary (updateSummary)
+(function testWriteSettingsAndSummary() {
+  var tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tvweb-writesettings-test-'));
+  var cfgPath = path.join(tmpDir, 'config.json');
+  fs.writeFileSync(cfgPath, JSON.stringify({ port: 8080, mqtt: { enabled: true } }), 'utf8');
+
+  var mockApps = { tileHidingAllowed: function () { return true; } };
+  var mockSavers = {
+    allowedAnyway: function () { return true; },
+    slowSwitch: function () { return true; }
+  };
+  var mockUpdater = { updateSummary: function () { return { ok: true, installed: '0.76.1' }; } };
+  var mockPrivacy = { tvUpdatesBlocked: function () { return false; } };
+
+  routes.init({
+    configFile: cfgPath,
+    apps: mockApps,
+    screensavers: mockSavers,
+    updater: mockUpdater,
+    privacy: mockPrivacy
+  });
+
+  // Check updateSummary reporting
+  var summary = routes.updateSummary();
+  assert.strictEqual(summary.allowTileHiding, true);
+  assert.strictEqual(summary.allowOnWebos10, true);
+  assert.strictEqual(summary.isWebos10, true);
+
+  // Write top-level primitive values along with section updates
+  routes.writeSettings({ allowTileHiding: false, allowOnWebos10: true, mqtt: { port: 1883 } }, function (err) {
+    assert.ifError(err);
+    var saved = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    assert.strictEqual(saved.port, 8080);
+    assert.strictEqual(saved.allowTileHiding, false);
+    assert.strictEqual(saved.allowOnWebos10, true);
+    assert.strictEqual(saved.mqtt.enabled, true);
+    assert.strictEqual(saved.mqtt.port, 1883);
+
+    // Clean up
+    try { fs.unlinkSync(cfgPath); fs.rmdirSync(tmpDir); } catch (e) {}
+    console.log('  ✓ writeSettings preserves sections and updates top-level primitive flags');
+  });
 })();
 
 // 5. CSRF & Request Body Parsing (readJsonBody)

@@ -431,6 +431,7 @@ controls.init({
   tvApp: tvApp,
   restartSelf: restartSelf,
   updateSummary: routes.updateSummary,
+  writeSettings: routes.writeSettings,
   fromHomebrewChannel: fromHomebrewChannel,
   inputs: INPUTS,
   browserApp: BROWSER_APP,

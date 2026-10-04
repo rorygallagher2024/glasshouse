@@ -30,7 +30,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
 * **Tested hardware**: 30 models verified so far (UH6030, UH610V, UH635V, B7, B8, C8, C9, CX, C1, UP80, UP81, QNED82, C2, C3, B4, G3, C4, G4, UT81, C5, G5, CS, LX3). Other rooted models should work; [see full table](#tested-tvs)
 
-[Quick start](#quick-start) • [What it's for](#what-its-for) • [Screenshots](#screenshots) • [Features](#features) • [Installation](#installation) • [Tested TVs](#tested-tvs) • [Known issues](#known-issues) • [Home Assistant](#home-assistant--mqtt) • [Managing the server](#managing-the-server) • [Security](#security)
+[Quick start](#quick-start) • [What it's for](#what-its-for) • [Screenshots](#screenshots) • [Features](#features) • [Installation](#installation) • [Tested TVs](#tested-tvs) • [Experimental features](#experimental-features) • [Home Assistant](#home-assistant--mqtt) • [Managing the server](#managing-the-server) • [Security](#security)
 
 ---
 
@@ -158,7 +158,7 @@ The **Apps** tab, `/?tab=apps`, offers four different ways to manage software on
 * **Install from a URL or a file:** **From URL...** downloads an `.ipk` from an http or https address, with an optional sha256 to check it against, and **Upload .ipk** sends one from the browser. Both show the same preview as a catalog install. They are in their own section at the bottom of the tab, and are off until switched on there (after a warning), a token is set, or the request comes from the TV itself.
 * **Uninstall applications:** Store downloads and sideloaded packages with version and vendor details, and a one-click uninstall action to permanently delete apps and free up internal eMMC flash storage.
 * **Turn off background services:** Safely disable unnecessary background services and daemons that consume RAM and CPU cycles (such as USB camera watcher, Connected Car listeners, and browser preloading). Only services actually present on the TV are displayed, and disabled states are persisted across reboots.
-* **Hide home screen system apps:** Hide non-removable LG system apps (Gallery, Music, Sports, Always Ready, Camera, User Guide, Device Connector, Alexa, Google Assistant, etc.) from the home launcher ribbon. Operates non-destructively via reversible `appinfo.json` bind-mounts. Includes a master toggle to instantly return to stock behavior. Not available on webOS 10 and later for now; see [Known issues](#known-issues).
+* **Hide home screen system apps:** Hide non-removable LG system apps (Gallery, Music, Sports, Always Ready, Camera, User Guide, Device Connector, Alexa, Google Assistant, etc.) from the home launcher ribbon. Operates non-destructively via reversible `appinfo.json` bind-mounts. Includes a master toggle to instantly return to stock behavior. Experimental; see [Experimental features](#experimental-features).
 * **Strict system safeguards:** Core TV services (`Live TV`, `Settings`, `Launcher`, input switchers, and the dashboard itself) are strictly protected and can never be hidden or uninstalled.
 * **Available on TV and Web:** Catalog installs, uninstalling, services and hiding work from any browser or from the on-TV dashboard app. Installing from a URL or a file is in the browser dashboard only.
 
@@ -254,7 +254,7 @@ Each mode offers dim and bright variants, and visual elements continuously drift
 
 A firmware update restores the LG default.
 
-Not available on webOS 10 and later for now; see [Known issues](#known-issues).
+Held back on webOS 10 and later by default; see [Experimental features](#experimental-features).
 
 <p align="center">
   <a href="docs/screenshots/screensaver.png"><img src="docs/screenshots/screensaver.png" alt="Screensaver tab: LG default, Clock, Starfield, Fireworks, Bokeh and Panel vitals, with brightness and a start button beside them" width="700"></a>
@@ -366,21 +366,23 @@ Tested across the following TVs so far. The Luna service names and `/proc/lg` pa
 
 **Tested on another model?** Please [open an issue](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/new) with the TV model, webOS version, and the contents of `/var/lib/tvweb/tvweb.log` — whether everything worked or something broke — and we will add a row.
 
-### Known issues
+### Experimental features
 
-**Black picture and no sound after mid-boot app manager restart ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)).** Restarting the application manager (`sam`) mid-boot can collide with HDMI handshake / display driver initialization, locking up the display engine and muting HDMI and live TV inputs.
+Features with known hardware-level quirks or driver interactions are categorized as experimental and disabled by default on affected platforms. They can be activated directly from the **Server** tab (`/?tab=server`) under **Experimental features**, or via `config.json`.
 
-This affects two features:
-- **Custom screen savers on webOS 10 and later:** On webOS 10 and 11 (where LG's stock screen saver runner is Flutter rather than QML), custom screen savers require restarting `sam` to register the runner type. They are held back by default on these TVs. Setting `"allowOnWebos10": true` in `/var/lib/tvweb/config.json` turns them back on.
-- **Home screen tile hiding (experimental across all webOS versions):** Hiding built-in system tiles bind-mounts modified `appinfo.json` manifests and restarts `sam` at boot. Because this restart can cause display lockups across webOS versions (including webOS 4 and webOS 10+), tile hiding is disabled by default and hidden from the dashboard and TV app until explicitly enabled with `"allowTileHiding": true` in `/var/lib/tvweb/config.json`. Existing installations that already had tile hiding enabled are migrated automatically.
+* **Home screen tile hiding:** Hiding built-in system tiles operates via reversible `appinfo.json` bind-mounts and requires restarting the application manager (`sam`) at boot to apply changes.
+  * **Known issue & Display Lockup:** Restarting `sam` mid-boot can collide with display driver initialization and HDMI timing renegotiation (e.g. 4K 60Hz Dolby Vision on HDMI 2), causing an unhandled kernel page domain fault in `tvservice`'s video processing pipeline, deadlocking display mutexes (`kadp-de-mtx`), and leaving HDMI or Live TV video black until reboot ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)).
+  * **Activation:** Because of this risk across webOS versions, tile hiding is disabled by default on new installations and completely hidden from the Apps tab and TV app. To use it, turn on **Home screen tile hiding** under **Server** → **Experimental features** (or set `"allowTileHiding": true` in `/var/lib/tvweb/config.json`). The tile hiding controls will then appear in the Apps tab. Existing installations that already had tile hiding actively enabled are migrated automatically upon upgrade.
+  * **Troubleshooting:** If a black screen or mute occurs after cold booting with tile hiding enabled, please run the following before restarting the TV and report the output to [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366):
+    ```sh
+    luna-send -n 1 -f luna://com.webos.service.tvpower/power/getPowerState '{}'
+    luna-send -n 1 -f luna://com.webos.service.videooutput/getStatus '{}'
+    cat /var/lib/webosbrew/tvweb-boot.log
+    ```
 
-If it happens, please add to [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366) rather than opening a new issue, with the output of these, run before restarting the TV:
-
-```sh
-luna-send -n 1 -f luna://com.webos.service.tvpower/power/getPowerState '{}'
-luna-send -n 1 -f luna://com.webos.service.videooutput/getStatus '{}'
-cat /var/lib/webosbrew/tvweb-boot.log
-```
+* **Custom screen savers on webOS 10 and later:** On webOS 10 and 11, LG's stock screen saver runner is Flutter rather than QML. Using custom QML screen savers requires restarting `sam` at boot to register the runner type, which can mute picture, audio, or HDMI-CEC on these sets ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)).
+  * Screen savers remain fully supported on webOS 3–9 (which use native QML runners and never restart `sam` on boot).
+  * On webOS 10 and later, custom screen savers are held back by default. They can be enabled under **Server** → **Experimental features** → **Custom screen savers (webOS 10+)** (or by setting `"allowOnWebos10": true` in `/var/lib/tvweb/config.json`).
 ### Install Steps
 
 #### 1. Get the files

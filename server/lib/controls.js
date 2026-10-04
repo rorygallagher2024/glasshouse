@@ -83,6 +83,7 @@ var inputMap = null;
 var browserAppId = null;
 var toastSourceId = null;
 var tileHidingOffMsg = null;
+var writeSettingsFn = null;
 
 var rcuDevicePath = null;
 function getRcuDevicePath() {
@@ -179,7 +180,7 @@ function doControl(action, value, cb) {
   var origCb = cb;
   cb = function (r) {
     if (r && r.ok) {
-      telemetry.clearCache();
+      if (telemetry) telemetry.clearCache();
       clearLunaCache();
     }
     origCb(r);
@@ -763,6 +764,29 @@ function doControl(action, value, cb) {
         cb(r);
       });
 
+    case 'setTileHidingAllowed':
+      var allowTiles = (value === true || value === 'on' || value === 'true');
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ allowTileHiding: allowTiles }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        if (config) config.allowTileHiding = allowTiles;
+        if (!allowTiles && appsModule && appsModule.setTileHidingEnabled) {
+          return appsModule.setTileHidingEnabled(false, function () {
+            cb(getUpdateSummary());
+          });
+        }
+        cb(getUpdateSummary());
+      });
+
+    case 'setWebos10ScreensaversAllowed':
+      var allowSs = (value === true || value === 'on' || value === 'true');
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ allowOnWebos10: allowSs }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        if (config) config.allowOnWebos10 = allowSs;
+        cb(getUpdateSummary());
+      });
+
     default:
       return cb({ ok: false, error: 'unknown action' });
   }
@@ -773,6 +797,7 @@ function init(opts) {
   if (opts.luna) luna = opts.luna;
   if (opts.clearLunaCache) clearLunaCache = opts.clearLunaCache;
   if (opts.config) config = opts.config;
+  if (opts.writeSettings) writeSettingsFn = opts.writeSettings;
   if (opts.telemetry) telemetry = opts.telemetry;
   if (opts.oled) oled = opts.oled;
   if (opts.privacy) privacy = opts.privacy;

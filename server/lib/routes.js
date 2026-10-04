@@ -151,11 +151,12 @@ function setupPending() {
 }
 
 /*
- * Settings the dashboard is allowed to write. Everything else in config.json
- * (port, host, allowControl, allowPower, token, allowOnWebos10, allowTileHiding) stays file-only: those decide
- * who may reach this server at all, and a UI that can widen its own exposure
- * defeats the point of setting them. The one exception is host, from the TV
- * itself during setup - see setNetworkAccess.
+ * Settings the dashboard is allowed to write. Security-sensitive settings in
+ * config.json (port, host, allowControl, allowPower, token) stay file-only:
+ * those decide who may reach this server at all, and a UI that can widen its
+ * own exposure defeats the point of setting them. The one exception is host,
+ * from the TV itself during setup - see setNetworkAccess. Experimental feature
+ * toggles (allowTileHiding, allowOnWebos10) are writable from the Server tab.
  */
 function readConfigFile() {
   try {
@@ -240,8 +241,12 @@ function validateSettings(j) {
 function writeSettings(patch, cb) {
   var file = readConfigFile();
   for (var section in patch) {
-    file[section] = file[section] || {};
-    for (var k in patch[section]) file[section][k] = patch[section][k];
+    if (patch[section] !== null && typeof patch[section] === 'object' && !Array.isArray(patch[section])) {
+      file[section] = file[section] || {};
+      for (var k in patch[section]) file[section][k] = patch[section][k];
+    } else {
+      file[section] = patch[section];
+    }
   }
   try {
     if (!configFilePath) return cb(new Error('no config file path configured'));
@@ -539,6 +544,9 @@ function loadUI() {
 function updateSummary() {
   var s = updaterModule.updateSummary();
   s.tvUpdatesBlocked = privacyModule.tvUpdatesBlocked();
+  s.allowTileHiding = !!(appsModule && appsModule.tileHidingAllowed && appsModule.tileHidingAllowed());
+  s.allowOnWebos10 = !!(screensaversModule && screensaversModule.allowedAnyway && screensaversModule.allowedAnyway());
+  s.isWebos10 = !!(screensaversModule && screensaversModule.slowSwitch && screensaversModule.slowSwitch());
   return s;
 }
 

@@ -140,8 +140,61 @@ apps.setTileHidingEnabled(true, function (res) {
               assert.strictEqual(apps.migrateConfig(alreadyTrueCfg), false, 'does not migrate already set true');
               console.log('  ✓ migrateConfig grandfathers active installs without overwriting user choices');
 
-              console.log('ALL test-tile-hiding-gate.js assertions passed!\n');
-              env.restore();
+              // 6. Test controls doControl toggles for experimental features
+              var writtenSettings = null;
+              var mockWriteSettings = function (patch, cb) {
+                writtenSettings = patch;
+                for (var k in patch) config[k] = patch[k];
+                cb(null);
+              };
+
+              var controls = require('../server/lib/controls');
+              var mockScreensavers = {
+                allowedAnyway: function () { return !!config.allowOnWebos10; },
+                slowSwitch: function () { return true; }
+              };
+              routes.init({
+                config: config,
+                apps: apps,
+                screensavers: mockScreensavers,
+                updater: { updateSummary: function () { return { ok: true, installed: '0.76.1' }; } },
+                privacy: { tvUpdatesBlocked: function () { return false; } }
+              });
+
+              controls.init({
+                config: config,
+                apps: apps,
+                screensavers: mockScreensavers,
+                writeSettings: mockWriteSettings,
+                updateSummary: routes.updateSummary
+              });
+
+              // Toggle tile hiding off via controls
+              controls.doControl('setTileHidingAllowed', false, function (summaryOff) {
+                assert.deepEqual(writtenSettings, { allowTileHiding: false });
+                assert.strictEqual(config.allowTileHiding, false);
+                assert.strictEqual(summaryOff.allowTileHiding, false);
+                assert.strictEqual(env.files[TILE_HIDING_FLAG_FILE], '0\n', 'disabling tile hiding clears flag file');
+
+                // Toggle tile hiding on via controls
+                controls.doControl('setTileHidingAllowed', true, function (summaryOn) {
+                  assert.deepEqual(writtenSettings, { allowTileHiding: true });
+                  assert.strictEqual(config.allowTileHiding, true);
+                  assert.strictEqual(summaryOn.allowTileHiding, true);
+
+                  // Toggle webOS 10 screensavers via controls
+                  controls.doControl('setWebos10ScreensaversAllowed', true, function (summarySs) {
+                    assert.deepEqual(writtenSettings, { allowOnWebos10: true });
+                    assert.strictEqual(config.allowOnWebos10, true);
+                    assert.strictEqual(summarySs.allowOnWebos10, true);
+                    assert.strictEqual(summarySs.isWebos10, true);
+                    console.log('  ✓ controls toggle experimental features and update config and summary');
+
+                    console.log('ALL test-tile-hiding-gate.js assertions passed!\n');
+                    env.restore();
+                  });
+                });
+              });
             }
           };
           routes.handleRequest(req2, res2);

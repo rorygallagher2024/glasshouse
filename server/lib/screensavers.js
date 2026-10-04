@@ -497,6 +497,8 @@ module.exports = {
   detectExternal: detectExternal,
   heldBack: heldBack,
   heldOverridden: heldOverridden,
+  slowSwitch: slowSwitch,
+  allowedAnyway: allowedAnyway,
   setScreensaver: setScreensaver,
   restageScreensaver: restageScreensaver,
   trigger: trigger
