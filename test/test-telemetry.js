@@ -81,6 +81,32 @@ console.log('Running test-telemetry.js ...');
   console.log('  ✓ onlineCpus handles ranges and status fallbacks');
 })();
 
+// CPU use is measured over the window, against every core present
+(function testStatCpu() {
+  function stat(rows) {
+    mockEnv.files['/proc/stat'] = 'cpu  0 0 0 0 0 0 0 0 0 0\n' + rows.map(function (r, i) {
+      return 'cpu' + r[0] + ' ' + r[1] + ' 0 0 ' + r[2] + ' 0 0 0 0 0 0';
+    }).join('\n') + '\n';
+  }
+  // cpu0 and cpu1 online, 1000 ticks each in the window; cpu0 busy 200, cpu1 busy 100
+  stat([[0, 1000, 9000], [1, 500, 9500]]);
+  telemetry.statCpu(4, 100000);
+  stat([[0, 1200, 9800], [1, 600, 10400]]);
+  var r = telemetry.statCpu(4, 110000);
+  assert.deepEqual(r.cores, { 0: 20, 1: 10 }, 'each online core against itself');
+  assert.strictEqual(r.overall, 8, 'the whole processor, parked cores idle: 300 busy of 4 x 1000');
+  // Asked again inside the window: the same reading, the window not cut short
+  stat([[0, 1300, 9800], [1, 600, 10400]]);
+  assert.strictEqual(telemetry.statCpu(4, 112000), r);
+  // A core that goes offline drops out rather than being read as negative
+  stat([[0, 1400, 10600]]);
+  r = telemetry.statCpu(4, 120000);
+  assert.deepEqual(Object.keys(r.cores), ['0']);
+  assert.ok(r.overall >= 0 && r.overall <= 100);
+  delete mockEnv.files['/proc/stat'];
+  console.log('  ✓ CPU use is measured over the window, against every core present');
+})();
+
 // 3. socMhz tests
 (function testSocMhz() {
   // webOS 4 kHz format: 1200000 -> 1200

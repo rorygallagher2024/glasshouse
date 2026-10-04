@@ -202,12 +202,22 @@ function socTemp() {
   return (t !== null && t > 0) ? t : null;
 }
 
-// Per-core load from /proc/stat, for models whose /proc/lg/pm/status has no
-// load line. Each call measures since the previous one, so the first is empty.
-// Offline cores drop out of /proc/stat, so only cores in both samples count.
-var prevCoreTicks = null;
-function statCoreLoads() {
-  var now = {};
+/*
+ * CPU use from /proc/stat: the busy share of each online core over the time
+ * since the last reading, and of the whole processor. LG's /proc/lg/pm/status
+ * load line is an instant reading against the cores and clock that are up: on
+ * a C2 it read 34% beside 6% measured, and with cores parked in a long standby
+ * the same small load reads several times higher. Offline cores drop out of
+ * /proc/stat, so only cores in both samples are compared, and they count as
+ * idle in the whole-processor figure, which is against every core present.
+ * A window under CPU_WINDOW_MS returns the last result, so a dashboard polling
+ * every second does not cut the window that Home Assistant's figure covers.
+ */
+var CPU_WINDOW_MS = 5000;
+var prevCpu = null, lastCpu = { cores: {}, overall: null };
+function statCpu(totalCores, at) {
+  var now = {}, t = at || Date.now();
+  if (prevCpu && t - prevCpu.time < CPU_WINDOW_MS) return lastCpu;
   var lines = (rd('/proc/stat') || '').split('\n');
   for (var i = 0; i < lines.length; i++) {
     var m = lines[i].match(/^cpu(\d+)\s+(.*)$/);
@@ -216,30 +226,45 @@ function statCoreLoads() {
     for (var j = 0; j < f.length; j++) total += f[j] || 0;
     now[m[1]] = { total: total, idle: (f[3] || 0) + (f[4] || 0) };
   }
-  var prev = prevCoreTicks, loads = [];
-  prevCoreTicks = now;
-  if (!prev) return loads;
-  Object.keys(now).sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (c) {
-    if (!prev[c]) return;
-    var dt = now[c].total - prev[c].total, di = now[c].idle - prev[c].idle;
-    if (dt > 0) loads.push(Math.max(0, Math.min(100, Math.round(100 * (dt - di) / dt))));
+  var prev = prevCpu;
+  prevCpu = { time: t, ticks: now };
+  if (!prev) return lastCpu;
+  var cores = {}, busy = 0, elapsed = 0;
+  Object.keys(now).forEach(function (c) {
+    var p = prev.ticks[c];
+    if (!p) return;
+    var dt = now[c].total - p.total, di = now[c].idle - p.idle;
+    // A core taken offline and back can restart its counters.
+    if (dt <= 0 || di < 0 || di > dt) return;
+    cores[c] = Math.max(0, Math.min(100, Math.round(100 * (dt - di) / dt)));
+    busy += dt - di;
+    if (dt > elapsed) elapsed = dt;
   });
-  return loads;
+  var n = Math.max(totalCores || 0, Object.keys(now).length);
+  lastCpu = {
+    cores: cores,
+    overall: elapsed > 0 && n > 0 ? Math.max(0, Math.min(100, Math.round(100 * busy / (elapsed * n)))) : null
+  };
+  return lastCpu;
+}
+
+// The cores this processor has, online or not, from a range list such as "0-3".
+function cpuRange(raw) {
+  if (!raw) return null;
+  var idx = [], parts = raw.trim().split(',');
+  for (var i = 0; i < parts.length; i++) {
+    var range = parts[i].split('-');
+    var lo = parseInt(range[0], 10);
+    var hi = range.length > 1 ? parseInt(range[1], 10) : lo;
+    if (isNaN(lo) || isNaN(hi)) continue;
+    for (var c = lo; c <= hi; c++) idx.push(c);
+  }
+  return idx.length ? idx : null;
 }
 
 function onlineCpus(status) {
-  var raw = rd('/sys/devices/system/cpu/online');
-  if (raw) {
-    var idx = [], parts = raw.trim().split(',');
-    for (var i = 0; i < parts.length; i++) {
-      var range = parts[i].split('-');
-      var lo = parseInt(range[0], 10);
-      var hi = range.length > 1 ? parseInt(range[1], 10) : lo;
-      if (isNaN(lo) || isNaN(hi)) continue;
-      for (var c = lo; c <= hi; c++) idx.push(c);
-    }
-    if (idx.length) return idx;
-  }
+  var idx = cpuRange(rd('/sys/devices/system/cpu/online'));
+  if (idx) return idx;
   var m = (status || '').match(/cpu_num:\s*(\d+)/);
   if (!m) return null;
   var n = parseInt(m[1], 10), out = [];
@@ -1002,10 +1027,16 @@ function collectStats(cb) {
   var coreMatch = status.match(/load:\s*([\d\s]+)/);
   var coreSlots = coreMatch ? coreMatch[1].trim().split(/\s+/).map(Number) : [];
   var liveCpus = onlineCpus(status);
+  var present = cpuRange(rd('/sys/devices/system/cpu/present'));
+  var coresTotal = present ? present.length : coreSlots.length;
+  var cpu = statCpu(coresTotal);
   var coreLoads = [];
-  if (!coreSlots.length) {
-    coreLoads = statCoreLoads();
-    coreSlots = coreLoads;
+  var measured = Object.keys(cpu.cores).sort(function (a, b) { return Number(a) - Number(b); });
+  if (measured.length) {
+    coreLoads = measured.map(function (c) { return cpu.cores[c]; });
+    if (!coresTotal) coresTotal = measured.length;
+  } else if (!coreSlots.length) {
+    coreLoads = [];
   } else if (liveCpus) {
     for (var ci = 0; ci < liveCpus.length; ci++) {
       if (liveCpus[ci] < coreSlots.length) coreLoads.push(coreSlots[liveCpus[ci]]);
@@ -1061,7 +1092,8 @@ function collectStats(cb) {
     remote: readRemoteInfo(),
     temp: socTemp(),
     temps: null,
-    load: coreLoads.length
+    load: cpu.overall !== null ? cpu.overall
+      : coreLoads.length
       ? Math.round(coreLoads.reduce(function (a, b) { return a + b; }, 0) / coreLoads.length)
       : num(rd('/proc/lg/pm/current_load'), null),
     loadPeak: coreLoads.length
@@ -1069,7 +1101,7 @@ function collectStats(cb) {
       : num(rd('/proc/lg/pm/current_load'), null),
     mhz: socMhz(),
     cores: coreLoads,
-    coresTotal: coreSlots.length,
+    coresTotal: coresTotal || coreSlots.length,
     mem: { total: mi.MemTotal || 0, avail: mi.MemAvailable || 0 },
     swap: { total: mi.SwapTotal || 0, free: mi.SwapFree || 0, backing: swapBacking() },
     uptime: uptimeSec,
@@ -1396,6 +1428,7 @@ module.exports = {
   meminfo: meminfo,
   emmcInfo: emmcInfo,
   onlineCpus: onlineCpus,
+  statCpu: statCpu,
   socMhz: socMhz,
   gpuClockMhz: gpuClockMhz,
   swapBacking: swapBacking,

@@ -113,13 +113,21 @@ empty, there is no `hwmon`, and `systemproperty` rejects every temperature key. 
 server reports this as `capabilities.thermal: false` so the dashboard can distinguish
 it from the ~80s post-boot window where the file exists but reads 0.
 
-### /proc/stat is not monotonic
+### CPU use: /proc/stat per core, not LG's load line
 
-LG hot-plugs CPU cores (`/proc/lg/pm/mp_enable`), so the aggregate counters in
-`/proc/stat` can go *backwards* between samples — the idle figure has been
-observed dropping from 324186 to 228324 across two reads seconds apart. Any
-delta-based CPU percentage built on it produces nonsense. `current_load` is the
-figure to trust; `/proc/stat` is only used when every delta is non-negative.
+LG hot-plugs CPU cores (`/proc/lg/pm/mp_enable`), so the aggregate `cpu` line in
+`/proc/stat` can go *backwards* between samples: the idle figure has been seen
+dropping from 324186 to 228324 across two reads seconds apart. The per-core
+lines are used instead, comparing only cores present in both samples whose
+counters both advanced.
+
+The `load:` line in `/proc/lg/pm/status` and `current_load` are instant readings
+against the cores and clock that are up. On a C2 the line read 34% beside 6%
+measured over the same seconds, and Home Assistant, sampling it once a minute
+in standby, showed 6-64% for a TV doing little. So `load` is the busy share of
+the whole processor since the previous reading (at least 5 s), with offline
+cores counted as idle; `cores` is each online core's own share. LG's figures
+are used only where `/proc/stat` gives nothing.
 
 ## OLED panel counters, and their units
 

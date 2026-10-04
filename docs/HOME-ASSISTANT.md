@@ -108,7 +108,7 @@ of Unknowns and a cable error count of zero.
 | `sensor` | `sensor.lg_tv_tcon_firmware` | TCON Firmware | Timing Controller FPGA firmware version |
 | `sensor` | `sensor.lg_tv_soc_temperature` | SoC Temperature | TV processor temperature (`°C`) |
 | `sensor` | `sensor.lg_tv_soc_current` | SoC Current | Processor current draw (`mA`, CPU + Core AVS) |
-| `sensor` | `sensor.lg_tv_cpu_load` | CPU Usage | Real-time CPU load (`%`) |
+| `sensor` | `sensor.lg_tv_cpu_load` | CPU Usage | Share of the whole processor in use since the last update (`%`); parked cores count as idle |
 | `sensor` | `sensor.lg_tv_gpu_clock` | GPU Clock | Real-time GPU frequency (`MHz`) |
 | `sensor` | `sensor.lg_tv_memory_usage` | Memory Usage | System RAM usage (`%`) |
 | `sensor` | `sensor.lg_tv_swap_usage` | Swap Usage | Swap usage (`%`), backed by zram or a flash partition depending on the TV |
