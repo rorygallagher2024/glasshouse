@@ -138,7 +138,14 @@ apps.setTileHidingEnabled(true, function (res) {
               // Existing install where allowTileHiding is already true
               var alreadyTrueCfg = { port: 8080, allowTileHiding: true };
               assert.strictEqual(apps.migrateConfig(alreadyTrueCfg), false, 'does not migrate already set true');
-              console.log('  ✓ migrateConfig grandfathers active installs without overwriting user choices');
+
+              // webOS 10 and later, where #381 already held tile hiding back
+              env.files['/var/lib/tvweb/screensaver-stock-type'] = 'flutter';
+              var webos10Cfg = { port: 8080 };
+              assert.strictEqual(apps.migrateConfig(webos10Cfg), false, 'not carried over on webOS 10 and later');
+              assert.strictEqual(webos10Cfg.allowTileHiding, undefined);
+              env.files['/var/lib/tvweb/screensaver-stock-type'] = null;
+              console.log('  ✓ migrateConfig grandfathers active installs without overwriting user choices, except on webOS 10+');
 
               // 6. Test controls doControl toggles for experimental features
               var writtenSettings = null;

@@ -75,10 +75,15 @@ fi
 # Tile hiding is experimental across all webOS versions: restarting sam mid-boot
 # can collide with HDMI timing / driver state, locking up the display engine
 # (#366). Requires "allowTileHiding": true in config.json.
+# Before the server first writes the key, an install that had tile hiding on
+# keeps it - except on webOS 10 and later (a Flutter stock screen saver), where
+# it was already held back.
 tile_hiding_allowed=0
 if grep -q '"allowTileHiding"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null; then
   tile_hiding_allowed=1
-elif ! grep -q '"allowTileHiding"' /var/lib/tvweb/config.json 2>/dev/null && [ "$(cat /var/lib/tvweb/tile_hiding_enabled 2>/dev/null)" = "1" ]; then
+elif { [ -z "$stock_type" ] || [ "$stock_type" = "qml" ]; } &&
+     ! grep -q '"allowTileHiding"' /var/lib/tvweb/config.json 2>/dev/null &&
+     [ "$(cat /var/lib/tvweb/tile_hiding_enabled 2>/dev/null)" = "1" ]; then
   tile_hiding_allowed=1
 fi
 

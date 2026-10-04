@@ -195,9 +195,14 @@ function tileHidingAllowed() {
   return isTileHidingEnabled();
 }
 
+// Carries tile hiding over for an install that had it on before it needed
+// allowTileHiding - but not on webOS 10 and later, where it was already held
+// back (#381) and has been followed by the fault in #366. There it takes a
+// deliberate "allowTileHiding": true.
 function migrateConfig(cfg) {
   if (!cfg || typeof cfg !== 'object') return false;
   if ('allowTileHiding' in cfg) return false;
+  if (screensavers.slowSwitch()) return false;
   if (!isTileHidingEnabled()) return false;
   cfg.allowTileHiding = true;
   return true;
