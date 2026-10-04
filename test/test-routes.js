@@ -190,8 +190,7 @@ function createMockRes(cb) {
 
 // 4b. Settings Persistence (writeSettings) and Update Summary (updateSummary)
 (function testWriteSettingsAndSummary() {
-  var tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tvweb-writesettings-test-'));
-  var cfgPath = path.join(tmpDir, 'config.json');
+  var cfgPath = path.join(os.tmpdir(), 'tvweb-writesettings-' + process.pid + '.json');
   fs.writeFileSync(cfgPath, JSON.stringify({ port: 8080, mqtt: { enabled: true } }), 'utf8');
 
   var mockApps = { tileHidingAllowed: function () { return true; } };
@@ -227,7 +226,7 @@ function createMockRes(cb) {
     assert.strictEqual(saved.mqtt.port, 1883);
 
     // Clean up
-    try { fs.unlinkSync(cfgPath); fs.rmdirSync(tmpDir); } catch (e) {}
+    try { fs.unlinkSync(cfgPath); } catch (e) {}
     console.log('  ✓ writeSettings preserves sections and updates top-level primitive flags');
   });
 })();
