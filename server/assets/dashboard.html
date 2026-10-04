@@ -1670,7 +1670,7 @@ function fetchTab(keepSel) {
         }
       }
       if (key === 'oled' && d && !d.isOled) {
-        var displayLabel = t('tv.tab.displayCare', 'Display Care');
+        var displayLabel = t('tv.tab.panelCare', 'Panel Care');
         if (section.label !== displayLabel) {
           section.label = displayLabel;
           renderTabs();
@@ -2184,7 +2184,7 @@ TABS.forEach(function (section) {
         return;
       }
       if (section.key === 'oled' && !d.isOled) {
-        var displayLabel = t('tv.tab.displayCare', 'Display Care');
+        var displayLabel = t('tv.tab.panelCare', 'Panel Care');
         if (section.label !== displayLabel) {
           section.label = displayLabel;
           renderTabs();

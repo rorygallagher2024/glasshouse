@@ -1018,7 +1018,7 @@ function handleRequest(req, res) {
 
   if (pathname === '/api/oledcare') {
     if (!oledModule) {
-      return send(res, 200, JSON.stringify({ ok: true, available: false, isOled: false, label: 'Display Care' }));
+      return send(res, 200, JSON.stringify({ ok: true, available: false, isOled: false, label: 'Panel Care' }));
     }
     return oledModule.detectOled(function (isOledPanel) {
       if (isOledPanel) {
@@ -1065,7 +1065,7 @@ function handleRequest(req, res) {
           ok: true,
           available: available,
           isOled: false,
-          label: 'Display Care',
+          label: 'Panel Care',
           serviceControls: false,
           writable: config.allowControl,
           gsr: null,

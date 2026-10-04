@@ -100,7 +100,7 @@ vm.runInContext(scriptMatch[1], sandbox);
   console.log('  ✓ oled tab is marked optional in TABS');
 })();
 
-// 3. oledRows renders Display Care on non-OLED sets with panel hours, or empty if no hours
+// 3. oledRows renders Panel Care on non-OLED sets with panel hours, or empty if no hours
 (function testOledRowsNonOled() {
   // Non-OLED with panel hours
   var rowsWithHours = sandbox.oledRows({
@@ -145,7 +145,7 @@ vm.runInContext(scriptMatch[1], sandbox);
     'OLED set includes protections'
   );
 
-  console.log('  ✓ oledRows renders Display Care for non-OLED with hours, empty without hours');
+  console.log('  ✓ oledRows renders Panel Care for non-OLED with hours, empty without hours');
 })();
 
 console.log('ALL test-dashboard-view.js assertions passed!\n');

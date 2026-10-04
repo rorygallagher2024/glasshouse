@@ -1114,7 +1114,7 @@ function createMockRes(cb) {
     assert.strictEqual(body.ok, true);
     assert.strictEqual(body.isOled, false);
     assert.strictEqual(body.available, true);
-    assert.strictEqual(body.label, 'Display Care');
+    assert.strictEqual(body.label, 'Panel Care');
     assert.strictEqual(body.panelHours, 1800);
     assert.strictEqual(body.serviceControls, false);
     assert.strictEqual(body.gsr, null);
@@ -1133,7 +1133,7 @@ function createMockRes(cb) {
     assert.strictEqual(body.ok, true);
     assert.strictEqual(body.isOled, false);
     assert.strictEqual(body.available, false);
-    assert.strictEqual(body.label, 'Display Care');
+    assert.strictEqual(body.label, 'Panel Care');
     assert.strictEqual(body.panelHours, null);
   });
 
@@ -1143,10 +1143,10 @@ function createMockRes(cb) {
     assert.strictEqual(body.ok, true);
     assert.strictEqual(body.isOled, false);
     assert.strictEqual(body.available, false);
-    assert.strictEqual(body.label, 'Display Care');
+    assert.strictEqual(body.label, 'Panel Care');
   });
 
-  console.log('  ✓ /api/oledcare serves OLED Care for OLEDs and Display Care for non-OLEDs');
+  console.log('  ✓ /api/oledcare serves OLED Care for OLEDs and Panel Care for non-OLEDs');
 })();
 
 console.log('ALL test-routes.js assertions passed!');

@@ -5059,9 +5059,9 @@
   "text": "Wi-Fi",
   "from": "Wi-Fi"
  },
- "tv.tab.displayCare": {
-  "text": "Cuidado de pantalla",
-  "from": "Display Care"
+ "tv.tab.panelCare": {
+  "text": "Cuidado del panel",
+  "from": "Panel Care"
  },
  "tv.tab.screenSaver": {
   "text": "Salvapantallas",
