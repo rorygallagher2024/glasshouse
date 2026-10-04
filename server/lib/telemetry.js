@@ -459,7 +459,6 @@ function getActiveHdmiDiagnostics(targetPort) {
     var phyMatch = raw.match(/PHY Mode\[([^\]]+)\]/i);
     var fmtMatch = raw.match(/Video Format\[([^\]]+)\]/i);
     var hdcpMatch = raw.match(/Current HDCP Auth Version => (HDCP\w+)/i);
-    var errMatch = raw.match(/PHY Error Count\s*:\s*(\d+)/i);
     var allmMatch = raw.match(/isAllm\[(\d+)\]/i);
     var vrrMatch = raw.match(/isFreeSync\[(\d+)\]/i);
     var vrrMinMax = raw.match(/VRR Min\[(\d+)\]\/Max\[(\d+)\]/i);
@@ -507,7 +506,6 @@ function getActiveHdmiDiagnostics(targetPort) {
       phy_mode: phyMode,
       chroma: format,
       hdcp: hdcp,
-      phy_errors: errMatch ? parseInt(errMatch[1], 10) : null,
       allm: allmMatch ? (allmMatch[1] === '1') : null,
       vrr: (vrrMatch || vrrMinMax) ? !!isVrr : null,
       qms: qmsMatch ? (qmsMatch[1] === '1') : null

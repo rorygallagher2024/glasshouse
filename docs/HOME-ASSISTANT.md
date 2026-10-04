@@ -82,7 +82,6 @@ Playback reaches an HDMI source over CEC, where the TV has only one key for both
 | `sensor` | `sensor.lg_tv_hdmi_link_mode` | HDMI Link Mode | Active link rate (e.g. `FRL 48 Gbps (12G 4L)`, `TMDS`) |
 | `sensor` | `sensor.lg_tv_hdmi_chroma` | HDMI Chroma Subsampling | Chroma format (e.g. `RGB 4:4:4`, `YCbCr 4:2:2`) |
 | `sensor` | `sensor.lg_tv_hdmi_hdcp` | HDMI HDCP Version | HDCP protocol version (e.g. `2.3`, `2.2`, `1.4`) |
-| `sensor` | `sensor.lg_tv_hdmi_cable_errors` | HDMI Cable Error Count | Physical cable bit error counter |
 | `binary_sensor` | `binary_sensor.lg_tv_hdmi_allm` | HDMI ALLM | Auto Low Latency Mode active status |
 | `binary_sensor` | `binary_sensor.lg_tv_hdmi_vrr` | HDMI VRR | Variable Refresh Rate active status |
 | `sensor` | `sensor.lg_tv_video_colorimetry` | Video Colorimetry | Color space standard (e.g. `BT.709`, `BT.2020`) |
@@ -94,10 +93,10 @@ Playback reaches an HDMI source over CEC, where the TV has only one key for both
 | `sensor` | `sensor.lg_tv_active_app` | Active App | Current foreground app or friendly CEC device |
 | `sensor` | `sensor.lg_tv_play_state` | Player State | State of the TV's own media pipeline (`playing`, `paused`, `stopped`), or `idle` with nothing playing. Published once the TV has reported playback, and kept from then on |
 
-The six HDMI entities are published per field, and only once the TV has
+The five HDMI entities are published per field, and only once the TV has
 reported that field. An HDMI 2.0 port reports as connected but carries none of
 the 2.1 lines, so a 2018 TV such as a B8 gets none of them rather than a row
-of Unknowns and a cable error count of zero.
+of Unknowns.
 
 ### Hardware, Remote & System Diagnostics
 | Domain | Entity ID | Name | Description |

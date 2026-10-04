@@ -1079,10 +1079,6 @@
   "text": "Activo",
   "from": "Active"
  },
- "metrics.hdmi.errors": {
-  "text": "{n} errores",
-  "from": "{n} errors"
- },
  "metrics.hdmi.failed": {
   "text": "No se pudo leer el estado de HDMI: {error}",
   "from": "Could not read HDMI state — {error}"

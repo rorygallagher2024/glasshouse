@@ -283,4 +283,13 @@ console.log('Running test-ha.js ...');
   console.log('  ✓ OLED Light is a slider on the live topic, and the D-pad, Back and Home are buttons');
 })();
 
+// LG's PHY error count is no longer published, and Home Assistant is told to
+// drop the entity it had
+(function testNoHdmiErrorCount() {
+  var ents = ha.buildEntities({ pfx: 'test/tv' });
+  assert.ok(!ents.some(function (e) { return e.id === 'hdmi_cable_errors'; }));
+  assert.ok(ha.RETIRED_ENTITIES.some(function (r) { return r.type === 'sensor' && r.id === 'hdmi_cable_errors'; }));
+  console.log('  ✓ the HDMI error count is retired');
+})();
+
 console.log('ALL test-ha.js assertions passed!\n');

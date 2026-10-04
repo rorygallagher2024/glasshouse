@@ -14,7 +14,6 @@ function renderHdmiDiag(diag, colSpace) {
     if (diag.allm) parts.push('ALLM');
     if (diag.vrr) parts.push('VRR');
     if (diag.qms) parts.push('QMS');
-    if (diag.phy_errors > 0) parts.push('<span style="color:var(--cand)">' + esc(t('metrics.hdmi.errors', '{n} errors', { n: diag.phy_errors })) + '</span>');
   }
   if (parts.length) {
     el.innerHTML = parts.join(' &middot; ');

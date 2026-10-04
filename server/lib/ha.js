@@ -125,7 +125,6 @@ var HA_ENTITIES = [
   { id: 'hdmi_link_mode', type: 'sensor', name: 'HDMI Link Mode', cat: 'video' },
   { id: 'hdmi_chroma', type: 'sensor', name: 'HDMI Chroma', cat: 'video' },
   { id: 'hdmi_hdcp', type: 'sensor', name: 'HDMI HDCP Version', cat: 'video' },
-  { id: 'hdmi_cable_errors', type: 'sensor', name: 'HDMI Cable Physical Errors', cat: 'video' },
   { id: 'hdmi_allm', type: 'binary_sensor', name: 'HDMI ALLM', cat: 'video' },
   { id: 'hdmi_vrr', type: 'binary_sensor', name: 'HDMI VRR', cat: 'video' },
   { id: 'video_colorimetry', type: 'sensor', name: 'Colorimetry', cat: 'video' },
@@ -327,12 +326,15 @@ var RETIRED_ENTITIES = [
     { type: 'sensor', id: 'oled_screen_shift' },
     { type: 'sensor', id: 'oled_logo_dimming' },
     // Now a number, which sets it as well as showing it.
-    { type: 'sensor', id: 'oled_light' }
+    { type: 'sensor', id: 'oled_light' },
+    // LG's PHY error count: a 0-15 counter that wraps, mostly of errors the
+    // HDMI 2.1 link corrects itself, so it said nothing anyone could act on.
+    { type: 'sensor', id: 'hdmi_cable_errors' }
   ];
 
 var HDMI_DIAG_ONLY = {
       hdmi_link_mode: 'phy_mode', hdmi_chroma: 'chroma', hdmi_hdcp: 'hdcp',
-      hdmi_cable_errors: 'phy_errors', hdmi_allm: 'allm', hdmi_vrr: 'vrr'
+      hdmi_allm: 'allm', hdmi_vrr: 'vrr'
     };
 
     var OLED_ONLY = {
@@ -555,17 +557,6 @@ function buildEntities(opts) {
           value_template: '{{ value_json.hdmi_diag.hdcp if value_json.hdmi_diag and value_json.hdmi_diag.hdcp else none }}',
           entity_category: 'diagnostic',
           icon: 'mdi:lock-check'
-        }
-      },
-      {
-        type: 'sensor', id: 'hdmi_cable_errors',
-        payload: {
-          name: 'HDMI Cable Bit Errors',
-          state_topic: topic.telemetry,
-          value_template: '{{ value_json.hdmi_diag.phy_errors if value_json.hdmi_diag and value_json.hdmi_diag.phy_errors is not none else none }}',
-          state_class: 'measurement',
-          entity_category: 'diagnostic',
-          icon: 'mdi:alert-outline'
         }
       },
       {
@@ -1286,7 +1277,7 @@ var OFF_TEXT = ['active_app', 'play_state', 'dynamic_range', 'video_signal', 'hd
 var OFF_BINARY = ['hdmi_allm', 'hdmi_vrr', 'screen_saver_active', 'oled_asbl_dimmer'];
 var AWAKE_ONLY = {
   soc_temperature: 1, cpu_load: 1, memory_usage: 1, swap_usage: 1, wifi_signal: 1, gpu_clock: 1,
-  ambient_light: 1, soc_current: 1, hdmi_cable_errors: 1, download_rate: 1, upload_rate: 1
+  ambient_light: 1, soc_current: 1, download_rate: 1, upload_rate: 1
 };
 
 function withOffStates(entities) {
