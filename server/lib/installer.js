@@ -102,11 +102,11 @@ function installFailed(text) {
 }
 
 function noSpace(need, free) {
-  return msg('srv.install.noSpace', 'not enough free space: {need} needed, {free} free', { need: mb(need), free: mb(free) });
+  return msg('srv.install.noSpace', 'not enough free space: {need} needed, {free} free', { need: formatMb(need), free: formatMb(free) });
 }
 
 function tooBig() {
-  return msg('srv.install.tooBig', 'the package is larger than the {limit} limit', { limit: mb(caps.uploadBytes) });
+  return msg('srv.install.tooBig', 'the package is larger than the {limit} limit', { limit: formatMb(caps.uploadBytes) });
 }
 
 // Why nothing else may start now, or null.
@@ -116,7 +116,7 @@ function busyText() {
   return null;
 }
 
-function mb(n) {
+function formatMb(n) {
   return (Math.round(n / 104857.6) / 10) + ' MB';
 }
 
@@ -689,7 +689,7 @@ function clearStaging() {
   });
 }
 
-function live(j) { return job === j && !j.cancelled; }
+function isCurrentJob(j) { return job === j && !j.cancelled; }
 
 function setState(j, state, err) {
   j.state = state;
@@ -698,7 +698,7 @@ function setState(j, state, err) {
 }
 
 function fail(j, text) {
-  if (!live(j)) return;
+  if (!isCurrentJob(j)) return;
   if (j.timer) { clearTimeout(j.timer); j.timer = null; }
   clearStaging();
   setState(j, 'error', text);
@@ -735,21 +735,21 @@ function isWorking() {
 function proceedVerify(j) {
   setState(j, 'verifying');
   fs.stat(j.file, function (err, st) {
-    if (!live(j)) return;
+    if (!isCurrentJob(j)) return;
     if (err) return fail(j, unreadable(err));
     if (st.size > caps.uploadBytes) {
       return fail(j, tooBig());
     }
     j.size = st.size;
     hashFile(j.file, function (err2, digest) {
-      if (!live(j)) return;
+      if (!isCurrentJob(j)) return;
       if (err2) return fail(j, unreadable(err2));
       if (j.sha256 && digest.toLowerCase() !== j.sha256.toLowerCase()) {
         return fail(j, msg('srv.install.hashMismatch', 'the download does not match its sha256 hash'));
       }
       j.digest = digest;
       inspectIpk(j.file, function (err3, info) {
-        if (!live(j)) return;
+        if (!isCurrentJob(j)) return;
         if (err3) return fail(j, err3);
         var idErr = checkIds(info);
         if (idErr) return fail(j, idErr);
@@ -770,7 +770,7 @@ function proceedVerify(j) {
 function buildPreview(j) {
   var info = j.info;
   listInstalled(function (list) {
-    if (!live(j)) return;
+    if (!isCurrentJob(j)) return;
     var primary = info.package;
     var ids = info.apps.map(function (a) { return a.id; });
     if (ids.indexOf(primary) < 0 && ids.length) primary = ids[0];
@@ -788,7 +788,7 @@ function buildPreview(j) {
       if (fs.existsSync(path.join(storeAppsDir, id, 'appinfo.json'))) store = true;
     });
     freeBytes(function (free) {
-      if (!live(j)) return;
+      if (!isCurrentJob(j)) return;
       // The staged file is already on disk; unpacking and the installed copy
       // still need room.
       var need = j.size * 2;
@@ -873,11 +873,11 @@ function startDownload(j, url, free) {
   if (free !== null && free / 3 < limit) limit = free / 3;
   j.dl = fetchMod.download(url, j.file, {
     onProgress: function (bytes) {
-      if (!live(j)) return;
+      if (!isCurrentJob(j)) return;
       j.progress.bytes = bytes;
       if (why || bytes <= limit) return;
       why = limit < caps.uploadBytes
-        ? msg('srv.install.noSpace.download', 'not enough free space for this download: {free} free, and the package needs about three times its size', { free: mb(free) })
+        ? msg('srv.install.noSpace.download', 'not enough free space for this download: {free} free, and the package needs about three times its size', { free: formatMb(free) })
         : tooBig();
       var d = j.dl;
       if (d) d.cancel();
@@ -885,7 +885,7 @@ function startDownload(j, url, free) {
     }
   }, function (err) {
     j.dl = null;
-    if (!live(j)) return;
+    if (!isCurrentJob(j)) return;
     if (err) return fail(j, msg('srv.install.downloadFailed', 'the download failed: {error}', { error: errText(err) }));
     proceedVerify(j);
   });
@@ -952,7 +952,7 @@ function start(req, cb) {
 
   if (!url) return proceedVerify(j);
   freeBytes(function (free) {
-    if (!live(j)) return;
+    if (!isCurrentJob(j)) return;
     if (size && free !== null && free < size * 3) {
       return fail(j, noSpace(size * 3, free));
     }
@@ -1154,7 +1154,7 @@ function appTitle(j) {
 }
 
 function finishJob(j, elevation) {
-  if (!live(j)) return;
+  if (!isCurrentJob(j)) return;
   clearStaging();
   j.result = {
     package: j.info.package,
@@ -1200,12 +1200,12 @@ function confirm(req, cb) {
   cb(null, snapshot());
 
   runInstall(j, function (err) {
-    if (!live(j)) return;
+    if (!isCurrentJob(j)) return;
     if (err) return fail(j, err);
     if (!services.length) return finishJob(j, null);
     setState(j, 'elevating');
     elevateAll(services, function (res) {
-      if (!live(j)) return;
+      if (!isCurrentJob(j)) return;
       if (res.done.length) {
         var rec = readJson(elevatedFile()) || {};
         rec[j.info.package] = res.done;

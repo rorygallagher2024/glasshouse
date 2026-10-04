@@ -1,7 +1,7 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
 var msg = require('./say').msg;
 var fs = require('fs');
-var rd = require('./util').rd;
+var readTrimmed = require('./util').readTrimmed;
 
 var SERVICE_MENU_APP = 'com.webos.app.factorywin';
 var SERVICE_MENUS = { ezAdjust: 1, inStart: 1 };
@@ -218,8 +218,8 @@ function refreshOledStats(picSettings, pState, cb) {
       if (picSettings.screenShift) cachedOled.screen_shift = picSettings.screenShift;
       if (picSettings.logoLuminanceAdjust) cachedOled.logo_dimming = picSettings.logoLuminanceAdjust;
     }
-    var pnStateCached = rd('/mnt/lg/cmn_data/pnwash/state');
-    var jobScopeCached = rd('/mnt/lg/cmn_data/pnwash/jobScope');
+    var pnStateCached = readTrimmed('/mnt/lg/cmn_data/pnwash/state');
+    var jobScopeCached = readTrimmed('/mnt/lg/cmn_data/pnwash/jobScope');
     var isPnwashRunningCached = (pnStateCached && pnStateCached.indexOf('2') === 0) || (jobScopeCached === '1');
     var isCompRunningCached = isPnwashRunningCached ||
       (pState && pState.raw === 'Active Standby' && cachedOled.hours_until_comp === 0);
@@ -228,15 +228,15 @@ function refreshOledStats(picSettings, pState, cb) {
     return cb(cachedOled);
   }
 
-  var autoPnwashRaw = rd('/mnt/lg/cmn_data/pnwash/autoPnwashTime') ||
-                      rd('/mnt/lg/cmn_data/pnwash/autoJbLastTime');
+  var autoPnwashRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/autoPnwashTime') ||
+                      readTrimmed('/mnt/lg/cmn_data/pnwash/autoJbLastTime');
   var lastRefresher = autoPnwashRaw ? parseInt(autoPnwashRaw, 10) : 0;
 
-  var autoOffRsRaw = rd('/mnt/lg/cmn_data/pnwash/autoOffRsTime') ||
-                     rd('/mnt/lg/cmn_data/pnwash/autoOffRsLastTime');
+  var autoOffRsRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/autoOffRsTime') ||
+                     readTrimmed('/mnt/lg/cmn_data/pnwash/autoOffRsLastTime');
   var fsLastCompHours = autoOffRsRaw ? parseInt(autoOffRsRaw, 10) : null;
 
-  var compIntervalRaw = rd('/mnt/lg/cmn_data/pnwash/autoOffRsIntervalHomeMode');
+  var compIntervalRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/autoOffRsIntervalHomeMode');
   var compIntervalUnits;
   var compInterval;
   if (compIntervalRaw) {
@@ -244,7 +244,7 @@ function refreshOledStats(picSettings, pState, cb) {
     if (!compIntervalUnits || compIntervalUnits <= 0) compIntervalUnits = 24;
     compInterval = Math.round((compIntervalUnits * 10 / 60) * 10) / 10;
   } else {
-    var compIntervalHoursRaw = rd('/mnt/lg/cmn_data/pnwash/autoOffRsInterval');
+    var compIntervalHoursRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/autoOffRsInterval');
     var hVal = compIntervalHoursRaw ? parseFloat(compIntervalHoursRaw) : 4;
     if (!hVal || hVal <= 0) hVal = 4;
     compInterval = hVal;
@@ -252,7 +252,7 @@ function refreshOledStats(picSettings, pState, cb) {
   }
   if (compInterval < 0.5 || compInterval > 24) compInterval = 4;
 
-  var autoJbIntervalRaw = rd('/mnt/lg/cmn_data/pnwash/autoJbInterval');
+  var autoJbIntervalRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/autoJbInterval');
   var REFRESHER_INTERVAL_HOURS = autoJbIntervalRaw ? parseInt(autoJbIntervalRaw, 10) : 2000;
   if (!REFRESHER_INTERVAL_HOURS || REFRESHER_INTERVAL_HOURS <= 0) REFRESHER_INTERVAL_HOURS = 2000;
 
@@ -285,12 +285,12 @@ function refreshOledStats(picSettings, pState, cb) {
     var hoursSinceRefresher = (panelHours && lastRefresher) ? Math.max(0, panelHours - lastRefresher) : 0;
     var hoursUntilRefresher = Math.max(0, REFRESHER_INTERVAL_HOURS - hoursSinceRefresher);
 
-    var offRsCountRaw = rd('/mnt/lg/cmn_data/pnwash/completedOffRsCount');
-    var jbCountRaw = rd('/mnt/lg/cmn_data/pnwash/completedJbCount');
-    var failAlertCountRaw = rd('/mnt/lg/cmn_data/pnwash/failAlertCount');
+    var offRsCountRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/completedOffRsCount');
+    var jbCountRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/completedJbCount');
+    var failAlertCountRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/failAlertCount');
     var tpcOffExists = fs.existsSync('/mnt/lg/cmn_data/pnwash/tpcOff');
     var gsrOffExists = fs.existsSync('/mnt/lg/cmn_data/pnwash/gsrOff');
-    var socTpcRaw = rd('/mnt/lg/cmn_data/pnwash/socTpcStatus');
+    var socTpcRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/socTpcStatus');
 
     var offRsCycles = offRsCountRaw ? parseInt(offRsCountRaw, 10) : null;
     var jbCycles = jbCountRaw ? parseInt(jbCountRaw, 10) : null;
@@ -299,8 +299,8 @@ function refreshOledStats(picSettings, pState, cb) {
     var asblStatus = hasTpcMonitoring ? ((tpcOffExists || socTpcRaw === '0') ? 'Disabled' : 'Active') : null;
     var gsrStatus = hasTpcMonitoring ? (gsrOffExists ? 'Disabled' : 'Active') : null;
 
-    var pnStateRaw = rd('/mnt/lg/cmn_data/pnwash/state');
-    var jobScopeRaw = rd('/mnt/lg/cmn_data/pnwash/jobScope');
+    var pnStateRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/state');
+    var jobScopeRaw = readTrimmed('/mnt/lg/cmn_data/pnwash/jobScope');
     var isPnwashRunning = (pnStateRaw && pnStateRaw.indexOf('2') === 0) || (jobScopeRaw === '1');
     var isCompRunning = isPnwashRunning ||
       (pState && pState.raw === 'Active Standby' && hoursUntilComp === 0);

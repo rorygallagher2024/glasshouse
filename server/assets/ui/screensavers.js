@@ -40,7 +40,7 @@ function setIfChanged(el, prop, value) {
 function pressScreensaver(id) {
   const el = q(id);
   if (el && el.getAttribute('aria-disabled') === 'true') return;
-  c('screensaver');
+  sendCommand('screensaver');
 }
 
 async function loadScreensavers() {
@@ -99,7 +99,7 @@ document.addEventListener('click', async ev => {
   const card = ev.target.closest('.ss-card[data-ss]');
   if (card && !card.disabled && !card.classList.contains('on')) {
     card.disabled = true;
-    const r = await c('screensaverMode', { mode: card.dataset.ss });
+    const r = await sendCommand('screensaverMode', { mode: card.dataset.ss });
     if (!r || !r.ok) card.disabled = false;
     loadScreensavers();
     return;
@@ -109,7 +109,7 @@ document.addEventListener('click', async ev => {
   if (lvl && !lvl.disabled && !lvl.classList.contains('on')) {
     lvl.disabled = true;
     // The mode goes with it: both are staged into the same file.
-    const r = await c('screensaverMode', { mode: ssCurrent, level: lvl.dataset.level });
+    const r = await sendCommand('screensaverMode', { mode: ssCurrent, level: lvl.dataset.level });
     if (!r || !r.ok) lvl.disabled = false;
     loadScreensavers();
   }

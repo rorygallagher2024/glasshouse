@@ -6,7 +6,7 @@ var fs = require('fs');
 var path = require('path');
 
 // An integer from config or a request, or dflt when there is none.
-function num(v, dflt) {
+function toInt(v, dflt) {
   var n = parseInt(v, 10);
   return isNaN(n) ? dflt : n;
 }
@@ -19,9 +19,9 @@ function mkdirp(dir) {
 }
 
 // A file's text, trimmed, or null when it cannot be read.
-function rd(filePath) {
+function readTrimmed(filePath) {
   try { return fs.readFileSync(filePath, 'utf8').trim(); }
   catch (e) { return null; }
 }
 
-module.exports = { num: num, mkdirp: mkdirp, rd: rd };
+module.exports = { toInt: toInt, mkdirp: mkdirp, readTrimmed: readTrimmed };

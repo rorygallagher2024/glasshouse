@@ -26,7 +26,7 @@ document.addEventListener('click', async e => {
   const b = e.target.closest('#pv-promo button[data-id]');
   if (!b) return;
   b.disabled = true;
-  await c('lgSetting', { id: b.dataset.id, on: b.dataset.next === '1' });
+  await sendCommand('lgSetting', { id: b.dataset.id, on: b.dataset.next === '1' });
   loadPrivacy();
 });
 
@@ -61,7 +61,7 @@ function lgsNumber(min, v) {
 
 async function setLgs(el, value) {
   const box = el.closest('[data-reload]');
-  await c('lgSetting', value === true || value === false ? { id: el.dataset.lgs, on: value } : { id: el.dataset.lgs, value });
+  await sendCommand('lgSetting', value === true || value === false ? { id: el.dataset.lgs, on: value } : { id: el.dataset.lgs, value });
   if (box && typeof window[box.dataset.reload] === 'function') window[box.dataset.reload]();
 }
 document.addEventListener('click', e => {

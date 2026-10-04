@@ -1,6 +1,6 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
 var fs = require('fs');
-var num = require('./util').num;
+var toInt = require('./util').toInt;
 var execFile = require('child_process').execFile;
 var msg = require('./say').msg;
 var zeroBuffer = require('./mqtt').zeroBuffer;
@@ -178,11 +178,11 @@ function doControl(action, value, cb) {
   switch (action) {
     case 'volume':
       return luna('com.webos.audio/setVolume',
-                  { volume: Math.max(0, Math.min(100, num(value, 10))) },
+                  { volume: Math.max(0, Math.min(100, toInt(value, 10))) },
                   function (r) { cb({ ok: !!(r && r.returnValue) }); });
 
     case 'volumeStep':
-      var step = Math.max(-100, Math.min(100, num(value, 1)));
+      var step = Math.max(-100, Math.min(100, toInt(value, 1)));
       if (step === 1) {
         return luna('com.webos.audio/volumeUp', {}, function (r) { cb({ ok: !!(r && r.returnValue) }); });
       }

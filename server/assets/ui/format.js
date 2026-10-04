@@ -1,11 +1,11 @@
 // Formatting and escaping helpers, and the toggle pill.
 
-const api = p => p + (K ? (p.includes('?') ? '&' : '?') + 'k=' + encodeURIComponent(K) : '');
+const api = p => p + (token ? (p.includes('?') ? '&' : '?') + 'k=' + encodeURIComponent(token) : '');
 const mb = k => (k / 1024).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const esc = s => String(s).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 /*
  * For a value landing in a single-quoted JS string inside an attribute -
- * onclick="c('launchApp','<id>')". Both escapes are needed, in this order: the
+ * onclick="sendCommand('launchApp','<id>')". Both escapes are needed, in this order: the
  * browser HTML-decodes the attribute before the JS in it is parsed, so &#39;
  * would arrive back as a quote that ends the string early. A backslash escape
  * survives that decode; esc() then keeps the value inside the attribute.

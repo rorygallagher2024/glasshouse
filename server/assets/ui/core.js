@@ -4,7 +4,7 @@
    is kept in the browser, so it can come out of the address bar and stay out
    of history and copied URLs. Where storage is blocked it stays in the URL,
    or a reload would lose it. */
-const K = (() => {
+const token = (() => {
   const s = new URLSearchParams(location.search);
   const k = s.get('k');
   if (k === null) {

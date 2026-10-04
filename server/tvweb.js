@@ -12,7 +12,7 @@
 
 var http = require('http');
 var fs = require('fs');
-var num = require('./lib/util').num;
+var toInt = require('./lib/util').toInt;
 var url = require('url');
 var net = require('net');
 var tls = require('tls');
@@ -1102,7 +1102,7 @@ function setupHomeAssistant() {
     }
 
     if (action === 'volume') {
-      doControl('volume', num(val, 10), function (r) {
+      doControl('volume', toInt(val, 10), function (r) {
         console.log('mqtt: volume set to ' + val + ', result: ' + JSON.stringify(r));
         setTimeout(publishTelemetry, 400);
       });
@@ -1122,7 +1122,7 @@ function setupHomeAssistant() {
       var lgsCur = lgsRows.filter(function (r) { return r.id === lgsRow; })[0];
       if (!lgsCur) return;
       var lgsVal = lgsCur.type === 'switch' ? { id: lgsRow, on: val.toUpperCase() === 'ON' }
-                 : lgsCur.type === 'number' ? { id: lgsRow, value: num(val, lgsCur.value) }
+                 : lgsCur.type === 'number' ? { id: lgsRow, value: toInt(val, lgsCur.value) }
                  : { id: lgsRow, value: val };
       doControl('lgSetting', lgsVal, function (r) {
         if (!r || !r.ok) console.log('mqtt: ' + lgsRow + ' not set: ' + JSON.stringify(r));

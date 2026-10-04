@@ -9,8 +9,8 @@
 
 var msg = require('./say').msg;
 var fs = require('fs');
-var rd = require('./util').rd;
-var num = require('./util').num;
+var readTrimmed = require('./util').readTrimmed;
+var toInt = require('./util').toInt;
 var path = require('path');
 var execFile = require('child_process').execFile;
 var ha = require('./ha');
@@ -61,7 +61,7 @@ var hdmiSeen = {};
 
 function loadHdmiSeen() {
   hdmiSeen = {};
-  var saved = rd(HDMI_SEEN_FILE);
+  var saved = readTrimmed(HDMI_SEEN_FILE);
   if (!saved) return;
   var fields = saved.split('\n');
   for (var i = 0; i < fields.length; i++) {
@@ -138,7 +138,7 @@ function init(opts) {
 }
 
 function meminfo() {
-  var out = {}, raw = rd('/proc/meminfo');
+  var out = {}, raw = readTrimmed('/proc/meminfo');
   if (!raw) return out;
   var lines = raw.split('\n');
   for (var i = 0; i < lines.length; i++) {
@@ -150,8 +150,8 @@ function meminfo() {
 
 function emmcInfo() {
   if (EMMC_CACHE) return EMMC_CACHE;
-  var raw = rd('/sys/block/mmcblk0/device/life_time');
-  var eolRaw = rd('/sys/block/mmcblk0/device/pre_eol_info');
+  var raw = readTrimmed('/sys/block/mmcblk0/device/life_time');
+  var eolRaw = readTrimmed('/sys/block/mmcblk0/device/pre_eol_info');
   var eol = EOL_MAP[parseInt(eolRaw, 16)] || 'unknown';
   if (!raw) {
     EMMC_CACHE = { life: 'unknown', wear: 'unknown', health: 'unknown', eol: eol };
@@ -189,7 +189,7 @@ function emmcInfo() {
 
 function socTemp() {
   if (!THERMAL_SOURCE) return null;
-  var t = num(rd(THERMAL_SOURCE), null);
+  var t = toInt(readTrimmed(THERMAL_SOURCE), null);
   if (t !== null && THERMAL_SOURCE === SYS_THERMAL) t = Math.round(t / 1000);
   return (t !== null && t > 0) ? t : null;
 }
@@ -212,7 +212,7 @@ var CPU_WINDOW_MS = 5000;
 var cpuWindows = {};
 function readCoreTicks() {
   var now = {};
-  var lines = (rd('/proc/stat') || '').split('\n');
+  var lines = (readTrimmed('/proc/stat') || '').split('\n');
   for (var i = 0; i < lines.length; i++) {
     var m = lines[i].match(/^cpu(\d+)\s+(.*)$/);
     if (!m) continue;
@@ -270,7 +270,7 @@ function cpuRange(raw) {
 }
 
 function onlineCpus(status) {
-  var idx = cpuRange(rd('/sys/devices/system/cpu/online'));
+  var idx = cpuRange(readTrimmed('/sys/devices/system/cpu/online'));
   if (idx) return idx;
   var m = (status || '').match(/cpu_num:\s*(\d+)/);
   if (!m) return null;
@@ -280,7 +280,7 @@ function onlineCpus(status) {
 }
 
 function socMhz() {
-  var v = num(rd('/proc/lg/pm/frequency'), 0);
+  var v = toInt(readTrimmed('/proc/lg/pm/frequency'), 0);
   if (!v || v < 0) return null;
   var mhz = Math.round(v > 10000 ? v / 1000 : v);
   return (mhz >= 100 && mhz <= 10000) ? mhz : null;
@@ -288,7 +288,7 @@ function socMhz() {
 
 function swapBacking() {
   if (SWAP_BACKING_CACHE !== null) return SWAP_BACKING_CACHE;
-  var raw = rd('/proc/swaps');
+  var raw = readTrimmed('/proc/swaps');
   if (!raw) return null;
   var lines = raw.split('\n'), best = null, bestSize = -1;
   for (var i = 1; i < lines.length; i++) {
@@ -304,7 +304,7 @@ function swapBacking() {
 }
 
 function wifi() {
-  var raw = rd('/proc/net/wireless');
+  var raw = readTrimmed('/proc/net/wireless');
   if (!raw) return null;
   var lines = raw.split('\n');
   for (var i = 0; i < lines.length; i++) {
@@ -320,14 +320,14 @@ function wifi() {
 }
 
 function ifaceRank(name) {
-  var st = rd('/sys/class/net/' + name + '/operstate');
+  var st = readTrimmed('/sys/class/net/' + name + '/operstate');
   if (st) {
     st = st.trim();
     if (st === 'up') return 2;
     if (st === 'down') return 0;
     return 1;
   }
-  var car = rd('/sys/class/net/' + name + '/carrier');
+  var car = readTrimmed('/sys/class/net/' + name + '/carrier');
   if (!car) return 1;
   return car.trim() === '1' ? 2 : 0;
 }
@@ -335,7 +335,7 @@ function ifaceRank(name) {
 function macAddress(iface) {
   if (!iface) return null;
   if (MAC_CACHE[iface]) return MAC_CACHE[iface];
-  var raw = rd('/sys/class/net/' + iface + '/address');
+  var raw = readTrimmed('/sys/class/net/' + iface + '/address');
   if (!raw) return null;
   var mac = raw.trim().toLowerCase();
   if (!/^([0-9a-f]{2}:){5}[0-9a-f]{2}$/.test(mac)) return null;
@@ -345,7 +345,7 @@ function macAddress(iface) {
 }
 
 function netBytes() {
-  var raw = rd('/proc/net/dev');
+  var raw = readTrimmed('/proc/net/dev');
   if (!raw) return null;
   var lines = raw.split('\n'), best = null;
   for (var i = 0; i < lines.length; i++) {
@@ -366,7 +366,7 @@ function netBytes() {
 
 function getVideoSignal() {
   for (var p = 0; p < 4; p++) {
-    var raw = rd('/proc/lg/hdmi20/port' + p + '/status');
+    var raw = readTrimmed('/proc/lg/hdmi20/port' + p + '/status');
     if (!raw) continue;
     var isConn = /connected:\s*on/i.test(raw) || /PHY\s+Lock\[1\]/i.test(raw);
     var w = null, h = null, hz = '';
@@ -397,7 +397,7 @@ function getVideoSignal() {
 function readRemoteInfo() {
   var now = Date.now();
   if (cachedRemote && (now - lastRemoteCheck < 30000)) return cachedRemote;
-  var raw = rd('/mnt/lg/cmn_data/mrcu/mrcu1.info');
+  var raw = readTrimmed('/mnt/lg/cmn_data/mrcu/mrcu1.info');
   if (!raw) return cachedRemote || null;
   var bMatch = raw.match(/Battery\s*=\s*(\d+)/i);
   var nMatch = raw.match(/Name\s*=\s*([^\r\n]+)/i);
@@ -417,7 +417,7 @@ function readRemoteInfo() {
 
 function getActiveHdmiDiagnostics() {
   for (var p = 0; p < 4; p++) {
-    var raw = rd('/proc/lg/hdmi20/port' + p + '/status');
+    var raw = readTrimmed('/proc/lg/hdmi20/port' + p + '/status');
     if (!raw) continue;
     var isConn = /connected:\s*on/i.test(raw) || /PHY\s+Lock\[1\]/i.test(raw) || /is5Vconnected\[1\]/i.test(raw);
     if (!isConn) continue;
@@ -483,7 +483,7 @@ function getActiveHdmiDiagnostics() {
 }
 
 function getPictureEngineInfo() {
-  var raw = rd('/proc/lg/pe/hdr_status');
+  var raw = readTrimmed('/proc/lg/pe/hdr_status');
   if (!raw) return null;
   var colMatch = raw.match(/colorimetry:\s*([^,\}]+)/i);
   var hdrMatch = raw.match(/hdrStatus:\s*([^\(,\}]+)/i);
@@ -631,7 +631,7 @@ function refreshInstalledApps(cb) {
 }
 
 function gpuClockMhz() {
-  var raw = rd('/proc/lg/sys/status');
+  var raw = readTrimmed('/proc/lg/sys/status');
   if (!raw) return null;
   var m = raw.match(/gpu pll out\s*:\s*(\d+)/i);
   return m ? Math.round(parseInt(m[1], 10) / 1000000) : null;
@@ -663,13 +663,13 @@ function appStorage(cb) {
 function hdmiPorts() {
   var ports = [];
   for (var i = 0; i < 4; i++) {
-    var raw = rd('/proc/lg/hdmi20/port' + i + '/status');
+    var raw = readTrimmed('/proc/lg/hdmi20/port' + i + '/status');
     if (!raw) continue;
-    function f(re) { var m = raw.match(re); return m ? m[1].trim() : null; }
-    var hact = parseInt(f(/horizontal-active:\s*(\d+)/) || '0', 10);
-    var vact = parseInt(f(/vertical-active:\s*(\d+)/) || '0', 10);
-    var rate = parseInt(f(/pixel-clock-V:\s*(\d+)/) || '0', 10);
-    var pclk = parseInt(f(/pixel-clock:\s*(\d+)/) || '0', 10);
+    function field(re) { var m = raw.match(re); return m ? m[1].trim() : null; }
+    var hact = parseInt(field(/horizontal-active:\s*(\d+)/) || '0', 10);
+    var vact = parseInt(field(/vertical-active:\s*(\d+)/) || '0', 10);
+    var rate = parseInt(field(/pixel-clock-V:\s*(\d+)/) || '0', 10);
+    var pclk = parseInt(field(/pixel-clock:\s*(\d+)/) || '0', 10);
 
     if (!hact || !vact) {
       var sigM = raw.match(/Sig:\s*\[(\d+)\](?:\(\d+\))?x\[(\d+)\](?:\(\d+\))?@\[(\d+)\]\s*Hz/i);
@@ -680,7 +680,7 @@ function hdmiPorts() {
       }
     }
     if (!pclk) {
-      var pclkStr = f(/Pixel Clk\[0*([1-9]\d*)\]/i);
+      var pclkStr = field(/Pixel Clk\[0*([1-9]\d*)\]/i);
       if (pclkStr) {
         var pclkNum = parseInt(pclkStr, 10);
         pclk = (pclkNum < 100000) ? pclkNum * 10 : Math.round(pclkNum / 1000);
@@ -689,7 +689,7 @@ function hdmiPorts() {
     var isConnected = /connected:\s*on/i.test(raw) ||
                       /PHY\s+Lock\[1\]/i.test(raw) ||
                       (hact > 0 && vact > 0);
-    var colorDepth = f(/deep-color-mode:\s*(\S+ \S+)/) || f(/DeepColorMode\[\s*([^\]]+)\]/);
+    var colorDepth = field(/deep-color-mode:\s*(\S+ \S+)/) || field(/DeepColorMode\[\s*([^\]]+)\]/);
     if (colorDepth) colorDepth = colorDepth.replace(/^[.\s]+/, '');
     var isInterlaced = /interlaced:\s*yes/i.test(raw) || /Interlaced\[1\]/i.test(raw);
 
@@ -864,10 +864,10 @@ function socArchName(raw) {
 }
 
 function detectWebosVersion(sdkVersion) {
-  var raw = rd('/etc/issue') || rd('/etc/issue.net') || '';
+  var raw = readTrimmed('/etc/issue') || readTrimmed('/etc/issue.net') || '';
   var m = raw.match(/webOS(?:\s+TV)?\s+([\d\.]+)/i);
   if (m) return m[1];
-  var sf = rd('/etc/starfish-release') || '';
+  var sf = readTrimmed('/etc/starfish-release') || '';
   var sm = sf.match(/release\s+([\d\.]+)/i);
   if (sm) return sm[1];
   if (sdkVersion) return String(sdkVersion);
@@ -876,11 +876,11 @@ function detectWebosVersion(sdkVersion) {
 
 function detectHardwareInfo(sdkVersion, cb) {
   HARDWARE_INFO.webos = detectWebosVersion(sdkVersion);
-  var envRaw = rd('/var/luna/preferences/environmentCondition');
+  var envRaw = readTrimmed('/var/luna/preferences/environmentCondition');
   if (envRaw) {
     try {
       var env = JSON.parse(envRaw);
-      var bStr = env.boardTypeStr || env.socChip || rd('/proc/lg/base/chip_name') || '';
+      var bStr = env.boardTypeStr || env.socChip || readTrimmed('/proc/lg/base/chip_name') || '';
       if (bStr) {
         bStr = bStr.trim();
         HARDWARE_INFO.socArch = socArchName(bStr);
@@ -892,7 +892,7 @@ function detectHardwareInfo(sdkVersion, cb) {
     } catch (e) {}
   }
   if (!HARDWARE_INFO.socArch) {
-    var chip = rd('/proc/lg/base/chip_name');
+    var chip = readTrimmed('/proc/lg/base/chip_name');
     if (chip) HARDWARE_INFO.socArch = socArchName(chip.trim());
   }
 
@@ -969,8 +969,8 @@ function detectFrontLights(cb) {
 
 // LG stores the hour and minute as separate strings, "1" and "0" for 01:00.
 function clockTime(h, m) {
-  function two(v) { v = parseInt(v, 10) || 0; return (v < 10 ? '0' : '') + v; }
-  return two(h) + ':' + two(m);
+  function pad2(v) { v = parseInt(v, 10) || 0; return (v < 10 ? '0' : '') + v; }
+  return pad2(h) + ':' + pad2(m);
 }
 
 function pushTemp(t) {
@@ -1030,11 +1030,11 @@ function collectStats(cb) {
   }
 
   var mi = meminfo();
-  var status = rd('/proc/lg/pm/status') || '';
+  var status = readTrimmed('/proc/lg/pm/status') || '';
   var coreMatch = status.match(/load:\s*([\d\s]+)/);
   var coreSlots = coreMatch ? coreMatch[1].trim().split(/\s+/).map(Number) : [];
   var liveCpus = onlineCpus(status);
-  var present = cpuRange(rd('/sys/devices/system/cpu/present'));
+  var present = cpuRange(readTrimmed('/sys/devices/system/cpu/present'));
   var coresTotal = present ? present.length : coreSlots.length;
   var cpu = statCpu(coresTotal);
   var coreLoads = [];
@@ -1068,7 +1068,7 @@ function collectStats(cb) {
   var hdmiDiag = getActiveHdmiDiagnostics();
   noteHdmiSeen(hdmiDiag);
   var peInfo = getPictureEngineInfo();
-  var uptimeSec = Math.floor(parseFloat(rd('/proc/uptime') || '0'));
+  var uptimeSec = Math.floor(parseFloat(readTrimmed('/proc/uptime') || '0'));
 
   var devCfg = (configObj && configObj.device) || {};
   var out = {
@@ -1102,10 +1102,10 @@ function collectStats(cb) {
     load: cpu.overall !== null ? cpu.overall
       : coreLoads.length
       ? Math.round(coreLoads.reduce(function (a, b) { return a + b; }, 0) / coreLoads.length)
-      : num(rd('/proc/lg/pm/current_load'), null),
+      : toInt(readTrimmed('/proc/lg/pm/current_load'), null),
     loadPeak: coreLoads.length
       ? Math.max.apply(null, coreLoads)
-      : num(rd('/proc/lg/pm/current_load'), null),
+      : toInt(readTrimmed('/proc/lg/pm/current_load'), null),
     mhz: socMhz(),
     cores: coreLoads,
     coresTotal: coresTotal || coreSlots.length,
@@ -1113,7 +1113,7 @@ function collectStats(cb) {
     swap: { total: mi.SwapTotal || 0, free: mi.SwapFree || 0, backing: swapBacking() },
     uptime: uptimeSec,
     bootTime: bootTime(uptimeSec),
-    loadavg: (rd('/proc/loadavg') || '').split(' ').slice(0, 3),
+    loadavg: (readTrimmed('/proc/loadavg') || '').split(' ').slice(0, 3),
     wifi: wifi(),
     net: rate,
     netTotal: n ? { rx: n.rx, tx: n.tx, iface: n.iface } : null,
@@ -1329,7 +1329,7 @@ function collectStats(cb) {
                   dynamicRange: formatDynamicRange(rawDr),
                   mode: formatPicMode(pic.settings.pictureMode),
                   mode_raw: pic.settings.pictureMode || 'standard',
-                  backlight: num(pic.settings.backlight, 50),
+                  backlight: toInt(pic.settings.backlight, 50),
                   energySaving: pic.settings.energySaving || 'off',
                   screenShift: pic.settings.screenShift || 'off',
                   logoLuminanceAdjust: pic.settings.logoLuminanceAdjust || 'off',
@@ -1455,8 +1455,6 @@ module.exports = {
   HARDWARE_INFO: HARDWARE_INFO,
   inputNameMap: inputNameMap,
   init: init,
-  rd: rd,
-  num: num,
   meminfo: meminfo,
   emmcInfo: emmcInfo,
   onlineCpus: onlineCpus,

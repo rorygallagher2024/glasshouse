@@ -47,31 +47,31 @@ function pageUrl(base, n) {
   return n <= 1 ? base : base.replace(/\.json$/, '') + '/' + n + '.json';
 }
 
-function str(v) { return typeof v === 'string' ? v : ''; }
+function stringOrEmpty(v) { return typeof v === 'string' ? v : ''; }
 
 function parsePackage(item, pageBase) {
   if (!item || typeof item !== 'object') return null;
   var m = item.manifest;
   if (!m || typeof m !== 'object') return null;
-  var id = str(item.id) || str(m.id);
-  var version = str(m.version);
-  var hash = m.ipkHash && str(m.ipkHash.sha256).toLowerCase();
+  var id = stringOrEmpty(item.id) || stringOrEmpty(m.id);
+  var version = stringOrEmpty(m.version);
+  var hash = m.ipkHash && stringOrEmpty(m.ipkHash.sha256).toLowerCase();
   // The installer's own rule for a package name: an id it would refuse, or one
   // carrying characters the dashboards would have to escape, is not listed.
   if (!NAME_RE.test(id)) return null;
   if (!version || !m.ipkUrl || !hash || !/^[0-9a-f]{64}$/.test(hash)) return null;
   // The manifest's own ipkUrl may be a file name beside the manifest.
-  var ipkUrl = url.resolve(str(item.manifestUrl) || pageBase, str(m.ipkUrl));
+  var ipkUrl = url.resolve(stringOrEmpty(item.manifestUrl) || pageBase, stringOrEmpty(m.ipkUrl));
   if (!/^https:\/\//i.test(ipkUrl)) return null;
-  var icon = str(item.iconUri) || str(m.iconUri);
+  var icon = stringOrEmpty(item.iconUri) || stringOrEmpty(m.iconUri);
   var size = (typeof m.ipkSize === 'number' && m.ipkSize > 0) ? m.ipkSize
            : (typeof item.ipkSize === 'number' && item.ipkSize > 0) ? item.ipkSize
            : (typeof m.size === 'number' && m.size > 0) ? m.size
            : null;
   return {
     id: id,
-    title: str(item.title) || str(m.title) || id,
-    description: str(item.shortDescription) || str(m.appDescription),
+    title: stringOrEmpty(item.title) || stringOrEmpty(m.title) || id,
+    description: stringOrEmpty(item.shortDescription) || stringOrEmpty(m.appDescription),
     iconUri: /^https:\/\//i.test(icon) ? icon : '',
     version: version,
     ipkUrl: ipkUrl,

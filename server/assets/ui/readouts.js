@@ -91,7 +91,7 @@ function renderApps(currentAppId) {
     const clean = cleanAppTitle(a.title, a.id);
     const btnId = 'app_' + a.id.replace(/[^a-zA-Z0-9_-]/g, '_');
     const isCur = currentAppId && (a.id === currentAppId || a.id === ('com.webos.app.' + currentAppId));
-    return `<button id="${btnId}" class="${isCur ? 'on' : ''}" title="${esc(a.title)}" onclick="c('launchApp','${jsq(a.id)}')">${esc(clean)}</button>`;
+    return `<button id="${btnId}" class="${isCur ? 'on' : ''}" title="${esc(a.title)}" onclick="sendCommand('launchApp','${jsq(a.id)}')">${esc(clean)}</button>`;
   }).join('');
 }
 
@@ -405,8 +405,8 @@ async function tick() {
 
     if (d.inputs && !q('inputs').dataset.built) {
       q('inputs').innerHTML = Object.keys(d.inputs).map(k =>
-        `<button id="in_${esc(k)}" onclick="c('input','${jsq(k)}')">${esc(d.inputs[k])}</button>`).join('') +
-        `<button id="in_livetv" onclick="c('input','livetv')">${esc(t('ctl.liveTv', 'Live TV'))}</button>`;
+        `<button id="in_${esc(k)}" onclick="sendCommand('input','${jsq(k)}')">${esc(d.inputs[k])}</button>`).join('') +
+        `<button id="in_livetv" onclick="sendCommand('input','livetv')">${esc(t('ctl.liveTv', 'Live TV'))}</button>`;
       q('inputs').dataset.built = '1';
     }
 
@@ -490,7 +490,7 @@ async function tick() {
       if (box && box.dataset.sig !== sig) {
         box.dataset.sig = sig;
         box.innerHTML = modes.map(m =>
-          `<button id="pm_${esc(m.value)}" onclick="c('pictureMode','${jsq(m.value)}')">${esc(m.label)}</button>`
+          `<button id="pm_${esc(m.value)}" onclick="sendCommand('pictureMode','${jsq(m.value)}')">${esc(m.label)}</button>`
         ).join('');
       }
       if (box) {

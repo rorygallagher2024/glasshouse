@@ -185,8 +185,8 @@
          reason a lot of people install this at all. -->
     <div class="set" style="margin-top:0"><div class="lbl" data-t="ctl.panel">Panel</div>
       <div class="btns">
-        <button id="btn-screenoff" onclick="c('screenOff')" data-t="ctl.screenOff">Screen off</button>
-        <button id="btn-screenon" onclick="c('screenOn')" data-t="ctl.screenOn">Screen on</button>
+        <button id="btn-screenoff" onclick="sendCommand('screenOff')" data-t="ctl.screenOff">Screen off</button>
+        <button id="btn-screenon" onclick="sendCommand('screenOn')" data-t="ctl.screenOn">Screen on</button>
         <button id="btn_ss" onclick="pressScreensaver('btn_ss')" data-t="tab.screensaver">Screensaver</button>
       </div>
     </div>
@@ -207,10 +207,10 @@
 
     <div class="set"><div class="lbl" data-t="ctl.playback">Playback</div>
       <div class="playback-btns">
-        <button onclick="c('media','rewind')" data-t="ctl.rewind">Rewind</button>
-        <button onclick="c('media','playPause')" data-t="ctl.playPause">Play / Pause</button>
-        <button onclick="c('media','stop')" data-t="ctl.stop">Stop</button>
-        <button onclick="c('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
+        <button onclick="sendCommand('media','rewind')" data-t="ctl.rewind">Rewind</button>
+        <button onclick="sendCommand('media','playPause')" data-t="ctl.playPause">Play / Pause</button>
+        <button onclick="sendCommand('media','stop')" data-t="ctl.stop">Stop</button>
+        <button onclick="sendCommand('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
       </div>
     </div>
 
@@ -221,15 +221,15 @@
 
       <div class="set">
         <div class="dpad">
-          <button class="dp dp-up"    onclick="c('rcu','up')"    title="Up" data-t-title="ctl.up">&#9650;</button>
-          <button class="dp dp-left"  onclick="c('rcu','left')"  title="Left" data-t-title="ctl.left">&#9664;</button>
-          <button class="dp dp-ok"    onclick="c('rcu','ok')"    title="Select" data-t-title="ctl.select" translate="no">OK</button>
-          <button class="dp dp-right" onclick="c('rcu','right')" title="Right" data-t-title="ctl.right">&#9654;</button>
-          <button class="dp dp-down"  onclick="c('rcu','down')"  title="Down" data-t-title="ctl.down">&#9660;</button>
+          <button class="dp dp-up"    onclick="sendCommand('rcu','up')"    title="Up" data-t-title="ctl.up">&#9650;</button>
+          <button class="dp dp-left"  onclick="sendCommand('rcu','left')"  title="Left" data-t-title="ctl.left">&#9664;</button>
+          <button class="dp dp-ok"    onclick="sendCommand('rcu','ok')"    title="Select" data-t-title="ctl.select" translate="no">OK</button>
+          <button class="dp dp-right" onclick="sendCommand('rcu','right')" title="Right" data-t-title="ctl.right">&#9654;</button>
+          <button class="dp dp-down"  onclick="sendCommand('rcu','down')"  title="Down" data-t-title="ctl.down">&#9660;</button>
         </div>
         <div class="btns">
-          <button onclick="c('rcu','back')" data-t="ctl.back">Back</button>
-          <button onclick="c('rcu','home')" data-t="ctl.home">Home</button>
+          <button onclick="sendCommand('rcu','back')" data-t="ctl.back">Back</button>
+          <button onclick="sendCommand('rcu','home')" data-t="ctl.home">Home</button>
         </div>
       </div>
     </details>
@@ -239,12 +239,12 @@
 
       <div class="set">
         <div class="btns" id="sleepbtns">
-          <button id="sl_off" onclick="c('sleepTimer','off')" data-t="common.off">Off</button>
-          <button id="sl_10"  onclick="c('sleepTimer','10')" data-t="ctl.sleep.10">10 min</button>
-          <button id="sl_30"  onclick="c('sleepTimer','30')" data-t="ctl.sleep.30">30 min</button>
-          <button id="sl_60"  onclick="c('sleepTimer','60')" data-t="ctl.sleep.60">60 min</button>
-          <button id="sl_90"  onclick="c('sleepTimer','90')" data-t="ctl.sleep.90">90 min</button>
-          <button id="sl_120" onclick="c('sleepTimer','120')" data-t="ctl.sleep.120">120 min</button>
+          <button id="sl_off" onclick="sendCommand('sleepTimer','off')" data-t="common.off">Off</button>
+          <button id="sl_10"  onclick="sendCommand('sleepTimer','10')" data-t="ctl.sleep.10">10 min</button>
+          <button id="sl_30"  onclick="sendCommand('sleepTimer','30')" data-t="ctl.sleep.30">30 min</button>
+          <button id="sl_60"  onclick="sendCommand('sleepTimer','60')" data-t="ctl.sleep.60">60 min</button>
+          <button id="sl_90"  onclick="sendCommand('sleepTimer','90')" data-t="ctl.sleep.90">90 min</button>
+          <button id="sl_120" onclick="sendCommand('sleepTimer','120')" data-t="ctl.sleep.120">120 min</button>
         </div>
       </div>
     </details>
@@ -270,12 +270,12 @@
 
       <div class="set"><div class="lbl"><span data-t="ctl.energySaving">Energy saving</span> &middot; <span id="energy-lbl" class="num">&mdash;</span></div>
         <div class="btns" id="energysteps">
-          <button id="es_auto" onclick="c('energySaving','auto')" data-t="energy.auto">Auto</button>
-          <button id="es_off" onclick="c('energySaving','off')" data-t="common.off">Off</button>
-          <button id="es_min" onclick="c('energySaving','min')" data-t="energy.min">Minimum</button>
-          <button id="es_med" onclick="c('energySaving','med')" data-t="energy.med">Medium</button>
-          <button id="es_max" onclick="c('energySaving','max')" data-t="energy.max">Maximum</button>
-          <button id="es_screen_off" onclick="c('energySaving','screen_off')" data-t="ctl.screenOff">Screen off</button>
+          <button id="es_auto" onclick="sendCommand('energySaving','auto')" data-t="energy.auto">Auto</button>
+          <button id="es_off" onclick="sendCommand('energySaving','off')" data-t="common.off">Off</button>
+          <button id="es_min" onclick="sendCommand('energySaving','min')" data-t="energy.min">Minimum</button>
+          <button id="es_med" onclick="sendCommand('energySaving','med')" data-t="energy.med">Medium</button>
+          <button id="es_max" onclick="sendCommand('energySaving','max')" data-t="energy.max">Maximum</button>
+          <button id="es_screen_off" onclick="sendCommand('energySaving','screen_off')" data-t="ctl.screenOff">Screen off</button>
         </div>
       </div>
 
@@ -286,11 +286,11 @@
 
       <div class="set"><div class="lbl"><span data-t="ctl.soundOutput">Output</span> &middot; <span id="soundout-lbl" class="num">&mdash;</span></div>
         <div class="btns" id="soundouts">
-          <button id="so_tv_speaker" onclick="c('soundOutput','tv_speaker')" data-t="sound.tvSpeaker">TV Speaker</button>
-          <button id="so_external_arc" onclick="c('soundOutput','external_arc')" translate="no">HDMI ARC</button>
-          <button id="so_optical" onclick="c('soundOutput','optical')" data-t="sound.optical">Optical</button>
-          <button id="so_headphone" onclick="c('soundOutput','headphone')" data-t="sound.headphone">Headphone</button>
-          <button id="so_bt_soundbar" onclick="c('soundOutput','bt_soundbar')" translate="no">Bluetooth</button>
+          <button id="so_tv_speaker" onclick="sendCommand('soundOutput','tv_speaker')" data-t="sound.tvSpeaker">TV Speaker</button>
+          <button id="so_external_arc" onclick="sendCommand('soundOutput','external_arc')" translate="no">HDMI ARC</button>
+          <button id="so_optical" onclick="sendCommand('soundOutput','optical')" data-t="sound.optical">Optical</button>
+          <button id="so_headphone" onclick="sendCommand('soundOutput','headphone')" data-t="sound.headphone">Headphone</button>
+          <button id="so_bt_soundbar" onclick="sendCommand('soundOutput','bt_soundbar')" translate="no">Bluetooth</button>
         </div>
       </div>
     </details>
@@ -318,8 +318,8 @@
 
     <div class="set" id="pwset"><div class="lbl" data-t="adv.power">Power</div>
       <div class="btns">
-        <button id="poff" onclick="pw(pwStandby ? 'powerOn' : 'powerOff')">&mdash;</button>
-        <button id="prb" onclick="pw('reboot')" data-t="ctl.reboot">Reboot</button>
+        <button id="poff" onclick="powerAction(pwStandby ? 'powerOn' : 'powerOff')">&mdash;</button>
+        <button id="prb" onclick="powerAction('reboot')" data-t="ctl.reboot">Reboot</button>
       </div>
     </div>
   </div>
@@ -421,7 +421,7 @@
           end or it is switched on. LG fixes the length; choose hours when the TV isn't used.</div>
       </div>
       <div class="prot-status"><select class="pill-sel" id="sel_aroff" aria-label="Nightly power-down hours" data-t-aria-label="adv.nightlyOff.hours"
-        onchange="c('alwaysReadyOffStart', this.value)"></select></div>
+        onchange="sendCommand('alwaysReadyOffStart', this.value)"></select></div>
     </div>
     <div class="prot-row" id="row-wol" hidden>
       <div class="prot-main">

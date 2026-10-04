@@ -20,10 +20,10 @@ if (!URLSearchParams) {
 }
 
 var src = fs.readFileSync(path.join(__dirname, '..', 'server', 'assets', 'ui', 'core.js'), 'utf8');
-var start = src.indexOf('const K = (() => {');
+var start = src.indexOf('const token = (() => {');
 var end = src.indexOf('\n})();', start);
 assert.ok(start !== -1 && end !== -1, 'the token code is in ui/core.js');
-var code = src.slice(start, end + '\n})();'.length) + '\nK';
+var code = src.slice(start, end + '\n})();'.length) + '\ntoken';
 
 // Opens the page at `search` and returns what it ended up with.
 function open(search, stored, storageBlocked) {

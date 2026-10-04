@@ -57,7 +57,7 @@ document.addEventListener('click', async ev => {
   if (!btn || btn.disabled) return;
   btn.disabled = true;
   if (btn.dataset.svc === 'open') {
-    await c('serviceMenuOpen', { menu: btn.dataset.menu });
+    await sendCommand('serviceMenuOpen', { menu: btn.dataset.menu });
     btn.disabled = false;
     return;
   }
@@ -66,6 +66,6 @@ document.addEventListener('click', async ev => {
     btn.disabled = false;
     return;
   }
-  await c('serviceMenuLock', { locked: wantLocked });
+  await sendCommand('serviceMenuLock', { locked: wantLocked });
   loadServiceMenu();
 });

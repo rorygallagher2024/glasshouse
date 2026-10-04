@@ -161,7 +161,7 @@ function slowSwitch() {
 // is found: the boot hook stops applying them, and nothing here restarts sam to
 // undo one already in use. "allowOnWebos10": true in config.json, file-only,
 // turns them back on.
-function held() {
+function heldBack() {
   return slowSwitch() && !allowedAnyway();
 }
 
@@ -268,7 +268,7 @@ function screensaverList() {
       label: SCREENSAVERS[k].label,
       description: SCREENSAVERS[k].description,
       active: k === cur,
-      available: k === 'stock' || (!held() && !!(assetPathFn && assetPathFn(SCREENSAVERS[k].qml)))
+      available: k === 'stock' || (!heldBack() && !!(assetPathFn && assetPathFn(SCREENSAVERS[k].qml)))
     });
   }
   return {
@@ -281,8 +281,8 @@ function screensaverList() {
     // Held back, there is nothing to choose once LG's is in use, so both
     // dashboards drop the tab; while one of ours still is, it stays so the
     // owner can switch back without waiting for a full restart.
-    available: !held() || cur !== 'stock',
-    held: held(),
+    available: !heldBack() || cur !== 'stock',
+    held: heldBack(),
     heldOverridden: heldOverridden(),
     switching: switching(),
     external: detectExternal()
@@ -361,7 +361,7 @@ function writeScreensaverQml(src, level) {
 function setScreensaver(mode, level, cb) {
   if (!SCREENSAVERS[mode]) return cb({ ok: false, error: 'unknown screen saver: ' + mode });
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
-  if (mode !== 'stock' && held()) return cb({ ok: false, error: HELD_ERROR });
+  if (mode !== 'stock' && heldBack()) return cb({ ok: false, error: HELD_ERROR });
   level = (level === 'bright') ? 'bright' : 'dim';
 
   unmountScreensaver(function () {
@@ -496,7 +496,7 @@ module.exports = {
   screensaverList: screensaverList,
   switching: switching,
   detectExternal: detectExternal,
-  held: held,
+  heldBack: heldBack,
   heldOverridden: heldOverridden,
   setScreensaver: setScreensaver,
   restageScreensaver: restageScreensaver,

@@ -33,13 +33,13 @@ function advPill(row, id, on) {
   });
 }
 function flip(id) { const el = q(id); return el && el.dataset.on ? 'off' : 'on'; }
-function toggleLight(which) { c(which, flip(which === 'standbyLight' ? 'lt_standby' : 'lt_logo')); }
-function toggleQuickBoot() { c('quickBoot', flip('btn_quickboot')); }
-function toggleLgLogo() { c('lgLogo', flip('btn_lglogo')); }
-function toggleWol() { c('wakeOnLan', flip('btn_wol')); }
-function toggleDeviceDetection() { c('deviceDetection', flip('btn_devdetect')); }
-function toggleAlwaysReady() { c('alwaysReady', flip('btn_ar')); }
-function toggleAlwaysReadyScreen() { c('alwaysReadyScreen', flip('btn_ars')); }
+function toggleLight(which) { sendCommand(which, flip(which === 'standbyLight' ? 'lt_standby' : 'lt_logo')); }
+function toggleQuickBoot() { sendCommand('quickBoot', flip('btn_quickboot')); }
+function toggleLgLogo() { sendCommand('lgLogo', flip('btn_lglogo')); }
+function toggleWol() { sendCommand('wakeOnLan', flip('btn_wol')); }
+function toggleDeviceDetection() { sendCommand('deviceDetection', flip('btn_devdetect')); }
+function toggleAlwaysReady() { sendCommand('alwaysReady', flip('btn_ar')); }
+function toggleAlwaysReadyScreen() { sendCommand('alwaysReadyScreen', flip('btn_ars')); }
 
 function applyOptimistic(action, value) {
   if (action === 'volume') {
@@ -152,7 +152,7 @@ function applyOptimistic(action, value) {
   }
 }
 
-async function c(action, value) {
+async function sendCommand(action, value) {
   setBusy(true, 'tx');
   applyOptimistic(action, value);
   try {
@@ -225,7 +225,7 @@ function initBacklightSlider() {
   const send = async v => {
     showBacklight(v);
     setLease('backlight', v);
-    await c('backlight', v);
+    await sendCommand('backlight', v);
   };
   const stop = e => {
     active = false;
@@ -313,7 +313,7 @@ function initVolSlider() {
     const val = setVolFromPointer(e);
     setLease('volume', val);
     volDragging = false;
-    await c('volume', val);
+    await sendCommand('volume', val);
   }
 
   function cancelVol(e) {
@@ -344,7 +344,7 @@ function initVolSlider() {
       muted = false;
       if (q('mute')) q('mute').classList.remove('on');
       setLease('volume', 0);
-      await c('volume', 0);
+      await sendCommand('volume', 0);
       return;
     } else if (e.key === 'End') {
       e.preventDefault();
@@ -355,7 +355,7 @@ function initVolSlider() {
       muted = false;
       if (q('mute')) q('mute').classList.remove('on');
       setLease('volume', 100);
-      await c('volume', 100);
+      await sendCommand('volume', 100);
       return;
     }
     if (step !== 0) {
@@ -369,7 +369,7 @@ function initVolSlider() {
       muted = false;
       if (q('mute')) q('mute').classList.remove('on');
       setLease('volume', next);
-      await c('volume', next);
+      await sendCommand('volume', next);
     }
   });
 }
@@ -383,7 +383,7 @@ function toggleMute() {
   if (q('vol-wrap')) q('vol-wrap').classList.toggle('muted', muted);
   const curVol = q('vol-slider') ? q('vol-slider').value : '';
   q('vol').textContent = muted ? t('ctl.muted', 'MUTED') : curVol;
-  c('mute', muted);
+  sendCommand('mute', muted);
 }
 async function sendToast() {
   const inp = q('toast-input');
@@ -392,7 +392,7 @@ async function sendToast() {
   const btn = q('btn-toast');
   if (btn) btn.disabled = true;
   try {
-    await c('toast', msg);
+    await sendCommand('toast', msg);
     if (inp) inp.value = '';
     const tc = q('toast-count');
     if (tc) tc.textContent = '0/120';
@@ -426,7 +426,7 @@ async function openUrl() {
   const btn = q('btn-url');
   if (btn) btn.disabled = true;
   try {
-    const r = await c('launch_url', url);
+    const r = await sendCommand('launch_url', url);
     if (r && r.ok && inp) inp.value = '';
     if (btn) {
       const label = btn.textContent;
@@ -464,14 +464,14 @@ async function installRunning() {
   return !!(s && INSTALL_BUSY[s.state]);
 }
 
-async function pw(a) {
-  if (a === 'powerOn') return c(a);
+async function powerAction(a) {
+  if (a === 'powerOn') return sendCommand(a);
   if (await installRunning() &&
       !confirm(t('ctl.power.installBusy', 'An app install is in progress. Interrupting it may leave the app half-installed. Continue anyway?'))) return;
   const msg = a === 'reboot'
     ? t('ctl.reboot.confirm', 'Reboot the TV now? It will be unavailable for about a minute.')
     : t('ctl.powerOff.confirm', 'Power off the TV now?');
-  if (confirm(msg)) c(a);
+  if (confirm(msg)) sendCommand(a);
 }
 
 // Switched off in config.json, the power buttons are not offered at all.

@@ -92,6 +92,14 @@ Skip comments that restate the code.
 Keep the measured facts that justify a decision (an observed value, a version,
 a threshold). Drop the story around them.
 
+## Names in code
+
+Name a function, or anything used beyond a few lines, for what it does:
+`readTrimmed`, `sendCommand`, not `rd` or `c`. A name read away from its
+definition has to carry the meaning, and an abbreviation is hard to search
+for. Short names are fine for locals used within a few lines, and for the
+dashboards' `q()` and `t()`, which every script uses.
+
 # Strings on the dashboards
 
 Text shown on the dashboards is keyed for translation: `data-t` in markup,

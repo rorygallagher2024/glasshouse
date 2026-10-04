@@ -69,7 +69,7 @@ async function switchAllOff() {
   go.dataset.busy = '1';
   go.textContent = t('pv.switchingOff', 'Switching off\u2026');
   msg.textContent = '';
-  const r = await c('privacyAllOff');
+  const r = await sendCommand('privacyAllOff');
   delete go.dataset.busy;
   msg.textContent = r && r.ok ? t('pv.done', 'Done.') : '';
   loadPrivacy();
@@ -254,7 +254,7 @@ q('pv-lmt').addEventListener('click', async (ev) => {
   if (!btn) return;
   btn.disabled = true;
   btn.textContent = '...';
-  await c('limitAdTracking', btn.dataset.next === '1');
+  await sendCommand('limitAdTracking', btn.dataset.next === '1');
   loadPrivacy();
 });
 q('pv-consent').addEventListener('click', async (ev) => {
@@ -262,7 +262,7 @@ q('pv-consent').addEventListener('click', async (ev) => {
   if (!btn) return;
   btn.disabled = true;
   btn.textContent = '...';
-  const r = await c('consent', { key: btn.dataset.key, enabled: btn.dataset.next === '1' });
+  const r = await sendCommand('consent', { key: btn.dataset.key, enabled: btn.dataset.next === '1' });
   if (!r || !r.ok) { btn.disabled = false; loadPrivacy(); return; }
   loadPrivacy();
 });
@@ -270,7 +270,7 @@ q('pv-consent').addEventListener('click', async (ev) => {
 
 async function setAdBlockMode(mode) {
   for (const m of ['off', 'ads', 'full']) { const b = q('ab-' + m); if (b) b.disabled = true; }
-  await c('setAdBlock', mode);
+  await sendCommand('setAdBlock', mode);
   await loadPrivacy();
   for (const m of ['off', 'ads', 'full']) { const b = q('ab-' + m); if (b) b.disabled = false; }
 }

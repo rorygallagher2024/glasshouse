@@ -134,7 +134,7 @@ realNextTick(function () {
 
                   // 5. allowOnWebos10 in config.json turns them back on, flagged
                   config.allowOnWebos10 = true;
-                  assert.strictEqual(screensavers.held(), false);
+                  assert.strictEqual(screensavers.heldBack(), false);
                   var over = screensavers.screensaverList();
                   assert.strictEqual(over.held, false);
                   assert.strictEqual(over.heldOverridden, true);

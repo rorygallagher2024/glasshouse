@@ -1,7 +1,7 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
 var msg = require('./say').msg;
 var fs = require('fs');
-var num = require('./util').num;
+var toInt = require('./util').toInt;
 var mkdirp = require('./util').mkdirp;
 var path = require('path');
 var zlib = require('zlib');
@@ -50,7 +50,7 @@ function setUpdateState(state, err) {
 
 function verParts(v) {
   var a = String(v || '').replace(/^v/i, '').split('.');
-  return [num(a[0], 0), num(a[1], 0), num(a[2], 0), num(a[3], 0)];
+  return [toInt(a[0], 0), toInt(a[1], 0), toInt(a[2], 0), toInt(a[3], 0)];
 }
 
 function verNewer(a, b) {
@@ -146,7 +146,7 @@ function scheduleUpdateChecks(firstMs) {
   if (updateFirstTimer) { clearTimeout(updateFirstTimer); updateFirstTimer = null; }
   if (updateEveryTimer) { clearInterval(updateEveryTimer); updateEveryTimer = null; }
   if (!(config.update && config.update.check)) return;
-  var everyH = num(config.update.intervalHours, 24);
+  var everyH = toInt(config.update.intervalHours, 24);
   if (!(everyH >= 1 && everyH <= 168)) everyH = 24;
   if (firstMs) {
     updateFirstTimer = setTimeout(function () {

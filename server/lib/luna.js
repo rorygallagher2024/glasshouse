@@ -40,11 +40,11 @@ var STARTUP_MS = 30000;
  * "later" by the old clock then waited out the whole step, every call and
  * subscription with it, while the heartbeat carried on.
  */
-function mono() {
+function monotonicMs() {
   var t = process.hrtime();
   return t[0] * 1000 + t[1] / 1e6;
 }
-var bornAt = mono();
+var bornAt = monotonicMs();
 var launches = [];
 var launchTimer = null;
 var nextLaunchAt = 0;
@@ -56,7 +56,7 @@ function launch(fn) {
 
 function drainLaunches() {
   if (launchTimer || !launches.length) return;
-  var now = mono();
+  var now = monotonicMs();
   var gap = now - bornAt < STARTUP_MS ? STARTUP_GAP_MS : GAP_MS;
   var wait = nextLaunchAt - now;
   if (wait > 0) {
@@ -68,7 +68,7 @@ function drainLaunches() {
   drainLaunches();
 }
 
-function pump() {
+function startWaiting() {
   while (running < PARALLEL && waiting.length) {
     var job = waiting.shift();
     running++;
@@ -101,10 +101,10 @@ function runNow(job) {
       if (!job.retried) {
         job.retried = true;
         waiting.unshift(job);
-        return pump();
+        return startWaiting();
       }
     }
-    pump();
+    startWaiting();
     var parsed = null;
     if (!err && stdout) {
       try { parsed = JSON.parse(stdout); } catch (e) {}
@@ -117,7 +117,7 @@ function call(uri, payload, cb, appId) {
   var args = appId ? ['-a', appId] : [];
   args = args.concat(['-n', '1', '-w', '2000', '-f', 'luna://' + uri, JSON.stringify(payload || {})]);
   waiting.push({ args: args, cb: cb });
-  pump();
+  startWaiting();
 }
 
 function Subscription(uri, payload, appId, handlers) {

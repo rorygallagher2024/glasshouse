@@ -110,16 +110,16 @@ document.addEventListener('click', async ev => {
   const key = btn.dataset.oled, next = btn.dataset.next;
   btn.disabled = true;
   if (key === 'screenShift') {
-    await c('screenShift', next);
+    await sendCommand('screenShift', next);
   } else if (key === 'logoDimming') {
-    await c('logoDimming', next);
+    await sendCommand('logoDimming', next);
   } else {
     const on = next === '1';
     if (!on && !confirm(t('oled.protection.confirm', 'Switching this off removes a protection against burn-in. Continue?'))) {
       btn.disabled = false;
       return;
     }
-    await c('oledProtection', { key, enabled: on });
+    await sendCommand('oledProtection', { key, enabled: on });
   }
   loadOledCare();
 });

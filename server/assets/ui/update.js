@@ -275,14 +275,14 @@ async function installUpdate() {
 async function toggleTvUpdates() {
   const b = q('upd-tvblock');
   b.disabled = true;
-  const r = await c('blockTvUpdates', !b.dataset.on);
+  const r = await sendCommand('blockTvUpdates', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
 
 async function toggleAutoCheck() {
   const b = q('upd-auto');
   b.disabled = true;
-  const r = await c('updateAutoCheck', !b.dataset.on);
+  const r = await sendCommand('updateAutoCheck', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
 
@@ -324,7 +324,7 @@ async function toggleTvApp() {
   tvAppBusy = true;
   btn.disabled = true;
   btn.textContent = adding ? t('server.tvApp.adding', 'Adding\u2026') : t('server.tvApp.removing', 'Removing\u2026');
-  const r = await c(adding ? 'tvAppInstall' : 'tvAppRemove');
+  const r = await sendCommand(adding ? 'tvAppInstall' : 'tvAppRemove');
   tvAppBusy = false;
   if (!r || !r.ok) q('upd-msg').textContent = (r && r.error) || t('server.tvApp.failed', 'Could not change it.');
   loadTvApp();

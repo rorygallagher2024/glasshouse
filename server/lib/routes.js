@@ -156,7 +156,7 @@ function readConfigFile() {
   return {};
 }
 
-function str(v) { return typeof v === 'string' ? v.trim() : ''; }
+function trimmedString(v) { return typeof v === 'string' ? v.trim() : ''; }
 
 /*
  * A topic segment ends up in every topic this bridge publishes. MQTT wildcards
@@ -173,7 +173,7 @@ function validateSettings(j) {
   var out = { mqtt: {}, device: {} }, e = [];
 
   out.mqtt.enabled = !!m.enabled;
-  out.mqtt.host = str(m.host);
+  out.mqtt.host = trimmedString(m.host);
   if (out.mqtt.enabled && !out.mqtt.host) e.push('a broker address is required to enable MQTT');
 
   if (m.port === null || m.port === undefined || m.port === '') {
@@ -186,7 +186,7 @@ function validateSettings(j) {
 
   out.mqtt.tls = !!m.tls;
   out.mqtt.tlsRejectUnauthorized = m.tlsRejectUnauthorized !== false;
-  out.mqtt.username = str(m.username);
+  out.mqtt.username = trimmedString(m.username);
 
   /*
    * The password is never sent to the browser, so an absent field means
@@ -194,9 +194,9 @@ function validateSettings(j) {
    */
   if (typeof m.password === 'string') out.mqtt.password = m.password;
 
-  out.mqtt.topicPrefix = str(m.topicPrefix) || 'lgtv';
+  out.mqtt.topicPrefix = trimmedString(m.topicPrefix) || 'lgtv';
   if (badTopic(out.mqtt.topicPrefix)) e.push('topic prefix cannot contain +, # or spaces, or start or end with /');
-  out.mqtt.discoveryPrefix = str(m.discoveryPrefix) || 'homeassistant';
+  out.mqtt.discoveryPrefix = trimmedString(m.discoveryPrefix) || 'homeassistant';
   if (badTopic(out.mqtt.discoveryPrefix)) e.push('discovery prefix cannot contain +, # or spaces, or start or end with /');
 
   var iv = parseInt(m.telemetryIntervalMs, 10);
@@ -217,9 +217,9 @@ function validateSettings(j) {
    * The device id keys every discovery topic and every entity id in Home
    * Assistant. Changing it orphans the old entities rather than renaming them.
    */
-  out.device.id = str(d.id);
+  out.device.id = trimmedString(d.id);
   if (!/^[a-z0-9_]{1,64}$/.test(out.device.id)) e.push('device id must be 1-64 characters of a-z, 0-9 or _');
-  out.device.name = str(d.name);
+  out.device.name = trimmedString(d.name);
 
   // Only when the form sends it, so a client without the switch leaves it be.
   // piccap.pollIntervalMs stays as the file has it: writeSettings merges keys.

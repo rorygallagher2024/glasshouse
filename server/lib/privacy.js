@@ -3,7 +3,7 @@ var say = require('./say');
 var msg = say.msg;
 var list = say.list;
 var fs = require('fs');
-var rd = require('./util').rd;
+var readTrimmed = require('./util').readTrimmed;
 var execFile = require('child_process').execFile;
 
 var ADBLOCK_HOSTS_FILE = '/var/lib/tvweb/adblock_hosts';
@@ -63,7 +63,7 @@ var ADBLOCK_FALLBACK_COUNTRIES = ['us', 'gb', 'au', 'br', 'ca', 'de', 'fr'];
 var COUNTRY_FILE = '/var/lib/tvweb/country';
 
 function adBlockAds() {
-  var country = (rd(COUNTRY_FILE) || '').toLowerCase();
+  var country = (readTrimmed(COUNTRY_FILE) || '').toLowerCase();
   var prefixes = ADBLOCK_REGION_PREFIXES.concat(/^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES);
   var list = ADBLOCK_ADS.slice();
   ADBLOCK_REGIONAL.forEach(function (name) {
@@ -230,7 +230,7 @@ function clearCache() {
 
 function storeHost() {
   try {
-    var j = JSON.parse(rd('/var/palm/data/com.webos.appInstallService/serverInfo') || '{}');
+    var j = JSON.parse(readTrimmed('/var/palm/data/com.webos.appInstallService/serverInfo') || '{}');
     var m = /^[a-z]+:\/\/([^\/:?#]+)/i.exec(String(j.serverUrl || ''));
     return m ? m[1].toLowerCase() : null;
   } catch (e) { return null; }
@@ -265,7 +265,7 @@ function isTableMounted() {
 }
 
 function flagMode() {
-  var flag = rd(ADBLOCK_FLAG_FILE);
+  var flag = readTrimmed(ADBLOCK_FLAG_FILE);
   return !flag ? 'off' : flag === 'ads' ? 'ads' : 'full';
 }
 
@@ -330,7 +330,7 @@ function applyHostsTable(cb) {
       function (err) { clearCache(); cb(err ? 'could not mount the hosts table' : null); });
   }
   var liftHbc = function () {
-    var hosts = rd('/etc/hosts') || '';
+    var hosts = readTrimmed('/etc/hosts') || '';
     if (hosts.indexOf('webosbrew startup script') === -1) return done();
     execFile('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { done(); });
   };
@@ -384,7 +384,7 @@ function loadConsentGroups() {
   if (consentGroups) return consentGroups;
   consentGroups = {};
   try {
-    var j = JSON.parse(rd('/var/palm/license/eulaInfoNetwork.json') || '{}');
+    var j = JSON.parse(readTrimmed('/var/palm/license/eulaInfoNetwork.json') || '{}');
     var list = (j.eulaMappingList && j.eulaMappingList.eulaInfo) || [];
     for (var i = 0; i < list.length; i++) {
       var e = list[i];
@@ -536,7 +536,7 @@ function annotateConsent(consent, eln) {
 }
 
 function readConsentFlags() {
-  var raw = rd('/var/luna/preferences/eula');
+  var raw = readTrimmed('/var/luna/preferences/eula');
   if (!raw) return null;
   var groups = loadConsentGroups();
   var out = { known: [], other: [] };
@@ -573,7 +573,7 @@ function readConsentFlags() {
 }
 
 function stoppedServices() {
-  var raw = rd(SERVICES_FILE), out = [];
+  var raw = readTrimmed(SERVICES_FILE), out = [];
   if (!raw) return out;
   var parts = raw.split('\n');
   for (var i = 0; i < parts.length; i++) {
@@ -835,7 +835,7 @@ function learnCountry() {
   luna('com.webos.settingsservice/getSystemSettings',
        { category: 'option', keys: ['smartServiceCountryCode2'] }, function (r) {
     var cc = String((r && r.settings && r.settings.smartServiceCountryCode2) || '').toLowerCase();
-    if (!/^[a-z]{2}$/.test(cc) || cc === (rd(COUNTRY_FILE) || '').toLowerCase()) return;
+    if (!/^[a-z]{2}$/.test(cc) || cc === (readTrimmed(COUNTRY_FILE) || '').toLowerCase()) return;
     try {
       fs.writeFileSync(COUNTRY_FILE, cc, 'utf8');
       if (isTableMounted()) fs.writeFileSync(ADBLOCK_HOSTS_FILE, adBlockHostsTable(flagMode()), 'utf8');
