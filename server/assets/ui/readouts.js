@@ -383,7 +383,7 @@ async function tick() {
     }
     /* Flash wear is independent of panel type, but the counters do not exist
        on webOS 3.x - drop the cells rather than print "unknown" twice. */
-    const wear_ = !(d.capabilities && d.capabilities.emmcWear === false);
+    const wear_ = !(d.capabilities && d.capabilities.emmcWear === false) && !(d.emmc && d.emmc.wear === 'unknown');
     q('flashwear-cell').hidden = !wear_;
     q('flashhealth-cell').hidden = !wear_;
     if (wear_) {

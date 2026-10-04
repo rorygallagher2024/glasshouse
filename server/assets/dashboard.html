@@ -374,8 +374,10 @@ function sysRows(d) {
     hint: t('tv.system.memoryFree.hint', 'Free memory is expected to be low: webOS keeps apps loaded so they reopen quickly, and releases them under pressure.') });
   if (d.swap && d.swap.total) r.push({ label: t('tv.system.swapFree', 'Swap free'), value: t('tv.system.freeOf', '{free} of {total}', { free: fmtKB(d.swap.free), total: fmtKB(d.swap.total) }),
     hint: t('tv.system.swapFree.hint', 'Compressed memory held in RAM rather than on disk, so heavy use costs speed but does not wear the storage.') });
-  if (d.emmc && d.emmc.health) r.push({ label: t('tv.system.emmcHealth', 'eMMC health'), value: d.emmc.health,
-    hint: t('tv.system.emmcHealth.hint', 'Life left in the built-in storage, as the chip itself reports it. It falls very slowly and cannot be reset.') });
+  var emmcWearAvailable = !(d.capabilities && d.capabilities.emmcWear === false);
+  if (emmcWearAvailable && d.emmc && d.emmc.health && d.emmc.health !== 'unknown')
+    r.push({ label: t('tv.system.emmcHealth', 'eMMC health'), value: d.emmc.health,
+      hint: t('tv.system.emmcHealth.hint', 'Life left in the built-in storage, as the chip itself reports it. It falls very slowly and cannot be reset.') });
 
   r.push(head(t('tv.system.head.thisTv', 'This TV')));
   if (d.device && d.device.model) r.push({ label: t('tv.system.model', 'Model'), value: d.device.model });
