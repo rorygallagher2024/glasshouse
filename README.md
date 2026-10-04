@@ -498,7 +498,7 @@ Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` o
 
 ### PicCap
 
-[PicCap](https://github.com/TBSniller/piccap) captures the TV's screen for a Hyperion server, which drives an ambient light from it. Where PicCap is installed, the Advanced tab has a **PicCap capture** switch that starts and stops the capture, so the light uses nothing while it is off, and Home Assistant gets a **PicCap Capture** switch under Controls & Media. Nothing is asked of PicCap on a TV without it. Its Home Assistant entity can be switched off like any other, which also stops the server checking PicCap's state every 30 seconds; `"piccap": { "enabled": false }` in `config.json` keeps it out of Home Assistant too.
+[PicCap](https://github.com/TBSniller/piccap) captures the TV's screen for a Hyperion server, which drives an ambient light from it. Where PicCap is installed, the Advanced tab has a **PicCap capture** switch that starts and stops the capture, so the light uses nothing while it is off, and Home Assistant gets a **PicCap Capture** switch under Controls & Media. Nothing is asked of PicCap on a TV without it. Its Home Assistant entity can be switched off like any other, which also stops the server checking PicCap's state every 30 seconds.
 
 The retained state topic `<topicPrefix>/state/piccap/power` carries `ON` or `OFF`, and the command topic `<topicPrefix>/command/piccap/power` accepts `ON` or `OFF`. Commands need `allowControl`. Telemetry includes boolean `piccap.power` while PicCap answers.
 

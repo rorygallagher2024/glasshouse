@@ -20,12 +20,27 @@ function luna(uri, payload, cb) {
   process.nextTick(function () { cb(r, JSON.stringify(r)); });
 }
 var publishes = [];
+var availability = [];
 var piccap = piccapModule.init({
   luna: luna,
+  pollIntervalMs: 1000,
   installed: function () { return installed; },
-  wanted: function () { return wanted; }
+  wanted: function () { return wanted; },
+  onAvailableChange: function (a) { availability.push(a); }
 });
 piccap.attachMqtt({ client: { connected: true, publish: function (t, p) { publishes.push(p); } }, prefix: 'tv', allowControl: true });
+
+// 0. The old piccap.enabled becomes the entity setting it duplicated
+var cfgOff = { piccap: { enabled: false, pollIntervalMs: 30000 }, mqtt: { entities: { controls: true, disabled: ['mute'] } } };
+assert.strictEqual(piccapModule.migrateConfig(cfgOff), true);
+assert.deepEqual(cfgOff, { piccap: { pollIntervalMs: 30000 }, mqtt: { entities: { controls: true, disabled: ['mute', 'piccap'] } } },
+  'off stays off, as an unticked entity, and the key goes');
+var cfgOn = { piccap: { enabled: true } };
+assert.strictEqual(piccapModule.migrateConfig(cfgOn), true);
+assert.deepEqual(cfgOn, {}, 'true meant nothing, so it just goes');
+assert.strictEqual(piccapModule.migrateConfig({ piccap: { pollIntervalMs: 1000 } }), false, 'nothing to do, nothing written');
+assert.strictEqual(piccapModule.migrateConfig({}), false);
+console.log('  ✓ an old piccap.enabled becomes the PicCap Capture entity setting');
 
 // piccap.js swallows what its callbacks throw, so a failure exits here.
 function checked(fn) {
@@ -61,8 +76,24 @@ piccap.status(checked(function (s) {
       assert.strictEqual(r.ok, true);
       assert.ok(calls.indexOf('org.webosbrew.piccap.service/start') !== -1, 'PicCap told to start: ' + calls.join(', '));
       console.log('  ✓ the dashboard\'s switch starts the capture');
-      console.log('ALL test-piccap-gate.js assertions passed!\n');
-      process.exit(0);
+
+      // 4. PicCap uninstalled: the next check notices, asks nothing more, and
+      // Home Assistant's entity and state go
+      installed = false;
+      availability = [];
+      publishes = [];
+      calls = [];
+      setTimeout(checked(function () {
+        assert.deepEqual(calls, [], 'nothing asked once it is gone');
+        assert.deepEqual(availability, [false], 'discovery told it is gone');
+        assert.ok(publishes.indexOf('') !== -1, 'its retained state cleared');
+        piccap.status(checked(function (s3) {
+          assert.strictEqual(s3, null, 'and the dashboard\'s switch hides');
+          console.log('  ✓ an uninstalled PicCap is noticed at the next check and no longer asked');
+          console.log('ALL test-piccap-gate.js assertions passed!\n');
+          process.exit(0);
+        }));
+      }), 1300);
     }));
   }));
 }));

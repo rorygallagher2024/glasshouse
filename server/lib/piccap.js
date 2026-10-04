@@ -206,9 +206,29 @@ function initNoop() {
   };
 }
 
+/*
+ * "piccap": {"enabled": ...} came from when PicCap was opt-in. It is offered
+ * wherever it is installed now, and Home Assistant's PicCap Capture entity is
+ * switched off like any other, so a saved false becomes exactly that and the
+ * key goes. Changes cfg in place; true when the file needs writing.
+ */
+function migrateConfig(cfg) {
+  if (!cfg || !cfg.piccap || typeof cfg.piccap !== 'object' || !('enabled' in cfg.piccap)) return false;
+  if (cfg.piccap.enabled === false) {
+    cfg.mqtt = cfg.mqtt || {};
+    cfg.mqtt.entities = cfg.mqtt.entities || {};
+    var off = Array.isArray(cfg.mqtt.entities.disabled) ? cfg.mqtt.entities.disabled : [];
+    if (off.indexOf('piccap') === -1) off.push('piccap');
+    cfg.mqtt.entities.disabled = off;
+  }
+  delete cfg.piccap.enabled;
+  if (!Object.keys(cfg.piccap).length) delete cfg.piccap;
+  return true;
+}
+
 /* Whether the app is on the TV: a look at its folder, without asking its service. */
 function installed() {
   try { return fs.existsSync(APP_DIR); } catch (e) { return false; }
 }
 
-module.exports = { init: init, initNoop: initNoop, installed: installed, APP_DIR: APP_DIR };
+module.exports = { init: init, initNoop: initNoop, installed: installed, migrateConfig: migrateConfig, APP_DIR: APP_DIR };

@@ -84,8 +84,8 @@ var CONFIG = {
   // cut (#366). File-only, like the settings above.
   allowOnWebos10: false,
 
-  // PicCap is offered to Home Assistant where it is installed; "enabled":
-  // false keeps it out, as the MQTT tab's old PicCap switch saved it.
+  // PicCap is offered where it is installed; its Home Assistant entity is
+  // switched off like any other.
   piccap: { pollIntervalMs: 30000 },
 
   // Home Assistant & MQTT Integration
@@ -213,6 +213,20 @@ function loadConfig() {
   }
 }
 loadConfig();
+
+// The old piccap.enabled, folded into the entity setting it duplicated.
+(function migrateConfigFile() {
+  try {
+    var raw = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    if (!piccapTransport.migrateConfig(raw)) return;
+    var tmp = CONFIG_FILE + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(raw, null, 2), 'utf8');
+    fs.chmodSync(tmp, parseInt('600', 8));
+    fs.renameSync(tmp, CONFIG_FILE);
+    piccapTransport.migrateConfig(CONFIG);
+    console.log('config: piccap.enabled replaced by the PicCap Capture entity setting');
+  } catch (e) {}
+})();
 
 /*
  * Command-line overrides, applied after the config file so they always win.
@@ -365,7 +379,6 @@ var piccapChanged = function () {};
  * its PicCap Capture entity is on: each check starts a luna-send.
  */
 function piccapWanted() {
-  if (CONFIG.piccap && CONFIG.piccap.enabled === false) return false;
   var ents = (CONFIG.mqtt && CONFIG.mqtt.entities) || {};
   var off = ents.disabled || [];
   return ents.controls !== false && off.indexOf('piccap') === -1 && off.indexOf('switch.piccap') === -1;
