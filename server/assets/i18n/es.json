@@ -4511,10 +4511,6 @@
   "text": "Limita cuánto tiempo mantiene el panel el brillo máximo, lo que lo protege y reduce el calor. Desactivarlo hace más probable la retención de imagen.",
   "from": "Limits how long the panel holds peak brightness, which protects it and keeps heat down. Switching it off makes burn-in more likely."
  },
- "tv.oled.thisIsNotAn": {
-  "text": "Esto no es un panel OLED",
-  "from": "This is not an OLED panel"
- },
  "tv.oled.totalPowerOnHours": {
   "text": "Horas totales encendida",
   "from": "Total power-on hours"
