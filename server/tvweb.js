@@ -952,6 +952,9 @@ function setupHomeAssistant() {
     mqttClient.publish(statusTopic, statusPayload(), true);
     lgSettings.collect(LGS_SECTIONS, function (ls) {
     telemetry.collectStats(function(s) {
+      // Over the whole interval since the last publish, whoever else reads.
+      var cpuOwn = telemetry.cpuSincePublish(s.coresTotal);
+      if (cpuOwn !== null) s.load = cpuOwn;
       s.lgs = {};
       ls.rows.forEach(function (r) { s.lgs[r.id] = r.type === 'switch' ? r.on : r.value; });
       var lgsSig = ls.rows.map(function (r) {

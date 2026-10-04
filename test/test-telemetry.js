@@ -103,6 +103,16 @@ console.log('Running test-telemetry.js ...');
   r = telemetry.statCpu(4, 120000);
   assert.deepEqual(Object.keys(r.cores), ['0']);
   assert.ok(r.overall >= 0 && r.overall <= 100);
+  // Home Assistant's window runs from its own last publish, however often
+  // the dashboards read in between
+  stat([[0, 2000, 20000], [1, 2000, 20000]]);
+  telemetry.cpuSincePublish(4, 190000);
+  stat([[0, 2100, 20900], [1, 2100, 20900]]);
+  telemetry.statCpu(4, 200000);
+  stat([[0, 2400, 21600], [1, 2400, 21600]]);
+  telemetry.statCpu(4, 210000);
+  stat([[0, 2500, 22500], [1, 2500, 22500]]);
+  assert.strictEqual(telemetry.cpuSincePublish(4, 250000), 8, '1000 busy of 4 x 3000 since the last publish, not the dashboards\' last window');
   delete mockEnv.files['/proc/stat'];
   console.log('  ✓ CPU use is measured over the window, against every core present');
 })();

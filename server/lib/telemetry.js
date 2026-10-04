@@ -214,10 +214,12 @@ function socTemp() {
  * every second does not cut the window that Home Assistant's figure covers.
  */
 var CPU_WINDOW_MS = 5000;
-var prevCpu = null, lastCpu = { cores: {}, overall: null };
-function statCpu(totalCores, at) {
-  var now = {}, t = at || Date.now();
-  if (prevCpu && t - prevCpu.time < CPU_WINDOW_MS) return lastCpu;
+// One window per reader: the dashboards' share one, and Home Assistant's
+// publish keeps its own, so a dashboard open in standby does not shrink the
+// minute that each published figure stands for to its last few seconds.
+var cpuWindows = {};
+function readCoreTicks() {
+  var now = {};
   var lines = (rd('/proc/stat') || '').split('\n');
   for (var i = 0; i < lines.length; i++) {
     var m = lines[i].match(/^cpu(\d+)\s+(.*)$/);
@@ -226,9 +228,17 @@ function statCpu(totalCores, at) {
     for (var j = 0; j < f.length; j++) total += f[j] || 0;
     now[m[1]] = { total: total, idle: (f[3] || 0) + (f[4] || 0) };
   }
-  var prev = prevCpu;
-  prevCpu = { time: t, ticks: now };
-  if (!prev) return lastCpu;
+  return now;
+}
+
+function statCpu(totalCores, at, reader, minMs) {
+  var t = at || Date.now();
+  var w = cpuWindows[reader || 'stats'] || (cpuWindows[reader || 'stats'] = { prev: null, last: { cores: {}, overall: null } });
+  if (w.prev && t - w.prev.time < (minMs === undefined ? CPU_WINDOW_MS : minMs)) return w.last;
+  var now = readCoreTicks();
+  var prev = w.prev;
+  w.prev = { time: t, ticks: now };
+  if (!prev) return w.last;
   var cores = {}, busy = 0, elapsed = 0;
   Object.keys(now).forEach(function (c) {
     var p = prev.ticks[c];
@@ -241,11 +251,16 @@ function statCpu(totalCores, at) {
     if (dt > elapsed) elapsed = dt;
   });
   var n = Math.max(totalCores || 0, Object.keys(now).length);
-  lastCpu = {
+  w.last = {
     cores: cores,
     overall: elapsed > 0 && n > 0 ? Math.max(0, Math.min(100, Math.round(100 * busy / (elapsed * n)))) : null
   };
-  return lastCpu;
+  return w.last;
+}
+
+// Home Assistant's figure: the whole processor since its previous publish.
+function cpuSincePublish(totalCores, at) {
+  return statCpu(totalCores, at, 'publish', 0).overall;
 }
 
 // The cores this processor has, online or not, from a range list such as "0-3".
@@ -1429,6 +1444,7 @@ module.exports = {
   emmcInfo: emmcInfo,
   onlineCpus: onlineCpus,
   statCpu: statCpu,
+  cpuSincePublish: cpuSincePublish,
   socMhz: socMhz,
   gpuClockMhz: gpuClockMhz,
   swapBacking: swapBacking,
