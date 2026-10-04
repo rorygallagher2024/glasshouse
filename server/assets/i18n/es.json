@@ -451,6 +451,14 @@
   "text": "Ahorro de energía",
   "from": "Energy saving"
  },
+ "ctl.backlight": {
+  "text": "Retroiluminación",
+  "from": "Backlight"
+ },
+ "ctl.oledLight": {
+  "text": "Luz OLED",
+  "from": "OLED light"
+ },
  "ctl.fastForward": {
   "text": "Avance rápido",
   "from": "Fast Fwd"

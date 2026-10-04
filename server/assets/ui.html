@@ -301,6 +301,7 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
   opacity:0;margin:0;padding:0;cursor:pointer;pointer-events:none;
 }
 .vol-wrap input[type=range]:focus{outline:none}
+.vol-wrap.full{grid-column:1/-1}
 #picmodes,#energysteps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
 #picmodes button,#energysteps button{
   font-size:11.5px;letter-spacing:.06em;padding:12px 6px;line-height:1.25;
@@ -1040,6 +1041,16 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
         <!-- Built from what the TV says it will accept: the settable modes
              change with the dynamic range of what is playing. -->
         <div class="btns" id="picmodes"></div>
+      </div>
+
+      <!-- The current picture mode's own level: the TV keeps one per mode. -->
+      <div class="set"><div class="lbl"><span id="bl-name"></span> &middot; <span id="bl-lbl" class="num">&mdash;</span></div>
+        <div class="vol-row">
+          <div class="vol-wrap full" id="bl-wrap" role="group" aria-label="OLED light" data-t-aria-label="ctl.oledLight">
+            <div class="vol-fill" id="bl-fill"></div>
+            <input type="range" id="bl-slider" min="0" max="100" value="0" aria-label="OLED light" data-t-aria-label="ctl.oledLight">
+          </div>
+        </div>
       </div>
 
       <div class="set"><div class="lbl"><span data-t="ctl.energySaving">Energy saving</span> &middot; <span id="energy-lbl" class="num">&mdash;</span></div>
@@ -2369,6 +2380,13 @@ async function tick() {
         }
       }
 
+      if (!blDragging && typeof d.picture.backlight === 'number') {
+        const blLeased = getLease('backlight', d.picture.backlight);
+        showBacklight(blLeased !== undefined ? blLeased : d.picture.backlight);
+      }
+      if (q('bl-name')) q('bl-name').textContent = isOledSet === false
+        ? t('ctl.backlight', 'Backlight') : t('ctl.oledLight', 'OLED light');
+
       const esLeased = getLease('energySaving', d.picture.energySaving);
       const es = esLeased !== undefined ? esLeased : (d.picture.energySaving || '');
       if (q('energy-lbl')) q('energy-lbl').textContent = (ENERGY_STEPS[es] || es || '—').toUpperCase();
@@ -2964,6 +2982,69 @@ function arOffRow(win) {
   }
 }
 
+/* OLED light, or Backlight on an LCD. Sent once on release, like volume, and
+   held by a lease so the next tick does not snap it back before the TV has
+   taken it. */
+let blDragging = false;
+
+function showBacklight(v) {
+  if (q('bl-slider')) q('bl-slider').value = v;
+  if (q('bl-fill')) q('bl-fill').style.width = v + '%';
+  if (q('bl-lbl')) q('bl-lbl').textContent = v;
+}
+
+function initBacklightSlider() {
+  const wrap = q('bl-wrap');
+  const slider = q('bl-slider');
+  if (!wrap || !slider) return;
+  let active = false;
+  const at = e => {
+    const r = wrap.getBoundingClientRect();
+    return Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 100)));
+  };
+  const send = async v => {
+    showBacklight(v);
+    setLease('backlight', v);
+    await c('backlight', v);
+  };
+  const stop = e => {
+    active = false;
+    blDragging = false;
+    wrap.classList.remove('dragging');
+    try { wrap.releasePointerCapture(e.pointerId); } catch (err) {}
+  };
+  wrap.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    active = true;
+    blDragging = true;
+    wrap.classList.add('dragging');
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    showBacklight(at(e));
+  });
+  wrap.addEventListener('pointermove', e => { if (active) showBacklight(at(e)); });
+  wrap.addEventListener('pointerup', async e => {
+    if (!active) return;
+    stop(e);
+    await send(at(e));
+  });
+  wrap.addEventListener('pointercancel', e => {
+    if (!active) return;
+    stop(e);
+    clearLease('backlight');
+    setTimeout(tick, 0);
+  });
+  slider.addEventListener('keydown', async e => {
+    const steps = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 };
+    let v;
+    if (steps[e.key]) v = Number(slider.value) + steps[e.key];
+    else if (e.key === 'Home') v = 0;
+    else if (e.key === 'End') v = 100;
+    else return;
+    e.preventDefault();
+    await send(Math.max(0, Math.min(100, v)));
+  });
+}
+
 let volDragging = false;
 let volActive = false;
 
@@ -3073,6 +3154,7 @@ function initVolSlider() {
   });
 }
 initVolSlider();
+initBacklightSlider();
 
 function toggleMute() {
   muted = !muted;
