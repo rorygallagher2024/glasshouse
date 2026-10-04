@@ -6,6 +6,50 @@ Branch, push the branch, open a PR. This applies to "commit and push" too.
 Push to an existing PR branch rather than opening a second one for the same
 line of work. Merging is the maintainer's call.
 
+# Code map
+
+The server runs on the TV under node 0.12, so it and the pages the TV's own
+browser shows are strict ES5: `scripts/check-es5.py` lists what it rejects.
+Only `ui.html` and `assets/ui/` run in a phone or computer's browser and may
+use modern JavaScript.
+
+- `server/tvweb.js` - entry point: config, wiring the lib modules together,
+  the MQTT bridge (`setupHomeAssistant`) and the heartbeat.
+- `server/lib/routes.js` - every HTTP route, auth, first-run setup, and
+  serving the dashboard (`loadUI` puts `assets/ui/` back inline).
+- `server/lib/` otherwise, one concern each: `telemetry` (stats and hardware
+  detection), `controls` (power, volume, input and other commands), `ha`
+  (Home Assistant entities), `topics` (MQTT topic names), `mqtt` (the client),
+  `mqtt-state` and `state` (live state), `luna` (luna-send calls and
+  subscriptions), `notifications`, `privacy` (consent, ad blocking),
+  `oled` (panel care, service menu), `lgsettings` (LG's own settings as
+  rows), `game`, `apps` (tiles, uninstall, saved pages), `installer` and
+  `repo` (installing .ipk packages, the Homebrew Channel catalog),
+  `services` (background services), `screensavers`, `updater` and `fetch`
+  (self-update over curl or wget), `piccap`, `say` (server-side strings),
+  `util` (small shared helpers).
+- `server/assets/ui.html` - the web dashboard's markup; its CSS and script
+  are in `server/assets/ui/`, one script per tab or concern.
+- `server/assets/dashboard.html`, `setup.html`, `setup-phone.html` - the pages
+  the TV app shows. `server/assets/dashboard-app/` is the TV app itself.
+- `server/assets/i18n/` - translations. `server/assets/screensavers/` - QML.
+- `server/tvwebctl`, `server/50-tvweb.sh` - start, stop and watchdog on the TV,
+  and the boot hook. `server/deploy.sh` installs over ssh; its `FILES` list
+  must name every file the server needs.
+- `hbc/` and `scripts/build-ipk.py` - the Homebrew Channel package.
+- `test/` - `node test/run-all.js` runs every `test-*.js`; fixtures are real
+  stats from a B8 (webOS 4) and a G4 (webOS 9).
+
+Before pushing, run what CI runs: `node test/run-all.js`, `npx tsc`, and
+`scripts/check-es5.py`, `check-ui-ids.py`, `check-strings.py`,
+`check-screensavers.py` and `check-drift.py`.
+
+For background, open the doc for the area rather than README.md:
+docs/IMPLEMENTATION.md (platform quirks and how each subsystem works),
+docs/HOME-ASSISTANT.md (entities), docs/TV-CHANGES.md (what the server changes
+on the TV), docs/TV-SPECS.md (hardware of the tested TVs), docs/ACR.md,
+docs/SECURITY.md and docs/STRINGS.md.
+
 # Writing conventions
 
 Applies to commit messages, PR descriptions, release notes, README and docs.
