@@ -71,6 +71,7 @@ var HA_ENTITIES = [
   { id: 'mute', type: 'switch', name: 'Mute', cat: 'controls' },
   { id: 'volume', type: 'number', name: 'Volume', cat: 'controls' },
   { id: 'input_source', type: 'select', name: 'Input Source', cat: 'controls' },
+  { id: 'piccap', type: 'switch', name: 'PicCap Capture', cat: 'controls' },
   { id: 'screen_notification', type: 'text', name: 'Screen Notification', cat: 'controls' },
   { id: 'picture_mode', type: 'select', name: 'Picture Mode (Select)', cat: 'controls' },
   { id: 'energy_saving', type: 'select', name: 'Energy Saving Step', cat: 'controls' },
@@ -247,9 +248,6 @@ for (var i = 0; i < HA_ENTITIES.length; i++) {
     ENTITY_CATEGORIES[_ent.id] = _ent.cat;
   }
 }
-// Not in the entity picker: the PicCap switch in the MQTT settings is its one
-// control, off by default where the picker's entries are on.
-ENTITY_CATEGORIES['switch.piccap'] = ENTITY_CATEGORIES.piccap = 'controls';
 
 function entityCategory(e) {
   if (!e) return 'diagnostics';

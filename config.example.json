@@ -8,7 +8,6 @@
   "allowPower": true,
   "token": "",
   "piccap": {
-    "enabled": false,
     "pollIntervalMs": 30000
   },
   "mqtt": {

@@ -219,6 +219,10 @@ async function tick() {
       const ltLogoVal = getLease('logoLight', lights.logo);
       advPill('logolight', 'lt_logo', lights.hasLogo ? (ltLogoVal !== undefined ? ltLogoVal : lights.logo) : undefined);
       if (q('adv-display')) q('adv-display').hidden = d.lgLogo === undefined;
+      const pc = d.piccapCapture;
+      const pcVal = getLease('piccap', pc ? pc.running : undefined);
+      advPill('piccap', 'btn_piccap', pc ? (pcVal !== undefined ? pcVal : pc.running) : undefined);
+      if (q('adv-piccap')) q('adv-piccap').hidden = !pc;
       const devVal = getLease('deviceDetection', d.deviceDetection);
       advPill('devdetect', 'btn_devdetect', devVal !== undefined ? devVal : d.deviceDetection);
       if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && !advLgsDevices;

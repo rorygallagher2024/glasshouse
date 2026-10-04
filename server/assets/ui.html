@@ -444,6 +444,18 @@
     </div>
   </div>
 
+  <!-- Only where PicCap is installed. -->
+  <div class="pv-sec adv-sec" id="adv-piccap" hidden data-t="adv.ambient">Ambient light</div>
+  <div class="prot-table">
+    <div class="prot-row" id="row-piccap" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.piccap">PicCap capture</div>
+        <div class="prot-desc" data-t="adv.piccap.desc">Sends what is on screen to PicCap's Hyperion server, which drives an ambient light behind the TV. Off stops the capture, and the light with it.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_piccap" onclick="togglePiccap()">&mdash;</button></div>
+    </div>
+  </div>
+
   <div class="pv-sec adv-sec" id="adv-sound" hidden data-t="adv.sound">Sound</div>
   <div class="prot-table" id="adv-lgs-sound" data-reload="loadAdvSettings"></div>
 
@@ -801,16 +813,6 @@
     Disabling an entity removes it cleanly from Home Assistant without leaving an orphaned state.</div>
 
   <div class="pv-table" id="cfg-ents"></div>
-  <!-- Offered where PicCap is installed; a row like the categories above. -->
-  <div class="pv-table" id="cfg-piccap-box" hidden>
-    <div class="pv-row">
-      <div>
-        <div class="n" data-t="mqtt.piccap">PicCap</div>
-        <div class="d" data-t="mqtt.piccap.desc">Adds a PicCap Capture switch to Home Assistant, to start and stop the screen capture that drives an ambient light.</div>
-      </div>
-      <button type="button" class="pill idle" id="cfg-piccap" onclick="cfgTogglePiccap()"></button>
-    </div>
-  </div>
 
   <details class="pv-d" id="cfg-fine" style="margin-top:16px">
     <summary>

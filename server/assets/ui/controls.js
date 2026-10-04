@@ -36,6 +36,7 @@ function flip(id) { const el = q(id); return el && el.dataset.on ? 'off' : 'on';
 function toggleLight(which) { sendCommand(which, flip(which === 'standbyLight' ? 'lt_standby' : 'lt_logo')); }
 function toggleQuickBoot() { sendCommand('quickBoot', flip('btn_quickboot')); }
 function toggleLgLogo() { sendCommand('lgLogo', flip('btn_lglogo')); }
+function togglePiccap() { sendCommand('piccap', flip('btn_piccap')); }
 function toggleWol() { sendCommand('wakeOnLan', flip('btn_wol')); }
 function toggleDeviceDetection() { sendCommand('deviceDetection', flip('btn_devdetect')); }
 function toggleAlwaysReady() { sendCommand('alwaysReady', flip('btn_ar')); }
@@ -137,6 +138,10 @@ function applyOptimistic(action, value) {
     const on = value === 'on' || value === true;
     setLease('lgLogo', on);
     advPill('lglogo', 'btn_lglogo', on);
+  } else if (action === 'piccap') {
+    const on = value === 'on' || value === true;
+    setLease('piccap', on);
+    advPill('piccap', 'btn_piccap', on);
   } else if (action === 'standbyLight') {
     const on = value === 'on' || value === true;
     setLease('standbyLight', on);

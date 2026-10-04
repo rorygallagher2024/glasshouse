@@ -84,8 +84,9 @@ var CONFIG = {
   // cut (#366). File-only, like the settings above.
   allowOnWebos10: false,
 
-  // PicCap status checks start a process on the TV, so this stays opt-in.
-  piccap: { enabled: false, pollIntervalMs: 30000 },
+  // PicCap is offered to Home Assistant where it is installed; "enabled":
+  // false keeps it out, as the MQTT tab's old PicCap switch saved it.
+  piccap: { pollIntervalMs: 30000 },
 
   // Home Assistant & MQTT Integration
   mqtt: {
@@ -359,13 +360,22 @@ var liveState = stateModule.init({
 
 // Set once MQTT is up: PicCap appearing or going changes the discovery.
 var piccapChanged = function () {};
-var piccap = CONFIG.piccap && CONFIG.piccap.enabled === true
-  ? piccapTransport.init({
-      luna: luna,
-      pollIntervalMs: CONFIG.piccap.pollIntervalMs,
-      onAvailableChange: function () { piccapChanged(); }
-    })
-  : piccapTransport.initNoop();
+/*
+ * Asks PicCap only where it is installed, and for Home Assistant only while
+ * its PicCap Capture entity is on: each check starts a luna-send.
+ */
+function piccapWanted() {
+  if (CONFIG.piccap && CONFIG.piccap.enabled === false) return false;
+  var ents = (CONFIG.mqtt && CONFIG.mqtt.entities) || {};
+  var off = ents.disabled || [];
+  return ents.controls !== false && off.indexOf('piccap') === -1 && off.indexOf('switch.piccap') === -1;
+}
+var piccap = piccapTransport.init({
+  luna: luna,
+  pollIntervalMs: CONFIG.piccap && CONFIG.piccap.pollIntervalMs,
+  wanted: piccapWanted,
+  onAvailableChange: function () { piccapChanged(); }
+});
 
 var notificationState = notifications.init({ luna: luna });
 
@@ -380,6 +390,7 @@ var TILE_HIDING_OFF = 'hiding home-screen tiles is not available when installed 
 
 controls.init({
   luna: luna,
+  piccap: piccap,
   clearLunaCache: clearLunaCache,
   config: CONFIG,
   telemetry: telemetry,
@@ -604,6 +615,7 @@ function appsChanged() {
 
 routes.init({
   config: CONFIG,
+  piccapStatus: piccap.status,
   repo: repo,
   installer: installer,
   configFile: CONFIG_FILE,
@@ -794,7 +806,7 @@ function setupHomeAssistant() {
       allowPower: CONFIG.allowPower,
       isOled: oled.getIsOled(),
       updatesElsewhere: fromHomebrewChannel(),
-      piccap: piccap.getState() !== null
+      piccap: piccapWanted() && piccap.getState() !== null
     });
 
     entities = ha.filterWithholds(entities, {

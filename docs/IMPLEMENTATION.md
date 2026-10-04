@@ -687,8 +687,8 @@ Custom QML screensavers are staged in `/var/lib/tvweb/screensaver` and bind-moun
 
 ---
 
-## Optional PicCap MQTT control
+## PicCap
 
-PicCap MQTT support is off by default and runs only when `piccap.enabled` is `true`. It polls independently of telemetry, every `piccap.pollIntervalMs` milliseconds (30 seconds by default). When PicCap is available, telemetry includes boolean `piccap.power`; the bridge publishes retained `ON` or `OFF` to `<prefix>/state/piccap/power`. The `<prefix>/command/piccap/power` topic accepts `ON` or `OFF` when `allowControl` is enabled. The bridge refreshes state after commands and on each MQTT connection. Discovery carries a `piccap` switch only while a status check has answered, and is republished when that changes. The settings form shows the switch where `/media/developer/apps/usr/palm/applications/org.webosbrew.piccap` exists, or while `piccap.enabled` is set, and saves only `piccap.enabled`.
+The server asks PicCap's service only where `/media/developer/apps/usr/palm/applications/org.webosbrew.piccap` exists, so a TV without it starts no `luna-send` for it. For Home Assistant it polls every `piccap.pollIntervalMs` milliseconds (30 seconds by default) while MQTT is connected and the `piccap` entity is wanted: not switched off in the entity settings, nor `"piccap": {"enabled": false}`. Telemetry includes boolean `piccap.power` while PicCap answers; the bridge publishes retained `ON` or `OFF` to `<prefix>/state/piccap/power`, and `<prefix>/command/piccap/power` accepts `ON` or `OFF` when `allowControl` is enabled. Discovery carries the `piccap` switch only while a status check has answered, and is republished when that changes. `/api/stats` adds `piccapCapture: {running}` where PicCap answers, for the Advanced tab's switch, which sends the `piccap` control.
 
 

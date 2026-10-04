@@ -157,18 +157,6 @@ function renderEntitiesUI() {
   if (countEl) countEl.textContent = t('mqtt.entities.active', '{n} of {total} active', { n: totalActive, total: totalEntities });
 }
 
-let cfgPiccap = false;
-function cfgSyncPiccap() {
-  updateToggle('cfg-piccap', {
-    cls: cfgPiccap ? 'good' : 'idle',
-    label: cfgPiccap ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled')
-  });
-}
-function cfgTogglePiccap() {
-  cfgPiccap = !cfgPiccap;
-  cfgSyncPiccap();
-}
-
 function cfgToggleCat(catId) {
   cfgEntities[catId] = !(cfgEntities[catId] !== false);
   renderEntitiesUI();
@@ -217,10 +205,6 @@ async function loadSettings() {
     if (m.categories) cfgCategories = m.categories;
     if (m.entityCatalogue) cfgCatalogue = m.entityCatalogue;
     renderEntitiesUI();
-    const pc = j.piccap || {};
-    q('cfg-piccap-box').hidden = !(pc.installed || pc.enabled);
-    cfgPiccap = !!pc.enabled;
-    cfgSyncPiccap();
     q('cfg-save-btn').disabled = !j.writable;
     cfgMsg(j.writable
       ? t('mqtt.save.note', 'Saving restarts the server. The dashboard reconnects on its own.')
@@ -251,7 +235,6 @@ async function saveSettings() {
     },
     device: { id: q('cfg-devid').value, name: q('cfg-devname').value }
   };
-  if (!q('cfg-piccap-box').hidden) body.piccap = { enabled: cfgPiccap };
   // An untouched password field means "keep the stored one", not "clear it".
   const pass = q('cfg-pass').value;
   if (pass !== '' || !cfgPasswordSet) body.mqtt.password = pass;

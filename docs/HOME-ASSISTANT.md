@@ -26,7 +26,7 @@ Categories:
 | `switch` | `switch.lg_tv_mute` | Mute | Toggle audio mute |
 | `switch` | `switch.lg_tv_pixel_refresher_schedule` | Schedule Pixel Refresher | Schedule/cancel 1-hour calibration for next standby |
 | `switch` | `switch.lg_tv_ad_blocker` | Ad & Telemetry Blocker | On-TV `/etc/hosts` blackhole for LG ad/tracking domains |
-| `switch` | `switch.lg_tv_piccap` | PicCap Capture | PicCap's screen capture for an ambient light; with the PicCap switch on and PicCap answering |
+| `switch` | `switch.lg_tv_piccap` | PicCap Capture | PicCap's screen capture for an ambient light, where PicCap is installed and answering |
 | `switch` | `switch.lg_tv_standby_light` | Standby LED | Toggle standby front indicator LED |
 | `switch` | `switch.lg_tv_logo_light` | Logo Light | Toggle front illuminated TV logo |
 | `number` | `number.lg_tv_volume` | Volume | Volume slider (0–100) |
@@ -159,7 +159,7 @@ The TV's own settings that the dashboard's Advanced, Game and Privacy tabs chang
 
 ## PicCap
 
-With the PicCap switch on in the MQTT settings, a **PicCap Capture** switch is discovered while PicCap answers on the TV, and removed when it stops answering. It uses `<topicPrefix>/state/piccap/power` for state and `<topicPrefix>/command/piccap/power` for control, both `ON` or `OFF`.
+Where PicCap is installed, a **PicCap Capture** switch is discovered while PicCap answers on the TV, and removed when it stops answering or is uninstalled. It is in Controls & Media and can be switched off there. It uses `<topicPrefix>/state/piccap/power` for state and `<topicPrefix>/command/piccap/power` for control, both `ON` or `OFF`.
 
 ---
 

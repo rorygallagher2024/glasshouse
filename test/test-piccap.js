@@ -38,7 +38,7 @@ function luna(uri, payload, cb) {
 }
 
 var availability = [];
-var piccap = piccapModule.init({ luna: luna, onAvailableChange: function (a) { availability.push(a); } });
+var piccap = piccapModule.init({ luna: luna, installed: function () { return true; }, onAvailableChange: function (a) { availability.push(a); } });
 piccap.attachMqtt({ client: client, prefix: 'room/tv', allowControl: true });
 
 function status(isRunning) {

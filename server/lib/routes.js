@@ -11,7 +11,6 @@ var say = require('./say');
 var msg = say.msg;
 var ha = require('./ha');
 var fetchLib = require('./fetch');
-var piccapLib = require('./piccap');
 
 var HA_CATEGORIES = ha.HA_CATEGORIES;
 var HA_ENTITIES = ha.HA_ENTITIES;
@@ -63,6 +62,7 @@ var assetPathFn = null;
 var assetDirsList = [];
 var lunaFn = null;
 var getMqttStatusFn = null;
+var piccapStatusFn = function (cb) { cb(null); };
 var appsChangedFn = function () {};
 var versionStr = '';
 
@@ -221,9 +221,6 @@ function validateSettings(j) {
   if (!/^[a-z0-9_]{1,64}$/.test(out.device.id)) e.push('device id must be 1-64 characters of a-z, 0-9 or _');
   out.device.name = trimmedString(d.name);
 
-  // Only when the form sends it, so a client without the switch leaves it be.
-  // piccap.pollIntervalMs stays as the file has it: writeSettings merges keys.
-  if (j && j.piccap && typeof j.piccap === 'object') out.piccap = { enabled: j.piccap.enabled === true };
 
   return { errors: e, value: out };
 }
@@ -1208,14 +1205,20 @@ function handleRequest(req, res) {
 
   if (pathname === '/api/stats') {
     return telemetryModule.collectStats(function (s) {
-      if (u.query.with !== 'settings') return send(res, 200, JSON.stringify(s));
-      // The TV dashboard's System page, which reads one endpoint, also lists
-      // the sound and SIMPLINK settings. Copied, since s is telemetry's cache.
-      lgSettingsModule.collect(['sound', 'hdmi', 'devices'], function (ls) {
+      // PicCap's capture, where it is installed, for the Advanced tab.
+      piccapStatusFn(function (pc) {
+        if (!pc && u.query.with !== 'settings') return send(res, 200, JSON.stringify(s));
+        // Copied, since s is telemetry's cache.
         var copy = {};
         for (var k in s) copy[k] = s[k];
-        copy.lgSettings = ls.rows;
-        send(res, 200, JSON.stringify(copy));
+        if (pc) copy.piccapCapture = pc;
+        if (u.query.with !== 'settings') return send(res, 200, JSON.stringify(copy));
+        // The TV dashboard's System page, which reads one endpoint, also lists
+        // the sound and SIMPLINK settings.
+        lgSettingsModule.collect(['sound', 'hdmi', 'devices'], function (ls) {
+          copy.lgSettings = ls.rows;
+          send(res, 200, JSON.stringify(copy));
+        });
       });
     });
   }
@@ -1260,11 +1263,6 @@ function handleRequest(req, res) {
       device: {
         id: (config.device && config.device.id) || '',
         name: (config.device && config.device.name) || ''
-      },
-      // The switch is offered where PicCap is installed, or still on without it.
-      piccap: {
-        installed: piccapLib.installed(),
-        enabled: !!(config.piccap && config.piccap.enabled === true)
       },
       /* Ages rather than timestamps: the TV's clock is often minutes off the
          browser's, and a negative "last publish" reads as a fault. */
@@ -1371,6 +1369,7 @@ function init(opts) {
   if (opts.updater) updaterModule = opts.updater;
   if (opts.tvApp) tvAppFn = opts.tvApp;
   if (opts.restartSelf) restartSelfFn = opts.restartSelf;
+  if (opts.piccapStatus) piccapStatusFn = opts.piccapStatus;
   if (opts.repo) repoModule = opts.repo;
   if (opts.installer) installerModule = opts.installer;
   if (opts.fromHomebrewChannel) fromHbcFn = opts.fromHomebrewChannel;

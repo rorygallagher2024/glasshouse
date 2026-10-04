@@ -60,6 +60,7 @@ var config = {};
 var telemetry = null;
 var oled = null;
 var privacy = null;
+var piccap = null;
 var servicesModule = null;
 var screensavers = null;
 var appsModule = null;
@@ -541,6 +542,14 @@ function doControl(action, value, cb) {
         cb(r);
       });
 
+    case 'piccap':
+      // PicCap's screen capture, which feeds an ambient light.
+      if (!piccap) return cb({ ok: false, error: 'PicCap is not available' });
+      var capOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
+      return piccap.setPower(capOn, function (r) {
+        cb({ ok: !!(r && r.ok), error: r && !r.ok ? r.error : undefined });
+      });
+
     case 'lgLogo':
       var logoOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
       return luna('com.webos.service.settings/setSystemSettings',
@@ -758,6 +767,7 @@ function init(opts) {
   if (opts.telemetry) telemetry = opts.telemetry;
   if (opts.oled) oled = opts.oled;
   if (opts.privacy) privacy = opts.privacy;
+  if (opts.piccap) piccap = opts.piccap;
   if (opts.services) servicesModule = opts.services;
   if (opts.screensavers) screensavers = opts.screensavers;
   if (opts.apps) appsModule = opts.apps;
