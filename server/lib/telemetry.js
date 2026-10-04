@@ -136,7 +136,6 @@ var SOC_ARCH = {
   M16PLUS: 'Alpha 7 (M16P)'
 };
 
-var PIC_MODE_MAP = ha.PIC_MODE_MAP;
 
 function init(opts) {
   opts = opts || {};
@@ -554,17 +553,57 @@ function getPictureEngineInfo() {
   };
 }
 
+/*
+ * How the volume can be changed with the sound going where it is now: 'level'
+ * sets it; 'steps' takes only up and down, which the TV passes to a receiver
+ * on HDMI ARC/eARC; 'none' not at all - over optical the TV refuses both with
+ * "Current Scenario doesn't support volume change".
+ *
+ * The newer audio service says so outright: adjustVolume and
+ * externalDeviceControl (C2, webOS 22, which still reports a level of 10 over
+ * optical). The older one reports -1 for no level (B8, webOS 4.4; 58UH635V,
+ * webOS 3.x), and its scenario is where the sound actually goes: a B8 set to
+ * HDMI ARC with no receiver answering stays on ext_speaker_optical.
+ */
+function volumeControl(vs, sound) {
+  if (vs && typeof vs.adjustVolume === 'boolean') {
+    if (vs.adjustVolume) return 'level';
+    return vs.externalDeviceControl ? 'steps' : 'none';
+  }
+  if (sound && typeof sound.volume === 'number' && sound.volume < 0) {
+    return /arc/.test(String(sound.scenario || '')) ? 'steps' : 'none';
+  }
+  return 'level';
+}
+
+/*
+ * Whether a Bluetooth audio device is paired: choosing Bluetooth output
+ * without one opens the TV's own pairing prompt and falls back to the
+ * speakers. A Magic Remote is paired too, so the device class is read:
+ * major class 4 is audio/video (a headset is 0x240404, a remote 0x1f00).
+ * null until the first answer.
+ */
+var btAudio = null;
+function refreshBtAudio() {
+  lunaCachedFn('com.webos.service.bluetooth2/device/getStatus', {}, 60000, function (r) {
+    if (!r || r.returnValue === false || !Array.isArray(r.devices)) return;
+    btAudio = r.devices.some(function (d) {
+      return d && d.paired && ((Number(d.classOfDevice) >> 8) & 0x1f) === 4;
+    });
+  });
+}
+
 function formatSoundOutput(so) {
   if (!so) return 'TV Speaker';
   if (SOUND_OUTPUT_MAP[so]) return SOUND_OUTPUT_MAP[so];
-  // A name not in the map is still shown readably: ext_speaker_arc reads as
-  // "Ext Speaker Arc" rather than as the raw key.
+  // A name not in the map is still shown readably: mobile_phone reads as
+  // "Mobile Phone" rather than as the raw key.
   return String(so).replace(/_/g, ' ').replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); });
 }
 
 function formatPicMode(mode) {
   if (!mode) return 'Standard';
-  return PIC_MODE_MAP[mode] || mode;
+  return ha.picModeName(mode);
 }
 
 /*
@@ -1061,6 +1100,7 @@ function collectStats(cb) {
   }
 
   statsWaiters.push(cb);
+  refreshBtAudio();
   if (isCollecting) return;
   isCollecting = true;
 
@@ -1340,9 +1380,8 @@ function collectStats(cb) {
       if (typeof vs.volume === 'number') out.volume = vs.volume;
       if (typeof vs.muteStatus === 'boolean') out.muted = vs.muteStatus;
     }
-    // -1 when the sound goes out over optical and the device on the other end
-    // sets the level (58UH635V, webOS 3.x): there is no level to show.
-    if (typeof out.volume === 'number' && out.volume < 0) out.volume = null;
+    out.volume_control = volumeControl(vs, sound);
+    if (out.volume_control !== 'level') out.volume = null;
     lunaCachedFn('com.webos.service.settings/getSystemSettings',
       { category: 'sound', keys: ['soundOutput', 'soundMode'] }, 15000,
       function (snd) {
@@ -1350,6 +1389,7 @@ function collectStats(cb) {
         out.sound = {
           output: formatSoundOutput(rawSnd),
           output_raw: rawSnd,
+          bt_audio: btAudio,
           mode: (snd && snd.settings && snd.settings.soundMode) || 'standard'
         };
 
@@ -1577,6 +1617,7 @@ module.exports = {
   getHdmiSignal: getHdmiSignal,
   getPictureEngineInfo: getPictureEngineInfo,
   formatSoundOutput: formatSoundOutput,
+  volumeControl: volumeControl,
   formatPicMode: formatPicMode,
   formatDynamicRange: formatDynamicRange,
   pictureModes: pictureModes,

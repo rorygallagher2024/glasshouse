@@ -225,9 +225,29 @@ console.log('Running test-telemetry.js ...');
   assert.strictEqual(telemetry.formatPicMode('expert1'), 'ISF Expert (Bright)');
   assert.strictEqual(telemetry.formatSoundOutput('tv_speaker'), 'TV Speaker');
   assert.strictEqual(telemetry.formatSoundOutput('ext_speaker_optical'), 'Optical');
-  assert.strictEqual(telemetry.formatSoundOutput('ext_speaker_arc'), 'Ext Speaker Arc');
+  assert.strictEqual(telemetry.formatSoundOutput('ext_speaker_builtin_lg_optical'), 'Optical');
+  assert.strictEqual(telemetry.formatSoundOutput('ext_speaker_arc'), 'HDMI ARC');
+  assert.strictEqual(telemetry.formatSoundOutput('mobile_phone'), 'Mobile Phone');
+  assert.strictEqual(telemetry.formatPicMode('hdrCinemaBright'), 'HDR Cinema Bright');
+  assert.strictEqual(telemetry.formatPicMode('hdrFilmMaker'), 'HDR Filmmaker');
+  assert.strictEqual(telemetry.formatPicMode('dolbyHdrSomethingNew'), 'Dolby Vision Something New');
   assert.strictEqual(telemetry.formatDynamicRange('hdr10'), 'HDR10');
   console.log('  ✓ formatters map modes and dynamic ranges');
+})();
+
+(function testVolumeControl() {
+  var vc = telemetry.volumeControl;
+  // C2 (webOS 22): the newer service says how
+  assert.strictEqual(vc({ adjustVolume: true, externalDeviceControl: false, volume: 9 }), 'level');
+  assert.strictEqual(vc({ adjustVolume: false, externalDeviceControl: false, volume: 10 }), 'none', 'optical');
+  assert.strictEqual(vc({ adjustVolume: false, externalDeviceControl: true, volume: 10 }), 'steps', 'HDMI ARC');
+  // B8 (webOS 4.4): -1, and the scenario is where the sound actually goes
+  assert.strictEqual(vc(null, { volume: 3, scenario: 'mastervolume_tv_speaker' }), 'level');
+  assert.strictEqual(vc(null, { volume: -1, scenario: 'mastervolume_ext_speaker_optical' }), 'none',
+    'HDMI ARC chosen, no receiver: still optical');
+  assert.strictEqual(vc(null, { volume: -1, scenario: 'mastervolume_ext_speaker_arc' }), 'steps');
+  assert.strictEqual(vc(null, null), 'level');
+  console.log('  ✓ the volume is set, stepped or left alone by where the sound goes');
 })();
 
 // 8. Capabilities test

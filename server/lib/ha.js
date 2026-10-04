@@ -25,7 +25,13 @@ var PIC_MODE_MAP = {
   dolbyHdrCinemaHome: 'Dolby Vision Cinema Home',
   dolbyHdrStandard: 'Dolby Vision Standard',
   dolbyHdrGame: 'Dolby Vision Game',
+  dolbyHdrFilmMaker: 'Dolby Vision Filmmaker',
   hdrCinema: 'HDR Cinema',
+  hdrCinemaBright: 'HDR Cinema Bright',
+  hdrFilmMaker: 'HDR Filmmaker',
+  hdrPersonalized: 'HDR Personalized',
+  hdrVivid: 'HDR Vivid',
+  filmMaker: 'Filmmaker',
   hdrCinemaHome: 'HDR Cinema Home',
   hdrStandard: 'HDR Standard',
   hdrGame: 'HDR Game',
@@ -43,12 +49,33 @@ var PIC_MODE_MAP = {
   normal: 'Standard'
 };
 
+/*
+ * A mode missing from the map is spelled out from its id rather than shown as
+ * one word: dolbyHdrCinemaBright reads "Dolby Vision Cinema Bright".
+ */
+function picModeName(id) {
+  if (PIC_MODE_MAP[id]) return PIC_MODE_MAP[id];
+  return String(id)
+    .replace(/^dolbyHdr(?=[A-Z])/, 'Dolby Vision ')
+    .replace(/^hdr(?=[A-Z])/, 'HDR ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/^[a-z]/, function (c) { return c.toUpperCase(); });
+}
+
+function picModeNames(ids) {
+  var names = {};
+  for (var i = 0; i < ids.length; i++) names[ids[i]] = picModeName(ids[i]);
+  return names;
+}
+
 var SOUND_OUTPUT_MAP = {
   tv_speaker: 'TV Speaker',
   external_arc: 'HDMI ARC',
   optical: 'Optical',
   external_optical: 'Optical',
   ext_speaker_optical: 'Optical',
+  ext_speaker_builtin_lg_optical: 'Optical',
+  ext_speaker_arc: 'HDMI ARC',
   headphone: 'Headphone / AUX',
   bt_soundbar: 'Bluetooth',
   external_speaker: 'External Speaker',
@@ -364,13 +391,15 @@ function buildEntities(opts) {
   var installedApps = opts.installedApps || [];
   var lastPicModes = opts.pictureModes || [];
 
-  // Volume Up and Down are unavailable when the TV reports no level and the
-  // sound is not going over HDMI ARC/eARC: then the level is set on a device
-  // the TV cannot reach (optical).
+  // telemetry's volume_control: the level can be set, or only stepped (a
+  // receiver on HDMI ARC/eARC), or neither (optical).
+  var volumeLevelAvailability = [{
+    topic: topic.telemetry,
+    value_template: '{{ "online" if (value_json.volume_control | default("level")) == "level" else "offline" }}'
+  }];
   var volumeStepAvailability = [{
     topic: topic.telemetry,
-    value_template: '{{ "offline" if value_json.volume is none and "arc" not in ' +
-      '((value_json.sound.output_raw if value_json.sound else "") or "") else "online" }}'
+    value_template: '{{ "offline" if value_json.volume_control == "none" else "online" }}'
   }];
 
   /** @type {any[]} */
@@ -741,7 +770,8 @@ function buildEntities(opts) {
           min: 0,
           max: 100,
           step: 1,
-          icon: 'mdi:volume-high'
+          icon: 'mdi:volume-high',
+          availability: volumeLevelAvailability
         }
       },
       {
@@ -932,10 +962,11 @@ function buildEntities(opts) {
         /* The settable modes depend on the dynamic range of what is playing,
            so this is whatever the TV last said it would accept. Discovery is
            republished when that set changes - see publishTelemetry. */
-        }, namedSelect(lastPicModes.length
+        }, (function (ids) {
+          return namedSelect(ids, picModeNames(ids), '(value_json.picture.mode_raw if value_json.picture else "standard")');
+        })(lastPicModes.length
             ? lastPicModes.map(function (m) { return m.value; })
-            : ['expert1', 'expert2', 'cinema', 'game', 'standard', 'eco', 'sports'],
-          PIC_MODE_MAP, '(value_json.picture.mode_raw if value_json.picture else "standard")'))
+            : ['expert1', 'expert2', 'cinema', 'game', 'standard', 'eco', 'sports']))
       },
       {
         type: 'select', id: 'energy_saving',
@@ -1420,6 +1451,7 @@ module.exports = {
   INPUTS: INPUTS,
   SOUND_OUTPUT_MAP: SOUND_OUTPUT_MAP,
   PIC_MODE_MAP: PIC_MODE_MAP,
+  picModeName: picModeName,
   AWAKE_ONLY: AWAKE_ONLY,
   HA_CATEGORIES: HA_CATEGORIES,
   HA_ENTITIES: HA_ENTITIES,

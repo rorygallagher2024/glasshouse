@@ -297,7 +297,7 @@ function initVolSlider() {
   if (!wrap || !slider) return;
 
   wrap.addEventListener('pointerdown', e => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || slider.disabled) return;
     volActive = true;
     volDragging = true;
     wrap.classList.add('dragging');
@@ -386,8 +386,8 @@ function toggleMute() {
   setLease('mute', muted);
   q('mute').classList.toggle('on', muted);
   if (q('vol-wrap')) q('vol-wrap').classList.toggle('muted', muted);
-  const curVol = q('vol-slider') ? q('vol-slider').value : '';
-  q('vol').textContent = muted ? t('ctl.muted', 'MUTED') : curVol;
+  const s = q('vol-slider');
+  q('vol').textContent = muted ? t('ctl.muted', 'MUTED') : (!s || s.disabled ? '—' : s.value);
   sendCommand('mute', muted);
 }
 async function sendToast() {

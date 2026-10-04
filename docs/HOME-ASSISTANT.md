@@ -29,15 +29,15 @@ Categories:
 | `switch` | `switch.lg_tv_piccap` | PicCap Capture | PicCap's screen capture for an ambient light, where PicCap is installed and answering |
 | `switch` | `switch.lg_tv_standby_light` | Standby LED | Toggle standby front indicator LED |
 | `switch` | `switch.lg_tv_logo_light` | Logo Light | Toggle front illuminated TV logo |
-| `number` | `number.lg_tv_volume` | Volume | Volume slider (0–100) |
+| `number` | `number.lg_tv_volume` | Volume | Volume slider (0–100). Unavailable when the level is set on an external sound device |
 | `select` | `select.lg_tv_input_source` | Input Source | HDMI 1–4, Live TV |
 | `select` | `select.lg_tv_app` | Launch App | Installed apps (YouTube, Netflix, Prime Video, Spotify, etc.) |
 | `select` | `select.lg_tv_picture_mode` | Picture Mode | Switch profiles (ISF Dark/Bright, Cinema, Game, Standard) |
 | `select` | `select.lg_tv_energy_saving` | Energy Saving Step | Auto, Off, Minimum, Medium, Maximum, Screen off |
 | `select` | `select.lg_tv_sound_output` | Sound Output | Switch outputs (TV Speaker, HDMI ARC, Optical, Headphone) |
 | `select` | `select.lg_tv_sleep_timer` | Sleep Timer | Off, 10, 30, 60, 90, 120 minutes |
-| `button` | `button.lg_tv_volume_up` | Volume Up | One step up, as the remote's key; reaches an HDMI ARC/eARC receiver that takes no set level |
-| `button` | `button.lg_tv_volume_down` | Volume Down | One step down, as the remote's key |
+| `button` | `button.lg_tv_volume_up` | Volume Up | One step up, as the remote's key; reaches an HDMI ARC/eARC receiver that takes no set level. Unavailable over optical |
+| `button` | `button.lg_tv_volume_down` | Volume Down | One step down, as the remote's key. Unavailable over optical |
 | `button` | `button.lg_tv_remote_up` | Remote Up | Presses Up on the remote |
 | `button` | `button.lg_tv_remote_down` | Remote Down | Presses Down on the remote |
 | `button` | `button.lg_tv_remote_left` | Remote Left | Presses Left on the remote |

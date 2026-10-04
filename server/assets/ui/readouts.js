@@ -155,10 +155,6 @@ function hdmiKey(d) {
   return [d.app_id || '', (d.powerState && d.powerState.raw) || '', d.signal || '', !!d.screenSaver].join('|');
 }
 
-function hasVolumeSteps(output) {
-  return /arc/i.test(output || '');
-}
-
 async function tick() {
   try {
     const r = await fetch(api('/api/stats'), { cache: 'no-store' });
@@ -418,21 +414,22 @@ async function tick() {
     if (!volDragging) {
       const vLeased = getLease('volume', d.volume);
       const v = vLeased !== undefined ? vLeased : (typeof d.volume === 'number' ? d.volume : 0);
-      // No level: the sound device on the other end of the cable sets it.
-      // Over HDMI ARC/eARC the TV still passes up and down to it, as the
-      // remote's keys do, so those replace the slider. Over optical nothing
-      // reaches it, and the disabled slider says so.
-      const external = d.volume === null;
-      const steps = external && hasVolumeSteps(d.sound && d.sound.output_raw);
-      if (q('vol-steps')) q('vol-steps').hidden = !steps;
-      if (q('vol-wrap')) q('vol-wrap').hidden = steps;
+      // The server says how the volume can be changed: set, stepped (a
+      // receiver on HDMI ARC/eARC takes only up and down), or not at all.
+      const ctl = d.volume_control || (d.volume === null ? 'none' : 'level');
+      const level = ctl === 'level';
+      if (q('vol-steps')) q('vol-steps').hidden = ctl !== 'steps';
+      if (q('vol-wrap')) {
+        q('vol-wrap').hidden = ctl === 'steps';
+        q('vol-wrap').classList.toggle('off', ctl === 'none');
+        q('vol-wrap').title = ctl === 'none' ? t('ctl.volumeExternal', 'The volume is set on the sound device') : '';
+      }
       if (q('vol-slider')) {
         q('vol-slider').value = v;
-        q('vol-slider').disabled = external;
-        q('vol-slider').title = external ? t('ctl.volumeExternal', 'The volume is set on the sound device') : '';
+        q('vol-slider').disabled = !level;
       }
-      if (q('vol-fill')) q('vol-fill').style.width = (external ? 0 : v) + '%';
-      q('vol').textContent = muted ? t('ctl.muted', 'MUTED') : external ? '—' : v;
+      if (q('vol-fill')) q('vol-fill').style.width = (level ? v : 0) + '%';
+      q('vol').textContent = muted ? t('ctl.muted', 'MUTED') : level ? v : '—';
       if (q('vol-wrap')) q('vol-wrap').classList.toggle('muted', muted);
     }
     q('mute').classList.toggle('on', muted);
@@ -557,6 +554,9 @@ async function tick() {
       const soLeased = getLease('soundOutput', d.sound.output_raw);
       const curSo = soLeased !== undefined ? soLeased : (d.sound.output_raw || '');
       if (q('soundout-lbl') && !soLeased) q('soundout-lbl').textContent = (d.sound.output || d.sound.output_raw || '').toUpperCase();
+      // Bluetooth only with an audio device paired: without one the TV opens
+      // its own pairing prompt and falls back to the speakers.
+      if (q('so_bt_soundbar')) q('so_bt_soundbar').hidden = d.sound.bt_audio === false && curSo !== 'bt_soundbar';
       const soBtns = q('soundouts') ? q('soundouts').querySelectorAll('button') : [];
       for (let b of soBtns) {
         const isCur = b.id.replace('so_', '') === curSo;

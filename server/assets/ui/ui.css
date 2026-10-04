@@ -294,6 +294,9 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
 }
 .vol-wrap input[type=range]:focus{outline:none}
 .vol-wrap.full{grid-column:1/-1}
+/* The level is set on the sound device, which the TV cannot reach. */
+.vol-wrap.off{cursor:default;opacity:.4}
+.vol-wrap.off:hover{border-color:var(--edge)}
 /* In the slider's place when only up and down reach the sound device. */
 .vol-steps{grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .vol-steps button{min-height:48px;font-size:22px;font-weight:300;line-height:1}
