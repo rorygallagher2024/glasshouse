@@ -1288,7 +1288,8 @@ function collectStats(cb) {
         formatSoundOutput(String(sound.scenario).replace(/^mastervolume_/, '')) : 'Internal';
     }
   masterVolume(function (vs) {
-    // The soundbar's volume where one holds it (#406); getSoundOut reads 0 then.
+    // With an eARC soundbar controlling the volume, getSoundOut reports 0 and
+    // the newer service has the soundbar's level (#406).
     if (vs) {
       if (typeof vs.volume === 'number') out.volume = vs.volume;
       if (typeof vs.muteStatus === 'boolean') out.muted = vs.muteStatus;

@@ -116,10 +116,12 @@ function applicationValues(appId, inputNames) {
 }
 
 /*
- * Two shapes. com.webos.service.audio/master/getVolume (webOS 5 and later)
- * nests it in volumeStatus, and with sound on an eARC soundbar that holds the
- * soundbar's volume: an LG SC9S on a C3 read 0 from the older
- * com.webos.audio/getVolume (#406). That one, flat, is all a B8 (webOS 4) has.
+ * The volume reply comes in one of two shapes. The newer audio service,
+ * com.webos.service.audio/master/getVolume (webOS 5 and later), nests it in
+ * volumeStatus. The older com.webos.audio/getVolume replies flat, and is all
+ * a webOS 4 TV such as the B8 has. The newer one is read where it exists:
+ * when sound goes to an eARC soundbar that controls the volume, the older one
+ * reports 0 instead of the soundbar's level (#406).
  */
 function audioValues(response, formatSoundOutput) {
   var vs = response && response.volumeStatus;

@@ -199,8 +199,8 @@ function doControl(action, value, cb) {
           cb({ ok: !!(r && r.returnValue) });
         });
       };
-      // The newer service first: with an eARC soundbar holding the volume, the
-      // older one reads 0 (#406). A B8 has only the older one.
+      // The newer service first: with an eARC soundbar controlling the volume,
+      // the older one reports 0 (#406). A B8 has only the older one.
       return luna('com.webos.service.audio/master/getVolume', {}, function (m) {
         var vs = m && m.volumeStatus;
         if (vs && typeof vs.volume === 'number') return stepFrom(vs.volume);
