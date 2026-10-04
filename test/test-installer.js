@@ -1275,6 +1275,7 @@ test('a catalog install with auto=true proceeds directly to install if nothing n
   startOk(req, function () {
     expectState('installed', function (s) {
       assert.strictEqual(s.result.package, 'com.example.app');
+      assert.strictEqual(s.result.title, 'Title of com.example.app', 'the app\'s own title, for the done message');
       done();
     });
   });

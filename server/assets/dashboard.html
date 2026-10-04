@@ -1305,7 +1305,7 @@ function progressRows(s) {
 function resultRows(s) {
   var r = s.result || {};
   if (s.state === 'installed') {
-    return [{ label: t('apps.install.done', 'Installed {name} v{version}.', { name: r.package || '', version: r.version || '' }),
+    return [{ label: t('apps.install.done', 'Installed {name} v{version}.', { name: r.title || r.package || '', version: r.version || '' }),
               value: t('tv.apps.install.dismiss.done', 'Done'), cls: 'act', act: 'instDone', key: 'done',
               press: t('tv.apps.install.press.done', 'Press OK to return to the catalog'),
               hint: t('tv.apps.install.done.hint', 'The app is on the TV now.') }];
@@ -1810,7 +1810,7 @@ function activate() {
       r.cls = 'warn';
       flash(t('tv.apps.uninstalling', 'Uninstalling {name}…', { name: r.title || r.key }));
       render();
-      return sendPost('/api/apps/uninstall', { id: r.key }, t('tv.apps.uninstalled', 'App uninstalled'));
+      return sendPost('/api/apps/uninstall', { id: r.key }, t('apps.uninstall.done', 'Uninstalled {name}.', { name: r.title || r.key }));
     case 'tile':
       var ep = r.on ? '/api/apps/hide' : '/api/apps/unhide';
       r.value = r.on ? t('apps.tile.hiding', 'Hiding…') : t('tv.apps.tile.showing', 'Showing…');

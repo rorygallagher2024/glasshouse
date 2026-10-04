@@ -496,6 +496,9 @@ button.btn-off:hover{color:var(--w60);border-color:var(--w12);background:transpa
 .upd-prog .track{height:4px}
 .upd-prog .track b{width:0;background:var(--w80);transition:width .3s linear,background .5s ease}
 .upd-prog.done .track b{background:var(--green)}
+#inst-prog{margin-top:0}
+#inst-prog .upd-step{margin-bottom:0}
+#inst-prog .track{margin-top:12px}
 /*
  * The lists run in two columns. A row is a sentence and a pill: given the full
  * width the pill ends up 400px from the text it belongs to, and capping the
@@ -1303,7 +1306,12 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
         autocomplete="off" spellcheck="false" oninput="renderCatalog()">
     </form>
     <div class="sub page-add-msg" id="catalog-msg" role="alert"></div>
-    <div class="pv-note" id="install-status" hidden></div>
+    <div class="pv-note" id="install-status" hidden>
+      <div class="upd-prog" id="inst-prog">
+        <div class="upd-step" id="inst-step"></div>
+        <div class="track" id="inst-track" hidden><b id="inst-bar"></b></div>
+      </div>
+    </div>
     <div id="install-modal" class="modal-backdrop" hidden onclick="if(event.target===this)cancelInstall()">
       <div class="modal-card" id="install-panel" hidden>
         <div class="prot-title" id="inst-title">&mdash;</div>
@@ -1339,6 +1347,7 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
     <div class="prot-table" id="apps-installed-list">
       <div class="sub" style="padding:16px 0" data-t="apps.loadingInstalled">Loading installed apps&hellip;</div>
     </div>
+    <div class="sub page-add-msg" id="uninstall-msg" role="status"></div>
   </details>
 
   <details class="pv-d" id="disc-system-tiles">
@@ -2564,34 +2573,38 @@ function noteArrival(d) {
  * watchdog has to step in - so the bar moves on time within each step and only
  * fills once the server answers on the version it was asked for.
  */
-const updProg = {
-  timer: null,
-  pct: 0,
-  show(on) {
-    clearInterval(this.timer);
-    q('upd-prog').classList.remove('done');
-    q('upd-prog').hidden = !on;
-    q('upd-btns').hidden = on;
-    this.set(0);
-  },
-  // Eases towards `to` without reaching it: 63% of the way there after `ms`.
-  step(label, to, ms) {
-    clearInterval(this.timer);
-    q('upd-step').textContent = label;
-    const from = this.pct, t0 = Date.now();
-    this.timer = setInterval(() => this.set(from + (to - from) * (1 - Math.exp(-(Date.now() - t0) / ms))), 250);
-  },
-  set(p) {
-    this.pct = p;
-    q('upd-bar').style.width = p + '%';
-  },
-  done(label) {
-    clearInterval(this.timer);
-    q('upd-step').textContent = label;
-    q('upd-prog').classList.add('done');
-    this.set(100);
-  }
-};
+function makeProgress(boxId, stepId, barId, onShow) {
+  return {
+    timer: null,
+    pct: 0,
+    show(on) {
+      clearInterval(this.timer);
+      q(boxId).classList.remove('done');
+      q(boxId).hidden = !on;
+      if (onShow) onShow(on);
+      this.set(0);
+    },
+    // Eases towards `to` without reaching it: 63% of the way there after `ms`.
+    step(label, to, ms) {
+      clearInterval(this.timer);
+      q(stepId).textContent = label;
+      const from = this.pct, t0 = Date.now();
+      this.timer = setInterval(() => this.set(from + (to - from) * (1 - Math.exp(-(Date.now() - t0) / ms))), 250);
+    },
+    set(p) {
+      this.pct = p;
+      q(barId).style.width = p + '%';
+    },
+    done(label) {
+      clearInterval(this.timer);
+      q(stepId).textContent = label;
+      q(boxId).classList.add('done');
+      this.set(100);
+    }
+  };
+}
+
+const updProg = makeProgress('upd-prog', 'upd-step', 'upd-bar', on => { q('upd-btns').hidden = on; });
 
 // With a deadline: a wedged server still accepts connections, and a request to
 // it would otherwise wait out the browser's own timeout.
@@ -3991,7 +4004,7 @@ function renderCatalog() {
     ].filter(Boolean).join(' · ');
     const root = a.rootRequired ? ` <span class="pill warn" style="padding:1px 8px">${esc(t('apps.install.rootBadge', 'root'))}</span>` : '';
     const clickFn = isInstalled
-      ? `confirmUninstall('${jsq(a.id)}', '${jsq(a.title || a.id)}');`
+      ? `confirmUninstall('${jsq(a.id)}', '${jsq(a.title || a.id)}', 'catalog');`
       : `startInstall('${jsq(a.id)}');`;
     return `<div class="prot-row">
       ${icon}
@@ -4000,7 +4013,7 @@ function renderCatalog() {
         <div class="prot-desc">${esc(a.description || a.id)}</div>
       </div>
       <div class="prot-status">
-        <button type="button" class="pill ${cls}" onclick="${clickFn}" ${off ? 'disabled' : ''}>${esc(label)}</button>
+        <button type="button" class="pill ${cls}" onclick="${clickFn}"${isInstalled ? ` data-uninstall="${esc(a.id)}"` : ''} ${off ? 'disabled' : ''}>${esc(label)}</button>
       </div>
     </div>`;
   }).join('');
@@ -4015,10 +4028,51 @@ function fmtSize(n) {
 
 function fmtMb(n) { return t('apps.install.mb', '{n} MB', { n: Math.round(n / 1048576) }); }
 
+/* The update tab's bar, for installs: a download or upload moves it by what
+   has arrived, up to 60%, and the steps after ease on towards their marks, as
+   nothing reports how far through them the TV is. */
+const instProg = makeProgress('inst-prog', 'inst-step', 'inst-bar');
+const INST_MARK = { downloading: [55, 20000], verifying: [70, 3000], installing: [92, 15000], elevating: [97, 5000] };
+let instStage = null;
+
+// A message without the bar: an error, or nothing.
 function setInstallStatus(text) {
-  const el = q('install-status');
-  el.hidden = !text;
-  el.textContent = text || '';
+  clearInterval(instProg.timer);
+  instStage = null;
+  instProg.set(0);
+  q('inst-prog').classList.remove('done');
+  q('inst-track').hidden = true;
+  q('inst-step').textContent = text || '';
+  q('install-status').hidden = !text;
+}
+
+function showInstallBar(label) {
+  // A new job starts from empty, even straight after one finished full.
+  if (instStage === null) instProg.set(0);
+  q('install-status').hidden = false;
+  q('inst-track').hidden = false;
+  q('inst-prog').classList.remove('done');
+  q('inst-step').textContent = label;
+}
+
+// By what has arrived, for a download or upload of known size.
+function setInstallBytes(stage, label, done, total) {
+  clearInterval(instProg.timer);
+  showInstallBar(label);
+  instStage = stage;
+  instProg.set(Math.max(instProg.pct, Math.min(60, done / total * 60)));
+}
+
+function showInstallProgress(s) {
+  const label = progressText(s);
+  if (!label) return setInstallStatus('');
+  const p = s.progress || {};
+  if (s.state === 'downloading' && p.total) return setInstallBytes('downloading', label, p.bytes || 0, p.total);
+  showInstallBar(label);
+  if (instStage === s.state) return;
+  instStage = s.state;
+  const mark = INST_MARK[s.state] || [90, 10000];
+  instProg.step(label, Math.max(instProg.pct, mark[0]), mark[1]);
 }
 
 function progressText(s) {
@@ -4135,19 +4189,24 @@ function renderInstall() {
     q('inst-confirm').disabled = false;
     q('inst-cancel').disabled = false;
     if (wasHidden) q('inst-confirm').focus();
-    setInstallStatus('');
+    // Hidden, not cleared: confirming carries the bar on from where it stood.
+    q('install-status').hidden = true;
   } else {
     panel.hidden = true;
     if (modal) modal.hidden = true;
     delete panel.dataset.job;
-    setInstallStatus(progressText(s));
+    showInstallProgress(s);
   }
 }
 
 function installEnded(s) {
   if (s.state === 'installed') {
     const r = s.result || {};
-    setInstallStatus(t('apps.install.done', 'Installed {name} v{version}.', { name: r.package || '', version: r.version || '' }));
+    clearInterval(instProg.timer);
+    instStage = 'installed';
+    showInstallBar('');
+    instStage = null;
+    instProg.done(t('apps.install.done', 'Installed {name} v{version}.', { name: r.title || r.package || '', version: r.version || '' }));
     setTimeout(() => { if (installIdle()) setInstallStatus(''); }, 8000);
   } else if (s.state === 'error' || s.state === 'interrupted') {
     showErr(s.error || t('common.unknownError', 'unknown error'));
@@ -4269,7 +4328,7 @@ function uploadIpk() {
 }
 
 function uploadStatus(done, total) {
-  setInstallStatus(t('apps.install.uploading', 'Uploading… {done} of {total}', { done: fmtMb(done), total: fmtMb(total) }));
+  setInstallBytes('uploading', t('apps.install.uploading', 'Uploading… {done} of {total}', { done: fmtMb(done), total: fmtMb(total) }), done, total);
 }
 
 async function confirmInstall() {
@@ -4464,7 +4523,7 @@ function renderAppsPanel() {
             <div class="prot-desc">${esc(meta || t('apps.installed.app', 'Installed app'))}</div>
           </div>
           <div class="prot-status">
-            <button type="button" class="pill bad" id="btn-uninstall-${id}" onclick="confirmUninstall('${id}', '${title}')" ${!d.writable ? 'disabled' : ''}>${esc(t('apps.uninstall.button', 'Uninstall'))}</button>
+            <button type="button" class="pill bad" data-uninstall="${id}" onclick="confirmUninstall('${jsq(app.id)}', '${jsq(app.title || app.id)}')" ${!d.writable ? 'disabled' : ''}>${esc(t('apps.uninstall.button', 'Uninstall'))}</button>
           </div>
         </div>`;
       }).join('');
@@ -4639,15 +4698,27 @@ async function toggleService(serviceId, makeDisabled) {
   }
 }
 
-async function confirmUninstall(appId, appTitle) {
+/*
+ * From the catalog or the installed list, which can both show the app. Both
+ * buttons say it is working, since with tiles hidden the home screen restarts
+ * first (about ten seconds), and the result is said where it was asked for.
+ */
+async function confirmUninstall(appId, appTitle, from) {
   if (!confirm(t('apps.uninstall.confirm', 'Uninstall "{name}" from the TV?\n\nThis will permanently delete the application and its stored data.', { name: appTitle }))) {
     return;
   }
-  const btn = document.getElementById('btn-uninstall-' + appId);
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = t('apps.uninstall.working', 'Uninstalling\u2026');
-  }
+  const buttons = () => Array.from(document.querySelectorAll('[data-uninstall]')).filter(b => b.dataset.uninstall === appId);
+  buttons().forEach(b => {
+    b.disabled = true;
+    b.textContent = t('apps.uninstall.working', 'Uninstalling\u2026');
+  });
+  const say = text => {
+    if (from === 'catalog') return setInstallStatus(text);
+    const m = q('uninstall-msg');
+    if (m) m.textContent = text;
+  };
+  say('');
+  let error = null;
   try {
     const res = await fetch(api('/api/apps/uninstall'), {
       method: 'POST',
@@ -4655,28 +4726,30 @@ async function confirmUninstall(appId, appTitle) {
       body: JSON.stringify({ id: appId })
     });
     const d = await res.json();
-    if (d && d.ok) {
-      // Optimistically remove from local state immediately for responsive feedback
-      if (appsData && appsData.installed) {
-        appsData.installed = appsData.installed.filter(a => a.id !== appId);
-        renderAppsPanel();
-      }
-      await loadApps();
-      await loadCatalog(true);
-    } else {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = t('apps.uninstall.button', 'Uninstall');
-      }
-      alert(t('apps.uninstall.failed', 'Could not uninstall {name}: {error}', { name: appTitle, error: (d && d.error) || t('common.unknownError', 'unknown error') }));
-    }
+    if (!d || !d.ok) error = (d && d.error) || t('common.unknownError', 'unknown error');
   } catch (e) {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = 'Uninstall';
-    }
-    alert(t('apps.uninstall.failed', 'Could not uninstall {name}: {error}', { name: appTitle, error: e.message }));
+    error = e.message;
   }
+  if (error) {
+    buttons().forEach(b => {
+      b.disabled = false;
+      b.textContent = t('apps.uninstall.button', 'Uninstall');
+    });
+    showErr(t('apps.uninstall.failed', 'Could not uninstall {name}: {error}', { name: appTitle, error }));
+    return;
+  }
+  // Out of the list at once rather than after the reload.
+  if (appsData && appsData.installed) {
+    appsData.installed = appsData.installed.filter(a => a.id !== appId);
+    renderAppsPanel();
+  }
+  const done = t('apps.uninstall.done', 'Uninstalled {name}.', { name: appTitle });
+  say(done);
+  setTimeout(() => {
+    if (from === 'catalog' ? (installIdle() && q('inst-step').textContent === done) : q('uninstall-msg').textContent === done) say('');
+  }, 8000);
+  await loadApps();
+  await loadCatalog(true);
 }
 
 async function toggleTileVisibility(appId, makeHidden) {

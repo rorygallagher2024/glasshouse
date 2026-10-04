@@ -375,6 +375,10 @@
   "text": "¿Desinstalar \"{name}\" de la TV? Esto borrará permanentemente la aplicación y sus datos guardados.",
   "from": "Uninstall \"{name}\" from the TV?\n\nThis will permanently delete the application and its stored data."
  },
+ "apps.uninstall.done": {
+  "text": "Se ha desinstalado {name}.",
+  "from": "Uninstalled {name}."
+ },
  "apps.uninstall.desc": {
   "text": "Descargas de la tienda y aplicaciones instaladas por el usuario. Pulsa Desinstalar para eliminar la aplicación de forma permanente y liberar espacio en la memoria flash eMMC interna.",
   "from": "Store downloads and user-installed applications. Click Uninstall to permanently remove the application and free up internal eMMC flash storage space."
@@ -3498,10 +3502,6 @@
  "tv.apps.uninstall.press": {
   "text": "Pulsa OK para desinstalar la app",
   "from": "Press OK to uninstall app"
- },
- "tv.apps.uninstalled": {
-  "text": "App desinstalada",
-  "from": "App uninstalled"
  },
  "tv.apps.uninstalling": {
   "text": "Desinstalando {name}…",
