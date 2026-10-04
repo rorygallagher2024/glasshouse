@@ -9,6 +9,8 @@
 
 var msg = require('./say').msg;
 var fs = require('fs');
+var rd = require('./util').rd;
+var num = require('./util').num;
 var path = require('path');
 var execFile = require('child_process').execFile;
 var ha = require('./ha');
@@ -133,16 +135,6 @@ function init(opts) {
   mapPowerStateFn = opts.mapPowerState;
   isScreenSaverFn = opts.isScreenSaver;
   loadHdmiSeen();
-}
-
-function rd(p) {
-  try { return fs.readFileSync(p, 'utf8').trim(); }
-  catch (e) { return null; }
-}
-
-function num(v, dflt) {
-  var n = parseInt(v, 10);
-  return isNaN(n) ? dflt : n;
 }
 
 function meminfo() {

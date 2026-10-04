@@ -12,6 +12,7 @@
 
 var http = require('http');
 var fs = require('fs');
+var num = require('./lib/util').num;
 var url = require('url');
 var net = require('net');
 var tls = require('tls');
@@ -248,10 +249,6 @@ var CLI_MODE = null;
 updater.init({ config: CONFIG, version: TVWEB_VERSION, installDir: __dirname });
 
 // ---------------------------------------------------------------- helpers
-function num(v, dflt) {
-  var n = parseInt(v, 10);
-  return isNaN(n) ? dflt : n;
-}
 var TOAST_SOURCE = 'com.webos.app.home';
 var BROWSER_APP = 'com.webos.app.browser';
 

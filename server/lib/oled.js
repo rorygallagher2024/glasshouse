@@ -1,6 +1,7 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
 var msg = require('./say').msg;
 var fs = require('fs');
+var rd = require('./util').rd;
 
 var SERVICE_MENU_APP = 'com.webos.app.factorywin';
 var SERVICE_MENUS = { ezAdjust: 1, inStart: 1 };
@@ -13,11 +14,6 @@ var isOled = null;   // null = not yet determined
 var cachedOled = null;
 var lastOledCheck = 0;
 var oledProtVia = null;
-
-function rd(filePath) {
-  try { return fs.readFileSync(filePath, 'utf8').trim(); }
-  catch (e) { return null; }
-}
 
 function clearCache() {
   cachedOled = null;

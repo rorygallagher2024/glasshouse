@@ -10,6 +10,7 @@
 
 var msg = require('./say').msg;
 var fs = require('fs');
+var mkdirp = require('./util').mkdirp;
 var path = require('path');
 var execFile = require('child_process').execFile;
 
@@ -197,12 +198,6 @@ function waitForRunner(type) {
       });
     }, SWITCH_POLL_MS);
   })();
-}
-
-function mkdirp(dir) {
-  if (fs.existsSync(dir)) return;
-  mkdirp(path.dirname(dir));
-  try { fs.mkdirSync(dir); } catch (e) {}
 }
 
 function screensaverLevel() {

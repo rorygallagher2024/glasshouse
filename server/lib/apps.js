@@ -12,6 +12,7 @@
 
 var msg = require('./say').msg;
 var fs = require('fs');
+var mkdirp = require('./util').mkdirp;
 var path = require('path');
 var execFile = require('child_process').execFile;
 var screensavers = require('./screensavers');
@@ -110,12 +111,6 @@ function isProtected(id) {
   if (id.indexOf('com.webos.app.hdmi') === 0) return true;
   if (id.indexOf('com.webos.app.input') === 0) return true;
   return false;
-}
-
-function mkdirp(dir) {
-  if (fs.existsSync(dir)) return;
-  mkdirp(path.dirname(dir));
-  try { fs.mkdirSync(dir); } catch (e) {}
 }
 
 function readHiddenAppsList() {

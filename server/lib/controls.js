@@ -1,5 +1,6 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
 var fs = require('fs');
+var num = require('./util').num;
 var execFile = require('child_process').execFile;
 var msg = require('./say').msg;
 var zeroBuffer = require('./mqtt').zeroBuffer;
@@ -152,11 +153,6 @@ function sendMediaKey(cmd, cb) {
     return;
   }
   injectKey(code, cb);
-}
-
-function num(v, dflt) {
-  var n = parseInt(v, 10);
-  return isNaN(n) ? dflt : n;
 }
 
 // What tvweb.js passes to init(). Called as given: a module left unwired fails

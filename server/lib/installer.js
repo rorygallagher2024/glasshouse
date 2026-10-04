@@ -10,6 +10,7 @@
 
 var msg = require('./say').msg;
 var fs = require('fs');
+var mkdirp = require('./util').mkdirp;
 var path = require('path');
 var zlib = require('zlib');
 var crypto = require('crypto');
@@ -70,12 +71,6 @@ function allocBuf(n) {
   var b = new Buffer(n);
   b.fill(0);
   return b;
-}
-
-function mkdirp(dir) {
-  if (fs.existsSync(dir)) return;
-  mkdirp(path.dirname(dir));
-  try { fs.mkdirSync(dir); } catch (e) {}
 }
 
 function errText(e) {

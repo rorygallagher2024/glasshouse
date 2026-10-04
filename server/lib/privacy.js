@@ -3,6 +3,7 @@ var say = require('./say');
 var msg = say.msg;
 var list = say.list;
 var fs = require('fs');
+var rd = require('./util').rd;
 var execFile = require('child_process').execFile;
 
 var ADBLOCK_HOSTS_FILE = '/var/lib/tvweb/adblock_hosts';
@@ -221,11 +222,6 @@ var lgSettingsModule = null;
 var lastPrivacyCheck = 0;
 var consentGroups = null;
 var consentMapFound = false;
-
-function rd(filePath) {
-  try { return fs.readFileSync(filePath, 'utf8').trim(); }
-  catch (e) { return null; }
-}
 
 function clearCache() {
   cachedPrivacy = null;

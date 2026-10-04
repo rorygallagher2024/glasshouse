@@ -1,6 +1,8 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
 var msg = require('./say').msg;
 var fs = require('fs');
+var num = require('./util').num;
+var mkdirp = require('./util').mkdirp;
 var path = require('path');
 var zlib = require('zlib');
 var execFile = require('child_process').execFile;
@@ -39,17 +41,6 @@ var viaHomebrewChannel = function () { return false; };
 var installerBusy = function () { return false; };
 var updateFirstTimer = null;
 var updateEveryTimer = null;
-
-function num(v, dflt) {
-  var n = parseInt(v, 10);
-  return isNaN(n) ? dflt : n;
-}
-
-function mkdirp(dir) {
-  if (fs.existsSync(dir)) return;
-  mkdirp(path.dirname(dir));
-  try { fs.mkdirSync(dir); } catch (e) {}
-}
 
 function setUpdateState(state, err) {
   UPDATE.state = state;
