@@ -51,7 +51,13 @@ function ctl(cmd) { return child.execSync('sh ' + CTL + ' ' + cmd, { env: env, e
 function mode(m) { fs.writeFileSync(MODE, m); }
 function read(f) { try { return fs.readFileSync(f, 'utf8'); } catch (e) { return ''; } }
 function serverPid() { return parseInt(read(PIDFILE), 10) || 0; }
-function alive(pid) { try { process.kill(pid, 0); return true; } catch (e) { return false; } }
+// A killed server is reparented to pid 1, and where that is not an init that
+// reaps orphans (some containers) it stays a zombie, which kill(pid, 0) still
+// finds.
+function alive(pid) {
+  try { process.kill(pid, 0); } catch (e) { return false; }
+  return !/^\d+ \(.*\) Z/.test(read('/proc/' + pid + '/stat'));
+}
 
 function finish(code, why) {
   try { ctl('stop'); } catch (e) {}

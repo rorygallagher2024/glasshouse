@@ -16,13 +16,18 @@ Two kinds of reference are fine and are not reported:
 
     ./scripts/check-ui-ids.py [file]
 
+The page is read with the scripts and stylesheet it loads from assets/ui/,
+which the server puts back inline before serving it.
+
 Exits non-zero if any id is reached for unguarded and never defined.
 """
 import re, sys, pathlib
 
 path = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else 'server/assets/ui.html')
-src = path.read_text(encoding='utf-8')
-lines = src.split('\n')
+page = path.read_text(encoding='utf-8')
+parts = [(path, page)] + [(path.parent / rel, (path.parent / rel).read_text(encoding='utf-8'))
+                          for rel in re.findall(r'"/assets/(ui/[\w-]+\.(?:js|css))"', page)]
+src = '\n'.join(text for _, text in parts)
 
 defined = set(re.findall(r'\bid="([^"$]+)"', src))
 # id="row-${...}" - anything starting with that prefix may be built at runtime
@@ -32,22 +37,23 @@ def is_dynamic(name):
     return any(name.startswith(p) for p in dynamic)
 
 problems = []
-for n, line in enumerate(lines, 1):
-    code = re.sub(r'//.*$', '', line)
-    for m in re.finditer(r"""\bq\(\s*['"]([^'"]+)['"]\s*\)""", code):
-        name = m.group(1)
-        if name in defined or is_dynamic(name):
-            continue
-        # A name tested anywhere on the line guards every use of it there:
-        # `if (q('x')) q('x').hidden = ...` is one statement, not two chances
-        # to throw.
-        pat = re.escape("q('%s')" % name) + r"\s*(?:\)|&&)"
-        guarded = re.search(pat, code) is not None
-        if not guarded:
-            problems.append((n, name))
+for where, text in parts:
+    for n, line in enumerate(text.split('\n'), 1):
+        code = re.sub(r'//.*$', '', line)
+        for m in re.finditer(r"""\bq\(\s*['"]([^'"]+)['"]\s*\)""", code):
+            name = m.group(1)
+            if name in defined or is_dynamic(name):
+                continue
+            # A name tested anywhere on the line guards every use of it there:
+            # `if (q('x')) q('x').hidden = ...` is one statement, not two chances
+            # to throw.
+            pat = re.escape("q('%s')" % name) + r"\s*(?:\)|&&)"
+            guarded = re.search(pat, code) is not None
+            if not guarded:
+                problems.append((where, n, name))
 
-for n, name in problems:
-    print('%s:%d: no element with id "%s"' % (path, n, name))
+for where, n, name in problems:
+    print('%s:%d: no element with id "%s"' % (where, n, name))
 print('%d defined, %d dynamic prefixes, %d unguarded and missing'
       % (len(defined), len(dynamic), len(problems)))
 sys.exit(1 if problems else 0)

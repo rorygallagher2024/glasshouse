@@ -10,6 +10,7 @@ var INPUT_NAMES = { hdmi1: 'HDMI 1', hdmi2: 'HDMI 2', hdmi3: 'HDMI 3', hdmi4: 'H
 // Screen saver names come from the registry, so a new one reaches Home
 // Assistant without a second list to keep in step (Bokeh was missed once).
 var SS = require('./screensavers').SCREENSAVERS;
+var topics = require('./topics');
 var SS_IDS = Object.keys(SS);
 function ssMap(byLabel) {
   var m = {};
@@ -200,7 +201,7 @@ for (var le = 0; le < LG_SETTING_ENTITIES.length; le++) {
  * One entity per row the TV has. Values come in telemetry as lgs, keyed by
  * row; commands go to <prefix>/command/lgs/<row>.
  */
-function lgSettingEntities(rows, pfx, telemetryTopic) {
+function lgSettingEntities(rows, topic) {
   var byRow = {}, out = [];
   (rows || []).forEach(function (r) { byRow[r.id] = r; });
   LG_SETTING_ENTITIES.forEach(function (e) {
@@ -210,8 +211,8 @@ function lgSettingEntities(rows, pfx, telemetryTopic) {
     var state = '(value_json.lgs | default({})).get("' + e.row + '")';
     var payload = {
       name: e.name,
-      command_topic: pfx + '/command/lgs/' + e.row,
-      state_topic: telemetryTopic,
+      command_topic: topic.command('lgs/' + e.row),
+      state_topic: topic.telemetry,
       icon: e.icon
     };
     if (!e.enabled) {
@@ -356,17 +357,7 @@ function clearRetired(publishFn, discPfx, devId) {
 
 function buildEntities(opts) {
   opts = opts || {};
-  var pfx = opts.pfx || 'lgtv';
-  var telemetryTopic = opts.telemetryTopic || (pfx + '/telemetry');
-  var statusTopic = opts.statusTopic || (pfx + '/status');
-  var stateScreenTopic = opts.stateScreenTopic || (pfx + '/state/screen');
-  var cmdScreenTopic = opts.cmdScreenTopic || (pfx + '/command/screen');
-  var cmdMuteTopic = opts.cmdMuteTopic || (pfx + '/command/mute');
-  var cmdVolTopic = opts.cmdVolTopic || (pfx + '/command/volume');
-  var cmdInputTopic = opts.cmdInputTopic || (pfx + '/command/input');
-  var cmdToastTopic = opts.cmdToastTopic || (pfx + '/command/toast');
-  var energySavingTopic = opts.energySavingTopic || (pfx + '/state/picture/energySaving');
-  var updateTopic = opts.updateTopic || (pfx + '/update');
+  var topic = topics(opts.pfx);
   var installedApps = opts.installedApps || [];
   var lastPicModes = opts.pictureModes || [];
 
@@ -376,7 +367,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'soc_temperature',
         payload: {
           name: 'SoC Temperature',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.temp }}',
           unit_of_measurement: '°C',
           device_class: 'temperature',
@@ -387,7 +378,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'cpu_load',
         payload: {
           name: 'CPU Usage',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.load }}',
           unit_of_measurement: '%',
           state_class: 'measurement',
@@ -398,7 +389,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'memory_usage',
         payload: {
           name: 'Memory Usage',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ ((value_json.mem.total - value_json.mem.avail) / value_json.mem.total * 100) | round(1) if value_json.mem.total > 0 else 0 }}',
           unit_of_measurement: '%',
           icon: 'mdi:memory'
@@ -408,7 +399,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'swap_usage',
         payload: {
           name: 'Swap Usage',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ ((value_json.swap.total - value_json.swap.free) / value_json.swap.total * 100) | round(1) if value_json.swap.total > 0 else 0 }}',
           unit_of_measurement: '%',
           icon: 'mdi:server'
@@ -418,7 +409,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'wifi_signal',
         payload: {
           name: 'Wi-Fi Signal',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           // none, not 0: a wired set has no signal to report, and 0 dBm would
           // enter the history as though it had been measured.
           value_template: '{{ value_json.wifi.level if value_json.wifi else none }}',
@@ -431,7 +422,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'download_rate',
         payload: {
           name: 'Download Rate',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ (value_json.net.rx / 1024) | round(1) if value_json.net else 0 }}',
           unit_of_measurement: 'kB/s',
           icon: 'mdi:download-network'
@@ -441,7 +432,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'upload_rate',
         payload: {
           name: 'Upload Rate',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ (value_json.net.tx / 1024) | round(1) if value_json.net else 0 }}',
           unit_of_measurement: 'kB/s',
           icon: 'mdi:upload-network'
@@ -451,7 +442,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'flash_health',
         payload: {
           name: 'Flash Storage Health',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           /* pre_eol_info, not the inverted wear band: emmc.health is derived
              from the same register as emmc.wear, so the two sensors were
              reporting one number twice. The name still fits - Normal, Warning
@@ -464,7 +455,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'flash_wear',
         payload: {
           name: 'Flash Wear Level',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.emmc.wear }}',
           icon: 'mdi:wrench-clock'
         }
@@ -473,7 +464,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'active_app',
         payload: {
           name: 'Active App',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.display_title or value_json.app_name or value_json.app }}',
           icon: 'mdi:television-play'
         }
@@ -482,7 +473,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'play_state',
         payload: {
           name: 'Player State',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           // Absent on a set whose media service does not answer, rather than
           // reported as stopped - nothing playing and nothing to ask are
           // different things. On an external input this tracks the HDMI
@@ -495,7 +486,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'dynamic_range',
         payload: {
           name: 'Dynamic Range',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.picture.dynamicRange if value_json.picture else "SDR" }}',
           icon: 'mdi:video-vintage'
         }
@@ -504,7 +495,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'picture_mode',
         payload: {
           name: 'Picture Mode',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.picture.mode if value_json.picture else "Unknown" }}',
           icon: 'mdi:palette'
         }
@@ -518,8 +509,8 @@ function buildEntities(opts) {
         type: 'number', id: 'oled_light',
         payload: {
           name: opts.isOled === false ? 'Backlight' : 'OLED Light',
-          command_topic: pfx + '/command/backlight',
-          state_topic: pfx + '/state/picture/backlight',
+          command_topic: topic.command('backlight'),
+          state_topic: topic.state('picture/backlight'),
           min: 0,
           max: 100,
           step: 1,
@@ -532,7 +523,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'video_signal',
         payload: {
           name: 'Video Signal',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.signal or "Internal / Standby" }}',
           icon: 'mdi:video-input-hdmi'
         }
@@ -541,7 +532,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'hdmi_link_mode',
         payload: {
           name: 'HDMI Link Protocol',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.hdmi_diag.phy_mode if value_json.hdmi_diag and value_json.hdmi_diag.phy_mode else none }}',
           entity_category: 'diagnostic',
           icon: 'mdi:video-input-hdmi'
@@ -551,7 +542,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'hdmi_chroma',
         payload: {
           name: 'HDMI Chroma Format',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.hdmi_diag.chroma if value_json.hdmi_diag and value_json.hdmi_diag.chroma else none }}',
           entity_category: 'diagnostic',
           icon: 'mdi:palette'
@@ -561,7 +552,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'hdmi_hdcp',
         payload: {
           name: 'HDMI HDCP Version',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.hdmi_diag.hdcp if value_json.hdmi_diag and value_json.hdmi_diag.hdcp else none }}',
           entity_category: 'diagnostic',
           icon: 'mdi:lock-check'
@@ -571,7 +562,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'hdmi_cable_errors',
         payload: {
           name: 'HDMI Cable Bit Errors',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.hdmi_diag.phy_errors if value_json.hdmi_diag and value_json.hdmi_diag.phy_errors is not none else none }}',
           state_class: 'measurement',
           entity_category: 'diagnostic',
@@ -582,7 +573,7 @@ function buildEntities(opts) {
         type: 'binary_sensor', id: 'hdmi_allm',
         payload: {
           name: 'Auto Low Latency Mode (ALLM)',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ ("ON" if value_json.hdmi_diag.allm else "OFF") if value_json.hdmi_diag and value_json.hdmi_diag.allm is not none else none }}',
           icon: 'mdi:gamepad-variant'
         }
@@ -591,7 +582,7 @@ function buildEntities(opts) {
         type: 'binary_sensor', id: 'hdmi_vrr',
         payload: {
           name: 'Variable Refresh Rate (VRR)',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ ("ON" if value_json.hdmi_diag.vrr else "OFF") if value_json.hdmi_diag and value_json.hdmi_diag.vrr is not none else none }}',
           icon: 'mdi:speedometer'
         }
@@ -600,7 +591,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'video_colorimetry',
         payload: {
           name: 'Video Color Space',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           // none, not "BT.709": defaulting to a colour space states a fact
           // about the signal that was never read, and states it wrongly on
           // anything wide-gamut. A set that does not report one reports none.
@@ -612,7 +603,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'audio_output',
         payload: {
           name: 'Audio Output',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.audio_output or "Internal" }}',
           icon: 'mdi:speaker'
         }
@@ -621,7 +612,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'soc_current',
         payload: {
           name: 'SoC Current',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.power.current_ma if value_json.power else 0 }}',
           unit_of_measurement: 'mA',
           device_class: 'current',
@@ -633,7 +624,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'uptime',
         payload: {
           name: 'Uptime',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.bootTime }}',
           device_class: 'timestamp',
           entity_category: 'diagnostic',
@@ -651,7 +642,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'tvweb_version',
         payload: {
           name: 'Server Version',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.tvwebVersion }}',
           entity_category: 'diagnostic',
           icon: 'mdi:tag-outline'
@@ -667,7 +658,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'mac_address',
         payload: {
           name: 'MAC Address',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.mac if value_json.mac else none }}',
           entity_category: 'diagnostic',
           icon: 'mdi:ethernet'
@@ -677,7 +668,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'remote_battery',
         payload: {
           name: 'Remote Battery',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.remote.battery if value_json.remote and value_json.remote.battery is not none else none }}',
           unit_of_measurement: '%',
           device_class: 'battery',
@@ -690,7 +681,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'soc_architecture',
         payload: {
           name: 'SoC Architecture',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.hardware.soc_arch if value_json.hardware and value_json.hardware.soc_arch else "Unknown" }}',
           entity_category: 'diagnostic',
           icon: 'mdi:cpu-64-bit'
@@ -700,7 +691,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_cell_type',
         payload: {
           name: 'OLED Cell Info',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.panel_silicon.cell if value_json.panel_silicon and value_json.panel_silicon.cell else none }}',
           entity_category: 'diagnostic',
           icon: 'mdi:monitor-cell'
@@ -710,7 +701,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'tcon_firmware',
         payload: {
           name: 'TCON Firmware',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.panel_silicon.tcon_firmware if value_json.panel_silicon and value_json.panel_silicon.tcon_firmware else none }}',
           entity_category: 'diagnostic',
           icon: 'mdi:chip'
@@ -720,8 +711,8 @@ function buildEntities(opts) {
         type: 'switch', id: 'display_panel',
         payload: {
           name: (opts.isOled === false) ? 'Display Panel' : 'OLED Display Panel',
-          command_topic: cmdScreenTopic,
-          state_topic: stateScreenTopic,
+          command_topic: topic.command('screen'),
+          state_topic: topic.state('screen'),
           payload_on: 'ON',
           payload_off: 'OFF',
           icon: 'mdi:television-ambient-light'
@@ -731,8 +722,8 @@ function buildEntities(opts) {
         type: 'switch', id: 'mute',
         payload: {
           name: 'Mute',
-          command_topic: cmdMuteTopic,
-          state_topic: telemetryTopic,
+          command_topic: topic.command('mute'),
+          state_topic: topic.telemetry,
           value_template: '{{ \'ON\' if value_json.muted else \'OFF\' }}',
           payload_on: 'ON',
           payload_off: 'OFF',
@@ -743,8 +734,8 @@ function buildEntities(opts) {
         type: 'number', id: 'volume',
         payload: {
           name: 'Volume',
-          command_topic: cmdVolTopic,
-          state_topic: telemetryTopic,
+          command_topic: topic.command('volume'),
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.volume }}',
           min: 0,
           max: 100,
@@ -756,8 +747,8 @@ function buildEntities(opts) {
         type: 'select', id: 'input_source',
         payload: withSelect({
           name: 'Input Source',
-          command_topic: cmdInputTopic,
-          state_topic: telemetryTopic,
+          command_topic: topic.command('input'),
+          state_topic: topic.telemetry,
           icon: 'mdi:video-input-hdmi'
         }, namedSelect(Object.keys(INPUTS), INPUT_NAMES, 'value_json.app'))
       },
@@ -765,7 +756,7 @@ function buildEntities(opts) {
         type: 'text', id: 'screen_notification',
         payload: {
           name: 'Screen Notification',
-          command_topic: cmdToastTopic,
+          command_topic: topic.command('toast'),
           icon: 'mdi:message-text-outline',
           mode: 'text'
         }
@@ -774,7 +765,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_panel_hours',
         payload: {
           name: 'OLED Panel Hours',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.panel_hours if value_json.oled else 0 }}',
           unit_of_measurement: 'h',
           state_class: 'total_increasing',
@@ -785,7 +776,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_hours_since_compensation',
         payload: {
           name: 'OLED Hours Since Short Cycle',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.hours_since_comp if value_json.oled else 0 }}',
           unit_of_measurement: 'h',
           state_class: 'measurement',
@@ -796,7 +787,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_hours_until_compensation',
         payload: {
           name: 'OLED Hours Until Short Cycle',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.hours_until_comp if value_json.oled else 0 }}',
           unit_of_measurement: 'h',
           state_class: 'measurement',
@@ -807,7 +798,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_hours_since_refresher',
         payload: {
           name: 'OLED Hours Since Pixel Refresher',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.hours_since_refresher if value_json.oled else 0 }}',
           unit_of_measurement: 'h',
           state_class: 'measurement',
@@ -818,7 +809,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_hours_until_refresher',
         payload: {
           name: 'OLED Hours Until Pixel Refresher',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.hours_until_refresher if value_json.oled else 0 }}',
           unit_of_measurement: 'h',
           state_class: 'measurement',
@@ -829,7 +820,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_compensation_status',
         payload: {
           name: 'OLED Compensation Status',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.comp_status if value_json.oled else "Unknown" }}',
           icon: 'mdi:autorenew'
         }
@@ -838,7 +829,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_refresher_status',
         payload: {
           name: 'Pixel Refresher Status',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.refresher_status if value_json.oled else "Unknown" }}',
           icon: 'mdi:television-shimmer'
         }
@@ -852,8 +843,8 @@ function buildEntities(opts) {
         type: 'switch', id: 'oled_screen_shift',
         payload: {
           name: 'OLED Screen Shift',
-          command_topic: pfx + '/command/screenShift',
-          state_topic: telemetryTopic,
+          command_topic: topic.command('screenShift'),
+          state_topic: topic.telemetry,
           value_template: '{{ ("ON" if value_json.oled.screen_shift == "on" else "OFF") if value_json.oled and value_json.oled.screen_shift else none }}',
           payload_on: 'on',
           payload_off: 'off',
@@ -866,8 +857,8 @@ function buildEntities(opts) {
         type: 'select', id: 'oled_logo_dimming',
         payload: {
           name: 'OLED Logo Dimming',
-          command_topic: pfx + '/command/logoDimming',
-          state_topic: telemetryTopic,
+          command_topic: topic.command('logoDimming'),
+          state_topic: topic.telemetry,
           // LG calls the strongest setting "strong"; the TV's own menu shows it
           // as High, and so does the dashboard.
           options: ['Off', 'Light', 'High'],
@@ -880,7 +871,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_short_cycles',
         payload: {
           name: 'OLED Short Cycles Completed',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.comp_cycles if value_json.oled and value_json.oled.comp_cycles is not none else none }}',
           state_class: 'total_increasing',
           entity_category: 'diagnostic',
@@ -891,7 +882,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_refresher_cycles',
         payload: {
           name: 'OLED Refresher Cycles Completed',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.refresher_cycles if value_json.oled and value_json.oled.refresher_cycles is not none else none }}',
           state_class: 'total_increasing',
           entity_category: 'diagnostic',
@@ -902,7 +893,7 @@ function buildEntities(opts) {
         type: 'sensor', id: 'oled_failure_alerts',
         payload: {
           name: 'OLED Compensation Failures',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ value_json.oled.failure_alerts if value_json.oled and value_json.oled.failure_alerts is not none else 0 }}',
           entity_category: 'diagnostic',
           icon: 'mdi:alert-circle-outline'
@@ -912,7 +903,7 @@ function buildEntities(opts) {
         type: 'binary_sensor', id: 'oled_asbl_dimmer',
         payload: {
           name: 'OLED ASBL Protection',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ "ON" if value_json.oled and value_json.oled.asbl_protection == "Active" else "OFF" }}',
           entity_category: 'diagnostic',
           icon: 'mdi:shield-check'
@@ -922,8 +913,8 @@ function buildEntities(opts) {
         type: 'switch', id: 'pixel_refresher_schedule',
         payload: {
           name: 'Schedule Pixel Refresher',
-          command_topic: pfx + '/command/refresher',
-          state_topic: telemetryTopic,
+          command_topic: topic.command('refresher'),
+          state_topic: topic.telemetry,
           value_template: '{{ \'ON\' if value_json.oled and value_json.oled.refresher_status == \'Scheduled\' else \'OFF\' }}',
           payload_on: 'schedule',
           payload_off: 'cancel',
@@ -934,8 +925,8 @@ function buildEntities(opts) {
         type: 'select', id: 'picture_mode',
         payload: withSelect({
           name: 'Picture Mode',
-          command_topic: pfx + '/command/picture_mode',
-          state_topic: telemetryTopic,
+          command_topic: topic.command('picture_mode'),
+          state_topic: topic.telemetry,
           icon: 'mdi:image-filter-black-white'
         /* The settable modes depend on the dynamic range of what is playing,
            so this is whatever the TV last said it would accept. Discovery is
@@ -949,8 +940,8 @@ function buildEntities(opts) {
         type: 'select', id: 'energy_saving',
         payload: {
           name: 'Energy Saving Step',
-          command_topic: pfx + '/command/energySaving',
-          state_topic: energySavingTopic,
+          command_topic: topic.command('energySaving'),
+          state_topic: topic.state('picture/energySaving'),
           options: ['auto', 'off', 'min', 'med', 'max', 'screen_off'],
           icon: 'mdi:brightness-auto'
         }
@@ -959,8 +950,8 @@ function buildEntities(opts) {
         type: 'select', id: 'sound_output',
         payload: withSelect({
           name: 'Sound Output',
-          command_topic: pfx + '/command/sound_output',
-          state_topic: telemetryTopic,
+          command_topic: topic.command('sound_output'),
+          state_topic: topic.telemetry,
           icon: 'mdi:speaker'
         }, namedSelect(Object.keys(SOUND_OUTPUT_MAP), SOUND_OUTPUT_MAP,
           '(value_json.sound.output_raw if value_json.sound else "tv_speaker")'))
@@ -973,11 +964,11 @@ function buildEntities(opts) {
           for (var id in byId) toId[byId[id]] = id;
           return {
             name: 'Launch App',
-            command_topic: pfx + '/command/launch_app',
+            command_topic: topic.command('launch_app'),
             // A name outside the list goes through as written, so an app id
             // sent by an older automation still launches.
             command_template: '{{ ' + JSON.stringify(toId) + '.get(value, value) }}',
-            state_topic: telemetryTopic,
+            state_topic: topic.telemetry,
             value_template: '{{ ' + JSON.stringify(byId) + '.get(value_json.app_id, "None") }}',
             options: Object.keys(toId),
             icon: 'mdi:apps'
@@ -991,7 +982,7 @@ function buildEntities(opts) {
          */
         type: 'sensor', id: 'gpu_clock',
         payload: {
-          name: 'GPU Clock', state_topic: telemetryTopic,
+          name: 'GPU Clock', state_topic: topic.telemetry,
           value_template: '{{ value_json.gpuMhz if value_json.gpuMhz else none }}',
           unit_of_measurement: 'MHz', state_class: 'measurement', icon: 'mdi:expansion-card'
         }
@@ -999,14 +990,14 @@ function buildEntities(opts) {
       {
         type: 'sensor', id: 'panel_dimming',
         payload: {
-          name: 'Panel Dimming', state_topic: telemetryTopic,
+          name: 'Panel Dimming', state_topic: topic.telemetry,
           value_template: '{{ value_json.dimming }}', icon: 'mdi:brightness-auto'
         }
       },
       {
         type: 'sensor', id: 'app_storage_free',
         payload: {
-          name: 'App Storage Free', state_topic: telemetryTopic,
+          name: 'App Storage Free', state_topic: topic.telemetry,
           value_template: '{{ (value_json.appStorage.freeMb / 1024) | round(1) if value_json.appStorage else none }}',
           unit_of_measurement: 'GB', state_class: 'measurement', icon: 'mdi:harddisk'
         }
@@ -1014,7 +1005,7 @@ function buildEntities(opts) {
       {
         type: 'sensor', id: 'ambient_light',
         payload: {
-          name: 'Ambient Light', state_topic: telemetryTopic,
+          name: 'Ambient Light', state_topic: topic.telemetry,
           value_template: '{{ value_json.lightSensor.lux if value_json.lightSensor else none }}',
           device_class: 'illuminance', state_class: 'measurement', icon: 'mdi:brightness-5'
         }
@@ -1023,8 +1014,8 @@ function buildEntities(opts) {
         type: 'select', id: 'sleep_timer',
         payload: {
           name: 'Sleep Timer',
-          command_topic: pfx + '/command/sleepTimer',
-          state_topic: telemetryTopic,
+          command_topic: topic.command('sleepTimer'),
+          state_topic: topic.telemetry,
           options: ['Off', '10 min', '30 min', '60 min', '90 min', '120 min'],
           command_template: '{{ {"Off":"off","10 min":"10","30 min":"30","60 min":"60","90 min":"90","120 min":"120"}[value] }}',
           value_template: '{{ {"off":"Off","10":"10 min","30":"30 min","60":"60 min","90":"90 min","120":"120 min"}.get(value_json.sleepTimer, "Off") }}',
@@ -1035,8 +1026,8 @@ function buildEntities(opts) {
         type: 'switch', id: 'standby_light',
         payload: {
           name: 'Standby LED',
-          command_topic: pfx + '/command/standbyLight',
-          state_topic: telemetryTopic,
+          command_topic: topic.command('standbyLight'),
+          state_topic: topic.telemetry,
           value_template: '{{ "ON" if value_json.lights and value_json.lights.standby else "OFF" }}',
           payload_on: 'on',
           payload_off: 'off',
@@ -1049,8 +1040,8 @@ function buildEntities(opts) {
         type: 'switch', id: 'logo_light',
         payload: {
           name: 'Logo Light',
-          command_topic: pfx + '/command/logoLight',
-          state_topic: telemetryTopic,
+          command_topic: topic.command('logoLight'),
+          state_topic: topic.telemetry,
           value_template: '{{ "ON" if value_json.lights and value_json.lights.logo else "OFF" }}',
           payload_on: 'on',
           payload_off: 'off',
@@ -1063,7 +1054,7 @@ function buildEntities(opts) {
         type: 'button', id: 'screensaver',
         payload: {
           name: 'Start Screensaver',
-          command_topic: pfx + '/command/screensaver',
+          command_topic: topic.command('screensaver'),
           payload_press: 'press',
           icon: 'mdi:television-shimmer'
         }
@@ -1077,7 +1068,7 @@ function buildEntities(opts) {
         type: 'binary_sensor', id: 'screen_saver_active',
         payload: {
           name: 'Screen Saver',
-          state_topic: telemetryTopic,
+          state_topic: topic.telemetry,
           value_template: '{{ "ON" if value_json.screenSaver else "OFF" }}',
           icon: 'mdi:television-shimmer'
         }
@@ -1086,8 +1077,8 @@ function buildEntities(opts) {
         type: 'select', id: 'screensaver_mode',
         payload: {
           name: 'Screen Saver',
-          command_topic: pfx + '/command/screensaverMode',
-          state_topic: telemetryTopic,
+          command_topic: topic.command('screensaverMode'),
+          state_topic: topic.telemetry,
           options: SS_IDS.map(function (k) { return SS[k].label; }),
           command_template: '{{ ' + JSON.stringify(ssMap(true)) + '[value] }}',
           value_template: '{{ ' + JSON.stringify(ssMap(false)) + '.get(value_json.screensaverMode, "LG default") }}',
@@ -1098,8 +1089,8 @@ function buildEntities(opts) {
         type: 'switch', id: 'ad_blocker',
         payload: {
           name: 'Ad & Telemetry Blocker',
-          command_topic: pfx + '/command/adblock',
-          state_topic: telemetryTopic,
+          command_topic: topic.command('adblock'),
+          state_topic: topic.telemetry,
           value_template: '{{ "ON" if value_json.privacy and value_json.privacy.adblock and value_json.privacy.adblock.enabled else "OFF" }}',
           payload_on: 'ON',
           payload_off: 'OFF',
@@ -1111,7 +1102,7 @@ function buildEntities(opts) {
         type: 'button', id: 'remote_up',
         payload: {
           name: 'Remote Up',
-          command_topic: pfx + '/command/rcu',
+          command_topic: topic.command('rcu'),
           payload_press: 'up',
           icon: 'mdi:chevron-up'
         }
@@ -1120,7 +1111,7 @@ function buildEntities(opts) {
         type: 'button', id: 'remote_down',
         payload: {
           name: 'Remote Down',
-          command_topic: pfx + '/command/rcu',
+          command_topic: topic.command('rcu'),
           payload_press: 'down',
           icon: 'mdi:chevron-down'
         }
@@ -1129,7 +1120,7 @@ function buildEntities(opts) {
         type: 'button', id: 'remote_left',
         payload: {
           name: 'Remote Left',
-          command_topic: pfx + '/command/rcu',
+          command_topic: topic.command('rcu'),
           payload_press: 'left',
           icon: 'mdi:chevron-left'
         }
@@ -1138,7 +1129,7 @@ function buildEntities(opts) {
         type: 'button', id: 'remote_right',
         payload: {
           name: 'Remote Right',
-          command_topic: pfx + '/command/rcu',
+          command_topic: topic.command('rcu'),
           payload_press: 'right',
           icon: 'mdi:chevron-right'
         }
@@ -1147,7 +1138,7 @@ function buildEntities(opts) {
         type: 'button', id: 'remote_ok',
         payload: {
           name: 'Remote OK',
-          command_topic: pfx + '/command/rcu',
+          command_topic: topic.command('rcu'),
           payload_press: 'ok',
           icon: 'mdi:circle-medium'
         }
@@ -1156,7 +1147,7 @@ function buildEntities(opts) {
         type: 'button', id: 'remote_back',
         payload: {
           name: 'Remote Back',
-          command_topic: pfx + '/command/rcu',
+          command_topic: topic.command('rcu'),
           payload_press: 'back',
           icon: 'mdi:keyboard-return'
         }
@@ -1165,7 +1156,7 @@ function buildEntities(opts) {
         type: 'button', id: 'remote_home',
         payload: {
           name: 'Remote Home',
-          command_topic: pfx + '/command/rcu',
+          command_topic: topic.command('rcu'),
           payload_press: 'home',
           icon: 'mdi:home'
         }
@@ -1174,7 +1165,7 @@ function buildEntities(opts) {
         type: 'button', id: 'play',
         payload: {
           name: 'Play',
-          command_topic: pfx + '/command/playback',
+          command_topic: topic.command('playback'),
           payload_press: 'play',
           icon: 'mdi:play'
         }
@@ -1183,7 +1174,7 @@ function buildEntities(opts) {
         type: 'button', id: 'pause',
         payload: {
           name: 'Pause',
-          command_topic: pfx + '/command/playback',
+          command_topic: topic.command('playback'),
           payload_press: 'pause',
           icon: 'mdi:pause'
         }
@@ -1192,7 +1183,7 @@ function buildEntities(opts) {
         type: 'button', id: 'play_pause',
         payload: {
           name: 'Play / Pause',
-          command_topic: pfx + '/command/playback',
+          command_topic: topic.command('playback'),
           payload_press: 'playPause',
           icon: 'mdi:play-pause'
         }
@@ -1201,7 +1192,7 @@ function buildEntities(opts) {
         type: 'button', id: 'stop',
         payload: {
           name: 'Stop',
-          command_topic: pfx + '/command/playback',
+          command_topic: topic.command('playback'),
           payload_press: 'stop',
           icon: 'mdi:stop'
         }
@@ -1210,13 +1201,13 @@ function buildEntities(opts) {
 
     var updatePayload = {
       name: 'Server Update',
-      state_topic: updateTopic,
+      state_topic: topic.update,
       icon: 'mdi:package-up'
     };
     // Without a command topic Home Assistant shows the release but no Install
     // button, which is right where the Homebrew Channel does the updating.
     if (!opts.updatesElsewhere) {
-      updatePayload.command_topic = pfx + '/command/update';
+      updatePayload.command_topic = topic.command('update');
       updatePayload.payload_install = 'install';
     }
     entities.push({ type: 'update', id: 'server_update', payload: updatePayload });
@@ -1226,7 +1217,7 @@ function buildEntities(opts) {
         type: 'button', id: 'restart',
         payload: {
           name: 'Restart TV',
-          command_topic: pfx + '/command/reboot',
+          command_topic: topic.command('reboot'),
           device_class: 'restart',
           icon: 'mdi:restart'
         }
@@ -1235,7 +1226,7 @@ function buildEntities(opts) {
         type: 'button', id: 'power_off',
         payload: {
           name: 'Power Off TV',
-          command_topic: pfx + '/command/powerOff',
+          command_topic: topic.command('powerOff'),
           icon: 'mdi:power'
         }
       });
@@ -1245,7 +1236,7 @@ function buildEntities(opts) {
         type: 'button', id: 'power_on',
         payload: {
           name: 'Power On TV',
-          command_topic: pfx + '/command/powerOn',
+          command_topic: topic.command('powerOn'),
           icon: 'mdi:power'
         }
       });
@@ -1258,8 +1249,8 @@ function buildEntities(opts) {
       type: 'switch', id: 'piccap',
       payload: {
         name: 'PicCap Capture',
-        command_topic: pfx + '/command/piccap/power',
-        state_topic: pfx + '/state/piccap/power',
+        command_topic: topic.command('piccap/power'),
+        state_topic: topic.state('piccap/power'),
         payload_on: 'ON',
         payload_off: 'OFF',
         icon: 'mdi:television-ambient-light'
@@ -1271,13 +1262,13 @@ function buildEntities(opts) {
     type: 'binary_sensor', id: 'power',
     payload: {
       name: 'Power',
-      state_topic: telemetryTopic,
+      state_topic: topic.telemetry,
       value_template: '{{ "OFF" if value_json.tvOff else "ON" }}',
       device_class: 'power'
     }
   });
 
-  entities = entities.concat(lgSettingEntities(opts.lgRows, pfx, telemetryTopic));
+  entities = entities.concat(lgSettingEntities(opts.lgRows, topic));
 
   return withOffStates(entities);
 }

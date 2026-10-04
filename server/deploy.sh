@@ -51,6 +51,10 @@ SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=6 -o StrictHostKeyChecking=accept-n
 STAGE=/var/lib/tvweb/.deploy     # on the TV; beside the install so moves are renames
 
 FILES="tvweb.js tvwebctl assets/ui.html assets/dashboard.html \
+assets/ui/ui.css assets/ui/core.js assets/ui/theme.js assets/ui/format.js assets/ui/readouts.js \
+assets/ui/update.js assets/ui/controls.js assets/ui/privacy.js assets/ui/lgsettings.js assets/ui/game.js \
+assets/ui/system.js assets/ui/apps.js assets/ui/install.js assets/ui/tabs.js assets/ui/servicemenu.js \
+assets/ui/oled.js assets/ui/screensavers.js assets/ui/mqtt.js assets/ui/main.js \
 assets/qr.js assets/i18n.js assets/i18n/es.json assets/setup.html assets/setup-phone.html \
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
@@ -63,7 +67,7 @@ assets/screensavers/clock.qml assets/screensavers/fireworks.qml \
 assets/screensavers/starfield.qml assets/screensavers/vitals.qml assets/screensavers/star.png \
 assets/screensavers/bokeh.qml assets/screensavers/bokeh.png \
 lib/mqtt.js lib/ha.js lib/updater.js lib/fetch.js lib/repo.js lib/installer.js lib/privacy.js lib/oled.js lib/screensavers.js lib/telemetry.js \
-lib/apps.js lib/luna.js lib/piccap.js lib/state.js lib/mqtt-state.js lib/notifications.js lib/services.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/util.js"
+lib/apps.js lib/luna.js lib/piccap.js lib/state.js lib/mqtt-state.js lib/notifications.js lib/services.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/util.js"
 
 for t in tar base64 fold; do
   command -v "$t" >/dev/null 2>&1 && continue

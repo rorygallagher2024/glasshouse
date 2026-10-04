@@ -3,6 +3,8 @@
  * Strict ES5 for Node 0.12.2 on webOS 4.
  */
 
+var topics = require('./topics');
+
 function scalar(value) {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return String(value);
@@ -13,13 +15,13 @@ function scalar(value) {
 function init(opts) {
   opts = opts || {};
   var client = opts.client;
-  var prefix = opts.prefix || 'lgtv';
-  var legacyScreenTopic = opts.legacyScreenTopic || (prefix + '/state/screen');
+  var topic = topics(opts.prefix);
+  var legacyScreenTopic = opts.legacyScreenTopic || topic.state('screen');
   var manager = null;
 
   function publishValue(group, key, value) {
     if (value === null || typeof value === 'undefined') return;
-    client.publish(prefix + '/state/' + group + '/' + key, scalar(value), true);
+    client.publish(topic.state(group + '/' + key), scalar(value), true);
     if (group === 'power' && key === 'screenOn') {
       var screenOn = !!value;
       if (manager) {

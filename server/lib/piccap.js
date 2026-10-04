@@ -1,6 +1,7 @@
 /* PicCap's Luna and MQTT controls. Strict ES5. */
 var fs = require('fs');
 var msg = require('./say').msg;
+var topics = require('./topics');
 var SERVICE = 'org.webosbrew.piccap.service/';
 var APP_DIR = '/media/developer/apps/usr/palm/applications/org.webosbrew.piccap';
 var STATUS_CACHE_MS = 4000;
@@ -122,7 +123,7 @@ function getState() {
 function attachMqtt(opts) {
   opts = opts || {};
   mqttClient = opts.client || null;
-  stateTopic = (opts.prefix || 'lgtv') + '/state/piccap/power';
+  stateTopic = topics(opts.prefix).state('piccap/power');
   allowControl = opts.allowControl === true;
   if (pollTimer) clearInterval(pollTimer);
   // Poll independently of telemetry, and only while MQTT can receive the state.

@@ -268,6 +268,9 @@ for page in PAGES:
     code = ''
     for m in re.finditer(r'<script>([\s\S]*?)</script>', src):
         code += scan_script(page, m.group(1), src.count('\n', 0, m.start(1)) + 1)
+    # The scripts a page loads from assets/ui/, which the server puts back inline.
+    for rel in re.findall(r'<script src="/assets/(ui/[\w-]+\.js)"></script>', src):
+        code += scan_script(rel, (ASSETS / rel).read_text(encoding='utf-8'), 1)
     for el_id in rewritten_ids(code) & set(parser.keyed_ids):
         problems.append('%s: #%s is tagged data-t but the script rewrites it; key it in the script instead'
                         % (parser.keyed_ids[el_id], el_id))

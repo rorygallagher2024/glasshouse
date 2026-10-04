@@ -1,7 +1,7 @@
 /**
  * test/test-token-url.js - The dashboard keeps its token out of the address bar
  *
- * Runs the page's own token code from ui.html against a stand-in address bar,
+ * Runs the page's own token code from ui/core.js against a stand-in address bar,
  * history and localStorage. The page is browser JavaScript, so this needs a
  * node that can parse it and has URLSearchParams; on node 0.12 it is skipped.
  */
@@ -19,11 +19,11 @@ if (!URLSearchParams) {
   process.exit(0);
 }
 
-var html = fs.readFileSync(path.join(__dirname, '..', 'server', 'assets', 'ui.html'), 'utf8');
-var start = html.indexOf('const K = (() => {');
-var end = html.indexOf('\n})();', start);
-assert.ok(start !== -1 && end !== -1, 'the token code is in ui.html');
-var code = html.slice(start, end + '\n})();'.length) + '\nK';
+var src = fs.readFileSync(path.join(__dirname, '..', 'server', 'assets', 'ui', 'core.js'), 'utf8');
+var start = src.indexOf('const K = (() => {');
+var end = src.indexOf('\n})();', start);
+assert.ok(start !== -1 && end !== -1, 'the token code is in ui/core.js');
+var code = src.slice(start, end + '\n})();'.length) + '\nK';
 
 // Opens the page at `search` and returns what it ended up with.
 function open(search, stored, storageBlocked) {

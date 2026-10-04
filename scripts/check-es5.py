@@ -12,8 +12,8 @@ running server, and a laptop's node parses all of it happily.
 
 Defaults to the server (tvweb.js and lib/), and the pages the TV's own browser
 runs - the dashboard app, setup and the helper they load - whose inline scripts
-are checked in place. server/assets/ui.html runs in a phone or computer's
-browser and is not restricted.
+are checked in place. server/assets/ui.html and the scripts it loads from
+assets/ui/ run in a phone or computer's browser and are not restricted.
 
 Strings, template literals, regex literals and comments are blanked before the
 scan, so a `=>` inside a string or a comment mentioning `const` is not a hit.
@@ -193,7 +193,8 @@ else:
     if lib_dir.exists():
         targets.extend(sorted(lib_dir.glob('*.js')))
     # The pages the TV's own browser runs, and the helper they load: on webOS 4
-    # it parses nothing newer. ui.html is for a phone or computer's browser.
+    # it parses nothing newer. ui.html and assets/ui/ are for a phone or computer's
+    # browser.
     assets = root / 'server' / 'assets'
     targets += [assets / 'i18n.js', assets / 'dashboard.html', assets / 'setup.html', assets / 'setup-phone.html']
 

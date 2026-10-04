@@ -38,6 +38,7 @@ var controls = require('./lib/controls');
 var routes = require('./lib/routes');
 var stateModule = require('./lib/state');
 var mqttStateModule = require('./lib/mqtt-state');
+var topics = require('./lib/topics');
 var notifications = require('./lib/notifications');
 var lunaTransport = require('./lib/luna');
 var say = require('./lib/say');
@@ -725,15 +726,7 @@ function setupHomeAssistant() {
   var discPfx = CONFIG.mqtt.discoveryPrefix || 'homeassistant';
   var devId = (CONFIG.device && CONFIG.device.id) || 'lg_b8_tv';
   console.log('mqtt: device id "' + devId + '", topic prefix "' + pfx + '"');
-  var statusTopic = pfx + '/status';
-  var telemetryTopic = pfx + '/telemetry';
-  var stateScreenTopic = pfx + '/state/screen';
-  var cmdScreenTopic = pfx + '/command/screen';
-  var cmdMuteTopic = pfx + '/command/mute';
-  var cmdVolTopic = pfx + '/command/volume';
-  var cmdInputTopic = pfx + '/command/input';
-  var cmdToastTopic = pfx + '/command/toast';
-  var updateTopic = pfx + '/update';
+  var mqttTopics = topics(pfx);
 
   var devInfo = {
     identifiers: [devId],
@@ -753,7 +746,7 @@ function setupHomeAssistant() {
     password: CONFIG.mqtt.password || null,
     clientId: (CONFIG.mqtt.clientId || (devId + '_tvweb')),
     will: {
-      topic: statusTopic,
+      topic: mqttTopics.status,
       payload: 'offline',
       retain: true
     }
@@ -771,8 +764,7 @@ function setupHomeAssistant() {
 
   var stateMqtt = mqttStateModule.init({
     client: mqttClient,
-    prefix: pfx,
-    legacyScreenTopic: stateScreenTopic
+    prefix: pfx
   });
   stateMqtt.attach(liveState.state);
 
@@ -796,15 +788,6 @@ function setupHomeAssistant() {
 
     var entities = ha.buildEntities({
       pfx: pfx,
-      telemetryTopic: telemetryTopic,
-      statusTopic: statusTopic,
-      stateScreenTopic: stateScreenTopic,
-      cmdScreenTopic: cmdScreenTopic,
-      cmdMuteTopic: cmdMuteTopic,
-      cmdVolTopic: cmdVolTopic,
-      cmdInputTopic: cmdInputTopic,
-      cmdToastTopic: cmdToastTopic,
-      updateTopic: updateTopic,
       installedApps: telemetry.getInstalledApps(),
       pictureModes: telemetry.getPictureModes(),
       lgRows: lgsRows,
@@ -832,7 +815,7 @@ function setupHomeAssistant() {
       var conf = item.payload;
       conf.unique_id = devId + '_' + item.id;
       conf.device = devInfo;
-      conf.availability_topic = statusTopic;
+      conf.availability_topic = mqttTopics.status;
       conf.availability_template = CONTROL_TYPES[item.type] || ha.AWAKE_ONLY[item.id]
         ? "{{ 'online' if value in ['online', 'off'] else 'offline' }}"
         : "{{ 'offline' if value == 'offline' else 'online' }}";
@@ -854,7 +837,7 @@ function setupHomeAssistant() {
   function publishUpdate() {
     if (!mqttClient.connected) return;
     var upd = updater.UPDATE;
-    mqttClient.publish(updateTopic, JSON.stringify({
+    mqttClient.publish(mqttTopics.update, JSON.stringify({
       installed_version: TVWEB_VERSION,
       latest_version: upd.latest || null,
       title: 'Server',
@@ -901,7 +884,7 @@ function setupHomeAssistant() {
     tvOff = off;
     console.log('mqtt: TV switched ' + (off ? 'off' : 'on') + ' - status ' + statusPayload());
     if (mqttClient.connected) {
-      mqttClient.publish(statusTopic, statusPayload(), true);
+      mqttClient.publish(mqttTopics.status, statusPayload(), true);
       publishTelemetry();
       piccap.refreshAndPublishState();
     }
@@ -946,7 +929,7 @@ function setupHomeAssistant() {
   function publishTelemetry() {
     if (!mqttClient.connected) return;
     lastPublish = Date.now();
-    mqttClient.publish(statusTopic, statusPayload(), true);
+    mqttClient.publish(mqttTopics.status, statusPayload(), true);
     lgSettings.collect(LGS_SECTIONS, function (ls) {
     telemetry.collectStats(function(s) {
       // Over the whole interval since the last publish, whoever else reads.
@@ -997,7 +980,7 @@ function setupHomeAssistant() {
        */
       var pub = {};
       for (var pk in s) if (pk !== 'apps' && pk !== 'temps') pub[pk] = s[pk];
-      mqttClient.publish(telemetryTopic, JSON.stringify(pub), true);
+      mqttClient.publish(mqttTopics.telemetry, JSON.stringify(pub), true);
       MQTT_STATUS.lastPublish = Date.now();
       /*
        * The picture modes a set will accept change with the source's dynamic
@@ -1056,7 +1039,7 @@ function setupHomeAssistant() {
     flushMqttErrorRepeats();
     console.log('mqtt: connected to ' + CONFIG.mqtt.host + ':' + mqttClient.opts.port +
                 (useTls ? ' (tls)' : ' (plaintext)'));
-    mqttClient.publish(statusTopic, statusPayload(), true);
+    mqttClient.publish(mqttTopics.status, statusPayload(), true);
     // Republish the in-memory state because broker retention is not assumed.
     stateMqtt.publishSnapshot();
     // Do not assert a guessed screen state before the TV reports one.
@@ -1069,16 +1052,15 @@ function setupHomeAssistant() {
         telemetry.refreshInstalledApps(function () { publishDiscovery(); });
       });
     });
-    mqttClient.subscribe(pfx + '/command/#');
+    mqttClient.subscribe(mqttTopics.commands + '#');
     publishTelemetry();
     piccap.refreshAndPublishState(true);
     publishUpdate();
   });
 
   mqttClient.on('message', function(topic, payload) {
-    var prefix = pfx + '/command/';
-    if (topic.indexOf(prefix) !== 0) return;
-    var action = topic.substring(prefix.length);
+    if (topic.indexOf(mqttTopics.commands) !== 0) return;
+    var action = topic.substring(mqttTopics.commands.length);
     var val = payload ? payload.trim() : '';
     console.log('mqtt: command received: ' + action + ' -> ' + val);
 

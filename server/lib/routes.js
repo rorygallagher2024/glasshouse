@@ -89,6 +89,7 @@ var HANDOFF_MS = 10 * 60 * 1000;
 
 var UI_HTML = null;
 var UI_HTML_GZ = null;
+var UI_MISSING = 'ui.html';   // the file named by the missing-assets page
 var ASSET_CACHE = {};
 
 // What tvweb.js passes to init(). Called as given: a module left unwired fails
@@ -447,7 +448,7 @@ function missingAssetsPage() {
     '.dim{color:rgba(255,255,255,.5);font-size:13px}',
     '</style></head><body>',
     '<h1>Dashboard assets are missing</h1>',
-    '<p><code>ui.html</code> was not found. The server is running normally &mdash;',
+    '<p><code>' + UI_MISSING + '</code> was not found. The server is running normally &mdash;',
     'the JSON API and the Home Assistant MQTT bridge are unaffected &mdash; but it',
     'has no dashboard to serve.</p>',
     '<p>Looked in:</p><ul>',
@@ -461,6 +462,35 @@ function missingAssetsPage() {
   ].join('\n');
 }
 
+/*
+ * ui.html names its stylesheet and scripts under assets/ui/, and they are put
+ * back inline here, so the browser still gets one page in one gzipped response
+ * that is never cached apart from it. The scripts become a single <script> in
+ * the order listed, so they behave as one script: a function declared in any
+ * of them can be called from the others. Returns the page, or null with
+ * UI_MISSING set to the part that could not be read.
+ */
+function inlineUI(html) {
+  var missing = null;
+  function part(rel) {
+    var f = assetPath(rel);
+    if (f) {
+      try { return fs.readFileSync(f, 'utf8'); } catch (e) {}
+    }
+    if (!missing) missing = rel;
+    return '';
+  }
+  html = html.replace(/<link rel="stylesheet" href="\/assets\/(ui\/[\w-]+\.css)">\n/g, function (m, rel) {
+    return '<style>\n' + part(rel) + '</style>\n';
+  });
+  html = html.replace(/(?:<script src="\/assets\/ui\/[\w-]+\.js"><\/script>\n)+/g, function (run) {
+    var names = run.match(/ui\/[\w-]+\.js/g);
+    return '<script>\n' + names.map(part).join('') + '</script>\n';
+  });
+  if (missing) { UI_MISSING = missing; return null; }
+  return html;
+}
+
 // Called only where something will serve it: not with the web dashboard off,
 // nor for a one-shot run such as --update.
 function loadUI() {
@@ -471,7 +501,13 @@ function loadUI() {
     return;
   }
   try {
-    UI_HTML = fs.readFileSync(f, 'utf8');
+    var page = inlineUI(fs.readFileSync(f, 'utf8'));
+    if (!page) {
+      console.error('assets: ' + UI_MISSING + ' not found in ' + assetDirsList.join(', ') +
+                    ' - the dashboard will report it is missing');
+      return;
+    }
+    UI_HTML = page;
     console.log('assets: serving ui.html from ' + f);
     /*
      * On this thread rather than zlib's worker pool. Node 0.12's process
@@ -1386,6 +1422,7 @@ module.exports = {
   startHandoff: startHandoff,
   stopHandoff: stopHandoff,
   loadUI: loadUI,
+  inlineUI: inlineUI,
   updateSummary: updateSummary,
   missingAssetsPage: missingAssetsPage,
   parseUrl: parseUrl,
