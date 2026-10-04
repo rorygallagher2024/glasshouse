@@ -4363,6 +4363,10 @@
   "text": "Wake-on-LAN activado",
   "from": "Wake-on-LAN turned on"
  },
+ "tv.display.totalPowerOnHours.hint": {
+  "text": "Horas que la pantalla ha estado encendida desde nueva.",
+  "from": "Hours the display has been lit since new."
+ },
  "tv.game.next": {
   "text": "Pulsa OK para {name}",
   "from": "Press OK for {name}"
@@ -5058,6 +5062,10 @@
  "tv.system.wiFi": {
   "text": "Wi-Fi",
   "from": "Wi-Fi"
+ },
+ "tv.tab.displayCare": {
+  "text": "Cuidado de pantalla",
+  "from": "Display Care"
  },
  "tv.tab.screenSaver": {
   "text": "Salvapantallas",

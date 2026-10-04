@@ -15,9 +15,14 @@ var cachedOled = null;
 var lastOledCheck = 0;
 var oledProtVia = null;
 
+var cachedNonOledHours = null;
+var lastNonOledCheck = 0;
+
 function clearCache() {
   cachedOled = null;
   lastOledCheck = 0;
+  cachedNonOledHours = null;
+  lastNonOledCheck = 0;
 }
 
 function getIsOled() {
@@ -337,30 +342,52 @@ function refreshOledStats(picSettings, pState, cb) {
 
   if (!luna) return cb(null);
 
+  readPanelUsageTime(function (usageUnits, lastCompUnits) {
+    luna('com.webos.service.tv.display/getClearPanelNoiseStatus', {}, function (dispRes) {
+      finishOledStats(usageUnits, lastCompUnits, dispRes);
+    });
+  });
+}
+
+function parseUsageUnits(val) {
+  if (val === undefined || val === null || val === '') return null;
+  var n = parseInt(val, 10);
+  return isNaN(n) ? null : n;
+}
+
+function readPanelUsageTime(cb) {
+  if (!luna) return cb(null, null);
   luna('com.webos.service.tv.systemproperty/getSystemProperties',
     { keys: ['panelUsageTime', 'lastCompensationTimestamp'] },
     function (sysRes) {
-      var usageUnits = (sysRes && sysRes.panelUsageTime) ? parseInt(sysRes.panelUsageTime, 10) : null;
-      var lastCompUnits = (sysRes && sysRes.lastCompensationTimestamp) ? parseInt(sysRes.lastCompensationTimestamp, 10) : null;
-
-      function queryDisplayStatus(uUnits, cUnits) {
-        luna('com.webos.service.tv.display/getClearPanelNoiseStatus', {}, function (dispRes) {
-          finishOledStats(uUnits, cUnits, dispRes);
-        });
-      }
+      var usageUnits = parseUsageUnits(sysRes && sysRes.panelUsageTime);
+      var lastCompUnits = parseUsageUnits(sysRes && sysRes.lastCompensationTimestamp);
 
       if (usageUnits !== null) {
-        queryDisplayStatus(usageUnits, lastCompUnits);
-      } else {
-        luna('com.webos.service.panelcontroller/getPanelUsageTime', { subscribe: false }, function (pcRes) {
-          if (pcRes && pcRes.panelUsageTime) {
-            usageUnits = parseInt(pcRes.panelUsageTime, 10);
-          }
-          queryDisplayStatus(usageUnits, lastCompUnits);
-        });
+        return cb(usageUnits, lastCompUnits);
       }
+      luna('com.webos.service.panelcontroller/getPanelUsageTime', { subscribe: false }, function (pcRes) {
+        if (pcRes && pcRes.panelUsageTime !== undefined) {
+          var pcUnits = parseUsageUnits(pcRes.panelUsageTime);
+          if (pcUnits !== null) usageUnits = pcUnits;
+        }
+        cb(usageUnits, lastCompUnits);
+      });
     }
   );
+}
+
+function queryPanelHours(cb) {
+  cb = cb || function () {};
+  var now = Date.now();
+  if (lastNonOledCheck && (now - lastNonOledCheck < 30000)) {
+    return cb(cachedNonOledHours);
+  }
+  readPanelUsageTime(function (usageUnits) {
+    lastNonOledCheck = Date.now();
+    cachedNonOledHours = (usageUnits !== null && !isNaN(usageUnits)) ? Math.floor(usageUnits / 6) : null;
+    cb(cachedNonOledHours);
+  });
 }
 
 function readPanelControllerInfo(cb) {
@@ -391,6 +418,7 @@ module.exports = {
   init: init,
   detectOled: detectOled,
   getIsOled: getIsOled,
+  queryPanelHours: queryPanelHours,
   serviceMenuState: serviceMenuState,
   setServiceMenuLock: setServiceMenuLock,
   openServiceMenu: openServiceMenu,

@@ -263,7 +263,7 @@ var TABS = [
   // Metrics keeps the key it had as System, which the installed app opens on.
   { key: 'system',  label: t('tab.metrics', 'Metrics'),      url: '/api/stats',       build: sysRows,  poll: 5000 },
   { key: 'apps',    label: t('tab.apps', 'Apps'),         url: '/api/apps',        build: appsRows },
-  { key: 'oled',    label: t('tab.oledCare', 'OLED Care'),    url: '/api/oledcare',    build: oledRows },
+  { key: 'oled',    label: t('tab.oledCare', 'OLED Care'),    url: '/api/oledcare',    build: oledRows, optional: true },
   { key: 'game',    label: t('tab.game', 'Game'),         url: '/api/game',        build: gameRows, optional: true },
   { key: 'saver',   label: t('tv.tab.screenSaver', 'Screen Saver'), url: '/api/screensaver', build: saverRows, optional: true },
   { key: 'privacy', label: t('tab.privacy', 'Privacy'),      url: '/api/privacy',     build: privacyRows },
@@ -522,7 +522,14 @@ function lgRow(g) {
 
 function oledRows(d) {
   if (!d || !d.ok) return [];
-  if (!d.isOled) return [{ label: t('tv.oled.thisIsNotAn', 'This is not an OLED panel'), value: '' }];
+  if (!d.isOled) {
+    if (d.panelHours === null || d.panelHours === undefined) return [];
+    return [
+      head(t('oled.panelLife', 'Panel life')),
+      { label: t('tv.oled.totalPowerOnHours', 'Total power-on hours'), value: num(d.panelHours),
+        hint: t('tv.display.totalPowerOnHours.hint', 'Hours the display has been lit since new.') }
+    ];
+  }
   var canSet = d.writable && d.serviceControls;
   var r = [];
 
@@ -1652,6 +1659,23 @@ function fetchTab(keepSel) {
     .then(function (d) {
       if (T().key !== key) return;        // the user moved on while this was in flight
       data[key] = d;
+      if (section.optional && d && d.available === false) {
+        var optIdx = TABS.indexOf(section);
+        if (optIdx >= 0) {
+          TABS.splice(optIdx, 1);
+          tab = Math.min(tab, TABS.length - 1);
+          renderTabs();
+          openTab(tab);
+          return;
+        }
+      }
+      if (key === 'oled' && d && !d.isOled) {
+        var displayLabel = t('tv.tab.displayCare', 'Display Care');
+        if (section.label !== displayLabel) {
+          section.label = displayLabel;
+          renderTabs();
+        }
+      }
       rows = buildRows(section, d);
       if (initialSel !== null && initialSel < rows.length && (!rows[initialSel] || !rows[initialSel].head)) {
         sel = initialSel;
@@ -2150,12 +2174,22 @@ TABS.forEach(function (section) {
     .then(function (r) { return r.json(); })
     .then(function (d) {
       var i = TABS.indexOf(section);
-      if (!d || d.available !== false || i < 0) return;
-      var cur = TABS[tab];
-      TABS.splice(i, 1);
-      tab = Math.max(0, TABS.indexOf(cur));
-      renderTabs();
-      if (cur === section) openTab(tab);
+      if (!d || i < 0) return;
+      if (d.available === false) {
+        var cur = TABS[tab];
+        TABS.splice(i, 1);
+        tab = Math.max(0, TABS.indexOf(cur));
+        renderTabs();
+        if (cur === section) openTab(tab);
+        return;
+      }
+      if (section.key === 'oled' && !d.isOled) {
+        var displayLabel = t('tv.tab.displayCare', 'Display Care');
+        if (section.label !== displayLabel) {
+          section.label = displayLabel;
+          renderTabs();
+        }
+      }
     })
     .catch(function () {});
 });

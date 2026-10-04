@@ -86,4 +86,66 @@ vm.runInContext(scriptMatch[1], sandbox);
   console.log('  ✓ sysRows omits eMMC health when unavailable or unknown');
 })();
 
+// 2. oled tab is marked optional in TABS
+(function testOledTabOptional() {
+  var oledTab = null;
+  for (var i = 0; i < sandbox.TABS.length; i++) {
+    if (sandbox.TABS[i].key === 'oled') {
+      oledTab = sandbox.TABS[i];
+      break;
+    }
+  }
+  assert.ok(oledTab, 'oled tab must exist in TABS');
+  assert.strictEqual(oledTab.optional, true, 'oled tab must be marked optional: true');
+  console.log('  ✓ oled tab is marked optional in TABS');
+})();
+
+// 3. oledRows renders Display Care on non-OLED sets with panel hours, or empty if no hours
+(function testOledRowsNonOled() {
+  // Non-OLED with panel hours
+  var rowsWithHours = sandbox.oledRows({
+    ok: true,
+    isOled: false,
+    panelHours: 3500
+  });
+  assert.strictEqual(rowsWithHours.length, 2, 'Non-OLED with hours must return Panel life head + Total power-on hours');
+  assert.strictEqual(rowsWithHours[0].label, 'Panel life');
+  assert.strictEqual(rowsWithHours[0].head, true);
+  assert.strictEqual(rowsWithHours[1].label, 'Total power-on hours');
+  assert.strictEqual(rowsWithHours[1].value, '3,500');
+  assert.strictEqual(rowsWithHours[1].hint, 'Hours the display has been lit since new.');
+  assert.strictEqual(
+    rowsWithHours.some(function (r) { return r.label === 'This is not an OLED panel'; }),
+    false,
+    'Never show "This is not an OLED panel"'
+  );
+
+  // Non-OLED without panel hours (null / undefined)
+  var rowsNoHours = sandbox.oledRows({
+    ok: true,
+    isOled: false,
+    panelHours: null
+  });
+  assert.deepEqual(rowsNoHours, [], 'Non-OLED without hours must return empty array');
+
+  // OLED panel returns full stats and protections
+  var oledRows = sandbox.oledRows({
+    ok: true,
+    isOled: true,
+    panelHours: 1200,
+    hoursUntilComp: 3.5,
+    gsr: true,
+    tpc: true,
+    screenShift: 'on'
+  });
+  assert.ok(oledRows.length > 2, 'OLED set must return multiple metrics');
+  assert.strictEqual(
+    oledRows.some(function (r) { return r.label === 'Global sticky reduction'; }),
+    true,
+    'OLED set includes protections'
+  );
+
+  console.log('  ✓ oledRows renders Display Care for non-OLED with hours, empty without hours');
+})();
+
 console.log('ALL test-dashboard-view.js assertions passed!\n');
