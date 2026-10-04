@@ -1083,7 +1083,7 @@ function handleRequest(req, res) {
     return appsModule.getApps(function (d) {
       d.tileHidingAvailable = !fromHomebrewChannel();
       if (!d.tileHidingAvailable) { d.systemTiles = []; d.tileHidingEnabled = false; d.hiddenCount = 0; }
-      d.tileHidingHeld = !!(screensaversModule && screensaversModule.held());
+      d.tileHidingHeld = !!(screensaversModule && screensaversModule.heldBack());
       d.tileHidingOverridden = !!(screensaversModule && screensaversModule.heldOverridden());
       servicesModule.getServices(function (sRes) {
         if (sRes && sRes.services) d.services = sRes.services;
