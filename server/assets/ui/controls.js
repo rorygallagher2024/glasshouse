@@ -91,6 +91,7 @@ function applyOptimistic(action, value) {
   } else if (action === 'soundOutput') {
     const so = String(value);
     setLease('soundOutput', so);
+    holdVolumeControls();
     const soBtns = q('soundouts') ? q('soundouts').querySelectorAll('button') : [];
     for (let b of soBtns) {
       const matches = b.id.replace('so_', '') === so;
@@ -272,6 +273,17 @@ function initBacklightSlider() {
 
 let volDragging = false;
 let volActive = false;
+// Until the new sound output has settled: the server reads it again 3s after
+// the change, and until then the volume and mute may be refused.
+let volSettleUntil = 0;
+
+function holdVolumeControls() {
+  volSettleUntil = Date.now() + 4500;
+  if (q('vol-slider')) q('vol-slider').disabled = true;
+  if (q('vol-wrap')) q('vol-wrap').classList.add('off');
+  if (q('mute')) q('mute').disabled = true;
+  if (q('vol-steps')) q('vol-steps').querySelectorAll('button').forEach(b => { b.disabled = true; });
+}
 
 function setVolFromPointer(e) {
   const wrap = q('vol-wrap');

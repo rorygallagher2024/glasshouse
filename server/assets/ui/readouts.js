@@ -418,19 +418,23 @@ async function tick() {
       // receiver on HDMI ARC/eARC takes only up and down), or not at all.
       const ctl = d.volume_control || (d.volume === null ? 'none' : 'level');
       const level = ctl === 'level';
-      if (q('vol-steps')) q('vol-steps').hidden = ctl !== 'steps';
+      const settling = Date.now() < volSettleUntil;
+      if (q('vol-steps')) {
+        q('vol-steps').hidden = ctl !== 'steps';
+        q('vol-steps').querySelectorAll('button').forEach(b => { b.disabled = settling; });
+      }
       if (q('vol-wrap')) {
         q('vol-wrap').hidden = ctl === 'steps';
-        q('vol-wrap').classList.toggle('off', ctl === 'none');
+        q('vol-wrap').classList.toggle('off', ctl === 'none' || settling);
         q('vol-wrap').title = ctl === 'none' ? t('ctl.volumeExternal', 'The volume is set on the sound device') : '';
       }
       if (q('vol-slider')) {
         q('vol-slider').value = v;
-        q('vol-slider').disabled = !level;
+        q('vol-slider').disabled = !level || settling;
       }
       // Mute is refused wherever the volume is ("Current Scenario doesn't
       // support mute"), and passed on where up and down are.
-      if (q('mute')) q('mute').disabled = ctl === 'none';
+      if (q('mute')) q('mute').disabled = ctl === 'none' || settling;
       if (q('vol-fill')) q('vol-fill').style.width = (level ? v : 0) + '%';
       q('vol').textContent = muted ? t('ctl.muted', 'MUTED') : level ? v : '—';
       if (q('vol-wrap')) q('vol-wrap').classList.toggle('muted', muted);
