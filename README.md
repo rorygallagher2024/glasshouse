@@ -335,7 +335,7 @@ Tested across the following TVs so far. The Luna service names and `/proc/lg` pa
 | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
 | 43UH610V-ZB | 3.4.3        | 05.70.50 | LCD   | No SoC temp, eMMC wear, or OLED metrics by hardware design     |
 | 55UH6030-UC | 3.4.3        | —        | LCD   |                                                                |
-| 58UH635V    | 3.x          | 05.70.40 | LCD   | Dashboard unreachable while live satellite TV plays (#379)     |
+| 58UH635V    | 3.x          | 05.70.40 | LCD   | Dashboard slow to come up after a cold boot (#379)             |
 | OLED65B7V-Z | 3.9.3        | 06.10.65 | OLED  | No SoC temperature or eMMC wear readings                       |
 | OLED65C8PUA | 4.4.0        | 05.50.15 | OLED  | No `getAdid` on this firmware                                  |
 | OLED65B8SLC | 4.4.3        | 05.50.70 | OLED  | Everything works. Misses a few metrics found on newer versions |
