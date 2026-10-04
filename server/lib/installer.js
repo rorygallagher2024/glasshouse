@@ -39,7 +39,9 @@ var VERSION_RE = /^[A-Za-z0-9][A-Za-z0-9.+~:_-]{0,63}$/;
 var ELF_MACHINES = { 3: 'x86', 8: 'mips', 40: 'arm', 62: 'x86_64', 183: 'aarch64', 243: 'riscv' };
 
 var lunaFn = null;
+/** @type {typeof import('./apps')} */
 var appsMod = null;
+/** @type {typeof import('./fetch')} */
 var fetchMod = null;
 /** @type {Object.<string, number>} */
 var caps = DEFAULT_CAPS;

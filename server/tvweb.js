@@ -365,7 +365,7 @@ telemetry.init({
 var liveState = stateModule.init({
   inputNameMap: telemetry.inputNameMap,
   mapPowerState: mapPowerState,
-  formatSoundOutput: ha.formatSoundOutput,
+  formatSoundOutput: telemetry.formatSoundOutput,
   clearCache: function (group) {
     telemetry.expireStats();
     clearLunaCache(LIVE_STALE[group]);

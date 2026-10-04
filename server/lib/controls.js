@@ -57,14 +57,23 @@ var LOGO_DIMMING_VALUES = ['off', 'light', 'strong'];
 var luna = null;
 var clearLunaCache = function () {};
 var config = {};
+/** @type {typeof import('./telemetry')} */
 var telemetry = null;
+/** @type {typeof import('./oled')} */
 var oled = null;
+/** @type {typeof import('./privacy')} */
 var privacy = null;
+/** @type {ReturnType<typeof import('./piccap').init>} */
 var piccap = null;
+/** @type {typeof import('./services')} */
 var servicesModule = null;
+/** @type {typeof import('./screensavers')} */
 var screensavers = null;
+/** @type {typeof import('./apps')} */
 var appsModule = null;
+/** @type {typeof import('./lgsettings')} */
 var lgSettings = null;
+/** @type {typeof import('./updater')} */
 var updater = null;
 var tvAppFn = null;
 var restartSelfFn = null;

@@ -15,6 +15,7 @@ var CACHE_MS = 3600000;
 var RETRY_MS = 10000;
 var config = {};
 var lunaFn = null;
+/** @type {typeof import('./fetch')} */
 var fetchLib = null;
 var cache = null;       // { apps: [...], fetchedAt, error }
 var attempted = 0;      // when the last fetch ended

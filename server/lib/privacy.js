@@ -218,6 +218,7 @@ var config = {};
 var cachedAdBlockActive = null;
 var lastAdBlockCheck = 0;
 var cachedPrivacy = null;
+/** @type {typeof import('./lgsettings')} */
 var lgSettingsModule = null;
 var lastPrivacyCheck = 0;
 var consentGroups = null;

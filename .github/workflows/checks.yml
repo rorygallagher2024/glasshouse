@@ -26,6 +26,11 @@ jobs:
       - name: dashboard reaches for no missing element
         run: ./scripts/check-ui-ids.py
 
+      # TypeScript reads a missing export of a JS module as any here, so a
+      # caller left behind by a rename is only found at run time.
+      - name: server calls only what its modules export
+        run: ./scripts/check-module-calls.py
+
       - name: strings keyed and translations current
         run: ./scripts/check-strings.py
 

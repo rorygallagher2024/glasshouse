@@ -28,8 +28,11 @@ var EMMC_WEAR_PRESENT = fs.existsSync('/sys/block/mmcblk0/device/life_time');
 var lunaFn = null;
 var lunaCachedFn = null;
 var configObj = null;
+/** @type {typeof import('./oled')} */
 var oledModule = null;
+/** @type {typeof import('./privacy')} */
 var privacyModule = null;
+/** @type {typeof import('./screensavers')} */
 var screensaversModule = null;
 var alwaysReadyScreenOn = false;
 var tvwebVersionStr = '0.0.0';

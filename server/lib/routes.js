@@ -42,19 +42,31 @@ function parseUrl(reqUrl) {
 
 var config = {};
 var configFilePath = '';
+/** @type {typeof import('./controls')} */
 var controlsModule = null;
+/** @type {typeof import('./telemetry')} */
 var telemetryModule = null;
+/** @type {typeof import('./oled')} */
 var oledModule = null;
+/** @type {typeof import('./privacy')} */
 var privacyModule = null;
+/** @type {typeof import('./lgsettings')} */
 var lgSettingsModule = null;
+/** @type {typeof import('./game')} */
 var gameModule = null;
+/** @type {typeof import('./apps')} */
 var appsModule = null;
+/** @type {typeof import('./services')} */
 var servicesModule = null;
+/** @type {typeof import('./screensavers')} */
 var screensaversModule = null;
+/** @type {typeof import('./updater')} */
 var updaterModule = null;
 var tvAppFn = null;
 var restartSelfFn = null;
+/** @type {typeof import('./repo')} */
 var repoModule = null;
+/** @type {typeof import('./installer')} */
 var installerModule = null;
 var fromHbcFn = null;
 var tileHidingOffMsg = '';

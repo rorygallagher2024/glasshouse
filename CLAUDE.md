@@ -41,8 +41,10 @@ use modern JavaScript.
   stats from a B8 (webOS 4) and a G4 (webOS 9).
 
 Before pushing, run what CI runs: `node test/run-all.js`, `npx tsc`, and
-`scripts/check-es5.py`, `check-ui-ids.py`, `check-strings.py`,
-`check-screensavers.py` and `check-drift.py`.
+`scripts/check-es5.py`, `check-module-calls.py`, `check-ui-ids.py`,
+`check-strings.py`, `check-screensavers.py` and `check-drift.py`. A module
+handed to another through init() is typed with
+`/** @type {typeof import('./x')} */`, so check-module-calls.py follows it.
 
 For background, open the doc for the area rather than README.md:
 docs/IMPLEMENTATION.md (platform quirks and how each subsystem works),
