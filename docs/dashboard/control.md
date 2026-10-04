@@ -12,8 +12,6 @@ From a browser, the dashboard can navigate the TV, change inputs, control playba
 
 The **Advanced** tab, `/?tab=advanced`, holds the TV's own settings that LG keeps several menus deep: Quick Boot, Wake-on-LAN, staying connected when off, LG's Always Ready screen, the LG logo shown at power on and off, sound (output, sound mode, digital sound output, balance, automatic volume, eARC and Bluetooth speaker mode), each HDMI input's Deep Colour and audio format, SIMPLINK (HDMI-CEC) and its auto power sync, IP control, auto device detection, and the front lights. Sound mode and balance apply to the TV speakers only, and an HDMI input's settings can be changed only while that input is on screen, as in LG's own menu. Auto device detection finds devices the TV can show on its Home Dashboard and control, from a set-top box to smart lights, plugs and switches; on newer TVs it does so by looking up every address on the home network each time the TV switches on, and switching it off stops those lookups. Each setting appears only on TVs that have it. On the TV itself they are under **System**.
 
-<p align="center">
-  <a href="../screenshots/advanced.png"><img src="../screenshots/advanced.png" alt="Advanced tab: Quick Boot, Stay connected when off with its nightly power-down hours, Wake-on-LAN, LG logo, auto device detection and the standby light" width="700"></a>
-  <br>
-  <sub>The TV's own settings, grouped as Power, Display, Devices and Front lights.</sub>
-</p>
+![Advanced tab: Quick Boot, Stay connected when off with its nightly power-down hours, Wake-on-LAN, LG logo, auto device detection and the standby light](../screenshots/advanced.png)
+
+*The TV's own settings, grouped as Power, Display, Devices and Front lights.*

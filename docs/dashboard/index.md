@@ -18,10 +18,8 @@ The page works with no internet access, and has a dark/light mode toggle (via th
 
 ## In both themes
 
-<p align="center">
-  <a href="../screenshots/dashboard.png"><img src="../screenshots/dashboard.png" alt="Metrics tab: SoC temperature, system readouts, storage, Magic Remote battery and HDMI ports, dark theme (OLED42C24LA)" width="440"></a>
-  &nbsp;
-  <a href="../screenshots/dashboard-light.png"><img src="../screenshots/dashboard-light.png" alt="Control tab: panel, source, volume, playback, sleep timer and power, light theme (OLED42C24LA)" width="440"></a>
-  <br>
-  <sub>Metrics and Control tabs, shown in dark and light themes.</sub>
-</p>
+![Metrics tab: SoC temperature, system readouts, storage, Magic Remote battery and HDMI ports, dark theme (OLED42C24LA)](../screenshots/dashboard.png)
+
+![Control tab: panel, source, volume, playback, sleep timer and power, light theme (OLED42C24LA)](../screenshots/dashboard-light.png)
+
+*Metrics and Control tabs, shown in dark and light themes.*

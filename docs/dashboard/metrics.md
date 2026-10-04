@@ -11,8 +11,6 @@ This is useful both for monitoring and for troubleshooting. It shows whether a h
 * Magic Remote battery and model; webOS and firmware version, SoC architecture, OLED cell ID and TCON firmware where the platform exposes them.
 * On demand: what is resident in memory, and which processes are using the processor right now.
 
-<p align="center">
-  <img width="432" alt="Metrics tab: processor, memory, swap, network and current draw readouts" src="../screenshots/metrics-system.png" />
-  <br>
-  <sub>Metrics including processor, memory, swap and current draw.</sub>
-</p>
+![Metrics tab: processor, memory, swap, network and current draw readouts](../screenshots/metrics-system.png)
+
+*Metrics including processor, memory, swap and current draw.*

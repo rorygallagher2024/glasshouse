@@ -9,14 +9,10 @@ The aim is not to encourage disabling OLED protections blindly. Instead, the das
 * Screen shift and logo dimming on any OLED.
 * Temporal peak control (ASBL) and global stress reduction on supported models (the two normally reachable only from the TV's service menu, with a service remote and a PIN).
 
-<p align="center">
-  <a href="../screenshots/oledcare.png"><img src="../screenshots/oledcare.png" alt="OLED Care tab: screen shift, logo dimming, temporal peak control and global stress reduction, each described, with switches and a warranty warning" width="700"></a>
-  <br>
-  <sub>OLED panel wear information and burn-in protection controls.</sub>
-</p>
+![OLED Care tab: screen shift, logo dimming, temporal peak control and global stress reduction, each described, with switches and a warranty warning](../screenshots/oledcare.png)
 
-<p align="center">
-  <img width="400" alt="Panel life: total power-on hours, panel maintenance and Pixel Refresher countdowns" src="../screenshots/oledcare-panel.png" />
-  <br>
-  <sub>Panel life, maintenance and Pixel Refresher status.</sub>
-</p>
+*OLED panel wear information and burn-in protection controls.*
+
+![Panel life: total power-on hours, panel maintenance and Pixel Refresher countdowns](../screenshots/oledcare-panel.png)
+
+*Panel life, maintenance and Pixel Refresher status.*

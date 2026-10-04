@@ -19,8 +19,6 @@ Two tiers are available:
 
 What ACR collects and what LG Ad Solutions does with it is set out in [What LG's ACR does](../ACR.md).
 
-<p align="center">
-  <a href="../screenshots/privacy.png"><img src="../screenshots/privacy.png" alt="Privacy tab: an overview of what is still on, then the ad and telemetry blocker, advertising identifier, the data collection agreements grouped by subject with toggles, and what is running now" width="700"></a>
-  <br>
-  <sub>Privacy controls, data agreements, advertising ID and LG telemetry blocking.</sub>
-</p>
+![Privacy tab: an overview of what is still on, then the ad and telemetry blocker, advertising identifier, the data collection agreements grouped by subject with toggles, and what is running now](../screenshots/privacy.png)
+
+*Privacy controls, data agreements, advertising ID and LG telemetry blocking.*
