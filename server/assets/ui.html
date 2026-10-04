@@ -581,7 +581,7 @@
       <button type="button" id="tile-hiding-on" onclick="setTileHiding(true)" data-t="apps.tiles.on">On (Custom)</button>
     </div>
     <div class="sub" id="apps-hidden-count" style="margin-top:8px">&mdash;</div>
-    <div class="pv-note" id="tile-hiding-overridden" style="margin-top:12px" hidden data-t="common.heldOverridden">Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged (#366).</div>
+    <div class="pv-note" id="tile-hiding-overridden" style="margin-top:12px" hidden data-t="common.heldOverridden">Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged.</div>
     <div class="pv-note" id="tile-hiding-held" style="margin-top:12px" hidden data-t="apps.tiles.held">Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.</div>
     <div class="pv-note" id="tile-hiding-warning" style="margin-top:12px" hidden><b data-t="apps.tiles.warn.lead">When enabled:</b> <span data-t="apps.tiles.warn">On each cold boot of your TV, this can cause a brief 1-second blank screen or input refresh before returning to your active HDMI source.</span></div>
     <div class="prot-table" id="apps-tiles-list" style="margin-top:16px">
@@ -896,7 +896,7 @@
       <div class="prot-row">
         <div class="prot-main">
           <div class="prot-title" data-t="server.experimental.tileHiding">Home screen tile hiding</div>
-          <div class="prot-desc" data-t="server.experimental.tileHiding.desc">Allows hiding built-in system tiles from the home launcher. Restarting the application manager at boot can cause display engine lockups on some TVs (issue #366).</div>
+          <div class="prot-desc" data-t="server.experimental.tileHiding.desc">Allows hiding built-in system tiles from the home launcher. Restarting the application manager at boot can cause display engine lockups on some TVs.</div>
         </div>
         <div class="prot-status"><button type="button" class="pill idle" id="exp-tilehiding" onclick="toggleExpTileHiding()">&mdash;</button></div>
       </div>
