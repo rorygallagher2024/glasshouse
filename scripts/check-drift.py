@@ -4,7 +4,7 @@ Check the two lists that are maintained by hand against what the code does.
 
 Both fail silently, which is why they are checked rather than remembered:
 
-  * docs/HOME-ASSISTANT.md is the entity reference, so an entity added to
+  * docs/HOME-ASSISTANT-ENTITIES.md is the entity reference, so an entity added to
     ha.js, renamed or dropped leaves the table wrong with nothing to notice.
     It had cpu_load documented under its old id and mac_address not at all.
   * deploy.sh copies a hardcoded FILES list. An asset added to server/assets
@@ -19,7 +19,7 @@ Exits non-zero if either has fallen out of step.
 import re, sys, pathlib
 
 root = pathlib.Path(__file__).resolve().parent.parent
-doc_path = root / 'docs' / 'HOME-ASSISTANT.md'
+doc_path = root / 'docs' / 'HOME-ASSISTANT-ENTITIES.md'
 problems = []
 
 DECL = r"type:\s*'(\w+)',\s*\n?\s*id:\s*'(\w+)'"
@@ -67,8 +67,8 @@ def documented():
     rows = ROW.findall(doc_path.read_text(encoding='utf-8'))
     for column, domain, name in rows:
         if column != domain:
-            problems.append('docs/HOME-ASSISTANT.md: %s.lg_tv_%s is in a `%s` row'
-                            % (domain, name, column))
+            problems.append('%s: %s.lg_tv_%s is in a `%s` row'
+                            % (doc_path.relative_to(root), domain, name, column))
     return {(domain, name) for _, domain, name in rows}
 
 

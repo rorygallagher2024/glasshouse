@@ -50,7 +50,9 @@ nav:
       - On the TV: dashboard/tv-app.md
       - Power and standby: dashboard/power.md
       - Server: dashboard/server.md
-  - Home Assistant: HOME-ASSISTANT.md
+  - Home Assistant:
+      - HOME-ASSISTANT.md
+      - Entities: HOME-ASSISTANT-ENTITIES.md
   - Running it:
       - Updating and uninstalling: managing.md
       - Experimental features: experimental.md
