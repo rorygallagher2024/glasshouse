@@ -92,13 +92,21 @@ async function loadOledCare() {
   // compStatus and refresherStatus are the TV's own words, in English.
   q('oc-comp-sub').textContent = d.compStatus ? d.compStatus : t('oled.comp.sub', '4-hour short cycle');
   q('oc-refr-sub').textContent = d.refresherStatus ? d.refresherStatus : t('oled.refresher.sub', '2,000-hour calibration');
-  const cyc = [];
-  const count = (label, n) => `${esc(label)} <span>${n.toLocaleString()}</span>`;
-  if (d.compCycles !== null && d.compCycles !== undefined) cyc.push(count(t('oled.cycles.comp', 'Short cycles completed'), d.compCycles));
-  if (d.refresherCycles !== null && d.refresherCycles !== undefined) cyc.push(count(t('oled.cycles.refresher', 'Pixel refresher cycles'), d.refresherCycles));
-  if (d.failureAlerts !== null && d.failureAlerts !== undefined) cyc.push(count(t('oled.cycles.failures', 'Refresher failure alerts'), d.failureAlerts));
-  if (d.gsrStressCount !== null && d.gsrStressCount !== undefined) cyc.push(count(t('oled.cycles.gsr', 'GSR stress events'), d.gsrStressCount));
-  q('oc-cycles').innerHTML = cyc.map(x => `<div>${x}</div>`).join('');
+  const counts = [
+    { n: d.compCycles, name: t('oled.cycles.comp', 'Short cycles completed'),
+      desc: t('tv.oled.shortCyclesCompleted.hint', 'How many short compensation passes the panel has run.') },
+    { n: d.refresherCycles, name: t('oled.cycles.refresher', 'Pixel refresher cycles'),
+      desc: t('tv.oled.pixelRefresherCycles.hint', 'How many long calibrations the panel has run. These are the ones that matter for wear.') },
+    { n: d.failureAlerts, name: t('oled.cycles.failures', 'Refresher failure alerts'),
+      desc: t('oled.cycles.failures.desc', 'Maintenance passes the TV recorded as not finishing. Normally zero.') },
+    { n: d.gsrStressCount, name: t('oled.cycles.gsr', 'GSR stress events'),
+      desc: t('oled.cycles.gsr.desc', 'How often Global Stress Reduction has dimmed the screen for something static. A count that climbs quickly means the same image is held on screen for long stretches.') }
+  ].filter(c => c.n !== null && c.n !== undefined);
+  q('oc-cycles').innerHTML = counts.map(c => `<div class="oc-count">
+      <div class="oc-count-top"><span>${esc(c.name)}</span><b class="num">${Number(c.n).toLocaleString()}</b></div>
+      <div class="oc-count-desc">${esc(c.desc)}</div>
+    </div>`).join('');
+  q('oc-counts').hidden = !counts.length;
   q('oled-warn').hidden = !d.serviceControls;
   q('oled-rows').querySelectorAll('button.pill').forEach(b => { b.disabled = !d.writable; });
 }

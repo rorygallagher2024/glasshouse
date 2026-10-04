@@ -1475,6 +1475,10 @@
   "text": "Mantenimiento del panel en",
   "from": "Panel maintenance in"
  },
+ "oled.counts": {
+  "text": "Recuentos totales",
+  "from": "Lifetime counts"
+ },
  "oled.cycles.comp": {
   "text": "Ciclos cortos completados",
   "from": "Short cycles completed"
@@ -1483,9 +1487,17 @@
   "text": "Avisos de fallo del refrescado",
   "from": "Refresher failure alerts"
  },
+ "oled.cycles.failures.desc": {
+  "text": "Pasadas de mantenimiento que la TV registró como no terminadas. Lo normal es cero.",
+  "from": "Maintenance passes the TV recorded as not finishing. Normally zero."
+ },
  "oled.cycles.gsr": {
   "text": "Eventos de estrés GSR",
   "from": "GSR stress events"
+ },
+ "oled.cycles.gsr.desc": {
+  "text": "Cuántas veces Global Stress Reduction ha atenuado la pantalla por algo estático. Si el recuento sube deprisa, la misma imagen se mantiene en pantalla durante mucho tiempo.",
+  "from": "How often Global Stress Reduction has dimmed the screen for something static. A count that climbs quickly means the same image is held on screen for long stretches."
  },
  "oled.cycles.refresher": {
   "text": "Ciclos de refrescado de píxeles",

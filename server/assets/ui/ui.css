@@ -414,8 +414,15 @@ button.btn-off:hover{color:var(--w60);border-color:var(--w12);background:transpa
 @media(min-width:1020px){.oled-split{grid-template-columns:minmax(280px,0.8fr) 1.6fr;gap:52px}}
 .oled-split .grp{margin-bottom:18px}
 .oled-split .oled-row:first-child{padding-top:0}
-.oc-cycles{margin-top:26px;font-size:13px;color:var(--w60);line-height:1.8}
-.oc-cycles span{color:var(--w80)}
+/* The counters are read the way the protections are: a name, then what the
+   number means. Older TVs report none of them, and the group goes too. */
+.oc-counts{margin-top:clamp(30px,4vw,40px)}
+.oc-counts .grp{margin-bottom:4px}
+.oc-count{padding:14px 0;border-bottom:1px solid var(--w12)}
+.oc-count:last-child{border-bottom:0}
+.oc-count-top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;font-size:15px}
+.oc-count-top b{font-family:'Outfit';font-weight:300;font-size:22px;color:var(--w100);white-space:nowrap}
+.oc-count-desc{font-size:13px;color:var(--w60);margin-top:5px;line-height:1.5;max-width:46ch}
 .oled-none{font-size:12px;letter-spacing:.06em;color:var(--w60);white-space:nowrap}
 /* A protection this TV will not talk about is still worth describing, but it
    should not compete with the ones that answer: its name steps down to the
