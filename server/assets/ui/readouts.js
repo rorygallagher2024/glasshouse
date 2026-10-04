@@ -554,11 +554,14 @@ async function tick() {
     }
 
     if (d.sound) {
-      const soLeased = getLease('soundOutput', d.sound.output_raw);
-      const curSo = soLeased !== undefined ? soLeased : (d.sound.output_raw || '');
+      // The TV reports optical as external_optical (B8, C2) and its speakers as
+      // internal on some firmware; the buttons carry the other id.
+      const soRaw = { external_optical: 'optical', internal: 'tv_speaker' }[d.sound.output_raw] || d.sound.output_raw || '';
+      const soLeased = getLease('soundOutput', soRaw);
+      const curSo = soLeased !== undefined ? soLeased : soRaw;
       if (q('soundout-lbl') && !soLeased) q('soundout-lbl').textContent = (d.sound.output || d.sound.output_raw || '').toUpperCase();
-      // Bluetooth only with an audio device paired: without one the TV opens
-      // its own pairing prompt and falls back to the speakers.
+      // Bluetooth only with an audio device connected: without one the TV
+      // opens its own pairing prompt and falls back to the speakers.
       if (q('so_bt_soundbar')) q('so_bt_soundbar').hidden = d.sound.bt_audio === false && curSo !== 'bt_soundbar';
       const soBtns = q('soundouts') ? q('soundouts').querySelectorAll('button') : [];
       for (let b of soBtns) {

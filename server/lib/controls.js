@@ -328,9 +328,19 @@ function doControl(action, value, cb) {
         luna('com.webos.service.settings/setSystemSettings',
              { category: 'sound', settings: { soundOutput: id } }, function (r) { next(!!(r && r.returnValue)); });
       };
+      // The TV takes a second or two to move the sound over (B8), and the
+      // first read after the change would keep the old output, and whether
+      // its volume and mute can be changed, cached for 10s.
+      var settled = function (ok) {
+        if (ok) setTimeout(function () {
+          if (telemetry) telemetry.clearCache();
+          clearLunaCache();
+        }, 3000);
+        cb({ ok: ok });
+      };
       return setOut(sOut, function (ok) {
-        if (ok || !sAlias) return cb({ ok: ok });
-        setOut(sAlias, function (ok2) { cb({ ok: ok2 }); });
+        if (ok || !sAlias) return settled(ok);
+        setOut(sAlias, settled);
       });
 
     case 'playback':

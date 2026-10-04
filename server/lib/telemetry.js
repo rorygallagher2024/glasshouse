@@ -577,18 +577,20 @@ function volumeControl(vs, sound) {
 }
 
 /*
- * Whether a Bluetooth audio device is paired: choosing Bluetooth output
+ * Whether a Bluetooth audio device is connected: choosing Bluetooth output
  * without one opens the TV's own pairing prompt and falls back to the
- * speakers. A Magic Remote is paired too, so the device class is read:
- * major class 4 is audio/video (a headset is 0x240404, a remote 0x1f00).
- * null until the first answer.
+ * speakers. Paired is not enough - headphones switched off stay paired. A
+ * Magic Remote is connected too, so the device class is read: major class 4
+ * is audio/video (a headset is 0x240404, a remote 0x1f00). null until the
+ * first answer.
  */
 var btAudio = null;
 function refreshBtAudio() {
   lunaCachedFn('com.webos.service.bluetooth2/device/getStatus', {}, 60000, function (r) {
     if (!r || r.returnValue === false || !Array.isArray(r.devices)) return;
     btAudio = r.devices.some(function (d) {
-      return d && d.paired && ((Number(d.classOfDevice) >> 8) & 0x1f) === 4;
+      return d && Array.isArray(d.connectedProfiles) && d.connectedProfiles.length > 0 &&
+        ((Number(d.classOfDevice) >> 8) & 0x1f) === 4;
     });
   });
 }
