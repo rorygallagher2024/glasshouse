@@ -28,7 +28,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 3.4 through 26 confirmed; tested across 2016–2025 models. Other versions likely work as well
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 28 models verified so far (UH6030, UH610V, UH635V, B7, B8, C8, C9, CX, C1, UP81, QNED82, C2, C3, B4, G3, C4, G4, UT81, C5, G5, CS, LX3). Other rooted models should work; [see full table](#tested-tvs)
+* **Tested hardware**: 29 models verified so far (UH6030, UH610V, UH635V, B7, B8, C8, C9, CX, C1, UP80, UP81, QNED82, C2, C3, B4, G3, C4, G4, UT81, C5, G5, CS, LX3). Other rooted models should work; [see full table](#tested-tvs)
 
 [Quick start](#quick-start) • [What it's for](#what-its-for) • [Screenshots](#screenshots) • [Features](#features) • [Installation](#installation) • [Tested TVs](#tested-tvs) • [Known issues](#known-issues) • [Home Assistant](#home-assistant--mqtt) • [Managing the server](#managing-the-server) • [Security](#security)
 
@@ -345,6 +345,7 @@ Tested across the following TVs so far. The Luna service names and `/proc/lg` pa
 | OLED55C17LB | 6.x          | —        | OLED  | HDMI 2.1 diagnostics and remote battery reporting              |
 | OLED55C1PUB | 6.x (6.3+)   | 03.53.45 | OLED  | SSH install and MQTT bridge confirmed                          |
 | 50UP81006LR | 6.5.0        | 03.51.16 | LCD   | Installed over telnet; in-app update confirmed                 |
+| 43UP80006LA | 6.5.3        | 03.53.45 | LCD   | MQTT bridge confirmed; dashboard start-up fix in 0.75.1 (#392) |
 | 55QNED826QB | 7.6.0        | 04.60.90 | LCD   | Installed over SSH; MQTT bridge confirmed                      |
 | OLED42C24LA | 9.2.2 (22+)  | 23.25.55 | OLED  | Rooted with jsbro-autoroot                                     |
 | OLED55B46LA | 24 (9.24.8)  | 23.23.30 | OLED  | Installed over telnet                                          |
