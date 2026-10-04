@@ -80,6 +80,8 @@ var HA_ENTITIES = [
   { id: 'app', type: 'select', name: 'Application', cat: 'controls' },
   { id: 'active_app', type: 'sensor', name: 'Active App', cat: 'controls' },
   { id: 'play_state', type: 'sensor', name: 'Player State', cat: 'controls' },
+  { id: 'volume_up', type: 'button', name: 'Volume Up', cat: 'controls' },
+  { id: 'volume_down', type: 'button', name: 'Volume Down', cat: 'controls' },
   { id: 'remote_up', type: 'button', name: 'Remote Up', cat: 'controls' },
   { id: 'remote_down', type: 'button', name: 'Remote Down', cat: 'controls' },
   { id: 'remote_left', type: 'button', name: 'Remote Left', cat: 'controls' },
@@ -361,6 +363,15 @@ function buildEntities(opts) {
   var topic = topics(opts.pfx);
   var installedApps = opts.installedApps || [];
   var lastPicModes = opts.pictureModes || [];
+
+  // Volume Up and Down are unavailable when the TV reports no level and the
+  // sound is not going over HDMI ARC/eARC: then the level is set on a device
+  // the TV cannot reach (optical).
+  var volumeStepAvailability = [{
+    topic: topic.telemetry,
+    value_template: '{{ "offline" if value_json.volume is none and "arc" not in ' +
+      '((value_json.sound.output_raw if value_json.sound else "") or "") else "online" }}'
+  }];
 
   /** @type {any[]} */
   var entities = [
@@ -1085,6 +1096,28 @@ function buildEntities(opts) {
           payload_on: 'ON',
           payload_off: 'OFF',
           icon: 'mdi:shield-check'
+        }
+      },
+      // A step at a time, as the remote's volume keys: a receiver on HDMI
+      // ARC/eARC that takes no set level still takes these.
+      {
+        type: 'button', id: 'volume_up',
+        payload: {
+          name: 'Volume Up',
+          command_topic: topic.command('volumeStep'),
+          payload_press: '1',
+          icon: 'mdi:volume-plus',
+          availability: volumeStepAvailability
+        }
+      },
+      {
+        type: 'button', id: 'volume_down',
+        payload: {
+          name: 'Volume Down',
+          command_topic: topic.command('volumeStep'),
+          payload_press: '-1',
+          icon: 'mdi:volume-minus',
+          availability: volumeStepAvailability
         }
       },
       // The remote's D-pad, Back and Home, as the dashboard's remote sends them.

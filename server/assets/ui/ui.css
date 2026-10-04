@@ -294,6 +294,9 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
 }
 .vol-wrap input[type=range]:focus{outline:none}
 .vol-wrap.full{grid-column:1/-1}
+/* In the slider's place when only up and down reach the sound device. */
+.vol-steps{grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vol-steps button{min-height:48px;font-size:22px;font-weight:300;line-height:1}
 #picmodes,#energysteps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
 #picmodes button,#energysteps button{
   font-size:11.5px;letter-spacing:.06em;padding:12px 6px;line-height:1.25;

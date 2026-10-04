@@ -155,6 +155,10 @@ function hdmiKey(d) {
   return [d.app_id || '', (d.powerState && d.powerState.raw) || '', d.signal || '', !!d.screenSaver].join('|');
 }
 
+function hasVolumeSteps(output) {
+  return /arc/i.test(output || '');
+}
+
 async function tick() {
   try {
     const r = await fetch(api('/api/stats'), { cache: 'no-store' });
@@ -415,7 +419,13 @@ async function tick() {
       const vLeased = getLease('volume', d.volume);
       const v = vLeased !== undefined ? vLeased : (typeof d.volume === 'number' ? d.volume : 0);
       // No level: the sound device on the other end of the cable sets it.
+      // Over HDMI ARC/eARC the TV still passes up and down to it, as the
+      // remote's keys do, so those replace the slider. Over optical nothing
+      // reaches it, and the disabled slider says so.
       const external = d.volume === null;
+      const steps = external && hasVolumeSteps(d.sound && d.sound.output_raw);
+      if (q('vol-steps')) q('vol-steps').hidden = !steps;
+      if (q('vol-wrap')) q('vol-wrap').hidden = steps;
       if (q('vol-slider')) {
         q('vol-slider').value = v;
         q('vol-slider').disabled = external;

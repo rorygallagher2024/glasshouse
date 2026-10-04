@@ -201,6 +201,10 @@
           <div class="vol-fill" id="vol-fill"></div>
           <input type="range" id="vol-slider" min="0" max="100" value="0" aria-label="Volume" data-t-aria-label="ctl.volume">
         </div>
+        <div class="vol-steps" id="vol-steps" hidden>
+          <button onclick="sendCommand('volumeStep',-1)" aria-label="Volume down" data-t-aria-label="ctl.volumeDown" translate="no">&minus;</button>
+          <button onclick="sendCommand('volumeStep',1)" aria-label="Volume up" data-t-aria-label="ctl.volumeUp" translate="no">+</button>
+        </div>
         <button id="mute" onclick="toggleMute()" data-t="ctl.mute">Mute</button>
       </div>
     </div>

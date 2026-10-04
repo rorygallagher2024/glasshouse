@@ -36,6 +36,8 @@ Categories:
 | `select` | `select.lg_tv_energy_saving` | Energy Saving Step | Auto, Off, Minimum, Medium, Maximum, Screen off |
 | `select` | `select.lg_tv_sound_output` | Sound Output | Switch outputs (TV Speaker, HDMI ARC, Optical, Headphone) |
 | `select` | `select.lg_tv_sleep_timer` | Sleep Timer | Off, 10, 30, 60, 90, 120 minutes |
+| `button` | `button.lg_tv_volume_up` | Volume Up | One step up, as the remote's key; reaches an HDMI ARC/eARC receiver that takes no set level |
+| `button` | `button.lg_tv_volume_down` | Volume Down | One step down, as the remote's key |
 | `button` | `button.lg_tv_remote_up` | Remote Up | Presses Up on the remote |
 | `button` | `button.lg_tv_remote_down` | Remote Down | Presses Down on the remote |
 | `button` | `button.lg_tv_remote_left` | Remote Left | Presses Left on the remote |

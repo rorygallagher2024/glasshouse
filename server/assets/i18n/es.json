@@ -887,9 +887,17 @@
   "text": "Volumen",
   "from": "Volume"
  },
+ "ctl.volumeDown": {
+  "text": "Bajar volumen",
+  "from": "Volume down"
+ },
  "ctl.volumeExternal": {
   "text": "El volumen se ajusta en el dispositivo de sonido",
   "from": "The volume is set on the sound device"
+ },
+ "ctl.volumeUp": {
+  "text": "Subir volumen",
+  "from": "Volume up"
  },
  "energy.auto": {
   "text": "Auto",
