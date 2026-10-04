@@ -922,15 +922,18 @@ function handleRequest(req, res) {
     if (req.method === 'GET') {
       /*
        * Setup offers Always-on only on a TV that has it (a C2 on webOS 9.2
-       * does, a B8 on 4.4 does not), so the TV is asked here; a TV without the
-       * setting answers with an error, and the step is left out.
+       * does, a B8 on 4.4 does not). A B8 still answers for the alwaysOn value,
+       * so whether the TV has the feature is telemetry's alwaysOnSupported.
        */
-      return luna('com.webos.service.settings/getSystemSettings',
-                  { category: 'general', keys: ['alwaysOn'] }, function (r) {
+      return telemetryModule.alwaysOnSupported(function (has) {
         var st = setupState();
-        var ar = r && r.returnValue !== false && r.settings && r.settings.alwaysOn;
-        if (ar !== undefined && ar !== null) st.alwaysReady = ar === 'on' || ar === true;
-        send(res, 200, JSON.stringify(st));
+        if (!has) return send(res, 200, JSON.stringify(st));
+        luna('com.webos.service.settings/getSystemSettings',
+             { category: 'general', keys: ['alwaysOn'] }, function (r) {
+          var ar = r && r.returnValue !== false && r.settings && r.settings.alwaysOn;
+          if (ar !== undefined && ar !== null) st.alwaysReady = ar === 'on' || ar === true;
+          send(res, 200, JSON.stringify(st));
+        });
       });
     }
     if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'GET or POST' }));

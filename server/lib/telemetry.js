@@ -127,6 +127,7 @@ function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
   lunaCachedFn = opts.lunaCached;
+  if (lunaFn) alwaysOnSupported();
   configObj = opts.config;
   oledModule = opts.oled;
   privacyModule = opts.privacy;
@@ -1217,7 +1218,9 @@ function collectStats(cb) {
        { category: 'general', keys: ['alwaysOn', 'alwaysOnDisableStartHour', 'alwaysOnDisableStartMinute',
                                      'alwaysOnDisableEndHour', 'alwaysOnDisableEndMinute'] }, 60000, function (gn) {
     var gs = (gn && gn.settings) || {};
-    var ar = gs.alwaysOn;
+    // Only where the TV has the feature: a B8 keeps an alwaysOn value of "on"
+    // without it, and setup offered to keep it connected when off.
+    var ar = alwaysOnSupport === true ? gs.alwaysOn : undefined;
     if (ar !== undefined) out.alwaysReady = ar === 'on' || ar === true;
     if (ar !== undefined && gs.alwaysOnDisableStartHour !== undefined && gs.alwaysOnDisableEndHour !== undefined) {
       out.alwaysReadyOff = {
@@ -1412,6 +1415,30 @@ function masterVolume(cb) {
   });
 }
 
+/*
+ * Whether the TV has LG's Always-on, from whether its settings service
+ * describes the setting: a C2 (webOS 9.2) does; a B8 (webOS 4.4) has an
+ * alwaysOn value but answers "no result in DB" for its description. Asked
+ * once, as it cannot change. cb(true|false).
+ */
+var alwaysOnSupport = null;
+var alwaysOnWaiters = null;
+function alwaysOnSupported(cb) {
+  cb = cb || function () {};
+  if (alwaysOnSupport !== null || !lunaFn) return cb(alwaysOnSupport === true);
+  if (alwaysOnWaiters) return alwaysOnWaiters.push(cb);
+  alwaysOnWaiters = [cb];
+  lunaFn('com.webos.service.settings/getSystemSettingDesc', { category: 'general', keys: ['alwaysOn'] }, function (r, raw) {
+    var desc = r && r.returnValue !== false && Array.isArray(r.results) ? r.results[0] : null;
+    // Remembered only once the TV has answered either way, not after a timeout.
+    if (desc) alwaysOnSupport = !(desc.ui && desc.ui.visible === false);
+    else if (r || /no result/i.test(String(raw || ''))) alwaysOnSupport = false;
+    var waiting = alwaysOnWaiters;
+    alwaysOnWaiters = null;
+    for (var i = 0; i < waiting.length; i++) waiting[i](alwaysOnSupport === true);
+  });
+}
+
 function getCapabilities(extra) {
   extra = extra || {};
   return {
@@ -1459,6 +1486,7 @@ module.exports = {
   emmcInfo: emmcInfo,
   onlineCpus: onlineCpus,
   statCpu: statCpu,
+  alwaysOnSupported: alwaysOnSupported,
   cpuSincePublish: cpuSincePublish,
   socMhz: socMhz,
   gpuClockMhz: gpuClockMhz,
