@@ -710,10 +710,13 @@ function fail(j, text) {
 }
 
 function snapshot() {
-  if (!job) return { state: 'idle', jobId: null, progress: null, preview: null, error: null, result: null };
+  if (!job) return { state: 'idle', jobId: null, source: null, appId: null, progress: null, preview: null, error: null, result: null };
   return {
     state: job.state,
     jobId: job.id,
+    // Which catalog row it belongs to, so the dashboard can show it there.
+    source: job.source,
+    appId: job.pkg ? job.pkg.id : null,
     progress: job.progress,
     preview: job.preview,
     error: job.error,

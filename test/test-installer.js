@@ -1276,6 +1276,8 @@ test('a catalog install with auto=true proceeds directly to install if nothing n
     expectState('installed', function (s) {
       assert.strictEqual(s.result.package, 'com.example.app');
       assert.strictEqual(s.result.title, 'Title of com.example.app', 'the app\'s own title, for the done message');
+      assert.strictEqual(s.source, 'catalog');
+      assert.strictEqual(s.appId, 'com.example.app', 'the catalog row it belongs to');
       done();
     });
   });

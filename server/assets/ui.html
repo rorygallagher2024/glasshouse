@@ -541,6 +541,16 @@ span.pill.good::before,span.pill.warn::before,span.pill.bad::before{
 button.pill, button.pill-toggle{background:transparent;font-family:'Manrope';cursor:pointer}
 button.pill:hover:not([disabled]), button.pill-toggle:hover:not([disabled]){background:rgba(var(--fg),.08)}
 button.pill[disabled], button.pill-toggle[disabled]{cursor:default;opacity:.45}
+/* An app's own button carries what is happening to it: a busy one fills like
+   the update bar as its install goes on, and an outcome holds for a moment.
+   Neither dims, since neither is a button that is merely unavailable. */
+button.pill.busy{color:var(--w100);border-color:var(--w40);
+  background:linear-gradient(90deg,var(--w20) var(--p,0%),transparent var(--p,0%))}
+button.pill.busy[disabled], button.pill.flash[disabled]{opacity:1;cursor:default}
+button.pill.busy[disabled]:hover{color:var(--w100);border-color:var(--w40)}
+button.pill.flash.good[disabled]:hover{color:var(--green);border-color:var(--green)}
+button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)}
+.prot-desc.row-err{color:var(--warn,#e5534b)}
 /* A flag the panel will not write keeps its colour - the value still matters -
    but has to read as inert next to 19 rows that respond to a click. */
 /* Read-only: a dashed edge says it cannot be pressed. It was 45% opacity,
@@ -1347,7 +1357,6 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
     <div class="prot-table" id="apps-installed-list">
       <div class="sub" style="padding:16px 0" data-t="apps.loadingInstalled">Loading installed apps&hellip;</div>
     </div>
-    <div class="sub page-add-msg" id="uninstall-msg" role="status"></div>
   </details>
 
   <details class="pv-d" id="disc-system-tiles">
@@ -2573,7 +2582,7 @@ function noteArrival(d) {
  * watchdog has to step in - so the bar moves on time within each step and only
  * fills once the server answers on the version it was asked for.
  */
-function makeProgress(boxId, stepId, barId, onShow) {
+function makeProgress(boxId, stepId, barId, onShow, onSet) {
   return {
     timer: null,
     pct: 0,
@@ -2594,6 +2603,7 @@ function makeProgress(boxId, stepId, barId, onShow) {
     set(p) {
       this.pct = p;
       q(barId).style.width = p + '%';
+      if (onSet) onSet(p);
     },
     done(label) {
       clearInterval(this.timer);
@@ -3940,8 +3950,11 @@ let installSideload = null; // whether the server takes URL and upload installs;
 let uploading = false;
 const INSTALL_BUSY = { downloading: 1, verifying: 1, installing: 1, elevating: 1 };
 
+let catalogAgain = false;
 async function loadCatalog(force) {
-  if (catalogLoading) return;
+  // Asked again while a load is out: once more after it, so a change made
+  // meanwhile is not lost with the dropped request.
+  if (catalogLoading) { catalogAgain = true; return; }
   catalogLoading = true;
   try {
     const r = await fetch(api('/api/apps/catalog' + (force ? '?force=1' : '')), { cache: 'no-store' });
@@ -3954,6 +3967,7 @@ async function loadCatalog(force) {
     catalogLoading = false;
   }
   renderCatalog();
+  if (catalogAgain) { catalogAgain = false; loadCatalog(); }
 }
 
 // Error text starts lower-case; a host name at the start keeps its case.
@@ -3989,9 +4003,17 @@ function renderCatalog() {
     return;
   }
   const idle = installIdle();
+  const job = catalogJob();
   list.innerHTML = shown.map(a => {
-    let label, cls = 'idle', off = !writable || !idle, isInstalled = false;
-    if (a.state === 'hbc') { label = t('apps.install.viaHbc', 'Updates through Homebrew Channel'); off = true; }
+    let label, cls = 'idle', off = !writable || !idle || !!uninstalling[a.id], isInstalled = false, fill = '';
+    const flash = rowFlashing(a.id);
+    if (job && job.appId === a.id) {
+      label = jobLabel(job); cls = 'busy'; off = true;
+      fill = ` style="--p:${job.state === 'awaiting-confirm' ? 0 : instProg.pct}%"`;
+    }
+    else if (uninstalling[a.id]) { label = t('apps.uninstall.working', 'Uninstalling\u2026'); cls = 'busy'; off = true; }
+    else if (flash) { label = flash.label; cls = flash.cls; off = true; }
+    else if (a.state === 'hbc') { label = t('apps.install.viaHbc', 'Updates through Homebrew Channel'); off = true; }
     else if (a.state === 'installed') { label = t('apps.uninstall.button', 'Uninstall'); cls = 'bad'; isInstalled = true; }
     else if (a.state === 'update') { label = t('apps.install.update', 'Update'); cls = 'warn'; }
     else { label = t('apps.install.button', 'Install'); cls = 'good'; }
@@ -4004,16 +4026,17 @@ function renderCatalog() {
     ].filter(Boolean).join(' · ');
     const root = a.rootRequired ? ` <span class="pill warn" style="padding:1px 8px">${esc(t('apps.install.rootBadge', 'root'))}</span>` : '';
     const clickFn = isInstalled
-      ? `confirmUninstall('${jsq(a.id)}', '${jsq(a.title || a.id)}', 'catalog');`
+      ? `confirmUninstall('${jsq(a.id)}', '${jsq(a.title || a.id)}');`
       : `startInstall('${jsq(a.id)}');`;
     return `<div class="prot-row">
       ${icon}
       <div class="prot-main">
         <div class="prot-title">${esc(a.title || a.id)}${root} <span class="prot-sub">&middot; ${esc(meta)}</span></div>
         <div class="prot-desc">${esc(a.description || a.id)}</div>
+        ${rowError[a.id] ? `<div class="prot-desc row-err">${esc(rowError[a.id])}</div>` : ''}
       </div>
       <div class="prot-status">
-        <button type="button" class="pill ${cls}" onclick="${clickFn}"${isInstalled ? ` data-uninstall="${esc(a.id)}"` : ''} ${off ? 'disabled' : ''}>${esc(label)}</button>
+        <button type="button" class="pill ${cls}" data-app="${esc(a.id)}" onclick="${clickFn}"${fill} ${off ? 'disabled' : ''}>${esc(label)}</button>
       </div>
     </div>`;
   }).join('');
@@ -4031,7 +4054,71 @@ function fmtMb(n) { return t('apps.install.mb', '{n} MB', { n: Math.round(n / 10
 /* The update tab's bar, for installs: a download or upload moves it by what
    has arrived, up to 60%, and the steps after ease on towards their marks, as
    nothing reports how far through them the TV is. */
-const instProg = makeProgress('inst-prog', 'inst-step', 'inst-bar');
+const instProg = makeProgress('inst-prog', 'inst-step', 'inst-bar', null, p => {
+  const b = jobButton();
+  if (b) b.style.setProperty('--p', p + '%');
+});
+
+/*
+ * A catalog install or an uninstall shows on the app's own button, wherever
+ * the list is scrolled to: busy while it runs, then the outcome for a moment
+ * before the button becomes the next action. An error goes under the app's
+ * name. Only an install from a URL or a file, which has no row, shows the
+ * status and bar under its form.
+ */
+const ROW_FLASH_MS = 2500;
+const rowFlash = {};      // id -> { label, cls, until }
+const rowError = {};      // id -> text
+const uninstalling = {};  // id -> true
+
+function catalogJob() {
+  const s = installSnap;
+  return s && s.source === 'catalog' && s.appId && (INSTALL_BUSY[s.state] || s.state === 'awaiting-confirm') ? s : null;
+}
+
+function jobButton() {
+  const s = catalogJob();
+  return s ? Array.from(document.querySelectorAll('#apps-catalog-list [data-app]')).find(b => b.dataset.app === s.appId) : null;
+}
+
+function jobLabel(s) {
+  switch (s.state) {
+    case 'downloading': return t('apps.install.btn.downloading', 'Downloading');
+    case 'verifying': return t('apps.install.btn.checking', 'Checking…');
+    case 'installing': return t('apps.install.installing', 'Installing…');
+    case 'elevating': return t('apps.install.btn.finishing', 'Finishing…');
+    case 'awaiting-confirm': return t('apps.install.btn.review', 'Review…');
+    default: return '';
+  }
+}
+
+// Each poll: the job's button, without rebuilding the list under the pointer.
+function paintJobButton() {
+  const s = catalogJob(), b = jobButton();
+  if (!s || !b) return;
+  b.textContent = jobLabel(s);
+  b.style.setProperty('--p', (s.state === 'awaiting-confirm' ? 0 : instProg.pct) + '%');
+}
+
+function flashRow(id, label, cls) {
+  rowFlash[id] = { label, cls, until: Date.now() + ROW_FLASH_MS };
+  setTimeout(() => { renderCatalog(); if (appsData) renderAppsPanel(); }, ROW_FLASH_MS + 50);
+}
+
+function rowFlashing(id) {
+  const f = rowFlash[id];
+  if (f && f.until > Date.now()) return f;
+  delete rowFlash[id];
+  return null;
+}
+
+// The catalog's own copy says what the TV now has, before the reload confirms it.
+function setCatalogState(id, version) {
+  const a = catalogData && (catalogData.apps || []).find(x => x.id === id);
+  if (!a || a.state === 'hbc') return;
+  a.installedVersion = version;
+  a.state = version === null ? 'none' : 'installed';
+}
 const INST_MARK = { downloading: [55, 20000], verifying: [70, 3000], installing: [92, 15000], elevating: [97, 5000] };
 let instStage = null;
 
@@ -4197,9 +4284,27 @@ function renderInstall() {
     delete panel.dataset.job;
     showInstallProgress(s);
   }
+  if (s.source === 'catalog') {
+    q('install-status').hidden = true;
+    paintJobButton();
+  }
 }
 
 function installEnded(s) {
+  if (s.source === 'catalog' && s.appId) {
+    setInstallStatus('');
+    if (s.state === 'installed') {
+      setCatalogState(s.appId, (s.result && s.result.version) || '');
+      flashRow(s.appId, t('apps.install.installed', 'Installed'), 'good flash');
+    } else if (s.state === 'error' || s.state === 'interrupted') {
+      rowError[s.appId] = sentence(s.error || t('common.unknownError', 'unknown error'));
+      showErr(s.error || t('common.unknownError', 'unknown error'));
+    }
+    renderCatalog();
+    loadApps();
+    loadCatalog();
+    return;
+  }
   if (s.state === 'installed') {
     const r = s.result || {};
     clearInterval(instProg.timer);
@@ -4213,7 +4318,7 @@ function installEnded(s) {
     setInstallStatus(sentence(s.error));
   }
   loadApps();
-  loadCatalog(true);
+  loadCatalog();
 }
 
 async function pollInstall() {
@@ -4255,6 +4360,7 @@ async function installPost(path, body) {
 }
 
 function startInstall(appId) {
+  delete rowError[appId];
   prepareInstallTarget('catalog');
   // The server goes straight on to install unless the preview has a choice or a warning in it.
   startJob('/api/apps/install/fetch', { id: appId, auto: true });
@@ -4521,9 +4627,10 @@ function renderAppsPanel() {
           <div class="prot-main">
             <div class="prot-title">${title} <span class="prot-sub">&middot; ${id}</span></div>
             <div class="prot-desc">${esc(meta || t('apps.installed.app', 'Installed app'))}</div>
+            ${rowError[app.id] ? `<div class="prot-desc row-err">${esc(rowError[app.id])}</div>` : ''}
           </div>
           <div class="prot-status">
-            <button type="button" class="pill bad" data-uninstall="${id}" onclick="confirmUninstall('${jsq(app.id)}', '${jsq(app.title || app.id)}')" ${!d.writable ? 'disabled' : ''}>${esc(t('apps.uninstall.button', 'Uninstall'))}</button>
+            <button type="button" class="pill ${uninstalling[app.id] ? 'busy' : 'bad'}" onclick="confirmUninstall('${jsq(app.id)}', '${jsq(app.title || app.id)}')" ${!d.writable || uninstalling[app.id] ? 'disabled' : ''}>${esc(uninstalling[app.id] ? t('apps.uninstall.working', 'Uninstalling\u2026') : t('apps.uninstall.button', 'Uninstall'))}</button>
           </div>
         </div>`;
       }).join('');
@@ -4699,25 +4806,19 @@ async function toggleService(serviceId, makeDisabled) {
 }
 
 /*
- * From the catalog or the installed list, which can both show the app. Both
- * buttons say it is working, since with tiles hidden the home screen restarts
- * first (about ten seconds), and the result is said where it was asked for.
+ * From the catalog or the installed list, which can both show the app: both
+ * say it is going while it does (about ten seconds with tiles hidden, as the
+ * home screen restarts), then the catalog's says so for a moment and the
+ * installed list's row goes.
  */
-async function confirmUninstall(appId, appTitle, from) {
+async function confirmUninstall(appId, appTitle) {
   if (!confirm(t('apps.uninstall.confirm', 'Uninstall "{name}" from the TV?\n\nThis will permanently delete the application and its stored data.', { name: appTitle }))) {
     return;
   }
-  const buttons = () => Array.from(document.querySelectorAll('[data-uninstall]')).filter(b => b.dataset.uninstall === appId);
-  buttons().forEach(b => {
-    b.disabled = true;
-    b.textContent = t('apps.uninstall.working', 'Uninstalling\u2026');
-  });
-  const say = text => {
-    if (from === 'catalog') return setInstallStatus(text);
-    const m = q('uninstall-msg');
-    if (m) m.textContent = text;
-  };
-  say('');
+  delete rowError[appId];
+  uninstalling[appId] = true;
+  renderCatalog();
+  renderAppsPanel();
   let error = null;
   try {
     const res = await fetch(api('/api/apps/uninstall'), {
@@ -4730,26 +4831,19 @@ async function confirmUninstall(appId, appTitle, from) {
   } catch (e) {
     error = e.message;
   }
+  delete uninstalling[appId];
   if (error) {
-    buttons().forEach(b => {
-      b.disabled = false;
-      b.textContent = t('apps.uninstall.button', 'Uninstall');
-    });
+    rowError[appId] = sentence(error);
     showErr(t('apps.uninstall.failed', 'Could not uninstall {name}: {error}', { name: appTitle, error }));
-    return;
+  } else {
+    if (appsData && appsData.installed) appsData.installed = appsData.installed.filter(a => a.id !== appId);
+    setCatalogState(appId, null);
+    flashRow(appId, t('apps.uninstall.removed', 'Removed'), 'idle flash');
   }
-  // Out of the list at once rather than after the reload.
-  if (appsData && appsData.installed) {
-    appsData.installed = appsData.installed.filter(a => a.id !== appId);
-    renderAppsPanel();
-  }
-  const done = t('apps.uninstall.done', 'Uninstalled {name}.', { name: appTitle });
-  say(done);
-  setTimeout(() => {
-    if (from === 'catalog' ? (installIdle() && q('inst-step').textContent === done) : q('uninstall-msg').textContent === done) say('');
-  }, 8000);
-  await loadApps();
-  await loadCatalog(true);
+  renderCatalog();
+  renderAppsPanel();
+  loadApps();
+  loadCatalog();
 }
 
 async function toggleTileVisibility(appId, makeHidden) {

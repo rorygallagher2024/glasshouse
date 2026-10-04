@@ -139,6 +139,26 @@
   "text": "Apps y lanzador de la pantalla de inicio",
   "from": "Apps & Home Screen Launcher"
  },
+ "apps.install.btn.checking": {
+  "text": "Comprobando…",
+  "from": "Checking…"
+ },
+ "apps.install.btn.downloading": {
+  "text": "Descargando",
+  "from": "Downloading"
+ },
+ "apps.install.btn.finishing": {
+  "text": "Terminando…",
+  "from": "Finishing…"
+ },
+ "apps.install.btn.review": {
+  "text": "Revisar…",
+  "from": "Review…"
+ },
+ "apps.install.installed": {
+  "text": "Instalada",
+  "from": "Installed"
+ },
  "apps.installed.app": {
   "text": "App instalada",
   "from": "Installed app"
@@ -386,6 +406,10 @@
  "apps.uninstall.failed": {
   "text": "No se pudo desinstalar {name}: {error}",
   "from": "Could not uninstall {name}: {error}"
+ },
+ "apps.uninstall.removed": {
+  "text": "Eliminada",
+  "from": "Removed"
  },
  "apps.uninstall.working": {
   "text": "Desinstalando…",
