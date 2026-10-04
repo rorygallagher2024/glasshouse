@@ -1063,10 +1063,6 @@
   "text": "Añade a Home Assistant un interruptor PicCap Capture para iniciar y detener la captura de pantalla que alimenta una luz ambiental.",
   "from": "Adds a PicCap Capture switch to Home Assistant, to start and stop the screen capture that drives an ambient light."
  },
- "mqtt.piccap.toggle": {
-  "text": "Interruptor de PicCap",
-  "from": "PicCap switch"
- },
  "mqtt.host": {
   "text": "Dirección del broker",
   "from": "Broker address"
