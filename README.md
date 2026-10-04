@@ -254,7 +254,7 @@ Each mode offers dim and bright variants, and visual elements continuously drift
 
 A firmware update restores the LG default.
 
-Held back on webOS 10 and later by default; see [Experimental features](#experimental-features).
+Experimental on webOS 10 and later; see [Experimental features](#experimental-features).
 
 <p align="center">
   <a href="docs/screenshots/screensaver.png"><img src="docs/screenshots/screensaver.png" alt="Screensaver tab: LG default, Clock, Starfield, Fireworks, Bokeh and Panel vitals, with brightness and a start button beside them" width="700"></a>
@@ -368,12 +368,26 @@ Tested across the following TVs so far. The Luna service names and `/proc/lg` pa
 
 ### Experimental features
 
-Two features restart the TV's app manager (sam) at boot, and that restart has been followed by a black picture that only a full reboot clears ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)). Both are off by default.
+Two features are experimental and off by default. Both are turned on under **Server** → **Experimental features**.
 
-* **Hiding home screen system apps**, on every webOS version. On a B8 (webOS 4), the kernel log showed the TV's video pipeline crashing and locking up during boot while the restart coincided with an HDMI source changing mode, leaving live TV and HDMI black. On webOS 10 and 11, picture, sound over ARC and HDMI-CEC have been lost instead. Turn it on under **Server** → **Experimental features**, or with `"allowTileHiding": true` in `/var/lib/tvweb/config.json`; its controls then appear on the Apps tab. An install where it was already running keeps it.
-* **Custom screen savers on webOS 10 and later**, where LG's own screen saver is a Flutter app and replacing it needs the same restart. They are unaffected on webOS 9 and earlier. Turn them on under **Server** → **Experimental features**, or with `"allowOnWebos10": true` in `/var/lib/tvweb/config.json`.
+#### Hiding home screen system apps
 
-If the picture or sound goes with either on, please add to [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366) rather than opening a new issue, with the output of these, run before restarting the TV:
+Hides built-in LG apps, such as Gallery, Music and Sports, from the Home screen ribbon. Once it is turned on, the apps to hide are chosen on the **Apps** tab. It is experimental on every TV.
+
+#### Custom screen savers on webOS 10 and later
+
+Replaces LG's screen saver with one of the dashboard's own, chosen on the **Screensaver** tab. It is experimental only on webOS 10 and later. On webOS 9 and earlier, custom screen savers work without turning anything on.
+
+#### Why they're experimental
+
+To apply either one, the dashboard restarts the TV's app manager when the TV starts up. On some TVs, that restart has been followed by a black picture or lost sound that only a full reboot clears ([#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366)):
+
+* On a B8 (webOS 4), live TV and HDMI went black. The TV's kernel log showed its video pipeline crashing and locking up during start-up, at the same moment as the restart, while a source on HDMI was changing its picture mode.
+* On webOS 10 and 11, picture, sound to a soundbar over ARC, and HDMI-CEC have been lost.
+
+It doesn't happen on every start-up, or on every TV. A TV that already used either feature before it became experimental keeps it after updating.
+
+If it happens, please add to [#366](https://github.com/rorygallagher2024/lg-webos-dashboard/issues/366) rather than opening a new issue, with the output of these, run before restarting the TV:
 
 ```sh
 dmesg | grep -i -E "Unhandled fault|blocked!!|kadp"
