@@ -41,6 +41,14 @@ STARTUP_STALE=${TVWEB_STARTUP_STALE:-45}
 # Rotating at 256k keeps at most 512k on disk across the two generations.
 LOG_MAX=262144
 
+app_running() {
+  pid=$(cat "$PIDFILE" 2>/dev/null)
+  case "$pid" in ''|*[!0-9]*) return 1 ;; esac
+  kill -0 "$pid" 2>/dev/null || return 1
+  # A pid left over from before a reboot may now belong to something else.
+  tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -q "$APP"
+}
+
 stop_app() {
   start-stop-daemon -K -q -p "$PIDFILE" 2>/dev/null
   # Catch instances started before this script existed.
@@ -55,6 +63,11 @@ stop_app() {
 start_app() {
   [ -x "$NODE" ] || { echo "node not found at $NODE"; exit 1; }
   [ -f "$APP" ]  || { echo "not installed: $APP"; exit 1; }
+  # start-stop-daemon cannot see a running server for itself: it is told to look
+  # for /bin/sh, and the server has exec'd into node. At a cold boot the boot
+  # hook and the Homebrew Channel app can both start it, and a second copy dies
+  # on EADDRINUSE leaving the pid file naming a dead process (#392).
+  if app_running; then echo "already running (pid $(cat "$PIDFILE"))"; return 0; fi
   chmod 600 /var/lib/tvweb/config.json 2>/dev/null
   # -b detaches and -m writes the pidfile, so the process survives the ssh
   # session closing. `setsid ... &` alone does not.
@@ -96,8 +109,9 @@ stop_watch() {
   rm -f "$WATCHPID"
 }
 
+# -o: a watchdog already running is not a failure, so a repeated start exits 0.
 start_watch() {
-  start-stop-daemon -S -b -m -p "$WATCHPID" -x /bin/sh -- -c "exec $SELF watch"
+  start-stop-daemon -S -o -b -m -p "$WATCHPID" -x /bin/sh -- -c "exec $SELF watch"
 }
 
 # A child of the server that is still node, rather than the program it was

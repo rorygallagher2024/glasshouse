@@ -77,6 +77,15 @@ ctl('start');
 waitFor('the server and its heartbeat', function () { return alive(serverPid()) && read(env.TVWEB_BEAT); }, 10000, function () {
   var first = serverPid();
 
+  // 0. A second start leaves the running server as the only one
+  ctl('start');
+  var copies = child.execSync('ps -eo args', { encoding: 'utf8' }).split('\n').filter(function (l) {
+    return l.trim().slice(-APP.length) === APP;
+  });
+  if (serverPid() !== first) return finish(1, 'a second start replaced the pid file');
+  if (copies.length !== 1) return finish(1, 'a second start left ' + copies.length + ' servers running');
+  console.log('  ✓ a second start leaves the running server as the only one');
+
   // 1. A server that keeps beating is left alone
   after(9000, function () {
     if (read(RESTARTS)) return finish(1, 'a healthy server was restarted');
