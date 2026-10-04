@@ -240,7 +240,9 @@ console.log('Running test-telemetry.js ...');
   // C2 (webOS 22): the newer service says how
   assert.strictEqual(vc({ adjustVolume: true, externalDeviceControl: false, volume: 9 }), 'level');
   assert.strictEqual(vc({ adjustVolume: false, externalDeviceControl: false, volume: 10 }), 'none', 'optical');
-  assert.strictEqual(vc({ adjustVolume: false, externalDeviceControl: true, volume: 10 }), 'steps', 'HDMI ARC');
+  assert.strictEqual(vc({ adjustVolume: false, externalDeviceControl: true, volumeSyncable: false, volume: 10 }), 'steps', 'HDMI ARC');
+  assert.strictEqual(vc({ adjustVolume: false, externalDeviceControl: true, volumeSyncable: true, volume: 24 }), 'level',
+    'a soundbar whose level the TV shows and sets (#406)');
   // B8 (webOS 4.4): -1, and the scenario is where the sound actually goes
   assert.strictEqual(vc(null, { volume: 3, scenario: 'mastervolume_tv_speaker' }), 'level');
   assert.strictEqual(vc(null, { volume: -1, scenario: 'mastervolume_ext_speaker_optical' }), 'none',

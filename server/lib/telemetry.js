@@ -561,13 +561,16 @@ function getPictureEngineInfo() {
  *
  * The newer audio service says so outright: adjustVolume and
  * externalDeviceControl (C2, webOS 22, which still reports a level of 10 over
- * optical). The older one reports -1 for no level (B8, webOS 4.4; 58UH635V,
+ * optical). volumeSyncable counts as settable too: an LG soundbar on eARC
+ * whose level the TV shows and sets (SC9S on a C3, #406) is that case, and on
+ * the C2 it is false over optical and over HDMI ARC with nothing answering.
+ * The older one reports -1 for no level (B8, webOS 4.4; 58UH635V,
  * webOS 3.x), and its scenario is where the sound actually goes: a B8 set to
  * HDMI ARC with no receiver answering stays on ext_speaker_optical.
  */
 function volumeControl(vs, sound) {
   if (vs && typeof vs.adjustVolume === 'boolean') {
-    if (vs.adjustVolume) return 'level';
+    if (vs.adjustVolume || vs.volumeSyncable) return 'level';
     return vs.externalDeviceControl ? 'steps' : 'none';
   }
   if (sound && typeof sound.volume === 'number' && sound.volume < 0) {
