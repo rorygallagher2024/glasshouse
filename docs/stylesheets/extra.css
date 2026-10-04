@@ -1,0 +1,12 @@
+/* The menu's group headings (Getting started, The dashboard, Running it,
+   Reference) set apart from the pages under them, which Material's default
+   draws at the same size. Desktop only: on a phone the menu is a drawer that
+   shows one level at a time. */
+@media screen and (min-width: 76.25em) {
+  .md-nav--primary > .md-nav__list > .md-nav__item--section > .md-nav__link {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--md-default-fg-color);
+    margin-top: 1.1em;
+  }
+}

@@ -66,6 +66,9 @@ nav:
 not_in_nav: |
   /install-homebrew-channel.md
 
+extra_css:
+  - stylesheets/extra.css
+
 markdown_extensions:
   - github-callouts
   - admonition
