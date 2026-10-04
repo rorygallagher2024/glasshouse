@@ -53,7 +53,7 @@ var luna = lunaTransport.call;
  * a link to /releases/tag/v<version>, so a value with no tag behind it gives a
  * 404 rather than a wrong page.
  */
-var TVWEB_VERSION = '0.76.1';
+var TVWEB_VERSION = '0.77.0';
 
 // ---------------------------------------------------------------- config
 /** @type {any} */
