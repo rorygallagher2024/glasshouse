@@ -392,7 +392,8 @@ function buildEntities(opts) {
   var lastPicModes = opts.pictureModes || [];
 
   // telemetry's volume_control: the level can be set, or only stepped (a
-  // receiver on HDMI ARC/eARC), or neither (optical).
+  // receiver on HDMI ARC/eARC), or neither (optical). Stepping and mute are
+  // available in the first two.
   var volumeLevelAvailability = [{
     topic: topic.telemetry,
     value_template: '{{ "online" if (value_json.volume_control | default("level")) == "level" else "offline" }}'
@@ -757,7 +758,9 @@ function buildEntities(opts) {
           value_template: '{{ \'ON\' if value_json.muted else \'OFF\' }}',
           payload_on: 'ON',
           payload_off: 'OFF',
-          icon: 'mdi:volume-mute'
+          icon: 'mdi:volume-mute',
+          // Refused with the volume ("Current Scenario doesn't support mute").
+          availability: volumeStepAvailability
         }
       },
       {

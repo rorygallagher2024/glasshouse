@@ -428,6 +428,9 @@ async function tick() {
         q('vol-slider').value = v;
         q('vol-slider').disabled = !level;
       }
+      // Mute is refused wherever the volume is ("Current Scenario doesn't
+      // support mute"), and passed on where up and down are.
+      if (q('mute')) q('mute').disabled = ctl === 'none';
       if (q('vol-fill')) q('vol-fill').style.width = (level ? v : 0) + '%';
       q('vol').textContent = muted ? t('ctl.muted', 'MUTED') : level ? v : '—';
       if (q('vol-wrap')) q('vol-wrap').classList.toggle('muted', muted);
