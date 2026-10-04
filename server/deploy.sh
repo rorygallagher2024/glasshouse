@@ -51,6 +51,10 @@ SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=6 -o StrictHostKeyChecking=accept-n
 STAGE=/var/lib/tvweb/.deploy     # on the TV; beside the install so moves are renames
 
 FILES="tvweb.js tvwebctl assets/ui.html assets/dashboard.html \
+assets/ui/ui.css assets/ui/core.js assets/ui/theme.js assets/ui/format.js assets/ui/readouts.js \
+assets/ui/update.js assets/ui/controls.js assets/ui/privacy.js assets/ui/lgsettings.js assets/ui/game.js \
+assets/ui/system.js assets/ui/apps.js assets/ui/install.js assets/ui/tabs.js assets/ui/servicemenu.js \
+assets/ui/oled.js assets/ui/screensavers.js assets/ui/mqtt.js assets/ui/main.js \
 assets/qr.js assets/i18n.js assets/i18n/es.json assets/setup.html assets/setup-phone.html \
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \

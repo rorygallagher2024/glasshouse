@@ -1,0 +1,797 @@
+/* ---------------------------------------------------------------
+   Type.
+
+   Two families doing different jobs. Manrope is the working face:
+   labels, captions, anything being read rather than looked at.
+   Outfit is the spectacle face and earns its place only at size -
+   its character is in the wide apertures and geometric bowls,
+   neither of which survives small. It is reserved for the few
+   moments meant to be looked at.
+
+   Weights are deliberately light. On black, at size, a regular
+   weight reads as heavy and a light weight reads as precise.
+
+   Palette is white on black at opacity steps. No accent hue:
+   level is carried by fill and opacity, never by colour.
+
+   Both faces are SIL Open Font License, bundled and served by the
+   TV itself so the dashboard needs no internet access. Licences
+   ship alongside them in assets/fonts/.
+   --------------------------------------------------------------- */
+@font-face{font-family:'Outfit';src:url('/assets/fonts/Outfit.ttf') format('truetype');font-weight:100 900;font-display:swap}
+@font-face{font-family:'Manrope';src:url('/assets/fonts/Manrope.ttf') format('truetype');font-weight:200 800;font-display:swap}
+
+:root{
+  --bg:#000; --fg:255,255,255;
+  --w06:rgba(var(--fg),.06); --w10:rgba(var(--fg),.10);
+  --w12:rgba(var(--fg),.12); --w25:rgba(var(--fg),.25);
+  --w35:rgba(var(--fg),.35); --w40:rgba(var(--fg),.40);
+  --w50:rgba(var(--fg),.50);
+  --w60:rgba(var(--fg),.60); --w70:rgba(var(--fg),.70);
+  --w80:rgba(var(--fg),.80);
+  --w90:rgba(var(--fg),.90); --w100:rgba(var(--fg),1);
+  /* The edge of anything that can be pressed or typed in. WCAG 2.2 (1.4.11)
+     asks 3:1 for it; w25 gave 2.0:1 on black and 1.8:1 on the light theme.
+     .40 is 3.5:1 here, and the light theme sets its own. */
+  --edge:rgba(var(--fg),.40);
+  /* Contrast on black: w25 is 2.0:1, w35 is 3.0:1, w50 is 5.3:1, w60 is 7.4:1.
+     w50 is 5.3:1 and the floor for large text; w60 is the floor for small text
+     (anything under ~14px), since 5.3:1 at 11-12px is technically AA but
+     perceptually dim. Steps below w50 are for rules, borders and fills. */
+  /* Accents, taken from the Velo light-scene swatches (Nanoleaf/Hue/LIFX).
+     Colour is only ever applied to something that CHANGES it: level, thermal
+     state, signal format, a privacy pill. If a thing would be the same colour
+     for the life of the install, it is not colour, it is decoration - and it
+     goes monochrome. The chrome stays monochrome. */
+  --cool:#D4E3FF; --warm:#FFDEA1; --cand:#FFB04F;
+  --red:#FF3030;  --blue:#3061FF; --green:#30DE61; --purple:#8F30FF;
+  /* Lighter violet for TEXT: #8F30FF is only 4.03:1 on black, under the
+     4.5:1 AA floor for small text. The solid tone stays for fills. */
+  --purple-t:#B57BFF;
+  --gut:clamp(20px,5vw,64px);
+  /* Active/selected button foreground - inverted against the surface. */
+  --btn-on-fg:#000;
+}
+/* ---- light theme ----
+   Swap the foreground channel to black and the background to white.
+   Accent hues darken slightly for legibility on a light surface. */
+[data-theme="light"]{
+  --bg:#f5f5f5; --fg:0,0,0;
+  --edge:rgba(var(--fg),.45);
+  /* Green and amber are also small text (pills, statuses): #1a9e44 and #c27a1e
+     were 3.2:1 on #f5f5f5, under the 4.5:1 AA needs; these are 4.7 and 4.6. */
+  --cool:#3a6fcf; --warm:#b8860b; --cand:#9c6218;
+  --red:#d42020; --blue:#2050cc; --green:#157f37; --purple:#6b20cc;
+  --purple-t:#6b20cc;
+  --btn-on-fg:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  background:var(--bg);color:var(--w80);
+  font-family:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-weight:400;font-size:15px;line-height:1.5;
+  padding:var(--gut) var(--gut) calc(var(--gut) * 2);
+  max-width:1440px;margin:0 auto;
+  -webkit-font-smoothing:antialiased;
+}
+/* Live numerals sit in tabular figures. A proportional digit set makes a
+   live readout twitch sideways on every update, which is far more
+   distracting than the numbers themselves. */
+.num{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1}
+
+.lbl{font-weight:500;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--w60)}
+.rule{height:1px;background:var(--w10);border:0}
+/* `hidden` loses to any author display rule - .cols and .r are grids - so
+   restate it with priority. Without this, hiding those blocks silently fails. */
+[hidden]{display:none !important}
+
+/* ---- masthead ---- */
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.hdr-left{display:flex;align-items:flex-start;gap:18px}
+/* The masthead: the Glasshouse mark, a hairline, and the TV in the page's two
+   voices - the kind of TV as a tracked label, the model in the thin display
+   face the big readings use. The mark takes the text colour, so it follows
+   the theme. */
+.mark{display:flex;align-items:center;gap:clamp(14px,1.8vw,22px)}
+.mark-logo{height:clamp(40px,4.6vw,54px);width:auto;color:var(--w100);flex:none}
+.mark-rule{width:1px;align-self:stretch;margin:4px 0;background:var(--w25)}
+.mark-tv{display:flex;flex-direction:column;gap:7px}
+.mark-tv #brand{font-family:'Manrope';font-weight:500;font-size:12px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--w60)}
+.mark-tv #model{font-family:'Outfit';font-weight:200;font-size:clamp(22px,2.6vw,30px);line-height:1;
+  letter-spacing:.01em;color:var(--w100)}
+
+/* Theme toggle, at the end of the footer: a set-and-forget control, which
+   left the masthead room to stay on one line at narrower widths. */
+.foot-end{display:inline-flex;align-items:center;flex-wrap:wrap}
+.theme-toggle{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border:1px solid var(--edge);border-radius:50%;
+  background:transparent;color:var(--w60);font-size:13px;
+  cursor:pointer;transition:color .2s,border-color .2s;
+  padding:0;min-height:0;letter-spacing:0;text-transform:none;
+  margin-left:12px;flex-shrink:0;vertical-align:middle;line-height:1;
+}
+.theme-toggle:hover{color:var(--w100);border-color:var(--w35)}
+
+/* Remote peripheral badge */
+
+.src{text-align:right}
+.src .t{font-family:'Outfit';font-weight:300;font-size:clamp(15px,1.8vw,19px);color:var(--w80)}
+/* Stale while the TV is off, so faded - but only to .8: at .55 the picture
+   mode fell to 3.4:1 on black, under AA for small text. */
+.src.dim .t,.src.dim .stream-info{opacity:.8}
+/* Panel state. A blanked screen is a normal state, not a fault, so it is
+   carried by weight rather than by an alarm colour. */
+.st{font-size:12px;letter-spacing:.10em;text-transform:uppercase;color:var(--w60);
+    display:flex;align-items:center;gap:7px;justify-content:flex-end;margin-bottom:4px}
+.st i{width:7px;height:7px;border-radius:50%;background:var(--w100);flex:none}
+.st.off i{background:transparent;box-shadow:inset 0 0 0 1px var(--w50)}
+.st.off{color:var(--w60)}
+.st.comp i{background:var(--cand);box-shadow:0 0 6px var(--cand)}
+.st.comp{color:var(--cand)}
+
+/* Tiered stream diagnostics */
+.stream-info{margin-top:3px}
+.stream-primary{
+  font-family:'Outfit',sans-serif;font-weight:300;
+  font-size:clamp(15px,1.7vw,18px);color:var(--w100);
+  display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;
+}
+.stream-tag{
+  font-family:'Manrope',sans-serif;font-size:11px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;
+  border-radius:2px;line-height:1.2;
+}
+.stream-tag.dv{color:var(--purple-t);border:1px solid rgba(181,123,255,.4);background:rgba(143,48,255,.1)}
+.stream-tag.hdr{color:var(--cand);border:1px solid rgba(255,176,79,.4);background:rgba(255,176,79,.1)}
+.stream-tag.sdr{color:var(--w80);border:1px solid var(--w25);background:var(--w06)}
+.stream-mode{
+  font-family:'Manrope',sans-serif;font-size:12px;font-weight:400;
+  color:var(--w70);letter-spacing:.02em;
+}
+@media (max-width:620px){
+  .st{justify-content:flex-start}
+  .src{text-align:left}
+  .stream-primary{justify-content:flex-start}
+}
+
+/* ---- the spectacle ---- */
+.hero{margin:clamp(20px,4vw,34px) 0 0;display:flex;align-items:flex-end;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.hero .big{font-family:'Outfit';font-weight:200;color:var(--hot,var(--w100));transition:color .8s ease;
+  font-size:clamp(56px,7vw,96px);line-height:.86;letter-spacing:-.025em}
+.hero .deg{font-size:.34em;color:var(--w50);vertical-align:super;letter-spacing:0}
+/* Nothing to show. Drop to ordinary size when temperature is unavailable. */
+.hero .big.none{font-size:clamp(36px,6vw,54px);color:var(--w50)}
+.hero .side{flex:1;min-width:150px;padding-bottom:6px}
+.trace{display:flex;align-items:flex-end;gap:2px;height:46px;margin-bottom:9px}
+.trace i{flex:1;background:var(--w25);min-height:1px;display:block;transition:background .8s ease}
+.trace i.warm{background:color-mix(in srgb,var(--hot,var(--w100)) 45%,transparent)}
+.trace i.now{background:var(--hot,var(--w100))}
+.trace i.void{background:transparent}
+.meta{display:flex;justify-content:space-between;font-size:13px;color:var(--w60);letter-spacing:.02em}
+
+/* ---- readouts ---- */
+.readouts{margin-top:0;border-top:1px solid var(--w06)}
+.r{display:grid;grid-template-columns:clamp(118px,15%,176px) 1fr 84px;gap:14px;align-items:center;
+   padding:15px 0;border-bottom:1px solid var(--w06)}
+.r .v{font-family:'Outfit';font-weight:200;font-size:26px;color:var(--w100);text-align:right;line-height:1}
+.r .v small{font-size:13px;color:var(--w60);margin-left:4px;font-family:'Manrope';font-weight:400}
+.track{height:2px;background:var(--w06);position:relative;overflow:hidden}
+.track b{position:absolute;inset:0 auto 0 0;background:var(--w60);transition:width .45s cubic-bezier(.4,0,.2,1),background .5s ease}
+
+.r.hi .lbl{color:var(--w80)}
+.sub{font-size:13px;color:var(--w60);letter-spacing:.02em;margin-top:6px;white-space:normal;line-height:1.35}
+/* Network carries the most in its sub - signal, upload rate and two lifetime
+   totals - and the column is capped at 176px. Wrapping keeps the totals
+   readable on a Wi-Fi set, where the dBm prefix would otherwise push them
+   past the ellipsis. */
+#sub-net{white-space:normal}
+
+/* ---- panel block: the second thing worth looking at ---- */
+
+.n{font-family:'Outfit';font-weight:200;font-size:clamp(52px,9vw,90px);color:var(--w100);line-height:.9;letter-spacing:-.02em}
+.n em{font-style:normal;color:var(--w60);font-size:.26em;letter-spacing:.14em;margin-left:12px;font-family:'Manrope';font-weight:500}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:26px;margin-top:26px}
+.cols .v{font-family:'Outfit';font-weight:300;font-size:24px;color:var(--w100);margin-top:6px}
+.cols .sub{overflow:visible;text-overflow:clip}
+
+/* ---- layout grid (2-column on desktop, single on mobile) ---- */
+/* Tabs. The page had grown to four things stacked vertically, three of which
+   matter only some of the time. */
+.tabs{display:flex;gap:2px;margin-top:clamp(20px,3vw,30px);
+      border-bottom:1px solid var(--w12);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{appearance:none;background:none;border:0;border-bottom:2px solid transparent;
+      font-family:'Manrope';font-weight:500;font-size:12px;letter-spacing:.14em;
+      text-transform:uppercase;color:var(--w60);padding:12px 16px;cursor:pointer;
+      white-space:nowrap;margin-bottom:-1px}
+.tabs button:hover{color:var(--w80)}
+.tabs button:focus-visible{outline:2px solid var(--w80);outline-offset:-2px}
+@media (max-width:560px){ .tabs button{padding:12px 10px;letter-spacing:.1em} }
+.tabs button[aria-selected="true"]{color:var(--w100);border-bottom-color:var(--w100)}
+/* The strip scrolls when the tabs do not fit, and its scrollbar is hidden, so
+   on its own it just looks like the list ends. An arrow sits on whichever
+   side has more, over a fade of the page behind it. */
+.tabs-wrap{position:relative}
+.tabs-arrow{position:absolute;top:0;bottom:1px;z-index:2;width:36px;
+      display:flex;align-items:center;justify-content:center;
+      border:0;padding:0;min-height:0;cursor:pointer;
+      color:var(--w60);font-size:20px;letter-spacing:0;
+      background:linear-gradient(to right,var(--bg) 60%,transparent);left:0}
+.tabs-arrow.right{left:auto;right:0;background:linear-gradient(to left,var(--bg) 60%,transparent)}
+.tabs-arrow:hover{color:var(--w100)}
+.tabs-arrow[hidden]{display:none}
+#panels{margin-top:clamp(24px,3.5vw,36px)}
+/* A panel is the whole width now, so the columns come from the panel itself
+   rather than from the page splitting in two. */
+.panel .col-sec{display:none}
+/*
+ * Columns are real containers, filled once by flowColumns(). CSS multi-column
+ * balances the whole flow by height, so opening any disclosure re-ran the
+ * balance and moved a group the reader was not even looking at. Assigned
+ * elements cannot migrate.
+ */
+.lcols{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));
+       gap:clamp(30px,4vw,52px);align-items:start}
+.lcol{display:flex;flex-direction:column;gap:clamp(26px,3vw,34px);min-width:0}
+/* The rule between groups separated them when they were one stack. In columns
+   the top of every column is a head, so only the ones below a sibling keep it -
+   otherwise column one starts higher than the rest and misses the rule. */
+/* The gap spaces the column, so a child's own top margin only offsets the
+   first one - which is how column two came to start lower than column one.
+   Two classes deep on purpose: .set and .grp-sec set their own margin later in
+   this sheet and would otherwise win on source order. */
+.lcols .lcol>*{margin-top:0}
+.lcol>.lhead{padding-top:0;border-top:0}
+.grid-wrap{display:grid;grid-template-columns:1fr;gap:clamp(32px,5vw,56px);margin-top:clamp(28px,4vw,44px)}
+@media (min-width:960px){
+  .grid-wrap{grid-template-columns:minmax(380px,1.15fr) minmax(340px,1fr);gap:clamp(36px,5vw,60px);align-items:start}
+}
+/* Column headings sit above the .lbl sub-headings, so they take the display
+   face at size rather than being another 12px uppercase line. */
+/* Three tiers in this column:
+     .col-sec  column heading   - Metrics / Control
+     .grp      group heading    - Temperature, System, Display panel, Storage
+     .lbl      item label       - Processor, Wear, Compensation in
+   Groups and items previously shared .lbl, so nothing read as a heading. */
+.grp{font-family:'Manrope';font-weight:500;font-size:14px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--w80);margin:0 0 16px}
+.grp-sec{margin-top:clamp(30px,5vw,46px);padding-top:clamp(20px,3vw,28px);
+  border-top:1px solid var(--w12)}
+.grp-sec.first{margin-top:0;padding-top:0;border-top:0}
+.col-sec-hdr{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding-bottom:12px;border-bottom:1px solid var(--w25);margin-bottom:22px}
+.col-sec-hdr .col-sec{padding-bottom:0;border-bottom:0;margin-bottom:0}
+.col-sec{font-family:'Outfit';font-weight:300;font-size:clamp(20px,2.2vw,25px);
+  letter-spacing:.005em;text-transform:none;color:var(--w100);
+  padding-bottom:12px;border-bottom:1px solid var(--w25);margin-bottom:22px}
+
+/* ---- controls ---- */
+.set{margin-top:22px}
+.btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin-top:11px}
+.vol-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px;align-items:stretch}
+.vol-wrap{
+  grid-column:span 2;position:relative;display:flex;align-items:center;
+  min-height:48px;background:transparent;border:1px solid var(--edge);
+  box-sizing:border-box;cursor:pointer;overflow:hidden;transition:border-color .16s ease;
+  user-select:none;-webkit-user-select:none;touch-action:none;
+}
+.vol-wrap:hover{border-color:var(--w70)}
+.vol-wrap.dragging{border-color:var(--w100)}
+.vol-wrap:focus-within{outline:2px solid var(--w80);outline-offset:2px}
+.vol-fill{
+  position:absolute;top:0;bottom:0;left:0;width:0%;
+  background:var(--w100);pointer-events:none;
+  transition:width .08s ease, opacity .16s ease;
+}
+.vol-wrap.muted .vol-fill{opacity:.35}
+.vol-wrap.dragging .vol-fill{transition:none}
+.vol-wrap input[type=range]{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  opacity:0;margin:0;padding:0;cursor:pointer;pointer-events:none;
+}
+.vol-wrap input[type=range]:focus{outline:none}
+.vol-wrap.full{grid-column:1/-1}
+#picmodes,#energysteps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
+#picmodes button,#energysteps button{
+  font-size:11.5px;letter-spacing:.06em;padding:12px 6px;line-height:1.25;
+  text-align:center;display:flex;align-items:center;justify-content:center;
+}
+@media (max-width:380px){
+  #picmodes,#energysteps{grid-template-columns:repeat(2,1fr)}
+}
+/* Collapsed groups. Picture mode, sound output and the app list are
+   set-and-forget: they were taking the majority of the column's height for
+   the things you would least often reach for from a phone. */
+.disc{border-top:1px solid var(--w06);margin-top:20px}
+.disc>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;
+  align-items:center;font-family:'Manrope';font-weight:500;font-size:12px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--w60);padding:14px 0 4px;min-height:44px;box-sizing:border-box}
+.disc>summary::-webkit-details-marker{display:none}
+.disc>summary::after{content:'+';font-size:17px;line-height:1;color:var(--w60)}
+.disc[open]>summary::after{content:'\2212'}
+.disc>summary:hover{color:var(--w80)}
+.disc>summary .cur{font-size:13px;font-weight:400;letter-spacing:.02em;text-transform:none;color:var(--w60);margin-left:auto;margin-right:12px}
+.disc .set{margin-top:12px}
+.playback-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}
+.app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:7px;margin-top:11px}
+.app-grid button{
+  padding:11px 8px;min-height:42px;font-size:11px;letter-spacing:.08em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;
+}
+.sub-btn{
+  font-family:'Manrope';font-weight:500;font-size:11px;letter-spacing:.10em;text-transform:uppercase;
+  color:var(--w60);background:transparent;border:1px dashed var(--edge);
+  padding:10px 12px;min-height:38px;width:100%;cursor:pointer;transition:.16s ease;
+}
+.sub-btn:hover{color:var(--w100);border-color:var(--w70)}
+.toast-form{display:flex;gap:8px;margin-top:11px}
+.toast-form input{
+  flex:1;min-width:0;
+  font-family:'Manrope';font-weight:400;font-size:13px;letter-spacing:.03em;
+  color:var(--w100);background:transparent;
+  border:1px solid var(--edge);padding:14px 12px;
+  min-height:48px;border-radius:0;outline:none;
+  box-sizing:border-box;transition:border-color .16s ease;
+}
+.toast-form input:focus{border-color:var(--w100)}
+.toast-form input::placeholder{color:var(--w60)}
+.toast-form button{flex-shrink:0;padding:0 22px;min-height:48px}
+button{
+  font-family:'Manrope';font-weight:500;font-size:13px;letter-spacing:.10em;text-transform:uppercase;
+  color:var(--w80);background:transparent;border:1px solid var(--edge);
+  padding:16px 10px;min-height:48px;cursor:pointer;transition:.16s ease;
+}
+button:hover{color:var(--w100);border-color:var(--w70)}
+button:active{background:var(--w10)}
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
+/* Selected, not "good". Green means healthy headroom elsewhere in this UI, so
+   selection is shown by inversion instead of by borrowing that meaning. */
+button.on{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100);font-weight:500}
+button.on:hover{color:var(--btn-on-fg);border-color:var(--w100)}
+button[disabled]{opacity:.28;cursor:not-allowed}
+button[disabled]:hover{color:var(--w60);border-color:var(--w12)}
+/* Refused rather than disabled: a disabled button takes no mouse events, so the
+   browser never shows its title, and the reason it cannot be pressed is exactly
+   what someone hovering it wants. */
+button.btn-off{opacity:.28;cursor:not-allowed}
+button.btn-off:hover{color:var(--w60);border-color:var(--w12);background:transparent}
+.dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,auto);
+      gap:8px;max-width:260px;margin:0 auto 14px}
+/* The arrows are glyphs, not words: the button voice everywhere else is
+   uppercase and letter-spaced, which pushes a single glyph off centre. */
+.dpad .dp{min-height:0;height:62px;padding:0;font-size:15px;letter-spacing:0;
+          text-transform:none;display:flex;align-items:center;justify-content:center}
+.dpad .dp-ok{font-size:12px;letter-spacing:.1em}
+.dp-up{grid-column:2;grid-row:1}
+.dp-left{grid-column:1;grid-row:2}
+.dp-ok{grid-column:2;grid-row:2}
+.dp-right{grid-column:3;grid-row:2}
+.dp-down{grid-column:2;grid-row:3}
+.oled-row{display:flex;gap:20px;justify-content:space-between;align-items:flex-start;
+          padding:18px 0;border-bottom:1px solid var(--w12)}
+.oled-row:last-child{border-bottom:0}
+.oled-main{max-width:56ch}
+.oled-name{font-size:15px}
+.oled-sub{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--w60);
+          margin-left:8px}
+.oled-desc{font-size:13px;color:var(--w60);margin-top:7px;line-height:1.5}
+.oled-ctl{flex:0 0 auto;display:flex;gap:8px;align-items:center}
+/* The service-menu ones are set apart: they are the reason the warning below
+   the list is there. */
+.oled-row.guarded .oled-name{color:var(--cand)}
+.oled-warn{margin-top:24px;border-left:2px solid var(--cand);padding:12px 0 12px 14px;
+           font-size:13px;color:var(--w60);max-width:64ch;line-height:1.55}
+/* The wear figures and the switches that decide how hard the panel is worked,
+   side by side - they are two halves of the same question. */
+.oled-split{display:grid;grid-template-columns:1fr;gap:38px}
+/* The frame rate is the one figure on the Game tab worth reading from the sofa.
+   Sized to its column, which is under 300px wide beside the settings, so three
+   digits and the unit fit; the vw size is for browsers without container units. */
+#gamepane .oled-wear{container-type:inline-size}
+.game-fps{font-size:clamp(64px,7vw,120px);font-size:clamp(64px,34cqw,150px);line-height:.85;
+          font-variant-numeric:tabular-nums;white-space:nowrap}
+.game-fps em{font-size:.2em}
+.game-fps.empty{font-size:clamp(52px,9vw,90px)}
+/* A number setting: a slider that shows its value as it moves and sends it
+   once, on release, so dragging is not a round trip to the TV per step. */
+.lgs-range{display:flex;align-items:center;gap:14px}
+.lgs-range input{width:170px;accent-color:var(--w100);cursor:pointer}
+.lgs-range .num{min-width:7ch;text-align:right;font-size:14px;color:var(--w80)}
+/* The HDMI inputs as a table: an input per row, a setting per column, and
+   one explanation above it rather than the same one under every row. */
+.hdmi-in .pv-sub{max-width:78ch;margin-bottom:18px}
+.hdmi-grid{display:grid;column-gap:24px;max-width:760px}
+.hdmi-grid>div{padding:14px 0;border-top:1px solid var(--w12);display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
+.hdmi-grid .hh{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--w50);border-top:0;padding-top:0}
+.hdmi-grid .in b{font-weight:400;font-size:15px;color:var(--w100)}
+.hdmi-grid .in span{display:block;font-size:12px;color:var(--w50);margin-top:3px}
+.hdmi-grid .na{color:var(--w40)}
+/* A setting the TV has greyed out: dimmed, as a disabled pill already is. */
+.pill-sel:disabled,.lgs-range input:disabled{opacity:.35;cursor:default}
+@media(min-width:1020px){.oled-split{grid-template-columns:minmax(280px,0.8fr) 1.6fr;gap:52px}}
+.oled-split .grp{margin-bottom:18px}
+.oled-split .oled-row:first-child{padding-top:0}
+.oc-cycles{margin-top:26px;font-size:13px;color:var(--w60);line-height:1.8}
+.oc-cycles span{color:var(--w80)}
+.oled-none{font-size:12px;letter-spacing:.06em;color:var(--w60);white-space:nowrap}
+/* A protection this TV will not talk about is still worth describing, but it
+   should not compete with the ones that answer: its name steps down to the
+   description's shade, the dimmest that still reads at AA. */
+.oled-row.silent .oled-name,.oled-row.silent .oled-desc{color:var(--w60)}
+
+
+/* ---- privacy pane ---- */
+.priv{margin-top:clamp(30px,5vw,48px);padding-top:clamp(24px,4vw,36px);border-top:1px solid var(--w12)}
+.priv.panel{margin-top:0;padding-top:0;border-top:0}
+.priv.panel>.lbl{display:none}
+/* The two status sections sit side by side: each is a handful of short rows,
+   and full width left the pill stranded from the label it belongs to. */
+.pv-top{display:grid;grid-template-columns:1fr;gap:0 clamp(30px,4vw,52px);
+  padding-bottom:clamp(24px,3vw,36px)}
+@media (min-width:900px){ .pv-top{grid-template-columns:repeat(2,1fr);align-items:start} }
+.pv-top .pv-h:first-child{margin-top:0}
+/* The long lists stay one column - a consent row is a sentence, not a tile -
+   but capped so the pill stays near what it describes on a wide screen. */
+.priv.panel{max-width:1180px}
+.ss-list{display:grid;gap:14px;grid-template-columns:1fr;margin-top:22px;max-width:760px}
+@media(min-width:820px){.ss-list{grid-template-columns:1fr 1fr}}
+/* A card is the control, not a container with a button in it: the whole thing
+   is the click target, so there is nothing to hunt for. */
+.ss-card{display:block;width:100%;text-align:left;background:transparent;cursor:pointer;
+         border:1px solid var(--w12);border-radius:3px;padding:18px 20px;min-height:0;
+         color:inherit;font-family:inherit;
+         /* The global button voice is an uppercase pill. These are cards. */
+         text-transform:none;letter-spacing:normal;font-weight:400}
+.ss-card:hover:not([disabled]):not(.on){border-color:var(--w25);background:rgba(var(--fg),.04)}
+.ss-card[disabled]{cursor:default;opacity:.45}
+/* The one in use is marked, not dimmed: it is the answer to what is running,
+   so it should read as the strongest thing on the panel. */
+.ss-card.on,.ss-card.on:hover{background:transparent;color:inherit;font-weight:400;
+         border-color:var(--green);cursor:default;opacity:1}
+.ss-name{font-size:15px;letter-spacing:.02em;display:flex;align-items:center;
+         justify-content:space-between;gap:12px}
+.ss-desc{font-size:13px;color:var(--w60);margin-top:7px;max-width:46ch}
+.ss-card.on .ss-name{color:var(--green)}
+.ss-tag{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.ss-level-row{margin-top:22px;max-width:760px}
+/* The choice on the left, and what to do with it - brightness, starting it,
+   the firmware note - beside it on a wide screen rather than below the list. */
+@media(min-width:1020px){
+  .ss-split{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);gap:clamp(36px,4vw,56px);
+            align-items:start}
+  .ss-split .ss-list{max-width:none}
+  .ss-side{margin-top:22px;display:flex;flex-direction:column;gap:22px}
+  #sspane .ss-side>*{margin-top:0}
+}
+.ss-level-lbl{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--w60);
+              margin-bottom:8px}
+.ss-level-row .btns{display:flex;gap:10px;max-width:340px}
+.ss-level-row .btns button{flex:1}
+.upd{max-width:760px;margin-top:22px}
+.upd .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.upd .btns button{min-width:160px;padding:16px 22px}
+/* Server updates: the version and daily check on the left, what can be done
+   about them on the right, where there is room for both. */
+@media(min-width:720px){
+  .upd-split{display:grid;grid-template-columns:minmax(0,1fr) 240px;column-gap:clamp(30px,4vw,52px)}
+  .upd-split .btns{flex-direction:column;margin-top:16px}
+  .upd-split .btns button{width:100%;min-width:0}
+}
+.theme-seg{display:flex;gap:6px}
+.theme-seg button{height:28px;min-height:0;padding:0 12px;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.upd #upd-msg{margin-top:12px}
+.upd-prog{margin-top:22px;max-width:520px}
+.upd-step{font-size:13px;color:var(--w80);letter-spacing:.02em;margin-bottom:12px}
+.upd-prog .track{height:4px}
+.upd-prog .track b{width:0;background:var(--w80);transition:width .3s linear,background .5s ease}
+.upd-prog.done .track b{background:var(--green)}
+#inst-prog{margin-top:0}
+#inst-prog .upd-step{margin-bottom:0}
+#inst-prog .track{margin-top:12px}
+/*
+ * The lists run in two columns. A row is a sentence and a pill: given the full
+ * width the pill ends up 400px from the text it belongs to, and capping the
+ * section instead only shortens the rule, not the gap. Groups never change
+ * height once loaded, so the browser can balance these.
+ */
+@media (min-width:980px){
+  .pv-list{column-count:2;column-gap:clamp(30px,4vw,52px)}
+}
+.pv-grp{break-inside:avoid}
+.pv-grp .pv-g{margin-top:0}
+.pv-grp+.pv-grp .pv-g{margin-top:22px}
+.pv-h{font-family:'Outfit';font-weight:300;font-size:clamp(20px,2.4vw,26px);color:var(--w100);margin:22px 0 4px}
+.pv-sub{font-size:13px;color:var(--w60);max-width:62ch;margin-bottom:16px}
+.pv-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;
+        padding:13px 0;border-bottom:1px solid var(--w06)}
+.pv-row .n{font-size:15px;color:var(--w100)}
+.pv-row .d{font-size:13px;color:var(--w60);margin-top:3px;max-width:58ch}
+.pill, .pill-toggle{font-family:'Manrope';font-weight:500;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+      display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
+      min-width:112px;height:28px;padding:0 12px;line-height:1;
+      border:1px solid;border-radius:2px;white-space:nowrap}
+button.pill, button.pill-toggle{min-height:0;color:inherit}
+.pill.good, .pill-toggle.good{color:var(--green);border-color:var(--green)}
+.pill.warn, .pill-toggle.warn{color:var(--cand);border-color:var(--cand)}
+.pill.bad, .pill-toggle.bad{color:var(--red);border-color:var(--red)}
+.pill.idle, .pill-toggle.idle{color:var(--w60);border-color:var(--edge)}
+/* A border means it can be pressed. A status that is only reported (a span)
+   reads as text, with a dot in its state colour where it has one. The state
+   classes are repeated because .pill.good and the like outrank span.pill. */
+span.pill,span.pill.good,span.pill.warn,span.pill.bad,span.pill.idle{border-color:transparent}
+span.pill{min-width:0;padding:0;gap:8px}
+span.pill.good::before,span.pill.warn::before,span.pill.bad::before{
+  content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.pill-sel{font:500 11px 'Manrope';letter-spacing:.1em;height:28px;min-width:112px;padding:0 8px;
+          color:var(--w100);background:transparent;border:1px solid var(--edge);border-radius:2px;cursor:pointer}
+.pill-sel option{color:initial}
+/* A settable flag keeps the pill vocabulary of the read-only rows: the row
+   should read the same, it just answers to a click. */
+button.pill, button.pill-toggle{background:transparent;font-family:'Manrope';cursor:pointer}
+button.pill:hover:not([disabled]), button.pill-toggle:hover:not([disabled]){background:rgba(var(--fg),.08)}
+button.pill[disabled], button.pill-toggle[disabled]{cursor:default;opacity:.45}
+/* An app's own button carries what is happening to it: a busy one fills like
+   the update bar as its install goes on, and an outcome holds for a moment.
+   Neither dims, since neither is a button that is merely unavailable. */
+button.pill.busy{color:var(--w100);border-color:var(--w40);
+  background:linear-gradient(90deg,var(--w20) var(--p,0%),transparent var(--p,0%))}
+button.pill.busy[disabled], button.pill.flash[disabled]{opacity:1;cursor:default}
+button.pill.busy[disabled]:hover{color:var(--w100);border-color:var(--w40)}
+button.pill.flash.good[disabled]:hover{color:var(--green);border-color:var(--green)}
+button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)}
+.prot-desc.row-err{color:var(--warn,#e5534b)}
+/* A flag the panel will not write keeps its colour - the value still matters -
+   but has to read as inert next to 19 rows that respond to a click. */
+/* Read-only: a dashed edge says it cannot be pressed. It was 45% opacity,
+   which took an amber pill to 2.9:1 on black and 1.8:1 on the light theme. */
+.pill.fixed, .pill-toggle.fixed{border-style:dashed}
+.pv-g{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--w60);
+      margin:22px 0 2px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.pv-g:first-child{margin-top:4px}
+.pv-g .c{letter-spacing:0;text-transform:none;color:var(--w60);font-size:12px;white-space:nowrap}
+.pv-gn{font-size:13px;color:var(--w60);max-width:58ch;margin:4px 0 2px}
+/* The raw flag name, kept visible on rows that now show a friendlier one: it is
+   what the API, the TV and the issue tracker all call it. */
+.pv-row .k{color:var(--w35)}
+.pv-row .cnt{color:var(--w60);font-size:13px;font-weight:400}
+/* Collapsible privacy sections. The consent list alone runs to 21 rows, so the
+   long sections fold. The summary keeps the pv-h size rather than borrowing the
+   control column's small caps, so folding a section does not demote it. */
+/* Install confirmation modal popup */
+.modal-backdrop{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.65);
+  display:flex;align-items:center;justify-content:center;z-index:999;padding:20px}
+.modal-card{background:var(--bg);border:1px solid var(--w20);border-radius:10px;
+  padding:24px 28px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto;
+  box-shadow:0 16px 40px rgba(0,0,0,0.6)}
+.pv-d{border:0;margin:0}
+.pv-d>summary{list-style:none;cursor:pointer;display:flex;align-items:baseline;gap:16px;
+  font-family:'Outfit';font-weight:300;font-size:clamp(20px,2.4vw,26px);color:var(--w100);
+  margin:0;padding:20px 0 14px;min-height:44px;border-top:1px solid var(--w12)}
+#disc-install-apps>summary,#appspane>.pv-d:first-of-type>summary{border-top:0;padding-top:0}
+.pv-d>summary:hover .cur{color:var(--w80)}
+.pv-d>summary::-webkit-details-marker{display:none}
+.pv-d>summary::after{content:'+';font-family:'Manrope';font-size:20px;line-height:1;color:var(--w60)}
+.pv-d[open]>summary::after{content:'\2212'}
+.pv-d>summary .cur{margin-left:auto;font-family:'Manrope';font-weight:500;font-size:12px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--w60);white-space:nowrap}
+.ps{margin:0}
+/* Three areas side by side where they fit, rather than the two-column flow
+   the long lists use, which split a row's "still on" line from its row. */
+#ps-areas{column-count:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:0 clamp(30px,4vw,52px);margin-top:18px}
+/* Read-outs, not controls: no border or box, so nothing here looks pressable
+   beside the outlined toggles further down. The dot repeats the headline's. */
+.ps-area{padding:18px 0 20px;border-top:1px solid var(--w12)}
+.ps-st{display:inline-flex;align-items:center;gap:10px;font-family:'Manrope';font-weight:600;
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+.ps-st::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;
+  box-shadow:0 0 0 4px color-mix(in srgb,currentColor 20%,transparent)}
+.ps-st.warn{color:var(--cand)}
+.ps-area .n{font-family:'Outfit';font-weight:300;font-size:clamp(19px,2vw,22px);color:var(--w100);
+  line-height:1.2;margin:12px 0 6px}
+.ps-area .d{font-size:13px;line-height:1.5;color:var(--w60);max-width:38ch}
+.ps-area .on{font-size:13px;line-height:1.5;color:var(--w80);margin-top:10px;max-width:38ch}
+.ps-area .on b{font-weight:500;color:var(--cand)}
+.ps-state{display:flex;gap:16px;align-items:center;margin-bottom:10px}
+.ps-dot{width:14px;height:14px;border-radius:50%;flex:none;background:var(--w25);
+  box-shadow:0 0 0 6px color-mix(in srgb,var(--w25) 18%,transparent)}
+.ps-dot.good{background:var(--green);box-shadow:0 0 0 6px color-mix(in srgb,var(--green) 18%,transparent)}
+.ps-dot.warn{background:var(--cand);box-shadow:0 0 0 6px color-mix(in srgb,var(--cand) 18%,transparent)}
+.ps-head{font-family:'Outfit';font-weight:300;font-size:clamp(26px,3.4vw,36px);color:var(--w100);line-height:1.15}
+/* Overview and Advanced are the tab's two sections and share one header: the
+   thin face over a rule, Advanced's with its fold control at the right. */
+.pv-sec,#pv-adv>summary{font-family:'Outfit';font-weight:300;font-size:clamp(20px,2.2vw,25px);
+  letter-spacing:.005em;color:var(--w100);border-bottom:1px solid var(--w25);padding:0 0 12px}
+.pv-sec{margin-bottom:26px}
+/* The Advanced tab's later sections sit apart from the table above them. */
+.adv-sec{margin-top:clamp(34px,4.5vw,48px)}
+/* The Advanced tab's settings, side by side in at most two columns where
+   they fit, so a description sits beside its switch instead of running the
+   full width away from it. Text at the Privacy tab's sizes (15px names, 13px
+   descriptions): the shared 13/12px of .prot-row read small here, where the
+   descriptions carry the substance. */
+#advpane .prot-table{display:grid;column-gap:clamp(30px,4vw,52px);
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
+/* The Server tab keeps one column, so every switch lines up under the daily
+   check's, clear of the update actions' column beside it. */
+#serverpane .prot-table{display:grid;grid-template-columns:1fr}
+@media(min-width:720px){
+  #serverpane .upd>.prot-table,#serverpane #tvapp-row .prot-table{margin-right:calc(240px + clamp(30px,4vw,52px))}
+}
+#advpane .prot-row,#serverpane .prot-row{align-items:flex-start;padding:16px 0}
+#advpane .prot-title,#serverpane .prot-title{font-size:15px;font-weight:500;letter-spacing:0;color:var(--w100)}
+#advpane .prot-desc,#serverpane .prot-desc{font-size:13px;line-height:1.5;margin-top:4px;max-width:none}
+#advpane .prot-status,#serverpane .prot-status{padding-top:2px}
+#pv-adv{margin-top:clamp(36px,5vw,56px)}
+#pv-adv>summary{border-top:0;min-height:0;align-items:center}
+#pv-adv[open]>summary{margin-bottom:22px}
+.pv-note{font-size:13px;color:var(--w60);border-left:2px solid var(--w25);padding:10px 14px;margin:16px 0;max-width:64ch}
+.cfg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(232px,100%),1fr));
+  gap:18px 20px;max-width:840px;margin-top:4px}
+.cfg-f{display:flex;flex-direction:column;gap:7px;min-width:0}
+.cfg-f>label{font-weight:500;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--w60)}
+.cfg-f input{
+  font-family:'Manrope';font-weight:400;font-size:13px;letter-spacing:.03em;
+  color:var(--w100);background:transparent;
+  border:1px solid var(--edge);padding:14px 12px;
+  min-height:48px;border-radius:0;outline:none;
+  box-sizing:border-box;transition:border-color .16s ease;
+}
+.cfg-f input:focus{border-color:var(--w100)}
+.cfg-f input::placeholder{color:var(--w60)}
+.cfg-f .hint{font-size:13px;color:var(--w60);line-height:1.45}
+.cfg-toggles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));
+  gap:8px;max-width:840px;margin-top:14px}
+/* State and switch to one side, the form it describes to the other. The left
+   is sized to its content - a pill and a button - rather than to half the page. */
+.cfg-cols{display:grid;grid-template-columns:1fr;gap:clamp(26px,4vw,48px);align-items:start}
+@media (min-width:980px){
+  .cfg-cols{grid-template-columns:minmax(250px,0.52fr) minmax(0,1fr)}
+}
+.cfg-side .pv-row{border-bottom:0;padding-top:0}
+/* One switch does not need the width of the column it sits in. */
+.cfg-side .cfg-toggles{max-width:320px}
+.pv-top .btns button{white-space:nowrap}
+.cfg-cols>*{min-width:0}
+.cfg-save{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:22px;max-width:840px}
+.cfg-save button{min-height:48px;padding:0 30px}
+.cfg-msg{font-size:13px;color:var(--w60)}
+.cfg-msg.bad{color:var(--warn,#e5534b)}
+.cfg-msg.good{color:var(--w100)}
+.cfg-toggles button[disabled].on{background:transparent;color:var(--w60);border-color:var(--w12);font-weight:400}
+.cfg-ent-chk{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:4px;
+  font-size:14px;color:var(--w90);min-width:0;user-select:none;cursor:pointer;transition:background .15s}
+.cfg-ent-chk:hover{background:var(--w06)}
+.cfg-ent-chk.dis{cursor:default;opacity:.45}
+.cfg-ent-chk.dis:hover{background:transparent}
+.cfg-ent-chk input[type="checkbox"]{width:16px;height:16px;margin:0;cursor:pointer;flex-shrink:0;accent-color:var(--w100)}
+.cfg-ent-chk.dis input[type="checkbox"]{cursor:default}
+.cfg-ent-chk .ent-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cfg-ent-chk .ent-type{font-size:12px;color:var(--w60);margin-left:5px;font-weight:400}
+.proc{display:grid;grid-template-columns:1fr auto;gap:14px;padding:9px 0;
+  border-bottom:1px solid var(--w06);font-size:14px}
+.proc .p-name{color:var(--w80);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proc .p-mb{color:var(--w100);font-variant-numeric:tabular-nums}
+/* ---- HDMI port grid ----
+   Four tiles, always all four: a port that vanished when nothing was plugged
+   into it would read as a missing port rather than an empty one. State is
+   carried by fill and weight, the same way the selected controls are - the
+   live port is the bright one. */
+.ports{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;margin-top:14px}
+.port{border:1px solid var(--w06);border-radius:4px;padding:13px 14px 14px;
+  display:flex;flex-direction:column;min-height:112px}
+.port .ptop{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.port .pn{font-family:'Outfit';font-weight:200;font-size:38px;line-height:.9;
+  color:var(--w50);font-variant-numeric:tabular-nums}
+.port .pst{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--w60);
+  padding-top:4px;white-space:nowrap}
+.port .pl{font-size:14px;color:var(--w50);margin-top:auto;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.port .pd{font-size:12px;color:var(--w60);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Nothing plugged in: the number alone. The dashed edge carries "empty", so
+   the numeral keeps its normal weight - it is the only thing in the tile, and
+   dimming it further would make the one piece of information unreadable. */
+.port.empty{border-color:var(--w06);border-style:dashed}
+.port.seen{border-color:var(--w10)}
+.port.seen .pn{color:var(--w80)}
+.port.seen .pl{color:var(--w80)}
+.port.live{border-color:var(--w25);background:var(--w06)}
+.port.live .pn{color:var(--w100)}
+.port.live .pst{color:var(--w80)}
+.port.live .pl{color:var(--w100)}
+.port.live .pd{color:var(--w60)}
+@media (max-width:420px){.ports{grid-template-columns:1fr}}
+@media (max-width:620px){.src{text-align:left}.hero{gap:22px}}
+footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:uppercase;color:var(--w60);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+/* The separator rides on the link so both appear only once a version is known. */
+#version{text-transform:none;color:inherit;text-decoration:none}
+#version::before{content:'|';margin:0 .55em;opacity:.45}
+#version:hover{color:var(--w80);text-decoration:underline}
+#version-new{text-transform:none;color:var(--cand);text-decoration:none;margin-left:.5em}
+#version-new:hover{text-decoration:underline}
+.activity-txrx{
+  display:inline-flex;
+  gap:3px;
+  align-items:center;
+  margin-right:8px;
+  vertical-align:middle;
+  flex-shrink:0;
+}
+.txrx-pip{
+  width:4px;
+  height:4px;
+  border-radius:1px;
+  background:var(--w15);
+  transition:background .12s,box-shadow .12s;
+}
+.txrx-pip.lit{
+  background:var(--w100);
+  box-shadow:0 0 5px var(--w100);
+}
+.stale{opacity:.35;transition:opacity .3s}
+#offline{margin:18px 0 0;font-size:14px;border-left:2px solid var(--red);padding:9px 13px;background:var(--w06)}
+#offline b{font-weight:600;margin-right:6px}
+#err{color:inherit;display:none}
+
+/* ---- hardware specifications strip ---- */
+.hw-specs{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px 20px;
+  margin-top:18px;padding-top:16px;border-top:1px solid var(--w06);
+}
+.spec-item{display:flex;flex-direction:column;gap:3px}
+.spec-k{
+  font-family:'Manrope',sans-serif;font-weight:500;font-size:11px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--w60);
+}
+.spec-v{
+  font-family:'Manrope',sans-serif;font-weight:400;font-size:13.5px;
+  color:var(--w90);letter-spacing:.02em;
+}
+
+/* ---- burn-in & dimmer protections table ---- */
+.panel-protections{margin-top:24px;padding-top:18px;border-top:1px solid var(--w06)}
+.prot-head{margin-bottom:10px}
+.prot-table{display:flex;flex-direction:column}
+.prot-row{
+  display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding:12px 0;border-bottom:1px solid var(--w06);
+}
+.prot-main{flex:1;min-width:0}
+.prot-title{
+  font-family:'Manrope',sans-serif;font-weight:600;font-size:13px;
+  color:var(--w90);letter-spacing:.02em;
+}
+.prot-title .prot-sub{font-weight:400;color:var(--w60);font-size:12px}
+.prot-desc{
+  font-size:13px;color:var(--w60);margin-top:3px;line-height:1.45;
+  max-width:62ch;
+}
+.prot-status{flex-shrink:0}
+/* The disabled "Updates through Homebrew Channel" button is wider than a phone's spare width. */
+#apps-catalog-list .prot-row{flex-wrap:wrap}
+#apps-catalog-list .prot-main{flex:1 1 160px}
+#apps-catalog-list .prot-status{max-width:100%}
+#apps-catalog-list .prot-status button{max-width:100%;white-space:normal}
+/* Renaming a saved page happens in its own row: the name becomes the field. */
+.page-edit{display:flex;gap:8px;margin:0}
+.page-edit{flex-wrap:wrap}
+.page-edit input{font-size:13px;padding:10px 12px;min-height:38px}
+.page-edit input[id^="page-url-"]{flex:2 1 240px}
+.page-edit input[id^="page-name-"]{flex:1 1 150px}
+.page-edit button{min-height:38px;padding:0 16px}
+.page-acts{display:flex;gap:8px}
+.page-add{margin-top:16px;flex-wrap:wrap}
+.page-add-msg{margin-top:10px;color:var(--red)}
+.page-add-msg:empty{display:none}
+.page-add #page-add-url{flex:2 1 260px}
+.page-add #page-add-name{flex:1 1 160px}
+/* The address takes a full row at every width, so its placeholder is not cut; the hash and the button share the next one. */
+#sl-url{flex:1 1 100%}
+#sl-sha{flex:1 1 160px}
+#sl-file{flex:1 1 200px}
+#sideload-box .prot-title{margin-top:20px}
+#catalog-msg{margin-bottom:6px}

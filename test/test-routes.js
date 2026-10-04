@@ -278,6 +278,36 @@ function createMockRes(cb) {
   console.log('  ✓ readJsonBody enforces Content-Type, Origin matching, and JSON parsing');
 })();
 
+// 5b. The dashboard's stylesheet and scripts are put back inline
+(function testInlineUI() {
+  var assets = path.join(__dirname, '..', 'server', 'assets');
+  var gone = null;
+  routes.init({
+    assetDirs: [assets],
+    assetPath: function (sub) {
+      var p = path.join(assets, sub);
+      return sub !== gone && fs.existsSync(p) ? p : null;
+    }
+  });
+  var html = fs.readFileSync(path.join(assets, 'ui.html'), 'utf8');
+  var page = routes.inlineUI(html);
+  assert.ok(page, 'every part is found');
+  assert.strictEqual(page.indexOf('/assets/ui/'), -1, 'no part is left to fetch');
+  assert.strictEqual(page.split('<style>').length - 1, 1, 'one stylesheet');
+  // i18n.js stays a fetch; the parts become one script after it, in order.
+  var scripts = page.split('<script>');
+  assert.strictEqual(scripts.length - 1, 1, 'one inline script');
+  var script = scripts[1];
+  assert.ok(script.indexOf('const K = (() => {') < script.indexOf('startPolling();'), 'core.js first, main.js last');
+
+  gone = 'ui/game.js';
+  assert.strictEqual(routes.inlineUI(html), null, 'a missing part means no page');
+  assert.ok(routes.missingAssetsPage().indexOf('<code>ui/game.js</code> was not found') !== -1,
+            'and the missing-assets page names it');
+
+  console.log('  ✓ inlineUI puts the stylesheet and scripts back inline, and names a missing one');
+})();
+
 // 6. Route Dispatching via handleRequest
 (function testRouteDispatch() {
   var controlDispatched = null;
