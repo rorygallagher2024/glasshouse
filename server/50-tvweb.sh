@@ -78,14 +78,11 @@ fi
 # kadp-de-mtx for good, so live TV and HDMI stayed black until a reboot, while
 # this restart coincided with an Apple TV switching to 4K Dolby Vision (#366).
 # Before the server first writes the key, an install that had tile hiding on
-# keeps it - except on webOS 10 and later (a Flutter stock screen saver), where
-# it was already held back.
+# keeps it.
 tile_hiding_allowed=0
 if grep -q '"allowTileHiding"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null; then
   tile_hiding_allowed=1
-elif { [ -z "$stock_type" ] || [ "$stock_type" = "qml" ]; } &&
-     ! grep -q '"allowTileHiding"' /var/lib/tvweb/config.json 2>/dev/null &&
-     [ "$(cat /var/lib/tvweb/tile_hiding_enabled 2>/dev/null)" = "1" ]; then
+elif ! grep -q '"allowTileHiding"' /var/lib/tvweb/config.json 2>/dev/null && [ "$(cat /var/lib/tvweb/tile_hiding_enabled 2>/dev/null)" = "1" ]; then
   tile_hiding_allowed=1
 fi
 
