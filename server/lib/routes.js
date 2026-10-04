@@ -1017,70 +1017,37 @@ function handleRequest(req, res) {
   }
 
   if (pathname === '/api/oledcare') {
-    if (!oledModule) {
-      return send(res, 200, JSON.stringify({ ok: true, available: false, isOled: false, label: 'Panel Care' }));
-    }
-    return oledModule.detectOled(function (isOledPanel) {
-      if (isOledPanel) {
-        return oledModule.readOledProtections(function (live) {
-          telemetryModule.collectStats(function (st) {
-            var oledData = (st && st.oled) || {};
-            send(res, 200, JSON.stringify({
-              ok: true,
-              available: true,
-              isOled: true,
-              label: 'OLED Care',
-              // Whether this TV has the service the service menu goes through.
-              serviceControls: oledModule.oledProtControllable(),
-              writable: config.allowControl,
-              /*
-               * null where the TV says nothing. Without the service, all there is
-               * are the marker files, and a TV that writes none of them - a B8
-               * writes neither - has not said these are off, only that it does not
-               * report them.
-               */
-              gsr: live ? live.gsr : (oledData.gsr_protection ? oledData.gsr_protection === 'Active' : null),
-              tpc: live ? live.tpc : (oledData.asbl_protection ? oledData.asbl_protection === 'Active' : null),
-              gsrStressCount: live ? live.gsrStressCount : null,
-              screenShift: oledData.screen_shift || null,
-              logoDimming: oledData.logo_dimming || null,
-              // The panel's own wear figures, which belong beside the switches
-              // that decide how hard it is worked.
-              panelHours: (oledData.panel_hours === undefined) ? null : oledData.panel_hours,
-              hoursUntilComp: (oledData.hours_until_comp === undefined) ? null : oledData.hours_until_comp,
-              hoursUntilRefresher: (oledData.hours_until_refresher === undefined) ? null : oledData.hours_until_refresher,
-              compStatus: oledData.comp_status || null,
-              refresherStatus: oledData.refresher_status || null,
-              compCycles: (oledData.comp_cycles === undefined) ? null : oledData.comp_cycles,
-              refresherCycles: (oledData.refresher_cycles === undefined) ? null : oledData.refresher_cycles,
-              failureAlerts: (oledData.failure_alerts === undefined) ? null : oledData.failure_alerts
-            }));
-          });
-        });
-      }
-
-      oledModule.queryPanelHours(function (hours) {
-        var available = (hours !== null && hours !== undefined);
+    return oledModule.readOledProtections(function (live) {
+      telemetryModule.collectStats(function (st) {
+        var oledData = (st && st.oled) || {};
         send(res, 200, JSON.stringify({
           ok: true,
-          available: available,
-          isOled: false,
-          label: 'Panel Care',
-          serviceControls: false,
+          isOled: !!(st && st.oled),
+          available: !!(st && st.oled),
+          // Whether this TV has the service the service menu goes through.
+          serviceControls: oledModule.oledProtControllable(),
           writable: config.allowControl,
-          gsr: null,
-          tpc: null,
-          gsrStressCount: null,
-          screenShift: null,
-          logoDimming: null,
-          panelHours: hours,
-          hoursUntilComp: null,
-          hoursUntilRefresher: null,
-          compStatus: null,
-          refresherStatus: null,
-          compCycles: null,
-          refresherCycles: null,
-          failureAlerts: null
+          /*
+           * null where the TV says nothing. Without the service, all there is
+           * are the marker files, and a TV that writes none of them - a B8
+           * writes neither - has not said these are off, only that it does not
+           * report them.
+           */
+          gsr: live ? live.gsr : (oledData.gsr_protection ? oledData.gsr_protection === 'Active' : null),
+          tpc: live ? live.tpc : (oledData.asbl_protection ? oledData.asbl_protection === 'Active' : null),
+          gsrStressCount: live ? live.gsrStressCount : null,
+          screenShift: oledData.screen_shift || null,
+          logoDimming: oledData.logo_dimming || null,
+          // The panel's own wear figures, which belong beside the switches
+          // that decide how hard it is worked.
+          panelHours: (oledData.panel_hours === undefined) ? null : oledData.panel_hours,
+          hoursUntilComp: (oledData.hours_until_comp === undefined) ? null : oledData.hours_until_comp,
+          hoursUntilRefresher: (oledData.hours_until_refresher === undefined) ? null : oledData.hours_until_refresher,
+          compStatus: oledData.comp_status || null,
+          refresherStatus: oledData.refresher_status || null,
+          compCycles: (oledData.comp_cycles === undefined) ? null : oledData.comp_cycles,
+          refresherCycles: (oledData.refresher_cycles === undefined) ? null : oledData.refresher_cycles,
+          failureAlerts: (oledData.failure_alerts === undefined) ? null : oledData.failure_alerts
         }));
       });
     });

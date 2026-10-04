@@ -1053,100 +1053,32 @@ function createMockRes(cb) {
   }
 })();
 
-// /api/oledcare endpoint tests for OLED and non-OLED panels
-(function testOledCareRoute() {
-  function getOledCare(opts, cb) {
+// /api/oledcare says whether the TV has an OLED panel, so the TV app drops its
+// OLED Care tab on an LCD TV as the web dashboard does
+(function testOledCareAvailable() {
+  function oledCare(stats) {
+    var body = null;
     routes.init({
       config: { web: { enabled: false }, allowControl: true, token: '' },
-      oled: opts.oled,
-      telemetry: opts.telemetry || { collectStats: function (fn) { fn({}); } }
+      oled: {
+        readOledProtections: function (cb) { cb(null); },
+        oledProtControllable: function () { return false; }
+      },
+      telemetry: { collectStats: function (cb) { cb(stats); } }
     });
-    var req = createMockReq({
+    routes.handleRequest(createMockReq({
       url: '/api/oledcare', method: 'GET', remoteAddress: '127.0.0.1',
       headers: { host: '127.0.0.1:8080' }
-    });
-    var res = createMockRes(function (r) {
-      cb(r.statusCode, JSON.parse(r.body));
-    });
-    routes.handleRequest(req, res);
+    }), createMockRes(function (r) { body = JSON.parse(r.body); }));
+    return body;
   }
-
-  // 1. OLED set
-  getOledCare({
-    oled: {
-      detectOled: function (cb) { cb(true); },
-      readOledProtections: function (cb) { cb({ gsr: true, tpc: false, gsrStressCount: 3 }); },
-      oledProtControllable: function () { return true; }
-    },
-    telemetry: {
-      collectStats: function (cb) {
-        cb({
-          oled: {
-            panel_hours: 4200,
-            screen_shift: 'on',
-            logo_dimming: 'low',
-            hours_until_comp: 2.5
-          }
-        });
-      }
-    }
-  }, function (status, body) {
-    assert.strictEqual(status, 200);
-    assert.strictEqual(body.ok, true);
-    assert.strictEqual(body.isOled, true);
-    assert.strictEqual(body.available, true);
-    assert.strictEqual(body.label, 'OLED Care');
-    assert.strictEqual(body.panelHours, 4200);
-    assert.strictEqual(body.gsr, true);
-    assert.strictEqual(body.tpc, false);
-    assert.strictEqual(body.screenShift, 'on');
-    assert.strictEqual(body.serviceControls, true);
-  });
-
-  // 2. Non-OLED set with power-on hours
-  getOledCare({
-    oled: {
-      detectOled: function (cb) { cb(false); },
-      queryPanelHours: function (cb) { cb(1800); }
-    }
-  }, function (status, body) {
-    assert.strictEqual(status, 200);
-    assert.strictEqual(body.ok, true);
-    assert.strictEqual(body.isOled, false);
-    assert.strictEqual(body.available, true);
-    assert.strictEqual(body.label, 'Panel Care');
-    assert.strictEqual(body.panelHours, 1800);
-    assert.strictEqual(body.serviceControls, false);
-    assert.strictEqual(body.gsr, null);
-    assert.strictEqual(body.tpc, null);
-    assert.strictEqual(body.screenShift, null);
-  });
-
-  // 3. Non-OLED set without power-on hours
-  getOledCare({
-    oled: {
-      detectOled: function (cb) { cb(false); },
-      queryPanelHours: function (cb) { cb(null); }
-    }
-  }, function (status, body) {
-    assert.strictEqual(status, 200);
-    assert.strictEqual(body.ok, true);
-    assert.strictEqual(body.isOled, false);
-    assert.strictEqual(body.available, false);
-    assert.strictEqual(body.label, 'Panel Care');
-    assert.strictEqual(body.panelHours, null);
-  });
-
-  // 4. oledModule missing
-  getOledCare({ oled: null }, function (status, body) {
-    assert.strictEqual(status, 200);
-    assert.strictEqual(body.ok, true);
-    assert.strictEqual(body.isOled, false);
-    assert.strictEqual(body.available, false);
-    assert.strictEqual(body.label, 'Panel Care');
-  });
-
-  console.log('  ✓ /api/oledcare serves OLED Care for OLEDs and Panel Care for non-OLEDs');
+  var oled = oledCare({ oled: { panel_hours: 4200 } });
+  assert.strictEqual(oled.available, true);
+  assert.strictEqual(oled.panelHours, 4200);
+  var lcd = oledCare({ oled: null });
+  assert.strictEqual(lcd.available, false);
+  assert.strictEqual(lcd.isOled, false);
+  console.log('  ✓ /api/oledcare is unavailable on a TV without an OLED panel');
 })();
 
 console.log('ALL test-routes.js assertions passed!');

@@ -522,14 +522,7 @@ function lgRow(g) {
 
 function oledRows(d) {
   if (!d || !d.ok) return [];
-  if (!d.isOled) {
-    if (d.panelHours === null || d.panelHours === undefined) return [];
-    return [
-      head(t('oled.panelLife', 'Panel life')),
-      { label: t('tv.oled.totalPowerOnHours', 'Total power-on hours'), value: num(d.panelHours),
-        hint: t('tv.display.totalPowerOnHours.hint', 'Hours the display has been lit since new.') }
-    ];
-  }
+  if (!d.isOled) return [];
   var canSet = d.writable && d.serviceControls;
   var r = [];
 
@@ -1659,23 +1652,6 @@ function fetchTab(keepSel) {
     .then(function (d) {
       if (T().key !== key) return;        // the user moved on while this was in flight
       data[key] = d;
-      if (section.optional && d && d.available === false) {
-        var optIdx = TABS.indexOf(section);
-        if (optIdx >= 0) {
-          TABS.splice(optIdx, 1);
-          tab = Math.min(tab, TABS.length - 1);
-          renderTabs();
-          openTab(tab);
-          return;
-        }
-      }
-      if (key === 'oled' && d && !d.isOled) {
-        var displayLabel = t('tv.tab.panelCare', 'Panel Care');
-        if (section.label !== displayLabel) {
-          section.label = displayLabel;
-          renderTabs();
-        }
-      }
       rows = buildRows(section, d);
       if (initialSel !== null && initialSel < rows.length && (!rows[initialSel] || !rows[initialSel].head)) {
         sel = initialSel;
@@ -2166,30 +2142,21 @@ if (selMatch) {
 openTab(initTab, initialSel !== null);
 
 /* A section the TV may not have is dropped once its endpoint says so, as the
-   browser dashboard hides its tab: a B8 has no Game Optimizer, and a TV
-   holding custom screen savers back (#366) has none to offer. */
+   browser dashboard hides its tab: a B8 has no Game Optimizer, a TV holding
+   custom screen savers back (#366) has none to offer, and an LCD TV has no
+   OLED Care. */
 TABS.forEach(function (section) {
   if (!section.optional) return;
   fetch(section.url, { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) {
       var i = TABS.indexOf(section);
-      if (!d || i < 0) return;
-      if (d.available === false) {
-        var cur = TABS[tab];
-        TABS.splice(i, 1);
-        tab = Math.max(0, TABS.indexOf(cur));
-        renderTabs();
-        if (cur === section) openTab(tab);
-        return;
-      }
-      if (section.key === 'oled' && !d.isOled) {
-        var displayLabel = t('tv.tab.panelCare', 'Panel Care');
-        if (section.label !== displayLabel) {
-          section.label = displayLabel;
-          renderTabs();
-        }
-      }
+      if (!d || d.available !== false || i < 0) return;
+      var cur = TABS[tab];
+      TABS.splice(i, 1);
+      tab = Math.max(0, TABS.indexOf(cur));
+      renderTabs();
+      if (cur === section) openTab(tab);
     })
     .catch(function () {});
 });
