@@ -118,6 +118,73 @@ test("they are carried over when it is, so this table does not undo it", functio
   }
 });
 
+test('Customer data host cdpsvc is blocked in both Ads & telemetry and Everything modes', function () {
+  var adsList = privacy.adBlockList('ads');
+  assert.ok(adsList.indexOf('cdpsvc.lgtvcommon.com') !== -1, 'cdpsvc base domain must be in ads mode');
+  assert.ok(adsList.indexOf('gb.cdpsvc.lgtvcommon.com') !== -1, 'regional cdpsvc must be in ads mode');
+
+  var fullList = privacy.adBlockList('full');
+  assert.ok(fullList.indexOf('cdpsvc.lgtvcommon.com') !== -1, 'cdpsvc base domain must be in full mode');
+  assert.ok(fullList.indexOf('gb.cdpsvc.lgtvcommon.com') !== -1, 'regional cdpsvc must be in full mode');
+});
+
+test('nextlgsdp.com is omitted while SDP grace period is active', function () {
+  privacy._setSdpGraceActive(true);
+  assert.strictEqual(privacy.isSdpGracePeriodActive(), true);
+  var list = privacy.adBlockList('full');
+  assert.strictEqual(list.indexOf('nextlgsdp.com'), -1, 'nextlgsdp omitted during grace period');
+  assert.strictEqual(list.indexOf('gb.nextlgsdp.com'), -1, 'regional nextlgsdp omitted during grace period');
+});
+
+test('SDP grace period is skipped when getSystemTime reports time is already valid on restart', function () {
+  privacy._setSdpGraceActive(true);
+  var mockLuna = function (uri, params, cb) {
+    if (uri === 'com.webos.service.systemservice/time/getSystemTime') {
+      cb({ returnValue: true, timeValid: true, systemTimeSource: 'sdp' });
+    }
+  };
+  privacy.init({ luna: mockLuna });
+  privacy._checkSdpClockSync(true);
+
+  assert.strictEqual(privacy.isSdpGracePeriodActive(), false, 'grace period should be closed immediately');
+  var fullList = privacy.adBlockList('full');
+  assert.ok(fullList.indexOf('nextlgsdp.com') !== -1, 'nextlgsdp blocked after window skipped');
+  assert.ok(fullList.indexOf('gb.nextlgsdp.com') !== -1, 'regional nextlgsdp blocked after window skipped');
+  privacy._clearSdpTimer();
+});
+
+test('SDP grace period stays open on cold boot until timeValid with source sdp is reported', function () {
+  privacy._setSdpGraceActive(true);
+  var timeState = { timeValid: false, systemTimeSource: 'system' };
+  var mockLuna = function (uri, params, cb) {
+    if (uri === 'com.webos.service.systemservice/time/getSystemTime') {
+      cb({ returnValue: true, timeValid: timeState.timeValid, systemTimeSource: timeState.systemTimeSource });
+    }
+  };
+  privacy.init({ luna: mockLuna });
+
+  // First check at boot - time is invalid
+  privacy._checkSdpClockSync(true);
+  assert.strictEqual(privacy.isSdpGracePeriodActive(), true, 'grace period stays open while time is invalid');
+  assert.strictEqual(privacy.adBlockList('full').indexOf('nextlgsdp.com'), -1);
+
+  // Intermediate poll - time becomes valid with source sdp
+  timeState.timeValid = true;
+  timeState.systemTimeSource = 'sdp';
+  privacy._checkSdpClockSync(false);
+
+  assert.strictEqual(privacy.isSdpGracePeriodActive(), false, 'grace period closes once sdp time is valid');
+  assert.ok(privacy.adBlockList('full').indexOf('nextlgsdp.com') !== -1, 'nextlgsdp blocked once synced');
+  privacy._clearSdpTimer();
+});
+
+test('SDP grace period closes and blocks nextlgsdp.com when finalized on timeout cap', function () {
+  privacy._setSdpGraceActive(true);
+  privacy._finalizeSdpBlock('timeout');
+  assert.strictEqual(privacy.isSdpGracePeriodActive(), false);
+  assert.ok(privacy.adBlockList('full').indexOf('nextlgsdp.com') !== -1);
+});
+
 var failures = 0;
 tests.forEach(function (t) {
   try {

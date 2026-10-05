@@ -78,13 +78,21 @@ var ADBLOCK_PLATFORM = [
   'us.lgtvsdp.com',
   'gb.lgtvsdp.com',
   'eu.lgtvsdp.com',
-  'nextlgsdp.com',
-  'us.nextlgsdp.com',
-  'gb.nextlgsdp.com',
-  'eu.nextlgsdp.com',
   'ngfts.lge.com',
   'aic-ngfts.lge.com'
 ];
+
+var ADBLOCK_SDP = [
+  'nextlgsdp.com',
+  'us.nextlgsdp.com',
+  'gb.nextlgsdp.com',
+  'eu.nextlgsdp.com'
+];
+var SDP_POLL_INTERVAL_MS = 3000;
+var SDP_MAX_WAIT_MS = 120000;
+var sdpGraceActive = true;
+var sdpPollTimer = null;
+var sdpCapTimer = null;
 
 
 /*
@@ -237,10 +245,28 @@ function storeHost() {
   } catch (e) { return null; }
 }
 
+function isSdpGracePeriodActive() {
+  return sdpGraceActive;
+}
+
 function adBlockPlatform() {
+  var country = (readTrimmed(COUNTRY_FILE) || '').toLowerCase();
+  var prefixes = ADBLOCK_REGION_PREFIXES.concat(/^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES);
   var list = ADBLOCK_PLATFORM.slice();
   var host = storeHost();
   if (host && list.indexOf(host) === -1) list.push(host);
+
+  // Omit SDP clock-sync hosts while waiting for initial time synchronization.
+  // webOS synchronizes its clock at startup via the HTTP X-Server-Time header
+  // on *.nextlgsdp.com rather than NTP; blocking it immediately at cold boot
+  // leaves the clock at epoch, causing TLS certificate validation failures in streaming apps.
+  if (!isSdpGracePeriodActive()) {
+    ADBLOCK_SDP.forEach(function (name) {
+      [name].concat(prefixes.map(function (p) { return p + '.' + name; }))
+        .forEach(function (h) { if (list.indexOf(h) === -1) list.push(h); });
+    });
+  }
+
   return list;
 }
 
@@ -310,6 +336,96 @@ function adBlockHostsTable(mode) {
   return lines.join('\n');
 }
 
+function clearSdpTimer() {
+  if (sdpPollTimer) {
+    clearInterval(sdpPollTimer);
+    sdpPollTimer = null;
+  }
+  if (sdpCapTimer) {
+    clearTimeout(sdpCapTimer);
+    sdpCapTimer = null;
+  }
+}
+
+function finalizeSdpBlock(logMsg) {
+  clearSdpTimer();
+  if (!sdpGraceActive) return;
+  sdpGraceActive = false;
+  if (logMsg) console.log(logMsg);
+  if (flagMode() === 'full' && isTableMounted()) {
+    try {
+      fs.writeFileSync(ADBLOCK_HOSTS_FILE, adBlockHostsTable('full'), 'utf8');
+      clearCache();
+    } catch (e) {}
+  }
+}
+
+function isTimeValid(r) {
+  if (!r) return false;
+  var v = (r.timeValid !== undefined) ? r.timeValid : r.timevalid;
+  return v === true || v === 'true';
+}
+
+function isSdpSource(r) {
+  if (!r) return false;
+  var s = (r.systemTimeSource || r.source || r.timeSource || '');
+  return typeof s === 'string' && s.toLowerCase() === 'sdp';
+}
+
+function checkSdpClockSync(isFirstCheck) {
+  if (!luna) {
+    finalizeSdpBlock('adblock: no luna wrapper; closing SDP grace period');
+    return;
+  }
+  luna('com.webos.service.systemservice/time/getSystemTime', {}, function (r) {
+    if (!sdpGraceActive) return;
+
+    var valid = isTimeValid(r);
+    var isSdp = isSdpSource(r);
+
+    // On a restart / warm boot, the clock is already valid: skip the grace window.
+    if (isFirstCheck && valid) {
+      finalizeSdpBlock('adblock: system time already valid; skipping SDP grace period');
+      return;
+    }
+
+    // On cold boot, block once timeValid with source sdp is reported.
+    if (valid && isSdp) {
+      finalizeSdpBlock('adblock: SDP clock sync complete (timeValid with source sdp); nextlgsdp.com blocked');
+      return;
+    }
+
+    // If initial check was invalid (cold boot), start polling and cap timer.
+    if (isFirstCheck && !sdpPollTimer) {
+      startSdpPolling();
+    }
+  });
+}
+
+function startSdpPolling() {
+  if (sdpPollTimer || sdpCapTimer) return;
+  sdpCapTimer = setTimeout(function () {
+    finalizeSdpBlock('adblock: SDP clock-sync window timeout reached (120s); nextlgsdp.com blocked');
+  }, SDP_MAX_WAIT_MS);
+  if (sdpCapTimer && sdpCapTimer.unref) sdpCapTimer.unref();
+
+  sdpPollTimer = setInterval(function () {
+    checkSdpClockSync(false);
+  }, SDP_POLL_INTERVAL_MS);
+  if (sdpPollTimer && sdpPollTimer.unref) sdpPollTimer.unref();
+}
+
+/*
+ * Leaves nextlgsdp.com unblocked until getSystemTime reports timeValid with
+ * source sdp (polling every few seconds, capped at a couple of minutes),
+ * and skips the window when the time is already valid, as after a restart.
+ */
+function scheduleSdpBlock() {
+  if (!sdpGraceActive) return;
+  if (sdpPollTimer || sdpCapTimer) return;
+  checkSdpClockSync(true);
+}
+
 /*
  * One table carries both the ad block and the update block, so it stays
  * mounted while either is on. The Homebrew Channel mounts its own update block
@@ -326,10 +442,13 @@ function applyHostsTable(cb) {
     } catch (e) {
       return cb('could not write the hosts table: ' + e.message);
     }
+    if (mode === 'full') scheduleSdpBlock();
+    else clearSdpTimer();
     if (mounted) return done();
     return execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
       function (err) { clearCache(); cb(err ? 'could not mount the hosts table' : null); });
   }
+  clearSdpTimer();
   var liftHbc = function () {
     var hosts = readTrimmed('/etc/hosts') || '';
     if (hosts.indexOf('webosbrew startup script') === -1) return done();
@@ -341,8 +460,13 @@ function applyHostsTable(cb) {
 
 function setAdBlock(mode, cb) {
   try {
-    if (mode === 'off') { if (fs.existsSync(ADBLOCK_FLAG_FILE)) fs.unlinkSync(ADBLOCK_FLAG_FILE); }
-    else fs.writeFileSync(ADBLOCK_FLAG_FILE, mode, 'utf8');
+    if (mode === 'off') {
+      if (fs.existsSync(ADBLOCK_FLAG_FILE)) fs.unlinkSync(ADBLOCK_FLAG_FILE);
+      clearSdpTimer();
+    } else {
+      fs.writeFileSync(ADBLOCK_FLAG_FILE, mode, 'utf8');
+      if (mode !== 'full') clearSdpTimer();
+    }
   } catch (e) {
     if (cb) cb({ ok: false, error: msg('srv.adblock.saveFailed', 'could not save the ad block setting: {error}', { error: e.message }) });
     return;
@@ -370,14 +494,16 @@ function checkBootAdBlock(cliMode) {
   try {
     // Rebuilt from the list in this version, so an update that adds names
     // takes effect without the mode being switched off and on.
-    var need = flagMode() !== 'off' || tvUpdatesBlocked();
-    if (need) fs.writeFileSync(ADBLOCK_HOSTS_FILE, adBlockHostsTable(flagMode()), 'utf8');
+    var mode = flagMode();
+    var need = mode !== 'off' || tvUpdatesBlocked();
+    if (need) fs.writeFileSync(ADBLOCK_HOSTS_FILE, adBlockHostsTable(mode), 'utf8');
     if (need && !isTableMounted()) {
       execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
         clearCache();
         if (!err) console.log('adblock: restored /etc/hosts bind-mount from previous boot');
       });
     }
+    if (mode === 'full') scheduleSdpBlock();
   } catch (e) {}
 }
 
@@ -867,5 +993,10 @@ module.exports = {
   adBlockHostsTable: adBlockHostsTable,
   CONSENT_LABELS: CONSENT_LABELS,
   CONSENT_LOCKED: CONSENT_LOCKED,
-  CONSENT_GROUPS: CONSENT_GROUPS
+  CONSENT_GROUPS: CONSENT_GROUPS,
+  isSdpGracePeriodActive: isSdpGracePeriodActive,
+  _checkSdpClockSync: checkSdpClockSync,
+  _setSdpGraceActive: function (b) { sdpGraceActive = b; },
+  _clearSdpTimer: clearSdpTimer,
+  _finalizeSdpBlock: finalizeSdpBlock
 };
