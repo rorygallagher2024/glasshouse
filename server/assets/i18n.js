@@ -25,9 +25,26 @@
   var dict = {};
   var lang = 'en';
 
+  // The choice made on this browser's Server tab: 'en', one of LANGS, or
+  // 'auto' (as when nothing is stored) to follow the browser's own language.
+  function stored() {
+    var v = null;
+    try { v = localStorage.getItem('lang'); } catch (e) { /* private window */ }
+    return v === 'en' || LANGS.indexOf(v) >= 0 ? v : 'auto';
+  }
+
+  function choose(v) {
+    try {
+      if (v === 'auto') localStorage.removeItem('lang');
+      else localStorage.setItem('lang', v);
+    } catch (e) { /* private window */ }
+  }
+
   function pick() {
     var m = /[?&]lang=([a-z]{2})/i.exec(location.search);
-    var want = m ? m[1] : ((navigator.languages && navigator.languages[0]) || navigator.language || 'en');
+    var chosen = stored();
+    var want = m ? m[1] : chosen !== 'auto' ? chosen
+             : ((navigator.languages && navigator.languages[0]) || navigator.language || 'en');
     want = String(want).slice(0, 2).toLowerCase();
     return LANGS.indexOf(want) >= 0 ? want : 'en';
   }
@@ -123,6 +140,6 @@
   }
 
   root.t = t;
-  root.I18N = { t: t, apply: apply, lang: function () { return lang; }, languages: LANGS };
+  root.I18N = { t: t, apply: apply, lang: function () { return lang; }, languages: LANGS, stored: stored, choose: choose };
 // Untyped for the type check, which does not know the two names added to it.
 })(/** @type {any} */ (window));

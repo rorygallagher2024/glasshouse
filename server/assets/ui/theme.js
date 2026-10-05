@@ -1,4 +1,4 @@
-// The theme toggle: auto, dark or light.
+// The theme toggle: auto, dark or light. And the language, chosen on the Server tab.
 
 // ---- theme toggle (auto / dark / light) ----
 (function initTheme() {
@@ -62,5 +62,26 @@
     setting = btn.dataset.themeSet || nextSetting();
     try { localStorage.setItem('theme', setting); } catch (err) { /* private window */ }
     apply();
+  });
+})();
+
+// ---- language (auto / a language) ----
+(function initLanguage() {
+  const chosen = I18N.stored();
+  document.querySelectorAll('[data-lang-set]').forEach(b => {
+    const on = b.dataset.langSet === chosen;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-lang-set]');
+    if (!btn || btn.dataset.langSet === I18N.stored()) return;
+    e.preventDefault();
+    I18N.choose(btn.dataset.langSet);
+    // Every string is set once, as the page loads, so a new language needs a
+    // fresh load. A ?lang= in the address would override the choice.
+    const url = new URL(location.href);
+    url.searchParams.delete('lang');
+    location.replace(url.toString());
   });
 })();
