@@ -112,8 +112,7 @@
   "hdmi_diag": null,
   "picture_engine": {
     "colorimetry": "BT.601",
-    "hdr_mode": "hdr10",
-    "peak_luminance": 1000
+    "hdr_mode": "sdr"
   },
   "colorimetry": "BT.601",
   "inputs": {

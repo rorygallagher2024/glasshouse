@@ -210,8 +210,7 @@
   },
   "picture_engine": {
     "colorimetry": "BT.2020",
-    "hdr_mode": "hdr10",
-    "peak_luminance": 1000
+    "hdr_mode": "hdr10"
   },
   "colorimetry": "BT.2020",
   "power": {

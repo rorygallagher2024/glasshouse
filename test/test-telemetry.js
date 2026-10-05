@@ -309,7 +309,55 @@ console.log('Running test-telemetry.js ...');
   console.log('  ✓ the volume is set, stepped or left alone by where the sound goes');
 })();
 
-// 8. Capabilities test
+// 8. Picture engine info parsing tests
+(function testPictureEngineInfo() {
+  var orig = mockEnv.files['/proc/lg/pe/hdr_status'];
+
+  // SDR source after HDR content: hdrStatus is hdr10(sdr)
+  mockEnv.files['/proc/lg/pe/hdr_status'] =
+    'VPQ_PQ_MODE_INFO=\n' +
+    '[0]{hdrStatus:hdr10(sdr),colorimetry:bt601,peakLuminance:1000,supportPrime:0,reserved:255}\n' +
+    '[1]{hdrStatus:sdr(sdr),colorimetry:bt601,peakLuminance:0,supportPrime:0,reserved:255}\n';
+  var pe1 = telemetry.getPictureEngineInfo();
+  assert.deepEqual(pe1, { colorimetry: 'BT.601', hdr_mode: 'sdr' });
+
+  // Active HDR10: hdrStatus is hdr10(hdr10)
+  mockEnv.files['/proc/lg/pe/hdr_status'] =
+    'VPQ_PQ_MODE_INFO=\n' +
+    '[0]{hdrStatus:hdr10(hdr10),colorimetry:bt2020,peakLuminance:1000,supportPrime:0,reserved:255}\n' +
+    '[1]{hdrStatus:sdr(sdr),colorimetry:bt601,peakLuminance:0,supportPrime:0,reserved:255}\n';
+  var pe2 = telemetry.getPictureEngineInfo();
+  assert.deepEqual(pe2, { colorimetry: 'BT.2020', hdr_mode: 'hdr10' });
+
+  // Standard SDR: hdrStatus is sdr(sdr)
+  mockEnv.files['/proc/lg/pe/hdr_status'] =
+    'VPQ_PQ_MODE_INFO=\n' +
+    '[0]{hdrStatus:sdr(sdr),colorimetry:bt709,peakLuminance:1000,supportPrime:0,reserved:255}\n' +
+    '[1]{hdrStatus:sdr(sdr),colorimetry:bt601,peakLuminance:0,supportPrime:0,reserved:255}\n';
+  var pe3 = telemetry.getPictureEngineInfo();
+  assert.deepEqual(pe3, { colorimetry: 'BT.709', hdr_mode: 'sdr' });
+
+  // HLG: hdrStatus is hlg(hlg)
+  mockEnv.files['/proc/lg/pe/hdr_status'] =
+    'VPQ_PQ_MODE_INFO=\n' +
+    '[0]{hdrStatus:hlg(hlg),colorimetry:bt2020,peakLuminance:1000,supportPrime:0,reserved:255}\n';
+  var pe4 = telemetry.getPictureEngineInfo();
+  assert.deepEqual(pe4, { colorimetry: 'BT.2020', hdr_mode: 'hlg' });
+
+  // Unparenthesized fallback
+  mockEnv.files['/proc/lg/pe/hdr_status'] = 'hdrStatus:hdr10,colorimetry:bt2020\n';
+  var pe5 = telemetry.getPictureEngineInfo();
+  assert.deepEqual(pe5, { colorimetry: 'BT.2020', hdr_mode: 'hdr10' });
+
+  // Missing file returns null
+  delete mockEnv.files['/proc/lg/pe/hdr_status'];
+  assert.strictEqual(telemetry.getPictureEngineInfo(), null);
+
+  mockEnv.files['/proc/lg/pe/hdr_status'] = orig;
+  console.log('  ✓ getPictureEngineInfo parses active signal and drops fixed peak luminance');
+})();
+
+// 9. Capabilities test
 (function testCapabilities() {
   var caps = telemetry.getCapabilities({ isOled: true });
   assert.strictEqual(caps.isOled, true);
@@ -405,6 +453,8 @@ telemetry.refreshInstalledApps(function (apps) {
         assert.ok(Array.isArray(stats.apps) && stats.apps.length === 2);
         assert.strictEqual(stats.signal, '3840x2160 @ 120Hz', 'stats signal matches active HDMI 2 input');
         assert.ok(stats.hdmi_diag && stats.hdmi_diag.port === 1, 'stats hdmi_diag matches active port 1');
+        assert.deepEqual(stats.picture_engine, { colorimetry: 'BT.709', hdr_mode: 'sdr' });
+        assert.strictEqual(stats.colorimetry, 'BT.709');
 
         console.log('  ✓ collectStats aggregates full telemetry payload including apps');
 

@@ -38,7 +38,7 @@ function createMockEnv(overrides) {
     '/sys/class/net/wlan0/address': '00:51:ed:99:7e:20\n',
     '/proc/lg/hdmi20/port0/status': 'horizontal-active: 3840\nvertical-active: 2160\npixel-clock-V: 60\npixel-clock: 594000\nconnected: on\ndeep-color-mode: 8bit\ninterlaced: no\n',
     '/proc/lg/hdmi20/port1/status': 'Sig:[3840]x[2160]@[120]Hz\nPixel Clk[1188000]\nconnected: on\ndeep-color-mode: 10bit\ninterlaced: no\n',
-    '/proc/lg/pe/hdr_status': 'hdr_mode: HDR10\n',
+    '/proc/lg/pe/hdr_status': 'VPQ_PQ_MODE_INFO=\n[0]{hdrStatus:hdr10(sdr),colorimetry:bt709,peakLuminance:1000,supportPrime:0,reserved:255}\n[1]{hdrStatus:sdr(sdr),colorimetry:bt601,peakLuminance:0,supportPrime:0,reserved:255}\n',
     '/proc/lg/sys/status': 'gpu pll out: 550000000\nss: OFF\n',
     '/etc/issue': 'webOS 4.4.3\n',
     '/etc/starfish-release': 'Starfish 4.4.3\n',

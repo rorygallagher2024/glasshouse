@@ -587,9 +587,11 @@ function getHdmiSignal(hdmiNum) {
 function getPictureEngineInfo() {
   var raw = readTrimmed('/proc/lg/pe/hdr_status');
   if (!raw) return null;
-  var colMatch = raw.match(/colorimetry:\s*([^,\}]+)/i);
-  var hdrMatch = raw.match(/hdrStatus:\s*([^\(,\}]+)/i);
-  var peakMatch = raw.match(/peakLuminance:\s*(\d+)/i);
+  // Window [0] is the main picture window; fall back to the whole file if unindexed.
+  var win0 = raw.match(/\[0\]\{([^}]+)\}/);
+  var target = win0 ? win0[1] : raw;
+  var colMatch = target.match(/colorimetry:\s*([^,\}]+)/i);
+  var hdrMatch = target.match(/hdrStatus:\s*([^\(,\}\s]+)(?:\s*\(\s*([^\),\s]+)\s*\))?/i);
 
   var colorimetry = null;
   if (colMatch) {
@@ -600,12 +602,17 @@ function getPictureEngineInfo() {
     else colorimetry = colMatch[1].trim();
   }
 
+  var hdrMode = null;
+  if (hdrMatch) {
+    hdrMode = (hdrMatch[2] || hdrMatch[1]).trim().toLowerCase();
+  }
+
   return {
     colorimetry: colorimetry,
-    hdr_mode: hdrMatch ? hdrMatch[1].trim() : null,
-    peak_luminance: peakMatch ? parseInt(peakMatch[1], 10) : null
+    hdr_mode: hdrMode
   };
 }
+
 
 /*
  * How the volume can be changed with the sound going where it is now: 'level'
