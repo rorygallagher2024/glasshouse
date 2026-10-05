@@ -185,6 +185,28 @@ test('SDP grace period closes and blocks nextlgsdp.com when finalized on timeout
   assert.ok(privacy.adBlockList('full').indexOf('nextlgsdp.com') !== -1);
 });
 
+test('SDP grace period correctly handles webOS 4 where timeValid is omitted from getSystemTime', function () {
+  privacy._setSdpGraceActive(true);
+  var timeState = { utc: 1000, systemTimeSource: 'system' };
+  var mockLuna = function (uri, params, cb) {
+    if (uri === 'com.webos.service.systemservice/time/getSystemTime') {
+      cb({ returnValue: true, utc: timeState.utc, systemTimeSource: timeState.systemTimeSource });
+    }
+  };
+  privacy.init({ luna: mockLuna });
+
+  // Boot check with invalid (epoch) UTC
+  privacy._checkSdpClockSync(true);
+  assert.strictEqual(privacy.isSdpGracePeriodActive(), true, 'grace period active while utc is epoch');
+
+  // Once synced to current year with source sdp
+  timeState.utc = 1791222699;
+  timeState.systemTimeSource = 'sdp';
+  privacy._checkSdpClockSync(false);
+  assert.strictEqual(privacy.isSdpGracePeriodActive(), false, 'grace period closed once utc is valid and source is sdp');
+  privacy._clearSdpTimer();
+});
+
 var failures = 0;
 tests.forEach(function (t) {
   try {

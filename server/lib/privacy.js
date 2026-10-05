@@ -351,9 +351,13 @@ function finalizeSdpBlock(logMsg) {
 }
 
 function isTimeValid(r) {
-  if (!r) return false;
+  if (!r || r.returnValue === false) return false;
   var v = (r.timeValid !== undefined) ? r.timeValid : r.timevalid;
-  return v === true || v === 'true';
+  if (v !== undefined) return v === true || v === 'true';
+  // Older webOS versions (such as webOS 4 on the B8) omit timeValid: verify
+  // the UTC timestamp has advanced past epoch into a modern year.
+  var utc = Number(r.utc);
+  return !isNaN(utc) && utc > 1577836800;
 }
 
 function isSdpSource(r) {
