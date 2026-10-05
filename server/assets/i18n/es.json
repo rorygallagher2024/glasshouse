@@ -1687,6 +1687,10 @@
   "text": "Todo",
   "from": "Everything"
  },
+ "pv.adblock.full.confirm": {
+  "text": "«Todo» también bloquea los servidores por los que llegan la tienda de apps y las actualizaciones de software de LG, así que instalar apps y actualizar la TV puede dejar de funcionar. ¿Cambiar a «Todo»?",
+  "from": "Everything also blocks the servers LG’s app store and software updates come through, so installing apps and updating the TV may stop working. Switch to Everything?"
+ },
  "pv.adblock.full.detail": {
   "text": "También bloquea los servicios de plataforma de LG; la app store y las actualizaciones podrían dejar de funcionar.",
   "from": "Also blocks LG's platform services, so the app store and software updates may stop working."
@@ -4630,6 +4634,14 @@
  "tv.privacy.blocking": {
   "text": "Bloqueando",
   "from": "Blocking"
+ },
+ "tv.privacy.blocking.fullAgain": {
+  "text": "Pulsa OK otra vez para «Todo»",
+  "from": "Press OK again for Everything"
+ },
+ "tv.privacy.blocking.fullWarn": {
+  "text": "«Todo» puede hacer que la tienda de apps y las actualizaciones de software dejen de funcionar. Pulsa OK otra vez para confirmar.",
+  "from": "Everything may stop the app store and software updates working. Press OK again to confirm."
  },
  "tv.privacy.blocking.streaming": {
   "text": "Las aplicaciones de streaming no se tocan.",

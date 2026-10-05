@@ -269,6 +269,9 @@ q('pv-consent').addEventListener('click', async (ev) => {
 
 
 async function setAdBlockMode(mode) {
+  const full = q('ab-full');
+  if (mode === 'full' && !(full && full.classList.contains('on')) &&
+      !confirm(t('pv.adblock.full.confirm', 'Everything also blocks the servers LG\u2019s app store and software updates come through, so installing apps and updating the TV may stop working. Switch to Everything?'))) return;
   for (const m of ['off', 'ads', 'full']) { const b = q('ab-' + m); if (b) b.disabled = true; }
   await sendCommand('setAdBlock', mode);
   await loadPrivacy();

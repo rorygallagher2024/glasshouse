@@ -1902,6 +1902,30 @@ function activate() {
     case 'logoLight':
       return send({ action: 'logoLight', value: !r.on }, r.on ? t('tv.flash.logoLightOff', 'Logo light turned off') : t('tv.flash.logoLightOn', 'Logo light turned on'));
     case 'adblock':
+      // Everything may stop the app store and updates working, so it takes a
+      // second press, as uninstalling does.
+      if (r.key === 'full' && !r.confirming) {
+        r.confirming = true;
+        r.origValue = r.value;
+        r.origPress = r.press;
+        r.origCls = r.cls;
+        r.value = t('tv.confirm', 'Confirm?');
+        r.cls = 'warn';
+        r.press = t('tv.privacy.blocking.fullAgain', 'Press OK again for Everything');
+        flash(t('tv.privacy.blocking.fullWarn', 'Everything may stop the app store and software updates working. Press OK again to confirm.'));
+        render();
+        setTimeout(function () {
+          if (r.confirming) {
+            r.confirming = false;
+            r.value = r.origValue;
+            r.press = r.origPress;
+            r.cls = r.origCls;
+            render();
+          }
+        }, 4000);
+        return;
+      }
+      r.confirming = false;
       return send({ action: 'setAdBlock', value: r.key });
     case 'acr':
       return send({ action: 'acr', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
