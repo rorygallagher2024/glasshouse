@@ -1,6 +1,6 @@
 # Tested TVs
 
-Confirmed across 32 models so far (webOS 3.4 through 26). Other rooted models should work.
+Confirmed across 33 models so far (webOS 3.4 through 26). Other rooted models should work.
 
 The Luna service names and `/proc/lg` paths this relies on may differ across webOS versions and panel types.
 
@@ -12,6 +12,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | OLED65B7V-Z | 3.9.3        | 06.10.65 | OLED  | No SoC temperature or eMMC wear readings                       |
 | OLED65C8PUA | 4.4.0        | 05.50.15 | OLED  | No `getAdid` on this firmware                                  |
 | OLED65B8SLC | 4.4.3        | 05.50.70 | OLED  | Everything works. Misses a few metrics found on newer versions |
+| 43LM5760PTC | 4.5          | —        | LCD   | Configured with panel: lcd; service and web UI confirmed       |
 | OLED55C9PLA | 4.9.0        | 05.30.40 | OLED  | Working fine                                                   |
 | OLED65C9AUA | 4.9.x (4.5+) | 05.50.00 | OLED  |                                                                |
 | OLED77CX6LA | 5.5.0        | 04.50.90 | OLED  | OLED Care, telemetry and MQTT bridge confirmed                 |

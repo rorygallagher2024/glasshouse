@@ -2,7 +2,7 @@
 # and says so only in its own log: Volume, Mute and the volume buttons went
 # missing that way in 0.78.0 (#437). This builds every config the server can
 # publish and runs it through Home Assistant's own validation.
-name: home-assistant
+name: Home Assistant
 
 # Only when what the configs are built from changes. Home Assistant is not
 # pinned, so it also runs weekly: a release that starts rejecting a config
@@ -37,7 +37,7 @@ permissions:
 jobs:
   discovery:
     runs-on: ubuntu-latest
-    name: Home Assistant accepts every discovery config
+    name: Discovery validation
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6

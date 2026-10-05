@@ -39,7 +39,8 @@ nav:
       - Tested TVs: tested-tvs.md
   - The dashboard:
       - dashboard/index.md
-      - Control and Advanced: dashboard/control.md
+      - Control: dashboard/control.md
+      - Advanced Controls: dashboard/advanced.md
       - Metrics: dashboard/metrics.md
       - Apps: dashboard/apps.md
       - Privacy: dashboard/privacy.md
@@ -48,7 +49,6 @@ nav:
       - Service menu: dashboard/service-menu.md
       - Screen savers: dashboard/screen-savers.md
       - On the TV: dashboard/tv-app.md
-      - Power and standby: dashboard/power.md
       - Server: dashboard/server.md
   - Home Assistant:
       - HOME-ASSISTANT.md
@@ -62,6 +62,7 @@ nav:
       - What LG's ACR does: ACR.md
       - TV specifications: TV-SPECS.md
   - Development:
+      - Contributing: CONTRIBUTING.md
       - Internals: IMPLEMENTATION.md
       - Testing and CI: development/testing.md
       - Translating the dashboards: STRINGS.md

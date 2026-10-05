@@ -29,6 +29,7 @@ var fetchLib = require('./lib/fetch');
 var repo = require('./lib/repo');
 var installer = require('./lib/installer');
 var privacy = require('./lib/privacy');
+var devtools = require('./lib/devtools');
 var oled = require('./lib/oled');
 var screensavers = require('./lib/screensavers');
 var appsModule = require('./lib/apps');
@@ -55,6 +56,9 @@ var luna = lunaTransport.call;
  * 404 rather than a wrong page.
  */
 var TVWEB_VERSION = '0.80.1';
+// What a person is shown: the same, plus the commit when deploy.sh installed it
+// from a git clone. Anything that compares versions uses TVWEB_VERSION.
+var TVWEB_DISPLAY_VERSION = updater.displayVersion(TVWEB_VERSION, __dirname);
 
 // ---------------------------------------------------------------- config
 /** @type {any} */
@@ -89,6 +93,11 @@ var CONFIG = {
   // mid-boot can lock up the display engine on some TVs, leaving the picture
   // black (#366). Off by default; set here or from the Server tab.
   allowTileHiding: false,
+
+  // The web app debugger (port 9998) is closed to the network unless this is
+  // set, for inspecting Homebrew apps with ares-inspect. File-only, like
+  // `token`: it widens who can run code on the TV.
+  allowNetworkDebugger: false,
 
   // PicCap is offered where it is installed; its Home Assistant entity is
   // switched off like any other.
@@ -277,7 +286,7 @@ var CLI_MODE = null;
   }
 })();
 
-updater.init({ config: CONFIG, version: TVWEB_VERSION, installDir: __dirname });
+updater.init({ config: CONFIG, version: TVWEB_VERSION, displayVersion: TVWEB_DISPLAY_VERSION, installDir: __dirname });
 
 // ---------------------------------------------------------------- helpers
 var TOAST_SOURCE = 'com.webos.app.home';
@@ -372,7 +381,7 @@ telemetry.init({
   oled: oled,
   privacy: privacy,
   screensavers: screensavers,
-  tvwebVersion: TVWEB_VERSION,
+  tvwebVersion: TVWEB_DISPLAY_VERSION,
   mapPowerState: mapPowerState,
   isScreenSaver: isScreenSaver
 });
@@ -552,9 +561,11 @@ function checkHomebrewChannelApp() {
     // Inline rather than a script, since the files it deletes include every
     // script there is. 20-services.sh holds down the services switched off in
     // the dashboard, and they come back once it goes.
+    var rule = devtools.RULE.join(' ');
     forgetHomeAssistant(function () {
       child_process.spawn('/bin/sh', ['-c',
         '/var/lib/tvweb/tvwebctl stop >/dev/null 2>&1; rm -rf /var/lib/tvweb /media/developer/temp/glasshouse-install; ' +
+        'PATH=/usr/sbin:/sbin:$PATH; iptables -D ' + rule + ' 2>/dev/null; ip6tables -D ' + rule + ' 2>/dev/null; ' +
         'cd /var/lib/webosbrew/init.d && rm -f 50-tvweb 20-services.sh 20-tvweb-services; ' +
         'rm -f /var/lib/webosbrew/tvweb-boot.log /var/lib/webosbrew/tvweb-boot.log.old'
       ], { detached: true, stdio: 'ignore' }).unref();
@@ -614,12 +625,14 @@ function restartSelf() {
 updater.init({
   config: CONFIG,
   version: TVWEB_VERSION,
+  displayVersion: TVWEB_DISPLAY_VERSION,
   installDir: __dirname,
   writeSettings: routes.writeSettings,
   viaHomebrewChannel: fromHomebrewChannel,
   installerBusy: installer.isWorking
 });
 
+// Bare in the user agent: a catalog has no use for the commit.
 fetchLib.init({ config: CONFIG, version: TVWEB_VERSION });
 repo.init({ config: CONFIG, luna: luna, fetch: fetchLib });
 installer.init({
@@ -672,7 +685,8 @@ routes.init({
   luna: luna,
   getMqttStatus: function () { return MQTT_STATUS; },
   appsChanged: appsChanged,
-  version: TVWEB_VERSION
+  version: TVWEB_VERSION,
+  displayVersion: TVWEB_DISPLAY_VERSION
 });
 
 if (WEB_ENABLED && !CLI_MODE) routes.loadUI();   // otherwise nothing will serve it
@@ -694,6 +708,10 @@ if (!CLI_MODE && !webEnabled && !mqttEnabled) {
 }
 
 privacy.checkBootAdBlock(CLI_MODE);
+if (!CLI_MODE) {
+  if (CONFIG.allowNetworkDebugger) devtools.leaveOpen();
+  else devtools.blockFromNetwork();
+}
 
 if (!CLI_MODE) servicesModule.startEnforcing();
 
@@ -876,6 +894,7 @@ function setupHomeAssistant() {
     if (!mqttClient.connected) return;
     var upd = updater.UPDATE;
     mqttClient.publish(mqttTopics.update, JSON.stringify({
+      // Bare: Home Assistant compares it with latest_version.
       installed_version: TVWEB_VERSION,
       latest_version: upd.latest || null,
       title: 'Server',
@@ -1322,7 +1341,7 @@ if (!CLI_MODE) {
 if (CLI_MODE === 'check') {
   updater.checkForUpdate(true, function (err, summary) {
     if (err) { console.error(err.message); process.exit(1); }
-    console.log('installed v' + TVWEB_VERSION + ', latest v' + summary.latest +
+    console.log('installed v' + TVWEB_DISPLAY_VERSION + ', latest v' + summary.latest +
                 (summary.available ? ' - update available' : ' - up to date'));
     process.exit(0);
   });

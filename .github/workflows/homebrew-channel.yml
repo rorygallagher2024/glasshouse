@@ -2,7 +2,7 @@
 # reads releases/latest/download/<id>.manifest.json, so a published release is
 # what users get; a pre-release is never "latest" and reaches only those who
 # install it by hand.
-name: homebrew-channel
+name: Homebrew Channel
 
 on:
   release:

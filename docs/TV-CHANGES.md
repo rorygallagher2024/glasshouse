@@ -31,6 +31,7 @@ the first reboot after uninstalling.
 | Ad blocker | Bind-mounts a replacement `/etc/hosts` | Switching it off |
 | Hidden home-screen tiles | Bind-mounts edited `appinfo.json` files, then restarts the app manager so the home screen rereads them. Experimental: turned on under Server → Experimental features. Not offered when installed from the Homebrew Channel, since the restart happens during boot | Switching tile hiding off |
 | Switched-off background services | Stops them and masks their systemd units under `/run`, then stops any found running again every five minutes | Switching them back on |
+| Debugger closed to the network | Adds a firewall rule dropping port 9998 (WebAppMgr's DevTools, opened by Developer Mode) on every interface but loopback. Put back each time the server starts, not by the boot hook | `allowNetworkDebugger` in `config.json` and a server restart, uninstalling from the Homebrew Channel, a reboot after any other uninstall, or `iptables -D INPUT -p tcp --dport 9998 ! -i lo -j DROP` |
 | Replacement screen saver | Bind-mounts over the built-in screen saver app. Experimental on webOS 10 and later, where the built-in one is a Flutter app: turned on under Server → Experimental features | Choosing the stock screen saver |
 
 ## Changes that stay

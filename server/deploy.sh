@@ -66,7 +66,7 @@ assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Manrope.txt \
 assets/screensavers/clock.qml assets/screensavers/fireworks.qml \
 assets/screensavers/starfield.qml assets/screensavers/vitals.qml assets/screensavers/star.png \
 assets/screensavers/bokeh.qml assets/screensavers/bokeh.png \
-lib/mqtt.js lib/ha.js lib/updater.js lib/fetch.js lib/repo.js lib/installer.js lib/privacy.js lib/oled.js lib/screensavers.js lib/telemetry.js \
+lib/mqtt.js lib/ha.js lib/updater.js lib/fetch.js lib/repo.js lib/installer.js lib/privacy.js lib/devtools.js lib/oled.js lib/screensavers.js lib/telemetry.js \
 lib/apps.js lib/luna.js lib/piccap.js lib/state.js lib/mqtt-state.js lib/notifications.js lib/services.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/timers.js lib/util.js lib/prometheus.js"
 
 for t in tar base64 fold; do
@@ -86,6 +86,17 @@ for f in $FILES; do
   cp "$DIR/$f" "$WORK/b/$f"
 done
 cp "$DIR/50-tvweb.sh" "$WORK/b/50-tvweb.sh"
+# From a git clone, the commit the server is built from, which it shows after
+# its version as 0.80.1+55e51e5. Dirty means uncommitted changes under server/
+# only: nothing outside it reaches the TV. With the version it was made for, so
+# a release installed over this later shows as itself. The TV has no git, so
+# this can only be worked out here.
+if commit=$(git -C "$DIR" rev-parse --short HEAD 2>/dev/null); then
+  dirty=false
+  [ -n "$(git -C "$DIR" status --porcelain -- . 2>/dev/null)" ] && dirty=true
+  version=$(sed -n "s/^var TVWEB_VERSION = '\([^']*\)';.*/\1/p" "$DIR/tvweb.js")
+  printf '{"version":"%s","commit":"%s","dirty":%s}\n' "$version" "$commit" "$dirty" > "$WORK/b/build.json"
+fi
 # A config for this particular TV wins over the general one. Either is only
 # used where the TV has none yet: its own holds its device id and topics.
 if [ -f "$DIR/config.$TV.json" ]; then
@@ -120,6 +131,9 @@ if [ -n "$SUM" ] && [ "\$(md5sum < bundle.tar | cut -d' ' -f1)" != "$SUM" ]; the
 fi
 mkdir -p x && tar -xof bundle.tar -C x || fail "the TV could not unpack the files"
 cd x
+# A bundle with no build.json was made outside a git clone, and the one an
+# earlier deploy left would name a commit this is not.
+[ -f build.json ] || rm -f "\$D/build.json"
 # Renamed into place, never written over: BusyBox's shell reads a script as it
 # runs it, so overwriting tvwebctl would corrupt the watchdog running out of it.
 for f in \$(find . -type f); do

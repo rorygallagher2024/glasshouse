@@ -54,7 +54,8 @@ no unit test does. It runs when the server, the pages or the fake TV change.
 ## Documentation
 
 `docs.yml` builds this site on each pull request that changes it, with every
-link and section link checked, and publishes it when the change is merged.
+link and section link checked, and `docs-publish.yml` publishes it when the
+change is merged.
 
 ## Releases
 

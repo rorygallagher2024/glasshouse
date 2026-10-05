@@ -28,7 +28,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 3.4 through 26 confirmed; tested across 2016–2025 models. Other versions likely work as well
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 32 models verified so far (UH6030, UH610V, UH635V, B7, B8, C8, C9, CX, C1, UP80, UP81, QNED82, C2, G2, C3, B4, G3, C4, G4, UT81, C5, G5, CS, LX3). Other rooted models should work; [see full table](tested-tvs.md)
+* **Tested hardware**: 33 models verified so far (UH6030, UH610V, UH635V, B7, B8, C8, LM57, C9, CX, C1, UP80, UP81, QNED82, C2, G2, C3, B4, G3, C4, G4, UT81, C5, G5, CS, LX3). Other rooted models should work; [see full table](tested-tvs.md)
 
 [Install](install.md){ .md-button .md-button--primary } [See the dashboard](dashboard/index.md){ .md-button }
 

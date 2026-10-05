@@ -2043,6 +2043,30 @@
   "text": "Comprobar ahora",
   "from": "Check now"
  },
+ "server.devtools": {
+  "text": "Depurador de apps web",
+  "from": "Web app debugger"
+ },
+ "server.devtools.closed": {
+  "text": "Cerrado a la red",
+  "from": "Closed to the network"
+ },
+ "server.devtools.desc": {
+  "text": "Glasshouse lo limita a la propia TV, para que otros dispositivos de la red no puedan usarlo para ejecutar código en la TV.",
+  "from": "Glasshouse keeps it to the TV itself, so other devices on the network can't use it to run code on the TV."
+ },
+ "server.devtools.off": {
+  "text": "No está en ejecución",
+  "from": "Not running"
+ },
+ "server.devtools.open": {
+  "text": "Abierto a la red",
+  "from": "Open to the network"
+ },
+ "server.devtools.title": {
+  "text": "Acceso al depurador",
+  "from": "Debugger access"
+ },
  "server.experimental": {
   "text": "Funciones experimentales",
   "from": "Experimental features"

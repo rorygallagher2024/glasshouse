@@ -31,7 +31,10 @@ var UPDATE = {
 };
 
 var config = {};
+// Compared against releases. shownVersion is what a person reads, the same
+// version with build metadata when deploy.sh left a build.json.
 var currentVersion = '';
+var shownVersion = '';
 var writeSettingsFn = null;
 var publishUpdateFn = null;
 var publishDiscoveryFn = null;
@@ -61,6 +64,26 @@ function verNewer(a, b) {
   return false;
 }
 
+/*
+ * The version to show: `version` with semver build metadata from the
+ * build.json deploy.sh writes when it deploys from a git clone, as in
+ * 0.80.1+55e51e5 or 0.80.1+55e51e5.dirty. A file recording another version
+ * claims nothing: a release installed over a git build leaves it behind.
+ * Build metadata does not count towards precedence, so comparisons keep using
+ * the bare version.
+ */
+function displayVersion(version, dir) {
+  var file = path.join(dir, 'build.json');
+  var build;
+  try { build = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return version; }
+  if (!build || !/^[0-9a-f]{4,40}$/.test(build.commit)) return version;
+  if (build.version !== version) {
+    console.log('build.json is for v' + build.version + ', not v' + version + '; ignoring it');
+    return version;
+  }
+  return version + '+' + build.commit + (build.dirty ? '.dirty' : '');
+}
+
 function declaredVersion(file) {
   try {
     var m = /TVWEB_VERSION\s*=\s*'([^']+)'/.exec(fs.readFileSync(file, 'utf8').slice(0, 4096));
@@ -78,7 +101,7 @@ function updateSummary() {
   return {
     ok: true,
     state: UPDATE.state,
-    installed: currentVersion,
+    installed: shownVersion,
     latest: UPDATE.latest,
     available: !!(UPDATE.latest && verNewer(UPDATE.latest, currentVersion)),
     url: UPDATE.url,
@@ -136,7 +159,7 @@ function checkForUpdate(force, cb) {
     UPDATE.notes = rel.body ? String(rel.body).slice(0, 800) : null;
     UPDATE.checked = Date.now();
     setUpdateState(verNewer(UPDATE.latest, currentVersion) ? 'available' : 'current');
-    console.log('update: installed v' + currentVersion + ', latest v' + UPDATE.latest +
+    console.log('update: installed v' + shownVersion + ', latest v' + UPDATE.latest +
                 ' (' + UPDATE.state + ', via ' + fetch.client() + ')');
     cb(null, updateSummary());
   });
@@ -331,7 +354,7 @@ function installUpdate(cb) {
 
               rmrf(stageDir, function () {
                 setUpdateState('installed');
-                console.log('update: installed v' + ver + ' over v' + currentVersion +
+                console.log('update: installed v' + ver + ' over v' + shownVersion +
                             ' (' + installed.length + ' files)');
                 done({ ok: true, updated: true, installed: currentVersion, latest: ver,
                        files: installed.length });
@@ -365,7 +388,8 @@ function rollbackUpdate(cb) {
 function init(opts) {
   opts = opts || {};
   if (opts.config) config = opts.config;
-  if (opts.version) currentVersion = opts.version;
+  if (opts.version) currentVersion = shownVersion = opts.version;
+  if (opts.displayVersion) shownVersion = opts.displayVersion;
   fetch.init({ config: opts.config, version: opts.version });
   if (opts.installDir) {
     installDir = opts.installDir;
@@ -395,5 +419,6 @@ module.exports = {
   rollbackUpdate: rollbackUpdate,
   scheduleUpdateChecks: scheduleUpdateChecks,
   setAutoCheck: setAutoCheck,
-  verNewer: verNewer
+  verNewer: verNewer,
+  displayVersion: displayVersion
 };

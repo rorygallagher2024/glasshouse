@@ -1,4 +1,4 @@
-name: traffic
+name: Traffic
 
 # GitHub keeps clone and view counts for 14 days. This adds them to
 # traffic.csv on the traffic-data branch each day, so the history outlasts

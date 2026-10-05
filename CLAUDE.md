@@ -22,6 +22,7 @@ use modern JavaScript.
   (Home Assistant entities), `topics` (MQTT topic names), `mqtt` (the client),
   `mqtt-state` and `state` (live state), `luna` (luna-send calls and
   subscriptions), `notifications`, `privacy` (consent, ad blocking),
+  `devtools` (closing the web app debugger to the network),
   `oled` (panel care, service menu), `lgsettings` (LG's own settings as
   rows), `game`, `apps` (tiles, uninstall, saved pages), `installer` and
   `repo` (installing .ipk packages, the Homebrew Channel catalog),

@@ -3,13 +3,19 @@
 // Releases are cut on the upstream repo, so the tag link points there.
 const REPO = 'https://github.com/rorygallagher2024/lg-webos-dashboard';
 
+// A git build's version carries its commit as build metadata, 0.80.1+55e51e5 or
+// 0.80.1+55e51e5.dirty; releases and the updater know only the part before it.
+const bareVersion = v => String(v || '').split('+')[0];
+
 function setVersion(v) {
   const el = q('version');
   if (!v || el.dataset.v === v) return;   // static between restarts, so set it once
   const had = el.dataset.v;
   el.dataset.v = v;
   el.textContent = 'v' + v;
-  el.href = REPO + '/releases/tag/v' + v;
+  // A git build's version may have no release yet, so it links to its commit.
+  const commit = v.split('+')[1];
+  el.href = commit ? REPO + '/commit/' + commit.split('.')[0] : REPO + '/releases/tag/v' + v;
   el.hidden = false;
   // It came back on a different version, so an upgrade landed: the "newer
   // version" hint beside this is now about the one that is running.
@@ -65,6 +71,18 @@ function renderUpdate(d) {
       on: d.tvUpdatesBlocked,
       disabled: !d.writable
     });
+  }
+
+  // null until the server's first attempt ends; absent from older servers.
+  const dt = q('srv-devtools');
+  if (dt && d.devtools !== undefined) {
+    // 'allowed' is a choice made in config.json, so it is not shown as a fault.
+    dt.className = 'pill ' + (d.devtools === 'closed' ? 'good' : d.devtools === 'open' ? 'bad'
+      : d.devtools === 'allowed' ? 'warn' : 'idle');
+    dt.textContent = d.devtools === 'closed' ? t('server.devtools.closed', 'Closed to the network')
+      : d.devtools === 'open' || d.devtools === 'allowed' ? t('server.devtools.open', 'Open to the network')
+      : d.devtools === 'off' ? t('server.devtools.off', 'Not running')
+      : '\u2014';
   }
 
   if (typeof d.allowTileHiding === 'boolean') {
@@ -134,7 +152,7 @@ function noteArrival(d) {
   p.delete('updated');
   p.delete('rolledback');
   history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
-  if (d.installed === (up || back)) {
+  if (bareVersion(d.installed) === (up || back)) {
     updArrival = up ? t('server.arrived.updated', 'Updated to v{version}.', { version: up })
       : t('server.arrived.rolledBack', 'Rolled back to v{version}.', { version: back });
     q('upd-msg').textContent = updArrival;
@@ -215,7 +233,7 @@ async function awaitRestart(version, doneLabel, param, confirmed, oldVersion) {
   for (;;) {
     await new Promise(res => setTimeout(res, 1500));
     const d = await fetchJson(api('/api/update'), {}, 3000);
-    if (d && d.installed === version) break;
+    if (d && bareVersion(d.installed) === version) break;
     if (d && !confirmed && d.installed === oldVersion && !/checking|downloading|installing/.test(d.state)) {
       updRestarting = false;
       updBusy = false;

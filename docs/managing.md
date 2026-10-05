@@ -30,6 +30,8 @@ git pull
 
 Only the server's own files are replaced; settings are kept.
 
+A server deployed from a git clone shows the commit it was built from after its version, as `0.80.1+55e51e5`, with `.dirty` added when files under `server/` had uncommitted changes. A release installed later shows its plain version.
+
 Previous versions are saved to allow instant rollback via `tvwebctl rollback`.
 
 See [docs/IMPLEMENTATION.md](IMPLEMENTATION.md#in-place-updater-and-binary-probing) for client probing order and manual rollback details.

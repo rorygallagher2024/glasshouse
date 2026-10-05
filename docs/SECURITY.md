@@ -77,6 +77,19 @@ it before exposing it more widely.
 - Remember the wider context: rooted webOS exposes an **unauthenticated root
   telnet on port 23**. That is a far bigger exposure than this server, and it
   is worth closing off if you have not already.
+- **The web app debugger is closed to the network.** Developer Mode, which a
+  rooted TV keeps on, opens WebAppMgr's DevTools on port 9998 to anyone on the
+  network, with no login. Every Homebrew app is inspectable, so that is code
+  running inside the Homebrew Channel, whose service runs as root, or inside
+  the on-TV app, which needs no token. The server drops the port at its firewall
+  on every interface but loopback when it starts. The rule is in memory only:
+  it goes at a reboot and comes back when the server starts. DevTools remains
+  reachable over ssh with `ssh -L 9998:localhost:9998 root@<tv-ip>` and
+  `http://localhost:9998`. Where the kernel has no `ip6_tables` (a C1, webOS 6)
+  the rule covers IPv4 only, which leaves the port open on any IPv6 address the
+  TV has. `{ "allowNetworkDebugger": true }` in `config.json` leaves the port
+  open for `ares-inspect`, and the server takes out a rule left by an earlier
+  start. Uninstalling from the Homebrew Channel removes the rule too.
 
 ---
 
