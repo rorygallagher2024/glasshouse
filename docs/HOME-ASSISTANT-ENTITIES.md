@@ -21,6 +21,8 @@ Every entity the TV publishes, by category. Which categories are published is se
 | `select` | `select.lg_tv_energy_saving` | Energy Saving Step | Auto, Off, Minimum, Medium, Maximum, Screen off |
 | `select` | `select.lg_tv_sound_output` | Sound Output | Switch outputs (TV Speaker, HDMI ARC, Optical, Headphone) |
 | `select` | `select.lg_tv_sleep_timer` | Sleep Timer | Off, 10, 30, 60, 90, 120 minutes |
+| `switch` | `switch.lg_tv_on_timer` | On Timer | LG's On Timer, with its time and repeat days as attributes. The time and days are set on the dashboard |
+| `switch` | `switch.lg_tv_off_timer` | Off Timer | LG's Off Timer, with its time and repeat days as attributes. The time and days are set on the dashboard |
 | `button` | `button.lg_tv_volume_up` | Volume Up | One step up, as the remote's key; reaches an HDMI ARC/eARC receiver that takes no set level. Unavailable over optical |
 | `button` | `button.lg_tv_volume_down` | Volume Down | One step down, as the remote's key. Unavailable over optical |
 | `button` | `button.lg_tv_remote_up` | Remote Up | Presses Up on the remote |

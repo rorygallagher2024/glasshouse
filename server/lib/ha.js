@@ -181,6 +181,8 @@ var HA_ENTITIES = [
   { id: 'audio_output', type: 'sensor', name: 'Audio Output', cat: 'diagnostics' },
   { id: 'remote_battery', type: 'sensor', name: 'Magic Remote Battery', cat: 'diagnostics' },
   { id: 'sleep_timer', type: 'select', name: 'Sleep Timer', cat: 'diagnostics' },
+  { id: 'on_timer', type: 'switch', name: 'On Timer', cat: 'diagnostics' },
+  { id: 'off_timer', type: 'switch', name: 'Off Timer', cat: 'diagnostics' },
   { id: 'standby_light', type: 'switch', name: 'Standby Light', cat: 'diagnostics' },
   { id: 'logo_light', type: 'switch', name: 'Logo Light', cat: 'diagnostics' },
   { id: 'ad_blocker', type: 'switch', name: 'Ad Blocker', cat: 'diagnostics' },
@@ -383,6 +385,30 @@ function clearRetired(publishFn, discPfx, devId) {
     publishFn(discPfx + '/' + RETIRED_ENTITIES[r].type + '/' + devId + '/' +
               RETIRED_ENTITIES[r].id + '/config', '', true);
   }
+}
+
+/*
+ * LG's On or Off Timer as a switch, with its time and repeat days as
+ * attributes. The time and days are set from the dashboard.
+ */
+function powerTimerPayload(topic, which, name, icon) {
+  var timer = '(value_json.powerTimers or {}).get("' + which + '")';
+  return {
+    name: name,
+    command_topic: topic.command('powerTimer/' + which),
+    state_topic: topic.telemetry,
+    json_attributes_topic: topic.telemetry,
+    value_template: '{{ "ON" if ' + timer + ' and ' + timer + '.enabled else "OFF" }}',
+    json_attributes_template: '{% set t = ' + timer + ' %}' +
+      '{% set names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] %}' +
+      '{% set ns = namespace(days=[]) %}{% for d in (t.days if t else []) %}{% set ns.days = ns.days + [names[d]] %}{% endfor %}' +
+      '{{ {"time": t.time, "days": ns.days} | tojson if t else "{}" }}',
+    payload_on: 'on',
+    payload_off: 'off',
+    state_on: 'ON',
+    state_off: 'OFF',
+    icon: icon
+  };
 }
 
 function buildEntities(opts) {
@@ -1058,6 +1084,14 @@ function buildEntities(opts) {
         }
       },
       {
+        type: 'switch', id: 'on_timer',
+        payload: powerTimerPayload(topic, 'on', 'On Timer', 'mdi:alarm')
+      },
+      {
+        type: 'switch', id: 'off_timer',
+        payload: powerTimerPayload(topic, 'off', 'Off Timer', 'mdi:alarm-off')
+      },
+      {
         type: 'switch', id: 'standby_light',
         payload: {
           name: 'Standby LED',
@@ -1444,6 +1478,10 @@ function filterWithholds(entities, opts) {
   if (!caps.socArch) withhold(byId('soc_architecture'));
 
   if (caps.hasLogoLight === false) withhold(byId('logo_light'));
+
+  // Known only once the TV's settings have been read; until then both stay.
+  if (caps.hasOnTimer === false) withhold(byId('on_timer'));
+  if (caps.hasOffTimer === false) withhold(byId('off_timer'));
 
   if (!caps.thermalPresent) withhold(byId('soc_temperature'));
 

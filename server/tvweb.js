@@ -1148,6 +1148,15 @@ function setupHomeAssistant() {
       return;
     }
 
+    // LG's On or Off Timer, switched on or off: powerTimer/on or powerTimer/off.
+    if (action === 'powerTimer/on' || action === 'powerTimer/off') {
+      doControl('powerTimer', { timer: action.substring(11), enabled: val.toUpperCase() === 'ON' }, function (r) {
+        if (!r || !r.ok) console.log('mqtt: ' + action + ' not set: ' + JSON.stringify(r));
+        setTimeout(publishTelemetry, 400);
+      });
+      return;
+    }
+
     // One of LG's own settings: lgs/<row>, as ha.js publishes them.
     if (action.indexOf('lgs/') === 0) {
       var lgsRow = action.substring(4);
