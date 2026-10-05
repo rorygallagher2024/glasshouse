@@ -415,8 +415,14 @@ async function tick() {
       const ctl = d.volume_control || (d.volume === null ? 'none' : 'level');
       const level = ctl === 'level';
       const settling = Date.now() < volSettleUntil;
+      /* On HDMI ARC the slider sets the TV's own level, which a receiver that
+         keeps its own may ignore while still following the remote's keys
+         (a C1 with an AV receiver on eARC, #437), so - and + show beside it. */
+      const arc = /arc/.test((d.sound && d.sound.output_raw) || '');
+      const steps = ctl === 'steps' || (level && arc);
+      if (q('vol-row')) q('vol-row').classList.toggle('both', level && steps);
       if (q('vol-steps')) {
-        q('vol-steps').hidden = ctl !== 'steps';
+        q('vol-steps').hidden = !steps;
         q('vol-steps').querySelectorAll('button').forEach(b => { b.disabled = settling; });
       }
       if (q('vol-wrap')) {

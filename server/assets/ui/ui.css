@@ -299,6 +299,8 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
 .vol-wrap.off:hover{border-color:var(--edge)}
 /* In the slider's place when only up and down reach the sound device. */
 .vol-steps{grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* With the slider too, - and + go on a row of their own beneath it. */
+.vol-row.both #mute{grid-row:1;grid-column:3}
 .vol-steps button{min-height:48px;font-size:22px;font-weight:300;line-height:1}
 #picmodes,#energysteps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
 #picmodes button,#energysteps button{
