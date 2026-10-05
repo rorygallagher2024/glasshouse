@@ -55,7 +55,7 @@ var luna = lunaTransport.call;
  * a link to /releases/tag/v<version>, so a value with no tag behind it gives a
  * 404 rather than a wrong page.
  */
-var TVWEB_VERSION = '0.80.1';
+var TVWEB_VERSION = '0.80.2';
 // What a person is shown: the same, plus the commit when deploy.sh installed it
 // from a git clone. Anything that compares versions uses TVWEB_VERSION.
 var TVWEB_DISPLAY_VERSION = updater.displayVersion(TVWEB_VERSION, __dirname);
