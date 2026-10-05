@@ -1119,14 +1119,6 @@
   "text": "Uso detallado de CPU",
   "from": "Detailed CPU usage"
  },
- "metrics.current": {
-  "text": "Actual",
-  "from": "Current"
- },
- "metrics.draw.split": {
-  "text": "Procesador {cpu} mA · Plataforma {core} mA",
-  "from": "Processor {cpu} mA · Platform {core} mA"
- },
  "metrics.firmware": {
   "text": "Firmware",
   "from": "Firmware"

@@ -46,7 +46,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 5. **[Integrating the TV with a smart home](HOME-ASSISTANT.md).** The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients.
 
-6. **[Seeing what the TV is actually doing](dashboard/metrics.md).** SoC temperature, per-core CPU load, memory, swap, current draw, Wi-Fi signal and throughput.
+6. **[Seeing what the TV is actually doing](dashboard/metrics.md).** SoC temperature, per-core CPU load, memory, swap, Wi-Fi signal and throughput.
 
 7. **[Observing OLED panel wear](dashboard/oled-care.md).** Cumulative panel hours, compensation cycle progress, Pixel Refresher countdown with scheduling, completed cycle counters and refresher failure alerts.
 

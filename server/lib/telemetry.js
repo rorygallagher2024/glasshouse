@@ -1152,11 +1152,6 @@ function collectStats(cb) {
   } else {
     coreLoads = coreSlots;
   }
-  var cpuAvsMatch = status.match(/cpuavs_current\(mA\):\s*(\d+)/);
-  var coreAvsMatch = status.match(/coreavs_current\(mA\):\s*(\d+)/);
-  var cpuMa = cpuAvsMatch ? parseInt(cpuAvsMatch[1], 10) : null;
-  var coreMa = coreAvsMatch ? parseInt(coreAvsMatch[1], 10) : null;
-  var totalMa = (cpuMa !== null && coreMa !== null) ? (cpuMa + coreMa) : null;
 
   var n = netBytes();
   var rate = null;
@@ -1222,11 +1217,6 @@ function collectStats(cb) {
     hdmi_diag: null,
     picture_engine: peInfo,
     colorimetry: peInfo ? peInfo.colorimetry : null,
-    power: {
-      cpu_ma: cpuMa,
-      core_ma: coreMa,
-      current_ma: totalMa
-    },
     inputs: inputNameMap
   };
 

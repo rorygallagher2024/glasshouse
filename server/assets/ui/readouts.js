@@ -6,12 +6,11 @@ const ROWS = [
   { k: 'cpu',   label: t('metrics.processor', 'Processor'), warn: 85 },
   { k: 'mem',   label: t('metrics.memory', 'Memory'),       warn: 90 },
   { k: 'swap',  label: t('metrics.swap', 'Swap'),           warn: 70 },
-  /* Throughput and draw have no threshold to cross - warn: 101 was the tell.
-     A level hue on them would be a lie, and the fixed blue and amber they used
-     to carry read as level anyway, sitting in a column where every other bar
-     meant exactly that. Their domain shows on the unit instead. */
-  { k: 'net',   label: t('metrics.network', 'Network'),    warn: 101, flat: true },
-  { k: 'draw',  label: t('metrics.current', 'Current'),    warn: 101, flat: true }
+  /* Throughput has no threshold to cross - warn: 101 was the tell. A level
+     hue on it would be a lie, and the fixed blue it used to carry read as
+     level anyway, sitting in a column where every other bar meant exactly
+     that. Its domain shows on the unit instead. */
+  { k: 'net',   label: t('metrics.network', 'Network'),    warn: 101, flat: true }
 ];
 const FLAT = Object.fromEntries(ROWS.map(r => [r.k, !!r.flat]));
 
@@ -325,7 +324,6 @@ async function tick() {
 
     // Wired sets report no wlan0; hide rather than showing a blank signal.
     q('row-net').hidden = !(d.wifi || d.net);
-    q('row-draw').hidden = !(d.power && d.power.current_ma);
     const rx = d.net ? (d.net.rx / 1024) : 0, tx = d.net ? (d.net.tx / 1024) : 0;
     /* Totals are per-interface and come from whichever link the rate was
        measured on, so a Wi-Fi set reads its own counters, not a dormant eth0. */
@@ -337,10 +335,6 @@ async function tick() {
     if (nt) netParts.push('↓ ' + bytes(nt.rx) + ' ↑ ' + bytes(nt.tx));
     row('net', rx.toFixed(0) + '<small>kB/s</small>', Math.min(100, rx / 20),
         netParts.join('  ·  ') || t('metrics.net.connected', 'Connected'), 101);
-
-    const ma = (d.power && d.power.current_ma) || 0;
-    row('draw', ma + '<small>mA</small>', Math.min(100, ma / 4),
-        d.power ? t('metrics.draw.split', 'Processor {cpu} mA · Platform {core} mA', { cpu: d.power.cpu_ma, core: d.power.core_ma }) : '', 101);
 
     // Hardware & System Specifications
     let hasHw = false;

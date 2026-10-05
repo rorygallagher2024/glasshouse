@@ -2,3 +2,4 @@
 # line as <domain>.<id>, then why. check-entity-stability.py fails on an
 # entity that has gone without being listed here. Lines can be cleared once
 # the release that removed the entity is out.
+sensor.soc_current  read the SoC's factory leakage figures, fixed per chip, not a live current draw (#476)

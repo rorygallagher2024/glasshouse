@@ -170,7 +170,6 @@ var HA_ENTITIES = [
   { id: 'upload_rate', type: 'sensor', name: 'Upload Rate', cat: 'system' },
   { id: 'flash_health', type: 'sensor', name: 'Flash Storage Health', cat: 'system' },
   { id: 'flash_wear', type: 'sensor', name: 'Flash Wear Level', cat: 'system' },
-  { id: 'soc_current', type: 'sensor', name: 'SoC Current', cat: 'system' },
   { id: 'soc_architecture', type: 'sensor', name: 'SoC Architecture', cat: 'system' },
   { id: 'gpu_clock', type: 'sensor', name: 'GPU Clock', cat: 'system' },
   { id: 'app_storage_free', type: 'sensor', name: 'App Storage Available', cat: 'system' },
@@ -663,18 +662,6 @@ function buildEntities(opts) {
           state_topic: topic.telemetry,
           value_template: '{{ value_json.audio_output or "Internal" }}',
           icon: 'mdi:speaker'
-        }
-      },
-      {
-        type: 'sensor', id: 'soc_current',
-        payload: {
-          name: 'SoC Current',
-          state_topic: topic.telemetry,
-          value_template: '{{ value_json.power.current_ma if value_json.power else 0 }}',
-          unit_of_measurement: 'mA',
-          device_class: 'current',
-          state_class: 'measurement',
-          icon: 'mdi:current-ac'
         }
       },
       {
@@ -1384,7 +1371,7 @@ var OFF_TEXT = ['active_app', 'play_state', 'dynamic_range', 'video_signal', 'hd
 var OFF_BINARY = ['hdmi_allm', 'hdmi_vrr', 'screen_saver_active', 'oled_asbl_dimmer'];
 var AWAKE_ONLY = {
   soc_temperature: 1, cpu_load: 1, memory_usage: 1, swap_usage: 1, wifi_signal: 1, gpu_clock: 1,
-  ambient_light: 1, soc_current: 1, download_rate: 1, upload_rate: 1
+  ambient_light: 1, download_rate: 1, upload_rate: 1
 };
 
 // Entities that send commands, which need the server awake to receive them.
