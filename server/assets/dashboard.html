@@ -359,7 +359,7 @@ function sysRows(d) {
   if (!d || !d.ok) return [];
   var r = [];
   r.push(head(t('tv.system.head.load', 'Load')));
-  if (d.temp !== null && d.temp !== undefined) r.push({ label: t('metrics.temperature', 'Temperature'), value: withUnit(d.temp, '°C'),
+  if (d.temp !== null && d.temp !== undefined && (!d.capabilities || d.capabilities.thermal !== false)) r.push({ label: t('metrics.temperature', 'Temperature'), value: withUnit(d.temp, '°C'),
     hint: t('tv.system.temperature.hint', 'The main processor (SoC) sensor, not the panel. It climbs with video decoding and CPU workload.') });
   if (d.load !== null && d.load !== undefined) r.push({ label: t('tv.system.cpuLoad', 'CPU load'), value: withUnit(d.load, '%'),
     hint: t('tv.system.cpuLoad.hint', 'Across all cores. Brief peaks while an app opens are normal; a sustained high figure with nothing playing is not.') });

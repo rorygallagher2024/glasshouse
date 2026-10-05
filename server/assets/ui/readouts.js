@@ -285,6 +285,7 @@ async function tick() {
     // Never push null into hist: Math.min/max coerce it to 0, which is where
     // the old "MIN 0 MAX 0" came from on sensorless sets.
     const noThermal = !!(d.capabilities && d.capabilities.thermal === false);
+    if (q('tempblock')) q('tempblock').hidden = noThermal;
     const hasTemp = !(d.temp === null || d.temp === undefined);
     q('temp').textContent = hasTemp ? d.temp : '\u2014';
     q('degsym').hidden = !hasTemp;
