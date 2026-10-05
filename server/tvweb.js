@@ -818,9 +818,6 @@ function setupHomeAssistant() {
     return publishRaw.call(mqttClient, topic, message, retain);
   };
 
-  // Entities that send commands, which need the server awake to receive them.
-  var CONTROL_TYPES = { 'switch': 1, 'select': 1, 'number': 1, 'button': 1, 'text': 1 };
-
   function publishDiscovery() {
     ha.clearRetired(function (topic, payload, retain) {
       mqttClient.publish(topic, payload, retain);
@@ -855,12 +852,7 @@ function setupHomeAssistant() {
       var conf = item.payload;
       conf.unique_id = devId + '_' + item.id;
       conf.device = devInfo;
-      conf.availability_topic = mqttTopics.status;
-      conf.availability_template = CONTROL_TYPES[item.type] || ha.AWAKE_ONLY[item.id]
-        ? "{{ 'online' if value in ['online', 'off'] else 'offline' }}"
-        : "{{ 'offline' if value == 'offline' else 'online' }}";
-      conf.payload_available = 'online';
-      conf.payload_not_available = 'offline';
+      ha.withAvailability(item, mqttTopics.status);
 
       var discTopic = discPfx + '/' + item.type + '/' + devId + '/' + item.id + '/config';
       mqttClient.publish(discTopic, JSON.stringify(conf), true);

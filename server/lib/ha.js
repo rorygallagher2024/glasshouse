@@ -1353,6 +1353,36 @@ var AWAKE_ONLY = {
   ambient_light: 1, soc_current: 1, download_rate: 1, upload_rate: 1
 };
 
+// Entities that send commands, which need the server awake to receive them.
+var CONTROL_TYPES = { 'switch': 1, 'select': 1, 'number': 1, 'button': 1, 'text': 1 };
+
+/*
+ * Whether Home Assistant shows an entity as available, from the status topic:
+ * controls and live readings only while the TV is up, everything else unless
+ * the server itself is gone. An entity with an availability list of its own
+ * (volume and mute, from telemetry's volume_control) gets the status check
+ * added to that list, with both required. Home Assistant rejects a config
+ * that has the list and availability_topic together (#437), and so created
+ * none of those four entities.
+ */
+function withAvailability(item, statusTopic) {
+  var conf = item.payload;
+  var template = CONTROL_TYPES[item.type] || AWAKE_ONLY[item.id]
+    ? "{{ 'online' if value in ['online', 'off'] else 'offline' }}"
+    : "{{ 'offline' if value == 'offline' else 'online' }}";
+  if (Array.isArray(conf.availability)) {
+    // A new list: the entity's own may be shared with others.
+    conf.availability = [{ topic: statusTopic, value_template: template }].concat(conf.availability);
+    conf.availability_mode = 'all';
+    return conf;
+  }
+  conf.availability_topic = statusTopic;
+  conf.availability_template = template;
+  conf.payload_available = 'online';
+  conf.payload_not_available = 'offline';
+  return conf;
+}
+
 function withOffStates(entities) {
   var when = {};
   OFF_TEXT.forEach(function (id) { when[id] = '"Off"'; });
@@ -1462,6 +1492,7 @@ module.exports = {
   PIC_MODE_MAP: PIC_MODE_MAP,
   picModeName: picModeName,
   AWAKE_ONLY: AWAKE_ONLY,
+  withAvailability: withAvailability,
   HA_CATEGORIES: HA_CATEGORIES,
   HA_ENTITIES: HA_ENTITIES,
   ENTITY_CATEGORIES: ENTITY_CATEGORIES,

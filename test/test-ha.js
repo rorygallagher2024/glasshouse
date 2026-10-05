@@ -255,6 +255,30 @@ console.log('Running test-ha.js ...');
   console.log('  ✓ the ad blocker switch turns on Ads & telemetry, not Everything');
 })();
 
+// Every discovery config has one form of availability: Home Assistant
+// rejects a config with an availability list and availability_topic together,
+// which left volume, mute and the volume buttons uncreated (#437)
+(function testAvailabilityOneForm() {
+  var all = ha.buildEntities({ pfx: 'test/tv', allowPower: true, isOled: true });
+  all.forEach(function (e) { ha.withAvailability(e, 'test/tv/status'); });
+  all.forEach(function (e) {
+    var c = e.payload;
+    assert.ok(!(c.availability && c.availability_topic), e.id + ' has both forms of availability');
+  });
+  var byId = {};
+  all.forEach(function (e) { byId[e.id] = e.payload; });
+  ['volume', 'mute', 'volume_up', 'volume_down'].forEach(function (id) {
+    var a = byId[id].availability;
+    assert.strictEqual(a.length, 2, id + ': the status check and its own, once each');
+    assert.strictEqual(a[0].topic, 'test/tv/status');
+    assert.strictEqual(a[1].topic, 'test/tv/telemetry');
+    assert.strictEqual(byId[id].availability_mode, 'all');
+  });
+  assert.strictEqual(byId.input_source.availability_topic, 'test/tv/status', 'the rest keep the flat form');
+  assert.strictEqual(byId.input_source.payload_available, 'online');
+  console.log('  ✓ no discovery config has both forms of availability, and volume needs both checks');
+})();
+
 // PicCap's switch, only while PicCap answers
 (function testPiccap() {
   var on = ha.buildEntities({ pfx: 'test/tv', piccap: true }).filter(function (e) { return e.id === 'piccap'; });
