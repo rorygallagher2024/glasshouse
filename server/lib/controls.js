@@ -4,6 +4,7 @@ var toInt = require('./util').toInt;
 var execFile = require('child_process').execFile;
 var msg = require('./say').msg;
 var zeroBuffer = require('./mqtt').zeroBuffer;
+var timers = require('./timers');
 
 /*
  * Measured on a B8 against the built-in player, watching playStateNow move:
@@ -572,6 +573,13 @@ function doControl(action, value, cb) {
                     telemetry.clearCache();
                     cb({ ok: !!(r && r.returnValue) });
                   });
+
+    // LG's On or Off Timer: { timer: 'on' or 'off', enabled, time, days }.
+    case 'powerTimer':
+      return timers.set(luna, value, function (r) {
+        telemetry.clearCache();
+        cb(r);
+      });
 
     // One of lgsettings.js's rows: { id, on } for a switch, { id, value } otherwise.
     case 'lgSetting':

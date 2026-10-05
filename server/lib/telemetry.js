@@ -14,6 +14,7 @@ var toInt = require('./util').toInt;
 var path = require('path');
 var execFile = require('child_process').execFile;
 var ha = require('./ha');
+var timers = require('./timers');
 
 var SOUND_OUTPUT_MAP = ha.SOUND_OUTPUT_MAP;
 
@@ -1264,9 +1265,11 @@ function collectStats(cb) {
     out.screensaverMode = screensaversModule ? screensaversModule.screensaverMode() : 'stock';
     out.screensaverLevel = screensaversModule ? screensaversModule.screensaverLevel() : 'dim';
 
+  // The whole category, for the sleep timer and LG's On and Off Timers.
   lunaCachedFn('com.webos.service.settings/getSystemSettings',
-       { category: 'time', keys: ['sleepTimer'] }, 30000, function (tm) {
+       { category: 'time' }, 30000, function (tm) {
     out.sleepTimer = (tm && tm.settings && tm.settings.sleepTimer) || 'off';
+    out.powerTimers = timers.fromSettings(tm && tm.returnValue !== false ? tm.settings : null);
 
   lunaCachedFn('com.webos.service.settings/getSystemSettings',
        { category: 'option', keys: ['standByLight', 'logoLight', 'powerOnLight', 'quickStartMode'] }, 60000, function (op) {

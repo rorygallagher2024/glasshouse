@@ -131,6 +131,12 @@ function applyOptimistic(action, value) {
     const on = value === 'on' || value === true;
     setLease('alwaysReadyScreen', on);
     advPill('ars', 'btn_ars', on);
+  } else if (action === 'powerTimer') {
+    const cur = shownPowerTimer(value.timer);
+    if (cur) {
+      setLease('powerTimer.' + value.timer, powerTimerKey(Object.assign({}, cur, value)));
+      powerTimerRows(lastPowerTimers);
+    }
   } else if (action === 'wakeOnLan') {
     const on = value === 'on' || value === true;
     setLease('wakeOnLan', on);
@@ -186,6 +192,66 @@ async function sendCommand(action, value) {
     setBusy(false);
   }
 }
+/* LG's On and Off Timers. Each timer's row shows only where the TV has it.
+   A change is held by a lease until the TV reports it, as the switches are. */
+let lastPowerTimers = null;
+function powerTimerKey(tm) {
+  return JSON.stringify({ enabled: !!tm.enabled, time: tm.time, days: tm.days.slice().sort() });
+}
+function shownPowerTimer(which) {
+  const tm = lastPowerTimers && lastPowerTimers[which];
+  if (!tm) return null;
+  const leased = getLease('powerTimer.' + which, powerTimerKey(tm));
+  return leased !== undefined ? Object.assign({}, tm, JSON.parse(leased)) : tm;
+}
+function powerTimerDayLabels() {
+  return [t('adv.timer.sun', 'Sun'), t('adv.timer.mon', 'Mon'), t('adv.timer.tue', 'Tue'), t('adv.timer.wed', 'Wed'),
+          t('adv.timer.thu', 'Thu'), t('adv.timer.fri', 'Fri'), t('adv.timer.sat', 'Sat')];
+}
+function powerTimerRows(timers) {
+  lastPowerTimers = timers || null;
+  ['on', 'off'].forEach(which => {
+    const row = q('row-' + which + 'timer');
+    if (!row) return;
+    const tm = shownPowerTimer(which);
+    row.hidden = !tm;
+    if (!tm) return;
+    advPill(which + 'timer', 'btn_' + which + 'timer', tm.enabled);
+    const time = q('time_' + which + 'timer');
+    if (time && document.activeElement !== time) time.value = tm.time;
+    const days = q('days_' + which + 'timer');
+    if (days && !days.children.length) {
+      // Monday first, as LG's menu lists them; the value is LG's, Sunday as 0.
+      const labels = powerTimerDayLabels();
+      [1, 2, 3, 4, 5, 6, 0].forEach(d => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = labels[d];
+        b.dataset.day = String(d);
+        b.onclick = () => togglePowerTimerDay(which, d);
+        days.appendChild(b);
+      });
+    }
+    if (days) for (const b of days.children) b.classList.toggle('on', tm.days.indexOf(Number(b.dataset.day)) !== -1);
+  });
+  const note = q('ontimer-autooff');
+  if (note) note.hidden = !(timers && timers.on && timers.on.autoOff);
+}
+function setPowerTimer(which, patch) {
+  if (patch.time === '') return;
+  sendCommand('powerTimer', Object.assign({ timer: which }, patch));
+}
+function togglePowerTimer(which) {
+  const tm = shownPowerTimer(which);
+  if (tm) setPowerTimer(which, { enabled: !tm.enabled });
+}
+function togglePowerTimerDay(which, day) {
+  const tm = shownPowerTimer(which);
+  if (!tm) return;
+  const days = tm.days.indexOf(day) === -1 ? tm.days.concat([day]) : tm.days.filter(d => d !== day);
+  setPowerTimer(which, { days: days.sort() });
+}
+
 // Shown only while Always-on is on: with it off, the TV sleeps every night anyway.
 function arOffRow(win) {
   const row = q('row-aroff'), sel = q('sel_aroff');

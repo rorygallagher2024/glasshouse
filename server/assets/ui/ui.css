@@ -784,6 +784,13 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
   max-width:62ch;
 }
 .prot-status{flex-shrink:0}
+.timer-ctl{display:flex;gap:8px;align-items:center}
+.timer-ctl input[type=time]{min-width:0;width:112px}
+.timer-days{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.timer-days button{min-width:42px;height:28px;padding:0 8px;font:500 11px 'Manrope';letter-spacing:.06em;
+  color:var(--w60);background:transparent;border:1px solid var(--edge);border-radius:2px;cursor:pointer}
+.timer-days button.on{color:var(--green);border-color:var(--green)}
+@media (max-width:560px){#row-ontimer,#row-offtimer{flex-wrap:wrap}}
 /* The disabled "Updates through Homebrew Channel" button is wider than a phone's spare width. */
 #apps-catalog-list .prot-row{flex-wrap:wrap}
 #apps-catalog-list .prot-main{flex:1 1 160px}
