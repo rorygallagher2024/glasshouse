@@ -96,7 +96,15 @@ const QUIET_MS = 500, MAX_MS = 4000;
 async function visit(browser, url, label, problems) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on('pageerror', e => problems.push(label + ': ' + e.message));
-  page.on('console', m => { if (m.type() === 'error') problems.push(label + ': console: ' + m.text()); });
+  // A failed request is reported with its address, which Chrome's console
+  // line leaves out. Chrome, unlike the bundled browser, asks for a favicon
+  // the server does not have.
+  page.on('console', m => {
+    if (m.type() === 'error' && !/^Failed to load resource/.test(m.text())) problems.push(label + ': console: ' + m.text());
+  });
+  page.on('response', r => {
+    if (r.status() >= 400 && !/\/favicon\.ico$/.test(r.url())) problems.push(label + ': ' + r.status() + ' for ' + r.url());
+  });
   let open = 0, last = Date.now();
   page.on('request', () => { open++; last = Date.now(); });
   const done = () => { open = Math.max(0, open - 1); last = Date.now(); };
