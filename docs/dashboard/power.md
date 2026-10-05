@@ -13,3 +13,9 @@ The switch is under **Advanced &rarr; Power** in the web dashboard and **System 
 ## Always Ready
 
 On TVs that have LG's Always Ready, the **Always Ready** switch under **Advanced &rarr; Power** makes the TV show LG's Always Ready screen, such as a clock or artwork, when it is switched off with the remote, instead of going dark. It is close to being on: an OLED42C24LA draws 31 W showing the clock. The dashboard and Home Assistant show the TV as switched off while it is up. It takes effect the next time the TV is switched off. The first time, the TV asks for OK on the remote. Home turns the TV back on from the clock; the power button switches it fully off, as in LG's own menu.
+
+## On and Off Timers
+
+LG's On Timer and Off Timer switch the TV on or off at a set time, once or on chosen days of the week. Both are under **Advanced &rarr; Power** in the web dashboard, with the time and the days. The TV dashboard shows them under **System &rarr; Power** and switches them on and off; the time and days are set from the browser.
+
+A TV switched on by the On Timer goes back off after two hours without a button press, while LG's own setting for that is on. An On Timer set to Live TV with no channel, as on a TV never tuned, turns the TV on to Home instead when switched on here, as LG's own menu does on a TV without a tuner.
