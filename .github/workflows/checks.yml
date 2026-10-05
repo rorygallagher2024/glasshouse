@@ -1,5 +1,5 @@
 # Offline checks that need nothing but the repository (and Node for tests/types).
-name: checks
+name: Checks
 
 # Branch pushes run through their PR, so a push to one runs once rather than
 # once per event. A branch without a PR can be run by hand.
@@ -12,6 +12,7 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    name: Lint and types
     steps:
       - uses: actions/checkout@v7
         with:
@@ -59,7 +60,7 @@ jobs:
   # Its own job, so it builds alongside the rest.
   package:
     runs-on: ubuntu-latest
-    name: Homebrew Channel package builds
+    name: Package build
     steps:
       - uses: actions/checkout@v7
       - run: npm install -g @webos-tools/cli@3.2.6 && python3 scripts/build-ipk.py
@@ -74,7 +75,7 @@ jobs:
       fail-fast: false
       matrix:
         node: ['0.12', '8.12', '16', '20', '24']
-    name: unit tests on node ${{ matrix.node }}
+    name: Unit tests (Node ${{ matrix.node }})
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
