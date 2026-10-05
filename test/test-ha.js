@@ -335,4 +335,19 @@ console.log('Running test-ha.js ...');
   console.log('  ✓ the HDMI error count is retired');
 })();
 
+// defaultEntityId provides valid Home Assistant entity IDs, slugifying device IDs
+(function testDefaultEntityId() {
+  assert.strictEqual(ha.defaultEntityId('switch', 'lg_c9', 'mute'), 'switch.lg_c9_mute');
+  assert.strictEqual(ha.defaultEntityId('sensor', 'lg_b8_tv', 'soc_temperature'), 'sensor.lg_b8_tv_soc_temperature');
+  // Hyphens, uppercase, and spaces are sanitized to underscores
+  assert.strictEqual(ha.defaultEntityId('switch', 'LG-C9', 'on_timer'), 'switch.lg_c9_on_timer');
+  assert.strictEqual(ha.defaultEntityId('sensor', 'Living Room TV', 'active_app'), 'sensor.living_room_tv_active_app');
+  assert.strictEqual(ha.defaultEntityId('button', '__LG_TV__', 'restart'), 'button.lg_tv_restart');
+  // Empty or missing device id produces domain.item_id
+  assert.strictEqual(ha.defaultEntityId('number', '', 'volume'), 'number.volume');
+  assert.strictEqual(ha.defaultEntityId('select', null, 'sound_output'), 'select.sound_output');
+  console.log('  ✓ defaultEntityId generates valid, sanitized Home Assistant entity IDs');
+})();
+
 console.log('ALL test-ha.js assertions passed!\n');
+

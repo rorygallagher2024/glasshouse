@@ -875,6 +875,7 @@ function setupHomeAssistant() {
       var item = entities[i];
       var conf = item.payload;
       conf.unique_id = devId + '_' + item.id;
+      conf.default_entity_id = ha.defaultEntityId(item.type, devId, item.id);
       conf.device = devInfo;
       ha.withAvailability(item, mqttTopics.status);
 

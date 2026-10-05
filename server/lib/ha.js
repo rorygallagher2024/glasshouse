@@ -1404,6 +1404,17 @@ function withAvailability(item, statusTopic) {
   return conf;
 }
 
+/*
+ * Suggests an initial entity_id to Home Assistant's MQTT discovery.
+ * Without default_entity_id, Home Assistant derives new entity IDs from
+ * the user's customized device name and area (e.g. Living Room TV Diagnostics)
+ * rather than devId (e.g. lg_c9).
+ */
+function defaultEntityId(type, devId, itemId) {
+  var devSlug = (devId || '').toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+  return type + '.' + (devSlug ? devSlug + '_' : '') + itemId;
+}
+
 function withOffStates(entities) {
   var when = {};
   OFF_TEXT.forEach(function (id) { when[id] = '"Off"'; });
@@ -1529,5 +1540,6 @@ module.exports = {
   OLED_ONLY: OLED_ONLY,
   clearRetired: clearRetired,
   buildEntities: buildEntities,
-  filterWithholds: filterWithholds
+  filterWithholds: filterWithholds,
+  defaultEntityId: defaultEntityId
 };
