@@ -303,4 +303,26 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ Backlight sets the current picture mode\'s level, 0 to 100');
 })();
 
+// A volume step is the remote's own key, which reaches a receiver on HDMI
+// ARC; the audio service only where the key is refused (#437)
+(function testVolumeStepPressesTheKey() {
+  var calls = [], keyRefused = false;
+  controls.init({
+    config: { allowControl: true },
+    telemetry: { clearCache: function () {} },
+    luna: function (uri, payload, cb) {
+      calls.push(uri.split('/').pop() + (payload && payload.keyCode ? ' ' + payload.keyCode : ''));
+      cb({ returnValue: !(keyRefused && /sendKeyCode$/.test(uri)) });
+    }
+  });
+  controls.doControl('volumeStep', '1', function (res) { assert.strictEqual(res.ok, true); });
+  controls.doControl('volumeStep', '-1', function (res) { assert.strictEqual(res.ok, true); });
+  assert.deepEqual(calls, ['sendKeyCode 115', 'sendKeyCode 114'], 'the remote\'s volume keys');
+  calls = [];
+  keyRefused = true;
+  controls.doControl('volumeStep', '1', function (res) { assert.strictEqual(res.ok, true); });
+  assert.deepEqual(calls, ['sendKeyCode 115', 'volumeUp'], 'the audio service where the key is refused');
+  console.log('  ✓ a volume step presses the remote\'s key, with the audio service as fallback');
+})();
+
 console.log('ALL test-controls.js assertions passed!\n');

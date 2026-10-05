@@ -44,6 +44,11 @@ var RCU_KEYS = {
   back: 412
 };
 
+// The remote's volume keys: evdev codes, IR_KEY_VOL_UP and IR_KEY_VOL_DOWN in
+// /usr/share/X11/xkb/keycodes/lg less the 8 that xkb adds.
+var KEY_VOLUMEUP = 115;
+var KEY_VOLUMEDOWN = 114;
+
 // KEY_BACK. Used to dismiss a screen saver, which consumes the first key it
 // gets, so nothing behind it sees this.
 var KEY_BACK = 158;
@@ -195,11 +200,21 @@ function doControl(action, value, cb) {
 
     case 'volumeStep':
       var step = Math.max(-100, Math.min(100, toInt(value, 1)));
-      if (step === 1) {
-        return luna('com.webos.audio/volumeUp', {}, function (r) { cb({ ok: !!(r && r.returnValue) }); });
-      }
-      if (step === -1) {
-        return luna('com.webos.audio/volumeDown', {}, function (r) { cb({ ok: !!(r && r.returnValue) }); });
+      /*
+       * A single step is the remote's own volume key, which the TV passes to
+       * a receiver on HDMI ARC over CEC. The audio service's volumeUp only
+       * moves the TV's own level: a C1 (webOS 6) with an AV receiver on eARC
+       * reports adjustVolume true there, and the receiver ignored it (#437).
+       * The audio service is the fallback where the key is refused.
+       */
+      if (step === 1 || step === -1) {
+        return luna('com.webos.service.networkinput/test/sendKeyCode',
+                    { keyCode: step === 1 ? KEY_VOLUMEUP : KEY_VOLUMEDOWN }, function (k) {
+          if (k && k.returnValue) return cb({ ok: true });
+          luna(step === 1 ? 'com.webos.audio/volumeUp' : 'com.webos.audio/volumeDown', {}, function (r) {
+            cb({ ok: !!(r && r.returnValue) });
+          });
+        });
       }
       var stepFrom = function (curVol) {
         var target = Math.max(0, Math.min(100, curVol + step));
