@@ -1,6 +1,6 @@
 # Tested TVs
 
-Confirmed across 30 models so far (webOS 3.4 through 26). Other rooted models should work.
+Confirmed across 31 models so far (webOS 3.4 through 26). Other rooted models should work.
 
 The Luna service names and `/proc/lg` paths this relies on may differ across webOS versions and panel types.
 
@@ -19,6 +19,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | OLED55C1PUB | 6.x (6.3+)   | 03.53.45 | OLED  | SSH install and MQTT bridge confirmed                          |
 | 50UP81006LR | 6.5.0        | 03.51.16 | LCD   | Installed over telnet; in-app update confirmed                 |
 | 43UP80006LA | 6.5.3        | 03.53.45 | LCD   | MQTT bridge confirmed                                          |
+| OLED65G29LA | 7.4.0 (22)   | 04.40.90 | OLED  | Confirmed working                                              |
 | 55QNED826QB | 7.6.0        | 04.60.90 | LCD   | Installed over SSH; MQTT bridge confirmed                      |
 | OLED42C24LA | 9.2.2 (22+)  | 23.25.55 | OLED  | Rooted with jsbro-autoroot                                     |
 | OLED55B46LA | 24 (9.24.8)  | 23.23.30 | OLED  | Installed over telnet                                          |
