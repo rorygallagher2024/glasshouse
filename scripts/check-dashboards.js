@@ -13,6 +13,9 @@
  *
  *   npm install --no-save playwright && npx playwright install chromium
  *   node scripts/check-dashboards.js
+ *
+ * BROWSER_CHANNEL=chrome uses an installed Chrome instead, with playwright-core
+ * alone, as CI does: its runners have Chrome, which saves the download.
  */
 'use strict';
 const child = require('child_process');
@@ -21,7 +24,8 @@ const http = require('http');
 const net = require('net');
 const os = require('os');
 const path = require('path');
-const { chromium } = require('playwright');
+let chromium;
+try { chromium = require('playwright').chromium; } catch (e) { chromium = require('playwright-core').chromium; }
 
 const ROOT = path.join(__dirname, '..');
 const ASSETS = path.join(ROOT, 'server', 'assets');
@@ -82,24 +86,43 @@ async function startServer() {
   throw new Error('the server did not start:\n' + out.slice(-3000));
 }
 
+/*
+ * Done once the tab's requests have all answered and none has started for
+ * QUIET_MS - a tab's script runs when its data arrives, which is where it
+ * breaks - or after MAX_MS, so a slow tab cannot hold the run up.
+ */
+const QUIET_MS = 500, MAX_MS = 4000;
+
 async function visit(browser, url, label, problems) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on('pageerror', e => problems.push(label + ': ' + e.message));
   page.on('console', m => { if (m.type() === 'error') problems.push(label + ': console: ' + m.text()); });
+  let open = 0, last = Date.now();
+  page.on('request', () => { open++; last = Date.now(); });
+  const done = () => { open = Math.max(0, open - 1); last = Date.now(); };
+  page.on('requestfinished', done);
+  page.on('requestfailed', done);
   await page.goto(url, { waitUntil: 'load' });
-  // The tab's own requests, and a second round of the dashboard's polling.
-  await page.waitForTimeout(2500);
+  const until = Date.now() + MAX_MS;
+  while (Date.now() < until && (open > 0 || Date.now() - last < QUIET_MS)) await page.waitForTimeout(100);
   await page.close();
+}
+
+// A few tabs at a time: each is its own page, so they cannot affect each other.
+async function visitAll(browser, jobs, problems) {
+  let next = 0;
+  async function worker() { while (next < jobs.length) { const j = jobs[next++]; await visit(browser, j.url, j.label, problems); } }
+  await Promise.all([worker(), worker(), worker(), worker()]);
 }
 
 (async () => {
   const server = await startServer();
   const base = 'http://127.0.0.1:' + server.port;
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {});
   const problems = [];
   const web = webTabs(), tv = tvTabs();
-  for (const t of web) await visit(browser, base + '/?tab=' + t, 'web ' + t, problems);
-  for (const t of tv) await visit(browser, base + '/assets/dashboard.html?tab=' + t, 'TV ' + t, problems);
+  await visitAll(browser, web.map(t => ({ url: base + '/?tab=' + t, label: 'web ' + t }))
+    .concat(tv.map(t => ({ url: base + '/assets/dashboard.html?tab=' + t, label: 'TV ' + t }))), problems);
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +

@@ -31,6 +31,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      # Here only: the server and its tests need none of it.
-      - run: npm install --no-save playwright && npx playwright install --with-deps --only-shell chromium
+      # Here only: the server and its tests need none of it. The runner's own
+      # Chrome is used, so no browser is downloaded.
+      - run: npm install --no-save playwright-core
       - run: node scripts/check-dashboards.js
+        env:
+          BROWSER_CHANNEL: chrome
