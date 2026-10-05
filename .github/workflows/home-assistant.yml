@@ -1,0 +1,49 @@
+# Home Assistant creates no entity for a discovery config it cannot validate,
+# and says so only in its own log: Volume, Mute and the volume buttons went
+# missing that way in 0.78.0 (#437). This builds every config the server can
+# publish and runs it through Home Assistant's own validation.
+name: home-assistant
+
+# Only when what the configs are built from changes. Home Assistant is not
+# pinned, so it also runs weekly: a release that starts rejecting a config
+# shows without waiting for a change here.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/lib/**'
+      - 'server/tvweb.js'
+      - 'scripts/discovery-configs.js'
+      - 'scripts/check-ha-discovery.py'
+      - 'test/fixtures/lgsettings-c2-webos22.json'
+      - 'test/fixtures/stats-g4-webos9.json'
+      - '.github/workflows/home-assistant.yml'
+  pull_request:
+    paths:
+      - 'server/lib/**'
+      - 'server/tvweb.js'
+      - 'scripts/discovery-configs.js'
+      - 'scripts/check-ha-discovery.py'
+      - 'test/fixtures/lgsettings-c2-webos22.json'
+      - 'test/fixtures/stats-g4-webos9.json'
+      - '.github/workflows/home-assistant.yml'
+  schedule:
+    - cron: '41 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    name: Home Assistant accepts every discovery config
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: .github/workflows/home-assistant.yml
+      - run: pip install homeassistant
+      - run: ./scripts/check-ha-discovery.py
