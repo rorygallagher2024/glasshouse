@@ -131,15 +131,17 @@ start_watch() {
 # such a child sits on a lock it inherited held, and the server waits on it with
 # its event loop frozen: "heartbeat 149s old" after a resume from standby, the
 # child a copy of tvweb.js in futex_wait_queue_me. The server starts nothing
-# that runs node, so the name alone identifies one. Node 22.15 and 23.8 on name
-# the main thread node-MainThread, which a child forked from it inherits. The
-# window is normally microseconds; one still there seconds later is killed,
-# which frees the server, and luna.js runs the call again.
+# that runs node, so a child still running the server's own binary is one.
+# The binary rather than the name: node 22.15 and later rename the main thread,
+# which the fork inherits, to MainThread (24.21) or node-MainThread. The window
+# is normally microseconds; one still there seconds later is killed, which
+# frees the server, and luna.js runs the call again.
 stuck_children() {
+  node=$(readlink "/proc/$1/exe" 2>/dev/null)
+  [ -n "$node" ] || return
   for st in /proc/[0-9]*/stat; do
-    read -r cpid comm _ ppid _ < "$st" 2>/dev/null || continue
-    [ "$ppid" = "$1" ] || continue
-    case "$comm" in "(node)"|"(node-MainThread)") printf "%s " "$cpid" ;; esac
+    read -r cpid _ _ ppid _ < "$st" 2>/dev/null || continue
+    [ "$ppid" = "$1" ] && [ "$(readlink "/proc/$cpid/exe" 2>/dev/null)" = "$node" ] && printf "%s " "$cpid"
   done
 }
 
