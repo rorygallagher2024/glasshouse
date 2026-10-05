@@ -492,18 +492,15 @@ it is stated at the control in the UI as well as here.
 
 ### Cold boot clock synchronization (`nextlgsdp.com`)
 
-Smart TVs typically do not have a battery-backed real-time clock. On a cold boot
-(e.g., after being unplugged), the hardware clock resets to epoch (January 1, 1970).
-webOS does not synchronize its clock via standard NTP; its time service retrieves
-the current time from the HTTP `X-Server-Time` response header on LG's SDP servers
-(`*.nextlgsdp.com`).
-
-If `nextlgsdp.com` is sinkholed immediately on cold boot before time synchronization
-completes, the TV's system clock remains at epoch. Because TLS certificates rely on
-a valid system time, streaming applications such as Netflix or YouTube fail TLS
-certificate verification and refuse to connect.
+webOS sets its clock from the `X-Server-Time` header of LG's SDP servers
+(`*.nextlgsdp.com`), not NTP: a C2 runs no NTP daemon and reports
+`systemTimeSource` `sdp`. The Everything tier blocks those servers, so a TV that
+lost its time in a power cut could not set it again, and anything using HTTPS
+fails while the clock is wrong.
 
 To prevent this while preserving full platform blocking:
+* The boot hook removes `nextlgsdp.com` from the saved table before mounting it, since
+  that table is the one the previous session left, with the time servers blocked.
 * When the **everything** tier is enabled, `nextlgsdp.com` is omitted from the initial
   hosts table if the clock is not yet valid.
 * The server polls `com.webos.service.systemservice/time/getSystemTime` every 3 seconds.

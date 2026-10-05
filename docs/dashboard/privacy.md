@@ -17,7 +17,7 @@ Two tiers are available:
 * **ads & telemetry** blocks LG's ad, diagnostics and customer-data hosts and the Alphonso screen recognition servers, and leaves LG's service platform reachable.
 * **everything** adds the hosts that carry LG's platform services, so on that tier the app store, software updates and LG Channels may stop working.
 
-On a cold boot, webOS synchronizes its clock from LG's SDP servers (`*.nextlgsdp.com`) rather than NTP. Blocking them before the clock is set leaves the TV at epoch (1970), breaking TLS certificate validation for streaming apps. On the **everything** tier, `nextlgsdp.com` is left unblocked at boot until webOS reports that the system time has been synchronized via SDP (or up to two minutes before blocking anyway). On a restart where the time is already valid, the grace period is skipped and the block takes effect immediately.
+On the **everything** tier, after a power cut the TV is left to set its clock from LG's time servers before they are blocked.
 
 If an app or one of LG's services stops working while the blocker is on, switch it off to check whether it is the cause.
 

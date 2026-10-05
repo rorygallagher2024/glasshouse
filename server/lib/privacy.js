@@ -250,23 +250,13 @@ function isSdpGracePeriodActive() {
 }
 
 function adBlockPlatform() {
-  var country = (readTrimmed(COUNTRY_FILE) || '').toLowerCase();
-  var prefixes = ADBLOCK_REGION_PREFIXES.concat(/^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES);
   var list = ADBLOCK_PLATFORM.slice();
   var host = storeHost();
   if (host && list.indexOf(host) === -1) list.push(host);
-
-  // Omit SDP clock-sync hosts while waiting for initial time synchronization.
-  // webOS synchronizes its clock at startup via the HTTP X-Server-Time header
-  // on *.nextlgsdp.com rather than NTP; blocking it immediately at cold boot
-  // leaves the clock at epoch, causing TLS certificate validation failures in streaming apps.
-  if (!isSdpGracePeriodActive()) {
-    ADBLOCK_SDP.forEach(function (name) {
-      [name].concat(prefixes.map(function (p) { return p + '.' + name; }))
-        .forEach(function (h) { if (list.indexOf(h) === -1) list.push(h); });
-    });
-  }
-
+  // The TV sets its clock from nextlgsdp.com's X-Server-Time header, not NTP
+  // (systemTimeSource "sdp" on a C2), so after a power cut it is left
+  // reachable until the time is valid: see scheduleSdpBlock.
+  if (!isSdpGracePeriodActive()) list = list.concat(ADBLOCK_SDP);
   return list;
 }
 

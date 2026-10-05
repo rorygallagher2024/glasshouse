@@ -24,8 +24,11 @@ echo "$(date): starting"
 # Hold down the LG daemons switched off in the dashboard. Done in the delayed
 # block below, after upstart has had its go at starting them.
 
-# Restore adblock bind-mount if enabled
+# Restore adblock bind-mount if enabled. Without the time servers, which the
+# Everything tier blocks: the TV sets its clock from them, and after a power
+# cut it has not yet. The server puts them back once the time is valid.
 if [ -f /var/lib/tvweb/adblock_enabled ] && [ -f /var/lib/tvweb/adblock_hosts ]; then
+  sed -i '/nextlgsdp\.com/d' /var/lib/tvweb/adblock_hosts 2>/dev/null || true
   mount --bind /var/lib/tvweb/adblock_hosts /etc/hosts 2>/dev/null || true
 fi
 
