@@ -18,6 +18,7 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 | `check-strings.py` | Dashboard text without a translation key, and translations made from English that has since changed. [Translating the dashboards](../STRINGS.md) has the rules. |
 | `check-screensavers.py` | Screen saver QML that the TV's QtQuick version cannot load. |
 | `check-drift.py` | The [entity reference](../HOME-ASSISTANT-ENTITIES.md) out of step with the entities the server publishes, and a dashboard file missing from `deploy.sh`'s list, which would never be installed. |
+| `check-entity-stability.py` | A Home Assistant entity from the last release that has gone, been renamed or changed domain, which leaves it unavailable and stops every automation that used it. A deliberate removal is listed in `scripts/retired-entities.txt` with the reason. |
 | shellcheck | Mistakes in `deploy.sh`, `tvwebctl` and the boot script. |
 | TypeScript | Type errors, from the JSDoc types in the server's JavaScript. |
 | Unit tests | Each part of the server, and one suite that starts the whole server against a fake TV and MQTT broker, once with a TV that answers and once with one that answers late, wrongly or not at all, and checking the dashboard keeps answering and telemetry keeps flowing. |

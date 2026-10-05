@@ -1,0 +1,4 @@
+# Home Assistant entities removed on purpose since the last release, one per
+# line as <domain>.<id>, then why. check-entity-stability.py fails on an
+# entity that has gone without being listed here. Lines can be cleared once
+# the release that removed the entity is out.

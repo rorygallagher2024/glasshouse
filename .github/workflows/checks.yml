@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # the release tags, for the entity stability check
 
       # The TV runs node 0.12, where an ES6 construct is a parse error rather
       # than a degraded feature - the server simply never starts.
@@ -39,6 +41,10 @@ jobs:
 
       - name: documented entity list and deploy list match the code
         run: ./scripts/check-drift.py
+
+      # An entity that goes or is renamed breaks the automations that used it.
+      - name: no Home Assistant entity from the last release gone without a reason
+        run: ./scripts/check-entity-stability.py
 
       # Preinstalled on ubuntu-latest.
       - name: shell scripts
