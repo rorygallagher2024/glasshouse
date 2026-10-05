@@ -41,6 +41,14 @@ It runs when the server or the check changes, not for documentation, and
 weekly, since Home Assistant is not pinned: a release that starts rejecting a
 config shows there first.
 
+## The dashboards in a browser
+
+`dashboards.yml` starts the real server against a fake TV, opens every tab of
+the web dashboard and the TV app in a headless browser, and fails on any
+script error, naming the tab. A function a page calls that has gone, or an
+element it reaches for that has moved, breaks only when that tab opens, which
+no unit test does. It runs when the server, the pages or the fake TV change.
+
 ## Documentation
 
 `docs.yml` builds this site on each pull request that changes it, with every
@@ -61,6 +69,13 @@ npm ci && npx tsc
 node test/run-all.js
 for s in check-es5 check-module-calls check-ui-ids check-strings check-screensavers check-drift; do ./scripts/$s.py || break; done
 ./scripts/check-entities.py --stats test/fixtures/stats-b8-webos4.json
+```
+
+The dashboard check needs Playwright and its browser:
+
+```bash
+npm install --no-save playwright && npx playwright install chromium
+node scripts/check-dashboards.js
 ```
 
 The Home Assistant check needs Python 3.13 and the `homeassistant` package:

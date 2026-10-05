@@ -1,0 +1,36 @@
+# Opens every tab of both dashboards in a headless browser against the real
+# server and a fake TV, and fails on any script error: a break in the pages
+# shows only when a tab opens, which the unit tests never do.
+name: dashboards
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'test/mocks/**'
+      - 'scripts/check-dashboards.js'
+      - '.github/workflows/dashboards.yml'
+  pull_request:
+    paths:
+      - 'server/**'
+      - 'test/mocks/**'
+      - 'scripts/check-dashboards.js'
+      - '.github/workflows/dashboards.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tabs:
+    runs-on: ubuntu-latest
+    name: every dashboard tab opens without a script error
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      # Here only: the server and its tests need none of it.
+      - run: npm install --no-save playwright && npx playwright install --with-deps --only-shell chromium
+      - run: node scripts/check-dashboards.js
