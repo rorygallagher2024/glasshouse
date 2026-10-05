@@ -51,10 +51,10 @@ console.log('  ✓ switched on while set to Live TV with no channel, it turns th
 
 luna = fakeLuna(c2, false);
 timers.set(luna, { timer: 'on', enabled: true }, function (r) {
-  assert.ok(!r.ok);
-  assert.strictEqual(luna.writes.length, 0);
+  assert.ok(r.ok);
+  assert.deepStrictEqual(luna.writes, [{ onTimerEnable: 'on' }]);
 });
-console.log('  ✓ without a Home app, it asks for a channel or input instead');
+console.log('  ✓ without a Home app (webOS 3-5), it is switched on as set, as LG\'s own menu does');
 
 luna = fakeLuna({ onTimerAppId: 'com.webos.app.hdmi2', onTimerChannel: 'noChannel' }, true);
 timers.set(luna, { timer: 'on', enabled: true }, function (r) {

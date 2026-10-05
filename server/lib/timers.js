@@ -8,8 +8,6 @@
  *
  * Strict ES5 for node 0.12 on webOS 4.
  */
-var msg = require('./say').msg;
-
 var LIVE_TV = 'com.webos.app.livetv';
 var HOME = 'com.webos.app.home';
 
@@ -91,18 +89,17 @@ function set(luna, value, cb) {
   if (value.timer !== 'on' || value.enabled !== true) return write();
 
   /*
-   * LG's app will not switch the On Timer on while it is set to Live TV with
-   * no channel, as it is on a TV never tuned (a C2 came so); it turns the TV on
-   * to Home instead where there is no tuner. So does this, where the TV has a
-   * Home app: webOS 3-5 has none.
+   * LG's app on webOS 22 will not switch the On Timer on while it is set to
+   * Live TV with no channel, as it is on a TV never tuned (a C2 came so); it
+   * turns the TV on to Home instead where there is no tuner. So does this,
+   * where the TV has a Home app. webOS 3-5 has none, and its own menu (a B8 on
+   * 4.4) switches the timer on as it is set, so that is written unchanged.
    */
   luna('com.webos.service.settings/getSystemSettings', { category: 'time', keys: ['onTimerAppId', 'onTimerChannel'] }, function (cur) {
     var s = (cur && cur.settings) || {};
     if (s.onTimerAppId !== LIVE_TV || (s.onTimerChannel && s.onTimerChannel !== 'noChannel')) return write();
     luna('com.webos.applicationManager/getAppInfo', { id: HOME }, function (app) {
-      if (!(app && app.returnValue)) {
-        return cb({ ok: false, error: msg('srv.timer.noChannel', 'The On Timer is set to Live TV with no channel. Choose a channel or input for it in the TV\'s own Timers menu first.') });
-      }
+      if (!(app && app.returnValue)) return write();
       settings.onTimerAppId = HOME;
       write();
     });

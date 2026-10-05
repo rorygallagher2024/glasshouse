@@ -18,4 +18,4 @@ On TVs that have LG's Always Ready, the **Always Ready** switch under **Advanced
 
 LG's On Timer and Off Timer switch the TV on or off at a set time, once or on chosen days of the week. Both are under **Advanced &rarr; Power** in the web dashboard, with the time and the days. The TV dashboard shows them under **System &rarr; Power** and switches them on and off; the time and days are set from the browser.
 
-A TV switched on by the On Timer goes back off after two hours without a button press, while LG's own setting for that is on. An On Timer set to Live TV with no channel, as on a TV never tuned, turns the TV on to Home instead when switched on here, as LG's own menu does on a TV without a tuner.
+A TV switched on by the On Timer goes back off after two hours without a button press, while LG's own setting for that is on. On webOS 6 and later, an On Timer set to Live TV with no channel, as on a TV never tuned, turns the TV on to Home instead when switched on here, as LG's own menu does on a TV without a tuner.
