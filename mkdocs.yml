@@ -61,8 +61,8 @@ nav:
   - Reference:
       - What LG's ACR does: ACR.md
       - TV specifications: TV-SPECS.md
-      - How it works: IMPLEMENTATION.md
   - Development:
+      - Internals: IMPLEMENTATION.md
       - Testing and CI: development/testing.md
       - Translating the dashboards: STRINGS.md
 

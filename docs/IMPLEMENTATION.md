@@ -1,4 +1,4 @@
-# Implementation notes
+# Internals
 
 How this works on the inside, and the platform quirks that shaped it. Nothing
 here is needed to use the project - see [Installing](install.md) and [the dashboard](dashboard/index.md) for that.

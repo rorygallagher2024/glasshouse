@@ -109,7 +109,7 @@ Play only releases the app publicly once testers have stayed opted in for 14 day
 * [Updating and uninstalling](https://rorygallagher2024.github.io/lg-webos-dashboard/managing/)
 * [Security](https://rorygallagher2024.github.io/lg-webos-dashboard/SECURITY/)
 * [What it changes on the TV](https://rorygallagher2024.github.io/lg-webos-dashboard/TV-CHANGES/)
-* [How it works](https://rorygallagher2024.github.io/lg-webos-dashboard/IMPLEMENTATION/)
+* [Internals](https://rorygallagher2024.github.io/lg-webos-dashboard/IMPLEMENTATION/)
 
 The pages are built from [docs/](docs/), so they can also be read there.
 
