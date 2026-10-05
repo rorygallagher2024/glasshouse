@@ -1127,8 +1127,14 @@ function buildEntities(opts) {
           command_topic: topic.command('adblock'),
           state_topic: topic.telemetry,
           value_template: '{{ "ON" if value_json.privacy and value_json.privacy.adblock and value_json.privacy.adblock.enabled else "OFF" }}',
-          payload_on: 'ON',
-          payload_off: 'OFF',
+          // On is the ads & telemetry tier. Everything also blocks the app
+          // store and software updates, which a switch cannot warn about, so
+          // it is chosen on a dashboard, where it is confirmed. The state
+          // stays ON for either tier.
+          payload_on: 'ads',
+          payload_off: 'off',
+          state_on: 'ON',
+          state_off: 'OFF',
           icon: 'mdi:shield-check'
         }
       },

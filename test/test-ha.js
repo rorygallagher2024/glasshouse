@@ -244,6 +244,17 @@ console.log('Running test-ha.js ...');
   console.log('  ✓ LG settings become entities only where the TV has them');
 })();
 
+// The blocker's switch turns on the tier that leaves the app store and
+// updates working, and reads on for either tier
+(function testAdBlocker() {
+  var ab = ha.buildEntities({ pfx: 'test/tv' }).filter(function (e) { return e.id === 'ad_blocker'; })[0];
+  assert.strictEqual(ab.payload.command_topic, 'test/tv/command/adblock');
+  assert.strictEqual(ab.payload.payload_on, 'ads');
+  assert.strictEqual(ab.payload.payload_off, 'off');
+  assert.strictEqual(ab.payload.state_on, 'ON', 'the state is compared with ON, not with what is sent');
+  console.log('  ✓ the ad blocker switch turns on Ads & telemetry, not Everything');
+})();
+
 // PicCap's switch, only while PicCap answers
 (function testPiccap() {
   var on = ha.buildEntities({ pfx: 'test/tv', piccap: true }).filter(function (e) { return e.id === 'piccap'; });
