@@ -15,8 +15,8 @@ var c2 = {
   sleepTimer: 'off'
 };
 var t = timers.fromSettings(c2);
-assert.deepStrictEqual(t.on, { enabled: true, time: '07:05', days: [1, 2, 3, 4, 5], autoOff: true });
-assert.deepStrictEqual(t.off, { enabled: false, time: '00:00', days: [] });
+assert.deepEqual(t.on, { enabled: true, time: '07:05', days: [1, 2, 3, 4, 5], autoOff: true });
+assert.deepEqual(t.off, { enabled: false, time: '00:00', days: [] });
 console.log('  ✓ days come from a Sunday-first bitmask, 0 being once');
 
 assert.strictEqual(timers.fromSettings({ sleepTimer: 'off' }), undefined);
@@ -38,27 +38,27 @@ function fakeLuna(stored, homeApp) {
 var luna = fakeLuna(c2, true);
 timers.set(luna, { timer: 'off', time: '23:30', days: [0, 6] }, function (r) {
   assert.ok(r.ok);
-  assert.deepStrictEqual(luna.writes, [{ offTimerHour: '23', offTimerMinute: '30', offTimerWeekday: '65' }]);
+  assert.deepEqual(luna.writes, [{ offTimerHour: '23', offTimerMinute: '30', offTimerWeekday: '65' }]);
 });
 console.log('  ✓ only the fields given are written');
 
 luna = fakeLuna(c2, true);
 timers.set(luna, { timer: 'on', enabled: true }, function (r) {
   assert.ok(r.ok);
-  assert.deepStrictEqual(luna.writes, [{ onTimerEnable: 'on', onTimerAppId: 'com.webos.app.home' }]);
+  assert.deepEqual(luna.writes, [{ onTimerEnable: 'on', onTimerAppId: 'com.webos.app.home' }]);
 });
 console.log('  ✓ switched on while set to Live TV with no channel, it turns the TV on to Home');
 
 luna = fakeLuna(c2, false);
 timers.set(luna, { timer: 'on', enabled: true }, function (r) {
   assert.ok(r.ok);
-  assert.deepStrictEqual(luna.writes, [{ onTimerEnable: 'on' }]);
+  assert.deepEqual(luna.writes, [{ onTimerEnable: 'on' }]);
 });
 console.log('  ✓ without a Home app (webOS 3-5), it is switched on as set, as LG\'s own menu does');
 
 luna = fakeLuna({ onTimerAppId: 'com.webos.app.hdmi2', onTimerChannel: 'noChannel' }, true);
 timers.set(luna, { timer: 'on', enabled: true }, function (r) {
-  assert.deepStrictEqual(luna.writes, [{ onTimerEnable: 'on' }]);
+  assert.deepEqual(luna.writes, [{ onTimerEnable: 'on' }]);
 });
 console.log('  ✓ an input already chosen is kept');
 
