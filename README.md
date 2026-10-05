@@ -87,6 +87,20 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 ---
 
+## Android app
+
+[Glasshouse for Android](https://github.com/rorygallagher2024/glasshouse-android) keeps a list of TVs, shows which are online and opens each one's dashboard full screen. A TV is added by scanning any QR code on its dashboard, which carries the token as well.
+
+The app is in closed testing ahead of its Play Store release. To test it:
+
+1. Join the [glasshouse-android-testers](https://groups.google.com/g/glasshouse-android-testers) Google Group with the Google account the phone uses for the Play Store.
+2. Opt in on the [testing page](https://play.google.com/apps/testing/org.glasshouse.android), signed in with the same account.
+3. Install Glasshouse from the Play Store link on that page.
+
+Play only releases the app publicly once testers have stayed opted in for 14 days, so leaving the group early holds it back. Problems and suggestions go in the app's [issues](https://github.com/rorygallagher2024/glasshouse-android/issues).
+
+---
+
 ## Documentation
 
 * [Installing](https://rorygallagher2024.github.io/lg-webos-dashboard/install/) and [tested TVs](https://rorygallagher2024.github.io/lg-webos-dashboard/tested-tvs/)
