@@ -192,6 +192,23 @@ console.log('Running test-telemetry.js ...');
   console.log('  ✓ Stable Sync Info preferred over raw sync jitter and target port respected');
 })();
 
+// 6a2. isFreeSync is a mode: G-SYNC over HDMI reads 2, and is VRR
+(function testVrrMode() {
+  function vrrWith(mode) {
+    mockEnv.files['/proc/lg/hdmi20/port3/status'] =
+      'PHY Lock[1]\nconnected: on\n' +
+      '[41] wasEDID[1], Disabled[0], isFreeSync[' + mode + '], isAllm[1], isMute[0]\n' +
+      '[42] VRR Min[0]/Max[0], RepeaterHPD[0], isSleepMode[0], DDCMon[0]\n';
+    var d = telemetry.getActiveHdmiDiagnostics(3);
+    delete mockEnv.files['/proc/lg/hdmi20/port3/status'];
+    return d.vrr;
+  }
+  assert.strictEqual(vrrWith(2), true, 'G-SYNC (HDMI Forum VRR) is VRR');
+  assert.strictEqual(vrrWith(1), true, 'FreeSync is VRR');
+  assert.strictEqual(vrrWith(0), false, 'off is not');
+  console.log('  ✓ any VRR mode but off reads as VRR, G-SYNC included');
+})();
+
 // 6b. An HDMI input is active only while it is on screen
 (function testHdmiActive() {
   var fg = 'com.webos.applicationManager/getForegroundAppInfo';

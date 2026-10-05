@@ -499,7 +499,10 @@ function getActiveHdmiDiagnostics(targetPort) {
       else hdcp = rawHdcp;
     }
 
-    var isVrr = (vrrMatch && vrrMatch[1] === '1') ||
+    // isFreeSync is the VRR mode rather than a flag: 1 for FreeSync, 2 for
+    // HDMI Forum VRR, which G-SYNC uses over HDMI (a PC at 4K120 on a C4,
+    // webOS 24, #475). Any mode but 0 is VRR.
+    var isVrr = (vrrMatch && vrrMatch[1] !== '0') ||
                 (vrrMinMax && (parseInt(vrrMinMax[1], 10) > 0 || parseInt(vrrMinMax[2], 10) > 0));
 
     return {

@@ -149,7 +149,7 @@
     "hdcp": "2.3",
     "phy_errors": 0,
     "allm": "ON",
-    "vrr": "G-SYNC"
+    "vrr": true
   },
   "picture_engine": null,
   "colorimetry": null,
