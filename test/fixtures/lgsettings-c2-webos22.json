@@ -1,0 +1,342 @@
+{
+ "rows": [
+  {
+   "id": "screenSaverAd",
+   "section": "promotions",
+   "type": "switch",
+   "title": "Screen saver ads",
+   "desc": "Adverts that some apps, such as LG Channels, show in the screen saver. LG calls this Screen Saver Promotion.",
+   "on": false
+  },
+  {
+   "id": "homePromotion",
+   "section": "promotions",
+   "type": "switch",
+   "title": "Sponsored tiles on Home",
+   "desc": "Adverts marked Sponsored on the Home screen. LG calls this Home Promotion.",
+   "on": false
+  },
+  {
+   "id": "contentRecommendation",
+   "section": "promotions",
+   "type": "switch",
+   "title": "Recommendations on Home",
+   "desc": "Rows of recommended programmes and films on the Home screen. LG calls this Content Recommendation.",
+   "on": false
+  },
+  {
+   "id": "livePromotion",
+   "section": "promotions",
+   "type": "switch",
+   "title": "Ads while watching",
+   "desc": "Adverts and offers shown over what is on screen, while LG's Live Plus is on. LG calls this Live Promotion.",
+   "on": false
+  },
+  {
+   "id": "aiNudge",
+   "section": "promotions",
+   "type": "switch",
+   "title": "Smart tips",
+   "desc": "Suggestions for TV features that pop up while watching or using an app. LG calls this Smart Tips.",
+   "on": false
+  },
+  {
+   "id": "aiSettingsNudge",
+   "section": "promotions",
+   "type": "switch",
+   "title": "Smart tips in Settings",
+   "desc": "Suggested settings shown in LG's Settings menu. LG calls this Smart Tips in Settings.",
+   "on": false
+  },
+  {
+   "id": "gameGenre",
+   "section": "game",
+   "type": "choice",
+   "title": "Game genre",
+   "desc": "Tunes the picture for the kind of game. Each genre keeps its own stabilizer settings.",
+   "value": "Standard",
+   "choices": [
+    {
+     "value": "Standard",
+     "label": "Standard"
+    },
+    {
+     "value": "FPS",
+     "label": "First-person shooter"
+    },
+    {
+     "value": "RPG",
+     "label": "Role-playing"
+    },
+    {
+     "value": "RTS",
+     "label": "Real-time strategy"
+    },
+    {
+     "value": "Sports",
+     "label": "Sports"
+    },
+    {
+     "value": "USER",
+     "label": "User"
+    }
+   ]
+  },
+  {
+   "id": "inputOptimization",
+   "section": "game",
+   "type": "choice",
+   "title": "Prevent input delay",
+   "desc": "Standard cuts input lag for the kind of content; Boost cuts it further by matching the console's frame rate.",
+   "value": "on",
+   "choices": [
+    {
+     "value": "auto",
+     "label": "Standard"
+    },
+    {
+     "value": "on",
+     "label": "Boost"
+    }
+   ]
+  },
+  {
+   "id": "gameOptimization",
+   "section": "game",
+   "type": "switch",
+   "title": "VRR & G-Sync",
+   "desc": "Lets the TV follow the frame rate a console or PC sends, so motion stays smooth without tearing.",
+   "on": true
+  },
+  {
+   "id": "freesync",
+   "section": "game",
+   "type": "switch",
+   "title": "AMD FreeSync Premium",
+   "desc": "The same for AMD graphics cards and consoles that use FreeSync.",
+   "on": false
+  },
+  {
+   "id": "enableALLM",
+   "section": "game",
+   "type": "switch",
+   "title": "ALLM",
+   "desc": "Switches the TV to its low-latency game mode by itself when a connected device starts a game.",
+   "on": true
+  },
+  {
+   "id": "darkMode",
+   "section": "game",
+   "type": "choice",
+   "title": "Dark room mode",
+   "desc": "Lowers the brightness for playing in a dark room.",
+   "value": "off",
+   "choices": [
+    {
+     "value": "off",
+     "label": "Off"
+    },
+    {
+     "value": "level1",
+     "label": "Level 1"
+    },
+    {
+     "value": "level2",
+     "label": "Level 2"
+    }
+   ]
+  },
+  {
+   "id": "blackStabilizer",
+   "section": "game",
+   "type": "number",
+   "title": "Black stabilizer",
+   "desc": "Lifts dark areas so detail in shadows is easier to see.",
+   "value": 10,
+   "min": 0,
+   "max": 20
+  },
+  {
+   "id": "whiteStabilizer",
+   "section": "game",
+   "type": "number",
+   "title": "White stabilizer",
+   "desc": "Tames bright areas so detail in highlights is easier to see.",
+   "value": 10,
+   "min": 0,
+   "max": 20
+  },
+  {
+   "id": "aigamesound",
+   "section": "game",
+   "type": "switch",
+   "title": "AI Game Sound",
+   "desc": "Sets the sound for the game being played: effects, clear voices and surround.",
+   "on": true
+  },
+  {
+   "id": "soundOutput",
+   "section": "sound",
+   "type": "choice",
+   "title": "Sound output",
+   "desc": "Where the TV plays its sound. Sound mode and balance apply only to the TV speakers.",
+   "value": "tv_speaker",
+   "choices": [
+    {
+     "value": "tv_speaker",
+     "label": "TV speakers"
+    },
+    {
+     "value": "external_arc",
+     "label": "HDMI (ARC) device"
+    },
+    {
+     "value": "external_optical",
+     "label": "Optical out device"
+    },
+    {
+     "value": "bt_soundbar",
+     "label": "Bluetooth device"
+    },
+    {
+     "value": "headphone",
+     "label": "Wired headphones"
+    },
+    {
+     "value": "tv_speaker_external_arc",
+     "label": "HDMI (ARC) device and TV speakers"
+    },
+    {
+     "value": "tv_speaker_bluetooth",
+     "label": "Bluetooth device and TV speakers"
+    },
+    {
+     "value": "tv_speaker_headphone",
+     "label": "Wired headphones and TV speakers"
+    }
+   ]
+  },
+  {
+   "id": "soundMode",
+   "section": "sound",
+   "type": "choice",
+   "title": "Sound mode",
+   "desc": "How the TV tunes its sound, through its own speakers only. AI Sound Pro adjusts it to what is on by itself.",
+   "value": "standard",
+   "choices": [
+    {
+     "value": "aiSoundPlus",
+     "label": "AI Sound Pro"
+    },
+    {
+     "value": "aiSound",
+     "label": "AI Sound"
+    },
+    {
+     "value": "standard",
+     "label": "Standard"
+    },
+    {
+     "value": "news",
+     "label": "Clear Voice"
+    },
+    {
+     "value": "movie",
+     "label": "Cinema"
+    },
+    {
+     "value": "sports",
+     "label": "Sports"
+    },
+    {
+     "value": "music",
+     "label": "Music"
+    },
+    {
+     "value": "game",
+     "label": "Game Optimizer"
+    }
+   ]
+  },
+  {
+   "id": "soundOutputDigital",
+   "section": "sound",
+   "type": "choice",
+   "title": "Digital sound output",
+   "desc": "The audio sent to a soundbar or receiver over HDMI ARC or optical. Pass Through sends Dolby and DTS as they are; PCM turns them into plain stereo.",
+   "value": "pcm",
+   "choices": [
+    {
+     "value": "auto",
+     "label": "Auto"
+    },
+    {
+     "value": "pcm",
+     "label": "PCM"
+    },
+    {
+     "value": "passThrough",
+     "label": "Pass Through"
+    }
+   ]
+  },
+  {
+   "id": "audioBalance",
+   "section": "sound",
+   "type": "number",
+   "title": "Balance",
+   "desc": "Between the left and right TV speakers, and only those. At 0 both play at the same level.",
+   "value": 0,
+   "min": -50,
+   "max": 50
+  },
+  {
+   "id": "autoVolume",
+   "section": "sound",
+   "type": "switch",
+   "title": "Automatic volume",
+   "desc": "Keeps the volume level when switching channels. LG calls this Automatic Volume Adjustment.",
+   "on": false
+  },
+  {
+   "id": "btSpeakerMode",
+   "section": "sound",
+   "type": "switch",
+   "title": "Bluetooth speaker mode",
+   "desc": "Lets phones in Bluetooth range connect and play music through the TV, even while it is switched off. LG calls this Bluetooth Speaker Mode.",
+   "on": false
+  },
+  {
+   "id": "eArcSupport",
+   "section": "sound",
+   "type": "switch",
+   "title": "eARC",
+   "desc": "Sends lossless and Dolby Atmos audio to a soundbar or receiver on the HDMI (eARC) input, where both support it.",
+   "on": false
+  },
+  {
+   "id": "simplinkEnable",
+   "section": "devices",
+   "type": "switch",
+   "title": "SIMPLINK (HDMI-CEC)",
+   "desc": "Lets the TV remote control devices connected over HDMI, such as a soundbar or console.",
+   "on": true
+  },
+  {
+   "id": "simplinkAutoPowerOn",
+   "section": "devices",
+   "type": "switch",
+   "title": "Auto power sync",
+   "desc": "Switching the TV off switches connected devices off, and switching a device on switches the TV on.",
+   "on": true
+  },
+  {
+   "id": "ipControl",
+   "section": "devices",
+   "type": "switch",
+   "title": "IP control",
+   "desc": "Lets home automation systems control the TV over the network with LG's own protocol. Off unless something needs it.",
+   "on": false
+  }
+ ]
+}
