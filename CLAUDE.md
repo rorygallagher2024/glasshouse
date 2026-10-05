@@ -39,7 +39,7 @@ use modern JavaScript.
   must name every file the server needs.
 - `hbc/` and `scripts/build-ipk.py` - the Homebrew Channel package.
 - `test/` - `node test/run-all.js` runs every `test-*.js`; fixtures are real
-  stats from a B8 (webOS 4) and a G4 (webOS 9).
+  stats from a B8 (webOS 4), a G4 and a C4 (webOS 9).
 
 Before pushing, run what CI runs: `node test/run-all.js`, `npx tsc`, and
 `scripts/check-es5.py`, `check-module-calls.py`, `check-ui-ids.py`,

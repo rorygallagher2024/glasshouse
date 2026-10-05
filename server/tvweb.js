@@ -1045,14 +1045,14 @@ function setupHomeAssistant() {
       }
       /*
        * Retained, so Home Assistant restarting reads the TV as it last was
-       * rather than every entity as unknown. Without the installed apps or
-       * the temperature history: no entity reads either, the app select's
+       * rather than every entity as unknown. Without the installed apps, the
+       * temperature history or the CPU times: no entity reads them, the app select's
        * options travel in discovery, and Home Assistant runs every entity's
        * template over the whole message, so its size is paid for once per
        * entity on each publish.
        */
       var pub = {};
-      for (var pk in s) if (pk !== 'apps' && pk !== 'temps') pub[pk] = s[pk];
+      for (var pk in s) if (pk !== 'apps' && pk !== 'temps' && pk !== 'cpuTimes') pub[pk] = s[pk];
       mqttClient.publish(mqttTopics.telemetry, JSON.stringify(pub), true);
       MQTT_STATUS.lastPublish = Date.now();
       pusher.finished();

@@ -172,11 +172,17 @@ function emmcInfo() {
   var eolRaw = readTrimmed('/sys/block/mmcblk0/device/pre_eol_info');
   var eol = EOL_MAP[parseInt(eolRaw, 16)] || 'unknown';
   if (!raw) {
-    EMMC_CACHE = { life: 'unknown', wear: 'unknown', health: 'unknown', eol: eol };
+    EMMC_CACHE = { life: 'unknown', wear: 'unknown', health: 'unknown', eol: eol, life_est_a: null, life_est_b: null };
     return EMMC_CACHE;
   }
 
   var parts = raw.split(/\s+/), wearList = [], minHealth = 100;
+  // DEVICE_LIFE_TIME_EST_TYP_A and _B as the card gives them: 1 to 10 for each
+  // tenth of the estimated life used, 11 beyond it, 0 where not defined.
+  var estimates = parts.map(function (p) {
+    var v = parseInt(p, 16);
+    return v >= 1 && v <= 11 ? v : null;
+  });
   for (var i = 0; i < parts.length; i++) {
     var n = parseInt(parts[i], 16);
     if (!n) continue;
@@ -200,16 +206,26 @@ function emmcInfo() {
     life: wearStr,
     wear: wearStr,
     health: healthStr,
-    eol: eol
+    eol: eol,
+    life_est_a: estimates.length > 0 ? estimates[0] : null,
+    life_est_b: estimates.length > 1 ? estimates[1] : null
   };
   return EMMC_CACHE;
 }
 
-function socTemp() {
+// In millidegrees, which the kernel's thermal zone reads in; LG's file has
+// whole degrees.
+function socTempMillidegrees() {
   if (!THERMAL_SOURCE) return null;
   var t = toInt(readTrimmed(THERMAL_SOURCE), null);
-  if (t !== null && THERMAL_SOURCE === SYS_THERMAL) t = Math.round(t / 1000);
+  if (t !== null && THERMAL_SOURCE !== SYS_THERMAL) t = t * 1000;
   return (t !== null && t > 0) ? t : null;
+}
+
+function socTemp() {
+  var mt = socTempMillidegrees();
+  var t = mt === null ? null : Math.round(mt / 1000);
+  return t > 0 ? t : null;
 }
 
 /*
@@ -239,6 +255,33 @@ function readCoreTicks() {
     now[m[1]] = { total: total, idle: (f[3] || 0) + (f[4] || 0) };
   }
   return now;
+}
+
+/*
+ * Time each online core has spent in each mode since boot, in USER_HZ ticks,
+ * and the boot time in seconds since the epoch, both from /proc/stat. Offline
+ * cores are absent from it. guest and guest_nice are left out: the kernel
+ * counts them in user and nice already.
+ */
+var CPU_MODES = ['user', 'nice', 'system', 'idle', 'iowait', 'irq', 'softirq', 'steal'];
+function cpuTimes() {
+  var out = { cpus: {}, btime: null };
+  var lines = (readTrimmed('/proc/stat') || '').split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var m = lines[i].match(/^cpu(\d+)\s+(.*)$/);
+    if (m) {
+      var f = m[2].trim().split(/\s+/), modes = {};
+      for (var j = 0; j < CPU_MODES.length; j++) {
+        var v = parseInt(f[j], 10);
+        if (!isNaN(v)) modes[CPU_MODES[j]] = v;
+      }
+      out.cpus[m[1]] = modes;
+      continue;
+    }
+    var b = lines[i].match(/^btime\s+(\d+)/);
+    if (b) out.btime = parseInt(b[1], 10);
+  }
+  return out;
 }
 
 function statCpu(totalCores, at, reader, minMs) {
@@ -297,11 +340,17 @@ function onlineCpus(status) {
   return out;
 }
 
-function socMhz() {
+// /proc/lg/pm/frequency is in kHz; a value of 10000 or under is read as MHz.
+function socHz() {
   var v = toInt(readTrimmed('/proc/lg/pm/frequency'), 0);
   if (!v || v < 0) return null;
-  var mhz = Math.round(v > 10000 ? v / 1000 : v);
-  return (mhz >= 100 && mhz <= 10000) ? mhz : null;
+  var hz = v > 10000 ? v * 1000 : v * 1000000;
+  return (hz >= 100e6 && hz <= 10000e6) ? hz : null;
+}
+
+function socMhz() {
+  var hz = socHz();
+  return hz === null ? null : Math.round(hz / 1e6);
 }
 
 function swapBacking() {
@@ -731,11 +780,17 @@ function refreshInstalledApps(cb) {
   });
 }
 
-function gpuClockMhz() {
+// The GPU PLL's output in Hz.
+function gpuClockHz() {
   var raw = readTrimmed('/proc/lg/sys/status');
   if (!raw) return null;
   var m = raw.match(/gpu pll out\s*:\s*(\d+)/i);
-  return m ? Math.round(parseInt(m[1], 10) / 1000000) : null;
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function gpuClockMhz() {
+  var hz = gpuClockHz();
+  return hz === null ? null : Math.round(hz / 1000000);
 }
 
 function appStorage(cb) {
@@ -754,7 +809,10 @@ function appStorage(cb) {
       totalMb: Math.round(total / 1024),
       usedMb: Math.round(used / 1024),
       freeMb: Math.round(avail / 1024),
-      pct: Math.round(used / total * 100)
+      pct: Math.round(used / total * 100),
+      // df -k's own figures, in KiB.
+      totalKb: total,
+      availKb: avail
     };
     lastAppStorageCheck = Date.now();
     cb(cachedAppStorage);
@@ -1165,6 +1223,7 @@ function collectStats(cb) {
   if (n) prevNet = n;
 
   var peInfo = getPictureEngineInfo();
+  var times = cpuTimes();
   var uptimeSec = Math.floor(parseFloat(readTrimmed('/proc/uptime') || '0'));
 
   var devCfg = (configObj && configObj.device) || {};
@@ -1195,6 +1254,7 @@ function collectStats(cb) {
     } : null,
     remote: readRemoteInfo(),
     temp: socTemp(),
+    tempMillidegrees: socTempMillidegrees(),
     temps: null,
     load: cpu.overall !== null ? cpu.overall
       : coreLoads.length
@@ -1204,12 +1264,15 @@ function collectStats(cb) {
       ? Math.max.apply(null, coreLoads)
       : toInt(readTrimmed('/proc/lg/pm/current_load'), null),
     mhz: socMhz(),
+    cpuHz: socHz(),
+    cpuTimes: times.cpus,
     cores: coreLoads,
     coresTotal: coresTotal || coreSlots.length,
     mem: { total: mi.MemTotal || 0, avail: mi.MemAvailable || 0 },
     swap: { total: mi.SwapTotal || 0, free: mi.SwapFree || 0, backing: swapBacking() },
     uptime: uptimeSec,
     bootTime: bootTime(uptimeSec),
+    btime: times.btime,
     loadavg: (readTrimmed('/proc/loadavg') || '').split(' ').slice(0, 3),
     wifi: wifi(),
     net: rate,
@@ -1279,6 +1342,7 @@ function collectStats(cb) {
       out.quickBoot = os.quickStartMode === 'on';
     }
     out.gpuMhz = gpuClockMhz();
+    out.gpuHz = gpuClockHz();
 
   lunaCachedFn('com.webos.service.settings/getSystemSettings',
        { category: 'network', keys: ['wolwowlOnOff'] }, 60000, function (nw) {
@@ -1616,6 +1680,8 @@ module.exports = {
   alwaysOnSupported: alwaysOnSupported,
   cpuSincePublish: cpuSincePublish,
   socMhz: socMhz,
+  socHz: socHz,
+  cpuTimes: cpuTimes,
   gpuClockMhz: gpuClockMhz,
   swapBacking: swapBacking,
   wifi: wifi,

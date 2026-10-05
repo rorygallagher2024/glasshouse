@@ -63,6 +63,8 @@ console.log('Running test-telemetry.js ...');
   assert.strictEqual(info.wear, '0-10%', 'Expected 0-10% wear');
   assert.strictEqual(info.eol, 'Normal', 'Expected Normal EOL');
   assert.ok(info.health.indexOf('>90%') !== -1, 'Expected healthy drive');
+  assert.strictEqual(info.life_est_a, 1, 'the type A estimate as the card gives it');
+  assert.strictEqual(info.life_est_b, 1);
   console.log('  ✓ emmcInfo parses healthy multi-region eMMC');
 })();
 
@@ -131,6 +133,44 @@ console.log('Running test-telemetry.js ...');
   mockEnv.files['/proc/lg/pm/frequency'] = '50\n';
   assert.strictEqual(telemetry.socMhz(), null, 'Expected null for impossible clock');
   console.log('  ✓ socMhz correctly scales kHz vs MHz across webOS versions');
+})();
+
+// The clock in hertz, unrounded
+(function testSocHz() {
+  mockEnv.files['/proc/lg/pm/frequency'] = '1400500\n';
+  assert.strictEqual(telemetry.socHz(), 1400500000, 'kHz kept to the kHz');
+  assert.strictEqual(telemetry.socMhz(), 1401);
+  mockEnv.files['/proc/lg/pm/frequency'] = '1200\n';
+  assert.strictEqual(telemetry.socHz(), 1200000000);
+  mockEnv.files['/proc/lg/pm/frequency'] = '50\n';
+  assert.strictEqual(telemetry.socHz(), null);
+  delete mockEnv.files['/proc/lg/pm/frequency'];
+  console.log('  ✓ socHz gives the clock in hertz');
+})();
+
+// Each online core's time by mode, and the boot time, from /proc/stat
+(function testCpuTimes() {
+  // From a C4: two of four cores online. The last two columns are guest time,
+  // which user and nice already count.
+  mockEnv.files['/proc/stat'] = [
+    'cpu  226653 42 89823 3463643 705 0 3055 0 0 0',
+    'cpu0 103220 12 39911 1425675 208 0 2878 0 7 0',
+    'cpu1 90592 13 34823 1434212 230 0 86 0 0 0',
+    'intr 123 0 0',
+    'btime 1791204921',
+    'processes 4567'
+  ].join('\n') + '\n';
+  assert.deepEqual(telemetry.cpuTimes(), {
+    cpus: {
+      0: { user: 103220, nice: 12, system: 39911, idle: 1425675, iowait: 208, irq: 0, softirq: 2878, steal: 0 },
+      1: { user: 90592, nice: 13, system: 34823, idle: 1434212, iowait: 230, irq: 0, softirq: 86, steal: 0 }
+    },
+    btime: 1791204921
+  });
+  mockEnv.files['/proc/stat'] = null;
+  assert.deepEqual(telemetry.cpuTimes(), { cpus: {}, btime: null });
+  delete mockEnv.files['/proc/stat'];
+  console.log('  ✓ cpuTimes reads each core\'s time by mode, and btime');
 })();
 
 // 4. swapBacking tests

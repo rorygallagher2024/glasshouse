@@ -308,6 +308,10 @@ function refreshOledStats(picSettings, pState, cb) {
     var compStatusLabel = isCompRunning ? 'Completing Panel Maintenance (Short Cycle)' : 'Idle';
 
     cachedOled = {
+      // The TV's own counts, in 10-minute units, which the hours round.
+      panel_usage_units: usageUnits,
+      last_compensation_units: lastCompUnits !== null ? lastCompUnits
+        : (fsLastCompHours !== null ? fsLastCompHours * 6 : null),
       panel_hours: panelHours,
       panel_hours_exact: panelHoursExact,
       last_compensation_hours: lastCompHours,
