@@ -2,6 +2,8 @@
 
 Every entity the TV publishes, by category. Which categories are published is set on the dashboard's **MQTT** tab: see [Entity selection](HOME-ASSISTANT.md#entity-selection).
 
+<div class="entity-tables" markdown>
+
 ## Controls & Switches
 | Domain | Entity ID | Name | Description |
 | :--- | :--- | :--- | :--- |
@@ -138,3 +140,5 @@ The TV's own settings that the dashboard's Advanced, Game and Privacy tabs chang
 | `switch` | `switch.lg_tv_ads_while_watching` | Ads While Watching | *Disabled by default.* Adverts and offers shown over what is on screen, with Live Plus on |
 | `switch` | `switch.lg_tv_smart_tips` | Smart Tips | *Disabled by default.* Feature suggestions that pop up while watching |
 | `switch` | `switch.lg_tv_smart_tips_in_settings` | Smart Tips in Settings | *Disabled by default.* Suggested settings in LG's Settings menu |
+
+</div>

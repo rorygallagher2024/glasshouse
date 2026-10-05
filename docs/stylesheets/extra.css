@@ -95,6 +95,7 @@
 [data-md-color-scheme="default"] .md-search__input::placeholder,
 [data-md-color-scheme="default"] .md-search__icon { color: rgba(0, 0, 0, 0.55); }
 
-/* An entity id broken across lines cannot be read or copied whole. A table
-   wider than the page scrolls on its own instead. */
-.md-typeset table:not([class]) code { white-space: nowrap; }
+/* An entity id broken across lines cannot be read or copied whole, so the
+   entity tables keep their code on one line and scroll if they must. Only
+   there: elsewhere a long service path has to wrap to fit. */
+.md-typeset .entity-tables table code { white-space: nowrap; }
