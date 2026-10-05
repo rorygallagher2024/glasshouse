@@ -5282,5 +5282,73 @@
  "tv.viewOnly": {
   "text": "Solo visualización",
   "from": "View only"
+ },
+ "adv.onTimer": {
+  "text": "Hora de encendido",
+  "from": "On Timer"
+ },
+ "adv.onTimer.desc": {
+  "text": "Enciende la TV a esta hora, una vez o los días elegidos.",
+  "from": "Switches the TV on at this time, once or on the days picked."
+ },
+ "adv.onTimer.autoOff": {
+  "text": "Encendida así, la TV vuelve a apagarse a las dos horas si no se pulsa ningún botón. Puede desactivarse en el menú Temporizadores de la propia TV.",
+  "from": "Switched on this way, the TV goes back off after two hours unless a button is pressed. That can be turned off in the TV's own Timers menu."
+ },
+ "adv.onTimer.time": {
+  "text": "Hora del encendido",
+  "from": "On Timer time"
+ },
+ "adv.offTimer": {
+  "text": "Hora de apagado",
+  "from": "Off Timer"
+ },
+ "adv.offTimer.desc": {
+  "text": "Apaga la TV a esta hora, una vez o los días elegidos.",
+  "from": "Switches the TV off at this time, once or on the days picked."
+ },
+ "adv.offTimer.time": {
+  "text": "Hora del apagado",
+  "from": "Off Timer time"
+ },
+ "adv.timer.mon": {
+  "text": "Lun",
+  "from": "Mon"
+ },
+ "adv.timer.tue": {
+  "text": "Mar",
+  "from": "Tue"
+ },
+ "adv.timer.wed": {
+  "text": "Mié",
+  "from": "Wed"
+ },
+ "adv.timer.thu": {
+  "text": "Jue",
+  "from": "Thu"
+ },
+ "adv.timer.fri": {
+  "text": "Vie",
+  "from": "Fri"
+ },
+ "adv.timer.sat": {
+  "text": "Sáb",
+  "from": "Sat"
+ },
+ "adv.timer.sun": {
+  "text": "Dom",
+  "from": "Sun"
+ },
+ "tv.options.timer.hint": {
+  "text": "La hora y los días se eligen desde Glasshouse en un navegador, en Avanzado.",
+  "from": "The time and days are set from Glasshouse in a browser, under Advanced."
+ },
+ "tv.options.timer.once": {
+  "text": "{time}, una vez",
+  "from": "{time}, once"
+ },
+ "tv.options.timer.repeats": {
+  "text": "{time}, se repite {days}",
+  "from": "{time}, repeats {days}"
  }
 }
