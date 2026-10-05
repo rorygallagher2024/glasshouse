@@ -2107,6 +2107,26 @@
   "text": "Auto sigue la configuración clara u oscura de este dispositivo. Otros teléfonos y ordenadores mantienen la suya. El botón del final del pie de página también lo cambia.",
   "from": "Auto follows this device's light or dark setting. Other phones and computers keep their own. The button at the end of the footer changes it too."
  },
+ "server.language": {
+  "text": "Idioma (este navegador)",
+  "from": "Language (this browser)"
+ },
+ "server.language.desc": {
+  "text": "Auto sigue el idioma de este dispositivo y muestra inglés donde no hay traducción. Otros teléfonos y ordenadores mantienen el suyo.",
+  "from": "Auto follows this device's language, and shows English where there is no translation. Other phones and computers keep their own."
+ },
+ "server.language.group": {
+  "text": "Idioma",
+  "from": "Language"
+ },
+ "lang.en": {
+  "text": "English",
+  "from": "English"
+ },
+ "lang.es": {
+  "text": "Español",
+  "from": "Español"
+ },
  "server.tvApp": {
   "text": "App del tablero",
   "from": "Dashboard app"
@@ -5282,25 +5302,5 @@
  "tv.viewOnly": {
   "text": "Solo visualización",
   "from": "View only"
- },
- "server.language": {
-  "text": "Idioma (este navegador)",
-  "from": "Language (this browser)"
- },
- "server.language.desc": {
-  "text": "Auto sigue el idioma de este dispositivo y muestra inglés donde no hay traducción. Otros teléfonos y ordenadores mantienen el suyo.",
-  "from": "Auto follows this device's language, and shows English where there is no translation. Other phones and computers keep their own."
- },
- "server.language.group": {
-  "text": "Idioma",
-  "from": "Language"
- },
- "lang.en": {
-  "text": "English",
-  "from": "English"
- },
- "lang.es": {
-  "text": "Español",
-  "from": "Español"
  }
 }
