@@ -23,35 +23,13 @@ If a pull request needs follow-up adjustments, push additional commits to the ex
 
 ### Commit messages and PR descriptions
 
-* **Keep it short:** State what changed and why. A pull request description is usually a paragraph or two explaining the rationale.
-* **No process narration:** Do not narrate the investigative path, false starts, or how verification was performed. Record decisions and their reasons.
-* **Third person, always:** Write "the TV", "the panel switch", never "you" or "your TV".
-* **No filler structure:** Avoid unnecessary headings or bullet lists for simple changes.
+Focus on clarity and readability. Clearly state what changed and why, keeping pull request descriptions concise and focused on the context reviewers need.
 
-## Code review guidelines (Conventional Comments)
+If you are using AI coding assistants or automated agents, ensure they adhere to the repository conventions in `CLAUDE.md`.
 
-To keep code reviews constructive, clear, and actionable, code review comments should follow the [Conventional Comments](https://conventionalcomments.org/) standard.
+## Code reviews
 
-Each review comment should start with a label indicating its intent:
-
-| Label | Purpose |
-| :--- | :--- |
-| `praise:` | Highlight positive aspects, elegant solutions, or great improvements. |
-| `nitpick:` | Minor stylistic or preference points that are non-blocking. |
-| `suggestion:` | Propose a concrete alternative way to implement something. |
-| `issue:` | Highlight a defect, bug, regression, or missing requirement that must be addressed. |
-| `question:` | Ask for clarification or context when something is not understood. |
-| `thought:` | Share an observation or idea without requiring immediate action. |
-| `chore:` | Request minor housekeeping (updating docs, test cases, formatting). |
-
-Optional decorations may clarify the comment's priority:
-
-* `(blocking)`: Must be addressed before the pull request can be merged.
-* `(non-blocking)`: Informational or optional feedback that does not prevent merging.
-* `(if-minor)`: Apply only if the change is quick and low-effort.
-
-**Example:**
-> `suggestion (non-blocking):` Consider caching this Luna response if the property does not change between invocations.
+We prefer code review comments to follow the [Conventional Comments](https://conventionalcomments.org/) standard (e.g. `praise:`, `suggestion:`, `issue:`, `nitpick:`, `question:`). This keeps feedback constructive, actionable, and makes it clear whether a comment is blocking or an optional suggestion. Refer to [conventionalcomments.org](https://conventionalcomments.org/) for the complete specification and examples.
 
 ## Environment and compatibility
 
