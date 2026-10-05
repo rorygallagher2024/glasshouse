@@ -78,30 +78,55 @@ function set(luna, value, cb) {
     if (!ok) return cb({ ok: false, error: 'days must be a list of 0 (Sunday) to 6 (Saturday)' });
     settings[prefix + 'Weekday'] = String(maskFromDays(value.days));
   }
-  if (value.enabled !== undefined) settings[prefix + 'Enable'] = value.enabled === true ? 'on' : 'off';
-  if (!Object.keys(settings).length) return cb({ ok: false, error: 'nothing to change' });
+  var enableKey = prefix + 'Enable';
+  if (!Object.keys(settings).length && value.enabled === undefined) return cb({ ok: false, error: 'nothing to change' });
 
-  function write() {
-    luna('com.webos.service.settings/setSystemSettings', { category: 'time', settings: settings }, function (r) {
-      cb({ ok: !!(r && r.returnValue) });
+  function write(changes, next) {
+    luna('com.webos.service.settings/setSystemSettings', { category: 'time', settings: changes }, function (r) {
+      if (!(r && r.returnValue)) return cb({ ok: false });
+      next();
     });
   }
-  if (value.timer !== 'on' || value.enabled !== true) return write();
+  function done() { cb({ ok: true }); }
 
-  /*
-   * LG's app on webOS 22 will not switch the On Timer on while it is set to
-   * Live TV with no channel, as it is on a TV never tuned (a C2 came so); it
-   * turns the TV on to Home instead where there is no tuner. So does this,
-   * where the TV has a Home app. webOS 3-5 has none, and its own menu (a B8 on
-   * 4.4) switches the timer on as it is set, so that is written unchanged.
-   */
-  luna('com.webos.service.settings/getSystemSettings', { category: 'time', keys: ['onTimerAppId', 'onTimerChannel'] }, function (cur) {
+  luna('com.webos.service.settings/getSystemSettings', { category: 'time', keys: [enableKey, 'onTimerAppId', 'onTimerChannel'] }, function (cur) {
     var s = (cur && cur.settings) || {};
-    if (s.onTimerAppId !== LIVE_TV || (s.onTimerChannel && s.onTimerChannel !== 'noChannel')) return write();
+    if (value.enabled === false) {
+      settings[enableKey] = 'off';
+      return write(settings, done);
+    }
+    // Neither switched on nor on already: the time and days are only stored.
+    if (value.enabled !== true && s[enableKey] !== 'on') return write(settings, done);
+
+    /*
+     * LG's scheduler takes a timer's time and days when the timer is switched
+     * on, and not when they change while it is on: a C2 (webOS 22) kept
+     * 12:54 for an Off Timer whose setting said 12:59. LG's own menu switches
+     * the timer off while it is edited and back on after, so this does the
+     * same: off, the changes, then on.
+     */
+    function rearm() {
+      var off = {}, on = {};
+      off[enableKey] = 'off';
+      on[enableKey] = 'on';
+      write(off, function () {
+        if (!Object.keys(settings).length) return write(on, done);
+        write(settings, function () { write(on, done); });
+      });
+    }
+    if (value.timer !== 'on') return rearm();
+
+    /*
+     * LG's app on webOS 22 will not switch the On Timer on while it is set to
+     * Live TV with no channel, as it is on a TV never tuned (a C2 came so); it
+     * turns the TV on to Home instead where there is no tuner. So does this,
+     * where the TV has a Home app. webOS 3-5 has none, and its own menu (a B8 on
+     * 4.4) switches the timer on as it is set, so that is written unchanged.
+     */
+    if (s.onTimerAppId !== LIVE_TV || (s.onTimerChannel && s.onTimerChannel !== 'noChannel')) return rearm();
     luna('com.webos.applicationManager/getAppInfo', { id: HOME }, function (app) {
-      if (!(app && app.returnValue)) return write();
-      settings.onTimerAppId = HOME;
-      write();
+      if (app && app.returnValue) settings.onTimerAppId = HOME;
+      rearm();
     });
   });
 }
