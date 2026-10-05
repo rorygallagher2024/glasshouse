@@ -5350,5 +5350,9 @@
  "tv.options.timer.repeats": {
   "text": "{time}, se repite {days}",
   "from": "{time}, repeats {days}"
+ },
+ "tv.options.timer.off": {
+  "text": "Desactivado ({when})",
+  "from": "Off ({when})"
  }
 }

@@ -172,6 +172,14 @@ console.log('Running test-ha.js ...');
   assert.strictEqual(!msIds.soc_temperature, true, 'thermalPresent:false withholds soc_temperature');
   assert.strictEqual(!msIds.ambient_light, true, 'hasLightSensor:false withholds ambient_light');
   assert.strictEqual(!msIds.gpu_clock, true, 'hasGpuClock:false withholds gpu_clock');
+  assert.strictEqual(msIds.on_timer && msIds.off_timer, true, 'timers not yet read keeps both timer switches');
+
+  // A TV with an On Timer and no Off Timer, once its settings have been read
+  var timerIds = {};
+  ha.filterWithholds(getEntities(), { capabilities: { isOled: true, hasOnTimer: true, hasOffTimer: false } })
+    .forEach(function (e) { timerIds[e.id] = true; });
+  assert.strictEqual(timerIds.on_timer, true, 'hasOnTimer:true keeps on_timer');
+  assert.strictEqual(!timerIds.off_timer, true, 'hasOffTimer:false withholds off_timer');
 
   // User configuration withholding category or specific entity
   var userFiltered = ha.filterWithholds(getEntities(), {

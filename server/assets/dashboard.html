@@ -478,7 +478,7 @@ function timerRow(tm, which, label) {
   [1, 2, 3, 4, 5, 6, 0].forEach(function (n) { if (tm.days.indexOf(n) !== -1) days.push(names[n]); });
   var when = days.length ? t('tv.options.timer.repeats', '{time}, repeats {days}', { time: tm.time, days: days.join(' ') })
                          : t('tv.options.timer.once', '{time}, once', { time: tm.time });
-  return { label: label, value: tm.enabled ? when : t('common.off', 'Off'), cls: 'act', act: 'powerTimer', which: which, on: !!tm.enabled,
+  return { label: label, value: tm.enabled ? when : t('tv.options.timer.off', 'Off ({when})', { when: when }), cls: 'act', act: 'powerTimer', which: which, on: !!tm.enabled,
            press: tm.enabled ? t('tv.press.turnOff', 'Press OK to turn off') : t('tv.press.turnOn', 'Press OK to turn on'),
            hint: which === 'on'
              ? t('adv.onTimer.desc', 'Switches the TV on at this time, once or on the days picked.') + ' ' + t('tv.options.timer.hint', 'The time and days are set from Glasshouse in a browser, under Advanced.')

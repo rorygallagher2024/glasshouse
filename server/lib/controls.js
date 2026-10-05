@@ -576,10 +576,7 @@ function doControl(action, value, cb) {
 
     // LG's On or Off Timer: { timer: 'on' or 'off', enabled, time, days }.
     case 'powerTimer':
-      return timers.set(luna, value, function (r) {
-        telemetry.clearCache();
-        cb(r);
-      });
+      return timers.set(luna, value, cb);
 
     // One of lgsettings.js's rows: { id, on } for a switch, { id, value } otherwise.
     case 'lgSetting':
