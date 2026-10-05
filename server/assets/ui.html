@@ -444,25 +444,25 @@
         <div class="prot-desc" data-t="adv.onTimer.desc">Switches the TV on at this time, once or on the days picked.</div>
         <div class="prot-desc" id="ontimer-autooff" hidden data-t="adv.onTimer.autoOff">Switched on this way, the TV goes
           back off after two hours unless a button is pressed. That can be turned off in the TV's own Timers menu.</div>
-        <div class="timer-days" id="days_ontimer"></div>
       </div>
       <div class="prot-status timer-ctl">
         <input type="time" class="pill-sel" id="time_ontimer" aria-label="On Timer time" data-t-aria-label="adv.onTimer.time"
           onchange="setPowerTimer('on', { time: this.value })">
         <button type="button" class="pill idle" id="btn_ontimer" onclick="togglePowerTimer('on')">&mdash;</button>
       </div>
+      <div class="timer-days" id="days_ontimer"></div>
     </div>
     <div class="prot-row" id="row-offtimer" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.offTimer">Off Timer</div>
         <div class="prot-desc" data-t="adv.offTimer.desc">Switches the TV off at this time, once or on the days picked.</div>
-        <div class="timer-days" id="days_offtimer"></div>
       </div>
       <div class="prot-status timer-ctl">
         <input type="time" class="pill-sel" id="time_offtimer" aria-label="Off Timer time" data-t-aria-label="adv.offTimer.time"
           onchange="setPowerTimer('off', { time: this.value })">
         <button type="button" class="pill idle" id="btn_offtimer" onclick="togglePowerTimer('off')">&mdash;</button>
       </div>
+      <div class="timer-days" id="days_offtimer"></div>
     </div>
   </div>
 
