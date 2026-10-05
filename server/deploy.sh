@@ -50,7 +50,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=6 -o StrictHostKeyChecking=accept-new)
 STAGE=/var/lib/tvweb/.deploy     # on the TV; beside the install so moves are renames
 
-FILES="tvweb.js tvwebctl assets/ui.html assets/dashboard.html \
+FILES="tvweb.js tvwebctl assets/ui.html assets/dashboard.html assets/favicon.svg \
 assets/ui/ui.css assets/ui/core.js assets/ui/theme.js assets/ui/format.js assets/ui/readouts.js \
 assets/ui/update.js assets/ui/controls.js assets/ui/privacy.js assets/ui/lgsettings.js assets/ui/game.js \
 assets/ui/system.js assets/ui/apps.js assets/ui/install.js assets/ui/tabs.js assets/ui/servicemenu.js \
