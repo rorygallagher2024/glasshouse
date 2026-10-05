@@ -1832,8 +1832,8 @@
   "from": "Tracking and ads are off"
  },
  "pv.allOff.hint": {
-  "text": "Desactivarlo todo mantiene las funciones de la TV en marcha. Se puede deshacer en Avanzado.",
-  "from": "Switching it all off keeps the TV’s features working. It can be undone under Advanced."
+  "text": "Desactivarlo todo incluye bloquear los servidores de anuncios y seguimiento de LG. Si después una app deja de funcionar, desactiva el bloqueador en Avanzado.",
+  "from": "Switching it all off includes blocking LG’s ad and tracking servers. If an app stops working afterwards, switch the blocker off under Advanced."
  },
  "pv.allOff.watch": {
   "text": "Si una actualización de LG reactiva algo, aparece aquí.",
@@ -4704,8 +4704,8 @@
   "from": "Blocks advertising, tracking and diagnostics addresses. LG’s app store and software updates still work."
  },
  "tv.privacy.allOff.hint": {
-  "text": "Mantiene funcionando las funciones de la TV. Todo se puede volver a activar más abajo.",
-  "from": "Keeps the TV’s features working. Anything can be switched back on further down."
+  "text": "Incluye bloquear los servidores de anuncios y seguimiento de LG. Si después una app deja de funcionar, desactiva el bloqueo más abajo.",
+  "from": "Includes blocking LG’s ad and tracking servers. If an app stops working afterwards, switch blocking off further down."
  },
  "tv.privacy.allOff.press": {
   "text": "Pulsa OK para desactivarlo todo",

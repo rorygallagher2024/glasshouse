@@ -776,7 +776,7 @@ function privacyRows(d) {
              cls: sm.total ? (can ? 'act' : 'off') : 'on',
              act: sm.total && can ? 'allOff' : null,
              press: t('tv.privacy.allOff.press', 'Press OK to switch it all off'),
-             hint: sm.total ? t('tv.privacy.allOff.hint', 'Keeps the TV’s features working. Anything can be switched back on further down.')
+             hint: sm.total ? t('tv.privacy.allOff.hint', 'Includes blocking LG’s ad and tracking servers. If an app stops working afterwards, switch blocking off further down.')
                             : t('pv.allOff.watch', 'If an LG update switches anything back on, it shows here.') });
     for (var sa = 0; sa < sm.areas.length; sa++) {
       var ar = sm.areas[sa];

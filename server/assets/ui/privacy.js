@@ -42,7 +42,7 @@ function renderSimple(d) {
     ? (sm.total === 1 ? t('pv.stillOn.one', '1 thing is still on') : t('pv.stillOn', '{n} things are still on', { n: sm.total }))
     : t('pv.allOff', 'Tracking and ads are off');
   q('ps-sub').textContent = sm.total
-    ? t('pv.allOff.hint', 'Switching it all off keeps the TV\u2019s features working. It can be undone under Advanced.')
+    ? t('pv.allOff.hint', 'Switching it all off includes blocking LG\u2019s ad and tracking servers. If an app stops working afterwards, switch the blocker off under Advanced.')
     : t('pv.allOff.watch', 'If an LG update switches anything back on, it shows here.');
   q('ps-areas').innerHTML = sm.areas.map(a => {
     const n = a.items.length;
