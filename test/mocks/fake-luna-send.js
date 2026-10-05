@@ -6,7 +6,10 @@
  *
  * FAKE_LUNA_CHAOS=1 makes the TV unreliable: some calls answer late, never
  * answer, answer with rubbish or an error, or die before answering; some
- * subscriptions drop after a few seconds.
+ * subscriptions drop after a few seconds. Which ones is fixed rather than
+ * random, so a run takes the same time each time: the nth call with a given
+ * uri and payload always misbehaves the same way (the count is kept under
+ * FAKE_ROOT).
  *
  * FAKE_LUNA_SCRIPT names a JSON file { "<uri>": { steps: [{ delay: ms, out:
  * object | raw: string }], end: "hold" | "exit" | "fail" } }. A call to a
@@ -78,23 +81,48 @@ function answer() {
   process.stdout.write(JSON.stringify(res) + '\n', function () { if (!subscribe) process.exit(0); });
 }
 
+/*
+ * Which call this is, among those with the same uri and payload: the first to
+ * create <key>.<n> owns n, which holds when calls run side by side.
+ */
+function callNumber(key) {
+  var fs = require('fs'), path = require('path');
+  var dir = path.join(process.env.FAKE_ROOT || require('os').tmpdir(), 'fake-luna-calls');
+  try { fs.mkdirSync(dir); } catch (e) {}
+  for (var n = 0; ; n++) {
+    try { fs.closeSync(fs.openSync(path.join(dir, key + '.' + n), 'wx')); return n; } catch (e) {
+      if (e.code !== 'EEXIST') return 0;
+    }
+  }
+}
+
+function hashOf(text) {
+  var h = 5381;
+  for (var c = 0; c < text.length; c++) h = ((h * 33) ^ text.charCodeAt(c)) >>> 0;
+  return h;
+}
+
 if (process.env.FAKE_LUNA_CHAOS) {
-  var roll = Math.random();
+  // Each call takes the next of 20 slots: 2 late, 1 silent, 1 rubbish, 1
+  // error, 1 dies, the rest answer. The hash sets where each uri starts, so
+  // some fail on their first call and they do not all fail together.
+  var key = String(hashOf(uri + ' ' + JSON.stringify(payload)));
+  var slot = (callNumber(key) + hashOf(key)) % 20;
   if (subscribe) {
     answer();
     // Some subscriptions drop, as a restarting LG service does.
-    if (roll < 0.3) setTimeout(function () { process.exit(1); }, 2000 + Math.random() * 4000);
+    if (slot % 10 < 3) setTimeout(function () { process.exit(1); }, 2000 + (slot % 10) * 2000);
     else setInterval(function () {}, 60000);
-  } else if (roll < 0.10) {
+  } else if (slot < 2) {
     setTimeout(answer, 2000);                                 // late
-  } else if (roll < 0.15) {
+  } else if (slot === 2) {
     setInterval(function () {}, 60000);                       // never answers
-  } else if (roll < 0.20) {
+  } else if (slot === 3) {
     process.stdout.write('{"returnValue": tru', function () { process.exit(0); });   // rubbish
-  } else if (roll < 0.25) {
+  } else if (slot === 4) {
     process.stdout.write(JSON.stringify({ returnValue: false, errorCode: -1, errorText: 'Service busy' }) + '\n',
       function () { process.exit(0); });
-  } else if (roll < 0.30) {
+  } else if (slot === 5) {
     process.kill(process.pid, 'SIGABRT');                     // dies before answering
   } else {
     answer();

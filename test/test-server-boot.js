@@ -113,6 +113,7 @@ function waitFor(what, test, ms, cb, fail) {
 
 function phase(name, chaos, next) {
   var root = path.join(os.tmpdir(), 'tvweb-boot-' + process.pid + '-' + (chaos ? 'chaos' : 'steady'));
+  rmrf(root); // fake-luna-send's call counts live here and must start at 0
   Object.keys(mockFiles).forEach(function (f) {
     if (mockFiles[f] === null) return;
     mkdirp(path.dirname(path.join(root, f)));
