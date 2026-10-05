@@ -70,7 +70,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: ['0.12', '8.12', '16']
+        node: ['0.12', '8.12', '16', '24']
     name: unit tests on node ${{ matrix.node }}
     steps:
       - uses: actions/checkout@v7
