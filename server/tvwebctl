@@ -22,6 +22,11 @@ RESTARTS=${TVWEB_RESTARTS:-/var/lib/tvweb/tvweb.restarts}
 NODE=${TVWEB_NODE:-/usr/bin/node}
 SELF=$(readlink -f "$0" 2>/dev/null || echo /var/lib/tvweb/tvwebctl)
 
+# Never keep the caller's working directory: if started from a directory that is
+# later deleted (like a temporary deploy path), node's module loader fails on
+# every restart with ENOENT in uv_cwd when process.cwd() no longer resolves.
+cd / || exit 1
+
 # How long the heartbeat may go unwritten before the server is considered
 # wedged. The server writes it every 20s, so this is five missed beats - long
 # enough that a busy TV delaying a timer is never mistaken for a hang.

@@ -100,6 +100,15 @@ waitFor('the server and its heartbeat', function () { return alive(serverPid()) 
   if (copies.length !== 1) return finish(1, 'a second start left ' + copies.length + ' servers running');
   console.log('  ✓ a second start leaves the running server as the only one');
 
+  // The server and watchdog run from /, so a deleted caller directory cannot break restarts
+  var serverCwd = fs.readlinkSync('/proc/' + first + '/cwd');
+  if (serverCwd !== '/') return finish(1, 'server cwd is ' + serverCwd + ', expected /');
+  var watchPid = parseInt(read(env.TVWEB_WATCHPID), 10);
+  if (watchPid) {
+    var watchCwd = fs.readlinkSync('/proc/' + watchPid + '/cwd');
+    if (watchCwd !== '/') return finish(1, 'watchdog cwd is ' + watchCwd + ', expected /');
+  }
+
   // 1. A server that keeps beating is left alone
   after(9000, function () {
     if (read(RESTARTS)) return finish(1, 'a healthy server was restarted');
