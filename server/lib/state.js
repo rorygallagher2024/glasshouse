@@ -246,7 +246,10 @@ function init(opts) {
   for (var groupName in groups) {
     (function (name) {
       groups[name].onState(function (event) {
-        state.update(name, event.key, event.value, event.sourceTime);
+        var changed = state.update(name, event.key, event.value, event.sourceTime);
+        // Only what the TV reports changing, not the first answer after
+        // subscribing nor a value telemetry filled in (reconcile).
+        if (changed && !event.snapshot && opts.onTvChange) opts.onTvChange(event);
       });
     })(groupName);
   }

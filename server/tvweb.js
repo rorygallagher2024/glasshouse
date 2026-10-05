@@ -299,7 +299,7 @@ function clearLunaCache(match) { lunaCacheObj.forget(match); }
  * the picture modes on offer, which follow the dynamic range of what is on.
  */
 var LIVE_STALE = {
-  audio: ['com.webos.audio/', '"category":"sound"'],
+  audio: ['com.webos.audio/', 'com.webos.service.audio/', '"category":"sound"'],
   application: ['getForegroundAppInfo', '"category":"picture"'],
   picture: ['"category":"picture"']
 };
@@ -383,8 +383,12 @@ var liveState = stateModule.init({
   clearCache: function (group) {
     telemetry.expireStats();
     clearLunaCache(LIVE_STALE[group]);
-  }
+  },
+  onTvChange: function (ev) { tvChanged(ev); }
 });
+// Set once MQTT is up: publishes a change the TV reports without waiting.
+/** @type {function(Object): void} */
+var tvChanged = function () {};
 
 // Set once MQTT is up: PicCap appearing or going changes the discovery.
 var piccapChanged = function () {};
@@ -897,6 +901,21 @@ function setupHomeAssistant() {
 
   var lastPicSig = '';
   publishNow = function () { publishTelemetry(); };
+
+  /*
+   * A change the TV reports itself - an input or app, the picture, the volume
+   * - goes to Home Assistant at once rather than at the next telemetry tick
+   * (#465). Changes close together go out as one, since holding the volume key
+   * sends many, and publishes stay 1.5s apart: each reads a few dozen things
+   * from the TV. A change during a publish goes out after it, as that publish
+   * may have read the value from before. Power has its own path, setTvOff.
+   */
+  var pusher = mqttStateModule.changePublisher({
+    settleMs: 300, gapMs: 1500, publish: function () { publishTelemetry(); }
+  });
+  tvChanged = function (ev) {
+    if (ev.group !== 'power' && mqttClient.connected) pusher.changed();
+  };
   var lastAppSig = '';
   var lastCapSig = '';
 
@@ -961,6 +980,7 @@ function setupHomeAssistant() {
   function publishTelemetry() {
     if (!mqttClient.connected) return;
     lastPublish = Date.now();
+    pusher.started();
     mqttClient.publish(mqttTopics.status, statusPayload(), true);
     lgSettings.collect(LGS_SECTIONS, function (ls) {
     telemetry.collectStats(function(s) {
@@ -1014,6 +1034,7 @@ function setupHomeAssistant() {
       for (var pk in s) if (pk !== 'apps' && pk !== 'temps') pub[pk] = s[pk];
       mqttClient.publish(mqttTopics.telemetry, JSON.stringify(pub), true);
       MQTT_STATUS.lastPublish = Date.now();
+      pusher.finished();
       /*
        * The picture modes a set will accept change with the source's dynamic
        * range, and a select whose options cannot be applied is worse than no

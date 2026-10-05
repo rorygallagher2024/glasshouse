@@ -58,6 +58,37 @@ function init(opts) {
   };
 }
 
+/*
+ * Calls publish soon after a change: settleMs after the first of a run of
+ * changes, which go out as one, and never sooner than gapMs after the last
+ * publish began. A change while a publish is under way is held until
+ * finished(), since that publish may have read the value from before. A
+ * publish that never finishes is forgotten after 15s rather than holding
+ * changes back for good.
+ */
+function changePublisher(opts) {
+  var timer = null, since = 0, last = 0, again = false;
+  function busy() { return since !== 0 && Date.now() - since < 15000; }
+  function changed() {
+    if (busy()) { again = true; return; }
+    if (timer) return;
+    timer = setTimeout(function () {
+      timer = null;
+      if (busy()) { again = true; return; }
+      opts.publish();
+    }, Math.max(opts.settleMs, last + opts.gapMs - Date.now()));
+  }
+  return {
+    changed: changed,
+    started: function () { since = last = Date.now(); },
+    finished: function () {
+      since = 0;
+      if (again) { again = false; changed(); }
+    }
+  };
+}
+
 module.exports = {
-  init: init
+  init: init,
+  changePublisher: changePublisher
 };
