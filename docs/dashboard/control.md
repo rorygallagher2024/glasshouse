@@ -1,17 +1,34 @@
-# Control and Advanced
+# Control
 
-The **Control** tab, `/?tab=control`, turns the TV itself into a locally controlled device. Instead of relying on LG's cloud services or a phone app, the dashboard talks directly to webOS over the local network.
+The **Control** tab, `/?tab=control`, turns the TV into a locally controlled device over the home network, operating directly with webOS without relying on LG's cloud services or mobile applications.
 
-From a browser, the dashboard can navigate the TV, change inputs, control playback and volume, launch applications, change picture and sound settings, blank the screen, set a sleep timer, and send notifications.
+## Navigation and playback
 
-* A D-pad — arrows, OK, Back and Home — to navigate the TV's own interface.
-* Volume, mute, input select, and media playback — play, pause, stop, skip.
-* App launching, picture presets and sound output routing. The presets on offer are the ones the TV will accept for whatever is playing: a Dolby Vision source has its own presets.
-* Screen blanking, sleep timer, on-screen notifications, and power and restart.
-* Opening a web page on the TV: type an address and the TV's browser takes it.
+* **D-pad navigation:** Directional arrows (Up, Down, Left, Right), OK/Select, Back, and Home to navigate webOS menus and built-in interfaces.
+* **Media playback:** Dedicated transport controls (Play, Pause, Stop, Rewind, Fast Forward) for active media players.
+* **Volume and mute:** Volume slider, precision step buttons (`+` and `-`), and a one-click mute toggle.
+* **Source selection:** One-click switching across active TV inputs, including HDMI ports and Live TV.
 
-The **Advanced** tab, `/?tab=advanced`, holds the TV's own settings that LG keeps several menus deep: Quick Boot, Wake-on-LAN, LG's On and Off Timers (a time, and the days to repeat on), staying connected when off, LG's Always Ready screen, the LG logo shown at power on and off, sound (output, sound mode, digital sound output, balance, automatic volume, eARC and Bluetooth speaker mode), each HDMI input's Deep Colour and audio format, SIMPLINK (HDMI-CEC) and its auto power sync, IP control, auto device detection, and the front lights. Sound mode and balance apply to the TV speakers only, and an HDMI input's settings can be changed only while that input is on screen, as in LG's own menu. Auto device detection finds devices the TV can show on its Home Dashboard and control, from a set-top box to smart lights, plugs and switches; on newer TVs it does so by looking up every address on the home network each time the TV switches on, and switching it off stops those lookups. Each setting appears only on TVs that have it. On the TV itself they are under **System**.
+## Picture and sound
 
-![Advanced tab: Quick Boot, Stay connected when off with its nightly power-down hours, Wake-on-LAN, LG logo, auto device detection and the standby light](../screenshots/advanced.png)
+* **Picture mode presets:** Instant switching between calibrated picture modes (such as Cinema, Filmmaker, ISF Expert, Game Optimizer). The presets offered adapt dynamically to what is currently playing, displaying Dolby Vision presets for Dolby Vision content and HDR presets for HDR signals.
+* **OLED light and backlight:** Live slider adjusting the panel luminance level for the active picture mode.
+* **Energy saving:** Quick toggles for Auto, Off, Minimum, Medium, Maximum, and Screen off energy-saving states.
+* **Sound output routing:** Switch audio output between TV Speaker, HDMI ARC, Optical, Headphone, and Bluetooth.
 
-*The TV's own settings, grouped as Power, Display, Devices and Front lights.*
+## Panel, timers and power
+
+* **Screen blanking:** **Screen off** turns off the OLED or LCD panel immediately while audio and background services continue running. **Screen on** or any remote interaction restores the picture.
+* **Screensaver:** Triggers the configured screensaver directly on the TV.
+* **Sleep timer:** Sets a timed shutoff (Off, 10, 30, 60, 90, or 120 minutes).
+* **Power and reboot:** Switches the TV between standby and on, or performs a full operating system reboot.
+
+## Apps, web and notifications
+
+* **App launcher:** Launch installed webOS applications directly from the dashboard grid.
+* **Screen notifications:** Send instant on-screen toast notifications (up to 120 characters) to display messages on the TV.
+* **Open a web page:** Enter any HTTP or HTTPS URL to launch it immediately in the TV's native web browser.
+
+![Control tab: panel, source, volume, playback, D-pad, sleep timer, picture, sound, apps, screen notifications, web page launcher and power](../screenshots/control.png)
+
+*The Control tab: local remote navigation, playback, inputs, picture presets and power.*
