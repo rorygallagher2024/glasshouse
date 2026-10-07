@@ -71,6 +71,30 @@ console.log = function () { logStamp(_origLog, 'INFO', arguments); };
 console.warn = function () { logStamp(_origWarn, 'WARN', arguments); };
 console.error = function () { logStamp(_origErr, 'ERR', arguments); };
 
+if (typeof process !== 'undefined' && process.on) {
+  process.on('uncaughtException', function (err) {
+    try {
+      var lines = logsModule.formatFatalError(err);
+      for (var i = 0; i < lines.length; i++) {
+        console.error(lines[i]);
+      }
+    } catch (e) {
+      _origErr.call(console, 'fatal: crash handler error: ' + (e && e.message));
+    }
+    process.exit(1);
+  });
+  if (typeof process.on === 'function') {
+    process.on('unhandledRejection', function (reason) {
+      try {
+        var lines = logsModule.formatFatalError(reason);
+        for (var i = 0; i < lines.length; i++) {
+          console.error(lines[i]);
+        }
+      } catch (e) {}
+    });
+  }
+}
+
 /*
  * Bump on release, and tag the release to match: the dashboard turns this into
  * a link to /releases/tag/v<version>, so a value with no tag behind it gives a

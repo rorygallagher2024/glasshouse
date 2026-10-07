@@ -332,10 +332,30 @@ function getLogs(opts, cb) {
   }
 }
 
+/**
+ * Format an unhandled exception or fatal error into structured log lines.
+ * @param {Error|any} err
+ * @returns {Array.<string>}
+ */
+function formatFatalError(err) {
+  var mem = (typeof process !== 'undefined' && process.memoryUsage) ? process.memoryUsage() : null;
+  var memStr = mem ? 'rss=' + Math.round(mem.rss / 1048576) + 'MB heap=' + Math.round(mem.heapUsed / 1048576) + '/' + Math.round(mem.heapTotal / 1048576) + 'MB' : '';
+  var stack = (err && err.stack) ? String(err.stack) : String(err);
+  var out = [];
+  out.push('fatal: uncaught exception' + (memStr ? ' (' + memStr + ')' : ''));
+  var lines = stack.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i].trim();
+    if (l) out.push('fatal: ' + l);
+  }
+  return out;
+}
+
 module.exports = {
   getLogs: getLogs,
   parseSystemLogs: parseSystemLogs,
   parseGlasshouseLogs: parseGlasshouseLogs,
   parseKernelLogs: parseKernelLogs,
-  detectLevel: detectLevel
+  detectLevel: detectLevel,
+  formatFatalError: formatFatalError
 };
