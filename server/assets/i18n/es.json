@@ -4143,6 +4143,10 @@
   "text": "Línea de registro original",
   "from": "Raw log line"
  },
+ "tools.redact": {
+  "text": "Anonimizar",
+  "from": "Redact"
+ },
  "tools.refresh": {
   "text": "Actualizar",
   "from": "Refresh"

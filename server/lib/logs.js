@@ -235,6 +235,7 @@ function parseKernelLogs(raw, bootTimeMs) {
  * @param {Array.<string>} [opts.sources] 'system', 'glasshouse', 'kernel'
  * @param {number|string} [opts.limit]
  * @param {string} [opts.filter]
+ * @param {boolean} [opts.redact]
  * @param {function(Error|null, Object=): void} cb
  */
 function getLogs(opts, cb) {
@@ -322,6 +323,14 @@ function getLogs(opts, cb) {
       allEntries = allEntries.slice(allEntries.length - limit);
     }
 
+    if (opts && opts.redact) {
+      var redacted = [];
+      for (var r = 0; r < allEntries.length; r++) {
+        redacted.push(redactEntry(allEntries[r]));
+      }
+      allEntries = redacted;
+    }
+
     cb(null, {
       ok: true,
       sources: meta,
@@ -368,6 +377,53 @@ function formatFatalError(err) {
   return out;
 }
 
+/**
+ * Redact sensitive diagnostic information (IPs, MACs, device serials, tokens/credentials)
+ * for safe bug reporting, sharing, and exports.
+ * @param {string} str
+ * @returns {string}
+ */
+function redact(str) {
+  if (!str) return str;
+  return String(str)
+    // Passwords, credentials, and basic auth in URLs
+    .replace(/(:\/\/[^:]+:)[^@\s]+(@)/g, '$1<REDACTED>$2')
+    // URL query tokens and auth keys (e.g. ?k=..., &token=...)
+    .replace(/((\?|&)(?:k|token|key|api_key|auth)=)[^&\s"'`>]+/gi, '$1<REDACTED>')
+    // Bearer authorization tokens
+    .replace(/(Bearer\s+)[A-Za-z0-9_\-\.]+/gi, '$1<REDACTED>')
+    // Key-value credentials (e.g. password: "foo", secret = "bar")
+    .replace(/(["']?(?:password|passwd|secret|client_secret|access_token|refresh_token)["']?\s*[:=]\s*["']?)[^"',\s}]+(["']?)/gi, '$1<REDACTED>$2')
+    // Serial numbers and device IDs (e.g. serialNumber: "301NDXK0C912")
+    .replace(/(["']?(?:serial(?:_?number)?|device_?id|esn)["']?\s*[:=]\s*["']?)[A-Za-z0-9_-]{6,}(["']?)/gi, '$1<SERIAL>$2')
+    // Wi-Fi SSIDs (e.g. SSID "MyNetwork")
+    .replace(/(ssid["':=\s]+["'])[^\r\n"']*(["'])/gi, '$1<SSID>$2')
+    // MAC addresses (e.g. 14:49:e0:12:34:56 or 14-49-e0-12-34-56)
+    .replace(/\b([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})\b/g, '<MAC>')
+    // IPv6 addresses (preserving ::1)
+    .replace(/(?:\bfe80:[0-9a-fA-F:]+\b|\b(?:[0-9a-fA-F]{1,4}:){3,7}[0-9a-fA-F]{1,4}\b|\b[0-9a-fA-F]{1,4}::[0-9a-fA-F:]*\b)/gi, '<IPV6>')
+    // IPv4 addresses (private and public, preserving 127.0.0.1 and 0.0.0.0)
+    .replace(/\b(?!(?:127\.0\.0\.1|0\.0\.0\.0)\b)(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g, '<IP>');
+}
+
+/**
+ * Return a copy of a log entry with sensitive data redacted in msg, proc, and raw.
+ * @param {Object} entry
+ * @returns {Object}
+ */
+function redactEntry(entry) {
+  if (!entry) return entry;
+  return {
+    ts: entry.ts,
+    mono: entry.mono,
+    source: entry.source,
+    proc: redact(entry.proc),
+    level: entry.level,
+    msg: redact(entry.msg),
+    raw: redact(entry.raw)
+  };
+}
+
 module.exports = {
   getLogs: getLogs,
   parseSystemLogs: parseSystemLogs,
@@ -375,6 +431,8 @@ module.exports = {
   parseKernelLogs: parseKernelLogs,
   detectLevel: detectLevel,
   formatFatalError: formatFatalError,
+  redact: redact,
+  redactEntry: redactEntry,
   getTvwebLogPath: getTvwebLogPath,
   getTvwebRotatedLogPath: getTvwebRotatedLogPath
 };

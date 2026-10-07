@@ -547,6 +547,8 @@ span.pill.good::before,span.pill.warn::before,span.pill.bad::before{
    should read the same, it just answers to a click. */
 button.pill, button.pill-toggle{background:transparent;font-family:'Manrope';cursor:pointer}
 button.pill:hover:not([disabled]), button.pill-toggle:hover:not([disabled]){background:rgba(var(--fg),.08)}
+button.pill.on, button.pill.active{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100)}
+button.pill.on:hover, button.pill.active:hover{color:var(--btn-on-fg);border-color:var(--w100)}
 button.pill[disabled], button.pill-toggle[disabled]{cursor:default;opacity:.45}
 /* An app's own button carries what is happening to it: a busy one fills like
    the update bar as its install goes on, and an outcome holds for a moment.
