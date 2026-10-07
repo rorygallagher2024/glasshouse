@@ -336,6 +336,91 @@ test('getLogs with redact: true redacts sensitive entries in results', function 
   });
 });
 
+test('recordGlasshouseLog buffers entries in memory and enforces ring capacity', function () {
+  logs.clearGlasshouseRing();
+  assert.strictEqual(logs.getGlasshouseRing().length, 0);
+
+  logs.recordGlasshouseLog('2026-10-07T12:00:00.000Z [100.000] [INFO] test line 1');
+  logs.recordGlasshouseLog('2026-10-07T12:00:01.000Z [101.000] [WARN] test line 2');
+
+  var ring = logs.getGlasshouseRing();
+  assert.strictEqual(ring.length, 2);
+  assert.strictEqual(ring[0].msg, 'test line 1');
+  assert.strictEqual(ring[1].msg, 'test line 2');
+  assert.strictEqual(ring[1].level, 'warning');
+
+  // Push beyond capacity (500)
+  for (var i = 3; i <= 510; i++) {
+    logs.recordGlasshouseLog('2026-10-07T12:00:02.000Z [' + (100 + i) + '.000] [INFO] line ' + i);
+  }
+  var capped = logs.getGlasshouseRing();
+  assert.strictEqual(capped.length, 500);
+  assert.strictEqual(capped[capped.length - 1].msg, 'line 510');
+  logs.clearGlasshouseRing();
+});
+
+test('getLogs serves entries from in-memory ring buffer without reading disk when buffer is sufficient', function (done) {
+  logs.clearGlasshouseRing();
+  var oldEnv = process.env.TVWEB_LOG;
+  // Non-existent file path: if it tried to read disk it would find nothing
+  process.env.TVWEB_LOG = '/var/nonexistent/tvweb.log';
+
+  logs.recordGlasshouseLog('2026-10-07T12:00:00.000Z [100.000] [INFO] buffered entry 1');
+  logs.recordGlasshouseLog('2026-10-07T12:00:01.000Z [101.000] [INFO] buffered entry 2');
+  logs.recordGlasshouseLog('2026-10-07T12:00:02.000Z [102.000] [WARN] buffered entry 3');
+
+  logs.getLogs({ limit: 3, sources: ['glasshouse'] }, function (err, res) {
+    if (oldEnv !== undefined) process.env.TVWEB_LOG = oldEnv;
+    else delete process.env.TVWEB_LOG;
+    logs.clearGlasshouseRing();
+
+    assert.ifError(err);
+    assert.ok(res);
+    assert.strictEqual(res.entries.length, 3);
+    assert.strictEqual(res.entries[0].msg, 'buffered entry 1');
+    assert.strictEqual(res.entries[1].msg, 'buffered entry 2');
+    assert.strictEqual(res.entries[2].msg, 'buffered entry 3');
+    if (typeof done === 'function') done();
+  });
+});
+
+test('getLogs stitches disk entries with ring buffer entries when ring is smaller than limit', function (done) {
+  var fs = require('fs');
+  var path = require('path');
+  var os = require('os');
+
+  logs.clearGlasshouseRing();
+  var tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tvweb-stitch-test-'));
+  var logPath = path.join(tmpDir, 'tvweb.log');
+  var oldEnv = process.env.TVWEB_LOG;
+  process.env.TVWEB_LOG = logPath;
+
+  // Older entries on disk
+  var diskContent = [
+    '2026-10-07T11:00:00.000Z [50.000] [INFO] older disk line 1',
+    '2026-10-07T11:00:01.000Z [51.000] [INFO] older disk line 2'
+  ].join('\n') + '\n';
+  fs.writeFileSync(logPath, diskContent, 'utf8');
+
+  // Newer entry in memory
+  logs.recordGlasshouseLog('2026-10-07T12:00:00.000Z [100.000] [INFO] newer memory line 3');
+
+  logs.getLogs({ limit: 10, sources: ['glasshouse'] }, function (err, res) {
+    if (oldEnv !== undefined) process.env.TVWEB_LOG = oldEnv;
+    else delete process.env.TVWEB_LOG;
+    logs.clearGlasshouseRing();
+    try { fs.unlinkSync(logPath); fs.rmdirSync(tmpDir); } catch (e) {}
+
+    assert.ifError(err);
+    assert.ok(res);
+    assert.strictEqual(res.entries.length, 3);
+    assert.strictEqual(res.entries[0].msg, 'older disk line 1');
+    assert.strictEqual(res.entries[1].msg, 'older disk line 2');
+    assert.strictEqual(res.entries[2].msg, 'newer memory line 3');
+    if (typeof done === 'function') done();
+  });
+});
+
 // Run all tests
 var failures = 0;
 var asyncLeft = 1;

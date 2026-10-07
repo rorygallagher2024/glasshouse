@@ -65,6 +65,13 @@ function logStamp(fn, levelTag, args) {
   } else {
     a.unshift(pfx);
   }
+  try {
+    var lineParts = [];
+    for (var i = 0; i < a.length; i++) {
+      lineParts.push(typeof a[i] === 'string' ? a[i] : JSON.stringify(a[i]));
+    }
+    logsModule.recordGlasshouseLog(lineParts.join(' '));
+  } catch (_) {}
   fn.apply(console, a);
 }
 console.log = function () { logStamp(_origLog, 'INFO', arguments); };
@@ -926,7 +933,9 @@ function setupHomeAssistant() {
     return publishRaw.call(mqttClient, topic, message, retain);
   };
 
-  function publishDiscovery() {
+  var discoveryTimer = null;
+  function doPublishDiscovery() {
+    if (!mqttClient || !mqttClient.connected) return;
     ha.clearRetired(function (topic, payload, retain) {
       mqttClient.publish(topic, payload, retain);
     }, discPfx, devId);
@@ -968,6 +977,21 @@ function setupHomeAssistant() {
       mqttClient.publish(discTopic, JSON.stringify(conf), true);
     }
     console.log('mqtt: published ' + entities.length + ' Home Assistant discovery entities');
+  }
+
+  function publishDiscovery(immediate) {
+    if (immediate) {
+      if (discoveryTimer) {
+        clearTimeout(discoveryTimer);
+        discoveryTimer = null;
+      }
+      return doPublishDiscovery();
+    }
+    if (discoveryTimer) clearTimeout(discoveryTimer);
+    discoveryTimer = setTimeout(function () {
+      discoveryTimer = null;
+      doPublishDiscovery();
+    }, 1200);
   }
 
   /*
@@ -1364,15 +1388,21 @@ function setupHomeAssistant() {
   /* A socket error destroys the socket, so 'close' follows it. The error text
      is the part worth reporting, so it stands until the next connect. */
   mqttClient.on('close', function() {
+    if (discoveryTimer) {
+      clearTimeout(discoveryTimer);
+      discoveryTimer = null;
+    }
     if (MQTT_STATUS.state !== 'error') mqttStatus('connecting', msg('srv.mqtt.dropped', 'connection dropped, retrying'));
   });
 
   process.on('SIGTERM', function() {
+    if (discoveryTimer) clearTimeout(discoveryTimer);
     remotebuttons.stop();
     if (mqttClient) mqttClient.disconnect();
     process.exit(0);
   });
   process.on('SIGINT', function() {
+    if (discoveryTimer) clearTimeout(discoveryTimer);
     remotebuttons.stop();
     if (mqttClient) mqttClient.disconnect();
     process.exit(0);
