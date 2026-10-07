@@ -239,6 +239,103 @@ test('getLogs stitches entries from rotated log tvweb.log.1 across rotation boun
   });
 });
 
+test('logs.redact scrubs sensitive network and device data while preserving safe tokens', function () {
+  // IP addresses
+  assert.strictEqual(
+    logs.redact('connected to 192.168.1.125:1883 and 10.0.0.42 and 172.16.5.10'),
+    'connected to <IP>:1883 and <IP> and <IP>'
+  );
+  assert.strictEqual(
+    logs.redact('listening on 127.0.0.1:8080 and 0.0.0.0:8080 version 0.80.8'),
+    'listening on 127.0.0.1:8080 and 0.0.0.0:8080 version 0.80.8'
+  );
+
+  // MAC addresses
+  assert.strictEqual(
+    logs.redact('peer 14:49:e0:1a:2b:3c and eth 00-14-22-01-23-45'),
+    'peer <MAC> and eth <MAC>'
+  );
+
+  // Serial numbers
+  assert.strictEqual(
+    logs.redact('serialNumber: "301NDXK0C912", device_id=ABCDEF123456'),
+    'serialNumber: "<SERIAL>", device_id=<SERIAL>'
+  );
+
+  // Tokens, keys, and passwords
+  assert.strictEqual(
+    logs.redact('GET /api/logs?k=mySecretToken123&sources=glasshouse'),
+    'GET /api/logs?k=<REDACTED>&sources=glasshouse'
+  );
+  assert.strictEqual(
+    logs.redact('Authorization: Bearer mySecretJwtToken.123.abc'),
+    'Authorization: Bearer <REDACTED>'
+  );
+  assert.strictEqual(
+    logs.redact('{"password":"superSecretPassword","other":"ok"}'),
+    '{"password":"<REDACTED>","other":"ok"}'
+  );
+  assert.strictEqual(
+    logs.redact('connecting to mqtt://user:secretPass@192.168.1.50:1883'),
+    'connecting to mqtt://user:<REDACTED>@<IP>:1883'
+  );
+
+  // Wi-Fi SSIDs
+  assert.strictEqual(
+    logs.redact('wlan0: associate to SSID "Home_Network_5G"'),
+    'wlan0: associate to SSID "<SSID>"'
+  );
+});
+
+test('logs.redactEntry redacts msg, proc, and raw and preserves metadata', function () {
+  var entry = {
+    ts: '2026-10-07T12:00:00.000Z',
+    mono: 123.456,
+    source: 'glasshouse',
+    proc: 'tvweb(192.168.1.131)',
+    level: 'info',
+    msg: 'mqtt connected to 192.168.1.125:1883 with key ?k=secret123',
+    raw: 'raw line with 192.168.1.125:1883 and ?k=secret123'
+  };
+
+  var redacted = logs.redactEntry(entry);
+  assert.strictEqual(redacted.ts, entry.ts);
+  assert.strictEqual(redacted.mono, entry.mono);
+  assert.strictEqual(redacted.source, entry.source);
+  assert.strictEqual(redacted.level, entry.level);
+  assert.strictEqual(redacted.proc, 'tvweb(<IP>)');
+  assert.strictEqual(redacted.msg, 'mqtt connected to <IP>:1883 with key ?k=<REDACTED>');
+  assert.strictEqual(redacted.raw, 'raw line with <IP>:1883 and ?k=<REDACTED>');
+});
+
+test('getLogs with redact: true redacts sensitive entries in results', function (done) {
+  var fs = require('fs');
+  var path = require('path');
+  var os = require('os');
+
+  var tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tvweb-redact-test-'));
+  var logPath = path.join(tmpDir, 'tvweb.log');
+  var oldEnv = process.env.TVWEB_LOG;
+  process.env.TVWEB_LOG = logPath;
+
+  var content = [
+    '2026-10-07T15:00:00.000Z [1000.000] [INFO] connected to 192.168.1.125:1883 with ?k=secretKey'
+  ].join('\n') + '\n';
+  fs.writeFileSync(logPath, content, 'utf8');
+
+  logs.getLogs({ limit: 10, sources: ['glasshouse'], redact: true }, function (err, res) {
+    if (oldEnv !== undefined) process.env.TVWEB_LOG = oldEnv;
+    else delete process.env.TVWEB_LOG;
+    try { fs.unlinkSync(logPath); fs.rmdirSync(tmpDir); } catch (e) {}
+
+    assert.ifError(err);
+    assert.ok(res);
+    assert.strictEqual(res.entries.length, 1);
+    assert.strictEqual(res.entries[0].msg, 'connected to <IP>:1883 with ?k=<REDACTED>');
+    if (typeof done === 'function') done();
+  });
+});
+
 // Run all tests
 var failures = 0;
 var asyncLeft = 1;
