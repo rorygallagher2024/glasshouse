@@ -97,6 +97,27 @@ test('parseGlasshouseLogs parses stamped lines and multi-line continuations', fu
   assert.strictEqual(parsed[3].proc, 'tvweb');
 });
 
+test('parseGlasshouseLogs handles legacy unstamped lines at start without claiming current time', function () {
+  var bootTime = 1760000000000;
+  var raw = [
+    'update: installed v0.75.0',
+    'device detected: LG C2 OLED',
+    '2026-10-07T15:59:30.123Z [13641.123] mqtt: connected'
+  ].join('\n');
+
+  var parsed = logs.parseGlasshouseLogs(raw, bootTime, 14000.0);
+  assert.strictEqual(parsed.length, 3);
+  assert.strictEqual(parsed[0].mono, 0);
+  assert.strictEqual(parsed[0].ts, new Date(bootTime).toISOString());
+  assert.strictEqual(parsed[0].msg, 'update: installed v0.75.0');
+
+  assert.strictEqual(parsed[1].mono, 0);
+  assert.strictEqual(parsed[1].msg, 'device detected: LG C2 OLED');
+
+  assert.strictEqual(parsed[2].mono, 13641.123);
+  assert.strictEqual(parsed[2].ts, '2026-10-07T15:59:30.123Z');
+});
+
 test('parseKernelLogs parses dmesg monotonic timestamps and process tags', function () {
   var bootTime = 1760000000000;
   var raw = [
