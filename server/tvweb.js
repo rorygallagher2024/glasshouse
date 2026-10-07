@@ -86,8 +86,10 @@ if (typeof process !== 'undefined' && process.on) {
   if (typeof process.on === 'function') {
     process.on('unhandledRejection', function (reason) {
       try {
-        var stack = (reason && reason.stack) ? String(reason.stack) : String(reason);
-        console.error('fatal: unhandled promise rejection: ' + stack);
+        var lines = logsModule.formatFatalError(reason);
+        for (var i = 0; i < lines.length; i++) {
+          console.error(lines[i]);
+        }
       } catch (e) {}
     });
   }
