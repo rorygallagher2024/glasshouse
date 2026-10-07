@@ -259,14 +259,16 @@ function getLogs(opts, cb) {
   var tvwebPath = getTvwebLogPath();
   var rotPath = getTvwebRotatedLogPath();
   var sysAvailable = fs.existsSync(MESSAGES_LOG);
-  var ghAvailable = fs.existsSync(tvwebPath) || fs.existsSync(rotPath);
+  var ringEntries = getGlasshouseRing();
+  var ghAvailable = fs.existsSync(tvwebPath) || fs.existsSync(rotPath) || ringEntries.length > 0;
 
   var meta = {
     system: { available: sysAvailable, path: MESSAGES_LOG },
     glasshouse: {
       available: ghAvailable,
       path: tvwebPath,
-      rotatedAvailable: fs.existsSync(rotPath)
+      rotatedAvailable: fs.existsSync(rotPath),
+      buffered: ringEntries.length
     },
     kernel: { available: true }
   };
@@ -282,19 +284,43 @@ function getLogs(opts, cb) {
   }
 
   if (wantGlasshouse && ghAvailable) {
-    var ghRaw = readTail(tvwebPath, MAX_FILE_READ) || '';
-    var ghEntries = parseGlasshouseLogs(ghRaw, bootTimeMs, uptime);
-    if (fs.existsSync(rotPath) && (ghEntries.length < limit || ghRaw.length < MAX_FILE_READ / 2)) {
-      var remainingBytes = Math.max(0, MAX_FILE_READ - ghRaw.length);
-      if (remainingBytes > 0) {
-        var rotRaw = readTail(rotPath, remainingBytes);
-        if (rotRaw) {
-          var rotEntries = parseGlasshouseLogs(rotRaw, bootTimeMs, uptime);
-          ghEntries = rotEntries.concat(ghEntries);
+    if (ringEntries.length >= limit) {
+      // In-memory ring buffer satisfies request completely - bypass eMMC file reads
+      var sliceStart = ringEntries.length - limit;
+      for (var r = sliceStart; r < ringEntries.length; r++) {
+        allEntries.push(ringEntries[r]);
+      }
+    } else {
+      var ghEntries = [];
+      if (fs.existsSync(tvwebPath) || fs.existsSync(rotPath)) {
+        var ghRaw = readTail(tvwebPath, MAX_FILE_READ) || '';
+        ghEntries = parseGlasshouseLogs(ghRaw, bootTimeMs, uptime);
+        if (fs.existsSync(rotPath) && (ghEntries.length < limit || ghRaw.length < MAX_FILE_READ / 2)) {
+          var remainingBytes = Math.max(0, MAX_FILE_READ - ghRaw.length);
+          if (remainingBytes > 0) {
+            var rotRaw = readTail(rotPath, remainingBytes);
+            if (rotRaw) {
+              var rotEntries = parseGlasshouseLogs(rotRaw, bootTimeMs, uptime);
+              ghEntries = rotEntries.concat(ghEntries);
+            }
+          }
+        }
+      }
+      if (ringEntries.length === 0) {
+        for (var g = 0; g < ghEntries.length; g++) allEntries.push(ghEntries[g]);
+      } else {
+        var firstRing = ringEntries[0];
+        for (var d = 0; d < ghEntries.length; d++) {
+          var de = ghEntries[d];
+          if (de.ts < firstRing.ts || (de.ts === firstRing.ts && de.mono < firstRing.mono)) {
+            allEntries.push(de);
+          }
+        }
+        for (var m = 0; m < ringEntries.length; m++) {
+          allEntries.push(ringEntries[m]);
         }
       }
     }
-    for (var g = 0; g < ghEntries.length; g++) allEntries.push(ghEntries[g]);
   }
 
   function finish() {
@@ -424,6 +450,45 @@ function redactEntry(entry) {
   };
 }
 
+var GH_RING_MAX = 500;
+var ghRing = [];
+
+/**
+ * Record a formatted Glasshouse log line into the in-memory ring buffer.
+ * Bounded to GH_RING_MAX lines to eliminate repetitive eMMC flash reads during live inspection.
+ * @param {string} line
+ * @returns {void}
+ */
+function recordGlasshouseLog(line) {
+  if (typeof line !== 'string' || !line) return;
+  var now = Date.now();
+  var uptime = typeof os.uptime === 'function' ? os.uptime() : 0;
+  var bootTimeMs = now - Math.round(uptime * 1000);
+  var entries = parseGlasshouseLogs(line + '\n', bootTimeMs, uptime);
+  for (var i = 0; i < entries.length; i++) {
+    ghRing.push(entries[i]);
+  }
+  if (ghRing.length > GH_RING_MAX) {
+    ghRing.splice(0, ghRing.length - GH_RING_MAX);
+  }
+}
+
+/**
+ * Get current in-memory Glasshouse ring buffer entries.
+ * @returns {Array.<Object>}
+ */
+function getGlasshouseRing() {
+  return ghRing.slice(0);
+}
+
+/**
+ * Clear ring buffer (for tests).
+ * @returns {void}
+ */
+function clearGlasshouseRing() {
+  ghRing = [];
+}
+
 module.exports = {
   getLogs: getLogs,
   parseSystemLogs: parseSystemLogs,
@@ -433,6 +498,9 @@ module.exports = {
   formatFatalError: formatFatalError,
   redact: redact,
   redactEntry: redactEntry,
+  recordGlasshouseLog: recordGlasshouseLog,
+  getGlasshouseRing: getGlasshouseRing,
+  clearGlasshouseRing: clearGlasshouseRing,
   getTvwebLogPath: getTvwebLogPath,
   getTvwebRotatedLogPath: getTvwebRotatedLogPath
 };
