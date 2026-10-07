@@ -1073,10 +1073,10 @@
     <div class="tools-search-count" id="tools-search-count">&mdash;</div>
 
     <div class="tools-actions">
-      <button type="button" class="pill" id="tools-live-btn" onclick="toggleToolsLive()">
-        <span class="live-dot" id="tools-live-dot"></span><span id="tools-live-text" data-t="tools.live">Live</span>
+      <button type="button" class="pill paused" id="tools-live-btn" onclick="toggleToolsLive()" aria-pressed="false">
+        <svg class="tools-live-icon" viewBox="0 0 10 10" aria-hidden="true"><path class="icon-play" d="M2 1l7 4-7 4z"/><path class="icon-pause" d="M2 1h2v8H2zM6 1h2v8H6z"/></svg><span id="tools-live-text">&mdash;</span>
       </button>
-      <button type="button" class="pill" id="tools-refresh-btn" onclick="loadLogs(false)" data-t="tools.refresh" hidden>Refresh</button>
+      <button type="button" class="pill" id="tools-refresh-btn" onclick="loadLogs(false)" data-t="tools.refresh">Refresh</button>
       <button type="button" class="pill" id="tools-copy-btn" onclick="copyToolsLogs()" data-t="tools.copy">Copy</button>
       <button type="button" class="pill" id="tools-download-btn" onclick="downloadToolsLogs()" data-t="tools.download">Export</button>
       <button type="button" class="pill" id="tools-scroll-btn" onclick="scrollToolsToBottom()" data-t="tools.bottom">Bottom</button>

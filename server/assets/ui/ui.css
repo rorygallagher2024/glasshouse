@@ -865,11 +865,11 @@ footer{margin-top:38px;font-size:12px;letter-spacing:.10em;text-transform:upperc
 .tools-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
 
 #tools-live-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-width:96px;padding:0 14px}
-.live-dot{width:7px;height:7px;border-radius:50%;background:#30DE61;display:inline-block;flex:none;
-  box-shadow:0 0 6px rgba(48,222,97,.6);animation:livePulse 2s infinite}
-.live-dot.paused{background:var(--w40);box-shadow:none;animation:none}
+.tools-live-icon{width:10px;height:10px;flex:none;fill:#30DE61;animation:livePulse 2s infinite}
+#tools-live-btn.paused .tools-live-icon{fill:currentColor;animation:none}
+#tools-live-btn .icon-play,#tools-live-btn.paused .icon-pause{display:none}
+#tools-live-btn.paused .icon-play{display:inline}
 @keyframes livePulse{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
-#tools-live-btn.paused{opacity:.7}
 
 /* Terminal View */
 .tools-terminal{background:var(--bg);border:1px solid var(--edge);border-radius:2px;overflow:hidden;

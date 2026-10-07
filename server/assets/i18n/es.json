@@ -4111,10 +4111,6 @@
   "text": "Líneas",
   "from": "Lines"
  },
- "tools.live": {
-  "text": "En vivo",
-  "from": "Live"
- },
  "tools.loading": {
   "text": "Cargando registros del sistema...",
   "from": "Loading system logs..."
@@ -4135,9 +4131,13 @@
   "text": "Avisos",
   "from": "Warnings"
  },
- "tools.paused": {
-  "text": "En pausa",
-  "from": "Paused"
+ "tools.pause": {
+  "text": "Pausar",
+  "from": "Pause"
+ },
+ "tools.play": {
+  "text": "Reproducir",
+  "from": "Play"
  },
  "tools.rawLine": {
   "text": "Línea de registro original",

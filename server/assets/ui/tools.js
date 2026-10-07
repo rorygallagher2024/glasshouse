@@ -4,7 +4,8 @@ let toolsSources = { system: true, glasshouse: true, kernel: false };
 let toolsLimit = 100;
 let toolsLevel = 'all';
 let toolsQuery = '';
-let toolsLive = true;
+// Paused until Play: each poll has the TV read and parse up to 1 MB of logs.
+let toolsLive = false;
 let toolsAutoScroll = true;
 let toolsEntries = [];
 let toolsExpandedIdx = null;
@@ -151,9 +152,6 @@ function updateToolsStats() {
     warnCard.classList.toggle('active-filter', toolsLevel === 'warning');
   }
 
-  // Synchronize refresh button visibility with live mode
-  const refBtn = q('tools-refresh-btn');
-  if (refBtn) refBtn.hidden = toolsLive;
 }
 
 function getFilteredEntries() {
@@ -315,16 +313,21 @@ function resetToolsFilters() {
   setToolsLevelFilter('all');
 }
 
+function renderToolsLiveBtn() {
+  const btn = q('tools-live-btn');
+  if (btn) {
+    btn.classList.toggle('paused', !toolsLive);
+    btn.setAttribute('aria-pressed', String(toolsLive));
+  }
+  if (q('tools-live-text')) q('tools-live-text').textContent = toolsLive ? t('tools.pause', 'Pause') : t('tools.play', 'Play');
+  const refBtn = q('tools-refresh-btn');
+  if (refBtn) refBtn.hidden = toolsLive;
+}
+
 function toggleToolsLive() {
   toolsLive = !toolsLive;
-  const btn = q('tools-live-btn');
-  const dot = q('tools-live-dot');
-  const txt = q('tools-live-text');
-  const refBtn = q('tools-refresh-btn');
-  if (btn) btn.classList.toggle('paused', !toolsLive);
-  if (dot) dot.classList.toggle('paused', !toolsLive);
-  if (txt) txt.textContent = toolsLive ? t('tools.live', 'Live') : t('tools.paused', 'Paused');
-  if (refBtn) refBtn.hidden = toolsLive;
+  renderToolsLiveBtn();
+  if (toolsLive) loadLogs(true);
   scheduleToolsPoll();
 }
 
@@ -452,4 +455,7 @@ function setupToolsScrollListener() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', setupToolsScrollListener);
+document.addEventListener('DOMContentLoaded', () => {
+  renderToolsLiveBtn();
+  setupToolsScrollListener();
+});
