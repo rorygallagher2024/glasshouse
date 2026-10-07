@@ -1287,15 +1287,35 @@ function detectDeviceInfo(cb, triesLeft) {
   );
 }
 
+var frontLightsWaiters = null;
+
 function detectFrontLights(cb) {
-  if (hasLogoLight !== null) return cb(hasLogoLight);
-  if (!lunaFn) return cb(false);
+  if (hasLogoLight !== null) {
+    if (cb) cb(hasLogoLight);
+    return;
+  }
+  if (!lunaFn) {
+    if (cb) cb(false);
+    return;
+  }
+  if (frontLightsWaiters) {
+    if (cb) frontLightsWaiters.push(cb);
+    return;
+  }
+  frontLightsWaiters = cb ? [cb] : [];
   lunaFn('com.webos.service.tv.systemproperty/getSystemProperties',
        { keys: ['tv.model.logoLight'] }, function (res) {
     var v = res && res['tv.model.logoLight'];
     hasLogoLight = (v === true);
-    console.log('front lights: standby LED' + (hasLogoLight ? ' + logo light' : ' only (no logo light on this model)'));
-    cb(hasLogoLight);
+    var waiters = frontLightsWaiters;
+    frontLightsWaiters = null;
+    if (waiters) {
+      for (var i = 0; i < waiters.length; i++) {
+        try {
+          waiters[i](hasLogoLight);
+        } catch (e) {}
+      }
+    }
   });
 }
 
