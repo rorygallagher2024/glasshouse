@@ -197,6 +197,48 @@ test('formatFatalError formats stack traces and primitives with memory stats', f
   assert.strictEqual(strLines[1], 'fatal: string error reason');
 });
 
+test('getLogs stitches entries from rotated log tvweb.log.1 across rotation boundary', function (done) {
+  var fs = require('fs');
+  var path = require('path');
+  var os = require('os');
+
+  var tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tvweb-rot-test-'));
+  var logPath = path.join(tmpDir, 'tvweb.log');
+  var rotPath = path.join(tmpDir, 'tvweb.log.1');
+
+  var oldEnv = process.env.TVWEB_LOG;
+  process.env.TVWEB_LOG = logPath;
+
+  // Earlier entries in rotated generation (.1)
+  var rotContent = [
+    '2026-10-07T15:00:00.000Z [1000.000] [INFO] line 1 from previous generation',
+    '2026-10-07T15:00:01.000Z [1001.000] [WARN] line 2 from previous generation'
+  ].join('\n') + '\n';
+
+  // New entries in current generation
+  var curContent = [
+    '2026-10-07T15:00:02.000Z [1002.000] [INFO] line 3 from current generation'
+  ].join('\n') + '\n';
+
+  fs.writeFileSync(rotPath, rotContent, 'utf8');
+  fs.writeFileSync(logPath, curContent, 'utf8');
+
+  logs.getLogs({ limit: 10, sources: ['glasshouse'] }, function (err, res) {
+    if (oldEnv !== undefined) process.env.TVWEB_LOG = oldEnv;
+    else delete process.env.TVWEB_LOG;
+    try { fs.unlinkSync(logPath); fs.unlinkSync(rotPath); fs.rmdirSync(tmpDir); } catch (e) {}
+
+    assert.ifError(err);
+    assert.ok(res);
+    assert.ok(res.sources.glasshouse.rotatedAvailable);
+    assert.strictEqual(res.entries.length, 3);
+    assert.strictEqual(res.entries[0].msg, 'line 1 from previous generation');
+    assert.strictEqual(res.entries[1].msg, 'line 2 from previous generation');
+    assert.strictEqual(res.entries[2].msg, 'line 3 from current generation');
+    if (typeof done === 'function') done();
+  });
+});
+
 // Run all tests
 var failures = 0;
 var asyncLeft = 1;
