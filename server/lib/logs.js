@@ -14,6 +14,10 @@ function getTvwebLogPath() {
   return process.env.TVWEB_LOG || '/var/lib/tvweb/tvweb.log';
 }
 
+function getTvwebRotatedLogPath() {
+  return (process.env.TVWEB_LOG || '/var/lib/tvweb/tvweb.log') + '.1';
+}
+
 /**
  * Safely read the tail of a file up to maxBytes.
  * @param {string} filePath
@@ -252,12 +256,17 @@ function getLogs(opts, cb) {
   var bootTimeMs = now - Math.round(uptime * 1000);
 
   var tvwebPath = getTvwebLogPath();
+  var rotPath = getTvwebRotatedLogPath();
   var sysAvailable = fs.existsSync(MESSAGES_LOG);
-  var ghAvailable = fs.existsSync(tvwebPath);
+  var ghAvailable = fs.existsSync(tvwebPath) || fs.existsSync(rotPath);
 
   var meta = {
     system: { available: sysAvailable, path: MESSAGES_LOG },
-    glasshouse: { available: ghAvailable, path: tvwebPath },
+    glasshouse: {
+      available: ghAvailable,
+      path: tvwebPath,
+      rotatedAvailable: fs.existsSync(rotPath)
+    },
     kernel: { available: true }
   };
 
@@ -272,11 +281,19 @@ function getLogs(opts, cb) {
   }
 
   if (wantGlasshouse && ghAvailable) {
-    var ghRaw = readTail(tvwebPath, MAX_FILE_READ);
-    if (ghRaw) {
-      var ghEntries = parseGlasshouseLogs(ghRaw, bootTimeMs, uptime);
-      for (var g = 0; g < ghEntries.length; g++) allEntries.push(ghEntries[g]);
+    var ghRaw = readTail(tvwebPath, MAX_FILE_READ) || '';
+    var ghEntries = parseGlasshouseLogs(ghRaw, bootTimeMs, uptime);
+    if (fs.existsSync(rotPath) && (ghEntries.length < limit || ghRaw.length < MAX_FILE_READ / 2)) {
+      var remainingBytes = Math.max(0, MAX_FILE_READ - ghRaw.length);
+      if (remainingBytes > 0) {
+        var rotRaw = readTail(rotPath, remainingBytes);
+        if (rotRaw) {
+          var rotEntries = parseGlasshouseLogs(rotRaw, bootTimeMs, uptime);
+          ghEntries = rotEntries.concat(ghEntries);
+        }
+      }
     }
+    for (var g = 0; g < ghEntries.length; g++) allEntries.push(ghEntries[g]);
   }
 
   function finish() {
@@ -357,5 +374,7 @@ module.exports = {
   parseGlasshouseLogs: parseGlasshouseLogs,
   parseKernelLogs: parseKernelLogs,
   detectLevel: detectLevel,
-  formatFatalError: formatFatalError
+  formatFatalError: formatFatalError,
+  getTvwebLogPath: getTvwebLogPath,
+  getTvwebRotatedLogPath: getTvwebRotatedLogPath
 };
