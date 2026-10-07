@@ -421,6 +421,28 @@ test('getLogs stitches disk entries with ring buffer entries when ring is smalle
   });
 });
 
+test('shouldLog filters log levels according to quiet, info, and debug modes', function () {
+  // quiet mode: only WARN, ERR, and FATAL are allowed
+  assert.strictEqual(logs.shouldLog('ERR', 'quiet'), true);
+  assert.strictEqual(logs.shouldLog('FATAL', 'quiet'), true);
+  assert.strictEqual(logs.shouldLog('WARN', 'quiet'), true);
+  assert.strictEqual(logs.shouldLog('INFO', 'quiet'), false);
+  assert.strictEqual(logs.shouldLog('DBG', 'quiet'), false);
+
+  // info mode (default): INFO, WARN, ERR allowed; DBG suppressed
+  assert.strictEqual(logs.shouldLog('ERR', 'info'), true);
+  assert.strictEqual(logs.shouldLog('WARN', 'info'), true);
+  assert.strictEqual(logs.shouldLog('INFO', 'info'), true);
+  assert.strictEqual(logs.shouldLog('DBG', 'info'), false);
+  assert.strictEqual(logs.shouldLog('INFO'), true);
+
+  // debug mode: all levels allowed
+  assert.strictEqual(logs.shouldLog('ERR', 'debug'), true);
+  assert.strictEqual(logs.shouldLog('WARN', 'debug'), true);
+  assert.strictEqual(logs.shouldLog('INFO', 'debug'), true);
+  assert.strictEqual(logs.shouldLog('DBG', 'debug'), true);
+});
+
 // Run all tests
 var failures = 0;
 var asyncLeft = 1;

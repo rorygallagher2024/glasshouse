@@ -55,7 +55,21 @@ var luna = lunaTransport.call;
 var _origLog = console.log;
 var _origWarn = console.warn || console.log;
 var _origErr = console.error;
+var _origDbg = console.debug || console.log;
+
+function getActiveLogLevel() {
+  if (process.env.TVWEB_LOG_LEVEL) return process.env.TVWEB_LOG_LEVEL;
+  if (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.logging && CONFIG.logging.level) {
+    return CONFIG.logging.level;
+  }
+  return 'info';
+}
+
 function logStamp(fn, levelTag, args) {
+  var activeLevel = getActiveLogLevel();
+  if (!logsModule.shouldLog(levelTag, activeLevel)) {
+    return;
+  }
   var iso = new Date().toISOString();
   var up = typeof os.uptime === 'function' ? os.uptime().toFixed(3) : null;
   var pfx = iso + (up !== null ? ' [' + up + ']' : '') + ' [' + levelTag + ']';
@@ -77,6 +91,7 @@ function logStamp(fn, levelTag, args) {
 console.log = function () { logStamp(_origLog, 'INFO', arguments); };
 console.warn = function () { logStamp(_origWarn, 'WARN', arguments); };
 console.error = function () { logStamp(_origErr, 'ERR', arguments); };
+console.debug = function () { logStamp(_origDbg, 'DBG', arguments); };
 
 if (typeof process !== 'undefined' && process.on) {
   process.on('uncaughtException', function (err) {
@@ -119,6 +134,12 @@ var CONFIG = {
   // it is an unauthenticated control endpoint unless `token` is set, and an
   // MQTT-only install has no reason to expose one.  { "web": { "enabled": false } }
   web: { enabled: true },
+
+  // Server logging verbosity: 'quiet', 'info' (default), or 'debug'.
+  //   'quiet': suppress routine info logs; only log warnings and errors
+  //   'info': standard operational logs
+  //   'debug': verbose diagnostics and details
+  logging: { level: 'info' },
 
   port: 8080,           // dashboard port
   host: '0.0.0.0',      // '127.0.0.1' to keep it TV-local only
@@ -318,6 +339,18 @@ loadConfig();
     else if (a[i] === '--config') i++;   // consumed before loadConfig
     else if (a[i] === '--no-mqtt') { CONFIG.mqtt = CONFIG.mqtt || {}; CONFIG.mqtt.enabled = false; }
     else if (a[i] === '--no-control') CONFIG.allowControl = false;
+    else if (a[i] === '--log-level' && a[i + 1]) {
+      CONFIG.logging = CONFIG.logging || {};
+      CONFIG.logging.level = a[++i].toLowerCase();
+    }
+    else if (a[i] === '--quiet' || a[i] === '-q') {
+      CONFIG.logging = CONFIG.logging || {};
+      CONFIG.logging.level = 'quiet';
+    }
+    else if (a[i] === '--debug' || a[i] === '-d') {
+      CONFIG.logging = CONFIG.logging || {};
+      CONFIG.logging.level = 'debug';
+    }
   }
 })();
 
