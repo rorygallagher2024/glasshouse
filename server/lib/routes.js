@@ -173,7 +173,7 @@ function readConfigFile() {
       return JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
     }
   } catch (e) {
-    console.error('warning: could not re-read ' + configFilePath + ': ' + e.message);
+    console.warn('warning: could not re-read ' + configFilePath + ': ' + e.message);
   }
   return {};
 }
@@ -862,7 +862,7 @@ function handleInstallRoute(req, res, u, pathname) {
       writeSettings({ apps: { sideload: enable } }, function (err) {
         if (err) return installError(res, err.message);
         if (enable) {
-          console.error('warning: apps.sideload enabled from dashboard; arbitrary IPK installations allowed');
+          console.warn('warning: apps.sideload enabled from dashboard; arbitrary IPK installations allowed');
         } else {
           console.log('apps: apps.sideload disabled');
         }

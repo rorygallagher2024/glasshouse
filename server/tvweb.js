@@ -53,11 +53,12 @@ var msg = say.msg;
 var luna = lunaTransport.call;
 
 var _origLog = console.log;
+var _origWarn = console.warn || console.log;
 var _origErr = console.error;
-function logStamp(fn, args) {
+function logStamp(fn, levelTag, args) {
   var iso = new Date().toISOString();
   var up = typeof os.uptime === 'function' ? os.uptime().toFixed(3) : null;
-  var pfx = iso + (up !== null ? ' [' + up + ']' : '');
+  var pfx = iso + (up !== null ? ' [' + up + ']' : '') + ' [' + levelTag + ']';
   var a = Array.prototype.slice.call(args);
   if (a.length > 0 && typeof a[0] === 'string') {
     a[0] = pfx + ' ' + a[0];
@@ -66,8 +67,9 @@ function logStamp(fn, args) {
   }
   fn.apply(console, a);
 }
-console.log = function () { logStamp(_origLog, arguments); };
-console.error = function () { logStamp(_origErr, arguments); };
+console.log = function () { logStamp(_origLog, 'INFO', arguments); };
+console.warn = function () { logStamp(_origWarn, 'WARN', arguments); };
+console.error = function () { logStamp(_origErr, 'ERR', arguments); };
 
 /*
  * Bump on release, and tag the release to match: the dashboard turns this into
@@ -235,14 +237,14 @@ function loadConfig() {
             console.log('tightened permissions on ' + paths[i] + ' to 0600');
           }
         } catch (e) {
-          console.error('warning: could not chmod ' + paths[i] + ': ' + e.message);
+          console.warn('warning: could not chmod ' + paths[i] + ': ' + e.message);
         }
         CONFIG_FILE = paths[i];
         console.log('loaded configuration from ' + paths[i]);
         break;
       }
     } catch (e) {
-      console.error('warning: error reading config from ' + paths[i] + ':', e.message);
+      console.warn('warning: error reading config from ' + paths[i] + ':', e.message);
     }
   }
 }
@@ -766,7 +768,7 @@ if (CLI_MODE) {
                 '  control=' + CONFIG.allowControl + '  power=' + CONFIG.allowPower +
                 '  auth=' + (CONFIG.token ? 'token' : 'none'));
     if (CONFIG.apps && CONFIG.apps.sideload === true && !CONFIG.token) {
-      console.error('warning: apps.sideload is on and no token is set; anyone who can reach port ' +
+      console.warn('warning: apps.sideload is on and no token is set; anyone who can reach port ' +
                     CONFIG.port + ' can install a package from a URL or a file');
     }
     oled.detectOled(function () {});   // resolve and log panel type up front
