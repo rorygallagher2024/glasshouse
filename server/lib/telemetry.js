@@ -1365,7 +1365,7 @@ function collectStats(cb) {
 
   var safetyTimeout = setTimeout(function () {
     if (isCollecting) {
-      console.log('warning: stats collection safety timeout reached');
+      console.warn('warning: stats collection safety timeout reached');
       flushStats(lastStats || { ok: false, error: 'timeout' });
     }
   }, 4500);
