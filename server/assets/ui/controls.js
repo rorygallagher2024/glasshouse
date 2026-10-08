@@ -98,6 +98,13 @@ function applyOptimistic(action, value) {
       b.classList.toggle('on', matches);
       if (matches && q('soundout-lbl')) q('soundout-lbl').textContent = b.textContent.toUpperCase();
     }
+    const more = q('so_more');
+    if (more) {
+      const opt = [...more.options].find(o => o.value && o.value === so);
+      more.value = opt ? so : '';
+      more.classList.toggle('on', !!opt);
+      if (opt && q('soundout-lbl')) q('soundout-lbl').textContent = opt.textContent.toUpperCase();
+    }
   } else if (action === 'input') {
     const inp = String(value);
     setLease('input', inp);

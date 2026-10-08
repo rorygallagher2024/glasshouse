@@ -439,6 +439,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 /* Selected, not "good". Green means healthy headroom elsewhere in this UI, so
    selection is shown by inversion instead of by borrowing that meaning. */
 button.on{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100);font-weight:500}
+/* The sound outputs that have no button: a list that reads as one more button. */
+.so-more{appearance:none;font:500 13px 'Manrope';letter-spacing:.10em;text-transform:uppercase;text-align:center;
+  color:var(--w80);background:transparent;border:1px solid var(--edge);border-radius:0;
+  padding:0 10px;min-height:48px;cursor:pointer;transition:.16s ease}
+.so-more:hover{color:var(--w100);border-color:var(--w70)}
+.so-more.on{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100)}
+.so-more option{color:initial;background:initial;text-transform:none;letter-spacing:normal}
 button.on:hover{color:var(--btn-on-fg);border-color:var(--w100)}
 button[disabled]{opacity:.28;cursor:not-allowed}
 button[disabled]:hover{color:var(--w60);border-color:var(--w12)}

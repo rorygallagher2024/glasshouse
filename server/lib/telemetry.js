@@ -1756,7 +1756,11 @@ function collectStats(cb) {
         };
         // Not waited for: the list changes rarely, and Home Assistant reads
         // the last one, which a later collection brings.
-        soundOutputs(rawSnd, function (ids) { if (out.sound && ids.length) out.sound.outputs = ids; });
+        soundOutputs(rawSnd, function (ids) {
+          if (out.sound && ids.length) {
+            out.sound.outputs = ids.map(function (id) { return { id: id, name: names.soundOutput(id).display }; });
+          }
+        });
 
         lunaCachedFn('com.webos.service.acb/getForegroundAppInfo', {}, 4000, function (acb) {
         var pipe = (acb && Array.isArray(acb.acbs)) ? acb.acbs[0] : null;
