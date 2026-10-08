@@ -517,7 +517,6 @@ advertising**, which is why they are a separate tier:
 | Domain | What it actually serves |
 | :--- | :--- |
 | `ngfts.lge.com`, `aic-ngfts.lge.com` | Content and firmware delivery CDN |
-| `ngfts.tv.wiselg.com` | The same name under LG's `wiselg.com` domain, seen during first-time setup; what it serves is not known |
 | `cdplauncher.lgtvcommon.com`, `lgchhomeapp.lgtvcommon.com` | The Home launcher's recommendations and usage reports; needed by the Content Store after a factory reset |
 | `lgtviot.com` | The ThinQ cloud: the LG ThinQ app can no longer control the TV with it blocked |
 | `ueiwsp.com` | Universal Electronics' identification of devices connected over HDMI-CEC |
@@ -527,6 +526,15 @@ advertising**, which is why they are a separate tier:
 `com.webos.appInstallService` names the one its own set installs from:
 `http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2. The full
 tier adds whatever that file says, so a firmware using neither is still covered.
+
+`wiselg.com` is not on either list, though the full tier still blocks it if
+`appInstallService` names it as its store. On webOS 26 the Content Store's
+first request goes to `<country>.tv.wiselg.com`, and a factory-reset TV asks for
+`ngfts.tv.wiselg.com` during setup
+([Huttunen](https://fabricati-diem.inform.social/post/deshittification-as-a-service-part2-bypassing-the-app-store-gatekeeper/)),
+which suggests it is that release's service platform, in place of the SDP
+hosts. None of the tested TVs runs webOS 26, and Huttunen reports Netflix
+being interrupted after a cold boot with it blocked.
 
 The `lgtvcommon.com`, `lgtviot.com` and `ueiwsp.com` rows, and
 `smartad.lge.com` on the ads tier, come from the blocklist in

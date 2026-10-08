@@ -86,7 +86,6 @@ var ADBLOCK_PLATFORM = [
   'eu.lgtvsdp.com',
   'ngfts.lge.com',
   'aic-ngfts.lge.com',
-  'ngfts.tv.wiselg.com',
   // From Huttunen's blocklist (docs/IMPLEMENTATION.md), not a capture of ours.
   // lgtviot.com is the ThinQ cloud, so the ThinQ app loses the TV on this tier.
   'cdplauncher.lgtvcommon.com',
