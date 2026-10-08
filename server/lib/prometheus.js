@@ -15,6 +15,9 @@ var USER_HZ = 100;
 var PANEL_UNIT_SECONDS = 600;
 var MEBIBYTE = 1024 * 1024;
 
+var names = require('./names');
+var snakeCase = names.snakeCase;
+
 function num(v) {
   return typeof v === 'number' && isFinite(v) ? v : null;
 }
@@ -65,85 +68,6 @@ function memoryRead(s) {
 // The JEDEC eMMC PRE_EOL_INFO states, as telemetry names them.
 var EMMC_EOL_STATES = ['Normal', 'Warning', 'Urgent'];
 
-/*
- * The picture settings' dynamic range, with the ALLM suffix (low latency)
- * read off separately. The settings service accepts these four, each with or
- * without ALLM, and nothing else: /etc/palm/description.json on a CX (webOS 5)
- * and a C4 (webOS 9) declares the same eight.
- */
-var DYNAMIC_RANGES = {
-  sdr: 'sdr',
-  hdr: 'hdr',
-  dolbyHdr: 'dolby_vision',
-  technicolorHdr: 'technicolor'
-};
-
-/*
- * A picture mode is the range's prefix (none, hdr, dolbyHdr) and a base mode;
- * the label is the base, since the range has its own. LG's display names are
- * no use as labels: they differ by webOS version (dolbyHdrCinema is "Cinema"
- * on webOS 5, "FILMMAKER MODE" on webOS 9) and by region. hdrExternal and
- * dolbyHdrDarkAmazon appear only in LG's name tables, named as Standard and
- * Cinema Home. hdrEffect is an SDR mode.
- */
-var PICTURE_MODES = {
-  personalized: 'personalized', hdrPersonalized: 'personalized', dolbyHdrPersonalized: 'personalized',
-  vivid: 'vivid', hdrVivid: 'vivid', dolbyHdrVivid: 'vivid',
-  normal: 'standard', hdrStandard: 'standard', dolbyHdrStandard: 'standard', hdrExternal: 'standard',
-  eco: 'eco', hdrEco: 'eco',
-  cinema: 'cinema', hdrCinema: 'cinema', dolbyHdrCinema: 'cinema',
-  hdrCinemaBright: 'cinema_bright', dolbyHdrCinemaBright: 'cinema_bright', dolbyHdrDarkAmazon: 'cinema_bright',
-  sports: 'sports',
-  game: 'game', hdrGame: 'game', dolbyHdrGame: 'game',
-  photo: 'photo',
-  filmMaker: 'filmmaker', hdrFilmMaker: 'filmmaker',
-  expert1: 'expert_bright', expert2: 'expert_dark',
-  hdrEffect: 'hdr_effect'
-};
-
-function snakeCase(v) {
-  return v.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
-}
-
-// A value outside the table keeps its own name rather than being dropped.
-function mapped(table, v) {
-  return table.hasOwnProperty(v) ? table[v] : snakeCase(v);
-}
-
-// The receiver's names for the chroma format and the HDCP version in use.
-var HDMI_CHROMA = { R444: 'rgb_444', Y444: 'ycbcr_444', Y422: 'ycbcr_422', Y420: 'ycbcr_420' };
-var HDMI_HDCP = { HDCP23: '2_3', HDCP22: '2_2', HDCP14: '1_4', HDCP0: 'none' };
-
-/*
- * The PHY mode as a label and the link's rate. FRL runs at its lane rate on
- * every lane, "FRL 12G 4L" being 48 Gbps. TMDS's "3G" and "6G" are ceilings
- * rather than rates: the rate is the character clock, ten bits a character,
- * on the three data channels. A mode named neither way is other, with no rate.
- */
-function hdmiPhyMode(link) {
-  var mode = String(link.phy_mode || '');
-  var frl = mode.match(/^FRL\s+(\d+)G\s+(\d+)L\b/i);
-  if (frl) {
-    var gbps = parseInt(frl[1], 10) * parseInt(frl[2], 10);
-    return { label: 'frl_' + gbps, bitsPerSecond: gbps * 1e9 };
-  }
-  var tmds = mode.match(/^(?:TMDS\s*)?([36])G$/i);
-  if (tmds) {
-    var clock = positive(link.tmds_clock_khz);
-    return { label: 'tmds_' + tmds[1] + 'g', bitsPerSecond: clock === null ? null : clock * 1000 * 10 * 3 };
-  }
-  return { label: 'other', bitsPerSecond: null };
-}
-
-/*
- * The video output service's colorimetry names: BT.2020 in RGB or YCbCr, one
- * name for either.
- */
-var SIGNAL_COLORIMETRY = { BT2020_RGBORYCbCr: 'bt2020_rgb_or_ycbcr' };
-
-// Its pixel encodings, named as the HDMI link's chroma is.
-var SIGNAL_ENCODING = { RGB: 'rgb_444', YCbCr444: 'ycbcr_444', YCbCr422: 'ycbcr_422', YCbCr420: 'ycbcr_420' };
-
 function hdmiLinks(s) {
   return Array.isArray(s.hdmi_links) ? s.hdmi_links : [];
 }
@@ -167,8 +91,7 @@ function hdmiInput(link) {
 function dynamicRange(s) {
   var raw = path(s, ['picture', 'dynamicRange_raw']);
   if (typeof raw !== 'string' || !raw) return null;
-  var lowLatency = /ALLM$/.test(raw);
-  return { range: mapped(DYNAMIC_RANGES, lowLatency ? raw.slice(0, -4) : raw), lowLatency: lowLatency };
+  return names.dynamicRange(raw);
 }
 
 // 1 when the Pixel Refresher is in the given state, 0 when in another, and
@@ -443,8 +366,8 @@ var FAMILIES = [
       var dr = dynamicRange(s);
       var mode = path(s, ['picture', 'mode_raw']);
       var labels = {
-        dynamic_range: dr ? dr.range : '',
-        picture_mode: typeof mode === 'string' && mode ? mapped(PICTURE_MODES, mode) : ''
+        dynamic_range: dr ? dr.label : '',
+        picture_mode: typeof mode === 'string' && mode ? names.pictureMode(mode).label : ''
       };
       return labels.dynamic_range || labels.picture_mode ? [[labels, 1]] : [];
     }
@@ -495,8 +418,8 @@ var FAMILIES = [
       return [[{
         type: typeof format.type === 'string' ? format.type : '',
         eotf: typeof format.eotf === 'string' ? format.eotf : '',
-        colorimetry: typeof format.colorimetry === 'string' ? mapped(SIGNAL_COLORIMETRY, format.colorimetry) : '',
-        encoding: typeof format.encoding === 'string' ? mapped(SIGNAL_ENCODING, format.encoding) : ''
+        colorimetry: typeof format.colorimetry === 'string' ? names.signalColorimetry(format.colorimetry).label : '',
+        encoding: typeof format.encoding === 'string' ? names.signalEncoding(format.encoding).label : ''
       }, 1]];
     }
   },
@@ -540,9 +463,9 @@ var FAMILIES = [
     samples: function (s) {
       return hdmiLinks(s).map(function (link) {
         var labels = hdmiInput(link);
-        labels.phy_mode = hdmiPhyMode(link).label;
-        labels.chroma = link.chroma ? mapped(HDMI_CHROMA, link.chroma) : '';
-        labels.hdcp = link.hdcp ? mapped(HDMI_HDCP, link.hdcp) : '';
+        labels.phy_mode = names.hdmiPhyMode(link.phy_mode, link.tmds_clock_khz).label;
+        labels.chroma = link.chroma ? names.hdmiChroma(link.chroma).label : '';
+        labels.hdcp = link.hdcp ? names.hdmiHdcp(link.hdcp).label : '';
         return [labels, 1];
       });
     }
@@ -553,7 +476,7 @@ var FAMILIES = [
     samples: function (s) {
       var out = [];
       hdmiLinks(s).forEach(function (link) {
-        var rate = hdmiPhyMode(link).bitsPerSecond;
+        var rate = names.hdmiPhyMode(link.phy_mode, link.tmds_clock_khz).bitsPerSecond;
         if (rate !== null) out.push([hdmiInput(link), rate]);
       });
       return out;

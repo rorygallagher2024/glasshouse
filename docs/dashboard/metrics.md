@@ -9,7 +9,7 @@ This is useful both for monitoring and for troubleshooting. It shows whether a h
 * HDMI link state per port, refresh rate, colour depth, pixel clock, and HDMI 2.1 diagnostics where supported (link rate, chroma format, HDCP version, ALLM, VRR, QMS and colorimetry).
 * Dolby Vision / HDR / SDR detection, picture mode, OLED light level, the raw HDMI signal (`3840x2160 @ 120Hz`), audio output routing, and the running app with friendly input names (`Apple TV (HDMI2)`).
 * Magic Remote battery and model; webOS and firmware version, SoC architecture, OLED cell ID and TCON firmware where the platform exposes them.
-* On demand: what is resident in memory, and which processes are using the processor right now.
+* On demand: what is resident in memory, and which processes are using the processor right now. Each process is listed with its pid, the number the TV's logs name it by.
 
 ![Metrics tab: processor, memory, swap and network readouts](../screenshots/metrics-system.png)
 

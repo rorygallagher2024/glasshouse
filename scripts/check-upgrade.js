@@ -96,7 +96,10 @@ function installWith(tag, work, tarball, ver, want) {
   process.on('exit', () => fs.rmSync(work, { recursive: true, force: true }));
 
   // As GitHub lays out a tag's tarball: everything under <repo>-<version>/.
-  const tree = git(['stash', 'create']) || 'HEAD';
+  // stash create fails while another git command holds the index lock; the
+  // last commit is then the tree, without uncommitted changes.
+  let tree = 'HEAD';
+  try { tree = git(['stash', 'create']) || 'HEAD'; } catch (e) { console.log('git stash create failed, checking HEAD: ' + e.message.split('\n')[0]); }
   const tarball = path.join(work, 'release.tar.gz');
   child.execFileSync('git', ['archive', '--format=tar.gz', '--prefix=glasshouse-' + ver + '/', '-o', tarball, tree], { cwd: ROOT });
   process.env.UPGRADE_VERSION = ver;

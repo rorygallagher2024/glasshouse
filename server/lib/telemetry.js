@@ -14,6 +14,7 @@ var toInt = require('./util').toInt;
 var path = require('path');
 var execFile = require('child_process').execFile;
 var ha = require('./ha');
+var names = require('./names');
 var timers = require('./timers');
 
 var SOUND_OUTPUT_MAP = ha.SOUND_OUTPUT_MAP;
@@ -604,40 +605,6 @@ function hdmiDiagnostics(raw, port) {
   var vrrMatch = raw.match(/isFreeSync\[(\d+)\]/i);
   var vrrMinMax = raw.match(/VRR Min\[(\d+)\]\/Max\[(\d+)\]/i);
 
-  var phyMode = null;
-  if (link.phy_mode) {
-    var rawPhy = link.phy_mode;
-    if (/FRL 12G 4L/i.test(rawPhy)) phyMode = 'FRL 48 Gbps';
-    else if (/FRL 10G 4L/i.test(rawPhy)) phyMode = 'FRL 40 Gbps';
-    else if (/FRL 8G 4L/i.test(rawPhy)) phyMode = 'FRL 32 Gbps';
-    else if (/FRL 6G 4L/i.test(rawPhy)) phyMode = 'FRL 24 Gbps';
-    else if (/FRL 6G 3L/i.test(rawPhy)) phyMode = 'FRL 18 Gbps';
-    else if (/FRL 3G 3L/i.test(rawPhy)) phyMode = 'FRL 9 Gbps';
-    else if (/3G/i.test(rawPhy)) phyMode = 'TMDS (3G)';
-    else if (/6G/i.test(rawPhy)) phyMode = 'TMDS (6G)';
-    else phyMode = rawPhy;
-  }
-
-  var format = null;
-  if (link.chroma) {
-    var rawFmt = link.chroma;
-    if (rawFmt === 'R444') format = 'RGB 4:4:4';
-    else if (rawFmt === 'Y444') format = 'YCbCr 4:4:4';
-    else if (rawFmt === 'Y422') format = 'YCbCr 4:2:2';
-    else if (rawFmt === 'Y420') format = 'YCbCr 4:2:0';
-    else format = rawFmt;
-  }
-
-  var hdcp = null;
-  if (link.hdcp) {
-    var rawHdcp = link.hdcp;
-    if (rawHdcp === 'HDCP23') hdcp = 'HDCP 2.3';
-    else if (rawHdcp === 'HDCP22') hdcp = 'HDCP 2.2';
-    else if (rawHdcp === 'HDCP14') hdcp = 'HDCP 1.4';
-    else if (rawHdcp === 'HDCP0') hdcp = 'None';
-    else hdcp = rawHdcp;
-  }
-
   // isFreeSync is the VRR mode rather than a flag: 1 for FreeSync, 2 for
   // HDMI Forum VRR, which G-SYNC uses over HDMI (a PC at 4K120 on a C4,
   // webOS 24, #475). Any mode but 0 is VRR.
@@ -646,9 +613,9 @@ function hdmiDiagnostics(raw, port) {
 
   return {
     port: port,
-    phy_mode: phyMode,
-    chroma: format,
-    hdcp: hdcp,
+    phy_mode: link.phy_mode ? names.hdmiPhyMode(link.phy_mode, link.tmds_clock_khz).display : null,
+    chroma: link.chroma ? names.hdmiChroma(link.chroma).display : null,
+    hdcp: link.hdcp ? names.hdmiHdcp(link.hdcp).display : null,
     allm: allmMatch ? (allmMatch[1] === '1') : null,
     vrr: (vrrMatch || vrrMinMax) ? !!isVrr : null,
     qms: link.qms
@@ -788,13 +755,6 @@ function getPictureEngineInfo() {
   };
 }
 
-// CTA-861-G's EOTF codes in the HDR static metadata; 4 to 7 are reserved.
-var HDR_EOTFS = ['sdr', 'hdr', 'pq', 'hlg'];
-
-// hdrType values renamed after snake-casing. An SDR source reports none,
-// and a C4 (webOS 9) reports player-led (low-latency) Dolby Vision as dolby_ll.
-var HDR_TYPES = { none: 'sdr', dolby_ll: 'dolby_vision_low_latency' };
-
 /*
  * The format and HDR metadata of the connected sink in videooutput's
  * getStatus, or null with none connected or no videoInfo, as in standby.
@@ -820,11 +780,10 @@ function signalFormat(reply) {
     return typeof v === 'number' || typeof v === 'boolean' ? !!v : null;
   }
   var colorimetry = vi.colormetry === 'FUTURE' ? vi.extendedColormetry : vi.colormetry;
-  var type = typeof vi.hdrType === 'string' && vi.hdrType ?
-    vi.hdrType.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase() : null;
+  var eotf = meta && typeof meta.EOTFtype === 'number' ? names.signalEotf(meta.EOTFtype) : null;
   return {
-    type: type && HDR_TYPES.hasOwnProperty(type) ? HDR_TYPES[type] : type,
-    eotf: meta && typeof meta.EOTFtype === 'number' ? (HDR_EOTFS[meta.EOTFtype] || null) : null,
+    type: typeof vi.hdrType === 'string' && vi.hdrType ? names.signalHdrType(vi.hdrType).label : null,
+    eotf: eotf ? eotf.label : null,
     colorimetry: typeof colorimetry === 'string' && colorimetry ? colorimetry : null,
     encoding: typeof vi.pixelEncoding === 'string' && vi.pixelEncoding ? vi.pixelEncoding : null,
     max_luminance: luminance('maxDisplayMasteringLuminance', 1),
@@ -891,27 +850,12 @@ function formatSoundOutput(so) {
 }
 
 function formatPicMode(mode) {
-  if (!mode) return 'Standard';
-  return ha.picModeName(mode);
+  return mode ? names.pictureMode(mode).display : 'Standard';
 }
 
-/*
- * The picture setting's "dimension". LG's own picture settings code (webOS 9.2,
- * QuickSettings PictureModeInterfaces) knows sdr, hdr, dolbyHdr and
- * technicolorHdr, each of the three HDR kinds also with an ALLM suffix: the
- * source asked for Auto Low Latency Mode, the TV's game-style low-latency
- * picture. Anything else is shown readably rather than as one word in capitals.
- */
-var DYNAMIC_RANGES = { sdr: 'SDR', hdr: 'HDR', dolbyHdr: 'Dolby Vision', technicolorHdr: 'Technicolor HDR' };
-
+// The TV gives no dimension where the picture is SDR.
 function formatDynamicRange(dr) {
-  if (!dr) return 'SDR';
-  var s = String(dr), low = /ALLM$/.test(s);
-  if (low) s = s.slice(0, -4);
-  var name = DYNAMIC_RANGES[s] ||
-    s.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/^(sdr|hdr|hlg)/i, function (m) { return m.toUpperCase(); })
-     .replace(/^./, function (c) { return c.toUpperCase(); });
-  return low ? name + ' \u00b7 Low latency' : name;
+  return dr ? names.dynamicRange(String(dr)).display : 'SDR';
 }
 
 function pictureModes(cb) {
@@ -1139,16 +1083,16 @@ function sampleCpuTicks() {
   } catch (e) {
     return null;
   }
-  var names;
-  try { names = fs.readdirSync('/proc'); } catch (e2) { return null; }
-  for (var n = 0; n < names.length; n++) {
-    if (!/^\d+$/.test(names[n])) continue;
+  var entries;
+  try { entries = fs.readdirSync('/proc'); } catch (e2) { return null; }
+  for (var n = 0; n < entries.length; n++) {
+    if (!/^\d+$/.test(entries[n])) continue;
     try {
-      var raw = fs.readFileSync('/proc/' + names[n] + '/stat', 'utf8');
+      var raw = fs.readFileSync('/proc/' + entries[n] + '/stat', 'utf8');
       var close = raw.lastIndexOf(')');
       if (close < 0) continue;
       var f = raw.slice(close + 2).split(' ');
-      out.procs[names[n]] = {
+      out.procs[entries[n]] = {
         ticks: (parseInt(f[11], 10) || 0) + (parseInt(f[12], 10) || 0),
         comm: raw.slice(raw.indexOf('(') + 1, close)
       };
@@ -1180,48 +1124,70 @@ function collectCpuProcesses(cb, retried) {
       return collectCpuProcesses(cb, true);
     }
 
-    var rows = [], busy = 0;
-    for (var pid in second.procs) {
-      if (!second.procs.hasOwnProperty(pid)) continue;
-      var was = first.procs[pid];
-      if (!was) continue;
-      var delta = second.procs[pid].ticks - was.ticks;
-      if (delta <= 0) continue;
-      var pct = delta / elapsed * 100;
-      busy += pct;
-      rows.push({ name: procName(second.procs[pid].comm, procCmdline(pid)), pct: Math.round(pct * 10) / 10 });
-    }
-    rows.sort(function (a, b) { return b.pct - a.pct; });
+    var r = cpuProcessRows(first, second, elapsed);
     cb({
       ok: true,
       windowMs: CPU_WINDOW_MS,
-      busy: Math.round(busy * 10) / 10,
-      active: rows.length,
-      top: rows.slice(0, 10)
+      busy: r.busy,
+      active: r.rows.length,
+      top: r.rows.slice(0, 10)
     });
   }, CPU_WINDOW_MS);
 }
 
-function collectProcesses(cb) {
-  execFile('/bin/ps', ['-eo', 'rss,comm,args'], { timeout: 4000, maxBuffer: 1024 * 1024 }, function (err, stdout) {
-    if (err) return cb({ ok: false, error: msg('srv.processes.failed', 'could not read process list') });
-    var lines = String(stdout || '').split('\n'), rows = [], total = 0, count = 0;
-    for (var i = 0; i < lines.length; i++) {
-      var m = lines[i].match(/^\s*(\d+)\s+(\S+)\s+(\S.*?)\s*$/);
-      if (!m) continue;
-      var rss = parseInt(m[1], 10);
-      count++;
-      total += rss;
-      rows.push({ name: procName(m[2], m[3]), mb: Math.round(rss / 1024 * 10) / 10 });
-    }
-    rows.sort(function (a, b) { return b.mb - a.mb; });
-    cb({
-      ok: true,
-      count: count,
-      totalMb: Math.round(total / 1024),
-      top: rows.slice(0, 10)
+// The processes that used the CPU between two samples, busiest first.
+function cpuProcessRows(first, second, elapsed) {
+  var rows = [], busy = 0;
+  for (var pid in second.procs) {
+    if (!second.procs.hasOwnProperty(pid)) continue;
+    var was = first.procs[pid];
+    if (!was) continue;
+    var delta = second.procs[pid].ticks - was.ticks;
+    if (delta <= 0) continue;
+    var pct = delta / elapsed * 100;
+    busy += pct;
+    rows.push({
+      pid: parseInt(pid, 10),
+      name: procName(second.procs[pid].comm, procCmdline(pid)),
+      pct: Math.round(pct * 10) / 10
     });
+  }
+  rows.sort(function (a, b) { return b.pct - a.pct; });
+  return { rows: rows, busy: Math.round(busy * 10) / 10 };
+}
+
+// Every process, largest resident size first, or the ten largest.
+function collectProcesses(all, cb) {
+  execFile('/bin/ps', ['-eo', 'pid,rss,comm,args'], { timeout: 4000, maxBuffer: 1024 * 1024 }, function (err, stdout) {
+    if (err) return cb({ ok: false, error: msg('srv.processes.failed', 'could not read process list') });
+    cb(parseProcesses(stdout, all));
   });
+}
+
+function parseProcesses(stdout, all) {
+  var lines = String(stdout || '').split('\n'), rows = [], total = 0, count = 0;
+  for (var i = 0; i < lines.length; i++) {
+    var m = lines[i].match(/^\s*(\d+)\s+(\d+)\s+(\S+)(?:\s+(\S.*?))?\s*$/);
+    if (!m) continue;
+    var rss = parseInt(m[2], 10);
+    var comm = m[3], args = m[4];
+    // A blank comm shifts args into its column. comm is never a path, so one
+    // there is the start of args.
+    if (args === undefined || comm.charAt(0) === '/') {
+      args = args === undefined ? comm : comm + ' ' + args;
+      comm = '';
+    }
+    count++;
+    total += rss;
+    rows.push({ pid: parseInt(m[1], 10), name: procName(comm, args), mb: Math.round(rss / 1024 * 10) / 10 });
+  }
+  rows.sort(function (a, b) { return b.mb - a.mb; });
+  return {
+    ok: true,
+    count: count,
+    totalMb: Math.round(total / 1024),
+    top: all ? rows : rows.slice(0, 10)
+  };
 }
 
 function socArchName(raw) {
@@ -1984,6 +1950,8 @@ module.exports = {
   hdmiPorts: hdmiPorts,
   hdmiInputs: hdmiInputs,
   collectProcesses: collectProcesses,
+  parseProcesses: parseProcesses,
+  cpuProcessRows: cpuProcessRows,
   collectCpuProcesses: collectCpuProcesses,
   detectWebosVersion: detectWebosVersion,
   detectHardwareInfo: detectHardwareInfo,

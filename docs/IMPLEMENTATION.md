@@ -107,6 +107,10 @@ instead:
 
 **Do not read `/proc/lg/pm/ts_enable`** — it segfaults the reading process.
 
+The receiver's PHY mode, chroma, and HDCP version are named in
+`server/lib/names.js`, which gives both the display string in `hdmi_diag` and
+the Prometheus label from the one raw value.
+
 The `port<n>` receivers are not numbered as the inputs are, and each keeps its
 link whichever input is on screen. configd holds the board's wiring as
 `inputMap.videoInputMapIndexInfo0`, an `assignment` of `hdmi1` to `hdmi4` to a
@@ -128,6 +132,8 @@ and to `dolby_vision` when the TV maps it from a BT.709 RGB 4:4:4 carrier. The
 picture settings' `dynamicRange` is `dolbyHdr` in both. Its `ALLM` suffix, like
 `isAllm` in the receiver's status file, is the source asking for low-latency
 processing in any format, and is independent of either.
+The names of the dynamic range, the HDR type, the EOTF, the colorimetry, and
+the pixel encoding come from `server/lib/names.js`.
 
 webOS 3.9 has no temperature source at all: `/proc/lg/pm/temperature` is absent,
 nothing under `/proc/lg` or `/sys` is named for temperature, `/sys/class/thermal` is
@@ -596,7 +602,7 @@ Glasshouse's next start:
 `hostname` is the name the TV sends as; left empty, it is the device name.
 `sources` takes `system` (`/var/log/messages`), `glasshouse` (`tvweb.log`) and
 `kernel`. The kernel's is not on by default, since following it means running
-`dmesg` every poll.
+`dmesg` every 30 seconds.
 
 Forwarding follows the files rather than wrapping `console.log`, so lines
 Glasshouse never wrote through console go too: libuv's assertions, and the crash
@@ -605,8 +611,12 @@ seconds a timer reads what each file gained since the last poll, with the
 Tools tab's cursor reads and parsers, so what leaves the TV is what the tab
 shows. A read takes at most 64 KB and the next poll carries on: the loop is
 single threaded, and a large synchronous read would hold up every HTTP answer
-and the heartbeat. `dmesg -r` is read whole and sent from after the last
-uptime sent.
+and the heartbeat. `dmesg -r` is read whole every 30 seconds and sent from
+after the last uptime sent. It starts in turn with the luna-send children,
+with the same gap between starts: on a CX (webOS 5), luna-send children
+aborting in libuv went from 1 to 3 an hour to 13 in 47 minutes once `dmesg`
+ran every 5 seconds outside that gate. The ring holds minutes of lines there,
+so nothing is lost between reads.
 
 Where a start begins:
 

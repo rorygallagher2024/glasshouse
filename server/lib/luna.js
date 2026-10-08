@@ -6,6 +6,7 @@
 var childProcess = require('child_process');
 var execFile = childProcess.execFile;
 var spawn = childProcess.spawn;
+var children = require('./children');
 
 // Overridable so the start-up test can run the whole server against a stand-in.
 var LUNA_SEND = process.env.TVWEB_LUNA_SEND || '/usr/bin/luna-send';
@@ -21,52 +22,6 @@ var LUNA_SEND = process.env.TVWEB_LUNA_SEND || '/usr/bin/luna-send';
 var PARALLEL = 2;
 var running = 0;
 var waiting = [];
-
-/*
- * Every process start, one-shot or subscription, waits its turn here, with a
- * gap between starts. Starting a child is the moment the freeze above can
- * happen, and it is likeliest while node's own threads are busy, as they are
- * just after start: 6 of 11 wedges a B8 logged in a fortnight came within 5
- * minutes of the server starting. The first 30s get a wider gap, so the
- * start-up calls and subscriptions spread out instead of landing together.
- */
-var GAP_MS = 50;
-// Not wider: a stats read makes about a dozen calls, and at 400ms apart it ran
-// past its 4.5s limit and came back incomplete during start-up.
-var STARTUP_GAP_MS = 150;
-var STARTUP_MS = 30000;
-/*
- * Monotonic, not Date.now(): the wall clock can step back, and a start due
- * "later" by the old clock then waited out the whole step, every call and
- * subscription with it, while the heartbeat carried on.
- */
-function monotonicMs() {
-  var t = process.hrtime();
-  return t[0] * 1000 + t[1] / 1e6;
-}
-var bornAt = monotonicMs();
-var launches = [];
-var launchTimer = null;
-var nextLaunchAt = 0;
-
-function launch(fn) {
-  launches.push(fn);
-  drainLaunches();
-}
-
-function drainLaunches() {
-  if (launchTimer || !launches.length) return;
-  var now = monotonicMs();
-  var gap = now - bornAt < STARTUP_MS ? STARTUP_GAP_MS : GAP_MS;
-  var wait = nextLaunchAt - now;
-  if (wait > 0) {
-    launchTimer = setTimeout(function () { launchTimer = null; drainLaunches(); }, wait);
-    return;
-  }
-  nextLaunchAt = now + gap;
-  launches.shift()();
-  drainLaunches();
-}
 
 function startWaiting() {
   while (running < PARALLEL && waiting.length) {
@@ -88,7 +43,7 @@ function diedEarly(err) {
 }
 
 function run(job) {
-  launch(function () { runNow(job); });
+  children.launch(function () { runNow(job); });
 }
 
 function runNow(job) {
@@ -157,7 +112,7 @@ Subscription.prototype._connect = function () {
   var self = this;
   if (self.stopped || self.child || self.launching) return;
   self.launching = true;
-  launch(function () {
+  children.launch(function () {
     self.launching = false;
     self._spawn();
   });

@@ -1105,7 +1105,8 @@ function handleRequest(req, res) {
   }
 
   if (pathname === '/api/processes') {
-    return telemetryModule.collectProcesses(function (r) { send(res, 200, JSON.stringify(r)); });
+    var allProcesses = u.query.all === '1' || u.query.all === 'true';
+    return telemetryModule.collectProcesses(allProcesses, function (r) { send(res, 200, JSON.stringify(r)); });
   }
 
   // LG's Game Optimizer settings, for the game input and genre in use, and

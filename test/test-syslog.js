@@ -5,12 +5,33 @@
  */
 
 var assert = require('assert');
+var child = require('child_process');
 var dgram = require('dgram');
 var fs = require('fs');
 var os = require('os');
 var path = require('path');
+
+// dmesg answers from here. The module keeps its own reference to execFile, so
+// this has to be in place before it is required.
+var dmesgRuns = 0;
+var dmesgOut = '';
+var realExecFile = child.execFile;
+child.execFile = function (file, args, opts, cb) {
+  if (file !== 'dmesg') return realExecFile.apply(child, arguments);
+  dmesgRuns++;
+  process.nextTick(function () { cb(null, dmesgOut); });
+};
+
 var logs = require('../server/lib/logs');
+var children = require('../server/lib/children');
 var syslog = require('../server/lib/syslog');
+
+var launches = 0;
+var realLaunch = children.launch;
+children.launch = function (fn) {
+  launches++;
+  realLaunch(fn);
+};
 
 var BOOT = Date.UTC(2026, 9, 8, 12, 0, 0);
 var OPTS = { hostname: 'Living Room TV', bootTimeMs: BOOT, redact: true };
@@ -264,6 +285,7 @@ function testBootMarker() {
     listener.close();
     try { fs.unlinkSync(messages); fs.unlinkSync(marker); fs.rmdirSync(dir); } catch (e) {}
     console.log('  ✓ the boot marker is left once the boot lines are sent, not at start');
+    testKernelInterval();
   });
   listener.bind(0, '127.0.0.1', function () {
     syslog.init({ config: { syslog: { server: '127.0.0.1', port: listener.address().port } }, messagesPath: messages, markerPath: marker, uptime: function () { return 4000; } });
@@ -272,6 +294,62 @@ function testBootMarker() {
       assert.ok(!fs.existsSync(marker), 'a start that has not sent the boot lines leaves no marker');
       syslog.setHostname('Bedroom TV');
       setTimeout(function () { syslog.poll(); }, 50);
+    });
+  });
+}
+
+// 9. dmesg runs in turn with the other child starts, every 30 s rather than
+// at every poll of the files
+function testKernelInterval() {
+  var dir = tempDir();
+  var messages = path.join(dir, 'messages');
+  var started = path.join(dir, 'started');
+  process.env.TVWEB_LOG = path.join(dir, 'tvweb.log');
+  fs.writeFileSync(messages, '');
+  fs.writeFileSync(started, '');
+  dmesgOut = '<6>[   10.000000] already in the ring at the start\n';
+  dmesgRuns = 0;
+  launches = 0;
+  var now = 1000000;
+  var got = [];
+  var listener = dgram.createSocket('udp4');
+  var deadline = setTimeout(function () { assert.fail('timed out with ' + got.length + ' messages'); }, 5000);
+  listener.on('message', function (buf) { got.push(buf.toString('utf8')); });
+
+  function settle(fn) { setTimeout(fn, 50); }
+
+  listener.bind(0, '127.0.0.1', function () {
+    syslog.init({ config: { syslog: { server: '127.0.0.1', port: listener.address().port, sources: ['system', 'kernel'] } },
+                  messagesPath: messages, markerPath: started, uptime: function () { return 4000; },
+                  clock: function () { return now; } });
+    syslog.start();
+    syslog.setHostname('Bedroom TV');
+    settle(function () {
+      syslog.poll(function () {
+        assert.strictEqual(dmesgRuns, 1, 'the first poll reads the kernel log');
+        assert.strictEqual(launches, 1, 'through the launch gate');
+        dmesgOut += '<6>[   20.000000] new in the ring\n';
+        fs.appendFileSync(messages, '2026-10-08T12:00:03.000000Z [3.000000] user.info sam [] five seconds on\n');
+        now += 5000;
+        syslog.poll(function () {
+          assert.strictEqual(dmesgRuns, 1, 'a poll 5 s later reads the files and not the kernel log');
+          now += 25000;
+          syslog.poll(function () {
+            assert.strictEqual(dmesgRuns, 2, 'a poll 30 s after the last read reads it again');
+            assert.strictEqual(launches, 2);
+            settle(function () {
+              clearTimeout(deadline);
+              assert.strictEqual(got.length, 2, got.join('\n'));
+              assert.ok(/ sam - system - five seconds on$/.test(got[0]), got[0]);
+              assert.ok(/ kernel - kernel - new in the ring$/.test(got[1]), got[1]);
+              syslog.stop();
+              listener.close();
+              try { fs.unlinkSync(messages); fs.unlinkSync(started); fs.rmdirSync(dir); } catch (e) {}
+              console.log('  ✓ dmesg starts through the launch gate, every 30 s rather than every poll');
+            });
+          });
+        });
+      });
     });
   });
 }

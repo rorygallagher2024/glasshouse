@@ -773,6 +773,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
   border-bottom:1px solid var(--w06);font-size:14px}
 .proc .p-name{color:var(--w80);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .proc .p-mb{color:var(--w100);font-variant-numeric:tabular-nums}
+.proc .p-pid{color:var(--w50);margin-left:6px;font-size:12px;font-variant-numeric:tabular-nums}
 /* ---- HDMI port grid ----
    Four tiles, always all four: a port that vanished when nothing was plugged
    into it would read as a missing port rather than an empty one. State is

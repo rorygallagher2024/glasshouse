@@ -72,6 +72,11 @@ function loadHdmiOnce() {
   loadHdmi();
 }
 
+// The pid the TV's logs name a process by, muted beside its name.
+function procPid(p) {
+  return typeof p.pid === 'number' ? `<span class="p-pid">${p.pid}</span>` : '';
+}
+
 async function loadProcesses() {
   try {
     const r = await fetch(api('/api/processes'), { cache: 'no-store' });
@@ -80,7 +85,7 @@ async function loadProcesses() {
     q('proc-cur').textContent = t('metrics.processes.summary', '{count} running · {mb} MB resident',
       { count: d.count, mb: d.totalMb.toLocaleString() });
     q('proc-list').innerHTML = d.top.map(p =>
-      `<div class="proc"><div class="p-name">${esc(p.name)}</div>` +
+      `<div class="proc"><div class="p-name">${esc(p.name)}${procPid(p)}</div>` +
       `<div class="p-mb">${p.mb.toFixed(1)} MB</div></div>`).join('');
   } catch (e) {
     q('proc-list').innerHTML =
@@ -104,7 +109,7 @@ async function loadCpu() {
     q('cpu-cur').textContent = t('metrics.cpu.summary', '{busy}% busy · {active} active', { busy: d.busy.toFixed(1), active: d.active });
     q('cpu-list').innerHTML = d.top.length
       ? d.top.map(p =>
-          `<div class="proc"><div class="p-name">${esc(p.name)}</div>` +
+          `<div class="proc"><div class="p-name">${esc(p.name)}${procPid(p)}</div>` +
           `<div class="p-mb">${p.pct.toFixed(1)}%</div></div>`).join('')
       : `<div class="sub">${esc(t('metrics.cpu.idle', 'Nothing used any CPU over the sample.'))}</div>`;
   } catch (e) {

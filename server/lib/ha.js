@@ -11,6 +11,7 @@ var INPUT_NAMES = { hdmi1: 'HDMI 1', hdmi2: 'HDMI 2', hdmi3: 'HDMI 3', hdmi4: 'H
 // Assistant without a second list to keep in step (Bokeh was missed once).
 var SS = require('./screensavers').SCREENSAVERS;
 var topics = require('./topics');
+var names = require('./names');
 var SS_IDS = Object.keys(SS);
 function ssMap(byLabel) {
   var m = {};
@@ -18,54 +19,22 @@ function ssMap(byLabel) {
   return m;
 }
 
-var PIC_MODE_MAP = {
-  dolbyHdrVivid: 'Dolby Vision Vivid',
-  dolbyHdrCinemaBright: 'Dolby Vision Cinema Bright',
-  dolbyHdrCinema: 'Dolby Vision Cinema',
-  dolbyHdrCinemaHome: 'Dolby Vision Cinema Home',
-  dolbyHdrStandard: 'Dolby Vision Standard',
-  dolbyHdrGame: 'Dolby Vision Game',
-  dolbyHdrFilmMaker: 'Dolby Vision Filmmaker',
-  hdrCinema: 'HDR Cinema',
-  hdrCinemaBright: 'HDR Cinema Bright',
-  hdrFilmMaker: 'HDR Filmmaker',
-  hdrPersonalized: 'HDR Personalized',
-  hdrVivid: 'HDR Vivid',
-  filmMaker: 'Filmmaker',
-  hdrCinemaHome: 'HDR Cinema Home',
-  hdrStandard: 'HDR Standard',
-  hdrGame: 'HDR Game',
-  cinema: 'Cinema',
-  personalized: 'Personalized',
-  expert1: 'ISF Expert (Bright)',
-  expert2: 'ISF Expert (Dark)',
-  game: 'Game',
-  standard: 'Standard',
-  eco: 'Eco',
-  technicolor: 'Technicolor',
-  technicolorHdr: 'Technicolor HDR',
-  hdrEffect: 'HDR Effect',
-  vivid: 'Vivid',
-  normal: 'Standard'
-};
+// The picture modes' names come from the names module; the map of the ones it
+// names is kept for callers that look one up directly.
+var PICTURE_MODES = names.PICTURE_MODES;
+var PIC_MODE_MAP = {};
+Object.keys(PICTURE_MODES).forEach(function (id) {
+  if (PICTURE_MODES[id].display) PIC_MODE_MAP[id] = PICTURE_MODES[id].display;
+});
 
-/*
- * A mode missing from the map is spelled out from its id rather than shown as
- * one word: dolbyHdrCinemaBright reads "Dolby Vision Cinema Bright".
- */
 function picModeName(id) {
-  if (PIC_MODE_MAP[id]) return PIC_MODE_MAP[id];
-  return String(id)
-    .replace(/^dolbyHdr(?=[A-Z])/, 'Dolby Vision ')
-    .replace(/^hdr(?=[A-Z])/, 'HDR ')
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .replace(/^[a-z]/, function (c) { return c.toUpperCase(); });
+  return names.pictureMode(id).display;
 }
 
 function picModeNames(ids) {
-  var names = {};
-  for (var i = 0; i < ids.length; i++) names[ids[i]] = picModeName(ids[i]);
-  return names;
+  var byId = {};
+  for (var i = 0; i < ids.length; i++) byId[ids[i]] = picModeName(ids[i]);
+  return byId;
 }
 
 var SOUND_OUTPUT_MAP = {

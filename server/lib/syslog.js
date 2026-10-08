@@ -15,9 +15,13 @@ var fs = require('fs');
 var os = require('os');
 var execFile = require('child_process').execFile;
 var logs = require('./logs');
+var children = require('./children');
 
 var SOURCES = ['system', 'glasshouse', 'kernel'];
 var POLL_MS = 5000;
+// On a CX (webOS 5) luna-send children's libuv aborts went from 1 to 3 an hour
+// to 13 in 47 minutes once dmesg ran every 5 s. Its ring holds minutes there.
+var KERNEL_POLL_MS = 30000;
 // The longest system line seen is 470 bytes; Alloy takes up to 8192.
 var MAX_DATAGRAM = 2048;
 // Each poll reads at most this much of a file, so one that has grown a lot
@@ -53,6 +57,7 @@ var GLASSHOUSE_STAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/;
 var config = null;
 var messagesPath = logs.MESSAGES_LOG;
 var uptimeFn = readUptime;
+var clockFn = monotonicMs;
 var markerPath = BOOT_SENT_MARKER;
 // Whether this start is sending the boot's logs and has yet to leave the marker.
 var bootPending = false;
@@ -69,8 +74,16 @@ var errorState = null;
 var polling = false;
 var cursors = {};
 var counters = null;
+// When dmesg was last started, on clockFn, or null for a read at the next poll.
+var kernelReadAt = null;
 // Bumped by each start and stop, so a callback from before one is ignored.
 var generation = 0;
+
+// Not Date.now(): the clock steps forward years when it syncs, and back too.
+function monotonicMs() {
+  var t = process.hrtime();
+  return t[0] * 1000 + t[1] / 1e6;
+}
 
 function readUptime() {
   try {
@@ -314,24 +327,30 @@ function poll(done) {
     if (bootPending && systemCaughtUp) bootSent();
     return done();
   }
+  var now = clockFn();
+  if (kernelReadAt !== null && now - kernelReadAt < KERNEL_POLL_MS) return done();
+  kernelReadAt = now;
   polling = true;
   var gen = generation;
   // A ring buffer rather than a file: read whole, and sent from after the
   // last uptime sent.
-  execFile('dmesg', ['-r'], { maxBuffer: 2 * 1024 * 1024 }, function (err, stdout) {
+  children.launch(function () {
     if (gen !== generation) return done();
-    polling = false;
-    if (err) { setError('could not run dmesg: ' + err.message); return done(); }
-    var entries = logs.parseKernelLogs(stdout, bootTimeMs);
-    var after = cursors.kernel, last = after === null ? -1 : after, fresh = [];
-    for (var i = 0; i < entries.length; i++) {
-      if (after !== null && entries[i].mono > after) fresh.push(entries[i]);
-      if (entries[i].mono > last) last = entries[i].mono;
-    }
-    cursors.kernel = last;
-    sendEntries(fresh, bootTimeMs);
-    if (bootPending && systemCaughtUp) bootSent();
-    done();
+    execFile('dmesg', ['-r'], { maxBuffer: 2 * 1024 * 1024 }, function (err, stdout) {
+      if (gen !== generation) return done();
+      polling = false;
+      if (err) { setError('could not run dmesg: ' + err.message); return done(); }
+      var entries = logs.parseKernelLogs(stdout, bootTimeMs);
+      var after = cursors.kernel, last = after === null ? -1 : after, fresh = [];
+      for (var i = 0; i < entries.length; i++) {
+        if (after !== null && entries[i].mono > after) fresh.push(entries[i]);
+        if (entries[i].mono > last) last = entries[i].mono;
+      }
+      cursors.kernel = last;
+      sendEntries(fresh, bootTimeMs);
+      if (bootPending && systemCaughtUp) bootSent();
+      done();
+    });
   });
 }
 
@@ -341,12 +360,14 @@ function poll(done) {
  * @param {string} [opts.messagesPath] the system log, for tests
  * @param {function(): number} [opts.uptime] seconds since boot, for tests
  * @param {string} [opts.markerPath] the boot-sent marker, for tests
+ * @param {function(): number} [opts.clock] monotonic milliseconds, for tests
  */
 function init(opts) {
   config = opts.config;
   if (opts.messagesPath) messagesPath = opts.messagesPath;
   if (opts.uptime) uptimeFn = opts.uptime;
   if (opts.markerPath) markerPath = opts.markerPath;
+  if (opts.clock) clockFn = opts.clock;
 }
 
 function bootLogsUnsent() {
@@ -371,6 +392,7 @@ function start() {
   bootPending = bootLogsUnsent();
   cursors = startCursors(bootPending, { system: messagesPath, glasshouse: logs.getTvwebLogPath() });
   counters = { messages: {}, errors: 0 };
+  kernelReadAt = null;
   settings.sources.forEach(function (name) { counters.messages[name] = 0; });
   needsLookup = true;
   announced = false;

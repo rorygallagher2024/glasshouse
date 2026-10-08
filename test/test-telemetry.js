@@ -493,6 +493,56 @@ console.log('Running test-telemetry.js ...');
   console.log('  ✓ getCapabilities produces filter flags');
 })();
 
+// 9a. Process lists carry the pid
+(function testParseProcesses() {
+  var lines = ['  PID   RSS COMMAND          COMMAND'];
+  for (var i = 1; i <= 11; i++) {
+    lines.push('  ' + (100 + i) + '  ' + (i * 1024) + ' worker' + i + '          /usr/bin/worker' + i + ' --slot ' + i);
+  }
+  lines.push(' 3794 40960 hal-gal          /usr/sbin/hal-gal -d --config /etc/hal gal.conf');
+  lines.push(' 4120 20480                  /usr/bin/kitchen-relay');
+  lines.push(' 4121 15360                  /usr/bin/livingroom-feeder --room living room');
+  var out = lines.join('\n') + '\n';
+
+  var r = telemetry.parseProcesses(out, false);
+  assert.strictEqual(r.count, 14);
+  assert.strictEqual(r.top.length, 10, 'ten largest by default');
+  assert.deepEqual(r.top[0], { pid: 3794, name: 'hal-gal', mb: 40 });
+  assert.deepEqual(r.top[1], { pid: 4120, name: 'kitchen-relay', mb: 20 });
+  assert.deepEqual(r.top[2], { pid: 4121, name: 'livingroom-feeder', mb: 15 });
+  assert.deepEqual(r.top[3], { pid: 111, name: 'worker11', mb: 11 });
+
+  var all = telemetry.parseProcesses(out, true);
+  assert.strictEqual(all.top.length, 14, 'every process with all');
+  assert.deepEqual(all.top[13], { pid: 101, name: 'worker1', mb: 1 });
+  assert.strictEqual(all.totalMb, r.totalMb);
+  console.log('  ✓ parseProcesses reads pids, a blank comm, and every process with all');
+})();
+
+(function testCpuProcessRows() {
+  var first = { total: 1000, procs: {
+    '3794': { ticks: 100, comm: 'hal-gal' },
+    '812': { ticks: 50, comm: 'surfacemgr' },
+    '900': { ticks: 10, comm: 'idle-one' }
+  } };
+  var second = { total: 2000, procs: {
+    '3794': { ticks: 350, comm: 'hal-gal' },
+    '812': { ticks: 100, comm: 'surfacemgr' },
+    '900': { ticks: 10, comm: 'idle-one' },
+    '950': { ticks: 40, comm: 'just-started' }
+  } };
+  // Read from /proc for the name, so kept off the real host's processes.
+  mockEnv.files['/proc/3794/cmdline'] = '/usr/sbin/hal-gal\0-d\0';
+  mockEnv.files['/proc/812/cmdline'] = null;
+  var r = telemetry.cpuProcessRows(first, second, 1000);
+  assert.deepEqual(r.rows, [
+    { pid: 3794, name: 'hal-gal', pct: 25 },
+    { pid: 812, name: 'surfacemgr', pct: 5 }
+  ]);
+  assert.strictEqual(r.busy, 30);
+  console.log('  ✓ cpuProcessRows carries the pid of each busy process');
+})();
+
 // 9. Installed apps tests
 telemetry.refreshInstalledApps(function (apps) {
   assert.ok(Array.isArray(apps), 'Expected array of apps');
