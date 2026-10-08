@@ -15,7 +15,7 @@ The ad & telemetry blocker blackholes LG's tracking, ad and ACR endpoints on the
 Two tiers are available:
 
 * **ads & telemetry** blocks LG's ad, diagnostics and customer-data hosts and the Alphonso screen recognition servers, and leaves LG's service platform reachable.
-* **everything** adds the hosts that carry LG's platform services, so on that tier the app store, software updates and LG Channels may stop working.
+* **everything** adds the hosts that carry LG's platform services, so on that tier the LG ThinQ app can no longer control the TV, and the app store, software updates and LG Channels may stop working.
 
 On the **everything** tier, after a power cut the TV is left to set its clock from LG's time servers before they are blocked. If its date is still wrong, apps fail to load or install with certificate errors; setting the time by hand, with **Set Automatically** off under Settings › General › System › Time & Date, fixes that without unblocking anything.
 

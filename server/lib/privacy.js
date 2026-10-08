@@ -20,6 +20,7 @@ var ADBLOCK_ADS = [
   'lgsmartad.com',
   'rdx.lgtvcommon.com',
   'aic.lgtvcommon.com',
+  'smartad.lge.com',
   'smartclip.com',
   'smartclip-services.com',
   'yumenetworks.com',
@@ -85,7 +86,13 @@ var ADBLOCK_PLATFORM = [
   'eu.lgtvsdp.com',
   'ngfts.lge.com',
   'aic-ngfts.lge.com',
-  'ngfts.tv.wiselg.com'
+  'ngfts.tv.wiselg.com',
+  // From Huttunen's blocklist (docs/IMPLEMENTATION.md), not a capture of ours.
+  // lgtviot.com is the ThinQ cloud, so the ThinQ app loses the TV on this tier.
+  'cdplauncher.lgtvcommon.com',
+  'lgchhomeapp.lgtvcommon.com',
+  'lgtviot.com',
+  'ueiwsp.com'
 ];
 
 var ADBLOCK_SDP = [
