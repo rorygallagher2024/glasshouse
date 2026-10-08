@@ -10,7 +10,7 @@
  * block apps by region, and sam watches it. Adding an id no app has and then
  * putting the list back exactly as it was blocks nothing, and sam rereads every
  * appinfo.json, overlays included, within seconds and without restarting: on a
- * C2 (webOS 22) a visible:false overlay took effect and sam kept its pid. The
+ * C2 on webOS 9.2 a visible:false overlay took effect and sam kept its pid. The
  * list lives in configd's memory, so the nudge leaves nothing behind.
  *
  * webOS 4 has no such setting (a B8 reports it missing), and there callers

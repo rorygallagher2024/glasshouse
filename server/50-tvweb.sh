@@ -36,7 +36,7 @@ fi
 # scan is the one thing every black-picture report in #366 has in common.
 # Where configd has LG's blocked-app list, adding an id no app has and putting
 # the list back as it was makes sam scan again without restarting: on a C2
-# (webOS 22) a visible:false overlay took effect in seconds and sam kept its
+# on webOS 9.2 a visible:false overlay took effect in seconds and sam kept its
 # pid. webOS 4 has no such list, and there sam is restarted as before. Mirrors
 # lib/samrescan.js.
 SAM_NUDGE_ID=io.github.rorygallagher2024.lg-webos-dashboard.rescan

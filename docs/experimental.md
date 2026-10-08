@@ -19,7 +19,7 @@ To apply either one, the TV's app manager has to read its apps again. Up to now 
 
 It doesn't happen on every start-up, or on every TV. A TV that already used either feature before it became experimental keeps it after updating.
 
-On webOS 22 and later, the dashboard now has the app manager reread its apps without restarting it, through the same setting LG uses to block apps by region, and restarts it only if that doesn't take. webOS 4 doesn't have that setting, so there it still restarts. Both features stay experimental until TVs that have shown the fault confirm it is gone.
+Where the TV has the setting LG uses to block apps by region, the dashboard now has the app manager reread its apps through it, without restarting it, and restarts it only if that doesn't take. webOS 9 has the setting and webOS 4 doesn't; other versions are checked on the TV itself, and fall back to the restart without it. Both features stay experimental until TVs that have shown the fault confirm it is gone.
 
 If it happens, please add to [#366](https://github.com/rorygallagher2024/glasshouse/issues/366) rather than opening a new issue, with the output of these, run before restarting the TV:
 
