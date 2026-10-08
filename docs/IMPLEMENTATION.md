@@ -517,6 +517,7 @@ advertising**, which is why they are a separate tier:
 | Domain | What it actually serves |
 | :--- | :--- |
 | `ngfts.lge.com`, `aic-ngfts.lge.com` | Content and firmware delivery CDN |
+| `ngfts.tv.wiselg.com` | The same name under LG's `wiselg.com` domain, seen during first-time setup; what it serves is not known |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
 | `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
 

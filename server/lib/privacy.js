@@ -39,7 +39,10 @@ var ADBLOCK_ADS = [
   'tr.alphonso.tv',
   'tn.alphonso.tv',
   'insights.alphonso.tv',
-  'bwlkup.alphonso.tv'
+  'bwlkup.alphonso.tv',
+  // Seen on port 4433 from a factory-reset TV, while its setup still showed
+  // the agreements unanswered (docs/ACR.md). Numbered siblings are not known.
+  'eu-acr86.alphonso.tv'
 ];
 
 /*
@@ -81,7 +84,8 @@ var ADBLOCK_PLATFORM = [
   'gb.lgtvsdp.com',
   'eu.lgtvsdp.com',
   'ngfts.lge.com',
-  'aic-ngfts.lge.com'
+  'aic-ngfts.lge.com',
+  'ngfts.tv.wiselg.com'
 ];
 
 var ADBLOCK_SDP = [
