@@ -32,6 +32,42 @@ if [ -f /var/lib/tvweb/adblock_enabled ] && [ -f /var/lib/tvweb/adblock_hosts ];
   mount --bind /var/lib/tvweb/adblock_hosts /etc/hosts 2>/dev/null || true
 fi
 
+# sam reads each appinfo.json only when it scans, and restarting it to make it
+# scan is the one thing every black-picture report in #366 has in common.
+# Where configd has LG's blocked-app list, adding an id no app has and putting
+# the list back as it was makes sam scan again without restarting: on a C2
+# (webOS 22) a visible:false overlay took effect in seconds and sam kept its
+# pid. webOS 4 has no such list, and there sam is restarted as before. Mirrors
+# lib/samrescan.js.
+SAM_NUDGE_ID=io.github.rorygallagher2024.lg-webos-dashboard.rescan
+sam_nudge() {
+  list=$(luna-send -n 1 luna://com.webos.service.config/getConfigs '{"configNames":["profile.blockedAppList"]}' 2>/dev/null |
+    tr -d '\n' | sed -n 's/.*"profile\.blockedAppList": *\(\[[^]]*\]\).*/\1/p')
+  [ -n "$list" ] || return 1
+  # LG's own list: without the id, should a run cut short have left it in.
+  lg=$(echo "$list" | sed "s/\"$SAM_NUDGE_ID\"//g; s/, *,/,/g; s/\[ *,/[/; s/, *\]/]/")
+  inner=$(echo "$lg" | sed 's/^\[ *//; s/ *\]$//')
+  if [ -z "$inner" ]; then nudged="[\"$SAM_NUDGE_ID\"]"; else nudged="[$inner,\"$SAM_NUDGE_ID\"]"; fi
+  luna-send -n 1 luna://com.webos.service.config/setConfigs "{\"configs\":{\"profile.blockedAppList\":$nudged}}" >/dev/null 2>&1 || return 1
+  sleep 2
+  for _ in 1 2 3; do
+    luna-send -n 1 luna://com.webos.service.config/setConfigs "{\"configs\":{\"profile.blockedAppList\":$lg}}" 2>/dev/null |
+      grep -q '"returnValue": *true' && return 0
+    sleep 1
+  done
+  return 1
+}
+
+# Whether sam's getAppInfo for app $1 matches pattern $2 within 20s: at boot sam
+# can still be on its own first scan, and takes the nudge after it.
+sam_reports() {
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+    luna-send -n 1 luna://com.webos.applicationManager/getAppInfo "{\"id\":\"$1\"}" 2>/dev/null | grep -q "$2" && return 0
+    sleep 1
+  done
+  return 1
+}
+
 # LG's screen saver ships as QML up to webOS 9 and as Flutter from webOS 10.
 # On the Flutter TVs, custom screen savers making sam reread its manifests
 # have been followed by the picture muted, HDMI-CEC and ARC dead and sound on
@@ -66,7 +102,11 @@ if [ -f /var/lib/tvweb/screensaver/.tvweb-screensaver ]; then
     # --no-block: stopping sam waits on every app in its cgroup, which is most
     # of a minute, and no hook may hold up boot for that.
     if [ -n "$stock_type" ] && [ -n "$staged_type" ] && [ "$stock_type" != "$staged_type" ]; then
-      systemctl restart --no-block sam >/dev/null 2>&1 || true
+      if sam_nudge && sam_reports com.webos.app.screensaver "\"type\": *\"$staged_type\""; then
+        echo "$(date): sam read the screen saver again, without a restart"
+      else
+        systemctl restart --no-block sam >/dev/null 2>&1 || true
+      fi
     fi
   fi
 fi
@@ -104,12 +144,14 @@ elif [ "$tile_hiding_allowed" -eq 1 ] && [ ! -f /var/lib/tvweb/.from-homebrew-ch
       for base in /media/system/apps/usr/palm/applications /usr/palm/applications /mnt/otncabi/usr/palm/applications /mnt/otycabi/usr/palm/applications; do
         tgt="$base/$app/appinfo.json"
         if [ -f "$tgt" ]; then
-          mount --bind "$ovr" "$tgt" 2>/dev/null && mounted=1
+          mount --bind "$ovr" "$tgt" 2>/dev/null && mounted=1 && first_hidden=${first_hidden:-$app}
         fi
       done
     fi
   done < /var/lib/tvweb/hidden_apps
-  if [ "$mounted" -eq 1 ]; then
+  if [ "$mounted" -eq 1 ] && sam_nudge && sam_reports "$first_hidden" '"visible": *false'; then
+    echo "$(date): sam read the hidden tiles, without a restart"
+  elif [ "$mounted" -eq 1 ]; then
     # Capture the active foreground app before restarting SAM so we can restore it
     fg_app=$(luna-send -n 1 -f luna://com.webos.applicationManager/getForegroundAppInfo '{}' 2>/dev/null | sed -n 's/.*"appId": *"\([^"]*\)".*/\1/p')
 

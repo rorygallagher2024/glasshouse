@@ -44,6 +44,7 @@ var devtools = require('./lib/devtools');
 var oled = require('./lib/oled');
 var screensavers = require('./lib/screensavers');
 var appsModule = require('./lib/apps');
+var samrescan = require('./lib/samrescan');
 var servicesModule = require('./lib/services');
 var telemetry = require('./lib/telemetry');
 var controls = require('./lib/controls');
@@ -467,6 +468,7 @@ lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaC
 game.init({ lunaCached: lunaCached });
 privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings });
 oled.init({ luna: luna, config: CONFIG });
+samrescan.init({ luna: luna });
 appsModule.init({ luna: luna, config: CONFIG });
 servicesModule.init({ stateDir: __dirname });
 screensavers.init({

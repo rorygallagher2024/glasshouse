@@ -10,6 +10,7 @@
  * Strict ES5 for Node 0.12.2 on webOS 4 (LG OLED B8).
  */
 
+var samrescan = require('./samrescan');
 var msg = require('./say').msg;
 var fs = require('fs');
 var mkdirp = require('./util').mkdirp;
@@ -207,6 +208,14 @@ function migrateConfig(cfg) {
   return true;
 }
 
+// { id: visible } for each id, or null for none.
+function visibleAs(ids, visible) {
+  if (!ids.length) return null;
+  var map = {};
+  ids.forEach(function (id) { map[id] = visible; });
+  return map;
+}
+
 function setTileHidingEnabled(enabled, cb) {
   if (!configObj || !configObj.allowControl) {
     if (cb) cb({ ok: false, error: msg('srv.controlsOff.apps', 'Control is disabled in server configuration') });
@@ -229,7 +238,7 @@ function setTileHidingEnabled(enabled, cb) {
       if (i >= ids.length) {
         return restartSam(function (restarted) {
           if (cb) cb({ ok: true, tileHidingEnabled: false, samRestarted: restarted });
-        });
+        }, visibleAs(ids, true));
       }
       var appId = ids[i++];
       unmountAllForApp(appId, unmountNext);
@@ -247,7 +256,9 @@ function setTileHidingEnabled(enabled, cb) {
       if (i >= ids.length) {
         return restartSam(function (restarted) {
           if (cb) cb({ ok: true, tileHidingEnabled: true, samRestarted: restarted });
-        });
+        }, visibleAs(ids.filter(function (id) {
+          return fs.existsSync(path.join(OVERRIDE_DIR, id + '.json'));
+        }), false));
       }
       var appId = ids[i++];
       var ovr = path.join(OVERRIDE_DIR, appId + '.json');
@@ -341,6 +352,7 @@ function waitForSam(cb) {
  * six restarts back to back, and the Apps tab reloaded between them.
  */
 var samRestartRunning = false;
+// Each waiting caller as { cb, expect }; see restartSam.
 var samRestartWaiting = [];
 var samRestartedThisRun = false;
 var FROM_HBC_FILE = '/var/lib/tvweb/.from-homebrew-channel';
@@ -362,25 +374,57 @@ function launcherNeedsRestart() {
 function refreshLauncher(cb) {
   cb = cb || function () {};
   if (!launcherNeedsRestart() || !tileHidingAllowed()) return cb(false);
-  console.log('apps: restarting sam so the home screen updates');
+  console.log('apps: refreshing sam so the home screen updates');
   restartSamShared(cb);
 }
 
-function restartSamShared(cb) {
-  samRestartWaiting.push(cb);
+function restartSamShared(cb, expect) {
+  samRestartWaiting.push({ cb: cb, expect: expect });
   if (samRestartRunning) return;
   samRestartRunning = true;
   (function run() {
     var batch = samRestartWaiting.splice(0, samRestartWaiting.length);
+    var merged = null;
+    batch.forEach(function (w) {
+      if (!w.expect) return;
+      merged = merged || {};
+      for (var id in w.expect) merged[id] = w.expect[id];
+    });
     restartSam(function (restarted) {
-      batch.forEach(function (f) { f(restarted); });
+      batch.forEach(function (w) { if (w.cb) w.cb(restarted); });
       if (samRestartWaiting.length) return run();
       samRestartRunning = false;
-    });
+    }, merged);
   })();
 }
 
-function restartSam(cb) {
+/*
+ * done(true) once sam reports each app's visibility as expect has it
+ * ({ appId: visible }). An app with no visible key is visible.
+ */
+function visibilityCheck(expect) {
+  var ids = Object.keys(expect);
+  return function (done) {
+    var i = 0;
+    (function next() {
+      if (i >= ids.length) return done(true);
+      var id = ids[i++];
+      lunaFn('com.webos.applicationManager/getAppInfo', { id: id }, function (r) {
+        var info = r && r.appInfo;
+        if (!info) return done(false);
+        if ((info.visible !== false) !== expect[id]) return done(false);
+        next();
+      });
+    })();
+  };
+}
+
+/*
+ * Makes sam read the apps again: a nudge where the TV has one (lib/samrescan,
+ * #366), checked against expect, and otherwise a restart. cb(true) once sam
+ * has them.
+ */
+function restartSam(cb, expect) {
   // Where tile hiding is not allowed, turning it off still unmounts the overrides
   // and the tiles come back at the next full restart.
   if (!tileHidingAllowed()) {
@@ -388,6 +432,17 @@ function restartSam(cb) {
     if (cb) cb(false);
     return;
   }
+  if (lunaFn) {
+    return samrescan.refresh(expect ? visibilityCheck(expect) : null, function (reread) {
+      if (!reread) return restartSamNow(cb);
+      console.log('apps: sam read the apps again, without a restart');
+      waitForSam(function () { if (cb) cb(true); });
+    });
+  }
+  restartSamNow(cb);
+}
+
+function restartSamNow(cb) {
   function executeRestart(savedAppId) {
     /*
      * systemd rate-limits on-failure restarts - StartLimitBurst=5 inside
@@ -755,6 +810,8 @@ function hideTile(appId, cb) {
           fs.writeFileSync(TILE_HIDING_FLAG_FILE, '1\n', 'utf8');
         } catch (e) {}
 
+        var expect = {};
+        expect[appId] = false;
         return restartSamShared(function (restarted) {
           cb({
             ok: true,
@@ -762,7 +819,7 @@ function hideTile(appId, cb) {
             hidden: true,
             samRestarted: restarted
           });
-        });
+        }, expect);
       }
 
       var tgt = tgts[i++];
@@ -794,6 +851,8 @@ function unhideTile(appId, cb) {
     delete hiddenMap[appId];
     writeHiddenAppsList(hiddenMap);
 
+    var expect = {};
+    expect[appId] = true;
     restartSamShared(function (restarted) {
       cb({
         ok: true,
@@ -801,7 +860,7 @@ function unhideTile(appId, cb) {
         hidden: false,
         samRestarted: restarted
       });
-    });
+    }, expect);
   });
 }
 
@@ -821,7 +880,7 @@ function unhideAllTiles(cb) {
       writeHiddenAppsList({});
       return restartSam(function (restarted) {
         cb({ ok: true, restoredCount: Object.keys(hiddenMap).length, samRestarted: restarted });
-      });
+      }, visibleAs(Object.keys(hiddenMap), true));
     }
 
     var curId = ids.shift();

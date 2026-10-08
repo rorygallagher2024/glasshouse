@@ -12,12 +12,14 @@ Replaces LG's screen saver with one of the dashboard's own, chosen on the **Scre
 
 ## Why they're experimental
 
-To apply either one, the dashboard restarts the TV's app manager when the TV starts up. On some TVs, that restart has been followed by a black picture or lost sound that only a full reboot clears ([#366](https://github.com/rorygallagher2024/glasshouse/issues/366)):
+To apply either one, the TV's app manager has to read its apps again. Up to now that meant restarting it when the TV starts up, and on some TVs that restart has been followed by a black picture or lost sound that only a full reboot clears ([#366](https://github.com/rorygallagher2024/glasshouse/issues/366)):
 
 * On a B8 (webOS 4), live TV and HDMI went black. The TV's kernel log showed its video pipeline crashing and locking up during start-up, at the same moment as the restart, while a source on HDMI was changing its picture mode.
 * On webOS 10 and 11, picture, sound to a soundbar over ARC, and HDMI-CEC have been lost.
 
 It doesn't happen on every start-up, or on every TV. A TV that already used either feature before it became experimental keeps it after updating.
+
+On webOS 22 and later, the dashboard now has the app manager reread its apps without restarting it, through the same setting LG uses to block apps by region, and restarts it only if that doesn't take. webOS 4 doesn't have that setting, so there it still restarts. Both features stay experimental until TVs that have shown the fault confirm it is gone.
 
 If it happens, please add to [#366](https://github.com/rorygallagher2024/glasshouse/issues/366) rather than opening a new issue, with the output of these, run before restarting the TV:
 
