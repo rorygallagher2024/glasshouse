@@ -91,8 +91,10 @@ var ADBLOCK_SDP = [
   'eu.nextlgsdp.com'
 ];
 var SDP_POLL_INTERVAL_MS = 3000;
-var SDP_MAX_WAIT_MS = 120000;
+var SDP_SLOW_POLL_INTERVAL_MS = 30000;
+var SDP_SOURCE_WAIT_MS = 120000;
 var sdpGraceActive = true;
+var sdpAnySourceAccepted = false;
 var sdpPollTimer = null;
 var sdpCapTimer = null;
 
@@ -337,6 +339,7 @@ function clearSdpTimer() {
     clearTimeout(sdpCapTimer);
     sdpCapTimer = null;
   }
+  sdpAnySourceAccepted = false;
 }
 
 function finalizeSdpBlock(logMsg) {
@@ -390,6 +393,10 @@ function checkSdpClockSync(isFirstCheck) {
       finalizeSdpBlock('adblock: SDP clock sync complete (timeValid with source sdp); nextlgsdp.com blocked');
       return;
     }
+    if (valid && sdpAnySourceAccepted) {
+      finalizeSdpBlock('adblock: system time valid from another source; nextlgsdp.com blocked');
+      return;
+    }
 
     // If initial check was invalid (cold boot), start polling and cap timer.
     if (isFirstCheck && !sdpPollTimer) {
@@ -398,23 +405,36 @@ function checkSdpClockSync(isFirstCheck) {
   });
 }
 
-function startSdpPolling() {
-  if (sdpPollTimer || sdpCapTimer) return;
-  sdpCapTimer = setTimeout(function () {
-    finalizeSdpBlock('adblock: SDP clock-sync window timeout reached (120s); nextlgsdp.com blocked');
-  }, SDP_MAX_WAIT_MS);
-  if (sdpCapTimer && sdpCapTimer.unref) sdpCapTimer.unref();
-
+function pollSdpClockSync(intervalMs) {
+  if (sdpPollTimer) clearInterval(sdpPollTimer);
   sdpPollTimer = setInterval(function () {
     checkSdpClockSync(false);
-  }, SDP_POLL_INTERVAL_MS);
+  }, intervalMs);
   if (sdpPollTimer && sdpPollTimer.unref) sdpPollTimer.unref();
+}
+
+function acceptAnyTimeSource() {
+  sdpCapTimer = null;
+  if (!sdpGraceActive) return;
+  sdpAnySourceAccepted = true;
+  console.log('adblock: no SDP clock sync after 120s; nextlgsdp.com stays reachable until the time is valid');
+  pollSdpClockSync(SDP_SLOW_POLL_INTERVAL_MS);
+}
+
+function startSdpPolling() {
+  if (sdpPollTimer || sdpCapTimer) return;
+  sdpCapTimer = setTimeout(acceptAnyTimeSource, SDP_SOURCE_WAIT_MS);
+  if (sdpCapTimer && sdpCapTimer.unref) sdpCapTimer.unref();
+  pollSdpClockSync(SDP_POLL_INTERVAL_MS);
 }
 
 /*
  * Leaves nextlgsdp.com unblocked until getSystemTime reports timeValid with
- * source sdp (polling every few seconds, capped at a couple of minutes),
- * and skips the window when the time is already valid, as after a restart.
+ * source sdp, and skips the window when the time is already valid, as after
+ * a restart. Blocking it before the clock is set would leave the TV with the
+ * wrong time until the next boot, and every HTTPS connection failing with it,
+ * so after two minutes a valid time from any source, such as one set by hand,
+ * closes the window instead, and nothing short of that does.
  */
 function scheduleSdpBlock() {
   if (!sdpGraceActive) return;
@@ -994,5 +1014,6 @@ module.exports = {
   _checkSdpClockSync: checkSdpClockSync,
   _setSdpGraceActive: function (b) { sdpGraceActive = b; },
   _clearSdpTimer: clearSdpTimer,
+  _acceptAnyTimeSource: acceptAnyTimeSource,
   _finalizeSdpBlock: finalizeSdpBlock
 };
