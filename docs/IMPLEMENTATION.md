@@ -538,6 +538,11 @@ webOS sets its clock from the `X-Server-Time` header of LG's SDP servers
 lost its time in a power cut could not set it again, and anything using HTTPS
 fails while the clock is wrong.
 
+After a factory reset, a webOS 26 TV's clock falls back to its firmware build
+date in 2024 rather than to 1970, which passes a plain year check but still
+fails certificate validation
+([Huttunen, Fabricati Diem](https://fabricati-diem.inform.social/post/deshittification-as-a-service/)).
+
 To prevent this while preserving full platform blocking:
 * The boot hook removes `nextlgsdp.com` from the saved table before mounting it, since
   that table is the one the previous session left, with the time servers blocked.
