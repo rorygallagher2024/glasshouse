@@ -8,6 +8,7 @@
  * Strict ES5 for Node 0.12.2 on webOS 4.
  */
 
+var samrescan = require('./samrescan');
 var msg = require('./say').msg;
 var fs = require('fs');
 var mkdirp = require('./util').mkdirp;
@@ -317,11 +318,23 @@ function ensureScreensaverRunner(cb) {
     // No answer means the bus is not up yet. Leave the service alone.
     if (!cached || cached === staged) return cb(false);
     console.log('screensaver: sam holds the app as "' + cached + '" and it is now "'
-                + staged + '" - restarting sam so it reads the manifest again');
-    execFile('/bin/systemctl', ['restart', '--no-block', 'sam'], { timeout: 10000 }, function (e) {
-      if (e) console.error('screensaver: could not restart sam: ' + e.message);
-      else waitForRunner(staged);
-      cb(!e);
+                + staged + '" - making sam read the manifest again');
+    // A nudge where the TV has one (lib/samrescan, #366). It leaves a running
+    // screen saver as it is, so cb(false) has the caller restart the app.
+    samrescan.refresh(function (done) {
+      lunaFn('com.webos.applicationManager/getAppInfo', { id: 'com.webos.app.screensaver' }, function (a) {
+        done(!!(a && a.appInfo && a.appInfo.type === staged));
+      });
+    }, function (reread) {
+      if (reread) {
+        console.log('screensaver: sam read the manifest again, without a restart');
+        return cb(false);
+      }
+      execFile('/bin/systemctl', ['restart', '--no-block', 'sam'], { timeout: 10000 }, function (e) {
+        if (e) console.error('screensaver: could not restart sam: ' + e.message);
+        else waitForRunner(staged);
+        cb(!e);
+      });
     });
   });
 }
