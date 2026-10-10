@@ -50,7 +50,8 @@ var luna = null;
 var settings = null;
 
 var timer = null;
-var querying = false;
+// From a sync's query until the time service has answered its set.
+var busy = false;
 var errorState = null;
 // Bumped by each start and stop, so a callback from before one is ignored.
 var generation = 0;
@@ -303,6 +304,7 @@ function setClock(answer, gen, done) {
   var payload = setTimePayload(answer);
   luna('com.webos.service.systemservice/clock/setTime', payload, function (res) {
     if (gen !== generation) return done();
+    busy = false;
     // The luna wrapper gives null when luna-send timed out or printed no JSON.
     if (!res) {
       syncFailed('the time service did not answer');
@@ -324,27 +326,29 @@ function setClock(answer, gen, done) {
 
 /**
  * Asks the server for the time, sets the clock if it needs it, and schedules
- * the next sync. Does nothing while off or while a query is out.
+ * the next sync. Does nothing while off or while another sync is under way:
+ * one that measured the clock before a pending set took would set it again.
  * @param {function(): void} [done] called once the sync has finished
  */
 function sync(done) {
   done = done || function () {};
-  if (!settings || querying) return done();
-  querying = true;
+  if (!settings || busy) return done();
+  busy = true;
   var gen = generation;
 
   query(function (r) {
     // A stop or start since the query began has reset everything.
     if (gen !== generation) return done();
-    querying = false;
 
     if (r.error) {
+      busy = false;
       syncFailed(r.error);
       return done();
     }
     lastAnswer = r.answer;
     if (needsSetting(r.answer)) return setClock(r.answer, gen, done);
 
+    busy = false;
     setError(null);
     schedule(RESYNC_MS);
     done();
@@ -384,7 +388,7 @@ function stop() {
   if (timer) clearTimeout(timer);
   timer = null;
   settings = null;
-  querying = false;
+  busy = false;
   errorState = null;
   appliedOnce = false;
   lastAnswer = null;
