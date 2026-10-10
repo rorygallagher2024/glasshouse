@@ -123,10 +123,13 @@ function reply(request, serverMs, fields) {
   var silent = false;
   var refuse = false;
   var lunaSilent = false;
+  var syncDuringSet = false;
   var calls = [];
+  var queries = 0;
   var deadline = setTimeout(function () { assert.fail('timed out'); }, 15000);
 
   server.on('message', function (msg, rinfo) {
+    queries++;
     if (silent) return;
     var out = reply(msg, Date.now() + aheadMs);
     server.send(out, 0, out.length, rinfo.port, rinfo.address);
@@ -138,6 +141,11 @@ function reply(request, serverMs, fields) {
     var res = { returnValue: true };
     if (refuse) res = { returnValue: false, errorText: 'denied' };
     if (lunaSilent) res = null;
+    if (syncDuringSet) {
+      var dropped = false;
+      ntp.sync(function () { dropped = true; });
+      assert.ok(dropped, 'a sync while the time service has not answered is dropped');
+    }
     setTimeout(function () { cb(res); }, 0);
   }
 
@@ -150,10 +158,15 @@ function reply(request, serverMs, fields) {
     { start: true, ahead: 3600000, calls: 1, why: 'an hour out: the clock is set' },
     { ahead: 200, calls: 1, why: 'within a second, once set: left alone' },
     { ahead: 5000, refuse: true, calls: 2, why: 'five seconds out: set, and refused' },
-    { ahead: 5000, lunaSilent: true, calls: 3, why: 'set again, and the time service silent' },
+    { ahead: 5000, lunaSilent: true, calls: 3, why: 'set again after a refusal, and the time service silent' },
     { silent: true, calls: 3, counted: [1, 3], why: 'no answer: nothing set, all three counted' },
     { start: true, ahead: 100, calls: 4, why: 'the first answer of a start is always sent' },
-    { ahead: 100, calls: 4, why: 'the next one within a second is not' }
+    { ahead: 100, calls: 4, why: 'the next one within a second is not' },
+    { start: true, ahead: 100, syncDuringSet: true, calls: 5, queries: 8,
+      why: 'a sync while the first set is pending: one query, one set' },
+    { ahead: 5000, refuse: true, syncDuringSet: true, calls: 6, queries: 9,
+      why: 'a sync while a refused set is pending: one query, one set' },
+    { ahead: 5000, calls: 7, queries: 10, why: 'and the next sync after the refusal sets it' }
   ];
 
   function run(i) {
@@ -163,8 +176,10 @@ function reply(request, serverMs, fields) {
     silent = !!step.silent;
     refuse = !!step.refuse;
     lunaSilent = !!step.lunaSilent;
+    syncDuringSet = !!step.syncDuringSet;
     function check() {
       assert.strictEqual(calls.length, step.calls, step.why);
+      if (step.queries) assert.strictEqual(queries, step.queries, step.why);
       if (step.counted) {
         var st = ntp.getStatus();
         assert.deepEqual([st.sets, st.errors], step.counted, step.why);
@@ -182,15 +197,15 @@ function reply(request, serverMs, fields) {
     assert.ok(Math.abs(calls[0].payload.utc - serverSec) < 5, 'to the server time');
 
     var st = ntp.getStatus();
-    assert.deepEqual([st.sets, st.errors], [1, 0], 'counted since the last start');
-    assert.ok(Math.abs(st.last.offsetMs - 100) < 100, String(st.last.offsetMs));
+    assert.deepEqual([st.sets, st.errors], [2, 1], 'counted since the last start');
+    assert.ok(Math.abs(st.last.offsetMs - 5000) < 100, String(st.last.offsetMs));
     assert.strictEqual(st.last.stratum, 2);
 
     ntp.stop();
     assert.strictEqual(ntp.getStatus(), null, 'no status while off');
     server.close();
     clearTimeout(deadline);
-    console.log('  ✓ against a server: set when out by a second or more, and once at each start');
+    console.log('  ✓ against a server: set when out by a second or more, once at each start, one sync at a time');
   }
 
   server.bind(0, '127.0.0.1', function () {
