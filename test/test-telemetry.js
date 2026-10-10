@@ -436,6 +436,23 @@ console.log('Running test-telemetry.js ...');
   console.log('  ✓ the volume is set, stepped or left alone by where the sound goes');
 })();
 
+// A refusal holds for the route it came on, whatever the flags say, and ends
+// when the sound goes elsewhere.
+(function testVolumeRefusedRoute() {
+  var rvc = telemetry.routedVolumeControl;
+  var optical = { soundOutput: 'external_optical', adjustVolume: true, externalDeviceControl: false, volume: 10 };
+  var speaker = { soundOutput: 'tv_speaker', adjustVolume: true, externalDeviceControl: false, volume: 12 };
+  assert.strictEqual(rvc(optical), 'level', 'as the TV reports it');
+  telemetry.noteVolumeRefused();
+  assert.strictEqual(rvc(optical), 'none', 'refused there');
+  assert.strictEqual(rvc(speaker), 'level', 'the sound moved');
+  assert.strictEqual(rvc(optical), 'level', 'back on optical, offered again');
+  telemetry.noteVolumeRefused();
+  assert.strictEqual(rvc(null, { volume: 10, scenario: 'mastervolume_ext_speaker_optical' }), 'level',
+    'a route named by the older service is another route');
+  console.log('  ✓ a refused volume change holds until the sound goes elsewhere');
+})();
+
 // 8. Picture engine info parsing tests
 (function testPictureEngineInfo() {
   var orig = mockEnv.files['/proc/lg/pe/hdr_status'];

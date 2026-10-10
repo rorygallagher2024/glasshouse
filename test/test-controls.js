@@ -325,4 +325,26 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ a volume step presses the remote\'s key, with the audio service as fallback');
 })();
 
+// A volume or mute change the TV refuses where the sound goes now is passed to
+// telemetry; any other failure is not.
+(function testVolumeRefusalNoted() {
+  var noted = 0, answer = null;
+  controls.init({
+    config: { allowControl: true },
+    telemetry: { clearCache: function () {}, noteVolumeRefused: function () { noted++; } },
+    luna: function (uri, payload, cb) { cb(answer); }
+  });
+  answer = { returnValue: false, errorText: "Current Scenario doesn't support volume change" };
+  controls.doControl('volume', 30, function (res) { assert.strictEqual(res.ok, false); });
+  answer = { returnValue: false, errorText: "Current Scenario doesn't support mute" };
+  controls.doControl('mute', true, function (res) { assert.strictEqual(res.ok, false); });
+  assert.strictEqual(noted, 2);
+  answer = null;
+  controls.doControl('volume', 30, function (res) { assert.strictEqual(res.ok, false); });
+  answer = { returnValue: true };
+  controls.doControl('volume', 30, function (res) { assert.strictEqual(res.ok, true); });
+  assert.strictEqual(noted, 2, 'no answer and a success are not refusals');
+  console.log('  ✓ a refused volume or mute change is passed to telemetry');
+})();
+
 console.log('ALL test-controls.js assertions passed!\n');

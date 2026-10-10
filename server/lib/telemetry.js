@@ -878,6 +878,38 @@ function volumeControl(vs, sound) {
 }
 
 /*
+ * Where the sound goes, as the audio service names it, so a refused volume
+ * change can be tied to it.
+ */
+function soundRoute(vs, sound) {
+  if (vs && vs.soundOutput) return String(vs.soundOutput);
+  if (sound && sound.scenario) return String(sound.scenario);
+  return null;
+}
+
+/*
+ * The route the TV last refused a volume or mute change on ("Current Scenario
+ * doesn't support volume change"), which counts as no volume control until
+ * the sound goes elsewhere. The flags above are not always right: an
+ * OLED65G5WUA (webOS 25) on optical showed a settable level of 10 that no
+ * change moved.
+ */
+var lastSoundRoute = null;
+var volumeRefusedRoute = null;
+
+function noteVolumeRefused() {
+  volumeRefusedRoute = lastSoundRoute;
+  lastStats = null;
+}
+
+function routedVolumeControl(vs, sound) {
+  var route = soundRoute(vs, sound);
+  lastSoundRoute = route;
+  if (volumeRefusedRoute !== null && volumeRefusedRoute !== route) volumeRefusedRoute = null;
+  return volumeRefusedRoute !== null ? 'none' : volumeControl(vs, sound);
+}
+
+/*
  * Whether a Bluetooth audio device is connected: choosing Bluetooth output
  * without one opens the TV's own pairing prompt and falls back to the
  * speakers. Paired is not enough - headphones switched off stay paired. A
@@ -1806,7 +1838,7 @@ function collectStats(cb) {
       if (typeof vs.muteStatus === 'boolean') out.muted = vs.muteStatus;
     }
     if (sound || vs) out.audio_output = audioOutput(vs, sound);
-    out.volume_control = volumeControl(vs, sound);
+    out.volume_control = routedVolumeControl(vs, sound);
     if (out.volume_control !== 'level') out.volume = null;
     lunaCachedFn('com.webos.service.settings/getSystemSettings',
       { category: 'sound', keys: ['soundOutput', 'soundMode'] }, 15000,
@@ -2100,6 +2132,8 @@ module.exports = {
   offeredSoundOutputs: offeredSoundOutputs,
   getSoundOutputs: getSoundOutputs,
   volumeControl: volumeControl,
+  routedVolumeControl: routedVolumeControl,
+  noteVolumeRefused: noteVolumeRefused,
   formatPicMode: formatPicMode,
   formatDynamicRange: formatDynamicRange,
   pictureModes: pictureModes,

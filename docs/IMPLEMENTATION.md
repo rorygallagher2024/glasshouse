@@ -146,6 +146,13 @@ from the `scenario` of `com.webos.audio/getSoundOut`: the scenario is
 `tv_speaker_ext` on TV Speaker + Optical, and getSoundOut fails outright on
 TV Speaker + Bluetooth with nothing paired.
 
+Whether the volume can be set, only stepped, or not changed at all where the
+sound goes comes from the same service's `adjustVolume`,
+`externalDeviceControl` and `volumeSyncable`. Those are not always right: an
+OLED65G5WUA (webOS 25) on optical showed a level of 10 that no change moved.
+So when the TV refuses a volume or mute change with "Current Scenario doesn't
+support", the volume counts as not changeable until the sound goes elsewhere.
+
 The TV's DNS name in the stats, `hostname`, is a reverse lookup of its IPv4
 address on the home network, `address`. It is looked up in the background and
 never on a request: the stats carry the cached answer, and the first after a
