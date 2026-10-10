@@ -178,11 +178,39 @@ test('SDP grace period stays open on cold boot until timeValid with source sdp i
   privacy._clearSdpTimer();
 });
 
-test('SDP grace period closes and blocks nextlgsdp.com when finalized on timeout cap', function () {
+test('SDP grace period closes and blocks nextlgsdp.com when finalized', function () {
   privacy._setSdpGraceActive(true);
-  privacy._finalizeSdpBlock('timeout');
+  privacy._finalizeSdpBlock('done');
   assert.strictEqual(privacy.isSdpGracePeriodActive(), false);
   assert.ok(privacy.adBlockList('full').indexOf('nextlgsdp.com') !== -1);
+});
+
+test('SDP grace period stays open past two minutes until the time is valid from any source', function () {
+  privacy._setSdpGraceActive(true);
+  var timeState = { timeValid: false, systemTimeSource: 'system' };
+  privacy.init({ luna: function (uri, params, cb) {
+    if (uri === 'com.webos.service.systemservice/time/getSystemTime') {
+      cb({ returnValue: true, timeValid: timeState.timeValid, systemTimeSource: timeState.systemTimeSource });
+    }
+  } });
+
+  privacy._checkSdpClockSync(true);
+  timeState.timeValid = true;
+  timeState.systemTimeSource = 'manual';
+  privacy._checkSdpClockSync(false);
+  assert.strictEqual(privacy.isSdpGracePeriodActive(), true, 'a time from another source waits for SDP at first');
+
+  timeState.timeValid = false;
+  privacy._acceptAnyTimeSource();
+  privacy._checkSdpClockSync(false);
+  assert.strictEqual(privacy.isSdpGracePeriodActive(), true, 'still open after two minutes while the time is invalid');
+  assert.strictEqual(privacy.adBlockList('full').indexOf('nextlgsdp.com'), -1);
+
+  timeState.timeValid = true;
+  privacy._checkSdpClockSync(false);
+  assert.strictEqual(privacy.isSdpGracePeriodActive(), false, 'closed once a time set by hand is valid');
+  assert.ok(privacy.adBlockList('full').indexOf('nextlgsdp.com') !== -1);
+  privacy._clearSdpTimer();
 });
 
 test('SDP grace period correctly handles webOS 4 where timeValid is omitted from getSystemTime', function () {

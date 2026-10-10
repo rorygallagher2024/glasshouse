@@ -575,8 +575,11 @@ To prevent this while preserving full platform blocking:
 * The server polls `com.webos.service.systemservice/time/getSystemTime` every 3 seconds.
   Once `timeValid` (or `timevalid`) is reported with source `sdp`, `nextlgsdp.com` is
   added to `/etc/hosts` and sinkholed.
-* The polling is capped at two minutes: if the SDP clock sync does not complete within
-  that window (e.g., during network outages), `nextlgsdp.com` is blocked anyway.
+* If the SDP clock sync has not completed within two minutes (a slow network after a
+  power cut, say), a valid time from any source, such as one set by hand, ends the wait
+  instead, polled every 30 seconds. `nextlgsdp.com` stays reachable until then: blocking
+  it with the clock wrong would leave the TV unable to make HTTPS connections until the
+  next boot.
 * On a restart (warm boot) or when toggling the blocker while the TV is already running,
   `getSystemTime` reports that the time is already valid. The grace period is skipped
   entirely, and `nextlgsdp.com` is blocked immediately.
