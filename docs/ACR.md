@@ -66,12 +66,23 @@ the Privacy tab lists each under a descriptive name:
 
 | Flag in the Privacy tab | Controls |
 | --- | --- |
-| Screen content recognition | ACR itself |
+| Screen content recognition | ACR itself, where the ACR client reads it |
 | Screen recognition (GDPR consent) | the EU consent record for ACR |
-| Screen recognition (master consent) | read, with personalised advertising, by the service that places ads over live TV |
+| Screen recognition (master consent) | ACR on webOS 4.10; on firmware with a service that places ads over live TV, read by it with personalised advertising |
 | Ads based on what you watch | using recognised content to choose ads |
 | Sharing viewing data with data partners | LG and Alphonso passing viewing and device data to other companies |
 | Personalised advertising | interest-based ads |
+
+Which flag the ACR client, `acr2`, reads differs by firmware. On a C9
+(webOS 4.10.2, firmware 05.50.00) it names `acrOnAllowed`, the master
+consent, and not `acrAllowed`
+([#629](https://github.com/rorygallagher2024/glasshouse/issues/629)).
+Glasshouse's ACR switch sets the TV's Live Plus setting and whichever of the
+two flags the client on the TV names, or `acrAllowed` where it names
+neither. Withdrawing the master consent withdraws the agreements it rests on,
+and with them any other flag resting on those agreements. Which flag starts
+ACR has not been confirmed: on that C9 none of them did while the ad
+blocker kept the TV from authenticating with LG.
 
 Switching the flags off stops the TV acting on them. The ad blocker's **Ads &
 telemetry** mode also blocks the Alphonso servers LG Ad Solutions runs ACR through, so a TV

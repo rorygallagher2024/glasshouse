@@ -191,7 +191,8 @@ var CONSENT_BY_DOCUMENT = {
 
 // Named from what reads them, where no agreement of their own names them.
 // adoverlay-service, which places ads over live TV, reads shoppingOnAllowed
-// with customadsAllowed and acrOnAllowed.
+// with customadsAllowed and acrOnAllowed. A C9 (webOS 4.10.2) has no such
+// service, and there acr2 reads acrOnAllowed (#629).
 var CONSENT_READ_BY = {
   shoppingOnAllowed: msg('srv.consent.shoppingOn.detail', 'Read by the service that places ads and offers over live TV, alongside personalised advertising')
 };
@@ -905,6 +906,26 @@ function clearAdCookies(cb) {
   });
 }
 
+/*
+ * The consent flags the ACR client reads, found by name in its binary. They
+ * differ by firmware: acr2 on a C9 (webOS 4.10.2) names acrOnAllowed and not
+ * acrAllowed (#629). acrAllowed alone where the binary cannot be read or
+ * names neither, as before. Read once: the binary is on the read-only rootfs.
+ */
+var ACR_BINARY = '/usr/sbin/acr2';
+var ACR_CONSENT_KEYS = ['acrAllowed', 'acrOnAllowed'];
+var acrConsentFound = null;
+
+function acrConsentKeys(cb) {
+  if (acrConsentFound) return cb(acrConsentFound);
+  fs.readFile(ACR_BINARY, function (err, buf) {
+    var text = !err && buf ? buf.toString('binary') : '';
+    var found = ACR_CONSENT_KEYS.filter(function (k) { return text.indexOf(k) !== -1; });
+    acrConsentFound = found.length ? found : ['acrAllowed'];
+    cb(acrConsentFound);
+  });
+}
+
 function setConsent(ckey, cOn, cb) {
   if (!ckey) return cb({ ok: false, error: 'no consent flag named' });
   if (!consentSettable(ckey)) return cb({ ok: false, error: ckey + ' is not changeable from here' });
@@ -982,6 +1003,8 @@ module.exports = {
   collectPrivacy: collectPrivacy,
   simpleSummary: simpleSummary,
   setConsent: setConsent,
+  acrConsentKeys: acrConsentKeys,
+  _setAcrBinary: function (file) { ACR_BINARY = file; acrConsentFound = null; },
   readConsentFlags: readConsentFlags,
   clearCache: clearCache,
   ADBLOCK_ADS: ADBLOCK_ADS,
