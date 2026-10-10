@@ -1772,20 +1772,20 @@
   "from": "Everything"
  },
  "pv.adblock.full.confirm": {
-  "text": "«Todo» también bloquea los servicios de la plataforma de LG, así que la tienda de apps, las actualizaciones de software y LG Channels pueden dejar de funcionar. ¿Cambiar a «Todo»?",
-  "from": "Everything also blocks LG’s platform services, so the app store, software updates and LG Channels may stop working. Switch to Everything?"
+  "text": "«Todo» también bloquea los servicios de la plataforma de LG, así que la app LG ThinQ ya no puede controlar la TV, y la tienda de apps, las actualizaciones de software y LG Channels pueden dejar de funcionar. ¿Cambiar a «Todo»?",
+  "from": "Everything also blocks LG’s platform services, so the LG ThinQ app can no longer control the TV, and the app store, software updates and LG Channels may stop working. Switch to Everything?"
  },
  "pv.adblock.full.detail": {
-  "text": "También bloquea los servicios de la plataforma de LG, así que la tienda de apps, las actualizaciones de software y LG Channels pueden dejar de funcionar.",
-  "from": "Also blocks LG's platform services, so the app store, software updates and LG Channels may stop working."
+  "text": "También bloquea los servicios de la plataforma de LG, así que la app LG ThinQ ya no puede controlar la TV, y la tienda de apps, las actualizaciones de software y LG Channels pueden dejar de funcionar.",
+  "from": "Also blocks LG's platform services, so the LG ThinQ app can no longer control the TV, and the app store, software updates and LG Channels may stop working."
  },
  "pv.adblock.full.updates": {
   "text": "Para bloquear solo las actualizaciones del sistema, usa Bloquear actualizaciones de software de la TV en la pestaña Servidor.",
   "from": "To stop only system updates, use Block TV software updates in the Server tab."
  },
  "pv.adblock.full.warn": {
-  "text": "«Todo» también bloquea los servicios de la plataforma de LG, así que la tienda de apps, las actualizaciones de software y LG Channels pueden dejar de funcionar.",
-  "from": "Everything also blocks LG's platform services, so the app store, software updates and LG Channels may stop working."
+  "text": "«Todo» también bloquea los servicios de la plataforma de LG, así que la app LG ThinQ ya no puede controlar la TV, y la tienda de apps, las actualizaciones de software y LG Channels pueden dejar de funcionar.",
+  "from": "Everything also blocks LG's platform services, so the LG ThinQ app can no longer control the TV, and the app store, software updates and LG Channels may stop working."
  },
  "pv.adblock.off.detail": {
   "text": "No hay nada bloqueado. Las direcciones de publicidad y telemetría de LG funcionan con normalidad.",
@@ -4996,8 +4996,8 @@
   "from": "Controls are switched off in this dashboard’s config."
  },
  "tv.privacy.everything.hint": {
-  "text": "También bloquea los servicios de la plataforma de LG. La tienda de apps, las actualizaciones de software y LG Channels pueden dejar de funcionar.",
-  "from": "Also blocks LG’s platform services. The app store, software updates and LG Channels may stop working."
+  "text": "También bloquea los servicios de la plataforma de LG. La app LG ThinQ ya no puede controlar la TV, y la tienda de apps, las actualizaciones de software y LG Channels pueden dejar de funcionar.",
+  "from": "Also blocks LG’s platform services. The LG ThinQ app can no longer control the TV, and the app store, software updates and LG Channels may stop working."
  },
  "tv.privacy.head.adAndTrackerBlocking": {
   "text": "Bloqueo de anuncios y rastreadores",

@@ -552,6 +552,9 @@ advertising**, which is why they are a separate tier:
 | Domain | What it actually serves |
 | :--- | :--- |
 | `ngfts.lge.com`, `aic-ngfts.lge.com` | Content and firmware delivery CDN |
+| `cdplauncher.lgtvcommon.com`, `lgchhomeapp.lgtvcommon.com` | The Home launcher's recommendations and usage reports; needed by the Content Store after a factory reset |
+| `lgtviot.com` | The ThinQ cloud: the LG ThinQ app can no longer control the TV with it blocked |
+| `ueiwsp.com` | Universal Electronics' identification of devices connected over HDMI-CEC |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
 | `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
 
@@ -559,8 +562,23 @@ advertising**, which is why they are a separate tier:
 `http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2. The full
 tier adds whatever that file says, so a firmware using neither is still covered.
 
-Blocking them is a defensible choice, but it means **firmware updates and the
-app store may stop working** on that tier. Anyone who turns it on and later
+`wiselg.com` is not on either list, though the full tier still blocks it if
+`appInstallService` names it as its store. On webOS 26 the Content Store's
+first request goes to `<country>.tv.wiselg.com`, and a factory-reset TV asks for
+`ngfts.tv.wiselg.com` during setup
+([Huttunen](https://fabricati-diem.inform.social/post/deshittification-as-a-service-part2-bypassing-the-app-store-gatekeeper/)),
+which suggests it is that release's service platform, in place of the SDP
+hosts. None of the tested TVs runs webOS 26, and Huttunen reports Netflix
+being interrupted after a cold boot with it blocked.
+
+The `lgtvcommon.com`, `lgtviot.com` and `ueiwsp.com` rows, and
+`smartad.lge.com` on the ads tier, come from the blocklist in
+[Huttunen's Deshittification as a Service](https://fabricati-diem.inform.social/post/deshittification-as-a-service/),
+with his descriptions, rather than from captures of the tested TVs.
+
+Blocking them is a defensible choice, but it means **the LG ThinQ app cannot
+control the TV, and firmware updates and the app store may stop working** on
+that tier. Anyone who turns it on and later
 finds the Content Store broken will not connect the two events unless told, so
 it is stated at the control in the UI as well as here.
 
@@ -571,6 +589,11 @@ webOS sets its clock from the `X-Server-Time` header of LG's SDP servers
 `systemTimeSource` `sdp`. The Everything tier blocks those servers, so a TV that
 lost its time in a power cut could not set it again, and anything using HTTPS
 fails while the clock is wrong.
+
+After a factory reset, a webOS 26 TV's clock falls back to its firmware build
+date in 2024 rather than to 1970, which passes a plain year check but still
+fails certificate validation
+([Huttunen, Fabricati Diem](https://fabricati-diem.inform.social/post/deshittification-as-a-service/)).
 
 To prevent this while preserving full platform blocking:
 * The boot hook removes `nextlgsdp.com` from the saved table before mounting it, since

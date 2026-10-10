@@ -234,7 +234,7 @@ async function loadPrivacy() {
       : mode === 'ads'
       ? t('pv.adblock.ads.detail', 'Blocks advertising, tracking and diagnostics addresses. LG\'s app store and software updates still work.')
       : mode === 'full'
-      ? t('pv.adblock.full.detail', 'Also blocks LG\'s platform services, so the app store, software updates and LG Channels may stop working.')
+      ? t('pv.adblock.full.detail', 'Also blocks LG\'s platform services, so the LG ThinQ app can no longer control the TV, and the app store, software updates and LG Channels may stop working.')
       : '';
     q('adblock-help').hidden = mode === 'off';
     for (const m of ['off', 'ads', 'full']) {
@@ -272,7 +272,7 @@ q('pv-consent').addEventListener('click', async (ev) => {
 async function setAdBlockMode(mode) {
   const full = q('ab-full');
   if (mode === 'full' && !(full && full.classList.contains('on')) &&
-      !confirm(t('pv.adblock.full.confirm', 'Everything also blocks LG\u2019s platform services, so the app store, software updates and LG Channels may stop working. Switch to Everything?'))) return;
+      !confirm(t('pv.adblock.full.confirm', 'Everything also blocks LG\u2019s platform services, so the LG ThinQ app can no longer control the TV, and the app store, software updates and LG Channels may stop working. Switch to Everything?'))) return;
   for (const m of ['off', 'ads', 'full']) { const b = q('ab-' + m); if (b) b.disabled = true; }
   await sendCommand('setAdBlock', mode);
   await loadPrivacy();

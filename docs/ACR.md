@@ -60,9 +60,16 @@ advertising needs consent beyond the Viewing Information Agreement.
 
 ## What controls it
 
-ACR is off until the Viewing Information Agreement is accepted. Several
-agreement flags decide whether it runs and what its data may be used for;
-the Privacy tab lists each under a descriptive name:
+LG says ACR is off until the Viewing Information Agreement is accepted. A
+packet capture of a factory-reset LG OLED (model and firmware not given)
+showed the TV contacting `eu-acr86.alphonso.tv` on port 4433, and looking up
+`FI.info.lgsmartad.com`, while its setup was still showing the agreements
+with nothing accepted. That shows the connection, not whether recognition
+was running
+([Huttunen, Fabricati Diem](https://fabricati-diem.inform.social/post/deshittification-as-a-service-part4-the-factory-reset-privacy-trap/)).
+
+Several agreement flags decide whether ACR runs and what its data may be used
+for; the Privacy tab lists each under a descriptive name:
 
 | Flag in the Privacy tab | Controls |
 | --- | --- |
