@@ -320,6 +320,8 @@
           <button id="so_optical" onclick="sendCommand('soundOutput','optical')" data-t="sound.optical">Optical</button>
           <button id="so_headphone" onclick="sendCommand('soundOutput','headphone')" data-t="sound.headphone">Headphone</button>
           <button id="so_bt_soundbar" onclick="sendCommand('soundOutput','bt_soundbar')" translate="no">Bluetooth</button>
+          <select id="so_more" class="so-more" hidden aria-label="More outputs" data-t-aria-label="sound.more.label"
+            onchange="if (this.value) sendCommand('soundOutput', this.value)"></select>
         </div>
       </div>
     </details>

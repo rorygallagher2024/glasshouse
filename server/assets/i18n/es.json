@@ -2531,6 +2531,14 @@
   "text": "Auriculares",
   "from": "Headphone"
  },
+ "sound.more": {
+  "text": "Más…",
+  "from": "More…"
+ },
+ "sound.more.label": {
+  "text": "Más salidas",
+  "from": "More outputs"
+ },
  "sound.optical": {
   "text": "Óptico",
   "from": "Optical"
