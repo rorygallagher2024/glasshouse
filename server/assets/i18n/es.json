@@ -2528,8 +2528,8 @@
   "from": "Yes"
  },
  "sound.headphone": {
-  "text": "Auriculares",
-  "from": "Headphone"
+  "text": "Auriculares / AUX",
+  "from": "Headphone / AUX"
  },
  "sound.optical": {
   "text": "Óptico",
@@ -3464,40 +3464,40 @@
   "from": "Sound output"
  },
  "srv.lgs.soundOutput.btSoundbar": {
-  "text": "Dispositivo Bluetooth",
-  "from": "Bluetooth device"
+  "text": "Bluetooth",
+  "from": "Bluetooth"
  },
  "srv.lgs.soundOutput.desc": {
   "text": "Por dónde reproduce la TV el sonido. El modo de sonido y el balance solo se aplican a los altavoces de la TV.",
   "from": "Where the TV plays its sound. Sound mode and balance apply only to the TV speakers."
  },
  "srv.lgs.soundOutput.externalArc": {
-  "text": "Dispositivo HDMI (ARC)",
-  "from": "HDMI (ARC) device"
+  "text": "HDMI ARC",
+  "from": "HDMI ARC"
  },
  "srv.lgs.soundOutput.externalOptical": {
-  "text": "Dispositivo de salida óptica",
-  "from": "Optical out device"
+  "text": "Óptico",
+  "from": "Optical"
  },
  "srv.lgs.soundOutput.headphone": {
-  "text": "Auriculares con cable",
-  "from": "Wired headphones"
+  "text": "Auriculares / AUX",
+  "from": "Headphone / AUX"
  },
  "srv.lgs.soundOutput.tvSpeaker": {
-  "text": "Altavoces de la TV",
-  "from": "TV speakers"
+  "text": "Altavoz de la TV",
+  "from": "TV Speaker"
  },
  "srv.lgs.soundOutput.tvSpeakerBluetooth": {
-  "text": "Dispositivo Bluetooth y altavoces de la TV",
-  "from": "Bluetooth device and TV speakers"
+  "text": "Altavoz de la TV + Bluetooth",
+  "from": "TV Speaker + Bluetooth"
  },
  "srv.lgs.soundOutput.tvSpeakerExternalArc": {
-  "text": "Dispositivo HDMI (ARC) y altavoces de la TV",
-  "from": "HDMI (ARC) device and TV speakers"
+  "text": "Altavoz de la TV + HDMI ARC",
+  "from": "TV Speaker + HDMI ARC"
  },
  "srv.lgs.soundOutput.tvSpeakerHeadphone": {
-  "text": "Auriculares con cable y altavoces de la TV",
-  "from": "Wired headphones and TV speakers"
+  "text": "Altavoz de la TV + Auriculares",
+  "from": "TV Speaker + Headphone"
  },
  "srv.lgs.soundOutputDigital": {
   "text": "Salida de sonido digital",

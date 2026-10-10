@@ -132,4 +132,11 @@ lgs.set('systemPin', true, function (r) {
   console.log('  ✓ anything outside the table is refused');
 });
 
+// The sound outputs read as the names module names them everywhere else
+var names = require('../server/lib/names');
+lgs.ROWS.filter(function (x) { return x.id === 'soundOutput'; })[0].choices.forEach(function (c) {
+  assert.strictEqual(c.label, names.soundOutput(c.value).display, c.value);
+});
+console.log('  ✓ the sound outputs have the names module\'s English');
+
 console.log('ALL test-lgsettings.js assertions passed!\n');
