@@ -180,6 +180,18 @@ function getUpdateSummary() { return updateSummaryFn(); }
 function doRestartSelf() { return restartSelfFn(); }
 function doTvApp(action, cb) { return tvAppFn(action, cb); }
 
+/*
+ * The audio service's answer to a volume or mute change, as ok. A refusal
+ * for where the sound goes now is passed to telemetry, which stops offering
+ * the volume there.
+ */
+function volumeAnswer(r) {
+  if (r && /Current Scenario doesn't support/i.test(String(r.errorText || '')) && telemetry) {
+    telemetry.noteVolumeRefused();
+  }
+  return { ok: !!(r && r.returnValue) };
+}
+
 function doControl(action, value, cb) {
   cb = cb || function () {};
   if (!config.allowControl) return cb({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') });
@@ -197,7 +209,7 @@ function doControl(action, value, cb) {
     case 'volume':
       return luna('com.webos.audio/setVolume',
                   { volume: Math.max(0, Math.min(100, toInt(value, 10))) },
-                  function (r) { cb({ ok: !!(r && r.returnValue) }); });
+                  function (r) { cb(volumeAnswer(r)); });
 
     case 'volumeStep':
       var step = Math.max(-100, Math.min(100, toInt(value, 1)));
@@ -220,7 +232,7 @@ function doControl(action, value, cb) {
       var stepFrom = function (curVol) {
         var target = Math.max(0, Math.min(100, curVol + step));
         luna('com.webos.audio/setVolume', { volume: target }, function (r) {
-          cb({ ok: !!(r && r.returnValue) });
+          cb(volumeAnswer(r));
         });
       };
       // The newer service first: with an eARC soundbar controlling the volume,
@@ -237,7 +249,7 @@ function doControl(action, value, cb) {
       var shouldMute = (value === 'true' || value === true || value === 'ON' || value === '1' || value === 1);
       return luna('com.webos.audio/setMuted',
                   { muted: shouldMute },
-                  function (r) { cb({ ok: !!(r && r.returnValue) }); });
+                  function (r) { cb(volumeAnswer(r)); });
 
     case 'screenOff':   // OLED: blank the panel, keep audio playing
       return luna('com.webos.service.tvpower/power/turnOffScreen', {},
