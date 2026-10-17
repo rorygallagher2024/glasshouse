@@ -9,7 +9,8 @@
  * - What decides who can reach or change this server (port, host, token,
  *   allowControl and the like), so a file cannot open a TV up.
  * - MQTT, whose topic prefix and device id must differ between TVs.
- * - The experimental switches.
+ * - The experimental switches, Glasshouse Home's among them: its layout is
+ *   carried, but not whether it is on, nor the settings it would put back.
  *
  * A restore sets only what this TV has and offers, one setting at a time
  * through lgsettings.set, and says what it skipped and why.
@@ -70,6 +71,8 @@ var repo = null;
 /** @type {function(string): boolean} */
 var keepApp = function (id) { return !!id; };
 var pendingFile = '/var/lib/tvweb/restore-apps.json';
+/** @type {typeof import('./home')} */
+var home = null;
 
 var DEVELOPER_APPS = '/media/developer/apps/';
 
@@ -161,6 +164,7 @@ function create(cb) {
         from: { model: from.model || null, glasshouse: from.version || null },
         lg: lg,
         glasshouse: pickGlasshouse(config),
+        home: home ? home.layout() : undefined,
         apps: apps
       });
     });
@@ -203,9 +207,17 @@ function restore(backup, cb) {
     (function next() {
       if (i >= ids.length) {
         return planApps(backup.apps, function (apps) {
-          restoreGlasshouse(backup.glasshouse, result, function (r) {
-            r.apps = apps;
-            cb(r);
+          restoreHome(backup.home, function (homeRestored) {
+            restoreGlasshouse(backup.glasshouse, result, function (r) {
+              r.apps = apps;
+              r.home = !!(homeRestored && homeRestored.ok);
+              if (homeRestored && !homeRestored.ok) {
+                r.ok = false;
+                r.error = msg('srv.home.backupFailed', 'Other settings may have been restored, but the Home layout could not be restored: {error}',
+                  { error: homeRestored.error || 'unknown error' });
+              }
+              cb(r);
+            });
           });
         });
       }
@@ -261,6 +273,12 @@ function planApps(list, cb) {
            missing.filter(function (a) { return !inCatalog[a.id]; }));
     });
   });
+}
+
+// The layout is checked and trimmed by Glasshouse Home as the dashboard's is.
+function restoreHome(layout, cb) {
+  if (!home || !layout || typeof layout !== 'object') return cb(null);
+  home.setLayout(layout, cb);
 }
 
 function restoreGlasshouse(src, lgResult, cb) {
@@ -384,6 +402,7 @@ function dailyStatus() {
  * @param {string} [opts.pendingFile] where the apps left to install are kept
  * @param {string} [opts.dailyDir] where daily backups are kept, for tests
  * @param {function(): number} [opts.now] wall clock, for tests
+ * @param {typeof import('./home')} [opts.home] Glasshouse Home, whose layout a backup carries
  */
 function init(opts) {
   lgSettings = opts.lgSettings;
@@ -392,6 +411,7 @@ function init(opts) {
   if (opts.about) about = opts.about;
   luna = opts.luna || null;
   repo = opts.repo || null;
+  home = opts.home || null;
   if (opts.keepApp) keepApp = opts.keepApp;
   if (opts.pendingFile) pendingFile = opts.pendingFile;
   if (opts.dailyDir) dailyDir = opts.dailyDir;

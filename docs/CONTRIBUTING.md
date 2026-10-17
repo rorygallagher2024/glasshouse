@@ -42,6 +42,8 @@ The server runs on the TV under Node.js 0.12 on webOS 3 and 4, and 0.10 on webOS
 * `server/assets/dashboard.html`
 * `server/assets/setup.html`
 * `server/assets/setup-phone.html`
+* `server/assets/home.html`
+* `server/assets/home-app/index.html`
 
 Avoid all ES6+ constructs in these files: no `const` or `let`, arrow functions, template literals, classes, default parameters, destructuring, promises, `async`/`await`, `for...of`, or ES6 built-in methods (`Object.assign`, `Array.prototype.find`, etc.).
 

@@ -269,6 +269,7 @@ var TABS = [
   { key: 'oled',    label: t('tab.oledCare', 'OLED Care'),    url: '/api/oledcare',    build: oledRows, optional: true },
   { key: 'game',    label: t('tab.game', 'Game'),         url: '/api/game',        build: gameRows, optional: true },
   { key: 'saver',   label: t('tv.tab.screenSaver', 'Screen Saver'), url: '/api/screensaver', build: saverRows, optional: true },
+  { key: 'home',    label: t('tab.home', 'Home'),         url: '/api/home?with=catalogue,channels', build: homeRows },
   { key: 'privacy', label: t('tab.privacy', 'Privacy'),      url: '/api/privacy',     build: privacyRows },
   { key: 'service', label: t('tv.tab.serviceMenu', 'Service Menu'), url: '/api/servicemenu', build: svcRows },
   { key: 'options', label: t('tv.tab.system', 'System'),       url: '/api/stats?with=settings', build: optionRows, poll: 5000 },
@@ -671,6 +672,173 @@ function saverRows(d) {
   return r;
 }
 
+/*
+ * Glasshouse Home: a home screen of Glasshouse's own in place of LG's. Before
+ * its app is on the TV the section offers to add it; after, everything the
+ * browser dashboard's Home tab changes is here too, editing the same layout.
+ */
+var HOME_DIM = [60, 120, 300, 0], HOME_OFF = [600, 900, 1800, 0];
+var homeData = null;
+var homeWallPoll = null;
+
+function homeDuration(sec) {
+  if (!sec) return t('home.idle.never', 'Never');
+  return sec < 3600 ? t('tv.home.minutes', '{n} min', { n: Math.round(sec / 60) }) : t('tv.home.hours', '{n} h', { n: Math.round(sec / 3600) });
+}
+
+function homeNextOf(list, cur) {
+  var i = list.indexOf(cur);
+  return list[(i + 1) % list.length];
+}
+
+function homeItemTitle(kind, id) {
+  var c = homeData.catalogue, list = kind === 'app' ? c.apps : kind === 'dev' ? c.devices : c.channels, i;
+  if (kind === 'app' && id === 'lg-home') return t('home.lgHome', 'LG Home');
+  for (i = 0; i < list.length; i++) {
+    if (list[i].id !== id) continue;
+    if (kind === 'app') return list[i].title;
+    if (kind === 'dev') return list[i].name;
+    return list[i].number + ' ' + list[i].name;
+  }
+  return null;
+}
+
+function homeRows(d) {
+  homeData = d;
+  var r = [head(t('home.title', 'Glasshouse Home'))];
+  if (!d || d.ok === false || !d.supported) return r;
+  if (!d.supported.ok && !d.enabled && !d.restorePending) {
+    r.push({ label: t('home.unavailable', 'Not available on this TV'), value: '',
+             hint: d.supported.reason || '' });
+    return r;
+  }
+  var can = d.writable !== false;
+  if (!d.installed && !d.restorePending) {
+    r.push({ label: t('home.install', 'Install Glasshouse Home'), value: t('home.notInstalled', 'Not installed'), cls: 'off',
+             act: can ? 'homeInstall' : null, press: t('tv.home.install.press', 'Press OK to install it'),
+             hint: t('home.installDesc', 'Adds the Glasshouse Home app to the TV. Nothing changes until it is switched on: LG\u2019s Home stays the TV\u2019s Home.') });
+    return r;
+  }
+  r.push({ label: d.restorePending ? t('home.retryRestore', 'Retry restoring LG Home') : t('home.title', 'Glasshouse Home'),
+           value: d.restorePending ? t('home.restorePending', 'LG Home restoration is incomplete') : d.enabled ? t('common.on', 'On') : t('common.off', 'Off'), cls: d.enabled ? 'on' : 'off',
+           act: can ? 'homeSwitch' : null, on: d.enabled || d.restorePending,
+           press: d.enabled ? t('tv.home.switch.off', 'Press OK to use LG Home again') : t('tv.home.switch.on', 'Press OK to use Glasshouse Home'),
+           hint: d.restorePending ? t('home.restoreRetry', 'Retry restoring LG Home before changing or removing Glasshouse Home.') : d.enabled ? t('home.isOnDesc', 'The Home and Back buttons open it, and the TV starts on it unless it was switched off on an input.')
+                           : t('home.isOffDesc', 'Switching on keeps a copy of the TV\u2019s Home settings first, and switching off puts them back exactly.') });
+  r.push({ label: t('tv.home.open', 'Open Glasshouse Home'), value: '\u2192', cls: 'act', act: 'homeOpen',
+           press: t('tv.home.open.press', 'Press OK to open it'),
+           hint: t('tv.home.open.hint', 'Hold OK on it to move tiles and rows. Back while a tile is held hides or shows it.') });
+
+  var c = d.catalogue, lay = d.layout;
+  if (c && lay) {
+    r.push(head(t('tv.home.rowOrder', 'Row order')));
+    var names = { app: t('home.row.apps', 'Apps'), dev: t('home.row.inputs', 'Inputs'), ch: t('home.row.channels', 'Channels') };
+    lay.rows.forEach(function (kind, i) {
+      r.push({ label: names[kind], value: t('tv.home.rowPlace', '{n} of {total}', { n: i + 1, total: lay.rows.length }), cls: 'act',
+               act: can && i > 0 ? 'homeRowUp' : null, key: kind,
+               press: i > 0 ? t('tv.home.rowUp.press', 'Press OK to move this row up') : t('tv.home.rowFirst', 'First row'),
+               hint: t('tv.home.rowUp.hint', 'The order of the rows on Glasshouse Home.') });
+    });
+    // One section per row, in the rows' order. Apps and inputs come from the TV, so they are hidden or shown;
+    // channels are added, so they are removed.
+    var hasChannels = !!(d.channels && d.channels.length);
+    lay.rows.forEach(function (kind) {
+      var order = c.order[kind] || [];
+      if (kind === 'ch') {
+        r.push(head(names.ch));
+        order.forEach(function (id) {
+          var title = homeItemTitle('ch', id);
+          if (title === null) return;
+          r.push({ label: title, value: t('home.ch.onHome', 'On Home'), cls: 'on', act: can ? 'homeChannel' : null, key: id, on: true,
+                   press: t('tv.home.ch.remove', 'Press OK to remove it'),
+                   hint: t('tv.home.ch.order.hint', 'Hold OK on Glasshouse Home to change the order of channels.') });
+        });
+        r.push({ label: t('home.ch.addTitle', 'Add channels'), value: t('tv.apps.install.browse', 'Browse'), cls: 'act',
+                 act: hasChannels ? 'open' : null, key: 'homeChannels',
+                 press: hasChannels ? t('tv.home.ch.press', 'Press OK to choose') : t('home.ch.none', 'This TV has no channels tuned, so the Channels row stays empty.'),
+                 hint: t('tv.home.ch.hint', 'From the TV\u2019s own channel list. Each one added goes on the end of the Channels row.') });
+        return;
+      }
+      if (!order.length) return;
+      r.push(head(names[kind]));
+      order.forEach(function (id) {
+        var title = homeItemTitle(kind, id);
+        if (title === null) return;
+        var hidden = lay.hidden[kind].indexOf(id) !== -1, lg = kind === 'app' && id === 'lg-home';
+        r.push({ label: title, value: lg ? t('home.alwaysShown', 'Always shown') : hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
+                 cls: lg ? '' : hidden ? 'off' : 'on', act: can && !lg ? 'homeTile' : null, key: id, kind: kind, on: !hidden,
+                 press: hidden ? t('tv.home.tile.show', 'Press OK to show it') : t('tv.home.tile.hide', 'Press OK to hide it'),
+                 hint: lg ? t('tv.home.lgTile.hint', 'The way back to LG\u2019s Home, so it always shows.')
+                          : t('tv.home.tile.hint', 'Hold OK on Glasshouse Home to change the order of tiles.') });
+      });
+    });
+    r.push(head(t('home.idle.title', 'Idle screen')));
+    r.push({ label: t('home.idle.dim', 'Dim clock after'), value: homeDuration(lay.idle.dimAfter), cls: 'act',
+             act: can ? 'homeIdle' : null, key: 'dimAfter', next: homeNextOf(HOME_DIM, lay.idle.dimAfter),
+             press: t('tv.home.idle.press', 'Press OK to change'),
+             hint: t('home.idle.desc', 'Only while Glasshouse Home is in front. LG\'s screen saver works as before everywhere else.') });
+    r.push({ label: t('home.idle.off', 'Switch the panel off after'), value: homeDuration(lay.idle.panelOffAfter), cls: 'act',
+             act: can ? 'homeIdle' : null, key: 'panelOffAfter', next: homeNextOf(HOME_OFF, lay.idle.panelOffAfter),
+             press: t('tv.home.idle.press', 'Press OK to change'),
+             hint: t('home.idle.desc', 'Only while Glasshouse Home is in front. LG\'s screen saver works as before everywhere else.') });
+    var walls = d.wallpapers || {};
+    r.push(head(t('home.wall.title', 'Wallpaper')));
+    r.push({ label: walls.downloading ? t('home.wall.downloading', 'Downloading wallpapers…')
+               : walls.available ? t('home.wall.remove', 'Remove wallpapers') : t('home.wall.download', 'Download wallpapers'),
+             value: '', act: can && !walls.downloading ? 'homeWallpapers' : null, on: !!walls.available,
+             hint: walls.error || t('home.wall.optional', 'Optional: download four wallpapers from GitHub (19 MB). Until then, Home has a black background.') });
+    clearTimeout(homeWallPoll);
+    if (walls.downloading) homeWallPoll = setTimeout(function () { if (T().key === 'home') fetchTab(true); }, 2000);
+    r.push(head(t('tv.home.head.more', 'More')));
+    r.push({ label: t('home.reset', 'Reset the layout'), value: '', act: can ? 'homeReset' : null,
+             press: t('tv.home.reset.press', 'Press OK, then again, to reset'),
+             hint: t('home.resetDesc', 'The rows, apps and inputs go back to their first order, with LG\u2019s promotions hidden again. Channels stay as they are.') });
+  }
+  if (!d.enabled && !d.restorePending) {
+    r.push({ label: t('home.remove', 'Remove the Glasshouse Home app'), value: '', act: can ? 'homeRemove' : null,
+             press: t('tv.home.remove.press', 'Press OK, then again, to remove it'),
+             hint: t('home.removeDesc', 'Takes the app off the TV. It can be installed again here.') });
+  }
+  return r;
+}
+
+// The TV's channels not yet on Glasshouse Home. Adding one takes it off this list; the Home tab lists those added.
+function homeChannelRows(d) {
+  // Each change reloads this list, and the next one is made from what it loaded.
+  homeData = d;
+  var r = [{ label: t('tv.backRow.home', '\u2039 Home'), value: '', act: 'close', press: t('tv.backRow.privacy.press', 'Press OK or Back to return'),
+             hint: t('tv.backRow.home.hint', 'Back to the Home tab.') }];
+  var picked = (d && d.layout && d.layout.channels) || [];
+  ((d && d.channels) || []).forEach(function (c) {
+    if (picked.indexOf(c.id) !== -1) return;
+    r.push({ label: c.number + ' ' + c.name, value: '', act: d.writable !== false ? 'homeChannel' : null, key: c.id, on: false,
+             press: t('tv.home.ch.add', 'Press OK to add it'),
+             hint: t('tv.home.ch.hint', 'From the TV\u2019s own channel list. Each one added goes on the end of the Channels row.') });
+  });
+  if (r.length === 1) r.push({ label: t('home.ch.allAdded', 'Every channel is on Home.'), value: '' });
+  return r;
+}
+
+// A second press within a few seconds, for what changes the TV's Home or removes something.
+function confirmFirst(r, again, warn) {
+  if (r.confirming) { r.confirming = false; return false; }
+  r.confirming = true;
+  r.origValue = r.value;
+  r.origPress = r.press;
+  r.value = t('tv.confirm', 'Confirm?');
+  r.press = again;
+  if (warn) flash(warn);
+  render();
+  setTimeout(function () {
+    if (r.confirming) { r.confirming = false; r.value = r.origValue; r.press = r.origPress; render(); }
+  }, 5000);
+  return true;
+}
+
+function homeLayout(patch, note) {
+  return sendPost('/api/home/layout', patch, note);
+}
+
 function appsRows(d) {
   if (!d || !d.ok) return [];
   var r = [];
@@ -999,8 +1167,8 @@ function privacyRows(d) {
  * the first row, returns to it. A switch that changes the TV reloads the list,
  * since LG ties some consents together and one can take others with it.
  */
-var SUBLISTS = { consents: consentRows, services: serviceRows, catalog: catalogRows };
-var SUBTAB = { consents: 'privacy', services: 'privacy', catalog: 'apps' };
+var SUBLISTS = { consents: consentRows, services: serviceRows, catalog: catalogRows, homeChannels: homeChannelRows };
+var SUBTAB = { consents: 'privacy', services: 'privacy', catalog: 'apps', homeChannels: 'home' };
 var sub = null, subFrom = 0;
 
 function buildRows(section, d) {
@@ -2096,6 +2264,46 @@ function activate() {
       return send({ action: 'refresherCancel' }, t('tv.oled.refresherCancelled', 'Refresher cancelled'));
     case 'saver':
       return send({ action: 'screensaverMode', value: r.key });
+    case 'homeInstall':
+      r.value = t('tv.home.installing', 'Installing\u2026');
+      render();
+      return sendPost('/api/home/install', {}, t('tv.home.installed', 'Glasshouse Home installed'));
+    case 'homeRemove':
+      if (confirmFirst(r, t('tv.home.remove.again', 'Press OK again to remove it'))) return;
+      r.value = t('tv.home.removing', 'Removing\u2026');
+      render();
+      return sendPost('/api/home/remove', {}, t('tv.home.removed', 'Glasshouse Home app removed'));
+    case 'homeSwitch':
+      if (confirmFirst(r, r.on ? t('home.confirmOff', 'Press again to use LG Home') : t('home.confirmOn', 'Press again to switch on'))) return;
+      r.value = t('apps.service.updating', 'Updating\u2026');
+      render();
+      return sendPost(r.on ? '/api/home/disable' : '/api/home/enable', {},
+                      r.on ? t('tv.home.off', 'LG\u2019s Home is the TV\u2019s Home again') : t('tv.home.on', 'Glasshouse Home is now the TV\u2019s Home'));
+    case 'homeOpen':
+      return send({ action: 'launchApp', value: 'com.tvweb.home' });
+    case 'homeRowUp':
+      var rowsNow = homeData.layout.rows.slice(), ri = rowsNow.indexOf(r.key);
+      rowsNow.splice(ri, 1);
+      rowsNow.splice(ri - 1, 0, r.key);
+      return homeLayout({ rows: rowsNow });
+    case 'homeTile':
+      var hiddenNow = {};
+      hiddenNow[r.kind] = homeData.layout.hidden[r.kind].filter(function (id) { return id !== r.key; });
+      if (r.on) hiddenNow[r.kind].push(r.key);
+      return homeLayout({ hidden: hiddenNow }, r.on ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'));
+    case 'homeChannel':
+      var chNow = homeData.layout.channels.filter(function (id) { return id !== r.key; });
+      if (!r.on) chNow.push(r.key);
+      return homeLayout({ channels: chNow }, r.on ? t('tv.home.ch.removed', 'Removed from Home') : t('tv.home.ch.added', 'Added to Home'));
+    case 'homeIdle':
+      var idleNow = { dimAfter: homeData.layout.idle.dimAfter, panelOffAfter: homeData.layout.idle.panelOffAfter };
+      idleNow[r.key] = r.next;
+      return homeLayout({ idle: idleNow });
+    case 'homeWallpapers':
+      return sendPost('/api/home/wallpapers', { remove: r.on });
+    case 'homeReset':
+      if (confirmFirst(r, t('tv.home.reset.again', 'Press OK again to reset'))) return;
+      return homeLayout({ reset: true }, t('home.arrange.resetDone', 'Layout reset'));
     case 'saverAllow':
       if (r.on) return send({ action: 'setWebos10ScreensaversAllowed', value: false }, t('tv.flash.switchedOff', 'Switched off'));
       if (!r.confirming) {

@@ -72,7 +72,7 @@ TV_CSS_RULES = [
     (r'backdrop-filter', 'backdrop-filter - Chrome 76'),
 ]
 # Pages the TV's own browser runs, and the scripts they load.
-TV_PAGES = {'dashboard.html', 'setup.html', 'i18n.js', 'qr.js'}
+TV_PAGES = {'dashboard.html', 'setup.html', 'home.html', 'index.html', 'i18n.js', 'qr.js'}
 
 
 def blank(src):
@@ -241,6 +241,6 @@ else:
     # browser.
     assets = root / 'server' / 'assets'
     targets += [assets / 'i18n.js', assets / 'qr.js', assets / 'dashboard.html', assets / 'setup.html',
-                assets / 'setup-phone.html']
+                assets / 'setup-phone.html', assets / 'home.html', assets / 'home-app' / 'index.html']
 
 sys.exit(1 if sum(check(t) for t in targets) else 0)

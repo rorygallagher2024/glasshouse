@@ -40,6 +40,11 @@
  * two are what the dashboard's own controls depend on, and the rest the
  * microcontroller handles before any filter sees them.
  *
+ * Home is set only by Glasshouse Home (lib/home.js), to open its own app:
+ * webOS 9 opens LG's Home on the Home key whatever general.defaultApps says,
+ * so without this LG's Home shows for a moment first. It is kept beside the
+ * keys, as `home`, and passes the key to LG's filters while it is empty.
+ *
  * Strict ES5: runs on node 0.12.
  */
 var fs = require('fs');
@@ -139,6 +144,16 @@ function keysOnTv() {
   return tvKeys;
 }
 
+// The app the Home key opens, set by Glasshouse Home, or ''.
+function readHome() {
+  try {
+    var j = JSON.parse(fs.readFileSync(mapFile(), 'utf8'));
+    return j && typeof j.home === 'string' ? j.home : '';
+  } catch (e) {
+    return '';
+  }
+}
+
 // What is set, as { key: id } with '' for a key that does nothing.
 function readMap() {
   try {
@@ -154,12 +169,14 @@ function readMap() {
   }
 }
 
-function writeMap(map) {
-  if (!Object.keys(map).length) {
-    try { fs.unlinkSync(mapFile()); } catch (e) {}
+function writeMap(map, home) {
+  if (!Object.keys(map).length && !home) {
+    try { fs.unlinkSync(mapFile()); } catch (e) { if (e.code !== 'ENOENT') throw e; }
     return;
   }
-  fs.writeFileSync(mapFile(), JSON.stringify({ keys: map, updated: new Date().toISOString() }, null, 2) + '\n', 'utf8');
+  var j = { keys: map, updated: new Date().toISOString() };
+  if (home) j.home = home;
+  fs.writeFileSync(mapFile(), JSON.stringify(j, null, 2) + '\n', 'utf8');
 }
 
 /*
@@ -189,11 +206,14 @@ function filterSource() {
     'function glasshouseKeysChanged(payload) {',
     '    try {',
     '        var r = typeof payload === "string" ? JSON.parse(payload) : payload;',
-    '        var set = (r && r.configs && r.configs[' + JSON.stringify(MAP_KEY) + '] || {}).keys || {};',
+    '        var value = (r && r.configs && r.configs[' + JSON.stringify(MAP_KEY) + ']) || {};',
+    '        var set = value.keys || {};',
     '        var codes = glasshouseKeyCodes(), ids = {};',
     '        for (var name in set) {',
     '            if (set.hasOwnProperty(name) && codes[name] !== undefined && typeof set[name] === "string") ids[codes[name]] = set[name];',
     '        }',
+    '        // Home, only while Glasshouse Home sets it.',
+    '        if (typeof value.home === "string" && value.home) ids[Qt.Key_Super_L] = value.home;',
     '        glasshouseKeyIds = ids;',
     '    } catch (e) {',
     '        console.warn("glasshouse keyfilter: " + e + "; keys left as they were");',
@@ -238,9 +258,10 @@ function readChain(cb) {
 }
 
 // What each key does, for the filter. cb(ok).
-function writeKeys(map, cb) {
+function writeKeys(map, cb, home) {
   var configs = {};
-  configs[MAP_KEY] = { keys: map };
+  // The whole value is replaced on each write, so leaving home out clears it.
+  configs[MAP_KEY] = home ? { keys: map, home: home } : { keys: map };
   lunaFn('com.webos.service.config/setConfigs', { configs: configs }, function (r) {
     cb(!!(r && r.returnValue));
   });
@@ -272,12 +293,13 @@ function withoutOurs(list) {
  */
 function apply(cb) {
   var map = readMap();
+  var home = readHome();
   readChain(function (list) {
     if (!list) return cb(false);
     var inChain = list.some(ours);
     // Nothing set and nothing installed: configd is not written, as it can
     // never forget the value again, and a TV that never sets a key keeps none.
-    if (!Object.keys(map).length && !inChain) return cb(true);
+    if (!Object.keys(map).length && !home && !inChain) return cb(true);
     var src = filterSource();
     var current = null;
     try { current = fs.readFileSync(filterFile(), 'utf8'); } catch (e) {}
@@ -307,7 +329,7 @@ function apply(cb) {
         if (!ok2) return cb(false);
         writeChain(full, done);
       });
-    });
+    }, home);
   });
 }
 
@@ -408,9 +430,9 @@ function setRemoteKey(key, action, id, cb) {
   });
 }
 
-function save(map, cb) {
+function save(map, cb, home) {
   try {
-    writeMap(map);
+    writeMap(map, home === undefined ? readHome() : home);
   } catch (e) {
     return cb({ ok: false, error: msg('srv.remoteKeys.saveFailed', 'Could not save the change: {error}', { error: e.message }) });
   }
@@ -418,6 +440,15 @@ function save(map, cb) {
     if (!ok) return cb({ ok: false, error: msg('srv.remoteKeys.chainFailed', 'The TV did not take the change') });
     cb({ ok: true });
   });
+}
+
+/*
+ * The app the Home key opens, for Glasshouse Home, or '' to give Home back to
+ * LG's filters. cb({ ok, error }).
+ */
+function setHome(id, cb) {
+  if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
+  save(readMap(), cb, String(id || ''));
 }
 
 /*
@@ -436,8 +467,10 @@ function ensure(cb) {
 // Everything as LG has it: the map deleted, the keys emptied in configd (it
 // cannot delete the value), and the filter out of the chain and deleted.
 function restore(cb) {
+  // A TV that never used the filter has nothing to restore, even without configd.
+  if (!fs.existsSync(mapFile()) && !fs.existsSync(filterFile())) return cb(true);
   if (!lunaFn) return cb(false);
-  try { fs.unlinkSync(mapFile()); } catch (e) {}
+  try { fs.unlinkSync(mapFile()); } catch (e) { if (e.code !== 'ENOENT') return cb(false); }
   writeKeys({}, function (okKeys) {
     readChain(function (list) {
       if (!list) return cb(false);
@@ -459,6 +492,7 @@ module.exports = {
   init: init,
   getRemoteKeys: getRemoteKeys,
   setRemoteKey: setRemoteKey,
+  setHome: setHome,
   ensure: ensure,
   restore: restore,
   filterSource: filterSource,

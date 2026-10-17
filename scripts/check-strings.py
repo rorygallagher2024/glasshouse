@@ -42,7 +42,7 @@ import html, html.parser, json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ASSETS = ROOT / 'server' / 'assets'
-PAGES = ['ui.html', 'dashboard.html', 'setup.html', 'setup-phone.html']
+PAGES = ['ui.html', 'dashboard.html', 'setup.html', 'setup-phone.html', 'home.html']
 I18N_JS = ASSETS / 'i18n.js'
 LANG_DIR = ASSETS / 'i18n'
 
@@ -55,6 +55,7 @@ CONVERTED = {
     'dashboard.html': ['<body>'],
     'setup.html': ['<body>'],
     'setup-phone.html': ['<body>'],
+    'home.html': ['<body>'],
 }
 
 KEY_RE = re.compile(r'^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)*$')

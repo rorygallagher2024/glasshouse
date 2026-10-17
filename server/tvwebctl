@@ -7,7 +7,7 @@
 # very command (its argv contains the path), so the shell kills itself before
 # starting anything. Inside a script, the shell's argv is just this file.
 #
-# Usage: tvwebctl {start|stop|restart|status|watch|update|rollback|restore-home|restore-keys}
+# Usage: tvwebctl {start|stop|restart|status|watch|update|rollback|restore-home|restore-keys|restore-glasshouse-home}
 
 # Each can be moved by a TVWEB_ variable of the same name, which only
 # test/test-tvwebctl.js sets: it runs this script against a stand-in server.
@@ -307,6 +307,8 @@ case "$1" in
   restore-home) "$NODE" "$(dirname "$SELF")/lib/homescreen.js" --restore ;;
   # Before uninstalling: the remote's keys as LG has them.
   restore-keys) "$NODE" "$(dirname "$SELF")/lib/remotekeys.js" --restore ;;
+  # LG's Home as the TV's Home again, with the settings Glasshouse Home changed put back.
+  restore-glasshouse-home) "$NODE" "$(dirname "$SELF")/lib/home.js" --restore ;;
   status)
     if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
       echo "running (pid $(cat "$PIDFILE"))"
@@ -323,5 +325,5 @@ case "$1" in
       echo "watchdog not running"
     fi
     [ -s "$RESTARTS" ] && echo "last restart: $(tail -1 "$RESTARTS")" ;;
-  *) echo "usage: $0 {start|stop|restart|status|watch|update [--check|--force]|rollback [--force]|restore-home|restore-keys}"; exit 2 ;;
+  *) echo "usage: $0 {start|stop|restart|status|watch|update [--check|--force]|rollback [--force]|restore-home|restore-keys|restore-glasshouse-home}"; exit 2 ;;
 esac

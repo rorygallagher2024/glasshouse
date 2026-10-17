@@ -45,7 +45,8 @@ use modern JavaScript.
   for), `notifications`, `privacy` (consent, ad blocking),
   `devtools` (closing the web app debugger to the network),
   `oled` (panel care, service menu), `homescreen` and `homescreen-webos9`
-  (LG's Home screen layout and input tiles, one module per home app), `lgsettings` (LG's own settings as
+  (LG's Home screen layout and input tiles, one module per home app), `home`
+  (Glasshouse Home, a home screen in place of LG's), `lgsettings` (LG's own settings as
   rows), `game`, `apps` (tiles, uninstall, saved pages), `installer` and
   `repo` (installing .ipk packages, the Homebrew Channel catalog),
   `services` (background services), `screensavers`, `updater` and `fetch`
@@ -56,6 +57,8 @@ use modern JavaScript.
   are in `server/assets/ui/`, one script per tab or concern.
 - `server/assets/dashboard.html`, `setup.html`, `setup-phone.html` - the pages
   the TV app shows. `server/assets/dashboard-app/` is the TV app itself.
+  `server/assets/home.html` and `server/assets/home-app/` are Glasshouse
+  Home's view and its app.
 - `server/assets/i18n/` - translations. `server/assets/screensavers/` - QML.
 - `server/tvwebctl`, `server/50-tvweb.sh` - start, stop and watchdog on the TV,
   and the boot hook. `server/deploy.sh` installs over ssh; its `FILES` list

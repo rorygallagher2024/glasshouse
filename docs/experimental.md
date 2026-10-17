@@ -1,6 +1,6 @@
 # Experimental features
 
-Three features are experimental and off by default. They are turned on under **Server** → **Advanced** → **Experimental features**.
+Four features are experimental and off by default. Three are turned on under **Server** → **Advanced** → **Experimental features**, and Glasshouse Home on its own **Home** tab.
 
 ## Hiding home screen system apps
 
@@ -17,6 +17,10 @@ On webOS 10 and 11 they were experimental too, until TVs had run them. Switching
 Switches off parts of LG's Home screen, chosen on the **Apps** tab under **Home screen layout**, which also has the switch, with its warning. On webOS 9 it works without turning anything on.
 
 webOS 10's home app keeps its layout on the TV's read-only system and looks nowhere else for it, so Glasshouse lays its own over LG's with an overlay mount and restarts the home app to read it. The mount does not survive a restart of the TV, so it is put back when Glasshouse starts, and LG's Home screen can show for a moment before that. It has been tried through Glasshouse on a C2 with webOS 10.3.1, and on a few other webOS 10 TVs outside it. **Put back LG's Home screen**, or switching it off, takes the overlay away and brings LG's Home screen back. It does not restart the app manager, so the problem below does not apply to it.
+
+## Glasshouse Home
+
+A home screen of Glasshouse's own in place of LG's, switched on from its own [Home tab](dashboard/home.md) rather than under Advanced. It is offered only on webOS 9, where it has been tried (a G3 with webOS 9.2.2), and it changes LG's own settings for which app is Home, the input the TV starts on and the screen saver; switching it off puts back the values saved before it was first switched on. Its view, its server and its app each fall back to LG's Home when one of them is not answering.
 
 ## Why the first two are experimental
 

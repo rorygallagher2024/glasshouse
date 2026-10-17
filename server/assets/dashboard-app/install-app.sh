@@ -12,10 +12,16 @@
 # does not complete - as on older webOS - this exits without failing, and the
 # served dashboard page stays reachable from a browser.
 
-ID=com.tvweb.dashboard
-VER=1.0.0
 ACTION=${1:-install}
 SRC=${2:-/var/lib/tvweb/assets/dashboard-app}
+# The same script installs Glasshouse Home's app (assets/home-app), named by
+# the app's own appinfo.json. Only the dashboard's app gives way to the
+# Homebrew Channel's tile: Glasshouse Home has no other.
+ID=$(sed -n 's/^ *"id": *"\([^"]*\)".*/\1/p' "$SRC/appinfo.json" 2>/dev/null | head -n 1)
+[ -n "$ID" ] || ID=com.tvweb.dashboard
+VER=1.0.0
+WHAT="dashboard"
+[ "$ID" = com.tvweb.dashboard ] || WHAT="$ID"
 # Where the developer install service puts an app, and so how to tell whether
 # this one is on the home screen without asking the bus.
 APPDIR=/media/developer/apps/usr/palm/applications/$ID
@@ -26,7 +32,7 @@ installed() { [ -d "$APPDIR" ]; }
 # Set when the server was put in place by the app the Homebrew Channel installs.
 # That app is then the tile, so this one is retired rather than offered.
 HBC_MARK=/var/lib/tvweb/.from-homebrew-channel
-from_hbc() { [ -f "$HBC_MARK" ]; }
+from_hbc() { [ "$ID" = com.tvweb.dashboard ] && [ -f "$HBC_MARK" ]; }
 
 # Take this tile away now the Homebrew Channel app replaces it - but never
 # while it is running. Closing an open app from outside made a webOS 4 TV
@@ -112,7 +118,7 @@ if [ "$ACTION" = refresh ]; then
 fi
 
 if from_hbc; then
-  echo "dashboard app not added: the Homebrew Channel app is on the home screen instead"
+  echo "$WHAT app not added: the Homebrew Channel app is on the home screen instead"
   exit 0
 fi
 
@@ -120,11 +126,11 @@ fi
 # switched off it would open to a blank page. Leave it off the home screen.
 CONF=/var/lib/tvweb/config.json
 if [ -f "$CONF" ] && tr -d ' \t\r\n' < "$CONF" | grep -q '"web":{[^}]*"enabled":false'; then
-  echo "dashboard app not added: the dashboard is switched off in config.json"
+  echo "$WHAT app not added: the dashboard is switched off in config.json"
   exit 0
 fi
 
-[ -f "$SRC/appinfo.json" ] || { echo "dashboard app files not found in $SRC"; exit 0; }
+[ -f "$SRC/appinfo.json" ] || { echo "$WHAT app files not found in $SRC"; exit 0; }
 command -v luna-send >/dev/null 2>&1 || { echo "no luna-send; skipping the home-screen app"; exit 0; }
 
 WORK=$(mktemp -d /tmp/tvweb-app.XXXXXX) || exit 0
@@ -145,7 +151,7 @@ Package: $ID
 Version: $VER
 Architecture: all
 Maintainer: tvweb
-Description: tvweb dashboard
+Description: tvweb $WHAT
 CTRL
 
 # tar then gzip separately: the BusyBox tar on webOS 9 is built without gzip, so
@@ -181,7 +187,7 @@ done
 kill "$lpid" 2>/dev/null
 
 if grep -q '"state":"installed"' "$LOG" 2>/dev/null; then
-  echo "dashboard added to the home screen"
+  echo "$WHAT added to the home screen"
 else
-  echo "dashboard app not installed (the dashboard is still served to browsers)"
+  echo "$WHAT app not installed (the dashboard is still served to browsers)"
 fi

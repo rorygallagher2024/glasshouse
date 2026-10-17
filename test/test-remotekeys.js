@@ -298,6 +298,37 @@ step(function (next) {
   }));
 });
 
+step(function (next) {
+  rk.setHome('com.tvweb.home', guard(function (s) {
+    assert.strictEqual(s.ok, true);
+    assert.strictEqual(tv.keys.home, 'com.tvweb.home');
+    var f = loadFilter();
+    assert.strictEqual(f.handle(2001, true, false), 'accepted');
+    assert.strictEqual(f.handle(2001, false, false), 'accepted');
+    assert.deepEqual(f.launched.map(function (l) { return l.id; }), ['com.tvweb.home']);
+    var unlink = fs.unlinkSync;
+    fs.unlinkSync = function (file) {
+      if (file !== MAP) return unlink.apply(fs, arguments);
+      var err = new Error('permission denied');
+      err.code = 'EACCES';
+      throw err;
+    };
+    rk.setHome('', guard(function (s2) {
+      fs.unlinkSync = unlink;
+      assert.strictEqual(s2.ok, false, 'a persisted Home override that could not be deleted is not a successful clear');
+      assert.strictEqual(tv.keys.home, 'com.tvweb.home');
+      rk.setHome('', guard(function (s3) {
+        assert.strictEqual(s3.ok, true);
+        assert.strictEqual(tv.keys.home, undefined);
+        f.tell(tv.keys);
+        assert.strictEqual(f.handle(2001, true, false), 'next');
+        console.log('  \u2713 Glasshouse Home gives the Home key back, and reports a failed save without claiming it was cleared');
+        next();
+      }));
+    }));
+  }));
+});
+
 function done() {
   fs.readdirSync(filtersDir).forEach(function (f) { fs.unlinkSync(path.join(filtersDir, f)); });
   fs.rmdirSync(filtersDir);

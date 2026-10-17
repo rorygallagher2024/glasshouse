@@ -1,6 +1,7 @@
 .DS_Store
 server/config*.json
 *.log
+.log/
 .tvweb_httpd
 lg-webos-mqtt/
 __pycache__/

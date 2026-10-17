@@ -2,7 +2,8 @@
  * remotebuttons.js - Remote control button event listener for webOS
  *
  * Reads Linux evdev streams on webOS remote input devices (/dev/input/event*)
- * to detect red, green, yellow, and blue button presses on LG Magic and IR remotes.
+ * to detect red, green, yellow, and blue button presses on LG Magic and IR remotes,
+ * and the Home button going down and up, for Glasshouse Home's hold-Home gesture.
  *
  * Runs in a dedicated worker child process to avoid blocking the main server's
  * libuv threadpool when waiting on Linux evdev character devices.
@@ -29,7 +30,15 @@ var BUTTON_CODES = {
   18874388: 'blue'
 };
 
+// IR_KEY_HOME in /usr/share/X11/xkb/keycodes/lg (781) less the 8 xkb adds; the
+// same on a G3 (webOS 9.2) and a B4 (webOS 10.3).
+var HOME_CODE = 773;
+
 var onButtonFn = null;
+var onHomeKeyFn = null;
+// Who wants the worker running: MQTT for the coloured buttons, Glasshouse Home
+// for the Home button. It runs while any do.
+var owners = {};
 var workerProc = null;
 var activeDevices = [];
 var lastPressTime = {};
@@ -68,6 +77,14 @@ function findRcuDevices() {
 }
 
 function handleParsedEvent(type, code, val) {
+  if (type === EV_KEY && code === HOME_CODE && (val === 0 || val === 1)) {
+    if (process.argv.indexOf('--worker') !== -1) {
+      try { process.stdout.write('home ' + val + '\n'); } catch (e) {}
+    } else if (onHomeKeyFn) {
+      onHomeKeyFn(val === 1);
+    }
+    return;
+  }
   if (type !== EV_KEY || val !== KEY_PRESS) return;
   var color = BUTTON_CODES[code];
   if (!color) return;
@@ -226,6 +243,10 @@ function start() {
         var line = lines[i].trim();
         if (!line) continue;
         var parts = line.split(' ');
+        if (parts[0] === 'home') {
+          if (onHomeKeyFn) onHomeKeyFn(parts[1] === '1');
+          continue;
+        }
         var color = parts[0];
         var code = parseInt(parts[1], 10);
         if (BUTTON_CODES[code] && onButtonFn) {
@@ -260,6 +281,16 @@ function start() {
 function init(opts) {
   opts = opts || {};
   onButtonFn = opts.onButton;
+  onHomeKeyFn = opts.onHomeKey || null;
+}
+
+// Starts the worker for the first owner to want it, stops it after the last.
+function want(owner, on) {
+  if (on) owners[owner] = true;
+  else delete owners[owner];
+  var wanted = Object.keys(owners).length > 0;
+  if (wanted && !running) start();
+  else if (!wanted && running) stop();
 }
 
 function isRunning() {
@@ -283,7 +314,9 @@ module.exports = {
   BUTTON_CODES: BUTTON_CODES,
   findRcuDevices: findRcuDevices,
   handleParsedEvent: handleParsedEvent,
+  HOME_CODE: HOME_CODE,
   init: init,
+  want: want,
   start: start,
   stop: stop,
   isSupported: isSupported,

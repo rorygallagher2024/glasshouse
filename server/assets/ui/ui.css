@@ -1391,3 +1391,20 @@ button.tools-jump:active{background:var(--w80)}
 .sys-tile.sys-hidden .rk-does{opacity:.45}
 /* Orange marks a change from LG's own setting. */
 .sys-tile.sys-changed .rk-name{color:var(--cand)}
+
+/* The Home tab */
+#home-rows{margin-top:14px}
+.home-row{border-top:1px solid var(--edge);padding:10px 0}
+.home-row summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;padding:6px 0}
+.home-row-move{display:flex;gap:6px}
+.home-tile .prot-title{display:flex;align-items:center;gap:10px}
+.home-tile .prot-status{display:flex;gap:6px;align-items:center}
+.home-tile .rk-ico{width:28px;height:28px;border-radius:6px}
+.home-hidden .prot-main{opacity:.45}
+.home-tile .home-move{min-width:0;width:36px;padding:0}
+.home-ch-add{margin-top:14px;padding-top:12px;border-top:1px dashed var(--edge)}
+.home-ch-filter{margin:12px 0;padding:8px 10px;width:100%;max-width:320px;background:transparent;color:inherit;border:1px solid var(--edge);border-radius:6px}
+.home-ch-list{max-height:420px;overflow:auto}
+.home-walls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:12px}
+.home-wall{margin:0}
+.home-wall img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;display:block}

@@ -127,6 +127,17 @@ var PENDING = require('path').join(require('os').tmpdir(), 'gh-restore-apps-earl
   console.log('  ✓ anything that is not a backup, or is from a newer Glasshouse, is refused and changes nothing');
 })();
 
+// A failed Home layout must not be reported as a complete backup restore.
+(function () {
+  backup.init({ lgSettings: fakeLg(C4_ROWS), config: CONFIG,
+    home: { setLayout: function (layout, cb) { cb({ ok: false, error: 'Home is busy' }); } } });
+  backup.restore({ format: 'glasshouse-backup', version: 1, home: { channels: ['one'] } }, function (r) {
+    assert.strictEqual(r.ok, false);
+    assert.ok(/Home is busy/.test(r.error));
+    assert.strictEqual(r.home, false);
+  });
+})();
+
 // 4. The developer apps: listed in a backup, offered to install on restore
 (function () {
   var os = require('os'), path = require('path'), fs = require('fs');

@@ -64,10 +64,11 @@ The request says nothing about the TV beyond the address any HTTP request reveal
 ssh root@<tv-ip>
 /var/lib/tvweb/tvwebctl restore-home
 /var/lib/tvweb/tvwebctl restore-keys
+/var/lib/tvweb/tvwebctl restore-glasshouse-home
 /var/lib/tvweb/tvwebctl stop
 rm -rf /var/lib/tvweb /media/developer/temp/glasshouse-install
 rm -f /var/lib/webosbrew/init.d/50-tvweb* /var/lib/webosbrew/init.d/20-tvweb-services /var/lib/webosbrew/init.d/20-services.sh
 rm -f /var/lib/webosbrew/tvweb-boot.log*
 ```
 
-`restore-home` puts LG's Home screen back where [Home screen layout](dashboard/apps.md#home-screen-layout) changed it, and `restore-keys` the remote's keys where [Remote keys](dashboard/apps.md#remote-keys) did. Nothing on the TV's read-only rootfs is ever modified. [What the dashboard changes on the TV](TV-CHANGES.md) lists everything else, including the settings that uninstalling leaves as they are.
+`restore-home` puts LG's Home screen back where [Home screen layout](dashboard/apps.md#home-screen-layout) changed it, `restore-keys` the remote's keys where [Remote keys](dashboard/apps.md#remote-keys) did, and `restore-glasshouse-home` LG's Home where [Glasshouse Home](dashboard/home.md) replaced it. Uninstalling Glasshouse through the Homebrew Channel restores LG Home and removes `com.tvweb.home` automatically. For manual removal, the Home section removes the replacement app after restoration. Nothing on the TV's read-only rootfs is ever modified. [What the dashboard changes on the TV](TV-CHANGES.md) lists everything else, including the settings that uninstalling leaves as they are.

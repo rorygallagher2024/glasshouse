@@ -100,9 +100,12 @@ test('hideTile rejects protected apps and invalid IDs', function () {
 test('uninstallApp strictly rejects protected applications', function () {
   apps.init({ config: { allowControl: true } });
 
-  apps.uninstallApp('com.tvweb.dashboard', function (res) {
+  ['com.tvweb.dashboard', 'com.tvweb.home'].forEach(function (id) {
+  apps.uninstallApp(id, function (res) {
     assert.strictEqual(res.ok, false);
     assert.ok(res.error.indexOf('Protected') !== -1);
+  });
+
   });
 
   apps.uninstallApp('org.webosbrew.hbchannel', function (res) {

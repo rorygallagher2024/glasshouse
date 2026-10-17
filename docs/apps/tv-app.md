@@ -69,6 +69,10 @@ It also provides system app hiding, allowing built-in LG apps and tiles (such as
 
 *The Apps view, showing Homebrew Channel catalog browsing and system app hiding.*
 
+### Glasshouse Home
+
+The **Home** section sets up [Glasshouse Home](../dashboard/home.md) from the TV, as the browser dashboard's Home tab does. Before its app is on the TV it offers only **Install Glasshouse Home**. Once installed it has the on/off switch (a second press confirms), a way to open Glasshouse Home, the order of its rows, then a section for each row in that order: apps and inputs each shown or hidden, and the channels added, each removed with OK, with **Add channels** listing the TV's channels not yet on Home. Then the idle timings, optional **Download wallpapers** or **Remove wallpapers**, **Reset the layout**, and, while switched off, removing the app. Moving tiles within a row is done on Glasshouse Home itself, by holding OK.
+
 ### Adding and removing the app
 
 A first install of Glasshouse adds the app to the TV's home screen; updating an existing install leaves the home screen alone.

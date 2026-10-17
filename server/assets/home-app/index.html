@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Glasshouse Home</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#000;color:#ece7df;overflow:hidden;font-family:sans-serif;cursor:none}
+#status{position:absolute;left:8vw;bottom:10vh;font-size:2.4vh;color:#6b665e;opacity:0;-webkit-transition:opacity .6s;transition:opacity .6s}
+#status.on{opacity:1}
+</style>
+</head>
+<body>
+<div id="status">Glasshouse Home is starting</div>
+<script>
+/*
+ * Glasshouse Home's app, which the TV opens as its Home. The view itself is
+ * served by the Glasshouse server on this TV; this page opens it once the
+ * server answers. A Home that cannot load would leave the TV on a black screen
+ * whenever Home is pressed, so where the server does not answer within
+ * GIVE_UP_MS this page asks for LG's own Home instead, and goes on asking the
+ * server: the TV starts this app about 15 s after a cold start and the server
+ * answers some 30 s later (a G3, webOS 9.2), when LG's Home cannot yet be
+ * opened from here. The view opens as soon as the server answers.
+ */
+(function () {
+  var GIVE_UP_MS = 8000;
+  var started = Date.now();
+  var done = false;
+
+  // Launched with { wall } or { hour }, the view shows that wallpaper slot,
+  // to check each one on the panel.
+  function preview() {
+    var p = {};
+    try { p = JSON.parse(window.PalmSystem.launchParams || '{}') || {}; } catch (e) {}
+    var out = '';
+    if (/^[a-z]+$/.test(String(p.wall || ''))) out += '&wall=' + p.wall;
+    if (/^\d{1,2}$/.test(String(p.hour || ''))) out += '&hour=' + p.hour;
+    return out;
+  }
+
+  function openView() {
+    if (done) return;
+    done = true;
+    location.replace('http://localhost:8080/assets/home.html?t=' + Date.now() + preview());
+  }
+
+  var askedLg = false;
+  function lgHome() {
+    if (askedLg) return;
+    askedLg = true;
+    document.getElementById('status').textContent = 'Glasshouse is not answering yet. Hold Home, or use the Input button.';
+    try {
+      var bridge = new window.PalmServiceBridge();
+      bridge.call('luna://com.webos.applicationManager/launch', JSON.stringify({ id: 'com.webos.app.home' }));
+    } catch (e) {}
+  }
+
+  function retry() {
+    if (Date.now() - started >= GIVE_UP_MS) lgHome();
+    setTimeout(probe, askedLg ? 2000 : 600);
+  }
+
+  function probe() {
+    if (done) return;
+    var x = new XMLHttpRequest();
+    x.open('GET', 'http://localhost:8080/api/caps?t=' + Date.now(), true);
+    x.timeout = 1500;
+    x.onload = function () { if (x.status >= 200 && x.status < 400) openView(); else retry(); };
+    x.onerror = x.ontimeout = retry;
+    x.send();
+  }
+
+  setTimeout(function () { if (!done) document.getElementById('status').className = 'on'; }, 1500);
+  probe();
+})();
+</script>
+</body>
+</html>

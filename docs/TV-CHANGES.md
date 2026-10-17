@@ -56,9 +56,16 @@ menus. Uninstalling the dashboard leaves them as they are.
 | Global Stress Reduction and Temporal Peak Control | OLED burn-in protections. Switching one off asks for confirmation, and neither is exposed to Home Assistant. Not switched back on by uninstalling |
 | Service menu lock | Unlocking asks for confirmation. Not locked again by uninstalling |
 | Privacy consents, advertising ID reset, advertising cookies | The same agreements as in the TV's settings |
+| Glasshouse Home | Installs the developer app `com.tvweb.home` beside the dashboard's, and, while switched on, sets `defaultApps.home` to it, sets `lastInputApp` and `physicalLastInputApp` to it while it is in front, and switches `screenSaverEnabled` off while it is in front and back on otherwise, all in the settings service's `general` category. It also points the Home key at its app through the remote key filter (see Remote keys below), as `home` in `glasshouse.remoteKeys` and in `remotekeys.json`, cleared when it is switched off. Before the first switch-on those settings, with `lastInputAppType` and `physicalLastInputType`, are saved in `/var/lib/tvweb/home.json` with the layout. **Use LG Home** on the Home tab, or `tvwebctl restore-glasshouse-home`, writes them back and checks them. Uninstalling Glasshouse from the Homebrew Channel restores these settings and removes `com.tvweb.home` before deleting the server; a failed restore keeps the server for retry |
 | Remote keys | Once a key is changed on the Apps tab, `/var/lib/tvweb/remotekeys-filter.js` is named first in the configd key `com.webos.surfacemanager.keyFilters`, ahead of LG's own filter files, which are not touched, and the mappings are kept in a configd value of its own, `glasshouse.remoteKeys`. configd keeps both across reboots. **As LG has it** on every key empties the mappings and leaves the filter passing every key on; `tvwebctl restore-keys`, which uninstalling from the Homebrew Channel runs, takes the entry out and deletes the file. configd cannot delete a value, so `glasshouse.remoteKeys` stays behind as an empty map. An uninstall by hand without it leaves an entry naming a file that is gone, which the compositor skips, and LG's filters handle every key |
 | LG's blocked-app list | Where hidden tiles or a screen saver switch use it, it is put back with LG's value but saved as a changed setting, which the TV has no way to remove. It keeps that value if LG's own list later changes with a firmware update or a new country. Not undone by uninstalling |
 | LG's blocked system app list | A screen saver switch on webOS 10 and later blocks the screen saver app and releases it at once, so that sam reads its manifest again. The block is written to `/var/preferences/com.webos.applicationManager/blockedSystemAppList/<country>.json` and the release takes it out; the file was byte-identical afterwards on a C5. The release is sent even when the block's answer did not come back. Only a run cut short between the two calls leaves the app blocked, and on these TVs the boot hook releases the screen saver at every boot |
+
+Glasshouse Home saves its enabled state before changing the TV's Home. Its settings writes run in order, so switching off restores the snapshot after pending guard writes finish. A late screen-saver read cannot change the restored value.
+
+Switching Glasshouse Home off reports a Home-key restore failure, including a saved mapping that could not be deleted. App removal is refused until the key and Home and start-up settings no longer target it, and is confirmed only after the TV reports the app absent. A missing app found by the guard switches the feature off and restores its saved settings and Home key.
+
+Optional Home wallpapers download only on request, with pinned SHA-256 checks, into `/var/lib/tvweb/home-wallpapers`. They are excluded from packages and rollback copies and removed with the server. Failed LG Home restoration remains visible and retryable on both dashboards.
 
 ## Network
 
@@ -69,7 +76,7 @@ Homebrew Channel it starts limited to the TV, until the owner opens it during
 setup. While a phone is being used to enter Home Assistant details,
 port 8081 answers a one-time code for up to ten minutes. The server connects out
 only to the configured MQTT broker, to the NTP server when one is configured,
-and, when update checks are switched on, to GitHub's releases API. Update checks are off by default.
+and, when update checks are switched on, to GitHub's releases API. Update checks are off by default. Requested Home wallpaper downloads fetch four pinned images from GitHub; no wallpaper request is made before opting in.
 
 With **Share app icons** on in the MQTT tab (`iconServer` in `config.json`), port 8082 (the dashboard's
 port plus two) answers on the whole network, dual-stack like the dashboard,

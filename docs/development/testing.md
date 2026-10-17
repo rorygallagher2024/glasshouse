@@ -48,6 +48,10 @@ The worker itself stays Python 2.7 compatible for the TV.
 
 `test-window-state.js` checks that short gaps in window focus do not publish empty remote attributes, persistent gaps do, standby clears immediately, and reconnects republish the retained state. The server boot test checks that both SurfaceManager subscriptions start only with MQTT enabled.
 
+`test-home.js` checks restoration with delayed screen-saver reads and writes, overlapping switch and layout requests, failed state saves, failed key or settings restoration blocking removal, an externally removed Home app, and a healthy view whose heartbeats later stop. `test-remotekeys.js` checks that a mapping which could not be deleted is reported as a failed change.
+
+`test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved.
+
 ## Home Assistant
 
 [`home-assistant.yml`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/home-assistant.yml) builds every discovery config the server can publish and
@@ -71,6 +75,8 @@ the web dashboard and the TV app in a headless browser, and fails on any
 script error, naming the tab. A function a page calls that has gone, or an
 element it reaches for that has moved, breaks only when that tab opens, which
 no unit test does. It runs when the server, the pages or the fake TV change.
+
+The Home view also runs through fifteen idle minutes with catalogue refreshes, then wakes by remote key. Arranging checks cover a late catalogue reply, resetting after moving a tile, and an update noticed while arranging. Its service replies are simulated; the page and its timers run in Chromium.
 
 ## Documentation
 
@@ -116,3 +122,5 @@ The Home Assistant check needs Python 3.13 and the `homeassistant` package:
 pip install homeassistant
 ./scripts/check-ha-discovery.py
 ```
+
+Home recovery checks cover failed restoration with a durable retry state, definite absent-app replies, HBC cleanup on a TV that never used Home, and backup partial failures. Browser checks cover pending/failed layout edits, first-catalogue failure, and delayed readiness. Wallpaper validation covers corrupt downloads and staging cleanup; a real pinned download and Office G3 deployment are recorded in the PR testing evidence.

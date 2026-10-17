@@ -81,6 +81,7 @@ it before exposing it more widely.
   is allowed (`apps.sideload`, a token, or the TV itself), since a catalog
   added there is trusted as a URL install is, and the server logs each one
   added.
+- **An upload disconnected while space is being reserved is cancelled before its staging file opens.** Its reservation is released, as for a connection dropped during streaming.
 - **Never port-forward this.** It is designed for a trusted LAN.
 - **Bind to `127.0.0.1` to keep the on-TV app but close the port.** With
   `"host": "127.0.0.1"` nothing on the network can connect to port 8080, while

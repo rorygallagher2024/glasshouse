@@ -19,6 +19,10 @@ BUTTON_CODES = {
     401: 'blue'
 }
 
+# The Home button, reported going down and up: Glasshouse Home opens LG's
+# Home when it is held. remotebuttons.js has the source of the code.
+HOME_CODE = 773
+
 QT_KEY_CODES = {
     18874385: 'red',
     18874386: 'green',
@@ -133,6 +137,11 @@ def main():
                 elif len(chunk) == 24:
                     _, _, type_, code, val = struct.unpack('QQHHi', chunk)
                 else:
+                    continue
+
+                if type_ == 1 and code == HOME_CODE and val in (0, 1):
+                    sys.stdout.write('home %d\n' % val)
+                    sys.stdout.flush()
                     continue
 
                 if type_ == 1 and val == 1:

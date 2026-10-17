@@ -123,6 +123,244 @@ async function visitAll(browser, jobs, problems) {
   await Promise.all([worker(), worker(), worker(), worker()]);
 }
 
+// Catalogue refreshes are background work, so they must not postpone panel off.
+async function visitHome(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home view: ' + e.message));
+  let screenOff = 0;
+  await page.route('**/api/home/**', route => {
+    const pathname = new URL(route.request().url()).pathname;
+    let body = { ok: true };
+    if (pathname === '/api/home/catalogue') body = {
+      ok: true, apps: [], devices: [], channels: [],
+      order: { app: ['lg-home'], dev: [], ch: [] }, sources: { channels: 0 },
+      layout: { rows: ['app', 'dev', 'ch'], hidden: { app: [], dev: [], ch: [] },
+        channels: [], idle: { dimAfter: 120, panelOffAfter: 900 }, hintSeen: true }
+    };
+    if (pathname === '/api/home/screen-off') screenOff++;
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    for (let i = 0; i < 3; i++) {
+      const refreshed = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+      await page.clock.fastForward(5 * 60000);
+      await refreshed;
+      await page.waitForTimeout(50);
+    }
+    if (!screenOff) problems.push('Home view: catalogue refreshes prevented panel off after fifteen idle minutes');
+    await page.keyboard.press('ArrowRight');
+    if (await page.locator('#idle').getAttribute('class') === 'show') problems.push('Home view: a remote key did not wake the idle screen');
+  } finally { await page.close(); }
+}
+
+async function visitHomeArrangement(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home arranging: ' + e.message));
+  const layout = {
+    rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: [],
+    idle: { dimAfter: 0, panelOffAfter: 0 }, hintSeen: true
+  };
+  const defaultOrder = ['netflix', 'youtube', 'lg-home'];
+  const saves = [];
+  let catalogueReads = 0, staleReply = null, build = 'first';
+  await page.route('**/api/home/**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    let body = { ok: true, build };
+    if (pathname === '/api/home/catalogue') {
+      body = {
+        ok: true, apps: [{ id: 'netflix', title: 'Netflix' }, { id: 'youtube', title: 'YouTube' }],
+        devices: [], channels: [], sources: { channels: 0 }, layout,
+        order: { app: layout.order.app.length ? layout.order.app : defaultOrder, dev: [], ch: [] }
+      };
+      // Keep the response as sent, even if a later save changes the fixture.
+      const reply = { contentType: 'application/json', body: JSON.stringify(body) };
+      if (++catalogueReads === 2) { staleReply = () => route.fulfill(reply); return; }
+      return route.fulfill(reply);
+    }
+    if (pathname === '/api/home/layout') {
+      const patch = route.request().postDataJSON();
+      saves.push(patch);
+      if (patch.reset) {
+        layout.rows = ['app', 'dev', 'ch'];
+        layout.order = { app: [], dev: [], ch: [] };
+        layout.hidden = { app: [], dev: [], ch: [] };
+      } else {
+        if (patch.order) Object.assign(layout.order, patch.order);
+        if (patch.rows) layout.rows = patch.rows;
+        if (patch.hidden) layout.hidden = patch.hidden;
+      }
+      body = { ok: true, layout };
+    }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  async function arrange() {
+    await page.keyboard.down('Enter');
+    await page.clock.fastForward(900);
+    await page.keyboard.up('Enter');
+  }
+  async function back() {
+    await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 461, bubbles: true })));
+  }
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    const pending = page.waitForRequest(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    await page.clock.fastForward(5 * 60000);
+    await pending;
+    await arrange();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowRight');
+    const received = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    await staleReply();
+    await received;
+    await page.waitForTimeout(50);
+    await page.keyboard.press('Enter');
+    let saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await back();
+    await saved;
+    if (JSON.stringify(saves[0].order.app) !== JSON.stringify(['youtube', 'netflix', 'lg-home'])) {
+      problems.push('Home arranging: a late catalogue reply lost the moved tile order');
+    }
+    await page.waitForTimeout(50);
+    await arrange();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowRight');
+    saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    const resetCatalogue = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 405, bubbles: true })));
+    await saved;
+    await resetCatalogue;
+    await page.waitForTimeout(50);
+    // An update noticed while arranging must still reload after arranging ends.
+    build = 'second';
+    const beat = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/beat');
+    await page.clock.fastForward(5000);
+    await beat;
+    let navigations = 0;
+    page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigations++; });
+    saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await back();
+    await saved;
+    if (Object.keys(saves[saves.length - 1].order).length) {
+      problems.push('Home arranging: finishing after Reset pinned the Apps order again');
+    }
+    await page.clock.fastForward(5000);
+    await page.waitForTimeout(100);
+    if (!navigations) problems.push('Home arranging: an update seen while arranging was never reloaded');
+  } finally { await page.close(); }
+}
+
+
+// Saves are acknowledged before another edit can replace a whole list.
+async function visitHomeEditor(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home editor: ' + e.message));
+  let layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: ['a'], idle: { dimAfter: 120, panelOffAfter: 900 }, hintSeen: true };
+  const channels = ['a', 'b', 'c'].map(id => ({ id, name: id.toUpperCase(), number: id }));
+  const saves = [];
+  let release = null, refuse = false, pendingRestore = false, portChanged = false;
+  await page.route('**/api/home**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    let body;
+    if (pathname === '/api/home') body = { ok: true, supported: { ok: !portChanged }, installed: true,
+      enabled: !pendingRestore, restorePending: pendingRestore, active: true, writable: true, layout, history: true };
+    else if (pathname.endsWith('/catalogue')) body = { ok: true, apps: [{ id: 'one', title: 'One' }, { id: 'two', title: 'Two' }], devices: [],
+      channels: channels.filter(c => layout.channels.includes(c.id)),
+      order: { app: layout.order.app.length ? layout.order.app : ['one', 'two', 'lg-home'], dev: [], ch: layout.channels }, layout };
+    else if (pathname.endsWith('/channels')) body = { ok: true, channels };
+    else if (pathname.endsWith('/layout')) {
+      const patch = route.request().postDataJSON();
+      saves.push(patch);
+      if (refuse) body = { ok: false, error: 'save refused' };
+      else {
+        if (patch.channels) layout.channels = patch.channels;
+        if (patch.order) Object.assign(layout.order, patch.order);
+        body = { ok: true, layout: JSON.parse(JSON.stringify(layout)) };
+        if (saves.length === 1) await new Promise(resolve => { release = resolve; });
+      }
+    } else body = { ok: true };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    const appRows = page.locator('details.home-row[data-kind="app"] .home-tile');
+    const ready = () => page.waitForFunction(() => {
+      const button = document.querySelector('details.home-row[data-kind="app"] .home-tile button[aria-label="Later"]');
+      return button && !button.disabled;
+    });
+    await ready();
+    await page.locator('details.home-row[data-kind="ch"] summary').click();
+    await page.getByRole('button', { name: 'Show the TV’s channels', exact: true }).click();
+    const add = id => page.locator('#home-ch-list .prot-row').filter({ hasText: id + ' ' + id.toUpperCase() }).getByRole('button', { name: 'Add', exact: true });
+    await add('b').click();
+    await page.waitForTimeout(100);
+    if (!await add('c').isDisabled()) problems.push('Home editor: controls remain enabled during a pending save');
+    await add('c').click({ force: true });
+    await page.waitForTimeout(100);
+    if (saves.length !== 1) problems.push('Home editor: a pending save allowed a second stale channel list');
+    release();
+    await ready();
+    if (await add('c').count()) { await add('c').click(); await ready(); }
+    if (JSON.stringify(layout.channels) !== JSON.stringify(['a', 'b', 'c'])) problems.push('Home editor: an acknowledged channel was lost');
+    refuse = true;
+    const refused = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await appRows.first().getByRole('button', { name: 'Later', exact: true }).click();
+    await refused; await ready();
+    if (await appRows.first().locator('[translate="no"]').textContent() !== 'One') problems.push('Home editor: refused move remained visible');
+    pendingRestore = true;
+    await page.reload();
+    await page.waitForSelector('#home-switch:not(:disabled)');
+    if (!await page.locator('#home-switch').textContent().then(t => /Retry/.test(t))) problems.push('Home editor: failed restoration has no retry action');
+    pendingRestore = false; portChanged = true;
+    await page.reload();
+    await page.waitForTimeout(200);
+    if (await page.locator('#home-switch').isDisabled()) problems.push('Home editor: changing the port blocked switching Home off');
+  } finally { await page.close(); }
+}
+
+async function visitHomeReadiness(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home readiness: ' + e.message));
+  let failed = true, release = null, beats = 0, escapes = 0;
+  await page.route('**/api/home/**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname.endsWith('/beat')) beats++;
+    if (pathname.endsWith('/open')) escapes++;
+    if (pathname.endsWith('/catalogue')) {
+      if (failed) return route.fulfill({ status: 503, body: '{}' });
+      await new Promise(resolve => { release = resolve; });
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, apps: [], devices: [], channels: [],
+        order: { app: ['lg-home'], dev: [], ch: [] }, sources: { channels: 0 },
+        layout: { rows: ['app', 'dev', 'ch'], hidden: { app: [], dev: [], ch: [] }, order: { app: [], dev: [], ch: [] },
+          channels: [], idle: { dimAfter: 120, panelOffAfter: 900 }, hintSeen: true } }) });
+    }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, build: 'one', kind: null }) });
+  });
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForTimeout(100);
+    await page.keyboard.press('ArrowDown');
+    if (!escapes) problems.push('Home readiness: failed first catalogue did not ask for LG Home');
+    if (beats) problems.push('Home readiness: unusable view sent a healthy heartbeat');
+    failed = false;
+    await page.reload();
+    await page.waitForTimeout(100);
+    await page.clock.fastForward(6500);
+    if (beats) problems.push('Home readiness: heartbeat preceded initial rendering');
+    release();
+    await page.waitForSelector('.tile');
+    await page.waitForTimeout(100);
+    if (beats !== 1) problems.push('Home readiness: delayed first render did not immediately send a heartbeat');
+  } finally { await page.close(); }
+}
+
 (async () => {
   const server = await startServer();
   const base = 'http://127.0.0.1:' + server.port;
@@ -131,9 +369,13 @@ async function visitAll(browser, jobs, problems) {
   const web = webTabs(), tv = tvTabs();
   await visitAll(browser, web.map(t => ({ url: base + '/?tab=' + t, label: 'web ' + t }))
     .concat(tv.map(t => ({ url: base + '/assets/dashboard.html?tab=' + t, label: 'TV ' + t }))), problems);
+  await visitHome(browser, base, problems);
+  await visitHomeArrangement(browser, base, problems);
+  await visitHomeEditor(browser, base, problems);
+  await visitHomeReadiness(browser, base, problems);
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              problems.length + ' script error' + (problems.length === 1 ? '' : 's'));
+              'Home idle, wake, arranging, update, editing and readiness checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });
