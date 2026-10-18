@@ -823,8 +823,7 @@ function supported() {
     reason: msg('srv.home.port', 'Glasshouse Home requires the dashboard to use port 8080.') };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is a Flutter app there, under the same id and folder (#612).
-  // LG's Home is a Flutter app there, untried but for one G5 on webOS 10.3.1,
-  // and a G5 on webOS 10 stopped starting the server once it was on (#865).
+  // LG's Home is a Flutter app there, tried only on one G5 on webOS 10.3.1.
   if (/^1[01]\./.test(v) && allowExperimentalFn()) return { ok: true, webos: v, experimental: true };
   return {
     ok: false, webos: v || null,
