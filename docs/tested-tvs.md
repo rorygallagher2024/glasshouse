@@ -2,7 +2,7 @@
 
 Confirmed on 47 TVs across 31 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
 
-One webOS 2 TV, a 55UH600V on webOS 2.2.3, restarts itself soon after Glasshouse starts or its dashboard is opened, which is being looked into in [#746](https://github.com/rorygallagher2024/glasshouse/issues/746). A 49LF632V on the same version runs it without trouble.
+On webOS 2 (tested on a 55UH600V and a 49LF632V), PicCap is withheld because its native service stalls webOS 2 and triggers a watchdog reboot (`cpuAbnormal`, [#746](https://github.com/rorygallagher2024/glasshouse/issues/746)). Both TVs run Glasshouse without trouble.
 
 Versions here are the ones the TV reports itself, as the dashboard shows them; [webOS version numbers](#webos-version-numbers) below gives LG's names for them.
 
@@ -51,7 +51,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | Model       | webOS        | Firmware | Panel | Notes                                                          |
 | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
 | 49LF632V-ZC | 2.2.3        | —        | LCD   | Settings service under its older name; server on Node 0.10     |
-| 55UH600V-ZA | 2.2.3        | 04.26.35 | LCD   | TV restarts itself (`cpuAbnormal`) soon after Glasshouse starts or the dashboard opens; under investigation ([#746](https://github.com/rorygallagher2024/glasshouse/issues/746)) |
+| 55UH600V-ZA | 2.2.3        | 04.26.35 | LCD   | PicCap withheld on webOS 2 to prevent watchdog reboot ([#746](https://github.com/rorygallagher2024/glasshouse/issues/746)); runs cleanly |
 | 43UH610V-ZB | 3.4.3        | 05.70.50 | LCD   | No SoC temp, eMMC wear, or OLED metrics by hardware design     |
 | 55UH6030-UC | 3.4.3        | —        | LCD   |                                                                |
 | 58UH635V    | 3.x          | 05.70.40 | LCD   | no eMMC wear reported                                          |

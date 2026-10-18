@@ -577,6 +577,7 @@ function piccapWanted() {
 var piccap = piccapTransport.init({
   luna: luna,
   pollIntervalMs: CONFIG.piccap && CONFIG.piccap.pollIntervalMs,
+  webosVersion: telemetry.detectWebosVersion(),
   wanted: piccapWanted,
   onAvailableChange: function () { piccapChanged(); }
 });

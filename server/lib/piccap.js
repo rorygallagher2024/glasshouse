@@ -22,7 +22,12 @@ var pollIntervalMs = 30000;
 var onAvailableChange = function () {};
 // Whether Home Assistant's PicCap Capture entity is wanted at all.
 var wanted = function () { return true; };
-var isInstalled = function () { return installed(); };
+var appInstalled = function () { return installed(); };
+var webosOk = true;
+
+function isInstalled() {
+  return webosOk && appInstalled();
+}
 
 function current() {
   return { available: available, isRunning: isRunning };
@@ -83,6 +88,7 @@ function getStatus(cb, force) {
 
 function setPower(on, cb) {
   if (typeof on !== 'boolean') return cb({ ok: false, error: 'power must be true or false' });
+  if (!isInstalled()) return cb({ ok: false, available: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') });
   getStatus(function (state) {
     if (!state.available) {
       return cb({ ok: false, available: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') });
@@ -184,7 +190,8 @@ function init(opts) {
   lunaFn = opts.luna;
   if (typeof opts.onAvailableChange === 'function') onAvailableChange = opts.onAvailableChange;
   if (typeof opts.wanted === 'function') wanted = opts.wanted;
-  if (typeof opts.installed === 'function') isInstalled = opts.installed;
+  if (typeof opts.installed === 'function') appInstalled = opts.installed;
+  if ('webosVersion' in opts) webosOk = supportedWebos(opts.webosVersion);
   var interval = parseInt(opts.pollIntervalMs, 10);
   pollIntervalMs = interval >= 1000 && interval <= 600000 ? interval : 30000;
   return {
@@ -233,4 +240,18 @@ function installed() {
   return existsQuiet(APP_DIR);
 }
 
-module.exports = { init: init, initNoop: initNoop, installed: installed, migrateConfig: migrateConfig, APP_DIR: APP_DIR };
+/*
+ * PicCap's capture service is built for webOS 4 and later. Asking it for its
+ * status starts it as root, and on a 55UH600V (webOS 2.2.3) each start took
+ * about a second, after which the bus stalled (getPowerState timed out at
+ * 5.7 s) and the TV reset itself with cpuAbnormal (#746). Below webOS 3 it is
+ * treated as absent and never started. A version that cannot be read is
+ * allowed, as before.
+ */
+function supportedWebos(version) {
+  var major = parseInt(version, 10);
+  return !(major < 3);
+}
+
+module.exports = { init: init, initNoop: initNoop, installed: installed, supportedWebos: supportedWebos,
+  migrateConfig: migrateConfig, APP_DIR: APP_DIR };

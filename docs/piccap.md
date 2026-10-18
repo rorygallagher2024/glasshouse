@@ -14,8 +14,8 @@ Glasshouse integrates with PicCap to provide one-tap power control from the web 
 
 PicCap is optional. Glasshouse inspects the TV filesystem for PicCap's application directory (`/media/developer/apps/usr/palm/applications/org.webosbrew.piccap`):
 
-* **If PicCap is not installed:** Glasshouse never queries Luna for PicCap, starts no timers, and sends no network requests. The dashboard does not show the toggle, and no unused entities are sent to Home Assistant.
-* **If PicCap is installed:** Glasshouse queries PicCap's background Luna service (`org.webosbrew.piccap.service/status`) to check whether capture is active.
+* **If PicCap is not installed or the TV runs webOS 2:** Glasshouse never queries Luna for PicCap, starts no timers, and sends no network requests. PicCap requires webOS 3 or newer; querying its service on webOS 2 stalls the Luna bus and causes watchdog resets (#746).
+* **If PicCap is installed (webOS 3+):** Glasshouse queries PicCap's background Luna service (`org.webosbrew.piccap.service/status`) to check whether capture is active.
 
 ### The toggle in Advanced Controls
 
