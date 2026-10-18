@@ -586,7 +586,9 @@ fetch(api('/api/caps')).then(r => r.json()).then(cp => {
  * The remote from a keyboard while the Control tab is open (#831). Left to the
  * page: keys typed into a field, keys with Ctrl, Alt or Cmd, anything while a
  * dialog or the menu is open, and Enter or Space on a focused control other
- * than the D-pad, so the page still works from the keyboard.
+ * than the D-pad, so the page still works from the keyboard. The open D-pad's
+ * header counts as the D-pad: clicking it to open it leaves it focused, and
+ * Enter would otherwise close it again.
  */
 const KEYBOARD_REMOTE = {
   ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
@@ -601,7 +603,8 @@ document.addEventListener('keydown', e => {
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   const rcu = KEYBOARD_REMOTE[key];
   if (!rcu && key !== ' ' && key !== 'k') return;
-  if ((key === 'Enter' || key === ' ') && el && el !== document.body && !el.dataset.rcu &&
+  const inDpad = el && el.closest && el.closest('#disc-dpad') && q('disc-dpad').open;
+  if ((key === 'Enter' || key === ' ') && el && el !== document.body && !el.dataset.rcu && !inDpad &&
       el.matches('button, a, summary, [tabindex]')) return;
   e.preventDefault();
   // A held key repeats about 30 times a second; the TV is sent at most one in 150 ms.
