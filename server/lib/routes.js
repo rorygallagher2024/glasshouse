@@ -1073,6 +1073,7 @@ function handleHomeRoute(req, res, u, pathname) {
           c.layout = st.layout;
           c.enabled = st.enabled;
           c.wallpapers = st.wallpapers;
+          c.layoutVersion = homeModule.layoutVersion();
           reply(c);
         });
       });

@@ -210,6 +210,9 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
   var okDownAt = 0, okTimer = null, okLong = false;
   var beatFails = 0;
   var layoutRevision = 0, layoutBusy = false;
+  // home.json's version as last loaded: a heartbeat bringing another means it
+  // was changed elsewhere, such as from a dashboard, and the layout is reloaded.
+  var layoutVersion = null;
   var loadRetry = null, wallAvailable = false, initialEscape = false;
   var wallSlots = null, wallRevision = '';
 
@@ -782,6 +785,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       var firstLoad = !data;
       data = r;
       layout = r.layout;
+      if (r.layoutVersion) layoutVersion = r.layoutVersion;
       refreshPicture();
       clearTimeout(loadRetry);
       wallAvailable = !!(r.wallpapers && r.wallpapers.available);
@@ -843,6 +847,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
           return;
         }
         build = r.build || build;
+        if (r.layoutVersion && layoutVersion && r.layoutVersion !== layoutVersion && !state.arranging && !layoutBusy) load();
         return;
       }
       if (++beatFails === 3) $('fault').className = 'show';

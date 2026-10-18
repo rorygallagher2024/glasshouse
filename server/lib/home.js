@@ -236,6 +236,16 @@ function readConfig() {
   return config;
 }
 
+/*
+ * Changes whenever home.json does, from either dashboard, the view itself or
+ * an edit over SSH: the view reloads its layout when its heartbeat brings a
+ * new one, so a change made elsewhere shows while it is on screen.
+ */
+function layoutVersion() {
+  readConfig();
+  return String(configMtime);
+}
+
 function saveConfig() {
   try {
     writeJsonAtomic(configFile(), config, 384);
@@ -296,7 +306,7 @@ function setLayout(body, cb) {
     return cb({ ok: false, error: msg('srv.home.saveFailed', 'could not save the layout') });
   }
   if (c.picture !== config.picture) pictureDetailsFn(config.picture);
-  cb({ ok: true, layout: layoutOf(config) });
+  cb({ ok: true, layout: layoutOf(config), layoutVersion: layoutVersion() });
 }
 
 function layoutOf(c) {
@@ -990,7 +1000,8 @@ function watchBeat(ms) {
 function beat() {
   lastBeatAt = nowMs();
   if (viewInFront()) watchBeat(BEAT_GRACE_MS);
-  return { ok: true, enabled: readConfig().enabled, build: buildId, wallpapers: wallpapers.status() };
+  return { ok: true, enabled: readConfig().enabled, build: buildId, wallpapers: wallpapers.status(),
+           layoutVersion: layoutVersion() };
 }
 
 function foregroundChanged(id) {
@@ -1204,6 +1215,7 @@ module.exports = {
   disable: function (cb) { change(function (done) { disable(function (r) { homeKeysFn(false); done(r); }); }, cb); },
   uninstall: function (cb) { change(uninstall, cb); },
   beat: beat,
+  layoutVersion: layoutVersion,
   homeKey: homeKey,
   iconPath: iconPath,
   wallpaperPath: wallpapers.image,

@@ -206,6 +206,21 @@ function next() {
   s.fn(function () { console.log('  ✓ ' + s.name); next(); });
 }
 
+step('a layout saved from a dashboard changes the version the view\'s heartbeat brings', function (done) {
+  start(null);
+  var before = home.beat().layoutVersion;
+  assert.ok(before, 'the heartbeat names a version');
+  wait(15, function () {
+    home.setLayout({ hidden: { dev: ['HDMI_1'] } }, function (r) {
+      assert.ok(r.ok, r.error);
+      var after = home.beat().layoutVersion;
+      assert.notStrictEqual(after, before, 'so the view reloads its layout');
+      assert.strictEqual(home.beat().layoutVersion, after, 'and stays put until the next change');
+      done();
+    });
+  });
+});
+
 step('the saved layout keeps its order, drops what has gone and appends what is new', function (done) {
   start({ order: { app: ['cdp-30', 'gone.app', 'netflix'], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] } });
   home.catalogue(function (c) {
