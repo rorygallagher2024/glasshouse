@@ -638,7 +638,8 @@ function supported() {
   var v = String(webosVersion || '');
   if (serverPort !== 8080) return { ok: false, webos: v,
     reason: msg('srv.home.port', 'Glasshouse Home requires the dashboard to use port 8080.') };
-  if (/^9\./.test(v)) return { ok: true, webos: v };
+  // webOS 9 is the one tried on a TV. webOS 6 (LG's webOS 21) is let through so it can be tried.
+  if (/^[69]\./.test(v)) return { ok: true, webos: v };
   return {
     ok: false, webos: v || null,
     reason: msg('srv.home.untested', 'Glasshouse Home has been tried only on webOS 9. This TV runs webOS {version}.', { version: v || '?' })

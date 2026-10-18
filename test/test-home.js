@@ -234,12 +234,26 @@ step('HBC cleanup restores settings and keys before removing an enabled Home', f
 
 step('switching on is refused on an untried webOS, changing nothing', function (done) {
   start(null);
-  home.init({ luna: luna, liveState: liveState, stateDir: dir, webosVersion: '6.3.1' });
+  home.init({ luna: luna, liveState: liveState, stateDir: dir, webosVersion: '7.4.0' });
   home.enable(function (r) {
     assert.strictEqual(r.ok, false);
-    assert.ok(/webOS 6\.3\.1/.test(r.error));
+    assert.ok(/webOS 7\.4\.0/.test(r.error));
     assert.deepEqual(tv.settings, ORIGINAL);
     done();
+  });
+});
+
+step('switching on and off works on webOS 6.5.3', function (done) {
+  start(null);
+  home.init({ luna: luna, liveState: liveState, stateDir: dir, webosVersion: '6.5.3' });
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(tv.settings.defaultApps.home, 'com.tvweb.home');
+    home.disable(function (r2) {
+      assert.ok(r2.ok, r2.error);
+      assert.deepEqual(tv.settings, ORIGINAL);
+      done();
+    });
   });
 });
 
