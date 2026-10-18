@@ -209,8 +209,6 @@ function start(file, opts) {
   home.init(o);
 }
 
-function allowExperimental() { return true; }
-
 function taken() { return tv.samType === 'web' && fs.realpathSync(appDir) === fs.realpathSync(stageDir); }
 
 function wait(ms, fn) { setTimeout(fn, ms); }
@@ -429,22 +427,6 @@ step('switched on where it is not offered, as after a firmware update to webOS 1
   });
 });
 
-step('switched on and in place on webOS 10 without the setting, as 0.116 left it, LG\'s Home is given back at start (#865)', function (done) {
-  start({ enabled: true }, { webosVersion: '10.3.1' });
-  tv.nudgeIgnored = true;
-  fs.mkdirSync(stageDir);
-  fs.writeFileSync(path.join(stageDir, 'appinfo.json'), JSON.stringify({ id: LG_HOME, type: 'web' }));
-  fs.unlinkSync(appDir);
-  fs.symlinkSync(stageDir, appDir);
-  samScan();
-  home.start();
-  wait(50, function () {
-    assert.strictEqual(home.enabled(), false);
-    assert.ok(!taken(), 'LG\'s Home has its place back');
-    done();
-  });
-});
-
 step('webOS 11 only with allowExperimentalHome', function (done) {
   start(null, { webosVersion: '11.2.0' });
   home.status(function (st0) {
@@ -458,11 +440,12 @@ step('webOS 11 only with allowExperimentalHome', function (done) {
   });
 });
 
-step('webOS 10 only with allowExperimentalHome, with LG\'s Flutter Home stopped and no start-up layout', function (done) {
+step('webOS 10 is offered without the setting, with LG\'s Flutter Home stopped and no start-up layout', function (done) {
   start(null, { webosVersion: '10.3.1' });
   home.status(function (st0) {
-  assert.strictEqual(st0.supported.ok, false, 'not offered by default after #865');
-  start({ hideLgHomeAtStart: true }, { webosVersion: '10.3.1', allowExperimental: allowExperimental });
+  assert.strictEqual(st0.supported.ok, true, 'tried there, on a G5');
+  assert.strictEqual(st0.supported.experimental, true);
+  start({ hideLgHomeAtStart: true }, { webosVersion: '10.3.1' });
   tv.nudgeIgnored = true;
   // LG's Home as a C2 (webOS 10.3.1) runs it: the Flutter runner given its id.
   lgRunning(false);
@@ -499,7 +482,7 @@ step('an upgrade rereads sam\'s old manifest, including after a restart between 
   function run() {
     if (!stagedBeforeStart.length) return done();
     var alreadyStaged = stagedBeforeStart.shift();
-    start({ enabled: true }, { webosVersion: '10.3.1', allowExperimental: allowExperimental });
+    start({ enabled: true }, { webosVersion: '10.3.1' });
     tv.nudgeIgnored = true;
     // As the earlier release left it: its manifest staged, mounted and read.
     fs.mkdirSync(stageDir);
@@ -527,7 +510,7 @@ step('an upgrade rereads sam\'s old manifest, including after a restart between 
 });
 
 step('an upgrade sam refuses restores LG\'s Home and reports failure', function (done) {
-  start({ enabled: true }, { webosVersion: '10.3.1', allowExperimental: allowExperimental });
+  start({ enabled: true }, { webosVersion: '10.3.1' });
   tv.nudgeIgnored = true;
   fs.mkdirSync(stageDir);
   fs.writeFileSync(path.join(stageDir, 'appinfo.json'), JSON.stringify({ id: LG_HOME, type: 'web' }));

@@ -141,7 +141,7 @@ Advanced settings can be adjusted in `config.json` or through the dashboard's Se
 | `ntp.server` | `""` | Hostname of an NTP server (e.g., `"pool.ntp.org"`) to synchronize the TV's clock on boot and hourly. |
 | `syslog.server` | `""` | Remote syslog server address to forward TV and Glasshouse logs over RFC 5424 UDP (port `514`). |
 | `allowTileHiding` | `false` | Experimental: allows hiding built-in LG system tiles and apps on the home screen. |
-| `allowExperimentalHome` | `false` | Experimental: offers [Glasshouse Home](dashboard/home.md) on webOS 10 and 11, where it is not yet reliable. |
+| `allowExperimentalHome` | `false` | Experimental: offers [Glasshouse Home](dashboard/home.md) on webOS 11, where it is untried. |
 | `allowExperimentalScreensavers` | `false` | Experimental: allows custom QML screensavers on webOS 12 and newer, which are untried there. Named `allowOnWebos10` before 0.105; that name is still read, and renamed when the server starts. |
 | `allowNetworkDebugger` | `false` | Exposes the webOS app inspector on port `9998` over the local network for developers using `ares-inspect`. |
 | `iconServer` | `false` | Serves installed apps' icons, read-only and without a token, at `http://<tv-ip>:8082/icons/<appId>.png` (the dashboard's port plus two), for launchers on other devices. Home Assistant's Launch App select then lists each icon's address in `app_icons`. Also switched from the MQTT tab. |
