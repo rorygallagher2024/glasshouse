@@ -169,6 +169,10 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
         if (missingModule) {
           if (out.indexOf('Glasshouse Home could not be loaded') === -1) return fail('no log line for the Home that did not load');
           console.log('  ✓ ' + name + ': the server starts without Glasshouse Home, and says why');
+          waitFor('LG\'s Home given back', function () { return /home: (LG's Home is in its place|could not give)/.test(out); }, 20000, function () {
+            if (out.indexOf('home: LG\'s Home is in its place') === -1) return fail('LG\'s Home was not given back');
+            console.log('  ✓ ' + name + ': LG\'s Home is given its place back');
+          }, fail);
         }
         var saved = JSON.parse(fs.readFileSync(cfg, 'utf8'));
         if (saved.allowExperimentalScreensavers !== true || 'allowOnWebos10' in saved) {

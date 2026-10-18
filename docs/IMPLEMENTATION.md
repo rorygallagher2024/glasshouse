@@ -1252,7 +1252,9 @@ icons.
 their files cannot be loaded, the server starts without Glasshouse Home and
 logs why, rather than not starting at all. On a G5 a missing
 `lib/home-recent.js` had kept the dashboard and MQTT down (#865). Without it,
-the Home routes are not served, and uninstalling from the Homebrew Channel
+the server runs `lib/home-takeover.js --release`, as the boot hook does when
+sam refuses the takeover, since the boot hook may already have put Glasshouse
+Home in LG's Home's place with no server to serve it. The Home routes are not served, and uninstalling from the Homebrew Channel
 keeps the server, since it cannot tell whether Glasshouse Home holds LG's
 Home's place.
 

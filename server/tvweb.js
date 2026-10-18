@@ -1693,6 +1693,22 @@ function heartbeat() {
   fs.writeFile(BEAT_FILE, String(Math.floor(Date.now() / 1000)), function () {});
 }
 
+/*
+ * Where Glasshouse Home did not load, the boot hook may already have put it in
+ * LG's Home's place, and Home would open a page this server no longer serves.
+ * LG's Home is put back as the boot hook does when sam refuses the takeover.
+ * Nothing can be done where home-takeover.js is the file missing.
+ */
+function releaseUnloadedHome() {
+  var script = path.join(__dirname, 'lib', 'home-takeover.js');
+  if (!fs.existsSync(script)) return console.error('home: lib/home-takeover.js is missing too; LG\'s Home not checked');
+  child_process.execFile(process.execPath, [script, '--release'], { timeout: 90000 }, function (err, out, errOut) {
+    var said = String(out || '').trim() || String(errOut || '').trim();
+    if (err) console.error('home: could not give LG\'s Home its place back: ' + (said || err.message));
+    else console.log(said || 'home: LG\'s Home is in its place');
+  });
+}
+
 // Glasshouse Home started, where its files loaded.
 function startGlasshouseHome() {
   homePicture.init({ telemetry: telemetry, oled: oled, luna: luna, Subscription: lunaTransport.Subscription });
@@ -1771,6 +1787,7 @@ if (!CLI_MODE) {
   screentime.start();
 
   if (glasshouseHome && homePicture) startGlasshouseHome();
+  else releaseUnloadedHome();
   /*
    * Registered before the MQTT bridge's handlers, which exit, so it runs
    * first. With no bridge it is the only handler, and exits itself.
