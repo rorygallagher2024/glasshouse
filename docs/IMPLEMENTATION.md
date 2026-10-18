@@ -1244,9 +1244,17 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 9 and 10; webOS 11 with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab (webOS 9; webOS 10 and 11 with `allowExperimentalHome`). The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
+
+`tvweb.js` loads it and `lib/home-picture.js` inside a `try`: where one of
+their files cannot be loaded, the server starts without Glasshouse Home and
+logs why, rather than not starting at all. On a G5 a missing
+`lib/home-recent.js` had kept the dashboard and MQTT down (#865). Without it,
+the Home routes are not served, and uninstalling from the Homebrew Channel
+keeps the server, since it cannot tell whether Glasshouse Home holds LG's
+Home's place.
 
 Switched on, that app runs under LG's Home's own id. `lib/home-takeover.js`
 stages it in `/var/lib/tvweb/home-takeover` with an `appinfo.json` naming

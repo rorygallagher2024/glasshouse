@@ -112,8 +112,9 @@ function waitFor(what, test, ms, cb, fail) {
   })();
 }
 
-function phase(name, chaos, next, mqttDisabled) {
-  var root = path.join(os.tmpdir(), 'tvweb-boot-' + process.pid + '-' + (mqttDisabled ? 'no-mqtt' : chaos ? 'chaos' : 'steady'));
+function phase(name, chaos, next, mqttDisabled, missingModule) {
+  var root = path.join(os.tmpdir(), 'tvweb-boot-' + process.pid + '-' +
+                       (missingModule ? 'missing' : mqttDisabled ? 'no-mqtt' : chaos ? 'chaos' : 'steady'));
   rmrf(root); // fake-luna-send's call counts live here and must start at 0
   Object.keys(mockFiles).forEach(function (f) {
     if (mockFiles[f] === null) return;
@@ -140,6 +141,7 @@ function phase(name, chaos, next, mqttDisabled) {
       env.TVWEB_LUNA_SEND = FAKE_LUNA;
       env.FAKE_LUNA_LOG = path.join(root, 'luna-calls.jsonl');
       if (chaos) env.FAKE_LUNA_CHAOS = '1';
+      if (missingModule) env.BOOT_MISSING_MODULE = missingModule;
 
       var out = '';
       var srv = child.spawn(process.execPath, [path.join(__dirname, 'mocks', 'boot-server.js'), '--config', cfg], { env: env });
@@ -164,6 +166,10 @@ function phase(name, chaos, next, mqttDisabled) {
       waitFor('the dashboard to answer', function () { return up || exited; }, 30000, function () {
         clearInterval(upTimer);
         if (exited) return fail('server exited at start: ' + JSON.stringify(exited));
+        if (missingModule) {
+          if (out.indexOf('Glasshouse Home could not be loaded') === -1) return fail('no log line for the Home that did not load');
+          console.log('  ✓ ' + name + ': the server starts without Glasshouse Home, and says why');
+        }
         var saved = JSON.parse(fs.readFileSync(cfg, 'utf8'));
         if (saved.allowExperimentalScreensavers !== true || 'allowOnWebos10' in saved) {
           return fail('allowOnWebos10 was not renamed in config.json: ' + JSON.stringify(saved));
@@ -246,7 +252,7 @@ function phase(name, chaos, next, mqttDisabled) {
   });
 }
 
-var phasesLeft = 3;
+var phasesLeft = 4;
 function phaseDone() {
   if (--phasesLeft) return;
   console.log('ALL test-server-boot.js assertions passed!\n');
@@ -255,3 +261,5 @@ function phaseDone() {
 phase('steady TV', false, phaseDone);
 phase('unreliable TV', true, phaseDone);
 phase('MQTT disabled', false, phaseDone, true);
+// A Glasshouse Home file gone from /var/lib/tvweb, as on a G5 in #865.
+phase('Glasshouse Home file missing', false, phaseDone, false, './home-recent');

@@ -57,8 +57,23 @@ var preload = require('./lib/preload');
 var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
 var homeScreen = require('./lib/homescreen');
-var glasshouseHome = require('./lib/home');
-var homePicture = require('./lib/home-picture');
+/*
+ * Glasshouse Home is loaded apart from the rest: one of its files missing from
+ * /var/lib/tvweb stopped the whole server starting, the dashboard and MQTT
+ * with it (#865). Without it the server runs with LG's Home.
+ */
+/** @type {typeof import('./lib/home')} */
+var glasshouseHome = null;
+/** @type {typeof import('./lib/home-picture')} */
+var homePicture = null;
+try {
+  glasshouseHome = require('./lib/home');
+  homePicture = require('./lib/home-picture');
+} catch (e) {
+  glasshouseHome = null;
+  homePicture = null;
+  console.error('home: Glasshouse Home could not be loaded, running without it: ' + e.message);
+}
 var telemetry = require('./lib/telemetry');
 var controls = require('./lib/controls');
 var routes = require('./lib/routes');
@@ -602,7 +617,7 @@ remotebuttons.init({
     onRemoteButton(button, code);
   },
   onHomeKey: function (down) {
-    glasshouseHome.homeKey(down);
+    if (glasshouseHome) glasshouseHome.homeKey(down);
   },
   onAnyKey: function () {
     screensavers.keyPressed();
@@ -749,6 +764,8 @@ function checkHomebrewChannelApp() {
     // restored before deletion: the compositor's key filter chain is kept by configd, and would go on
     // naming a filter file deleted here.
     var rule = devtools.RULE.join(' ');
+    // Unloaded, it cannot say whether it holds LG's Home's place, so the server is kept.
+    if (!glasshouseHome) return console.error('uninstall: Glasshouse Home is not loaded; server kept for retry');
     glasshouseHome.uninstall(function (restored) {
       if (!restored.ok) return console.error('uninstall: Home restore failed: ' + restored.error);
       // The live owner stops the guard and verifies recovery before any file disappears.
@@ -1676,6 +1693,38 @@ function heartbeat() {
   fs.writeFile(BEAT_FILE, String(Math.floor(Date.now() / 1000)), function () {});
 }
 
+// Glasshouse Home started, where its files loaded.
+function startGlasshouseHome() {
+  homePicture.init({ telemetry: telemetry, oled: oled, luna: luna, Subscription: lunaTransport.Subscription });
+  homePicture.want('tv', (liveState.state.snapshot().power || {}).systemOn !== false);
+  var homeWatchesForeground = false;
+  glasshouseHome.init({
+    luna: luna,
+    allowExperimental: function () { return CONFIG.allowExperimentalHome === true; },
+    liveState: liveState,
+    history: history,
+    stateDir: __dirname,
+    webosVersion: telemetry.detectWebosVersion(),
+    port: CONFIG.port,
+    samrescan: samrescan,
+    // Only to remove the separate app earlier builds installed.
+    installApp: function (action, cb) { tvApp(action, cb, 'home-app'); },
+    setHomeKey: remoteKeys.setHome,
+    homeKeyApp: remoteKeys.homeApp,
+    setStarting: remoteKeys.setStarting,
+    build: TVWEB_DISPLAY_VERSION + '@' + Date.now(),
+    homeKeys: function (on) {
+      if (remotebuttons.isSupported()) remotebuttons.want('home', on);
+      homePicture.want('home', on);
+      // What is in front, which the MQTT bridge starts only with a broker.
+      if (on !== homeWatchesForeground) liveState[on ? 'startGroup' : 'stopGroup']('application');
+      homeWatchesForeground = on;
+    },
+    pictureDetails: function (on) { homePicture.want('details', on); }
+  });
+  glasshouseHome.start();
+}
+
 if (!CLI_MODE) {
   heartbeat();
   setInterval(heartbeat, 20000);
@@ -1707,7 +1756,7 @@ if (!CLI_MODE) {
   liveState.startGroup('power');
   liveState.state.onChange(function (ev) {
     if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) setTimeout(refreshHomeTitles, 20000);
-    if (ev.group === 'power' && ev.key === 'systemOn') homePicture.want('tv', ev.value !== false);
+    if (homePicture && ev.group === 'power' && ev.key === 'systemOn') homePicture.want('tv', ev.value !== false);
     // LG puts its own streaming buttons back around each change, not always announced.
     if (ev.group === 'power' && ev.key === 'state') remoteKeys.powerChanged();
     if (ev.group === 'surface' && ev.key === 'control_app_id' && ev.value === 'com.webos.app.home') refreshHomeTitles();
@@ -1721,46 +1770,19 @@ if (!CLI_MODE) {
   screentime.init({ config: CONFIG, liveState: liveState, control: controls.doControl, injectKey: controls.injectKey, keyBack: controls.KEY_BACK });
   screentime.start();
 
-  homePicture.init({ telemetry: telemetry, oled: oled, luna: luna, Subscription: lunaTransport.Subscription });
-  homePicture.want('tv', (liveState.state.snapshot().power || {}).systemOn !== false);
-  var homeWatchesForeground = false;
-  glasshouseHome.init({
-    luna: luna,
-    allowExperimental: function () { return CONFIG.allowExperimentalHome === true; },
-    liveState: liveState,
-    history: history,
-    stateDir: __dirname,
-    webosVersion: telemetry.detectWebosVersion(),
-    port: CONFIG.port,
-    samrescan: samrescan,
-    // Only to remove the separate app earlier builds installed.
-    installApp: function (action, cb) { tvApp(action, cb, 'home-app'); },
-    setHomeKey: remoteKeys.setHome,
-    homeKeyApp: remoteKeys.homeApp,
-    setStarting: remoteKeys.setStarting,
-    build: TVWEB_DISPLAY_VERSION + '@' + Date.now(),
-    homeKeys: function (on) {
-      if (remotebuttons.isSupported()) remotebuttons.want('home', on);
-      homePicture.want('home', on);
-      // What is in front, which the MQTT bridge starts only with a broker.
-      if (on !== homeWatchesForeground) liveState[on ? 'startGroup' : 'stopGroup']('application');
-      homeWatchesForeground = on;
-    },
-    pictureDetails: function (on) { homePicture.want('details', on); }
-  });
-  glasshouseHome.start();
+  if (glasshouseHome && homePicture) startGlasshouseHome();
   /*
    * Registered before the MQTT bridge's handlers, which exit, so it runs
    * first. With no bridge it is the only handler, and exits itself.
    */
   process.on('SIGTERM', function () {
     history.flush();
-    glasshouseHome.flush();
+    if (glasshouseHome) glasshouseHome.flush();
     if (process.listeners('SIGTERM').length === 1) process.exit(0);
   });
   process.on('SIGINT', function () {
     history.flush();
-    glasshouseHome.flush();
+    if (glasshouseHome) glasshouseHome.flush();
     if (process.listeners('SIGINT').length === 1) process.exit(0);
   });
 

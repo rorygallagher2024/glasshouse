@@ -40,6 +40,21 @@ function wrap(name, both) {
 ONE.forEach(function (n) { wrap(n, false); });
 TWO.forEach(function (n) { wrap(n, true); });
 
+// BOOT_MISSING_MODULE: a require() of that name fails as for a file not there.
+var missing = process.env.BOOT_MISSING_MODULE;
+if (missing) {
+  var Module = require('module');
+  var load = Module._load;
+  Module._load = function (request) {
+    if (request === missing) {
+      var e = new Error('Cannot find module \'' + request + '\'');
+      /** @type {any} */ (e).code = 'MODULE_NOT_FOUND';
+      throw e;
+    }
+    return load.apply(this, arguments);
+  };
+}
+
 process.argv = [process.argv[0], path.join(__dirname, '..', '..', 'server', 'tvweb.js')]
   .concat(process.argv.slice(2));
 require('../../server/tvweb.js');
