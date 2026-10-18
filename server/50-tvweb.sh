@@ -172,15 +172,14 @@ fi
 # under it, its own layout too, and it restarts on that. The server does the
 # same at its start, for a hook that did not run.
 # On webOS 10 and 11 LG's Home is a Flutter app run as
-# "flutter-client -i com.webos.app.home"; webOS 11 only with
-# allowExperimentalHome in config.json. sam ignores the nudge there (above), so
+# "flutter-client -i com.webos.app.home"; there only with allowExperimentalHome
+# in config.json (#865). sam ignores the nudge there (above), so
 # the app is reread with a block and release first, as for the screen saver.
 homeapp=/usr/palm/applications/com.webos.app.home
 homestage=/var/lib/tvweb/home-takeover
 home_os=0
 [ "$webos_major" = "9" ] && home_os=1
-[ "$webos_major" = "10" ] && home_os=1
-if [ "$webos_major" = "11" ]; then
+if [ "$webos_major" = "10" ] || [ "$webos_major" = "11" ]; then
   grep -q '"allowExperimentalHome"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null && home_os=1
 fi
 # A block and release cut short leaves Home blocked across boots, as for the
