@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.117.1';
+var TVWEB_VERSION = '0.117.2';
 
 var http = require('http');
 var fs = require('fs');
