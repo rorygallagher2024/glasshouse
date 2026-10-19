@@ -17,6 +17,7 @@ var unlinkQuiet = require('./util').unlinkQuiet;
 var path = require('path');
 var execFile = require('child_process').execFile;
 var power = require('./power');
+var idlesaver = require('./idlesaver');
 var names = require('./names');
 
 var SCREENSAVER_APP_ID = 'com.webos.app.screensaver';
@@ -673,34 +674,40 @@ function trigger(cb) {
       }
       ensureScreensaverKnown(function (known) {
         if (!known) return cb({ ok: false, error: LOST_ERROR });
-        lunaFn('com.webos.service.tvpower/power/turnOnScreenSaver', {}, function (r) {
-          if (r && r.returnValue) {
-            return refusedAfterRequest(function (refused) {
-              if (!refused) return cb({ ok: true });
-              launchScreensaverApp(function (ok, error) {
-                cb(ok ? { ok: true } : {
-                  ok: false,
-                  error: error || (fgId ? msg('srv.saver.refusedFrom', 'the TV would not start a screen saver from {source}', { source: fgId })
-                    : msg('srv.saver.refusedHere', 'the TV would not start a screen saver from this source'))
+        // Where panel care holds the screen saver back, the app in front is
+        // handed to it without the hold first (lib/idlesaver.js).
+        idlesaver.lift(function () {
+          lunaFn('com.webos.service.tvpower/power/turnOnScreenSaver', {}, function (r) {
+            if (r && r.returnValue) {
+              return refusedAfterRequest(function (refused) {
+                if (!refused) return cb({ ok: true });
+                idlesaver.restore();
+                launchScreensaverApp(function (ok, error) {
+                  cb(ok ? { ok: true } : {
+                    ok: false,
+                    error: error || (fgId ? msg('srv.saver.refusedFrom', 'the TV would not start a screen saver from {source}', { source: fgId })
+                      : msg('srv.saver.refusedHere', 'the TV would not start a screen saver from this source'))
+                  });
                 });
               });
-            });
-          }
-          if (r && r.errorText === 'Invalid State change Request') {
-            return launchScreensaverApp(function (launched, error) {
-              if (launched) return cb({ ok: true });
-              cb({
-                ok: false,
-                error: error || msg('srv.saver.refused', 'the TV would not start a screen saver here: {error}', { error: r.errorText })
+            }
+            idlesaver.restore();
+            if (r && r.errorText === 'Invalid State change Request') {
+              return launchScreensaverApp(function (launched, error) {
+                if (launched) return cb({ ok: true });
+                cb({
+                  ok: false,
+                  error: error || msg('srv.saver.refused', 'the TV would not start a screen saver here: {error}', { error: r.errorText })
+                });
               });
+            }
+            cb({
+              ok: false,
+              error: (r && r.errorText)
+                ? msg('srv.saver.refused', 'the TV would not start a screen saver here: {error}', { error: r.errorText })
+                : fgId ? msg('srv.saver.refusedFrom', 'the TV would not start a screen saver from {source}', { source: fgId })
+                : msg('srv.saver.refusedHere', 'the TV would not start a screen saver from this source')
             });
-          }
-          cb({
-            ok: false,
-            error: (r && r.errorText)
-              ? msg('srv.saver.refused', 'the TV would not start a screen saver here: {error}', { error: r.errorText })
-              : fgId ? msg('srv.saver.refusedFrom', 'the TV would not start a screen saver from {source}', { source: fgId })
-              : msg('srv.saver.refusedHere', 'the TV would not start a screen saver from this source')
           });
         });
       });

@@ -54,6 +54,8 @@ function StateGroup(name, subscription, mapResponse, onError) {
   this.onError = onError;
   /** @type {?function(Object): void} A reply with returnValue false. */
   this.onRefused = null;
+  /** @type {?function(Object): void} Every other reply, as the TV sent it. */
+  this.onReply = null;
   this.listeners = [];
   this.snapshotPending = true;
   // Starts not yet matched by a stop: the subscription runs while any remain.
@@ -90,6 +92,9 @@ StateGroup.prototype._message = function (response) {
   var values, key, sourceTime, event, i;
   if (response && response.returnValue === false && this.onRefused) this.onRefused(response);
   if (!response || response.returnValue === false) return;
+  if (this.onReply) {
+    try { this.onReply(response); } catch (e) {}
+  }
   values = this.mapResponse(response);
   if (!values) return;
   sourceTime = Date.now();

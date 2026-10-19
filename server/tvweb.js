@@ -49,6 +49,7 @@ var privacy = require('./lib/privacy');
 var devtools = require('./lib/devtools');
 var oled = require('./lib/oled');
 var screensavers = require('./lib/screensavers');
+var idlesaver = require('./lib/idlesaver');
 var appsModule = require('./lib/apps');
 var iconServer = require('./lib/iconserver');
 var samrescan = require('./lib/samrescan');
@@ -547,6 +548,7 @@ screensavers.init({
   watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('screensaver', on); },
   mediaState: telemetry.readMediaState
 });
+idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState });
 telemetry.init({
   luna: luna,
   lunaCached: lunaCached,
@@ -1768,6 +1770,7 @@ if (!CLI_MODE) {
   liveState.state.onChange(function (ev) {
     if (ev.group === 'power' && ev.key === 'state') power.stateChanged(ev.value);
   });
+  liveState.groups.power.onReply = idlesaver.powerReply;
   // Its own start, as the MQTT bridge starts every group only with a broker.
   liveState.startGroup('power');
   liveState.state.onChange(function (ev) {

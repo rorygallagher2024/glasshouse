@@ -898,6 +898,7 @@ use and a Hall sensor as reasons. Store mode was `home`,
 Which client refused, and why, was not found: their debug logs do not reach
 `/var/log/messages`, which PmLogDaemon filters by
 `/etc/PmLogDaemon/whitelist.txt`, nor `/var/log/legacy-log`.
+It was eplmanager: see the next section.
 
 Launching `com.webos.app.screensaver` through sam still brought LG's screen
 saver up, and `closeByAppId` closed it. tvpower stayed Active under it. The
@@ -907,6 +908,42 @@ off'"), so the remote did not close it. Start screensaver launches the app
 where tvpower drops the request, except over full-screen playback, tracks it
 through sam's `running` list, and closes it on any key the remote-button
 worker reads from `/dev/input`.
+
+## Panel care holding the screen saver back (webOS 9.2.2, G3)
+
+`ls-monitor -c` (`/usr/sbin/ls-monitor`, run as root with a terminal: over a
+plain `ssh` command luna-send printed nothing) showed the answers to
+tvpower's `responseScreenSaverRequest`: screenmanager and the browser `ack:
+true`, `com.webos.service.oledepl` (`/usr/sbin/eplmanager`) `ack: false`.
+From eplmanager's disassembly (32-bit Thumb, symbols exported):
+
+- `PixelExtension::RequestScreenSaver` answers by a test policy (`1`
+  always yes, `2` always no, set from its debug menu, "Set Screen Saver
+  Policy (0:Default, 1:Forcely Enable, 2:Forcely Disable)"), and by default
+  answers no while its screen saver timer runs.
+- screenmanager calls `setEplAppInfo { appId, supportScreenSaverPolicy }` at
+  each change of foreground app, with `false` for every app seen (Home, the
+  browser, YouTube, Netflix). For those, on a TV where
+  `mw_isSupportOSDCapture` is true, `applyEplAppPolicy` sets the delay to 30
+  minutes (`movs r3, #0x1e`), starts the timer and the OSD capture dimming
+  (the `com.webos.service.capture/executeOneShot` calls seen while idle).
+  `onInputKey` (by `restoreEplCondition`, at most once per 3 s) starts it
+  again on every key.
+- With `supportScreenSaverPolicy: true`, `screenSaverDelay` (minutes) is the
+  timer instead, and `createScreenSaverTimer` starts none at 3 or less; 0
+  reads as not set. That path uses `brightnessDropRatio` and
+  `brightnessDropPeriod` rather than the OSD capture dimming. screenmanager's
+  `screenSaverProperties` in configd give 30 minutes for both kinds
+  (`preferredType` 2 with a 33 % drop after 300 s, and 3).
+
+Timed live: with Home handed over at a 4-minute delay, LG's idle requests at
+0:36 and 3:36 were refused and the one at 6:36 started the screen saver. At a
+1-minute delay a `turnOnScreenSaver` straight after started it, and handing
+Home back with `false` made the next one refused again. screenmanager did not
+call `setEplAppInfo` when the screen saver closed, only at the next change of
+app. eplmanager has no getter for the app info it holds. The C2 on the same
+webOS starts its screen saver; whether it reports no OSD capture support was
+not checked.
 
 ## Home's snapshot (webOS 5.6.2, CX)
 
