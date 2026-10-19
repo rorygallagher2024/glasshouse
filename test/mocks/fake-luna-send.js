@@ -20,12 +20,66 @@
  * Strict ES5: the test runs on node 0.12.
  */
 var mock = require('./mock-env').createMockEnv({ luna: {
-  // As an OLED65B8SLC answers.
+  // As an OLED65B8SLC answers by default, or TV_MODEL profile.
   'com.webos.service.tv.systemproperty/getSystemProperties': function (p) {
     var all = { modelName: 'OLED65B8SLC', firmwareVersion: '05.50.70', boardType: 'M16P_DVB_EU', sdkVersion: '4.4.3' };
+    if (process.env.TV_MODEL === 'c2') {
+      all = { modelName: 'OLED65C26LD', firmwareVersion: '03.33.95', boardType: 'O22N_DVB_EU', sdkVersion: '7.3.0' };
+    } else if (process.env.TV_MODEL === 'c3') {
+      all = { modelName: 'OLED65C35LA', firmwareVersion: '04.40.75', boardType: 'O23N_DVB_EU', sdkVersion: '8.3.0' };
+    }
     var out = { returnValue: true };
     ((p && p.keys) || []).forEach(function (k) { if (all[k] !== undefined) out[k] = all[k]; });
     return out;
+  },
+  'com.webos.applicationManager/listApps': function () {
+    return {
+      returnValue: true,
+      apps: [
+        { id: 'netflix', title: 'Netflix', folderPath: '/media/cryptofs/apps/usr/palm/applications/netflix', removable: true },
+        { id: 'youtube.leanback.v4', title: 'YouTube', folderPath: '/media/cryptofs/apps/usr/palm/applications/youtube.leanback.v4', removable: true },
+        { id: 'com.plexapp.android', title: 'Plex', folderPath: '/media/cryptofs/apps/usr/palm/applications/com.plexapp.android', removable: true },
+        { id: 'amazon', title: 'Prime Video', folderPath: '/media/cryptofs/apps/usr/palm/applications/amazon', removable: true },
+        { id: 'com.webos.app.livetv', title: 'Live TV', folderPath: '/usr/palm/applications/com.webos.app.livetv', systemApp: true },
+        { id: 'com.webos.app.hdmi1', title: 'HDMI 1', folderPath: '/usr/palm/applications/com.webos.app.hdmi1', systemApp: true },
+        { id: 'com.webos.app.hdmi2', title: 'HDMI 2', folderPath: '/usr/palm/applications/com.webos.app.hdmi2', systemApp: true }
+      ]
+    };
+  },
+  'com.webos.applicationManager/running': function () {
+    return {
+      returnValue: true,
+      running: [
+        { id: 'netflix', appType: 'native' },
+        { id: 'youtube.leanback.v4', appType: 'web' },
+        { id: 'com.plexapp.android', appType: 'native' }
+      ]
+    };
+  },
+  'com.webos.service.recent/listRecents': function () {
+    return {
+      returnValue: true,
+      recentsAppList: [
+        { appId: 'netflix', title: 'Netflix', cardSnapShotFilePath: '/tmp/snapshots/netflix/snap.jpg' },
+        { appId: 'youtube.leanback.v4', title: 'YouTube', cardSnapShotFilePath: '/tmp/snapshots/youtube/snap.jpg' },
+        { appId: 'com.plexapp.android', title: 'Plex', cardSnapShotFilePath: '/tmp/snapshots/plex/snap.jpg' }
+      ]
+    };
+  },
+  'com.webos.service.recent/removeRecent': function () { return { returnValue: true }; },
+  'com.webos.service.recent/removeAllRecents': function () { return { returnValue: true }; },
+  'com.webos.service.config/getConfigs': function (p) {
+    var configs = {
+      'tv.model.logoLight': false,
+      'com.webos.surfacemanager.keyFilters': [
+        { file: '/usr/lib/qt5/qml/KeyFilters/appLaunch.js', handler: 'handleHotkeys' }
+      ]
+    };
+    var out = {};
+    ((p && p.configNames) || []).forEach(function (k) {
+      if (configs[k] !== undefined) out[k] = configs[k];
+    });
+    return { returnValue: true, configs: out };
   }
 } });
 

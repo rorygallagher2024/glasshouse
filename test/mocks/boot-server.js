@@ -13,7 +13,7 @@ var path = require('path');
 var ROOT = process.env.FAKE_ROOT;
 if (!ROOT) { console.error('FAKE_ROOT not set'); process.exit(2); }
 
-var MOVED = /^\/(var|mnt|media|proc|sys|etc|home\/root)(\/|$)/;
+var MOVED = /^\/(var|mnt|media|proc|sys|etc|usr|home\/root)(\/|$)/;
 function moved(p) {
   if (typeof p !== 'string' || p.indexOf(ROOT) === 0 || !MOVED.test(p)) return p;
   return path.join(ROOT, p);
