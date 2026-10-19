@@ -80,7 +80,61 @@ var mock = require('./mock-env').createMockEnv({ luna: {
       if (configs[k] !== undefined) out[k] = configs[k];
     });
     return { returnValue: true, configs: out };
-  }
+  },
+  'com.webos.applicationManager/listLaunchPoints': function () {
+    return {
+      returnValue: true,
+      launchPoints: [
+        { id: 'netflix', title: 'Netflix', icon: '' },
+        { id: 'youtube.leanback.v4', title: 'YouTube', icon: '' },
+        { id: 'com.plexapp.android', title: 'Plex', icon: '' },
+        { id: 'amazon', title: 'Prime Video', icon: '' }
+      ]
+    };
+  },
+  'com.webos.service.eim/getAllInputStatus': function () {
+    return {
+      returnValue: true,
+      devices: [
+        { id: 'HDMI_1', port: 1, label: 'Apple TV', activate: true, connected: true, hdmiPlugIn: true },
+        { id: 'HDMI_2', port: 2, label: 'PlayStation 5', activate: false, connected: true, hdmiPlugIn: true },
+        { id: 'HDMI_3', port: 3, label: 'HDMI 3', activate: false, connected: false, hdmiPlugIn: false },
+        { id: 'HDMI_4', port: 4, label: 'HDMI 4', activate: false, connected: false, hdmiPlugIn: false }
+      ]
+    };
+  },
+  'com.webos.service.apiadapter/tv/getChannelList': function () {
+    return {
+      returnValue: true,
+      channelList: [
+        { channelId: '1_1_1_0_0_0_0', channelNumber: '1', channelName: 'BBC One HD' },
+        { channelId: '1_1_2_0_0_0_0', channelNumber: '2', channelName: 'BBC Two HD' },
+        { channelId: '1_1_3_0_0_0_0', channelNumber: '3', channelName: 'ITV1 HD' }
+      ]
+    };
+  },
+  'com.webos.service.utp.boot/getLastChannelId': function () {
+    return { returnValue: true, channelId: '1_1_1_0_0_0_0' };
+  },
+  'com.webos.service.apiadapter/tv/getChannelCurrentProgramInfo': function () {
+    return { returnValue: true, programName: 'News at Ten' };
+  },
+  'com.webos.applicationManager/getAppInfo': function (p) {
+    return {
+      returnValue: true,
+      appInfo: {
+        id: (p && p.id) || 'com.webos.app.home',
+        type: 'web',
+        title: 'Home',
+        folderPath: '/usr/palm/applications/com.webos.app.home'
+      }
+    };
+  },
+  'com.palm.webappmanager/killApp': function () { return { returnValue: true }; },
+  'com.webos.applicationManager/closeByAppId': function () { return { returnValue: true }; },
+  'com.webos.applicationManager/launch': function () { return { returnValue: true }; },
+  'com.webos.settingsservice/getSystemSettings': function () { return { returnValue: true, settings: {} }; },
+  'com.webos.settingsservice/setSystemSettings': function () { return { returnValue: true }; }
 } });
 
 var args = process.argv.slice(2);

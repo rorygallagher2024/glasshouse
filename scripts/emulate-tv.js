@@ -50,6 +50,7 @@ const PROFILES = {
     boardType: 'O22N_DVB_EU',
     firmwareVersion: '03.33.95',
     sdkVersion: '7.3.0',
+    webosVersion: '9.2.0',
     webosMajor: 9,
     oled: true
   },
@@ -59,6 +60,7 @@ const PROFILES = {
     boardType: 'M16P_DVB_EU',
     firmwareVersion: '05.50.70',
     sdkVersion: '4.4.3',
+    webosVersion: '4.4.3',
     webosMajor: 4,
     oled: true
   },
@@ -68,6 +70,7 @@ const PROFILES = {
     boardType: 'O23N_DVB_EU',
     firmwareVersion: '04.40.75',
     sdkVersion: '8.3.0',
+    webosVersion: '10.3.1',
     webosMajor: 10,
     oled: true
   }
@@ -100,11 +103,14 @@ async function main() {
   const chosenPort = await getAvailablePort(port);
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'glasshouse-emulate-'));
 
+  const webosVer = profile.webosVersion || profile.sdkVersion;
+
   // Seed mock files
   const mockEnv = require(path.join(ROOT, 'test', 'mocks', 'mock-env')).createMockEnv();
   const files = Object.assign({}, mockEnv.files, {
-    '/etc/issue': `webOS ${profile.sdkVersion}\n`,
-    '/etc/starfish-release': `Starfish ${profile.sdkVersion}\n`,
+    '/etc/issue': `webOS ${webosVer} \\n \\l\n`,
+    '/etc/issue.net': `webOS ${webosVer}\n`,
+    '/etc/starfish-release': `Starfish release ${webosVer} (broadway)\n`,
     '/proc/lg/pm/temperature': '42\n',
     '/var/luna/preferences/environmentCondition': JSON.stringify({ boardTypeStr: profile.boardType, socChip: profile.boardType })
   });
@@ -154,8 +160,36 @@ async function main() {
     host: '0.0.0.0',
     allowControl: true,
     allowPower: true,
+    allowExperimentalHome: true,
     token: ''
   }, null, 2));
+
+  // Seed Glasshouse Home config as enabled
+  const homeCfg = {
+    enabled: true,
+    rows: ['app', 'dev', 'ch'],
+    order: { app: [], dev: [], ch: [] },
+    sort: { app: 'custom', dev: 'custom', ch: 'custom' },
+    hidden: {
+      app: [
+        'com.webos.app.lgchannels',
+        'com.webos.app.sportsteamsettings',
+        'com.webos.app.lifeonscreen',
+        'amazon.alexa.view',
+        'com.webos.app.camera'
+      ],
+      dev: [],
+      ch: []
+    },
+    channels: [
+      { id: '1_1_1_0_0_0_0', name: 'BBC One HD', number: '1' },
+      { id: '1_1_2_0_0_0_0', name: 'BBC Two HD', number: '2' },
+      { id: '1_1_3_0_0_0_0', name: 'ITV1 HD', number: '3' }
+    ],
+    hintSeen: true,
+    picture: false
+  };
+  fs.writeFileSync(path.join(root, 'var/lib/tvweb/home.json'), JSON.stringify(homeCfg, null, 2));
 
   const fakeLuna = path.join(ROOT, 'test', 'mocks', 'fake-luna-send.js');
 
