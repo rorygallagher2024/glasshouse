@@ -1,6 +1,6 @@
 # Tested TVs
 
-Confirmed on 47 TVs across 31 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
+Confirmed on 48 TVs across 33 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
 
 On webOS 2 (tested on a 55UH600V and a 49LF632V), PicCap is withheld because its native service stalls webOS 2 and triggers a watchdog reboot (`cpuAbnormal`, [#746](https://github.com/rorygallagher2024/glasshouse/issues/746)). Both TVs run Glasshouse without trouble.
 
@@ -43,6 +43,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | C5            | 2025 | OLED  | 10                | 3       |
 | G5            | 2025 | OLED  | 10 – 11           | 2       |
 | UA73          | 2025 | LCD   | 10.3.1            | 1       |
+| C6            | 2026 | OLED  | 11.2              | 1       |
 | NU80          | 2026 | LCD   | 11                | 1       |
 
 <details markdown="1">
@@ -98,6 +99,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | OLED65G36LA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; privacy, app installs and custom screen savers confirmed |
 | OLED83G5WUA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; runs with internet access blocked         |
 | OLED42C35LA | 11.2.0       | 43.21.71 | OLED  | Working                                                        |
+| OLED55C61LA | 11.2.0       | 43.21.79 | OLED  | Rooted with Dualbro; screen saver and remote keys confirmed    |
 
 </details>
 
