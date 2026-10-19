@@ -96,6 +96,25 @@ node scripts/check-upgrade.js
 
 All automated checks must pass cleanly.
 
+### Previewing UI changes locally
+
+To visually preview and interact with the web dashboard, TV app, or Glasshouse Home on your computer without a physical TV:
+
+```bash
+npm run emulate
+```
+
+This starts the server against a virtual webOS environment with procfs, sysfs, Luna bus calls, apps, remote keys, and recent apps mocked. You can also specify a model or port:
+
+```bash
+node scripts/emulate-tv.js [--model c2|b8|c3] [--port 8080] [--open]
+```
+
+Direct URLs:
+* Web Dashboard: `http://localhost:8080/`
+* TV App Dashboard: `http://localhost:8080/assets/dashboard.html`
+* Glasshouse Home: `http://localhost:8080/assets/home.html`
+
 ## Testing on a real TV
 
 The automated checks run the server's code, not the TV. LG's services, the picture and sound pipeline and the start-up sequence behave differently between models and webOS versions, and only a real TV shows how a change behaves there. Before asking for a review:
