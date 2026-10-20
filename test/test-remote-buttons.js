@@ -18,6 +18,12 @@ test('BUTTON_CODES maps 398-401 to red, green, yellow, blue', function () {
   assert.strictEqual(remotebuttons.BUTTON_CODES[401], 'blue');
 });
 
+test('BUTTON_CODES maps the streaming buttons', function () {
+  assert.strictEqual(remotebuttons.BUTTON_CODES[1037], 'netflix');
+  assert.strictEqual(remotebuttons.BUTTON_CODES[1043], 'lgchannels');
+  assert.strictEqual(remotebuttons.BUTTON_CODES[18874397], 'lgchannels');
+});
+
 test('handleParsedEvent ignores non-EV_KEY, non-press, or unknown keycodes', function () {
   var called = 0;
   remotebuttons.init({
@@ -124,7 +130,7 @@ test('remotebuttons lifecycle and status', function () {
   assert.strictEqual(Array.isArray(s.devices), true);
 });
 
-test('Home Assistant discovery builds remote_button entity with red/green/yellow/blue events', function () {
+test('Home Assistant discovery builds remote_button entity with colour and streaming button events', function () {
   var entities = ha.buildEntities({ pfx: 'lgtv' });
   var remoteBtn = null;
   for (var i = 0; i < entities.length; i++) {
@@ -137,7 +143,8 @@ test('Home Assistant discovery builds remote_button entity with red/green/yellow
   assert.strictEqual(remoteBtn.type, 'event');
   assert.strictEqual(remoteBtn.payload.name, 'Remote Button');
   assert.strictEqual(remoteBtn.payload.state_topic, 'lgtv/events/button');
-  assert.deepEqual(remoteBtn.payload.event_types, ['red', 'green', 'yellow', 'blue']);
+  assert.deepEqual(remoteBtn.payload.event_types, ['red', 'green', 'yellow', 'blue', 'netflix',
+    'amazon', 'disneyplus', 'lgchannels', 'rakutentv', 'alexa']);
   assert.strictEqual(remoteBtn.payload.icon, 'mdi:remote');
 });
 
