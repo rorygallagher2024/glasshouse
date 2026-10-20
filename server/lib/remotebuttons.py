@@ -152,12 +152,29 @@ def main():
                         sys.stdout.write('key %d\n' % code)
                         sys.stdout.flush()
 
+        # webOS rotates inputcommon. Follow the path, not the old fd: if the
+        # file was replaced or truncated, reopen it and read the new file from
+        # the start. Seeking the old fd back to 0 replays every old press.
+        if log_fd is None and os.path.exists(log_path):
+            try:
+                log_fd = open(log_path, 'r')
+                log_pos = 0
+            except Exception:
+                log_fd = None
         if log_fd:
             try:
-                cur_size = os.path.getsize(log_path)
-                if cur_size < log_pos:
-                    log_fd.seek(0)
+                if not os.path.exists(log_path):
+                    log_fd.close()
+                    log_fd = None
+                    continue
+                st = os.stat(log_path)
+                if (st.st_ino != os.fstat(log_fd.fileno()).st_ino
+                        or st.st_size < log_pos):
+                    log_fd.close()
+                    log_fd = None
+                    log_fd = open(log_path, 'r')
                     log_pos = 0
+                cur_size = st.st_size
                 if cur_size > log_pos:
                     lines = log_fd.readlines()
                     log_pos = log_fd.tell()
