@@ -135,6 +135,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 .arranging #banner{display:-webkit-flex;display:flex}
 #banner b{color:#ece7df;font-weight:600;margin-right:8px}
 #banner .keys{-webkit-flex:1 1 auto;flex:1 1 auto;margin-left:34px}
+#banner .btn.off{opacity:.35}
 #banner .btn{margin-left:12px;padding:8px 18px;border-radius:5px;color:#ece7df;background:#231d12;outline:2px solid transparent}
 #banner .btn.focus{outline-color:#e9ad55}
 
@@ -183,8 +184,16 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #fault h1{font-family:'Outfit',sans-serif;font-weight:300;font-size:56px;margin-bottom:18px}
 #fault p{font-size:26px;color:#a39d93}
 
+/* Where the layout asks for it: fading in as the view comes on screen, and
+   out before a tile opens. faded alone hides it at once, as when it goes off
+   screen; fades is the transition. */
+html.fades #stage{-webkit-transition:opacity .35s ease;transition:opacity .35s ease}
+/* Coming on screen it eases out, once what it shows has been refreshed. */
+html.fades.in #stage{-webkit-transition:opacity .3s ease-out;transition:opacity .3s ease-out}
+html.faded #stage{opacity:0}
+
 @media (prefers-reduced-motion:reduce){
-  .track,#toast,.tile{-webkit-transition:none;transition:none}
+  .track,#toast,.tile,html.fades #stage{-webkit-transition:none;transition:none}
   #wall .layer{-webkit-animation:none;animation:none}
 }
 </style>
@@ -331,7 +340,8 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     for (var i = 0; i < (list || []).length; i++) if (list[i].id === id) return list[i];
     return null;
   }
-  function hidden(kind, id) { return layout.hidden[kind].indexOf(id) !== -1; }
+  // Inputs are never hidden one by one; see leftOut.
+  function hidden(kind, id) { return kind !== 'dev' && layout.hidden[kind].indexOf(id) !== -1; }
   // The server puts a Last opened row in that order; the view shows it as sent.
   function byRecent(kind) { return !!(layout.sort && layout.sort[kind] === 'recent'); }
 
@@ -340,10 +350,13 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     var out = [];
     (data.order[kind] || []).forEach(function (id) {
       var it = byId(kind, id);
-      if (it && (state.arranging || !hidden(kind, id))) out.push(it);
+      if (it && (state.arranging || !hidden(kind, id)) && !leftOut(kind, it)) out.push(it);
     });
     return out;
   }
+  // An input with nothing plugged in, where the layout leaves those out. While
+  // arranging it shows, greyed out, so that it can still be moved.
+  function leftOut(kind, it) { return kind === 'dev' && it.unused && layout.hideUnused === true && !state.arranging; }
   function rowKey() { return layout.rows[state.row]; }
   // A row with nothing to show is left out of the view, but not while arranging.
   function shown(ri) { return state.arranging || items(layout.rows[ri]).length > 0; }
@@ -449,6 +462,8 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     // Apps and inputs come from the TV and can only be hidden; channels were added, so they are removed.
     $('btnHide').textContent = state.last && state.last.kind === 'ch'
       ? t('home.arrange.removeChannel', 'Remove channel') : t('home.arrange.hide', 'Hide or show');
+    // An input is not hidden on its own, so the button does nothing for it.
+    if (state.last && state.last.kind === 'dev') $('btnHide').className += ' off';
     if (state.arranging) {
       var it = items(rowKey())[colOf(rowKey())];
       $('bannerState').textContent = colOf(rowKey()) === -1
@@ -576,11 +591,85 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     toastTimer = setTimeout(function () { el.className = ''; }, 3600);
   }
 
+  // ---------------------------------------------------------------- fading
+
+  /*
+   * Where the layout asks for it, the view fades in as it comes on screen and
+   * out before a tile opens what it names. The choice is kept in the page's
+   * storage too, so a view opened from cold starts dark and fades in, rather
+   * than showing and then going dark once the catalogue says so.
+   */
+  var FADE_MS = 350;
+  // Back on screen it stays dark until its rows and what was last on are
+  // refreshed, so that they do not change under the fade; at most this long.
+  var FADE_WAIT_MS = 800;
+  // Home still in front this long after an open went through, as when LG's
+  // Home is slow to come: it fades back in rather than stay dark.
+  var FADE_BACK_MS = 4000;
+  var FADE_KEY = 'glasshouse.home.fade';
+  var fadeOn = false;
+  var faded = false;
+  var opening = false;
+  var fadeBack = null;
+  try { fadeOn = window.localStorage.getItem(FADE_KEY) === '1'; } catch (e) {}
+
+  // transition: 'out', 'in', or none, for at once.
+  function paintFade(transition) {
+    document.documentElement.className = (transition ? 'fades' + (transition === 'in' ? ' in' : '') : '') + (faded ? ' faded' : '');
+  }
+
+  function setFadeOn(on) {
+    if (on === fadeOn) return;
+    fadeOn = on;
+    try { window.localStorage.setItem(FADE_KEY, on ? '1' : '0'); } catch (e) {}
+    if (!on && faded) { faded = false; paintFade(false); }
+  }
+
+  // Whether it fades in: true while the fade runs, for what waits on it.
+  function fadeIn() {
+    clearTimeout(fadeBack);
+    opening = false;
+    if (!faded) return false;
+    // Dark without the transition first, so the fade starts from there.
+    paintFade(false);
+    void document.documentElement.offsetWidth;
+    faded = false;
+    paintFade('in');
+    return true;
+  }
+
+  // Off screen: dark at once, so it comes back dark and fades in.
+  function darken() {
+    clearTimeout(fadeBack);
+    opening = false;
+    if (!fadeOn) return;
+    faded = true;
+    paintFade(false);
+  }
+
+  // Fades out, then sends; open(cb) gets the reply's ok. An overlay of LG's
+  // opens over the view, which stays as it is.
+  function fadeThenOpen(overlay, open) {
+    if (opening) return;
+    var after = function (ok) {
+      if (!ok) return fadeIn();
+      if (faded) fadeBack = setTimeout(function () { if (!document.hidden) fadeIn(); }, FADE_BACK_MS);
+    };
+    if (!fadeOn || overlay) return open(function () {});
+    opening = true;
+    faded = true;
+    paintFade('out');
+    setTimeout(function () { open(after); }, FADE_MS);
+  }
+
   function activate() {
     var kind = rowKey(), it = items(kind)[colOf(kind)];
     if (!it) return;
-    postJson('/api/home/open', { kind: kind, id: it.id }, function (r) {
-      if (!r || !r.ok) toast(t('home.openFailed', 'That did not open'), r && r.error);
+    fadeThenOpen(it.overlay === true, function (done) {
+      postJson('/api/home/open', { kind: kind, id: it.id }, function (r) {
+        done(!!(r && r.ok));
+        if (!r || !r.ok) toast(t('home.openFailed', 'That did not open'), r && r.error);
+      });
     });
   }
 
@@ -678,10 +767,16 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 
   function recentAction(action, app) {
     if (recents.busy) return;
+    if (action === 'open') return fadeThenOpen(false, function (done) { sendRecentAction(action, app, done); });
+    sendRecentAction(action, app, function () {});
+  }
+
+  function sendRecentAction(action, app, done) {
     recents.busy = true;
     var revision = recents.revision;
     postJson('/api/home/recents', { action: action, id: app && app.id }, function (r) {
       recents.busy = false;
+      done(!!(r && r.ok));
       if (revision !== recents.revision) return;
       if (!r || !r.ok) {
         return toast(action === 'open' ? t('home.openFailed', 'That did not open') : t('home.recents.closeFailed', 'That did not close'), r && r.error);
@@ -837,7 +932,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     // The LG Home tile is the way back to LG's Home, so it always shows.
     if (!last || (last.kind === 'app' && last.id === LG_HOME_TILE)) return;
     var kind = last.kind, it = byId(kind, last.id);
-    if (!it) return;
+    if (!it || kind === 'dev') return;
     if (kind === 'ch') {
       layout.channels = layout.channels.filter(function (id) { return id !== it.id; });
       data.order.ch = data.order.ch.filter(function (id) { return id !== it.id; });
@@ -1077,7 +1172,8 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 
   // ---------------------------------------------------------------- data
 
-  function load(cb, whileArranging) {
+  // onNow, where given, is called once what was last on has been refreshed too.
+  function load(cb, whileArranging, onNow) {
     if ((layoutBusy || state.arranging) && !whileArranging) return;
     var revision = layoutRevision;
     getJson('/api/home/catalogue', function (r) {
@@ -1099,6 +1195,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       var firstLoad = !data;
       data = r;
       layout = r.layout;
+      setFadeOn(layout.fade === true);
       applyColours(layout.colours);
       if (r.layoutVersion) layoutVersion = r.layoutVersion;
       refreshPicture();
@@ -1108,7 +1205,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       wallRevision = r.wallpapers && r.wallpapers.revision || '';
       updateWall();
       if (!state.arranging) render();
-      if (firstLoad) beat();
+      if (firstLoad) { beat(); fadeIn(); }
       if (!layout.hintSeen) {
         toast(t('home.hint.title', 'Hold OK to arrange'), t('home.hint.desc', 'Move or hide tiles and rows. LG\'s Home is the last tile in Apps.'));
         postJson('/api/home/layout', { hintSeen: true });
@@ -1117,16 +1214,18 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       refreshGuide();
       if (cb) cb(true);
     });
-    refreshNow();
+    refreshNow(onNow);
   }
 
-  function refreshNow() {
+  function refreshNow(cb) {
     getJson('/api/home/now', function (r) {
-      if (!r) return;
-      lastOn = r;
-      renderNow();
-      refreshPicture();
-      if (data && !state.arranging) render();
+      if (r) {
+        lastOn = r;
+        renderNow();
+        refreshPicture();
+        if (data && !state.arranging) render();
+      }
+      if (cb) cb();
     });
   }
 
@@ -1170,6 +1269,8 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
   }
 
   function returned() {
+    var dark = faded;
+    if (!dark) fadeIn();
     initialEscape = false;
     clearTimeout(okTimer);
     okDownAt = 0; backDown = false;
@@ -1179,7 +1280,13 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     state.row = 0; state.col = {}; state.bar = -1;
     if (state.arranging) setArranging(false);
     beat();
-    load();
+    if (!dark) return load();
+    // In once both the rows and what was last on have come back, or before long.
+    var waiting = 2, shown = false;
+    var show = function () { if (!shown) { shown = true; fadeIn(); } };
+    var ready = function () { if (--waiting <= 0) show(); };
+    setTimeout(show, FADE_WAIT_MS);
+    load(ready, false, ready);
   }
 
   window.addEventListener('resize', fit);
@@ -1189,8 +1296,11 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
   document.addEventListener('click', onClick);
   // Home pressed with the view already open reaches it as a relaunch.
   document.addEventListener('webOSRelaunch', returned);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) returned(); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) darken(); else returned(); });
 
+  // Started dark where fading is chosen; in at the first catalogue, or before
+  // long without one.
+  if (fadeOn) { faded = true; paintFade(false); setTimeout(fadeIn, 1500); }
   fit();
   renderNow();
   updateWall();

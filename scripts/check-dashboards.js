@@ -235,6 +235,195 @@ async function visitHomePicture(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// Glasshouse Home's fading and its Inputs row without the inputs that have
+// nothing plugged in, each where the layout asks for it.
+async function visitHomeFadeAndInputs(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home fade: ' + e.message));
+  const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, colours: null, fade: false, hideUnused: true };
+  let version = 1;
+  let openFails = false;
+  let holdCatalogue = null;
+  const opened = [];
+  const catalogue = () => ({ ok: true, layout, layoutVersion: String(version),
+    apps: [{ id: 'netflix', title: 'Netflix', icon: null }, { id: 'com.webos.app.voice', title: 'Search', icon: null, overlay: true }],
+    devices: [{ id: 'hdmi1', name: 'Xbox', input: 'hdmi1', port: 1, via: null, address: null },
+      { id: 'hdmi2', name: 'HDMI 2', input: 'hdmi2', port: 2, via: null, address: null, unused: true }],
+    channels: [], sources: { channels: 0 },
+    order: { app: ['netflix', 'com.webos.app.voice', 'lg-home'], dev: ['hdmi1', 'hdmi2'], ch: [] } });
+  await page.route('**/api/home/**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname === '/api/home/catalogue' && holdCatalogue) await holdCatalogue;
+    if (pathname === '/api/home/open') {
+      opened.push({ id: JSON.parse(route.request().postData() || '{}').id, at: Date.now() });
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(openFails ? { ok: false, error: 'no' } : { ok: true }) });
+    }
+    const body = pathname === '/api/home/catalogue' ? catalogue()
+      : pathname === '/api/home/now' ? { kind: 'none' }
+      : { ok: true, build: 'one', layoutVersion: String(version) };
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  const faded = () => page.evaluate(() => / ?faded/.test(document.documentElement.className));
+  const devTiles = () => page.locator('.tile.dev').count();
+  async function returned() {
+    const reply = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    await page.evaluate(() => document.dispatchEvent(new Event('webOSRelaunch')));
+    await reply;
+    await page.waitForTimeout(150);
+  }
+  async function visible(hidden) {
+    await page.evaluate(h => {
+      Object.defineProperty(document, 'hidden', { value: h, configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }, hidden);
+    await page.waitForTimeout(150);
+  }
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile.dev');
+    if (await devTiles() !== 1) problems.push('Home inputs: an input with nothing plugged in showed with hideUnused on');
+    layout.hideUnused = false;
+    version++;
+    await returned();
+    if (await devTiles() !== 2) problems.push('Home inputs: an input with nothing plugged in was left out with hideUnused off');
+    if (await faded()) problems.push('Home fade: the view was dark without fading chosen');
+
+    layout.fade = true;
+    version++;
+    await returned();
+    // Netflix, the first tile: dark at once, opened only once the fade is over.
+    await page.keyboard.press('Enter');
+    const pressedAt = Date.now();
+    await page.waitForTimeout(80);
+    if (!await faded()) problems.push('Home fade: opening a tile did not fade out');
+    if (opened.length) problems.push('Home fade: the tile opened before the fade was over');
+    await page.waitForTimeout(500);
+    if (opened.length !== 1 || opened[0].id !== 'netflix') problems.push('Home fade: the tile did not open after the fade');
+    else if (opened[0].at - pressedAt < 300) problems.push('Home fade: the tile opened ' + (opened[0].at - pressedAt) + ' ms after OK, before the fade');
+    // Off screen and back: dark, then in.
+    await visible(true);
+    if (!await faded()) problems.push('Home fade: off screen, the view was not left dark');
+    await visible(false);
+    await page.waitForTimeout(500);
+    if (await faded()) problems.push('Home fade: back on screen, the view did not fade in');
+
+    // Search opens over Home: no fade, and opened at once.
+    await page.keyboard.press('ArrowRight');
+    opened.length = 0;
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(120);
+    if (await faded()) problems.push('Home fade: an overlay of LG\'s faded the view out');
+    if (!opened.length || opened[0].id !== 'com.webos.app.voice') problems.push('Home fade: an overlay was not opened at once');
+
+    // A failed open brings the view back.
+    await page.keyboard.press('ArrowLeft');
+    openFails = true;
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(900);
+    if (await faded()) problems.push('Home fade: a failed open left the view dark');
+    openFails = false;
+
+    // Back on screen: dark while the rows and what was last on are refreshed, then in.
+    await visible(true);
+    let releaseRows;
+    holdCatalogue = new Promise(r => { releaseRows = r; });
+    await visible(false);
+    await page.waitForTimeout(250);
+    if (!await faded()) problems.push('Home fade: coming back faded in before the rows were refreshed');
+    releaseRows();
+    holdCatalogue = null;
+    await page.waitForTimeout(150);
+    const cls = await page.evaluate(() => document.documentElement.className);
+    if (/faded/.test(cls)) problems.push('Home fade: the refreshed rows did not fade in');
+    else if (!/\bin\b/.test(cls)) problems.push('Home fade: coming back did not use the fade in (' + cls + ')');
+    // A refresh that does not come: in all the same, before long.
+    await visible(true);
+    holdCatalogue = new Promise(r => { releaseRows = r; });
+    await visible(false);
+    await page.waitForTimeout(1000);
+    if (await faded()) problems.push('Home fade: a slow refresh kept the view dark');
+    releaseRows();
+    holdCatalogue = null;
+    await page.waitForTimeout(200);
+
+    // Arranging: the input with nothing plugged in shows, greyed out, and is not hidden on its own.
+    layout.hideUnused = true;
+    version++;
+    await returned();
+    await page.waitForTimeout(400);
+    await page.keyboard.down('Enter');
+    await page.waitForTimeout(900);
+    await page.keyboard.up('Enter');
+    await page.waitForTimeout(150);
+    if (await page.locator('.tile.dev.unused').count() !== 1) problems.push('Home inputs: arranging did not show the input with nothing plugged in');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(100);
+    const btnHide = await page.evaluate(() => document.getElementById('btnHide').className);
+    if (!/\boff\b/.test(btnHide)) problems.push('Home inputs: Hide or show was offered for an input');
+    // Picked up, then Back: an input is not hidden.
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(100);
+    await page.evaluate(() => {
+      for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: 461, bubbles: true }));
+    });
+    await page.waitForTimeout(150);
+    if (await page.locator('.tile.dev.hidden').count()) problems.push('Home inputs: Back hid an input on its own');
+
+    // From cold with fading chosen: dark before the catalogue, in once it comes.
+    let release;
+    holdCatalogue = new Promise(r => { release = r; });
+    await page.reload();
+    await page.waitForTimeout(150);
+    if (!await faded()) problems.push('Home fade: from cold with fading on, the view did not start dark');
+    release();
+    holdCatalogue = null;
+    await page.waitForSelector('.tile');
+    await page.waitForTimeout(600);
+    if (await faded()) problems.push('Home fade: from cold, the view did not fade in after the catalogue');
+  } finally { await page.close(); }
+}
+
+// The Home tab's Inputs row: one tick box for inputs with nothing plugged in,
+// no show or hide for each input.
+async function visitHomeInputsEditor(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home inputs editor: ' + e.message));
+  const layout = { rows: ['dev', 'app', 'ch'], order: { app: [], dev: [], ch: [] }, sort: { app: 'custom', dev: 'custom', ch: 'custom' },
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, hideUnused: false };
+  const saves = [];
+  await page.route('**/api/home**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    let body;
+    if (pathname === '/api/home') body = { ok: true, supported: { ok: true }, installed: true, enabled: true, active: true, writable: true, layout, history: true };
+    else if (pathname.endsWith('/catalogue')) body = { ok: true, apps: [], channels: [], layout,
+      devices: [{ id: 'hdmi1', name: 'Xbox', input: 'hdmi1', port: 1 }, { id: 'hdmi2', name: 'HDMI 2', input: 'hdmi2', port: 2, unused: true }],
+      order: { app: ['lg-home'], dev: ['hdmi1', 'hdmi2'], ch: [] } };
+    else if (pathname.endsWith('/layout')) {
+      const patch = route.request().postDataJSON();
+      saves.push(patch);
+      if (typeof patch.hideUnused === 'boolean') layout.hideUnused = patch.hideUnused;
+      body = { ok: true, layout: JSON.parse(JSON.stringify(layout)) };
+    } else body = { ok: true };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    const row = page.locator('details.home-row[data-kind="dev"]');
+    await row.locator('.home-tile').first().waitFor();
+    if (await row.locator('#home-hide-unused').count() !== 1) problems.push('Home inputs editor: the Inputs row has no tick box for inputs with nothing connected');
+    const toggles = await row.locator('.home-tile').getByText(/^(Shown|Hidden)$/).count();
+    if (toggles) problems.push('Home inputs editor: inputs still offer show or hide one by one');
+    await row.locator('#home-hide-unused').check();
+    const until = Date.now() + 5000;
+    while (Date.now() < until && !/Left out/.test(await row.textContent())) await page.waitForTimeout(100);
+    if (!saves.some(p => p.hideUnused === true)) problems.push('Home inputs editor: the tick box did not save hideUnused');
+    const out = await row.locator('.home-tile').filter({ hasText: 'HDMI 2' }).getByText('Left out').count();
+    if (out !== 1) problems.push('Home inputs editor: the input with nothing connected was not marked Left out');
+  } finally { await page.close(); }
+}
+
 async function visitHomeColours(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home colours: ' + e.message));
@@ -764,6 +953,8 @@ async function visitHomeRecents(browser, base, problems) {
   await visitHomeArrangement(browser, base, problems);
   await visitHomePicture(browser, base, problems);
   await visitHomeColours(browser, base, problems);
+  await visitHomeFadeAndInputs(browser, base, problems);
+  await visitHomeInputsEditor(browser, base, problems);
   await visitHomeEditor(browser, base, problems);
   await visitHomeOrder(browser, base, problems);
   await visitHomeUploads(browser, base, problems);
@@ -773,6 +964,6 @@ async function visitHomeRecents(browser, base, problems) {
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'Home arranging, picture, colours, update, editing, order, uploads, readiness, availability and recents checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+              'Home arranging, picture, colours, fading and inputs, update, editing, order, uploads, readiness, availability and recents checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

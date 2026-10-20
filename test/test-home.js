@@ -831,6 +831,10 @@ step('LG\'s notifications and search are on the Apps row where the TV has them',
     assert.strictEqual(notif.title, 'Notifications');
     assert.ok(notif.icon, 'its own icon');
     assert.strictEqual(search.icon, null, 'Search\'s icon is not a search, so it shows a letter');
+    // Both open over Home, which the view does not fade out for.
+    assert.strictEqual(notif.overlay, true);
+    assert.strictEqual(search.overlay, true);
+    assert.ok(c.apps.filter(function (a) { return !a.overlay; }).length > 1, 'other apps are not overlays');
     home.iconPath('com.webos.app.notificationcenter', function (p) {
       assert.strictEqual(p, '/usr/palm/applications/com.webos.app.notificationcenter/icon_notification.png');
       home.open({ kind: 'app', id: 'com.webos.app.voice' }, function (r) {
@@ -1073,6 +1077,38 @@ step('the picture details stay off until switched on, and the server is told of 
         assert.deepEqual(told, [false, true, false]);
         done();
       });
+    });
+  });
+});
+
+step('fading and leaving out inputs with nothing plugged in stay off until switched on, are saved, and outlast a reset; inputs are not hidden one by one', function (done) {
+  start(null);
+  assert.strictEqual(home.layout().fade, false);
+  assert.strictEqual(home.layout().hideUnused, false);
+  home.setLayout({ fade: true, hideUnused: true }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.layout.fade, true);
+    assert.strictEqual(r.layout.hideUnused, true);
+    var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+    assert.strictEqual(saved.fade, true);
+    assert.strictEqual(saved.hideUnused, true);
+    // Only true switches them on.
+    assert.strictEqual(home.normalise({ fade: 'yes', hideUnused: 1 }).fade, false);
+    assert.strictEqual(home.normalise({ fade: 'yes', hideUnused: 1 }).hideUnused, false);
+    // Inputs are not hidden one by one: an earlier build's list is dropped, and a new one is not kept.
+    assert.deepEqual(home.normalise({ hidden: { dev: ['hdmi1'], app: ['netflix'] } }).hidden.dev, []);
+    assert.deepEqual(home.normalise({ hidden: { dev: ['hdmi1'], app: ['netflix'] } }).hidden.app, ['netflix']);
+    home.setLayout({ hidden: { dev: ['hdmi2'] } }, function (rh) {
+      assert.deepEqual(rh.layout.hidden.dev, []);
+    home.setLayout({ reset: true }, function (r2) {
+      assert.strictEqual(r2.layout.fade, true, 'a reset is of rows and tiles');
+      assert.strictEqual(r2.layout.hideUnused, true);
+      home.setLayout({ hideUnused: false }, function (r3) {
+        assert.strictEqual(r3.layout.hideUnused, false);
+        assert.strictEqual(r3.layout.fade, true, 'one is changed without the other');
+        done();
+      });
+    });
     });
   });
 });

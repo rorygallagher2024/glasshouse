@@ -875,6 +875,12 @@ function homeRows(d) {
              act: can ? 'homePicture' : null, on: picOn,
              press: picOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.pictureDesc', 'In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.') });
+    var fadeOn = d.layout.fade === true;
+    r.push({ label: t('home.fade', 'Fade in and out'),
+             value: fadeOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: fadeOn ? 'on' : 'off',
+             act: can ? 'homeFade' : null, on: fadeOn,
+             press: fadeOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+             hint: t('home.fadeDesc', 'Glasshouse Home fades in as it comes on screen, and out as an app, input or channel opens.') });
     // OK steps through the presets; colours picked on the browser dashboard show as Custom.
     var presets = d.colourPresets || [], cur = d.layout.colours, at = cur ? -1 : 0;
     for (var pi = 0; pi < presets.length; pi++) if (cur && presets[pi].text === cur.text && presets[pi].accent === cur.accent) at = pi;
@@ -939,6 +945,24 @@ function homeRows(d) {
       if (!order.length) return;
       r.push(head(names[kind]));
       r.push(sortRow(kind));
+      if (kind === 'dev') {
+        // Inputs are not hidden one by one: this leaves out those with nothing connected.
+        var hideUnusedOn = lay.hideUnused === true;
+        r.push({ label: t('home.hideUnused', 'Hide inputs with nothing connected'),
+                 value: hideUnusedOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: hideUnusedOn ? 'on' : 'off',
+                 act: can ? 'homeHideUnused' : null, on: hideUnusedOn,
+                 press: hideUnusedOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+                 hint: t('home.hideUnusedDesc', 'Leaves inputs with nothing plugged in out of the Inputs row, instead of showing them greyed out. They still show while arranging.') });
+        order.forEach(function (id) {
+          var title = homeItemTitle('dev', id), dev = null, i;
+          if (title === null) return;
+          for (i = 0; i < c.devices.length; i++) if (c.devices[i].id === id) dev = c.devices[i];
+          var out = !!(dev && dev.unused && hideUnusedOn);
+          r.push({ label: title, value: out ? t('home.leftOut', 'Left out') : t('home.shown', 'Shown'), cls: out ? 'off' : 'on',
+                   hint: t('tv.home.tile.hint', 'Hold OK on Glasshouse Home to change the order of tiles.') });
+        });
+        return;
+      }
       order.forEach(function (id) {
         var title = homeItemTitle(kind, id);
         if (title === null) return;
@@ -2455,6 +2479,10 @@ function activate() {
                       r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'homePicture':
       return homeLayout({ picture: !r.on });
+    case 'homeFade':
+      return homeLayout({ fade: !r.on });
+    case 'homeHideUnused':
+      return homeLayout({ hideUnused: !r.on });
     case 'homeColours':
       // The first preset is the view's own colours, saved as none chosen.
       return homeLayout({ colours: r.key.id === homeData.colourPresets[0].id ? null : { text: r.key.text, accent: r.key.accent } });

@@ -100,6 +100,16 @@ function renderHome() {
     updateToggle(pic, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     pic.disabled = !homeWritable();
   }
+  // Fading, as Picture details.
+  [['home-fade', 'fade']].forEach(([id, field]) => {
+    const row = q(id + '-row');
+    if (row) row.hidden = !st.supported.ok;
+    const btn = q(id);
+    if (!btn) return;
+    const on = !!st.layout && st.layout[field] === true;
+    updateToggle(btn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    btn.disabled = !homeWritable();
+  });
   const hide = q('home-hide-lg');
   if (hide) {
     const armed = homeArmed === 'hide';
@@ -177,7 +187,7 @@ function homeItem(kind, id) {
   const list = kind === 'app' ? homeCat.apps : kind === 'dev' ? homeCat.devices : homeCat.channels;
   const it = list.find(x => x.id === id);
   if (!it) return null;
-  if (kind === 'dev' && it.unused) return { title: it.name, sub: t('home.dev.unused', 'Nothing connected') };
+  if (kind === 'dev' && it.unused) return { title: it.name, sub: t('home.dev.unused', 'Nothing connected'), unused: true };
   if (kind === 'dev') return { title: it.name, sub: it.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: it.port, via: it.via }) : t('home.dev.port', 'HDMI {port}', { port: it.port }) };
   if (kind === 'ch') return { title: it.number + ' ' + it.name };
   return { title: it.title, icon: it.icon };
@@ -198,9 +208,11 @@ function renderHomeRows() {
     const tiles = order.map((id, i) => {
       const it = homeItem(kind, id);
       if (!it) return '';
-      const hidden = kind !== 'ch' && homeLayout.hidden[kind].includes(id);
+      // Inputs are not hidden one by one: the row's tick box leaves out those with nothing connected.
+      const hidden = kind === 'app' && homeLayout.hidden[kind].includes(id);
+      const leftOut = kind === 'dev' && it.unused && homeLayout.hideUnused === true;
       const icon = it.icon ? `<img class="rk-ico" src="${esc(api(it.icon))}" alt="">` : '';
-      return `<div class="prot-row home-tile${hidden ? ' home-hidden' : ''}">
+      return `<div class="prot-row home-tile${hidden || leftOut ? ' home-hidden' : ''}">
         <div class="prot-main"><div class="prot-title">${icon}<span translate="no">${esc(it.title)}</span></div>
           ${it.sub ? `<div class="prot-desc">${esc(it.sub)}</div>` : ''}</div>
         <div class="prot-status">
@@ -208,6 +220,7 @@ function renderHomeRows() {
           <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">↓</button>
           ${it.lg ? `<span class="pill idle">${esc(t('home.alwaysShown', 'Always shown'))}</span>` :
             kind === 'ch' ? `<button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeToggleChannel('${jsq(id)}')">${esc(t('home.ch.remove', 'Remove'))}</button>` :
+            kind === 'dev' ? (leftOut ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>` : '') :
             renderToggle({ cls: hidden ? 'idle' : 'good', label: hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
               disabled: !usable, onclick: `homeToggleTile('${kind}', '${jsq(id)}')` })}
         </div></div>`;
@@ -218,11 +231,20 @@ function renderHomeRows() {
           <button type="button" class="pill idle" ${usable && ri > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
           <button type="button" class="pill idle" ${usable && ri < homeLayout.rows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
         </span></summary>
-      <div class="prot-table">${homeSortRow(kind, usable)}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
+      <div class="prot-table">${homeSortRow(kind, usable)}${kind === 'dev' ? homeUnusedRow(usable) : ''}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
       ${kind === 'ch' ? homeChannelPicker() : ''}
     </details>`;
   }).join('');
   if (q('home-ch-filter')) q('home-ch-filter').value = filter;
+}
+
+// The Inputs row's one choice of what it shows.
+function homeUnusedRow(usable) {
+  const on = homeLayout.hideUnused === true;
+  return `<div class="prot-row">
+    <div class="prot-main"><label class="cfg-ent-chk${usable ? '' : ' dis'}"><input type="checkbox" id="home-hide-unused" ${on ? 'checked' : ''} ${usable ? '' : 'disabled'} onchange="homeHideUnused()"><span class="prot-title">${esc(t('home.hideUnused', 'Hide inputs with nothing connected'))}</span></label>
+      <div class="prot-desc">${esc(t('home.hideUnusedDesc', 'Leaves inputs with nothing plugged in out of the Inputs row, instead of showing them greyed out. They still show while arranging.'))}</div></div>
+  </div>`;
 }
 
 function homeSort(kind) { return homeLayout.sort && homeLayout.sort[kind] === 'recent' ? 'recent' : 'custom'; }
@@ -332,6 +354,14 @@ async function homeHideLg() {
 
 function homePicture() {
   homeSaveLayout({ picture: homeLayout.picture !== true });
+}
+
+function homeFade() {
+  homeSaveLayout({ fade: homeLayout.fade !== true });
+}
+
+function homeHideUnused() {
+  homeSaveLayout({ hideUnused: homeLayout.hideUnused !== true });
 }
 
 // Added channels are the Channels row; this finds more to add. Built once, then only its list redraws.
