@@ -1401,6 +1401,51 @@ app is opened or closed only while it is on the list. Snapshot responses use
 `private, no-store` caching. Back cancels a pending panel load; returning Home
 discards replies from the previous visit. OK acts once on release.
 
+Left of any row's first tile is a search mark in the gutter, and OK there
+opens a panel to search films and series. `lib/home-search.js` asks `com.webos.service.nlpmanager/search`, the
+service LG's own Search (`com.webos.app.voice`) asks, as a subscription; a
+one-off call is refused with `NLP invalid parameter`. It answers from LG's
+catalogue in under a second on a G3, one result for each title on each
+service, with the service's app id and an item id. Results for apps the TV
+does not have are counted, not shown; the same title and kind within a year
+on several services is one title, since each service dates it differently.
+Opening one asks `com.webos.service.sdx/send` for the item's detail, whose
+`exec_id` is the id the app knows the title by, and launches the app with
+`replaceParams.deeplinkingParams`, which applicationManager puts into the
+app's own `deeplinkingParams` template in its `appinfo.json`
+([TV-RESEARCH](development/TV-RESEARCH.md#lgs-search-and-deep-links-g3-webos-922)).
+For a series, item detail names the latest episode, so
+the start is found instead: the `advanced` detail lists the seasons
+(`season_list`) and a season's lists its episodes (`tab_episode`). Prime
+Video and HBO Max open at the first season's page; other apps, whose season
+links do not open (Disney+) or which have only playback links (BBC iPlayer),
+play the first episode. Apple TV and Netflix list no seasons and keep LG's
+link. An LG item id less its first `|` and LG's service tag (`AMAZON_`) is the
+app's own id, used where the detail names none. Trailers are never listed or
+opened: LG marks none, and lists Prime Video's sneak peeks as films and its
+trailers as episodes, so a title or episode is taken for one by a promo word
+(trailer, teaser, sneak peek, preview, first look) with a running time of 15
+minutes or less, or, without one, ending the name or before its colon or
+dash; Trailer Park Boys and Trailer War stay. `search` in `home.json`, on by
+default, switches search off: no rail, and both routes refuse before asking
+LG. Only a title and app from the last search can be opened. Both calls go to
+LG's servers through `nextlgsdp.com`, which the ad blocker's Everything
+setting blocks, so search does not work there. The view searches 0.4 s after
+typing stops. Back on the TV's keyboard closes it without the page seeing the
+key; the `keyboardStateChange` event on the document says so, and the titles
+take the focus. A return from an app opened in the panel comes as both a
+relaunch and the page showing again, and keeps the panel open for 30 minutes
+unless the heartbeat's `sleeps`, the times the screen has gone off since the
+server started, has changed.
+
+Only the current search may replace the launch list, including while its app
+list is still loading; an empty answer clears the previous targets. The view
+clears previous titles when a new query starts and waits for that reply before
+Enter focuses its results. A failed query can be retried with Enter. An app
+launch holds further selections until it answers, and its late reply is
+discarded if the panel has closed. Search requests allow 12 seconds for the
+server's 10-second limit; launches allow 20 seconds for sequential detail reads.
+
 ## Apps kept ready in the background
 
 webOS's preload manager keeps apps loaded so they open quickly, including ones

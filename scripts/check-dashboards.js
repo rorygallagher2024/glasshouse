@@ -143,7 +143,7 @@ async function visitHomePicture(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home picture: ' + e.message));
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
-    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true };
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
   const hdmi4 = { ok: true, range: 'hdr', mode: { display: 'HDR Filmmaker' }, light: 100, oled: true,
     signal: { width: 3840, height: 2160, hz: 24, chroma: 'YCbCr 4:4:4', bits: 10, hdr: 'hdr10' } };
   const netflix = { ok: true, range: 'dolbyHdr', mode: { display: 'Dolby Vision Cinema Bright' }, light: 100, oled: true,
@@ -239,7 +239,7 @@ async function visitHomeColours(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home colours: ' + e.message));
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
-    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, colours: null };
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true, colours: null };
   let version = 1;
   await page.route('**/api/home/**', route => {
     const pathname = new URL(route.request().url()).pathname;
@@ -284,7 +284,7 @@ async function visitHomeArrangement(browser, base, problems) {
   page.on('pageerror', e => problems.push('Home arranging: ' + e.message));
   const layout = {
     rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
-    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true
   };
   const defaultOrder = ['netflix', 'youtube', 'lg-home'];
   const saves = [];
@@ -386,7 +386,7 @@ async function visitHomeOrder(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   page.on('pageerror', e => problems.push('Home order: ' + e.message));
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
-    sort: { app: 'custom', dev: 'custom', ch: 'custom' }, hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true };
+    sort: { app: 'custom', dev: 'custom', ch: 'custom' }, hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
   const saves = [];
   let pauseSave = false, pauseCatalogue = false, saveHeld, catalogueHeld;
   const saveReady = new Promise(resolve => { saveHeld = resolve; });
@@ -507,7 +507,7 @@ async function visitHomeEditor(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home editor: ' + e.message));
   let layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
-    hidden: { app: [], dev: [], ch: [] }, channels: ['a'], hintSeen: true };
+    hidden: { app: [], dev: [], ch: [] }, channels: ['a'], hintSeen: true, searchHintSeen: true };
   const channels = ['a', 'b', 'c'].map(id => ({ id, name: id.toUpperCase(), number: id }));
   const saves = [];
   let release = null, refuse = false, pendingRestore = false, portChanged = false;
@@ -575,7 +575,7 @@ async function visitHomeUploads(browser, base, problems) {
   const page = await context.newPage(), observer = await context.newPage();
   for (const p of [page, observer]) p.on('pageerror', e => problems.push('Home uploads: ' + e.message));
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
-    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true };
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
   let uploading = false, uploaded = false, release, image;
   const wallpapers = () => ({ available: uploaded, uploading,
     slots: { morning: uploaded }, revision: uploaded ? '1' : '0' });
@@ -631,7 +631,7 @@ async function visitHomeAvailability(browser, base, problems) {
     page.on('pageerror', e => problems.push('Home availability: ' + e.message));
     await page.route('**/api/home**', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify(Object.assign({
       ok: true, supported: { ok: st.available }, installed: true, restorePending: false, writable: true,
-      layout: { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true },
+      layout: { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true },
       apps: [], devices: [], channels: [], order: { app: [], dev: [], ch: [] }, sources: { channels: 0 }, wallpapers: { slots: {} }
     }, st)) }));
     try {
@@ -661,7 +661,7 @@ async function visitHomeReadiness(browser, base, problems) {
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, apps: [], devices: [], channels: [],
         order: { app: ['lg-home'], dev: [], ch: [] }, sources: { channels: 0 },
         layout: { rows: ['app', 'dev', 'ch'], hidden: { app: [], dev: [], ch: [] }, order: { app: [], dev: [], ch: [] },
-          channels: [], hintSeen: true } }) });
+          channels: [], hintSeen: true, searchHintSeen: true } }) });
     }
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, build: 'one', kind: null }) });
   });
@@ -694,7 +694,7 @@ async function visitHomeRecents(browser, base, problems) {
     const pathname = new URL(route.request().url()).pathname;
     if (pathname === '/api/home/catalogue') return reply(route, {
       ok: true, apps: [], devices: [], channels: [], sources: {}, order: { app: ['lg-home'], dev: [], ch: [] },
-      layout: { rows: ['app', 'dev', 'ch'], hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true }
+      layout: { rows: ['app', 'dev', 'ch'], hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true }
     });
     if (pathname === '/api/home/recents') {
       if (route.request().method() === 'POST') {
@@ -753,6 +753,96 @@ async function visitHomeRecents(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// Search requests and launches through the real view, including delayed replies.
+async function visitHomeSearch(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home search: ' + e.message));
+  const layout = { rows: ['app', 'dev', 'ch'], hidden: { app: [], dev: [], ch: [] }, channels: [],
+    hintSeen: true, searchHintSeen: true, search: true };
+  let pending, releaseOpen, searches = 0, launches = 0, sleeps = 0;
+  await page.route('**/api/home/**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname === '/api/home/search') { searches++; pending = route; return; }
+    if (pathname === '/api/home/search/open') { launches++; releaseOpen = () => route.fulfill({ json: { ok: true } }); return; }
+    const body = pathname === '/api/home/catalogue'
+      ? { ok: true, layout, apps: [], devices: [], channels: [], sources: { channels: 0 },
+          order: { app: ['lg-home'], dev: [], ch: [] } }
+      : { ok: true, build: 'one', sleeps };
+    await route.fulfill({ json: body });
+  });
+  const result = title => ({ ok: true, elsewhere: 0,
+    results: [{ id: title, title, kind: 'film', apps: [{ id: 'amazon', title: 'Prime Video' }] }] });
+  const enterSearch = async () => {
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#stage.typing');
+  };
+  const query = async text => {
+    pending = null;
+    const sent = page.waitForRequest(r => new URL(r.url()).pathname === '/api/home/search');
+    await page.locator('#query').fill(text);
+    await sent;
+    const deadline = Date.now() + 3000;
+    while (!pending && Date.now() < deadline) await page.waitForTimeout(10);
+    if (!pending) throw new Error('Home search: the request did not reach its handler');
+  };
+  const answer = async body => {
+    const received = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/search');
+    await pending.fulfill({ json: body });
+    await received;
+  };
+  const back = () => page.evaluate(() => {
+    for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: 461, bubbles: true }));
+  });
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    await enterSearch();
+    await query('dune');
+    await answer(result('Dune'));
+    await page.waitForSelector('.hit');
+    await query('alien');
+    await page.keyboard.press('Enter');
+    if (await page.locator('.hit').count()) problems.push('Home search: previous titles remain selectable during a newer query');
+    await answer(result('Alien'));
+    await page.waitForSelector('.hit.on');
+    if (await page.locator('.hit.on .ttl').textContent() !== 'Alien') problems.push('Home search: Enter did not focus the awaited results');
+    await page.keyboard.press('ArrowUp');
+    await query('retry');
+    await answer({ ok: false });
+    await page.waitForFunction(() => document.getElementById('status').textContent.includes('did not answer'));
+    pending = null;
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(200);
+    if (searches !== 4 || !pending) throw new Error('Home search: Enter did not retry the failed query');
+    await answer(result('Retry'));
+    await page.waitForSelector('.hit.on');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(100);
+    if (launches !== 1) problems.push('Home search: repeated OK sent duplicate launches during detail lookup');
+    await releaseOpen();
+    await page.waitForTimeout(100);
+    await page.evaluate(() => document.dispatchEvent(new Event('webOSRelaunch')));
+    await page.waitForSelector('#stage.finding');
+    if (await page.locator('#query').inputValue() !== 'retry') problems.push('Home search: return from a launched app lost the query');
+    sleeps++;
+    await page.evaluate(() => document.dispatchEvent(new Event('webOSRelaunch')));
+    await page.waitForSelector('#stage:not(.finding)');
+    await enterSearch();
+    await query('late');
+    await back();
+    await answer(result('Late'));
+    if (await page.locator('.hit').count()) problems.push('Home search: a late response repopulated a closed panel');
+    layout.search = false;
+    await page.evaluate(() => document.dispatchEvent(new Event('webOSRelaunch')));
+    await page.waitForSelector('#stage.no-search');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Enter');
+    if (await page.locator('#stage.finding').count()) problems.push('Home search: the disabled rail opened the panel');
+  } finally { await page.close(); }
+}
+
 (async () => {
   const server = await startServer();
   const base = 'http://127.0.0.1:' + server.port;
@@ -770,9 +860,10 @@ async function visitHomeRecents(browser, base, problems) {
   await visitHomeReadiness(browser, base, problems);
   await visitHomeAvailability(browser, base, problems);
   await visitHomeRecents(browser, base, problems);
+  await visitHomeSearch(browser, base, problems);
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'Home arranging, picture, colours, update, editing, order, uploads, readiness, availability and recents checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+              'Home arranging, picture, colours, update, editing, order, uploads, readiness, availability, recents and search checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

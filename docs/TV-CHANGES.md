@@ -82,6 +82,13 @@ for web apps, and confirm they have stopped before removing their cards with
 the cards for retry. Home and apps running without a card are left alone.
 Snapshot responses are private and must not be cached.
 
+Glasshouse Home's search sends typed queries to LG's catalogue through
+`com.webos.service.nlpmanager` and reads item details through
+`com.webos.service.sdx` before launching an installed app at the title. Search
+is on by default; **Search** on either dashboard's Home section switches it
+off, saves the choice in `/var/lib/tvweb/home.json`, and refuses new searches
+and search launches before asking LG. Results and launch targets stay in memory.
+
 ## Home-screen app port
 
 The dashboard's TV app and the Homebrew Channel's app are static pages and open the dashboard at the port in a `var PORT = n; // tvweb:port` line. At every start the server rewrites that line in each installed copy (`/media/developer/apps/usr/palm/applications/com.tvweb.dashboard/index.html` and `.../io.github.rorygallagher2024.lg-webos-dashboard/index.html`) to match `port` in `config.json`. Only that number changes; reinstalling the app brings the default back until the next start.

@@ -1134,6 +1134,8 @@ function handleHomeRoute(req, res, u, pathname) {
       if (pathname === '/api/home/enable') return homeModule.enable(reply);
       if (pathname === '/api/home/disable') return homeModule.disable(reply);
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
+      if (pathname === '/api/home/search') return homeModule.search.find(body && body.query, reply);
+      if (pathname === '/api/home/search/open') return homeModule.search.open(body, reply);
       if (pathname === '/api/home/recents') {
         var recentApps = homeModule.recentApps, recentId = body && typeof body.id === 'string' ? body.id : '';
         if (body && body.action === 'open') return recentApps.open(recentId, reply);

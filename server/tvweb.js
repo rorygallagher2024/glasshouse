@@ -1716,6 +1716,7 @@ function startGlasshouseHome() {
   var homeWatchesForeground = false;
   glasshouseHome.init({
     luna: luna,
+    Subscription: lunaTransport.Subscription,
     allowExperimental: function () { return CONFIG.allowExperimentalHome === true; },
     liveState: liveState,
     history: history,
