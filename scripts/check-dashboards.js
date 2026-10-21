@@ -235,6 +235,215 @@ async function visitHomePicture(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// The Magic Remote's pointer on a row of 30 apps: hover only focuses, resting
+// at the screen's side glides the row, a click opens the tile under the
+// pointer, the wheel scrolls, the keys go on from what is in view, and
+// closing Recent apps while its cards glide leaves the rows scrolling.
+async function visitHomeScrolling(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home scrolling: ' + e.message));
+  const apps = Array.from({ length: 30 }, (_, i) => ({ id: 'app' + i, title: 'App ' + i }));
+  const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true };
+  const opened = [];
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+    if (url.pathname.endsWith('/catalogue')) {
+      return reply({ ok: true, layout, apps, devices: [{ id: 'hdmi1:box', name: 'Box', port: 1 }], channels: [],
+        sources: { channels: 0 }, order: { app: apps.map(a => a.id), dev: ['hdmi1:box'], ch: [] } });
+    }
+    if (url.pathname.endsWith('/now')) return reply({ kind: null });
+    if (url.pathname.endsWith('/open')) { opened.push(JSON.parse(route.request().postData() || '{}')); return reply({ ok: true }); }
+    if (url.pathname.endsWith('/recents')) return reply({ ok: true, apps: apps.slice(0, 12).map(a => ({ id: a.id, title: a.title })) });
+    return reply({ ok: true, build: 'one' });
+  });
+  const x = sel => page.evaluate(sel => {
+    const m = /translateX\((-?[\d.]+)px\)/.exec(document.querySelector(sel).style.transform || '');
+    return m ? -parseFloat(m[1]) : 0;
+  }, sel);
+  const apps0 = '.row[data-key="app"] .track';
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.row[data-key="app"] .tile');
+    const rowY = await page.evaluate(() => { const r = document.querySelector('.row[data-key="app"] .wrap').getBoundingClientRect(); return r.top + r.height / 2; });
+    await page.mouse.move(900, rowY);
+    await page.waitForTimeout(300);
+    if (await x(apps0) !== 0) problems.push('Home scrolling: hovering a tile moved its row');
+    await page.mouse.move(1880, rowY, { steps: 3 });
+    await page.waitForTimeout(600);
+    const glided = await x(apps0);
+    if (glided < 200) problems.push('Home scrolling: resting at the screen\'s side did not glide the row (' + glided + ' px)');
+    // Held still over a tile near the end while the row glides under it, a
+    // click, with no move before it, opens the tile under the pointer.
+    const still = [1760, rowY];
+    await page.mouse.move(still[0], still[1]);
+    await page.waitForTimeout(500);
+    const under = await page.evaluate(([px, py]) => { let t = document.elementFromPoint(px, py); while (t && !/\btile\b/.test(t.className)) t = t.parentNode; return t && t.querySelector('.nm').textContent; }, still);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.waitForTimeout(150);
+    const last = opened[opened.length - 1];
+    if (!last || 'App ' + last.id.slice(3) !== under) problems.push('Home scrolling: a click opened ' + (last && last.id) + ', not the tile under the pointer, ' + under);
+    await page.mouse.move(900, rowY);
+    await page.waitForTimeout(700);
+    const stopped = await x(apps0);
+    await page.waitForTimeout(300);
+    if (await x(apps0) !== stopped) problems.push('Home scrolling: the glide went on after the pointer left the end');
+    await page.mouse.wheel(0, 100);
+    await page.waitForTimeout(500);
+    if (Math.round(await x(apps0) - stopped) !== 176) problems.push('Home scrolling: a wheel notch did not move the row one tile');
+    // Wheel steps move tiles under a still pointer: a click then opens the
+    // tile now under it, and moving down a row leaves this row where it is.
+    await page.mouse.wheel(0, 300);
+    await page.waitForTimeout(600);
+    const wheeled = await x(apps0);
+    const underWheel = await page.evaluate(([px, py]) => { let t = document.elementFromPoint(px, py); while (t && !/\btile\b/.test(t.className)) t = t.parentNode; return t && t.querySelector('.nm').textContent; }, [900, rowY]);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.waitForTimeout(150);
+    const afterWheel = opened[opened.length - 1];
+    if (!afterWheel || 'App ' + afterWheel.id.slice(3) !== underWheel) problems.push('Home scrolling: after the wheel a click opened ' + (afterWheel && afterWheel.id) + ', not ' + underWheel);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(400);
+    if (Math.abs(await x(apps0) - wheeled) > 1) problems.push('Home scrolling: moving down a row pulled the wheeled row back');
+    await page.keyboard.press('ArrowUp');
+    await page.waitForTimeout(300);
+    const before = await x(apps0);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(400);
+    if (Math.abs(await x(apps0) - before) > 1) problems.push('Home scrolling: moving down a row pulled the scrolled row above back');
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(500);
+    if (Math.abs(await x(apps0) - before) > 200) problems.push('Home scrolling: the keys pulled a scrolled row back');
+    if (!(await page.evaluate(() => { const f = document.querySelector('.row .tile.focus'), w = f.parentNode.parentNode.getBoundingClientRect(), r = f.getBoundingClientRect(); return r.right > w.left && r.left < w.right; })))
+      problems.push('Home scrolling: the keys focused a tile out of view');
+    // Recent apps: glide its cards, close it, and the rows still glide.
+    await page.keyboard.press('Backspace');
+    await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 461, bubbles: true })));
+    await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keyup', { keyCode: 461, bubbles: true })));
+    await page.waitForSelector('#recents .tile.rc');
+    await page.waitForTimeout(400);
+    const cards = await page.evaluate(() => { const r = document.querySelector('#recents .wrap').getBoundingClientRect(); return { y: r.top + r.height / 2, x: r.right - 60 }; });
+    // Over a card in the panel's end zone, the cards glide; a click there
+    // opens that app and the panel closes while the cards are still moving.
+    await page.mouse.move(cards.x, cards.y, { steps: 3 });
+    await page.waitForTimeout(300);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+    const rowsAt = await x(apps0);
+    await page.mouse.move(1870, rowY, { steps: 3 });
+    await page.waitForTimeout(500);
+    if (await x(apps0) <= rowsAt) problems.push('Home scrolling: after Recent apps closed mid-glide, the rows no longer glide');
+  } finally { await page.close(); }
+}
+
+/*
+ * A row's place frame by frame, read in a frame callback: a flick to the
+ * screen's side gathers speed over several frames, the row brakes into its
+ * end, and moving the pointer away lets it slow to a stop.
+ */
+async function visitHomeMotion(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home motion: ' + e.message));
+  const apps = Array.from({ length: 30 }, (_, i) => ({ id: 'app' + i, title: 'App ' + i }));
+  const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true };
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+    if (url.pathname.endsWith('/catalogue')) {
+      return reply({ ok: true, layout, apps, devices: [], channels: [],
+        sources: { channels: 0 }, order: { app: apps.map(a => a.id), dev: [], ch: [] } });
+    }
+    if (url.pathname.endsWith('/now')) return reply({ kind: null });
+    return reply({ ok: true, build: 'one' });
+  });
+  const mark = () => page.evaluate(() => window.xs.length);
+  const steps = from => page.evaluate(from => {
+    const d = [];
+    for (let i = from + 1; i < window.xs.length; i++) if (window.xs[i] !== window.xs[i - 1]) d.push(window.xs[i] - window.xs[i - 1]);
+    return d;
+  }, from);
+  const show = d => d.map(v => v.toFixed(1)).join(', ');
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.row[data-key="app"] .tile');
+    const rowY = await page.evaluate(() => { const r = document.querySelector('.row[data-key="app"] .wrap').getBoundingClientRect(); return r.top + r.height / 2; });
+    await page.mouse.move(900, rowY);
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      window.xs = [];
+      const track = document.querySelector('.row[data-key="app"] .track');
+      (function read() {
+        const m = /translateX\((-?[\d.]+)px\)/.exec(track.style.transform || '');
+        window.xs.push(m ? -parseFloat(m[1]) : 0);
+        requestAnimationFrame(read);
+      })();
+    });
+    let at = await mark();
+    await page.mouse.move(1880, rowY);
+    await page.waitForTimeout(400);
+    let d = await steps(at);
+    if (d.length < 3) problems.push('Home motion: a flick to the screen\'s side did not glide the row');
+    else if (d[0] > 10 || d[1] > 14) problems.push('Home motion: a glide started at full speed (' + show(d.slice(0, 3)) + ' px a frame)');
+    await page.waitForFunction(() => { const xs = window.xs, n = xs.length; return n > 12 && xs[n - 1] > 1000 && xs[n - 1] === xs[n - 12]; }, null, { timeout: 10000 });
+    d = await steps(at);
+    const end = await page.evaluate(() => { const w = document.querySelector('.row[data-key="app"] .wrap'); return w.querySelector('.track').scrollWidth - (w.clientWidth - 44); });
+    const rest = await page.evaluate(() => window.xs[window.xs.length - 1]);
+    if (Math.abs(rest - end) > 1) problems.push('Home motion: the glide stopped at ' + rest + ' px, not at the row\'s end, ' + end);
+    if (Math.max.apply(null, d) < 18) problems.push('Home motion: the glide never reached its speed (' + Math.max.apply(null, d).toFixed(1) + ' px a frame)');
+    if (Math.max.apply(null, d.slice(-3)) > 12) problems.push('Home motion: the row ran into its end (' + show(d.slice(-3)) + ' px a frame)');
+    await page.mouse.move(20, rowY);
+    await page.waitForTimeout(700);
+    at = await mark();
+    await page.mouse.move(900, rowY);
+    await page.waitForTimeout(800);
+    d = await steps(at);
+    if (d.length < 6 || Math.abs(d[d.length - 1]) > 3) problems.push('Home motion: the glide stopped dead when the pointer left the end (' + show(d) + ')');
+  } finally { await page.close(); }
+}
+
+/*
+ * A channel's programme moves on through the minute's refresh with its tile
+ * left in place: the rows are not rebuilt for the progress bar.
+ */
+async function visitHomeGuide(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home guide: ' + e.message));
+  const start = Date.parse('2026-10-20T20:00:00Z');
+  const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: ['ch1'], hintSeen: true };
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+    if (url.pathname.endsWith('/catalogue')) {
+      return reply({ ok: true, layout, apps: [{ id: 'app0', title: 'App 0' }], devices: [],
+        channels: [{ id: 'ch1', number: '1', name: 'One' }], sources: { channels: 1 },
+        order: { app: ['app0'], dev: [], ch: ['ch1'] } });
+    }
+    if (url.pathname.endsWith('/guide')) {
+      return reply({ ok: true, guide: { ch1: [{ title: 'News', start, end: start + 3600000 },
+        { title: 'Film', start: start + 3600000, end: start + 7200000 }] } });
+    }
+    if (url.pathname.endsWith('/now')) return reply({ kind: null });
+    return reply({ ok: true, build: 'one' });
+  });
+  try {
+    await page.clock.install({ time: start + 600000 });
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.ch .bar i');
+    const first = await page.evaluate(() => { window.bar = document.querySelector('.ch .bar i'); return window.bar.style.width; });
+    if (first !== '16.7%') problems.push('Home guide: ten minutes into an hour showed as ' + first);
+    await page.clock.fastForward(60000);
+    await page.waitForFunction(w => document.querySelector('.ch .bar i').style.width !== w, first, { timeout: 5000 });
+    if (!(await page.evaluate(() => document.querySelector('.ch .bar i') === window.bar)))
+      problems.push('Home guide: the minute\'s refresh rebuilt the rows to move a programme\'s progress on');
+  } finally { await page.close(); }
+}
+
 async function visitHomeColours(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home colours: ' + e.message));
@@ -770,9 +979,12 @@ async function visitHomeRecents(browser, base, problems) {
   await visitHomeReadiness(browser, base, problems);
   await visitHomeAvailability(browser, base, problems);
   await visitHomeRecents(browser, base, problems);
+  await visitHomeScrolling(browser, base, problems);
+  await visitHomeMotion(browser, base, problems);
+  await visitHomeGuide(browser, base, problems);
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'Home arranging, picture, colours, update, editing, order, uploads, readiness, availability and recents checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+              'Home arranging, picture, colours, update, editing, order, uploads, readiness, availability, recents, scrolling, motion and guide checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

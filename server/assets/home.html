@@ -81,9 +81,22 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 .row{margin-bottom:22px}
 .row h2{padding:0 112px;font-size:25px;font-weight:400;color:#a39d93;margin-bottom:10px}
 .row h2 span{color:#6b665e;margin-left:14px}
-.wrap{overflow:hidden;margin:0 90px;padding:6px 22px}
-.track{display:-webkit-flex;display:flex;white-space:nowrap;
-  -webkit-transition:-webkit-transform .28s cubic-bezier(.2,.7,.2,1);transition:transform .28s cubic-bezier(.2,.7,.2,1)}
+.wrap{position:relative;overflow:hidden;margin:0 90px;padding:6px 22px}
+/* Moved by script, a frame at a time (scrollTrack). Relative, so a tile's
+   offsetLeft is always from the track, also before it has been moved; its own
+   layer, so a move is not a repaint of every tile in it. */
+.track{position:relative;display:-webkit-flex;display:flex;white-space:nowrap;will-change:transform}
+/* While the pointer is over a row with more to one side, a soft arrow shows
+   there: resting the pointer on that end glides the row. */
+.wrap .edge{position:absolute;top:0;bottom:0;width:96px;opacity:0;pointer-events:none;z-index:1;
+  -webkit-transition:opacity .25s;transition:opacity .25s}
+.wrap .edge.l{left:0;background:linear-gradient(90deg,rgba(0,0,0,.72),rgba(0,0,0,0))}
+.wrap .edge.r{right:0;background:linear-gradient(270deg,rgba(0,0,0,.72),rgba(0,0,0,0))}
+.wrap .edge:after{content:"";position:absolute;top:50%;width:18px;height:18px;margin-top:-12px;
+  border:solid #ece7df;border-width:0 0 3px 3px}
+.wrap .edge.l:after{left:28px;-webkit-transform:rotate(45deg);transform:rotate(45deg)}
+.wrap .edge.r:after{right:28px;-webkit-transform:rotate(-135deg);transform:rotate(-135deg)}
+.wrap.more-l .edge.l,.wrap.more-r .edge.r{opacity:1}
 
 .tile{position:relative;-webkit-flex:0 0 auto;flex:0 0 auto;margin-right:8px;padding:16px 20px 18px;border-radius:6px;
   outline:2px solid transparent;opacity:.8;
@@ -227,7 +240,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       <h2 data-t="home.recents.title">Recent apps</h2>
       <span class="btn" id="btnCloseAll" data-t="home.recents.closeAll">Close all</span>
     </div>
-    <div class="wrap"><div class="track" id="recentsTrack"></div></div>
+    <div class="wrap"><i class="edge l"></i><i class="edge r"></i><div class="track" id="recentsTrack"></div></div>
   </section>
 
   <div id="fault">
@@ -314,6 +327,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
   function fit() {
     var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
     var st = $('stage');
+    stageScale = s;
     var x = (window.innerWidth - 1920 * s) / 2, y = (window.innerHeight - 1080 * s) / 2;
     st.style.webkitTransform = st.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + s + ')';
   }
@@ -380,6 +394,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
   function render() {
     stageClass();
     var html = '';
+    barWidths = [];
     if (!shown(state.row)) state.row = nextShown(0, 1);
     layout.rows.forEach(function (kind, ri) {
       var list = items(kind);
@@ -389,11 +404,40 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + ' data-row="' + ri + '" data-key="' + kind + '">' +
         '<h2>' + esc(ROW_TITLES[kind]) + (list.length ? '<span>' + note + '</span>' : '') +
         '<em class="sort">' + esc(sortLabel(kind)) + '</em></h2>' +
-        (list.length ? '<div class="wrap"><div class="track">' + tiles + '</div></div>' : '<div class="slot">' + note + '</div>') +
+        (list.length ? '<div class="wrap"><i class="edge l"></i><i class="edge r"></i><div class="track">' + tiles + '</div></div>'
+          : '<div class="slot">' + note + '</div>') +
         '</section>';
     });
-    $('rows').innerHTML = html;
-    applyFocus(true);
+    // Rebuilt only when something shown changed: the minute's refresh of
+    // what was last on leaves the rows, and where they are scrolled, alone.
+    var changed = html !== renderedRows;
+    if (changed) {
+      $('rows').innerHTML = html;
+      renderedRows = html;
+    }
+    // A programme's progress is set in place, so the minute's refresh does
+    // not rebuild the rows.
+    var bars = $('rows').querySelectorAll('.bar i');
+    for (var b = 0; b < bars.length; b++) if (bars[b].style.width !== barWidths[b]) bars[b].style.width = barWidths[b];
+    // Every row stays where it was; with the keys, the row in focus keeps
+    // its focused tile in view, as when a tile is moved while arranging. A
+    // row still moving is left to finish, and settle() then keeps its focus
+    // in view.
+    applyFocus(true, true);
+    placeRows();
+    if (!pointing && (!animating || state.arranging)) {
+      var active = document.querySelector('.row.active');
+      if (active) scrollTrack(active, active.querySelector('.tile.focus'), !animating);
+    }
+  }
+  var renderedRows = '', barWidths = [];
+
+  // The minute's refresh waits for a moving row to stop (tick), so the rows
+  // are not rebuilt under it. Its changes leave every tile where it was.
+  var renderWaiting = false;
+  function renderWhenStill() {
+    if (animating) renderWaiting = true;
+    else render();
   }
 
   var hiddenLabel = '<span class="hid">' + esc(t('home.hidden', 'Hidden')) + '</span>';
@@ -421,14 +465,16 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       var body = '<div class="num">' + esc(c.number) + '</div><div class="nm">' + esc(c.name) + '</div>';
       if (shows.length) {
         var on = shows[0], pct = Math.max(0, Math.min(100, (Date.now() - on.start) / (on.end - on.start) * 100));
-        body += '<div class="prog">' + esc(on.title) + '</div><div class="bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>';
+        body += '<div class="prog">' + esc(on.title) + '</div><div class="bar"><i></i></div>';
+        barWidths.push(Math.round(pct * 10) / 10 + '%');
         if (shows[1]) body += '<div class="next">' + esc(hm(new Date(shows[1].start)) + ' ' + shows[1].title) + '</div>';
       }
       return '<div class="' + cls + '" data-c="' + i + '">' + body + hiddenLabel + '</div>';
     }
   };
 
-  function applyFocus(instant) {
+  // noScroll: focus only, as the pointer does, leaving each row where it is.
+  function applyFocus(instant, noScroll) {
     var rows = document.querySelectorAll('.row');
     for (var ri = 0; ri < rows.length; ri++) {
       var rowEl = rows[ri], kind = rowEl.getAttribute('data-key'), active = ri === state.row && state.bar < 0;
@@ -439,7 +485,9 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
         tiles[ci].className = tiles[ci].className.replace(/ (focus|held)\b/g, '') + (on ? ' focus' : '') + (on && state.held ? ' held' : '');
       }
       rowEl.querySelector('.sort').className = 'sort' + (active && c === -1 ? ' focus' : '');
-      scrollTrack(rowEl, tiles[c], instant);
+      // Only the row in focus is moved: one the pointer or the wheel moved
+      // stays where it was left.
+      if (!noScroll && active) scrollTrack(rowEl, tiles[c], instant);
     }
     for (var b = 0; b < BAR.length; b++) $(BAR[b]).className = 'btn' + (state.bar === b ? ' focus' : '');
     if (state.bar < 0) {
@@ -459,21 +507,285 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     }
   }
 
-  // Keeps the focused tile in view by moving the track, not the page.
-  function scrollTrack(rowEl, tile, instant) {
-    var track = rowEl.querySelector('.track'), wrap = rowEl.querySelector('.wrap');
+  // ---------------------------------------------------------------- scrolling
+
+  /*
+   * The rows move by script, a frame at a time, not by a CSS transition
+   * restarted at each step. The arrow keys ease a row to keep the focused
+   * tile in view; the wheel eases the row under the pointer a tile a notch;
+   * and the Magic Remote's pointer resting on either end of a row, out to the
+   * side of the screen, glides it at a speed that grows the further in it
+   * points, as LG's Home does. Hovering a tile only focuses it. When hover
+   * also scrolled the tile into view, the 14 px sliver of the next tile at a
+   * row's end took the focus, stepped the row a tile and left another sliver
+   * under the pointer, so the row ran on in jerks.
+   *
+   * No row changes speed in a single frame. A glide gathers speed, slows to a
+   * stop when the pointer leaves the end, and brakes into the row's last
+   * tile. The keys and the wheel set where a row is headed, and a critically
+   * damped spring takes it there from whatever speed it has, so a spun wheel
+   * or a held arrow moves it steadily, where an ease restarted at each step
+   * surged at every notch.
+   *
+   * Each row's place is kept here, by row, so a rebuilt row keeps it.
+   */
+  var tracks = {};
+  var nextFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
+    function (f) { return setTimeout(function () { f(Date.now()); }, 16); };
+  var animating = false, lastFrame = 0, lastHover = 0;
+  var EDGE = 150;          // stage px in from a row's end where it glides
+  var GLIDE_MAX = 1400;    // stage px a second, pointing at the very end
+  var GLIDE_IN = 110;      // ms for a glide to gather most of its speed
+  var GLIDE_OUT = 65;      // ms to lose it: from full speed, about 90 px more
+  var BRAKE = 6000;        // stage px/s², into a row's end: the last 163 px from full speed
+  var SPRING = 20;         // per second: a key or wheel step is 90% there in about 195 ms
+  var stageScale = 1;
+  var pointing = false;    // the pointer is showing and was used last
+  var pointerX = 0, pointerY = 0;
+  var hoverKey = null;     // the row the pointer is over
+  var glide = null;        // { key, dir, depth } while it rests on an end
+
+  // x is where a row is drawn and target where it is headed; v is the
+  // spring's speed, and gv the glide's, which moves both, in px a second.
+  function trackOf(key) { return tracks[key] || (tracks[key] = { x: 0, target: 0, max: 0, v: 0, gv: 0 }); }
+  function keyOf(rowEl) { return rowEl.id === 'recents' ? 'recents' : rowEl.getAttribute('data-key'); }
+  function rowElOf(key) { return key === 'recents' ? $('recents') : document.querySelector('.row[data-key="' + key + '"]'); }
+
+  // A row's track and view width, noting how far the track can move.
+  function measure(key) {
+    var rowEl = rowElOf(key);
+    var track = rowEl && rowEl.querySelector('.track'), wrap = rowEl && rowEl.querySelector('.wrap');
+    if (!track || !wrap) return null;
+    var view = wrap.clientWidth - 44, tr = trackOf(key);
+    tr.max = Math.max(0, track.scrollWidth - view);
+    return { track: track, view: view };
+  }
+
+  function paint(key) {
+    var rowEl = rowElOf(key), track = rowEl && rowEl.querySelector('.track'), tr = trackOf(key);
     if (!track) return;
-    if (!tile) tile = track.querySelector('.tile');
+    // Sent back the other way at speed, the spring can carry a row a little
+    // past where it is headed; never past its ends.
+    var x = -Math.round(Math.max(0, Math.min(tr.max, tr.x)) * 10) / 10;
+    track.style.webkitTransform = track.style.transform = 'translateX(' + x + 'px)';
+  }
+
+  // Rows just rebuilt put back where they were, within their new length; one
+  // on its way somewhere carries on.
+  function placeRows() {
+    var rows = document.querySelectorAll('.row');
+    for (var i = 0; i < rows.length; i++) {
+      var key = keyOf(rows[i]), tr = trackOf(key);
+      if (!measure(key)) continue;
+      tr.target = Math.max(0, Math.min(tr.target, tr.max));
+      tr.x = Math.max(0, Math.min(tr.x, tr.max));
+      paint(key);
+    }
+    edges();
+  }
+
+  /*
+   * The keys or the wheel taking a row over from its glide: where the glide
+   * would have come to rest is where the row is headed, and the spring takes
+   * it there from the speed it has.
+   */
+  function land(tr) {
+    if (!tr.gv) return;
+    tr.target = Math.max(0, Math.min(tr.max, Math.round(tr.target + tr.gv * GLIDE_OUT / 1000)));
+    tr.v += tr.gv;
+    tr.gv = 0;
+  }
+  function landAll() {
+    for (var key in tracks) if (tracks.hasOwnProperty(key)) land(tracks[key]);
+  }
+
+  // Keeps a tile in view by moving the track, not the page.
+  function scrollTrack(rowEl, tile, instant) {
+    if (!rowEl) return;
+    var key = keyOf(rowEl), tr = trackOf(key), m = measure(key);
+    if (!m) return;
+    land(tr);
+    if (!tile) tile = m.track.querySelector('.tile');
+    var x = tr.target;
+    if (tile) {
+      if (tile.offsetLeft + tile.offsetWidth > x + m.view) x = tile.offsetLeft + tile.offsetWidth - m.view;
+      if (tile.offsetLeft < x) x = tile.offsetLeft;
+    }
+    tr.target = Math.max(0, Math.min(x, tr.max));
+    if (instant) { tr.x = tr.target; tr.v = 0; paint(key); } else kick();
+  }
+
+  // The tiles of a row in view where it is headed, as [first, last]: one
+  // with any real part showing counts, so the sliver at an end is not passed.
+  function inView(key) {
+    var m = measure(key), tr = trackOf(key);
+    if (!m) return null;
+    var tiles = m.track.querySelectorAll('.tile'), first = -1, last = -1;
+    for (var i = 0; i < tiles.length; i++) {
+      var left = tiles[i].offsetLeft - tr.target, right = left + tiles[i].offsetWidth;
+      if (right > 8 && left < m.view - 8) { if (first === -1) first = i; last = i; }
+    }
+    return first === -1 ? null : [first, last];
+  }
+
+  function kick() {
+    if (animating) return;
+    animating = true;
+    lastFrame = 0;
+    nextFrame(tick);
+  }
+
+  function tick(now) {
+    var busy = false;
+    // An error in a frame must not leave the loop marked as running, or no
+    // row would move again until Home was reloaded.
+    try { busy = frame(now); } finally {
+      if (busy) nextFrame(tick);
+      else animating = false;
+    }
+    if (busy) return;
+    settle();
+    // The minute's refresh, held back while a row moved (renderWhenStill).
+    if (renderWaiting) {
+      renderWaiting = false;
+      if (data && layout && !state.arranging) render();
+    }
+  }
+
+  function frame(now) {
+    var dt = lastFrame ? Math.min(64, now - lastFrame) : 16;
+    lastFrame = now;
+    var s = dt / 1000, busy = false, glided = false;
+    if (glide && state.held) glide = null;
+    for (var key in tracks) {
+      if (!tracks.hasOwnProperty(key)) continue;
+      var tr = tracks[key], was = tr.x;
+      var want = glide && glide.key === key ? glide.dir * GLIDE_MAX * glide.depth * glide.depth : 0;
+      if (want || tr.gv) {
+        var faster = want * tr.gv >= 0 && Math.abs(want) > Math.abs(tr.gv);
+        tr.gv += (want - tr.gv) * (1 - Math.exp(-dt / (faster ? GLIDE_IN : GLIDE_OUT)));
+        // No faster than can still stop at the row's end, braking evenly.
+        var cap = Math.sqrt(2 * BRAKE * Math.max(0, tr.gv > 0 ? tr.max - tr.target : tr.target));
+        if (Math.abs(tr.gv) > cap) tr.gv = tr.gv > 0 ? cap : -cap;
+        var from = tr.target;
+        tr.target = Math.max(0, Math.min(tr.max, tr.target + tr.gv * s));
+        // The glide moves the row itself; a wheel step on its way carries on.
+        tr.x += tr.target - from;
+        if (tr.target !== from) glided = true;
+        // A glide comes to rest on a whole pixel, where text is sharpest,
+        // the next one on, so the row does not step back to it.
+        if (!want && Math.abs(tr.gv) < 5) {
+          tr.target = Math.max(0, Math.min(tr.max, tr.gv > 0 ? Math.ceil(tr.target) : Math.floor(tr.target)));
+          tr.v += tr.gv;
+          tr.gv = 0;
+        }
+      }
+      var e = tr.x - tr.target;
+      if (e || tr.v) {
+        if (Math.abs(e) < 0.05 && Math.abs(tr.v) < 3) { tr.x = tr.target; tr.v = 0; }
+        else {
+          // The spring solved for the frame's length, so a long frame cannot
+          // make it overshoot or run away.
+          var k = Math.exp(-SPRING * s), c = tr.v + SPRING * e;
+          tr.x = tr.target + (e + c * s) * k;
+          tr.v = (c - SPRING * (e + c * s)) * k;
+        }
+      }
+      if (tr.x !== was) paint(key);
+      if (tr.gv || tr.v || tr.x !== tr.target) busy = true;
+    }
+    if (glide || glided) edges();
+    // The tile under a still pointer changes as a row glides past it.
+    if (glided && pointing && now - lastHover > 120) {
+      lastHover = now;
+      hoverTile(document.elementFromPoint(pointerX, pointerY));
+    }
+    return busy;
+  }
+
+  /*
+   * Once a row has stopped, the focus is on a tile in view: the one under the
+   * pointer, so OK or a click opens what it points at, or, with the pointer
+   * hidden after the wheel, the nearest tile still in view, so the keys and
+   * the next render do not pull the row back.
+   */
+  function settle() {
+    if (pointing) return hoverTile(document.elementFromPoint(pointerX, pointerY));
+    if (!data || !layout || recents.open || state.bar >= 0 || state.held) return;
+    var kind = rowKey(), span = inView(kind), c = colOf(kind);
+    if (!span || c < 0 || (c >= span[0] && c <= span[1])) return;
+    state.col[kind] = c < span[0] ? span[0] : span[1];
+    applyFocus(false, true);
+  }
+
+  // The arrows on the row under the pointer, where there is more to see.
+  function edges() {
+    var wraps = document.querySelectorAll('.wrap');
+    for (var i = 0; i < wraps.length; i++) {
+      var key = keyOf(wraps[i].parentNode), tr = tracks[key];
+      var on = pointing && key === hoverKey && !state.held && !!tr;
+      var cls = 'wrap' + (on && tr.target > 0.5 ? ' more-l' : '') + (on && tr.target < tr.max - 0.5 ? ' more-r' : '');
+      if (wraps[i].className !== cls) wraps[i].className = cls;
+    }
+  }
+
+  // Which row the pointer is over, and whether it rests on one of its ends.
+  function aim() {
+    glide = null;
+    hoverKey = null;
+    if (data && layout && !layoutBusy && !state.held) {
+      var list = recents.open ? [$('recents')] : document.querySelectorAll('.row');
+      for (var i = 0; i < list.length; i++) {
+        var wrap = list[i].querySelector('.wrap');
+        if (!wrap || !list[i].querySelector('.track')) continue;
+        var r = wrap.getBoundingClientRect();
+        if (pointerY < r.top || pointerY > r.bottom) continue;
+        var key = keyOf(list[i]), tr = trackOf(key), zone = EDGE * stageScale;
+        measure(key);
+        hoverKey = key;
+        // Past the row's end, out to the side of the screen, is the full speed.
+        var left = (r.left + zone - pointerX) / zone, right = (pointerX - (r.right - zone)) / zone;
+        if (left > 0 && tr.target > 0) glide = { key: key, dir: -1, depth: Math.min(1, left) };
+        else if (right > 0 && tr.target < tr.max) glide = { key: key, dir: 1, depth: Math.min(1, right) };
+        break;
+      }
+    }
+    edges();
+    if (glide) kick();
+  }
+
+  // The keys, or the pointer going away, end the pointer's scrolling; a
+  // gliding row slows to a stop.
+  function stopPointing() {
+    if (!pointing && !glide) return;
+    pointing = false;
+    glide = null;
+    hoverKey = null;
+    edges();
+  }
+
+  /*
+   * The Magic Remote's wheel scrolls the row under the pointer, or the row in
+   * focus, a tile a notch. Older engines only fire mousewheel, whose
+   * wheelDelta has the opposite sign to deltaY.
+   */
+  function onWheel(e) {
+    e.preventDefault();
+    if (!data || !layout || layoutBusy || state.held) return;
+    var d = e.deltaY !== undefined ? e.deltaY : -e.wheelDelta;
+    if (e.deltaX && Math.abs(e.deltaX) > Math.abs(d || 0)) d = e.deltaX;
+    if (!d) return;
+    var key = hoverKey || (recents.open ? 'recents' : rowKey());
+    var m = measure(key), tile = m && m.track.querySelector('.tile');
     if (!tile) return;
-    var viewW = wrap.clientWidth - 44;
-    var cur = -(parseFloat(track.getAttribute('data-x')) || 0), x = cur;
-    if (tile.offsetLeft + tile.offsetWidth > cur + viewW) x = tile.offsetLeft + tile.offsetWidth - viewW;
-    if (tile.offsetLeft < cur) x = tile.offsetLeft;
-    x = Math.max(0, Math.min(x, track.scrollWidth - viewW));
-    if (instant) track.style.webkitTransition = track.style.transition = 'none';
-    track.setAttribute('data-x', -x);
-    track.style.webkitTransform = track.style.transform = 'translateX(' + (-x) + 'px)';
-    if (instant) { void track.offsetWidth; track.style.webkitTransition = track.style.transition = ''; }
+    var tr = trackOf(key), step = tile.offsetWidth;
+    var next = tile.nextSibling;
+    if (next && next.offsetLeft) step = next.offsetLeft - tile.offsetLeft;
+    // On a row the pointer is gliding, the notch goes a tile further.
+    if (!glide || glide.key !== key) land(tr);
+    tr.target = Math.max(0, Math.min(tr.max, tr.target + (d > 0 ? step : -step)));
+    edges();
+    kick();
   }
 
   // ---------------------------------------------------------------- top strip
@@ -592,9 +904,14 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     }
     // Up and down from a row's Order go to the next row's.
     if (dr && onSort) state.col[rowKey()] = -1;
+    // A row the pointer or the wheel moved is taken up from the tiles in
+    // view, not pulled back to the tile focused before.
+    var kind = rowKey(), span = state.arranging ? null : inView(kind), c = colOf(kind);
+    var outside = span && c >= 0 && (c < span[0] || c > span[1]);
+    if (outside && dr) state.col[kind] = c < span[0] ? span[0] : span[1];
     if (dc) {
-      var kind = rowKey();
-      state.col[kind] = Math.max(state.arranging ? -1 : 0, Math.min(items(kind).length - 1, colOf(kind) + dc));
+      if (outside) state.col[kind] = dc > 0 ? span[0] : span[1];
+      else state.col[kind] = Math.max(state.arranging ? -1 : 0, Math.min(items(kind).length - 1, c + dc));
     }
     applyFocus();
   }
@@ -636,6 +953,8 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     recents.revision++;
     recents.loading = false;
     recents.open = false;
+    if (glide && glide.key === 'recents') glide = null;
+    if (hoverKey === 'recents') hoverKey = null;
     stageClass();
   }
 
@@ -666,14 +985,15 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     focusRecents(true);
   }
 
-  function focusRecents(instant) {
+  // noScroll: the pointer's focus, which leaves the cards where they are.
+  function focusRecents(instant, noScroll) {
     var cards = $('recentsTrack').querySelectorAll('.rc');
     for (var i = 0; i < cards.length; i++) {
       var on = i === recents.col && !recents.onAll;
       cards[i].className = 'tile rc' + (on ? ' focus' : '') + (on && recents.onX ? ' on-x' : '');
     }
     $('btnCloseAll').className = 'btn' + (recents.apps.length ? '' : ' none') + (recents.onAll ? ' focus' : '');
-    scrollTrack($('recents'), cards[recents.col], instant);
+    if (!noScroll) scrollTrack($('recents'), cards[recents.col], instant);
   }
 
   function recentAction(action, app) {
@@ -705,7 +1025,10 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     }
     if (!app) return;
     if (k === KEY.left || k === KEY.right) {
-      recents.col = Math.max(0, Math.min(recents.apps.length - 1, recents.col + (k === KEY.left ? -1 : 1)));
+      // Cards the wheel or the pointer moved are taken up from those in view.
+      var span = inView('recents');
+      if (span && (recents.col < span[0] || recents.col > span[1])) recents.col = k === KEY.right ? span[0] : span[1];
+      else recents.col = Math.max(0, Math.min(recents.apps.length - 1, recents.col + (k === KEY.left ? -1 : 1)));
       recents.onX = false;
     } else if (k === KEY.up) {
       if (recents.onX) recents.onX = false; else recents.onAll = true;
@@ -779,6 +1102,9 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       saveLayout({});
     }
     render();
+    // render() leaves a moving row alone; with the hidden tiles gone, the
+    // focused one may have moved out of view.
+    if (!on && animating) applyFocus();
   }
 
   /*
@@ -895,6 +1221,8 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
   // ---------------------------------------------------------------- input
 
   function onKeyDown(e) {
+    stopPointing();
+    landAll();
     if (!data || !layout) return;
     if (layoutBusy) { e.preventDefault(); return; }
     var k = e.keyCode;
@@ -954,22 +1282,31 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     return null;
   }
   function onPointer(e) {
-    if (layoutBusy) return;
-    var tile = tileAt(e.target);
+    pointerX = e.clientX;
+    pointerY = e.clientY;
+    pointing = true;
+    hoverTile(e.target);
+    aim();
+  }
+  // Focuses the tile under the pointer, without moving its row.
+  function hoverTile(target) {
+    if (layoutBusy || !data || !layout) return;
+    var tile = tileAt(target);
     if (recents.open) {
       if (tile && /\brc\b/.test(tile.className) && (+tile.getAttribute('data-c') !== recents.col || recents.onAll)) {
         recents.col = +tile.getAttribute('data-c'); recents.onAll = false; recents.onX = false;
-        focusRecents();
+        focusRecents(false, true);
       }
       return;
     }
     if (!tile || state.held) return;
     var rowEl = tile.parentNode;
     while (rowEl && !/\brow\b/.test(rowEl.className)) rowEl = rowEl.parentNode;
+    if (!rowEl) return;
     var r = +rowEl.getAttribute('data-row'), c = +tile.getAttribute('data-c'), kind = layout.rows[r];
     if (state.row !== r || colOf(kind) !== c || state.bar >= 0) {
       state.row = r; state.col[kind] = c; state.bar = -1;
-      applyFocus();
+      applyFocus(false, true);
     }
   }
   function onClick(e) {
@@ -984,6 +1321,9 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       return toggleSort(rowKey());
     }
     if (!tileAt(e.target)) return;
+    // The tile clicked, which a glide may have moved under the pointer since
+    // the focus last followed it.
+    hoverTile(e.target);
     if (state.arranging) pickUp();
     else activate();
   }
@@ -1067,6 +1407,9 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     var key = c ? c.text + c.accent : '';
     if (key === lookShown) return;
     lookShown = key;
+    // Rebuilt at the next render, so the tiles take the colours at once
+    // rather than fading their frames to them.
+    renderedRows = '';
     if (!c) { $('look').textContent = LOOK; return; }
     var swap = { '#ece7df': c.text, '#a39d93': shade(c.text, 0.69), '#6b665e': shade(c.text, 0.45),
                  '#e9ad55': c.accent, '#231d12': shade(c.accent, 0.15) };
@@ -1126,7 +1469,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       lastOn = r;
       renderNow();
       refreshPicture();
-      if (data && !state.arranging) render();
+      if (data && !state.arranging) renderWhenStill();
     });
   }
 
@@ -1135,7 +1478,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     getJson('/api/home/guide', function (r) {
       if (!r || !r.guide) return;
       guideData = r.guide;
-      if (!state.arranging && data) render();
+      if (!state.arranging && data) renderWhenStill();
     });
   }
 
@@ -1176,7 +1519,16 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
     closeRecents();
     readLaunchParams();
     updateWall();
-    state.row = 0; state.col = {}; state.bar = -1;
+    // Back from an app, Home is as it was left: the same tile in focus and
+    // every row where it was scrolled, brought to rest where it was headed.
+    state.bar = -1;
+    stopPointing();
+    landAll();
+    for (var key in tracks) {
+      if (!tracks.hasOwnProperty(key)) continue;
+      tracks[key].x = tracks[key].target;
+      tracks[key].v = 0;
+    }
     if (state.arranging) setArranging(false);
     beat();
     load();
@@ -1186,6 +1538,12 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
   document.addEventListener('keydown', onKeyDown, true);
   document.addEventListener('keyup', onKeyUp, true);
   document.addEventListener('mousemove', onPointer);
+  document.addEventListener('onwheel' in document ? 'wheel' : 'mousewheel', onWheel);
+  // webOS says when the pointer hides, after a few still seconds or a key.
+  document.addEventListener('cursorStateChange', function (e) {
+    if (!(e.detail && e.detail.visibility)) stopPointing();
+  });
+  document.addEventListener('mouseout', function (e) { if (!e.relatedTarget) stopPointing(); });
   document.addEventListener('click', onClick);
   // Home pressed with the view already open reaches it as a relaunch.
   document.addEventListener('webOSRelaunch', returned);

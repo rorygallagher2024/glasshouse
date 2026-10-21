@@ -89,6 +89,8 @@ no unit test does. It runs when the server, the pages or the fake TV change.
 
 For the Home view, arranging checks cover a late catalogue reply, resetting after moving a tile, and an update noticed while arranging. Picture checks cover a layout with picture details left at their default (off), the plate's single mode and OLED light, an input with no signal keeping its line level with the source's first line, a delayed reply after changing source, and a delayed reply after switching picture details off. Its service replies are simulated; the page and its timers run in Chromium.
 
+Scrolling checks, on a row of 30 apps under the pointer, cover hovering a tile leaving its row in place, the pointer resting at the screen's side gliding the row and coming to rest when it moves away, a click held still while the row glides opening the tile under the pointer, the wheel moving the row a tile a notch and a click after it opening the tile now under the pointer, moving down a row leaving the scrolled row where it is, the keys focusing a tile in view, and the rows still gliding after Recent apps closes while its cards glide. Motion checks read the row's place every frame: a flick to the screen's side gathers speed over several frames instead of starting at full speed, the row brakes into its last tile, and moving the pointer away lets it slow to a stop. A guide check moves a channel's programme on through the minute's refresh and finds its tile left in place rather than the rows rebuilt.
+
 Home colour checks cover custom accents matching the stylesheet's original colours, changes and reset arriving through the heartbeat, and malformed colour values being discarded without stopping the server.
 
 ## Documentation
