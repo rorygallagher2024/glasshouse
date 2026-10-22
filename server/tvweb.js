@@ -1723,7 +1723,7 @@ function startGlasshouseHome() {
     webosVersion: telemetry.detectWebosVersion(),
     port: CONFIG.port,
     samrescan: samrescan,
-    // Only to remove the separate app earlier builds installed.
+    // The standalone launcher on webOS 5, or an earlier build's app to remove.
     installApp: function (action, cb) { tvApp(action, cb, 'home-app'); },
     setHomeKey: remoteKeys.setHome,
     homeKeyApp: remoteKeys.homeApp,

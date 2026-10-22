@@ -60,7 +60,9 @@ menus. Uninstalling the dashboard leaves them as they are.
 | LG's blocked-app list | Where hidden tiles or a screen saver switch use it, it is put back with LG's value but saved as a changed setting, which the TV has no way to remove. It keeps that value if LG's own list later changes with a firmware update or a new country. Not undone by uninstalling |
 | LG's blocked system app list | A screen saver switch on webOS 10 and later blocks the screen saver app and releases it at once, so that sam reads its manifest again, and so does Glasshouse Home with LG's Home app as it takes or gives back the place. The block is written to `/var/preferences/com.webos.applicationManager/blockedSystemAppList/<country>.json` and the release takes it out; the file was byte-identical afterwards on a C5. The release is sent even when the block's answer did not come back. Only a run cut short between the two calls leaves the app blocked, and on these TVs the boot hook releases the screen saver and LG's Home at every boot |
 
-Glasshouse Home saves its enabled state before changing the TV's Home. Its settings writes run in order, so switching off restores the snapshot after pending guard writes finish. A late guard read cannot change the restored value.
+On webOS 5, Glasshouse Home instead installs `com.tvweb.home` and sets `glasshouse.remoteKeys.home` to that app. The existing JavaScript key filter consumes Home press and release before LG's filters. LG's app directory, startup settings and layout files are left in place. Switching off clears the Home mapping and removes the standalone app, with a failed key restoration reported for retry. Server restart retains the app and reapplies the mapping. Server stop or watchdog recovery clears that Home mapping and opens LG's Home; the saved enabled state allows the next server start to reapply it.
+
+Glasshouse Home's settings writes run in order, so switching off restores the snapshot after pending guard writes finish. A late guard read cannot change the restored value.
 
 A refused device tile leaves the next input switch from the remote recorded for every device on that input, in rows set to Last opened.
 
