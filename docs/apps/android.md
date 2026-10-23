@@ -14,16 +14,7 @@ The app runs on Android 10 and later, and follows the dashboard's design: monoch
 
 ## How to get the app
 
-The app is currently in closed testing ahead of its public release on the Google Play Store.
-
-To join the test:
-
-1. Join the [glasshouse-android-testers](https://groups.google.com/g/glasshouse-android-testers) Google Group using the Google account your phone uses for the Play Store.
-2. Opt in to the test on the [Google Play testing page](https://play.google.com/apps/testing/org.glasshouse.android) while signed in with that account.
-3. Install Glasshouse from the Google Play Store link provided on the testing page.
-
-> [!NOTE]
-> Google Play requires testers to remain opted in for 14 days before an app can be released publicly to the store. Please stay opted in during the testing period. Suggestions and bug reports can be submitted on the [GitHub repository issues page](https://github.com/rorygallagher2024/glasshouse-android/issues).
+Install [Glasshouse from Google Play](https://play.google.com/store/apps/details?id=org.glasshouse.android). Suggestions and bug reports go on the [GitHub repository issues page](https://github.com/rorygallagher2024/glasshouse-android/issues).
 
 ## Adding a TV
 
