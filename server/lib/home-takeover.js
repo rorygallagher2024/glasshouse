@@ -452,6 +452,16 @@ if (require.main === module && process.argv[2] === '--release') {
       console.log(r.ok ? 'home: LG\'s Home is in its place' : 'home: ' + r.error);
       process.exit(r.ok ? 0 : 1);
     }
+    // A stopped webOS 5 server leaves a separate app waiting for localhost.
+    // Clear only its Home mapping, preserving every other remote shortcut.
+    if (remoteKeys.homeApp() === 'com.tvweb.home') {
+      return remoteKeys.setHome('', function (restored) {
+        if (!restored || !restored.ok) return finish({ ok: false, error: 'the standalone Home key could not be restored' });
+        lunaTransport.call('com.webos.applicationManager/launch', { id: LG_HOME }, function (opened) {
+          finish({ ok: !!(opened && opened.returnValue), error: 'LG\'s Home could not be opened' });
+        });
+      });
+    }
     if (!mounted()) return finish(restoreLayout());
     release(finish);
   });

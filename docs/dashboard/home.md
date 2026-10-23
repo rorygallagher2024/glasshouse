@@ -1,6 +1,8 @@
 # Home
 
-**Experimental.** Glasshouse Home is a home screen of Glasshouse's own, shown in place of LG's when the remote's Home or Back button is pressed and when the TV switches on. The Home tab switches it on and off and arranges it. It has been tried on webOS 9 and 10, and requires the dashboard on port 8080. On webOS 11 it is offered once `"allowExperimentalHome": true` is set in `config.json`. Elsewhere neither dashboard shows it, unless it is still switched on or LG's Home has not yet been fully restored.
+**Experimental.** Glasshouse Home is a home screen of Glasshouse's own. The Home tab switches it on and off and arranges it. It requires the dashboard on port 8080. On webOS 5 it opens as a standalone app with the Home button. On webOS 9 and 10 it replaces LG's Home for Home, Back and startup. On webOS 11 that replacement is offered once `"allowExperimentalHome": true` is set in `config.json`. Elsewhere neither dashboard shows it, unless it is still switched on or LG's Home has not yet been fully restored.
+
+On webOS 5, **Use Glasshouse Home** installs a separate app and maps the Home button to it. LG's native Home app, Back behavior and startup settings stay as LG has them. **Use LG Home** clears that mapping and removes the standalone app. The LG Home tile and holding Home still open LG's Home; the next short Home press opens Glasshouse Home. The standalone app is retained and its mapping reapplied when the server restarts. The SSH recovery command below also restores the Home button. The replacement and startup-layout behavior described below applies to webOS 9 and later.
 
 ![Glasshouse Home on an OLED55G36LA (webOS 9.2): clock and the Apps, Inputs and Channels rows over an uploaded afternoon wallpaper](../screenshots/home.jpg)
 
@@ -65,7 +67,7 @@ The Glasshouse server answers about ten seconds later; Glasshouse Home opened in
 
 Over SSH, `tvwebctl restore-glasshouse-home` does what **Use LG Home** does. Uninstalling Glasshouse from the Homebrew Channel switches Glasshouse Home off before deleting the server; a failed switch-off keeps the server for another attempt.
 
-Earlier builds installed a separate Glasshouse Home app and changed the TV's Home and start-up settings to it. The first start of a newer server puts back any of those settings that still name that app, gives the Home button back to LG's filters, and removes the app.
+Earlier builds installed a separate Glasshouse Home app and changed the TV's Home and start-up settings to it. The first start of a newer server puts back any of those settings that still name that app. On webOS 5 the app and Home-button mapping are retained while standalone mode is enabled; elsewhere the mapping is cleared and the old app removed.
 
 ![The Home tab in the browser dashboard: the Channels row with its added channels, and Add channels below them](../screenshots/home-dashboard.png)
 

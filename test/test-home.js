@@ -671,6 +671,129 @@ step('webOS 11 only with allowExperimentalHome', function (done) {
   });
 });
 
+function startStandalone(file, overrides) {
+  var options = {
+    webosVersion: '5.6.2',
+    homeKeyApp: function () { return tv.homeKey || ''; },
+    setHomeKey: function (id, cb) {
+      tv.homeKey = id;
+      cb({ ok: !tv.keyFails || !id });
+    },
+    installApp: function (action, cb) {
+      tv.events.push(action + ' standalone');
+      if (tv.installFails) return cb({ ok: false, error: 'install failed' });
+      tv.oldAppInstalled = action !== 'remove';
+      cb({ ok: true });
+    }
+  };
+  Object.keys(overrides || {}).forEach(function (key) { options[key] = overrides[key]; });
+  start(file, options);
+}
+
+step('webOS 5 opens a standalone Home without mounting LG Home or changing startup settings', function (done) {
+  startStandalone(null);
+  var standaloneInfo = JSON.parse(fs.readFileSync(path.join(__dirname, '../server/assets/home-app/appinfo.json'), 'utf8'));
+  assert.strictEqual(standaloneInfo.appCategory, undefined, 'the standalone app must not register as the default Home');
+  tv.settings.homeAutoLaunch = 'on';
+  tv.settings.quickStartMode = 'off';
+  var before = copy(tv.settings);
+  home.status(function (status) {
+    assert.strictEqual(status.supported.ok, true);
+    assert.strictEqual(status.supported.mode, 'standalone');
+    assert.strictEqual(status.hideLgHomeAtStartAvailable, false);
+    home.enable(function (result) {
+      assert.ok(result.ok, result.error);
+      assert.strictEqual(tv.homeKey, OLD_APP);
+      assert.deepEqual(tv.events, ['install standalone']);
+      assert.deepEqual(tv.settings, before);
+      assert.strictEqual(tv.samType, 'native');
+      foreground(OLD_APP);
+      home.status(function (active) {
+        assert.strictEqual(active.active, true);
+        home.open({ kind: 'lg' }, function (opened) {
+          assert.ok(opened.ok);
+          assert.strictEqual(tv.launched.pop(), LG_HOME);
+          assert.strictEqual(tv.homeKey, OLD_APP, 'the next Home press still opens the launcher');
+          foreground(LG_HOME);
+          foreground('netflix');
+          assert.strictEqual(tv.events.indexOf('mount'), -1);
+          home.disable(function (disabled) {
+            assert.ok(disabled.ok, disabled.error);
+            assert.strictEqual(tv.homeKey, '');
+            assert.deepEqual(tv.settings, before);
+            assert.ok(!taken());
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
+step('webOS 5 preserves its standalone app and remap when the server restarts', function (done) {
+  startStandalone({ enabled: true });
+  tv.oldAppInstalled = true;
+  tv.homeKey = OLD_APP;
+  home.start();
+  wait(50, function () {
+    assert.ok(home.enabled());
+    assert.strictEqual(tv.homeKey, OLD_APP);
+    assert.deepEqual(tv.events, ['refresh standalone']);
+    assert.ok(tv.oldAppInstalled, 'legacy cleanup must not remove the active standalone app');
+    assert.strictEqual(tv.starting, '', 'the takeover starting notice must not intercept Home');
+    home.disable(function (result) { assert.ok(result.ok, result.error); done(); });
+  });
+});
+
+step('webOS 5 leaves Home unchanged when installing the launcher fails', function (done) {
+  startStandalone(null);
+  tv.installFails = true;
+  home.enable(function (result) {
+    assert.strictEqual(result.ok, false);
+    assert.strictEqual(home.enabled(), false);
+    assert.strictEqual(tv.homeKey, undefined);
+    assert.deepEqual(tv.events, ['install standalone']);
+    done();
+  });
+});
+
+step('webOS 5 rolls back a refused Home key mapping', function (done) {
+  startStandalone(null);
+  tv.keyFails = true;
+  home.enable(function (result) {
+    assert.strictEqual(result.ok, false);
+    assert.strictEqual(home.enabled(), false);
+    assert.strictEqual(tv.homeKey, '');
+    assert.ok(!taken());
+    done();
+  });
+});
+
+step('webOS 5 keeps a failed remap restoration pending until retried', function (done) {
+  var refuseRestore = false;
+  startStandalone(null, { setHomeKey: function (id, cb) {
+    if (!id && refuseRestore) return cb({ ok: false, error: 'restore refused' });
+    tv.homeKey = id;
+    cb({ ok: true });
+  } });
+  home.enable(function (enabled) {
+    assert.ok(enabled.ok);
+    refuseRestore = true;
+    home.disable(function (failed) {
+      assert.strictEqual(failed.ok, false);
+      home.status(function (pending) {
+        assert.strictEqual(pending.restorePending, true);
+        refuseRestore = false;
+        home.disable(function (restored) {
+          assert.ok(restored.ok, restored.error);
+          assert.strictEqual(tv.homeKey, '');
+          done();
+        });
+      });
+    });
+  });
+});
+
 step('webOS 10 is offered without the setting, with LG\'s Flutter Home stopped and no start-up layout', function (done) {
   start(null, { webosVersion: '10.3.1' });
   home.status(function (st0) {

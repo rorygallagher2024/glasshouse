@@ -15,7 +15,8 @@
  * the place again once something else is in front, or on a short press of
  * Home.
  *
- * Earlier builds made a separate app (com.tvweb.home) the TV's Home
+ * On webOS 5, a separate app is opened by the Home key without a takeover.
+ * Earlier builds made that separate app (com.tvweb.home) the TV's Home
  * through its settings, and kept a snapshot of them. What those left behind
  * is undone once at start (cleanLegacy).
  *
@@ -34,7 +35,7 @@ var takeover = require('./home-takeover');
 var recent = require('./home-recent');
 var recentApps = require('./home-recent-apps');
 
-// The separate app earlier builds installed: removed, and its settings undone.
+// Kept as a standalone launcher on webOS 5; otherwise an earlier build's app.
 var HOME_APP = 'com.tvweb.home';
 var LG_HOME = takeover.LG_HOME;
 var LIVE_TV = 'com.webos.app.livetv';
@@ -789,6 +790,7 @@ function toLgHome(why, cb) {
   if (!readConfig().enabled) return launch(LG_HOME, null, cb);
   escaped = true;
   stopBeatWatch();
+  if (standalone()) return launch(LG_HOME, null, cb);
   switchTo(false, function (r) {
     if (!r.ok) {
       console.error('home: ' + r.error);
@@ -813,10 +815,14 @@ function switchTo(on, cb) {
   (function run() {
     var want = switchWant;
     var batch = switchWaiting.splice(0, switchWaiting.length);
-    (want ? takeover.take : takeover.release)(function (r) {
+    var switchHome = standalone() ? switchStandalone : function (on, done) {
+      (on ? takeover.take : takeover.release)(done);
+    };
+    switchHome(want, function (r) {
       function finish() {
         if (r.ok) {
-          console.log('home: ' + (want ? 'Glasshouse Home is in LG\'s Home\'s place' : 'LG\'s Home is in its place'));
+          console.log('home: ' + (standalone() ? (want ? 'the Home key opens Glasshouse Home' : 'the Home key is restored') :
+            (want ? 'Glasshouse Home is in LG\'s Home\'s place' : 'LG\'s Home is in its place')));
           if (want && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
         }
         batch.forEach(function (f) { f(r); });
@@ -830,6 +836,33 @@ function switchTo(on, cb) {
       });
     });
   })();
+}
+
+// The UN7300's native/QML Home is left in place. Only the Home key changes.
+function standalone() { return /^5\./.test(String(webosVersion || '')); }
+
+function switchStandalone(on, cb) {
+  if (!on) {
+    return setHomeKeyFn('', function (r) {
+      if (!r || !r.ok) return cb(r || { ok: false, error: 'the Home key was not restored' });
+      luna('com.palm.webappmanager/killApp', { appId: HOME_APP }, function () { cb({ ok: true }); });
+    });
+  }
+  if (!installFn) return cb({ ok: false, error: 'the standalone Home installer is unavailable' });
+  appInstalled(function (installed) {
+    installFn(installed === true ? 'refresh' : 'install', function (r) {
+      if (!r || !r.ok) return cb(r || { ok: false, error: 'the standalone Home app was not installed' });
+      appInstalled(function (present) {
+        if (present !== true) return cb({ ok: false, error: 'the standalone Home app is unavailable' });
+        setHomeKeyFn(HOME_APP, function (keyResult) {
+          if (keyResult && keyResult.ok) return cb({ ok: true });
+          setHomeKeyFn('', function () {
+            cb({ ok: false, error: 'the TV did not take the Home key mapping' });
+          });
+        });
+      });
+    });
+  });
 }
 
 // ---------------------------------------------------------------- settings
@@ -872,6 +905,8 @@ function supported() {
   var v = String(webosVersion || '');
   if (serverPort !== 8080) return { ok: false, webos: v,
     reason: msg('srv.home.port', 'Glasshouse Home requires the dashboard to use port 8080.') };
+  if (standalone()) return { ok: true, webos: v, mode: 'standalone',
+    description: msg('srv.home.standalone', 'On webOS 5, the Home button opens Glasshouse Home as a separate app. Back and startup still use LG\'s Home.') };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is a Flutter app there, under the same id and folder (#612).
   // Tried on a G5 (webOS 10.3.1); webOS 11 is untried and needs the setting.
@@ -989,6 +1024,7 @@ function setHideLgHomeAtStart(body, cb) {
  * server start and each switch on or off, so a change to it is followed.
  */
 function syncLgAutoLaunch(cb) {
+  if (standalone()) { if (cb) cb(true); return; }
   if (cb) autoLaunchWaiting.push(cb);
   if (autoLaunchBusy) {
     autoLaunchAgain = true;
@@ -1063,7 +1099,7 @@ function restoreLgAutoLaunch(cb) {
 }
 
 function startingNotice(on, cb) {
-  var text = on ? msg('srv.home.startingToast', 'Glasshouse Home is starting. It opens in a few seconds.') : '';
+  var text = on && !standalone() ? msg('srv.home.startingToast', 'Glasshouse Home is starting. It opens in a few seconds.') : '';
   setStartingFn(text, function (r) {
     if (!r || !r.ok) console.error('home: could not ' + (on ? 'set' : 'clear') + ' the Home key\'s starting notice');
     if (cb) cb(r);
@@ -1145,11 +1181,18 @@ function finishLegacy(c, cb) {
         return cb(false);
       }
     }
+    if (standalone()) {
+      legacyAppPending = false;
+      if (c.enabled) return cb(true);
+      return removeLegacyApp(function () {
+        appInstalled(function (installed) { cb(installed === false); });
+      });
+    }
     legacyAppPending = true;
     tryRemoveLegacyApp();
     cb(true);
   }
-  if (homeKeyAppFn() !== HOME_APP) return done();
+  if ((standalone() && c.enabled) || homeKeyAppFn() !== HOME_APP) return done();
   setHomeKeyFn('', function (k) {
     if (!k || !k.ok) {
       console.error('home: the Home key still opens the old Glasshouse Home app');
@@ -1166,6 +1209,7 @@ function finishLegacy(c, cb) {
  * with the app locked until the TV restarts (a G3, webOS 9.2).
  */
 function tryRemoveLegacyApp() {
+  if (standalone() && readConfig().enabled) return;
   if (!legacyAppPending || legacyAppRemoving || !installFn) return;
   if (foreground === HOME_APP) return;
   legacyAppRemoving = true;
@@ -1223,7 +1267,8 @@ function removeLegacyApp(cb) {
 // ---------------------------------------------------------------- the view
 
 function viewInFront() {
-  return foreground === LG_HOME && !escaped && readConfig().enabled && takeover.mounted();
+  return readConfig().enabled && !escaped && (standalone() ? foreground === HOME_APP :
+    foreground === LG_HOME && takeover.mounted());
 }
 
 function stopBeatWatch() {
@@ -1260,6 +1305,12 @@ function foregroundChanged(id) {
   if (id !== HOME_APP && id !== LG_HOME && id) lastSource = { appId: id, at: nowMs() };
   if (!readConfig().enabled) return;
   noteForeground(was, id);
+  if (standalone()) {
+    escaped = id === LG_HOME;
+    if (id === HOME_APP && was !== HOME_APP && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+    else if (id !== HOME_APP) stopBeatWatch();
+    return;
+  }
   if (id === LG_HOME) {
     if (was !== LG_HOME && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
     return;
@@ -1289,6 +1340,7 @@ function homeKey(down) {
     homeDownAt = 0;
     if (shortPress && escaped && foreground === LG_HOME) {
       escaped = false;
+      if (standalone()) return launch(HOME_APP, null, function () {});
       switchTo(true, function () {});
     }
     return;
@@ -1365,7 +1417,7 @@ function status(cb) {
       enabled: c.enabled,
       restorePending: c.restorePending,
       // In LG's Home's place now; false while one of the ways back has LG's Home open.
-      active: takeover.mounted() && type === 'web',
+      active: standalone() ? c.enabled && homeKeyAppFn() === HOME_APP : takeover.mounted() && type === 'web',
       lgHomeOpen: escaped,
       hideLgHomeAtStart: c.hideLgHomeAtStart === true,
       hideLgHomeAtStartAvailable: startLayoutAvailable(),

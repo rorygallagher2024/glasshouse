@@ -40,8 +40,8 @@
  * two are what the dashboard's own controls depend on, and the rest the
  * microcontroller handles before any filter sees them.
  *
- * Home: earlier builds of Glasshouse Home pointed it at their own app, kept
- * beside the keys as `home`; lib/home.js clears it. Glasshouse Home now runs
+ * Home: on webOS 5, Glasshouse Home points it at its standalone app, kept
+ * beside the keys as `home`. On newer supported TVs, Glasshouse Home runs
  * under LG's Home's id, mounted by the boot hook about 25 s into a cold start,
  * so while it is on `starting` holds a message instead: until the app manager
  * reports LG's Home as Glasshouse Home's web app, the filter keeps the Home key

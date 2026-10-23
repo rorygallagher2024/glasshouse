@@ -859,6 +859,7 @@ function homeRows(d) {
            act: can ? 'homeSwitch' : null, on: d.enabled || d.restorePending,
            press: d.enabled ? t('tv.home.switch.off', 'Press OK to use LG Home again') : t('tv.home.switch.on', 'Press OK to use Glasshouse Home'),
            hint: d.restorePending ? t('home.restoreRetry', 'Retry restoring LG Home before switching Glasshouse Home on again.')
+                 : d.supported.mode === 'standalone' ? d.supported.description
                  : d.enabled ? t('home.isOnDesc', 'It opens in LG\u2019s Home\u2019s place: with the Home and Back buttons, and when the TV wakes on Home.')
                  : t('home.isOffDesc', 'Nothing of LG\u2019s is changed: Glasshouse Home is laid over LG\u2019s Home while on, and switching off takes it away.') });
   if (d.supported.ok && d.hideLgHomeAtStartAvailable !== false) {
