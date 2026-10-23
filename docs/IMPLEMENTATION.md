@@ -1318,7 +1318,9 @@ before restoring it, and an already-off value needs no write or snapshot.
 With Quick Start+ on, a power-on resumes the TV with the mount in place, and bootd opens
 Glasshouse Home only while auto launch is on, so there the owner's value is
 put back; Quick Start+ is read at server start and at each switch on or off,
-and an unreadable value, as just after a wake, changes nothing. Where the owner chooses **Hide LG's Home while the TV
+and an unreadable value, as just after a wake, changes nothing. A C4 (webOS
+10.3.1) started on its last input with auto launch on, so where nothing is
+held the hook and the wake path read LG's value instead, with the same checks. Where the owner chooses **Hide LG's Home while the TV
 starts** (`hideLgHomeAtStart` in `home.json`, off by default, since it outlives
 Glasshouse), LG's layout files in `/mnt/lg/cmn_data/manifest` hold an empty
 layout while Glasshouse Home has the place, which LG's Home reads when it

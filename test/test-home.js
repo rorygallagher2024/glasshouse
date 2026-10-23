@@ -515,6 +515,58 @@ step('woken from Active Standby with auto launch held off, Glasshouse Home opens
   });
 });
 
+/*
+ * With Quick Start+ on, auto launch is left on, yet a C4 (webOS 10.3.1) woke
+ * on its last input: LG's own value is read there. Where bootd opens Home
+ * itself, as a G3 does, Home coming to the front cancels the open.
+ */
+step('woken with Quick Start+ on and the TV still on its input, Glasshouse Home opens where LG\'s auto launch is on', function (done) {
+  start(null);
+  tv.settings.homeAutoLaunch = 'on';
+  tv.settings.quickStartMode = 'on';
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('com.webos.app.hdmi3');
+    powerState('Active');
+    powerState('Active Standby');
+    tv.launched = [];
+    wait(20, function () {
+    assert.strictEqual(tv.settings.homeAutoLaunch, 'on', 'left as the owner had it');
+    assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')).lgAutoLaunch, null);
+    powerState('Active');
+    wait(1700, function () {
+      assert.deepEqual(tv.launched, [LG_HOME]);
+      // bootd opened Home itself.
+      tv.launched = [];
+      powerState('Active Standby');
+      powerState('Active');
+      foreground(LG_HOME);
+      wait(1700, function () {
+        assert.deepEqual(tv.launched, [], 'Home already in front');
+        // The owner has auto launch off.
+        tv.settings.homeAutoLaunch = 'off';
+        foreground('com.webos.app.hdmi3');
+        powerState('Active Standby');
+        powerState('Active');
+        wait(1700, function () {
+          assert.deepEqual(tv.launched, [], 'auto launch off');
+          // LG's value unread: nothing is opened.
+          tv.settings.homeAutoLaunch = 'on';
+          tv.settingsReadFails = true;
+          powerState('Active Standby');
+          powerState('Active');
+          wait(1700, function () {
+            assert.deepEqual(tv.launched, [], 'an unread auto launch opens nothing');
+            tv.settingsReadFails = false;
+            home.disable(function () { done(); });
+          });
+        });
+      });
+    });
+    });
+  });
+});
+
 step('a layout saved from a dashboard keeps LG\'s Home auto launch as it was', function (done) {
   start({ enabled: true, lgAutoLaunch: 'on', lgAutoLaunchCheck: 'default' });
   home.setLayout({ reset: true, colours: null }, function (r) {

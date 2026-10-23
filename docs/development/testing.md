@@ -59,7 +59,9 @@ The worker itself stays Python 2.7 compatible for the TV.
 The Home suite also checks auto-launch restoration with a delayed settings
 read, no write when auto launch was already off, and a refused takeover with
 and without an earlier hold. Wake cases cover source changes, standby,
-server stop and switch-off, including delayed power-on reason replies.
+server stop and switch-off, including delayed power-on reason replies, and
+a wake with Quick Start+ on, where LG's own auto launch value is read and
+nothing is opened with Home already in front.
 
 ## Home Assistant
 

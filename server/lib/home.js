@@ -985,8 +985,12 @@ function setHideLgHomeAtStart(body, cb) {
  *
  * With Quick Start+ on, a power-on resumes the TV with Glasshouse Home still in
  * place, and bootd opens it as Home only while auto launch is on (a G3, webOS
- * 9.2.2), so there the owner's value is put back. Quick Start+ is read at each
- * server start and each switch on or off, so a change to it is followed.
+ * 9.2.2, and a G5, webOS 10.3.1), so there the owner's value is put back. Not
+ * every TV does: a C4 (webOS 10.3.1) kept its last input in front with auto
+ * launch on, at a wake from Active Standby and at the cold start after the
+ * full power-off it makes 4 h after its last boot, so the boot hook and
+ * powerStateChanged read LG's value too. Quick Start+ is read at each server
+ * start and each switch on or off, so a change to it is followed.
  */
 function syncLgAutoLaunch(cb) {
   if (cb) autoLaunchWaiting.push(cb);
@@ -1308,11 +1312,26 @@ function cancelWake() {
 }
 
 /*
+ * Whether the owner has LG's Home open at power-on: auto launch held off for
+ * them, or, where it is not held, LG's own value.
+ */
+function homeAtPowerOn(cb) {
+  if (readConfig().lgAutoLaunch === 'on') return cb(true);
+  readSettings(['homeAutoLaunch'], function (s) {
+    var value = s && typeof s.homeAutoLaunch === 'string' ? s.homeAutoLaunch : '';
+    if (!value) console.error('home: could not read LG\'s Home auto launch after the wake');
+    cb(value === 'on');
+  });
+}
+
+/*
  * Switched back on before the TV had powered off, it wakes from Active Standby
  * without a boot, so the boot hook does not run, and with auto launch held off
- * bootd opens the last input (a G3, webOS 9.2.2, off and on 6 s apart). Where
- * the owner had auto launch on, Glasshouse Home is opened over that input, as
- * bootd would have opened it.
+ * bootd opens the last input (a G3, webOS 9.2.2, off and on 6 s apart), as it
+ * does with auto launch on and Quick Start+ on (a C4, webOS 10.3.1). Where the
+ * owner has auto launch on, Glasshouse Home is opened over that input, as
+ * bootd would have opened it. Where bootd opens Home itself, Home coming to
+ * the front cancels this, and an open that still goes out finds it there.
  */
 function powerStateChanged(raw) {
   var was = powerState;
@@ -1320,27 +1339,29 @@ function powerStateChanged(raw) {
   if (was === powerState) return;
   cancelWake();
   if (was === null || names.powerState(was).systemOn || !names.powerState(powerState).systemOn) return;
-  var c = readConfig();
-  if (!c.enabled || c.lgAutoLaunch !== 'on') return;
+  if (!readConfig().enabled) return;
   var request = { input: isInputApp(foreground) ? foreground : '' };
   wakeRequest = request;
   function canOpen() {
-    var current = readConfig();
-    return wakeRequest === request && current.enabled && current.lgAutoLaunch === 'on' &&
+    return wakeRequest === request && readConfig().enabled &&
       names.powerState(powerState).systemOn && powerActive && !escaped && takeover.mounted() &&
       isInputApp(foreground) && foreground === request.input;
   }
   wakeTimer = setTimeout(function () {
     wakeTimer = null;
     if (!canOpen()) return cancelWake();
-    luna('com.webos.service.tvpower/power/getPowerOnReason', {}, function (r) {
+    homeAtPowerOn(function (wanted) {
       if (wakeRequest !== request) return;
-      var reason = r && typeof r.reason === 'string' ? r.reason : '';
-      if (FULL_HOME_REASONS.indexOf(reason) === -1 || !canOpen()) return cancelWake();
-      cancelWake();
-      console.log('home: opening Glasshouse Home over ' + foreground + ' after a wake by ' + reason);
-      launch(LG_HOME, null, function (res) {
-        if (!res.ok) console.error('home: could not open Glasshouse Home after the wake');
+      if (!wanted || !canOpen()) return cancelWake();
+      luna('com.webos.service.tvpower/power/getPowerOnReason', {}, function (r) {
+        if (wakeRequest !== request) return;
+        var reason = r && typeof r.reason === 'string' ? r.reason : '';
+        if (FULL_HOME_REASONS.indexOf(reason) === -1 || !canOpen()) return cancelWake();
+        cancelWake();
+        console.log('home: opening Glasshouse Home over ' + foreground + ' after a wake by ' + reason);
+        launch(LG_HOME, null, function (res) {
+          if (!res.ok) console.error('home: could not open Glasshouse Home after the wake');
+        });
       });
     });
   }, WAKE_SETTLE_MS);

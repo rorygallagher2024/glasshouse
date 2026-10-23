@@ -1081,6 +1081,25 @@ Measured on 19 October 2026 on an OLED55G36LA.
 - **With Glasshouse Home first, the boot hook** started 30 s in and had it in
   place at 34 to 39 s, the screen saver mount after it.
 
+## What the TV opens as it starts (C4, webOS 10.3.1)
+
+Measured on 20 and 21 October 2026 on an OLED65C4PSA (firmware 33.31.68),
+Quick Start+ on, Always Ready on, `homeAutoLaunch` `on`
+(`checkHomeAutoLaunchValue` `user`).
+
+- **It powers off 4 h after its last boot.** tvweb.log had
+  `Active Standby -> Power Off` at 14411 s of uptime on both days, so the
+  first power-on after that is a cold start even with Quick Start+ on.
+- **bootd started on the last input at every power-on by `remoteKey`.** At a
+  cold start it logged `homeAutoLaunch(on)` at 10 s and
+  `'com.webos.app.hdmi3' is foreground` at 15 s, and launched no
+  `com.webos.app.home`. Woken after 8 s in Active Standby, it logged
+  `auto_home_launch(on) homeAutoLaunch(on)` and again launched only HDMI 3.
+- **The boot hook** started about 41 s into the cold start and had Glasshouse
+  Home in place 3 s later.
+- **Switched on by Always Ready** the power-on reason is `alwaysOn`, which is
+  not in `fullHomeBootingPowerOnReasons`.
+
 ## Muting and pausing (webOS 5.6.2, CX)
 
 - `com.webos.audio/setMuted` only changes audiod's own status: the TV keeps

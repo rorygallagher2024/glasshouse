@@ -147,9 +147,16 @@ lg_home_pids() {
 # LG's would have: after a power-on LG opens Home for, and only while the input
 # the TV started on is still in front, so an input or app chosen since stays.
 # bootd logs the app it put in front as "'<id>' is foreground" (a G5, webOS
-# 10.3.1); without that line nothing is opened.
+# 10.3.1); without that line nothing is opened. With Quick Start+ on, auto
+# launch is left as the owner had it, and a C4 (webOS 10.3.1) with it on still
+# started on its last input after its 4 h full power-off, so LG's value is read
+# where home.json holds none; where bootd opened Home itself, the checks below
+# find Home rather than the input.
 home_open_at_boot() {
-  grep -q '"lgAutoLaunch"[[:space:]]*:[[:space:]]*"on"' /var/lib/tvweb/home.json 2>/dev/null || return 0
+  grep -q '"lgAutoLaunch"[[:space:]]*:[[:space:]]*"on"' /var/lib/tvweb/home.json 2>/dev/null ||
+    luna-send -n 1 luna://com.webos.service.settings/getSystemSettings \
+      '{"category":"general","keys":["homeAutoLaunch"]}' 2>/dev/null |
+      grep -q '"homeAutoLaunch": *"on"' || return 0
   reason=$(luna-send -n 1 luna://com.webos.service.tvpower/power/getPowerOnReason '{}' 2>/dev/null |
     sed -n 's/.*"reason": *"\([^"]*\)".*/\1/p')
   reasons=$(luna-send -n 1 luna://com.webos.service.config/getConfigs \
