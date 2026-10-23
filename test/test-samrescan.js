@@ -76,6 +76,73 @@ step(function () {
   }));
 });
 
+// 1b. No list in configd, but sam reads it (webOS 7): the nudge starts from
+// the country's list sam blocks meanwhile, and leaves exactly that behind.
+var fs = require('fs');
+var os = require('os');
+var path = require('path');
+var tmpDirs = [];
+function samFiles(samText, countries, hasBlock) {
+  var dir = path.join(os.tmpdir(), 'samrescan-' + process.pid + '-' + tmpDirs.length);
+  tmpDirs.push(dir);
+  fs.mkdirSync(dir);
+  fs.mkdirSync(path.join(dir, 'lists'));
+  fs.writeFileSync(path.join(dir, 'sam'), samText);
+  if (hasBlock) fs.writeFileSync(path.join(dir, 'block.schema'), '{}');
+  Object.keys(countries).forEach(function (c) {
+    fs.writeFileSync(path.join(dir, 'lists', c + '.json'), JSON.stringify({ blocked_applist: countries[c] }));
+  });
+  return { samBin: path.join(dir, 'sam'), countryLists: path.join(dir, 'lists'), blockSchema: path.join(dir, 'block.schema') };
+}
+function removeSamFiles() {
+  tmpDirs.forEach(function (dir) {
+    fs.readdirSync(path.join(dir, 'lists')).forEach(function (f) { fs.unlinkSync(path.join(dir, 'lists', f)); });
+    fs.rmdirSync(path.join(dir, 'lists'));
+    fs.readdirSync(dir).forEach(function (f) { fs.unlinkSync(path.join(dir, f)); });
+    fs.rmdirSync(dir);
+  });
+  tmpDirs = [];
+}
+step(function () {
+  var tv = fakeTV(null);
+  var f = samFiles('\u0000no_' + KEY + '\u0000', { IND: ['com.webos.app.livepick-full', 'google.assistant.promo'] });
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5, samBin: f.samBin, countryLists: f.countryLists, blockSchema: f.blockSchema });
+  samrescan.refresh(null, checked(function (ok) {
+    assert.strictEqual(ok, true);
+    assert.deepEqual(tv.writes[0], ['com.webos.app.livepick-full', 'google.assistant.promo', NUDGE]);
+    assert.deepEqual(tv.list, ['com.webos.app.livepick-full', 'google.assistant.promo']);
+    console.log('  ✓ with no list in configd, the nudge starts from the country\'s list sam blocks');
+    next();
+  }));
+});
+step(function () {
+  var tv = fakeTV(null);
+  var f = samFiles('a sam without the key', { IND: ['netflix'] });
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5, samBin: f.samBin, countryLists: f.countryLists, blockSchema: f.blockSchema });
+  samrescan.refresh(null, checked(function (ok) {
+    assert.strictEqual(ok, false);
+    assert.strictEqual(tv.writes.length, 0, 'nothing written for a sam that does not read the list');
+    var tv2 = fakeTV(null);
+    var f2 = samFiles(KEY, { IND: ['netflix'], GBR: [] });
+    samrescan.init({ luna: tv2.luna, nudgeMs: 5, pollMs: 5, samBin: f2.samBin, countryLists: f2.countryLists, blockSchema: f2.blockSchema });
+    samrescan.refresh(null, checked(function (ok2) {
+      assert.strictEqual(ok2, false);
+      assert.strictEqual(tv2.writes.length, 0, 'nothing written where the country is not clear');
+      // webOS 10 and 11: sam has blockSystemApp, and ignores the list.
+      var tv3 = fakeTV(null);
+      var f3 = samFiles(KEY, { GRC: [] }, true);
+      samrescan.init({ luna: tv3.luna, nudgeMs: 5, pollMs: 5, samBin: f3.samBin, countryLists: f3.countryLists, blockSchema: f3.blockSchema });
+      samrescan.refresh(null, checked(function (ok3) {
+        assert.strictEqual(ok3, false);
+        assert.strictEqual(tv3.writes.length, 0, 'nothing written where sam rereads app by app');
+        removeSamFiles();
+        console.log('  ✓ no country list is used where sam does not read the key, has blockSystemApp, or two countries are kept');
+        next();
+      }));
+    }));
+  }));
+});
+
 // 2. LG's own entries are put back exactly, after the nudge id was added.
 step(function () {
   var tv = fakeTV(['com.webos.app.roomconnect', 'netflix']);

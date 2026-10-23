@@ -31,6 +31,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | C2            | 2022 | OLED  | 9.2, 10.3         | 2       |
 | G2            | 2022 | OLED  | 7.4               | 1       |
 | QNED82        | 2022 | LCD   | 7.6               | 1       |
+| UQ80          | 2022 | LCD   | 7.6               | 1       |
 | LX3           | 2022 | OLED  | —                 | 1       |
 | CS            | 2022 | OLED  | 10                | 1       |
 | C3            | 2023 | OLED  | 10 – 11           | 3       |
@@ -75,6 +76,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | 43UP80006LA | 6.5.3        | 03.53.45 | LCD   | MQTT bridge confirmed                                          |
 | OLED65G29LA | 7.4.0        | 04.40.90 | OLED  | Confirmed working                                              |
 | 55QNED826QB | 7.6.0        | 04.60.90 | LCD   | Installed over SSH; MQTT bridge confirmed                      |
+| 65UQ801C0SB | 7.6.0        | 04.60.90 | LCD   | Rooted with slopbro; SSH install; Glasshouse Home confirmed    |
 | OLED42C24LA | 9.2.2        | 23.25.55 | OLED  | Rooted with jsbro-autoroot                                     |
 | OLED55C4PUA | 9.2.0        | 23.20.35 | OLED  | Rooted with faultmanager; SSH install; no internet access      |
 | OLED55B46LA | 9.24.8       | 23.23.30 | OLED  | Installed over telnet                                          |

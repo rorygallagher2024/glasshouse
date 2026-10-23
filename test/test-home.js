@@ -133,6 +133,9 @@ function luna(uri, p, cb) {
     if (tv.settingsReadFails) return process.nextTick(function () { cb({ returnValue: false }); });
     r.settings = {};
     p.keys.forEach(function (k) { if (tv.settings[k] !== undefined) r.settings[k] = copy(tv.settings[k]); });
+    // As webOS 7.6.0 answers for a key it does not have: the rest, and a failure naming it.
+    var absent = p.keys.filter(function (k) { return (tv.missingSettings || []).indexOf(k) !== -1; });
+    if (absent.length) { r.returnValue = false; r.errorKey = absent; }
   } else if (uri === 'com.webos.service.settings/setSystemSettings') {
     if ((tv.settingsWriteFails && p.settings.screenSaverEnabled === undefined) ||
         (tv.saverWriteFails && p.settings.screenSaverEnabled !== undefined)) {
@@ -643,6 +646,19 @@ step('switched on in LG\'s settings while Glasshouse Home is on, auto launch is 
   wait(50, function () {
     assert.strictEqual(tv.settings.homeAutoLaunch, 'off');
     assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')).lgAutoLaunch, 'on');
+    home.disable(function () { done(); });
+  });
+});
+
+step('webOS 7, which has no defaultApps setting, still starts: it takes the place and watches the Home key', function (done) {
+  var keys = [];
+  start({ enabled: true }, { webosVersion: '7.6.0', homeKeys: function (on) { keys.push(on); } });
+  tv.missingSettings = ['defaultApps'];
+  tv.settings.quickStartMode = 'off';
+  home.start();
+  wait(50, function () {
+    assert.ok(taken(), 'Glasshouse Home has LG\'s Home\'s place');
+    assert.deepEqual(keys, [true], 'the Home key is watched, for holding Home');
     home.disable(function () { done(); });
   });
 });

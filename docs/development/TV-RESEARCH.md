@@ -217,6 +217,40 @@ Checked on 18 October 2026 on the same TV, with Glasshouse Home in the place:
   /mnt/lg/cmn_data/checkpoint/*com.webos.app.home* && reboot` brought LG's
   Home back on its default layout.
 
+## Glasshouse Home on webOS 7 (65UQ801C0SB, webOS 7.6.0)
+
+Measured on 22 October 2026 on an LCD 65UQ801C0SB, firmware 04.60.90.
+
+- **LG's Home is the webOS 9 kind.** `/usr/palm/applications/com.webos.app.home`
+  holds a native app (`main` is `/usr/bin/com.webos.app.home`, with QML) and the
+  compositor's key filters are the QML ones in `com.webos.surfacemanager.keyFilters`.
+- **sam has neither rescan used elsewhere.** `profile.blockedAppList` is listed in
+  `missingConfigs`, and `blockSystemApp` and `releaseBlockSystemApp` are
+  "Unknown method". Installing and removing a developer app made sam read only
+  that app.
+- **sam still reads the list.** `/usr/sbin/sam` names `profile.blockedAppList` and
+  logs `NEW_BLOCKED_APP_LIST_FROM_CONFIGD`. While configd has none, sam blocks the
+  list LG's server sent, kept in
+  `/var/preferences/com.webos.applicationManager/blockedAppList/IND.json`
+  (`com.webos.app.livepick-full`, `google.assistant.promo`); the
+  `DefaultBlockedAppList` in `/etc/palm/sam-conf-tv.json` was not applied.
+  Writing that list plus an id no app has, then the list alone, made sam report a
+  bind-mounted `appinfo.json` within 0.5 s, with the same pid, `listApps`
+  unchanged and `IND.json` untouched.
+- **The takeover works as on webOS 9.** Mounted and nudged, `getAppInfo` reported
+  `com.webos.app.home` as `web`, LG's process was stopped, and the Home button
+  (evdev 773, `IR_KEY_HOME`) opened Glasshouse Home, which drew its rows and
+  opened apps from its tiles.
+- **No `defaultApps`.** `getSystemSettings` in `general` for `defaultApps`,
+  `lastInputApp` and `physicalLastInputApp` answers `returnValue: false` with
+  `errorKey: ["defaultApps"]`, and the other two in `settings`.
+- **Cold start.** The boot hook had it mounted, nudged and LG's process stopped
+  by 66 s; sam kept the pid it started with, `profile.blockedAppList` still held
+  the country's list, and MAIN's video sink was not muted.
+- **LG's Home is slow to come back.** Given its place back and launched, it was
+  in front about 6 s later, against 2 to 3 s on a G3; the screen is black
+  meanwhile.
+
 ## LG Home's recent apps (G3, webOS 9.2.2)
 
 Read on 19 October 2026 from LG's Home's QML under the Glasshouse Home
