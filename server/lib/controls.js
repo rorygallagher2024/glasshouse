@@ -79,6 +79,8 @@ var oled = null;
 var privacy = null;
 /** @type {ReturnType<typeof import('./piccap').init>} */
 var piccap = null;
+/** @type {ReturnType<typeof import('./huesync').init>} */
+var huesync = null;
 /** @type {typeof import('./services')} */
 var servicesModule = null;
 /** @type {typeof import('./screensavers')} */
@@ -695,6 +697,14 @@ function doControl(action, value, cb) {
         cb({ ok: !!(r && r.ok), error: r && !r.ok ? r.error : undefined });
       });
 
+    case 'huesync':
+      // Hue Sync's streaming to a Philips Ambience light.
+      if (!huesync) return cb({ ok: false, error: 'Hue Sync is not available' });
+      var streamOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
+      return huesync.setPower(streamOn, function (r) {
+        cb({ ok: !!(r && r.ok), error: r && !r.ok ? r.error : undefined });
+      });
+
     case 'lgLogo':
       var logoOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
       return luna('com.webos.service.settings/setSystemSettings',
@@ -1086,6 +1096,7 @@ function init(opts) {
   if (opts.oled) oled = opts.oled;
   if (opts.privacy) privacy = opts.privacy;
   if (opts.piccap) piccap = opts.piccap;
+  if (opts.huesync) huesync = opts.huesync;
   if (opts.services) servicesModule = opts.services;
   if (opts.screensavers) screensavers = opts.screensavers;
   if (opts.apps) appsModule = opts.apps;

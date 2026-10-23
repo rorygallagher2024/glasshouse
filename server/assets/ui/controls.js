@@ -37,6 +37,7 @@ function toggleLight(which) { sendCommand(which, flip(which === 'standbyLight' ?
 function toggleQuickBoot() { sendCommand('quickBoot', flip('btn_quickboot')); }
 function toggleLgLogo() { sendCommand('lgLogo', flip('btn_lglogo')); }
 function togglePiccap() { sendCommand('piccap', flip('btn_piccap')); }
+function toggleHuesync() { sendCommand('huesync', flip('btn_huesync')); }
 function toggleWol() { sendCommand('wakeOnLan', flip('btn_wol')); }
 function toggleDeviceDetection() { sendCommand('deviceDetection', flip('btn_devdetect')); }
 function toggleAlwaysReady() { sendCommand('alwaysReady', flip('btn_ar')); }
@@ -153,6 +154,10 @@ function applyOptimistic(action, value) {
     const on = value === 'on' || value === true;
     setLease('piccap', on);
     advPill('piccap', 'btn_piccap', on);
+  } else if (action === 'huesync') {
+    const on = value === 'on' || value === true;
+    setLease('huesync', on);
+    advPill('huesync', 'btn_huesync', on);
   } else if (action === 'standbyLight') {
     const on = value === 'on' || value === true;
     setLease('standbyLight', on);

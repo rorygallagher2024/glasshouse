@@ -674,7 +674,7 @@
     </div>
   </div>
 
-  <!-- Only where PicCap is installed. -->
+  <!-- Only where PicCap or Hue Sync are installed. -->
   <div class="pv-sec adv-sec" id="adv-piccap" hidden data-t="adv.ambient">Ambient light</div>
   <div class="prot-table">
     <div class="prot-row" id="row-piccap" hidden>
@@ -683,6 +683,13 @@
         <div class="prot-desc" data-t="adv.piccap.desc">Sends what is on screen to PicCap's Hyperion server, which drives an ambient light behind the TV. Off stops the capture, and the light with it.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_piccap" onclick="togglePiccap()">&mdash;</button></div>
+    </div>
+    <div class="prot-row" id="row-huesync" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.huesync">Hue Sync streaming</div>
+        <div class="prot-desc" data-t="adv.huesync.desc">Starts and stops the colour stream the Hue Sync app sends to a Philips Ambience light. Off stops the stream, and the light with it.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_huesync" onclick="toggleHuesync()">&mdash;</button></div>
     </div>
   </div>
 

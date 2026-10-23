@@ -112,6 +112,7 @@ var assetDirsList = [];
 var lunaFn = null;
 var getMqttStatusFn = null;
 var piccapStatusFn = function (cb) { cb(null); };
+var huesyncStatusFn = function (cb) { cb(null); };
 var appsChangedFn = function () {};
 var versionStr = '';
 // With the commit of a git build: what a person reads, and what tells one
@@ -1760,19 +1761,23 @@ function handleRequest(req, res) {
 
   if (pathname === '/api/stats') {
     return telemetryModule.collectStats(function (s) {
-      // PicCap's capture, where it is installed, for the Advanced tab.
+      // PicCap's capture and Hue Sync's streaming, where installed, for the
+      // Advanced tab.
       piccapStatusFn(function (pc) {
-        if (!pc && u.query.with !== 'settings') return send(res, 200, JSON.stringify(s));
-        // Copied, since s is telemetry's cache.
-        var copy = {};
-        for (var k in s) copy[k] = s[k];
-        if (pc) copy.piccapCapture = pc;
-        if (u.query.with !== 'settings') return send(res, 200, JSON.stringify(copy));
-        // The TV dashboard's System page, which reads one endpoint, also lists
-        // the sound and SIMPLINK settings.
-        lgSettingsModule.collect(['sound', 'hdmi', 'devices'], function (ls) {
-          copy.lgSettings = ls.rows;
-          send(res, 200, JSON.stringify(copy));
+        huesyncStatusFn(function (hs) {
+          if (!pc && !hs && u.query.with !== 'settings') return send(res, 200, JSON.stringify(s));
+          // Copied, since s is telemetry's cache.
+          var copy = {};
+          for (var k in s) copy[k] = s[k];
+          if (pc) copy.piccapCapture = pc;
+          if (hs) copy.huesyncStreaming = hs;
+          if (u.query.with !== 'settings') return send(res, 200, JSON.stringify(copy));
+          // The TV dashboard's System page, which reads one endpoint, also
+          // lists the sound and SIMPLINK settings.
+          lgSettingsModule.collect(['sound', 'hdmi', 'devices'], function (ls) {
+            copy.lgSettings = ls.rows;
+            send(res, 200, JSON.stringify(copy));
+          });
         });
       });
     });
@@ -1947,6 +1952,7 @@ function init(opts) {
   if (opts.tvApp) tvAppFn = opts.tvApp;
   if (opts.restartSelf) restartSelfFn = opts.restartSelf;
   if (opts.piccapStatus) piccapStatusFn = opts.piccapStatus;
+  if (opts.huesyncStatus) huesyncStatusFn = opts.huesyncStatus;
   if (opts.repo) repoModule = opts.repo;
   if (opts.installer) installerModule = opts.installer;
   if (opts.prometheus) prometheusModule = opts.prometheus;

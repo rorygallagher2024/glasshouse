@@ -66,6 +66,7 @@ The limits are counted by [watch time](metrics.md#watch-time), so they apply onl
 
 * **LG logo:** Controls whether the LG logo animation displays during power-on and power-off (LG Logo Display).
 * **Ambient light (PicCap):** When PicCap is installed, captures on-screen content and streams it to a Hyperion server to drive ambient backlighting behind the TV. Turning it off stops video capture and the ambient lighting with it. See [PicCap and ambient light](../piccap.md) for how it works and setup details.
+* **Ambient light (Hue Sync):** When the Hue Sync app is installed, starts and stops its streaming of what is on screen to Philips Hue and Ambience lights. Turning it off stops the streaming and the light with it. See [Hue Sync](../huesync.md) for setup details.
 
 ## Sound
 

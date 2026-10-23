@@ -61,6 +61,7 @@ nav:
           - Entities: HOME-ASSISTANT-ENTITIES.md
           - Remote button events: HOME-ASSISTANT-REMOTE-BUTTONS.md
       - Ambient light (PicCap): piccap.md
+      - Hue Sync: huesync.md
   - Advanced & Administration:
       - Security: SECURITY.md
       - What it changes on the TV: TV-CHANGES.md

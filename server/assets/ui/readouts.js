@@ -307,7 +307,10 @@ async function tick() {
       const pc = d.piccapCapture;
       const pcVal = getLease('piccap', pc ? pc.running : undefined);
       advPill('piccap', 'btn_piccap', pc ? (pcVal !== undefined ? pcVal : pc.running) : undefined);
-      if (q('adv-piccap')) q('adv-piccap').hidden = !pc;
+      const hs = d.huesyncStreaming;
+      const hsVal = getLease('huesync', hs ? hs.streaming : undefined);
+      advPill('huesync', 'btn_huesync', hs ? (hsVal !== undefined ? hsVal : hs.streaming) : undefined);
+      if (q('adv-piccap')) q('adv-piccap').hidden = !pc && !hs;
       const devVal = getLease('deviceDetection', d.deviceDetection);
       advPill('devdetect', 'btn_devdetect', devVal !== undefined ? devVal : d.deviceDetection);
       if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && !advLgsDevices;
