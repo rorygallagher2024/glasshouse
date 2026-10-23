@@ -20,7 +20,7 @@
  */
 (function (root) {
   // Languages that have a file in /assets/i18n/. English needs none.
-  var LANGS = ['es'];
+  var LANGS = ['es', 'de'];
 
   var dict = {};
   var lang = 'en';

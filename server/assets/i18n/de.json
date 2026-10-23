@@ -1,0 +1,626 @@
+{
+  "home.alwaysShown": {
+    "text": "Immer sichtbar",
+    "from": "Always shown"
+  },
+  "home.arrange.done": {
+    "text": "Fertig",
+    "from": "Done"
+  },
+  "home.arrange.emptyRow": {
+    "text": "Diese Reihe ist leer",
+    "from": "This row is empty"
+  },
+  "home.arrange.hide": {
+    "text": "Aus- oder einblenden",
+    "from": "Hide or show"
+  },
+  "home.arrange.isHidden": {
+    "text": "(ausgeblendet)",
+    "from": "(hidden)"
+  },
+  "home.arrange.keys": {
+    "text": "OK nimmt eine Kachel auf oder legt sie ab. Gehalten verschieben die Pfeile sie oder ihre Reihe, Zurück blendet sie aus oder ein bzw. entfernt einen Sender. Links von einer Reihe legt OK ihre Reihenfolge fest.",
+    "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."
+  },
+  "home.arrange.moving": {
+    "text": "{name} wird verschoben",
+    "from": "Moving {name}"
+  },
+  "home.arrange.nowCustom": {
+    "text": "{row} folgen jetzt deiner Reihenfolge",
+    "from": "{row} are now in your order"
+  },
+  "home.arrange.nowCustomDesc": {
+    "text": "Die Reihenfolge links neben der ersten Kachel stellt sie wieder auf „zuletzt geöffnet“ um",
+    "from": "The row's Order, left of its first tile, puts them back in last opened order"
+  },
+  "home.arrange.orderCustom": {
+    "text": "Reihenfolge: deine",
+    "from": "Order: yours"
+  },
+  "home.arrange.orderRecent": {
+    "text": "Reihenfolge: zuletzt geöffnet",
+    "from": "Order: last opened"
+  },
+  "home.arrange.removeChannel": {
+    "text": "Sender entfernen",
+    "from": "Remove channel"
+  },
+  "home.arrange.reset": {
+    "text": "Zurücksetzen",
+    "from": "Reset"
+  },
+  "home.arrange.resetDesc": {
+    "text": "Apps, Eingänge, dann Sender, in ihrer ursprünglichen Reihenfolge",
+    "from": "Apps, Inputs, then Channels, in their first order"
+  },
+  "home.arrange.resetDone": {
+    "text": "Layout zurückgesetzt",
+    "from": "Layout reset"
+  },
+  "home.arrange.resetFailed": {
+    "text": "Layout konnte nicht zurückgesetzt werden",
+    "from": "Layout could not be reset"
+  },
+  "home.arrange.saveFailed": {
+    "text": "Layout konnte nicht gespeichert werden",
+    "from": "Layout could not be saved"
+  },
+  "home.arrange.saved": {
+    "text": "Layout gespeichert",
+    "from": "Layout saved"
+  },
+  "home.arrange.savedDesc": {
+    "text": "Der Home-Tab im Dashboard zeigt es ebenfalls",
+    "from": "The dashboard's Home tab shows it too"
+  },
+  "home.arrange.sortFocus": {
+    "text": "{row}: OK ändert die Reihenfolge",
+    "from": "{row}: OK changes the order"
+  },
+  "home.arrange.sortedCustom": {
+    "text": "{row}: in deiner Reihenfolge",
+    "from": "{row}: in your order"
+  },
+  "home.arrange.sortedCustomDesc": {
+    "text": "Kachel mit OK aufnehmen, um sie zu verschieben",
+    "from": "Pick a tile up with OK to move it"
+  },
+  "home.arrange.sortedRecent": {
+    "text": "{row}: zuletzt geöffnet zuerst",
+    "from": "{row}: last opened first"
+  },
+  "home.arrange.sortedRecentDesc": {
+    "text": "Jede Kachel rückt beim Öffnen nach vorn",
+    "from": "Each tile moves to the front when it is opened"
+  },
+  "home.arrange.title": {
+    "text": "Anordnen",
+    "from": "Arranging"
+  },
+  "home.ch.add": {
+    "text": "Hinzufügen",
+    "from": "Add"
+  },
+  "home.ch.addTitle": {
+    "text": "Sender hinzufügen",
+    "from": "Add channels"
+  },
+  "home.ch.allAdded": {
+    "text": "Alle Sender sind auf Home.",
+    "from": "Every channel is on Home."
+  },
+  "home.ch.empty": {
+    "text": "Noch keine Sender. Füge sie unten hinzu.",
+    "from": "No channels yet. Add them below."
+  },
+  "home.ch.find": {
+    "text": "Sender suchen",
+    "from": "Find a channel"
+  },
+  "home.ch.loading": {
+    "text": "Sender des TVs werden gelesen…",
+    "from": "Reading the TV’s channels…"
+  },
+  "home.ch.noMatch": {
+    "text": "Kein Sender passt dazu.",
+    "from": "No channel matches that."
+  },
+  "home.ch.none": {
+    "text": "Auf diesem TV sind keine Sender eingerichtet, daher bleibt die Reihe Sender leer.",
+    "from": "This TV has no channels tuned, so the Channels row stays empty."
+  },
+  "home.ch.onHome": {
+    "text": "Auf Home",
+    "from": "On Home"
+  },
+  "home.ch.radio": {
+    "text": "Radio",
+    "from": "Radio"
+  },
+  "home.ch.remove": {
+    "text": "Entfernen",
+    "from": "Remove"
+  },
+  "home.ch.show": {
+    "text": "Sender des TVs anzeigen",
+    "from": "Show the TV’s channels"
+  },
+  "home.colours.accent": {
+    "text": "Akzent",
+    "from": "Accent"
+  },
+  "home.colours.custom": {
+    "text": "Eigene",
+    "from": "Custom"
+  },
+  "home.colours.desc": {
+    "text": "Die Schrift auf Glasshouse Home und der Akzent, der die gewählte Kachel umrahmt und markiert, was zuletzt lief. Der leisere Text ist ein dunklerer Ton der Textfarbe.",
+    "from": "The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour."
+  },
+  "home.colours.glasshouse": {
+    "text": "Glasshouse",
+    "from": "Glasshouse"
+  },
+  "home.colours.ice": {
+    "text": "Eis",
+    "from": "Ice"
+  },
+  "home.colours.lilac": {
+    "text": "Flieder",
+    "from": "Lilac"
+  },
+  "home.colours.reset": {
+    "text": "Standardfarben verwenden",
+    "from": "Use the default colours"
+  },
+  "home.colours.rose": {
+    "text": "Rosé",
+    "from": "Rose"
+  },
+  "home.colours.text": {
+    "text": "Text",
+    "from": "Text"
+  },
+  "home.colours.title": {
+    "text": "Farben",
+    "from": "Colours"
+  },
+  "home.colours.tvHint": {
+    "text": "Schrift und Akzent auf Glasshouse Home. Jede Farbe lässt sich im Home-Tab des Browser-Dashboards wählen.",
+    "from": "The text and accent on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab."
+  },
+  "home.colours.warm": {
+    "text": "Warm",
+    "from": "Warm"
+  },
+  "home.colours.white": {
+    "text": "Weiß",
+    "from": "White"
+  },
+  "home.confirmOff": {
+    "text": "Noch einmal drücken, um LG Home zu verwenden",
+    "from": "Press again to use LG Home"
+  },
+  "home.confirmOn": {
+    "text": "Noch einmal drücken zum Einschalten",
+    "from": "Press again to switch on"
+  },
+  "home.date": {
+    "text": "{weekday}, {day}. {month}",
+    "from": "{weekday} {day} {month}"
+  },
+  "home.dev.cec": {
+    "text": "CEC {address}",
+    "from": "CEC {address}"
+  },
+  "home.dev.connected": {
+    "text": "Verbunden",
+    "from": "Connected"
+  },
+  "home.dev.last": {
+    "text": "Zuletzt gesehen",
+    "from": "Last watched"
+  },
+  "home.dev.port": {
+    "text": "HDMI {port}",
+    "from": "HDMI {port}"
+  },
+  "home.dev.through": {
+    "text": "HDMI {port}, über {via}",
+    "from": "HDMI {port}, through {via}"
+  },
+  "home.dev.unused": {
+    "text": "Nichts angeschlossen",
+    "from": "Nothing connected"
+  },
+  "home.earlier": {
+    "text": "Früher",
+    "from": "Earlier"
+  },
+  "home.experimental": {
+    "text": "Experimentell. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. Bisher nur auf webOS 9 erprobt. In der ersten halben Minute nach einem Kaltstart zeigt Home einen Hinweis, dass Glasshouse Home startet.",
+    "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. It has been tried on webOS 9 only. In the first half minute after the TV starts from cold, Home shows a message that Glasshouse Home is starting."
+  },
+  "home.fault.desc": {
+    "text": "Glasshouse Home kommt zurück, sobald es antwortet. Bleibt es stumm, kommt nach wenigen Minuten LGs Home zurück.",
+    "from": "Glasshouse Home comes back when it answers. Should it stay silent, LG's Home comes back in a few minutes."
+  },
+  "home.fault.title": {
+    "text": "Glasshouse antwortet nicht",
+    "from": "Glasshouse is not answering"
+  },
+  "home.hidden": {
+    "text": "Ausgeblendet",
+    "from": "Hidden"
+  },
+  "home.hideLg": {
+    "text": "LGs Home beim Start des TVs ausblenden",
+    "from": "Hide LG’s Home while the TV starts"
+  },
+  "home.hideLgConfirm": {
+    "text": "Noch einmal drücken zum Ausblenden",
+    "from": "Press again to hide it"
+  },
+  "home.hideLgDesc": {
+    "text": "Etwa 25 Sekunden nach einem Kaltstart, bis Glasshouse Home seinen Platz einnimmt, öffnet sich LGs Home als schwarzer Bildschirm statt mit eigenem Inhalt. Läuft Glasshouse nicht mehr – etwa nach einem Firmware-Update, das Root entfernt –, bleibt LGs Home schwarz, bis es per SSH zurückgesetzt wird.",
+    "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG’s Home stays black until it is put back over SSH."
+  },
+  "home.hint.desc": {
+    "text": "Kacheln und Reihen verschieben oder ausblenden. LG Home ist die letzte Kachel bei Apps.",
+    "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."
+  },
+  "home.hint.title": {
+    "text": "OK halten zum Anordnen",
+    "from": "Hold OK to arrange"
+  },
+  "home.historyNote": {
+    "text": "Apps stehen in LGs Reihenfolge. Mit eingeschalteter Historie unter Erweitert werden neue Apps nach Nutzung einsortiert.",
+    "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."
+  },
+  "home.isOff": {
+    "text": "LGs Home ist der Startbildschirm des TVs",
+    "from": "LG’s Home is the TV’s Home"
+  },
+  "home.isOffDesc": {
+    "text": "An LGs Home wird nichts geändert: Glasshouse Home liegt darüber, solange es eingeschaltet ist; Ausschalten nimmt es wieder weg.",
+    "from": "Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away."
+  },
+  "home.isOn": {
+    "text": "Glasshouse Home ist der Startbildschirm des TVs",
+    "from": "Glasshouse Home is the TV’s Home"
+  },
+  "home.isOnDesc": {
+    "text": "Es öffnet sich an LGs Home statt: mit Home- und Zurück-Taste und wenn der TV auf Home aufwacht.",
+    "from": "It opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."
+  },
+  "home.isOnLgOpen": {
+    "text": "LGs Home ist vorerst geöffnet. Glasshouse Home kommt zurück, sobald etwas anderes geöffnet oder Home gedrückt wird.",
+    "from": "LG’s Home is open for now. Glasshouse Home comes back when something else is opened, or Home is pressed."
+  },
+  "home.isOnPending": {
+    "text": "Eingeschaltet, aber LGs Home ist noch an seinem Platz. Aus- und wieder Einschalten versucht es erneut.",
+    "from": "Switched on, but LG’s Home is still in its place. Switching off and on again tries once more."
+  },
+  "home.later": {
+    "text": "Später",
+    "from": "Later"
+  },
+  "home.layout": {
+    "text": "Reihen und Kacheln",
+    "from": "Rows and tiles"
+  },
+  "home.layoutDesc": {
+    "text": "Apps und Eingänge kommen vom TV: unerwünschte ausblenden. Sender sind nur die hier hinzugefügten. OK auf Glasshouse Home halten ordnet dasselbe Layout am TV.",
+    "from": "Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV."
+  },
+  "home.lgHome": {
+    "text": "LG Home",
+    "from": "LG Home"
+  },
+  "home.now.app": {
+    "text": "App auf diesem TV",
+    "from": "App on this TV"
+  },
+  "home.now.channel": {
+    "text": "Sender {number}",
+    "from": "Channel {number}"
+  },
+  "home.now.channelShow": {
+    "text": "Sender {number}: {title}",
+    "from": "Channel {number}: {title}"
+  },
+  "home.now.lastOpened": {
+    "text": "Zuletzt geöffnet",
+    "from": "Last opened"
+  },
+  "home.now.lastWatched": {
+    "text": "Zuletzt gesehen",
+    "from": "Last watched"
+  },
+  "home.openFailed": {
+    "text": "Das ließ sich nicht öffnen",
+    "from": "That did not open"
+  },
+  "home.picture": {
+    "text": "Bilddetails",
+    "from": "Picture details"
+  },
+  "home.pictureDesc": {
+    "text": "Oben rechts auf Glasshouse Home: Auflösung, Bildwiederholrate und HDR des zuletzt Gesehenen sowie Bildmodus und Helligkeit.",
+    "from": "In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets."
+  },
+  "home.plate.allm": {
+    "text": "Geringe Latenz",
+    "from": "Low latency"
+  },
+  "home.plate.backlight": {
+    "text": "Hintergrundlicht",
+    "from": "Backlight"
+  },
+  "home.plate.depth": {
+    "text": "{chroma}, {bits} Bit",
+    "from": "{chroma}, {bits}-bit"
+  },
+  "home.plate.dolby": {
+    "text": "Dolby Vision",
+    "from": "Dolby Vision"
+  },
+  "home.plate.noSignal": {
+    "text": "Kein Bildsignal",
+    "from": "No picture coming in"
+  },
+  "home.plate.oledLight": {
+    "text": "OLED-Licht",
+    "from": "OLED light"
+  },
+  "home.plate.played": {
+    "text": "Zuletzt abgespielt",
+    "from": "Last video"
+  },
+  "home.plate.size": {
+    "text": "{width} × {height} bei {hz} Hz",
+    "from": "{width} × {height} at {hz} Hz"
+  },
+  "home.plate.sizeOnly": {
+    "text": "{width} × {height}",
+    "from": "{width} × {height}"
+  },
+  "home.plate.vrr": {
+    "text": "VRR",
+    "from": "VRR"
+  },
+  "home.recents.allClosed": {
+    "text": "Zuletzt geöffnete Apps geschlossen",
+    "from": "Recent apps closed"
+  },
+  "home.recents.close": {
+    "text": "Schließen",
+    "from": "Close"
+  },
+  "home.recents.closeAll": {
+    "text": "Alle schließen",
+    "from": "Close all"
+  },
+  "home.recents.closeFailed": {
+    "text": "Das ließ sich nicht schließen",
+    "from": "That did not close"
+  },
+  "home.recents.none": {
+    "text": "Nichts ist geöffnet",
+    "from": "Nothing is open"
+  },
+  "home.recents.noneDesc": {
+    "text": "Apps bleiben hier, solange sie geöffnet sind.",
+    "from": "Apps stay here while they are open."
+  },
+  "home.recents.title": {
+    "text": "Zuletzt geöffnete Apps",
+    "from": "Recent apps"
+  },
+  "home.reset": {
+    "text": "Layout zurücksetzen",
+    "from": "Reset the layout"
+  },
+  "home.resetDesc": {
+    "text": "Reihen, Apps und Eingänge kehren in ihre ursprüngliche Reihenfolge zurück, LGs Werbekacheln sind wieder ausgeblendet. Sender bleiben, wie sie sind.",
+    "from": "The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are."
+  },
+  "home.restorePending": {
+    "text": "Wiederherstellung von LG Home unvollständig",
+    "from": "LG Home restoration is incomplete"
+  },
+  "home.restoreRetry": {
+    "text": "LG Home erst wiederherstellen, bevor Glasshouse Home erneut eingeschaltet wird.",
+    "from": "Retry restoring LG Home before switching Glasshouse Home on again."
+  },
+  "home.retryRestore": {
+    "text": "LG Home erneut wiederherstellen",
+    "from": "Retry restoring LG Home"
+  },
+  "home.row.addChannels": {
+    "text": "Sender in den Home-Einstellungen von Glasshouse hinzufügen",
+    "from": "Add channels in Glasshouse’s Home settings"
+  },
+  "home.row.apps": {
+    "text": "Apps",
+    "from": "Apps"
+  },
+  "home.row.appsNote": {
+    "text": "{n} von {total} sichtbar",
+    "from": "{n} of {total} shown"
+  },
+  "home.row.channels": {
+    "text": "Sender",
+    "from": "Channels"
+  },
+  "home.row.channelsNote": {
+    "text": "{n} hinzugefügt",
+    "from": "{n} added"
+  },
+  "home.row.inputs": {
+    "text": "Eingänge",
+    "from": "Inputs"
+  },
+  "home.row.inputsNote": {
+    "text": "Geräte an {n} HDMI-Eingängen",
+    "from": "Devices on {n} HDMI inputs"
+  },
+  "home.row.inputsNoteOne": {
+    "text": "Geräte an HDMI {port}",
+    "from": "Devices on HDMI {port}"
+  },
+  "home.row.noTuner": {
+    "text": "Auf diesem TV sind keine Sender eingerichtet",
+    "from": "This TV has no channels tuned"
+  },
+  "home.rowDown": {
+    "text": "Reihe nach unten",
+    "from": "Row down"
+  },
+  "home.rowEmpty": {
+    "text": "In dieser Reihe gibt es noch nichts zu zeigen.",
+    "from": "Nothing to show in this row yet."
+  },
+  "home.rowUp": {
+    "text": "Reihe nach oben",
+    "from": "Row up"
+  },
+  "home.shown": {
+    "text": "Sichtbar",
+    "from": "Shown"
+  },
+  "home.sort": {
+    "text": "Reihenfolge",
+    "from": "Order"
+  },
+  "home.sortCustom": {
+    "text": "Deine Reihenfolge",
+    "from": "Your order"
+  },
+  "home.sortCustomDesc": {
+    "text": "Wie hier angeordnet oder durch Halten von OK auf Glasshouse Home.",
+    "from": "As arranged here, or by holding OK on Glasshouse Home."
+  },
+  "home.sortRecent": {
+    "text": "Zuletzt geöffnet",
+    "from": "Last opened"
+  },
+  "home.sortRecentDesc": {
+    "text": "Die zuletzt geöffnete Kachel steht vorn, egal ob von Glasshouse Home aus geöffnet oder nicht. Noch nicht geöffnete Kacheln folgen in der Reihenfolge dieser Reihe.",
+    "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."
+  },
+  "home.switchOff": {
+    "text": "LG Home verwenden",
+    "from": "Use LG Home"
+  },
+  "home.switchOn": {
+    "text": "Glasshouse Home verwenden",
+    "from": "Use Glasshouse Home"
+  },
+  "home.title": {
+    "text": "Glasshouse Home",
+    "from": "Glasshouse Home"
+  },
+  "home.unavailable": {
+    "text": "Auf diesem TV nicht verfügbar",
+    "from": "Not available on this TV"
+  },
+  "home.wall.afternoon": {
+    "text": "Nachmittag, 11:00 bis 17:00",
+    "from": "Afternoon, 11:00 to 17:00"
+  },
+  "home.wall.black": {
+    "text": "Schwarz",
+    "from": "Black"
+  },
+  "home.wall.chooseFile": {
+    "text": "Hintergrundbild auswählen",
+    "from": "Choose a wallpaper image"
+  },
+  "home.wall.chooseImage": {
+    "text": "Ein Bild als JPEG, PNG oder WebP bis 25 MB wählen.",
+    "from": "Choose a JPEG, PNG or WebP image up to 25 MB."
+  },
+  "home.wall.clear": {
+    "text": "Hochgeladene Bilder entfernen",
+    "from": "Remove uploaded images"
+  },
+  "home.wall.evening": {
+    "text": "Abend, 17:00 bis 21:00",
+    "from": "Evening, 17:00 to 21:00"
+  },
+  "home.wall.morning": {
+    "text": "Morgen, 06:00 bis 11:00",
+    "from": "Morning, 06:00 to 11:00"
+  },
+  "home.wall.night": {
+    "text": "Nacht, 21:00 bis 06:00",
+    "from": "Night, 21:00 to 06:00"
+  },
+  "home.wall.optional": {
+    "text": "Optional: für jede Tageszeit ein Bild hochladen. Ohne Bild bleibt der Hintergrund schwarz.",
+    "from": "Optional: upload an image for each time of day. A time of day without one has a black background."
+  },
+  "home.wall.slot": {
+    "text": "Tageszeit",
+    "from": "Time of day"
+  },
+  "home.wall.slotAfternoon": {
+    "text": "Nachmittag",
+    "from": "Afternoon"
+  },
+  "home.wall.slotEvening": {
+    "text": "Abend",
+    "from": "Evening"
+  },
+  "home.wall.slotMorning": {
+    "text": "Morgen",
+    "from": "Morning"
+  },
+  "home.wall.slotNight": {
+    "text": "Nacht",
+    "from": "Night"
+  },
+  "home.wall.title": {
+    "text": "Hintergrundbild",
+    "from": "Wallpaper"
+  },
+  "home.wall.tooLarge": {
+    "text": "Das aufbereitete Bild ist zu groß. Wähle ein kleineres.",
+    "from": "The prepared image is too large. Choose a smaller image."
+  },
+  "home.wall.tvHint": {
+    "text": "Bilder für die Tageszeiten werden im Home-Tab des Browser-Dashboards hochgeladen.",
+    "from": "Images for each time of day are uploaded on the browser dashboard’s Home tab."
+  },
+  "home.wall.unreadable": {
+    "text": "Das Bild konnte nicht geöffnet werden.",
+    "from": "The image could not be opened."
+  },
+  "home.wall.upload": {
+    "text": "Bild hochladen",
+    "from": "Upload image"
+  },
+  "home.wall.uploadDone": {
+    "text": "Bild hochgeladen. Home aktualisiert sich in wenigen Sekunden.",
+    "from": "Image uploaded. Home updates within a few seconds."
+  },
+  "home.wall.uploadFailed": {
+    "text": "Das Bild konnte nicht hochgeladen werden.",
+    "from": "The image could not be uploaded."
+  },
+  "home.wall.uploadHelp": {
+    "text": "JPEG, PNG oder WebP, bis 25 MB. Bilder werden vor dem Hochladen auf 1920 × 1080 angepasst – die Größe, in der Glasshouse Home gezeichnet wird – und füllen den Bildschirm.",
+    "from": "JPEG, PNG or WebP, up to 25 MB. Images are resized to fit 1920 × 1080, the size Glasshouse Home is drawn at, before upload, and fill the screen."
+  },
+  "home.wall.uploadedValue": {
+    "text": "Hochgeladen",
+    "from": "Uploaded"
+  },
+  "home.wall.uploading": {
+    "text": "Wird hochgeladen…",
+    "from": "Uploading…"
+  }
+}
