@@ -854,18 +854,34 @@ step('where sam does not take the app, LG\'s files go back under it and nothing 
   });
 });
 
-step('switching on is refused on a non-default port or an untried webOS, changing nothing', function (done) {
+step('switching on works on any port, with the staged page opening the view there', function (done) {
   start(null, { port: 8090 });
   home.enable(function (r) {
-    assert.strictEqual(r.ok, false);
-    assert.ok(/8080/.test(r.error));
-    start(null, { webosVersion: '6.3.1' });
-    home.enable(function (r2) {
-      assert.strictEqual(r2.ok, false);
-      assert.ok(/webOS 6\.3\.1/.test(r2.error));
-      assert.deepEqual(tv.events, []);
-      done();
-    });
+    assert.strictEqual(r.ok, true, r.error);
+    var page = fs.readFileSync(path.join(stageDir, 'index.html'), 'utf8');
+    assert.ok(/var PORT = 8090;\s*\/\/ tvweb:port/.test(page), 'the staged page carries the port');
+    assert.ok(!/localhost:8080/.test(page));
+    done();
+  });
+});
+
+step('the default port stages the page at 8080', function (done) {
+  start(null);
+  home.enable(function (r) {
+    assert.strictEqual(r.ok, true, r.error);
+    var page = fs.readFileSync(path.join(stageDir, 'index.html'), 'utf8');
+    assert.ok(/var PORT = 8080;\s*\/\/ tvweb:port/.test(page));
+    done();
+  });
+});
+
+step('switching on is refused on an untried webOS, changing nothing', function (done) {
+  start(null, { webosVersion: '6.3.1' });
+  home.enable(function (r2) {
+    assert.strictEqual(r2.ok, false);
+    assert.ok(/webOS 6\.3\.1/.test(r2.error));
+    assert.deepEqual(tv.events, []);
+    done();
   });
 });
 

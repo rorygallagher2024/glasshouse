@@ -109,7 +109,6 @@ var liveState = null;
 var historyModule = null;
 var stateDir = '/var/lib/tvweb';
 var webosVersion = null;
-var serverPort = 8080;
 var installFn = null;
 // Starts and stops reading the remote's Home button (lib/remotebuttons).
 /** @type {function(boolean): void} */
@@ -870,8 +869,6 @@ function copy(o) { return JSON.parse(JSON.stringify(o)); }
 
 function supported() {
   var v = String(webosVersion || '');
-  if (serverPort !== 8080) return { ok: false, webos: v,
-    reason: msg('srv.home.port', 'Glasshouse Home requires the dashboard to use port 8080.') };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is a Flutter app there, under the same id and folder (#612).
   // Tried on a G5 (webOS 10.3.1); webOS 11 is untried and needs the setting.
@@ -1395,6 +1392,7 @@ function init(opts) {
     samrescan: opts.samrescan || null,
     stageDir: opts.takeoverDir || path.join(stateDir, 'home-takeover'),
     sourceDir: opts.appSource,
+    port: opts.port,
     appDir: opts.lgHomeDir,
     procDir: opts.procDir,
     layoutDir: opts.lgLayoutDir,
@@ -1406,7 +1404,6 @@ function init(opts) {
     blockFirst: function () { return /^1[01]\./.test(String(webosVersion || '')); }
   });
   webosVersion = opts.webosVersion || null;
-  serverPort = opts.port === undefined ? 8080 : Number(opts.port);
   installFn = opts.installApp || null;
   allowExperimentalFn = opts.allowExperimental || function () { return false; };
   homeKeysFn = opts.homeKeys || function () {};

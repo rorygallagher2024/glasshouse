@@ -84,6 +84,8 @@ Snapshot responses are private and must not be cached.
 
 ## Home-screen app port
 
+Glasshouse Home's page, staged in `/var/lib/tvweb/home-takeover` and mounted over LG's Home, has the port filled in the same way each time the server stages it.
+
 The dashboard's TV app and the Homebrew Channel's app are static pages and open the dashboard at the port in a `var PORT = n; // tvweb:port` line. At every start the server rewrites that line in each installed copy (`/media/developer/apps/usr/palm/applications/com.tvweb.dashboard/index.html` and `.../io.github.rorygallagher2024.lg-webos-dashboard/index.html`) to match `port` in `config.json`. Only that number changes; reinstalling the app brings the default back until the next start.
 
 ## Network

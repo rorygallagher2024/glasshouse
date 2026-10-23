@@ -23,11 +23,10 @@ function freePort(cb) {
   });
 }
 
-function setup(config, homeOn) {
+function setup(config) {
   var h = { saved: [], restarts: 0 };
   controls.init({
     config: config,
-    home: homeOn ? { enabled: function () { return true; } } : null,
     writeSettings: function (patch, cb) { h.saved.push(patch); cb(null); },
     restartSelf: function () { h.restarts++; return true; },
     updateSummary: function () { return { ok: true }; }
@@ -52,17 +51,6 @@ function testValidation(done) {
     if (i === bad.length) { console.log('  ✓ ports outside 1024-65533, 9996-9998 and non-numbers are refused unsaved'); return done(); }
     refused(bad[i++], { allowControl: true, port: 8080 }, next);
   })();
-}
-
-function testHomeOn(done) {
-  var h = setup({ allowControl: true, port: 8080 }, true);
-  controls.doControl('setDashboardPort', '8085', function (res) {
-    assert.strictEqual(res.ok, false);
-    assert.ok(/Glasshouse Home/.test(res.error), res.error);
-    assert.strictEqual(h.saved.length, 0, 'not saved while Glasshouse Home is on');
-    console.log('  ✓ changing away from 8080 is refused while Glasshouse Home is on');
-    done();
-  });
 }
 
 function testInUse(done) {
@@ -180,12 +168,12 @@ function testLauncherAppinfoSync() {
 }
 
 function testShippedLaunchersCarryMarker() {
-  ['../server/assets/dashboard-app/index.html', '../hbc/app/index.html'].forEach(function (rel) {
+  ['../server/assets/dashboard-app/index.html', '../server/assets/home-app/index.html', '../hbc/app/index.html'].forEach(function (rel) {
     var html = fs.readFileSync(path.join(__dirname, rel), 'utf8');
     assert.ok(/var PORT = 8080;\s*\/\/ tvweb:port/.test(html), rel + ' has the marker line at the default port');
     assert.ok(!/localhost:8080/.test(html), rel + ' does not hard-code the port elsewhere');
   });
-  console.log('  ✓ both shipped launcher pages carry the marker and default to 8080');
+  console.log('  ✓ the shipped launcher pages carry the marker and default to 8080');
 }
 
 function testShippedAppinfoResolutions() {
@@ -201,13 +189,11 @@ testLauncherAppinfoSync();
 testShippedLaunchersCarryMarker();
 testShippedAppinfoResolutions();
 testValidation(function () {
-  testHomeOn(function () {
-    testInUse(function () {
-      testSaved(function () {
-        testUnchanged(function () {
-          console.log('test-dashboard-port.js passed');
-          process.exit(0);
-        });
+  testInUse(function () {
+    testSaved(function () {
+      testUnchanged(function () {
+        console.log('test-dashboard-port.js passed');
+        process.exit(0);
       });
     });
   });

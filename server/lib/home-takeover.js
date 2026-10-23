@@ -55,6 +55,9 @@ var lunaFn = null;
 var samrescan = null;
 var stageDir = '/var/lib/tvweb/home-takeover';
 var sourceDir = path.join(__dirname, '..', 'assets', 'home-app');
+// The dashboard's port, filled into the page when it is staged.
+var serverPort = 8080;
+var PORT_LINE = /(var PORT = )\d+(;\s*\/\/ tvweb:port)/;
 var appDir = APP_DIR;
 var procDir = '/proc';
 var layoutDir = '/mnt/lg/cmn_data/manifest';
@@ -71,6 +74,7 @@ function init(opts) {
   samrescan = opts.samrescan || null;
   if (opts.stageDir) stageDir = opts.stageDir;
   if (opts.sourceDir) sourceDir = opts.sourceDir;
+  serverPort = opts.port ? Number(opts.port) : 8080;
   if (opts.appDir) appDir = opts.appDir;
   if (opts.procDir) procDir = opts.procDir;
   if (opts.layoutDir) layoutDir = opts.layoutDir;
@@ -113,8 +117,9 @@ function manifest() {
   };
 }
 
-function copyFile(from, to) {
+function copyFile(from, to, transform) {
   var data = fs.readFileSync(from);
+  if (transform) data = new Buffer(transform(data.toString('utf8')), 'utf8');
   var had = null;
   try { had = fs.readFileSync(to); } catch (e) {}
   if (had && had.toString('base64') === data.toString('base64')) return false;
@@ -129,7 +134,10 @@ function copyFile(from, to) {
 function stage() {
   try {
     mkdirp(path.join(stageDir, 'assets'));
-    var changed = copyFile(path.join(sourceDir, 'index.html'), path.join(stageDir, 'index.html'));
+    // The page cannot read config.json, so it carries the port the server is on.
+    var changed = copyFile(path.join(sourceDir, 'index.html'), path.join(stageDir, 'index.html'), function (html) {
+      return html.replace(PORT_LINE, '$1' + serverPort + '$2');
+    });
     fs.readdirSync(path.join(sourceDir, 'assets')).forEach(function (f) {
       if (copyFile(path.join(sourceDir, 'assets', f), path.join(stageDir, 'assets', f))) changed = true;
     });

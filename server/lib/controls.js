@@ -97,8 +97,6 @@ var ntpModule = null;
 var historyModule = null;
 /** @type {typeof import('./backup')} */
 var backupModule = null;
-/** @type {typeof import('./home')} */
-var homeModule = null;
 var republishDiscoveryFn = null;
 var tvAppFn = null;
 var restartSelfFn = null;
@@ -957,9 +955,6 @@ function doControl(action, value, cb) {
       if (!(newPort >= 1024 && newPort <= 65533) || (newPort >= 9996 && newPort <= 9998)) {
         return cb({ ok: false, error: msg('srv.port.invalid', 'The port must be a number from 1024 to 65533, other than 9996 to 9998') });
       }
-      if (newPort !== 8080 && homeModule && homeModule.enabled()) {
-        return cb({ ok: false, error: msg('srv.port.homeOn', 'Glasshouse Home requires port 8080. Switch Glasshouse Home off before changing the port.') });
-      }
       if (config && newPort === config.port) return cb(getUpdateSummary());
       return portIsFree(newPort, function (free) {
         if (!free) {
@@ -1095,7 +1090,6 @@ function init(opts) {
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
   if (opts.backup) backupModule = opts.backup;
-  homeModule = opts.home || null;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;
   if (opts.tvApp) tvAppFn = opts.tvApp;
   if (opts.restartSelf) restartSelfFn = opts.restartSelf;
