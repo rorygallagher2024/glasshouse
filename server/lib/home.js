@@ -876,9 +876,15 @@ function supported() {
   // LG's Home is a Flutter app there, under the same id and folder (#612).
   // Tried on a G5 (webOS 10.3.1); webOS 11 is untried and needs the setting.
   if (/^10\./.test(v) || (/^11\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true };
+  // LG's Home is a native app there too (a CX on 5.5.0-19), but sam has
+  // neither the configd nudge nor the block and release, so taking its place
+  // restarts sam, which both switches need (lib/samrescan). Offered marked
+  // experimental, as webOS 10 is. webOS 6 (a C1 on 6.5.3) shows the same
+  // limits, so it is offered the same way.
+  if (/^[56]\./.test(v)) return { ok: true, webos: v, experimental: true };
   return {
     ok: false, webos: v || null,
-    reason: msg('srv.home.untested', 'Glasshouse Home has been tried only on webOS 9 and 10. This TV runs webOS {version}.', { version: v || '?' })
+    reason: msg('srv.home.untested', 'Glasshouse Home has been tried only on webOS 5, 9 and 10. This TV runs webOS {version}.', { version: v || '?' })
   };
 }
 

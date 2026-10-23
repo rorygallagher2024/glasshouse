@@ -313,7 +313,14 @@ function reread(wantWeb, cb, check) {
   }
   call(first, function (ok) {
     if (ok) return cb(true);
-    call(then, cb);
+    call(then, function (ok) {
+      if (ok) return cb(true);
+      // webOS 5 and 6 have neither the configd nudge nor the block and
+      // release (a CX on 5.5.0-19, a C1 on 6.5.3): there sam reads the files
+      // again only by restarting it.
+      if (!samrescan.restart) return cb(false);
+      samrescan.restart(check, cb);
+    });
   });
 }
 

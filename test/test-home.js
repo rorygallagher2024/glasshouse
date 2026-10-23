@@ -92,16 +92,23 @@ function samScan() {
   tv.samCategory = info.appCategory || null;
 }
 
-// webOS 10 ignores the nudge and rereads one app on a block and release.
+// webOS 10 ignores the nudge and rereads one app on a block and release;
+// webOS 5 has neither, and there a restart of sam reads the files again.
 var samrescan = {
   refresh: function (check, cb) {
     tv.events.push('reread');
+    if (tv.rescanAbsent) return cb(false);
     if (!tv.nudgeIgnored) samScan();
     check(function (ok) { cb(ok); });
   },
   rereadApp: function (id, check, cb) {
-    if (!tv.nudgeIgnored) return cb(false);
+    if (tv.rescanAbsent || !tv.nudgeIgnored) return cb(false);
     tv.events.push('block and release');
+    samScan();
+    check(function (ok) { cb(ok); });
+  },
+  restart: function (check, cb) {
+    tv.events.push('restart');
     samScan();
     check(function (ok) { cb(ok); });
   }
@@ -671,6 +678,54 @@ step('webOS 11 only with allowExperimentalHome', function (done) {
   });
 });
 
+step('webOS 5 has neither the nudge nor the block and release, so both switches restart sam', function (done) {
+  start(null, { webosVersion: '5.5.0' });
+  home.status(function (st) {
+    assert.strictEqual(st.supported.ok, true, 'offered on a CX');
+    assert.strictEqual(st.supported.experimental, true);
+    tv.rescanAbsent = true;
+    home.enable(function (r) {
+      assert.ok(r.ok, r.error);
+      assert.deepEqual(tv.events, ['mount', 'reread', 'restart', 'stop LG ' + LG_PID],
+                       'sam is restarted to read the files, then LG\'s Home is stopped');
+      assert.deepEqual(tv.samCategory, ['home']);
+      assert.ok(taken());
+      tv.events = [];
+      home.disable(function (r2) {
+        assert.ok(r2.ok, r2.error);
+        assert.deepEqual(tv.events, ['umount', 'reread', 'restart', 'close page'], 'and restarted again to give LG\'s Home back');
+        assert.strictEqual(tv.samType, 'native');
+        assert.ok(!taken());
+        done();
+      });
+    });
+  });
+});
+
+step('webOS 6 shows the same limits, so it is offered and restarts sam too', function (done) {
+  start(null, { webosVersion: '6.5.3' });
+  home.status(function (st) {
+    assert.strictEqual(st.supported.ok, true, 'offered on a C1');
+    assert.strictEqual(st.supported.experimental, true);
+    tv.rescanAbsent = true;
+    home.enable(function (r) {
+      assert.ok(r.ok, r.error);
+      assert.deepEqual(tv.events, ['mount', 'reread', 'restart', 'stop LG ' + LG_PID],
+                       'sam is restarted to read the files, then LG\'s Home is stopped');
+      assert.deepEqual(tv.samCategory, ['home']);
+      assert.ok(taken());
+      tv.events = [];
+      home.disable(function (r2) {
+        assert.ok(r2.ok, r2.error);
+        assert.deepEqual(tv.events, ['umount', 'reread', 'restart', 'close page'], 'and restarted again to give LG\'s Home back');
+        assert.strictEqual(tv.samType, 'native');
+        assert.ok(!taken());
+        done();
+      });
+    });
+  });
+});
+
 step('webOS 10 is offered without the setting, with LG\'s Flutter Home stopped and no start-up layout', function (done) {
   start(null, { webosVersion: '10.3.1' });
   home.status(function (st0) {
@@ -859,10 +914,10 @@ step('switching on is refused on a non-default port or an untried webOS, changin
   home.enable(function (r) {
     assert.strictEqual(r.ok, false);
     assert.ok(/8080/.test(r.error));
-    start(null, { webosVersion: '6.3.1' });
+    start(null, { webosVersion: '7.4.0' });
     home.enable(function (r2) {
       assert.strictEqual(r2.ok, false);
-      assert.ok(/webOS 6\.3\.1/.test(r2.error));
+      assert.ok(/webOS 7\.4\.0/.test(r2.error));
       assert.deepEqual(tv.events, []);
       done();
     });
