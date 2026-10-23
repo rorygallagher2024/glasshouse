@@ -539,18 +539,30 @@ function rows(cb) {
           ch: picked.map(function (p) { return p.id; })
         };
         ROWS.forEach(function (r) { if (c.sort[r] === 'recent') order[r] = lastOpenedFirst(r, order[r]); });
-        cb({
-          apps: appList.map(function (a) {
-            return { id: a.id, title: a.title, icon: a.icon ? '/api/home/icon?id=' + encodeURIComponent(a.id) : null };
-          }),
-          devices: devs || [],
-          channels: picked,
-          order: order,
-          sources: { apps: !!apps, devices: !!devs, channels: chans ? chans.length : null }
+        clockFormat(function (format) {
+          cb({
+            apps: appList.map(function (a) {
+              return { id: a.id, title: a.title, icon: a.icon ? '/api/home/icon?id=' + encodeURIComponent(a.id) : null };
+            }),
+            devices: devs || [],
+            channels: picked,
+            order: order,
+            clock12: format === 'HH12',
+            sources: { apps: !!apps, devices: !!devs, channels: chans ? chans.length : null }
+          });
         });
       });
     });
   });
+}
+
+// The TV's own 12 or 24 hour clock, HH12 or HH24, as its menus show the time.
+function clockFormat(cb) {
+  cached('timeFormat', 60000, function (done) {
+    luna('com.webos.service.systemservice/getPreferences', { keys: ['timeFormat'] }, function (r) {
+      done(r && typeof r.timeFormat === 'string' ? r.timeFormat : null);
+    });
+  }, cb);
 }
 
 /*

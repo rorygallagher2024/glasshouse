@@ -183,6 +183,8 @@ function luna(uri, p, cb) {
     ];
   } else if (uri === 'com.webos.service.apiadapter/tv/getChannelList') {
     r.channelList = (tv.channels || []).map(function (id) { return { channelId: id, channelNumber: id, channelName: id }; });
+  } else if (uri === 'com.webos.service.systemservice/getPreferences') {
+    if (tv.timeFormat) r.timeFormat = tv.timeFormat;
   } else if (uri === 'com.webos.service.utp.boot/getLastChannelId') {
     r.channelId = tv.lastChannel;
   }
@@ -644,6 +646,19 @@ step('switched on in LG\'s settings while Glasshouse Home is on, auto launch is 
     assert.strictEqual(tv.settings.homeAutoLaunch, 'off');
     assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')).lgAutoLaunch, 'on');
     home.disable(function () { done(); });
+  });
+});
+
+step('the clock follows the TV\'s own 12 or 24 hour setting, 24 where it gives none', function (done) {
+  start({ enabled: false });
+  home.catalogue(function (c) {
+    assert.strictEqual(c.clock12, false, 'no setting: 24 hour, as before');
+    start({ enabled: false });
+    tv.timeFormat = 'HH12';
+    home.catalogue(function (c2) {
+      assert.strictEqual(c2.clock12, true);
+      done();
+    });
   });
 });
 

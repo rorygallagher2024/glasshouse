@@ -42,6 +42,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #when{width:520px;-webkit-flex:0 0 auto;flex:0 0 auto}
 #clock{font-family:'Outfit',sans-serif;font-size:176px;line-height:.8;font-weight:300;letter-spacing:-4px}
 #date{margin-top:22px;font-size:28px;color:#a39d93}
+#clock .ampm{margin-left:18px;font-size:56px;letter-spacing:0;color:#a39d93}
 #source{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;padding-left:24px;border-left:1px solid #2a2825;padding-bottom:2px}
 #source.none{visibility:hidden}
 #srcKind{font-size:23px;color:#e9ad55}
@@ -277,7 +278,13 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 
   function $(id) { return document.getElementById(id); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
-  function hm(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function clock12() { return !!(data && data.clock12); }
+  function ampm(d) { return d.getHours() < 12 ? t('home.clock.am', 'AM') : t('home.clock.pm', 'PM'); }
+  // As the TV's own menus have it: 7:05 PM, or 19:05.
+  function hm(d) {
+    if (!clock12()) return pad(d.getHours()) + ':' + pad(d.getMinutes());
+    return (d.getHours() % 12 || 12) + ':' + pad(d.getMinutes()) + ' ' + ampm(d);
+  }
   function esc(s) {
     return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -480,7 +487,11 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 
   function renderNow() {
     var d = new Date();
-    $('clock').textContent = hm(d);
+    if (clock12()) {
+      $('clock').innerHTML = esc((d.getHours() % 12 || 12) + ':' + pad(d.getMinutes())) + '<span class="ampm">' + esc(ampm(d)) + '</span>';
+    } else {
+      $('clock').textContent = hm(d);
+    }
     $('date').textContent = dateText(d);
     var kind = '', title = '', via = '';
     if (lastOn.kind === 'input') {
@@ -1097,9 +1108,11 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       // A reply sent before arranging or saving must not replace local edits.
       if (revision !== layoutRevision || ((layoutBusy || state.arranging) && !whileArranging)) return;
       var firstLoad = !data;
+      var clockChanged = !data || !data.clock12 !== !r.clock12;
       data = r;
       layout = r.layout;
       applyColours(layout.colours);
+      if (clockChanged) renderNow();
       if (r.layoutVersion) layoutVersion = r.layoutVersion;
       refreshPicture();
       clearTimeout(loadRetry);
