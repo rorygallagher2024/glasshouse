@@ -1296,3 +1296,13 @@ switch"; `WoV PDM Mic` on ALSA card 1) and a switch for it on the TV.
 showed a toast saying the microphone is off. Before the flip, in Active
 Standby, voice activation was already off with reason `tvPowerState`, so
 wake-word listening does not run in standby.
+
+## WebKit 538.2 requires -webkit- prefixes for flexbox and transforms (webOS 2.2.3, 55UH600V)
+
+webOS 2 runs WebKit 538.2. Unprefixed CSS `display: flex`, `flex`, `align-items`,
+and `justify-content` are ignored; flex containers and items fall back to block
+layout unless given `-webkit-flex` and `-webkit-` prefixes. Without them, an
+item with `position: absolute` children and no in-flow height collapses to 0 px.
+CSS transitions and transforms similarly require `-webkit-transition`,
+`-webkit-transform`, and `element.style.webkitTransform` in script (#746).
+

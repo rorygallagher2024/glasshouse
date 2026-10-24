@@ -26,12 +26,12 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 /* The clock on the left and the Glasshouse mark on the right, at the clock's
    height and full strength, level with the end of the tab bar. */
 #top{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;
-  justify-content:space-between;-webkit-justify-content:space-between;flex:0 0 auto;margin:0 4vw 3.4vh 0}
+  justify-content:space-between;-webkit-justify-content:space-between;flex:0 0 auto;-webkit-flex:0 0 auto;margin:0 4vw 3.4vh 0}
 #mark{height:4.6vh;width:auto;color:#fff;opacity:.92}
 #clock{font-family:'Manrope',sans-serif;font-weight:400;font-size:4.4vh;letter-spacing:.01em;
   line-height:1;opacity:.65}
 
-#tabs{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;flex:0 0 auto;margin:0 4vw 3.2vh 0;
+#tabs{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;flex:0 0 auto;-webkit-flex:0 0 auto;margin:0 4vw 3.2vh 0;
   /* the bar clips so it can scroll, and at line-height 1 that takes the tails
      of g and y with it; the padding makes room and the margin gives it back */
   padding-bottom:1.2vh;white-space:nowrap;overflow:hidden}
@@ -51,12 +51,12 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 /* Two columns: the rows on the left, an explainer for whichever row is selected
    on the right. A row's label and value never needed the full width, and the
    space buys somewhere to say what a setting means without a second screen. */
-#main{flex:1 1 auto;display:flex;overflow:hidden;padding-right:4vw;min-height:0}
-#list{flex:1 1 62%;overflow:hidden;position:relative}
-#rows{position:absolute;left:0;right:0;transition:transform .28s cubic-bezier(.4,0,.2,1)}
+#main{flex:1 1 auto;-webkit-flex:1 1 auto;display:flex;display:-webkit-flex;overflow:hidden;padding-right:4vw;min-height:0}
+#list{flex:1 1 62%;-webkit-flex:1 1 62%;height:100%;overflow:hidden;position:relative}
+#rows{position:absolute;left:0;right:0;-webkit-transition:-webkit-transform .28s cubic-bezier(.4,0,.2,1);transition:transform .28s cubic-bezier(.4,0,.2,1)}
 
-#hint{flex:0 0 31%;margin-left:2.6vw;align-self:center;border-left:1px solid rgba(255,255,255,.14);
-  padding-left:2.4vw;opacity:0;transition:opacity .22s ease}
+#hint{flex:0 0 31%;-webkit-flex:0 0 31%;margin-left:2.6vw;align-self:center;-webkit-align-self:center;border-left:1px solid rgba(255,255,255,.14);
+  padding-left:2.4vw;opacity:0;-webkit-transition:opacity .22s ease;transition:opacity .22s ease}
 #hint.on{opacity:1}
 .h-title{font-family:'Manrope',sans-serif;font-weight:600;font-size:3.4vh;line-height:1.15;
   letter-spacing:.005em;margin-bottom:1.6vh}
@@ -82,12 +82,12 @@ body{font-family:'Manrope',sans-serif;color:#fff;
    slightly enlarged; the rest recede, so the eye lands on the choice. */
 /* The right padding is the scroll arrows' lane, so a long value never runs
    underneath one. */
-.row{display:flex;align-items:baseline;justify-content:space-between;height:7.6vh;
+.row{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;justify-content:space-between;-webkit-justify-content:space-between;height:7.6vh;
   padding-right:3.4vw;
-  opacity:.55;transition:opacity .22s ease,transform .22s ease;
-  transform-origin:left center}
+  opacity:.55;-webkit-transition:opacity .22s ease,-webkit-transform .22s ease;transition:opacity .22s ease,transform .22s ease;
+  -webkit-transform-origin:left center;transform-origin:left center}
 .row:not(.head){cursor:pointer}
-.row.sel{opacity:1;transform:scale(1.03)}
+.row.sel{opacity:1;-webkit-transform:scale(1.03);transform:scale(1.03)}
 .lbl{font-family:'Manrope',sans-serif;font-weight:500;font-size:3.1vh;letter-spacing:.01em}
 .val{font-family:'Manrope',sans-serif;font-weight:400;font-size:3.1vh;color:rgba(255,255,255,.75);
   text-align:right;white-space:nowrap;padding-left:2vw}
@@ -96,7 +96,7 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 .val .sub{display:block;font-size:2.1vh;line-height:1.2;font-weight:400;color:rgba(255,255,255,.5)}
 /* Catalog rows: an icon, a version and a root badge beside the title. The
    title gives way with an ellipsis rather than pushing the state off the row. */
-.row.cat .lbl{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row.cat .lbl{flex:1 1 auto;-webkit-flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row.cat .val{font-size:2.6vh}
 .lbl .ic{width:4.4vh;height:4.4vh;border-radius:.8vh;object-fit:contain;background:rgba(255,255,255,.08);
   vertical-align:middle;margin-right:1.4vh}
@@ -115,7 +115,7 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 /* A read-out rather than a setting: a status label with a lit dot, set small in
    capitals, so it cannot be mistaken for the On/Off values of the toggles. The
    glow is a blurred shadow: color-mix is too new for the webOS 4 browser. */
-.val.st{display:inline-flex;align-items:center;font-size:2.1vh;font-weight:600;letter-spacing:.16em;
+.val.st{display:inline-flex;display:-webkit-inline-flex;align-items:center;-webkit-align-items:center;font-size:2.1vh;font-weight:600;letter-spacing:.16em;
   text-transform:uppercase}
 .val.st::before{content:'';width:1vh;height:1vh;border-radius:50%;margin-right:1.3vh;
   background:currentColor;box-shadow:0 0 1.2vh currentColor}
@@ -134,12 +134,12 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 .row.doable.sel .lbl::before{background:#1ec15f}
 
 /* A heading inside the list - groups rows without being selectable itself. */
-.row.head{height:5.4vh;opacity:1;transform:none}
+.row.head{height:5.4vh;opacity:1;-webkit-transform:none;transform:none}
 .row.head .lbl{font-family:'Manrope';font-weight:600;font-size:1.5vh;letter-spacing:.24em;
   text-transform:uppercase;color:rgba(255,255,255,.55)}
 .row.head .lbl::before{display:none}
 
-#msg{position:absolute;top:50%;left:0;transform:translateY(-50%);
+#msg{position:absolute;top:50%;left:0;-webkit-transform:translateY(-50%);transform:translateY(-50%);
   font-family:'Manrope',sans-serif;font-weight:400;font-size:4vh;color:rgba(255,255,255,.8)}
 #msg .msg-detail{font-family:'Manrope',sans-serif;font-weight:400;font-size:2vh;line-height:1.8;
   color:rgba(255,255,255,.6);margin-top:2.2vh}
@@ -2111,7 +2111,8 @@ function position() {
   var floor = Math.min(0, list.clientHeight - total);   // never scroll past the last row
   if (y > 0) y = 0;
   if (y < floor) y = floor;
-  document.getElementById('rows').style.transform = 'translateY(' + y + 'px)';
+  var rowsEl = document.getElementById('rows');
+  rowsEl.style.webkitTransform = rowsEl.style.transform = 'translateY(' + y + 'px)';
   document.getElementById('moreUp').className = 'more' + (y < 0 ? ' on' : '');
   document.getElementById('moreDown').className = 'more' + (y > floor ? ' on' : '');
 }
