@@ -22,9 +22,10 @@ var filtersDir = path.join(dir, 'KeyFilters');
 fs.mkdirSync(dir);
 fs.mkdirSync(stateDir);
 fs.mkdirSync(filtersDir);
-// A CX's filters name Netflix, Prime Video, Guide and the color keys; no Disney+ key.
+// A CX's filters name Netflix, Prime Video, the Movies button, Guide and the
+// color keys; no Disney+ key.
 fs.writeFileSync(path.join(filtersDir, 'systemUi.js'), 'case Qt.Key_Super_L: case WebOS.Key_webOS_Red:');
-fs.writeFileSync(path.join(filtersDir, 'appLaunch.js'), 'case WebOS.Key_webOS_Netflix: case WebOS.Key_webOS_Amazon: case WebOS.Key_webOS_TVGuide:');
+fs.writeFileSync(path.join(filtersDir, 'appLaunch.js'), 'case WebOS.Key_webOS_Netflix: case WebOS.Key_webOS_Amazon: case WebOS.Key_webOS_USP: case WebOS.Key_webOS_TVGuide:');
 fs.writeFileSync(path.join(filtersDir, 'notes.txt'), 'WebOS.Key_webOS_Disneyplus');
 
 var FILTER = path.join(stateDir, 'remotekeys-filter.js');
@@ -76,7 +77,8 @@ function loadFilter(broken) {
   var timers = [];
   var ctx = {
     genericTimer: { set: function (ms, fn) { timers.push({ ms: ms, fn: fn }); return timers.length; } },
-    WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004 },
+    WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
+             Key_webOS_USP: 1005 },
     Qt: { Key_Super_L: 2001 },
     KeyPolicy: { NextPolicy: 'next', Accepted: 'accepted', NotAccepted: 'notAccepted' },
     lunaCall: {
@@ -133,7 +135,7 @@ function guard(fn) {
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
     assert.strictEqual(r.supported, true);
-    assert.deepEqual(r.keys.map(function (k) { return k.key; }), ['netflix', 'amazon', 'guide', 'red']);
+    assert.deepEqual(r.keys.map(function (k) { return k.key; }), ['netflix', 'amazon', 'movies', 'guide', 'red']);
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
@@ -169,6 +171,20 @@ step(function (next) {
 });
 
 step(function (next) {
+  // The Movies button on a 2020 remote: LG's own filters name it USP.
+  rk.setRemoteKey('movies', 'open', 'netflix', guard(function (s) {
+    assert.strictEqual(s.ok, true);
+    var f = loadFilter();
+    assert.strictEqual(f.handle(1005, true, false), 'accepted');
+    assert.strictEqual(f.handle(1005, true, true), 'accepted');
+    assert.strictEqual(f.handle(1005, false, false), 'accepted');
+    assert.deepEqual(f.launched, [{ id: 'netflix', params: '{}' }], 'once per press, and the held key does not open it again');
+    console.log('  ✓ the Movies button is offered where the TV\'s filters name it, and opens what it is set to once per press');
+    next();
+  }));
+});
+
+step(function (next) {
   var f = loadFilter();
   rk.setRemoteKey('guide', 'nothing', '', guard(function (s) {
     assert.strictEqual(s.ok, true);
@@ -176,7 +192,7 @@ step(function (next) {
     // included, and open the Game Dashboard on a TV in Game mode.
     assert.strictEqual(tv.chainWrites, 1);
     assert.strictEqual(fs.readFileSync(FILTER, 'utf8'), source);
-    assert.deepEqual(tv.keys, { keys: { netflix: 'youtube.leanback.v4', guide: '' } });
+    assert.deepEqual(tv.keys, { keys: { netflix: 'youtube.leanback.v4', movies: 'netflix', guide: '' } });
     assert.strictEqual(f.handle(1003, true, false), 'next');
     f.tell(tv.keys);
     assert.strictEqual(f.handle(1003, true, false), 'accepted');
@@ -202,13 +218,13 @@ step(function (next) {
 
 step(function (next) {
   rk.getRemoteKeys(guard(function (r) {
-    assert.deepEqual(r.keys.map(function (k) { return k.action + ':' + k.opens; }), ['open:YouTube', 'lg:', 'nothing:', 'lg:']);
+    assert.deepEqual(r.keys.map(function (k) { return k.action + ':' + k.opens; }), ['open:YouTube', 'lg:', 'open:Netflix', 'nothing:', 'lg:']);
     assert.strictEqual(r.inChain, true);
     rk.setRemoteKey('disneyplus', 'open', 'netflix', guard(function (s1) {
       assert.strictEqual(s1.ok, false);
       rk.setRemoteKey('red', 'open', 'com.webos.app.browser', guard(function (s2) {
         assert.strictEqual(s2.ok, false);
-        assert.deepEqual(JSON.parse(fs.readFileSync(MAP, 'utf8')).keys, { netflix: 'youtube.leanback.v4', guide: '' });
+        assert.deepEqual(JSON.parse(fs.readFileSync(MAP, 'utf8')).keys, { netflix: 'youtube.leanback.v4', movies: 'netflix', guide: '' });
         console.log('  ✓ the keys read back with what each does; a key the TV does not have, or an app not on it, is refused and changes nothing');
         next();
       }));
@@ -248,7 +264,7 @@ step(function (next) {
           assert.strictEqual(red.opens, 'Pause');
           rk.setRemoteKey('red', 'lg', '', guard(function () {
             rk.setRemoteKey('amazon', 'lg', '', guard(function () {
-              assert.deepEqual(tv.keys.keys, { netflix: 'youtube.leanback.v4', guide: '' });
+              assert.deepEqual(tv.keys.keys, { netflix: 'youtube.leanback.v4', movies: 'netflix', guide: '' });
               console.log('  ✓ a key set to a media control sends its key code once per press, or while held for volume; an unknown control is refused');
               next();
             }));
@@ -289,17 +305,21 @@ step(function (next) {
   var writes = tv.chainWrites;
   rk.setRemoteKey('netflix', 'lg', '', guard(function (s1) {
     assert.strictEqual(s1.ok, true);
-    rk.setRemoteKey('guide', 'lg', '', guard(function (s2) {
-      assert.strictEqual(s2.ok, true);
-      assert.ok(!exists(MAP));
-      assert.deepEqual(tv.keys, { keys: {} });
-      assert.strictEqual(tv.chainWrites, writes);
-      assert.deepEqual(tv.chain[0], { file: FILTER, handler: rk.HANDLER });
-      var f = loadFilter();
-      assert.strictEqual(f.handle(1001, true, false), 'next');
-      assert.strictEqual(f.handle(1003, true, false), 'next');
-      console.log('  ✓ every key back as LG has it empties the value and leaves the filter in place, passing every key on, with no chain write');
-      next();
+    rk.setRemoteKey('movies', 'lg', '', guard(function (sm) {
+      assert.strictEqual(sm.ok, true);
+      rk.setRemoteKey('guide', 'lg', '', guard(function (s2) {
+        assert.strictEqual(s2.ok, true);
+        assert.ok(!exists(MAP));
+        assert.deepEqual(tv.keys, { keys: {} });
+        assert.strictEqual(tv.chainWrites, writes);
+        assert.deepEqual(tv.chain[0], { file: FILTER, handler: rk.HANDLER });
+        var f = loadFilter();
+        assert.strictEqual(f.handle(1001, true, false), 'next');
+        assert.strictEqual(f.handle(1003, true, false), 'next');
+        assert.strictEqual(f.handle(1005, true, false), 'next');
+        console.log('  ✓ every key back as LG has it empties the value and leaves the filter in place, passing every key on, with no chain write');
+        next();
+      }));
     }));
   }));
 });
