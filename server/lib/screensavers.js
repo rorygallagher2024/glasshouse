@@ -71,6 +71,11 @@ var SCREENSAVERS = {
     description: msg('srv.saver.harmonograph.desc', 'Pendulum ribbons of light weaving and fading on black.'),
     qml: 'screensavers/harmonograph.qml'
   },
+  tesseract: {
+    label: msg('srv.saver.tesseract', 'Tesseract'),
+    description: msg('srv.saver.tesseract.desc', 'A four-dimensional cube turning through the fourth dimension, in fine lines of light.'),
+    qml: 'screensavers/tesseract.qml'
+  },
   vitals: {
     label: msg('srv.saver.vitals', 'Panel vitals'),
     description: msg('srv.saver.vitals.desc', 'The TV\'s own readings - panel hours, pixel refresher countdown, temperature.'),
