@@ -94,6 +94,7 @@ var ntpClient = require('./lib/ntp');
 var history = require('./lib/history');
 var sshKeys = require('./lib/sshkeys');
 var screentime = require('./lib/screentime');
+var saverPowerOff = require('./lib/saverpoweroff');
 var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
 var power = require('./lib/power');
@@ -539,7 +540,6 @@ homeScreen.reapply();
 screensavers.init({
   luna: luna,
   webosVersion: telemetry.detectWebosVersion(),
-  assetPath: assetPath,
   config: CONFIG,
   injectKey: controls.injectKey,
   KEY_BACK: controls.KEY_BACK,
@@ -1785,6 +1785,8 @@ if (!CLI_MODE) {
   history.start();
   screentime.init({ config: CONFIG, liveState: liveState, control: controls.doControl, injectKey: controls.injectKey, keyBack: controls.KEY_BACK });
   screentime.start();
+  saverPowerOff.init({ config: CONFIG, liveState: liveState, control: controls.doControl });
+  saverPowerOff.start();
 
   if (glasshouseHome && homePicture) startGlasshouseHome();
   else releaseUnloadedHome();

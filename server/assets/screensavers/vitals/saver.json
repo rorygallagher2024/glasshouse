@@ -1,0 +1,18 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Panel vitals",
+    "es": "Vitalidad del panel"
+  },
+  "description": {
+    "en": "The TV's own readings - panel hours, pixel refresher countdown, temperature.",
+    "es": "Las lecturas de la TV: horas de panel, cuenta atrás del refrescado y temperatura."
+  },
+  "license": "MIT",
+  "uses": [
+    "level",
+    "stats"
+  ],
+  "order": 140
+}

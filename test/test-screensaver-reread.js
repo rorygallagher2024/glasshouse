@@ -83,7 +83,6 @@ var config = { port: 8080, allowControl: true, allowExperimentalScreensavers: tr
 samrescan.init({ luna: env.mockLuna, nudgeMs: 1, pollMs: 1 });
 screensavers.init({
   luna: env.mockLuna,
-  assetPath: function (qml) { return qml === 'screensavers/clock.qml' ? '/tmp/tvweb-test/clock.qml' : null; },
   config: config
 });
 

@@ -59,7 +59,9 @@ use modern JavaScript.
   the TV app shows. `server/assets/dashboard-app/` is the TV app itself.
   `server/assets/home.html` and `server/assets/home-app/` are Glasshouse
   Home's view and its app.
-- `server/assets/i18n/` - translations. `server/assets/screensavers/` - QML.
+- `server/assets/i18n/` - translations. `server/assets/screensavers/` - the
+  screen savers, a folder each with a `saver.json`. `server/screensavers/` is
+  installed into the TV's folder for added ones, as an example of one.
 - `server/tvwebctl`, `server/50-tvweb.sh` - start, stop and watchdog on the TV,
   and the boot hook. `server/deploy.sh` installs over ssh; its `FILES` list
   must name every file the server needs.

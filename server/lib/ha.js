@@ -7,15 +7,24 @@ var msg = require('./say').msg;
 
 // Screen saver names come from the registry, so a new one reaches Home
 // Assistant without a second list to keep in step (Bokeh was missed once).
-var SS = require('./screensavers').SCREENSAVERS;
+var screensavers = require('./screensavers');
 var topics = require('./topics');
 var names = require('./names');
 var hexColor = require('./util').hexColor;
 var APP_ID_RE = require('./iconserver').APP_ID_RE;
-var SS_IDS = Object.keys(SS);
-function ssMap(byLabel) {
+// The screen savers that can be picked, as Home Assistant's select names them:
+// [id, name] pairs, a name made unique with its id where two are the same.
+function ssChoices() {
+  var seen = {};
+  return screensavers.catalog().filter(function (e) { return !e.problem; }).map(function (e) {
+    var name = seen[e.label] ? e.label + ' (' + e.id + ')' : e.label;
+    seen[name] = true;
+    return [e.id, name];
+  });
+}
+function ssMap(choices, byLabel) {
   var m = {};
-  SS_IDS.forEach(function (k) { if (byLabel) m[SS[k].label] = k; else m[k] = SS[k].label; });
+  choices.forEach(function (c) { if (byLabel) m[c[1]] = c[0]; else m[c[0]] = c[1]; });
   return m;
 }
 
@@ -409,6 +418,7 @@ function powerTimerPayload(topic, which, name, icon) {
 }
 
 function buildEntities(opts) {
+  var ssc = ssChoices();
   opts = opts || {};
   var topic = topics(opts.pfx);
   var installedApps = opts.installedApps || [];
@@ -1199,9 +1209,9 @@ function buildEntities(opts) {
           name: 'Screen Saver',
           command_topic: topic.command('screensaverMode'),
           state_topic: topic.telemetry,
-          options: SS_IDS.map(function (k) { return SS[k].label; }),
-          command_template: '{{ ' + JSON.stringify(ssMap(true)) + '[value] }}',
-          value_template: '{{ ' + JSON.stringify(ssMap(false)) + '.get(value_json.screensaverMode, "LG default") }}',
+          options: ssc.map(function (c) { return c[1]; }),
+          command_template: '{{ ' + JSON.stringify(ssMap(ssc, true)) + '[value] }}',
+          value_template: '{{ ' + JSON.stringify(ssMap(ssc, false)) + '.get(value_json.screensaverMode, "LG default") }}',
           icon: 'mdi:television-shimmer'
         }
       },

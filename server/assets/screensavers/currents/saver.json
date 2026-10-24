@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Currents",
+    "es": "Corrientes"
+  },
+  "description": {
+    "en": "Streams of light flowing along a slowly changing wind on black.",
+    "es": "Corrientes de luz que fluyen con un viento que cambia despacio, sobre negro."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 70
+}

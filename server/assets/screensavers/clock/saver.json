@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Clock",
+    "es": "Reloj"
+  },
+  "description": {
+    "en": "A digital clock on black, moving to a new position every minute.",
+    "es": "Un reloj digital sobre negro, que cambia de posición cada minuto."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 10
+}

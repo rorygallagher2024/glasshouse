@@ -83,6 +83,8 @@ nav:
           - LG NU80 (43NU800BPSC): development/tv-specs/nu80.md
       - Testing and CI: development/testing.md
       - TV research: development/TV-RESEARCH.md
+      - Screen saver design: development/SCREENSAVER-DESIGN.md
+      - Writing a screen saver: development/WRITING-SCREENSAVERS.md
       - Translating the dashboards: STRINGS.md
 
 # Kept until the Homebrew Channel listing is live (webosbrew/apps-repo#261).

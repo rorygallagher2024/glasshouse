@@ -1,0 +1,9 @@
+{
+  "manifest": 1,
+  "version": "0.1.0",
+  "name": { "en": "Mine", "es": "Mío" },
+  "description": "One added on the TV, to test with.",
+  "author": "A Tester",
+  "license": "MIT",
+  "uses": ["level"]
+}

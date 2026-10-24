@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Starfield",
+    "es": "Campo estelar"
+  },
+  "description": {
+    "en": "A drifting cosmic starscape with occasional shooting stars.",
+    "es": "Un paisaje cósmico a la deriva con ocasionales estrellas fugaces."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 20
+}

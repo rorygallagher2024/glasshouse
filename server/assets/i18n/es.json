@@ -4822,38 +4822,6 @@
   "text": "no se pudieron guardar los ajustes",
   "from": "could not save the settings"
  },
- "srv.saver.bokeh": {
-  "text": "Bokeh",
-  "from": "Bokeh"
- },
- "srv.saver.bokeh.desc": {
-  "text": "Círculos suaves de luz que aparecen y se desvanecen sobre negro.",
-  "from": "Soft circles of light drifting in and out on black."
- },
- "srv.saver.clock": {
-  "text": "Reloj",
-  "from": "Clock"
- },
- "srv.saver.clock.desc": {
-  "text": "Un reloj digital sobre negro, que cambia de posición cada minuto.",
-  "from": "A digital clock on black, moving to a new position every minute."
- },
- "srv.saver.fireworks": {
-  "text": "Fuegos artificiales",
-  "from": "Fireworks"
- },
- "srv.saver.fireworks.desc": {
-  "text": "Estallidos de color sobre negro, cada pocos segundos.",
-  "from": "Bursts of colour on black, a few seconds apart."
- },
- "srv.saver.harmonograph": {
-  "text": "Harmonógrafo",
-  "from": "Harmonograph"
- },
- "srv.saver.harmonograph.desc": {
-  "text": "Cintas de luz pendulares que se entrelazan y desvanecen sobre negro.",
-  "from": "Pendulum ribbons of light weaving and fading on black."
- },
  "srv.saver.held": {
   "text": "Los salvapantallas personalizados están desactivados en esta TV por ahora, ya que no se han probado en su versión de webOS. Antes de la 0.98.1, en webOS 10, podían dejar la imagen, el sonido y el control HDMI apagados hasta desenchufar la TV. Uno que ya esté en uso sigue hasta que la TV se reinicie por completo.",
   "from": "Custom screen savers are turned off on this TV for now, as they have not been tried on its webOS version. Before 0.98.1, on webOS 10, they could leave the picture, the sound and HDMI control off until the TV was unplugged. One already in use stays until the TV is next fully restarted."
@@ -4882,14 +4850,6 @@
   "text": "no se pudo preparar el salvapantallas: {error}",
   "from": "could not stage the screen saver: {error}"
  },
- "srv.saver.starfield": {
-  "text": "Campo estelar",
-  "from": "Starfield"
- },
- "srv.saver.starfield.desc": {
-  "text": "Un paisaje cósmico a la deriva con ocasionales estrellas fugaces.",
-  "from": "A drifting cosmic starscape with occasional shooting stars."
- },
  "srv.saver.stock": {
   "text": "LG por defecto",
   "from": "LG default"
@@ -4901,14 +4861,6 @@
  "srv.saver.switching": {
   "text": "La TV todavía está cambiando de salvapantallas. Inténtalo de nuevo en un minuto.",
   "from": "The TV is still switching screen savers. Try again in a minute."
- },
- "srv.saver.vitals": {
-  "text": "Vitalidad del panel",
-  "from": "Panel vitals"
- },
- "srv.saver.vitals.desc": {
-  "text": "Las lecturas de la TV: horas de panel, cuenta atrás del refrescado y temperatura.",
-  "from": "The TV's own readings - panel hours, pixel refresher countdown, temperature."
  },
  "srv.service.badge.flashWrites": {
   "text": "Escrituras en flash",
@@ -7213,5 +7165,41 @@
  "ctl.dpad.keys": {
   "text": "Con un teclado: las flechas, Intro para OK, Esc o Retroceso para Atrás, H para Inicio, M para Ajustes, Espacio para reproducir o pausar, K para silenciar.",
   "from": "On a keyboard: the arrows, Enter for OK, Esc or Backspace for Back, H for Home, M for Settings, Space to play or pause, K to mute."
+ },
+ "ss.powerOff": {
+  "text": "Apagar después de",
+  "from": "Poweroff after"
+ },
+ "ss.powerOff.input": {
+  "text": "Minutos de salvapantallas antes del modo de espera",
+  "from": "Minutes of screen saver before standby"
+ },
+ "ss.powerOff.noPower": {
+  "text": "Las acciones de encendido están desactivadas en config.json, así que esto no puede poner la TV en espera.",
+  "from": "Power actions are off in config.json, so this cannot put the TV in standby."
+ },
+ "ss.powerOff.on": {
+  "text": "La TV pasa a modo de espera cuando un salvapantallas lleva {n} minutos. Cualquier botón del mando reinicia la cuenta.",
+  "from": "The TV goes to standby once a screen saver has been on for {n} minutes. Any button on the remote starts the count again."
+ },
+ "ss.powerOff.off": {
+  "text": "Minutos de salvapantallas antes de que la TV pase a modo de espera. En blanco para nunca.",
+  "from": "Minutes of screen saver before the TV goes to standby. Blank for never."
+ },
+ "tv.saver.powerOff.minutes": {
+  "text": "{n} min",
+  "from": "{n} min"
+ },
+ "tv.saver.powerOff.hint": {
+  "text": "Pone la TV en espera cuando un salvapantallas lleva este tiempo. Desde Glasshouse en un navegador se puede poner cualquier número de minutos.",
+  "from": "Puts the TV in standby once a screen saver has been on this long. Any number of minutes can be set from Glasshouse in a browser."
+ },
+ "srv.saver.powerOff.bad": {
+  "text": "Apagar después de admite un número de minutos de 1 a {max}, o en blanco para desactivarlo",
+  "from": "Poweroff after takes a number of minutes from 1 to {max}, or blank for off"
+ },
+ "ss.powerOff.onOne": {
+  "text": "La TV pasa a modo de espera cuando un salvapantallas lleva un minuto. Cualquier botón del mando reinicia la cuenta.",
+  "from": "The TV goes to standby once a screen saver has been on for a minute. Any button on the remote starts the count again."
  }
 }

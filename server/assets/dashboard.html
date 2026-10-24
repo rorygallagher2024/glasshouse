@@ -632,6 +632,26 @@ function sleepRow(cur) {
            hint: t('tv.options.sleep.hint', 'Switches the TV off once this time has passed.') };
 }
 
+var SAVER_OFF_STEPS = [0, 3, 5, 10, 20, 30];
+
+function saverOffWords(n) {
+  return n ? t('tv.saver.powerOff.minutes', '{n} min', { n: n }) : t('common.off', 'Off');
+}
+
+function saverPowerOffRow(cur, allowPower) {
+  // The next step up from the current value, which a browser may have set between steps.
+  var next = 0, i;
+  for (i = 0; i < SAVER_OFF_STEPS.length; i++) {
+    if (SAVER_OFF_STEPS[i] > cur) { next = SAVER_OFF_STEPS[i]; break; }
+  }
+  return { label: t('ss.powerOff', 'Poweroff after'), value: saverOffWords(cur), cls: 'act',
+           act: allowPower ? 'saverPowerOff' : null, on: cur > 0, next: next,
+           press: next ? t('tv.options.sleep.toNext', 'Press OK for {time}', { time: saverOffWords(next) })
+                       : t('tv.options.sleep.toOff', 'Press OK to turn it off'),
+           hint: !allowPower ? t('ss.powerOff.noPower', 'Power actions are off in config.json, so this cannot put the TV in standby.')
+                 : t('tv.saver.powerOff.hint', 'Puts the TV in standby once a screen saver has been on this long. Any number of minutes can be set from Glasshouse in a browser.') };
+}
+
 function timerRow(tm, which, label) {
   var names = [t('adv.timer.sun', 'Sun'), t('adv.timer.mon', 'Mon'), t('adv.timer.tue', 'Tue'), t('adv.timer.wed', 'Wed'),
                t('adv.timer.thu', 'Thu'), t('adv.timer.fri', 'Fri'), t('adv.timer.sat', 'Sat')];
@@ -820,6 +840,11 @@ function saverRows(d) {
     r.push({ label: t('ss.start', 'Start screen saver'), value: '→', cls: 'act', act: 'saverStart',
              press: t('tv.saver.startScreenSaver.press', 'Press OK to start it'),
              hint: t('tv.saver.startScreenSaver.hint', 'Shows the screen saver in use straight away, to see how it looks. Any button on the remote ends it.') });
+  }
+  // Poweroff after: steps here, any number of minutes from a browser.
+  if (d.writable && !busy) {
+    r.push(head(t('ss.powerOff', 'Poweroff after')));
+    r.push(saverPowerOffRow(d.powerOffMinutes || 0, !!d.allowPower));
   }
   r.push(head(t('tv.saver.head.aFirmwareUpdatePuts', 'A firmware update puts LG’s own back')));
   return r;
@@ -2503,6 +2528,12 @@ function activate() {
                   r.next === 'bright' ? t('ss.bright', 'Bright') : t('ss.dim', 'Dim'));
     case 'saverStart':
       return startSaverAfterRelease();
+    case 'saverPowerOff':
+      // Shown at once, as the sleep timer: a second OK before the poll would send the same step again.
+      var offStep = r.next, offShown = saverPowerOffRow(offStep, true);
+      for (var pk in offShown) r[pk] = offShown[pk];
+      render();
+      return send({ action: 'screensaverPowerOff', value: offStep });
     case 'sleepTimer':
       // Shown at once: the poll can take 5 s to bring the new value, and a
       // second OK before then would send the same step again.

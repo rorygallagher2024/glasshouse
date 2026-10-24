@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Fireworks",
+    "es": "Fuegos artificiales"
+  },
+  "description": {
+    "en": "Bursts of colour on black, a few seconds apart.",
+    "es": "Estallidos de color sobre negro, cada pocos segundos."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 30
+}

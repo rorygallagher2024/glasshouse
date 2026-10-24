@@ -1,11 +1,18 @@
 # Screen savers
 
-The **Screensaver** tab, `/?tab=screensaver`, provides six alternatives to LG's default:
+The **Screensaver** tab, `/?tab=screensaver`, provides thirteen alternatives to LG's default, and any added on the TV:
 
 * Clock
 * Starfield
 * Fireworks
 * Bokeh, soft circles of light drifting in and out
+* Filament, swarms of light circling and trailing across black
+* Currents, streams of light flowing along a slowly changing wind
+* Veils, translucent ribbons of light rippling across black
+* Incense, thin streams of colored smoke rising and curling
+* Murmuration, flocks of light swooping after their leaders
+* Vortex, whirlwinds of light spiraling up swaying funnels
+* Neo, columns of falling glyphs whose colors turn every minute
 * Harmonograph, pendulum ribbons of light weaving and fading on black
 * Panel vitals, showing the TV's own panel hours and refresher countdown
 
@@ -13,9 +20,23 @@ Each mode offers dim and bright variants, and visual elements continuously drift
 
 A firmware update restores the LG default.
 
+## Adding your own
+
+A screen saver added on the TV is a folder in `/var/lib/tvweb/screensavers/`, named as you like within a few rules (lowercase letters, digits and `-`, up to 32 characters; see the format below), holding a `saver.json` that names and describes it, its QML, and anything else it uses. The tab lists it after Glasshouse's own, marked *Added on this TV* with its author and license, and a Glasshouse update leaves the folder alone. To add one, copy its folder there and open the tab:
+
+```
+scp -r my-saver root@<tv-ip>:/var/lib/tvweb/screensavers/
+```
+
+One with something wrong in its folder, or whose QML would only show black, is listed with the reason and cannot be picked. One that reaches the network, can play sound, or can open apps says so under its name, and can still be picked. [Writing a screen saver](../development/WRITING-SCREENSAVERS.md) covers making one, and the format is in [Screen saver design principles](../development/SCREENSAVER-DESIGN.md#screen-saver-folders).
+
+Glasshouse installs one there itself, as an example: **Pigs - Three Different Ones**, a pink pig, a saddleback and a razorback, big and small, flapping across a pixel-art night over Chicago. An update puts it back if it has been removed.
+
 On webOS 10 and later they are experimental: the tab shows a switch above the list that turns them on, after a warning, and until then only LG's default can be chosen. See [Experimental features](../experimental.md) for why.
 
 **Start screen saver** asks the TV for its screen saver. Some TVs accept the request and then refuse it; a G3 on webOS 9.2.2 refused every one, its own idle screen saver included. There the dashboard opens the screen saver itself, unless something is playing full screen or playback cannot be checked. Any key on the remote, including Home and the coloured buttons, or a second press of the button closes it. A failed close leaves it tracked so another press can retry. The TV does not know about a screen saver opened this way: its power state stays On, in the dashboards and in Home Assistant, and watch time counts the app beneath it. The Screen Saver sensor does show it.
+
+**Poweroff after** puts the TV in standby once a screen saver has been on for the number of minutes typed, from 1 to 1440; blank is off, the default. The count starts when the TV reports its power state as Screen Saver and starts again whenever it leaves it, so any key that closes the screen saver resets it. It applies to LG's screen saver as well as these, and needs power actions allowed (`allowPower`). A screen saver the dashboard opened itself, as above, leaves the power state at On and is not counted. The TV app steps through Off, 3, 5, 10, 20 and 30 minutes; the setting is kept in `config.json` as `screensaverPowerOffMinutes`.
 
 ![Screensaver tab: LG default, Clock, Starfield, Fireworks, Bokeh and Panel vitals, with brightness and a start button beside them](../screenshots/screensaver.png)
 

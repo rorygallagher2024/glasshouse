@@ -7,6 +7,7 @@ var listenDualStack = require('./util').listenDualStack;
 var execFile = require('child_process').execFile;
 var msg = require('./say').msg;
 var timers = require('./timers');
+var saverPowerOff = require('./saverpoweroff');
 var names = require('./names');
 
 /*
@@ -930,6 +931,22 @@ function doControl(action, value, cb) {
           });
         }
         cb(getUpdateSummary());
+      });
+
+    // Poweroff after: minutes of screen saver before standby, 0 or blank for off.
+    case 'screensaverPowerOff':
+      var offMin = saverPowerOff.parseMinutes(value);
+      if (offMin === null) return cb({ ok: false, error: msg('srv.saver.powerOff.bad', 'Poweroff after takes a number of minutes from 1 to {max}, or blank for off', { max: saverPowerOff.MAX_MINUTES }) });
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      // Off leaves it out of the file.
+      return writeSettingsFn({ screensaverPowerOffMinutes: offMin || undefined }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        if (config) {
+          if (offMin) config.screensaverPowerOffMinutes = offMin;
+          else delete config.screensaverPowerOffMinutes;
+        }
+        saverPowerOff.apply();
+        cb({ ok: true, minutes: offMin });
       });
 
     case 'setWebos10ScreensaversAllowed':

@@ -555,6 +555,9 @@ html.nav-hidden body.nav-open{overflow:hidden}
 .toast-form input::placeholder{color:var(--w60)}
 .toast-form button{flex-shrink:0;padding:0 22px;min-height:48px}
 #port-input{flex:0 0 84px;width:84px;font-variant-numeric:tabular-nums}
+#ss-poweroff-form{max-width:340px}
+#ss-poweroff{font-variant-numeric:tabular-nums}
+#ss-poweroff-desc{margin-top:8px}
 button{
   font-family:'Manrope';font-weight:500;font-size:14px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--w80);background:transparent;border:1px solid var(--edge);
@@ -690,26 +693,33 @@ button.key-hit{background:var(--w10)}
 /* The long lists stay one column - a consent row is a sentence, not a tile -
    but capped so the pill stays near what it describes on a wide screen. */
 .priv.panel{max-width:1180px}
-.ss-list{display:grid;gap:14px;grid-template-columns:1fr;margin-top:22px;max-width:760px}
-@media(min-width:820px){.ss-list{grid-template-columns:1fr 1fr}}
-/* A card is the control, not a container with a button in it: the whole thing
+/* One list that scrolls, a row per screen saver, so more fit without the tab
+   growing: the name, and what it shows under it. */
+.ss-list{position:relative;display:flex;flex-direction:column;margin-top:22px;max-width:760px;
+         max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain;
+         border:1px solid var(--w12);border-radius:3px}
+/* A row is the control, not a container with a button in it: the whole thing
    is the click target, so there is nothing to hunt for. */
-.ss-card{display:block;width:100%;text-align:left;background:transparent;cursor:pointer;
-         border:1px solid var(--w12);border-radius:3px;padding:18px 20px;min-height:0;
+.ss-card{display:block;flex:none;
+         width:100%;text-align:left;background:transparent;cursor:pointer;
+         border:0;border-bottom:1px solid var(--w12);border-radius:0;padding:12px 16px;min-height:0;
          color:inherit;font-family:inherit;
-         /* The global button voice is an uppercase pill. These are cards. */
+         /* The global button voice is an uppercase pill. These are rows. */
          text-transform:none;letter-spacing:normal;font-weight:400}
-.ss-card:hover:not([disabled]):not(.on){border-color:var(--w25);background:rgba(var(--fg),.04)}
+.ss-card:last-child{border-bottom:0}
+.ss-card:hover:not([disabled]):not(.on){background:rgba(var(--fg),.04)}
 .ss-card[disabled]{cursor:default;opacity:.45}
 /* The one in use is marked, not dimmed: it is the answer to what is running,
    so it should read as the strongest thing on the panel. */
-.ss-card.on,.ss-card.on:hover{background:transparent;color:inherit;font-weight:400;
-         border-color:var(--green);cursor:default;opacity:1}
-.ss-name{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em;
-         display:flex;align-items:center;justify-content:space-between;gap:12px}
-.ss-desc{font-size:14px;color:var(--w60);margin-top:7px;line-height:1.45;max-width:46ch}
+.ss-card.on,.ss-card.on:hover{background:rgba(var(--fg),.03);color:inherit;font-weight:400;
+         box-shadow:inset 3px 0 0 var(--green);cursor:default;opacity:1}
+.ss-name{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em}
+.ss-desc{font-size:14px;color:var(--w60);margin-top:3px;line-height:1.45;max-width:60ch}
+.ss-meta{font-size:12px;color:var(--w60);margin-top:4px;letter-spacing:.02em}
+.ss-meta.bad{color:var(--red)}
+.ss-meta.warn{color:var(--w80)}
 .ss-card.on .ss-name{color:var(--green)}
-.ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green)}
+.ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
 /* The choice on the left, and what to do with it - brightness, starting it,
    the firmware note - beside it on a wide screen rather than below the list. */

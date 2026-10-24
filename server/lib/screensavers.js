@@ -9,7 +9,8 @@
  */
 
 var samrescan = require('./samrescan');
-var msg = require('./say').msg;
+var say = require('./say');
+var msg = say.msg;
 var fs = require('fs');
 var mkdirp = require('./util').mkdirp;
 var readTrimmed = require('./util').readTrimmed;
@@ -18,6 +19,8 @@ var path = require('path');
 var execFile = require('child_process').execFile;
 var power = require('./power');
 var names = require('./names');
+var saverPowerOff = require('./saverpoweroff');
+var qmlcheck = require('./qmlcheck');
 
 var SCREENSAVER_APP_ID = 'com.webos.app.screensaver';
 var SCREENSAVER_APP_DIR = '/usr/palm/applications/' + SCREENSAVER_APP_ID;
@@ -41,46 +44,205 @@ var LOST_ERROR = msg('srv.saver.lost', 'The TV has lost track of its screen save
 var NOT_TAKEN_ERROR = msg('srv.saver.notTaken', 'The TV did not take the new screen saver without restarting its app manager, which has left the picture or sound off on some TVs, so LG\'s screen saver is kept.');
 var STOCK_LATER_ERROR = msg('srv.saver.stockLater', 'LG\'s screen saver is set, and the TV uses it from its next restart: it did not take the change without restarting its app manager, which has left the picture or sound off on some TVs.');
 
-var SCREENSAVERS = {
-  stock: {
-    label: msg('srv.saver.stock', 'LG default'),
-    description: msg('srv.saver.stock.desc', 'The screen saver the TV shipped with.')
-  },
-  clock: {
-    label: msg('srv.saver.clock', 'Clock'),
-    description: msg('srv.saver.clock.desc', 'A digital clock on black, moving to a new position every minute.'),
-    qml: 'screensavers/clock.qml'
-  },
-  starfield: {
-    label: msg('srv.saver.starfield', 'Starfield'),
-    description: msg('srv.saver.starfield.desc', 'A drifting cosmic starscape with occasional shooting stars.'),
-    qml: 'screensavers/starfield.qml'
-  },
-  fireworks: {
-    label: msg('srv.saver.fireworks', 'Fireworks'),
-    description: msg('srv.saver.fireworks.desc', 'Bursts of colour on black, a few seconds apart.'),
-    qml: 'screensavers/fireworks.qml'
-  },
-  bokeh: {
-    label: msg('srv.saver.bokeh', 'Bokeh'),
-    description: msg('srv.saver.bokeh.desc', 'Soft circles of light drifting in and out on black.'),
-    qml: 'screensavers/bokeh.qml'
-  },
-  harmonograph: {
-    label: msg('srv.saver.harmonograph', 'Harmonograph'),
-    description: msg('srv.saver.harmonograph.desc', 'Pendulum ribbons of light weaving and fading on black.'),
-    qml: 'screensavers/harmonograph.qml'
-  },
-  vitals: {
-    label: msg('srv.saver.vitals', 'Panel vitals'),
-    description: msg('srv.saver.vitals.desc', 'The TV\'s own readings - panel hours, pixel refresher countdown, temperature.'),
-    qml: 'screensavers/vitals.qml'
-  }
+// LG's own, always first. The others are folders, each with a saver.json.
+var STOCK = {
+  id: 'stock',
+  label: msg('srv.saver.stock', 'LG default'),
+  description: msg('srv.saver.stock.desc', 'The screen saver the TV shipped with.'),
+  builtin: true
 };
+
+/*
+ * Screen savers are folders: one per saver, holding a saver.json, its QML and
+ * anything else it uses, all of it staged together. Glasshouse's own are in
+ * assets/screensavers; ones added on the TV are in /var/lib/tvweb/screensavers,
+ * which an update leaves alone. Both are read the same way. A folder's name is
+ * its id, so two in one place cannot clash; an added one's id starts "user-",
+ * so it cannot clash with one of Glasshouse's either. The format is described
+ * in docs/development/SCREENSAVER-DESIGN.md.
+ */
+var USER_SAVERS_DIR = '/var/lib/tvweb/screensavers';
+var MANIFEST = 'saver.json';
+var MANIFEST_FORMAT = 1;
+var USER_PREFIX = 'user-';
+// The id comes from it, so it has to be safe in a setting, a URL and Home
+// Assistant. One named otherwise is listed with the reason.
+var FOLDER_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
+var MAX_SAVER_BYTES = 5 * 1024 * 1024;
+var MAX_SAVER_FILES = 200;
+// What a saver may ask Glasshouse to fill in, and the placeholder for each.
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__' };
+var DEFAULT_ROOTS = [
+  { dir: path.join(__dirname, '..', 'assets', 'screensavers'), builtin: true },
+  { dir: USER_SAVERS_DIR, builtin: false }
+];
+var saverRoots = DEFAULT_ROOTS;
+var catalogCache = null;  // { list: [entries, stock first], byId: {} }
+// What qmlcheck found in each QML file, kept while the file is unchanged, as
+// the list is read each time the tab asks: path -> { stamp, wrong, src }.
+var qmlChecked = {};
+
+// A name or description: a string, or { en: ..., es: ... } with en.
+function manifestText(v) {
+  if (typeof v === 'string' && v) return { en: v };
+  if (v && typeof v === 'object' && typeof v.en === 'string' && v.en) return v;
+  return null;
+}
+
+// Every file in a folder, below it too, by path relative to it. Links are
+// left out, so a folder cannot reach outside itself.
+function saverFiles(dir) {
+  var out = [];
+  (function walk(rel) {
+    var entries = fs.readdirSync(path.join(dir, rel));
+    for (var i = 0; i < entries.length; i++) {
+      var r = rel ? rel + '/' + entries[i] : entries[i];
+      var st = fs.lstatSync(path.join(dir, r));
+      if (st.isSymbolicLink()) continue;
+      if (st.isDirectory()) walk(r);
+      else if (st.isFile()) out.push({ rel: r, size: st.size, mtime: st.mtime.getTime() });
+    }
+  })('');
+  return out;
+}
+
+// One saver's folder as an entry for the list. Something wrong with it is
+// kept as its problem: the saver is listed but cannot be picked.
+function readSaver(root, name) {
+  var dir = path.join(root.dir, name);
+  var id = (root.builtin ? '' : USER_PREFIX) + name;
+  var e = { id: id, dir: dir, builtin: root.builtin, label: name, description: '', order: 1e9, uses: [] };
+  function problem(text) { e.problem = text; return e; }
+  if (!FOLDER_NAME.test(name)) {
+    return problem(msg('srv.saver.badFolder', 'Its folder name, "{name}", can only have lowercase letters, digits and -, starting with a letter or digit, up to 32 characters.', { name: name }));
+  }
+  var m;
+  try { m = JSON.parse(fs.readFileSync(path.join(dir, MANIFEST), 'utf8')); }
+  catch (err) {
+    return problem(msg('srv.saver.badManifest', '{file} could not be read: {error}', { file: MANIFEST, error: err.message }));
+  }
+  if (!m || typeof m !== 'object') return problem(msg('srv.saver.notObject', '{file} is not a JSON object.', { file: MANIFEST }));
+  var name_ = manifestText(m.name), desc = manifestText(m.description);
+  if (name_) e.label = say.define('saver.' + id + '.name', name_.en, name_);
+  if (desc) e.description = say.define('saver.' + id + '.desc', desc.en, desc);
+  e.version = typeof m.version === 'string' ? m.version : '';
+  e.author = typeof m.author === 'string' ? m.author : '';
+  e.license = typeof m.license === 'string' ? m.license : '';
+  e.homepage = typeof m.homepage === 'string' ? m.homepage : '';
+  if (typeof m.order === 'number' && root.builtin) e.order = m.order;
+  if (m.manifest !== MANIFEST_FORMAT) {
+    return problem(msg('srv.saver.format', '{file} is in format {format}, and this Glasshouse reads format {known}.',
+                       { file: MANIFEST, format: String(m.manifest), known: String(MANIFEST_FORMAT) }));
+  }
+  if (!name_ || !desc || !e.version) {
+    return problem(msg('srv.saver.missing', '{file} needs a name, a description and a version.', { file: MANIFEST }));
+  }
+  e.main = m.main === undefined ? 'main.qml' : m.main;
+  if (typeof e.main !== 'string' || !/^[\w.-]+\.qml$/.test(e.main)) {
+    return problem(msg('srv.saver.badMain', '{file}: main must name a .qml file in the folder.', { file: MANIFEST }));
+  }
+  var uses = m.uses === undefined ? [] : m.uses;
+  if (!Array.isArray(uses)) return problem(msg('srv.saver.badUses', '{file}: uses must be a list.', { file: MANIFEST }));
+  for (var i = 0; i < uses.length; i++) {
+    if (!Object.prototype.hasOwnProperty.call(USES, uses[i])) {
+      return problem(msg('srv.saver.unknownUse', '{file}: uses has "{value}", which Glasshouse does not know.', { file: MANIFEST, value: String(uses[i]) }));
+    }
+  }
+  e.uses = uses;
+  // The stats address carries the dashboard's access token.
+  if (!root.builtin && uses.indexOf('stats') !== -1) {
+    return problem(msg('srv.saver.noStats', 'It asks for the TV\'s readings, which only Glasshouse\'s own screen savers are given.'));
+  }
+  if (Array.isArray(m.panels) && m.panels.length === 1 && (m.panels[0] === 'oled' || m.panels[0] === 'lcd')) e.panels = m.panels[0];
+  var need = m.requires && typeof m.requires.webos === 'number' ? m.requires.webos : 0;
+  var have = parseInt(String(webosVersion || ''), 10);
+  if (need && have && have < need) {
+    return problem(msg('srv.saver.needsWebos', 'It needs webOS {need} or later.', { need: String(need) }));
+  }
+  var files;
+  try { files = saverFiles(dir); }
+  catch (err2) { return problem(msg('srv.saver.unreadable', 'Its folder could not be read: {error}', { error: err2.message })); }
+  var bytes = 0, hasMain = false;
+  for (var j = 0; j < files.length; j++) {
+    bytes += files[j].size;
+    if (files[j].rel === e.main) hasMain = true;
+  }
+  if (!hasMain) return problem(msg('srv.saver.noMain', '{main} is missing from its folder.', { main: e.main }));
+  if (files.length > MAX_SAVER_FILES || bytes > MAX_SAVER_BYTES) {
+    return problem(msg('srv.saver.tooBig', 'Its folder is over the limit of {files} files and {mb} MB.',
+                       { files: String(MAX_SAVER_FILES), mb: String(MAX_SAVER_BYTES / 1048576) }));
+  }
+  // A placeholder it did not ask for would be left in, and the QML fail.
+  var qml;
+  try { qml = fs.readFileSync(path.join(dir, e.main), 'utf8'); }
+  catch (err3) { return problem(msg('srv.saver.unreadable', 'Its folder could not be read: {error}', { error: err3.message })); }
+  for (var u in USES) {
+    if (qml.indexOf(USES[u]) !== -1 && uses.indexOf(u) === -1) {
+      return problem(msg('srv.saver.undeclared', '{main} uses {placeholder} without "{use}" in uses.',
+                         { main: e.main, placeholder: USES[u], use: u }));
+    }
+  }
+  // A mistake that would leave it black, in any of its QML files. What one
+  // added on the TV does past the screen is noted under it, not refused.
+  var sources = [];
+  for (var k = 0; k < files.length; k++) {
+    if (!/\.qml$/i.test(files[k].rel)) continue;
+    var full = path.join(dir, files[k].rel);
+    var stamp = files[k].size + ':' + files[k].mtime + ':' + (have || 0);
+    var seen = qmlChecked[full];
+    if (!seen || seen.stamp !== stamp) {
+      var src;
+      try { src = fs.readFileSync(full, 'utf8'); }
+      catch (err4) { return problem(msg('srv.saver.unreadable', 'Its folder could not be read: {error}', { error: err4.message })); }
+      seen = qmlChecked[full] = { stamp: stamp, wrong: qmlcheck.problem(src, files[k].rel, have || 0), src: root.builtin ? '' : src };
+    }
+    if (seen.wrong) return problem(seen.wrong);
+    sources.push(seen.src);
+  }
+  if (!root.builtin) e.cautions = qmlcheck.reaches(sources.join('\n'));
+  return e;
+}
+
+// Every screen saver, read from the folders again: LG's first, then
+// Glasshouse's in their order, then the TV's own by name.
+function scanSavers() {
+  var list = [], byId = { stock: STOCK };
+  for (var r = 0; r < saverRoots.length; r++) {
+    var entries;
+    try { entries = fs.readdirSync(saverRoots[r].dir); } catch (e) { continue; }
+    entries.sort();
+    var found = [];
+    for (var i = 0; i < entries.length; i++) {
+      if (entries[i].charAt(0) === '.') continue;   // hidden
+      try { if (!fs.statSync(path.join(saverRoots[r].dir, entries[i])).isDirectory()) continue; }
+      catch (e2) { continue; }
+      var entry = readSaver(saverRoots[r], entries[i]);
+      if (byId[entry.id]) continue;
+      byId[entry.id] = entry;
+      found.push(entry);
+    }
+    found.sort(function (a, b) {
+      return a.order - b.order || (a.label.toLowerCase() < b.label.toLowerCase() ? -1 : a.label.toLowerCase() > b.label.toLowerCase() ? 1 : 0);
+    });
+    list = list.concat(found);
+  }
+  catalogCache = { list: [STOCK].concat(list), byId: byId };
+  return catalogCache;
+}
+
+function savers() { return catalogCache || scanSavers(); }
+
+// The screen savers, LG's first, each { id, label, description, builtin, ... }.
+// Reads the folders again, so one just added on the TV is there.
+function catalog() { return scanSavers().list; }
+
+function saverById(id) {
+  var byId = savers().byId;
+  return Object.prototype.hasOwnProperty.call(byId, id) ? byId[id] : null;
+}
 
 var webosVersion = null;  // as the TV reports it
 var lunaFn = null;
-var assetPathFn = null;
 var configObj = null;
 var injectKeyFn = null;
 var keyBackVal = null;
@@ -101,16 +263,21 @@ function clearStagedScreensaver() {
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER));
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER));
   unlinkQuiet(path.join(SCREENSAVER_DIR, 'appinfo.json'));
-  try {
-    var qmlDir = path.join(SCREENSAVER_DIR, 'qml');
-    if (fs.existsSync(qmlDir)) {
-      var files = fs.readdirSync(qmlDir);
-      for (var i = 0; i < files.length; i++) {
-        unlinkQuiet(path.join(qmlDir, files[i]));
-      }
-      try { fs.rmdirSync(qmlDir); } catch (e) {}
-    }
-  } catch (e) {}
+  removeTree(path.join(SCREENSAVER_DIR, 'qml'));
+}
+
+// A folder and everything in it, quietly: the staged copy of a saver.
+function removeTree(dir) {
+  var entries;
+  try { entries = fs.readdirSync(dir); } catch (e) { return; }
+  for (var i = 0; i < entries.length; i++) {
+    var p = path.join(dir, entries[i]);
+    var isDir = false;
+    try { isDir = fs.lstatSync(p).isDirectory(); } catch (e2) {}
+    if (isDir) removeTree(p);
+    else unlinkQuiet(p);
+  }
+  try { fs.rmdirSync(dir); } catch (e3) {}
 }
 
 function unmountScreensaver(cb) {
@@ -131,9 +298,10 @@ function unmountScreensaver(cb) {
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
-  assetPathFn = opts.assetPath;
   configObj = opts.config;
   webosVersion = opts.webosVersion || null;
+  saverRoots = opts.saverRoots || DEFAULT_ROOTS;
+  catalogCache = null;
   injectKeyFn = opts.injectKey;
   keyBackVal = opts.KEY_BACK;
   if (opts.inputKey) inputKeyFn = opts.inputKey;
@@ -216,7 +384,8 @@ function screensaverLevel() {
 
 function screensaverMode() {
   var m = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
-  return SCREENSAVERS[m] && m !== 'stock' ? m : 'stock';
+  var e = m && m !== 'stock' ? saverById(m) : null;
+  return e && !e.problem ? m : 'stock';
 }
 
 function detectExternal() {
@@ -265,13 +434,24 @@ function detectExternal() {
 function screensaverList() {
   var cur = screensaverMode();
   var out = [];
-  for (var k in SCREENSAVERS) {
+  var all = catalog();
+  for (var i = 0; i < all.length; i++) {
+    var e = all[i];
     out.push({
-      id: k,
-      label: SCREENSAVERS[k].label,
-      description: SCREENSAVERS[k].description,
-      active: k === cur,
-      available: k === 'stock' || (!heldBack() && !!(assetPathFn && assetPathFn(SCREENSAVERS[k].qml)))
+      id: e.id,
+      label: e.label,
+      description: e.description,
+      active: e.id === cur,
+      available: e.id === 'stock' || (!heldBack() && !e.problem),
+      builtin: e.builtin,
+      author: e.author || undefined,
+      license: e.license || undefined,
+      version: e.version || undefined,
+      panels: e.panels,
+      // Why it cannot be picked, where something is wrong with its folder.
+      note: e.problem,
+      // What one added on the TV does past the screen: the network, sound.
+      cautions: e.cautions && e.cautions.length ? e.cautions : undefined
     });
   }
   return {
@@ -287,7 +467,10 @@ function screensaverList() {
     held: heldBack(),
     heldOverridden: heldOverridden(),
     switching: switching(),
-    external: detectExternal()
+    external: detectExternal(),
+    // Poweroff after, in minutes (0 for off); it needs power actions allowed.
+    powerOffMinutes: saverPowerOff.minutes(),
+    allowPower: !!(configObj && configObj.allowPower)
   };
 }
 
@@ -358,32 +541,40 @@ function settleScreensaverApp(cb) {
   });
 }
 
-function writeScreensaverQml(src, level) {
-  var port = (configObj && configObj.port) || 8080;
-  var token = configObj && configObj.token;
-  var qml = fs.readFileSync(src, 'utf8')
-    .replace(/__TVWEB_URL__/g,
-      'http://127.0.0.1:' + port + '/api/stats' +
-      (token ? '?k=' + encodeURIComponent(token) : ''))
-    .replace(/__TVWEB_LEVEL__/g, level === 'bright' ? '1' : '0');
-  fs.writeFileSync(path.join(SCREENSAVER_DIR, 'qml', 'main.qml'), qml);
-
-  try {
-    var from = path.dirname(src);
-    var files = fs.readdirSync(from);
-    for (var i = 0; i < files.length; i++) {
-      if (/\.qml$/i.test(files[i])) continue;
-      fs.writeFileSync(path.join(SCREENSAVER_DIR, 'qml', files[i]),
-                       fs.readFileSync(path.join(from, files[i])));
-    }
-  } catch (e) {
-    console.error('screensaver: could not stage its files: ' + e.message);
+// A saver's whole folder into the staged app's qml folder, its main file as
+// main.qml, with what it asked for in uses filled in.
+function stageSaverFiles(e, level) {
+  var qmlDir = path.join(SCREENSAVER_DIR, 'qml');
+  removeTree(qmlDir);
+  mkdirp(qmlDir);
+  var files = saverFiles(e.dir);
+  for (var i = 0; i < files.length; i++) {
+    var rel = files[i].rel;
+    if (rel === MANIFEST || rel === e.main) continue;
+    mkdirp(path.dirname(path.join(qmlDir, rel)));
+    fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
+  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), level === 'bright' ? 'bright' : 'dim');
 }
 
+function fillSaverQml(e, qml, level) {
+  var port = (configObj && configObj.port) || 8080;
+  var token = configObj && configObj.token;
+  if (e.uses.indexOf('stats') !== -1) {
+    qml = qml.replace(/__TVWEB_URL__/g,
+      'http://127.0.0.1:' + port + '/api/stats' + (token ? '?k=' + encodeURIComponent(token) : ''));
+  }
+  if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, level === 'bright' ? '1' : '0');
+  return qml;
+}
+
 function setScreensaver(mode, level, cb) {
-  if (!SCREENSAVERS[mode]) return cb({ ok: false, error: 'unknown screen saver: ' + mode });
+  // Read again, so a saver just added on the TV can be picked.
+  if (mode !== 'stock') scanSavers();
+  var saver = mode === 'stock' ? STOCK : saverById(mode);
+  if (!saver) return cb({ ok: false, error: 'unknown screen saver: ' + mode });
+  if (saver.problem) return cb({ ok: false, error: saver.problem });
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
   if (mode !== 'stock' && heldBack()) return cb({ ok: false, error: HELD_ERROR });
   level = (level === 'bright') ? 'bright' : 'dim';
@@ -397,13 +588,10 @@ function setScreensaver(mode, level, cb) {
       });
     }
 
-    var src = assetPathFn ? assetPathFn(SCREENSAVERS[mode].qml) : null;
-    if (!src) return cb({ ok: false, error: 'screen saver asset missing: ' + SCREENSAVERS[mode].qml });
-
     try {
       mkdirp(path.join(SCREENSAVER_DIR, 'qml'));
       stageScreensaverAppinfo();
-      writeScreensaverQml(src, level);
+      stageSaverFiles(saver, level);
       fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), mode);
     } catch (e) {
       return cb({ ok: false, error: msg('srv.saver.stageFailed', 'could not stage the screen saver: {error}', { error: e.message }) });
@@ -434,14 +622,14 @@ function setScreensaver(mode, level, cb) {
 function restageScreensaver() {
   var mode = screensaverMode();
   if (mode === 'stock') return;
-  var src = assetPathFn ? assetPathFn(SCREENSAVERS[mode].qml) : null;
-  if (!src) return;
+  var saver = saverById(mode);
+  if (!saver || saver.problem) return;
   try {
     var staged = path.join(SCREENSAVER_DIR, 'qml', 'main.qml');
     var before = fs.existsSync(staged) ? fs.readFileSync(staged, 'utf8') : '';
-    writeScreensaverQml(src, screensaverLevel());
+    stageSaverFiles(saver, screensaverLevel());
     if (fs.readFileSync(staged, 'utf8') !== before) {
-      console.log('screensaver: restaged "' + mode + '" from a newer asset');
+      console.log('screensaver: restaged "' + mode + '" from a newer copy');
     }
   } catch (e) {
     console.error('screensaver: could not restage ' + mode + ': ' + e.message);
@@ -711,7 +899,8 @@ function trigger(cb) {
 module.exports = {
   SCREENSAVER_APP_DIR: SCREENSAVER_APP_DIR,
   SCREENSAVER_DIR: SCREENSAVER_DIR,
-  SCREENSAVERS: SCREENSAVERS,
+  USER_SAVERS_DIR: USER_SAVERS_DIR,
+  catalog: catalog,
   init: init,
   clearStagedScreensaver: clearStagedScreensaver,
   unmountScreensaver: unmountScreensaver,

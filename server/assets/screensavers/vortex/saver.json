@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Vortex",
+    "es": "Vórtice"
+  },
+  "description": {
+    "en": "Whirlwinds of light spiraling up swaying funnels on black.",
+    "es": "Torbellinos de luz que suben en espiral por embudos que se mecen sobre negro."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 110
+}

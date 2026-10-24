@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Murmuration",
+    "es": "Bandada"
+  },
+  "description": {
+    "en": "Flocks of light swooping after their leaders across black.",
+    "es": "Bandadas de luz que siguen a sus líderes en picado sobre negro."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 100
+}

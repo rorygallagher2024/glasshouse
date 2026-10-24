@@ -73,12 +73,24 @@ assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \
 assets/fonts/Outfit-Light.ttf assets/fonts/Outfit-Regular.ttf \
 assets/fonts/Manrope-Regular.ttf assets/fonts/Manrope-SemiBold.ttf \
 assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Manrope.txt \
-assets/screensavers/clock.qml assets/screensavers/fireworks.qml \
-assets/screensavers/starfield.qml assets/screensavers/vitals.qml assets/screensavers/star.png \
-assets/screensavers/bokeh.qml assets/screensavers/bokeh.png \
-assets/screensavers/harmonograph.qml \
-lib/mqtt.js lib/ha.js lib/updater.js lib/fetch.js lib/repo.js lib/installer.js lib/privacy.js lib/devtools.js lib/oled.js lib/screensavers.js lib/telemetry.js \
-lib/apps.js lib/samrescan.js lib/children.js lib/luna.js lib/piccap.js lib/state.js lib/mqtt-state.js lib/notifications.js lib/screentime.js lib/services.js lib/preload.js lib/quickaccess.js lib/remotekeys.js lib/homescreen.js lib/homescreen-webos9.js lib/homescreen-webos10.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/timers.js lib/util.js lib/names.js lib/prometheus.js lib/remotebuttons.js lib/remotebuttons.py lib/logs.js lib/syslog.js lib/ntp.js lib/power.js lib/history.js lib/sshkeys.js lib/remotebattery.js lib/backup.js lib/iconserver.js lib/home.js lib/home-picture.js lib/home-takeover.js lib/home-wallpapers.js lib/home-recent.js lib/home-recent-apps.js"
+assets/screensavers/bokeh/bokeh.png assets/screensavers/bokeh/main.qml \
+assets/screensavers/bokeh/saver.json assets/screensavers/clock/main.qml \
+assets/screensavers/clock/saver.json assets/screensavers/currents/main.qml \
+assets/screensavers/currents/saver.json assets/screensavers/filament/main.qml \
+assets/screensavers/filament/saver.json assets/screensavers/fireworks/main.qml \
+assets/screensavers/fireworks/saver.json assets/screensavers/fireworks/star.png \
+assets/screensavers/harmonograph/main.qml assets/screensavers/harmonograph/saver.json \
+assets/screensavers/incense/main.qml assets/screensavers/incense/saver.json \
+assets/screensavers/murmuration/main.qml assets/screensavers/murmuration/saver.json \
+assets/screensavers/neo/main.qml assets/screensavers/neo/saver.json \
+assets/screensavers/starfield/main.qml assets/screensavers/starfield/saver.json \
+assets/screensavers/starfield/star.png assets/screensavers/veils/main.qml \
+assets/screensavers/veils/saver.json assets/screensavers/vitals/main.qml \
+assets/screensavers/vitals/saver.json assets/screensavers/vortex/main.qml \
+assets/screensavers/vortex/saver.json \
+screensavers/pigs/main.qml screensavers/pigs/saver.json \
+lib/mqtt.js lib/ha.js lib/updater.js lib/fetch.js lib/repo.js lib/installer.js lib/privacy.js lib/devtools.js lib/oled.js lib/screensavers.js lib/qmlcheck.js lib/telemetry.js \
+lib/apps.js lib/samrescan.js lib/children.js lib/luna.js lib/piccap.js lib/state.js lib/mqtt-state.js lib/notifications.js lib/screentime.js lib/saverpoweroff.js lib/services.js lib/preload.js lib/quickaccess.js lib/remotekeys.js lib/homescreen.js lib/homescreen-webos9.js lib/homescreen-webos10.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/timers.js lib/util.js lib/names.js lib/prometheus.js lib/remotebuttons.js lib/remotebuttons.py lib/logs.js lib/syslog.js lib/ntp.js lib/power.js lib/history.js lib/sshkeys.js lib/remotebattery.js lib/backup.js lib/iconserver.js lib/home.js lib/home-picture.js lib/home-takeover.js lib/home-wallpapers.js lib/home-recent.js lib/home-recent-apps.js"
 
 for t in tar base64 fold; do
   command -v "$t" >/dev/null 2>&1 && continue

@@ -43,6 +43,19 @@ function pressScreensaver(id) {
   sendCommand('screensaver');
 }
 
+// Under a saver added on the TV, who made it, its license and what it does
+// past the screen; under one that cannot be picked, why. Glasshouse's own carry nothing more.
+function ssMeta(m) {
+  if (m.note) return `<div class="ss-meta bad">${esc(m.note)}</div>`;
+  if (m.builtin !== false) return '';
+  const bits = [t('ss.added', 'Added on this TV')];
+  if (m.author) bits.push(t('ss.by', 'by {author}', { author: m.author }));
+  if (m.license) bits.push(m.license);
+  const cautions = (m.cautions || []).join(' ');
+  return `<div class="ss-meta">${esc(bits.join(' · '))}</div>` +
+    (cautions ? `<div class="ss-meta warn">${esc(cautions)}</div>` : '');
+}
+
 async function loadScreensavers() {
   const box = q('ss-list');
   if (!box) return;
@@ -60,8 +73,14 @@ async function loadScreensavers() {
     <button class="ss-card${m.active ? ' on' : ''}" data-ss="${esc(m.id)}"
             ${(!m.available || locked) ? 'disabled' : ''}>
       <div class="ss-name"><span>${esc(m.label)}</span>${m.active ? `<span class="ss-tag">${t('ss.inUse', 'In use')}</span>` : ''}</div>
-      <div class="ss-desc">${esc(m.description)}</div>
+      <div class="ss-desc">${esc(m.description)}</div>${ssMeta(m)}
     </button>`).join('');
+  // The one in use in view, once: after that the list stays where it was scrolled to.
+  const inUse = box.querySelector('.ss-card.on');
+  if (inUse && !box.dataset.scrolled) {
+    box.dataset.scrolled = '1';
+    box.scrollTop = Math.max(0, inUse.offsetTop - (box.clientHeight - inUse.offsetHeight) / 2);
+  }
 
   /* LG's own screen saver is not ours to draw, so brightness is offered only
      for the ones that are. */
@@ -85,12 +104,44 @@ async function loadScreensavers() {
     : d.held && d.current !== 'stock' ? t('ss.held', 'Custom screen savers are turned off on this TV for now, as they have not been tried on its webOS version. Switch to LG\'s screen saver to stop using this one now; otherwise it goes when the TV is next fully restarted.')
     : (d.slowSwitch ? t('ss.slowSwitch', 'On this TV, switching to or from the LG default takes about a minute, and the screen goes dark while it does.') + ' ' : '')
       + t('ss.firmwareNote', 'Note: if a firmware update is applied, the screen saver will be restored to the LG default.'));
+  renderSsPowerOff(d);
   ssWritable = d.writable;
   // The status poll sets it from here on; this just saves waiting for it.
   if (ssSwitching) refuseScreensaver(q('ss-toggle'), SS_SWITCHING);
 
   clearTimeout(ssSwitchPoll);
   if (ssSwitching) ssSwitchPoll = setTimeout(() => { if (activeTab === 'screensaver') loadScreensavers(); }, 4000);
+}
+
+/*
+ * Poweroff after: minutes of screen saver before the TV goes to standby.
+ * Typed rather than picked, so any number of minutes will do; blank is off.
+ */
+function renderSsPowerOff(d) {
+  const input = q('ss-poweroff'), btn = q('ss-poweroff-save'), desc = q('ss-poweroff-desc');
+  if (!input) return;
+  const n = d.powerOffMinutes || 0;
+  // Not while someone is typing: the tab reloads under them.
+  if (!input.dataset.dirty) input.value = n ? String(n) : '';
+  input.disabled = btn.disabled = !d.writable;
+  desc.textContent = !d.allowPower
+    ? t('ss.powerOff.noPower', 'Power actions are off in config.json, so this cannot put the TV in standby.')
+    : n === 1 ? t('ss.powerOff.onOne', 'The TV goes to standby once a screen saver has been on for a minute. Any button on the remote starts the count again.')
+    : n ? t('ss.powerOff.on', 'The TV goes to standby once a screen saver has been on for {n} minutes. Any button on the remote starts the count again.', { n })
+    : t('ss.powerOff.off', 'Minutes of screen saver before the TV goes to standby. Blank for never.');
+}
+
+async function saveSsPowerOff() {
+  const input = q('ss-poweroff'), btn = q('ss-poweroff-save');
+  btn.disabled = true; btn.classList.add('busy');
+  try {
+    // A refusal, such as a word for a number, is shown by sendCommand.
+    const r = await sendCommand('screensaverPowerOff', input.value.trim());
+    if (r && r.ok) delete input.dataset.dirty;
+  } finally {
+    btn.disabled = false; btn.classList.remove('busy');
+    loadScreensavers();
+  }
 }
 
 /*

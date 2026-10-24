@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Bokeh",
+    "es": "Bokeh"
+  },
+  "description": {
+    "en": "Soft circles of light drifting in and out on black.",
+    "es": "Círculos suaves de luz que aparecen y se desvanecen sobre negro."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 40
+}

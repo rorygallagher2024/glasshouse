@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Veils",
+    "es": "Velos"
+  },
+  "description": {
+    "en": "Translucent ribbons of light rippling slowly across black.",
+    "es": "Cintas de luz translúcidas que ondulan despacio sobre negro."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 80
+}

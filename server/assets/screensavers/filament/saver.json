@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Filament",
+    "es": "Filamento"
+  },
+  "description": {
+    "en": "Swarms of light circling and trailing across black, slowly changing color.",
+    "es": "Enjambres de luz que giran y dejan estelas sobre negro, cambiando de color poco a poco."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 60
+}

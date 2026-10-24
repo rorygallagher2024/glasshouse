@@ -90,7 +90,7 @@ def check_deploy():
         return set()
     listed = set(m.group(1).replace('\\\n', ' ').split())
     on_disk = set()
-    scan_dirs = [root / 'server' / 'assets', root / 'server' / 'lib']
+    scan_dirs = [root / 'server' / 'assets', root / 'server' / 'lib', root / 'server' / 'screensavers']
     for d in scan_dirs:
         if d.exists():
             for f in d.rglob('*'):
@@ -98,7 +98,7 @@ def check_deploy():
                     on_disk.add(str(f.relative_to(root / 'server')))
     for missing in sorted(on_disk - listed):
         problems.append('server/deploy.sh: %s is not in FILES, so it is never installed' % missing)
-    for gone in sorted(f for f in listed - on_disk if f.startswith('assets/') or f.startswith('lib/')):
+    for gone in sorted(f for f in listed - on_disk if f.startswith(('assets/', 'lib/', 'screensavers/'))):
         problems.append('server/deploy.sh: FILES lists %s, which does not exist' % gone)
     return on_disk
 

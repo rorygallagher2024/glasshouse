@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Incense",
+    "es": "Incienso"
+  },
+  "description": {
+    "en": "Thin streams of colored smoke rising and curling on black.",
+    "es": "Finas columnas de humo de colores que suben y se enroscan sobre negro."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 90
+}

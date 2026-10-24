@@ -752,6 +752,17 @@
     </div>
   </div>
 
+  <div class="ss-level-row" id="ss-poweroff-row">
+    <div class="ss-level-lbl" data-t="ss.powerOff">Poweroff after</div>
+    <form class="toast-form" id="ss-poweroff-form" onsubmit="event.preventDefault();saveSsPowerOff();">
+      <input type="text" id="ss-poweroff" inputmode="numeric" maxlength="12" placeholder="Off" data-t-placeholder="common.off"
+        autocomplete="off" aria-label="Minutes of screen saver before standby" data-t-aria-label="ss.powerOff.input"
+        oninput="this.dataset.dirty='1'">
+      <button type="submit" id="ss-poweroff-save" data-t="server.port.save">Save</button>
+    </form>
+    <div class="pv-sub" id="ss-poweroff-desc"></div>
+  </div>
+
   <div class="pv-note" id="ss-note"></div>
   </div>
   </div>
