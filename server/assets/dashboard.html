@@ -409,6 +409,10 @@ var initialSel = null;
 var lanOrigin = null, lanKey = null;
 // allowPower in config.json; without it the server refuses Power off and Reboot, so they are not offered.
 var allowPower = false;
+// clock.hour12 in config.json: 12-hour time on this clock, switched from the Server tab.
+var clockHour12 = false;
+// Ticks since caps were read again, for the hour cycle to be noticed on an open page.
+var capsTicks = 0;
 function refreshCaps() {
   fetch('/api/caps', { cache: 'no-store' })
     .then(function (r) { return r.json(); })
@@ -426,6 +430,9 @@ function refreshCaps() {
       allowPower = !!(d && d.allowPower);
       renderHint();
       if (allowPower !== couldPower && T().key === 'options') fetchTab(true);
+      var couldHour12 = clockHour12;
+      clockHour12 = !!(d && d.clockHour12);
+      if (clockHour12 !== couldHour12) tick();
     })
     .catch(function () {});
 }
@@ -452,9 +459,18 @@ applyTheme(currentTheme);
 function T() { return TABS[tab]; }
 
 function tick() {
-  var d = new Date(), h = d.getHours(), m = d.getMinutes();
-  document.getElementById('clock').textContent =
-    (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  var d = new Date(), h = d.getHours(), m = d.getMinutes(), text;
+  if (clockHour12) {
+    h = h % 12 || 12;
+    text = h + ':' + (m < 10 ? '0' : '') + m + ' ' +
+      (d.getHours() < 12 ? t('common.am', 'AM') : t('common.pm', 'PM'));
+  } else {
+    text = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  document.getElementById('clock').textContent = text;
+  /* Caps are read again every sixth tick: the hour cycle is one the Server
+     tab can change while this page is open, and it is read nowhere else. */
+  if (++capsTicks >= 6) { capsTicks = 0; refreshCaps(); }
 }
 setInterval(tick, 10000); tick();
 

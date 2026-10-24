@@ -36,6 +36,9 @@
   "logging": {
     "level": "info"
   },
+  "clock": {
+    "hour12": false
+  },
   "prometheus": {
     "enabled": false
   },

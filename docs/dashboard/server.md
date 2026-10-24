@@ -16,6 +16,8 @@ Shows the installed version and whether a newer release is out. **Check now** lo
 
 **Update pop-up** shows a pop-up in the browser it is switched on in when a newer release is out, over whichever tab is open, with the release's one-line summary. **Update** installs it the way **Install** does, with its progress in the pop-up, and **Dismiss** leaves it until the next release. It is off by default and kept per browser. Where the update cannot be installed from the dashboard, because controls are off or the Homebrew Channel owns the install, the pop-up only says it is out.
 
+**12-hour time** draws the time as 9:40 PM rather than 21:40 on every clock the TV shows: the dashboard's own, [Glasshouse Home](home.md) and the clock screen savers. It is off by default, and saved in `config.json` as `clock.hour12`, so it is kept across restarts and updates. The clocks take it up at once, except a clock screen saver already on screen, which has the hour cycle written into its file and so picks it up the next time it starts.
+
 **Server health** shows the background process uptime and memory footprint on the TV.
 
 **Watch time** counts how long the screen is on, per app and input, for [the Metrics tab](metrics.md#watch-time) and Home Assistant. It is off by default, as it records what the household watches. **Clear history** deletes what has been kept, whether counting is on or off.

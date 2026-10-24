@@ -41,6 +41,9 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #now{display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;padding:0 112px;height:262px}
 #when{width:520px;-webkit-flex:0 0 auto;flex:0 0 auto}
 #clock{font-family:'Outfit',sans-serif;font-size:176px;line-height:.8;font-weight:300;letter-spacing:-4px}
+/* The hour cycle, in 12-hour time only: small enough to stay inside #when,
+   which is sized for the digits alone. */
+#mer{font-size:.28em;letter-spacing:0;margin-left:.1em;opacity:.75;font-weight:400}
 #date{margin-top:22px;font-size:28px;color:#a39d93}
 #source{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;padding-left:24px;border-left:1px solid #2a2825;padding-bottom:2px}
 #source.none{visibility:hidden}
@@ -196,7 +199,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 
   <section id="now">
     <div id="when">
-      <div id="clock">&mdash;</div>
+      <div id="clock"><span id="hm">&mdash;</span><span id="mer" hidden></span></div>
       <div id="date">&mdash;</div>
     </div>
     <div id="source" class="none">
@@ -268,6 +271,8 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
   var build = null;
   var okDownAt = 0, okTimer = null, okLong = false, okInRecents = false, backDown = false;
   var beatFails = 0;
+  // clock.hour12 in config.json, which the server repeats with each heartbeat.
+  var hour12 = false;
   var layoutRevision = 0, layoutBusy = false;
   // home.json's version as last loaded: a heartbeat bringing another means it
   // was changed elsewhere, such as from a dashboard, and the layout is reloaded.
@@ -277,7 +282,20 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 
   function $(id) { return document.getElementById(id); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
-  function hm(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  // The hour cycle, and the time to go with it. clock.hour12 in config.json
+  // selects it: 12-hour time names the half of the day, 24-hour time adds
+  // no word. hmParts keeps the two apart, since the clock sets the word in
+  // type of its own.
+  function meridiem(d) { return d.getHours() < 12 ? t('common.am', 'AM') : t('common.pm', 'PM'); }
+  function hmParts(d) {
+    var h = d.getHours();
+    return [(hour12 ? ((h % 12) || 12) : pad(h)) + ':' + pad(d.getMinutes()),
+            hour12 ? meridiem(d) : ''];
+  }
+  function hm(d) {
+    var p = hmParts(d);
+    return p[1] ? p[0] + ' ' + p[1] : p[0];
+  }
   function esc(s) {
     return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -480,7 +498,10 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 
   function renderNow() {
     var d = new Date();
-    $('clock').textContent = hm(d);
+    var p = hmParts(d);
+    $('hm').textContent = p[0];
+    $('mer').textContent = p[1];
+    $('mer').hidden = !p[1];
     $('date').textContent = dateText(d);
     var kind = '', title = '', via = '';
     if (lastOn.kind === 'input') {
@@ -1156,6 +1177,12 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
         wallRevision = r.wallpapers && r.wallpapers.revision || '';
         updateWall();
         $('fault').className = '';
+        // The hour cycle is switched from the dashboard's Server tab, so the
+        // heartbeat is where this view hears of it.
+        if (typeof r.clockHour12 === 'boolean' && r.clockHour12 !== hour12) {
+          hour12 = r.clockHour12;
+          renderNow();
+        }
         // A new release of the server: the page is the old one's until reloaded.
         if (build && r.build && r.build !== build) {
           if (!state.arranging && !layoutBusy) location.reload();

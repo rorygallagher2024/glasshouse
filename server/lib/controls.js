@@ -990,6 +990,25 @@ function doControl(action, value, cb) {
       });
 
     /*
+     * The hour cycle every clock in the app draws. routes.js reads this same
+     * config object, so the dashboards and Home take it without a restart;
+     * the clock screen savers have it written into their staged QML, so those
+     * files are written again now.
+     */
+    case 'setClockHour12':
+      var clockOn = (value === true || value === 'on' || value === 'true');
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ clock: { hour12: clockOn } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        if (config) {
+          config.clock = config.clock || {};
+          config.clock.hour12 = clockOn;
+        }
+        if (screensavers && screensavers.restageScreensaver) screensavers.restageScreensaver();
+        cb(getUpdateSummary());
+      });
+
+    /*
      * The time server, "host" or "host:port"; empty turns it off. The client
      * restarts with it, and the answer waits for its first sync, so the
      * Server tab shows straight away whether the server answered.

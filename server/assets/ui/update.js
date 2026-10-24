@@ -114,6 +114,14 @@ function renderUpdate(d) {
       disabled: !d.writable
     });
   }
+  if (typeof d.clockHour12 === 'boolean') {
+    updateToggle('srv-clock12', {
+      cls: d.clockHour12 ? 'good' : 'idle',
+      label: d.clockHour12 ? t('common.on', 'On') : t('common.off', 'Off'),
+      on: d.clockHour12,
+      disabled: !d.writable
+    });
+  }
   if (d.watchHistory) {
     updateToggle('srv-watch', {
       cls: d.watchHistory.enabled ? 'good' : 'idle',
@@ -689,6 +697,14 @@ async function togglePrometheus() {
   const b = q('srv-prometheus');
   b.disabled = true;
   const r = await sendCommand('setPrometheusEnabled', !b.dataset.on);
+  if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
+// Saved to config.json like the switches above, and read by every clock at once.
+async function toggleClockHour12() {
+  const b = q('srv-clock12');
+  b.disabled = true;
+  const r = await sendCommand('setClockHour12', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
 

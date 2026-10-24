@@ -340,6 +340,11 @@ function prometheusEnabled() {
   return !!(config.prometheus && config.prometheus.enabled === true);
 }
 
+// Whether the clocks draw 12-hour time: clock.hour12 in config.json.
+function clockHour12() {
+  return !!(config && config.clock && config.clock.hour12 === true);
+}
+
 function handoffPort() { return (config.port || 8080) + 1; }
 
 function stopHandoff() {
@@ -611,6 +616,7 @@ function updateSummary() {
   s.isWebos10 = !!(screensaversModule && screensaversModule.experimental && screensaversModule.experimental());
   s.homeLayout = homeScreenModule ? homeScreenModule.experimental() : null;
   s.prometheusEnabled = prometheusEnabled();
+  s.clockHour12 = clockHour12();
   s.watchHistory = historyModule ? historyModule.status() : null;
   s.backupDaily = backupModule ? backupModule.dailyStatus() : null;
   s.ntp = ntpModule ? ntpModule.getStatus() : null;
@@ -1056,6 +1062,8 @@ function handleHomeRoute(req, res, u, pathname) {
       var wants = String((u.query && u.query['with']) || '').split(',');
       return homeModule.status(function (st) {
         st.writable = !!config.allowControl || fromTV(req);
+        // What the Home pane draws its colour previews' clock as.
+        st.clockHour12 = clockHour12();
         if (wants.indexOf('catalogue') === -1) return reply(st);
         homeModule.catalogue(function (c) {
           st.catalogue = c;
@@ -1126,7 +1134,10 @@ function handleHomeRoute(req, res, u, pathname) {
     if (pathname === '/api/home/beat') {
       if (!postGuard(req, res, 'application/json', false)) return;
       req.resume();
-      return reply(homeModule.beat());
+      // The hour cycle the view's clock draws, which the Server tab changes.
+      var beatBody = homeModule.beat();
+      beatBody.clockHour12 = clockHour12();
+      return reply(beatBody);
     }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
@@ -1224,7 +1235,9 @@ function handleRequest(req, res) {
       ok: true, allowControl: config.allowControl, allowPower: config.allowPower,
       // Bare: the Homebrew Channel app's launch page compares it with its own.
       origin: lanOrigin(), version: versionStr,
-      fromHomebrewChannel: fromHomebrewChannel(), setupNeeded: setupPending()
+      fromHomebrewChannel: fromHomebrewChannel(), setupNeeded: setupPending(),
+      // The hour cycle the dashboard's own clock draws.
+      clockHour12: clockHour12()
     };
     // The token goes into the TV's QR codes, so a phone that scans one can use
     // what it opens. Only to the TV itself: whoever sees the screen holds the

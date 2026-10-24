@@ -153,10 +153,13 @@ function renderHomeColours() {
   const now = homeLookNow();
   const can = homeWritable() && !homeSaving;
   // The first preset is the view's own colours, saved as none chosen.
+  // The sample clock in each preview is a fixed time, in the hour cycle the
+  // Server tab sets.
+  const lookClock = homeStatus.clockHour12 ? `9:40 ${t('common.pm', 'PM')}` : '21:40';
   box.innerHTML = presets.map((p, i) => `<button type="button" class="home-look${now && now.id === p.id ? ' picked' : ''}"
       onclick="homeSaveLayout({ colours: ${i === 0 ? 'null' : `{ text: '${p.text}', accent: '${p.accent}' }`} })" ${can ? '' : 'disabled'}
       aria-pressed="${now && now.id === p.id}" style="--look-text:${p.text};--look-accent:${p.accent}">
-      <span class="home-look-screen"><span class="home-look-clock">21:40</span><span class="home-look-row">${esc(t('home.row.apps', 'Apps'))}</span><i></i></span>
+      <span class="home-look-screen"><span class="home-look-clock">${lookClock}</span><span class="home-look-row">${esc(t('home.row.apps', 'Apps'))}</span><i></i></span>
       <span class="home-look-name">${esc(names[p.id] || p.id)}</span>
     </button>`).join('');
   const c = (homeLayout && homeLayout.colours) || presets[0] || { text: '#ece7df', accent: '#e9ad55' };

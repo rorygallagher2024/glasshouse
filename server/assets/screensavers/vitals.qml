@@ -57,6 +57,8 @@ WebOSWindow {
 
     // Dim or bright, written in when the screen saver is staged.
     property int level: __TVWEB_LEVEL__
+    // 12-hour or 24-hour, staged with the level above; "" in 24-hour.
+    property bool hour12: __TVWEB_CLOCK12__
 
     // Surface & typography palette (scaled down for Dim mode)
     property color boxOuterBg:   level > 0 ? "#0c0f16" : "#06080c"
@@ -152,6 +154,8 @@ WebOSWindow {
     property string activeUptimeStr: "—"
     property string clockH: "00"
     property string clockM: "00"
+    // The hour cycle, beside the clock in 12-hour time and empty otherwise.
+    property string clockMer: ""
     property int soundVol: 0
     property bool soundMuted: false
     property string soundOutLabel: "TV Speaker"
@@ -619,8 +623,10 @@ WebOSWindow {
 
     function refreshClock() {
         var now = new Date();
-        win.clockH = win.two(now.getHours());
+        var h = now.getHours();
+        win.clockH = win.two(win.hour12 ? ((h % 12) || 12) : h);
         win.clockM = win.two(now.getMinutes());
+        win.clockMer = win.hour12 ? (h < 12 ? "AM" : "PM") : "";
     }
 
     function pickNewStagePosition() {
@@ -1713,6 +1719,7 @@ WebOSWindow {
             }
 
             Row {
+                id: clockRow
                 x: 0
                 y: Math.round(26 * win.unit)
                 spacing: Math.round(6 * win.unit)
@@ -1745,6 +1752,18 @@ WebOSWindow {
                     color: win.inkHero
                     text: win.clockM
                 }
+            }
+
+            // Outside the Row, which places its own children: 12-hour time
+            // says which half of the day it is, 24-hour says nothing.
+            Text {
+                visible: win.hour12
+                x: clockRow.x + clockRow.width + Math.round(14 * win.unit)
+                y: clockRow.y + Math.round(34 * win.unit)
+                font.family: win.digitFamily
+                font.pixelSize: Math.round(30 * win.unit)
+                color: win.inkSub
+                text: win.clockMer
             }
 
             Row {

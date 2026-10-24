@@ -365,7 +365,10 @@ function writeScreensaverQml(src, level) {
     .replace(/__TVWEB_URL__/g,
       'http://127.0.0.1:' + port + '/api/stats' +
       (token ? '?k=' + encodeURIComponent(token) : ''))
-    .replace(/__TVWEB_LEVEL__/g, level === 'bright' ? '1' : '0');
+    .replace(/__TVWEB_LEVEL__/g, level === 'bright' ? '1' : '0')
+    // The hour cycle the clock screen savers draw, from clock.hour12.
+    .replace(/__TVWEB_CLOCK12__/g,
+      configObj && configObj.clock && configObj.clock.hour12 === true ? 'true' : 'false');
   fs.writeFileSync(path.join(SCREENSAVER_DIR, 'qml', 'main.qml'), qml);
 
   try {

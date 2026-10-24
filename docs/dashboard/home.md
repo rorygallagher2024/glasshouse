@@ -10,6 +10,8 @@ The screen has a clock and date, what was last on (an app, an input and the devi
 * **Inputs**: every HDMI input. An input with devices on it has a tile for each device the TV knows over HDMI-CEC, saying which device it is behind ("HDMI 2, through STEREO 70s"); an input with nothing connected is greyed out. Choosing a tile switches the TV to that input. Nothing is sent to the devices themselves.
 * **Channels**: the channels added here, in the order they are listed, with the programme on now where the TV's guide has it. Choosing one tunes it.
 
+The clock and the times on the channel tiles draw 12-hour or 24-hour time as the [Server tab](server.md) is set.
+
 A row with nothing to show, such as Inputs with every input hidden or Channels with none added, is left out, and the rows that remain sit centred below the clock.
 
 **Back** on Glasshouse Home opens **Recent apps**, as it opens LG's on LG's Home: the apps the TV lists as recent, newest first, each with a snapshot of how it was left (its splash screen, for an app left before the TV last restarted). OK opens one. Down from a card reaches its **Close**, and up from the cards reaches **Close all**; closing an app takes it off the list and stops it. Apps the TV keeps running in the background without a card, such as YouTube when it is kept ready, are not listed. Back again closes the panel. On a TV that gives no list, Back moves to the first tile instead.

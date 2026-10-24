@@ -1362,6 +1362,13 @@
       </div>
       <div class="prot-row">
         <div class="prot-main">
+          <div class="prot-title" data-t="server.clock.title">12-hour time</div>
+          <div class="prot-desc" data-t="server.clock.desc">Shows the time as 9:40 PM rather than 21:40 on every clock on the TV: the dashboard's own, Glasshouse Home and the clock screen savers. One setting for the whole TV, kept in config.json.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="srv-clock12" onclick="toggleClockHour12()">&mdash;</button></div>
+      </div>
+      <div class="prot-row">
+        <div class="prot-main">
           <div class="prot-title" data-t="server.watch.title">Watch time</div>
           <div class="prot-desc" data-t="server.watch.desc">Counts how long the screen is on, per app and input, for the Metrics tab and Home Assistant. Kept on the TV for 13 months. It records what the household watches, so it stays off until turned on here.</div>
           <button type="button" class="link-btn" id="srv-watch-clear" hidden onclick="clearWatchTime()" data-t="server.watch.clear">Clear history</button>

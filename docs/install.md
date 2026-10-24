@@ -138,6 +138,7 @@ Advanced settings can be adjusted in `config.json` or through the dashboard's Se
 | :--- | :--- | :--- |
 | `panel` | Auto | Overrides panel detection with `"oled"` or `"lcd"` if automatic detection does not detect your panel correctly. |
 | `logging.level` | `"info"` | Server logging verbosity: `"quiet"` (warnings/errors only), `"info"` (standard), or `"debug"` (verbose diagnostics). |
+| `clock.hour12` | `false` | Draws the time as 12-hour (`9:40 PM`) rather than 24-hour (`21:40`) on every clock the TV shows: the dashboard's, Glasshouse Home's and the clock screen savers. Also switched from the Server tab. |
 | `ntp.server` | `""` | Hostname of an NTP server (e.g., `"pool.ntp.org"`) to synchronize the TV's clock on boot and hourly. |
 | `syslog.server` | `""` | Remote syslog server address to forward TV and Glasshouse logs over RFC 5424 UDP (port `514`). |
 | `allowTileHiding` | `false` | Experimental: allows hiding built-in LG system tiles and apps on the home screen. |

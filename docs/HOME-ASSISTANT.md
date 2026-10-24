@@ -71,7 +71,7 @@ For config-file deployments, `deploy.sh` checks for `server/config.<tv-ip>.json`
 
 The dashboard can change the broker, credentials, topic prefix and device identity — the settings that decide *where* telemetry goes.
 
-`port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the MQTT tab ([App icons](#app-icons-for-launchers)).
+`port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled`, `clock.hour12` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the MQTT tab ([App icons](#app-icons-for-launchers)).
 
 Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart.
 

@@ -177,6 +177,12 @@ var CONFIG = {
   //   'debug': verbose diagnostics and details
   logging: { level: 'info' },
 
+  // The hour cycle the clocks draw: 24-hour unless set. Read live by every
+  // clock, and switched from the Server tab, which saves it to config.json.
+  // The clock screen savers have it written into their staged QML, so a
+  // change reaches one that is not showing the next time it starts.
+  clock: { hour12: false },
+
   port: 8080,           // dashboard port
   host: '::',           // '0.0.0.0' for IPv4 only, '127.0.0.1' to keep it TV-local only
 

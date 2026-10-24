@@ -9,7 +9,7 @@ The **Screensaver** tab, `/?tab=screensaver`, provides six alternatives to LG's 
 * Harmonograph, pendulum ribbons of light weaving and fading on black
 * Panel vitals, showing the TV's own panel hours and refresher countdown
 
-Each mode offers dim and bright variants, and visual elements continuously drift across the screen to prevent OLED burn-in or image retention.
+Each mode offers dim and bright variants, and visual elements continuously drift across the screen to prevent OLED burn-in or image retention. The clock and the time on Panel vitals follow the hour cycle the [Server tab](server.md) is set to, and pick up a change the next time the screen saver starts.
 
 A firmware update restores the LG default.
 
