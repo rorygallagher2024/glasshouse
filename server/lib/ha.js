@@ -1314,7 +1314,8 @@ function buildEntities(opts) {
         payload: {
           name: 'Remote Button',
           state_topic: topic.eventsButton,
-          event_types: ['red', 'green', 'yellow', 'blue'],
+          event_types: ['red', 'green', 'yellow', 'blue', 'netflix', 'amazon', 'disneyplus',
+            'lgchannels', 'rakutentv', 'alexa'],
           icon: 'mdi:remote'
         }
       },
