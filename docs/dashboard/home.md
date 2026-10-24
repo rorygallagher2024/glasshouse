@@ -41,11 +41,14 @@ The TV's screen saver, LG's or one chosen on the [Screensaver](screen-savers.md)
 
 While a switch is in progress, further changes are refused with a retry message. A switch-off that is cut short is shown as **Retry restoring LG Home** on both dashboards, and is finished when the server next starts.
 
-Three ways lead back to LG's Home without switching anything off:
+Four ways lead back to LG's Home without switching anything off:
 
 * the **LG Home** tile;
 * holding the remote's **Home** button for a second or more; a short press on LG's Home then brings Glasshouse Home back;
-* Glasshouse Home not answering: if the view stops sending its heartbeat for ten seconds, LG's Home opens instead.
+* Glasshouse Home not answering: if the view stops sending its heartbeat for ten seconds, LG's Home opens instead;
+* Glasshouse Home not opening: if a short press of **Home** brings no heartbeat from the view within five seconds, LG's Home opens instead.
+
+In the last two cases, where the TV's web app manager, which runs Glasshouse Home, has stopped, it is started again first and Glasshouse Home given one more try: with it stopped, LG's Home does not open either.
 
 LG's Home opens about two seconds after any of them, and Glasshouse Home takes its place again as soon as something else is opened.
 
