@@ -5,6 +5,8 @@ server/config*.json
 .tvweb_httpd
 lg-webos-mqtt/
 __pycache__/
+.venv/
+venv/
 node_modules/
 dist/
 site/

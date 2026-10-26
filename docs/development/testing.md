@@ -91,6 +91,8 @@ For the Home view, arranging checks cover a late catalogue reply, resetting afte
 
 Home colour checks cover custom accents matching the stylesheet's original colours, changes and reset arriving through the heartbeat, and malformed colour values being discarded without stopping the server.
 
+For the TV app dashboard, checks verify the two-column layout geometry (the row list on the left and the hint pane on the right with non-zero dimensions and horizontal adjacency), remote D-pad navigation (`ArrowDown`, `ArrowUp`, `PageDown`), list translateY scrolling with the scroll arrow indicator, tab switching (`ArrowRight`, `ArrowLeft`), and that the OLED Care tab is dropped when running on a non-OLED (LCD) TV profile.
+
 ## Documentation
 
 [`docs.yml`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/docs.yml) builds this site on each pull request that changes it, with every
@@ -136,6 +138,15 @@ pip install homeassistant
 ./scripts/check-ha-discovery.py
 ```
 
+The documentation check needs MkDocs, Material for MkDocs, and `markdown-callouts`:
+
+```bash
+pip install 'mkdocs>=1.6,<2' 'mkdocs-material>=9.7,<10' 'markdown-callouts>=0.4,<0.5'
+NO_MKDOCS_2_WARNING=1 mkdocs build
+```
+
+Use `NO_MKDOCS_2_WARNING=1 mkdocs serve` to preview the site locally at `http://127.0.0.1:8000/glasshouse/` with live reloading.
+
 ## Local TV emulation
 
 `scripts/emulate-tv.js` runs the server inside a simulated TV environment with procfs, sysfs, Luna calls, installed apps, remote key filters, and recent apps mocked. It serves the web dashboard, the TV app dashboard, and Glasshouse Home locally for development and visual testing without physical TV hardware:
@@ -147,6 +158,10 @@ node scripts/emulate-tv.js [--port 8080] [--model c2|b8|c3] [--open]
 
 
 Home recovery checks cover a switch-off cut short, failed layout restoration and its retry, failed migration without losing the snapshot or removing the old app, closing the old app when it is left running in the background, and a missing first heartbeat when Home already has the foreground id. A refused device tile is followed by a remote input switch to check that Last opened still records the whole input. Remote-key checks cover clearing the startup notice on escape and retrying a configd write after the local map was saved. Browser checks cover pending/failed layout edits, each row's Order on the view, the Home tab and the TV app, edits attempted during an Order save and refresh, keeping unsaved moves when Order changes, clicking Order while a tile is held, first-catalogue failure, delayed readiness, the Home tab left out where Glasshouse Home is not offered, and the Apps tab's notes while it is on.
+
+`test-home.js` also checks LG's native CEC launch contract: a receiver and a
+console on the same port select their own device IDs, a direct source selects
+its ID, and missing or unusable IDs and non-CEC inputs open the port alone.
 
 `test-home-wallpaper-upload.js` exercises the real HTTP boundary: rejected and interrupted uploads preserve the previous image, concurrent uploads are refused, the lock is released after an abort, and an uploaded JPEG survives reinitialisation and is served with its image type. The dashboard check prepares a PNG as JPEG, shows the uploaded image and verifies that a second tab recovers after the first finishes uploading.
 

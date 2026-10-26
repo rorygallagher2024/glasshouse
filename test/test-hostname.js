@@ -1,5 +1,6 @@
 /**
- * test/test-hostname.js - The TV's DNS name, from a reverse lookup of its LAN address
+ * test/test-hostname.js - The TV's DNS name, from a reverse lookup of its IPv4
+ * local address
  */
 
 var assert = require('assert');
@@ -17,11 +18,11 @@ var origNow = Date.now;
 var asked = [];
 dns.reverse = function (address, cb) { asked.push({ address: address, cb: cb }); };
 
-var lanIp = '192.0.2.17';
+var tvIp4 = '192.0.2.17';
 os.networkInterfaces = function () {
   return {
     lo: [{ address: '127.0.0.1', family: 'IPv4', internal: true }],
-    wlan0: [{ address: lanIp, family: 'IPv4', internal: false },
+    wlan0: [{ address: tvIp4, family: 'IPv4', internal: false },
             { address: 'fd00::17', family: 'IPv6', internal: false }]
   };
 };
@@ -92,38 +93,38 @@ step(function (done) {
 // Cached by address: asked once, then not again for an hour, then again.
 step(function (done) {
   asked = [];
-  assert.strictEqual(telemetry.lanHostname(null), null);
+  assert.strictEqual(telemetry.localHostname(null), null);
   assert.strictEqual(asked.length, 0, 'no address, no lookup');
-  assert.strictEqual(telemetry.lanHostname('192.0.2.10'), null, 'nothing known yet');
-  assert.strictEqual(telemetry.lanHostname('192.0.2.10'), null);
+  assert.strictEqual(telemetry.localHostname('192.0.2.10'), null, 'nothing known yet');
+  assert.strictEqual(telemetry.localHostname('192.0.2.10'), null);
   assert.strictEqual(asked.length, 1, 'one lookup while one is pending');
   asked[0].cb(null, ['tv.example.net']);
-  assert.strictEqual(telemetry.lanHostname('192.0.2.10'), 'tv.example.net');
+  assert.strictEqual(telemetry.localHostname('192.0.2.10'), 'tv.example.net');
   now += 3599000;
-  assert.strictEqual(telemetry.lanHostname('192.0.2.10'), 'tv.example.net');
+  assert.strictEqual(telemetry.localHostname('192.0.2.10'), 'tv.example.net');
   assert.strictEqual(asked.length, 1, 'cached within an hour');
   now += 1000;
-  assert.strictEqual(telemetry.lanHostname('192.0.2.10'), 'tv.example.net', 'stale name kept while it is redone');
+  assert.strictEqual(telemetry.localHostname('192.0.2.10'), 'tv.example.net', 'stale name kept while it is redone');
   assert.strictEqual(asked.length, 2, 'redone after an hour');
   asked[1].cb(nxdomain());
-  assert.strictEqual(telemetry.lanHostname('192.0.2.10'), null, 'renamed out of DNS');
+  assert.strictEqual(telemetry.localHostname('192.0.2.10'), null, 'renamed out of DNS');
 
   // No name is cached as long as a name is.
   now += 1800000;
-  telemetry.lanHostname('192.0.2.10');
+  telemetry.localHostname('192.0.2.10');
   assert.strictEqual(asked.length, 2, 'no name is not asked again within an hour');
 
   // A new address is looked up at once, and an answer for the old one is dropped.
   now += 1801000;
-  telemetry.lanHostname('192.0.2.10');
+  telemetry.localHostname('192.0.2.10');
   assert.strictEqual(asked.length, 3);
-  assert.strictEqual(telemetry.lanHostname('192.0.2.11'), null);
+  assert.strictEqual(telemetry.localHostname('192.0.2.11'), null);
   assert.strictEqual(asked.length, 4);
   assert.strictEqual(asked[3].address, '192.0.2.11');
   asked[2].cb(null, ['old.example.net']);
-  assert.strictEqual(telemetry.lanHostname('192.0.2.11'), null);
+  assert.strictEqual(telemetry.localHostname('192.0.2.11'), null);
   asked[3].cb(null, ['new.example.net']);
-  assert.strictEqual(telemetry.lanHostname('192.0.2.11'), 'new.example.net');
+  assert.strictEqual(telemetry.localHostname('192.0.2.11'), 'new.example.net');
   console.log('  ✓ the name is cached by address for an hour, no name included');
   done();
 });
@@ -151,8 +152,8 @@ step(function (done) {
   });
   collected(function (first) {
     assert.strictEqual(asked.length, 1);
-    assert.strictEqual(asked[0].address, lanIp);
-    assert.strictEqual(first.address, lanIp);
+    assert.strictEqual(asked[0].address, tvIp4);
+    assert.strictEqual(first.address, tvIp4);
     assert.strictEqual(first.hostname, null, 'collected before the lookup answered');
     asked[0].cb(null, ['office-tv.example.net']);
     now += 2000;

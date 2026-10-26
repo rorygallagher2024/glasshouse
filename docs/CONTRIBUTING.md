@@ -25,7 +25,7 @@ If a pull request needs follow-up adjustments, push additional commits to the ex
 
 Focus on clarity and readability. Clearly state what changed and why, keeping pull request descriptions concise and focused on the context reviewers need.
 
-If you are using AI coding assistants or automated agents, ensure they adhere to the repository conventions in `CLAUDE.md`.
+If you are using AI coding assistants or automated agents, ensure they adhere to the repository conventions in `CLAUDE.md` (symlinked as `AGENTS.md`).
 
 ## Code reviews
 
@@ -114,6 +114,24 @@ Direct URLs:
 * Web Dashboard: `http://localhost:8080/`
 * TV App Dashboard: `http://localhost:8080/assets/dashboard.html`
 * Glasshouse Home: `http://localhost:8080/assets/home.html`
+
+### Previewing documentation locally
+
+The documentation site is built with [MkDocs](https://www.mkdocs.org/) and the [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) theme. To preview documentation changes locally with live reloading:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install 'mkdocs>=1.6,<2' 'mkdocs-material>=9.7,<10' 'markdown-callouts>=0.4,<0.5'
+NO_MKDOCS_2_WARNING=1 .venv/bin/mkdocs serve
+```
+
+Then open `http://127.0.0.1:8000/glasshouse/` in a browser. The page reloads automatically whenever a file under `docs/` or `mkdocs.yml` is saved. (With Nix, `nix develop` provides these packages directly so `mkdocs serve` works without a virtual environment.)
+
+To run the same strict build and link check that CI runs on pull requests:
+
+```bash
+NO_MKDOCS_2_WARNING=1 .venv/bin/mkdocs build
+```
 
 ## Testing on a real TV
 

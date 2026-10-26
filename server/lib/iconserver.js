@@ -10,7 +10,8 @@ var fs = require('fs');
 var http = require('http');
 var url = require('url');
 var listenDualStack = require('./util').listenDualStack;
-var lanAddress = require('./util').lanAddress;
+var localAddress4 = require('./util').localAddress4;
+var hostPort = require('./util').hostPort;
 
 // A leading dot is refused as well, so '.' and '..' never reach a path join.
 var APP_ID_RE = /^[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}$/;
@@ -133,8 +134,8 @@ function stop() {
  */
 function baseUrl() {
   if (!listening) return null;
-  var ip = lanAddress();
-  return ip ? 'http://' + ip + ':' + port() + '/icons/' : null;
+  var ip4 = localAddress4();
+  return ip4 ? 'http://' + hostPort(ip4, port()) + '/icons/' : null;
 }
 
 module.exports = {

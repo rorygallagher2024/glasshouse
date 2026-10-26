@@ -581,7 +581,7 @@ function renderNtp(n, cfg, writable) {
   q('ntp-save').disabled = !writable;
   input.disabled = !writable;
   if (document.activeElement !== input && !input.dataset.dirty) {
-    input.value = cfg.server ? (cfg.port && cfg.port !== 123 ? cfg.server + ':' + cfg.port : cfg.server) : '';
+    input.value = cfg.server ? (cfg.port && cfg.port !== 123 ? hostPort(cfg.server, cfg.port) : cfg.server) : '';
   }
   status.classList.remove('row-err');
   if (ntpEditing) {

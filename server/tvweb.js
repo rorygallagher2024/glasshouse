@@ -1105,7 +1105,7 @@ function setupHomeAssistant() {
     remotebuttons.want('mqtt', true);
   }
 
-  MQTT_STATUS.broker = CONFIG.mqtt.host + ':' + mqttClient.opts.port;
+  MQTT_STATUS.broker = hostPort(CONFIG.mqtt.host, mqttClient.opts.port);
   MQTT_STATUS.tls = useTls;
   mqttStatus('connecting', '');
 
@@ -1153,6 +1153,7 @@ function setupHomeAssistant() {
     var entities = ha.buildEntities({
       pfx: pfx,
       installedApps: telemetry.getInstalledApps(),
+      inputNames: telemetry.inputNameMap,
       pictureModes: telemetry.getPictureModes(),
       soundOutputs: telemetry.getSoundOutputs(),
       lgRows: lgsRows,
@@ -1267,6 +1268,7 @@ function setupHomeAssistant() {
     if (ev.group !== 'power' && mqttClient.connected) pusher.changed();
   };
   var lastAppSig = '';
+  var lastInputSig = '';
   var lastCapSig = '';
 
   /*
@@ -1412,6 +1414,16 @@ function setupHomeAssistant() {
         lastSoundFormatCap = true;
         requestDiscoveryRepublish('sound format');
       }
+      // Input Source's options are the names the TV's settings give its HDMI
+      // inputs, also in discovery. A renamed input updates the selector.
+      var inNames = telemetry.inputNameMap;
+      var inputSig = Object.keys(inNames).sort().map(function (k) {
+        return k + '=' + inNames[k];
+      }).join(',');
+      if (inputSig !== lastInputSig) {
+        lastInputSig = inputSig;
+        requestDiscoveryRepublish('input names');
+      }
       // Launch App's options are the installed apps, and live in discovery too.
       var appSig = telemetry.getInstalledApps().map(function (a) { return a.id; }).sort().join(',');
       if (appSig && appSig !== lastAppSig) {
@@ -1450,7 +1462,7 @@ function setupHomeAssistant() {
   mqttClient.on('connect', function() {
     mqttStatus('connected', '');
     flushMqttErrorRepeats();
-    console.log('mqtt: connected to ' + CONFIG.mqtt.host + ':' + mqttClient.opts.port +
+    console.log('mqtt: connected to ' + hostPort(CONFIG.mqtt.host, mqttClient.opts.port) +
                 (useTls ? ' (tls)' : ' (plaintext)'));
     mqttClient.publish(mqttTopics.status, statusPayload(), true);
     // Republish the in-memory state because broker retention is not assumed.
@@ -1462,7 +1474,11 @@ function setupHomeAssistant() {
     // has not been scanned yet - without this it publishes the fallback list.
     oled.detectOled(function () {
       telemetry.detectLogoLight(function () {
-        telemetry.refreshInstalledApps(function () { publishDiscovery(); });
+        telemetry.refreshInstalledApps(function () {
+          // The Input Source select's options are the names the TV gives its
+          // HDMI inputs, so read them before publishing its discovery.
+          telemetry.refreshInputNames(function () { publishDiscovery(); });
+        });
       });
     });
     mqttClient.subscribe(mqttTopics.commands + '#');

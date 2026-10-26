@@ -7,6 +7,7 @@ var net = require('net');
 var path = require('path');
 var tls = require('tls');
 var toBuffer = require('./util').toBuffer;
+var hostPort = require('./util').hostPort;
 
 // Node 0.12's built-in root list predates ISRG Root X1 (2015), so a broker
 // with a Let's Encrypt certificate fails with "unable to get local issuer
@@ -165,7 +166,7 @@ MiniMQTT.prototype.connect = function() {
     self.latencyMs = null;
     clearInterval(self.pingTimer);
     if (wasConnected) {
-      console.log('mqtt: disconnected from ' + self.opts.host + ':' + (self.opts.port || (self.opts.tls ? 8883 : 1883)));
+      console.log('mqtt: disconnected from ' + hostPort(self.opts.host, self.opts.port || (self.opts.tls ? 8883 : 1883)));
       self.emit('close');
     }
     if (self.rewill) {

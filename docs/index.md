@@ -32,69 +32,139 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 2.2 through 11 (LG's webOS 26) confirmed; tested across 2015–2026 models. Other versions likely work as well. LG names its versions two ways: [webOS version numbers](tested-tvs.md#webos-version-numbers) gives both
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 48 TVs across 33 series verified so far (LF632V, UH600V, UH6030, UH610V, UH635V, B7, B8, C8, LM57, UM73, C9, CX, GX, C1, UP80, UP81, QNED82, C2, G2, C3, B4, G3, C4, G4, UT73, UT81, C5, G5, CS, LX3, UA73, C6, NU80). Other rooted models should work; [see full table](tested-tvs.md)
+* **Tested hardware**: 53 TVs across 36 series verified so far (LF632V, UH600V, UH6030, UH610V, UH635V, B7, B8, C8, LK61, LM57, UM71, UM73, C9, CX, GX, C1, UP80, UP81, QNED82, C2, G2, C3, B4, G3, C4, G4, UT73, UT81, C5, G5, CS, LX3, UA73, C6, NU80, QNED84). Other rooted models should work; [see full table](tested-tvs.md)
 
 [Install](install.md){ .md-button .md-button--primary } [See the dashboard](dashboard/index.md){ .md-button }
+
+<div id="screenshots"></div>
+
+=== "Web dashboard"
+
+    <p align="center">
+      <a href="screenshots/dashboard.png"><img src="screenshots/dashboard.png" alt="Metrics tab: SoC temperature, system readouts, storage, watch time, Magic Remote battery and HDMI ports, dark theme (OLED42C24LA)" width="440"></a>
+      &nbsp;
+      <a href="screenshots/dashboard-light.png"><img src="screenshots/dashboard-light.png" alt="Control tab: panel, source, volume, playback, sleep timer and power, light theme (OLED42C24LA)" width="440"></a>
+      <br>
+      <sub>Metrics and Control tabs in dark and light themes — served directly from the TV with no cloud or external dependencies.</sub>
+    </p>
+
+=== "Glasshouse Home"
+
+    <p align="center">
+      <a href="screenshots/home.jpg"><img src="screenshots/home.jpg" alt="Glasshouse Home on the TV screen with apps and inputs" width="440"></a>
+      &nbsp;
+      <a href="screenshots/home-evening.jpg"><img src="screenshots/home-evening.jpg" alt="Glasshouse Home with an evening colour theme" width="440"></a>
+      <br>
+      <sub><a href="dashboard/home/">Glasshouse Home</a> replaces LG's ad-heavy launcher with a clean, instant app and input row on the TV.</sub>
+    </p>
+
+=== "TV app"
+
+    <p align="center">
+      <a href="screenshots/tv-app.png"><img src="screenshots/tv-app.png" alt="Glasshouse TV app running on the TV screen" width="680"></a>
+      <br>
+      <sub><a href="apps/tv-app/">The TV app</a> puts the same readings and controls on the TV screen itself, driven by the remote.</sub>
+    </p>
+
+=== "Home Assistant"
+
+    <p align="center">
+      <a href="https://github.com/user-attachments/assets/1d76b1a2-68d9-42a4-a497-b107d706b235"><img width="440" alt="Home Assistant MQTT entities" src="https://github.com/user-attachments/assets/1d76b1a2-68d9-42a4-a497-b107d706b235" /></a>
+      &nbsp;
+      <a href="https://github.com/user-attachments/assets/737b3106-e8a4-4c6b-ba96-b0bad130b600"><img width="440" alt="Custom dashboard leveraging MQTT data" src="https://github.com/user-attachments/assets/737b3106-e8a4-4c6b-ba96-b0bad130b600" /></a>
+      <br>
+      <sub>The TV arrives over <a href="HOME-ASSISTANT/">MQTT Discovery</a> as a single unified device with its controls, sensors, and remote button events.</sub>
+    </p>
+
+=== "Android app"
+
+    <p align="center">
+      <a href="screenshots/android-tvs.png"><img src="screenshots/android-tvs.png" alt="Android app showing online TVs" width="280"></a>
+      &nbsp;&nbsp;
+      <a href="screenshots/android-dashboard.png"><img src="screenshots/android-dashboard.png" alt="Android app showing the full-screen TV dashboard" width="280"></a>
+      <br>
+      <sub><a href="apps/android/">Glasshouse for Android</a> keeps a list of TVs, shows which are online, wakes them with Wake-on-LAN, and opens each dashboard full screen.</sub>
+    </p>
 
 ## What it's for
 
 This project is intended to give a rooted webOS TV a useful local control surface instead of requiring the owner to work around the TV's built-in menus, vendor services and cloud dependencies.
 
-1. **[Controlling the TV without the cloud](dashboard/control.md).** A D-pad to navigate the TV itself, volume, mute, media playback keys (play, pause, stop, skip), app launcher, picture presets, sound output routing, power and reboot.
+<div class="grid cards" markdown>
 
-2. **[Seeing what the TV is configured to collect, and switching it off](dashboard/privacy.md).** Whether LG's content-recognition engine is running and sampling the screen, the advertising identifier and whether ad tracking is limited, and every data agreement recorded on the TV with most of them switchable from the dashboard. Includes an on-TV blocker for LG's ad and telemetry endpoints, and a switch for the two diagnostics services that upload to LG.
+-   **[Controlling the TV without the cloud](dashboard/control.md)**
 
-3. **[App management, debloating and home screen cleanup](dashboard/apps.md).** Install apps from the Homebrew Channel catalog, permanently uninstall apps to reclaim internal flash storage, disable unnecessary background system services to free up RAM and CPU cycles, stop LG keeping apps loaded in the background that are never used, and hide non-removable built-in LG system apps from the home launcher.
+    ---
 
-4. **[Remapping the remote's buttons](dashboard/apps.md#remote-keys).** Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off. The change applies straight away and lasts across reboots, without waiting for the dashboard to start.
+    A D-pad to navigate the TV itself, volume, mute, media playback keys (play, pause, stop, skip), app launcher, picture presets, sound output routing, power and reboot.
 
-5. **[Replacing the screen saver](dashboard/screen-savers.md).** A clock, a starfield, fireworks, or the TV's own readings, each dim or bright, in place of LG's.
+-   **[Seeing what the TV collects, and switching it off](dashboard/privacy.md)**
 
-6. **[Integrating the TV with a smart home](HOME-ASSISTANT.md).** The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients.
+    ---
 
-7. **[Seeing what the TV is actually doing](dashboard/metrics.md).** SoC temperature, per-core CPU load, memory, swap, Wi-Fi signal and throughput.
+    Whether LG's content-recognition engine is sampling the screen, the advertising ID and ad-tracking switch, every recorded data agreement, an on-TV blocker for LG's ad and telemetry endpoints, and switches for diagnostics uploads.
 
-8. **[Observing OLED panel wear](dashboard/oled-care.md).** Cumulative panel hours, compensation cycle progress, Pixel Refresher countdown with scheduling, completed cycle counters and refresher failure alerts.
+-   **[App management, debloating & home screen cleanup](dashboard/apps.md)**
 
-9. **[Controlling the OLED burn-in protections](dashboard/oled-care.md).** What each one does and a switch for it: screen shift and logo dimming on any OLED, and on TVs that expose them, ASBL and Global Stress Reduction (normally reachable only from the TV's service menu, with a service remote and a PIN).
+    ---
 
-10. **[Opening the service menu, and unlocking it where it is locked](dashboard/service-menu.md).** LG's own engineering menu, put on the TV screen from a browser which means no service remote is needed. Newer firmware shows a cut-down version of it until it is unlocked, which the dashboard can do as well.
+    Install from Homebrew Channel, uninstall apps to reclaim flash storage, disable background services, stop unused preloaded apps, hide built-in system apps, or replace LG's launcher with [Glasshouse Home](dashboard/home.md).
 
-11. **[Reading all of it on the TV itself](apps/tv-app.md).** An optional app on the home screen puts the same readings and controls on the TV, driven by the remote, for when there is no phone or laptop to hand.
+-   **[Remapping the remote's buttons](dashboard/apps.md#remote-keys)**
 
-12. **[Managing TVs from Android](apps/android.md).** A phone app that keeps a list of TVs, shows which are online, wakes them with Wake-on-LAN, and opens each one's dashboard full screen.
+    ---
 
----
+    Point Netflix, Prime Video, Guide, the color keys and other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off. Applies immediately and persists across reboots.
 
-## Screenshots
+-   **[Replacing the screen saver](dashboard/screen-savers.md)**
 
-### Web dashboard
+    ---
 
-<p align="center">
-  <a href="screenshots/dashboard.png"><img src="screenshots/dashboard.png" alt="Metrics tab: SoC temperature, system readouts, storage, watch time, Magic Remote battery and HDMI ports, dark theme (OLED42C24LA)" width="440"></a>
-  &nbsp;
-  <a href="screenshots/dashboard-light.png"><img src="screenshots/dashboard-light.png" alt="Control tab: panel, source, volume, playback, sleep timer and power, light theme (OLED42C24LA)" width="440"></a>
-  <br>
-  <sub>Metrics and Control tabs, shown in dark and light themes.</sub>
-</p>
+    A clock, a starfield, fireworks, or the TV's own readings, each dim or bright, in place of LG's.
 
-### Home Assistant
+-   **[Integrating the TV with a smart home](HOME-ASSISTANT.md)**
 
-The TV arrives over MQTT Discovery as a single unified device:
+    ---
 
-<p align="center">
-  <a href="https://github.com/user-attachments/assets/1d76b1a2-68d9-42a4-a497-b107d706b235"><img width="800" alt="Home Assistant MQTT entities" src="https://github.com/user-attachments/assets/1d76b1a2-68d9-42a4-a497-b107d706b235" /></a>
-  <br>
-  <sub>MQTT Discovery entities exposed by the TV.</sub>
-</p>
+    The MQTT bridge exposes the TV as a single device with its controls, telemetry and remote button press events, with automatic Home Assistant MQTT Discovery.
 
-A custom Home Assistant dashboard for an LG TV:
+-   **[Seeing what the TV is actually doing](dashboard/metrics.md)**
 
-<p align="center">
-  <a href="https://github.com/user-attachments/assets/737b3106-e8a4-4c6b-ba96-b0bad130b600"><img width="800" alt="Custom dashboard leveraging MQTT data" src="https://github.com/user-attachments/assets/737b3106-e8a4-4c6b-ba96-b0bad130b600" /></a>
-  <br>
-  <sub>A custom Home Assistant dashboard using the TV's MQTT entities.</sub>
-</p>
+    ---
+
+    SoC temperature, per-core CPU load, memory, swap, Wi-Fi signal and network throughput.
+
+-   **[Observing OLED panel wear](dashboard/oled-care.md)**
+
+    ---
+
+    Cumulative panel hours, compensation cycle progress, Pixel Refresher countdown with scheduling, completed cycle counters and refresher failure alerts.
+
+-   **[Controlling OLED burn-in protections](dashboard/oled-care.md)**
+
+    ---
+
+    Screen shift and logo dimming on any OLED, plus ASBL (TPC) and Global Stress Reduction (GSR) without needing a service remote or PIN.
+
+-   **[Opening and unlocking the service menu](dashboard/service-menu.md)**
+
+    ---
+
+    Open LG's engineering menu on the TV screen from a browser with no service remote needed, and unlock the full menu on newer firmware.
+
+-   **[Reading all of it on the TV itself](apps/tv-app.md)**
+
+    ---
+
+    An optional app on the home screen puts the same readings and controls on the TV, driven by the remote, for when there is no phone or laptop to hand.
+
+-   **[Managing TVs from Android](apps/android.md)**
+
+    ---
+
+    A phone app that keeps a list of TVs, shows which are online, wakes them with Wake-on-LAN, and opens each one's dashboard full screen.
+
+</div>
 
 ---
 

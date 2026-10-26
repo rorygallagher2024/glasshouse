@@ -318,7 +318,10 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
 .nav-pref-grp{display:flex;flex-direction:column;gap:5px}
 .nav-pref-lbl{font:500 12px 'Manrope';letter-spacing:.08em;text-transform:uppercase;color:var(--w40)}
 .nav-pref .theme-seg{display:flex;gap:4px;width:100%}
-.nav-pref .theme-seg button{flex:1;min-width:0;height:32px;min-height:0;padding:0 4px;font-size:12px;
+.nav-pref .pill-sel{width:100%;min-width:0}
+/* Sized to their words, then sharing what is left: Oscuro, in Spanish, does not
+   fit a third of the sidebar. */
+.nav-pref .theme-seg button{flex:1 1 auto;min-width:0;height:32px;min-height:0;padding:0 4px;font-size:12px;
   letter-spacing:.06em;text-transform:uppercase;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav-help{display:flex;align-items:center;gap:14px;margin:0 12px;padding:10px 12px;border-radius:2px;
   font:500 13.5px 'Manrope';letter-spacing:.10em;text-transform:uppercase;color:var(--w50);text-decoration:none;

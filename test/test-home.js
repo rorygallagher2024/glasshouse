@@ -78,7 +78,7 @@ function freshTv() {
   fs.writeFileSync(path.join(layoutDir, 'home_layoutShelfView.xml'), CUSTOM_LAYOUT);
   fs.mkdirSync(checkpointDir);
   fs.mkdirSync(path.join(checkpointDir, LG_HOME));
-  tv = { settings: copy(ORIGINAL), events: [], launched: [], samType: 'native', samCategory: null, samRefuses: false,
+  tv = { settings: copy(ORIGINAL), events: [], launched: [], launches: [], samType: 'native', samCategory: null, samRefuses: false,
          oldAppInstalled: false, mountFails: false };
   lgRunning(true);
 }
@@ -162,6 +162,7 @@ function luna(uri, p, cb) {
     r.reason = tv.powerOnReason || 'remoteKey';
   } else if (uri === 'com.webos.applicationManager/launch') {
     tv.launched.push(p.id);
+    tv.launches.push(copy(p));
     if (tv.launchFails) r.returnValue = false;
   } else if (uri === 'com.webos.applicationManager/listLaunchPoints') {
     r.launchPoints = [
@@ -174,11 +175,11 @@ function luna(uri, p, cb) {
     ];
   } else if (uri === 'com.webos.service.eim/getAllInputStatus') {
     // As a G3 reports them: a receiver with a console behind it on HDMI 2, HDMI 1 empty.
-    r.devices = [
+    r.devices = tv.devices || [
       { id: 'HDMI_1', label: 'HDMI 1', connected: true, hdmiPlugIn: false },
       { id: 'HDMI_2', label: 'STEREO 70s', connected: true, hdmiPlugIn: true, subList: [
-        { id: 'SIMPLINK', depth: 1, physicalAddress: 8192, osdName: 'STEREO 70s' },
-        { id: 'SIMPLINK', depth: 2, physicalAddress: 9216, osdName: 'PlayStation 5' }
+        { id: 'SIMPLINK', depth: 1, physicalAddress: 8192, uniqueId: 5, osdName: 'STEREO 70s' },
+        { id: 'SIMPLINK', depth: 2, physicalAddress: 9216, uniqueId: 8, osdName: 'PlayStation 5' }
       ] }
     ];
   } else if (uri === 'com.webos.service.apiadapter/tv/getChannelList') {
@@ -262,6 +263,39 @@ step('a layout naming one row leaves the other rows as they were saved', functio
     assert.deepEqual(r.layout.order.dev, ['hdmi2:playstation-5']);
     done();
   });
+});
+
+step('device tiles use LG\'s CEC selection contract, or open the port without a usable device ID', function (done) {
+  var cases = [
+    { id: 'hdmi2:stereo-70s', app: 'com.webos.app.hdmi2', selected: '5' },
+    { id: 'hdmi2:playstation-5', app: 'com.webos.app.hdmi2', selected: '8' },
+    { uniqueId: 4, selected: '4' },
+    { uniqueId: undefined },
+    { uniqueId: -1 },
+    { uniqueId: 0 },
+    { uniqueId: 15 },
+    { uniqueId: 255 },
+    { plain: true }
+  ];
+  (function nextCase() {
+    var c = cases.shift();
+    if (!c) return done();
+    start(null);
+    if (!c.id) {
+      tv.devices = [{ id: 'HDMI_4', hdmiPlugIn: true, subList: c.plain ? [] :
+        [{ id: 'SIMPLINK', depth: 1, osdName: 'Player', uniqueId: c.uniqueId }] }];
+      c.id = c.plain ? 'hdmi4' : 'hdmi4:player';
+      c.app = 'com.webos.app.hdmi4';
+    }
+    home.open({ kind: 'dev', id: c.id }, function (r) {
+      assert.ok(r.ok, c.id);
+      // As the G3's native InputPicker launches a selected CEC source.
+      var expected = { id: c.app };
+      if (c.selected) expected.params = { id: 'uniqueId', value: c.selected };
+      assert.deepEqual(tv.launches, [expected], c.id + ', CEC ID ' + c.uniqueId);
+      nextCase();
+    });
+  })();
 });
 
 step('channels are added and removed, never hidden, and their list is their order', function (done) {

@@ -25,8 +25,8 @@ function readTrimmed(filePath) {
   catch (e) { return null; }
 }
 
-// The TV's own address on the home network, whatever the server is bound to.
-function lanAddress() {
+// The TV's IPv4 local address, whatever the server is bound to.
+function localAddress4() {
   var ifaces = {};
   try { ifaces = os.networkInterfaces() || {}; } catch (e) { return null; }
   var best = null;
@@ -141,7 +141,7 @@ module.exports = {
   toInt: toInt,
   mkdirp: mkdirp,
   readTrimmed: readTrimmed,
-  lanAddress: lanAddress,
+  localAddress4: localAddress4,
   monotonicMs: monotonicMs,
   toBuffer: toBuffer,
   allocBuffer: allocBuffer,

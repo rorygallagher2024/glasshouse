@@ -484,7 +484,8 @@ function devices(cb) {
             input: input,
             port: port,
             via: s.depth > 1 && top && top !== name ? top : null,
-            address: cecAddress(s.physicalAddress)
+            address: cecAddress(s.physicalAddress),
+            uniqueId: s.uniqueId
           });
         });
       });
@@ -722,7 +723,7 @@ function launch(id, params, cb) {
 /*
  * Opens a tile: { kind: 'app'|'dev'|'ch'|'lg', id }. Only what the catalogue
  * lists can be opened, so this is not a way to launch anything at all. A
- * device opens its HDMI input; nothing is sent to the device or a receiver.
+ * device opens its HDMI input with LG's CEC selection parameters where known.
  */
 function open(body, cb) {
   var kind = body && body.kind;
@@ -747,7 +748,12 @@ function open(body, cb) {
       if (!hit) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
       var input = { app: names.inputAppId(hit.input), at: nowMs() };
       tileInput = input;
-      launch(input.app, null, function (r) {
+      // LG's picker selects the source behind a receiver through this launch parameter.
+      // The G3's IDs match CEC logical addresses (receiver 5, PS5 8): 0 is the
+      // TV, 15 broadcast, and EIM reports -1 for none.
+      var params = typeof hit.uniqueId === 'number' && hit.uniqueId > 0 && hit.uniqueId < 15 ?
+        { id: 'uniqueId', value: String(hit.uniqueId) } : null;
+      launch(input.app, params, function (r) {
         // A refused tile must not consume the next input switch from the remote.
         if (!r.ok && tileInput === input) tileInput = null;
         opened('dev', hit.id, cb)(r);

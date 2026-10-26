@@ -161,6 +161,10 @@ var KEYS = [
   { key: 'disneyplus', symbol: 'WebOS.Key_webOS_Disneyplus', title: 'Disney+' },
   { key: 'lgchannels', symbol: 'WebOS.Key_webOS_LGChannels', title: 'LG Channels' },
   { key: 'rakutentv', symbol: 'WebOS.Key_webOS_RakutenTV', title: 'Rakuten TV' },
+  // The Movies button on 2020 remotes (the MR20's white MOVIES key). LG's
+  // filters open whichever film store the region has from it, a hotkey id
+  // from the settings service, under the key it called USP on 2019 sets.
+  { key: 'movies', symbol: 'WebOS.Key_webOS_USP', title: 'Movies' },
   { key: 'hulu', symbol: 'WebOS.Key_webOS_Hulu', title: 'Hulu', regions: ['us'] },
   { key: 'iplayer', symbol: 'WebOS.Key_webOS_IPlayer', title: 'BBC iPlayer', regions: ['gb'] },
   { key: 'freeviewplay', symbol: 'WebOS.Key_webOS_FreeviewPlay', title: 'Freeview Play', regions: ['gb'] },

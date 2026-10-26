@@ -32,7 +32,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 2.2 through 11 (LG's webOS 26) confirmed; tested across 2015–2026 models. Other versions likely work as well. LG names its versions two ways: [webOS version numbers](https://rorygallagher2024.github.io/glasshouse/tested-tvs/#webos-version-numbers) gives both
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 48 TVs across 33 series verified so far (LF632V, UH600V, UH6030, UH610V, UH635V, B7, B8, C8, LM57, UM73, C9, CX, GX, C1, UP80, UP81, QNED82, C2, G2, C3, B4, G3, C4, G4, UT73, UT81, C5, G5, CS, LX3, UA73, C6, NU80). Other rooted models should work; [see full table](https://rorygallagher2024.github.io/glasshouse/tested-tvs/)
+* **Tested hardware**: 53 TVs across 36 series verified so far (LF632V, UH600V, UH6030, UH610V, UH635V, B7, B8, C8, LK61, LM57, UM71, UM73, C9, CX, GX, C1, UP80, UP81, QNED82, C2, G2, C3, B4, G3, C4, G4, UT73, UT81, C5, G5, CS, LX3, UA73, C6, NU80, QNED84). Other rooted models should work; [see full table](https://rorygallagher2024.github.io/glasshouse/tested-tvs/)
 
 **[Read the documentation](https://rorygallagher2024.github.io/glasshouse/)** for the features, installation, Home Assistant and security.
 
@@ -59,7 +59,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 2. **[Seeing what the TV is configured to collect, and switching it off](https://rorygallagher2024.github.io/glasshouse/dashboard/privacy/).** Whether LG's content-recognition engine is running and sampling the screen, the advertising identifier and whether ad tracking is limited, and every data agreement recorded on the TV with most of them switchable from the dashboard. Includes an on-TV blocker for LG's ad and telemetry endpoints, and a switch for the two diagnostics services that upload to LG.
 
-3. **[App management, debloating and home screen cleanup](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/).** Install apps from the Homebrew Channel catalog, permanently uninstall apps to reclaim internal flash storage, disable unnecessary background system services to free up RAM and CPU cycles, stop LG keeping apps loaded in the background that are never used, hide non-removable built-in LG system apps from the home launcher, and on webOS 9 strip LG's Home screen down to the apps and inputs.
+3. **[App management, debloating and home screen cleanup](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/).** Install apps from the Homebrew Channel catalog, permanently uninstall apps to reclaim internal flash storage, disable unnecessary background system services to free up RAM and CPU cycles, stop LG keeping apps loaded in the background that are never used, hide non-removable built-in LG system apps from the home launcher, or replace LG's Home screen with [Glasshouse Home](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).
 
 4. **[Remapping the remote's buttons](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/#remote-keys).** Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off. The change applies straight away and lasts across reboots, without waiting for the dashboard to start.
 
@@ -99,13 +99,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 [Glasshouse for Android](https://github.com/rorygallagher2024/glasshouse-android) keeps a list of TVs, shows which are online and opens each one's dashboard full screen. A TV is added by scanning any QR code on its dashboard, which carries the token as well. See the [Android app documentation](https://rorygallagher2024.github.io/glasshouse/apps/android/) for more details.
 
-The app is in closed testing ahead of its Play Store release. To test it:
-
-1. Join the [glasshouse-android-testers](https://groups.google.com/g/glasshouse-android-testers) Google Group with the Google account the phone uses for the Play Store.
-2. Opt in on the [testing page](https://play.google.com/apps/testing/org.glasshouse.android), signed in with the same account.
-3. Install Glasshouse from the Play Store link on that page.
-
-Play only releases the app publicly once testers have stayed opted in for 14 days, so leaving the group early holds it back. Problems and suggestions go in the app's [issues](https://github.com/rorygallagher2024/glasshouse-android/issues).
+It is on [Google Play](https://play.google.com/store/apps/details?id=org.glasshouse.android), for Android 10 and later. Problems and suggestions go in the app's [issues](https://github.com/rorygallagher2024/glasshouse-android/issues).
 
 ---
 

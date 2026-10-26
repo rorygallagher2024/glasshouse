@@ -42,6 +42,31 @@ body{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:ce
  * System tab. If the server is already running, the first probe succeeds in <100ms.
  */
 (function () {
+  /*
+   * This page shows while the server that holds the translations is still
+   * starting, so its few strings are here: Spanish on a Spanish TV, English
+   * otherwise. The markup above holds the English, for a page whose script
+   * does not run. English is the first entry of TXT, the base language for
+   * translations in this project.
+   */
+  var SPT = String((navigator.languages && navigator.languages[0]) || navigator.language || 'en')
+    .slice(0, 2).toLowerCase() === 'es';
+  var TXT = {
+    en: {
+      connecting: 'Connecting to TV service',
+      waiting: 'Waiting for background service to initialize',
+      out: 'The dashboard is not answering. It may still be starting, or it may be switched off on this TV.',
+      retry: 'Press OK to Retry'
+    },
+    es: {
+      connecting: 'Conectando con el servicio de la TV',
+      waiting: 'Esperando a que arranque el servicio en segundo plano',
+      out: 'El panel no responde. Puede que aún esté arrancando, o que esté desactivado en esta TV.',
+      retry: 'Pulsa OK para reintentar'
+    }
+  };
+  TXT = TXT[SPT ? 'es' : 'en'];
+
   // Rewritten by the server to match config.json's port, at every start.
   var PORT = 8080;                // tvweb:port
   var BASE = 'http://localhost:' + PORT;
@@ -49,6 +74,9 @@ body{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:ce
   var probeCount = 0;
   var statusEl = document.getElementById('status');
   var retryBtn = document.getElementById('retry');
+  function show(text) { if (statusEl) statusEl.innerHTML = text + '<span class="dots"></span>'; }
+  if (retryBtn) retryBtn.textContent = TXT.retry;
+  if (statusEl) show(TXT.connecting);
 
   function openDashboard() {
     if (navigated) return;
@@ -61,10 +89,10 @@ body{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:ce
     probeCount++;
 
     if (probeCount === 12 && statusEl) {
-      statusEl.innerHTML = 'Waiting for background service to initialize<span class="dots"></span>';
+      show(TXT.waiting);
     } else if (probeCount >= 80 && statusEl) {
       // A server still starting and one switched off look the same from here.
-      statusEl.textContent = 'The dashboard is not answering. It may still be starting, or it may be switched off on this TV.';
+      statusEl.textContent = TXT.out;
       if (retryBtn) retryBtn.className = 'on';
     }
 
@@ -103,7 +131,7 @@ body{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:ce
     var k = e.keyCode || e.which;
     if (k === 13) {
       if (retryBtn) retryBtn.className = '';
-      if (statusEl) statusEl.innerHTML = 'Connecting to TV service<span class="dots"></span>';
+      show(TXT.connecting);
       probeCount = 0;
       probe();
     } else if (k === 461) {
@@ -114,7 +142,7 @@ body{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:ce
   if (retryBtn) {
     retryBtn.addEventListener('click', function () {
       retryBtn.className = '';
-      if (statusEl) statusEl.innerHTML = 'Connecting to TV service<span class="dots"></span>';
+      show(TXT.connecting);
       probeCount = 0;
       probe();
     });
