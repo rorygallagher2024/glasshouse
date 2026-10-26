@@ -40,7 +40,6 @@ async function homePost(path, body) {
 function setHomeAvailable(st) {
   homeAvailable = st.available !== false;
   if (q('tab-btn-home')) q('tab-btn-home').hidden = !homeAvailable;
-  document.querySelectorAll('[data-glasshouse-home-note]').forEach(note => { note.hidden = !st.enabled; });
 }
 
 async function loadHomeAvailable() {
@@ -64,18 +63,17 @@ async function loadHome(afterSave) {
 
 function homeWritable() { return !!(!homeSaving && homeStatus && (homeStatus.supported.ok || homeStatus.enabled || homeStatus.restorePending) && homeStatus.writable !== false); }
 
-// LG's Home's options: its layout only while it is the TV's Home, and the
-// system apps hidden from it, which Glasshouse Home leaves out too.
+// Built-in apps hidden from the Home screen, whichever Home it is, and LG's
+// Home's layout, only while LG's Home is the TV's Home.
 function renderLgHome() {
   const st = homeStatus;
   const lg = st && st.lgHome;
   const box = q('home-lg');
-  const layoutShown = !!(lg && lg.homeScreen) && !st.enabled;
-  if (box) box.hidden = !lg || !(layoutShown || lg.tileHidingAvailable);
+  if (box) box.hidden = !lg || !lg.homeScreen || st.enabled;
+  const tiles = q('disc-system-tiles');
+  if (tiles) tiles.hidden = !lg;
   if (!lg) return;
   renderHomeScreen(lg);
-  const layout = q('disc-homescreen');
-  if (layout && st.enabled) layout.hidden = true;
   renderSystemTiles(lg);
 }
 

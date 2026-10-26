@@ -1116,8 +1116,8 @@ async function visitHomeUploads(browser, base, problems) {
 /*
  * The Home tab: left out where neither Glasshouse Home nor LG's Home's options
  * are offered; with LG's Home's options alone (a B8) it shows only those; and
- * with Glasshouse Home on, LG's Home's layout is left out and the system apps
- * say they reach Glasshouse Home too.
+ * with Glasshouse Home on, LG's Home's layout is left out and hidden system
+ * apps stay.
  */
 async function visitHomeAvailability(browser, base, problems) {
   const lgHome = enabled => ({ writable: true, glasshouseHome: enabled,
@@ -1151,8 +1151,6 @@ async function visitHomeAvailability(browser, base, problems) {
       if (await page.locator('#home-hero').isVisible() !== c.glasshouse) fail('Glasshouse Home\'s switch ' + (c.glasshouse ? 'missing' : 'shown'));
       if (!await page.locator('#disc-system-tiles').isVisible()) fail('system apps missing');
       if (await page.locator('#disc-homescreen').isVisible() === st.enabled) fail('LG\'s Home layout ' + (st.enabled ? 'shown with Glasshouse Home on' : 'missing'));
-      const notes = await page.locator('[data-glasshouse-home-note]:not([hidden])').count();
-      if (notes !== (st.enabled ? 1 : 0)) fail(notes + ' Glasshouse Home notes');
     } finally { await page.close(); }
   }
 }

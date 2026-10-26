@@ -907,9 +907,9 @@ function homeRows(d) {
 }
 
 /*
- * LG's Home's own options, from /api/home?with=lghome (lgHomeOptions in
- * lib/routes.js): its layout while it is the TV's Home, and the system apps
- * hidden from it, which Glasshouse Home leaves out too.
+ * From /api/home?with=lghome (lgHomeOptions in lib/routes.js): built-in apps
+ * hidden from the Home screen, whichever Home it is, and LG's Home's layout,
+ * while it is the TV's Home.
  */
 function lgHomeRows(d) {
   var r = [];
@@ -970,10 +970,6 @@ function lgHomeRows(d) {
   var sys = d.systemTiles || [];
   if (sys.length > 0) {
     r.push(head(t('tv.apps.head.hideHomeScreenSystem', 'Hide Home Screen System Apps')));
-    if (d.glasshouseHome) {
-      r.push({ label: t('tv.apps.glasshouseHome', 'Glasshouse Home is on'), value: '',
-               hint: t('tv.apps.glasshouseHomeTilesNote', 'Apps hidden here are hidden on Glasshouse Home too. Its own hiding, above, hides others on Glasshouse Home only.') });
-    }
     var tileHidingEnabled = !!d.tileHidingEnabled;
     var tilesHeld = !!d.tileHidingHeld;
     r.push({

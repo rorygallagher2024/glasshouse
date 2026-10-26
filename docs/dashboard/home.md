@@ -139,9 +139,21 @@ Rows and tiles can be arranged from the **web dashboard**, the **TV app**, or **
 
     ![The Home section of the TV app: inputs shown or hidden, channels removed with OK, and Add channels](../screenshots/home-tv-app.jpg)
 
+## Hide home screen system apps
+
+![Hide home screen system apps switched on, with each built-in LG app as a tile marked hidden or shown](../screenshots/apps-system-apps.png)
+
+Hides built-in LG apps that can't be uninstalled, such as Gallery, Music, Sports, Alexa and the User Guide, from the Home screen ribbon. Each app is a tile, dimmed and marked **Hidden** while hidden; choosing one hides or shows it. The apps themselves stay on the TV, and switching the feature off brings every one back. The Web Browser is not offered: hidden, it no longer opens, and saved web pages and links from other apps open in it. A TV that had it hidden shows it again.
+
+On a TV where the app manager can be made to reread its apps through LG's region list (webOS 9 has it, webOS 4 does not), hidden apps come back hidden at each start without restarting it. Elsewhere it is restarted at each cold boot, which can blank the screen for a moment before the active input returns, and the section says so.
+
+It applies to whichever Home is in use: apps hidden here are left out of Glasshouse Home too, whose own [Arranging](#arranging) hides others on Glasshouse Home only.
+
+It is experimental, and off until it is turned on under **Server** → **Advanced** → **Experimental features**; see [Experimental features](../experimental.md) for why. It is not offered on a Homebrew Channel install.
+
 ## LG's Home
 
-LG's own Home screen's options are at the end of the Home tab: its layout, and the built-in apps hidden from it. On a TV Glasshouse Home is not offered on, such as a B8 with webOS 4.4, the Home tab has these alone, where the TV has them.
+LG's own Home screen's layout, at the end of the Home tab while LG's Home is the TV's Home. On a TV Glasshouse Home is not offered on, such as a B8 with webOS 4.4, the Home tab has this and [Hide home screen system apps](#hide-home-screen-system-apps) alone, where the TV has them.
 
 ### Home screen layout
 
@@ -170,15 +182,3 @@ a failed discovery keeps the last good title.
 It is offered on webOS 9 (LG's webOS 24), where it has been tried on a C2, and as an [experimental feature](../experimental.md#home-screen-layout-on-webos-10) on webOS 10 (LG's webOS 25), where it has been tried on a C2 with webOS 10.3.1. webOS 3 and 4 have a much plainer Home screen, so they do not have it. A webOS 8 TV may have the same home app as webOS 9, and webOS 11 a layout of its own; neither is offered it until one has been tried.
 
 On webOS 10 the section has a switch at the top, with its warning, and nothing in it changes until that is on. The parts that can be switched off there are the **Side buttons** (profile, notifications, settings and search), the **Quick Cards** and the **Recommended shelf**. The banner stays.
-
-### Hide home screen system apps
-
-![Hide home screen system apps switched on, with each built-in LG app as a tile marked hidden or shown](../screenshots/apps-system-apps.png)
-
-Hides built-in LG apps that can't be uninstalled, such as Gallery, Music, Sports, Alexa and the User Guide, from the Home screen ribbon. Each app is a tile, dimmed and marked **Hidden** while hidden; choosing one hides or shows it. The apps themselves stay on the TV, and switching the feature off brings every one back. The Web Browser is not offered: hidden, it no longer opens, and saved web pages and links from other apps open in it. A TV that had it hidden shows it again.
-
-On a TV where the app manager can be made to reread its apps through LG's region list (webOS 9 has it, webOS 4 does not), hidden apps come back hidden at each start without restarting it. Elsewhere it is restarted at each cold boot, which can blank the screen for a moment before the active input returns, and the section says so.
-
-Apps hidden here are left out of Glasshouse Home too, so this section stays while it is on; Glasshouse Home's own [Arranging](#arranging) hides others on Glasshouse Home only.
-
-It is experimental, and off until it is turned on under **Server** → **Advanced** → **Experimental features**; see [Experimental features](../experimental.md) for why. It is not offered on a Homebrew Channel install.
