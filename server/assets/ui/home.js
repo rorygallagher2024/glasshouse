@@ -89,6 +89,16 @@ function renderHome() {
   }
   const more = q('home-more');
   if (more) more.hidden = !st.supported.ok;
+  const autoRow = q('home-autolaunch-row');
+  const autoLeased = typeof getLease === 'function' ? getLease('homeAutoLaunch', st.homeAutoLaunch) : undefined;
+  const autoVal = autoLeased !== undefined ? autoLeased : st.homeAutoLaunch;
+  if (autoRow) autoRow.hidden = !st.supported.ok || autoVal === undefined;
+  const autoBtn = q('home-autolaunch');
+  if (autoBtn && autoVal !== undefined) {
+    const on = !!autoVal;
+    updateToggle(autoBtn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off'), on: on });
+    autoBtn.disabled = !homeWritable();
+  }
   const hideRow = q('home-hide-lg-row');
   // webOS 9 only: newer TVs have no layout file for LG's Home to start on.
   if (hideRow) hideRow.hidden = !st.supported.ok || st.hideLgHomeAtStartAvailable === false;

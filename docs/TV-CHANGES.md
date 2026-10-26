@@ -52,7 +52,7 @@ menus. Uninstalling the dashboard leaves them as they are.
 | Uninstalling an app | Permanent; reinstall it from the LG Content Store |
 | SSH keys added or removed on the Server tab | In `/home/root/.ssh/authorized_keys`. Deleting the file there gives root the password `alpine` from the next boot. Uninstalling leaves the file as it is |
 | Installing an app | Installed as a developer app; remove it from the Apps tab or the Homebrew Channel. Its services stay elevated to root if that was chosen |
-| Picture mode, energy saving, sound output, Quick Start+, sleep timer, Quick Access keys, 12-hour clock (`timeFormat` in `systemservice`) | Ordinary TV settings |
+| Picture mode, energy saving, sound output, Quick Start+, Home Auto Launch (`general.homeAutoLaunch`), sleep timer, Quick Access keys, 12-hour clock (`timeFormat` in `systemservice`) | Ordinary TV settings |
 | LG settings restored from a backup | Sound, device, HDMI and ad settings, set as the dashboard sets them one by one. Undone by changing them back, or by restoring a backup made before |
 | Screen Shift, Logo Luminance Adjustment | OLED panel settings in the TV's own menus |
 | Global Stress Reduction and Temporal Peak Control | OLED burn-in protections. Switching one off asks for confirmation, and neither is exposed to Home Assistant. Not switched back on by uninstalling |

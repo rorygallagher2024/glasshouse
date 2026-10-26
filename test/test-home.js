@@ -736,6 +736,55 @@ step('switched on in LG\'s settings while Glasshouse Home is on, auto launch is 
   });
 });
 
+step('Open Home at power-on updates LG\'s setting or the held preference, and status reports the effective state', function (done) {
+  start(null);
+  tv.settings.homeAutoLaunch = 'off';
+  tv.settings.quickStartMode = 'off';
+  home.setAutoLaunch(true, function (r1) {
+    assert.ok(r1.ok);
+    assert.strictEqual(tv.settings.homeAutoLaunch, 'on');
+    assert.strictEqual(home.autoLaunchHeld(), false);
+    home.status(function (st1) {
+      assert.strictEqual(st1.homeAutoLaunch, true);
+      home.enable(function (re) {
+        assert.ok(re.ok, re.error);
+        wait(20, function () {
+          assert.strictEqual(tv.settings.homeAutoLaunch, 'off', 'held off while Quick Start+ is off');
+          assert.strictEqual(home.autoLaunchHeld(), true);
+          home.status(function (st2) {
+            assert.strictEqual(st2.homeAutoLaunch, true, 'effective preference stays on');
+            home.setAutoLaunch(false, function (r2) {
+              assert.ok(r2.ok);
+              assert.strictEqual(tv.settings.homeAutoLaunch, 'off');
+              assert.strictEqual(home.autoLaunchHeld(), false);
+              assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')).lgAutoLaunch, null);
+              home.status(function (st3) {
+                assert.strictEqual(st3.homeAutoLaunch, false);
+                home.setAutoLaunch(true, function (r3) {
+                  assert.ok(r3.ok);
+                  assert.strictEqual(tv.settings.homeAutoLaunch, 'off');
+                  assert.strictEqual(home.autoLaunchHeld(), true);
+                  tv.settings.quickStartMode = 'on';
+                  home.setAutoLaunch(false, function (r4) {
+                    assert.ok(r4.ok);
+                    assert.strictEqual(tv.settings.homeAutoLaunch, 'off');
+                    assert.strictEqual(home.autoLaunchHeld(), false);
+                    home.setAutoLaunch(true, function (r5) {
+                      assert.ok(r5.ok);
+                      assert.strictEqual(tv.settings.homeAutoLaunch, 'on', 'written directly when Quick Start+ is on');
+                      home.disable(function () { done(); });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
 step('webOS 7, which has no defaultApps setting, still starts: it takes the place and watches the Home key', function (done) {
   var keys = [];
   start({ enabled: true }, { webosVersion: '7.6.0', homeKeys: function (on) { keys.push(on); } });

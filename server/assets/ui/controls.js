@@ -35,6 +35,7 @@ function advPill(row, id, on) {
 function flip(id) { const el = q(id); return el && el.dataset.on ? 'off' : 'on'; }
 function toggleLight(which) { sendCommand(which, flip(which === 'standbyLight' ? 'lt_standby' : 'lt_logo')); }
 function toggleQuickBoot() { sendCommand('quickBoot', flip('btn_quickboot')); }
+function toggleHomeAutoLaunch(id) { sendCommand('homeAutoLaunch', flip(id || 'btn_homeautolaunch')); }
 function toggleClockHour12() { sendCommand('clockHour12', flip('btn_clock12')); }
 function toggleLgLogo() { sendCommand('lgLogo', flip('btn_lglogo')); }
 function togglePiccap() { sendCommand('piccap', flip('btn_piccap')); }
@@ -127,6 +128,13 @@ function applyOptimistic(action, value) {
     const on = value === 'on' || value === true;
     setLease('quickBoot', on);
     advPill('quickboot', 'btn_quickboot', on);
+  } else if (action === 'homeAutoLaunch') {
+    const on = value === 'on' || value === true;
+    setLease('homeAutoLaunch', on);
+    advPill('homeautolaunch', 'btn_homeautolaunch', on);
+    const hb = q('home-autolaunch');
+    if (hb) updateToggle(hb, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off'), on: on });
+    if (typeof homeStatus === 'object' && homeStatus) homeStatus.homeAutoLaunch = on;
   } else if (action === 'alwaysReady') {
     const on = value === 'on' || value === true;
     setLease('alwaysReady', on);

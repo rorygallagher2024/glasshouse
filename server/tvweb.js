@@ -564,6 +564,7 @@ telemetry.init({
   game: game,
   power: power,
   remoteBattery: remoteBattery,
+  home: glasshouseHome,
   tvwebVersion: TVWEB_DISPLAY_VERSION
 });
 
@@ -649,6 +650,7 @@ controls.init({
   ntp: ntpClient,
   history: history,
   backup: backup,
+  home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
   tvApp: tvApp,
   restartSelf: restartSelf,

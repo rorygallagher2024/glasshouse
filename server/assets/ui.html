@@ -524,6 +524,13 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_quickboot" onclick="toggleQuickBoot()">&mdash;</button></div>
     </div>
+    <div class="prot-row" id="row-homeautolaunch" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.homeAutoLaunch">Open Home at power-on</div>
+        <div class="prot-desc" data-t="adv.homeAutoLaunch.desc">Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_homeautolaunch" onclick="toggleHomeAutoLaunch('btn_homeautolaunch')">&mdash;</button></div>
+    </div>
     <div class="prot-row" id="row-ar" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.stayConnected">Stay connected when off</div>
@@ -997,6 +1004,13 @@
         <div class="prot-desc" id="home-state-desc"></div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-switch" onclick="homeSwitch()">&mdash;</button></div>
+    </div>
+    <div class="prot-row" id="home-autolaunch-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.homeAutoLaunch">Open Home at power-on</div>
+        <div class="prot-desc" data-t="adv.homeAutoLaunch.desc">Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-autolaunch" onclick="toggleHomeAutoLaunch('home-autolaunch')">&mdash;</button></div>
     </div>
     <div class="prot-row" id="home-hide-lg-row" hidden>
       <div class="prot-main">

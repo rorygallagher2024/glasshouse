@@ -99,6 +99,8 @@ var ntpModule = null;
 var historyModule = null;
 /** @type {typeof import('./backup')} */
 var backupModule = null;
+/** @type {typeof import('./home')} */
+var homeModule = null;
 var republishDiscoveryFn = null;
 var tvAppFn = null;
 var restartSelfFn = null;
@@ -599,6 +601,22 @@ function doControl(action, value, cb) {
       var qbOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
       return luna('com.webos.service.settings/setSystemSettings',
                   { category: 'option', settings: { quickStartMode: qbOn ? 'on' : 'off' } },
+                  function (r) {
+                    if (homeModule) homeModule.syncAutoLaunch();
+                    telemetry.clearCache();
+                    cb({ ok: !!(r && r.returnValue) });
+                  });
+
+    case 'homeAutoLaunch':
+      var halOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
+      if (homeModule) {
+        return homeModule.setAutoLaunch(halOn, function (r) {
+          telemetry.clearCache();
+          cb(r);
+        });
+      }
+      return luna('com.webos.service.settings/setSystemSettings',
+                  { category: 'general', settings: { homeAutoLaunch: halOn ? 'on' : 'off' } },
                   function (r) {
                     telemetry.clearCache();
                     cb({ ok: !!(r && r.returnValue) });
@@ -1115,6 +1133,7 @@ function init(opts) {
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
   if (opts.backup) backupModule = opts.backup;
+  if (opts.home) homeModule = opts.home;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;
   if (opts.tvApp) tvAppFn = opts.tvApp;
   if (opts.restartSelf) restartSelfFn = opts.restartSelf;

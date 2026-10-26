@@ -286,6 +286,14 @@ async function tick() {
       // Each setting shows only where the TV has it; Display only when it has any.
       const qbVal = getLease('quickBoot', d.quickBoot);
       advPill('quickboot', 'btn_quickboot', qbVal !== undefined ? qbVal : d.quickBoot);
+      const halVal = getLease('homeAutoLaunch', d.homeAutoLaunch);
+      const halNow = halVal !== undefined ? halVal : d.homeAutoLaunch;
+      advPill('homeautolaunch', 'btn_homeautolaunch', halNow);
+      if (typeof halNow === 'boolean' && typeof homeStatus === 'object' && homeStatus && homeStatus.homeAutoLaunch !== halNow) {
+        homeStatus.homeAutoLaunch = halNow;
+        const hb = q('home-autolaunch');
+        if (hb) updateToggle(hb, { cls: halNow ? 'good' : 'idle', label: halNow ? t('common.on', 'On') : t('common.off', 'Off'), on: halNow });
+      }
       lastArOff = d.alwaysReadyOff;
       const arLeased = getLease('alwaysReady', d.alwaysReady);
       const arVal = arLeased !== undefined ? arLeased : d.alwaysReady;

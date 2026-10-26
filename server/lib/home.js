@@ -1105,6 +1105,59 @@ function restoreLgAutoLaunch(cb) {
   });
 }
 
+function autoLaunchHeld() {
+  return readConfig().lgAutoLaunch === 'on';
+}
+
+/*
+ * Changes the owner's Open Home at power-on choice. While Glasshouse Home is in
+ * place with Quick Start+ off, LG's setting stays held at off and the choice is
+ * kept in lgAutoLaunch for the boot hook, wake from Active Standby, and
+ * restoration when Glasshouse Home is switched off.
+ */
+function setAutoLaunch(on, cb) {
+  cb = cb || function () {};
+  if (autoLaunchBusy) {
+    autoLaunchWaiting.push(function () { setAutoLaunch(on, cb); });
+    return;
+  }
+  autoLaunchBusy = true;
+  var want = on === true || on === 'on';
+  function finish(ok) {
+    autoLaunchBusy = false;
+    cb({ ok: !!ok });
+    if (autoLaunchAgain) {
+      autoLaunchAgain = false;
+      return syncLgAutoLaunch();
+    }
+    var waiting = autoLaunchWaiting.splice(0, autoLaunchWaiting.length);
+    waiting.forEach(function (fn) { fn(ok); });
+  }
+  var c = readConfig();
+  if (!c.enabled || (!escaped && !takeover.mounted())) {
+    if (c.lgAutoLaunch !== null || c.lgAutoLaunchCheck !== null) {
+      c.lgAutoLaunch = null;
+      c.lgAutoLaunchCheck = null;
+      if (!saveConfig()) return finish(false);
+    }
+    return writeSettings({ homeAutoLaunch: want ? 'on' : 'off' }, finish);
+  }
+  luna(SETTINGS + 'getSystemSettings', { category: 'option', keys: ['quickStartMode'] }, function (r) {
+    var quickStart = r && r.settings && typeof r.settings.quickStartMode === 'string' ? r.settings.quickStartMode : '';
+    var cur = readConfig();
+    if (cur.enabled && (escaped || takeover.mounted()) && quickStart === 'off') {
+      cur.lgAutoLaunch = want ? 'on' : null;
+      cur.lgAutoLaunchCheck = null;
+      if (!saveConfig()) return finish(false);
+      return writeSettings({ homeAutoLaunch: 'off' }, finish);
+    }
+    cur.lgAutoLaunch = null;
+    cur.lgAutoLaunchCheck = null;
+    if (!saveConfig()) return finish(false);
+    writeSettings({ homeAutoLaunch: want ? 'on' : 'off' }, finish);
+  });
+}
+
 function startingNotice(on, cb) {
   var text = on ? msg('srv.home.startingToast', 'Glasshouse Home is starting. It opens in a few seconds.') : '';
   setStartingFn(text, function (r) {
@@ -1415,25 +1468,32 @@ function powerChanged(active) {
 }
 
 function status(cb) {
-  var c = readConfig();
   var sup = supported();
   takeover.samType(function (type) {
-    cb({
-      ok: true,
-      // Both dashboards leave Home out where it is false, as for other features a TV lacks.
-      available: sup.ok || c.enabled || c.restorePending,
-      supported: sup,
-      enabled: c.enabled,
-      restorePending: c.restorePending,
-      // In LG's Home's place now; false while one of the ways back has LG's Home open.
-      active: takeover.mounted() && type === 'web',
-      lgHomeOpen: escaped,
-      hideLgHomeAtStart: c.hideLgHomeAtStart === true,
-      hideLgHomeAtStartAvailable: startLayoutAvailable(),
-      history: !!(historyModule && historyModule.enabled && historyModule.enabled()),
-      wallpapers: wallpapers.status(),
-      colourPresets: COLOUR_PRESETS,
-      layout: layoutOf(c)
+    readSettings(['homeAutoLaunch'], function (s) {
+      var hal = s && typeof s.homeAutoLaunch === 'string' ? s.homeAutoLaunch : '';
+      var c = readConfig();
+      var out = {
+        ok: true,
+        // Both dashboards leave Home out where it is false, as for other features a TV lacks.
+        available: sup.ok || c.enabled || c.restorePending,
+        supported: sup,
+        enabled: c.enabled,
+        restorePending: c.restorePending,
+        // In LG's Home's place now; false while one of the ways back has LG's Home open.
+        active: takeover.mounted() && type === 'web',
+        lgHomeOpen: escaped,
+        hideLgHomeAtStart: c.hideLgHomeAtStart === true,
+        hideLgHomeAtStartAvailable: startLayoutAvailable(),
+        history: !!(historyModule && historyModule.enabled && historyModule.enabled()),
+        wallpapers: wallpapers.status(),
+        colourPresets: COLOUR_PRESETS,
+        layout: layoutOf(c)
+      };
+      if (c.lgAutoLaunch === 'on' || hal === 'on' || hal === 'off') {
+        out.homeAutoLaunch = c.lgAutoLaunch === 'on' || hal === 'on';
+      }
+      cb(out);
     });
   });
 }
@@ -1617,7 +1677,10 @@ module.exports = {
   normalise: normalise,
   layout: function () { return layoutOf(readConfig()); },
   programme: programme,
-  enabled: function () { return readConfig().enabled; }
+  enabled: function () { return readConfig().enabled; },
+  autoLaunchHeld: autoLaunchHeld,
+  setAutoLaunch: setAutoLaunch,
+  syncAutoLaunch: syncLgAutoLaunch
 };
 
 // tvwebctl restore-glasshouse-home: no server running, so luna is found here.

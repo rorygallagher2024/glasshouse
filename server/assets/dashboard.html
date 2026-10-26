@@ -566,11 +566,14 @@ function optionRows(d) {
              press: on ? t('tv.press.turnOff', 'Press OK to turn off') : t('tv.press.turnOn', 'Press OK to turn on'), hint: hint };
   }
   var timers = d.powerTimers || {};
-  if (d.quickBoot !== undefined || d.wakeOnLan !== undefined || d.alwaysReady !== undefined || d.alwaysReadyScreen !== undefined) {
+  if (d.quickBoot !== undefined || d.homeAutoLaunch !== undefined || d.wakeOnLan !== undefined || d.alwaysReady !== undefined || d.alwaysReadyScreen !== undefined) {
     r.push(head(t('adv.powerStandby', 'Power & standby')));
     if (d.quickBoot !== undefined)
       r.push(toggle(t('adv.quickBoot', 'Quick Boot'), d.quickBoot, 'quickBoot',
         t('adv.quickBoot.desc', 'Switching off puts the TV into a light sleep rather than shutting it down, so it comes back on faster. LG calls this Quick Start+.')));
+    if (d.homeAutoLaunch !== undefined)
+      r.push(toggle(t('adv.homeAutoLaunch', 'Open Home at power-on'), d.homeAutoLaunch, 'homeAutoLaunch',
+        t('adv.homeAutoLaunch.desc', 'Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch.')));
     if (d.alwaysReady !== undefined)
       r.push(toggle(t('adv.stayConnected', 'Stay connected when off'), d.alwaysReady, 'alwaysReady',
         t('tv.options.stayConnected.hint', 'Keeps the TV on the network while it is switched off, apart from five hours each night, so Glasshouse and Home Assistant keep working. The screen stays dark. Uses about 12 W on an LG C2.')));
@@ -915,6 +918,13 @@ function homeRows(d) {
            hint: d.restorePending ? t('home.restoreRetry', 'Retry restoring LG Home before switching Glasshouse Home on again.')
                  : d.enabled ? t('home.isOnDesc', 'It opens in LG\u2019s Home\u2019s place: with the Home and Back buttons, and when the TV wakes on Home.')
                  : t('home.isOffDesc', 'Nothing of LG\u2019s is changed: Glasshouse Home is laid over LG\u2019s Home while on, and switching off takes it away.') });
+  if (d.supported.ok && d.homeAutoLaunch !== undefined) {
+    r.push({ label: t('adv.homeAutoLaunch', 'Open Home at power-on'),
+             value: d.homeAutoLaunch ? t('common.on', 'On') : t('common.off', 'Off'), cls: d.homeAutoLaunch ? 'on' : 'off',
+             act: can ? 'homeAutoLaunch' : null, on: !!d.homeAutoLaunch,
+             press: d.homeAutoLaunch ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+             hint: t('adv.homeAutoLaunch.desc', 'Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch.') });
+  }
   if (d.supported.ok && d.hideLgHomeAtStartAvailable !== false) {
     r.push({ label: t('home.hideLg', 'Hide LG\u2019s Home while the TV starts'),
              value: d.hideLgHomeAtStart ? t('common.on', 'On') : t('common.off', 'Off'), cls: d.hideLgHomeAtStart ? 'on' : 'off',
@@ -2639,6 +2649,8 @@ function activate() {
       return send({ action: r.act }, going);
     case 'quickBoot':
       return send({ action: 'quickBoot', value: !r.on }, r.on ? t('tv.flash.quickBootOff', 'Quick Boot turned off') : t('tv.flash.quickBootOn', 'Quick Boot turned on'));
+    case 'homeAutoLaunch':
+      return send({ action: 'homeAutoLaunch', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'deviceDetection':
       return send({ action: 'deviceDetection', value: !r.on }, r.on ? t('tv.flash.detectionOff', 'Device detection turned off') : t('tv.flash.detectionOn', 'Device detection turned on'));
     case 'alwaysReady':

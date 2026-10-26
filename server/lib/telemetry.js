@@ -45,6 +45,8 @@ var gameModule = null;
 var powerModule = null;
 /** @type {typeof import('./remotebattery')} */
 var remoteBatteryModule = null;
+/** @type {typeof import('./home')} */
+var homeModule = null;
 var alwaysReadyScreenOn = false;
 var tvwebVersionStr = '0.0.0';
 
@@ -202,6 +204,7 @@ function init(opts) {
   gameModule = opts.game;
   powerModule = opts.power || null;
   remoteBatteryModule = opts.remoteBattery || null;
+  homeModule = opts.home || null;
   tvwebVersionStr = opts.tvwebVersion || '0.0.0';
   loadHdmiSeen();
   hasMediaState = readTrimmed(MEDIA_SEEN_FILE) !== null;
@@ -1904,6 +1907,15 @@ function collectStats(cb) {
     var los = lo && lo.returnValue !== false && lo.settings && lo.settings.lifeOnScreenMode;
     if (los) out.alwaysReadyScreen = alwaysReadyScreenOn = los !== 'off';
 
+  // LG's Home Auto Launch. While Glasshouse Home holds it off with Quick
+  // Start+ off, the owner's preference is kept in home.json.
+  lunaCachedFn('com.webos.service.settings/getSystemSettings',
+       { category: 'general', keys: ['homeAutoLaunch'] }, 60000, function (ha) {
+    var hal = ha && ha.returnValue !== false && ha.settings && ha.settings.homeAutoLaunch;
+    if (hal === 'on' || hal === 'off' || hal === true || hal === false) {
+      out.homeAutoLaunch = !!(homeModule && homeModule.autoLaunchHeld()) || hal === 'on' || hal === true;
+    }
+
   lunaCachedFn('com.palm.connectionmanager/getStatus', {}, 60000, function (cm) {
     var w = cm && cm.wifi;
     out.ssid = (w && w.ssid) ? w.ssid : null;
@@ -2119,6 +2131,7 @@ function collectStats(cb) {
         });
       }
     );
+  });
   });
   });
   });
