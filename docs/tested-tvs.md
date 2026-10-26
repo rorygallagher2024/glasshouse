@@ -1,12 +1,12 @@
 # Tested TVs
 
-Confirmed on **54 TVs across 37 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **55 TVs across 38 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
 
-=== "By series (37)"
+=== "By series (38)"
 
     | Series        | Year | Panel | webOS seen        | Reports |
     | :------------ | :--- | :---- | :---------------- | :------ |
@@ -15,6 +15,7 @@ Confirmed on **54 TVs across 37 series** running **webOS 2.2 through 11** (LG's 
     | UH6030        | 2016 | LCD   | 3.4               | 1       |
     | UH610V        | 2016 | LCD   | 3.4               | 1       |
     | UH635V        | 2016 | LCD   | 3.x               | 1       |
+    | B6            | 2016 | OLED  | 3.4               | 1       |
     | B7            | 2017 | OLED  | 3.9               | 1       |
     | B8            | 2018 | OLED  | 4.4               | 1       |
     | C8            | 2018 | OLED  | 4.4               | 1       |
@@ -48,7 +49,7 @@ Confirmed on **54 TVs across 37 series** running **webOS 2.2 through 11** (LG's 
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (54)"
+=== "All reports (55)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
@@ -57,6 +58,7 @@ Confirmed on **54 TVs across 37 series** running **webOS 2.2 through 11** (LG's 
     | 43UH610V-ZB | 3.4.3        | 05.70.50 | LCD   | No SoC temp, eMMC wear, or OLED metrics by hardware design     |
     | 55UH6030-UC | 3.4.3        | —        | LCD   |                                                                |
     | 58UH635V    | 3.x          | 05.70.40 | LCD   | no eMMC wear reported                                          |
+    | OLED65B6D-Z | 3.4.3        | 05.70.55 | OLED  | Rooted with mvpd-autoroot; tracking and ads disabled; custom screen savers refused without sam restart ([#1012](https://github.com/rorygallagher2024/glasshouse/issues/1012)) |
     | OLED65B7V-Z | 3.9.3        | 06.10.65 | OLED  | No SoC temperature or eMMC wear readings                       |
     | OLED65C8PUA | 4.4.0        | 05.50.15 | OLED  | No `getAdid` on this firmware                                  |
     | OLED65B8SLC | 4.4.3        | 05.50.70 | OLED  | Everything works. Misses a few metrics found on newer versions |
