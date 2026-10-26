@@ -444,7 +444,7 @@
  "home.dev.through": {"text": "HDMI {port}, ezen keresztül: {via}", "from": "HDMI {port}, through {via}"},
  "home.dev.unused": {"text": "Nincs csatlakoztatva semmi", "from": "Nothing connected"},
  "home.earlier": {"text": "Korábban", "from": "Earlier"},
- "home.experimental": {"text": "Kísérleti funkció. A Glasshouse Home az LG Kezdőképernyőt a Glasshouse saját kezdőképernyőjére cseréli. webOS 9 és 10 rendszeren próbálták ki. A TV hidegindítása utáni első fél percben a Kezdőképernyő üzenetben jelzi, hogy a Glasshouse Home indul.", "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. It has been tried on webOS 9 and 10. In the first half minute after the TV starts from cold, Home shows a message that Glasshouse Home is starting."},
+ "home.experimental": {"text": "Kísérleti funkció. A Glasshouse Home az LG Kezdőképernyőt a Glasshouse saját kezdőképernyőjére cseréli. A TV hidegindítása utáni első fél percben a Kezdőképernyő üzenetben jelzi, hogy indul.", "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
  "home.fault.desc": {"text": "A Glasshouse Home visszatér, amint válaszol. Ha továbbra sem válaszol, néhány percen belül az LG Kezdőképernyő tér vissza.", "from": "Glasshouse Home comes back when it answers. Should it stay silent, LG's Home comes back in a few minutes."},
  "home.fault.title": {"text": "A Glasshouse nem válaszol", "from": "Glasshouse is not answering"},
  "home.hidden": {"text": "Rejtett", "from": "Hidden"},

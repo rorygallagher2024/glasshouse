@@ -244,8 +244,8 @@
     "from": "Earlier"
   },
   "home.experimental": {
-    "text": "Experimentell. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. Erprobt auf webOS 9 und 10. In der ersten halben Minute nach einem Kaltstart zeigt Home einen Hinweis, dass Glasshouse Home startet.",
-    "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. It has been tried on webOS 9 and 10. In the first half minute after the TV starts from cold, Home shows a message that Glasshouse Home is starting."
+    "text": "Experimentell. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.",
+    "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. For the first half minute after the TV starts from cold, Home shows a message that it is starting."
   },
   "home.fault.desc": {
     "text": "Glasshouse Home kommt zurück, sobald es antwortet. Bleibt es stumm, kommt nach wenigen Minuten LGs Home zurück.",

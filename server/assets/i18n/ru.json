@@ -444,7 +444,7 @@
  "home.dev.through": {"text": "HDMI {port}, через {via}", "from": "HDMI {port}, through {via}"},
  "home.dev.unused": {"text": "Ничего не подключено", "from": "Nothing connected"},
  "home.earlier": {"text": "Ранее", "from": "Earlier"},
- "home.experimental": {"text": "Экспериментальная функция. Glasshouse Home заменяет главный экран LG собственным экраном Glasshouse. Проверено на webOS 9 и 10. В первые полминуты после холодного запуска телевизора на главном экране показано сообщение, что Glasshouse Home запускается.", "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. It has been tried on webOS 9 and 10. In the first half minute after the TV starts from cold, Home shows a message that Glasshouse Home is starting."},
+ "home.experimental": {"text": "Экспериментальная функция. Glasshouse Home заменяет главный экран LG собственным экраном Glasshouse. В первые полминуты после холодного запуска телевизора на главном экране показано сообщение, что он запускается.", "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
  "home.fault.desc": {"text": "Glasshouse Home вернется, как только ответит. Если он так и не ответит, через несколько минут вернется главный экран LG.", "from": "Glasshouse Home comes back when it answers. Should it stay silent, LG's Home comes back in a few minutes."},
  "home.fault.title": {"text": "Glasshouse не отвечает", "from": "Glasshouse is not answering"},
  "home.hidden": {"text": "Скрыто", "from": "Hidden"},
