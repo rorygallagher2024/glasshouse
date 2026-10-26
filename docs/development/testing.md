@@ -60,6 +60,8 @@ The worker itself stays Python 2.7 compatible for the TV.
 
 `test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved.
 
+`test-stats-timeout.js` checks that a stats collection past its limit answers its callers with the last complete one, or the empty stand-in when none has finished, and carries on with no second collection started beside it; that `expireStats` does not take that fallback away; and that one given up on after 60 s answers no caller of the next.
+
 The Home suite also checks auto-launch restoration with a delayed settings
 read, no write when auto launch was already off, and a refused takeover with
 and without an earlier hold. Wake cases cover source changes, standby,

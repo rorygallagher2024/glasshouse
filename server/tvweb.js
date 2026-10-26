@@ -1341,6 +1341,13 @@ function setupHomeAssistant() {
     mqttClient.publish(mqttTopics.status, statusPayload(), true);
     lgSettings.collect(LGS_SECTIONS, function (ls) {
     telemetry.collectStats(function(s) {
+      // No collection has finished yet, as when the first after a cold boot
+      // runs past its limit. Retained, the stand-in would replace every
+      // reading Home Assistant has with an empty one, so the last stays.
+      if (s.ok === false) {
+        pusher.finished();
+        return;
+      }
       // Over the whole interval since the last publish, whoever else reads.
       var cpuOwn = telemetry.cpuSincePublish(s.coresTotal);
       if (cpuOwn !== null) s.load = cpuOwn;

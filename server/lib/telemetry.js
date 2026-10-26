@@ -149,10 +149,20 @@ var bootEpoch = 0;
 
 var lastStats = null;
 var lastStatsTime = 0;
+// The last collection that finished. expireStats and clearCache leave it: it
+// answers for a collection that runs past its limit.
+var lastCompleteStats = null;
 // Whether a collection has finished since the server started.
 var statsCollected = false;
 var isCollecting = false;
 var statsWaiters = [];
+var statsSafetyTimer = null;
+// Each collection's number: one given up on cannot finish over a later one.
+var statsGeneration = 0;
+var statsAbandonTimer = null;
+// Past this a collection is taken never to finish (a callback lost on the
+// way), and the next caller starts a fresh one.
+var STATS_ABANDON_MS = 60000;
 
 var EMMC_CACHE = null;
 var SWAP_BACKING_CACHE = null;
@@ -1646,6 +1656,30 @@ function expireStats() {
   lastStats = null;
 }
 
+/*
+ * A collection still running at its limit is answered for, not dropped: the
+ * callers so far get the last complete one, and it carries on. Callers after
+ * that wait for it under a limit of their own. Starting another beside it put
+ * two at once on a TV already slow to answer: after a cold boot a C2 (webOS
+ * 10.3.1) ran past the 20 s limit, and the late one then let a third start.
+ */
+function armStatsSafety(ms) {
+  if (statsSafetyTimer) return;
+  statsSafetyTimer = setTimeout(function () {
+    statsSafetyTimer = null;
+    console.warn('telemetry: stats collection safety timeout reached');
+    answerStatsWaiters(lastCompleteStats || { ok: false, error: 'timeout' });
+  }, ms);
+}
+
+function answerStatsWaiters(result) {
+  var waiters = statsWaiters;
+  statsWaiters = [];
+  for (var w = 0; w < waiters.length; w++) {
+    try { waiters[w](result); } catch (e) {}
+  }
+}
+
 function collectStats(cb) {
   var now = Date.now();
   if (lastStats && now >= lastStatsTime && now - lastStatsTime < 1500) {
@@ -1654,30 +1688,30 @@ function collectStats(cb) {
 
   statsWaiters.push(cb);
   refreshBtAudio();
-  if (isCollecting) return;
+  if (isCollecting) return armStatsSafety(4500);
   isCollecting = true;
+  var generation = ++statsGeneration;
+  statsAbandonTimer = setTimeout(function () {
+    console.warn('telemetry: stats collection given up after ' + STATS_ABANDON_MS / 1000 + 's');
+    statsGeneration++;
+    isCollecting = false;
+  }, STATS_ABANDON_MS);
 
   // The first collection after start-up asks every luna service afresh, none
   // of it cached yet: 4.7-4.8s on a C2 (webOS 9.2), over the 4.5s limit that
   // later ones stay well within.
-  var safetyTimeout = setTimeout(function () {
-    if (isCollecting) {
-      console.warn('telemetry: stats collection safety timeout reached');
-      flushStats(lastStats || { ok: false, error: 'timeout' }, true);
-    }
-  }, statsCollected ? 4500 : 20000);
+  armStatsSafety(statsCollected ? 4500 : 20000);
 
-  function flushStats(result, timedOut) {
-    clearTimeout(safetyTimeout);
-    if (!timedOut) statsCollected = true;
-    lastStats = result;
+  function flushStats(result) {
+    if (generation !== statsGeneration) return;
+    clearTimeout(statsAbandonTimer);
+    clearTimeout(statsSafetyTimer);
+    statsSafetyTimer = null;
+    statsCollected = true;
+    lastStats = lastCompleteStats = result;
     lastStatsTime = Date.now();
     isCollecting = false;
-    var waiters = statsWaiters.slice(0);
-    statsWaiters = [];
-    for (var w = 0; w < waiters.length; w++) {
-      try { waiters[w](result); } catch (e) {}
-    }
+    answerStatsWaiters(result);
   }
 
   var mi = meminfo();
