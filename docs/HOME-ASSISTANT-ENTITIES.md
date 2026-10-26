@@ -15,7 +15,7 @@ Every entity the TV publishes, by category. Which categories are published is se
 | `switch` | `switch.lg_tv_standby_light` | Standby LED | Toggle standby front indicator LED |
 | `switch` | `switch.lg_tv_logo_light` | Logo Light | Toggle front illuminated TV logo |
 | `number` | `number.lg_tv_volume` | Volume | Volume slider (0–100). Unavailable when the level is set on an external sound device |
-| `select` | `select.lg_tv_input_source` | Input Source | Live TV, and HDMI 1–4 under the names the TV's settings give them (`Apple TV (HDMI2)`, as the Active App sensor shows them). The options update when an input is renamed |
+| `select` | `select.lg_tv_input_source` | Input Source | Live TV, and HDMI 1–4 under the names the TV's settings give them (`Apple TV (HDMI2)`, as the Active App sensor shows them). The options update when an input is renamed; the `input_ids` attribute maps each option to its input (`hdmi1`–`hdmi4`, `livetv`), which stays the same |
 | `select` | `select.lg_tv_app` | Launch App | Installed apps and LG Settings; `app_ids` attribute maps option labels to stable app IDs. `app_colors` gives each app's `iconColor` from its `appinfo.json` as `#rrggbb`, where it has one, and with **Share app icons** on in the MQTT tab, `app_icons` gives each app's icon as `http://<tv-ip>:8082/icons/<appId>.png` |
 | `select` | `select.lg_tv_picture_mode` | Picture Mode | Switch profiles (ISF Dark/Bright, Cinema, Game, Standard) |
 | `select` | `select.lg_tv_energy_saving` | Energy Saving Step | Auto, Off, Minimum, Medium, Maximum, Screen off |

@@ -263,6 +263,24 @@ action:
       value: "Motion detected at front door"
 ```
 
+### 4. Switch to an input by its port, whatever it is called
+Input Source lists inputs by the names given to them in the TV's settings, such as `Apple TV (HDMI2)`, so an automation that selects a name stops working when the input is renamed. Its `input_ids` attribute maps each option to its port, which stays the same:
+
+```yaml
+alias: "TV to HDMI 2"
+trigger:
+  - platform: state
+    entity_id: input_boolean.games_night
+    to: "on"
+action:
+  - service: select.select_option
+    target:
+      entity_id: select.lg_tv_input_source
+    data:
+      option: >-
+        {% for name, id in state_attr('select.lg_tv_input_source', 'input_ids').items() if id == 'hdmi2' %}{{ name }}{% endfor %}
+```
+
 ---
 
 ## Universal Media Player Setup

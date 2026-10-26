@@ -450,7 +450,12 @@ console.log('Running test-ha.js ...');
   assert.ok(named.payload.value_template.indexOf('"hdmi3":"Apple TV (HDMI3)"') !== -1);
   assert.deepEqual(ha.inputSourceNames({ hdmi2: 'Apple TV' }).hdmi2, 'Apple TV (HDMI2)');
   assert.deepEqual(ha.inputSourceNames({}).hdmi2, 'HDMI 2');
-  console.log('  ✓ Input Source shows the names the TV gives its inputs, and sends the port key');
+  // input_ids: each option's input, the same whatever the TV calls it.
+  var attrs = named.payload.json_attributes_template;
+  assert.strictEqual(named.payload.json_attributes_topic, 'test/tv/telemetry');
+  assert.ok(attrs.indexOf('"input_ids":{"HDMI 1":"hdmi1","Apple TV (HDMI2)":"hdmi2","Apple TV (HDMI3)":"hdmi3","HDMI 4":"hdmi4","Live TV":"livetv"}') !== -1, attrs);
+  assert.ok(plain.payload.json_attributes_template.indexOf('"HDMI 2":"hdmi2"') !== -1);
+  console.log('  ✓ Input Source shows the names the TV gives its inputs, sends the port key, and lists input_ids');
 })();
 
 console.log('ALL test-ha.js assertions passed!\n');

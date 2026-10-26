@@ -350,6 +350,14 @@ function inputSourceNames(custom) {
   return byId;
 }
 
+// The Input Source select's options mapped to their inputs, as Launch App's
+// app_ids maps titles to app ids.
+function inputIds(byId) {
+  var out = {};
+  Object.keys(byId).forEach(function (id) { if (!out.hasOwnProperty(byId[id])) out[byId[id]] = id; });
+  return out;
+}
+
 function selectState(expr, options) {
   var quoted = [];
   for (var i = 0; i < options.length; i++) quoted.push('\'' + options[i] + '\'');
@@ -873,6 +881,10 @@ function buildEntities(opts) {
           name: 'Input Source',
           command_topic: topic.command('input'),
           state_topic: topic.telemetry,
+          // Each option's input, which stays when the TV renames it: an
+          // automation can find the option by input rather than by name.
+          json_attributes_topic: topic.telemetry,
+          json_attributes_template: '{{ ' + JSON.stringify({ input_ids: inputIds(inputNames) }) + ' | tojson }}',
           icon: 'mdi:video-input-hdmi'
         }, namedSelect(Object.keys(inputNames), inputNames, 'value_json.app'))
       },
