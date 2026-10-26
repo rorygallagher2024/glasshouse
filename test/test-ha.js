@@ -450,6 +450,8 @@ console.log('Running test-ha.js ...');
   assert.ok(named.payload.value_template.indexOf('"hdmi3":"Apple TV (HDMI3)"') !== -1);
   assert.deepEqual(ha.inputSourceNames({ hdmi2: 'Apple TV' }).hdmi2, 'Apple TV (HDMI2)');
   assert.deepEqual(ha.inputSourceNames({}).hdmi2, 'HDMI 2');
+  // The state is the input just chosen while the TV switches, else what it reports.
+  assert.ok(named.payload.value_template.indexOf("(value_json.get('input_source') or value_json.get('app'))") !== -1, named.payload.value_template);
   console.log('  ✓ Input Source shows the names the TV gives its inputs, and sends the port key');
 })();
 

@@ -112,8 +112,11 @@ for typ, eid, body in blocks:
     # handled. Only an unguarded missing path is a real failure. selectState()
     # emits `else 'None'` for exactly that reason, so it counts as a guard.
     text = tmpl.group(1) if tmpl else body
+    # A field read with another to fall back on (`value_json.x or value_json.y`)
+    # is guarded the same way: absent, the fallback is used.
     guarded = ('else none' in text or 'else "' in text or "else '" in text
-               or 'selectState(' in body)
+               or 'selectState(' in body
+               or re.search(r'value_json\.[A-Za-z0-9_.]+ or value_json\.', body) is not None)
     missing = [p for p in paths if not resolve(p)]
     bad = [] if guarded else missing
     optional = missing if guarded else []

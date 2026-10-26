@@ -874,7 +874,7 @@ function buildEntities(opts) {
           command_topic: topic.command('input'),
           state_topic: topic.telemetry,
           icon: 'mdi:video-input-hdmi'
-        }, namedSelect(Object.keys(inputNames), inputNames, 'value_json.app'))
+        }, namedSelect(Object.keys(inputNames), inputNames, '(value_json.input_source or value_json.app)'))
       },
       {
         type: 'text', id: 'screen_notification',
