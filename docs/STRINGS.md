@@ -90,8 +90,10 @@ the check.
    writes every key with its English as `from` and an empty `text`.
 2. Fill in `text`, keeping each `{placeholder}` as it is. An entry left out, or
    left empty, shows in English.
-3. Add the two-letter code to `LANGS` in `server/assets/i18n.js`, and the file
-   to `FILES` in `server/deploy.sh`.
+3. Add the two-letter code to `LANGS` in `server/assets/i18n.js`, the
+   language's name in its own words to `NAMES` there, and the file to `FILES`
+   in `server/deploy.sh`. The Language list in the sidebar's Preferences is
+   built from `LANGS` and `NAMES`.
 
 The page follows the browser's language. `?lang=es` picks one for testing.
 

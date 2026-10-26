@@ -370,8 +370,6 @@
  "game.vrr": {"text": "VRR", "from": "VRR"},
  "header.brand": {"text": "TV LG", "from": "LG TV"},
  "header.brand.oled": {"text": "LG OLED TV", "from": "LG OLED TV"},
- "lang.en": {"text": "EN", "from": "EN"},
- "lang.es": {"text": "ES", "from": "ES"},
  "lgs.hdmi.audioFormat": {"text": "Formato de audio", "from": "Audio format"},
  "lgs.hdmi.deepColor": {"text": "Deep Colour", "from": "Deep Colour"},
  "lgs.hdmi.input": {"text": "Entrada", "from": "Input"},
