@@ -1,6 +1,6 @@
 # Tested TVs
 
-Confirmed on 50 TVs across 34 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
+Confirmed on 51 TVs across 35 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
 
 On webOS 2 (tested on a 55UH600V and a 49LF632V), PicCap is withheld because its native service stalls webOS 2 and triggers a watchdog reboot (`cpuAbnormal`, [#746](https://github.com/rorygallagher2024/glasshouse/issues/746)). Both TVs run Glasshouse without trouble.
 
@@ -46,6 +46,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | UA73          | 2025 | LCD   | 10.3.1            | 1       |
 | C6            | 2026 | OLED  | 11.2              | 1       |
 | NU80          | 2026 | LCD   | 11                | 1       |
+| QNED84        | 2026 | LCD   | 11.0              | 1       |
 
 <details markdown="1">
 <summary>All reports</summary>
@@ -99,6 +100,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | 42LX3Q6LA   | —            | 33.31.68 | OLED  | Flex; model number has no OLED prefix                          |
 | 43UT73006LA | —            | —        | LCD   | Reported working                                               |
 | 43NU800BPSC | 11.0.0       | 43.02.50 | LCD   | Rooted with slopbro; privacy controls confirmed                |
+| 85QNED84BUA | 11.0.1       | 43.11.76 | LCD   | Dashboard, telemetry disabling and privacy controls confirmed |
 | OLED65G36LA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; privacy, app installs and custom screen savers confirmed |
 | OLED83G5WUA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; runs with internet access blocked         |
 | OLED42C35LA | 11.2.0       | 43.21.71 | OLED  | Working                                                        |
