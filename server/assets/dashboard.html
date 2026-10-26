@@ -929,7 +929,8 @@ function homeRows(d) {
              value: d.hideLgHomeAtStart ? t('common.on', 'On') : t('common.off', 'Off'), cls: d.hideLgHomeAtStart ? 'on' : 'off',
              act: can ? 'homeHideLg' : null, on: !!d.hideLgHomeAtStart,
              press: d.hideLgHomeAtStart ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.home.hideLg.on', 'Press OK, then again, to hide it'),
-             hint: t('home.hideLgDesc', 'For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG\u2019s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG\u2019s Home stays black until it is put back over SSH.') });
+             hint: t('home.hideLgDesc', 'For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG\u2019s Home opens as a black screen instead of its own.'),
+             warn: t('home.hideLgWarn', 'Warning: If Glasshouse stops running (for example after a firmware update removes root), LG\u2019s Home will stay black until it is put back over SSH.') });
   }
   if (d.supported.ok && d.layout) {
     var picOn = d.layout.picture === true;

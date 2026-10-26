@@ -1870,7 +1870,7 @@
  "home.hidden": {"text": "Oculta", "from": "Hidden"},
  "home.hideLg": {"text": "Ocultar el Inicio de LG mientras arranca la TV", "from": "Hide LG’s Home while the TV starts"},
  "home.hideLgConfirm": {"text": "Pulsa otra vez para ocultarlo", "from": "Press again to hide it"},
- "home.hideLgDesc": {"text": "Durante unos 25 segundos tras un arranque en frío, hasta que Glasshouse Home ocupa su lugar, el Inicio de LG se abre como pantalla negra en vez de mostrar el suyo. Si Glasshouse deja de funcionar, por ejemplo si una actualización de firmware elimina el root, el Inicio de LG seguirá en negro hasta restaurarlo por SSH.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG’s Home stays black until it is put back over SSH."},
+ "home.hideLgDesc": {"text": "Durante unos 25 segundos tras un arranque en frío, hasta que Glasshouse Home ocupa su lugar, el Inicio de LG se abre como pantalla negra en vez de mostrar el suyo.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own."},
  "home.hideUnused": {"text": "Ocultar entradas sin nada conectado", "from": "Hide inputs with nothing connected"},
  "home.hideUnusedDesc": {"text": "Deja fuera de la fila Entradas las entradas sin nada conectado, en lugar de mostrarlas atenuadas. Se siguen mostrando al organizar.", "from": "Leaves inputs with nothing plugged in out of the Inputs row, instead of showing them greyed out. They still show while arranging."},
  "home.hint.desc": {"text": "Mueve u oculta tarjetas y filas. El Inicio de LG es la última tarjeta de Apps.", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
@@ -2105,5 +2105,6 @@
  "tv.audio.playbackHint": {"text": "La declaración de recursos multimedia de LG para la reproducción en apps de la TV. Un decodificador o un número de canales listado no garantiza el paso del bitstream.", "from": "LG’s media-resource declaration for TV-app playback. A listed decoder or channel count does not establish bitstream pass-through."},
  "tv.audio.readFailed": {"text": "Lecturas de audio no disponibles", "from": "Audio readings unavailable"},
  "tv.audio.receiverFormat": {"text": "Receptor: {format}", "from": "Receiver: {format}"},
- "audio.readFailed": {"text": "No se pudieron leer los ajustes de sonido ni las lecturas de audio de la TV.", "from": "The TV’s sound settings and audio readings could not be read."}
+ "audio.readFailed": {"text": "No se pudieron leer los ajustes de sonido ni las lecturas de audio de la TV.", "from": "The TV’s sound settings and audio readings could not be read."},
+ "home.hideLgWarn": {"text": "Aviso: si Glasshouse deja de funcionar (por ejemplo, si una actualización de firmware elimina el root), el Inicio de LG seguirá en negro hasta restaurarlo por SSH.", "from": "Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH."}
 }

@@ -450,7 +450,7 @@
  "home.hidden": {"text": "Rejtett", "from": "Hidden"},
  "home.hideLg": {"text": "Az LG Kezdőképernyő elrejtése a TV indulásakor", "from": "Hide LG’s Home while the TV starts"},
  "home.hideLgConfirm": {"text": "Nyomja meg újra az elrejtéshez", "from": "Press again to hide it"},
- "home.hideLgDesc": {"text": "Hidegindítás után körülbelül 25 másodpercig, amíg a Glasshouse Home át nem veszi a helyét, az LG Kezdőképernyő fekete képernyőként nyílik meg a saját tartalma helyett. Ha a Glasshouse leáll, például mert egy firmware-frissítés eltávolítja a rootjogosultságot, az LG Kezdőképernyő fekete marad, amíg SSH-n keresztül vissza nem állítják.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG’s Home stays black until it is put back over SSH."},
+ "home.hideLgDesc": {"text": "Hidegindítás után körülbelül 25 másodpercig, amíg a Glasshouse Home át nem veszi a helyét, az LG Kezdőképernyő fekete képernyőként nyílik meg a saját tartalma helyett.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own."},
  "home.hint.desc": {"text": "Csempék és sorok mozgatása vagy elrejtése. Az LG Kezdőképernyő az Alkalmazások sor utolsó csempéje.", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
  "home.hint.title": {"text": "Az elrendezéshez tartsa lenyomva az OK gombot", "from": "Hold OK to arrange"},
  "home.historyNote": {"text": "Az alkalmazások az LG sorrendjében vannak. Ha a Speciális részben az Előzmények be van kapcsolva, az új alkalmazások használati gyakoriság szerint kerülnek a helyükre.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
@@ -2181,5 +2181,6 @@
  "tv.audio.playbackHint": {"text": "Az LG médiaerőforrás-nyilatkozata a TV alkalmazásaiban történő lejátszáshoz. Egy felsorolt dekóder vagy csatornaszám nem jelenti a bitstream áteresztését.", "from": "LG’s media-resource declaration for TV-app playback. A listed decoder or channel count does not establish bitstream pass-through."},
  "tv.audio.readFailed": {"text": "A hangadatok nem érhetők el", "from": "Audio readings unavailable"},
  "tv.audio.receiverFormat": {"text": "Erősítő: {format}", "from": "Receiver: {format}"},
- "audio.readFailed": {"text": "A TV hangbeállításai és hangadatai nem olvashatók.", "from": "The TV’s sound settings and audio readings could not be read."}
+ "audio.readFailed": {"text": "A TV hangbeállításai és hangadatai nem olvashatók.", "from": "The TV’s sound settings and audio readings could not be read."},
+ "home.hideLgWarn": {"text": "Figyelem: ha a Glasshouse leáll (például mert egy firmware-frissítés eltávolítja a rootjogosultságot), az LG Kezdőképernyő fekete marad, amíg SSH-n keresztül vissza nem állítják.", "from": "Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH."}
 }

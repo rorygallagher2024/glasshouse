@@ -450,7 +450,7 @@
  "home.hidden": {"text": "Скрыто", "from": "Hidden"},
  "home.hideLg": {"text": "Скрывать главный экран LG при запуске телевизора", "from": "Hide LG’s Home while the TV starts"},
  "home.hideLgConfirm": {"text": "Нажмите еще раз, чтобы скрыть", "from": "Press again to hide it"},
- "home.hideLgDesc": {"text": "Примерно 25 секунд после холодного запуска, пока Glasshouse Home не займет его место, главный экран LG открывается черным экраном вместо своего. Если Glasshouse перестанет работать, например после обновления прошивки, которое снимает root, главный экран LG останется черным, пока его не вернут по SSH.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG’s Home stays black until it is put back over SSH."},
+ "home.hideLgDesc": {"text": "Примерно 25 секунд после холодного запуска, пока Glasshouse Home не займет его место, главный экран LG открывается черным экраном вместо своего.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own."},
  "home.hint.desc": {"text": "Перемещение и скрытие плиток и рядов. Главный экран LG — последняя плитка в ряду «Приложения».", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
  "home.hint.title": {"text": "Удерживайте OK для расстановки", "from": "Hold OK to arrange"},
  "home.historyNote": {"text": "Приложения идут в порядке LG. Если в разделе «Дополнительно» включена история, новые приложения размещаются по частоте использования.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
@@ -2181,5 +2181,6 @@
  "tv.audio.playbackHint": {"text": "Заявление LG о медиаресурсах для воспроизведения в приложениях телевизора. Указанный декодер или число каналов не означают сквозную передачу bitstream.", "from": "LG’s media-resource declaration for TV-app playback. A listed decoder or channel count does not establish bitstream pass-through."},
  "tv.audio.readFailed": {"text": "Показания звука недоступны", "from": "Audio readings unavailable"},
  "tv.audio.receiverFormat": {"text": "Ресивер: {format}", "from": "Receiver: {format}"},
- "audio.readFailed": {"text": "Не удалось прочитать настройки звука и аудиопоказания телевизора.", "from": "The TV’s sound settings and audio readings could not be read."}
+ "audio.readFailed": {"text": "Не удалось прочитать настройки звука и аудиопоказания телевизора.", "from": "The TV’s sound settings and audio readings could not be read."},
+ "home.hideLgWarn": {"text": "Внимание: если Glasshouse перестанет работать (например, после обновления прошивки, которое снимает root), главный экран LG останется черным, пока его не вернут по SSH.", "from": "Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH."}
 }
