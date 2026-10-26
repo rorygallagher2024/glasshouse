@@ -10,12 +10,14 @@ on:
       - 'server/**'
       - 'test/mocks/**'
       - 'scripts/check-dashboards.js'
+      - 'scripts/check-home-alternative.js'
       - '.github/workflows/dashboards.yml'
   pull_request:
     paths:
       - 'server/**'
       - 'test/mocks/**'
       - 'scripts/check-dashboards.js'
+      - 'scripts/check-home-alternative.js'
       - '.github/workflows/dashboards.yml'
   workflow_dispatch:
 

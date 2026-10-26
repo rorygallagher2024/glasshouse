@@ -73,6 +73,21 @@ that answers `no result from DB`.
 `luna://com.webos.service.capture/executeOneShot` with `method: DISPLAY`
 writes a PNG of the screen, web apps included, at the size asked for.
 
+## The TV's 12 or 24 hour clock (webOS 4.4, 7.6, 9.2)
+
+`com.webos.service.systemservice/getPreferences` with `keys: ["timeFormat"]`
+reads `timeFormat` (`"HH12"` or `"HH24"`) from `/var/luna/preferences/systemprefs.db`.
+On an OLED65B8SLC (webOS 4.4.3) and an OLED42C24LA (webOS 9.2.2) set to the UK
+(`en-GB`, `Europe/London`), `/etc/palm/defaultPreferences.txt` seeds
+`systemprefs.db` with `"timeFormat": "HH12"`, and LG's Settings app
+(`com.palm.app.settings`) has no switch for it (its own menus read
+`localeInfo.clock: "locale"`). `systemservice/getPreferenceValues` with
+`key: "timeFormat"` lists `["HH12", "HH24"]` on both TVs, and
+`systemservice/setPreferences` with `timeFormat: "HH12"` or `"HH24"` updates
+`TimePrefsHandler` in `/usr/sbin/LunaSysService` and persists the choice in
+`systemprefs.db`. The clocks Glasshouse draws follow it, and a TV that answers
+without `timeFormat` is taken as 24-hour.
+
 ## Home input titles (G3, webOS 9.2.2)
 
 HDMI launch points added by Glasshouse are bookmarks with `systemApp: false`.
@@ -237,6 +252,40 @@ Checked on 18 October 2026 on the same TV, with Glasshouse Home in the place:
   /mnt/lg/cmn_data/checkpoint/*com.webos.app.home* && reboot` brought LG's
   Home back on its default layout.
 
+## Glasshouse Home on webOS 7 (65UQ801C0SB, webOS 7.6.0)
+
+Measured on 22 October 2026 on an LCD 65UQ801C0SB, firmware 04.60.90.
+
+- **LG's Home is the webOS 9 kind.** `/usr/palm/applications/com.webos.app.home`
+  holds a native app (`main` is `/usr/bin/com.webos.app.home`, with QML) and the
+  compositor's key filters are the QML ones in `com.webos.surfacemanager.keyFilters`.
+- **sam has neither rescan used elsewhere.** `profile.blockedAppList` is listed in
+  `missingConfigs`, and `blockSystemApp` and `releaseBlockSystemApp` are
+  "Unknown method". Installing and removing a developer app made sam read only
+  that app.
+- **sam still reads the list.** `/usr/sbin/sam` names `profile.blockedAppList` and
+  logs `NEW_BLOCKED_APP_LIST_FROM_CONFIGD`. While configd has none, sam blocks the
+  list LG's server sent, kept in
+  `/var/preferences/com.webos.applicationManager/blockedAppList/IND.json`
+  (`com.webos.app.livepick-full`, `google.assistant.promo`); the
+  `DefaultBlockedAppList` in `/etc/palm/sam-conf-tv.json` was not applied.
+  Writing that list plus an id no app has, then the list alone, made sam report a
+  bind-mounted `appinfo.json` within 0.5 s, with the same pid, `listApps`
+  unchanged and `IND.json` untouched.
+- **The takeover works as on webOS 9.** Mounted and nudged, `getAppInfo` reported
+  `com.webos.app.home` as `web`, LG's process was stopped, and the Home button
+  (evdev 773, `IR_KEY_HOME`) opened Glasshouse Home, which drew its rows and
+  opened apps from its tiles.
+- **No `defaultApps`.** `getSystemSettings` in `general` for `defaultApps`,
+  `lastInputApp` and `physicalLastInputApp` answers `returnValue: false` with
+  `errorKey: ["defaultApps"]`, and the other two in `settings`.
+- **Cold start.** The boot hook had it mounted, nudged and LG's process stopped
+  by 66 s; sam kept the pid it started with, `profile.blockedAppList` still held
+  the country's list, and MAIN's video sink was not muted.
+- **LG's Home is slow to come back.** Given its place back and launched, it was
+  in front about 6 s later, against 2 to 3 s on a G3; the screen is black
+  meanwhile.
+
 ## LG Home's recent apps (G3, webOS 9.2.2)
 
 Read on 19 October 2026 from LG's Home's QML under the Glasshouse Home
@@ -265,6 +314,81 @@ mount, and tried over SSH.
   it. Snapshots are in `/tmp`, so apps left before the TV restarted are
   listed with `cardSnapShotFilePath` empty and only their
   `splashBackground`. Checked on 19 October 2026.
+
+## LG's search and deep links (G3, webOS 9.2.2)
+
+Read on 21 October 2026 from LG's Search app's QML
+(`/usr/palm/applications/com.webos.app.voice/qml`) and tried over SSH on a
+G3 in the UK.
+
+- **Search is a luna service.** `com.webos.service.nlpmanager/search`
+  `{ subscribe: true, query, start_index: 1, max_results: 24, category_name:
+  "movie,tvshow" }` answers `searchStart`, `searchConnecting`, then
+  `searchResult` and `sessionEnd`, in 0.7 to 0.9 s. Without `subscribe` it is
+  refused (`6011`, `NLP invalid parameter`). Root needs no app id (`-a`).
+- **Each result is one title on one service**: `title`, `type` (`movie`,
+  `tvshow`), `thumbnail` (a 960x540 poster on `eic-ngfts.lge.com`, with a
+  `#ADDSIZE#...` hint after it), `display_info` (`release_date`,
+  `running_time`, `age_ratings`), `cp_thumbnail[0].cp_id` (the app id:
+  `amazon`, `netflix`, `com.apple.appletv`, `com.wbd.stream`,
+  `com.disney.disneyplus-prod`, `bbc.iplayer.3.0`, `cdp-30` for Plex) and
+  `action_on_click.launch_parameter.itemId`. Dune (2021) came on three
+  services, dated 3 September, 15 September and 21 October 2021.
+- **The item's detail names the app's own id.** `com.webos.service.sdx/send`
+  with `serviceName` `sdp_onnow`, `url` `content_discovery/item-detail` and
+  `item_id`, `item_type=CONTS` in `bodyData` answers in about 0.5 s with
+  `item.item_detail.exec_list.execs[]`: `exec_app_id` and `exec_id`. For
+  Prime Video, Netflix and HBO Max the `exec_id` was the item id after its
+  first `|`; for Disney+ it was its own (`page=play&id=...`).
+- **applicationManager builds the deep link.** LG's Search launches
+  `{ id, replaceParams: { deeplinkingParams: { target: "$CONTENTID", value:
+  exec_id } } }`, and the app's `appinfo.json` holds the template, such as
+  `{"contentTarget":"$CONTENTID"}` (Disney+ and HBO Max add
+  `"handledBy":"app"`). Prime Video and Netflix opened at the film's page,
+  Apple TV at an episode of Severance after its profile picker, BBC iPlayer at
+  an episode's playback (asking to sign in), and Disney+ and HBO Max stopped
+  at their own first-run privacy prompts.
+- **A series opens at its latest episode** in LG's own Search:
+  `exec_full` names it (Severance on Prime Video: series 2 episode 16, a
+  bonus interview; The Bear on Disney+: series 5 episode 8). With
+  `item_detail_type` `advanced` the detail adds `season_list` (each season's
+  `conts_season_num` and `item_id`) and `tab_episode` (that season's items,
+  `item_name` the episode number, real episodes listed before extras, which
+  Prime Video numbers too). Any other type (`full`) gives Apple TV's show id.
+  Each item id, less what precedes its first `|` and LG's tag (`AMAZON_`,
+  `DISNEY_`, `BBC_`, `MAX_`), is the app's own id. Tried on 21 October 2026:
+  Prime Video's season id opened its season page; Disney+'s season links
+  (`page=browse&...`) left a blank screen, its episode links played; BBC
+  iPlayer's programme id and a guessed `tv/episodes/` link failed or went to
+  its home, its episode links played; Apple TV ignored its show id and a
+  `tv.apple.com/gb/show/` link, cold or running.
+- **The servers are LG's SDP.** `sdx/getHttpHeaderForServiceRequest` with
+  `serviceName` `sdp_nlp`, `sdp_search` or `sdp_onnow` answers a top-level
+  `HOST` (`GB.nextlgsdp.com`) beside device ids and LG account tokens, which
+  should not be logged.
+- **Only that host matters to search** (26 October 2026, firmware 23.25.55).
+  Everything blocked `gb.nextlgsdp.com` and search failed (`errorCode` 6003,
+  `Server response error`); Ads & telemetry plus an uploaded list holding only
+  that host failed the same way; Everything with every name but that host
+  searched normally.
+- **Apps opened from search** (26 October 2026, Ads & telemetry): Prime Video
+  at the Dune and Severance pages, Netflix at Dune: Part Two and Stranger
+  Things, Plex at its film pages, BBC iPlayer playing Doctor Who and All
+  Creatures Great and Small series 1 episode 1, Apple TV at Dune and
+  Severance's latest episode. Apple TV, Disney+ and HBO Max showed a profile
+  picker first when cold: Apple TV then went on to the title, HBO Max to its
+  home; opened again while running, HBO Max played Dune and Succession and
+  Disney+ played The Bear and Loki (protected video captures black, so the
+  episode was not seen). LG's catalogue offered no titles on ITVX, Channel 4,
+  5, YouTube, Paramount+ or Sky Store for 14 test queries.
+- **luna-send over SSH needs stdin closed** (`</dev/null`): without it, it
+  printed nothing and did nothing on the G3.
+- **The TV's keyboard.** A focused text field brings up LG's keyboard, which
+  takes the arrows. Its Enter reaches the page as key 13; its Back closes it
+  without reaching the page and leaves the field focused, and
+  `keyboardStateChange` with `detail.visibility` fires on the document, not
+  the window. `com.webos.service.ime/insertText` and `sendEnterKey` type
+  into it over SSH.
 
 ## Channels and the guide (G3, webOS 9.2.2)
 
@@ -1182,6 +1306,25 @@ Measured on 19 October 2026 on an OLED55G36LA.
   unlike the G5.
 - **With Glasshouse Home first, the boot hook** started 30 s in and had it in
   place at 34 to 39 s, the screen saver mount after it.
+
+## What the TV opens as it starts (C4, webOS 10.3.1)
+
+Measured on 20 and 21 October 2026 on an OLED65C4PSA (firmware 33.31.68),
+Quick Start+ on, Always Ready on, `homeAutoLaunch` `on`
+(`checkHomeAutoLaunchValue` `user`).
+
+- **It powers off 4 h after its last boot.** tvweb.log had
+  `Active Standby -> Power Off` at 14411 s of uptime on both days, so the
+  first power-on after that is a cold start even with Quick Start+ on.
+- **bootd started on the last input at every power-on by `remoteKey`.** At a
+  cold start it logged `homeAutoLaunch(on)` at 10 s and
+  `'com.webos.app.hdmi3' is foreground` at 15 s, and launched no
+  `com.webos.app.home`. Woken after 8 s in Active Standby, it logged
+  `auto_home_launch(on) homeAutoLaunch(on)` and again launched only HDMI 3.
+- **The boot hook** started about 41 s into the cold start and had Glasshouse
+  Home in place 3 s later.
+- **Switched on by Always Ready** the power-on reason is `alwaysOn`, which is
+  not in `fullHomeBootingPowerOnReasons`.
 
 ## Muting and pausing (webOS 5.6.2, CX)
 

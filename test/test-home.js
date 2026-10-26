@@ -133,6 +133,9 @@ function luna(uri, p, cb) {
     if (tv.settingsReadFails) return process.nextTick(function () { cb({ returnValue: false }); });
     r.settings = {};
     p.keys.forEach(function (k) { if (tv.settings[k] !== undefined) r.settings[k] = copy(tv.settings[k]); });
+    // As webOS 7.6.0 answers for a key it does not have: the rest, and a failure naming it.
+    var absent = p.keys.filter(function (k) { return (tv.missingSettings || []).indexOf(k) !== -1; });
+    if (absent.length) { r.returnValue = false; r.errorKey = absent; }
   } else if (uri === 'com.webos.service.settings/setSystemSettings') {
     if ((tv.settingsWriteFails && p.settings.screenSaverEnabled === undefined) ||
         (tv.saverWriteFails && p.settings.screenSaverEnabled !== undefined)) {
@@ -549,6 +552,58 @@ step('woken from Active Standby with auto launch held off, Glasshouse Home opens
   });
 });
 
+/*
+ * With Quick Start+ on, auto launch is left on, yet a C4 (webOS 10.3.1) woke
+ * on its last input: LG's own value is read there. Where bootd opens Home
+ * itself, as a G3 does, Home coming to the front cancels the open.
+ */
+step('woken with Quick Start+ on and the TV still on its input, Glasshouse Home opens where LG\'s auto launch is on', function (done) {
+  start(null);
+  tv.settings.homeAutoLaunch = 'on';
+  tv.settings.quickStartMode = 'on';
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('com.webos.app.hdmi3');
+    powerState('Active');
+    powerState('Active Standby');
+    tv.launched = [];
+    wait(20, function () {
+    assert.strictEqual(tv.settings.homeAutoLaunch, 'on', 'left as the owner had it');
+    assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')).lgAutoLaunch, null);
+    powerState('Active');
+    wait(1700, function () {
+      assert.deepEqual(tv.launched, [LG_HOME]);
+      // bootd opened Home itself.
+      tv.launched = [];
+      powerState('Active Standby');
+      powerState('Active');
+      foreground(LG_HOME);
+      wait(1700, function () {
+        assert.deepEqual(tv.launched, [], 'Home already in front');
+        // The owner has auto launch off.
+        tv.settings.homeAutoLaunch = 'off';
+        foreground('com.webos.app.hdmi3');
+        powerState('Active Standby');
+        powerState('Active');
+        wait(1700, function () {
+          assert.deepEqual(tv.launched, [], 'auto launch off');
+          // LG's value unread: nothing is opened.
+          tv.settings.homeAutoLaunch = 'on';
+          tv.settingsReadFails = true;
+          powerState('Active Standby');
+          powerState('Active');
+          wait(1700, function () {
+            assert.deepEqual(tv.launched, [], 'an unread auto launch opens nothing');
+            tv.settingsReadFails = false;
+            home.disable(function () { done(); });
+          });
+        });
+      });
+    });
+    });
+  });
+});
+
 step('a layout saved from a dashboard keeps LG\'s Home auto launch as it was', function (done) {
   start({ enabled: true, lgAutoLaunch: 'on', lgAutoLaunchCheck: 'default' });
   home.setLayout({ reset: true, colours: null }, function (r) {
@@ -677,6 +732,68 @@ step('switched on in LG\'s settings while Glasshouse Home is on, auto launch is 
   wait(50, function () {
     assert.strictEqual(tv.settings.homeAutoLaunch, 'off');
     assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')).lgAutoLaunch, 'on');
+    home.disable(function () { done(); });
+  });
+});
+
+step('Open Home at power-on updates LG\'s setting or the held preference, and status reports the effective state', function (done) {
+  start(null);
+  tv.settings.homeAutoLaunch = 'off';
+  tv.settings.quickStartMode = 'off';
+  home.setAutoLaunch(true, function (r1) {
+    assert.ok(r1.ok);
+    assert.strictEqual(tv.settings.homeAutoLaunch, 'on');
+    assert.strictEqual(home.autoLaunchHeld(), false);
+    home.status(function (st1) {
+      assert.strictEqual(st1.homeAutoLaunch, true);
+      home.enable(function (re) {
+        assert.ok(re.ok, re.error);
+        wait(20, function () {
+          assert.strictEqual(tv.settings.homeAutoLaunch, 'off', 'held off while Quick Start+ is off');
+          assert.strictEqual(home.autoLaunchHeld(), true);
+          home.status(function (st2) {
+            assert.strictEqual(st2.homeAutoLaunch, true, 'effective preference stays on');
+            home.setAutoLaunch(false, function (r2) {
+              assert.ok(r2.ok);
+              assert.strictEqual(tv.settings.homeAutoLaunch, 'off');
+              assert.strictEqual(home.autoLaunchHeld(), false);
+              assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')).lgAutoLaunch, null);
+              home.status(function (st3) {
+                assert.strictEqual(st3.homeAutoLaunch, false);
+                home.setAutoLaunch(true, function (r3) {
+                  assert.ok(r3.ok);
+                  assert.strictEqual(tv.settings.homeAutoLaunch, 'off');
+                  assert.strictEqual(home.autoLaunchHeld(), true);
+                  tv.settings.quickStartMode = 'on';
+                  home.setAutoLaunch(false, function (r4) {
+                    assert.ok(r4.ok);
+                    assert.strictEqual(tv.settings.homeAutoLaunch, 'off');
+                    assert.strictEqual(home.autoLaunchHeld(), false);
+                    home.setAutoLaunch(true, function (r5) {
+                      assert.ok(r5.ok);
+                      assert.strictEqual(tv.settings.homeAutoLaunch, 'on', 'written directly when Quick Start+ is on');
+                      home.disable(function () { done(); });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+step('webOS 7, which has no defaultApps setting, still starts: it takes the place and watches the Home key', function (done) {
+  var keys = [];
+  start({ enabled: true }, { webosVersion: '7.6.0', homeKeys: function (on) { keys.push(on); } });
+  tv.missingSettings = ['defaultApps'];
+  tv.settings.quickStartMode = 'off';
+  home.start();
+  wait(50, function () {
+    assert.ok(taken(), 'Glasshouse Home has LG\'s Home\'s place');
+    assert.deepEqual(keys, [true], 'the Home key is watched, for holding Home');
     home.disable(function () { done(); });
   });
 });
@@ -1131,20 +1248,24 @@ step('the picture details stay off until switched on, and the server is told of 
   });
 });
 
-step('fading and leaving out inputs with nothing plugged in stay off until switched on, are saved, and outlast a reset, beside hiding inputs one by one', function (done) {
+step('fading, search and leaving out inputs with nothing plugged in stay off until switched on, are saved, and outlast a reset, beside hiding inputs one by one', function (done) {
   start(null);
   assert.strictEqual(home.layout().fade, false);
+  assert.strictEqual(home.layout().search, false);
   assert.strictEqual(home.layout().hideUnused, false);
-  home.setLayout({ fade: true, hideUnused: true }, function (r) {
+  home.setLayout({ fade: true, search: true, hideUnused: true }, function (r) {
     assert.ok(r.ok, r.error);
     assert.strictEqual(r.layout.fade, true);
+    assert.strictEqual(r.layout.search, true);
     assert.strictEqual(r.layout.hideUnused, true);
     var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
     assert.strictEqual(saved.fade, true);
+    assert.strictEqual(saved.search, true);
     assert.strictEqual(saved.hideUnused, true);
     // Only true switches them on.
-    assert.strictEqual(home.normalise({ fade: 'yes', hideUnused: 1 }).fade, false);
-    assert.strictEqual(home.normalise({ fade: 'yes', hideUnused: 1 }).hideUnused, false);
+    assert.strictEqual(home.normalise({ fade: 'yes', search: 'yes', hideUnused: 1 }).fade, false);
+    assert.strictEqual(home.normalise({ fade: 'yes', search: 'yes', hideUnused: 1 }).search, false);
+    assert.strictEqual(home.normalise({ fade: 'yes', search: 'yes', hideUnused: 1 }).hideUnused, false);
     // Inputs are still hidden one by one beside it: an earlier version's list stays, and a new one is kept.
     assert.deepEqual(home.normalise({ hidden: { dev: ['hdmi1'], app: ['netflix'] } }).hidden.dev, ['hdmi1']);
     home.setLayout({ hidden: { dev: ['hdmi2'] } }, function (rh) {

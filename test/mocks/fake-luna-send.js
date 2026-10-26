@@ -134,7 +134,9 @@ var mock = require('./mock-env').createMockEnv({ luna: {
   'com.webos.applicationManager/closeByAppId': function () { return { returnValue: true }; },
   'com.webos.applicationManager/launch': function () { return { returnValue: true }; },
   'com.webos.settingsservice/getSystemSettings': function () { return { returnValue: true, settings: {} }; },
-  'com.webos.settingsservice/setSystemSettings': function () { return { returnValue: true }; }
+  'com.webos.settingsservice/setSystemSettings': function () { return { returnValue: true }; },
+  'com.webos.service.systemservice/getPreferences': function () { return { returnValue: true, timeFormat: 'HH24' }; },
+  'com.webos.service.systemservice/setPreferences': function () { return { returnValue: true }; }
 } });
 
 var args = process.argv.slice(2);

@@ -1,12 +1,12 @@
 # Tested TVs
 
-Confirmed on **53 TVs across 36 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **54 TVs across 37 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
 
-=== "By series (36)"
+=== "By series (37)"
 
     | Series        | Year | Panel | webOS seen        | Reports |
     | :------------ | :--- | :---- | :---------------- | :------ |
@@ -31,6 +31,7 @@ Confirmed on **53 TVs across 36 series** running **webOS 2.2 through 11** (LG's 
     | C2            | 2022 | OLED  | 9.2, 10.3         | 2       |
     | G2            | 2022 | OLED  | 7.4               | 1       |
     | QNED82        | 2022, 2025 | LCD   | 7.6, 10.3         | 2       |
+    | UQ80          | 2022 | LCD   | 7.6               | 1       |
     | LX3           | 2022 | OLED  | —                 | 1       |
     | CS            | 2022 | OLED  | 10                | 1       |
     | C3            | 2023 | OLED  | 10 – 11           | 3       |
@@ -47,7 +48,7 @@ Confirmed on **53 TVs across 36 series** running **webOS 2.2 through 11** (LG's 
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (53)"
+=== "All reports (54)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
@@ -77,6 +78,7 @@ Confirmed on **53 TVs across 36 series** running **webOS 2.2 through 11** (LG's 
     | 43UP80006LA | 6.5.3        | 03.53.45 | LCD   | MQTT bridge confirmed                                          |
     | OLED65G29LA | 7.4.0        | 04.40.90 | OLED  | Confirmed working                                              |
     | 55QNED826QB | 7.6.0        | 04.60.90 | LCD   | Installed over SSH; MQTT bridge confirmed                      |
+    | 65UQ801C0SB | 7.6.0        | 04.60.90 | LCD   | Rooted with slopbro; SSH install; Glasshouse Home confirmed    |
     | OLED42C24LA | 9.2.2        | 23.25.55 | OLED  | Rooted with jsbro-autoroot                                     |
     | OLED55C4PUA | 9.2.0        | 23.20.35 | OLED  | Rooted with faultmanager; SSH install; no internet access      |
     | OLED55B46LA | 9.24.8       | 23.23.30 | OLED  | Installed over telnet                                          |

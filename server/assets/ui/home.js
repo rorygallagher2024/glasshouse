@@ -89,6 +89,16 @@ function renderHome() {
   }
   const more = q('home-more');
   if (more) more.hidden = !st.supported.ok;
+  const autoRow = q('home-autolaunch-row');
+  const autoLeased = typeof getLease === 'function' ? getLease('homeAutoLaunch', st.homeAutoLaunch) : undefined;
+  const autoVal = autoLeased !== undefined ? autoLeased : st.homeAutoLaunch;
+  if (autoRow) autoRow.hidden = !st.supported.ok || autoVal === undefined;
+  const autoBtn = q('home-autolaunch');
+  if (autoBtn && autoVal !== undefined) {
+    const on = !!autoVal;
+    updateToggle(autoBtn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off'), on: on });
+    autoBtn.disabled = !homeWritable();
+  }
   const hideRow = q('home-hide-lg-row');
   // webOS 9 only: newer TVs have no layout file for LG's Home to start on.
   if (hideRow) hideRow.hidden = !st.supported.ok || st.hideLgHomeAtStartAvailable === false;
@@ -99,6 +109,23 @@ function renderHome() {
     const on = !!st.layout && st.layout.picture === true;
     updateToggle(pic, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     pic.disabled = !homeWritable();
+  }
+  const searchRow = q('home-search-row');
+  if (searchRow) searchRow.hidden = !st.supported.ok;
+  const searchPill = q('home-search');
+  // Greyed while the ad blocker blocks LG's search; the setting itself is kept.
+  const searchBlocked = st.layout && st.layout.searchBlocked;
+  if (searchPill) {
+    const on = !!(st.layout && st.layout.search === true);
+    updateToggle(searchPill, { cls: on && !searchBlocked ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    searchPill.disabled = !homeWritable() || !!searchBlocked;
+  }
+  const blockedNote = q('home-search-blocked');
+  if (blockedNote) {
+    blockedNote.hidden = !searchBlocked;
+    if (searchBlocked) q('home-search-blocked-text').textContent = searchBlocked.by === 'list'
+      ? t('home.searchBlockedList', 'Unavailable: the ad blocker\u2019s hosts list blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Take {host} out of the list to use it. This switch keeps its setting.', { host: searchBlocked.host })
+      : t('home.searchBlockedLevel', 'Unavailable: the ad blocker\u2019s Everything setting blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Set the ad blocker to Ads & telemetry or off to use it. This switch keeps its setting.', { host: searchBlocked.host });
   }
   // Fading, as Picture details.
   [['home-fade', 'fade']].forEach(([id, field]) => {
@@ -175,10 +202,13 @@ function renderHomeColours() {
   const now = homeLookNow();
   const can = homeWritable() && !homeSaving;
   // The first preset is the view's own colours, saved as none chosen.
+  // The sample clock in each preview is a fixed time, in the TV's own hour
+  // cycle.
+  const lookClock = homeStatus.clockHour12 ? `9:40 ${t('common.pm', 'PM')}` : '21:40';
   box.innerHTML = presets.map((p, i) => `<button type="button" class="home-look${now && now.id === p.id ? ' picked' : ''}"
       onclick="homeSaveLayout({ colours: ${i === 0 ? 'null' : `{ text: '${p.text}', accent: '${p.accent}' }`} })" ${can ? '' : 'disabled'}
       aria-pressed="${now && now.id === p.id}" style="--look-text:${p.text};--look-accent:${p.accent}">
-      <span class="home-look-screen"><span class="home-look-clock">21:40</span><span class="home-look-row">${esc(t('home.row.apps', 'Apps'))}</span><i></i></span>
+      <span class="home-look-screen"><span class="home-look-clock">${lookClock}</span><span class="home-look-row">${esc(t('home.row.apps', 'Apps'))}</span><i></i></span>
       <span class="home-look-name">${esc(names[p.id] || p.id)}</span>
     </button>`).join('');
   const c = (homeLayout && homeLayout.colours) || presets[0] || { text: '#ece7df', accent: '#e9ad55' };
@@ -369,6 +399,10 @@ async function homeHideLg() {
 
 function homePicture() {
   homeSaveLayout({ picture: homeLayout.picture !== true });
+}
+
+function homeSearch() {
+  homeSaveLayout({ search: homeLayout.search !== true });
 }
 
 function homeFade() {

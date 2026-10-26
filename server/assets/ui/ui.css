@@ -939,6 +939,8 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .pv-note{font-size:14px;color:var(--w60);border-left:2px solid var(--w25);padding:10px 14px;margin:16px 0;max-width:64ch}
 /* A note that warns: the yellow accent of the OLED and service menu warnings. */
 .pv-note.warn{border-left-color:var(--cand)}
+/* Links in a note read as part of it, not the browser's blue. */
+.pv-note a{color:var(--w90);text-underline-offset:3px}
 .cfg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(232px,100%),1fr));
   gap:18px 20px;max-width:840px;margin-top:4px}
 .cfg-f{display:flex;flex-direction:column;gap:7px;min-width:0}
@@ -1185,6 +1187,7 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
   max-width:62ch;
 }
 .prot-status{flex-shrink:0}
+.prot-main .pv-note{margin:10px 0 0}
 .timer-ctl{display:flex;gap:8px;align-items:center}
 .timer-ctl input[type=time]{min-width:0;width:112px}
 /* The days take the row's full width, under the title and the time, so all

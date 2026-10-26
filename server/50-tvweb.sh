@@ -54,6 +54,15 @@ SAM_NUDGE_ID=io.github.rorygallagher2024.lg-webos-dashboard.rescan
 sam_nudge() {
   list=$(luna-send -n 1 luna://com.webos.service.config/getConfigs '{"configNames":["profile.blockedAppList"]}' 2>/dev/null |
     tr -d '\n' | sed -n 's/.*"profile\.blockedAppList": *\(\[[^]]*\]\).*/\1/p')
+  # webOS 7: sam reads the list but configd has none until one is written, and
+  # sam blocks the country's list meanwhile, so the nudge starts from that.
+  # Only where sam has no blockSystemApp; webOS 10 and 11 ignore the list.
+  if [ -z "$list" ] && [ ! -e /etc/palm/schemas/sam/applicationManager.blockSystemApp.schema ] &&
+     grep -q 'profile\.blockedAppList' /usr/sbin/sam 2>/dev/null; then
+    set -- /var/preferences/com.webos.applicationManager/blockedAppList/*.json
+    [ $# -eq 1 ] && [ -f "$1" ] &&
+      list=$(tr -d '\n' < "$1" | sed -n 's/.*"blocked_applist": *\(\[[^]]*\]\).*/\1/p')
+  fi
   [ -n "$list" ] || return 1
   # LG's own list: without the id, should a run cut short have left it in.
   lg=$(echo "$list" | sed "s/\"$SAM_NUDGE_ID\"//g; s/, *,/,/g; s/\[ *,/[/; s/, *\]/]/")
@@ -123,6 +132,7 @@ webos_major=$(sed -n 's/.*webOS[^0-9]*\([0-9][0-9]*\)\..*/\1/p' /etc/issue 2>/de
 homeapp=/usr/palm/applications/com.webos.app.home
 homestage=/var/lib/tvweb/home-takeover
 home_os=0
+[ "$webos_major" = "7" ] && home_os=1
 [ "$webos_major" = "9" ] && home_os=1
 [ "$webos_major" = "10" ] && home_os=1
 if [ "$webos_major" = "11" ]; then
@@ -147,9 +157,16 @@ lg_home_pids() {
 # LG's would have: after a power-on LG opens Home for, and only while the input
 # the TV started on is still in front, so an input or app chosen since stays.
 # bootd logs the app it put in front as "'<id>' is foreground" (a G5, webOS
-# 10.3.1); without that line nothing is opened.
+# 10.3.1); without that line nothing is opened. With Quick Start+ on, auto
+# launch is left as the owner had it, and a C4 (webOS 10.3.1) with it on still
+# started on its last input after its 4 h full power-off, so LG's value is read
+# where home.json holds none; where bootd opened Home itself, the checks below
+# find Home rather than the input.
 home_open_at_boot() {
-  grep -q '"lgAutoLaunch"[[:space:]]*:[[:space:]]*"on"' /var/lib/tvweb/home.json 2>/dev/null || return 0
+  grep -q '"lgAutoLaunch"[[:space:]]*:[[:space:]]*"on"' /var/lib/tvweb/home.json 2>/dev/null ||
+    luna-send -n 1 luna://com.webos.service.settings/getSystemSettings \
+      '{"category":"general","keys":["homeAutoLaunch"]}' 2>/dev/null |
+      grep -q '"homeAutoLaunch": *"on"' || return 0
   reason=$(luna-send -n 1 luna://com.webos.service.tvpower/power/getPowerOnReason '{}' 2>/dev/null |
     sed -n 's/.*"reason": *"\([^"]*\)".*/\1/p')
   reasons=$(luna-send -n 1 luna://com.webos.service.config/getConfigs \
@@ -181,7 +198,7 @@ home_opened=0
 if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
    grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
   mount --bind "$homestage" "$homeapp" 2>/dev/null || true
-  if [ "$webos_major" = "9" ]; then
+  if [ "$webos_major" = "9" ] || [ "$webos_major" = "7" ]; then
     home_reread() { sam_nudge; }
   else
     home_reread() { sam_reread_app com.webos.app.home; }

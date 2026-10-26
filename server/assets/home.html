@@ -42,7 +42,10 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #now{display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;padding:0 112px;height:262px}
 #when{width:520px;-webkit-flex:0 0 auto;flex:0 0 auto}
 #clock{font-family:'Outfit',sans-serif;font-size:176px;line-height:.8;font-weight:300;letter-spacing:-4px}
-#date{margin-top:22px;font-size:28px;color:#a39d93}
+/* The hour cycle, in 12-hour time only: small enough to stay inside #when,
+   which is sized for the digits alone. */
+#mer{font-size:.28em;letter-spacing:0;margin-left:.1em;opacity:.75;font-weight:400}
+#date{margin-top:22px;font-size:28px;color:#a39d93;white-space:nowrap}
 #source{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;padding-left:24px;border-left:1px solid #2a2825;padding-bottom:2px}
 #source.none{visibility:hidden}
 #srcKind{font-size:23px;color:#e9ad55}
@@ -197,6 +200,75 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #fault h1{font-family:'Outfit',sans-serif;font-weight:300;font-size:56px;margin-bottom:18px}
 #fault p{font-size:26px;color:#a39d93}
 
+/* Search. A rail in the left gutter, one quiet mark level with the rows,
+   lit with its word when Left from a row's first tile reaches it. OK slides
+   it out into a panel over the left of Home, which dims behind as it does
+   for Recent apps: the question at headline size on a rule, the titles
+   below. Each title lists the apps on this TV that have it, framed as tiles
+   are when focused. While the TV's keyboard covers the lower screen the
+   titles are single lines, so several stay in view above it. */
+#rail{position:absolute;left:0;top:296px;bottom:40px;width:112px;display:-webkit-flex;display:flex;
+  -webkit-flex-direction:column;flex-direction:column;-webkit-align-items:center;align-items:center;
+  -webkit-justify-content:center;justify-content:center;color:#3a3732;
+  -webkit-transition:color .12s,opacity .32s;transition:color .12s,opacity .32s}
+#rail svg{display:block;width:34px;height:34px;padding:12px;box-sizing:content-box;border-radius:50%;outline:2px solid transparent;
+  -webkit-transition:background-color .12s,outline-color .12s;transition:background-color .12s,outline-color .12s}
+#rail .word{font-size:18px;font-weight:600;margin-top:10px;visibility:hidden}
+#rail.focus{color:#ece7df}
+#rail.focus svg{background:rgba(20,19,16,.86);outline-color:#ece7df}
+#rail.focus .word{visibility:visible}
+.arranging #rail,.no-search #rail{visibility:hidden}
+
+#finder{position:absolute;left:0;top:0;bottom:0;width:1120px;padding:96px 72px 0 112px;
+  background:linear-gradient(90deg,#000 0,#000 86%,rgba(0,0,0,0) 100%);
+  -webkit-transform:translateX(-100%);transform:translateX(-100%);visibility:hidden;
+  -webkit-transition:-webkit-transform .32s cubic-bezier(.2,.7,.2,1),visibility 0s .32s;transition:transform .32s cubic-bezier(.2,.7,.2,1),visibility 0s .32s}
+.finding #finder{-webkit-transform:none;transform:none;visibility:visible;-webkit-transition-delay:0s;transition-delay:0s}
+.finding #now,.finding #rows,.finding #rail{opacity:.25}
+.finding #rows .tile.focus{outline-color:transparent;background:none}
+#ask{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;border-bottom:2px solid #2a2825;
+  -webkit-transition:border-color .12s;transition:border-color .12s}
+.typing #ask{border-bottom-color:#ece7df}
+#ask svg{-webkit-flex:0 0 auto;flex:0 0 auto;width:44px;height:44px;margin-right:26px;color:#6b665e}
+/* Line height above the face's ascent and descent, so a field, which clips
+   its text, keeps the tails of g and y. */
+#query{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;height:116px;padding:0;margin:0;border:0;outline:0;background:transparent;border-radius:0;
+  font-family:'Outfit',sans-serif;font-size:84px;line-height:116px;font-weight:300;letter-spacing:-1.5px;color:#ece7df;caret-color:#ece7df}
+#query::-webkit-input-placeholder{color:#3a3732}
+#query::placeholder{color:#3a3732}
+#status{font-size:23px;color:#a39d93;margin-top:18px;height:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#results{position:absolute;left:112px;right:72px;top:300px;bottom:0;overflow:hidden}
+#hits{-webkit-transition:-webkit-transform .28s cubic-bezier(.2,.7,.2,1);transition:transform .28s cubic-bezier(.2,.7,.2,1)}
+.hit{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:200px;opacity:.5;
+  -webkit-transition:opacity .12s;transition:opacity .12s}
+.hit.on{opacity:1}
+.hit .poster{position:relative;-webkit-flex:0 0 auto;flex:0 0 auto;width:272px;height:153px;border-radius:6px;overflow:hidden;background:#141310}
+.hit .poster img{display:block;width:100%;height:100%;object-fit:cover}
+.hit .poster .mono{position:absolute;left:0;top:0;right:0;bottom:0;text-align:center;line-height:153px;
+  font-family:'Outfit',sans-serif;font-size:64px;font-weight:300;color:#6b665e}
+.hit .info{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;margin-left:36px}
+.hit .ttl{font-family:'Outfit',sans-serif;font-size:40px;line-height:1.15;font-weight:300;letter-spacing:-.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hit .meta{font-size:21px;color:#a39d93;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hit .meta span+span{margin-left:22px}
+.hit .where{display:-webkit-flex;display:flex;margin:14px 0 0 -10px}
+.chip{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-flex:0 0 auto;flex:0 0 auto;
+  margin-right:4px;padding:7px 18px 7px 10px;border-radius:6px;outline:2px solid transparent;font-size:20px;font-weight:600;
+  -webkit-transition:background-color .12s,outline-color .12s;transition:background-color .12s,outline-color .12s}
+.chip img,.chip .mono{display:block;width:46px;height:46px;border-radius:8px;margin-right:12px}
+.chip .mono{background:#2a2825;text-align:center;line-height:46px;font-family:'Outfit',sans-serif;font-size:22px;font-weight:300}
+.hit.on .chip.focus{background:rgba(20,19,16,.86);outline-color:#ece7df}
+/* Above the keyboard: a line each, the year and the apps' icons. */
+.typing .hit{height:76px;opacity:.75}
+.typing .hit .poster,.typing .hit .meta span,.typing .chip .nm{display:none}
+.typing .hit .info{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;margin-left:0}
+.typing .hit .ttl{-webkit-flex:0 1 auto;flex:0 1 auto;font-size:34px}
+.typing .hit .meta{margin:0 0 0 22px}
+.typing .hit .meta .yr{display:inline}
+.typing .hit .where{margin:0 0 0 auto}
+.typing .chip{padding:0;margin:0 0 0 10px;background:none}
+.typing .chip img,.typing .chip .mono{width:38px;height:38px;margin:0}
+
 /* Where the layout asks for it: fading in as the view comes on screen, and
    out before a tile opens. faded alone hides it at once, as when it goes off
    screen; fades is the transition. */
@@ -206,7 +278,7 @@ html.fades.in #stage{-webkit-transition:opacity .3s ease-out;transition:opacity 
 html.faded #stage{opacity:0}
 
 @media (prefers-reduced-motion:reduce){
-  .track,#toast,.tile,html.fades #stage{-webkit-transition:none;transition:none}
+  .track,#toast,.tile,#hits,.hit,.chip,#finder,#rail,#rail svg,#ask,html.fades #stage{-webkit-transition:none;transition:none}
   #wall .layer{-webkit-animation:none;animation:none}
 }
 
@@ -312,13 +384,13 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
 </style>
 </head>
 <body>
-<div id="stage">
+<div id="stage" class="no-search">
   <div id="wall"><div class="layer"></div><div class="layer"></div></div>
   <div id="scrim"></div>
 
   <section id="now">
     <div id="when">
-      <div id="clock">&mdash;</div>
+      <div id="clock"><span id="hm">&mdash;</span><span id="mer" hidden></span></div>
       <div id="date">&mdash;</div>
     </div>
     <div id="source" class="none">
@@ -334,6 +406,12 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   </section>
 
   <main id="rows"></main>
+  <div id="rail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="word" data-t="home.search.rail">Search</span></div>
+  <section id="finder">
+    <div id="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input id="query" type="text" autocomplete="off" spellcheck="false" maxlength="80" placeholder="Film or series" data-t-placeholder="home.search.placeholder"></div>
+    <div id="status">&mdash;</div>
+    <div id="results"><div id="hits"></div></div>
+  </section>
 
 <aside id="home-weather" aria-label="" aria-hidden="true" style="display:none" data-weather-state="loading">
   <div class="wx-head"><span class="wx-place" id="home-wx-place">&mdash;</span><span class="wx-country" id="home-wx-country">&mdash;</span><button id="home-wx-change" type="button" title="Change weather location (Blue button, or Up from top row then OK)" data-t-title="home.weather.changeHelp" aria-haspopup="dialog" aria-controls="home-weather-settings" data-t="home.weather.change">Change</button></div>
@@ -638,7 +716,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   }
   function allowed() {
     var stage = document.getElementById('stage');
-    return enabled && stage && !/\b(arranging|recents)\b/.test(stage.className) && !document.hidden;
+    return enabled && stage && !/\b(arranging|recents|finding)\b/.test(stage.className) && !document.hidden;
   }
   function focusControl() {
     if (!allowed()) return false;
@@ -884,12 +962,15 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   var layout = null;     // rows, order, sort, hidden, channels, hintSeen, picture
   var guideData = {};
   var lastOn = { kind: null };
-  // last: the tile focused last, which the bar's Hide or show acts on.
-  var state = { row: 0, col: {}, arranging: false, held: false, bar: -1, last: null };
+  // last: the tile focused last, which the bar's Hide or show acts on. rail:
+  // the search mark in the left gutter has the focus.
+  var state = { row: 0, col: {}, arranging: false, held: false, bar: -1, last: null, rail: false };
   var BAR = ['btnHide', 'btnReset', 'btnDone'];
   var build = null;
   var okDownAt = 0, okTimer = null, okLong = false, okInRecents = false, backDown = false;
   var beatFails = 0;
+  // The TV's own 12 or 24 hour setting, which the server repeats with each heartbeat.
+  var hour12 = false;
   var layoutRevision = 0, layoutBusy = false;
   // home.json's version as last loaded: a heartbeat bringing another means it
   // was changed elsewhere, such as from a dashboard, and the layout is reloaded.
@@ -899,7 +980,20 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
 
   function $(id) { return document.getElementById(id); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
-  function hm(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  // The hour cycle, and the time to go with it, as the TV's setting has it:
+  // 12-hour time names the half of the day, 24-hour time adds
+  // no word. hmParts keeps the two apart, since the clock sets the word in
+  // type of its own.
+  function meridiem(d) { return d.getHours() < 12 ? t('common.am', 'AM') : t('common.pm', 'PM'); }
+  function hmParts(d) {
+    var h = d.getHours();
+    return [(hour12 ? ((h % 12) || 12) : pad(h)) + ':' + pad(d.getMinutes()),
+            hour12 ? meridiem(d) : ''];
+  }
+  function hm(d) {
+    var p = hmParts(d);
+    return p[1] ? p[0] + ' ' + p[1] : p[0];
+  }
   function esc(s) {
     return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -921,12 +1015,15 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   function request(method, url, body, cb) {
     var x = new XMLHttpRequest();
     x.open(method, url, true);
-    x.timeout = 8000;
+    // Search waits ten seconds server-side; a series launch can need three
+    // detail reads before opening the app.
+    x.timeout = url === '/api/home/search' ? 12000 : url === '/api/home/search/open' ? 20000 : 8000;
     if (body !== null) x.setRequestHeader('Content-Type', 'application/json');
     x.onload = function () {
       var j = null;
       try { j = JSON.parse(x.responseText); } catch (e) {}
-      cb(x.status >= 200 && x.status < 300 ? j : null, x.status);
+      // A refusal's body too, for the reason (search: { blocked }).
+      cb(x.status >= 200 && x.status < 300 ? j : null, x.status, j);
     };
     x.onerror = x.ontimeout = function () { cb(null, 0); };
     x.send(body === null ? null : JSON.stringify(body));
@@ -1092,7 +1189,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   function applyFocus(instant, noScroll) {
     var rows = document.querySelectorAll('.row');
     for (var ri = 0; ri < rows.length; ri++) {
-      var rowEl = rows[ri], kind = rowEl.getAttribute('data-key'), active = ri === state.row && state.bar < 0;
+      var rowEl = rows[ri], kind = rowEl.getAttribute('data-key'), active = ri === state.row && state.bar < 0 && !state.rail;
       rowEl.className = 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : '');
       var tiles = rowEl.querySelectorAll('.tile'), c = colOf(kind);
       for (var ci = 0; ci < tiles.length; ci++) {
@@ -1105,6 +1202,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
       if (!noScroll && active) scrollTrack(rowEl, tiles[c], instant);
     }
     for (var b = 0; b < BAR.length; b++) $(BAR[b]).className = 'btn' + (state.bar === b ? ' focus' : '');
+    $('rail').className = state.rail && !finder.open ? 'focus' : '';
     if (state.bar < 0) {
       var focused = items(rowKey())[colOf(rowKey())];
       state.last = focused ? { kind: rowKey(), id: focused.id } : null;
@@ -1360,7 +1458,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   function aim() {
     glide = null;
     hoverKey = null;
-    if (data && layout && !layoutBusy && !state.held) {
+    if (data && layout && !layoutBusy && !state.held && !finder.open) {
       var list = recents.open ? [$('recents')] : document.querySelectorAll('.row');
       for (var i = 0; i < list.length; i++) {
         var wrap = list[i].querySelector('.wrap');
@@ -1420,7 +1518,10 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
 
   function renderNow() {
     var d = new Date();
-    $('clock').textContent = hm(d);
+    var p = hmParts(d);
+    $('hm').textContent = p[0];
+    $('mer').textContent = p[1];
+    $('mer').hidden = !p[1];
     $('date').textContent = dateText(d);
     var kind = '', title = '', via = '';
     if (lastOn.kind === 'input') {
@@ -1588,6 +1689,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   }
 
   function activate() {
+    if (state.rail) return openSearch();
     var kind = rowKey(), it = items(kind)[colOf(kind)];
     if (!it) return;
     fadeThenOpen(it.overlay === true, function (done) {
@@ -1600,6 +1702,16 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
 
   function move(dr, dc) {
     var onSort = colOf(rowKey()) === -1;
+    // Left of any row's first tile is the search rail, outside arranging;
+    // right goes back to the tile it came from.
+    if (state.rail) {
+      if (dc > 0) { state.rail = false; applyFocus(); }
+      return;
+    }
+    if (dc < 0 && !state.arranging && searchOn() && colOf(rowKey()) === 0) {
+      state.rail = true;
+      return applyFocus();
+    }
     if (dr) {
       var to = nextShown(state.row + dr, dr);
       if (to >= 0 && to < layout.rows.length && shown(to)) state.row = to;
@@ -1620,8 +1732,10 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
 
   function stageClass() {
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
-      (layout && layout.view === 'alternative' ? ' alternative' : '');
-    window.GlasshouseWeather.configure(!!layout && layout.view === 'alternative' && layout.weather === true);
+      (layout && layout.view === 'alternative' ? ' alternative' : '') +
+      (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search');
+    // The film search owns the left side and the remote while it is open.
+    window.GlasshouseWeather.configure(!!layout && layout.view === 'alternative' && layout.weather === true && !finder.open);
   }
 
   // ---------------------------------------------------------------- recent apps
@@ -1760,6 +1874,334 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
     recentAction(target.className === 'x' ? 'close' : 'open', recents.apps[recents.col]);
   }
 
+
+  // ---------------------------------------------------------------- search
+
+  /*
+   * OK on the rail opens the search panel: LG's catalogue answers with the
+   * films and series on this TV's apps (lib/home-search), a moment after
+   * typing stops. Up and down move between titles, left and right between
+   * the apps that have one, and OK opens that app at the title. Up from the
+   * first title types again; Back closes the panel onto the rail.
+   *
+   * Back from an app opened here finds the panel as it was left, within
+   * KEEP_MS and while the screen has not gone off since (the server counts
+   * that in the heartbeat's sleeps); any other way in starts on the rows.
+   */
+  var SEARCH_DELAY_MS = 400;
+  // Switched on on the dashboards' Home tab, and LG's search host not blocked
+  // by the ad blocker: otherwise no rail, and the server refuses.
+  function searchOn() { return !!(layout && layout.search === true && !layout.searchBlocked); }
+
+  // The server found the ad blocker blocking LG's search after the rail was drawn.
+  function searchBlocked(b) {
+    layout.searchBlocked = b;
+    closeSearch();
+    state.rail = false;
+    render();
+    toast(t('home.search.blockedTitle', 'Search is unavailable'), b.by === 'list'
+      ? t('home.search.blockedList', 'The ad blocker\u2019s hosts list blocks {host}, which LG\u2019s search needs. Take it out of the list on the dashboard\u2019s Privacy tab.', { host: b.host })
+      : t('home.search.blockedLevel', 'The ad blocker\u2019s Everything setting blocks LG\u2019s search. Set it to Ads & telemetry or off on the dashboard\u2019s Privacy tab.'));
+  }
+  var KEEP_MS = 30 * 60000;
+  var sleeps = null;
+  // commit: Enter was pressed, so the titles take the focus once they come.
+  // leftAt and leftSleeps: when an app was opened from the panel, and the
+  // heartbeat's sleeps then.
+  var finder = { open: false, typing: false, commit: false, okDown: false, loading: false, opening: false, query: '', results: [], row: 0, col: 0,
+    revision: 0, timer: null, leftAt: 0, leftSleeps: null, shown: '' };
+
+  function openSearch() {
+    if (finder.open) return;
+    finder.open = true;
+    finder.results = [];
+    finder.query = '';
+    finder.commit = false;
+    finder.okDown = false;
+    $('query').value = '';
+    setStatus(t('home.search.ready', 'Films and series on this TV\u2019s apps, from LG\u2019s search'));
+    showHits();
+    applyFocus();
+    startTyping();
+  }
+
+  function closeSearch() {
+    if (!finder.open) return;
+    clearTimeout(finder.timer);
+    finder.revision++;
+    finder.open = false;
+    finder.typing = false;
+    finder.loading = false;
+    finder.opening = false;
+    finder.leftAt = 0;
+    finder.leftSleeps = null;
+    $('query').blur();
+    $('query').value = '';
+    $('hits').innerHTML = '';
+    state.rail = true;
+    stageClass();
+    applyFocus();
+  }
+
+  /*
+   * Coming back to the view: the panel stays only for a return from its app.
+   * A return comes as both a relaunch and the page showing again, so the
+   * mark that an app was opened from it lasts until a key is pressed here.
+   */
+  function keepSearch() {
+    var keep = finder.open && finder.leftAt && Date.now() - finder.leftAt < KEEP_MS &&
+      (sleeps === null || sleeps === finder.leftSleeps);
+    if (!keep) {
+      closeSearch();
+      state.rail = false;
+      return false;
+    }
+    finder.typing = false;
+    finder.okDown = false;
+    if (finder.shown) setStatus(finder.shown);
+    $('query').blur();
+    stageClass();
+    focusHits(true);
+    return true;
+  }
+
+  // Focusing the field brings up the TV's keyboard.
+  function startTyping() {
+    finder.typing = true;
+    stageClass();
+    focusHits(true);
+    $('query').focus();
+  }
+
+  function stopTyping() {
+    if (!finder.typing) return;
+    finder.typing = false;
+    $('query').blur();
+    stageClass();
+    focusHits();
+  }
+
+  function setStatus(text) {
+    $('status').textContent = text;
+  }
+
+  function queryChanged() {
+    clearTimeout(finder.timer);
+    // The debounce delays the request, not invalidation of the old selection.
+    finder.revision++;
+    finder.query = null;
+    finder.results = [];
+    finder.loading = false;
+    finder.commit = false;
+    showHits();
+    finder.timer = setTimeout(runSearch, SEARCH_DELAY_MS);
+  }
+
+  function runSearch() {
+    clearTimeout(finder.timer);
+    var q = $('query').value.replace(/\s+/g, ' ').replace(/^ | $/g, '');
+    if (q === finder.query) return finder.loading ? null : committed();
+    finder.query = q;
+    var revision = ++finder.revision;
+    finder.results = [];
+    finder.loading = false;
+    showHits();
+    if (q.length < 2) {
+      return setStatus(t('home.search.ready', 'Films and series on this TV\u2019s apps, from LG\u2019s search'));
+    }
+    finder.loading = true;
+    setStatus(t('home.search.looking', 'Looking for \u201c{query}\u201d', { query: q }));
+    postJson('/api/home/search', { query: q }, function (r, status, refused) {
+      if (revision !== finder.revision || !finder.open) return;
+      finder.loading = false;
+      if (refused && refused.blocked) return searchBlocked(refused.blocked);
+      if (!r || !r.ok) {
+        finder.query = null;
+        finder.results = [];
+        showHits();
+        return setStatus(t('home.search.failed', 'LG\u2019s search did not answer. It needs the TV online, and the ad blocker on Ads & telemetry or off.'));
+      }
+      finder.results = r.results;
+      finder.row = 0;
+      finder.col = 0;
+      showHits();
+      committed();
+      var n = r.results.length;
+      if (!n) {
+        setStatus(r.elsewhere ? t('home.search.onlyElsewhere', 'Nothing for \u201c{query}\u201d on this TV\u2019s apps. {n} more on apps it does not have.', { query: q, n: r.elsewhere })
+          : t('home.search.none', 'Nothing for \u201c{query}\u201d', { query: q }));
+      } else if (r.elsewhere) {
+        setStatus(n === 1 ? t('home.search.foundOneMore', '1 title on this TV\u2019s apps, {more} more on apps it does not have', { more: r.elsewhere })
+          : t('home.search.foundMore', '{n} titles on this TV\u2019s apps, {more} more on apps it does not have', { n: n, more: r.elsewhere }));
+      } else {
+        setStatus(n === 1 ? t('home.search.foundOne', '1 title on this TV\u2019s apps') : t('home.search.found', '{n} titles on this TV\u2019s apps', { n: n }));
+      }
+    });
+  }
+
+  function committed() {
+    if (!finder.commit) return;
+    finder.commit = false;
+    if (finder.results.length) stopTyping();
+  }
+
+  function minutesText(m) {
+    var h = Math.floor(m / 60), r = m % 60;
+    if (!h) return t('home.search.minutes', '{m} min', { m: r });
+    return r ? t('home.search.hoursMinutes', '{h} h {m} min', { h: h, m: r }) : t('home.search.hours', '{h} h', { h: h });
+  }
+
+  function showHits() {
+    var html = '';
+    finder.results.forEach(function (hit, i) {
+      var meta = [hit.kind === 'film' ? t('home.search.film', 'Film') : t('home.search.series', 'Series')];
+      if (hit.year) meta.push({ yr: String(hit.year) });
+      if (hit.minutes) meta.push(minutesText(hit.minutes));
+      if (hit.genre) meta.push(hit.genre.split(/,\s*/).slice(0, 3).join(', '));
+      if (hit.rating) meta.push(hit.rating);
+      var mono = '<span class="mono">' + esc(String(hit.title).charAt(0)) + '</span>';
+      var chips = '';
+      hit.apps.forEach(function (a, c) {
+        chips += '<span class="chip" data-c="' + c + '">' + (a.icon ? '<img src="' + esc(a.icon) + '" alt="">' : '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>') +
+          '<span class="nm">' + esc(a.title) + '</span></span>';
+      });
+      html += '<div class="hit" data-r="' + i + '"><div class="poster">' + (hit.poster ? '<img src="' + esc(hit.poster) + '" alt="">' : mono) + '</div>' +
+        '<div class="info"><div class="ttl">' + esc(hit.title) + '</div><div class="meta">' + meta.map(function (m) { return m.yr ? '<span class="yr">' + esc(m.yr) + '</span>' : '<span>' + esc(m) + '</span>'; }).join('') + '</div>' +
+        '<div class="where">' + chips + '</div></div></div>';
+    });
+    $('hits').innerHTML = html;
+    // A poster LG no longer serves, or one blocked, leaves the title's initial.
+    var imgs = $('hits').querySelectorAll('.poster img');
+    for (var j = 0; j < imgs.length; j++) {
+      imgs[j].onerror = function () {
+        var span = document.createElement('span');
+        span.className = 'mono';
+        span.textContent = (this.parentNode.parentNode.querySelector('.ttl').textContent || '').charAt(0);
+        this.parentNode.replaceChild(span, this);
+      };
+    }
+    stageClass();
+    focusHits(true);
+  }
+
+  // Keeps the focused title in view by moving the list, as the rows' tracks move.
+  function focusHits(instant) {
+    var hits = $('hits').querySelectorAll('.hit');
+    finder.row = Math.max(0, Math.min(finder.row, hits.length - 1));
+    for (var i = 0; i < hits.length; i++) {
+      var on = i === finder.row && !finder.typing;
+      hits[i].className = 'hit' + (on ? ' on' : '');
+      var chips = hits[i].querySelectorAll('.chip');
+      if (on) finder.col = Math.max(0, Math.min(finder.col, chips.length - 1));
+      for (var c = 0; c < chips.length; c++) chips[c].className = 'chip' + (on && c === finder.col ? ' focus' : '');
+    }
+    var list = $('hits'), hit = hits[finder.row];
+    var y = hit ? Math.max(0, Math.min(hit.offsetTop - hit.offsetHeight, list.scrollHeight - $('results').clientHeight)) : 0;
+    if (finder.typing || !hit) y = 0;
+    if (instant) list.style.webkitTransition = list.style.transition = 'none';
+    list.style.webkitTransform = list.style.transform = 'translateY(' + (-y) + 'px)';
+    if (instant) { void list.offsetWidth; list.style.webkitTransition = list.style.transition = ''; }
+  }
+
+  function openHit() {
+    if (finder.opening || finder.loading) return;
+    var hit = finder.results[finder.row], app = hit && hit.apps[finder.col];
+    if (!app) return;
+    finder.opening = true;
+    var revision = finder.revision;
+    // A series is looked up to its start first, which takes a second or two;
+    // the line says what is opening until the app is in front, and is put
+    // back for a return to the panel.
+    finder.shown = $('status').textContent;
+    setStatus(t('home.search.opening', 'Opening {title} on {app}', { title: hit.title, app: app.title }));
+    postJson('/api/home/search/open', { id: hit.id, app: app.id }, function (r, status, refused) {
+      if (revision !== finder.revision || !finder.open) return;
+      finder.opening = false;
+      if (refused && refused.blocked) return searchBlocked(refused.blocked);
+      if (!r || !r.ok) {
+        setStatus(finder.shown);
+        return toast(t('home.openFailed', 'That did not open'), r && r.error);
+      }
+      finder.leftAt = Date.now();
+      finder.leftSleeps = sleeps;
+    });
+  }
+
+  // True where the key was the view's to act on.
+  function finderKey(k) {
+    finder.leftAt = 0;
+    if (k === KEY.back) {
+      if (backDown) return true;
+      backDown = true;
+      if (finder.typing && finder.results.length) stopTyping();
+      else closeSearch();
+      return true;
+    }
+    if (finder.opening) return true;
+    if (finder.typing) {
+      // The keyboard has the arrows; Enter on it, or Down, goes to the titles.
+      if (k === KEY.ok) {
+        finder.commit = true;
+        runSearch();
+        return true;
+      }
+      if (k === KEY.down && finder.results.length) { stopTyping(); return true; }
+      return false;
+    }
+    finder.commit = false;
+    if (!finder.results.length && (k === KEY.ok || k === KEY.up)) { startTyping(); return true; }
+    if (k === KEY.left) finder.col--;
+    else if (k === KEY.right) finder.col++;
+    else if (k === KEY.down) { if (finder.row < finder.results.length - 1) { finder.row++; finder.col = 0; } }
+    else if (k === KEY.up) {
+      if (finder.row === 0) { startTyping(); return true; }
+      finder.row--; finder.col = 0;
+    } else if (k === KEY.ok) { openHit(); return true; }
+    else return false;
+    focusHits();
+    return true;
+  }
+
+  function chipAt(target) {
+    while (target && target !== document.body) {
+      if (target.className && /\b(chip|hit)\b/.test(target.className)) return target;
+      target = target.parentNode;
+    }
+    return null;
+  }
+
+  function within(target, id) {
+    while (target && target !== document.body) {
+      if (target.id === id) return true;
+      target = target.parentNode;
+    }
+    return false;
+  }
+
+  // The pointer over a title or an app on it focuses that.
+  function finderPointer(target) {
+    var el = chipAt(target);
+    if (!el || finder.typing || finder.opening) return;
+    var hit = /\bhit\b/.test(el.className) ? el : chipAt(el.parentNode);
+    if (!hit) return;
+    var r = +hit.getAttribute('data-r'), c = /\bchip\b/.test(el.className) ? +el.getAttribute('data-c') : finder.col;
+    if (r === finder.row && c === finder.col) return;
+    finder.row = r; finder.col = c;
+    focusHits();
+  }
+
+  function finderClick(target) {
+    // A click on Home, dimmed beside the panel, closes it.
+    if (!within(target, 'finder')) return closeSearch();
+    if (finder.opening) return;
+    if (within(target, 'ask')) return finder.typing ? null : startTyping();
+    var el = chipAt(target);
+    if (!el || !/\bchip\b/.test(el.className)) return;
+    finderPointer(target);
+    if (finder.typing) { stopTyping(); finderPointer(target); }
+    openHit();
+  }
+
   // ---------------------------------------------------------------- arranging
 
   /*
@@ -1804,6 +2246,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
     state.arranging = on;
     state.held = false;
     state.bar = -1;
+    state.rail = false;
     if (cur) {
       var list = items(kind);
       for (var i = 0; i < list.length; i++) if (list[i].id === cur.id) state.col[kind] = i;
@@ -1934,6 +2377,14 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
     stopPointing();
     landAll();
     if (!data || !layout) return;
+    if (finder.open) {
+      // OK held repeats: one press opens one app. The keyboard's Enter sends
+      // no key up (ime/sendEnterKey on a G3), so it is not counted.
+      if (e.keyCode === KEY.ok && finder.okDown) { e.preventDefault(); return; }
+      if (e.keyCode === KEY.ok && !finder.typing) finder.okDown = true;
+      if (finderKey(e.keyCode)) e.preventDefault();
+      return;
+    }
     if (layoutBusy) { e.preventDefault(); return; }
     var k = e.keyCode;
     if (k === KEY.ok) {
@@ -1973,6 +2424,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
 
   function onKeyUp(e) {
     if (e.keyCode === KEY.back) { backDown = false; return; }
+    if (e.keyCode === KEY.ok) finder.okDown = false;
     if (e.keyCode !== KEY.ok || !okDownAt) return;
     e.preventDefault();
     clearTimeout(okTimer);
@@ -2002,6 +2454,11 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   // Focuses the tile under the pointer, without moving its row.
   function hoverTile(target) {
     if (layoutBusy || !data || !layout) return;
+    if (finder.open) return finderPointer(target);
+    if (!state.arranging && searchOn() && within(target, 'rail')) {
+      if (!state.rail) { state.rail = true; state.bar = -1; applyFocus(false, true); }
+      return;
+    }
     var tile = tileAt(target);
     if (recents.open) {
       if (tile && /\brc\b/.test(tile.className) && (+tile.getAttribute('data-c') !== recents.col || recents.onAll)) {
@@ -2015,14 +2472,16 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
     while (rowEl && !/\brow\b/.test(rowEl.className)) rowEl = rowEl.parentNode;
     if (!rowEl) return;
     var r = +rowEl.getAttribute('data-row'), c = +tile.getAttribute('data-c'), kind = layout.rows[r];
-    if (state.row !== r || colOf(kind) !== c || state.bar >= 0) {
-      state.row = r; state.col[kind] = c; state.bar = -1;
+    if (state.row !== r || colOf(kind) !== c || state.bar >= 0 || state.rail) {
+      state.row = r; state.col[kind] = c; state.bar = -1; state.rail = false;
       applyFocus(false, true);
     }
   }
   function onClick(e) {
     if (!data || !layout || layoutBusy) return;
     if (recents.open) return recentsClick(e.target);
+    if (finder.open) return finderClick(e.target);
+    if (!state.arranging && searchOn() && within(e.target, 'rail')) return openSearch();
     var btn = e.target && e.target.id;
     if (BAR.indexOf(btn) !== -1) return pressBar(BAR.indexOf(btn));
     if (state.arranging && /\bsort\b/.test(e.target.className || '')) {
@@ -2154,6 +2613,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
       var firstLoad = !data;
       data = r;
       layout = r.layout;
+      if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
       applyColours(layout.colours);
       if (r.layoutVersion) layoutVersion = r.layoutVersion;
@@ -2169,6 +2629,11 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
         toast(t('home.hint.title', 'Hold OK to arrange'), t('home.hint.desc', 'Move or hide tiles and rows. LG\'s Home is the last tile in Apps.'));
         postJson('/api/home/layout', { hintSeen: true });
         layout.hintSeen = true;
+      } else if (!layout.searchHintSeen && searchOn()) {
+        // Once, for a TV that had Glasshouse Home before search came.
+        toast(t('home.search.hintTitle', 'Search is left of the rows'), t('home.search.hintDesc', 'Press left on a row\u2019s first tile to find a film or series and open it in an app on this TV'));
+        postJson('/api/home/layout', { searchHintSeen: true });
+        layout.searchHintSeen = true;
       }
       refreshGuide();
       if (cb) cb(true);
@@ -2214,12 +2679,29 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
         wallRevision = r.wallpapers && r.wallpapers.revision || '';
         updateWall();
         $('fault').className = '';
+        // The TV's setting can change while the view is open, so the heartbeat
+        // is where this view hears of it.
+        if (typeof r.clockHour12 === 'boolean' && r.clockHour12 !== hour12) {
+          hour12 = r.clockHour12;
+          renderNow();
+        }
         // A new release of the server: the page is the old one's until reloaded.
         if (build && r.build && r.build !== build) {
           if (!state.arranging && !layoutBusy) location.reload();
           return;
         }
         build = r.build || build;
+        if (typeof r.sleeps === 'number') {
+          // The screen went off since an app was opened from the panel: the
+          // return was not straight back, so Home starts on its rows.
+          if (finder.open && finder.leftSleeps !== null && r.sleeps !== finder.leftSleeps && !document.hidden) {
+            closeSearch();
+            state.rail = false;
+            state.row = 0; state.col = {};
+            render();
+          }
+          sleeps = r.sleeps;
+        }
         if (r.layoutVersion && layoutVersion && r.layoutVersion !== layoutVersion && !state.arranging && !layoutBusy) load();
         return;
       }
@@ -2234,6 +2716,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
     clearTimeout(okTimer);
     okDownAt = 0; backDown = false;
     closeRecents();
+    keepSearch();
     readLaunchParams();
     updateWall();
     // Back from an app, Home is as it was left: the same tile in focus and
@@ -2261,6 +2744,16 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   document.addEventListener('keydown', onKeyDown, true);
   document.addEventListener('keyup', onKeyUp, true);
   document.addEventListener('mousemove', onPointer);
+  $('query').addEventListener('input', queryChanged);
+  /*
+   * The TV's keyboard closed by its own Back, which the page does not see,
+   * leaves the field focused; webOS says so on the document, not the window
+   * (a G3, webOS 9.2.2). The titles take the focus.
+   */
+  document.addEventListener('keyboardStateChange', function (e) {
+    if (!finder.typing || !e.detail || e.detail.visibility !== false) return;
+    if (finder.results.length) stopTyping(); else closeSearch();
+  });
   document.addEventListener('onwheel' in document ? 'wheel' : 'mousewheel', onWheel);
   // webOS says when the pointer hides, after a few still seconds or a key.
   document.addEventListener('cursorStateChange', function (e) {

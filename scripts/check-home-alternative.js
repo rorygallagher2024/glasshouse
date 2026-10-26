@@ -10,8 +10,10 @@ module.exports = async function checkHomeAlternative(browser, base, problems) {
   const clone = v => JSON.parse(JSON.stringify(v));
   const layout = { rows: ['dev', 'app', 'ch'], order: {app:[],dev:[],ch:[]}, sort:{app:'custom',dev:'custom',ch:'custom'},
     hidden:{app:['hidden-app'],dev:[],ch:[]},channels:[],hintSeen:true,picture:false,fade:false,hideUnused:false,colours:null,
-    view:'standard',weather:false };
+    view:'standard',weather:false,search:false,searchHintSeen:true };
   let version = 1, forecastMode = 'ok', searchMode = 'ok', heldForecast = null, extraApps = [];
+  let clockHour12 = false;
+  const filmQueries = [], filmLaunches = [];
   const catalogue = () => ({ok:true, layout:clone(layout), layoutVersion:String(version),wallpapers:{available:false},
     apps:[{id:'youtube',title:'YouTube'},{id:'prime',title:'Prime Video'},{id:'spotify',title:'Spotify'},
       {id:'homebrew',title:'Homebrew'},{id:'tools',title:'Tools'},{id:'hidden-app',title:'Hidden app'}].concat(extraApps),
@@ -30,17 +32,23 @@ module.exports = async function checkHomeAlternative(browser, base, problems) {
   const fulfill = (route, body, status=200) => route.fulfill({status,contentType:'application/json',body:JSON.stringify(body)});
   await page.route('**/api/home/**', route => {
     const path = new URL(route.request().url()).pathname;
-    let body = {ok:true,build:'test',layoutVersion:String(version),wallpapers:{available:false}};
+    let body = {ok:true,build:'test',layoutVersion:String(version),wallpapers:{available:false},clockHour12,sleeps:0};
     if (path === '/api/home/catalogue') body = catalogue();
     if (path === '/api/home/now') body = {kind:'app',title:'YouTube',appId:'youtube'};
     if (path === '/api/home/open') opens.push(route.request().postDataJSON());
     if (path === '/api/home/layout') {
       const patch = route.request().postDataJSON();
-      for (const key of ['rows','sort','hidden','hintSeen','view','weather','colours']) if (patch[key] !== undefined) layout[key]=patch[key];
+      for (const key of ['rows','sort','hidden','hintSeen','searchHintSeen','view','weather','search','colours']) if (patch[key] !== undefined) layout[key]=patch[key];
       if(patch.order) Object.assign(layout.order,patch.order);
       version++; body={ok:true,layout:clone(layout),layoutVersion:String(version)};
     }
     if(path === '/api/home/recents') body={ok:true,apps:[]};
+    if(path === '/api/home/search') {
+      filmQueries.push(route.request().postDataJSON());
+      body={ok:true,elsewhere:0,results:[{id:'dune',title:'Dune',kind:'film',year:2021,minutes:155,
+        apps:[{id:'prime',title:'Prime Video'}]}]};
+    }
+    if(path === '/api/home/search/open') filmLaunches.push(route.request().postDataJSON());
     return fulfill(route,body);
   });
   await page.route('https://geocoding-api.open-meteo.com/**', route => {
@@ -115,6 +123,34 @@ module.exports = async function checkHomeAlternative(browser, base, problems) {
     ok(requests[requests.length-1].includes('Europe%2FParis'),'Forecast timezone changes');
     await page.reload();await page.waitForSelector('.row .tile');
     ok((await page.locator('#home-wx-place').innerText())==='Paris','Selected location survives reload');
+    // LG's title search and weather use separate panels and remote focus.
+    await change({search:true});
+    await page.locator('#rail').click();
+    ok(await page.locator('#stage').evaluate(e=>e.classList.contains('alternative')&&e.classList.contains('finding')),'Search retains Alternative View');
+    ok(await page.locator('#home-weather').isHidden(),'Film search pauses the weather card');
+    await key(406);
+    ok(await page.locator('#home-weather-settings').isHidden(),'Blue cannot open weather over film search');
+    await page.locator('#query').fill('Dune');await page.clock.fastForward(500);await page.waitForSelector('#hits .hit');
+    ok(filmQueries.length===1&&filmQueries[0].query==='Dune','Film queries reach the title search independently');
+    const pausedForecasts=requests.length;
+    await page.clock.fastForward(16*60000);await page.waitForTimeout(50);
+    ok(requests.length===pausedForecasts,'Film search pauses forecast requests');
+    clockHour12=true;await page.clock.fastForward(6000);await page.waitForTimeout(50);
+    ok(await page.locator('#mer').isVisible()&&/^(AM|PM)$/.test(await page.locator('#mer').innerText()),'Alternative clock follows the TV 12-hour setting');
+    ok(await page.locator('#clock').evaluate(e=>getComputedStyle(e).fontSize)==='100px','12-hour clock keeps Alternative geometry');
+    await key(461);
+    ok(await page.locator('#stage').evaluate(e=>e.classList.contains('finding')),'First Back leaves film results open');
+    await key(461);
+    ok(await page.locator('#home-weather').isVisible(),'Closing film search restores weather');
+    ok((await page.locator('#home-wx-place').innerText())==='Paris','Film search preserves the weather location');
+    await key(406);
+    ok(await page.locator('#home-weather-settings').isVisible(),'Weather shortcut returns after film search closes');
+    await key(461);await change({search:false});
+    ok(await page.locator('#rail').isHidden(),'Film search can be disabled independently');
+    ok(await page.locator('#home-weather').isVisible()&&layout.weather===true,'Disabling film search keeps weather enabled');
+    ok(filmLaunches.length===0,'Weather and Back keys do not launch a film');
+    clockHour12=false;await page.clock.fastForward(6000);await page.waitForTimeout(50);
+    ok(await page.locator('#mer').isHidden(),'Clock returns to 24-hour time');
     await page.locator('#home-wx-change').click(); searchMode='empty';
     await page.locator('#home-location-query').fill('zzzzz');await page.locator('#home-location-search').click();
     await page.waitForFunction(()=>document.getElementById('home-location-status').textContent.indexOf('No matching')===0);

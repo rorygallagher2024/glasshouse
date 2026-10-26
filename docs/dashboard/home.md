@@ -1,13 +1,13 @@
 # Home
 
 > [!NOTE]
-> **Experimental (webOS 9 & 10):** Glasshouse Home replaces LG's built-in launcher when pressing **Home** or **Back** on the remote, or when the TV turns on. It is available on webOS 9 and 10 (and on webOS 11 when `"allowExperimentalHome": true` is set in `config.json`), and works on whichever port the dashboard is on.
+> **Experimental (webOS 7, 9 & 10):** Glasshouse Home replaces LG's built-in launcher when pressing **Home** or **Back** on the remote, or when the TV turns on. It is available on webOS 7, 9 and 10 (and on webOS 11 when `"allowExperimentalHome": true` is set in `config.json`), and works on whichever port the dashboard is on.
 
 ![Glasshouse Home on an OLED55G36LA (webOS 9.2): clock and the Apps, Inputs and Channels rows over an uploaded afternoon wallpaper](../screenshots/home.jpg)
 
 ## What is on screen
 
-Glasshouse Home displays a clock and date, the last active source or app, and up to three rows (any row with no visible items is automatically hidden):
+Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour time setting), the last active source or app, and up to three rows (any row with no visible items is automatically hidden):
 
 <div class="grid cards" markdown>
 
@@ -61,6 +61,16 @@ Glasshouse Home displays a clock and date, the last active source or app, and up
 
 </div>
 
+## Search
+
+> [!WARNING]
+> **Sends queries to LG's search service:** Enabling **Search** sends typed search queries to LG's cloud search service (`com.webos.service.nlpmanager` / `*.nextlgsdp.com` — the same backend used by LG's built-in Search app) and nowhere else. It is **off by default** so nothing leaves the TV unless explicitly switched on.
+
+When switched on under **Home** on the web dashboard or in the TV app's Home section, **Search** adds a mark in the left margin beside the rows: **Left** from the first tile of any row reaches it, and **Right** goes back. **OK** opens a search panel over the left of Glasshouse Home for films and series, typed on the TV's keyboard. While the keyboard is up the titles are single lines, with the icons of the apps that have them; once it closes each shows its poster, year, running time and apps. Editing the query clears the previous titles immediately. Up and down move between titles, left and right between apps, and OK opens the app at that title. A series opens at its start where the app allows: Prime Video and HBO Max at its first season, Disney+ and BBC iPlayer playing its first episode, Netflix at the series; Apple TV opens its latest episode. Titles only on apps the TV does not have are counted, not listed, and trailers, teasers and sneak peeks are never shown or opened. Back closes the keyboard, then the panel. Coming back from an app opened there within 30 minutes, without the TV having been switched off, finds the panel as it was left. Switched off, the mark goes and nothing typed leaves the TV.
+
+LG's search needs the TV online and LG's search server (`gb.nextlgsdp.com` on a TV in the UK) reachable. Where the ad blocker blocks that server, on **Everything** or through an uploaded hosts list, the mark is hidden on Glasshouse Home and the **Search** switch is greyed on both dashboards, with a note saying what blocks it. The switch keeps its setting, and search comes back when the blocker is set to **Ads & telemetry** or off.
+
+
 ## Alternative View
 
 **Home appearance** in the web dashboard's **Home** tab selects **Standard** or
@@ -94,6 +104,10 @@ view's browser storage, not `home.json`. A choice in a computer's browser is
 separate. Clearing the Home view's browser storage removes its location and
 cache. Previously saved choices from the D&D Games weather customisation are
 recognised; its old fixed default is not assumed.
+
+The film and series search works in either Home view. While its panel is open,
+the weather card and its shortcuts pause; closing search brings the card back.
+The Search and Weather card switches are saved independently.
 
 Forecasts are model-based, displayed in Celsius and mph, with feels-like,
 current-day high/low and three further days. While Home is visible they refresh
@@ -142,7 +156,7 @@ Click **Use Glasshouse Home** (and confirm on the second press) in the web dashb
   * Select the **LG Home** tile at the end of the Apps row.
   * Hold the remote's **Home** button for 1 second (a short press on LG's Home returns to Glasshouse Home).
   * Stop the Glasshouse server: if Glasshouse Home stops answering or the server is stopped/uninstalled, LG's Home automatically takes its place back.
-* **Cold boot & standby:** With Quick Start+ (Active Standby) on, Glasshouse Home opens immediately on wake. On a cold boot (Quick Start+ off), Glasshouse Home takes over about 25–40 seconds after power-on; pressing Home during startup keeps the TV on the current input with a brief notice until ready.
+* **Cold boot & standby:** **Open Home at power-on** (also under **Advanced &rarr; Power & standby**) controls whether the TV opens the Home screen when switched on or stays on the last input (LG's Home Auto Launch). With Quick Start+ (Active Standby) on, Glasshouse Home opens immediately on wake (and on TVs like the C4 on webOS 10.3.1 that start on their last input anyway, Glasshouse Home is opened over it when Open Home at power-on is on). On a cold boot (Quick Start+ off), Glasshouse Home takes over about 25–40 seconds after power-on; pressing Home during startup keeps the TV on the current input with a brief notice until ready.
 * **Hide LG's Home while the TV starts (webOS 9 optional setting):** Replaces LG's Home layout with a blank screen during the first seconds of a cold boot so LG's launcher never flashes on screen.
 
 > [!WARNING]

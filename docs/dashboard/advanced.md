@@ -22,6 +22,10 @@ The switch is under **Advanced &rarr; Power** in the web dashboard and **System 
 
 Switching off puts the TV into a light sleep rather than shutting it down completely, so it starts up faster. LG calls this Quick Start+.
 
+### Open Home at power-on
+
+Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch (`general.homeAutoLaunch`). On TVs with Glasshouse Home, the same switch appears on the **Home** tab.
+
 ### Wake-on-LAN
 
 Lets Home Assistant, a mobile app, or another network device switch the TV on from deep sleep using a Wake-on-LAN magic packet. LG refers to this as Mobile TV On.
@@ -64,8 +68,10 @@ The limits are counted by [watch time](metrics.md#watch-time), so they apply onl
 
 ![Display: the LG logo switch](../screenshots/advanced-display.png)
 
+* **12-hour clock:** Shows the time as `9:40 PM` rather than `21:40` on the TV dashboard, Glasshouse Home and the clock screen savers. Sets the TV's `timeFormat` preference (`HH12` or `HH24`), which webOS seeds as `HH12` by default and gives no menu switch for.
 * **LG logo:** Controls whether the LG logo animation displays during power-on and power-off (LG Logo Display).
 * **Ambient light (PicCap):** When PicCap is installed, captures on-screen content and streams it to a Hyperion server to drive ambient backlighting behind the TV. Turning it off stops video capture and the ambient lighting with it. See [PicCap and ambient light](../piccap.md) for how it works and setup details.
+* **Ambient light (Hue Sync):** When the Hue Sync app is installed, starts and stops its streaming of what is on screen to Philips Hue and Ambience lights. Turning it off stops the streaming and the light with it. See [Hue Sync](../huesync.md) for setup details.
 
 ## Sound
 

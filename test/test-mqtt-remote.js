@@ -21,6 +21,7 @@ vm.runInNewContext(source.slice(start, end), {
   mqttClient: { on: function (name, callback) { handler = callback; } },
   mqttTopics: { commands: 'test/command/' },
   piccap: { handleMqttCommand: function () { return false; } },
+  huesync: { handleMqttCommand: function () { return false; } },
   console: { log: function () {} },
   doControl: function (action, value, callback) { keys.push(action + ':' + value); callback({ ok: true }); },
   setTimeout: function (fn, delay) { timers.push(delay); },

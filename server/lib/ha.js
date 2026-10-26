@@ -56,6 +56,7 @@ var HA_ENTITIES = [
   { id: 'volume', type: 'number', name: 'Volume', cat: 'controls' },
   { id: 'input_source', type: 'select', name: 'Input Source', cat: 'controls' },
   { id: 'piccap', type: 'switch', name: 'PicCap Capture', cat: 'controls' },
+  { id: 'huesync', type: 'switch', name: 'Hue Sync', cat: 'controls' },
   { id: 'screen_notification', type: 'text', name: 'Screen Notification', cat: 'controls' },
   { id: 'picture_mode', type: 'select', name: 'Picture Mode (Select)', cat: 'controls' },
   { id: 'energy_saving', type: 'select', name: 'Energy Saving Step', cat: 'controls' },
@@ -1467,6 +1468,22 @@ function buildEntities(opts) {
         name: 'PicCap Capture',
         command_topic: topic.command('piccap/power'),
         state_topic: topic.state('piccap/power'),
+        payload_on: 'ON',
+        payload_off: 'OFF',
+        icon: 'mdi:television-ambient-light'
+      }
+    });
+  }
+
+  // Hue Sync's streaming to a Philips Ambience light, offered the same way:
+  // only while the app's service answers.
+  if (opts.huesync) {
+    entities.push({
+      type: 'switch', id: 'huesync',
+      payload: {
+        name: 'Hue Sync',
+        command_topic: topic.command('huesync/power'),
+        state_topic: topic.state('huesync/power'),
         payload_on: 'ON',
         payload_off: 'OFF',
         icon: 'mdi:television-ambient-light'

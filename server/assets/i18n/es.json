@@ -2055,5 +2055,11 @@
  "srv.saver.powerOff.bad": {"text": "Apagar después de admite un número de minutos de 1 a {max}, o en blanco para desactivarlo", "from": "Poweroff after takes a number of minutes from 1 to {max}, or blank for off"},
  "ss.powerOff.onOne": {"text": "La TV pasa a modo de espera cuando un salvapantallas lleva un minuto. Cualquier botón del mando reinicia la cuenta.", "from": "The TV goes to standby once a screen saver has been on for a minute. Any button on the remote starts the count again."},
  "lang.partial": {"text": "{name} (parcial)", "from": "{name} (partial)"},
- "srv.remoteKeys.home": {"text": "Inicio", "from": "Home"}
+ "srv.remoteKeys.home": {"text": "Inicio", "from": "Home"},
+ "common.am": {"text": "a. m.", "from": "AM"},
+ "common.pm": {"text": "p. m.", "from": "PM"},
+ "adv.clock12": {"text": "Reloj de 12 horas", "from": "12-hour clock"},
+ "adv.clock12.desc": {"text": "Muestra la hora como 9:40 p. m. en lugar de 21:40 en el panel de la TV, Glasshouse Home y los salvapantallas de reloj.", "from": "Shows the time as 9:40 PM rather than 21:40 on the TV dashboard, Glasshouse Home and the clock screen savers."},
+ "tv.flash.clock12": {"text": "Reloj de 12 horas", "from": "12-hour clock"},
+ "tv.flash.clock24": {"text": "Reloj de 24 horas", "from": "24-hour clock"}
 }

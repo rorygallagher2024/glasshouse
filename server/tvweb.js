@@ -57,6 +57,7 @@ var servicesModule = require('./lib/services');
 var preload = require('./lib/preload');
 var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
+var clockFormat = require('./lib/clock');
 var homeScreen = require('./lib/homescreen');
 /*
  * Glasshouse Home is loaded apart from the rest: one of its files missing from
@@ -88,6 +89,7 @@ var say = require('./lib/say');
 var lgSettings = require('./lib/lgsettings');
 var game = require('./lib/game');
 var piccapTransport = require('./lib/piccap');
+var huesyncTransport = require('./lib/huesync');
 var remotebuttons = require('./lib/remotebuttons');
 var logsModule = require('./lib/logs');
 var syslogForwarder = require('./lib/syslog');
@@ -225,6 +227,9 @@ var CONFIG = {
   // PicCap is offered where it is installed; its Home Assistant entity is
   // switched off like any other.
   piccap: { pollIntervalMs: 30000 },
+
+  // Hue Sync likewise: offered where its app is installed.
+  huesync: { pollIntervalMs: 30000 },
 
   // Home Assistant & MQTT Integration
   mqtt: {
@@ -538,8 +543,12 @@ remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services
 homeScreen.init({ luna: luna, config: CONFIG, inputNames: telemetry.inputNameMap, stateDir: __dirname, webosVersion: telemetry.detectWebosVersion() });
 // webOS 10's layout is an overlay mount, gone after a restart of the TV.
 homeScreen.reapply();
+// The TV's own 12 or 24 hour setting, for every clock Glasshouse draws. A
+// change restages a clock screen saver, which has it written into its file.
+clockFormat.init({ luna: luna, onChange: function () { screensavers.restageScreensaver(); } });
 screensavers.init({
   luna: luna,
+  hour12: clockFormat.hour12,
   webosVersion: telemetry.detectWebosVersion(),
   config: CONFIG,
   injectKey: controls.injectKey,
@@ -559,6 +568,7 @@ telemetry.init({
   game: game,
   power: power,
   remoteBattery: remoteBattery,
+  home: glasshouseHome,
   tvwebVersion: TVWEB_DISPLAY_VERSION
 });
 
@@ -599,6 +609,24 @@ var piccap = piccapTransport.init({
   onAvailableChange: function () { piccapChanged(); }
 });
 
+// Set once MQTT is up: Hue Sync appearing or going changes the discovery.
+var huesyncChanged = function () {};
+/*
+ * Asks Hue Sync only where its app is installed, and for Home Assistant only
+ * while its Hue Sync entity is wanted: each check starts a luna-send.
+ */
+function huesyncWanted() {
+  var ents = (CONFIG.mqtt && CONFIG.mqtt.entities) || {};
+  var off = ents.disabled || [];
+  return ents.controls !== false && off.indexOf('huesync') === -1 && off.indexOf('switch.huesync') === -1;
+}
+var huesync = huesyncTransport.init({
+  luna: luna,
+  pollIntervalMs: CONFIG.huesync && CONFIG.huesync.pollIntervalMs,
+  wanted: huesyncWanted,
+  onAvailableChange: function () { huesyncChanged(); }
+});
+
 var notificationState = notifications.init({ luna: luna });
 
 // ---------------------------------------------------------------- controls
@@ -630,6 +658,7 @@ controls.init({
   luna: luna,
   lunaUrgent: lunaTransport.callUrgent,
   piccap: piccap,
+  huesync: huesync,
   clearLunaCache: clearLunaCache,
   config: CONFIG,
   telemetry: telemetry,
@@ -644,6 +673,7 @@ controls.init({
   ntp: ntpClient,
   history: history,
   backup: backup,
+  home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
   tvApp: tvApp,
   restartSelf: restartSelf,
@@ -881,7 +911,9 @@ function appsChanged() {
 
 routes.init({
   config: CONFIG,
+  clock: clockFormat,
   piccapStatus: piccap.status,
+  huesyncStatus: huesync.status,
   repo: repo,
   installer: installer,
   prometheus: prometheus,
@@ -1087,8 +1119,12 @@ function setupHomeAssistant() {
   });
   activeMqttClient = mqttClient;
   piccap.attachMqtt({ client: mqttClient, prefix: pfx, allowControl: CONFIG.allowControl });
+  huesync.attachMqtt({ client: mqttClient, prefix: pfx, allowControl: CONFIG.allowControl });
   piccapChanged = function () {
     requestDiscoveryRepublish('PicCap status');
+  };
+  huesyncChanged = function () {
+    requestDiscoveryRepublish('Hue Sync status');
   };
   republishDiscovery = function () {
     requestDiscoveryRepublish('configuration');
@@ -1162,6 +1198,7 @@ function setupHomeAssistant() {
       isOled: oled.getIsOled(),
       updatesElsewhere: fromHomebrewChannel(),
       piccap: piccapWanted() && piccap.getState() !== null,
+      huesync: huesyncWanted() && huesync.getState() !== null,
       iconBaseUrl: iconServer.baseUrl()
     });
 
@@ -1295,6 +1332,7 @@ function setupHomeAssistant() {
       mqttClient.publish(mqttTopics.status, statusPayload(), true);
       publishTelemetry();
       piccap.refreshAndPublishState();
+      huesync.refreshAndPublishState();
     }
     // After the publishes above: on a B8 the TV can be asleep within 5s.
     mqttClient.setWill(off ? 'asleep' : 'offline');
@@ -1367,6 +1405,8 @@ function setupHomeAssistant() {
        */
       var piccapState = piccap.getState();
       if (piccapState) s.piccap = { power: piccapState.isRunning };
+      var huesyncState = huesync.getState();
+      if (huesyncState) s.huesync = { streaming: huesyncState.isStreaming };
       if (!tvOff) {
         if ((s.app && s.app !== lastApp) || (s.app_id && s.app_id !== lastAppId)) {
           lastApp = s.app || lastApp;
@@ -1498,6 +1538,7 @@ function setupHomeAssistant() {
     mqttClient.subscribe(mqttTopics.commands + '#');
     publishTelemetry();
     piccap.refreshAndPublishState(true);
+    huesync.refreshAndPublishState(true);
     publishUpdate();
   });
 
@@ -1520,6 +1561,7 @@ function setupHomeAssistant() {
     }
 
     if (piccap.handleMqttCommand(action, val)) return;
+    if (huesync.handleMqttCommand(action, val)) return;
 
     // A held arrow sends a stream of keys, and a telemetry read after each one
     // would queue a dozen luna calls per key. A key that changes the app
@@ -1758,6 +1800,8 @@ function startGlasshouseHome() {
   var homeWatchesForeground = false;
   glasshouseHome.init({
     luna: luna,
+    Subscription: lunaTransport.Subscription,
+    blockedBy: privacy.blockedBy,
     allowExperimental: function () { return CONFIG.allowExperimentalHome === true; },
     liveState: liveState,
     history: history,
@@ -1785,6 +1829,7 @@ function startGlasshouseHome() {
 
 if (!CLI_MODE) {
   heartbeat();
+  clockFormat.refresh();
   setInterval(heartbeat, 20000);
 
   // HDMI tile titles on webOS 9's Home (lib/homescreen.js): EIM cannot be

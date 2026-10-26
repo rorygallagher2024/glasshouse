@@ -524,6 +524,13 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_quickboot" onclick="toggleQuickBoot()">&mdash;</button></div>
     </div>
+    <div class="prot-row" id="row-homeautolaunch" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.homeAutoLaunch">Open Home at power-on</div>
+        <div class="prot-desc" data-t="adv.homeAutoLaunch.desc">Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_homeautolaunch" onclick="toggleHomeAutoLaunch('btn_homeautolaunch')">&mdash;</button></div>
+    </div>
     <div class="prot-row" id="row-ar" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.stayConnected">Stay connected when off</div>
@@ -666,6 +673,13 @@
 
   <div class="pv-sec adv-sec" id="adv-display" hidden data-t="adv.display">Display</div>
   <div class="prot-table">
+    <div class="prot-row" id="row-clock12" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.clock12">12-hour clock</div>
+        <div class="prot-desc" data-t="adv.clock12.desc">Shows the time as 9:40 PM rather than 21:40 on the TV dashboard, Glasshouse Home and the clock screen savers.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_clock12" onclick="toggleClockHour12()">&mdash;</button></div>
+    </div>
     <div class="prot-row" id="row-lglogo" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.lgLogo">LG logo</div>
@@ -675,7 +689,7 @@
     </div>
   </div>
 
-  <!-- Only where PicCap is installed. -->
+  <!-- Only where PicCap or Hue Sync are installed. -->
   <div class="pv-sec adv-sec" id="adv-piccap" hidden data-t="adv.ambient">Ambient light</div>
   <div class="prot-table">
     <div class="prot-row" id="row-piccap" hidden>
@@ -684,6 +698,13 @@
         <div class="prot-desc" data-t="adv.piccap.desc">Sends what is on screen to PicCap's Hyperion server, which drives an ambient light behind the TV. Off stops the capture, and the light with it.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_piccap" onclick="togglePiccap()">&mdash;</button></div>
+    </div>
+    <div class="prot-row" id="row-huesync" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.huesync">Hue Sync streaming</div>
+        <div class="prot-desc" data-t="adv.huesync.desc">Starts and stops the colour stream the Hue Sync app sends to a Philips Ambience light. Off stops the stream, and the light with it.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_huesync" onclick="toggleHuesync()">&mdash;</button></div>
     </div>
   </div>
 
@@ -991,6 +1012,13 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-switch" onclick="homeSwitch()">&mdash;</button></div>
     </div>
+    <div class="prot-row" id="home-autolaunch-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.homeAutoLaunch">Open Home at power-on</div>
+        <div class="prot-desc" data-t="adv.homeAutoLaunch.desc">Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-autolaunch" onclick="toggleHomeAutoLaunch('home-autolaunch')">&mdash;</button></div>
+    </div>
     <div class="prot-row" id="home-hide-lg-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.hideLg">Hide LG’s Home while the TV starts</div>
@@ -1004,6 +1032,15 @@
         <div class="prot-desc" data-t="home.pictureDesc">In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-picture" onclick="homePicture()">&mdash;</button></div>
+    </div>
+    <div class="prot-row" id="home-search-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.search">Search</div>
+        <div class="prot-desc" data-t="home.searchDesc">Left of the rows on Glasshouse Home: films and series on this TV’s apps, opened in the app at the title.</div>
+        <div class="pv-note warn" data-t="home.searchPrivacy">What is typed is sent to LG’s search, as with LG’s own Search, and to nowhere else. Switched off, the search mark goes and nothing typed leaves the TV.</div>
+        <div class="pv-note warn" id="home-search-blocked" hidden><span id="home-search-blocked-text"></span> <a href="?tab=privacy" onclick="event.preventDefault(); showTab('privacy'); const ad = q('pv-adv'); if (ad) { ad.open = true; ad.scrollIntoView({ block: 'start' }); }" data-t="home.searchBlockedLink">Open the ad blocker</a></div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-search" onclick="homeSearch()">&mdash;</button></div>
     </div>
     <div class="prot-row" id="home-fade-row" hidden>
       <div class="prot-main">
@@ -1110,7 +1147,8 @@
         services stops working while the blocker is on, switch it off to check whether it is the cause.</div>
       <div class="pv-note warn"><b data-t="pv.adblock.full.warn">Everything also blocks LG's platform services, so
         the LG ThinQ app can no longer control the TV, and the app store, software updates and LG
-        Channels may stop working.</b> <span data-t="pv.adblock.full.updates">To stop only system updates, use Block TV software
+        Channels may stop working.</b> <span data-t="pv.adblock.full.search">Where it blocks LG's search, Glasshouse Home's
+        search is hidden until the blocker is back on Ads &amp; telemetry or off.</span> <span data-t="pv.adblock.full.updates">To stop only system updates, use Block TV software
         updates in the Advanced tab.</span></div>
     </div>
 
