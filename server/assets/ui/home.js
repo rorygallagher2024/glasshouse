@@ -87,6 +87,7 @@ function renderHome() {
     state.textContent = t('home.isOff', 'LG’s Home is the TV’s Home');
     desc.textContent = t('home.isOffDesc', 'Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away.');
   }
+  if (!st.restorePending && st.supported.mode === 'standalone') desc.textContent = st.supported.description;
   const more = q('home-more');
   if (more) more.hidden = !st.supported.ok;
   const hideRow = q('home-hide-lg-row');

@@ -1,5 +1,11 @@
 # Testing and CI
 
+The webOS 5 cases in `test-home.js` cover standalone installation, preserving
+LG's Home and startup settings, restart persistence, failed installation,
+mapping rollback and retrying a failed restore. `test-home-release.js` checks
+that server-stop recovery clears only the standalone Home mapping and opens
+LG's Home, including failed mapping and launch responses.
+
 Every pull request is checked on [GitHub Actions](https://github.com/rorygallagher2024/glasshouse/actions) before it is merged. Most of
 the checks exist because a mistake of that kind once reached a release, or
 could have without anyone noticing: the TV gives little feedback when

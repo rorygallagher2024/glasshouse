@@ -4,6 +4,19 @@ Findings about how LG's webOS works, kept so the same ground is not covered
 twice. Each entry names the TV and webOS version it was found on. For how
 Glasshouse itself works, see [IMPLEMENTATION.md](../IMPLEMENTATION.md).
 
+## Standalone Home on the UN7300 (webOS 5.6.2)
+
+On an LG 43UN73003LC, firmware 04.64.00, LG's Home is native/QML:
+`com.webos.app.home` declares `type: native` and
+`main: file:///usr/bin/com.webos.app.home`. It is not a web app.
+
+`com.webos.surfacemanager.keyFilters` contains 14 JavaScript filters on this
+TV. Prepending a handler that consumes `Qt.Key_Super_L` press and release and
+calls `applicationManager.launch` opens a separately installed web app with
+the physical Home button. The chain persists across reboot. This permits a
+standalone Home-button launcher without mounting over LG's app or changing
+the TV's Back and startup behavior.
+
 ## HDMI CEC devices (G3, webOS 9.2.2)
 
 `com.webos.service.eim/getAllInputStatus` returns CEC devices in each HDMI
