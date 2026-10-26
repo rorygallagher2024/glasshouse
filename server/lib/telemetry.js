@@ -12,7 +12,7 @@ var fs = require('fs');
 var dns = require('dns');
 var readTrimmed = require('./util').readTrimmed;
 var toInt = require('./util').toInt;
-var lanAddress = require('./util').lanAddress;
+var localAddress4 = require('./util').localAddress4;
 var hexColor = require('./util').hexColor;
 var path = require('path');
 var execFile = require('child_process').execFile;
@@ -462,9 +462,9 @@ function macAddress(iface) {
 }
 
 /*
- * The TV's DNS name, from a reverse lookup of its LAN address. Most home
- * networks have no reverse zone, so no name is the usual answer, and it is
- * cached for the same hour as a name: a network without one is asked that
+ * The TV's DNS name, from a reverse lookup of its IPv4 local address. Most
+ * home networks have no reverse zone, so no name is the usual answer, and it
+ * is cached for the same hour as a name: a network without one is asked that
  * often, not every scrape. The record's own TTL would be the right lifetime,
  * but node's dns gives none for a PTR (node 0.12 for no record type; later
  * versions only for A and AAAA), so it is fixed at 3600 seconds, the TTL
@@ -496,7 +496,7 @@ function reverseName(address, timeoutMs, cb) {
 
 // The cached name for address, or null; a stale or missing one is looked up
 // behind the answer, so a caller never waits on DNS.
-function lanHostname(address) {
+function localHostname(address) {
   if (!address) return null;
   var c = hostnameCache;
   var known = c.address === address;
@@ -1699,7 +1699,7 @@ function collectStats(cb) {
   var uptimeSec = Math.floor(parseFloat(readTrimmed('/proc/uptime') || '0'));
 
   var devCfg = (configObj && configObj.device) || {};
-  var address = lanAddress();
+  var ip4 = localAddress4();
   var out = {
     ok: true,
     time: Date.now(),
@@ -1751,8 +1751,8 @@ function collectStats(cb) {
     net: rate,
     netTotal: n ? { rx: n.rx, tx: n.tx, iface: n.iface } : null,
     mac: n ? macAddress(n.iface) : null,
-    address: address,
-    hostname: lanHostname(address),
+    address: ip4,
+    hostname: localHostname(ip4),
     emmc: emmcInfo(),
     signal: null,
     signal_timing: null,
@@ -2253,7 +2253,7 @@ module.exports = {
   wifi: wifi,
   macAddress: macAddress,
   reverseName: reverseName,
-  lanHostname: lanHostname,
+  localHostname: localHostname,
   netBytes: netBytes,
   getVideoSignal: getVideoSignal,
   readRemoteInfo: readRemoteInfo,

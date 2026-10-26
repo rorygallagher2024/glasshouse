@@ -25,7 +25,7 @@ If a pull request needs follow-up adjustments, push additional commits to the ex
 
 Focus on clarity and readability. Clearly state what changed and why, keeping pull request descriptions concise and focused on the context reviewers need.
 
-If you are using AI coding assistants or automated agents, ensure they adhere to the repository conventions in `CLAUDE.md`.
+If you are using AI coding assistants or automated agents, ensure they adhere to the repository conventions in `CLAUDE.md` (symlinked as `AGENTS.md`).
 
 ## Code reviews
 

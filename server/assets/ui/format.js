@@ -11,6 +11,9 @@ const esc = s => String(s).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':
  * survives that decode; esc() then keeps the value inside the attribute.
  */
 const jsq = s => esc(String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+// host:port as a URL writes it, with an IPv6 address in brackets, as the
+// server's hostPort() does.
+const hostPort = (host, port) => (String(host).includes(':') ? `[${host}]` : host) + ':' + port;
 const hrs = h => h == null ? '—' : (h >= 100 ? Math.round(h).toLocaleString() : h.toFixed(1));
 /* Binary steps labelled kB/MB/GB, matching mb() above and the rest of the
    dashboard. Three significant figures at most: a lifetime byte counter is

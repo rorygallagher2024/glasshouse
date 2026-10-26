@@ -25,10 +25,10 @@ var FILES = [FLAG, '/usr/sbin/iptables', '/usr/sbin/ip6tables', '/sbin/iptables'
 function tv(present, fn) {
   FILES.forEach(function (f) { mockEnv.files[f] = present.indexOf(f) !== -1 ? '' : null; });
   calls = [];
-  var log = console.log, error = console.error;
-  console.log = console.error = function () {};
+  var log = console.log, warn = console.warn, error = console.error;
+  console.log = console.warn = console.error = function () {};
   try { return fn(); } finally {
-    console.log = log; console.error = error;
+    console.log = log; console.warn = warn; console.error = error;
     answer = function () { return null; };
   }
 }

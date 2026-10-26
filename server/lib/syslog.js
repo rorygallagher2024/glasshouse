@@ -186,8 +186,7 @@ function formatMessage(entry, opts) {
 }
 
 function target() {
-  var server = settings.server.indexOf(':') !== -1 ? '[' + settings.server + ']' : settings.server;
-  return server + ':' + settings.port;
+  return util.hostPort(settings.server, settings.port);
 }
 
 // One line when the error changes, not one per failed datagram.

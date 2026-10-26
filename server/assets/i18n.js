@@ -21,6 +21,9 @@
 (function (root) {
   // Languages that have a file in /assets/i18n/. English needs none.
   var LANGS = ['es'];
+  // Each language in its own words, as the language list shows it, so it can
+  // be found whatever the page is in.
+  var NAMES = { en: 'English', es: 'Español' };
 
   var dict = {};
   var lang = 'en';
@@ -140,6 +143,6 @@
   }
 
   root.t = t;
-  root.I18N = { t: t, apply: apply, lang: function () { return lang; }, languages: LANGS, stored: stored, choose: choose };
+  root.I18N = { t: t, apply: apply, lang: function () { return lang; }, languages: LANGS, names: NAMES, stored: stored, choose: choose };
 // Untyped for the type check, which does not know the two names added to it.
 })(/** @type {any} */ (window));

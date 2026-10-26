@@ -16,7 +16,14 @@ BUTTON_CODES = {
     398: 'red',
     399: 'green',
     400: 'yellow',
-    401: 'blue'
+    401: 'blue',
+    # Streaming buttons, IR_KEY_* in /usr/share/X11/xkb/keycodes/lg less 8.
+    1037: 'netflix',
+    1038: 'amazon',
+    1042: 'disneyplus',
+    1043: 'lgchannels',
+    1044: 'rakutentv',
+    1086: 'alexa'
 }
 
 # The Home button, reported going down and up: Glasshouse Home opens LG's
@@ -27,7 +34,13 @@ QT_KEY_CODES = {
     18874385: 'red',
     18874386: 'green',
     18874387: 'yellow',
-    18874388: 'blue'
+    18874388: 'blue',
+    18874408: 'netflix',
+    18874409: 'amazon',
+    18874396: 'disneyplus',
+    18874397: 'lgchannels',
+    18874426: 'rakutentv',
+    18874416: 'alexa'
 }
 
 running = True
@@ -152,12 +165,29 @@ def main():
                         sys.stdout.write('key %d\n' % code)
                         sys.stdout.flush()
 
+        # webOS rotates inputcommon. Follow the path, not the old fd: if the
+        # file was replaced or truncated, reopen it and read the new file from
+        # the start. Seeking the old fd back to 0 replays every old press.
+        if log_fd is None and os.path.exists(log_path):
+            try:
+                log_fd = open(log_path, 'r')
+                log_pos = 0
+            except Exception:
+                log_fd = None
         if log_fd:
             try:
-                cur_size = os.path.getsize(log_path)
-                if cur_size < log_pos:
-                    log_fd.seek(0)
+                if not os.path.exists(log_path):
+                    log_fd.close()
+                    log_fd = None
+                    continue
+                st = os.stat(log_path)
+                if (st.st_ino != os.fstat(log_fd.fileno()).st_ino
+                        or st.st_size < log_pos):
+                    log_fd.close()
+                    log_fd = None
+                    log_fd = open(log_path, 'r')
                     log_pos = 0
+                cur_size = st.st_size
                 if cur_size > log_pos:
                     lines = log_fd.readlines()
                     log_pos = log_fd.tell()

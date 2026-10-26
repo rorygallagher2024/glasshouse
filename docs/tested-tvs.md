@@ -1,6 +1,6 @@
 # Tested TVs
 
-Confirmed on 49 TVs across 34 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
+Confirmed on 54 TVs across 37 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
 
 On webOS 2 (tested on a 55UH600V and a 49LF632V), PicCap is withheld because its native service stalls webOS 2 and triggers a watchdog reboot (`cpuAbnormal`, [#746](https://github.com/rorygallagher2024/glasshouse/issues/746)). Both TVs run Glasshouse without trouble.
 
@@ -20,7 +20,9 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | B7            | 2017 | OLED  | 3.9               | 1       |
 | B8            | 2018 | OLED  | 4.4               | 1       |
 | C8            | 2018 | OLED  | 4.4               | 1       |
+| LK61          | 2018 | LCD   | 4.4               | 1       |
 | LM57          | 2019 | LCD   | 4.5               | 1       |
+| UM71          | 2019 | LCD   | 4.10              | 1       |
 | UM73          | 2019 | LCD   | 4.10              | 1       |
 | C9            | 2019 | OLED  | 4.9 – 4.10        | 3       |
 | UN73          | 2020 | LCD   | 5.6               | 1       |
@@ -31,13 +33,13 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | UP81          | 2021 | LCD   | 6.5               | 1       |
 | C2            | 2022 | OLED  | 9.2, 10.3         | 2       |
 | G2            | 2022 | OLED  | 7.4               | 1       |
-| QNED82        | 2022 | LCD   | 7.6               | 1       |
+| QNED82        | 2022, 2025 | LCD   | 7.6, 10.3         | 2       |
 | LX3           | 2022 | OLED  | —                 | 1       |
 | CS            | 2022 | OLED  | 10                | 1       |
 | C3            | 2023 | OLED  | 10 – 11           | 3       |
 | G3            | 2023 | OLED  | 11                | 1       |
 | B4            | 2024 | OLED  | 9                 | 1       |
-| C4            | 2024 | OLED  | 9 – 10            | 4       |
+| C4            | 2024 | OLED  | 9 – 10            | 5       |
 | G4            | 2024 | OLED  | 10                | 2       |
 | UT73          | 2024 | LCD   | —                 | 1       |
 | UT81          | 2024 | LCD   | 10                | 1       |
@@ -46,6 +48,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | UA73          | 2025 | LCD   | 10.3.1            | 1       |
 | C6            | 2026 | OLED  | 11.2              | 1       |
 | NU80          | 2026 | LCD   | 11                | 1       |
+| QNED84        | 2026 | LCD   | 11.0              | 1       |
 
 <details markdown="1">
 <summary>All reports</summary>
@@ -60,11 +63,13 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | OLED65B7V-Z | 3.9.3        | 06.10.65 | OLED  | No SoC temperature or eMMC wear readings                       |
 | OLED65C8PUA | 4.4.0        | 05.50.15 | OLED  | No `getAdid` on this firmware                                  |
 | OLED65B8SLC | 4.4.3        | 05.50.70 | OLED  | Everything works. Misses a few metrics found on newer versions |
+| 32LK6100PLB | 4.4.3        | 05.50.70 | LCD   | Rooted with faultmanager; dashboard, apps and SSH confirmed    |
 | 43LM5760PTC | 4.5          | —        | LCD   | Configured with panel: lcd; service and web UI confirmed       |
 | OLED55C9PLA | 4.9.0        | 05.30.40 | OLED  | Working fine                                                   |
 | OLED65C9AUA | 4.9.x (4.5+) | 05.50.00 | OLED  |                                                                |
 | OLED65C9PLA | 4.10.2       | —        | OLED  | Working fine                                                   |
 | 50UM7300AUE | 4.10.0       | —        | LCD   | Working; hiding system apps did not work                       |
+| 55UM7100PLB | 4.10.2       | 05.40.97 | LCD   | Homebrew Channel, telnet install; privacy controls and preload confirmed |
 | 43UN73003LC | 5.6.2        | 04.64.00 | LCD   | Standalone Glasshouse Home and Home-button remap; YouTube launch confirmed |
 | OLED77CX6LA | 5.5.0        | 04.50.90 | OLED  | OLED Care, telemetry and MQTT bridge confirmed                 |
 | OLED77CXAUA | 5.6.0        | 04.60.65 | OLED  | Rooted with faultmanager; SSH install; dashboard and telemetry |
@@ -81,6 +86,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | OLED55C4PUA | 9.2.0        | 23.20.35 | OLED  | Rooted with faultmanager; SSH install; no internet access      |
 | OLED55B46LA | 9.24.8       | 23.23.30 | OLED  | Installed over telnet                                          |
 | OLED55G42LW | 10           | 33.31.68 | OLED  | Rooted with slopbro, not the Homebrew Channel                  |
+| OLED55C41LA | 10.2.0       | 33.21.85 | OLED  | OLED Care, remote keys, privacy controls and screen saver confirmed |
 | 50UT81006LA | 10.2.1       | 33.22.56 | LCD   | Partial: blocking works; some settings reported not to apply   |
 | OLED55C31LA | 10.2.2       | 33.22.80 | OLED  | Installed over SSH; in-app updates confirmed                   |
 | OLED65CSPSA | 10.3.0       | 33.31.20 | OLED  | Reported working                                               |
@@ -94,10 +100,12 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | OLED77C57LA | 10.3.1       | 33.31.68 | OLED  | MQTT, privacy, screen saver and web dashboard confirmed        |
 | OLED48C5PUA | 10.3.1       | 33.31.69 | OLED  | Rooted with slopbro; dashboard, telemetry and API .ipk installs |
 | 55UA73006LA | 10.3.1       | 33.31.61 | LCD   | Homebrew Channel; SSH install; dashboard and telemetry confirmed |
+| 55QNED82AUA | 10.3.1       | 33.31.61 | LCD   | Rooted with slopbro; SSH install; privacy switches, Glasshouse Home confirmed |
 | OLED65G5WUA | 10           | 33.30.69 | OLED  | No screen saver tab; volume stuck at +10 on optical output     |
 | 42LX3Q6LA   | —            | 33.31.68 | OLED  | Flex; model number has no OLED prefix                          |
 | 43UT73006LA | —            | —        | LCD   | Reported working                                               |
 | 43NU800BPSC | 11.0.0       | 43.02.50 | LCD   | Rooted with slopbro; privacy controls confirmed                |
+| 85QNED84BUA | 11.0.1       | 43.11.76 | LCD   | Dashboard, telemetry disabling and privacy controls confirmed |
 | OLED65G36LA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; privacy, app installs and custom screen savers confirmed |
 | OLED83G5WUA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; runs with internet access blocked         |
 | OLED42C35LA | 11.2.0       | 43.21.71 | OLED  | Working                                                        |

@@ -82,7 +82,7 @@ iconServer.start(function (err, started) {
       var port = iconServer.port();
       assert.strictEqual(port, basePort);
       var base = iconServer.baseUrl();
-      assert.ok(base === null || base === 'http://' + require('../server/lib/util').lanAddress() + ':' + port + '/icons/');
+      assert.ok(base === null || base === 'http://' + require('../server/lib/util').localAddress4() + ':' + port + '/icons/');
       var etag;
 
       series([

@@ -183,7 +183,7 @@ step('offers Guide and the streaming buttons LG has switched on, with no filter 
     assert.ok(r.supported);
     assert.strictEqual(r.inChain, false);
     var keys = r.keys.map(function (k) { return k.key; });
-    assert.deepEqual(keys, ['netflix', 'amazon', 'disneyplus', 'hulu', 'alexa', 'apps', 'homehub', 'ai', 'multikey', 'multikeyhold', 'guide']);
+    assert.deepEqual(keys, ['netflix', 'amazon', 'disneyplus', 'movies', 'hulu', 'alexa', 'apps', 'homehub', 'ai', 'multikey', 'multikeyhold', 'guide']);
     assert.strictEqual(r.keys.filter(function (k) { return k.key === 'alexa'; })[0].blocksApp, true);
     assert.strictEqual(r.keys.filter(function (k) { return k.key === 'ai'; })[0].turnsOffVoice, true);
     var multi = r.keys.filter(function (k) { return k.key === 'multikey'; })[0];

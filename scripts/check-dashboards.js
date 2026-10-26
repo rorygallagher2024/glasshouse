@@ -753,6 +753,146 @@ async function visitHomeRecents(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+async function visitTvDashboard(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('TV dashboard: ' + e.message));
+  page.on('console', m => {
+    if (m.type() === 'error' && !/^Failed to load resource/.test(m.text())) {
+      problems.push('TV dashboard: console: ' + m.text());
+    }
+  });
+
+  try {
+    await page.goto(base + '/assets/dashboard.html', { waitUntil: 'load' });
+    await page.waitForSelector('#rows .row');
+    await page.waitForTimeout(100);
+
+    // Two-column layout geometry check
+    const layout = await page.evaluate(() => {
+      const main = document.getElementById('main').getBoundingClientRect();
+      const list = document.getElementById('list').getBoundingClientRect();
+      const hint = document.getElementById('hint').getBoundingClientRect();
+      const sel = document.querySelector('.row.sel');
+      return {
+        main: { w: main.width, h: main.height },
+        list: { left: list.left, right: list.right, w: list.width, h: list.height },
+        hint: { left: hint.left, right: hint.right, w: hint.width, h: hint.height },
+        hasSel: !!sel,
+        selLabel: sel ? (sel.querySelector('.lbl') ? sel.querySelector('.lbl').textContent.trim() : '') : ''
+      };
+    });
+
+    if (layout.main.w <= 0 || layout.main.h <= 0) {
+      problems.push('TV dashboard: #main has 0 dimensions (' + layout.main.w + 'x' + layout.main.h + ')');
+    }
+    if (layout.list.w <= 0 || layout.list.h <= 0) {
+      problems.push('TV dashboard: #list column has 0 dimensions (' + layout.list.w + 'x' + layout.list.h + ')');
+    }
+    if (layout.hint.w <= 0 || layout.hint.h <= 0) {
+      problems.push('TV dashboard: #hint column has 0 dimensions (' + layout.hint.w + 'x' + layout.hint.h + ')');
+    }
+    if (layout.hint.left < layout.list.right - 1) {
+      problems.push('TV dashboard: #hint is not to the right of #list (hint left: ' + layout.hint.left + ', list right: ' + layout.list.right + ')');
+    }
+    if (!layout.hasSel) {
+      problems.push('TV dashboard: no row is selected initially');
+    }
+
+    // Remote D-pad navigation: ArrowDown / ArrowUp moves selection and updates hint
+    const initialTitle = await page.evaluate(() => document.getElementById('hintTitle').textContent.trim());
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(50);
+    const secondTitle = await page.evaluate(() => document.getElementById('hintTitle').textContent.trim());
+    if (!secondTitle || secondTitle === initialTitle) {
+      problems.push('TV dashboard: ArrowDown did not update selected row hint title');
+    }
+
+    await page.keyboard.press('ArrowUp');
+    await page.waitForTimeout(50);
+    const restoredTitle = await page.evaluate(() => document.getElementById('hintTitle').textContent.trim());
+    if (restoredTitle !== initialTitle) {
+      problems.push('TV dashboard: ArrowUp did not restore initial row selection');
+    }
+
+    // PageDown / ChannelDown jumps multiple rows
+    await page.keyboard.press('PageDown');
+    await page.waitForTimeout(50);
+    const pagedTitle = await page.evaluate(() => document.getElementById('hintTitle').textContent.trim());
+    if (pagedTitle === initialTitle || pagedTitle === secondTitle) {
+      problems.push('TV dashboard: PageDown did not jump selection forward');
+    }
+
+    // Repeated ArrowDown triggers translateY scroll and illuminates moreUp
+    for (let i = 0; i < 15; i++) {
+      await page.keyboard.press('ArrowDown');
+      await page.waitForTimeout(20);
+    }
+    const scrollState = await page.evaluate(() => {
+      const rows = document.getElementById('rows');
+      const tr = rows.style.transform || rows.style.webkitTransform || '';
+      const moreUp = document.getElementById('moreUp').classList.contains('on');
+      return { transform: tr, moreUp };
+    });
+    if (!/translateY\(-/.test(scrollState.transform)) {
+      problems.push('TV dashboard: scrolling down list did not apply negative translateY: ' + scrollState.transform);
+    }
+    if (!scrollState.moreUp) {
+      problems.push('TV dashboard: scrolling down list did not illuminate moreUp arrow');
+    }
+
+    // Remote navigation: ArrowRight / ArrowLeft switches tabs
+    const initialTab = await page.evaluate(() => {
+      const on = document.querySelector('.tab.on');
+      return on ? on.textContent.trim() : '';
+    });
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(100);
+    const nextTab = await page.evaluate(() => {
+      const on = document.querySelector('.tab.on');
+      return on ? on.textContent.trim() : '';
+    });
+    if (!nextTab || nextTab === initialTab) {
+      problems.push('TV dashboard: ArrowRight did not switch tabs (stayed on ' + initialTab + ')');
+    }
+
+    // Verify two columns still intact after tab switch
+    const newTabListHeight = await page.evaluate(() => document.getElementById('list').getBoundingClientRect().height);
+    if (newTabListHeight <= 0) {
+      problems.push('TV dashboard: #list collapsed to 0 height after switching tabs to ' + nextTab);
+    }
+
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(100);
+    const backTab = await page.evaluate(() => {
+      const on = document.querySelector('.tab.on');
+      return on ? on.textContent.trim() : '';
+    });
+    if (backTab !== initialTab) {
+      problems.push('TV dashboard: ArrowLeft did not return to ' + initialTab + ' (on ' + backTab + ')');
+    }
+  } finally {
+    await page.close();
+  }
+}
+
+async function visitTvNonOled(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('TV non-OLED: ' + e.message));
+  await page.route('**/api/oledcare', route => {
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, isOled: false, available: false }) });
+  });
+  try {
+    await page.goto(base + '/assets/dashboard.html', { waitUntil: 'load' });
+    await page.waitForSelector('#rows .row');
+    const tabs = await page.evaluate(() => [...document.querySelectorAll('.tab')].map(t => t.textContent.trim().toLowerCase()));
+    if (tabs.indexOf('oled care') !== -1) {
+      problems.push('TV non-OLED: OLED Care tab was not omitted on an LCD TV');
+    }
+  } finally {
+    await page.close();
+  }
+}
+
 (async () => {
   const server = await startServer();
   const base = 'http://127.0.0.1:' + server.port;
@@ -761,6 +901,8 @@ async function visitHomeRecents(browser, base, problems) {
   const web = webTabs(), tv = tvTabs();
   await visitAll(browser, web.map(t => ({ url: base + '/?tab=' + t, label: 'web ' + t }))
     .concat(tv.map(t => ({ url: base + '/assets/dashboard.html?tab=' + t, label: 'TV ' + t }))), problems);
+  await visitTvDashboard(browser, base, problems);
+  await visitTvNonOled(browser, base, problems);
   await visitHomeArrangement(browser, base, problems);
   await visitHomePicture(browser, base, problems);
   await visitHomeColours(browser, base, problems);
@@ -773,6 +915,6 @@ async function visitHomeRecents(browser, base, problems) {
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'Home arranging, picture, colours, update, editing, order, uploads, readiness, availability and recents checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+              'TV navigation and LCD profile, Home arranging, picture, colours, update, editing, order, uploads, readiness, availability and recents checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

@@ -8,8 +8,9 @@ var zlib = require('zlib');
 var crypto = require('crypto');
 var http = require('http');
 var say = require('./say');
-var lanAddress = require('./util').lanAddress;
+var localAddress4 = require('./util').localAddress4;
 var listenDualStack = require('./util').listenDualStack;
+var hostPort = require('./util').hostPort;
 var sendIconFile = require('./iconserver').sendIconFile;
 var writeJsonAtomic = require('./util').writeJsonAtomic;
 var unlinkQuiet = require('./util').unlinkQuiet;
@@ -331,8 +332,8 @@ function lanOrigin() {
   // Bound to loopback, the server answers nothing on the network, so any LAN
   // address handed to a phone would be a dead link.
   if (!networkOpen()) return null;
-  var ip = lanAddress();
-  return ip ? 'http://' + ip + ':' + config.port : null;
+  var ip4 = localAddress4();
+  return ip4 ? 'http://' + hostPort(ip4, config.port) : null;
 }
 
 function prometheusEnabled() {
@@ -348,8 +349,8 @@ function stopHandoff() {
 }
 
 function handoffUrl() {
-  var ip = lanAddress();
-  return ip && HANDOFF.code ? 'http://' + ip + ':' + handoffPort() + '/?c=' + HANDOFF.code : null;
+  var ip4 = localAddress4();
+  return ip4 && HANDOFF.code ? 'http://' + hostPort(ip4, handoffPort()) + '/?c=' + HANDOFF.code : null;
 }
 
 /*
@@ -369,9 +370,9 @@ function ownIdentity() {
   if (!model || model === 'webostv') model = 'tv';
   var mac = '', ifaces = {};
   try { ifaces = os.networkInterfaces() || {}; } catch (e) {}
-  var ip = lanAddress();
+  var ip4 = localAddress4();
   for (var name in ifaces) {
-    (ifaces[name] || []).forEach(function (a) { if (a.address === ip && a.mac) mac = a.mac; });
+    (ifaces[name] || []).forEach(function (a) { if (a.address === ip4 && a.mac) mac = a.mac; });
   }
   var tail = mac.replace(/[^0-9a-f]/gi, '').slice(-4).toLowerCase();
   var key = (model + (tail ? '_' + tail : '')).slice(0, 40);
@@ -404,10 +405,10 @@ function setupState(isDemo) {
     writable: config.allowControl,
     network: open,
     token: !!config.token,
-    address: lanAddress() ? lanAddress() + ':' + config.port : (isDemo ? '192.168.1.131:' + (config.port || 8080) : null),
-    hostname: telemetryModule ? telemetryModule.lanHostname(lanAddress()) : null,
+    address: localAddress4() ? hostPort(localAddress4(), config.port) : (isDemo ? hostPort('192.168.1.131', config.port || 8080) : null),
+    hostname: telemetryModule ? telemetryModule.localHostname(localAddress4()) : null,
     homeAssistant: (isDemo && simulatedSetupState.homeAssistant) ? simulatedSetupState.homeAssistant : { configured: !!(m.enabled && m.host), state: mqttStat.state },
-    handoff: HANDOFF.server ? handoffUrl() : (isDemo ? 'http://' + (lanAddress() || '192.168.1.131') + ':' + (config.port || 8080) + '/?c=demo' : null)
+    handoff: HANDOFF.server ? handoffUrl() : (isDemo ? 'http://' + hostPort(localAddress4() || '192.168.1.131', config.port || 8080) + '/?c=demo' : null)
   };
   if (isDemo) {
     st.demo = true;
@@ -420,7 +421,7 @@ function setupState(isDemo) {
 
 function startHandoff(cb) {
   if (HANDOFF.server) return cb(null, handoffUrl());
-  if (!lanAddress()) return cb(new Error('this TV has no network address'));
+  if (!localAddress4()) return cb(new Error('this TV has no network address'));
   var code = crypto.randomBytes(8).toString('hex');
   var srv = http.createServer(function (req, res) {
     var u = parseUrl(req.url);
@@ -1312,7 +1313,7 @@ function handleRequest(req, res) {
           return send(res, 200, JSON.stringify({ ok: true, demo: true }));
         }
         if (a.action === 'handoff') {
-          var dummyUrl = (lanOrigin() || 'http://' + (lanAddress() || '192.168.1.131') + ':' + (config.port || 8080)) + '/?c=demo';
+          var dummyUrl = (lanOrigin() || 'http://' + hostPort(localAddress4() || '192.168.1.131', config.port || 8080)) + '/?c=demo';
           return send(res, 200, JSON.stringify({ ok: true, url: dummyUrl, demo: true }));
         }
         if (a.action === 'handoffStop') {
@@ -1974,7 +1975,7 @@ function init(opts) {
     validateSettings: validateSettings,
     writeSettings: writeSettings,
     readConfigFile: readConfigFile,
-    lanAddress: lanAddress,
+    localAddress4: localAddress4,
     networkOpen: networkOpen,
     lanOrigin: lanOrigin,
     setupPending: setupPending,
@@ -1997,7 +1998,7 @@ module.exports = {
   writeSettings: writeSettings,
   readConfigFile: readConfigFile,
   setNetworkAccess: setNetworkAccess,
-  lanAddress: lanAddress,
+  localAddress4: localAddress4,
   networkOpen: networkOpen,
   lanOrigin: lanOrigin,
   setupPending: setupPending,

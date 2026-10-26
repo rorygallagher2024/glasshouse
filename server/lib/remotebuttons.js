@@ -24,10 +24,23 @@ var BUTTON_CODES = {
   399: 'green',
   400: 'yellow',
   401: 'blue',
+  // Streaming buttons, IR_KEY_* in /usr/share/X11/xkb/keycodes/lg less 8.
+  1037: 'netflix',
+  1038: 'amazon',
+  1042: 'disneyplus',
+  1043: 'lgchannels',
+  1044: 'rakutentv',
+  1086: 'alexa',
   18874385: 'red',
   18874386: 'green',
   18874387: 'yellow',
-  18874388: 'blue'
+  18874388: 'blue',
+  18874408: 'netflix',
+  18874409: 'amazon',
+  18874396: 'disneyplus',
+  18874397: 'lgchannels',
+  18874426: 'rakutentv',
+  18874416: 'alexa'
 };
 
 // IR_KEY_HOME in /usr/share/X11/xkb/keycodes/lg (781) less the 8 xkb adds; the

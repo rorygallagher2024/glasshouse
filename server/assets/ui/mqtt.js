@@ -83,7 +83,7 @@ function resolveBrokerAddress(st) {
   if (!hostInput || !hostInput.value) return '';
   const port = q('cfg-port') && q('cfg-port').value;
   const tls = q('cfg-tls') && q('cfg-tls').classList.contains('on');
-  return hostInput.value + ':' + (port || (tls ? '8883' : '1883'));
+  return hostPort(hostInput.value, port || (tls ? '8883' : '1883'));
 }
 
 function updateMqttPublishPulse(st, isEnabled) {

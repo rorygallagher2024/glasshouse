@@ -48,7 +48,7 @@ function createMockRes(cb) {
   assert.strictEqual(typeof routes.writeSettings, 'function');
   assert.strictEqual(typeof routes.readConfigFile, 'function');
   assert.strictEqual(typeof routes.setNetworkAccess, 'function');
-  assert.strictEqual(typeof routes.lanAddress, 'function');
+  assert.strictEqual(typeof routes.localAddress4, 'function');
   assert.strictEqual(typeof routes.networkOpen, 'function');
   assert.strictEqual(typeof routes.lanOrigin, 'function');
   assert.strictEqual(typeof routes.setupPending, 'function');
@@ -83,6 +83,29 @@ function createMockRes(cb) {
   assert.deepEqual(u3.query, {});
 
   console.log('  ✓ parseUrl handles query strings and missing paths cleanly');
+})();
+
+// The setup state gives the IPv4 local address with the port, and its name.
+(function testSetupStateAddress() {
+  var origInterfaces = os.networkInterfaces;
+  routes.init({
+    config: { port: 8080, host: '::', web: { enabled: false } },
+    telemetry: { localHostname: function (address) { return address === '192.0.2.17' ? 'tv.example.net' : null; } },
+    getMqttStatus: function () { return { state: 'disconnected' }; }
+  });
+  os.networkInterfaces = function () {
+    return { wlan0: [{ address: '192.0.2.17', family: 'IPv4', internal: false }] };
+  };
+  try {
+    var st = routes.setupState();
+    assert.strictEqual(st.address, '192.0.2.17:8080');
+    assert.strictEqual(st.hostname, 'tv.example.net');
+    os.networkInterfaces = function () { return {}; };
+    st = routes.setupState();
+    assert.strictEqual(st.address, null, 'no address');
+    assert.strictEqual(st.hostname, null, 'no address, no name');
+  } finally { os.networkInterfaces = origInterfaces; }
+  console.log('  ✓ setupState gives the address with its port, and its name');
 })();
 
 // 2. Loopback checks (fromTV)
@@ -1360,7 +1383,7 @@ function createMockRes(cb) {
   var cfg = { allowControl: true, port: 8080, host: '0.0.0.0', emulateSetup: true };
   routes.init({
     config: cfg,
-    telemetry: { alwaysOnSupported: function (cb) { cb(true); }, lanHostname: function () { return 'lg.lan'; } }
+    telemetry: { alwaysOnSupported: function (cb) { cb(true); }, localHostname: function () { return 'lg.lan'; } }
   });
   routes.resetSimulatedSetup();
 

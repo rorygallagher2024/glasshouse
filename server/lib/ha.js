@@ -333,6 +333,23 @@ function withSelect(payload, sel) {
   return payload;
 }
 
+/*
+ * The Input Source select's options, by short app id. An HDMI input goes by
+ * the name the TV's settings give it - "Apple TV (HDMI2)", as the Active App
+ * sensor shows it - so the selector matches what is on screen. The port keeps
+ * the name unique when two inputs have the same one. Until the TV has named
+ * them, and for Live TV, the built-in names stand.
+ */
+function inputSourceNames(custom) {
+  var byId = {};
+  Object.keys(names.INPUTS).forEach(function (id) {
+    var fallback = names.INPUTS[id];
+    var name = custom && custom[id] ? String(custom[id]) : '';
+    byId[id] = name && name !== id && name !== fallback ? names.inputTitle(id, name) : fallback;
+  });
+  return byId;
+}
+
 function selectState(expr, options) {
   var quoted = [];
   for (var i = 0; i < options.length; i++) quoted.push('\'' + options[i] + '\'');
@@ -413,6 +430,7 @@ function buildEntities(opts) {
   var topic = topics(opts.pfx);
   var installedApps = opts.installedApps || [];
   var lastPicModes = opts.pictureModes || [];
+  var inputNames = inputSourceNames(opts.inputNames);
   var soundOutputIds = (opts.soundOutputs && opts.soundOutputs.length) ? opts.soundOutputs : Object.keys(names.SOUND_OUTPUTS);
 
   // telemetry's volume_control: the level can be set, or only stepped (a
@@ -856,7 +874,7 @@ function buildEntities(opts) {
           command_topic: topic.command('input'),
           state_topic: topic.telemetry,
           icon: 'mdi:video-input-hdmi'
-        }, namedSelect(Object.keys(names.INPUTS), names.INPUTS, 'value_json.app'))
+        }, namedSelect(Object.keys(inputNames), inputNames, 'value_json.app'))
       },
       {
         type: 'text', id: 'screen_notification',
@@ -1314,7 +1332,8 @@ function buildEntities(opts) {
         payload: {
           name: 'Remote Button',
           state_topic: topic.eventsButton,
-          event_types: ['red', 'green', 'yellow', 'blue'],
+          event_types: ['red', 'green', 'yellow', 'blue', 'netflix', 'amazon', 'disneyplus',
+            'lgchannels', 'rakutentv', 'alexa'],
           icon: 'mdi:remote'
         }
       },
@@ -1657,6 +1676,7 @@ module.exports = {
   entityCategory: entityCategory,
   selectState: selectState,
   appNames: appNames,
+  inputSourceNames: inputSourceNames,
   RETIRED_ENTITIES: RETIRED_ENTITIES,
   safeFields: safeFields,
   HDMI_DIAG_ONLY: HDMI_DIAG_ONLY,

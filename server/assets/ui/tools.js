@@ -545,7 +545,7 @@ async function loadLogForwarding() {
     } else {
       const sourceNames = { system: t('tools.src.system', 'System'), glasshouse: t('tools.src.glasshouse', 'Glasshouse'), kernel: t('tools.src.kernel', 'Kernel') };
       const sent = Object.keys(s.messages || {}).reduce((n, k) => n + (s.messages[k] || 0), 0);
-      const where = s.port && s.port !== 514 ? s.server + ':' + s.port : s.server;
+      const where = s.port && s.port !== 514 ? hostPort(s.server, s.port) : s.server;
       el.innerHTML = esc(t('tools.fwd.on', 'Also sent to the log server {server}: {sources}, {redact}. {sent} sent since Glasshouse started{failed}.', {
         server: where,
         sources: s.sources.map(k => sourceNames[k] || k).join(', '),
