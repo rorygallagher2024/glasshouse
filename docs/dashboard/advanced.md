@@ -22,10 +22,6 @@ The switch is under **Advanced &rarr; Power** in the web dashboard and **System 
 
 Switching off puts the TV into a light sleep rather than shutting it down completely, so it starts up faster. LG calls this Quick Start+.
 
-### Open Home at power-on
-
-Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch (`general.homeAutoLaunch`). On TVs with Glasshouse Home, the same switch appears on the **Home** tab.
-
 ### Wake-on-LAN
 
 Lets Home Assistant, a mobile app, or another network device switch the TV on from deep sleep using a Wake-on-LAN magic packet. LG refers to this as Mobile TV On.
@@ -73,17 +69,11 @@ The limits are counted by [watch time](metrics.md#watch-time), so they apply onl
 * **Ambient light (PicCap):** When PicCap is installed, captures on-screen content and streams it to a Hyperion server to drive ambient backlighting behind the TV. Turning it off stops video capture and the ambient lighting with it. See [PicCap and ambient light](../piccap.md) for how it works and setup details.
 * **Ambient light (Hue Sync):** When the Hue Sync app is installed, starts and stops its streaming of what is on screen to Philips Hue and Ambience lights. Turning it off stops the streaming and the light with it. See [Hue Sync](../huesync.md) for setup details.
 
-## Sound
-
-![Sound: sound output and mode, digital sound output, balance, automatic volume, Bluetooth speaker mode and eARC](../screenshots/advanced-sound.png)
-
-Hold the TV's advanced audio settings, including sound output, sound mode, digital sound output format, balance, automatic volume leveling, eARC, and Bluetooth speaker mode. Sound mode and balance apply to the internal TV speakers only.
-
 ## HDMI inputs
 
 ![HDMI inputs: Deep Colour and audio format for each input, changeable only for the input on screen](../screenshots/advanced-hdmi.png)
 
-Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR) and audio input format (Bitstream or PCM). In accordance with webOS design, an HDMI input's settings can be adjusted only while that specific input is actively displayed on screen.
+Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each input's audio format is on the [Audio tab](audio.md). In accordance with webOS design, an HDMI input's settings can be adjusted only while that specific input is actively displayed on screen.
 
 ## Devices and connectivity
 

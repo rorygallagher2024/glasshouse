@@ -113,22 +113,24 @@ function hdmiTable(rows, dims, inputs) {
     }).join('') + '</div>';
 }
 
-// The Advanced tab's Sound section, and the SIMPLINK rows in Devices.
+// One of lgsettings.js's rows, for a .prot-table.
+function lgsRow(r) {
+  return '<div class="prot-row"><div class="prot-main"><div class="prot-title">' + esc(r.title) + '</div>' +
+    '<div class="prot-desc">' + esc(r.desc) + (r.active === false ? ' ' + esc(t('lgs.inactive', 'Not available with the TV’s current input or sound output.')) : '') +
+    '</div></div><div class="prot-status">' + lgsControl(r) + '</div></div>';
+}
+
+// The Advanced tab's HDMI inputs and the SIMPLINK rows in Devices. Sound, and
+// each input's audio format, are on the Audio tab.
 var advLgsDevices = false;   // read by tick(), which can run before this line on the first load
 async function loadAdvSettings() {
   let d;
-  try { d = await (await fetch(api('/api/lgsettings?section=sound,hdmi,devices'), { cache: 'no-store' })).json(); } catch (e) { return; }
-  const row = r => '<div class="prot-row"><div class="prot-main"><div class="prot-title">' + esc(r.title) + '</div>' +
-    '<div class="prot-desc">' + esc(r.desc) + (r.active === false ? ' ' + esc(t('lgs.inactive', 'Not available with the TV’s current input or sound output.')) : '') +
-    '</div></div><div class="prot-status">' + lgsControl(r) + '</div></div>';
-  const sound = (d.rows || []).filter(r => r.section === 'sound');
+  try { d = await (await fetch(api('/api/lgsettings?section=hdmi,devices'), { cache: 'no-store' })).json(); } catch (e) { return; }
   const devices = (d.rows || []).filter(r => r.section === 'devices');
-  const hdmi = (d.rows || []).filter(r => r.section === 'hdmi');
+  const hdmi = (d.rows || []).filter(r => r.section === 'hdmi' && r.column !== 'audioFormat');
   q('adv-hdmi').hidden = !hdmi.length;
   q('adv-lgs-hdmi').innerHTML = hdmi.length ? hdmiTable(hdmi, d.dimensions || {}, d.inputs) : '';
-  q('adv-sound').hidden = !sound.length;
-  q('adv-lgs-sound').innerHTML = sound.map(row).join('');
   advLgsDevices = devices.length > 0;
   if (advLgsDevices) q('adv-devices').hidden = false;
-  q('adv-lgs-devices').innerHTML = devices.map(row).join('');
+  q('adv-lgs-devices').innerHTML = devices.map(lgsRow).join('');
 }

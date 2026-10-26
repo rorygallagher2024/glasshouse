@@ -1,0 +1,130 @@
+{
+  "captured": "25 October 2026; OLED55G36LA / 23.25.55; ARC receiver observation captured separately from speaker baseline",
+  "responses": {
+    "com.webos.service.config/getConfigs": {
+      "subscribed": false,
+      "configs": {
+        "tv.model.edidType": "TrueHD+dts",
+        "tv.model.modelname": "OLED55G36LA"
+      },
+      "returnValue": true
+    },
+    "com.webos.service.tv.systemproperty/getSystemInfo": {
+      "returnValue": true,
+      "firmwareVersion": "23.25.55",
+      "modelName": "OLED55G36LA",
+      "sdkVersion": "9.2.2"
+    },
+    "com.webos.service.eim/getAllInputStatus": {
+      "returnValue": true,
+      "devices": [
+        {
+          "port": 2,
+          "subList": [
+            {
+              "id": "SIMPLINK",
+              "cecpDevType": 5,
+              "osdName": "STEREO 70s"
+            }
+          ]
+        }
+      ]
+    },
+    "com.webos.service.audio/tv/getAudioInputProperty": {
+      "returnValue": true,
+      "audioInputProperty": []
+    },
+    "com.webos.service.arccontroller/getARCState": {
+      "lgHarmonyDevice": false,
+      "arcProfile": "PCM",
+      "returnValue": true,
+      "earcCapability": [
+        "PCM"
+      ],
+      "earcATMOS": false,
+      "audioDeviceType": "arc",
+      "mpeg4AACLC": false,
+      "earcMatProfile": "matprofilenone",
+      "arcActivation": "ARC",
+      "volumeSyncable": false,
+      "advancedEarcCapability": [
+        {
+          "audioCodingType": "PCM",
+          "maxChannelNumber": 2,
+          "hexSAD": "097f07"
+        }
+      ],
+      "connectionDepth": "depth_1",
+      "lgHarmony": false
+    },
+    "com.webos.service.arccontroller/getARCEDIDInfo": {
+      "eARC": true,
+      "returnValue": true,
+      "earcSADs": "2c0957073d1ec05f7e07670400",
+      "arcHDMIPort": 2,
+      "atmos_arc": false,
+      "subscribed": false,
+      "edidInfo": [
+        {
+          "inputType": "hdmi",
+          "port": 1,
+          "dynamicEdid": true,
+          "atmos_arc": false,
+          "SADs": "2c0957073d1ec05f7e07670400",
+          "SADB": ""
+        },
+        {
+          "inputType": "hdmi",
+          "port": 2,
+          "dynamicEdid": true,
+          "atmos_arc": false,
+          "SADs": "2c0957073d1ec05f7e07670400",
+          "SADB": ""
+        },
+        {
+          "inputType": "hdmi",
+          "port": 3,
+          "dynamicEdid": true,
+          "atmos_arc": false,
+          "SADs": "2c0957073d1ec05f7e07670400",
+          "SADB": ""
+        },
+        {
+          "inputType": "hdmi",
+          "port": 4,
+          "dynamicEdid": true,
+          "atmos_arc": false,
+          "SADs": "2c0957073d1ec05f7e07670400",
+          "SADB": ""
+        }
+      ],
+      "earcSADB": ""
+    },
+    "com.webos.service.settings/getSystemSettings": {
+      "subscribed": false,
+      "category": "sound",
+      "method": "getSystemSettings",
+      "dimension": {
+        "audioInput": "hdmi4"
+      },
+      "settings": {
+        "soundOutputDigital": "auto",
+        "inputAudioFormatHDMI1": "bitstream",
+        "inputAudioFormatHDMI3": "bitstream",
+        "inputAudioFormatHDMI4": "bitstream",
+        "inputAudioFormatHDMI2": "bitstream",
+        "soundOutput": "tv_speaker",
+        "eArcSupport": "on"
+      },
+      "returnValue": true
+    }
+  },
+  "files": {
+    "/proc/lgtv-driver/audio/hdmi": "HDMIConnected=1\nAudioData=1\nCodec=PCM\nSamplingRate=0\nN=0\nCTS=0\n",
+    "/proc/lgtv-driver/audio/adec.p0": "AdecPortNum=0\nOpen=0\nConnect=UNKNOWN\nStart=0\nUserCodec=UNKNOWN\nCurCodec=UNKNOWN\nSrcCodec=UNKNOWN\nSrcBitrate=0\nSrcSamplingRate=0\nSrcChannel=0\nOutputCodec=PCM\nOutputChannel=0\nPTS=0\nLanguage=0\nDolbyDRCMode=LINE\nDownmixMode=LORO\nSyncMode=0\nTrickMode=NONE\nDualmonoMode=LR\nGain=0x800000\nMute=0\nDelay=0\nAudio Description=0\nEaseGain=0\nEaseDuration=0\nDefaultPRL=2147483647\nOverflow=0\n\n",
+    "/proc/lgtv-driver/audio/adec.p1": "AdecPortNum=1\nOpen=1\nConnect=HDMI_PORT0\nStart=0\nUserCodec=PCM\nCurCodec=UNKNOWN\nSrcCodec=UNKNOWN\nSrcBitrate=0\nSrcSamplingRate=0\nSrcChannel=0\nOutputCodec=PCM\nOutputChannel=0\nPTS=0\nLanguage=0\nDolbyDRCMode=LINE\nDownmixMode=LTRT\nSyncMode=1\nTrickMode=NONE\nDualmonoMode=LR\nGain=0x800000\nMute=1\nDelay=73\nAudio Description=0\nEaseGain=0\nEaseDuration=0\nDefaultPRL=2147483647\nOverflow=0\n\n",
+    "/proc/lgtv-driver/audio/sndout": "[SPK]\nOpen=1\nConnect=1\nSpkOutputChannel=2\nGain=0x5A9DF7\nMute=0\nDelay=0\nProcessingDelay=73\nUnderflow=0\n\n[OPTIC]\nOpen=0\nConnect=0\nLight=0\nOpticMode=NONE\nOutputCodec=PCM\nOutputChannel=0\nSrcCopyProtection=FREE\nOutputCopyProtection=FREE\nGain=0x800000\nMute=1\nDelay=0\nSet_type=2\nCodec_type=1\nChannel_num=0\nSample_rate=0\nMix_option=1\nProcessingDelay=73\nUnderflow=0\n\n[OPTIC_LG]\nOpen=0\nConnect=0\nLight=0\nOutputCodec=PCM\nOutputChannel=2\nSrcCopyProtection=FREE\nOutputCopyProtection=FREE\nSoundBarID=0xF048A6\nSoundBarVolume=0\nSoundBarMute=0\nSoundBarPower=0\nGain=0x800000\nMute=1\nDelay=0\nProcessingDelay=73\nUnderflow=0\n\n[ARC]\nOpen=0\nConnect=0\nArcOnOff=0\nArcMode=NONE\nOutputCodec=PCM\nOutputChannel=0\nSrcCopyProtection=FREE\nOutputCopyProtection=FREE\nGain=0x800000\nMute=0\nDelay=0\nSet_type=2\nCodec_type=1\nChannel_num=0\nSample_rate=0\nMix_option=1\nProcessingDelay=73\nUnderflow=0\n\n[EARC]\nEArcOnOff=Off\nSet_type=2\nCodec_type=1\nChannel_num=0\nSample_rate=0\nMix_option=1\nUnderflow=0\n\n[BLUETOOTH]\nOpen=0\nConnect=0\nGain=0x800000\nMute=1\nDelay=NA\nProcessingDelay=73\n\n[HP]\nOpen=0\nConnect=0\nGain=0x800000\nMute=1\nDelay=0\nProcessingDelay=73\nUnderflow=0\n\n[WISA]\nOpen=0\nConnect=0\nOutputChannel=0\nGain=0x800000\nMute=1\nDelay=NA\nProcessingDelay=73\n\n[SE_BT]\nOpen=0\nConnect=0\nGain=0x800000\nMute=1\nDelay=NA\nProcessingDelay=73\n\n[SE_BT_SUR]\nOpen=0\nConnect=0\nGain=0x800000\nMute=1\nDelay=NA\nProcessingDelay=73\n\n[DAP_HP_BT]\nOpen=0\nConnect=0\nGain=0x800000\nMute=1\nDelay=NA\nProcessingDelay=73\n\n[COMMON_CAPTURE]\nOpen=0\nConnect=0\nGain=0x800000\nMute=1\nDelay=NA\nProcessingDelay=73\n\n[SE_ARC]\nOpen=0\nConnect=0\nArcOnOff=0\nArcMode=NONE\nOutputCopyProtection=FREE\nGain=0x800000\nMute=1\nDelay=NA\nProcessingDelay=73\n\n[WOWCAST]\nOpen=0\nConnect=0\nWowcastOnOff=0\nOutputCopyProtection=FREE\nGain=0x800000\nMute=1\nDelay=NA\nProcessingDelay=73\nSet_type=2\nCodec_type=1\nChannel_num=0\nSample_rate=0\nMix_option=1\n\n[Misc]\neAC3 ATMOS Encode On=0\nConnectedAdec=\nConnectedAmixer=5,6,7\nMainAudioOutput=ADEC1\nMainAudioInput=1\nMainAudioPort=1\n\n",
+    "/etc/umediaserver/device_codec_capability_config.json": "{\"audioCodecs\": [{\"name\": \"MPEG\", \"channels\": 2}, {\"name\": \"AAC\", \"channels\": 6}, {\"name\": \"WMA\", \"channels\": 6}, {\"name\": \"WMAP\", \"channels\": 8}, {\"name\": \"WMAL\", \"channels\": 8}, {\"name\": \"PCM\", \"channels\": 2}, {\"name\": \"LPCM\", \"channels\": 2}, {\"name\": \"AC3\", \"channels\": 6}, {\"name\": \"EAC3\", \"channels\": 8}, {\"name\": \"DTS\", \"channels\": 6}, {\"name\": \"DTSH\", \"channels\": 6}, {\"name\": \"DTSE\", \"channels\": 6}, {\"name\": \"DRA\", \"channels\": 6}, {\"name\": \"Vorbis\", \"channels\": 6}, {\"name\": \"RA6\", \"channels\": 2}, {\"name\": \"RA8\", \"channels\": 6}, {\"name\": \"AMR\", \"channels\": 1}, {\"name\": \"FLAC\", \"channels\": 6}, {\"name\": \"OPUS\", \"channels\": 6}]}",
+    "/proc/lg/hdmi20/port0/edid": "=========================================================================================================================\n[0x00] |  [0x00] [0x01] [0x02] [0x03] [0x04] [0x05] [0x06] [0x07] [0x08] [0x09] [0x0A] [0x0B] [0x0C] [0x0D] [0x0E] [0x0F]\n=========================================================================================================================\n-------------------------------------------------------------------------------------------------------------------------\nEDID Block 0, Bytes 0-127 [00H-7fH]\n-------------------------------------------------------------------------------------------------------------------------\n[0x00] | [0x00] [0xff] [0xff] [0xff] [0xff] [0xff] [0xff] [0x00] [0x1e] [0x6d] [0xcd] [0x81] [0x01] [0x01] [0x01] [0x01]\n[0x01] | [0x01] [0x21] [0x01] [0x03] [0x80] [0xa0] [0x5a] [0x78] [0x0a] [0xee] [0x91] [0xa3] [0x54] [0x4c] [0x99] [0x26]\n[0x02] | [0x0f] [0x50] [0x54] [0xa1] [0x08] [0x00] [0x31] [0x40] [0x45] [0x40] [0x61] [0x40] [0x71] [0x40] [0x81] [0x80]\n[0x03] | [0xd1] [0xc0] [0x01] [0x01] [0x01] [0x01] [0x08] [0xe8] [0x00] [0x30] [0xf2] [0x70] [0x5a] [0x80] [0xb0] [0x58]\n[0x04] | [0x8a] [0x00] [0x40] [0x84] [0x63] [0x00] [0x00] [0x1e] [0x6f] [0xc2] [0x00] [0xa0] [0xa0] [0xa0] [0x55] [0x50]\n[0x05] | [0x30] [0x20] [0x35] [0x00] [0x40] [0x84] [0x63] [0x00] [0x00] [0x1e] [0x00] [0x00] [0x00] [0xfd] [0x00] [0x18]\n[0x06] | [0x78] [0x1e] [0xff] [0x77] [0x00] [0x0a] [0x20] [0x20] [0x20] [0x20] [0x20] [0x20] [0x00] [0x00] [0x00] [0xfc]\n[0x07] | [0x00] [0x4c] [0x47] [0x20] [0x54] [0x56] [0x20] [0x53] [0x53] [0x43] [0x52] [0x32] [0x0a] [0x20] [0x01] [0x9d]\n-------------------------------------------------------------------------------------------------------------------------\nEDID Block 1, Bytes 128-255 [80H-ffH]\n-------------------------------------------------------------------------------------------------------------------------\n[0x08] | [0x02] [0x03] [0x6c] [0xf1] [0x5d] [0x61] [0x60] [0x76] [0x75] [0x66] [0x65] [0xdb] [0xda] [0x10] [0x1f] [0x04]\n[0x09] | [0x13] [0x05] [0x14] [0x03] [0x02] [0x12] [0x20] [0x21] [0x22] [0x15] [0x5d] [0x5e] [0x5f] [0x62] [0x63] [0x64]\n[0x0a] | [0x3f] [0x40] [0x32] [0x09] [0x57] [0x07] [0x15] [0x07] [0x50] [0x57] [0x07] [0x01] [0x3d] [0x1e] [0xc0] [0x5f]\n[0x0b] | [0x7e] [0x07] [0x67] [0x04] [0x03] [0x6e] [0x03] [0x0c] [0x00] [0x40] [0x00] [0xb8] [0x44] [0x2c] [0x00] [0x80]\n[0x0c] | [0x01] [0x02] [0x03] [0x04] [0x6d] [0xd8] [0x5d] [0xc4] [0x01] [0x78] [0x80] [0x6b] [0x43] [0x28] [0x78] [0xd3]\n[0x0d] | [0x33] [0x05] [0xe2] [0x00] [0xcf] [0xe3] [0x05] [0xc0] [0x00] [0xe3] [0x06] [0x0d] [0x01] [0xe2] [0x0f] [0xff]\n[0x0e] | [0xeb] [0x01] [0x46] [0xd0] [0x00] [0x48] [0x22] [0x9e] [0x7e] [0x62] [0x65] [0x97] [0x00] [0x00] [0x00] [0x00]\n[0x0f] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x47]\n-------------------------------------------------------------------------------------------------------------------------\nEDID Block 2, Bytes 256-383 [100H-17fH]\n-------------------------------------------------------------------------------------------------------------------------\n[0x10] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x11] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x12] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x13] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x14] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x15] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x16] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x17] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n-------------------------------------------------------------------------------------------------------------------------\nEDID Block 3, Bytes 384-511 [180H-1ffH]\n-------------------------------------------------------------------------------------------------------------------------\n[0x18] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x19] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x1a] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x1b] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x1c] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x1d] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x1e] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n[0x1f] | [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00] [0x00]\n"
+  }
+}

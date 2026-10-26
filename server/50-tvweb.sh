@@ -185,7 +185,9 @@ home_open_at_boot() {
     com.webos.app.livetv|com.webos.app.hdmi[0-9]|com.webos.app.av[0-9]|com.webos.app.comp[0-9]) ;;
     *) echo "$(date): Glasshouse Home not opened: the TV started on ${boot_app:-nothing logged}"; return 0 ;;
   esac
-  if [ "$front" != "$boot_app" ]; then
+  # On webOS 11.1 (50QNED72B6B) sam respawns com.webos.app.home once LG's Home
+  # is killed above, and reports it in front although nothing is drawn.
+  if [ "$front" != "$boot_app" ] && [ "$front" != com.webos.app.home ]; then
     echo "$(date): Glasshouse Home not opened: ${front:-nothing} in front since the start on $boot_app"
     return 0
   fi

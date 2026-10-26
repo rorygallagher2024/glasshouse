@@ -143,6 +143,14 @@ dynamic range while the TV reports no format, as in standby.
 The names of the dynamic range, the HDR type, the EOTF, the colorimetry, and
 the pixel encoding come from `server/lib/names.js`.
 
+The Audio tabs' `/api/audio` snapshot in `lib/audio.js` separates source-facing HDMI
+EDID, receiver formats from `arccontroller/getARCState`, local playback
+declarations, and live audio-driver readings. The EDID parser checks block
+checksums and uses telemetry's input map. `getARCEDIDInfo.eARC` is not treated
+as negotiation evidence. `?with=settings` adds LG's sound and HDMI setting rows, so
+each dashboard reads one endpoint. Reads run only while an Audio tab is open;
+there is no audio-capability background subscription.
+
 The audio output in the stats is named from the `soundOutput` of
 `com.webos.service.audio/master/getVolume`, which uses the sound settings'
 keys, or `tv_speaker_bt_surround` for `tv_speaker_bluetooth` when the
@@ -1221,7 +1229,7 @@ Home screen bloatware tile hiding allows built-in or preloaded system apps (whic
 
 ## Home Screen Layout
 
-The Apps tab's **Home screen layout** switches parts of LG's Home screen off by
+The Home tab's **Home screen layout** switches parts of LG's Home screen off by
 changing the home app's own layout file, which the app reads only when it
 starts. `lib/homescreen.js` lists one module per home app and uses the first
 whose `supported()` says yes; a TV with none has no Home screen section.

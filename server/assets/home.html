@@ -959,7 +959,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   var BEAT_MS = 5000;
 
   var data = null;       // the catalogue: apps, devices, channels, order
-  var layout = null;     // rows, order, sort, hidden, channels, hintSeen, picture
+  var layout = null;     // rows, order, sort, hidden, channels, hintSeen, picture, show*
   var guideData = {};
   var lastOn = { kind: null };
   // last: the tile focused last, which the bar's Hide or show acts on. rail:
@@ -999,17 +999,29 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  // The words from the page's language, the order from the translation. A TV
-  // whose browser runs in another language (en-US is common) would otherwise
-  // read Wednesday under a German clock.
+  // The words in the page's language, the order from the translation. The
+  // browser's default locale will not do for a translated page: webOS leaves
+  // it at en-US whatever the TV's language (seen on webOS 10.3). The month is
+  // taken from a date with its day, where a language such as Russian gives the
+  // form that follows a number: "24 октября", not "октябрь".
   function dateText(d) {
     var lang = (window.I18N && I18N.lang) ? I18N.lang() : 'en';
     function part(opts) {
       try { return d.toLocaleDateString(lang === 'en' ? undefined : lang, opts); } catch (e) { return ''; }
     }
-    return t('home.date', '{weekday} {day} {month}', {
-      weekday: part({ weekday: 'long' }), day: d.getDate(), month: part({ month: 'long' })
+    function month() {
+      try {
+        var parts = new Intl.DateTimeFormat(lang === 'en' ? undefined : lang, { day: 'numeric', month: 'long' }).formatToParts(d);
+        for (var i = 0; i < parts.length; i++) if (parts[i].type === 'month') return parts[i].value;
+      } catch (e) { /* no formatToParts in webOS 4's browser */ }
+      return part({ month: 'long' });
+    }
+    var line = t('home.date', '{weekday} {day} {month}', {
+      weekday: part({ weekday: 'long' }), day: d.getDate(), month: month()
     });
+    // A line of its own, so it starts with a capital even where the weekday
+    // is written in lower case, as in Russian and Spanish.
+    return line.charAt(0).toUpperCase() + line.slice(1);
   }
 
   function request(method, url, body, cb) {
@@ -1091,7 +1103,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
   }
 
   function rowNote(kind, list) {
-    if (kind === 'app') return t('home.row.appsNote', '{n} of {total} shown', { n: items('app').length, total: data.order.app.length });
+    if (kind === 'app') return layout.showAppCount === false ? '' : t('home.row.appsNote', '{n} of {total} shown', { n: items('app').length, total: data.order.app.length });
     if (kind === 'dev') {
       var ports = [];
       items('dev').forEach(function (d) { if (!d.unused && ports.indexOf(d.port) === -1) ports.push(d.port); });
@@ -1114,7 +1126,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
       list.forEach(function (it, i) { tiles += TILE[kind](it, i); });
       var note = esc(rowNote(kind, list));
       html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + ' data-row="' + ri + '" data-key="' + kind + '">' +
-        '<h2>' + esc(ROW_TITLES[kind]) + (list.length ? '<span>' + note + '</span>' : '') +
+        '<h2>' + esc(ROW_TITLES[kind]) + (list.length && note ? '<span>' + note + '</span>' : '') +
         '<em class="sort">' + esc(sortLabel(kind)) + '</em></h2>' +
         (list.length ? '<div class="wrap"><i class="edge l"></i><i class="edge r"></i><div class="track">' + tiles + '</div></div>'
           : '<div class="slot">' + note + '</div>') +
@@ -1162,14 +1174,14 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
       return '<div class="' + cls + '" data-c="' + i + '">' + icon + '<div class="nm">' + esc(a.title) + '</div>' + hiddenLabel + '</div>';
     },
     dev: function (d, i) {
-      var last = lastOn.kind === 'input' && lastOn.port === d.port;
+      var last = layout.showLastOn !== false && lastOn.kind === 'input' && lastOn.port === d.port;
       var cls = 'tile dev' + (last ? ' last' : '') + (d.unused ? ' unused' : '') + (hidden('dev', d.id) ? ' hidden' : '');
       var path = d.unused ? '' : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
                        : t('home.dev.port', 'HDMI {port}', { port: d.port });
       return '<div class="' + cls + '" data-c="' + i + '"><div><div class="nm">' + esc(d.name) + '</div>' +
         '<div class="path">' + esc(path) + '</div></div>' +
         '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : d.unused ? t('home.dev.unused', 'Nothing connected') : t('home.dev.connected', 'Connected')) + '</em>' +
-        '<span>' + (d.address ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' + hiddenLabel + '</div>';
+        '<span>' + (d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' + hiddenLabel + '</div>';
     },
     ch: function (c, i) {
       var cls = 'tile ch' + (hidden('ch', c.id) ? ' hidden' : '');
@@ -1524,7 +1536,9 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
     $('mer').hidden = !p[1];
     $('date').textContent = dateText(d);
     var kind = '', title = '', via = '';
-    if (lastOn.kind === 'input') {
+    if (!layout || layout.showLastOn === false) {
+      // The source can arrive before its saved visibility. Keep the clock's space.
+    } else if (lastOn.kind === 'input') {
       kind = t('home.now.lastWatched', 'Last watched');
       title = lastOn.title || t('home.dev.port', 'HDMI {port}', { port: lastOn.port });
       via = t('home.dev.port', 'HDMI {port}', { port: lastOn.port });
@@ -2613,6 +2627,7 @@ body[data-home-weather-focus="1"] #stage.alternative #rows .tile.focus{outline-c
       var firstLoad = !data;
       data = r;
       layout = r.layout;
+      renderNow();
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
       applyColours(layout.colours);

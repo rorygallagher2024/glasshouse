@@ -4,6 +4,31 @@ Findings about how LG's webOS works, kept so the same ground is not covered
 twice. Each entry names the TV and webOS version it was found on. For how
 Glasshouse itself works, see [IMPLEMENTATION.md](../IMPLEMENTATION.md).
 
+## Audio declarations and the negotiated link (G3, webOS 9.2.2)
+
+OLED55G36LA, firmware 23.25.55, kernel `5.4.268-320`, read on 25 October 2026:
+`tv.model.edidType` is `TrueHD+dts`, `dts_audiodec` accepts DTS/DTS-HD/DTS:X
+input caps, and DSP0 contains `dec_dtsx`. These are native declarations and
+decoder evidence, not a receiver-side pass-through trial.
+
+`arccontroller/getARCState` reported `arcActivation: ARC`, `audioDeviceType:
+arc`, and a two-channel PCM receiver descriptor for the HDMI 2 STEREO 70s.
+At the same time, `getARCEDIDInfo` reported `eARC: true` and DTS/HD/MAT SADs.
+Its eARC flag and source-facing descriptors therefore do not identify the
+negotiated link or the receiver's accepted formats. With TV speakers selected,
+ARC state reported no active link and empty receiver descriptors.
+
+The current HDMI input's `/proc/lg/hdmi20/portN/edid` provides a checksummed
+CTA declaration even with ARC off. LG's public-input-to-receiver map must be
+applied before selecting that file. The media-resource file lists local
+playback codecs; it is a separate declaration from HDMI forwarding.
+
+With no audio playing, the HDMI driver still reported `AudioData=1` and
+`Codec=PCM`, with zero sampling rate and an unstarted ADEC. Those values are
+not a live PCM signal. Native sound-output and Pass Through controls were
+exercised and their original settings restored. The PCM-only receiver did
+not provide a DTS reception test.
+
 ## HDMI CEC devices (G3, webOS 9.2.2)
 
 `com.webos.service.eim/getAllInputStatus` returns CEC devices in each HDMI
@@ -646,6 +671,14 @@ Unix seconds, `offset` in minutes (120 in Ljubljana in October), `timezone`
 `utc` matched `offset`. Watch time works its offset out from `localtime` and
 `utc`. Which of these fields older webOS versions give is not yet known.
 
+## The browser's locale (C5, webOS 10.3.1)
+
+With the TV's language set to Russian, the web app browser (Chrome 120)
+reports `navigator.language` as `ru-RU`, but `Intl.DateTimeFormat()` resolves
+to `en-US`, so `toLocaleDateString()` without a locale gives `Saturday` and
+`October`. Given `ru` it gives `суббота`, and with a day `24 октября`.
+Glasshouse Home names the page's language when it writes the date.
+
 ## Toasts as the screen comes on (C4, webOS 10.3.1)
 
 A toast sent through `com.webos.notification/createToast` in the moment
@@ -1191,6 +1224,34 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
 - The TV has no `/etc/issue`. `/etc/starfish-release` has
   `Rockhopper release 10.3.1-3006`, and `/etc/os-release` `VERSION_ID=10.3.1`.
 
+## WebAppMgr stopped (G4, webOS 11.2.0)
+
+Seen on 23 October 2026 on an OLED65G4KNA with Glasshouse Home switched on.
+
+- **WebAppMgr can stop for good.** `webapp-mgr.service` (in
+  `/etc/systemd/system`, `Type=simple`, `Restart=on-failure`,
+  `OOMScoreAdjust=-1000`, `PartOf=surface-manager.service`) ended with
+  `code=killed, signal=TERM`, `Result=success`, `NRestarts=0`, and stayed
+  inactive. What sent the signal was not found: nothing in
+  `/var/log/messages` at that second, no crash report, and the TV has no
+  systemd journal.
+- **Every web app then opens nothing.** Each Home press logged
+  `NL_BUTTON_CLICK` `KEY_HOME` (`lginput2`, remote `LGE MR24N`) and sam's
+  `NL_APP_LAUNCH_BEGIN` for `com.webos.app.home` (caller
+  `com.webos.starfish.keyfilters`), with no `NL_VSC` window after it, for
+  40 minutes. LG's own Flutter Home, put back in its place, did not show
+  either: launched by the server and then by a Home press 21 s later, it got
+  no window.
+- **sam goes on naming the dead view in front.** With WebAppMgr stopped while
+  the view was in front (under the screen saver), Glasshouse's foreground
+  stayed `com.webos.app.home` through later presses, so only the view's
+  heartbeat tells whether a press opened it.
+- **`systemctl start webapp-mgr.service` brings it back** without a restart.
+- **The remote's Home reaches `/dev/input` on this TV.** Unlike the C5's
+  MR25GA (above), Glasshouse's reader saw Home go down on the MR24N and
+  held it past its 1.2 s; LG's filter opened the screen magnifier at 2.5 s,
+  as on webOS 10.
+
 ## Home's button does not change the foreground app (webOS 4.10.2, 55UM7100PLB)
 
 `supported()` already refuses Glasshouse Home on webOS 4 and nothing here
@@ -1325,6 +1386,24 @@ Quick Start+ on, Always Ready on, `homeAutoLaunch` `on`
   Home in place 3 s later.
 - **Switched on by Always Ready** the power-on reason is `alwaysOn`, which is
   not in `fullHomeBootingPowerOnReasons`.
+
+## What the TV opens as it starts (QNED72B6B, webOS 11.1.0)
+
+Measured on 26 October 2026 on a 50QNED72B6B (43.11.85), Quick Start+ off.
+
+- **bootd put Live TV in front at 22 s** (`'com.webos.app.livetv' is
+  foreground`), with `general.homeAutoLaunch` `off` and the power-on reason
+  `remoteKey`.
+- **The boot hook ran 41 s in**, after `rest-boot-done` at 39.6 s, and had
+  Glasshouse Home mounted 4 to 9 s later.
+- **LG's Home's id is reported in front once the hook has stopped it.** At
+  44 s, while the hook had sam reread the mounted app, bootd logged `'com.webos.app.home'
+  is foreground`, and `getForegroundAppInfo` gave `com.webos.app.home`, with
+  Live TV still on screen and nothing of Home drawn. A check that the input
+  bootd started on is still in front then opens nothing. Launching
+  `com.webos.app.home` from there brought Glasshouse Home to the front.
+- **With Quick Start+ on**, a wake by the remote from Active Standby or
+  Suspend had Glasshouse Home in front with no Live TV before it.
 
 ## Muting and pausing (webOS 5.6.2, CX)
 
@@ -1541,3 +1620,13 @@ switch"; `WoV PDM Mic` on ALSA card 1) and a switch for it on the TV.
 showed a toast saying the microphone is off. Before the flip, in Active
 Standby, voice activation was already off with reason `tvPowerState`, so
 wake-word listening does not run in standby.
+
+## WebKit 538.2 requires -webkit- prefixes for flexbox and transforms (webOS 2.2.3, 55UH600V)
+
+webOS 2 runs WebKit 538.2. Unprefixed CSS `display: flex`, `flex`, `align-items`,
+and `justify-content` are ignored; flex containers and items fall back to block
+layout unless given `-webkit-flex` and `-webkit-` prefixes. Without them, an
+item with `position: absolute` children and no in-flow height collapses to 0 px.
+CSS transitions and transforms similarly require `-webkit-transition`,
+`-webkit-transform`, and `element.style.webkitTransform` in script (#746).
+

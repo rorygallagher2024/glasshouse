@@ -70,6 +70,7 @@
     <button type="button" role="tab" data-tab="privacy"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z"/></svg><span data-t="tab.privacy">Privacy</span></button>
     <button type="button" role="tab" data-tab="oledcare" id="tab-btn-oledcare" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 8.5v5M9.5 11h5"/></svg><span data-t="tab.oledCare">OLED Care</span></button>
     <button type="button" role="tab" data-tab="game" id="tab-btn-game" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10a4 4 0 0 1 4 4v1.5a3 3 0 0 1-5.4 1.8L14.5 14h-5l-1.1 1.3A3 3 0 0 1 3 13.5V12a4 4 0 0 1 4-4z"/><path d="M7.5 11v2.5M6.25 12.25h2.5M16 12h.01"/></svg><span data-t="tab.game">Game</span></button>
+    <button type="button" role="tab" data-tab="audio"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><span data-t="tab.audio">Audio</span></button>
     <button type="button" role="tab" data-tab="screensaver" id="tab-btn-screensaver"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg><span data-t="tab.screensaver">Screensaver</span></button>
     <div class="nav-rule" role="presentation"></div>
     <button type="button" role="tab" data-tab="advanced"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span data-t="tab.advanced">Advanced</span></button>
@@ -512,6 +513,35 @@
   </div>
 </section>
 
+<section class="priv panel" id="audiopane" role="tabpanel" hidden>
+  <div class="lbl" data-t="tab.audio">Audio</div>
+  <div class="pv-sec" id="audio-sound-head" data-t="adv.sound">Sound</div>
+  <div class="prot-table" id="audio-settings" data-reload="loadAudio"></div>
+
+  <div class="err-note audio-error" id="audio-error" role="alert" hidden></div>
+  <details class="pv-d audio-more" id="audio-more">
+  <summary><span class="audio-fold"><span data-t="audio.pathTitle">Soundbar and receiver</span><span class="pv-sub" data-t="audio.pathDesc">Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which audio formats the TV and the receiver say they support. Useful when Dolby Atmos or DTS doesn’t come through.</span></span></summary>
+  <div class="audio-head">
+    <div><div class="prot-title" id="audio-summary" role="status"><span data-t="audio.loading">Reading audio capabilities…</span></div><div class="prot-desc" id="audio-identity"></div></div>
+    <button type="button" class="pill idle" id="audio-refresh" onclick="loadAudio()" data-t="audio.refresh">Refresh</button>
+  </div>
+  <div id="audio-readings" aria-busy="true">
+    <ol class="audio-path" id="audio-path"></ol>
+    <div class="audio-formats-wrap">
+      <table class="audio-formats">
+        <caption class="sub" data-t="audio.tableCaption">Supported formats</caption>
+        <thead><tr><th scope="col" data-t="audio.format">Format</th><th scope="col" data-t="audio.tvAdvertises">TV advertises</th><th scope="col" data-t="audio.receiverAdvertises">Receiver advertises</th></tr></thead>
+        <tbody id="audio-formats"></tbody>
+      </table>
+    </div>
+    <p class="sub" id="audio-link-note"></p>
+
+
+    <details class="pv-d"><summary data-t="audio.playbackTitle">TV playback declarations</summary><p class="pv-sub" data-t="audio.playbackDesc">Formats listed by LG’s media configuration, with their declared channel limits. These describe playback resources, not what reaches an amp.</p><div class="audio-playback" id="audio-playback"></div></details>
+  </div>
+  </details>
+</section>
+
 <section class="priv panel" id="advpane" role="tabpanel" hidden>
   <div class="lbl" data-t="tab.advanced">Advanced</div>
   <div class="pv-sec" data-t="adv.powerStandby">Power &amp; standby</div>
@@ -523,13 +553,6 @@
           comes back on faster. LG calls this Quick Start+.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_quickboot" onclick="toggleQuickBoot()">&mdash;</button></div>
-    </div>
-    <div class="prot-row" id="row-homeautolaunch" hidden>
-      <div class="prot-main">
-        <div class="prot-title" data-t="adv.homeAutoLaunch">Open Home at power-on</div>
-        <div class="prot-desc" data-t="adv.homeAutoLaunch.desc">Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="btn_homeautolaunch" onclick="toggleHomeAutoLaunch('btn_homeautolaunch')">&mdash;</button></div>
     </div>
     <div class="prot-row" id="row-ar" hidden>
       <div class="prot-main">
@@ -707,9 +730,6 @@
       <div class="prot-status"><button type="button" class="pill idle" id="btn_huesync" onclick="toggleHuesync()">&mdash;</button></div>
     </div>
   </div>
-
-  <div class="pv-sec adv-sec" id="adv-sound" hidden data-t="adv.sound">Sound</div>
-  <div class="prot-table" id="adv-lgs-sound" data-reload="loadAdvSettings"></div>
 
   <div class="pv-sec adv-sec" id="adv-hdmi" hidden data-t="adv.hdmi">HDMI inputs</div>
   <div class="hdmi-in" id="adv-lgs-hdmi" data-reload="loadAdvSettings"></div>
@@ -925,30 +945,8 @@
   </div>
 
   <div class="apps-grp" id="apps-grp-launch">
-    <div class="apps-grp-h" data-t="apps.group.launch">Home screen and remote</div>
-    <div class="pv-sub apps-grp-d" data-t="apps.group.launch.desc">What the Home screen shows, and what the remote&rsquo;s number keys open.</div>
-
-    <details class="pv-d" id="disc-homescreen" hidden>
-      <summary><span data-t="apps.home">Home screen layout</span> <span class="cur" id="apps-home-summary"></span></summary>
-      <div class="pv-note" data-glasshouse-home-note hidden><span data-t="apps.glasshouseHomeNote">Glasshouse Home is switched on, so this applies only to LG&rsquo;s Home, seen from its tile, by holding Home, or while Glasshouse starts.</span> <a href="?tab=home" onclick="event.preventDefault(); showTab('home')" data-t="apps.glasshouseHomeLink">Arrange Glasshouse Home</a></div>
-      <div class="pv-sub" data-t="apps.home.desc">Which parts of LG&rsquo;s Home screen show, and which inputs have a tile among the apps. A change takes a few seconds, while the Home screen starts again.</div>
-      <div class="prot-table" id="apps-home-exp" hidden>
-        <div class="prot-row">
-          <div class="prot-main">
-            <div class="prot-title" data-t="apps.home.exp.title">Experimental on this TV</div>
-            <div class="prot-desc" data-t="apps.home.exp.desc">On webOS 10 Glasshouse lays its own Home screen layout over LG&rsquo;s each time the TV starts, so LG&rsquo;s can show for a moment first, and it has been tried on only a few TVs. Put back LG&rsquo;s Home screen, or switching this off, undoes it.</div>
-          </div>
-          <div class="prot-status"><button type="button" class="pill idle" id="btn-home-allow" onclick="toggleHomeLayoutAllowed('btn-home-allow')">&mdash;</button></div>
-        </div>
-      </div>
-      <div class="pv-g" id="apps-home-inputs-h" data-t="apps.home.inputs">Inputs on Home</div>
-      <div id="apps-home-inputs" style="margin-top:12px"></div>
-      <div class="pv-g" data-t="apps.home.parts">Parts of the Home screen</div>
-      <div class="prot-table" id="apps-home-parts"></div>
-      <div class="btns" style="margin-top:14px;max-width:420px">
-        <button type="button" class="pill idle" id="btn-home-restore" onclick="restoreHome()" data-t="apps.home.restore">Put back LG&rsquo;s Home screen</button>
-      </div>
-    </details>
+    <div class="apps-grp-h" data-t="apps.group.launch">Remote</div>
+    <div class="pv-sub apps-grp-d" data-t="apps.group.launch.desc">What the remote&rsquo;s keys open.</div>
 
     <details class="pv-d" id="disc-quickaccess" hidden>
       <summary><span data-t="apps.quickAccess">Quick Access</span> <span class="cur" id="apps-qa-summary"></span></summary>
@@ -960,23 +958,6 @@
       <summary><span data-t="apps.remoteKeys">Remote keys</span> <span class="cur" id="apps-rk-summary"></span></summary>
       <div class="pv-sub" data-t="apps.remoteKeys.desc">What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all.</div>
       <div id="apps-rk-list"></div>
-    </details>
-
-    <details class="pv-d" id="disc-system-tiles">
-      <summary><span data-t="apps.tiles">Hide home screen system apps</span> <span class="cur" id="apps-tiles-summary"></span></summary>
-      <div class="pv-note" data-glasshouse-home-note hidden><span data-t="apps.glasshouseHomeTilesNote">Glasshouse Home is switched on. Apps hidden here are hidden on it too; the Home tab hides others on Glasshouse Home only.</span> <a href="?tab=home" onclick="event.preventDefault(); showTab('home')" data-t="apps.glasshouseHomeLink">Arrange Glasshouse Home</a></div>
-      <div class="pv-sub" data-t="apps.tiles.desc">Hide built-in LG apps (Gallery, Music, Sports, Always Ready, Alexa, etc.) from the TV's home launcher ribbon.</div>
-      <div class="btns" style="margin-top:14px;max-width:520px">
-        <button type="button" id="tile-hiding-off" onclick="setTileHiding(false)" data-t="apps.tiles.off">Off (Stock)</button>
-        <button type="button" id="tile-hiding-on" onclick="setTileHiding(true)" data-t="apps.tiles.on">On (Custom)</button>
-      </div>
-      <div class="sub" id="apps-hidden-count" style="margin-top:8px">&mdash;</div>
-      <div class="pv-note" id="tile-hiding-overridden" style="margin-top:12px" hidden data-t="common.heldOverridden">Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged.</div>
-      <div class="pv-note" id="tile-hiding-held" style="margin-top:12px" hidden data-t="apps.tiles.held">Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.</div>
-      <div class="pv-note" id="tile-hiding-warning" style="margin-top:12px" hidden><b data-t="apps.tiles.warn.lead">When enabled:</b> <span data-t="apps.tiles.warn">On each cold boot of your TV, this can cause a brief 1-second blank screen or input refresh before returning to your active HDMI source.</span></div>
-      <div id="apps-tiles-list" style="margin-top:16px">
-        <div class="sub" style="padding:16px 0" data-t="apps.loadingSystem">Loading system apps&hellip;</div>
-      </div>
     </details>
   </div>
 
@@ -1003,15 +984,26 @@
 </section>
 
 <section class="priv panel" id="homepane" role="tabpanel" hidden>
-  <div class="pv-note warn" data-t="home.experimental">Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. It has been tried on webOS 9 and 10. In the first half minute after the TV starts from cold, Home shows a message that Glasshouse Home is starting.</div>
-  <div class="prot-table">
-    <div class="prot-row">
-      <div class="prot-main">
-        <div class="prot-title" id="home-state">&mdash;</div>
-        <div class="prot-desc" id="home-state-desc"></div>
+  <div id="home-hero">
+    <div class="ps-state">
+      <span class="ps-dot" id="home-dot"></span>
+      <div>
+        <div class="ps-head" id="home-state">&mdash;</div>
+        <div class="pv-sub" id="home-state-desc"></div>
+        <div class="pv-note warn" data-t="home.experimental">Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.</div>
       </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-switch" onclick="homeSwitch()">&mdash;</button></div>
     </div>
+    <div class="btns" id="home-mode-btns">
+      <button type="button" id="home-mode-lg" onclick="homeChooseMode(false)">&mdash;</button>
+      <button type="button" id="home-switch" onclick="homeChooseMode(true)">&mdash;</button>
+    </div>
+  </div>
+
+  <!-- Home customisation, whichever Home is the TV's: power-on, Glasshouse Home's
+       own options while it is on, LG's Home's layout while that is, and system apps -->
+  <div id="home-custom" hidden>
+  <div class="pv-sec" data-t="home.customisation">Home customisation</div>
+  <div class="prot-table" id="home-custom-table">
     <div class="prot-row" id="home-autolaunch-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.homeAutoLaunch">Open Home at power-on</div>
@@ -1019,21 +1011,43 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-autolaunch" onclick="toggleHomeAutoLaunch('home-autolaunch')">&mdash;</button></div>
     </div>
-    <div class="prot-row" id="home-hide-lg-row" hidden>
+    <div class="prot-row home-gh-row" id="home-hide-lg-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.hideLg">Hide LG’s Home while the TV starts</div>
-        <div class="prot-desc" data-t="home.hideLgDesc">For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG’s Home stays black until it is put back over SSH.</div>
+        <div class="prot-desc" data-t="home.hideLgDesc">For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own.</div>
+        <div class="pv-note warn" data-t="home.hideLgWarn">Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-hide-lg" onclick="homeHideLg()">&mdash;</button></div>
     </div>
-    <div class="prot-row" id="home-picture-row" hidden>
+    <div class="prot-row home-gh-row" id="home-picture-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.picture">Picture details</div>
         <div class="prot-desc" data-t="home.pictureDesc">In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-picture" onclick="homePicture()">&mdash;</button></div>
     </div>
-    <div class="prot-row" id="home-search-row" hidden>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.showLast">Last watched</div>
+        <div class="prot-desc" data-t="home.showLastDesc">At the top of Glasshouse Home and on the input it was on: what the TV last showed.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-show-last" onclick="homeShow('showLastOn')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.showAppCount">App count</div>
+        <div class="prot-desc" data-t="home.showAppCountDesc">Beside the Apps row: how many of the TV’s apps it shows.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-show-count" onclick="homeShow('showAppCount')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.showCec">CEC addresses</div>
+        <div class="prot-desc" data-t="home.showCecDesc">On each input’s tile: the HDMI-CEC address of the device behind it.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-show-cec" onclick="homeShow('showCec')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-search-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.search">Search</div>
         <div class="prot-desc" data-t="home.searchDesc">Left of the rows on Glasshouse Home: films and series on this TV’s apps, opened in the app at the title.</div>
@@ -1042,7 +1056,7 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-search" onclick="homeSearch()">&mdash;</button></div>
     </div>
-    <div class="prot-row" id="home-fade-row" hidden>
+    <div class="prot-row home-gh-row" id="home-fade-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.fade">Fade in and out</div>
         <div class="prot-desc" data-t="home.fadeDesc">Glasshouse Home fades in as it comes on screen, and out as an app, input or channel opens.</div>
@@ -1050,9 +1064,46 @@
       <div class="prot-status"><button type="button" class="pill idle" id="home-fade" onclick="homeFade()">&mdash;</button></div>
     </div>
   </div>
+    <details class="pv-d" id="disc-homescreen" hidden>
+      <summary><span data-t="apps.home">Home screen layout</span> <span class="cur" id="apps-home-summary"></span></summary>
+      <div class="pv-sub" data-t="apps.home.desc">Which parts of LG&rsquo;s Home screen show, and which inputs have a tile among the apps. A change takes a few seconds, while the Home screen starts again.</div>
+      <div class="prot-table" id="apps-home-exp" hidden>
+        <div class="prot-row">
+          <div class="prot-main">
+            <div class="prot-title" data-t="apps.home.exp.title">Experimental on this TV</div>
+            <div class="prot-desc" data-t="apps.home.exp.desc">On webOS 10 Glasshouse lays its own Home screen layout over LG&rsquo;s each time the TV starts, so LG&rsquo;s can show for a moment first, and it has been tried on only a few TVs. Put back LG&rsquo;s Home screen, or switching this off, undoes it.</div>
+          </div>
+          <div class="prot-status"><button type="button" class="pill idle" id="btn-home-allow" onclick="toggleHomeLayoutAllowed('btn-home-allow')">&mdash;</button></div>
+        </div>
+      </div>
+      <div class="pv-g" id="apps-home-inputs-h" data-t="apps.home.inputs">Inputs on Home</div>
+      <div id="apps-home-inputs" style="margin-top:12px"></div>
+      <div class="pv-g" data-t="apps.home.parts">Parts of the Home screen</div>
+      <div class="prot-table" id="apps-home-parts"></div>
+      <div class="btns" style="margin-top:14px;max-width:420px">
+        <button type="button" class="pill idle" id="btn-home-restore" onclick="restoreHome()" data-t="apps.home.restore">Put back LG&rsquo;s Home screen</button>
+      </div>
+    </details>
+
+    <details class="pv-d" id="disc-system-tiles" hidden>
+      <summary><span data-t="apps.tiles">Hide home screen system apps</span> <span class="cur" id="apps-tiles-summary"></span></summary>
+      <div class="pv-sub" data-t="apps.tiles.desc">Hide built-in LG apps (Gallery, Music, Sports, Always Ready, Alexa, etc.) from the TV's home launcher ribbon.</div>
+      <div class="btns" style="margin-top:14px;max-width:520px">
+        <button type="button" id="tile-hiding-off" onclick="setTileHiding(false)" data-t="apps.tiles.off">Off (Stock)</button>
+        <button type="button" id="tile-hiding-on" onclick="setTileHiding(true)" data-t="apps.tiles.on">On (Custom)</button>
+      </div>
+      <div class="sub" id="apps-hidden-count" style="margin-top:8px">&mdash;</div>
+      <div class="pv-note" id="tile-hiding-overridden" style="margin-top:12px" hidden data-t="common.heldOverridden">Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged.</div>
+      <div class="pv-note" id="tile-hiding-held" style="margin-top:12px" hidden data-t="apps.tiles.held">Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.</div>
+      <div class="pv-note" id="tile-hiding-warning" style="margin-top:12px" hidden><b data-t="apps.tiles.warn.lead">When enabled:</b> <span data-t="apps.tiles.warn">On each cold boot of your TV, this can cause a brief 1-second blank screen or input refresh before returning to your active HDMI source.</span></div>
+      <div id="apps-tiles-list" style="margin-top:16px">
+        <div class="sub" style="padding:16px 0" data-t="apps.loadingSystem">Loading system apps&hellip;</div>
+      </div>
+    </details>
+  </div>
 
   <div id="home-more">
-  <div class="grp grp-sec" data-t="home.view.heading">Home appearance</div>
+  <div class="pv-sec adv-sec" data-t="home.view.heading">Home appearance</div>
   <div class="prot-table">
     <div class="prot-row">
       <div class="prot-main">
@@ -1073,14 +1124,15 @@
       <div class="prot-status"><button type="button" class="pill idle" id="home-weather-enabled" onclick="homeSaveLayout({ weather: !(homeLayout &amp;&amp; homeLayout.weather) })">&mdash;</button></div>
     </div>
   </div>
-  <div class="grp grp-sec" data-t="home.layout">Rows and tiles</div>
+
+  <div class="pv-sec adv-sec" data-t="home.layout">Rows and tiles</div>
   <div class="sub" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
   <div class="pv-note" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
   <div id="home-rows"></div>
   <div class="btns" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
   <div class="sub" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
 
-  <div class="grp grp-sec" data-t="home.colours.title">Colours</div>
+  <div class="pv-sec adv-sec" data-t="home.colours.title">Colours</div>
   <div class="sub" data-t="home.colours.desc">The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour.</div>
   <div class="home-looks" id="home-looks"></div>
   <div class="home-custom">
@@ -1089,7 +1141,7 @@
     <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: null })" data-t="home.colours.reset">Use the default colours</button>
   </div>
 
-  <div class="grp grp-sec" data-t="home.wall.title">Wallpaper</div>
+  <div class="pv-sec adv-sec" data-t="home.wall.title">Wallpaper</div>
   <div class="sub" data-t="home.wall.optional">Optional: upload an image for each time of day. A time of day without one has a black background.</div>
   <div class="home-upload">
     <label for="home-wall-slot" data-t="home.wall.slot">Time of day</label>
@@ -1107,6 +1159,7 @@
   <div class="sub" id="home-wall-upload-note" role="status"></div>
   <div class="home-walls" id="home-walls"></div>
   </div>
+
 </section>
 
 <section class="priv panel" id="privpane" role="tabpanel" hidden>
@@ -1550,7 +1603,7 @@
         <div class="prot-row">
           <div class="prot-main">
             <div class="prot-title" data-t="server.experimental.tileHiding">Home screen tile hiding</div>
-            <div class="prot-desc" data-t="server.experimental.tileHiding.short">Allows hiding built-in apps from the Home screen, on the Apps tab.</div>
+            <div class="prot-desc" data-t="server.experimental.tileHiding.short">Allows hiding built-in apps from the Home screen, on the Home tab.</div>
             <div class="prot-desc" data-t="server.experimental.tileHiding.warn">On some TVs this has left the picture or sound off until the TV was unplugged. On webOS 10 and later, multiple issues have been reported including black screen and stuck picture settings.</div>
           </div>
           <div class="prot-status"><button type="button" class="pill idle" id="exp-tilehiding" onclick="toggleExpTileHiding()">&mdash;</button></div>
@@ -1558,7 +1611,7 @@
         <div class="prot-row" id="exp-homelayout-row" hidden>
           <div class="prot-main">
             <div class="prot-title" data-t="server.experimental.homeLayout">Home screen layout (webOS 10)</div>
-            <div class="prot-desc" data-t="server.experimental.homeLayout.short">Allows switching off parts of LG&rsquo;s Home screen on webOS 10, on the Apps tab.</div>
+            <div class="prot-desc" data-t="server.experimental.homeLayout.short">Allows switching off parts of LG&rsquo;s Home screen on webOS 10, on the Home tab.</div>
           </div>
           <div class="prot-status"><button type="button" class="pill idle" id="exp-homelayout" onclick="toggleHomeLayoutAllowed('exp-homelayout')">&mdash;</button></div>
         </div>
@@ -1697,6 +1750,7 @@
 <script src="/assets/ui/apps.js"></script>
 <script src="/assets/ui/install.js"></script>
 <script src="/assets/ui/home.js"></script>
+<script src="/assets/ui/audio.js"></script>
 <script src="/assets/ui/servicemenu.js"></script>
 <script src="/assets/ui/oled.js"></script>
 <script src="/assets/ui/screensavers.js"></script>

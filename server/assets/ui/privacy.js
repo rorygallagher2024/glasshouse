@@ -246,9 +246,7 @@ async function loadPrivacy() {
     // The rows only report; switching off is the Apps tab's background
     // services switch, which the note points to.
     q('pv-running-note').textContent = t('pv.runningNow.note',
-      'A service can be running with its permission switched off \u2014 it simply has nothing it is allowed to send. ' +
-      'They are switched off in the Apps tab, under Turn off background services, which keeps them off across reboots. ' +
-      'LG\'s recognition and advertising services are not listed: anything that asks them a question starts them, so this panel asks them only while they are running.');
+      'A service can be running with its permission switched off \u2014 it simply has nothing it is allowed to send. They are switched off in the Apps tab, under Turn off background services, which keeps them off across reboots. LG\'s recognition and advertising services are not listed: anything that asks them a question starts them, so this panel asks them only while they are running.');
 
     q('pv-running-cur').textContent = dae.length
       ? t('pv.runningOf', '{n} of {total} running', { n: dae.filter(x => x.running).length + liveOn, total }) : '';

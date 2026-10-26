@@ -62,6 +62,8 @@ var oledModule = null;
 var privacyModule = null;
 /** @type {typeof import('./lgsettings')} */
 var lgSettingsModule = null;
+/** @type {typeof import('./audio')} */
+var audioModule = null;
 /** @type {typeof import('./game')} */
 var gameModule = null;
 /** @type {typeof import('./apps')} */
@@ -1060,6 +1062,37 @@ function getSettingsPayload() {
   };
 }
 
+function tileHidingAvailable() {
+  return !!(appsModule && appsModule.tileHidingAllowed && appsModule.tileHidingAllowed()) && !fromHomebrewChannel();
+}
+
+function lgHomeLayoutAvailable() { return !!(homeScreenModule && homeScreenModule.supported()); }
+
+/*
+ * LG's Home's options on the Home tab: its layout (lib/homescreen.js) and the
+ * system apps hidden from it (lib/apps.js), in the fields the Apps tab used.
+ */
+function lgHomeOptions(glasshouseHome, cb) {
+  var lg = { writable: !!config.allowControl, glasshouseHome: !!glasshouseHome, homeScreen: null,
+    tileHidingAvailable: tileHidingAvailable(), tileHidingHeld: false, tileHidingOverridden: false,
+    systemTiles: [], tileHidingEnabled: false, hiddenCount: 0 };
+  function withLayout() {
+    if (!lgHomeLayoutAvailable()) return cb(lg);
+    homeScreenModule.getHomeScreen(function (hs) {
+      lg.homeScreen = hs;
+      cb(lg);
+    });
+  }
+  if (!lg.tileHidingAvailable) return withLayout();
+  appsModule.getApps(function (d) {
+    lg.systemTiles = d.systemTiles || [];
+    lg.hiddenCount = d.hiddenCount || 0;
+    lg.tileHidingEnabled = !!d.tileHidingEnabled;
+    lg.tileHidingNudge = d.tileHidingNudge;
+    withLayout();
+  });
+}
+
 /*
  * Glasshouse Home (lib/home.js). Its view runs on the TV and changes nothing
  * but the layout and what is open, so it needs no allowControl; anything from
@@ -1068,22 +1101,37 @@ function getSettingsPayload() {
 function handleHomeRoute(req, res, u, pathname) {
   function reply(r) { send(res, r && r.ok === false ? 400 : 200, JSON.stringify(r)); }
   if (req.method === 'GET') {
-    // ?with=catalogue,channels adds what the TV app's Home section lists, in one answer.
+    // ?with=catalogue,channels adds what the TV app's Home section lists, and
+    // lghome LG's Home's own options, in one answer.
     if (pathname === '/api/home') {
       var wants = String((u.query && u.query['with']) || '').split(',');
       return homeModule.status(function (st) {
         st.writable = !!config.allowControl || fromTV(req);
         // What the Home pane draws its colour previews' clock as.
         st.clockHour12 = clockHour12();
-        if (wants.indexOf('catalogue') === -1) return reply(st);
-        homeModule.catalogue(function (c) {
-          st.catalogue = c;
-          if (wants.indexOf('channels') === -1) return reply(st);
-          homeModule.channelList(function (list) {
-            st.channels = list;
-            reply(st);
+        // The Home tab also holds LG's Home's layout and hidden system apps, so
+        // it is there wherever either is, Glasshouse Home or not (a B8).
+        st.lgHomeAvailable = lgHomeLayoutAvailable() || tileHidingAvailable();
+        // Open Home at power-on is on the Home tab too, wherever LG has it.
+        if (st.lgHomeAvailable || st.homeAutoLaunch !== undefined) st.available = true;
+        withLgHome(function () {
+          if (wants.indexOf('catalogue') === -1) return reply(st);
+          homeModule.catalogue(function (c) {
+            st.catalogue = c;
+            if (wants.indexOf('channels') === -1) return reply(st);
+            homeModule.channelList(function (list) {
+              st.channels = list;
+              reply(st);
+            });
           });
         });
+        function withLgHome(next) {
+          if (wants.indexOf('lghome') === -1 || !st.lgHomeAvailable) return next();
+          lgHomeOptions(st.enabled, function (lg) {
+            st.lgHome = lg;
+            next();
+          });
+        }
       });
     }
     if (pathname === '/api/home/catalogue') {
@@ -1257,6 +1305,22 @@ function handleRequest(req, res) {
     // remote, and the remote needs no token.
     if (config.token && fromTV(req)) caps.key = config.token;
     return send(res, 200, JSON.stringify(caps));
+  }
+
+  if (pathname === '/api/audio' && audioModule) {
+    if (req.method === 'GET') {
+      return audioModule.status(function (r) {
+        r.writable = !!config.allowControl;
+        if (u.query.with !== 'settings') return send(res, 200, JSON.stringify(r));
+        // The Audio tabs show LG's sound settings beside the readings.
+        lgSettingsModule.collect(['sound', 'hdmi'], function (ls) {
+          r.lgSettings = ls.rows;
+          r.inputs = telemetryModule.inputNameMap;
+          send(res, 200, JSON.stringify(r));
+        });
+      });
+    }
+    return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
   }
 
   if (pathname === '/api/screensaver') {
@@ -1588,12 +1652,10 @@ function handleRequest(req, res) {
 
   if (pathname === '/api/apps' && req.method === 'GET') {
     return appsModule.getApps(function (d) {
-      d.tileHidingAvailable = !!(appsModule && appsModule.tileHidingAllowed && appsModule.tileHidingAllowed()) && !fromHomebrewChannel();
+      d.tileHidingAvailable = tileHidingAvailable();
       if (!d.tileHidingAvailable) { d.systemTiles = []; d.tileHidingEnabled = false; d.hiddenCount = 0; }
       d.tileHidingHeld = false;
       d.tileHidingOverridden = false;
-      // The TV app notes that LG's Home layout and hidden apps reach Glasshouse Home differently.
-      d.glasshouseHome = !!(homeModule && homeModule.enabled());
       servicesModule.getServices(function (sRes) {
         if (sRes && sRes.services) d.services = sRes.services;
         if (!preloadModule) return send(res, 200, JSON.stringify(d));
@@ -1602,19 +1664,12 @@ function handleRequest(req, res) {
           if (!quickAccessModule) return send(res, 200, JSON.stringify(d));
           quickAccessModule.getQuickAccess(function (qa) {
             d.quickAccess = qa && qa.supported ? qa : null;
-            if (!remoteKeysModule) return withHome();
+            if (!remoteKeysModule) return send(res, 200, JSON.stringify(d));
             remoteKeysModule.getRemoteKeys(function (rk) {
               d.remoteKeys = rk && rk.supported ? rk : null;
-              withHome();
-            });
-          });
-          function withHome() {
-            if (!homeScreenModule) return send(res, 200, JSON.stringify(d));
-            homeScreenModule.getHomeScreen(function (hs) {
-              d.homeScreen = hs;
               send(res, 200, JSON.stringify(d));
             });
-          }
+          });
         });
       });
     });
@@ -1963,6 +2018,7 @@ function init(opts) {
   if (opts.oled) oledModule = opts.oled;
   if (opts.privacy) privacyModule = opts.privacy;
   if (opts.lgSettings) lgSettingsModule = opts.lgSettings;
+  if (opts.audio) audioModule = opts.audio;
   if (opts.game) gameModule = opts.game;
   if (opts.apps) appsModule = opts.apps;
   if (opts.services) servicesModule = opts.services;

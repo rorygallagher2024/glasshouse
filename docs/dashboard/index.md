@@ -22,13 +22,13 @@ On a wide screen the tabs are listed down the left. On a phone, or wherever Pref
 
     ---
 
-    Install, uninstall, background services, remote button remapping and the home screen.
+    Install, uninstall, background services and remote button remapping.
 
 -   **[Home](home.md)**
 
     ---
 
-    Glasshouse Home, a clean home screen in place of LG's.
+    Glasshouse Home, a clean home screen in place of LG's, and Home customisation: Open Home at power-on, LG's Home screen layout and hidden system apps.
 
 -   **[Privacy](privacy.md)**
 
@@ -48,6 +48,12 @@ On a wide screen the tabs are listed down the left. On a phone, or wherever Pref
 
     Live frame rate, VRR and the Game Optimizer.
 
+-   **[Audio](audio.md)**
+
+    ---
+
+    Sound settings and the formats the TV and its receiver report.
+
 -   **[Screen savers](screen-savers.md)**
 
     ---
@@ -58,7 +64,7 @@ On a wide screen the tabs are listed down the left. On a phone, or wherever Pref
 
     ---
 
-    Power and standby, sound routing, HDMI, auto device detection and front lights.
+    Power and standby, HDMI, auto device detection and front lights.
 
 -   **[Service menu](service-menu.md)**
 

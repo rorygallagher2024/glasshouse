@@ -148,6 +148,9 @@ function inputLaunchPoints(cb) {
  * with inputs as [{ id, title, onHome }], or null where the TV did not list
  * its tiles.
  */
+// Whether this TV's Home screen layout can be changed from here at all.
+function supported() { return !!layout; }
+
 function getHomeScreen(cb) {
   if (!layout || !lunaFn) return cb(null);
   var out = {
@@ -280,6 +283,7 @@ function restore(cb) {
 
 module.exports = {
   init: init,
+  supported: supported,
   getHomeScreen: getHomeScreen,
   setPart: setPart,
   setInput: setInput,
