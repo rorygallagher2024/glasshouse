@@ -44,13 +44,13 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 2. **[Seeing what the TV is configured to collect, and switching it off](dashboard/privacy.md).** Whether LG's content-recognition engine is running and sampling the screen, the advertising identifier and whether ad tracking is limited, and every data agreement recorded on the TV with most of them switchable from the dashboard. Includes an on-TV blocker for LG's ad and telemetry endpoints, and a switch for the two diagnostics services that upload to LG.
 
-3. **[App management, debloating and home screen cleanup](dashboard/apps.md).** Install apps from the Homebrew Channel catalog, permanently uninstall apps to reclaim internal flash storage, disable unnecessary background system services to free up RAM and CPU cycles, stop LG keeping apps loaded in the background that are never used, and hide non-removable built-in LG system apps from the home launcher.
+3. **[App management, debloating and home screen cleanup](dashboard/apps.md).** Install apps from the Homebrew Channel catalog, permanently uninstall apps to reclaim internal flash storage, disable unnecessary background system services to free up RAM and CPU cycles, stop LG keeping apps loaded in the background that are never used, hide non-removable built-in LG system apps from the home launcher, or replace LG's Home screen with [Glasshouse Home](dashboard/home.md).
 
 4. **[Remapping the remote's buttons](dashboard/apps.md#remote-keys).** Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off. The change applies straight away and lasts across reboots, without waiting for the dashboard to start.
 
 5. **[Replacing the screen saver](dashboard/screen-savers.md).** A clock, a starfield, fireworks, or the TV's own readings, each dim or bright, in place of LG's.
 
-6. **[Integrating the TV with a smart home](HOME-ASSISTANT.md).** The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients.
+6. **[Integrating the TV with a smart home](HOME-ASSISTANT.md).** The MQTT bridge exposes the TV as a single device with its controls and telemetry, with Home Assistant support through MQTT Discovery and the same underlying interface available to other MQTT clients. You can also send button press events to Home Assistant to control your smart home from your TV remote.
 
 7. **[Seeing what the TV is actually doing](dashboard/metrics.md).** SoC temperature, per-core CPU load, memory, swap, Wi-Fi signal and throughput.
 
