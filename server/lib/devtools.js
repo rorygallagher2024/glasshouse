@@ -71,7 +71,7 @@ function blockFromNetwork(cb) {
         console.log('devtools: port 9998 bound to TV only');
       } else if (!tools.length || !fs.existsSync(FILTER_TABLES)) {
         state = 'unsupported';
-        console.error('devtools: port 9998 stays open to the network: this TV has no firewall' +
+        console.warn('devtools: port 9998 stays open to the network: this TV has no firewall' +
           (tools.length ? ' (its kernel has no ip_tables)' : ' (no iptables)'));
       } else {
         state = 'open';

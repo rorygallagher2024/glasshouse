@@ -64,109 +64,102 @@ The script takes about ten seconds to copy the server files and verify that the 
 
 ## Configuration options
 
-Glasshouse can be configured in two ways:
+Glasshouse can be configured either directly on the TV screen with the remote or headlessly via `config.json` and command-line flags:
 
-1. **[On-screen setup in the TV app](#option-1-on-screen-setup-in-the-tv-app) (Recommended)**: An easy, remote-driven setup wizard right on the TV screen.
-2. **[Configuration file and flags](#option-2-configuration-file-and-flags) (Command line / Headless)**: A declarative `config.json` file and command-line options for headless setups, automation, or pre-configured installs.
+=== "On-screen TV setup (Recommended)"
 
----
+    When Glasshouse is installed, opening the app on the TV for the first time starts an interactive setup wizard designed for the remote.
 
-### Option 1: On-screen setup in the TV app
+    ![Network access selection in the Glasshouse TV app setup wizard](screenshots/tv-app-setup-network.png)
 
-When Glasshouse is installed, opening the app on the TV for the first time starts an interactive setup wizard designed for the remote.
+    *Choosing whether the web dashboard is open to devices on the home network or TV-local only.*
 
-![Network access selection in the Glasshouse TV app setup wizard](screenshots/tv-app-setup-network.png)
+    The wizard guides you through three key choices:
 
-*Choosing whether the web dashboard is open to devices on the home network or TV-local only.*
+    * **Web dashboard access**: Choose between opening the web dashboard to phones and computers on your home network, or keeping it private to this TV only (`127.0.0.1`).
+    * **Home Assistant integration**: Connect your TV to Home Assistant via MQTT. The TV displays a QR code to scan with your phone, allowing you to enter your MQTT broker credentials easily from your mobile browser without typing on the TV remote.
+    * **Active Standby (Always-on)**: On TVs that support Always Ready / Active Standby (such as the LG C2 or G2), choose whether Glasshouse and Home Assistant remain connected with the screen off so the TV can be controlled and turned back on over the network.
 
-The wizard guides you through three key choices:
+    Any choice made during setup can be changed at any time from the TV app's **Settings** tab or the web dashboard. For a full walkthrough with screenshots, see [The TV app setup wizard](apps/tv-app.md#first-run-setup-wizard).
 
-* **Web dashboard access**: Choose between opening the web dashboard to phones and computers on your home network, or keeping it private to this TV only (`127.0.0.1`).
-* **Home Assistant integration**: Connect your TV to Home Assistant via MQTT. The TV displays a QR code to scan with your phone, allowing you to enter your MQTT broker credentials easily from your mobile browser without typing on the TV remote.
-* **Active Standby (Always-on)**: On TVs that support Always Ready / Active Standby (such as the LG C2 or G2), choose whether Glasshouse and Home Assistant remain connected with the screen off so the TV can be controlled and turned back on over the network.
+=== "Configuration file & flags (Headless)"
 
-Any choice made during setup can be changed at any time from the TV app's **Settings** tab or the web dashboard. For a full walkthrough with screenshots, see [The TV app setup wizard](apps/tv-app.md#first-run-setup-wizard).
+    For headless installs, multi-TV households, or users who prefer configuring files directly, Glasshouse reads its settings from `/var/lib/tvweb/config.json` on the TV.
 
----
+    To pre-configure a TV before installation, create a `server/config.json` file (or `server/config.<tv-ip>.json` if deploying to multiple TVs) in your cloned repository before running `./deploy.sh`. The installer automatically seeds the TV with that configuration on first deploy.
 
-### Option 2: Configuration file and flags
+    #### Core settings
 
-For headless installs, multi-TV households, or users who prefer configuring files directly, Glasshouse reads its settings from `/var/lib/tvweb/config.json` on the TV.
+    These are the most common properties you can set in `config.json`:
 
-To pre-configure a TV before installation, create a `server/config.json` file (or `server/config.<tv-ip>.json` if deploying to multiple TVs) in your cloned repository before running `./deploy.sh`. The installer automatically seeds the TV with that configuration on first deploy.
+    | Property | Default | Description |
+    | :--- | :--- | :--- |
+    | `port` | `8080` | Port for the web dashboard and REST API. Also set under Server → Advanced → Dashboard port; the port after it (`port + 1`) and the one after that (`port + 2`) serve the phone handoff and the icons. |
+    | `host` | `"::"` | Bind address. `"::"` listens dual-stack (IPv4 and IPv6), `"0.0.0.0"` listens on all IPv4 interfaces, and `"127.0.0.1"` keeps the dashboard private to the TV only. |
+    | `token` | `""` | Optional access token. When set, every web dashboard visit and API request requires `?k=<token>`. The TV app automatically embeds this token into its phone pairing QR code. |
+    | `allowControl` | `true` | When `false`, disables remote TV controls (volume, inputs, screen on/off, app launch, toast). |
+    | `allowPower` | `true` | When `false`, hides and refuses power off, power on, and reboot actions. |
+    | `mqtt.enabled` | `false` | Enables the Home Assistant MQTT bridge. |
+    | `mqtt.host` | `""` | IP address or hostname of your MQTT broker (e.g., `"192.168.1.5"`). |
+    | `mqtt.port` | `1883` / `8883` | Broker port. Defaults to `1883` (plain) or `8883` when `mqtt.tls` is `true`. |
+    | `mqtt.tls` | `false` | Encrypts the broker connection with TLS. |
+    | `mqtt.username` | `""` | MQTT username (use a dedicated user restricted to the TV's topics). |
+    | `mqtt.password` | `""` | MQTT password. |
+    | `mqtt.topicPrefix` | `"lgtv"` | Root segment for published state topics and commands. |
+    | `mqtt.discoveryPrefix` | `"homeassistant"` | Home Assistant MQTT discovery prefix. |
 
-#### Core settings
+    An example `config.json` with Home Assistant enabled:
 
-These are the most common properties you can set in `config.json`:
+    ```json
+    {
+      "port": 8080,
+      "token": "my-secret-token",
+      "mqtt": {
+        "enabled": true,
+        "host": "192.168.1.50",
+        "username": "lgtv",
+        "password": "broker-password"
+      }
+    }
+    ```
 
-| Property | Default | Description |
-| :--- | :--- | :--- |
-| `port` | `8080` | Port for the web dashboard and REST API. Also set under Server → Advanced → Dashboard port; the port after it (`port + 1`) and the one after that (`port + 2`) serve the phone handoff and the icons. |
-| `host` | `"::"` | Bind address. `"::"` listens dual-stack (IPv4 and IPv6), `"0.0.0.0"` listens on all IPv4 interfaces, and `"127.0.0.1"` keeps the dashboard private to the TV only. |
-| `token` | `""` | Optional access token. When set, every web dashboard visit and API request requires `?k=<token>`. The TV app automatically embeds this token into its phone pairing QR code. |
-| `allowControl` | `true` | When `false`, disables remote TV controls (volume, inputs, screen on/off, app launch, toast). |
-| `allowPower` | `true` | When `false`, hides and refuses power off, power on, and reboot actions. |
-| `mqtt.enabled` | `false` | Enables the Home Assistant MQTT bridge. |
-| `mqtt.host` | `""` | IP address or hostname of your MQTT broker (e.g., `"192.168.1.5"`). |
-| `mqtt.port` | `1883` / `8883` | Broker port. Defaults to `1883` (plain) or `8883` when `mqtt.tls` is `true`. |
-| `mqtt.tls` | `false` | Encrypts the broker connection with TLS. |
-| `mqtt.username` | `""` | MQTT username (use a dedicated user restricted to the TV's topics). |
-| `mqtt.password` | `""` | MQTT password. |
-| `mqtt.topicPrefix` | `"lgtv"` | Root segment for published state topics and commands. |
-| `mqtt.discoveryPrefix` | `"homeassistant"` | Home Assistant MQTT discovery prefix. |
+    #### Advanced and hardware settings
 
-An example `config.json` with Home Assistant enabled:
+    Advanced settings can be adjusted in `config.json` or through the dashboard's Server and Tools tabs:
 
-```json
-{
-  "port": 8080,
-  "token": "my-secret-token",
-  "mqtt": {
-    "enabled": true,
-    "host": "192.168.1.50",
-    "username": "lgtv",
-    "password": "broker-password"
-  }
-}
-```
+    | Property | Default | Description |
+    | :--- | :--- | :--- |
+    | `panel` | Auto | Overrides panel detection with `"oled"` or `"lcd"` if automatic detection does not detect your panel correctly. |
+    | `logging.level` | `"info"` | Server logging verbosity: `"quiet"` (warnings/errors only), `"info"` (standard), or `"debug"` (verbose diagnostics). |
+    | `ntp.server` | `""` | Hostname of an NTP server (e.g., `"pool.ntp.org"`) to synchronize the TV's clock on boot and hourly. |
+    | `syslog.server` | `""` | Remote syslog server address to forward TV and Glasshouse logs over RFC 5424 UDP (port `514`). |
+    | `allowTileHiding` | `false` | Experimental: allows hiding built-in LG system tiles and apps on the home screen. |
+    | `allowExperimentalHome` | `false` | Experimental: offers [Glasshouse Home](dashboard/home.md) on webOS 11, where it is untried. |
+    | `allowExperimentalScreensavers` | `false` | Experimental: allows custom QML screensavers on webOS 12 and newer, which are untried there. Named `allowOnWebos10` before 0.105; that name is still read, and renamed when the server starts. |
+    | `allowNetworkDebugger` | `false` | Exposes the webOS app inspector on port `9998` over the local network for developers using `ares-inspect`. |
+    | `iconServer` | `false` | Serves installed apps' icons, read-only and without a token, at `http://<tv-ip>:8082/icons/<appId>.png` (the dashboard's port plus two), for launchers on other devices. Home Assistant's Launch App select then lists each icon's address in `app_icons`. Also switched from the MQTT tab. |
+    | `update.check` | `false` | When `true`, automatically queries GitHub once daily for new Glasshouse releases. |
 
-#### Advanced and hardware settings
+    #### Command-line flags
 
-Advanced settings can be adjusted in `config.json` or through the dashboard's Server and Tools tabs:
+    **Installer flags (`./deploy.sh <tv-ip> [flags]`)**:
 
-| Property | Default | Description |
-| :--- | :--- | :--- |
-| `panel` | Auto | Overrides panel detection with `"oled"` or `"lcd"` if automatic detection does not detect your panel correctly. |
-| `logging.level` | `"info"` | Server logging verbosity: `"quiet"` (warnings/errors only), `"info"` (standard), or `"debug"` (verbose diagnostics). |
-| `ntp.server` | `""` | Hostname of an NTP server (e.g., `"pool.ntp.org"`) to synchronize the TV's clock on boot and hourly. |
-| `syslog.server` | `""` | Remote syslog server address to forward TV and Glasshouse logs over RFC 5424 UDP (port `514`). |
-| `allowTileHiding` | `false` | Experimental: allows hiding built-in LG system tiles and apps on the home screen. |
-| `allowExperimentalHome` | `false` | Experimental: offers [Glasshouse Home](dashboard/home.md) on webOS 11, where it is untried. |
-| `allowExperimentalScreensavers` | `false` | Experimental: allows custom QML screensavers on webOS 12 and newer, which are untried there. Named `allowOnWebos10` before 0.105; that name is still read, and renamed when the server starts. |
-| `allowNetworkDebugger` | `false` | Exposes the webOS app inspector on port `9998` over the local network for developers using `ares-inspect`. |
-| `iconServer` | `false` | Serves installed apps' icons, read-only and without a token, at `http://<tv-ip>:8082/icons/<appId>.png` (the dashboard's port plus two), for launchers on other devices. Home Assistant's Launch App select then lists each icon's address in `app_icons`. Also switched from the MQTT tab. |
-| `update.check` | `false` | When `true`, automatically queries GitHub once daily for new Glasshouse releases. |
+    * `--app`: Ensure the Glasshouse app tile is installed on the TV home screen.
+    * `--no-app`: Omit installing the TV app tile (runs the background server only).
+    * `--telnet`: Force connection over telnet even if SSH is available.
+    * `--no-persist`: Run the server only until the next TV reboot (skips the boot persistence hook).
 
-#### Command-line flags
+    **Server flags (`node tvweb.js [flags]`)**:
 
-**Installer flags (`./deploy.sh <tv-ip> [flags]`)**:
+    Used when running the server directly in testing or custom scripts:
 
-* `--app`: Ensure the Glasshouse app tile is installed on the TV home screen.
-* `--no-app`: Omit installing the TV app tile (runs the background server only).
-* `--telnet`: Force connection over telnet even if SSH is available.
-* `--no-persist`: Run the server only until the next TV reboot (skips the boot persistence hook).
-
-**Server flags (`node tvweb.js [flags]`)**:
-
-Used when running the server directly in testing or custom scripts:
-
-* `--port <port>`: Overrides the configured listening port.
-* `--host <host>`: Overrides the configured bind address.
-* `--config <path>`: Loads a specific configuration file instead of `/var/lib/tvweb/config.json`.
-* `--no-mqtt`: Disables the MQTT bridge regardless of the configuration file.
-* `--no-control`: Disables remote control actions.
-* `--log-level <quiet|info|debug>` (or `-q` / `-d`): Sets logging verbosity.
-* `--emulate-setup`: Simulates the first-run setup wizard in non-destructive test mode without altering TV settings or restarting.
+    * `--port <port>`: Overrides the configured listening port.
+    * `--host <host>`: Overrides the configured bind address.
+    * `--config <path>`: Loads a specific configuration file instead of `/var/lib/tvweb/config.json`.
+    * `--no-mqtt`: Disables the MQTT bridge regardless of the configuration file.
+    * `--no-control`: Disables remote control actions.
+    * `--log-level <quiet|info|debug>` (or `-q` / `-d`): Sets logging verbosity.
+    * `--emulate-setup`: Simulates the first-run setup wizard in non-destructive test mode without altering TV settings or restarting.
 
 ## Troubleshooting
 

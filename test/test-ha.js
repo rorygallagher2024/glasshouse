@@ -455,7 +455,9 @@ console.log('Running test-ha.js ...');
   assert.strictEqual(named.payload.json_attributes_topic, 'test/tv/telemetry');
   assert.ok(attrs.indexOf('"input_ids":{"HDMI 1":"hdmi1","Apple TV (HDMI2)":"hdmi2","Apple TV (HDMI3)":"hdmi3","HDMI 4":"hdmi4","Live TV":"livetv"}') !== -1, attrs);
   assert.ok(plain.payload.json_attributes_template.indexOf('"HDMI 2":"hdmi2"') !== -1);
-  console.log('  ✓ Input Source shows the names the TV gives its inputs, sends the port key, and lists input_ids');
+  // The state is the input just chosen while the TV switches, else what it reports.
+  assert.ok(named.payload.value_template.indexOf("(value_json.get('input_source') or value_json.get('app'))") !== -1, named.payload.value_template);
+  console.log('  ✓ Input Source shows the names the TV gives its inputs, sends the port key, lists input_ids, and holds a chosen input');
 })();
 
 console.log('ALL test-ha.js assertions passed!\n');

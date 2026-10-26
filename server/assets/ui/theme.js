@@ -70,17 +70,22 @@
 // Language and theme settings are applied above.
 // ---- language (auto / a language) ----
 (function initLanguage() {
-  const chosen = I18N.stored();
-  document.querySelectorAll('[data-lang-set]').forEach(b => {
-    const on = b.dataset.langSet === chosen;
-    b.classList.toggle('on', on);
-    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  const sel = q('lang-sel');
+  if (!sel) return;
+  I18N.languages.forEach(code => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    const name = I18N.names[code] || code.toUpperCase();
+    // One translated only in part shows English for the rest of the dashboard.
+    opt.textContent = I18N.complete(code) ? name : t('lang.partial', '{name} (partial)', { name: name });
+    // Each in its own words, the same whatever the page is in.
+    opt.setAttribute('translate', 'no');
+    sel.appendChild(opt);
   });
-  document.addEventListener('click', function(e) {
-    const btn = e.target.closest('[data-lang-set]');
-    if (!btn || btn.dataset.langSet === I18N.stored()) return;
-    e.preventDefault();
-    I18N.choose(btn.dataset.langSet);
+  sel.value = I18N.stored();
+  sel.addEventListener('change', function() {
+    if (sel.value === I18N.stored()) return;
+    I18N.choose(sel.value);
     // Every string is set once, as the page loads, so a new language needs a
     // fresh load. A ?lang= in the address would override the choice.
     const url = new URL(location.href);

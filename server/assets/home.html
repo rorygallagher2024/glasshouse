@@ -283,10 +283,13 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  // The words from the browser's locale, the order from the translation.
+  // The words from the page's language, the order from the translation. A TV
+  // whose browser runs in another language (en-US is common) would otherwise
+  // read Wednesday under a German clock.
   function dateText(d) {
+    var lang = (window.I18N && I18N.lang) ? I18N.lang() : 'en';
     function part(opts) {
-      try { return d.toLocaleDateString(undefined, opts); } catch (e) { return ''; }
+      try { return d.toLocaleDateString(lang === 'en' ? undefined : lang, opts); } catch (e) { return ''; }
     }
     return t('home.date', '{weekday} {day} {month}', {
       weekday: part({ weekday: 'long' }), day: d.getDate(), month: part({ month: 'long' })

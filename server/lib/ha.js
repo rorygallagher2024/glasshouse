@@ -886,7 +886,7 @@ function buildEntities(opts) {
           json_attributes_topic: topic.telemetry,
           json_attributes_template: '{{ ' + JSON.stringify({ input_ids: inputIds(inputNames) }) + ' | tojson }}',
           icon: 'mdi:video-input-hdmi'
-        }, namedSelect(Object.keys(inputNames), inputNames, 'value_json.app'))
+        }, namedSelect(Object.keys(inputNames), inputNames, '(value_json.input_source or value_json.app)'))
       },
       {
         type: 'text', id: 'screen_notification',

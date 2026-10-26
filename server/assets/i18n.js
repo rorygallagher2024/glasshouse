@@ -20,7 +20,17 @@
  */
 (function (root) {
   // Languages that have a file in /assets/i18n/. English needs none.
-  var LANGS = ['es'];
+  var LANGS = ['es', 'de'];
+  // Each language in its own words, as the language list shows it, so it can
+  // be found whatever the page is in.
+  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch' };
+  /*
+   * Languages translated only in part, with the pages they cover in full:
+   * 'web' (the dashboard), 'tv' (the TV app) and 'home' (Glasshouse Home).
+   * Following the browser's language, one is used only on those pages, so no
+   * page mixes it with English; elsewhere it is used only once chosen.
+   */
+  var PARTIAL = { de: ['home'] };
 
   var dict = {};
   var lang = 'en';
@@ -43,10 +53,23 @@
   function pick() {
     var m = /[?&]lang=([a-z]{2})/i.exec(location.search);
     var chosen = stored();
-    var want = m ? m[1] : chosen !== 'auto' ? chosen
+    var auto = !m && chosen === 'auto';
+    var want = m ? m[1] : !auto ? chosen
              : ((navigator.languages && navigator.languages[0]) || navigator.language || 'en');
     want = String(want).slice(0, 2).toLowerCase();
-    return LANGS.indexOf(want) >= 0 ? want : 'en';
+    if (LANGS.indexOf(want) < 0) return 'en';
+    return auto && !covers(want, page()) ? 'en' : want;
+  }
+
+  // Which of the pages this is, for PARTIAL.
+  function page() {
+    var p = location.pathname;
+    return /\/home\.html$/.test(p) ? 'home' : /\/dashboard\.html$/.test(p) ? 'tv' : 'web';
+  }
+
+  // Whether language code is translated in full on page.
+  function covers(code, where) {
+    return !PARTIAL.hasOwnProperty(code) || PARTIAL[code].indexOf(where) >= 0;
   }
 
   /*
@@ -140,6 +163,9 @@
   }
 
   root.t = t;
-  root.I18N = { t: t, apply: apply, lang: function () { return lang; }, languages: LANGS, stored: stored, choose: choose };
+  root.I18N = { t: t, apply: apply, lang: function () { return lang; }, languages: LANGS, names: NAMES, stored: stored, choose: choose,
+    // Whether a language covers this page in full: one that does not is
+    // only used here once chosen.
+    complete: function (code) { return covers(code, page()); } };
 // Untyped for the type check, which does not know the two names added to it.
 })(/** @type {any} */ (window));
