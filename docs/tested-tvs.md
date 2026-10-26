@@ -1,6 +1,6 @@
 # Tested TVs
 
-Confirmed on 49 TVs across 33 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
+Confirmed on 50 TVs across 34 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
 
 On webOS 2 (tested on a 55UH600V and a 49LF632V), PicCap is withheld because its native service stalls webOS 2 and triggers a watchdog reboot (`cpuAbnormal`, [#746](https://github.com/rorygallagher2024/glasshouse/issues/746)). Both TVs run Glasshouse without trouble.
 
@@ -20,6 +20,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | B7            | 2017 | OLED  | 3.9               | 1       |
 | B8            | 2018 | OLED  | 4.4               | 1       |
 | C8            | 2018 | OLED  | 4.4               | 1       |
+| LK61          | 2018 | LCD   | 4.4               | 1       |
 | LM57          | 2019 | LCD   | 4.5               | 1       |
 | UM73          | 2019 | LCD   | 4.10              | 1       |
 | C9            | 2019 | OLED  | 4.9 – 4.10        | 3       |
@@ -59,6 +60,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | OLED65B7V-Z | 3.9.3        | 06.10.65 | OLED  | No SoC temperature or eMMC wear readings                       |
 | OLED65C8PUA | 4.4.0        | 05.50.15 | OLED  | No `getAdid` on this firmware                                  |
 | OLED65B8SLC | 4.4.3        | 05.50.70 | OLED  | Everything works. Misses a few metrics found on newer versions |
+| 32LK6100PLB | 4.4.3        | 05.50.70 | LCD   | Rooted with faultmanager; dashboard, apps and SSH confirmed    |
 | 43LM5760PTC | 4.5          | —        | LCD   | Configured with panel: lcd; service and web UI confirmed       |
 | OLED55C9PLA | 4.9.0        | 05.30.40 | OLED  | Working fine                                                   |
 | OLED65C9AUA | 4.9.x (4.5+) | 05.50.00 | OLED  |                                                                |
