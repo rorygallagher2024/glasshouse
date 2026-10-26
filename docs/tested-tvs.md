@@ -1,6 +1,6 @@
 # Tested TVs
 
-Confirmed on 52 TVs across 36 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
+Confirmed on 53 TVs across 36 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
 
 On webOS 2 (tested on a 55UH600V and a 49LF632V), PicCap is withheld because its native service stalls webOS 2 and triggers a watchdog reboot (`cpuAbnormal`, [#746](https://github.com/rorygallagher2024/glasshouse/issues/746)). Both TVs run Glasshouse without trouble.
 
@@ -38,7 +38,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | C3            | 2023 | OLED  | 10 – 11           | 3       |
 | G3            | 2023 | OLED  | 11                | 1       |
 | B4            | 2024 | OLED  | 9                 | 1       |
-| C4            | 2024 | OLED  | 9 – 10            | 4       |
+| C4            | 2024 | OLED  | 9 – 10            | 5       |
 | G4            | 2024 | OLED  | 10                | 2       |
 | UT73          | 2024 | LCD   | —                 | 1       |
 | UT81          | 2024 | LCD   | 10                | 1       |
@@ -84,6 +84,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | OLED55C4PUA | 9.2.0        | 23.20.35 | OLED  | Rooted with faultmanager; SSH install; no internet access      |
 | OLED55B46LA | 9.24.8       | 23.23.30 | OLED  | Installed over telnet                                          |
 | OLED55G42LW | 10           | 33.31.68 | OLED  | Rooted with slopbro, not the Homebrew Channel                  |
+| OLED55C41LA | 10.2.0       | 33.21.85 | OLED  | OLED Care, remote keys, privacy controls and screen saver confirmed |
 | 50UT81006LA | 10.2.1       | 33.22.56 | LCD   | Partial: blocking works; some settings reported not to apply   |
 | OLED55C31LA | 10.2.2       | 33.22.80 | OLED  | Installed over SSH; in-app updates confirmed                   |
 | OLED65CSPSA | 10.3.0       | 33.31.20 | OLED  | Reported working                                               |
