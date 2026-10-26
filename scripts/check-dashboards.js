@@ -708,6 +708,7 @@ async function visitHomeInputsEditor(browser, base, problems) {
   try {
     await page.goto(base + '/?tab=home');
     const row = page.locator('details.home-row[data-kind="dev"]');
+    await row.locator('summary').click();
     await row.locator('.home-tile').first().waitFor();
     if (await row.locator('button#home-hide-unused.pill').count() !== 1) problems.push('Home inputs editor: the Inputs row has no On and Off switch for inputs with nothing connected');
     const toggles = await row.locator('.home-tile').getByText(/^(Shown|Hidden)$/).count();
@@ -1027,6 +1028,7 @@ async function visitHomeEditor(browser, base, problems) {
       return button && !button.disabled;
     });
     await ready();
+    await page.locator('details.home-row[data-kind="app"] summary').click();
     await page.locator('details.home-row[data-kind="ch"] summary').click();
     await page.getByRole('button', { name: 'Show channels', exact: true }).click();
     const add = id => page.locator('#home-ch-list .prot-row').filter({ hasText: id + ' ' + id.toUpperCase() }).getByRole('button', { name: 'Add', exact: true });
@@ -1082,7 +1084,7 @@ async function visitHomeUploads(browser, base, problems) {
       if (route.request().postDataJSON().removeUploads) uploaded = false;
       body = { ok: true, wallpapers: wallpapers() };
     } else if (pathname === '/api/home') {
-      body = { ok: true, supported: { ok: true }, installed: true, enabled: false, writable: true, layout, wallpapers: wallpapers() };
+      body = { ok: true, supported: { ok: true }, installed: true, enabled: true, writable: true, layout, wallpapers: wallpapers() };
     } else {
       body = { ok: true, layout, apps: [], devices: [], channels: [], order: { app: [], dev: [], ch: [] }, sources: { channels: 0 } };
     }

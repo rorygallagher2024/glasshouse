@@ -87,12 +87,16 @@ function renderHome() {
     state.textContent = t('home.isOff', 'LG’s Home is the TV’s Home');
     desc.textContent = t('home.isOffDesc', 'Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away.');
   }
+  const dot = q('home-dot');
+  if (dot) dot.className = 'ps-dot' + (st.restorePending ? ' warn' : st.enabled ? (st.active && !st.lgHomeOpen ? ' good' : ' warn') : '');
   const more = q('home-more');
-  if (more) more.hidden = !st.supported.ok;
+  if (more) more.hidden = !st.supported.ok || !st.enabled;
   const autoRow = q('home-autolaunch-row');
   const autoLeased = typeof getLease === 'function' ? getLease('homeAutoLaunch', st.homeAutoLaunch) : undefined;
   const autoVal = autoLeased !== undefined ? autoLeased : st.homeAutoLaunch;
   if (autoRow) autoRow.hidden = !st.supported.ok || autoVal === undefined;
+  const pwrTable = q('home-power-table');
+  if (pwrTable) pwrTable.hidden = !st.supported.ok || autoVal === undefined;
   const autoBtn = q('home-autolaunch');
   if (autoBtn && autoVal !== undefined) {
     const on = !!autoVal;
@@ -154,14 +158,30 @@ function renderHome() {
     });
     hide.disabled = !homeWritable();
   }
+  const lgBtn = q('home-mode-lg');
   if (btn) {
     const wantOn = !(st.enabled || st.restorePending);
     const armed = homeArmed === (wantOn ? 'on' : 'off');
-    btn.disabled = !homeWritable();
-    btn.className = 'pill ' + (armed ? 'warn' : st.enabled ? 'good' : 'idle');
-    btn.textContent = armed
-      ? (wantOn ? t('home.confirmOn', 'Press again to switch on') : t('home.confirmOff', 'Press again to use LG Home'))
-      : (st.restorePending ? t('home.retryRestore', 'Retry restoring LG Home') : wantOn ? t('home.switchOn', 'Use Glasshouse Home') : t('home.switchOff', 'Use LG Home'));
+    if (st.restorePending) {
+      if (lgBtn) lgBtn.hidden = true;
+      btn.disabled = !homeWritable();
+      btn.className = armed ? 'warn' : '';
+      btn.textContent = armed ? t('home.confirmOff', 'Press again to use LG Home') : t('home.retryRestore', 'Retry restoring LG Home');
+    } else {
+      if (lgBtn) {
+        lgBtn.hidden = false;
+        lgBtn.disabled = !homeWritable();
+        lgBtn.className = !st.enabled ? 'on' : armed ? 'warn' : '';
+        lgBtn.textContent = st.enabled
+          ? (armed ? t('home.confirmOff', 'Press again to use LG Home') : t('home.switchOff', 'Use LG Home'))
+          : t('home.lgHome', 'LG Home');
+      }
+      btn.disabled = !homeWritable();
+      btn.className = st.enabled ? 'on' : armed ? 'warn' : '';
+      btn.textContent = !st.enabled
+        ? (armed ? t('home.confirmOn', 'Press again to switch on') : t('home.switchOn', 'Use Glasshouse Home'))
+        : t('home.title', 'Glasshouse Home');
+    }
   }
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
@@ -175,6 +195,7 @@ function renderHome() {
 const HOME_LOOK_NAMES = () => ({
   warm: t('home.colours.warm', 'Warm'),
   glasshouse: t('home.colours.glasshouse', 'Glasshouse'),
+  pure: t('home.colours.pure', 'Pure white'),
   white: t('home.colours.white', 'White'),
   ice: t('home.colours.ice', 'Ice'),
   rose: t('home.colours.rose', 'Rose'),
@@ -236,7 +257,7 @@ function renderHomeRows() {
   if (!box || !homeCat) return;
   const usable = homeWritable();
   // Redrawing after each change keeps the rows that were open, and what was typed in the channel search.
-  const open = box.children.length ? [...box.querySelectorAll('details[open]')].map(d => d.dataset.kind) : [homeLayout.rows[0]];
+  const open = box.children.length ? [...box.querySelectorAll('details[open]')].map(d => d.dataset.kind) : [];
   const filter = q('home-ch-filter') ? q('home-ch-filter').value : '';
   box.innerHTML = homeLayout.rows.map((kind, ri) => {
     const order = homeCat.order[kind] || [];
@@ -254,11 +275,11 @@ function renderHomeRows() {
         <div class="prot-main"><div class="prot-title">${icon}<span translate="no">${esc(it.title)}</span></div>
           ${it.sub ? `<div class="prot-desc">${esc(it.sub)}</div>` : ''}</div>
         <div class="prot-status">
+          ${leftOut ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>` : ''}
           <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">↑</button>
           <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">↓</button>
-          ${it.lg ? `<span class="pill idle">${esc(t('home.alwaysShown', 'Always shown'))}</span>` :
+          ${it.lg ? `<span class="pill idle home-fixed-pill">${esc(t('home.alwaysShown', 'Always shown'))}</span>` :
             kind === 'ch' ? `<button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeToggleChannel('${jsq(id)}')">${esc(t('home.ch.remove', 'Remove'))}</button>` :
-            (leftOut ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>` : '') +
             renderToggle({ cls: hidden ? 'idle' : 'good', label: hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
               disabled: !usable, onclick: `homeToggleTile('${kind}', '${jsq(id)}')` })}
         </div></div>`;
@@ -352,6 +373,16 @@ function homeToggleTile(kind, id) {
 
 function homeResetLayout() { homeSaveLayout({ reset: true }); }
 
+function homeChooseMode(wantOn) {
+  if (!homeStatus) return;
+  if (homeStatus.restorePending) { homeSwitch(); return; }
+  if (Boolean(homeStatus.enabled) === Boolean(wantOn)) {
+    if (wantOn && !homeStatus.supported.ok) homeSwitch();
+    return;
+  }
+  homeSwitch();
+}
+
 // The master switch: one press arms it, a second within five seconds acts.
 async function homeSwitch() {
   if (!homeWritable()) return;
@@ -365,7 +396,11 @@ async function homeSwitch() {
   homeArmed = null;
   clearTimeout(homeArmTimer);
   const btn = q('home-switch');
-  if (btn) { btn.disabled = true; btn.textContent = t('apps.service.updating', 'Updating…'); }
+  const lgBtn = q('home-mode-lg');
+  const activeBtn = want === 'off' && !homeStatus.restorePending && lgBtn ? lgBtn : btn;
+  if (btn) btn.disabled = true;
+  if (lgBtn) lgBtn.disabled = true;
+  if (activeBtn) activeBtn.textContent = t('apps.service.updating', 'Updating…');
   try {
     await homePost(want === 'on' ? '/api/home/enable' : '/api/home/disable');
   } catch (e) { showErr(e.message); }

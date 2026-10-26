@@ -1004,14 +1004,20 @@
 
 <section class="priv panel" id="homepane" role="tabpanel" hidden>
   <div class="pv-note warn" data-t="home.experimental">Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. It has been tried on webOS 9 and 10. In the first half minute after the TV starts from cold, Home shows a message that Glasshouse Home is starting.</div>
-  <div class="prot-table">
-    <div class="prot-row">
-      <div class="prot-main">
-        <div class="prot-title" id="home-state">&mdash;</div>
-        <div class="prot-desc" id="home-state-desc"></div>
+  <div id="home-hero">
+    <div class="ps-state">
+      <span class="ps-dot" id="home-dot"></span>
+      <div>
+        <div class="ps-head" id="home-state">&mdash;</div>
+        <div class="pv-sub" id="home-state-desc"></div>
       </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-switch" onclick="homeSwitch()">&mdash;</button></div>
     </div>
+    <div class="btns" id="home-mode-btns">
+      <button type="button" id="home-mode-lg" onclick="homeChooseMode(false)">&mdash;</button>
+      <button type="button" id="home-switch" onclick="homeChooseMode(true)">&mdash;</button>
+    </div>
+  </div>
+  <div class="prot-table" id="home-power-table">
     <div class="prot-row" id="home-autolaunch-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.homeAutoLaunch">Open Home at power-on</div>
@@ -1019,6 +1025,11 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-autolaunch" onclick="toggleHomeAutoLaunch('home-autolaunch')">&mdash;</button></div>
     </div>
+  </div>
+
+  <div id="home-more">
+  <div class="pv-sec adv-sec" data-t="home.customisation">Home customisation</div>
+  <div class="prot-table">
     <div class="prot-row" id="home-hide-lg-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.hideLg">Hide LG’s Home while the TV starts</div>
@@ -1072,15 +1083,14 @@
     </div>
   </div>
 
-  <div id="home-more">
-  <div class="grp grp-sec" data-t="home.layout">Rows and tiles</div>
+  <div class="pv-sec adv-sec" data-t="home.layout">Rows and tiles</div>
   <div class="sub" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
   <div class="pv-note" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
   <div id="home-rows"></div>
   <div class="btns" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
   <div class="sub" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
 
-  <div class="grp grp-sec" data-t="home.colours.title">Colours</div>
+  <div class="pv-sec adv-sec" data-t="home.colours.title">Colours</div>
   <div class="sub" data-t="home.colours.desc">The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour.</div>
   <div class="home-looks" id="home-looks"></div>
   <div class="home-custom">
@@ -1089,7 +1099,7 @@
     <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: null })" data-t="home.colours.reset">Use the default colours</button>
   </div>
 
-  <div class="grp grp-sec" data-t="home.wall.title">Wallpaper</div>
+  <div class="pv-sec adv-sec" data-t="home.wall.title">Wallpaper</div>
   <div class="sub" data-t="home.wall.optional">Optional: upload an image for each time of day. A time of day without one has a black background.</div>
   <div class="home-upload">
     <label for="home-wall-slot" data-t="home.wall.slot">Time of day</label>

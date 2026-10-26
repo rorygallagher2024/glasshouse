@@ -925,6 +925,8 @@ function homeRows(d) {
              press: d.homeAutoLaunch ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('adv.homeAutoLaunch.desc', 'Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch.') });
   }
+  if (!d.enabled) return r;
+  r.push(head(t('home.customisation', 'Home customisation')));
   if (d.supported.ok && d.hideLgHomeAtStartAvailable !== false) {
     r.push({ label: t('home.hideLg', 'Hide LG\u2019s Home while the TV starts'),
              value: d.hideLgHomeAtStart ? t('common.on', 'On') : t('common.off', 'Off'), cls: d.hideLgHomeAtStart ? 'on' : 'off',
@@ -975,8 +977,9 @@ function homeRows(d) {
     for (var pi = 0; pi < presets.length; pi++) if (cur && presets[pi].text === cur.text && presets[pi].accent === cur.accent) at = pi;
     if (presets.length) {
       var lookNames = { warm: t('home.colours.warm', 'Warm'), glasshouse: t('home.colours.glasshouse', 'Glasshouse'),
-                        white: t('home.colours.white', 'White'), ice: t('home.colours.ice', 'Ice'),
-                        rose: t('home.colours.rose', 'Rose'), lilac: t('home.colours.lilac', 'Lilac') };
+                        pure: t('home.colours.pure', 'Pure white'), white: t('home.colours.white', 'White'),
+                        ice: t('home.colours.ice', 'Ice'), rose: t('home.colours.rose', 'Rose'),
+                        lilac: t('home.colours.lilac', 'Lilac') };
       var nextLook = presets[(at + 1) % presets.length];
       r.push({ label: t('home.colours.title', 'Colours'),
                value: at === -1 ? t('home.colours.custom', 'Custom') : lookNames[presets[at].id] || presets[at].id, cls: 'act',

@@ -925,14 +925,14 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
    full width away from it. Text at the Privacy tab's sizes (15px names, 13px
    descriptions): the shared 13/12px of .prot-row read small here, where the
    descriptions carry the substance. */
-#advpane .prot-table{display:grid;column-gap:clamp(30px,4vw,52px);
+#advpane .prot-table,#home-power-table,#home-more>.prot-table{display:grid;column-gap:clamp(30px,4vw,52px);
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
 /* The Server tab keeps one column, so every control lines up down the right. */
 #serverpane .prot-table{display:grid;grid-template-columns:1fr}
-#advpane .prot-row,#serverpane .prot-row{align-items:flex-start;padding:16px 0}
-#advpane .prot-title,#serverpane .prot-title{font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--w90)}
-#advpane .prot-desc,#serverpane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
-#advpane .prot-status,#serverpane .prot-status{padding-top:2px}
+#advpane .prot-row,#serverpane .prot-row,#home-power-table .prot-row,#home-more>.prot-table .prot-row{align-items:flex-start;padding:16px 0}
+#advpane .prot-title,#serverpane .prot-title,#homepane .prot-title{font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--w90)}
+#advpane .prot-desc,#serverpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
+#advpane .prot-status,#serverpane .prot-status,#home-power-table .prot-status,#home-more>.prot-table .prot-status{padding-top:2px}
 #pv-adv{margin-top:clamp(36px,5vw,56px)}
 #pv-adv>summary{border-top:0;min-height:0;align-items:center}
 #pv-adv[open]>summary{margin-bottom:22px}
@@ -1441,6 +1441,13 @@ button.tools-jump:active{background:var(--w80)}
 .sys-tile.sys-changed .rk-name{color:var(--cand)}
 
 /* The Home tab */
+#home-hero{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px 24px;
+  padding:8px 0 22px;border-bottom:1px solid var(--w12)}
+#home-hero .ps-state{margin-bottom:0;flex:1 1 320px}
+#home-hero .pv-sub{margin:6px 0 0}
+#home-mode-btns{display:flex;flex-wrap:wrap;gap:8px;flex:0 0 auto;width:auto}
+#home-mode-btns button{min-width:176px;padding:0 18px;white-space:nowrap}
+#home-mode-btns button.warn{color:var(--cand);border-color:var(--cand)}
 #home-rows{margin-top:14px}
 .home-row{border-top:1px solid var(--edge);padding:10px 0}
 .home-row summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;padding:6px 0}
@@ -1451,11 +1458,13 @@ button.tools-jump:active{background:var(--w80)}
 .home-row summary:hover::after{color:var(--w90)}
 /* Pushed right, beside the fold's plus, rather than spread to the middle. */
 .home-row-move{display:flex;gap:6px;margin-left:auto}
+.home-row-move button.pill{min-width:96px}
 .home-tile .prot-title{display:flex;align-items:center;gap:10px}
 .home-tile .prot-status{display:flex;gap:6px;align-items:center}
 .home-tile .rk-ico{width:28px;height:28px;border-radius:6px}
 .home-hidden .prot-main{opacity:.45}
 .home-tile .home-move{min-width:0;width:36px;padding:0}
+span.pill.home-fixed-pill{min-width:116px;padding:0 12px;justify-content:center;text-align:center}
 .home-ch-add{margin-top:14px;border-top:1px dashed var(--edge)}
 /* The dashboard's own field, as the Apps tab's search is. */
 .home-ch-filter{margin:4px 0 12px;width:100%;max-width:320px;font:400 14px 'Manrope';letter-spacing:.03em;
