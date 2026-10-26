@@ -118,8 +118,12 @@ fi
 # ustar is the plainest format, and both the GNU tar on webOS 4 and the BusyBox
 # tar on webOS 9 read it. COPYFILE_DISABLE stops macOS adding its ._ files.
 # ustar holds IDs up to 2097151, and a Mac account from a directory server can
-# have a larger group ID (1149420193 seen), so every entry is written as root.
-( cd "$WORK/b" && COPYFILE_DISABLE=1 tar --format=ustar --owner=0 --group=0 -cf "$WORK/bundle.tar" . )
+# have a larger group ID (1149420193 seen), so every entry is written as root,
+# which the TV ignores anyway. GNU tar and the tar on macOS 15.4 or later take
+# --owner; the one on macOS 10.15 to 15.3 (libarchive before 3.7.3) takes --uid
+# instead, and the one on macOS 10.14 or older neither, so there the IDs stay.
+make_bundle() { ( cd "$WORK/b" && COPYFILE_DISABLE=1 tar --format=ustar "$@" -cf "$WORK/bundle.tar" . ); }
+make_bundle --owner=0 --group=0 2>/dev/null || make_bundle --uid=0 --gid=0 2>/dev/null || make_bundle
 
 SUM=""
 if command -v md5sum >/dev/null 2>&1; then
