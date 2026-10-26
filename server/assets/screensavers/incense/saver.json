@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "name": {
     "en": "Incense",
-    "es": "Incienso"
+    "es": "Incienso",
+    "ru": "Благовония"
   },
   "description": {
     "en": "Thin streams of colored smoke rising and curling on black.",
-    "es": "Finas columnas de humo de colores que suben y se enroscan sobre negro."
+    "es": "Finas columnas de humo de colores que suben y se enroscan sobre negro.",
+    "ru": "Тонкие струйки цветного дыма поднимаются и завиваются на чёрном фоне."
   },
   "license": "MIT",
   "uses": [

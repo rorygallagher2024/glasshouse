@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "name": {
     "en": "Filament",
-    "es": "Filamento"
+    "es": "Filamento",
+    "ru": "Нити"
   },
   "description": {
     "en": "Swarms of light circling and trailing across black, slowly changing color.",
-    "es": "Enjambres de luz que giran y dejan estelas sobre negro, cambiando de color poco a poco."
+    "es": "Enjambres de luz que giran y dejan estelas sobre negro, cambiando de color poco a poco.",
+    "ru": "Рои света кружат и тянутся по чёрному фону, медленно меняя цвет."
   },
   "license": "MIT",
   "uses": [

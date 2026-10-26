@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "name": {
     "en": "Currents",
-    "es": "Corrientes"
+    "es": "Corrientes",
+    "ru": "Течения"
   },
   "description": {
     "en": "Streams of light flowing along a slowly changing wind on black.",
-    "es": "Corrientes de luz que fluyen con un viento que cambia despacio, sobre negro."
+    "es": "Corrientes de luz que fluyen con un viento que cambia despacio, sobre negro.",
+    "ru": "Потоки света текут по медленно меняющемуся ветру на чёрном фоне."
   },
   "license": "MIT",
   "uses": [

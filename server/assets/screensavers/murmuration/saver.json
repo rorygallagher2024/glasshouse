@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "name": {
     "en": "Murmuration",
-    "es": "Bandada"
+    "es": "Bandada",
+    "ru": "Стая"
   },
   "description": {
     "en": "Flocks of light swooping after their leaders across black.",
-    "es": "Bandadas de luz que siguen a sus líderes en picado sobre negro."
+    "es": "Bandadas de luz que siguen a sus líderes en picado sobre negro.",
+    "ru": "Стаи света проносятся за своими вожаками по чёрному фону."
   },
   "license": "MIT",
   "uses": [

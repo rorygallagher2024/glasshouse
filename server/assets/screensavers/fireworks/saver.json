@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "name": {
     "en": "Fireworks",
-    "es": "Fuegos artificiales"
+    "es": "Fuegos artificiales",
+    "ru": "Фейерверк"
   },
   "description": {
     "en": "Bursts of colour on black, a few seconds apart.",
-    "es": "Estallidos de color sobre negro, cada pocos segundos."
+    "es": "Estallidos de color sobre negro, cada pocos segundos.",
+    "ru": "Разноцветные вспышки на чёрном фоне каждые несколько секунд."
   },
   "license": "MIT",
   "uses": [
