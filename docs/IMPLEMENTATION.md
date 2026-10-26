@@ -1229,7 +1229,7 @@ Home screen bloatware tile hiding allows built-in or preloaded system apps (whic
 
 ## Home Screen Layout
 
-The Apps tab's **Home screen layout** switches parts of LG's Home screen off by
+The Home tab's **Home screen layout** switches parts of LG's Home screen off by
 changing the home app's own layout file, which the app reads only when it
 starts. `lib/homescreen.js` lists one module per home app and uses the first
 whose `supported()` says yes; a TV with none has no Home screen section.

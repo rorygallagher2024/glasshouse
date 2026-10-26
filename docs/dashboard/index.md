@@ -22,13 +22,13 @@ On a wide screen the tabs are listed down the left. On a phone, or wherever Pref
 
     ---
 
-    Install, uninstall, background services, remote button remapping and the home screen.
+    Install, uninstall, background services and remote button remapping.
 
 -   **[Home](home.md)**
 
     ---
 
-    Glasshouse Home, a clean home screen in place of LG's.
+    Glasshouse Home, a clean home screen in place of LG's, and LG's own Home screen layout and hidden system apps.
 
 -   **[Privacy](privacy.md)**
 

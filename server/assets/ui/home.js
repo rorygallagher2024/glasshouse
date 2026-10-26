@@ -51,7 +51,7 @@ async function loadHome(afterSave) {
   if (homeSaving && afterSave !== true) return;
   const revision = ++homeLoadRevision;
   try {
-    const [st, cat] = await Promise.all([homeGet('/api/home'), homeGet('/api/home/catalogue')]);
+    const [st, cat] = await Promise.all([homeGet('/api/home?with=lghome'), homeGet('/api/home/catalogue')]);
     if (revision !== homeLoadRevision) return;
     homeStatus = st;
     homeCat = cat;
@@ -64,12 +64,34 @@ async function loadHome(afterSave) {
 
 function homeWritable() { return !!(!homeSaving && homeStatus && (homeStatus.supported.ok || homeStatus.enabled || homeStatus.restorePending) && homeStatus.writable !== false); }
 
+// LG's Home's options: its layout only while it is the TV's Home, and the
+// system apps hidden from it, which Glasshouse Home leaves out too.
+function renderLgHome() {
+  const st = homeStatus;
+  const lg = st && st.lgHome;
+  const box = q('home-lg');
+  const layoutShown = !!(lg && lg.homeScreen) && !st.enabled;
+  if (box) box.hidden = !lg || !(layoutShown || lg.tileHidingAvailable);
+  if (!lg) return;
+  renderHomeScreen(lg);
+  const layout = q('disc-homescreen');
+  if (layout && st.enabled) layout.hidden = true;
+  renderSystemTiles(lg);
+}
+
 function renderHome() {
   const st = homeStatus;
   const state = q('home-state');
   const desc = q('home-state-desc');
   const btn = q('home-switch');
   if (!st || !state) return;
+  // A TV without Glasshouse Home (a B8) has the tab for LG's Home's options alone.
+  const glasshouse = st.supported.ok || st.enabled || st.restorePending;
+  const note = q('homepane').querySelector('[data-t="home.experimental"]');
+  if (note) note.hidden = !glasshouse;
+  const hero = q('home-hero');
+  if (hero) hero.hidden = !glasshouse;
+  renderLgHome();
   if (st.restorePending) {
     state.textContent = t('home.restorePending', 'LG Home restoration is incomplete');
     desc.textContent = t('home.restoreRetry', 'Retry restoring LG Home before switching Glasshouse Home on again.');

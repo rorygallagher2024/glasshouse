@@ -402,7 +402,7 @@ var TABS = [
   { key: 'game',    label: t('tab.game', 'Game'),         url: '/api/game',        build: gameRows, optional: true },
   { key: 'audio',   label: t('tab.audio', 'Audio'),        url: '/api/audio?with=settings', build: audioRows, poll: 8000 },
   { key: 'saver',   label: t('tv.tab.screenSaver', 'Screen Saver'), url: '/api/screensaver', build: saverRows, optional: true },
-  { key: 'home',    label: t('tab.home', 'Home'),         url: '/api/home?with=catalogue,channels', build: homeRows, optional: true },
+  { key: 'home',    label: t('tab.home', 'Home'),         url: '/api/home?with=catalogue,channels,lghome', build: homeRows, optional: true },
   { key: 'privacy', label: t('tab.privacy', 'Privacy'),      url: '/api/privacy',     build: privacyRows },
   { key: 'service', label: t('tv.tab.serviceMenu', 'Service Menu'), url: '/api/servicemenu', build: svcRows },
   { key: 'options', label: t('tv.tab.system', 'System'),       url: '/api/stats?with=settings', build: optionRows, poll: 5000 },
@@ -900,13 +900,121 @@ function homeItemTitle(kind, id) {
 
 function homeRows(d) {
   homeData = d;
-  var r = [head(t('home.title', 'Glasshouse Home'))];
-  if (!d || d.ok === false || !d.supported) return r;
-  if (!d.supported.ok && !d.enabled && !d.restorePending) {
-    r.push({ label: t('home.unavailable', 'Not available on this TV'), value: '',
-             hint: d.supported.reason || '' });
-    return r;
+  if (!d || d.ok === false || !d.supported) return [head(t('home.title', 'Glasshouse Home'))];
+  // A TV without Glasshouse Home (a B8) has the section for LG's Home's options alone.
+  var glasshouse = d.supported.ok || d.enabled || d.restorePending;
+  return (glasshouse ? glasshouseHomeRows(d) : []).concat(d.lgHome ? lgHomeRows(d.lgHome) : []);
+}
+
+/*
+ * LG's Home's own options, from /api/home?with=lghome (lgHomeOptions in
+ * lib/routes.js): its layout while it is the TV's Home, and the system apps
+ * hidden from it, which Glasshouse Home leaves out too.
+ */
+function lgHomeRows(d) {
+  var r = [];
+  // Parts of LG's Home screen, and inputs as tiles on it (lib/homescreen.js).
+  var hs = d.homeScreen;
+  if (hs && hs.parts && !d.glasshouseHome) {
+    r.push(head(t('apps.home', 'Home screen layout')));
+    // Experimental on webOS 10: switched on from the dashboard in a browser,
+    // where its warning is.
+    var locked = !!(hs.experimental && !hs.experimental.allowed);
+    if (locked) {
+      r.push({
+        label: t('apps.home.exp.title', 'Experimental on this TV'),
+        value: t('common.off', 'Off'),
+        cls: 'off',
+        hint: t('tv.apps.home.exp.hint', 'Switch it on from the dashboard in a browser, under Home, where its warning is.')
+      });
+    }
+    var hin = hs.inputs || [];
+    for (var hi = 0; hi < hin.length; hi++) {
+      var inp = hin[hi];
+      r.push({
+        label: inp.title,
+        value: inp.onHome ? t('apps.home.onHome', 'On Home') : t('apps.home.notOnHome', 'Not on Home'),
+        cls: inp.onHome ? 'on' : 'off',
+        act: d.writable === false || locked ? null : 'homeInput',
+        key: inp.id,
+        on: inp.onHome,
+        press: inp.onHome ? t('tv.apps.home.inputOff', 'Press OK to take its tile off Home') : t('tv.apps.home.inputOn', 'Press OK to add a tile for it'),
+        hint: t('tv.apps.home.input.hint', 'A tile among the apps on the Home screen that switches to this input.')
+      });
+    }
+    for (var hp = 0; hp < hs.parts.length; hp++) {
+      var part = hs.parts[hp];
+      r.push({
+        label: part.title,
+        value: part.shown ? t('apps.home.shown', 'Shown') : t('apps.home.hidden', 'Hidden'),
+        cls: part.shown ? 'on' : 'off',
+        act: d.writable === false || locked ? null : 'homePart',
+        key: part.id,
+        on: part.shown,
+        press: part.shown ? t('tv.apps.home.hide', 'Press OK to hide it') : t('tv.apps.home.show', 'Press OK to show it'),
+        // desc is the server's own words.
+        hint: part.desc + ' ' + t('tv.apps.home.restart', 'The Home screen starts again, which takes a few seconds.')
+      });
+    }
+    if (d.writable !== false && !locked) {
+      r.push({
+        label: t('apps.home.restore', 'Put back LG\u2019s Home screen'),
+        value: t('tv.apps.home.restore.value', 'Put back'),
+        cls: 'act', act: 'homeRestore',
+        press: t('tv.apps.home.restore.press', 'Press OK to put it back'),
+        hint: t('tv.apps.home.restore.hint', 'Every part shown again, and the input tiles added here taken off.')
+      });
+    }
   }
+
+  var sys = d.systemTiles || [];
+  if (sys.length > 0) {
+    r.push(head(t('tv.apps.head.hideHomeScreenSystem', 'Hide Home Screen System Apps')));
+    if (d.glasshouseHome) {
+      r.push({ label: t('tv.apps.glasshouseHome', 'Glasshouse Home is on'), value: '',
+               hint: t('tv.apps.glasshouseHomeTilesNote', 'Apps hidden here are hidden on Glasshouse Home too. Its own hiding, above, hides others on Glasshouse Home only.') });
+    }
+    var tileHidingEnabled = !!d.tileHidingEnabled;
+    var tilesHeld = !!d.tileHidingHeld;
+    r.push({
+      label: t('tv.apps.systemAppHiding', 'System App Hiding'),
+      value: tileHidingEnabled ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled'),
+      cls: tileHidingEnabled ? 'on' : 'off',
+      act: tilesHeld && !tileHidingEnabled ? null : 'tileHiding',
+      on: tileHidingEnabled,
+      press: tileHidingEnabled ? t('tv.apps.tiles.disable', 'Press OK to disable tile hiding') : t('tv.apps.tiles.enable', 'Press OK to enable tile hiding'),
+      hint: d.tileHidingOverridden ? t('common.heldOverridden', 'Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged.')
+        : tilesHeld ? t('apps.tiles.held', 'Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.')
+        : tileHidingEnabled
+        ? t('tv.apps.tiles.on.hint', 'When enabled: On each cold boot of your TV, this can cause a brief 1-second blank screen or input refresh before returning to your active HDMI source.')
+        : t('tv.apps.tiles.off.hint', 'Stock behavior active. Press OK to enable system app hiding.')
+    });
+    if (tileHidingEnabled && !tilesHeld) {
+      for (var i = 0; i < sys.length; i++) {
+        var tile = sys[i];
+        var isVisible = !tile.hidden;
+        r.push({
+          label: tile.title || tile.id,
+          value: isVisible ? t('apps.tile.visible', 'Visible') : t('apps.tile.hidden', 'Hidden'),
+          cls: isVisible ? 'on' : 'off',
+          act: 'tile',
+          key: tile.id,
+          title: tile.title || tile.id,
+          on: isVisible,
+          press: isVisible ? t('tv.apps.tile.hide', 'Press OK to hide tile') : t('tv.apps.tile.show', 'Press OK to show tile'),
+          hint: isVisible
+            ? t('tv.apps.tile.visible.hint', 'Currently visible on the TV home ribbon. Press OK to hide this tile.')
+            : t('tv.apps.tile.hidden.hint', 'Currently hidden from the TV home ribbon. Press OK to make this tile visible again.')
+        });
+      }
+    }
+  }
+
+  return r;
+}
+
+function glasshouseHomeRows(d) {
+  var r = [head(t('home.title', 'Glasshouse Home'))];
   var can = d.writable !== false;
   r.push({ label: d.restorePending ? t('home.retryRestore', 'Retry restoring LG Home') : t('home.title', 'Glasshouse Home'),
            value: d.restorePending ? t('home.restorePending', 'LG Home restoration is incomplete') : d.enabled ? t('common.on', 'On') : t('common.off', 'Off'), cls: d.enabled ? 'on' : 'off',
@@ -1151,65 +1259,6 @@ function appsRows(d) {
     }
   }
 
-  // Parts of LG's Home screen, and inputs as tiles on it (lib/homescreen.js).
-  var hs = d.homeScreen;
-  if (hs && hs.parts) {
-    r.push(head(t('apps.home', 'Home screen layout')));
-    if (d.glasshouseHome) {
-      r.push({ label: t('tv.apps.glasshouseHome', 'Glasshouse Home is on'), value: '',
-               hint: t('apps.glasshouseHomeNote', 'Glasshouse Home is switched on, so this applies only to LG\u2019s Home, seen from its tile, by holding Home, or while Glasshouse starts.') + ' ' +
-                     t('tv.apps.glasshouseHomeWhere', 'Glasshouse Home is arranged in its own Home section.') });
-    }
-    // Experimental on webOS 10: switched on from the dashboard in a browser,
-    // where its warning is.
-    var locked = !!(hs.experimental && !hs.experimental.allowed);
-    if (locked) {
-      r.push({
-        label: t('apps.home.exp.title', 'Experimental on this TV'),
-        value: t('common.off', 'Off'),
-        cls: 'off',
-        hint: t('tv.apps.home.exp.hint', 'Switch it on from the dashboard in a browser, under Apps, where its warning is.')
-      });
-    }
-    var hin = hs.inputs || [];
-    for (var hi = 0; hi < hin.length; hi++) {
-      var inp = hin[hi];
-      r.push({
-        label: inp.title,
-        value: inp.onHome ? t('apps.home.onHome', 'On Home') : t('apps.home.notOnHome', 'Not on Home'),
-        cls: inp.onHome ? 'on' : 'off',
-        act: d.writable === false || locked ? null : 'homeInput',
-        key: inp.id,
-        on: inp.onHome,
-        press: inp.onHome ? t('tv.apps.home.inputOff', 'Press OK to take its tile off Home') : t('tv.apps.home.inputOn', 'Press OK to add a tile for it'),
-        hint: t('tv.apps.home.input.hint', 'A tile among the apps on the Home screen that switches to this input.')
-      });
-    }
-    for (var hp = 0; hp < hs.parts.length; hp++) {
-      var part = hs.parts[hp];
-      r.push({
-        label: part.title,
-        value: part.shown ? t('apps.home.shown', 'Shown') : t('apps.home.hidden', 'Hidden'),
-        cls: part.shown ? 'on' : 'off',
-        act: d.writable === false || locked ? null : 'homePart',
-        key: part.id,
-        on: part.shown,
-        press: part.shown ? t('tv.apps.home.hide', 'Press OK to hide it') : t('tv.apps.home.show', 'Press OK to show it'),
-        // desc is the server's own words.
-        hint: part.desc + ' ' + t('tv.apps.home.restart', 'The Home screen starts again, which takes a few seconds.')
-      });
-    }
-    if (d.writable !== false && !locked) {
-      r.push({
-        label: t('apps.home.restore', 'Put back LG\u2019s Home screen'),
-        value: t('tv.apps.home.restore.value', 'Put back'),
-        cls: 'act', act: 'homeRestore',
-        press: t('tv.apps.home.restore.press', 'Press OK to put it back'),
-        hint: t('tv.apps.home.restore.hint', 'Every part shown again, and the input tiles added here taken off.')
-      });
-    }
-  }
-
   // Quick Access, as it is set: changing it is in the browser dashboard,
   // where picking from every app is easier than with the remote.
   var qa = d.quickAccess;
@@ -1224,49 +1273,6 @@ function appsRows(d) {
         hint: t('apps.quickAccess.desc', 'Holding a number key on the remote opens the app or input set for it. A change here applies on the TV straight away.') + ' ' +
               t('tv.apps.quickAccess.browser', 'Change them from the dashboard in a browser.')
       });
-    }
-  }
-
-  var sys = d.systemTiles || [];
-  if (sys.length > 0) {
-    r.push(head(t('tv.apps.head.hideHomeScreenSystem', 'Hide Home Screen System Apps')));
-    if (d.glasshouseHome) {
-      r.push({ label: t('tv.apps.glasshouseHome', 'Glasshouse Home is on'), value: '',
-               hint: t('tv.apps.glasshouseHomeTilesNote', 'Glasshouse Home is switched on. Apps hidden here are hidden on it too; its Home section hides others on Glasshouse Home only.') });
-    }
-    var tileHidingEnabled = !!d.tileHidingEnabled;
-    var tilesHeld = !!d.tileHidingHeld;
-    r.push({
-      label: t('tv.apps.systemAppHiding', 'System App Hiding'),
-      value: tileHidingEnabled ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled'),
-      cls: tileHidingEnabled ? 'on' : 'off',
-      act: tilesHeld && !tileHidingEnabled ? null : 'tileHiding',
-      on: tileHidingEnabled,
-      press: tileHidingEnabled ? t('tv.apps.tiles.disable', 'Press OK to disable tile hiding') : t('tv.apps.tiles.enable', 'Press OK to enable tile hiding'),
-      hint: d.tileHidingOverridden ? t('common.heldOverridden', 'Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged.')
-        : tilesHeld ? t('apps.tiles.held', 'Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.')
-        : tileHidingEnabled
-        ? t('tv.apps.tiles.on.hint', 'When enabled: On each cold boot of your TV, this can cause a brief 1-second blank screen or input refresh before returning to your active HDMI source.')
-        : t('tv.apps.tiles.off.hint', 'Stock behavior active. Press OK to enable system app hiding.')
-    });
-    if (tileHidingEnabled && !tilesHeld) {
-      for (var i = 0; i < sys.length; i++) {
-        var tile = sys[i];
-        var isVisible = !tile.hidden;
-        r.push({
-          label: tile.title || tile.id,
-          value: isVisible ? t('apps.tile.visible', 'Visible') : t('apps.tile.hidden', 'Hidden'),
-          cls: isVisible ? 'on' : 'off',
-          act: 'tile',
-          key: tile.id,
-          title: tile.title || tile.id,
-          on: isVisible,
-          press: isVisible ? t('tv.apps.tile.hide', 'Press OK to hide tile') : t('tv.apps.tile.show', 'Press OK to show tile'),
-          hint: isVisible
-            ? t('tv.apps.tile.visible.hint', 'Currently visible on the TV home ribbon. Press OK to hide this tile.')
-            : t('tv.apps.tile.hidden.hint', 'Currently hidden from the TV home ribbon. Press OK to make this tile visible again.')
-        });
-      }
     }
   }
 

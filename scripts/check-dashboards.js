@@ -1113,25 +1113,46 @@ async function visitHomeUploads(browser, base, problems) {
   } finally { await context.close(); }
 }
 
-// Where Glasshouse Home is not offered its tab is left out; where it is on, the Apps tab says what LG's settings reach.
+/*
+ * The Home tab: left out where neither Glasshouse Home nor LG's Home's options
+ * are offered; with LG's Home's options alone (a B8) it shows only those; and
+ * with Glasshouse Home on, LG's Home's layout is left out and the system apps
+ * say they reach Glasshouse Home too.
+ */
 async function visitHomeAvailability(browser, base, problems) {
-  for (const st of [{ available: false, enabled: false }, { available: true, enabled: true }]) {
+  const lgHome = enabled => ({ writable: true, glasshouseHome: enabled,
+    homeScreen: { parts: [{ id: 'banner', title: 'Banner', desc: 'The banner.', shown: true }], inputs: null, experimental: null },
+    tileHidingAvailable: true, tileHidingEnabled: false, systemTiles: [], hiddenCount: 0 });
+  const cases = [
+    { name: 'unavailable', st: { available: false, enabled: false }, glasshouse: false },
+    { name: 'LG\'s Home only', st: { available: true, enabled: false, lgHomeAvailable: true, lgHome: lgHome(false) }, glasshouse: false },
+    { name: 'Glasshouse Home on', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true) }, glasshouse: true }
+  ];
+  for (const c of cases) {
+    const st = c.st;
     const page = await browser.newPage();
     page.on('pageerror', e => problems.push('Home availability: ' + e.message));
     await page.route('**/api/home**', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify(Object.assign({
-      ok: true, supported: { ok: st.available }, installed: true, restorePending: false, writable: true,
+      ok: true, supported: { ok: c.glasshouse }, installed: true, restorePending: false, writable: true,
       layout: { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true },
       apps: [], devices: [], channels: [], order: { app: [], dev: [], ch: [] }, sources: { channels: 0 }, wallpapers: { slots: {} }
     }, st)) }));
+    const fail = what => problems.push('Home availability (' + c.name + '): ' + what);
     try {
       await page.goto(base + '/?tab=home');
       await page.waitForFunction(() => homeAvailable !== null);
       await page.waitForTimeout(100);
       const hidden = await page.locator('#tab-btn-home').isHidden();
-      if (hidden === st.available) problems.push('Home availability: tab ' + (hidden ? 'hidden' : 'shown') + ' with available ' + st.available);
-      if (!st.available && await page.evaluate(() => activeTab) !== 'control') problems.push('Home availability: an unavailable Home tab stayed open');
+      if (hidden === st.available) fail('tab ' + (hidden ? 'hidden' : 'shown'));
+      if (!st.available) {
+        if (await page.evaluate(() => activeTab) !== 'control') fail('an unavailable Home tab stayed open');
+        continue;
+      }
+      if (await page.locator('#home-hero').isVisible() !== c.glasshouse) fail('Glasshouse Home\'s switch ' + (c.glasshouse ? 'missing' : 'shown'));
+      if (!await page.locator('#disc-system-tiles').isVisible()) fail('system apps missing');
+      if (await page.locator('#disc-homescreen').isVisible() === st.enabled) fail('LG\'s Home layout ' + (st.enabled ? 'shown with Glasshouse Home on' : 'missing'));
       const notes = await page.locator('[data-glasshouse-home-note]:not([hidden])').count();
-      if (notes !== (st.enabled ? 2 : 0)) problems.push('Home availability: ' + notes + ' Apps tab notes with Glasshouse Home ' + (st.enabled ? 'on' : 'off'));
+      if (notes !== (st.enabled ? 1 : 0)) fail(notes + ' Glasshouse Home notes');
     } finally { await page.close(); }
   }
 }
