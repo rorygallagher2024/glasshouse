@@ -337,7 +337,11 @@ function homePicture() {
 // Added channels are the Channels row; this finds more to add. Built once, then only its list redraws.
 function homeChannelPicker() {
   return `<div class="home-ch-add">
-    <div class="prot-title">${esc(t('home.ch.addTitle', 'Add channels'))}</div>
+    <div class="prot-row">
+      <div class="prot-main"><div class="prot-title">${esc(t('home.ch.addTitle', 'Add channels'))}</div>
+        <div class="prot-desc">${esc(t('home.ch.addDesc', 'From those the TV has tuned.'))}</div></div>
+      <div class="prot-status" id="home-ch-show"></div>
+    </div>
     <input type="search" id="home-ch-filter" class="home-ch-filter" placeholder="${esc(t('home.ch.find', 'Find a channel'))}" oninput="renderHomeChannels()">
     <div class="prot-table home-ch-list" id="home-ch-list"></div>
   </div>`;
@@ -359,8 +363,12 @@ function renderHomeChannels() {
   if (!box || !homeLayout) return;
   const picked = homeLayout.channels;
   if (filterBox) filterBox.hidden = !homeChannels || !homeChannels.length;
+  // The button beside the row's title, until the channels have been read.
+  const show = q('home-ch-show');
+  if (show) show.innerHTML = homeChannels ? '' :
+    `<button type="button" class="pill idle" onclick="homeLoadChannels()">${esc(t('home.ch.show', 'Show channels'))}</button>`;
   if (!homeChannels) {
-    box.innerHTML = `<button type="button" class="pill idle" onclick="homeLoadChannels()">${esc(t('home.ch.show', 'Show the TV’s channels'))}</button>`;
+    box.innerHTML = '';
     return;
   }
   if (!homeChannels.length) {

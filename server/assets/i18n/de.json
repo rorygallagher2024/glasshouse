@@ -144,8 +144,12 @@
     "from": "Remove"
   },
   "home.ch.show": {
-    "text": "Sender des TVs anzeigen",
-    "from": "Show the TV’s channels"
+    "text": "Sender anzeigen",
+    "from": "Show channels"
+  },
+  "home.ch.addDesc": {
+    "text": "Aus denen, die der TV gespeichert hat.",
+    "from": "From those the TV has tuned."
   },
   "home.colours.accent": {
     "text": "Akzent",

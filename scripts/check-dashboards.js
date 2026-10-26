@@ -542,7 +542,7 @@ async function visitHomeEditor(browser, base, problems) {
     });
     await ready();
     await page.locator('details.home-row[data-kind="ch"] summary').click();
-    await page.getByRole('button', { name: 'Show the TV’s channels', exact: true }).click();
+    await page.getByRole('button', { name: 'Show channels', exact: true }).click();
     const add = id => page.locator('#home-ch-list .prot-row').filter({ hasText: id + ' ' + id.toUpperCase() }).getByRole('button', { name: 'Add', exact: true });
     await add('b').click();
     await page.waitForTimeout(100);

@@ -1431,14 +1431,24 @@ button.tools-jump:active{background:var(--w80)}
 #home-rows{margin-top:14px}
 .home-row{border-top:1px solid var(--edge);padding:10px 0}
 .home-row summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;padding:6px 0}
-.home-row-move{display:flex;gap:6px}
+/* Folds as the dashboard's other sections do: a plus that turns to a minus. */
+.home-row summary::-webkit-details-marker{display:none}
+.home-row summary::after{content:'+';font-size:17px;line-height:1;color:var(--w60);width:12px;text-align:center;flex:none}
+.home-row[open] summary::after{content:'\2212'}
+.home-row summary:hover::after{color:var(--w90)}
+/* Pushed right, beside the fold's plus, rather than spread to the middle. */
+.home-row-move{display:flex;gap:6px;margin-left:auto}
 .home-tile .prot-title{display:flex;align-items:center;gap:10px}
 .home-tile .prot-status{display:flex;gap:6px;align-items:center}
 .home-tile .rk-ico{width:28px;height:28px;border-radius:6px}
 .home-hidden .prot-main{opacity:.45}
 .home-tile .home-move{min-width:0;width:36px;padding:0}
-.home-ch-add{margin-top:14px;padding-top:12px;border-top:1px dashed var(--edge)}
-.home-ch-filter{margin:12px 0;padding:8px 10px;width:100%;max-width:320px;background:transparent;color:inherit;border:1px solid var(--edge);border-radius:6px}
+.home-ch-add{margin-top:14px;border-top:1px dashed var(--edge)}
+/* The dashboard's own field, as the Apps tab's search is. */
+.home-ch-filter{margin:4px 0 12px;width:100%;max-width:320px;font:400 14px 'Manrope';letter-spacing:.03em;
+  color:var(--w100);background:transparent;border:1px solid var(--edge);border-radius:0;padding:10px 12px;outline:none}
+.home-ch-filter:focus{border-color:var(--w100)}
+.home-ch-filter::placeholder{color:var(--w60)}
 .home-ch-list{max-height:420px;overflow:auto}
 .home-walls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:12px}
 .home-wall{margin:0}
