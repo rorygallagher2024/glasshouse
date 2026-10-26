@@ -1,6 +1,6 @@
 # Tested TVs
 
-Confirmed on 48 TVs across 33 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
+Confirmed on 49 TVs across 33 series so far, running webOS 2.2 through 11 (LG's webOS 26). Other rooted models should work. The oldest, webOS 2 and 3, have fewer of LG's services, so some readings and controls do not appear there.
 
 On webOS 2 (tested on a 55UH600V and a 49LF632V), PicCap is withheld because its native service stalls webOS 2 and triggers a watchdog reboot (`cpuAbnormal`, [#746](https://github.com/rorygallagher2024/glasshouse/issues/746)). Both TVs run Glasshouse without trouble.
 
@@ -30,7 +30,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | UP81          | 2021 | LCD   | 6.5               | 1       |
 | C2            | 2022 | OLED  | 9.2, 10.3         | 2       |
 | G2            | 2022 | OLED  | 7.4               | 1       |
-| QNED82        | 2022 | LCD   | 7.6               | 1       |
+| QNED82        | 2022, 2025 | LCD   | 7.6, 10.3         | 2       |
 | LX3           | 2022 | OLED  | —                 | 1       |
 | CS            | 2022 | OLED  | 10                | 1       |
 | C3            | 2023 | OLED  | 10 – 11           | 3       |
@@ -92,6 +92,7 @@ The Luna service names and `/proc/lg` paths this relies on may differ across web
 | OLED77C57LA | 10.3.1       | 33.31.68 | OLED  | MQTT, privacy, screen saver and web dashboard confirmed        |
 | OLED48C5PUA | 10.3.1       | 33.31.69 | OLED  | Rooted with slopbro; dashboard, telemetry and API .ipk installs |
 | 55UA73006LA | 10.3.1       | 33.31.61 | LCD   | Homebrew Channel; SSH install; dashboard and telemetry confirmed |
+| 55QNED82AUA | 10.3.1       | 33.31.61 | LCD   | Rooted with slopbro; SSH install; privacy switches, Glasshouse Home confirmed |
 | OLED65G5WUA | 10           | 33.30.69 | OLED  | No screen saver tab; volume stuck at +10 on optical output     |
 | 42LX3Q6LA   | —            | 33.31.68 | OLED  | Flex; model number has no OLED prefix                          |
 | 43UT73006LA | —            | —        | LCD   | Reported working                                               |
