@@ -2051,5 +2051,6 @@
  "tv.options.sleep.hint": {"text": "Apaga la TV cuando pase este tiempo.", "from": "Switches the TV off once this time has passed."},
  "tv.options.sleep.toNext": {"text": "Pulsa OK para {time}", "from": "Press OK for {time}"},
  "tv.options.sleep.toOff": {"text": "Pulsa OK para apagarla", "from": "Press OK to turn it off"},
- "lang.partial": {"text": "{name} (parcial)", "from": "{name} (partial)"}
+ "lang.partial": {"text": "{name} (parcial)", "from": "{name} (partial)"},
+ "srv.remoteKeys.home": {"text": "Inicio", "from": "Home"}
 }

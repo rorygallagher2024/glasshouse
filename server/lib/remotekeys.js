@@ -88,6 +88,12 @@ var HANDLER = 'handleGlasshouseKeys';
  */
 var HOLD_LIMIT_MS = 90000;
 var LIVE_TV = 'com.webos.app.livetv';
+// LG's Home, which opens Glasshouse Home while that holds its place. Not a tile
+// on the Home screen, so not among the apps, and offered on its own.
+var HOME_APP = 'com.webos.app.home';
+// The separate app earlier Glasshouse Home builds installed, now removed; a key
+// still set to it opened nothing, and is moved to HOME_APP at start.
+var LEGACY_HOME_APP = 'com.tvweb.home';
 // LG's input switcher, as the remote's Input and ? buttons open it (a C5,
 // webOS 11.2.0): a choice of its own where the TV has it. Launched with no
 // parameters it shows the same list.
@@ -430,7 +436,9 @@ function filterSource() {
     '            }',
     '        } else if (pressed && !autoRepeat && id) {',
     '            console.info("glasshouse keyfilter: key", key, "opens", id);',
-    '            applicationManager.launch(id, "{}");',
+    // Home opened as the Home key opens it, so Glasshouse Home opens as Home.
+    '            applicationManager.launch(id, id === ' + JSON.stringify(HOME_APP),
+    '                ? JSON.stringify({ "activateType": "home", "launchType": "homeKey" }) : "{}");',
     '        }',
     '        return KeyPolicy.Accepted;',
     '    } catch (e) {',
@@ -1122,6 +1130,11 @@ function mediaChoices() {
   return MEDIA_ACTIONS.map(function (a) { return { id: MEDIA_PREFIX + a, title: titles[a], kind: 'media' }; });
 }
 
+// Home as a choice, where the JavaScript filter opens it as the Home key would.
+function homeChoices(native) {
+  return native ? [] : [{ id: HOME_APP, title: msg('srv.remoteKeys.home', 'Home'), kind: 'app' }];
+}
+
 // The apps a key can open: those on the Home screen, by title.
 function appChoices(apps) {
   var seen = {};
@@ -1166,7 +1179,7 @@ function describeKeys(keys, inChain, cb, native) {
       var inputs = inputChoices();
       var media = native ? [] : mediaChoices();
       var cc = country();
-      switchers.concat(inputs, mediaChoices()).forEach(function (c) { titles[c.id] = c.title; });
+      switchers.concat(inputs, mediaChoices(), homeChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
       var out = keys.map(function (k) {
         var set = Object.prototype.hasOwnProperty.call(map, k.key);
         var id = set ? map[k.key] : null;
@@ -1185,7 +1198,7 @@ function describeKeys(keys, inChain, cb, native) {
       });
       cb({
         ok: true, supported: true, keys: out,
-        choices: switchers.concat(media, inputs, appChoices(apps)),
+        choices: switchers.concat(media, inputs, homeChoices(native), appChoices(apps)),
         inChain: inChain
       });
     });
@@ -1226,7 +1239,8 @@ function setOfferedKey(def, action, id, kind, cb) {
     listApps(function (apps) {
       if (!apps) return cb({ ok: false, error: msg('srv.remoteKeys.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
       var media = kind === 'filter' ? mediaChoices() : [];
-      var allowed = switchers.concat(media, inputChoices(), appChoices(apps)).some(function (c) { return c.id === id; });
+      var allowed = switchers.concat(media, inputChoices(), homeChoices(kind !== 'filter'), appChoices(apps))
+        .some(function (c) { return c.id === id; });
       if (!allowed) return cb({ ok: false, error: msg('srv.remoteKeys.unknownApp', 'That app is not on this TV') });
       map[def.key] = id;
       save(map, cb);
@@ -1273,11 +1287,27 @@ function setHome(id, cb) {
 function ensure(cb) {
   cb = cb || function () {};
   if (!lunaFn) return cb(false);
+  moveLegacyHome();
   if (keysOnTv()) return apply(cb);
   hasNativeFilters(function (yes) {
     if (!yes) return cb(false);
     applyNative(cb);
   });
+}
+
+// Keys an earlier build set to its separate Home app, set to LG's Home instead.
+function moveLegacyHome() {
+  var map = readMap(), moved = [];
+  Object.keys(map).forEach(function (k) {
+    if (map[k] === LEGACY_HOME_APP) { map[k] = HOME_APP; moved.push(k); }
+  });
+  if (!moved.length) return;
+  try {
+    writeMap(map, readHome(), readStarting());
+    console.log('remotekeys: ' + moved.join(', ') + ' set to Home, from the Glasshouse Home app earlier builds installed');
+  } catch (e) {
+    console.error('remotekeys: could not move ' + moved.join(', ') + ' to Home: ' + e.message);
+  }
 }
 
 /*

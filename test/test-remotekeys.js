@@ -141,8 +141,9 @@ step(function (next) {
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
       ['media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
        'media:volumeUp', 'media:volumeDown', 'media:mute',
-       'com.webos.app.hdmi1', 'com.webos.app.hdmi2', 'com.webos.app.livetv', 'netflix', 'youtube.leanback.v4']);
-    console.log('  ✓ only the keys the TV\'s filters name are offered, each as LG has it, with the media controls, inputs and apps a key can open');
+       'com.webos.app.hdmi1', 'com.webos.app.hdmi2', 'com.webos.app.livetv',
+       'com.webos.app.home', 'netflix', 'youtube.leanback.v4']);
+    console.log('  ✓ only the keys the TV\'s filters name are offered, each as LG has it, with the media controls, inputs, Home and apps a key can open');
     next();
   }));
 });
@@ -340,6 +341,37 @@ step(function (next) {
         console.log('  ✓ restore() takes the filter out and deletes it, empties the value, and writes nothing more when it already has');
         next();
       }));
+    }));
+  }));
+});
+
+step(function (next) {
+  // A key an earlier build set to its separate Glasshouse Home app, now gone.
+  fs.writeFileSync(MAP, JSON.stringify({ keys: { amazon: 'com.tvweb.home', red: 'netflix' } }), 'utf8');
+  rk.ensure(guard(function (ok) {
+    assert.strictEqual(ok, true);
+    var saved = JSON.parse(fs.readFileSync(MAP, 'utf8')).keys;
+    assert.deepEqual(saved, { amazon: 'com.webos.app.home', red: 'netflix' });
+    rk.getRemoteKeys(guard(function (r) {
+      var amazon = r.keys.filter(function (k) { return k.key === 'amazon'; })[0];
+      assert.strictEqual(amazon.opens, 'Home');
+      rk.setRemoteKey('amazon', 'lg', '', guard(function () {
+        rk.setRemoteKey('red', 'lg', '', guard(function () {
+          console.log('  ✓ a key set to the Glasshouse Home app of earlier builds is set to Home at start');
+          next();
+        }));
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  rk.setRemoteKey('netflix', 'open', 'com.webos.app.home', guard(function (s) {
+    assert.ok(s.ok, s.error);
+    assert.ok(rk.filterSource().indexOf('"activateType": "home", "launchType": "homeKey"') !== -1, 'opened as the Home key opens it');
+    rk.setRemoteKey('netflix', 'lg', '', guard(function () {
+      console.log('  ✓ a key can be set to Home, which the filter opens as the Home key does');
+      rk.restore(guard(function () { next(); }));
     }));
   }));
 });
