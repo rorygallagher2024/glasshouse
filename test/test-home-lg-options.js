@@ -1,7 +1,8 @@
 /**
  * test/test-home-lg-options.js - the Home tab is offered for LG's Home's own
- * options (its layout, and system apps hidden from it) on a TV without
- * Glasshouse Home, as a B8 (webOS 4.4) is, and ?with=lghome carries them.
+ * options (its layout, system apps hidden from it, and Open Home at power-on)
+ * on a TV without Glasshouse Home, as a B8 (webOS 4.4) is, and ?with=lghome
+ * carries them.
  *
  * Strict ES5: runs on node 0.12.
  */
@@ -17,8 +18,14 @@ console.log('Running test-home-lg-options.js ...');
 
 var dir = path.join(os.tmpdir(), 'home-lg-options-' + process.pid);
 fs.mkdirSync(dir);
-// The TV answers nothing: none of it is needed here.
-home.init({ stateDir: dir, webosVersion: '4.4.3', port: 8080, luna: function (uri, params, cb) { cb({ returnValue: false }); } });
+// The TV has LG's Open Home at power-on only where powerOn is set.
+var powerOn = false;
+home.init({ stateDir: dir, webosVersion: '4.4.3', port: 8080, luna: function (uri, params, cb) {
+  if (powerOn && /getSystemSettings$/.test(uri) && params.keys && params.keys.indexOf('homeAutoLaunch') !== -1) {
+    return cb({ returnValue: true, settings: { homeAutoLaunch: 'off' } });
+  }
+  cb({ returnValue: false });
+} });
 
 var tileHiding = true;
 var apps = {
@@ -58,8 +65,14 @@ server.listen(0, '127.0.0.1', function () {
       get('/api/home', function (st3) {
         assert.strictEqual(st3.available, false, 'nothing to show: no tab');
         console.log('  ✓ with neither, the Home tab is left out');
-        server.close();
-        console.log('ALL test-home-lg-options.js assertions passed!');
+        powerOn = true;
+        get('/api/home', function (st4) {
+          assert.strictEqual(st4.homeAutoLaunch, false);
+          assert.strictEqual(st4.available, true, 'Open Home at power-on alone is enough');
+          console.log('  ✓ LG\'s Open Home at power-on alone gives the Home tab');
+          server.close();
+          console.log('ALL test-home-lg-options.js assertions passed!');
+        });
       });
     });
   });

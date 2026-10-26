@@ -1859,7 +1859,7 @@
  "home.dev.through": {"text": "HDMI {port}, a través de {via}", "from": "HDMI {port}, through {via}"},
  "home.dev.unused": {"text": "Nada conectado", "from": "Nothing connected"},
  "home.earlier": {"text": "Antes", "from": "Earlier"},
- "home.experimental": {"text": "Experimental: puede que no siempre funcione como se espera. Glasshouse Home sustituye la pantalla de Inicio de LG por una propia. Si falla, mantenga pulsado Inicio en el mando un segundo para abrir el Inicio de LG, o pulse Usar el Inicio de LG más abajo para volver a él. En los primeros 30 segundos tras un arranque en frío, Home muestra un mensaje de que está arrancando.", "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home below to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
+ "home.experimental": {"text": "Experimental: puede que no siempre funcione como se espera. Glasshouse Home sustituye la pantalla de Inicio de LG por una propia. Si falla, mantenga pulsado Inicio en el mando un segundo para abrir el Inicio de LG, o pulse Usar el Inicio de LG para volver a él. En los primeros 30 segundos tras un arranque en frío, Home muestra un mensaje de que está arrancando.", "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
  "home.fade": {"text": "Aparecer y desaparecer gradualmente", "from": "Fade in and out"},
  "home.fadeDesc": {"text": "Glasshouse Home aparece gradualmente al mostrarse en pantalla, y desaparece gradualmente al abrir una app, una entrada o un canal.", "from": "Glasshouse Home fades in as it comes on screen, and out as an app, input or channel opens."},
  "home.fault.desc": {"text": "Glasshouse Home vuelve cuando responde. Si sigue sin responder, el Inicio de LG vuelve en unos minutos.", "from": "Glasshouse Home comes back when it answers. Should it stay silent, LG's Home comes back in a few minutes."},
@@ -2100,6 +2100,5 @@
  "tv.audio.readFailed": {"text": "Lecturas de audio no disponibles", "from": "Audio readings unavailable"},
  "tv.audio.receiverFormat": {"text": "Receptor: {format}", "from": "Receiver: {format}"},
  "audio.readFailed": {"text": "No se pudieron leer los ajustes de sonido ni las lecturas de audio de la TV.", "from": "The TV’s sound settings and audio readings could not be read."},
- "home.lgSection": {"text": "El Inicio de LG", "from": "LG’s Home"},
  "home.hideLgWarn": {"text": "Aviso: si Glasshouse deja de funcionar (por ejemplo, si una actualización de firmware elimina el root), el Inicio de LG seguirá en negro hasta restaurarlo por SSH.", "from": "Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH."}
 }

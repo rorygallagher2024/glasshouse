@@ -35,7 +35,7 @@ function advPill(row, id, on) {
 function flip(id) { const el = q(id); return el && el.dataset.on ? 'off' : 'on'; }
 function toggleLight(which) { sendCommand(which, flip(which === 'standbyLight' ? 'lt_standby' : 'lt_logo')); }
 function toggleQuickBoot() { sendCommand('quickBoot', flip('btn_quickboot')); }
-function toggleHomeAutoLaunch(id) { sendCommand('homeAutoLaunch', flip(id || 'btn_homeautolaunch')); }
+function toggleHomeAutoLaunch(id) { sendCommand('homeAutoLaunch', flip(id || 'home-autolaunch')); }
 function toggleClockHour12() { sendCommand('clockHour12', flip('btn_clock12')); }
 function toggleLgLogo() { sendCommand('lgLogo', flip('btn_lglogo')); }
 function togglePiccap() { sendCommand('piccap', flip('btn_piccap')); }

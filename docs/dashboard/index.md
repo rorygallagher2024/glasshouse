@@ -28,7 +28,7 @@ On a wide screen the tabs are listed down the left. On a phone, or wherever Pref
 
     ---
 
-    Glasshouse Home, a clean home screen in place of LG's, and LG's own Home screen layout and hidden system apps.
+    Glasshouse Home, a clean home screen in place of LG's, and Home customisation: Open Home at power-on, LG's Home screen layout and hidden system apps.
 
 -   **[Privacy](privacy.md)**
 

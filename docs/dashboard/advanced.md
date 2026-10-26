@@ -22,10 +22,6 @@ The switch is under **Advanced &rarr; Power** in the web dashboard and **System 
 
 Switching off puts the TV into a light sleep rather than shutting it down completely, so it starts up faster. LG calls this Quick Start+.
 
-### Open Home at power-on
-
-Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch (`general.homeAutoLaunch`). On TVs with Glasshouse Home, the same switch appears on the **Home** tab.
-
 ### Wake-on-LAN
 
 Lets Home Assistant, a mobile app, or another network device switch the TV on from deep sleep using a Wake-on-LAN magic packet. LG refers to this as Mobile TV On.

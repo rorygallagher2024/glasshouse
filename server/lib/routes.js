@@ -1112,7 +1112,8 @@ function handleHomeRoute(req, res, u, pathname) {
         // The Home tab also holds LG's Home's layout and hidden system apps, so
         // it is there wherever either is, Glasshouse Home or not (a B8).
         st.lgHomeAvailable = lgHomeLayoutAvailable() || tileHidingAvailable();
-        if (st.lgHomeAvailable) st.available = true;
+        // Open Home at power-on is on the Home tab too, wherever LG has it.
+        if (st.lgHomeAvailable || st.homeAutoLaunch !== undefined) st.available = true;
         withLgHome(function () {
           if (wants.indexOf('catalogue') === -1) return reply(st);
           homeModule.catalogue(function (c) {

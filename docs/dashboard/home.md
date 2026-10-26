@@ -110,7 +110,7 @@ Click **Use Glasshouse Home** (and confirm on the second press) in the web dashb
   * Hold the remote's **Home** button for 1 second (a short press on LG's Home returns to Glasshouse Home).
   * Stop the Glasshouse server: if Glasshouse Home stops answering or the server is stopped/uninstalled, LG's Home automatically takes its place back.
   * Glasshouse Home not opening: if a short press of **Home** brings nothing from Glasshouse Home within five seconds, LG's Home opens instead. Where the TV's web app manager, which runs Glasshouse Home, has stopped, it is started again first and Glasshouse Home given one more try.
-* **Cold boot & standby:** **Open Home at power-on** (also under **Advanced &rarr; Power & standby**) controls whether the TV opens the Home screen when switched on or stays on the last input (LG's Home Auto Launch). With Quick Start+ (Active Standby) on, Glasshouse Home opens immediately on wake (and on TVs like the C4 on webOS 10.3.1 that start on their last input anyway, Glasshouse Home is opened over it when Open Home at power-on is on). On a cold boot (Quick Start+ off), Glasshouse Home takes over about 25–40 seconds after power-on; pressing Home during startup keeps the TV on the current input with a brief notice until ready.
+* **Cold boot & standby:** [Open Home at power-on](#open-home-at-power-on) controls whether the TV opens the Home screen when switched on or stays on the last input (LG's Home Auto Launch). With Quick Start+ (Active Standby) on, Glasshouse Home opens immediately on wake (and on TVs like the C4 on webOS 10.3.1 that start on their last input anyway, Glasshouse Home is opened over it when Open Home at power-on is on). On a cold boot (Quick Start+ off), Glasshouse Home takes over about 25–40 seconds after power-on; pressing Home during startup keeps the TV on the current input with a brief notice until ready.
 * **Hide LG's Home while the TV starts (webOS 9 optional setting):** Replaces LG's Home layout with a blank screen during the first seconds of a cold boot so LG's launcher never flashes on screen.
 
 > [!WARNING]
@@ -139,7 +139,20 @@ Rows and tiles can be arranged from the **web dashboard**, the **TV app**, or **
 
     ![The Home section of the TV app: inputs shown or hidden, channels removed with OK, and Add channels](../screenshots/home-tv-app.jpg)
 
-## Hide home screen system apps
+## Home customisation
+
+The Home tab's **Home customisation** section holds what applies to whichever Home is the TV's, in one column with each switch on the right:
+
+* While Glasshouse Home is on: **Open Home at power-on**, Glasshouse Home's own options (**Hide LG's Home while the TV starts**, **Picture details**, **Last watched**, **App count**, **CEC addresses**, **Search**, **Fade in and out**), and **Hide home screen system apps**.
+* While LG's Home is: **Open Home at power-on**, **Home screen layout** and **Hide home screen system apps**.
+
+Each appears where the TV has it. A TV Glasshouse Home is not offered on, such as a B8 with webOS 4.4, still has the Home tab for these; there it holds Open Home at power-on and Hide home screen system apps. The TV app's Home section has the same rows.
+
+### Open Home at power-on
+
+Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch (`general.homeAutoLaunch`). While Glasshouse Home is on, the Home it opens is Glasshouse Home (see [Switching it on and off](#switching-it-on-and-off)).
+
+### Hide home screen system apps
 
 ![Hide home screen system apps switched on, with each built-in LG app as a tile marked hidden or shown](../screenshots/apps-system-apps.png)
 
@@ -150,10 +163,6 @@ On a TV where the app manager can be made to reread its apps through LG's region
 It applies to whichever Home is in use: apps hidden here are left out of Glasshouse Home too, whose own [Arranging](#arranging) hides others on Glasshouse Home only.
 
 It is experimental, and off until it is turned on under **Server** → **Advanced** → **Experimental features**; see [Experimental features](../experimental.md) for why. It is not offered on a Homebrew Channel install.
-
-## LG's Home
-
-LG's own Home screen's layout, at the end of the Home tab while LG's Home is the TV's Home. On a TV Glasshouse Home is not offered on, such as a B8 with webOS 4.4, the Home tab has this and [Hide home screen system apps](#hide-home-screen-system-apps) alone, where the TV has them.
 
 ### Home screen layout
 

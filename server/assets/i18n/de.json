@@ -244,8 +244,8 @@
     "from": "Earlier"
   },
   "home.experimental": {
-    "text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. Wenn etwas nicht stimmt, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder drücken Sie unten „LG Home verwenden“, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.",
-    "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home below to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."
+    "text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. Wenn etwas nicht stimmt, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder drücken Sie „LG Home verwenden“, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.",
+    "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."
   },
   "home.fault.desc": {
     "text": "Glasshouse Home kommt zurück, sobald es antwortet. Bleibt es stumm, kommt nach wenigen Minuten LGs Home zurück.",

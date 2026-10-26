@@ -925,14 +925,15 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
    full width away from it. Text at the Privacy tab's sizes (15px names, 13px
    descriptions): the shared 13/12px of .prot-row read small here, where the
    descriptions carry the substance. */
-#advpane .prot-table,#home-power-table,#home-more>.prot-table{display:grid;column-gap:clamp(30px,4vw,52px);
+#advpane .prot-table{display:grid;column-gap:clamp(30px,4vw,52px);
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
-/* The Server tab keeps one column, so every control lines up down the right. */
-#serverpane .prot-table{display:grid;grid-template-columns:1fr}
-#advpane .prot-row,#serverpane .prot-row,#home-power-table .prot-row,#home-more>.prot-table .prot-row{align-items:flex-start;padding:16px 0}
+/* The Server tab and Home customisation keep one column, so every control,
+   and each fold's count, lines up down the right. */
+#serverpane .prot-table,#home-custom-table{display:grid;grid-template-columns:1fr}
+#advpane .prot-row,#serverpane .prot-row,#home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
 #advpane .prot-title,#serverpane .prot-title,#homepane .prot-title{font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--w90)}
 #advpane .prot-desc,#serverpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
-#advpane .prot-status,#serverpane .prot-status,#home-power-table .prot-status,#home-more>.prot-table .prot-status{padding-top:2px}
+#advpane .prot-status,#serverpane .prot-status,#home-custom-table .prot-status{padding-top:2px}
 #pv-adv{margin-top:clamp(36px,5vw,56px)}
 #pv-adv>summary{border-top:0;min-height:0;align-items:center}
 #pv-adv[open]>summary{margin-bottom:22px}
@@ -1482,9 +1483,25 @@ button.tools-jump:active{background:var(--w80)}
 
 /* The Home tab */
 #home-hero{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px 24px;
-  padding:8px 0 22px;border-bottom:1px solid var(--w12)}
+  padding:8px 0 0}
 #home-hero .ps-state{margin-bottom:0;flex:1 1 320px}
 #home-hero .pv-sub{margin:6px 0 0}
+/* The dot stays level with the heading's first line, however tall the
+   experimental note beneath makes the block. */
+#home-hero .ps-state{align-items:flex-start}
+#home-hero .ps-dot{margin-top:calc(clamp(26px,3.4vw,36px) * 1.15 / 2 - 7px)}
+#home-hero .pv-note{margin:14px 0 0}
+/* One section for whichever Home is the TV's. Its heading's rule is the only
+   divider under the switch; Glasshouse Home's rows leave with it. */
+#home-hero+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
+#home-custom.lg-home .home-gh-row{display:none}
+/* Its folding sections read as rows of the list above: a row's title, the
+   count and the plus at the right, a row's rule beneath. */
+#home-custom .pv-d>summary{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em;
+  color:var(--w90);align-items:center;min-height:0;padding:16px 0;border-top:0;border-bottom:1px solid var(--w06)}
+#home-custom .pv-d>summary::after{font-size:18px}
+#home-custom .pv-d[open]>summary{border-bottom-color:transparent}
+#home-custom .pv-d[open]{padding-bottom:16px;border-bottom:1px solid var(--w06)}
 #home-mode-btns{display:flex;flex-wrap:wrap;gap:8px;flex:0 0 auto;width:auto}
 #home-mode-btns button{min-width:176px;padding:0 18px;white-space:nowrap}
 #home-mode-btns button.warn{color:var(--cand);border-color:var(--cand)}

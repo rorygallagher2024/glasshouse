@@ -924,7 +924,7 @@ async function confirmUninstall(appId, appTitle) {
 async function toggleTileVisibility(appId, makeHidden) {
   if (tilePending.hasOwnProperty(appId)) return;
   tilePending[appId] = makeHidden;
-  renderLgHome();
+  renderHome();
   const ep = makeHidden ? '/api/apps/hide' : '/api/apps/unhide';
   let error = null;
   try {
@@ -942,7 +942,7 @@ async function toggleTileVisibility(appId, makeHidden) {
   const lg = homeStatus && homeStatus.lgHome;
   const tile = !error && lg && (lg.systemTiles || []).find(x => x.id === appId);
   if (tile) tile.hidden = makeHidden;
-  if (Object.keys(tilePending).length) renderLgHome();
+  if (Object.keys(tilePending).length) renderHome();
   else await loadHome();
   if (error) alert(t('apps.tile.failed', 'Could not update tile: {error}', { error }));
 }
@@ -964,16 +964,16 @@ async function setTileHiding(enabled) {
     if (d && d.ok) {
       if (homeStatus && homeStatus.lgHome) {
         homeStatus.lgHome.tileHidingEnabled = enabled;
-        renderLgHome();
+        renderHome();
       }
       await loadHome();
     } else {
       alert(t('apps.tiles.failed', 'Could not update tile hiding: {error}', { error: (d && d.error) || t('common.unknownError', 'unknown error') }));
-      renderLgHome();
+      renderHome();
     }
   } catch (e) {
     alert(t('apps.tiles.failed', 'Could not update tile hiding: {error}', { error: e.message }));
-    renderLgHome();
+    renderHome();
   } finally {
     if (target) target.classList.remove('busy');
     if (btnOff) btnOff.disabled = false;

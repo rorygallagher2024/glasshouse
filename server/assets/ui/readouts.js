@@ -288,7 +288,6 @@ async function tick() {
       advPill('quickboot', 'btn_quickboot', qbVal !== undefined ? qbVal : d.quickBoot);
       const halVal = getLease('homeAutoLaunch', d.homeAutoLaunch);
       const halNow = halVal !== undefined ? halVal : d.homeAutoLaunch;
-      advPill('homeautolaunch', 'btn_homeautolaunch', halNow);
       if (typeof halNow === 'boolean' && typeof homeStatus === 'object' && homeStatus && homeStatus.homeAutoLaunch !== halNow) {
         homeStatus.homeAutoLaunch = halNow;
         const hb = q('home-autolaunch');
