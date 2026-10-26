@@ -244,8 +244,8 @@
     "from": "Earlier"
   },
   "home.experimental": {
-    "text": "Experimentell. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. Erprobt auf webOS 9 und 10. In der ersten halben Minute nach einem Kaltstart zeigt Home einen Hinweis, dass Glasshouse Home startet.",
-    "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. It has been tried on webOS 9 and 10. In the first half minute after the TV starts from cold, Home shows a message that Glasshouse Home is starting."
+    "text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. Wenn etwas nicht stimmt, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder drücken Sie unten „LG Home verwenden“, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.",
+    "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home below to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."
   },
   "home.fault.desc": {
     "text": "Glasshouse Home kommt zurück, sobald es antwortet. Bleibt es stumm, kommt nach wenigen Minuten LGs Home zurück.",
@@ -268,8 +268,8 @@
     "from": "Press again to hide it"
   },
   "home.hideLgDesc": {
-    "text": "Etwa 25 Sekunden nach einem Kaltstart, bis Glasshouse Home seinen Platz einnimmt, öffnet sich LGs Home als schwarzer Bildschirm statt mit eigenem Inhalt. Läuft Glasshouse nicht mehr – etwa nach einem Firmware-Update, das Root entfernt –, bleibt LGs Home schwarz, bis es per SSH zurückgesetzt wird.",
-    "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG’s Home stays black until it is put back over SSH."
+    "text": "Etwa 25 Sekunden nach einem Kaltstart, bis Glasshouse Home seinen Platz einnimmt, öffnet sich LGs Home als schwarzer Bildschirm statt mit eigenem Inhalt.",
+    "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own."
   },
   "home.hint.desc": {
     "text": "Kacheln und Reihen verschieben oder ausblenden. LG Home ist die letzte Kachel bei Apps.",
@@ -630,5 +630,9 @@
   "lang.partial": {
     "text": "{name} (teilweise)",
     "from": "{name} (partial)"
+  },
+  "home.hideLgWarn": {
+    "text": "Warnung: Läuft Glasshouse nicht mehr (etwa nach einem Firmware-Update, das Root entfernt), bleibt LGs Home schwarz, bis es per SSH zurückgesetzt wird.",
+    "from": "Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH."
   }
 }

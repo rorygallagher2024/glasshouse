@@ -441,13 +441,13 @@
  "home.dev.through": {"text": "HDMI {port}, ezen keresztül: {via}", "from": "HDMI {port}, through {via}"},
  "home.dev.unused": {"text": "Nincs csatlakoztatva semmi", "from": "Nothing connected"},
  "home.earlier": {"text": "Korábban", "from": "Earlier"},
- "home.experimental": {"text": "Kísérleti funkció. A Glasshouse Home az LG Kezdőképernyőt a Glasshouse saját kezdőképernyőjére cseréli. webOS 9 és 10 rendszeren próbálták ki. A TV hidegindítása utáni első fél percben a Kezdőképernyő üzenetben jelzi, hogy a Glasshouse Home indul.", "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. It has been tried on webOS 9 and 10. In the first half minute after the TV starts from cold, Home shows a message that Glasshouse Home is starting."},
+ "home.experimental": {"text": "Kísérleti funkció: előfordulhat, hogy nem mindig működik a várt módon. A Glasshouse Home az LG Kezdőképernyőt a Glasshouse saját kezdőképernyőjére cseréli. Ha hibásan működik, tartsa lenyomva egy másodpercig a távirányító Home gombját az LG Kezdőképernyő megnyitásához, vagy nyomja meg lent az LG Kezdőképernyő használata gombot a visszaváltáshoz. A TV hidegindítása utáni első fél percben a Kezdőképernyő üzenetben jelzi, hogy indul.", "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home below to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
  "home.fault.desc": {"text": "A Glasshouse Home visszatér, amint válaszol. Ha továbbra sem válaszol, néhány percen belül az LG Kezdőképernyő tér vissza.", "from": "Glasshouse Home comes back when it answers. Should it stay silent, LG's Home comes back in a few minutes."},
  "home.fault.title": {"text": "A Glasshouse nem válaszol", "from": "Glasshouse is not answering"},
  "home.hidden": {"text": "Rejtett", "from": "Hidden"},
  "home.hideLg": {"text": "Az LG Kezdőképernyő elrejtése a TV indulásakor", "from": "Hide LG’s Home while the TV starts"},
  "home.hideLgConfirm": {"text": "Nyomja meg újra az elrejtéshez", "from": "Press again to hide it"},
- "home.hideLgDesc": {"text": "Hidegindítás után körülbelül 25 másodpercig, amíg a Glasshouse Home át nem veszi a helyét, az LG Kezdőképernyő fekete képernyőként nyílik meg a saját tartalma helyett. Ha a Glasshouse leáll, például mert egy firmware-frissítés eltávolítja a rootjogosultságot, az LG Kezdőképernyő fekete marad, amíg SSH-n keresztül vissza nem állítják.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG’s Home stays black until it is put back over SSH."},
+ "home.hideLgDesc": {"text": "Hidegindítás után körülbelül 25 másodpercig, amíg a Glasshouse Home át nem veszi a helyét, az LG Kezdőképernyő fekete képernyőként nyílik meg a saját tartalma helyett.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own."},
  "home.hint.desc": {"text": "Csempék és sorok mozgatása vagy elrejtése. Az LG Kezdőképernyő az Alkalmazások sor utolsó csempéje.", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
  "home.hint.title": {"text": "Az elrendezéshez tartsa lenyomva az OK gombot", "from": "Hold OK to arrange"},
  "home.historyNote": {"text": "Az alkalmazások az LG sorrendjében vannak. Ha a Speciális részben az Előzmények be van kapcsolva, az új alkalmazások használati gyakoriság szerint kerülnek a helyükre.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
@@ -2176,5 +2176,6 @@
  "tv.audio.readFailed": {"text": "A hangadatok nem érhetők el", "from": "Audio readings unavailable"},
  "tv.audio.receiverFormat": {"text": "Erősítő: {format}", "from": "Receiver: {format}"},
  "audio.readFailed": {"text": "A TV hangbeállításai és hangadatai nem olvashatók.", "from": "The TV’s sound settings and audio readings could not be read."},
- "home.lgSection": {"text": "Az LG Kezdőképernyő", "from": "LG’s Home"}
+ "home.lgSection": {"text": "Az LG Kezdőképernyő", "from": "LG’s Home"},
+ "home.hideLgWarn": {"text": "Figyelem: ha a Glasshouse leáll (például mert egy firmware-frissítés eltávolítja a rootjogosultságot), az LG Kezdőképernyő fekete marad, amíg SSH-n keresztül vissza nem állítják.", "from": "Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH."}
 }

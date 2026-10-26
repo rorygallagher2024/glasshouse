@@ -441,13 +441,13 @@
  "home.dev.through": {"text": "HDMI {port}, через {via}", "from": "HDMI {port}, through {via}"},
  "home.dev.unused": {"text": "Ничего не подключено", "from": "Nothing connected"},
  "home.earlier": {"text": "Ранее", "from": "Earlier"},
- "home.experimental": {"text": "Экспериментальная функция. Glasshouse Home заменяет главный экран LG собственным экраном Glasshouse. Проверено на webOS 9 и 10. В первые полминуты после холодного запуска телевизора на главном экране показано сообщение, что Glasshouse Home запускается.", "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. It has been tried on webOS 9 and 10. In the first half minute after the TV starts from cold, Home shows a message that Glasshouse Home is starting."},
+ "home.experimental": {"text": "Экспериментальная функция: она может работать не всегда так, как ожидается. Glasshouse Home заменяет главный экран LG собственным экраном Glasshouse. Если что-то пошло не так, удерживайте кнопку Home на пульте секунду, чтобы открыть главный экран LG, или нажмите ниже «Использовать LG Home», чтобы вернуться к нему. В первые полминуты после холодного запуска телевизора на главном экране показано сообщение, что он запускается.", "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home below to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
  "home.fault.desc": {"text": "Glasshouse Home вернется, как только ответит. Если он так и не ответит, через несколько минут вернется главный экран LG.", "from": "Glasshouse Home comes back when it answers. Should it stay silent, LG's Home comes back in a few minutes."},
  "home.fault.title": {"text": "Glasshouse не отвечает", "from": "Glasshouse is not answering"},
  "home.hidden": {"text": "Скрыто", "from": "Hidden"},
  "home.hideLg": {"text": "Скрывать главный экран LG при запуске телевизора", "from": "Hide LG’s Home while the TV starts"},
  "home.hideLgConfirm": {"text": "Нажмите еще раз, чтобы скрыть", "from": "Press again to hide it"},
- "home.hideLgDesc": {"text": "Примерно 25 секунд после холодного запуска, пока Glasshouse Home не займет его место, главный экран LG открывается черным экраном вместо своего. Если Glasshouse перестанет работать, например после обновления прошивки, которое снимает root, главный экран LG останется черным, пока его не вернут по SSH.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG’s Home stays black until it is put back over SSH."},
+ "home.hideLgDesc": {"text": "Примерно 25 секунд после холодного запуска, пока Glasshouse Home не займет его место, главный экран LG открывается черным экраном вместо своего.", "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own."},
  "home.hint.desc": {"text": "Перемещение и скрытие плиток и рядов. Главный экран LG — последняя плитка в ряду «Приложения».", "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."},
  "home.hint.title": {"text": "Удерживайте OK для расстановки", "from": "Hold OK to arrange"},
  "home.historyNote": {"text": "Приложения идут в порядке LG. Если в разделе «Дополнительно» включена история, новые приложения размещаются по частоте использования.", "from": "Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used."},
@@ -2176,5 +2176,6 @@
  "tv.audio.readFailed": {"text": "Показания звука недоступны", "from": "Audio readings unavailable"},
  "tv.audio.receiverFormat": {"text": "Ресивер: {format}", "from": "Receiver: {format}"},
  "audio.readFailed": {"text": "Не удалось прочитать настройки звука и аудиопоказания телевизора.", "from": "The TV’s sound settings and audio readings could not be read."},
- "home.lgSection": {"text": "Главный экран LG", "from": "LG’s Home"}
+ "home.lgSection": {"text": "Главный экран LG", "from": "LG’s Home"},
+ "home.hideLgWarn": {"text": "Внимание: если Glasshouse перестанет работать (например, после обновления прошивки, которое снимает root), главный экран LG останется черным, пока его не вернут по SSH.", "from": "Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH."}
 }
