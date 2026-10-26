@@ -112,6 +112,20 @@ stops them too. Results and launch targets stay in memory.
 Aborted package uploads close their staging file even when the abort arrives
 before the file opens on Node 0.12, then remove the file.
 
+
+### Home appearance and optional weather
+
+`home.json` also stores `view` (`standard` by default, or `alternative`) and
+`weather` (false by default). These preferences do not enable Glasshouse Home or
+change LG settings. Row resets leave the appearance preferences intact. The
+weather location and a short-lived cache are stored in the Home webview's
+localStorage. No files under LG's firmware are added or changed for this view.
+
+The optional weather card makes HTTPS requests from the Home view to
+`api.open-meteo.com` and, on an explicit search, `geocoding-api.open-meteo.com`.
+Standard view and weather-off make no such requests. Hidden Home pauses them;
+disabling the card cancels them. Provider requests omit credentials and referrers.
+
 ## Home-screen app port
 
 Glasshouse Home's page, staged in `/var/lib/tvweb/home-takeover` and mounted over LG's Home, has the port filled in the same way each time the server stages it.

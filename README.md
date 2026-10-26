@@ -81,6 +81,14 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 ---
 
+### Optional Home appearance
+
+[Alternative View](docs/dashboard/home.md#alternative-view) adds a bottom-centred
+Home dock, rounded tiles and a smaller right-aligned clock. Standard remains the
+default. A separately enabled weather card offers town/postcode search;
+weather alone uses external services. These are Home-screen aesthetic refinements,
+not a replacement for Glasshouse's TV controls or Home takeover.
+
 ## Screenshots
 
 <p align="center">

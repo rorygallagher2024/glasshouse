@@ -213,6 +213,18 @@ function renderHome() {
   renderHomeChannels();
   renderHomeWalls();
   renderHomeColours();
+  const view = q('home-view');
+  if (view) {
+    view.value = homeLayout && homeLayout.view === 'alternative' ? 'alternative' : 'standard';
+    view.disabled = !homeWritable() || homeSaving;
+  }
+  const weatherRow = q('home-weather-row'), weather = q('home-weather-enabled');
+  if (weatherRow) weatherRow.hidden = !homeLayout || homeLayout.view !== 'alternative';
+  if (weather) {
+    const on = !!homeLayout && homeLayout.weather === true;
+    updateToggle(weather, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    weather.disabled = !homeWritable() || homeSaving;
+  }
   q('home-reset').disabled = !homeWritable();
 }
 

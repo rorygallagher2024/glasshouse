@@ -13,19 +13,27 @@ var path = require('path');
 var ROOT = process.env.FAKE_ROOT;
 if (!ROOT) { console.error('FAKE_ROOT not set'); process.exit(2); }
 
-var SERVER_DIR = path.resolve(__dirname, '..', '..', 'server');
+var PROJECT_DIR = path.resolve(__dirname, '..', '..');
+var SERVER_DIR = path.join(PROJECT_DIR, 'server');
 
 var MOVED = /^\/(var|mnt|media|proc|sys|etc|usr|home\/root)(\/|$)/;
+function inside(p, directory) {
+  return p === directory || p.indexOf(directory + path.sep) === 0;
+}
 function moved(p) {
-  if (typeof p !== 'string' || p.indexOf(ROOT) === 0) return p;
-  if (MOVED.test(p)) return path.join(ROOT, p);
-  if (p.indexOf(SERVER_DIR) === 0) {
+  if (typeof p !== 'string' || inside(p, ROOT)) return p;
+  if (inside(p, SERVER_DIR)) {
     var rel = path.relative(SERVER_DIR, p);
     if (rel.indexOf('assets') !== 0 && rel.indexOf('lib') !== 0 &&
         !/(\.js|\.sh)$/.test(rel) && rel !== 'tvwebctl') {
       return path.join(ROOT, 'var/lib/tvweb', rel);
     }
+    return p;
   }
+  // Bazzite checkouts live under /var/home. Module resolution must retain the
+  // source tree and its parent directories, while server state stays above.
+  if (inside(p, PROJECT_DIR) || inside(PROJECT_DIR, p)) return p;
+  if (MOVED.test(p)) return path.join(ROOT, p);
   return p;
 }
 

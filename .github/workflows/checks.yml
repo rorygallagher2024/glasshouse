@@ -43,6 +43,11 @@ jobs:
       - name: documented entity list and deploy list match the code
         run: ./scripts/check-drift.py
 
+      # File uploads to a fork do not bring the upstream release tags with them.
+      - name: Fetch official release tags for fork checks
+        if: github.repository != 'rorygallagher2024/glasshouse'
+        run: git fetch --no-recurse-submodules https://github.com/rorygallagher2024/glasshouse.git 'refs/tags/v*:refs/tags/v*'
+
       # An entity that goes or is renamed breaks the automations that used it.
       - name: no Home Assistant entity from the last release gone without a reason
         run: ./scripts/check-entity-stability.py

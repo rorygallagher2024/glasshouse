@@ -242,6 +242,9 @@ function defaults() {
     showLastOn: true,
     showAppCount: true,
     showCec: true,
+    // Alternative View is opt-in; weather is separately consented to.
+    view: 'standard',
+    weather: false,
     // Search on the view (lib/home-search): off by default, so nothing typed reaches LG unless switched on.
     search: false,
     // The view fading in as it comes on screen, and out as a tile opens.
@@ -295,6 +298,8 @@ function normalise(raw) {
   d.searchHintSeen = raw.searchHintSeen === true;
   d.picture = raw.picture === true;
   SHOW_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
+  d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
+  d.weather = raw.weather === true;
   d.search = raw.search === true;
   d.fade = raw.fade === true;
   d.hideUnused = raw.hideUnused === true;
@@ -408,6 +413,8 @@ function setLayout(body, cb) {
     showLastOn: typeof body.showLastOn === 'boolean' ? body.showLastOn : c.showLastOn,
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
+    view: body.view !== undefined ? body.view : c.view,
+    weather: typeof body.weather === 'boolean' ? body.weather : c.weather,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
@@ -436,6 +443,7 @@ function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, channels: c.channels, hintSeen: c.hintSeen,
     searchHintSeen: c.searchHintSeen, picture: c.picture, search: c.search, fade: c.fade, hideUnused: c.hideUnused,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, colours: c.colours,
+    view: c.view, weather: c.weather,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
 }
