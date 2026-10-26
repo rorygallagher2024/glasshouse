@@ -40,6 +40,7 @@ var fs = require('fs');
 var path = require('path');
 var execFile = require('child_process').execFile;
 var mkdirp = require('./util').mkdirp;
+var toBuffer = require('./util').toBuffer;
 
 var LG_HOME = 'com.webos.app.home';
 var APP_DIR = '/usr/palm/applications/' + LG_HOME;
@@ -119,7 +120,7 @@ function manifest() {
 
 function copyFile(from, to, transform) {
   var data = fs.readFileSync(from);
-  if (transform) data = new Buffer(transform(data.toString('utf8')), 'utf8');
+  if (transform) data = toBuffer(transform(data.toString('utf8')), 'utf8');
   var had = null;
   try { had = fs.readFileSync(to); } catch (e) {}
   if (had && had.toString('base64') === data.toString('base64')) return false;
