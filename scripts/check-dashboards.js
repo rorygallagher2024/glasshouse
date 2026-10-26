@@ -1320,6 +1320,7 @@ async function visitTvNonOled(browser, base, problems) {
   await visitHomeScrolling(browser, base, problems);
   await visitHomeMotion(browser, base, problems);
   await visitHomeGuide(browser, base, problems);
+  await require('./check-home-alternative')(browser, base, problems);
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +

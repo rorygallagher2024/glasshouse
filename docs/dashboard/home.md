@@ -61,6 +61,56 @@ Glasshouse Home displays a clock and date, the last active source or app, and up
 
 </div>
 
+## Alternative View
+
+**Home appearance** in the web dashboard's **Home** tab selects **Standard** or
+**Alternative View**. Standard is the default, including for existing
+installations. Alternative View is an aesthetic variation: a bottom-centred
+stacked dock, rounded translucent tiles, a smaller clock on the right, and row
+headings hidden outside Arrange mode. The last-source and picture-details
+panels are hidden in this view. Switching back restores the standard layout.
+
+Rows keep their saved order and hidden tiles. Short rows are centred; overflowing
+rows retain the normal key, wheel and pointer scrolling. Inputs can be placed
+above Apps with the existing arrangement controls. The selected view is saved in
+`home.json` and reaches an open Home page through its normal refresh.
+
+### Optional weather
+
+**Weather card** is a separate, off-by-default switch shown only for Alternative
+View. When enabled, the card appears on the left. **Change** opens a town or
+postcode search; results include region and country. Selecting a result and
+**Save location** changes the forecast. Cancel and failed searches leave the
+previous location intact. There is no automatically selected town or GPS lookup.
+
+The Magic Remote pointer can select Change. With the keys, **Up** from the first
+visible row focuses it and **OK** opens the search; **Blue** is also a shortcut
+outside Arrange and Recent Apps. **Back** closes the search without saving.
+The TV's keyboard enters the query. Search is sent only when Search is selected,
+not on every keystroke.
+
+The selected location and recent model readings are stored in this TV Home
+view's browser storage, not `home.json`. A choice in a computer's browser is
+separate. Clearing the Home view's browser storage removes its location and
+cache. Previously saved choices from the D&D Games weather customisation are
+recognised; its old fixed default is not assumed.
+
+Forecasts are model-based, displayed in Celsius and mph, with feels-like,
+current-day high/low and three further days. While Home is visible they refresh
+about every 15 minutes. Recent cached data is labelled; readings older than two
+hours are not displayed as current. Failed or rate-limited requests back off
+rather than blocking Home. Turning weather off or selecting Standard cancels
+pending requests and stops weather timers. Leaving Home pauses requests.
+
+This optional card requires internet access to [Open-Meteo](https://open-meteo.com/)
+for forecasts and [Open-Meteo / GeoNames](https://open-meteo.com/en/docs/geocoding-api)
+for search. Search queries, selected coordinates and the public IP address are
+shared with those providers as applicable. No Glasshouse credentials are sent.
+There are no external weather requests in Standard view, while weather is off,
+or before a location is chosen except for explicitly submitted searches.
+The public API's [non-commercial limits](https://open-meteo.com/en/terms) apply;
+no API key is bundled. Data attribution is shown on the card.
+
 ## Wallpapers
 
 By default, Glasshouse Home uses a pure `#000` OLED black background (and leaves the TV's [screen saver](screen-savers.md) untouched). Custom wallpapers can be uploaded for four times of day (**Morning** 06:00, **Afternoon** 11:00, **Evening** 17:00, **Night** 21:00):

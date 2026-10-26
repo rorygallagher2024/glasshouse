@@ -204,6 +204,9 @@ function defaults() {
     // The plate describing the picture of what was last on: detail many
     // won't want on a home screen, so it waits to be switched on.
     picture: false,
+    // Alternative View is opt-in; weather is separately consented to.
+    view: 'standard',
+    weather: false,
     // The view fading in as it comes on screen, and out as a tile opens.
     fade: false,
     // Inputs with nothing plugged in left out of the Inputs row, rather than
@@ -253,6 +256,8 @@ function normalise(raw) {
   d.restorePending = raw.restorePending === true;
   d.hintSeen = raw.hintSeen === true;
   d.picture = raw.picture === true;
+  d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
+  d.weather = raw.weather === true;
   d.fade = raw.fade === true;
   d.hideUnused = raw.hideUnused === true;
   d.colours = validColours(raw.colours);
@@ -359,6 +364,8 @@ function setLayout(body, cb) {
                       body.channels !== undefined ? stringList(body.channels, MAX_CHANNELS) : c.channels),
     hintSeen: body.hintSeen !== undefined ? body.hintSeen : c.hintSeen,
     picture: typeof body.picture === 'boolean' ? body.picture : c.picture,
+    view: body.view !== undefined ? body.view : c.view,
+    weather: typeof body.weather === 'boolean' ? body.weather : c.weather,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
     // null puts the view's own colours back.
@@ -384,7 +391,7 @@ function setLayout(body, cb) {
 
 function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, channels: c.channels, hintSeen: c.hintSeen, picture: c.picture,
-    fade: c.fade, hideUnused: c.hideUnused, colours: c.colours };
+    fade: c.fade, hideUnused: c.hideUnused, colours: c.colours, view: c.view, weather: c.weather };
 }
 
 // ---------------------------------------------------------------- what it shows

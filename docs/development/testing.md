@@ -177,3 +177,24 @@ report failure, Close all stops web and native apps while preserving Home,
 unlisted apps and newer cards, and snapshots forbid caching. The browser
 check covers held OK acting once on release, close errors above the panel,
 and Back or a Home relaunch cancelling a delayed panel reply.
+
+## Alternative Home view
+
+The server boot mock keeps the checkout's source and parent directories on the
+host, including Bazzite checkouts under `/var/home`. TV system paths and server
+state remain under the temporary root. `test/test-boot-paths.js` checks both
+mappings across six checkout locations without starting the server.
+
+`test/test-home-view.js` runs with the normal unit suite. It covers the standard
+and weather-off defaults, malformed preferences, persisted view selection,
+partial layout saves, row resets, and independence from LG Home takeover.
+
+`node scripts/check-dashboards.js` additionally runs
+`scripts/check-home-alternative.js`. It checks both layouts, saved appearance
+controls, hidden apps, Arrange mode, focus colours, location-search/save/cancel,
+cache reload, and cancellation when weather is disabled. Forecast and geocoding
+responses are intercepted; the test makes no external weather requests.
+The original dashboard assertions still run unchanged.
+
+Live keyboard input, TLS connectivity to the weather providers and cold boot
+still need testing on a TV. A local browser result is not hardware acceptance.

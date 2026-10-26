@@ -88,6 +88,19 @@ for web apps, and confirm they have stopped before removing their cards with
 the cards for retry. Home and apps running without a card are left alone.
 Snapshot responses are private and must not be cached.
 
+### Home appearance and optional weather
+
+`home.json` also stores `view` (`standard` by default, or `alternative`) and
+`weather` (false by default). These preferences do not enable Glasshouse Home or
+change LG settings. Row resets leave the appearance preferences intact. The
+weather location and a short-lived cache are stored in the Home webview's
+localStorage. No files under LG's firmware are added or changed for this view.
+
+The optional weather card makes HTTPS requests from the Home view to
+`api.open-meteo.com` and, on an explicit search, `geocoding-api.open-meteo.com`.
+Standard view and weather-off make no such requests. Hidden Home pauses them;
+disabling the card cancels them. Provider requests omit credentials and referrers.
+
 ## Home-screen app port
 
 Glasshouse Home's page, staged in `/var/lib/tvweb/home-takeover` and mounted over LG's Home, has the port filled in the same way each time the server stages it.

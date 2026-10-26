@@ -1015,6 +1015,27 @@
   </div>
 
   <div id="home-more">
+  <div class="grp grp-sec" data-t="home.view.heading">Home appearance</div>
+  <div class="prot-table">
+    <div class="prot-row">
+      <div class="prot-main">
+        <label for="home-view" class="prot-title" data-t="home.view.label">Home view</label>
+        <div class="prot-desc" data-t="home.view.desc">Standard keeps the original Home screen. Alternative View uses a bottom-centred dock, rounded tiles and a smaller clock on the right. Tile order and hidden apps stay the same.</div>
+      </div>
+      <div class="prot-status"><select id="home-view" onchange="homeSaveLayout({ view: this.value })">
+        <option value="standard" data-t="home.view.standard">Standard</option>
+        <option value="alternative" data-t="home.view.alternative">Alternative View</option>
+      </select></div>
+    </div>
+    <div class="prot-row" id="home-weather-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.weather.toggle">Weather card</div>
+        <div class="prot-desc" data-t="home.weather.consent">Optional in Alternative View. Enable, then choose Change on the TV to search a town or postcode. Forecasts use Open-Meteo; searches use Open-Meteo / GeoNames and share the query and IP address with those services. No requests are made in Standard view or while weather is off.</div>
+        <div class="prot-desc" data-t="home.weather.storageNote">The chosen location stays in the TV Home view, not in this dashboard. Clearing that view's browser storage clears its location. Celsius and mph.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-weather-enabled" onclick="homeSaveLayout({ weather: !(homeLayout &amp;&amp; homeLayout.weather) })">&mdash;</button></div>
+    </div>
+  </div>
   <div class="grp grp-sec" data-t="home.layout">Rows and tiles</div>
   <div class="sub" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
   <div class="pv-note" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
