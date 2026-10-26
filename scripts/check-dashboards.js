@@ -972,6 +972,7 @@ async function visitHomeOrder(browser, base, problems) {
 
     layout.sort.app = 'recent';
     await page.goto(base + '/?tab=home');
+    await page.locator('details.home-row[data-kind="app"] summary').click();
     await page.waitForSelector('#home-sort-app:not(:disabled)');
     if (!await page.locator('details.home-row[data-kind="app"] .home-tile button[aria-label="Later"]').first().isDisabled()) {
       problems.push('Home order: tiles in a Last opened row can be moved on the Home tab');
