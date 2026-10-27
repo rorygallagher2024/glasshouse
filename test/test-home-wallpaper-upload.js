@@ -35,6 +35,15 @@ function choose(name, cb) {
     cb(code, JSON.parse(body));
   });
 }
+// A directory and what is in it, by fs alone: Node 0.10 has no synchronous child process.
+function rmTree(d) {
+  if (!fs.existsSync(d)) return;
+  fs.readdirSync(d).forEach(function (name) {
+    var f = path.join(d, name);
+    if (fs.statSync(f).isDirectory()) rmTree(f); else fs.unlinkSync(f);
+  });
+  fs.rmdirSync(d);
+}
 function upload(data, headers, cb) { request('POST', '/api/home/wallpapers/upload?slot=morning', data, headers, cb); }
 function unchanged() { assert.deepEqual(fs.readFileSync(home.wallpaperPath('morning')), jpeg); }
 var steps = [
@@ -212,7 +221,7 @@ var steps = [
     fs.writeFileSync(path.join(mine, 'home-wallpaper-uploads', 'morning.jpg'), jpeg.slice(0, jpeg.length - 2));
     wallpapers.init(mine);
     assert.strictEqual(wallpapers.status().choice, 'own');
-    [older, mine].forEach(function (d) { require('child_process').execSync('rm -rf ' + JSON.stringify(d)); });
+    [older, mine].forEach(rmTree);
     wallpapers.init(dir);
     next();
   }
@@ -223,7 +232,7 @@ server.listen(0, '127.0.0.1', function () {
     var step = steps.shift();
     if (step) return step(next);
     server.close(function () {
-      require('child_process').execSync('rm -rf ' + JSON.stringify(dir));
+      rmTree(dir);
       console.log('Home wallpaper uploads preserve existing images on failure, recover after abort, survive restart, and are removed one time of day at a time or all at once; a set is downloaded when chosen and kept only when its checksums match, leaving the owner\'s own; an older install\'s example pictures become the landscape set.');
     });
   }
