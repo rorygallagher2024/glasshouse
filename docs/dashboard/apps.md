@@ -1,6 +1,6 @@
 # Apps and home screen launcher
 
-The **Apps** tab, `/?tab=apps`, has three groups: **Apps**, for installing and removing apps and the web pages saved to the Home screen; **Home screen and remote**, for what the Home screen shows and what the remote's keys do; and **Background**, for the memory LG's background apps and services take up.
+The **Apps** tab, `/?tab=apps`, has three groups: **Apps**, for installing and removing apps and the web pages saved to the Home screen; **Remote**, for what the remote's keys do; and **Background**, for the memory LG's background apps and services take up.
 
 ![Apps tab in three groups: installed applications and saved web pages under Apps, the Home screen layout with its inputs and parts, Quick Access and hidden system apps under Home screen and remote, and apps kept ready and background services under Background](../screenshots/apps.png)
 
@@ -12,7 +12,7 @@ The **Apps** tab, `/?tab=apps`, has three groups: **Apps**, for installing and r
 
 ![Manage applications, listing each installed app with its size and Launch and Uninstall buttons](../screenshots/apps-manage.png)
 
-Lists the apps downloaded from the LG store or installed by hand, with their version, vendor, and storage badge showing disk footprint. Launch opens the application on the TV, while Uninstall deletes an app completely and frees its storage. LG's built-in apps can't be removed this way; they can be hidden instead.
+Lists the apps downloaded from the LG store or installed by hand, with their version, vendor, and storage badge showing disk footprint. Launch opens the application on the TV, while Uninstall deletes an app completely and frees its storage. LG's built-in apps can't be removed this way; they can be [hidden](home.md#hide-home-screen-system-apps) instead.
 
 ### Install homebrew apps
 
@@ -44,35 +44,7 @@ It is off until it is switched on in this section (after a warning) or a token i
 
 Lists the web pages on the Home screen, each of which opens in the TV's browser. A page saved from the browser takes its whole title as its name, so a long one can be given a shorter name here. Pages can also be added, pointed at a new address, or removed.
 
-## Home screen and remote
-
-### Home screen layout
-
-![Home screen layout on webOS 9, with HDMI 1 and HDMI 2 on Home, the banner, Quick Cards and recent input hidden, and the app tiles shown](../screenshots/apps-home-layout.png)
-
-Switches parts of LG's Home screen off, for a Home screen with only the apps and inputs on it:
-
-* **Banner**: the large picture at the top, with LG's adverts or, with them off, its own message and a Go to Apps button. The profile, notifications, settings and search buttons beside it go with it; Settings and search stay on the remote's own buttons.
-* **Quick Cards**: the coloured buttons for LG's offers, Sports, Gaming, Music and others.
-* **App tiles**: the row of apps and inputs.
-* **Recent Input and Device Functions**: the last input used, and cards for editing the app list, the TV guide, the user guide and Home Hub.
-
-At least one part stays. A change takes a few seconds, while the Home screen starts again, and lasts through restarts and power cuts. While [Glasshouse Home](home.md) is on, LG's Home screen is not changed here; the layout set here is kept, and is what LG's Home shows when opened from Glasshouse Home or once Glasshouse Home is switched off. The rows further down, such as Live TV and LG Channels, come from LG's servers and stay.
-
-**Inputs on Home** shows each HDMI input as a tile, dimmed while it is not on Home; choosing one adds or removes the Home screen's tile for it, named as the TV names the input. The input tiles go before the apps, in HDMI order; adding one moves any input tiles moved elsewhere back to the front, and starts the Home screen again to show it. It is LG's own tile for the input, so it can be moved or removed on the TV like any other.
-
-On webOS 9, highlighting an input tile shows its HDMI port and the CEC device
-names, including devices behind a receiver, or the TV's own name for the input
-where no device gives one. Long names scroll in LG's title area. Titles are
-read again when the Home screen opens and shortly after the TV switches on,
-never while it is in standby. Only input tiles added by Glasshouse are updated;
-a failed discovery keeps the last good title.
-
-**Put back LG's Home screen** shows every part again and takes off the input tiles added here; ones added on the TV stay. The TV app has the same switches.
-
-It is offered on webOS 9 (LG's webOS 24), where it has been tried on a C2, and as an [experimental feature](../experimental.md#home-screen-layout-on-webos-10) on webOS 10 (LG's webOS 25), where it has been tried on a C2 with webOS 10.3.1. webOS 3 and 4 have a much plainer Home screen, so they do not have it. A webOS 8 TV may have the same home app as webOS 9, and webOS 11 a layout of its own; neither is offered it until one has been tried.
-
-On webOS 10 the section has a switch at the top, with its warning, and nothing in it changes until that is on. The parts that can be switched off there are the **Side buttons** (profile, notifications, settings and search), the **Quick Cards** and the **Recommended shelf**. The banner stays.
+## Remote
 
 ### Quick Access
 
@@ -101,16 +73,6 @@ On webOS 11 (LG's webOS 26) LG handles keys differently. The streaming buttons, 
 The **AI** button is answered by LG's voice assistant itself, which no setting changes, so setting it here switches the voice assistant off: voice search, the AI assistant and the microphone stop working until the button is **As LG has it** again, which switches it back on, as uninstalling does. Glasshouse then opens what was chosen about a second after the press. After the TV restarts, the button does nothing until the server has started.
 
 The **Alexa** button set here keeps Alexa from opening until it is **As LG has it** again; LG's voice assistant is left as it is. Glasshouse opens what was chosen right after the press, and for 4 s from it no notice is shown on the TV, so that Amazon's "Alexa is loading" does not appear; a notice anything else sends in those seconds is not shown either. How it works is in [webOS 11: LG's own values](../IMPLEMENTATION.md#webos-11-lgs-own-values).
-
-### Hide home screen system apps
-
-![Hide home screen system apps switched on, with each built-in LG app as a tile marked hidden or shown](../screenshots/apps-system-apps.png)
-
-Hides built-in LG apps that can't be uninstalled, such as Gallery, Music, Sports, Alexa and the User Guide, from the Home screen ribbon. Each app is a tile, dimmed and marked **Hidden** while hidden; choosing one hides or shows it. The apps themselves stay on the TV, and switching the feature off brings every one back. The Web Browser is not offered: hidden, it no longer opens, and saved web pages and links from other apps open in it. A TV that had it hidden shows it again.
-
-On a TV where the app manager can be made to reread its apps through LG's region list (webOS 9 has it, webOS 4 does not), hidden apps come back hidden at each start without restarting it. Elsewhere it is restarted at each cold boot, which can blank the screen for a moment before the active input returns, and the section says so.
-
-It is experimental, and off until it is turned on under **Server** → **Advanced** → **Experimental features**; see [Experimental features](../experimental.md) for why. It is not offered on a Homebrew Channel install.
 
 ## Background
 

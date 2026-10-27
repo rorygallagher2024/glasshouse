@@ -25,7 +25,7 @@ var lgRows = JSON.parse(fs.readFileSync(rowsFile, 'utf8')).rows || [];
 
 // No filterWithholds: it only removes entities, and every one is checked.
 var entities = ha.buildEntities({
-  pfx: 'tv', allowPower: true, isOled: true, piccap: true, updatesElsewhere: false,
+  pfx: 'tv', allowPower: true, isOled: true, piccap: true, huesync: true,
   installedApps: [{ id: 'youtube.leanback.v4', title: 'YouTube' }],
   pictureModes: [{ value: 'hdrGame', label: 'HDR Game' }, { value: 'hdrVivid', label: 'HDR Vivid' }],
   lgRows: lgRows

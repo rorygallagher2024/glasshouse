@@ -47,6 +47,7 @@ nav:
       - Privacy: dashboard/privacy.md
       - OLED Care: dashboard/oled-care.md
       - Game: dashboard/game.md
+      - Audio: dashboard/audio.md
       - Screen savers: dashboard/screen-savers.md
       - Advanced Controls: dashboard/advanced.md
       - Service menu: dashboard/service-menu.md
@@ -61,6 +62,7 @@ nav:
           - Entities: HOME-ASSISTANT-ENTITIES.md
           - Remote button events: HOME-ASSISTANT-REMOTE-BUTTONS.md
       - Ambient light (PicCap): piccap.md
+      - Hue Sync: huesync.md
   - Advanced & Administration:
       - Security: SECURITY.md
       - What it changes on the TV: TV-CHANGES.md
@@ -83,6 +85,8 @@ nav:
           - LG NU80 (43NU800BPSC): development/tv-specs/nu80.md
       - Testing and CI: development/testing.md
       - TV research: development/TV-RESEARCH.md
+      - Screen saver design: development/SCREENSAVER-DESIGN.md
+      - Writing a screen saver: development/WRITING-SCREENSAVERS.md
       - Translating the dashboards: STRINGS.md
 
 # Kept until the Homebrew Channel listing is live (webosbrew/apps-repo#261).

@@ -1,0 +1,392 @@
+{
+ "subscribed": true,
+ "event": "searchResult",
+ "result": {
+  "ResponseData": [
+   {
+    "ServiceType": "search",
+    "ActionType": "search_content_stt",
+    "ActionData": {
+     "response": {
+      "results": [
+       {
+        "doc": [
+         {
+          "ext_data": "index~wise3_tvshow",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "display_type": "tvshow",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "title": "Mathematical Brain Teasers and Logic Puzzles",
+           "release_date": "2020-11-27",
+           "age_ratings": "pg"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/efc391498871a8d36ee44db917acc2c3_3_H.jpg#ADDSIZE#H720X540",
+          "thumbnail_type": "original",
+          "content_id": "AMAZON_amzn1.dv.gti.e77e27a3-90cf-4bbc-8712-cb3c7a22fc51",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.e77e27a3-90cf-4bbc-8712-cb3c7a22fc51",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "tvshow",
+          "title": "Mathematical Brain Teasers and Logic Puzzles"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Thriller Teaser Series",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "running_time": 121,
+           "display_type": "movie",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250210/38372686.png"
+            }
+           ],
+           "genre": "Crime, Thriller",
+           "release_date": "2017-01-01",
+           "age_ratings": "TV-MA",
+           "title": "Thriller Teaser Series"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/tubi/GB/poster/43e6272199233cf83bb83a43d46ac9_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Crime, Thriller",
+          "content_id": "TUBI_content_id=680612&utm_source=search&utm_medium=partnership&utm_campaign=lgtv-general&utm_feed=lg_all_gb",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|TUBI_content_id=680612&utm_source=search&utm_medium=partnership&utm_campaign=lgtv-general&utm_feed=lg_all_gb",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "com.tubitv.ott.tubi",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250210/38372686.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "First Look Teaser",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "release_date": "2022-12-02",
+           "running_time": 1,
+           "display_type": "movie",
+           "genre": "Music, Current Affairs/Documentary",
+           "title": "First Look Teaser",
+           "age_ratings": "15"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/46766ff0d74aa0b05937b42685a3025_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Music, Current Affairs/Documentary",
+          "content_id": "AMAZON_amzn1.dv.gti.7430f2a7-454a-4d8e-8fdf-d7bef6466299",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.7430f2a7-454a-4d8e-8fdf-d7bef6466299",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Dune : Part Two Extended Preview",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "running_time": 10,
+           "display_type": "movie",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "genre": "Drama, Sci-Fi, Action, Adventure",
+           "release_date": "2024-03-01",
+           "age_ratings": "12",
+           "title": "Dune : Part Two Extended Preview"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/c652b2e37ebf56a357f28bcd4c6549a7_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Drama, Sci-Fi, Action, Adventure",
+          "content_id": "AMAZON_amzn1.dv.gti.23d6003b-b0e2-4374-be9d-2ac1e6a61ff8",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.23d6003b-b0e2-4374-be9d-2ac1e6a61ff8",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Ghostbusters: Frozen Empire - Sneak Peek",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "running_time": 7,
+           "display_type": "movie",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "genre": "Comedy, Sci-Fi, Action, Fantasy, Adventure",
+           "release_date": "2024-03-22",
+           "age_ratings": "12",
+           "title": "Ghostbusters: Frozen Empire - Sneak Peek"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/2fb24c4b7a7fa911ed5dcf55c80cde6_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Comedy, Sci-Fi, Action, Fantasy, Adventure",
+          "content_id": "AMAZON_amzn1.dv.gti.54853340-07d8-4d61-a713-f65d83a5e080",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.54853340-07d8-4d61-a713-f65d83a5e080",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_tvshow",
+          "title": "Sneak Peek: Ryan's World the Movie: Titan Universe Adventure",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "display_type": "tvshow",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "genre": "Children",
+           "release_date": "2024-06-14",
+           "age_ratings": "all",
+           "title": "Sneak Peek: Ryan's World the Movie: Titan Universe Adventure"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/df8fbf5391afb28442871928269edcf_3_H.jpg#ADDSIZE#H720X540",
+          "genre": "Children",
+          "content_id": "AMAZON_amzn1.dv.gti.579ac29d-5de5-46f0-86bb-d91836dbfc0a",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.579ac29d-5de5-46f0-86bb-d91836dbfc0a",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "tvshow",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_tvshow",
+          "title": "Gypsy Rose: Life After Lock Up 2 - Sneak Peek",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "display_type": "tvshow",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "genre": "Current Affairs/Documentary",
+           "release_date": "2025-02-03",
+           "age_ratings": "pg",
+           "title": "Gypsy Rose: Life After Lock Up 2 - Sneak Peek"
+          },
+          "thumbnail_size": "H986X740",
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/program/4fa865df1f2d1f7b11b9a5f2a435_1_M.jpg#ADDSIZE#H986X740",
+          "genre": "Current Affairs/Documentary",
+          "content_id": "AMAZON_amzn1.dv.gti.f062cbe9-e2ab-4a06-943f-3381965505b4",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.f062cbe9-e2ab-4a06-943f-3381965505b4",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "tvshow",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_tvshow",
+          "title": "Trailer Park Boys",
+          "thumbnail_type": "original",
+          "content_set_id": "com.lge.meta.crawler.netflix.NetflixCrawler_en_GB",
+          "display_info": {
+           "display_type": "tvshow",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20150421/21790820472215287LARGE_APP_ICON_130x130_webos.png"
+            }
+           ],
+           "genre": "Drama, Sitcom, International",
+           "title": "Trailer Park Boys",
+           "age_ratings": "18"
+          },
+          "original_by": [
+           "netflix",
+           "netflix-mnt",
+           "netflix-pjtr",
+           "netflix.mnt"
+          ],
+          "genre": "Drama, Sitcom, International",
+          "content_id": "-Q m=http%3A%2F%2Fapi-global.netflix.com%2Fcatalog%2Ftitles%2Fseries%2F70153385&source_type=4&trackId=13783779&trackUrl=https%3A%2F%2Fapi-global.netflix.com%2FAPI_APP_ID_6261%3F%23Search%3F",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "com.lge.meta.crawler.netflix.NetflixCrawler_en_GB|-Q m=http%3A%2F%2Fapi-global.netflix.com%2Fcatalog%2Ftitles%2Fseries%2F70153385&source_type=4&trackId=13783779&trackUrl=https%3A%2F%2Fapi-global.netflix.com%2FAPI_APP_ID_6261%3F%23Search%3F",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "netflix",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20150421/21790820472215287LARGE_APP_ICON_130x130_webos.png"
+           }
+          ],
+          "type": "tvshow",
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/netflix/GB/poster/9282e5f23e62848464ef08da146d9_3_H.jpg#ADDSIZE#H960X540"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Trailer War",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "running_time": 113,
+           "display_type": "movie",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20251103/38663527.png"
+            }
+           ],
+           "genre": "Current Affairs/Documentary",
+           "release_date": "2012-12-07",
+           "age_ratings": "Unrated",
+           "title": "Trailer War"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/appletv/GB/poster/72f25317493377f3fddcdc3bc6418ab0_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Current Affairs/Documentary",
+          "content_id": "APPLETV_https://tv.apple.com/gb/movie/trailer-war/umc.cmc.1tipswc7wzglvymf15pfu1vzh",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|APPLETV_https://tv.apple.com/gb/movie/trailer-war/umc.cmc.1tipswc7wzglvymf15pfu1vzh",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "com.apple.appletv",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20251103/38663527.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Kung Fu Trailers of Fury",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "release_date": "2016-03-01",
+           "running_time": 122,
+           "display_type": "movie",
+           "genre": "Martial Arts, Action",
+           "title": "Kung Fu Trailers of Fury",
+           "age_ratings": "18"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/d038b850f02bc6e8334ff95fd4eed2a_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Martial Arts, Action",
+          "content_id": "AMAZON_amzn1.dv.gti.757a8095-2b39-443f-917f-7bd68aeff11e",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.757a8095-2b39-443f-917f-7bd68aeff11e",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         }
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

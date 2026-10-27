@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Currents",
+    "es": "Corrientes",
+    "hu": "Áramlatok",
+    "ru": "Течения"
+  },
+  "description": {
+    "en": "Streams of light flowing along a slowly changing wind on black.",
+    "es": "Corrientes de luz que fluyen con un viento que cambia despacio, sobre negro.",
+    "hu": "Fénypatakok áramlanak egy lassan változó szél mentén fekete háttéren.",
+    "ru": "Потоки света текут по медленно меняющемуся ветру на чёрном фоне."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 70
+}

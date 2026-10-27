@@ -184,7 +184,26 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
   console.log('  ✓ updateRows includes Server health row');
 })();
 
-// 6. Promise and fetch polyfills activate when missing (webOS 2 WebKit #746)
+// 6. dashboard.html includes -webkit- flexbox and transform rules for webOS 2 WebKit (#746)
+(function testWebos2FlexboxPrefixes() {
+  assert.ok(/#main\{[^}]*display:-webkit-flex/.test(html), '#main has display:-webkit-flex');
+  assert.ok(/#main\{[^}]*-webkit-flex:1 1 auto/.test(html), '#main has -webkit-flex:1 1 auto');
+  assert.ok(/#list\{[^}]*-webkit-flex:1 1 62%/.test(html), '#list has -webkit-flex:1 1 62%');
+  // A percentage height collapses #list to 0 px on WebKit 538.2 and Chromium 53.
+  assert.ok(!/#list\{[^}]*height:/.test(html), '#list has no height of its own, so it is stretched');
+  assert.ok(/if \(!list\.clientHeight\) list\.style\.height = /.test(html), 'a list still at 0 px is given #main\'s height');
+  assert.ok(/else if \(d\.version !== pageVersion\) return reloadPage\(\);/.test(html), 'the TV app reloads when the server version changes');
+  assert.ok(/#hint\{[^}]*-webkit-flex:0 0 31%/.test(html), '#hint has -webkit-flex:0 0 31%');
+  assert.ok(/#hint\{[^}]*-webkit-align-self:center/.test(html), '#hint has -webkit-align-self:center');
+  assert.ok(/\.row\{[^}]*display:-webkit-flex/.test(html), '.row has display:-webkit-flex');
+  assert.ok(/\.row\{[^}]*-webkit-align-items:baseline/.test(html), '.row has -webkit-align-items:baseline');
+  assert.ok(/\.val\.st\{[^}]*display:-webkit-inline-flex/.test(html), '.val.st has display:-webkit-inline-flex');
+  assert.ok(/#rows\{[^}]*-webkit-transition:-webkit-transform/.test(html), '#rows transitions -webkit-transform');
+  assert.ok(html.indexOf('rowsEl.style.webkitTransform = rowsEl.style.transform =') !== -1, 'position() sets webkitTransform');
+  console.log('  ✓ dashboard.html layout includes -webkit- flexbox and transform prefixes for webOS 2 WebKit');
+})();
+
+// 7. Promise and fetch polyfills activate when missing (webOS 2 WebKit #746)
 (function testPromiseAndFetchPolyfill() {
   var xhrs = [];
   function FakeXHR() {

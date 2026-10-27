@@ -118,7 +118,7 @@ console.log('Running test-updater.js ...');
   console.log('  \u2713 installUpdate and rollbackUpdate refuse while an app install runs');
 })();
 
-// 100. Homebrew Channel install refuses updates unless force is specified
+// 100. A Homebrew Channel install with no package installer wired refuses, unless forced
 (function testHomebrewChannelBypass() {
   updater.init({
     config: { allowControl: true, update: { check: true } },

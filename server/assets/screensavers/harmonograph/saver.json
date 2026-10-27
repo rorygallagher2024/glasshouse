@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Harmonograph",
+    "es": "Harmonógrafo",
+    "hu": "Harmonográf",
+    "ru": "Гармонограф"
+  },
+  "description": {
+    "en": "Pendulum ribbons of light weaving and fading on black.",
+    "es": "Cintas de luz pendulares que se entrelazan y desvanecen sobre negro.",
+    "hu": "Inga rajzolta fényszalagok fonódnak és halványulnak el fekete háttéren.",
+    "ru": "Маятниковые ленты света сплетаются и гаснут на чёрном фоне."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 50
+}

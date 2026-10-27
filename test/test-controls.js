@@ -455,6 +455,48 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ updateCheck and updateAutoCheck return unified updateSummary including daemon');
 })();
 
+// homeAutoLaunch and quickBoot sync with Glasshouse Home when present
+(function testHomeAutoLaunchAndQuickBoot() {
+  var lastCall = null;
+  var synced = 0;
+  var delegated = null;
+  var cacheCleared = 0;
+  controls.init({
+    config: { allowControl: true },
+    luna: function (uri, payload, cb) {
+      lastCall = { uri: uri, payload: payload };
+      cb({ returnValue: true });
+    },
+    telemetry: { clearCache: function () { cacheCleared++; } }
+  });
+  controls.doControl('homeAutoLaunch', true, function (res) {
+    assert.strictEqual(res.ok, true);
+    assert.strictEqual(lastCall.uri, 'com.webos.service.settings/setSystemSettings');
+    assert.deepEqual(lastCall.payload, { category: 'general', settings: { homeAutoLaunch: 'on' } });
+  });
+  controls.init({
+    config: { allowControl: true },
+    luna: function (uri, payload, cb) {
+      lastCall = { uri: uri, payload: payload };
+      cb({ returnValue: true });
+    },
+    telemetry: { clearCache: function () { cacheCleared++; } },
+    home: {
+      syncAutoLaunch: function () { synced++; },
+      setAutoLaunch: function (on, cb) { delegated = on; cb({ ok: true }); }
+    }
+  });
+  controls.doControl('quickBoot', false, function (res) {
+    assert.strictEqual(res.ok, true);
+    assert.strictEqual(synced, 1);
+  });
+  controls.doControl('homeAutoLaunch', 'off', function (res) {
+    assert.strictEqual(res.ok, true);
+    assert.strictEqual(delegated, false);
+  });
+  console.log('  ✓ homeAutoLaunch and quickBoot coordinate with Glasshouse Home');
+})();
+
 // Remote keys and Home go ahead of the luna queue, and log how long they took
 (function testRcuUrgent() {
   var normal = [];

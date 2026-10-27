@@ -4,6 +4,31 @@ Findings about how LG's webOS works, kept so the same ground is not covered
 twice. Each entry names the TV and webOS version it was found on. For how
 Glasshouse itself works, see [IMPLEMENTATION.md](../IMPLEMENTATION.md).
 
+## Audio declarations and the negotiated link (G3, webOS 9.2.2)
+
+OLED55G36LA, firmware 23.25.55, kernel `5.4.268-320`, read on 25 October 2026:
+`tv.model.edidType` is `TrueHD+dts`, `dts_audiodec` accepts DTS/DTS-HD/DTS:X
+input caps, and DSP0 contains `dec_dtsx`. These are native declarations and
+decoder evidence, not a receiver-side pass-through trial.
+
+`arccontroller/getARCState` reported `arcActivation: ARC`, `audioDeviceType:
+arc`, and a two-channel PCM receiver descriptor for the HDMI 2 STEREO 70s.
+At the same time, `getARCEDIDInfo` reported `eARC: true` and DTS/HD/MAT SADs.
+Its eARC flag and source-facing descriptors therefore do not identify the
+negotiated link or the receiver's accepted formats. With TV speakers selected,
+ARC state reported no active link and empty receiver descriptors.
+
+The current HDMI input's `/proc/lg/hdmi20/portN/edid` provides a checksummed
+CTA declaration even with ARC off. LG's public-input-to-receiver map must be
+applied before selecting that file. The media-resource file lists local
+playback codecs; it is a separate declaration from HDMI forwarding.
+
+With no audio playing, the HDMI driver still reported `AudioData=1` and
+`Codec=PCM`, with zero sampling rate and an unstarted ADEC. Those values are
+not a live PCM signal. Native sound-output and Pass Through controls were
+exercised and their original settings restored. The PCM-only receiver did
+not provide a DTS reception test.
+
 ## HDMI CEC devices (G3, webOS 9.2.2)
 
 `com.webos.service.eim/getAllInputStatus` returns CEC devices in each HDMI
@@ -73,6 +98,21 @@ that answers `no result from DB`.
 `luna://com.webos.service.capture/executeOneShot` with `method: DISPLAY`
 writes a PNG of the screen, web apps included, at the size asked for.
 
+## The TV's 12 or 24 hour clock (webOS 4.4, 7.6, 9.2)
+
+`com.webos.service.systemservice/getPreferences` with `keys: ["timeFormat"]`
+reads `timeFormat` (`"HH12"` or `"HH24"`) from `/var/luna/preferences/systemprefs.db`.
+On an OLED65B8SLC (webOS 4.4.3) and an OLED42C24LA (webOS 9.2.2) set to the UK
+(`en-GB`, `Europe/London`), `/etc/palm/defaultPreferences.txt` seeds
+`systemprefs.db` with `"timeFormat": "HH12"`, and LG's Settings app
+(`com.palm.app.settings`) has no switch for it (its own menus read
+`localeInfo.clock: "locale"`). `systemservice/getPreferenceValues` with
+`key: "timeFormat"` lists `["HH12", "HH24"]` on both TVs, and
+`systemservice/setPreferences` with `timeFormat: "HH12"` or `"HH24"` updates
+`TimePrefsHandler` in `/usr/sbin/LunaSysService` and persists the choice in
+`systemprefs.db`. The clocks Glasshouse draws follow it, and a TV that answers
+without `timeFormat` is taken as 24-hour.
+
 ## Home input titles (G3, webOS 9.2.2)
 
 HDMI launch points added by Glasshouse are bookmarks with `systemApp: false`.
@@ -132,6 +172,14 @@ Measured on 17 October 2026 by rebooting over SSH with `lastInputApp` naming `co
 - The TV's own `defaultApps.home` is unset after each of these reboots.
 - Home pressed (over SSAP) at about 37 s brought LG's Home to the front: drawn in one run, black for about 6 s in another. The compositor key filter that sends Home to `com.tvweb.home` from the server's start onwards had not done so.
 - `/var/log` holds CRIU dump and restore logs for `com.webos.app.home` and `com.webos.app.inputcommon`, so those two are restored from snapshots at boot; whether that is why the started app is not drawn is not established.
+
+### What the boot hooks wait for (50QNED87T6B, webOS 10.2.2)
+
+Measured from bootd's log and each process's start time in `/proc/<pid>/stat`:
+
+- bootd signals `core-boot-done` at 16.1 s and Live TV is in front at 18 s, but the Homebrew Channel's service, which its `core-boot-done` activity starts, was started only at 27.5 s, and its `startup.sh` at about 29 s. It sleeps 2 s, then runs `init.d` with `run-parts`, one hook after the other.
+- `20-tvweb-services` took 7.2 s, almost all of it `systemctl daemon-reload`. With another hook that sleeps 5 s before its own work, `50-tvweb` started at about 50 s and Glasshouse Home was in front at 53.5 s.
+- With both hooks doing their work in the background, `50-tvweb` started at 32 s, Glasshouse Home was in place at 35 s, and bootd had it in front at 43.7 s.
 
 ## Replacing LG's Home under its id (webOS 9.2.2, G3)
 
@@ -237,6 +285,40 @@ Checked on 18 October 2026 on the same TV, with Glasshouse Home in the place:
   /mnt/lg/cmn_data/checkpoint/*com.webos.app.home* && reboot` brought LG's
   Home back on its default layout.
 
+## Glasshouse Home on webOS 7 (65UQ801C0SB, webOS 7.6.0)
+
+Measured on 22 October 2026 on an LCD 65UQ801C0SB, firmware 04.60.90.
+
+- **LG's Home is the webOS 9 kind.** `/usr/palm/applications/com.webos.app.home`
+  holds a native app (`main` is `/usr/bin/com.webos.app.home`, with QML) and the
+  compositor's key filters are the QML ones in `com.webos.surfacemanager.keyFilters`.
+- **sam has neither rescan used elsewhere.** `profile.blockedAppList` is listed in
+  `missingConfigs`, and `blockSystemApp` and `releaseBlockSystemApp` are
+  "Unknown method". Installing and removing a developer app made sam read only
+  that app.
+- **sam still reads the list.** `/usr/sbin/sam` names `profile.blockedAppList` and
+  logs `NEW_BLOCKED_APP_LIST_FROM_CONFIGD`. While configd has none, sam blocks the
+  list LG's server sent, kept in
+  `/var/preferences/com.webos.applicationManager/blockedAppList/IND.json`
+  (`com.webos.app.livepick-full`, `google.assistant.promo`); the
+  `DefaultBlockedAppList` in `/etc/palm/sam-conf-tv.json` was not applied.
+  Writing that list plus an id no app has, then the list alone, made sam report a
+  bind-mounted `appinfo.json` within 0.5 s, with the same pid, `listApps`
+  unchanged and `IND.json` untouched.
+- **The takeover works as on webOS 9.** Mounted and nudged, `getAppInfo` reported
+  `com.webos.app.home` as `web`, LG's process was stopped, and the Home button
+  (evdev 773, `IR_KEY_HOME`) opened Glasshouse Home, which drew its rows and
+  opened apps from its tiles.
+- **No `defaultApps`.** `getSystemSettings` in `general` for `defaultApps`,
+  `lastInputApp` and `physicalLastInputApp` answers `returnValue: false` with
+  `errorKey: ["defaultApps"]`, and the other two in `settings`.
+- **Cold start.** The boot hook had it mounted, nudged and LG's process stopped
+  by 66 s; sam kept the pid it started with, `profile.blockedAppList` still held
+  the country's list, and MAIN's video sink was not muted.
+- **LG's Home is slow to come back.** Given its place back and launched, it was
+  in front about 6 s later, against 2 to 3 s on a G3; the screen is black
+  meanwhile.
+
 ## LG Home's recent apps (G3, webOS 9.2.2)
 
 Read on 19 October 2026 from LG's Home's QML under the Glasshouse Home
@@ -265,6 +347,81 @@ mount, and tried over SSH.
   it. Snapshots are in `/tmp`, so apps left before the TV restarted are
   listed with `cardSnapShotFilePath` empty and only their
   `splashBackground`. Checked on 19 October 2026.
+
+## LG's search and deep links (G3, webOS 9.2.2)
+
+Read on 21 October 2026 from LG's Search app's QML
+(`/usr/palm/applications/com.webos.app.voice/qml`) and tried over SSH on a
+G3 in the UK.
+
+- **Search is a luna service.** `com.webos.service.nlpmanager/search`
+  `{ subscribe: true, query, start_index: 1, max_results: 24, category_name:
+  "movie,tvshow" }` answers `searchStart`, `searchConnecting`, then
+  `searchResult` and `sessionEnd`, in 0.7 to 0.9 s. Without `subscribe` it is
+  refused (`6011`, `NLP invalid parameter`). Root needs no app id (`-a`).
+- **Each result is one title on one service**: `title`, `type` (`movie`,
+  `tvshow`), `thumbnail` (a 960x540 poster on `eic-ngfts.lge.com`, with a
+  `#ADDSIZE#...` hint after it), `display_info` (`release_date`,
+  `running_time`, `age_ratings`), `cp_thumbnail[0].cp_id` (the app id:
+  `amazon`, `netflix`, `com.apple.appletv`, `com.wbd.stream`,
+  `com.disney.disneyplus-prod`, `bbc.iplayer.3.0`, `cdp-30` for Plex) and
+  `action_on_click.launch_parameter.itemId`. Dune (2021) came on three
+  services, dated 3 September, 15 September and 21 October 2021.
+- **The item's detail names the app's own id.** `com.webos.service.sdx/send`
+  with `serviceName` `sdp_onnow`, `url` `content_discovery/item-detail` and
+  `item_id`, `item_type=CONTS` in `bodyData` answers in about 0.5 s with
+  `item.item_detail.exec_list.execs[]`: `exec_app_id` and `exec_id`. For
+  Prime Video, Netflix and HBO Max the `exec_id` was the item id after its
+  first `|`; for Disney+ it was its own (`page=play&id=...`).
+- **applicationManager builds the deep link.** LG's Search launches
+  `{ id, replaceParams: { deeplinkingParams: { target: "$CONTENTID", value:
+  exec_id } } }`, and the app's `appinfo.json` holds the template, such as
+  `{"contentTarget":"$CONTENTID"}` (Disney+ and HBO Max add
+  `"handledBy":"app"`). Prime Video and Netflix opened at the film's page,
+  Apple TV at an episode of Severance after its profile picker, BBC iPlayer at
+  an episode's playback (asking to sign in), and Disney+ and HBO Max stopped
+  at their own first-run privacy prompts.
+- **A series opens at its latest episode** in LG's own Search:
+  `exec_full` names it (Severance on Prime Video: series 2 episode 16, a
+  bonus interview; The Bear on Disney+: series 5 episode 8). With
+  `item_detail_type` `advanced` the detail adds `season_list` (each season's
+  `conts_season_num` and `item_id`) and `tab_episode` (that season's items,
+  `item_name` the episode number, real episodes listed before extras, which
+  Prime Video numbers too). Any other type (`full`) gives Apple TV's show id.
+  Each item id, less what precedes its first `|` and LG's tag (`AMAZON_`,
+  `DISNEY_`, `BBC_`, `MAX_`), is the app's own id. Tried on 21 October 2026:
+  Prime Video's season id opened its season page; Disney+'s season links
+  (`page=browse&...`) left a blank screen, its episode links played; BBC
+  iPlayer's programme id and a guessed `tv/episodes/` link failed or went to
+  its home, its episode links played; Apple TV ignored its show id and a
+  `tv.apple.com/gb/show/` link, cold or running.
+- **The servers are LG's SDP.** `sdx/getHttpHeaderForServiceRequest` with
+  `serviceName` `sdp_nlp`, `sdp_search` or `sdp_onnow` answers a top-level
+  `HOST` (`GB.nextlgsdp.com`) beside device ids and LG account tokens, which
+  should not be logged.
+- **Only that host matters to search** (26 October 2026, firmware 23.25.55).
+  Everything blocked `gb.nextlgsdp.com` and search failed (`errorCode` 6003,
+  `Server response error`); Ads & telemetry plus an uploaded list holding only
+  that host failed the same way; Everything with every name but that host
+  searched normally.
+- **Apps opened from search** (26 October 2026, Ads & telemetry): Prime Video
+  at the Dune and Severance pages, Netflix at Dune: Part Two and Stranger
+  Things, Plex at its film pages, BBC iPlayer playing Doctor Who and All
+  Creatures Great and Small series 1 episode 1, Apple TV at Dune and
+  Severance's latest episode. Apple TV, Disney+ and HBO Max showed a profile
+  picker first when cold: Apple TV then went on to the title, HBO Max to its
+  home; opened again while running, HBO Max played Dune and Succession and
+  Disney+ played The Bear and Loki (protected video captures black, so the
+  episode was not seen). LG's catalogue offered no titles on ITVX, Channel 4,
+  5, YouTube, Paramount+ or Sky Store for 14 test queries.
+- **luna-send over SSH needs stdin closed** (`</dev/null`): without it, it
+  printed nothing and did nothing on the G3.
+- **The TV's keyboard.** A focused text field brings up LG's keyboard, which
+  takes the arrows. Its Enter reaches the page as key 13; its Back closes it
+  without reaching the page and leaves the field focused, and
+  `keyboardStateChange` with `detail.visibility` fires on the document, not
+  the window. `com.webos.service.ime/insertText` and `sendEnterKey` type
+  into it over SSH.
 
 ## Channels and the guide (G3, webOS 9.2.2)
 
@@ -521,6 +678,14 @@ Unix seconds, `offset` in minutes (120 in Ljubljana in October), `timezone`
 (`Europe/Ljubljana`), `TZ` (`CEST`), `isDST` and `timeValid`. `localtime` less
 `utc` matched `offset`. Watch time works its offset out from `localtime` and
 `utc`. Which of these fields older webOS versions give is not yet known.
+
+## The browser's locale (C5, webOS 10.3.1)
+
+With the TV's language set to Russian, the web app browser (Chrome 120)
+reports `navigator.language` as `ru-RU`, but `Intl.DateTimeFormat()` resolves
+to `en-US`, so `toLocaleDateString()` without a locale gives `Saturday` and
+`October`. Given `ru` it gives `суббота`, and with a day `24 октября`.
+Glasshouse Home names the page's language when it writes the date.
 
 ## Toasts as the screen comes on (C4, webOS 10.3.1)
 
@@ -1067,6 +1232,44 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
 - The TV has no `/etc/issue`. `/etc/starfish-release` has
   `Rockhopper release 10.3.1-3006`, and `/etc/os-release` `VERSION_ID=10.3.1`.
 
+## The first Home press after a reboot (CX, webOS 5.6.2)
+
+Reported on 26 October 2026 from an OLED55CXPUA (firmware 4.64.00), with
+Glasshouse Home on behind `allowExperimentalHome`.
+
+- **The view took up to 13 s to answer** the first Home press after a reboot,
+  with WebAppMgr running: its page was loading from cold. A 5 s wait for its
+  first heartbeat gave LG's Home the place every time, so Glasshouse Home
+  never opened. With the wait at 20 s it opened.
+
+## WebAppMgr stopped (G4, webOS 11.2.0)
+
+Seen on 23 October 2026 on an OLED65G4KNA with Glasshouse Home switched on.
+
+- **WebAppMgr can stop for good.** `webapp-mgr.service` (in
+  `/etc/systemd/system`, `Type=simple`, `Restart=on-failure`,
+  `OOMScoreAdjust=-1000`, `PartOf=surface-manager.service`) ended with
+  `code=killed, signal=TERM`, `Result=success`, `NRestarts=0`, and stayed
+  inactive. What sent the signal was not found: nothing in
+  `/var/log/messages` at that second, no crash report, and the TV has no
+  systemd journal.
+- **Every web app then opens nothing.** Each Home press logged
+  `NL_BUTTON_CLICK` `KEY_HOME` (`lginput2`, remote `LGE MR24N`) and sam's
+  `NL_APP_LAUNCH_BEGIN` for `com.webos.app.home` (caller
+  `com.webos.starfish.keyfilters`), with no `NL_VSC` window after it, for
+  40 minutes. LG's own Flutter Home, put back in its place, did not show
+  either: launched by the server and then by a Home press 21 s later, it got
+  no window.
+- **sam goes on naming the dead view in front.** With WebAppMgr stopped while
+  the view was in front (under the screen saver), Glasshouse's foreground
+  stayed `com.webos.app.home` through later presses, so only the view's
+  heartbeat tells whether a press opened it.
+- **`systemctl start webapp-mgr.service` brings it back** without a restart.
+- **The remote's Home reaches `/dev/input` on this TV.** Unlike the C5's
+  MR25GA (above), Glasshouse's reader saw Home go down on the MR24N and
+  held it past its 1.2 s; LG's filter opened the screen magnifier at 2.5 s,
+  as on webOS 10.
+
 ## Home's button does not change the foreground app (webOS 4.10.2, 55UM7100PLB)
 
 `supported()` already refuses Glasshouse Home on webOS 4 and nothing here
@@ -1182,6 +1385,43 @@ Measured on 19 October 2026 on an OLED55G36LA.
   unlike the G5.
 - **With Glasshouse Home first, the boot hook** started 30 s in and had it in
   place at 34 to 39 s, the screen saver mount after it.
+
+## What the TV opens as it starts (C4, webOS 10.3.1)
+
+Measured on 20 and 21 October 2026 on an OLED65C4PSA (firmware 33.31.68),
+Quick Start+ on, Always Ready on, `homeAutoLaunch` `on`
+(`checkHomeAutoLaunchValue` `user`).
+
+- **It powers off 4 h after its last boot.** tvweb.log had
+  `Active Standby -> Power Off` at 14411 s of uptime on both days, so the
+  first power-on after that is a cold start even with Quick Start+ on.
+- **bootd started on the last input at every power-on by `remoteKey`.** At a
+  cold start it logged `homeAutoLaunch(on)` at 10 s and
+  `'com.webos.app.hdmi3' is foreground` at 15 s, and launched no
+  `com.webos.app.home`. Woken after 8 s in Active Standby, it logged
+  `auto_home_launch(on) homeAutoLaunch(on)` and again launched only HDMI 3.
+- **The boot hook** started about 41 s into the cold start and had Glasshouse
+  Home in place 3 s later.
+- **Switched on by Always Ready** the power-on reason is `alwaysOn`, which is
+  not in `fullHomeBootingPowerOnReasons`.
+
+## What the TV opens as it starts (QNED72B6B, webOS 11.1.0)
+
+Measured on 26 October 2026 on a 50QNED72B6B (43.11.85), Quick Start+ off.
+
+- **bootd put Live TV in front at 22 s** (`'com.webos.app.livetv' is
+  foreground`), with `general.homeAutoLaunch` `off` and the power-on reason
+  `remoteKey`.
+- **The boot hook ran 41 s in**, after `rest-boot-done` at 39.6 s, and had
+  Glasshouse Home mounted 4 to 9 s later.
+- **LG's Home's id is reported in front once the hook has stopped it.** At
+  44 s, while the hook had sam reread the mounted app, bootd logged `'com.webos.app.home'
+  is foreground`, and `getForegroundAppInfo` gave `com.webos.app.home`, with
+  Live TV still on screen and nothing of Home drawn. A check that the input
+  bootd started on is still in front then opens nothing. Launching
+  `com.webos.app.home` from there brought Glasshouse Home to the front.
+- **With Quick Start+ on**, a wake by the remote from Active Standby or
+  Suspend had Glasshouse Home in front with no Live TV before it.
 
 ## Muting and pausing (webOS 5.6.2, CX)
 
@@ -1398,3 +1638,46 @@ switch"; `WoV PDM Mic` on ALSA card 1) and a switch for it on the TV.
 showed a toast saying the microphone is off. Before the flip, in Active
 Standby, voice activation was already off with reason `tvPowerState`, so
 wake-word listening does not run in standby.
+
+## WebKit 538.2 requires -webkit- prefixes for flexbox and transforms (webOS 2.2.3, 55UH600V)
+
+webOS 2 runs WebKit 538.2. Unprefixed CSS `display: flex`, `flex`, `align-items`,
+and `justify-content` are ignored; flex containers and items fall back to block
+layout unless given `-webkit-flex` and `-webkit-` prefixes. Without them, an
+item with `position: absolute` children and no in-flow height collapses to 0 px.
+CSS transitions and transforms similarly require `-webkit-transition`,
+`-webkit-transform`, and `element.style.webkitTransform` in script (#746).
+
+`height: 100%` on that flex item does not rescue it. Chromium 53 (webOS 4, a
+B8 and a C9) and WebKit 538.2 (the 55UH600V on 0.122.1) both count it as no
+height, so the TV app's row list collapsed to 0 px: on webOS 4 nothing showed
+in 0.121.0 and 0.122.0, and on webOS 2 only the right-hand explainer. The list
+now has no height of its own and is stretched to its row, and the page sets
+it in pixels where an engine still leaves it at 0.
+
+On the B8 the TV app's page, kept in memory, went on showing the old layout
+after the server was updated, until the TV restarted: it came back without the
+`webOSRelaunch` event that reloads it. The page now also reloads when
+`/api/caps` reports a server version other than the one it loaded with.
+
+
+## Installing Glasshouse's own package (G3, webOS 9.2.2)
+
+- `appInstallService/dev/install` with `ipkUrl` set to a local `.ipk` of
+  `io.github.rorygallagher2024.lg-webos-dashboard` replaced the app in about
+  1.5 s, with the server, run from `/var/lib/tvweb`, left running. The package
+  has no services, so nothing lost root.
+- The app was open at the time and the install closed it; the TV went back to
+  Home.
+- Network-input key codes (`networkinput/test/sendKeyCode`) did not reach the
+  Glasshouse app's page; key events written to the remote's input device
+  (`LGE RCU`) did.
+
+## Glasshouse Home's first load after a cold start (C2, webOS 9.2.2)
+
+Opened as the boot hook opens it, 30 s after a reboot, Glasshouse Home's page
+waited for the server, which answered at 41 s, and the view's first heartbeat
+came at 50 s: about 9 s from the server answering to the view drawn. The
+first Home press after a reboot took up to 13 s on a CX (webOS 5.6.2), so a
+fixed wait from the server's start is too short for slower TVs; the page's
+own requests to the server show it is running.

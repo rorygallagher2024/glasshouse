@@ -19,6 +19,15 @@ The TV app is operated entirely with the LG remote control:
 * **Back**: Return to the previous view from sub-menus (such as app preview details) or exit the app.
 * **Magic Remote pointer**: Clicking a row selects it and clicking it again acts on it; clicking a tab opens it.
 
+### Audio capabilities
+
+The **Audio** tab has the same rows as the web dashboard's
+[Audio tab](../dashboard/audio.md): LG's sound settings and each input's audio
+format, then the TV model, the DTS declaration, the incoming audio and the
+negotiated return channel, and the format declarations.
+
+![Audio tab on the office G3, showing its sound settings](../screenshots/audio-g3-tv-sound.png)
+
 ### First-run setup wizard
 
 Opening the TV app on a fresh install starts an on-screen setup wizard to configure the TV in a few quick steps with the remote:
@@ -59,11 +68,9 @@ Scanning the code automatically pairs the phone with the TV, passing the access 
 
 *The Settings view, presenting the web dashboard's LAN address and phone pairing QR code.*
 
-### Installing apps and system app hiding
+### Installing apps
 
 The **Apps** tab can install packages directly from the Homebrew Channel catalog: **Install apps** lists catalog entries by title, with updates first. The preview shows the app's background services, root access switches, and free storage space before confirming the install with the remote.
-
-It also provides system app hiding, allowing built-in LG apps and tiles (such as Always Ready, Alexa, or Camera) to be hidden from the webOS home screen.
 
 ![Apps tab on the TV app, showing Homebrew catalog installation and home screen app hiding](../screenshots/tv-app-apps.png)
 
@@ -71,7 +78,7 @@ It also provides system app hiding, allowing built-in LG apps and tiles (such as
 
 ### Glasshouse Home
 
-The **Home** section sets up [Glasshouse Home](../dashboard/home.md) from the TV, as the browser dashboard's Home tab does, and is left out on a TV Glasshouse Home is not offered on. It has the on/off switch (a second press confirms), a way to open Glasshouse Home while it is on, the order of its rows, then a section for each row in that order: each row's Order (Your order or Last opened), apps and inputs each shown or hidden, and the channels added, each removed with OK, with **Add channels** listing the TV's channels not yet on Home. Then whether wallpapers are uploaded (they are uploaded from the browser dashboard), and **Reset the layout**. Moving tiles within a row is done on Glasshouse Home itself, by holding OK.
+The **Home** section sets up [Glasshouse Home](../dashboard/home.md) from the TV, as the browser dashboard's Home tab does, and is left out on a TV with neither Glasshouse Home nor LG's Home's options. Its rows follow the browser dashboard's [Home customisation](../dashboard/home.md#home-customisation): Open Home at power-on wherever the TV has it, system app hiding, which hides built-in LG apps (such as Always Ready, Alexa, or Camera) from whichever Home screen is in use, and LG's Home's layout while LG's Home is the TV's Home. A TV without Glasshouse Home, such as a B8, has these alone. It has the on/off switch (a second press confirms), a way to open Glasshouse Home while it is on, the order of its rows, then a section for each row in that order: each row's Order (Your order or Last opened), apps and inputs each shown or hidden, and the channels added, each removed with OK, with **Add channels** listing the TV's channels not yet on Home. Then whether wallpapers are uploaded (they are uploaded from the browser dashboard), and **Reset the layout**. Moving tiles within a row is done on Glasshouse Home itself, by holding OK.
 
 ### Sleep timer and power
 

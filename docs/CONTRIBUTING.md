@@ -107,7 +107,7 @@ npm run emulate
 This starts the server against a virtual webOS environment with procfs, sysfs, Luna bus calls, apps, remote keys, and recent apps mocked. You can also specify a model or port:
 
 ```bash
-node scripts/emulate-tv.js [--model c2|b8|c3] [--port 8080] [--open]
+node scripts/emulate-tv.js [--model c2|b8|c3|cx|c1] [--webos 6.5.3] [--home on|off] [--port 8080] [--open]
 ```
 
 Direct URLs:

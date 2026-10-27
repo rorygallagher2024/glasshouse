@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Starfield",
+    "es": "Campo estelar",
+    "hu": "Csillagmező",
+    "ru": "Звёздное поле"
+  },
+  "description": {
+    "en": "A drifting cosmic starscape with occasional shooting stars.",
+    "es": "Un paisaje cósmico a la deriva con ocasionales estrellas fugaces.",
+    "hu": "Lassan mozgó csillagmező, időnként hullócsillagokkal.",
+    "ru": "Плывущий космический пейзаж со звёздами и редкими падающими звёздами."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 20
+}

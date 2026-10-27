@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Veils",
+    "es": "Velos",
+    "hu": "Fátylak",
+    "ru": "Вуали"
+  },
+  "description": {
+    "en": "Translucent ribbons of light rippling slowly across black.",
+    "es": "Cintas de luz translúcidas que ondulan despacio sobre negro.",
+    "hu": "Áttetsző fényszalagok hullámzanak lassan a fekete háttéren.",
+    "ru": "Полупрозрачные ленты света медленно колышутся на чёрном фоне."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 80
+}

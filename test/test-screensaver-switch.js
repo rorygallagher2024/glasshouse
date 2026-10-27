@@ -70,7 +70,6 @@ console.log('Running test-screensaver-switch.js ...');
 var config = { port: 8080, allowControl: true };
 screensavers.init({
   luna: env.mockLuna,
-  assetPath: function (qml) { return qml === 'screensavers/clock.qml' ? '/tmp/tvweb-test/clock.qml' : null; },
   config: config
 });
 apps.init({ luna: env.mockLuna, config: config });
@@ -130,14 +129,13 @@ realNextTick(function () {
             assert.strictEqual(over.held, false);
             assert.strictEqual(over.heldOverridden, true);
             over.modes.forEach(function (m) {
-              assert.strictEqual(m.available, m.id === 'stock' || m.id === 'clock', m.id);
+              assert.strictEqual(m.available, true, m.id);
             });
             console.log('  ✓ allowExperimentalScreensavers turns them back on and is reported');
 
             // 6. On webOS 10 they are on without it, and not experimental (#768)
             config.allowExperimentalScreensavers = false;
-            screensavers.init({ luna: env.mockLuna, config: config, webosVersion: '10.3.1',
-              assetPath: function (qml) { return qml === 'screensavers/clock.qml' ? '/tmp/tvweb-test/clock.qml' : null; } });
+            screensavers.init({ luna: env.mockLuna, config: config, webosVersion: '10.3.1' });
             assert.strictEqual(screensavers.heldBack(), false);
             assert.strictEqual(screensavers.onByDefault(), true);
             assert.strictEqual(screensavers.experimental(), false);

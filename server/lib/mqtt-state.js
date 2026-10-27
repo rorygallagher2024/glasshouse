@@ -25,13 +25,15 @@ function init(opts) {
   function publishValue(group, key, value) {
     if (value === null || typeof value === 'undefined') return;
     client.publish(topic.state(group + '/' + key), scalar(value), true);
-    if (group === 'power' && key === 'screenOn') {
-      var screenOn = !!value;
-      if (manager) {
-        var snap = manager.snapshot();
-        var pwr = snap && snap.power;
-        if (pwr && pwr.systemOn === false) screenOn = false;
-      }
+    // tvpower's reply gives screenOn before systemOn, so on a switch-on
+    // screenOn arrives while systemOn still reads false. Worked out again on
+    // either, the screen follows whichever comes second.
+    if (group === 'power' && (key === 'screenOn' || key === 'systemOn')) {
+      var snap = manager ? manager.snapshot() : null;
+      var pwr = snap && snap.power;
+      var screenOn = key === 'screenOn' ? !!value : !!(pwr && pwr.screenOn);
+      if (key === 'systemOn' && !(pwr && typeof pwr.screenOn === 'boolean')) return;
+      if (pwr && pwr.systemOn === false) screenOn = false;
       client.publish(legacyScreenTopic, screenOn ? 'ON' : 'OFF', true);
     }
   }

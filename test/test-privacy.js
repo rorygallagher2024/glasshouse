@@ -316,6 +316,39 @@ test('"add" blocks the owner\'s names with the tier\'s, once each', function () 
   });
 });
 
+// What Glasshouse Home's search asks: whether the table in use holds LG's search host.
+function withTable(mode, fn) {
+  var savedHosts = mockEnv.files['/etc/hosts'];
+  mockEnv.files['/etc/hosts'] = '127.0.0.1 localhost\n# LG Ad & Telemetry Blackhole (lg-webos-dashboard)\n';
+  mockEnv.files[FLAG_FILE] = mode;
+  privacy.clearCache();
+  try { fn(); } finally {
+    if (savedHosts === undefined) delete mockEnv.files['/etc/hosts'];
+    else mockEnv.files['/etc/hosts'] = savedHosts;
+    delete mockEnv.files[FLAG_FILE];
+    privacy.clearCache();
+  }
+}
+
+test('LG\'s search host is blocked by Everything once the clock is set, not by Ads & telemetry', function () {
+  privacy._setSdpGraceActive(false);
+  withTable('ads', function () { assert.strictEqual(privacy.blockedBy('GB.nextlgsdp.com'), null); });
+  withTable('full', function () {
+    assert.strictEqual(privacy.blockedBy('GB.nextlgsdp.com'), 'level');
+    privacy._setSdpGraceActive(true);
+    assert.strictEqual(privacy.blockedBy('gb.nextlgsdp.com'), null, 'reachable while the TV waits for its clock');
+    privacy._setSdpGraceActive(false);
+  });
+  assert.strictEqual(privacy.blockedBy('gb.nextlgsdp.com'), null, 'nothing while the blocker is off');
+});
+
+test('an uploaded list that names LG\'s search host blocks it on Ads & telemetry', function () {
+  privacy._setSdpGraceActive(false);
+  withCustom({ mode: 'add', text: 'gb.nextlgsdp.com\n' }, function () {
+    withTable('ads', function () { assert.strictEqual(privacy.blockedBy('gb.nextlgsdp.com'), 'list'); });
+  });
+});
+
 test('switched off, the list is kept but nothing in it is blocked; a new upload switches it on', function () {
   var own = privacy.ownBlockList('ads');
   withCustom({ mode: 'replace', text: 'mine.example.com\n', file: 'my-list.txt' }, function (r) {

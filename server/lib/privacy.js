@@ -565,6 +565,21 @@ function isAdBlockActive() {
   return adBlockMode() !== 'off';
 }
 
+/*
+ * Whether the table in use blocks a name, from the names it holds rather than
+ * the tier: the SDP clock wait and the owner's list both change what a tier
+ * blocks. 'level' where the tier's own list has it, 'list' where only the
+ * owner's list does, null where it is reachable.
+ */
+function blockedBy(name) {
+  var mode = adBlockMode();
+  name = String(name || '').toLowerCase();
+  if (mode === 'off' || !name || adBlockList(mode).indexOf(name) === -1) return null;
+  var c = customHosts();
+  var replaced = c && c.enabled && c.mode === 'replace';
+  return !replaced && ownBlockList(mode).indexOf(name) !== -1 ? 'level' : 'list';
+}
+
 function tvUpdatesBlocked() {
   return fs.existsSync(HBC_BLOCK_UPDATES_FLAG);
 }
@@ -1414,6 +1429,7 @@ module.exports = {
   init: init,
   isAdBlockActive: isAdBlockActive,
   adBlockMode: adBlockMode,
+  blockedBy: blockedBy,
   adBlockPlatform: adBlockPlatform,
   adBlockList: adBlockList,
   ownBlockList: ownBlockList,

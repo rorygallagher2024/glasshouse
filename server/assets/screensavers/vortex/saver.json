@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Vortex",
+    "es": "Vórtice",
+    "hu": "Örvény",
+    "ru": "Вихрь"
+  },
+  "description": {
+    "en": "Whirlwinds of light spiraling up swaying funnels on black.",
+    "es": "Torbellinos de luz que suben en espiral por embudos que se mecen sobre negro.",
+    "hu": "Fényforgószelek kúsznak fel spirálban imbolygó tölcsérek mentén, fekete háttéren.",
+    "ru": "Световые вихри поднимаются по спирали вдоль качающихся воронок на чёрном фоне."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 110
+}

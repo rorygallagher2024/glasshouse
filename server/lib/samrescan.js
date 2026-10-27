@@ -19,6 +19,14 @@
  * webOS 4 has no such setting (a B8 reports it missing), and there callers
  * restart sam as before. They also do if sam has not caught up in time.
  *
+ * On webOS 7 (a 65UQ801C0SB on 7.6.0) sam watches the list as well, its
+ * binary naming profile.blockedAppList, but configd holds no value until one
+ * is written. sam then blocks the list LG's server sent for the country, kept
+ * in blockedAppList/<country>.json, so a nudge starts from that file: sam
+ * rescanned within the second, kept its pid, and its app list was unchanged
+ * after the list went back. Only where sam has no blockSystemApp, as there:
+ * webOS 10 and 11 ignore the list and are reread app by app instead.
+ *
  * sam ignores that list on webOS 10 (a C2 on 10.3.1 kept a blocked app on
  * Home), so there rereadApp() asks sam for one app instead:
  * applicationManager/blockSystemApp followed by releaseBlockSystemApp makes
@@ -40,6 +48,8 @@
  */
 var fs = require('fs');
 var BLOCK_SCHEMA = '/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema';
+var SAM_BIN = '/usr/sbin/sam';
+var COUNTRY_LISTS = '/var/preferences/com.webos.applicationManager/blockedAppList';
 var KEY = 'profile.blockedAppList';
 // Not an app: blocking it blocks nothing.
 var NUDGE_ID = 'io.github.rorygallagher2024.lg-webos-dashboard.rescan';
@@ -50,6 +60,9 @@ var CHECK_POLLS = 16;
 var lunaFn = null;
 var supported = null;
 var blockSchema = BLOCK_SCHEMA;
+var samBin = SAM_BIN;
+var countryLists = COUNTRY_LISTS;
+var samReadsKey = null;   // whether sam's binary names KEY, read once
 var forceParam = null;   // whether the block needs forceBlockSystemApp, read once
 var running = false;
 var waiting = [];
@@ -60,6 +73,9 @@ function init(opts) {
   supported = null;
   forceParam = null;
   if (opts.blockSchema) blockSchema = opts.blockSchema;
+  if (opts.samBin) samBin = opts.samBin;
+  if (opts.countryLists) countryLists = opts.countryLists;
+  samReadsKey = null;
   if (opts.nudgeMs !== undefined) NUDGE_MS = opts.nudgeMs;
   if (opts.pollMs !== undefined) CHECK_POLL_MS = opts.pollMs;
 }
@@ -67,8 +83,31 @@ function init(opts) {
 function readList(cb) {
   lunaFn('com.webos.service.config/getConfigs', { configNames: [KEY] }, function (r) {
     var list = r && r.configs && r.configs[KEY];
-    cb(Array.isArray(list) ? list : null);
+    if (Array.isArray(list)) return cb(list);
+    if (r && r.returnValue) return cb(countryList());
+    cb(null);
   });
+}
+
+/*
+ * The list sam blocks while configd has none: the country's, where sam reads
+ * the key, has no blockSystemApp, and exactly one country's list is kept.
+ * null otherwise.
+ */
+function countryList() {
+  try {
+    if (fs.existsSync(blockSchema)) return null;
+    if (samReadsKey === null) samReadsKey = fs.readFileSync(samBin).toString('binary').indexOf(KEY) !== -1;
+    if (!samReadsKey) return null;
+    var files = fs.readdirSync(countryLists).filter(function (f) { return /\.json$/.test(f); });
+    if (files.length !== 1) return null;
+    var list = JSON.parse(fs.readFileSync(countryLists + '/' + files[0], 'utf8')).blocked_applist;
+    if (!Array.isArray(list)) return null;
+    for (var i = 0; i < list.length; i++) if (typeof list[i] !== 'string') return null;
+    return list;
+  } catch (e) {
+    return null;
+  }
 }
 
 function writeList(list, cb) {

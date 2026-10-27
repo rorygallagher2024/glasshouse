@@ -4,7 +4,7 @@ Four features are experimental and off by default. Three are turned on under **S
 
 ## Hiding home screen system apps
 
-Hides built-in LG apps, such as Gallery, Music and Sports, from the Home screen ribbon. Once it is turned on, the apps to hide are chosen on the **Apps** tab. It is experimental on every TV.
+Hides built-in LG apps, such as Gallery, Music and Sports, from the Home screen ribbon. Once it is turned on, the apps to hide are chosen on the **Home** tab. It is experimental on every TV.
 
 ## Custom screen savers on webOS 12 and later
 
@@ -14,7 +14,7 @@ On webOS 10 and 11 they were experimental too, until TVs had run them. Switching
 
 ## Home screen layout on webOS 10
 
-Switches off parts of LG's Home screen, chosen on the **Apps** tab under **Home screen layout**, which also has the switch, with its warning. On webOS 9 it works without turning anything on.
+Switches off parts of LG's Home screen, chosen on the **Home** tab under **Home screen layout**, which also has the switch, with its warning. On webOS 9 it works without turning anything on.
 
 webOS 10's home app keeps its layout on the TV's read-only system and looks nowhere else for it, so Glasshouse lays its own over LG's with an overlay mount and restarts the home app to read it. The mount does not survive a restart of the TV, so it is put back when Glasshouse starts, and LG's Home screen can show for a moment before that. It has been tried through Glasshouse on a C2 with webOS 10.3.1, and on a few other webOS 10 TVs outside it. **Put back LG's Home screen**, or switching it off, takes the overlay away and brings LG's Home screen back. It does not restart the app manager, so the problem below does not apply to it.
 

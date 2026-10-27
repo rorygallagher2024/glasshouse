@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Neo",
+    "es": "Neo",
+    "hu": "Neo",
+    "ru": "Neo"
+  },
+  "description": {
+    "en": "Columns of falling glyphs, their colors turning round the wheel every minute.",
+    "es": "Columnas de glifos que caen, con colores que dan la vuelta a la rueda cada minuto.",
+    "hu": "Hulló jelek oszlopai, amelyek színe percenként körbejár a színkörön.",
+    "ru": "Столбцы падающих символов, цвет которых каждую минуту проходит по кругу."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 120
+}

@@ -23,7 +23,7 @@ var DISPLAY_FIELDS = {
   error: 1, note: 1, label: 1, name: 1, detail: 1, desc: 1, description: 1,
   title: 1, badge: 1, message: 1, hint: 1, limitTrackingLabel: 1, limitTrackingDetail: 1,
   // Lists of the names above, which a page joins into a sentence.
-  sharesWith: 1, agreements: 1, kept: 1,
+  sharesWith: 1, agreements: 1, kept: 1, cautions: 1,
   // [id, title, note] rows: only the strings msg() made are changed, never an id.
   consentGroups: 1
 };
@@ -39,6 +39,10 @@ var filledCount = 0;
 
 var dicts = {};              // lang -> { key: { text, from } }
 var langDir = null;
+// Strings that bring their own translations instead of being in the language
+// files, such as a screen saver's name in its saver.json. Kept apart so that
+// reading the files again does not lose them: lang -> { key: { text, from } }.
+var given = {};
 
 function fill(text, vars) {
   if (!vars) return text;
@@ -61,6 +65,21 @@ function msg(key, en, vars) {
   return text;
 }
 
+// A fixed string with its translations by language, as a screen saver's
+// saver.json gives them: { en: 'Clock', es: 'Reloj' }. Returns the English,
+// as msg() does. A language Glasshouse has no file for stays in English.
+function define(key, en, texts) {
+  fixed[en] = { key: key, en: en, vars: null };
+  for (var lang in texts) {
+    if (!Object.prototype.hasOwnProperty.call(texts, lang)) continue;
+    if (lang === 'en' || !/^[a-z]{2}$/.test(lang) || typeof texts[lang] !== 'string' || !texts[lang]) continue;
+    if (!given[lang]) given[lang] = {};
+    given[lang][key] = { text: texts[lang], from: en };
+    if (dicts[lang]) dicts[lang][key] = given[lang][key];
+  }
+  return en;
+}
+
 // "A, B and C" as a message, so the joining word follows the page's language
 // too. The items are left as they are: they may be messages themselves, or
 // names the TV gave in its own language.
@@ -81,6 +100,10 @@ function init(dir) {
     if (!m) continue;
     try { dicts[m[1]] = JSON.parse(fs.readFileSync(path.join(dir, files[i]), 'utf8')); }
     catch (e) { console.error('strings: ' + files[i] + ' did not parse: ' + e.message); }
+  }
+  for (var lang in given) {
+    if (!dicts[lang]) continue;
+    for (var key in given[lang]) dicts[lang][key] = given[lang][key];
   }
 }
 
@@ -134,6 +157,7 @@ function translateBody(body, lang) {
 
 module.exports = {
   msg: msg,
+  define: define,
   list: list,
   init: init,
   langOf: langOf,

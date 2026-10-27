@@ -143,6 +143,14 @@ dynamic range while the TV reports no format, as in standby.
 The names of the dynamic range, the HDR type, the EOTF, the colorimetry, and
 the pixel encoding come from `server/lib/names.js`.
 
+The Audio tabs' `/api/audio` snapshot in `lib/audio.js` separates source-facing HDMI
+EDID, receiver formats from `arccontroller/getARCState`, local playback
+declarations, and live audio-driver readings. The EDID parser checks block
+checksums and uses telemetry's input map. `getARCEDIDInfo.eARC` is not treated
+as negotiation evidence. `?with=settings` adds LG's sound and HDMI setting rows, so
+each dashboard reads one endpoint. Reads run only while an Audio tab is open;
+there is no audio-capability background subscription.
+
 The audio output in the stats is named from the `soundOutput` of
 `com.webos.service.audio/master/getVolume`, which uses the sound settings'
 keys, or `tv_speaker_bt_surround` for `tv_speaker_bluetooth` when the
@@ -1109,7 +1117,7 @@ run in CI alongside `shellcheck`; `check-entities.py` needs a live
 | :--- | :--- |
 | `check-es5.py` | An ES6 construct in `tvweb.js`. Node 0.12 treats one as a parse error, so the server never starts and logs nothing. |
 | `check-ui-ids.py` | An id the dashboard reaches for that no element defines. |
-| `check-screensavers.py` | QML newer than the `import QtQuick` line it declares. |
+| `check-screensavers.py` | QML newer than the `import QtQuick` line it declares, and each screen saver folder's `saver.json`. |
 | `check-drift.py` | A documented entity count the code has moved past, and an asset `deploy.sh` would never install. |
 | `check-entities.py` | An entity template naming a field the telemetry no longer has. |
 
@@ -1122,6 +1130,8 @@ log shows, while a parse error leaves no process to log anything.
 ## In-place updater and binary probing
 
 The in-place updater (`server/lib/updater.js`) downloads the release tarball from GitHub directly onto the TV and unpacks it over `/var/lib/tvweb/` without needing a computer or `deploy.sh`.
+
+On a Homebrew Channel install, server files unpacked over `/var/lib/tvweb/` would be taken back to the app's copy, so the updater installs the release's package instead: it reads `<id>.manifest.json` from the release, downloads the `.ipk` it names to `/media/developer/temp/glasshouse-update`, checks the sha256, installs it with `appInstallService/dev/install` (`installer.installOwnPackage`), and runs the new `payload/install.sh` detached, which moves the server over and restarts it. The package carries no services, so `dev/install` costs it no root, and the server keeps running from `/var/lib/tvweb/` until that script restarts it. `dev/install` closes the app while it is open. Package downloads use the same stall limits as other app installs rather than a 30-second total limit. No rollback copy is kept for package updates. `--force` still takes the tarball path.
 
 ### Download Client Probing
 The download requires `curl` or `wget` on the TV. LG's stock `/usr/bin/curl` reaches GitHub on tested TVs, but third-party tools or stripped setups might place modern clients in non-standard paths. To ensure reliable downloads across webOS generations, the updater probes executable binaries in prioritized order:
@@ -1154,7 +1164,7 @@ The call is `luna://com.webos.appInstallService/dev/install` with `{id, ipkUrl: 
 
 **`luna-send` is spawned directly, not through `luna.Subscription`.** The subscription's close handler reconnects, and a reconnect would issue the install a second time. The child is killed on success, failure, timeout and server exit. The service keeps working after `luna-send` is given up on, so a timeout (120 s) checks `listApps` for the expected version before reporting a failure. Cancelling is possible only before the install starts; killing `luna-send` does not stop one in progress.
 
-**`dev/install` kills the package's services.** The Homebrew Channel and the dashboard's own package would lose root that way, so the installer refuses both and leaves them to update themselves.
+**`dev/install` kills the package's services.** The Homebrew Channel would lose root that way, so the installer refuses it and the dashboard's own package; the updater installs the latter itself, as above.
 
 ### Root
 
@@ -1193,7 +1203,7 @@ An upload is refused before any of it is read unless:
 * `Content-Length` is present and `Transfer-Encoding` is not (411), and the length is a positive integer (400);
 * the length is within the 512 MB cap (413), no job or other upload is running (409) and three times the length is free on the staging directory, when `df` can be read (507).
 
-`postGuard` holds the content type and Origin checks that `readJsonBody` shares. `installer.prepareUpload` makes the checks above, clears leftovers from the staging directory and reserves `upload-<random>.ipk` there; a reservation also makes other installs refuse, since a job's cleanup empties the directory, and lapses after 30 minutes without upload data. The route writes the stream with `req.on('data')` and a `fs.createWriteStream`, pausing the request until `drain`. The file is deleted when the connection aborts or closes early, on a write error, and when the byte count differs from `Content-Length`. A complete upload is handed over as `installer.start({source: 'file', path})`, which accepts only a path directly inside the staging directory.
+`postGuard` holds the content type and Origin checks that `readJsonBody` shares. `installer.prepareUpload` makes the checks above, clears leftovers from the staging directory and reserves `upload-<random>.ipk` there; a reservation also makes other installs refuse, since a job's cleanup empties the directory, and lapses after 30 minutes without upload data. The route writes the stream with `req.on('data')` and a `fs.createWriteStream`, pausing the request until `drain`. The file is deleted when the connection aborts or closes early, on a write error, and when the byte count differs from `Content-Length`. On Node 0.12, destroying a stream before its file opens leaves the eventual descriptor alive, so an aborted upload also closes it on `open` and removes the file on `close`. A complete upload is handed over as `installer.start({source: 'file', path})`, which accepts only a path directly inside the staging directory.
 
 The preview carries `source` (`catalog`, `url` or `file`) and the package's sha256. For a `url` or `file` source the page asks again before elevating, naming each service that would run as root, and the confirm request must carry the same list as `confirmRoot` or the installer refuses. `willElevate` tells whether a catalog update will be elevated again from `elevated.json`; the on-TV page offers the root switch for catalog packages only.
 
@@ -1221,7 +1231,7 @@ Home screen bloatware tile hiding allows built-in or preloaded system apps (whic
 
 ## Home Screen Layout
 
-The Apps tab's **Home screen layout** switches parts of LG's Home screen off by
+The Home tab's **Home screen layout** switches parts of LG's Home screen off by
 changing the home app's own layout file, which the app reads only when it
 starts. `lib/homescreen.js` lists one module per home app and uses the first
 whose `supported()` says yes; a TV with none has no Home screen section.
@@ -1326,7 +1336,9 @@ before restoring it, and an already-off value needs no write or snapshot.
 With Quick Start+ on, a power-on resumes the TV with the mount in place, and bootd opens
 Glasshouse Home only while auto launch is on, so there the owner's value is
 put back; Quick Start+ is read at server start and at each switch on or off,
-and an unreadable value, as just after a wake, changes nothing. Where the owner chooses **Hide LG's Home while the TV
+and an unreadable value, as just after a wake, changes nothing. A C4 (webOS
+10.3.1) started on its last input with auto launch on, so where nothing is
+held the hook and the wake path read LG's value instead, with the same checks. Where the owner chooses **Hide LG's Home while the TV
 starts** (`hideLgHomeAtStart` in `home.json`, off by default, since it outlives
 Glasshouse), LG's layout files in `/mnt/lg/cmn_data/manifest` hold an empty
 layout while Glasshouse Home has the place, which LG's Home reads when it
@@ -1409,6 +1421,61 @@ app is opened or closed only while it is on the list. Snapshot responses use
 `private, no-store` caching. Back cancels a pending panel load; returning Home
 discards replies from the previous visit. OK acts once on release.
 
+Left of any row's first tile is a search mark in the gutter, and OK there
+opens a panel to search films and series. `lib/home-search.js` asks `com.webos.service.nlpmanager/search`, the
+service LG's own Search (`com.webos.app.voice`) asks, as a subscription; a
+one-off call is refused with `NLP invalid parameter`. It answers from LG's
+catalogue in under a second on a G3, one result for each title on each
+service, with the service's app id and an item id. Results for apps the TV
+does not have are counted, not shown; the same title and kind within a year
+on several services is one title, since each service dates it differently.
+Opening one asks `com.webos.service.sdx/send` for the item's detail, whose
+`exec_id` is the id the app knows the title by, and launches the app with
+`replaceParams.deeplinkingParams`, which applicationManager puts into the
+app's own `deeplinkingParams` template in its `appinfo.json`
+([TV-RESEARCH](development/TV-RESEARCH.md#lgs-search-and-deep-links-g3-webos-922)).
+For a series, item detail names the latest episode, so
+the start is found instead: the `advanced` detail lists the seasons
+(`season_list`) and a season's lists its episodes (`tab_episode`). Prime
+Video and HBO Max open at the first season's page; other apps, whose season
+links do not open (Disney+) or which have only playback links (BBC iPlayer),
+play the first episode. Apple TV and Netflix list no seasons and keep LG's
+link. An LG item id less its first `|` and LG's service tag (`AMAZON_`) is the
+app's own id, used where the detail names none. Trailers are never listed or
+opened: LG marks none, and lists Prime Video's sneak peeks as films and its
+trailers as episodes, so a title or episode is taken for one by a promo word
+(trailer, teaser, sneak peek, preview, first look) with a running time of 15
+minutes or less, or, without one, ending the name or before its colon or
+dash; Trailer Park Boys and Trailer War stay. `search` in `home.json`, off by
+default, switches search on and off: while off, no rail is shown and both routes refuse before asking
+LG. Only a title and app from the last search can be opened. Both calls go to
+the host sdx names in its request headers for `sdp_nlp` and `sdp_onnow`
+(`GB.nextlgsdp.com` on a G3 in the UK). Each unresolved service host is
+retried each minute, even when the other service has answered. `privacy.blockedBy` checks that host
+against the names the ad blocker's table holds, not the tier: the SDP clock
+wait leaves it reachable on Everything, and an uploaded list can block it on
+Ads & telemetry. While it is blocked the layout carries `searchBlocked`
+(`{ host, by: 'level' | 'list' }`, not saved), the view hides the rail, both
+dashboards grey the switch with a note, and both routes refuse. The state is
+part of `layoutVersion`, so a view already showing reloads within a
+heartbeat when the blocker changes. The view searches 0.4 s after
+typing stops. Back on the TV's keyboard closes it without the page seeing the
+key; the `keyboardStateChange` event on the document says so, and the titles
+take the focus. A return from an app opened in the panel comes as both a
+relaunch and the page showing again, and keeps the panel open for 30 minutes
+unless the heartbeat's `sleeps`, the times the screen has gone off since the
+server started, has changed.
+
+Only the current search may replace the launch list, including while its app
+list is still loading; an empty answer clears the previous targets. The view
+clears previous titles as soon as the text changes, before the typing delay, and waits for the new reply before
+Enter focuses its results. A failed query can be retried with Enter. An app
+launch holds further selections until it answers, and its late reply is
+discarded if the panel has closed. Each detail read and the final launch recheck
+the Search setting and blocker, so a pending lookup stops when either refuses.
+Search requests allow 12 seconds for the
+server's 10-second limit; launches allow 20 seconds for sequential detail reads.
+
 ## Apps kept ready in the background
 
 webOS's preload manager keeps apps loaded so they open quickly, including ones
@@ -1480,6 +1547,8 @@ The debloating engine (`server/lib/services.js`) manages background system daemo
 
 Custom QML screensavers are staged in `/var/lib/tvweb/screensaver` and bind-mounted over `/usr/palm/applications/com.webos.app.screensaver`.
 
+* **Screen saver folders**: each screen saver is a folder with a `saver.json`, read by `lib/screensavers.js` from `assets/screensavers` (Glasshouse's own) and `/var/lib/tvweb/screensavers` (added on the TV, which an update leaves alone). The folder's name gives the id; for an added one Glasshouse prefixes the id, not the folder, with `user-`, so it never clashes with one of Glasshouse's. The folders are read again whenever the tab asks for the list or a screen saver is picked. Picking one copies its whole folder into the staged `qml/`, its main file as `main.qml`, filling in only the placeholders its `uses` names. Home Assistant's select is built from the same list when discovery is published. The format is in [SCREENSAVER-DESIGN.md](development/SCREENSAVER-DESIGN.md#screen-saver-folders).
+
 * **Cold Boot vs Quick Start+**: On Quick Start+ suspend-to-RAM, active bind-mounts persist in memory. On a cold boot (such as after the 4-hour OLED Pixel Cleaning cycle or extended standby on webOS 9 and 10), `/var/lib/webosbrew/init.d/50-tvweb` re-applies the bind-mount if `/var/lib/tvweb/screensaver/.tvweb-screensaver` is present.
 * **Making sam read the new manifest**: sam reads an `appinfo.json` only when it scans, and where LG's screen saver is Flutter (webOS 10 and later) ours changes the app's `type`, so sam has to read it again or the launch goes to the wrong runner. `ensureScreensaverRunner` in `lib/screensavers.js` and the boot hook try two things in turn: `applicationManager/blockSystemApp` followed by `releaseBlockSystemApp` for the one app (`samrescan.rereadApp`; the block adds `"forceBlockSystemApp": false` where the TV's `applicationManager.blockSystemApp.schema` names it, as webOS 11.2 requires; on a C5 on webOS 10.3.1 sam reported the new type within the second and kept its pid), then the configd nudge below (webOS 9). They never restart sam, the restart behind the black-picture reports in #366, which they used to fall back to. A switch to one of ours that sam has not taken is undone (unmounted, staged files cleared) and answered with an error, and a switch back to LG's is answered as taking effect from the next restart; the boot hook unmounts ours likewise. A running screen saver is relaunched after either, since neither stops it. The release goes out even when the block got no answer, which may still have been a block sam made, and on a TV whose stock screen saver is not QML the boot hook releases it once at every boot, so a run cut short between the two calls cannot leave it blocked. Custom screen savers are on by default on webOS 10 and 11 (#768) and stay held back on webOS 12 and later unless `allowExperimentalScreensavers` is set; the version is read from `/etc/issue`.
 * **Reverting to Stock**: When the user selects "LG default" (`stock`), `screensavers.setScreensaver('stock')` unmounts the live overlay and deletes `.tvweb-screensaver` along with all staged files. Without this cleanup, the boot hook would see the stale marker file on cold boot and re-mount the previously staged screensaver. `screensavers.init()` also auto-heals any orphaned marker files if the live screensaver is currently stock.
@@ -1490,8 +1559,12 @@ Custom QML screensavers are staged in `/var/lib/tvweb/screensaver` and bind-moun
 
 The server asks PicCap's service only where `/media/developer/apps/usr/palm/applications/org.webosbrew.piccap` exists and webOS is version 3 or later, so a TV without it or running webOS 2 starts no `luna-send` for it (querying PicCap's native service on webOS 2 stalled the Luna bus and tripped a watchdog reboot, #746). For Home Assistant it polls every `piccap.pollIntervalMs` milliseconds (30 seconds by default) while MQTT is connected and the `piccap` entity is not switched off in the entity settings. An old `"piccap": {"enabled": false}` is turned into exactly that at start-up, and the key removed. Telemetry includes boolean `piccap.power` while PicCap answers; the bridge publishes retained `ON` or `OFF` to `<prefix>/state/piccap/power`, and `<prefix>/command/piccap/power` accepts `ON` or `OFF` when `allowControl` is enabled. Discovery carries the `piccap` switch only while a status check has answered, and is republished when that changes. `/api/stats` adds `piccapCapture: {running}` where PicCap answers, for the Advanced tab's switch, which sends the `piccap` control.
 
+## Hue Sync
+
+Hue Sync is offered where `/media/cryptofs/apps/usr/palm/services/com.lighting.huesync.service` exists, the retail install from LG's store, so a TV without the app starts no `luna-send` for it. For Home Assistant it polls `com.lighting.huesync.service/get` (`{"key":"streaming","data":""}`, the reply carries the state as `value`: `"0"` stopped, `"1"` streaming) every `huesync.pollIntervalMs` milliseconds (30 seconds by default) while MQTT is connected and the `huesync` entity is not switched off in the entity settings. Every call carries the app's ACL id `com.lighting.huesync`, the service's own. Toggling sends `com.lighting.huesync.service/set` with `{"key":"streaming","data":true|false}` and re-reads the state 400 ms later, like PicCap's start/stop; an enable instead waits 3 s after each `set` and is sent again until that re-read reports streaming, up to three attempts, because the app answers the first `set` with `returnValue` true while its own `get` still reads `"0"`, or reads `"1"` once and falls back to `"0"` seconds later. Telemetry includes boolean `huesync.streaming` while Hue Sync answers; the bridge publishes retained `ON` or `OFF` to `<prefix>/state/huesync/power`, and `<prefix>/command/huesync/power` accepts `ON` or `OFF` when `allowControl` is enabled. Discovery carries the `huesync` switch only while a status check has answered, and is republished when that changes. `/api/stats` adds `huesyncStreaming: {streaming}` where Hue Sync answers, for the Advanced tab's switch, which sends the `huesync` control.
 
 
-No Home wallpapers are packaged; the background is black until one is uploaded. The browser prepares personal JPEG/PNG/WebP images as JPEGs within 1920 × 1080 pixels, the `resolution` the Home app declares, which webOS web apps are drawn at. `/api/home/wallpapers/upload?slot=morning|afternoon|evening|night` accepts only `image/jpeg` with a declared size up to 5 MiB, under the usual authentication, control and Origin guards. One upload is buffered at a time, with a 30-second body deadline, frame/scan structure and dimension checks, a disk-space check and atomic replacement. The server does not decode JPEG pixels. The Apps tab hides a system app by setting `visible: false` in its appinfo, and the TV's launch points, which the Apps row is built from, have no tile for such an app (AirPlay's appinfo has it from LG), so it is hidden on both Homes. On a G3 no launch point carries a `visible` field; the Apps row skips any that says `false` all the same. `home-wallpaper-uploads/<slot>.jpg`, outside the updater payload and rollback copy, is that slot's image. File revisions invalidate the browser and TV image URLs after replacement. Uploads are excluded from layout backups.
+
+No Home wallpapers are packaged; the background is black until one is uploaded. The browser prepares personal JPEG/PNG/WebP images as JPEGs within 1920 × 1080 pixels, the `resolution` the Home app declares, which webOS web apps are drawn at. `/api/home/wallpapers/upload?slot=morning|afternoon|evening|night` accepts only `image/jpeg` with a declared size up to 5 MiB, under the usual authentication, control and Origin guards. One upload is buffered at a time, with a 30-second body deadline, frame/scan structure and dimension checks, a disk-space check and atomic replacement. The server does not decode JPEG pixels. `POST /api/home/wallpapers` with `{ "examples": true }` downloads the example set from the `v1` tag of `rorygallagher2024/glasshouse-wallpapers` into each slot without an image, one at a time under the same lock, keeping each only if it matches the sha256 pinned in `lib/home-wallpapers.js` and passes the same JPEG checks; a new set is a new tag. The Apps tab hides a system app by setting `visible: false` in its appinfo, and the TV's launch points, which the Apps row is built from, have no tile for such an app (AirPlay's appinfo has it from LG), so it is hidden on both Homes. On a G3 no launch point carries a `visible` field; the Apps row skips any that says `false` all the same. `home-wallpaper-uploads/<slot>.jpg`, outside the updater payload and rollback copy, is that slot's image. File revisions invalidate the browser and TV image URLs after replacement. Uploads are excluded from layout backups.
 
 A failed Home restore persists `restorePending` with the guard stopped; both dashboards keep a retry action until all settings and the Home key are restored. HBC uninstall uses the same owner before removing the app, and skips Home service writes on TVs that never used it. App absence requires the specific `Invalid appId` response, including raw replies accompanying a non-zero luna-send exit. A failed Home layout restore makes the backup result report partial failure.

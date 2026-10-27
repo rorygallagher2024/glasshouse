@@ -11,6 +11,14 @@
     "text": "Diese Reihe ist leer",
     "from": "This row is empty"
   },
+  "home.arrange.folder": {
+    "text": "In „Weitere Apps“ oder heraus",
+    "from": "Into or out of More apps"
+  },
+  "home.arrange.folderAppsOnly": {
+    "text": "Nur Apps kommen in „Weitere Apps“",
+    "from": "Only apps go into More apps"
+  },
   "home.arrange.hide": {
     "text": "Aus- oder einblenden",
     "from": "Hide or show"
@@ -18,6 +26,10 @@
   "home.arrange.isHidden": {
     "text": "(ausgeblendet)",
     "from": "(hidden)"
+  },
+  "home.arrange.isInFolder": {
+    "text": "{name} (in „Weitere Apps“)",
+    "from": "{name} (in More apps)"
   },
   "home.arrange.keys": {
     "text": "OK nimmt eine Kachel auf oder legt sie ab. Gehalten verschieben die Pfeile sie oder ihre Reihe, Zurück blendet sie aus oder ein bzw. entfernt einen Sender. Links von einer Reihe legt OK ihre Reihenfolge fest.",
@@ -144,8 +156,12 @@
     "from": "Remove"
   },
   "home.ch.show": {
-    "text": "Sender des TVs anzeigen",
-    "from": "Show the TV’s channels"
+    "text": "Sender anzeigen",
+    "from": "Show channels"
+  },
+  "home.ch.addDesc": {
+    "text": "Aus denen, die der TV gespeichert hat.",
+    "from": "From those the TV has tuned."
   },
   "home.colours.accent": {
     "text": "Akzent",
@@ -240,8 +256,8 @@
     "from": "Earlier"
   },
   "home.experimental": {
-    "text": "Experimentell. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. Erprobt auf webOS 9 und 10. In der ersten halben Minute nach einem Kaltstart zeigt Home einen Hinweis, dass Glasshouse Home startet.",
-    "from": "Experimental. Glasshouse Home replaces LG's Home screen with Glasshouse's own. It has been tried on webOS 9 and 10. In the first half minute after the TV starts from cold, Home shows a message that Glasshouse Home is starting."
+    "text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. Wenn etwas nicht stimmt, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder drücken Sie „LG Home verwenden“, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.",
+    "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."
   },
   "home.fault.desc": {
     "text": "Glasshouse Home kommt zurück, sobald es antwortet. Bleibt es stumm, kommt nach wenigen Minuten LGs Home zurück.",
@@ -250,6 +266,14 @@
   "home.fault.title": {
     "text": "Glasshouse antwortet nicht",
     "from": "Glasshouse is not answering"
+  },
+  "home.folder.label": {
+    "text": "In „Weitere Apps“",
+    "from": "In More apps"
+  },
+  "home.folder.title": {
+    "text": "Weitere Apps",
+    "from": "More apps"
   },
   "home.hidden": {
     "text": "Ausgeblendet",
@@ -264,8 +288,8 @@
     "from": "Press again to hide it"
   },
   "home.hideLgDesc": {
-    "text": "Etwa 25 Sekunden nach einem Kaltstart, bis Glasshouse Home seinen Platz einnimmt, öffnet sich LGs Home als schwarzer Bildschirm statt mit eigenem Inhalt. Läuft Glasshouse nicht mehr – etwa nach einem Firmware-Update, das Root entfernt –, bleibt LGs Home schwarz, bis es per SSH zurückgesetzt wird.",
-    "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG’s Home stays black until it is put back over SSH."
+    "text": "Etwa 25 Sekunden nach einem Kaltstart, bis Glasshouse Home seinen Platz einnimmt, öffnet sich LGs Home als schwarzer Bildschirm statt mit eigenem Inhalt.",
+    "from": "For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG’s Home opens as a black screen instead of its own."
   },
   "home.hint.desc": {
     "text": "Kacheln und Reihen verschieben oder ausblenden. LG Home ist die letzte Kachel bei Apps.",
@@ -350,6 +374,10 @@
   "home.pictureDesc": {
     "text": "Oben rechts auf Glasshouse Home: Auflösung, Bildwiederholrate und HDR des zuletzt Gesehenen sowie Bildmodus und Helligkeit.",
     "from": "In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets."
+  },
+  "home.place": {
+    "text": "Wo sie erscheint",
+    "from": "Where it shows"
   },
   "home.plate.allm": {
     "text": "Geringe Latenz",
@@ -451,6 +479,10 @@
     "text": "{n} von {total} sichtbar",
     "from": "{n} of {total} shown"
   },
+  "home.row.appsNoteFolder": {
+    "text": "{n} von {total} sichtbar, {folder} in „Weitere Apps“",
+    "from": "{n} of {total} shown, {folder} in More apps"
+  },
   "home.row.channels": {
     "text": "Sender",
     "from": "Channels"
@@ -527,45 +559,13 @@
     "text": "Auf diesem TV nicht verfügbar",
     "from": "Not available on this TV"
   },
-  "home.wall.afternoon": {
-    "text": "Nachmittag, 11:00 bis 17:00",
-    "from": "Afternoon, 11:00 to 17:00"
-  },
   "home.wall.black": {
     "text": "Schwarz",
     "from": "Black"
   },
-  "home.wall.chooseFile": {
-    "text": "Hintergrundbild auswählen",
-    "from": "Choose a wallpaper image"
-  },
   "home.wall.chooseImage": {
     "text": "Ein Bild als JPEG, PNG oder WebP bis 25 MB wählen.",
     "from": "Choose a JPEG, PNG or WebP image up to 25 MB."
-  },
-  "home.wall.clear": {
-    "text": "Hochgeladene Bilder entfernen",
-    "from": "Remove uploaded images"
-  },
-  "home.wall.evening": {
-    "text": "Abend, 17:00 bis 21:00",
-    "from": "Evening, 17:00 to 21:00"
-  },
-  "home.wall.morning": {
-    "text": "Morgen, 06:00 bis 11:00",
-    "from": "Morning, 06:00 to 11:00"
-  },
-  "home.wall.night": {
-    "text": "Nacht, 21:00 bis 06:00",
-    "from": "Night, 21:00 to 06:00"
-  },
-  "home.wall.optional": {
-    "text": "Optional: für jede Tageszeit ein Bild hochladen. Ohne Bild bleibt der Hintergrund schwarz.",
-    "from": "Optional: upload an image for each time of day. A time of day without one has a black background."
-  },
-  "home.wall.slot": {
-    "text": "Tageszeit",
-    "from": "Time of day"
   },
   "home.wall.slotAfternoon": {
     "text": "Nachmittag",
@@ -599,10 +599,6 @@
     "text": "Das Bild konnte nicht geöffnet werden.",
     "from": "The image could not be opened."
   },
-  "home.wall.upload": {
-    "text": "Bild hochladen",
-    "from": "Upload image"
-  },
   "home.wall.uploadDone": {
     "text": "Bild hochgeladen. Home aktualisiert sich in wenigen Sekunden.",
     "from": "Image uploaded. Home updates within a few seconds."
@@ -626,5 +622,53 @@
   "lang.partial": {
     "text": "{name} (teilweise)",
     "from": "{name} (partial)"
+  },
+  "home.hideLgWarn": {
+    "text": "Warnung: Läuft Glasshouse nicht mehr (etwa nach einem Firmware-Update, das Root entfernt), bleibt LGs Home schwarz, bis es per SSH zurückgesetzt wird.",
+    "from": "Warning: If Glasshouse stops running (for example after a firmware update removes root), LG’s Home will stay black until it is put back over SSH."
+  },
+  "home.wall.add": {
+    "text": "Bild hinzufügen",
+    "from": "Add a picture"
+  },
+  "home.wall.choose": {
+    "text": "Bild für {name} wählen",
+    "from": "Choose a picture for {name}"
+  },
+  "home.wall.clearAll": {
+    "text": "Alle entfernen",
+    "from": "Remove all"
+  },
+  "home.wall.intro": {
+    "text": "Ein Bild hinter Glasshouse Home für jede Tageszeit. Wählen Sie eine Tageszeit oder ziehen Sie ein Bild darauf. Eine ohne Bild hat einen schwarzen Hintergrund.",
+    "from": "A picture behind Glasshouse Home for each part of the day. Choose a time of day, or drop an image on it. One without a picture has a black background."
+  },
+  "home.wall.now": {
+    "text": "Jetzt",
+    "from": "Now"
+  },
+  "home.wall.remove": {
+    "text": "Entfernen",
+    "from": "Remove"
+  },
+  "home.wall.replace": {
+    "text": "Ersetzen",
+    "from": "Replace"
+  },
+  "srv.home.wallSlot": {
+    "text": "unbekannte Tageszeit für das Hintergrundbild",
+    "from": "unknown wallpaper slot"
+  },
+  "home.wall.examples": {
+    "text": "Beispielbilder hinzufügen",
+    "from": "Add example pictures"
+  },
+  "home.wall.examplesBusy": {
+    "text": "Wird heruntergeladen…",
+    "from": "Downloading…"
+  },
+  "home.wall.examplesDone": {
+    "text": "Beispielbilder hinzugefügt. Home aktualisiert sich in wenigen Sekunden.",
+    "from": "Example pictures added. Home updates within a few seconds."
   }
 }

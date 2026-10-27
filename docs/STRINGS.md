@@ -23,8 +23,9 @@ An attribute takes `data-t-` and its name, with the English in the attribute:
 
 `title`, `aria-label` and `placeholder` are covered.
 
-In the page's script, call `t()` with a literal key and literal English. Values
-go in through named placeholders:
+In the page's script, call `t()` with a literal key and literal English, one
+literal however long rather than pieces joined with `+`. Values go in through
+named placeholders:
 
 ```js
 t('server.install', 'Install v{version}', { version: v })
@@ -65,6 +66,9 @@ description - is written with `msg()`, from `server/lib/say.js`:
 error: msg('srv.update.busy', 'an update is already running')
 error: msg('srv.saver.stageFailed', 'could not stage the screen saver: {error}', { error: e.message })
 ```
+
+The key and the English follow the rules for `t()`: both literal, the English
+one literal rather than pieces joined with `+`.
 
 `msg()` returns the English, so the server, Home Assistant, MQTT and the log
 all carry on in English. When a page is in another language it says so on its

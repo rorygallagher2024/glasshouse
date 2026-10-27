@@ -136,7 +136,7 @@ var ROWS = [
       { value: 'passThrough', label: msg('srv.lgs.soundOutputDigital.passThrough', 'Pass Through') }
     ],
     title: msg('srv.lgs.soundOutputDigital', 'Digital sound output'),
-    desc: msg('srv.lgs.soundOutputDigital.desc', 'The audio sent to a soundbar or receiver over HDMI ARC or optical. Pass Through sends Dolby and DTS as they are; PCM turns them into plain stereo.') },
+    desc: msg('srv.lgs.soundOutputDigital.desc', 'The audio sent to a soundbar or receiver over HDMI ARC/eARC or optical. Pass Through requests encoded audio; PCM sends decoded audio.') },
   { id: 'audioBalance', section: 'sound', category: 'sound', key: 'audioBalance', type: 'number', min: -50, max: 50, store: 'string',
     title: msg('srv.lgs.audioBalance', 'Balance'),
     desc: msg('srv.lgs.audioBalance.desc', 'Between the left and right TV speakers, and only those. At 0 both play at the same level.') },
@@ -180,28 +180,28 @@ var ROWS = [
       { value: 'pcm', label: msg('srv.lgs.audioFormat.pcm', 'PCM') }
     ],
     title: msg('srv.lgs.audioFormatHdmi1', 'HDMI 1 audio format'),
-    desc: msg('srv.lgs.audioFormatHdmi.desc', 'What the TV asks the device on this input to send. Bitstream passes Dolby Atmos and DTS on to a soundbar or receiver; PCM asks for plain audio.') },
+    desc: msg('srv.lgs.audioFormatHdmi.desc', 'What the TV asks the device on this input to send. Bitstream allows encoded audio; PCM requests decoded audio.') },
   { id: 'audioFormatHDMI2', section: 'hdmi', port: 2, column: 'audioFormat', greyable: true, category: 'sound', key: 'inputAudioFormatHDMI2', type: 'choice',
     choices: [
       { value: 'bitstream', label: msg('srv.lgs.audioFormat.bitstream', 'Bitstream') },
       { value: 'pcm', label: msg('srv.lgs.audioFormat.pcm', 'PCM') }
     ],
     title: msg('srv.lgs.audioFormatHdmi2', 'HDMI 2 audio format'),
-    desc: msg('srv.lgs.audioFormatHdmi.desc', 'What the TV asks the device on this input to send. Bitstream passes Dolby Atmos and DTS on to a soundbar or receiver; PCM asks for plain audio.') },
+    desc: msg('srv.lgs.audioFormatHdmi.desc', 'What the TV asks the device on this input to send. Bitstream allows encoded audio; PCM requests decoded audio.') },
   { id: 'audioFormatHDMI3', section: 'hdmi', port: 3, column: 'audioFormat', greyable: true, category: 'sound', key: 'inputAudioFormatHDMI3', type: 'choice',
     choices: [
       { value: 'bitstream', label: msg('srv.lgs.audioFormat.bitstream', 'Bitstream') },
       { value: 'pcm', label: msg('srv.lgs.audioFormat.pcm', 'PCM') }
     ],
     title: msg('srv.lgs.audioFormatHdmi3', 'HDMI 3 audio format'),
-    desc: msg('srv.lgs.audioFormatHdmi.desc', 'What the TV asks the device on this input to send. Bitstream passes Dolby Atmos and DTS on to a soundbar or receiver; PCM asks for plain audio.') },
+    desc: msg('srv.lgs.audioFormatHdmi.desc', 'What the TV asks the device on this input to send. Bitstream allows encoded audio; PCM requests decoded audio.') },
   { id: 'audioFormatHDMI4', section: 'hdmi', port: 4, column: 'audioFormat', greyable: true, category: 'sound', key: 'inputAudioFormatHDMI4', type: 'choice',
     choices: [
       { value: 'bitstream', label: msg('srv.lgs.audioFormat.bitstream', 'Bitstream') },
       { value: 'pcm', label: msg('srv.lgs.audioFormat.pcm', 'PCM') }
     ],
     title: msg('srv.lgs.audioFormatHdmi4', 'HDMI 4 audio format'),
-    desc: msg('srv.lgs.audioFormatHdmi.desc', 'What the TV asks the device on this input to send. Bitstream passes Dolby Atmos and DTS on to a soundbar or receiver; PCM asks for plain audio.') },
+    desc: msg('srv.lgs.audioFormatHdmi.desc', 'What the TV asks the device on this input to send. Bitstream allows encoded audio; PCM requests decoded audio.') },
 
   // HDMI-CEC, which LG calls SIMPLINK.
   { id: 'simplinkEnable', section: 'devices', category: 'other', key: 'simplinkEnable', on: 'on', off: 'off',

@@ -8,6 +8,7 @@ var path = require('path');
 var zlib = require('zlib');
 var execFile = require('child_process').execFile;
 var fetch = require('./fetch');
+var hashFile = require('./installer').hashFile;
 var probeFetch = fetch.probeFetch;
 var execErr = fetch.execErr;
 
@@ -17,6 +18,10 @@ var UPDATE_REPO = 'rorygallagher2024/glasshouse';
 var UPDATE_API = 'https://api.github.com/repos/' + UPDATE_REPO + '/releases?per_page=10';
 var WHATS_NEW_MAX = 5;
 var UPDATE_TARBALL = 'https://codeload.github.com/' + UPDATE_REPO + '/tar.gz/refs/tags/v';
+// The Homebrew Channel package each release carries, and the manifest naming
+// its file and sha256 (.github/workflows/homebrew-channel.yml).
+var PACKAGE_ID = 'io.github.rorygallagher2024.lg-webos-dashboard';
+var RELEASE_DOWNLOAD = 'https://github.com/' + UPDATE_REPO + '/releases/download/v';
 var BOOT_HOOK = '/var/lib/webosbrew/init.d/50-tvweb';
 
 var installDir = path.resolve(__dirname, '..');
@@ -44,10 +49,18 @@ var shownVersion = '';
 var writeSettingsFn = null;
 var publishUpdateFn = null;
 var publishDiscoveryFn = null;
-// True when the Homebrew Channel installed the server. It updates it then: a
-// release installed here would be taken back to the app's own copy.
+// True when the Homebrew Channel installed the server. A release's server
+// files installed here would be taken back to the app's own copy, so the
+// release's package is installed instead and the app brings the server along.
 var viaHomebrewChannel = function () { return false; };
 var installerBusy = function () { return false; };
+// installPackage(file, version, cb(err)) puts an .ipk in place with the TV's
+// app installer; afterPackage(version) runs the app's own installer, which
+// moves the server over and restarts it.
+var installPackageFn = null;
+/** @type {(version: string) => void} */
+var afterPackageFn = function () {};
+var packageStageDir = '/media/developer/temp/glasshouse-update';
 var updateFirstTimer = null;
 var updateEveryTimer = null;
 
@@ -320,16 +333,64 @@ function installBusy(cb) {
   return true;
 }
 
+/*
+ * A Homebrew Channel install updates by the release's package, as the Homebrew
+ * Channel itself would: the TV's app installer puts it in place, then the
+ * app's installer moves the server over and restarts it. Glasshouse is not in
+ * the Homebrew Channel's catalog, so nothing else would offer the update.
+ */
+function installReleasePackage(ver, done) {
+  var fail = function (reason) {
+    setUpdateState('error', reason);
+    console.error('update: ' + reason);
+    rmrf(packageStageDir, function () { done({ ok: false, error: reason }); });
+  };
+  probeFetch(RELEASE_DOWNLOAD + ver + '/' + PACKAGE_ID + '.manifest.json', null, function (err, body) {
+    if (err) return fail(err.message);
+    var man = null;
+    try { man = JSON.parse(body); } catch (e) {}
+    var file = man && String(man.ipkUrl || '');
+    var sha = man && man.ipkHash && String(man.ipkHash.sha256 || '').toLowerCase();
+    if (!man || man.id !== PACKAGE_ID || man.version !== ver ||
+        !/^[A-Za-z0-9._+-]+\.ipk$/.test(file) || !/^[0-9a-f]{64}$/.test(sha)) {
+      return fail(msg('srv.update.badManifest', 'the release v{version} has no usable package manifest', { version: ver }));
+    }
+    rmrf(packageStageDir, function () {
+      try { mkdirp(packageStageDir); } catch (e) { return fail('could not create ' + packageStageDir + ': ' + e.message); }
+      var ipk = path.join(packageStageDir, file);
+      console.log('update: downloading the v' + ver + ' package');
+      fetch.download(RELEASE_DOWNLOAD + ver + '/' + file, ipk, {}, function (e2) {
+        if (e2) return fail(e2.message);
+        hashFile(ipk, function (e3, got) {
+          if (e3) return fail('could not read the download: ' + e3.message);
+          if (got !== sha) return fail(msg('srv.update.badHash', 'the downloaded package does not match the release\'s checksum'));
+          setUpdateState('installing');
+          installPackageFn(ipk, ver, function (e4) {
+            if (e4) return fail(String(e4.message || e4));
+            rmrf(packageStageDir, function () {
+              setUpdateState('installed');
+              console.log('update: installed the v' + ver + ' package over v' + shownVersion);
+              afterPackageFn(ver);
+              done({ ok: true, updated: true, installed: currentVersion, latest: ver, restarting: true });
+            });
+          });
+        });
+      });
+    });
+  });
+}
+
 function installUpdate(opts, cb) {
   if (typeof opts === 'function') { cb = opts; opts = {}; }
   opts = opts || {};
   if (installBusy(cb)) return;
   if (UPDATE.busy) return cb({ ok: false, error: msg('srv.update.busy', 'an update is already running') });
-  if (viaHomebrewChannel() && !opts.force) {
+  var asPackage = viaHomebrewChannel() && !opts.force;
+  if (asPackage && !installPackageFn) {
     return cb({ ok: false, error: msg('srv.update.viaHbc', 'updates for this install come from the Homebrew Channel (or sideload the latest .ipk from GitHub releases)') });
   }
 
-  if (fs.existsSync(path.join(installDir, '..', '.git'))) {
+  if (!asPackage && fs.existsSync(path.join(installDir, '..', '.git'))) {
     return cb({ ok: false, error: msg('srv.update.gitCheckout', 'this is a git checkout - update it with git, not from here') });
   }
 
@@ -355,6 +416,7 @@ function installUpdate(opts, cb) {
     }
 
     setUpdateState('downloading');
+    if (asPackage) return installReleasePackage(ver, done);
     rmrf(stageDir, function () {
       try { mkdirp(stageDir); } catch (e) { return fail('could not create ' + stageDir + ': ' + e.message); }
       var gz = path.join(stageDir, 'release.tar.gz');
@@ -474,6 +536,9 @@ function init(opts) {
   if (opts.onDiscoveryChange) publishDiscoveryFn = opts.onDiscoveryChange;
   if (opts.viaHomebrewChannel) viaHomebrewChannel = opts.viaHomebrewChannel;
   if (opts.installerBusy) installerBusy = opts.installerBusy;
+  if (opts.installPackage) installPackageFn = opts.installPackage;
+  if (opts.afterPackage) afterPackageFn = opts.afterPackage;
+  if (opts.packageStageDir) packageStageDir = opts.packageStageDir;
 }
 
 function setPublishHandler(pubUpdate, pubDiscovery) {

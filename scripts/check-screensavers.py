@@ -12,11 +12,24 @@ that simply never draws. These are the two mistakes that have actually shipped:
   * anchors on a direct child of a Row or Column, which QML refuses for the
     axis that the layout owns, so the item silently lands somewhere else.
 
-    ./scripts/check-screensavers.py [files...]
+It also checks each screen saver folder, as the server reads them
+(docs/development/SCREENSAVER-DESIGN.md has the format): its saver.json
+parses, is format 1 and has a name, a description and a version;
+its main file is there; and every placeholder its QML uses is one it asks for
+in uses. Glasshouse's own, in server/assets/screensavers, also need Spanish and
+the MIT license. The ones in server/screensavers are installed into the TV's
+folder for added screen savers, as an example of one, so they are checked as
+anyone's would be.
+
+    ./scripts/check-screensavers.py                every folder in the repository
+    ./scripts/check-screensavers.py my-saver/      a screen saver of your own
+    ./scripts/check-screensavers.py a.qml b.qml    single QML files
+
+A folder given by path is checked as one added on a TV would be.
 
 Exits non-zero if anything is flagged.
 """
-import re, sys, pathlib
+import json, re, sys, pathlib
 
 # property -> QtQuick version that introduced it
 SINCE = {
@@ -91,11 +104,86 @@ def check(path):
 
     return bad
 
-files = [pathlib.Path(a) for a in sys.argv[1:]]
-if not files:
-    files = sorted(pathlib.Path('server/assets/screensavers').glob('*.qml'))
+SAVERS = pathlib.Path('server/assets/screensavers')
+EXAMPLES = pathlib.Path('server/screensavers')
+USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__'}
 
+def check_folder(d, own):
+    """Problems with one saver folder's saver.json, and its main QML file."""
+    bad = []
+    if not re.match(r'^[a-z0-9][a-z0-9-]{0,31}$', d.name):
+        bad.append('folder name can only have lowercase letters, digits and -, starting with a letter or digit, up to 32 characters')
+    try:
+        m = json.loads((d / 'saver.json').read_text(encoding='utf-8'))
+    except Exception as e:
+        return ['saver.json: %s' % e], []
+    if not isinstance(m, dict):
+        return ['saver.json is not an object'], []
+    if m.get('manifest') != 1:
+        bad.append('saver.json: manifest must be 1')
+    for field in ('name', 'description'):
+        v = m.get(field)
+        if own and not (isinstance(v, dict) and v.get('en') and v.get('es')):
+            bad.append('saver.json: %s needs en and es' % field)
+        elif not (isinstance(v, str) and v) and not (isinstance(v, dict) and v.get('en')):
+            bad.append('saver.json: %s needs English' % field)
+    if not isinstance(m.get('version'), str) or not m.get('version'):
+        bad.append('saver.json: version missing')
+    if own and m.get('license') != 'MIT':
+        bad.append('saver.json: Glasshouse\'s own screen savers are MIT')
+    if not own and 'stats' in m.get('uses', []):
+        bad.append('saver.json: only Glasshouse\'s own screen savers are given stats')
+    if 'id' in m:
+        bad.append('saver.json: no id - the folder name is the id')
+    main = m.get('main', 'main.qml')
+    uses = m.get('uses', [])
+    for u in uses:
+        if u not in USES:
+            bad.append('saver.json: unknown use "%s"' % u)
+    qml = d / main
+    if not qml.is_file():
+        return bad + ['%s missing' % main], []
+    src = qml.read_text(encoding='utf-8')
+    for u, ph in USES.items():
+        if ph in src and u not in uses:
+            bad.append('%s uses %s without "%s" in uses' % (main, ph, u))
+    # Every QML file in it, as the TV checks them all.
+    return bad, sorted(p for p in d.rglob('*.qml') if p.is_file())
+
+args = [pathlib.Path(a) for a in sys.argv[1:]]
+files = []
 fails = 0
+for a in args:
+    if a.is_dir():
+        if not (a / 'saver.json').is_file():
+            fails += 1
+            print('%s: no saver.json - not a screen saver folder' % a)
+            continue
+        problems, qmls = check_folder(a if a.name else a.resolve(), False)
+        if problems:
+            fails += 1
+            for msg in problems:
+                print('%s: %s' % (a, msg))
+        files += qmls
+    else:
+        files.append(a)
+if not args:
+    shown = lambda root: sorted(p for p in root.iterdir() if p.is_dir() and not p.name.startswith('.'))
+    folders = [(d, True) for d in shown(SAVERS)]
+    if EXAMPLES.is_dir():
+        folders += [(d, False) for d in shown(EXAMPLES)]
+    for d, own in folders:
+        problems, qmls = check_folder(d, own)
+        if problems:
+            fails += 1
+            for msg in problems:
+                print('%s: %s' % (d, msg))
+        files += qmls
+    stray = sorted(p for p in SAVERS.iterdir() if p.is_file())
+    for p in stray:
+        fails += 1
+        print('%s: belongs in a saver\'s own folder' % p)
+
 for f in files:
     problems = check(f)
     if problems:

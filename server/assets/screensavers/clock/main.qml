@@ -71,6 +71,13 @@ WebOSWindow {
     property color inkBright: level > 0 ? "#ffffff" : "#a8aeb6"
     property color inkDim:    level > 0 ? "#c2c8d0" : "#5c6066"
 
+    /*
+     * 12-hour or 24-hour, written in when the screen saver is staged like the
+     * level above. With nothing at all in 24-hour, so the block keeps its
+     * width and the 24-hour clock draws exactly as it always has.
+     */
+    property bool hour12: __TVWEB_CLOCK12__
+
     function two(n) { return n < 10 ? "0" + n : "" + n }
 
     Item {
@@ -169,15 +176,38 @@ WebOSWindow {
                 color: win.inkBright
                 text: "0"
             }
+            // Wrapped so its own box matches the digits' height: Row places
+            // its children, and the small type wants the digits' baseline.
+            Item {
+                visible: win.hour12
+                width: merText.x + merText.width
+                height: gauge.height
+
+                Text {
+                    id: merText
+                    x: Math.round(34 * win.unit)
+                    y: parent.height - height - Math.round(14 * win.unit)
+                    font.family: win.digitFamily
+                    font.pixelSize: Math.round(76 * win.unit)
+                    color: win.inkBright
+                    text: ""
+                }
+            }
         }
     }
 
     function refresh() {
         var now = new Date();
-        var h = win.two(now.getHours());
+        var h = now.getHours();
+        var shown = h;
+        if (win.hour12) {
+            shown = (h % 12) || 12;
+            merText.text = h < 12 ? "AM" : "PM";
+        }
+        var hh = win.two(shown);
         var m = win.two(now.getMinutes());
-        hourTens.text = h.charAt(0);
-        hourUnits.text = h.charAt(1);
+        hourTens.text = hh.charAt(0);
+        hourUnits.text = hh.charAt(1);
         minTens.text = m.charAt(0);
         minUnits.text = m.charAt(1);
     }

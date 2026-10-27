@@ -9,7 +9,10 @@
  *   - Glasshouse Home:        http://localhost:8080/assets/home.html
  *
  * Usage:
- *   node scripts/emulate-tv.js [--port 8080] [--model c2|b8|c3] [--open]
+ *   node scripts/emulate-tv.js [--port 8080] [--model c2|b8|c3|cx|c1] [--webos 6.5.3] [--home on|off] [--open]
+ *
+ * --webos reports another webOS version on the chosen model, to see how the
+ * dashboards treat a version no profile covers.
  */
 'use strict';
 
@@ -27,16 +30,22 @@ const args = process.argv.slice(2);
 let port = 8080;
 let model = 'c2';
 let autoOpen = false;
+let webosOverride = null;
+let homeOn = null;
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--port' && args[i + 1]) { port = parseInt(args[++i], 10); }
   else if (args[i] === '--model' && args[i + 1]) { model = args[++i].toLowerCase(); }
+  else if (args[i] === '--webos' && args[i + 1]) { webosOverride = args[++i]; }
+  else if (args[i] === '--home' && /^(on|off)$/.test(args[i + 1] || '')) { homeOn = args[++i] === 'on'; }
   else if (args[i] === '--open') { autoOpen = true; }
   else if (args[i] === '--help' || args[i] === '-h') {
     console.log('Usage: node scripts/emulate-tv.js [options]');
     console.log('Options:');
     console.log('  --port <number>    HTTP port to bind (default: 8080)');
-    console.log('  --model <c2|b8|c3> TV profile to simulate (default: c2)');
+    console.log('  --model <c2|b8|c3|cx|c1> TV profile to simulate (default: c2)');
+    console.log('  --webos <version>  webOS version to report instead of the profile\'s, e.g. 6.5.3');
+    console.log('  --home <on|off>    start with Glasshouse Home switched on or off (default: on from webOS 7)');
     console.log('  --open             Automatically open the dashboard in browser');
     process.exit(0);
   }
@@ -73,10 +82,45 @@ const PROFILES = {
     webosVersion: '10.3.1',
     webosMajor: 10,
     oled: true
+  },
+  // The model, firmware and webOS version of test/fixtures/stats-cx-webos5.json.
+  cx: {
+    name: 'LG CX (OLED77CXAUA - webOS 5.6)',
+    modelName: 'OLED77CXAUA',
+    boardType: 'O20_ATSC_US',
+    firmwareVersion: '04.60.65',
+    sdkVersion: '5.6.0',
+    webosVersion: '5.6.0',
+    webosMajor: 5,
+    oled: true
+  },
+  // webOS 6 as a C1 in #910 reported it; the model details are illustrative.
+  c1: {
+    name: 'LG C1 (OLED65C14LB - webOS 6.5)',
+    modelName: 'OLED65C14LB',
+    boardType: 'O21_DVB_EU',
+    firmwareVersion: '03.36.30',
+    sdkVersion: '6.5.3',
+    webosVersion: '6.5.3',
+    webosMajor: 6,
+    oled: true
   }
 };
 
-const profile = PROFILES[model] || PROFILES.c2;
+if (!PROFILES[model]) {
+  console.error(`Unknown model "${model}": one of ${Object.keys(PROFILES).join(', ')}`);
+  process.exit(2);
+}
+const profile = Object.assign({}, PROFILES[model]);
+if (webosOverride) {
+  if (!/^\d+(\.\d+){1,3}$/.test(webosOverride)) {
+    console.error(`--webos takes a version such as 6.5.3, not "${webosOverride}"`);
+    process.exit(2);
+  }
+  profile.webosVersion = profile.sdkVersion = webosOverride;
+  profile.webosMajor = parseInt(webosOverride, 10);
+  profile.name = `${profile.name.replace(/ - webOS [^)]*\)$/, '')} - webOS ${webosOverride}, overridden)`;
+}
 
 function checkPortFree(p) {
   return new Promise(resolve => {
@@ -164,9 +208,12 @@ async function main() {
     token: ''
   }, null, 2));
 
-  // Seed Glasshouse Home config as enabled
+  // Glasshouse Home starts switched on where main supports it, webOS 7 and
+  // later. Seeded on where it is not, the Home tab shows a switch-off left
+  // unfinished, which no real TV would have; --home on is for a branch that
+  // adds a version. Switching it here does nothing: nothing is mounted.
   const homeCfg = {
-    enabled: true,
+    enabled: homeOn === null ? profile.webosMajor >= 7 : homeOn,
     rows: ['app', 'dev', 'ch'],
     order: { app: [], dev: [], ch: [] },
     sort: { app: 'custom', dev: 'custom', ch: 'custom' },
@@ -206,7 +253,10 @@ async function main() {
     env: Object.assign({}, process.env, {
       FAKE_ROOT: root,
       TVWEB_LUNA_SEND: fakeLuna,
-      TV_MODEL: model
+      TV_MODEL: model,
+      // What the mock system property service answers (test/mocks/fake-luna-send.js).
+      TV_PROFILE: JSON.stringify({ modelName: profile.modelName, firmwareVersion: profile.firmwareVersion,
+        boardType: profile.boardType, sdkVersion: profile.sdkVersion })
     })
   });
 

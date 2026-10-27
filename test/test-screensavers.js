@@ -72,14 +72,13 @@ console.log('Running test-screensavers.js ...');
   env.files[path.join(SCREENSAVER_APP_DIR, '.tvweb-screensaver')] = 'clock';
   env.files[path.join(SCREENSAVER_APP_DIR, '.tvweb-brightness')] = null;
 
-  // Provide assetPath that resolves for clock and starfield but not fireworks
+  // Glasshouse's own, and the test folders as ones added on the TV
   screensavers.init({
     luna: env.mockLuna,
-    assetPath: function (qml) {
-      if (qml === 'screensavers/clock.qml') return '/tmp/clock.qml';
-      if (qml === 'screensavers/starfield.qml') return '/tmp/starfield.qml';
-      return null;
-    },
+    saverRoots: [
+      { dir: path.join(__dirname, '..', 'server', 'assets', 'screensavers'), builtin: true },
+      { dir: path.join(__dirname, 'fixtures', 'savers'), builtin: false }
+    ],
     config: { port: 8080, allowControl: true },
     injectKey: null,
     KEY_BACK: null
@@ -107,10 +106,11 @@ console.log('Running test-screensavers.js ...');
   assert.strictEqual(clock.active, true);
   assert.strictEqual(clock.available, true);
 
-  // fireworks is NOT available (assetPath returns null)
-  var fireworks = list.modes.filter(function (m) { return m.id === 'fireworks'; })[0];
-  assert.ok(fireworks, 'fireworks mode must exist');
-  assert.strictEqual(fireworks.available, false);
+  // one whose saver.json does not parse is listed, but NOT available
+  var broken = list.modes.filter(function (m) { return m.id === 'user-broken'; })[0];
+  assert.ok(broken, 'user-broken mode must exist');
+  assert.strictEqual(broken.available, false);
+  assert.ok(broken.note, 'and says why');
 
   console.log('  ✓ screensaverList returns all modes with correct active/available flags');
 })();
@@ -119,7 +119,6 @@ console.log('Running test-screensavers.js ...');
 (function testListNotWritable() {
   screensavers.init({
     luna: env.mockLuna,
-    assetPath: null,
     config: { port: 8080 },
     injectKey: null,
     KEY_BACK: null
@@ -130,9 +129,13 @@ console.log('Running test-screensavers.js ...');
   console.log('  ✓ screensaverList reports writable=false without allowControl');
 })();
 
-// 7. SCREENSAVERS catalog has expected entries
+// 7. The catalog has Glasshouse's own, each read from its folder
 (function testCatalog() {
-  var ids = Object.keys(screensavers.SCREENSAVERS);
+  screensavers.init({ luna: env.mockLuna, saverRoots: [
+    { dir: path.join(__dirname, '..', 'server', 'assets', 'screensavers'), builtin: true }
+  ] });
+  var all = screensavers.catalog();
+  var ids = all.map(function (e) { return e.id; });
   assert.ok(ids.indexOf('stock') !== -1, 'catalog must include stock');
   assert.ok(ids.indexOf('clock') !== -1, 'catalog must include clock');
   assert.ok(ids.indexOf('starfield') !== -1, 'catalog must include starfield');
@@ -140,22 +143,25 @@ console.log('Running test-screensavers.js ...');
   assert.ok(ids.indexOf('vitals') !== -1, 'catalog must include vitals');
   assert.ok(ids.indexOf('bokeh') !== -1, 'catalog must include bokeh');
   assert.ok(ids.indexOf('harmonograph') !== -1, 'catalog must include harmonograph');
-  assert.strictEqual(ids.length, 7, 'catalog must have exactly 7 entries');
+  assert.ok(ids.indexOf('filament') !== -1, 'catalog must include filament');
+  assert.ok(ids.indexOf('currents') !== -1, 'catalog must include currents');
+  assert.ok(ids.indexOf('veils') !== -1, 'catalog must include veils');
+  assert.ok(ids.indexOf('tesseract') !== -1, 'catalog must include tesseract');
+  assert.strictEqual(ids.length, 15, 'catalog must have exactly 15 entries');
 
-  // Each non-stock entry must have a qml path
-  for (var i = 0; i < ids.length; i++) {
-    if (ids[i] === 'stock') continue;
-    assert.ok(screensavers.SCREENSAVERS[ids[i]].qml, ids[i] + ' must have a qml path');
+  // Each of Glasshouse's own reads cleanly from its folder
+  for (var i = 0; i < all.length; i++) {
+    assert.ok(!all[i].problem, all[i].id + ': ' + all[i].problem);
+    assert.strictEqual(all[i].builtin, true);
   }
 
-  console.log('  ✓ SCREENSAVERS catalog has 6 expected entries with QML paths');
+  console.log('  ✓ the catalog has Glasshouse\'s 14 screen savers and LG\'s, each read from its folder');
 })();
 
 // 8. trigger returns error when luna is not available
 (function testTriggerNoLuna() {
   screensavers.init({
     luna: null,
-    assetPath: null,
     config: {},
     injectKey: null,
     KEY_BACK: null
@@ -202,8 +208,8 @@ console.log('Running test-screensavers.js ...');
     (function testHaOffersEveryScreensaver() {
       var ha = require('../server/lib/ha');
       var sel = ha.buildEntities({}).filter(function (e) { return e.id === 'screensaver_mode'; })[0];
-      Object.keys(screensavers.SCREENSAVERS).forEach(function (k) {
-        var label = screensavers.SCREENSAVERS[k].label;
+      screensavers.catalog().forEach(function (e) {
+        var k = e.id, label = e.label;
         assert.ok(sel.payload.options.indexOf(label) !== -1, label + ' missing from Home Assistant');
         assert.ok(sel.payload.value_template.indexOf('"' + k + '":"' + label + '"') !== -1, k + ' not mapped');
       });
@@ -227,7 +233,6 @@ console.log('Running test-screensavers.js ...');
       };
       screensavers.init({
         luna: fallbackLuna,
-        assetPath: null,
         config: {},
         injectKey: function () {},
         KEY_BACK: 412,

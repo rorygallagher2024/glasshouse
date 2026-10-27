@@ -1221,17 +1221,48 @@ function createMockRes(cb) {
         upload({ length: 10, chunks: [new Buffer(3)], then: 'close' }, function () {
           later(function () {
             assert.deepEqual(staged(), [], 'a closed connection leaves no file');
-            upload({ length: 10, chunks: [], then: 'abort' }, function () {
-              later(function () {
-                assert.deepEqual(staged(), [], 'an upload aborted before its file opened leaves no file');
-                assert.strictEqual(started.length, 0);
-                oneAtATime();
-              });
-            });
+            abortBeforeOpen();
           });
         });
       });
     });
+  }
+
+  function abortBeforeOpen() {
+    var req = createMockReq({ url: '/api/apps/install/upload', method: 'POST', remoteAddress: REMOTE,
+      headers: { host: HOST, 'content-type': 'application/octet-stream', 'content-length': '10' } });
+    var realOpen = fs.open;
+    var deadline = Date.now() + 3000;
+    var watchdog = setTimeout(function () { throw new Error('aborted upload did not finish cleaning up'); }, 4000);
+    // Hold the actual open until the abort: a timer alone does not guarantee
+    // this ordering, especially on Node 0.12 where destroy does not await open.
+    fs.open = function (file, flags, mode, cb) {
+      if (path.dirname(file) !== staging) return realOpen.apply(fs, arguments);
+      fs.open = realOpen;
+      process.nextTick(function () {
+        req.emit('aborted');
+        req.emit('close');
+        realOpen.call(fs, file, flags, mode, function (err, fd) {
+          assert.ifError(err);
+          cb(err, fd);
+          (function cleaned() {
+            fs.fstat(fd, function (statError) {
+              var closed = statError && statError.code === 'EBADF';
+              var files = staged();
+              if ((!closed || files.length) && Date.now() < deadline) return setTimeout(cleaned, 10);
+              clearTimeout(watchdog);
+              assert.ok(closed, 'an upload aborted before open closes its eventual descriptor');
+              assert.deepEqual(files, [], 'an upload aborted before open leaves no file');
+              assert.strictEqual(started.length, 0);
+              oneAtATime();
+            });
+          })();
+        });
+      });
+    };
+    routes.handleRequest(req, createMockRes(function () {
+      throw new Error('an aborted upload must not send a response');
+    }));
   }
 
   function oneAtATime() {

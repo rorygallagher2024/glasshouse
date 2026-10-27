@@ -1,0 +1,16 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Pigs - Three Different Ones",
+    "es": "Cerdos - Tres distintos"
+  },
+  "description": {
+    "en": "A pink pig, a saddleback and a razorback, big and small, flapping across a pixel-art night over Chicago.",
+    "es": "Un cerdo rosa, un saddleback y un razorback, grandes y pequeños, aleteando sobre una noche de Chicago en pixel art."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ]
+}

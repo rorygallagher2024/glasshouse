@@ -26,12 +26,12 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 /* The clock on the left and the Glasshouse mark on the right, at the clock's
    height and full strength, level with the end of the tab bar. */
 #top{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;
-  justify-content:space-between;-webkit-justify-content:space-between;flex:0 0 auto;margin:0 4vw 3.4vh 0}
+  justify-content:space-between;-webkit-justify-content:space-between;flex:0 0 auto;-webkit-flex:0 0 auto;margin:0 4vw 3.4vh 0}
 #mark{height:4.6vh;width:auto;color:#fff;opacity:.92}
 #clock{font-family:'Manrope',sans-serif;font-weight:400;font-size:4.4vh;letter-spacing:.01em;
   line-height:1;opacity:.65}
 
-#tabs{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;flex:0 0 auto;margin:0 4vw 3.2vh 0;
+#tabs{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;flex:0 0 auto;-webkit-flex:0 0 auto;margin:0 4vw 3.2vh 0;
   /* the bar clips so it can scroll, and at line-height 1 that takes the tails
      of g and y with it; the padding makes room and the margin gives it back */
   padding-bottom:1.2vh;white-space:nowrap;overflow:hidden}
@@ -51,17 +51,24 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 /* Two columns: the rows on the left, an explainer for whichever row is selected
    on the right. A row's label and value never needed the full width, and the
    space buys somewhere to say what a setting means without a second screen. */
-#main{flex:1 1 auto;display:flex;overflow:hidden;padding-right:4vw;min-height:0}
-#list{flex:1 1 62%;overflow:hidden;position:relative}
-#rows{position:absolute;left:0;right:0;transition:transform .28s cubic-bezier(.4,0,.2,1)}
+#main{flex:1 1 auto;-webkit-flex:1 1 auto;display:flex;display:-webkit-flex;overflow:hidden;padding-right:4vw;min-height:0}
+/* No height: the row is stretched to #main's. A percentage height resolves to
+   none on a flex item in Chromium 53 (webOS 4) and WebKit 538.2 (webOS 2),
+   collapsing #list to 0 px and hiding every row; position() covers an engine
+   that still leaves it at 0. */
+#list{flex:1 1 62%;-webkit-flex:1 1 62%;overflow:hidden;position:relative}
+#rows{position:absolute;left:0;right:0;-webkit-transition:-webkit-transform .28s cubic-bezier(.4,0,.2,1);transition:transform .28s cubic-bezier(.4,0,.2,1)}
 
-#hint{flex:0 0 31%;margin-left:2.6vw;align-self:center;border-left:1px solid rgba(255,255,255,.14);
-  padding-left:2.4vw;opacity:0;transition:opacity .22s ease}
+#hint{flex:0 0 31%;-webkit-flex:0 0 31%;margin-left:2.6vw;align-self:center;-webkit-align-self:center;border-left:1px solid rgba(255,255,255,.14);
+  padding-left:2.4vw;opacity:0;-webkit-transition:opacity .22s ease;transition:opacity .22s ease}
 #hint.on{opacity:1}
 .h-title{font-family:'Manrope',sans-serif;font-weight:600;font-size:3.4vh;line-height:1.15;
   letter-spacing:.005em;margin-bottom:1.6vh}
 .h-body{font-family:'Manrope',sans-serif;font-weight:400;font-size:2.1vh;line-height:1.65;
   color:rgba(255,255,255,.68)}
+.h-warn{display:none;font-family:'Manrope',sans-serif;font-weight:400;font-size:2vh;line-height:1.6;
+  color:rgba(255,255,255,.78);border-left:2px solid #ff9800;padding-left:1.2vw;margin-top:1.8vh}
+.h-warn.on{display:block}
 /* What OK does here, or that it does nothing. Green only when there is
    something to press, so the colour itself carries the distinction. */
 .h-act{font-family:'Manrope',sans-serif;font-weight:600;font-size:1.7vh;letter-spacing:.14em;
@@ -82,12 +89,12 @@ body{font-family:'Manrope',sans-serif;color:#fff;
    slightly enlarged; the rest recede, so the eye lands on the choice. */
 /* The right padding is the scroll arrows' lane, so a long value never runs
    underneath one. */
-.row{display:flex;align-items:baseline;justify-content:space-between;height:7.6vh;
+.row{display:flex;display:-webkit-flex;align-items:baseline;-webkit-align-items:baseline;justify-content:space-between;-webkit-justify-content:space-between;height:7.6vh;
   padding-right:3.4vw;
-  opacity:.55;transition:opacity .22s ease,transform .22s ease;
-  transform-origin:left center}
+  opacity:.55;-webkit-transition:opacity .22s ease,-webkit-transform .22s ease;transition:opacity .22s ease,transform .22s ease;
+  -webkit-transform-origin:left center;transform-origin:left center}
 .row:not(.head){cursor:pointer}
-.row.sel{opacity:1;transform:scale(1.03)}
+.row.sel{opacity:1;-webkit-transform:scale(1.03);transform:scale(1.03)}
 .lbl{font-family:'Manrope',sans-serif;font-weight:500;font-size:3.1vh;letter-spacing:.01em}
 .val{font-family:'Manrope',sans-serif;font-weight:400;font-size:3.1vh;color:rgba(255,255,255,.75);
   text-align:right;white-space:nowrap;padding-left:2vw}
@@ -98,7 +105,7 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 .row.tall{height:10.2vh}
 /* Catalog rows: an icon, a version and a root badge beside the title. The
    title gives way with an ellipsis rather than pushing the state off the row. */
-.row.cat .lbl{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row.cat .lbl{flex:1 1 auto;-webkit-flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row.cat .val{font-size:2.6vh}
 .lbl .ic{width:4.4vh;height:4.4vh;border-radius:.8vh;object-fit:contain;background:rgba(255,255,255,.08);
   vertical-align:middle;margin-right:1.4vh}
@@ -117,7 +124,7 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 /* A read-out rather than a setting: a status label with a lit dot, set small in
    capitals, so it cannot be mistaken for the On/Off values of the toggles. The
    glow is a blurred shadow: color-mix is too new for the webOS 4 browser. */
-.val.st{display:inline-flex;align-items:center;font-size:2.1vh;font-weight:600;letter-spacing:.16em;
+.val.st{display:inline-flex;display:-webkit-inline-flex;align-items:center;-webkit-align-items:center;font-size:2.1vh;font-weight:600;letter-spacing:.16em;
   text-transform:uppercase}
 .val.st::before{content:'';width:1vh;height:1vh;border-radius:50%;margin-right:1.3vh;
   background:currentColor;box-shadow:0 0 1.2vh currentColor}
@@ -136,12 +143,12 @@ body{font-family:'Manrope',sans-serif;color:#fff;
 .row.doable.sel .lbl::before{background:#1ec15f}
 
 /* A heading inside the list - groups rows without being selectable itself. */
-.row.head{height:5.4vh;opacity:1;transform:none}
+.row.head{height:5.4vh;opacity:1;-webkit-transform:none;transform:none}
 .row.head .lbl{font-family:'Manrope';font-weight:600;font-size:1.5vh;letter-spacing:.24em;
   text-transform:uppercase;color:rgba(255,255,255,.55)}
 .row.head .lbl::before{display:none}
 
-#msg{position:absolute;top:50%;left:0;transform:translateY(-50%);
+#msg{position:absolute;top:50%;left:0;-webkit-transform:translateY(-50%);transform:translateY(-50%);
   font-family:'Manrope',sans-serif;font-weight:400;font-size:4vh;color:rgba(255,255,255,.8)}
 #msg .msg-detail{font-family:'Manrope',sans-serif;font-weight:400;font-size:2vh;line-height:1.8;
   color:rgba(255,255,255,.6);margin-top:2.2vh}
@@ -170,6 +177,7 @@ body.light .tab.on{color:#000;font-weight:600}
 body.light #hint{border-left-color:rgba(0,0,0,.15)}
 body.light .h-title{color:#000}
 body.light .h-body{color:rgba(0,0,0,.78)}
+body.light .h-warn{color:rgba(0,0,0,.82);border-left-color:#b45309}
 body.light .h-act{color:#15803d}
 body.light .h-act.ro{color:rgba(0,0,0,.50)}
 body.light .h-qr svg{border:1px solid rgba(0,0,0,.15)}
@@ -222,6 +230,7 @@ body.light #flash{color:rgba(0,0,0,.88)}
     <aside id="hint">
       <div class="h-title" id="hintTitle"></div>
       <div class="h-body" id="hintBody"></div>
+      <div class="h-warn" id="hintWarn"></div>
       <div class="h-act" id="hintAct"></div>
       <div class="h-qr" id="hintQr"><svg id="hintQrSvg" viewBox="0 0 33 33" shape-rendering="crispEdges"></svg><div class="h-url" id="hintUrl"></div></div>
     </aside>
@@ -395,8 +404,9 @@ var TABS = [
   { key: 'apps',    label: t('tab.apps', 'Apps'),         url: '/api/apps',        build: appsRows },
   { key: 'oled',    label: t('tab.oledCare', 'OLED Care'),    url: '/api/oledcare',    build: oledRows, optional: true },
   { key: 'game',    label: t('tab.game', 'Game'),         url: '/api/game',        build: gameRows, optional: true },
+  { key: 'audio',   label: t('tab.audio', 'Audio'),        url: '/api/audio?with=settings', build: audioRows, poll: 8000 },
   { key: 'saver',   label: t('tv.tab.screenSaver', 'Screen Saver'), url: '/api/screensaver', build: saverRows, optional: true },
-  { key: 'home',    label: t('tab.home', 'Home'),         url: '/api/home?with=catalogue,channels', build: homeRows, optional: true },
+  { key: 'home',    label: t('tab.home', 'Home'),         url: '/api/home?with=catalogue,channels,lghome', build: homeRows, optional: true },
   { key: 'privacy', label: t('tab.privacy', 'Privacy'),      url: '/api/privacy',     build: privacyRows },
   { key: 'service', label: t('tv.tab.serviceMenu', 'Service Menu'), url: '/api/servicemenu', build: svcRows },
   { key: 'options', label: t('tv.tab.system', 'System'),       url: '/api/stats?with=settings', build: optionRows, poll: 5000 },
@@ -411,10 +421,25 @@ var initialSel = null;
 var lanOrigin = null, lanKey = null;
 // allowPower in config.json; without it the server refuses Power off and Reboot, so they are not offered.
 var allowPower = false;
+// 12-hour time on this clock, as the TV's own setting has it (the server's lib/clock).
+var clockHour12 = false;
+// Ticks since caps were read again, for the hour cycle to be noticed on an open page.
+var capsTicks = 0;
+// The server version this page came from. webOS keeps the app's page in
+// memory, and on a B8 (webOS 4.4) it came back without webOSRelaunch, so a
+// fix the server installed did not show until the TV restarted.
+var pageVersion = null;
+function reloadPage() {
+  location.replace(location.pathname + '?tab=' + T().key + '&t=' + Date.now());
+}
 function refreshCaps() {
   fetch('/api/caps', { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) {
+      if (d && d.version) {
+        if (pageVersion === null) pageVersion = d.version;
+        else if (d.version !== pageVersion) return reloadPage();
+      }
       // A new install walks through setup first - but only in the TV app: a
       // phone's browser cannot use those screens. The ?setup=1 or ?emulate-setup=1
       // query parameter allows testing the setup wizard from any browser.
@@ -428,6 +453,9 @@ function refreshCaps() {
       allowPower = !!(d && d.allowPower);
       renderHint();
       if (allowPower !== couldPower && T().key === 'options') fetchTab(true);
+      var couldHour12 = clockHour12;
+      clockHour12 = !!(d && d.clockHour12);
+      if (clockHour12 !== couldHour12) tick();
     })
     .catch(function () {});
 }
@@ -454,9 +482,18 @@ applyTheme(currentTheme);
 function T() { return TABS[tab]; }
 
 function tick() {
-  var d = new Date(), h = d.getHours(), m = d.getMinutes();
-  document.getElementById('clock').textContent =
-    (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  var d = new Date(), h = d.getHours(), m = d.getMinutes(), text;
+  if (clockHour12) {
+    h = h % 12 || 12;
+    text = h + ':' + (m < 10 ? '0' : '') + m + ' ' +
+      (d.getHours() < 12 ? t('common.am', 'AM') : t('common.pm', 'PM'));
+  } else {
+    text = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  document.getElementById('clock').textContent = text;
+  /* Caps are read again every sixth tick: the TV's hour cycle can change
+     while this page is open, and it is read nowhere else. */
+  if (++capsTicks >= 6) { capsTicks = 0; refreshCaps(); }
 }
 setInterval(tick, 10000); tick();
 
@@ -574,25 +611,27 @@ function optionRows(d) {
     if (timers.on) r.push(timerRow(timers.on, 'on', t('adv.onTimer', 'On Timer')));
     if (timers.off) r.push(timerRow(timers.off, 'off', t('adv.offTimer', 'Off Timer')));
   }
-  // Sound and SIMPLINK, from lgsettings.js; each shows only where the TV has it.
+  // HDMI and SIMPLINK, from lgsettings.js; each shows only where the TV has it.
+  // Sound, and each input's audio format, are on the Audio tab.
   var ls = d.lgSettings || [];
-  var snd = ls.filter(function (x) { return x.section === 'sound'; });
   var dev = ls.filter(function (x) { return x.section === 'devices'; });
-  var hin = ls.filter(function (x) { return x.section === 'hdmi'; });
-  if (snd.length) {
-    r.push(head(t('adv.sound', 'Sound')));
-    for (var si = 0; si < snd.length; si++) r.push(lgRow(snd[si]));
-  }
+  var hin = ls.filter(function (x) { return x.section === 'hdmi' && x.column !== 'audioFormat'; });
   if (hin.length) {
     r.push(head(t('adv.hdmi', 'HDMI inputs')));
     for (var hi = 0; hi < hin.length; hi++) r.push(lgRow(hin[hi]));
   }
-  if (d.lgLogo !== undefined) {
+  if (d.clockHour12 !== undefined || d.lgLogo !== undefined) {
     r.push(head(t('adv.display', 'Display')));
-    var logo = toggle(t('adv.lgLogo', 'LG logo'), d.lgLogo, 'lgLogo',
-      t('adv.lgLogo.desc', 'Shows the LG logo as the TV switches on and off. LG calls this LG Logo Display.'), t('tv.options.lgLogo.shown', 'Shown'), t('apps.tile.hidden', 'Hidden'));
-    logo.press = d.lgLogo ? t('tv.options.lgLogo.hide', 'Press OK to hide it') : t('tv.options.lgLogo.show', 'Press OK to show it');
-    r.push(logo);
+    if (d.clockHour12 !== undefined) {
+      r.push(toggle(t('adv.clock12', '12-hour clock'), d.clockHour12, 'clockHour12',
+        t('adv.clock12.desc', 'Shows the time as 9:40 PM rather than 21:40 on the TV dashboard, Glasshouse Home and the clock screen savers.')));
+    }
+    if (d.lgLogo !== undefined) {
+      var logo = toggle(t('adv.lgLogo', 'LG logo'), d.lgLogo, 'lgLogo',
+        t('adv.lgLogo.desc', 'Shows the LG logo as the TV switches on and off. LG calls this LG Logo Display.'), t('tv.options.lgLogo.shown', 'Shown'), t('apps.tile.hidden', 'Hidden'));
+      logo.press = d.lgLogo ? t('tv.options.lgLogo.hide', 'Press OK to hide it') : t('tv.options.lgLogo.show', 'Press OK to show it');
+      r.push(logo);
+    }
   }
   if (d.deviceDetection !== undefined || dev.length) r.push(head(t('adv.devices', 'Devices')));
   for (var di = 0; di < dev.length; di++) r.push(lgRow(dev[di]));
@@ -632,6 +671,26 @@ function sleepRow(cur) {
            press: next === 'off' ? t('tv.options.sleep.toOff', 'Press OK to turn it off')
                                  : t('tv.options.sleep.toNext', 'Press OK for {time}', { time: words[next] }),
            hint: t('tv.options.sleep.hint', 'Switches the TV off once this time has passed.') };
+}
+
+var SAVER_OFF_STEPS = [0, 3, 5, 10, 20, 30];
+
+function saverOffWords(n) {
+  return n ? t('tv.saver.powerOff.minutes', '{n} min', { n: n }) : t('common.off', 'Off');
+}
+
+function saverPowerOffRow(cur, allowPower) {
+  // The next step up from the current value, which a browser may have set between steps.
+  var next = 0, i;
+  for (i = 0; i < SAVER_OFF_STEPS.length; i++) {
+    if (SAVER_OFF_STEPS[i] > cur) { next = SAVER_OFF_STEPS[i]; break; }
+  }
+  return { label: t('ss.powerOff', 'Poweroff after'), value: saverOffWords(cur), cls: 'act',
+           act: allowPower ? 'saverPowerOff' : null, on: cur > 0, next: next,
+           press: next ? t('tv.options.sleep.toNext', 'Press OK for {time}', { time: saverOffWords(next) })
+                       : t('tv.options.sleep.toOff', 'Press OK to turn it off'),
+           hint: !allowPower ? t('ss.powerOff.noPower', 'Power actions are off in config.json, so this cannot put the TV in standby.')
+                 : t('tv.saver.powerOff.hint', 'Puts the TV in standby once a screen saver has been on this long. Any number of minutes can be set from Glasshouse in a browser.') };
 }
 
 function timerRow(tm, which, label) {
@@ -694,7 +753,7 @@ function lgRow(g) {
              press: t('tv.game.next', 'Press OK for {name}', { name: nx.label }), hint: g.desc };
   }
   if (g.type === 'number') {
-    if (g.max - g.min > 30) return { label: g.title, value: String(g.value), hint: g.desc, web: '/?tab=advanced' };
+    if (g.max - g.min > 30) return { label: g.title, value: String(g.value), hint: g.desc, web: g.section === 'sound' ? '/?tab=audio' : '/?tab=advanced' };
     var up = g.value >= g.max ? g.min : g.value + 1;
     return { label: g.title, value: String(g.value), cls: 'act', act: 'lgValue', key: g.id, next: up,
              press: t('tv.game.next', 'Press OK for {name}', { name: String(up) }), hint: g.desc };
@@ -823,6 +882,11 @@ function saverRows(d) {
              press: t('tv.saver.startScreenSaver.press', 'Press OK to start it'),
              hint: t('tv.saver.startScreenSaver.hint', 'Shows the screen saver in use straight away, to see how it looks. Any button on the remote ends it.') });
   }
+  // Poweroff after: steps here, any number of minutes from a browser.
+  if (d.writable && !busy) {
+    r.push(head(t('ss.powerOff', 'Poweroff after')));
+    r.push(saverPowerOffRow(d.powerOffMinutes || 0, !!d.allowPower));
+  }
   r.push(head(t('tv.saver.head.aFirmwareUpdatePuts', 'A firmware update puts LG’s own back')));
   return r;
 }
@@ -848,13 +912,134 @@ function homeItemTitle(kind, id) {
 
 function homeRows(d) {
   homeData = d;
-  var r = [head(t('home.title', 'Glasshouse Home'))];
-  if (!d || d.ok === false || !d.supported) return r;
-  if (!d.supported.ok && !d.enabled && !d.restorePending) {
-    r.push({ label: t('home.unavailable', 'Not available on this TV'), value: '',
-             hint: d.supported.reason || '' });
-    return r;
+  if (!d || d.ok === false || !d.supported) return [head(t('home.title', 'Glasshouse Home'))];
+  // A TV without Glasshouse Home (a B8) has the section for LG's Home's options alone.
+  var glasshouse = d.supported.ok || d.enabled || d.restorePending;
+  var glasshouseOn = d.enabled && d.supported.ok;
+  var r = glasshouse ? glasshouseHomeRows(d) : [];
+  // Open Home at power-on wherever LG has it, Glasshouse Home or not.
+  var power = d.homeAutoLaunch === undefined ? null
+    : { label: t('adv.homeAutoLaunch', 'Open Home at power-on'),
+        value: d.homeAutoLaunch ? t('common.on', 'On') : t('common.off', 'Off'), cls: d.homeAutoLaunch ? 'on' : 'off',
+        act: d.writable !== false ? 'homeAutoLaunch' : null, on: !!d.homeAutoLaunch,
+        press: d.homeAutoLaunch ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+        hint: t('adv.homeAutoLaunch.desc', 'Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch.') };
+  var lg = d.lgHome ? lgHomeRows(d.lgHome) : [];
+  // With Glasshouse Home on, power-on follows its switch and hidden system
+  // apps end its own customisation; otherwise both are Home customisation.
+  if (glasshouseOn) {
+    if (power) r.splice(2, 0, power);
+    return r.concat(lg);
   }
+  var custom = (power ? [power] : []).concat(lg);
+  return custom.length ? r.concat([head(t('home.customisation', 'Home customisation'))], custom) : r;
+}
+
+/*
+ * From /api/home?with=lghome (lgHomeOptions in lib/routes.js): built-in apps
+ * hidden from the Home screen, whichever Home it is, and LG's Home's layout,
+ * while it is the TV's Home.
+ */
+function lgHomeRows(d) {
+  var r = [];
+  // Parts of LG's Home screen, and inputs as tiles on it (lib/homescreen.js).
+  var hs = d.homeScreen;
+  if (hs && hs.parts && !d.glasshouseHome) {
+    r.push(head(t('apps.home', 'Home screen layout')));
+    // Experimental on webOS 10: switched on from the dashboard in a browser,
+    // where its warning is.
+    var locked = !!(hs.experimental && !hs.experimental.allowed);
+    if (locked) {
+      r.push({
+        label: t('apps.home.exp.title', 'Experimental on this TV'),
+        value: t('common.off', 'Off'),
+        cls: 'off',
+        hint: t('tv.apps.home.exp.hint', 'Switch it on from the dashboard in a browser, under Home, where its warning is.')
+      });
+    }
+    var hin = hs.inputs || [];
+    for (var hi = 0; hi < hin.length; hi++) {
+      var inp = hin[hi];
+      r.push({
+        label: inp.title,
+        value: inp.onHome ? t('apps.home.onHome', 'On Home') : t('apps.home.notOnHome', 'Not on Home'),
+        cls: inp.onHome ? 'on' : 'off',
+        act: d.writable === false || locked ? null : 'homeInput',
+        key: inp.id,
+        on: inp.onHome,
+        press: inp.onHome ? t('tv.apps.home.inputOff', 'Press OK to take its tile off Home') : t('tv.apps.home.inputOn', 'Press OK to add a tile for it'),
+        hint: t('tv.apps.home.input.hint', 'A tile among the apps on the Home screen that switches to this input.')
+      });
+    }
+    for (var hp = 0; hp < hs.parts.length; hp++) {
+      var part = hs.parts[hp];
+      r.push({
+        label: part.title,
+        value: part.shown ? t('apps.home.shown', 'Shown') : t('apps.home.hidden', 'Hidden'),
+        cls: part.shown ? 'on' : 'off',
+        act: d.writable === false || locked ? null : 'homePart',
+        key: part.id,
+        on: part.shown,
+        press: part.shown ? t('tv.apps.home.hide', 'Press OK to hide it') : t('tv.apps.home.show', 'Press OK to show it'),
+        // desc is the server's own words.
+        hint: part.desc + ' ' + t('tv.apps.home.restart', 'The Home screen starts again, which takes a few seconds.')
+      });
+    }
+    if (d.writable !== false && !locked) {
+      r.push({
+        label: t('apps.home.restore', 'Put back LG\u2019s Home screen'),
+        value: t('tv.apps.home.restore.value', 'Put back'),
+        cls: 'act', act: 'homeRestore',
+        press: t('tv.apps.home.restore.press', 'Press OK to put it back'),
+        hint: t('tv.apps.home.restore.hint', 'Every part shown again, and the input tiles added here taken off.')
+      });
+    }
+  }
+
+  var sys = d.systemTiles || [];
+  if (sys.length > 0) {
+    r.push(head(t('tv.apps.head.hideHomeScreenSystem', 'Hide Home Screen System Apps')));
+    var tileHidingEnabled = !!d.tileHidingEnabled;
+    var tilesHeld = !!d.tileHidingHeld;
+    r.push({
+      label: t('tv.apps.systemAppHiding', 'System App Hiding'),
+      value: tileHidingEnabled ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled'),
+      cls: tileHidingEnabled ? 'on' : 'off',
+      act: tilesHeld && !tileHidingEnabled ? null : 'tileHiding',
+      on: tileHidingEnabled,
+      press: tileHidingEnabled ? t('tv.apps.tiles.disable', 'Press OK to disable tile hiding') : t('tv.apps.tiles.enable', 'Press OK to enable tile hiding'),
+      hint: d.tileHidingOverridden ? t('common.heldOverridden', 'Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged.')
+        : tilesHeld ? t('apps.tiles.held', 'Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.')
+        : tileHidingEnabled
+        ? t('tv.apps.tiles.on.hint', 'When enabled: On each cold boot of your TV, this can cause a brief 1-second blank screen or input refresh before returning to your active HDMI source.')
+        : t('tv.apps.tiles.off.hint', 'Stock behavior active. Press OK to enable system app hiding.')
+    });
+    if (tileHidingEnabled && !tilesHeld) {
+      for (var i = 0; i < sys.length; i++) {
+        var tile = sys[i];
+        var isVisible = !tile.hidden;
+        r.push({
+          label: tile.title || tile.id,
+          value: isVisible ? t('apps.tile.visible', 'Visible') : t('apps.tile.hidden', 'Hidden'),
+          cls: isVisible ? 'on' : 'off',
+          act: 'tile',
+          key: tile.id,
+          title: tile.title || tile.id,
+          on: isVisible,
+          press: isVisible ? t('tv.apps.tile.hide', 'Press OK to hide tile') : t('tv.apps.tile.show', 'Press OK to show tile'),
+          hint: isVisible
+            ? t('tv.apps.tile.visible.hint', 'Currently visible on the TV home ribbon. Press OK to hide this tile.')
+            : t('tv.apps.tile.hidden.hint', 'Currently hidden from the TV home ribbon. Press OK to make this tile visible again.')
+        });
+      }
+    }
+  }
+
+  return r;
+}
+
+function glasshouseHomeRows(d) {
+  var r = [head(t('home.title', 'Glasshouse Home'))];
   var can = d.writable !== false;
   r.push({ label: d.restorePending ? t('home.retryRestore', 'Retry restoring LG Home') : t('home.title', 'Glasshouse Home'),
            value: d.restorePending ? t('home.restorePending', 'LG Home restoration is incomplete') : d.enabled ? t('common.on', 'On') : t('common.off', 'Off'), cls: d.enabled ? 'on' : 'off',
@@ -863,12 +1048,15 @@ function homeRows(d) {
            hint: d.restorePending ? t('home.restoreRetry', 'Retry restoring LG Home before switching Glasshouse Home on again.')
                  : d.enabled ? t('home.isOnDesc', 'It opens in LG\u2019s Home\u2019s place: with the Home and Back buttons, and when the TV wakes on Home.')
                  : t('home.isOffDesc', 'Nothing of LG\u2019s is changed: Glasshouse Home is laid over LG\u2019s Home while on, and switching off takes it away.') });
+  if (!d.enabled) return r;
+  r.push(head(t('home.customisation', 'Home customisation')));
   if (d.supported.ok && d.hideLgHomeAtStartAvailable !== false) {
     r.push({ label: t('home.hideLg', 'Hide LG\u2019s Home while the TV starts'),
              value: d.hideLgHomeAtStart ? t('common.on', 'On') : t('common.off', 'Off'), cls: d.hideLgHomeAtStart ? 'on' : 'off',
              act: can ? 'homeHideLg' : null, on: !!d.hideLgHomeAtStart,
              press: d.hideLgHomeAtStart ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.home.hideLg.on', 'Press OK, then again, to hide it'),
-             hint: t('home.hideLgDesc', 'For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG\u2019s Home opens as a black screen instead of its own. If Glasshouse stops running, for example after a firmware update removes root, LG\u2019s Home stays black until it is put back over SSH.') });
+             hint: t('home.hideLgDesc', 'For about 25 seconds after a cold start, until Glasshouse Home takes its place, LG\u2019s Home opens as a black screen instead of its own.'),
+             warn: t('home.hideLgWarn', 'Warning: If Glasshouse stops running (for example after a firmware update removes root), LG\u2019s Home will stay black until it is put back over SSH.') });
   }
   if (d.supported.ok && d.layout) {
     var picOn = d.layout.picture === true;
@@ -877,13 +1065,45 @@ function homeRows(d) {
              act: can ? 'homePicture' : null, on: picOn,
              press: picOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.pictureDesc', 'In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.') });
+    var shows = [['showLastOn', t('home.showLast', 'Last watched'), t('home.showLastDesc', 'At the top of Glasshouse Home and on the input it was on: what the TV last showed.')],
+                 ['showAppCount', t('home.showAppCount', 'App count'), t('home.showAppCountDesc', 'Beside the Apps row: how many of the TV\u2019s apps it shows.')],
+                 ['showCec', t('home.showCec', 'CEC addresses'), t('home.showCecDesc', 'On each input\u2019s tile: the HDMI-CEC address of the device behind it.')]];
+    for (var si = 0; si < shows.length; si++) {
+      var showOn = d.layout[shows[si][0]] !== false;
+      r.push({ label: shows[si][1], key: shows[si][0],
+               value: showOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: showOn ? 'on' : 'off',
+               act: can ? 'homeShow' : null, on: showOn,
+               press: showOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+               hint: shows[si][2] });
+    }
+    var searchOn = d.layout.search === true, blocked = d.layout.searchBlocked;
+    var searchAbout = t('home.searchDesc', 'Left of the rows on Glasshouse Home: films and series on this TV\u2019s apps, opened in the app at the title.');
+    var searchWarn = t('home.searchPrivacy', 'What is typed is sent to LG\u2019s search, as with LG\u2019s own Search, and to nowhere else. Switched off, the search mark goes and nothing typed leaves the TV.');
+    // Greyed while the ad blocker blocks LG's search; the setting itself is kept.
+    r.push(blocked ? { label: t('home.search', 'Search'), value: t('home.searchUnavailable', 'Unavailable'), cls: 'off',
+             hint: searchAbout,
+             warn: blocked.by === 'list'
+               ? t('tv.home.searchBlockedList', 'The ad blocker\u2019s hosts list blocks {host}, which LG\u2019s search needs. Take it out of the list on the web dashboard\u2019s Privacy tab to use search.', { host: blocked.host })
+               : t('tv.home.searchBlockedLevel', 'The ad blocker\u2019s Everything setting blocks {host}, which LG\u2019s search needs. Set Blocking to Ads & telemetry or off in Privacy to use search.', { host: blocked.host }) }
+      : { label: t('home.search', 'Search'),
+             value: searchOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: searchOn ? 'on' : 'off',
+             act: can ? 'homeSearch' : null, on: searchOn,
+             press: searchOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+             hint: searchAbout, warn: searchWarn });
+    var fadeOn = d.layout.fade === true;
+    r.push({ label: t('home.fade', 'Fade in and out'),
+             value: fadeOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: fadeOn ? 'on' : 'off',
+             act: can ? 'homeFade' : null, on: fadeOn,
+             press: fadeOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+             hint: t('home.fadeDesc', 'Glasshouse Home fades in as it comes on screen, and out as an app, input or channel opens.') });
     // OK steps through the presets; colours picked on the browser dashboard show as Custom.
     var presets = d.colourPresets || [], cur = d.layout.colours, at = cur ? -1 : 0;
     for (var pi = 0; pi < presets.length; pi++) if (cur && presets[pi].text === cur.text && presets[pi].accent === cur.accent) at = pi;
     if (presets.length) {
       var lookNames = { warm: t('home.colours.warm', 'Warm'), glasshouse: t('home.colours.glasshouse', 'Glasshouse'),
-                        white: t('home.colours.white', 'White'), ice: t('home.colours.ice', 'Ice'),
-                        rose: t('home.colours.rose', 'Rose'), lilac: t('home.colours.lilac', 'Lilac') };
+                        pure: t('home.colours.pure', 'Pure white'), white: t('home.colours.white', 'White'),
+                        ice: t('home.colours.ice', 'Ice'), rose: t('home.colours.rose', 'Rose'),
+                        lilac: t('home.colours.lilac', 'Lilac') };
       var nextLook = presets[(at + 1) % presets.length];
       r.push({ label: t('home.colours.title', 'Colours'),
                value: at === -1 ? t('home.colours.custom', 'Custom') : lookNames[presets[at].id] || presets[at].id, cls: 'act',
@@ -941,6 +1161,26 @@ function homeRows(d) {
       if (!order.length) return;
       r.push(head(names[kind]));
       r.push(sortRow(kind));
+      if (kind === 'dev') {
+        // Beside hiding each input, this leaves out those with nothing connected.
+        var hideUnusedOn = lay.hideUnused === true;
+        r.push({ label: t('home.hideUnused', 'Hide inputs with nothing connected'),
+                 value: hideUnusedOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: hideUnusedOn ? 'on' : 'off',
+                 act: can ? 'homeHideUnused' : null, on: hideUnusedOn,
+                 press: hideUnusedOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+                 hint: t('home.hideUnusedDesc', 'Leaves inputs with nothing plugged in out of the Inputs row, instead of showing them greyed out. They still show while arranging.') });
+        order.forEach(function (id) {
+          var title = homeItemTitle('dev', id), dev = null, i;
+          if (title === null) return;
+          for (i = 0; i < c.devices.length; i++) if (c.devices[i].id === id) dev = c.devices[i];
+          var out = !!(dev && dev.unused && hideUnusedOn), hid = lay.hidden.dev.indexOf(id) !== -1;
+          r.push({ label: title, value: hid ? t('home.hidden', 'Hidden') : out ? t('home.leftOut', 'Left out') : t('home.shown', 'Shown'),
+                   cls: hid || out ? 'off' : 'on', act: can ? 'homeTile' : null, key: id, kind: 'dev', on: !hid,
+                   press: hid ? t('tv.home.tile.show', 'Press OK to show it') : t('tv.home.tile.hide', 'Press OK to hide it'),
+                   hint: t('tv.home.tile.hint', 'Hold OK on Glasshouse Home to change the order of tiles.') });
+        });
+        return;
+      }
       order.forEach(function (id) {
         var title = homeItemTitle(kind, id);
         if (title === null) return;
@@ -1038,65 +1278,6 @@ function appsRows(d) {
     }
   }
 
-  // Parts of LG's Home screen, and inputs as tiles on it (lib/homescreen.js).
-  var hs = d.homeScreen;
-  if (hs && hs.parts) {
-    r.push(head(t('apps.home', 'Home screen layout')));
-    if (d.glasshouseHome) {
-      r.push({ label: t('tv.apps.glasshouseHome', 'Glasshouse Home is on'), value: '',
-               hint: t('apps.glasshouseHomeNote', 'Glasshouse Home is switched on, so this applies only to LG\u2019s Home, seen from its tile, by holding Home, or while Glasshouse starts.') + ' ' +
-                     t('tv.apps.glasshouseHomeWhere', 'Glasshouse Home is arranged in its own Home section.') });
-    }
-    // Experimental on webOS 10: switched on from the dashboard in a browser,
-    // where its warning is.
-    var locked = !!(hs.experimental && !hs.experimental.allowed);
-    if (locked) {
-      r.push({
-        label: t('apps.home.exp.title', 'Experimental on this TV'),
-        value: t('common.off', 'Off'),
-        cls: 'off',
-        hint: t('tv.apps.home.exp.hint', 'Switch it on from the dashboard in a browser, under Apps, where its warning is.')
-      });
-    }
-    var hin = hs.inputs || [];
-    for (var hi = 0; hi < hin.length; hi++) {
-      var inp = hin[hi];
-      r.push({
-        label: inp.title,
-        value: inp.onHome ? t('apps.home.onHome', 'On Home') : t('apps.home.notOnHome', 'Not on Home'),
-        cls: inp.onHome ? 'on' : 'off',
-        act: d.writable === false || locked ? null : 'homeInput',
-        key: inp.id,
-        on: inp.onHome,
-        press: inp.onHome ? t('tv.apps.home.inputOff', 'Press OK to take its tile off Home') : t('tv.apps.home.inputOn', 'Press OK to add a tile for it'),
-        hint: t('tv.apps.home.input.hint', 'A tile among the apps on the Home screen that switches to this input.')
-      });
-    }
-    for (var hp = 0; hp < hs.parts.length; hp++) {
-      var part = hs.parts[hp];
-      r.push({
-        label: part.title,
-        value: part.shown ? t('apps.home.shown', 'Shown') : t('apps.home.hidden', 'Hidden'),
-        cls: part.shown ? 'on' : 'off',
-        act: d.writable === false || locked ? null : 'homePart',
-        key: part.id,
-        on: part.shown,
-        press: part.shown ? t('tv.apps.home.hide', 'Press OK to hide it') : t('tv.apps.home.show', 'Press OK to show it'),
-        // desc is the server's own words.
-        hint: part.desc + ' ' + t('tv.apps.home.restart', 'The Home screen starts again, which takes a few seconds.')
-      });
-    }
-    if (d.writable !== false && !locked) {
-      r.push({
-        label: t('apps.home.restore', 'Put back LG\u2019s Home screen'),
-        value: t('tv.apps.home.restore.value', 'Put back'),
-        cls: 'act', act: 'homeRestore',
-        press: t('tv.apps.home.restore.press', 'Press OK to put it back'),
-        hint: t('tv.apps.home.restore.hint', 'Every part shown again, and the input tiles added here taken off.')
-      });
-    }
-  }
-
   // Quick Access, as it is set: changing it is in the browser dashboard,
   // where picking from every app is easier than with the remote.
   var qa = d.quickAccess;
@@ -1111,49 +1292,6 @@ function appsRows(d) {
         hint: t('apps.quickAccess.desc', 'Holding a number key on the remote opens the app or input set for it. A change here applies on the TV straight away.') + ' ' +
               t('tv.apps.quickAccess.browser', 'Change them from the dashboard in a browser.')
       });
-    }
-  }
-
-  var sys = d.systemTiles || [];
-  if (sys.length > 0) {
-    r.push(head(t('tv.apps.head.hideHomeScreenSystem', 'Hide Home Screen System Apps')));
-    if (d.glasshouseHome) {
-      r.push({ label: t('tv.apps.glasshouseHome', 'Glasshouse Home is on'), value: '',
-               hint: t('tv.apps.glasshouseHomeTilesNote', 'Glasshouse Home is switched on. Apps hidden here are hidden on it too; its Home section hides others on Glasshouse Home only.') });
-    }
-    var tileHidingEnabled = !!d.tileHidingEnabled;
-    var tilesHeld = !!d.tileHidingHeld;
-    r.push({
-      label: t('tv.apps.systemAppHiding', 'System App Hiding'),
-      value: tileHidingEnabled ? t('mqtt.cat.enabled', 'Enabled') : t('mqtt.cat.disabled', 'Disabled'),
-      cls: tileHidingEnabled ? 'on' : 'off',
-      act: tilesHeld && !tileHidingEnabled ? null : 'tileHiding',
-      on: tileHidingEnabled,
-      press: tileHidingEnabled ? t('tv.apps.tiles.disable', 'Press OK to disable tile hiding') : t('tv.apps.tiles.enable', 'Press OK to enable tile hiding'),
-      hint: d.tileHidingOverridden ? t('common.heldOverridden', 'Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged.')
-        : tilesHeld ? t('apps.tiles.held', 'Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.')
-        : tileHidingEnabled
-        ? t('tv.apps.tiles.on.hint', 'When enabled: On each cold boot of your TV, this can cause a brief 1-second blank screen or input refresh before returning to your active HDMI source.')
-        : t('tv.apps.tiles.off.hint', 'Stock behavior active. Press OK to enable system app hiding.')
-    });
-    if (tileHidingEnabled && !tilesHeld) {
-      for (var i = 0; i < sys.length; i++) {
-        var tile = sys[i];
-        var isVisible = !tile.hidden;
-        r.push({
-          label: tile.title || tile.id,
-          value: isVisible ? t('apps.tile.visible', 'Visible') : t('apps.tile.hidden', 'Hidden'),
-          cls: isVisible ? 'on' : 'off',
-          act: 'tile',
-          key: tile.id,
-          title: tile.title || tile.id,
-          on: isVisible,
-          press: isVisible ? t('tv.apps.tile.hide', 'Press OK to hide tile') : t('tv.apps.tile.show', 'Press OK to show tile'),
-          hint: isVisible
-            ? t('tv.apps.tile.visible.hint', 'Currently visible on the TV home ribbon. Press OK to hide this tile.')
-            : t('tv.apps.tile.hidden.hint', 'Currently hidden from the TV home ribbon. Press OK to make this tile visible again.')
-        });
-      }
     }
   }
 
@@ -1248,6 +1386,7 @@ function privacyRows(d) {
                     t('tv.privacy.blocking.troubleshoot', 'If an app stops working, switch blocking off to check whether it is the cause.') },
       full: { label: t('pv.adblock.full', 'Everything'), next: 'off', press: t('tv.privacy.blocking.toOff', 'Press OK for Off'),
               hint: t('tv.privacy.everything.hint', 'Also blocks LG’s platform services. The LG ThinQ app can no longer control the TV, and the app store, software updates and LG Channels may stop working.') + ' ' +
+                    t('tv.privacy.everything.search', 'Where it blocks LG’s search, Glasshouse Home’s search is hidden.') + ' ' +
                     t('tv.privacy.blocking.troubleshoot', 'If an app stops working, switch blocking off to check whether it is the cause.') }
     };
     var cur = AB[abMode] || AB.off;
@@ -1384,6 +1523,61 @@ function backRow() {
 function backRowApps() {
   return { label: t('tv.backRow.apps', '‹ Apps'), value: '', act: 'close', press: t('tv.backRow.privacy.press', 'Press OK or Back to return'),
            hint: t('tv.backRow.apps.hint', 'Back to the Apps tab.') };
+}
+
+function audioDeclaration(value) {
+  return value === true ? t('audio.advertised', 'Advertised') : value === false
+    ? t('audio.notAdvertised', 'Not advertised') : t('audio.unknown', 'Unknown');
+}
+
+/*
+ * The Audio tab: LG's sound settings first, as the rows most often changed,
+ * then what the TV and the receiver report. A failed read shows nothing stale.
+ */
+function audioRows(d) {
+  if (!d) return [];
+  if (d.ok === false) return [{ label: t('tv.audio.readFailed', 'Audio readings unavailable'), value: t('tv.apps.install.retry', 'Retry'), cls: 'act',
+    act: 'audioRefresh', press: t('tv.apps.install.press.retry', 'Press OK to try again'),
+    hint: t('audio.readFailed', 'The TV’s sound settings and audio readings could not be read.') + (d.error ? ' ' + sentence(d.error) : '') }];
+  var r = [], ls = d.lgSettings || [];
+  r.push(head(t('adv.sound', 'Sound')));
+  ls.forEach(function (g) { if (g.section === 'sound') r.push(lgRow(g)); });
+  ls.forEach(function (g) { if (g.column === 'audioFormat') r.push(lgRow(g)); });
+  r.push(head(t('audio.pathTitle', 'Soundbar and receiver')));
+  var unknown = t('audio.unknown', 'Unknown'), receiver = d.receiver;
+  var dts = null;
+  d.tv.formats.forEach(function (f) { if (f.id === 'dts') dts = f; });
+  r.push({ label: t('tv.system.model', 'Model'), value: d.identity.model || unknown,
+    sub: d.identity.firmware || '', hint: t('tv.audio.identityHint', 'Audio support depends on the exact TV model and firmware.') });
+  r.push({ label: 'DTS', value: audioDeclaration(dts && dts.advertised),
+    hint: d.tv.dtsDecoder === true ? t('audio.decoderPresent', 'LG DTS decoder present') : d.tv.dtsDecoder === false
+      ? t('audio.decoderAbsent', 'LG DTS-core decoder not registered') : t('tv.audio.decoderUnknown', 'DTS decoder registration is unknown.') });
+  r.push({ label: t('audio.inputNow', 'Incoming audio'), value: d.live.input ? d.live.input.codec : t('audio.noInput', 'No audio reported'),
+    hint: t('tv.audio.inputHint', 'The TV’s current input reading. TV-app playback and HDMI-input forwarding use different audio paths.') });
+  // The output itself is the Sound output setting above; only a live codec adds to it.
+  if (d.live.output) r.push({ label: t('tv.audio.outputFormat', 'Output format'), value: d.live.output,
+    hint: t('tv.audio.outputHint', 'The output codec the audio driver reports now. The receiver’s own incoming-signal display confirms what arrives.') });
+  r.push({ label: t('audio.receiverNow', 'Return channel'), value: receiver.link === 'inactive'
+      ? t('audio.linkInactive', 'No active ARC link') : receiver.link === 'unknown' ? t('audio.linkUnknown', 'Link unknown') : receiver.link,
+    sub: receiver.name || '', hint: t('tv.audio.linkHint', 'The negotiated link is separate from the eARC setting. Standard DTS can use ARC; DTS-HD needs eARC. Receiver capability declarations do not prove reception.') });
+  r.push(head(t('audio.tableCaption', 'Supported formats')));
+  d.tv.formats.forEach(function (f) {
+    r.push({ label: f.name, value: audioDeclaration(f.advertised),
+      sub: t('tv.audio.receiverFormat', 'Receiver: {format}', { format: audioDeclaration(f.receiver) }),
+      hint: t('tv.audio.formatHint', 'The main value is what the TV advertises to an HDMI source; the line below is what the ARC/eARC receiver reports. Unknown stays unknown. DTS:X is not established by a DTS-HD entry.') +
+        (d.tv.input ? ' ' + t('audio.inputDeclaration', 'The TV column describes HDMI {port}.', { port: d.tv.input }) : '') });
+  });
+  r.push(head(t('audio.playbackTitle', 'TV playback declarations')));
+  var declarations = d.tv.playbackDeclarations;
+  var playbackNames = { AC3: 'Dolby Digital', EAC3: 'Dolby Digital Plus', DTSH: 'DTS-HD', DTSE: 'DTS Express', WMAP: 'WMA Pro', WMAL: 'WMA Lossless', OPUS: 'Opus' };
+  if (!declarations || !declarations.length) r.push({ label: t('tv.audio.playback', 'TV playback'), value: unknown,
+    hint: t('audio.playbackUnknown', 'The TV did not expose a playback declaration list.') });
+  else declarations.forEach(function (f) {
+    r.push({ label: playbackNames[f.name] || f.name,
+      value: f.channels ? t('audio.channels', '{count} channels', { count: f.channels }) : unknown,
+      hint: t('tv.audio.playbackHint', 'LG’s media-resource declaration for TV-app playback. A listed decoder or channel count does not establish bitstream pass-through.') });
+  });
+  return r;
 }
 
 // Only the supervised services: an on-demand one starts whenever anything asks
@@ -1534,13 +1728,7 @@ function updateRows(d) {
       plain: true,
       hint: t('tv.update.newer.hint', 'A newer release is available (v{version}).', { version: d.latest })
     });
-    if (d.viaHomebrewChannel) {
-      r.push({
-        label: t('tv.update.installUpdate', 'Install update'),
-        value: t('tv.update.inHbc', 'In the Homebrew Channel'),
-        hint: t('tv.update.installUpdate.hint', 'Update Glasshouse in the Homebrew Channel, or sideload the latest .ipk from GitHub releases.')
-      });
-    } else if (d.writable) {
+    if (d.writable) {
       r.push({
         label: t('tv.update.installUpdate', 'Install update'),
         value: t('server.install', 'Install v{version}', { version: d.latest }),
@@ -2081,6 +2269,9 @@ function renderHint() {
   // The scan prompt is added only when there is a code to scan.
   document.getElementById('hintBody').textContent =
     (r.hint || '') + (renderQr(r) && r.scan ? ' ' + r.scan : '');
+  var warn = document.getElementById('hintWarn');
+  warn.textContent = r.warn || '';
+  warn.className = 'h-warn' + (r.warn ? ' on' : '');
   var act = document.getElementById('hintAct');
   act.textContent = r.act ? (r.press || t('tv.press.change', 'Press OK to change')) : t('tv.viewOnly', 'View only');
   act.className = 'h-act' + (r.act ? '' : ' ro');
@@ -2110,6 +2301,7 @@ function renderQr(r) {
    of floating in the centre with half the screen empty. */
 function position() {
   var list = document.getElementById('list');
+  if (!list.clientHeight) list.style.height = document.getElementById('main').clientHeight + 'px';
   var off = 0, total = 0, i;
   for (i = 0; i < rows.length; i++) {
     if (i < sel) off += rowHeight(rows[i]);
@@ -2120,7 +2312,8 @@ function position() {
   var floor = Math.min(0, list.clientHeight - total);   // never scroll past the last row
   if (y > 0) y = 0;
   if (y < floor) y = floor;
-  document.getElementById('rows').style.transform = 'translateY(' + y + 'px)';
+  var rowsEl = document.getElementById('rows');
+  rowsEl.style.webkitTransform = rowsEl.style.transform = 'translateY(' + y + 'px)';
   document.getElementById('moreUp').className = 'more' + (y < 0 ? ' on' : '');
   document.getElementById('moreDown').className = 'more' + (y > floor ? ' on' : '');
 }
@@ -2196,11 +2389,11 @@ function flash(text) {
 // ---- data ----
 
 function fetchTab(keepSel) {
-  var section = T(), key = section.key;
+  var section = T(), key = section.key, view = sub;
   fetch(section.url, { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      if (T().key !== key) return;        // the user moved on while this was in flight
+      if (T().key !== key || sub !== view) return; // the user moved on while this was in flight
       data[key] = d;
       rows = buildRows(section, d);
       if (initialSel !== null && initialSel < rows.length && (!rows[initialSel] || !rows[initialSel].head)) {
@@ -2212,7 +2405,14 @@ function fetchTab(keepSel) {
       render();
     })
     .catch(function () {
-      if (T().key !== key || rows.length) return;
+      if (T().key !== key || sub !== view) return;
+      if (key === 'audio') {
+        data.audio = { ok: false, error: t('tv.msg.noResponse', 'The dashboard’s server on this TV did not respond.') };
+        rows = buildRows(section, data.audio);
+        sel = firstSel();
+        return render();
+      }
+      if (rows.length) return;
       document.getElementById('rows').innerHTML = '';
       var msg = document.getElementById('msg');
       msg.style.display = 'block';
@@ -2365,6 +2565,8 @@ function activate() {
   var r = rows[sel];
   if (!r || !r.act) return;
   switch (r.act) {
+    case 'audioRefresh':
+      return fetchTab(true);
     case 'uninstall':
       if (!r.confirming) {
         r.confirming = true;
@@ -2464,6 +2666,16 @@ function activate() {
                       r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'homePicture':
       return homeLayout({ picture: !r.on });
+    case 'homeShow':
+      var showChange = {};
+      showChange[r.key] = !r.on;
+      return homeLayout(showChange);
+    case 'homeSearch':
+      return homeLayout({ search: !r.on });
+    case 'homeFade':
+      return homeLayout({ fade: !r.on });
+    case 'homeHideUnused':
+      return homeLayout({ hideUnused: !r.on });
     case 'homeColours':
       // The first preset is the view's own colours, saved as none chosen.
       return homeLayout({ colours: r.key.id === homeData.colourPresets[0].id ? null : { text: r.key.text, accent: r.key.accent } });
@@ -2512,6 +2724,12 @@ function activate() {
                   r.next === 'bright' ? t('ss.bright', 'Bright') : t('ss.dim', 'Dim'));
     case 'saverStart':
       return startSaverAfterRelease();
+    case 'saverPowerOff':
+      // Shown at once, as the sleep timer: a second OK before the poll would send the same step again.
+      var offStep = r.next, offShown = saverPowerOffRow(offStep, true);
+      for (var pk in offShown) r[pk] = offShown[pk];
+      render();
+      return send({ action: 'screensaverPowerOff', value: offStep });
     case 'sleepTimer':
       // Shown at once: the poll can take 5 s to bring the new value, and a
       // second OK before then would send the same step again.
@@ -2531,12 +2749,18 @@ function activate() {
       return send({ action: r.act }, going);
     case 'quickBoot':
       return send({ action: 'quickBoot', value: !r.on }, r.on ? t('tv.flash.quickBootOff', 'Quick Boot turned off') : t('tv.flash.quickBootOn', 'Quick Boot turned on'));
+    case 'homeAutoLaunch':
+      return send({ action: 'homeAutoLaunch', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'deviceDetection':
       return send({ action: 'deviceDetection', value: !r.on }, r.on ? t('tv.flash.detectionOff', 'Device detection turned off') : t('tv.flash.detectionOn', 'Device detection turned on'));
     case 'alwaysReady':
       return send({ action: 'alwaysReady', value: !r.on }, r.on ? t('tv.flash.willSleep', 'Will sleep when off') : t('tv.flash.willStay', 'Will stay connected when off'));
     case 'alwaysReadyScreen':
       return send({ action: 'alwaysReadyScreen', value: !r.on }, r.on ? t('tv.flash.alwaysReadyOff', 'Always Ready turned off') : t('tv.flash.alwaysReadyOn', 'Always Ready turned on'));
+    case 'clockHour12':
+      clockHour12 = !r.on;
+      tick();
+      return send({ action: 'clockHour12', value: !r.on }, r.on ? t('tv.flash.clock24', '24-hour clock') : t('tv.flash.clock12', '12-hour clock'));
     case 'lgLogo':
       return send({ action: 'lgLogo', value: !r.on }, r.on ? t('tv.flash.logoHidden', 'LG logo hidden') : t('tv.flash.logoShown', 'LG logo shown'));
     case 'wakeOnLan':
@@ -2745,8 +2969,10 @@ function activate() {
 // Back only sends a webOS app to the background, and opening it again from the
 // home screen resumes the page as it was. Reload instead, on the same tab, so
 // a server updated in the meantime shows its current dashboard.
-document.addEventListener('webOSRelaunch', function () {
-  location.replace(location.pathname + '?tab=' + T().key + '&t=' + Date.now());
+document.addEventListener('webOSRelaunch', reloadPage);
+// Back in front by any other way, ask at once rather than at the next sixth tick.
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) refreshCaps();
 });
 
 function leaveApp() {

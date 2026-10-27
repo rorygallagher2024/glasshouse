@@ -100,6 +100,12 @@ With the dashboard disabled, the server acts purely as an MQTT bridge with no we
 
 The retained state topic `<topicPrefix>/state/piccap/power` carries `ON` or `OFF`, and the command topic `<topicPrefix>/command/piccap/power` accepts `ON` or `OFF` (commands require `allowControl`). Telemetry includes the boolean `piccap.power` while PicCap answers.
 
+### Hue Sync
+
+Where the Hue Sync app is installed, the Advanced tab has a **Hue Sync streaming** switch and Home Assistant receives a **Hue Sync** switch under Controls & Media, which starts and stops its streaming to Philips Hue and Ambience lights. Nothing is asked of Hue Sync on a TV without it. Its Home Assistant entity can be switched off like any other, which also stops the server polling Hue Sync's state every 30 seconds.
+
+The retained state topic `<topicPrefix>/state/huesync/power` carries `ON` or `OFF`, and the command topic `<topicPrefix>/command/huesync/power` accepts `ON` or `OFF` (commands require `allowControl`). Telemetry includes the boolean `huesync.streaming` while Hue Sync answers. See [Hue Sync](huesync.md) for setup and automation examples.
+
 ### Using MQTT without Home Assistant
 
 The bridge is a plain MQTT publisher, so any client that speaks MQTT can read it. Telemetry is published as JSON to `<topicPrefix>/telemetry`, availability to `<topicPrefix>/status`, and commands are accepted on `<topicPrefix>/command/*`.
@@ -132,6 +138,12 @@ Categories:
 ## PicCap
 
 Where PicCap is installed, a **PicCap Capture** switch is discovered while PicCap answers on the TV, and removed when it stops answering or is uninstalled. It is in Controls & Media and can be switched off there. It uses `<topicPrefix>/state/piccap/power` for state and `<topicPrefix>/command/piccap/power` for control, both `ON` or `OFF`. See [PicCap and ambient light](piccap.md) for full setup instructions, Hyperion configuration, and automation examples.
+
+---
+
+## Hue Sync
+
+Where the Hue Sync app is installed, a **Hue Sync** switch is discovered while its service answers on the TV, and removed when it stops answering or the app goes. It is in Controls & Media and can be switched off there. It uses `<topicPrefix>/state/huesync/power` for state and `<topicPrefix>/command/huesync/power` for control, both `ON` or `OFF`. See [Hue Sync](huesync.md) for setup and automation examples.
 
 ---
 

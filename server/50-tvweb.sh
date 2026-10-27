@@ -54,6 +54,15 @@ SAM_NUDGE_ID=io.github.rorygallagher2024.lg-webos-dashboard.rescan
 sam_nudge() {
   list=$(luna-send -n 1 luna://com.webos.service.config/getConfigs '{"configNames":["profile.blockedAppList"]}' 2>/dev/null |
     tr -d '\n' | sed -n 's/.*"profile\.blockedAppList": *\(\[[^]]*\]\).*/\1/p')
+  # webOS 7: sam reads the list but configd has none until one is written, and
+  # sam blocks the country's list meanwhile, so the nudge starts from that.
+  # Only where sam has no blockSystemApp; webOS 10 and 11 ignore the list.
+  if [ -z "$list" ] && [ ! -e /etc/palm/schemas/sam/applicationManager.blockSystemApp.schema ] &&
+     grep -q 'profile\.blockedAppList' /usr/sbin/sam 2>/dev/null; then
+    set -- /var/preferences/com.webos.applicationManager/blockedAppList/*.json
+    [ $# -eq 1 ] && [ -f "$1" ] &&
+      list=$(tr -d '\n' < "$1" | sed -n 's/.*"blocked_applist": *\(\[[^]]*\]\).*/\1/p')
+  fi
   [ -n "$list" ] || return 1
   # LG's own list: without the id, should a run cut short have left it in.
   lg=$(echo "$list" | sed "s/\"$SAM_NUDGE_ID\"//g; s/, *,/,/g; s/\[ *,/[/; s/, *\]/]/")
@@ -123,6 +132,7 @@ webos_major=$(sed -n 's/.*webOS[^0-9]*\([0-9][0-9]*\)\..*/\1/p' /etc/issue 2>/de
 homeapp=/usr/palm/applications/com.webos.app.home
 homestage=/var/lib/tvweb/home-takeover
 home_os=0
+[ "$webos_major" = "7" ] && home_os=1
 [ "$webos_major" = "9" ] && home_os=1
 [ "$webos_major" = "10" ] && home_os=1
 if [ "$webos_major" = "11" ]; then
@@ -147,9 +157,16 @@ lg_home_pids() {
 # LG's would have: after a power-on LG opens Home for, and only while the input
 # the TV started on is still in front, so an input or app chosen since stays.
 # bootd logs the app it put in front as "'<id>' is foreground" (a G5, webOS
-# 10.3.1); without that line nothing is opened.
+# 10.3.1); without that line nothing is opened. With Quick Start+ on, auto
+# launch is left as the owner had it, and a C4 (webOS 10.3.1) with it on still
+# started on its last input after its 4 h full power-off, so LG's value is read
+# where home.json holds none; where bootd opened Home itself, the checks below
+# find Home rather than the input.
 home_open_at_boot() {
-  grep -q '"lgAutoLaunch"[[:space:]]*:[[:space:]]*"on"' /var/lib/tvweb/home.json 2>/dev/null || return 0
+  grep -q '"lgAutoLaunch"[[:space:]]*:[[:space:]]*"on"' /var/lib/tvweb/home.json 2>/dev/null ||
+    luna-send -n 1 luna://com.webos.service.settings/getSystemSettings \
+      '{"category":"general","keys":["homeAutoLaunch"]}' 2>/dev/null |
+      grep -q '"homeAutoLaunch": *"on"' || return 0
   reason=$(luna-send -n 1 luna://com.webos.service.tvpower/power/getPowerOnReason '{}' 2>/dev/null |
     sed -n 's/.*"reason": *"\([^"]*\)".*/\1/p')
   reasons=$(luna-send -n 1 luna://com.webos.service.config/getConfigs \
@@ -168,20 +185,25 @@ home_open_at_boot() {
     com.webos.app.livetv|com.webos.app.hdmi[0-9]|com.webos.app.av[0-9]|com.webos.app.comp[0-9]) ;;
     *) echo "$(date): Glasshouse Home not opened: the TV started on ${boot_app:-nothing logged}"; return 0 ;;
   esac
-  if [ "$front" != "$boot_app" ]; then
+  # On webOS 11.1 (50QNED72B6B) sam respawns com.webos.app.home once LG's Home
+  # is killed above, and reports it in front although nothing is drawn.
+  if [ "$front" != "$boot_app" ] && [ "$front" != com.webos.app.home ]; then
     echo "$(date): Glasshouse Home not opened: ${front:-nothing} in front since the start on $boot_app"
     return 0
   fi
   luna-send -n 1 luna://com.webos.applicationManager/launch '{"id":"com.webos.app.home"}' 2>/dev/null |
     grep -q '"returnValue": *true' || return 0
   home_opened=1
+  # The server watches for the view from its start and opens LG's Home if it
+  # does not come (lib/home.js watchBootOpen).
+  : > /tmp/glasshouse-home-opened-at-boot
   echo "$(date): Glasshouse Home opened over $boot_app"
 }
 home_opened=0
 if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
    grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
   mount --bind "$homestage" "$homeapp" 2>/dev/null || true
-  if [ "$webos_major" = "9" ]; then
+  if [ "$webos_major" = "9" ] || [ "$webos_major" = "7" ]; then
     home_reread() { sam_nudge; }
   else
     home_reread() { sam_reread_app com.webos.app.home; }

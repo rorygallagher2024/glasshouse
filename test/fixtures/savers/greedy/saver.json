@@ -1,0 +1,1 @@
+{ "manifest": 1, "version": "1.0", "name": "Greedy", "description": "Asks for the readings.", "license": "MIT", "uses": ["level", "stats"] }

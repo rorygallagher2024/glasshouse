@@ -558,6 +558,9 @@ html.nav-hidden body.nav-open{overflow:hidden}
 .toast-form input::placeholder{color:var(--w60)}
 .toast-form button{flex-shrink:0;padding:0 22px;min-height:48px}
 #port-input{flex:0 0 84px;width:84px;font-variant-numeric:tabular-nums}
+#ss-poweroff-form{max-width:340px}
+#ss-poweroff{font-variant-numeric:tabular-nums}
+#ss-poweroff-desc{margin-top:8px}
 button{
   font-family:'Manrope';font-weight:500;font-size:14px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--w80);background:transparent;border:1px solid var(--edge);
@@ -693,26 +696,33 @@ button.key-hit{background:var(--w10)}
 /* The long lists stay one column - a consent row is a sentence, not a tile -
    but capped so the pill stays near what it describes on a wide screen. */
 .priv.panel{max-width:1180px}
-.ss-list{display:grid;gap:14px;grid-template-columns:1fr;margin-top:22px;max-width:760px}
-@media(min-width:820px){.ss-list{grid-template-columns:1fr 1fr}}
-/* A card is the control, not a container with a button in it: the whole thing
+/* One list that scrolls, a row per screen saver, so more fit without the tab
+   growing: the name, and what it shows under it. */
+.ss-list{position:relative;display:flex;flex-direction:column;margin-top:22px;max-width:760px;
+         max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain;
+         border:1px solid var(--w12);border-radius:3px}
+/* A row is the control, not a container with a button in it: the whole thing
    is the click target, so there is nothing to hunt for. */
-.ss-card{display:block;width:100%;text-align:left;background:transparent;cursor:pointer;
-         border:1px solid var(--w12);border-radius:3px;padding:18px 20px;min-height:0;
+.ss-card{display:block;flex:none;
+         width:100%;text-align:left;background:transparent;cursor:pointer;
+         border:0;border-bottom:1px solid var(--w12);border-radius:0;padding:12px 16px;min-height:0;
          color:inherit;font-family:inherit;
-         /* The global button voice is an uppercase pill. These are cards. */
+         /* The global button voice is an uppercase pill. These are rows. */
          text-transform:none;letter-spacing:normal;font-weight:400}
-.ss-card:hover:not([disabled]):not(.on){border-color:var(--w25);background:rgba(var(--fg),.04)}
+.ss-card:last-child{border-bottom:0}
+.ss-card:hover:not([disabled]):not(.on){background:rgba(var(--fg),.04)}
 .ss-card[disabled]{cursor:default;opacity:.45}
 /* The one in use is marked, not dimmed: it is the answer to what is running,
    so it should read as the strongest thing on the panel. */
-.ss-card.on,.ss-card.on:hover{background:transparent;color:inherit;font-weight:400;
-         border-color:var(--green);cursor:default;opacity:1}
-.ss-name{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em;
-         display:flex;align-items:center;justify-content:space-between;gap:12px}
-.ss-desc{font-size:14px;color:var(--w60);margin-top:7px;line-height:1.45;max-width:46ch}
+.ss-card.on,.ss-card.on:hover{background:rgba(var(--fg),.03);color:inherit;font-weight:400;
+         box-shadow:inset 3px 0 0 var(--green);cursor:default;opacity:1}
+.ss-name{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em}
+.ss-desc{font-size:14px;color:var(--w60);margin-top:3px;line-height:1.45;max-width:60ch}
+.ss-meta{font-size:12px;color:var(--w60);margin-top:4px;letter-spacing:.02em}
+.ss-meta.bad{color:var(--red)}
+.ss-meta.warn{color:var(--w80)}
 .ss-card.on .ss-name{color:var(--green)}
-.ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green)}
+.ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
 /* The choice on the left, and what to do with it - brightness, starting it,
    the firmware note - beside it on a wide screen rather than below the list. */
@@ -917,18 +927,21 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
    descriptions carry the substance. */
 #advpane .prot-table{display:grid;column-gap:clamp(30px,4vw,52px);
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
-/* The Server tab keeps one column, so every control lines up down the right. */
-#serverpane .prot-table{display:grid;grid-template-columns:1fr}
-#advpane .prot-row,#serverpane .prot-row{align-items:flex-start;padding:16px 0}
-#advpane .prot-title,#serverpane .prot-title{font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--w90)}
-#advpane .prot-desc,#serverpane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
-#advpane .prot-status,#serverpane .prot-status{padding-top:2px}
+/* The Server tab and Home customisation keep one column, so every control,
+   and each fold's count, lines up down the right. */
+#serverpane .prot-table,#home-custom-table{display:grid;grid-template-columns:1fr}
+#advpane .prot-row,#serverpane .prot-row,#home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
+#advpane .prot-title,#serverpane .prot-title,#homepane .prot-title{font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--w90)}
+#advpane .prot-desc,#serverpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
+#advpane .prot-status,#serverpane .prot-status,#home-custom-table .prot-status{padding-top:2px}
 #pv-adv{margin-top:clamp(36px,5vw,56px)}
 #pv-adv>summary{border-top:0;min-height:0;align-items:center}
 #pv-adv[open]>summary{margin-bottom:22px}
 .pv-note{font-size:14px;color:var(--w60);border-left:2px solid var(--w25);padding:10px 14px;margin:16px 0;max-width:64ch}
 /* A note that warns: the yellow accent of the OLED and service menu warnings. */
 .pv-note.warn{border-left-color:var(--cand)}
+/* Links in a note read as part of it, not the browser's blue. */
+.pv-note a{color:var(--w90);text-underline-offset:3px}
 .cfg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(232px,100%),1fr));
   gap:18px 20px;max-width:840px;margin-top:4px}
 .cfg-f{display:flex;flex-direction:column;gap:7px;min-width:0}
@@ -1175,6 +1188,7 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
   max-width:62ch;
 }
 .prot-status{flex-shrink:0}
+.prot-main .pv-note{margin:10px 0 0}
 .timer-ctl{display:flex;gap:8px;align-items:center}
 .timer-ctl input[type=time]{min-width:0;width:112px}
 /* The days take the row's full width, under the title and the time, so all
@@ -1427,22 +1441,148 @@ button.tools-jump:active{background:var(--w80)}
 /* Orange marks a change from LG's own setting. */
 .sys-tile.sys-changed .rk-name{color:var(--cand)}
 
+/* The Audio tab. The path is a sequence - what comes in, where the TV sends
+   it, what the receiver negotiated - so it reads left to right, joined by a
+   rule, and stacks top to bottom on a phone. */
+/* The fold's title with what it is for beneath it, both seen while it is closed. */
+.audio-fold{display:flex;flex-direction:column;gap:6px;min-width:0}
+.audio-fold .pv-sub{font-family:'Manrope';font-weight:400;margin:0}
+.audio-more[open]>summary{margin-bottom:6px}
+.audio-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:0 0 18px}
+.audio-head .pill{flex-shrink:0;min-height:36px}
+.audio-path{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:20px 0 22px;border-block:1px solid var(--w12)}
+.audio-path>li{position:relative;padding:0 20px 0 0}
+.audio-path>li+li{padding-left:28px}
+.audio-path>li+li::before{content:'';position:absolute;left:0;top:7px;width:16px;border-top:1px solid var(--w40)}
+.audio-path>li+li::after{content:'';position:absolute;left:12px;top:4px;border:3.5px solid transparent;border-left:5px solid var(--w40)}
+.audio-label{font-size:12px;color:var(--w60);margin-bottom:5px}
+.audio-value{font-size:16px;color:var(--w100);overflow-wrap:anywhere}
+.audio-path .prot-desc{margin-top:4px}
+.audio-formats-wrap{overflow-x:auto;margin:20px 0 10px}
+.audio-formats{width:100%;border-collapse:collapse;text-align:left;font-size:14px}
+.audio-formats caption{text-align:left;margin-bottom:10px}
+.audio-formats th,.audio-formats td{padding:11px 12px;border-bottom:1px solid var(--w08);vertical-align:top}
+.audio-formats th:first-child{padding-left:0}
+.audio-formats thead th{font-size:12px;color:var(--w60);font-weight:400}
+.audio-formats tbody th{font-weight:500;color:var(--w90)}
+.audio-formats td{color:var(--w60)}
+.audio-formats td.audio-yes{color:var(--w100)}
+.audio-playback{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;margin:10px 0}
+.audio-playback>div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--w08);font-size:14px}
+.audio-playback>div>span:last-child{color:var(--w60)}
+.audio-error{margin:4px 0 18px}
+@media(max-width:600px){
+  .audio-path{grid-template-columns:1fr;gap:18px}
+  .audio-path>li,.audio-path>li+li{padding:0 0 0 18px}
+  .audio-path>li::before,.audio-path>li+li::before{content:'';position:absolute;left:3px;top:6px;width:7px;height:7px;border:0;border-radius:50%;background:var(--w40)}
+  .audio-path>li+li::after{content:'';position:absolute;left:6px;top:-18px;height:24px;width:0;border:0;border-left:1px solid var(--w40)}
+  .audio-playback{grid-template-columns:1fr}
+  .audio-formats{font-size:13px}
+  .audio-formats th,.audio-formats td{padding:10px 7px}
+}
+
 /* The Home tab */
+#home-hero{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px 24px;
+  padding:8px 0 0}
+#home-hero .ps-state{margin-bottom:0;flex:1 1 320px}
+#home-hero .pv-sub{margin:6px 0 0}
+/* The dot stays level with the heading's first line, however tall the
+   experimental note beneath makes the block. */
+#home-hero .ps-state{align-items:flex-start}
+#home-hero .ps-dot{margin-top:calc(clamp(26px,3.4vw,36px) * 1.15 / 2 - 7px)}
+#home-hero .pv-note{margin:14px 0 0}
+/* One section for whichever Home is the TV's. Its heading's rule is the only
+   divider under the switch; Glasshouse Home's rows leave with it. */
+#home-hero+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
+#home-custom.lg-home .home-gh-row{display:none}
+/* Its folding sections read as rows of the list above: a row's title, the
+   count and the plus at the right, a row's rule beneath. */
+#home-custom .pv-d>summary{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em;
+  color:var(--w90);align-items:center;min-height:0;padding:16px 0;border-top:0;border-bottom:1px solid var(--w06)}
+#home-custom .pv-d>summary::after{font-size:18px}
+#home-custom .pv-d[open]>summary{border-bottom-color:transparent}
+#home-custom .pv-d[open]{padding-bottom:16px;border-bottom:1px solid var(--w06)}
+#home-mode-btns{display:flex;flex-wrap:wrap;gap:8px;flex:0 0 auto;width:auto}
+#home-mode-btns button{min-width:176px;padding:0 18px;white-space:nowrap}
+#home-mode-btns button.warn{color:var(--cand);border-color:var(--cand)}
 #home-rows{margin-top:14px}
 .home-row{border-top:1px solid var(--edge);padding:10px 0}
 .home-row summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;padding:6px 0}
-.home-row-move{display:flex;gap:6px}
+/* Folds as the dashboard's other sections do: a plus that turns to a minus. */
+.home-row summary::-webkit-details-marker{display:none}
+.home-row summary::after{content:'+';font-size:17px;line-height:1;color:var(--w60);width:12px;text-align:center;flex:none}
+.home-row[open] summary::after{content:'\2212'}
+.home-row summary:hover::after{color:var(--w90)}
+/* Pushed right, beside the fold's plus, rather than spread to the middle. */
+.home-row-move{display:flex;gap:6px;margin-left:auto}
+.home-row-move button.pill{min-width:96px}
+@media(max-width:600px){.home-row-move{min-width:0;flex-wrap:wrap;justify-content:flex-end}}
 .home-tile .prot-title{display:flex;align-items:center;gap:10px}
 .home-tile .prot-status{display:flex;gap:6px;align-items:center}
 .home-tile .rk-ico{width:28px;height:28px;border-radius:6px}
 .home-hidden .prot-main{opacity:.45}
 .home-tile .home-move{min-width:0;width:36px;padding:0}
-.home-ch-add{margin-top:14px;padding-top:12px;border-top:1px dashed var(--edge)}
-.home-ch-filter{margin:12px 0;padding:8px 10px;width:100%;max-width:320px;background:transparent;color:inherit;border:1px solid var(--edge);border-radius:6px}
+span.pill.home-fixed-pill{min-width:116px;padding:0 12px;justify-content:center;text-align:center}
+.home-ch-add{margin-top:14px;border-top:1px dashed var(--edge)}
+/* The dashboard's own field, as the Apps tab's search is. */
+.home-ch-filter{margin:4px 0 12px;width:100%;max-width:320px;font:400 14px 'Manrope';letter-spacing:.03em;
+  color:var(--w100);background:transparent;border:1px solid var(--edge);border-radius:0;padding:10px 12px;outline:none}
+.home-ch-filter:focus{border-color:var(--w100)}
+.home-ch-filter::placeholder{color:var(--w60)}
 .home-ch-list{max-height:420px;overflow:auto}
-.home-walls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:12px}
-.home-wall{margin:0}
-.home-wall img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;display:block}
+/* Wallpaper: the day as a strip, each part filled with its picture at its
+   share of the 24 hours, a needle at the time now; then each time of day as
+   a small Glasshouse Home, its clock in the chosen text colour. The screens
+   are the TV's, so they stay dark in the light theme too. */
+.wall-day{margin:38px 0 30px}
+.wall-day-bar{position:relative;display:flex;height:58px}
+button.wall-day-part{flex:1 1 0;min-width:0;min-height:0;padding:0;border:0;border-right:2px solid var(--bg);
+  background:#0d0d0d center/cover no-repeat;cursor:pointer;transition:filter .16s ease}
+button.wall-day-part:first-child{border-radius:10px 0 0 10px}
+button.wall-day-part:nth-child(5){border-radius:0 10px 10px 0;border-right:0}
+/* A part without a picture keeps a hint of its sky, so the strip still reads as a day. */
+button.wall-day-part[data-slot=night]:not(.has){background:linear-gradient(180deg,#0b0f24,#05060d)}
+button.wall-day-part[data-slot=morning]:not(.has){background:linear-gradient(180deg,#3b2a18,#140e08)}
+button.wall-day-part[data-slot=afternoon]:not(.has){background:linear-gradient(180deg,#163047,#081320)}
+button.wall-day-part[data-slot=evening]:not(.has){background:linear-gradient(180deg,#3d1b2c,#12080e)}
+button.wall-day-part:hover:not(:disabled){filter:brightness(1.25)}
+button.wall-day-part:disabled{opacity:1;cursor:default}
+.wall-day-needle{position:absolute;top:-8px;bottom:-8px;width:2px;margin-left:-1px;background:var(--w100);border-radius:1px;pointer-events:none}
+.wall-day-needle b{position:absolute;bottom:100%;left:50%;transform:translate(-50%,-4px);font-family:'Manrope';font-weight:600;
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--w100);white-space:nowrap}
+.wall-day-scale{position:relative;height:18px;margin-top:8px;font-size:11px;color:var(--w60);font-variant-numeric:tabular-nums}
+.wall-day-scale span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.wall-day-scale span:first-child{transform:none}
+.wall-day-scale span:last-child{transform:translateX(-100%)}
+.wall-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 18px}
+@media(max-width:820px){.wall-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+button.wall-screen{position:relative;display:block;width:100%;aspect-ratio:16/9;min-height:0;padding:0;overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);border-radius:8px;background:#000 center/cover no-repeat;text-transform:none;letter-spacing:normal}
+button.wall-screen::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45),transparent 45%,rgba(0,0,0,.4))}
+button.wall-screen:hover:not(:disabled){border-color:rgba(255,255,255,.45)}
+button.wall-screen:disabled{opacity:1;cursor:default}
+.wall-card:not(.has) button.wall-screen{border-style:dashed;border-color:rgba(255,255,255,.22)}
+.wall-card.now button.wall-screen{outline:2px solid var(--look-accent);outline-offset:3px}
+.wall-screen.drop,.wall-day-part.drop{outline:2px dashed var(--look-accent,var(--cand));outline-offset:3px}
+.wall-clock{position:absolute;left:12px;top:9px;font-family:'Outfit';font-weight:300;font-size:clamp(20px,2.2vw,28px);line-height:1;letter-spacing:-.5px;color:var(--look-text)}
+.wall-row{position:absolute;left:12px;bottom:10px;font-family:'Manrope';font-size:10px;color:var(--look-text);opacity:.69}
+.wall-screen i{position:absolute;right:12px;bottom:12px;width:7px;height:7px;border-radius:50%;background:var(--look-accent)}
+.wall-add{position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);font-family:'Manrope';font-size:12px;letter-spacing:.04em;
+  color:rgba(255,255,255,.62);white-space:nowrap}
+.wall-add::before{content:'+';display:block;text-align:center;font-size:22px;line-height:1;margin-bottom:4px;color:rgba(255,255,255,.8)}
+.wall-badge{position:absolute;right:10px;top:9px;padding:3px 8px;border-radius:999px;background:var(--look-accent);color:#000;
+  font-family:'Manrope';font-weight:700;font-size:9px;letter-spacing:.14em;text-transform:uppercase}
+.wall-sending{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.62);color:#fff;
+  font-family:'Manrope';font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.wall-meta{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:10px}
+.wall-name{font-size:14px;font-weight:600;color:var(--w90)}
+.wall-hours{font-size:12px;color:var(--w60);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wall-actions{display:flex;gap:14px;margin-top:4px;min-height:18px}
+button.wall-link{min-height:0;padding:0;border:0;background:none;font-size:12px;letter-spacing:.02em;text-transform:none;color:var(--w60)}
+button.wall-link:hover:not(:disabled){color:var(--w100);text-decoration:underline;text-underline-offset:3px}
+.wall-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;margin-top:24px}
+.wall-foot .sub{max-width:64ch;margin:0}
+.wall-foot-btns{display:flex;gap:10px;flex-wrap:wrap}
 .home-upload{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0 8px}
 .home-upload input[type=file]{min-width:0;max-width:100%;flex:1 1 220px}
 .home-looks{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0 10px}
@@ -1461,7 +1601,6 @@ button.home-look:active{background:none}
 .home-custom{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin:4px 0 8px}
 .home-custom label{display:flex;align-items:center;gap:8px}
 .home-custom input[type=color]{width:40px;height:28px;padding:0;border:1px solid var(--edge);border-radius:6px;background:none}
-.home-wall-empty{aspect-ratio:16/9;display:grid;place-items:center;background:#000;color:#999;border-radius:6px}
 
 /* Cross-panel search: opened from the sidebar or keyboard, so it does not
    occupy space in the dashboard itself. */

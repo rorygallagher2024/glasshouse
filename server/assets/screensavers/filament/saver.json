@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Filament",
+    "es": "Filamento",
+    "hu": "Izzószál",
+    "ru": "Нити"
+  },
+  "description": {
+    "en": "Swarms of light circling and trailing across black, slowly changing color.",
+    "es": "Enjambres de luz que giran y dejan estelas sobre negro, cambiando de color poco a poco.",
+    "hu": "Fényrajok köröznek és húznak csíkot a fekete háttéren, lassan változó színnel.",
+    "ru": "Рои света кружат и тянутся по чёрному фону, медленно меняя цвет."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 60
+}

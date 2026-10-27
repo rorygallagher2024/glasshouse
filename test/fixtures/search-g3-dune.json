@@ -1,0 +1,474 @@
+{
+ "subscribed": true,
+ "event": "searchResult",
+ "result": {
+  "UserUtterance": "Dune",
+  "ResponseData": [
+   {
+    "ActionData": {
+     "request": {
+      "domain": "epg,tvshow,movie,app,youtube,freeviewplay,shopping,game,sports_live,sports_on_demand,gallery_album",
+      "query": "Dune",
+      "webKeyword": "Dune"
+     },
+     "response": {
+      "total_count": 63,
+      "results": [
+       {
+        "doc": [
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Dune",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "release_date": "2021-10-21",
+           "running_time": 155,
+           "display_type": "movie",
+           "genre": "Drama, Sci-Fi, Action, Adventure",
+           "title": "Dune",
+           "age_ratings": "12"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/b7f858c7124e6bd6bed8bf842f4713c_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Drama, Sci-Fi, Action, Adventure",
+          "content_id": "AMAZON_amzn1.dv.gti.a8025548-3908-4562-8896-8fffd945cfb6",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.a8025548-3908-4562-8896-8fffd945cfb6",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Dune",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20251103/38663527.png"
+            }
+           ],
+           "release_date": "2021-09-15",
+           "running_time": 155,
+           "display_type": "movie",
+           "genre": "Sci-Fi, Action, Adventure",
+           "title": "Dune",
+           "age_ratings": "PG-13"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/appletv/GB/poster/e7da7197263848b1791f399bdf44c4a_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Sci-Fi, Action, Adventure",
+          "content_id": "APPLETV_https://tv.apple.com/gb/movie/dune/umc.cmc.2l7qj9p33t3jww1roxi8cgiw5",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|APPLETV_https://tv.apple.com/gb/movie/dune/umc.cmc.2l7qj9p33t3jww1roxi8cgiw5",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "com.apple.appletv",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20251103/38663527.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "content_set_id": "com.lge.meta.crawler.netflix.NetflixCrawler_en_GB",
+          "display_info": {
+           "running_time": 166,
+           "display_type": "movie",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20150421/21790820472215287LARGE_APP_ICON_130x130_webos.png"
+            }
+           ],
+           "title": "Dune: Part Two",
+           "age_ratings": "12",
+           "video_spec": "HD, HD+"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/netflix/GB/poster/c9ea2d70af25833db5dcd33f917e9e7c_3_H.jpg#ADDSIZE#H960X540",
+          "thumbnail_type": "original",
+          "content_id": "-Q m=http%3A%2F%2Fapi-global.netflix.com%2Fcatalog%2Ftitles%2Fmovies%2F81602836&source_type=4&trackId=13783779&trackUrl=https%3A%2F%2Fapi-global.netflix.com%2FAPI_APP_ID_6261%3F%23Search%3F",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "com.lge.meta.crawler.netflix.NetflixCrawler_en_GB|-Q m=http%3A%2F%2Fapi-global.netflix.com%2Fcatalog%2Ftitles%2Fmovies%2F81602836&source_type=4&trackId=13783779&trackUrl=https%3A%2F%2Fapi-global.netflix.com%2FAPI_APP_ID_6261%3F%23Search%3F",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "netflix",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20150421/21790820472215287LARGE_APP_ICON_130x130_webos.png"
+           }
+          ],
+          "type": "movie",
+          "title": "Dune: Part Two"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Dune: Part Two",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "release_date": "2024-03-01",
+           "running_time": 166,
+           "display_type": "movie",
+           "genre": "Drama, Sci-Fi, Action, Adventure",
+           "title": "Dune: Part Two",
+           "age_ratings": "12"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/a6d087a57c758f1b461cc8fad8ecee60_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Drama, Sci-Fi, Action, Adventure",
+          "content_id": "AMAZON_amzn1.dv.gti.9392c069-96f9-421b-ac7a-275308e1327a",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.9392c069-96f9-421b-ac7a-275308e1327a",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Dune",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250626/38527114.png"
+            }
+           ],
+           "release_date": "2021-09-03",
+           "running_time": 156,
+           "display_type": "movie",
+           "genre": "Action, Fantasy",
+           "title": "Dune",
+           "age_ratings": "12"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/max/GB/poster/d2b346cc2544b5b993c073c8cac77974_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Action, Fantasy",
+          "content_id": "MAX_bolt-video-07323549-c382-4363-a3fe-97a365e81331?utm_source=universal_search",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|MAX_bolt-video-07323549-c382-4363-a3fe-97a365e81331?utm_source=universal_search",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "com.wbd.stream",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250626/38527114.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Dune",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20181104/34111643.png"
+            }
+           ],
+           "release_date": "2021-12-06",
+           "running_time": 155,
+           "display_type": "movie",
+           "genre": "Sci-Fi, Action, Adventure",
+           "title": "Dune",
+           "age_ratings": "12"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/rakuten/GB/poster/1f453f1525d2355244973fac47bbcae_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Sci-Fi, Action, Adventure",
+          "content_id": "RAKUTEN_movie_id150975$movies/dune-2021",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|RAKUTEN_movie_id150975$movies/dune-2021",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "ui30",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20181104/34111643.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Dune",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "release_date": "1984-12-14",
+           "running_time": 136,
+           "display_type": "movie",
+           "genre": "Sci-Fi, Action, Adventure",
+           "title": "Dune",
+           "age_ratings": "15"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/7823eedf1cf87367fcfe35f5dc4eca_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Sci-Fi, Action, Adventure",
+          "content_id": "AMAZON_amzn1.dv.gti.a7a11335-4d79-4bee-8e91-a1b00fde05fb",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.a7a11335-4d79-4bee-8e91-a1b00fde05fb",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Dune: Part Two",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20251103/38663527.png"
+            }
+           ],
+           "release_date": "2024-03-01",
+           "running_time": 165,
+           "display_type": "movie",
+           "genre": "Sci-Fi, Action, Fantasy, Adventure",
+           "title": "Dune: Part Two",
+           "age_ratings": "PG-13"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/appletv/GB/poster/d2df7a63d23f2bc963bddf2fc965d74b_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Sci-Fi, Action, Fantasy, Adventure",
+          "content_id": "APPLETV_https://tv.apple.com/gb/movie/dune-part-two/umc.cmc.363aycnv6vy9qgekvew6fveb9",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|APPLETV_https://tv.apple.com/gb/movie/dune-part-two/umc.cmc.363aycnv6vy9qgekvew6fveb9",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "com.apple.appletv",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20251103/38663527.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_movie",
+          "title": "Dune",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "running_time": 137,
+           "display_type": "movie",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20180417/17010990.png"
+            }
+           ],
+           "genre": "Sci-Fi",
+           "title": "Dune",
+           "age_ratings": "12"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/fastweb/GB/poster/3d3e89b3239c6c6d1712b2cde68cc0_3_H.jpg#ADDSIZE#H956X540",
+          "genre": "Sci-Fi",
+          "content_id": "FASTWEB_977d94c1-4de0-4bb5-ad34-17039f850fc6",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|FASTWEB_977d94c1-4de0-4bb5-ad34-17039f850fc6",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "chilieu",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20180417/17010990.png"
+           }
+          ],
+          "type": "movie",
+          "thumbnail_type": "original"
+         }
+        ],
+        "id": "movie",
+        "name": "Movies",
+        "hit_count": 24,
+        "total_count": 52
+       },
+       {
+        "doc": [
+         {
+          "ext_data": "index~wise3_tvshow",
+          "title": "Dune: Prophecy",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "display_type": "tvshow",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20251103/38663527.png"
+            }
+           ],
+           "genre": "Drama, Sci-Fi, Adventure",
+           "release_date": "2024-11-14",
+           "age_ratings": "TV-MA",
+           "title": "Dune: Prophecy"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/appletv/GB/poster/7d84b08212c3adf2d435048eec112f_3_H.jpg#ADDSIZE#H960X540",
+          "genre": "Drama, Sci-Fi, Adventure",
+          "content_id": "APPLETV_umc.cmr.its.sh.6w5x3qrtbpe8vp9kn2eb84avn",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|APPLETV_umc.cmr.its.sh.6w5x3qrtbpe8vp9kn2eb84avn",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "com.apple.appletv",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20251103/38663527.png"
+           }
+          ],
+          "type": "tvshow",
+          "thumbnail_type": "original"
+         },
+         {
+          "ext_data": "index~wise3_tvshow",
+          "title": "Frank Herbert's Dune",
+          "content_set_id": "MasterSet_GB",
+          "display_info": {
+           "display_type": "tvshow",
+           "content_provider": [
+            {
+             "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "genre": "Drama, Sci-Fi, Adventure",
+           "release_date": "2000-12-03",
+           "age_ratings": "12",
+           "title": "Frank Herbert's Dune"
+          },
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/a7f3331476f30d7b2cc89987f5fc0_3_H.jpg#ADDSIZE#H720X540",
+          "genre": "Drama, Sci-Fi, Adventure",
+          "content_id": "AMAZON_amzn1.dv.gti.74ef8398-ed30-4ac3-aca7-60e70cc85e09",
+          "action_on_click": {
+           "method": "other",
+           "app_id": "com.webos.app.aicontentsupport",
+           "launch_parameter": {
+            "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.74ef8398-ed30-4ac3-aca7-60e70cc85e09",
+            "itemType": "CONTS"
+           }
+          },
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+           }
+          ],
+          "type": "tvshow",
+          "thumbnail_type": "original"
+         }
+        ],
+        "id": "tvshow",
+        "name": "TV Shows",
+        "hit_count": 10,
+        "total_count": 10
+       },
+       {
+        "doc": [
+         {
+          "url": "http://www.bing.com/search?form=QBLH&qs=n&sk=&q=",
+          "display_name": "Bing",
+          "query": "Dune",
+          "type": "web",
+          "ext_data": "index~unknown"
+         }
+        ],
+        "id": "web",
+        "name": "Web",
+        "hit_count": 1,
+        "total_count": 1
+       }
+      ],
+      "query": "Dune",
+      "hit_count": 35,
+      "nlp_result": {
+       "user_term": [
+        {
+         "title": [
+          "Dune"
+         ]
+        }
+       ],
+       "title": [
+        "dune: part two"
+       ]
+      }
+     }
+    },
+    "SystemUtterance": "",
+    "ServiceType": "search",
+    "ActionType": "search_content_stt"
+   }
+  ],
+  "ResponseType": "normal"
+ }
+}

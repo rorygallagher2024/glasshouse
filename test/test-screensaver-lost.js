@@ -36,7 +36,7 @@ function tv(canFind) {
     cb({ returnValue: true });
   };
   samrescan.init({ luna: state.luna, nudgeMs: 1, pollMs: 1 });
-  screensavers.init({ luna: state.luna, assetPath: null, config: {}, injectKey: function () {}, KEY_BACK: 412,
+  screensavers.init({ luna: state.luna, config: {}, injectKey: function () {}, KEY_BACK: 412,
                       inputKey: function (id) { return id; } });
   return state;
 }

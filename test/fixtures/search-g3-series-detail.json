@@ -1,0 +1,624 @@
+{
+ "search": {
+  "subscribed": true,
+  "event": "searchResult",
+  "result": {
+   "ResponseData": [
+    {
+     "ServiceType": "search",
+     "ActionType": "search_content_stt",
+     "ActionData": {
+      "response": {
+       "results": [
+        {
+         "doc": [
+          {
+           "ext_data": "index~wise3_tvshow",
+           "title": "Severance",
+           "content_set_id": "MasterSet_GB",
+           "display_info": {
+            "display_type": "tvshow",
+            "content_provider": [
+             {
+              "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+             }
+            ],
+            "genre": "Mystery, Drama, Thriller, Sci-Fi",
+            "release_date": "2021-12-16",
+            "age_ratings": "15",
+            "title": "Severance"
+           },
+           "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/poster/2d2b2f8b8931f4dd3a68eed9fa3c556f_3_H.jpg#ADDSIZE#H720X540",
+           "genre": "Mystery, Drama, Thriller, Sci-Fi",
+           "content_id": "AMAZON_amzn1.dv.gti.03b67a6d-243d-4151-a33f-fa931eb92b24",
+           "action_on_click": {
+            "method": "other",
+            "app_id": "com.webos.app.aicontentsupport",
+            "launch_parameter": {
+             "itemId": "MasterSet_GB|AMAZON_amzn1.dv.gti.03b67a6d-243d-4151-a33f-fa931eb92b24",
+             "itemType": "CONTS"
+            }
+           },
+           "cp_thumbnail": [
+            {
+             "cp_id": "amazon",
+             "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png"
+            }
+           ],
+           "type": "tvshow",
+           "thumbnail_type": "original"
+          },
+          {
+           "ext_data": "index~wise3_tvshow",
+           "title": "The Bear",
+           "content_set_id": "MasterSet_GB",
+           "display_info": {
+            "display_type": "tvshow",
+            "content_provider": [
+             {
+              "app_icon_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20240226/38047867.png"
+             }
+            ],
+            "genre": "Comedy, Drama",
+            "release_date": "2022-06-23",
+            "age_ratings": "16",
+            "title": "The Bear"
+           },
+           "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/disney/GB/poster/26e69e4d7f9c763a230f477b43bc543_3_H.jpg#ADDSIZE#H960X540",
+           "genre": "Comedy, Drama",
+           "content_id": "DISNEY_page=browse&id=entity-a1abfb99-40b6-4141-82b1-2a04a8b50890&seasonSequenceNumber=5&distributionPartner=lg",
+           "action_on_click": {
+            "method": "other",
+            "app_id": "com.webos.app.aicontentsupport",
+            "launch_parameter": {
+             "itemId": "MasterSet_GB|DISNEY_page=browse&id=entity-a1abfb99-40b6-4141-82b1-2a04a8b50890&seasonSequenceNumber=5&distributionPartner=lg",
+             "itemType": "CONTS"
+            }
+           },
+           "cp_thumbnail": [
+            {
+             "cp_id": "com.disney.disneyplus-prod",
+             "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20240226/38047867.png"
+            }
+           ],
+           "type": "tvshow",
+           "thumbnail_type": "original"
+          }
+         ]
+        }
+       ]
+      }
+     }
+    }
+   ]
+  }
+ },
+ "detail": {
+  "advanced MasterSet_GB|AMAZON_amzn1.dv.gti.03b67a6d-243d-4151-a33f-fa931eb92b24": {
+   "season_list": {
+    "items": [
+     {
+      "conts_season_num": "2",
+      "conts_episode_cnt": "26",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.03b67a6d-243d-4151-a33f-fa931eb92b24",
+      "item_name": "Severance - Season 2"
+     },
+     {
+      "conts_season_num": "1",
+      "conts_episode_cnt": "12",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.078e982d-fd12-426a-8764-dfabcca6245c",
+      "item_name": "Severance - Season 1"
+     }
+    ]
+   },
+   "tab_episode": {
+    "items": [
+     {
+      "item_name": "16",
+      "conts_epsd_real_name": "Adam Scott Interview",
+      "conts_release_date": "09/10/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.7ed41c4b-5c4a-4420-b9a5-eb75efe432e8"
+     },
+     {
+      "item_name": "15",
+      "conts_epsd_real_name": "Ben Stiller Interview",
+      "conts_release_date": "09/12/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.adaea102-2849-4194-8254-3279b8c7a75b"
+     },
+     {
+      "item_name": "12",
+      "conts_epsd_real_name": "Season 2 Sneak Peek",
+      "conts_release_date": "12/23/2024",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.b25f1d0f-6d8c-47f1-a2f2-9353729af554"
+     },
+     {
+      "item_name": "10",
+      "conts_epsd_real_name": "Inside S2 E1: Hello, Ms. Cobel",
+      "conts_release_date": "01/16/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.9f42f50d-41fb-4feb-a8ac-45fdc076a412"
+     },
+     {
+      "item_name": "10",
+      "conts_epsd_real_name": "Cold Harbor",
+      "conts_release_date": "03/21/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.3e0dac00-f55c-4918-8c6d-21b91bea915f"
+     },
+     {
+      "item_name": "9",
+      "conts_epsd_real_name": "Inside S2 E2: Goodbye, Mrs. Selvig",
+      "conts_release_date": "01/23/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.df409944-ff06-4b2d-a485-d7e0f12d3cf3"
+     },
+     {
+      "item_name": "9",
+      "conts_epsd_real_name": "The After Hours",
+      "conts_release_date": "03/14/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.4df0c9af-8a24-4ad9-843e-9209b7097ca4"
+     },
+     {
+      "item_name": "8",
+      "conts_epsd_real_name": "Inside S2 E3: Who Is Alive?",
+      "conts_release_date": "01/30/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.80f446ab-b66f-461e-9f8a-3c7425885ad3"
+     },
+     {
+      "item_name": "8",
+      "conts_epsd_real_name": "Sweet Vitriol",
+      "conts_release_date": "03/07/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.79af3671-caf9-403b-98dc-c4939350a166"
+     },
+     {
+      "item_name": "7",
+      "conts_epsd_real_name": "Chikhai Bardo",
+      "conts_release_date": "02/28/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.b10bd929-69a9-433a-b518-01600a896c88"
+     },
+     {
+      "item_name": "7",
+      "conts_epsd_real_name": "Inside S2 E4: Woe's Hollow",
+      "conts_release_date": "02/06/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.4a35817a-509e-44c1-8be7-f33135251457"
+     },
+     {
+      "item_name": "6",
+      "conts_epsd_real_name": "Inside S2 E5: Trojan's Horse",
+      "conts_release_date": "02/13/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.ecaeeae1-96f2-4078-9333-205a41710ef0"
+     },
+     {
+      "item_name": "6",
+      "conts_epsd_real_name": "Attila",
+      "conts_release_date": "02/21/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.5bd2e103-da26-4510-8887-5a02d572a107"
+     },
+     {
+      "item_name": "5",
+      "conts_epsd_real_name": "Inside S2 E6: Attila",
+      "conts_release_date": "02/20/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.dd90b9a2-12b1-464e-bae1-1f354e180f78"
+     },
+     {
+      "item_name": "5",
+      "conts_epsd_real_name": "Trojan's Horse",
+      "conts_release_date": "02/14/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.4dca8a34-5bb6-403a-b965-5b962552e170"
+     },
+     {
+      "item_name": "4",
+      "conts_epsd_real_name": "Inside S2 E7: Chikhai Bardo",
+      "conts_release_date": "02/27/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.e243e91b-3b72-40e6-88e6-e62e688ae6df"
+     },
+     {
+      "item_name": "4",
+      "conts_epsd_real_name": "Woe's Hollow",
+      "conts_release_date": "02/07/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.949ea9d7-ef9c-4112-9e6c-ead085abd42c"
+     },
+     {
+      "item_name": "3",
+      "conts_epsd_real_name": "Inside S2 E8: Sweet Vitriol",
+      "conts_release_date": "03/06/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.ea43f958-8655-4979-a433-817e0b539968"
+     },
+     {
+      "item_name": "3",
+      "conts_epsd_real_name": "Who Is Alive?",
+      "conts_release_date": "01/31/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.e6879501-b939-466d-bfc2-f4f24a495b74"
+     },
+     {
+      "item_name": "3",
+      "conts_epsd_real_name": "Elevator Pitch",
+      "conts_release_date": "01/06/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.c423bfbe-a8da-437e-b7f2-239599ed114e"
+     },
+     {
+      "item_name": "2",
+      "conts_epsd_real_name": "Inside S2 E9: The After Hours",
+      "conts_release_date": "03/13/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.e0e6faa0-404e-4a22-b1bd-f48891416dc6"
+     },
+     {
+      "item_name": "2",
+      "conts_epsd_real_name": "Goodbye, Mrs. Selvig",
+      "conts_release_date": "01/24/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.d538cd6c-2083-4e9f-9daf-a49d2b131e36"
+     },
+     {
+      "item_name": "2",
+      "conts_epsd_real_name": "Welcome Back: Season 2",
+      "conts_release_date": "11/03/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.8410cc25-cddf-4ae9-9e4b-1def774f78c1"
+     },
+     {
+      "item_name": "1",
+      "conts_epsd_real_name": "Inside S2 E10: Cold Harbor",
+      "conts_release_date": "03/20/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.f60825cf-dc13-4d6e-9ee4-d144ef475a63"
+     },
+     {
+      "item_name": "1",
+      "conts_epsd_real_name": "Hello, Ms. Cobel",
+      "conts_release_date": "01/17/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.e68d5bf6-eb04-487b-bf18-505b5880255b"
+     },
+     {
+      "item_name": "1",
+      "conts_epsd_real_name": "Return to Office: Season 2",
+      "conts_release_date": "10/23/2024",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.884292f1-f82d-44c5-88f8-f6c1fd10a502"
+     }
+    ]
+   },
+   "exec_list": {
+    "execs": [
+     {
+      "add_info_disp": "HD",
+      "cp_conts_name": "Adam Scott Interview",
+      "exec_app_id": "amazon",
+      "exec_app_name": "Prime Video",
+      "exec_id": "amzn1.dv.gti.7ed41c4b-5c4a-4420-b9a5-eb75efe432e8",
+      "exec_type": "APP",
+      "img_url_cp": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png",
+      "item_id": "com.lge.meta.crawler.amazon.AmazonCrawler_GB|amzn1.dv.gti.7ed41c4b-5c4a-4420-b9a5-eb75efe432e8",
+      "plex_flag": "FALSE",
+      "premium_app_flag": "TRUE",
+      "price_disp": ""
+     }
+    ],
+    "shelf_title": "Watch at"
+   }
+  },
+  "advanced MasterSet_GB|AMAZON_amzn1.dv.gti.078e982d-fd12-426a-8764-dfabcca6245c": {
+   "season_list": {
+    "items": [
+     {
+      "conts_season_num": "2",
+      "conts_episode_cnt": "26",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.03b67a6d-243d-4151-a33f-fa931eb92b24",
+      "item_name": "Severance - Season 2"
+     },
+     {
+      "conts_season_num": "1",
+      "conts_episode_cnt": "12",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.078e982d-fd12-426a-8764-dfabcca6245c",
+      "item_name": "Severance - Season 1"
+     }
+    ]
+   },
+   "tab_episode": {
+    "items": [
+     {
+      "item_name": "9",
+      "conts_epsd_real_name": "The We We Are",
+      "conts_release_date": "04/08/2022",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.c984c14a-74a9-4c9d-9972-75e81e2ccaa7"
+     },
+     {
+      "item_name": "8",
+      "conts_epsd_real_name": "What's for Dinner?",
+      "conts_release_date": "04/01/2022",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.e975280c-2509-4912-a381-b62a219841d4"
+     },
+     {
+      "item_name": "7",
+      "conts_epsd_real_name": "Defiant Jazz",
+      "conts_release_date": "03/25/2022",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.19787e30-8a76-4996-9e27-77032e7720ed"
+     },
+     {
+      "item_name": "6",
+      "conts_epsd_real_name": "Hide and Seek",
+      "conts_release_date": "03/18/2022",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.3e107ad8-118c-4b85-b119-2825098aa53e"
+     },
+     {
+      "item_name": "5",
+      "conts_epsd_real_name": "The Grim Barbarity Of Optics and Design",
+      "conts_release_date": "03/11/2022",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.6fca0d59-5acb-469e-922e-5092f3ac0158"
+     },
+     {
+      "item_name": "4",
+      "conts_epsd_real_name": "The You You Are",
+      "conts_release_date": "03/04/2022",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.d4128a92-30e4-4de7-974c-f074a2dc2c45"
+     },
+     {
+      "item_name": "3",
+      "conts_epsd_real_name": "In Perpetuity",
+      "conts_release_date": "02/25/2022",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.f986a76d-d27d-4326-9e3c-d9aaabf2fc95"
+     },
+     {
+      "item_name": "2",
+      "conts_epsd_real_name": "Half Loop",
+      "conts_release_date": "02/18/2022",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.bc93782a-ad08-465b-915e-ea2a5213be2d"
+     },
+     {
+      "item_name": "2",
+      "conts_epsd_real_name": "Daydream: Season 1",
+      "conts_release_date": "11/03/2025",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.ad8022a7-60aa-44a5-891e-d1bed23dcf5b"
+     },
+     {
+      "item_name": "1",
+      "conts_epsd_real_name": "Good News About Hell",
+      "conts_release_date": "02/18/2022",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.92c7e5ed-9cf4-4e34-93a8-3beb40f7b279"
+     },
+     {
+      "item_name": "1",
+      "conts_epsd_real_name": "Welcome to Lumon",
+      "conts_release_date": "02/24/2022",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.29a1e56a-0444-4e82-be00-e75c21534dcd"
+     },
+     {
+      "item_name": "1",
+      "conts_epsd_real_name": "Teaser Trailer: Season 1",
+      "conts_release_date": "12/16/2021",
+      "item_id": "MasterSet_GB|AMAZON_amzn1.dv.gti.11dec5ec-a13d-4c37-8213-d0e218d44357"
+     }
+    ]
+   },
+   "exec_list": {
+    "execs": [
+     {
+      "add_info_disp": "UHD",
+      "cp_conts_name": "The We We Are",
+      "exec_app_id": "amazon",
+      "exec_app_name": "Prime Video",
+      "exec_id": "amzn1.dv.gti.c984c14a-74a9-4c9d-9972-75e81e2ccaa7",
+      "exec_type": "APP",
+      "img_url_cp": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png",
+      "item_id": "com.lge.meta.crawler.amazon.AmazonCrawler_GB|amzn1.dv.gti.c984c14a-74a9-4c9d-9972-75e81e2ccaa7",
+      "plex_flag": "FALSE",
+      "premium_app_flag": "TRUE",
+      "price_disp": ""
+     }
+    ],
+    "shelf_title": "Watch at"
+   }
+  },
+  "advanced MasterSet_GB|DISNEY_page=browse&id=entity-a1abfb99-40b6-4141-82b1-2a04a8b50890&seasonSequenceNumber=5&distributionPartner=lg": {
+   "season_list": {
+    "items": [
+     {
+      "conts_season_num": "5",
+      "conts_episode_cnt": "8",
+      "item_id": "MasterSet_GB|DISNEY_page=browse&id=entity-a1abfb99-40b6-4141-82b1-2a04a8b50890&seasonSequenceNumber=5&distributionPartner=lg",
+      "item_name": "The Bear"
+     },
+     {
+      "conts_season_num": "4",
+      "conts_episode_cnt": "10",
+      "item_id": "MasterSet_GB|DISNEY_page=browse&id=entity-3b0786d1-a902-489b-8051-b7a61fa893d0&seasonSequenceNumber=4&distributionPartner=lg",
+      "item_name": "The Bear Season 4"
+     },
+     {
+      "conts_season_num": "3",
+      "conts_episode_cnt": "10",
+      "item_id": "MasterSet_GB|DISNEY_page=browse&id=entity-6bdd96f8-b3d6-4b95-bf75-ee5791d33625&seasonSequenceNumber=3&distributionPartner=lg",
+      "item_name": "The Bear"
+     },
+     {
+      "conts_season_num": "2",
+      "conts_episode_cnt": "10",
+      "item_id": "MasterSet_GB|DISNEY_page=browse&id=entity-ad254c22-a79f-4eb7-ba22-7026729e117c&seasonSequenceNumber=2&distributionPartner=lg",
+      "item_name": "The Bear"
+     },
+     {
+      "conts_season_num": "1",
+      "conts_episode_cnt": "8",
+      "item_id": "MasterSet_GB|DISNEY_page=browse&id=entity-f1b38ee5-310d-4be7-b8b3-6998d29d8e85&seasonSequenceNumber=1&distributionPartner=lg",
+      "item_name": "The Bear"
+     }
+    ]
+   },
+   "tab_episode": {
+    "items": [
+     {
+      "item_name": "8",
+      "conts_epsd_real_name": "The Original Beef of Chicagoland",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=652df326-f3ac-4e35-a51f-8e12546c0083&distributionPartner=lg"
+     },
+     {
+      "item_name": "7",
+      "conts_epsd_real_name": "Caramel",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=7f1e8284-330a-4e06-a0af-4ea1d972b282&distributionPartner=lg"
+     },
+     {
+      "item_name": "6",
+      "conts_epsd_real_name": "Focaccia",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=6cd838e4-8443-48bb-85e2-cac8c4ff7d81&distributionPartner=lg"
+     },
+     {
+      "item_name": "5",
+      "conts_epsd_real_name": "Raspberries",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=16dbc81b-26a2-4294-ab8d-03f406ebfa2c&distributionPartner=lg"
+     },
+     {
+      "item_name": "4",
+      "conts_epsd_real_name": "Ribs",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=413f2ae6-df69-43ea-b7e3-706fd27e2c9e&distributionPartner=lg"
+     },
+     {
+      "item_name": "3",
+      "conts_epsd_real_name": "Mint",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=a7241e18-5c9d-4c1f-9de3-9d47bd0385c8&distributionPartner=lg"
+     },
+     {
+      "item_name": "2",
+      "conts_epsd_real_name": "Lamb",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=9ea28c6c-18eb-44f7-842d-47c7fe0ddd6d&distributionPartner=lg"
+     },
+     {
+      "item_name": "1",
+      "conts_epsd_real_name": "Soda",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=3ac90e90-8ac1-47f8-879f-f5be97230210&distributionPartner=lg"
+     }
+    ]
+   },
+   "exec_list": {
+    "execs": [
+     {
+      "add_info_disp": "UHD",
+      "cp_conts_name": "The Original Beef of Chicagoland",
+      "exec_app_id": "com.disney.disneyplus-prod",
+      "exec_app_name": "Disney+",
+      "exec_id": "page=play&id=652df326-f3ac-4e35-a51f-8e12546c0083&distributionPartner=lg",
+      "exec_type": "APP",
+      "img_url_cp": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20240226/38047867.png",
+      "item_id": "com.lge.meta.crawler.disney.DisneyCrawler_GB|page=play&id=652df326-f3ac-4e35-a51f-8e12546c0083&distributionPartner=lg",
+      "plex_flag": "FALSE",
+      "premium_app_flag": "TRUE",
+      "price_disp": ""
+     }
+    ],
+    "shelf_title": "Watch at"
+   }
+  },
+  "exec_full MasterSet_GB|DISNEY_page=browse&id=entity-a1abfb99-40b6-4141-82b1-2a04a8b50890&seasonSequenceNumber=5&distributionPartner=lg": {
+   "exec_list": {
+    "execs": [
+     {
+      "add_info_disp": "UHD",
+      "cp_conts_name": "The Original Beef of Chicagoland",
+      "episode_number": "8",
+      "exec_app_id": "com.disney.disneyplus-prod",
+      "exec_app_name": "Disney+",
+      "exec_id": "page=play&id=652df326-f3ac-4e35-a51f-8e12546c0083&distributionPartner=lg",
+      "exec_type": "APP",
+      "img_url_cp": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20240226/38047867.png",
+      "item_id": "com.lge.meta.crawler.disney.DisneyCrawler_GB|page=play&id=652df326-f3ac-4e35-a51f-8e12546c0083&distributionPartner=lg",
+      "plex_flag": "FALSE",
+      "premium_app_flag": "TRUE",
+      "price_disp": "",
+      "season_number": "5"
+     }
+    ],
+    "shelf_title": "Watch at"
+   }
+  },
+  "advanced MasterSet_GB|DISNEY_page=browse&id=entity-f1b38ee5-310d-4be7-b8b3-6998d29d8e85&seasonSequenceNumber=1&distributionPartner=lg": {
+   "season_list": {
+    "items": [
+     {
+      "conts_season_num": "5",
+      "conts_episode_cnt": "8",
+      "item_id": "MasterSet_GB|DISNEY_page=browse&id=entity-a1abfb99-40b6-4141-82b1-2a04a8b50890&seasonSequenceNumber=5&distributionPartner=lg",
+      "item_name": "The Bear"
+     },
+     {
+      "conts_season_num": "4",
+      "conts_episode_cnt": "10",
+      "item_id": "MasterSet_GB|DISNEY_page=browse&id=entity-3b0786d1-a902-489b-8051-b7a61fa893d0&seasonSequenceNumber=4&distributionPartner=lg",
+      "item_name": "The Bear Season 4"
+     },
+     {
+      "conts_season_num": "3",
+      "conts_episode_cnt": "10",
+      "item_id": "MasterSet_GB|DISNEY_page=browse&id=entity-6bdd96f8-b3d6-4b95-bf75-ee5791d33625&seasonSequenceNumber=3&distributionPartner=lg",
+      "item_name": "The Bear"
+     },
+     {
+      "conts_season_num": "2",
+      "conts_episode_cnt": "10",
+      "item_id": "MasterSet_GB|DISNEY_page=browse&id=entity-ad254c22-a79f-4eb7-ba22-7026729e117c&seasonSequenceNumber=2&distributionPartner=lg",
+      "item_name": "The Bear"
+     },
+     {
+      "conts_season_num": "1",
+      "conts_episode_cnt": "8",
+      "item_id": "MasterSet_GB|DISNEY_page=browse&id=entity-f1b38ee5-310d-4be7-b8b3-6998d29d8e85&seasonSequenceNumber=1&distributionPartner=lg",
+      "item_name": "The Bear"
+     }
+    ]
+   },
+   "tab_episode": {
+    "items": [
+     {
+      "item_name": "8",
+      "conts_epsd_real_name": "Braciole",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=208a3033-a652-4cb8-9f10-b749b3ccbab8&distributionPartner=lg"
+     },
+     {
+      "item_name": "7",
+      "conts_epsd_real_name": "Review",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=c76890a7-5645-464d-8a7f-59b43c6c7dcd&distributionPartner=lg"
+     },
+     {
+      "item_name": "6",
+      "conts_epsd_real_name": "Ceres",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=2045e98f-5a3f-439b-ab5b-0fa07dfe6a1e&distributionPartner=lg"
+     },
+     {
+      "item_name": "5",
+      "conts_epsd_real_name": "Sheridan",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=a626811e-62c9-4ca9-8bcc-8f2676b21890&distributionPartner=lg"
+     },
+     {
+      "item_name": "4",
+      "conts_epsd_real_name": "Dogs",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=e2b5c1c0-b88e-4157-91f8-d029af6770cd&distributionPartner=lg"
+     },
+     {
+      "item_name": "3",
+      "conts_epsd_real_name": "Brigade",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=7357c277-c807-402c-b5bc-6a3471ee9ffe&distributionPartner=lg"
+     },
+     {
+      "item_name": "2",
+      "conts_epsd_real_name": "Hands",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=a75f279c-4156-4fb1-8371-d0ba15061009&distributionPartner=lg"
+     },
+     {
+      "item_name": "1",
+      "conts_epsd_real_name": "System",
+      "item_id": "MasterSet_GB|DISNEY_page=play&id=60da223c-d2a0-411a-95c9-665a839371f9&distributionPartner=lg"
+     }
+    ]
+   },
+   "exec_list": {
+    "execs": [
+     {
+      "add_info_disp": "HD",
+      "cp_conts_name": "Braciole",
+      "exec_app_id": "com.disney.disneyplus-prod",
+      "exec_app_name": "Disney+",
+      "exec_id": "page=play&id=208a3033-a652-4cb8-9f10-b749b3ccbab8&distributionPartner=lg",
+      "exec_type": "APP",
+      "img_url_cp": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20240226/38047867.png",
+      "item_id": "com.lge.meta.crawler.disney.DisneyCrawler_GB|page=play&id=208a3033-a652-4cb8-9f10-b749b3ccbab8&distributionPartner=lg",
+      "plex_flag": "FALSE",
+      "premium_app_flag": "TRUE",
+      "price_disp": ""
+     }
+    ],
+    "shelf_title": "Watch at"
+   }
+  }
+ }
+}

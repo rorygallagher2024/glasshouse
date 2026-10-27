@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.118.0';
+var TVWEB_VERSION = '0.124.2';
 
 var http = require('http');
 var fs = require('fs');
@@ -57,6 +57,7 @@ var servicesModule = require('./lib/services');
 var preload = require('./lib/preload');
 var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
+var clockFormat = require('./lib/clock');
 var homeScreen = require('./lib/homescreen');
 /*
  * Glasshouse Home is loaded apart from the rest: one of its files missing from
@@ -88,6 +89,8 @@ var say = require('./lib/say');
 var lgSettings = require('./lib/lgsettings');
 var game = require('./lib/game');
 var piccapTransport = require('./lib/piccap');
+var audioCapabilities = require('./lib/audio');
+var huesyncTransport = require('./lib/huesync');
 var remotebuttons = require('./lib/remotebuttons');
 var logsModule = require('./lib/logs');
 var syslogForwarder = require('./lib/syslog');
@@ -95,6 +98,7 @@ var ntpClient = require('./lib/ntp');
 var history = require('./lib/history');
 var sshKeys = require('./lib/sshkeys');
 var screentime = require('./lib/screentime');
+var saverPowerOff = require('./lib/saverpoweroff');
 var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
 var power = require('./lib/power');
@@ -224,6 +228,9 @@ var CONFIG = {
   // PicCap is offered where it is installed; its Home Assistant entity is
   // switched off like any other.
   piccap: { pollIntervalMs: 30000 },
+
+  // Hue Sync likewise: offered where its app is installed.
+  huesync: { pollIntervalMs: 30000 },
 
   // Home Assistant & MQTT Integration
   mqtt: {
@@ -524,6 +531,7 @@ var LIVE_STALE = {
 };
 
 lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache });
+audioCapabilities.init({ luna: luna, lunaCached: lunaCached, hdmiReceiverMap: telemetry.hdmiReceiverMap });
 game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
 privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule });
 oled.init({ luna: luna, config: CONFIG });
@@ -537,10 +545,13 @@ remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services
 homeScreen.init({ luna: luna, config: CONFIG, inputNames: telemetry.inputNameMap, stateDir: __dirname, webosVersion: telemetry.detectWebosVersion() });
 // webOS 10's layout is an overlay mount, gone after a restart of the TV.
 homeScreen.reapply();
+// The TV's own 12 or 24 hour setting, for every clock Glasshouse draws. A
+// change restages a clock screen saver, which has it written into its file.
+clockFormat.init({ luna: luna, onChange: function () { screensavers.restageScreensaver(); } });
 screensavers.init({
   luna: luna,
+  hour12: clockFormat.hour12,
   webosVersion: telemetry.detectWebosVersion(),
-  assetPath: assetPath,
   config: CONFIG,
   injectKey: controls.injectKey,
   KEY_BACK: controls.KEY_BACK,
@@ -559,6 +570,7 @@ telemetry.init({
   game: game,
   power: power,
   remoteBattery: remoteBattery,
+  home: glasshouseHome,
   tvwebVersion: TVWEB_DISPLAY_VERSION
 });
 
@@ -599,6 +611,24 @@ var piccap = piccapTransport.init({
   onAvailableChange: function () { piccapChanged(); }
 });
 
+// Set once MQTT is up: Hue Sync appearing or going changes the discovery.
+var huesyncChanged = function () {};
+/*
+ * Asks Hue Sync only where its app is installed, and for Home Assistant only
+ * while its Hue Sync entity is wanted: each check starts a luna-send.
+ */
+function huesyncWanted() {
+  var ents = (CONFIG.mqtt && CONFIG.mqtt.entities) || {};
+  var off = ents.disabled || [];
+  return ents.controls !== false && off.indexOf('huesync') === -1 && off.indexOf('switch.huesync') === -1;
+}
+var huesync = huesyncTransport.init({
+  luna: luna,
+  pollIntervalMs: CONFIG.huesync && CONFIG.huesync.pollIntervalMs,
+  wanted: huesyncWanted,
+  onAvailableChange: function () { huesyncChanged(); }
+});
+
 var notificationState = notifications.init({ luna: luna });
 
 // ---------------------------------------------------------------- controls
@@ -630,6 +660,7 @@ controls.init({
   luna: luna,
   lunaUrgent: lunaTransport.callUrgent,
   piccap: piccap,
+  huesync: huesync,
   clearLunaCache: clearLunaCache,
   config: CONFIG,
   telemetry: telemetry,
@@ -644,6 +675,7 @@ controls.init({
   ntp: ntpClient,
   history: history,
   backup: backup,
+  home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
   tvApp: tvApp,
   restartSelf: restartSelf,
@@ -729,6 +761,17 @@ function hbcAppDir() {
   return readTrimmed(HBC_MARK) || HBC_APP_DEFAULT;
 }
 
+// Detached: it restarts the server once the files are in place.
+function runHomebrewChannelInstaller() {
+  try {
+    child_process.spawn('/bin/sh', [path.join(hbcAppDir(), 'payload/install.sh')], {
+      detached: true, stdio: 'ignore'
+    }).unref();
+  } catch (e) {
+    console.error('update: could not run the app\'s installer: ' + e.message);
+  }
+}
+
 function checkHomebrewChannelApp() {
   if (!fromHomebrewChannel()) return;
   var dir = hbcAppDir();
@@ -741,13 +784,7 @@ function checkHomebrewChannelApp() {
     if (!carried || carried === hbcTried || !updater.verNewer(carried, TVWEB_VERSION)) return;
     hbcTried = carried;
     console.log('update: the Homebrew Channel app carries v' + carried + ', installing it');
-    try {
-      child_process.spawn('/bin/sh', [path.join(dir, 'payload/install.sh')], {
-        detached: true, stdio: 'ignore'
-      }).unref();
-    } catch (e) {
-      console.error('update: could not run the app\'s installer: ' + e.message);
-    }
+    runHomebrewChannelInstaller();
     return;
   }
   if (!fs.existsSync(path.dirname(dir)) || ++hbcMissing < 2) return;
@@ -849,7 +886,11 @@ updater.init({
   installDir: __dirname,
   writeSettings: routes.writeSettings,
   viaHomebrewChannel: fromHomebrewChannel,
-  installerBusy: installer.isWorking
+  installerBusy: installer.isWorking,
+  installPackage: installer.installOwnPackage,
+  // Marked as tried so the periodic check does not start a second installer
+  // run over the same staging directory while this one is copying.
+  afterPackage: function (ver) { hbcTried = ver; runHomebrewChannelInstaller(); }
 });
 
 // Bare in the user agent: a catalog has no use for the commit.
@@ -881,7 +922,10 @@ function appsChanged() {
 
 routes.init({
   config: CONFIG,
+  audio: audioCapabilities,
+  clock: clockFormat,
   piccapStatus: piccap.status,
+  huesyncStatus: huesync.status,
   repo: repo,
   installer: installer,
   prometheus: prometheus,
@@ -1087,8 +1131,12 @@ function setupHomeAssistant() {
   });
   activeMqttClient = mqttClient;
   piccap.attachMqtt({ client: mqttClient, prefix: pfx, allowControl: CONFIG.allowControl });
+  huesync.attachMqtt({ client: mqttClient, prefix: pfx, allowControl: CONFIG.allowControl });
   piccapChanged = function () {
     requestDiscoveryRepublish('PicCap status');
+  };
+  huesyncChanged = function () {
+    requestDiscoveryRepublish('Hue Sync status');
   };
   republishDiscovery = function () {
     requestDiscoveryRepublish('configuration');
@@ -1160,8 +1208,8 @@ function setupHomeAssistant() {
       lgRows: lgsRows,
       allowPower: CONFIG.allowPower,
       isOled: oled.getIsOled(),
-      updatesElsewhere: fromHomebrewChannel(),
       piccap: piccapWanted() && piccap.getState() !== null,
+      huesync: huesyncWanted() && huesync.getState() !== null,
       iconBaseUrl: iconServer.baseUrl()
     });
 
@@ -1295,6 +1343,7 @@ function setupHomeAssistant() {
       mqttClient.publish(mqttTopics.status, statusPayload(), true);
       publishTelemetry();
       piccap.refreshAndPublishState();
+      huesync.refreshAndPublishState();
     }
     // After the publishes above: on a B8 the TV can be asleep within 5s.
     mqttClient.setWill(off ? 'asleep' : 'offline');
@@ -1302,6 +1351,11 @@ function setupHomeAssistant() {
   liveState.state.onChange(function (ev) {
     if (ev.group === 'power' && ev.key === 'systemOn' && typeof ev.value === 'boolean') setTvOff(!ev.value);
   });
+  // The power group starts before the bridge, which waits for device
+  // detection, and its first answer can come before this listener: a server
+  // started in standby then reported the TV on, and missed the switch-on.
+  var startPower = liveState.state.snapshot().power;
+  if (startPower && typeof startPower.systemOn === 'boolean') setTvOff(!startPower.systemOn);
 
   /*
    * While the TV is off but still up, readings change little and nothing is
@@ -1374,6 +1428,8 @@ function setupHomeAssistant() {
        */
       var piccapState = piccap.getState();
       if (piccapState) s.piccap = { power: piccapState.isRunning };
+      var huesyncState = huesync.getState();
+      if (huesyncState) s.huesync = { streaming: huesyncState.isStreaming };
       if (!tvOff) {
         if ((s.app && s.app !== lastApp) || (s.app_id && s.app_id !== lastAppId)) {
           lastApp = s.app || lastApp;
@@ -1505,6 +1561,7 @@ function setupHomeAssistant() {
     mqttClient.subscribe(mqttTopics.commands + '#');
     publishTelemetry();
     piccap.refreshAndPublishState(true);
+    huesync.refreshAndPublishState(true);
     publishUpdate();
   });
 
@@ -1527,6 +1584,7 @@ function setupHomeAssistant() {
     }
 
     if (piccap.handleMqttCommand(action, val)) return;
+    if (huesync.handleMqttCommand(action, val)) return;
 
     // A held arrow sends a stream of keys, and a telemetry read after each one
     // would queue a dozen luna calls per key. A key that changes the app
@@ -1765,6 +1823,8 @@ function startGlasshouseHome() {
   var homeWatchesForeground = false;
   glasshouseHome.init({
     luna: luna,
+    Subscription: lunaTransport.Subscription,
+    blockedBy: privacy.blockedBy,
     allowExperimental: function () { return CONFIG.allowExperimentalHome === true; },
     liveState: liveState,
     history: history,
@@ -1785,13 +1845,15 @@ function startGlasshouseHome() {
       if (on !== homeWatchesForeground) liveState[on ? 'startGroup' : 'stopGroup']('application');
       homeWatchesForeground = on;
     },
-    pictureDetails: function (on) { homePicture.want('details', on); }
+    pictureDetails: function (on) { homePicture.want('details', on); },
+    handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
   glasshouseHome.start();
 }
 
 if (!CLI_MODE) {
   heartbeat();
+  clockFormat.refresh();
   setInterval(heartbeat, 20000);
 
   // HDMI tile titles on webOS 9's Home (lib/homescreen.js): EIM cannot be
@@ -1835,6 +1897,8 @@ if (!CLI_MODE) {
   history.start();
   screentime.init({ config: CONFIG, liveState: liveState, control: controls.doControl, injectKey: controls.injectKey, keyBack: controls.KEY_BACK });
   screentime.start();
+  saverPowerOff.init({ config: CONFIG, liveState: liveState, control: controls.doControl });
+  saverPowerOff.start();
 
   if (glasshouseHome && homePicture) startGlasshouseHome();
   else releaseUnloadedHome();
@@ -1907,6 +1971,8 @@ if (CLI_MODE === 'check') {
   updater.installUpdate({ force: CLI_FORCE }, function (r) {
     if (!r.ok) { console.error(r.error); process.exit(1); }
     if (!r.updated) { console.log(r.note + ' (v' + r.installed + ')'); process.exit(3); }
+    // The app's installer restarts the server itself, after moving the files.
+    if (r.restarting) { console.log('installed the v' + r.latest + ' package; its installer restarts the server'); process.exit(3); }
     console.log('installed v' + r.latest + ' over v' + r.installed + ', ' + r.files + ' files');
     process.exit(0);
   });

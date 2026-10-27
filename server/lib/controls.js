@@ -7,6 +7,8 @@ var listenDualStack = require('./util').listenDualStack;
 var execFile = require('child_process').execFile;
 var msg = require('./say').msg;
 var timers = require('./timers');
+var saverPowerOff = require('./saverpoweroff');
+var clock = require('./clock');
 var names = require('./names');
 
 /*
@@ -79,6 +81,8 @@ var oled = null;
 var privacy = null;
 /** @type {ReturnType<typeof import('./piccap').init>} */
 var piccap = null;
+/** @type {ReturnType<typeof import('./huesync').init>} */
+var huesync = null;
 /** @type {typeof import('./services')} */
 var servicesModule = null;
 /** @type {typeof import('./screensavers')} */
@@ -97,6 +101,8 @@ var ntpModule = null;
 var historyModule = null;
 /** @type {typeof import('./backup')} */
 var backupModule = null;
+/** @type {typeof import('./home')} */
+var homeModule = null;
 var republishDiscoveryFn = null;
 var tvAppFn = null;
 var restartSelfFn = null;
@@ -598,6 +604,22 @@ function doControl(action, value, cb) {
       return luna('com.webos.service.settings/setSystemSettings',
                   { category: 'option', settings: { quickStartMode: qbOn ? 'on' : 'off' } },
                   function (r) {
+                    if (homeModule) homeModule.syncAutoLaunch();
+                    telemetry.clearCache();
+                    cb({ ok: !!(r && r.returnValue) });
+                  });
+
+    case 'homeAutoLaunch':
+      var halOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
+      if (homeModule) {
+        return homeModule.setAutoLaunch(halOn, function (r) {
+          telemetry.clearCache();
+          cb(r);
+        });
+      }
+      return luna('com.webos.service.settings/setSystemSettings',
+                  { category: 'general', settings: { homeAutoLaunch: halOn ? 'on' : 'off' } },
+                  function (r) {
                     telemetry.clearCache();
                     cb({ ok: !!(r && r.returnValue) });
                   });
@@ -693,6 +715,14 @@ function doControl(action, value, cb) {
         cb({ ok: !!(r && r.ok), error: r && !r.ok ? r.error : undefined });
       });
 
+    case 'huesync':
+      // Hue Sync's streaming to a Philips Ambience light.
+      if (!huesync) return cb({ ok: false, error: 'Hue Sync is not available' });
+      var streamOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
+      return huesync.setPower(streamOn, function (r) {
+        cb({ ok: !!(r && r.ok), error: r && !r.ok ? r.error : undefined });
+      });
+
     case 'lgLogo':
       var logoOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
       return luna('com.webos.service.settings/setSystemSettings',
@@ -701,6 +731,13 @@ function doControl(action, value, cb) {
                     telemetry.clearCache();
                     cb({ ok: !!(r && r.returnValue) });
                   });
+
+    /*
+     * systemservice's timeFormat preference (HH12 or HH24), which sets the hour
+     * cycle for every clock Glasshouse draws and persists in systemprefs.db.
+     */
+    case 'clockHour12':
+      return clock.set(value, cb, luna);
 
     case 'wakeOnLan':
       var wolOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
@@ -795,6 +832,9 @@ function doControl(action, value, cb) {
 
     case 'tileHiding':
       if (isFromHbc()) return cb({ ok: false, error: tileHidingOffMsg });
+      if (value && homeModule && homeModule.enabled()) {
+        return cb({ ok: false, error: msg('srv.apps.tilesGlasshouseHome', 'Glasshouse Home hides apps itself: arrange them there') });
+      }
       return appsModule.setTileHidingEnabled(!!value, function (r) {
         telemetry.clearCache();
         cb(r);
@@ -891,7 +931,8 @@ function doControl(action, value, cb) {
 
     case 'update':
       return updater.installUpdate(function (r) {
-        if (r && r.ok && r.updated) {
+        // A package update's own installer restarts the server once its files are in.
+        if (r && r.ok && r.updated && !r.restarting) {
           setTimeout(function () {
             if (!doRestartSelf()) console.error('update: no tvwebctl found - restart manually to apply');
           }, 600);
@@ -928,6 +969,22 @@ function doControl(action, value, cb) {
           });
         }
         cb(getUpdateSummary());
+      });
+
+    // Poweroff after: minutes of screen saver before standby, 0 or blank for off.
+    case 'screensaverPowerOff':
+      var offMin = saverPowerOff.parseMinutes(value);
+      if (offMin === null) return cb({ ok: false, error: msg('srv.saver.powerOff.bad', 'Poweroff after takes a number of minutes from 1 to {max}, or blank for off', { max: saverPowerOff.MAX_MINUTES }) });
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      // Off leaves it out of the file.
+      return writeSettingsFn({ screensaverPowerOffMinutes: offMin || undefined }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        if (config) {
+          if (offMin) config.screensaverPowerOffMinutes = offMin;
+          else delete config.screensaverPowerOffMinutes;
+        }
+        saverPowerOff.apply();
+        cb({ ok: true, minutes: offMin });
       });
 
     case 'setWebos10ScreensaversAllowed':
@@ -1081,6 +1138,7 @@ function init(opts) {
   if (opts.oled) oled = opts.oled;
   if (opts.privacy) privacy = opts.privacy;
   if (opts.piccap) piccap = opts.piccap;
+  if (opts.huesync) huesync = opts.huesync;
   if (opts.services) servicesModule = opts.services;
   if (opts.screensavers) screensavers = opts.screensavers;
   if (opts.apps) appsModule = opts.apps;
@@ -1090,6 +1148,7 @@ function init(opts) {
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
   if (opts.backup) backupModule = opts.backup;
+  if (opts.home) homeModule = opts.home;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;
   if (opts.tvApp) tvAppFn = opts.tvApp;
   if (opts.restartSelf) restartSelfFn = opts.restartSelf;

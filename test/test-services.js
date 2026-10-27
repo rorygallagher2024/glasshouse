@@ -38,6 +38,36 @@ console.log('Running test-services.js ...');
   console.log('  ✓ CATALOG contains valid debloatable services with metadata');
 })();
 
+// 1b. The boot hook runs its work in the background, so the hooks after it do
+// not wait; an older hook is rewritten at start, and an unchanged one left be.
+(function testBootHook() {
+  var dir = path.join(os.tmpdir(), 'tvweb-services-hook-' + process.pid);
+  var initDir = path.join(dir, 'init.d');
+  fs.mkdirSync(dir);
+  fs.mkdirSync(initDir);
+  var hook = path.join(initDir, '20-tvweb-services');
+  fs.writeFileSync(path.join(dir, 'disabled_services.json'), JSON.stringify(['uploadd']));
+  fs.writeFileSync(hook, '#!/bin/sh\n# tvweb managed disabled services\nif which systemctl >/dev/null 2>&1; then\n  systemctl daemon-reload\nfi\n');
+  services.init({ stateDir: dir, initDir: initDir });
+  var text = fs.readFileSync(hook, 'utf8');
+  var lines = text.split('\n');
+  assert.strictEqual(lines[2], '(', 'the work is in a subshell');
+  assert.ok(/^\) <\/dev\/null >\/dev\/null 2>&1 &$/.test(lines[lines.length - 2]), 'run in the background');
+  assert.ok(text.indexOf('systemctl stop "uploadd.service"') !== -1);
+  console.log('  ✓ an older boot hook is rewritten at start, its work in the background');
+
+  var old = new Date(2020, 0, 1);
+  fs.utimesSync(hook, old, old);
+  services.init({ stateDir: dir, initDir: initDir });
+  assert.strictEqual(fs.statSync(hook).mtime.getTime(), old.getTime(), 'not written again');
+  console.log('  ✓ an unchanged boot hook is not written again');
+
+  fs.unlinkSync(hook);
+  fs.rmdirSync(initDir);
+  fs.unlinkSync(path.join(dir, 'disabled_services.json'));
+  fs.rmdirSync(dir);
+})();
+
 // 2. Reject unknown service toggle
 (function testUnknownServiceToggle() {
   services.toggleService('nonexistent-service', true, function (res) {

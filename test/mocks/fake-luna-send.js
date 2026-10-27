@@ -20,10 +20,13 @@
  * Strict ES5: the test runs on node 0.12.
  */
 var mock = require('./mock-env').createMockEnv({ luna: {
-  // As an OLED65B8SLC answers by default, or TV_MODEL profile.
+  // As an OLED65B8SLC answers by default, or as the emulator's profile
+  // (TV_PROFILE, scripts/emulate-tv.js) or TV_MODEL has it.
   'com.webos.service.tv.systemproperty/getSystemProperties': function (p) {
     var all = { modelName: 'OLED65B8SLC', firmwareVersion: '05.50.70', boardType: 'M16P_DVB_EU', sdkVersion: '4.4.3' };
-    if (process.env.TV_MODEL === 'c2') {
+    if (process.env.TV_PROFILE) {
+      all = JSON.parse(process.env.TV_PROFILE);
+    } else if (process.env.TV_MODEL === 'c2') {
       all = { modelName: 'OLED65C26LD', firmwareVersion: '03.33.95', boardType: 'O22N_DVB_EU', sdkVersion: '7.3.0' };
     } else if (process.env.TV_MODEL === 'c3') {
       all = { modelName: 'OLED65C35LA', firmwareVersion: '04.40.75', boardType: 'O23N_DVB_EU', sdkVersion: '8.3.0' };
@@ -134,7 +137,9 @@ var mock = require('./mock-env').createMockEnv({ luna: {
   'com.webos.applicationManager/closeByAppId': function () { return { returnValue: true }; },
   'com.webos.applicationManager/launch': function () { return { returnValue: true }; },
   'com.webos.settingsservice/getSystemSettings': function () { return { returnValue: true, settings: {} }; },
-  'com.webos.settingsservice/setSystemSettings': function () { return { returnValue: true }; }
+  'com.webos.settingsservice/setSystemSettings': function () { return { returnValue: true }; },
+  'com.webos.service.systemservice/getPreferences': function () { return { returnValue: true, timeFormat: 'HH24' }; },
+  'com.webos.service.systemservice/setPreferences': function () { return { returnValue: true }; }
 } });
 
 var args = process.argv.slice(2);

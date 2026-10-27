@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Clock",
+    "es": "Reloj",
+    "hu": "Óra",
+    "ru": "Часы"
+  },
+  "description": {
+    "en": "A digital clock on black, moving to a new position every minute.",
+    "es": "Un reloj digital sobre negro, que cambia de posición cada minuto.",
+    "hu": "Digitális óra fekete háttéren, amely percenként új helyre kerül.",
+    "ru": "Цифровые часы на чёрном фоне, которые каждую минуту перемещаются на новое место."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 10
+}

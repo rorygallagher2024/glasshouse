@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Murmuration",
+    "es": "Bandada",
+    "hu": "Seregélyraj",
+    "ru": "Стая"
+  },
+  "description": {
+    "en": "Flocks of light swooping after their leaders across black.",
+    "es": "Bandadas de luz que siguen a sus líderes en picado sobre negro.",
+    "hu": "Fényrajok csapnak le vezetőik után a fekete háttéren.",
+    "ru": "Стаи света проносятся за своими вожаками по чёрному фону."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 100
+}

@@ -1,0 +1,22 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Panel vitals",
+    "es": "Vitalidad del panel",
+    "hu": "Panelállapot",
+    "ru": "Состояние панели"
+  },
+  "description": {
+    "en": "The TV's own readings - panel hours, pixel refresher countdown, temperature.",
+    "es": "Las lecturas de la TV: horas de panel, cuenta atrás del refrescado y temperatura.",
+    "hu": "A TV saját mért adatai: a panel üzemórái, a következő pixelfrissítésig hátralévő idő és a hőmérséklet.",
+    "ru": "Собственные показания телевизора: часы работы панели, отсчёт до обновления пикселей, температура."
+  },
+  "license": "MIT",
+  "uses": [
+    "level",
+    "stats"
+  ],
+  "order": 140
+}

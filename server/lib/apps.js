@@ -299,6 +299,31 @@ function setTileHidingEnabled(enabled, cb) {
   }
 }
 
+/*
+ * Tile hiding handed to Glasshouse Home, which hides apps itself: hide(ids)
+ * puts the apps it hid on Glasshouse Home's hidden list, and it is switched
+ * off. sam is asked to read the apps again but never restarted for it, as
+ * this runs at server start; where it does not reread, they show on LG's Home
+ * again from the next cold boot. The list is kept for switching it on again.
+ */
+function handOverToHome(hide, cb) {
+  cb = cb || function () {};
+  if (!isTileHidingEnabled()) return cb(false);
+  var ids = Object.keys(readHiddenAppsList());
+  hide(ids);
+  try { fs.writeFileSync(TILE_HIDING_FLAG_FILE, '0\n', 'utf8'); } catch (e) {}
+  var i = 0;
+  (function next() {
+    if (i < ids.length) return unmountAllForApp(ids[i++], next);
+    console.log('apps: tile hiding handed to Glasshouse Home (' + ids.length + ' hidden there)');
+    if (!lunaFn || !ids.length) return cb(true);
+    samrescan.refresh(visibilityCheck(visibleAs(ids, true)), function (reread) {
+      if (!reread) console.log('apps: sam did not read the apps again; they show on LG\'s Home from the next cold boot');
+      cb(true);
+    });
+  })();
+}
+
 /**
  * Platform-aware fast SAM restart with active foreground app preservation.
  * On systemd sets (C2, webOS 9), LunaExecutable (AirPlay) ignores SIGTERM and hangs
@@ -1256,6 +1281,7 @@ module.exports = {
   writeHiddenAppsList: writeHiddenAppsList,
   isTileHidingEnabled: isTileHidingEnabled,
   setTileHidingEnabled: setTileHidingEnabled,
+  handOverToHome: handOverToHome,
   tileHidingAllowed: tileHidingAllowed,
   migrateConfig: migrateConfig,
   PROTECTED_APP_IDS: PROTECTED_APP_IDS,

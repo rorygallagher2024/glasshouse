@@ -6,7 +6,10 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 var http = require('http');
+var crypto = require('crypto');
 var home = require('../server/lib/home');
+var wallpapers = require('../server/lib/home-wallpapers');
+var fetchMod = require('../server/lib/fetch');
 var routes = require('../server/lib/routes');
 var dir = path.join(os.tmpdir(), 'home-upload-' + process.pid);
 var jpeg = fs.readFileSync(path.join(__dirname, 'fixtures/home-wallpaper.jpg'));
@@ -25,6 +28,12 @@ function request(method, url, body, headers, cb) {
   });
   req.on('error', function (e) { throw e; });
   req.end(body || undefined);
+}
+var realDownload = fetchMod.download, fetched = [];
+function examples(cb) {
+  request('POST', '/api/home/wallpapers', new Buffer('{"examples":true}'), { 'Content-Type': 'application/json' }, function (code, body) {
+    cb(code, JSON.parse(body));
+  });
 }
 function upload(data, headers, cb) { request('POST', '/api/home/wallpapers/upload?slot=morning', data, headers, cb); }
 function unchanged() { assert.deepEqual(fs.readFileSync(home.wallpaperPath('morning')), jpeg); }
@@ -101,12 +110,69 @@ var steps = [
     });
   },
   function (next) {
+    request('POST', '/api/home/wallpapers/upload?slot=evening', jpeg, {}, function (code) {
+      assert.strictEqual(code, 200);
+      request('POST', '/api/home/wallpapers', new Buffer('{"remove":"noon"}'), { 'Content-Type': 'application/json' }, function (badCode) {
+        assert.strictEqual(badCode, 400, 'an unknown time of day is refused');
+        request('POST', '/api/home/wallpapers', new Buffer('{"remove":"morning"}'), { 'Content-Type': 'application/json' }, function (code2, body) {
+          assert.strictEqual(code2, 200);
+          var slots = JSON.parse(body).wallpapers.slots;
+          assert.strictEqual(slots.morning, false, 'Morning\'s picture is removed');
+          assert.strictEqual(slots.evening, true, 'and Evening\'s kept');
+          assert.strictEqual(home.wallpaperPath('morning'), null);
+          next();
+        });
+      });
+    });
+  },
+  function (next) {
     request('POST', '/api/home/wallpapers', new Buffer('{"removeUploads":true}'), { 'Content-Type': 'application/json' }, function (code, body) {
       assert.strictEqual(code, 200);
       assert.strictEqual(JSON.parse(body).wallpapers.available, false);
       assert.strictEqual(home.wallpaperPath('morning'), null);
       assert.deepEqual(fs.readdirSync(path.join(dir, 'home-wallpaper-uploads')), []);
       next();
+    });
+  },
+  function (next) {
+    // The example set goes only where there is no picture: Morning's own is kept.
+    upload(jpeg, {}, function (code) {
+      assert.strictEqual(code, 200);
+      var sum = crypto.createHash('sha256').update(jpeg).digest('hex');
+      Object.keys(wallpapers.EXAMPLES).forEach(function (key) { wallpapers.EXAMPLES[key] = sum; });
+      fetched = [];
+      fetchMod.download = function (url, out, o, cb) { fetched.push(url); fs.writeFileSync(out, jpeg); setTimeout(function () { cb(null); }, 0); };
+      examples(function (code2, r) {
+        assert.strictEqual(code2, 200);
+        assert.strictEqual(r.added, 3);
+        assert.deepEqual(fetched.map(function (u) { return u.replace(/^.*\//, ''); }), ['afternoon.jpg', 'evening.jpg', 'night.jpg']);
+        assert.ok(fetched.every(function (u) { return u.indexOf('https://raw.githubusercontent.com/rorygallagher2024/glasshouse-wallpapers/v1/') === 0; }));
+        assert.ok(r.wallpapers.slots.night);
+        examples(function (code3, r3) {
+          assert.strictEqual(r3.added, 0, 'nothing to add once every time of day has a picture');
+          next();
+        });
+      });
+    });
+  },
+  function (next) {
+    // A picture that does not match its checksum is not kept.
+    request('POST', '/api/home/wallpapers', new Buffer('{"remove":"evening"}'), { 'Content-Type': 'application/json' }, function () {
+      wallpapers.EXAMPLES.evening = new Array(65).join('0');
+      examples(function (code, r) {
+        assert.strictEqual(r.ok, false);
+        assert.strictEqual(r.added, 0);
+        assert.strictEqual(r.wallpapers.slots.evening, false);
+        assert.strictEqual(r.wallpapers.uploading, false, 'the lock is released');
+        assert.deepEqual(fs.readdirSync(path.join(dir, 'home-wallpaper-uploads')).sort(), ['afternoon.jpg', 'morning.jpg', 'night.jpg']);
+        fetchMod.download = function (url, out, o, cb) { setTimeout(function () { cb(new Error('offline')); }, 0); };
+        examples(function (code2, r2) {
+          assert.strictEqual(r2.error, 'offline');
+          assert.strictEqual(r2.wallpapers.slots.evening, false);
+          fetchMod.download = realDownload;
+          request('POST', '/api/home/wallpapers', new Buffer('{"removeUploads":true}'), { 'Content-Type': 'application/json' }, function () { next(); });
+        });
+      });
     });
   }
 ];
@@ -118,7 +184,7 @@ server.listen(0, '127.0.0.1', function () {
     server.close(function () {
       fs.rmdirSync(path.join(dir, 'home-wallpaper-uploads'));
       fs.rmdirSync(dir);
-      console.log('Home wallpaper uploads preserve existing images on failure, recover after abort and survive restart.');
+      console.log('Home wallpaper uploads preserve existing images on failure, recover after abort, survive restart, and are removed one time of day at a time or all at once; the example set fills only empty times of day and is kept only when its checksum matches.');
     });
   }
   next();

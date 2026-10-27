@@ -98,6 +98,23 @@ stateMgr.update('power', 'screenOn', true);
 assert.strictEqual(published['lgtv/state/screen'], 'OFF');
 console.log('  ✓ mqtt-state suppresses ON and keeps OFF while systemOn is false');
 
+// A switch-on from Active Standby as tvpower reports it: the group's values
+// arrive in the order state, screenOn, systemOn.
+var wake = stateModule.init({});
+var wakeScreen = [];
+var wakeBridge = mqttState.init({
+  client: { publish: function (topic, val) { if (topic === 'lgtv/state/screen') wakeScreen.push(val); } },
+  prefix: 'lgtv'
+});
+wakeBridge.attach(wake.state);
+var powerReply = wake.groups.power.subscription.handlers.message;
+powerReply({ returnValue: true, state: 'Active Standby' });
+powerReply({ returnValue: true, state: 'Active' });
+assert.strictEqual(wakeScreen[wakeScreen.length - 1], 'ON', 'screen after switch-on: ' + wakeScreen.join(', '));
+powerReply({ returnValue: true, state: 'Active Standby' });
+assert.strictEqual(wakeScreen[wakeScreen.length - 1], 'OFF', 'screen after standby: ' + wakeScreen.join(', '));
+console.log('  ✓ the screen reads ON after a switch-on from Active Standby');
+
 // ---------------------------------------------------------------- ha entity naming
 var oledEntities = ha.buildEntities({ isOled: true });
 var lcdEntities = ha.buildEntities({ isOled: false });

@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Incense",
+    "es": "Incienso",
+    "hu": "Füstölő",
+    "ru": "Благовония"
+  },
+  "description": {
+    "en": "Thin streams of colored smoke rising and curling on black.",
+    "es": "Finas columnas de humo de colores que suben y se enroscan sobre negro.",
+    "hu": "Vékony színes füstcsíkok szállnak fel és kunkorodnak fekete háttéren.",
+    "ru": "Тонкие струйки цветного дыма поднимаются и завиваются на чёрном фоне."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 90
+}
