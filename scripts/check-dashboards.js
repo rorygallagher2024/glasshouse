@@ -302,6 +302,27 @@ async function visitHomeVisibility(browser, base, problems) {
     await page.clock.fastForward(5000);
     await release();
     if (await check(false) !== clock) problems.push('Home visibility: the clock moved when last watched was hidden');
+    // The clock switched off keeps its space; the rows along the bottom sit lower.
+    const place = () => page.evaluate(() => ({
+      when: getComputedStyle(document.getElementById('when')).visibility,
+      rowTop: document.querySelector('.row').getBoundingClientRect().top,
+      rowsBottom: document.getElementById('rows').getBoundingClientRect().bottom,
+      // The last row shown: an empty one is left out.
+      lastBottom: [].slice.call(document.querySelectorAll('.row')).filter(r => r.offsetHeight).pop().getBoundingClientRect().bottom
+    }));
+    const centred = await place();
+    layout.showClock = false;
+    layout.rowsBottom = true;
+    version++;
+    await page.clock.fastForward(5000);
+    await release();
+    const bottom = await place();
+    if (bottom.when !== 'hidden') problems.push('Home visibility: the clock stayed with it switched off');
+    // Only a row's own margin is left below the last row.
+    const gap = p => p.rowsBottom - p.lastBottom;
+    if (!(bottom.rowTop > centred.rowTop) || !(gap(bottom) < gap(centred) / 3)) {
+      problems.push('Home visibility: the rows are not along the bottom: ' + JSON.stringify({ centred, bottom }));
+    }
   } finally { await page.close(); }
 }
 

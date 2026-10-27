@@ -1544,6 +1544,24 @@ step('last watched, the app count and CEC addresses show until switched off, one
   });
 });
 
+step('the clock shows until switched off, the rows sit along the bottom only when switched on, and both are saved', function (done) {
+  start(null);
+  var l = home.layout();
+  assert.deepEqual([l.showClock, l.rowsBottom], [true, false]);
+  home.setLayout({ showClock: false, rowsBottom: true }, function (r) {
+    assert.deepEqual([r.layout.showClock, r.layout.rowsBottom], [false, true]);
+    var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+    assert.deepEqual([saved.showClock, saved.rowsBottom], [false, true]);
+    home.setLayout({ showClock: 'no', rowsBottom: 1 }, function (r2) {
+      assert.deepEqual([r2.layout.showClock, r2.layout.rowsBottom], [false, true], 'only true or false changes them');
+      home.setLayout({ showClock: true, rowsBottom: false }, function (r3) {
+        assert.deepEqual([r3.layout.showClock, r3.layout.rowsBottom], [true, false]);
+        done();
+      });
+    });
+  });
+});
+
 step('fading, search and leaving out inputs with nothing plugged in stay off until switched on, are saved, and outlast a reset, beside hiding inputs one by one', function (done) {
   start(null);
   assert.strictEqual(home.layout().fade, false);

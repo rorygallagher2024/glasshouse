@@ -45,6 +45,8 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
    which is sized for the digits alone. */
 #mer{font-size:.28em;letter-spacing:0;margin-left:.1em;opacity:.75;font-weight:400}
 #date{margin-top:22px;font-size:28px;color:#a39d93;white-space:nowrap}
+/* Switched off, the clock keeps its space, so the rows and Last watched stay put. */
+.no-clock #when{visibility:hidden}
 #source{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;padding-left:24px;border-left:1px solid #2a2825;padding-bottom:2px}
 #source.none{visibility:hidden}
 #srcKind{font-size:23px;color:#e9ad55}
@@ -74,6 +76,8 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #rows{position:absolute;left:0;right:0;top:296px;bottom:40px;
   display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
 #rows:before,#rows:after{content:"";-webkit-flex:1 1 0;flex:1 1 0}
+/* Along the bottom, as on LG's Home: no space below the rows. */
+.rows-bottom #rows:after{-webkit-flex:0 0 0;flex:0 0 0}
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
 .row.empty{display:none}
 .arranging .row.empty{display:block}
@@ -1209,7 +1213,8 @@ html.faded #stage{opacity:0}
 
   function stageClass() {
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
-      (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '');
+      (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
+      (layout && layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '');
   }
 
   // ---------------------------------------------------------------- more apps
