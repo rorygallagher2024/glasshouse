@@ -63,6 +63,14 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ![Glasshouse Home with the clock off and the rows along the bottom](../screenshots/home-bottom.jpg)
 
+-   **Alternative View**
+
+    ---
+
+    A smaller clock on the right, with Last watched to its left, and the rows as rounded, translucent tiles. Row titles, and the app count with them, show only while arranging. It is off by default, and works with **Rows along the bottom** and the other switches. Thanks to @wkirby86.
+
+    ![Glasshouse Home in Alternative View with the rows along the bottom](../screenshots/home-alternative.jpg)
+
 -   **Fade in and out**
 
     ---
@@ -156,7 +164,7 @@ Rows and tiles can be arranged from the **web dashboard**, the **TV app**, or **
 
 The Home tab's **Home customisation** section holds what applies to whichever Home is the TV's, in one column with each switch on the right:
 
-* While Glasshouse Home is on: **Open Home at power-on**, Glasshouse Home's own options (**Hide LG's Home while the TV starts**, **Picture details**, **Clock and date**, **Rows along the bottom**, **Last watched**, **App count**, **CEC addresses**, **Search**, **Fade in and out**).
+* While Glasshouse Home is on: **Open Home at power-on**, Glasshouse Home's own options (**Hide LG's Home while the TV starts**, **Picture details**, **Clock and date**, **Rows along the bottom**, **Alternative View**, **Last watched**, **App count**, **CEC addresses**, **Search**, **Fade in and out**).
 * While LG's Home is: **Open Home at power-on**, **Home screen layout** and **Hide home screen system apps**.
 
 Each appears where the TV has it. A TV Glasshouse Home is not offered on, such as a B8 with webOS 4.4, still has the Home tab for these; there it holds Open Home at power-on and Hide home screen system apps. The TV app's Home section has the same rows.

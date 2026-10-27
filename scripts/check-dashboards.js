@@ -323,6 +323,18 @@ async function visitHomeVisibility(browser, base, problems) {
     if (!(bottom.rowTop > centred.rowTop) || !(gap(bottom) < gap(centred) / 3)) {
       problems.push('Home visibility: the rows are not along the bottom: ' + JSON.stringify({ centred, bottom }));
     }
+    // Alternative View: the clock on the right, and the row titles hidden.
+    layout.showClock = true;
+    layout.view = 'alternative';
+    version++;
+    await page.clock.fastForward(5000);
+    await release();
+    const alt = await page.evaluate(() => ({
+      when: document.getElementById('when').getBoundingClientRect().left,
+      source: document.getElementById('source').getBoundingClientRect().left,
+      titles: [].slice.call(document.querySelectorAll('.row > h2')).filter(h => h.offsetHeight).length
+    }));
+    if (!(alt.when > alt.source) || alt.titles) problems.push('Home visibility: Alternative View did not apply: ' + JSON.stringify(alt));
   } finally { await page.close(); }
 }
 

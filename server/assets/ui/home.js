@@ -176,6 +176,14 @@ function renderHome() {
     updateToggle(btn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     btn.disabled = !homeWritable();
   });
+  const altRow = q('home-alternative-row');
+  if (altRow) altRow.hidden = !st.supported.ok;
+  const alt = q('home-alternative');
+  if (alt) {
+    const on = !!st.layout && st.layout.view === 'alternative';
+    updateToggle(alt, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    alt.disabled = !homeWritable();
+  }
   const hide = q('home-hide-lg');
   if (hide) {
     const armed = homeArmed === 'hide';
@@ -492,6 +500,10 @@ function homeShow(key) {
 
 function homeSearch() {
   homeSaveLayout({ search: homeLayout.search !== true });
+}
+
+function homeAlternative() {
+  homeSaveLayout({ view: homeLayout.view === 'alternative' ? 'standard' : 'alternative' });
 }
 
 function homeRowsBottom() {

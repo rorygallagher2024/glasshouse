@@ -2068,6 +2068,8 @@
  "home.showClockDesc": {"text": "A Glasshouse Home bal felső részén. Kikapcsolva a helye üresen marad.", "from": "At the top left of Glasshouse Home. Switched off, the space stays empty."},
  "home.rowsBottom": {"text": "Sorok alul", "from": "Rows along the bottom"},
  "home.rowsBottomDesc": {"text": "Az alkalmazások és bemenetek sorai a képernyő alján helyezkednek el, mint az LG kezdőképernyőjén, nem középen.", "from": "The rows of apps and inputs sit along the bottom of the screen, as on LG’s Home, rather than in the middle."},
+ "home.alternative": {"text": "Alternatív nézet", "from": "Alternative View"},
+ "home.alternativeDesc": {"text": "Kisebb óra a jobb oldalon, a sorok lekerekített, áttetsző csempék, címmel csak elrendezés közben.", "from": "A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging."},
  "home.showCec": {"text": "CEC-címek", "from": "CEC addresses"},
  "home.showCecDesc": {"text": "Minden bemenet csempéjén: a mögötte lévő eszköz HDMI-CEC címe.", "from": "On each input’s tile: the HDMI-CEC address of the device behind it."},
  "home.showLast": {"text": "Legutóbb nézett", "from": "Last watched"},

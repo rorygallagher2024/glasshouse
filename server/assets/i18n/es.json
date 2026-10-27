@@ -2111,5 +2111,7 @@
  "home.showClockDesc": {"text": "Arriba a la izquierda en Glasshouse Home. Si se desactiva, el espacio queda vacío.", "from": "At the top left of Glasshouse Home. Switched off, the space stays empty."},
  "home.rowsBottom": {"text": "Filas abajo", "from": "Rows along the bottom"},
  "home.rowsBottomDesc": {"text": "Las filas de apps y entradas se colocan en la parte inferior de la pantalla, como en el inicio de LG, en lugar de en el centro.", "from": "The rows of apps and inputs sit along the bottom of the screen, as on LG’s Home, rather than in the middle."},
+ "home.alternative": {"text": "Vista alternativa", "from": "Alternative View"},
+ "home.alternativeDesc": {"text": "Un reloj más pequeño a la derecha y las filas como mosaicos redondeados y translúcidos, con título solo al organizar.", "from": "A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging."},
  "srv.home.wallExampleBad": {"text": "Una imagen de ejemplo no se descargó completa. Inténtalo de nuevo más tarde.", "from": "An example wallpaper did not download intact. Try again later."}
 }

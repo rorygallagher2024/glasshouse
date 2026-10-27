@@ -266,6 +266,9 @@ function defaults() {
     showCec: true,
     // The rows centred below the top strip, or along the bottom as on LG's Home.
     rowsBottom: false,
+    // standard, or alternative: a smaller clock on the right, and the rows
+    // as rounded, translucent tiles without their titles.
+    view: 'standard',
     // Search on the view (lib/home-search): off by default, so nothing typed reaches LG unless switched on.
     search: false,
     // The view fading in as it comes on screen, and out as a tile opens.
@@ -323,6 +326,7 @@ function normalise(raw) {
   d.picture = raw.picture === true;
   SHOW_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.rowsBottom = raw.rowsBottom === true;
+  d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.search = raw.search === true;
   d.fade = raw.fade === true;
   d.hideUnused = raw.hideUnused === true;
@@ -445,6 +449,7 @@ function setLayout(body, cb) {
     picture: typeof body.picture === 'boolean' ? body.picture : c.picture,
     showClock: typeof body.showClock === 'boolean' ? body.showClock : c.showClock,
     rowsBottom: typeof body.rowsBottom === 'boolean' ? body.rowsBottom : c.rowsBottom,
+    view: body.view !== undefined ? body.view : c.view,
     showLastOn: typeof body.showLastOn === 'boolean' ? body.showLastOn : c.showLastOn,
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
@@ -476,7 +481,7 @@ function setLayout(body, cb) {
 function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     searchHintSeen: c.searchHintSeen, picture: c.picture, search: c.search, fade: c.fade, hideUnused: c.hideUnused,
-    showClock: c.showClock, rowsBottom: c.rowsBottom,
+    showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };

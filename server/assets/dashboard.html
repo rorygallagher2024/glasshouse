@@ -1083,6 +1083,12 @@ function glasshouseHomeRows(d) {
                  act: can ? 'homeShow' : null, on: bottomOn,
                  press: bottomOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
                  hint: t('home.rowsBottomDesc', 'The rows of apps and inputs sit along the bottom of the screen, as on LG\u2019s Home, rather than in the middle.') });
+        var altOn = d.layout.view === 'alternative';
+        r.push({ label: t('home.alternative', 'Alternative View'),
+                 value: altOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: altOn ? 'on' : 'off',
+                 act: can ? 'homeAlternative' : null, on: altOn,
+                 press: altOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+                 hint: t('home.alternativeDesc', 'A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging.') });
       }
     }
     var searchOn = d.layout.search === true, blocked = d.layout.searchBlocked;
@@ -2681,6 +2687,8 @@ function activate() {
       return homeLayout(showChange);
     case 'homeSearch':
       return homeLayout({ search: !r.on });
+    case 'homeAlternative':
+      return homeLayout({ view: r.on ? 'standard' : 'alternative' });
     case 'homeFade':
       return homeLayout({ fade: !r.on });
     case 'homeHideUnused':

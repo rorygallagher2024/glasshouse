@@ -78,6 +78,28 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #rows:before,#rows:after{content:"";-webkit-flex:1 1 0;flex:1 1 0}
 /* Along the bottom, as on LG's Home: no space below the rows. */
 .rows-bottom #rows:after{-webkit-flex:0 0 0;flex:0 0 0}
+
+/* Alternative View (#999): a smaller clock on the right, Last watched to its
+   left, and the rows as rounded, translucent tiles, titled only while arranging. */
+.alternative #now{padding:0 90px}
+.alternative #when{-webkit-order:2;order:2;width:420px;text-align:right}
+.alternative #clock{font-size:100px;line-height:1;letter-spacing:-2px}
+.alternative #date{margin-top:8px;font-size:23px}
+.alternative #source{-webkit-order:1;order:1;border-left:0;padding-left:22px}
+.alternative:not(.arranging) .row > h2{display:none}
+.alternative .row{margin-bottom:10px}
+.alternative .tile{border-radius:18px;margin-right:12px;background:rgba(20,15,29,.45)}
+.alternative .tile.focus{background:rgba(34,25,48,.86)}
+.alternative .app{width:160px;padding:12px}
+.alternative .app img,.alternative .app .mono{width:100px;height:100px;border-radius:16px}
+.alternative .app .mono{line-height:100px}
+.alternative .app .nm{font-size:18px;margin-top:8px}
+.alternative .app .fold{width:100px;height:100px;padding:9px}
+.alternative .app .fold i,.alternative .app .fold i img{width:37px;height:37px}
+.alternative .app .fold i{line-height:37px;font-size:18px}
+.alternative .dev{width:340px;height:108px}
+.alternative .dev .nm{font-size:26px}
+.alternative .dev .path,.alternative .dev .st{font-size:17px}
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
 .row.empty{display:none}
 .arranging .row.empty{display:block}
@@ -1214,7 +1236,8 @@ html.faded #stage{opacity:0}
   function stageClass() {
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
-      (layout && layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '');
+      (layout && layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
+      (layout && layout.view === 'alternative' ? ' alternative' : '');
   }
 
   // ---------------------------------------------------------------- more apps

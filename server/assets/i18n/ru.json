@@ -2068,6 +2068,8 @@
  "home.showClockDesc": {"text": "В левом верхнем углу Glasshouse Home. Если выключить, это место остаётся пустым.", "from": "At the top left of Glasshouse Home. Switched off, the space stays empty."},
  "home.rowsBottom": {"text": "Ряды внизу", "from": "Rows along the bottom"},
  "home.rowsBottomDesc": {"text": "Ряды приложений и входов располагаются внизу экрана, как на главном экране LG, а не посередине.", "from": "The rows of apps and inputs sit along the bottom of the screen, as on LG’s Home, rather than in the middle."},
+ "home.alternative": {"text": "Альтернативный вид", "from": "Alternative View"},
+ "home.alternativeDesc": {"text": "Часы меньше и справа, ряды — скруглённые полупрозрачные плитки, с названиями только при упорядочивании.", "from": "A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging."},
  "home.showCec": {"text": "Адреса CEC", "from": "CEC addresses"},
  "home.showCecDesc": {"text": "На плитке каждого входа: адрес HDMI-CEC подключённого к нему устройства.", "from": "On each input’s tile: the HDMI-CEC address of the device behind it."},
  "home.showLast": {"text": "Смотрели последним", "from": "Last watched"},
