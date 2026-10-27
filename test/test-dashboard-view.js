@@ -190,6 +190,7 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
   assert.ok(/#main\{[^}]*-webkit-flex:1 1 auto/.test(html), '#main has -webkit-flex:1 1 auto');
   assert.ok(/#list\{[^}]*-webkit-flex:1 1 62%/.test(html), '#list has -webkit-flex:1 1 62%');
   assert.ok(/#list\{[^}]*height:100%/.test(html), '#list has explicit height:100%');
+  assert.ok(html.indexOf('@supports (display:flex){#list{height:auto}}') !== -1, 'browsers with unprefixed flexbox stretch #list instead (webOS 4)');
   assert.ok(/#hint\{[^}]*-webkit-flex:0 0 31%/.test(html), '#hint has -webkit-flex:0 0 31%');
   assert.ok(/#hint\{[^}]*-webkit-align-self:center/.test(html), '#hint has -webkit-align-self:center');
   assert.ok(/\.row\{[^}]*display:-webkit-flex/.test(html), '.row has display:-webkit-flex');

@@ -53,6 +53,11 @@ body{font-family:'Manrope',sans-serif;color:#fff;
    space buys somewhere to say what a setting means without a second screen. */
 #main{flex:1 1 auto;-webkit-flex:1 1 auto;display:flex;display:-webkit-flex;overflow:hidden;padding-right:4vw;min-height:0}
 #list{flex:1 1 62%;-webkit-flex:1 1 62%;height:100%;overflow:hidden;position:relative}
+/* webOS 2's WebKit 538.2 has no @supports and lays #list out as a block, so
+   it needs the height above. Chromium 53 (webOS 4) takes a percentage height
+   on a flex item as none, collapsing #list to 0 px and hiding every row; it
+   stretches the list to fit instead. */
+@supports (display:flex){#list{height:auto}}
 #rows{position:absolute;left:0;right:0;-webkit-transition:-webkit-transform .28s cubic-bezier(.4,0,.2,1);transition:transform .28s cubic-bezier(.4,0,.2,1)}
 
 #hint{flex:0 0 31%;-webkit-flex:0 0 31%;margin-left:2.6vw;align-self:center;-webkit-align-self:center;border-left:1px solid rgba(255,255,255,.14);

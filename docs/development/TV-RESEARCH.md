@@ -1640,6 +1640,12 @@ item with `position: absolute` children and no in-flow height collapses to 0 px.
 CSS transitions and transforms similarly require `-webkit-transition`,
 `-webkit-transform`, and `element.style.webkitTransform` in script (#746).
 
+On webOS 4 (Chromium 53, a B8 and a C9) the reverse holds: `height: 100%` on a
+flex item inside a flexed parent counts as no height, so the TV app's row list
+collapsed to 0 px and showed nothing in 0.121.0 and 0.122.0. The height is set
+back to `auto` inside `@supports (display: flex)`, which WebKit 538.2 does not
+read.
+
 
 ## Installing Glasshouse's own package (G3, webOS 9.2.2)
 
