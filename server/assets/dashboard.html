@@ -1065,17 +1065,19 @@ function glasshouseHomeRows(d) {
              act: can ? 'homePicture' : null, on: picOn,
              press: picOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.pictureDesc', 'In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.') });
-    var shows = [['showClock', t('home.showClock', 'Clock and date'), t('home.showClockDesc', 'At the top left of Glasshouse Home. Switched off, the space stays empty.')],
+    var shows = [['showClock', t('home.showClock', 'Clock and date'), t('home.showClockDesc', 'At the top of Glasshouse Home. Switched off, the space stays empty.')],
                  ['showLastOn', t('home.showLast', 'Last watched'), t('home.showLastDesc', 'At the top of Glasshouse Home and on the input it was on: what the TV last showed.')],
                  ['showAppCount', t('home.showAppCount', 'App count'), t('home.showAppCountDesc', 'Beside the Apps row: how many of the TV\u2019s apps it shows.')],
                  ['showCec', t('home.showCec', 'CEC addresses'), t('home.showCecDesc', 'On each input\u2019s tile: the HDMI-CEC address of the device behind it.')]];
     for (var si = 0; si < shows.length; si++) {
       var showOn = d.layout[shows[si][0]] !== false;
+      // Alternative View's rows have no titles, so no app count beside them.
+      var unused = shows[si][0] === 'showAppCount' && d.layout.view === 'alternative';
       r.push({ label: shows[si][1], key: shows[si][0],
-               value: showOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: showOn ? 'on' : 'off',
-               act: can ? 'homeShow' : null, on: showOn,
+               value: showOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: showOn && !unused ? 'on' : 'off',
+               act: can && !unused ? 'homeShow' : null, on: showOn,
                press: showOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
-               hint: shows[si][2] });
+               hint: unused ? t('home.showAppCountAlt', 'Not shown in Alternative View, whose rows have no titles.') : shows[si][2] });
       if (si === 0) {
         var bottomOn = d.layout.rowsBottom === true;
         r.push({ label: t('home.rowsBottom', 'Rows along the bottom'), key: 'rowsBottom',

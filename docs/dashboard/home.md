@@ -67,7 +67,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    A smaller clock on the right, with Last watched to its left, and the rows as rounded, translucent tiles. Row titles, and the app count with them, show only while arranging. It is off by default, and works with **Rows along the bottom** and the other switches. Thanks to @wkirby86.
+    A smaller clock on the right, with Last watched and the Picture details plate to its left, and the rows as rounded, translucent tiles. Row titles show only while arranging, so **App count** is greyed out in this view. It is off by default, and works with **Rows along the bottom** and the other switches. Thanks to @wkirby86.
 
     ![Glasshouse Home in Alternative View with the rows along the bottom](../screenshots/home-alternative.jpg)
 
