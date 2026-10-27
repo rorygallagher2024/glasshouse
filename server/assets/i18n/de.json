@@ -559,10 +559,6 @@
     "text": "Auf diesem TV nicht verfügbar",
     "from": "Not available on this TV"
   },
-  "home.wall.black": {
-    "text": "Schwarz",
-    "from": "Black"
-  },
   "home.wall.chooseImage": {
     "text": "Ein Bild als JPEG, PNG oder WebP bis 25 MB wählen.",
     "from": "Choose a JPEG, PNG or WebP image up to 25 MB."
@@ -591,10 +587,6 @@
     "text": "Das aufbereitete Bild ist zu groß. Wähle ein kleineres.",
     "from": "The prepared image is too large. Choose a smaller image."
   },
-  "home.wall.tvHint": {
-    "text": "Bilder für die Tageszeiten werden im Home-Tab des Browser-Dashboards hochgeladen.",
-    "from": "Images for each time of day are uploaded on the browser dashboard’s Home tab."
-  },
   "home.wall.unreadable": {
     "text": "Das Bild konnte nicht geöffnet werden.",
     "from": "The image could not be opened."
@@ -610,10 +602,6 @@
   "home.wall.uploadHelp": {
     "text": "JPEG, PNG oder WebP, bis 25 MB. Bilder werden vor dem Hochladen auf 1920 × 1080 angepasst – die Größe, in der Glasshouse Home gezeichnet wird – und füllen den Bildschirm.",
     "from": "JPEG, PNG or WebP, up to 25 MB. Images are resized to fit 1920 × 1080, the size Glasshouse Home is drawn at, before upload, and fill the screen."
-  },
-  "home.wall.uploadedValue": {
-    "text": "Hochgeladen",
-    "from": "Uploaded"
   },
   "home.wall.uploading": {
     "text": "Wird hochgeladen…",
@@ -639,10 +627,6 @@
     "text": "Alle entfernen",
     "from": "Remove all"
   },
-  "home.wall.intro": {
-    "text": "Ein Bild hinter Glasshouse Home für jede Tageszeit. Wählen Sie eine Tageszeit oder ziehen Sie ein Bild darauf. Eine ohne Bild hat einen schwarzen Hintergrund.",
-    "from": "A picture behind Glasshouse Home for each part of the day. Choose a time of day, or drop an image on it. One without a picture has a black background."
-  },
   "home.wall.now": {
     "text": "Jetzt",
     "from": "Now"
@@ -659,16 +643,8 @@
     "text": "unbekannte Tageszeit für das Hintergrundbild",
     "from": "unknown wallpaper slot"
   },
-  "home.wall.examples": {
-    "text": "Beispielbilder hinzufügen",
-    "from": "Add example pictures"
-  },
   "home.wall.examplesBusy": {
     "text": "Wird heruntergeladen…",
     "from": "Downloading…"
-  },
-  "home.wall.examplesDone": {
-    "text": "Beispielbilder hinzugefügt. Home aktualisiert sich in wenigen Sekunden.",
-    "from": "Example pictures added. Home updates within a few seconds."
   }
 }

@@ -1,6 +1,6 @@
-/* Home wallpapers: personal images uploaded from the browser, one for each
- * time of day, or the example set fetched on request. None are packaged; a
- * slot without one is black.
+/* Home wallpapers: black, one of the sets fetched when chosen, or the owner's
+ * own images uploaded from the browser, one for each time of day. None are
+ * packaged; with the owner's own, a time of day without one is black.
  * Kept outside assets so updates do not carry them into the rollback copy.
  * Strict ES5 for the TV's Node 0.10/0.12. */
 var fs = require('fs');
@@ -16,24 +16,73 @@ var SLOTS = ['morning', 'afternoon', 'evening', 'night'];
 // webOS web apps render at 1920x1080 (home-app/appinfo.json), so larger adds nothing on screen.
 var MAX_WIDTH = 1920, MAX_HEIGHT = 1080;
 var uploadsDir = '/var/lib/tvweb/home-wallpaper-uploads';
+var setsDir = '/var/lib/tvweb/home-wallpaper-sets';
+var choiceFile = '/var/lib/tvweb/home-wallpaper.json';
 var uploading = false;
+// The set being fetched, while it is.
+var fetching = null;
 var MAX_UPLOAD = 5 * 1024 * 1024;
-// The example set, from a tag of its own repo so that it is not in every
-// release's download. A tag's files never change: each is pinned here.
-var EXAMPLES_BASE = 'https://raw.githubusercontent.com/rorygallagher2024/glasshouse-wallpapers/v1/';
-var EXAMPLES = {
-  morning: '07b116a4e124b5fa7021638c4653fab3ee1ad55dedeaed75dbcb3cd31cb13cc5',
-  afternoon: '5c55ec973573e88f37805a65536ec1a07b5950de40ff19f9e54a30ef808f221c',
-  evening: '651cf5c2123d35b4c06b2d317d3dc13e66806eea16a1d5e82c9e060eb8a1a743',
-  night: '710be1cc3b9fb79f574f256eda6c64bb28e429c58e3a9d123ff6d5d40e8466eb'
+/*
+ * The sets, from a tag of their own repo so that they are not in every
+ * release's download. A tag's files never change: each is pinned here.
+ */
+var SETS_BASE = 'https://raw.githubusercontent.com/rorygallagher2024/glasshouse-wallpapers/v2/';
+var SETS = {
+  landscape: { dir: '', sums: {
+    morning: '07b116a4e124b5fa7021638c4653fab3ee1ad55dedeaed75dbcb3cd31cb13cc5',
+    afternoon: '5c55ec973573e88f37805a65536ec1a07b5950de40ff19f9e54a30ef808f221c',
+    evening: '651cf5c2123d35b4c06b2d317d3dc13e66806eea16a1d5e82c9e060eb8a1a743',
+    night: '710be1cc3b9fb79f574f256eda6c64bb28e429c58e3a9d123ff6d5d40e8466eb' } },
+  abstract: { dir: 'abstract/', sums: {
+    morning: 'c8418d6a80e95c10644a2bad08b9355bea7bd337d32814e7fb298386ac3d7e56',
+    afternoon: 'debe27bb99fb15cf51d82d9ad78363d6fa116f20913024d73c584182f040b3e0',
+    evening: '1ccb4bbc5b176f26f643c84cdd255bac36707515093b64892630d5b3925e18d1',
+    night: '189e934db4b5aff8608110e3cd4562cb70d50c32a044a1f8c441ac924baa84a7' } }
 };
+// own is the owner's uploads; black, no picture at all.
+var CHOICES = ['black', 'landscape', 'abstract', 'own'];
+var choice = 'black';
 
 function init(stateDir) {
   uploadsDir = path.join(stateDir, 'home-wallpaper-uploads');
+  setsDir = path.join(stateDir, 'home-wallpaper-sets');
+  choiceFile = path.join(stateDir, 'home-wallpaper.json');
+  var saved = util.readJson(choiceFile, null);
+  if (saved && CHOICES.indexOf(saved.choice) !== -1) choice = saved.choice;
+  else migrate();
+}
+
+function sha256(file) {
+  try { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); } catch (e) { return null; }
+}
+
+/*
+ * Before the choice, uploads were the only wallpapers, and Add example
+ * pictures copied the landscape set into them. Four uploads that are exactly
+ * that set become it, kept rather than fetched again; any other uploads are
+ * the owner's own.
+ */
+function migrate() {
+  var own = SLOTS.filter(function (key) { return fs.existsSync(path.join(uploadsDir, key + '.jpg')); });
+  choice = own.length ? 'own' : 'black';
+  var set = SETS.landscape.sums;
+  if (own.length === SLOTS.length && SLOTS.every(function (key) { return sha256(path.join(uploadsDir, key + '.jpg')) === set[key]; })) {
+    try {
+      util.mkdirp(path.join(setsDir, 'landscape'));
+      SLOTS.forEach(function (key) { fs.renameSync(path.join(uploadsDir, key + '.jpg'), path.join(setsDir, 'landscape', key + '.jpg')); });
+      choice = 'landscape';
+    } catch (e) { console.error('home: could not keep the landscape wallpapers: ' + e.message); }
+  }
+  saveChoice();
+}
+
+function saveChoice() {
+  try { fs.writeFileSync(choiceFile, JSON.stringify({ choice: choice }) + '\n'); }
+  catch (e) { console.error('home: could not save the wallpaper choice: ' + e.message); }
 }
 
 function status() {
-  var slots = {}, revision = [];
+  var slots = {}, revision = [choice];
   SLOTS.forEach(function (key) {
     var file = image(key), st = null;
     try { if (file) st = fs.statSync(file); } catch (e) {}
@@ -41,12 +90,16 @@ function status() {
     revision.push(st ? String(Number(st.mtime)) + '-' + st.size : '0');
   });
   return { available: SLOTS.some(function (key) { return slots[key]; }),
-    uploading: uploading, slots: slots, revision: revision.join('.') };
+    choice: choice, choices: CHOICES, fetching: fetching,
+    uploading: uploading || !!fetching, slots: slots, revision: revision.join('.') };
 }
 
+function setFile(name, key) { return path.join(setsDir, name, key + '.jpg'); }
+
+// The picture for a time of day, from the chosen set or the owner's own.
 function image(key) {
-  if (SLOTS.indexOf(key) === -1) return null;
-  var file = path.join(uploadsDir, key + '.jpg');
+  if (SLOTS.indexOf(key) === -1 || choice === 'black') return null;
+  var file = choice === 'own' ? path.join(uploadsDir, key + '.jpg') : setFile(choice, key);
   try { if (fs.statSync(file).isFile()) return file; } catch (e) {}
   return null;
 }
@@ -161,6 +214,8 @@ function upload(key, req, cb) {
         if (writeError) { util.unlinkQuiet(staging); return finish(writeError.message, 500); }
         fs.rename(staging, file, function (renameError) {
           if (renameError) util.unlinkQuiet(staging);
+          // A picture of the owner's own is chosen by uploading it.
+          else if (choice !== 'own') ownChosen();
           finish(renameError && renameError.message, renameError ? 500 : null);
         });
       });
@@ -168,40 +223,49 @@ function upload(key, req, cb) {
   });
 }
 
-// The example set into every slot without a picture; the owner's own are kept.
-function addExamples(cb) {
-  if (uploading) return cb({ ok: false, error: msg('srv.home.wallUploading', 'Wait for the wallpaper upload to finish.'), status: 409 });
-  var empty = SLOTS.filter(function (key) { return !image(key); });
-  if (!empty.length) return cb({ ok: true, added: 0, wallpapers: status() });
-  try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir); }
-  catch (e) { return cb({ ok: false, error: e.message }); }
-  uploading = true;
-  var added = 0;
-  function done(error) {
-    uploading = false;
-    if (error) return cb({ ok: false, error: error, added: added, wallpapers: status() });
-    cb({ ok: true, added: added, wallpapers: status() });
+/*
+ * Black, a set or the owner's own. A set is fetched the first time it is
+ * chosen, each picture checked against its pinned sum; only the chosen set is
+ * kept, so the other is removed. The owner's own uploads are always kept.
+ */
+function choose(name, cb) {
+  if (CHOICES.indexOf(name) === -1) return cb({ ok: false, error: msg('srv.home.wallChoice', 'unknown wallpaper choice') });
+  if (uploading || fetching) return cb({ ok: false, error: msg('srv.home.wallUploading', 'Wait for the wallpaper upload to finish.'), status: 409 });
+  function chosen() {
+    choice = name;
+    saveChoice();
+    Object.keys(SETS).forEach(function (other) { if (other !== name) removeSet(other); });
+    cb({ ok: true, wallpapers: status() });
   }
-  execFile('df', ['-k', uploadsDir], { timeout: 5000 }, function (err, out) {
+  if (!SETS[name]) return chosen();
+  var dir = path.join(setsDir, name);
+  var missing = SLOTS.filter(function (key) { return sha256(setFile(name, key)) !== SETS[name].sums[key]; });
+  if (!missing.length) return chosen();
+  try { util.mkdirp(dir); } catch (e) { return cb({ ok: false, error: e.message }); }
+  fetching = name;
+  function failed(error) {
+    fetching = null;
+    cb({ ok: false, error: error, wallpapers: status() });
+  }
+  execFile('df', ['-k', dir], { timeout: 5000 }, function (err, out) {
     var free = err ? null : installer.parseDf(out);
-    if (free === null || free < empty.length * MAX_UPLOAD + 5 * 1024 * 1024) {
-      return done(msg('srv.home.wallUploadSpace', 'Not enough confirmed free space for the wallpaper.'));
+    if (free === null || free < missing.length * MAX_UPLOAD + 5 * 1024 * 1024) {
+      return failed(msg('srv.home.wallUploadSpace', 'Not enough confirmed free space for the wallpaper.'));
     }
     (function next(i) {
-      if (i >= empty.length) return done(null);
-      var key = empty[i], file = path.join(uploadsDir, key + '.jpg'), staging = file + '.part';
-      fetchMod.download(EXAMPLES_BASE + key + '.jpg', staging, {}, function (fetchError) {
-        if (fetchError) { util.unlinkQuiet(staging); return done(fetchError.message); }
+      if (i >= missing.length) { fetching = null; return chosen(); }
+      var key = missing[i], file = setFile(name, key), staging = file + '.part';
+      fetchMod.download(SETS_BASE + SETS[name].dir + key + '.jpg', staging, {}, function (fetchError) {
+        if (fetchError) { util.unlinkQuiet(staging); return failed(fetchError.message); }
         fs.readFile(staging, function (readError, buf) {
-          if (readError) { util.unlinkQuiet(staging); return done(readError.message); }
-          if (buf.length > MAX_UPLOAD || crypto.createHash('sha256').update(buf).digest('hex') !== EXAMPLES[key] || !validJpeg(buf)) {
+          if (readError) { util.unlinkQuiet(staging); return failed(readError.message); }
+          if (buf.length > MAX_UPLOAD || crypto.createHash('sha256').update(buf).digest('hex') !== SETS[name].sums[key] || !validJpeg(buf)) {
             util.unlinkQuiet(staging);
-            return done(msg('srv.home.wallExampleBad', 'An example wallpaper did not download intact. Try again later.'));
+            return failed(msg('srv.home.wallExampleBad', 'A wallpaper did not download intact. Try again later.'));
           }
           try { fs.chmodSync(staging, parseInt('600', 8)); } catch (e) {}
           fs.rename(staging, file, function (renameError) {
-            if (renameError) { util.unlinkQuiet(staging); return done(renameError.message); }
-            added++;
+            if (renameError) { util.unlinkQuiet(staging); return failed(renameError.message); }
             next(i + 1);
           });
         });
@@ -210,5 +274,17 @@ function addExamples(cb) {
   });
 }
 
+function ownChosen() {
+  choice = 'own';
+  saveChoice();
+  Object.keys(SETS).forEach(removeSet);
+}
+
+function removeSet(name) {
+  var dir = path.join(setsDir, name);
+  SLOTS.forEach(function (key) { util.unlinkQuiet(path.join(dir, key + '.jpg')); util.unlinkQuiet(path.join(dir, key + '.jpg.part')); });
+  try { fs.rmdirSync(dir); } catch (e) {}
+}
+
 module.exports = { init: init, status: status, image: image, upload: upload, removeUploads: removeUploads,
-  addExamples: addExamples, EXAMPLES: EXAMPLES };
+  choose: choose, SETS: SETS };

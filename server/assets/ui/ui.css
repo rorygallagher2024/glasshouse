@@ -1633,6 +1633,9 @@ button.wall-screen{position:relative;display:block;width:100%;aspect-ratio:16/9;
 button.wall-screen::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45),transparent 45%,rgba(0,0,0,.4))}
 button.wall-screen:hover:not(:disabled){border-color:rgba(255,255,255,.45)}
 button.wall-screen:disabled{opacity:1;cursor:default}
+.wall-choice{max-width:560px;margin:14px 0 6px}
+/* A set's or Black's empty time of day is not a place to add a picture. */
+.wall-card.fixed:not(.has) button.wall-screen{border-style:solid;border-color:rgba(255,255,255,.12)}
 .wall-card:not(.has) button.wall-screen{border-style:dashed;border-color:rgba(255,255,255,.22)}
 .wall-card.now button.wall-screen{outline:2px solid var(--look-accent);outline-offset:3px}
 .wall-screen.drop,.wall-day-part.drop{outline:2px dashed var(--look-accent,var(--cand));outline-offset:3px}

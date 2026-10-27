@@ -1157,15 +1157,15 @@
   </div>
 
   <div class="pv-sec adv-sec" data-t="home.wall.title">Wallpaper</div>
-  <div class="sub" data-t="home.wall.intro">A picture behind Glasshouse Home for each part of the day. Choose a time of day, or drop an image on it. One without a picture has a black background.</div>
+  <div class="sub" data-t="home.wall.introSets">A picture behind Glasshouse Home for each part of the day: none, one of the picture sets, or your own.</div>
+  <div class="btns wall-choice" id="home-wall-choice"></div>
   <!-- The day as Glasshouse Home shows it: each part's picture across its hours, and where the day is now -->
   <div class="wall-day" id="home-wall-day"></div>
   <div class="wall-cards" id="home-walls"></div>
   <input type="file" id="home-wall-file" accept="image/jpeg,image/png,image/webp" hidden onchange="homeWallPicked(this)">
   <div class="wall-foot">
-    <div class="sub" data-t="home.wall.uploadHelp">JPEG, PNG or WebP, up to 25 MB. Images are resized to fit 1920 × 1080, the size Glasshouse Home is drawn at, before upload, and fill the screen.</div>
+    <div class="sub" id="home-wall-help" data-t="home.wall.uploadHelp">JPEG, PNG or WebP, up to 25 MB. Images are resized to fit 1920 × 1080, the size Glasshouse Home is drawn at, before upload, and fill the screen.</div>
     <div class="wall-foot-btns">
-      <button type="button" class="pill idle" id="home-wall-examples" onclick="homeAddExamples()" data-t="home.wall.examples">Add example pictures</button>
       <button type="button" class="pill idle" id="home-wall-clear" onclick="homeClearUploads()" data-t="home.wall.clearAll">Remove all</button>
     </div>
   </div>

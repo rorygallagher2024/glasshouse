@@ -1228,8 +1228,17 @@ function glasshouseHomeRows(d) {
     });
     var walls = d.wallpapers || {};
     r.push(head(t('home.wall.title', 'Wallpaper')));
-    r.push({ label: t('home.wall.title', 'Wallpaper'), value: walls.available ? t('home.wall.uploadedValue', 'Uploaded') : t('home.wall.black', 'Black'),
-             hint: t('home.wall.tvHint', 'Images for each time of day are uploaded on the browser dashboard\u2019s Home tab.') });
+    // Black, a picture set, or the owner's own, which are uploaded from a browser.
+    var wallNames = { black: t('home.wall.setBlack', 'Black'), landscape: t('home.wall.setLandscape', 'Landscape'),
+      abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own') };
+    var wallChoices = walls.choices || ['black', 'landscape', 'abstract', 'own'];
+    var wallNow = walls.choice || 'own';
+    var wallNext = wallChoices[(wallChoices.indexOf(wallNow) + 1) % wallChoices.length];
+    r.push(walls.fetching ? { label: t('home.wall.title', 'Wallpaper'), value: t('home.wall.examplesBusy', 'Downloading…') }
+      : { label: t('home.wall.title', 'Wallpaper'), value: wallNames[wallNow] || wallNow, cls: can ? 'act' : '',
+          act: can ? 'homeWallSet' : null, next: wallNext,
+          press: t('tv.game.next', 'Press OK for {name}', { name: wallNames[wallNext] }),
+          hint: t('home.wall.tvHintSets', 'Landscape and Abstract are downloaded to the TV when chosen. Your own pictures are uploaded on the browser dashboard\u2019s Home tab.') });
     r.push(head(t('tv.home.head.more', 'More')));
     r.push({ label: t('home.reset', 'Reset the layout'), value: '', act: can ? 'homeReset' : null,
              press: t('tv.home.reset.press', 'Press OK, then again, to reset'),
@@ -2879,6 +2888,10 @@ function activate() {
       var chNow = homeData.layout.channels.filter(function (id) { return id !== r.key; });
       if (!r.on) chNow.push(r.key);
       return homeLayout({ channels: chNow }, r.on ? t('tv.home.ch.removed', 'Removed from Home') : t('tv.home.ch.added', 'Added to Home'));
+    case 'homeWallSet':
+      r.value = t('home.wall.examplesBusy', 'Downloading…');
+      render();
+      return sendPost('/api/home/wallpapers', { choose: r.next });
     case 'homeReset':
       if (confirmFirst(r, t('tv.home.reset.again', 'Press OK again to reset'))) return;
       return homeLayout({ reset: true }, t('home.arrange.resetDone', 'Layout reset'));

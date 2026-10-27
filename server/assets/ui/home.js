@@ -621,13 +621,21 @@ function renderHomeWalls() {
   const names = HOME_WALL_NAMES();
   const now = homeWallNow();
   const c = (homeLayout && homeLayout.colours) || ((homeStatus.colourPresets || [])[0]) || { text: '#ece7df', accent: '#e9ad55' };
+  // The owner's own pictures are uploaded to the times of day; a set's are shown as they are.
+  const choice = walls.choice || 'own';
+  const own = choice === 'own';
+  const getting = walls.fetching || (/^set:/.test(homeWallUploading || '') ? homeWallUploading.slice(4) : '');
+  const choiceBox = q('home-wall-choice');
+  if (choiceBox) {
+    const label = { black: t('home.wall.setBlack', 'Black'), landscape: t('home.wall.setLandscape', 'Landscape'),
+      abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own') };
+    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).map(name =>
+      `<button type="button" class="${name === choice ? 'on' : ''}${name === getting ? ' busy' : ''}" ${busy ? 'disabled' : ''}
+        aria-pressed="${name === choice}" onclick="homeWallSet('${name}')">${esc(name === getting ? t('home.wall.examplesBusy', 'Downloading…') : label[name] || name)}</button>`).join('');
+  }
+  q('home-wall-help').hidden = !own;
+  q('home-wall-clear').hidden = !own;
   q('home-wall-clear').disabled = busy || !walls.available;
-  // Only into times of day without a picture, so it goes once all four have one.
-  const examples = q('home-wall-examples');
-  examples.hidden = HOME_WALL_SLOTS.every(w => has[w.key]);
-  examples.disabled = busy;
-  examples.textContent = homeWallUploading === 'examples'
-    ? t('home.wall.examplesBusy', 'Downloading…') : t('home.wall.examples', 'Add example pictures');
   clearTimeout(homeWallTimer);
   if (walls.uploading) homeWallTimer = setTimeout(() => { if (activeTab === 'home') loadHome(); }, 2000);
 
@@ -639,7 +647,7 @@ function renderHomeWalls() {
     const at = (d.getHours() + d.getMinutes() / 60) / 24 * 100;
     day.innerHTML = `<div class="wall-day-bar">${parts.map(([key, from, to]) => `<button type="button" class="wall-day-part${has[key] ? ' has' : ''}${key === now ? ' now' : ''}" data-slot="${key}"
         style="flex:${to - from}${has[key] ? `;background-image:url('${esc(homeWallUrl(key, walls))}')` : ''}"
-        onclick="homeWallChoose('${key}')" ${busy ? 'disabled' : ''} title="${esc(names[key])}" aria-label="${esc(names[key])}"></button>`).join('')}
+        ${own ? `onclick="homeWallChoose('${key}')"` : 'tabindex="-1"'} ${busy || !own ? 'disabled' : ''} title="${esc(names[key])}" aria-label="${esc(names[key])}"></button>`).join('')}
       <span class="wall-day-needle" style="left:${at.toFixed(2)}%"><b>${esc(t('home.wall.now', 'Now'))}</b></span></div>
       <div class="wall-day-scale">${[0, 6, 12, 18, 24].map(h => `<span style="left:${h / 24 * 100}%">${esc(homeWallTime(h, 0))}</span>`).join('')}</div>`;
   }
@@ -648,15 +656,15 @@ function renderHomeWalls() {
   box.style.setProperty('--look-accent', c.accent);
   box.innerHTML = HOME_WALL_SLOTS.map(w => {
     const key = w.key, set = !!has[key];
-    const fetching = homeWallUploading === 'examples' && !set;
+    const fetching = !!getting;
     const sending = homeWallUploading === key || fetching || (walls.uploading && !homeWallUploading);
-    return `<div class="wall-card${set ? ' has' : ''}${key === now ? ' now' : ''}${sending ? ' busy' : ''}" data-slot="${key}">
-      <button type="button" class="wall-screen" onclick="homeWallChoose('${key}')" ${busy ? 'disabled' : ''}
+    return `<div class="wall-card${set ? ' has' : ''}${key === now ? ' now' : ''}${sending ? ' busy' : ''}${own ? '' : ' fixed'}" data-slot="${key}">
+      <button type="button" class="wall-screen" ${own ? `onclick="homeWallChoose('${key}')"` : 'tabindex="-1"'} ${busy || !own ? 'disabled' : ''}
           aria-label="${esc(t('home.wall.choose', 'Choose a picture for {name}', { name: names[key] }))}"
           ${set ? `style="background-image:url('${esc(homeWallUrl(key, walls))}')"` : ''}>
         <span class="wall-clock">${esc(homeWallTime(w.sample[0], w.sample[1]))}</span>
         <span class="wall-row">${esc(t('home.row.apps', 'Apps'))}</span><i></i>
-        ${set ? '' : `<span class="wall-add">${esc(t('home.wall.add', 'Add a picture'))}</span>`}
+        ${set || !own ? '' : `<span class="wall-add">${esc(t('home.wall.add', 'Add a picture'))}</span>`}
         ${key === now ? `<span class="wall-badge">${esc(t('home.wall.now', 'Now'))}</span>` : ''}
         ${sending ? `<span class="wall-sending">${esc(fetching ? t('home.wall.examplesBusy', 'Downloading…') : t('home.wall.uploading', 'Uploading…'))}</span>` : ''}
       </button>
@@ -664,7 +672,7 @@ function renderHomeWalls() {
         <span class="wall-name">${esc(names[key])}</span>
         <span class="wall-hours">${esc(homeWallTime(w.from, 0))} – ${esc(homeWallTime(w.to, 0))}</span>
       </div>
-      <div class="wall-actions">${set ? `<button type="button" class="wall-link" onclick="homeWallChoose('${key}')" ${busy ? 'disabled' : ''}>${esc(t('home.wall.replace', 'Replace'))}</button>
+      <div class="wall-actions">${set && own ? `<button type="button" class="wall-link" onclick="homeWallChoose('${key}')" ${busy ? 'disabled' : ''}>${esc(t('home.wall.replace', 'Replace'))}</button>
         <button type="button" class="wall-link" onclick="homeWallRemove('${key}')" ${busy ? 'disabled' : ''}>${esc(t('home.wall.remove', 'Remove'))}</button>`
         : ''}</div>
     </div>`;
@@ -672,13 +680,13 @@ function renderHomeWalls() {
   // An image dropped on a time of day, or on its part of the strip, is its picture.
   document.querySelectorAll('#home-walls .wall-screen, #home-wall-day .wall-day-part').forEach(el => {
     const slot = el.closest('[data-slot]').dataset.slot;
-    el.addEventListener('dragover', e => { if (busy) return; e.preventDefault(); el.classList.add('drop'); });
+    el.addEventListener('dragover', e => { if (busy || !own) return; e.preventDefault(); el.classList.add('drop'); });
     el.addEventListener('dragleave', () => el.classList.remove('drop'));
     el.addEventListener('drop', e => {
       e.preventDefault();
       el.classList.remove('drop');
       const file = e.dataTransfer && e.dataTransfer.files[0];
-      if (file && !busy) homeUploadWall(slot, file);
+      if (file && !busy && own) homeUploadWall(slot, file);
     });
   });
 }
@@ -749,18 +757,16 @@ async function homeWallRemove(key) {
   await loadHome();
 }
 
-// The example set (a loch at four times of day) into every time of day
-// without a picture; ones already chosen are kept.
-async function homeAddExamples() {
+// Black, a picture set, or the owner's own pictures; a set is downloaded to the
+// TV the first time it is chosen.
+async function homeWallSet(name) {
   if (!homeWritable() || homeWallUploading) return;
   const note = q('home-wall-upload-note');
   note.textContent = '';
-  homeWallUploading = 'examples';
+  homeWallUploading = 'set:' + name;
   renderHomeWalls();
-  try {
-    await homePost('/api/home/wallpapers', { examples: true });
-    note.textContent = t('home.wall.examplesDone', 'Example pictures added. Home updates within a few seconds.');
-  } catch (e) { note.textContent = e.message; }
+  try { await homePost('/api/home/wallpapers', { choose: name }); }
+  catch (e) { note.textContent = e.message; }
   finally {
     homeWallUploading = false;
     await loadHome();

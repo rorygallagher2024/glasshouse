@@ -1101,9 +1101,10 @@ async function visitHomeUploads(browser, base, problems) {
   for (const p of [page, observer]) p.on('pageerror', e => problems.push('Home uploads: ' + e.message));
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
     hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
-  let uploading = false, hold = true, release, image, revision = 0;
+  let uploading = false, hold = true, release, image, revision = 0, choice = 'black';
   const has = {};
-  const wallpapers = () => ({ available: Object.keys(has).some(k => has[k]), uploading,
+  const wallpapers = () => ({ available: choice === 'own' && Object.keys(has).some(k => has[k]), uploading, choice,
+    choices: ['black', 'landscape', 'abstract', 'own'],
     slots: { morning: !!has.morning, afternoon: !!has.afternoon, evening: !!has.evening, night: !!has.night }, revision: String(revision) });
   await context.route('**/api/home**', async route => {
     const url = new URL(route.request().url());
@@ -1123,6 +1124,7 @@ async function visitHomeUploads(browser, base, problems) {
       const req = route.request().postDataJSON();
       if (req.removeUploads) Object.keys(has).forEach(k => { has[k] = false; });
       else if (req.remove) has[req.remove] = false;
+      else if (req.choose) choice = req.choose;
       revision++;
       body = { ok: true, wallpapers: wallpapers() };
     } else if (pathname === '/api/home') {
@@ -1137,6 +1139,10 @@ async function visitHomeUploads(browser, base, problems) {
   try {
     await page.goto(base + '/?tab=home');
     await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && homeCat);
+    // With Black chosen, a time of day is not a place to upload.
+    await page.waitForSelector('#home-wall-choice button');
+    if (!await card(page, 'morning').locator('.wall-screen').isDisabled()) problems.push('Home uploads: a time of day took uploads with Black chosen');
+    await page.locator('#home-wall-choice button', { hasText: 'Your own' }).click();
     await ready(page);
     // Choosing Morning opens the file chooser for it.
     const chooser = page.waitForEvent('filechooser');

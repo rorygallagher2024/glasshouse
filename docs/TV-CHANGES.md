@@ -81,7 +81,7 @@ without a usable CEC device ID opens its HDMI port alone.
 
 Switching Glasshouse Home off reports a Home-key restore failure, including a saved mapping that could not be deleted. App removal is refused until the key and Home and start-up settings no longer target it, and is confirmed only after the TV reports the app absent. A missing app found by the guard switches the feature off and restores its saved settings and Home key.
 
-Home wallpapers uploaded through the browser, or the example set downloaded from the `v1` tag of `rorygallagher2024/glasshouse-wallpapers` on request, go into `/var/lib/tvweb/home-wallpaper-uploads`, one for each time of day. The directory is excluded from packages and rollback copies and removed with the server. Failed LG Home restoration remains visible and retryable on both dashboards.
+Home wallpapers uploaded through the browser go into `/var/lib/tvweb/home-wallpaper-uploads`, one for each time of day; a set chosen on the Home tab is downloaded from the `v2` tag of `rorygallagher2024/glasshouse-wallpapers` into `/var/lib/tvweb/home-wallpaper-sets/<set>`, and the choice is kept in `/var/lib/tvweb/home-wallpaper.json`. The directories are excluded from packages and rollback copies and removed with the server. Failed LG Home restoration remains visible and retryable on both dashboards.
 
 Glasshouse Home leaves empty rows out and centres the remaining rows below the clock. Empty rows reappear as movable strips while arranging.
 
