@@ -1267,9 +1267,46 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 9; webOS 10 and 11 with `allowExperimentalHome`). The view is `assets/home.html`,
-opened by a small web app whose files are `assets/home-app/index.html` and its
-icons.
+from the dashboard's Home tab (webOS 9; webOS 10 and 11 with `allowExperimentalHome`). The view is
+`native/home`, a native program drawn with OpenGL ES 2 through the TV's own
+SDL2 (LG's webOS build, 2.0.14 on webOS 9), installed as
+`native/glasshouse-home` beside the server. It reads everything from
+`/api/home/*` as before; the server decides what is listed and opens what the
+view asks for. The `assets/home-app` icons go with it.
+
+The view is linked against a webOS 9 TV's own libraries (glibc 2.35) rather
+than the webOS toolchain's sysroot, whose glibc 2.12 is older than Rust's
+standard library supports (`scripts/build-home.sh`). It needs a few things a
+web page got for free:
+
+- LG's SDL names the window for the compositor from `APPID`, which sam does
+  not set for a native app; without it `getForegroundAppInfo` named nothing in
+  front. The view sets it from the `nid` in sam's launch argument.
+- Back goes to the system, which sends the app away, unless the window sets
+  `_WEBOS_ACCESS_POLICY_KEYS_BACK` (SDL hint
+  `SDL_WEBOS_ACCESS_POLICY_KEYS_BACK`).
+- LG's SDL keyboard event carries 4 more bytes before the key than upstream
+  SDL2's.
+- Arrow presses hide LG's compositor pointer and resume directional focus.
+  Fresh pointer motion restores it once it has travelled 24 stage pixels, so
+  the hand's drift while the arrows are in use does not; stationary motion
+  events cannot change focus. SDL's cursor image stays enabled on the TV so
+  LG can restore it.
+- `SDL_VIDEO_ALLOW_SCREENSAVER` is set, since SDL otherwise holds the
+  system's screen saver off while its window is up.
+- A native app's output goes nowhere; the view logs to
+  `/tmp/glasshouse-home.log`.
+- The preload manager starts Home in the background during boot
+  (`"preload":"full"` in sam's launch argument, about 67 s into a cold start
+  on a G5). A web page stayed hidden; the view starts with its window hidden
+  and draws offscreen as its data arrives, and shows itself at the first
+  relaunch, so the TV stays on the input it started on and the first Home
+  press is drawn as quickly as later ones. A restart for a new server build
+  preserves the window's current visibility rather than its boot argument.
+
+Source-only deployments and packages omit the optional executable. A
+takeover without it fails and restores LG's Home. ARM release packaging and
+self-update delivery of the executable remain prerequisites for release.
 
 `tvweb.js` loads it and `lib/home-picture.js` inside a `try`: where one of
 their files cannot be loaded, the server starts without Glasshouse Home and
@@ -1281,10 +1318,11 @@ Home in LG's Home's place with no server to serve it. The Home routes are not se
 keeps the server, since it cannot tell whether Glasshouse Home holds LG's
 Home's place.
 
-Switched on, that app runs under LG's Home's own id. `lib/home-takeover.js`
+Switched on, the view runs under LG's Home's own id. `lib/home-takeover.js`
 stages it in `/var/lib/tvweb/home-takeover` with an `appinfo.json` naming
-`com.webos.app.home` (type `web`, `visible` false, `appCategory` `["home"]`
-as LG's has it), bind-mounts the directory over
+`com.webos.app.home` (type `native`, vendor `tvweb`, `visible` false,
+`appCategory` `["home"]` as LG's has it) and `glasshouse-home.json`, where the
+view finds the server's fonts, bind-mounts the directory over
 `/usr/palm/applications/com.webos.app.home`, and has sam read it again
 (`lib/samrescan.js`): with the nudge on webOS 9, and with a block and release
 of the one app on webOS 10, which ignores the nudge. On webOS 10 the Home
@@ -1299,18 +1337,39 @@ Home button (surface-manager, `hotKey`), Back out of the last app (sam's
 `last_input_handler`), waking on Home (`bootManager`), so all of them open
 Glasshouse Home, with nothing to correct afterwards and no setting changed
 ([research](development/TV-RESEARCH.md#replacing-lgs-home-under-its-id-webos-922-g3)).
-The staged files are rewritten at every server start, so a new release reaches
-the page without a remount; the view reloads itself when the server's build
-changes.
+LG's Home is a native app too on webOS 9, so sam's `vendor` is what tells the
+two manifests apart, for the server, the boot hook and the remote key filter.
+The staged files are rewritten at every server start, the executable by a
+rename since a running one cannot be written over, so a new release reaches
+the view without a remount; the view starts itself again (`exec`) when the
+heartbeat brings a new server build.
 
 The order matters. sam tells a native app from a web one by the manifest it
 last read, and switching it while the old instance runs leaves it unable to
 close that instance or start the new one, with the screen black. So the mount
 changes and sam reads it first, and only then is the old instance stopped:
-LG's process is killed, or the web page is killed through WebAppMgr's
-`killApp` (`closeByAppId` only sends it to the background). Where that
-instance was in front, sam's `last_input_handler` opens Home again about a
-second later, as the new app.
+LG's process or the view is killed, or, where sam last had an earlier
+release's web page, that page is killed through WebAppMgr's `killApp`
+(`closeByAppId` only sends it to the background). Where that instance was in
+front, sam's `last_input_handler` opens Home again about a second later, as
+the new app.
+
+sam starts a native app staged as Home afresh for every launch unless it has
+registered: on a G3 each Home press killed the view and started another, its
+first frame about 0.5 s later. `lib/home-lifecycle.js` holds the registration
+(`registerNativeApp`, lifecycle v1, as root with `luna-send -a
+com.webos.app.home`) for the process the view's heartbeat names, so the view
+makes no luna calls. sam then keeps the process and answers a launch with
+`relaunch`, which the server passes on as SIGUSR1, the launch's parameters
+written to `/tmp/glasshouse-home-launch.json` first; the view raises its
+window and draws in about 150 ms. When either the view or the registration
+ends, the other is ended too, since a registration with no view behind it
+would leave the Home key with nothing to open, and the server ends any
+registration left from before it started.
+Desktop previews send no process id. Before registering or signalling a
+process, the server checks `/proc/<pid>/cmdline` still names the native view,
+so a preview or a reused process id cannot displace the TV's registration or
+receive the view's signals.
 
 The boot hook (`50-tvweb.sh`) mounts it again about 25 s into a cold start
 (31 to 36 s on a G5), before its other mounts, and stops LG's Home where it has
@@ -1352,8 +1411,8 @@ taken. The Home key itself is answered
 earlier still, by the remote key filter (`lib/remotekeys.js`), which the
 compositor loads from configd before any startup hook: while
 `glasshouse.remoteKeys` carries `starting`, a Home press is kept from LG's
-filters, press and release, and the filter asks sam for LG's Home's type; while
-it is not yet `web` it shows `starting` as a toast, and once it is, it opens
+filters, press and release, and the filter asks sam for LG's Home's manifest;
+while its vendor is not yet `tvweb` it shows `starting` as a toast, and once it is, it opens
 Home and leaves later presses to LG's filters for the rest of the boot. A
 `genericTimer` set in the filter's `init()` ends the hold 90 s after the filter
 loads, so a TV where Glasshouse no longer runs, with `starting` left in
@@ -1368,8 +1427,9 @@ the remote-button worker, and a view in front without a heartbeat for 10 s, or
 20 s before its first) unmount and open LG's Home. The next app in front, or a
 short press of Home on LG's Home, mounts it again. The app in front comes from
 the live state's `application` group, which Glasshouse Home starts itself
-while it is on, as the MQTT bridge starts the groups only with a broker. The app's own page waits on
-black for the server; being LG's Home's app, it cannot open LG's Home itself.
+while it is on, as the MQTT bridge starts the groups only with a broker. The view shows
+"Glasshouse is not answering" after three missed heartbeats; being LG's Home's
+app, it cannot open LG's Home itself.
 `tvwebctl stop`, and the watchdog after a third restart in ten minutes, run
 `lib/home-takeover.js --release`, which unmounts without switching Glasshouse
 Home off, so the server takes the place again when it runs.

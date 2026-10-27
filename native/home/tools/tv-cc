@@ -1,0 +1,9 @@
+#!/bin/sh
+# Links for the TV against the oldest supported TV's own libraries (webOS 9,
+# glibc 2.35) rather than the toolchain's glibc 2.12, which Rust's standard
+# library is too new for. scripts/build-home.sh fills .build/tv-lib.
+HERE=$(cd "$(dirname "$0")/.." && pwd)
+B="$HERE/.build"
+SDK="$B/arm-webos-linux-gnueabi_sdk-buildroot"
+exec "$SDK/bin/arm-webos-linux-gnueabi-gcc" --sysroot="$SDK/arm-webos-linux-gnueabi/sysroot" \
+  -L"$B/tv-lib" -Wl,-rpath-link,"$B/tv-lib" -Wl,--dynamic-linker=/lib/ld-linux.so.3 "$@"

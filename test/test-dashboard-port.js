@@ -168,7 +168,7 @@ function testLauncherAppinfoSync() {
 }
 
 function testShippedLaunchersCarryMarker() {
-  ['../server/assets/dashboard-app/index.html', '../server/assets/home-app/index.html', '../hbc/app/index.html'].forEach(function (rel) {
+  ['../server/assets/dashboard-app/index.html', '../hbc/app/index.html'].forEach(function (rel) {
     var html = fs.readFileSync(path.join(__dirname, rel), 'utf8');
     assert.ok(/var PORT = 8080;\s*\/\/ tvweb:port/.test(html), rel + ' has the marker line at the default port');
     assert.ok(!/localhost:8080/.test(html), rel + ' does not hard-code the port elsewhere');

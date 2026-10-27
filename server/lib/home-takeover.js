@@ -56,9 +56,11 @@ var lunaFn = null;
 var samrescan = null;
 var stageDir = '/var/lib/tvweb/home-takeover';
 var sourceDir = path.join(__dirname, '..', 'assets', 'home-app');
-// The dashboard's port, filled into the page when it is staged.
+// The view, drawn with OpenGL ES (native/home), and the files it reads.
+var EXE = 'glasshouse-home';
+var exeSource = path.join(__dirname, '..', 'native', EXE);
+var assetsDir = path.join(__dirname, '..', 'assets');
 var serverPort = 8080;
-var PORT_LINE = /(var PORT = )\d+(;\s*\/\/ tvweb:port)/;
 var appDir = APP_DIR;
 var procDir = '/proc';
 var layoutDir = '/mnt/lg/cmn_data/manifest';
@@ -75,7 +77,9 @@ function init(opts) {
   samrescan = opts.samrescan || null;
   if (opts.stageDir) stageDir = opts.stageDir;
   if (opts.sourceDir) sourceDir = opts.sourceDir;
-  serverPort = opts.port ? Number(opts.port) : 8080;
+  if (opts.exeSource) exeSource = opts.exeSource;
+  if (opts.assetsDir) assetsDir = opts.assetsDir;
+  if (opts.port) serverPort = Number(opts.port);
   if (opts.appDir) appDir = opts.appDir;
   if (opts.procDir) procDir = opts.procDir;
   if (opts.layoutDir) layoutDir = opts.layoutDir;
@@ -97,15 +101,17 @@ function luna(uri, payload, cb) {
  * visible false, so neither LG's app list nor Glasshouse Home's lists it.
  * appCategory home as LG's has it: on webOS 10 the Home key opens the default
  * app of that category, and without it sam has none and the key does nothing
- * (a G5, webOS 10.3.1).
+ * (a G5, webOS 10.3.1). A native app, as LG's Home is on webOS 9, so sam's
+ * vendor is what tells the two apart.
  */
+var VENDOR = 'tvweb';
 function manifest() {
   return {
     id: LG_HOME,
     version: '1.0.0',
-    vendor: 'tvweb',
-    type: 'web',
-    main: 'index.html',
+    vendor: VENDOR,
+    type: 'native',
+    main: EXE,
     title: 'Home',
     icon: 'assets/icon80.png',
     largeIcon: 'assets/icon130.png',
@@ -113,9 +119,24 @@ function manifest() {
     bgColor: '#000000',
     resolution: '1920x1080',
     visible: false,
-    disableBackHistoryAPI: true,
     appCategory: ['home']
   };
+}
+
+/*
+ * The executable is replaced by a rename, as writing over a running one fails
+ * (ETXTBSY); the running view goes on with the old file until it restarts
+ * itself on the heartbeat's new build.
+ */
+function copyExe(from, to) {
+  var data = fs.readFileSync(from);
+  var had = null;
+  try { had = fs.readFileSync(to); } catch (e) {}
+  if (had && had.toString('base64') === data.toString('base64')) return false;
+  fs.writeFileSync(to + '.new', data);
+  fs.chmodSync(to + '.new', 493); // 0755
+  fs.renameSync(to + '.new', to);
+  return true;
 }
 
 function copyFile(from, to, transform) {
@@ -130,26 +151,30 @@ function copyFile(from, to, transform) {
 
 /*
  * The app's files as this release has them. Written in place: while mounted,
- * the next page load reads them, so a new release needs no remount.
+ * the view restarts itself on the new release's heartbeat, so it needs no
+ * remount.
  */
 function stage() {
   try {
     mkdirp(path.join(stageDir, 'assets'));
-    // The page cannot read config.json, so it carries the port the server is on.
-    var changed = copyFile(path.join(sourceDir, 'index.html'), path.join(stageDir, 'index.html'), function (html) {
-      return html.replace(PORT_LINE, '$1' + serverPort + '$2');
-    });
+    var changed = false;
+    // The web page an earlier release staged here.
+    try { fs.unlinkSync(path.join(stageDir, 'index.html')); changed = true; } catch (e) {}
     fs.readdirSync(path.join(sourceDir, 'assets')).forEach(function (f) {
       if (copyFile(path.join(sourceDir, 'assets', f), path.join(stageDir, 'assets', f))) changed = true;
     });
-    var json = JSON.stringify(manifest(), null, 2) + '\n';
-    var file = path.join(stageDir, 'appinfo.json');
-    var had = '';
-    try { had = fs.readFileSync(file, 'utf8'); } catch (e) {}
-    if (had !== json) {
-      fs.writeFileSync(file, json);
+    if (copyExe(exeSource, path.join(stageDir, EXE))) changed = true;
+    function write(name, text) {
+      var file = path.join(stageDir, name);
+      var had = '';
+      try { had = fs.readFileSync(file, 'utf8'); } catch (e) {}
+      if (had === text) return;
+      fs.writeFileSync(file, text);
       changed = true;
     }
+    // Where the view finds the server's fonts and translations.
+    write('glasshouse-home.json', JSON.stringify({ assets: assetsDir }, null, 2) + '\n');
+    write('appinfo.json', JSON.stringify(manifest(), null, 2) + '\n');
     return { ok: true, changed: changed };
   } catch (e) {
     return { ok: false, error: e.message };
@@ -288,19 +313,27 @@ function mounted() {
   }
 }
 
-// The type sam has for LG's Home: 'web' while it runs Glasshouse Home's.
-function samType(cb) {
+// The manifest sam has for LG's Home, or null where it did not answer.
+function samInfo(cb) {
   luna('com.webos.applicationManager/getAppInfo', { id: LG_HOME }, function (r) {
-    cb(r && r.appInfo && r.appInfo.type ? String(r.appInfo.type) : null);
+    cb(r && r.appInfo ? r.appInfo : null);
   });
 }
 
-// Whether sam has this release's manifest, appCategory included.
+/*
+ * Whose manifest sam has for LG's Home: true for Glasshouse Home's, false for
+ * LG's, null where sam did not answer.
+ */
+function samOurs(cb) {
+  samInfo(function (info) { cb(info ? info.vendor === VENDOR : null); });
+}
+
+// Whether sam has this release's manifest: its type and appCategory too.
 function samHasManifest(cb) {
   luna('com.webos.applicationManager/getAppInfo', { id: LG_HOME }, function (r) {
-    var info = r && r.appInfo;
-    cb(!!info && info.type === 'web' &&
-       JSON.stringify(info.appCategory || null) === JSON.stringify(manifest().appCategory));
+    var info = r && r.appInfo, want = manifest();
+    cb(!!info && info.vendor === VENDOR && info.type === want.type &&
+       JSON.stringify(info.appCategory || null) === JSON.stringify(want.appCategory));
   });
 }
 
@@ -309,10 +342,10 @@ function samHasManifest(cb) {
  * ignore the nudge, which costs its 8 s of polls before the block and release
  * there, so they go to the block and release first.
  */
-function reread(wantWeb, cb, check) {
+function reread(wantOurs, cb, check) {
   if (!samrescan) return cb(false);
   check = check || function (done) {
-    samType(function (type) { done(type !== null && (type === 'web') === wantWeb); });
+    samOurs(function (ours) { done(ours !== null && ours === wantOurs); });
   };
   var first = blockFirst() ? 'rereadApp' : 'refresh';
   var then = first === 'refresh' ? 'rereadApp' : 'refresh';
@@ -360,6 +393,33 @@ function stopLgHome() {
   return pids.length;
 }
 
+function viewPids() {
+  var pids = [];
+  try {
+    fs.readdirSync(procDir).forEach(function (d) {
+      if (!/^\d+$/.test(d)) return;
+      try {
+        var argv0 = fs.readFileSync(path.join(procDir, d, 'cmdline'), 'utf8').split('\0')[0];
+        if (path.basename(argv0) === EXE) pids.push(Number(d));
+      } catch (e) {}
+    });
+  } catch (e) {}
+  return pids;
+}
+
+/*
+ * Glasshouse Home's own instance: the native view, or where sam last had a
+ * release before it (`web`), its page, which WebAppMgr has to kill
+ * (closeByAppId only sends it to the background).
+ */
+function stopView(web, cb) {
+  viewPids().forEach(function (pid) {
+    try { killFn(pid); } catch (e) {}
+  });
+  if (!web) return cb();
+  luna('com.palm.webappmanager/killApp', { appId: LG_HOME }, function () { cb(); });
+}
+
 /*
  * Glasshouse Home in LG's Home's place. cb({ ok }); where sam does not take
  * it, LG's files are put back under sam, so the two agree.
@@ -368,15 +428,19 @@ function take(cb) {
   var st = stage();
   if (!st.ok) return giveBack('could not stage the app: ' + st.error);
   function settle() {
-    reread(true, function (ok) {
-      if (ok) {
-        var layout = layoutForTake();
-        if (!layout.ok) return giveBack(layout.error);
-        var stopped = stopLgHome();
-        return cb({ ok: true, stoppedLg: stopped > 0 });
-      }
-      giveBack('sam did not take Glasshouse Home as Home');
-    }, samHasManifest);
+    samInfo(function (before) {
+      // A release before ran a web page under this id, a type sam no longer has.
+      var wasWeb = !!before && before.type === 'web';
+      reread(true, function (ok) {
+        if (ok) {
+          var layout = layoutForTake();
+          if (!layout.ok) return giveBack(layout.error);
+          var stopped = stopLgHome();
+          return stopView(wasWeb, function () { cb({ ok: true, stoppedLg: stopped > 0 }); });
+        }
+        giveBack('sam did not take Glasshouse Home as Home');
+      }, samHasManifest);
+    });
   }
   function giveBack(error) {
     release(function (r) { cb({ ok: false, error: r.ok ? error : error + '; ' + r.error }); });
@@ -407,7 +471,7 @@ function unmount(cb) {
 }
 
 /*
- * LG's Home back in its own place. Glasshouse Home's page is closed last,
+ * LG's Home back in its own place. Glasshouse Home's view is closed last,
  * once sam has LG's manifest: where it was in front, the TV opens LG's Home.
  */
 function release(cb) {
@@ -415,14 +479,13 @@ function release(cb) {
   if (!restored.ok) return cb(restored);
   unmount(function () {
     if (mounted()) return cb({ ok: false, error: 'LG\'s Home could not be put back: the mount is held' });
-    samType(function (type) {
-      function closePage() {
-        luna('com.palm.webappmanager/killApp', { appId: LG_HOME }, function () { cb({ ok: true }); });
-      }
-      if (type !== 'web') return closePage();
+    samInfo(function (info) {
+      var web = !!info && info.type === 'web';
+      function closeView() { stopView(web, function () { cb({ ok: true }); }); }
+      if (!info || info.vendor !== VENDOR) return closeView();
       reread(false, function (ok) {
         if (!ok) return cb({ ok: false, error: 'sam did not take LG\'s Home back' });
-        closePage();
+        closeView();
       });
     });
   });
@@ -433,7 +496,7 @@ module.exports = {
   init: init,
   stage: stage,
   mounted: mounted,
-  samType: samType,
+  samOurs: samOurs,
   take: take,
   release: release,
   stopLgHome: stopLgHome,

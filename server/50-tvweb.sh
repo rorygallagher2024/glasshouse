@@ -205,7 +205,7 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
   else
     home_reread() { sam_reread_app com.webos.app.home; }
   fi
-  if home_reread && sam_reports com.webos.app.home '"type": *"web"'; then
+  if home_reread && sam_reports com.webos.app.home '"vendor": *"tvweb"'; then
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): Glasshouse Home is in LG's Home's place"
     home_open_at_boot

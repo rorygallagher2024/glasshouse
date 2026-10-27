@@ -6,7 +6,8 @@
  * and OLED care telemetry, allowing developers to preview and interact with:
  *   - The Web Dashboard:      http://localhost:8080/
  *   - The TV App Dashboard:   http://localhost:8080/assets/dashboard.html
- *   - Glasshouse Home:        http://localhost:8080/assets/home.html
+ *   - Glasshouse Home, the native view in a window (scripts/build-home.sh --preview):
+ *       native/home/target/release/glasshouse-home --server 127.0.0.1:8080 --assets server/assets
  *
  * Usage:
  *   node scripts/emulate-tv.js [--port 8080] [--model c2|b8|c3] [--open]
@@ -260,7 +261,7 @@ async function main() {
   console.log(`\n✨ TV Emulator is READY! Open these in your browser:\n`);
   console.log(`  🌐 Web Dashboard:      ${base}/`);
   console.log(`  📺 TV App Dashboard:   ${base}/assets/dashboard.html`);
-  console.log(`  🏠 Glasshouse Home:    ${base}/assets/home.html`);
+  console.log(`  🏠 Glasshouse Home:    native/home/target/release/glasshouse-home --server ${base.replace(/^http:\/\//, '')} --assets server/assets`);
   console.log(`\n  (Press Ctrl+C to stop the emulator)\n`);
 
   if (autoOpen) {

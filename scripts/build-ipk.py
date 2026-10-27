@@ -10,9 +10,9 @@ official packager writes (Installed-Size, webOS-Package-Format-Version,
 webOS-Packager-Version). This script lays out the app directory and writes
 the manifest from what the packager produced.
 
-The server files are exactly deploy.sh's FILES, read from deploy.sh so there is
-one list. Nothing else from server/ goes in - in particular no config.json,
-which can hold a broker password.
+The server files come from deploy.sh's FILES and any OPTIONAL_FILES present,
+read from deploy.sh so there is one list. Nothing else from server/ goes in
+- in particular no config.json, which can hold a broker password.
 
     scripts/build-ipk.py            -> dist/<id>_<version>_all.ipk
                                        dist/<id>.manifest.json
@@ -40,7 +40,7 @@ REPO = 'https://github.com/rorygallagher2024/glasshouse'
 ICON_URI = ('https://raw.githubusercontent.com/rorygallagher2024/glasshouse/'
             'main/server/assets/dashboard-app/assets/icon130.png')
 
-EXECUTABLE = re.compile(r'(\.sh$|/tvwebctl$|^tvwebctl$)')
+EXECUTABLE = re.compile(r'(\.sh$|/tvwebctl$|^tvwebctl$|^native/glasshouse-home$)')
 
 
 def version():
@@ -56,7 +56,13 @@ def deploy_files():
     m = re.search(r'^FILES="(.*?)"', src, re.M | re.S)
     if not m:
         sys.exit('no FILES list in server/deploy.sh')
-    return m.group(1).replace('\\\n', ' ').split()
+    files = m.group(1).replace('\\\n', ' ').split()
+    optional = re.search(r'^OPTIONAL_FILES="(.*?)"', src, re.M | re.S)
+    if optional:
+        for rel in optional.group(1).split():
+            if os.path.isfile(os.path.join(SERVER, rel)):
+                files.append(rel)
+    return files
 
 
 def put(path, data, mode):

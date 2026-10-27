@@ -95,3 +95,13 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: node --version && node test/run-all.js
+
+  native-home:
+    runs-on: ubuntu-latest
+    name: Native Home behaviour
+    steps:
+      - uses: actions/checkout@v7
+      - name: SDL2 for the desktop build
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
+      - name: Native view tests
+        run: cargo test --locked --manifest-path native/home/Cargo.toml

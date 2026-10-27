@@ -1,0 +1,3 @@
+[target.armv7-unknown-linux-gnueabi]
+linker = "tools/tv-cc"
+rustflags = ["-C", "target-cpu=cortex-a9"]

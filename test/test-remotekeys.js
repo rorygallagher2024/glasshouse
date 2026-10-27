@@ -86,10 +86,11 @@ function loadFilter(broken) {
       subscribe: function (service, method, payload, cb) {
         subscribed = { service: service, method: method, payload: JSON.parse(payload), cb: cb };
       },
-      // sam answers for LG's Home with the type tv.homeType gives.
+      // sam answers for LG's Home with the vendor tv.homeVendor gives:
+      // Glasshouse Home's manifest names tvweb, LG's its own.
       send: function (service, method, payload, cb) {
         sent.push({ uri: service + method, payload: JSON.parse(payload) });
-        if (method === '/getAppInfo') cb(JSON.stringify({ returnValue: true, appInfo: { type: tv.homeType } }));
+        if (method === '/getAppInfo') cb(JSON.stringify({ returnValue: true, appInfo: { type: 'native', vendor: tv.homeVendor } }));
         else if (cb) cb(JSON.stringify({ returnValue: true }));
       }
     },
@@ -450,7 +451,7 @@ step(function (next) {
   rk.setStarting('Glasshouse Home is starting.', guard(function (s) {
     assert.strictEqual(s.ok, true);
     assert.strictEqual(tv.keys.starting, 'Glasshouse Home is starting.');
-    tv.homeType = 'native';
+    tv.homeVendor = 'LG Electronics';
     var f = loadFilter();
     // Before the boot hook has put Glasshouse Home in LG's Home's place.
     assert.strictEqual(f.handle(2001, true, false), 'accepted');
@@ -460,7 +461,7 @@ step(function (next) {
     assert.strictEqual(toast.length, 1);
     assert.strictEqual(toast[0].payload.message, 'Glasshouse Home is starting.');
     // In place: the press opens Home, and later presses go to LG's filters as usual.
-    tv.homeType = 'web';
+    tv.homeVendor = 'tvweb';
     assert.strictEqual(f.handle(2001, true, false), 'accepted');
     assert.strictEqual(f.handle(2001, false, false), 'accepted');
     assert.deepEqual(f.launched.map(function (l) { return l.id; }), ['com.webos.app.home']);
@@ -469,7 +470,7 @@ step(function (next) {
     rk.setStarting('', guard(function (s2) {
       assert.strictEqual(s2.ok, true);
       assert.strictEqual(tv.keys.starting, undefined);
-      tv.homeType = 'native';
+      tv.homeVendor = 'LG Electronics';
       var g = loadFilter();
       assert.strictEqual(g.handle(2001, true, false), 'next', 'switched off, Home is LG\'s');
       console.log('  \u2713 while Glasshouse Home is on and not yet in place, Home stays where it is and says it is starting; once in place it opens Home');
@@ -480,7 +481,7 @@ step(function (next) {
 
 step(function (next) {
   rk.setStarting('Glasshouse Home is starting.', guard(function () {
-    tv.homeType = 'native';
+    tv.homeVendor = 'LG Electronics';
     var f = loadFilter();
     assert.deepEqual(f.timers.map(function (t) { return t.ms; }), [90000]);
     assert.strictEqual(f.handle(2001, true, false), 'accepted');

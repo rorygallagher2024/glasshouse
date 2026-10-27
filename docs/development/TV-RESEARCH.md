@@ -1151,6 +1151,7 @@ app. eplmanager has no getter for the app info it holds. The C2 on the same
 webOS starts its screen saver; whether it reports no OSD capture support was
 not checked.
 
+
 ## Home's snapshot (webOS 5.6.2, CX)
 
 The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
@@ -1224,6 +1225,70 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
 - The TV has no `/etc/issue`. `/etc/starfish-release` has
   `Rockhopper release 10.3.1-3006`, and `/etc/os-release` `VERSION_ID=10.3.1`.
 
+## A native app as Home (G3, webOS 9.2.2; G5, webOS 10.3.1)
+
+Tried on 25 October 2026 with Glasshouse Home's native view
+(`native/home`) staged under `com.webos.app.home` as `type: native`.
+
+- Userland is 32-bit soft-float ARM (`/lib/ld-linux.so.3`, glibc 2.35) on an
+  aarch64 kernel. The webosbrew toolchain's sysroot has glibc 2.12, older than
+  Rust's standard library supports; linking against the TV's own libraries
+  works.
+- LG's `libSDL2-2.0.so.0` (2.0.14) has a webOS Wayland backend that works for
+  a root native app: a fullscreen GLES 2 window at 1920x1080, vsync on.
+- Its `SDL_KeyboardEvent` has 4 bytes more before the key than upstream
+  SDL2: state at offset 16, scancode at 20, keycode at 24. The arrows and OK
+  arrive as standard scancodes (79 to 82, 40).
+- The SDK's `SDL_webOS.h` defines cursor-show and cursor-hide scancodes 484
+  and 485. On the G3, handling those notifications alone did not restore a
+  pointer explicitly hidden with `SDL_webOSCursorVisibility(false)`.
+  Keeping SDL's cursor image enabled, requesting compositor visibility on
+  arrows and fresh motion, and ignoring stationary motion worked in the
+  physical Magic Remote trial: arrows hid it and resumed selection, and
+  shaking restored it. This transition has not been retried on the G5.
+- Back never reaches the app unless the window sets
+  `_WEBOS_ACCESS_POLICY_KEYS_BACK` (SDL hint
+  `SDL_WEBOS_ACCESS_POLICY_KEYS_BACK`): `systemUi.js` checks it in
+  `activeSurfaceAcceptsBackKey()`, and without it the window just loses
+  focus.
+- sam passes `{"@system_native_app":true,"nid":"com.webos.app.home"}` (and a
+  launch's `params` merged in) as `argv[1]` but sets no `APPID`; LG's SDL names
+  the surface from `APPID`, and without it `getForegroundAppInfo` answered an
+  empty `appId` with the view in front.
+- Unregistered, sam ends the view (`SDL_QUIT`) and starts another on every
+  launch, Home key included; the first frame came about 0.5 s later.
+  `luna-send -a com.webos.app.home -i
+  luna://com.webos.applicationManager/registerNativeApp '{}'` as root answers
+  `{"message":"registered"}`, then `{"message":"relaunch","parameters":
+  {"launchType":"homeKey","activateType":"home"}}` on each launch, and the
+  process is kept; the app must raise its own window (SDL Show, Restore and
+  Raise work).
+- `luna-send` over SSH only answers with its standard input from
+  `/dev/null`; without it a launch sent that way was never made.
+  `com.webos.service.capture/executeOneShot` takes `width` 1920 and `height`
+  1080 for a full-size capture.
+- The G5 (webOS 10.3.1) behaves the same in all of the above, with a
+  different build of LG's SDL 2.0.14 (other checksum, same event layout) and
+  `launchDefaultApp {category: "home"}`, the Home key's route there,
+  relaunching the registered view. During a cold boot there
+  `com.webos.service.preloadmanager` launched `com.webos.app.home` at 67 s
+  with `"preload":"full"` in `argv[1]`; a native app that shows its window
+  then takes the screen from Live TV, so it has to stay hidden until a
+  relaunch.
+- LG's SDL has a `ScreensaverTimer` thread whose strings reset nop's
+  `[TIMER]ScreenSaver` (`removeNopTimer` with `"option":"reset"`). With
+  `SDL_VIDEO_ALLOW_SCREENSAVER=1` set before `SDL_Init`, nop's 180 s timer
+  expired with the view in front and nothing reset it; without the hint was
+  not tried.
+- LG's SDL also sends a window `SDL_WINDOWEVENT_ENTER` as the Magic
+  Remote's cursor appears, and the cursor stays up while the arrows are used
+  unless the app hides it. Mouse motion has upstream SDL2's layout (x at
+  offset 20, y at 24).
+- Measured with remote keys sent through `networkinput/test/sendKeyCode`,
+  the web view's `requestAnimationFrame` missed 25 of ~480 vsyncs over 8 s of
+  continuous scrolling, with frame gaps up to 87 ms (173 ms opening Recent
+  apps), where the native view missed none.
+
 ## WebAppMgr stopped (G4, webOS 11.2.0)
 
 Seen on 23 October 2026 on an OLED65G4KNA with Glasshouse Home switched on.
@@ -1296,6 +1361,7 @@ webOS 4 next.
 - Device: 55UM7100PLB (2019 LCD), webOS 4.10.2, firmware 05.40.97,
   `core_os_kernel_version` `4.4.84-p.649.grampians.k5lp.1`, `core_os_name`
   `Rockhopper`, `webos_imagename` `starfish-dvb-secured`.
+
 
 ## What the TV opens as it starts (G5, webOS 10.3.1)
 
@@ -1439,7 +1505,8 @@ use normally, limit 1024). faultmanager recorded `fd leak is happened on
 "process = ls-hubd"` in `/var/spool/faultmanager` and answered the next
 suspend request with `rebootToSuspend`, so the TV restarted with
 `PowerOnReason: rebootByFault` at its next standby. It happened both times
-`ls-monitor` was run, and not without it.
+`ls-monitor` was run, and not without it. On a G3 (webOS 9.2.2), after five
+runs of up to 200 s, `ls-hubd` held 415 handles and stayed there.
 
 ## Consent flags on a CX and a C5 (webOS 5.6.2 and 10.3.1)
 

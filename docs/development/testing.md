@@ -180,7 +180,7 @@ node scripts/emulate-tv.js [--port 8080] [--model c2|b8|c3] [--open]
 ```
 
 
-Home recovery checks cover a switch-off cut short, failed layout restoration and its retry, failed migration without losing the snapshot or removing the old app, closing the old app when it is left running in the background, and a missing first heartbeat when Home already has the foreground id. A refused device tile is followed by a remote input switch to check that Last opened still records the whole input. Remote-key checks cover clearing the startup notice on escape and retrying a configd write after the local map was saved. Browser checks cover pending/failed layout edits, each row's Order on the view, the Home tab and the TV app, edits attempted during an Order save and refresh, keeping unsaved moves when Order changes, clicking Order while a tile is held, first-catalogue failure, delayed readiness, the Home tab left out where Glasshouse Home is not offered, and the Apps tab's notes while it is on.
+Home recovery checks cover a switch-off cut short, failed layout restoration and its retry, failed migration without losing the snapshot or removing the old app, closing the old app when it is left running in the background, and a missing first heartbeat when Home already has the foreground id. A refused device tile is followed by a remote input switch to check that Last opened still records the whole input. Remote-key checks cover clearing the startup notice on escape and retrying a configd write after the local map was saved. Browser checks cover pending/failed layout edits, each row's Order on the Home tab and the TV app, the Home tab left out where Glasshouse Home is not offered, and the Apps tab's notes while it is on.
 
 `test-home.js` also checks LG's native CEC launch contract: a receiver and a
 console on the same port select their own device IDs, a direct source selects
@@ -191,9 +191,7 @@ its ID, and missing or unusable IDs and non-CEC inputs open the port alone.
 `test-home-recent-apps.js` exercises the recent-app HTTP routes: refused and
 unconfirmed stops retain their cards for retry, unavailable running lists
 report failure, Close all stops web and native apps while preserving Home,
-unlisted apps and newer cards, and snapshots forbid caching. The browser
-check covers held OK acting once on release, close errors above the panel,
-and Back or a Home relaunch cancelling a delayed panel reply.
+unlisted apps and newer cards, and snapshots forbid caching.
 
 `test-home-date.js` runs Glasshouse Home's date with the browser's default locale at en-US, as on webOS 10: a Russian page gets Russian words with the month as it follows a number (`24 октября`), and the line starts with a capital, an English page is unchanged, and a browser without `formatToParts` still uses the page's language. It is skipped on a node without full ICU.
 
@@ -212,15 +210,72 @@ an empty answer removes the preceding search's targets. Partial host discovery
 retries the unanswered service after a minute. Switching Search off or blocking
 its host during a series lookup prevents further detail reads and the launch.
 
-The browser check exercises search through the Home view: editing the query clears
-the previous titles before the typing delay, Enter waits for its reply, failed queries can be retried,
-and repeated OK during a detail lookup sends one launch. Returning from that
-app keeps the panel, a changed sleep counter closes it, late search replies
-cannot refill a closed panel, and switching search off removes its entry point.
-Home interaction fixtures mark both introductory hints as seen so hint saves
-do not count as layout edits.
-
 The sideload route check forces an upload to abort before its file opens,
 then confirms that the eventual descriptor closes and the staging file is
 removed. This catches Node 0.12's destroy-before-open behaviour without
 relying on the filesystem finishing within a fixed delay.
+
+`test-home-lifecycle.js` plays sam's messages to the view's registration:
+relaunch passed on as a signal with its parameters, the view ended when the
+registration is lost, the registration ended when the view has gone, and a
+leftover registration ended at start.
+Process-identity checks reject a desktop preview's PID and end a registration
+whose PID has been reused without signalling the unrelated process.
+
+## Glasshouse Home's native view
+
+`cargo test` in `native/home` runs the view against a server played by hand
+(`src/view_tests.rs`): OK acting once on release and arranging when held,
+each row's Order and no edit lost while it saves or its order loads, a moved
+tile keeping a Last opened row's order as its own, unsaved moves kept when
+Order changes, clicking Order while a tile is held, a failing first catalogue
+opening LG's Home once, Back cancelling a recent apps panel still loading,
+the heartbeat naming only an on-TV process, a click opening its own tile
+after directional navigation, and a scrolled tile staying between the
+rows' edges. The [Native Home behaviour job](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L99-L107)
+compiles and tests the desktop view with SDL2. `scripts/build-home.sh` builds
+the ARM executable for the TV; CI does not cross-compile that executable yet.
+The package build accepts a source-only checkout and includes the native
+executable when one has been built locally.
+
+On a TV, `touch /tmp/glasshouse-home.trace` makes the view write every frame
+and remote key to `/tmp/glasshouse-home.frames`, with each frame's work time,
+for measuring motion; `/tmp/glasshouse-home.log` reports each motion's frame
+rate and dropped frames whether or not it is on.
+
+### Appearance comparison
+
+Captured on 25 October 2026 at 1920 × 1080: main's web view in Chromium and
+the native desktop view, both reading the office G3's live catalogue,
+wallpapers and recent-app snapshots. These are renderer captures, not panel
+photographs or performance measurements. The clock and wallpaper drift are
+sampled at different times. The native arranging banner keeps its state and
+buttons on one line, so its wrapping differs from the web view.
+
+| State | Web view | Native view |
+|---|---|---|
+| Home | ![Web Home](../screenshots/home-web-home.png) | ![Native Home](../screenshots/home-native-home.png) |
+| Arranging | ![Web arranging](../screenshots/home-web-arranging.png) | ![Native arranging](../screenshots/home-native-arranging.png) |
+| Recent apps | ![Web recent apps](../screenshots/home-web-recents.png) | ![Native recent apps](../screenshots/home-native-recents.png) |
+
+The proposal's earlier on-TV trials used identical remote-key scenarios
+(continuous scrolling, individual steps, row changes and recent apps):
+
+| Frame production | G3 web | G3 native | G5 web | G5 native |
+|---|---:|---:|---:|---:|
+| Gaps over 33.4 ms across four scenarios | 66 | 0 | 79 | 0 |
+| Longest gap | 173 ms | 31 ms | 182 ms | 32 ms |
+
+Web timings sample JavaScript animation callbacks; native timings sample
+buffer swaps and exclude idle intervals. They describe frame production,
+not every frame presented by the panel or complete input latency. The saved
+G3 native scrolling trace averages 60.0 fps; its web trace averages 56.8 fps.
+The G5 native scrolling run includes idle pauses and has no comparable fps
+figure. CPU usage recorded during the trials was 9–13 seconds for the web
+view and 0.4–1.6 seconds for the native view per scenario. Browser-process
+sharing prevents a like-for-like memory claim.
+
+On hardware, check pointer → arrows → pointer, stationary motion after an
+arrow, clicking a different tile, and a server-build restart both before
+and after opening a boot preload. Desktop event injection cannot establish
+physical Magic Remote behaviour.

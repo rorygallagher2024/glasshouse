@@ -42,8 +42,6 @@ The server runs on the TV under Node.js 0.12 on webOS 3 and 4, and 0.10 on webOS
 * `server/assets/dashboard.html`
 * `server/assets/setup.html`
 * `server/assets/setup-phone.html`
-* `server/assets/home.html`
-* `server/assets/home-app/index.html`
 
 Avoid all ES6+ constructs in these files: no `const` or `let`, arrow functions, template literals, classes, default parameters, destructuring, promises, `async`/`await`, `for...of`, or ES6 built-in methods (`Object.assign`, `Array.prototype.find`, etc.).
 
@@ -55,6 +53,23 @@ Modern JavaScript (ES6+) is permitted exclusively in client-side code running in
 
 * `server/assets/ui.html`
 * `server/assets/ui/*.js`
+
+### Glasshouse Home's native view
+
+Glasshouse Home is drawn by `native/home`, a Rust program using OpenGL ES 2
+through the TV's own SDL2. `scripts/build-home.sh --tv <ip of a webOS 9 TV>`
+builds it for the TV into `server/native/glasshouse-home`, which `deploy.sh`
+installs; the first build downloads the webOS toolchain and copies the
+libraries to link against from that TV. `scripts/build-home.sh --preview`
+builds it for this computer, and `native/home/tools/preview.sh <tv-ip>` runs it
+in a window against a TV's server. Its text goes through the same `t()` keys
+as the dashboards, in `native/home/src/view.rs`.
+
+The executable is optional in `deploy.sh` and the Homebrew Channel package
+while the ARM release build remains separate. Without it, the takeover
+refuses to stage Home and keeps LG's Home available. CI compiles the desktop
+view and runs its Rust tests; building the ARM executable in CI and shipping
+it through self-update remain required before release.
 
 ### Adding new server assets
 
@@ -113,7 +128,7 @@ node scripts/emulate-tv.js [--model c2|b8|c3] [--port 8080] [--open]
 Direct URLs:
 * Web Dashboard: `http://localhost:8080/`
 * TV App Dashboard: `http://localhost:8080/assets/dashboard.html`
-* Glasshouse Home: `http://localhost:8080/assets/home.html`
+* Glasshouse Home: `native/home/target/release/glasshouse-home --server 127.0.0.1:8080 --assets server/assets`, after `scripts/build-home.sh --preview`
 
 ### Previewing documentation locally
 

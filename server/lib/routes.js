@@ -1190,15 +1190,12 @@ function handleHomeRoute(req, res, u, pathname) {
         reply(r);
       });
     }
-    if (pathname === '/api/home/beat') {
-      if (!postGuard(req, res, 'application/json', false)) return;
-      req.resume();
-      // The hour cycle the view's clock draws, which follows the TV's setting.
-      var beatBody = homeModule.beat();
-      beatBody.clockHour12 = clockHour12();
-      return reply(beatBody);
-    }
     return readJsonBody(req, res, function (body) {
+      if (pathname === '/api/home/beat') {
+        var beatBody = homeModule.beat(body);
+        beatBody.clockHour12 = clockHour12();
+        return reply(beatBody);
+      }
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
       if (pathname === '/api/home/start-layout') return homeModule.setHideLgHomeAtStart(body, reply);
       if (pathname === '/api/home/wallpapers') return homeModule.setWallpapers(body, reply);

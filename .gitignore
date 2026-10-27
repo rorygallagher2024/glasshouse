@@ -13,3 +13,8 @@ site/
 
 # nix-direnv's dev shell cache.
 /.direnv/
+
+# Glasshouse Home's native view, built by scripts/build-home.sh.
+/server/native/
+/native/home/target/
+/native/home/.build/

@@ -43,7 +43,7 @@ import html, html.parser, json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ASSETS = ROOT / 'server' / 'assets'
-PAGES = ['ui.html', 'dashboard.html', 'setup.html', 'setup-phone.html', 'home.html']
+PAGES = ['ui.html', 'dashboard.html', 'setup.html', 'setup-phone.html']
 I18N_JS = ASSETS / 'i18n.js'
 LANG_DIR = ASSETS / 'i18n'
 
@@ -56,7 +56,6 @@ CONVERTED = {
     'dashboard.html': ['<body>'],
     'setup.html': ['<body>'],
     'setup-phone.html': ['<body>'],
-    'home.html': ['<body>'],
 }
 
 KEY_RE = re.compile(r'^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)*$')
@@ -211,6 +210,28 @@ def js_string(src, i):
     return ''.join(val), j + 1
 
 
+def rust_string(src, i):
+    """A Rust string literal at src[i]: (value, end) or None."""
+    if i >= len(src) or src[i] != '"':
+        return None
+    j, val = i + 1, []
+    while j < len(src) and src[j] != '"':
+        if src[j] == '\\':
+            nxt = src[j + 1]
+            if nxt == 'u' and src.startswith('{', j + 2):
+                close = src.find('}', j + 3)
+                if close > 0:
+                    val.append(chr(int(src[j + 3:close], 16)))
+                    j = close + 1
+                    continue
+            val.append({'n': '\n', 't': '\t', 'r': '\r', '"': '"', '\\': '\\'}.get(nxt, nxt))
+            j += 2
+            continue
+        val.append(src[j])
+        j += 1
+    return ''.join(val), j + 1
+
+
 def one_literal(src, end):
     """Whether the literal ending at src[end] is the whole argument. English
     built with + would be checked as its first piece only, while the caller
@@ -329,6 +350,34 @@ for path in SERVER:
         note(key[0], english[0], where)
     for m in re.finditer(r'(?:\b(?:const|let|var)\s+msg\s*=(?!\s*(?:say\.msg|require))|\(\s*msg\s*[,)]|function\s*\w*\s*\(\s*msg\s*[,)])', code):
         problems.append('%s:%d: a local named msg hides msg()' % (name, 1 + src.count('\n', 0, m.start())))
+
+NATIVE = sorted((ROOT / 'native' / 'home' / 'src').glob('*.rs')) if (ROOT / 'native' / 'home' / 'src').exists() else []
+for path in NATIVE:
+    src = path.read_text(encoding='utf-8')
+    name = str(path.relative_to(ROOT))
+    for m in re.finditer(r'\bself\.t(?:v)?\(', src):
+        where = '%s:%d' % (name, 1 + src.count('\n', 0, m.start()))
+        i = m.end()
+        while i < len(src) and src[i].isspace():
+            i += 1
+        key = rust_string(src, i)
+        if not key:
+            problems.append('%s: t() needs a literal key' % where)
+            continue
+        j = key[1]
+        while j < len(src) and src[j].isspace():
+            j += 1
+        if j >= len(src) or src[j] != ',':
+            problems.append("%s: t('%s') needs its English as the second argument" % (where, key[0]))
+            continue
+        j += 1
+        while j < len(src) and src[j].isspace():
+            j += 1
+        english = rust_string(src, j)
+        if not english:
+            problems.append("%s: t('%s', ...) needs literal English" % (where, key[0]))
+            continue
+        note(key[0], english[0], where)
 
 for key, texts in sorted(uses.items()):
     if len(texts) > 1:

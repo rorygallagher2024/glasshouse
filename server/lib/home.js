@@ -32,6 +32,7 @@ var names = require('./names');
 var writeJsonAtomic = require('./util').writeJsonAtomic;
 var wallpapers = require('./home-wallpapers');
 var takeover = require('./home-takeover');
+var lifecycle = require('./home-lifecycle');
 var recent = require('./home-recent');
 var recentApps = require('./home-recent-apps');
 var search = require('./home-search');
@@ -883,6 +884,8 @@ function switchTo(on, cb) {
   (function run() {
     var want = switchWant;
     var batch = switchWaiting.splice(0, switchWaiting.length);
+    // LG's Home's place given back: sam's registration of the view goes with it.
+    if (!want) lifecycle.stop();
     (want ? takeover.take : takeover.release)(function (r) {
       function finish() {
         if (r.ok) {
@@ -1376,9 +1379,11 @@ function watchBeat(ms) {
   }, ms);
 }
 
-function beat() {
+// The view's heartbeat, naming its process for sam's registration.
+function beat(body) {
   lastBeatAt = nowMs();
   beats++;
+  if (body && takeover.mounted()) lifecycle.view(body.pid);
   if (viewInFront()) watchBeat(BEAT_GRACE_MS);
   return { ok: true, enabled: readConfig().enabled, build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps };
@@ -1575,7 +1580,7 @@ function powerChanged(active) {
 
 function status(cb) {
   var sup = supported();
-  takeover.samType(function (type) {
+  takeover.samOurs(function (ours) {
     readSettings(['homeAutoLaunch'], function (s) {
       var hal = s && typeof s.homeAutoLaunch === 'string' ? s.homeAutoLaunch : '';
       var c = readConfig();
@@ -1587,7 +1592,7 @@ function status(cb) {
         enabled: c.enabled,
         restorePending: c.restorePending,
         // In LG's Home's place now; false while one of the ways back has LG's Home open.
-        active: takeover.mounted() && type === 'web',
+        active: takeover.mounted() && ours === true,
         lgHomeOpen: escaped,
         hideLgHomeAtStart: c.hideLgHomeAtStart === true,
         hideLgHomeAtStartAvailable: startLayoutAvailable(),
@@ -1617,6 +1622,7 @@ function init(opts) {
   wallpapers.init(stateDir);
   recent.init(stateDir, opts.now);
   recentApps.init({ luna: lunaFn });
+  lifecycle.init({ Subscription: opts.Subscription || null, signal: opts.signal, launchFile: opts.launchFile, procDir: opts.procDir });
   search.init({ luna: lunaFn, Subscription: opts.Subscription, apps: launchPoints,
     opened: function (id) { noteOpened('app', id); }, enabled: function () { return readConfig().search; },
     blockedBy: opts.blockedBy });
@@ -1625,6 +1631,7 @@ function init(opts) {
     samrescan: opts.samrescan || null,
     stageDir: opts.takeoverDir || path.join(stateDir, 'home-takeover'),
     sourceDir: opts.appSource,
+    exeSource: opts.homeExe,
     port: opts.port,
     appDir: opts.lgHomeDir,
     procDir: opts.procDir,

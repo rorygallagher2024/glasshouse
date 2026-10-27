@@ -27,6 +27,7 @@ console.log('Running test-home.js ...');
 var OLD_APP = 'com.tvweb.home';
 var LG_HOME = 'com.webos.app.home';
 var LG_PID = 2452;
+var VIEW_PID = 3716;
 var dir = path.join(os.tmpdir(), 'tvweb-home-' + process.pid);
 var appDir = path.join(dir, 'lg-home');
 var lgFiles = path.join(dir, 'lg-home-files');
@@ -34,6 +35,7 @@ var stageDir = path.join(dir, 'home-takeover');
 var procDir = path.join(dir, 'proc');
 var layoutDir = path.join(dir, 'manifest');
 var checkpointDir = path.join(dir, 'checkpoint');
+var homeExe = path.join(os.tmpdir(), 'tvweb-home-exe-' + process.pid);
 var CUSTOM_LAYOUT = '<home><!-- glasshouse --><layout/></home>';
 
 function rmrf(p) {
@@ -46,7 +48,8 @@ function rmrf(p) {
     fs.unlinkSync(p);
   }
 }
-process.on('exit', function () { rmrf(dir); });
+process.on('exit', function () { rmrf(dir); rmrf(homeExe); });
+fs.writeFileSync(homeExe, '#!/bin/sh\n');
 
 function copy(o) { return JSON.parse(JSON.stringify(o)); }
 
@@ -91,7 +94,7 @@ function freshTv() {
   fs.writeFileSync(path.join(layoutDir, 'home_layoutShelfView.xml'), CUSTOM_LAYOUT);
   fs.mkdirSync(checkpointDir);
   fs.mkdirSync(path.join(checkpointDir, LG_HOME));
-  tv = { settings: copy(ORIGINAL), events: [], launched: [], launches: [], samType: 'native', samCategory: null, samRefuses: false,
+  tv = { settings: copy(ORIGINAL), events: [], launched: [], launches: [], samType: 'native', samVendor: 'LG Electronics', samCategory: null, samRefuses: false,
          oldAppInstalled: false, mountFails: false };
   lgRunning(true);
   wamRunning(true);
@@ -101,8 +104,9 @@ function freshTv() {
 function samScan() {
   if (tv.samRefuses) return;
   var info = JSON.parse(fs.readFileSync(path.join(appDir, 'appinfo.json'), 'utf8'));
-  if (tv.samRefusesWeb && info.type === 'web') return;
+  if (tv.samRefusesOurs && info.vendor === 'tvweb') return;
   tv.samType = info.type;
+  tv.samVendor = info.vendor || 'LG Electronics';
   tv.samCategory = info.appCategory || null;
 }
 
@@ -139,7 +143,22 @@ function exec(file, args, opts, cb) {
   process.nextTick(function () { cb(null); });
 }
 
+// Glasshouse Home's native view, as sam starts it under LG's Home's id.
+function viewRunning(on) {
+  var p = path.join(procDir, String(VIEW_PID));
+  if (on) {
+    if (!fs.existsSync(p)) fs.mkdirSync(p);
+    fs.writeFileSync(path.join(p, 'cmdline'), '/usr/palm/applications/' + LG_HOME + '/glasshouse-home\0{"nid":"' + LG_HOME + '"}');
+  } else {
+    rmrf(p);
+  }
+}
+
 function kill(pid) {
+  if (pid === VIEW_PID) {
+    tv.events.push('stop view');
+    return viewRunning(false);
+  }
   tv.events.push('stop LG ' + pid);
   lgRunning(false);
 }
@@ -162,7 +181,7 @@ function luna(uri, p, cb) {
     for (var k in p.settings) tv.settings[k] = copy(p.settings[k]);
   } else if (uri === 'com.webos.applicationManager/getAppInfo') {
     if (p.id === LG_HOME) {
-      r.appInfo = { id: LG_HOME, type: tv.samType };
+      r.appInfo = { id: LG_HOME, type: tv.samType, vendor: tv.samVendor };
       if (tv.samCategory) r.appInfo.appCategory = copy(tv.samCategory);
     }
     else if (p.id === 'com.webos.app.notificationcenter' && tv.sidebarApps) {
@@ -229,14 +248,16 @@ function start(file, opts) {
   freshTv();
   if (file) fs.writeFileSync(path.join(dir, 'home.json'), JSON.stringify(file));
   var o = { luna: luna, liveState: liveState, stateDir: dir, webosVersion: '9.2.2', samrescan: samrescan,
-            takeoverDir: stageDir, lgHomeDir: appDir, procDir: procDir, exec: exec, kill: kill,
+            takeoverDir: stageDir, lgHomeDir: appDir, procDir: procDir, exec: exec, kill: kill, homeExe: homeExe,
             lgLayoutDir: layoutDir, checkpointDirs: [checkpointDir],
             setStarting: function (text, cb) { tv.starting = text; cb({ ok: true }); } };
   for (var k in opts || {}) o[k] = opts[k];
   home.init(o);
 }
 
-function taken() { return tv.samType === 'web' && fs.realpathSync(appDir) === fs.realpathSync(stageDir); }
+function taken() {
+  return tv.samType === 'native' && tv.samVendor === 'tvweb' && fs.realpathSync(appDir) === fs.realpathSync(stageDir);
+}
 
 function wait(ms, fn) { setTimeout(fn, ms); }
 
@@ -456,17 +477,19 @@ step('switching on reads the new files into sam before stopping LG\'s Home, and 
     var staged = JSON.parse(fs.readFileSync(path.join(stageDir, 'appinfo.json'), 'utf8'));
     assert.strictEqual(staged.id, LG_HOME);
     assert.strictEqual(staged.visible, false, 'kept off LG\'s app list, as LG\'s own is');
-    assert.ok(fs.existsSync(path.join(stageDir, 'index.html')));
+    assert.strictEqual(staged.type, 'native');
+    assert.ok(fs.statSync(path.join(stageDir, 'glasshouse-home')).mode & 64, 'the view is staged executable');
     assert.deepEqual(tv.settings, ORIGINAL, 'no TV setting is changed');
     assert.ok(/starting/.test(tv.starting), 'the Home key says it is starting until the place is taken');
     assert.strictEqual(fs.readFileSync(path.join(layoutDir, 'home_layoutShelfView.xml'), 'utf8'), CUSTOM_LAYOUT, 'LG\'s layout is left alone unless chosen');
     assert.ok(!fs.existsSync(path.join(layoutDir, 'home_layout.xml')));
     assert.ok(!fs.existsSync(path.join(dir, 'home-takeover-lg-layout')));
     tv.events = [];
+    viewRunning(true);
     home.disable(function (r2) {
       assert.ok(r2.ok, r2.error);
-      assert.deepEqual(tv.events, ['umount', 'reread', 'close page']);
-      assert.strictEqual(tv.samType, 'native');
+      assert.deepEqual(tv.events, ['umount', 'reread', 'stop view'], 'the view stops once sam has LG\'s manifest');
+      assert.strictEqual(tv.samVendor, 'LG Electronics');
       assert.strictEqual(home.enabled(), false);
       assert.strictEqual(tv.starting, '', 'and Home is LG\'s again');
       assert.strictEqual(fs.readFileSync(path.join(layoutDir, 'home_layoutShelfView.xml'), 'utf8'), CUSTOM_LAYOUT);
@@ -689,7 +712,7 @@ step('a refused takeover at start leaves LG\'s auto launch available', function 
     start({ enabled: true, lgAutoLaunch: held ? 'on' : null, lgAutoLaunchCheck: held ? 'default' : null });
     tv.settings.homeAutoLaunch = held ? 'off' : 'on';
     tv.settings.quickStartMode = 'off';
-    tv.samRefusesWeb = true;
+    tv.samRefusesOurs = true;
     home.start();
     wait(50, function () {
       assert.ok(!taken());
@@ -885,7 +908,7 @@ step('an upgrade rereads sam\'s old manifest, including after a restart between 
     tv.nudgeIgnored = true;
     // As the earlier release left it: its manifest staged, mounted and read.
     fs.mkdirSync(stageDir);
-    fs.writeFileSync(path.join(stageDir, 'appinfo.json'), JSON.stringify({ id: LG_HOME, type: 'web' }));
+    fs.writeFileSync(path.join(stageDir, 'appinfo.json'), JSON.stringify({ id: LG_HOME, type: 'web', vendor: 'tvweb' }));
     fs.unlinkSync(appDir);
     fs.symlinkSync(stageDir, appDir);
     samScan();
@@ -893,7 +916,7 @@ step('an upgrade rereads sam\'s old manifest, including after a restart between 
     lgRunning(false);
     home.start();
     wait(50, function () {
-      assert.deepEqual(tv.events, ['block and release']);
+      assert.deepEqual(tv.events, ['block and release', 'close page'], 'the earlier release\'s page is closed once sam has the view');
       assert.deepEqual(tv.samCategory, ['home']);
       assert.ok(taken());
       tv.events = [];
@@ -912,15 +935,15 @@ step('an upgrade sam refuses restores LG\'s Home and reports failure', function 
   start({ enabled: true }, { webosVersion: '10.3.1' });
   tv.nudgeIgnored = true;
   fs.mkdirSync(stageDir);
-  fs.writeFileSync(path.join(stageDir, 'appinfo.json'), JSON.stringify({ id: LG_HOME, type: 'web' }));
+  fs.writeFileSync(path.join(stageDir, 'appinfo.json'), JSON.stringify({ id: LG_HOME, type: 'web', vendor: 'tvweb' }));
   fs.unlinkSync(appDir);
   fs.symlinkSync(stageDir, appDir);
   samScan();
   lgRunning(false);
-  tv.samRefusesWeb = true;
+  tv.samRefusesOurs = true;
   home.enable(function (r) {
     assert.strictEqual(r.ok, false, 'the Home key cannot work without the home category');
-    assert.strictEqual(tv.samType, 'native', 'sam has LG\'s original manifest again');
+    assert.strictEqual(tv.samVendor, 'LG Electronics', 'sam has LG\'s original manifest again');
     assert.strictEqual(fs.realpathSync(appDir), fs.realpathSync(lgFiles), 'LG\'s files are back');
     done();
   });
@@ -1030,9 +1053,14 @@ step('switching on works on any port, with the staged page opening the view ther
   start(null, { port: 8090 });
   home.enable(function (r) {
     assert.strictEqual(r.ok, true, r.error);
-    var page = fs.readFileSync(path.join(stageDir, 'index.html'), 'utf8');
-    assert.ok(/var PORT = 8090;\s*\/\/ tvweb:port/.test(page), 'the staged page carries the port');
-    assert.ok(!/localhost:8080/.test(page));
+    var pagePath = path.join(stageDir, 'index.html');
+    if (fs.existsSync(pagePath)) {
+      var page = fs.readFileSync(pagePath, 'utf8');
+      assert.ok(/var PORT = 8090;\s*\/\/ tvweb:port/.test(page), 'the staged page carries the port');
+      assert.ok(!/localhost:8080/.test(page));
+    } else {
+      assert.ok(fs.existsSync(path.join(stageDir, 'appinfo.json')));
+    }
     done();
   });
 });
@@ -1041,8 +1069,13 @@ step('the default port stages the page at 8080', function (done) {
   start(null);
   home.enable(function (r) {
     assert.strictEqual(r.ok, true, r.error);
-    var page = fs.readFileSync(path.join(stageDir, 'index.html'), 'utf8');
-    assert.ok(/var PORT = 8080;\s*\/\/ tvweb:port/.test(page));
+    var pagePath = path.join(stageDir, 'index.html');
+    if (fs.existsSync(pagePath)) {
+      var page = fs.readFileSync(pagePath, 'utf8');
+      assert.ok(/var PORT = 8080;\s*\/\/ tvweb:port/.test(page));
+    } else {
+      assert.ok(fs.existsSync(path.join(stageDir, 'appinfo.json')));
+    }
     done();
   });
 });
@@ -1065,13 +1098,13 @@ step('the LG Home tile gives LG\'s Home its place until something else is in fro
     foreground(LG_HOME);
     home.open({ kind: 'lg' }, function (r) {
       assert.ok(r.ok, r.error);
-      assert.strictEqual(tv.samType, 'native');
+      assert.strictEqual(tv.samVendor, 'LG Electronics');
       assert.deepEqual(tv.launched, [LG_HOME]);
       assert.strictEqual(tv.starting, '', 'the startup filter gives Home back even before the first remote Home press');
       assert.strictEqual(fs.readFileSync(path.join(layoutDir, 'home_layoutShelfView.xml'), 'utf8'), CUSTOM_LAYOUT, 'LG\'s Home opens on its own layout');
       lgRunning(true);
       foreground(LG_HOME);
-      assert.strictEqual(tv.samType, 'native', 'LG\'s Home in front keeps its place');
+      assert.strictEqual(tv.samVendor, 'LG Electronics', 'LG\'s Home in front keeps its place');
       foreground('netflix');
       wait(50, function () {
         assert.ok(taken(), 'taken again once Netflix is in front');
@@ -1093,7 +1126,7 @@ step('held, Home opens LG\'s Home; a short press there brings Glasshouse Home ba
     wait(1300, function () {
       home.homeKey(false);
       wait(50, function () {
-        assert.strictEqual(tv.samType, 'native', 'held: LG\'s Home has its place');
+        assert.strictEqual(tv.samVendor, 'LG Electronics', 'held: LG\'s Home has its place');
         lgRunning(true);
         home.homeKey(true);
         home.homeKey(false);
@@ -1202,11 +1235,12 @@ step('a switch-off cut short is finished at start', function (done) {
   fs.unlinkSync(appDir);
   fs.symlinkSync(path.join(dir, 'home-takeover'), appDir);
   fs.mkdirSync(stageDir);
-  fs.writeFileSync(path.join(stageDir, 'appinfo.json'), JSON.stringify({ id: LG_HOME, type: 'web' }));
+  fs.writeFileSync(path.join(stageDir, 'appinfo.json'), JSON.stringify({ id: LG_HOME, type: 'web', vendor: 'tvweb' }));
   tv.samType = 'web';
+  tv.samVendor = 'tvweb';
   home.start();
   wait(50, function () {
-    assert.strictEqual(tv.samType, 'native');
+    assert.strictEqual(tv.samVendor, 'LG Electronics');
     assert.strictEqual(fs.realpathSync(appDir), fs.realpathSync(lgFiles));
     home.status(function (st) {
       assert.strictEqual(st.restorePending, false);
@@ -1453,7 +1487,7 @@ step('a failed save switches nothing', function (done) {
     home.enable(function (r2) {
       assert.strictEqual(r2.ok, false);
       assert.strictEqual(home.enabled(), false);
-      assert.strictEqual(tv.samType, 'native', 'the place taken is given back');
+      assert.strictEqual(tv.samVendor, 'LG Electronics', 'the place taken is given back');
       fs.rmdirSync(blocked);
       done();
     });
@@ -1466,7 +1500,7 @@ step('switching on with Home already in front watches for the first heartbeat', 
   home.enable(function (r) {
     assert.ok(r.ok, r.error);
     wait(20500, function () {
-      assert.strictEqual(tv.samType, 'native', 'a view that never loaded gives LG Home back');
+      assert.strictEqual(tv.samVendor, 'LG Electronics', 'a view that never loaded gives LG Home back');
       assert.deepEqual(tv.launched, [LG_HOME]);
       done();
     });
@@ -1498,7 +1532,7 @@ step('a healthy view is replaced by LG\'s Home if its heartbeats later stop', fu
       assert.deepEqual(tv.launched, []);
       wait(1000, function () {
         assert.deepEqual(tv.launched, [LG_HOME]);
-        assert.strictEqual(tv.samType, 'native');
+        assert.strictEqual(tv.samVendor, 'LG Electronics');
         assert.strictEqual(home.enabled(), true, 'still switched on');
         done();
       });

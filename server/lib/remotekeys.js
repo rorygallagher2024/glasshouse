@@ -383,7 +383,7 @@ function filterSource() {
     '    lunaCall.send("com.webos.applicationManager", "/getAppInfo", JSON.stringify({ "id": "com.webos.app.home" }), function (payload) {',
     '        try {',
     '            var r = typeof payload === "string" ? JSON.parse(payload) : payload;',
-    '            if (r && r.appInfo && r.appInfo.type === "web") {',
+    '            if (r && r.appInfo && r.appInfo.vendor === "tvweb") {',
     '                glasshouseHomeReady = true;',
     '                applicationManager.launch("com.webos.app.home", JSON.stringify({ "activateType": "home", "launchType": "homeKey" }));',
     '                return;',

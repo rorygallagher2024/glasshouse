@@ -1,0 +1,23 @@
+[package]
+name = "glasshouse-home"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Glasshouse Home drawn with OpenGL ES 2 in place of the web view"
+
+[[bin]]
+name = "glasshouse-home"
+path = "src/main.rs"
+
+[dependencies]
+gl = "0.14"
+fontdue = "0.9"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"
