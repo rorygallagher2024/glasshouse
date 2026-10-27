@@ -194,6 +194,9 @@ home_open_at_boot() {
   luna-send -n 1 luna://com.webos.applicationManager/launch '{"id":"com.webos.app.home"}' 2>/dev/null |
     grep -q '"returnValue": *true' || return 0
   home_opened=1
+  # The server watches for the view from its start and opens LG's Home if it
+  # does not come (lib/home.js watchBootOpen).
+  : > /tmp/glasshouse-home-opened-at-boot
   echo "$(date): Glasshouse Home opened over $boot_app"
 }
 home_opened=0

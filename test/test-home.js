@@ -1241,6 +1241,95 @@ step('a short Home press the view answers with a heartbeat changes nothing', fun
   });
 });
 
+// A G3 (webOS 11.2.0) stayed on its HDMI input after a launch sam accepted (#1042).
+step('opened after a wake, a view that never beats gives LG\'s Home its place', function (done) {
+  start(null, { systemctl: '/bin/systemctl', slowOpenMs: 5000 });
+  tv.settings.homeAutoLaunch = 'on';
+  tv.settings.quickStartMode = 'off';
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('com.webos.app.hdmi1');
+    powerState('Active');
+    powerState('Active Standby');
+    wait(20, function () {
+      tv.launched = [];
+      powerState('Active');
+      wait(1700, function () {
+        assert.deepEqual(tv.launched, [LG_HOME], 'opened after the wake');
+        assert.ok(taken(), 'waiting');
+        wait(5100, function () {
+          assert.strictEqual(tv.samType, 'native', 'LG\'s Home has its place');
+          home.disable(function () { done(); });
+        });
+      });
+    });
+  });
+});
+
+step('opened after a wake, a view that beats, or an input chosen meanwhile, keeps Glasshouse Home', function (done) {
+  start(null, { systemctl: '/bin/systemctl', slowOpenMs: 5000 });
+  tv.settings.homeAutoLaunch = 'on';
+  tv.settings.quickStartMode = 'off';
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('com.webos.app.hdmi1');
+    powerState('Active');
+    powerState('Active Standby');
+    wait(20, function () {
+      powerState('Active');
+      wait(1700, function () {
+        foreground(LG_HOME);
+        home.beat();
+        wait(5100, function () {
+          assert.ok(taken(), 'the view beat');
+          foreground('com.webos.app.hdmi1');
+          powerState('Active Standby');
+          wait(20, function () {
+            powerState('Active');
+            wait(1700, function () {
+              foreground('com.webos.app.hdmi2');
+              wait(5100, function () {
+                assert.ok(taken(), 'another input was chosen');
+                home.disable(function () { done(); });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+step('opened by the boot hook, a view that never beats gives LG\'s Home its place', function (done) {
+  var marker = path.join(dir, 'opened-at-boot');
+  start({ enabled: true }, { systemctl: '/bin/systemctl', slowOpenMs: 2000, bootOpenedFile: marker });
+  fs.writeFileSync(marker, '');
+  home.start();
+  wait(50, function () {
+    foreground('com.webos.app.hdmi1');
+    wait(2500, function () {
+      assert.strictEqual(tv.samType, 'native', 'LG\'s Home has its place');
+      assert.ok(!fs.existsSync(marker), 'watched once');
+      home.disable(function () { done(); });
+    });
+  });
+});
+
+step('opened by the boot hook, a view that beat before the watch keeps Glasshouse Home', function (done) {
+  var marker = path.join(dir, 'opened-at-boot');
+  start({ enabled: true }, { systemctl: '/bin/systemctl', slowOpenMs: 2000, bootOpenedFile: marker });
+  fs.writeFileSync(marker, '');
+  home.beat();
+  home.start();
+  wait(50, function () {
+    foreground(LG_HOME);
+    wait(2500, function () {
+      assert.ok(taken());
+      home.disable(function () { done(); });
+    });
+  });
+});
+
 step('a switch-off cut short is finished at start', function (done) {
   start({ enabled: false, restorePending: true });
   fs.unlinkSync(appDir);

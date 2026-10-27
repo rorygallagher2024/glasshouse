@@ -113,6 +113,9 @@ var HOLD_MS = 1200;
  * to 13 s on a CX (webOS 5.6.2), so there the wait runs to the first beat's.
  */
 var OPEN_GRACE_MS = 5000;
+// Written by the boot hook when it opens the view; /tmp is empty at each boot.
+var BOOT_OPENED_FILE = '/tmp/glasshouse-home-opened-at-boot';
+var bootOpenedFile = BOOT_OPENED_FILE;
 var slowOpenMs = FIRST_BEAT_GRACE_MS;
 /*
  * WebAppMgr runs every web app, the view among them. On a G4 (webOS 11.2.0) it
@@ -1461,17 +1464,23 @@ function homeKey(down) {
 }
 
 /*
- * After a short Home press the view beats at once, opened or relaunched. sam
- * is no witness: with WebAppMgr stopped it kept naming the view in front
- * though nothing was drawn (a G4, webOS 11.2.0).
+ * After a short Home press, a wake or the boot hook's open, the view beats
+ * once opened or relaunched. sam is no witness: with WebAppMgr stopped it kept
+ * naming the view in front though nothing was drawn (a G4, webOS 11.2.0), and
+ * a launch it accepted left a G3 (webOS 11.2.0) on its HDMI input (#1042).
+ * Something else opened meanwhile ends the watch: only the view, or what was
+ * in front when it was opened, is replaced. beatsBefore counts beats from
+ * earlier, where the view may have beaten before the watch began.
  */
-function watchOpen(retried, ms) {
+function watchOpen(retried, ms, beatsBefore) {
   stopOpenWatch();
-  var beatsBefore = beats, since = nowMs();
+  if (beatsBefore === undefined) beatsBefore = beats;
+  var since = nowMs(), over = foreground;
   function check(wait) {
     openTimer = setTimeout(function () {
       openTimer = null;
       if (beats > beatsBefore || escaped || !powerActive || !readConfig().enabled) return;
+      if (foreground && foreground !== LG_HOME && foreground !== over && !(over === '' && isInputApp(foreground))) return;
       var left = slowOpenMs - (nowMs() - since);
       if (!retried && left > 0 && webAppMgrRunning() !== false) return check(left);
       recoverView('Glasshouse Home did not open', retried);
@@ -1585,7 +1594,8 @@ function powerStateChanged(raw) {
         cancelWake();
         console.log('home: opening Glasshouse Home over ' + foreground + ' after a wake by ' + reason);
         launch(LG_HOME, null, function (res) {
-          if (!res.ok) console.error('home: could not open Glasshouse Home after the wake');
+          if (!res.ok) return console.error('home: could not open Glasshouse Home after the wake');
+          watchOpen(false, OPEN_GRACE_MS);
         });
       });
     });
@@ -1667,6 +1677,7 @@ function init(opts) {
   installFn = opts.installApp || null;
   procDir = opts.procDir || '/proc';
   slowOpenMs = typeof opts.slowOpenMs === 'number' ? opts.slowOpenMs : FIRST_BEAT_GRACE_MS;
+  bootOpenedFile = opts.bootOpenedFile || BOOT_OPENED_FILE;
   execFn = opts.exec || execFile;
   systemctlPath = opts.systemctl !== undefined ? opts.systemctl
     : SYSTEMCTLS.filter(function (p) { return fs.existsSync(p); })[0] || '';
@@ -1767,8 +1778,20 @@ function start() {
     switchTo(true, function (r) {
       if (!r.ok) console.error('home: could not take LG\'s Home\'s place: ' + r.error);
       syncLgAutoLaunch();
+      if (r.ok) watchBootOpen();
     });
   });
+}
+
+/*
+ * The boot hook opened the view before this server started (50-tvweb.sh). It
+ * waits for the server before loading, so the wait starts here, and beats
+ * since the start count.
+ */
+function watchBootOpen() {
+  try { fs.unlinkSync(bootOpenedFile); } catch (e) { return; }
+  console.log('home: opened at boot; waiting for the view');
+  watchOpen(false, slowOpenMs, 0);
 }
 
 function stop() {
