@@ -96,7 +96,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     ---
 
-    A replacement Home app with full control over what displays, and no ads. This feature is currently only webOS 7, 9 and 10 TVs.
+    A replacement Home app with full control over what displays, and no ads. This feature is currently only available on webOS 7, 9 and 10 TVs.
 
 -   **[Controlling the TV without the cloud](dashboard/control.md)**
 

@@ -55,7 +55,7 @@ The [installation guide](https://rorygallagher2024.github.io/glasshouse/install/
 
 This project is intended to give a rooted webOS TV a useful local control surface instead of requiring the owner to work around the TV's built-in menus, vendor services and cloud dependencies.
 
-1. **[A cleaner Home screen](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).** A replacement Home app with full control over what displays, and no ads. This feature is currently only webOS 7, 9 and 10 TVs.
+1. **[A cleaner Home screen](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).** A replacement Home app with full control over what displays, and no ads. This feature is currently only available on webOS 7, 9 and 10 TVs.
 
 2. **[Controlling the TV without the cloud](https://rorygallagher2024.github.io/glasshouse/dashboard/control/).** Remote's keys, volume, inputs, power, sleep timer, comprehensive picture and sound settings, Game Optimizer, and much more.
 
