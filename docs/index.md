@@ -92,11 +92,17 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 <div class="grid cards" markdown>
 
+-   **[A cleaner Home screen](dashboard/home.md)**
+
+    ---
+
+    Glasshouse Home takes the place of LG's Home: apps, inputs and channels in rows that can be arranged, with wallpapers, search and no promotions. Offered on some models only, those on webOS 7, 9 and 10 so far.
+
 -   **[Controlling the TV without the cloud](dashboard/control.md)**
 
     ---
 
-    A D-pad to navigate the TV itself, volume, mute, media playback keys (play, pause, stop, skip), app launcher, picture presets, sound output routing, power and reboot.
+    The remote's keys, volume, inputs, power and sleep timer, LG's picture and sound settings, Game Optimizer, and much more.
 
 -   **[Seeing what the TV collects, and switching it off](dashboard/privacy.md)**
 
@@ -104,11 +110,11 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     Whether LG's content-recognition engine is sampling the screen, the advertising ID and ad-tracking switch, every recorded data agreement, an on-TV blocker for LG's ad and telemetry endpoints, and switches for diagnostics uploads.
 
--   **[App management, debloating & home screen cleanup](dashboard/apps.md)**
+-   **[App management and debloating](dashboard/apps.md)**
 
     ---
 
-    Install from Homebrew Channel, uninstall apps to reclaim flash storage, disable background services, stop unused preloaded apps, hide built-in system apps, or replace LG's launcher with [Glasshouse Home](dashboard/home.md).
+    Install from Homebrew Channel, uninstall apps to reclaim flash storage, disable background services, stop unused preloaded apps, and hide built-in system apps from LG's Home.
 
 -   **[Remapping the remote's buttons](dashboard/apps.md#remote-keys)**
 
@@ -120,7 +126,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     ---
 
-    A clock, a starfield, fireworks, or the TV's own readings, each dim or bright, in place of LG's.
+    Over a dozen in place of LG's, from a clock and the TV's own panel readings to fireworks, starfields and flowing light, each dim or bright.
 
 -   **[Integrating the TV with a smart home](HOME-ASSISTANT.md)**
 
@@ -132,7 +138,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     ---
 
-    SoC temperature, per-core CPU load, memory, swap, Wi-Fi signal and network throughput.
+    SoC temperature, CPU load, memory, Wi-Fi signal and throughput, storage health, watch time and much more.
 
 -   **[Observing OLED panel wear](dashboard/oled-care.md)**
 
