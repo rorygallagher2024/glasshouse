@@ -1294,6 +1294,8 @@ function handleRequest(req, res) {
   }
 
   if (pathname === '/api/caps') {
+    // Glasshouse Home's page waiting for the server (lib/home.js watchStart).
+    if (u.query && u.query.from === 'home' && fromTV(req) && homeModule) homeModule.pageAlive();
     var caps = {
       ok: true, allowControl: config.allowControl, allowPower: config.allowPower,
       // Bare: the Homebrew Channel app's launch page compares it with its own.

@@ -1664,3 +1664,12 @@ after the server was updated, until the TV restarted: it came back without the
 - Network-input key codes (`networkinput/test/sendKeyCode`) did not reach the
   Glasshouse app's page; key events written to the remote's input device
   (`LGE RCU`) did.
+
+## Glasshouse Home's first load after a cold start (C2, webOS 9.2.2)
+
+Opened as the boot hook opens it, 30 s after a reboot, Glasshouse Home's page
+waited for the server, which answered at 41 s, and the view's first heartbeat
+came at 50 s: about 9 s from the server answering to the view drawn. The
+first Home press after a reboot took up to 13 s on a CX (webOS 5.6.2), so a
+fixed wait from the server's start is too short for slower TVs; the page's
+own requests to the server show it is running.

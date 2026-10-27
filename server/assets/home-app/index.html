@@ -71,7 +71,8 @@ html,body{height:100%;background:#000;color:#ece7df;overflow:hidden;font-family:
   function probe() {
     if (done) return;
     var x = new XMLHttpRequest();
-    x.open('GET', BASE + '/api/caps?t=' + Date.now(), true);
+    // from=home tells the server this page is running (lib/home.js watchStart).
+    x.open('GET', BASE + '/api/caps?from=home&t=' + Date.now(), true);
     x.timeout = 1500;
     x.onload = function () { if (x.status >= 200 && x.status < 400) openView(); else retry(); };
     x.onerror = x.ontimeout = retry;
