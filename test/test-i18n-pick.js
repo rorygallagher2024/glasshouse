@@ -29,13 +29,19 @@ function load(opts) {
     },
     document: {
       readyState: 'complete',
-      documentElement: { setAttribute: function () {} },
+      documentElement: {
+        setAttribute: function (name, value) { if (opts.attributes) opts.attributes[name] = value; },
+        getAttribute: function (name) { return name === 'data-layout' && opts.page === '/phone' ? 'phone' : null; }
+      },
       querySelectorAll: function () { return []; },
       addEventListener: function () {}
     },
     XMLHttpRequest: function () {
       this.open = function () {};
-      this.send = function () { this.status = 200; this.responseText = '{}'; };
+      this.send = function () {
+        this.status = opts.httpStatus === undefined ? 200 : opts.httpStatus;
+        this.responseText = '{}';
+      };
     }
   };
   win.window = win;
@@ -67,5 +73,15 @@ assert.strictEqual(web.complete('de'), false, 'the list marks German as partial 
 assert.strictEqual(web.complete('es'), true);
 assert.strictEqual(web.names.de, 'Deutsch');
 console.log('  ✓ the list knows which languages are partial');
+
+var arabicAttrs = {};
+assert.strictEqual(load({ browser: 'ar-SA', page: TV, attributes: arabicAttrs }).lang(), 'ar');
+assert.strictEqual(arabicAttrs.dir, 'rtl');
+assert.strictEqual(load({ browser: 'ar-SA', page: WEB, stored: 'en' }).lang(), 'en');
+assert.strictEqual(load({ browser: 'en-US', page: WEB, search: '?lang=ar', stored: 'en' }).lang(), 'ar');
+var failedAttrs = {};
+assert.strictEqual(load({ browser: 'ar-SA', page: TV, httpStatus: 404, attributes: failedAttrs }).lang(), 'en');
+assert.strictEqual(failedAttrs.dir, 'ltr');
+console.log('  ✓ Arabic follows selection precedence and restores LTR if its dictionary cannot load');
 
 console.log('ALL test-i18n-pick.js assertions passed!');

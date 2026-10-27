@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-layout="tv">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
@@ -212,6 +212,8 @@ body.light #msg .msg-url{color:rgba(0,0,0,.85)}
 body.light .more{color:rgba(0,0,0,.50)}
 body.light #flash{color:rgba(0,0,0,.88)}
 </style>
+<link rel="stylesheet" href="/assets/rtl.css">
+<script src="/assets/i18n.js"></script>
 </head>
 <body>
 <div id="stage">
@@ -239,7 +241,6 @@ body.light #flash{color:rgba(0,0,0,.88)}
   <div id="flash"></div>
 </div>
 <script src="/assets/qr.js"></script>
-<script src="/assets/i18n.js"></script>
 <script>
 /* webOS 2.x runs WebKit 538.2, which has neither fetch nor Promise (ES6): on a
    55UH600V the page threw ReferenceError on new Promise, so the clock stuck at

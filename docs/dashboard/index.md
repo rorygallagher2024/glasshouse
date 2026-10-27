@@ -2,7 +2,9 @@
 
 Each of these has a tab of its own in the dashboard, and a deep link to it. OLED Care appears on OLED TVs only.
 
-On a wide screen the tabs are listed down the left. On a phone, or wherever Preferences is set to hide the sidebar, they open from the menu button at the top of the page. In the Android app that button is in the app's bottom bar, beside its back button.
+On a wide screen the tabs are listed down the left, or down the right in Arabic. On a phone, or wherever Preferences is set to hide the sidebar, they open from the menu button at the top of the page. In the Android app that button is in the app's bottom bar, beside its back button.
+
+Preferences → Language includes **العربية**. The choice is saved in that browser; `?lang=ar` selects Arabic for one address. Arabic uses right-to-left text and layout, while the remote keypad, sliders, signal paths and charts keep their physical directions. TV-provided names, identifiers and logs remain as reported.
 
 <div class="grid cards" markdown>
 

@@ -20,10 +20,10 @@
  */
 (function (root) {
   // Languages that have a file in /assets/i18n/. English needs none.
-  var LANGS = ['es', 'de', 'ru', 'hu'];
+  var LANGS = ['es', 'de', 'ru', 'hu', 'ar'];
   // Each language in its own words, as the language list shows it, so it can
   // be found whatever the page is in.
-  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar' };
+  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', ar: 'العربية' };
   /*
    * Languages translated only in part, with the pages they cover in full:
    * 'web' (the dashboard), 'tv' (the TV app) and 'home' (Glasshouse Home).
@@ -80,17 +80,23 @@
    */
   function load() {
     lang = pick();
+    document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
     if (lang === 'en') return;
     try {
       var x = new XMLHttpRequest();
-      x.open('GET', '/assets/i18n/' + lang + '.json', false);
+      var code = document.documentElement.getAttribute('data-layout') === 'phone' &&
+        /[?&]c=([0-9a-f]+)/.exec(location.search);
+      x.open('GET', '/assets/i18n/' + lang + '.json' + (code ? '?c=' + code[1] : ''), false);
       x.send(null);
       if (x.status === 200) dict = JSON.parse(x.responseText);
-      document.documentElement.setAttribute('lang', lang);
+      if (x.status !== 200) lang = 'en';
     } catch (e) {
       dict = {};
       lang = 'en';
     }
+    document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
   }
 
   function fill(text, vars) {

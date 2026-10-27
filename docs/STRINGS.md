@@ -107,6 +107,17 @@ the check.
 
 The page follows the browser's language. `?lang=es` picks one for testing.
 
+Arabic (`ar`) covers the web dashboard, TV app, setup pages and Glasshouse Home.
+`i18n.js` sets `lang` and `dir` in the document head; `assets/rtl.css` contains
+direction-scoped layout overrides. The TV tabs and Home's scrolling tracks stay
+LTR because their physical-key navigation uses positive offsets. Text within
+them remains Arabic. The free/total memory translation isolates each substituted
+value with `\u2068` and `\u2069`, keeping a quantity and its unit together.
+
+The phone handoff serves only its localization assets after checking the
+one-time code, including dictionary requests. New localization assets must be
+added to `deploy.sh` and, if needed there, to that restricted allowlist.
+
 ## Keeping a translation current
 
 Each entry records the English it was translated from. When the English changes,

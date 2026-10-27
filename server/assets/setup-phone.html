@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-layout="phone">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -31,6 +31,8 @@ button:disabled{opacity:.5}
 #msg.err{color:#ff8a80}
 .done h1{margin-top:20vh}
 </style>
+<link rel="stylesheet" href="/assets/rtl.css">
+<script src="/assets/i18n.js"></script>
 </head>
 <body>
 <main id="form">
@@ -63,7 +65,6 @@ button:disabled{opacity:.5}
   <p class="sub" data-t="phone.sent.sub">It's connecting now and will show the result on screen. You can close this page.</p>
 </main>
 
-<script src="/assets/i18n.js"></script>
 <script>
 (function () {
   var code = (location.search.match(/[?&]c=([0-9a-f]+)/) || [])[1] || '';

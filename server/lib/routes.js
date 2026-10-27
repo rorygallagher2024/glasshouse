@@ -449,7 +449,20 @@ function startHandoff(cb) {
       if (!page) return send(res, 404, 'setup page missing', 'text/plain');
       return fs.readFile(page, function (err, buf) {
         if (err) return send(res, 500, 'could not read the setup page', 'text/plain');
-        send(res, 200, buf, 'text/html; charset=utf-8');
+        // Every localization request also needs the one-time authorization code.
+        var html = buf.toString('utf8')
+          .replace('href="/assets/rtl.css"', 'href="/assets/rtl.css?c=' + code + '"')
+          .replace('src="/assets/i18n.js"', 'src="/assets/i18n.js?c=' + code + '"');
+        send(res, 200, html, 'text/html; charset=utf-8');
+      });
+    }
+    if (req.method === 'GET' && (u.pathname === '/assets/i18n.js' ||
+        u.pathname === '/assets/rtl.css' || /^\/assets\/i18n\/[a-z]{2}\.json$/.test(u.pathname))) {
+      var localization = assetPath(u.pathname.slice('/assets/'.length));
+      if (!localization) return send(res, 404, 'localization asset missing', 'text/plain');
+      return fs.readFile(localization, function (err, buf) {
+        if (err) return send(res, 404, 'localization asset missing', 'text/plain');
+        send(res, 200, buf, MIME[path.extname(localization).toLowerCase()]);
       });
     }
     if (u.pathname === '/mqtt' && req.method === 'POST') {
