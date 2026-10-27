@@ -1224,6 +1224,16 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
 - The TV has no `/etc/issue`. `/etc/starfish-release` has
   `Rockhopper release 10.3.1-3006`, and `/etc/os-release` `VERSION_ID=10.3.1`.
 
+## The first Home press after a reboot (CX, webOS 5.6.2)
+
+Reported on 26 October 2026 from an OLED55CXPUA (firmware 4.64.00), with
+Glasshouse Home on behind `allowExperimentalHome`.
+
+- **The view took up to 13 s to answer** the first Home press after a reboot,
+  with WebAppMgr running: its page was loading from cold. A 5 s wait for its
+  first heartbeat gave LG's Home the place every time, so Glasshouse Home
+  never opened. With the wait at 20 s it opened.
+
 ## WebAppMgr stopped (G4, webOS 11.2.0)
 
 Seen on 23 October 2026 on an OLED65G4KNA with Glasshouse Home switched on.

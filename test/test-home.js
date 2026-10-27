@@ -1148,17 +1148,42 @@ step('a view that stops beating with WebAppMgr stopped gets WebAppMgr started, n
   });
 });
 
-step('with WebAppMgr running, a short Home press that brings no heartbeat gives LG\'s Home its place', function (done) {
-  start({ enabled: true }, { systemctl: '/bin/systemctl' });
+// With WebAppMgr running the view may only be loading: the wait runs to the
+// first beat's (20 s; 7 s here).
+step('with WebAppMgr running, a short Home press that brings no heartbeat gives LG\'s Home its place after the longer wait', function (done) {
+  start({ enabled: true }, { systemctl: '/bin/systemctl', slowOpenMs: 7000 });
   home.start();
   wait(50, function () {
     foreground('com.webos.app.hdmi1');
     home.homeKey(true);
     home.homeKey(false);
     wait(5100, function () {
-      assert.strictEqual(tv.samType, 'native', 'LG\'s Home has its place');
-      assert.ok(tv.events.indexOf('systemctl start webapp-mgr.service') === -1, 'WebAppMgr left alone');
-      home.disable(function () { done(); });
+      assert.ok(taken(), 'still waiting at 5 s');
+      wait(2000, function () {
+        assert.strictEqual(tv.samType, 'native', 'LG\'s Home has its place');
+        assert.ok(tv.events.indexOf('systemctl start webapp-mgr.service') === -1, 'WebAppMgr left alone');
+        home.disable(function () { done(); });
+      });
+    });
+  });
+});
+
+// A CX (webOS 5.6.2) took up to 13 s to draw the view on the first press after a reboot.
+step('a short Home press the view answers slowly, with WebAppMgr running, keeps Glasshouse Home', function (done) {
+  start({ enabled: true }, { systemctl: '/bin/systemctl', slowOpenMs: 7000 });
+  home.start();
+  wait(50, function () {
+    foreground('com.webos.app.hdmi1');
+    home.homeKey(true);
+    home.homeKey(false);
+    wait(6000, function () {
+      foreground(LG_HOME);
+      home.beat();
+      wait(1200, function () {
+        assert.ok(taken(), 'Glasshouse Home keeps the place');
+        assert.ok(tv.events.indexOf('systemctl start webapp-mgr.service') === -1);
+        home.disable(function () { done(); });
+      });
     });
   });
 });
