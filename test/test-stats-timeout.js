@@ -49,8 +49,18 @@ telemetry.init({
   tvwebVersion: '0.0.0'
 });
 
-// Lets every collection under way run up to its held last step.
-function settle(cb) { realSetTimeout(cb, 50); }
+/*
+ * Lets every collection under way run up to its held last step: n of them
+ * held in all. On a CI runner a collection's commands take longer than here,
+ * so this waits for them rather than a fixed time, up to maxMs (10 s).
+ */
+function settle(n, cb, maxMs) {
+  var until = Date.now() + (maxMs || 10000);
+  (function poll() {
+    if (pending.length >= n || Date.now() > until) return realSetTimeout(cb, 20);
+    realSetTimeout(poll, 20);
+  })();
+}
 
 function done(fail) {
   global.setTimeout = realSetTimeout;
@@ -68,14 +78,15 @@ function answer(name) {
 
 try {
   telemetry.collectStats(record('first'));
-  settle(function () {
+  settle(1, function () {
     try {
       assert.strictEqual(pending.length, 1, 'the first collection is running');
       fire(20000);
       assert.strictEqual(answer('first').error, 'timeout', 'nothing complete to answer with yet');
 
+      // Long enough for a second collection, were one started, to be held too.
       telemetry.collectStats(record('during'));
-      settle(function () {
+      settle(2, function () {
         try {
           assert.strictEqual(pending.length, 1, 'no second collection beside the late one');
           pending[0]({});
@@ -85,7 +96,7 @@ try {
 
           telemetry.expireStats();
           telemetry.collectStats(record('expired'));
-          settle(function () {
+          settle(2, function () {
             try {
               assert.strictEqual(pending.length, 2, 'a fresh collection after expireStats');
               fire(4500);
@@ -94,7 +105,7 @@ try {
 
               fire(60000);
               telemetry.collectStats(record('after'));
-              settle(function () {
+              settle(3, function () {
                 try {
                   assert.strictEqual(pending.length, 3, 'given up on, the next caller starts a fresh one');
                   pending[1]({});
@@ -108,7 +119,7 @@ try {
             } catch (e) { done(e); }
           });
         } catch (e) { done(e); }
-      });
+      }, 2000);
     } catch (e) { done(e); }
   });
 } catch (e) { done(e); }
