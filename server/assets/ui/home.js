@@ -112,7 +112,10 @@ function renderHome() {
     desc.textContent = t('home.isOffDesc', 'Nothing of LG’s is changed: Glasshouse Home is laid over LG’s Home while on, and switching off takes it away.');
   }
   const dot = q('home-dot');
-  if (dot) dot.className = 'ps-dot' + (st.restorePending ? ' warn' : st.enabled ? (st.active && !st.lgHomeOpen ? ' good' : ' warn') : '');
+  // Orange only when something needs attention: switched on but not in LG's
+  // Home's place, or a switch-off left unfinished. LG's Home opened on purpose
+  // (its tile, or holding Home) leaves Glasshouse Home the TV's Home.
+  if (dot) dot.className = 'ps-dot' + (st.restorePending ? ' warn' : st.enabled ? (st.active || st.lgHomeOpen ? ' good' : ' warn') : '');
   const more = q('home-more');
   if (more) more.hidden = !st.supported.ok || !st.enabled;
   const autoRow = q('home-autolaunch-row');
