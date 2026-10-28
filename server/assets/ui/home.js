@@ -1,3 +1,5 @@
+git: error: couldn't create cache file '/var/folders/zz/zyxvpxvq6csfxvn_n00001ym0000gn/T/xcrun_db-72lJzXn3' (errno=Operation not permitted)
+git: error: couldn't create cache file '/var/folders/zz/zyxvpxvq6csfxvn_n00001ym0000gn/T/xcrun_db-1o1OoChZ' (errno=Operation not permitted)
 // The Home tab: Glasshouse Home, a home screen of Glasshouse's own in place of LG's.
 
 let homeStatus = null;
@@ -497,7 +499,7 @@ function homePicture() {
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.
-const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec']];
+const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showAppNames', 'home-show-app-names'], ['showCec', 'home-show-cec']];
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });

@@ -1,0 +1,406 @@
+{
+  "common.am": {
+    "text": "dop.",
+    "from": "AM"
+  },
+  "common.pm": {
+    "text": "odp.",
+    "from": "PM"
+  },
+  "home.arrange.done": {
+    "text": "Hotovo",
+    "from": "Done"
+  },
+  "home.arrange.emptyRow": {
+    "text": "Tento řádek je prázdný",
+    "from": "This row is empty"
+  },
+  "home.arrange.folder": {
+    "text": "Přesunout do složky Další aplikace nebo zpět",
+    "from": "Into or out of More apps"
+  },
+  "home.arrange.folderAppsOnly": {
+    "text": "Do složky Další aplikace lze přesunout jen aplikace",
+    "from": "Only apps go into More apps"
+  },
+  "home.arrange.hide": {
+    "text": "Skrýt nebo zobrazit",
+    "from": "Hide or show"
+  },
+  "home.arrange.isHidden": {
+    "text": "(skryto)",
+    "from": "(hidden)"
+  },
+  "home.arrange.isInFolder": {
+    "text": "{name} (ve složce Další aplikace)",
+    "from": "{name} (in More apps)"
+  },
+  "home.arrange.keys": {
+    "text": "Stisknutím OK dlaždici vyberete nebo umístíte. Se stisknutou dlaždicí ji šipkami přesunete nebo změníte její řádek. Tlačítkem Zpět ji skryjete, zobrazíte nebo odeberete kanál. Vlevo od řádku změníte jeho pořadí tlačítkem OK.",
+    "from": "OK picks a tile up or puts it down. Held, the arrows move it or its row, and Back hides or shows it, or removes a channel. Left of a row, OK sets its order."
+  },
+  "home.arrange.moving": {
+    "text": "Přesouvání: {name}",
+    "from": "Moving {name}"
+  },
+  "home.arrange.nowCustom": {
+    "text": "Řádek {row} je nyní ve vlastním pořadí",
+    "from": "{row} are now in your order"
+  },
+  "home.arrange.nowCustomDesc": {
+    "text": "Pořadí řádku vlevo od první dlaždice jej vrátí k řazení podle posledního otevření",
+    "from": "The row's Order, left of its first tile, puts them back in last opened order"
+  },
+  "home.arrange.orderCustom": {
+    "text": "Pořadí: vlastní",
+    "from": "Order: yours"
+  },
+  "home.arrange.orderRecent": {
+    "text": "Pořadí: naposledy otevřené",
+    "from": "Order: last opened"
+  },
+  "home.arrange.removeChannel": {
+    "text": "Odebrat kanál",
+    "from": "Remove channel"
+  },
+  "home.arrange.reset": {
+    "text": "Obnovit",
+    "from": "Reset"
+  },
+  "home.arrange.resetDesc": {
+    "text": "Aplikace, vstupy a kanály v původním pořadí",
+    "from": "Apps, Inputs, then Channels, in their first order"
+  },
+  "home.arrange.resetDone": {
+    "text": "Rozložení obnoveno",
+    "from": "Layout reset"
+  },
+  "home.arrange.resetFailed": {
+    "text": "Rozložení se nepodařilo obnovit",
+    "from": "Layout could not be reset"
+  },
+  "home.arrange.saveFailed": {
+    "text": "Rozložení se nepodařilo uložit",
+    "from": "Layout could not be saved"
+  },
+  "home.arrange.saved": {
+    "text": "Rozložení uloženo",
+    "from": "Layout saved"
+  },
+  "home.arrange.savedDesc": {
+    "text": "Změna se projeví také na kartě Home v ovládacím panelu",
+    "from": "The dashboard's Home tab shows it too"
+  },
+  "home.arrange.sortFocus": {
+    "text": "{row}: tlačítkem OK změníte pořadí",
+    "from": "{row}: OK changes the order"
+  },
+  "home.arrange.sortedCustom": {
+    "text": "{row}: vlastní pořadí",
+    "from": "{row}: in your order"
+  },
+  "home.arrange.sortedCustomDesc": {
+    "text": "Stisknutím OK vyberete dlaždici k přesunutí",
+    "from": "Pick a tile up with OK to move it"
+  },
+  "home.arrange.sortedRecent": {
+    "text": "{row}: naposledy otevřené první",
+    "from": "{row}: last opened first"
+  },
+  "home.arrange.sortedRecentDesc": {
+    "text": "Každá dlaždice se po otevření přesune na začátek",
+    "from": "Each tile moves to the front when it is opened"
+  },
+  "home.arrange.title": {
+    "text": "Uspořádání",
+    "from": "Arranging"
+  },
+  "home.date": {
+    "text": "{weekday} {day}. {month}",
+    "from": "{weekday} {day} {month}"
+  },
+  "home.dev.cec": {
+    "text": "CEC {address}",
+    "from": "CEC {address}"
+  },
+  "home.dev.connected": {
+    "text": "Připojeno",
+    "from": "Connected"
+  },
+  "home.dev.last": {
+    "text": "Naposledy sledováno",
+    "from": "Last watched"
+  },
+  "home.dev.port": {
+    "text": "HDMI {port}",
+    "from": "HDMI {port}"
+  },
+  "home.dev.through": {
+    "text": "HDMI {port}, přes {via}",
+    "from": "HDMI {port}, through {via}"
+  },
+  "home.dev.unused": {
+    "text": "Nic není připojeno",
+    "from": "Nothing connected"
+  },
+  "home.fault.desc": {
+    "text": "Glasshouse Home se vrátí, jakmile začne odpovídat. Pokud zůstane nedostupná, za několik minut se obnoví LG Home.",
+    "from": "Glasshouse Home comes back when it answers. Should it stay silent, LG's Home comes back in a few minutes."
+  },
+  "home.fault.title": {
+    "text": "Glasshouse neodpovídá",
+    "from": "Glasshouse is not answering"
+  },
+  "home.folder.label": {
+    "text": "Ve složce Další aplikace",
+    "from": "In More apps"
+  },
+  "home.folder.title": {
+    "text": "Další aplikace",
+    "from": "More apps"
+  },
+  "home.hidden": {
+    "text": "Skryto",
+    "from": "Hidden"
+  },
+  "home.hint.desc": {
+    "text": "Přesouvejte dlaždice a řádky nebo je skrývejte. Dlaždice LG Home je v řádku Aplikace poslední.",
+    "from": "Move or hide tiles and rows. LG's Home is the last tile in Apps."
+  },
+  "home.hint.title": {
+    "text": "Podržením OK zapnete uspořádání",
+    "from": "Hold OK to arrange"
+  },
+  "home.lgHome": {
+    "text": "LG Home",
+    "from": "LG Home"
+  },
+  "home.now.app": {
+    "text": "Aplikace v této televizi",
+    "from": "App on this TV"
+  },
+  "home.now.channel": {
+    "text": "Kanál {number}",
+    "from": "Channel {number}"
+  },
+  "home.now.channelShow": {
+    "text": "Kanál {number}: {title}",
+    "from": "Channel {number}: {title}"
+  },
+  "home.now.lastOpened": {
+    "text": "Naposledy otevřeno",
+    "from": "Last opened"
+  },
+  "home.now.lastWatched": {
+    "text": "Naposledy sledováno",
+    "from": "Last watched"
+  },
+  "home.openFailed": {
+    "text": "Obsah se nepodařilo otevřít",
+    "from": "That did not open"
+  },
+  "home.plate.allm": {
+    "text": "Nízká latence",
+    "from": "Low latency"
+  },
+  "home.plate.backlight": {
+    "text": "Podsvícení",
+    "from": "Backlight"
+  },
+  "home.plate.depth": {
+    "text": "{chroma}, {bits} bitů",
+    "from": "{chroma}, {bits}-bit"
+  },
+  "home.plate.dolby": {
+    "text": "Dolby Vision",
+    "from": "Dolby Vision"
+  },
+  "home.plate.noSignal": {
+    "text": "Žádný obrazový signál",
+    "from": "No picture coming in"
+  },
+  "home.plate.oledLight": {
+    "text": "Světlo OLED",
+    "from": "OLED light"
+  },
+  "home.plate.played": {
+    "text": "Poslední video",
+    "from": "Last video"
+  },
+  "home.plate.size": {
+    "text": "{width} × {height} při {hz} Hz",
+    "from": "{width} × {height} at {hz} Hz"
+  },
+  "home.plate.sizeOnly": {
+    "text": "{width} × {height}",
+    "from": "{width} × {height}"
+  },
+  "home.plate.vrr": {
+    "text": "VRR",
+    "from": "VRR"
+  },
+  "home.recents.allClosed": {
+    "text": "Nedávné aplikace zavřeny",
+    "from": "Recent apps closed"
+  },
+  "home.recents.close": {
+    "text": "Zavřít",
+    "from": "Close"
+  },
+  "home.recents.closeAll": {
+    "text": "Zavřít vše",
+    "from": "Close all"
+  },
+  "home.recents.closeFailed": {
+    "text": "Aplikaci se nepodařilo zavřít",
+    "from": "That did not close"
+  },
+  "home.recents.none": {
+    "text": "Nic není otevřeno",
+    "from": "Nothing is open"
+  },
+  "home.recents.noneDesc": {
+    "text": "Aplikace tu zůstávají, dokud jsou otevřené.",
+    "from": "Apps stay here while they are open."
+  },
+  "home.recents.title": {
+    "text": "Nedávné aplikace",
+    "from": "Recent apps"
+  },
+  "home.row.addChannels": {
+    "text": "Přidejte kanály v nastavení Home aplikace Glasshouse",
+    "from": "Add channels in Glasshouse’s Home settings"
+  },
+  "home.row.apps": {
+    "text": "Aplikace",
+    "from": "Apps"
+  },
+  "home.row.appsNote": {
+    "text": "Zobrazeno {n} z {total}",
+    "from": "{n} of {total} shown"
+  },
+  "home.row.appsNoteFolder": {
+    "text": "Zobrazeno {n} z {total}, ve složce Další aplikace: {folder}",
+    "from": "{n} of {total} shown, {folder} in More apps"
+  },
+  "home.row.channels": {
+    "text": "Kanály",
+    "from": "Channels"
+  },
+  "home.row.channelsNote": {
+    "text": "Přidáno: {n}",
+    "from": "{n} added"
+  },
+  "home.row.inputs": {
+    "text": "Vstupy",
+    "from": "Inputs"
+  },
+  "home.row.inputsNote": {
+    "text": "Zařízení na {n} vstupech HDMI",
+    "from": "Devices on {n} HDMI inputs"
+  },
+  "home.row.inputsNoteOne": {
+    "text": "Zařízení na HDMI {port}",
+    "from": "Devices on HDMI {port}"
+  },
+  "home.row.noTuner": {
+    "text": "V televizi nejsou naladěné žádné kanály",
+    "from": "This TV has no channels tuned"
+  },
+  "home.search.blockedLevel": {
+    "text": "Volba „Everything“ v blokování reklam znemožňuje vyhledávání LG. Chcete-li vyhledávání použít, na kartě Privacy ovládacího panelu zvolte „Ads plus telemetry“ nebo „Off“.",
+    "from": "The ad blocker’s Everything setting blocks LG’s search. Set it to Ads & telemetry or off on the dashboard’s Privacy tab."
+  },
+  "home.search.blockedList": {
+    "text": "Seznam blokovaných adres blokuje {host}, který vyhledávání LG potřebuje. Odeberte tuto adresu ze seznamu na kartě Privacy ovládacího panelu.",
+    "from": "The ad blocker’s hosts list blocks {host}, which LG’s search needs. Take it out of the list on the dashboard’s Privacy tab."
+  },
+  "home.search.blockedTitle": {
+    "text": "Vyhledávání není dostupné",
+    "from": "Search is unavailable"
+  },
+  "home.search.failed": {
+    "text": "Vyhledávání LG neodpovědělo. Televize musí být připojena k internetu a blokování reklam nastaveno na „Ads plus telemetry“ nebo „Off“.",
+    "from": "LG’s search did not answer. It needs the TV online, and the ad blocker on Ads & telemetry or off."
+  },
+  "home.search.film": {
+    "text": "Film",
+    "from": "Film"
+  },
+  "home.search.found": {
+    "text": "Počet nalezených titulů v aplikacích této televize: {n}",
+    "from": "{n} titles on this TV’s apps"
+  },
+  "home.search.foundMore": {
+    "text": "Nalezené tituly v aplikacích této televize: {n}; dalších {more} je v aplikacích, které tato televize nemá.",
+    "from": "{n} titles on this TV’s apps, {more} more on apps it does not have"
+  },
+  "home.search.foundOne": {
+    "text": "V aplikacích této televize nalezen 1 titul",
+    "from": "1 title on this TV’s apps"
+  },
+  "home.search.foundOneMore": {
+    "text": "V aplikacích této televize nalezen 1 titul; dalších {more} je v aplikacích, které tato televize nemá.",
+    "from": "1 title on this TV’s apps, {more} more on apps it does not have"
+  },
+  "home.search.hintDesc": {
+    "text": "Film nebo seriál vyhledáte šipkou doleva z první dlaždice řádku; otevře se v aplikaci této televize",
+    "from": "Press left on a row’s first tile to find a film or series and open it in an app on this TV"
+  },
+  "home.search.hintTitle": {
+    "text": "Vyhledávání najdete vlevo od řádků",
+    "from": "Search is left of the rows"
+  },
+  "home.search.hours": {
+    "text": "{h} h",
+    "from": "{h} h"
+  },
+  "home.search.hoursMinutes": {
+    "text": "{h} h {m} min",
+    "from": "{h} h {m} min"
+  },
+  "home.search.looking": {
+    "text": "Hledá se „{query}“",
+    "from": "Looking for “{query}”"
+  },
+  "home.search.minutes": {
+    "text": "{m} min",
+    "from": "{m} min"
+  },
+  "home.search.none": {
+    "text": "Pro „{query}“ nebyly nalezeny žádné výsledky",
+    "from": "Nothing for “{query}”"
+  },
+  "home.search.onlyElsewhere": {
+    "text": "V aplikacích této televize se pro „{query}“ nic nenašlo. Další výsledky v nepodporovaných aplikacích: {n}.",
+    "from": "Nothing for “{query}” on this TV’s apps. {n} more on apps it does not have."
+  },
+  "home.search.opening": {
+    "text": "Otevírá se {title} v aplikaci {app}",
+    "from": "Opening {title} on {app}"
+  },
+  "home.search.placeholder": {
+    "text": "Film nebo seriál",
+    "from": "Film or series"
+  },
+  "home.search.rail": {
+    "text": "Hledat",
+    "from": "Search"
+  },
+  "home.search.ready": {
+    "text": "Filmy a seriály v aplikacích této televize z vyhledávání LG",
+    "from": "Films and series on this TV’s apps, from LG’s search"
+  },
+  "home.search.series": {
+    "text": "Seriál",
+    "from": "Series"
+  },
+  "home.showAppNames": {
+    "text": "Názvy aplikací",
+    "from": "App names"
+  },
+  "home.showAppNamesDesc": {
+    "text": "Zobrazovat názvy aplikací pod jejich ikonami na Glasshouse Home.",
+    "from": "Show app names below their icons on Glasshouse Home."
+  }
+}

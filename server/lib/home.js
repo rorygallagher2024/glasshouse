@@ -1,3 +1,5 @@
+git: error: couldn't create cache file '/var/folders/zz/zyxvpxvq6csfxvn_n00001ym0000gn/T/xcrun_db-WU2xIwmJ' (errno=Operation not permitted)
+git: error: couldn't create cache file '/var/folders/zz/zyxvpxvq6csfxvn_n00001ym0000gn/T/xcrun_db-rCgi4Spw' (errno=Operation not permitted)
 /*
  * lib/home.js - Glasshouse Home: a home screen of Glasshouse's own in place
  * of LG's, and the way back to LG's
@@ -45,7 +47,7 @@ var SETTINGS = 'com.webos.service.settings/';
 var ROWS = ['app', 'dev', 'ch'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
-var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec'];
+var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showAppNames', 'showCec'];
 // An input opened from its tile is recorded as that device, not as the whole input.
 var TILE_OPEN_MS = 15000;
 /*
@@ -263,6 +265,7 @@ function defaults() {
     showClock: true,
     showLastOn: true,
     showAppCount: true,
+    showAppNames: true,
     showCec: true,
     // The rows centred below the top strip, or along the bottom as on LG's Home.
     rowsBottom: false,
@@ -452,6 +455,7 @@ function setLayout(body, cb) {
     view: body.view !== undefined ? body.view : c.view,
     showLastOn: typeof body.showLastOn === 'boolean' ? body.showLastOn : c.showLastOn,
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
+    showAppNames: typeof body.showAppNames === 'boolean' ? body.showAppNames : c.showAppNames,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
@@ -482,7 +486,7 @@ function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     searchHintSeen: c.searchHintSeen, picture: c.picture, search: c.search, fade: c.fade, hideUnused: c.hideUnused,
     showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, colours: c.colours,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showAppNames: c.showAppNames, showCec: c.showCec, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
 }

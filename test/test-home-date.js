@@ -1,3 +1,5 @@
+git: error: couldn't create cache file '/var/folders/zz/zyxvpxvq6csfxvn_n00001ym0000gn/T/xcrun_db-ZKqFWC9H' (errno=Operation not permitted)
+git: error: couldn't create cache file '/var/folders/zz/zyxvpxvq6csfxvn_n00001ym0000gn/T/xcrun_db-ppk0JVG6' (errno=Operation not permitted)
 /**
  * test/test-home-date.js - Glasshouse Home writes the date in the page's language
  *
@@ -11,6 +13,7 @@ var assert = require('assert');
 var fs = require('fs');
 var path = require('path');
 var vm = require('vm');
+var cs = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'server', 'assets', 'i18n', 'cs.json'), 'utf8'));
 
 console.log('Running test-home-date.js ...');
 
@@ -54,7 +57,9 @@ function dateIn(lang, old) {
   var ctx = {
     Intl: tvIntl(old),
     I18N: { lang: function () { return lang; } },
-    t: function (_key, english, vars) {
+    t: function (key, english, vars) {
+      var entry = lang === 'cs' && cs[key];
+      if (entry && entry.from === english) english = entry.text;
       return english.replace(/\{(\w+)\}/g, function (_m, name) { return vars[name]; });
     }
   };
@@ -73,5 +78,8 @@ console.log('  ✓ English page unchanged');
 // 3. Without formatToParts the words are still the page's language
 assert.strictEqual(dateIn('es', true), 'Sábado 24 octubre');
 console.log('  ✓ older browser: page language, month on its own');
+
+assert.strictEqual(dateIn('cs'), 'Sobota 24. října');
+console.log('  ✓ Czech page: weekday and month in Czech, with Czech date order');
 
 console.log('ALL test-home-date.js assertions passed!\n');

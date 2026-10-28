@@ -20,17 +20,17 @@
  */
 (function (root) {
   // Languages that have a file in /assets/i18n/. English needs none.
-  var LANGS = ['es', 'de', 'ru', 'hu', 'it'];
+  var LANGS = ['cs', 'es', 'de', 'ru', 'hu', 'it'];
   // Each language in its own words, as the language list shows it, so it can
   // be found whatever the page is in.
-  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', it: 'Italiano' };
+  var NAMES = { en: 'English', cs: 'Čeština', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', it: 'Italiano' };
   /*
    * Languages translated only in part, with the pages they cover in full:
    * 'web' (the dashboard), 'tv' (the TV app) and 'home' (Glasshouse Home).
    * Following the browser's language, one is used only on those pages, so no
    * page mixes it with English; elsewhere it is used only once chosen.
    */
-  var PARTIAL = { de: ['home'] };
+  var PARTIAL = { cs: ['home'], de: ['home'] };
 
   var dict = {};
   var lang = 'en';

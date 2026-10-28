@@ -1,3 +1,5 @@
+git: error: couldn't create cache file '/var/folders/zz/zyxvpxvq6csfxvn_n00001ym0000gn/T/xcrun_db-oFumpvJa' (errno=Operation not permitted)
+git: error: couldn't create cache file '/var/folders/zz/zyxvpxvq6csfxvn_n00001ym0000gn/T/xcrun_db-w99zQsFk' (errno=Operation not permitted)
 /**
  * test/test-i18n-pick.js - which language server/assets/i18n.js picks: the
  * browser's, unless it is translated only in part and does not cover the page
@@ -47,7 +49,9 @@ var HOME = '/assets/home.html', TV = '/assets/dashboard.html', WEB = '/';
 
 // German covers Glasshouse Home in full and nothing else.
 assert.strictEqual(load({ browser: 'de-DE', page: HOME }).lang(), 'de', 'Glasshouse Home, which German covers');
+assert.strictEqual(load({ browser: 'cs-CZ', page: HOME }).lang(), 'cs', 'Glasshouse Home, which Czech covers');
 assert.strictEqual(load({ browser: 'de-DE', page: WEB }).lang(), 'en', 'not the dashboard, which it does not');
+assert.strictEqual(load({ browser: 'cs-CZ', page: WEB }).lang(), 'en', 'not the dashboard, which Czech does not cover');
 assert.strictEqual(load({ browser: 'de-DE', page: TV }).lang(), 'en', 'nor the TV app');
 console.log('  ✓ a partial language is picked from the browser only on the pages it covers');
 
@@ -66,6 +70,8 @@ var web = load({ browser: 'en-GB', page: WEB });
 assert.strictEqual(web.complete('de'), false, 'the list marks German as partial on the dashboard');
 assert.strictEqual(web.complete('es'), true);
 assert.strictEqual(web.names.de, 'Deutsch');
+assert.strictEqual(web.complete('cs'), false);
+assert.strictEqual(web.names.cs, 'Čeština');
 console.log('  ✓ the list knows which languages are partial');
 
 console.log('ALL test-i18n-pick.js assertions passed!');

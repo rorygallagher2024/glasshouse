@@ -1,3 +1,5 @@
+git: error: couldn't create cache file '/var/folders/zz/zyxvpxvq6csfxvn_n00001ym0000gn/T/xcrun_db-RLncxfaH' (errno=Operation not permitted)
+git: error: couldn't create cache file '/var/folders/zz/zyxvpxvq6csfxvn_n00001ym0000gn/T/xcrun_db-BCehT5k0' (errno=Operation not permitted)
 /**
  * test/test-home.js - Glasshouse Home: the saved layout merges with what the
  * TV has; switching on puts the app's files in LG's Home's place and sam is
@@ -1523,20 +1525,20 @@ step('the picture details stay off until switched on, and the server is told of 
   });
 });
 
-step('last watched, the app count and CEC addresses show until switched off, one at a time', function (done) {
+step('last watched, the app count, app names and CEC addresses show until switched off, one at a time', function (done) {
   start(null);
   var l = home.layout();
-  assert.deepEqual([l.showLastOn, l.showAppCount, l.showCec], [true, true, true]);
+  assert.deepEqual([l.showLastOn, l.showAppCount, l.showAppNames, l.showCec], [true, true, true, true]);
   home.setLayout({ showCec: false }, function (r) {
-    assert.deepEqual([r.layout.showLastOn, r.layout.showAppCount, r.layout.showCec], [true, true, false]);
-    home.setLayout({ showLastOn: false, showAppCount: 'no' }, function (r2) {
-      assert.deepEqual([r2.layout.showLastOn, r2.layout.showAppCount, r2.layout.showCec], [false, true, false]);
+    assert.deepEqual([r.layout.showLastOn, r.layout.showAppCount, r.layout.showAppNames, r.layout.showCec], [true, true, true, false]);
+    home.setLayout({ showLastOn: false, showAppCount: 'no', showAppNames: false }, function (r2) {
+      assert.deepEqual([r2.layout.showLastOn, r2.layout.showAppCount, r2.layout.showAppNames, r2.layout.showCec], [false, true, false, false]);
       var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
-      assert.deepEqual([saved.showLastOn, saved.showAppCount, saved.showCec], [false, true, false]);
+      assert.deepEqual([saved.showLastOn, saved.showAppCount, saved.showAppNames, saved.showCec], [false, true, false, false]);
       home.setLayout({ showAppCount: false }, function (r3) {
-        assert.deepEqual([r3.layout.showLastOn, r3.layout.showAppCount, r3.layout.showCec], [false, false, false]);
-        home.setLayout({ showLastOn: true, showAppCount: true, showCec: true }, function (r4) {
-          assert.deepEqual([r4.layout.showLastOn, r4.layout.showAppCount, r4.layout.showCec], [true, true, true]);
+        assert.deepEqual([r3.layout.showLastOn, r3.layout.showAppCount, r3.layout.showAppNames, r3.layout.showCec], [false, false, false, false]);
+        home.setLayout({ showLastOn: true, showAppCount: true, showAppNames: true, showCec: true }, function (r4) {
+          assert.deepEqual([r4.layout.showLastOn, r4.layout.showAppCount, r4.layout.showAppNames, r4.layout.showCec], [true, true, true, true]);
           done();
         });
       });
