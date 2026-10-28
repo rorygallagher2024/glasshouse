@@ -604,6 +604,8 @@ button.pill.busy:not([style*="--p"]){
 }
 .dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,auto);
       gap:8px;max-width:260px;margin:0 auto 14px}
+/* Its arrows stay where they point in a page laid out right to left. */
+[dir=rtl] .dpad{direction:ltr}
 /* The arrows are glyphs, not words: the button voice everywhere else is
    uppercase and letter-spaced, which pushes a single glyph off centre. */
 .dpad .dp{min-height:0;height:62px;padding:0;font-size:15px;letter-spacing:0;
