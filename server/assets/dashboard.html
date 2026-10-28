@@ -877,12 +877,15 @@ function saverRows(d) {
                : t('tv.saver.use', 'Press OK to use this one'),
              hint: m.id === 'stock'
                ? t('tv.saver.stock.hint', 'LG’s own screen saver.')
+               : m.fromApp ? t('tv.saver.app.hint', 'From the {app} app. Any settings it has are in that app.', { app: m.fromApp })
                : t('tv.saver.ours.hint', 'Replaces LG’s screen saver. Everything on it drifts slowly so no pixel holds the same image.') });
   });
   // Brightness only for the screen savers drawn here, as in the browser
   // dashboard: LG's own is not ours to dim. The mode goes with it, since both
   // are staged into the same file.
-  if (d.writable && !busy && d.current && d.current !== 'stock') {
+  // An installed app's screen saver has its own settings, and no brightness from here.
+  var appSaver = d.modes.some(function (m) { return m.active && m.fromApp; });
+  if (d.writable && !busy && d.current && d.current !== 'stock' && !appSaver) {
     var bright = d.level === 'bright';
     r.push(head(t('tv.saver.head.howItLooks', 'How it looks')));
     r.push({ label: t('ss.brightness', 'Brightness'), value: bright ? t('ss.bright', 'Bright') : t('ss.dim', 'Dim'), cls: 'act', act: 'saverLevel',
@@ -2301,8 +2304,8 @@ function previewRows(pv) {
              hint: t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.') });
   }
   if (pv.isScreensaver) {
-    r.push({ label: t('tv.apps.install.pv.screensaver', 'Screen saver'), value: t('common.replaces', 'Replaces ours'), cls: 'warn', key: 'pv:screensaver',
-             hint: t('apps.install.screensaver.warn', 'This app installs a custom screen saver, which will replace Glasshouse’s own screen savers.') });
+    r.push({ label: t('tv.apps.install.pv.screensaver', 'Screen saver'), value: t('tv.apps.install.pv.screensaverListed', 'Listed with ours'), key: 'pv:screensaver',
+             hint: t('apps.install.screensaver.listed', 'This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own.') });
   }
   if (pv.freeBytes !== null && pv.freeBytes !== undefined) {
     r.push({ label: t('tv.apps.install.pv.space', 'Free space'), value: fmtMb(pv.freeBytes), key: 'pv:space',

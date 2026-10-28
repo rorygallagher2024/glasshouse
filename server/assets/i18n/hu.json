@@ -155,7 +155,6 @@
  "apps.install.root.needed": {"text": "Az alkalmazás szolgáltatásai rootjogosultságot igényelnek. Enélkül előfordulhat, hogy az alkalmazás nem működik.", "from": "This app asks for its services to run as root, and may not work without it."},
  "apps.install.root.restored": {"text": "A frissítés után a következők ismét megkapják a korábbi rootjogosultságukat: {list}.", "from": "Root is given back to {list} after this update, as before."},
  "apps.install.rootBadge": {"text": "root", "from": "root"},
- "apps.install.screensaver.warn": {"text": "Ez az alkalmazás egyéni képernyővédőt telepít, amely a Glasshouse saját képernyővédőit váltja fel.", "from": "This app installs a custom screen saver, which will replace Glasshouse’s own screen savers."},
  "apps.install.search": {"text": "Alkalmazások keresése", "from": "Search apps"},
  "apps.install.services": {"text": "Háttérszolgáltatások: {list}", "from": "Background services: {list}"},
  "apps.install.showMore": {"text": "További {n} megjelenítése", "from": "Show {n} more"},
@@ -302,7 +301,6 @@
  "common.heldOverridden": {"text": "Visszakapcsolva az allowOnWebos10 beállítással a config.json fájlban. webOS 10 és újabb rendszeren az egyéni képernyővédők és a csempék elrejtése miatt a kép, a hang és a HDMI-vezérlés kikapcsolva maradt, amíg a TV-t ki nem húzták a konnektorból.", "from": "Turned back on with allowOnWebos10 in config.json. On webOS 10 and later custom screen savers and tile hiding have left the picture, the sound and HDMI control off until the TV was unplugged."},
  "common.off": {"text": "Ki", "from": "Off"},
  "common.on": {"text": "Be", "from": "On"},
- "common.replaces": {"text": "A Glasshouse sajátját váltja fel", "from": "Replaces ours"},
  "common.unauthorised": {"text": "Nincs jogosultság - a token hiányzik vagy hibás", "from": "Unauthorised — token missing or wrong"},
  "common.unknownError": {"text": "ismeretlen hiba", "from": "unknown error"},
  "common.unreachable": {"text": "A TV nem érhető el", "from": "Can’t reach the TV"},
@@ -2400,5 +2398,11 @@
  "home.row.recommended": {"text": "Ajánlott", "from": "Recommended"},
  "srv.home.recommendedUnavailable": {"text": "a tévé nem adta meg az alkalmazásai ajánlásait", "from": "the TV did not list its apps’ recommendations"},
  "audio.hdmiChannels": {"text": "Csatornák a HDMI szerint", "from": "HDMI channel information"},
- "audio.hdmiMetadataHint": {"text": "A HDMI-forrás által jelzett csatornák. Szünet alatt is megmaradhatnak, és nem igazolják, hogy a vevő lejátssza a hangot.", "from": "Channel metadata reported by the HDMI source. It can remain during a pause and does not confirm playback at the receiver."}
+ "audio.hdmiMetadataHint": {"text": "A HDMI-forrás által jelzett csatornák. Szünet alatt is megmaradhatnak, és nem igazolják, hogy a vevő lejátssza a hangot.", "from": "Channel metadata reported by the HDMI source. It can remain during a pause and does not confirm playback at the receiver."},
+ "srv.saver.fromApp": {"text": "A(z) {app} alkalmazás képernyővédője. A beállításai, ha vannak, abban az alkalmazásban vannak.", "from": "The screen saver from the {app} app. Any settings it has are in that app."},
+ "srv.saver.appTooBig": {"text": "A képernyővédő-fájlja nagyobb {kb} KB-nál.", "from": "Its screen saver file is over {kb} KB."},
+ "ss.installedApp": {"text": "Telepített alkalmazás", "from": "Installed app"},
+ "tv.saver.app.hint": {"text": "A(z) {app} alkalmazásból. A beállításai, ha vannak, abban az alkalmazásban vannak.", "from": "From the {app} app. Any settings it has are in that app."},
+ "tv.apps.install.pv.screensaverListed": {"text": "A mieink mellett", "from": "Listed with ours"},
+ "apps.install.screensaver.listed": {"text": "Ennek az alkalmazásnak van képernyővédője. Telepítés után a Képernyővédő lapon választható ki, a Glasshouse sajátjai mellett.", "from": "This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own."}
 }

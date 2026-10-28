@@ -849,14 +849,13 @@ function isScreensaverPackage(id) {
 /*
  * What a one-click catalog install still stops for: a choice to make (root for
  * an unvetted package's services, replacing an LG store copy) or a warning to
- * read (a different processor, an older version, or a custom screensaver).
- * Vetted catalog packages with root services auto-elevate on single-click.
+ * read (a different processor, an older version). A screen saver app no longer
+ * replaces Glasshouse's: its screen saver is listed with them.
  */
 function needsReview(pv) {
   var unvettedRoot = !pv.vetted && pv.rootRequired && pv.services && pv.services.length && fs.existsSync(elevatePath);
   return !!(unvettedRoot ||
-            pv.storeInstalled || pv.cpuMismatch || pv.direction === 'down' ||
-            pv.isScreensaver);
+            pv.storeInstalled || pv.cpuMismatch || pv.direction === 'down');
 }
 
 /*
