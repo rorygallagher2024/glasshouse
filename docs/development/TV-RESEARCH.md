@@ -145,6 +145,14 @@ that answers `no result from DB`.
 `luna://com.webos.service.capture/executeOneShot` with `method: DISPLAY`
 writes a PNG of the screen, web apps included, at the size asked for.
 
+## An input's picture in a web app (OLED77B46LA, webOS 10)
+
+A web app plays the tuner and an HDMI input in a `<video>` element of its own,
+at any size, with a `<source>` of type `service/webos-broadcast` and `src`
+`tv://` for the tuner, or type `service/webos-external` and `src`
+`ext://hdmi:1` to `ext://hdmi:4` for an input. An app installed with an empty
+`requiredPermissions` played both, as Glasshouse Home does.
+
 ## LG's picture settings (G3, webOS 9.2.2)
 
 `getSystemSettings {category: 'picture'}` without a dimension answers the

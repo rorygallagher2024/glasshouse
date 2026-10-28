@@ -148,6 +148,15 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 .dev.last .st em{color:#e9ad55}
 .row .dev.unused{opacity:.3}
 .row .dev.unused.focus{opacity:.6}
+.dev>div{position:relative;z-index:1}
+.dev .pv{position:absolute;left:0;top:0;right:0;bottom:0;border-radius:inherit;overflow:hidden;opacity:0;
+  -webkit-transition:opacity .35s;transition:opacity .35s}
+.dev .pv.on{opacity:1}
+.row .dev.live{opacity:1}
+.dev .pv video{display:block;width:100%;height:100%;object-fit:cover;background:#000}
+.dev .pv:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;
+  background:-webkit-linear-gradient(left,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15));
+  background:linear-gradient(90deg,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15))}
 .dev.last .st em:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#e9ad55;margin-right:10px;vertical-align:2px}
 
 .ch{width:224px;height:176px}
@@ -646,7 +655,7 @@ html.faded #stage{opacity:0}
     }
     if (kind === 'dev') {
       var ports = [];
-      items('dev').forEach(function (d) { if (!d.unused && ports.indexOf(d.port) === -1) ports.push(d.port); });
+      items('dev').forEach(function (d) { if (!d.unused && !d.tuner && ports.indexOf(d.port) === -1) ports.push(d.port); });
       return ports.length === 1 ? t('home.row.inputsNoteOne', 'Devices on HDMI {port}', { port: ports[0] })
         : t('home.row.inputsNote', 'Devices on {n} HDMI inputs', { n: ports.length });
     }
@@ -737,6 +746,7 @@ html.faded #stage{opacity:0}
         hiddenLabel + folderLabel + '</div>';
     },
     dev: function (d, i) {
+      if (d.tuner) return tunerTileHtml(d, i);
       var last = layout.showLastOn !== false && lastOn.kind === 'input' && lastOn.port === d.port;
       var cls = 'tile dev' + (last ? ' last' : '') + (d.unused ? ' unused' : '') + (hidden('dev', d.id) ? ' hidden' : '');
       var path = d.unused ? '' : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
@@ -744,7 +754,8 @@ html.faded #stage{opacity:0}
       return '<div class="' + cls + '" data-c="' + i + '"><div><div class="nm">' + esc(d.name) + '</div>' +
         '<div class="path">' + esc(path) + '</div></div>' +
         '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : d.unused ? t('home.dev.unused', 'Nothing connected') : t('home.dev.connected', 'Connected')) + '</em>' +
-        '<span>' + (d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' + hiddenLabel + '</div>';
+        '<span>' + (d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' +
+        (d.unused ? '' : previewHolder) + hiddenLabel + '</div>';
     },
     ch: function (c, i) {
       var cls = 'tile ch' + (hidden('ch', c.id) ? ' hidden' : '');
@@ -766,6 +777,173 @@ html.faded #stage{opacity:0}
         '<div class="cat">' + esc(r.category || (app ? app.title : '')) + '</div></div>';
     }
   };
+
+  var previewHolder = '<span class="pv"></span>';
+
+  // The TV's own tuner: Live TV, on the channel it was last on.
+  function tunerTileHtml(d, i) {
+    var last = layout.showLastOn !== false && lastOn.kind === 'channel';
+    var cls = 'tile dev tuner' + (last ? ' last' : '') + (hidden('dev', d.id) ? ' hidden' : '');
+    var path = d.channel ? d.channel.number + ' ' + d.channel.name : '';
+    return '<div class="' + cls + '" data-c="' + i + '"><div><div class="nm">' + esc(d.name) + '</div>' +
+      '<div class="path">' + esc(path) + '</div></div>' +
+      '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : t('ctl.liveTv', 'Live TV')) + '</em><span></span></div>' +
+      previewHolder + hiddenLabel + '</div>';
+  }
+
+  // ---------------------------------------------------------------- live preview
+
+  /*
+   * The tile chosen in the Inputs row shows what its input is showing, without
+   * sound: the TV's tuner on the channel it was last on, or an HDMI input
+   * with something connected. It starts once the focus has rested on the tile
+   * a moment, so stepping along the row does not tune each input in turn, and
+   * stops as soon as the focus moves, anything opens or Home leaves the
+   * screen, so the TV's one video decoder is free again for what opens next.
+   */
+  var PREVIEW_REST_MS = 700;
+  // With the preview kept on what was last on, it starts this soon: long
+  // enough for an app or Live TV leaving to give the decoder back.
+  var PREVIEW_BACK_MS = 800;
+  // An input that does not start playing is tried again after each of these;
+  // one that has not started by PREVIEW_STALL_MS counts as not playing.
+  var PREVIEW_RETRY_MS = [1000, 2000, 4000, 8000];
+  var PREVIEW_STALL_MS = 5000;
+  var live = { key: null, timer: 0, video: null, held: false, at: -1, tries: 0, stall: 0 };
+
+  function previewOf(it, i) {
+    if (!it || it.unused || hidden('dev', it.id)) return null;
+    if (it.tuner) return { key: 'tv', type: 'service/webos-broadcast', src: 'tv://', at: i };
+    if (!(it.port >= 1 && it.port <= 4)) return null;
+    return { key: 'hdmi' + it.port, type: 'service/webos-external', src: 'ext://hdmi:' + it.port, at: i };
+  }
+
+  /*
+   * What the preview shows, and on which tile: the input chosen in the
+   * Inputs row, or, kept on, what was last on. The TV shows one input at a
+   * time, so choosing another input's tile moves the preview there.
+   */
+  function previewTarget() {
+    if (!layout || !data || layout.showPreview === false || live.held || document.hidden) return null;
+    if (state.arranging || folder.open || recents.open || recents.loading || finder.open) return null;
+    var list = items('dev'), i;
+    if (rowKey() === 'dev' && state.bar < 0 && !state.rail) {
+      var chosen = previewOf(list[colOf('dev')], colOf('dev'));
+      if (chosen) { chosen.chosen = true; return chosen; }
+    }
+    if (layout.previewAlways !== true) return null;
+    // What was last on, if it was an input; after an app, the TV's last channel.
+    var tuner = null;
+    for (i = 0; i < list.length; i++) {
+      var it = list[i];
+      if (it.tuner && !tuner) tuner = previewOf(it, i);
+      if (lastOn.kind === 'input' && !it.tuner && it.port === lastOn.port) {
+        var input = previewOf(it, i);
+        if (input) return input;
+      }
+    }
+    return tuner;
+  }
+
+  function previewHolderEl(at) {
+    var tile = document.querySelector('.row[data-key="dev"] .tile[data-c="' + at + '"]');
+    return tile ? tile.querySelector('.pv') : null;
+  }
+
+  function showOn(holder) {
+    var was = document.querySelectorAll('.pv.on');
+    for (var i = 0; i < was.length; i++) if (was[i] !== holder) { was[i].className = 'pv'; was[i].parentNode.className = was[i].parentNode.className.replace(/ live\b/g, ''); }
+    if (!holder) return;
+    holder.className = 'pv on';
+    if (!/ live\b/.test(holder.parentNode.className)) holder.parentNode.className += ' live';
+  }
+
+  function stopPreview() {
+    clearTimeout(live.timer);
+    clearTimeout(live.stall);
+    live.timer = 0;
+    live.stall = 0;
+    var v = live.video;
+    live.video = null;
+    if (v) {
+      try { v.pause(); } catch (e) { /* already stopped */ }
+      while (v.firstChild) v.removeChild(v.firstChild);
+      try { v.removeAttribute('src'); v.load(); } catch (e) { /* nothing loaded */ }
+      if (v.parentNode) v.parentNode.removeChild(v);
+    }
+    showOn(null);
+  }
+
+  function startPreview() {
+    live.timer = 0;
+    var target = previewTarget();
+    if (!target || target.key !== live.key) return;
+    var holder = previewHolderEl(target.at);
+    if (!holder) return;
+    var v = document.createElement('video');
+    v.muted = true;
+    v.setAttribute('muted', '');
+    v.autoplay = true;
+    var source = document.createElement('source');
+    source.type = target.type;
+    source.src = target.src;
+    v.appendChild(source);
+    v.addEventListener('playing', function () {
+      if (live.video !== v) return;
+      clearTimeout(live.stall);
+      live.tries = 0;
+      if (v.parentNode) showOn(v.parentNode);
+    });
+    v.addEventListener('error', function () { if (live.video === v) retryPreview(); });
+    live.video = v;
+    live.at = target.at;
+    live.stall = setTimeout(function () { if (live.video === v) retryPreview(); }, PREVIEW_STALL_MS);
+    holder.appendChild(v);
+  }
+
+  // Tried again a few times; an input the TV will not show here then stays a plain tile.
+  function retryPreview() {
+    var key = live.key, tries = live.tries;
+    stopPreview();
+    live.key = key;
+    if (tries >= PREVIEW_RETRY_MS.length) return;
+    live.tries = tries + 1;
+    live.timer = setTimeout(startPreview, PREVIEW_RETRY_MS[tries]);
+  }
+
+  // Follows the focus: called whenever it may have moved or Home changed state.
+  function updatePreview() {
+    var target = previewTarget(), key = target ? target.key : null;
+    if (key !== live.key) {
+      stopPreview();
+      live.key = key;
+      live.tries = 0;
+      if (key) live.timer = setTimeout(startPreview, target.chosen ? PREVIEW_REST_MS : PREVIEW_BACK_MS);
+      return;
+    }
+    // The same input on another tile (a second device on the same port, or
+    // a rebuilt row): the playing video moves there.
+    if (live.video) {
+      var holder = previewHolderEl(target.at);
+      if (holder && live.video.parentNode !== holder) {
+        holder.appendChild(live.video);
+        showOn(holder);
+      }
+      live.at = target.at;
+    }
+  }
+
+  // Before anything opens: the decoder is let go first.
+  function holdPreview() {
+    live.held = true;
+    stopPreview();
+    live.key = null;
+  }
+
+  function releasePreview() {
+    live.held = false;
+    updatePreview();
+  }
 
   // noScroll: focus only, as the pointer does, leaving each row where it is.
   function applyFocus(instant, noScroll) {
@@ -803,6 +981,7 @@ html.faded #stage{opacity:0}
         : inFolder(rowKey(), it.id) ? t('home.arrange.isInFolder', '{name} (in More apps)', { name: it.title })
         : (it.title || it.name);
     }
+    updatePreview();
   }
 
   // ---------------------------------------------------------------- scrolling
@@ -1267,10 +1446,17 @@ html.faded #stage{opacity:0}
     var kind = rowKey(), it = items(kind)[colOf(kind)];
     if (!it) return;
     if (it.folder) return openFolder();
+    holdPreview();
     fadeThenOpen(it.overlay === true, function (done) {
       postJson('/api/home/open', { kind: kind, id: it.id }, function (r) {
         done(!!(r && r.ok));
-        if (!r || !r.ok) toast(t('home.openFailed', 'That did not open'), r && r.error);
+        if (!r || !r.ok) {
+          releasePreview();
+          toast(t('home.openFailed', 'That did not open'), r && r.error);
+        } else {
+          // What opens over Home, rather than in its place, leaves it on screen.
+          setTimeout(function () { if (!document.hidden) releasePreview(); }, 8000);
+        }
       });
     });
   }
@@ -1355,6 +1541,7 @@ html.faded #stage{opacity:0}
   }
 
   function openFromFolder(app) {
+    holdPreview();
     fadeThenOpen(app.overlay === true, function (done) {
       postJson('/api/home/open', { kind: 'app', id: app.id }, function (r) {
         done(!!(r && r.ok));
@@ -2444,7 +2631,13 @@ html.faded #stage{opacity:0}
   document.addEventListener('click', onClick);
   // Home pressed with the view already open reaches it as a relaunch.
   document.addEventListener('webOSRelaunch', returned);
-  document.addEventListener('visibilitychange', function () { if (document.hidden) darken(); else returned(); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { holdPreview(); darken(); }
+    else { returned(); releasePreview(); }
+  });
+  // Folders, recent apps and search open from keys that do not all move the
+  // focus; the preview checks again once each key has been handled.
+  document.addEventListener('keydown', function () { setTimeout(updatePreview, 0); });
 
   // Started dark where fading is chosen; in at the first catalogue, or before
   // long without one.

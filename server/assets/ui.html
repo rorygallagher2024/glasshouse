@@ -1097,6 +1097,20 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-cec" onclick="homeShow('showCec')">&mdash;</button></div>
     </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.showPreview">Live preview</div>
+        <div class="prot-desc" data-t="home.showPreviewDesc">On the TV and HDMI tiles in the Inputs row: what the input is showing, without sound, while its tile is chosen.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-show-preview" onclick="homeShow('showPreview')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-preview-always-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewAlways">Keep the preview on</div>
+        <div class="prot-desc" data-t="home.previewAlwaysDesc">Whenever Glasshouse Home is on screen, not only while a tile is chosen: the HDMI input last watched, or otherwise the TV on its last channel. Choosing another input’s tile moves the preview there, as the TV shows one input at a time.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-always" onclick="homePreviewAlways()">&mdash;</button></div>
+    </div>
     <div class="prot-row home-gh-row" id="home-search-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.search">Search</div>

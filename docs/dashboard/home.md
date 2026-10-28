@@ -27,7 +27,15 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    Every HDMI port, plus separate tiles for connected HDMI-CEC devices (for example, *"HDMI 2, through STEREO 70s"*). Selecting a CEC tile wakes the device and switches receivers to that source; inactive ports appear dimmed. Inputs can be hidden one by one, like apps. Beside that, **Hide inputs with nothing connected**, a switch in the Inputs row's settings on the dashboard and in the TV app, leaves out ports with nothing plugged in instead of dimming them, marked **Left out**; they show, dimmed, while arranging, and come back as soon as something is plugged in. An input is left out if it is hidden or, with that switch on, has nothing connected.
+    A **TV** tile for the TV's own tuner comes first, with the channel it was last on; selecting it opens Live TV. It is there on TVs with channels tuned. After it, every HDMI port, plus separate tiles for connected HDMI-CEC devices (for example, *"HDMI 2, through STEREO 70s"*). Selecting a CEC tile wakes the device and switches receivers to that source; inactive ports appear dimmed. Inputs can be hidden one by one, like apps. Beside that, **Hide inputs with nothing connected**, a switch in the Inputs row's settings on the dashboard and in the TV app, leaves out ports with nothing plugged in instead of dimming them, marked **Left out**; they show, dimmed, while arranging, and come back as soon as something is plugged in. An input is left out if it is hidden or, with that switch on, has nothing connected.
+
+-   **Live preview**
+
+    ---
+
+    With the focus resting on the TV tile, or on an HDMI input with something connected, the tile shows what that input is showing, live and without sound. It starts after a moment's rest, so stepping along the row does not switch each input on in turn, and stops as soon as the focus moves, anything opens or Home leaves the screen. One tile is live at a time.
+
+    **Keep the preview on**, off by default, keeps that preview running whenever Glasshouse Home is on screen, not only while a tile is chosen: on the HDMI input last watched, or otherwise on the TV's last channel. Choosing another input's tile moves it there, and it comes back once the focus leaves the Inputs row. **Live preview** switches both off. Both are in either dashboard's Home tab.
 
 -   **Channels**
 
@@ -179,7 +187,7 @@ Rows and tiles can be arranged from the **web dashboard**, the **TV app**, or **
 
 The Home tab's **Home customisation** section holds what applies to whichever Home is the TV's, in one column with each switch on the right:
 
-* While Glasshouse Home is on: **Open Home at power-on**, Glasshouse Home's own options (**Hide LG's Home while the TV starts**, **Picture details**, **Clock and date**, **Rows along the bottom**, **Alternative View**, **Last watched**, **App count**, **CEC addresses**, **Search**, **Fade in and out**).
+* While Glasshouse Home is on: **Open Home at power-on**, Glasshouse Home's own options (**Hide LG's Home while the TV starts**, **Picture details**, **Clock and date**, **Rows along the bottom**, **Alternative View**, **Last watched**, **App count**, **CEC addresses**, **Live preview**, **Keep the preview on**, **Search**, **Fade in and out**).
 * While LG's Home is: **Open Home at power-on**, **Home screen layout** and **Hide home screen system apps**.
 
 Each appears where the TV has it. A TV Glasshouse Home is not offered on, such as a B8 with webOS 4.4, still has the Home tab for these; there it holds Open Home at power-on and Hide home screen system apps. The TV app's Home section has the same rows.
