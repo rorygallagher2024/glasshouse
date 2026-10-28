@@ -17,7 +17,11 @@ var reads = 0;
 var before;
 var cases = [];
 child.execFile = function () { launches++; throw new Error('The audio endpoint must not start a process'); };
-function call(uri, params, cb) { reads++; cb(responses[uri] || null); }
+function call(uri, params, cb) {
+  reads++;
+  var response = responses[uri];
+  cb(typeof response === 'function' ? response(params) : response || null);
+}
 audio.init({ luna: call, lunaCached: function (uri, params, ttl, cb) { call(uri, params, cb); },
   hdmiReceiverMap: function (cb) { cb({ 1: 3, 2: 2, 3: 1, 4: 0 }); } });
 
@@ -43,6 +47,27 @@ add('TV, receiver, local playback and negotiated transport stay separate', null,
   assert.strictEqual(format(st, 'dtsx').advertised, null, 'a DTS-HD descriptor does not certify DTS:X');
   assert.strictEqual(st.live.input, null, 'AudioData with zero rate and an unstarted decoder is not live PCM');
   assert.strictEqual(st.live.output, null);
+});
+add('current output settings override whole-category defaults', function () {
+  var category = responses['com.webos.service.settings/getSystemSettings'];
+  responses['com.webos.service.settings/getSystemSettings'] = function (params) {
+    return params.keys ? { returnValue: true, settings: { soundOutput: 'external_arc', soundOutputDigital: 'passThrough' } } : category;
+  };
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(st.settings.soundOutput, 'external_arc');
+  assert.strictEqual(st.settings.soundOutputDigital, 'passThrough');
+});
+add('a refused named output query retains older-TV category values', function () {
+  var category = responses['com.webos.service.settings/getSystemSettings'];
+  responses['com.webos.service.settings/getSystemSettings'] = function (params) {
+    return params.keys ? { returnValue: false } : category;
+  };
+}, function (code, st) {
+  var expected = fixture.responses['com.webos.service.settings/getSystemSettings'].settings;
+  assert.strictEqual(code, 200);
+  assert.strictEqual(st.settings.soundOutput, expected.soundOutput);
+  assert.strictEqual(st.settings.soundOutputDigital, expected.soundOutputDigital);
 });
 add('inactive receivers do not retain stale advertised capabilities', function () {
   responses['com.webos.service.arccontroller/getARCState'].arcActivation = 'None';

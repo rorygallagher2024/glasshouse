@@ -24,7 +24,8 @@
  * render the rows as they come.
  *
  * Each category is read whole, one call for all its rows: asking for a key
- * the TV does not have fails the whole call on some firmware.
+ * the TV does not have fails the whole call on some firmware. Sound is then
+ * read again by name, for the keys the whole read returned (see collect).
  *
  * Strict ES5 for node 0.12 on webOS 4.
  */
@@ -669,18 +670,31 @@ function collect(section, cb, ttl) {
     lunaCached('com.webos.service.settings/getSystemSettings', ask, ttl, function (res) {
       values[store] = (res && (perApp || res.returnValue !== false) && res.settings) || {};
       if (res && res.dimension && !perApp) dims[cat] = res.dimension;
-      // The values a choice or number may take on this TV, and whether it can
-      // be changed now, which follows the input on screen.
       var keys = own.map(function (r) { return r.key; })
                     .filter(function (k) { return values[store][k] !== undefined; });
       if (!keys.length) return next();
-      var describeAsk = { category: cat, keys: keys };
-      if (perApp) describeAsk.app_id = appId;
-      lunaCached('com.webos.service.settings/getSystemSettingDesc', describeAsk, ttl, function (d) {
-        descs[store] = {};
-        ((d && d.results) || []).forEach(function (x) { descs[store][x.key] = describe(x); });
-        next();
+      if (cat !== 'sound' || perApp) return describeStore(store, cat, perApp, keys);
+      // The sound category read whole can lag a change: a G5 on webOS 10.3
+      // reported Digital Sound Output as auto there and passThrough when the
+      // key was named. Only keys the whole read returned are named, so no TV
+      // is asked for one it lacks.
+      lunaCached('com.webos.service.settings/getSystemSettings', { category: cat, keys: keys }, ttl, function (now) {
+        var current = (now && now.returnValue !== false && now.settings) || {};
+        keys.forEach(function (k) { if (current[k] !== undefined) values[store][k] = current[k]; });
+        describeStore(store, cat, perApp, keys);
       });
+    });
+  }
+
+  // The values a choice or number may take on this TV, and whether it can
+  // be changed now, which follows the input on screen.
+  function describeStore(store, cat, perApp, keys) {
+    var describeAsk = { category: cat, keys: keys };
+    if (perApp) describeAsk.app_id = appId;
+    lunaCached('com.webos.service.settings/getSystemSettingDesc', describeAsk, ttl, function (d) {
+      descs[store] = {};
+      ((d && d.results) || []).forEach(function (x) { descs[store][x.key] = describe(x); });
+      next();
     });
   }
 }

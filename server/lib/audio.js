@@ -136,7 +136,13 @@ function build(replies, decoder) {
   var cfg = replies.config && replies.config.returnValue !== false && replies.config.configs || {};
   var info = replies.identity && replies.identity.returnValue !== false && replies.identity || {};
   var sr = replies.settings && replies.settings.returnValue !== false && replies.settings || {};
-  var settings = sr.settings && typeof sr.settings === 'object' ? sr.settings : {};
+  var settings = {};
+  var categorySettings = sr.settings && typeof sr.settings === 'object' ? sr.settings : {};
+  Object.keys(categorySettings).forEach(function (key) { settings[key] = categorySettings[key]; });
+  var current = replies.outputSettings && replies.outputSettings.returnValue === true && replies.outputSettings.settings;
+  ['soundOutput', 'soundOutputDigital'].forEach(function (key) {
+    if (current && typeof current[key] === 'string') settings[key] = current[key];
+  });
   var arc = replies.arc && replies.arc.returnValue !== false ? replies.arc : null;
   var edid = replies.edid && replies.edid.returnValue !== false ? replies.edid : null;
   var inputPort = /^hdmi([1-9])$/.exec(String(sr.dimension && sr.dimension.audioInput || ''));
@@ -220,7 +226,7 @@ function build(replies, decoder) {
 function status(cb, force) {
   /** @type {Object.<string, any>} */
   var replies = {};
-  var left = 9;
+  var left = 10;
   var decoder = null;
   function done() {
     if (--left) return;
@@ -239,6 +245,11 @@ function status(cb, force) {
   // The whole category, as lgsettings asks: webOS 4.4 answers nothing when a
   // named key it lacks, such as eArcSupport, is in the list.
   ask('settings', 'com.webos.service.settings/getSystemSettings', { category: 'sound' }, 3000);
+  // G5 33.31.68 returned auto for the whole category while a named query
+  // returned the actual Pass Through setting. A failed named query keeps the
+  // category values and dimension metadata used by older TVs.
+  ask('outputSettings', 'com.webos.service.settings/getSystemSettings',
+    { category: 'sound', keys: ['soundOutput', 'soundOutputDigital'] }, 3000);
   ask('input', 'com.webos.service.audio/tv/getAudioInputProperty', {}, 3000);
   inspectDts(function (value) { decoder = value; done(); });
   if (receiverMap) receiverMap(function (map) { replies.receiverMap = map; done(); });

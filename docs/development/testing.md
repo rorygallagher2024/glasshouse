@@ -10,8 +10,9 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC
 EDID flag does not promote ARC, stale driver values do not become live audio,
-and corrupt or missing evidence remains unknown. The endpoint is read-only and
-starts no process.
+and corrupt or missing evidence remains unknown. A named read of the sound output
+wins over a stale whole-category read, and a refused one leaves the category's
+values. The endpoint is read-only and starts no process.
 
 The dashboard check opens both Audio tabs: the sound settings come first and
 are gone from the TV app's System tab, and a failed read leaves no stale
@@ -22,7 +23,9 @@ them after a successful retry.
 inactive choices, alongside locked rows and values outside the TV's range, and
 that a TV which describes none of its picture settings is offered none, and
 that colour management follows Colour adjustment where the TV offers User
-Selection and is greyed out in Game mode.
+Selection and is greyed out in Game mode. Sound settings read again by name
+win over the whole category's, only keys the whole read returned are named,
+and a failed named read leaves the category's values.
 
 The TV dashboard check adjusts two picture sliders before the first write
 answers. Both changes must be sent, including when the first write is refused
