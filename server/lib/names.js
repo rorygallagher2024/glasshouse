@@ -242,6 +242,11 @@ function shortAppId(appId, aliases) {
   return aliases && aliases.hasOwnProperty(id) ? aliases[id] : id;
 }
 
+// Whether an app id is one of the TV's inputs rather than an app.
+function isInputAppId(id) {
+  return /^com\.webos\.app\.(hdmi\d|livetv|av\d|comp\d)/.test(String(id || ''));
+}
+
 // The app id LG launches an input under, as the input command does.
 function inputAppId(key) {
   return APP_PREFIX + key;
@@ -487,6 +492,7 @@ module.exports = {
   isHdmiKey: isHdmiKey,
   shortAppId: shortAppId,
   inputAppId: inputAppId,
+  isInputAppId: isInputAppId,
   input: input,
   inputTitle: inputTitle,
   POWER_STATES: POWER_STATES,

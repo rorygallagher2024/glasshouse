@@ -528,6 +528,59 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ remote keys and Home use the urgent luna path and log their timing');
 })();
 
+// Play / Pause picks the key from what the foreground app's media reports
+(function testPlayPauseKey() {
+  var fs = require('fs');
+  var realOpen = fs.openSync;
+  var realWrite = fs.writeSync;
+  var realClose = fs.closeSync;
+  var pressed = [];
+  fs.openSync = function () { return 99; };
+  fs.closeSync = function () {};
+  fs.writeSync = function (fd, b) {
+    if (b.readUInt16LE(8) === 1 && b.readInt32LE(12) === 1) pressed.push(b.readUInt16LE(10));
+  };
+  var foreground = 'io.github.haydengriffin.afterglow';
+  controls.init({
+    config: { allowControl: true },
+    telemetry: { clearCache: function () {}, readMediaState: function (cb) { cb(reading.media, reading.noPipe); } },
+    luna: function (uri, payload, cb) {
+      cb(uri === 'com.webos.applicationManager/getForegroundAppInfo' ? { returnValue: true, appId: foreground } : { returnValue: true });
+    }
+  });
+  var reading = {};
+  function pressWith(media, noPipe) {
+    pressed = [];
+    reading = { media: media, noPipe: noPipe };
+    controls.sendMediaKey('playPause', function () {});
+    return pressed;
+  }
+  try {
+    assert.deepEqual(pressWith({ state: 'playing', playerType: 'MSE' }), [119], 'playing gets KEY_PAUSE');
+    assert.deepEqual(pressWith({ state: 'paused', playerType: 'MSE' }), [207], 'paused gets KEY_PLAY');
+    assert.deepEqual(pressWith({ state: 'playing', playerType: 'external input' }), [207],
+      'an external input gets KEY_PLAY, a toggle over CEC');
+    assert.deepEqual(pressWith({ state: 'idle', playerType: null }), [207], 'nothing playing in a pipe gets KEY_PLAY');
+    assert.deepEqual(pressWith(null), [207], 'no answer gets KEY_PLAY');
+
+    var idle = { state: 'idle', playerType: null };
+    assert.deepEqual(pressWith(idle, true), [119], 'no pipe (Web Audio): KEY_PAUSE first');
+    assert.deepEqual(pressWith(idle, true), [207], 'then KEY_PLAY');
+    assert.deepEqual(pressWith(idle, true), [119], 'then KEY_PAUSE again');
+    pressWith({ state: 'playing', playerType: 'MSE' });
+    assert.deepEqual(pressWith(idle, true), [119], 'a pipe read in between starts again from KEY_PAUSE');
+
+    foreground = 'com.webos.app.hdmi3';
+    assert.deepEqual(pressWith(idle, true), [207], 'an input with nothing to read keeps KEY_PLAY');
+    assert.deepEqual(pressWith(idle, true), [207], 'every time');
+  } finally {
+    fs.openSync = realOpen;
+    fs.writeSync = realWrite;
+    fs.closeSync = realClose;
+  }
+  console.log('  ✓ Play / Pause sends pause or play from the pipe, and in turn with no pipe');
+})();
+
 console.log('ALL test-controls.js assertions passed!\n');
 
 // 6. A powerOff answered with a failure is read back before trying again

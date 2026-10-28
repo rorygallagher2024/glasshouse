@@ -50,7 +50,7 @@ Every entity the TV publishes, by category. Which categories are published is se
 | `button` | `button.lg_tv_power_on` | Power On TV | Turns the TV back on from Active Standby, while it is still finishing panel compensation; in plain standby the bridge is offline (not published when `allowPower` is false) |
 | `binary_sensor` | `binary_sensor.lg_tv_power` | Power | On while the TV is on, off while it is switched off or in standby |
 
-Playback reaches an HDMI source over CEC, where the TV has only one key for both halves of play/pause. Pause and Play / Pause behave as expected there; Play toggles rather than only resuming. On the built-in apps all four are exact.
+Playback reaches an HDMI source over CEC, where the TV has only one key for both halves of play/pause. Pause and Play / Pause behave as expected there; Play toggles rather than only resuming. On the built-in apps all four are exact. An app with no media pipe, one playing through Web Audio, can't say whether it is playing, so Play / Pause sends it Pause and Play in turn, starting with Pause.
 
 ## OLED Panel Health (OLED TVs only)
 | Domain | Entity ID | Name | Description |

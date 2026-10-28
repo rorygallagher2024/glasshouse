@@ -498,7 +498,7 @@ function cached(key, ttl, load, cb) {
   });
 }
 
-function isInputApp(id) { return /^com\.webos\.app\.(hdmi\d|livetv|av\d|comp\d)/.test(id); }
+var isInputApp = names.isInputAppId;
 
 /*
  * The apps on LG's Home, in its order, as { id, title, icon }. Saved web
