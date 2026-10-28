@@ -2398,5 +2398,7 @@
  "home.row.recFrom": {"text": "Из {app}", "from": "From {app}"},
  "home.row.recOff": {"text": "Включите в настройках главного экрана Glasshouse", "from": "Switch on in Glasshouse’s Home settings"},
  "home.row.recommended": {"text": "Рекомендуемое", "from": "Recommended"},
- "srv.home.recommendedUnavailable": {"text": "телевизор не выдал рекомендации своих приложений", "from": "the TV did not list its apps’ recommendations"}
+ "srv.home.recommendedUnavailable": {"text": "телевизор не выдал рекомендации своих приложений", "from": "the TV did not list its apps’ recommendations"},
+ "audio.hdmiChannels": {"text": "Каналы по данным HDMI", "from": "HDMI channel information"},
+ "audio.hdmiMetadataHint": {"text": "Каналы, которые сообщает источник HDMI. Они могут сохраняться во время паузы и не подтверждают воспроизведение на ресивере.", "from": "Channel metadata reported by the HDMI source. It can remain during a pause and does not confirm playback at the receiver."}
 }

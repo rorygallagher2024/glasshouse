@@ -11,11 +11,17 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 declarations: receiver formats remain separate from TV capabilities, an eARC
 EDID flag does not promote ARC, stale driver values do not become live audio,
 and corrupt or missing evidence remains unknown. The endpoint is read-only and
-starts no process.
+starts no process in those fixtures. Synthetic C9 cases cover `dimension.input`,
+HAWK2's native EDID, invalid checksums/lengths/bytes, failed native reads without
+family fallback, and omission of unspecified, disconnected or unstable channel
+metadata. They check logical input parameters and that native-app playback
+never reads an arbitrary HDMI port. Channel metadata does not establish a
+codec, playback or eARC negotiation.
 
 The dashboard check opens both Audio tabs: the sound settings come first and
 are gone from the TV app's System tab, and a failed read leaves no stale
-readings. The web tab removes stale controls after a failed read and restores
+readings. Both tabs render C9 source channel metadata separately from incoming
+audio. The web tab removes stale controls after a failed read and restores
 them after a successful retry.
 
 `test-lgsettings.js` checks that picture writes refuse hidden settings and

@@ -4,6 +4,30 @@ Findings about how LG's webOS works, kept so the same ground is not covered
 twice. Each entry names the TV and webOS version it was found on. For how
 Glasshouse itself works, see [IMPLEMENTATION.md](../IMPLEMENTATION.md).
 
+## C9 HAWK2 audio EDID (webOS 4.10.2)
+
+OLED65C9PUA, firmware 05.50.00, reported in #1078 on 28 October 2026.
+
+- The C9 reports `tv.model.hdmiSwitchType: HAWK2` and `tv.model.edidType:
+  TrueHD`. Source-facing EDIDs are returned by
+  `com.webos.service.tv.systemproperty/getEdidData` with `inputType: 0` and
+  logical `portNumber: 1..4`. On the measured mapping, HDMI 1 is receiver 3.
+  The lower HDMI20 driver buffer does not hold this switch's source EDID.
+- Its sound-settings response names the selected input in `dimension.input`
+  (`hdmi1`), not `dimension.audioInput`. Its legacy audio and ARC queries can
+  be unavailable. The `TrueHD` family name does not mean no DTS: the
+  checksummed native EDID includes core DTS (`3d1ec0`) and DTS-HD (`5f7e01`).
+- Receiver 3's status file gives the source's Audio InfoFrame channel count,
+  allocation and sample frequency. Zero means unspecified, not stereo or
+  48 kHz. The fields can remain through a pause, so they are source metadata,
+  not proof of playback.
+- The media-resource file declares DTS, DTSH and DTSE with six-channel limits,
+  which does not show DTS-HD Master Audio decoding or DTS:X rendering.
+- A Panasonic UB820 on HDMI 1 decoded DTS-HD Master Audio 5.1 to stereo PCM
+  for a Sonos on eARC. With HDMI 1's EDID changed to declare six-channel PCM
+  and a 5.1 speaker allocation, it sent PCM 5.1 instead. Writing the EDID is
+  elforeign's separate helper, not part of Glasshouse.
+
 ## Audio declarations and the negotiated link (G3, webOS 9.2.2)
 
 OLED55G36LA, firmware 23.25.55, kernel `5.4.268-320`, read on 25 October 2026:

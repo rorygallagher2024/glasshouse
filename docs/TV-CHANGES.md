@@ -4,8 +4,11 @@
 
 The Audio tabs read LG's capability, settings and ARC services, the current
 HDMI EDID and audio driver status, and the media-resource declaration file. LG's DTS decoder is inspected on demand, at most once every five minutes.
-No audio setting changes during a snapshot. Native controls use LG's ordinary
-settings service.
+On HAWK2, the source-facing EDID is read through LG's native
+`getEdidData` service for the selected HDMI input; channel metadata is read
+from the mapped HDMI receiver's status file. A snapshot performs no EDID or
+audio-setting write.
+Native controls use LG's ordinary settings service.
 
 Nothing on the read-only root filesystem is written. Everything below other
 than the server's own files happens only when the owner switches it on, and the

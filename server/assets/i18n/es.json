@@ -2322,5 +2322,7 @@
  "home.row.recFrom": {"text": "De {app}", "from": "From {app}"},
  "home.row.recOff": {"text": "Actívala en los ajustes de inicio de Glasshouse", "from": "Switch on in Glasshouse’s Home settings"},
  "home.row.recommended": {"text": "Recomendado", "from": "Recommended"},
- "srv.home.recommendedUnavailable": {"text": "la TV no ofreció las recomendaciones de sus apps", "from": "the TV did not list its apps’ recommendations"}
+ "srv.home.recommendedUnavailable": {"text": "la TV no ofreció las recomendaciones de sus apps", "from": "the TV did not list its apps’ recommendations"},
+ "audio.hdmiChannels": {"text": "Canales según HDMI", "from": "HDMI channel information"},
+ "audio.hdmiMetadataHint": {"text": "Los canales que indica la fuente HDMI. Pueden mantenerse durante una pausa y no confirman que el receptor esté reproduciendo.", "from": "Channel metadata reported by the HDMI source. It can remain during a pause and does not confirm playback at the receiver."}
 }

@@ -1748,6 +1748,10 @@ function audioRows(d) {
       ? t('audio.decoderAbsent', 'LG DTS-core decoder not registered') : t('tv.audio.decoderUnknown', 'DTS decoder registration is unknown.') });
   r.push({ label: t('audio.inputNow', 'Incoming audio'), value: d.live.input ? d.live.input.codec : t('audio.noInput', 'No audio reported'),
     hint: t('tv.audio.inputHint', 'The TV’s current input reading. TV-app playback and HDMI-input forwarding use different audio paths.') });
+  if (d.live.hdmi) r.push({ label: t('audio.hdmiChannels', 'HDMI channel information'),
+    value: t('audio.channels', '{count} channels', { count: d.live.hdmi.channels }),
+    sub: d.live.hdmi.sampleRate ? (d.live.hdmi.sampleRate / 1000) + ' kHz' : '',
+    hint: t('audio.hdmiMetadataHint', 'Channel metadata reported by the HDMI source. It can remain during a pause and does not confirm playback at the receiver.') });
   // The output itself is the Sound output setting above; only a live codec adds to it.
   if (d.live.output) r.push({ label: t('tv.audio.outputFormat', 'Output format'), value: d.live.output,
     hint: t('tv.audio.outputHint', 'The output codec the audio driver reports now. The receiver’s own incoming-signal display confirms what arrives.') });

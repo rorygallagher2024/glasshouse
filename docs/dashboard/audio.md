@@ -34,6 +34,16 @@ does not report a value. A DTS-HD entry does not establish DTS:X. A listed
 format is not proof of working pass-through; the receiver's incoming-signal
 display confirms what arrives.
 
+On a C9 with a HAWK2 HDMI switch, the input declaration comes from LG's
+native switch readback. The lower HDMI driver buffer and the `TrueHD` family
+name do not describe that switch's current source-facing EDID. A failed native
+read remains unknown.
+
+**HDMI channel information**, where available on HAWK2, shows the source's
+Audio InfoFrame channel count and an explicitly reported sample rate. An
+unspecified rate stays blank. Metadata can remain during a pause; it does not
+identify the codec, establish active playback or confirm the receiver's audio.
+
 **TV playback declarations** lists the formats and channel limits in LG's
 media configuration for apps on the TV. They describe playback, not what
 reaches a receiver.

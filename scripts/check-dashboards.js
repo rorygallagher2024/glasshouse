@@ -1229,6 +1229,7 @@ async function visitAudio(browser, base, problems) {
   page.on('pageerror', e => problems.push('Web audio: ' + e.message));
   try {
     const state = await page.request.get(base + '/api/audio?with=settings').then(r => r.json());
+    state.live.hdmi = { channels: 6, channelAllocation: 11, sampleRate: null };
     let failed = false;
     await page.route('**/api/audio*', route => {
       if (failed) return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'Audio service unavailable' }) });
@@ -1237,6 +1238,8 @@ async function visitAudio(browser, base, problems) {
     await page.goto(base + '/?tab=audio');
     await page.waitForFunction(() => audioState !== null);
     if (!await page.locator('#audio-settings [data-lgs]').count()) problems.push('Audio tab: LG sound settings missing');
+    if (!/HDMI channel information[\s\S]*6 channels/.test(await page.locator('#audio-path').textContent()))
+      problems.push('Web audio: source channel metadata missing');
     failed = true;
     // The readings and their Refresh are folded below the settings.
     await page.locator('#audio-more > summary').click();
@@ -1579,6 +1582,7 @@ async function visitTvAudio(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   page.on('pageerror', e => problems.push('TV audio: ' + e.message));
   const state = await page.request.get(base + '/api/audio?with=settings').then(r => r.json());
+  state.live.hdmi = { channels: 6, channelAllocation: 11, sampleRate: null };
   let failed = false;
   await page.route('**/api/audio*', route => route.fulfill({ status: failed ? 503 : 200, contentType: 'application/json',
     body: JSON.stringify(failed ? { ok: false, error: 'Audio service unavailable' } : state) }));
@@ -1591,6 +1595,8 @@ async function visitTvAudio(browser, base, problems) {
   try {
     await open();
     if (await selected() !== 'Sound output') problems.push('TV audio: did not open on the Sound settings');
+    if (!await page.locator('#rows .row').filter({ hasText: 'HDMI channel information' }).filter({ hasText: '6 channels' }).count())
+      problems.push('TV audio: source channel metadata missing');
     failed = true;
     await open();
     if (await readings().count()) problems.push('TV audio: a failed read left stale readings on screen');

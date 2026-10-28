@@ -2398,5 +2398,7 @@
  "home.row.recFrom": {"text": "Innen: {app}", "from": "From {app}"},
  "home.row.recOff": {"text": "Kapcsold be a Glasshouse kezdőképernyő-beállításaiban", "from": "Switch on in Glasshouse’s Home settings"},
  "home.row.recommended": {"text": "Ajánlott", "from": "Recommended"},
- "srv.home.recommendedUnavailable": {"text": "a tévé nem adta meg az alkalmazásai ajánlásait", "from": "the TV did not list its apps’ recommendations"}
+ "srv.home.recommendedUnavailable": {"text": "a tévé nem adta meg az alkalmazásai ajánlásait", "from": "the TV did not list its apps’ recommendations"},
+ "audio.hdmiChannels": {"text": "Csatornák a HDMI szerint", "from": "HDMI channel information"},
+ "audio.hdmiMetadataHint": {"text": "A HDMI-forrás által jelzett csatornák. Szünet alatt is megmaradhatnak, és nem igazolják, hogy a vevő lejátssza a hangot.", "from": "Channel metadata reported by the HDMI source. It can remain during a pause and does not confirm playback at the receiver."}
 }
