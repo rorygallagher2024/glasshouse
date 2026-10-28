@@ -22,6 +22,14 @@ RESTARTS=${TVWEB_RESTARTS:-/var/lib/tvweb/tvweb.restarts}
 NODE=${TVWEB_NODE:-/usr/bin/node}
 SELF=$(readlink -f "$0" 2>/dev/null || echo /var/lib/tvweb/tvwebctl)
 
+# start-stop-daemon is in /sbin, which a non-interactive SSH session's PATH can
+# leave out (webOS 5.6.2 rooted with slopbro, #1072). Added after the caller's
+# own directories, so their order is kept.
+for dir in /usr/sbin /sbin; do
+  case ":$PATH:" in *":$dir:"*) ;; *) PATH="$PATH:$dir" ;; esac
+done
+export PATH
+
 # Never keep the caller's working directory: if started from a directory that is
 # later deleted (like a temporary deploy path), node's module loader fails on
 # every restart with ENOENT in uv_cwd when process.cwd() no longer resolves.
