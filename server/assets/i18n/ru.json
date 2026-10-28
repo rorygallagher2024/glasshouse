@@ -2404,5 +2404,6 @@
  "ss.installedApp": {"text": "Установленное приложение", "from": "Installed app"},
  "tv.saver.app.hint": {"text": "Из приложения {app}. Её настройки, если есть, — в этом приложении.", "from": "From the {app} app. Any settings it has are in that app."},
  "tv.apps.install.pv.screensaverListed": {"text": "Рядом с нашими", "from": "Listed with ours"},
- "apps.install.screensaver.listed": {"text": "У этого приложения есть заставка. После установки выберите её на вкладке «Заставка», рядом с заставками Glasshouse.", "from": "This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own."}
+ "apps.install.screensaver.listed": {"text": "У этого приложения есть заставка. После установки выберите её на вкладке «Заставка», рядом с заставками Glasshouse.", "from": "This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own."},
+ "srv.remoteKeys.screenOff": {"text": "Выключить экран", "from": "Screen off"}
 }

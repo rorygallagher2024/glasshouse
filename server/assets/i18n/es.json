@@ -2328,5 +2328,6 @@
  "ss.installedApp": {"text": "App instalada", "from": "Installed app"},
  "tv.saver.app.hint": {"text": "De la app {app}. Sus ajustes, si tiene, están en esa app.", "from": "From the {app} app. Any settings it has are in that app."},
  "tv.apps.install.pv.screensaverListed": {"text": "Junto a los nuestros", "from": "Listed with ours"},
- "apps.install.screensaver.listed": {"text": "Esta app trae un salvapantallas. Una vez instalada, elígelo en la pestaña Salvapantallas, junto a los de Glasshouse.", "from": "This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own."}
+ "apps.install.screensaver.listed": {"text": "Esta app trae un salvapantallas. Una vez instalada, elígelo en la pestaña Salvapantallas, junto a los de Glasshouse.", "from": "This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own."},
+ "srv.remoteKeys.screenOff": {"text": "Pantalla apagada", "from": "Screen off"}
 }

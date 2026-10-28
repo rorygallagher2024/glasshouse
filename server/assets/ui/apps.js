@@ -397,6 +397,7 @@ function rkDoes(k, kindOf) {
   if (k.action === 'lg') return `<span class="rk-lg">${esc(t('apps.remoteKeys.lg', 'As LG has it'))}</span>`;
   if (k.action === 'nothing') return `<span class="rk-none" aria-hidden="true">⦸</span>${esc(t('apps.remoteKeys.doesNothing', 'Does nothing'))}`;
   if (kindOf(k.id) === 'switcher') return `<span class="rk-none" aria-hidden="true">⇄</span>${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}`;
+  if (kindOf(k.id) === 'action') return `<span class="rk-none" aria-hidden="true">◼</span>${esc(k.opens)}`;
   if (kindOf(k.id) === 'media') return `<span class="rk-none" aria-hidden="true">${RK_MEDIA_GLYPHS[k.id] || '⏯'}</span>${esc(k.opens)}`;
   const icon = kindOf(k.id) === 'app' ? rkIcon(k.id) : '';
   return `${icon}<span translate="no">${esc(k.opens)}</span>`;
@@ -424,7 +425,7 @@ function renderRemoteKeys(d) {
   const kindOf = id => kinds[id] || 'app';
   const tile = k => {
     const dot = RK_COLOURS[k.key] ? `<i class="rk-dot" style="background:${RK_COLOURS[k.key]}"></i>` : '';
-    const label = k.action === 'open' && kindOf(k.id) === 'media' ? k.opens
+    const label = k.action === 'open' && (kindOf(k.id) === 'media' || kindOf(k.id) === 'action') ? k.opens
       : k.action === 'open' ? t('apps.remoteKeys.opens', 'Opens {app}', { app: k.opens })
       : k.action === 'nothing' ? t('apps.remoteKeys.doesNothing', 'Does nothing') : t('apps.remoteKeys.lg', 'As LG has it');
     return `<button type="button" class="rk-key${k.action !== 'lg' ? ' rk-changed' : ''}" data-key="${esc(k.key)}"
@@ -482,9 +483,10 @@ function toggleRemoteKey(tile) {
   const media = rkData.choices.filter(c => c.kind === 'media');
   const inputs = rkData.choices.filter(c => c.kind === 'input');
   const apps = rkData.choices.filter(c => c.kind === 'app');
-  // LG's input switcher, beside As LG has it and Nothing.
+  // LG's input switcher and Screen off, beside As LG has it and Nothing.
   const switchers = rkData.choices.filter(c => c.kind === 'switcher')
-    .map(c => opt(c.id, `<span aria-hidden="true">⇄</span> ${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}`)).join('');
+    .map(c => opt(c.id, `<span aria-hidden="true">⇄</span> ${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}`)).join('') +
+    rkData.choices.filter(c => c.kind === 'action').map(c => opt(c.id, `<span aria-hidden="true">◼</span> ${esc(c.title)}`)).join('');
   // A key set to something no longer offered (an app since removed) still shows it.
   const gone = k.action === 'open' && !rkData.choices.some(c => c.id === k.id)
     ? opt(k.id, `<span translate="no">${esc(k.opens)}</span>`) : '';

@@ -90,6 +90,7 @@ function loadFilter(broken) {
       send: function (service, method, payload, cb) {
         sent.push({ uri: service + method, payload: JSON.parse(payload) });
         if (method === '/getAppInfo') cb(JSON.stringify({ returnValue: true, appInfo: { type: tv.homeType } }));
+        else if (method === '/power/getPowerState') cb(JSON.stringify({ returnValue: true, state: tv.powerState || 'Active' }));
         else if (cb) cb(JSON.stringify({ returnValue: true }));
       }
     },
@@ -139,7 +140,7 @@ step(function (next) {
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
-      ['media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
+      ['action:screenOff', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
        'media:volumeUp', 'media:volumeDown', 'media:mute',
        'com.webos.app.hdmi1', 'com.webos.app.hdmi2', 'com.webos.app.livetv',
        'com.webos.app.home', 'netflix', 'youtube.leanback.v4']);
@@ -271,6 +272,33 @@ step(function (next) {
             }));
           }));
         }));
+      }));
+    }));
+  }));
+});
+
+// #1085: one press blanks the panel, as the dashboard's Screen off does.
+step(function (next) {
+  rk.setRemoteKey('red', 'open', 'action:screenOff', guard(function (s) {
+    assert.strictEqual(s.ok, true);
+    var f = loadFilter();
+    var offs = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.tvpower/power/turnOffScreen'; }).length; };
+    assert.strictEqual(f.handle(1004, true, false), 'accepted');
+    assert.strictEqual(f.handle(1004, true, true), 'accepted');
+    assert.strictEqual(f.handle(1004, false, false), 'accepted');
+    assert.strictEqual(offs(), 1, 'once per press, not while held');
+    assert.strictEqual(f.launched.length, 0);
+    // With the screen off, the key that brings the picture back does not blank it again.
+    tv.powerState = 'Screen Off';
+    f.handle(1004, true, false);
+    assert.strictEqual(offs(), 1);
+    tv.powerState = 'Active';
+    rk.getRemoteKeys(guard(function (r) {
+      var red = r.keys.filter(function (k) { return k.key === 'red'; })[0];
+      assert.strictEqual(red.opens, 'Screen off');
+      rk.setRemoteKey('red', 'lg', '', guard(function () {
+        console.log('  ✓ a key set to Screen off blanks the panel once per press, and not while the screen is already off');
+        next();
       }));
     }));
   }));

@@ -2404,5 +2404,6 @@
  "ss.installedApp": {"text": "Telepített alkalmazás", "from": "Installed app"},
  "tv.saver.app.hint": {"text": "A(z) {app} alkalmazásból. A beállításai, ha vannak, abban az alkalmazásban vannak.", "from": "From the {app} app. Any settings it has are in that app."},
  "tv.apps.install.pv.screensaverListed": {"text": "A mieink mellett", "from": "Listed with ours"},
- "apps.install.screensaver.listed": {"text": "Ennek az alkalmazásnak van képernyővédője. Telepítés után a Képernyővédő lapon választható ki, a Glasshouse sajátjai mellett.", "from": "This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own."}
+ "apps.install.screensaver.listed": {"text": "Ennek az alkalmazásnak van képernyővédője. Telepítés után a Képernyővédő lapon választható ki, a Glasshouse sajátjai mellett.", "from": "This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own."},
+ "srv.remoteKeys.screenOff": {"text": "Képernyő ki", "from": "Screen off"}
 }

@@ -120,6 +120,12 @@ var MEDIA_CODES = {
 };
 var MEDIA_ACTIONS = ['play', 'pause', 'stop', 'rewind', 'fastForward', 'volumeUp', 'volumeDown', 'mute'];
 var MEDIA_REPEATS = { volumeUp: true, volumeDown: true };
+/*
+ * Screen off, as the dashboard's: tvpower's turnOffScreen blanks the panel and
+ * any key brings the picture back (#1085). The filter asks for it only while the
+ * TV is Active, so the press that brings the picture back does not blank it again.
+ */
+var SCREEN_OFF = 'action:screenOff';
 
 // webOS 11's native key filters; see the header.
 var NATIVE_FILTERS_KEY = 'com.webos.surfacemanager.keyFiltersCpp';
@@ -370,6 +376,18 @@ function filterSource() {
     '    }',
     '}',
     '',
+    '// Blanks the panel, only while the picture is on: in Screen Off the key brings it back.',
+    'function glasshouseScreenOff() {',
+    '    lunaCall.send("com.webos.service.tvpower", "/power/getPowerState", "{}", function (payload) {',
+    '        try {',
+    '            var r = typeof payload === "string" ? JSON.parse(payload) : payload;',
+    '            if (r && r.state === "Active") lunaCall.send("com.webos.service.tvpower", "/power/turnOffScreen", "{}", function () {});',
+    '        } catch (e) {',
+    '            console.warn("glasshouse keyfilter: " + e);',
+    '        }',
+    '    });',
+    '}',
+    '',
     'function glasshouseSendKey(code) {',
     '    lunaCall.send("com.webos.service.networkinput", "/test/sendKeyCode", JSON.stringify({ "keyCode": code }), function () {});',
     '}',
@@ -435,6 +453,11 @@ function filterSource() {
     '            if (pressed && (!autoRepeat || glasshouseMediaRepeats.hasOwnProperty(media))) {',
     '                if (!autoRepeat) console.info("glasshouse keyfilter: key", key, "sends", id);',
     '                glasshouseMedia(media);',
+    '            }',
+    '        } else if (id === ' + JSON.stringify(SCREEN_OFF) + ') {',
+    '            if (pressed && !autoRepeat) {',
+    '                console.info("glasshouse keyfilter: key", key, "turns the screen off");',
+    '                glasshouseScreenOff();',
     '            }',
     '        } else if (pressed && !autoRepeat && id) {',
     '            console.info("glasshouse keyfilter: key", key, "opens", id);',
@@ -1132,6 +1155,11 @@ function mediaChoices() {
   return MEDIA_ACTIONS.map(function (a) { return { id: MEDIA_PREFIX + a, title: titles[a], kind: 'media' }; });
 }
 
+// Screen off, where the JavaScript filter runs.
+function actionChoices() {
+  return [{ id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' }];
+}
+
 // Home as a choice, where the JavaScript filter opens it as the Home key would.
 function homeChoices(native) {
   return native ? [] : [{ id: HOME_APP, title: msg('srv.remoteKeys.home', 'Home'), kind: 'app' }];
@@ -1179,9 +1207,9 @@ function describeKeys(keys, inChain, cb, native) {
       var titles = {};
       (apps || []).forEach(function (a) { if (a && a.id) titles[a.id] = a.title || a.id; });
       var inputs = inputChoices();
-      var media = native ? [] : mediaChoices();
+      var media = native ? [] : actionChoices().concat(mediaChoices());
       var cc = country();
-      switchers.concat(inputs, mediaChoices(), homeChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
+      switchers.concat(inputs, actionChoices(), mediaChoices(), homeChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
       var out = keys.map(function (k) {
         var set = Object.prototype.hasOwnProperty.call(map, k.key);
         var id = set ? map[k.key] : null;
@@ -1211,7 +1239,8 @@ function describeKeys(keys, inChain, cb, native) {
 /*
  * Sets a key: action 'lg' puts it back as LG has it, 'nothing' makes it do
  * nothing, 'open' opens id, an input, an app on the Home screen or LG's input
- * switcher, or sends a media control where the JavaScript filter runs. It takes
+ * switcher, or sends a media control or turns the screen off where the
+ * JavaScript filter runs. It takes
  * effect at once, through the filter's configd subscription or, on webOS 11,
  * LG's own values. cb({ ok, error }).
  */
@@ -1241,7 +1270,7 @@ function setOfferedKey(def, action, id, kind, cb) {
   switcherChoices(function (switchers) {
     listApps(function (apps) {
       if (!apps) return cb({ ok: false, error: msg('srv.remoteKeys.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
-      var media = kind === 'filter' ? mediaChoices() : [];
+      var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : [];
       var allowed = switchers.concat(media, inputChoices(), homeChoices(kind !== 'filter'), appChoices(apps))
         .some(function (c) { return c.id === id; });
       if (!allowed) return cb({ ok: false, error: msg('srv.remoteKeys.unknownApp', 'That app is not on this TV') });
