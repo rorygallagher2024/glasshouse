@@ -81,6 +81,8 @@ EOF are dropped rather than read in a busy loop, a device with nothing to read
 yet is kept, and a device that comes back is reopened and its buttons arrive.
 The worker itself stays Python 2.7 compatible for the TV.
 
+`test-repo.js` checks declared source URLs from the Homebrew Channel and added catalogs, including missing, malformed and unsafe addresses, GitHub downloads mapped to their repository, and other `.ipk` downloads omitted without changing installation URLs. `test-catalog-ui.js` checks source-link escaping, new-tab attributes, placement beside the primary action using the idle pill style, and availability across app states and disabled controls in both lists, including corrected and omitted download links.
+
 `test-saver-manifests.js` reads screen saver folders: the order and ids, a folder with something wrong listed with the reason, staging, translated names, and what one added on the TV does past the screen. An installed homebrew app's screen saver is listed from its app, by either file name, with the same checks, an app without one is left out, only its QML is staged, and one whose app has gone counts as LG's.
 
 `test-screensaver-dropped.js` covers a refused request's fallback, remote dismissal and restart recovery, failed closes, delayed replies, and playback or source changes that must prevent a launch. `test-remote-buttons.js` checks that Home, coloured buttons and ordinary keys reach the dismissal handler through both parsed events and the worker stream, including split lines.

@@ -1431,6 +1431,12 @@ button.tools-jump:active{background:var(--w80)}
 .rk-opt.on{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100)}
 /* A catalog's address is one long word. */
 .catalog-url, #apps-others-list .prot-sub{overflow-wrap:anywhere}
+#apps-catalog-list .prot-main, #apps-others-list .prot-main{overflow-wrap:anywhere}
+.catalog-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:100%}
+.catalog-source{flex:1;max-width:100%;white-space:normal;text-align:center;text-decoration:none;transition:.16s ease}
+.catalog-source:hover{background:rgba(var(--fg),.08)}
+.catalog-source:active{background:var(--w10)}
+.catalog-source:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
 /* An error under a row, styled as the page's own error banner (#offline). */
 .err-note{font-size:14px;border-left:2px solid var(--red);padding:9px 13px;background:var(--w06);color:var(--w90);margin-top:8px;max-width:64ch;overflow-wrap:anywhere}
 .err-note b{font-weight:600;margin-right:6px}
