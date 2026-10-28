@@ -148,7 +148,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 .dev.last .st em{color:#e9ad55}
 .row .dev.unused{opacity:.3}
 .row .dev.unused.focus{opacity:.6}
-.dev>div{position:relative;z-index:1}
+.dev.live>div{position:relative;z-index:1}
 .dev .pv{position:absolute;left:0;top:0;right:0;bottom:0;border-radius:inherit;overflow:hidden;opacity:0;
   -webkit-transition:opacity .35s;transition:opacity .35s}
 .dev .pv.on{opacity:1}
@@ -755,7 +755,7 @@ html.faded #stage{opacity:0}
         '<div class="path">' + esc(path) + '</div></div>' +
         '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : d.unused ? t('home.dev.unused', 'Nothing connected') : t('home.dev.connected', 'Connected')) + '</em>' +
         '<span>' + (d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' +
-        (d.unused ? '' : previewHolder) + hiddenLabel + '</div>';
+        hiddenLabel + '</div>';
     },
     ch: function (c, i) {
       var cls = 'tile ch' + (hidden('ch', c.id) ? ' hidden' : '');
@@ -778,8 +778,6 @@ html.faded #stage{opacity:0}
     }
   };
 
-  var previewHolder = '<span class="pv"></span>';
-
   // The TV's own tuner: Live TV, on the channel it was last on.
   function tunerTileHtml(d, i) {
     var last = layout.showLastOn !== false && lastOn.kind === 'channel';
@@ -788,7 +786,7 @@ html.faded #stage{opacity:0}
     return '<div class="' + cls + '" data-c="' + i + '"><div><div class="nm">' + esc(d.name) + '</div>' +
       '<div class="path">' + esc(path) + '</div></div>' +
       '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : t('ctl.liveTv', 'Live TV')) + '</em><span></span></div>' +
-      previewHolder + hiddenLabel + '</div>';
+      hiddenLabel + '</div>';
   }
 
   // ---------------------------------------------------------------- live preview
@@ -825,9 +823,12 @@ html.faded #stage{opacity:0}
    */
   function previewTarget() {
     if (!layout || !data || layout.showPreview === false || live.held || document.hidden) return null;
+    // Checked at every change of focus, so out quickly when there is nothing to show.
+    var onInputs = rowKey() === 'dev' && state.bar < 0 && !state.rail;
+    if (!onInputs && layout.previewAlways !== true) return null;
     if (state.arranging || folder.open || recents.open || recents.loading || finder.open) return null;
     var list = items('dev'), i;
-    if (rowKey() === 'dev' && state.bar < 0 && !state.rail) {
+    if (onInputs) {
       var chosen = previewOf(list[colOf('dev')], colOf('dev'));
       if (chosen) { chosen.chosen = true; return chosen; }
     }
@@ -845,14 +846,27 @@ html.faded #stage{opacity:0}
     return tuner;
   }
 
+  // The layer the video plays in, added to a tile only while it has a
+  // preview, so the tiles carry nothing extra while the rows move.
   function previewHolderEl(at) {
     var tile = document.querySelector('.row[data-key="dev"] .tile[data-c="' + at + '"]');
-    return tile ? tile.querySelector('.pv') : null;
+    if (!tile) return null;
+    var holder = tile.querySelector('.pv');
+    if (!holder) {
+      holder = document.createElement('span');
+      holder.className = 'pv';
+      tile.appendChild(holder);
+    }
+    return holder;
   }
 
   function showOn(holder) {
-    var was = document.querySelectorAll('.pv.on');
-    for (var i = 0; i < was.length; i++) if (was[i] !== holder) { was[i].className = 'pv'; was[i].parentNode.className = was[i].parentNode.className.replace(/ live\b/g, ''); }
+    var was = document.querySelectorAll('.pv');
+    for (var i = 0; i < was.length; i++) {
+      if (was[i] === holder) continue;
+      was[i].parentNode.className = was[i].parentNode.className.replace(/ live\b/g, '');
+      was[i].parentNode.removeChild(was[i]);
+    }
     if (!holder) return;
     holder.className = 'pv on';
     if (!/ live\b/.test(holder.parentNode.className)) holder.parentNode.className += ' live';
