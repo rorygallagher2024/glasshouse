@@ -2405,5 +2405,12 @@
  "tv.saver.app.hint": {"text": "من تطبيق {app}. إعداداتها، إن وُجدت، في ذلك التطبيق.", "from": "From the {app} app. Any settings it has are in that app."},
  "tv.apps.install.pv.screensaverListed": {"text": "مدرجة مع شاشاتنا", "from": "Listed with ours"},
  "apps.install.screensaver.listed": {"text": "لهذا التطبيق شاشة توقف. بعد تثبيته، اخترها من تبويب شاشة التوقف مع شاشات Glasshouse.", "from": "This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own."},
- "srv.remoteKeys.screenOff": {"text": "إيقاف الشاشة", "from": "Screen off"}
+ "srv.remoteKeys.screenOff": {"text": "إيقاف الشاشة", "from": "Screen off"},
+ "ctl.keyboard": {"text": "لوحة المفاتيح", "from": "Keyboard"},
+ "ctl.keyboard.sub": {"text": "اكتب في الحقل المحدد", "from": "Type into a focused field"},
+ "ctl.keyboard.placeholder": {"text": "حدد حقلاً على التلفاز، ثم اكتب", "from": "Focus a field on the TV, then type"},
+ "ctl.keyboard.enter": {"text": "إدخال", "from": "Enter"},
+ "ctl.keyboard.hint": {"text": "حدد أولاً حقلاً نصياً على التلفاز، مثل البحث أو عنوان ويب. ما تكتبه هنا يصل إليه أثناء الكتابة، بما في ذلك الحذف، وزر «إدخال» يرسله.", "from": "Focus a text field on the TV first, such as a search box or a web address. What you type here goes to it as you type, backspace included, and Enter submits it."},
+ "ctl.keyboard.up": {"text": "لوحة مفاتيح LG ظاهرة على التلفاز: ما تكتبه هنا يصل إلى حقلها أثناء الكتابة، بما في ذلك الحذف، وزر «إدخال» يرسله.", "from": "LG’s keyboard is up on the TV: what you type here goes to its field as you type, backspace included, and Enter submits it."},
+ "ctl.keyboard.down": {"text": "لوحة مفاتيح LG غير ظاهرة على التلفاز. حدد هناك أولاً حقلاً نصياً، مثل البحث أو عنوان ويب. بعض التطبيقات تستخدم لوحة مفاتيح خاصة بها.", "from": "LG’s keyboard is not up on the TV. Select a text field there first, such as a search box or a web address. Some apps use a keyboard of their own instead."}
 }
