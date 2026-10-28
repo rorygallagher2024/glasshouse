@@ -122,8 +122,12 @@ var MEDIA_ACTIONS = ['play', 'pause', 'stop', 'rewind', 'fastForward', 'volumeUp
 var MEDIA_REPEATS = { volumeUp: true, volumeDown: true };
 /*
  * Screen off, as the dashboard's: tvpower's turnOffScreen blanks the panel and
- * any key brings the picture back (#1085). The filter asks for it only while the
- * TV is Active, so the press that brings the picture back does not blank it again.
+ * any key brings the picture back (#1085). The key's own release brought it
+ * back on a C2 (webOS 9.2.2) when the press blanked it, so it is blanked on the
+ * release, and only where the press found the picture on: a press while it is
+ * off wakes it, and its release must not blank it again. The state is followed
+ * through a tvpower subscription, as asking at the press answered after the
+ * TV had woken.
  */
 var SCREEN_OFF = 'action:screenOff';
 
@@ -345,6 +349,9 @@ function filterSource() {
     'var glasshouseHoldOver = false;',
     'var glasshouseMediaCodes = ' + JSON.stringify(MEDIA_CODES) + ';',
     'var glasshouseMediaRepeats = ' + JSON.stringify(MEDIA_REPEATS) + ';',
+    '// tvpower\'s state, and whether the Screen off key went down with the picture on.',
+    'var glasshousePowerState = "Active";',
+    'var glasshouseScreenOffArmed = false;',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
     'function glasshouseKeyCodes() {',
@@ -376,16 +383,24 @@ function filterSource() {
     '    }',
     '}',
     '',
-    '// Blanks the panel, only while the picture is on: in Screen Off the key brings it back.',
-    'function glasshouseScreenOff() {',
-    '    lunaCall.send("com.webos.service.tvpower", "/power/getPowerState", "{}", function (payload) {',
-    '        try {',
-    '            var r = typeof payload === "string" ? JSON.parse(payload) : payload;',
-    '            if (r && r.state === "Active") lunaCall.send("com.webos.service.tvpower", "/power/turnOffScreen", "{}", function () {});',
-    '        } catch (e) {',
-    '            console.warn("glasshouse keyfilter: " + e);',
-    '        }',
-    '    });',
+    'function glasshousePowerChanged(payload) {',
+    '    try {',
+    '        var r = typeof payload === "string" ? JSON.parse(payload) : payload;',
+    '        if (r && typeof r.state === "string") glasshousePowerState = r.state;',
+    '    } catch (e) {',
+    '        console.warn("glasshouse keyfilter: " + e);',
+    '    }',
+    '}',
+    '',
+    '// Down with the picture on, the release blanks it; down with it off, the key only wakes it.',
+    'function glasshouseScreenOffKey(pressed, autoRepeat) {',
+    '    if (pressed) {',
+    '        if (!autoRepeat) glasshouseScreenOffArmed = glasshousePowerState === "Active";',
+    '        return;',
+    '    }',
+    '    if (!glasshouseScreenOffArmed) return;',
+    '    glasshouseScreenOffArmed = false;',
+    '    lunaCall.send("com.webos.service.tvpower", "/power/turnOffScreen", "{}", function () {});',
     '}',
     '',
     'function glasshouseSendKey(code) {',
@@ -429,6 +444,12 @@ function filterSource() {
     '    } catch (e) {',
     '        console.warn("glasshouse keyfilter: " + e + "; no keys set");',
     '    }',
+    '    try {',
+    '        lunaCall.subscribe("com.webos.service.tvpower", "/power/getPowerState",',
+    '            JSON.stringify({ "subscribe": true }), glasshousePowerChanged, true);',
+    '    } catch (e) {',
+    '        console.warn("glasshouse keyfilter: " + e + "; power state not followed");',
+    '    }',
     '}',
     '',
     // First in the chain, it sees every key, the arrows and OK included: an
@@ -455,10 +476,8 @@ function filterSource() {
     '                glasshouseMedia(media);',
     '            }',
     '        } else if (id === ' + JSON.stringify(SCREEN_OFF) + ') {',
-    '            if (pressed && !autoRepeat) {',
-    '                console.info("glasshouse keyfilter: key", key, "turns the screen off");',
-    '                glasshouseScreenOff();',
-    '            }',
+    '            if (!pressed && glasshouseScreenOffArmed) console.info("glasshouse keyfilter: key", key, "turns the screen off");',
+    '            glasshouseScreenOffKey(pressed, autoRepeat);',
     '        } else if (pressed && !autoRepeat && id) {',
     '            console.info("glasshouse keyfilter: key", key, "opens", id);',
     // Home opened as the Home key opens it, so Glasshouse Home opens as Home.
