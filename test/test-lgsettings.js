@@ -275,4 +275,47 @@ cmsRows(function (by) {
 });
 console.log('  ✓ colour management follows Colour adjustment, and is greyed out in Game mode');
 
+// 7. The sound category read whole can lag a change made since: a G5 on webOS
+// 10.3 reported Digital Sound Output as auto there, and passThrough to a read
+// that names the key, as LG's menu showed. The named read wins.
+var current = { soundOutput: 'external_arc', soundOutputDigital: 'passThrough' };
+var named = [];
+lgs.init({
+  lunaCached: function (uri, payload, ttl, cb) {
+    if (/Desc$/.test(uri)) return cb({ returnValue: true, results: [] });
+    if (payload.keys) {
+      named.push(payload.keys);
+      var settings = {};
+      payload.keys.forEach(function (k) { if (current[k] !== undefined) settings[k] = current[k]; });
+      return cb({ returnValue: true, settings: settings });
+    }
+    cb({ returnValue: true, settings: { soundOutput: 'external_arc', soundOutputDigital: 'auto', soundMode: 'standard' } });
+  },
+  luna: function (uri, payload, cb) { cb({ returnValue: true }); },
+  clearLunaCache: function () {}
+});
+lgs.collect(['sound'], function (r) {
+  var by = {};
+  r.rows.forEach(function (x) { by[x.id] = x; });
+  assert.strictEqual(by.soundOutputDigital.value, 'passThrough');
+  assert.strictEqual(by.soundMode.value, 'standard', 'a key the named read leaves out keeps its whole-category value');
+  assert.strictEqual(named.length, 1);
+  assert.deepEqual(named[0].slice().sort(), ['soundMode', 'soundOutput', 'soundOutputDigital'],
+    'only keys the whole read returned are named, so an older TV is not asked for one it lacks');
+});
+// A failed named read leaves the whole-category values.
+lgs.init({
+  lunaCached: function (uri, payload, ttl, cb) {
+    if (/Desc$/.test(uri)) return cb({ returnValue: true, results: [] });
+    if (payload.keys) return cb({ returnValue: false });
+    cb({ returnValue: true, settings: { soundOutputDigital: 'auto' } });
+  },
+  luna: function (uri, payload, cb) { cb({ returnValue: true }); },
+  clearLunaCache: function () {}
+});
+lgs.collect(['sound'], function (r) {
+  assert.strictEqual(r.rows.filter(function (x) { return x.id === 'soundOutputDigital'; })[0].value, 'auto');
+});
+console.log('  ✓ sound settings read by name win over a stale whole-category read');
+
 console.log('ALL test-lgsettings.js assertions passed!\n');

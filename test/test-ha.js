@@ -340,7 +340,23 @@ console.log('Running test-ha.js ...');
     assert.ok(require('../server/lib/controls').RCU_KEY_CODES[m[1]], 'controls knows ' + m[1]);
     assert.ok(ha.HA_ENTITIES.some(function (e) { return e.id === m[0] && e.type === 'button' && e.cat === 'controls'; }));
   });
-  console.log('  ✓ OLED Light is a slider on the live topic, and the D-pad, Back, Home, Rewind and Fast Forward are buttons');
+  var text = by['text.keyboard_text'];
+  assert.ok(text, 'Keyboard Text');
+  assert.strictEqual(text.payload.command_topic, 'test/tv/command/keyboardText');
+  assert.strictEqual(text.payload.mode, 'text');
+  assert.ok(text.payload.state_topic, 'a state topic, so Home Assistant never keeps the typed text as the state');
+  assert.strictEqual(text.payload.value_template, "{{ '' }}", 'the state is always empty');
+  assert.strictEqual(text.payload.max, require('../server/lib/controls').KEYBOARD_TEXT_MAX, 'the length controls keeps');
+  [['keyboard_enter', 'enter'], ['keyboard_backspace', 'backspace']].forEach(function (m) {
+    var b = by['button.' + m[0]];
+    assert.ok(b, m[0]);
+    assert.strictEqual(b.payload.command_topic, 'test/tv/command/keyboardKey');
+    assert.strictEqual(b.payload.payload_press, m[1]);
+  });
+  ['keyboard_text', 'keyboard_enter', 'keyboard_backspace'].forEach(function (id) {
+    assert.ok(ha.HA_ENTITIES.some(function (e) { return e.id === id && e.cat === 'controls'; }), id);
+  });
+  console.log('  ✓ OLED Light is a slider on the live topic, and the D-pad, Back, Home, Rewind, Fast Forward and keyboard are controls');
 })();
 
 // LG's PHY error count is no longer published, and Home Assistant is told to

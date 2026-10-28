@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.127.0';
+var TVWEB_VERSION = '0.130.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -685,7 +685,11 @@ controls.init({
   inputs: names.INPUTS,
   browserApp: BROWSER_APP,
   toastSource: TOAST_SOURCE,
-  tileHidingOff: TILE_HIDING_OFF
+  tileHidingOff: TILE_HIDING_OFF,
+  keyboardVisible: function () {
+    var kb = liveState.state.snapshot().keyboard;
+    return !!(kb && kb.keyboard_visible === true);
+  }
 });
 
 var doControl = controls.doControl;
@@ -1569,7 +1573,9 @@ function setupHomeAssistant() {
     if (topic.indexOf(mqttTopics.commands) !== 0) return;
     var action = topic.substring(mqttTopics.commands.length);
     var val = payload ? payload.trim() : '';
-    console.log('mqtt: command received: ' + action + ' -> ' + val);
+    // Typed text can be a password, so only its length is logged.
+    console.log('mqtt: command received: ' + action + ' -> ' +
+                (action === 'keyboardText' ? (payload || '').length + ' characters' : val));
     if (action === 'input' && val) {
       pendingInput = { id: val, until: Date.now() + 10000 };
       /*
@@ -1589,8 +1595,14 @@ function setupHomeAssistant() {
     // A held arrow sends a stream of keys, and a telemetry read after each one
     // would queue a dozen luna calls per key. A key that changes the app
     // reaches Home Assistant through the foreground-app subscription.
-    if (action === 'rcu') {
+    if (action === 'rcu' || action === 'keyboardKey') {
       doControl(action, val, function () {});
+      return;
+    }
+
+    // Untrimmed: a space typed at either end is part of the text.
+    if (action === 'keyboardText') {
+      doControl(action, payload || '', function () {});
       return;
     }
 
@@ -1777,6 +1789,7 @@ function setupHomeAssistant() {
   liveState.start();
   liveState.startGroup('surface');
   liveState.startGroup('focus');
+  liveState.startGroup('keyboard');
   notificationState.start();
   mqttClient.connect();
 }

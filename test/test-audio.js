@@ -14,10 +14,16 @@ var originalExec = child.execFile;
 var responses;
 var launches = 0;
 var reads = 0;
+var calls = [];
 var before;
 var cases = [];
 child.execFile = function () { launches++; throw new Error('The audio endpoint must not start a process'); };
-function call(uri, params, cb) { reads++; cb(responses[uri] || null); }
+function call(uri, params, cb) {
+  reads++;
+  calls.push({ uri: uri, params: params });
+  var response = responses[uri];
+  cb(typeof response === 'function' ? response(params) : response || null);
+}
 audio.init({ luna: call, lunaCached: function (uri, params, ttl, cb) { call(uri, params, cb); },
   hdmiReceiverMap: function (cb) { cb({ 1: 3, 2: 2, 3: 1, 4: 0 }); } });
 
@@ -43,6 +49,27 @@ add('TV, receiver, local playback and negotiated transport stay separate', null,
   assert.strictEqual(format(st, 'dtsx').advertised, null, 'a DTS-HD descriptor does not certify DTS:X');
   assert.strictEqual(st.live.input, null, 'AudioData with zero rate and an unstarted decoder is not live PCM');
   assert.strictEqual(st.live.output, null);
+});
+add('current output settings override whole-category defaults', function () {
+  var category = responses['com.webos.service.settings/getSystemSettings'];
+  responses['com.webos.service.settings/getSystemSettings'] = function (params) {
+    return params.keys ? { returnValue: true, settings: { soundOutput: 'external_arc', soundOutputDigital: 'passThrough' } } : category;
+  };
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(st.settings.soundOutput, 'external_arc');
+  assert.strictEqual(st.settings.soundOutputDigital, 'passThrough');
+});
+add('a refused named output query retains older-TV category values', function () {
+  var category = responses['com.webos.service.settings/getSystemSettings'];
+  responses['com.webos.service.settings/getSystemSettings'] = function (params) {
+    return params.keys ? { returnValue: false } : category;
+  };
+}, function (code, st) {
+  var expected = fixture.responses['com.webos.service.settings/getSystemSettings'].settings;
+  assert.strictEqual(code, 200);
+  assert.strictEqual(st.settings.soundOutput, expected.soundOutput);
+  assert.strictEqual(st.settings.soundOutputDigital, expected.soundOutputDigital);
 });
 add('inactive receivers do not retain stale advertised capabilities', function () {
   responses['com.webos.service.arccontroller/getARCState'].arcActivation = 'None';
@@ -80,6 +107,67 @@ add('malformed optional records cannot crash the capability endpoint', function 
   assert.strictEqual(format(st, 'dts').playback, true);
   assert.strictEqual(format(st, 'dts').receiver, null);
 });
+function c9Setup() {
+  responses['com.webos.service.config/getConfigs'].configs['tv.model.hdmiSwitchType'] = 'HAWK2';
+  responses['com.webos.service.config/getConfigs'].configs['tv.model.edidType'] = 'TrueHD';
+  responses['com.webos.service.settings/getSystemSettings'].dimension = { input: 'hdmi1' };
+  var base = [], extension = [], i;
+  for (i = 0; i < 128; i++) { base.push(0); extension.push(0); }
+  [0, 255, 255, 255, 255, 255, 255, 0].forEach(function (n, offset) { base[offset] = n; });
+  base[126] = 1;
+  var data = [0x2f, 0x0d, 7, 7, 0x15, 7, 0x50, 0x57, 7, 1, 0x67, 4, 3, 0x3d, 0x1e, 0xc0];
+  extension[0] = 2; extension[1] = 3; extension[2] = 4 + data.length; extension[3] = 0x40;
+  data.forEach(function (n, offset) { extension[offset + 4] = n; });
+  [base, extension].forEach(function (block) { var sum = 0; for (var j = 0; j < 127; j++) sum += block[j]; block[127] = (-sum) & 255; });
+  responses['com.webos.service.tv.systemproperty/getEdidData'] = { returnValue: true, edidData: { length: 256, data: base.concat(extension) } };
+  responses['com.webos.service.arccontroller/getARCState'] = { returnValue: false };
+  responses['com.webos.service.arccontroller/getARCEDIDInfo'] = { returnValue: false };
+  responses['com.webos.service.audio/tv/getAudioInputProperty'] = { returnValue: false };
+  ['/proc/lgtv-driver/audio/sndout', '/proc/lgtv-driver/audio/hdmi', '/proc/lgtv-driver/audio/adec.p0', '/proc/lgtv-driver/audio/adec.p1'].forEach(function (name) { mock.files[name] = null; });
+  mock.files['/proc/lg/hdmi20/port3/status'] = 'connected: on\ntiming-invalid: no (0)\nstable_cnt: 24 (VIDEO Status)\nAIF-CC2-0: 0x00000005 (channel count)\nAIF-CA7-0: 0x0000000b (channel allocation)\nAIF-SF2-0: 0x00000000 (sample frequency)\n';
+}
+add('C9 uses its input dimension and authoritative HAWK2 native EDID', c9Setup, function (code, st) {
+  assert.strictEqual(st.tv.input, 1);
+  assert.deepEqual(calls.filter(function (entry) { return /getEdidData$/.test(entry.uri); })[0].params, { inputType: 0, portNumber: 1 });
+  assert.strictEqual(format(st, 'dts').advertised, true, 'TrueHD family must not erase the actual core DTS declaration');
+  assert.strictEqual(format(st, 'dtshd').advertised, false, 'the native EDID wins over a lower driver buffer');
+  assert.strictEqual(st.live.hdmi.channels, 6);
+  assert.strictEqual(st.live.hdmi.channelAllocation, 11);
+  assert.strictEqual(st.live.hdmi.sampleRate, null, 'an unspecified frequency is not assumed to be 48 kHz');
+  assert.strictEqual(st.live.input, null, 'an InfoFrame does not establish live audio or PCM decoding');
+  assert.strictEqual(st.receiver.link, 'unknown', 'the eARC setting is not a negotiated link');
+});
+add('a failed HAWK2 read remains unknown instead of falling back to a family guess', function () {
+  c9Setup(); responses['com.webos.service.tv.systemproperty/getEdidData'] = { returnValue: false };
+}, function (code, st) { assert.strictEqual(format(st, 'dts').advertised, null); assert.strictEqual(format(st, 'mat').advertised, null); });
+add('a corrupt native HAWK2 checksum stays unknown', function () {
+  c9Setup(); responses['com.webos.service.tv.systemproperty/getEdidData'].edidData.data[140] ^= 1;
+}, function (code, st) { assert.strictEqual(format(st, 'dts').advertised, null); });
+add('native EDID length and bytes must agree', function () {
+  c9Setup(); responses['com.webos.service.tv.systemproperty/getEdidData'].edidData.length = 128;
+}, function (code, st) { assert.strictEqual(format(st, 'pcm').advertised, null); });
+add('native EDID byte values must be valid', function () {
+  c9Setup(); responses['com.webos.service.tv.systemproperty/getEdidData'].edidData.data[145] = '7';
+}, function (code, st) { assert.strictEqual(format(st, 'dts').advertised, null); });
+add('stale or unspecified HDMI channel information stays absent', function () {
+  c9Setup(); mock.files['/proc/lg/hdmi20/port3/status'] = mock.files['/proc/lg/hdmi20/port3/status'].replace('0x00000005', '0x00000000');
+}, function (code, st) { assert.strictEqual(st.live.hdmi, null); });
+add('disconnected HDMI must not retain its last audio layout', function () {
+  c9Setup(); mock.files['/proc/lg/hdmi20/port3/status'] = mock.files['/proc/lg/hdmi20/port3/status'].replace('connected: on', 'connected: off');
+}, function (code, st) { assert.strictEqual(st.live.hdmi, null); });
+add('a source without a stable picture must not report cached metadata', function () {
+  c9Setup(); mock.files['/proc/lg/hdmi20/port3/status'] = mock.files['/proc/lg/hdmi20/port3/status'].replace('stable_cnt: 24', 'stable_cnt: 0');
+}, function (code, st) { assert.strictEqual(st.live.hdmi, null); });
+add('an explicit HDMI rate and eight-channel layout are retained as metadata', function () {
+  c9Setup(); mock.files['/proc/lg/hdmi20/port3/status'] = mock.files['/proc/lg/hdmi20/port3/status'].replace('0x00000005', '0x00000007').replace('0x00000000 (sample frequency)', '0x00000003 (sample frequency)');
+}, function (code, st) { assert.strictEqual(st.live.hdmi.channels, 8); assert.strictEqual(st.live.hdmi.sampleRate, 48000); });
+add('non-HDMI C9 app playback does not query an arbitrary HDMI port', function () {
+  c9Setup(); responses['com.webos.service.settings/getSystemSettings'].dimension = { input: 'default' };
+  responses['com.webos.service.tv.systemproperty/getEdidData'] = null;
+}, function (code, st) {
+  assert.strictEqual(st.tv.input, null); assert.strictEqual(st.live.hdmi, null); assert.strictEqual(format(st, 'dts').advertised, null);
+  assert.strictEqual(calls.filter(function (entry) { return /getEdidData$/.test(entry.uri); }).length, 0);
+});
 add('the endpoint is read-only', null, function (code) {
   assert.strictEqual(code, 405);
   assert.strictEqual(launches, 0);
@@ -91,6 +179,7 @@ function next() {
   var task = cases.shift();
   if (!task) { clearTimeout(guard); restore(); console.log('ALL test-audio.js assertions passed!'); return; }
   responses = JSON.parse(JSON.stringify(fixture.responses));
+  calls = [];
   Object.keys(fixture.files).forEach(function (key) { mock.files[key] = fixture.files[key]; });
   os.release = function () { return '5.4.268-320'; };
   routes.init({ config: { allowControl: true, token: '', port: 8080 }, audio: audio });

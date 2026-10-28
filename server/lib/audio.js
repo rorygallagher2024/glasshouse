@@ -52,43 +52,37 @@ function sads(text) {
   return out;
 }
 
-// The driver's EDID is what this input actually advertises, including while
-// ARC is off. Configd's edidType is only a fallback for its named families.
-function inputSads(port, map) {
-  if (!port || !map || typeof map[port] !== 'number') return null;
-  var raw = util.readTrimmed('/proc/lg/hdmi20/port' + map[port] + '/edid');
-  if (!raw) return null;
-  var bytes = [];
-  raw.split(/\r?\n/).forEach(function (line) {
-    var row = /^\[0x[\da-f]+\]\s*\|((?:\s*\[0x[\da-f]{2}\]){16})\s*$/i.exec(line);
-    if (row) (row[1].match(/\[0x[\da-f]{2}\]/ig) || []).forEach(function (value) { bytes.push(parseInt(value.slice(3, -1), 16)); });
-  });
-  var start = -1;
-  for (var n = 0; n <= bytes.length - 128; n++) {
-    if (bytes.slice(n, n + 8).join(',') === '0,255,255,255,255,255,255,0') { start = n; break; }
-  }
-  if (start < 0) return null;
-  bytes = bytes.slice(start);
-  function validBlock(at) {
-    if (bytes.length < at + 128) return false;
+function currentInputPort(reply) {
+  var dimension = reply && reply.returnValue !== false && reply.dimension || {};
+  var input = /^hdmi([1-9])$/.exec(String(dimension.audioInput || '')) ||
+    /^hdmi([1-9])$/.exec(String(dimension.input || ''));
+  return input ? Number(input[1]) : null;
+}
+
+function edidSads(bytes) {
+  if (!Array.isArray(bytes) || bytes.length < 128 || bytes.length % 128 ||
+      bytes.some(function (n) { return typeof n !== 'number' || n !== Math.floor(n) || n < 0 || n > 255; }) ||
+      bytes.slice(0, 8).join(',') !== '0,255,255,255,255,255,255,0') return null;
+  var count = bytes[126] + 1;
+  if (bytes.length < count * 128) return null;
+  for (var block = 0; block < count; block++) {
     var sum = 0;
-    for (var i = at; i < at + 128; i++) sum += bytes[i];
-    return sum % 256 === 0;
+    for (var offset = block * 128; offset < (block + 1) * 128; offset++) sum += bytes[offset];
+    if (sum % 256) return null;
   }
-  if (!validBlock(0)) return null;
   var formats = {}, found = false;
-  for (n = 1; n <= bytes[126]; n++) {
+  for (var n = 1; n < count; n++) {
     var at = n * 128;
-    if (!validBlock(at) || bytes[at] !== 2) continue;
+    if (bytes[at] !== 2) continue;
     var end = bytes[at + 2] || 4;
-    if (end < 4 || end > 127) continue;
+    if (end < 4 || end > 127) return null;
     found = true;
     if (bytes[at + 3] & 64) formats[1] = 2;
     for (var pos = 4; pos < end;) {
       var head = bytes[at + pos++], len = head & 31;
       if (pos + len > end) return null;
       if (head >> 5 === 1) {
-        if (len % 3) return null;
+        if (!len || len % 3) return null;
         for (var j = pos; j < pos + len; j += 3) {
           var code = (bytes[at + j] >> 3) & 15;
           if (code) formats[code] = Math.max(formats[code] || 0, (bytes[at + j] & 7) + 1);
@@ -98,6 +92,47 @@ function inputSads(port, map) {
     }
   }
   return found ? formats : null;
+}
+
+function inputSads(port, map) {
+  if (!port || !map || typeof map[port] !== 'number') return null;
+  var raw = util.readTrimmed('/proc/lg/hdmi20/port' + map[port] + '/edid');
+  if (!raw) return null;
+  var bytes = [];
+  raw.split(/\r?\n/).forEach(function (line) {
+    var row = /^\[0x[\da-f]+\]\s*\|((?:\s*\[0x[\da-f]{2}\]){16})\s*$/i.exec(line);
+    if (row) (row[1].match(/\[0x[\da-f]{2}\]/ig) || []).forEach(function (value) { bytes.push(parseInt(value.slice(3, -1), 16)); });
+  });
+  for (var n = 0; n <= bytes.length - 128; n++) {
+    if (bytes.slice(n, n + 8).join(',') === '0,255,255,255,255,255,255,0') return edidSads(bytes.slice(n));
+  }
+  return null;
+}
+
+function nativeInputSads(reply) {
+  var data = reply && reply.returnValue === true && reply.edidData;
+  return data && data.length === 256 && Array.isArray(data.data) && data.data.length === data.length
+    ? edidSads(data.data) : null;
+}
+
+function hdmiChannelInfo(port, map) {
+  if (!port || !map || typeof map[port] !== 'number') return null;
+  var raw = util.readTrimmed('/proc/lg/hdmi20/port' + map[port] + '/status');
+  if (!raw || !/^connected:\s*on\s*$/m.test(raw) || !/^timing-invalid:\s*no\b/m.test(raw)) return null;
+  var stable = /^stable_cnt:\s*(\d+)/m.exec(raw);
+  if (!stable || Number(stable[1]) < 1) return null;
+  function field(name, max) {
+    var match = new RegExp('^' + name + ':\\s*0x([0-9a-f]+)\\s', 'mi').exec(raw);
+    var value = match ? parseInt(match[1], 16) : null;
+    return value !== null && value <= max ? value : null;
+  }
+  // Zero means "refer to stream", not stereo or a known sample rate. An
+  // InfoFrame can survive a pause, so this is metadata, not playback proof.
+  var count = field('AIF-CC2-0', 7);
+  if (!count) return null;
+  var rate = field('AIF-SF2-0', 7);
+  return { channels: count + 1, channelAllocation: field('AIF-CA7-0', 255),
+    sampleRate: [null, 32000, 44100, 48000, 88200, 96000, 176400, 192000][rate || 0] };
 }
 
 function formatId(raw) {
@@ -136,14 +171,23 @@ function build(replies, decoder) {
   var cfg = replies.config && replies.config.returnValue !== false && replies.config.configs || {};
   var info = replies.identity && replies.identity.returnValue !== false && replies.identity || {};
   var sr = replies.settings && replies.settings.returnValue !== false && replies.settings || {};
-  var settings = sr.settings && typeof sr.settings === 'object' ? sr.settings : {};
+  var settings = {};
+  var categorySettings = sr.settings && typeof sr.settings === 'object' ? sr.settings : {};
+  Object.keys(categorySettings).forEach(function (key) { settings[key] = categorySettings[key]; });
+  var current = replies.outputSettings && replies.outputSettings.returnValue === true && replies.outputSettings.settings;
+  ['soundOutput', 'soundOutputDigital'].forEach(function (key) {
+    if (current && typeof current[key] === 'string') settings[key] = current[key];
+  });
   var arc = replies.arc && replies.arc.returnValue !== false ? replies.arc : null;
   var edid = replies.edid && replies.edid.returnValue !== false ? replies.edid : null;
-  var inputPort = /^hdmi([1-9])$/.exec(String(sr.dimension && sr.dimension.audioInput || ''));
-  var port = inputPort ? Number(inputPort[1]) : null;
+  var port = currentInputPort(sr);
+  var hawk2 = cfg['tv.model.hdmiSwitchType'] === 'HAWK2';
   var edids = records(edid && edid.edidInfo);
   var chosen = edids.filter(function (x) { return x.inputType === 'hdmi' && x.port === port; })[0];
-  var advertised = inputSads(port, replies.receiverMap) || (chosen ? sads(chosen.SADs) : null);
+  // HAWK2's source-facing EDID belongs to the switch, not the lower HDMI20
+  // buffer. Its family name also omits DTS even when its native EDID has it.
+  var advertised = hawk2 ? nativeInputSads(replies.nativeEdid) :
+    inputSads(port, replies.receiverMap) || (chosen ? sads(chosen.SADs) : null);
   var edidType = typeof cfg['tv.model.edidType'] === 'string' ? cfg['tv.model.edidType'] : null;
   var knownType = /^(TrueHD|ac3)(\+dts)?$/.test(edidType || '');
   var receiverFormats = null;
@@ -171,8 +215,8 @@ function build(replies, decoder) {
   var declarations = file && Array.isArray(file.audioCodecs) ? records(file.audioCodecs).filter(function (x) { return typeof x.name === 'string' && x.name.length > 0; }) : null;
   var rows = FORMATS.map(function (f) {
     var tv = advertised && f.sad !== null ? !!advertised[f.sad] : null;
-    if (tv === null && knownType && f.id === 'dts') tv = /\+dts$/.test(edidType);
-    if (tv === null && knownType && f.id === 'mat') tv = /^TrueHD/.test(edidType);
+    if (tv === null && !hawk2 && knownType && f.id === 'dts') tv = /\+dts$/.test(edidType);
+    if (tv === null && !hawk2 && knownType && f.id === 'mat') tv = /^TrueHD/.test(edidType);
     var declared = declarations ? declarations.filter(function (x) { return f.aliases.indexOf(String(x.name).toUpperCase()) !== -1; }) : [];
     return { id: f.id, name: f.label, advertised: tv,
       receiver: receiverFormats && receiverFormats[f.id] ? true : receiverFormats && receiverComplete ? false : null,
@@ -212,7 +256,7 @@ function build(replies, decoder) {
       formatsKnown: receiverFormats !== null },
     settings: settings,
     outputName: settings.soundOutput ? names.soundOutput(settings.soundOutput).display : null,
-    live: { input: liveInput,
+    live: { input: liveInput, hdmi: hawk2 ? hdmiChannelInfo(port, replies.receiverMap) : null,
       output: liveInput && settings.soundOutput === 'external_arc' && link !== 'inactive' && link !== 'unknown' && sound.ARC && Number(sound.ARC.OutputChannel) > 0 ? sound.ARC.OutputCodec : null }
   };
 }
@@ -220,18 +264,25 @@ function build(replies, decoder) {
 function status(cb, force) {
   /** @type {Object.<string, any>} */
   var replies = {};
-  var left = 9;
+  var left = 10;
   var decoder = null;
   function done() {
     if (--left) return;
-    cb(build(replies, decoder));
+    var cfg = replies.config && replies.config.returnValue !== false && replies.config.configs || {};
+    var port = currentInputPort(replies.settings);
+    if (cfg['tv.model.hdmiSwitchType'] === 'HAWK2' && port >= 1 && port <= 4) {
+      var params = { inputType: 0, portNumber: port };
+      var next = function (reply) { replies.nativeEdid = reply; cb(build(replies, decoder)); };
+      if (force) luna('com.webos.service.tv.systemproperty/getEdidData', params, next);
+      else cached('com.webos.service.tv.systemproperty/getEdidData', params, 3000, next);
+    } else cb(build(replies, decoder));
   }
   function ask(key, uri, params, ttl) {
     var next = function (r) { replies[key] = r; done(); };
     if (force) luna(uri, params, next);
     else cached(uri, params, ttl, next);
   }
-  ask('config', 'com.webos.service.config/getConfigs', { configNames: ['tv.model.edidType', 'tv.model.modelname'] }, 300000);
+  ask('config', 'com.webos.service.config/getConfigs', { configNames: ['tv.model.edidType', 'tv.model.modelname', 'tv.model.hdmiSwitchType'] }, 300000);
   ask('identity', 'com.webos.service.tv.systemproperty/getSystemInfo', { keys: ['modelName', 'firmwareVersion', 'sdkVersion'] }, 300000);
   ask('arc', 'com.webos.service.arccontroller/getARCState', {}, 3000);
   ask('edid', 'com.webos.service.arccontroller/getARCEDIDInfo', {}, 3000);
@@ -239,6 +290,11 @@ function status(cb, force) {
   // The whole category, as lgsettings asks: webOS 4.4 answers nothing when a
   // named key it lacks, such as eArcSupport, is in the list.
   ask('settings', 'com.webos.service.settings/getSystemSettings', { category: 'sound' }, 3000);
+  // G5 33.31.68 returned auto for the whole category while a named query
+  // returned the actual Pass Through setting. A failed named query keeps the
+  // category values and dimension metadata used by older TVs.
+  ask('outputSettings', 'com.webos.service.settings/getSystemSettings',
+    { category: 'sound', keys: ['soundOutput', 'soundOutputDigital'] }, 3000);
   ask('input', 'com.webos.service.audio/tv/getAudioInputProperty', {}, 3000);
   inspectDts(function (value) { decoder = value; done(); });
   if (receiverMap) receiverMap(function (map) { replies.receiverMap = map; done(); });

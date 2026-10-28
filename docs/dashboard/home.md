@@ -7,7 +7,7 @@
 
 ## What is on screen
 
-Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour time setting), the last active source or app, and up to three rows (any row with no visible items is automatically hidden):
+Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour time setting), the last active source or app, and up to four rows (any row with no visible items is automatically hidden):
 
 <div class="grid cards" markdown>
 
@@ -34,6 +34,12 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
     ---
 
     Favourite live TV channels added from the dashboard or TV app, showing the current broadcast programme from the TV guide when available.
+
+-   **Recommended**
+
+    ---
+
+    The titles the TV's apps put on LG's Home, such as Netflix's *Continue watching*, Prime Video's picks, Disney+, HBO Max and YouTube, as a row of cards with each app's picture, title and category. **OK** opens the app at that title. With an app in focus on the Apps row, by the keys or the pointer, the row shows only that app's cards (*From Netflix*), and **Down** reaches them; on a tile with no cards, such as an input or LG Home, it shows every app's, in the Apps row's order. An app hidden there shows none. The row starts under Apps and is moved like the others, but its cards are not arranged one by one. **Off by default**: switch it on in the Recommended row's settings on the dashboard or in the TV app. The pictures are loaded from each app's own servers, as on LG's Home; nothing else is sent. Tried on webOS 10. On a C2 with webOS 9.2 the TV listed no apps' titles, so the row stays hidden there and the switch says none are listed.
 
 -   **Recent apps (`Back` button)**
 

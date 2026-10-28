@@ -1354,19 +1354,16 @@ test('a vetted catalog package with root services auto-elevates and installs wit
   });
 });
 
-test('a screensaver package marks isScreensaver in preview and requires review even with auto=true', function (done) {
+// Its screen saver is listed with Glasshouse's, so it no longer stops a one-click install.
+test('a screensaver package marks isScreensaver in preview and installs with auto=true', function (done) {
   var ctx = setup();
   ctx.script([{ out: DONE }]);
   var req = ctx.pkg(makeIpk({ pkg: 'org.example.custom-screensaver' }), 'org.example.custom-screensaver');
   req.auto = true;
   startOk(req, function () {
-    expectState('awaiting-confirm', function (s) {
+    expectState('installed', function (s) {
       assert.strictEqual(s.preview.isScreensaver, true);
-      installer.confirm({ jobId: s.jobId }, function () {
-        expectState('installed', function () {
-          done();
-        });
-      });
+      done();
     });
   });
 });

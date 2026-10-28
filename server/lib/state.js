@@ -161,6 +161,7 @@ function stopIfUnknownMethod(response) {
 
 var MASTER_VOLUME = 'com.webos.service.audio/master/getVolume';
 var LEGACY_VOLUME = 'com.webos.audio/getVolume';
+var KEYBOARD_WINDOW = '_WEBOS_WINDOW_TYPE_KEYBOARD';
 
 function init(opts) {
   opts = opts || {};
@@ -227,7 +228,17 @@ function init(opts) {
   });
   // A TV whose SurfaceManager lacks these methods refuses them each time:
   // stop asking, and Active App goes without control_app_id.
-  groups.surface.onRefused = groups.focus.onRefused = stopIfUnknownMethod;
+  // LG's on-screen keyboard is a _WEBOS_WINDOW_TYPE_KEYBOARD view in this
+  // list. It never takes focus, so focus keeps naming the app typed into.
+  groups.keyboard = new StateGroup('keyboard', new luna.Subscription(
+    'com.webos.surfacemanager/getForegroundWindowInfo', { subscribe: true }, null
+  ), function (response) {
+    if (!Array.isArray(response.windows)) return null;
+    return { keyboard_visible: response.windows.some(function (w) {
+      return !!w && w.windowType === KEYBOARD_WINDOW;
+    }) };
+  });
+  groups.surface.onRefused = groups.focus.onRefused = groups.keyboard.onRefused = stopIfUnknownMethod;
   groups.audio = new StateGroup('audio', new luna.Subscription(
     MASTER_VOLUME, { subscribe: true }, null
   ), function (response) {
@@ -284,7 +295,7 @@ function init(opts) {
     var key;
     // Window tracking is only useful to MQTT, which starts those groups itself.
     for (key in groups) {
-      if (key !== 'surface' && key !== 'focus') groups[key].start();
+      if (key !== 'surface' && key !== 'focus' && key !== 'keyboard') groups[key].start();
     }
   }
 

@@ -877,12 +877,15 @@ function saverRows(d) {
                : t('tv.saver.use', 'Press OK to use this one'),
              hint: m.id === 'stock'
                ? t('tv.saver.stock.hint', 'LG’s own screen saver.')
+               : m.fromApp ? t('tv.saver.app.hint', 'From the {app} app. Any settings it has are in that app.', { app: m.fromApp })
                : t('tv.saver.ours.hint', 'Replaces LG’s screen saver. Everything on it drifts slowly so no pixel holds the same image.') });
   });
   // Brightness only for the screen savers drawn here, as in the browser
   // dashboard: LG's own is not ours to dim. The mode goes with it, since both
   // are staged into the same file.
-  if (d.writable && !busy && d.current && d.current !== 'stock') {
+  // An installed app's screen saver has its own settings, and no brightness from here.
+  var appSaver = d.modes.some(function (m) { return m.active && m.fromApp; });
+  if (d.writable && !busy && d.current && d.current !== 'stock' && !appSaver) {
     var bright = d.level === 'bright';
     r.push(head(t('tv.saver.head.howItLooks', 'How it looks')));
     r.push({ label: t('ss.brightness', 'Brightness'), value: bright ? t('ss.bright', 'Bright') : t('ss.dim', 'Dim'), cls: 'act', act: 'saverLevel',
@@ -1156,7 +1159,8 @@ function glasshouseHomeRows(d) {
   var c = d.catalogue, lay = d.layout;
   if (c && lay) {
     r.push(head(t('tv.home.rowOrder', 'Row order')));
-    var names = { app: t('home.row.apps', 'Apps'), dev: t('home.row.inputs', 'Inputs'), ch: t('home.row.channels', 'Channels') };
+    var names = { app: t('home.row.apps', 'Apps'), dev: t('home.row.inputs', 'Inputs'), ch: t('home.row.channels', 'Channels'),
+                  rec: t('home.row.recommended', 'Recommended') };
     lay.rows.forEach(function (kind, i) {
       r.push({ label: names[kind], value: t('tv.home.rowPlace', '{n} of {total}', { n: i + 1, total: lay.rows.length }), cls: 'act',
                act: can && i > 0 ? 'homeRowUp' : null, key: kind,
@@ -1190,6 +1194,18 @@ function glasshouseHomeRows(d) {
                  act: hasChannels ? 'open' : null, key: 'homeChannels',
                  press: hasChannels ? t('tv.home.ch.press', 'Press OK to choose') : t('home.ch.none', 'This TV has no channels tuned, so the Channels row stays empty.'),
                  hint: t('tv.home.ch.hint', 'From the TV\u2019s own channel list. Each one added goes on the end of the Channels row.') });
+        return;
+      }
+      // The apps' cards come and go with their lists: the row has its switch, not tiles.
+      if (kind === 'rec') {
+        var recOn = lay.recommended === true;
+        r.push(head(names.rec));
+        r.push({ label: t('home.recommended', 'Show the apps’ recommendations'),
+                 value: recOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: recOn ? 'on' : 'off',
+                 act: can ? 'homeRecommended' : null, on: recOn,
+                 press: recOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+                 hint: t('home.recommendedDesc', 'The titles Netflix, Prime Video, Disney+, HBO Max, YouTube and other apps put on LG’s Home, such as Continue watching, as a row of cards. OK opens the app at the title. An app hidden from the Apps row shows none.'),
+                 warn: t('home.recommendedPrivacy', 'The cards’ pictures are loaded from each app’s own servers, as on LG’s Home.') });
         return;
       }
       if (!order.length) return;
@@ -1735,6 +1751,10 @@ function audioRows(d) {
       ? t('audio.decoderAbsent', 'LG DTS-core decoder not registered') : t('tv.audio.decoderUnknown', 'DTS decoder registration is unknown.') });
   r.push({ label: t('audio.inputNow', 'Incoming audio'), value: d.live.input ? d.live.input.codec : t('audio.noInput', 'No audio reported'),
     hint: t('tv.audio.inputHint', 'The TV’s current input reading. TV-app playback and HDMI-input forwarding use different audio paths.') });
+  if (d.live.hdmi) r.push({ label: t('audio.hdmiChannels', 'HDMI channel information'),
+    value: t('audio.channels', '{count} channels', { count: d.live.hdmi.channels }),
+    sub: d.live.hdmi.sampleRate ? (d.live.hdmi.sampleRate / 1000) + ' kHz' : '',
+    hint: t('audio.hdmiMetadataHint', 'Channel metadata reported by the HDMI source. It can remain during a pause and does not confirm playback at the receiver.') });
   // The output itself is the Sound output setting above; only a live codec adds to it.
   if (d.live.output) r.push({ label: t('tv.audio.outputFormat', 'Output format'), value: d.live.output,
     hint: t('tv.audio.outputHint', 'The output codec the audio driver reports now. The receiver’s own incoming-signal display confirms what arrives.') });
@@ -2284,8 +2304,8 @@ function previewRows(pv) {
              hint: t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.') });
   }
   if (pv.isScreensaver) {
-    r.push({ label: t('tv.apps.install.pv.screensaver', 'Screen saver'), value: t('common.replaces', 'Replaces ours'), cls: 'warn', key: 'pv:screensaver',
-             hint: t('apps.install.screensaver.warn', 'This app installs a custom screen saver, which will replace Glasshouse’s own screen savers.') });
+    r.push({ label: t('tv.apps.install.pv.screensaver', 'Screen saver'), value: t('tv.apps.install.pv.screensaverListed', 'Listed with ours'), key: 'pv:screensaver',
+             hint: t('apps.install.screensaver.listed', 'This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own.') });
   }
   if (pv.freeBytes !== null && pv.freeBytes !== undefined) {
     r.push({ label: t('tv.apps.install.pv.space', 'Free space'), value: fmtMb(pv.freeBytes), key: 'pv:space',
@@ -2863,6 +2883,8 @@ function activate() {
       return homeLayout({ view: r.on ? 'standard' : 'alternative' });
     case 'homeFade':
       return homeLayout({ fade: !r.on });
+    case 'homeRecommended':
+      return homeLayout({ recommended: !r.on });
     case 'homeHideUnused':
       return homeLayout({ hideUnused: !r.on });
     case 'homeColours':

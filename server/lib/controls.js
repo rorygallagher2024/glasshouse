@@ -52,6 +52,9 @@ var RCU_KEYS = {
   settings: 139
 };
 
+// What one Keyboard Text entry may insert into the focused field.
+var KEYBOARD_TEXT_MAX = 100;
+
 // The remote's volume keys: evdev codes, IR_KEY_VOL_UP and IR_KEY_VOL_DOWN in
 // /usr/share/X11/xkb/keycodes/lg less the 8 that xkb adds.
 var KEY_VOLUMEUP = 115;
@@ -113,6 +116,8 @@ var browserAppId = null;
 var toastSourceId = null;
 var tileHidingOffMsg = null;
 var writeSettingsFn = null;
+// Whether LG's on-screen keyboard is up, from the live window list.
+var keyboardVisibleFn = function () { return false; };
 
 var rcuDevicePath = null;
 function getRcuDevicePath() {
@@ -232,6 +237,10 @@ function doTvApp(action, cb) { return tvAppFn(action, cb); }
  * for where the sound goes now is passed to telemetry, which stops offering
  * the volume there.
  */
+function imeAnswer(cb) {
+  return function (r) { cb({ ok: !!(r && r.returnValue), error: r && r.errorText }); };
+}
+
 function volumeAnswer(r) {
   if (r && /Current Scenario doesn't support/i.test(String(r.errorText || '')) && telemetry) {
     telemetry.noteVolumeRefused();
@@ -792,6 +801,19 @@ function doControl(action, value, cb) {
       if (!RCU_KEYS.hasOwnProperty(rcuName)) {
         return cb({ ok: false, error: 'unknown key: ' + rcuName });
       }
+      /*
+       * Keys from the network input service did not move LG's on-screen
+       * keyboard on a C1 (webOS 6.4). They go to the remote's own device
+       * while it is up, as a real press: network input releases in the same
+       * instant, which LG's key handling already mishandles for Home.
+       */
+      if (keyboardVisibleFn()) {
+        return injectKey(RCU_KEYS[rcuName], function (ok) {
+          console.debug('rcu ' + rcuName + ': on-screen keyboard, remote device, ' + (ok ? 'ok' : 'failed'));
+          telemetry.clearCache();
+          cb({ ok: ok });
+        });
+      }
       return lunaUrgent('com.webos.service.networkinput/test/sendKeyCode',
                   { keyCode: RCU_KEYS[rcuName] },
                   function (r, raw, timing) {
@@ -799,6 +821,21 @@ function doControl(action, value, cb) {
                     telemetry.clearCache();
                     cb({ ok: !!(r && r.returnValue) });
                   });
+
+    /*
+     * Typing into the focused text field through LG's input method service,
+     * whatever the on-screen keyboard shows. Urgent, so text, Enter and
+     * Backspace keep their order with remote keys.
+     */
+    case 'keyboardText':
+      var kbText = String(value === null || value === undefined ? '' : value).slice(0, KEYBOARD_TEXT_MAX);
+      if (!kbText) return cb({ ok: false, error: 'no text' });
+      return lunaUrgent('com.webos.service.ime/insertText', { text: kbText }, imeAnswer(cb));
+
+    case 'keyboardKey':
+      if (value === 'enter') return lunaUrgent('com.webos.service.ime/sendEnterKey', {}, imeAnswer(cb));
+      if (value === 'backspace') return lunaUrgent('com.webos.service.ime/deleteCharacters', { count: 1 }, imeAnswer(cb));
+      return cb({ ok: false, error: 'unknown keyboard key: ' + value });
 
     case 'screensaverMode':
       /*
@@ -1158,6 +1195,7 @@ function init(opts) {
   if (opts.browserApp) browserAppId = opts.browserApp;
   if (opts.toastSource) toastSourceId = opts.toastSource;
   if (opts.tileHidingOff) tileHidingOffMsg = opts.tileHidingOff;
+  if (opts.keyboardVisible) keyboardVisibleFn = opts.keyboardVisible;
 
   return {
     doControl: doControl,
@@ -1175,6 +1213,7 @@ module.exports = {
   sendPlayPause: sendPlayPause,
   RCU_KEY_CODES: RCU_KEY_CODES,
   RCU_KEYS: RCU_KEYS,
+  KEYBOARD_TEXT_MAX: KEYBOARD_TEXT_MAX,
   KEY_BACK: KEY_BACK,
   SLEEP_TIMER_VALUES: SLEEP_TIMER_VALUES,
   ENERGY_SAVING_VALUES: ENERGY_SAVING_VALUES,

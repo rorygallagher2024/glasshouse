@@ -528,6 +528,74 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ remote keys and Home use the urgent luna path and log their timing');
 })();
 
+// With LG's on-screen keyboard up, the D-pad, OK and Back go to the remote's
+// own device; typing, Enter and Backspace go to the input method service.
+(function testOnScreenKeyboard() {
+  var fs = require('fs');
+  var realOpen = fs.openSync;
+  var realWrite = fs.writeSync;
+  var realClose = fs.closeSync;
+  var realDebug = console.debug;
+  var pressed = [], urgent = [], keyboardUp = true, answers = [];
+  function setUp() {
+    controls.init({
+      config: { allowControl: true },
+      telemetry: { clearCache: function () {} },
+      luna: function (uri, payload, cb) { cb({ returnValue: true }); },
+      lunaUrgent: function (uri, payload, cb) { urgent.push(uri + ' ' + JSON.stringify(payload)); cb({ returnValue: true }); },
+      keyboardVisible: function () { return keyboardUp; }
+    });
+  }
+  fs.openSync = function () { return 99; };
+  fs.closeSync = function () {};
+  fs.writeSync = function (fd, b) {
+    if (b.readUInt16LE(8) === 1 && b.readInt32LE(12) === 1) pressed.push(b.readUInt16LE(10));
+  };
+  console.debug = function () {};
+  setUp();
+  ['up', 'down', 'left', 'right', 'ok', 'back'].forEach(function (k) {
+    controls.doControl('rcu', k, function (r) { answers.push(r); });
+  });
+  // After the releases, which follow each press by 50 ms.
+  setTimeout(function () {
+    fs.openSync = realOpen;
+    fs.writeSync = realWrite;
+    fs.closeSync = realClose;
+    console.debug = realDebug;
+    assert.deepEqual(pressed, [103, 108, 105, 106, 28, 412], 'evdev presses on the remote device');
+    assert.deepEqual(urgent, [], 'no network input key while the keyboard is up');
+    assert.strictEqual(answers.length, 6);
+    assert.ok(answers.every(function (r) { return r.ok === true; }));
+
+    // The power-off test below runs meanwhile with its own luna; only the
+    // urgent path is taken back, and the rest runs without a break.
+    controls.init({
+      lunaUrgent: function (uri, payload, cb) { urgent.push(uri + ' ' + JSON.stringify(payload)); cb({ returnValue: true }); }
+    });
+    keyboardUp = false;
+    controls.doControl('rcu', 'ok', function () {});
+    assert.deepEqual(urgent, ['com.webos.service.networkinput/test/sendKeyCode {"keyCode":28}'], 'network input again once it is gone');
+
+    urgent = [];
+    var long = new Array(controls.KEYBOARD_TEXT_MAX + 21).join('x');
+    controls.doControl('keyboardText', ' two words ', function (r) { assert.strictEqual(r.ok, true); });
+    controls.doControl('keyboardText', long, function () {});
+    controls.doControl('keyboardKey', 'backspace', function (r) { assert.strictEqual(r.ok, true); });
+    controls.doControl('keyboardKey', 'enter', function (r) { assert.strictEqual(r.ok, true); });
+    assert.deepEqual(urgent, [
+      'com.webos.service.ime/insertText {"text":" two words "}',
+      'com.webos.service.ime/insertText {"text":"' + long.slice(0, 100) + '"}',
+      'com.webos.service.ime/deleteCharacters {"count":1}',
+      'com.webos.service.ime/sendEnterKey {}'
+    ], 'in order, on the urgent path, text cut to 100');
+    controls.doControl('keyboardText', '', function (r) { assert.strictEqual(r.ok, false, 'nothing to type'); });
+    controls.doControl('keyboardKey', 'tab', function (r) { assert.strictEqual(r.ok, false); });
+    assert.strictEqual(urgent.length, 4, 'neither reaches the TV');
+    controls.init({ keyboardVisible: function () { return false; } });
+    console.log('  ✓ on-screen keyboard: D-pad, OK and Back on the remote device; text, Enter and Backspace through the input method');
+  }, 120);
+})();
+
 console.log('ALL test-controls.js assertions passed!\n');
 
 // 6. A powerOff answered with a failure is read back before trying again

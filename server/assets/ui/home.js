@@ -16,7 +16,8 @@ let homeAvailable = null;
 const HOME_ROWS = {
   app: () => t('home.row.apps', 'Apps'),
   dev: () => t('home.row.inputs', 'Inputs'),
-  ch: () => t('home.row.channels', 'Channels')
+  ch: () => t('home.row.channels', 'Channels'),
+  rec: () => t('home.row.recommended', 'Recommended')
 };
 
 async function homeGet(path) {
@@ -300,6 +301,17 @@ function renderHomeRows() {
   const open = box.children.length ? [...box.querySelectorAll('details[open]')].map(d => d.dataset.kind) : [];
   const filter = q('home-ch-filter') ? q('home-ch-filter').value : '';
   box.innerHTML = homeLayout.rows.map((kind, ri) => {
+    const rowMove = `<span class="home-row-move">
+          <button type="button" class="pill idle" ${usable && ri > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
+          <button type="button" class="pill idle" ${usable && ri < homeLayout.rows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
+        </span>`;
+    // The apps' cards come and go with their lists, so the row has its switch rather than tiles.
+    if (kind === 'rec') {
+      return `<details class="home-row" data-kind="rec"${open.includes('rec') ? ' open' : ''}>
+      <summary><span class="prot-title">${esc(HOME_ROWS.rec())}</span>${rowMove}</summary>
+      <div class="prot-table">${homeRecRow(usable)}</div>
+    </details>`;
+    }
     const order = homeCat.order[kind] || [];
     // A Last opened row is in the order the server sends; moving a tile means choosing Your order first.
     const recent = homeSort(kind) === 'recent';
@@ -327,15 +339,34 @@ function renderHomeRows() {
     }).join('');
     return `<details class="home-row" data-kind="${kind}"${open.includes(kind) ? ' open' : ''}>
       <summary><span class="prot-title">${esc(HOME_ROWS[kind]())}</span>
-        <span class="home-row-move">
-          <button type="button" class="pill idle" ${usable && ri > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
-          <button type="button" class="pill idle" ${usable && ri < homeLayout.rows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
-        </span></summary>
+        ${rowMove}</summary>
       <div class="prot-table">${homeSortRow(kind, usable)}${kind === 'dev' ? homeUnusedRow(usable) : ''}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
       ${kind === 'ch' ? homeChannelPicker() : ''}
     </details>`;
   }).join('');
   if (q('home-ch-filter')) q('home-ch-filter').value = filter;
+}
+
+// The Recommended row's switch, with how many cards the apps have listed.
+function homeRecRow(usable) {
+  const on = homeLayout.recommended === true;
+  const n = homeCat && homeCat.sources ? homeCat.sources.recommended : false;
+  const shown = (homeCat.order.rec || []).length;
+  const count = !on ? '' : n === null ? t('home.recUnavailable', 'This TV did not list any recommendations.')
+    : !shown ? t('home.recNone', 'None of this TV\u2019s apps list any yet.')
+    : t('home.recCount', '{n} on Glasshouse Home now', { n: shown });
+  return `<div class="prot-row">
+    <div class="prot-main"><div class="prot-title">${esc(t('home.recommended', 'Show the apps’ recommendations'))}</div>
+      <div class="prot-desc">${esc(t('home.recommendedDesc', 'The titles Netflix, Prime Video, Disney+, HBO Max, YouTube and other apps put on LG’s Home, such as Continue watching, as a row of cards. OK opens the app at the title. An app hidden from the Apps row shows none.'))}</div>
+      <div class="prot-desc">${esc(t('home.recommendedPrivacy', 'The cards’ pictures are loaded from each app’s own servers, as on LG’s Home.'))}</div>
+      ${count ? `<div class="prot-desc">${esc(count)}</div>` : ''}</div>
+    <div class="prot-status">${renderToggle({ id: 'home-recommended', cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off'),
+      on, disabled: !usable, onclick: 'homeRecommended()' })}</div>
+  </div>`;
+}
+
+function homeRecommended() {
+  homeSaveLayout({ recommended: homeLayout.recommended !== true });
 }
 
 // The Inputs row's one choice of what it shows.

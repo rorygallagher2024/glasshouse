@@ -99,9 +99,32 @@ focus({ returnValue: true, focusedWindowInfo: [] });
 assert.strictEqual(remoteMessages[remoteMessages.length - 1].control_app_id, 'com.webos.app.home', 'a transient empty focus waits');
 focus({ returnValue: true, focusedWindowInfo: [{ appId: 'com.webos.app.hdmi3' }] });
 assert.strictEqual(remoteMessages[remoteMessages.length - 1].control_app_id, 'com.webos.app.hdmi3');
+assert.ok(!('keyboard_visible' in remoteMessages[remoteMessages.length - 1]), 'omitted until the window list answers');
+
+// LG's on-screen keyboard over an app: published at once, the app stays the target.
+var windows = routing.groups.keyboard.subscription.handlers.message;
+assert.strictEqual(routing.groups.keyboard.subscription.uri, 'com.webos.surfacemanager/getForegroundWindowInfo');
+focus({ returnValue: true, focusedWindowInfo: [{ appId: 'net.botworth.vizman' }] });
+windows({ returnValue: true, windows: [{ appId: 'net.botworth.vizman', windowType: '_WEBOS_WINDOW_TYPE_CARD' }] });
+assert.strictEqual(remoteMessages[remoteMessages.length - 1].keyboard_visible, false);
+var before = remoteMessages.length;
+windows({ returnValue: true, windows: [
+  { appId: 'net.botworth.vizman', windowType: '_WEBOS_WINDOW_TYPE_CARD' },
+  { appId: '', windowType: '_WEBOS_WINDOW_TYPE_KEYBOARD' }
+] });
+assert.strictEqual(remoteMessages.length, before + 1, 'pushed on the change, not at the next telemetry');
+assert.deepEqual(remoteMessages[remoteMessages.length - 1],
+  { app_id: 'com.webos.app.hdmi3', control_app_id: 'net.botworth.vizman', keyboard_visible: true });
+windows({ returnValue: true, windows: [{ appId: 'net.botworth.vizman', windowType: '_WEBOS_WINDOW_TYPE_CARD' }] });
+assert.strictEqual(remoteMessages[remoteMessages.length - 1].keyboard_visible, false, 'closed again');
+windows({ returnValue: true, windows: [{ appId: '', windowType: '_WEBOS_WINDOW_TYPE_KEYBOARD' }] });
+before = remoteMessages.length;
+windows({ returnValue: false, errorText: 'Unknown method' });
+assert.strictEqual(remoteMessages.length, before, 'a refusal changes nothing');
 routing.groups.power.subscription.handlers.message({ returnValue: true, state: 'Suspend' });
 assert.strictEqual(remoteMessages[remoteMessages.length - 1].control_app_id, '');
-console.log('  ✓ immediate app routing, Settings overlay, dismissal, secondary display and standby');
+assert.strictEqual(remoteMessages[remoteMessages.length - 1].keyboard_visible, false, 'no keyboard in standby');
+console.log('  ✓ immediate app routing, Settings overlay, dismissal, secondary display, keyboard and standby');
 
 // A TV without SurfaceManager's window reports: no control_app_id, on or off,
 // and the refused subscriptions stop rather than retrying for good.
@@ -118,9 +141,13 @@ assert.deepEqual(olderMessages[olderMessages.length - 1], { app_id: 'netflix' },
 var stops = [];
 older.groups.focus.subscription.stop = function () { stops.push('focus'); };
 older.groups.surface.subscription.stop = function () { stops.push('surface'); };
+older.groups.keyboard.subscription.stop = function () { stops.push('keyboard'); };
 older.groups.surface.subscription.handlers.message({ returnValue: false, errorText: 'Service is busy' });
 older.groups.focus.subscription.handlers.message({ returnValue: false, errorText: 'Unknown method "getFocusedWindowInfo" for category "/"' });
 assert.deepEqual(stops, ['focus'], 'only a method the TV does not have stops its subscription');
+older.groups.keyboard.subscription.handlers.message({ returnValue: false, errorText: 'Unknown method "getForegroundWindowInfo" for category "/"' });
+assert.deepEqual(stops, ['focus', 'keyboard'], 'nor does the window list, on a TV without it');
+assert.ok(!('keyboard_visible' in olderMessages[olderMessages.length - 1]), 'and keyboard_visible is left out');
 console.log('  \u2713 a TV without window reports leaves control_app_id out and stops asking');
 
 // 2. The timing, with short intervals

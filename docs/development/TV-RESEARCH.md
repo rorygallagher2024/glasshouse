@@ -4,6 +4,30 @@ Findings about how LG's webOS works, kept so the same ground is not covered
 twice. Each entry names the TV and webOS version it was found on. For how
 Glasshouse itself works, see [IMPLEMENTATION.md](../IMPLEMENTATION.md).
 
+## C9 HAWK2 audio EDID (webOS 4.10.2)
+
+OLED65C9PUA, firmware 05.50.00, reported in #1078 on 28 October 2026.
+
+- The C9 reports `tv.model.hdmiSwitchType: HAWK2` and `tv.model.edidType:
+  TrueHD`. Source-facing EDIDs are returned by
+  `com.webos.service.tv.systemproperty/getEdidData` with `inputType: 0` and
+  logical `portNumber: 1..4`. On the measured mapping, HDMI 1 is receiver 3.
+  The lower HDMI20 driver buffer does not hold this switch's source EDID.
+- Its sound-settings response names the selected input in `dimension.input`
+  (`hdmi1`), not `dimension.audioInput`. Its legacy audio and ARC queries can
+  be unavailable. The `TrueHD` family name does not mean no DTS: the
+  checksummed native EDID includes core DTS (`3d1ec0`) and DTS-HD (`5f7e01`).
+- Receiver 3's status file gives the source's Audio InfoFrame channel count,
+  allocation and sample frequency. Zero means unspecified, not stereo or
+  48 kHz. The fields can remain through a pause, so they are source metadata,
+  not proof of playback.
+- The media-resource file declares DTS, DTSH and DTSE with six-channel limits,
+  which does not show DTS-HD Master Audio decoding or DTS:X rendering.
+- A Panasonic UB820 on HDMI 1 decoded DTS-HD Master Audio 5.1 to stereo PCM
+  for a Sonos on eARC. With HDMI 1's EDID changed to declare six-channel PCM
+  and a 5.1 speaker allocation, it sent PCM 5.1 instead. Writing the EDID is
+  elforeign's separate helper, not part of Glasshouse.
+
 ## Audio declarations and the negotiated link (G3, webOS 9.2.2)
 
 OLED55G36LA, firmware 23.25.55, kernel `5.4.268-320`, read on 25 October 2026:
@@ -28,6 +52,29 @@ With no audio playing, the HDMI driver still reported `AudioData=1` and
 not a live PCM signal. Native sound-output and Pass Through controls were
 exercised and their original settings restored. The PCM-only receiver did
 not provide a DTS reception test.
+
+## A stale whole-category sound read (G5, webOS 10.3.1)
+
+Reported in #1007 from an OLED83G54LW, firmware 33.31.68. `getSystemSettings`
+for the whole `sound` category returned `soundOutputDigital: auto`, while a
+query naming `soundOutputDigital` returned `passThrough`, as LG's menu showed.
+Both answers were successful, and repeated with no setting written between
+them. webOS 4.4 answers nothing to a named query that includes a key it lacks
+(#954), so only keys the whole read returned are named.
+
+## Homebrew Channel screen saver apps
+
+Read from their sources on 28 October 2026 (#1067). Custom Screensaver
+(webosbrew), Aerial Screensaver (aabytt), Aerial webOS screensaver (rchalaaa)
+and Idlegif each ship one QML file and bind-mount it over
+`/usr/palm/applications/com.webos.app.screensaver/qml/main.qml`, from their
+app or an `init.d` hook. On webOS 10.3.2 that file does not exist, as LG's
+screen saver is Flutter, so Custom Screensaver's script stops with "Target file
+does not exist". Each QML loads everything else by its full path: its app
+folder under `/media/developer/apps`, or `/var/lib/webosbrew/idlegif` for
+Idlegif's GIFs. Custom Screensaver's DVD logo is inside the QML. They use
+QtQuick 2.4, with QtMultimedia, `WebOSServices` and `iLib` for the Aerial
+ones. aabytt's also takes over `com.webos.app.videoads` on webOS 11.
 
 ## HDMI CEC devices (G3, webOS 9.2.2)
 
@@ -536,6 +583,17 @@ Measured on 18 October 2026 by launching apps over SSH and logging
   is the one the remote's keys reach.
 - All three accept `subscribe: true`. SurfaceManager's replies are formatted
   JSON over several lines even without luna-send's `-f`.
+- LG's on-screen keyboard is the MaliitServer surface
+  `_WEBOS_WINDOW_TYPE_KEYBOARD`. `getForegroundWindowInfo` lists it while it
+  is open, but it never takes focus, so `getFocusedWindowInfo` keeps naming
+  the app typed into. With it up, keys sent through
+  `networkinput/test/sendKeyCode` did not move it; the remote's own input
+  device does.
+- `com.webos.service.ime` has four methods: `registerRemoteKeyboard`
+  (subscribe only; `currentWidget.focus` and the field's content type),
+  `insertText` (`text`, optional `replace` and `replaceLength`),
+  `deleteCharacters` (`count`, optional `mode` `backspace` or `direct`) and
+  `sendEnterKey`. None checks that the caller registered as a remote keyboard.
 
 ## Disconnected input devices (webOS 6.4.0, C1)
 
@@ -889,12 +947,9 @@ app in front. Remote Keys puts its own filter first.
   assistant's app on a press, while the microphone button
   (`Key_webOS_Voice`, RF 436) goes to voice control. The same file names about
   20 regional streaming buttons (Hotstar, Stan, Wavve, U-Next, TVer and others).
-- **The voice assistants' buttons are ordinary hotkeys.** On a C2 (webOS 9.2.2)
-  `appLaunch.js` handles `Key_webOS_ALEXA` (IR 1094) and
-  `Key_webOS_GoogleVoice` (IR 1125) like the streaming buttons, launching the
-  assistant's app on a press, while the microphone button
-  (`Key_webOS_Voice`, RF 436) goes to voice control. The same file names about
-  20 regional streaming buttons (Hotstar, Stan, Wavve, U-Next, TVer and others).
+  On a CX (webOS 5.5), the microphone button set to an app through the filter
+  opened it on a press and on a hold alike, and set back to LG's own it started
+  voice control again (#1034).
 - **Filters get the compositor's timers.** `StarfishKeyFilter.qml` hands every
   filter `genericTimer` (`set(ms, callback)`, `cancel`, `isRunning`), as LG's
   `appLaunch.js` uses it. On a change to the key it cancels every
@@ -1049,6 +1104,31 @@ and others' work on webOS 10
   (killing it) reads the new layout; no black picture was reported from it.
   Mounted from a webosbrew `init.d` hook, the home app was running with the
   changed layout about 29 s after power-on.
+
+## The apps' recommendations (50QNED87T6B, webOS 10.2.2)
+
+- **The cards come from the apps, not LG's servers.** Netflix, Prime Video,
+  Disney+, HBO Max and YouTube each give the application manager a list of
+  titles. `luna://com.webos.service.applicationmanager/getAllContents` with
+  `{}` answers with all of them, read on the TV: `allContents`, one entry per
+  launch point (`netflix_default`), each with `contents`. A `type: 'title'`
+  entry heads each list and is empty; the cards are `type: 'content'` with
+  `titleText`, `category` (Netflix: "Continue watching for …", "Top picks
+  for you today"), `image.url` (480 x 270, on the app's own servers) and
+  `onClick: { targetAppId, contentId, launchParam }`. 70 cards across the five
+  apps on this TV; the browser's list was empty.
+- **LG's Home reads them as its `NowStreamingProvider`.** `libapp.so` names
+  `applicationmanager/getAllContents` there, and `applicationManager/getContents`
+  (which refuses `{}` as invalid parameters). The `recommendedShelf` itself is
+  LG's: `[SDP Shelf Data]` and `[ContentMinorShelf]` ask
+  `com.webos.service.admanager/requestBannerInfoWithoutContextIndex` and
+  `com.webos.service.sdx`.
+- **A card opens through `contentTarget`.** `contentId` is the app's
+  `contentTarget` launch parameter, the convention `libapp.so` names beside
+  `targetAppId`. Each card also has an `onShow` (`{ method: 'invoke', service:
+  'amazon.service', contentId }`) that tells the app it was seen.
+- `com.webos.service.discovery/getRecommendationData` and
+  `com.webos.service.prs/listRecommendations` gave no answer within 10 s.
 
 ## What the player is doing (webOS 4.4.3, B8; webOS 9.2.2, C2)
 

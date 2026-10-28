@@ -56,8 +56,13 @@ function init(opts) {
         payload.control_app_id = windowGroups[i].control_app_id;
       }
     }
-    if (payload.control_app_id !== undefined && snap.power && snap.power.systemOn === false) {
-      payload.control_app_id = '';
+    // Omitted, like control_app_id, where the window list is not offered.
+    if (snap.keyboard && typeof snap.keyboard.keyboard_visible === 'boolean') {
+      payload.keyboard_visible = snap.keyboard.keyboard_visible;
+    }
+    if (snap.power && snap.power.systemOn === false) {
+      if (payload.control_app_id !== undefined) payload.control_app_id = '';
+      if (payload.keyboard_visible !== undefined) payload.keyboard_visible = false;
     }
     // Closing an LG window can report no focus for about 100 ms before HDMI
     // regains it. Standby still releases the remote immediately.
@@ -79,7 +84,7 @@ function init(opts) {
 
   function changesRemote(event) {
     return (event.group === 'application' && event.key === 'app_id') ||
-           event.group === 'surface' || event.group === 'focus' ||
+           event.group === 'surface' || event.group === 'focus' || event.group === 'keyboard' ||
            (event.group === 'power' && event.key === 'systemOn');
   }
 

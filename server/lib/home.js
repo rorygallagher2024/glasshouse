@@ -35,6 +35,7 @@ var takeover = require('./home-takeover');
 var recent = require('./home-recent');
 var recentApps = require('./home-recent-apps');
 var search = require('./home-search');
+var recommended = require('./home-recommended');
 
 // The separate app earlier builds installed: removed, and its settings undone.
 var HOME_APP = 'com.tvweb.home';
@@ -42,7 +43,8 @@ var LG_HOME = takeover.LG_HOME;
 var LIVE_TV = 'com.webos.app.livetv';
 var SETTINGS = 'com.webos.service.settings/';
 
-var ROWS = ['app', 'dev', 'ch'];
+// rec, the apps' recommendations, sits under the Apps row it follows and is not arranged tile by tile.
+var ROWS = ['app', 'rec', 'dev', 'ch'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec'];
@@ -182,6 +184,8 @@ var wasEnabled = false;
 // LG's Home is in its place, opened by one of the ways back to it.
 var escaped = false;
 var foreground = '';
+// When something other than the view last came to the front, for the open watch.
+var otherOpenedAt = 0;
 var lastSource = null;
 var beatTimer = null;
 var lastBeatAt = 0;
@@ -244,9 +248,9 @@ function defaults() {
     enabled: false,
     restorePending: false,
     rows: ROWS.slice(),
-    order: { app: [], dev: [], ch: [] },
-    sort: { app: 'custom', dev: 'custom', ch: 'custom' },
-    hidden: { app: PROMO_APPS.slice(), dev: [], ch: [] },
+    order: { app: [], dev: [], ch: [], rec: [] },
+    sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom' },
+    hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [] },
     // Apps moved off the Apps row into its More apps tile, in no order of
     // their own: the folder shows them in the row's.
     folder: [],
@@ -271,6 +275,9 @@ function defaults() {
     view: 'standard',
     // Search on the view (lib/home-search): off by default, so nothing typed reaches LG unless switched on.
     search: false,
+    // The Recommended row (lib/home-recommended): off by default, as its
+    // pictures come from the apps' own servers.
+    recommended: false,
     // The view fading in as it comes on screen, and out as a tile opens.
     fade: false,
     // Inputs with nothing plugged in left out of the Inputs row, rather than
@@ -297,7 +304,11 @@ function normalise(raw) {
   var d = defaults();
   if (!raw || typeof raw !== 'object') return d;
   var rows = stringList(raw.rows).filter(function (r) { return ROWS.indexOf(r) !== -1; });
-  ROWS.forEach(function (r) { if (rows.indexOf(r) === -1) rows.push(r); });
+  ROWS.forEach(function (r) {
+    if (rows.indexOf(r) !== -1) return;
+    // A layout saved before the Recommended row gets it under Apps, whose cards it shows.
+    rows.splice(r === 'rec' ? rows.indexOf('app') + 1 : rows.length, 0, r);
+  });
   d.rows = rows;
   ROWS.forEach(function (r) {
     if (raw.order && typeof raw.order === 'object') d.order[r] = stringList(raw.order[r]);
@@ -328,6 +339,11 @@ function normalise(raw) {
   d.rowsBottom = raw.rowsBottom === true;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.search = raw.search === true;
+  d.recommended = raw.recommended === true;
+  // Its cards come and go with the apps' lists, so it keeps no order of its own.
+  d.order.rec = [];
+  d.sort.rec = 'custom';
+  d.hidden.rec = [];
   d.fade = raw.fade === true;
   d.hideUnused = raw.hideUnused === true;
   d.colours = validColours(raw.colours);
@@ -454,6 +470,7 @@ function setLayout(body, cb) {
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
     search: typeof body.search === 'boolean' ? body.search : c.search,
+    recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
     // null puts the view's own colours back.
@@ -480,8 +497,8 @@ function setLayout(body, cb) {
 
 function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
-    searchHintSeen: c.searchHintSeen, picture: c.picture, search: c.search, fade: c.fade, hideUnused: c.hideUnused,
-    showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    searchHintSeen: c.searchHintSeen, picture: c.picture, search: c.search, recommended: c.recommended,
+    fade: c.fade, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
@@ -637,32 +654,56 @@ function rows(cb) {
   launchPoints(function (apps) {
     devices(function (devs) {
       channelList(function (chans) {
-        var appList = byUse(apps || []);
-        var appIds = appList.map(function (a) { return a.id; }).concat([LG_HOME_TILE]);
-        var devIds = (devs || []).map(function (d) { return d.id; });
-        var picked = [];
-        (chans || []).forEach(function (ch) { if (c.channels.indexOf(ch.id) !== -1) picked.push(ch); });
-        picked.sort(function (a, b) { return c.channels.indexOf(a.id) - c.channels.indexOf(b.id); });
-        var order = {
-          app: ordered(c.order.app, appIds),
-          dev: ordered(c.order.dev, devIds),
-          ch: picked.map(function (p) { return p.id; })
-        };
-        ROWS.forEach(function (r) { if (c.sort[r] === 'recent') order[r] = lastOpenedFirst(r, order[r]); });
-        cb({
-          apps: appList.map(function (a) {
-            var app = { id: a.id, title: a.title, icon: a.icon ? '/api/home/icon?id=' + encodeURIComponent(a.id) : null };
-            if (a.overlay) app.overlay = true;
-            return app;
-          }),
-          devices: devs || [],
-          channels: picked,
-          order: order,
-          sources: { apps: !!apps, devices: !!devs, channels: chans ? chans.length : null }
-        });
+        recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs)); });
       });
     });
   });
+}
+
+function build(c, apps, devs, chans, recs) {
+  var appList = byUse(apps || []);
+  var appIds = appList.map(function (a) { return a.id; }).concat([LG_HOME_TILE]);
+  var devIds = (devs || []).map(function (d) { return d.id; });
+  var picked = [];
+  (chans || []).forEach(function (ch) { if (c.channels.indexOf(ch.id) !== -1) picked.push(ch); });
+  picked.sort(function (a, b) { return c.channels.indexOf(a.id) - c.channels.indexOf(b.id); });
+  var order = {
+    app: ordered(c.order.app, appIds),
+    dev: ordered(c.order.dev, devIds),
+    ch: picked.map(function (p) { return p.id; }),
+    rec: []
+  };
+  ROWS.forEach(function (r) { if (c.sort[r] === 'recent') order[r] = lastOpenedFirst(r, order[r]); });
+  // Each app's cards together, in the Apps row's order; an app hidden there,
+  // or not on the TV, shows none.
+  var all = recs || [];
+  var cards = all.filter(function (r) {
+    return order.app.indexOf(r.app) !== -1 && c.hidden.app.indexOf(r.app) === -1;
+  });
+  cards.sort(function (a, b) {
+    return order.app.indexOf(a.app) - order.app.indexOf(b.app) || all.indexOf(a) - all.indexOf(b);
+  });
+  order.rec = cards.map(function (r) { return r.id; });
+  return {
+    apps: appList.map(function (a) {
+      var app = { id: a.id, title: a.title, icon: a.icon ? '/api/home/icon?id=' + encodeURIComponent(a.id) : null };
+      if (a.overlay) app.overlay = true;
+      return app;
+    }),
+    devices: devs || [],
+    channels: picked,
+    recommended: cards,
+    order: order,
+    // recommended: false while the row is off, null when the TV gave no list.
+    sources: { apps: !!apps, devices: !!devs, channels: chans ? chans.length : null,
+      recommended: c.recommended ? (recs ? recs.length : null) : false }
+  };
+}
+
+// The apps' cards while the row is switched on; null when the TV gave none.
+function recommendedCards(c, cb) {
+  if (!c.recommended) return cb([]);
+  recommended.cards(cb);
 }
 
 /*
@@ -840,6 +881,8 @@ function open(body, cb) {
   var kind = body && body.kind;
   var id = body && typeof body.id === 'string' ? body.id : '';
   console.log('home: open ' + kind + ' ' + id);
+  // Only the view opens tiles: asked to, it is up, whether or not it beat first.
+  beats++;
   if (kind === 'lg' || (kind === 'app' && id === LG_HOME_TILE)) {
     if (body.recovery && !viewInFront()) return cb({ ok: true, done: false });
     return toLgHome('tile', cb);
@@ -884,7 +927,15 @@ function open(body, cb) {
       });
     });
   }
-  cb({ ok: false, error: 'kind must be app, dev, ch or lg' });
+  if (kind === 'rec') {
+    if (!readConfig().recommended) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+    // A card opens its app, which counts as opening the app's tile.
+    return recommended.open(id, function (r) {
+      if (r.ok) noteOpened('app', r.app);
+      cb({ ok: r.ok, error: r.error });
+    });
+  }
+  cb({ ok: false, error: 'kind must be app, dev, ch, rec or lg' });
 }
 
 // A tile's callback that first records it as opened, if it opened.
@@ -1434,6 +1485,7 @@ function beat() {
 function foregroundChanged(id) {
   var was = foreground;
   foreground = id;
+  if (id && id !== LG_HOME && id !== was) otherOpenedAt = nowMs();
   if (wakeRequest && id && id !== was) {
     if (!wakeRequest.input && isInputApp(id)) wakeRequest.input = id;
     else if (wakeRequest.input !== id) cancelWake();
@@ -1488,7 +1540,10 @@ function homeKey(down) {
 /*
  * After a short Home press the view beats at once, opened or relaunched. sam
  * is no witness: with WebAppMgr stopped it kept naming the view in front
- * though nothing was drawn (a G4, webOS 11.2.0).
+ * though nothing was drawn (a G4, webOS 11.2.0). Something else opened since
+ * ends the watch: on a C2 (webOS 9.2.2) the view opened an input 2 s after a
+ * press, and hidden before its next 5 s beat, sent none, so LG's Home opened
+ * over the input 18 s later.
  */
 function watchOpen(retried, ms) {
   stopOpenWatch();
@@ -1497,6 +1552,7 @@ function watchOpen(retried, ms) {
     openTimer = setTimeout(function () {
       openTimer = null;
       if (beats > beatsBefore || escaped || !powerActive || !readConfig().enabled) return;
+      if (otherOpenedAt > since && foreground !== LG_HOME) return;
       var left = slowOpenMs - (nowMs() - since);
       if (!retried && left > 0 && webAppMgrRunning() !== false) return check(left);
       recoverView('Glasshouse Home did not open', retried);
@@ -1670,6 +1726,7 @@ function init(opts) {
   wallpapers.init(stateDir);
   recent.init(stateDir, opts.now);
   recentApps.init({ luna: lunaFn });
+  recommended.init({ luna: lunaFn });
   search.init({ luna: lunaFn, Subscription: opts.Subscription, apps: launchPoints,
     opened: function (id) { noteOpened('app', id); }, enabled: function () { return readConfig().search; },
     blockedBy: opts.blockedBy });
