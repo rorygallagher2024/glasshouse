@@ -142,6 +142,14 @@ function renderHome() {
     updateToggle(pic, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     pic.disabled = !homeWritable();
   }
+  const previewRow = q('home-preview-row');
+  if (previewRow) previewRow.hidden = !st.supported.ok;
+  const previewPill = q('home-preview');
+  if (previewPill) {
+    const on = !!st.layout && st.layout.livePreview === true;
+    updateToggle(previewPill, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    previewPill.disabled = !homeWritable();
+  }
   document.querySelectorAll('.home-show-row').forEach(row => { row.hidden = !st.supported.ok; });
   // Alternative View's rows have no titles, so no app count beside them.
   const altView = !!st.layout && st.layout.view === 'alternative';
@@ -525,6 +533,10 @@ async function homeHideLg() {
 
 function homePicture() {
   homeSaveLayout({ picture: homeLayout.picture !== true });
+}
+
+function homeLivePreview() {
+  homeSaveLayout({ livePreview: homeLayout.livePreview !== true });
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.

@@ -260,6 +260,9 @@ function defaults() {
     // The plate describing the picture of what was last on: detail many
     // won't want on a home screen, so it waits to be switched on.
     picture: false,
+    // A live picture of the input or channel whose tile is in focus: off
+    // until switched on, as it moves the TV's HDMI receiver or a tuner.
+    livePreview: false,
     // What the view shows beyond the rows: the clock and date, the last
     // source in the top strip and on its input's tile, the "n of total"
     // beside Apps, and each CEC device's address. On unless switched off, as
@@ -335,6 +338,7 @@ function normalise(raw) {
   d.hintSeen = raw.hintSeen === true;
   d.searchHintSeen = raw.searchHintSeen === true;
   d.picture = raw.picture === true;
+  d.livePreview = raw.livePreview === true;
   SHOW_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.rowsBottom = raw.rowsBottom === true;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
@@ -463,6 +467,7 @@ function setLayout(body, cb) {
     hintSeen: body.hintSeen !== undefined ? body.hintSeen : c.hintSeen,
     searchHintSeen: body.searchHintSeen !== undefined ? body.searchHintSeen : c.searchHintSeen,
     picture: typeof body.picture === 'boolean' ? body.picture : c.picture,
+    livePreview: typeof body.livePreview === 'boolean' ? body.livePreview : c.livePreview,
     showClock: typeof body.showClock === 'boolean' ? body.showClock : c.showClock,
     rowsBottom: typeof body.rowsBottom === 'boolean' ? body.rowsBottom : c.rowsBottom,
     view: body.view !== undefined ? body.view : c.view,
@@ -497,7 +502,7 @@ function setLayout(body, cb) {
 
 function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
-    searchHintSeen: c.searchHintSeen, picture: c.picture, search: c.search, recommended: c.recommended,
+    searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).

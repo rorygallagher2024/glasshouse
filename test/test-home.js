@@ -1623,6 +1623,18 @@ step('Alternative View is off until chosen, saved, and anything but alternative 
   });
 });
 
+step('live preview stays off until switched on, and is saved', function (done) {
+  start(null);
+  assert.strictEqual(home.layout().livePreview, false);
+  assert.strictEqual(home.normalise({ livePreview: 'yes' }).livePreview, false, 'only true switches it on');
+  home.setLayout({ livePreview: true }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.layout.livePreview, true);
+    assert.strictEqual(home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8'))).livePreview, true);
+    done();
+  });
+});
+
 step('fading, search and leaving out inputs with nothing plugged in stay off until switched on, are saved, and outlast a reset, beside hiding inputs one by one', function (done) {
   start(null);
   assert.strictEqual(home.layout().fade, false);
