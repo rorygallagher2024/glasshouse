@@ -289,6 +289,124 @@ is needed in Glasshouse. A DISPLAY capture showed the receiver's logo even
 while the PS5 reported On, so that picture alone does not establish console
 power state.
 
+## LG's recent-input preview (G3, webOS 9.2.2)
+
+Read from the installed QML on 29 October 2026. With Glasshouse mounted over
+LG's Home, the original app remained readable at
+`/var/palm/jail/com.webos.service.voice.performer/usr/palm/applications/com.webos.app.home`;
+no unmount was needed.
+
+**Recent Input embeds the input app through App View.** In Home's `qml/`,
+`UserInterfaceLayer/Containers/Sub/DeviceInfoTileComponent.qml` enables live
+preview only when `lastInput` equals `physicalLastInputApp` and both settings
+have arrived. For HDMI, its guest parameters are
+`{id: "deeplinkAppViewExt", sender: "home"}`, without a CEC device ID.
+`Interfaces/AppViewInterfaces/AppServices.js` maps its calls to
+`com.webos.service.multiviewcontroller`. `AppViewInterfaces.qml` subscribes
+to `getAppViewStatus`, then calls `createAppView` with:
+
+```json
+{
+  "hostAppId": "com.webos.app.home",
+  "guestAppId": "com.webos.app.hdmi4",
+  "guestAppParams": {"id": "deeplinkAppViewExt", "sender": "home"},
+  "mode": "pip",
+  "usageType": "appview",
+  "guestAppLayout": {"x": 35, "y": 636, "width": 338, "height": 190}
+}
+```
+
+The rectangle above is the service wrapper's default; the call uses the
+tile's current absolute rectangle. The subscription reports completion as
+`appViewStatus.eventStatus`: `appViewCreateCompleted` or
+`appViewChangeCompleted`. Showing and hiding use `setAppViewStatus` with
+`hostAppId`, `guestAppId` and `event: "focusInGuestApp"` or
+`"focusOutGuestApp"`; focus-in also carries `guestAppLayout`. Home destroys
+the view with `destroyAppView {}` on exit or power-off and handles
+`appViewDestroyCompleted`. A recent HDMI input has a 1000 ms focus delay
+followed by a 400 ms show delay. Other preview paths also wait for the
+subscription's `appPipelineStatus` to report a connected pipeline.
+
+**The HDMI app uses the external-input service.** `com.webos.app.hdmi4`
+runs `com.webos.app.inputcommon`. Its `Handlers/DeepLinkHandler.qml`
+recognises `appViewRole: "appViewGuest"`; `DisplayInterfaces.qml` opens
+`com.webos.service.utp.extinputs/open` with
+`{inputSourceType, options: {appId, windowId}}` and starts the port through
+`switchExternalInput {pipelineId, portId}`. The inspected Home path uses
+neither an `ext://` source nor `mediaOption`. This establishes LG's caller
+path, not that App View works unchanged with Glasshouse or avoids CEC,
+picture-mode and audio side effects; those need a live trial.
+
+**Live TV uses the same App View with channel parameters.** The Recent Input
+tile gives `guestAppId: "com.webos.app.livetv"` and
+`guestAppParams: {id: "channelChange", channelId: lastChannelId, sender: "home"}`.
+That app also runs `inputcommon`. Its `ChannelChangeInterfaces.qml` calls
+`com.webos.service.utp.broadcast/changeChannel` with
+`{broadcastId, channelId, connection_timeout: 500}` and adds `update: false`
+while `isAppViewLaunching` is true. The explicit-channel path also supplies
+`ignorable`, false by default. `checkEndAppView` commits an explicitly chosen
+channel through `com.webos.service.utp.channel/setLastChannelId` when returning
+from preview to normal viewing.
+
+**Updating channel history is separate from tuning.** The installed
+`/etc/palm/schemas/utp/utp.changeChannel.schema` defines `update`, default
+true, as whether to update the last channel. `utp.open.schema` also accepts
+`options.updateLastChannelId`, default true; false prevents that
+`broadcastId` from updating the last channel. These are channel-history
+controls, not evidence of a spare tuner or independent CI+ decoding.
+
+`ChannelChangeInterfaces.qml` classifies `BROADCAST_ERROR_1006` and
+`CHANNEL_ERROR_1011` as digital-TV recording conflicts, and
+`BROADCAST_ERROR_1007` and `CHANNEL_ERROR_1012` as analogue-TV recording
+conflicts. Its recording handlers can ask to stop recording before changing
+channel. `utp.play.schema` separately defines `resolveConflicts`, default
+false; true resolves recording conflicts and plays an available channel.
+Tuner-busy and CI+ behaviour, including the events received by a web-page
+preview, was not exercised during this source inspection.
+
+**AlwaysReadyPreview and Hero are separate players.**
+`Interfaces/AlwaysReadyInterfaces/AlwaysReadyInterfaces.qml` reads
+`com.webos.app.lifeonscreen/assets/builtin_theme.json`, taking each mood-wall
+theme's `themePlayInfo[0].previewPath` for its Qt Multimedia player. Hero's
+player takes the advert's `assetData.contentData`. Neither is the Recent
+Input preview.
+
+## An input or channel playing in a web page (G3, webOS 9.2.2)
+
+Measured on 29 October 2026 from a test web app and from Glasshouse Home, a
+muted `<video>` with one `<source>`:
+
+- `type="service/webos-external" src="ext://hdmi:4"`, the input behind Home
+  (3840x2160 at 24 Hz), played in about 150 ms. videooutput's `MAIN` sink
+  read `connectedSource: HDMI` with the page's app ID, `displayOutput`
+  followed the element's rectangle, and a `DISPLAY` capture included the
+  picture, unlike the HDMI app's. `/var/log/cecmessages` showed no Set Stream
+  Path, Active Source or other message beyond the TV's periodic ones, and the
+  sound output stayed `tv_speaker`.
+- HDMI 2, its receiver and PS5 asleep: `loadeddata`, `canplay` and `playing`
+  all fired over a black picture, nothing woke and nothing went out over CEC.
+  The events do not tell a live picture from none; the receiver's lock in
+  `/proc/lg/hdmi20` does.
+- Back to HDMI 4 from HDMI 2, its picture returned within about 0.7 s.
+- `pause()`, removing the source and `load()` set both sinks back to
+  `unknown`.
+- `type="service/webos-broadcast" src="tv://"` plays the last channel.
+  `src="tv://<channelId>"` tunes that channel and makes it the last channel
+  (`com.webos.service.utp.boot/getLastChannelId`).
+- `type="service/webos-broadcast-preview" src="tv://<channelId>"` tuned BBC
+  ONE in about 120 ms and left the last channel as it was, also after the
+  video was released.
+- While a channel plays in the page, videooutput's `getStatus` names it on
+  the `MAIN` sink with `contentType: dtv`: Sky News read 544x576,
+  `scanType: interlaced`, `frameRate: 2500` (hundredths of a hertz; an app's
+  video reads 23.976) and `hdrType: none`; BBC ONE HD 1920x1080 interlaced
+  at 2500. The format appears a moment after `playing`.
+- The test app on screen became Glasshouse Home's last source, as any app
+  does.
+
+How a busy tuner (a recording) or an encrypted channel shows to the page was
+not tried.
+
 ## The picture of an input behind Home (G3, webOS 9.2.2)
 
 With a web app on screen, an HDMI input's receiver stays locked to its

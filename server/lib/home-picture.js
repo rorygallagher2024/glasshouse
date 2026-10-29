@@ -92,6 +92,40 @@ function appVideo(reply) {
   return null;
 }
 
+/*
+ * A channel playing on the main sink, from a getStatus reply, or null: the
+ * tuner's video, decoded, with contentType dtv. On a G3 (webOS 9.2.2) Sky
+ * News in Glasshouse Home's preview read 544x576, scanType interlaced and
+ * frameRate 2500, in hundredths of a hertz, where an app's reads 23.976.
+ */
+function channelVideo(reply) {
+  var sinks = reply && Array.isArray(reply.video) ? reply.video : [];
+  for (var i = 0; i < sinks.length; i++) {
+    var v = sinks[i];
+    if (!v || v.sink !== 'MAIN' || v.connected !== true || v.contentType !== 'dtv') continue;
+    if (!(v.width > 0) || !(v.height > 0)) continue;
+    var rate = v.frameRate > 240 ? v.frameRate / 100 : v.frameRate;
+    var hdr = v.videoInfo && v.videoInfo.hdrType;
+    return {
+      width: v.width,
+      height: v.height,
+      hz: rate > 0 ? Math.round(rate * 100) / 100 : null,
+      interlaced: v.scanType === 'interlaced',
+      broadcast: true,
+      chroma: null,
+      bits: null,
+      hdr: VIDEO_HDR.hasOwnProperty(hdr) ? VIDEO_HDR[hdr] : 'sdr',
+      vrr: false,
+      allm: false
+    };
+  }
+  return null;
+}
+
+function channelSignal(port, cb) {
+  luna('com.webos.service.videooutput/getStatus', {}, function (r) { cb(channelVideo(r)); });
+}
+
 function notePlaying(reply) {
   var seen = appVideo(reply);
   if (!seen) return;
@@ -223,10 +257,13 @@ function picture(kind, port, cb, appId) {
   if (kind === 'input' && !(port >= 1 && port <= 4)) return cb({ ok: false, error: 'port 1 to 4 expected' });
   var key = kind === 'app' ? 'app:' + (appId || '') : input;
   var hit = cache[key];
-  if (hit && nowMs() - hit.at < CACHE_MS) return cb(hit.value);
+  // A channel's signal is there only while one plays, as in Home's preview,
+  // which moves from channel to channel, so it is read each time.
+  if (hit && kind !== 'channel' && nowMs() - hit.at < CACHE_MS) return cb(hit.value);
   var lastPlayed = kind === 'app' && appId && played.hasOwnProperty(appId) ? played[appId] : null;
-  (kind === 'input' ? hdmiSignal : function (p, next) { next(lastPlayed); })(port, function (signal) {
-    // A channel's signal is not read, and broadcast is almost all SDR.
+  var readSignal = kind === 'input' ? hdmiSignal : kind === 'channel' ? channelSignal : function (p, next) { next(lastPlayed); };
+  readSignal(port, function (signal) {
+    // A channel not playing is taken as SDR, as broadcast almost all is.
     var range = signal ? rangeOf(signal.hdr) : kind === 'channel' ? 'sdr' : null;
     pictureMode(input, range, function (mode) {
       oledLight(input, mode ? mode.raw : null, function (light) {
@@ -242,10 +279,26 @@ function picture(kind, port, cb, appId) {
   });
 }
 
+/*
+ * Whether HDMI input port has a picture on its receiver now, for Glasshouse
+ * Home's preview of it. The preview's video reports playing with nothing
+ * there: on a G3 (webOS 9.2.2) HDMI 2, its receiver asleep, gave loadeddata,
+ * canplay and playing, and a black picture. Read fresh each time, as the
+ * preview has just switched the receiver.
+ */
+function signal(port, cb) {
+  if (!(port >= 1 && port <= 4)) return cb({ ok: false, error: 'port 1 to 4 expected' });
+  // The plate read next must not be one cached before the receiver moved here.
+  delete cache['hdmi' + port];
+  hdmiSignal(port, function (s) { cb({ ok: true, port: port, signal: !!s }); });
+}
+
 module.exports = {
   init: init,
   want: want,
   picture: picture,
+  signal: signal,
   sourceHdr: sourceHdr,
+  channelVideo: channelVideo,
   refreshHz: refreshHz
 };

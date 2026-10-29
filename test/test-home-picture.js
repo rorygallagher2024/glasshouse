@@ -47,6 +47,8 @@ function setUp(files, Subscription) {
     oled: { detectOled: function (cb) { cb(true); } },
     readFile: function (p) { return files.hasOwnProperty(p) ? files[p] : null; },
     luna: function (uri, payload, cb) {
+      // No channel playing: the plate for one is read with no signal.
+      if (/videooutput\/getStatus$/.test(uri)) return cb({ returnValue: true, video: [] });
       asked.push(payload);
       var dim = payload.dimension || {};
       if (payload.keys[0] === 'backlight') {
@@ -180,5 +182,25 @@ console.log('  ✓ HDR from the receiver: PQ, HLG, none, Dolby Vision');
 assert.equal(homePicture.refreshHz(status.replace('cvi_vfreq[2400]', 'cvi_vfreq[2397]'), 23), 23.97);
 assert.equal(homePicture.refreshHz('', 60), 60);
 console.log('  ✓ the rate in hundredths of a hertz, not the rounded Sig rate');
+
+setUp(FILES);
+var signals = [];
+[4, 2, 0].forEach(function (port) { homePicture.signal(port, function (r) { signals.push(r); }); });
+assert.deepEqual(signals[0], { ok: true, port: 4, signal: true }, 'HDMI 4, locked');
+assert.deepEqual(signals[1], { ok: true, port: 2, signal: false }, 'HDMI 2, nothing connected');
+assert.equal(signals[2].ok, false, 'no such input');
+console.log('  ✓ the preview asks whether an input has a picture, off its own receiver');
+
+// Sky News in Home's preview on the G3, as videooutput's getStatus answered.
+var skyNews = { video: [
+  { sink: 'MAIN', connected: true, connectedSource: 'VDEC', contentType: 'dtv', appId: 'com.webos.app.home', width: 544, height: 576,
+    frameRate: 2500, scanType: 'interlaced', videoInfo: { hdrType: 'none' } },
+  { sink: 'SUB0', connected: false, connectedSource: 'unknown', width: 0, height: 0 }
+] };
+assert.deepEqual(homePicture.channelVideo(skyNews), { width: 544, height: 576, hz: 25, interlaced: true, broadcast: true,
+  chroma: null, bits: null, hdr: 'sdr', vrr: false, allm: false });
+assert.equal(homePicture.channelVideo({ video: [{ sink: 'MAIN', connected: true, contentType: 'vod', width: 3840, height: 2160 }] }), null,
+  'an app\'s video is not a channel');
+console.log('  ✓ a channel\'s format off the main sink, its rate in hundredths of a hertz');
 
 console.log('ALL test-home-picture.js assertions passed!');

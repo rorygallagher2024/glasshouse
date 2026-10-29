@@ -1159,6 +1159,7 @@ function handleHomeRoute(req, res, u, pathname) {
       return homePictureModule.picture(String(u.query && u.query.kind || ''), Number(u.query && u.query.port), reply,
         String(u.query && u.query.app || ''));
     }
+    if (pathname === '/api/home/signal') return homePictureModule.signal(Number(u.query && u.query.port), reply);
     if (pathname === '/api/home/wallpaper') {
       var wallpaper = homeModule.wallpaperPath(String(u.query && u.query.slot || ''));
       if (!wallpaper) return send(res, 404, JSON.stringify({ ok: false, error: 'no wallpaper uploaded' }));
