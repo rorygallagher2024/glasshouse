@@ -79,6 +79,10 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ![Glasshouse Home in Alternative View with the rows along the bottom](../screenshots/home-alternative.jpg)
 
+    With the clock, Last watched and CEC addresses switched off and the Abstract wallpaper, it makes a minimal Home:
+
+    ![A minimal Glasshouse Home: Alternative View with the clock, Last watched and CEC addresses off, apps and one input over the Abstract wallpaper](../screenshots/home-minimal.jpg)
+
 -   **Fade in and out**
 
     ---
