@@ -35,6 +35,8 @@ var _serviceName = {};
 var SERVICE_DIRS = (process.env.TVWEB_LUNA_SERVICE_DIRS ||
   '/usr/share/luna-service2/services.d;/usr/share/dbus-1/system-services;' +
   '/mnt/otycabi/usr/share/luna-service2/services.d;/mnt/otncabi/usr/share/luna-service2/services.d').split(';');
+// Off a TV, such as a Linux test runner, the D-Bus folder lists other services.
+var SERVICE_DIRS_APPLY = !!process.env.TVWEB_LUNA_SERVICE_DIRS || fs.existsSync(LUNA_SEND);
 var ABSENT_MS = 10 * 60 * 1000;
 var listedServices = null;
 var listedCount = 0;
@@ -64,6 +66,7 @@ function readListedServices() {
 
 function isUnlistedLgService(service) {
   if (!/^com\.(webos|palm|lge)\./.test(service)) return false;
+  if (!SERVICE_DIRS_APPLY) return false;
   if (!listedServices) readListedServices();
   return listedCount > 0 && !listedServices[service];
 }
