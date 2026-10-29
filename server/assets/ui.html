@@ -420,6 +420,19 @@
             onchange="if (this.value) sendCommand('soundOutput', this.value)"></select>
         </div>
       </div>
+      <!-- Paired Bluetooth audio devices, the same list and actions as the Audio tab. Shown only where the TV has the service. -->
+      <div class="set" id="sound-bt-set" hidden>
+        <div class="lbl" data-t="ctl.btDevice">Bluetooth device</div>
+        <div class="bt-pick" id="sound-bt-pick" aria-busy="true">
+          <select id="sound-bt-select" class="bt-select" aria-label="Paired Bluetooth device" data-t-aria-label="ctl.btDevice.label"></select>
+          <div class="btns bt-pick-btns">
+            <button type="button" id="sound-bt-action" hidden></button>
+            <button type="button" id="sound-bt-refresh" onclick="loadAudioBluetooth()" data-t="audio.refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="sub" id="sound-bt-note" role="status" hidden></div>
+        <div class="err-note" id="sound-bt-error" role="alert" hidden></div>
+      </div>
       <!-- Only while something plays: the TV reports no format otherwise. -->
       <div class="set" id="sound-format-set" hidden><div class="lbl"><span data-t="ctl.soundFormat">Current sound format</span> &middot; <span id="sound-format" class="num" translate="no">&mdash;</span></div></div>
     </details>
@@ -545,6 +558,17 @@
   <div class="lbl" data-t="tab.audio">Audio</div>
   <div class="pv-sec" id="audio-sound-head" data-t="adv.sound">Sound</div>
   <div class="prot-table" id="audio-settings" data-reload="loadAudio"></div>
+
+  <div id="audio-bt" hidden>
+    <div class="pv-sec" data-t="audio.bt.title">Bluetooth audio</div>
+    <div class="audio-head">
+      <div class="pv-sub" data-t="audio.bt.desc">Headphones and speakers already paired with the TV. Pair or remove them in LG’s own settings.</div>
+      <button type="button" class="pill idle" id="audio-bt-refresh" onclick="loadAudioBluetooth()" data-t="audio.refresh">Refresh</button>
+    </div>
+    <div class="prot-table" id="audio-bt-list" aria-busy="true"></div>
+    <div class="sub" id="audio-bt-note" role="status"></div>
+    <div class="err-note audio-error" id="audio-bt-error" role="alert" hidden></div>
+  </div>
 
   <div class="err-note audio-error" id="audio-error" role="alert" hidden></div>
   <details class="pv-d audio-more" id="audio-more">

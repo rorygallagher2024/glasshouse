@@ -64,6 +64,8 @@ var privacyModule = null;
 var lgSettingsModule = null;
 /** @type {typeof import('./audio')} */
 var audioModule = null;
+/** @type {typeof import('./btaudio')} */
+var btAudioModule = null;
 /** @type {typeof import('./game')} */
 var gameModule = null;
 /** @type {typeof import('./apps')} */
@@ -1329,6 +1331,29 @@ function handleRequest(req, res) {
     return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
   }
 
+  // Paired Bluetooth audio devices: read when the Audio tab opens or is
+  // refreshed, and connected or disconnected on request. Never polled.
+  if (pathname === '/api/audio/bluetooth') {
+    if (!btAudioModule) return send(res, 503, JSON.stringify({ ok: false, error: 'bluetooth audio module unavailable' }));
+    if (req.method === 'GET') {
+      return btAudioModule.list(function (r) {
+        r.writable = !!config.allowControl;
+        send(res, r.ok ? 200 : 502, JSON.stringify(r));
+      });
+    }
+    if (req.method === 'POST') {
+      if (!config.allowControl) {
+        return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+      }
+      return readJsonBody(req, res, function (body) {
+        btAudioModule.act(body.action, body.address, function (status, r) {
+          send(res, status, JSON.stringify(r));
+        });
+      });
+    }
+    return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
+  }
+
   if (pathname === '/api/screensaver') {
     return send(res, 200, JSON.stringify(screensaversModule.screensaverList()));
   }
@@ -2044,6 +2069,7 @@ function init(opts) {
   if (opts.privacy) privacyModule = opts.privacy;
   if (opts.lgSettings) lgSettingsModule = opts.lgSettings;
   if (opts.audio) audioModule = opts.audio;
+  if (opts.btAudio) btAudioModule = opts.btAudio;
   if (opts.game) gameModule = opts.game;
   if (opts.apps) appsModule = opts.apps;
   if (opts.services) servicesModule = opts.services;

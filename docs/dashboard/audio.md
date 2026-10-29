@@ -15,6 +15,24 @@ only. Pass Through and Bitstream request encoded audio; PCM requests decoded
 audio. As in LG's menu, only the input on screen can have its audio format
 changed.
 
+## Bluetooth audio
+
+Under Sound on the web dashboard, and as a device chooser under **Sound** on the
+[Control tab](control.md), the headphones and speakers already paired
+with the TV, each with whether it is connected, and a **Connect** or
+**Disconnect** button. The list is read when the tab opens (or Sound is opened on Control) and on **Refresh**,
+and again after a button is used; it is not polled. Pair or remove devices in
+LG's own settings: the dashboard does not search for devices, pair, unpair,
+switch the TV's Bluetooth off or on, or connect anything by itself.
+
+The buttons follow the Controls setting like the rest of the tab. Connecting
+while another device is connected asks for confirmation because it may change
+the sound output. After an action, the row shows the state the TV then reports.
+A missing reply is shown as unconfirmed, not as a failed connection. While the
+state is pending, further actions wait for a confirming read or 15 seconds;
+**Refresh** checks again. A TV without the service does not show the section.
+The TV app does not have it.
+
 ## Soundbar and receiver
 
 ![G3 audio declarations](../screenshots/audio-g3-formats.png)
