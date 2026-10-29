@@ -148,6 +148,25 @@ function records(value) {
   return Array.isArray(value) ? value.filter(function (x) { return x && typeof x === 'object' && !Array.isArray(x); }) : [];
 }
 
+// EIM can identify the CEC audio device even on webOS 4, where the newer
+// ARC capability service is absent. Detection does not prove a negotiated link.
+function detectedReceiver(reply) {
+  if (!reply || reply.returnValue !== true || reply.arcDevice !== true) return null;
+  var candidates = [];
+  records(reply.devices).forEach(function (d) {
+    var port = Number(d.port);
+    if (port < 1 || port > 4 || port !== Math.floor(port) || d.id !== 'HDMI_' + port ||
+        d.connected !== true || d.hdmiPlugIn === false) return;
+    var devices = records(d.subList).filter(function (device) {
+      return device.id === 'SIMPLINK' && device.cecpDevType === 5 &&
+        (device.portId === undefined || Number(device.portId) === port);
+    });
+    if (devices.length === 1) candidates.push({ port: port,
+      name: typeof devices[0].osdName === 'string' && devices[0].osdName ? devices[0].osdName : null });
+  });
+  return candidates.length === 1 ? candidates[0] : null;
+}
+
 function inspectDts(cb) {
   if (decoderAt && Date.now() - decoderAt < 300000) return cb(decoderCache);
   if (decoderWaiters) { decoderWaiters.push(cb); return; }
@@ -237,9 +256,10 @@ function build(replies, decoder) {
   // G3 returned true there while getARCState and its driver reported ARC.
   var earc = sound.EARC && sound.EARC.EArcOnOff === 'On';
   var link = earc ? 'eARC' : arcActive ? 'ARC' : arc ? 'inactive' : 'unknown';
-  var arcPort = edid && Number(edid.arcHDMIPort) || null;
+  var detected = detectedReceiver(replies.devices);
+  var arcPort = edid && Number(edid.arcHDMIPort) || (detected ? detected.port : null);
   var devices = records(replies.devices && replies.devices.devices);
-  var receiverName = null;
+  var receiverName = detected && detected.port === arcPort ? detected.name : null;
   devices.forEach(function (d) {
     if (Number(d.port) !== arcPort) return;
     records(d.subList).forEach(function (s) {
@@ -252,7 +272,8 @@ function build(replies, decoder) {
       firmware: info.firmwareVersion || null, webos: info.sdkVersion || null, kernel: os.release() },
     tv: { edidType: edidType, input: port, dtsDecoder: decoder, formats: rows,
       playbackDeclarations: declarations ? declarations.map(function (x) { return { name: String(x.name), channels: x.channels || null }; }) : null },
-    receiver: { name: receiverName, connected: arc ? arcActive : null, link: link, port: arcPort,
+    receiver: { name: receiverName, detected: detected && detected.port === arcPort ? true : null,
+      connected: arc ? arcActive : null, link: link, port: arcPort,
       formatsKnown: receiverFormats !== null },
     settings: settings,
     outputName: settings.soundOutput ? names.soundOutput(settings.soundOutput).display : null,

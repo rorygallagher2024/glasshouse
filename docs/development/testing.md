@@ -18,7 +18,12 @@ checksums/lengths/bytes, failed native reads without family fallback, and
 omission of unspecified, disconnected or unstable channel metadata. They check
 logical input parameters and that native-app playback never reads an arbitrary
 HDMI port. Channel metadata does not establish a codec, playback or eARC
-negotiation.
+negotiation. Additional C9 cases identify one connected CEC audio system when
+the ARC service is unavailable; failed, disconnected, non-audio, negative ARC
+flags and ambiguous devices do not choose a receiver. Explicit inactive ARC
+state remains inactive despite CEC presence. `test-audio-detection-ui.js` checks
+receiver naming, escaping and the distinction between device detection,
+unknown live status and negotiated transport.
 
 The dashboard check opens both Audio tabs: the sound settings come first and
 are gone from the TV app's System tab, and a failed read leaves no stale
