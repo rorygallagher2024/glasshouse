@@ -2415,5 +2415,15 @@
  "ctl.keyboard.enter": {"text": "إدخال", "from": "Enter"},
  "ctl.keyboard.hint": {"text": "حدد أولاً حقلاً نصياً على التلفاز، مثل البحث أو عنوان ويب. ما تكتبه هنا يصل إليه أثناء الكتابة، بما في ذلك الحذف، وزر «إدخال» يرسله.", "from": "Focus a text field on the TV first, such as a search box or a web address. What you type here goes to it as you type, backspace included, and Enter submits it."},
  "ctl.keyboard.up": {"text": "لوحة مفاتيح LG ظاهرة على التلفاز: ما تكتبه هنا يصل إلى حقلها أثناء الكتابة، بما في ذلك الحذف، وزر «إدخال» يرسله.", "from": "LG’s keyboard is up on the TV: what you type here goes to its field as you type, backspace included, and Enter submits it."},
- "ctl.keyboard.down": {"text": "لوحة مفاتيح LG غير ظاهرة على التلفاز. حدد هناك أولاً حقلاً نصياً، مثل البحث أو عنوان ويب. بعض التطبيقات تستخدم لوحة مفاتيح خاصة بها.", "from": "LG’s keyboard is not up on the TV. Select a text field there first, such as a search box or a web address. Some apps use a keyboard of their own instead."}
+ "ctl.keyboard.down": {"text": "لوحة مفاتيح LG غير ظاهرة على التلفاز. حدد هناك أولاً حقلاً نصياً، مثل البحث أو عنوان ويب. بعض التطبيقات تستخدم لوحة مفاتيح خاصة بها.", "from": "LG’s keyboard is not up on the TV. Select a text field there first, such as a search box or a web address. Some apps use a keyboard of their own instead."},
+ "ctl.keyboard.via.ime": {"text": "تمت الكتابة عبر أسلوب الإدخال في LG.", "from": "Typed through LG’s input method."},
+ "ctl.keyboard.via.page": {"text": "تمت الكتابة في صفحة التطبيق.", "from": "Typed into the app’s page."},
+ "ctl.keyboard.via.keys": {"text": "تتم الكتابة كضغطات مفاتيح؛ بالأحرف الصغيرة فقط.", "from": "Typing as key presses; lowercase only."},
+ "srv.typing.keyRefused": {"text": "لم يقبل التلفاز ضغطة المفتاح", "from": "the TV did not take the key press"},
+ "srv.typing.keysTooLong": {"text": "{max} ضغطة مفتاح كحد أقصى في المرة الواحدة", "from": "at most {max} key presses at a time"},
+ "srv.typing.noKey": {"text": "لا توجد ضغطة مفتاح للحرف «{character}»", "from": "there is no key press for “{character}”"},
+ "srv.typing.pageAddress": {"text": "ليس لدى الصفحة عنوان مصحح الأخطاء", "from": "the page has no debugger address"},
+ "srv.typing.pageClosed": {"text": "أغلقت الصفحة اتصال مصحح الأخطاء", "from": "the page closed the debugger connection"},
+ "srv.typing.pageGarbled": {"text": "أرسلت الصفحة شيئاً غير مقروء", "from": "the page sent something unreadable"},
+ "srv.typing.pageTimeout": {"text": "لم تستجب الصفحة", "from": "the page did not answer"}
 }

@@ -2339,5 +2339,15 @@
  "ctl.keyboard.down": {"text": "El teclado de LG no está abierto en la TV. Selecciona antes allí un campo de texto, como una búsqueda o una dirección web. Algunas apps usan su propio teclado.", "from": "LG’s keyboard is not up on the TV. Select a text field there first, such as a search box or a web address. Some apps use a keyboard of their own instead."},
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "apps.remoteKeys.toHomeAssistant": {"text": "A Home Assistant", "from": "To Home Assistant"},
- "srv.remoteKeys.notReported": {"text": "Home Assistant no recibe las pulsaciones de esta tecla", "from": "Home Assistant does not receive this key's presses"}
+ "srv.remoteKeys.notReported": {"text": "Home Assistant no recibe las pulsaciones de esta tecla", "from": "Home Assistant does not receive this key's presses"},
+ "ctl.keyboard.via.ime": {"text": "Escrito mediante el método de entrada de LG.", "from": "Typed through LG’s input method."},
+ "ctl.keyboard.via.page": {"text": "Escrito en la página de la app.", "from": "Typed into the app’s page."},
+ "ctl.keyboard.via.keys": {"text": "Escribiendo como pulsaciones de teclas; solo minúsculas.", "from": "Typing as key presses; lowercase only."},
+ "srv.typing.keyRefused": {"text": "la TV no aceptó la pulsación de tecla", "from": "the TV did not take the key press"},
+ "srv.typing.keysTooLong": {"text": "como máximo {max} pulsaciones de tecla a la vez", "from": "at most {max} key presses at a time"},
+ "srv.typing.noKey": {"text": "no hay pulsación de tecla para «{character}»", "from": "there is no key press for “{character}”"},
+ "srv.typing.pageAddress": {"text": "la página no tiene dirección de depuración", "from": "the page has no debugger address"},
+ "srv.typing.pageClosed": {"text": "la página cerró la conexión del depurador", "from": "the page closed the debugger connection"},
+ "srv.typing.pageGarbled": {"text": "la página envió algo ilegible", "from": "the page sent something unreadable"},
+ "srv.typing.pageTimeout": {"text": "la página no respondió", "from": "the page did not answer"}
 }

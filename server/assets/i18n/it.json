@@ -2415,5 +2415,15 @@
  "ctl.keyboard.down": {"text": "La tastiera di LG non è aperta sulla TV. Seleziona prima lì un campo di testo, come una ricerca o un indirizzo web. Alcune app usano una tastiera propria.", "from": "LG’s keyboard is not up on the TV. Select a text field there first, such as a search box or a web address. Some apps use a keyboard of their own instead."},
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "apps.remoteKeys.toHomeAssistant": {"text": "A Home Assistant", "from": "To Home Assistant"},
- "srv.remoteKeys.notReported": {"text": "Home Assistant non riceve le pressioni di questo tasto", "from": "Home Assistant does not receive this key's presses"}
+ "srv.remoteKeys.notReported": {"text": "Home Assistant non riceve le pressioni di questo tasto", "from": "Home Assistant does not receive this key's presses"},
+ "ctl.keyboard.via.ime": {"text": "Digitato tramite il metodo di input di LG.", "from": "Typed through LG’s input method."},
+ "ctl.keyboard.via.page": {"text": "Digitato nella pagina dell'app.", "from": "Typed into the app’s page."},
+ "ctl.keyboard.via.keys": {"text": "Digitazione come pressioni di tasti; solo minuscole.", "from": "Typing as key presses; lowercase only."},
+ "srv.typing.keyRefused": {"text": "la TV non ha accettato la pressione del tasto", "from": "the TV did not take the key press"},
+ "srv.typing.keysTooLong": {"text": "al massimo {max} pressioni di tasti per volta", "from": "at most {max} key presses at a time"},
+ "srv.typing.noKey": {"text": "non c'è una pressione di tasto per «{character}»", "from": "there is no key press for “{character}”"},
+ "srv.typing.pageAddress": {"text": "la pagina non ha un indirizzo di debug", "from": "the page has no debugger address"},
+ "srv.typing.pageClosed": {"text": "la pagina ha chiuso la connessione del debugger", "from": "the page closed the debugger connection"},
+ "srv.typing.pageGarbled": {"text": "la pagina ha inviato qualcosa di illeggibile", "from": "the page sent something unreadable"},
+ "srv.typing.pageTimeout": {"text": "la pagina non ha risposto", "from": "the page did not answer"}
 }

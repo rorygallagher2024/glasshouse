@@ -2415,5 +2415,15 @@
  "ctl.keyboard.down": {"text": "Клавиатура LG не открыта на телевизоре. Сначала выберите там текстовое поле, например поиск или веб-адрес. Некоторые приложения используют свою клавиатуру.", "from": "LG’s keyboard is not up on the TV. Select a text field there first, such as a search box or a web address. Some apps use a keyboard of their own instead."},
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "apps.remoteKeys.toHomeAssistant": {"text": "В Home Assistant", "from": "To Home Assistant"},
- "srv.remoteKeys.notReported": {"text": "Home Assistant не получает нажатия этой кнопки", "from": "Home Assistant does not receive this key's presses"}
+ "srv.remoteKeys.notReported": {"text": "Home Assistant не получает нажатия этой кнопки", "from": "Home Assistant does not receive this key's presses"},
+ "ctl.keyboard.via.ime": {"text": "Введено через метод ввода LG.", "from": "Typed through LG’s input method."},
+ "ctl.keyboard.via.page": {"text": "Введено на страницу приложения.", "from": "Typed into the app’s page."},
+ "ctl.keyboard.via.keys": {"text": "Ввод нажатиями клавиш; только строчные буквы.", "from": "Typing as key presses; lowercase only."},
+ "srv.typing.keyRefused": {"text": "телевизор не принял нажатие клавиши", "from": "the TV did not take the key press"},
+ "srv.typing.keysTooLong": {"text": "не более {max} нажатий клавиш за раз", "from": "at most {max} key presses at a time"},
+ "srv.typing.noKey": {"text": "для символа «{character}» нет нажатия клавиши", "from": "there is no key press for “{character}”"},
+ "srv.typing.pageAddress": {"text": "у страницы нет адреса отладчика", "from": "the page has no debugger address"},
+ "srv.typing.pageClosed": {"text": "страница закрыла соединение с отладчиком", "from": "the page closed the debugger connection"},
+ "srv.typing.pageGarbled": {"text": "страница прислала нечитаемые данные", "from": "the page sent something unreadable"},
+ "srv.typing.pageTimeout": {"text": "страница не ответила", "from": "the page did not answer"}
 }

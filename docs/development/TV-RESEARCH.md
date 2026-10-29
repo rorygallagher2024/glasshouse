@@ -978,6 +978,42 @@ codes 428 (the microphone) and 1117 (Google Assistant), LG's xkb codes 436 and
 webOS 4.10.2 reports 428 for the microphone too. With either set in Remote keys,
 the compositor's filter keeps the press from LG and the device still delivers it.
 
+## Typing into apps that ignore LG's input method (55UM7290PTD, webOS 4.10.2, Glasshouse 0.132.0)
+
+The dashboard's keyboard box types through `com.webos.service.ime`
+(`insertText`, `deleteCharacters`, `sendEnterKey`), which only reaches LG's own
+text fields. `ime/registerRemoteKeyboard` with `{"subscribe":true}` answers at
+once with `currentWidget`; on a screen with no LG field it was
+`{"currentWidget":{"focus":false}}`. The answer on a focused LG field was not
+read on this TV.
+
+- **Native apps (Nuvio Legacy 2.0.8, SDL).** `networkinput/test/sendKeyCode`
+  with Linux evdev codes typed letters, space and backspace into its search
+  (`KEY_B` 48, `KEY_H` 35, `KEY_I` 23, `KEY_SPACE` 57, `KEY_M` 50,
+  `KEY_BACKSPACE` 14). The call takes one code and no modifier, so there is no
+  shift. Digits and unshifted punctuation were not tried. Nuvio treats `s`
+  as a shortcut for its Saved panel even while its search has focus, so `s`
+  cannot be typed this way; pressing OK on its search box opens LG's keyboard,
+  where the input method types everything. Back to back, a letter was
+  sometimes lost, so the keys go about 60 ms apart.
+- **YouTube (`youtube.leanback.v4`), a web app.** IME, `sendKeyCode`, writes to
+  the remote's evdev node and a uinput keyboard did nothing in its own
+  on-screen-keyboard search. The web app debugger on 127.0.0.1:9998 lists its
+  page in `/json` as type `page`, title "YouTube on TV", URL
+  `https://www.youtube.com/tv?...`. Chrome DevTools Protocol over the page's
+  `webSocketDebuggerUrl`, `Input.dispatchKeyEvent` with `{type: "keyDown",
+  key: "a", code: "KeyA", text: "a", unmodifiedText: "a",
+  windowsVirtualKeyCode: 65, nativeVirtualKeyCode: 65}` then the same as
+  `keyUp`, typed "a" into the search. Sent back to back, the results matched the
+  query but the box showed some letters missing; about 60 ms between keys
+  keeps them. Backspace (`rawKeyDown`, code 8) deletes, and on an empty box it
+  acts as Back. Chromium is 53 (WebKit 537.36), protocol
+  1.1. `devtools.js` only drops port 9998 for traffic that is not on loopback,
+  so this is not affected by closing the debugger to the network.
+
+Glasshouse picks between these by the app in front; docs/IMPLEMENTATION.md has
+the order.
+
 ## Native key filters (C5, webOS 11.2.0)
 
 - **No JavaScript filters.** `surface-manager` runs on Weston

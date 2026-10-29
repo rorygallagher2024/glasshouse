@@ -2415,5 +2415,15 @@
  "ctl.keyboard.down": {"text": "Az LG billentyűzete nem látható a tévén. Előbb jelölj ki ott egy szövegmezőt, például egy keresőt vagy egy webcímet. Egyes alkalmazások saját billentyűzetet használnak.", "from": "LG’s keyboard is not up on the TV. Select a text field there first, such as a search box or a web address. Some apps use a keyboard of their own instead."},
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "apps.remoteKeys.toHomeAssistant": {"text": "A Home Assistantnak", "from": "To Home Assistant"},
- "srv.remoteKeys.notReported": {"text": "A Home Assistant nem kapja meg ennek a gombnak a lenyomásait", "from": "Home Assistant does not receive this key's presses"}
+ "srv.remoteKeys.notReported": {"text": "A Home Assistant nem kapja meg ennek a gombnak a lenyomásait", "from": "Home Assistant does not receive this key's presses"},
+ "ctl.keyboard.via.ime": {"text": "Az LG beviteli módszerén keresztül gépelve.", "from": "Typed through LG’s input method."},
+ "ctl.keyboard.via.page": {"text": "Az alkalmazás oldalába gépelve.", "from": "Typed into the app’s page."},
+ "ctl.keyboard.via.keys": {"text": "Gépelés billentyűleütésekként; csak kisbetűk.", "from": "Typing as key presses; lowercase only."},
+ "srv.typing.keyRefused": {"text": "a TV nem fogadta el a billentyűleütést", "from": "the TV did not take the key press"},
+ "srv.typing.keysTooLong": {"text": "legfeljebb {max} billentyűleütés egyszerre", "from": "at most {max} key presses at a time"},
+ "srv.typing.noKey": {"text": "a(z) „{character}” karakterhez nincs billentyűleütés", "from": "there is no key press for “{character}”"},
+ "srv.typing.pageAddress": {"text": "az oldalnak nincs hibakereső-címe", "from": "the page has no debugger address"},
+ "srv.typing.pageClosed": {"text": "az oldal lezárta a hibakeresővel való kapcsolatot", "from": "the page closed the debugger connection"},
+ "srv.typing.pageGarbled": {"text": "az oldal olvashatatlan választ küldött", "from": "the page sent something unreadable"},
+ "srv.typing.pageTimeout": {"text": "az oldal nem válaszolt", "from": "the page did not answer"}
 }

@@ -351,10 +351,11 @@
         <form class="toast-form" onsubmit="event.preventDefault();sendTypedText();">
           <input type="text" id="kb-text" placeholder="Focus a field on the TV, then type"
                  data-t-placeholder="ctl.keyboard.placeholder" maxlength="500" autocomplete="off" spellcheck="false"
-                 oninput="kbSyncLive()">
+                 oninput="kbSyncLive()" onkeydown="kbIgnoreBackspaceInEmptyBox(event)">
           <button type="submit" id="btn-kb-enter" data-t="ctl.keyboard.enter">Enter</button>
         </form>
         <p class="sub" id="kb-hint" data-t="ctl.keyboard.hint">Focus a text field on the TV first, such as a search box or a web address. What you type here goes to it as you type, backspace included, and Enter submits it.</p>
+        <p class="sub" id="kb-via"></p>
       </div>
     </details>
 

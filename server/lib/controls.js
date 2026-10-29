@@ -10,6 +10,7 @@ var timers = require('./timers');
 var saverPowerOff = require('./saverpoweroff');
 var clock = require('./clock');
 var names = require('./names');
+var typing = require('./typing');
 
 /*
  * Measured on a B8 against the built-in player, watching playStateNow move:
@@ -234,6 +235,23 @@ function portIsFree(port, cb) {
 
 function doTvApp(action, cb) { return tvAppFn(action, cb); }
 
+function imeResult(r) {
+  return { ok: !!(r && r.returnValue), error: r && r.errorText, method: 'ime' };
+}
+
+// Deletes delCount characters, then types typed, through LG's input method.
+function typeThroughIme(typed, delCount, cb) {
+  var insertRest = function () {
+    if (!typed) return cb({ ok: true, method: 'ime' });
+    lunaUrgent('com.webos.service.ime/insertText', { text: typed }, function (r) { cb(imeResult(r)); });
+  };
+  if (delCount <= 0) return insertRest();
+  lunaUrgent('com.webos.service.ime/deleteCharacters', { count: delCount }, function (r) {
+    if (!r || !r.returnValue) return cb(imeResult(r));
+    insertRest();
+  });
+}
+
 /*
  * The audio service's answer to a volume or mute change, as ok. A refusal
  * for where the sound goes now is passed to telemetry, which stops offering
@@ -241,6 +259,115 @@ function doTvApp(action, cb) { return tvAppFn(action, cb); }
  */
 function imeAnswer(cb) {
   return function (r) { cb({ ok: !!(r && r.returnValue), error: r && r.errorText }); };
+}
+
+/*
+ * Presses the keys in order, each once the one before has been taken: the
+ * order a field sees is the order of the calls. Stops at the first refusal and
+ * says how many went through.
+ */
+var KEY_PRESS_GAP_MS = 60;
+
+function pressKeyCodes(keyCodes, cb) {
+  var pressed = 0;
+  var pressNext = function () {
+    if (pressed >= keyCodes.length) return cb({ ok: true, sent: pressed });
+    lunaUrgent('com.webos.service.networkinput/test/sendKeyCode',
+               { keyCode: keyCodes[pressed] }, function (r) {
+      if (!r || !r.returnValue) {
+        return cb({ ok: false, error: (r && r.errorText) || msg('srv.typing.keyRefused', 'the TV did not take the key press'), sent: pressed });
+      }
+      pressed++;
+      // Back to back, Nuvio Legacy lost a letter now and then (webOS 4.10).
+      setTimeout(pressNext, KEY_PRESS_GAP_MS);
+    });
+  };
+  pressNext();
+}
+
+// How long the choice of where the keyboard box types holds: it costs a few
+// service calls, and a field does not move between two letters.
+var TYPING_ROUTE_TTL_MS = 2000;
+var typingRoute = null;
+var typingRouteAt = 0;
+
+function foregroundAppId(cb) {
+  lunaUrgent('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+    cb(fg && fg.returnValue !== false && fg.appId ? String(fg.appId) : '');
+  });
+}
+
+/*
+ * Where the keyboard box types now: { method: 'ime' | 'page' | 'keys', ... }.
+ *  - ime: LG's input method, when it has a field in focus (the remote keyboard
+ *    answers focus true, or on webOS 6+ LG's keyboard window is up), and when
+ *    the foreground app cannot be told.
+ *  - page: the foreground web app's page, through the web app debugger.
+ *  - keys: key presses on the network input, for native apps.
+ * registerRemoteKeyboard is asked as a one-answer call: its subscription ends
+ * with the call, so nothing is left registered.
+ */
+function chooseTypingRoute(cb) {
+  if (typingRoute && monotonicMs() - typingRouteAt < TYPING_ROUTE_TTL_MS) return cb(typingRoute);
+  var choose = function (route) {
+    typingRoute = route;
+    typingRouteAt = monotonicMs();
+    cb(route);
+  };
+  if (keyboardVisibleFn()) return choose({ method: 'ime' });
+  lunaUrgent('com.webos.service.ime/registerRemoteKeyboard', { subscribe: true }, function (r) {
+    if (r && r.currentWidget && r.currentWidget.focus === true) return choose({ method: 'ime' });
+    foregroundAppId(function (appId) {
+      if (!appId) return choose({ method: 'ime' });
+      typing.listPages(function (pages) {
+        var page = typing.pickPage(pages, appId);
+        if (page) return choose({ method: 'page', pageUrl: page.webSocketDebuggerUrl });
+        if (pages.length !== 1) return choose({ method: 'keys' });
+        // The one page open is the app's only if the app is a web app.
+        lunaUrgent('com.webos.applicationManager/getAppInfo', { id: appId }, function (info) {
+          var isWebApp = !!(info && info.appInfo && info.appInfo.type === 'web');
+          choose(isWebApp ? { method: 'page', pageUrl: pages[0].webSocketDebuggerUrl } : { method: 'keys' });
+        });
+      });
+    });
+  });
+}
+
+/*
+ * The dashboard's keyboard box, typed where the TV can take it. text is what
+ * to add, replace how many characters to delete first, enter whether to submit
+ * afterwards. The answer names the route, and for a route that goes one key at
+ * a time says how many went through, as a key press cannot be read back.
+ */
+function typeFromBox(request, cb) {
+  chooseTypingRoute(function (route) {
+    var answer = function (r) {
+      r.method = route.method;
+      // Whatever went wrong, choose again next time.
+      if (!r.ok) typingRoute = null;
+      cb(r);
+    };
+    var pressEnter = function (r) {
+      if (!r.ok || !request.enter) return answer(r);
+      typingRoute = null;
+      if (route.method === 'ime') {
+        return lunaUrgent('com.webos.service.ime/sendEnterKey', {}, function (e) { answer(imeResult(e)); });
+      }
+      if (route.method === 'page') {
+        return typing.typeIntoPage(route.pageUrl, '', 0, true, answer);
+      }
+      pressKeyCodes([RCU_KEYS.ok], answer);
+    };
+    var hasText = !!request.text || request.replace > 0;
+    if (!hasText) return pressEnter({ ok: true });
+    if (route.method === 'ime') return typeThroughIme(request.text, request.replace, pressEnter);
+    if (route.method === 'page') {
+      return typing.typeIntoPage(route.pageUrl, request.text, request.replace, false, pressEnter);
+    }
+    var keys = typing.keyCodesFor(request.text, request.replace);
+    if (keys.error) return answer({ ok: false, error: keys.error, sent: 0 });
+    pressKeyCodes(keys.codes, pressEnter);
+  });
 }
 
 function volumeAnswer(r) {
@@ -334,32 +461,32 @@ function doControl(action, value, cb) {
       /*
        * The dashboard's keyboard box: types into the text field in focus on
        * the TV, as it is typed. value is a string to insert, or { text,
-       * replace } with the characters to delete first. Both go through LG's
+       * replace } with the characters to delete first. Those go through LG's
        * input method on the urgent path, as keyboardText does: typing queued
        * behind other calls stalled in Glasshouse Home's search, and a
        * backspace sent as a key on the remote's device closed LG's keyboard
-       * there instead (a C2, webOS 9.2.2).
+       * there instead (a C2, webOS 9.2.2). With full as well, the whole box,
+       * the dashboard is asking for the route that suits the app in front: see
+       * chooseTypingRoute. Without it the text goes through LG's input method
+       * only, as Home Assistant and older dashboards send it. The routes type
+       * what changed, so full itself is not read. enter submits what was typed.
        */
-      var typed, delCount;
+      var typed, delCount, fullLength = 0, routeByApp = false, pressesEnter = false;
       if (value && typeof value === 'object') {
         typed = String(value.text == null ? '' : value.text);
         delCount = Math.max(0, toInt(value.replace, 0));
+        routeByApp = typeof value.full === 'string';
+        if (routeByApp) fullLength = value.full.length;
+        pressesEnter = value.enter === true;
       } else {
         typed = String(value == null ? '' : value);
         delCount = 0;
       }
-      if (typed.length > SEND_TEXT_MAX || delCount > SEND_TEXT_MAX) {
+      if (typed.length > SEND_TEXT_MAX || delCount > SEND_TEXT_MAX || fullLength > SEND_TEXT_MAX) {
         return cb({ ok: false, error: 'at most ' + SEND_TEXT_MAX + ' characters at a time' });
       }
-      var insertRest = function () {
-        if (!typed) return cb({ ok: true });
-        lunaUrgent('com.webos.service.ime/insertText', { text: typed }, imeAnswer(cb));
-      };
-      if (delCount <= 0) return insertRest();
-      return lunaUrgent('com.webos.service.ime/deleteCharacters', { count: delCount }, function (r) {
-        if (!r || !r.returnValue) return imeAnswer(cb)(r);
-        insertRest();
-      });
+      if (!routeByApp) return typeThroughIme(typed, delCount, cb);
+      return typeFromBox({ text: typed, replace: delCount, enter: pressesEnter }, cb);
 
     case 'launch_app':
     case 'launchApp':
