@@ -230,6 +230,7 @@ function renderHome() {
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
   renderHomeRows();
+  renderHomeRecents();
   renderHomeChannels();
   renderHomeWalls();
   renderHomeColours();
@@ -435,6 +436,42 @@ function homeMoveRow(i, d) {
   if (j < 0 || j >= rows.length) return;
   [rows[i], rows[j]] = [rows[j], rows[i]];
   homeSaveLayout({ rows });
+}
+
+/*
+ * The apps kept out of the Recent apps panel (Back on Glasshouse Home), and
+ * their last screen with them; their tiles stay on the Apps row.
+ */
+function renderHomeRecents() {
+  const box = q('home-recents');
+  if (!box || !homeLayout || !homeCat) return;
+  const usable = homeWritable();
+  const open = box.querySelector('details[open]') !== null;
+  const out = homeLayout.excludedRecents || [];
+  const apps = (homeCat.apps || []).slice().sort((a, b) => a.title.localeCompare(b.title));
+  const rows = apps.map(a => {
+    const hidden = out.includes(a.id);
+    const icon = a.icon ? `<img class="rk-ico" src="${esc(api(a.icon))}" alt="">` : '';
+    return `<div class="prot-row home-tile${hidden ? ' home-hidden' : ''}">
+      <div class="prot-main"><div class="prot-title">${icon}<span translate="no">${esc(a.title)}</span></div></div>
+      <div class="prot-status">${renderToggle({ cls: hidden ? 'idle' : 'good',
+        label: hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
+        disabled: !usable, onclick: `homeToggleRecents('${jsq(a.id)}')` })}</div></div>`;
+  }).join('');
+  const summary = out.length ? t('home.recents.hiddenCount', '{n} hidden', { n: out.length }) : '';
+  box.innerHTML = `<details class="home-row"${open ? ' open' : ''}>
+    <summary><span class="prot-title">${esc(t('home.recents.title', 'Recent apps'))}</span>
+      <span class="home-row-move">${summary ? `<span class="sub">${esc(summary)}</span>` : ''}</span></summary>
+    <div class="sub">${esc(t('home.recents.desc', 'Apps hidden here never show in Glasshouse Home’s Recent apps (Back on Home), nor does their last screen. Their tiles stay on the Apps row.'))}</div>
+    <div class="prot-table">${rows || `<div class="sub">${esc(t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
+  </details>`;
+}
+
+function homeToggleRecents(id) {
+  const list = (homeLayout.excludedRecents || []).slice();
+  const i = list.indexOf(id);
+  if (i >= 0) list.splice(i, 1); else list.push(id);
+  homeSaveLayout({ excludedRecents: list });
 }
 
 function homeToggleTile(kind, id) {

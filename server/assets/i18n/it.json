@@ -2416,5 +2416,7 @@
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "apps.remoteKeys.toHomeAssistant": {"text": "A Home Assistant", "from": "To Home Assistant"},
  "srv.remoteKeys.notReported": {"text": "Home Assistant non riceve le pressioni di questo tasto", "from": "Home Assistant does not receive this key's presses"},
- "home.restartsApps": {"text": "Su questa TV, attivare o disattivare Glasshouse Home, o tenere premuto Home per la Home di LG, riavvia il gestore delle app della TV, che chiude le app aperte.", "from": "On this TV, switching Glasshouse Home on or off, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."}
+ "home.restartsApps": {"text": "Su questa TV, attivare o disattivare Glasshouse Home, o tenere premuto Home per la Home di LG, riavvia il gestore delle app della TV, che chiude le app aperte.", "from": "On this TV, switching Glasshouse Home on or off, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."},
+ "home.recents.desc": {"text": "Le app nascoste qui non compaiono mai nelle App recenti di Glasshouse Home (Indietro sulla Home), né la loro ultima schermata. I loro riquadri restano nella riga App.", "from": "Apps hidden here never show in Glasshouse Home’s Recent apps (Back on Home), nor does their last screen. Their tiles stay on the Apps row."},
+ "home.recents.hiddenCount": {"text": "{n} nascoste", "from": "{n} hidden"}
 }

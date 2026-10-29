@@ -2340,5 +2340,7 @@
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "apps.remoteKeys.toHomeAssistant": {"text": "A Home Assistant", "from": "To Home Assistant"},
  "srv.remoteKeys.notReported": {"text": "Home Assistant no recibe las pulsaciones de esta tecla", "from": "Home Assistant does not receive this key's presses"},
- "home.restartsApps": {"text": "En esta TV, activar o desactivar Glasshouse Home, o mantener pulsado Home para la pantalla de inicio de LG, reinicia el gestor de apps de la TV, lo que cierra las apps abiertas.", "from": "On this TV, switching Glasshouse Home on or off, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."}
+ "home.restartsApps": {"text": "En esta TV, activar o desactivar Glasshouse Home, o mantener pulsado Home para la pantalla de inicio de LG, reinicia el gestor de apps de la TV, lo que cierra las apps abiertas.", "from": "On this TV, switching Glasshouse Home on or off, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."},
+ "home.recents.desc": {"text": "Las apps ocultas aquí nunca aparecen en Apps recientes de Glasshouse Home (Atrás en Inicio), ni su última pantalla. Sus iconos siguen en la fila Apps.", "from": "Apps hidden here never show in Glasshouse Home’s Recent apps (Back on Home), nor does their last screen. Their tiles stay on the Apps row."},
+ "home.recents.hiddenCount": {"text": "{n} ocultas", "from": "{n} hidden"}
 }

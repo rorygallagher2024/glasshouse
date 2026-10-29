@@ -2416,5 +2416,7 @@
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "apps.remoteKeys.toHomeAssistant": {"text": "В Home Assistant", "from": "To Home Assistant"},
  "srv.remoteKeys.notReported": {"text": "Home Assistant не получает нажатия этой кнопки", "from": "Home Assistant does not receive this key's presses"},
- "home.restartsApps": {"text": "На этом телевизоре включение или выключение Glasshouse Home, а также удержание кнопки Home для главного экрана LG перезапускает диспетчер приложений, и открытые приложения закрываются.", "from": "On this TV, switching Glasshouse Home on or off, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."}
+ "home.restartsApps": {"text": "На этом телевизоре включение или выключение Glasshouse Home, а также удержание кнопки Home для главного экрана LG перезапускает диспетчер приложений, и открытые приложения закрываются.", "from": "On this TV, switching Glasshouse Home on or off, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."},
+ "home.recents.desc": {"text": "Скрытые здесь приложения никогда не появляются в недавних приложениях Glasshouse Home (Назад на главном экране), как и их последний экран. Их плитки остаются в ряду «Приложения».", "from": "Apps hidden here never show in Glasshouse Home’s Recent apps (Back on Home), nor does their last screen. Their tiles stay on the Apps row."},
+ "home.recents.hiddenCount": {"text": "Скрыто: {n}", "from": "{n} hidden"}
 }
