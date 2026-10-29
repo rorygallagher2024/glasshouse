@@ -110,6 +110,18 @@ The state-push suite checks `keyboard_visible` from the window list: pushed on c
 
 `test-home-picture.js` reads a G3's receiver files with Glasshouse Home on screen: the signal and HDR of the input behind it, the picture mode asked for with both input and dynamic range, an empty input, and HDR from the receiver's packets (PQ, HLG, none, Dolby Vision). Only the mode for the range coming in is asked for, none without a signal, and a channel's SDR mode. It also checks that tracking runs only while Glasshouse Home, picture details and the TV are all on, that it retains an app's first video before any app plate is read, and that standby or switching either off stops it and leaves the recorded video available.
 
+The same suite checks the preview's HDMI signal read and a channel's decoded
+format through the public picture read, including SDR, HLG, HDR10, Dolby
+Vision and Technicolor HDR selecting their stored picture modes, and another
+broadcast's HDR context being ignored. `test-home.js` checks that Live preview
+defaults to off and saves its choice. The browser check changes Picture details
+during HDMI and channel previews, without restarting playback, rejects a late
+reply after the details are disabled, and checks that switching Live preview
+off releases its media source. Desktop media methods are stubbed; webOS
+decoding, sound and CEC still need a real TV.
+Delayed guide and catalogue replies cannot reopen a preview after **OK**;
+a refused launch or returning to Home allows it again.
+
 `test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved.
 
 `test-stats-timeout.js` checks that a stats collection past its limit answers its callers with the last complete one, or the empty stand-in when none has finished, and carries on with no second collection started beside it; that `expireStats` does not take that fallback away; and that one given up on after 60 s answers no caller of the next.

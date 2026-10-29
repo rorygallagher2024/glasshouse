@@ -32,10 +32,10 @@ var MODES = {
   hdmi2: { sdr: 'filmMaker', hdr: 'hdrCinema', dolbyHdr: 'dolbyHdrCinema' },
   default: { sdr: 'filmMaker', hdr: 'hdrFilmMaker', dolbyHdr: 'dolbyHdrCinemaBright' },
   // Not read from the G3: the tuner input as a test case.
-  dtv: { sdr: 'cinema' }
+  dtv: { sdr: 'cinema', hdr: 'hdrCinema', dolbyHdr: 'dolbyHdrCinema', technicolorHdr: 'technicolorHdrTechnicolor' }
 };
 
-function setUp(files, Subscription) {
+function setUp(files, Subscription, channel) {
   var asked = [];
   homePicture.init({
     Subscription: Subscription,
@@ -47,8 +47,8 @@ function setUp(files, Subscription) {
     oled: { detectOled: function (cb) { cb(true); } },
     readFile: function (p) { return files.hasOwnProperty(p) ? files[p] : null; },
     luna: function (uri, payload, cb) {
-      // No channel playing: the plate for one is read with no signal.
-      if (/videooutput\/getStatus$/.test(uri)) return cb({ returnValue: true, video: [] });
+      if (/videooutput\/getStatus$/.test(uri)) return cb(channel ? channel.status : { returnValue: true, video: [] });
+      if (/broadcast\/getCurrentVideoInfo$/.test(uri)) return cb(channel.info);
       asked.push(payload);
       var dim = payload.dimension || {};
       if (payload.keys[0] === 'backlight') {
@@ -197,27 +197,34 @@ var skyNews = { video: [
     frameRate: 2500, scanType: 'interlaced', videoInfo: { hdrType: 'none' } },
   { sink: 'SUB0', connected: false, connectedSource: 'unknown', width: 0, height: 0 }
 ] };
-assert.deepEqual(homePicture.channelVideo(skyNews), { width: 544, height: 576, hz: 25, interlaced: true, broadcast: true,
-  context: null, chroma: null, bits: null, hdr: 'sdr', vrr: false, allm: false });
-assert.equal(homePicture.channelVideo({ video: [{ sink: 'MAIN', connected: true, contentType: 'vod', width: 3840, height: 2160 }] }), null,
-  'an app\'s video is not a channel');
-console.log('  ✓ a channel\'s format off the main sink, its rate in hundredths of a hertz');
+skyNews.video[0].context = 'aB1b';
 
 // The broadcast service's reply for an SD channel in Home's preview on the G3.
 var sdInfo = { returnValue: true, appId: 'com.webos.app.home', videoInfo: { context: 'aB1b', content: 'dtv',
   video: { width: 704, height: 576, frameRate: 25, IsBT2020: false, scanType: 'VIDEO_INTERLACED', hdrType: 'none' } } };
-assert.equal(homePicture.broadcastHdr(sdInfo, 'aB1b'), null, 'SDR names no HDR');
-function withType(key, type, context) {
-  var r = JSON.parse(JSON.stringify(sdInfo));
-  delete r.videoInfo.video.hdrType;
-  r.videoInfo.video[key] = type;
-  if (context) r.videoInfo.context = context;
-  return r;
-}
-assert.equal(homePicture.broadcastHdr(withType('HDRType', 'HLG'), 'aB1b'), 'hlg');
-assert.equal(homePicture.broadcastHdr(withType('hdrType', 'HDR10'), 'aB1b'), 'hdr10');
-assert.equal(homePicture.broadcastHdr(withType('hdrType', 'DOLBY'), 'aB1b'), 'dolby_vision');
-assert.equal(homePicture.broadcastHdr(withType('HDRType', 'HLG', 'other'), 'aB1b'), null, 'another broadcast\'s video');
-console.log('  ✓ a channel\'s HDR as LG\'s Live TV banner reads it');
+[
+  ['hdrType', 'none', 'sdr', 'sdr'],
+  ['HDRType', 'HLG', 'hlg', 'hdr'],
+  ['hdrType', 'HDR10', 'hdr10', 'hdr'],
+  ['hdrType', 'DOLBY', 'dolby_vision', 'dolbyHdr'],
+  ['HDRType', 'DolbyVision', 'dolby_vision', 'dolbyHdr'],
+  ['HDRType', 'Prime', 'technicolor', 'technicolorHdr'],
+  ['HDRType', 'HLG', 'sdr', 'sdr', 'other']
+].forEach(function (c) {
+  var info = JSON.parse(JSON.stringify(sdInfo));
+  delete info.videoInfo.video.hdrType;
+  info.videoInfo.video[c[0]] = c[1];
+  if (c[4]) info.videoInfo.context = c[4];
+  setUp({}, null, { status: skyNews, info: info });
+  homePicture.picture('channel', null, function (r) {
+    assert.deepEqual(r.signal, { width: 544, height: 576, hz: 25, interlaced: true, broadcast: true,
+      chroma: null, bits: null, hdr: c[2], vrr: false, allm: false });
+    assert.equal(r.range, c[3], c[1] + ' selects its own settings range');
+    assert.equal(r.mode.raw, MODES.dtv[c[3]], c[1] + ' reads the matching stored picture mode');
+  });
+});
+setUp({}, null, { status: { video: [{ sink: 'MAIN', connected: true, contentType: 'vod', width: 3840, height: 2160 }] } });
+homePicture.picture('channel', null, function (r) { assert.equal(r.signal, null, 'an app\'s video is not a channel'); });
+console.log('  ✓ channel format, HDR context and the matching picture mode through the public picture read');
 
 console.log('ALL test-home-picture.js assertions passed!');

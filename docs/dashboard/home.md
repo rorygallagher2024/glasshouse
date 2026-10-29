@@ -59,6 +59,9 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     When **Live preview** is switched on, resting on an input or a TV channel for a moment shows it live and silent in the top right, with its name and programme beside it. With **Picture details** on too, the plate moves under the picture and describes what it shows: the input's signal as it arrives, or the channel's resolution, frame rate and HDR as the tuner decodes it, and the picture mode and OLED light it gets. Devices behind one receiver share its HDMI input, so each shows what that input shows. An input with nothing coming in, or a channel off air, says so. Moving to another input takes the TV's HDMI receiver off the one that was on, without sending anything over CEC, and a channel previewed this way does not become the TV's last channel. It is off by default.
 
+    Changing **Picture details** shows or hides the strip during a preview, without restarting the picture.
+    Pressing **OK** releases the preview while the input or channel opens.
+
 -   **Last watched, app count and CEC addresses**
 
     ---

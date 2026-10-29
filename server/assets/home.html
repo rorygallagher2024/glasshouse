@@ -1354,11 +1354,17 @@ html.faded #stage{opacity:0}
     if (!it) return;
     if (it.folder) return openFolder();
     // The input goes back to its own app, which opens it full screen.
+    var preview = tilePreview.target;
     stopPreview();
+    if (preview) tilePreview.opened = preview.key;
     fadeThenOpen(it.overlay === true, function (done) {
       postJson('/api/home/open', { kind: kind, id: it.id }, function (r) {
         done(!!(r && r.ok));
-        if (!r || !r.ok) toast(t('home.openFailed', 'That did not open'), r && r.error);
+        if (!r || !r.ok) {
+          if (preview && tilePreview.opened === preview.key) tilePreview.opened = null;
+          followPreview();
+          toast(t('home.openFailed', 'That did not open'), r && r.error);
+        }
       });
     });
   }
@@ -1425,18 +1431,26 @@ html.faded #stage{opacity:0}
   var PREVIEW_CHANNEL_POLL_MS = 400;
   var PREVIEW_CHANNEL_TRIES = 15;
   // target: { key, row, item, port } - port for an input, 0 for a channel.
-  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null };
+  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null };
 
   // What the tile in focus would preview: a connected input or a TV channel.
   // Devices on one input share its key, so moving between them keeps the picture.
   function previewTarget() {
     if (!layout || layout.livePreview !== true || document.hidden || opening) return null;
-    if (state.arranging || state.bar >= 0 || state.rail || recents.open || finder.open || folder.open) return null;
+    if (state.arranging || state.bar >= 0 || state.rail || recents.open || finder.open || folder.open) {
+      tilePreview.opened = null;
+      return null;
+    }
     var row = rowKey(), it = items(row)[colOf(row)];
-    if (!it) return null;
-    if (row === 'dev' && !it.unused && it.port >= 1 && it.port <= 4) return { key: 'hdmi' + it.port, row: row, item: it, port: it.port };
-    if (row === 'ch' && !it.radio && it.id) return { key: 'ch' + it.id, row: row, item: it, port: 0 };
-    return null;
+    if (!it) { tilePreview.opened = null; return null; }
+    var target = null;
+    if (row === 'dev' && !it.unused && it.port >= 1 && it.port <= 4) target = { key: 'hdmi' + it.port, row: row, item: it, port: it.port };
+    if (row === 'ch' && !it.radio && it.id) target = { key: 'ch' + it.id, row: row, item: it, port: 0 };
+    // A guide or catalogue reply can repaint Home before the input opens.
+    // Keep that tile released until focus moves away or Home returns.
+    if (target && target.key === tilePreview.opened) return null;
+    tilePreview.opened = null;
+    return target;
   }
 
   // Called wherever focus or what covers the rows may have changed.
@@ -1444,11 +1458,18 @@ html.faded #stage{opacity:0}
     var next = previewTarget();
     if (next && tilePreview.target && next.key === tilePreview.target.key) {
       if (tilePreview.target.item !== next.item) { tilePreview.target = next; if ($('preview').className) renderNow(); }
+      var details = layout.picture === true;
+      if (details !== tilePreview.details) {
+        tilePreview.details = details;
+        renderPreviewInfo();
+        if (details && next.port && !tilePreview.info && tilePreview.playing && !tilePreview.blank) loadPreviewInfo(next, tilePreview.gen);
+      }
       return;
     }
     stopPreview();
     if (!next) return;
     tilePreview.target = next;
+    tilePreview.details = layout.picture === true;
     var gen = tilePreview.gen;
     tilePreview.timer = setTimeout(function () { if (gen === tilePreview.gen) startPreview(next); }, PREVIEW_DWELL_MS);
   }
@@ -1482,10 +1503,6 @@ html.faded #stage{opacity:0}
   }
 
   /*
-   * The plate for what the preview shows: an input's signal off its receiver,
-   * read once the receiver has a picture, or the mode a channel gets in SDR.
-   */
-  /*
    * A channel's format is polled whether or not the band shows, as it is also
    * how a channel off air is told: BBC FOUR HD and BBC THREE HD in the
    * afternoon on a G3 played with no format and a black picture.
@@ -1504,14 +1521,20 @@ html.faded #stage{opacity:0}
         }
         return blankPreview();
       }
-      if (!details) return;
       tilePreview.info = r;
-      var sig = r.signal ? signalParts(r.signal) : [];
-      $('pvMode').textContent = r.mode ? r.mode.display : '';
-      $('pvLight').innerHTML = lightHtml(r);
-      $('pvSig').innerHTML = spans(sig);
-      if (!tilePreview.blank && (r.mode || sig.length)) $('preview').className = 'on info';
+      renderPreviewInfo();
     });
+  }
+
+  function renderPreviewInfo() {
+    if (tilePreview.blank || !$('preview').className) return;
+    var p = tilePreview.info;
+    if (!layout || layout.picture !== true || !p) { $('preview').className = 'on'; return; }
+    var sig = p.signal ? signalParts(p.signal) : [];
+    $('pvMode').textContent = p.mode ? p.mode.display : '';
+    $('pvLight').innerHTML = lightHtml(p);
+    $('pvSig').innerHTML = spans(sig);
+    $('preview').className = 'on' + (p.mode || sig.length ? ' info' : '');
   }
 
   function blankPreview() {
@@ -2657,6 +2680,7 @@ html.faded #stage{opacity:0}
   }
 
   function returned() {
+    tilePreview.opened = null;
     var dark = faded;
     if (!dark) fadeIn();
     initialEscape = false;

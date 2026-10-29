@@ -237,6 +237,123 @@ async function visitHomePicture(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+async function visitHomePreview(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home preview: ' + e.message));
+  const layout = { rows: ['dev', 'ch', 'app'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: ['one'], hintSeen: true, searchHintSeen: true,
+    livePreview: true, picture: false };
+  let version = 1, holdPicture = false, latePicture = null, holdGuide = false, lateGuide = null, lateOpen = null;
+  await page.addInitScript(() => {
+    // Desktop Chrome has no webOS media service. Deliver its playing event
+    // separately so the page still owns the dwell and metadata lifecycle.
+    window.previewPlays = 0;
+    HTMLMediaElement.prototype.load = function () {};
+    HTMLMediaElement.prototype.pause = function () {};
+    HTMLMediaElement.prototype.play = function () { window.previewPlays++; return Promise.resolve(); };
+  });
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: version,
+      apps: [], devices: [{ id: 'player', name: 'Player', port: 1 }],
+      channels: [{ id: 'one', name: 'One', number: '1' }], sources: { channels: 1 },
+      order: { app: ['lg-home'], dev: ['player'], ch: ['one'] } });
+    if (url.pathname.endsWith('/now')) return reply({ kind: null });
+    if (url.pathname.endsWith('/guide')) {
+      if (holdGuide) { holdGuide = false; lateGuide = () => reply({ ok: true, guide: {} }); return; }
+      return reply({ ok: true, guide: {} });
+    }
+    if (url.pathname.endsWith('/open')) { lateOpen = ok => reply({ ok }); return; }
+    if (url.pathname.endsWith('/signal')) return reply({ ok: true, signal: true });
+    if (url.pathname.endsWith('/picture')) {
+      const body = { ok: true, mode: { display: 'Cinema' }, light: 95, oled: true,
+        signal: { width: 1920, height: 1080, hz: 25, hdr: 'sdr' } };
+      if (holdPicture) { holdPicture = false; latePicture = () => reply(body); return; }
+      return reply(body);
+    }
+    return reply({ ok: true, build: 'preview', layoutVersion: version });
+  });
+  async function changeLayout(change) {
+    Object.assign(layout, change);
+    version++;
+    const updated = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    await page.clock.fastForward(5000);
+    await updated;
+    await page.waitForTimeout(100);
+  }
+  async function startPreview() {
+    await page.clock.fastForward(400);
+    await page.waitForSelector('#pvVideo source', { state: 'attached' });
+    await page.locator('#pvVideo').dispatchEvent('playing');
+    await page.clock.fastForward(1000);
+    await page.waitForTimeout(100);
+  }
+  async function checkDetails(on, label) {
+    if (await page.locator('#pvInfo').isVisible() !== on) problems.push('Home preview: ' + label);
+    if (on && await page.locator('#pvMode').textContent() !== 'Cinema') problems.push('Home preview: missing picture mode');
+  }
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    for (const kind of ['input', 'channel']) {
+      if (kind === 'channel') await page.keyboard.press('ArrowDown');
+      await startPreview();
+      const plays = await page.evaluate(() => window.previewPlays);
+      await checkDetails(false, kind + ' started with details disabled');
+      await changeLayout({ picture: true });
+      await checkDetails(true, kind + ' did not show details when enabled');
+      await changeLayout({ picture: false });
+      await checkDetails(false, kind + ' kept details after disabling');
+      if (await page.evaluate(() => window.previewPlays) !== plays) problems.push('Home preview: changing details restarted ' + kind);
+    }
+    await changeLayout({ livePreview: false });
+    if (await page.locator('#pvVideo source').count()) problems.push('Home preview: switching off kept its media source');
+    await page.keyboard.press('ArrowUp');
+    await changeLayout({ livePreview: true, picture: true });
+    holdPicture = true;
+    await startPreview();
+    if (!latePicture) throw new Error('no preview picture reply to delay');
+    await changeLayout({ picture: false });
+    await latePicture();
+    await page.waitForTimeout(100);
+    await checkDetails(false, 'a delayed reply restored disabled details');
+    await changeLayout({ picture: true });
+    await checkDetails(true, 'a delayed picture was unavailable after enabling details');
+    await changeLayout({ livePreview: false });
+    if (await page.locator('#preview').isVisible() || await page.locator('#pvVideo source').count()) {
+      problems.push('Home preview: switching off kept its picture or media source');
+    }
+    holdGuide = true;
+    await changeLayout({ livePreview: true });
+    await startPreview();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(100);
+    if (!lateOpen || !lateGuide) throw new Error('no launch or guide reply to delay');
+    await lateGuide();
+    await page.waitForTimeout(100);
+    await page.clock.fastForward(400);
+    if (await page.locator('#pvVideo source').count()) problems.push('Home preview: a delayed guide reopened a source after OK');
+    await lateOpen(false);
+    await page.waitForTimeout(100);
+    await page.clock.fastForward(400);
+    if (!await page.locator('#pvVideo source').count()) problems.push('Home preview: a refused launch prevented retrying its preview');
+    lateOpen = null;
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(100);
+    if (!lateOpen) throw new Error('no second launch to complete');
+    await lateOpen(true);
+    await changeLayout({ showCec: false });
+    await page.clock.fastForward(400);
+    if (await page.locator('#pvVideo source').count()) problems.push('Home preview: a catalogue refresh reopened an accepted launch');
+    await page.evaluate(() => document.dispatchEvent(new Event('webOSRelaunch')));
+    await page.waitForTimeout(100);
+    await page.clock.fastForward(400);
+    if (!await page.locator('#pvVideo source').count()) problems.push('Home preview: returning to Home kept its preview suppressed');
+  } finally { await page.close(); }
+}
+
 async function visitHomeVisibility(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home visibility: ' + e.message));
@@ -1833,7 +1950,7 @@ function groups(web, tv) {
     { tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [] },
     { tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
-    { tabs: [], visits: [visitHomePicture, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
+    { tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
     { tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide] },
     /*
@@ -1864,6 +1981,6 @@ async function runGroup(browser, group, problems, after) {
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'TV navigation and LCD profile, Home arranging, picture, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide and search checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+              'TV navigation and LCD profile, Home arranging, picture, preview, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide and search checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

@@ -252,7 +252,7 @@ function hdmiSignal(port, cb) {
 
 // The settings range a source's HDR is shown in.
 function rangeOf(hdr) {
-  return hdr === 'dolby_vision' ? 'dolbyHdr' : hdr === 'hdr10' || hdr === 'hlg' ? 'hdr' : 'sdr';
+  return hdr === 'dolby_vision' ? 'dolbyHdr' : hdr === 'technicolor' ? 'technicolorHdr' : hdr === 'hdr10' || hdr === 'hlg' ? 'hdr' : 'sdr';
 }
 
 function pictureMode(input, range, cb) {
@@ -275,8 +275,8 @@ function oledLight(input, mode, cb) {
  * The plate for what was last on: kind 'input' with its port, 'channel', or
  * 'app' with its id. cb({ ok, input, signal, range, mode, light, oled }), where
  * range is the dynamic range the signal is shown in and mode the picture mode
- * it gets. A channel is taken as SDR; an input or app with no signal to go by
- * has neither.
+ * it gets. A channel with no decoded signal is taken as SDR; an input or app
+ * with no signal to go by has neither.
  */
 function picture(kind, port, cb, appId) {
   var inputs = { input: 'hdmi' + port, channel: 'dtv', app: 'default' };
@@ -327,7 +327,5 @@ module.exports = {
   picture: picture,
   signal: signal,
   sourceHdr: sourceHdr,
-  channelVideo: channelVideo,
-  broadcastHdr: broadcastHdr,
   refreshHz: refreshHz
 };

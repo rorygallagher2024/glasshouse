@@ -463,6 +463,10 @@ the current display processing; settings with an explicit `dtv` dimension
 read a stored picture preset. Neither is a per-channel HDR declaration.
 Named `dtv` reads returned `filmMaker` for `sdr`, `hdrStandard` for `hdr`
 and `dolbyHdrCinemaBright` for `dolbyHdr`, without an HDR broadcast playing.
+Another read on 29 October 2026 returned `technicolorHdrTechnicolor` for
+`dynamicRange: technicolorHdr`. A broadcast reporting `Prime` needs that
+settings range rather than `sdr`; this is a stored preset read, not a
+Technicolor broadcast reception test.
 
 The API adapter's `tv/getChannelList` returned 183 terrestrial services,
 including data and radio, with no HDR/UHD field. Their DVB `serviceType`
