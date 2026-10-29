@@ -992,18 +992,24 @@ step('webOS 11 only with allowExperimentalHome', function (done) {
   });
 });
 
-step('webOS 5 and 6 only with allowExperimentalHome', function (done) {
+step('webOS 5 and 6 are offered, experimental, with each switch closing the apps that are open', function (done) {
   start(null, { webosVersion: '5.5.0' });
-  home.status(function (st0) {
-    assert.strictEqual(st0.supported.ok, false, 'a sam restart at every switch is the owner\'s call');
+  home.status(function (st5) {
+    assert.strictEqual(st5.supported.ok, true, 'no setting needed on a CX');
+    assert.strictEqual(st5.supported.experimental, true);
+    assert.strictEqual(st5.supported.restartsApps, true, 'the dashboards say a switch restarts the app manager');
     start(null, { webosVersion: '6.5.3' });
-    home.status(function (st1) {
-      assert.strictEqual(st1.supported.ok, false, 'same on a C1');
-      start(null, { webosVersion: '5.5.0', allowExperimental: function () { return true; } });
-      home.status(function (st) {
-        assert.strictEqual(st.supported.ok, true);
-        assert.strictEqual(st.supported.experimental, true);
-        done();
+    home.status(function (st6) {
+      assert.strictEqual(st6.supported.ok, true, 'same on a C1');
+      assert.strictEqual(st6.supported.restartsApps, true);
+      start(null, { webosVersion: '9.2.2' });
+      home.status(function (st9) {
+        assert.strictEqual(st9.supported.restartsApps, undefined, 'not where sam reads the files without a restart');
+        start(null, { webosVersion: '11.2.0' });
+        home.status(function (st11) {
+          assert.strictEqual(st11.supported.ok, false, 'webOS 11 still needs the setting');
+          done();
+        });
       });
     });
   });

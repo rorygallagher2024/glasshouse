@@ -1,7 +1,7 @@
 # Home
 
 > [!NOTE]
-> **Experimental (webOS 7, 9 & 10):** Glasshouse Home replaces LG's built-in launcher when pressing **Home** or **Back** on the remote, or when the TV turns on. It is available on webOS 7, 9 and 10, and on webOS 5, 6 and 11 when `"allowExperimentalHome": true` is set in `config.json` (tried on a CX with webOS 5 and a C1 with webOS 6), and works on whichever port the dashboard is on.
+> **Experimental (webOS 5, 6, 7, 9 & 10):** Glasshouse Home replaces LG's built-in launcher when pressing **Home** or **Back** on the remote, or when the TV turns on. It is available on webOS 5, 6, 7, 9 and 10, and on webOS 11 when `"allowExperimentalHome": true` is set in `config.json`, and works on whichever port the dashboard is on. On webOS 5 and 6 (tried on a CX, two C1s and a B1), switching it on or off, or holding Home for LG's Home, restarts the TV's app manager, which closes the apps that are open; the Home tab says so on those TVs.
 
 ![Glasshouse Home on an OLED55G36LA (webOS 9.2): clock and the Apps, Inputs and Channels rows over an uploaded afternoon wallpaper](../screenshots/home.jpg)
 

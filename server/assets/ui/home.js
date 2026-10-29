@@ -95,6 +95,9 @@ function renderHome() {
   const glasshouse = st.supported.ok || st.enabled || st.restorePending;
   const hero = q('home-hero');
   if (hero) hero.hidden = !glasshouse;
+  // webOS 5 and 6, where each switch restarts the TV's app manager.
+  const restartNote = q('home-restart-note');
+  if (restartNote) restartNote.hidden = !st.supported.restartsApps;
   if (st.restorePending) {
     state.textContent = t('home.restorePending', 'LG Home restoration is incomplete');
     desc.textContent = t('home.restoreRetry', 'Retry restoring LG Home before switching Glasshouse Home on again.');

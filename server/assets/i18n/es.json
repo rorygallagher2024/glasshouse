@@ -1963,7 +1963,7 @@
  "srv.home.startLayoutWebos9": {"text": "El Inicio de LG solo se puede ocultar al arrancar en webOS 9.", "from": "LG's Home can be hidden at start on webOS 9 only."},
  "srv.home.startingToast": {"text": "Glasshouse Home está arrancando. Se abre en unos segundos.", "from": "Glasshouse Home is starting. It opens in a few seconds."},
  "srv.home.unknownTile": {"text": "eso no está en Glasshouse Home", "from": "that is not on Glasshouse Home"},
- "srv.home.untested": {"text": "Glasshouse Home solo se ha probado en webOS 7, 9 y 10. Esta TV usa webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 7, 9 and 10. This TV runs webOS {version}."},
+ "srv.home.untested": {"text": "Glasshouse Home solo se ha probado en webOS 5, 6, 7, 9 y 10. Esta TV tiene webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 5, 6, 7, 9 and 10. This TV runs webOS {version}."},
  "srv.home.wallUploadImage": {"text": "Elige un JPEG válido de hasta 1920 × 1080 píxeles.", "from": "Choose a valid JPEG up to 1920 × 1080 pixels."},
  "srv.home.wallUploadSize": {"text": "El JPEG subido debe ocupar como máximo 5 MB e indicar su tamaño.", "from": "The uploaded JPEG must be at most 5 MB and state its size."},
  "srv.home.wallUploadSpace": {"text": "No hay espacio libre confirmado suficiente para el fondo.", "from": "Not enough confirmed free space for the wallpaper."},
@@ -2339,5 +2339,6 @@
  "ctl.keyboard.down": {"text": "El teclado de LG no está abierto en la TV. Selecciona antes allí un campo de texto, como una búsqueda o una dirección web. Algunas apps usan su propio teclado.", "from": "LG’s keyboard is not up on the TV. Select a text field there first, such as a search box or a web address. Some apps use a keyboard of their own instead."},
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "apps.remoteKeys.toHomeAssistant": {"text": "A Home Assistant", "from": "To Home Assistant"},
- "srv.remoteKeys.notReported": {"text": "Home Assistant no recibe las pulsaciones de esta tecla", "from": "Home Assistant does not receive this key's presses"}
+ "srv.remoteKeys.notReported": {"text": "Home Assistant no recibe las pulsaciones de esta tecla", "from": "Home Assistant does not receive this key's presses"},
+ "home.restartsApps": {"text": "En esta TV, activar o desactivar Glasshouse Home, o mantener pulsado Home para la pantalla de inicio de LG, reinicia el gestor de apps de la TV, lo que cierra las apps abiertas.", "from": "On this TV, switching Glasshouse Home on or off, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."}
 }

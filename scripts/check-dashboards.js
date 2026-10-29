@@ -1192,7 +1192,10 @@ async function visitHomeAvailability(browser, base, problems) {
   const cases = [
     { name: 'unavailable', st: { available: false, enabled: false }, glasshouse: false },
     { name: 'LG\'s Home only', st: { available: true, enabled: false, lgHomeAvailable: true, lgHome: lgHome(false), homeAutoLaunch: false }, glasshouse: false },
-    { name: 'Glasshouse Home on', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true) }, glasshouse: true }
+    { name: 'Glasshouse Home on', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true) }, glasshouse: true },
+    // webOS 5 and 6, where each switch restarts the app manager: their note shows there only.
+    { name: 'webOS 6', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true),
+      supported: { ok: true, experimental: true, restartsApps: true } }, glasshouse: true }
   ];
   for (const c of cases) {
     const st = c.st;
@@ -1215,6 +1218,10 @@ async function visitHomeAvailability(browser, base, problems) {
         continue;
       }
       if (await page.locator('#home-hero').isVisible() !== c.glasshouse) fail('Glasshouse Home\'s switch ' + (c.glasshouse ? 'missing' : 'shown'));
+      const restarts = !!(st.supported && st.supported.restartsApps);
+      if (c.glasshouse && await page.locator('#home-restart-note').isVisible() !== restarts) {
+        fail('the note that a switch closes apps ' + (restarts ? 'missing' : 'shown on a TV it does not apply to'));
+      }
       if (await page.locator('#disc-system-tiles').isVisible() === c.glasshouse) fail('system apps ' + (c.glasshouse ? 'shown with Glasshouse Home on' : 'missing'));
       if (st.homeAutoLaunch !== undefined && (!await page.locator('#home-autolaunch').isVisible() || await page.locator('#home-autolaunch').isDisabled()))
         fail('Open Home at power-on missing or unusable');

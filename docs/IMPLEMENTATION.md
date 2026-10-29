@@ -1269,7 +1269,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 9; webOS 10 and 11 with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab (webOS 5, 6, 7, 9 and 10; webOS 11 with `allowExperimentalHome`). The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 

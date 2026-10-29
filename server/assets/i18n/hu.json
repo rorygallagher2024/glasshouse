@@ -1207,7 +1207,7 @@
  "srv.home.unknownPart": {"text": "A Kezdőképernyőnek nincs ilyen része", "from": "There is no such part of the Home screen"},
  "srv.home.unknownTile": {"text": "ez nincs a Glasshouse Home-on", "from": "that is not on Glasshouse Home"},
  "srv.home.unsupported": {"text": "Ennek a TV-nek a Kezdőképernyője innen nem módosítható", "from": "This TV's Home screen cannot be changed from here"},
- "srv.home.untested": {"text": "A Glasshouse Home-ot csak webOS 7, 9 és 10 rendszeren próbálták ki. Ezen a TV-n webOS {version} fut.", "from": "Glasshouse Home has been tried only on webOS 7, 9 and 10. This TV runs webOS {version}."},
+ "srv.home.untested": {"text": "A Glasshouse Home-ot eddig csak webOS 5, 6, 7, 9 és 10 rendszeren próbálták ki. Ezen a tévén webOS {version} fut.", "from": "Glasshouse Home has been tried only on webOS 5, 6, 7, 9 and 10. This TV runs webOS {version}."},
  "srv.home.wallUploadImage": {"text": "Válasszon érvényes, legfeljebb 1920 × 1080 képpontos JPEG-képet.", "from": "Choose a valid JPEG up to 1920 × 1080 pixels."},
  "srv.home.wallUploadSize": {"text": "A feltöltött JPEG-fájl legfeljebb 5 MB lehet, és a feltöltési kérésnek tartalmaznia kell a fájl méretét.", "from": "The uploaded JPEG must be at most 5 MB and state its size."},
  "srv.home.wallUploadSpace": {"text": "Nincs elég igazoltan szabad hely a háttérképhez.", "from": "Not enough confirmed free space for the wallpaper."},
@@ -2415,5 +2415,6 @@
  "ctl.keyboard.down": {"text": "Az LG billentyűzete nem látható a tévén. Előbb jelölj ki ott egy szövegmezőt, például egy keresőt vagy egy webcímet. Egyes alkalmazások saját billentyűzetet használnak.", "from": "LG’s keyboard is not up on the TV. Select a text field there first, such as a search box or a web address. Some apps use a keyboard of their own instead."},
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "apps.remoteKeys.toHomeAssistant": {"text": "A Home Assistantnak", "from": "To Home Assistant"},
- "srv.remoteKeys.notReported": {"text": "A Home Assistant nem kapja meg ennek a gombnak a lenyomásait", "from": "Home Assistant does not receive this key's presses"}
+ "srv.remoteKeys.notReported": {"text": "A Home Assistant nem kapja meg ennek a gombnak a lenyomásait", "from": "Home Assistant does not receive this key's presses"},
+ "home.restartsApps": {"text": "Ezen a tévén a Glasshouse Home be- vagy kikapcsolása, illetve a Home nyomva tartása az LG kezdőképernyőjéhez újraindítja a tévé alkalmazáskezelőjét, ami bezárja a nyitott alkalmazásokat.", "from": "On this TV, switching Glasshouse Home on or off, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."}
 }

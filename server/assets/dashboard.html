@@ -1067,7 +1067,9 @@ function glasshouseHomeRows(d) {
            press: d.enabled ? t('tv.home.switch.off', 'Press OK to use LG Home again') : t('tv.home.switch.on', 'Press OK to use Glasshouse Home'),
            hint: d.restorePending ? t('home.restoreRetry', 'Retry restoring LG Home before switching Glasshouse Home on again.')
                  : d.enabled ? t('home.isOnDesc', 'It opens in LG\u2019s Home\u2019s place: with the Home and Back buttons, and when the TV wakes on Home.')
-                 : t('home.isOffDesc', 'Nothing of LG\u2019s is changed: Glasshouse Home is laid over LG\u2019s Home while on, and switching off takes it away.') });
+                 : t('home.isOffDesc', 'Nothing of LG\u2019s is changed: Glasshouse Home is laid over LG\u2019s Home while on, and switching off takes it away.'),
+           warn: d.supported && d.supported.restartsApps
+             ? t('home.restartsApps', 'On this TV, switching Glasshouse Home on or off, or holding Home for LG\u2019s Home, restarts the TV\u2019s app manager, which closes the apps that are open.') : undefined });
   if (!d.enabled) return r;
   r.push(head(t('home.customisation', 'Home customisation')));
   if (d.supported.ok && d.hideLgHomeAtStartAvailable !== false) {
