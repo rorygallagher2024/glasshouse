@@ -112,6 +112,7 @@ function channelVideo(reply) {
       hz: rate > 0 ? Math.round(rate * 100) / 100 : null,
       interlaced: v.scanType === 'interlaced',
       broadcast: true,
+      context: v.context || null,
       chroma: null,
       bits: null,
       hdr: VIDEO_HDR.hasOwnProperty(hdr) ? VIDEO_HDR[hdr] : 'sdr',
@@ -122,8 +123,35 @@ function channelVideo(reply) {
   return null;
 }
 
+/*
+ * LG's Live TV banner names a channel's HDR from the broadcast service, not
+ * videooutput: inputcommon's ChannelDetailBannerController reads
+ * videoInfo.HDRType or hdrType (HLG, HDR10, Prime for Technicolor, DOLBY or
+ * DolbyVision). getCurrentVideoInfo answers for whichever broadcast is
+ * playing, here Home's preview, with the same context as the MAIN sink: on a
+ * G3 (webOS 9.2.2) a 704x576 SD channel read hdrType none and IsBT2020 false.
+ * Width and height read 0 until the format arrives.
+ */
+var BROADCAST_HDR = { HLG: 'hlg', HDR10: 'hdr10', Prime: 'technicolor', DOLBY: 'dolby_vision', DolbyVision: 'dolby_vision' };
+
+function broadcastHdr(info, context) {
+  var v = info && info.videoInfo;
+  if (!v || v.content !== 'dtv' || !v.video || (context && v.context && v.context !== context)) return null;
+  var type = v.video.HDRType || v.video.hdrType;
+  return BROADCAST_HDR.hasOwnProperty(type) ? BROADCAST_HDR[type] : null;
+}
+
 function channelSignal(port, cb) {
-  luna('com.webos.service.videooutput/getStatus', {}, function (r) { cb(channelVideo(r)); });
+  luna('com.webos.service.videooutput/getStatus', {}, function (r) {
+    var signal = channelVideo(r);
+    if (!signal) return cb(null);
+    luna('com.webos.service.utp.broadcast/getCurrentVideoInfo', {}, function (info) {
+      var hdr = broadcastHdr(info, signal.context);
+      if (hdr) signal.hdr = hdr;
+      delete signal.context;
+      cb(signal);
+    });
+  });
 }
 
 function notePlaying(reply) {
@@ -300,5 +328,6 @@ module.exports = {
   signal: signal,
   sourceHdr: sourceHdr,
   channelVideo: channelVideo,
+  broadcastHdr: broadcastHdr,
   refreshHz: refreshHz
 };

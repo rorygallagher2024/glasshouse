@@ -125,6 +125,10 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 /* The clock is right-aligned in a box sized for any time; previewing, it hugs
    its digits so the picture sits beside it. */
 .alternative #now.previewing #when{width:auto}
+/* Even-width figures keep the digits, and the preview beside them, still as
+   the minutes change: at the standard clock's size Outfit's own run from 245px
+   for 3:11 to 341px for 3:09. */
+.alternative #clock{font-variant-numeric:tabular-nums;-webkit-font-feature-settings:"tnum";font-feature-settings:"tnum"}
 .alternative:not(.arranging) .row > h2{display:none}
 .alternative .row{margin-bottom:10px}
 .alternative .tile{border-radius:18px;margin-right:12px;background:rgba(20,15,29,.45)}
@@ -1162,7 +1166,6 @@ html.faded #stage{opacity:0}
         via = shows.length ? t('home.now.channelShow', 'Channel {number}: {title}', { number: it.number, title: shows[0].title })
           : t('home.now.channel', 'Channel {number}', { number: it.number });
       }
-      if (tilePreview.blank) via = t('home.preview.blankVia', '{via}. No picture.', { via: via });
     } else if (!layout || layout.showLastOn === false) {
       // The source can arrive before its saved visibility. Keep the clock's space.
     } else if (lastOn.kind === 'input') {
@@ -1195,7 +1198,7 @@ html.faded #stage{opacity:0}
   var picture = null;
   var pictureRevision = 0;
   var pictureSource = null;
-  var HDR_NAMES = { hdr10: 'HDR10', hlg: 'HLG', dolby_vision: t('home.plate.dolby', 'Dolby Vision') };
+  var HDR_NAMES = { hdr10: 'HDR10', hlg: 'HLG', dolby_vision: t('home.plate.dolby', 'Dolby Vision'), technicolor: t('home.plate.technicolor', 'Technicolor HDR') };
 
   function refreshPicture() {
     var revision = ++pictureRevision;
@@ -1416,9 +1419,11 @@ html.faded #stage{opacity:0}
   var PREVIEW_START_MS = 4000;
   var PREVIEW_SIGNAL_MS = 1000;
   var PREVIEW_SIGNAL_TRIES = 3;
-  var PREVIEW_CHANNEL_INFO_MS = 800;
-  // BBC ONE HD on a G3 had not reported its format 3 s in; Sky News had.
-  var PREVIEW_CHANNEL_TRIES = 6;
+  // A G3's decoder had no format for an HD channel 1.8 s after the picture
+  // showed, and had it 1.2 s later; SD channels are quicker.
+  var PREVIEW_CHANNEL_INFO_MS = 500;
+  var PREVIEW_CHANNEL_POLL_MS = 400;
+  var PREVIEW_CHANNEL_TRIES = 15;
   // target: { key, row, item, port } - port for an input, 0 for a channel.
   var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null };
 
@@ -1480,15 +1485,26 @@ html.faded #stage{opacity:0}
    * The plate for what the preview shows: an input's signal off its receiver,
    * read once the receiver has a picture, or the mode a channel gets in SDR.
    */
+  /*
+   * A channel's format is polled whether or not the band shows, as it is also
+   * how a channel off air is told: BBC FOUR HD and BBC THREE HD in the
+   * afternoon on a G3 played with no format and a black picture.
+   */
   function loadPreviewInfo(target, gen, tries) {
-    if (!layout || layout.picture !== true) return;
+    var details = !!layout && layout.picture === true;
+    if (target.port && !details) return;
     if (tries === undefined) tries = target.port ? 1 : PREVIEW_CHANNEL_TRIES;
     getJson('/api/home/picture?kind=' + (target.port ? 'input&port=' + target.port : 'channel'), function (r) {
       if (gen !== tilePreview.gen || !r || !r.ok) return;
-      // A channel's decoder can still be starting: its format follows shortly.
-      if (!target.port && !r.signal && tries > 1) {
-        setTimeout(function () { if (gen === tilePreview.gen) loadPreviewInfo(target, gen, tries - 1); }, PREVIEW_SIGNAL_MS);
+      // A channel's decoder reports its format a moment after the picture
+      // shows; the band waits for it, rather than showing half and growing.
+      if (!target.port && !r.signal) {
+        if (tries > 1) {
+          return setTimeout(function () { if (gen === tilePreview.gen) loadPreviewInfo(target, gen, tries - 1); }, PREVIEW_CHANNEL_POLL_MS);
+        }
+        return blankPreview();
       }
+      if (!details) return;
       tilePreview.info = r;
       var sig = r.signal ? signalParts(r.signal) : [];
       $('pvMode').textContent = r.mode ? r.mode.display : '';

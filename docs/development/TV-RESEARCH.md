@@ -407,6 +407,84 @@ muted `<video>` with one `<source>`:
 How a busy tuner (a recording) or an encrypted channel shows to the page was
 not tried.
 
+## Broadcast HDR and preview metadata (G3, webOS 9.2.2)
+
+Read on 29 October 2026 from the office OLED55G36LA, during an existing
+Glasshouse Home preview run. These probes did not open a pipeline or tune.
+
+LG's Live TV badge reads `com.webos.service.utp.broadcast/getVideoInfo`
+with the app's `broadcastId`. In inputcommon's
+`Interfaces/ChannelBannerInterfaces/`, `responseGetVideoInfo` takes
+`response.videoInfo.video`; `ChannelDetailBannerController.qml` reads
+`HDRType || hdrType`. It displays `HLG` as HLG HDR, `HDR10` as HDR, `Prime`
+as Advanced HDR by Technicolor, and `DOLBY` or `DolbyVision` as Dolby Vision.
+`IsBT2020` controls a separate colour-space badge.
+
+The no-ID method also works while the page owns the preview:
+
+```sh
+sleep 4 | luna-send -n 1 -f \
+  luna://com.webos.service.utp.broadcast/getCurrentVideoInfo '{}'
+```
+
+During a BBC ONE Lon HD preview it returned `appId: com.webos.app.home`,
+`videoInfo.content: dtv` and `videoInfo.video` with `width: 1920`,
+`height: 1080`, `frameRate: 25`, `hdrType: none`, `IsBT2020: false`.
+`videoInfo.context` matched videooutput's MAIN sink `context`. Unlike
+videooutput's broadcast rate of `2500`, this method reports hertz.
+`getCurrentVideoInfo` selects the active broadcast internally, as confirmed
+in `utp-dvb`'s `cb_getCurrentVideoInfo`; it does not select by a supplied
+app ID. A transition can return `No resource` or zero dimensions. Match
+the app and content, and wait for non-zero dimensions before using it.
+The observed `getChannelState` replies contained `videoSignalState` and
+`channelScreensaverType`, without an HDR field.
+
+The ID from `com.webos.media/getActivePipelines` (`type: tv`) is not a UTP
+`broadcastId`: passing it to `getVideoInfo` returned error `-106`.
+`ls-monitor -j -f com.webos.service.utp.broadcast` showed the page's
+`open` reply returning a UTP UUID, for example
+`000008df-9f29-5b3d-97e2-063de2a3770b`. UTP translates it to a different
+legacy-broadcast ID, which is also the decoder context. The service's
+private introspection lists no broadcast-ID enumeration method. The no-ID
+video read avoids needing either ID for the picture format.
+
+Do not repeat `ls-monitor` on this G3. Claude-HDMI-preview reported a
+15:02 entry in `/tmp/faultmanager/kernel` on 29 October 2026:
+`fd leak is happened on "process = ls-hubd(1750) ... max = 1024"`,
+coinciding with these monitor probes. `ps -ef` at 15:11 showed no monitor
+remaining. The [C5 monitor fault](#ls-monitor-restarts-the-tv-webos-1031-c5)
+was already known; the G3's leak mechanism was not independently measured.
+
+During the same SDR previews, `/proc/lg/pe/hdr_status` contained
+`VPQ_PQ_MODE_INFO` with `[0]{hdrStatus:sdr(sdr),colorimetry:bt709,...}`
+for HD and `bt601` for SD. The picture settings read still returned
+`dimension: {input: default, dynamicRange: sdr}`. The engine status describes
+the current display processing; settings with an explicit `dtv` dimension
+read a stored picture preset. Neither is a per-channel HDR declaration.
+Named `dtv` reads returned `filmMaker` for `sdr`, `hdrStandard` for `hdr`
+and `dolbyHdrCinemaBright` for `dolbyHdr`, without an HDR broadcast playing.
+
+The API adapter's `tv/getChannelList` returned 183 terrestrial services,
+including data and radio, with no HDR/UHD field. Their DVB `serviceType`
+counts were `1: 96`, `2: 24`, `12: 37`, `22: 13`, `25: 13`. The HD entries
+were AVC (`25`, hexadecimal `0x19`); none declared HEVC (`0x1f` or
+`0x20`; [DVB service-type definitions](https://www.etsi.org/deliver/etsi_en/300400_300499/300468/01.18.00_20/en_300468v011800a.pdf),
+table 89). `iepg/getChannelList` additionally returned 354 IP services, all
+type 0, also without an HDR field. No catalogue entry had UHD, HDR or 4K
+in its name. A BBC ONE HD current-channel response reported
+`isHEVCChannel: false`. These results provide no known HDR broadcast
+test source; the IP catalogue does not establish its streams' live formats.
+
+For DVB signalling, VUI `transfer_characteristics: 16` identifies PQ.
+HLG10 can instead use VUI value `14` with
+`alternative_transfer_characteristics` SEI
+`preferred_transfer_characteristics: 18`. See DVB TS 101 154,
+[clauses 5.14.4.4.2.1 and 5.14.4.4.3.2](https://dvb.org/wp-content/uploads/2021/02/A001r18_Use-of-Video-and-Audio-Coding-in-Broadcast-and-Broadband-Applications_Draft_TS_101-154-v271_Nov-2021.pdf).
+Checking only `videoInfo.vui.transferCharacteristics === 18` would miss
+that signalling. Prefer LG's effective `hdrType`; BT.2020 or UHD alone
+does not establish HDR. Positive HLG/HDR10 broadcast detection in the page
+was not tested because no such source was identified.
+
 ## The picture of an input behind Home (G3, webOS 9.2.2)
 
 With a web app on screen, an HDMI input's receiver stays locked to its

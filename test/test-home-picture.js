@@ -198,9 +198,26 @@ var skyNews = { video: [
   { sink: 'SUB0', connected: false, connectedSource: 'unknown', width: 0, height: 0 }
 ] };
 assert.deepEqual(homePicture.channelVideo(skyNews), { width: 544, height: 576, hz: 25, interlaced: true, broadcast: true,
-  chroma: null, bits: null, hdr: 'sdr', vrr: false, allm: false });
+  context: null, chroma: null, bits: null, hdr: 'sdr', vrr: false, allm: false });
 assert.equal(homePicture.channelVideo({ video: [{ sink: 'MAIN', connected: true, contentType: 'vod', width: 3840, height: 2160 }] }), null,
   'an app\'s video is not a channel');
 console.log('  ✓ a channel\'s format off the main sink, its rate in hundredths of a hertz');
+
+// The broadcast service's reply for an SD channel in Home's preview on the G3.
+var sdInfo = { returnValue: true, appId: 'com.webos.app.home', videoInfo: { context: 'aB1b', content: 'dtv',
+  video: { width: 704, height: 576, frameRate: 25, IsBT2020: false, scanType: 'VIDEO_INTERLACED', hdrType: 'none' } } };
+assert.equal(homePicture.broadcastHdr(sdInfo, 'aB1b'), null, 'SDR names no HDR');
+function withType(key, type, context) {
+  var r = JSON.parse(JSON.stringify(sdInfo));
+  delete r.videoInfo.video.hdrType;
+  r.videoInfo.video[key] = type;
+  if (context) r.videoInfo.context = context;
+  return r;
+}
+assert.equal(homePicture.broadcastHdr(withType('HDRType', 'HLG'), 'aB1b'), 'hlg');
+assert.equal(homePicture.broadcastHdr(withType('hdrType', 'HDR10'), 'aB1b'), 'hdr10');
+assert.equal(homePicture.broadcastHdr(withType('hdrType', 'DOLBY'), 'aB1b'), 'dolby_vision');
+assert.equal(homePicture.broadcastHdr(withType('HDRType', 'HLG', 'other'), 'aB1b'), null, 'another broadcast\'s video');
+console.log('  ✓ a channel\'s HDR as LG\'s Live TV banner reads it');
 
 console.log('ALL test-home-picture.js assertions passed!');
