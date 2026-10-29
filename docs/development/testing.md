@@ -89,6 +89,8 @@ The worker itself stays Python 2.7 compatible for the TV.
 
 `test-idlesaver.js` checks that an idle screen saver refused by panel care is asked for again without its hold, and that the hold is put back when it closes or is still refused, but not over an app that has come to the front since. An app that still refuses it is not lifted again until another app is in front or the TV leaves On. Failed restores are retried, a lost policy reply remains tracked, and a server restart recovers an outstanding lift. Delayed idle callbacks respect later power changes, and a dashboard lift expires if no screen saver starts. Its own request's refusal, playback and a TV without `setEplAppInfo` are left alone. The assertions run on Node 0.10 and 0.12 as well as newer versions.
 
+`test-luna-absent.js` checks that a failed call to an LG service missing from the TV's service files makes later calls to it fail at once, for 10 minutes, while listed services and homebrew ones keep being called.
+
 `test-window-state.js` checks that short gaps in window focus do not publish empty remote attributes, persistent gaps do, standby clears immediately, and reconnects republish the retained state. The server boot test checks that the three SurfaceManager subscriptions start only with MQTT enabled.
 
 The state-push suite checks `keyboard_visible` from the window list: pushed on change, the app under it kept as the control target, false in standby, and left out on a TV without the method. `test-controls.js` checks that remote keys go to the remote's device while the keyboard is up and that typing, Enter and Backspace reach the input method service in order; `test-mqtt-remote.js` that typed text keeps its spaces and schedules no telemetry read.

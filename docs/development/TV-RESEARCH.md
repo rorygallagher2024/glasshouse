@@ -1203,6 +1203,18 @@ and others' work on webOS 10
   list was empty on HDMI 2. `com.webos.media/pause` with that `mediaId`
   answered `returnValue: false` and did not pause.
 
+## Services a TV does not have (webOS 3.9.3, 43UJ750V; webOS 9.2.2, C2)
+
+ls-hubd routes a call only to a service named on a `Name=` line of its
+service files (`/usr/share/luna-service2/services.d`,
+`/usr/share/dbus-1/system-services`); one line can name several, separated by
+`;`. On a C2 a call to an unlisted service, such as `com.webos.service.acb`,
+answers "Service does not exist" at once. On a 43UJ750V (webOS 3.9.3) a call
+to an unlisted one, such as `com.webos.service.audio` or
+`com.webos.service.videooutput`, gets no answer: luna-send waits out `-w` and
+logs "Shutting down with unsent QueryName message", and ls-hubd logs
+`LSHUB_NOT_LSTED` "Service not listed in service files" as an error (#1112).
+
 ## Boot and app state (webOS 9.2.2, C2)
 
 - The kernel command line has `snapshot resume=/dev/mmcblk0p51 criu_enabled`.
