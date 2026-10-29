@@ -383,6 +383,46 @@ step('apps in More apps are saved, kept by a layout that does not name them, and
 var clock = 0;
 function at(id) { clock += 1000; foreground(id); }
 
+step('the TV\'s tuner is the first tile in the Inputs row, on the channel it was last on, and opens Live TV', function (done) {
+  start({ order: { app: [], dev: ['hdmi1', 'hdmi2:stereo-70s'], ch: [] } });
+  tv.channels = ['c1', 'c2'];
+  tv.lastChannel = 'c2';
+  home.catalogue(function (c) {
+    assert.deepEqual(c.order.dev, ['tv', 'hdmi1', 'hdmi2:stereo-70s', 'hdmi2:playstation-5'], 'first in a row arranged before it was there');
+    assert.deepEqual(c.devices[0], { id: 'tv', name: 'TV', input: 'tv', tuner: true, port: 0, via: null, address: null,
+                                     channel: { number: 'c2', name: 'c2' } });
+    home.open({ kind: 'dev', id: 'tv' }, function (r) {
+      assert.ok(r.ok);
+      assert.deepEqual(tv.launches, [{ id: 'com.webos.app.livetv' }]);
+      home.setLayout({ order: { dev: ['hdmi1', 'tv'] }, showPreview: false }, function (r2) {
+        assert.ok(r2.ok);
+        assert.strictEqual(r2.layout.showPreview, false, 'the live preview can be switched off');
+        assert.strictEqual(r2.layout.previewAlways, false);
+        home.catalogue(function (c2) {
+          assert.deepEqual(c2.order.dev.slice(0, 2), ['hdmi1', 'tv'], 'and once placed, it stays where it was put');
+          done();
+        });
+      });
+    });
+  });
+});
+
+step('a TV with no channels tuned has no tuner tile, and the tile will not open', function (done) {
+  start(null);
+  home.catalogue(function (c) {
+    assert.strictEqual(c.order.dev.indexOf('tv'), -1);
+    assert.strictEqual(c.devices.filter(function (d) { return d.tuner; }).length, 0);
+    assert.strictEqual(home.normalise({}).showPreview, true, 'the live preview is on unless switched off');
+    assert.strictEqual(home.normalise({}).previewAlways, false, 'and kept on what was last on only once switched on');
+    assert.strictEqual(home.normalise({ previewAlways: true }).previewAlways, true);
+    home.open({ kind: 'dev', id: 'tv' }, function (r) {
+      assert.strictEqual(r.ok, false);
+      assert.deepEqual(tv.launches, []);
+      done();
+    });
+  });
+});
+
 function startRecent(cb) {
   clock = 1000;
   start({ enabled: true, channels: ['c1', 'c2', 'c3'], order: { app: ['cdp-30', 'youtube.leanback.v4', 'netflix'] } },
@@ -409,7 +449,7 @@ step('a row set to Last opened puts what was opened last first, from the view or
       // A G3 asks for the rows before sam names the view in front: Live TV still is.
       home.catalogue(function (c2) {
         assert.deepEqual(c2.order.app, ['netflix', 'cdp-30', 'youtube.leanback.v4', 'lg-home'], 'the LG Home tile stays last');
-        assert.deepEqual(c2.order.dev, ['hdmi2:stereo-70s', 'hdmi2:playstation-5', 'hdmi1']);
+        assert.deepEqual(c2.order.dev, ['tv', 'hdmi2:stereo-70s', 'hdmi2:playstation-5', 'hdmi1'], 'Live TV, opened last, puts the TV\'s tile first');
         assert.deepEqual(c2.order.ch, ['c3', 'c1', 'c2'], 'the channel Live TV is on');
         at(LG_HOME);
         setImmediate(function () {
@@ -436,7 +476,7 @@ step('a device\'s own tile counts for that device, and a row back in its own ord
       assert.ok(o.ok);
       at('com.webos.app.hdmi2');
       home.catalogue(function (c) {
-        assert.deepEqual(c.order.dev, ['hdmi2:playstation-5', 'hdmi1', 'hdmi2:stereo-70s'], 'not the receiver on the same input');
+        assert.deepEqual(c.order.dev, ['hdmi2:playstation-5', 'hdmi1', 'tv', 'hdmi2:stereo-70s'], 'not the receiver on the same input');
         home.flush();
         var kept = JSON.parse(fs.readFileSync(path.join(dir, 'home-recent.json'), 'utf8'));
         assert.ok(kept.dev['hdmi2:playstation-5'] && kept.dev.hdmi1);
@@ -464,7 +504,7 @@ step('a refused device tile leaves the next remote input switch recorded', funct
       tv.launchFails = false;
       at('com.webos.app.hdmi2');
       home.catalogue(function (c) {
-        assert.deepEqual(c.order.dev, ['hdmi2:stereo-70s', 'hdmi2:playstation-5', 'hdmi1'], 'the remote opens the whole input after a refused tile');
+        assert.deepEqual(c.order.dev, ['hdmi2:stereo-70s', 'hdmi2:playstation-5', 'hdmi1', 'tv'], 'the remote opens the whole input after a refused tile');
         done();
       });
     });
