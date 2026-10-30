@@ -73,6 +73,8 @@ Strings are cataloged in `server/assets/i18n/`. Refer to [Translating the dashbo
 
 Before opening a pull request, run the test suite and validation scripts locally:
 
+`scripts/check-all.sh` runs all of these side by side. One at a time:
+
 ```bash
 # Run all unit and integration tests
 node test/run-all.js
