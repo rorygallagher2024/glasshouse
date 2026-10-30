@@ -1377,8 +1377,21 @@ write is retried even where the local map already has the requested value.
 The ways back to LG's Home (its tile, holding Home, read from `/dev/input` by
 the remote-button worker, and a view in front without a heartbeat for 10 s, or
 20 s before its first) unmount and open LG's Home. The next app in front, or a
-short press of Home on LG's Home, mounts it again. The app in front comes from
-the live state's `application` group, which Glasshouse Home starts itself
+short press of Home on LG's Home, mounts it again. A quick press with the view
+in front puts it away instead: what sam last named in front that was not a
+Home screen, else LG's own record of the last input (`physicalLastInputApp`,
+`lastInputApp`) and Live TV where those name a Home screen, is opened back, so
+the input or app comes to the front and the mounted view goes behind it; the
+mount is kept, so the next Home press, a `hotKey` launch, opens the view again.
+Stopping the view is out of the question: sam's `last_input_handler` launches
+`defaultApps.home`, the mounted app, 1.0 to 1.2 s after the app in front is
+stopped, which reloads the same page. The press decides at its down event, so
+the one whose launch brought the view back cannot also put it away, and the
+heartbeat watch ignores a view away by choice. Where WebAppMgr has stopped a
+press cannot take the view off the front, as sam kept launching it and naming
+it in front whatever came, so that press stays the watch below, which starts it
+again.
+The app in front comes from the live state's `application` group, which Glasshouse Home starts itself
 while it is on, as the MQTT bridge starts the groups only with a broker. The app's own page waits on
 black for the server; being LG's Home's app, it cannot open LG's Home itself.
 `tvwebctl stop`, and the watchdog after a third restart in ten minutes, run

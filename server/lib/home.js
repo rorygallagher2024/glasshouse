@@ -15,6 +15,12 @@
  * the place again once something else is in front, or on a short press of
  * Home.
  *
+ * The Home button also toggles the view itself: pressed quickly while the
+ * view is in front, the input or app it covers is opened back and the view
+ * goes behind it; the next press, which the TV's own filters launch, opens
+ * the view again. Nothing is mounted or unmounted and LG's Home is not
+ * stopped, so the takeover keeps its place.
+ *
  * Earlier builds made a separate app (com.tvweb.home) the TV's Home
  * through its settings, and kept a snapshot of them. What those left behind
  * is undone once at start (cleanLegacy).
@@ -216,6 +222,10 @@ var configMtime = 0;
 var wasEnabled = false;
 // LG's Home is in its place, opened by one of the ways back to it.
 var escaped = false;
+// The view put away by Home itself: mounted, off screen, what it covers showing.
+var homeExited = false;
+// The press now down decided at its start whether a quick release puts the view away.
+var exitWanted = false;
 var foreground = '';
 // When something other than the view last came to the front, for the open watch.
 var otherOpenedAt = 0;
@@ -1043,6 +1053,65 @@ function toLgHome(why, cb) {
   });
 }
 
+/*
+ * An id that only brings a Home screen back to the front: LG's, the mounted
+ * view's own, or a build's Home app. Opening one of these leaves the panel on
+ * the view, reloading its page, which is what the Home button must not do.
+ */
+function isHomeScreen(id) {
+  return id === LG_HOME || id === HOME_APP || id === LG_FULLHOME;
+}
+
+/*
+ * What to open back when the Home button puts the view away: what sam named in
+ * front before the view took its place, else LG's own record of the last input,
+ * the one bootd starts the TV on. That record cannot be trusted while the view
+ * shows: sam names the mounted view as com.webos.app.home, so its last input
+ * reads as a Home screen, and builds that ran before this one left the view's
+ * own id in these settings. Where a record names a Home screen, Live TV: the
+ * input bootd falls back to, so the view is always off the front after a press.
+ */
+function lastInFront(cb) {
+  var id = lastSource && lastSource.appId;
+  if (id && !isHomeScreen(id)) return cb(id);
+  readSettings(['physicalLastInputApp', 'lastInputApp'], function (s) {
+    var want = LIVE_TV;
+    if (s) {
+      ['physicalLastInputApp', 'lastInputApp'].forEach(function (key) {
+        if (want !== LIVE_TV) return;
+        if (s && typeof s[key] === 'string' && !isHomeScreen(s[key])) want = s[key];
+      });
+    }
+    cb(want);
+  });
+}
+
+/*
+ * A quick Home press with the view in front: what the view covers is opened
+ * back, so the input or app the view was over comes to the front and the view
+ * goes behind it. Closing the view is not enough: sam's last_input_handler
+ * launches `defaultApps.home` again 1.0 to 1.2 s after the app in front is
+ * stopped, and the mounted view is that app, so closing it only reloads the
+ * same page. Launched back, the app takes the front by itself and nothing has
+ * to be stopped: the next Home press, which the TV's own filters launch,
+ * opens the view again, with the takeover still mounted.
+ */
+function exitHome(cb) {
+  cb = cb || function () {};
+  stopBeatWatch();
+  lastInFront(function (id) {
+    console.log('home: the Home button puts the view away over ' + id);
+    homeExited = true;
+    launch(id, null, function (r) {
+      if (r.ok) return cb({ ok: true });
+      homeExited = false;
+      console.error('home: the TV would not open ' + id + ' back: ' + r.error);
+      if (viewInFront() && powerActive) watchBeat(BEAT_GRACE_MS);
+      cb({ ok: false, error: r.error });
+    });
+  });
+}
+
 // ---------------------------------------------------------------- the switch
 
 /*
@@ -1062,6 +1131,7 @@ function switchTo(on, cb) {
         if (r.ok) holdLgHome(want);
         if (r.ok) {
           console.log('home: ' + (want ? 'Glasshouse Home is in LG\'s Home\'s place' : 'LG\'s Home is in its place'));
+          homeExited = false;
           if (want && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
         }
         batch.forEach(function (f) { f(r); });
@@ -1679,7 +1749,8 @@ function watchBeat(ms) {
   beatTimer = setTimeout(function () {
     beatTimer = null;
     // Switched off into standby the view stops beating; nothing is on screen to replace.
-    if (!viewInFront() || !powerActive) return;
+    // Put away by a Home press, the view is away by choice, not stuck.
+    if (homeExited || !viewInFront() || !powerActive) return;
     function hung() {
       console.error('home: the Glasshouse Home view is not answering');
       recoverView('view not answering', false);
@@ -1728,6 +1799,7 @@ function foregroundChanged(id) {
   if (!readConfig().enabled) return;
   noteForeground(was, id);
   if (id === LG_HOME) {
+    if (viewInFront()) homeExited = false;
     if (was !== LG_HOME && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
     return;
   }
@@ -1748,7 +1820,8 @@ function foregroundChanged(id) {
   });
 }
 
-// The remote's Home button, as remotebuttons reports it: held, LG's Home.
+// The remote's Home button, as remotebuttons reports it: a quick press toggles
+// the view, held gives LG's Home its place.
 function homeKey(down) {
   var wasHeld = !holdTimer && homeDownAt && nowMs() - homeDownAt >= HOLD_MS;
   if (holdTimer) clearTimeout(holdTimer);
@@ -1759,18 +1832,30 @@ function homeKey(down) {
      * A short press on LG's Home, opened by one of the ways back to it: the TV
      * opens LG's Home again, which changes nothing in front. Stopping LG's
      * Home once the view has its place makes the TV open the view.
+     *
+     * With the view in front, the same quick press puts it away instead: what
+     * the view covers, an input or an app, is opened back and Home goes to the
+     * background behind it. The press decided that at its start, so the press
+     * whose launch brought the view back cannot also put it away.
      */
     var shortPress = homeDownAt && !wasHeld;
     homeDownAt = 0;
+    var wantedExit = exitWanted;
+    exitWanted = false;
     if (shortPress && escaped && foreground === LG_HOME) {
       escaped = false;
       switchTo(true, function () {});
+    } else if (shortPress && wantedExit) {
+      exitHome();
     } else if (shortPress && !escaped && takeover.mounted()) {
       watchOpen(false, OPEN_GRACE_MS);
     }
     return;
   }
   homeDownAt = nowMs();
+  // Where the app manager that runs the view has stopped, there is nothing to
+  // put away: that press stays the watch below, which starts it again.
+  exitWanted = viewInFront() && webAppMgrRunning() !== false;
   if (escaped) return;
   holdTimer = setTimeout(function () {
     holdTimer = null;
@@ -2038,6 +2123,8 @@ function init(opts) {
   configMtime = 0;
   wasEnabled = false;
   escaped = false;
+  homeExited = false;
+  exitWanted = false;
   foreground = '';
   lastSource = null;
   powerActive = true;

@@ -8,7 +8,9 @@
  * LG's notifications and search are on the Apps row; the ways back to LG's Home give its
  * place back until something else is in front; what earlier builds changed is undone once; and a view
  * that sends no heartbeat, or none after a Home press, gets WebAppMgr started
- * again where it is not running, and is otherwise replaced by LG's Home
+ * again where it is not running, and is otherwise replaced by LG's Home; a quick
+ * press of Home with the view in front opens what the view covers back, so the
+ * next press opens the view again
  *
  * The mount is a symlink here: lib/home-takeover tells a mounted directory by
  * its inode, which a symlink shares. sam is a reader of whatever appinfo.json
@@ -1495,6 +1497,68 @@ step('held, Home opens LG\'s Home; a short press there brings Glasshouse Home ba
         wait(50, function () {
           assert.ok(taken(), 'a short press takes it again');
           home.disable(function () { done(); });
+        });
+      });
+    });
+  });
+});
+
+step('a quick press with the view in front opens what it covers back, and the next press opens the view again', function (done) {
+  start({ enabled: true });
+  home.start();
+  wait(50, function () {
+    assert.ok(taken(), 'Glasshouse Home is in LG\'s Home\'s place');
+    foreground(LG_HOME);
+    wait(50, function () {
+      home.homeKey(true);
+      wait(50, function () {
+        home.homeKey(false);
+        wait(50, function () {
+          assert.ok(tv.launched.indexOf('com.webos.app.hdmi2') !== -1,
+            'the quick press opens back what the view covers');
+          assert.ok(taken(), 'the takeover keeps its place');
+          foreground('com.webos.app.hdmi2');
+          wait(50, function () {
+            assert.strictEqual(tv.samType, 'web', 'away by choice, not answered by LG\'s Home');
+            home.homeKey(true);
+            wait(50, function () {
+              home.homeKey(false);
+              wait(50, function () {
+                assert.ok(tv.launched.indexOf('com.webos.app.hdmi2') ===
+                  tv.launched.lastIndexOf('com.webos.app.hdmi2'), 'the press that opened the view does not open it back');
+                foreground(LG_HOME);
+                home.beat();
+                wait(50, function () {
+                  assert.ok(taken(), 'the view is still the mounted app the TV opened');
+                  done();
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
+// LG's own record of the last input naming a Home screen: opening it back would
+// only reload the view, which is what an earlier build left in these settings.
+step('a quick Home press with LG\'s record naming a Home screen opens Live TV back', function (done) {
+  start({ enabled: true });
+  home.start();
+  wait(50, function () {
+    tv.settings.physicalLastInputApp = OLD_APP;
+    tv.settings.lastInputApp = OLD_APP;
+    assert.ok(taken(), 'Glasshouse Home is in LG\'s Home\'s place');
+    foreground(LG_HOME);
+    wait(50, function () {
+      home.homeKey(true);
+      wait(50, function () {
+        home.homeKey(false);
+        wait(50, function () {
+          assert.ok(tv.launched.indexOf('com.webos.app.livetv') !== -1, 'Live TV opened back, not the Home screen in the record');
+          assert.strictEqual(tv.launched.indexOf(OLD_APP), -1, 'LG\'s record of a Home screen never opened back');
+          done();
         });
       });
     });
