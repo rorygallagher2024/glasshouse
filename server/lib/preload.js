@@ -46,11 +46,12 @@ var KEY = 'com.webos.service.preloadmanager.supportAppList';
 var POLICY_URI = 'com.webos.service.preloadmanager/getPreloadPolicy';
 
 /*
- * Entries the TV relies on, never offered: Home, the inputs and their guide,
- * screen sharing, voice search and the web app container. Each is under
- * 100 MB, and switching one off risks a slow or broken Home or input.
+ * Entries the TV relies on, never offered: Home, the inputs (HDMI, and USB-C
+ * on a C5) and their guide, screen sharing, voice search and the web app
+ * container. Each is under 100 MB, and switching one off risks a slow or
+ * broken Home or input.
  */
-var ESSENTIAL = /^(com\.webos\.app\.(home|livetv|livemenu|hdmi\d*|miracast(-overlay)?|voice|container|inputcommon)|airplay)$/;
+var ESSENTIAL = /^(com\.webos\.app\.(home|livetv|livemenu|hdmi\d*|usbc\d*|miracast(-overlay)?|voice|container|inputcommon)|airplay)$/;
 
 var lunaFn = null;
 var stateFile = null;
