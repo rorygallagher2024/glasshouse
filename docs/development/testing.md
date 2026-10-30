@@ -124,6 +124,8 @@ and fails on any warning Home Assistant logs: a field missing from the payload
 is logged on every message, which was tens of thousands of lines an hour with
 a few TVs (#761).
 
+The job keeps the installed Home Assistant for a week, so it runs the newest release from the first run each week, the weekly scheduled one included.
+
 It runs when the server or the check changes, not for documentation, and
 weekly, since Home Assistant is not pinned: a release that starts rejecting a
 config shows there first.
