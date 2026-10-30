@@ -153,6 +153,16 @@ function renderHome() {
     updateToggle(previewPill, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     previewPill.disabled = !homeWritable();
   }
+  // Its options, while it is on.
+  [['home-preview-always', 'previewAlways'], ['home-preview-tile', 'previewInTile']].forEach(([id, field]) => {
+    const row = q(id + '-row');
+    if (row) row.hidden = !st.supported.ok || !st.layout || st.layout.livePreview !== true;
+    const btn = q(id);
+    if (!btn) return;
+    const on = !!st.layout && st.layout[field] === true;
+    updateToggle(btn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    btn.disabled = !homeWritable();
+  });
   document.querySelectorAll('.home-show-row').forEach(row => { row.hidden = !st.supported.ok; });
   // Alternative View's rows have no titles, so no app count beside them.
   const altView = !!st.layout && st.layout.view === 'alternative';
@@ -590,6 +600,10 @@ function homePicture() {
 
 function homeLivePreview() {
   homeSaveLayout({ livePreview: homeLayout.livePreview !== true });
+}
+
+function homePreviewOption(field) {
+  homeSaveLayout({ [field]: homeLayout[field] !== true });
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.

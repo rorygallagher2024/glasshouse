@@ -1079,6 +1079,20 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-preview" onclick="homeLivePreview()">&mdash;</button></div>
     </div>
+    <div class="prot-row home-gh-row" id="home-preview-always-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewAlways">Keep the preview on</div>
+        <div class="prot-desc" data-t="home.previewAlwaysDesc">The preview runs whenever Glasshouse Home is on screen, not only while a tile with one is chosen: the HDMI input last watched, or otherwise the TV on its last channel. Choosing another input or channel moves it there.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-always" onclick="homePreviewOption('previewAlways')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-preview-tile-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewInTile">Preview in the tile</div>
+        <div class="prot-desc" data-t="home.previewInTileDesc">The preview fills the tile it shows, under the tile’s own name, rather than sitting beside the clock with the picture details under it.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-tile" onclick="homePreviewOption('previewInTile')">&mdash;</button></div>
+    </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.showClock">Clock and date</div>

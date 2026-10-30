@@ -27,7 +27,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    Every HDMI port, plus separate tiles for connected HDMI-CEC devices (for example, *"HDMI 2, through STEREO 70s"*). Selecting a CEC tile wakes the device and switches receivers to that source; inactive ports appear dimmed. Inputs can be hidden one by one, like apps. Beside that, **Hide inputs with nothing connected**, a switch in the Inputs row's settings on the dashboard and in the TV app, leaves out ports with nothing plugged in instead of dimming them, marked **Left out**; they show, dimmed, while arranging, and come back as soon as something is plugged in. An input is left out if it is hidden or, with that switch on, has nothing connected.
+    A **TV** tile for the TV's own tuner comes first, with the channel it was last on; selecting it opens Live TV. It is there on TVs with channels tuned. After it, every HDMI port, plus separate tiles for connected HDMI-CEC devices (for example, *"HDMI 2, through STEREO 70s"*). Selecting a CEC tile wakes the device and switches receivers to that source; inactive ports appear dimmed. Inputs can be hidden one by one, like apps. Beside that, **Hide inputs with nothing connected**, a switch in the Inputs row's settings on the dashboard and in the TV app, leaves out ports with nothing plugged in instead of dimming them, marked **Left out**; they show, dimmed, while arranging, and come back as soon as something is plugged in. An input is left out if it is hidden or, with that switch on, has nothing connected.
 
 -   **Channels**
 
@@ -58,6 +58,8 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
     ---
 
     When **Live preview** is switched on, resting on an input or a TV channel for a moment shows it live and silent in the top right, with its name and programme beside it. With **Picture details** on too, the plate moves beside the picture, level with its foot, and describes what it shows: the input's signal as it arrives, or the channel's resolution, frame rate and HDR as the tuner decodes it, and the picture mode and OLED light it gets. Devices behind one receiver share its HDMI input, so each shows what that input shows. An input with nothing coming in, or a channel off air, says so. Moving to another input takes the TV's HDMI receiver off the one that was on, without sending anything over CEC, and a channel previewed this way does not become the TV's last channel. It is off by default.
+
+    Resting on the **TV** tile previews the channel it was last on. Two options show under Live preview while it is on, both off by default. **Keep the preview on** runs the preview whenever Glasshouse Home is on screen, not only while a tile with one is chosen: on the HDMI input last watched, or otherwise on the TV's last channel; choosing another input or channel moves it there. **Preview in the tile** shows it in the tile it previews, under the tile's own name, rather than beside the clock with the picture details under it.
 
     Changing **Picture details** shows or hides the strip during a preview, without restarting the picture.
     Pressing **OK** releases the preview while the input or channel opens.
@@ -204,7 +206,7 @@ Rows and tiles can be arranged from the **web dashboard**, the **TV app**, or **
 
 The Home tab's **Home customisation** section holds what applies to whichever Home is the TV's, in one column with each switch on the right:
 
-* While Glasshouse Home is on: **Open Home at power-on**, Glasshouse Home's own options (**Hide LG's Home while the TV starts**, **Picture details**, **Live preview**, **Clock and date**, **Rows along the bottom**, **Alternative View**, **Last watched**, **App count**, **CEC addresses**, **Search**, **Fade in and out**).
+* While Glasshouse Home is on: **Open Home at power-on**, Glasshouse Home's own options (**Hide LG's Home while the TV starts**, **Picture details**, **Live preview**, **Keep the preview on**, **Preview in the tile**, **Clock and date**, **Rows along the bottom**, **Alternative View**, **Last watched**, **App count**, **CEC addresses**, **Search**, **Fade in and out**).
 * While LG's Home is: **Open Home at power-on**, **Home screen layout** and **Hide home screen system apps**.
 
 Each appears where the TV has it. A TV Glasshouse Home is not offered on, such as a webOS 11 TV without `allowExperimentalHome`, still has the Home tab for these; there it holds Open Home at power-on and whichever of LG's Home options the TV has. The TV app's Home section has the same rows.

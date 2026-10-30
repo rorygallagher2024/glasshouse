@@ -104,6 +104,15 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #pvSig{margin-top:5px;font-size:19px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #pvSig span+span{margin-left:16px}
 #now.previewing #plate{display:none}
+/* With Preview in the tile, the preview fills the tile it shows: the tile's
+   own text over a shade on the picture's left, nothing below it. */
+#rows #preview{position:absolute;left:0;top:0;width:100%;height:100%;margin:0;box-shadow:none;border-radius:inherit;overflow:hidden;z-index:0}
+#rows #preview:after{border:0;background:-webkit-linear-gradient(left,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15));
+  background:linear-gradient(90deg,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15))}
+#rows #preview video{object-fit:cover}
+#rows #preview.info #pvInfo,#rows #preview.blank{display:none}
+.tile.live>div{position:relative;z-index:1}
+.row .tile.live{opacity:1}
 
 /* The rows sit centred between the clock and the arrange bar, so three rows
    land a little below where they used to and fewer settle lower. The spacers shrink first, so rows taller than the space run on down
@@ -703,7 +712,7 @@ html.faded #stage{opacity:0}
     }
     if (kind === 'dev') {
       var ports = [];
-      items('dev').forEach(function (d) { if (!d.unused && ports.indexOf(d.port) === -1) ports.push(d.port); });
+      items('dev').forEach(function (d) { if (!d.unused && !d.tuner && ports.indexOf(d.port) === -1) ports.push(d.port); });
       return ports.length === 1 ? t('home.row.inputsNoteOne', 'Devices on HDMI {port}', { port: ports[0] })
         : t('home.row.inputsNote', 'Devices on {n} HDMI inputs', { n: ports.length });
     }
@@ -739,6 +748,7 @@ html.faded #stage{opacity:0}
     // what was last on leaves the rows, and where they are scrolled, alone.
     var changed = html !== renderedRows;
     if (changed) {
+      parkPreview();
       $('rows').innerHTML = html;
       renderedRows = html;
     }
@@ -794,6 +804,7 @@ html.faded #stage{opacity:0}
         hiddenLabel + folderLabel + '</div>';
     },
     dev: function (d, i) {
+      if (d.tuner) return tunerTileHtml(d, i);
       var last = layout.showLastOn !== false && lastOn.kind === 'input' && lastOn.port === d.port &&
         (!lastOn.devices || lastOn.devices.indexOf(d.id) !== -1);
       var cls = 'tile dev' + (last ? ' last' : '') + (d.unused ? ' unused' : '') + (hidden('dev', d.id) ? ' hidden' : '');
@@ -824,6 +835,17 @@ html.faded #stage{opacity:0}
         '<div class="cat">' + esc(r.category || (app ? app.title : '')) + '</div></div>';
     }
   };
+
+  // The TV's own tuner, first in Inputs: Live TV, on the channel it was last on.
+  function tunerTileHtml(d, i) {
+    var last = layout.showLastOn !== false && lastOn.kind === 'channel';
+    var cls = 'tile dev tuner' + (last ? ' last' : '') + (hidden('dev', d.id) ? ' hidden' : '');
+    var path = d.channel ? d.channel.number + ' ' + d.channel.name : '';
+    return '<div class="' + cls + '" data-c="' + i + '"><div><div class="nm">' + esc(d.name) + '</div>' +
+      '<div class="path">' + esc(path) + '</div></div>' +
+      '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : t('ctl.liveTv', 'Live TV')) + '</em><span></span></div>' +
+      hiddenLabel + '</div>';
+  }
 
   // noScroll: focus only, as the pointer does, leaving each row where it is.
   function applyFocus(instant, noScroll) {
@@ -1154,7 +1176,7 @@ html.faded #stage{opacity:0}
     $('mer').textContent = p[1];
     $('mer').hidden = !p[1];
     $('date').textContent = dateText(d);
-    var kind = '', title = '', via = '', pv = $('preview').className ? tilePreview.target : null;
+    var kind = '', title = '', via = '', pv = $('preview').className && !inTile() ? tilePreview.target : null;
     if (pv) {
       // The source names what the preview shows, and is Last watched again once it closes.
       var it = pv.item;
@@ -1433,33 +1455,105 @@ html.faded #stage{opacity:0}
   var PREVIEW_CHANNEL_POLL_MS = 400;
   var PREVIEW_CHANNEL_TRIES = 15;
   // target: { key, row, item, port } - port for an input, 0 for a channel.
-  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null };
+  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null, inTile: false };
+
+  // What a tile previews: a connected input, a TV channel, or the TV's tile,
+  // which shows the channel it was last on. col is the tile's place in its row.
+  function tileTarget(row, it, col) {
+    if (!it) return null;
+    if (row === 'dev' && it.tuner) {
+      var ch = it.channel;
+      return ch && ch.id && !hidden('dev', it.id) ? { key: 'ch' + ch.id, row: row, col: col, item: ch, port: 0 } : null;
+    }
+    if (row === 'dev' && !it.unused && it.port >= 1 && it.port <= 4) return { key: 'hdmi' + it.port, row: row, col: col, item: it, port: it.port };
+    if (row === 'ch' && !it.radio && it.id) return { key: 'ch' + it.id, row: row, col: col, item: it, port: 0 };
+    return null;
+  }
+
+  /*
+   * With Keep the preview on, what was last on while no tile with a preview
+   * is chosen: the HDMI input last watched, or the TV on its last channel.
+   * With Preview in the tile it needs a tile to show in.
+   */
+  function keptTarget() {
+    var list = items('dev'), tuner = null, i, target;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].tuner) { if (!tuner) tuner = tileTarget('dev', list[i], i); continue; }
+      if (lastOn.kind === 'input' && list[i].port === lastOn.port && (target = tileTarget('dev', list[i], i))) return target;
+    }
+    if (lastOn.kind === 'channel' && lastOn.channel && lastOn.channel.id) {
+      if (tuner) return { key: 'ch' + lastOn.channel.id, row: 'dev', col: tuner.col, item: lastOn.channel, port: 0 };
+      if (layout.previewInTile !== true) return { key: 'ch' + lastOn.channel.id, row: 'dev', col: -1, item: lastOn.channel, port: 0 };
+    }
+    return tuner;
+  }
 
   // What the tile in focus would preview: a connected input or a TV channel.
   // Devices on one input share its key, so moving between them keeps the picture.
   function previewTarget() {
     if (!layout || layout.livePreview !== true || document.hidden || opening) return null;
-    if (state.arranging || state.bar >= 0 || state.rail || recents.open || finder.open || folder.open) {
+    if (state.arranging || recents.open || finder.open || folder.open) {
       tilePreview.opened = null;
       return null;
     }
-    var row = rowKey(), it = items(row)[colOf(row)];
-    if (!it) { tilePreview.opened = null; return null; }
-    var target = null;
-    if (row === 'dev' && !it.unused && it.port >= 1 && it.port <= 4) target = { key: 'hdmi' + it.port, row: row, item: it, port: it.port };
-    if (row === 'ch' && !it.radio && it.id) target = { key: 'ch' + it.id, row: row, item: it, port: 0 };
+    var onRows = state.bar < 0 && !state.rail;
+    var row = rowKey(), col = colOf(row), it = onRows ? items(row)[col] : null;
+    var target = tileTarget(row, it, col);
+    if (!target && layout.previewAlways === true) target = keptTarget();
+    if (!target) { tilePreview.opened = null; return null; }
     // A guide or catalogue reply can repaint Home before the input opens.
     // Keep that tile released until focus moves away or Home returns.
-    if (target && target.key === tilePreview.opened) return null;
+    if (target.key === tilePreview.opened) return null;
     tilePreview.opened = null;
     return target;
+  }
+
+  // ---- Preview in the tile
+
+  // Where the preview sits beside the clock, to go back to from a tile.
+  var previewHome = { parent: null, next: null };
+
+  function inTile() { return !!layout && layout.previewInTile === true; }
+
+  function previewTile(target) {
+    if (!target || target.col < 0) return null;
+    return document.querySelector('.row[data-key="' + target.row + '"] .tile[data-c="' + target.col + '"]');
+  }
+
+  // Back beside the clock: before the rows are rebuilt, and as it stops.
+  function parkPreview() {
+    var pv = $('preview');
+    if (!previewHome.parent) return;
+    var tile = pv.parentNode;
+    if (tile === previewHome.parent) return;
+    if (tile && tile.className) tile.className = tile.className.replace(/ live\b/g, '');
+    previewHome.parent.insertBefore(pv, previewHome.next);
+  }
+
+  // Into the tile it shows, with Preview in the tile; beside the clock otherwise.
+  function placePreview() {
+    var pv = $('preview');
+    if (!previewHome.parent) { previewHome.parent = pv.parentNode; previewHome.next = pv.nextSibling; }
+    var tile = inTile() && pv.className ? previewTile(tilePreview.target) : null;
+    if (!tile) return parkPreview();
+    if (pv.parentNode === tile) return;
+    parkPreview();
+    tile.appendChild(pv);
+    tile.className += ' live';
   }
 
   // Called wherever focus or what covers the rows may have changed.
   function followPreview() {
     var next = previewTarget();
     if (next && tilePreview.target && next.key === tilePreview.target.key) {
-      if (tilePreview.target.item !== next.item) { tilePreview.target = next; if ($('preview').className) renderNow(); }
+      var moved = tilePreview.target.item !== next.item || tilePreview.target.col !== next.col || tilePreview.target.row !== next.row;
+      tilePreview.target = next;
+      if ($('preview').className) {
+        // A rebuilt row, another tile on the same input, or the place switched on a dashboard.
+        if (inTile() !== tilePreview.inTile) { tilePreview.inTile = inTile(); $('now').className = tilePreview.inTile ? '' : 'previewing'; moved = true; }
+        placePreview();
+        if (moved) renderNow();
+      }
       var details = layout.picture === true;
       if (details !== tilePreview.details) {
         tilePreview.details = details;
@@ -1498,6 +1592,7 @@ html.faded #stage{opacity:0}
     releaseVideo();
     $('preview').className = '';
     $('now').className = '';
+    parkPreview();
     if (!shown) return;
     renderNow();
     // The preview may have moved the receiver off the input the plate describes.
@@ -1574,7 +1669,9 @@ html.faded #stage{opacity:0}
     var played = v.play();
     if (played && played.then) played.then(null, function () {});
     $('preview').className = 'on';
-    $('now').className = 'previewing';
+    tilePreview.inTile = inTile();
+    placePreview();
+    $('now').className = tilePreview.inTile ? '' : 'previewing';
     renderNow();
     tilePreview.timer = setTimeout(function () { if (current() && !tilePreview.playing) blankPreview(); }, PREVIEW_START_MS);
   }

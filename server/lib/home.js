@@ -61,6 +61,8 @@ var PROMO_APPS = ['com.webos.app.lgchannels', 'com.webos.app.sportsteamsettings'
   'com.webos.app.lifeonscreen', 'amazon.alexa.view', 'com.webos.app.camera'];
 // The view's own way back to LG's Home: last in the Apps row, and never hidden.
 var LG_HOME_TILE = 'lg-home';
+// The Inputs row's tile for the TV's own tuner, which opens Live TV.
+var TUNER_TILE = 'tv';
 /*
  * LG's notifications and search, reached from its Home's sidebar and from no
  * other screen. Neither has a launch point, so the Apps row lists them from
@@ -322,6 +324,11 @@ function defaults() {
     showLastOn: true,
     showAppCount: true,
     showCec: true,
+    // The live preview kept on what was last on whenever the view is on
+    // screen, rather than only while a tile is chosen.
+    previewAlways: false,
+    // The live preview in the tile it shows, rather than beside the clock.
+    previewInTile: false,
     // The rows centred below the top strip, or along the bottom as on LG's Home.
     rowsBottom: false,
     // standard, or alternative: a smaller clock on the right, and the rows
@@ -400,6 +407,8 @@ function normalise(raw) {
   SHOW_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.rowsBottom = raw.rowsBottom === true;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
+  d.previewAlways = raw.previewAlways === true;
+  d.previewInTile = raw.previewInTile === true;
   d.search = raw.search === true;
   d.recommended = raw.recommended === true;
   // Its cards come and go with the apps' lists, so it keeps no order of its own.
@@ -542,6 +551,8 @@ function setLayout(body, cb) {
     showLastOn: typeof body.showLastOn === 'boolean' ? body.showLastOn : c.showLastOn,
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
+    previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
+    previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
@@ -574,7 +585,7 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, colours: c.colours,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, previewAlways: c.previewAlways, previewInTile: c.previewInTile, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
 }
@@ -798,9 +809,12 @@ function catalogue(cb) {
 function rows(cb) {
   var c = readConfig();
   launchPoints(function (apps) {
-    devices(function (devs) {
+    devices(function (hdmi) {
       channelList(function (chans) {
+       tunerTile(chans, function (tuner) {
+        var devs = hdmi || tuner ? (tuner ? [tuner] : []).concat(hdmi || []) : null;
         recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs)); });
+       });
       });
     });
   });
@@ -815,7 +829,7 @@ function build(c, apps, devs, chans, recs) {
   picked.sort(function (a, b) { return c.channels.indexOf(a.id) - c.channels.indexOf(b.id); });
   var order = {
     app: ordered(c.order.app, appIds),
-    dev: ordered(c.order.dev, devIds),
+    dev: tunerFirst(c.order.dev, ordered(c.order.dev, devIds)),
     ch: picked.map(function (p) { return p.id; }),
     rec: []
   };
@@ -853,6 +867,29 @@ function recommendedCards(c, cb) {
 }
 
 /*
+ * The TV's own tuner as a tile in the Inputs row, with the channel it was
+ * last on, or null on a TV with no channels tuned. Opening it opens Live TV.
+ */
+function tunerTile(chans, cb) {
+  if (!chans || !chans.length) return cb(null);
+  luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
+    var chId = r && typeof r.channelId === 'string' ? r.channelId : null;
+    /** @type {any} */
+    var hit = null;
+    chans.forEach(function (ch) { if (ch.id === chId) hit = ch; });
+    cb({ id: TUNER_TILE, name: 'TV', input: 'tv', tuner: true, port: 0, via: null, address: null,
+         channel: hit ? { id: hit.id, number: hit.number, name: hit.name } : null });
+  });
+}
+
+// The TV's tile goes first in a row arranged before it existed, rather than last.
+function tunerFirst(saved, order) {
+  var i = order.indexOf(TUNER_TILE);
+  if (i <= 0 || saved.indexOf(TUNER_TILE) !== -1) return order;
+  return [TUNER_TILE].concat(order.slice(0, i), order.slice(i + 1));
+}
+
+/*
  * A row's ids, the one opened last first. Those never opened since the row
  * was set to Last opened follow in the row's own order, and the LG Home tile
  * stays last. An input opened from the TV rather than from its tile counts
@@ -886,6 +923,7 @@ function noteOpened(row, id) {
 function noteForeground(was, id) {
   if (was === LIVE_TV && id !== LIVE_TV) noteLiveChannel(function () {});
   if (!id || id === HOME_APP || id === LG_HOME) return;
+  if (id === LIVE_TV && was !== LIVE_TV) noteOpened('dev', TUNER_TILE);
   var m = /^com\.webos\.app\.hdmi(\d)$/.exec(id);
   if (m) {
     var fromTile = tileInput && tileInput.app === id && nowMs() - tileInput.at < TILE_OPEN_MS;
@@ -1066,6 +1104,12 @@ function open(body, cb) {
       var known = (apps || []).some(function (a) { return a.id === id; });
       if (!known) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
       launch(id, null, opened('app', id, cb));
+    });
+  }
+  if (kind === 'dev' && id === TUNER_TILE) {
+    return channelList(function (chans) {
+      if (!chans || !chans.length) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+      launch(LIVE_TV, null, opened('dev', TUNER_TILE, cb));
     });
   }
   if (kind === 'dev') {

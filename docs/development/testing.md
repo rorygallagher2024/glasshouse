@@ -121,6 +121,13 @@ off releases its media source. Desktop media methods are stubbed; webOS
 decoding, sound and CEC still need a real TV.
 Delayed guide and catalogue replies cannot reopen a preview after **OK**;
 a refused launch or returning to Home allows it again.
+A second browser check covers the TV tile and the preview's options: the TV
+tile previews its last channel as a broadcast preview, an app tile previews
+nothing, **Preview in the tile** puts the preview in the tile in focus and keeps
+it there when the rows are rebuilt, and **Keep the preview on** shows the input
+last watched with the focus on Apps. `test-home.js` checks the TV tile is first
+in the Inputs row on a TV with channels, absent without them, opens Live TV,
+and that both options default to off and save.
 
 `test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved.
 
