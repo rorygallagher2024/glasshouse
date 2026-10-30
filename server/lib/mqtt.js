@@ -105,9 +105,9 @@ MiniMQTT.prototype.on = function(event, fn) {
   this.listeners[event].push(fn);
 };
 
-MiniMQTT.prototype.emit = function(event, a, b) {
+MiniMQTT.prototype.emit = function(event, a, b, c) {
   var list = this.listeners[event] || [];
-  for (var i = 0; i < list.length; i++) list[i](a, b);
+  for (var i = 0; i < list.length; i++) list[i](a, b, c);
 };
 
 MiniMQTT.prototype.connect = function() {
@@ -260,8 +260,10 @@ MiniMQTT.prototype._parse = function() {
         }
         pOffset += 2;   // past the packet identifier
       }
-      var payload = packetBody.slice(pOffset).toString('utf8');
-      this.emit('message', topic, payload);
+      var rawPayload = packetBody.slice(pOffset);
+      var payload = rawPayload.toString('utf8');
+      // The bytes too, for a payload that is not text (an audio clip).
+      this.emit('message', topic, payload, rawPayload);
     }
   }
 };

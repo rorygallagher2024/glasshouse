@@ -12,7 +12,7 @@ var vm = require('vm');
 console.log('Running test-mqtt-remote.js ...');
 
 var source = fs.readFileSync(path.join(__dirname, '../server/tvweb.js'), 'utf8');
-var start = source.indexOf("  mqttClient.on('message', function(topic, payload)");
+var start = source.indexOf("  mqttClient.on('message', function(topic, payload, rawPayload)");
 var end = source.indexOf('\n  /*\n   * A connection attempt', start);
 assert.ok(start > 0 && end > start, 'the MQTT command handler is found in tvweb.js');
 
@@ -22,6 +22,8 @@ vm.runInNewContext(source.slice(start, end), {
   mqttTopics: { commands: 'test/command/' },
   piccap: { handleMqttCommand: function () { return false; } },
   huesync: { handleMqttCommand: function () { return false; } },
+  audioclip: { handleMqttCommand: function () { return false; } },
+  fetchLib: {},
   console: { log: function () {} },
   doControl: function (action, value, callback) { keys.push(action + ':' + value); callback({ ok: true }); },
   setTimeout: function (fn, delay) { timers.push(delay); },
