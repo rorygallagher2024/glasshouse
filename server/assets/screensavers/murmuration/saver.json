@@ -6,14 +6,16 @@
     "es": "Bandada",
     "hu": "Seregélyraj",
     "it": "Stormo",
-    "ru": "Стая"
+    "ru": "Стая",
+    "pl": "Murmuracja"
   },
   "description": {
     "en": "Flocks of light swooping after their leaders across black.",
     "es": "Bandadas de luz que siguen a sus líderes en picado sobre negro.",
     "hu": "Fényrajok csapnak le vezetőik után a fekete háttéren.",
     "it": "Stormi di luce che piombano dietro ai loro capofila sul nero.",
-    "ru": "Стаи света проносятся за своими вожаками по чёрному фону."
+    "ru": "Стаи света проносятся за своими вожаками по чёрному фону.",
+    "pl": "Stada światła śmigające za swoimi przewodnikami po czerni."
   },
   "license": "MIT",
   "uses": [

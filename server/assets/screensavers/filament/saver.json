@@ -6,14 +6,16 @@
     "es": "Filamento",
     "hu": "Izzószál",
     "it": "Filamenti",
-    "ru": "Нити"
+    "ru": "Нити",
+    "pl": "Włókna"
   },
   "description": {
     "en": "Swarms of light circling and trailing across black, slowly changing color.",
     "es": "Enjambres de luz que giran y dejan estelas sobre negro, cambiando de color poco a poco.",
     "hu": "Fényrajok köröznek és húznak csíkot a fekete háttéren, lassan változó színnel.",
     "it": "Sciami di luce che girano e lasciano scie sul nero, cambiando lentamente colore.",
-    "ru": "Рои света кружат и тянутся по чёрному фону, медленно меняя цвет."
+    "ru": "Рои света кружат и тянутся по чёрному фону, медленно меняя цвет.",
+    "pl": "Roje światła krążące i ciągnące smugi po czerni, powoli zmieniające kolor."
   },
   "license": "MIT",
   "uses": [

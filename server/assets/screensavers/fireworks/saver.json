@@ -6,14 +6,16 @@
     "es": "Fuegos artificiales",
     "hu": "Tűzijáték",
     "it": "Fuochi d'artificio",
-    "ru": "Фейерверк"
+    "ru": "Фейерверк",
+    "pl": "Fajerwerki"
   },
   "description": {
     "en": "Bursts of colour on black, a few seconds apart.",
     "es": "Estallidos de color sobre negro, cada pocos segundos.",
     "hu": "Színes robbanások fekete háttéren, néhány másodpercenként.",
     "it": "Esplosioni di colore sul nero, a pochi secondi di distanza.",
-    "ru": "Разноцветные вспышки на чёрном фоне каждые несколько секунд."
+    "ru": "Разноцветные вспышки на чёрном фоне каждые несколько секунд.",
+    "pl": "Wybuchy kolorów na czerni co kilka sekund."
   },
   "license": "MIT",
   "uses": [

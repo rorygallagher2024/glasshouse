@@ -6,14 +6,16 @@
     "es": "Neo",
     "hu": "Neo",
     "it": "Neo",
-    "ru": "Neo"
+    "ru": "Neo",
+    "pl": "Neo"
   },
   "description": {
     "en": "Columns of falling glyphs, their colors turning round the wheel every minute.",
     "es": "Columnas de glifos que caen, con colores que dan la vuelta a la rueda cada minuto.",
     "hu": "Hulló jelek oszlopai, amelyek színe percenként körbejár a színkörön.",
     "it": "Colonne di glifi che cadono, con i colori che fanno il giro della ruota ogni minuto.",
-    "ru": "Столбцы падающих символов, цвет которых каждую минуту проходит по кругу."
+    "ru": "Столбцы падающих символов, цвет которых каждую минуту проходит по кругу.",
+    "pl": "Kolumny spadających znaków, których kolory co minutę obracają się po kole barw."
   },
   "license": "MIT",
   "uses": [

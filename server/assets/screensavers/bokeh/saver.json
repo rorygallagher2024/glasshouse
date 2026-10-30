@@ -6,14 +6,16 @@
     "es": "Bokeh",
     "hu": "Bokeh",
     "it": "Bokeh",
-    "ru": "Боке"
+    "ru": "Боке",
+    "pl": "Bokeh"
   },
   "description": {
     "en": "Soft circles of light drifting in and out on black.",
     "es": "Círculos suaves de luz que aparecen y se desvanecen sobre negro.",
     "hu": "Lágy fénykörök úsznak be és ki fekete háttéren.",
     "it": "Morbidi cerchi di luce che compaiono e svaniscono sul nero.",
-    "ru": "Мягкие круги света проплывают и тают на чёрном фоне."
+    "ru": "Мягкие круги света проплывают и тают на чёрном фоне.",
+    "pl": "Miękkie kręgi światła pojawiające się i znikające na czerni."
   },
   "license": "MIT",
   "uses": [

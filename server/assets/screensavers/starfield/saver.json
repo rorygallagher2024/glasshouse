@@ -6,14 +6,16 @@
     "es": "Campo estelar",
     "hu": "Csillagmező",
     "it": "Campo stellare",
-    "ru": "Звёздное поле"
+    "ru": "Звёздное поле",
+    "pl": "Gwiezdne pole"
   },
   "description": {
     "en": "A drifting cosmic starscape with occasional shooting stars.",
     "es": "Un paisaje cósmico a la deriva con ocasionales estrellas fugaces.",
     "hu": "Lassan mozgó csillagmező, időnként hullócsillagokkal.",
     "it": "Un paesaggio cosmico di stelle alla deriva, con qualche stella cadente.",
-    "ru": "Плывущий космический пейзаж со звёздами и редкими падающими звёздами."
+    "ru": "Плывущий космический пейзаж со звёздами и редкими падающими звёздами.",
+    "pl": "Dryfujący kosmiczny krajobraz gwiazd z okazjonalnymi spadającymi gwiazdami."
   },
   "license": "MIT",
   "uses": [
