@@ -105,7 +105,7 @@ Confirmed on **55 TVs across 38 series** running **webOS 2.2 through 11** (LG's 
     | 43UT73006LA | —            | —        | LCD   | Reported working                                               |
     | 43NU800BPSC | 11.0.0       | 43.02.50 | LCD   | Rooted with slopbro; privacy controls confirmed                |
     | 85QNED84BUA | 11.0.1       | 43.11.76 | LCD   | Dashboard, telemetry disabling and privacy controls confirmed |
-    | OLED77C5PUA | 11.2.0       | 43.21.31 | OLED  | Installed over SSH; dashboard, telemetry, privacy switches and custom screen savers confirmed |
+    | OLED77C5PUA | 11.2.0       | 43.21.31 | OLED  | Installed over SSH; dashboard, telemetry, privacy and log upload switches, ad blocker, preload (from the preload manager) and custom screen savers confirmed |
     | OLED65G36LA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; privacy, app installs and custom screen savers confirmed |
     | OLED83G5WUA | 11.2.0       | 43.21.71 | OLED  | Rooted with DualBro; runs with internet access blocked         |
     | OLED42C35LA | 11.2.0       | 43.21.71 | OLED  | Working                                                        |
