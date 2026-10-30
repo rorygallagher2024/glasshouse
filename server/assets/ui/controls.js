@@ -42,6 +42,7 @@ function togglePiccap() { sendCommand('piccap', flip('btn_piccap')); }
 function toggleHuesync() { sendCommand('huesync', flip('btn_huesync')); }
 function toggleWol() { sendCommand('wakeOnLan', flip('btn_wol')); }
 function toggleDeviceDetection() { sendCommand('deviceDetection', flip('btn_devdetect')); }
+function toggleLocalLookups() { sendCommand('localLookups', flip('btn_locallookups')); }
 function toggleAlwaysReady() { sendCommand('alwaysReady', flip('btn_ar')); }
 function toggleAlwaysReadyScreen() { sendCommand('alwaysReadyScreen', flip('btn_ars')); }
 
@@ -187,6 +188,10 @@ function applyOptimistic(action, value) {
     const on = value === 'on' || value === true;
     setLease('deviceDetection', on);
     advPill('devdetect', 'btn_devdetect', on);
+  } else if (action === 'localLookups') {
+    const on = value === 'on' || value === true;
+    setLease('localLookups', on);
+    advPill('locallookups', 'btn_locallookups', on);
   }
 }
 

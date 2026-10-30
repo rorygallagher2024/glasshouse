@@ -782,6 +782,16 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_devdetect" onclick="toggleDeviceDetection()">&mdash;</button></div>
     </div>
+    <div class="prot-row" id="row-locallookups" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.localLookups">Answer device scans on the TV</div>
+        <div class="prot-desc" data-t="adv.localLookups.desc">LG's device detection asks your router for the name of every address on your home network:
+          whenever the TV's Home Hub looks for devices, and on some TVs every 5 minutes, even with Auto device detection off.
+          A network-wide ad blocker such as Pi-hole shows them as hundreds of requests. Switched on, the TV answers them itself,
+          so they stay off your network. Nothing the TV shows changes.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_locallookups" onclick="toggleLocalLookups()">&mdash;</button></div>
+    </div>
   </div>
 
   <div class="pv-sec adv-sec" id="adv-lights" hidden data-t="adv.frontLights">Front lights</div>

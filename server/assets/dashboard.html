@@ -640,11 +640,16 @@ function optionRows(d) {
       r.push(logo);
     }
   }
-  if (d.deviceDetection !== undefined || dev.length) r.push(head(t('adv.devices', 'Devices')));
+  var lookups = d.privacy ? d.privacy.localLookups === true : undefined;
+  if (d.deviceDetection !== undefined || lookups !== undefined || dev.length) r.push(head(t('adv.devices', 'Devices')));
   for (var di = 0; di < dev.length; di++) r.push(lgRow(dev[di]));
   if (d.deviceDetection !== undefined) {
     r.push(toggle(t('adv.deviceDetection', 'Auto device detection'), d.deviceDetection, 'deviceDetection',
       t('tv.options.deviceDetection.hint', 'Finds devices to show on the Home Dashboard and control: a set-top box, and smart lights, plugs and switches. Newer TVs look up every address on your home network each time they switch on to do it. Switched off, the scans stop and the TV no longer finds devices by itself.')));
+  }
+  if (lookups !== undefined) {
+    r.push(toggle(t('adv.localLookups', 'Answer device scans on the TV'), lookups, 'localLookups',
+      t('tv.options.localLookups.hint', 'LG\u2019s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes.')));
   }
   if (lights.standby !== undefined || lights.hasLogo) {
     r.push(head(t('adv.frontLights', 'Front lights')));
@@ -3013,6 +3018,8 @@ function activate() {
       return send({ action: 'quickBoot', value: !r.on }, r.on ? t('tv.flash.quickBootOff', 'Quick Boot turned off') : t('tv.flash.quickBootOn', 'Quick Boot turned on'));
     case 'homeAutoLaunch':
       return send({ action: 'homeAutoLaunch', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
+    case 'localLookups':
+      return send({ action: 'localLookups', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'deviceDetection':
       return send({ action: 'deviceDetection', value: !r.on }, r.on ? t('tv.flash.detectionOff', 'Device detection turned off') : t('tv.flash.detectionOn', 'Device detection turned on'));
     case 'alwaysReady':

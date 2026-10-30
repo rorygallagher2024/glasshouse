@@ -2124,7 +2124,8 @@ function collectStats(cb) {
                     adblock: {
                       enabled: privacyModule ? privacyModule.isAdBlockActive() : false,
                       count: (privacyModule && privacyModule.adBlockList) ? privacyModule.adBlockList('full').length : 0
-                    }
+                    },
+                    localLookups: privacyModule && privacyModule.localLookups ? privacyModule.localLookups() : false
                   };
                   if (!oledModule) {
                     out.capabilities = {

@@ -709,6 +709,13 @@ function doControl(action, value, cb) {
      * tvpowerd subscribes to the key, so writing it is all LG's menu does.
      * Only on firmware that has it: a C2 on webOS 9.2 does, a B8 on 4.4 does not.
      */
+    // LG's device scans answered on the TV (lib/privacy.js).
+    case 'localLookups':
+      return privacy.setLocalLookups(value === true || value === 'on' || value === 'true', function (r) {
+        telemetry.clearCache();
+        cb(r);
+      });
+
     // LG's universal control device detection (other/ueiEnable); see telemetry.
     case 'deviceDetection':
       var ddOn = (value === true || value === 'on' || value === 'ON' || value === 'true');

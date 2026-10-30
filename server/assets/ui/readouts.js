@@ -328,7 +328,10 @@ async function tick() {
       if (q('adv-piccap')) q('adv-piccap').hidden = !pc && !hs;
       const devVal = getLease('deviceDetection', d.deviceDetection);
       advPill('devdetect', 'btn_devdetect', devVal !== undefined ? devVal : d.deviceDetection);
-      if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && !advLgsDevices;
+      const lookups = d.privacy ? d.privacy.localLookups === true : undefined;
+      const lookupsVal = getLease('localLookups', lookups);
+      advPill('locallookups', 'btn_locallookups', lookupsVal !== undefined ? lookupsVal : lookups);
+      if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && lookups === undefined && !advLgsDevices;
       if (q('tl-cur')) {
         q('tl-cur').textContent = st === 'off' ? t('common.off', 'Off') : t('ctl.sleep.minutes', '{n} min', { n: st });
       }
