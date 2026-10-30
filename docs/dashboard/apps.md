@@ -20,6 +20,10 @@ Lists the apps downloaded from the LG store or installed by hand, with their ver
 
 Lists the Homebrew Channel catalog, with category filters (All, Media, Games, Utilities, Ambilight, Screensavers) and keyword search, and Install, Update or Uninstall for each app, with Launch beside an installed one. The list shows 10 apps at a time, with **Show 10 more** beneath; a search or category looks through the whole catalog. Downloads are checked against the catalog before they are installed, and the dashboard asks first when something needs a decision, such as replacing a copy installed from the LG store.
 
+The outlined **View source** control beside Install, Update or Uninstall opens an app's declared source repository in a new browser tab when its catalog provides a valid absolute HTTPS address. It stays available while installation is disabled, in progress or complete. Apps without a valid source address have no source control.
+
+GitHub release-download and archive addresses open the repository's main page. Other source addresses keep their path, including links to specific source files or directories. A direct `.ipk` download has no source link when its repository cannot be identified this way.
+
 After a [settings backup](server.md#glasshouse) is restored, the apps it listed that this TV lacks and the catalog has are shown above the catalog. **Install all** installs them one after another, each as if picked from the catalog, so it stops for any decision; **Dismiss** forgets the list.
 
 ### Other app catalogs
@@ -27,6 +31,8 @@ After a [settings backup](server.md#glasshouse) is restored, the apps it listed 
 Catalogs other than the Homebrew Channel's, such as the one a developer keeps for a fork of an app. Pasting a catalog's address and choosing **Add catalog** lists its apps here, each with Install, Update or Uninstall (and Launch, once installed) and the catalog it is from, and they are checked for updates with the rest. A GitHub repository's page can be pasted in place of the address, and the dashboard reads the `repo.json` it keeps, as many such catalogs do. Each catalog shows how many apps it offers, or why it could not be read, and **Remove** takes it off the list; apps installed from it stay on the TV. Their apps show 10 at a time, as the Homebrew Channel's do, with a search box once there are more than 10.
 
 These apps are listed apart from the Homebrew Channel's, so an app both list, such as YouTube AdFree and a fork of it, shows in each, and Install or Update installs the one in that list. Where the TV has an LG store app under the same id, as YouTube is for YouTube AdFree and its forks, the catalog's app shows as not installed, and installing it asks before replacing the store's. An app from an added catalog is never given root without asking, as for an install from a URL.
+
+Apps here also show **View source** when their catalog declares a valid HTTPS source address, regardless of where the repository is hosted.
 
 Adding or removing a catalog needs **Install app from a URL or file** turned on, or a token, since whoever runs a catalog chooses what it offers to install. Catalogs listed in `config.json` show here too.
 
