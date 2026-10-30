@@ -1738,37 +1738,35 @@ async function visitTvNonOled(browser, base, problems) {
   }
 }
 
-(async () => {
+/*
+ * Four groups side by side, each against its own server and fake TV, as the
+ * Home checks change the layout and uploads they read back. Within a group
+ * the checks run in their order here. One after another this took 97 s in
+ * CI; the slowest group sets the length now.
+ */
+function groups(web, tv) {
+  return [
+    { tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [] },
+    { tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
+      visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
+    { tabs: [], visits: [visitHomePicture, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeMotion, visitHomeSearch] },
+    { tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
+      visitHomeRecentsHidden, visitHomeUploads, visitHomeReadiness, visitAudio, visitHomeRecents, visitHomeScrolling, visitHomeGuide] }
+  ];
+}
+
+async function runGroup(browser, group, problems) {
   const server = await startServer();
   const base = 'http://127.0.0.1:' + server.port;
+  await visitAll(browser, group.tabs.map(t => ({ url: base + t.path, label: t.label })), problems);
+  for (const visitOne of group.visits) await visitOne(browser, base, problems);
+}
+
+(async () => {
   const browser = await chromium.launch(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {});
   const problems = [];
   const web = webTabs(), tv = tvTabs();
-  await visitAll(browser, web.map(t => ({ url: base + '/?tab=' + t, label: 'web ' + t }))
-    .concat(tv.map(t => ({ url: base + '/assets/dashboard.html?tab=' + t, label: 'TV ' + t }))), problems);
-  await visitTvDashboard(browser, base, problems);
-  await visitTvAudio(browser, base, problems);
-  await visitTvPictureWrites(browser, base, problems);
-  await visitPictureUnavailable(browser, base, problems);
-  await visitTvNonOled(browser, base, problems);
-  await visitHomeArrangement(browser, base, problems);
-  await visitHomePicture(browser, base, problems);
-  await visitHomeVisibility(browser, base, problems);
-  await visitHomeColours(browser, base, problems);
-  await visitHomeFadeAndInputs(browser, base, problems);
-  await visitHomeInputsEditor(browser, base, problems);
-  await visitHomeEditor(browser, base, problems);
-  await visitHomeOrder(browser, base, problems);
-  await visitHomeRecentsHidden(browser, base, problems);
-  await visitHomeUploads(browser, base, problems);
-  await visitHomeReadiness(browser, base, problems);
-  await visitHomeAvailability(browser, base, problems);
-  await visitAudio(browser, base, problems);
-  await visitHomeRecents(browser, base, problems);
-  await visitHomeScrolling(browser, base, problems);
-  await visitHomeMotion(browser, base, problems);
-  await visitHomeGuide(browser, base, problems);
-  await visitHomeSearch(browser, base, problems);
+  await Promise.all(groups(web, tv).map(g => runGroup(browser, g, problems)));
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
