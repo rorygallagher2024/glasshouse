@@ -903,3 +903,57 @@ async function rollbackUpdate() {
   await loadUpdate();
   q('upd-msg').textContent = r.error || t('server.rollbackFailed', 'The rollback failed.');
 }
+
+// Calibration archives are deliberately separate from settings restoration.
+function calibrationMessage(text) {
+  const el = q('calibration-msg');
+  el.textContent = text;
+  el.hidden = false;
+}
+async function saveCalibrationArchive() {
+  const button = q('calibration-save');
+  button.disabled = true;
+  calibrationMessage(t('server.calibration.reading', 'Reading calibration data without changing the TV…'));
+  try {
+    const r = await fetch(api('/api/calibration/export'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', cache: 'no-store'
+    });
+    const result = await r.json();
+    if (!r.ok || !result.ok || !result.archive || result.archive.format !== 'glasshouse-calibration-archive') throw new Error(result.error || r.status);
+    const archive = result.archive;
+    const link = document.createElement('a');
+    const objectUrl = URL.createObjectURL(new Blob([JSON.stringify(archive)], { type: 'application/json' }));
+    link.href = objectUrl;
+    link.download = 'glasshouse-calibration-' + String(archive.source.model).replace(/[^A-Za-z0-9_-]/g, '_') + '-' + archive.created.slice(0, 10) + '.json';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    calibrationMessage(t('server.calibration.saved', 'Saved {count} calibration files. Coverage is partial; this archive does not yet support factory-reset recovery.', { count: archive.files.length }));
+  } catch (e) {
+    calibrationMessage(t('server.calibration.failed', 'Could not capture calibration data: {error}', { error: e.message }));
+  } finally { button.disabled = false; }
+}
+async function checkCalibrationArchive(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  const button = q('calibration-check');
+  button.disabled = true;
+  try {
+    if (file.size > 12 * 1024 * 1024) throw new Error(t('server.calibration.tooLarge', 'Archive exceeds 12 MiB'));
+    const archive = JSON.parse(await file.text());
+    const r = await fetch(api('/api/calibration/inspect'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(archive), cache: 'no-store'
+    });
+    const result = await r.json();
+    if (!r.ok || !result.ok) throw new Error(result.error || r.status);
+    let text = t('server.calibration.checked', 'Archive integrity checked. Calibration restoration is not supported yet.');
+    if (!result.sameTV) text += ' ' + t('server.calibration.wrongTv', 'This archive cannot be matched to this TV.');
+    else if (!result.sameFirmware) text += ' ' + t('server.calibration.wrongFirmware', 'The recorded firmware or hardware identity differs.');
+    text += ' ' + t('server.calibration.noReset', 'Do not factory-reset the TV relying on this archive alone.');
+    calibrationMessage(text);
+  } catch (e) {
+    calibrationMessage(t('server.calibration.checkFailed', 'Archive check failed: {error}', { error: e.message }));
+  } finally { button.disabled = false; }
+}

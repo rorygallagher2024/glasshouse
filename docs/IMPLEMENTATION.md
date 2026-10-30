@@ -1116,6 +1116,41 @@ make, and the Apps tab installs them one at a time as catalog installs with
 `auto`, so a preview with a choice in it waits for the person. A file anyone
 could edit decides nothing installed or given root on its own.
 
+## Calibration archives
+
+`lib/calibration.js` is separate from `backup.js`. Its format is
+`glasshouse-calibration-archive`, version 2 (version 1 preview archives remain
+inspectable). Only the C9/05.50.00 capture profile
+is currently accepted. GET `/api/calibration/status` reports capture and restore
+support; POST `/api/calibration/export` accepts an empty JSON object; POST
+`/api/calibration/inspect` accepts an archive. The POSTs require authentication,
+controls allowed, JSON and the same-origin guard. Bodies are bounded at 1 KiB
+and 12 MiB respectively, with a 30-second receive deadline. Responses are not
+cacheable. No restore route is provided.
+
+Capture reads allowlisted regular files under two fixed roots, refusing
+symlinks, hard links, replaced descriptors and files changing during a read.
+Limits are 2 MiB per file, 8 MiB total and 128 entries per directory. The two
+snapshots include byte content, file inventory, getter readings and identity;
+a change refuses the whole result. Readings request explicit C9 input/pictureMode/2D contexts, read the category
+to avoid failures from absent named keys, and retain only allowlisted keys.
+Only matching native dimensions count; an extra returned dynamic range must
+also agree. Earlier preview archives with the original dimension shape remain
+inspectable. A single in-memory owner and 40-second
+deadline bound capture; late getter replies cannot publish an archive or
+continue the remaining read sequence.
+
+The downloaded JSON carries base64 file bytes, per-file SHA-256, a metadata
+manifest hash and a private hash binding model/board/network-hardware identity.
+It contains no network credential or raw MAC. The manifest hash detects
+accidental changes, not authentication. Inspection validates file allowlists,
+paths, lengths, canonical base64, duplicates, hashes and context structure,
+then recomputes coverage independently of uploaded coverage claims. Matching
+mainboard identity cannot prove unchanged panel identity. EEPROM and full
+picture-context coverage remain unqualified; every archive is partial and
+restoration stays disabled. [The qualification plan](dashboard/calibration.md#work-needed-for-factory-reset-recovery)
+keeps future writes separate from read-only capture and the audio helper.
+
 ## The checks
 
 `scripts/` holds five static checks. Four need nothing but the repository and

@@ -2144,3 +2144,92 @@ came at 50 s: about 9 s from the server answering to the view drawn. The
 first Home press after a reboot took up to 13 s on a CX (webOS 5.6.2), so a
 fixed wait from the server's start is too short for slower TVs; the page's
 own requests to the server show it is running.
+
+## C9 calibration archive coverage
+
+On the OLED65C9PUA, webOS 4.10.2/firmware 05.50.00, prior read-only preservation
+captures identified stored files under `/mnt/lg/cmn_data/external_pqldb` for
+Expert 1/2, HDR Cinema and Dolby Vision Cinema/Bright, plus
+`/mnt/lg/cmn_data/dolby/DolbyVision_UserDisplayConfiguration.txt`. Hashes of
+those files were useful for proving that audio trials left them unchanged.
+That does not establish that those files alone recreate every calibrated
+profile after a factory reset, or that direct file writes reload the active
+pipeline. Factory white-balance getter readings likewise cover only that
+service's reported values, not the whole EEPROM.
+
+The generalized calibration archive captures those allowlisted file types
+and explicit picture-context getter replies without switching inputs or
+picture modes. An isolated capture on 28 October 2026 saved 29 files whose bytes matched the
+existing preservation hashes and confirmed 10 SDR Expert contexts. All before/after
+calibration, white-balance, OLED, installed-code and HDMI EDID readbacks matched. It
+keeps absent or unconfirmed contexts as gaps and implements no restore.
+LG's settings dimensions use `sdr`, `hdr` and `dolbyHdr`; these are separate
+from the audio/video diagnostics' display labels. The
+[bscpylgtv calibration documentation](https://github.com/chros73/bscpylgtv#calibration-functionality-in-full-version)
+also notes that calibration getters may return effective, processed LUTs.
+A future restore must establish original versus effective data and qualify
+reload/order/recovery independently for each supported model and firmware.
+
+The C9's `getSystemSettingDesc` reports dimensions
+`input/pictureMode/_3dStatus` for backlight, contrast and white balance, and
+`input/_3dStatus/dynamicRange` for the pictureMode selector. Explicit queries
+missing `_3dStatus: 2d` returned no DB result. Asking for absent named keys also
+refused a profile read. Reading the category with the native three dimensions
+and retaining only allowlisted calibration keys yielded Expert 1/2 readings
+for apps/default and HDMI 1-4 without activating those inputs or modes. Those initial queries left twenty
+HDR/Dolby Vision contexts unconfirmed; the corrected identifiers below resolved
+them in the next capture.
+
+The same pictureMode descriptor lists `hdrCinema`, `hdrCinemaBright`,
+`dolbyHdrCinema` and `dolbyHdrCinemaBright`. The underscore names in stored LUT
+files belong to the calibration API, not the settings-service DB dimensions.
+Archive version 2 uses the described settings identifiers and binds format
+and version into its metadata digest; version 1 preview imports retain their
+original context table and digest for inspection.
+
+The version 2 capture confirmed all 30 requested contexts (six modes across
+apps/default and HDMI 1-4), with all 29 stored files and factory white-balance
+readings intact. The corrected table resolves capture gaps; it does not
+establish coverage of every menu key, other picture modes, EEPROM, panel
+identity or factory-reset restoration.
+
+### Physical NVM and recovery research
+
+On the same C9/05.50.00, the installed I2C library's table and native
+initializer map NVM to Linux adapter 4 (`f9000000.i2c`) and 8-bit address
+`0xA0` (7-bit `0x50`). The legacy model configuration calls this channel 5;
+that value must not be passed directly as a Linux adapter number. The native
+implementation declares a 32 KiB extent and uses two big-endian offset bytes
+followed by a combined repeated-start read. Its message flags 6/7 are specific
+to the installed implementation, not portable I2C defaults.
+
+A separate firmware-pinned reader checked the exact library, TV executable,
+model configuration, native ABI, live NVM mapping and adapter identity before
+opening the device. Two fresh 32 KiB physical passes agreed; all 37 stable
+clean cache blocks and all 18 factory white-balance getter values matched.
+Static `DIL_NVM_InitWhiteBalanceDB` reads the three six-byte groups at
+`0x582`, `0x588` and `0x58e`. Its initialization paths can also write defaults;
+these functions must not be called to discover calibration state. The chip
+manufacturer/package marking was not physically inspected.
+
+Static `DIL_NandNVM_Initialize` and the live backing-device string identify a
+separate eMMC NVM store, `/dev/mmcblk0p16`, on this unit. Kernel geometry
+reports 16,384 512-byte sectors. Two bounded read-only 8 MiB copies agreed.
+This adds evidence beyond physical EEPROM; it does not qualify raw partition
+restoration or establish that all reset-sensitive state is present.
+
+Two picture-scoped logical DB snapshots agreed: 231 system records and 8,462
+default records, including eight system records with app-specific overrides.
+The dashboard's selected-context capture is narrower than that logical export.
+The expanded category allowlist returned 53 fields in all 30 requested
+contexts, including external-PQ selection and additional white-balance fields.
+The active SDR Expert context matched all 53 fields. Before/after checks of
+stored calibration, factory white balance, OLED protections, installed code
+and HDMI EDIDs agreed; the user may independently change the active content.
+
+The dashboard does not expose these hardware readers. The host-only recovery
+preview verifies private research bundles but always emits no actions. Raw
+EEPROM/eMMC writes, reset behavior, original/effective LUT conversion,
+enable-state and reload order, panel binding, interruption rollback and
+post-reset access remain separate qualifications. Factory-reset recovery must
+be measured on a lab TV with its own calibration, not an owner's calibrated TV.

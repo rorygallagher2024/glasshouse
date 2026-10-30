@@ -101,6 +101,7 @@ var screentime = require('./lib/screentime');
 var saverPowerOff = require('./lib/saverpoweroff');
 var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
+var calibration = require('./lib/calibration');
 var power = require('./lib/power');
 var names = require('./lib/names');
 var msg = say.msg;
@@ -926,6 +927,7 @@ function appsChanged() {
 }
 
 routes.init({
+  calibration: calibration,
   config: CONFIG,
   audio: audioCapabilities,
   clock: clockFormat,
@@ -982,6 +984,7 @@ routes.init({
   displayVersion: TVWEB_DISPLAY_VERSION
 });
 
+calibration.init({ luna: luna });
 backup.init({
   lgSettings: lgSettings,
   home: glasshouseHome,
