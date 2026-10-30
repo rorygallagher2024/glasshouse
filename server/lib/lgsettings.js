@@ -532,7 +532,6 @@ var util = require('./util');
 var luna = null;
 var lunaCached = null;
 var clearLunaCache = null;
-// { <row id>: <value> } for rows with hold, once the owner chose the held value.
 var heldFile = null;
 
 function init(opts) {
@@ -547,8 +546,6 @@ function readHeld() {
   return h && typeof h === 'object' && !Array.isArray(h) ? h : {};
 }
 
-// Records an owner's choice for a hold row: the held value keeps it, any other
-// releases it to LG. A failure to record is logged, never a failed change.
 function remember(r, value) {
   if (r.hold !== 'off') return;
   var held = readHeld();
@@ -826,12 +823,6 @@ function set(id, value, cb) {
   }
 }
 
-/*
- * Puts back the held rows LG has switched on again, each read first so that
- * nothing is written while it is still as chosen. Called 60 s after the
- * server starts, at each switch-on and hourly: PmLogDaemon writes dbgLogUpload
- * at boot once it has LG's answer. cb() once done.
- */
 function reapply(cb) {
   cb = cb || function () {};
   var held = readHeld();

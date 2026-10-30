@@ -85,13 +85,11 @@ var ADBLOCK_REGION_PREFIXES = ['aic', 'eic', 'kic', 'eu'];
 var ADBLOCK_FALLBACK_COUNTRIES = ['us', 'gb', 'au', 'br', 'ca', 'de', 'fr'];
 var COUNTRY_FILE = '/var/lib/tvweb/country';
 
-// The TV's own country code and LG's regional ones, as name prefixes.
 function regionPrefixes() {
   var country = (readTrimmed(COUNTRY_FILE) || '').toLowerCase();
   return ADBLOCK_REGION_PREFIXES.concat(/^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES);
 }
 
-// Each name bare and with each prefix, once.
 function withPrefixes(names) {
   var prefixes = regionPrefixes();
   var out = [];

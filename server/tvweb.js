@@ -1030,7 +1030,6 @@ if (!CLI_MODE) {
   if (preloadTimer.unref) preloadTimer.unref();
   var keysTimer = setTimeout(function () { remoteKeys.ensure(); }, 60000);
   if (keysTimer.unref) keysTimer.unref();
-  // PmLogDaemon writes dbgLogUpload from LG's answer once the network is up.
   var heldTimer = setTimeout(function () { lgSettings.reapply(); }, 60000);
   if (heldTimer.unref) heldTimer.unref();
   var heldRecheck = setInterval(function () { lgSettings.reapply(); }, 60 * 60000);

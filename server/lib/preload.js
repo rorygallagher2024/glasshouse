@@ -75,11 +75,6 @@ function writeState(s) {
   util.writeJsonAtomic(stateFile, { off: s.off, lg: s.lg });
 }
 
-/*
- * LG's list and where it came from: 'configd', or 'policy' where configd has
- * none and the preload manager answered itself (webOS 11.2). cb(list, source);
- * list is null where neither has one.
- */
 function readList(cb) {
   lunaFn('com.webos.service.config/getConfigs', { configNames: [KEY] }, function (r) {
     var list = r && r.configs && r.configs[KEY];
@@ -91,11 +86,6 @@ function readList(cb) {
   });
 }
 
-/*
- * Saves the list where configd holds it. Where only the preload manager has
- * one there is nothing to save: setPreloadPolicy takes the change, and
- * resend() repeats it at each start and switch-on.
- */
 function writeList(list, source, cb) {
   if (source === 'policy') return cb(true);
   var configs = {};
@@ -249,7 +239,6 @@ function reapply(cb) {
   if (!state.off.length || !state.lg) return cb();
   readList(function (list, source) {
     if (!list) return cb();
-    // Nothing kept to put back where only the preload manager has the list.
     if (source === 'policy') return resend(cb);
     var want = listWithout(list, state.off);
     var lost = 0;
