@@ -328,9 +328,9 @@ action:
 
 ## Universal Media Player Setup
 
-Home Assistant Core does not offer native MQTT discovery for `media_player` platforms. To group all the discovered volume, mute, power, playback, and source controls into a single native media player card:
+Home Assistant's MQTT discovery has no `media_player` platform, so Glasshouse cannot create one itself. Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, with the app in front as its title, for a media control card on a dashboard.
 
-Add the following to `configuration.yaml`. Power uses the `LG TV` switch from [Switched off, and back on](#switched-off-and-back-on).
+Add the following to `configuration.yaml`. Power uses the `LG TV` switch from [Switched off, and back on](#switched-off-and-back-on). The entity IDs start with the TV's `device.id`: for one set to `lg_c9`, `select.lg_tv_input_source` is `select.lg_c9_input_source`.
 
 ```yaml
 media_player:
@@ -389,12 +389,17 @@ media_player:
           entity_id: select.lg_tv_input_source
         data:
           option: "{{ source }}"
+    state_template: >-
+      {% if not is_state('switch.lg_tv', 'on') %}off
+      {% elif states('sensor.lg_tv_play_state') in ['playing', 'paused'] %}{{ states('sensor.lg_tv_play_state') }}
+      {% else %}on{% endif %}
     attributes:
-      state: switch.lg_tv
       is_volume_muted: switch.lg_tv_mute
-      volume_level: number.lg_tv_volume
+      volume_level: number.lg_tv_volume|volume_level
       source: select.lg_tv_input_source
       source_list: select.lg_tv_input_source|options
+      media_title: sensor.lg_tv_active_app
+      app_name: sensor.lg_tv_active_app
 ```
 
 ---
