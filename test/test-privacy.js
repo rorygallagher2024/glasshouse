@@ -158,12 +158,23 @@ test('Customer data host cdpsvc is blocked in both Ads & telemetry and Everythin
   assert.ok(fullList.indexOf('gb.cdpsvc.lgtvcommon.com') !== -1, 'regional cdpsvc must be in full mode');
 });
 
+test('webOS 11 upload hosts are in the Ads & telemetry tier, its platform is not', function () {
+  var adsList = privacy.adBlockList('ads');
+  assert.ok(adsList.indexOf('api.adts.lgtvcommon.com') !== -1, 'the ad log script\'s host');
+  assert.ok(adsList.indexOf('aic.api.adts.lgtvcommon.com') !== -1, 'with LG\'s regional prefix');
+  assert.ok(adsList.indexOf('rone-aic.lge.com') !== -1, 'remote diagnostics');
+  assert.strictEqual(adsList.indexOf('tv.wiselg.com'), -1, 'the service platform also serves the Content Store');
+  assert.strictEqual(adsList.indexOf('aic.tv.wiselg.com'), -1);
+});
+
 test('nextlgsdp.com is omitted while SDP grace period is active', function () {
   privacy._setSdpGraceActive(true);
   assert.strictEqual(privacy.isSdpGracePeriodActive(), true);
   var list = privacy.adBlockList('full');
   assert.strictEqual(list.indexOf('nextlgsdp.com'), -1, 'nextlgsdp omitted during grace period');
   assert.strictEqual(list.indexOf('gb.nextlgsdp.com'), -1, 'regional nextlgsdp omitted during grace period');
+  assert.strictEqual(list.indexOf('tv.wiselg.com'), -1, 'the webOS 11 platform, also the clock source, omitted during grace period');
+  assert.strictEqual(list.indexOf('aic.tv.wiselg.com'), -1, 'and its regional names');
 });
 
 test('SDP grace period is skipped when getSystemTime reports time is already valid on restart', function () {
@@ -213,6 +224,8 @@ test('SDP grace period closes and blocks nextlgsdp.com when finalized', function
   privacy._finalizeSdpBlock('done');
   assert.strictEqual(privacy.isSdpGracePeriodActive(), false);
   assert.ok(privacy.adBlockList('full').indexOf('nextlgsdp.com') !== -1);
+  assert.ok(privacy.adBlockList('full').indexOf('tv.wiselg.com') !== -1, 'the webOS 11 platform once the clock has synced');
+  assert.ok(privacy.adBlockList('full').indexOf('aic.tv.wiselg.com') !== -1, 'with LG\'s regional prefix');
 });
 
 test('SDP grace period stays open past two minutes until the time is valid from any source', function () {

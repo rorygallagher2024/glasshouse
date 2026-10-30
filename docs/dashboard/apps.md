@@ -82,7 +82,7 @@ The **Alexa** button set here keeps Alexa from opening until it is **As LG has i
 
 LG keeps some apps loaded so they open faster, including ones that are never used, and each takes up memory. Each app is a tile with roughly how much memory it takes once loaded, and whether it is loaded now; choosing one switches it off, or keeps it ready again. A switched-off app's tile is dimmed and marked in orange, the colour the Apps tab uses for a change from LG's own setting.
 
-Switching an app off frees its memory once the app is next closed or the TV restarts, and it then takes a few seconds longer to open. Switching it back on returns it to LG's setting. Home, Live TV, the HDMI inputs and the other parts the TV relies on are not listed, and the section only appears on TVs that keep such a list.
+Switching an app off frees its memory once the app is next closed or the TV restarts, and it then takes a few seconds longer to open. Switching it back on returns it to LG's setting. Home, Live TV, the HDMI inputs and the other parts the TV relies on are not listed, and the section only appears on TVs that keep such a list. On webOS 11.2 the TV keeps none in its settings; the list comes from the preload manager itself, which is told about switched-off apps at each start and switch-on.
 
 ### Turn off background services
 

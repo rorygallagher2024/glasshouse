@@ -133,14 +133,50 @@ preload.getPreload(checked(function (r) {
                     assert.ok(r7.apps.every(function (a) { return !a.off; }));
                     console.log('  ✓ switching it back gives the app LG\'s setting again and keeps apps an update added');
 
-                    // 7. A TV without the list.
+                    // 7. A TV without the list, in configd or the preload manager.
                     preload.init({ luna: function (u, p, cb) { process.nextTick(function () { cb({ returnValue: true, configs: {} }); }); }, stateDir: dir });
                     preload.getPreload(checked(function (r8) {
                       assert.strictEqual(r8.supported, false);
                       assert.deepEqual(r8.apps, []);
                       console.log('  ✓ a TV without the list offers nothing');
-                      try { fs.unlinkSync(path.join(dir, 'preload.json')); fs.rmdirSync(dir); } catch (e) {}
-                      console.log('ALL test-preload.js assertions passed!\n');
+
+                      // 8. A C5 on webOS 11.2: configd has no list, the preload
+                      // manager answers its own, and only it is told.
+                      try { fs.unlinkSync(path.join(dir, 'preload.json')); } catch (e) {}
+                      var policy = [
+                        { id: 'com.webos.app.lgchannels', isAllowed: true, isEnabled: true, preloadMode: 'partial', preloadType: 'periodic', requiredMemory: 100, staticPriority: 1, extPolicy: [], params: {} },
+                        { id: 'com.webos.app.home', isAllowed: true, isEnabled: true, preloadMode: 'criu', preloadType: 'periodic', requiredMemory: 40, staticPriority: 2, extPolicy: [], params: {} },
+                        { id: 'youtube.leanback.v4', isAllowed: true, isEnabled: true, preloadMode: 'semi-full', preloadType: 'periodic', requiredMemory: 100, staticPriority: 10, extPolicy: [], params: {} }
+                      ];
+                      var configWrites = 0, live11 = [];
+                      preload.init({ stateDir: dir, luna: function (u, p, cb) {
+                        var r = { returnValue: true };
+                        if (u === 'com.webos.service.config/getConfigs') r.configs = {};
+                        else if (u === 'com.webos.service.config/setConfigs') configWrites++;
+                        else if (u === 'com.webos.service.preloadmanager/getPreloadPolicy') r.applications = JSON.parse(JSON.stringify(policy));
+                        else if (u === 'com.webos.service.preloadmanager/setPreloadPolicy') live11.push(p.application.id + '=' + p.application.isEnabled);
+                        else if (u === 'com.webos.applicationManager/listApps') r.apps = [{ id: 'com.webos.app.lgchannels', title: 'LG Channels' }, { id: 'com.webos.app.home', title: 'Home' }, { id: 'youtube.leanback.v4', title: 'YouTube' }];
+                        process.nextTick(function () { cb(r); });
+                      } });
+                      preload.getPreload(checked(function (r9) {
+                        assert.strictEqual(r9.supported, true);
+                        assert.deepEqual(r9.apps.map(function (a) { return a.id; }), ['com.webos.app.lgchannels', 'youtube.leanback.v4']);
+                        preload.setPreloadOff('youtube.leanback.v4', true, checked(function (r10) {
+                          assert.strictEqual(r10.ok, true);
+                          assert.strictEqual(configWrites, 0, 'nothing is written to configd');
+                          assert.deepEqual(live11, ['youtube.leanback.v4=false']);
+                          preload.reapply(checked(function () {
+                            assert.strictEqual(configWrites, 0);
+                            assert.deepEqual(live11, ['youtube.leanback.v4=false', 'youtube.leanback.v4=false'], 'the preload manager is told again at start');
+                            preload.getPreload(checked(function (r11) {
+                              assert.deepEqual(r11.apps.filter(function (a) { return a.off; }).map(function (a) { return a.id; }), ['youtube.leanback.v4']);
+                              console.log('  ✓ where only the preload manager has the list (webOS 11.2), it alone is told, and configd is left alone');
+                              try { fs.unlinkSync(path.join(dir, 'preload.json')); fs.rmdirSync(dir); } catch (e) {}
+                              console.log('ALL test-preload.js assertions passed!\n');
+                            }));
+                          }));
+                        }));
+                      }));
                     }));
                   }));
               }));
