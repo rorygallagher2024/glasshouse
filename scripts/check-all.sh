@@ -41,7 +41,7 @@ run screensavers python3 scripts/check-screensavers.py
 run drift python3 scripts/check-drift.py
 run entity-stability python3 scripts/check-entity-stability.py
 run entities python3 scripts/check-entities.py --stats test/fixtures/stats-b8-webos4.json
-run shellcheck shellcheck server/deploy.sh server/tvwebctl server/50-tvweb.sh tvstats.sh scripts/check-all.sh
+run shellcheck shellcheck server/deploy.sh server/tvwebctl server/50-tvweb.sh tvstats.sh scripts/check-all.sh scripts/tv.sh
 run tests node test/run-all.js
 if [ "$quick" = 0 ]; then
   run upgrade node scripts/check-upgrade.js

@@ -83,6 +83,13 @@ function report() {
     }
   });
   var failures = Object.keys(failed).length;
+  // Again at the end, where the last lines of a long CI log show them.
+  runs.forEach(function (run) {
+    if (run.out.code === 0) return;
+    console.log('═════ ' + run.suite + (run.shard ? ' (shard ' + run.shard + ')' : '') + ' failed: its output ═════');
+    process.stdout.write(run.out.stdout.split('\n').slice(-40).join('\n') + '\n');
+    if (run.out.stderr) process.stdout.write(run.out.stderr.split('\n').slice(-40).join('\n') + '\n');
+  });
   if (showTimes) {
     console.log('─────────────────────────');
     runs.slice().sort(function (a, b) { return b.ms - a.ms; }).slice(0, 10).forEach(function (run) {

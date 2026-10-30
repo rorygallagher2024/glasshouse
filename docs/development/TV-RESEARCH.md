@@ -1203,6 +1203,14 @@ and others' work on webOS 10
   list was empty on HDMI 2. `com.webos.media/pause` with that `mediaId`
   answered `returnValue: false` and did not pause.
 
+## luna-send over SSH (webOS 9.2.2, C2)
+
+Run over `ssh` without a terminal, `luna-send -n 1` exits 0 at once and
+prints nothing, for any service; with `ssh -tt` it prints the reply, with
+`\r\n` line ends. `getForegroundAppInfo` answers an empty `appId` while LG's
+Home or Glasshouse Home is in front and in standby, and the input's app
+(`com.webos.app.hdmi2`) while an input is.
+
 ## Services a TV does not have (webOS 3.9.3, 43UJ750V; webOS 9.2.2, C2)
 
 ls-hubd routes a call only to a service named on a `Name=` line of its
