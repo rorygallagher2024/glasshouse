@@ -14,6 +14,10 @@
  * its inode, which a symlink shares. sam is a reader of whatever appinfo.json
  * the directory holds when it is told to scan.
  *
+ * Most steps wait on Glasshouse Home's real timers, up to 10 s each, so
+ * run-all.js runs it as 8 shards side by side.
+ * @shards 16
+ *
  * Strict ES5: runs on node 0.12.
  */
 var assert = require('assert');
@@ -256,8 +260,10 @@ function taken() { return tv.samType === 'web' && fs.realpathSync(appDir) === fs
 function wait(ms, fn) { setTimeout(fn, ms); }
 
 var steps = [];
+var shard = require('./shard');
 function step(name, fn) { steps.push({ name: name, fn: fn }); }
 function next() {
+  if (!next.picked) { steps = shard.pick(steps); next.picked = true; }
   var s = steps.shift();
   if (!s) { console.log('All home tests passed.'); return process.exit(0); }
   s.fn(function () { console.log('  ✓ ' + s.name); next(); });
