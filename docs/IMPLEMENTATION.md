@@ -756,8 +756,8 @@ the previous boot's, so a tool that is no longer started leaves nothing behind.
 The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
 
-Nine of the nineteen domains are ad, tracking and diagnostics hosts that
-nothing on the TV needs. The other ten are **LG infrastructure rather than
+The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
+the TV needs. The platform tier's are **LG infrastructure rather than
 advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
@@ -768,19 +768,26 @@ advertising**, which is why they are a separate tier:
 | `ueiwsp.com` | Universal Electronics' identification of devices connected over HDMI-CEC |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
 | `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
+| `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
+| `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
 
 `com.webos.appInstallService` names the one its own set installs from:
-`http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2. The full
-tier adds whatever that file says, so a firmware using neither is still covered.
+`http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,
+`http://US.tv.wiselg.com` on a C5 on webOS 11.2. The full tier adds whatever
+that file says, so a firmware using none of them is still covered.
 
-`wiselg.com` is not on either list, though the full tier still blocks it if
-`appInstallService` names it as its store. On webOS 11 the Content Store's
-first request goes to `<country>.tv.wiselg.com`, and a factory-reset TV asks for
-`ngfts.tv.wiselg.com` during setup
+On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
+sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names
+`<country>.tv.wiselg.com` (`US.`) for sign-in, set-up, logging and Home, and
+`<region>.tv.wiselg.com` (`AIC.`) for the Content Store, search, app usage
+statistics and the diagnostics report upload, which `getRdxServerUrl` gives as
+`https://AIC.tv.wiselg.com/rdx/10.0.0/`. The clock comes from the same servers
+(`systemTimeSource` `sdp`), so the full tier blocks them, the store host
+included, only once the clock has synced, as it does `nextlgsdp.com`. A
+factory-reset TV asks for `ngfts.tv.wiselg.com` during setup
 ([Huttunen](https://fabricati-diem.inform.social/post/deshittification-as-a-service-part2-bypassing-the-app-store-gatekeeper/)),
-which suggests it is that release's service platform, in place of the SDP
-hosts. None of the tested TVs runs webOS 11, and Huttunen reports Netflix
-being interrupted after a cold boot with it blocked.
+who reports Netflix being interrupted after a cold boot with the host blocked
+outright.
 
 The `lgtvcommon.com`, `lgtviot.com` and `ueiwsp.com` rows, and
 `smartad.lge.com` on the ads tier, come from the blocklist in

@@ -34,6 +34,12 @@ The **Privacy** tab (`/?tab=privacy`) surfaces the TV's telemetry, advertising, 
 
     Individual switches for screen saver ads, Home screen sponsored tiles and recommendations, promotions shown while watching, and Smart Tips (each shown on TVs that support it).
 
+-   **Log uploads to LG**
+
+    ---
+
+    Switches for the debug log and fault log uploads that LG's diagnostics uploader reads before sending anything. LG's own menus have no switch for them; a C5 on webOS 11.2 shipped with debug log upload on.
+
 -   **On-TV ad & telemetry blocker**
 
     ---
@@ -48,13 +54,14 @@ The built-in blocker runs directly on the TV without needing an external DNS sin
 
 === "Ads & telemetry tier"
 
-    Blocks LG's advertising, diagnostics, customer-data, and Alphonso screen-recognition servers while leaving LG's core service platform reachable (so the Content Store, app updates, and LG ThinQ continue to work).
+    Blocks LG's advertising, diagnostics, remote-diagnostics, customer-data and Alphonso screen-recognition servers, and the host LG's ad log script reports to, while leaving LG's core service platform reachable (so the Content Store, app updates, and LG ThinQ continue to work). On webOS 11 the diagnostics report upload shares its host with the Content Store, so it stays reachable on this tier; the Everything tier takes it.
 
 === "Everything tier"
 
     Adds the hosts that carry LG's platform services:
 
     * **What stops working:** The LG ThinQ phone app, the Content Store, firmware updates, LG Channels, and LG's search, so [Glasshouse Home's search](home.md#search) is hidden while it blocks it. (To block only firmware updates while keeping platform services, use **Block TV software updates** on the [System tab](advanced.md) instead.)
+    * **webOS 11:** LG's platform there is `tv.wiselg.com`, which also carries the diagnostics report upload and app usage statistics. This tier blocks it, with the Content Store's host, once the clock has synced.
     * **Clock sync after a power cut:** After a cold boot, the blocker waits for the TV to set its clock from LG's time servers before blocking them. If the TV's date is still wrong and apps fail with certificate errors, set the time manually under **Settings › General › System › Time & Date** (with **Set Automatically** off).
     * **Switching back:** After switching away from **everything**, LG's built-in apps (such as Content Store or LG Channels) may take about a minute to reconnect while their browser engine's DNS cache expires.
 

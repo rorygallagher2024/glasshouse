@@ -318,4 +318,31 @@ lgs.collect(['sound'], function (r) {
 });
 console.log('  ✓ sound settings read by name win over a stale whole-category read');
 
+// LG's log upload settings are true/false, not 'on'/'off' (a C5 on webOS 11.2
+// had dbgLogUpload true from the factory).
+var uploadWrites = [];
+lgs.init({
+  lunaCached: function (uri, payload, ttl, cb) {
+    if (/Desc$/.test(uri)) return cb({ returnValue: true, results: [] });
+    cb({ returnValue: true, settings: payload.category === 'option' ? { dbgLogUpload: true, faultLogUpload: false, livePromotion: 'off' } : {} });
+  },
+  luna: function (uri, payload, cb) {
+    if (/Desc$/.test(uri)) return cb({ returnValue: true, results: [] });
+    uploadWrites.push(payload);
+    cb({ returnValue: true });
+  },
+  clearLunaCache: function () {}
+});
+lgs.collect(['promotions', 'uploads'], function (r) {
+  var by = {};
+  r.rows.forEach(function (x) { by[x.id] = x; });
+  assert.strictEqual(by.dbgLogUpload.on, true);
+  assert.strictEqual(by.dbgLogUpload.section, 'uploads');
+  assert.strictEqual(by.faultLogUpload.on, false);
+  assert.strictEqual(by.livePromotion.on, false, 'the promotions rows come with them');
+});
+lgs.set('dbgLogUpload', false, function (r) { assert.strictEqual(r.ok, true); });
+assert.deepEqual(uploadWrites, [{ category: 'option', settings: { dbgLogUpload: false } }], 'written as the boolean LG stores');
+console.log('  ✓ the log upload settings read and write as true/false');
+
 console.log('ALL test-lgsettings.js assertions passed!\n');

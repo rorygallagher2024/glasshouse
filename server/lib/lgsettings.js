@@ -92,6 +92,18 @@ var ROWS = [
     title: msg('srv.lgs.aiSettingsNudge', 'Smart tips in Settings'),
     desc: msg('srv.lgs.aiSettingsNudge.desc', 'Suggested settings shown in LG\'s Settings menu. LG calls this Smart Tips in Settings.') },
 
+  // What the TV may upload to LG, kept as true/false rather than 'on'/'off'.
+  // uploadd, the diagnostics uploader, reads both before it sends anything
+  // (an OLED77C5PUA on webOS 11.2.0 had dbgLogUpload true from the factory);
+  // PmLogDaemon, prosense and remotediag read faultLogUpload. LG's own menus
+  // have no switch for either.
+  { id: 'dbgLogUpload', section: 'uploads', category: 'option', key: 'dbgLogUpload', on: true, off: false,
+    title: msg('srv.lgs.dbgLogUpload', 'Debug log upload'),
+    desc: msg('srv.lgs.dbgLogUpload.desc', 'Lets the diagnostics uploader send the TV\'s debug logs to LG. Not in LG\'s own menus.') },
+  { id: 'faultLogUpload', section: 'uploads', category: 'option', key: 'faultLogUpload', on: true, off: false,
+    title: msg('srv.lgs.faultLogUpload', 'Fault log upload'),
+    desc: msg('srv.lgs.faultLogUpload.desc', 'Lets the TV send crash and fault reports to LG. Not in LG\'s own menus.') },
+
   // LG's Game Optimizer, from its own app on webOS 9.2. LG keeps these for the
   // game input and genre in use, which it reports as the category's
   // dimension, and applies them while the picture mode is Game Optimizer.

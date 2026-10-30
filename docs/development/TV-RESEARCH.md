@@ -1950,3 +1950,72 @@ came at 50 s: about 9 s from the server answering to the view drawn. The
 first Home press after a reboot took up to 13 s on a CX (webOS 5.6.2), so a
 fixed wait from the server's start is too short for slower TVs; the page's
 own requests to the server show it is running.
+
+## LG's cloud and its uploads on webOS 11.2 (OLED77C5PUA, firmware 43.21.31)
+
+- **The service platform is `tv.wiselg.com`.** sdx's server list,
+  `/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`, has one block, `11.0.0`,
+  naming `tv.wiselg.com` (and `tv.wiselg.cn`) for every service: `domainType`
+  `default` services (`sdp_auth`, `sdp_init`, `sdp_common`, `sdp_logging`,
+  `sdp_home`) are reached as `<country>.tv.wiselg.com`, `ric` services
+  (`sdp_apps`, `sdp_search`, `sdp_nlp`, `ibis_secure`, `ibis_stat_secure`,
+  `rdx_secure` at `rdx/10.0.0/`, `nudge_log_secure`, `cdpbeacon_secure`,
+  `lgshoplog_secure`) as `<region>.tv.wiselg.com`. `getServerUrl` answered
+  `http://US.tv.wiselg.com` and `getRdxServerUrl`
+  `https://AIC.tv.wiselg.com/rdx/10.0.0/`; `appInstallService`'s `serverInfo`
+  names `http://US.tv.wiselg.com`. `lgtvsdp.com` and `nextlgsdp.com` are not in
+  the list. `systemTimeSource` is `sdp`, so the clock comes from these hosts.
+- **uploadd is started by the bus, not its unit.**
+  `/usr/share/luna-service2/services.d/com.palm.uploadd.service` is
+  `Type=dynamic`, so a call to it runs `/usr/sbin/uploadd -v` whatever
+  `uploadd.service` is masked to; PmLogDaemon, faultmanager, prosense, rdxd,
+  alwaysready, arccontroller, iot-proxy and remotediag name it. With its unit
+  masked, it was found running 64 to 76 s after each of four boots and stopped
+  by the server's first check. It names no host: it asks sdx for
+  `getRdxServerUrl`, `getServerUrl`, `getHttpHeaderForServiceRequest` and
+  sends through `sdx/send`. It reads `option.dbgLogUpload` (true from the
+  factory) and `option.faultLogUpload` (false); PmLogDaemon, prosense and
+  remotediag read `faultLogUpload`. `/var/spool/uploadd/pending`,
+  `/var/spool/rdxd` and `/var/log/reports/librdx` were empty with rdxd masked.
+- **adlogservice.** `/mnt/lg/cmn_data/adlogservice/data/adlogservice.enc` is an
+  encrypted Python script (`script_version` 0.38, with a `backup/` record from
+  August), run by `com.webos.service.lsa` (`Type=dynamic`, which reads
+  `generalTermsAllowed`, `sdx/getHttpHeaderForServiceRequest` and the power
+  state). Its `adlogservice-config.json` enables it on `generalTermsAllowed`
+  alone. Its bytecode names `aic.api.adts.lgtvcommon.com/api/v2/advertisement`,
+  `https://{}{}.tv.wiselg.com/authr5`, `mac`, `app_id` and `channel`. Neither
+  host is in the tested blocklists of earlier releases.
+- **remotediag** (`/usr/sbin/remotediag`) names `rone-aic.lge.com`,
+  `rone-eic.lge.com`, `rone-kic.lge.com`, `rone-saic.lge.com` and `rone-tv-*`
+  siblings, and LG-internal addresses. Its unit has
+  `ConditionPathExists=/mnt/lg/cmn_data/remoteDebug/remoteDebug.sh`, absent
+  here, so it does not run.
+- **remotelogger** (`/usr/sbin/remotelogger`, running since first boot) names
+  no host or URL and holds one local socket; its strings name `/var/log/crashd`,
+  `/dev/mem`, `/dev/kmsg` and `/proc/thermalinfo/soc_temperature`.
+- **The updater** (`/usr/sbin/update`) checks `https://snu.lge.com/...laf`
+  (`snu-dev.lge.com` and an IP for test), which the Homebrew Channel's update
+  block covers; `http://nsu.lge.com:5100/` is the download CDN it uses after a
+  check answers (`responseUpdate.cdnUrl`).
+- **No preload list in configd.** `com.webos.service.preloadmanager.supportAppList`
+  is a missing config; `preloadmanager/getPreloadPolicy` answers the list, with
+  the same fields (`id`, `isEnabled`, `isAllowed`, `requiredMemory`,
+  `preloadMode`, `preloadType`, `staticPriority`), naming LG Channels, Home,
+  HDMI 2, YouTube, the browser, Prime Video and Live TV; sam's log shows the
+  preload manager launching them at each boot. The allow list is
+  `/var/preferences/webos-preload-manager-conf.json` (`version` 3).
+- **Other hosts in the firmware, not telemetry.** `lgtvonline.lge.com` is
+  connman's online check (`/etc/connman/main.conf`); `www.lge.com` and
+  `dlnadevicename.lge.com` are UPnP and DLNA descriptions; `hlm.lge.com`,
+  `dokdo.lge.com`, `wam.lge.com` and `collab.lge.com` are LG-internal
+  references in configuration; `lgthinq.com`, `lgeapi.com` and `lgtviot.com`
+  are the ThinQ account and IoT cloud (accountmanager, iot-client, iot-proxy,
+  the Matter service).
+- **No `/etc/issue`.** The release is in `/etc/starfish-release`
+  (`Rockhopper release 11.2.0-2901 (queue-qilian)`), `/etc/os-release`
+  (`VERSION_ID=11.2.0`) and `/var/run/nyx/os_info.json`; the kernel is
+  6.12.44, 64-bit, with 32-bit userspace.
+- **Usage events stay in `/var/log/messages`.** pqcontroller writes
+  `NL_PICTURE_PERIODIC_REPORT` (picture mode, backlight, `zip_code`, the app)
+  and sam `NL_APP_LAUNCH_BEGIN`; lginput2 logs each remote press. With the
+  uploaders stopped these go nowhere.
