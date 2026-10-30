@@ -93,14 +93,17 @@ var ROWS = [
     desc: msg('srv.lgs.aiSettingsNudge.desc', 'Suggested settings shown in LG\'s Settings menu. LG calls this Smart Tips in Settings.') },
 
   // What the TV may upload to LG, kept as true/false rather than 'on'/'off'.
-  // uploadd, the diagnostics uploader, reads both before it sends anything
-  // (an OLED77C5PUA on webOS 11.2.0 had dbgLogUpload true from the factory);
-  // PmLogDaemon, prosense and remotediag read faultLogUpload. LG's own menus
-  // have no switch for either.
-  { id: 'dbgLogUpload', section: 'uploads', category: 'option', key: 'dbgLogUpload', on: true, off: false,
+  // uploadd, the diagnostics uploader, subscribes to both and refuses to send
+  // while either is false; PmLogDaemon, prosense and remotediag read
+  // faultLogUpload. LG's own menus have no switch for either. hold: 'off'
+  // because PmLogDaemon writes dbgLogUpload at each boot from LG's server's
+  // answer (its debug log whitelist, rdxdev_secure): an OLED77C5PUA on webOS
+  // 11.2.0 had it true again after every start, with LG's defaultSettings.json
+  // saying false. An off chosen here is put back; see reapply.
+  { id: 'dbgLogUpload', section: 'uploads', category: 'option', key: 'dbgLogUpload', on: true, off: false, hold: 'off',
     title: msg('srv.lgs.dbgLogUpload', 'Debug log upload'),
-    desc: msg('srv.lgs.dbgLogUpload.desc', 'Lets the diagnostics uploader send the TV\'s debug logs to LG. Not in LG\'s own menus.') },
-  { id: 'faultLogUpload', section: 'uploads', category: 'option', key: 'faultLogUpload', on: true, off: false,
+    desc: msg('srv.lgs.dbgLogUpload.desc', 'Lets the diagnostics uploader send the TV\'s debug logs to LG. LG switches it on again at each start; off is kept here. Not in LG\'s own menus.') },
+  { id: 'faultLogUpload', section: 'uploads', category: 'option', key: 'faultLogUpload', on: true, off: false, hold: 'off',
     title: msg('srv.lgs.faultLogUpload', 'Fault log upload'),
     desc: msg('srv.lgs.faultLogUpload.desc', 'Lets the TV send crash and fault reports to LG. Not in LG\'s own menus.') },
 
@@ -523,14 +526,37 @@ var ROWS = [
     desc: msg('srv.lgs.ipControl.desc', 'Lets home automation systems control the TV over the network with LG\'s own protocol. Off unless something needs it.') }
 ];
 
+var path = require('path');
+var util = require('./util');
+
 var luna = null;
 var lunaCached = null;
 var clearLunaCache = null;
+// { <row id>: <value> } for rows with hold, once the owner chose the held value.
+var heldFile = null;
 
 function init(opts) {
   luna = opts.luna;
   lunaCached = opts.lunaCached;
   clearLunaCache = opts.clearLunaCache;
+  heldFile = path.join(opts.stateDir || '/var/lib/tvweb', 'lgsettings-held.json');
+}
+
+function readHeld() {
+  var h = util.readJson(heldFile, null);
+  return h && typeof h === 'object' && !Array.isArray(h) ? h : {};
+}
+
+// Records an owner's choice for a hold row: the held value keeps it, any other
+// releases it to LG. A failure to record is logged, never a failed change.
+function remember(r, value) {
+  if (r.hold !== 'off') return;
+  var held = readHeld();
+  if (value === false) held[r.id] = false;
+  else delete held[r.id];
+  try { util.writeJsonAtomic(heldFile, held); } catch (e) {
+    console.log('lgsettings: could not record ' + r.id + ': ' + e.message);
+  }
 }
 
 function rowById(id) {
@@ -791,10 +817,43 @@ function set(id, value, cb) {
     if (r.perApp) payload.current_app = true;
     luna('com.webos.service.settings/setSystemSettings', payload, function (res) {
       clearLunaCache();
-      if (res && res.returnValue) return cb({ ok: true });
+      if (res && res.returnValue) {
+        remember(r, value);
+        return cb({ ok: true });
+      }
       cb({ ok: false, error: msg('srv.lgs.refused', 'The TV did not take the change.') });
     });
   }
+}
+
+/*
+ * Puts back the held rows LG has switched on again, each read first so that
+ * nothing is written while it is still as chosen. Called 60 s after the
+ * server starts, at each switch-on and hourly: PmLogDaemon writes dbgLogUpload
+ * at boot once it has LG's answer. cb() once done.
+ */
+function reapply(cb) {
+  cb = cb || function () {};
+  var held = readHeld();
+  var ids = Object.keys(held);
+  if (!ids.length || !luna) return cb();
+  var i = 0;
+  (function next() {
+    if (i >= ids.length) return cb();
+    var r = rowById(ids[i++]);
+    if (!r || r.hold !== 'off') return next();
+    luna('com.webos.service.settings/getSystemSettings', { category: r.category, keys: [r.key] }, function (res) {
+      var now = res && res.settings ? res.settings[r.key] : undefined;
+      if (now === undefined || now === r.off) return next();
+      var settings = {};
+      settings[r.key] = r.off;
+      luna('com.webos.service.settings/setSystemSettings', { category: r.category, settings: settings }, function (w) {
+        if (clearLunaCache) clearLunaCache();
+        console.log('lgsettings: ' + r.id + (w && w.returnValue ? ' put back off' : ' could not be put back off'));
+        next();
+      });
+    });
+  })();
 }
 
 // The value LG stores for a row's value, or undefined if the TV does not take it.
@@ -816,5 +875,6 @@ module.exports = {
   init: init,
   collect: collect,
   set: set,
+  reapply: reapply,
   ROWS: ROWS
 };

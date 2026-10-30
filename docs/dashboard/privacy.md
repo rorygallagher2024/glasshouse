@@ -38,7 +38,7 @@ The **Privacy** tab (`/?tab=privacy`) surfaces the TV's telemetry, advertising, 
 
     ---
 
-    Switches for the debug log and fault log uploads that LG's diagnostics uploader reads before sending anything. LG's own menus have no switch for them; a C5 on webOS 11.2 shipped with debug log upload on.
+    Switches for the debug log and fault log uploads that LG's diagnostics uploader reads before sending anything. LG's own menus have no switch for them. LG switches debug log upload on again at each start, from its own server's answer (a C5 on webOS 11.2 had it on after every boot), so an off chosen here is put back a minute after the server starts, at each switch-on and hourly; switching it back on leaves it to LG.
 
 -   **On-TV ad & telemetry blocker**
 

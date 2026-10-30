@@ -2019,3 +2019,14 @@ own requests to the server show it is running.
   `NL_PICTURE_PERIODIC_REPORT` (picture mode, backlight, `zip_code`, the app)
   and sam `NL_APP_LAUNCH_BEGIN`; lginput2 logs each remote press. With the
   uploaders stopped these go nowhere.
+- **LG switches `dbgLogUpload` on at boot.** `/etc/palm/defaultSettings.json`
+  has it false, yet it was true again after every start, with
+  `/var/luna/preferences/option` rewritten at boot. PmLogDaemon's strings have
+  the mechanism: `dbgWhitelist_update` asks sdx's `rdxdev_secure` service
+  (`fileInfo?version=`, on `tv.wiselg.com`), downloads `dbgWhitelist.enc`
+  through the download manager into `/mnt/lg/cmn_data/whitelist/` (version 6
+  here, `dbglogversion`), and writes
+  `{"category":"option", "settings":{"dbgLogUpload": %s}}` from the answer;
+  "UserReport Off" writes `faultLogUpload` false. uploadd subscribes to both
+  keys and answers "isDbgLogUpload flag is false" while it is off. A write of
+  false from the dashboard held until the next boot only.
