@@ -2575,5 +2575,20 @@
  "home.motion.scroll": {"text": "Плавная прокрутка", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "Ряд плавно едет к выбранной плитке, а не перескакивает к ней.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "Выдвижные панели", "from": "Sliding panels"},
- "home.motion.slideDesc": {"text": "«Недавние приложения», «Поиск» и «Другие приложения» выезжают и уезжают, а не появляются сразу.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
+ "home.motion.slideDesc": {"text": "«Недавние приложения», «Поиск» и «Другие приложения» выезжают и уезжают, а не появляются сразу.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."},
+ "home.weather.clearNight": {"text": "Ясная ночь", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "Облачно", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Туман", "from": "Fog"},
+ "home.weather.hail": {"text": "Град", "from": "Hail"},
+ "home.weather.lightning": {"text": "Молния", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Грозы", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Переменная облачность", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Сильный дождь", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Дождливо", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Снег", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Снег с дождём", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Солнечно", "from": "Sunny"},
+ "home.weather.windy": {"text": "Ветрено", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Ветрено", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Опасные погодные явления", "from": "Severe weather"}
 }

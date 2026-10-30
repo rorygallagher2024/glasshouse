@@ -1711,6 +1711,12 @@ function setupHomeAssistant() {
       return;
     }
 
+    if (action === 'weather') {
+      // Cached for Glasshouse Home to poll; nothing on the TV to control.
+      if (glasshouseHome) glasshouseHome.setWeather(val);
+      return;
+    }
+
     if (action === 'toast') {
       doControl('toast', val, function() {});
       return;

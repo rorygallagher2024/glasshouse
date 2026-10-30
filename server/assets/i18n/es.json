@@ -2575,5 +2575,20 @@
  "home.motion.scroll": {"text": "Desplazamiento suave", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "Una fila se desliza hasta el icono elegido, en lugar de saltar a él.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "Paneles deslizantes", "from": "Sliding panels"},
- "home.motion.slideDesc": {"text": "Apps recientes, Buscar y Más apps entran y salen deslizándose, en lugar de aparecer de golpe.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
+ "home.motion.slideDesc": {"text": "Apps recientes, Buscar y Más apps entran y salen deslizándose, en lugar de aparecer de golpe.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."},
+ "home.weather.clearNight": {"text": "Noche despejada", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "Nublado", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Niebla", "from": "Fog"},
+ "home.weather.hail": {"text": "Granizo", "from": "Hail"},
+ "home.weather.lightning": {"text": "Relámpagos", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Tormentas", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Parcialmente nublado", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Lluvia intensa", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Lluvioso", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Nieve", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Nieve y lluvia", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Soleado", "from": "Sunny"},
+ "home.weather.windy": {"text": "Ventoso", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Ventoso", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Tiempo severo", "from": "Severe weather"}
 }

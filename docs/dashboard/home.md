@@ -64,6 +64,12 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
     Changing **Picture details** shows or hides the strip during a preview, without restarting the picture.
     Pressing **OK** releases the preview while the input or channel opens.
 
+-   **Weather badge**
+
+    ---
+
+    An icon and the current temperature, to the right of the Picture details plate (or in its place, when the plate is off), with the city and a short condition label underneath. There is no weather lookup on the TV: it shows whatever was last written to the `text.lg_tv_weather` Home Assistant entity, a JSON string such as `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}` ([entities](../HOME-ASSISTANT-ENTITIES.md)) — an automation on `weather.*`'s state keeps it current. `city` is optional; the condition label is translated from `condition` on the TV. The badge stays hidden until something has been pushed since the server last started.
+
 -   **Last watched, app count and CEC addresses**
 
     ---

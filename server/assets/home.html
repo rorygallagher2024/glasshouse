@@ -114,6 +114,21 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .tile.live>div{position:relative;z-index:1}
 .row .tile.live{opacity:1}
 
+/* The weather badge: an icon and the current temperature, right of the
+   plate (or alone, in its place, when the plate is off). Pushed from
+   Home Assistant over MQTT (ha.js's 'weather' text entity), so it shows
+   only once something has been pushed at least once since the server
+   started. */
+#weather{-webkit-flex:0 0 auto;flex:0 0 auto;margin-left:40px;text-align:center;padding-bottom:2px;white-space:nowrap}
+#weather.none{display:none}
+#wxMain{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center}
+#wxIcon{font-size:72px;line-height:1;margin-right:16px}
+#wxTemp{font-family:'Outfit',sans-serif;font-size:72px;line-height:1;font-weight:400;letter-spacing:-1px}
+#wxCity{margin-top:8px;font-size:28px;color:#a39d93}
+#wxCond{margin-top:2px;font-size:22px;font-weight:300;opacity:.65}
+#wxCity:empty,#wxCond:empty{display:none}
+.alternative #weather{-webkit-order:4;order:4;margin:0 0 0 48px}
+
 /* The rows sit centred between the clock and the arrange bar, so three rows
    land a little below where they used to and fewer settle lower. The spacers shrink first, so rows taller than the space run on down
    rather than under the clock. A row with nothing to show is left out, and
@@ -422,6 +437,14 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     <div id="preview"><video id="pvVideo" muted></video>
       <div id="pvInfo"><div id="pvTop"><div id="pvMode"></div><div id="pvLight"></div></div><div id="pvSig"></div></div>
       <div id="pvNote" data-t="home.preview.noPicture">No picture</div></div>
+    <div id="weather" class="none">
+      <div id="wxMain">
+        <div id="wxIcon">&mdash;</div>
+        <div id="wxTemp">&mdash;</div>
+      </div>
+      <div id="wxCity"></div>
+      <div id="wxCond"></div>
+    </div>
   </section>
 
   <main id="rows"></main>
@@ -1293,6 +1316,54 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       ? '<div><b>' + esc(p.oled ? t('home.plate.oledLight', 'OLED light') : t('home.plate.backlight', 'Backlight')) +
         '</b>' + esc(p.light) + '</div>'
       : '';
+  }
+
+  /*
+   * The weather badge. The server only ever reports what the last MQTT
+   * push to ha.js's 'weather' entity set (see server/lib/home.js,
+   * setWeather), so this stays hidden until Home Assistant has sent
+   * something at least once.
+   */
+  var WX_ICONS = {
+    'clear-night': '🌙', cloudy: '☁️', fog: '🌫️',
+    hail: '🌨️', lightning: '🌩️', 'lightning-rainy': '⛈️',
+    partlycloudy: '⛅', pouring: '🌧️', rainy: '🌦️',
+    snowy: '❄️', 'snowy-rainy': '🌨️', sunny: '☀️',
+    windy: '🌬️', 'windy-variant': '🌬️', exceptional: '⚠️'
+  };
+
+  function wxLabel(condition) {
+    switch (condition) {
+      case 'clear-night': return t('home.weather.clearNight', 'Clear night');
+      case 'cloudy': return t('home.weather.cloudy', 'Cloudy');
+      case 'fog': return t('home.weather.fog', 'Fog');
+      case 'hail': return t('home.weather.hail', 'Hail');
+      case 'lightning': return t('home.weather.lightning', 'Lightning');
+      case 'lightning-rainy': return t('home.weather.lightningRainy', 'Thunderstorms');
+      case 'partlycloudy': return t('home.weather.partlycloudy', 'Partly cloudy');
+      case 'pouring': return t('home.weather.pouring', 'Pouring rain');
+      case 'rainy': return t('home.weather.rainy', 'Rainy');
+      case 'snowy': return t('home.weather.snowy', 'Snowy');
+      case 'snowy-rainy': return t('home.weather.snowyRainy', 'Snow and rain');
+      case 'sunny': return t('home.weather.sunny', 'Sunny');
+      case 'windy': return t('home.weather.windy', 'Windy');
+      case 'windy-variant': return t('home.weather.windyVariant', 'Windy');
+      case 'exceptional': return t('home.weather.exceptional', 'Severe weather');
+      default: return '';
+    }
+  }
+
+  function renderWeather(w) {
+    if (!w || typeof w.temp !== 'number') { $('weather').className = 'none'; return; }
+    $('wxIcon').textContent = WX_ICONS[w.condition] || '🌡️';
+    $('wxTemp').textContent = Math.round(w.temp) + '°';
+    $('wxCity').textContent = w.city || '';
+    $('wxCond').textContent = wxLabel(w.condition);
+    $('weather').className = '';
+  }
+
+  function refreshWeather() {
+    getJson('/api/home/weather', function (r) { renderWeather(r && r.ok ? r : null); });
   }
 
   // ---------------------------------------------------------------- actions
@@ -2865,9 +2936,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   updateWall();
   beat();
   load();
+  refreshWeather();
   setInterval(beat, BEAT_MS);
   setInterval(function () { renderNow(); updateWall(); if (!document.hidden) refreshPicture(); }, 15000);
   setInterval(function () { refreshNow(); refreshGuide(); }, 60000);
+  setInterval(refreshWeather, 10 * 60000);
   setInterval(function () { if (!state.arranging) load(); }, 5 * 60000);
 })();
 </script>
