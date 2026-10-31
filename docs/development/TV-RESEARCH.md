@@ -1684,6 +1684,20 @@ Glasshouse Home on behind `allowExperimentalHome`.
   first heartbeat gave LG's Home the place every time, so Glasshouse Home
   never opened. With the wait at 20 s it opened.
 
+## Glasshouse Home without the remote after a wake (C5, webOS 11.2.0)
+
+On an OLED65C5PSA (firmware 43.21.77) with an MR25GA, after every wake from
+standby Glasshouse Home was drawn and kept beating, but arrows, OK and the
+pointer did nothing, while `lginput2` logged each press as `NL_BUTTON_CLICK`
+(#1122). It happened after a full restart too. Stuck, surface-manager's
+`getFocusedWindowInfo` named `com.webos.app.home` (`fullscreen`) and
+`getForegroundWindowInfo` it alone as the card; LG's Flutter Home was not
+running, WebAppMgr was, and `com.webos.app.starfish_flutter_systemui` was. So
+the compositor gave the view the keys and they were lost in the web engine.
+`closeByAppId` on `com.webos.app.home`, 2 s, then `launch` brought them back
+every time. On that TV `preloadmanager/setPreloadPolicy` failed each time it
+was asked.
+
 ## WebAppMgr stopped (G4, webOS 11.2.0)
 
 Seen on 23 October 2026 on an OLED65G4KNA with Glasshouse Home switched on.

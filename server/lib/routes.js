@@ -1196,11 +1196,12 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/beat') {
       if (!postGuard(req, res, 'application/json', false)) return;
-      req.resume();
-      // The hour cycle the view's clock draws, which follows the TV's setting.
-      var beatBody = homeModule.beat();
-      beatBody.clockHour12 = clockHour12();
-      return reply(beatBody);
+      return readJsonBody(req, res, function (body) {
+        // The hour cycle the view's clock draws, which follows the TV's setting.
+        var beatBody = homeModule.beat(body);
+        beatBody.clockHour12 = clockHour12();
+        reply(beatBody);
+      });
     }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);

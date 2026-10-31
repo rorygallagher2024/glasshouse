@@ -2353,7 +2353,9 @@ html.faded #stage{opacity:0}
   function beat() {
     // With no usable catalogue, let the server's ten-second watchdog recover Home.
     if (!data || !layout) return;
-    postJson('/api/home/beat', {}, function (r) {
+    // Whether the page has the keyboard: after a wake on webOS 11 it can be
+    // in front and get no keys (#1122).
+    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '' }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
         wallAvailable = !!(r.wallpapers && r.wallpapers.available);

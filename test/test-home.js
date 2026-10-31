@@ -197,6 +197,8 @@ function luna(uri, p, cb) {
     r.running = tv.oldAppRunning ? [{ id: OLD_APP }] : [];
   } else if (uri === 'com.webos.service.tvpower/power/getPowerOnReason') {
     r.reason = tv.powerOnReason || 'remoteKey';
+  } else if (uri === 'com.webos.applicationManager/closeByAppId') {
+    tv.events.push('close ' + p.id);
   } else if (uri === 'com.webos.applicationManager/launch') {
     tv.launched.push(p.id);
     tv.launches.push(copy(p));
@@ -2125,6 +2127,64 @@ step('switching on with Home already in front watches for the first heartbeat', 
       assert.strictEqual(tv.samType, 'native', 'a view that never loaded gives LG Home back');
       assert.deepEqual(tv.launched, [LG_HOME]);
       done();
+    });
+  });
+});
+
+function webos11() {
+  return { webosVersion: '11.2.0', allowExperimental: function () { return true; } };
+}
+
+step('on webOS 11, Glasshouse Home is closed and opened again once after a wake, while it is in front', function (done) {
+  start(null, webos11());
+  home.enable(function () {
+    foreground(LG_HOME);
+    home.beat({ focused: true, visible: 'visible' });
+    power(false);
+    power(true);
+    tv.launched = [];
+    wait(3500, function () {
+      assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'not before the wake has settled');
+      wait(1000, function () {
+        assert.ok(tv.events.indexOf('close ' + LG_HOME) !== -1, 'closed');
+        assert.deepEqual(tv.launched, [], 'and left closed for a moment');
+        wait(2100, function () {
+          assert.deepEqual(tv.launched, [LG_HOME], 'then opened again');
+          home.disable(function () { done(); });
+        });
+      });
+    });
+  });
+});
+
+step('on webOS 11, an app opened after the wake, or a switch-off, cancels it; other webOS never does it', function (done) {
+  start(null, webos11());
+  home.enable(function () {
+    foreground(LG_HOME);
+    power(false);
+    power(true);
+    foreground('netflix');
+    wait(4500, function () {
+      assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'an app opened since');
+      foreground(LG_HOME);
+      power(false);
+      power(true);
+      power(false);
+      wait(4500, function () {
+        assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'switched off again');
+        home.disable(function () {
+          start(null);
+          home.enable(function () {
+            foreground(LG_HOME);
+            power(false);
+            power(true);
+            wait(4500, function () {
+              assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'webOS 9');
+              home.disable(function () { done(); });
+            });
+          });
+        });
+      });
     });
   });
 });

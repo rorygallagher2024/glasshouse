@@ -87,6 +87,10 @@ var FULL_HOME_REASONS = ['aiKey', 'lastPowerOn', 'localKey', 'remoteKey', 'senio
 var WAKE_SETTLE_MS = 4500;
 // How long after opening it Home is opened once more if the input comes back in front.
 var WAKE_REOPEN_MS = 4000;
+// After a wake on webOS 11, how long the view is left before it is opened
+// again, and how long it stays closed: the times the reporter's script used.
+var WAKE11_REOPEN_MS = 4000;
+var WAKE11_CLOSED_MS = 2000;
 /*
  * Where giving LG's Home its place back restarts sam (webOS 5 and 6), the TV's
  * last-input handler puts the input or app back over LG's Home about 3 s later
@@ -222,6 +226,11 @@ var otherOpenedAt = 0;
 var lastSource = null;
 var beatTimer = null;
 var lastBeatAt = 0;
+// What the view last said of itself, with its heartbeat: whether its page had
+// the keyboard's focus and was visible (#1122).
+var viewFocus = null;
+var wake11Timer = null;
+var preloadRefusalLogged = false;
 // Heartbeats since the server started, so one after a press can be told apart.
 var beats = 0;
 var holdTimer = null;
@@ -1085,7 +1094,9 @@ function flutterHome() {
 
 function preloadLgHome(enabled) {
   luna('com.webos.service.preloadmanager/setPreloadPolicy', { application: { id: LG_HOME, isEnabled: enabled } }, function (r) {
-    if (!r || r.returnValue === false) {
+    // Refused every time on a C5 (webOS 11.2.0), where it is asked again each minute.
+    if ((!r || r.returnValue === false) && !(enabled === false && preloadRefusalLogged)) {
+      if (!enabled) preloadRefusalLogged = true;
       console.error('home: the preload manager did not take LG\'s Home ' + (enabled ? 'back' : 'off') +
                     (r && r.errorText ? ': ' + r.errorText : ''));
     }
@@ -1706,8 +1717,11 @@ function behindAnother(cb) {
   });
 }
 
-function beat() {
+function beat(body) {
   lastBeatAt = nowMs();
+  if (body && typeof body.focused === 'boolean') {
+    viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
+  }
   beats++;
   if (viewInFront()) watchBeat(BEAT_GRACE_MS);
   return { ok: true, enabled: readConfig().enabled, build: buildId, wallpapers: wallpapers.status(),
@@ -1938,10 +1952,48 @@ function powerStateChanged(raw) {
   }, wakeSettleMs);
 }
 
+function describeViewFocus() {
+  if (!viewFocus) return 'nothing of its focus';
+  return (viewFocus.focused ? 'it had the focus' : 'it did not have the focus') +
+    (viewFocus.visible ? ' and was ' + viewFocus.visible : '') +
+    ', ' + Math.round((nowMs() - viewFocus.at) / 1000) + ' s before';
+}
+
+/*
+ * On a C5 (webOS 11.2.0), after every wake from standby, Glasshouse Home was
+ * drawn and in front, and surface-manager gave its window the focus, but the
+ * page got no keys or pointer while it went on beating. Closing it and
+ * opening it again brought them back (#1122). Done once after a wake, while
+ * it is still in front and nothing else has been opened since.
+ */
+function reopenAfterWake11() {
+  if (wake11Timer) clearTimeout(wake11Timer);
+  var since = nowMs();
+  wake11Timer = setTimeout(function () {
+    wake11Timer = null;
+    if (!powerActive || escaped || switchBusy || recovering || !readConfig().enabled || !takeover.mounted()) return;
+    if (foreground !== LG_HOME || otherOpenedAt > since) return;
+    console.log('home: opening Glasshouse Home again after the wake, as webOS 11 leaves it without the remote; ' +
+                'the view last said ' + describeViewFocus());
+    luna('com.webos.applicationManager/closeByAppId', { id: LG_HOME }, function () {
+      setTimeout(function () {
+        launch(LG_HOME, null, function (res) {
+          if (!res.ok) console.error('home: could not open Glasshouse Home again after the wake');
+        });
+      }, WAKE11_CLOSED_MS);
+    });
+  }, WAKE11_REOPEN_MS);
+}
+
 function powerChanged(active) {
   var was = powerActive;
   powerActive = active;
   if (was && !active) sleeps++;
+  if (!active && wake11Timer) {
+    clearTimeout(wake11Timer);
+    wake11Timer = null;
+  }
+  if (!was && active && flutterHome() && readConfig().enabled) reopenAfterWake11();
   if (!active) cancelWake();
   if (was !== active && readConfig().enabled) syncLgAutoLaunch();
   // The preload manager may have started over with the TV.
