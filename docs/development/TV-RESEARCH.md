@@ -1396,6 +1396,9 @@ to an unlisted one, such as `com.webos.service.audio` or
 `com.webos.service.videooutput`, gets no answer: luna-send waits out `-w` and
 logs "Shutting down with unsent QueryName message", and ls-hubd logs
 `LSHUB_NOT_LSTED` "Service not listed in service files" as an error (#1112).
+A 55SJ800V-ZB (webOS 3.9.3) answered the same way, with nothing, for
+`com.webos.service.settings`, where it lists only `com.webos.settingsservice`
+(#1137), so a TV that old never says "Service does not exist" for a renamed one.
 
 ## LG's device scans (webOS 9.2.2, C2; #244)
 
