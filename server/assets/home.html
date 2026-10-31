@@ -455,6 +455,9 @@ html.faded #stage{opacity:0}
   // was changed elsewhere, such as from a dashboard, and the layout is reloaded.
   var layoutVersion = null;
   var loadRetry = null, wallAvailable = false, initialEscape = false;
+  // Opened by the boot hook, the page can be up before the server, which then
+  // takes about a minute (a B8, webOS 4.4.3): the logo stays until then.
+  var pageOpenedAt = Date.now(), STARTING_MS = 60000;
   var wallSlots = null, wallRevision = '';
 
   function $(id) { return document.getElementById(id); }
@@ -2292,7 +2295,7 @@ html.faded #stage{opacity:0}
     getJson('/api/home/catalogue', function (r) {
       if (!r || !r.ok) {
         if (!data) {
-          $('fault').className = 'show';
+          if (Date.now() - pageOpenedAt > STARTING_MS) $('fault').className = 'show';
           // A live HTTP server is not enough: Home needs its tiles and escape tile.
           if (!document.hidden && !initialEscape) {
             initialEscape = true;

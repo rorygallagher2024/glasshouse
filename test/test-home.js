@@ -1205,6 +1205,27 @@ step('on webOS 4, a Home press the view does not answer opens it again before gi
   });
 });
 
+step('on webOS 4, the page\'s escape when its first load fails is ignored', function (done) {
+  var injected = [];
+  start(null, {
+    webosVersion: '4.4.3',
+    allowExperimental: function () { return true; },
+    installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { cb({ ok: true }); },
+    injectKey: function (code, cb) { injected.push(code); if (cb) cb(true); }
+  });
+  home.enable(function () {
+    foreground(OLD_APP);
+    home.open({ kind: 'lg', recovery: true }, function (r) {
+      assert.strictEqual(r.done, false, 'left to the page, which tries again');
+      wait(400, function () {
+        assert.deepEqual(injected, [], 'LG\'s ribbon not opened');
+        home.disable(function () { done(); });
+      });
+    });
+  });
+});
+
 step('webOS 5 has neither the nudge nor the block and release, so both switches restart sam', function (done) {
   start(null, { webosVersion: '5.5.0', allowExperimental: function () { return true; } });
   home.status(function (st) {

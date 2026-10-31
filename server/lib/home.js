@@ -985,7 +985,13 @@ function open(body, cb) {
   // Only the view opens tiles: asked to, it is up, whether or not it beat first.
   beats++;
   if (kind === 'lg' || (kind === 'app' && id === LG_HOME_TILE)) {
-    if (body.recovery && !viewInFront()) return cb({ ok: true, done: false });
+    /*
+     * The page's escape when its first load fails. Not on webOS 4, where LG's
+     * ribbon is a long press of Home away and is no takeover to undo: on a B8
+     * (4.4.3) the page opened at boot before the server, and the escape put
+     * LG's ribbon over it as the server came up.
+     */
+    if (body.recovery && (isStandalone() || !viewInFront())) return cb({ ok: true, done: false });
     return toLgHome('tile', cb);
   }
   if (kind === 'app') {
