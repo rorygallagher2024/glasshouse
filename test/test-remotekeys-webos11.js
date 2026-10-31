@@ -110,6 +110,7 @@ function luna(uri, params, cb) {
     delete tv.blocked[params.id];
   } else if (uri === 'com.webos.service.tvpower/power/getPowerState') {
     r.state = power.state;
+    if (power.processing) r.processing = power.processing;
   } else if (uri === 'com.webos.service.tvpower/power/turnOffScreen') {
     power.screenOffs++;
   } else {
@@ -457,10 +458,17 @@ step('Screen off on a streaming button switches LG\'s entry off and turns the sc
         assert.ok(rk.isFollowingLog());
         power.screenOffs = 0;
         launched = [];
+        // Still finishing a change: tried again rather than lost.
+        power.processing = 'Screen On';
+        setTimeout(function () { power.processing = ''; }, 250);
         logLine(NETFLIX_LINE);
         setTimeout(function () {
-          assert.strictEqual(power.screenOffs, 1);
+          assert.strictEqual(power.screenOffs, 1, 'turned off once tvpower was done');
           assert.deepEqual(launched, []);
+          // LG writes its list back at the power change, unannounced: set again unasked.
+          tv.mapping.forEach(function (e) { if (e.netflix) e.netflix.isActive = true; });
+          setTimeout(function () {
+            assert.strictEqual(entry('netflix').isActive, false, 'set again after the screen off');
           // A press with the picture already off wakes the TV, and is left to.
           power.state = 'Screen Off';
           setTimeout(function () {
@@ -475,7 +483,8 @@ step('Screen off on a streaming button switches LG\'s entry off and turns the sc
               });
             }, POLLED);
           }, 600);
-        }, POLLED);
+          }, 1700);
+        }, POLLED + 800);
       });
     });
   });
