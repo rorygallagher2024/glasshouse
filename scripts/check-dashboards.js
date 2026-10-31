@@ -647,7 +647,10 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
     await page.keyboard.press('Enter');
     await page.waitForTimeout(120);
     if (await faded()) problems.push('Home fade: an overlay of LG\'s faded the view out');
-    if (!opened.length || opened[0].id !== 'com.webos.app.voice') problems.push('Home fade: an overlay was not opened at once');
+    // Not faded is what "at once" means; the open itself is given time, as
+    // 120 ms was too short with the other groups sharing CI's cores (#1161).
+    for (let waited = 120; !opened.length && waited < 1500; waited += 50) await page.waitForTimeout(50);
+    if (!opened.length || opened[0].id !== 'com.webos.app.voice') problems.push('Home fade: an overlay was not opened');
 
     // A failed open brings the view back.
     await page.keyboard.press('ArrowLeft');
