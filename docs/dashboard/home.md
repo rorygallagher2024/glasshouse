@@ -190,6 +190,8 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
 
 Each appears where the TV has it. A TV Glasshouse Home is not offered on, such as a B8 with webOS 4.4, still has the Home tab for these; there it holds Open Home at power-on and Hide home screen system apps. The TV app's Home section has the same rows.
 
+Where Glasshouse Home is not offered, as on webOS 3 and 4, [Lightkeeper](https://github.com/chiotas/lightkeeper) is a separate app that stands in for LG's Home: a clock, the weather and a short row of apps and inputs over a picture. It takes the Home key through Glasshouse's remote key filter, as the filter's `home` entry, so the key needs Glasshouse running. Owners report it working on webOS 4.4 and 4.10. webOS 3 has no key filters, so there the Home key stays LG's, and Lightkeeper opens at power-on and when Back leaves the last app.
+
 ### Open Home at power-on
 
 Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch (`general.homeAutoLaunch`). While Glasshouse Home is on, the Home it opens is Glasshouse Home (see [Switching it on and off](#switching-it-on-and-off)).
