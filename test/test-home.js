@@ -315,6 +315,33 @@ step('the saved layout keeps its order, drops what has gone and appends what is 
   });
 });
 
+step('where eim does not say which ports are plugged in, as on a B8, the HDMI reading does', function (done) {
+  start(null, {
+    webosVersion: '4.4.3',
+    hdmiInputs: function (cb) {
+      cb({ ok: true, inputs: [
+        { id: 'HDMI_1', deviceSeen: false, signal: null },
+        { id: 'HDMI_2', deviceSeen: true, signal: { port: 3 } },
+        { id: 'HDMI_3', deviceSeen: false, signal: null }
+      ] });
+    }
+  });
+  // As a B8 (webOS 4.4.3) answers: no hdmiPlugIn, no connected.
+  tv.devices = [
+    { id: 'HDMI_1', label: 'HDMI 1', activate: false, subList: [], lastUniqueId: 255 },
+    { id: 'HDMI_2', label: 'Apple TV', activate: true, subList: [{ id: 'SIMPLINK', osdName: 'Apple TV', uniqueId: 4 }] },
+    { id: 'HDMI_3', label: 'HDMI 3', activate: false, subList: [], lastUniqueId: 255 }
+  ];
+  home.catalogue(function (c) {
+    var by = {};
+    c.devices.forEach(function (d) { by[d.input] = d; });
+    assert.strictEqual(by.hdmi1.unused, true, 'nothing on HDMI 1');
+    assert.strictEqual(by.hdmi3.unused, true, 'nothing on HDMI 3');
+    assert.ok(!by.hdmi2.unused, 'the Apple TV on HDMI 2');
+    done();
+  });
+});
+
 step('a layout naming one row leaves the other rows as they were saved', function (done) {
   start({ order: { app: ['netflix', 'cdp-30'], dev: [], ch: [] } });
   home.setLayout({ order: { dev: ['hdmi2:playstation-5'] } }, function (r) {

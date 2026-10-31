@@ -1859,7 +1859,9 @@ function startGlasshouseHome() {
     port: CONFIG.port,
     samrescan: samrescan,
     injectKey: controls.injectKey,
-    // Only to remove the separate app earlier builds installed.
+    // Which ports have something plugged in, where eim does not say (webOS 4).
+    hdmiInputs: telemetry.hdmiInputs,
+    // The standalone app on webOS 4, and removing the one earlier builds installed elsewhere.
     installApp: function (action, cb) { tvApp(action, cb, 'home-app'); },
     setHomeKey: remoteKeys.setHome,
     homeKeyApp: remoteKeys.homeApp,

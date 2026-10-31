@@ -184,6 +184,7 @@ var lgHomeTicks = 0;
 var lgHomeHeld = false;
 var installFn = null;
 var injectKeyFn = null;
+var hdmiInputsFn = null;
 var procDir = '/proc';
 var execFn = execFile;
 var systemctlPath = '';
@@ -634,46 +635,68 @@ function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').re
  * which: depth 2 under depth 1 on the same port. The G3 reports connected
  * true for every port, so the plug is hdmiPlugIn, where it is given.
  */
+/*
+ * eim on webOS 4 (a B8, 4.4.3) names neither hdmiPlugIn nor connected, so
+ * every port read as plugged in. The Metrics tab's reading of the ports is
+ * used there instead: a CEC device behind the port, or a link on it.
+ */
+function pluggedPorts(devs, cb) {
+  var told = devs.some(function (d) { return d && (typeof d.hdmiPlugIn === 'boolean' || typeof d.connected === 'boolean'); });
+  if (told || !hdmiInputsFn) return cb(null);
+  hdmiInputsFn(function (r) {
+    if (!r || !r.ok || !isArray(r.inputs)) return cb(null);
+    var plugged = {};
+    r.inputs.forEach(function (i) { if (i && i.id) plugged[i.id] = !!(i.deviceSeen || i.signal); });
+    cb(plugged);
+  });
+}
+
 function devices(cb) {
   cached('dev', LIST_TTL_MS, function (done) {
     luna('com.webos.service.eim/getAllInputStatus', {}, function (r) {
       if (!r || !isArray(r.devices)) return done(null);
-      var out = [];
-      r.devices.forEach(function (d) {
-        var m = d && typeof d.id === 'string' && /^HDMI_(\d)$/.exec(d.id);
-        if (!m) return;
-        var plugged = typeof d.hdmiPlugIn === 'boolean' ? d.hdmiPlugIn : d.connected !== false;
-        var port = +m[1];
-        var input = 'hdmi' + port;
-        if (!plugged) {
-          out.push({ id: input, name: 'HDMI ' + port, input: input, port: port, via: null, address: null, unused: true });
-          return;
-        }
-        var subs = (isArray(d.subList) ? d.subList : []).filter(function (s) {
-          return s && s.id === 'SIMPLINK' && typeof s.osdName === 'string' && s.osdName.trim();
-        });
-        if (!subs.length) {
-          out.push({ id: input, name: String(d.label || ('HDMI ' + port)), input: input, port: port, via: null, address: null });
-          return;
-        }
-        var top = null;
-        subs.forEach(function (s) { if (s.depth === 1 && !top) top = s.osdName.trim(); });
-        subs.forEach(function (s) {
-          var name = s.osdName.replace(/\s+/g, ' ').trim();
-          out.push({
-            id: input + ':' + slug(name),
-            name: name,
-            input: input,
-            port: port,
-            via: s.depth > 1 && top && top !== name ? top : null,
-            address: cecAddress(s.physicalAddress),
-            uniqueId: s.uniqueId
-          });
-        });
-      });
-      done(out);
+      pluggedPorts(r.devices, function (portsPlugged) { done(listDevices(r.devices, portsPlugged)); });
     });
   }, cb);
+}
+
+function listDevices(devs, portsPlugged) {
+  var out = [];
+  devs.forEach(function (d) {
+    var m = d && typeof d.id === 'string' && /^HDMI_(\d)$/.exec(d.id);
+    if (!m) return;
+    var plugged = typeof d.hdmiPlugIn === 'boolean' ? d.hdmiPlugIn
+      : portsPlugged && Object.prototype.hasOwnProperty.call(portsPlugged, d.id) ? portsPlugged[d.id]
+      : d.connected !== false;
+    var port = +m[1];
+    var input = 'hdmi' + port;
+    if (!plugged) {
+      out.push({ id: input, name: 'HDMI ' + port, input: input, port: port, via: null, address: null, unused: true });
+      return;
+    }
+    var subs = (isArray(d.subList) ? d.subList : []).filter(function (s) {
+      return s && s.id === 'SIMPLINK' && typeof s.osdName === 'string' && s.osdName.trim();
+    });
+    if (!subs.length) {
+      out.push({ id: input, name: String(d.label || ('HDMI ' + port)), input: input, port: port, via: null, address: null });
+      return;
+    }
+    var top = null;
+    subs.forEach(function (s) { if (s.depth === 1 && !top) top = s.osdName.trim(); });
+    subs.forEach(function (s) {
+      var name = s.osdName.replace(/\s+/g, ' ').trim();
+      out.push({
+        id: input + ':' + slug(name),
+        name: name,
+        input: input,
+        port: port,
+        via: s.depth > 1 && top && top !== name ? top : null,
+        address: cecAddress(s.physicalAddress),
+        uniqueId: s.uniqueId
+      });
+    });
+  });
+  return out;
 }
 
 /*
@@ -2146,6 +2169,7 @@ function init(opts) {
   wakeSettleMs = typeof opts.wakeSettleMs === 'number' ? opts.wakeSettleMs : WAKE_SETTLE_MS;
   installFn = opts.installApp || null;
   if (opts.injectKey) injectKeyFn = opts.injectKey;
+  hdmiInputsFn = opts.hdmiInputs || null;
   procDir = opts.procDir || '/proc';
   slowOpenMs = typeof opts.slowOpenMs === 'number' ? opts.slowOpenMs : FIRST_BEAT_GRACE_MS;
   bootOpenedFile = opts.bootOpenedFile || BOOT_OPENED_FILE;
