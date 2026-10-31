@@ -1793,6 +1793,18 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/homescreen/banner' && req.method === 'POST') {
+    if (!config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    if (!postGuard(req, res, 'image/jpeg', true)) return;
+    if (!homeScreenModule) return refuseUpload(req, res, 'home screen module unavailable', 503);
+    return homeScreenModule.uploadBanner(req, function (r) {
+      if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+      send(res, 200, JSON.stringify(r));
+    });
+  }
+
   if (pathname === '/api/homescreen' && req.method === 'POST') {
     if (!config.allowControl) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
@@ -1811,8 +1823,9 @@ function handleRequest(req, res) {
       }
       if (body.restore === true) return homeScreenModule.restore(done);
       if (typeof body.part === 'string') return homeScreenModule.setPart(body.part, !!body.shown, done);
+      if (typeof body.banner === 'string') return homeScreenModule.setBanner(body.banner, done);
       if (typeof body.input === 'string') return homeScreenModule.setInput(body.input, !!body.onHome, done);
-      done({ ok: false, error: 'part, input or restore expected' });
+      done({ ok: false, error: 'part, banner, input or restore expected' });
     });
   }
 

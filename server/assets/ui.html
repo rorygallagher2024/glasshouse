@@ -1148,6 +1148,13 @@
       <div id="apps-home-inputs" style="margin-top:12px"></div>
       <div class="pv-g" data-t="apps.home.parts">Parts of the Home screen</div>
       <div class="prot-table" id="apps-home-parts"></div>
+      <div id="apps-home-banner" hidden>
+        <div class="pv-g" data-t="apps.home.banner">Banner picture</div>
+        <div class="pv-sub" data-t="apps.home.banner.desc">The picture across the top of the Home screen: LG&rsquo;s, plain black, or your own. Your own is cropped to the banner&rsquo;s shape as it is now, so choose it after hiding the rows you want gone.</div>
+        <div class="btns wall-choice" id="apps-home-banner-choice"></div>
+        <input type="file" id="home-banner-file" accept="image/jpeg,image/png,image/webp" hidden onchange="homeBannerPicked(this)">
+        <div class="sub" id="apps-home-banner-note" role="status"></div>
+      </div>
       <div class="btns" style="margin-top:14px;max-width:420px">
         <button type="button" class="pill idle" id="btn-home-restore" onclick="restoreHome()" data-t="apps.home.restore">Put back LG&rsquo;s Home screen</button>
       </div>

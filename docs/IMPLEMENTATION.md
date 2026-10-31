@@ -1260,14 +1260,24 @@ over that folder, leaving every other file LG's. The parts are the side buttons
 (`globalline`, shrunk to 0 by 0 after the banner: taking it out left the screen
 black), the Quick Cards (`qcardList`) and the recommended shelf
 (`recommendedShelf`); the banner takes the height of the rows taken out, so the
-apps row stays at the bottom. The home app runs as
+apps row stays at the bottom, and with the side buttons hidden it also takes
+their width and the gap above it, reaching the screen's edges. The banner's text and picture are files in the
+same folder: the text is looked up by its English in `i18n`, a symlink to LG's
+language files under `/mnt/lg/wee/ui_l10n`, so hiding it lays an `i18n` folder
+of its own over the symlink, copied from LG's each time it is mounted with the
+two strings blank (added where a file lacks them). The picture is
+`images/<size>/bg_banner_img.png`, laid in each size folder LG has, linked
+rather than copied since `/tmp` is memory: a small black PNG, or the owner's
+JPEG under the PNG's name, which the browser crops to the banner's shape and
+keeps within 3840 across. The home app runs as
 `flutter-client -i com.webos.app.home`, so it is found by that argument pair in
 `/proc/<pid>/cmdline`, checked again just before it is sent SIGTERM, and other
 Flutter apps are left alone; a failed restart is reported to the dashboard. The
 mount goes with a restart of the TV, so `reapply()` mounts it again when the
 server starts, and does nothing while it is still mounted. The choices and a
 copy of LG's `home.xml`, which cannot be read while the overlay covers it, are
-kept in `/var/lib/tvweb`. Offered only on 10.x, where `/proc/filesystems` lists
+kept in `/var/lib/tvweb`, with the owner's banner picture
+(`home-webos10-banner.jpg`). Offered only on 10.x, where `/proc/filesystems` lists
 overlay and the layout is one recognised from #612's dumps, and only once
 `allowHomeLayout` is set.
 

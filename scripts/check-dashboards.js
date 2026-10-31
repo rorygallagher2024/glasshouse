@@ -1224,14 +1224,17 @@ async function visitHomeUploads(browser, base, problems) {
  * Home at power-on among them, usable without Glasshouse Home; and
  * with Glasshouse Home on, LG's Home's layout and hidden system apps are
  * left out (lgHomeOptions in lib/routes.js offers no tile hiding then).
+ * The banner's picture shows only where the layout offers it (webOS 10).
  */
 async function visitHomeAvailability(browser, base, problems) {
-  const lgHome = enabled => ({ writable: true, glasshouseHome: enabled,
-    homeScreen: { parts: [{ id: 'banner', title: 'Banner', desc: 'The banner.', shown: true }], inputs: null, experimental: null },
+  const lgHome = (enabled, banner) => ({ writable: true, glasshouseHome: enabled,
+    homeScreen: { parts: [{ id: 'banner', title: 'Banner', desc: 'The banner.', shown: true }], inputs: null, experimental: null, banner: banner || null },
     tileHidingAvailable: !enabled, tileHidingEnabled: false, systemTiles: [], hiddenCount: 0 });
   const cases = [
     { name: 'unavailable', st: { available: false, enabled: false }, glasshouse: false },
     { name: 'LG\'s Home only', st: { available: true, enabled: false, lgHomeAvailable: true, lgHome: lgHome(false), homeAutoLaunch: false }, glasshouse: false },
+    { name: 'webOS 10\'s banner', st: { available: true, enabled: false, lgHomeAvailable: true, homeAutoLaunch: false,
+      lgHome: lgHome(false, { choice: 'black', own: false, width: 3492, height: 1685 }) }, glasshouse: false, banner: true },
     { name: 'Glasshouse Home on', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true) }, glasshouse: true },
     // webOS 5 and 6, where each switch restarts the app manager: their note shows there only.
     { name: 'webOS 6', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true),
@@ -1267,6 +1270,16 @@ async function visitHomeAvailability(browser, base, problems) {
         fail('Open Home at power-on missing or unusable');
       if (!c.glasshouse && await page.locator('#home-picture-row').isVisible()) fail('Glasshouse Home\'s options shown without it');
       if (await page.locator('#disc-homescreen').isVisible() === st.enabled) fail('LG\'s Home layout ' + (st.enabled ? 'shown with Glasshouse Home on' : 'missing'));
+      if (!st.enabled) {
+        await page.locator('#disc-homescreen summary').click();
+        if (await page.locator('#apps-home-banner').isVisible() !== !!c.banner) fail('banner picture ' + (c.banner ? 'missing' : 'shown where it cannot be changed'));
+      }
+      if (c.banner) {
+        const pressed = await page.locator('#apps-home-banner-choice button[aria-pressed="true"]').allTextContents();
+        if (pressed.join() !== 'Black') fail('banner picture chosen: ' + pressed.join());
+        if (await page.locator('#btn-home-banner-own').textContent() !== 'Your own…') fail('Your own does not ask for an upload before one is made');
+        if (await page.locator('#btn-home-banner-replace').count()) fail('Upload another offered with nothing uploaded');
+      }
     } finally { await page.close(); }
   }
 }

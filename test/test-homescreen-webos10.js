@@ -41,6 +41,15 @@ var assets = path.join(root, 'assets');
 var state = path.join(root, 'state');
 [root, assets, state].forEach(function (d) { fs.mkdirSync(d); });
 fs.writeFileSync(path.join(assets, 'home.xml'), LG);
+// LG's language files, elsewhere, behind a symlink; and the banner's size folders.
+var l10n = path.join(root, 'l10n');
+fs.mkdirSync(l10n);
+fs.writeFileSync(path.join(l10n, 'de.json'), JSON.stringify({ 'Start a new experience with webOS.': 'Ein neues Erlebnis mit webOS.', 'Go to Apps': 'Zu den Apps', 'Settings': 'Einstellungen' }));
+fs.writeFileSync(path.join(l10n, 'en.json'), JSON.stringify({ 'Settings': 'Settings' }));
+fs.writeFileSync(path.join(l10n, 'README'), 'not json');
+fs.symlinkSync(l10n, path.join(assets, 'i18n'));
+fs.mkdirSync(path.join(assets, 'images'));
+['hd', '2k', '4k'].forEach(function (d) { fs.mkdirSync(path.join(assets, 'images', d)); });
 var mounts = path.join(root, 'mounts');
 var filesystems = path.join(root, 'filesystems');
 fs.writeFileSync(mounts, '');
@@ -63,11 +72,22 @@ process.kill = function (pid, sig) {
   killed.push(pid + ' ' + sig);
 };
 
-// Shell commands recorded, not run; a mount marks the folder mounted.
+function rmTree(p) {
+  var st;
+  try { st = fs.lstatSync(p); } catch (e) { return; }
+  if (st.isDirectory()) fs.readdirSync(p).forEach(function (n) { rmTree(path.join(p, n)); });
+  if (st.isDirectory()) fs.rmdirSync(p); else fs.unlinkSync(p);
+}
+
+// Shell commands recorded, not run, but for clearing the overlay's folder; a
+// mount marks the folder mounted.
+var overlay = path.join(root, 'overlay');
+var upper = path.join(overlay, 'upper');
 var runs = [];
 childProcess.execFile = function (file, args, opts, cb) {
   var rec = { cmd: args[1], stdin: '' };
   runs.push(rec);
+  if (rec.cmd.indexOf("rm -rf '" + overlay + "'") !== -1) rmTree(overlay);
   // Mounting starts by unmounting whatever was there, so the mount decides.
   if (/mount -t overlay/.test(rec.cmd)) fs.writeFileSync(mounts, 'overlay ' + assets + ' overlay rw 0 0\n');
   else if (/^umount /.test(rec.cmd)) fs.writeFileSync(mounts, '');
@@ -80,7 +100,7 @@ var config = {};
 function setup(version) {
   home10.init({ luna: function (u, p, cb) { process.nextTick(function () { cb({ returnValue: true, appId: 'com.webos.app.hdmi1' }); }); },
                 config: config, webosVersion: version, assetsDir: assets, stateDir: state,
-                overlayDir: path.join(root, 'overlay'), mountsFile: mounts, procDir: proc, filesystemsFile: filesystems,
+                overlayDir: overlay, mountsFile: mounts, procDir: proc, filesystemsFile: filesystems,
                 checkpointDirs: [path.join(root, 'cp')] });
 }
 function checked(fn) {
@@ -122,7 +142,16 @@ var lgRows = rows(LG);
   assert.strictEqual(banner, box, 'banner fills the taller container');
   var side = /<item id="globalline"[^>]*itemHeight="(\d+)"/.exec(xml)[1];
   assert.strictEqual(side, hidden.indexOf('sideIcons') !== -1 ? '0' : box, 'side buttons grow with it unless hidden');
+  // #833: without the side buttons the banner reaches the edges, as the picture behind it did not.
+  var width = /<item id="herobanner"[^>]*itemWidth="(\d+)"/.exec(xml)[1];
+  var firstGap = /<item id="margin"[^>]*itemHeight="(\d+)"/.exec(xml)[1];
+  var sideHidden = hidden.indexOf('sideIcons') !== -1;
+  assert.strictEqual(width, sideHidden ? '3840' : '3492', hidden.join('+') + ': the whole width without the side buttons');
+  assert.strictEqual(firstGap, sideHidden ? '0' : '45', hidden.join('+') + ': and the gap above folded into it');
 });
+var sideOnly = home10.buildLayout(LG, ['sideIcons']);
+assert.ok(/id="herobanner"[^>]*itemWidth="3840"[^>]*itemHeight="945"/.test(sideOnly), 'side buttons alone: 3840 by 900 + 45');
+assert.strictEqual(total(rows(sideOnly)), total(lgRows), 'the apps row stays where LG puts it');
 var both = home10.buildLayout(LG, ['quickCards', 'recommended']);
 assert.ok(/id="container"[^>]*itemHeight="1685"/.test(both), '900 + 74 + 180 + 531');
 assert.deepEqual(rows(both).map(function (r) { return r.id; }), ['margin', 'container', 'margin', 'appList', 'margin', 'quickGuide']);
@@ -146,14 +175,16 @@ home10.setPart('quickCards', false, checked(function (refused) {
     assert.strictEqual(r.ok, true);
     var mount = runs.filter(function (x) { return /mount -t overlay/.test(x.cmd); })[0];
     assert.ok(mount.cmd.indexOf('lowerdir=' + assets) !== -1, 'LG\'s folder underneath');
-    assert.ok(mount.stdin.indexOf('qcardList') === -1 && mount.stdin.indexOf('recommendedShelf') !== -1);
+    var xml = fs.readFileSync(path.join(upper, 'home.xml'), 'utf8');
+    assert.ok(xml.indexOf('qcardList') === -1 && xml.indexOf('recommendedShelf') !== -1);
+    assert.ok(!fs.existsSync(path.join(upper, 'i18n')) && !fs.existsSync(path.join(upper, 'images')), 'banner left as LG has it');
     assert.deepEqual(killed, ['100 SIGTERM', '101 SIGTERM'], 'the home app under either name, no other Flutter app or shell');
     assert.ok(!runs.some(function (x) { return /pkill|pidof/.test(x.cmd); }));
     assert.strictEqual(fs.readFileSync(path.join(state, 'home-webos10-lg.xml'), 'utf8'), LG, 'LG\'s copy kept');
     console.log('  ✓ hiding a part mounts LG\'s layout without it over the folder, and restarts the home app found by its arguments');
 
     home10.setPart('sideIcons', false, checked(function () {
-      var xml = runs.filter(function (x) { return /mount -t overlay/.test(x.cmd); }).pop().stdin.split('\n');
+      var xml = fs.readFileSync(path.join(upper, 'home.xml'), 'utf8').split('\n');
       var side = xml.filter(function (l) { return l.indexOf('globalline') !== -1; })[0];
       assert.ok(/itemWidth="0"/.test(side) && /itemHeight="0"/.test(side), 'shrunk, not removed');
       var at = function (id) { for (var i = 0; i < xml.length; i++) if (xml[i].indexOf('id="' + id + '"') !== -1) return i; return -1; };
@@ -177,14 +208,69 @@ home10.setPart('quickCards', false, checked(function (refused) {
           assert.ok(/restart/.test(failed.error));
           killFails = false;
           console.log('  ✓ a failed restart of the home app is reported');
-          killed = [];
+
+          home10.setPart('bannerText', false, checked(function (r1) {
+          assert.strictEqual(r1.ok, true, r1.error);
+          var de = JSON.parse(fs.readFileSync(path.join(upper, 'i18n', 'de.json'), 'utf8'));
+          assert.deepEqual(de, { 'Start a new experience with webOS.': '', 'Go to Apps': '', 'Settings': 'Einstellungen' }, 'blank, the rest as LG has it');
+          var en = JSON.parse(fs.readFileSync(path.join(upper, 'i18n', 'en.json'), 'utf8'));
+          assert.strictEqual(en['Go to Apps'], '', 'added where a language shows the key as it is');
+          assert.strictEqual(fs.readFileSync(path.join(upper, 'i18n', 'README'), 'utf8'), 'not json');
+          assert.ok(!fs.lstatSync(path.join(upper, 'i18n')).isSymbolicLink(), 'a folder of its own over LG\'s symlink');
+          assert.strictEqual(JSON.parse(fs.readFileSync(path.join(l10n, 'de.json'), 'utf8'))['Go to Apps'], 'Zu den Apps', 'LG\'s files untouched');
+          console.log('  ✓ hiding the banner text lays a copy of LG\'s language files over its symlink with the two strings blank');
+
+          var b0 = home10.banner();
+          assert.deepEqual(b0, { choice: 'lg', own: false, width: 3840, height: 1730 },
+            'with the side buttons, Quick Cards and Recommended hidden, the whole width and the gap above it too');
+          home10.setBanner('own', checked(function (noOwn) {
+          assert.strictEqual(noOwn.ok, false, 'nothing uploaded yet');
+          home10.setBanner('black', checked(function (r2) {
+          assert.strictEqual(r2.ok, true, r2.error);
+          var pics = ['hd', '2k', '4k'].map(function (d) { return path.join(upper, 'images', d, 'bg_banner_img.png'); });
+          pics.forEach(function (f) { assert.ok(fs.existsSync(f), f); });
+          assert.strictEqual(fs.readFileSync(pics[0]).slice(1, 4).toString(), 'PNG');
+          assert.ok(fs.existsSync(path.join(upper, 'i18n', 'de.json')), 'the text stays hidden');
+          assert.strictEqual(home10.banner().choice, 'black');
+          console.log('  ✓ a black banner is a picture in each of LG\'s size folders');
+
+          // The owner's picture, as the browser sends it.
+          var jpeg = fs.readFileSync(path.join(__dirname, 'fixtures', 'home-wallpaper.jpg'));
+          var EventEmitter = require('events').EventEmitter;
+          var req = new EventEmitter();
+          req.headers = { 'content-length': String(jpeg.length) };
+          home10.uploadBanner(req, checked(function (r3) {
+            assert.strictEqual(r3.ok, true, r3.error);
+            assert.deepEqual(fs.readFileSync(path.join(upper, 'images', '4k', 'bg_banner_img.png')), jpeg, 'the upload laid over LG\'s picture');
+            assert.deepEqual(home10.banner().choice, 'own');
+            var bad = new EventEmitter();
+            bad.headers = { 'content-length': '4' };
+            home10.uploadBanner(bad, checked(function (r4) {
+              assert.strictEqual(r4.ok, false, 'not a JPEG');
+              assert.strictEqual(home10.banner().choice, 'own', 'the picture before is kept');
+              console.log('  ✓ an uploaded JPEG is chosen and laid over LG\'s picture; a bad one is refused');
+
+              home10.setBanner('lg', checked(function () {
+                assert.ok(!fs.existsSync(path.join(upper, 'images')), 'LG\'s picture back');
+                assert.ok(home10.banner().own, 'the upload kept to choose again');
+                killed = [];
           home10.restore(checked(function (back) {
             assert.strictEqual(back.changed, true);
             assert.strictEqual(killed.length, 2, 'restarted after putting LG\'s layout back too');
             assert.ok(runs.slice(before).some(function (x) { return /^umount /.test(x.cmd); }));
-            assert.deepEqual(home10.parts().map(function (p) { return p.shown; }), [true, true, true]);
+            assert.deepEqual(home10.parts().map(function (p) { return p.shown; }), [true, true, true, true]);
+            assert.deepEqual(home10.banner().choice, 'lg');
+            assert.strictEqual(home10.banner().own, false, 'the upload removed too');
             console.log('  ✓ putting LG\'s Home screen back unmounts it and forgets the choices');
             console.log('ALL test-homescreen-webos10.js assertions passed!\n');
+          }));
+              }));
+            }));
+            process.nextTick(function () { bad.emit('data', require('../server/lib/util').toBuffer('nope', 'utf8')); bad.emit('end'); });
+          }));
+          process.nextTick(function () { req.emit('data', jpeg); req.emit('end'); });
+          }));
+          }));
           }));
           }));
         }));

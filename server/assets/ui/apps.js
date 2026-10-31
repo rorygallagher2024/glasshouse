@@ -686,6 +686,7 @@ function renderHomeScreen(d) {
   if (summary) {
     summary.textContent = hidden
       ? t('apps.home.hiddenOf', '{n} of {total} hidden', { n: hidden, total: hs.parts.length })
+      : hs.banner && hs.banner.choice !== 'lg' ? t('apps.home.bannerChanged', 'Banner picture changed')
       : t('apps.home.asLg', 'As LG has it');
   }
   const parts = q('apps-home-parts');
@@ -706,6 +707,7 @@ function renderHomeScreen(d) {
       </div>
     </div>`).join('');
   }
+  renderHomeBanner(hs.banner, usable);
   const inputs = q('apps-home-inputs');
   const inputsHead = q('apps-home-inputs-h');
   const showInputs = !!(hs.inputs && hs.inputs.length);
@@ -776,6 +778,85 @@ async function postHomeScreen(btnId, body) {
   }
   if (error) alert(t('apps.home.failed', 'Could not change the Home screen: {error}', { error }));
   loadHome();
+}
+
+// The banner's picture on webOS 10: LG's, black, or the owner's own, uploaded.
+let homeBannerSize = null;
+let homeBannerUploading = false;
+function renderHomeBanner(banner, usable) {
+  const box = q('apps-home-banner');
+  if (!box) return;
+  box.hidden = !banner;
+  if (!banner) return;
+  homeBannerSize = { width: banner.width, height: banner.height };
+  const label = { lg: t('apps.home.banner.lg', 'LG’s'), black: t('apps.home.banner.black', 'Black'),
+    own: banner.own ? t('apps.home.banner.own', 'Your own') : t('apps.home.banner.upload', 'Your own…') };
+  q('apps-home-banner-choice').innerHTML = ['lg', 'black', 'own'].map(name =>
+    `<button type="button" id="btn-home-banner-${name}" class="${name === banner.choice ? 'on' : ''}${name === 'own' && homeBannerUploading ? ' busy' : ''}"
+      ${!usable || homeBannerUploading ? 'disabled' : ''} aria-pressed="${name === banner.choice}"
+      onclick="setHomeBanner('${name}', ${banner.own})">${esc(label[name])}</button>`).join('') +
+    (banner.own ? `<button type="button" id="btn-home-banner-replace" ${!usable || homeBannerUploading ? 'disabled' : ''}
+      onclick="chooseHomeBanner()">${esc(t('apps.home.banner.replace', 'Upload another…'))}</button>` : '');
+}
+
+function setHomeBanner(choice, haveOwn) {
+  q('apps-home-banner-note').textContent = '';
+  if (choice === 'own' && !haveOwn) return chooseHomeBanner();
+  return postHomeScreen('btn-home-banner-' + choice, { banner: choice });
+}
+
+function chooseHomeBanner() {
+  const input = q('home-banner-file');
+  input.value = '';
+  input.click();
+}
+
+function homeBannerPicked(input) {
+  if (input.files[0]) uploadHomeBanner(input.files[0]);
+}
+
+// Cropped to the banner's shape and sent as a JPEG of up to 3840 across, the
+// layout's own width; the server refuses larger.
+async function uploadHomeBanner(file) {
+  const note = q('apps-home-banner-note');
+  const size = homeBannerSize || { width: 3492, height: 900 };
+  homeBannerUploading = true;
+  note.textContent = t('apps.home.banner.uploading', 'Uploading the picture. The Home screen starts again with it.');
+  let url;
+  try {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 25 * 1024 * 1024) {
+      throw new Error(t('home.wall.chooseImage', 'Choose a JPEG, PNG or WebP image up to 25 MB.'));
+    }
+    url = URL.createObjectURL(file);
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error(t('home.wall.unreadable', 'The image could not be opened.')));
+      img.src = url;
+    });
+    const aspect = size.width / size.height;
+    let sw = img.naturalWidth, sh = Math.round(sw / aspect);
+    if (sh > img.naturalHeight) { sh = img.naturalHeight; sw = Math.round(sh * aspect); }
+    const outW = Math.min(3840, sw), outH = Math.max(1, Math.round(outW / aspect));
+    const canvas = document.createElement('canvas');
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, outW, outH);
+    ctx.drawImage(img, (img.naturalWidth - sw) / 2, (img.naturalHeight - sh) / 2, sw, sh, 0, 0, outW, outH);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.88));
+    if (!blob || blob.size > 5 * 1024 * 1024) throw new Error(t('home.wall.tooLarge', 'The prepared image is too large. Choose a smaller image.'));
+    const res = await fetch(api('/api/homescreen/banner'), { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
+    const r = await res.json();
+    if (!res.ok || !r.ok) throw new Error(r.error || t('home.wall.uploadFailed', 'The image could not be uploaded.'));
+    note.textContent = '';
+  } catch (e) { note.textContent = e.message; }
+  finally {
+    if (url) URL.revokeObjectURL(url);
+    homeBannerUploading = false;
+    loadHome();
+  }
 }
 
 function setHomePart(id, shown) { return postHomeScreen('btn-home-' + id, { part: id, shown }); }
