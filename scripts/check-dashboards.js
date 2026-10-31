@@ -1830,14 +1830,22 @@ function groups(web, tv) {
     { tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [] },
     { tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
-    { tabs: [], visits: [visitHomePicture, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeMotion, visitHomeSearch] },
+    { tabs: [], visits: [visitHomePicture, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
     { tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
-      visitHomeRecentsHidden, visitHomeUploads, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeScrolling, visitHomeGuide] }
+      visitHomeRecentsHidden, visitHomeUploads, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide] },
+    /*
+     * Scrolling and motion read the row's place frame by frame, and missed
+     * frames with the other groups sharing CI's four cores: 3 of 15 runs
+     * failed on them after the groups went side by side (#1126). Their server
+     * starts with the rest; they run once the rest are done.
+     */
+    { tabs: [], visits: [visitHomeScrolling, visitHomeMotion], alone: true }
   ];
 }
 
-async function runGroup(browser, group, problems) {
+async function runGroup(browser, group, problems, after) {
   const server = await startServer();
+  if (after) await after;
   const base = 'http://127.0.0.1:' + server.port;
   await visitAll(browser, group.tabs.map(t => ({ url: base + t.path, label: t.label })), problems);
   for (const visitOne of group.visits) await visitOne(browser, base, problems);
@@ -1847,7 +1855,9 @@ async function runGroup(browser, group, problems) {
   const browser = await chromium.launch(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {});
   const problems = [];
   const web = webTabs(), tv = tvTabs();
-  await Promise.all(groups(web, tv).map(g => runGroup(browser, g, problems)));
+  const all = groups(web, tv);
+  const together = Promise.all(all.filter(g => !g.alone).map(g => runGroup(browser, g, problems)));
+  await Promise.all([together].concat(all.filter(g => g.alone).map(g => runGroup(browser, g, problems, together))));
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +

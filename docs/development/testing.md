@@ -149,7 +149,7 @@ installed apps have no icon files. A function a page calls that has gone, or an
 element it reaches for that has moved, breaks only when that tab opens, which
 no unit test does. It runs when the server, the pages or the fake TV change.
 
-The checks run in four groups side by side, each against its own server and fake TV, since the Home checks change the layout and uploads they read back. A new check goes in the group it shares state with, or in the shortest.
+The checks run in four groups side by side, each against its own server and fake TV, since the Home checks change the layout and uploads they read back. A new check goes in the group it shares state with, or in the shortest. The scrolling and motion checks, which measure the rows frame by frame, run on their own server after the others have finished, as they missed frames with the groups sharing CI's processor.
 
 For the Home view, arranging checks cover a late catalogue reply, resetting after moving a tile, and an update noticed while arranging. Picture checks cover a layout with picture details left at their default (off), the plate's single mode and OLED light, an input with no signal keeping its line level with the source's first line, a delayed reply after changing source, and a delayed reply after switching picture details off. Its service replies are simulated; the page and its timers run in Chromium.
 
