@@ -1585,7 +1585,13 @@ function setAutoLaunch(on, cb) {
   });
 }
 
+/*
+ * Not on webOS 4: the filter waits for LG's Home's id to be Glasshouse Home's
+ * web app, which it never is there, so on a B8 (4.4.3) Home only said it was
+ * starting for 90 s after a boot. The standalone app opens as soon as it is set.
+ */
 function startingNotice(on, cb) {
+  if (isStandalone()) on = false;
   var text = on ? msg('srv.home.startingToast', 'Glasshouse Home is starting. It opens in a few seconds.') : '';
   setStartingFn(text, function (r) {
     if (!r || !r.ok) console.error('home: could not ' + (on ? 'set' : 'clear') + ' the Home key\'s starting notice');
@@ -1955,7 +1961,22 @@ function watchOpen(retried, ms) {
  */
 function recoverView(why, retried) {
   if (recovering) return;
-  if (retried || webAppMgrRunning() !== false) return toLgHome(why);
+  if (retried) return toLgHome(why);
+  /*
+   * webOS 4 has no WebAppMgr unit to start: sam starts it with the app. On a
+   * B8 (4.4.3), the view not opening a minute after a boot was taken for that
+   * and gave LG's ribbon the Home key. It is opened once more first.
+   */
+  if (isStandalone()) {
+    recovering = true;
+    console.error('home: ' + why + '; opening it again');
+    return launch(HOME_APP, null, function () {
+      recovering = false;
+      stopBeatWatch();
+      watchOpen(true, FIRST_BEAT_GRACE_MS);
+    });
+  }
+  if (webAppMgrRunning() !== false) return toLgHome(why);
   recovering = true;
   console.error('home: ' + why + ': WebAppMgr is not running; starting it');
   startWebAppMgr(function (ok) {

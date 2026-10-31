@@ -1149,6 +1149,7 @@ step('on webOS 4, enabling installs the standalone app and sets the Home key fil
     assert.ok(r.ok, r.error);
     assert.strictEqual(installed, true, 'installed standalone app');
     assert.strictEqual(homeKey, OLD_APP, 'pointed Home key at com.tvweb.home');
+    assert.strictEqual(tv.starting || '', '', 'no starting notice, which would hold the Home key for 90 s');
     assert.strictEqual(tv.events.indexOf('mount'), -1, 'did not mount takeover');
     home.status(function (st) {
       assert.strictEqual(st.enabled, true);
@@ -1174,6 +1175,32 @@ step('on webOS 4, enabling installs the standalone app and sets the Home key fil
           });
         });
       });
+    });
+  });
+});
+
+step('on webOS 4, a Home press the view does not answer opens it again before giving LG\'s ribbon the key', function (done) {
+  var homeKey = '', injected = [];
+  start(null, {
+    webosVersion: '4.4.3',
+    allowExperimental: function () { return true; },
+    slowOpenMs: 5000,
+    installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { homeKey = id; cb({ ok: true }); },
+    injectKey: function (code, cb) { injected.push(code); if (cb) cb(true); }
+  });
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('com.webos.app.hdmi2');
+    tv.launched = [];
+    home.homeKey(true);
+    home.homeKey(false);
+    // No systemctl on webOS 4, so no WebAppMgr unit to start.
+    wait(5100, function () {
+      assert.deepEqual(tv.launched, [OLD_APP], 'opened once more');
+      assert.deepEqual(injected, [], 'LG\'s ribbon not opened yet');
+      assert.strictEqual(homeKey, OLD_APP, 'Home still opens Glasshouse Home');
+      home.disable(function () { done(); });
     });
   });
 });
