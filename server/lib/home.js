@@ -1808,8 +1808,9 @@ function foregroundChanged(id) {
   stopBeatWatch();
   // sam names nothing in front for a moment between apps.
   if (!id || !escaped) return;
+  // webOS 4: LG's ribbon opens over the view, so anything opened from it
+  // comes after the view; Glasshouse Home has the Home key again.
   if (isStandalone()) {
-    if (was === homeId) return;
     escaped = false;
     setHomeKeyFn(HOME_APP, function () {});
     return;

@@ -1113,10 +1113,9 @@ step('on webOS 4, enabling installs the standalone app and sets the Home key fil
         assert.deepEqual(injected, [125], 'injected key 125 for LG ribbon');
         assert.strictEqual(tv.events.indexOf('close old app'), -1, 'the view is left under LG\'s ribbon, not closed from outside');
         assert.strictEqual(homeKey, '', 'cleared Home key filter so 125 reaches LG ribbon');
+        assert.strictEqual(homeKey, '', 'the Home key is LG\'s while its ribbon is open');
         foreground('com.webos.app.hdmi2');
-        assert.strictEqual(homeKey, '', 'revealing the underlying input does not rearm yet');
-        foreground('netflix');
-        assert.strictEqual(homeKey, OLD_APP, 'opening an app from LG ribbon rearms Glasshouse Home');
+        assert.strictEqual(homeKey, OLD_APP, 'an input opened from LG\'s ribbon rearms Glasshouse Home');
         home.disable(function (r3) {
           assert.ok(r3.ok);
           assert.strictEqual(homeKey, '', 'restored Home key filter');
