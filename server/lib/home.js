@@ -1240,8 +1240,8 @@ function isHomeInPlace() {
 
 function supported() {
   var v = String(webosVersion || '');
-  // LG's Home is an in-compositor ribbon there; see isStandalone. Tried on a B8 (4.4.3).
-  if (/^4\./.test(v)) return { ok: true, webos: v, experimental: true, standalone: true };
+  // Tried on a B8 only (4.4.3), so behind allowExperimentalHome, as webOS 11.
+  if (/^4\./.test(v) && allowExperimentalFn()) return { ok: true, webos: v, experimental: true, standalone: true };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is the same native app as on webOS 9; sam is nudged from the
   // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0).
@@ -1258,7 +1258,7 @@ function supported() {
   if (/^[56]\./.test(v)) return { ok: true, webos: v, experimental: true, restartsApps: true };
   return {
     ok: false, webos: v || null,
-    reason: msg('srv.home.untested', 'Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9 and 10. This TV runs webOS {version}.', { version: v || '?' })
+    reason: msg('srv.home.untested', 'Glasshouse Home has been tried only on webOS 5, 6, 7, 9 and 10. This TV runs webOS {version}.', { version: v || '?' })
   };
 }
 

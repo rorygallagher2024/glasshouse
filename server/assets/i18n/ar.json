@@ -1313,7 +1313,7 @@
  "srv.home.unknownPart": {"text": "لا يوجد قسم بهذا الاسم في الشاشة الرئيسية", "from": "There is no such part of the Home screen"},
  "srv.home.unknownTile": {"text": "هذه الأيقونة غير موجودة في واجهة Glasshouse الرئيسية", "from": "that is not on Glasshouse Home"},
  "srv.home.unsupported": {"text": "لا يمكن تعديل الشاشة الرئيسية لهذا التلفاز من هنا", "from": "This TV's Home screen cannot be changed from here"},
- "srv.home.untested": {"text": "جُرّبت واجهة Glasshouse الرئيسية فقط على webOS 4 و5 و6 و7 و9 و10. يعمل هذا التلفاز بنظام webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9 and 10. This TV runs webOS {version}."},
+ "srv.home.untested": {"text": "جُرّبت واجهة Glasshouse الرئيسية فقط على webOS 5 و6 و7 و9 و10. يعمل هذا التلفاز بنظام webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 5, 6, 7, 9 and 10. This TV runs webOS {version}."},
  "srv.home.wallExampleBad": {"text": "لم يكتمل تنزيل الخلفية بشكل سليم. حاول مجدداً لاحقاً.", "from": "A wallpaper did not download intact. Try again later."},
  "srv.home.wallSlot": {"text": "فترة خلفية غير معروفة", "from": "unknown wallpaper slot"},
  "srv.home.wallUploadImage": {"text": "اختر صورة JPEG صالحة بأبعاد تصل إلى 1920 × 1080 بكسل.", "from": "Choose a valid JPEG up to 1920 × 1080 pixels."},
