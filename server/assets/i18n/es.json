@@ -1963,7 +1963,7 @@
  "srv.home.startLayoutWebos9": {"text": "El Inicio de LG solo se puede ocultar al arrancar en webOS 9.", "from": "LG's Home can be hidden at start on webOS 9 only."},
  "srv.home.startingToast": {"text": "Glasshouse Home está arrancando. Se abre en unos segundos.", "from": "Glasshouse Home is starting. It opens in a few seconds."},
  "srv.home.unknownTile": {"text": "eso no está en Glasshouse Home", "from": "that is not on Glasshouse Home"},
- "srv.home.untested": {"text": "Glasshouse Home solo se ha probado en webOS 5, 6, 7, 9 y 10. Esta TV tiene webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 5, 6, 7, 9 and 10. This TV runs webOS {version}."},
+ "srv.home.untested": {"text": "Glasshouse Home solo se ha probado en webOS 4, 5, 6, 7, 9 y 10. Esta TV tiene webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9 and 10. This TV runs webOS {version}."},
  "srv.home.wallUploadImage": {"text": "Elige un JPEG válido de hasta 1920 × 1080 píxeles.", "from": "Choose a valid JPEG up to 1920 × 1080 pixels."},
  "srv.home.wallUploadSize": {"text": "El JPEG subido debe ocupar como máximo 5 MB e indicar su tamaño.", "from": "The uploaded JPEG must be at most 5 MB and state its size."},
  "srv.home.wallUploadSpace": {"text": "No hay espacio libre confirmado suficiente para el fondo.", "from": "Not enough confirmed free space for the wallpaper."},

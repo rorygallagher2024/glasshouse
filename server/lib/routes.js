@@ -1144,6 +1144,7 @@ function handleHomeRoute(req, res, u, pathname) {
           c.ok = true;
           c.layout = st.layout;
           c.enabled = st.enabled;
+          c.supported = st.supported;
           c.wallpapers = st.wallpapers;
           c.layoutVersion = homeModule.layoutVersion();
           reply(c);

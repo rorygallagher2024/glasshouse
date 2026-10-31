@@ -1810,6 +1810,17 @@ webOS 4 next.
   `core_os_kernel_version` `4.4.84-p.649.grampians.k5lp.1`, `core_os_name`
   `Rockhopper`, `webos_imagename` `starfish-dvb-secured`.
 
+## Glasshouse Home on webOS 4 (webOS 4.4.3, B8)
+
+Tested on an OLED65B8SLC (webOS 4.4.3, firmware 05.50.70) in October 2026.
+
+- **Standalone app rather than takeover:** On webOS 4 LG's launcher is an in-compositor ribbon rendered directly by LSM, triggered by Linux evdev 125 (`Qt.Key_Super_L`). Rather than mounting over an app, Glasshouse Home runs as a standalone web app `com.tvweb.home`.
+- **Compositor key filter:** Directing the remote's Home button to Glasshouse Home sets `glasshouse.remoteKeys.home` in configd. LSM's key filter (`remotekeys-filter.js`) intercepts `Qt.Key_Super_L` and launches `com.tvweb.home`.
+- **Escaping to LG ribbon:** Escaping to LG's native launcher (via the "LG Home" tile or holding Home) requires clearing `glasshouse.remoteKeys.home` in configd before killing `com.tvweb.home` and injecting evdev key 125 after a 300 ms delay. If key 125 is injected while the filter is active, LSM catches it and relaunches `com.tvweb.home`.
+- **Foreground transition guard:** When `com.tvweb.home` is killed during an escape, `foregroundChanged` receives the underlying app (e.g. HDMI 2) with `was === "com.tvweb.home"`. Rearming the key filter must be skipped on that transition so the filter remains clear while LG's ribbon is open; opening an app from the ribbon or pressing Home rearms `com.tvweb.home`.
+- **Dismissal on Back:** `window.PalmSystem.platformBack()` is a no-op on standalone web apps on webOS 4; `window.close()` cleanly dismisses the app.
+- **Chromium 53 ICU locale:** `Date#toLocaleDateString(undefined, ...)` defaults to Korean (`ko`) in Chromium 53 on webOS 4; passing `'en-US'` explicitly produces English date strings.
+
 ## What the TV opens as it starts (G5, webOS 10.3.1)
 
 Measured on 19 October 2026 on an OLED55G56LS, Quick Start+ off.

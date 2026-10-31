@@ -1059,7 +1059,68 @@ step('webOS 5 and 6 are offered, experimental, with each switch closing the apps
         start(null, { webosVersion: '11.2.0' });
         home.status(function (st11) {
           assert.strictEqual(st11.supported.ok, false, 'webOS 11 still needs the setting');
-          done();
+          start(null, { webosVersion: '4.4.3' });
+          home.status(function (st4) {
+            assert.strictEqual(st4.supported.ok, true, 'offered on webOS 4');
+            assert.strictEqual(st4.supported.experimental, true);
+            assert.strictEqual(st4.supported.standalone, true);
+            assert.strictEqual(st4.supported.restartsApps, undefined);
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
+step('on webOS 4, enabling installs the standalone app and sets the Home key filter, without mounting', function (done) {
+  var installed = false;
+  var homeKey = '';
+  var injected = [];
+  start(null, {
+    webosVersion: '4.4.3',
+    installApp: function (action, cb) {
+      if (action === 'install') { installed = true; tv.oldAppInstalled = true; }
+      if (action === 'remove') { installed = false; tv.oldAppInstalled = false; }
+      cb({ ok: true });
+    },
+    setHomeKey: function (id, cb) {
+      homeKey = id;
+      cb({ ok: true });
+    },
+    injectKey: function (code, cb) {
+      injected.push(code);
+      if (cb) cb(true);
+    }
+  });
+  tv.oldAppInstalled = false;
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(installed, true, 'installed standalone app');
+    assert.strictEqual(homeKey, OLD_APP, 'pointed Home key at com.tvweb.home');
+    assert.strictEqual(tv.events.indexOf('mount'), -1, 'did not mount takeover');
+    home.status(function (st) {
+      assert.strictEqual(st.enabled, true);
+      assert.strictEqual(st.active, true);
+      foreground(OLD_APP);
+      home.open({ kind: 'lg' }, function (r2) {
+        assert.ok(r2.ok);
+        assert.deepEqual(injected, [125], 'injected key 125 for LG ribbon');
+        assert.ok(tv.events.indexOf('close old app') !== -1, 'killed com.tvweb.home');
+        assert.strictEqual(homeKey, '', 'cleared Home key filter so 125 reaches LG ribbon');
+        foreground('com.webos.app.hdmi2');
+        assert.strictEqual(homeKey, '', 'revealing the underlying input does not rearm yet');
+        foreground('netflix');
+        assert.strictEqual(homeKey, OLD_APP, 'opening an app from LG ribbon rearms Glasshouse Home');
+        home.disable(function (r3) {
+          assert.ok(r3.ok);
+          assert.strictEqual(homeKey, '', 'restored Home key filter');
+          assert.strictEqual(installed, true, 'standalone app was not uninstalled');
+          home.status(function (stOff) {
+            assert.strictEqual(stOff.enabled, false);
+            assert.strictEqual(stOff.active, false);
+            done();
+          });
         });
       });
     });

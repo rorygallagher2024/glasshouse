@@ -1207,7 +1207,7 @@
  "srv.home.unknownPart": {"text": "Такой части главного экрана нет", "from": "There is no such part of the Home screen"},
  "srv.home.unknownTile": {"text": "этого нет в Glasshouse Home", "from": "that is not on Glasshouse Home"},
  "srv.home.unsupported": {"text": "Главный экран этого телевизора нельзя изменить отсюда", "from": "This TV's Home screen cannot be changed from here"},
- "srv.home.untested": {"text": "Glasshouse Home проверен только на webOS 5, 6, 7, 9 и 10. На этом телевизоре webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 5, 6, 7, 9 and 10. This TV runs webOS {version}."},
+ "srv.home.untested": {"text": "Glasshouse Home проверен только на webOS 4, 5, 6, 7, 9 и 10. На этом телевизоре webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9 and 10. This TV runs webOS {version}."},
  "srv.home.wallUploadImage": {"text": "Выберите корректный JPEG размером не больше 1920 × 1080 пикселей.", "from": "Choose a valid JPEG up to 1920 × 1080 pixels."},
  "srv.home.wallUploadSize": {"text": "Загружаемый JPEG должен быть не больше 5 МБ, и его размер должен быть указан.", "from": "The uploaded JPEG must be at most 5 MB and state its size."},
  "srv.home.wallUploadSpace": {"text": "Не хватает подтвержденного свободного места для обоев.", "from": "Not enough confirmed free space for the wallpaper."},

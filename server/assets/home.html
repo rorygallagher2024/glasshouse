@@ -475,12 +475,13 @@ html.faded #stage{opacity:0}
   // form that follows a number: "24 октября", not "октябрь".
   function dateText(d) {
     var lang = (window.I18N && I18N.lang) ? I18N.lang() : 'en';
+    var loc = lang === 'en' ? 'en-US' : lang;
     function part(opts) {
-      try { return d.toLocaleDateString(lang === 'en' ? undefined : lang, opts); } catch (e) { return ''; }
+      try { return d.toLocaleDateString(loc, opts); } catch (e) { return ''; }
     }
     function month() {
       try {
-        var parts = new Intl.DateTimeFormat(lang === 'en' ? undefined : lang, { day: 'numeric', month: 'long' }).formatToParts(d);
+        var parts = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'long' }).formatToParts(d);
         for (var i = 0; i < parts.length; i++) if (parts[i].type === 'month') return parts[i].value;
       } catch (e) { /* no formatToParts in webOS 4's browser */ }
       return part({ month: 'long' });
@@ -2075,6 +2076,9 @@ html.faded #stage{opacity:0}
       if (recents.open || recents.loading) return closeRecents();
       if (state.arranging && state.held) { state.held = false; return toggleHidden(); }
       if (state.arranging) return setArranging(false);
+      if (data && data.supported && data.supported.standalone) {
+        return window.close();
+      }
       return openRecents();
     }
     if (folder.open) { e.preventDefault(); return folderKey(k); }
