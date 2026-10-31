@@ -20,10 +20,10 @@
  */
 (function (root) {
   // Languages that have a file in /assets/i18n/. English needs none.
-  var LANGS = ['es', 'de', 'ru', 'hu', 'it', 'ar'];
+  var LANGS = ['es', 'de', 'ru', 'hu', 'it', 'ar', 'pt-br'];
   // Each language in its own words, as the language list shows it, so it can
   // be found whatever the page is in.
-  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', it: 'Italiano', ar: 'العربية' };
+  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', it: 'Italiano', ar: 'العربية', 'pt-br': 'Português (Brasil)' };
   /*
    * Languages translated only in part, with the pages they cover in full:
    * 'web' (the dashboard), 'tv' (the TV app) and 'home' (Glasshouse Home).
@@ -58,12 +58,15 @@
   }
 
   function pick() {
-    var m = /[?&]lang=([a-z]{2})/i.exec(location.search);
+    var m = /[?&]lang=([a-z]{2}(?:-[a-z]{2})?)/i.exec(location.search);
     var chosen = stored();
     var auto = !m && chosen === 'auto';
     var want = m ? m[1] : !auto ? chosen
              : ((navigator.languages && navigator.languages[0]) || navigator.language || 'en');
-    want = String(want).slice(0, 2).toLowerCase();
+    want = String(want).toLowerCase();
+    // A code with its region, pt-br, is a language of its own; any other
+    // region, es-MX, is the language.
+    if (LANGS.indexOf(want) < 0) want = want.slice(0, 2);
     if (LANGS.indexOf(want) < 0) return 'en';
     return auto && !covers(want, page()) ? 'en' : want;
   }
