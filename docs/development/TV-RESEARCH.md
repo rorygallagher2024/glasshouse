@@ -1145,6 +1145,9 @@ app in front. Remote Keys puts its own filter first.
   down 114 and mute 113 acted as the remote's keys. A play/pause toggle that
   first asked `com.webos.service.acb/getForegroundAppInfo` (then
   `com.webos.media`'s) and sent pause or play did nothing.
+- **A mapped microphone button can switch the TV off.** Power off in Remote
+  keys was tested with the microphone button on an OLED65C43LA, webOS 10.3.1,
+  firmware 33.31.61. The filter requests standby through tvpower on release.
 - **A rebuild re-runs LG's `init()`s.** In Game mode each write of the key
   opened the Game Dashboard (`NL_GAMEDASHBOARD_ENTERED`,
   `"entered_by":"HotKey"` in `/var/log/messages`) on the C2. Launching an app

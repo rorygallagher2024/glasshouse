@@ -656,6 +656,12 @@ the same codes as the dashboard's media buttons (play 207, pause 119, stop 128,
 rewind 168, fast forward 208, volume up 115, volume down 114, mute 113;
 volume repeats while the key is held). Those keys go through the chain again, and the
 filter names none of them, so they reach LG's filters and the app in front.
+A key set to `action:powerOff` calls `com.webos.service.tvpower/power/powerOff`
+with `reason: "remoteKey"` on release, once per press begun while the TV is on,
+including with the panel blank or a screen saver. A press begun in standby
+does not arm it, so waking with the key does not immediately switch the TV off
+again. It sends no IR command;
+an IR press reaching two TVs can still trigger both mappings.
 LG's files are never written. configd has no way to
 delete a value, so **As LG has it** on every key leaves the filter in the
 chain, passing every key on, and `tvwebctl restore-keys` takes it out, deletes
