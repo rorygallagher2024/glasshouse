@@ -16,7 +16,7 @@ That's it. The dashboard is ready to use.
 
 The MQTT bridge also needs an MQTT broker on the network. Home Assistant's Mosquitto add-on is one option, but any compatible MQTT broker works.
 
-The models confirmed so far are listed under [Tested TVs](tested-tvs.md). webOS 2 TVs have [known problems](tested-tvs.md). LG names its webOS versions two ways; [webOS version numbers](tested-tvs.md#webos-version-numbers) gives both.
+The models confirmed so far are listed under [Tested TVs](tested-tvs.md). LG names its webOS versions two ways; [webOS version numbers](tested-tvs.md#webos-version-numbers) gives both.
 
 ## Install steps
 

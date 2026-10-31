@@ -5,7 +5,6 @@ Confirmed on **57 TVs across 40 series** running **webOS 2.2 through 11** (LG's 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
-* **webOS 2:** known problems. On a UH600V, Glasshouse made the TV restart itself until its picture capture was switched off there, and parts of the TV app's tabs stayed empty ([#746](https://github.com/rorygallagher2024/glasshouse/issues/746)). Fixes for both are in, but no webOS 2 TV has yet been confirmed to work fully, and there is none to test on here.
 
 === "By series (40)"
 
