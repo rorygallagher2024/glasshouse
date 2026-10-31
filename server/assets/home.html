@@ -28,6 +28,10 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
   -webkit-animation:drift 180s ease-in-out infinite alternate;animation:drift 180s ease-in-out infinite alternate}
+/* At rest while covered: the wallpaper is not drawn or animated under the screen
+   saver or another app. */
+html.resting #wall{visibility:hidden}
+html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-state:paused}
 @-webkit-keyframes drift{from{-webkit-transform:scale(1) translate(0,0)}to{-webkit-transform:scale(1.04) translate(-1.2%,-.8%)}}
 @keyframes drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.04) translate(-1.2%,-.8%)}}
 #scrim{position:absolute;left:0;top:0;right:0;bottom:0;
@@ -426,6 +430,12 @@ html.faded #stage{opacity:0}
   // Held this long, OK arranges the tiles rather than opening one.
   var LONG_PRESS_MS = 800;
   var BEAT_MS = 5000;
+  var CLOSE_BEHIND_MS = 120000;
+  var coveredSince = 0;
+  function rest(on) {
+    var cl = document.documentElement.classList;
+    if (on !== cl.contains('resting')) cl.toggle('resting', on);
+  }
 
   var data = null;       // the catalogue: apps, devices, channels, order
   var layout = null;     // rows, order, sort, hidden, channels, hintSeen, picture, show*
@@ -2362,8 +2372,14 @@ html.faded #stage{opacity:0}
     postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '' }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
+        var standalone = !!(data && data.supported && data.supported.standalone);
         // webOS 4: switched off, the standalone view closes itself, as Back does.
-        if (r.enabled === false && data && data.supported && data.supported.standalone) return window.close();
+        if (r.enabled === false && standalone) return window.close();
+        rest(!!r.covered);
+        // webOS 4: two minutes behind another app, not the screen saver, the
+        // view closes itself to give its memory back; Home opens it afresh.
+        coveredSince = r.covered && !r.saver ? (coveredSince || Date.now()) : 0;
+        if (standalone && coveredSince && Date.now() - coveredSince > CLOSE_BEHIND_MS) return window.close();
         wallAvailable = !!(r.wallpapers && r.wallpapers.available);
         wallSlots = r.wallpapers && r.wallpapers.slots;
         wallRevision = r.wallpapers && r.wallpapers.revision || '';

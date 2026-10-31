@@ -1798,6 +1798,17 @@ function behindAnother(cb) {
   });
 }
 
+/*
+ * Whether the view is covered: by the screen saver, or on webOS 4 by whatever
+ * is in front of the standalone app. Covered, the page rests: on a B8 (4.4.3)
+ * its drifting wallpaper kept the web app manager at 34% under the screen
+ * saver, which got 2% and stuttered.
+ */
+function viewCovered() {
+  if (powerState === 'Screen Saver') return true;
+  return isStandalone() && !!foreground && foreground !== HOME_APP;
+}
+
 function beat(body) {
   lastBeatAt = nowMs();
   if (body && typeof body.focused === 'boolean') {
@@ -1805,7 +1816,8 @@ function beat(body) {
   }
   beats++;
   if (viewInFront()) watchBeat(BEAT_GRACE_MS);
-  return { ok: true, enabled: readConfig().enabled, build: buildId, wallpapers: wallpapers.status(),
+  return { ok: true, enabled: readConfig().enabled, covered: viewCovered(), saver: powerState === 'Screen Saver',
+           build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps };
 }
 

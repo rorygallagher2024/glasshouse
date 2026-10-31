@@ -315,6 +315,25 @@ step('the saved layout keeps its order, drops what has gone and appends what is 
   });
 });
 
+step('the heartbeat says when the view is covered: by the screen saver, or on webOS 4 by what is in front', function (done) {
+  start(null, { webosVersion: '4.4.3' });
+  foreground(OLD_APP);
+  assert.strictEqual(home.beat().covered, false, 'in front');
+  powerState('Screen Saver');
+  var b = home.beat();
+  assert.strictEqual(b.covered, true, 'under the screen saver');
+  assert.strictEqual(b.saver, true);
+  powerState('Active');
+  foreground('com.webos.app.hdmi2');
+  b = home.beat();
+  assert.strictEqual(b.covered, true, 'behind an input');
+  assert.strictEqual(b.saver, false);
+  start(null);
+  foreground('com.webos.app.hdmi2');
+  assert.strictEqual(home.beat().covered, false, 'on webOS 9 the view is LG\'s Home and the screen saver alone covers it');
+  done();
+});
+
 step('where eim does not say which ports are plugged in, as on a B8, the HDMI reading does', function (done) {
   start(null, {
     webosVersion: '4.4.3',
