@@ -805,9 +805,9 @@ the previous boot's, so a tool that is no longer started leaves nothing behind.
 The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
 
-Nine of the nineteen domains are ad, tracking and diagnostics hosts that
-nothing on the TV needs. The other ten are **LG infrastructure rather than
-advertising**, which is why they are a separate tier:
+Nine of the twenty domains are ad, tracking and diagnostics hosts that
+nothing on the TV needs. The other eleven are **platform infrastructure rather
+than advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
 | :--- | :--- |
@@ -815,6 +815,7 @@ advertising**, which is why they are a separate tier:
 | `cdplauncher.lgtvcommon.com`, `lgchhomeapp.lgtvcommon.com` | The Home launcher's recommendations and usage reports; needed by the Content Store after a factory reset |
 | `lgtviot.com` | The ThinQ cloud: the LG ThinQ app can no longer control the TV with it blocked |
 | `ueiwsp.com` | Universal Electronics' identification of devices connected over HDMI-CEC |
+| `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
 | `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
 

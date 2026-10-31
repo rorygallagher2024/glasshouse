@@ -91,7 +91,11 @@ var ADBLOCK_PLATFORM = [
   'cdplauncher.lgtvcommon.com',
   'lgchhomeapp.lgtvcommon.com',
   'lgtviot.com',
-  'ueiwsp.com'
+  'ueiwsp.com',
+  // Amazon's Alexa SDK (libAVSCommon) fetches /generate_204 from it on a timer
+  // to tell whether the TV is online, while Alexa runs; blocked, Alexa reads
+  // the TV as offline.
+  'avsxappcaptiveportal.com'
 ];
 
 var ADBLOCK_SDP = [
