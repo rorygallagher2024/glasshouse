@@ -108,6 +108,10 @@ function luna(uri, params, cb) {
     tv.blocked[params.id] = true;
   } else if (uri === 'com.webos.applicationManager/releaseBlockSystemApp') {
     delete tv.blocked[params.id];
+  } else if (uri === 'com.webos.service.tvpower/power/getPowerState') {
+    r.state = power.state;
+  } else if (uri === 'com.webos.service.tvpower/power/turnOffScreen') {
+    power.screenOffs++;
   } else {
     throw new Error('unexpected call ' + uri);
   }
@@ -116,6 +120,7 @@ function luna(uri, params, cb) {
 
 var launched = [];
 var toasts = [];
+var power = { state: 'Active', screenOffs: 0 };
 
 // lib/services.js as the TV has it: the voice assistant there and running.
 var voice = { off: false, switches: [] };
@@ -435,6 +440,44 @@ step('the AI button set switches LG\'s voice assistant off and opens its app fro
         });
       }, POLLED);
     }, POLLED);
+  });
+});
+
+step('Screen off on a streaming button switches LG\'s entry off and turns the screen off from the log, with the picture on', function (next) {
+  rk.getRemoteKeys(function (r) {
+    assert.ok(r.choices.some(function (c) { return c.id === 'action:screenOff'; }), 'offered');
+    var by = {};
+    r.keys.forEach(function (k) { by[k.key] = k; });
+    assert.ok(!by.netflix.noScreenOff, 'on a key whose presses the TV logs');
+    assert.ok(by.guide.noScreenOff, 'not on Guide');
+    rk.setRemoteKey('guide', 'open', 'action:screenOff', function (g) {
+      assert.strictEqual(g.ok, false, 'refused on Guide');
+      set('netflix', 'open', 'action:screenOff', function () {
+        assert.strictEqual(entry('netflix').isActive, false, 'LG\'s app switched off, as for Nothing');
+        assert.ok(rk.isFollowingLog());
+        power.screenOffs = 0;
+        launched = [];
+        logLine(NETFLIX_LINE);
+        setTimeout(function () {
+          assert.strictEqual(power.screenOffs, 1);
+          assert.deepEqual(launched, []);
+          // A press with the picture already off wakes the TV, and is left to.
+          power.state = 'Screen Off';
+          setTimeout(function () {
+            logLine(NETFLIX_LINE);
+            setTimeout(function () {
+              assert.strictEqual(power.screenOffs, 1);
+              power.state = 'Active';
+              set('netflix', 'lg', '', function () {
+                assert.strictEqual(entry('netflix').isActive, true, 'put back as LG had it');
+                assert.ok(!rk.isFollowingLog());
+                next();
+              });
+            }, POLLED);
+          }, 600);
+        }, POLLED);
+      });
+    });
   });
 });
 
