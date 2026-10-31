@@ -1,12 +1,13 @@
 # Tested TVs
 
-Confirmed on **55 TVs across 38 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **57 TVs across 40 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
+* **webOS 2:** known problems. On a UH600V, Glasshouse made the TV restart itself until its picture capture was switched off there, and parts of the TV app's tabs stayed empty ([#746](https://github.com/rorygallagher2024/glasshouse/issues/746)). Fixes for both are in, but no webOS 2 TV has yet been confirmed to work fully, and there is none to test on here.
 
-=== "By series (38)"
+=== "By series (40)"
 
     | Series        | Year | Panel | webOS seen        | Reports |
     | :------------ | :--- | :---- | :---------------- | :------ |
@@ -17,9 +18,11 @@ Confirmed on **55 TVs across 38 series** running **webOS 2.2 through 11** (LG's 
     | UH635V        | 2016 | LCD   | 3.x               | 1       |
     | B6            | 2016 | OLED  | 3.4               | 1       |
     | B7            | 2017 | OLED  | 3.9               | 1       |
+    | SJ80          | 2017 | LCD   | 3.9               | 1       |
     | B8            | 2018 | OLED  | 4.4               | 1       |
     | C8            | 2018 | OLED  | 4.4               | 1       |
     | LK61          | 2018 | LCD   | 4.4               | 1       |
+    | UK63          | 2018 | LCD   | 4.4               | 1       |
     | LM57          | 2019 | LCD   | 4.5               | 1       |
     | UM71          | 2019 | LCD   | 4.10              | 1       |
     | UM73          | 2019 | LCD   | 4.10              | 1       |
@@ -49,7 +52,7 @@ Confirmed on **55 TVs across 38 series** running **webOS 2.2 through 11** (LG's 
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (55)"
+=== "All reports (57)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
@@ -60,9 +63,11 @@ Confirmed on **55 TVs across 38 series** running **webOS 2.2 through 11** (LG's 
     | 58UH635V    | 3.x          | 05.70.40 | LCD   | no eMMC wear reported                                          |
     | OLED65B6D-Z | 3.4.3        | 05.70.55 | OLED  | Rooted with mvpd-autoroot; tracking and ads disabled; custom screen savers refused without sam restart ([#1012](https://github.com/rorygallagher2024/glasshouse/issues/1012)) |
     | OLED65B7V-Z | 3.9.3        | 06.10.65 | OLED  | No SoC temperature or eMMC wear readings                       |
+    | 55SJ800V-ZB | 3.9.3        | 06.10.65 | LCD   | Working fine                                                   |
     | OLED65C8PUA | 4.4.0        | 05.50.15 | OLED  | No `getAdid` on this firmware                                  |
     | OLED65B8SLC | 4.4.3        | 05.50.70 | OLED  | Everything works. Misses a few metrics found on newer versions |
     | 32LK6100PLB | 4.4.3        | 05.50.70 | LCD   | Rooted with faultmanager; dashboard, apps and SSH confirmed    |
+    | 55UK6300PVB | 4.4.3        | 05.50.70 | LCD   | Working; the Privacy tab's consents come back on after a restart ([#1145](https://github.com/rorygallagher2024/glasshouse/issues/1145)) |
     | 43LM5760PTC | 4.5          | —        | LCD   | Configured with panel: lcd; service and web UI confirmed       |
     | OLED55C9PLA | 4.9.0        | 05.30.40 | OLED  | Working fine                                                   |
     | OLED65C9AUA | 4.9.x (4.5+) | 05.50.00 | OLED  |                                                                |
