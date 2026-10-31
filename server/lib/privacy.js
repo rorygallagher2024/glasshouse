@@ -117,7 +117,10 @@ var sdpCapTimer = null;
  * update blocking off, silently, so its hosts go into this table too.
  */
 var HBC_BLOCK_UPDATES_FLAG = '/var/luna/preferences/webosbrew_block_updates';
-var HBC_UPDATE_HOSTS = ['snu.lge.com', 'su-dev.lge.com', 'su.lge.com', 'su-ssl.lge.com'];
+// All six update servers from https://tv.slada.sk/guides/blocking-updates
+// (snu/su/su-ssl production, snu-dev/su-dev dev, nsu NSU mode).
+var HBC_UPDATE_HOSTS = ['snu.lge.com', 'su.lge.com', 'su-ssl.lge.com',
+                        'snu-dev.lge.com', 'su-dev.lge.com', 'nsu.lge.com'];
 
 /*
  * The owner's own list, uploaded from the dashboard. Only its names are kept,
