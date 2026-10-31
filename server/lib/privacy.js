@@ -51,12 +51,19 @@ var ADBLOCK_ADS = [
  * aic.cdpbeacon.lgtvcommon.com), and a hosts file only matches whole names. A
  * TV uses its own country code and LG's regional ones, so those are listed
  * rather than every country, which would cost the B8 ~4ms a lookup (74KB
- * table). The bare lgtvsdp.com family also serves the Content Store, which is
- * why only its rdx2 ad subdomain is here.
+ * table). The bare lgtvsdp.com and nextlgsdp.com families also serve the
+ * Content Store, which is why only their rdx2 report subdomains are here: sdx
+ * hands out us.rdx2.nextlgsdp.com as its report upload URL (getRdxServerUrl)
+ * on a C4 on webOS 10.3.1. That one waits for the clock like the time servers
+ * (see scheduleSdpBlock). The Content Store posts its request logs, with the
+ * wired MAC address, to <store host's first label>.elastic.lgwebostv.com,
+ * apart from the catalog.
  */
 var ADBLOCK_REGIONAL = [
   'info.lgsmartad.com',
   'rdx2.lgtvsdp.com',
+  'rdx2.nextlgsdp.com',
+  'elastic.lgwebostv.com',
   'ibs.lgappstv.com',
   'ibsstat.lgappstv.com',
   'cdpbeacon.lgtvcommon.com',
@@ -364,7 +371,8 @@ function adBlockPlatform() {
 // This version's own names for a tier, without the owner's list.
 function ownBlockList(mode) {
   if (mode === 'off') return [];
-  return mode === 'full' ? adBlockAds().concat(adBlockPlatform()) : adBlockAds();
+  var list = mode === 'full' ? adBlockAds().concat(adBlockPlatform()) : adBlockAds();
+  return isSdpGracePeriodActive() ? list.filter(function (n) { return !isSdpName(n); }) : list;
 }
 
 function isSdpName(name) {
@@ -529,9 +537,9 @@ function applyCustom(cb, extra) {
   applyHostsTable(reply);
 }
 
-// Whether the clock wait applies: the Everything tier, or the owner's list naming the time servers.
+// Whether the clock wait applies: a tier or the owner's list naming a host under the time servers' domain.
 function waitsForSdp(mode) {
-  if (mode === 'full') return true;
+  if (mode === 'full' || (mode === 'ads' && adBlockAds().some(isSdpName))) return true;
   var c = customHosts();
   return mode !== 'off' && !!c && c.enabled && c.names.some(isSdpName);
 }

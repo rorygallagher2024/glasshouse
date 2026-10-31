@@ -833,6 +833,9 @@ To prevent this while preserving full platform blocking:
   entirely, and `nextlgsdp.com` is blocked immediately.
 * With an [NTP server](#setting-the-clock-from-ntp) configured, the first answer it
   gives sets the time as `sdp`, which ends the wait at once.
+* The Ads & telemetry tier's `rdx2.nextlgsdp.com` names, sdx's report upload host, get
+  the same wait. They are not the time servers, but they share their domain, and the
+  boot hook's removal goes by the domain.
 * An owner's hosts list that names `nextlgsdp.com` or a name under it gets the same wait,
   on either tier.
 

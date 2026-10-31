@@ -188,6 +188,44 @@ test('Customer data host cdpsvc is blocked in both Ads & telemetry and Everythin
   assert.ok(fullList.indexOf('gb.cdpsvc.lgtvcommon.com') !== -1, 'regional cdpsvc must be in full mode');
 });
 
+test('Ads & telemetry blocks the store\'s request logs and the rdx2 report host, the latter once the clock is set', function () {
+  privacy._setSdpGraceActive(false);
+  var list = privacy.adBlockList('ads');
+  ['us.elastic.lgwebostv.com', 'us.rdx2.nextlgsdp.com', 'rdx2.nextlgsdp.com'].forEach(function (host) {
+    assert.ok(list.indexOf(host) !== -1, host + ' must be in ads mode');
+  });
+  assert.strictEqual(list.indexOf('us.nextlgsdp.com'), -1, 'the Content Store host stays reachable');
+  assert.ok(privacy.adBlockList('full').indexOf('us.rdx2.nextlgsdp.com') !== -1, 'and in full mode');
+
+  privacy._setSdpGraceActive(true);
+  list = privacy.adBlockList('ads');
+  assert.strictEqual(list.indexOf('us.rdx2.nextlgsdp.com'), -1, 'reachable while the TV waits for its clock');
+  assert.ok(list.indexOf('us.elastic.lgwebostv.com') !== -1, 'the store logs do not wait');
+  assert.ok(list.indexOf('us.rdx2.lgtvsdp.com') !== -1, 'nor does the lgtvsdp.com rdx2 host');
+  privacy._setSdpGraceActive(false);
+});
+
+test('Ads & telemetry waits for the clock and blocks rdx2.nextlgsdp.com once it is set', function () {
+  privacy._setSdpGraceActive(true);
+  var timeState = { timeValid: false, systemTimeSource: 'system' };
+  privacy.init({ luna: function (uri, params, cb) {
+    if (uri === 'com.webos.service.systemservice/time/getSystemTime') {
+      cb({ returnValue: true, timeValid: timeState.timeValid, systemTimeSource: timeState.systemTimeSource });
+    }
+  } });
+  withTable('ads', function () {
+    privacy.checkBootAdBlock();
+    assert.strictEqual(privacy.isSdpGracePeriodActive(), true, 'open while the time is invalid');
+    assert.ok(!sinkholed(mockEnv.files['/var/lib/tvweb/adblock_hosts'], 'us.rdx2.nextlgsdp.com'));
+    timeState.timeValid = true;
+    timeState.systemTimeSource = 'sdp';
+    privacy._checkSdpClockSync(false);
+    assert.strictEqual(privacy.isSdpGracePeriodActive(), false, 'closed once the sdp time is valid');
+    assert.ok(sinkholed(mockEnv.files['/var/lib/tvweb/adblock_hosts'], 'us.rdx2.nextlgsdp.com'), 'written to the table');
+  });
+  privacy._clearSdpTimer();
+});
+
 test('nextlgsdp.com is omitted while SDP grace period is active', function () {
   privacy._setSdpGraceActive(true);
   assert.strictEqual(privacy.isSdpGracePeriodActive(), true);
