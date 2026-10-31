@@ -1060,12 +1060,16 @@ step('webOS 5 and 6 are offered, experimental, with each switch closing the apps
         home.status(function (st11) {
           assert.strictEqual(st11.supported.ok, false, 'webOS 11 still needs the setting');
           start(null, { webosVersion: '4.4.3' });
-          home.status(function (st4) {
-            assert.strictEqual(st4.supported.ok, true, 'offered on webOS 4');
-            assert.strictEqual(st4.supported.experimental, true);
-            assert.strictEqual(st4.supported.standalone, true);
-            assert.strictEqual(st4.supported.restartsApps, undefined);
-            done();
+          home.status(function (st4off) {
+            assert.strictEqual(st4off.supported.ok, false, 'webOS 4 needs the setting too');
+            start(null, { webosVersion: '4.4.3', allowExperimental: function () { return true; } });
+            home.status(function (st4) {
+              assert.strictEqual(st4.supported.ok, true, 'offered on webOS 4 with it');
+              assert.strictEqual(st4.supported.experimental, true);
+              assert.strictEqual(st4.supported.standalone, true);
+              assert.strictEqual(st4.supported.restartsApps, undefined);
+              done();
+            });
           });
         });
       });
@@ -1079,6 +1083,7 @@ step('on webOS 4, enabling installs the standalone app and sets the Home key fil
   var injected = [];
   start(null, {
     webosVersion: '4.4.3',
+    allowExperimental: function () { return true; },
     installApp: function (action, cb) {
       if (action === 'install') { installed = true; tv.oldAppInstalled = true; }
       if (action === 'remove') { installed = false; tv.oldAppInstalled = false; }
@@ -1106,7 +1111,7 @@ step('on webOS 4, enabling installs the standalone app and sets the Home key fil
       home.open({ kind: 'lg' }, function (r2) {
         assert.ok(r2.ok);
         assert.deepEqual(injected, [125], 'injected key 125 for LG ribbon');
-        assert.ok(tv.events.indexOf('close old app') !== -1, 'killed com.tvweb.home');
+        assert.strictEqual(tv.events.indexOf('close old app'), -1, 'the view is left under LG\'s ribbon, not closed from outside');
         assert.strictEqual(homeKey, '', 'cleared Home key filter so 125 reaches LG ribbon');
         foreground('com.webos.app.hdmi2');
         assert.strictEqual(homeKey, '', 'revealing the underlying input does not rearm yet');
@@ -1115,6 +1120,7 @@ step('on webOS 4, enabling installs the standalone app and sets the Home key fil
         home.disable(function (r3) {
           assert.ok(r3.ok);
           assert.strictEqual(homeKey, '', 'restored Home key filter');
+          assert.strictEqual(tv.events.indexOf('close old app'), -1, 'the view closes itself, from its heartbeat');
           assert.strictEqual(installed, true, 'standalone app was not uninstalled');
           home.status(function (stOff) {
             assert.strictEqual(stOff.enabled, false);

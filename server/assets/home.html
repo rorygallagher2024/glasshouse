@@ -2362,6 +2362,8 @@ html.faded #stage{opacity:0}
     postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '' }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
+        // webOS 4: switched off, the standalone view closes itself, as Back does.
+        if (r.enabled === false && data && data.supported && data.supported.standalone) return window.close();
         wallAvailable = !!(r.wallpapers && r.wallpapers.available);
         wallSlots = r.wallpapers && r.wallpapers.slots;
         wallRevision = r.wallpapers && r.wallpapers.revision || '';
