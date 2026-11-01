@@ -73,6 +73,8 @@ Strings are cataloged in `server/assets/i18n/`. Refer to [Translating the dashbo
 
 Before opening a pull request, run the test suite and validation scripts locally:
 
+`scripts/check-all.sh` runs all of these side by side. One at a time:
+
 ```bash
 # Run all unit and integration tests
 node test/run-all.js
@@ -149,7 +151,8 @@ Add a short **Testing** section to the pull request description:
 
 * the TV's model and webOS version, for example "OLED42C24LA, webOS 9.2";
 * what you did and what you saw;
-* what you didn't test, such as other webOS versions or something that needs hardware you don't have.
+* what you didn't test, such as other webOS versions or something that needs hardware you don't have;
+* where the change shows on a screen, a screenshot of it: the dashboard, the TV app, Glasshouse Home or the TV's own screen. `scripts/tv.sh <tv-ip> capture out.jpg` takes one from the TV.
 
 For example:
 

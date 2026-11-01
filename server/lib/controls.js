@@ -1,5 +1,6 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
 var fs = require('fs');
+var path = require('path');
 var toInt = require('./util').toInt;
 var allocBuffer = require('./util').allocBuffer;
 var monotonicMs = require('./util').monotonicMs;
@@ -10,6 +11,7 @@ var timers = require('./timers');
 var saverPowerOff = require('./saverpoweroff');
 var clock = require('./clock');
 var names = require('./names');
+var typing = require('./typing');
 
 /*
  * Measured on a B8 against the built-in player, watching playStateNow move:
@@ -109,6 +111,7 @@ var backupModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
 var republishDiscoveryFn = null;
+var deviceNameChangedFn = null;
 var tvAppFn = null;
 var restartSelfFn = null;
 var updateSummaryFn = null;
@@ -116,12 +119,43 @@ var fromHbcFn = null;
 var inputMap = null;
 var browserAppId = null;
 var toastSourceId = null;
+// Icons for notify: <name>.png here, beside config.json, so updates keep them.
+var toastIconDir = path.join(__dirname, '..', 'toast-icons');
 var tileHidingOffMsg = null;
 var writeSettingsFn = null;
 // Whether LG's on-screen keyboard is up, from the live window list.
 var keyboardVisibleFn = function () { return false; };
 
 var rcuDevicePath = null;
+// LG's toast types (SystemUI/Notification/Toast.qml): standard is the plain
+// toast at the bottom and has no icon slot; advanced is the same toast with a
+// 66 icon; light is the small one at the top right with a 36 icon.
+var TOAST_TYPES = ['standard', 'advanced', 'light'];
+
+/*
+ * A toast's luna payload. A string is the message of a standard toast. An
+ * object { type, text } is a notification, whose text may open with an icon:
+ * ":washer:" names a PNG in toastIconDir, ":@/usr/palm/.../icon.png:" is any
+ * image on the TV. The compositor only loads icons from local files, and LG's
+ * own toasts pass absolute paths too.
+ */
+function toastParams(value) {
+  var note = value && typeof value === 'object' ? value : { text: value };
+  var text = String(note.text || '');
+  var params = { sourceId: toastSourceId };
+  var iconMatch = typeof value === 'object' ? /^:(@\/[^:]+|[a-z0-9_-]+):\s*/i.exec(text) : null;
+  if (iconMatch) {
+    text = text.substring(iconMatch[0].length);
+    var iconPath = iconMatch[1].charAt(0) === '@' ? iconMatch[1].substring(1)
+      : path.join(toastIconDir, iconMatch[1] + '.png');
+    if (fs.existsSync(iconPath)) params.iconUrl = iconPath;
+    else console.error('toast: no icon at ' + iconPath);
+  }
+  if (note.type && note.type !== 'standard') params.type = note.type;
+  params.message = (text || 'hello').slice(0, 120);
+  return params;
+}
+
 function getRcuDevicePath() {
   if (rcuDevicePath) return rcuDevicePath;
   try {
@@ -234,6 +268,23 @@ function portIsFree(port, cb) {
 
 function doTvApp(action, cb) { return tvAppFn(action, cb); }
 
+function imeResult(r) {
+  return { ok: !!(r && r.returnValue), error: r && r.errorText, method: 'ime' };
+}
+
+// Deletes delCount characters, then types typed, through LG's input method.
+function typeThroughIme(typed, delCount, cb) {
+  var insertRest = function () {
+    if (!typed) return cb({ ok: true, method: 'ime' });
+    lunaUrgent('com.webos.service.ime/insertText', { text: typed }, function (r) { cb(imeResult(r)); });
+  };
+  if (delCount <= 0) return insertRest();
+  lunaUrgent('com.webos.service.ime/deleteCharacters', { count: delCount }, function (r) {
+    if (!r || !r.returnValue) return cb(imeResult(r));
+    insertRest();
+  });
+}
+
 /*
  * The audio service's answer to a volume or mute change, as ok. A refusal
  * for where the sound goes now is passed to telemetry, which stops offering
@@ -241,6 +292,123 @@ function doTvApp(action, cb) { return tvAppFn(action, cb); }
  */
 function imeAnswer(cb) {
   return function (r) { cb({ ok: !!(r && r.returnValue), error: r && r.errorText }); };
+}
+
+/*
+ * Presses the keys in order, each once the one before has been taken: the
+ * order a field sees is the order of the calls. Stops at the first refusal and
+ * says how many went through.
+ */
+var KEY_PRESS_GAP_MS = 60;
+
+function pressKeyCodes(keyCodes, cb) {
+  var pressed = 0;
+  var pressNext = function () {
+    if (pressed >= keyCodes.length) return cb({ ok: true, sent: pressed });
+    lunaUrgent('com.webos.service.networkinput/test/sendKeyCode',
+               { keyCode: keyCodes[pressed] }, function (r) {
+      if (!r || !r.returnValue) {
+        return cb({ ok: false, error: (r && r.errorText) || msg('srv.typing.keyRefused', 'the TV did not take the key press'), sent: pressed });
+      }
+      pressed++;
+      // Back to back, Nuvio Legacy lost a letter now and then (webOS 4.10).
+      setTimeout(pressNext, KEY_PRESS_GAP_MS);
+    });
+  };
+  pressNext();
+}
+
+// How long the choice of where the keyboard box types holds: it costs a few
+// service calls, and a field does not move between two letters.
+var TYPING_ROUTE_TTL_MS = 2000;
+var typingRoute = null;
+var typingRouteAt = 0;
+
+function foregroundAppId(cb) {
+  lunaUrgent('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+    cb(fg && fg.returnValue !== false && fg.appId ? String(fg.appId) : '');
+  });
+}
+
+/*
+ * Where the keyboard box types now: { method: 'ime' | 'page' | 'keys', ... }.
+ *  - ime: LG's input method, when it has a field in focus (the remote keyboard
+ *    answers focus true, or on webOS 6+ LG's keyboard window is up), and when
+ *    the foreground app cannot be told.
+ *  - page: the foreground web app's page, through the web app debugger.
+ *  - keys: key presses on the network input, for native apps.
+ *  - none: a web app whose page cannot be reached, as without Developer Mode,
+ *    where the web app debugger does not run, or an app on Cobalt, YouTube's
+ *    engine, a native app on a C2 (webOS 9.2.2). Neither took any of the key
+ *    presses, so they are not sent and the box says so.
+ * registerRemoteKeyboard is asked as a one-answer call: its subscription ends
+ * with the call, so nothing is left registered.
+ */
+function chooseTypingRoute(cb) {
+  if (typingRoute && monotonicMs() - typingRouteAt < TYPING_ROUTE_TTL_MS) return cb(typingRoute);
+  var choose = function (route) {
+    typingRoute = route;
+    typingRouteAt = monotonicMs();
+    cb(route);
+  };
+  if (keyboardVisibleFn()) return choose({ method: 'ime' });
+  lunaUrgent('com.webos.service.ime/registerRemoteKeyboard', { subscribe: true }, function (r) {
+    if (r && r.currentWidget && r.currentWidget.focus === true) return choose({ method: 'ime' });
+    foregroundAppId(function (appId) {
+      if (!appId) return choose({ method: 'ime' });
+      typing.listPages(function (pages) {
+        var page = typing.pickPage(pages, appId);
+        if (page) return choose({ method: 'page', pageUrl: page.webSocketDebuggerUrl });
+        lunaUrgent('com.webos.applicationManager/getAppInfo', { id: appId }, function (info) {
+          var isWebApp = !!(info && info.appInfo && info.appInfo.type === 'web');
+          if (info && info.appInfo && info.appInfo.main === 'cobalt') return choose({ method: 'none' });
+          if (!isWebApp) return choose({ method: 'keys' });
+          // The one page open is the app's only if the app is a web app.
+          choose(pages.length === 1 ? { method: 'page', pageUrl: pages[0].webSocketDebuggerUrl } : { method: 'none' });
+        });
+      });
+    });
+  });
+}
+
+/*
+ * The dashboard's keyboard box, typed where the TV can take it. text is what
+ * to add, replace how many characters to delete first, enter whether to submit
+ * afterwards. The answer names the route, and for a route that goes one key at
+ * a time says how many went through, as a key press cannot be read back.
+ */
+function typeFromBox(request, cb) {
+  chooseTypingRoute(function (route) {
+    var answer = function (r) {
+      r.method = route.method;
+      // Whatever went wrong, choose again next time.
+      if (!r.ok) typingRoute = null;
+      cb(r);
+    };
+    var pressEnter = function (r) {
+      if (!r.ok || !request.enter) return answer(r);
+      typingRoute = null;
+      if (route.method === 'ime') {
+        return lunaUrgent('com.webos.service.ime/sendEnterKey', {}, function (e) { answer(imeResult(e)); });
+      }
+      if (route.method === 'page') {
+        return typing.typeIntoPage(route.pageUrl, '', 0, true, answer);
+      }
+      pressKeyCodes([RCU_KEYS.ok], answer);
+    };
+    if (route.method === 'none') {
+      return answer({ ok: false, error: msg('srv.typing.noRoute', 'This app does not take typing from here. Use the keyboard it shows on the TV, or, where it opens LG\u2019s, the box types into that.') });
+    }
+    var hasText = !!request.text || request.replace > 0;
+    if (!hasText) return pressEnter({ ok: true });
+    if (route.method === 'ime') return typeThroughIme(request.text, request.replace, pressEnter);
+    if (route.method === 'page') {
+      return typing.typeIntoPage(route.pageUrl, request.text, request.replace, false, pressEnter);
+    }
+    var keys = typing.keyCodesFor(request.text, request.replace);
+    if (keys.error) return answer({ ok: false, error: keys.error, sent: 0 });
+    pressKeyCodes(keys.codes, pressEnter);
+  });
 }
 
 function volumeAnswer(r) {
@@ -334,32 +502,32 @@ function doControl(action, value, cb) {
       /*
        * The dashboard's keyboard box: types into the text field in focus on
        * the TV, as it is typed. value is a string to insert, or { text,
-       * replace } with the characters to delete first. Both go through LG's
+       * replace } with the characters to delete first. Those go through LG's
        * input method on the urgent path, as keyboardText does: typing queued
        * behind other calls stalled in Glasshouse Home's search, and a
        * backspace sent as a key on the remote's device closed LG's keyboard
-       * there instead (a C2, webOS 9.2.2).
+       * there instead (a C2, webOS 9.2.2). With full as well, the whole box,
+       * the dashboard is asking for the route that suits the app in front: see
+       * chooseTypingRoute. Without it the text goes through LG's input method
+       * only, as Home Assistant and older dashboards send it. The routes type
+       * what changed, so full itself is not read. enter submits what was typed.
        */
-      var typed, delCount;
+      var typed, delCount, fullLength = 0, routeByApp = false, pressesEnter = false;
       if (value && typeof value === 'object') {
         typed = String(value.text == null ? '' : value.text);
         delCount = Math.max(0, toInt(value.replace, 0));
+        routeByApp = typeof value.full === 'string';
+        if (routeByApp) fullLength = value.full.length;
+        pressesEnter = value.enter === true;
       } else {
         typed = String(value == null ? '' : value);
         delCount = 0;
       }
-      if (typed.length > SEND_TEXT_MAX || delCount > SEND_TEXT_MAX) {
+      if (typed.length > SEND_TEXT_MAX || delCount > SEND_TEXT_MAX || fullLength > SEND_TEXT_MAX) {
         return cb({ ok: false, error: 'at most ' + SEND_TEXT_MAX + ' characters at a time' });
       }
-      var insertRest = function () {
-        if (!typed) return cb({ ok: true });
-        lunaUrgent('com.webos.service.ime/insertText', { text: typed }, imeAnswer(cb));
-      };
-      if (delCount <= 0) return insertRest();
-      return lunaUrgent('com.webos.service.ime/deleteCharacters', { count: delCount }, function (r) {
-        if (!r || !r.returnValue) return imeAnswer(cb)(r);
-        insertRest();
-      });
+      if (!routeByApp) return typeThroughIme(typed, delCount, cb);
+      return typeFromBox({ text: typed, replace: delCount, enter: pressesEnter }, cb);
 
     case 'launch_app':
     case 'launchApp':
@@ -677,6 +845,13 @@ function doControl(action, value, cb) {
      * tvpowerd subscribes to the key, so writing it is all LG's menu does.
      * Only on firmware that has it: a C2 on webOS 9.2 does, a B8 on 4.4 does not.
      */
+    // LG's device scans answered on the TV (lib/privacy.js).
+    case 'localLookups':
+      return privacy.setLocalLookups(value === true || value === 'on' || value === 'true', function (r) {
+        telemetry.clearCache();
+        cb(r);
+      });
+
     // LG's universal control device detection (other/ueiEnable); see telemetry.
     case 'deviceDetection':
       var ddOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
@@ -895,10 +1070,19 @@ function doControl(action, value, cb) {
     case 'toast':
       /* Both the payload's sourceId and luna-send's -a have to name an app the
          bus already knows; "tvweb" is rejected as an Unknown Source. */
-      return luna('com.webos.notification/createToast',
-                  { sourceId: toastSourceId, message: String(value || 'hello').slice(0, 120) },
-                  function (r) { cb({ ok: !!(r && r.returnValue), error: r && r.errorText }); },
-                  toastSourceId);
+      if (value && typeof value === 'object' && TOAST_TYPES.indexOf(value.type) === -1) {
+        return cb({ ok: false, error: 'toast type must be one of ' + TOAST_TYPES.join(', ') });
+      }
+      var toast = toastParams(value);
+      return luna('com.webos.notification/createToast', toast, function (r) {
+        if (r && r.returnValue) return cb({ ok: true });
+        // webOS 4.4 (a B8) refuses the advanced type, with or without an icon:
+        // "Message is not parsed". The message still goes out, as a plain toast.
+        if (!toast.type) return cb({ ok: false, error: r && r.errorText });
+        console.log('toast: the TV refused a ' + toast.type + ' toast (' + ((r && r.errorText) || 'no answer') + '); sending it as a standard one');
+        luna('com.webos.notification/createToast', { sourceId: toast.sourceId, message: toast.message },
+             function (r2) { cb({ ok: !!(r2 && r2.returnValue), error: r2 && r2.errorText }); }, toastSourceId);
+      }, toastSourceId);
 
     case 'tileHiding':
       if (isFromHbc()) return cb({ ok: false, error: tileHidingOffMsg });
@@ -1134,6 +1318,23 @@ function doControl(action, value, cb) {
       if (!writeSettingsFn || !ntpModule) return cb({ ok: false, error: 'no NTP client configured' });
       return saveNtp({ enabled: value === true || value === 'on' || value === 'true' }, cb);
 
+    /*
+     * The TV's name, under Glasshouse in the dashboards and as the device in
+     * Home Assistant. Empty puts back the one made at start from the model.
+     */
+    case 'setDeviceName':
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no settings file configured' });
+      var deviceName = String(value === undefined || value === null ? '' : value).replace(/\s+/g, ' ').trim();
+      if (deviceName.length > 64) return cb({ ok: false, error: msg('srv.deviceName.tooLong', 'The name must be at most 64 characters') });
+      return writeSettingsFn({ device: { name: deviceName } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        config.device = config.device || {};
+        config.device.name = deviceName || (config.device.model ? 'LG ' + config.device.model : 'LG webOS TV');
+        if (deviceNameChangedFn) deviceNameChangedFn(config.device.name);
+        if (republishDiscoveryFn) republishDiscoveryFn();
+        cb({ ok: true, name: config.device.name });
+      });
+
     // Watch time. Home Assistant's watch-time entities come and go with it.
     case 'setHistoryEnabled':
       if (!writeSettingsFn || !historyModule) return cb({ ok: false, error: 'no history configured' });
@@ -1220,6 +1421,7 @@ function init(opts) {
   if (opts.backup) backupModule = opts.backup;
   if (opts.home) homeModule = opts.home;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;
+  if (opts.deviceNameChanged) deviceNameChangedFn = opts.deviceNameChanged;
   if (opts.tvApp) tvAppFn = opts.tvApp;
   if (opts.restartSelf) restartSelfFn = opts.restartSelf;
   if (opts.updateSummary) updateSummaryFn = opts.updateSummary;
@@ -1227,6 +1429,7 @@ function init(opts) {
   if (opts.inputs) inputMap = opts.inputs;
   if (opts.browserApp) browserAppId = opts.browserApp;
   if (opts.toastSource) toastSourceId = opts.toastSource;
+  if (opts.toastIconDir) toastIconDir = opts.toastIconDir;
   if (opts.tileHidingOff) tileHidingOffMsg = opts.tileHidingOff;
   if (opts.keyboardVisible) keyboardVisibleFn = opts.keyboardVisible;
 

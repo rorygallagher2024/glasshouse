@@ -95,6 +95,9 @@ function renderHome() {
   const glasshouse = st.supported.ok || st.enabled || st.restorePending;
   const hero = q('home-hero');
   if (hero) hero.hidden = !glasshouse;
+  // webOS 5 and 6, where each switch restarts the TV's app manager.
+  const restartNote = q('home-restart-note');
+  if (restartNote) restartNote.hidden = !st.supported.restartsApps;
   if (st.restorePending) {
     state.textContent = t('home.restorePending', 'LG Home restoration is incomplete');
     desc.textContent = t('home.restoreRetry', 'Retry restoring LG Home before switching Glasshouse Home on again.');
@@ -142,6 +145,25 @@ function renderHome() {
     updateToggle(pic, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     pic.disabled = !homeWritable();
   }
+  const previewRow = q('home-preview-row');
+  if (previewRow) previewRow.hidden = !st.supported.ok;
+  const previewPill = q('home-preview');
+  if (previewPill) {
+    const on = !!st.layout && st.layout.livePreview === true;
+    updateToggle(previewPill, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    previewPill.disabled = !homeWritable();
+  }
+  // Its options, while it is on.
+  [['home-preview-always', 'previewAlways'], ['home-preview-tile', 'previewInTile']].forEach(([id, field]) => {
+    const row = q(id + '-row');
+    // Neither plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
+    if (row) row.hidden = !st.supported.ok || st.supported.standalone === true || !st.layout || st.layout.livePreview !== true;
+    const btn = q(id);
+    if (!btn) return;
+    const on = !!st.layout && st.layout[field] === true;
+    updateToggle(btn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    btn.disabled = !homeWritable();
+  });
   document.querySelectorAll('.home-show-row').forEach(row => { row.hidden = !st.supported.ok; });
   // Alternative View's rows have no titles, so no app count beside them.
   const altView = !!st.layout && st.layout.view === 'alternative';
@@ -227,9 +249,13 @@ function renderHome() {
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
   renderHomeRows();
+  renderHomeRecents();
   renderHomeChannels();
   renderHomeWalls();
   renderHomeColours();
+  if (!homeDarkDragging) showHomeDarkening(homeLayout && typeof homeLayout.darkening === 'number' ? homeLayout.darkening : 100);
+  const darkWrap = q('home-dark-wrap');
+  if (darkWrap) darkWrap.classList.toggle('disabled', !homeWritable());
   q('home-reset').disabled = !homeWritable();
 }
 
@@ -243,11 +269,20 @@ const HOME_LOOK_NAMES = () => ({
   lilac: t('home.colours.lilac', 'Lilac')
 });
 
-// The preset matching the chosen colours, the first (the view's own) when none are chosen, or null for custom ones.
+// What a fresh Glasshouse Home starts with, the first preset (Pure white).
+function homeDefaultLook() {
+  const p = ((homeStatus && homeStatus.colourPresets) || [])[0];
+  return p ? { text: p.text, accent: p.accent } : { text: '#ffffff', accent: '#ffffff' };
+}
+
+// The view's own look, saved as no colours chosen.
+function homeOwnLook(presets) { return presets.find(p => p.own) || presets[0] || null; }
+
+// The preset matching the chosen colours, the view's own when none are chosen, or null for custom ones.
 function homeLookNow() {
   const presets = (homeStatus && homeStatus.colourPresets) || [];
   const c = homeLayout && homeLayout.colours;
-  if (!c) return presets[0] || null;
+  if (!c) return homeOwnLook(presets);
   return presets.find(p => p.text === c.text && p.accent === c.accent) || null;
 }
 
@@ -259,23 +294,24 @@ function renderHomeColours() {
   const names = HOME_LOOK_NAMES();
   const now = homeLookNow();
   const can = homeWritable() && !homeSaving;
-  // The first preset is the view's own colours, saved as none chosen.
+  // The view's own look is saved as none chosen.
   // The sample clock in each preview is a fixed time, in the TV's own hour
   // cycle.
   const lookClock = homeStatus.clockHour12 ? `9:40 ${t('common.pm', 'PM')}` : '21:40';
   box.innerHTML = presets.map((p, i) => `<button type="button" class="home-look${now && now.id === p.id ? ' picked' : ''}"
-      onclick="homeSaveLayout({ colours: ${i === 0 ? 'null' : `{ text: '${p.text}', accent: '${p.accent}' }`} })" ${can ? '' : 'disabled'}
+      onclick="homeSaveLayout({ colours: ${p.own ? 'null' : `{ text: '${p.text}', accent: '${p.accent}' }`} })" ${can ? '' : 'disabled'}
       aria-pressed="${now && now.id === p.id}" style="--look-text:${p.text};--look-accent:${p.accent}">
       <span class="home-look-screen"><span class="home-look-clock">${lookClock}</span><span class="home-look-row">${esc(t('home.row.apps', 'Apps'))}</span><i></i></span>
       <span class="home-look-name">${esc(names[p.id] || p.id)}</span>
     </button>`).join('');
-  const c = (homeLayout && homeLayout.colours) || presets[0] || { text: '#ece7df', accent: '#e9ad55' };
+  const c = (homeLayout && homeLayout.colours) || homeOwnLook(presets) || { text: '#ece7df', accent: '#e9ad55' };
   const text = q('home-col-text'), accent = q('home-col-accent');
   if (text && document.activeElement !== text) text.value = c.text;
   if (accent && document.activeElement !== accent) accent.value = c.accent;
   [text, accent].forEach(el => { if (el) el.disabled = !can; });
   const reset = q('home-col-reset');
-  if (reset) reset.disabled = !can || !(homeLayout && homeLayout.colours);
+  const fresh = homeDefaultLook(), cur = homeLayout && homeLayout.colours;
+  if (reset) reset.disabled = !can || !!(cur && cur.text === fresh.text && cur.accent === fresh.accent);
 }
 
 function homeCustomColours() {
@@ -287,6 +323,8 @@ function homeItem(kind, id) {
   const list = kind === 'app' ? homeCat.apps : kind === 'dev' ? homeCat.devices : homeCat.channels;
   const it = list.find(x => x.id === id);
   if (!it) return null;
+  // The TV's own tuner: no HDMI port, as its tile on Glasshouse Home says.
+  if (kind === 'dev' && it.tuner) return { title: it.name, sub: t('ctl.liveTv', 'Live TV') };
   if (kind === 'dev' && it.unused) return { title: it.name, sub: t('home.dev.unused', 'Nothing connected'), unused: true };
   if (kind === 'dev') return { title: it.name, sub: it.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: it.port, via: it.via }) : t('home.dev.port', 'HDMI {port}', { port: it.port }) };
   if (kind === 'ch') return { title: it.number + ' ' + it.name };
@@ -434,6 +472,42 @@ function homeMoveRow(i, d) {
   homeSaveLayout({ rows });
 }
 
+/*
+ * The apps kept out of the Recent apps panel (Back on Glasshouse Home), and
+ * their last screen with them; their tiles stay on the Apps row.
+ */
+function renderHomeRecents() {
+  const box = q('home-recents');
+  if (!box || !homeLayout || !homeCat) return;
+  const usable = homeWritable();
+  const open = box.querySelector('details[open]') !== null;
+  const out = homeLayout.excludedRecents || [];
+  const apps = (homeCat.apps || []).slice().sort((a, b) => a.title.localeCompare(b.title));
+  const rows = apps.map(a => {
+    const hidden = out.includes(a.id);
+    const icon = a.icon ? `<img class="rk-ico" src="${esc(api(a.icon))}" alt="">` : '';
+    return `<div class="prot-row home-tile${hidden ? ' home-hidden' : ''}">
+      <div class="prot-main"><div class="prot-title">${icon}<span translate="no">${esc(a.title)}</span></div></div>
+      <div class="prot-status">${renderToggle({ cls: hidden ? 'idle' : 'good',
+        label: hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
+        disabled: !usable, onclick: `homeToggleRecents('${jsq(a.id)}')` })}</div></div>`;
+  }).join('');
+  const summary = out.length ? t('home.recents.hiddenCount', '{n} hidden', { n: out.length }) : '';
+  box.innerHTML = `<details class="home-row"${open ? ' open' : ''}>
+    <summary><span class="prot-title">${esc(t('home.recents.title', 'Recent apps'))}</span>
+      <span class="home-row-move">${summary ? `<span class="sub">${esc(summary)}</span>` : ''}</span></summary>
+    <div class="sub">${esc(t('home.recents.desc', 'Apps hidden here never show in Glasshouse Home’s Recent apps (Back on Home), nor does their last screen. Their tiles stay on the Apps row.'))}</div>
+    <div class="prot-table">${rows || `<div class="sub">${esc(t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
+  </details>`;
+}
+
+function homeToggleRecents(id) {
+  const list = (homeLayout.excludedRecents || []).slice();
+  const i = list.indexOf(id);
+  if (i >= 0) list.splice(i, 1); else list.push(id);
+  homeSaveLayout({ excludedRecents: list });
+}
+
 function homeToggleTile(kind, id) {
   const hidden = Object.assign({}, homeLayout.hidden);
   const list = hidden[kind].slice();
@@ -525,6 +599,14 @@ async function homeHideLg() {
 
 function homePicture() {
   homeSaveLayout({ picture: homeLayout.picture !== true });
+}
+
+function homeLivePreview() {
+  homeSaveLayout({ livePreview: homeLayout.livePreview !== true });
+}
+
+function homePreviewOption(field) {
+  homeSaveLayout({ [field]: homeLayout[field] !== true });
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.
@@ -651,7 +733,7 @@ function renderHomeWalls() {
   const busy = !homeWritable() || !!homeWallUploading || walls.uploading;
   const names = HOME_WALL_NAMES();
   const now = homeWallNow();
-  const c = (homeLayout && homeLayout.colours) || ((homeStatus.colourPresets || [])[0]) || { text: '#ece7df', accent: '#e9ad55' };
+  const c = (homeLayout && homeLayout.colours) || homeOwnLook(homeStatus.colourPresets || []) || { text: '#ece7df', accent: '#e9ad55' };
   // The owner's own pictures are uploaded to the times of day; a set's are shown as they are.
   const choice = walls.choice || 'own';
   const own = choice === 'own';
@@ -812,3 +894,62 @@ async function homeClearUploads() {
   catch (e) { q('home-wall-upload-note').textContent = e.message; }
   await loadHome();
 }
+
+/* The wallpaper's darkening behind the text and rows, in 5% steps, saved on
+   release as OLED light is. */
+let homeDarkDragging = false;
+
+function showHomeDarkening(v) {
+  if (q('home-dark-slider')) q('home-dark-slider').value = v;
+  if (q('home-dark-fill')) q('home-dark-fill').style.width = v + '%';
+  if (q('home-dark-lbl')) q('home-dark-lbl').textContent = v === 0 ? t('common.off', 'Off') : v + '%';
+}
+
+function initHomeDarkSlider() {
+  const wrap = q('home-dark-wrap');
+  const slider = q('home-dark-slider');
+  if (!wrap || !slider) return;
+  let active = false;
+  const at = e => {
+    const r = wrap.getBoundingClientRect();
+    return Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 20) * 5));
+  };
+  const save = v => { showHomeDarkening(v); return homeSaveLayout({ darkening: v }); };
+  const stop = e => {
+    active = false;
+    homeDarkDragging = false;
+    wrap.classList.remove('dragging');
+    try { wrap.releasePointerCapture(e.pointerId); } catch (err) {}
+  };
+  wrap.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || !homeWritable()) return;
+    active = true;
+    homeDarkDragging = true;
+    wrap.classList.add('dragging');
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    showHomeDarkening(at(e));
+  });
+  wrap.addEventListener('pointermove', e => { if (active) showHomeDarkening(at(e)); });
+  wrap.addEventListener('pointerup', e => {
+    if (!active) return;
+    stop(e);
+    save(at(e));
+  });
+  wrap.addEventListener('pointercancel', e => {
+    if (!active) return;
+    stop(e);
+    showHomeDarkening(homeLayout && typeof homeLayout.darkening === 'number' ? homeLayout.darkening : 100);
+  });
+  slider.addEventListener('keydown', e => {
+    const steps = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5, PageUp: 25, PageDown: -25 };
+    let v;
+    if (steps[e.key]) v = Number(slider.value) + steps[e.key];
+    else if (e.key === 'Home') v = 0;
+    else if (e.key === 'End') v = 100;
+    else return;
+    e.preventDefault();
+    if (homeWritable()) save(Math.max(0, Math.min(100, v)));
+  });
+}
+
+initHomeDarkSlider();

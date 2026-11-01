@@ -138,6 +138,7 @@ console.log('Running test-screensavers.js ...');
   var ids = all.map(function (e) { return e.id; });
   assert.ok(ids.indexOf('stock') !== -1, 'catalog must include stock');
   assert.ok(ids.indexOf('clock') !== -1, 'catalog must include clock');
+  assert.ok(ids.indexOf('clock-date') !== -1, 'catalog must include clock-date');
   assert.ok(ids.indexOf('starfield') !== -1, 'catalog must include starfield');
   assert.ok(ids.indexOf('fireworks') !== -1, 'catalog must include fireworks');
   assert.ok(ids.indexOf('vitals') !== -1, 'catalog must include vitals');
@@ -147,7 +148,7 @@ console.log('Running test-screensavers.js ...');
   assert.ok(ids.indexOf('currents') !== -1, 'catalog must include currents');
   assert.ok(ids.indexOf('veils') !== -1, 'catalog must include veils');
   assert.ok(ids.indexOf('tesseract') !== -1, 'catalog must include tesseract');
-  assert.strictEqual(ids.length, 15, 'catalog must have exactly 15 entries');
+  assert.strictEqual(ids.length, 16, 'catalog must have exactly 16 entries');
 
   // Each of Glasshouse's own reads cleanly from its folder
   for (var i = 0; i < all.length; i++) {
@@ -155,7 +156,7 @@ console.log('Running test-screensavers.js ...');
     assert.strictEqual(all[i].builtin, true);
   }
 
-  console.log('  ✓ the catalog has Glasshouse\'s 14 screen savers and LG\'s, each read from its folder');
+  console.log('  ✓ the catalog has Glasshouse\'s 15 screen savers and LG\'s, each read from its folder');
 })();
 
 // 8. trigger returns error when luna is not available

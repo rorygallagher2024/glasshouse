@@ -1,0 +1,4 @@
+#!/bin/sh
+base=/var/lib/lg-dts-native
+[ -f "$base/enabled" ] || exit 0
+/usr/bin/python3 "$base/control.py" boot >> "$base/boot.log" 2>&1

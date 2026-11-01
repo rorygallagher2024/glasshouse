@@ -1,7 +1,9 @@
-// Public audio snapshots: what the TV, its receiver and LG's playback configuration report.
+// Public audio snapshots and the boundary before a privileged helper runs.
 var assert = require('assert');
 var events = require('events');
+var fs = require('fs');
 var os = require('os');
+var crypto = require('crypto');
 var child = require('child_process');
 var fixture = require('./fixtures/audio-g3.json');
 var mock = require('./mocks/mock-env').createMockEnv({ files: fixture.files });
@@ -11,13 +13,16 @@ var audio = require('../server/lib/audio');
 var routes = require('../server/lib/routes');
 var originalRelease = os.release;
 var originalExec = child.execFile;
+var originalHash = crypto.createHash;
+var originalStat = fs.statSync;
 var responses;
 var launches = 0;
 var reads = 0;
 var calls = [];
 var before;
 var cases = [];
-child.execFile = function () { launches++; throw new Error('The audio endpoint must not start a process'); };
+function refuseLaunch() { launches++; throw new Error('A refused override must not start a process'); }
+child.execFile = refuseLaunch;
 function call(uri, params, cb) {
   reads++;
   calls.push({ uri: uri, params: params });
@@ -168,12 +173,210 @@ add('non-HDMI C9 app playback does not query an arbitrary HDMI port', function (
   assert.strictEqual(st.tv.input, null); assert.strictEqual(st.live.hdmi, null); assert.strictEqual(format(st, 'dts').advertised, null);
   assert.strictEqual(calls.filter(function (entry) { return /getEdidData$/.test(entry.uri); }).length, 0);
 });
-add('the endpoint is read-only', null, function (code) {
-  assert.strictEqual(code, 405);
+add('the G3 cannot execute a G5 override', null, function (code, st) {
+  assert.strictEqual(code, 400);
+  assert.strictEqual(st.ok, false);
   assert.strictEqual(launches, 0);
 }, { enabled: true });
+add('matching model/version still refuses an unverified helper', function () {
+  responses['com.webos.service.tv.systemproperty/getSystemInfo'].modelName = 'OLED77G5RLA';
+  responses['com.webos.service.tv.systemproperty/getSystemInfo'].firmwareVersion = '33.30.80';
+  os.release = function () { return '5.4.268-329.ptl4tv.5'; };
+  mock.files['/var/lib/lg-dts-core/control.sh'] = '#!/bin/sh\nexit 0\n';
+  mock.files['/var/lib/lg-dts-core/manifest.json'] = JSON.stringify({ target: 'OLED77G5RLA 33.30.80', kernel: '5.4.268-329.ptl4tv.5', input: 'HDMI3', output: 'eARC' });
+}, function (code, st) {
+  assert.strictEqual(code, 400);
+  assert.strictEqual(st.ok, false);
+  assert.strictEqual(launches, 0);
+}, { enabled: true });
+add('read-only configuration refuses before inspecting a helper', function () {
+  before = reads;
+  routes.init({ config: { allowControl: false, token: '', port: 8080 }, audio: audio });
+}, function (code) { assert.strictEqual(code, 403); assert.strictEqual(reads, before); }, { enabled: true });
+add('cross-origin writes never reach the helper', null, function (code) {
+  assert.strictEqual(code, 403);
+  assert.strictEqual(launches, 0);
+}, { enabled: true }, { host: '127.0.0.1', origin: 'https://untrusted.example', 'content-type': 'application/json' });
+add('override requires a boolean', null, function (code) {
+  assert.strictEqual(code, 400);
+  assert.strictEqual(launches, 0);
+}, { enabled: 'yes' });
 
-function restore() { os.release = originalRelease; child.execFile = originalExec; mock.restore(); }
+// The native package's pins, so a mocked file can stand for the pinned binary.
+var NATIVE = '/var/lib/lg-dts-native/';
+var pins = {};
+fs.readFileSync(__dirname + '/../server/lib/audio.js', 'utf8').replace(/"((?:control\.py|gst\/libgstghdts\.so|gh_dts_native-apply[01]\.ko))": "([0-9a-f]{64})"/g,
+  function (all, name, hash) { pins[name] = hash; });
+assert.strictEqual(Object.keys(pins).length, 4);
+var stream = { active: true, carrierWordRate: 768000, sampleRate: 192000, channels: 8, hdReady: true,
+  hdFrames: 297, coreOnlyFrames: 0, silentFrames: 145, droppedPartialFrames: 0, lastPayload: 'dtshd', reason: null };
+var controller = null;
+// The qualified G5 with a verified, enabled HD package playing a DTS:X stream
+// to a DTS-HD receiver over eARC.
+function nativeG5(changes) {
+  changes = changes || {};
+  var info = responses['com.webos.service.tv.systemproperty/getSystemInfo'];
+  info.modelName = 'OLED83G54LW.BEKYLJP';
+  info.firmwareVersion = '33.31.68';
+  os.release = function () { return '5.4.268-329.ptl4tv.5'; };
+  var arc = responses['com.webos.service.arccontroller/getARCState'];
+  arc.arcActivation = 'eARC';
+  arc.earcCapability = ['PCM', 'DTS', 'DTSHD'];
+  arc.advancedEarcCapability = [{ audioCodingType: 'PCM', maxChannelNumber: 8 }, { audioCodingType: 'DTS', maxChannelNumber: 6 },
+    { audioCodingType: 'DTSHD', maxChannelNumber: 8 }];
+  var settings = responses['com.webos.service.settings/getSystemSettings'].settings;
+  settings.soundOutput = 'external_arc';
+  settings.soundOutputDigital = 'passThrough';
+  mock.files['/proc/lgtv-driver/audio/sndout'] = fixture.files['/proc/lgtv-driver/audio/sndout'].replace('EArcOnOff=Off', 'EArcOnOff=On');
+  mock.files[NATIVE + 'manifest.json'] = '{}';
+  Object.keys(pins).forEach(function (name) { mock.files[NATIVE + name] = 'pinned:' + pins[name]; });
+  mock.files[NATIVE + 'enabled'] = '';
+  mock.files[NATIVE + 'hd-rate'] = '768000\n';
+  mock.files['/run/systemd/system/umediaserver.service.d/90-glasshouse-dts.conf'] = '[Service]\nEnvironment=GST_PLUGIN_PATH=' + NATIVE + 'gst\n';
+  mock.files['/sys/module/gh_dts_native'] = '';
+  mock.files['/sys/module/gh_dts_native/parameters/active'] = '1\n';
+  mock.files['/sys/module/gh_dts_native/parameters/carrier_rate'] = '192000\n';
+  mock.files['/sys/module/gh_dts_native/parameters/hd_ready'] = '1\n';
+  mock.files['/proc/aaudio/dot_block_connection'] = 'renderer_0_out100 -> output_3_in0\n';
+  mock.files[NATIVE + 'last-stream.json'] = JSON.stringify(stream);
+  Object.keys(changes).forEach(function (path) { mock.files[path] = changes[path]; });
+  crypto.createHash = function (kind) {
+    var hash = originalHash(kind), pinned = null;
+    return { update: function (data) { pinned = /^pinned:([0-9a-f]{64})$/.exec(String(data)); hash.update(data); return this; },
+      digest: function (enc) { return pinned ? pinned[1] : hash.digest(enc); } };
+  };
+  fs.statSync = function (path) {
+    if (path === NATIVE + 'gstcool-native.conf' || path === '/etc/gst/gstcool.conf') return { dev: 1, ino: 7 };
+    return originalStat.apply(fs, arguments);
+  };
+  child.execFile = function (file, args, opts, cb) {
+    if (file === '/bin/systemctl') return cb(null, 'active\n', '');
+    if (file === '/usr/bin/python3' && controller) return controller(args, cb);
+    return refuseLaunch();
+  };
+}
+function withStream(fields) {
+  var copy = JSON.parse(JSON.stringify(stream));
+  Object.keys(fields).forEach(function (key) { copy[key] = fields[key]; });
+  return JSON.stringify(copy);
+}
+
+add('native HD is reported only with readiness, HD frames and no core substitution', function () { nativeG5(); }, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(st.override.backend, 'native-apps');
+  assert.strictEqual(st.override.available, true);
+  assert.strictEqual(st.override.active, true);
+  assert.strictEqual(st.override.hdPayloadActive, true);
+  assert.strictEqual(st.override.stream.hdFrames, 297);
+});
+[['core-only frames', { 'last-stream.json': withStream({ coreOnlyFrames: 3 }) }],
+  ['a refusal reason', { 'last-stream.json': withStream({ reason: 'hd-not-ready' }) }],
+  ['a stream that has ended', { 'last-stream.json': withStream({ active: false }) }],
+  ['a fractional count', { 'last-stream.json': withStream({ hdFrames: 1.5 }) }],
+  ['a stereo carrier', { 'last-stream.json': withStream({ channels: 2 }) }],
+  ['an unsettled output', { '/sys/module/gh_dts_native/parameters/hd_ready': '0\n' }],
+  ['a core carrier', { '/sys/module/gh_dts_native/parameters/carrier_rate': '48000\n' }],
+  ['a route that is not on eARC output 3', { '/proc/aaudio/dot_block_connection': 'mixer_0_out0 -> output_3_in0\n' }]
+].forEach(function (variant) {
+  add('native HD is not claimed with ' + variant[0], function () {
+    var changes = {};
+    Object.keys(variant[1]).forEach(function (key) { changes[key.charAt(0) === '/' ? key : NATIVE + key] = variant[1][key]; });
+    nativeG5(changes);
+  }, function (code, st) {
+    assert.strictEqual(code, 200);
+    assert.strictEqual(st.override.hdPayloadActive, false);
+  });
+});
+add('a refused stream\'s reason is reported while forwarding waits', function () {
+  nativeG5({ '/sys/module/gh_dts_native/parameters/active': null, '/sys/module/gh_dts_native': null });
+  mock.files[NATIVE + 'last-error.json'] = JSON.stringify({ action: 'start', error: 'Native DTS requires HDMI ARC and Pass Through' });
+}, function (code, st) {
+  assert.strictEqual(st.override.running, true);
+  assert.strictEqual(st.override.active, false);
+  assert.strictEqual(st.override.lastError, 'Native DTS requires HDMI ARC and Pass Through');
+});
+add('the forwarder\'s own refusal is reported, but not an enable failure', function () {
+  nativeG5({ '/sys/module/gh_dts_native/parameters/active': null, '/sys/module/gh_dts_native': null });
+  mock.files[NATIVE + 'last-error.json'] = JSON.stringify({ action: 'acquire', error: 'another stream owns the route' });
+}, function (code, st) {
+  assert.strictEqual(st.override.lastError, 'another stream owns the route');
+});
+add('an enable failure is not reported as a refused stream', function () {
+  nativeG5({ '/sys/module/gh_dts_native/parameters/active': null, '/sys/module/gh_dts_native': null });
+  mock.files[NATIVE + 'last-error.json'] = JSON.stringify({ action: 'enable', error: 'Unknown TV declaration family' });
+}, function (code, st) {
+  assert.strictEqual(st.override.lastError, null);
+});
+add('changes left without the enabled marker need restoring, even on another model', function () {
+  nativeG5({ '/var/lib/lg-dts-native/enabled': null });
+  responses['com.webos.service.tv.systemproperty/getSystemInfo'].modelName = 'OLED65C4';
+}, function (code, st) {
+  assert.strictEqual(st.override.backend, 'native-apps');
+  assert.strictEqual(st.override.needsRestore, true);
+  assert.strictEqual(st.override.canDisable, true);
+  assert.strictEqual(st.override.available, false);
+});
+add('HD mode is not enabled for a receiver without DTS-HD', function () {
+  nativeG5({ '/var/lib/lg-dts-native/enabled': null, '/sys/module/gh_dts_native': null });
+  fs.statSync = originalStat;
+  var arc = responses['com.webos.service.arccontroller/getARCState'];
+  arc.earcCapability = ['PCM', 'DTS'];
+  arc.advancedEarcCapability = [{ audioCodingType: 'PCM', maxChannelNumber: 8 }, { audioCodingType: 'DTS', maxChannelNumber: 6 }];
+}, function (code, st) {
+  assert.strictEqual(code, 400);
+  assert.ok(/DTS-HD/.test(st.error), st.error);
+  assert.strictEqual(launches, 0);
+}, { enabled: true });
+add('native forwarding is not enabled over plain ARC', function () {
+  nativeG5({ '/var/lib/lg-dts-native/enabled': null, '/sys/module/gh_dts_native': null,
+    '/proc/lgtv-driver/audio/sndout': fixture.files['/proc/lgtv-driver/audio/sndout'] });
+  fs.statSync = originalStat;
+  responses['com.webos.service.arccontroller/getARCState'].arcActivation = 'ARC';
+}, function (code, st) {
+  assert.strictEqual(code, 400);
+  assert.strictEqual(launches, 0);
+}, { enabled: true });
+add('a TV with no forwarding helper is not offered the section', null, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(st.override.offered, false, 'every other TV sees no DTS forwarding');
+});
+add('the qualified G5 is offered the section', function () { nativeG5(); }, function (code, st) {
+  assert.strictEqual(st.override.offered, true);
+});
+add('an unverified native package is not enabled on the qualified TV', function () {
+  nativeG5({ '/var/lib/lg-dts-native/enabled': null, '/sys/module/gh_dts_native': null, '/var/lib/lg-dts-native/control.py': 'changed' });
+  fs.statSync = originalStat;
+}, function (code, st) {
+  assert.strictEqual(code, 400);
+  assert.strictEqual(st.ok, false);
+  assert.strictEqual(launches, 0);
+}, { enabled: true });
+add('a failed disable reports the controller\'s reason', function () {
+  nativeG5();
+  controller = function (args, cb) {
+    assert.deepEqual(args, [NATIVE + 'control.py', 'disable']);
+    delete mock.files[NATIVE + 'enabled'];
+    cb(new Error('exit 1'), '', 'Native DTS: Native DTS decoder rank bind did not release\n');
+  };
+}, function (code, st) {
+  assert.strictEqual(st.ok, false);
+  assert.ok(/rank bind did not release$/.test(st.error), st.error);
+}, { enabled: false });
+add('a disable is not confirmed while changes remain to restore', function () {
+  nativeG5();
+  controller = function (args, cb) {
+    mock.files[NATIVE + 'enabled'] = null;
+    mock.files[NATIVE + 'config-original.json'] = '{"original":"TrueHD"}';
+    cb(null, '', '');
+  };
+}, function (code, st) {
+  assert.strictEqual(st.ok, false);
+  assert.strictEqual(st.status.override.needsRestore, true);
+}, { enabled: false });
+
+function restore() {
+  os.release = originalRelease; child.execFile = originalExec; crypto.createHash = originalHash; fs.statSync = originalStat; mock.restore();
+}
 var guard = setTimeout(function () { restore(); throw new Error('audio endpoint did not complete'); }, 5000);
 function next() {
   var task = cases.shift();
@@ -181,6 +384,13 @@ function next() {
   responses = JSON.parse(JSON.stringify(fixture.responses));
   calls = [];
   Object.keys(fixture.files).forEach(function (key) { mock.files[key] = fixture.files[key]; });
+  Object.keys(mock.files).forEach(function (key) {
+    if (/^\/(var\/lib\/lg-dts-|sys\/module\/gh_dts_native|proc\/aaudio\/|run\/systemd\/)/.test(key)) delete mock.files[key];
+  });
+  child.execFile = refuseLaunch;
+  crypto.createHash = originalHash;
+  fs.statSync = originalStat;
+  controller = null;
   os.release = function () { return '5.4.268-320'; };
   routes.init({ config: { allowControl: true, token: '', port: 8080 }, audio: audio });
   if (task.setup) task.setup();

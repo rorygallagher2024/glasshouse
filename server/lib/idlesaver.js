@@ -33,6 +33,11 @@ var lastState = '';
 var powerGeneration = 0;
 var policyGeneration = 0;
 var liftedApp = '';
+// An app that still refused the screen saver without panel care's hold is
+// blocking it itself (RetroArch, played with a gamepad, on a C1). Asking
+// again every idle period flipped its policy twice each time, and each flip
+// stuttered the picture.
+var refusingApp = '';
 var lifting = false;
 var restoring = false;
 var restoreWanted = false;
@@ -105,11 +110,13 @@ function restore() {
   });
 }
 
-function checkRequest(generation) {
+function checkRequest(generation, idle) {
   if (!liftedApp || generation !== policyGeneration) return;
   lunaFn(POWER + 'getPowerState', {}, function (pw) {
     if (!liftedApp || generation !== policyGeneration) return;
-    if (!pw || pw.returnValue === false || pw.state !== 'Screen Saver') restore();
+    if (pw && pw.returnValue !== false && pw.state === 'Screen Saver') return;
+    if (idle && pw && pw.returnValue !== false && pw.state === 'Active') refusingApp = liftedApp;
+    restore();
   });
 }
 
@@ -151,13 +158,18 @@ function idleRequestRefused() {
   var generation = powerGeneration;
   mediaStateFn(function (media) {
     if (!media || media.state === 'playing' || lastState !== 'Active' || generation !== powerGeneration) return;
+    if (refusingApp) return foregroundApp(function (appId) {
+      if (!appId || appId === refusingApp || generation !== powerGeneration) return;
+      refusingApp = '';
+      idleRequestRefused();
+    });
     lift(function (ok) {
       if (!ok) return;
       if (lastState !== 'Active' || generation !== powerGeneration) return restore();
       console.log('idlesaver: panel care refused the idle screen saver; asking again without its hold on ' + liftedApp);
       var policy = policyGeneration;
       lunaFn(POWER + 'turnOnScreenSaver', {}, function () {
-        setTimeout(function () { checkRequest(policy); }, 1500);
+        setTimeout(function () { checkRequest(policy, true); }, 1500);
       });
     });
   }, true);
@@ -177,6 +189,7 @@ function powerReply(response) {
   if (wasScreenSaver && state !== 'Screen Saver') restore();
   if (state !== 'Active') {
     requestSeenAt = 0;
+    refusingApp = '';
     if (state !== 'Screen Saver') restore();
     return;
   }
