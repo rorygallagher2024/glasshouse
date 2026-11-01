@@ -1677,7 +1677,7 @@
       <div class="prot-row">
         <div class="prot-main">
           <div class="prot-title" data-t="server.backup.title">Settings backup</div>
-          <div class="prot-desc" data-t="server.backup.desc">Saves LG's sound, device, HDMI and ad settings, and Glasshouse's own, to a file. Restoring it, on this TV or another, sets those the TV has. Network access, MQTT and game settings are not included.</div>
+          <div class="prot-desc" data-t="server.backup.desc">Saves LG's sound, device, HDMI and ad settings, and Glasshouse's own, to a file. Restoring it, on this TV or another, sets those the TV has. Network access, MQTT, game settings and picture calibration are not included.</div>
           <div class="btns backup-btns">
             <button type="button" id="backup-save" onclick="saveBackup()" data-t="server.backup.save">Download backup</button>
             <button type="button" id="backup-restore" onclick="q('backup-file').click()" data-t="server.backup.restore">Restore from file</button>
@@ -1693,6 +1693,18 @@
         </div>
         <div class="prot-status"><button type="button" class="pill idle" id="backup-daily" onclick="toggleBackupDaily()">&mdash;</button></div>
         <div class="backup-saved" id="backup-saved" hidden></div>
+      </div>
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="server.calibration.title">Calibration archive (C9 preview)</div>
+          <div class="prot-desc" data-t="server.calibration.desc">Saves stored calibration files and readings separately from settings backups. Coverage is partial. Factory-reset recovery is not yet supported; keep the calibrator's original files.</div>
+          <div class="btns backup-btns">
+            <button type="button" id="calibration-save" onclick="saveCalibrationArchive()" data-t="server.calibration.save">Download calibration archive</button>
+            <button type="button" id="calibration-check" onclick="q('calibration-file').click()" data-t="server.calibration.check">Check archive</button>
+          </div>
+          <input type="file" id="calibration-file" accept=".json,application/json" hidden onchange="checkCalibrationArchive(this)">
+          <div class="sub" id="calibration-msg" hidden role="status"></div>
+        </div>
       </div>
       <!-- Hidden where the TV will not take the app; renderTvApp shows it. -->
       <div class="prot-row" id="tvapp-row" hidden>

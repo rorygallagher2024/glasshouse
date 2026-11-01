@@ -112,6 +112,9 @@ var sshKeysModule = null;
 var screentimeModule = null;
 /** @type {typeof import('./backup')} */
 var backupModule = null;
+/** @type {typeof import('./calibration')} */
+var calibrationModule = null;
+var calibrationRequestBusy = false;
 var fromHbcFn = null;
 var tileHidingOffMsg = '';
 var assetPathFn = null;
@@ -1957,6 +1960,56 @@ function handleRequest(req, res) {
     return send(res, 200, JSON.stringify(getSettingsPayload()));
   }
 
+  // Calibration data has its own format and cannot reach settings restoration.
+  if (pathname.indexOf('/api/calibration/') === 0 && calibrationModule) {
+    if (pathname === '/api/calibration/status' && req.method === 'GET') {
+      return calibrationModule.status(function (r) { send(res, 200, JSON.stringify(r)); });
+    }
+    if (req.method !== 'POST' || (pathname !== '/api/calibration/export' && pathname !== '/api/calibration/inspect')) {
+      return send(res, 404, JSON.stringify({ ok: false, error: msg('srv.calibration.unknownAction', 'no such calibration action') }));
+    }
+    if (!config.allowControl) return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    if (!postGuard(req, res, 'application/json', false)) return;
+    if (calibrationRequestBusy) return send(res, 409, JSON.stringify({ ok: false, error: msg('srv.calibration.requestBusy', 'Another calibration request is in progress') }));
+    calibrationRequestBusy = true;
+    var archiveChunks = [], archiveSize = 0, archiveDone = false;
+    var archiveLimit = pathname === '/api/calibration/export' ? 1024 : 12 * 1024 * 1024;
+    var archiveTimer = setTimeout(function () { archiveFinish(408, { ok: false, error: msg('srv.calibration.requestTimeout', 'calibration request timed out') }); }, 30000);
+    function archiveFinish(code, result) {
+      if (archiveDone) return;
+      archiveDone = true;
+      calibrationRequestBusy = false;
+      archiveChunks = [];
+      clearTimeout(archiveTimer);
+      send(res, code, JSON.stringify(result));
+    }
+    function archiveAborted() {
+      if (archiveDone) return;
+      archiveDone = true; calibrationRequestBusy = false; archiveChunks = []; clearTimeout(archiveTimer);
+    }
+    req.on('aborted', archiveAborted);
+    req.on('error', archiveAborted);
+    req.on('data', function (d) {
+      if (archiveDone) return;
+      var chunk = Buffer.isBuffer(d) ? d : new Buffer(d, 'utf8');
+      archiveSize += chunk.length;
+      if (archiveSize > archiveLimit) return archiveFinish(413, { ok: false, error: msg('srv.calibration.requestTooLarge', 'calibration request too large') });
+      archiveChunks.push(chunk);
+    });
+    req.on('end', function () {
+      if (archiveDone) return;
+      clearTimeout(archiveTimer);
+      var value;
+      try { value = JSON.parse(Buffer.concat(archiveChunks).toString('utf8')); } catch (e) { return archiveFinish(400, { ok: false, error: 'malformed JSON' }); }
+      if (pathname === '/api/calibration/export') {
+        if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length) return archiveFinish(400, { ok: false, error: msg('srv.calibration.emptyExport', 'export expects an empty object') });
+        return calibrationModule.create(function (r) { archiveFinish(r.ok ? 200 : 400, r); });
+      }
+      calibrationModule.inspect(value, function (r) { archiveFinish(r.ok ? 200 : 400, r); });
+    });
+    return;
+  }
+
   // The apps a restored backup listed that this TV still lacks, for the Apps tab.
   if (pathname === '/api/backup/apps' && req.method === 'GET' && backupModule) {
     return backupModule.pendingApps(function (apps) { send(res, 200, JSON.stringify({ ok: true, apps: apps })); });
@@ -2129,6 +2182,7 @@ function init(opts) {
   if (opts.sshKeys) sshKeysModule = opts.sshKeys;
   if (opts.screentime) screentimeModule = opts.screentime;
   if (opts.backup) backupModule = opts.backup;
+  if (opts.calibration) calibrationModule = opts.calibration;
   if (opts.fromHomebrewChannel) fromHbcFn = opts.fromHomebrewChannel;
   if (opts.tileHidingOff) tileHidingOffMsg = opts.tileHidingOff;
   if (opts.assetPath) assetPathFn = opts.assetPath;

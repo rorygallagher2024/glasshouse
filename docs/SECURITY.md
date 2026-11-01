@@ -242,3 +242,19 @@ fact. Installing openssh via the Homebrew Channel and disabling telnet is the
 single biggest improvement you can make.
 
 ---
+
+## Calibration archive preview
+
+Calibration archives are private files downloaded on request, separate from
+settings backups and EDID rollback. Export and inspection use authenticated
+POST routes with controls allowed, JSON and the existing origin guard. Only
+one body/export/inspection request is accepted at a time; size and receive
+limits bound upload memory. No archive is extracted, executed, applied or saved
+to the TV. The capture module has fixed source paths and getter methods, with
+file-type, path, size and stability checks. It never probes EEPROM or I2C.
+
+Archive hashes detect accidental damage, not authenticity. An editable archive
+cannot authorize restoration, even if its coverage flags are changed. The
+hashed model/board/network identity is private matching evidence; it is not
+proof that the panel is unchanged. Full calibration restoration remains
+unsupported until its separate hardware qualification is complete.
