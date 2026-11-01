@@ -55,11 +55,17 @@ assert.strictEqual(load({ browser: 'de-DE', page: WEB, stored: 'de' }).lang(), '
 assert.strictEqual(load({ browser: 'en-US', page: WEB, search: '?lang=de' }).lang(), 'de', 'asked for in the address');
 console.log('  ✓ chosen, or asked for in the address, it is used on every page');
 
+// French covers the dashboard and Glasshouse Home, not the TV app.
+assert.strictEqual(load({ browser: 'fr-FR', page: WEB }).lang(), 'fr', 'the dashboard, which French covers');
+assert.strictEqual(load({ browser: 'fr-FR', page: HOME }).lang(), 'fr', 'Glasshouse Home, which French covers');
+assert.strictEqual(load({ browser: 'fr-FR', page: TV }).lang(), 'en', 'not the TV app, which it does not');
+console.log('  ✓ a partial language covering two pages is picked on both');
+
 // A complete language follows the browser on every page.
 [HOME, TV, WEB].forEach(function (p) {
   assert.strictEqual(load({ browser: 'es-ES', page: p }).lang(), 'es', p);
 });
-assert.strictEqual(load({ browser: 'fr-FR', page: WEB }).lang(), 'en', 'a language without a file');
+assert.strictEqual(load({ browser: 'xx-XX', page: WEB }).lang(), 'en', 'a language without a file');
 console.log('  ✓ a complete language follows the browser everywhere');
 
 var web = load({ browser: 'en-GB', page: WEB });

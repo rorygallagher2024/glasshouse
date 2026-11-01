@@ -20,17 +20,17 @@
  */
 (function (root) {
   // Languages that have a file in /assets/i18n/. English needs none.
-  var LANGS = ['es', 'de', 'ru', 'hu', 'it', 'ar', 'pt'];
+  var LANGS = ['es', 'de', 'ru', 'hu', 'it', 'ar', 'pt', 'fr'];
   // Each language in its own words, as the language list shows it, so it can
   // be found whatever the page is in.
-  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', it: 'Italiano', ar: 'العربية', pt: 'Português' };
+  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', it: 'Italiano', ar: 'العربية', pt: 'Português', fr: 'Français' };
   /*
    * Languages translated only in part, with the pages they cover in full:
    * 'web' (the dashboard), 'tv' (the TV app) and 'home' (Glasshouse Home).
    * Following the browser's language, one is used only on those pages, so no
    * page mixes it with English; elsewhere it is used only once chosen.
    */
-  var PARTIAL = { de: ['home'] };
+  var PARTIAL = { de: ['home'], fr: ['web', 'home'] };
   /*
    * Languages written right to left. The page is laid out that way only where
    * it is used with a pointer: on the TV app, Glasshouse Home and the TV's setup
