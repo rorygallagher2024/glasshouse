@@ -65,6 +65,7 @@ The children are the five subscriptions held open for live state, to which a TV 
 ## Platform constraints
 
 - **Node.js v0.12 (2015)**: webOS 4.x ships Node v0.12.2. All code in `tvweb.js` is written in strict ES5 (no `let`/`const`, no arrow functions, no template literals, no `async`/`await`).
+- **Node 0.x keeps its heap at its peak.** On a B8 the server's live objects are about 20 MB, but its heap grew to 57 MB and stayed there, 73 MB resident. `tvwebctl` starts node 0.x with `--optimize_for_size --max_semi_space_size=1`, which kept it at 28-36 MB for the same CPU time.
 - **BusyBox `run-parts` Hook Naming**: The webosbrew startup system invokes user hooks with `run-parts /var/lib/webosbrew/init.d`. BusyBox `run-parts` strictly ignores any filename containing a dot (`.`), so the boot hook must be named `50-tvweb` without `.sh`.
 - **Luna Bus Introspection**: Control commands interact with webOS via native `luna-send` calls (`com.webos.audio`, `com.webos.service.tvpower`, `com.webos.applicationManager`, `com.webos.notification`, `com.webos.service.settings`, `com.webos.service.eim`).
 
