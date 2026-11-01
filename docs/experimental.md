@@ -20,7 +20,7 @@ webOS 10's home app keeps its layout on the TV's read-only system and looks nowh
 
 ## Glasshouse Home
 
-A home screen of Glasshouse's own in place of LG's, switched on from its own [Home tab](dashboard/home.md) rather than under Advanced. It is offered on webOS 9, where it has been tried (a G3 and a C2 with webOS 9.2.2), and on webOS 10 (a G5 with webOS 10.3.1); on webOS 11 only with `"allowExperimentalHome": true` in `config.json`. While on, it is laid over LG's Home app in its place, which switching off takes away; no TV setting is changed. A view that stops answering, and a server that stops or keeps failing, each give LG's Home its place back.
+A home screen of Glasshouse's own in place of LG's, switched on from its own [Home tab](dashboard/home.md) rather than under Advanced. It is offered on webOS 9, where it has been tried (a G3 and a C2 with webOS 9.2.2), on webOS 10 (a G5 with webOS 10.3.1), and on webOS 5 (a CX with 5.5.0-19) and webOS 6 (C1s with 6.4.0 and 6.5.3 and a B1 with 6.5.3, where sam shows the same limits); on webOS 11 only with `"allowExperimentalHome": true` in `config.json`. On webOS 5 and 6 sam has neither of the ways it is made to read an appinfo.json again, so each switch restarts it, which is the restart described below, and the app in front comes back a moment later. While on, it is laid over LG's Home app in its place, which switching off takes away; no TV setting is changed. A view that stops answering, and a server that stops or keeps failing, each give LG's Home its place back.
 
 ## Why the first two are experimental
 

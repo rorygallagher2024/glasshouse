@@ -35,7 +35,7 @@ A **Quick Settings tile** turns one TV on and off: the one chosen with **Use for
 ## Turning a TV on
 
 > [!IMPORTANT]
-> A TV that is powered off or in standby can only be woken over the network if Wake-on-LAN is enabled. On the TV, turn on **Turn on via Wi-Fi** (or **Mobile TV On** on older webOS versions), or check Power under the dashboard's **Advanced** tab.
+> A TV that is powered off or in standby can only be woken over the network if Wake-on-LAN is enabled. On the TV, turn on **Turn on via Wi-Fi** (or **Mobile TV On** on older webOS versions), or check Power under the dashboard's **System** tab.
 
 * **Active Standby / Screen Off**: If the TV is in Active Standby (running panel clearing or Always Ready), the app displays a standby ring and a power button that triggers the server's `powerOn` API.
 * **Cold Standby / Powered Off**: If the TV's MAC address is known, the app sends Wake-on-LAN magic packets across the local broadcast domain every five seconds until the server responds.

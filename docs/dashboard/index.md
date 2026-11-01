@@ -2,7 +2,9 @@
 
 Each of these has a tab of its own in the dashboard, and a deep link to it. OLED Care appears on OLED TVs only.
 
-On a wide screen the tabs are listed down the left. On a phone, or wherever Preferences is set to hide the sidebar, they open from the menu button at the top of the page. In the Android app that button is in the app's bottom bar, beside its back button.
+On a wide screen the tabs are listed down the left, under the TV's name. On a phone, or wherever Preferences is set to hide the sidebar, they open from the menu button at the top of the page. In the Android app that button is in the app's bottom bar, beside its back button.
+
+The top of every tab shows what the TV is doing: its state (On, Screen off, Screen saver or Standby), what is on screen in large type, and the picture's resolution, dynamic range and picture mode under it, with the volume and any sleep timer opposite. In standby it shows the last source, faded.
 
 <div class="grid cards" markdown>
 
@@ -58,7 +60,7 @@ On a wide screen the tabs are listed down the left. On a phone, or wherever Pref
 
     ---
 
-    Sound settings and the formats the TV and its receiver report.
+    Sound settings, the formats the TV and its receiver report, and experimental DTS forwarding.
 
 -   **[Screen savers](screen-savers.md)**
 
@@ -66,7 +68,7 @@ On a wide screen the tabs are listed down the left. On a phone, or wherever Pref
 
     Clock, Starfield, Fireworks, Bokeh, Harmonograph and Panel Vitals in place of LG's.
 
--   **[Advanced Controls](advanced.md)**
+-   **[System](advanced.md)**
 
     ---
 
@@ -96,7 +98,7 @@ For companion applications, see [Glasshouse apps](../apps/tv-app.md), including 
 
 The page works with no internet access, and has a dark/light mode toggle (via the UI or `/?theme=light`).
 
-The footer names the TV, by its DNS name where the home network's DNS has one or else by its address, beside the Glasshouse version.
+The footer names the TV, by its DNS name where the home network's DNS has one or else by its address, beside the Glasshouse version, and gives its model where the TV's name does not already include it.
 
 Use the search button at the top of the sidebar (or press `/` or `Ctrl`/`Cmd` + `K`)
 to find sections, settings, controls, and installed apps. Useful destinations can be pinned

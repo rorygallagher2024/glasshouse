@@ -124,7 +124,7 @@ of Unknowns.
 
 ## LG settings
 
-The TV's own settings that the dashboard's Advanced, Game and Privacy tabs change, as switches, selects and numbers. Each is published only on TVs that have it: a webOS 4 TV has no Game Optimizer, eARC or Bluetooth speaker mode, for example. Those marked disabled by default appear under the device's configuration and can be enabled in Home Assistant. An HDMI input's own settings, such as Deep Colour, are not published: LG changes them only while that input is on screen.
+The TV's own settings that the dashboard's System, Game and Privacy tabs change, as switches, selects and numbers. Each is published only on TVs that have it: a webOS 4 TV has no Game Optimizer, eARC or Bluetooth speaker mode, for example. Those marked disabled by default appear under the device's configuration and can be enabled in Home Assistant. An HDMI input's own settings, such as Deep Colour, are not published: LG changes them only while that input is on screen.
 
 | Domain | Entity ID | Name | Description |
 | :--- | :--- | :--- | :--- |

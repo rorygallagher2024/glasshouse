@@ -50,7 +50,7 @@ nav:
       - Picture: dashboard/picture.md
       - Audio: dashboard/audio.md
       - Screen savers: dashboard/screen-savers.md
-      - Advanced Controls: dashboard/advanced.md
+      - System: dashboard/advanced.md
       - Service menu: dashboard/service-menu.md
       - Server: dashboard/server.md
       - Tools: dashboard/tools.md

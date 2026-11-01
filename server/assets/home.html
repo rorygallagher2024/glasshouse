@@ -28,6 +28,10 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
   -webkit-animation:drift 180s ease-in-out infinite alternate;animation:drift 180s ease-in-out infinite alternate}
+/* At rest while covered: the wallpaper is not drawn or animated under the screen
+   saver or another app. */
+html.resting #wall{visibility:hidden}
+html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-state:paused}
 @-webkit-keyframes drift{from{-webkit-transform:scale(1) translate(0,0)}to{-webkit-transform:scale(1.04) translate(-1.2%,-.8%)}}
 @keyframes drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.04) translate(-1.2%,-.8%)}}
 #scrim{position:absolute;left:0;top:0;right:0;bottom:0;
@@ -667,6 +671,12 @@ html.faded #stage{opacity:0}
   // Held this long, OK arranges the tiles rather than opening one.
   var LONG_PRESS_MS = 800;
   var BEAT_MS = 5000;
+  var CLOSE_BEHIND_MS = 120000;
+  var coveredSince = 0;
+  function rest(on) {
+    var cl = document.documentElement.classList;
+    if (on !== cl.contains('resting')) cl.toggle('resting', on);
+  }
 
   var data = null;       // the catalogue: apps, devices, channels, order
   var layout = null;     // rows, order, sort, hidden, channels, hintSeen, picture, show*
@@ -686,6 +696,9 @@ html.faded #stage{opacity:0}
   // was changed elsewhere, such as from a dashboard, and the layout is reloaded.
   var layoutVersion = null;
   var loadRetry = null, wallAvailable = false, initialEscape = false;
+  // Opened by the boot hook, the page can be up before the server, which then
+  // takes about a minute (a B8, webOS 4.4.3): the logo stays until then.
+  var pageOpenedAt = Date.now(), STARTING_MS = 60000;
   var wallSlots = null, wallRevision = '';
 
   function $(id) { return document.getElementById(id); }
@@ -716,12 +729,13 @@ html.faded #stage{opacity:0}
   // form that follows a number: "24 октября", not "октябрь".
   function dateText(d) {
     var lang = (window.I18N && I18N.lang) ? I18N.lang() : 'en';
+    var loc = lang === 'en' ? 'en-US' : lang;
     function part(opts) {
-      try { return d.toLocaleDateString(lang === 'en' ? undefined : lang, opts); } catch (e) { return ''; }
+      try { return d.toLocaleDateString(loc, opts); } catch (e) { return ''; }
     }
     function month() {
       try {
-        var parts = new Intl.DateTimeFormat(lang === 'en' ? undefined : lang, { day: 'numeric', month: 'long' }).formatToParts(d);
+        var parts = new Intl.DateTimeFormat(loc, { day: 'numeric', month: 'long' }).formatToParts(d);
         for (var i = 0; i < parts.length; i++) if (parts[i].type === 'month') return parts[i].value;
       } catch (e) { /* no formatToParts in webOS 4's browser */ }
       return part({ month: 'long' });
@@ -1004,7 +1018,8 @@ html.faded #stage{opacity:0}
         hiddenLabel + folderLabel + '</div>';
     },
     dev: function (d, i) {
-      var last = layout.showLastOn !== false && lastOn.kind === 'input' && lastOn.port === d.port;
+      var last = layout.showLastOn !== false && lastOn.kind === 'input' && lastOn.port === d.port &&
+        (!lastOn.devices || lastOn.devices.indexOf(d.id) !== -1);
       var cls = 'tile dev' + (last ? ' last' : '') + (d.unused ? ' unused' : '') + (hidden('dev', d.id) ? ' hidden' : '');
       var path = d.unused ? '' : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
                        : t('home.dev.port', 'HDMI {port}', { port: d.port });
@@ -1440,7 +1455,8 @@ html.faded #stage{opacity:0}
     } else if (lastOn.kind === 'input') {
       kind = t('home.now.lastWatched', 'Last watched');
       title = lastOn.title || t('home.dev.port', 'HDMI {port}', { port: lastOn.port });
-      via = t('home.dev.port', 'HDMI {port}', { port: lastOn.port });
+      via = lastOn.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: lastOn.port, via: lastOn.via })
+        : t('home.dev.port', 'HDMI {port}', { port: lastOn.port });
     } else if (lastOn.kind === 'channel' && lastOn.channel) {
       kind = t('home.now.lastWatched', 'Last watched');
       title = lastOn.channel.name;
@@ -3880,6 +3896,9 @@ html.faded #stage{opacity:0}
       if (recents.open || recents.loading) return closeRecents();
       if (state.arranging && state.held) { state.held = false; return toggleHidden(); }
       if (state.arranging) return setArranging(false);
+      if (data && data.supported && data.supported.standalone) {
+        return window.close();
+      }
       return openRecents();
     }
     if (folder.open) { e.preventDefault(); return folderKey(k); }
@@ -4133,7 +4152,7 @@ html.faded #stage{opacity:0}
     getJson('/api/home/catalogue', function (r) {
       if (!r || !r.ok) {
         if (!data) {
-          $('fault').className = 'show';
+          if (Date.now() - pageOpenedAt > STARTING_MS) $('fault').className = 'show';
           // A live HTTP server is not enough: Home needs its tiles and escape tile.
           if (!document.hidden && !initialEscape) {
             initialEscape = true;
@@ -4214,9 +4233,19 @@ html.faded #stage{opacity:0}
   function beat() {
     // With no usable catalogue, let the server's ten-second watchdog recover Home.
     if (!data || !layout) return;
-    postJson('/api/home/beat', {}, function (r) {
+    // Whether the page has the keyboard: after a wake on webOS 11 it can be
+    // in front and get no keys (#1122).
+    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '' }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
+        var standalone = !!(data && data.supported && data.supported.standalone);
+        // webOS 4: switched off, the standalone view closes itself, as Back does.
+        if (r.enabled === false && standalone) return window.close();
+        rest(!!r.covered);
+        // webOS 4: two minutes behind another app, not the screen saver, the
+        // view closes itself to give its memory back; Home opens it afresh.
+        coveredSince = r.covered && !r.saver ? (coveredSince || Date.now()) : 0;
+        if (standalone && coveredSince && Date.now() - coveredSince > CLOSE_BEHIND_MS) return window.close();
         wallAvailable = !!(r.wallpapers && r.wallpapers.available);
         wallSlots = r.wallpapers && r.wallpapers.slots;
         wallRevision = r.wallpapers && r.wallpapers.revision || '';

@@ -497,6 +497,79 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ homeAutoLaunch and quickBoot coordinate with Glasshouse Home');
 })();
 
+// A notification's type is LG's toast type, and ":icon:" opening its text an icon
+(function testToastIcon() {
+  var fs = require('fs');
+  var os = require('os');
+  var path = require('path');
+  var dir = path.join(os.tmpdir(), 'toast-icons-' + process.pid);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+  fs.writeFileSync(path.join(dir, 'washer.png'), 'png');
+  var calls = [], results = [];
+  controls.init({
+    config: { allowControl: true },
+    luna: function (uri, payload, cb) { calls.push(payload); cb({ returnValue: true }); },
+    clearLunaCache: function () {},
+    telemetry: { clearCache: function () {} },
+    toastSource: 'com.webos.app.home',
+    toastIconDir: dir
+  });
+  function note(type, text) {
+    controls.doControl('toast', { type: type, text: text }, function (r) { results.push(r); });
+  }
+
+  controls.doControl('toast', ':washer: plain', function () {});
+  note('light', ':washer:   Washer done');
+  note('advanced', ':washer:Washer done');
+  note('standard', ':washer: No icon slot');
+  note('light', ':nope: Missing icon');
+  note('light', 'Time: 10:30');
+  note('light', ':@' + path.join(dir, 'washer.png') + ': By path');
+  note('light', ':@relative/washer.png: Not a path');
+  note('huge', 'Unknown type');
+
+  var src = 'com.webos.app.home', icon = path.join(dir, 'washer.png');
+  assert.deepEqual(calls[0], { sourceId: src, message: ':washer: plain' });
+  assert.deepEqual(calls[1], { sourceId: src, iconUrl: icon, type: 'light', message: 'Washer done' });
+  assert.deepEqual(calls[2], { sourceId: src, iconUrl: icon, type: 'advanced', message: 'Washer done' });
+  assert.deepEqual(calls[3], { sourceId: src, iconUrl: icon, message: 'No icon slot' });
+  assert.deepEqual(calls[4], { sourceId: src, type: 'light', message: 'Missing icon' });
+  assert.deepEqual(calls[5], { sourceId: src, type: 'light', message: 'Time: 10:30' });
+  assert.deepEqual(calls[6], { sourceId: src, iconUrl: icon, type: 'light', message: 'By path' });
+  assert.deepEqual(calls[7], { sourceId: src, type: 'light', message: ':@relative/washer.png: Not a path' });
+  assert.strictEqual(calls.length, 8);
+  assert.strictEqual(results[7].ok, false);
+  fs.unlinkSync(icon);
+  fs.rmdirSync(dir);
+  console.log('  ✓ a notification takes its type from the topic and its icon from ":icon:"');
+})();
+
+// webOS 4.4 (a B8) refuses the advanced type with "Message is not parsed": the
+// message goes out again as a plain toast, so it is still shown.
+(function testToastFallback() {
+  var calls = [], results = [];
+  controls.init({
+    config: { allowControl: true },
+    luna: function (uri, payload, cb) {
+      calls.push(payload);
+      cb(payload.type ? { returnValue: false, errorText: 'Message is not parsed' } : { returnValue: true });
+    },
+    clearLunaCache: function () {},
+    telemetry: { clearCache: function () {} },
+    toastSource: 'com.webos.app.home'
+  });
+  controls.doControl('toast', { type: 'advanced', text: 'Washer done' }, function (r) { results.push(r); });
+  assert.deepEqual(calls, [
+    { sourceId: 'com.webos.app.home', type: 'advanced', message: 'Washer done' },
+    { sourceId: 'com.webos.app.home', message: 'Washer done' }
+  ], 'sent again as a standard toast, without the icon');
+  assert.strictEqual(results[0].ok, true);
+  calls = [];
+  controls.doControl('toast', 'plain', function (r) { results.push(r); });
+  assert.strictEqual(calls.length, 1, 'a standard toast is not sent twice');
+  console.log('  ✓ a toast type the TV refuses goes out as a standard toast');
+})();
+
 // Remote keys and Home go ahead of the luna queue, and log how long they took
 (function testRcuUrgent() {
   var normal = [];

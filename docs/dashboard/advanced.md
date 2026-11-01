@@ -1,6 +1,6 @@
-# Advanced Controls
+# System
 
-The **Advanced** tab, `/?tab=advanced`, surfaces system settings that LG places several menus deep. Settings are grouped by category and appear only on TV models that support them. On the TV itself, they are located under **System**.
+The **System** tab, `/?tab=advanced` (called Advanced before 0.133), surfaces system settings that LG places several menus deep. Settings are grouped by category and appear only on TV models that support them. On the TV itself, they are located under **System**.
 
 ## Power and standby
 
@@ -16,7 +16,7 @@ LG added this low-power awake state with its 2022 TVs (webOS 7). Older TVs can o
 
 It does not hold all night. For five hours every night, 01:00 to 06:00 unless changed, LG suspends Always-on, and a TV switched off during those hours sleeps fully. It is offline until they end or it is switched on: the dashboard does not answer, and Home Assistant shows it asleep. LG fixes the length at five hours; **Nightly power-down**, next to the switch, moves them to hours the TV is not used.
 
-The switch is under **Advanced &rarr; Power** in the web dashboard and **System &rarr; Power** on the TV, and setup offers it as a third step. TVs without the setting, such as webOS 4 models, do not show it; Wake-on-LAN still wakes them from standby.
+The switch is under **System &rarr; Power** in the web dashboard and **System &rarr; Power** on the TV, and setup offers it as a third step. TVs without the setting, such as webOS 4 models, do not show it; Wake-on-LAN still wakes them from standby.
 
 ### Quick Boot
 
@@ -36,7 +36,7 @@ It is close to being on: an OLED42C24LA draws 31 W showing the clock. The dashbo
 
 ![Timers: the On Timer and Off Timer, each with a time, a switch and the days of the week](../screenshots/advanced-timers.png)
 
-LG's On Timer and Off Timer switch the TV on or off at a scheduled time, once or on chosen days of the week. Both are configured under **Advanced &rarr; Power** in the web dashboard, with the time and days. The TV dashboard shows them under **System &rarr; Power** and switches them on and off; the specific time and days are configured from a browser.
+LG's On Timer and Off Timer switch the TV on or off at a scheduled time, once or on chosen days of the week. Both are configured under **System &rarr; Power** in the web dashboard, with the time and days. The TV dashboard shows them under **System &rarr; Power** and switches them on and off; the specific time and days are configured from a browser.
 
 A TV switched on by the On Timer shuts back off after two hours without a button press, provided LG's automatic shutoff setting is enabled. On webOS 6 and later, an On Timer set to Live TV with no channel tuned turns the TV on to Home instead when triggered here.
 
@@ -44,7 +44,7 @@ A TV switched on by the On Timer shuts back off after two hours without a button
 
 ![Screen time: the limits switch, daily limit, bedtime, app and input limits, and what happens at each](../screenshots/advanced-screen-time.png)
 
-Limits on how long the screen is on each day, under **Advanced &rarr; Screen time**:
+Limits on how long the screen is on each day, under **System &rarr; Screen time**:
 
 * **Daily limit:** the screen time allowed in a day, from midnight on the TV's clock.
 * **Bedtime:** two times between which the TV is kept off. A window that ends earlier than it starts runs past midnight.
@@ -82,6 +82,7 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 * **SIMPLINK (HDMI-CEC):** Enables CEC control and auto power synchronization with connected devices over HDMI.
 * **IP control:** Enables external IP control protocol support.
 * **Auto device detection:** Finds devices the TV can show on its Home Dashboard and control, from set-top boxes to smart lights, plugs, and switches. On newer webOS versions, the TV looks up every address on the home network each time it boots, which local network ad blockers (such as Pi-hole) record as hundreds of requests. Turning this off stops the boot scans completely.
+* **Answer device scans on the TV:** LG's device detection also looks up every address on the home network when the TV's Home Hub looks for devices, and on some TVs every 5 minutes even with Auto device detection off. Switched on, the TV answers those lookups itself, so they no longer reach the router or an ad blocker. Off by default. The lookups never find a name on a typical home network, so nothing the TV shows changes.
 
 ## Front lights
 
@@ -89,6 +90,6 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 
 * **Standby light:** Toggles the red standby indicator LED located on the front bezel of the TV.
 
-![Advanced tab: Quick Boot, Stay connected when off, Always Ready, nightly power-down and Wake-on-LAN, the On and Off Timers, screen-time limits, system updates, LG logo, sound, HDMI inputs, devices and the standby light](../screenshots/advanced.png)
+![System tab: Quick Boot, Stay connected when off, Always Ready, nightly power-down and Wake-on-LAN, the On and Off Timers, screen-time limits, system updates, LG logo, sound, HDMI inputs, devices and the standby light](../screenshots/advanced.png)
 
 *The TV's own settings, grouped as Power & standby, Timers, Screen time, System updates, Display, Sound, HDMI inputs, Devices and Front lights.*

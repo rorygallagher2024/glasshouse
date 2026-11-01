@@ -127,16 +127,21 @@ html::-webkit-scrollbar-thumb:hover,
 
 /* ---- masthead ---- */
 header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
-.hdr-left{display:flex;align-items:flex-start;gap:18px}
-/* The masthead: the TV in the page's two voices - the kind of TV as a tracked
-   label, the model in the thin display face the big readings use. The
-   Glasshouse mark is in the sidebar's head. */
-.mark{display:flex;align-items:center}
-.mark-tv{display:flex;flex-direction:column;gap:7px}
-.mark-tv #brand{font-family:'Manrope';font-weight:500;font-size:13px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--w60)}
-.mark-tv #model{font-family:'Outfit';font-weight:200;font-size:var(--mh-model);line-height:1;
+/* The masthead: what the TV is showing, in the page's two voices - a tracked
+   label, then the source in the thin display face the big readings use, with
+   its signal under it. The TV's state, volume and sleep timer sit opposite.
+   The model is in the footer, and the TV's name under the sidebar's mark. */
+.src.now{text-align:left;min-width:0}
+.src.now .st{justify-content:flex-start;margin-bottom:7px}
+.src.now .t{font-family:'Outfit';font-weight:200;font-size:var(--mh-model);line-height:1.1;
   letter-spacing:.01em;color:var(--w100)}
+.src.now .stream-primary{justify-content:flex-start;margin-top:6px}
+.hdr-status{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.hdr-line{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--w60)}
+.foot-tv{margin-right:auto}
+.sidenav-titles{display:flex;flex-direction:column;min-width:0}
+.sidenav-tv{font-size:12px;letter-spacing:.04em;color:var(--w60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidenav-tv:empty{display:none}
 
 /* Theme toggle, at the end of the footer: a set-and-forget control, which
    left the masthead room to stay on one line at narrower widths. */
@@ -158,8 +163,11 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
 /* Stale while the TV is off, so faded - but only to .8: at .55 the picture
    mode fell to 3.4:1 on black, under AA for small text. */
 .src.dim .t,.src.dim .stream-info{opacity:.8}
-/* Hidden rather than removed, so the masthead keeps its height. */
-.src.standby .t,.src.standby .stream-info{visibility:hidden}
+/* In standby, the last source seen, labelled Last on and faded like a blank
+   screen's; with none seen, just Standby, with no label or stale signal. */
+.src.last .t,.src.last .stream-info{opacity:.8}
+.src.blank .stream-info{visibility:hidden}
+.src.blank .t{color:var(--w60)}
 /* Panel state. A blanked screen is a normal state, not a fault, so it is
    carried by weight rather than by an alarm colour. */
 .st{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--w60);
@@ -201,6 +209,7 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
   .st{justify-content:flex-start}
   .src{text-align:left}
   .stream-primary{justify-content:flex-start}
+  .hdr-status{align-items:flex-start;text-align:left}
 }
 
 /* ---- the spectacle ---- */
@@ -1472,6 +1481,9 @@ button.tools-jump:active{background:var(--w80)}
 .audio-playback{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;margin:10px 0}
 .audio-playback>div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--w08);font-size:14px}
 .audio-playback>div>span:last-child{color:var(--w60)}
+.audio-helper{margin:12px 0 28px}
+.audio-helper a{color:var(--w80);text-decoration-color:var(--w40);text-underline-offset:3px}
+.audio-helper a:hover{color:var(--w100)}
 .audio-error{margin:4px 0 18px}
 @media(max-width:600px){
   .audio-path{grid-template-columns:1fr;gap:18px}

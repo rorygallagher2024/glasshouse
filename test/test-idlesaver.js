@@ -97,6 +97,40 @@ refusal(saver);
 advance(1500);
 assert.deepEqual(policies()[1], { appId: 'com.webos.app.home', supportScreenSaverPolicy: false });
 
+// An app that refuses it itself is left alone until another app is in front
+// or the TV leaves Active, rather than flipping its policy every idle period.
+saver = start();
+powerState = 'Active';
+foreground = 'com.retroarch.webos';
+refusal(saver);
+advance(1500);
+assert.strictEqual(policies().length, 2);
+advance(130000);
+refusal(saver);
+advance(1500);
+assert.strictEqual(policies().length, 2);
+assert.strictEqual(requests(), 1);
+foreground = 'com.webos.app.home';
+advance(130000);
+refusal(saver);
+assert.strictEqual(policies().length, 3);
+advance(1500);
+foreground = 'com.retroarch.webos';
+saver.powerReply({ returnValue: true, state: 'ScreenOff' });
+saver.powerReply({ returnValue: true, state: 'Active' });
+advance(130000);
+refusal(saver);
+assert.strictEqual(policies().length, 5);
+
+// The dashboard's own lift does not count as the app refusing.
+saver = start();
+powerState = 'Active';
+saver.lift(function () {});
+advance(5000);
+advance(130000);
+refusal(saver);
+assert.strictEqual(policies().length, 3);
+
 // Playing, or the playback state unknown: left alone.
 saver = start();
 media = { state: 'playing', fullScreen: true };

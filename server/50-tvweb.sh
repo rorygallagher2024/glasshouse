@@ -101,6 +101,37 @@ sam_reread_app() {
   return 1
 }
 
+# The last way to make sam scan, for webOS 5 and 6: a restart, with the command
+# lib/apps.js and lib/samrescan.js restart it with. The start limit of sam and
+# every unit that requires it is cleared first, so a run of restarts does not
+# leave the input manager failed and the TV with no inputs, and LunaExecutable
+# is killed since it ignores SIGTERM. Mirrors lib/samrescan.js.
+sam_units() {
+  systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null |
+    sed -n 's/^[^A-Za-z0-9]*\([A-Za-z0-9@._-]*\.service\)$/\1/p'
+}
+sam_restart() {
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl reset-failed sam.service >/dev/null 2>&1 || true
+    sam_units | while read -r u; do systemctl reset-failed "$u" >/dev/null 2>&1 || true; done
+    killall -9 LunaExecutable >/dev/null 2>&1 || true
+    systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true
+    # A unit that requires sam and hit its own restart limit is started again.
+    sam_units | while read -r u; do
+      systemctl is-failed --quiet "$u" || continue
+      systemctl reset-failed "$u"
+      systemctl start --no-block "$u"
+    done
+  elif command -v initctl >/dev/null 2>&1; then
+    initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true
+    # Upstart does not restart dependent jobs, so eim is restarted here.
+    initctl restart eim >/dev/null 2>&1 || true
+  else
+    pkill -9 -x sam >/dev/null 2>&1 || true
+  fi
+  sleep 2
+}
+
 # Whether sam's getAppInfo for app $1 matches pattern $2 within 20s: at boot sam
 # can still be on its own first scan, and takes the nudge after it.
 sam_reports() {
@@ -129,12 +160,17 @@ webos_major=$(sed -n 's/.*webOS[^0-9]*\([0-9][0-9]*\)\..*/\1/p' /etc/issue 2>/de
 # "flutter-client -i com.webos.app.home"; webOS 11 only with
 # allowExperimentalHome in config.json. sam ignores the nudge there (above), so
 # the app is reread with a block and release first.
+# On webOS 5 (a CX on 5.5.0-19) and webOS 6 (a C1 on 6.5.3) there is neither
+# the configd list nor the block and release, so sam is restarted, as
+# lib/samrescan.js does for the switch.
 homeapp=/usr/palm/applications/com.webos.app.home
 homestage=/var/lib/tvweb/home-takeover
 home_os=0
 [ "$webos_major" = "7" ] && home_os=1
 [ "$webos_major" = "9" ] && home_os=1
 [ "$webos_major" = "10" ] && home_os=1
+[ "$webos_major" = "5" ] && home_os=1
+[ "$webos_major" = "6" ] && home_os=1
 if [ "$webos_major" = "11" ]; then
   grep -q '"allowExperimentalHome"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null && home_os=1
 fi
@@ -191,7 +227,9 @@ home_open_at_boot() {
     echo "$(date): Glasshouse Home not opened: ${front:-nothing} in front since the start on $boot_app"
     return 0
   fi
-  luna-send -n 1 luna://com.webos.applicationManager/launch '{"id":"com.webos.app.home"}' 2>/dev/null |
+  target_home=com.webos.app.home
+  [ "$webos_major" = "4" ] && target_home=com.tvweb.home
+  luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$target_home\"}" 2>/dev/null |
     grep -q '"returnValue": *true' || return 0
   home_opened=1
   # The server watches for the view from its start and opens LG's Home if it
@@ -205,6 +243,8 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
   mount --bind "$homestage" "$homeapp" 2>/dev/null || true
   if [ "$webos_major" = "9" ] || [ "$webos_major" = "7" ]; then
     home_reread() { sam_nudge; }
+  elif [ "$webos_major" = "5" ] || [ "$webos_major" = "6" ]; then
+    home_reread() { sam_restart; }
   else
     home_reread() { sam_reread_app com.webos.app.home; }
   fi
@@ -219,6 +259,8 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): sam did not take Glasshouse Home - LG's Home kept"
   fi
+elif [ "$webos_major" = "4" ] && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
+  home_open_at_boot
 fi
 
 # LG's screen saver ships as QML up to webOS 9 and as Flutter from webOS 10.

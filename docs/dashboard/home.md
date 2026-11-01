@@ -1,7 +1,7 @@
 # Home
 
 > [!NOTE]
-> **Experimental (webOS 7, 9 & 10):** Glasshouse Home replaces LG's built-in launcher when pressing **Home** or **Back** on the remote, or when the TV turns on. It is available on webOS 7, 9 and 10 (and on webOS 11 when `"allowExperimentalHome": true` is set in `config.json`), and works on whichever port the dashboard is on.
+> **Experimental (webOS 5, 6, 7, 9 & 10):** Glasshouse Home replaces LG's built-in launcher when pressing **Home** or **Back** on the remote, or when the TV turns on. It is available on webOS 5, 6, 7, 9 and 10, and on webOS 4 and 11 when `"allowExperimentalHome": true` is set in `config.json`, and works on whichever port the dashboard is on. On webOS 4 (tried on a B8), LG's launcher is an in-compositor ribbon; Glasshouse Home runs as a standalone app (`com.tvweb.home`) launched by the remote key filter, and pressing Back dismisses it. On webOS 5 and 6 (tried on a CX, two C1s and a B1), switching it on or off, or holding Home for LG's Home, restarts the TV's app manager, which closes the apps that are open; the Home tab says so on those TVs.
 
 ![Glasshouse Home on an OLED55G36LA (webOS 9.2): clock and the Apps, Inputs and Channels rows over an uploaded afternoon wallpaper](../screenshots/home.jpg)
 
@@ -74,6 +74,8 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     **Last watched** (the top strip and the marker on that input's tile), **App count** (the "4 of 18 shown" beside Apps) and **CEC addresses** (on each input tile) are on by default, and each can be switched off from either dashboard's Home tab.
 
+    Behind a receiver, Last watched names the device the TV last selected on that port, such as the console rather than the receiver, and marks only its tile. Where the TV has not recorded one, every device on the port is named.
+
     The top strip stays empty until the saved layout loads. Switching **Last watched** off leaves the clock in place.
 
 -   **Clock and rows along the bottom**
@@ -91,6 +93,10 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
     A smaller clock on the right, with Last watched and the Picture details plate to its left, and the rows as rounded, translucent tiles. Row titles show only while arranging, so **App count** is greyed out in this view. It is off by default, and works with **Rows along the bottom** and the other switches. Thanks to @wkirby86.
 
     ![Glasshouse Home in Alternative View with the rows along the bottom](../screenshots/home-alternative.jpg)
+
+    With the clock, Last watched and CEC addresses switched off and the Abstract wallpaper, it makes a minimal Home:
+
+    ![A minimal Glasshouse Home: Alternative View with the clock, Last watched and CEC addresses off, apps and one input over the Abstract wallpaper](../screenshots/home-minimal.jpg)
 
 -   **Fade in and out**
 
@@ -305,7 +311,7 @@ The TV app's **Wallpaper** row moves through the four choices with OK.
 
 ## Switching it on and off
 
-Click **Use Glasshouse Home** (and confirm on the second press) in the web dashboard's **Home** tab or the TV app's **Home** section. Glasshouse Home is mounted over LG's launcher without modifying the root filesystem. Clicking **Use LG Home** (or running `tvwebctl restore-glasshouse-home` over SSH) restores LG's launcher within a few seconds.
+Click **Use Glasshouse Home** (and confirm on the second press) in the web dashboard's **Home** tab or the TV app's **Home** section. Glasshouse Home is mounted over LG's launcher without modifying the root filesystem (on webOS 4 it runs as a standalone app, `com.tvweb.home`, with the remote's Home key intercepted by the compositor filter). Clicking **Use LG Home** (or running `tvwebctl restore-glasshouse-home` over SSH) restores LG's launcher within a few seconds. On webOS 5 and 6 each switch restarts LG's app manager (sam), so the app in front comes back a moment later and a switch takes a few seconds longer.
 
 * **Reaching LG's Home without turning Glasshouse Home off:**
   * Select the **LG Home** tile at the end of the Apps row.
@@ -349,7 +355,7 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
 * While Glasshouse Home is on: **Open Home at power-on**, Glasshouse Home's own options (**Hide LG's Home while the TV starts**, **Picture details**, **Live preview**, **Clock and date**, **Rows along the bottom**, **Alternative View**, **Last watched**, **App count**, **CEC addresses**, **Search**, **Fade in and out**).
 * While LG's Home is: **Open Home at power-on**, **Home screen layout** and **Hide home screen system apps**.
 
-Each appears where the TV has it. A TV Glasshouse Home is not offered on, such as a B8 with webOS 4.4, still has the Home tab for these; there it holds Open Home at power-on and Hide home screen system apps. The TV app's Home section has the same rows.
+Each appears where the TV has it. A TV Glasshouse Home is not offered on, such as a B8 with webOS 4.4 without `allowExperimentalHome`, still has the Home tab for these; there it holds Open Home at power-on and Hide home screen system apps. The TV app's Home section has the same rows.
 
 ### Open Home at power-on
 
@@ -394,3 +400,9 @@ a failed discovery keeps the last good title.
 It is offered on webOS 9 (LG's webOS 24), where it has been tried on a C2, and as an [experimental feature](../experimental.md#home-screen-layout-on-webos-10) on webOS 10 (LG's webOS 25), where it has been tried on a C2 with webOS 10.3.1. webOS 3 and 4 have a much plainer Home screen, so they do not have it. A webOS 8 TV may have the same home app as webOS 9, and webOS 11 a layout of its own; neither is offered it until one has been tried.
 
 On webOS 10 the section has a switch at the top, with its warning, and nothing in it changes until that is on. The parts that can be switched off there are the **Side buttons** (profile, notifications, settings and search), the **Quick Cards** and the **Recommended shelf**. The banner stays.
+
+### Hiding apps from Recents
+
+**Recent apps**, under the rows on the Home tab, lists the apps with a **Shown** or **Hidden** switch each. A hidden app never appears in Glasshouse Home's Recent apps panel (Back on Home), and Glasshouse no longer serves its last screen, including one saved before it was hidden. Its tile stays on the Apps row; hiding a tile is the Apps row's own choice. This doesn't stop webOS taking its snapshots or change LG's own Recents.
+
+The list is kept as `excludedRecents` in `/var/lib/tvweb/home.json`, a list of app IDs, and `POST /api/home/layout` takes it too, for example `{"excludedRecents":["private.app.id"]}`.

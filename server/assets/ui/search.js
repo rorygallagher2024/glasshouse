@@ -20,7 +20,7 @@
   const TAB_NAMES = {
     control: 'Control', metrics: 'Metrics', apps: 'Apps', home: 'Home',
     oledcare: 'OLED Care', game: 'Game', servicemenu: 'Service menu',
-    screensaver: 'Screensaver', privacy: 'Privacy', advanced: 'Advanced',
+    screensaver: 'Screensaver', privacy: 'Privacy', advanced: 'System',
     mqtt: 'MQTT', server: 'Server', tools: 'Tools'
   };
 
