@@ -1034,6 +1034,11 @@
       <summary><span data-t="apps.remoteKeys">Remote keys</span> <span class="cur" id="apps-rk-summary"></span></summary>
       <div class="pv-sub" data-t="apps.remoteKeys.desc">What a key on the remote does: as LG has it, nothing, or opening an app or input instead. A change applies straight away and lasts across reboots. A key set here is taken before any app sees it, so an app that uses the key itself, such as YouTube with Guide, no longer gets it. The keys listed are the ones this TV handles; a given remote may not have them all.</div>
       <div id="apps-rk-list"></div>
+      <div id="apps-rk-bar" hidden>
+        <div class="rk-grp" data-t="apps.inputBar">Input bar</div>
+        <div class="pv-sub" data-t="apps.inputBar.desc">The inputs the bar steps through, in Glasshouse Home&rsquo;s order. Hiding one here hides it on Glasshouse Home too.</div>
+        <div class="prot-table" id="apps-rk-bar-list"></div>
+      </div>
     </details>
   </div>
 
@@ -1740,6 +1745,14 @@
             <div class="prot-desc" data-t="server.experimental.screensaver.short">Allows the dashboard's own screen savers on webOS 12 and later, on the Screensaver tab.</div>
           </div>
           <div class="prot-status"><button type="button" class="pill idle" id="exp-screensaver" onclick="toggleExpScreensaver()">&mdash;</button></div>
+        </div>
+        <div class="prot-row" id="exp-inputbar-row" hidden>
+          <div class="prot-main">
+            <div class="prot-title" data-t="server.experimental.inputBar">Input bar</div>
+            <div class="prot-desc" data-t="server.experimental.inputBar.short">Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote&rsquo;s Input key.</div>
+            <div class="prot-desc" data-t="server.experimental.inputBar.warn">Tried on webOS 6 only. Switching it off sets any key using it back to LG&rsquo;s and removes its app.</div>
+          </div>
+          <div class="prot-status"><button type="button" class="pill idle" id="exp-inputbar" onclick="toggleExpInputBar()">&mdash;</button></div>
         </div>
       </div>
     </details>

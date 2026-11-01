@@ -162,6 +162,20 @@ function renderUpdate(d) {
     }
   }
 
+  // Offered where the input bar has not been tried; where it has, it needs no switch.
+  const barRow = q('exp-inputbar-row');
+  if (barRow) {
+    barRow.hidden = !(d.inputBar && d.inputBar.standing === 'experimental');
+    if (d.inputBar) {
+      updateToggle('exp-inputbar', {
+        cls: d.inputBar.experimental ? 'good' : 'idle',
+        label: d.inputBar.experimental ? t('common.on', 'On') : t('common.off', 'Off'),
+        on: d.inputBar.experimental,
+        disabled: !d.writable
+      });
+    }
+  }
+
   msg.textContent = (d.state === 'error' || d.state === 'offline') ? (d.error || t('server.checkFailed', 'the check failed'))
     : d.state === 'installed' ? t('server.installed', 'Installed. The server is restarting - this page reconnects on its own.')
     : updArrival;
@@ -851,6 +865,13 @@ async function toggleExpScreensaver() {
   const b = q('exp-screensaver');
   b.disabled = true;
   const r = await sendCommand('setWebos10ScreensaversAllowed', !b.dataset.on);
+  if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
+async function toggleExpInputBar() {
+  const b = q('exp-inputbar');
+  b.disabled = true;
+  const r = await sendCommand('setInputBarAllowed', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
 

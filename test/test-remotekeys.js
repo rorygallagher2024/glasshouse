@@ -59,6 +59,8 @@ function luna(uri, params, cb) {
   } else if (uri === 'com.webos.applicationManager/getAppInfo') {
     // A CX has no quick input picker, so no input switcher choice.
     r.returnValue = false;
+  } else if (uri === 'com.webos.appInstallService/dev/remove') {
+    tv.removed = (tv.removed || []).concat(params.id);
   }
   process.nextTick(function () { cb(r); });
 }
@@ -70,7 +72,8 @@ function exists(p) { try { fs.statSync(p); return true; } catch (e) { return fal
 // kept, so tell() hands it a value as configd would on a change.
 // broken: 'launch' makes the launch throw, 'symbols' leaves WebOS undefined,
 // 'timer' leaves genericTimer undefined. expire() runs the timers it set.
-function loadFilter(broken) {
+// extra: more of the compositor's objects, put over the ones here.
+function loadFilter(broken, extra) {
   var launched = [];
   var sent = [];
   var subscribed = null;
@@ -102,6 +105,7 @@ function loadFilter(broken) {
     } },
     console: { info: function () {}, warn: function () {} }
   };
+  Object.keys(extra || {}).forEach(function (k) { ctx[k] = extra[k]; });
   if (broken === 'symbols') delete ctx.WebOS;
   if (broken === 'timer') delete ctx.genericTimer;
   vm.runInNewContext(fs.readFileSync(FILTER, 'utf8') + '\nthis.handler = ' + rk.HANDLER + '; this.init = init;', ctx);
@@ -647,6 +651,100 @@ step(function (next) {
       assert.strictEqual(retried.ok, true);
       assert.strictEqual(tv.keys.starting, 'Waiting for Home');
       rk.setStarting('', guard(function () { next(); }));
+    }));
+  }));
+});
+
+// ---------------------------------------------------------------- input bar
+// The Input key, which the CX's filters name too.
+var bar = { calls: [], installs: true, allowed: true, pokes: 0 };
+step(function (next) {
+  fs.appendFileSync(path.join(filtersDir, 'appLaunch.js'), ' case WebOS.Key_webOS_InputSource:');
+  rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+    inputBarAllowed: function () { return bar.allowed; },
+    inputBarApp: function (action, cb) {
+      bar.calls.push(action);
+      process.nextTick(function () { cb({ ok: action !== 'install' || bar.installs }); });
+    },
+    onInputBarKey: function () { bar.pokes++; } });
+  rk.getRemoteKeys(guard(function (r) {
+    assert.ok(r.keys.some(function (k) { return k.key === 'input'; }), 'the Input key is offered');
+    assert.ok(r.choices.some(function (c) { return c.id === 'com.tvweb.inputbar' && c.title === 'Input bar'; }), 'the bar is offered before its app is installed');
+    bar.allowed = false;
+    rk.getRemoteKeys(guard(function (r2) {
+      assert.ok(!r2.choices.some(function (c) { return c.id === 'com.tvweb.inputbar'; }), 'not offered where lib/inputbar.js does not allow it');
+      bar.allowed = true;
+      console.log('  ✓ the input bar is offered where allowed, whether or not its app is installed yet');
+      next();
+    }));
+  }));
+});
+
+step(function (next) {
+  bar.installs = false;
+  rk.setRemoteKey('input', 'open', 'com.tvweb.inputbar', guard(function (s) {
+    assert.strictEqual(s.ok, false, 'refused when its app cannot be installed');
+    assert.deepEqual(bar.calls, ['install']);
+    assert.strictEqual(rk.opensInputBar(), false, 'the key is left as it was');
+    bar.installs = true;
+    rk.setRemoteKey('input', 'open', 'com.tvweb.inputbar', guard(function (s2) {
+      assert.ok(s2.ok, s2.error);
+      assert.deepEqual(bar.calls, ['install', 'install']);
+      assert.strictEqual(rk.opensInputBar(), true);
+      assert.strictEqual(bar.pokes, 1, 'the preloader is told');
+      console.log('  ✓ choosing the bar installs its app first, and a failed install leaves the key as it was');
+      next();
+    }));
+  }));
+});
+
+step(function (next) {
+  var front = false, focusKeys = [];
+  var f = loadFilter(null, {
+    WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
+             Key_webOS_USP: 1005, Key_webOS_InputSource: 1006 },
+    Qt: { Key_Super_L: 2001, Key_Right: 3001 },
+    global: {
+      isForegroundApp: function (id) { return front && id === 'com.tvweb.inputbar'; },
+      sendKeyToFocusWindow: function (key, pressed, code) { focusKeys.push([key, pressed, code]); }
+    }
+  });
+  assert.strictEqual(f.handle(1006, true, false), 'accepted');
+  f.handle(1006, false, false);
+  assert.deepEqual(f.launched.map(function (l) { return l.id; }), ['com.tvweb.inputbar'], 'opened while not in front');
+  front = true;
+  f.handle(1006, true, false);
+  f.handle(1006, true, true);
+  f.handle(1006, false, false);
+  assert.strictEqual(f.launched.length, 1, 'not opened again while in front');
+  assert.deepEqual(focusKeys, [[3001, true, 106], [3001, false, 106]], 'handed to it as Right, held repeats left out');
+  console.log('  ✓ the Input key opens the bar, and a press while it is in front goes to it as Right rather than relaunching it');
+  next();
+});
+
+step(function (next) {
+  rk.setRemoteKey('input', 'lg', '', guard(function (s) {
+    assert.ok(s.ok, s.error);
+    setImmediate(guard(function () {
+      assert.deepEqual(bar.calls.slice(-1), ['remove'], 'the last key leaving the bar removes its app');
+      rk.setRemoteKey('input', 'open', 'com.tvweb.inputbar', guard(function () {
+        rk.dropInputBar(guard(function (ok) {
+          assert.strictEqual(ok, true);
+          assert.strictEqual(rk.opensInputBar(), false, 'dropInputBar sets its keys back as LG has them');
+          setImmediate(guard(function () {
+            assert.deepEqual(bar.calls.slice(-1), ['remove']);
+            rk.setRemoteKey('input', 'open', 'com.tvweb.inputbar', guard(function () {
+              tv.removed = [];
+              rk.restore(guard(function (ok2) {
+                assert.ok(ok2);
+                assert.deepEqual(tv.removed, ['com.tvweb.inputbar'], 'restore() removes the bar app with the keys');
+                console.log('  ✓ the bar\'s app is removed when no key opens it any more, by dropInputBar(), and by restore() at uninstall');
+                next();
+              }));
+            }));
+          }));
+        }));
+      }));
     }));
   }));
 });

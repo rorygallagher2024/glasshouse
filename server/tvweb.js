@@ -57,6 +57,7 @@ var servicesModule = require('./lib/services');
 var preload = require('./lib/preload');
 var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
+var inputBar = require('./lib/inputbar');
 var clockFormat = require('./lib/clock');
 var homeScreen = require('./lib/homescreen');
 /*
@@ -203,6 +204,7 @@ var CONFIG = {
   // untried (#366, #768). Set here or from the Server tab. It was named
   // allowOnWebos10 until 0.105, and migrateConfigFile() renames that.
   allowExperimentalScreensavers: false,
+  allowExperimentalInputBar: false,
 
   // Glasshouse Home is offered on webOS 9 and 10, where it has been tried.
   // This lets it be switched on on webOS 11 too, untried there. File-only.
@@ -544,7 +546,22 @@ servicesModule.init({ stateDir: __dirname });
 preload.init({ luna: luna, stateDir: __dirname });
 quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
 remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
-  homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); } });
+  homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },
+  // The input bar: offered where lib/inputbar.js allows it, its app installed
+  // when a key is set to it, and preloaded from then on.
+  inputBarAllowed: function () { return inputBar.allowed(); },
+  inputBarApp: function (action, cb) { tvApp(action, cb, 'inputbar-app'); },
+  onInputBarKey: function () { inputBar.poke(); } });
+inputBar.init({
+  luna: luna,
+  config: CONFIG,
+  webosVersion: telemetry.detectWebosVersion(),
+  writeSettings: routes.writeSettings,
+  wanted: remoteKeys.opensInputBar,
+  drop: function (cb) { remoteKeys.dropInputBar(cb); },
+  // liveState is set up further on; the bar only asks once started.
+  on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; }
+});
 homeScreen.init({ luna: luna, config: CONFIG, inputNames: telemetry.inputNameMap, stateDir: __dirname, webosVersion: telemetry.detectWebosVersion() });
 // webOS 10's layout is an overlay mount, gone after a restart of the TV.
 homeScreen.reapply();
@@ -661,6 +678,7 @@ remotebuttons.init({
 
 controls.init({
   luna: luna,
+  inputBar: inputBar,
   lunaUrgent: lunaTransport.callUrgent,
   piccap: piccap,
   huesync: huesync,
@@ -930,6 +948,7 @@ function appsChanged() {
 
 routes.init({
   config: CONFIG,
+  inputBar: inputBar,
   audio: audioCapabilities,
   btAudio: btAudio,
   clock: clockFormat,
@@ -1070,6 +1089,12 @@ if (CLI_MODE) {
         if (r && r.refreshed && r.ok) console.log('tvapp: refreshed to current release');
       });
     }
+    // The input bar's app carries its page, so it is brought up to this
+    // release however Glasshouse was updated. One that is not installed is
+    // left alone: it is installed when a key is set to it.
+    tvApp('refresh', function (r) {
+      if (r && r.refreshed && r.ok) console.log('inputbar: app refreshed to current release');
+    }, 'inputbar-app');
   });
 } else {
   console.log('server: web dashboard disabled (web.enabled: false) - mqtt bridge only');
@@ -1976,6 +2001,11 @@ if (!CLI_MODE) {
   // A C5 (webOS 10.3) has every app's preloading enabled again at each switch-on.
   liveState.state.onChange(function (ev) {
     if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) preload.resend();
+  });
+  // The input bar is preloaded while a remote key opens it and the TV is on.
+  inputBar.start();
+  liveState.state.onChange(function (ev) {
+    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) inputBar.poke();
   });
 
   telemetry.detectDeviceInfo(function() {

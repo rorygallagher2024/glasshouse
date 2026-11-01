@@ -1,6 +1,6 @@
 # Experimental features
 
-Four features are experimental and off by default. Three are turned on under **Server** → **Advanced** → **Experimental features**, and Glasshouse Home on its own **Home** tab.
+Five features are experimental and off by default. Four are turned on under **Server** → **Advanced** → **Experimental features**, and Glasshouse Home on its own **Home** tab.
 
 ## Hiding home screen system apps
 
@@ -21,6 +21,14 @@ webOS 10's home app keeps its layout on the TV's read-only system and looks nowh
 ## Glasshouse Home
 
 A home screen of Glasshouse's own in place of LG's, switched on from its own [Home tab](dashboard/home.md) rather than under Advanced. It is offered on webOS 4 (a B8 with webOS 4.4.3, where it runs as an app of its own beside LG's Home ribbon), on webOS 9, where it has been tried (a G3 and a C2 with webOS 9.2.2), on webOS 10 (a G5 with webOS 10.3.1), and on webOS 5 (a CX with 5.5.0-19) and webOS 6 (C1s with 6.4.0 and 6.5.3 and a B1 with 6.5.3, where sam shows the same limits); on webOS 11 only with `"allowExperimentalHome": true` in `config.json`. On webOS 5 and 6 sam has neither of the ways it is made to read an appinfo.json again, so each switch restarts it, which is the restart described below, and the app in front comes back a moment later. While on, it is laid over LG's Home app in its place, which switching off takes away; no TV setting is changed. A view that stops answering, and a server that stops or keeps failing, each give LG's Home its place back.
+
+## Input bar
+
+Glasshouse's own [input bar](dashboard/apps.md#input-bar), a strip of the HDMI inputs over the picture opened by a remote key, is offered without the switch on webOS 6, where it has been tried (a C1 with 6.5.3). On webOS 4, 5 and 7 to 10 the switch, shown there alone, offers it under Remote keys. It is not offered on webOS 11, whose remote keys are LG's own.
+
+It relies on parts of webOS that the C1 showed but other versions may not have: a web app's window drawn over the input with the input still in front (`"defaultWindowType": "overlay"`), an app started hidden in advance (`preload`), and the compositor's key filter seeing which app is in front and handing a key to the window in focus. Where one is missing, the bar may cover the picture, open slowly or not step through the inputs.
+
+Switching it off sets any key using it back to LG's and removes its app, so the TV is left as it was before. If it misbehaves, a [new issue](https://github.com/rorygallagher2024/glasshouse/issues/new) with the TV's model and webOS version helps it along.
 
 ## Why the first two are experimental
 
