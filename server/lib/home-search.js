@@ -15,6 +15,13 @@
  * a title from the last search can be opened, so this is not a way to launch
  * anything at all.
  *
+ * webOS 4 (a B8, 4.4.3) answers the same search with less in each title: no
+ * type, which is the category it is listed under, and no launch parameter,
+ * whose item id is its content_set_id and content_id joined by "|", as LG's
+ * Search there asks for the detail. Item detail answers there only through
+ * sdp_secure, and LG's Search puts the id into the app's deeplinkingParams
+ * itself.
+ *
  * Both services reach LG's catalogue on the host sdx names for them
  * (GB.nextlgsdp.com on a G3 in the UK). Where the ad blocker's table holds it,
  * search is unavailable: the view hides it and both routes refuse, rather
@@ -40,6 +47,7 @@ var SubscriptionType = null;
 var appsFn = null;
 var openedFn = null;
 var enabledFn = null;
+var appInfoLaunchFn = null;
 var blockedByFn = null;
 // LG's hosts for search, lower case, once sdx has named them.
 var hosts = {};
@@ -56,6 +64,7 @@ function init(opts) {
   appsFn = opts.apps || function (cb) { cb([]); };
   openedFn = opts.opened || function () {};
   enabledFn = opts.enabled || function () { return true; };
+  appInfoLaunchFn = opts.appInfoLaunch || function () { return false; };
   blockedByFn = opts.blockedBy || function () { return null; };
   listed = {};
   hosts = {};
@@ -128,7 +137,7 @@ function documents(reply) {
   (data || []).forEach(function (d) {
     var results = d && d.ActionData && d.ActionData.response && d.ActionData.response.results;
     (results || []).forEach(function (res) {
-      (res && res.doc || []).forEach(function (doc) { out.push(doc); });
+      (res && res.doc || []).forEach(function (doc) { out.push({ doc: doc, category: res.domain }); });
     });
   });
   return out;
@@ -154,26 +163,36 @@ function isTrailer(name, minutes) {
   return PROMO_PLACED.test(name);
 }
 
-// A document as a title on one service, or null for what is not one.
-function entry(doc) {
-  if (!doc || (doc.type !== 'movie' && doc.type !== 'tvshow') || typeof doc.title !== 'string') return null;
+// The item id of a document: its launch parameter's, or on webOS 4 its own ids.
+function itemIdOf(doc) {
   var click = doc.action_on_click && doc.action_on_click.launch_parameter;
+  if (click) return typeof click.itemId === 'string' ? click.itemId : null;
+  if (typeof doc.content_set_id !== 'string' || typeof doc.content_id !== 'string' || !doc.content_id) return null;
+  return doc.content_set_id + '|' + doc.content_id;
+}
+
+// A document as a title on one service, or null for what is not one.
+function entry(listed) {
+  var doc = listed.doc;
+  var type = doc && (doc.type || listed.category);
+  if (!doc || (type !== 'movie' && type !== 'tvshow') || typeof doc.title !== 'string') return null;
+  var itemId = itemIdOf(doc);
   var cp = doc.cp_thumbnail && doc.cp_thumbnail[0] && doc.cp_thumbnail[0].cp_id;
-  if (!click || typeof click.itemId !== 'string' || typeof cp !== 'string') return null;
+  if (!itemId || typeof cp !== 'string') return null;
   var info = doc.display_info || {};
   if (isTrailer(doc.title, info.running_time)) return null;
   // LG's poster address ends in a size hint for its own app (#ADDSIZE#...).
   var poster = String(doc.thumbnail || '').split('#')[0];
   return {
     title: doc.title,
-    kind: doc.type === 'movie' ? 'film' : 'series',
+    kind: type === 'movie' ? 'film' : 'series',
     year: yearOf(info.release_date),
     minutes: typeof info.running_time === 'number' ? info.running_time : null,
     genre: typeof doc.genre === 'string' ? doc.genre : '',
     rating: typeof info.age_ratings === 'string' ? info.age_ratings : '',
     poster: /^https?:\/\//.test(poster) ? poster : '',
     app: cp,
-    itemId: click.itemId
+    itemId: itemId
   };
 }
 
@@ -259,7 +278,7 @@ function find(query, cb) {
       // has been read where it is not cached.
       if (r.event === 'sessionEnd' && !mine.answered) finish({ ok: true, query: query, results: [], elsewhere: 0 });
     },
-    // luna-send ends without an answer where the service is missing (webOS before 9 is untried).
+    // luna-send ends without an answer where the service is missing.
     close: function () { if (!mine.answered) finish(failure(null)); }
   });
   mine.timer = setTimeout(function () { finish(failure(null)); }, SEARCH_TIMEOUT_MS);
@@ -296,12 +315,18 @@ function detail(itemId, type, cb) {
   // A series can need several reads; settings may change between replies.
   if (refusal()) return cb(null);
   var body = 'item_id=' + encodeURIComponent(itemId) + '&item_type=CONTS&item_detail_type=' + type + '&app_id=WTV_NLP';
-  luna(DETAIL, { serviceName: 'sdp_onnow', url: 'content_discovery/item-detail', methodType: 'REQ_SSL_POST_METHOD', bodyData: body }, function (r) {
-    /** @type {any} */
-    var answer = null;
-    try { answer = JSON.parse(r.serverResponse.response); } catch (e) {}
-    cb(answer && answer.item && answer.item.item_detail || null);
-  });
+  function ask(service, next) {
+    luna(DETAIL, { serviceName: service, url: 'content_discovery/item-detail', methodType: 'REQ_SSL_POST_METHOD', bodyData: body }, function (r) {
+      var text = r && r.serverResponse && r.serverResponse.response;
+      if (typeof text !== 'string') return next();
+      /** @type {any} */
+      var answer = null;
+      try { answer = JSON.parse(text); } catch (e) {}
+      cb(answer && answer.item && answer.item.item_detail || null);
+    });
+  }
+  // On webOS 4 sdp_onnow answers with no response at all.
+  ask('sdp_onnow', function () { ask('sdp_secure', function () { cb(null); }); });
 }
 
 function items(d, key) {
@@ -394,13 +419,32 @@ function open(body, cb) {
     var no = refusal();
     if (no) return cb(no);
     console.log('home: search opens ' + app + ' at ' + to.at + (to.value ? ': ' + to.value : ''));
-    var launch = { id: app };
-    if (to.value) launch.replaceParams = { deeplinkingParams: { target: '$CONTENTID', value: to.value } };
-    luna('com.webos.applicationManager/launch', launch, function (r) {
+    launchAt(app, to.value, function (r) {
       if (!r || !r.returnValue) return cb({ ok: false, error: msg('srv.home.launchRefused', 'the TV would not open it') });
       openedFn(app);
       cb({ ok: true });
     });
+  });
+}
+
+function launchAt(app, value, cb) {
+  var launch = { id: app };
+  if (!value) return luna('com.webos.applicationManager/launch', launch, cb);
+  if (!appInfoLaunchFn()) {
+    launch.replaceParams = { deeplinkingParams: { target: '$CONTENTID', value: value } };
+    return luna('com.webos.applicationManager/launch', launch, cb);
+  }
+  // As LG's Search on webOS 4: the id put into the app's own template, or
+  // given as its contentTarget where the app has none.
+  luna('com.webos.applicationManager/getAppInfo', { id: app }, function (r) {
+    var template = r && r.appInfo && r.appInfo.deeplinkingParams;
+    /** @type {any} */
+    var params = null;
+    if (typeof template === 'string') {
+      try { params = JSON.parse(template.split('$CONTENTID').join(JSON.stringify(value).slice(1, -1))); } catch (e) {}
+    }
+    launch.params = params || { contentTarget: value };
+    luna('com.webos.applicationManager/launch', launch, cb);
   });
 }
 

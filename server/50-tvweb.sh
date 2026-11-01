@@ -227,15 +227,17 @@ home_open_at_boot() {
     echo "$(date): Glasshouse Home not opened: ${front:-nothing} in front since the start on $boot_app"
     return 0
   fi
-  luna-send -n 1 luna://com.webos.applicationManager/launch '{"id":"com.webos.app.home"}' 2>/dev/null |
+  target_home=com.webos.app.home
+  [ "$webos_major" = "4" ] && target_home=com.tvweb.home
+  luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$target_home\"}" 2>/dev/null |
     grep -q '"returnValue": *true' || return 0
-  home_opened=1
   # The server watches for the view from its start and opens LG's Home if it
   # does not come (lib/home.js watchBootOpen).
   : > /tmp/glasshouse-home-opened-at-boot
   echo "$(date): Glasshouse Home opened over $boot_app"
 }
-home_opened=0
+home_on=0
+grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null && home_on=1
 if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
    grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
   mount --bind "$homestage" "$homeapp" 2>/dev/null || true
@@ -257,6 +259,8 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): sam did not take Glasshouse Home - LG's Home kept"
   fi
+elif [ "$webos_major" = "4" ] && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
+  home_open_at_boot
 fi
 
 # LG's screen saver ships as QML up to webOS 9 and as Flutter from webOS 10.
@@ -394,12 +398,12 @@ fi
   # then start: the sooner it is up, the sooner Home Assistant has the TV's state
   # after a power-on (and the sooner the launcher, if it is the home, can load).
   # The server retries MQTT, so it is fine to start before the network settles.
-  # Not where Glasshouse Home was just opened: its page shows the Glasshouse
-  # mark until the server answers, about 12 s after the open with the buffer
-  # (a G5, webOS 10.3.1).
-  [ "$home_opened" -eq 1 ] || sleep 5
-  /usr/bin/pkill -9 -f tvweb.js 2>/dev/null || true
-  sleep 1
+  # Not while Glasshouse Home is on: its page shows the Glasshouse mark until
+  # the server answers, about 12 s after the open with the buffer (a G5,
+  # webOS 10.3.1), and on webOS 4 the Home key opens it before this hook runs
+  # (25 s and 41 s into a B8's boot).
+  [ "$home_on" -eq 1 ] || sleep 5
+  /usr/bin/pkill -9 -f tvweb.js 2>/dev/null && sleep 1
   if [ -f /var/lib/tvweb/services_stopped ]; then
     while read -r job; do
       [ -n "$job" ] && /sbin/initctl stop "$job" >/dev/null 2>&1

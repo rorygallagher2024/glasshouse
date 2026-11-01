@@ -13,17 +13,16 @@
 <body>
 
 <header>
-  <div class="hdr-left">
-    <div class="mark">
-      <div class="mark-tv"><span id="brand">&mdash;</span><span id="model" class="num">&mdash;</span></div>
-    </div>
-  </div>
-  <div class="src">
+  <div class="src now">
     <div class="st" id="state"><i></i><span>&mdash;</span></div>
     <div class="t" id="source">&mdash;</div>
     <div class="stream-info">
       <div class="stream-primary num" id="stream-primary">&mdash;</div>
     </div>
+  </div>
+  <div class="hdr-status">
+    <div class="hdr-line num" id="hdr-volume" hidden></div>
+    <div class="hdr-line" id="hdr-sleep" hidden></div>
   </div>
 </header>
 
@@ -54,7 +53,7 @@
         <path d="M358 214 L256 134 L154 214 V342 A34 34 0 0 0 188 376 H324 A34 34 0 0 0 358 342 V286 H272"
               fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span class="sidenav-title" translate="no">Glasshouse</span>
+      <span class="sidenav-titles"><span class="sidenav-title" translate="no">Glasshouse</span><span class="sidenav-tv" id="nav-tv" translate="no"></span></span>
     </span>
     <button type="button" class="nav-close" onclick="closeNav()" aria-label="Close menu" data-t-aria-label="nav.close">&times;</button>
   </div>
@@ -351,10 +350,11 @@
         <form class="toast-form" onsubmit="event.preventDefault();sendTypedText();">
           <input type="text" id="kb-text" placeholder="Focus a field on the TV, then type"
                  data-t-placeholder="ctl.keyboard.placeholder" maxlength="500" autocomplete="off" spellcheck="false"
-                 oninput="kbSyncLive()">
+                 oninput="kbSyncLive()" onkeydown="kbIgnoreBackspaceInEmptyBox(event)">
           <button type="submit" id="btn-kb-enter" data-t="ctl.keyboard.enter">Enter</button>
         </form>
         <p class="sub" id="kb-hint" data-t="ctl.keyboard.hint">Focus a text field on the TV first, such as a search box or a web address. What you type here goes to it as you type, backspace included, and Enter submits it.</p>
+        <p class="sub" id="kb-via"></p>
       </div>
     </details>
 
@@ -564,6 +564,13 @@
     </div>
     <p class="sub" id="audio-link-note"></p>
 
+    <div id="audio-forwarding" hidden>
+    <div class="pv-sec adv-sec" data-t="audio.overrideTitle">Experimental DTS forwarding</div>
+    <div class="prot-table">
+      <div class="prot-row"><div class="prot-main"><div class="prot-title" data-t="tv.audio.forwarding">DTS forwarding</div><div class="prot-desc" id="audio-override-desc"></div></div><div class="prot-status"><button type="button" class="pill idle" id="audio-override" onclick="audioOverride()" aria-pressed="false" aria-describedby="audio-override-desc" disabled><span data-t="audio.unavailable">Unavailable</span></button></div></div>
+    </div>
+    <p class="sub audio-helper"><a href="https://github.com/dakenf/lg-g5-dts" target="_blank" rel="noopener noreferrer" data-t="audio.helperLink">About the DTS forwarding helper</a></p>
+    </div>
 
     <details class="pv-d"><summary data-t="audio.playbackTitle">TV playback declarations</summary><p class="pv-sub" data-t="audio.playbackDesc">Formats listed by LG’s media configuration, with their declared channel limits. These describe playback resources, not what reaches an amp.</p><div class="audio-playback" id="audio-playback"></div></details>
   </div>
@@ -774,6 +781,16 @@
           stop and the TV no longer finds devices by itself.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_devdetect" onclick="toggleDeviceDetection()">&mdash;</button></div>
+    </div>
+    <div class="prot-row" id="row-locallookups" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.localLookups">Answer device scans on the TV</div>
+        <div class="prot-desc" data-t="adv.localLookups.desc">LG's device detection asks your router for the name of every address on your home network:
+          whenever the TV's Home Hub looks for devices, and on some TVs every 5 minutes, even with Auto device detection off.
+          A network-wide ad blocker such as Pi-hole shows them as hundreds of requests. Switched on, the TV answers them itself,
+          so they stay off your network. Nothing the TV shows changes.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_locallookups" onclick="toggleLocalLookups()">&mdash;</button></div>
     </div>
   </div>
 
@@ -1744,6 +1761,7 @@
 </main>
 
 <footer>
+  <span class="foot-tv" id="foot-tv" translate="no"></span>
   <span class="foot-end"><span id="activity-txrx" class="activity-txrx" aria-hidden="true"><span id="act-tx" class="txrx-pip"></span><span id="act-rx" class="txrx-pip"></span></span><span id="tv-name" hidden></span><a id="version" hidden target="_blank" rel="noopener noreferrer"></a><a id="version-new" hidden target="_blank" rel="noopener noreferrer"></a><button type="button" class="theme-toggle" id="theme-toggle">☾</button></span>
 </footer>
 

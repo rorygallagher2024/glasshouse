@@ -15,6 +15,8 @@ fs.writeFileSync(path.join(dir, 'com.webos.service.tv.display.service'),
   '[D-BUS Service]\nName=com.webos.service.tv.display\nExec=/usr/sbin/tvd\nType=static\n');
 fs.writeFileSync(path.join(dir, 'com.webos.service.audio.service'),
   '[D-BUS Service]\nName=com.webos.audio;com.webos.service.audioalt\n');
+fs.writeFileSync(path.join(dir, 'com.webos.settingsservice.service'),
+  '[D-BUS Service]\nName=com.webos.settingsservice\n');
 process.env.TVWEB_LUNA_SERVICE_DIRS = dir + ';/nonexistent';
 
 // The launch queue spaces starts on the same clock, so it keeps running and is only moved on.
@@ -32,7 +34,7 @@ child.execFile = function (file, args, opts, cb) {
   var uri = args[args.length - 2].replace('luna://', '');
   calls.push(uri);
   process.nextTick(function () {
-    if (/^com\.webos\.service\.(audio|videooutput)\//.test(uri) || /^org\.webosbrew\./.test(uri)) return cb(new Error('exit 1'), '');
+    if (/^com\.webos\.service\.(audio|videooutput|settings)\//.test(uri) || /^org\.webosbrew\./.test(uri)) return cb(new Error('exit 1'), '');
     if (/^com\.webos\.service\.tv\.display\//.test(uri)) return cb(null, '{"returnValue":false,"errorText":"busy"}');
     cb(null, '{"returnValue":true}');
   });
@@ -79,6 +81,20 @@ series([
             });
           });
         });
+      });
+    });
+  },
+  // A renamed service listed only by its legacy name, as on webOS 3.9: no
+  // answer under the newer one moves it to the legacy one, and it is never skipped.
+  function (next) {
+    calls = [];
+    call('com.webos.service.settings/getSystemSettings', function (r) {
+      assert.deepEqual(calls, ['com.webos.service.settings/getSystemSettings', 'com.webos.settingsservice/getSystemSettings']);
+      assert.strictEqual(r.returnValue, true);
+      call('com.webos.service.settings/setSystemSettings', function () {
+        assert.strictEqual(calls[2], 'com.webos.settingsservice/setSystemSettings', 'straight to the legacy name after');
+        assert.ok(!logs.some(function (l) { return /settings is not on this TV/.test(l); }));
+        next();
       });
     });
   },

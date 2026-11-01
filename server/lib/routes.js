@@ -1140,14 +1140,14 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/catalogue') {
       return homeModule.catalogue(function (c) {
-        homeModule.status(function (st) {
-          c.ok = true;
-          c.layout = st.layout;
-          c.enabled = st.enabled;
-          c.wallpapers = st.wallpapers;
-          c.layoutVersion = homeModule.layoutVersion();
-          reply(c);
-        });
+        var st = homeModule.viewStatus();
+        c.ok = true;
+        c.layout = st.layout;
+        c.enabled = st.enabled;
+        c.supported = st.supported;
+        c.wallpapers = st.wallpapers;
+        c.layoutVersion = homeModule.layoutVersion();
+        reply(c);
       });
     }
     if (pathname === '/api/home/channels') {
@@ -1196,11 +1196,12 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/beat') {
       if (!postGuard(req, res, 'application/json', false)) return;
-      req.resume();
-      // The hour cycle the view's clock draws, which follows the TV's setting.
-      var beatBody = homeModule.beat();
-      beatBody.clockHour12 = clockHour12();
-      return reply(beatBody);
+      return readJsonBody(req, res, function (body) {
+        // The hour cycle the view's clock draws, which follows the TV's setting.
+        var beatBody = homeModule.beat(body);
+        beatBody.clockHour12 = clockHour12();
+        reply(beatBody);
+      });
     }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
@@ -1326,7 +1327,12 @@ function handleRequest(req, res) {
         });
       });
     }
-    return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
+    if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
+    if (!config.allowControl) return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    if (!hostAllowed(req)) return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.audio.hostRefused', 'Use the TV address to change the DTS override.') }));
+    return readJsonBody(req, res, function (body) {
+      audioModule.setOverride(body.enabled, function (r) { send(res, r.ok ? 200 : 400, JSON.stringify(r)); });
+    });
   }
 
   if (pathname === '/api/screensaver') {

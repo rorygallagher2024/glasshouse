@@ -236,11 +236,13 @@ async function tick() {
     lastHdmiKey = hk;
 
     const model = (d.device && d.device.model) || '';
-    q('model').textContent = model;
-    const isOled = !(d.capabilities && d.capabilities.oled === false) &&
-                    (d.capabilities ? d.capabilities.oled === true : (/oled/i.test(model) || !!(d.oled && d.oled.panel_hours !== undefined)));
-    const brand = isOled ? t('header.brand.oled', 'LG OLED TV') : t('header.brand', 'LG TV');
-    if (q('brand')) q('brand').textContent = brand;
+    // The model in the footer, and the TV's own name under the sidebar's mark,
+    // so a home with several TVs can tell their dashboards apart.
+    const deviceName = (d.device && d.device.name) || model;
+    if (q('nav-tv') && q('nav-tv').textContent !== deviceName) q('nav-tv').textContent = deviceName;
+    // Only where the name is not already the model: a B8 (webOS 4.4) reports none.
+    const footModel = model && deviceName.indexOf(model) === -1 ? 'LG ' + model : '';
+    if (q('foot-tv')) q('foot-tv').textContent = footModel;
     const want = model ? 'Glasshouse · ' + model : 'Glasshouse';
     if (document.title !== want) document.title = want;
     // Panel state first: without it, a blanked screen still reads as though
@@ -267,8 +269,26 @@ async function tick() {
     }
     q('source').parentElement.classList.toggle('dim', ps.screenOn === false && !isComp);
     // In standby the source and picture lines are the last ones seen, not what
-    // the TV is doing. With only the screen off it is still playing them.
-    q('source').parentElement.classList.toggle('standby', ps.systemOn === false && !isComp);
+    // the TV is doing, so they are labelled as such. With only the screen off
+    // it is still playing them.
+    const asleep = ps.systemOn === false && !isComp;
+    // The state above says Standby; with nothing seen since the server
+    // started, the headline is the TV's own name.
+    const nothingSeen = asleep && q('source').textContent === '—';
+    if (nothingSeen) q('source').textContent = deviceName || '—';
+    q('source').parentElement.classList.toggle('last', asleep && !nothingSeen);
+    q('source').parentElement.classList.toggle('blank', nothingSeen);
+    const vol = q('hdr-volume');
+    if (vol) {
+      vol.hidden = asleep || typeof d.volume !== 'number';
+      vol.textContent = d.muted ? t('header.muted', 'Muted') : t('header.volume', 'Volume {n}', { n: d.volume });
+    }
+    const sleepEl = q('hdr-sleep');
+    if (sleepEl) {
+      const sl = d.sleepTimer && d.sleepTimer !== 'off' ? d.sleepTimer : '';
+      sleepEl.hidden = asleep || !sl;
+      if (sl) sleepEl.textContent = t('header.sleep', 'Sleep timer {n} min', { n: sl });
+    }
     const pic = d.picture || {};
 
     // Summarise the collapsed groups so their current values are readable
@@ -328,7 +348,10 @@ async function tick() {
       if (q('adv-piccap')) q('adv-piccap').hidden = !pc && !hs;
       const devVal = getLease('deviceDetection', d.deviceDetection);
       advPill('devdetect', 'btn_devdetect', devVal !== undefined ? devVal : d.deviceDetection);
-      if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && !advLgsDevices;
+      const lookups = d.privacy ? d.privacy.localLookups === true : undefined;
+      const lookupsVal = getLease('localLookups', lookups);
+      advPill('locallookups', 'btn_locallookups', lookupsVal !== undefined ? lookupsVal : lookups);
+      if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && lookups === undefined && !advLgsDevices;
       if (q('tl-cur')) {
         q('tl-cur').textContent = st === 'off' ? t('common.off', 'Off') : t('ctl.sleep.minutes', '{n} min', { n: st });
       }

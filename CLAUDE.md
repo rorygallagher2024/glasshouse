@@ -70,7 +70,8 @@ use modern JavaScript.
 - `test/` - `node test/run-all.js` runs every `test-*.js`; fixtures are real
   stats from a B8 (webOS 4), a CX (webOS 5), and a G4 and a C4 (webOS 9).
 
-Before pushing, run what CI runs: `node test/run-all.js`, `npx tsc`, and
+Before pushing, run what CI runs: `scripts/check-all.sh` runs it all side
+by side. One at a time: `node test/run-all.js`, `npx tsc`, and
 `scripts/check-es5.py`, `check-module-calls.py`, `check-ui-ids.py`,
 `check-strings.py`, `check-screensavers.py`, `check-drift.py`,
 `check-entity-stability.py` and
@@ -78,6 +79,24 @@ Before pushing, run what CI runs: `node test/run-all.js`, `npx tsc`, and
 `node scripts/check-upgrade.js`. A module
 handed to another through init() is typed with
 `/** @type {typeof import('./x')} */`, so check-module-calls.py follows it.
+
+# Working with a TV
+
+`scripts/tv.sh <address> version|app|luna|log|capture` covers the usual
+look at a rooted TV over SSH; run it with no arguments for its usage.
+
+- `luna-send` prints nothing over SSH without a terminal: use `ssh -tt`,
+  as tv.sh does, and strip the carriage returns.
+- Glasshouse lives in `/var/lib/tvweb`: its log is `tvweb.log` there and its
+  settings `config.json`. `server/deploy.sh <address>` installs a branch.
+- A TV whose `config.json` sets `host` to `127.0.0.1` answers only on the TV:
+  reach its dashboard through `ssh -L 18080:127.0.0.1:8080 root@<address>`.
+- The app in front is empty while a Home screen is, and names the input
+  (`com.webos.app.hdmi2`) while one is. An HDMI input shows another device's
+  screen: capture it only when asked. Protected video captures black.
+- Screen capture is `com.webos.service.capture/executeOneShot` on webOS 9
+  (a C2) and `com.webos.service.tv.capture` on webOS 4 (a B8); tv.sh tries
+  one, then the other.
 
 For background, open the doc for the area rather than README.md:
 docs/IMPLEMENTATION.md (platform quirks and how each subsystem works),

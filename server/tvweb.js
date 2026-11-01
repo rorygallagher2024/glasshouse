@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.135.0';
+var TVWEB_VERSION = '0.136.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -531,9 +531,9 @@ var LIVE_STALE = {
 };
 
 lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache });
-audioCapabilities.init({ luna: luna, lunaCached: lunaCached, hdmiReceiverMap: telemetry.hdmiReceiverMap });
+audioCapabilities.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache, hdmiReceiverMap: telemetry.hdmiReceiverMap });
 game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
-privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule });
+privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, watchNetwork: true });
 oled.init({ luna: luna, config: CONFIG });
 samrescan.init({ luna: luna });
 appsModule.init({ luna: luna, config: CONFIG });
@@ -1858,7 +1858,10 @@ function startGlasshouseHome() {
     webosVersion: telemetry.detectWebosVersion(),
     port: CONFIG.port,
     samrescan: samrescan,
-    // Only to remove the separate app earlier builds installed.
+    injectKey: controls.injectKey,
+    // Which ports have something plugged in, where eim does not say (webOS 4).
+    hdmiInputs: telemetry.hdmiInputs,
+    // The standalone app on webOS 4, and removing the one earlier builds installed elsewhere.
     installApp: function (action, cb) { tvApp(action, cb, 'home-app'); },
     setHomeKey: remoteKeys.setHome,
     homeKeyApp: remoteKeys.homeApp,

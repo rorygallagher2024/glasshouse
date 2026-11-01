@@ -14,6 +14,10 @@
  * its inode, which a symlink shares. sam is a reader of whatever appinfo.json
  * the directory holds when it is told to scan.
  *
+ * Most steps wait on Glasshouse Home's real timers, up to 10 s each, so
+ * run-all.js runs it as 8 shards side by side.
+ * @shards 16
+ *
  * Strict ES5: runs on node 0.12.
  */
 var assert = require('assert');
@@ -193,6 +197,8 @@ function luna(uri, p, cb) {
     r.running = tv.oldAppRunning ? [{ id: OLD_APP }] : [];
   } else if (uri === 'com.webos.service.tvpower/power/getPowerOnReason') {
     r.reason = tv.powerOnReason || 'remoteKey';
+  } else if (uri === 'com.webos.applicationManager/closeByAppId') {
+    tv.events.push('close ' + p.id);
   } else if (uri === 'com.webos.applicationManager/launch') {
     tv.launched.push(p.id);
     tv.launches.push(copy(p));
@@ -206,6 +212,7 @@ function luna(uri, p, cb) {
       { id: 'com.webos.app.music', title: 'Music', icon: '/x/music.png', visible: false },
       { id: 'com.webos.app.hdmi1', title: 'HDMI 1', lptype: 'bookmark' }
     ];
+    if (tv.newApp) r.launchPoints.push({ id: 'new.app', title: 'New', icon: '/x/new.png' });
   } else if (uri === 'com.webos.service.eim/getAllInputStatus') {
     // As a G3 reports them: a receiver with a console behind it on HDMI 2, HDMI 1 empty.
     r.devices = tv.devices || [
@@ -254,10 +261,21 @@ function start(file, opts) {
 function taken() { return tv.samType === 'web' && fs.realpathSync(appDir) === fs.realpathSync(stageDir); }
 
 function wait(ms, fn) { setTimeout(fn, ms); }
+// Until check() holds or ms have passed: for a step a slow runner takes
+// longer over, such as node 0.12 on CI.
+function until(check, ms, fn) {
+  var end = Date.now() + ms;
+  (function poll() {
+    if (check() || Date.now() >= end) return fn();
+    setTimeout(poll, 10);
+  })();
+}
 
 var steps = [];
+var shard = require('./shard');
 function step(name, fn) { steps.push({ name: name, fn: fn }); }
 function next() {
+  if (!next.picked) { steps = shard.pick(steps); next.picked = true; }
   var s = steps.shift();
   if (!s) { console.log('All home tests passed.'); return process.exit(0); }
   s.fn(function () { console.log('  ✓ ' + s.name); next(); });
@@ -295,6 +313,37 @@ step('a layout saved from a dashboard changes the version the view\'s heartbeat 
   });
 });
 
+step('after a start the rows come from the lists last read, and a change read behind them reloads the view', function (done) {
+  start(null);
+  home.catalogue(function (c) {
+    assert.deepEqual(c.order.app, ['netflix', 'youtube.leanback.v4', 'cdp-30', 'lg-home']);
+    var held = [];
+    var slowLuna = function (uri, p, cb) {
+      if (uri === 'com.webos.applicationManager/listLaunchPoints') return held.push(function () { luna(uri, p, cb); });
+      luna(uri, p, cb);
+    };
+    var lists = fs.readFileSync(path.join(dir, 'home-lists.json'));
+    start(null, { luna: slowLuna });
+    fs.writeFileSync(path.join(dir, 'home-lists.json'), lists);
+    tv.newApp = true;
+    var before = home.beat().layoutVersion;
+    home.catalogue(function (c2) {
+      assert.deepEqual(c2.order.app, c.order.app, 'answered from the saved list while the TV is still asked');
+      until(function () { return held.length > 0; }, 2000, function () {
+        assert.strictEqual(held.length, 1, 'and the list read again behind it');
+        held.shift()();
+        until(function () { return home.beat().layoutVersion !== before; }, 2000, function () {
+          assert.notStrictEqual(home.beat().layoutVersion, before, 'a list that changed has the view reload');
+          home.catalogue(function (c3) {
+            assert.ok(c3.order.app.indexOf('new.app') !== -1, 'with the list just read');
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
 step('the saved layout keeps its order, drops what has gone and appends what is new', function (done) {
   start({ order: { app: ['cdp-30', 'gone.app', 'netflix'], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] } });
   home.catalogue(function (c) {
@@ -303,6 +352,52 @@ step('the saved layout keeps its order, drops what has gone and appends what is 
     assert.strictEqual(c.devices[0].unused, true, 'an empty input is listed, marked unused');
     assert.strictEqual(c.devices[2].via, 'STEREO 70s');
     assert.strictEqual(c.devices[2].address, '2.4.0.0');
+    done();
+  });
+});
+
+step('the heartbeat says when the view is covered: by the screen saver, or on webOS 4 by what is in front', function (done) {
+  start(null, { webosVersion: '4.4.3' });
+  foreground(OLD_APP);
+  assert.strictEqual(home.beat().covered, false, 'in front');
+  powerState('Screen Saver');
+  var b = home.beat();
+  assert.strictEqual(b.covered, true, 'under the screen saver');
+  assert.strictEqual(b.saver, true);
+  powerState('Active');
+  foreground('com.webos.app.hdmi2');
+  b = home.beat();
+  assert.strictEqual(b.covered, true, 'behind an input');
+  assert.strictEqual(b.saver, false);
+  start(null);
+  foreground('com.webos.app.hdmi2');
+  assert.strictEqual(home.beat().covered, false, 'on webOS 9 the view is LG\'s Home and the screen saver alone covers it');
+  done();
+});
+
+step('where eim does not say which ports are plugged in, as on a B8, the HDMI reading does', function (done) {
+  start(null, {
+    webosVersion: '4.4.3',
+    hdmiInputs: function (cb) {
+      cb({ ok: true, inputs: [
+        { id: 'HDMI_1', deviceSeen: false, signal: null },
+        { id: 'HDMI_2', deviceSeen: true, signal: { port: 3 } },
+        { id: 'HDMI_3', deviceSeen: false, signal: null }
+      ] });
+    }
+  });
+  // As a B8 (webOS 4.4.3) answers: no hdmiPlugIn, no connected.
+  tv.devices = [
+    { id: 'HDMI_1', label: 'HDMI 1', activate: false, subList: [], lastUniqueId: 255 },
+    { id: 'HDMI_2', label: 'Apple TV', activate: true, subList: [{ id: 'SIMPLINK', osdName: 'Apple TV', uniqueId: 4 }] },
+    { id: 'HDMI_3', label: 'HDMI 3', activate: false, subList: [], lastUniqueId: 255 }
+  ];
+  home.catalogue(function (c) {
+    var by = {};
+    c.devices.forEach(function (d) { by[d.input] = d; });
+    assert.strictEqual(by.hdmi1.unused, true, 'nothing on HDMI 1');
+    assert.strictEqual(by.hdmi3.unused, true, 'nothing on HDMI 3');
+    assert.ok(!by.hdmi2.unused, 'the Apple TV on HDMI 2');
     done();
   });
 });
@@ -887,7 +982,9 @@ step('a refused takeover at start leaves LG\'s auto launch available', function 
     tv.settings.quickStartMode = 'off';
     tv.samRefusesWeb = true;
     home.start();
-    wait(50, function () {
+    // 50 ms was not always enough for the restore on node 0.12 on CI.
+    var settled = held ? function () { return tv.settings.homeAutoLaunch === 'on'; } : function () { return false; };
+    until(settled, held ? 2000 : 50, function () {
       assert.ok(!taken());
       assert.strictEqual(tv.settings.homeAutoLaunch, 'on', held ? 'restore a previous hold' : 'do not start a hold');
       run();
@@ -1051,8 +1148,118 @@ step('webOS 5 and 6 are offered, experimental, with each switch closing the apps
         start(null, { webosVersion: '11.2.0' });
         home.status(function (st11) {
           assert.strictEqual(st11.supported.ok, false, 'webOS 11 still needs the setting');
-          done();
+          start(null, { webosVersion: '4.4.3' });
+          home.status(function (st4) {
+            assert.strictEqual(st4.supported.ok, true, 'offered on webOS 4 without the setting');
+            assert.strictEqual(st4.supported.experimental, true);
+            assert.strictEqual(st4.supported.standalone, true);
+            assert.strictEqual(st4.supported.restartsApps, undefined);
+            done();
+          });
         });
+      });
+    });
+  });
+});
+
+step('on webOS 4, enabling installs the standalone app and sets the Home key filter, without mounting', function (done) {
+  var installed = false;
+  var homeKey = '';
+  var injected = [];
+  start(null, {
+    webosVersion: '4.4.3',
+    allowExperimental: function () { return true; },
+    installApp: function (action, cb) {
+      if (action === 'install') { installed = true; tv.oldAppInstalled = true; }
+      if (action === 'remove') { installed = false; tv.oldAppInstalled = false; }
+      cb({ ok: true });
+    },
+    setHomeKey: function (id, cb) {
+      homeKey = id;
+      cb({ ok: true });
+    },
+    injectKey: function (code, cb) {
+      injected.push(code);
+      if (cb) cb(true);
+    }
+  });
+  tv.oldAppInstalled = false;
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(installed, true, 'installed standalone app');
+    assert.strictEqual(homeKey, OLD_APP, 'pointed Home key at com.tvweb.home');
+    assert.strictEqual(tv.starting || '', '', 'no starting notice, which would hold the Home key for 90 s');
+    assert.strictEqual(tv.events.indexOf('mount'), -1, 'did not mount takeover');
+    home.status(function (st) {
+      assert.strictEqual(st.enabled, true);
+      assert.strictEqual(st.active, true);
+      foreground(OLD_APP);
+      home.open({ kind: 'lg' }, function (r2) {
+        assert.ok(r2.ok);
+        assert.deepEqual(injected, [125], 'injected key 125 for LG ribbon');
+        assert.strictEqual(tv.events.indexOf('close old app'), -1, 'the view is left under LG\'s ribbon, not closed from outside');
+        assert.strictEqual(homeKey, '', 'cleared Home key filter so 125 reaches LG ribbon');
+        assert.strictEqual(homeKey, '', 'the Home key is LG\'s while its ribbon is open');
+        foreground('com.webos.app.hdmi2');
+        assert.strictEqual(homeKey, OLD_APP, 'an input opened from LG\'s ribbon rearms Glasshouse Home');
+        home.disable(function (r3) {
+          assert.ok(r3.ok);
+          assert.strictEqual(homeKey, '', 'restored Home key filter');
+          assert.strictEqual(tv.events.indexOf('close old app'), -1, 'the view closes itself, from its heartbeat');
+          assert.strictEqual(installed, true, 'standalone app was not uninstalled');
+          home.status(function (stOff) {
+            assert.strictEqual(stOff.enabled, false);
+            assert.strictEqual(stOff.active, false);
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
+step('on webOS 4, a Home press the view does not answer opens it again before giving LG\'s ribbon the key', function (done) {
+  var homeKey = '', injected = [];
+  start(null, {
+    webosVersion: '4.4.3',
+    allowExperimental: function () { return true; },
+    slowOpenMs: 5000,
+    installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { homeKey = id; cb({ ok: true }); },
+    injectKey: function (code, cb) { injected.push(code); if (cb) cb(true); }
+  });
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('com.webos.app.hdmi2');
+    tv.launched = [];
+    home.homeKey(true);
+    home.homeKey(false);
+    // No systemctl on webOS 4, so no WebAppMgr unit to start.
+    wait(5100, function () {
+      assert.deepEqual(tv.launched, [OLD_APP], 'opened once more');
+      assert.deepEqual(injected, [], 'LG\'s ribbon not opened yet');
+      assert.strictEqual(homeKey, OLD_APP, 'Home still opens Glasshouse Home');
+      home.disable(function () { done(); });
+    });
+  });
+});
+
+step('on webOS 4, the page\'s escape when its first load fails is ignored', function (done) {
+  var injected = [];
+  start(null, {
+    webosVersion: '4.4.3',
+    allowExperimental: function () { return true; },
+    installApp: function (action, cb) { tv.oldAppInstalled = true; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { cb({ ok: true }); },
+    injectKey: function (code, cb) { injected.push(code); if (cb) cb(true); }
+  });
+  home.enable(function () {
+    foreground(OLD_APP);
+    home.open({ kind: 'lg', recovery: true }, function (r) {
+      assert.strictEqual(r.done, false, 'left to the page, which tries again');
+      wait(400, function () {
+        assert.deepEqual(injected, [], 'LG\'s ribbon not opened');
+        home.disable(function () { done(); });
       });
     });
   });
@@ -2119,6 +2326,64 @@ step('switching on with Home already in front watches for the first heartbeat', 
       assert.strictEqual(tv.samType, 'native', 'a view that never loaded gives LG Home back');
       assert.deepEqual(tv.launched, [LG_HOME]);
       done();
+    });
+  });
+});
+
+function webos11() {
+  return { webosVersion: '11.2.0', allowExperimental: function () { return true; } };
+}
+
+step('on webOS 11, Glasshouse Home is closed and opened again once after a wake, while it is in front', function (done) {
+  start(null, webos11());
+  home.enable(function () {
+    foreground(LG_HOME);
+    home.beat({ focused: true, visible: 'visible' });
+    power(false);
+    power(true);
+    tv.launched = [];
+    wait(3500, function () {
+      assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'not before the wake has settled');
+      wait(1000, function () {
+        assert.ok(tv.events.indexOf('close ' + LG_HOME) !== -1, 'closed');
+        assert.deepEqual(tv.launched, [], 'and left closed for a moment');
+        wait(2100, function () {
+          assert.deepEqual(tv.launched, [LG_HOME], 'then opened again');
+          home.disable(function () { done(); });
+        });
+      });
+    });
+  });
+});
+
+step('on webOS 11, an app opened after the wake, or a switch-off, cancels it; other webOS never does it', function (done) {
+  start(null, webos11());
+  home.enable(function () {
+    foreground(LG_HOME);
+    power(false);
+    power(true);
+    foreground('netflix');
+    wait(4500, function () {
+      assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'an app opened since');
+      foreground(LG_HOME);
+      power(false);
+      power(true);
+      power(false);
+      wait(4500, function () {
+        assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'switched off again');
+        home.disable(function () {
+          start(null);
+          home.enable(function () {
+            foreground(LG_HOME);
+            power(false);
+            power(true);
+            wait(4500, function () {
+              assert.strictEqual(tv.events.indexOf('close ' + LG_HOME), -1, 'webOS 9');
+              home.disable(function () { done(); });
+            });
+          });
+        });
+      });
     });
   });
 });
