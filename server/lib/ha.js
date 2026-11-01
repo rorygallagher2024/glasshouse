@@ -58,7 +58,10 @@ var HA_ENTITIES = [
   { id: 'input_source', type: 'select', name: 'Input Source', cat: 'controls' },
   { id: 'piccap', type: 'switch', name: 'PicCap Capture', cat: 'controls' },
   { id: 'huesync', type: 'switch', name: 'Hue Sync', cat: 'controls' },
+  { id: 'audio_clip_mute_tv', type: 'switch', name: 'Mute TV During Audio Clips', cat: 'controls' },
+  { id: 'play_audio_clip', type: 'text', name: 'Play Audio Clip', cat: 'controls' },
   { id: 'screen_notification', type: 'text', name: 'Screen Notification', cat: 'controls' },
+  { id: 'open_url', type: 'text', name: 'Open Website', cat: 'controls' },
   { id: 'picture_mode', type: 'select', name: 'Picture Mode (Select)', cat: 'controls' },
   { id: 'energy_saving', type: 'select', name: 'Energy Saving Step', cat: 'controls' },
   { id: 'sound_output', type: 'select', name: 'Sound Output', cat: 'controls' },
@@ -904,11 +907,35 @@ function buildEntities(opts) {
         }, namedSelect(Object.keys(inputNames), inputNames, '(value_json.input_source or value_json.app)'))
       },
       {
+        // A URL to a clip, played as a message on play_audio is. Home
+        // Assistant's text entity cannot send bytes, so raw audio stays an
+        // MQTT publish.
+        type: 'text', id: 'play_audio_clip',
+        payload: {
+          name: 'Play Audio Clip',
+          command_topic: topic.command('play_audio'),
+          icon: 'mdi:bullhorn-outline',
+          mode: 'text',
+          min: 0,
+          max: 255
+        }
+      },
+      {
         type: 'text', id: 'screen_notification',
         payload: {
           name: 'Screen Notification',
           command_topic: topic.command('toast'),
           icon: 'mdi:message-text-outline',
+          mode: 'text'
+        }
+      },
+      {
+        type: 'text',
+        id: 'open_url',
+        payload: {
+          name: 'Open Website',
+          command_topic: topic.command('launch_url'),
+          icon: 'mdi:web',
           mode: 'text'
         }
       },
@@ -1523,6 +1550,21 @@ function buildEntities(opts) {
       }
     });
   }
+
+  // Whether an audio clip sent to <prefix>/command/play_audio silences the TV's
+  // own audio while it plays. Kept by Glasshouse, so it is always offered.
+  entities.push({
+    type: 'switch', id: 'audio_clip_mute_tv',
+    payload: {
+      name: 'Mute TV During Audio Clips',
+      command_topic: topic.command('audioclip/mute_tv'),
+      state_topic: topic.state('audioclip/mute_tv'),
+      payload_on: 'ON',
+      payload_off: 'OFF',
+      entity_category: 'config',
+      icon: 'mdi:volume-off'
+    }
+  });
 
   entities.push({
     type: 'binary_sensor', id: 'power',

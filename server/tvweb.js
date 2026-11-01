@@ -91,6 +91,7 @@ var game = require('./lib/game');
 var piccapTransport = require('./lib/piccap');
 var audioCapabilities = require('./lib/audio');
 var huesyncTransport = require('./lib/huesync');
+var audioclip = require('./lib/audioclip');
 var remotebuttons = require('./lib/remotebuttons');
 var logsModule = require('./lib/logs');
 var syslogForwarder = require('./lib/syslog');
@@ -231,6 +232,10 @@ var CONFIG = {
 
   // Hue Sync likewise: offered where its app is installed.
   huesync: { pollIntervalMs: 30000 },
+
+  // Audio clips sent to <prefix>/command/play_audio. muteTv is the Home
+  // Assistant switch "Mute TV During Audio Clips"; the rest is file-only.
+  audioClip: { enabled: true, muteTv: true },
 
   // Home Assistant & MQTT Integration
   mqtt: {
@@ -630,6 +635,27 @@ var huesync = huesyncTransport.init({
   onAvailableChange: function () { huesyncChanged(); }
 });
 
+/*
+ * The mute-during-clip switch lives in the config file, so it survives a
+ * restart and the next start reads it back like any other setting.
+ */
+// Set once MQTT is up.
+var publishAudioClipState = function () {};
+audioclip.init({
+  luna: luna,
+  lunaUrgent: lunaTransport.callUrgent,
+  config: CONFIG.audioClip,
+  saveMuteTv: function (value, cb) {
+    try {
+      var file = readJson(CONFIG_FILE, {}) || {};
+      file.audioClip = file.audioClip || {};
+      file.audioClip.muteTv = value;
+      writeJsonAtomic(CONFIG_FILE, file, parseInt('600', 8));
+      cb(null);
+    } catch (e) { cb(e); }
+  },
+  onChange: function () { publishAudioClipState(); }
+});
 var notificationState = notifications.init({ luna: luna });
 
 // ---------------------------------------------------------------- controls
@@ -1115,6 +1141,11 @@ function setupHomeAssistant() {
   var devId = (CONFIG.device && CONFIG.device.id) || 'lg_b8_tv';
   console.log('mqtt: device id "' + devId + '", topic prefix "' + pfx + '"');
   var mqttTopics = topics(pfx);
+  publishAudioClipState = function () {
+    if (!mqttClient || !mqttClient.connected) return;
+    mqttClient.publish(mqttTopics.state('audioclip/mute_tv'), audioclip.muteTv() ? 'ON' : 'OFF', true);
+    mqttClient.publish(mqttTopics.state('audioclip/status'), audioclip.status().playing ? 'playing' : 'idle', true);
+  };
 
   var devInfo = {
     identifiers: [devId],
@@ -1571,19 +1602,28 @@ function setupHomeAssistant() {
       });
     });
     mqttClient.subscribe(mqttTopics.commands + '#');
+    publishAudioClipState();
     publishTelemetry();
     piccap.refreshAndPublishState(true);
     huesync.refreshAndPublishState(true);
     publishUpdate();
   });
 
-  mqttClient.on('message', function(topic, payload) {
+  mqttClient.on('message', function(topic, payload, rawPayload) {
     if (topic.indexOf(mqttTopics.commands) !== 0) return;
     var action = topic.substring(mqttTopics.commands.length);
     var val = payload ? payload.trim() : '';
-    // Typed text can be a password, so only its length is logged.
+    // Typed text can be a password, so only its length is logged. An audio
+    // clip is bytes, which would only fill the log.
     console.log('mqtt: command received: ' + action + ' -> ' +
-                (action === 'keyboardText' ? (payload || '').length + ' characters' : val));
+                (action === 'keyboardText' ? (payload || '').length + ' characters' :
+                 action === 'play_audio' ? (rawPayload ? rawPayload.length : 0) + ' bytes' : val));
+
+    if (audioclip.handleMqttCommand(action, payload, rawPayload, fetchLib)) return;
+    if (action === 'audioclip/mute_tv') {
+      audioclip.setMuteTv(val.toUpperCase() === 'ON');
+      return;
+    }
     if (action === 'input' && val) {
       pendingInput = { id: val, until: Date.now() + 10000 };
       /*
@@ -1712,6 +1752,15 @@ function setupHomeAssistant() {
       doControl('toast', val, function() {});
       return;
     }
+    
+    if (action === 'launch_url') {
+      doControl('launch_url', val, function (r) {
+        if (!r || !r.ok) {
+          console.error('mqtt: launch_url failed: ' + ((r && (r.error || r.errorText)) || 'unknown error'));
+        }
+      });
+      return;
+    }
 
     // notify/<type>, the text optionally opening with ":icon:".
     if (action === 'notify' || action.indexOf('notify/') === 0) {
@@ -1787,12 +1836,14 @@ function setupHomeAssistant() {
   });
 
   process.on('SIGTERM', function() {
+    audioclip.shutdown();
     remotebuttons.stop();
     iconServer.stop();
     if (mqttClient) mqttClient.disconnect();
     process.exit(0);
   });
   process.on('SIGINT', function() {
+    audioclip.shutdown();
     remotebuttons.stop();
     iconServer.stop();
     if (mqttClient) mqttClient.disconnect();

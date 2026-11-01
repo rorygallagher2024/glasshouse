@@ -61,6 +61,7 @@ riskier controls ask for confirmation in the dashboard first.
 | Boot hook that holds switched-off services down, in the background so the hooks after it are not held up | `/var/lib/webosbrew/init.d/20-tvweb-services`, only once a service is switched off, and written again at each server start | Switching the services back on, or uninstalling |
 | Home-screen tile | The Homebrew Channel app, or with `deploy.sh` a developer app | Removing the app |
 | Glasshouse package updates | `/media/developer/temp/glasshouse-update`, deleted after success or failure; the release’s checksum is checked before replacing the installed app and restarting the server. The open Glasshouse app closes; settings are kept, but no rollback copy is made | No automatic rollback |
+| Audio clips, while one plays | Each clip is written to `/tmp` for `paplay` and deleted after it plays. With **Mute TV During Audio Clips** on, the TV's media audio connection (`ADEC1` to `MAIN`) is muted, and `/tmp/glasshouse-clip-restore.json` records what to put back | Put back when the clip ends, fails or is stopped; a restart of the server puts it back at start |
 | Packages being installed | `/media/developer/temp/glasshouse-install`, deleted when the install ends or at the next start | Itself |
 | Watch time, while switched on in the Server tab | `/var/lib/tvweb/history`, a file for each month, kept for 13 months | **Clear history** in the Server tab, or uninstalling |
 | Daily backups, while switched on in the Server tab | `/var/lib/tvweb/backups`, one file a day, the last 7 kept | Uninstalling |

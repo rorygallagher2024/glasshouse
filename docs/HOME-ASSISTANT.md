@@ -220,6 +220,36 @@ cards:
 
 The icons are plain `http`. A browser showing Home Assistant over `https`, as through Home Assistant Cloud, blocks them as mixed content, and the cards show no pictures there.
 
+## Playing audio clips
+
+A message on `<prefix>/command/play_audio` (`lgtv/command/play_audio` by default) plays a clip over whatever the TV is showing, through PulseAudio's `ptts` device, which plays beside the TV's own audio. The payload is the audio itself (WAV, or another format `paplay` reads), a URL, or JSON of the form `{"url": "http://..."}`. A clip is at most 4 MB and plays for at most 60 seconds; up to 5 wait behind the one playing.
+
+With **Mute TV During Audio Clips** on, the TV's own media audio is muted for the clip and put back as it was, whether the clip ends, fails or is cut off. Only the media audio connection is muted, not the volume or the TV's mute. A TV already muted stays muted. The switch is a configuration entity, and is saved as `audioClip.muteTv` in the config file. `audioClip.enabled`, `paplay`, `device`, `maxBytes`, `maxSeconds` and `maxQueue` are set in the config file only.
+
+**Play Audio Clip** (`text.lg_tv_play_audio_clip`) takes a URL from Home Assistant, which cannot send audio bytes itself:
+
+```yaml
+action:
+  - service: text.set_value
+    target:
+      entity_id: text.lg_tv_play_audio_clip
+    data:
+      value: "http://homeassistant.local:8123/local/doorbell.wav"
+```
+
+### As a media player, for the media browser and text to speech
+
+HA's MQTT discovery has no media player, so a small custom integration, `homeassistant/custom_components/glasshouse_speaker` in the release files, adds one. Copy that folder to `<config>/custom_components/`, add the platform below and restart Home Assistant:
+
+```yaml
+media_player:
+  - platform: glasshouse_speaker
+    name: TV Speaker
+    topic_prefix: lgtv
+```
+
+The player is then a target in the **Media** panel, where a clip from a media source is browsed and played, and for `tts.speak`. It shows `playing` while a clip plays. The TV fetches the clip itself, so Home Assistant's internal URL (Settings, System, Network) must be an address the TV reaches. `paplay` may not read the MP3 most text to speech engines send; where the engine allows it, ask for WAV with `options: {preferred_format: wav}`.
+
 ## Example automations
 
 ### 1. Automatically Blank Screen When Playing Music (Spotify / AirPlay)
