@@ -27,10 +27,10 @@ Focus on clarity and readability. Clearly state what changed and why, keeping pu
 
 If you are using AI coding assistants or automated agents, ensure they adhere to the repository conventions in `CLAUDE.md` (symlinked as `AGENTS.md`).
 
-## Ready for review
+## Rules for a pull request
 
-Open a pull request as a draft, and mark it ready for review only when all of
-these are done:
+These are not negotiable. Open a pull request as a draft, and mark it ready
+for review only when it meets all of them:
 
 * **Tried on a real TV,** with a [Testing section](#testing-details-in-the-pull-request)
   in the description and a screenshot of anything that shows on a screen.
@@ -40,10 +40,35 @@ these are done:
   Spanish, Hungarian, Italian and Russian for the dashboards, and German too for
   Glasshouse Home. `python3 scripts/check-strings.py --missing` lists what is
   left.
-* **Docs updated.** The page for the tab it changes in `docs/dashboard/` says
-  what it does for the owner, without how it works. Findings about LG's
-  software go in `docs/development/TV-RESEARCH.md`, and anything the server
-  changes on the TV in `docs/TV-CHANGES.md`.
+* **Docs updated:** the pages that describe what it changes, as in
+  [Docs](#docs).
+
+## Guidelines
+
+What reviews look for. Unlike the rules, these leave room for judgement: a
+pull request that departs from one says why in its description. This is a
+starting set, added to as reviews turn up more.
+
+### The dashboards' design
+
+* **Reuse what is there.** Buttons, dropdowns, rows, headings and notes use
+  the existing classes (`pill`, `pill-sel`, `prot-row`, `pv-sec`), not new
+  styles for the same thing. A new kind of element is the exception, and is
+  made to match the ones around it.
+* **Keep the design language.** Spacing, type sizes and lines between rows
+  follow the sections around a change. Check it in the dark and light themes
+  and at phone width.
+* **Colour means something.** Green is for the action that turns something on
+  or connects it, and red (`pill bad`) only for removing something. Other
+  buttons stay neutral.
+* **Every press gets an answer.** A button responds when pressed, and every
+  state says what is happening: loading, empty, in progress, failed. A button
+  is never greyed out without a visible reason.
+* **Say what the owner needs, not how it works.** Text on screen leaves out
+  services, timings and other mechanics.
+
+### Code
+
 * **One concern per file.** A server module in `server/lib/` and a dashboard
   script in `server/assets/ui/` each handle one thing. A feature of its own,
   or one that serves more than one tab, gets its own file rather than growing
@@ -51,13 +76,13 @@ these are done:
 * **Small functions.** A function does one job and reads without scrolling.
   One that handles several cases in nested branches or callbacks is split, one
   function per case, with the shared steps in helpers.
-* **The dashboard's own parts.** Buttons, dropdowns, rows and headings use the
-  existing classes (`pill`, `pill-sel`, `prot-row`, `pv-sec`), not new styles
-  for the same thing. Red (`pill bad`) is only for removing something.
-* **Checked on screen.** Spacing matches the sections around it, in the dark
-  and light themes and at phone width. Every button responds when pressed,
-  and every state says what is happening: loading, empty, in progress,
-  failed. A button is never greyed out with no visible reason.
+
+### Docs
+
+* The page for a tab in `docs/dashboard/` says what each part does for the
+  owner, in a sentence or two, without how it works.
+* Findings about LG's software go in `docs/development/TV-RESEARCH.md`, and
+  anything the server changes on the TV in `docs/TV-CHANGES.md`.
 
 ## Code reviews
 

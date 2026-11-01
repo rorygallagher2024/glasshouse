@@ -8,10 +8,11 @@ line of work. Merging is the maintainer's call.
 
 ## Draft until ready
 
-A PR stays a draft until every item in docs/CONTRIBUTING.md's "Ready for
-review" list is done, even when feedback on it is wanted: tried on a real TV
-with the result in its Testing section, translated, docs updated. Mark it
-ready for review then.
+A PR stays a draft until it meets every rule in docs/CONTRIBUTING.md's "Rules
+for a pull request", even when feedback on it is wanted: tried on a real TV
+with the result in its Testing section, checks passing, translated, docs
+updated. Mark it ready for review then. Its "Guidelines" are followed too,
+and a PR that departs from one says why.
 
 ## Docs move with the change
 
