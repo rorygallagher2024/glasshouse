@@ -1616,6 +1616,28 @@ and others' work on webOS 10
 - `com.webos.service.discovery/getRecommendationData` and
   `com.webos.service.prs/listRecommendations` gave no answer within 10 s.
 
+### On webOS 4.10.2 (43UM7100PLB, webOS TV Lite)
+
+- `getAllContents` answers in the same shape under both
+  `com.webos.service.applicationmanager` and `com.webos.applicationManager`:
+  54 cards, from Prime Video and YouTube (16 each), Netflix and Disney+ (11
+  each). Pictures are 390 x 219 to 480 x 270, with an `image_4k` of 960 x 540
+  except on Netflix. Only Netflix's cards carry `onShow`.
+- **LG's Home here is `com.webos.app.fullhome`**, the one running.
+  `PreviewInterfaces.qml` reads `getAllContents`, keeps at most 16 cards an app,
+  and shows only the apps in `contentPreviewMenu`, which `ShelfList.js` takes
+  from the shelf data's `parameter.appId`. `com.webos.app.home` is on the TV too
+  and not running; it asks `getContents` per `launchPointId`.
+- **Opening a card:** LG's Home uses `onClick.launchParam` if set, otherwise the
+  app's `deeplinkingParams` with `$CONTENTID` replaced, and bare `contentTarget`
+  for a stub app. No card here set `launchParam`. Netflix, Prime Video and
+  YouTube's `deeplinkingParams` are `{"contentTarget":"$CONTENTID"}`; Disney+
+  adds `"handledBy":"app"`.
+- Launched with only `contentTarget`, as Glasshouse Home does, a Netflix card
+  opens that title's page and a YouTube card plays that video, after YouTube's
+  account picker where it shows one. The cards are listed with no account signed
+  in to YouTube, Prime Video or Disney+.
+
 ## What the player is doing (webOS 4.4.3, B8; webOS 9.2.2, C2)
 
 - The B8 answers `com.webos.service.acb/getForegroundAppInfo` with an `acbs`

@@ -23,7 +23,7 @@ Confirmed on **58 TVs across 41 series** running **webOS 2.2 through 11** (LG's 
     | LK61          | 2018 | LCD   | 4.4               | 1       |
     | UK63          | 2018 | LCD   | 4.4               | 1       |
     | LM57          | 2019 | LCD   | 4.5               | 1       |
-    | UM71          | 2019 | LCD   | 4.10              | 1       |
+    | UM71          | 2019 | LCD   | 4.10              | 2       |
     | UM73          | 2019 | LCD   | 4.10              | 1       |
     | C9            | 2019 | OLED  | 4.9 – 4.10        | 3       |
     | CX            | 2020 | OLED  | 5.5 – 5.6         | 4       |
@@ -74,6 +74,7 @@ Confirmed on **58 TVs across 41 series** running **webOS 2.2 through 11** (LG's 
     | OLED65C9PLA | 4.10.2       | —        | OLED  | Working fine                                                   |
     | 50UM7300AUE | 4.10.0       | —        | LCD   | Working; hiding system apps did not work                       |
     | 55UM7100PLB | 4.10.2       | 05.40.97 | LCD   | Homebrew Channel, telnet install; privacy controls and preload confirmed |
+    | 43UM7100PLB | 4.10.2       | 05.40.97 | LCD   | Homebrew Channel, telnet install; Glasshouse Home's Recommended row confirmed |
     | OLED77CX6LA | 5.5.0        | 04.50.90 | OLED  | OLED Care, telemetry and MQTT bridge confirmed                 |
     | OLED77CXAUA | 5.6.0        | 04.60.65 | OLED  | Rooted with faultmanager; SSH install; dashboard and telemetry |
     | OLED48CXPUB | 5.6.2        | 04.64.00 | OLED  | Rooted with slopbro; dashboard, telemetry and API .ipk installs |
