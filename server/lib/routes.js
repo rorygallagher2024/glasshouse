@@ -1140,15 +1140,14 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/catalogue') {
       return homeModule.catalogue(function (c) {
-        homeModule.status(function (st) {
-          c.ok = true;
-          c.layout = st.layout;
-          c.enabled = st.enabled;
-          c.supported = st.supported;
-          c.wallpapers = st.wallpapers;
-          c.layoutVersion = homeModule.layoutVersion();
-          reply(c);
-        });
+        var st = homeModule.viewStatus();
+        c.ok = true;
+        c.layout = st.layout;
+        c.enabled = st.enabled;
+        c.supported = st.supported;
+        c.wallpapers = st.wallpapers;
+        c.layoutVersion = homeModule.layoutVersion();
+        reply(c);
       });
     }
     if (pathname === '/api/home/channels') {

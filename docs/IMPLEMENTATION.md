@@ -1446,6 +1446,17 @@ The layout lives in `home.json`, shared by the Home tab and the view's arrange
 mode, and is re-read when the file changes, so `tvwebctl
 restore-glasshouse-home` over SSH is seen by a running server.
 
+The apps, inputs, channels and cards the rows are built from are kept as last
+read in `home-lists.json`. Just after the server starts, every luna call waits
+its turn 150 ms apart (`lib/children.js`), and a view opened then waited 7.9 s
+for its first catalogue on a B8 (webOS 4.4.3). Until each list has been read in
+this run, the saved one is answered at once and read again behind it; a list
+that changed bumps `layoutVersion`, so the view reloads on its next heartbeat.
+The catalogue route takes the layout and wallpapers from `viewStatus()`, which
+makes no luna calls. While Glasshouse Home is on, the boot hook starts the
+server without its 5 s wait: on webOS 4 the Home key opens the view (25 s into
+a B8's boot) before webosbrew runs the hook (41 s).
+
 A row set to Last opened (`sort` in `home.json`) is ordered by
 `home-recent.json`, the time each tile id was last opened. sam's foreground
 app gives apps and HDMI inputs, an input as `hdmiN`, which counts for every
