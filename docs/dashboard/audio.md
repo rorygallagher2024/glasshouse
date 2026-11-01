@@ -16,6 +16,27 @@ only. Pass Through and Bitstream request encoded audio; PCM requests decoded
 audio. As in LG's menu, only the input on screen can have its audio format
 changed.
 
+## Bluetooth audio
+
+![Bluetooth audio on a B8: a paired pair of headphones, with Find devices, Connect and Remove](../screenshots/audio-bluetooth.png)
+
+The headphones and speakers paired with the TV, each with whether it is
+connected. **Connect** or **Disconnect** one, or **Remove** it from the TV; a
+removed device has to be paired again before it can be used.
+
+To add a new one, put it in pairing mode, then press **Find devices**. Devices
+found nearby are listed within a few seconds, and **Pair** adds one and
+switches the sound to it. If a device doesn't connect, the dashboard says so:
+check it is switched on and nearby.
+
+While Bluetooth audio is connected, LG takes Game Optimizer out of the picture
+modes and may switch the picture mode, with its own message on screen. Game
+Optimizer comes back when the device disconnects.
+
+Paired devices can also be connected and disconnected under **Sound** on the
+[Control tab](control.md). The section isn't shown on TVs without Bluetooth
+audio, or in the TV app.
+
 ## Soundbar and receiver
 
 ![G3 audio declarations](../screenshots/audio-g3-formats.png)

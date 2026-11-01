@@ -49,7 +49,10 @@ async function loadAudio(fromPoll) {
     q('audio-readings').hidden = false;
     renderAudio();
     renderAudioSettings(st.lgSettings || []);
-    if (fromPoll !== true && !audioChanging) audioError('');
+    if (fromPoll !== true) {
+      if (!audioChanging) audioError('');
+      loadAudioBluetooth();
+    }
   } catch (e) {
     if (revision === audioRevision) {
       audioState = null;

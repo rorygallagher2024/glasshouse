@@ -91,6 +91,7 @@ var lgSettings = require('./lib/lgsettings');
 var game = require('./lib/game');
 var piccapTransport = require('./lib/piccap');
 var audioCapabilities = require('./lib/audio');
+var btAudio = require('./lib/btaudio');
 var huesyncTransport = require('./lib/huesync');
 var remotebuttons = require('./lib/remotebuttons');
 var logsModule = require('./lib/logs');
@@ -534,6 +535,7 @@ var LIVE_STALE = {
 
 lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache });
 audioCapabilities.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache, hdmiReceiverMap: telemetry.hdmiReceiverMap });
+btAudio.init({ luna: luna, clearLunaCache: clearLunaCache });
 game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
 privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, watchNetwork: true });
 oled.init({ luna: luna, config: CONFIG });
@@ -948,6 +950,7 @@ routes.init({
   config: CONFIG,
   inputBar: inputBar,
   audio: audioCapabilities,
+  btAudio: btAudio,
   clock: clockFormat,
   piccapStatus: piccap.status,
   huesyncStatus: huesync.status,
