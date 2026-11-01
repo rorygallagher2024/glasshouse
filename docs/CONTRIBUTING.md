@@ -27,6 +27,38 @@ Focus on clarity and readability. Clearly state what changed and why, keeping pu
 
 If you are using AI coding assistants or automated agents, ensure they adhere to the repository conventions in `CLAUDE.md` (symlinked as `AGENTS.md`).
 
+## Ready for review
+
+Open a pull request as a draft, and mark it ready for review only when all of
+these are done:
+
+* **Tried on a real TV,** with a [Testing section](#testing-details-in-the-pull-request)
+  in the description and a screenshot of anything that shows on a screen.
+* **All checks pass:** `scripts/check-all.sh`.
+* **Translated.** Every new or changed string has its translation in each
+  language file in `server/assets/i18n/` that covers the page it is on: Arabic,
+  Spanish, Hungarian, Italian and Russian for the dashboards, and German too for
+  Glasshouse Home. `python3 scripts/check-strings.py --missing` lists what is
+  left.
+* **Docs updated.** The page for the tab it changes in `docs/dashboard/` says
+  what it does for the owner, without how it works. Findings about LG's
+  software go in `docs/development/TV-RESEARCH.md`, and anything the server
+  changes on the TV in `docs/TV-CHANGES.md`.
+* **One concern per file.** A server module in `server/lib/` and a dashboard
+  script in `server/assets/ui/` each handle one thing. A feature of its own,
+  or one that serves more than one tab, gets its own file rather than growing
+  another.
+* **Small functions.** A function does one job and reads without scrolling.
+  One that handles several cases in nested branches or callbacks is split, one
+  function per case, with the shared steps in helpers.
+* **The dashboard's own parts.** Buttons, dropdowns, rows and headings use the
+  existing classes (`pill`, `pill-sel`, `prot-row`, `pv-sec`), not new styles
+  for the same thing. Red (`pill bad`) is only for removing something.
+* **Checked on screen.** Spacing matches the sections around it, in the dark
+  and light themes and at phone width. Every button responds when pressed,
+  and every state says what is happening: loading, empty, in progress,
+  failed. A button is never greyed out with no visible reason.
+
 ## Code reviews
 
 We prefer code review comments to follow the [Conventional Comments](https://conventionalcomments.org/) standard (e.g. `praise:`, `suggestion:`, `issue:`, `nitpick:`, `question:`). This keeps feedback constructive, actionable, and makes it clear whether a comment is blocking or an optional suggestion. Refer to [conventionalcomments.org](https://conventionalcomments.org/) for the complete specification and examples.
