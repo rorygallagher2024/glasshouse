@@ -23,6 +23,76 @@ var SERVICE_MAP = [
 // Learned on first call: which service name the TV actually uses.
 var _serviceName = {};
 
+/*
+ * ls-hubd routes only services named in its service files. On webOS 3.9
+ * (a 43UJ750V) a call to an unlisted one, such as com.webos.service.audio,
+ * gets no answer until luna-send's 2 s wait runs out, and the TV logs
+ * LSHUB_NOT_LSTED as an error each time; readings polled every few seconds
+ * filled its log (#1112). A failed call to an unlisted LG service makes later
+ * calls to it fail at once, for 10 minutes in case the list read was wrong.
+ * Homebrew services are left out: they are listed when installed.
+ */
+var SERVICE_DIRS = (process.env.TVWEB_LUNA_SERVICE_DIRS ||
+  '/usr/share/luna-service2/services.d;/usr/share/dbus-1/system-services;' +
+  '/mnt/otycabi/usr/share/luna-service2/services.d;/mnt/otncabi/usr/share/luna-service2/services.d').split(';');
+// Off a TV, such as a Linux test runner, the D-Bus folder lists other services.
+var SERVICE_DIRS_APPLY = !!process.env.TVWEB_LUNA_SERVICE_DIRS || fs.existsSync(LUNA_SEND);
+var ABSENT_MS = 10 * 60 * 1000;
+var listedServices = null;
+var listedCount = 0;
+var absentUntil = {};
+
+function readListedServices() {
+  listedServices = {};
+  SERVICE_DIRS.forEach(function (dir) {
+    var files;
+    try { files = fs.readdirSync(dir); } catch (e) { return; }
+    files.forEach(function (file) {
+      if (!/\.service$/.test(file)) return;
+      var text;
+      try { text = fs.readFileSync(dir + '/' + file, 'utf8'); } catch (e) { return; }
+      var name = /^Name=(.*)$/m.exec(text);
+      if (!name) return;
+      name[1].split(';').forEach(function (service) {
+        service = service.trim();
+        if (service && !listedServices[service]) {
+          listedServices[service] = true;
+          listedCount++;
+        }
+      });
+    });
+  });
+}
+
+function isUnlistedLgService(service) {
+  if (!/^com\.(webos|palm|lge)\./.test(service)) return false;
+  if (!SERVICE_DIRS_APPLY) return false;
+  if (!listedServices) readListedServices();
+  return listedCount > 0 && !listedServices[service];
+}
+
+function noteFailure(uri, parsed) {
+  if (parsed && parsed.returnValue !== false) return;
+  // A renamed service is never skipped: its other name is tried instead.
+  if (findServiceMapping(uri)) return;
+  var service = uri.split('/')[0];
+  if (!isUnlistedLgService(service)) return;
+  if (!(service in absentUntil)) console.log('luna: ' + service + ' is not on this TV; calls to it are skipped');
+  absentUntil[service] = monotonicMs() + ABSENT_MS;
+}
+
+/*
+ * No answer under the newer name, which the TV does not list, where it lists
+ * the legacy one: a 55SJ800V-ZB (webOS 3.9.3) answers nothing for an unlisted
+ * service rather than "Service does not exist" (#1137).
+ */
+function legacyOnlyListed(uri, parsed) {
+  var serviceMap = findServiceMapping(uri);
+  if (!serviceMap || _serviceName[serviceMap.newer] || parsed) return false;
+  if (!isUnlistedLgService(serviceMap.newer.slice(0, -1))) return false;
+  return !!(listedServices && listedServices[serviceMap.legacy.slice(0, -1)]);
+}
+
 function findServiceMapping(uri) {
   for (var i = 0; i < SERVICE_MAP.length; i++) {
     if (uri.indexOf(SERVICE_MAP[i].newer) === 0) return SERVICE_MAP[i];
@@ -173,7 +243,7 @@ function runNow(job) {
     // Service fallback: the first call that gets "Service does not exist"
     // switches to the legacy name and retries transparently.
     var rawUri = job.args[job.args.length - 2].replace('luna://', '');
-    if (isServiceNotFound(rawUri, parsed) && !job.serviceRetried) {
+    if ((isServiceNotFound(rawUri, parsed) || legacyOnlyListed(rawUri, parsed)) && !job.serviceRetried) {
       var serviceMap = findServiceMapping(rawUri);
       _serviceName[serviceMap.newer] = serviceMap.legacy;
       var oldUri = serviceMap.legacy + rawUri.slice(serviceMap.newer.length);
@@ -184,6 +254,7 @@ function runNow(job) {
       return run(job);
     }
     handleServiceResult(rawUri, parsed);
+    noteFailure(rawUri, parsed);
 
     // When the child that answered started and ended, on the monotonic clock.
     if (job.cb) job.cb(parsed, String(stdout || ''), { startedAt: startedAt, endedAt: endedAt });
@@ -192,6 +263,14 @@ function runNow(job) {
 
 function queueCall(uri, payload, cb, appId, urgent) {
   uri = resolveUri(uri);
+  var service = uri.split('/')[0];
+  if (absentUntil[service] > monotonicMs()) {
+    var reply = { returnValue: false, errorCode: -1, errorText: 'Service does not exist: ' + service + '.' };
+    var now = monotonicMs();
+    return process.nextTick(function () {
+      if (cb) cb(reply, JSON.stringify(reply), { startedAt: now, endedAt: now });
+    });
+  }
   var args = appId ? ['-a', appId] : [];
   args = args.concat(['-n', '1', '-w', '2000', '-f', 'luna://' + uri, JSON.stringify(payload || {})]);
   enqueue({ args: args, cb: cb, urgent: urgent });

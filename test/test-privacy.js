@@ -121,6 +121,36 @@ test("they are carried over when it is, so this table does not undo it", functio
 
 var AMAZOFF = ['127.0.0.1 cloudfront.xp-assets.aiv-cdn.net', '::1 cloudfront.xp-assets.aiv-cdn.net'];
 
+test('local lookups name every address on the TV\'s networks as itself, but not the TV', function () {
+  var LOCAL = '/var/lib/tvweb/local_lookups';
+  privacy._setInterfaces(function () {
+    return {
+      lo: [{ family: 'IPv4', address: '127.0.0.1', netmask: '255.0.0.0', internal: true }],
+      wlan0: [{ family: 'IPv4', address: '192.168.2.128', netmask: '255.255.255.0', internal: false },
+              { family: 'IPv6', address: 'fe80::1', netmask: 'ffff:ffff:ffff:ffff::', internal: false }],
+      eth1: [{ family: 4, address: '10.0.0.9', netmask: '255.255.0.0', internal: false }],
+      wan: [{ family: 'IPv4', address: '81.2.3.4', netmask: '255.255.255.0', internal: false }]
+    };
+  });
+  try {
+    assert.strictEqual(privacy.adBlockHostsTable('ads').indexOf('192.168.2.1\t'), -1, 'nothing while it is off');
+    mockEnv.files[LOCAL] = '';
+    var addrs = privacy.localLookupAddresses();
+    assert.strictEqual(addrs.filter(function (a) { return /^192\.168\.2\./.test(a); }).length, 253, '1 to 254, less the TV');
+    assert.strictEqual(addrs.indexOf('192.168.2.128'), -1, 'the server looks up the TV\'s own name');
+    assert.ok(addrs.indexOf('10.0.0.1') !== -1 && addrs.indexOf('10.0.0.254') !== -1, 'a wider network covers the /24 around the TV');
+    assert.strictEqual(addrs.indexOf('10.0.1.1'), -1);
+    assert.ok(!addrs.some(function (a) { return /^(81|127)\./.test(a); }), 'public and loopback addresses are left alone');
+    var table = privacy.adBlockHostsTable('off');
+    assert.ok(table.indexOf('\n192.168.2.1\t192.168.2.1\n') !== -1);
+    assert.deepEqual(privacy.foreignHostsLines(table + '192.168.2.5\tnas\n'), ['192.168.2.5\tnas'],
+      'its own lines are not carried over as another tool\'s, a real name is');
+  } finally {
+    delete mockEnv.files[LOCAL];
+    privacy._setInterfaces(function () { return {}; });
+  }
+});
+
 test("other tools' lines are told apart from the table's own and the Homebrew Channel's", function () {
   var hosts = privacy.adBlockHostsTable('ads') + '\n# webosbrew startup script\n' +
     '127.0.0.1 snu.lge.com su-dev.lge.com su.lge.com su-ssl.lge.com\n::1 snu.lge.com su-dev.lge.com su.lge.com su-ssl.lge.com\n' +

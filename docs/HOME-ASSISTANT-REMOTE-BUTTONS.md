@@ -1,6 +1,6 @@
 # Remote Button Events
 
-Capture presses of the four colored buttons (**Red**, **Green**, **Yellow**, and **Blue**) and the streaming buttons (**Netflix**, **Prime Video**, **Disney+**, **LG Channels**, **Rakuten TV** and **Alexa**) on an LG Magic Remote or IR remote to trigger automations in Home Assistant.
+Capture presses of the four colored buttons (**Red**, **Green**, **Yellow**, and **Blue**), the streaming buttons (**Netflix**, **Prime Video**, **Disney+**, **LG Channels**, **Rakuten TV**, **Movies** and **Alexa**), the **Google Assistant** button and the **microphone** on an LG Magic Remote or IR remote to trigger automations in Home Assistant.
 
 ---
 
@@ -10,7 +10,7 @@ Most LG remotes include dedicated colored buttons (traditionally used for telete
 
 Because it is exposed as an `event` entity rather than a `sensor`, every press fires an event in Home Assistant—even if you press the same button multiple times in succession.
 
-A streaming button still opens its app as LG set it. To use one for an automation only, set it to **None** under [Remote keys](dashboard/apps.md#remote-keys) on the Apps tab: the press then opens nothing on the TV and still reaches Home Assistant. Which streaming buttons a remote has depends on the model and region. They have been tried on a C4 with webOS 10.3.1; the Google Assistant button is not reported.
+Presses always reach Home Assistant, whatever the button is set to under [Remote keys](dashboard/apps.md#remote-keys) on the Apps tab, and the button still does what it is set to there: a streaming button opens its app, and the microphone starts voice control. To stop the TV acting on a button as well, set it to **Home Assistant** (or **Nothing**, which does the same): the press then does nothing on the TV and still reaches Home Assistant. The choice is offered for the buttons listed here, while MQTT is on. Which buttons a remote has depends on the model and region. The streaming buttons have been tried on a C4 with webOS 10.3.1, and the microphone and Google Assistant on a C2's MR22 remote with webOS 9.2.2.
 
 <div style="text-align: center; margin: 1.5rem 0;">
   <iframe width="315" height="560" src="https://www.youtube.com/embed/G1o166aweb0" title="Remote button events demonstration" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="max-width: 100%; border-radius: 8px;"></iframe>
@@ -28,7 +28,7 @@ A streaming button still opens its app as LG set it. To use one for an automatio
 
 | Entity | Type | Event Types | Topic |
 |---|---|---|---|
-| `event.lg_tv_remote_button` | `event` | `red`, `green`, `yellow`, `blue`, `netflix`, `amazon` (Prime Video), `disneyplus`, `lgchannels`, `rakutentv`, `alexa` | `lgtv/events/button` |
+| `event.lg_tv_remote_button` | `event` | `red`, `green`, `yellow`, `blue`, `netflix`, `amazon` (Prime Video), `disneyplus`, `lgchannels`, `rakutentv`, `movies`, `alexa`, `googleassistant`, `voice` (the microphone) | `lgtv/events/button` |
 
 When a button is pressed, the server publishes a JSON payload to the event topic:
 
@@ -47,7 +47,7 @@ When a button is pressed, the server publishes a JSON payload to the event topic
 
 1. Go to **Settings** → **Automations & Scenes** → **Create Automation**.
 2. Under **When** (Triggers), choose **Entity** → **State**, select entity **Remote Button** (`event.lg_tv_remote_button`), and leave the attribute and the from and to states empty, so every press triggers it.
-3. Under **And if** (Conditions), add **Template** with `{{ trigger.to_state.attributes.event_type == 'red' }}`, using the button wanted: a color (`red`, `green`, `yellow`, `blue`) or a streaming button (`netflix`, `amazon`, `disneyplus`, `lgchannels`, `rakutentv`, `alexa`).
+3. Under **And if** (Conditions), add **Template** with `{{ trigger.to_state.attributes.event_type == 'red' }}`, using the button wanted: a color (`red`, `green`, `yellow`, `blue`), a streaming button (`netflix`, `amazon`, `disneyplus`, `lgchannels`, `rakutentv`, `movies`, `alexa`), `googleassistant` or the microphone, `voice`.
 4. Under **Then do** (Actions), add any action you want (e.g. toggle lights, run a script, set a scene).
 
 The button is checked in a condition rather than in the trigger's **Attribute** and **To** fields: a trigger on the attribute fires only when it changes, so pressing the same button twice in a row would run the automation once.
@@ -104,7 +104,32 @@ action:
 mode: restart
 ```
 
-#### Example 3: Handling All Four Buttons in a Single Automation
+#### Example 3: The Microphone Toggles the Ambient Light
+
+Set the microphone to **Home Assistant** under Remote keys too, so a press no longer starts LG's voice control as well.
+
+```yaml
+alias: "TV Remote: microphone toggles the ambient light"
+trigger:
+  - platform: state
+    entity_id: event.lg_tv_remote_button
+    not_from:
+      - unknown
+      - unavailable
+    not_to:
+      - unknown
+      - unavailable
+condition:
+  - condition: template
+    value_template: "{{ trigger.to_state.attributes.event_type == 'voice' }}"
+action:
+  - action: light.toggle
+    target:
+      entity_id: light.tv_ambient
+mode: restart
+```
+
+#### Example 4: Handling All Four Buttons in a Single Automation
 
 You can handle all four colored buttons within a single automation using a `choose` action:
 

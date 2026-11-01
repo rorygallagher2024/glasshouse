@@ -281,4 +281,53 @@ step(function () {
   }));
 });
 
+// 11. webOS 5 has neither the nudge nor the block and release: sam is
+//     restarted, the app in front opened again afterwards.
+step(function () {
+  var tv = fakeTV(null, { hasBlock: false });
+  var commands = [];
+  tv.luna = (function (inner) {
+    return function (uri, payload, cb) {
+      if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'netflix' });
+      if (uri === 'com.webos.applicationManager/launch') { commands.push('launch ' + payload.id); return cb({ returnValue: true }); }
+      inner(uri, payload, cb);
+    };
+  })(tv.luna);
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5,
+                   exec: function (file, args, opts, cb) { commands.push(args[1]); process.nextTick(function () { cb(null); }); } });
+  var asked = 0;
+  samrescan.restart(function (done) { asked++; done(asked >= 2); }, checked(function (ok) {
+    assert.strictEqual(ok, true);
+    assert.strictEqual(commands.length, 3, 'the restart, its dependents started again, then the app in front: ' + commands.join(' | '));
+    assert.ok(commands[0].indexOf('sam.service') !== -1, 'the restart names the unit');
+    assert.ok(commands[1].indexOf('is-failed') !== -1, 'a dependent unit left failed is started again');
+    assert.strictEqual(commands[2], 'launch netflix');
+    assert.strictEqual(asked, 2, 'asked until sam had it');
+    console.log('  \u2713 with neither nudge nor block and release, sam is restarted and the app in front opened again');
+    next();
+  }));
+});
+
+// 12. sam never comes back, or Home was in front: nothing is launched, and the
+//     caller is told the restart did not take.
+step(function () {
+  var tv = fakeTV(null);
+  var launches = [];
+  tv.luna = (function (inner) {
+    return function (uri, payload, cb) {
+      if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.home' });
+      if (uri === 'com.webos.applicationManager/launch') { launches.push(payload.id); return cb({ returnValue: true }); }
+      inner(uri, payload, cb);
+    };
+  })(tv.luna);
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5,
+                   exec: function (file, args, opts, cb) { process.nextTick(function () { cb(null); }); } });
+  samrescan.restart(function (done) { done(false); }, checked(function (ok) {
+    assert.strictEqual(ok, false, 'not left thinking sam came back');
+    assert.deepEqual(launches, [], 'Home is not launched again');
+    console.log('  \u2713 a restart sam does not come back from is reported, and Home in front is not launched again');
+    next();
+  }));
+});
+
 next();

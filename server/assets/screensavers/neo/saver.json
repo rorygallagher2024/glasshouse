@@ -6,6 +6,7 @@
     "es": "Neo",
     "hu": "Neo",
     "it": "Neo",
+    "pt": "Neo",
     "ru": "Neo"
   },
   "description": {
@@ -13,6 +14,7 @@
     "es": "Columnas de glifos que caen, con colores que dan la vuelta a la rueda cada minuto.",
     "hu": "Hulló jelek oszlopai, amelyek színe percenként körbejár a színkörön.",
     "it": "Colonne di glifi che cadono, con i colori che fanno il giro della ruota ogni minuto.",
+    "pt": "Colunas de glifos a cair, com cores que percorrem a roda cromática a cada minuto.",
     "ru": "Столбцы падающих символов, цвет которых каждую минуту проходит по кругу."
   },
   "license": "MIT",

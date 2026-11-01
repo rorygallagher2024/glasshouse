@@ -8,6 +8,7 @@ var msg = require('./say').msg;
 // Screen saver names come from the registry, so a new one reaches Home
 // Assistant without a second list to keep in step (Bokeh was missed once).
 var screensavers = require('./screensavers');
+var remotebuttons = require('./remotebuttons');
 var topics = require('./topics');
 var names = require('./names');
 var hexColor = require('./util').hexColor;
@@ -1391,8 +1392,8 @@ function buildEntities(opts) {
         payload: {
           name: 'Remote Button',
           state_topic: topic.eventsButton,
-          event_types: ['red', 'green', 'yellow', 'blue', 'netflix', 'amazon', 'disneyplus',
-            'lgchannels', 'rakutentv', 'alexa'],
+          // Home Assistant ignores an event type discovery does not name.
+          event_types: remotebuttons.buttonNames(),
           icon: 'mdi:remote'
         }
       },

@@ -23,7 +23,11 @@ BUTTON_CODES = {
     1042: 'disneyplus',
     1043: 'lgchannels',
     1044: 'rakutentv',
-    1086: 'alexa'
+    1086: 'alexa',
+    # The microphone, Movies and Google Assistant (remotebuttons.js).
+    428: 'voice',
+    1083: 'movies',
+    1117: 'googleassistant'
 }
 
 # The Home button, reported going down and up: Glasshouse Home opens LG's
@@ -40,7 +44,10 @@ QT_KEY_CODES = {
     18874396: 'disneyplus',
     18874397: 'lgchannels',
     18874426: 'rakutentv',
-    18874416: 'alexa'
+    18874416: 'alexa',
+    18874420: 'voice',
+    18874413: 'movies',
+    18874398: 'googleassistant'
 }
 
 running = True

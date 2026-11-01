@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.130.0';
+var TVWEB_VERSION = '0.137.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -90,6 +90,7 @@ var lgSettings = require('./lib/lgsettings');
 var game = require('./lib/game');
 var piccapTransport = require('./lib/piccap');
 var audioCapabilities = require('./lib/audio');
+var btAudio = require('./lib/btaudio');
 var huesyncTransport = require('./lib/huesync');
 var remotebuttons = require('./lib/remotebuttons');
 var logsModule = require('./lib/logs');
@@ -532,9 +533,10 @@ var LIVE_STALE = {
 };
 
 lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache });
-audioCapabilities.init({ luna: luna, lunaCached: lunaCached, hdmiReceiverMap: telemetry.hdmiReceiverMap });
+audioCapabilities.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache, hdmiReceiverMap: telemetry.hdmiReceiverMap });
+btAudio.init({ luna: luna, clearLunaCache: clearLunaCache });
 game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
-privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule });
+privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, watchNetwork: true });
 oled.init({ luna: luna, config: CONFIG });
 samrescan.init({ luna: luna });
 appsModule.init({ luna: luna, config: CONFIG });
@@ -542,7 +544,8 @@ iconServer.init({ config: CONFIG, apps: appsModule });
 servicesModule.init({ stateDir: __dirname });
 preload.init({ luna: luna, stateDir: __dirname });
 quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
-remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname });
+remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
+  homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); } });
 homeScreen.init({ luna: luna, config: CONFIG, inputNames: telemetry.inputNameMap, stateDir: __dirname, webosVersion: telemetry.detectWebosVersion() });
 // webOS 10's layout is an overlay mount, gone after a restart of the TV.
 homeScreen.reapply();
@@ -678,6 +681,7 @@ controls.init({
   backup: backup,
   home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
+  deviceNameChanged: function (name) { syslogForwarder.setHostname(name); },
   tvApp: tvApp,
   restartSelf: restartSelf,
   updateSummary: routes.updateSummary,
@@ -929,9 +933,14 @@ routes.init({
   calibration: calibration,
   config: CONFIG,
   audio: audioCapabilities,
+  btAudio: btAudio,
   clock: clockFormat,
   piccapStatus: piccap.status,
   huesyncStatus: huesync.status,
+  keyboardUp: function () {
+    var kb = liveState.state.snapshot().keyboard;
+    return kb && typeof kb.keyboard_visible === 'boolean' ? kb.keyboard_visible : null;
+  },
   repo: repo,
   installer: installer,
   prometheus: prometheus,
@@ -1202,6 +1211,8 @@ function setupHomeAssistant() {
   }
 
   function publishDiscovery() {
+    // The Server tab renames the TV without a restart.
+    devInfo.name = (CONFIG.device && CONFIG.device.name) || devInfo.name;
     ha.clearRetired(function (topic, payload, retain) {
       mqttClient.publish(topic, payload, retain);
     }, discPfx, devId);
@@ -1708,6 +1719,14 @@ function setupHomeAssistant() {
       return;
     }
 
+    // notify/<type>, the text optionally opening with ":icon:".
+    if (action === 'notify' || action.indexOf('notify/') === 0) {
+      doControl('toast', { type: action.substring(7) || 'standard', text: val }, function (r) {
+        if (!r || !r.ok) console.error('mqtt: ' + action + ' failed: ' + ((r && r.error) || 'unknown error'));
+      });
+      return;
+    }
+
     if (action === 'update') {
       // Home Assistant's update entity sends `install`. Anything else on this
       // topic is read as a request to look rather than to install, so an
@@ -1848,7 +1867,10 @@ function startGlasshouseHome() {
     webosVersion: telemetry.detectWebosVersion(),
     port: CONFIG.port,
     samrescan: samrescan,
-    // Only to remove the separate app earlier builds installed.
+    injectKey: controls.injectKey,
+    // Which ports have something plugged in, where eim does not say (webOS 4).
+    hdmiInputs: telemetry.hdmiInputs,
+    // The standalone app on webOS 4, and removing the one earlier builds installed elsewhere.
     installApp: function (action, cb) { tvApp(action, cb, 'home-app'); },
     setHomeKey: remoteKeys.setHome,
     homeKeyApp: remoteKeys.homeApp,

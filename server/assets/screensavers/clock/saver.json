@@ -6,6 +6,7 @@
     "es": "Reloj",
     "hu": "Óra",
     "it": "Orologio",
+    "pt": "Relógio",
     "ru": "Часы"
   },
   "description": {
@@ -13,6 +14,7 @@
     "es": "Un reloj digital sobre negro, que cambia de posición cada minuto.",
     "hu": "Digitális óra fekete háttéren, amely percenként új helyre kerül.",
     "it": "Un orologio digitale sul nero, che cambia posizione ogni minuto.",
+    "pt": "Um relógio digital sobre fundo preto, que muda de posição a cada minuto.",
     "ru": "Цифровые часы на чёрном фоне, которые каждую минуту перемещаются на новое место."
   },
   "license": "MIT",

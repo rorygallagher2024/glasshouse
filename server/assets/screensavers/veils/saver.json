@@ -6,6 +6,7 @@
     "es": "Velos",
     "hu": "Fátylak",
     "it": "Veli",
+    "pt": "Véus",
     "ru": "Вуали"
   },
   "description": {
@@ -13,6 +14,7 @@
     "es": "Cintas de luz translúcidas que ondulan despacio sobre negro.",
     "hu": "Áttetsző fényszalagok hullámzanak lassan a fekete háttéren.",
     "it": "Nastri di luce traslucidi che ondeggiano lentamente sul nero.",
+    "pt": "Fitas de luz translúcidas que ondulam lentamente sobre fundo preto.",
     "ru": "Полупрозрачные ленты света медленно колышутся на чёрном фоне."
   },
   "license": "MIT",

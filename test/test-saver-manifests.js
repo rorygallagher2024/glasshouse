@@ -171,7 +171,37 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   console.log('  ✓ the pigs Glasshouse installs as an example read as an added screen saver');
 })();
 
-// 10. An installed Homebrew Channel app's screen saver is listed, from its app,
+// 10. Clock with date is a saver of its own, following the TV's 12/24-hour setting as Clock does
+(function testClockDate() {
+  screensavers.init({
+    luna: env.mockLuna,
+    config: { port: 8080, allowControl: true },
+    saverRoots: [{ dir: BUILTIN, builtin: true }]
+  });
+  var ids = screensavers.catalog().map(function (e) { return e.id; });
+  assert.strictEqual(ids.indexOf('clock-date'), ids.indexOf('clock') + 1, 'listed beside Clock');
+
+  var clockDate = byId(screensavers.screensaverList().modes, 'clock-date');
+  assert.ok(clockDate, 'clock-date listed');
+  assert.strictEqual(clockDate.available, true, clockDate.note);
+  assert.strictEqual(clockDate.builtin, true);
+  assert.strictEqual(clockDate.label, 'Clock with date');
+  assert.deepEqual(clockDate.description, 'A digital clock with seconds, the weekday and date on black, moving to a new position every minute.');
+  assert.ok(clockDate.description.indexOf('seconds') !== -1, 'seconds are described');
+
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'clock-date';
+  env.files[path.join(APP, '.tvweb-brightness')] = 'dim';
+  screensavers.restageScreensaver();
+  var main = env.files[path.join(STAGE, 'qml', 'main.qml')];
+  assert.ok(main.indexOf('property int level: 0') !== -1, 'level filled in');
+  assert.strictEqual(main.indexOf('__TVWEB_'), -1, 'no placeholder left');
+  assert.ok(/property bool hour12: (true|false)/.test(main), 'the TV\'s 12/24-hour setting filled in');
+  assert.ok(main.indexOf('Qt.formatDate') !== -1, 'the day and date are drawn');
+  assert.ok(main.indexOf('getSeconds') !== -1, 'the seconds are drawn');
+  console.log('  ✓ Clock with date stages as its own saver, with the TV\'s 12/24-hour setting');
+})();
+
+// 11. An installed Homebrew Channel app's screen saver is listed, from its app,
 // and staged as its QML alone: it loads the rest from its own folder (#1067)
 (function testAppSavers() {
   var APPS = path.join(__dirname, 'fixtures', 'saver-apps');

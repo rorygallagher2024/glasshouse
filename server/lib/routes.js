@@ -64,6 +64,8 @@ var privacyModule = null;
 var lgSettingsModule = null;
 /** @type {typeof import('./audio')} */
 var audioModule = null;
+/** @type {typeof import('./btaudio')} */
+var btAudioModule = null;
 /** @type {typeof import('./game')} */
 var gameModule = null;
 /** @type {typeof import('./apps')} */
@@ -121,6 +123,8 @@ var lunaFn = null;
 var getMqttStatusFn = null;
 var piccapStatusFn = function (cb) { cb(null); };
 var huesyncStatusFn = function (cb) { cb(null); };
+// Whether LG's on-screen keyboard is up: true, false, or null where the TV does not say.
+var keyboardUpFn = function () { return null; };
 var appsChangedFn = function () {};
 var versionStr = '';
 // With the commit of a git build: what a person reads, and what tells one
@@ -150,6 +154,7 @@ var HANDOFF_MS = 10 * 60 * 1000;
 
 var UI_HTML = null;
 var UI_HTML_GZ = null;
+var UI_ETAG = null;
 var UI_MISSING = 'ui.html';   // the file named by the missing-assets page
 var ASSET_CACHE = {};
 
@@ -284,7 +289,8 @@ function validateSettings(j) {
    */
   out.device.id = trimmedString(d.id);
   if (!/^[a-z0-9_]{1,64}$/.test(out.device.id)) e.push('device id must be 1-64 characters of a-z, 0-9 or _');
-  out.device.name = trimmedString(d.name);
+  // The Server tab sets the name; a form without it keeps the one saved.
+  if (typeof d.name === 'string') out.device.name = trimmedString(d.name);
 
   // Saved with the MQTT form, whose Launch App select lists the icons' addresses.
   if (j && typeof j.iconServer === 'boolean') out.iconServer = j.iconServer;
@@ -598,6 +604,9 @@ function loadUI() {
       return;
     }
     UI_HTML = page;
+    // From the content, not the version: a deploy of uncommitted changes keeps
+    // the version, and browsers would go on showing the page before them.
+    UI_ETAG = '"' + crypto.createHash('sha1').update(page, 'utf8').digest('hex').slice(0, 16) + '"';
     /*
      * On this thread rather than zlib's worker pool. Node 0.12's process
      * spawning can deadlock (see lunaCached), and startup launches luna-send
@@ -1141,14 +1150,14 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/catalogue') {
       return homeModule.catalogue(function (c) {
-        homeModule.status(function (st) {
-          c.ok = true;
-          c.layout = st.layout;
-          c.enabled = st.enabled;
-          c.wallpapers = st.wallpapers;
-          c.layoutVersion = homeModule.layoutVersion();
-          reply(c);
-        });
+        var st = homeModule.viewStatus();
+        c.ok = true;
+        c.layout = st.layout;
+        c.enabled = st.enabled;
+        c.supported = st.supported;
+        c.wallpapers = st.wallpapers;
+        c.layoutVersion = homeModule.layoutVersion();
+        reply(c);
       });
     }
     if (pathname === '/api/home/channels') {
@@ -1160,6 +1169,7 @@ function handleHomeRoute(req, res, u, pathname) {
       return homePictureModule.picture(String(u.query && u.query.kind || ''), Number(u.query && u.query.port), reply,
         String(u.query && u.query.app || ''));
     }
+    if (pathname === '/api/home/signal') return homePictureModule.signal(Number(u.query && u.query.port), reply);
     if (pathname === '/api/home/wallpaper') {
       var wallpaper = homeModule.wallpaperPath(String(u.query && u.query.slot || ''));
       if (!wallpaper) return send(res, 404, JSON.stringify({ ok: false, error: 'no wallpaper uploaded' }));
@@ -1197,11 +1207,12 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/beat') {
       if (!postGuard(req, res, 'application/json', false)) return;
-      req.resume();
-      // The hour cycle the view's clock draws, which follows the TV's setting.
-      var beatBody = homeModule.beat();
-      beatBody.clockHour12 = clockHour12();
-      return reply(beatBody);
+      return readJsonBody(req, res, function (body) {
+        // The hour cycle the view's clock draws, which follows the TV's setting.
+        var beatBody = homeModule.beat(body);
+        beatBody.clockHour12 = clockHour12();
+        reply(beatBody);
+      });
     }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
@@ -1232,19 +1243,26 @@ function handleRequest(req, res) {
 
   if (pathname === '/' || pathname === '/index.html') {
     if (UI_HTML) {
-      var enc = req.headers['accept-encoding'] || '';
-      if (UI_HTML_GZ && enc.indexOf('gzip') !== -1) {
-        res.writeHead(200, {
-          'Content-Type': 'text/html; charset=utf-8',
-          'Content-Encoding': 'gzip',
-          'Content-Length': UI_HTML_GZ.length,
-          'Cache-Control': 'no-store',
-          'X-Content-Type-Options': 'nosniff',
-          'Referrer-Policy': 'no-referrer'
-        });
-        return res.end(UI_HTML_GZ);
+      var gzip = !!UI_HTML_GZ && (req.headers['accept-encoding'] || '').indexOf('gzip') !== -1;
+      // no-cache, not no-store: the browser keeps the page and asks each
+      // time, and an unchanged one comes back as a 304 with no body.
+      var uiHeaders = {
+        'Cache-Control': 'no-cache',
+        'ETag': UI_ETAG,
+        'Vary': 'Accept-Encoding'
+      };
+      if (req.headers['if-none-match'] === UI_ETAG) {
+        res.writeHead(304, uiHeaders);
+        return res.end();
       }
-      return send(res, 200, UI_HTML, 'text/html; charset=utf-8');
+      var uiBody = gzip ? UI_HTML_GZ : UI_HTML;
+      uiHeaders['Content-Type'] = 'text/html; charset=utf-8';
+      uiHeaders['Content-Length'] = gzip ? UI_HTML_GZ.length : Buffer.byteLength(UI_HTML);
+      if (gzip) uiHeaders['Content-Encoding'] = 'gzip';
+      uiHeaders['X-Content-Type-Options'] = 'nosniff';
+      uiHeaders['Referrer-Policy'] = 'no-referrer';
+      res.writeHead(200, uiHeaders);
+      return res.end(uiBody);
     }
     // 503, not 200: the dashboard is genuinely unavailable, and a monitor
     // polling this should see that rather than a page that says so in prose.
@@ -1324,6 +1342,34 @@ function handleRequest(req, res) {
           r.lgSettings = ls.rows;
           r.inputs = telemetryModule.inputNameMap;
           send(res, 200, JSON.stringify(r));
+        });
+      });
+    }
+    if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
+    if (!config.allowControl) return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    if (!hostAllowed(req)) return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.audio.hostRefused', 'Use the TV address to change the DTS override.') }));
+    return readJsonBody(req, res, function (body) {
+      audioModule.setOverride(body.enabled, function (r) { send(res, r.ok ? 200 : 400, JSON.stringify(r)); });
+    });
+  }
+
+  // Paired Bluetooth audio devices: read when the Audio tab opens or is
+  // refreshed, and connected or disconnected on request. Never polled.
+  if (pathname === '/api/audio/bluetooth') {
+    if (!btAudioModule) return send(res, 503, JSON.stringify({ ok: false, error: 'bluetooth audio module unavailable' }));
+    if (req.method === 'GET') {
+      return btAudioModule.list(function (r) {
+        r.writable = !!config.allowControl;
+        send(res, r.ok ? 200 : 502, JSON.stringify(r));
+      });
+    }
+    if (req.method === 'POST') {
+      if (!config.allowControl) {
+        return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+      }
+      return readJsonBody(req, res, function (body) {
+        btAudioModule.act(body.action, body.address, function (status, r) {
+          send(res, status, JSON.stringify(r));
         });
       });
     }
@@ -1789,6 +1835,18 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/homescreen/banner' && req.method === 'POST') {
+    if (!config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    if (!postGuard(req, res, 'image/jpeg', true)) return;
+    if (!homeScreenModule) return refuseUpload(req, res, 'home screen module unavailable', 503);
+    return homeScreenModule.uploadBanner(req, function (r) {
+      if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+      send(res, 200, JSON.stringify(r));
+    });
+  }
+
   if (pathname === '/api/homescreen' && req.method === 'POST') {
     if (!config.allowControl) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
@@ -1807,8 +1865,9 @@ function handleRequest(req, res) {
       }
       if (body.restore === true) return homeScreenModule.restore(done);
       if (typeof body.part === 'string') return homeScreenModule.setPart(body.part, !!body.shown, done);
+      if (typeof body.banner === 'string') return homeScreenModule.setBanner(body.banner, done);
       if (typeof body.input === 'string') return homeScreenModule.setInput(body.input, !!body.onHome, done);
-      done({ ok: false, error: 'part, input or restore expected' });
+      done({ ok: false, error: 'part, banner, input or restore expected' });
     });
   }
 
@@ -1868,13 +1927,16 @@ function handleRequest(req, res) {
       // Advanced tab.
       piccapStatusFn(function (pc) {
         huesyncStatusFn(function (hs) {
-          if (!pc && !hs && !clockModule && u.query.with !== 'settings') return send(res, 200, JSON.stringify(s));
+          var keyboardUp = keyboardUpFn();
+          if (!pc && !hs && !clockModule && keyboardUp === null && u.query.with !== 'settings') return send(res, 200, JSON.stringify(s));
           // Copied, since s is telemetry's cache.
           var copy = {};
           for (var k in s) copy[k] = s[k];
           if (clockModule) copy.clockHour12 = clockHour12();
           if (pc) copy.piccapCapture = pc;
           if (hs) copy.huesyncStreaming = hs;
+          // For the Control tab's keyboard box.
+          if (keyboardUp !== null) copy.keyboardUp = keyboardUp;
           if (u.query.with !== 'settings') return send(res, 200, JSON.stringify(copy));
           // The TV dashboard's System page, which reads one endpoint, also
           // lists the sound and SIMPLINK settings.
@@ -2092,6 +2154,7 @@ function init(opts) {
   if (opts.privacy) privacyModule = opts.privacy;
   if (opts.lgSettings) lgSettingsModule = opts.lgSettings;
   if (opts.audio) audioModule = opts.audio;
+  if (opts.btAudio) btAudioModule = opts.btAudio;
   if (opts.game) gameModule = opts.game;
   if (opts.apps) appsModule = opts.apps;
   if (opts.services) servicesModule = opts.services;
@@ -2109,6 +2172,7 @@ function init(opts) {
   if (opts.restartSelf) restartSelfFn = opts.restartSelf;
   if (opts.piccapStatus) piccapStatusFn = opts.piccapStatus;
   if (opts.huesyncStatus) huesyncStatusFn = opts.huesyncStatus;
+  if (opts.keyboardUp) keyboardUpFn = opts.keyboardUp;
   if (opts.repo) repoModule = opts.repo;
   if (opts.installer) installerModule = opts.installer;
   if (opts.prometheus) prometheusModule = opts.prometheus;

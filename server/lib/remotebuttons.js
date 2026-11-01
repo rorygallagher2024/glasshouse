@@ -31,6 +31,11 @@ var BUTTON_CODES = {
   1043: 'lgchannels',
   1044: 'rakutentv',
   1086: 'alexa',
+  // The microphone (RF_KEY_VOICE), Movies (IR_KEY_USP) and Google Assistant,
+  // less 8 likewise; the microphone measured as 428 on a C9 (webOS 4.10.2) too.
+  428: 'voice',
+  1083: 'movies',
+  1117: 'googleassistant',
   18874385: 'red',
   18874386: 'green',
   18874387: 'yellow',
@@ -40,7 +45,11 @@ var BUTTON_CODES = {
   18874396: 'disneyplus',
   18874397: 'lgchannels',
   18874426: 'rakutentv',
-  18874416: 'alexa'
+  18874416: 'alexa',
+  // Qt::Key_webOS_Voice, _USP and _GoogleVoice, as the xkb table names them.
+  18874420: 'voice',
+  18874413: 'movies',
+  18874398: 'googleassistant'
 };
 
 // IR_KEY_HOME in /usr/share/X11/xkb/keycodes/lg (781) less the 8 xkb adds; the
@@ -341,8 +350,18 @@ if (process.argv.indexOf('--worker') !== -1) {
   runWorker();
 }
 
+// The buttons whose presses are reported, by name, each once.
+function buttonNames() {
+  var out = [];
+  for (var code in BUTTON_CODES) {
+    if (out.indexOf(BUTTON_CODES[code]) === -1) out.push(BUTTON_CODES[code]);
+  }
+  return out;
+}
+
 module.exports = {
   BUTTON_CODES: BUTTON_CODES,
+  buttonNames: buttonNames,
   findRcuDevices: findRcuDevices,
   handleParsedEvent: handleParsedEvent,
   HOME_CODE: HOME_CODE,

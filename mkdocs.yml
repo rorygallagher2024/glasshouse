@@ -50,7 +50,7 @@ nav:
       - Picture: dashboard/picture.md
       - Audio: dashboard/audio.md
       - Screen savers: dashboard/screen-savers.md
-      - Advanced Controls: dashboard/advanced.md
+      - System: dashboard/advanced.md
       - Service menu: dashboard/service-menu.md
       - Server: dashboard/server.md
       - Calibration archives: dashboard/calibration.md
@@ -58,6 +58,7 @@ nav:
   - Glasshouse apps:
       - The TV app: apps/tv-app.md
       - Android app: apps/android.md
+      - Pane (macOS): apps/pane.md
   - Smart Home & Lighting:
       - Home Assistant:
           - Overview: HOME-ASSISTANT.md

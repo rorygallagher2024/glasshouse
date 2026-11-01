@@ -143,7 +143,7 @@ step(function (next) {
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
-      ['action:screenOff', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
+      ['action:screenOff', 'action:powerOff', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
        'media:volumeUp', 'media:volumeDown', 'media:mute',
        'com.webos.app.hdmi1', 'com.webos.app.hdmi2', 'com.webos.app.livetv',
        'com.webos.app.home', 'netflix', 'youtube.leanback.v4']);
@@ -310,6 +310,92 @@ step(function (next) {
       rk.setRemoteKey('red', 'lg', '', guard(function () {
         console.log('  ✓ a key set to Screen off blanks the panel on its release, and a press while it is off only wakes it');
         next();
+      }));
+    }));
+  }));
+});
+
+step(function (next) {
+  rk.setRemoteKey('red', 'open', 'action:powerOff', guard(function (s) {
+    assert.strictEqual(s.ok, true);
+    var f = loadFilter();
+    var powerOffRequests = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.tvpower/power/powerOff'; }); };
+    f.power('Active');
+    assert.strictEqual(f.handle(1004, false, false), 'accepted');
+    assert.strictEqual(powerOffRequests().length, 0, 'a release without a press does nothing');
+    f.handle(1004, true, true);
+    f.handle(1004, false, false);
+    assert.strictEqual(powerOffRequests().length, 0, 'a repeat without a press does not arm the key');
+    assert.strictEqual(f.handle(1004, true, false), 'accepted');
+    assert.strictEqual(f.handle(1004, true, true), 'accepted');
+    assert.strictEqual(powerOffRequests().length, 0, 'not on the press or while held');
+    f.handle(1004, false, false);
+    f.handle(1004, false, false);
+    assert.strictEqual(powerOffRequests().length, 1, 'one power-off request on release');
+    assert.deepEqual(powerOffRequests()[0].payload, { reason: 'remoteKey' });
+    assert.strictEqual(f.launched.length, 0);
+    assert.strictEqual(f.handle(9999, true, false), 'next');
+    f.power('Screen Off');
+    f.handle(1004, true, false);
+    f.handle(1004, false, false);
+    assert.strictEqual(powerOffRequests().length, 2, 'also switches off with the panel already blank');
+    ['ScreenOff', 'Screen Saver', 'ScreenSaver', 'On'].forEach(function (state) {
+      var before = powerOffRequests().length;
+      f.power(state);
+      f.handle(1004, true, false);
+      f.handle(1004, false, false);
+      assert.strictEqual(powerOffRequests().length, before + 1, 'switches off in ' + state);
+    });
+    var beforeWake = powerOffRequests().length;
+    f.power('Active Standby');
+    f.handle(1004, true, false);
+    f.power('Active');
+    f.handle(1004, false, false);
+    assert.strictEqual(powerOffRequests().length, beforeWake, 'a press waking from standby does not switch off again');
+    f.handle(1004, true, false);
+    f.tell({ keys: { red: 'action:powerOff' } });
+    f.handle(1004, false, false);
+    assert.strictEqual(powerOffRequests().length, beforeWake, 'changing the mappings cancels a pending release');
+    rk.getRemoteKeys(guard(function (r) {
+      var red = r.keys.filter(function (k) { return k.key === 'red'; })[0];
+      assert.strictEqual(red.opens, 'Power off');
+      rk.setRemoteKey('red', 'lg', '', guard(function () {
+        console.log('  ✓ Power off requests standby once on release, including with a blank panel, and does not undo a wake');
+        next();
+      }));
+    }));
+  }));
+});
+
+// #1088: with MQTT on, a key whose presses Home Assistant receives can be set
+// to send them there; the filter keeps it from the TV and opens nothing.
+step(function (next) {
+  var mqtt = false;
+  rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+            homeAssistant: function () { return mqtt; } });
+  rk.getRemoteKeys(guard(function (off) {
+    assert.ok(!off.choices.some(function (c) { return c.id === 'action:homeAssistant'; }), 'not without MQTT');
+    assert.ok(!off.keys.some(function (k) { return k.homeAssistant; }));
+    mqtt = true;
+    rk.getRemoteKeys(guard(function (on) {
+      assert.ok(on.choices.some(function (c) { return c.id === 'action:homeAssistant' && c.kind === 'ha'; }));
+      var offered = on.keys.filter(function (k) { return k.homeAssistant; }).map(function (k) { return k.key; });
+      assert.deepEqual(offered, ['netflix', 'amazon', 'movies', 'red'], 'the keys Home Assistant receives, not Guide');
+      rk.setRemoteKey('guide', 'open', 'action:homeAssistant', guard(function (refused) {
+        assert.strictEqual(refused.ok, false);
+        assert.ok(/does not receive/.test(refused.error));
+        rk.setRemoteKey('red', 'open', 'action:homeAssistant', guard(function (s) {
+          assert.strictEqual(s.ok, true);
+          var f = loadFilter();
+          assert.strictEqual(f.handle(1004, true, false), 'accepted', 'kept from the TV');
+          assert.strictEqual(f.handle(1004, false, false), 'accepted');
+          assert.strictEqual(f.launched.length, 0, 'nothing opened');
+          assert.strictEqual(f.sent.filter(function (m) { return /turnOffScreen|sendKeyCode/.test(m.uri); }).length, 0);
+          rk.setRemoteKey('red', 'lg', '', guard(function () {
+            console.log('  ✓ with MQTT on, a key Home Assistant receives can be set to send it there, which the TV then ignores');
+            next();
+          }));
+        }));
       }));
     }));
   }));
