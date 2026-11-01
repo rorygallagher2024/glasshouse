@@ -41,6 +41,7 @@ var path = require('path');
 var execFile = require('child_process').execFile;
 var mkdirp = require('./util').mkdirp;
 var toBuffer = require('./util').toBuffer;
+var readTrimmed = require('./util').readTrimmed;
 
 var LG_HOME = 'com.webos.app.home';
 var APP_DIR = '/usr/palm/applications/' + LG_HOME;
@@ -356,6 +357,10 @@ function lgHomePids() {
     fs.readdirSync(procDir).forEach(function (d) {
       if (!/^\d+$/.test(d)) return;
       try {
+        var comm = readTrimmed(path.join(procDir, d, 'comm'));
+        if (comm && comm !== 'flutter-client' && comm !== 'com.webos.app.home' && comm !== 'com.webos.app.h') {
+          return;
+        }
         var argv = fs.readFileSync(path.join(procDir, d, 'cmdline'), 'utf8').split('\0');
         if (isLgHome(argv)) pids.push(Number(d));
       } catch (e) {}
