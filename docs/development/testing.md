@@ -17,7 +17,14 @@ checksums/lengths/bytes, failed native reads without family fallback, and
 omission of unspecified, disconnected or unstable channel metadata. They check
 logical input parameters and that native-app playback never reads an arbitrary
 HDMI port. Channel metadata does not establish a codec, playback or eARC
-negotiation. It also checks that wrong targets, unverified helpers, read-only
+negotiation. Additional C9 cases identify one connected CEC audio system when
+the ARC service is unavailable; failed, disconnected, non-audio, negative ARC
+flags and ambiguous devices do not choose a receiver. Explicit inactive ARC
+state remains inactive despite CEC presence. `test-audio-detection-ui.js` checks
+receiver naming, escaping and the distinction between device detection,
+unknown live status and negotiated transport.
+
+The suite also checks that wrong targets, unverified helpers, read-only
 mode and cross-origin requests cannot launch the privileged helper. On a
 mocked OLED83G54LW with the native package, it checks that HD payload is
 reported only with every readiness signal, that leftover changes ask for

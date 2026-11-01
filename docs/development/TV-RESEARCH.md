@@ -2488,6 +2488,24 @@ first Home press after a reboot took up to 13 s on a CX (webOS 5.6.2), so a
 fixed wait from the server's start is too short for slower TVs; the page's
 own requests to the server show it is running.
 
+## C9 CEC receiver detection without the newer ARC service
+
+On an OLED65C9PUA, webOS 4.10.2/05.50.00, the 0.130 Audio view had no receiver
+name while audible DTS-HD-to-PCM 5.1 continued at Sonos. The firmware returned
+Service does not exist for `com.webos.service.arccontroller`, Unknown method
+for audio/tv/getAudioInputProperty, and exposed none of the newer
+`/proc/lgtv-driver/audio` files. `com.webos.service.eim/getAllInputStatus` did
+report `arcDevice: true` and a connected HDMI 2 with one SIMPLINK audio system
+(`cecpDevType: 5`) named Sonos Arc.
+
+The receiver reader can identify that unique connected CEC audio system and
+its port without assigning it an active return-channel type or codec list.
+Ambiguous, disconnected, non-audio or failed replies do not supply a fallback.
+A targeted read-only diagnostics deployment identified Sonos Arc on HDMI 2,
+retained the native HAWK2 DTS advertisement and six-channel source metadata,
+and the owner confirmed continued audible Multichannel PCM 5.1. All
+calibration-file hashes, white balance, OLED protections and HDMI EDIDs matched
+the pretest baseline. The TV app was not opened on the TV during the disc.
 ## Where a cold start's time goes (B8, webOS 4.4.3; C2, webOS 9.2.2)
 
 Uptime in seconds from LG's `NL_APP_LAUNCH_BEGIN` and `NL_VSC` lines in

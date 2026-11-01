@@ -8,7 +8,10 @@ On HAWK2, the source-facing EDID is read through LG's native
 `getEdidData` service for the selected HDMI input; channel metadata is read
 from the mapped HDMI receiver's status file. A snapshot performs no EDID or
 audio-setting write.
-Native controls use LG's ordinary settings service.
+LG's input-manager CEC records may identify a connected soundbar when newer
+ARC services are unavailable. This adds only a detection label; it does not
+change or infer the negotiated link or the receiver's formats. Native controls
+use LG's ordinary settings service.
 
 The experimental override invokes `control.sh enable` or `disable` on an
 already-installed, pinned lg-g5-dts helper, only on its exact supported target.

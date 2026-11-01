@@ -2132,7 +2132,7 @@
  "audio.linkInactive": {"text": "Нет активного соединения ARC", "from": "No active ARC link"},
  "audio.linkUnknown": {"text": "Соединение неизвестно", "from": "Link unknown"},
  "audio.loading": {"text": "Чтение аудиовозможностей…", "from": "Reading audio capabilities…"},
- "audio.noInput": {"text": "Звук не обнаружен", "from": "No audio reported"},
+ "audio.noInput": {"text": "Текущий статус аудио недоступен", "from": "Live audio status unavailable"},
  "audio.notAdvertised": {"text": "Не заявлен", "from": "Not advertised"},
  "audio.outputNow": {"text": "Аудиовыход", "from": "Sound output"},
  "audio.pathDesc": {"text": "Подключён ли саундбар или ресивер по HDMI ARC или eARC и какие аудиоформаты, по их словам, поддерживают телевизор и ресивер. Пригодится, если Dolby Atmos или DTS не доходят.", "from": "Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which audio formats the TV and the receiver say they support. Useful when Dolby Atmos or DTS doesn’t come through."},
@@ -2575,5 +2575,8 @@
  "home.motion.scroll": {"text": "Плавная прокрутка", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "Ряд плавно едет к выбранной плитке, а не перескакивает к ней.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "Выдвижные панели", "from": "Sliding panels"},
- "home.motion.slideDesc": {"text": "«Недавние приложения», «Поиск» и «Другие приложения» выезжают и уезжают, а не появляются сразу.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
+ "home.motion.slideDesc": {"text": "«Недавние приложения», «Поиск» и «Другие приложения» выезжают и уезжают, а не появляются сразу.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."},
+ "audio.deviceDetected": {"text": "Обнаружено аудиоустройство HDMI", "from": "HDMI audio device detected"},
+ "audio.receiverDetectedUnknown": {"text": "ТВ определяет это аудиоустройство HDMI, но не сообщает тип соединения ARC/eARC или форматы приёмника. Проверьте Audio In на приёмнике, чтобы подтвердить получение сигнала.", "from": "The TV identifies this HDMI audio device, but does not report its ARC/eARC link type or receiver formats. Check the receiver’s Audio In display to confirm reception."},
+ "audio.receiverPort": {"text": "HDMI {port}", "from": "HDMI {port}"}
 }

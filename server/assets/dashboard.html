@@ -1812,7 +1812,7 @@ function audioRows(d) {
   r.push({ label: 'DTS', value: audioDeclaration(dts && dts.advertised),
     hint: d.tv.dtsDecoder === true ? t('audio.decoderPresent', 'LG DTS decoder present') : d.tv.dtsDecoder === false
       ? t('audio.decoderAbsent', 'LG DTS-core decoder not registered') : t('tv.audio.decoderUnknown', 'DTS decoder registration is unknown.') });
-  r.push({ label: t('audio.inputNow', 'Incoming audio'), value: d.live.input ? d.live.input.codec : t('audio.noInput', 'No audio reported'),
+  r.push({ label: t('audio.inputNow', 'Incoming audio'), value: d.live.input ? d.live.input.codec : t('audio.noInput', 'Live audio status unavailable'),
     hint: t('tv.audio.inputHint', 'The TV’s current input reading. TV-app playback and HDMI-input forwarding use different audio paths.') });
   if (d.live.hdmi) r.push({ label: t('audio.hdmiChannels', 'HDMI channel information'),
     value: t('audio.channels', '{count} channels', { count: d.live.hdmi.channels }),
@@ -1822,8 +1822,9 @@ function audioRows(d) {
   if (d.live.output) r.push({ label: t('tv.audio.outputFormat', 'Output format'), value: d.live.output,
     hint: t('tv.audio.outputHint', 'The output codec the audio driver reports now. The receiver’s own incoming-signal display confirms what arrives.') });
   r.push({ label: t('audio.receiverNow', 'Return channel'), value: receiver.link === 'inactive'
-      ? t('audio.linkInactive', 'No active ARC link') : receiver.link === 'unknown' ? t('audio.linkUnknown', 'Link unknown') : receiver.link,
-    sub: receiver.name || '', hint: t('tv.audio.linkHint', 'The negotiated link is separate from the eARC setting. Standard DTS can use ARC; DTS-HD needs eARC. Receiver capability declarations do not prove reception.') });
+      ? t('audio.linkInactive', 'No active ARC link') : receiver.link === 'unknown' ? receiver.detected ? t('audio.deviceDetected', 'HDMI audio device detected')
+      : t('audio.linkUnknown', 'Link unknown') : receiver.link,
+    sub: [receiver.name, receiver.port ? t('audio.receiverPort', 'HDMI {port}', { port: receiver.port }) : null].filter(Boolean).join(' · '), hint: t('tv.audio.linkHint', 'The negotiated link is separate from the eARC setting. Standard DTS can use ARC; DTS-HD needs eARC. Receiver capability declarations do not prove reception.') });
   if (helper.offered) r.push(head(t('audio.overrideTitle', 'Experimental DTS forwarding')));
   var on = helper.enabled || helper.running === true || helper.needsRestore === true;
   var can = d.writable !== false && !helper.busy && (on ? helper.canDisable : helper.available);

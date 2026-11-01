@@ -314,7 +314,7 @@
  "audio.linkInactive": {"text": "لا يوجد اتصال ARC نشط", "from": "No active ARC link"},
  "audio.linkUnknown": {"text": "حالة الاتصال غير معروفة", "from": "Link unknown"},
  "audio.loading": {"text": "جاري قراءة قدرات الصوت…", "from": "Reading audio capabilities…"},
- "audio.noInput": {"text": "لا يوجد صوت مسجل", "from": "No audio reported"},
+ "audio.noInput": {"text": "حالة الصوت الحالية غير متاحة", "from": "Live audio status unavailable"},
  "audio.notAdvertised": {"text": "غير مدعوم", "from": "Not advertised"},
  "audio.outputNow": {"text": "مخرج الصوت", "from": "Sound output"},
  "audio.pathDesc": {"text": "يوضح ما إذا كان مكبر الصوت (Soundbar) أو الرسيفر متصلاً عبر HDMI ARC أو eARC، والصيغ الصوتية التي يعلن التلفاز والرسيفر عن دعمها. مفيد عند انقطاع صوت Dolby Atmos أو DTS.", "from": "Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which audio formats the TV and the receiver say they support. Useful when Dolby Atmos or DTS doesn’t come through."},
@@ -2575,5 +2575,8 @@
  "home.motion.scroll": {"text": "تمرير سلس", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "ينزلق الصف إلى المربع المحدد بدلًا من القفز إليه.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "لوحات منزلقة", "from": "Sliding panels"},
- "home.motion.slideDesc": {"text": "تنزلق التطبيقات الأخيرة والبحث والمزيد من التطبيقات للداخل والخارج بدلًا من الظهور فورًا.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
+ "home.motion.slideDesc": {"text": "تنزلق التطبيقات الأخيرة والبحث والمزيد من التطبيقات للداخل والخارج بدلًا من الظهور فورًا.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."},
+ "audio.deviceDetected": {"text": "تم اكتشاف جهاز صوت HDMI", "from": "HDMI audio device detected"},
+ "audio.receiverDetectedUnknown": {"text": "يتعرّف التلفاز على جهاز الصوت HDMI هذا، لكنه لا يبلّغ عن نوع اتصال ARC/eARC أو التنسيقات التي يدعمها جهاز الاستقبال. تحقّق من عرض Audio In في جهاز الاستقبال للتأكد من وصول الصوت.", "from": "The TV identifies this HDMI audio device, but does not report its ARC/eARC link type or receiver formats. Check the receiver’s Audio In display to confirm reception."},
+ "audio.receiverPort": {"text": "HDMI {port}", "from": "HDMI {port}"}
 }

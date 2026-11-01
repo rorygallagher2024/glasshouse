@@ -2057,7 +2057,7 @@
  "audio.linkInactive": {"text": "Sin enlace ARC activo", "from": "No active ARC link"},
  "audio.linkUnknown": {"text": "Enlace desconocido", "from": "Link unknown"},
  "audio.loading": {"text": "Leyendo las capacidades de audio…", "from": "Reading audio capabilities…"},
- "audio.noInput": {"text": "No se informa de audio", "from": "No audio reported"},
+ "audio.noInput": {"text": "Estado del audio en directo no disponible", "from": "Live audio status unavailable"},
  "audio.notAdvertised": {"text": "No anunciado", "from": "Not advertised"},
  "audio.outputNow": {"text": "Salida de sonido", "from": "Sound output"},
  "audio.pathDesc": {"text": "Si hay una barra de sonido o un receptor conectado por HDMI ARC o eARC, y qué formatos de audio dicen admitir la TV y el receptor. Útil cuando Dolby Atmos o DTS no llegan.", "from": "Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which audio formats the TV and the receiver say they support. Useful when Dolby Atmos or DTS doesn’t come through."},
@@ -2575,5 +2575,8 @@
  "home.motion.scroll": {"text": "Desplazamiento suave", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "Una fila se desliza hasta el icono elegido, en lugar de saltar a él.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "Paneles deslizantes", "from": "Sliding panels"},
- "home.motion.slideDesc": {"text": "Apps recientes, Buscar y Más apps entran y salen deslizándose, en lugar de aparecer de golpe.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
+ "home.motion.slideDesc": {"text": "Apps recientes, Buscar y Más apps entran y salen deslizándose, en lugar de aparecer de golpe.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."},
+ "audio.deviceDetected": {"text": "Dispositivo de audio HDMI detectado", "from": "HDMI audio device detected"},
+ "audio.receiverDetectedUnknown": {"text": "La TV identifica este dispositivo de audio HDMI, pero no informa del tipo de enlace ARC/eARC ni de los formatos del receptor. Comprueba Audio In en el receptor para confirmar la recepción.", "from": "The TV identifies this HDMI audio device, but does not report its ARC/eARC link type or receiver formats. Check the receiver’s Audio In display to confirm reception."},
+ "audio.receiverPort": {"text": "HDMI {port}", "from": "HDMI {port}"}
 }
