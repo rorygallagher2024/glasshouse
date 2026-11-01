@@ -221,6 +221,8 @@ home10.setPart('quickCards', false, checked(function (refused) {
           console.log('  ✓ hiding the banner text lays a copy of LG\'s language files over its symlink with the two strings blank');
 
           var b0 = home10.banner();
+          assert.strictEqual(b0.shapes.length, 8, 'a shape for each mix of the three parts: ' + b0.shapes);
+          delete b0.shapes;
           assert.deepEqual(b0, { choice: 'lg', own: false, width: 3840, height: 1730 },
             'with the side buttons, Quick Cards and Recommended hidden, the whole width and the gap above it too');
           home10.setBanner('own', checked(function (noOwn) {
@@ -250,6 +252,29 @@ home10.setPart('quickCards', false, checked(function (refused) {
               assert.strictEqual(home10.banner().choice, 'own', 'the picture before is kept');
               console.log('  ✓ an uploaded JPEG is chosen and laid over LG\'s picture; a bad one is refused');
 
+              // #833: cropped for the banner as it is with the side buttons shown too.
+              var b = home10.banner();
+              assert.ok(b.shapes.indexOf('3492x900') !== -1 && b.shapes.indexOf('3492x1685') !== -1, 'every shape the banner takes: ' + b.shapes);
+              // Another JPEG: a comment segment after the start marker.
+              var wide = Buffer.concat([jpeg.slice(0, 2), require('../server/lib/util').toBuffer('fffe000677696465', 'hex'), jpeg.slice(2)]);
+              var wideReq = new EventEmitter();
+              wideReq.url = '/api/homescreen/banner?shape=3492x1685';
+              wideReq.headers = { 'content-length': String(wide.length) };
+              var restarts = killed.length;
+              home10.uploadBanner(wideReq, checked(function (r5) {
+                assert.strictEqual(r5.ok, true, r5.error);
+                assert.strictEqual(killed.length, restarts, 'a shape the banner does not have now is only kept');
+                assert.deepEqual(fs.readFileSync(path.join(upper, 'images', '4k', 'bg_banner_img.png')), jpeg);
+                home10.setPart('sideIcons', true, checked(function () {
+                  assert.deepEqual(fs.readFileSync(path.join(upper, 'images', '4k', 'bg_banner_img.png')), wide, 'the side buttons shown: the picture cropped for that');
+                  home10.setPart('sideIcons', false, checked(function () {
+                    assert.deepEqual(fs.readFileSync(path.join(upper, 'images', '4k', 'bg_banner_img.png')), jpeg, 'and back');
+                    var odd = new EventEmitter();
+                    odd.url = '/api/homescreen/banner?shape=100x100';
+                    odd.headers = { 'content-length': String(jpeg.length) };
+                    home10.uploadBanner(odd, checked(function (r6) {
+                      assert.strictEqual(r6.ok, false, 'a shape the banner never takes is refused');
+                      console.log('  ✓ the picture is cropped for each shape the banner takes, and the one for its shape now is shown');
               home10.setBanner('lg', checked(function () {
                 assert.ok(!fs.existsSync(path.join(upper, 'images')), 'LG\'s picture back');
                 assert.ok(home10.banner().own, 'the upload kept to choose again');
@@ -265,6 +290,12 @@ home10.setPart('quickCards', false, checked(function (refused) {
             console.log('ALL test-homescreen-webos10.js assertions passed!\n');
           }));
               }));
+                    }));
+                    process.nextTick(function () { odd.emit('data', jpeg); odd.emit('end'); });
+                  }));
+                }));
+              }));
+              process.nextTick(function () { wideReq.emit('data', wide); wideReq.emit('end'); });
             }));
             process.nextTick(function () { bad.emit('data', require('../server/lib/util').toBuffer('nope', 'utf8')); bad.emit('end'); });
           }));

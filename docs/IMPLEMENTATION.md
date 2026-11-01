@@ -1310,8 +1310,13 @@ of its own over the symlink, copied from LG's each time it is mounted with the
 two strings blank (added where a file lacks them). The picture is
 `images/<size>/bg_banner_img.png`, laid in each size folder LG has, linked
 rather than copied since `/tmp` is memory: a small black PNG, or the owner's
-JPEG under the PNG's name, which the browser crops to the banner's shape and
-keeps within 3840 across. The home app runs as
+JPEG under the PNG's name, which the browser crops within 3840 across to each
+shape the banner takes with the side buttons, Quick Cards and Recommended
+shown or hidden. The home app fits the picture to the banner's height and
+centres it, so one crop fills only one shape: one made with all three hidden
+(about 2.2:1 on a C4, webOS 10.2.2) showed as a small window between black
+with them back (3492 x 900, #833). The shape shown is sent first and shown; the
+rest are kept, and a part shown or hidden mounts the one for the new shape. The home app runs as
 `flutter-client -i com.webos.app.home`, so it is found by that argument pair in
 `/proc/<pid>/cmdline`, checked again just before it is sent SIGTERM, and other
 Flutter apps are left alone; a failed restart is reported to the dashboard. The
@@ -1319,7 +1324,7 @@ mount goes with a restart of the TV, so `reapply()` mounts it again when the
 server starts, and does nothing while it is still mounted. The choices and a
 copy of LG's `home.xml`, which cannot be read while the overlay covers it, are
 kept in `/var/lib/tvweb`, with the owner's banner picture
-(`home-webos10-banner.jpg`). Offered only on 10.x, where `/proc/filesystems` lists
+(`home-webos10-banner-<width>x<height>.jpg`, one for each shape). Offered only on 10.x, where `/proc/filesystems` lists
 overlay and the layout is one recognised from #612's dumps, and only once
 `allowHomeLayout` is set.
 

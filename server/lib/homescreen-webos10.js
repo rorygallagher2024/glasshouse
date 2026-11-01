@@ -92,7 +92,50 @@ function homeXml() { return path.join(assetsDir, 'home.xml'); }
 // LG's own home.xml, kept: once the overlay is mounted it cannot be read.
 function lgCopy() { return path.join(stateDir, 'home-webos10-lg.xml'); }
 function stateFile() { return path.join(stateDir, 'home-webos10.json'); }
-function ownBannerFile() { return path.join(stateDir, 'home-webos10-banner.jpg'); }
+/*
+ * The owner's picture, one file for each shape the banner can take: the home
+ * app fits the picture to the banner's height and centres it, so a picture
+ * cropped with every part hidden (about 2.2:1 on a C4, webOS 10.2.2) showed
+ * as a small window between black once the parts were back (3492 x 900,
+ * #833). home-webos10-banner.jpg, without a shape, is from before.
+ */
+var OWN_BANNER_PREFIX = 'home-webos10-banner';
+function ownBannerFile(shape) {
+  return path.join(stateDir, OWN_BANNER_PREFIX + (shape ? '-' + shape : '') + '.jpg');
+}
+
+function ownBannerFiles() {
+  var names = [];
+  try { names = fs.readdirSync(stateDir); } catch (e) {}
+  return names.filter(function (n) { return /^home-webos10-banner(-\d+x\d+)?\.jpg$/.test(n); })
+    .map(function (n) { return path.join(stateDir, n); });
+}
+
+// The file for the banner's shape now, else the one from before, else any.
+function ownBannerFor(shape) {
+  var files = ownBannerFiles();
+  if (files.indexOf(ownBannerFile(shape)) !== -1) return ownBannerFile(shape);
+  if (files.indexOf(ownBannerFile()) !== -1) return ownBannerFile();
+  return files[0] || null;
+}
+
+// "3492x900": the banner's size in a layout, in its units (3840 across).
+function shapeOf(xml) {
+  var m = /<item id="herobanner"[^>]*itemWidth="(\d+)"[^>]*itemHeight="(\d+)"/.exec(xml || '');
+  return m ? m[1] + 'x' + m[2] : null;
+}
+
+// Every shape the banner takes, one for each mix of the parts that size it.
+function bannerShapes(lg) {
+  var sizing = ['sideIcons', 'quickCards', 'recommended'];
+  var shapes = [];
+  for (var bits = 0; bits < 1 << sizing.length; bits++) {
+    var hidden = sizing.filter(function (id, i) { return bits & (1 << i); });
+    var shape = shapeOf(buildLayout(lg, hidden));
+    if (shape && shapes.indexOf(shape) === -1) shapes.push(shape);
+  }
+  return shapes;
+}
 
 function mounted() {
   var m = readText(mountsFile) || '';
@@ -135,7 +178,7 @@ function readState() {
   try { st = JSON.parse(fs.readFileSync(stateFile(), 'utf8')) || {}; } catch (e) { st = {}; }
   var hidden = Array.isArray(st.hidden) ? st.hidden.filter(function (id) { return PARTS.some(function (p) { return p.id === id; }); }) : [];
   var banner = BANNERS.indexOf(st.banner) !== -1 ? st.banner : 'lg';
-  if (banner === 'own' && !fs.existsSync(ownBannerFile())) banner = 'lg';
+  if (banner === 'own' && !ownBannerFiles().length) banner = 'lg';
   return { hidden: hidden, banner: banner };
 }
 
@@ -264,7 +307,7 @@ function mountLayout(xml, st, cb) {
       mkdirp(upper);
       fs.writeFileSync(path.join(upper, 'home.xml'), xml, 'utf8');
       if (st.hidden.indexOf('bannerText') !== -1) writeLanguageFiles(path.join(upper, 'i18n'));
-      if (st.banner !== 'lg') writeBanner(upper, st.banner);
+      if (st.banner !== 'lg') writeBanner(upper, st.banner, shapeOf(xml));
     } catch (e) {
       return cb(e.message);
     }
@@ -316,8 +359,9 @@ function writeLanguageFiles(dest) {
 }
 
 // The picture in each size folder LG has, linked rather than copied: /tmp is memory.
-function writeBanner(upper, banner) {
-  var data = banner === 'own' ? fs.readFileSync(ownBannerFile()) : toBuffer(BLACK_PNG, 'base64');
+function writeBanner(upper, banner, shape) {
+  var own = banner === 'own' && ownBannerFor(shape);
+  var data = own ? fs.readFileSync(own) : toBuffer(BLACK_PNG, 'base64');
   var first = null;
   BANNER_SIZES.forEach(function (size) {
     if (!fs.existsSync(path.join(assetsDir, 'images', size))) return;
@@ -377,16 +421,19 @@ function setPart(id, shown, cb) {
 }
 
 /*
- * The banner's picture: { choice, own, width, height }, the size being the
- * banner's in the layout's units (3840 across), which grows with the rows
- * hidden.
+ * The banner's picture: { choice, own, width, height, shapes }, the size being
+ * the banner's in the layout's units (3840 across), which grows with the rows
+ * hidden, and shapes every size it can take, as "3492x900", for an upload to
+ * be cropped to each.
  */
 function banner() {
   var st = readState();
   var lg = lgLayout();
-  var m = recognised(lg) && /<item id="herobanner"[^>]*itemWidth="(\d+)"[^>]*itemHeight="(\d+)"/.exec(buildLayout(lg, st.hidden));
-  return { choice: st.banner, own: fs.existsSync(ownBannerFile()),
-           width: m ? Number(m[1]) : 3492, height: m ? Number(m[2]) : 900 };
+  var ok = recognised(lg);
+  var shape = (ok && shapeOf(buildLayout(lg, st.hidden))) || '3492x900';
+  return { choice: st.banner, own: ownBannerFiles().length > 0,
+           width: Number(shape.split('x')[0]), height: Number(shape.split('x')[1]),
+           shapes: ok ? bannerShapes(lg) : [shape] };
 }
 
 // LG's picture, black, or the owner's uploaded one.
@@ -394,7 +441,7 @@ function setBanner(choice, cb) {
   var refused = refusal();
   if (refused) return cb(refused);
   if (BANNERS.indexOf(choice) === -1) return cb({ ok: false, error: msg('srv.home.unknownBanner', 'There is no such banner picture') });
-  if (choice === 'own' && !fs.existsSync(ownBannerFile())) return cb({ ok: false, error: msg('srv.home.noOwnBanner', 'Upload a picture first') });
+  if (choice === 'own' && !ownBannerFiles().length) return cb({ ok: false, error: msg('srv.home.noOwnBanner', 'Upload a picture first') });
   var st = readState();
   st.banner = choice;
   console.log('homescreen: banner picture ' + choice + ' (webOS 10)');
@@ -402,13 +449,20 @@ function setBanner(choice, cb) {
 }
 
 /*
- * The owner's picture, a JPEG the browser has cropped to the banner, kept in
- * the state folder and chosen by uploading it. cb({ ok, error, status }).
+ * The owner's picture, a JPEG the browser has cropped to one of the banner's
+ * shapes (?shape=3492x900), kept in the state folder. The shape the banner has
+ * now is sent first: it replaces the pictures from before, and is chosen and
+ * shown; the others are only kept, for when the parts shown change. Without a
+ * shape, the picture is used for every one. cb({ ok, error, status }).
  */
 function uploadBanner(req, cb) {
   function refused(text, code) { cb({ ok: false, error: text, status: code || 400 }); }
   var notNow = refusal();
   if (notNow) return refused(notNow.error, 409);
+  var shape = String(require('url').parse(req.url || '', true).query.shape || '');
+  var info = banner();
+  if (shape && info.shapes.indexOf(shape) === -1) return refused(msg('srv.home.bannerShape', 'The picture is not cropped to a shape the banner takes.'));
+  var current = !shape || shape === info.width + 'x' + info.height;
   if (bannerUploading) return refused(msg('srv.home.bannerUploading', 'Wait for the picture to finish uploading.'), 409);
   bannerUploading = true;
   require('./home-wallpapers').receiveJpeg(req, { maxBytes: MAX_BANNER_BYTES, maxWidth: 3840, maxHeight: 2160 }, function (kind, buf) {
@@ -417,14 +471,17 @@ function uploadBanner(req, cb) {
     if (kind === 'size') return done({ ok: false, status: 413, error: msg('srv.home.bannerSize', 'The picture must be at most 5 MB and state its size.') });
     if (kind === 'timeout') return done({ ok: false, status: 408, error: msg('srv.home.bannerTimeout', 'The picture upload timed out.') });
     if (kind) return done({ ok: false, status: 400, error: msg('srv.home.bannerImage', 'Choose a valid JPEG up to 3840 × 2160 pixels.') });
-    var staging = ownBannerFile() + '.part';
+    var file = ownBannerFile(shape);
+    var staging = file + '.part';
     try {
       fs.writeFileSync(staging, buf, { mode: parseInt('600', 8) });
-      fs.renameSync(staging, ownBannerFile());
+      if (current) ownBannerFiles().forEach(function (f) { if (f !== file) fs.unlinkSync(f); });
+      fs.renameSync(staging, file);
     } catch (e) {
       try { fs.unlinkSync(staging); } catch (e2) {}
       return done({ ok: false, status: 500, error: e.message });
     }
+    if (!current) return done({ ok: true });
     var st = readState();
     st.banner = 'own';
     console.log('homescreen: banner picture uploaded (webOS 10)');
@@ -436,7 +493,7 @@ function uploadBanner(req, cb) {
 function restore(cb) {
   var had = mounted() || changed(readState());
   try { if (fs.existsSync(stateFile())) fs.unlinkSync(stateFile()); } catch (e) {}
-  try { if (fs.existsSync(ownBannerFile())) fs.unlinkSync(ownBannerFile()); } catch (e) {}
+  ownBannerFiles().forEach(function (f) { try { fs.unlinkSync(f); } catch (e) {} });
   if (!had) return cb({ ok: true, changed: false });
   console.log('homescreen: LG\'s layout put back (webOS 10)');
   unmountLayout(function () {

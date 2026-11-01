@@ -788,7 +788,7 @@ function renderHomeBanner(banner, usable) {
   if (!box) return;
   box.hidden = !banner;
   if (!banner) return;
-  homeBannerSize = { width: banner.width, height: banner.height };
+  homeBannerSize = { width: banner.width, height: banner.height, shapes: banner.shapes || [] };
   const label = { lg: t('apps.home.banner.lg', 'LG’s'), black: t('apps.home.banner.black', 'Black'),
     own: banner.own ? t('apps.home.banner.own', 'Your own') : t('apps.home.banner.upload', 'Your own…') };
   q('apps-home-banner-choice').innerHTML = ['lg', 'black', 'own'].map(name =>
@@ -815,11 +815,31 @@ function homeBannerPicked(input) {
   if (input.files[0]) uploadHomeBanner(input.files[0]);
 }
 
-// Cropped to the banner's shape and sent as a JPEG of up to 3840 across, the
-// layout's own width; the server refuses larger.
+// The home app fits the picture to the banner's height, so one crop fills only
+// one of the banner's shapes. Cropped to each and sent as JPEGs of up to 3840
+// across, the layout's own width (the server refuses larger), the shape the
+// banner has now first, which the server shows.
+function cropHomeBanner(img, shape) {
+  const [width, height] = shape.split('x').map(Number);
+  const aspect = width / height;
+  let sw = img.naturalWidth, sh = Math.round(sw / aspect);
+  if (sh > img.naturalHeight) { sh = img.naturalHeight; sw = Math.round(sh * aspect); }
+  const outW = Math.min(3840, sw), outH = Math.max(1, Math.round(outW / aspect));
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, outW, outH);
+  ctx.drawImage(img, (img.naturalWidth - sw) / 2, (img.naturalHeight - sh) / 2, sw, sh, 0, 0, outW, outH);
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.88));
+}
+
 async function uploadHomeBanner(file) {
   const note = q('apps-home-banner-note');
-  const size = homeBannerSize || { width: 3492, height: 900 };
+  const size = homeBannerSize || { width: 3492, height: 900, shapes: [] };
+  const now = size.width + 'x' + size.height;
+  const shapes = [now].concat(size.shapes.filter(s => s !== now));
   homeBannerUploading = true;
   note.textContent = t('apps.home.banner.uploading', 'Uploading the picture. The Home screen starts again with it.');
   let url;
@@ -834,22 +854,13 @@ async function uploadHomeBanner(file) {
       img.onerror = () => reject(new Error(t('home.wall.unreadable', 'The image could not be opened.')));
       img.src = url;
     });
-    const aspect = size.width / size.height;
-    let sw = img.naturalWidth, sh = Math.round(sw / aspect);
-    if (sh > img.naturalHeight) { sh = img.naturalHeight; sw = Math.round(sh * aspect); }
-    const outW = Math.min(3840, sw), outH = Math.max(1, Math.round(outW / aspect));
-    const canvas = document.createElement('canvas');
-    canvas.width = outW;
-    canvas.height = outH;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, outW, outH);
-    ctx.drawImage(img, (img.naturalWidth - sw) / 2, (img.naturalHeight - sh) / 2, sw, sh, 0, 0, outW, outH);
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.88));
-    if (!blob || blob.size > 5 * 1024 * 1024) throw new Error(t('home.wall.tooLarge', 'The prepared image is too large. Choose a smaller image.'));
-    const res = await fetch(api('/api/homescreen/banner'), { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
-    const r = await res.json();
-    if (!res.ok || !r.ok) throw new Error(r.error || t('home.wall.uploadFailed', 'The image could not be uploaded.'));
+    for (const shape of shapes) {
+      const blob = await cropHomeBanner(img, shape);
+      if (!blob || blob.size > 5 * 1024 * 1024) throw new Error(t('home.wall.tooLarge', 'The prepared image is too large. Choose a smaller image.'));
+      const res = await fetch(api('/api/homescreen/banner?shape=' + shape), { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
+      const r = await res.json();
+      if (!res.ok || !r.ok) throw new Error(r.error || t('home.wall.uploadFailed', 'The image could not be uploaded.'));
+    }
     note.textContent = '';
   } catch (e) { note.textContent = e.message; }
   finally {
