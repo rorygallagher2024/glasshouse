@@ -1,6 +1,8 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
 var assert = require('assert');
 var events = require('events');
+var StringDecoder = require('string_decoder').StringDecoder;
+var toBuffer = require('../server/lib/util').toBuffer;
 var fs = require('fs');
 var os = require('os');
 var path = require('path');
@@ -16,6 +18,11 @@ function createMockReq(opts) {
   req.headers = opts.headers || {};
   req.connection = { remoteAddress: opts.remoteAddress !== undefined ? opts.remoteAddress : '127.0.0.1' };
   req.destroy = function () { req.destroyed = true; };
+  // As http's: Buffers emitted as data are decoded across chunk boundaries once an encoding is set.
+  req.setEncoding = function (enc) {
+    var decoder = new StringDecoder(enc), emit = req.emit;
+    req.emit = function (ev, d) { return emit.call(req, ev, ev === 'data' && Buffer.isBuffer(d) ? decoder.write(d) : d); };
+  };
   return req;
 }
 
@@ -381,7 +388,31 @@ function createMockRes(cb) {
   reqValid.emit('end');
   assert.deepEqual(parsedResult, { action: 'volume', value: 20 });
 
-  console.log('  ✓ readJsonBody enforces Content-Type, Origin matching, and JSON parsing');
+  // A character split between two chunks arrives whole.
+  var reqSplit = createMockReq({ method: 'POST', headers: { 'content-type': 'application/json' } });
+  var splitResult = null;
+  routes.readJsonBody(reqSplit, createMockRes(), function (data) { splitResult = data; });
+  var bytes = toBuffer(JSON.stringify({ name: 'Первый канал ᴴᴰ' }), 'utf8');
+  var cut = 0;
+  while (cut < bytes.length && bytes[cut] < 128) cut++;
+  cut++;
+  reqSplit.emit('data', bytes.slice(0, cut));
+  reqSplit.emit('data', bytes.slice(cut));
+  reqSplit.emit('end');
+  assert.deepEqual(splitResult, { name: 'Первый канал ᴴᴰ' });
+
+  // Past its limit: answered 413, read to the end rather than the connection dropped.
+  var reqBig = createMockReq({ method: 'POST', headers: { 'content-type': 'application/json' } });
+  var bigStatus = null;
+  routes.readJsonBody(reqBig, createMockRes(function (res) { bigStatus = res.statusCode; }), function () {
+    assert.fail('Should not be called past the limit');
+  }, 100);
+  reqBig.emit('data', JSON.stringify({ pad: new Array(200).join('x') }));
+  reqBig.emit('end');
+  assert.strictEqual(bigStatus, 413);
+  assert.ok(!reqBig.destroyed);
+
+  console.log('  ✓ readJsonBody enforces Content-Type, Origin matching, JSON parsing, whole characters and its limit');
 })();
 
 // 5b. The dashboard's stylesheet and scripts are put back inline

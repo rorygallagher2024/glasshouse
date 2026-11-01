@@ -1072,6 +1072,13 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-picture" onclick="homePicture()">&mdash;</button></div>
     </div>
+    <div class="prot-row home-gh-row" id="home-preview-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.livePreview">Live preview</div>
+        <div class="prot-desc" data-t="home.livePreviewDesc">A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details under it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview" onclick="homeLivePreview()">&mdash;</button></div>
+    </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.showClock">Clock and date</div>
@@ -1179,6 +1186,10 @@
   <div id="home-recents"></div>
   <div class="btns" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
   <div class="sub" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
+
+  <div class="pv-sec adv-sec" data-t="home.tv.title">Internet TV</div>
+  <div class="sub" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses. It is kept on the TV and never shown here again.</div>
+  <div id="home-tv"></div>
 
   <div class="pv-sec adv-sec" data-t="home.colours.title">Colours</div>
   <div class="sub" data-t="home.colours.desc">The text on Glasshouse Home, and the accent that frames the chosen tile and marks what was last on. The quieter text is a shade of the text colour.</div>
@@ -1778,6 +1789,43 @@
   </div>
 </div>
 
+<div id="tvm" class="tvm" hidden role="dialog" aria-modal="true" aria-labelledby="tvm-title" data-pane="groups">
+  <header class="tvm-top">
+    <button type="button" class="tvm-back" onclick="tvmClose()"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6" fill="none"/></svg><span data-t="home.tvm.back">Home</span></button>
+    <div class="tvm-titles">
+      <h2 id="tvm-title" data-t="home.tvm.title">Internet TV channels</h2>
+      <div id="tvm-summary" class="tvm-sub"></div>
+    </div>
+    <button type="button" id="tvm-undo" class="tvm-undo" disabled onclick="tvmUndo()" title="Undo the last change (Ctrl+Z)" data-t-title="home.tvm.undoTip"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.5 3.5L2.5 6.5l3 3" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 6.5h6.5a3.5 3.5 0 010 7H7" stroke="currentColor" stroke-width="1.5" fill="none"/></svg><span data-t="home.tvm.undo">Undo</span></button>
+    <select id="tvm-pl" class="pill-sel" hidden onchange="tvmPickPlaylist(this.value)" aria-label="Playlist" data-t-aria-label="home.tvm.playlist"></select>
+    <input type="search" id="tvm-find" class="tvm-input tvm-search" autocomplete="off" spellcheck="false" placeholder="Find a channel by name" data-t-placeholder="home.tvm.find" oninput="tvmFind(this.value)">
+  </header>
+  <div id="tvm-tabs" class="tvm-tabs" role="tablist">
+    <button type="button" role="tab" data-pane="groups" onclick="tvmPane('groups')"><span data-t="home.tvm.groups">Groups</span> <span class="num"></span></button>
+    <button type="button" role="tab" data-pane="channels" onclick="tvmPane('channels')"><span data-t="home.tvm.channels">Channels</span> <span class="num"></span></button>
+    <button type="button" role="tab" data-pane="lineup" onclick="tvmPane('lineup')"><span data-t="home.tvm.lineup">Lineup</span> <span class="num"></span></button>
+  </div>
+  <div class="tvm-body">
+    <section class="tvm-pane" data-pane="groups" aria-labelledby="tvm-groups-h">
+      <div class="tvm-pane-head"><h2 class="lbl" id="tvm-groups-h" data-t="home.tvm.groupsTitle">The provider’s groups</h2>
+        <input type="search" id="tvm-filter" class="tvm-input" autocomplete="off" spellcheck="false" placeholder="Filter groups" data-t-placeholder="home.tvm.filter" oninput="tvmFilter(this.value)"></div>
+      <div id="tvm-groups" class="tvm-scroll" data-scope="groups" onclick="tvmRowClick(event, 'groups')"></div>
+    </section>
+    <section class="tvm-pane" data-pane="channels" aria-label="Channels" data-t-aria-label="home.tvm.channels">
+      <div id="tvm-channels" class="tvm-scroll" data-scope="channels" onclick="tvmRowClick(event, 'channels')"></div>
+    </section>
+    <section class="tvm-pane tvm-pane-lineup" data-pane="lineup" aria-labelledby="tvm-lineup-h">
+      <div class="tvm-pane-head tvm-pane-head-row"><h2 class="lbl" id="tvm-lineup-h" data-t="home.tvm.lineupTitle">On the TV, in number order</h2>
+        <div id="tvm-lineup-tools" class="tvm-tools"></div></div>
+      <div id="tvm-lineup" class="tvm-scroll" data-scope="lineup" onclick="tvmRowClick(event, 'lineup')"></div>
+    </section>
+  </div>
+  <div class="tvm-foot">
+    <div id="tvm-toast" class="tvm-toast" role="status" aria-live="polite" hidden></div>
+    <div id="tvm-dock" class="tvm-dock" role="toolbar" aria-label="Selected channels" data-t-aria-label="home.tvm.bar.label" hidden></div>
+  </div>
+</div>
+
 <script src="/assets/i18n.js"></script>
 <!-- The server puts these back inline as one script, in this order: see inlineUI in lib/routes.js. -->
 <script src="/assets/ui/core.js"></script>
@@ -1796,6 +1844,7 @@
 <script src="/assets/ui/apps.js"></script>
 <script src="/assets/ui/install.js"></script>
 <script src="/assets/ui/home.js"></script>
+<script src="/assets/ui/tvchannels.js"></script>
 <script src="/assets/ui/audio.js"></script>
 <script src="/assets/ui/picture.js"></script>
 <script src="/assets/ui/servicemenu.js"></script>

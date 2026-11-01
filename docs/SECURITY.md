@@ -119,6 +119,31 @@ it before exposing it more widely.
 ---
 
 
+## Internet TV
+
+An IPTV playlist's link often carries a token, and an Xtream playlist's play
+links carry its user name and password in their path. On the TV they are
+kept in `/var/lib/tvweb/iptv`, a folder only root can read (mode 700, its
+files 600), and they stay there:
+
+- The dashboard and the TV app are given each playlist's name, host, channel
+  count and account details, never its link, user name or password. A
+  password is write-only: an edit that leaves it blank keeps the one saved.
+- The play link is given only to a request from the TV itself, Glasshouse
+  Home's page, which plays it; the same request from the network gets 403.
+- Failures are reported as codes (the provider refused the login, answered
+  503, could not be reached), never in curl's or the provider's own words,
+  which can repeat the link. Nothing about a playlist goes to Home Assistant,
+  Prometheus or the logs, and so not to a syslog server either.
+- The downloads are read by a separate worker process, not the server, and
+  are parsed as they arrive rather than saved: nothing but the list of
+  channels it derives is written, and that only inside the folder above.
+- Logos and guide links found in a playlist are fetched only over http or
+  https and only without a user name in them; a logo is kept only if its
+  first bytes are a PNG, JPEG or WebP, and is 256 KB at most.
+
+Removing a playlist on the Home tab deletes its folder at once.
+
 ## Narrowing access
 
 | Setting                        | Browser on the network                                                   | App on the TV | MQTT  |

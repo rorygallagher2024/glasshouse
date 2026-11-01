@@ -65,6 +65,7 @@ riskier controls ask for confirmation in the dashboard first.
 | Watch time, while switched on in the Server tab | `/var/lib/tvweb/history`, a file for each month, kept for 13 months | **Clear history** in the Server tab, or uninstalling |
 | Daily backups, while switched on in the Server tab | `/var/lib/tvweb/backups`, one file a day, the last 7 kept | Uninstalling |
 | Install job and services run as root | `install-job.json` and `elevated.json` in `/var/lib/tvweb` | Uninstalling |
+| Internet TV playlists, their logins, the lineup chosen from them, the channels read for it, logos and guides | `/var/lib/tvweb/iptv`, mode 700, a folder for each playlist. Each read writes a new copy beside the last, and the one no longer used is deleted a minute after. A playlist of 50,000 channels takes about 15 MB; a lineup of 231 channels with their guide about 4 MB more | Removing the playlist on the Home tab, which deletes its folder at once, or uninstalling |
 
 Installed from the Homebrew Channel, uninstalling the app stops the server
 starting at boot straight away, and within a few minutes the server removes the
@@ -78,6 +79,7 @@ the first reboot after uninstalling.
 
 | Feature | What it does | Undone by |
 | :------ | :----------- | :-------- |
+| Glasshouse Home live preview | Off by default. While an input or channel is in focus, a muted video uses the HDMI receiver or a tuner. Previewing another HDMI input moves the receiver away from the previous one. On a G3 with webOS 9.2.2, previews sent no CEC commands and left the last channel unchanged | Leaving the tile, closing Home or switching **Live preview** off releases the video source |
 | Ad blocker | Bind-mounts a replacement `/etc/hosts`, carrying over the lines other tools such as AmazOff add to it. An uploaded hosts list is kept in `/var/lib/tvweb/adblock_custom.json`. With **Answer device scans on the TV** on (`/var/lib/tvweb/local_lookups`), the table also names each address on the TV's local network as itself, the TV's own excepted, and is rewritten when the TV's network changes | Switching it, update blocking and device scan answering off. While another tool's lines are in it and the `/etc/hosts` underneath cannot hold them, it stays up, blocking nothing, until the next reboot |
 | Hidden home-screen tiles | Bind-mounts edited `appinfo.json` files, then has the app manager reread them: where the TV has LG's blocked-app list in configd (webOS 9 does, webOS 4 doesn't), by briefly adding an id no app has to LG's blocked-app list in configd and putting the list back, and otherwise by restarting it. On webOS 7, where sam reads that list but configd holds none until one is written, the list written back is the country's from `/var/preferences/com.webos.applicationManager/blockedAppList/<country>.json`, which sam blocks meanwhile; configd keeps it from then on, so a later change to LG's country list does not reach sam. Experimental: turned on under Server → Advanced → Experimental features. Not offered when installed from the Homebrew Channel, since the restart happens during boot. Not offered while Glasshouse Home is on: switching it on, or a server start with it on, unmounts them and has the app manager reread its apps, never restarting it (where it does not reread, they come back at the next cold boot), and adds the apps to Glasshouse Home's hidden list in `/var/lib/tvweb/home.json`; `hidden_apps` is kept | Switching tile hiding off |
 | Apps no longer kept ready in the background | Sets `isEnabled` false for each in configd's `com.webos.service.preloadmanager.supportAppList`, which the TV keeps as a changed setting, and tells the preload manager at once, and again at each start and each time the TV is switched on. An app already loaded stays until it is next closed or the TV restarts. Put back at start if the list loses them | Switching each back on, which gives it LG's own setting again. The list stays a changed setting, which the TV has no way to remove, and uninstalling leaves the apps switched off |
@@ -171,6 +173,11 @@ setup. While a phone is being used to enter Home Assistant details,
 port 8081 answers a one-time code for up to ten minutes. The server connects out
 only to the configured MQTT broker, to the NTP server when one is configured,
 and, when update checks are switched on, to GitHub's releases API. Update checks are off by default.
+
+With an IPTV playlist added on the Home tab, the server also connects to that
+provider: to read the playlist each night and its guide every six hours, the
+added channels' logos, and the stream of a channel while Glasshouse Home
+plays it.
 
 With **Share app icons** on in the MQTT tab (`iconServer` in `config.json`), port 8082 (the dashboard's
 port plus two) answers on the whole network, dual-stack like the dashboard,

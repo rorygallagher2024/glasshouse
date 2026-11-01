@@ -110,6 +110,18 @@ The state-push suite checks `keyboard_visible` from the window list: pushed on c
 
 `test-home-picture.js` reads a G3's receiver files with Glasshouse Home on screen: the signal and HDR of the input behind it, the picture mode asked for with both input and dynamic range, an empty input, and HDR from the receiver's packets (PQ, HLG, none, Dolby Vision). Only the mode for the range coming in is asked for, none without a signal, and a channel's SDR mode. It also checks that tracking runs only while Glasshouse Home, picture details and the TV are all on, that it retains an app's first video before any app plate is read, and that standby or switching either off stops it and leaves the recorded video available.
 
+The same suite checks the preview's HDMI signal read and a channel's decoded
+format through the public picture read, including SDR, HLG, HDR10, Dolby
+Vision and Technicolor HDR selecting their stored picture modes, and another
+broadcast's HDR context being ignored. `test-home.js` checks that Live preview
+defaults to off and saves its choice. The browser check changes Picture details
+during HDMI and channel previews, without restarting playback, rejects a late
+reply after the details are disabled, and checks that switching Live preview
+off releases its media source. Desktop media methods are stubbed; webOS
+decoding, sound and CEC still need a real TV.
+Delayed guide and catalogue replies cannot reopen a preview after **OK**;
+a refused launch or returning to Home allows it again.
+
 `test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved.
 
 `test-stats-timeout.js` checks that a stats collection past its limit answers its callers with the last complete one, or the empty stand-in when none has finished, and carries on with no second collection started beside it; that `expireStats` does not take that fallback away; and that one given up on after 60 s answers no caller of the next.
@@ -273,7 +285,97 @@ cannot refill a closed panel, and switching search off removes its entry point.
 Home interaction fixtures mark both introductory hints as seen so hint saves
 do not count as layout edits.
 
+`test-iptv-parse.js` feeds Internet TV's readers in chunks of every size,
+from one character up: an M3U with a BOM, CRLF, a name with commas after a
+quoted group with commas, `#EXTGRP`, `#EXTVLCOPT` and `|User-Agent=` headers,
+`#KODIPROP` DRM, films and series to leave out, a bare URL, a multicast link
+and comma lists of guide links; Xtream's JSON with brackets and escaped
+quotes inside strings, and a refusal object where the list should be; an
+XMLTV guide with a DTD whose entity must not expand, CDATA, numeric entities,
+offsets and shortened times. Logins are refused by `auth` and `status`
+whatever the HTTP status, short EPG text is decoded only when it is base64 of
+UTF-8 text, a guide id matches loosely only where one guide channel does, and
+two channels whose links differ only in a rotated token keep separate keys.
+
+`test-iptv.js` runs the server module with real worker processes and curl
+against a local provider: a playlist read and published 0600 in a 0700
+folder, search leaving out a provider's `### NEWS ###` headings, an added
+channel's logo, play link and now and next from the playlist's own guide, a
+500 keeping the last list, an edit replacing it, a refused Xtream login not
+tried again until edited, a blank password keeping the saved one, no link,
+token, user name or password in any reply, the row's order and removal, a
+whole group added as a section numbered after the picks with its guide from
+the Xtream `xmltv.php`, sections moved and given start numbers, a channel
+taken out of a group staying out until added again, a rename and a star
+reaching the row, a hidden group left out of a whole-playlist search, Undo
+putting a channel taken out back at its number, and a removed playlist's
+folder deleted. It is skipped where there is no curl.
+
+`test-iptv-lineup.js` checks the lineup's rules alone: a version 1 selection
+becoming one section of favourites, numbering through sections with a start
+number already passed moved on, a channel in two sections counted once, a
+channel removed from a pick ahead of its group staying out of both, the 60
+favourites, stars kept by a channel another section still carries, renames,
+the 2,000 cap, moved keys followed, malformed entries dropped, several
+groups added or sections removed in one edit, stars for many stopping at a
+full row, channels moved out of a group into a new section and added into
+one, sections and single channels taken out in one edit, and a refused
+edit leaving the selection as it was.
+
+`scripts/fake-iptv.js` is a provider to drive Internet TV by hand or in the
+emulator (it is not deployed). It serves an M3U and an Xtream panel with
+the quirks above, logos in the styles real ones come in (and dead links), an
+XMLTV guide, and three live HLS test channels from ffmpeg, one without CORS:
+
+```bash
+node scripts/fake-iptv.js --port 8090
+node scripts/fake-iptv.js --port 8091 --channels 100000 --guide-channels 16000 --no-video
+node scripts/fake-iptv.js --port 8095 --channels 20000 --groups 120 --no-video
+```
+
+`--groups` adds that many country groups (*DE | Sport*, *FR | News* and so
+on), as a subscription of hundreds of groups lists them, for the channel
+manager.
+
+Its M3U takes `?mode=401`, `403`, `429` (with `Retry-After`), `500`, `html`,
+`gzip`, `slow` and `truncate`; a wrong Xtream password is `auth: 0` with HTTP
+200, three in a minute block the address for a minute, and its live links
+redirect to a token that expires after 90 s. It allows one connection, counted
+as a panel does, by the client address that fetched a segment in the last
+12 s, so a TV changing channel replaces its own; `/admin/state` reports
+`concurrentSessions` apart, the streams fetching segments in the last 4 s,
+which stays at 1 when each is closed before the next opens.
+`/admin/rotate` rotates every M3U token. The second command makes a
+100,000-entry playlist and a guide of about 200 MB unzipped, for the size
+drills. The emulator starts Internet TV's overdue jobs after 5 s rather than
+3 to 8 minutes (`iptv.catchupMs` in its config).
+
+The browser check drives Internet TV on Glasshouse Home with its API answered
+in the page: the row's names tidied, a channel previewed after its dwell with
+the lease taken, the preview grown into the player without opening the stream
+again, OK during the dwell giving one stream and keeping the player's picture,
+the channel list changing channel after releasing the last stream, Back, the
+guide's schedule, and the add panel listing a playlist's groups. It then
+drives the channel manager the same way: a hidden group left out, a group's
+channels listed and added whole, a star, a Shift-click run added from the
+bar in one edit, Delete taking a selected channel out, Escape clearing a
+selection before it closes the page and its address, one pane at a time at phone width, and in the TV app, the groups,
+a channel added with OK, and Back up one list.
+
 The sideload route check forces an upload to abort before its file opens,
 then confirms that the eventual descriptor closes and the staging file is
 removed. This catches Node 0.12's destroy-before-open behaviour without
 relying on the filesystem finishing within a fixed delay.
+
+The Internet TV regression checks also cover a full 2,000-channel lineup
+through real workers, a bulk add that overlaps channels already carried,
+and failed selection saves (including Undo) without changing the lineup or
+its history. Home accepts unstarred lineup channels and refuses unknown
+ones; the generated remote filter opens the standalone Home app's guide
+when the Home key names it. Browser checks cover the Guide tile and
+now-and-next without favourites, and a delayed response from the previous
+provider leaving the chosen provider's groups in place.
+The audio route checks use a readable stream for request bodies, including
+the UTF-8 decoding used by every JSON POST.
+The split-character route fixture uses the server's buffer helper so it
+also runs on Node 0.10 and 0.12.

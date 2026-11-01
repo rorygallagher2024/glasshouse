@@ -27,6 +27,10 @@ var OWN_REQUEST_MS = 5000;
 var lunaFn = null;
 /** @type {function(function(?{state: string, fullScreen: boolean}): void, boolean=): void} */
 var mediaStateFn = function (cb) { cb(null); };
+// Glasshouse Home playing Internet TV full screen: its <video> is not in the
+// TV's media state, which reads stopped while a stream plays there.
+/** @type {function(): boolean} */
+var watchingFn = function () { return false; };
 var requestSeenAt = 0;
 var ownRequestAt = 0;
 var lastState = '';
@@ -49,6 +53,7 @@ function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
   mediaStateFn = opts.mediaState || function (cb) { cb(null); };
+  watchingFn = opts.watching || function () { return false; };
   liftedApp = readTrimmed(LIFTED_MARKER) || '';
   recovering = !!liftedApp;
 }
@@ -157,7 +162,7 @@ function lift(cb) {
 function idleRequestRefused() {
   var generation = powerGeneration;
   mediaStateFn(function (media) {
-    if (!media || media.state === 'playing' || lastState !== 'Active' || generation !== powerGeneration) return;
+    if (!media || media.state === 'playing' || watchingFn() || lastState !== 'Active' || generation !== powerGeneration) return;
     if (refusingApp) return foregroundApp(function (appId) {
       if (!appId || appId === refusingApp || generation !== powerGeneration) return;
       refusingApp = '';

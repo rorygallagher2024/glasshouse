@@ -73,12 +73,46 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #plStrip{font-size:23px;height:36px;line-height:38px;color:#a39d93}
 #plStrip b{font-weight:400;color:#6b665e;margin-right:12px}
 
+/* The preview: a live picture of the input in focus, in the plate's place on
+   the strip's bottom line, with the source beside it naming what it shows.
+   The picture is the TV's video plane showing through the page, so its
+   corners stay square; the edge and the shadow are drawn over and around it. */
+#preview{-webkit-flex:0 0 auto;flex:0 0 auto;position:relative;width:432px;height:243px;margin-left:56px;background:#000;display:none;
+  box-shadow:0 24px 60px rgba(0,0,0,.6)}
+#preview.on{display:block}
+#preview:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;border:1px solid rgba(244,241,234,.16);pointer-events:none}
+#preview video{display:block;width:100%;height:100%}
+#pvNote{position:absolute;left:0;top:0;right:0;bottom:0;display:none;background:#14120f;text-align:center;
+  font-size:23px;line-height:243px;color:#6b665e}
+#preview.blank #pvNote{display:block}
+/* With Picture details on, the plate follows the preview and describes what
+   it shows, in a band hung below the picture as a reference monitor's status
+   line: nothing drawn over the video, whose own captions and tickers sit at
+   its foot. The band reaches below the strip into the space above the rows'
+   tiles, clear of the row title on the left. */
+#pvInfo{position:absolute;left:0;right:0;top:100%;padding:12px 18px 13px;display:none;
+  background:rgba(14,12,10,.84);border:1px solid rgba(244,241,234,.16);border-top:0;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+#preview.info #pvInfo{display:block}
+#preview.blank #pvInfo{display:none}
+#pvTop{display:-webkit-flex;display:flex;-webkit-align-items:baseline;align-items:baseline}
+#pvMode{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;font-family:'Outfit',sans-serif;font-size:27px;line-height:1.1;font-weight:400;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pvLight{-webkit-flex:0 0 auto;flex:0 0 auto;margin-left:16px;font-size:19px;color:#a39d93;white-space:nowrap}
+#pvLight b{font-weight:400;color:#6b665e;margin-right:8px}
+#pvSig{margin-top:5px;font-size:19px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pvSig span+span{margin-left:16px}
+#now.previewing #plate{display:none}
+
 /* The rows sit centred between the clock and the arrange bar, so three rows
    land a little below where they used to and fewer settle lower. The spacers shrink first, so rows taller than the space run on down
    rather than under the clock. A row with nothing to show is left out, and
    while arranging stands as a slot that can still be moved. */
-#rows{position:absolute;left:0;right:0;top:296px;bottom:40px;
+/* More rows than fit (a tuner's channels and Internet TV's under Apps and
+   Inputs) scroll within this area, keeping the row in focus in view, so
+   the clock above them stays clear. */
+#rows{position:absolute;left:0;right:0;top:296px;bottom:40px;overflow:hidden;
   display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
+#rows.scrolled{-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 44px);mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 44px)}
 #rows:before,#rows:after{content:"";-webkit-flex:1 1 0;flex:1 1 0}
 /* Along the bottom, as on LG's Home: no space below the rows. */
 .rows-bottom #rows:after{-webkit-flex:0 0 0;flex:0 0 0}
@@ -91,6 +125,14 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative #date{margin-top:8px;font-size:23px}
 .alternative #source{-webkit-order:1;order:1;border-left:0;padding-left:22px}
 .alternative #plate{-webkit-order:2;order:2;margin:0 56px 0 0}
+.alternative #preview{-webkit-order:2;order:2;margin:0 56px 0 auto}
+/* The clock is right-aligned in a box sized for any time; previewing, it hugs
+   its digits so the picture sits beside it. */
+.alternative #now.previewing #when{width:auto}
+/* Even-width figures keep the digits, and the preview beside them, still as
+   the minutes change: at the standard clock's size Outfit's own run from 245px
+   for 3:11 to 341px for 3:09. */
+.alternative #clock{font-variant-numeric:tabular-nums;-webkit-font-feature-settings:"tnum";font-feature-settings:"tnum"}
 .alternative:not(.arranging) .row > h2{display:none}
 .alternative .row{margin-bottom:10px}
 .alternative .tile{border-radius:18px;margin-right:12px;background:rgba(20,15,29,.45)}
@@ -198,6 +240,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   background:#141310;border-left:3px solid #e9ad55;opacity:0;-webkit-transform:translateY(8px);transform:translateY(8px);
   -webkit-transition:opacity .2s,-webkit-transform .2s;transition:opacity .2s,transform .2s;max-width:1100px}
 #toast.show{opacity:1;-webkit-transform:none;transform:none}
+.playing #toast{z-index:6}
 #toast small{display:block;font-size:18px;color:#a39d93;margin-top:4px}
 .arranging #toast{bottom:96px}
 
@@ -331,6 +374,160 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .typing .chip{padding:0;margin:0 0 0 10px;background:none}
 .typing .chip img,.typing .chip .mono{width:38px;height:38px;margin:0}
 
+/* Internet TV. Its tiles keep the Channels row's box and line heights, so the
+   two rows read alike: where a tuner channel has its number in Outfit Light,
+   an Internet TV channel has its logo, drawn as warm-white type at the
+   number's height. A logo that fills its own box (a full-colour square, a
+   photo) keeps its colours on a small plate; one with no logo, or a broken
+   one, is its initials in the number's face. */
+.tv .glyph{height:43px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden;white-space:nowrap}
+.tv .glyph img{display:block;max-width:184px;max-height:43px;width:auto;height:auto}
+.glyph img.mark{-webkit-filter:brightness(0) invert(.93) sepia(.08);filter:brightness(0) invert(.93) sepia(.08)}
+.glyph img.plate{border-radius:6px;opacity:.85}
+.glyph .mono{font-family:'Outfit',sans-serif;font-size:48px;line-height:.9;font-weight:300;letter-spacing:-.5px}
+.tv .prog.quiet{font-weight:400;color:#6b665e}
+.row .tv.gone{opacity:.32}
+.row .tv.gone.focus{opacity:.6}
+.tv.add .glyph .mono,.tv.add .glyph svg{color:#a39d93}
+.tv.add.focus .glyph .mono,.tv.add.focus .glyph svg{color:#ece7df}
+
+/* The player: the preview's own picture grown to the whole screen, so the
+   stream is not opened twice. The band and the channel list are drawn over
+   it and go when not in use: nothing still stays on the panel. */
+.playing #now{z-index:4}
+.playing #rows,.playing #rail,.playing #wall,.playing #scrim{visibility:hidden}
+#preview.full{position:absolute;left:0;top:0;width:1920px;height:1080px;margin:0;box-shadow:none;
+  -webkit-transform-origin:0 0;transform-origin:0 0}
+#preview.full:after,#preview.full #pvInfo{display:none}
+#preview.full #pvNote{line-height:1080px;font-size:34px;background:#000}
+#player{position:absolute;left:0;top:0;width:1920px;height:1080px;z-index:5;display:none}
+.playing #player{display:block}
+#band{position:absolute;left:0;right:0;bottom:0;z-index:1;padding:110px 112px 64px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;
+  background:linear-gradient(180deg,rgba(0,0,0,0) 0,rgba(0,0,0,.92) 80px,#000 110px);opacity:0;visibility:hidden;
+  -webkit-transition:opacity .2s,visibility 0s .2s;transition:opacity .2s,visibility 0s .2s}
+#player.band #band{opacity:1;visibility:visible;-webkit-transition-delay:0s;transition-delay:0s}
+/* The band's logo: larger than a tile's, level with the name and the line below it. */
+#band .glyph{display:-webkit-flex;display:flex;-webkit-flex:0 0 auto;flex:0 0 auto;width:220px;height:96px;margin-bottom:30px;-webkit-align-items:flex-end;align-items:flex-end}
+#band .glyph img{max-width:184px;max-height:96px}
+#band .glyph .mono{font-size:72px}
+#band .txt{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
+#bdName{font-family:'Outfit',sans-serif;font-size:52px;line-height:1.1;font-weight:300;letter-spacing:-.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bdLine{display:-webkit-flex;display:flex;-webkit-align-items:baseline;align-items:baseline;margin-top:14px;font-size:25px;white-space:nowrap}
+#bdLine b{font-weight:400;color:#6b665e;margin-right:12px}
+#bdLine .t{color:#a39d93;margin-right:22px}
+#bdNow{-webkit-flex:0 1 auto;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+#bdNext{-webkit-flex:0 1 auto;flex:0 1 auto;min-width:0;margin-left:auto;padding-left:48px;overflow:hidden;text-overflow:ellipsis;color:#a39d93}
+#band .bar{height:2px;background:#2a2825;margin-top:18px}
+#band .bar i{display:block;height:100%;background:#ece7df}
+#bdFmt{-webkit-flex:0 0 auto;flex:0 0 auto;margin:0 0 4px 56px;font-size:21px;color:#6b665e;white-space:nowrap;text-align:right;line-height:1.5}
+#bdFmt span{display:block}
+#pmsg{position:absolute;left:0;right:0;top:470px;text-align:center;display:none}
+#pmsg.show{display:block}
+#pmsg b{display:block;font-family:'Outfit',sans-serif;font-size:56px;font-weight:300;letter-spacing:-.5px}
+#pmsg span{display:block;margin-top:14px;font-size:25px;color:#a39d93}
+#digits{position:absolute;right:112px;top:72px;font-family:'Outfit',sans-serif;font-size:96px;font-weight:300;line-height:1;
+  display:none;text-shadow:0 2px 24px rgba(0,0,0,.7)}
+#digits.show{display:block}
+#digits small{display:block;font-family:'Manrope',sans-serif;font-size:23px;color:#a39d93;text-align:right;margin-top:8px}
+
+#chlist{position:absolute;left:0;top:0;bottom:0;width:760px;padding:84px 56px 0 112px;
+  background:linear-gradient(90deg,rgba(0,0,0,.94) 0,rgba(0,0,0,.9) 78%,rgba(0,0,0,0) 100%);
+  -webkit-transform:translateX(-100%);transform:translateX(-100%);visibility:hidden;
+  -webkit-transition:-webkit-transform .24s cubic-bezier(.2,.7,.2,1),visibility 0s .24s;transition:transform .24s cubic-bezier(.2,.7,.2,1),visibility 0s .24s}
+#player.list #chlist{-webkit-transform:none;transform:none;visibility:visible;-webkit-transition-delay:0s;transition-delay:0s}
+#clHead{display:-webkit-flex;display:flex;-webkit-align-items:baseline;align-items:baseline;margin-bottom:26px;white-space:nowrap}
+#clGroup{font-family:'Outfit',sans-serif;font-size:44px;font-weight:300;letter-spacing:-.4px;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#clCount{margin-left:22px;font-size:23px;color:#a39d93;-webkit-flex:0 0 auto;flex:0 0 auto}
+#clCount i{font-style:normal;color:#6b665e;margin:0 10px}
+#clWrap{position:absolute;left:100px;right:44px;top:170px;bottom:300px;overflow:hidden;padding:6px 12px}
+#clItems{-webkit-transition:-webkit-transform .2s cubic-bezier(.2,.7,.2,1);transition:transform .2s cubic-bezier(.2,.7,.2,1)}
+.cl{position:relative;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:112px;padding:0 20px;margin-bottom:6px;
+  border-radius:6px;outline:2px solid transparent;opacity:.72}
+.cl.focus{background:rgba(20,19,16,.86);outline-color:#ece7df;opacity:1}
+.cl .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:96px;height:34px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden}
+.cl .glyph img{display:block;max-width:84px;max-height:34px}
+.cl .glyph .mono{font-size:36px}
+.cl .n{-webkit-flex:0 0 auto;flex:0 0 auto;width:56px;font-family:'Outfit',sans-serif;font-size:30px;font-weight:300;color:#a39d93}
+.cl .c{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
+.cl .nm{font-size:25px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl .pg{font-size:21px;color:#a39d93;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl .bar{height:2px;background:#2a2825;margin-top:10px}
+.cl .bar i{display:block;height:100%;background:#a39d93}
+.cl.focus .bar i{background:#ece7df}
+.cl.on .n:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#e9ad55;margin:0 10px 0 -18px;vertical-align:6px}
+
+/* The guide: Internet TV's channels against time, in the rows' place, with
+   Home's top strip above it naming the programme in focus and previewing its
+   channel. The playlist's groups are its tabs; the amber line is now. */
+#guide{position:absolute;left:0;right:0;top:282px;bottom:0;padding:0 112px;background:#000;display:none}
+.guiding #guide{display:block}
+.guiding #rows,.guiding #rail{visibility:hidden}
+#gTabs{display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;height:58px;border-bottom:1px solid #2a2825;white-space:nowrap;overflow:hidden}
+#gTabs span{font-size:24px;color:#6b665e;margin-right:46px;padding:0 0 12px;border-bottom:2px solid transparent;position:relative;top:1px}
+#gTabs span.on{color:#ece7df;border-bottom-color:#ece7df}
+#gTabs.focus span.on{color:#ece7df;border-bottom-color:#e9ad55}
+#gTimes{position:relative;height:50px;margin-left:300px;overflow:hidden}
+#gTimes span{position:absolute;top:14px;font-size:21px;color:#a39d93;padding-left:8px;border-left:1px solid #2a2825;height:36px}
+#gBody{position:absolute;left:112px;right:112px;top:108px;bottom:24px;overflow:hidden}
+.gr{display:-webkit-flex;display:flex;height:78px;border-top:1px solid #0c0b0a}
+.gr .gch{-webkit-flex:0 0 auto;flex:0 0 auto;width:300px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding-right:18px;overflow:hidden}
+.gr .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:84px;height:34px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;overflow:hidden}
+.gr .glyph img{display:block;max-width:72px;max-height:34px}
+.gr .glyph .mono{font-size:30px}
+.gr .gnm{font-size:22px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gr.focus .gnm{color:#ece7df}
+.gr .gnm em{font-style:normal;color:#6b665e;margin-right:12px;font-variant-numeric:tabular-nums}
+.gr .lane{position:relative;-webkit-flex:1 1 auto;flex:1 1 auto;overflow:hidden}
+.gc{position:absolute;top:5px;bottom:5px;padding:9px 14px 0;background:#100f0d;border-radius:4px;overflow:hidden;outline:2px solid transparent;outline-offset:-2px;white-space:nowrap}
+.gc.past{background:#080807}
+.gc.past b{color:#6b665e}
+.gc.live{background:#1a1814}
+.gc.focus{background:#24211b;outline-color:#ece7df}
+.gc b{display:block;font-size:21px;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.gc i{display:block;font-style:normal;font-size:17px;color:#6b665e;margin-top:3px;overflow:hidden;text-overflow:ellipsis}
+.gc.none b{font-weight:400;color:#6b665e}
+/* Over the programmes, softly: the time now reads through their titles. */
+#gNow{position:absolute;top:96px;bottom:24px;width:2px;margin-left:-1px;background:#e9ad55;opacity:.6;display:none}
+#gNow:before{content:"";position:absolute;left:-5px;top:-6px;width:12px;height:12px;border-radius:50%;background:#e9ad55}
+#srcDesc{font-size:22px;color:#6b665e;margin-top:8px;max-height:58px;overflow:hidden;display:none;max-width:680px;line-height:1.3}
+.guiding #srcDesc{display:block}
+.guiding #preview.info #pvInfo{display:none}
+
+/* Adding channels: a panel over the left of Home, built as search's is. The
+   playlists, then a playlist's groups, then a group's channels; typing
+   searches the playlist. A tick marks what is on the row. */
+#adder{position:absolute;left:0;top:0;bottom:0;width:1120px;padding:84px 72px 0 112px;
+  background:linear-gradient(90deg,#000 0,#000 86%,rgba(0,0,0,0) 100%);
+  -webkit-transform:translateX(-100%);transform:translateX(-100%);visibility:hidden;
+  -webkit-transition:-webkit-transform .32s cubic-bezier(.2,.7,.2,1),visibility 0s .32s;transition:transform .32s cubic-bezier(.2,.7,.2,1),visibility 0s .32s}
+.adding #adder{-webkit-transform:none;transform:none;visibility:visible;-webkit-transition-delay:0s;transition-delay:0s}
+.adding #now,.adding #rows,.adding #rail{opacity:.25}
+.adding #banner{display:none}
+.adding #rows .tile.focus{outline-color:transparent;background:none}
+#adder h2{font-family:'Outfit',sans-serif;font-size:56px;font-weight:300;letter-spacing:-.6px}
+#adCrumb{font-size:25px;color:#a39d93;margin-top:10px;height:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#adCrumb i{font-style:normal;color:#6b665e;margin:0 12px}
+#adAsk{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;margin-top:26px;border-bottom:2px solid #2a2825;
+  -webkit-transition:border-color .12s;transition:border-color .12s}
+.adtyping #adAsk{border-bottom-color:#ece7df}
+#adAsk svg{-webkit-flex:0 0 auto;flex:0 0 auto;width:32px;height:32px;margin-right:20px;color:#6b665e}
+#adQuery{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;height:76px;padding:0;margin:0;border:0;outline:0;background:transparent;border-radius:0;
+  font-family:'Outfit',sans-serif;font-size:46px;line-height:76px;font-weight:300;color:#ece7df;caret-color:#ece7df}
+#adQuery::-webkit-input-placeholder{color:#3a3732}
+#adQuery::placeholder{color:#3a3732}
+#adStatus{font-size:22px;color:#a39d93;margin-top:16px;height:30px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#adWrap{position:absolute;left:100px;right:60px;top:372px;bottom:0;overflow:hidden;padding:6px 12px}
+#adItems{-webkit-transition:-webkit-transform .2s cubic-bezier(.2,.7,.2,1);transition:transform .2s cubic-bezier(.2,.7,.2,1)}
+.ad{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:80px;padding:0 20px;margin-bottom:4px;border-radius:6px;
+  outline:2px solid transparent;opacity:.7}
+.ad.focus{background:rgba(20,19,16,.86);outline-color:#ece7df;opacity:1}
+.ad .tick{-webkit-flex:0 0 auto;flex:0 0 auto;width:44px;font-size:26px;color:#ece7df}
+.ad .nm{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;font-size:26px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ad .meta{-webkit-flex:0 0 auto;flex:0 0 auto;margin-left:24px;font-size:21px;color:#6b665e;white-space:nowrap}
+.ad.off .nm{color:#6b665e}
+.ad.more .nm{font-weight:400;color:#a39d93}
+.adtyping .ad{opacity:.45}
+
 /* Where the layout asks for it: fading in as the view comes on screen, and
    out before a tile opens. faded alone hides it at once, as when it goes off
    screen; fades is the transition. */
@@ -340,7 +537,8 @@ html.fades.in #stage{-webkit-transition:opacity .3s ease-out;transition:opacity 
 html.faded #stage{opacity:0}
 
 @media (prefers-reduced-motion:reduce){
-  .track,#toast,.tile,#folder,#folderGrid,#hits,.hit,.chip,#finder,#rail,#rail svg,#ask,html.fades #stage{-webkit-transition:none;transition:none}
+  .track,#toast,.tile,#folder,#folderGrid,#hits,.hit,.chip,#finder,#rail,#rail svg,#ask,html.fades #stage,
+  #band,#chlist,#clItems,#adder,#adItems,#adAsk,#preview.full,#rows{-webkit-transition:none;transition:none}
   #wall .layer{-webkit-animation:none;animation:none}
 }
 </style>
@@ -359,12 +557,16 @@ html.faded #stage{opacity:0}
       <div id="srcKind">&mdash;</div>
       <div id="srcTitle">&mdash;</div>
       <div id="srcVia">&mdash;</div>
+      <div id="srcDesc"></div>
     </div>
     <div id="plate" class="none">
       <div id="plSig"></div>
       <div id="plMode"></div>
       <div id="plStrip"></div>
     </div>
+    <div id="preview"><video id="pvVideo" muted></video>
+      <div id="pvInfo"><div id="pvTop"><div id="pvMode"></div><div id="pvLight"></div></div><div id="pvSig"></div></div>
+      <div id="pvNote" data-t="home.preview.noPicture">No picture</div></div>
   </section>
 
   <main id="rows"></main>
@@ -373,6 +575,39 @@ html.faded #stage{opacity:0}
     <div id="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input id="query" type="text" autocomplete="off" spellcheck="false" maxlength="80" placeholder="Film or series" data-t-placeholder="home.search.placeholder"></div>
     <div id="status">&mdash;</div>
     <div id="results"><div id="hits"></div></div>
+  </section>
+
+  <section id="guide">
+    <div id="gTabs"></div>
+    <div id="gTimes"></div>
+    <div id="gBody"></div>
+    <div id="gNow"></div>
+  </section>
+
+  <section id="adder">
+    <h2 data-t="home.tv.addTitle">Add channels</h2>
+    <div id="adCrumb">&mdash;</div>
+    <div id="adAsk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input id="adQuery" type="text" autocomplete="off" spellcheck="false" maxlength="60" placeholder="Find a channel" data-t-placeholder="home.tv.find"></div>
+    <div id="adStatus">&mdash;</div>
+    <div id="adWrap"><div id="adItems"></div></div>
+  </section>
+
+  <section id="player">
+    <div id="pmsg"></div>
+    <div id="digits"></div>
+    <div id="band">
+      <div class="glyph" id="bdGlyph"></div>
+      <div class="txt">
+        <div id="bdName">&mdash;</div>
+        <div id="bdLine"><span id="bdNow"></span><span id="bdNext"></span></div>
+        <div class="bar"><i id="bdBar"></i></div>
+      </div>
+      <div id="bdFmt"></div>
+    </div>
+    <div id="chlist">
+      <div id="clHead"><span id="clGroup">&mdash;</span><span id="clCount"></span></div>
+      <div id="clWrap"><div id="clItems"></div></div>
+    </div>
   </section>
 
   <div id="banner">
@@ -418,11 +653,17 @@ html.faded #stage{opacity:0}
     app: t('home.row.apps', 'Apps'),
     dev: t('home.row.inputs', 'Inputs'),
     ch: t('home.row.channels', 'Channels'),
-    rec: t('home.row.recommended', 'Recommended')
+    rec: t('home.row.recommended', 'Recommended'),
+    iptv: t('home.row.iptv', 'Internet TV')
   };
   var LG_HOME_TILE = 'lg-home';
   // The remote's keys as webOS reports them to a page.
-  var KEY = { left: 37, up: 38, right: 39, down: 40, ok: 13, back: 461, red: 403, green: 404, yellow: 405 };
+  var KEY = { left: 37, up: 38, right: 39, down: 40, ok: 13, back: 461, red: 403, green: 404, yellow: 405,
+    chUp: 33, chDown: 34, info: 457 };
+  // The Internet TV row's last tile while it has channels: the guide.
+  var GUIDE_TILE = 'iptv-guide';
+  // Internet TV's Add channels tile: last in its row while arranging, and the row's only tile while it is empty.
+  var ADD_TILE = 'iptv-add';
   // The More apps tile, last in the Apps row while any app is in the folder.
   var FOLDER_TILE = 'more-apps';
   // Tiles per line in the More apps grid: 9 of 176px fill the 1696px between the margins.
@@ -544,13 +785,14 @@ html.faded #stage{opacity:0}
       return find(data.apps, id);
     }
     if (kind === 'rec') return find(data.recommended, id);
+    if (kind === 'iptv') return find(data.iptv, id);
     return find(kind === 'dev' ? data.devices : data.channels, id);
   }
   function find(list, id) {
     for (var i = 0; i < (list || []).length; i++) if (list[i].id === id) return list[i];
     return null;
   }
-  function hidden(kind, id) { return layout.hidden[kind].indexOf(id) !== -1; }
+  function hidden(kind, id) { return (layout.hidden[kind] || []).indexOf(id) !== -1; }
   function inFolder(kind, id) { return kind === 'app' && (layout.folder || []).indexOf(id) !== -1; }
   // The server puts a Last opened row in that order; the view shows it as sent.
   function byRecent(kind) { return !!(layout.sort && layout.sort[kind] === 'recent'); }
@@ -571,6 +813,12 @@ html.faded #stage{opacity:0}
     if (kind === 'app' && !state.arranging) {
       var inside = folderItems();
       if (inside.length) out.push({ id: FOLDER_TILE, title: t('home.folder.title', 'More apps'), folder: inside });
+    }
+    var hasLineup = data.iptvStatus && data.iptvStatus.lineup > 0;
+    if (kind === 'iptv' && data.sources && data.sources.iptv && (state.arranging || (!out.length && !hasLineup))) {
+      out.push({ id: ADD_TILE, add: true, name: t('home.tv.addTitle', 'Add channels') });
+    } else if (kind === 'iptv' && (out.length || hasLineup) && !state.arranging) {
+      out.push({ id: GUIDE_TILE, guide: true, name: t('home.tv.guide', 'Guide') });
     }
     return out;
   }
@@ -670,9 +918,28 @@ html.faded #stage{opacity:0}
       var from = recApp && find(data.apps, recApp);
       return from ? t('home.row.recFrom', 'From {app}', { app: from.title }) : '';
     }
+    if (kind === 'iptv') return tvNote(list);
     if (data.sources.channels === 0) return t('home.row.noTuner', 'This TV has no channels tuned');
     if (!list.length) return t('home.row.addChannels', 'Add channels in Glasshouse\u2019s Home settings');
     return t('home.row.channelsNote', '{n} added', { n: list.length });
+  }
+
+  // The row's heading: how many, from where, or why the list is old.
+  function tvNote(list) {
+    var st = data.iptvStatus || {}, n = list.filter(function (it) { return !it.add && !it.guide; }).length;
+    if (!data.sources.iptv) return t('home.tv.rowNone', 'Add your IPTV playlist on the dashboard’s Home tab');
+    if (st.state === 'login') return t('home.tv.rowLogin', '{name} refused the login: check it on the dashboard', { name: st.label || '' });
+    if (st.state === 'failed') {
+      return st.since ? t('home.tv.rowFailedSince', 'Couldn’t reach {name}, showing the list from {date}', { name: st.label || '', date: shortDate(st.since) })
+        : t('home.tv.rowFailed', 'Couldn’t reach {name}', { name: st.label || '' });
+    }
+    if (st.state === 'updating') return t('home.tv.rowUpdating', 'Updating');
+    if (!n) return '';
+    return st.label ? t('home.tv.rowFrom', '{n} added from {name}', { n: n, name: st.label }) : t('home.row.channelsNote', '{n} added', { n: n });
+  }
+  function shortDate(ms) {
+    var d = new Date(ms);
+    try { return d.toLocaleDateString(undefined, { day: 'numeric', month: 'long' }); } catch (e) { return d.getDate() + '/' + (d.getMonth() + 1); }
   }
 
   function render() {
@@ -698,6 +965,7 @@ html.faded #stage{opacity:0}
     if (changed) {
       $('rows').innerHTML = html;
       renderedRows = html;
+      wireGlyphs($('rows'));
     }
     // A programme's progress is set in place, so the minute's refresh does
     // not rebuild the rows.
@@ -773,6 +1041,30 @@ html.faded #stage{opacity:0}
       }
       return '<div class="' + cls + '" data-c="' + i + '">' + body + hiddenLabel + '</div>';
     },
+    iptv: function (c, i) {
+      if (c.guide) {
+        return '<div class="tile ch tv add" data-c="' + i + '"><div class="glyph"><svg viewBox="0 0 48 36" width="48" height="36" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+          '<path d="M2 6h10M18 6h28M2 18h22M30 18h16M2 30h6M14 30h32"/></svg></div>' +
+          '<div class="nm">' + esc(c.name) + '</div><div class="prog quiet">' + esc(t('home.tv.guideDesc', 'What is on now and later')) + '</div></div>';
+      }
+      if (c.add) {
+        return '<div class="tile ch tv add" data-c="' + i + '"><div class="glyph"><span class="mono">+</span></div>' +
+          '<div class="nm">' + esc(c.name) + '</div><div class="prog quiet">' + esc(t('home.tv.addDesc', 'From your playlist')) + '</div></div>';
+      }
+      var bad = tvUnplayable(c), on = bad ? null : tvNow(c.id);
+      var cls = 'tile ch tv' + (bad ? ' gone' : '');
+      var body = '<div class="glyph">' + glyphHtml(c) + '</div><div class="nm">' + esc(c.name) + '</div>';
+      if (on) {
+        body += '<div class="prog">' + esc(on.title) + '</div><div class="bar"><i></i></div>';
+        barWidths.push(Math.round(pctOf(on) * 10) / 10 + '%');
+        var nx = tvNext(c.id);
+        if (nx) body += '<div class="next">' + esc(hm(new Date(nx.start)) + ' ' + nx.title) + '</div>';
+      } else {
+        // No guide: the group where the programme would be.
+        body += '<div class="prog quiet">' + esc(bad || c.group || '') + '</div>';
+      }
+      return '<div class="' + cls + '" data-c="' + i + '">' + body + '</div>';
+    },
     rec: function (r, i) {
       var app = find(data.apps, r.app);
       var pic = r.image ? ' style="background-image:url(\'' + esc(r.image.replace(/'/g, '%27')) + '\')"' : '';
@@ -798,6 +1090,7 @@ html.faded #stage{opacity:0}
       // stays where it was left.
       if (!noScroll && active) scrollTrack(rowEl, tiles[c], instant);
     }
+    if (!noScroll) keepRowInView(instant);
     for (var b = 0; b < BAR.length; b++) $(BAR[b]).className = 'btn' + (state.bar === b ? ' focus' : '');
     $('rail').className = state.rail && !finder.open ? 'focus' : '';
     followApps();
@@ -806,21 +1099,49 @@ html.faded #stage{opacity:0}
       state.last = focused ? { kind: rowKey(), id: focused.id } : null;
     }
     // Apps and inputs come from the TV and can only be hidden; channels were added, so they are removed.
-    $('btnHide').textContent = state.last && state.last.kind === 'ch'
+    $('btnHide').textContent = state.last && (state.last.kind === 'ch' || state.last.kind === 'iptv')
       ? t('home.arrange.removeChannel', 'Remove channel') : t('home.arrange.hide', 'Hide or show');
     if (state.arranging) {
       var it = items(rowKey())[colOf(rowKey())];
       $('bannerState').textContent = colOf(rowKey()) === -1
           ? t('home.arrange.sortFocus', '{row}: OK changes the order', { row: ROW_TITLES[rowKey()] })
         : !it ? t('home.arrange.emptyRow', 'This row is empty')
+        : it.add ? t('home.tv.addArrange', 'Add channels: OK opens the list')
         : state.held ? t('home.arrange.moving', 'Moving {name}', { name: it.title || it.name })
         : hidden(rowKey(), it.id) ? (it.title || it.name) + ' ' + t('home.arrange.isHidden', '(hidden)')
         : inFolder(rowKey(), it.id) ? t('home.arrange.isInFolder', '{name} (in More apps)', { name: it.title })
         : (it.title || it.name);
     }
+    followPreview();
   }
 
   // ---------------------------------------------------------------- scrolling
+
+  /*
+   * The rows' area scrolls up and down only when they do not all fit, to
+   * keep the row in focus whole, its title included.
+   */
+  var rowsScroll = { to: 0, timer: null };
+  function keepRowInView(instant) {
+    var box = $('rows'), active = box.querySelector('.row.active');
+    if (!active) return;
+    var view = box.clientHeight, y = box.scrollTop;
+    var top = active.offsetTop - 6, bottom = active.offsetTop + active.offsetHeight + 6;
+    if (bottom > y + view) y = bottom - view;
+    if (top < y) y = top;
+    y = Math.max(0, Math.min(y, box.scrollHeight - view));
+    if (y === rowsScroll.to && Math.abs(box.scrollTop - y) < 1) return;
+    rowsScroll.to = y;
+    box.className = y > 0 ? 'scrolled' : '';
+    clearInterval(rowsScroll.timer);
+    if (instant) { box.scrollTop = y; return; }
+    var from = box.scrollTop, start = Date.now();
+    rowsScroll.timer = setInterval(function () {
+      var k = Math.min(1, (Date.now() - start) / 200);
+      box.scrollTop = from + (y - from) * (1 - Math.pow(1 - k, 3));
+      if (k >= 1) clearInterval(rowsScroll.timer);
+    }, 16);
+  }
 
   /*
    * The rows move by script, a frame at a time, not by a CSS transition
@@ -1110,8 +1431,27 @@ html.faded #stage{opacity:0}
     $('mer').textContent = p[1];
     $('mer').hidden = !p[1];
     $('date').textContent = dateText(d);
-    var kind = '', title = '', via = '';
-    if (!layout || layout.showLastOn === false) {
+    if (guide.open) return renderGuideStrip();
+    var kind = '', title = '', via = '', pv = $('preview').className ? tilePreview.target : null;
+    if (pv) {
+      // The source names what the preview shows, and is Last watched again once it closes.
+      var it = pv.item;
+      kind = t('home.preview.live', 'Live preview');
+      if (pv.tv) {
+        var tvOn = tvNow(it.id);
+        title = it.name;
+        via = tvOn ? t('home.tv.via', 'Internet TV, {group}: {title}', { group: it.group || '', title: tvOn.title })
+          : it.group ? t('home.tv.viaGroup', 'Internet TV, {group}', { group: it.group }) : t('home.row.iptv', 'Internet TV');
+      } else if (pv.port) {
+        title = it.name;
+        via = it.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: pv.port, via: it.via }) : t('home.dev.port', 'HDMI {port}', { port: pv.port });
+      } else {
+        var shows = guideData[it.id] || [];
+        title = it.name;
+        via = shows.length ? t('home.now.channelShow', 'Channel {number}: {title}', { number: it.number, title: shows[0].title })
+          : t('home.now.channel', 'Channel {number}', { number: it.number });
+      }
+    } else if (!layout || layout.showLastOn === false) {
       // The source can arrive before its saved visibility. Keep the clock's space.
     } else if (lastOn.kind === 'input') {
       kind = t('home.now.lastWatched', 'Last watched');
@@ -1143,7 +1483,7 @@ html.faded #stage{opacity:0}
   var picture = null;
   var pictureRevision = 0;
   var pictureSource = null;
-  var HDR_NAMES = { hdr10: 'HDR10', hlg: 'HLG', dolby_vision: t('home.plate.dolby', 'Dolby Vision') };
+  var HDR_NAMES = { hdr10: 'HDR10', hlg: 'HLG', dolby_vision: t('home.plate.dolby', 'Dolby Vision'), technicolor: t('home.plate.technicolor', 'Technicolor HDR') };
 
   function refreshPicture() {
     var revision = ++pictureRevision;
@@ -1178,22 +1518,36 @@ html.faded #stage{opacity:0}
     if (s) {
       // An app's video, noted while it played: it has stopped since.
       if (s.played) sig.push(t('home.plate.played', 'Last video'));
-      sig.push(s.hz ? t('home.plate.size', '{width} \u00d7 {height} at {hz} Hz', { width: s.width, height: s.height, hz: hz(s.hz) })
-        : t('home.plate.sizeOnly', '{width} \u00d7 {height}', { width: s.width, height: s.height }));
-      if (s.chroma) sig.push(s.bits ? t('home.plate.depth', '{chroma}, {bits}-bit', { chroma: s.chroma.replace(/^YCbCr /, ''), bits: s.bits }) : s.chroma);
-      if (HDR_NAMES[s.hdr]) sig.push(HDR_NAMES[s.hdr]);
-      if (s.vrr) sig.push(t('home.plate.vrr', 'VRR'));
-      if (s.allm) sig.push(t('home.plate.allm', 'Low latency'));
+      sig = sig.concat(signalParts(s));
     } else if (lastOn.kind === 'input') {
       sig.push(t('home.plate.noSignal', 'No picture coming in'));
     }
-    $('plSig').innerHTML = sig.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
+    $('plSig').innerHTML = spans(sig);
     $('plMode').textContent = p.mode ? p.mode.display : '';
-    $('plStrip').innerHTML = p.mode && typeof p.light === 'number'
+    $('plStrip').innerHTML = lightHtml(p);
+    $('plate').className = '';
+  }
+
+  function signalParts(s) {
+    var sig = [s.interlaced && s.hz ? t('home.plate.sizeInterlaced', '{width} \u00d7 {height}i at {hz} Hz', { width: s.width, height: s.height, hz: hz(s.hz) })
+      : s.hz ? t('home.plate.size', '{width} \u00d7 {height} at {hz} Hz', { width: s.width, height: s.height, hz: hz(s.hz) })
+      : t('home.plate.sizeOnly', '{width} \u00d7 {height}', { width: s.width, height: s.height })];
+    // A channel says SDR outright: broadcast in HDR is the exception worth seeing.
+    if (s.broadcast && s.hdr === 'sdr') sig.push(t('home.plate.sdr', 'SDR'));
+    if (s.chroma) sig.push(s.bits ? t('home.plate.depth', '{chroma}, {bits}-bit', { chroma: s.chroma.replace(/^YCbCr /, ''), bits: s.bits }) : s.chroma);
+    if (HDR_NAMES[s.hdr]) sig.push(HDR_NAMES[s.hdr]);
+    if (s.vrr) sig.push(t('home.plate.vrr', 'VRR'));
+    if (s.allm) sig.push(t('home.plate.allm', 'Low latency'));
+    return sig;
+  }
+
+  function spans(list) { return list.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join(''); }
+
+  function lightHtml(p) {
+    return p.mode && typeof p.light === 'number'
       ? '<div><b>' + esc(p.oled ? t('home.plate.oledLight', 'OLED light') : t('home.plate.backlight', 'Backlight')) +
         '</b>' + esc(p.light) + '</div>'
       : '';
-    $('plate').className = '';
   }
 
   // ---------------------------------------------------------------- actions
@@ -1256,6 +1610,10 @@ html.faded #stage{opacity:0}
 
   // Off screen: dark at once, so it comes back dark and fades in.
   function darken() {
+    // Off screen, the stream lets go of the provider: an account may allow one.
+    if (player.open) closePlayer();
+    if (guide.open) closeGuide();
+    stopPreview();
     clearTimeout(fadeBack);
     opening = false;
     if (!fadeOn) return;
@@ -1283,10 +1641,25 @@ html.faded #stage{opacity:0}
     var kind = rowKey(), it = items(kind)[colOf(kind)];
     if (!it) return;
     if (it.folder) return openFolder();
+    if (kind === 'iptv') {
+      if (it.add) return openAdder();
+      if (it.guide) return openGuide(null);
+      var bad = tvUnplayable(it);
+      if (bad) return toast(it.name, bad);
+      return openPlayer(it);
+    }
+    // The input goes back to its own app, which opens it full screen.
+    var preview = tilePreview.target;
+    stopPreview();
+    if (preview) tilePreview.opened = preview.key;
     fadeThenOpen(it.overlay === true, function (done) {
       postJson('/api/home/open', { kind: kind, id: it.id }, function (r) {
         done(!!(r && r.ok));
-        if (!r || !r.ok) toast(t('home.openFailed', 'That did not open'), r && r.error);
+        if (!r || !r.ok) {
+          if (preview && tilePreview.opened === preview.key) tilePreview.opened = null;
+          followPreview();
+          toast(t('home.openFailed', 'That did not open'), r && r.error);
+        }
       });
     });
   }
@@ -1325,7 +1698,1406 @@ html.faded #stage{opacity:0}
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
       (layout && layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
-      (layout && layout.view === 'alternative' ? ' alternative' : '');
+      (layout && layout.view === 'alternative' ? ' alternative' : '') + (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
+      (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '');
+    followPreview();
+  }
+
+  // ---------------------------------------------------------------- preview
+
+  /*
+   * A live picture of the input whose tile is in focus, once focus has rested
+   * on it. The page plays the input as an external source; on a G3 (webOS
+   * 9.2.2) it showed in about 150 ms, sent nothing over CEC and woke nothing.
+   * The TV has one HDMI receiver, so previewing another input takes it off the
+   * one that was on (back on it in under a second). Devices behind one
+   * receiver share its input, so each shows what that input shows.
+   *
+   * The video reports playing whether or not the input has a picture, so the
+   * server reads the receiver: none after a few tries, and the video lets the
+   * input go and the note says so.
+   */
+  var PREVIEW_DWELL_MS = 400;
+  var PREVIEW_START_MS = 4000;
+  var PREVIEW_SIGNAL_MS = 1000;
+  var PREVIEW_SIGNAL_TRIES = 3;
+  // A G3's decoder had no format for an HD channel 1.8 s after the picture
+  // showed, and had it 1.2 s later; SD channels are quicker.
+  var PREVIEW_CHANNEL_INFO_MS = 500;
+  var PREVIEW_CHANNEL_POLL_MS = 400;
+  var PREVIEW_CHANNEL_TRIES = 15;
+  // target: { key, row, item, port } - port for an input, 0 for a channel.
+  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null };
+
+  // What the tile in focus would preview: a connected input or a TV channel.
+  // Devices on one input share its key, so moving between them keeps the picture.
+  function previewTarget() {
+    if (!layout || layout.livePreview !== true || document.hidden || opening) return null;
+    if (guide.open) {
+      var gi = guide.list[guide.row];
+      return gi ? { key: 'tv' + gi.id, row: 'iptv', item: gi, port: 0, tv: true } : null;
+    }
+    if (state.arranging || state.bar >= 0 || state.rail || recents.open || finder.open || folder.open || adder.open) {
+      tilePreview.opened = null;
+      return null;
+    }
+    var row = rowKey(), it = items(row)[colOf(row)];
+    if (!it) { tilePreview.opened = null; return null; }
+    var target = null;
+    if (row === 'dev' && !it.unused && it.port >= 1 && it.port <= 4) target = { key: 'hdmi' + it.port, row: row, item: it, port: it.port };
+    if (row === 'ch' && !it.radio && it.id) target = { key: 'ch' + it.id, row: row, item: it, port: 0 };
+    if (row === 'iptv' && !it.add && !it.guide && !tvUnplayable(it)) target = { key: 'tv' + it.id, row: row, item: it, port: 0, tv: true };
+    // A guide or catalogue reply can repaint Home before the input opens.
+    // Keep that tile released until focus moves away or Home returns.
+    if (target && target.key === tilePreview.opened) return null;
+    tilePreview.opened = null;
+    return target;
+  }
+
+  // Called wherever focus or what covers the rows may have changed.
+  function followPreview() {
+    // The player has the <video> while it is open.
+    if (player.open) return;
+    var next = previewTarget();
+    if (next && tilePreview.target && next.key === tilePreview.target.key) {
+      if (tilePreview.target.item !== next.item) { tilePreview.target = next; if ($('preview').className) renderNow(); }
+      var details = layout.picture === true;
+      if (details !== tilePreview.details) {
+        tilePreview.details = details;
+        renderPreviewInfo();
+        if (details && next.port && !tilePreview.info && tilePreview.playing && !tilePreview.blank) loadPreviewInfo(next, tilePreview.gen);
+      }
+      return;
+    }
+    stopPreview();
+    if (!next) return;
+    tilePreview.target = next;
+    tilePreview.details = layout.picture === true;
+    var gen = tilePreview.gen;
+    // A stream opens a connection to the provider: a longer rest before it does.
+    tilePreview.timer = setTimeout(function () { if (gen === tilePreview.gen) startPreview(next); }, next.tv ? TV_DWELL_MS : PREVIEW_DWELL_MS);
+  }
+
+  /*
+   * Always, whatever was playing: a stream set as the video's src has no
+   * <source> children, and returning early on that left it connected.
+   */
+  function releaseVideo() {
+    var v = $('pvVideo');
+    v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = null;
+    try { v.pause(); } catch (e) {}
+    while (v.firstChild) v.removeChild(v.firstChild);
+    // Hiding the element keeps the input, tuner or stream; emptied and loaded, it lets it go.
+    if (v.getAttribute('src') !== null) v.removeAttribute('src');
+    try { v.load(); } catch (e) {}
+  }
+
+  function stopPreview() {
+    // The player's stream is the player's to stop.
+    if (player.open) return;
+    var shown = !!$('preview').className;
+    tilePreview.gen++;
+    clearTimeout(tilePreview.timer);
+    tilePreview.timer = null;
+    var wasTv = tilePreview.target && tilePreview.target.tv || tvStream.item;
+    tilePreview.target = null;
+    tilePreview.playing = false;
+    tilePreview.blank = false;
+    tilePreview.info = null;
+    if (wasTv) stopTvStream();
+    else releaseVideo();
+    $('preview').className = '';
+    $('now').className = '';
+    if (!shown) return;
+    renderNow();
+    // The preview may have moved the receiver off the input the plate describes.
+    refreshPicture();
+  }
+
+  /*
+   * A channel's format is polled whether or not the band shows, as it is also
+   * how a channel off air is told: BBC FOUR HD and BBC THREE HD in the
+   * afternoon on a G3 played with no format and a black picture.
+   */
+  function loadPreviewInfo(target, gen, tries) {
+    var details = !!layout && layout.picture === true;
+    if (target.port && !details) return;
+    if (tries === undefined) tries = target.port ? 1 : PREVIEW_CHANNEL_TRIES;
+    getJson('/api/home/picture?kind=' + (target.port ? 'input&port=' + target.port : 'channel'), function (r) {
+      if (gen !== tilePreview.gen || !r || !r.ok) return;
+      // A channel's decoder reports its format a moment after the picture
+      // shows; the band waits for it, rather than showing half and growing.
+      if (!target.port && !r.signal) {
+        if (tries > 1) {
+          return setTimeout(function () { if (gen === tilePreview.gen) loadPreviewInfo(target, gen, tries - 1); }, PREVIEW_CHANNEL_POLL_MS);
+        }
+        return blankPreview();
+      }
+      tilePreview.info = r;
+      renderPreviewInfo();
+    });
+  }
+
+  function renderPreviewInfo() {
+    if (tilePreview.blank || !$('preview').className) return;
+    var p = tilePreview.info;
+    if (!layout || layout.picture !== true || !p) { $('preview').className = 'on'; return; }
+    var sig = p.signal ? signalParts(p.signal) : [];
+    $('pvMode').textContent = p.mode ? p.mode.display : '';
+    $('pvLight').innerHTML = lightHtml(p);
+    $('pvSig').innerHTML = spans(sig);
+    $('preview').className = 'on' + (p.mode || sig.length ? ' info' : '');
+  }
+
+  function blankPreview() {
+    if (tilePreview.target && tilePreview.target.tv) stopTvStream();
+    else releaseVideo();
+    tilePreview.blank = true;
+    $('preview').className = 'on blank';
+    renderNow();
+  }
+
+  /*
+   * An input plays as an external source. A channel plays as a broadcast
+   * preview: on a G3 (webOS 9.2.2) service/webos-broadcast-preview tuned
+   * tv://<channelId> in about 120 ms and left the TV's last channel as it
+   * was, where service/webos-broadcast with the same source made it the last
+   * channel.
+   */
+  /*
+   * An Internet TV channel previews muted, from the provider: no picture in
+   * 6 s says so, and the size and kind of stream show once it plays.
+   */
+  var TV_DWELL_MS = 600;
+  var TV_PREVIEW_START_MS = 6000;
+  function previewState(gen) {
+    return function (st) {
+      if (gen !== tilePreview.gen) return;
+      if (st === 'playing' || st === 'format') {
+        tilePreview.playing = true;
+        renderTvPreviewInfo();
+      } else if (st === 'nopicture' || st === 'failed' || st === 'stopped') blankPreview();
+    };
+  }
+  function renderTvPreviewInfo() {
+    if (tilePreview.blank || !$('preview').className || player.open) return;
+    var fmt = formatText();
+    $('pvMode').textContent = t('home.tv.stream', 'Internet stream');
+    $('pvLight').innerHTML = '';
+    $('pvSig').innerHTML = spans(fmt);
+    $('preview').className = 'on' + (layout.picture === true && fmt.length ? ' info' : '');
+  }
+  function startTvPreview(target) {
+    var gen = tilePreview.gen;
+    playTvStream(target.item, true, previewState(gen));
+    $('preview').className = 'on';
+    $('now').className = 'previewing';
+    renderNow();
+    tilePreview.timer = setTimeout(function () { if (gen === tilePreview.gen && !tilePreview.playing) blankPreview(); }, TV_PREVIEW_START_MS);
+  }
+
+  function startPreview(target) {
+    if (target.tv) return startTvPreview(target);
+    var gen = tilePreview.gen, v = $('pvVideo'), s = document.createElement('source');
+    var current = function () { return gen === tilePreview.gen; };
+    v.muted = true;
+    v.defaultMuted = true;
+    s.setAttribute('type', target.port ? 'service/webos-external' : 'service/webos-broadcast-preview');
+    s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
+    v.appendChild(s);
+    v.onplaying = function () {
+      if (!current() || tilePreview.playing) return;
+      tilePreview.playing = true;
+      if (target.port) checkSignal(target.port, gen, PREVIEW_SIGNAL_TRIES);
+      // The decoder reports the channel's format a moment after it plays.
+      else setTimeout(function () { if (current()) loadPreviewInfo(target, gen); }, PREVIEW_CHANNEL_INFO_MS);
+    };
+    v.onerror = function () { if (current()) blankPreview(); };
+    v.load();
+    // Promise or undefined, by engine; the events say how it went.
+    var played = v.play();
+    if (played && played.then) played.then(null, function () {});
+    $('preview').className = 'on';
+    $('now').className = 'previewing';
+    renderNow();
+    tilePreview.timer = setTimeout(function () { if (current() && !tilePreview.playing) blankPreview(); }, PREVIEW_START_MS);
+  }
+
+  function checkSignal(port, gen, tries) {
+    setTimeout(function () {
+      if (gen !== tilePreview.gen) return;
+      getJson('/api/home/signal?port=' + port, function (r) {
+        if (gen !== tilePreview.gen) return;
+        if (r && r.ok && r.signal) return loadPreviewInfo(tilePreview.target, gen);
+        if (tries > 1) return checkSignal(port, gen, tries - 1);
+        blankPreview();
+      });
+    }, PREVIEW_SIGNAL_MS);
+  }
+
+  // ---------------------------------------------------------------- internet tv
+
+  /*
+   * Internet TV: channels from the owner's IPTV playlists (lib/iptv). The
+   * server gives the row's tiles, now and next, and a play URL at each play;
+   * the page plays the stream in the preview's own <video>, so the preview,
+   * the player and a channel change all share one connection to the
+   * provider, which may allow only one.
+   */
+  var tvGuide = {}, tvGuideTimer = null;
+  var LOGO_KEY = 'glasshouse.iptv.logo.';
+
+  // "Harbour Sport 1" -> "HS1", up to four characters.
+  function monogram(name) {
+    var words = String(name || '').replace(/[^A-Za-z0-9À-ɏ ]+/g, ' ').split(/\s+/), out = '';
+    for (var i = 0; i < words.length && out.length < 4; i++) {
+      if (!words[i]) continue;
+      out += /^\d+$/.test(words[i]) ? words[i].slice(0, 4 - out.length) : words[i].charAt(0).toUpperCase();
+    }
+    return out || '?';
+  }
+
+  /*
+   * A channel's logo as type. Its look is decided once, from its pixels, and
+   * kept: one whose opaque pixels cover more than 60% of its box keeps its
+   * colours on a plate; any other is drawn as a warm-white silhouette.
+   */
+  function glyphHtml(it) {
+    var mono = '<span class="mono">' + esc(monogram(it.name)) + '</span>';
+    if (!it.logo) return mono;
+    var look = null;
+    try { look = window.localStorage.getItem(LOGO_KEY + it.logo); } catch (e) {}
+    if (look === 'none') return mono;
+    return '<img src="' + esc(it.logo) + '" alt="" data-mono="' + esc(monogram(it.name)) + '"' + (look ? ' class="' + look + '"' : ' data-judge="1" style="visibility:hidden"') + '>';
+  }
+
+  // Wired after each draw: judges a new logo, and puts the initials in a broken one's place.
+  function wireGlyphs(root) {
+    var imgs = (root || document).querySelectorAll('.glyph img');
+    for (var i = 0; i < imgs.length; i++) {
+      var img = imgs[i];
+      if (img.getAttribute('data-wired')) continue;
+      img.setAttribute('data-wired', '1');
+      img.onerror = function () {
+        var span = document.createElement('span');
+        span.className = 'mono';
+        span.textContent = this.getAttribute('data-mono') || '?';
+        if (this.parentNode) this.parentNode.replaceChild(span, this);
+      };
+      if (img.getAttribute('data-judge')) {
+        if (img.complete && img.naturalWidth) judgeLogo(img);
+        else img.onload = function () { judgeLogo(this); };
+      }
+    }
+  }
+
+  function judgeLogo(img) {
+    var look = 'mark';
+    try {
+      var w = 64, h = Math.max(1, Math.round(64 * img.naturalHeight / img.naturalWidth));
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      var g = c.getContext('2d');
+      g.drawImage(img, 0, 0, w, h);
+      var px = g.getImageData(0, 0, w, h).data, opaque = 0;
+      for (var p = 3; p < px.length; p += 4) if (px[p] > 32) opaque++;
+      if (opaque / (w * h) > 0.6) look = 'plate';
+      // Nothing drawn: a placeholder, shown as the initials.
+      else if (opaque / (w * h) < 0.02) look = 'none';
+    } catch (e) {}
+    try { window.localStorage.setItem(LOGO_KEY + img.getAttribute('src'), look); } catch (e) {}
+    // Every copy of this logo on the page, at once.
+    var same = document.querySelectorAll('.glyph img[data-judge]');
+    for (var i = 0; i < same.length; i++) {
+      if (same[i].getAttribute('src') !== img.getAttribute('src')) continue;
+      if (look === 'none') { same[i].onerror(); continue; }
+      same[i].className = look;
+      same[i].removeAttribute('data-judge');
+      same[i].style.visibility = '';
+    }
+    // The rows' markup changed under them; the next render redraws.
+    renderedRows = '';
+  }
+
+  /*
+   * Providers' names as Home shows them. Playlists prefix a tier or country
+   * ("VIP: ", "UK| ") and mark quality in superscript letters ("ᴴᴰ", "ᴿᴬᵂ"),
+   * and many are in capitals, so every tile of a row would read "VIP: BBC
+   * ...". The prefix goes, the marks become a quiet tag, and capitals are set
+   * in title case, short words kept as acronyms (BBC, ITV, F1) unless they
+   * are ordinary words. The dashboard's channel manager keeps the prefix and
+   * every mark (tvchannels.js tvmTidy), to tell variants apart.
+   */
+  var SUPER = { '\u1d2c': 'A', '\u1d2e': 'B', '\u1d30': 'D', '\u1d31': 'E', '\u1d33': 'G', '\u1d34': 'H', '\u1d35': 'I', '\u1d36': 'J',
+    '\u1d37': 'K', '\u1d38': 'L', '\u1d39': 'M', '\u1d3a': 'N', '\u1d3c': 'O', '\u1d3e': 'P', '\u1d3f': 'R', '\u1d40': 'T', '\u1d41': 'U',
+    '\u2c7d': 'V', '\u1d42': 'W', '\u02b0': 'h', '\u1d49': 'e', '\u1d5b': 'v', '\u1d9c': 'c', '\u1da0': 'f', '\u1d56': 'p', '\u02e2': 's',
+    '\u1d4f': 'k', '\u2074': '4', '\u2076': '6', '\u2070': '0', '\u00b9': '1', '\u00b2': '2', '\u00b3': '3', '\u2075': '5', '\u2078': '8', '\u2079': '9' };
+  var SUPER_RE = /[\u1d2c-\u1d6a\u1d9c-\u1dbf\u02b0-\u02ff\u2070-\u209f\u2c7d\u00b9\u00b2\u00b3]+/g;
+  var WORDS = ['and', 'the', 'of', 'on', 'in', 'at', 'to', 'for', 'one', 'two', 'sky', 'mix', 'box', 'max', 'now', 'plus', 'gold', 'life', 'kids', 'news',
+    'live', 'main', 'event', 'club', 'arena', 'extra', 'film', 'films', 'sport', 'sports', 'more', 'plus', 'red', 'blue', 'jr', 'pop', 'fox', 'hits'];
+  var KEEP_TAGS = /^(HD|FHD|UHD|4K|RAW|SD|HEVC|50FPS|60FPS|HDR)$/i;
+  var TAIL_MARK = '(?:HD|FHD|UHD|SD|LQ|4K|8K|HEVC|H\\.?26[45]|RAW|HDR|\\d{2,3} ?FPS|\\d{3,4}P)';
+  var TAIL_RE = new RegExp('\\s+(' + TAIL_MARK + '(?:/' + TAIL_MARK + ')*)$', 'i');
+  function titleCase(s) {
+    if (/[a-z]/.test(s)) return s;
+    return s.replace(/[A-Z][A-Z0-9'\u00c0-\u00de]*/g, function (w) {
+      if (w.length <= 3 && WORDS.indexOf(w.toLowerCase()) === -1) return w;
+      return w.charAt(0) + w.slice(1).toLowerCase();
+    });
+  }
+  function tidyName(raw) {
+    var tags = [];
+    var name = String(raw || '').replace(SUPER_RE, function (m) {
+      var plain = '';
+      for (var i = 0; i < m.length; i++) plain += SUPER[m.charAt(i)] || '';
+      if (plain && KEEP_TAGS.test(plain) && tags.indexOf(plain.toUpperCase()) === -1) tags.push(plain.toUpperCase());
+      return ' ';
+    });
+    // Decoration some providers add: "◉", "▶", "★".
+    name = name.replace(/[\u2190-\u21ff\u25a0-\u25ff\u2600-\u27bf\u2b00-\u2bff]+/g, ' ');
+    // A tier or country tag before the name: "VIP: ", "UK| ", "[UK] ".
+    name = name.replace(/^\s*(\[[^\]]{1,8}\]|[A-Z0-9+]{2,6}\s*[:|\u2022-])\s*/, '');
+    name = name.replace(/\s+/g, ' ').replace(/^[\s\/|:-]+|[\s\/|:-]+$/g, '');
+    // Marks written out at the end ("BBC NEWS HEVC", "ITV 1 HD/4K") go the same way as superscript ones.
+    var m;
+    while ((m = TAIL_RE.exec(name))) {
+      var marks = m[1].replace(/\s/g, '').toUpperCase().split('/');
+      for (var j = 0; j < marks.length; j++) if (KEEP_TAGS.test(marks[j]) && tags.indexOf(marks[j]) === -1) tags.push(marks[j]);
+      name = name.slice(0, m.index).replace(/[\s\/|:-]+$/, '');
+    }
+    return { name: titleCase(name) || String(raw || ''), tags: tags };
+  }
+  function tidyGroup(raw) {
+    var g = String(raw || '').replace(SUPER_RE, ' ').replace(/\s*\|\s*/g, ' ').replace(/\s+/g, ' ').replace(/^[\s\/:-]+|[\s\/:-]+$/g, '');
+    return titleCase(g);
+  }
+  // Applied once as the catalogue arrives; the provider's name stays in raw.
+  function tidyItem(it) {
+    if (it.raw !== undefined) return it;
+    // A name the owner gave it stands as written.
+    var n = it.renamed ? { name: it.name, tags: [] } : tidyName(it.name);
+    it.raw = it.name;
+    it.name = n.name;
+    it.tags = n.tags;
+    it.group = tidyGroup(it.group);
+    return it;
+  }
+
+  function tvShows(id) { return tvGuide[id] || []; }
+
+  // The programme on now, and its progress, or null.
+  function tvNow(id) {
+    var s = tvShows(id)[0];
+    if (!s || s.start > Date.now() || s.end <= Date.now()) return null;
+    return s;
+  }
+  function tvNext(id) {
+    var list = tvShows(id);
+    for (var i = 0; i < list.length; i++) if (list[i] && list[i].start > Date.now()) return list[i];
+    return null;
+  }
+  function pctOf(s) { return Math.max(0, Math.min(100, (Date.now() - s.start) / (s.end - s.start) * 100)); }
+
+  function refreshTvGuide() {
+    if (!data || (!(data.iptv && data.iptv.length) && !(data.iptvStatus && data.iptvStatus.lineup > 0))) return;
+    getJson('/api/iptv/guide', function (r) {
+      if (!r || !r.guide) return;
+      tvGuide = r.guide;
+      clearTimeout(tvGuideTimer);
+      // Redrawn at the next programme's start, not up to a minute late.
+      if (r.nextChange && r.nextChange > Date.now()) {
+        tvGuideTimer = setTimeout(refreshTvGuide, Math.min(r.nextChange - Date.now() + 800, 30 * 60000));
+      }
+      if (!state.arranging && data) renderWhenStill();
+      if (player.open) { renderBand(); if (player.list) renderList(); }
+    });
+  }
+
+  function tvUnplayable(it) {
+    if (it.missing) return t('home.tv.gone', 'Not in the playlist any more');
+    if (it.unplayable === 'drm') return t('home.tv.drm', 'Protected (DRM): can’t play here');
+    if (it.unplayable === 'headers') return t('home.tv.headers', 'Needs a player that sends its own headers');
+    if (it.unplayable) return t('home.tv.format', 'A stream this TV can’t open');
+    return null;
+  }
+
+  /*
+   * One stream at a time, through the preview's <video>. Each start bumps the
+   * generation, which strands any reply, timer or retry from the last; the
+   * last is torn down completely before the next opens.
+   */
+  // muted: the stream's own, kept here so a recovery reopens it as it is shown now.
+  var tvStream = { gen: 0, item: null, format: '', playing: false, waitingAt: 0, retried: false, watch: null, onState: null, leaseTimer: null,
+    muted: true, retryTimer: null };
+  var STREAM_START_MS = 12000;
+  var STALL_MS = 8000;
+
+  function stopTvStream() {
+    tvStream.gen++;
+    clearTimeout(tvStream.retryTimer);
+    tvStream.retryTimer = null;
+    clearInterval(tvStream.watch);
+    tvStream.watch = null;
+    tvStream.item = null;
+    tvStream.playing = false;
+    tvStream.onState = null;
+    releaseVideo();
+    lease(false);
+  }
+
+  /*
+   * Background refreshes wait while this lasts (lib/iptv), and while it says
+   * full screen, LG's idle screen saver stays held off (lib/idlesaver): the
+   * TV's media state does not see a stream in this page's <video>.
+   */
+  function lease(on) {
+    clearInterval(tvStream.leaseTimer);
+    tvStream.leaseTimer = null;
+    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open }); };
+    send();
+    if (on) tvStream.leaseTimer = setInterval(send, 60000);
+  }
+
+  /*
+   * Plays it in the <video>; onState(state, detail) hears 'playing',
+   * 'nopicture' (no frame in time), 'stopped' (stalled twice) and 'failed'.
+   * The URL is asked for fresh each time: an Xtream live link redirects to a
+   * token that expires.
+   */
+  function playTvStream(it, muted, onState) {
+    stopTvStream();
+    var gen = tvStream.gen;
+    tvStream.item = it;
+    tvStream.retried = false;
+    tvStream.onState = onState;
+    tvStream.muted = !!muted;
+    lease(true);
+    openTvStream(gen);
+  }
+
+  function openTvStream(gen) {
+    var it = tvStream.item;
+    var say = function (s, d) { if (gen === tvStream.gen && tvStream.onState) tvStream.onState(s, d); };
+    getJson('/api/iptv/stream?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key), function (r) {
+      if (gen !== tvStream.gen) return;
+      if (!r || !r.ok || !r.url) return say('failed', r && r.error);
+      var v = $('pvVideo');
+      tvStream.format = r.format === 'hls' ? 'HLS' : r.format === 'ts' ? 'MPEG-TS' : '';
+      // As shown now: the preview may have become the player while this was asked for.
+      v.muted = tvStream.muted;
+      v.defaultMuted = tvStream.muted;
+      v.onplaying = function () {
+        if (gen !== tvStream.gen) return;
+        tvStream.waitingAt = 0;
+        if (!tvStream.playing) { tvStream.playing = true; say('playing'); }
+      };
+      v.ontimeupdate = function () { if (gen === tvStream.gen) tvStream.waitingAt = 0; };
+      v.onwaiting = v.onstalled = function () { if (gen === tvStream.gen && !tvStream.waitingAt) tvStream.waitingAt = Date.now(); };
+      v.onloadedmetadata = function () { if (gen === tvStream.gen) say('format'); };
+      v.onerror = function () { if (gen === tvStream.gen) stalled(gen); };
+      v.src = r.url;
+      v.load();
+      var played = v.play();
+      if (played && played.then) played.then(null, function () {});
+      var startedAt = Date.now();
+      clearInterval(tvStream.watch);
+      tvStream.watch = setInterval(function () {
+        if (gen !== tvStream.gen) return;
+        if (!tvStream.playing && Date.now() - startedAt > STREAM_START_MS) { clearInterval(tvStream.watch); return say('nopicture'); }
+        if (tvStream.waitingAt && Date.now() - tvStream.waitingAt > STALL_MS) stalled(gen);
+      }, 1000);
+    });
+  }
+
+  // Torn down and opened once more, with a fresh URL; then left stopped.
+  function stalled(gen) {
+    if (gen !== tvStream.gen) return;
+    if (tvStream.retried) {
+      clearInterval(tvStream.watch);
+      var it = tvStream.item, cb = tvStream.onState;
+      tvStream.gen++;
+      releaseVideo();
+      tvStream.item = it;
+      if (cb) cb('stopped');
+      return;
+    }
+    tvStream.retried = true;
+    tvStream.playing = false;
+    tvStream.waitingAt = 0;
+    // Recovering, a preview is not playing: OK opens the player afresh rather than adopting it.
+    if (tilePreview.target && tilePreview.target.tv) tilePreview.playing = false;
+    var keep = tvStream.item, keepCb = tvStream.onState;
+    var retryGen = ++tvStream.gen;
+    releaseVideo();
+    tvStream.item = keep;
+    tvStream.onState = keepCb;
+    // Its own generation: a stop or another play meanwhile strands it.
+    tvStream.retryTimer = setTimeout(function () {
+      tvStream.retryTimer = null;
+      if (tvStream.gen === retryGen && tvStream.item === keep) openTvStream(retryGen);
+    }, 400);
+  }
+
+  function formatText() {
+    var v = $('pvVideo'), out = [];
+    if (v.videoWidth && v.videoHeight) out.push(t('home.plate.sizeOnly', '{width} × {height}', { width: v.videoWidth, height: v.videoHeight }));
+    if (tvStream.format) out.push(tvStream.format);
+    return out;
+  }
+
+  // ---------------------------------------------------------------- player
+
+  /*
+   * OK on an Internet TV tile. Its order is the row's as it stands when the
+   * player opens, frozen until it closes, so channel up and down and the
+   * numbers reach the same channels however the row would reorder itself.
+   */
+  var player = { open: false, okDown: false, list: false, items: [], idx: 0, bandTimer: null, listTimer: null, group: 0, groups: [], lcol: 0,
+    digits: '', digitTimer: null, failed: false };
+  var BAND_MS = 5000, LIST_IDLE_MS = 10000, DIGIT_MS = 2000, ZAP_DWELL_MS = 600, EXPAND_MS = 280;
+  var zapTimer = null;
+
+  function tvItems() {
+    var out = [];
+    (data.order.iptv || []).forEach(function (id) { var it = byId('iptv', id); if (it) out.push(it); });
+    return out;
+  }
+
+  /*
+   * The whole lineup (/api/iptv/lineup): the row shows the favourites, and
+   * the player, its channel list, the number keys and the guide go through
+   * every channel in it. Read again when the server's lineup revision moves.
+   */
+  var tvLineup = null, tvLineupRev = -1, tvLineupBusy = false;
+  function loadLineup() {
+    var st = data && data.iptvStatus;
+    if (!st || typeof st.lineupRevision !== 'number' || st.lineupRevision === tvLineupRev || tvLineupBusy) return;
+    tvLineupBusy = true;
+    getJson('/api/iptv/lineup', function (r) {
+      tvLineupBusy = false;
+      if (!r || !r.ok) return;
+      (r.channels || []).forEach(tidyItem);
+      var bySection = {};
+      (r.sections || []).forEach(function (sec) { bySection[sec.id] = sec; });
+      tvLineup = { channels: r.channels || [], sections: r.sections || [], bySection: bySection, favourites: r.favourites || [] };
+      tvLineupRev = r.revision;
+      if (data && data.iptvStatus && data.iptvStatus.lineupRevision !== tvLineupRev) loadLineup();
+    });
+  }
+  function playable(it) { return !it.missing && !it.unplayable && !it.pending; }
+  function lineupItems() { return (tvLineup && tvLineup.channels.length ? tvLineup.channels : tvItems()).filter(playable); }
+  // A section's name: the owner's, else its group's, else the picks'.
+  function sectionName(key) {
+    var sec = tvLineup && tvLineup.bySection[key];
+    if (sec) return sec.name || (sec.kind === 'group' ? tidyGroup(sec.group) : '') || t('home.tv.myChannels', 'My channels');
+    return key || t('home.tv.ungrouped', 'Channels');
+  }
+  function sectionOf(it) { return tvLineup && it.sid ? it.sid : it.group || ''; }
+
+  function openPlayer(it) {
+    var adopt = tilePreview.target && tilePreview.target.tv && tilePreview.target.item.id === it.id && tilePreview.playing && !tilePreview.blank;
+    // The preview's dwell and no-picture timers go before the player takes the
+    // <video>: stopPreview leaves the player's stream alone once it is open.
+    if (!adopt) stopPreview();
+    player.items = lineupItems();
+    // A favourite whose section has not been read yet plays from the row's list.
+    if (indexIn(player.items, it.id) === -1) player.items = tvItems().filter(function (x) { return !x.missing && !x.unplayable; });
+    player.idx = Math.max(0, indexIn(player.items, it.id));
+    player.open = true;
+    player.list = false;
+    player.failed = false;
+    state.rail = false;
+    postJson('/api/home/open', { kind: 'iptv', id: it.id });
+    var pv = $('preview');
+    if (adopt) {
+      // The preview's picture grows into the player: the stream is not opened again.
+      var from = { x: pv.offsetLeft, y: pv.offsetTop, w: pv.offsetWidth, h: pv.offsetHeight };
+      tilePreview.gen++;
+      clearTimeout(tilePreview.timer);
+      tilePreview.target = null;
+      tvStream.onState = playerState;
+      tvStream.muted = false;
+      $('pvVideo').muted = false;
+      pv.className = 'on full';
+      expandFrom(pv, from);
+      // The same stream, now full screen.
+      lease(true);
+    } else {
+      pv.className = 'on full';
+      startPlayerStream();
+    }
+    $('now').className = 'previewing';
+    stageClass();
+    showBand();
+    renderPmsg();
+  }
+
+  function expandFrom(pv, r) {
+    var s = 'translate(' + r.x + 'px,' + r.y + 'px) scale(' + (r.w / 1920) + ',' + (r.h / 1080) + ')';
+    pv.style.webkitTransition = pv.style.transition = 'none';
+    pv.style.webkitTransform = pv.style.transform = s;
+    void pv.offsetWidth;
+    var ease = '-webkit-transform ' + EXPAND_MS + 'ms cubic-bezier(.2,.7,.2,1)';
+    pv.style.webkitTransition = ease;
+    pv.style.transition = 'transform ' + EXPAND_MS + 'ms cubic-bezier(.2,.7,.2,1)';
+    pv.style.webkitTransform = pv.style.transform = 'none';
+    setTimeout(function () { pv.style.webkitTransition = pv.style.transition = ''; pv.style.webkitTransform = pv.style.transform = ''; }, EXPAND_MS + 40);
+  }
+
+  function indexIn(list, id) {
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return i;
+    return -1;
+  }
+
+  function playerChannel() { return player.items[player.idx]; }
+
+  function startPlayerStream() {
+    var it = playerChannel();
+    player.failed = false;
+    renderPmsg(t('home.tv.connecting', 'Connecting to {name}', { name: it.name }));
+    playTvStream(it, false, playerState);
+  }
+
+  function playerState(s) {
+    if (!player.open) return;
+    if (s === 'playing') { player.failed = false; renderPmsg(); renderBand(); }
+    else if (s === 'format') renderBand();
+    else if (s === 'nopicture' || s === 'failed' || s === 'stopped') {
+      // Nothing plays: the stream, its lease and the screen saver's hold go.
+      // The channel stays chosen, for OK to try again.
+      stopTvStream();
+      player.failed = true;
+      renderPmsg(s === 'stopped' ? t('home.tv.stopped', 'The stream stopped') : t('home.tv.noStream', 'This channel isn’t playing'),
+        t('home.tv.tryAgain', 'OK tries again. If someone else is watching on this account, it may allow only one stream.'));
+      showBand(true);
+    }
+  }
+
+  function renderPmsg(title, detail) {
+    var el = $('pmsg');
+    if (!title) { el.className = ''; return; }
+    el.innerHTML = '<b>' + esc(title) + '</b>' + (detail ? '<span>' + esc(detail) + '</span>' : '');
+    el.className = 'show';
+  }
+
+  // Back to Home, the tile in focus. With Live preview on, the picture
+  // shrinks back to the preview and goes on playing there.
+  function closePlayer() {
+    if (!player.open) return;
+    var it = playerChannel();
+    player.open = false;
+    player.list = false;
+    clearTimeout(player.bandTimer);
+    clearTimeout(player.listTimer);
+    clearTimeout(zapTimer);
+    clearDigits();
+    renderPmsg();
+    $('player').className = '';
+    var pv = $('preview');
+    // The row takes its new order now, so the tile is found again by id.
+    if (it) {
+      var ri = layout.rows.indexOf('iptv');
+      if (ri !== -1) {
+        state.row = ri;
+        var c = indexIn(items('iptv'), it.id);
+        if (c !== -1) state.col.iptv = c;
+      }
+    }
+    var keep = layout.livePreview === true && tvStream.playing && !document.hidden && it;
+    if (keep) {
+      tvStream.muted = true;
+      $('pvVideo').muted = true;
+      pv.className = 'on';
+      tilePreview.target = { key: 'tv' + it.id, row: 'iptv', item: it, port: 0, tv: true };
+      tilePreview.playing = true;
+      tilePreview.blank = false;
+      tvStream.onState = previewState(tilePreview.gen);
+      lease(true);
+      renderTvPreviewInfo();
+    } else {
+      stopTvStream();
+      pv.className = '';
+      $('now').className = '';
+    }
+    stageClass();
+    render();
+    renderNow();
+  }
+
+  function showBand(stay) {
+    renderBand();
+    $('player').className = 'band' + (player.list ? ' list' : '');
+    clearTimeout(player.bandTimer);
+    if (stay && player.failed) return;
+    player.bandTimer = setTimeout(function () {
+      if (player.open) $('player').className = player.list ? 'list' : '';
+    }, BAND_MS);
+  }
+
+  function renderBand() {
+    var it = playerChannel();
+    if (!it) return;
+    $('bdGlyph').innerHTML = glyphHtml(it);
+    wireGlyphs($('bdGlyph'));
+    $('bdName').textContent = it.name;
+    var now = tvNow(it.id), next = tvNext(it.id);
+    $('bdNow').innerHTML = now ? '<b>' + esc(t('home.tv.now', 'Now')) + '</b><span class="t">' +
+      esc(t('home.tv.span', '{from} to {to}', { from: hm(new Date(now.start)), to: hm(new Date(now.end)) })) + '</span>' + esc(now.title)
+      : '<span class="t">' + esc(it.group || '') + '</span>';
+    $('bdNext').innerHTML = next ? '<b>' + esc(t('home.tv.next', 'Next')) + '</b><span class="t">' + esc(hm(new Date(next.start))) + '</span>' + esc(next.title) : '';
+    $('bdBar').style.width = now ? Math.round(pctOf(now) * 10) / 10 + '%' : '0';
+    $('bdBar').parentNode.style.visibility = now ? '' : 'hidden';
+    var fmt = formatText();
+    if (it.tags && it.tags.length && !fmt.length) fmt = it.tags;
+    $('bdFmt').innerHTML = (player.idx + 1 ? '<span>' + esc(t('home.tv.position', '{n} of {total}', { n: player.idx + 1, total: player.items.length })) + '</span>' : '') +
+      (fmt.length ? '<span>' + esc(fmt.join('\u2002\u2002')) + '</span>' : '');
+  }
+
+  // The channel a channel up, down or number reaches, after a short dwell.
+  function zapTo(idx) {
+    if (!player.items.length) return;
+    player.idx = (idx + player.items.length) % player.items.length;
+    player.failed = false;
+    stopTvStream();
+    renderPmsg();
+    showBand();
+    if (player.list) { player.lcol = indexIn(groupItems(), playerChannel().id); renderList(); }
+    clearTimeout(zapTimer);
+    zapTimer = setTimeout(function () {
+      if (!player.open) return;
+      postJson('/api/home/open', { kind: 'iptv', id: playerChannel().id });
+      startPlayerStream();
+    }, ZAP_DWELL_MS);
+  }
+
+  // The list's pages: the lineup's sections, in their order.
+  function listGroups() {
+    var out = [];
+    player.items.forEach(function (it) { if (out.indexOf(sectionOf(it)) === -1) out.push(sectionOf(it)); });
+    return out;
+  }
+  function groupItems() {
+    var g = player.groups[player.group];
+    return player.items.filter(function (it) { return sectionOf(it) === g; });
+  }
+
+  function openList() {
+    player.groups = listGroups();
+    player.group = Math.max(0, player.groups.indexOf(sectionOf(playerChannel())));
+    player.lcol = Math.max(0, indexIn(groupItems(), playerChannel().id));
+    player.list = true;
+    renderList();
+    $('player').className = 'list band';
+    showBand();
+    listIdle();
+  }
+
+  function closeList() {
+    player.list = false;
+    clearTimeout(player.listTimer);
+    $('player').className = '';
+  }
+
+  function listIdle() {
+    clearTimeout(player.listTimer);
+    player.listTimer = setTimeout(function () { if (player.open && player.list) closeList(); }, LIST_IDLE_MS);
+  }
+
+  // A section can hold hundreds of channels: only those near the focus are drawn.
+  var LIST_WINDOW = 40;
+  function renderList() {
+    var list = groupItems(), g = player.groups[player.group];
+    $('clGroup').textContent = sectionName(g);
+    $('clCount').innerHTML = (player.groups.length > 1 ? '<i>‹</i>' : '') +
+      esc(list.length === 1 ? t('home.tv.oneChannel', '1 channel') : t('home.tv.channels', '{n} channels', { n: list.length })) +
+      (player.groups.length > 1 ? '<i>›</i>' : '');
+    var html = '', on = playerChannel();
+    var from = Math.max(0, Math.min(player.lcol - 12, list.length - LIST_WINDOW));
+    list.slice(from, from + LIST_WINDOW).forEach(function (it, n) {
+      var i = from + n, now = tvNow(it.id);
+      html += '<div class="cl' + (i === player.lcol ? ' focus' : '') + (on && it.id === on.id ? ' on' : '') + '" data-l="' + i + '">' +
+        '<div class="glyph">' + glyphHtml(it) + '</div><div class="n">' + esc(it.number || String(indexIn(player.items, it.id) + 1)) + '</div>' +
+        '<div class="c"><div class="nm">' + esc(it.name) + '</div><div class="pg">' + esc(now ? now.title : it.group || '') + '</div>' +
+        (now ? '<div class="bar"><i style="width:' + Math.round(pctOf(now)) + '%"></i></div>' : '') + '</div></div>';
+    });
+    $('clItems').innerHTML = html;
+    wireGlyphs($('clItems'));
+    var row = $('clItems').children[player.lcol - from];
+    var view = $('clWrap').clientHeight - 12;
+    var y = row ? Math.max(0, row.offsetTop + row.offsetHeight - view) : 0;
+    $('clItems').style.webkitTransform = $('clItems').style.transform = 'translateY(' + (-y) + 'px)';
+  }
+
+  function clearDigits() {
+    clearTimeout(player.digitTimer);
+    player.digits = '';
+    $('digits').className = '';
+  }
+
+  // A channel by its number in the lineup, or its place in the row's order before the lineup is read.
+  function byNumber(n) {
+    for (var i = 0; i < player.items.length; i++) if (+player.items[i].number === n) return i;
+    return tvLineup ? -1 : n - 1 < player.items.length ? n - 1 : -1;
+  }
+
+  // Numbers as the lineup gives them, entered within 2 s.
+  function digit(d) {
+    player.digits = (player.digits + d).slice(-4);
+    var n = +player.digits, it = player.items[byNumber(n)];
+    $('digits').innerHTML = esc(player.digits) + '<small>' + esc(it ? it.name : t('home.tv.noNumber', 'No channel {n}', { n: n })) + '</small>';
+    $('digits').className = 'show';
+    clearTimeout(player.digitTimer);
+    player.digitTimer = setTimeout(function () {
+      var target = byNumber(+player.digits);
+      clearDigits();
+      if (target !== -1 && target !== player.idx) zapTo(target);
+    }, DIGIT_MS);
+  }
+
+  function playerKey(k) {
+    if (k === KEY.back) {
+      if (player.digits) return clearDigits();
+      if (player.list) return closeList();
+      return closePlayer();
+    }
+    if (k >= 48 && k <= 57) return digit(k - 48);
+    if (k >= 96 && k <= 105) return digit(k - 96);
+    if (k === KEY.chUp) return zapTo(player.idx + 1);
+    if (k === KEY.chDown) return zapTo(player.idx - 1);
+    if (k === KEY.info) return showBand();
+    if (player.list) {
+      listIdle();
+      var list = groupItems();
+      if (k === KEY.up) player.lcol = Math.max(0, player.lcol - 1);
+      else if (k === KEY.down) player.lcol = Math.min(list.length - 1, player.lcol + 1);
+      else if ((k === KEY.left || k === KEY.right) && player.groups.length > 1) {
+        player.group = (player.group + (k === KEY.left ? -1 : 1) + player.groups.length) % player.groups.length;
+        player.lcol = 0;
+      } else if (k === KEY.ok) {
+        var pick = list[player.lcol];
+        if (pick && pick.id !== playerChannel().id) { closeList(); return zapTo(indexIn(player.items, pick.id)); }
+        return closeList();
+      }
+      return renderList();
+    }
+    if (k === KEY.ok) {
+      if (player.failed) { showBand(); return startPlayerStream(); }
+      return openList();
+    }
+    // Up and down change channel, as channel up and down do.
+    if (k === KEY.up) return zapTo(player.idx + 1);
+    if (k === KEY.down) return zapTo(player.idx - 1);
+    if (k === KEY.left || k === KEY.right) return openList();
+  }
+
+  function playerClick(target) {
+    var row = target;
+    while (row && row !== document.body && !(row.className && /\bcl\b/.test(row.className))) row = row.parentNode;
+    if (row && row !== document.body && player.list) {
+      player.lcol = +row.getAttribute('data-l');
+      return playerKey(KEY.ok);
+    }
+    if (player.list) return closeList();
+    if (player.failed) return startPlayerStream();
+    openList();
+  }
+
+  // ---------------------------------------------------------------- guide
+
+  /*
+   * The guide: two and a half hours of Internet TV's channels at a time,
+   * from the half hour before now, in the rows' place. The day files of each
+   * channel's schedule come from the server as they were written (lib/iptv),
+   * a channel at a time as its row comes into view. Up and down keep the
+   * time in focus; left and right go a programme at a time, moving the hours
+   * shown when one starts outside them. OK on a programme on now plays its
+   * channel. The groups are tabs above, reached by Up from the first row.
+   */
+  var GUIDE_SPAN_MS = 150 * 60000, HALF_HOUR = 30 * 60000, GUIDE_LANE_PX = 1396, GUIDE_ROW_PX = 79;
+  var GUIDE_BACK_MS = 2 * 3600000, GUIDE_AHEAD_MS = 24 * 3600000;
+  // byDay[id][day]: a channel's programmes from one day file. days[id@day]:
+  // 'loading', 'done', or the time a request failed, to try again a minute on.
+  var GUIDE_CACHE_MS = 10 * 60000;
+  var guide = { open: false, okDown: false, tabs: false, groups: [], group: 0, list: [], row: 0, top: 0, at: 0, start: 0, byDay: {}, days: {},
+    loadedAt: 0 };
+
+  function guideAll() { return lineupItems(); }
+  // The guide's tabs: All, the favourites, then each section.
+  function guideTabList(key) {
+    var all = guideAll();
+    if (key === '') return all;
+    if (key === '*') return all.filter(function (x) { return x.fav; });
+    return all.filter(function (x) { return sectionOf(x) === key; });
+  }
+
+  function openGuide(fromId) {
+    var all = guideAll();
+    if (!all.length) return;
+    stopPreview();
+    guide.open = true;
+    guide.tabs = false;
+    guide.groups = [''];
+    if (tvLineup && all.some(function (it) { return it.fav; }) && all.some(function (it) { return !it.fav; })) guide.groups.push('*');
+    all.forEach(function (it) { if (guide.groups.indexOf(sectionOf(it)) === -1) guide.groups.push(sectionOf(it)); });
+    guide.group = 0;
+    guide.list = all;
+    guide.row = Math.max(0, fromId ? indexIn(all, fromId) : 0);
+    guide.top = 0;
+    guide.start = Math.floor(Date.now() / HALF_HOUR) * HALF_HOUR;
+    guide.at = Date.now();
+    // Read afresh each time it opens: the server refreshes the guide meanwhile.
+    clearGuideCache();
+    stageClass();
+    renderGuide();
+  }
+
+  function clearGuideCache() {
+    guide.byDay = {};
+    guide.days = {};
+    guide.loadedAt = Date.now();
+  }
+
+  function closeGuide() {
+    if (!guide.open) return;
+    var it = guide.list[guide.row];
+    guide.open = false;
+    stopPreview();
+    var ri = layout.rows.indexOf('iptv');
+    if (ri !== -1 && it) {
+      state.row = ri;
+      var c = indexIn(items('iptv'), it.id);
+      if (c !== -1) state.col.iptv = c;
+    }
+    stageClass();
+    render();
+    renderNow();
+  }
+
+  function utcDay(ms) {
+    var d = new Date(ms);
+    return d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate());
+  }
+
+  /*
+   * The day files a channel needs for the hours shown. A programme is filed
+   * under the UTC day it starts, so one running at the start of the hours
+   * shown can be in the day before's: that is asked for too.
+   */
+  var GUIDE_LOOKBACK_MS = 6 * 3600000;
+  function needSchedule(it) {
+    var days = [];
+    [guide.start - GUIDE_LOOKBACK_MS, guide.start, guide.start + GUIDE_SPAN_MS].forEach(function (ms) {
+      var d = utcDay(ms);
+      if (days.indexOf(d) === -1) days.push(d);
+    });
+    days.forEach(function (day) {
+      var key = it.id + '@' + day, was = guide.days[key];
+      if (was === 'loading' || was === 'done' || (typeof was === 'number' && Date.now() - was < 60000)) return;
+      guide.days[key] = 'loading';
+      var stamp = guide.loadedAt;
+      getJson('/api/iptv/schedule?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key) + '&day=' + day, function (r, status) {
+        if (stamp !== guide.loadedAt) return;
+        if (Object.prototype.toString.call(r) !== '[object Array]') {
+          // No file for that day is an answer; anything else is tried again.
+          guide.days[key] = status === 404 ? 'done' : Date.now();
+          return guide.open && renderGuide();
+        }
+        guide.days[key] = 'done';
+        var list = [];
+        r.forEach(function (p) {
+          if (p && typeof p[0] === 'number' && typeof p[1] === 'number') list.push({ start: p[0], end: p[1], title: String(p[2] || ''), desc: String(p[3] || '') });
+        });
+        (guide.byDay[it.id] = guide.byDay[it.id] || {})[day] = list;
+        if (guide.open) renderGuide();
+      });
+    });
+  }
+
+  // A channel's programmes in the hours shown, from every day file it has, each once.
+  function guideProgs(it) {
+    var end = guide.start + GUIDE_SPAN_MS, days = guide.byDay[it.id] || {}, seen = {}, out = [];
+    for (var d in days) {
+      if (!days.hasOwnProperty(d)) continue;
+      days[d].forEach(function (p) {
+        if (p.end <= guide.start || p.start >= end || seen[p.start]) return;
+        seen[p.start] = true;
+        out.push(p);
+      });
+    }
+    return out.sort(function (a, b) { return a.start - b.start; });
+  }
+
+  // The programme in focus on a row: the one on at the time in focus, else the nearest.
+  function guideFocus(it) {
+    var list = guideProgs(it), best = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].start <= guide.at && guide.at < list[i].end) return list[i];
+      if (!best || Math.abs(list[i].start - guide.at) < Math.abs(best.start - guide.at)) best = list[i];
+    }
+    return best;
+  }
+
+  function renderGuide() {
+    var now = Date.now(), k = GUIDE_LANE_PX / GUIDE_SPAN_MS;
+    var tabs = $('gTabs');
+    tabs.className = guide.tabs ? 'focus' : '';
+    tabs.innerHTML = guide.groups.map(function (g, i) {
+      return '<span' + (i === guide.group ? ' class="on"' : '') + '>' + esc(i === 0 ? t('home.tv.guideAll', 'All') : g === '*' ? t('home.tv.guideFavourites', 'Favourites') : sectionName(g)) + '</span>';
+    }).join('');
+    // A lineup of many sections runs past the edge: the chosen tab is kept in view.
+    var onTab = tabs.children[guide.group];
+    if (onTab && onTab.offsetLeft + onTab.offsetWidth > tabs.scrollLeft + tabs.clientWidth) tabs.scrollLeft = onTab.offsetLeft + onTab.offsetWidth - tabs.clientWidth;
+    else if (onTab && onTab.offsetLeft < tabs.scrollLeft) tabs.scrollLeft = onTab.offsetLeft;
+    var times = '';
+    for (var t0 = guide.start; t0 < guide.start + GUIDE_SPAN_MS; t0 += HALF_HOUR) {
+      times += '<span style="left:' + Math.round((t0 - guide.start) * k) + 'px">' + esc(hm(new Date(t0))) + '</span>';
+    }
+    $('gTimes').innerHTML = times;
+    var visible = Math.floor(($('gBody').clientHeight || 674) / GUIDE_ROW_PX);
+    if (guide.row < guide.top) guide.top = guide.row;
+    if (guide.row >= guide.top + visible) guide.top = guide.row - visible + 1;
+    var html = '';
+    guide.list.slice(guide.top, guide.top + visible).forEach(function (it, n) {
+      var r = guide.top + n, focusRow = r === guide.row && !guide.tabs;
+      needSchedule(it);
+      var progs = guideProgs(it), focus = focusRow ? guideFocus(it) : null, cells = '';
+      progs.forEach(function (p) {
+        var left = Math.max(0, (p.start - guide.start) * k), right = Math.min(GUIDE_LANE_PX, (p.end - guide.start) * k);
+        var cls = 'gc' + (p.end <= now ? ' past' : p.start <= now ? ' live' : '') + (p === focus ? ' focus' : '');
+        cells += '<div class="' + cls + '" data-s="' + p.start + '" style="left:' + Math.round(left) + 'px;width:' + Math.max(8, Math.round(right - left) - 4) + 'px">' +
+          '<b>' + esc(p.title) + '</b><i>' + esc(hm(new Date(p.start)) + ' \u2013 ' + hm(new Date(p.end))) + '</i></div>';
+      });
+      if (!progs.length) {
+        var loading = guide.days[it.id + '@' + utcDay(guide.start)] === 'loading';
+        cells = '<div class="gc none' + (focusRow ? ' focus' : '') + '" style="left:0;width:' + (GUIDE_LANE_PX - 4) + 'px"><b>' +
+          esc(loading ? '\u2026' : t('home.tv.guideNone', 'No guide for these hours')) + '</b></div>';
+      }
+      html += '<div class="gr' + (focusRow ? ' focus' : '') + '" data-g="' + r + '"><div class="gch"><span class="glyph">' + glyphHtml(it) + '</span>' +
+        '<span class="gnm">' + (it.number ? '<em>' + esc(it.number) + '</em>' : '') + esc(it.name) + '</span></div><div class="lane">' + cells + '</div></div>';
+    });
+    $('gBody').innerHTML = html;
+    wireGlyphs($('gBody'));
+    var nowX = (now - guide.start) * k;
+    $('gNow').style.display = nowX >= 0 && nowX <= GUIDE_LANE_PX ? 'block' : 'none';
+    $('gNow').style.left = Math.round(112 + 300 + nowX) + 'px';
+    renderNow();
+    followPreview();
+  }
+
+  // The top strip names the programme in focus, its time and what it is about.
+  function renderGuideStrip() {
+    var it = guide.list[guide.row], p = it && !guide.tabs ? guideFocus(it) : null;
+    $('source').className = it ? '' : 'none';
+    $('srcKind').textContent = p && p.start <= Date.now() && Date.now() < p.end ? t('home.tv.onNow', 'On now') : t('home.tv.guide', 'Guide');
+    $('srcTitle').textContent = p ? p.title : it ? it.name : ' ';
+    $('srcVia').textContent = it ? (p ? t('home.tv.guideVia', '{name}, {from} to {to}', { name: it.name, from: hm(new Date(p.start)), to: hm(new Date(p.end)) })
+      : t('home.tv.guideNone', 'No guide for these hours')) : ' ';
+    $('srcDesc').textContent = p ? p.desc : '';
+  }
+
+  function guideShift(ms) {
+    var min = Math.floor((Date.now() - GUIDE_BACK_MS) / HALF_HOUR) * HALF_HOUR, max = Date.now() + GUIDE_AHEAD_MS;
+    guide.start = Math.max(min, Math.min(max, guide.start + ms));
+  }
+
+  function guideKey(k) {
+    if (k === KEY.back) return closeGuide();
+    var it = guide.list[guide.row];
+    if (guide.tabs) {
+      if (k === KEY.left || k === KEY.right) {
+        guide.group = (guide.group + (k === KEY.left ? -1 : 1) + guide.groups.length) % guide.groups.length;
+        guide.list = guideTabList(guide.groups[guide.group]);
+        guide.row = 0;
+        guide.top = 0;
+      } else if (k === KEY.down || k === KEY.ok) guide.tabs = false;
+      return renderGuide();
+    }
+    if (k === KEY.up) {
+      if (guide.row === 0) guide.tabs = true;
+      else guide.row--;
+    } else if (k === KEY.down) guide.row = Math.min(guide.list.length - 1, guide.row + 1);
+    else if (k === KEY.left || k === KEY.right) {
+      var list = it ? guideProgs(it) : [], cur = it ? guideFocus(it) : null, i = cur ? list.indexOf(cur) : -1;
+      var next = k === KEY.right ? list[i + 1] : list[i - 1];
+      if (next) {
+        guide.at = Math.max(next.start, guide.start);
+        if (next.start < guide.start) { guideShift(-HALF_HOUR); guide.at = next.start; }
+        if (next.start >= guide.start + GUIDE_SPAN_MS - HALF_HOUR) guideShift(HALF_HOUR);
+      } else {
+        guideShift(k === KEY.right ? HALF_HOUR : -HALF_HOUR);
+        guide.at = k === KEY.right ? Math.max(guide.at, guide.start + GUIDE_SPAN_MS - HALF_HOUR) : Math.min(guide.at, guide.start);
+      }
+    } else if (k === KEY.ok) return guideOpen(it);
+    else if (k === KEY.info) return closeGuide();
+    else return;
+    renderGuide();
+  }
+
+  // A programme on now plays its channel; one to come says when.
+  function guideOpen(it) {
+    if (!it) return;
+    var p = guideFocus(it), now = Date.now();
+    if (p && p.start > now) return toast(p.title, t('home.tv.startsAt', 'Starts at {time}', { time: hm(new Date(p.start)) }));
+    if (p && p.end <= now) return toast(p.title, t('home.tv.finished', 'That has finished'));
+    guide.open = false;
+    stageClass();
+    openPlayer(it);
+  }
+
+  // The row under the pointer, and the programme in it, are the focus.
+  function guidePointer(target) {
+    var at = null;
+    while (target && target !== document.body && !(target.className && /\bgr\b/.test(target.className))) {
+      if (target.getAttribute && target.getAttribute('data-s')) at = Math.max(+target.getAttribute('data-s'), guide.start);
+      target = target.parentNode;
+    }
+    if (!target || target === document.body) return;
+    var r = +target.getAttribute('data-g');
+    if (r !== guide.row || guide.tabs || (at !== null && at !== guide.at)) {
+      guide.row = r;
+      guide.tabs = false;
+      if (at !== null) guide.at = at;
+      renderGuide();
+    }
+  }
+
+  function guideClick(target) {
+    if (!within(target, 'guide')) return closeGuide();
+    guidePointer(target);
+    guideKey(KEY.ok);
+  }
+
+  // ---------------------------------------------------------------- adding channels
+
+  /*
+   * The add panel: playlists, then a playlist's groups, then a group's
+   * channels, 50 at a time, fetched as the focus nears the end. Typing
+   * searches the playlist. OK adds or removes; added channels go to the end
+   * of the row. Back steps up a level, then closes.
+   */
+  var adder = { open: false, typing: false, level: 'playlists', playlists: [], pl: null, group: null, items: [], total: 0, row: 0,
+    loading: false, gen: 0, query: '', timer: null, changed: false, okDown: false };
+
+  function openAdder() {
+    adder.open = true;
+    adder.changed = false;
+    adder.query = '';
+    $('adQuery').value = '';
+    stopPreview();
+    stageClass();
+    setAdStatus(t('home.tv.loading', 'Reading your playlists…'));
+    adList([]);
+    getJson('/api/iptv/playlists', function (r) {
+      if (!adder.open) return;
+      adder.playlists = (r && r.playlists || []).filter(function (p) { return p.ready; });
+      if (!adder.playlists.length) {
+        adCrumb([]);
+        return setAdStatus(r && r.playlists && r.playlists.length ? t('home.tv.notReady', 'Your playlist is still being read. Try again in a minute.')
+          : t('home.tv.noPlaylists', 'Add a playlist on the dashboard’s Home tab first.'));
+      }
+      if (adder.playlists.length === 1) return adGroups(adder.playlists[0]);
+      adPlaylists();
+    });
+  }
+
+  function closeAdder() {
+    adder.open = false;
+    adder.gen++;
+    clearTimeout(adder.timer);
+    adStopTyping();
+    stageClass();
+    if (adder.changed) load();
+    else applyFocus();
+  }
+
+  function setAdStatus(s) { $('adStatus').textContent = s || ''; }
+  function adCrumb(parts) { $('adCrumb').innerHTML = parts.map(esc).join('<i>›</i>') || '&nbsp;'; }
+
+  function adPlaylists() {
+    adder.level = 'playlists';
+    adder.pl = null;
+    adCrumb([]);
+    setAdStatus(t('home.tv.pickPlaylist', 'Pick a playlist'));
+    adList(adder.playlists.map(function (p) {
+      return { kind: 'pl', pl: p, name: p.label, meta: p.channels !== null ? t('home.tv.liveCount', '{n} live channels', { n: num(p.channels) }) : '' };
+    }));
+  }
+
+  function num(n) { try { return Number(n).toLocaleString(); } catch (e) { return String(n); } }
+
+  function adGroups(p) {
+    adder.level = 'groups';
+    adder.pl = p;
+    adder.group = null;
+    adCrumb([p.label]);
+    setAdStatus(t('home.tv.loadingGroups', 'Reading {name}…', { name: p.label }));
+    var gen = ++adder.gen;
+    getJson('/api/iptv/groups?pl=' + encodeURIComponent(p.id), function (r) {
+      if (gen !== adder.gen) return;
+      if (!r || !r.ok) return setAdStatus(t('home.tv.failed', 'That didn’t load. Back, then try again.'));
+      setAdStatus(r.total > r.groups.length
+        ? t('home.tv.groupsSome', '{n} groups; type to search them all', { n: num(r.total) })
+        : t('home.tv.groupsAll', '{n} groups, {channels} live channels', { n: num(r.total), channels: num(r.channels) }));
+      adList(r.groups.map(function (g) { return { kind: 'group', name: tidyGroup(g.name) || t('home.tv.ungrouped', 'Channels'), group: g.name, meta: num(g.count) }; }));
+    });
+  }
+
+  function adChannels(group, page) {
+    var p = adder.pl;
+    adder.level = 'channels';
+    adder.group = group;
+    adCrumb([p.label, tidyGroup(group) || t('home.tv.ungrouped', 'Channels')]);
+    if (!page) { adList([]); setAdStatus(t('home.tv.loadingGroup', 'Reading the group…')); }
+    adder.loading = true;
+    var gen = ++adder.gen;
+    getJson('/api/iptv/browse?pl=' + encodeURIComponent(p.id) + '&group=' + encodeURIComponent(group) + '&page=' + page, function (r) {
+      if (gen !== adder.gen) return;
+      adder.loading = false;
+      if (!r || !r.ok) return setAdStatus(t('home.tv.failed', 'That didn’t load. Back, then try again.'));
+      adder.total = r.total;
+      var items = (page ? adder.items.filter(function (x) { return x.kind !== 'more'; }) : []).concat(r.channels.map(chanItem));
+      setAdStatus(t('home.tv.groupCount', '{n} channels', { n: num(r.total) }));
+      adList(items, true, r.page);
+    });
+  }
+
+  function chanItem(c) {
+    var meta = c.drm ? t('home.tv.drmShort', 'DRM') : c.headers ? t('home.tv.headersShort', 'Needs headers') : c.unsupported ? t('home.tv.formatShort', 'Can’t play') : '';
+    if (c.dupe) meta = (meta ? meta + '   ' : '') + t('home.tv.dupe', '{n} of {total}', { n: c.dupe.split('/')[0], total: c.dupe.split('/')[1] });
+    var tidy = tidyName(c.name);
+    if (tidy.tags.length) meta = (meta ? meta + '   ' : '') + tidy.tags.join(' ');
+    return { kind: 'ch', ch: c, name: tidy.name, meta: meta || c.number || '', off: !!(c.drm || c.headers || c.unsupported) };
+  }
+
+  // keep: the focus stays where it was, as a page is added below it.
+  function adList(items, keep, page) {
+    adder.items = items;
+    adder.page = page || 0;
+    if (!keep) adder.row = 0;
+    adder.row = Math.max(0, Math.min(adder.row, items.length - 1));
+    var html = '';
+    items.forEach(function (it, i) {
+      var tick = it.kind === 'ch' && it.ch.added ? '✓' : '';
+      html += '<div class="ad' + (it.off ? ' off' : '') + '" data-a="' + i + '"><span class="tick">' + tick + '</span>' +
+        '<span class="nm">' + esc(it.name) + '</span><span class="meta">' + esc(it.meta || '') + '</span></div>';
+    });
+    $('adItems').innerHTML = html;
+    focusAd();
+  }
+
+  function focusAd() {
+    var rows = $('adItems').children;
+    for (var i = 0; i < rows.length; i++) {
+      rows[i].className = rows[i].className.replace(/ focus\b/g, '') + (i === adder.row && !adder.typing ? ' focus' : '');
+    }
+    var row = rows[adder.row], view = $('adWrap').clientHeight - 12;
+    var y = row && !adder.typing ? Math.max(0, row.offsetTop + row.offsetHeight - view + 84) : 0;
+    $('adItems').style.webkitTransform = $('adItems').style.transform = 'translateY(' + (-Math.min(y, Math.max(0, $('adItems').scrollHeight - view))) + 'px)';
+    // The next page as the focus nears the end.
+    if (adder.level === 'channels' && !adder.loading && !adder.query && adder.items.length < adder.total && adder.row > adder.items.length - 10) {
+      adChannels(adder.group, adder.page + 1);
+    }
+  }
+
+  function adStartTyping() {
+    if (!adder.pl) return;
+    adder.typing = true;
+    $('stage').className = $('stage').className.replace(/ adtyping\b/g, '') + ' adtyping';
+    focusAd();
+    $('adQuery').focus();
+  }
+  function adStopTyping() {
+    if (!adder.typing) return;
+    adder.typing = false;
+    $('adQuery').blur();
+    $('stage').className = $('stage').className.replace(/ adtyping\b/g, '');
+    focusAd();
+  }
+
+  function adQueryChanged() {
+    clearTimeout(adder.timer);
+    adder.timer = setTimeout(adSearch, 450);
+  }
+
+  function adSearch() {
+    var q = $('adQuery').value.replace(/\s+/g, ' ').replace(/^ | $/g, '');
+    if (q === adder.query) return;
+    adder.query = q;
+    var p = adder.pl;
+    if (!p) return;
+    if (q.length < 2) return adder.group ? adChannels(adder.group, 0) : adGroups(p);
+    adder.level = 'search';
+    adCrumb([p.label, t('home.tv.searchCrumb', '“{q}”', { q: q })]);
+    setAdStatus(t('home.tv.searching', 'Looking for “{q}”…', { q: q }));
+    var gen = ++adder.gen;
+    getJson('/api/iptv/search?pl=' + encodeURIComponent(p.id) + '&q=' + encodeURIComponent(q), function (r) {
+      if (gen !== adder.gen) return;
+      if (!r || !r.ok) return setAdStatus(t('home.tv.failed', 'That didn’t load. Back, then try again.'));
+      setAdStatus(!r.total ? t('home.tv.noMatch', 'Nothing called “{q}”', { q: q })
+        : r.total > r.channels.length ? t('home.tv.matchesSome', 'The first {n} of {total}', { n: r.channels.length, total: num(r.total) })
+        : r.total === 1 ? t('home.tv.matchOne', '1 channel') : t('home.tv.groupCount', '{n} channels', { n: num(r.total) }));
+      adList(r.channels.map(chanItem));
+    });
+  }
+
+  function adToggle(item) {
+    var c = item.ch;
+    if (item.off && !c.added) return setAdStatus(item.meta + ': ' + t('home.tv.cantAdd', 'this channel can’t play on the TV'));
+    var action = c.added ? 'remove' : 'add';
+    postJson('/api/iptv/selection', { action: action, channels: [{ pl: c.pl, key: c.key, name: c.name, group: c.group }] }, function (r) {
+      if (!r || !r.ok) {
+        return setAdStatus(r && r.error === 'full' ? t('home.tv.full', 'The row holds {max} channels; remove one first', { max: r.max || 60 })
+          : t('home.tv.saveFailed', 'That didn’t save'));
+      }
+      c.added = action === 'add';
+      adder.changed = true;
+      setAdStatus(c.added ? t('home.tv.added', '{name} is on the row', { name: c.name }) : t('home.tv.removed', '{name} is off the row', { name: c.name }));
+      var row = $('adItems').children[adder.row];
+      if (row) row.querySelector('.tick').textContent = c.added ? '✓' : '';
+    });
+  }
+
+  function adderKey(k) {
+    if (k === KEY.back) {
+      if (adder.typing) { adStopTyping(); return true; }
+      if (adder.level === 'search') { adder.query = ''; $('adQuery').value = ''; adder.group ? adChannels(adder.group, 0) : adGroups(adder.pl); return true; }
+      if (adder.level === 'channels') { adGroups(adder.pl); return true; }
+      if (adder.level === 'groups' && adder.playlists.length > 1) { adPlaylists(); return true; }
+      closeAdder();
+      return true;
+    }
+    if (adder.typing) {
+      if (k === KEY.ok) { adSearch(); adStopTyping(); return true; }
+      if (k === KEY.down && adder.items.length) { adStopTyping(); return true; }
+      return false;
+    }
+    if (k === KEY.up) {
+      if (adder.row === 0) { adStartTyping(); return true; }
+      adder.row--;
+    } else if (k === KEY.down) adder.row = Math.min(adder.items.length - 1, adder.row + 1);
+    else if (k === KEY.ok) {
+      var it = adder.items[adder.row];
+      if (!it) return true;
+      if (it.kind === 'pl') adGroups(it.pl);
+      else if (it.kind === 'group') adChannels(it.group, 0);
+      else if (it.kind === 'ch') adToggle(it);
+      return true;
+    } else if (k === KEY.left || k === KEY.right) return true;
+    else return false;
+    focusAd();
+    return true;
+  }
+
+  function adderClick(target) {
+    if (!within(target, 'adder')) return closeAdder();
+    if (within(target, 'adAsk')) return adStartTyping();
+    var row = target;
+    while (row && row !== document.body && !(row.className && /\bad\b/.test(row.className))) row = row.parentNode;
+    if (!row || row === document.body) return;
+    adStopTyping();
+    adder.row = +row.getAttribute('data-a');
+    focusAd();
+    adderKey(KEY.ok);
   }
 
   // ---------------------------------------------------------------- more apps
@@ -1923,6 +3695,8 @@ html.faded #stage{opacity:0}
   function pickUp() {
     var kind = rowKey();
     if (colOf(kind) === -1) return toggleSort(kind);
+    var it = items(kind)[colOf(kind)];
+    if (it && it.add) return openAdder();
     if (!state.held && items(kind).length && byRecent(kind)) {
       layout.sort[kind] = 'custom';
       movedRows[kind] = true;
@@ -1951,7 +3725,7 @@ html.faded #stage{opacity:0}
 
   function shiftTile(dc) {
     var kind = rowKey(), list = items(kind), i = colOf(kind), j = i + dc;
-    if (j < 0 || j >= list.length) return;
+    if (j < 0 || j >= list.length || !list[i] || list[i].add || list[j].add || list[i].guide || list[j].guide) return;
     var order = data.order[kind], a = order.indexOf(list[i].id), b = order.indexOf(list[j].id);
     var tmp = order[a]; order[a] = order[b]; order[b] = tmp;
     movedRows[kind] = true;
@@ -1977,6 +3751,13 @@ html.faded #stage{opacity:0}
       layout.channels = layout.channels.filter(function (id) { return id !== it.id; });
       data.order.ch = data.order.ch.filter(function (id) { return id !== it.id; });
       channelsChanged = true;
+      return render();
+    }
+    if (kind === 'iptv') {
+      if (it.add || it.guide) return;
+      // Removed from the row: the order sent leaves it out (lib/iptv setOrder).
+      data.order.iptv = data.order.iptv.filter(function (id) { return id !== it.id; });
+      movedRows.iptv = true;
       return render();
     }
     var h = layout.hidden[kind], i = h.indexOf(it.id);
@@ -2055,6 +3836,33 @@ html.faded #stage{opacity:0}
     stopPointing();
     landAll();
     if (!data || !layout) return;
+    if (player.open) {
+      e.preventDefault();
+      // OK held repeats on webOS: acted on once, at its first press.
+      if (e.keyCode === KEY.ok) { if (player.okDown) return; player.okDown = true; }
+      if (e.keyCode === KEY.back) { if (backDown) return; backDown = true; }
+      return playerKey(e.keyCode);
+    }
+    if (guide.open) {
+      e.preventDefault();
+      if (e.keyCode === KEY.back) { if (backDown) return; backDown = true; }
+      if (e.keyCode === KEY.ok) { if (guide.okDown) return; guide.okDown = true; }
+      return guideKey(e.keyCode);
+    }
+    // The remote's Guide button never reaches the page: webOS opens LG's own guide (G3, webOS 9.2.2).
+    if (e.keyCode === KEY.info && !state.arranging && !recents.open && !folder.open && !finder.open &&
+        rowKey() === 'iptv' && data.iptv && data.iptv.length) {
+      e.preventDefault();
+      var onTile = items('iptv')[colOf('iptv')];
+      return openGuide(onTile && !onTile.add && !onTile.guide ? onTile.id : null);
+    }
+    if (adder.open) {
+      if (e.keyCode === KEY.ok && adder.okDown) { e.preventDefault(); return; }
+      if (e.keyCode === KEY.ok && !adder.typing) adder.okDown = true;
+      if (e.keyCode === KEY.back) { e.preventDefault(); if (backDown) return; backDown = true; }
+      if (adderKey(e.keyCode)) e.preventDefault();
+      return;
+    }
     if (finder.open) {
       // OK held repeats: one press opens one app. The keyboard's Enter sends
       // no key up (ime/sendEnterKey on a G3), so it is not counted.
@@ -2107,7 +3915,8 @@ html.faded #stage{opacity:0}
 
   function onKeyUp(e) {
     if (e.keyCode === KEY.back) { backDown = false; return; }
-    if (e.keyCode === KEY.ok) finder.okDown = false;
+    if (e.keyCode === KEY.ok) { finder.okDown = false; player.okDown = false; adder.okDown = false; guide.okDown = false; }
+    if (player.open || adder.open || guide.open) return;
     if (e.keyCode !== KEY.ok || !okDownAt) return;
     e.preventDefault();
     clearTimeout(okTimer);
@@ -2137,7 +3946,17 @@ html.faded #stage{opacity:0}
   }
   // Focuses the tile under the pointer, without moving its row.
   function hoverTile(target) {
-    if (layoutBusy || !data || !layout) return;
+    if (layoutBusy || !data || !layout || player.open) return;
+    if (guide.open) return guidePointer(target);
+    if (adder.open) {
+      var adRow = target;
+      while (adRow && adRow !== document.body && !(adRow.className && /\bad\b/.test(adRow.className))) adRow = adRow.parentNode;
+      if (adRow && adRow !== document.body && !adder.typing && +adRow.getAttribute('data-a') !== adder.row) {
+        adder.row = +adRow.getAttribute('data-a');
+        focusAd();
+      }
+      return;
+    }
     if (finder.open) return finderPointer(target);
     if (folder.open) {
       var inFolder = tileAt(target);
@@ -2171,6 +3990,9 @@ html.faded #stage{opacity:0}
   }
   function onClick(e) {
     if (!data || !layout || layoutBusy) return;
+    if (player.open) return playerClick(e.target);
+    if (guide.open) return guideClick(e.target);
+    if (adder.open) return adderClick(e.target);
     if (folder.open) {
       var picked = tileAt(e.target);
       if (!picked || !picked.hasAttribute('data-f')) return closeFolder();
@@ -2213,6 +4035,42 @@ html.faded #stage{opacity:0}
    * its relaunch, without loading the page again.
    */
   var preview = { wall: (/[?&]wall=([a-z]+)/.exec(location.search) || [])[1], hour: (/[?&]hour=(\d+)/.exec(location.search) || [])[1] };
+  /*
+   * Opened by the remote's Guide key where it is set to Glasshouse Home's
+   * guide (lib/remotekeys): only a launch says so, as a return to the view
+   * finds the last launch's parameters still there.
+   */
+  var guideAsked = false;
+  var LOADED_KEY = 'glasshouse.home.loaded';
+  /*
+   * Each launch replaces the last one's request, so a Home press after Guide
+   * cancels it. At a page load the launch is new only on the app's first
+   * load: a reload (a new build) finds the old launch's parameters still
+   * there, and the session's mark says it has been loaded before.
+   */
+  function guideLaunch(atLoad) {
+    var p = {};
+    try { p = JSON.parse(window.PalmSystem.launchParams || '{}') || {}; } catch (e) {}
+    if (atLoad) {
+      var seen = false;
+      try { seen = window.sessionStorage.getItem(LOADED_KEY) === '1'; window.sessionStorage.setItem(LOADED_KEY, '1'); } catch (e) {}
+      if (seen) return;
+    }
+    guideAsked = p.glasshouse === 'guide';
+  }
+  function openAskedGuide() {
+    if (!guideAsked || !data || !layout) return;
+    guideAsked = false;
+    if (player.open) closePlayer();
+    if (adder.open) closeAdder();
+    // Asked for the guide: a search panel kept for a return from its app goes.
+    if (finder.open) { closeSearch(); state.rail = false; }
+    if (!guide.open && data.iptv && data.iptv.length) {
+      var ri = layout.rows.indexOf('iptv');
+      if (ri !== -1) state.row = ri;
+      openGuide(null);
+    }
+  }
   function readLaunchParams() {
     var p = {};
     try { p = JSON.parse(window.PalmSystem.launchParams || '{}') || {}; } catch (e) {}
@@ -2309,7 +4167,9 @@ html.faded #stage{opacity:0}
       // A reply sent before arranging or saving must not replace local edits.
       if (revision !== layoutRevision || ((layoutBusy || state.arranging) && !whileArranging)) return;
       var firstLoad = !data;
+      (r.iptv || []).forEach(tidyItem);
       data = r;
+      loadLineup();
       layout = r.layout;
       renderNow();
       if (!searchOn()) { closeSearch(); state.rail = false; }
@@ -2335,6 +4195,10 @@ html.faded #stage{opacity:0}
         layout.searchHintSeen = true;
       }
       refreshGuide();
+      refreshTvGuide();
+      openAskedGuide();
+      // The player keeps its frozen order; its channels' names and guide follow.
+      if (player.open) renderBand();
       if (cb) cb(true);
     });
     refreshNow(onNow);
@@ -2419,6 +4283,7 @@ html.faded #stage{opacity:0}
   }
 
   function returned() {
+    tilePreview.opened = null;
     var dark = faded;
     if (!dark) fadeIn();
     initialEscape = false;
@@ -2426,6 +4291,7 @@ html.faded #stage{opacity:0}
     okDownAt = 0; backDown = false;
     closeRecents();
     closeFolder();
+    if (adder.open) closeAdder();
     keepSearch();
     readLaunchParams();
     updateWall();
@@ -2455,12 +4321,14 @@ html.faded #stage{opacity:0}
   document.addEventListener('keyup', onKeyUp, true);
   document.addEventListener('mousemove', onPointer);
   $('query').addEventListener('input', queryChanged);
+  $('adQuery').addEventListener('input', adQueryChanged);
   /*
    * The TV's keyboard closed by its own Back, which the page does not see,
    * leaves the field focused; webOS says so on the document, not the window
    * (a G3, webOS 9.2.2). The titles take the focus.
    */
   document.addEventListener('keyboardStateChange', function (e) {
+    if (adder.typing && e.detail && e.detail.visibility === false) return adStopTyping();
     if (!finder.typing || !e.detail || e.detail.visibility !== false) return;
     if (finder.results.length) stopTyping(); else closeSearch();
   });
@@ -2472,8 +4340,9 @@ html.faded #stage{opacity:0}
   document.addEventListener('mouseout', function (e) { if (!e.relatedTarget) stopPointing(); });
   document.addEventListener('click', onClick);
   // Home pressed with the view already open reaches it as a relaunch.
-  document.addEventListener('webOSRelaunch', returned);
+  document.addEventListener('webOSRelaunch', function () { guideLaunch(); returned(); });
   document.addEventListener('visibilitychange', function () { if (document.hidden) darken(); else returned(); });
+  window.addEventListener('pagehide', function () { if (player.open) closePlayer(); stopPreview(); });
 
   // Started dark where fading is chosen; in at the first catalogue, or before
   // long without one.
@@ -2482,9 +4351,18 @@ html.faded #stage{opacity:0}
   renderNow();
   updateWall();
   beat();
+  // A cold start by the Guide key, too.
+  guideLaunch(true);
   load();
   setInterval(beat, BEAT_MS);
-  setInterval(function () { renderNow(); updateWall(); if (!document.hidden) refreshPicture(); }, 15000);
+  setInterval(function () {
+    renderNow(); updateWall(); if (!document.hidden) refreshPicture();
+    if (guide.open) {
+      // Left open, it reads the schedule afresh now and then.
+      if (Date.now() - guide.loadedAt > GUIDE_CACHE_MS) clearGuideCache();
+      renderGuide();
+    }
+  }, 15000);
   setInterval(function () { refreshNow(); refreshGuide(); }, 60000);
   setInterval(function () { if (!state.arranging) load(); }, 5 * 60000);
 })();

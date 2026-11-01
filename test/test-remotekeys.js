@@ -349,6 +349,56 @@ step(function (next) {
   }));
 });
 
+// The Guide key can open Glasshouse Home's Internet TV guide, where Home is on
+// with a playlist: Home opens as the Home key opens it, asked for its guide.
+step(function (next) {
+  var on = false;
+  rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+            homeGuide: function () { return on; } });
+  rk.getRemoteKeys(guard(function (off) {
+    assert.ok(!off.choices.some(function (c) { return c.id === 'action:homeGuide'; }), 'not without Glasshouse Home and a playlist');
+    on = true;
+    rk.getRemoteKeys(guard(function (r) {
+      assert.ok(r.choices.some(function (c) { return c.id === 'action:homeGuide'; }));
+      rk.setRemoteKey('guide', 'open', 'action:homeGuide', guard(function (s) {
+        assert.strictEqual(s.ok, true);
+        var f = loadFilter();
+        assert.strictEqual(f.handle(1003, true, false), 'accepted', 'kept from LG\'s guide');
+        assert.strictEqual(f.handle(1003, true, true), 'accepted');
+        assert.strictEqual(f.handle(1003, false, false), 'accepted');
+        assert.strictEqual(f.launched.length, 1, 'once, on the press');
+        assert.strictEqual(f.launched[0].id, 'com.webos.app.home');
+        assert.deepEqual(JSON.parse(f.launched[0].params), { activateType: 'home', launchType: 'homeKey', glasshouse: 'guide' });
+        f.tell({ keys: { guide: 'action:homeGuide' }, home: 'com.tvweb.home' });
+        f.handle(1003, true, false);
+        assert.equal(f.launched[1].id, 'com.tvweb.home', 'webOS 4 opens the standalone Home app');
+        assert.equal(JSON.parse(f.launched[1].params).glasshouse, 'guide');
+        rk.getRemoteKeys(guard(function (after) {
+          var guide = after.keys.filter(function (k) { return k.key === 'guide'; })[0];
+          assert.strictEqual(guide.opens, 'Glasshouse Home\'s guide');
+          // Glasshouse Home switched off: Guide is LG's again, the choice kept for its return.
+          on = false;
+          rk.availabilityChanged();
+          setTimeout(function () {
+            assert.ok(!('guide' in tv.keys.keys), 'left to LG while unavailable');
+            assert.strictEqual(JSON.parse(fs.readFileSync(MAP, 'utf8')).keys.guide, 'action:homeGuide', 'still saved');
+            assert.strictEqual(loadFilter().handle(1003, true, false), 'next');
+            on = true;
+            rk.availabilityChanged();
+            setTimeout(function () {
+              assert.strictEqual(tv.keys.keys.guide, 'action:homeGuide', 'back once available');
+          rk.setRemoteKey('guide', 'lg', '', guard(function () {
+            console.log('  ✓ with Glasshouse Home on and a playlist, Guide can open its Internet TV guide instead of LG\'s, and is LG\'s again while it cannot');
+            next();
+          }));
+            }, 50);
+          }, 50);
+        }));
+      }));
+    }));
+  }));
+});
+
 step(function (next) {
   var writes = tv.chainWrites;
   rk.ensure(guard(function (ok) {

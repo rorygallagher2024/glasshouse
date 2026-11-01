@@ -156,7 +156,9 @@ start_watch() {
 # such a child sits on a lock it inherited held, and the server waits on it with
 # its event loop frozen: "heartbeat 149s old" after a resume from standby, the
 # child a copy of tvweb.js in futex_wait_queue_me. The server starts nothing
-# that runs node, so a child still running the server's own binary is one.
+# else that runs node but its two workers, the remote's buttons and Internet
+# TV's jobs (lib/iptv-worker.js, which can run for minutes), so any other child
+# still running the server's own binary is one.
 # The binary rather than the name: node 22.15 and later rename the main thread,
 # which the fork inherits, to MainThread (24.21) or node-MainThread. The window
 # is normally microseconds; one still there seconds later is killed, which
@@ -169,7 +171,7 @@ stuck_children() {
     [ "$ppid" = "$1" ] || continue
     [ "$(readlink "/proc/$cpid/exe" 2>/dev/null)" = "$node" ] || continue
     cmd=$(tr '\0' ' ' < "/proc/$cpid/cmdline" 2>/dev/null)
-    case "$cmd" in *remotebuttons*) continue ;; esac
+    case "$cmd" in *remotebuttons*|*iptv-worker*) continue ;; esac
     printf "%s " "$cpid"
   done
 }

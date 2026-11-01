@@ -1167,7 +1167,7 @@ function glasshouseHomeRows(d) {
   if (c && lay) {
     r.push(head(t('tv.home.rowOrder', 'Row order')));
     var names = { app: t('home.row.apps', 'Apps'), dev: t('home.row.inputs', 'Inputs'), ch: t('home.row.channels', 'Channels'),
-                  rec: t('home.row.recommended', 'Recommended') };
+                  rec: t('home.row.recommended', 'Recommended'), iptv: t('home.row.iptv', 'Internet TV') };
     lay.rows.forEach(function (kind, i) {
       r.push({ label: names[kind], value: t('tv.home.rowPlace', '{n} of {total}', { n: i + 1, total: lay.rows.length }), cls: 'act',
                act: can && i > 0 ? 'homeRowUp' : null, key: kind,
@@ -1201,6 +1201,27 @@ function glasshouseHomeRows(d) {
                  act: hasChannels ? 'open' : null, key: 'homeChannels',
                  press: hasChannels ? t('tv.home.ch.press', 'Press OK to choose') : t('home.ch.none', 'This TV has no channels tuned, so the Channels row stays empty.'),
                  hint: t('tv.home.ch.hint', 'From the TV\u2019s own channel list. Each one added goes on the end of the Channels row.') });
+        return;
+      }
+      // Internet TV's channels are added on Glasshouse Home or the browser dashboard, and removed here.
+      if (kind === 'iptv') {
+        r.push(head(names.iptv));
+        if (c.sources && c.sources.iptv) {
+          r.push({ label: t('tv.tvm.manage', 'Internet TV channels'), value: t('tv.tvm.manageValue', 'Lineup'), cls: 'act', act: 'open', key: 'tvLineup',
+                   press: t('tv.tvm.managePress', 'Press OK to open the lineup'),
+                   hint: t('tv.tvm.manageHint', 'Which of the provider’s channels the TV carries, their numbers, and the ones starred for this row.') });
+        }
+        r.push(sortRow('iptv'));
+        (c.iptv || []).forEach(function (tv) {
+          r.push({ label: tv.name, value: t('home.ch.onHome', 'On Home'), cls: 'on', act: can ? 'homeTvRemove' : null, key: tv.id, on: true,
+                   press: t('tv.home.ch.remove', 'Press OK to remove it'),
+                   hint: t('tv.home.tv.hint', 'From your IPTV playlist. Add channels from the row on Glasshouse Home, or on the browser dashboard\u2019s Home tab.') });
+        });
+        if (!c.iptv || !c.iptv.length) {
+          r.push({ label: t('home.tv.title', 'Internet TV'), value: '',
+                   hint: c.sources && c.sources.iptv ? t('tv.home.tv.empty', 'No channels yet. Add them from the row on Glasshouse Home.')
+                     : t('home.tv.rowNone', 'Add your IPTV playlist on the dashboard\u2019s Home tab') });
+        }
         return;
       }
       // The apps' cards come and go with their lists: the row has its switch, not tiles.
@@ -1267,6 +1288,205 @@ function glasshouseHomeRows(d) {
              press: t('tv.home.reset.press', 'Press OK, then again, to reset'),
              hint: t('home.resetDesc', 'The rows, apps and inputs go back to their first order, with LG\u2019s promotions hidden again. Channels stay as they are.') });
   }
+  return r;
+}
+
+// ---- Internet TV channels ----
+
+/*
+ * The lineup (lib/iptv-lineup) from the remote: its sections, each one's
+ * channels and start number, Home's row, and the provider's groups to add a
+ * whole group or single channels from. Renaming, which needs typing, is on
+ * the browser dashboard. Each list fetches what it shows and redraws when it
+ * arrives; Back goes up one list.
+ */
+var TV_PARENT = { tvSection: 'tvLineup', tvGroups: 'tvLineup', tvGroup: 'tvGroups' };
+var tvm = { lineup: null, groups: null, group: null, sid: null, pl: null, sel: {} };
+
+function openTv(key) {
+  if (!sub) subFrom = sel;
+  else tvm.sel[sub] = sel;
+  var back = TV_PARENT[sub] === key;
+  sub = key;
+  rows = buildRows(T(), data[T().key]);
+  sel = back && tvm.sel[key] !== undefined && tvm.sel[key] < rows.length ? tvm.sel[key] : nextRow(firstSel());
+  render();
+  tvLoad(key);
+}
+
+function tvGet(url, cb) {
+  fetch(url, { cache: 'no-store' }).then(function (x) { return x.json(); })
+    .then(function (d) { cb(d && d.ok !== false ? d : null); })
+    .catch(function () { cb(null); });
+}
+
+// What a list shows, fetched; the list redrawn if it is still the one open.
+function tvLoad(key) {
+  var redraw = function () {
+    if (sub !== key) return;
+    var at = sel;
+    rows = buildRows(T(), data[T().key]);
+    sel = at < rows.length && !rows[at].head ? at : nextRow(firstSel());
+    render();
+  };
+  tvGet('/api/iptv/lineup', function (d) {
+    tvm.lineup = d;
+    redraw();
+    // A group just added is read by the TV in a few seconds.
+    if (d && sub === key && d.sections.some(function (x) { return x.state === 'pending'; })) setTimeout(function () { if (sub === key) tvLoad(key); }, 2500);
+  });
+  if (key === 'tvGroups' || !tvm.pl) {
+    tvGet('/api/iptv/playlists', function (st) {
+      var ready = st ? st.playlists.filter(function (p) { return p.ready; }) : [];
+      tvm.pl = ready.length ? ready[0].id : null;
+      tvm.plName = ready.length ? ready[0].label : '';
+      if (key !== 'tvGroups' || !tvm.pl) return redraw();
+      tvGet('/api/iptv/groups?pl=' + encodeURIComponent(tvm.pl), function (g) { tvm.groups = g; redraw(); });
+    });
+  }
+}
+
+function tvBrowse(page) {
+  var g = tvm.group;
+  g.loading = true;
+  tvGet('/api/iptv/browse?pl=' + encodeURIComponent(tvm.pl) + '&group=' + encodeURIComponent(g.name) + '&page=' + page + '&size=100', function (d) {
+    if (tvm.group !== g) return;
+    g.loading = false;
+    if (d) { g.list = page ? g.list.concat(d.channels) : d.channels; g.total = d.total; g.page = page; }
+    if (sub === 'tvGroup') { var at = sel; rows = buildRows(T(), data[T().key]); sel = at < rows.length ? at : nextRow(firstSel()); render(); }
+  });
+}
+
+// An edit, then the list redrawn from the lineup as it now stands (or another list opened).
+function tvEdit(body, note, then) {
+  busy = true;
+  fetch('/api/iptv/lineup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(function (x) { return x.json().catch(function () { return {}; }); })
+    .then(function (res) {
+      busy = false;
+      if (res && res.ok === false) return flash(tvError(res.error, res.max));
+      if (note) flash(note);
+      if (then) return openTv(then);
+      if (sub === 'tvGroup') {
+        // The group's channels show their numbers once the lineup is read again.
+        tvGet('/api/iptv/lineup', function (d) { tvm.lineup = d; tvBrowse(0); });
+      } else tvLoad(sub);
+    })
+    .catch(function () { busy = false; flash(t('tv.failed', 'That did not work')); });
+}
+
+function tvError(code, max) {
+  if (code === 'full') return t('tv.tvm.err.full', 'Home’s row holds {n}. Take one off first.', { n: max || 60 });
+  if (code === 'lineup-full') return t('tv.tvm.err.lineupFull', 'The lineup holds {n} channels.', { n: max || 2000 });
+  if (code === 'not-in-lineup') return t('tv.tvm.err.notIn', 'Add it to the lineup first.');
+  return sentence(code || t('tv.failed', 'That did not work'));
+}
+
+function tvSectionTitle(sec) {
+  return sec.name || (sec.kind === 'group' ? sec.group : '') || t('home.tv.myChannels', 'My channels');
+}
+
+function tvBackRow(label) {
+  return { label: label, value: '', act: 'tvBack', press: t('tv.backRow.privacy.press', 'Press OK or Back to return'),
+           hint: t('tv.tvm.backHint', 'Back one list.') };
+}
+
+function tvLineupRows() {
+  var r = [{ label: t('tv.backRow.home', '\u2039 Home'), value: '', act: 'close', press: t('tv.backRow.privacy.press', 'Press OK or Back to return'),
+             hint: t('tv.backRow.home.hint', 'Back to the Home tab.') }];
+  var lu = tvm.lineup;
+  r.push({ label: t('home.ch.addTitle', 'Add channels'), value: t('tv.apps.install.browse', 'Browse'), cls: 'act', act: 'open', key: 'tvGroups',
+           press: t('tv.tvm.addPress', 'Press OK to choose from the provider’s groups'),
+           hint: t('tv.tvm.addHint', 'Add a whole group, which follows the provider as it adds and drops channels, or single channels from it. Searching by name is on Glasshouse Home’s Internet TV row and the browser dashboard.') });
+  if (!lu) { r.push({ label: t('tv.loading', 'Loading…'), value: '' }); return r; }
+  var byId = {};
+  lu.channels.forEach(function (c) { byId[c.id] = c; });
+  r.push(head(t('tv.tvm.rowHead', 'Home’s row: {n} of {max}', { n: lu.favourites.length, max: lu.maxFavourites })));
+  lu.favourites.forEach(function (id) {
+    var c = byId[id];
+    if (!c) return;
+    r.push({ label: c.number + '  ' + c.name, value: '\u2605', cls: 'on', act: 'tvStar', key: c.id, on: true,
+             press: t('tv.tvm.unstarPress', 'Press OK to take it off Home’s row'),
+             hint: t('tv.tvm.rowHint', 'Starred channels make Glasshouse Home’s Internet TV row, in this order. Hold OK on the row on Home to change the order.') });
+  });
+  if (!lu.favourites.length) r.push({ label: t('tv.tvm.rowEmpty', 'Nothing starred yet'), value: '', hint: t('tv.tvm.rowEmptyHint', 'Open a section below and press OK on a channel to star it for Home’s row.') });
+  r.push(head(t('tv.tvm.lineupHead', 'The lineup: {n} channels', { n: lu.channels.length })));
+  lu.sections.forEach(function (sec) {
+    var range = sec.count > 1 ? sec.start + '\u2013' + sec.end : String(sec.start);
+    r.push({ label: range + '  ' + tvSectionTitle(sec),
+             value: sec.state === 'pending' ? t('tv.tvm.reading', 'Being read') : t('home.tv.channels', '{n} channels', { n: sec.count }),
+             act: 'tvSection', key: sec.id, press: t('tv.tvm.sectionPress', 'Press OK to open the section'),
+             hint: sec.kind === 'group' ? t('tv.tvm.groupHint', 'The whole of {group}, as the provider changes it.', { group: sec.group }) : t('tv.tvm.pickHint', 'Channels picked one by one.') });
+  });
+  if (!lu.sections.length) r.push({ label: t('tv.tvm.empty', 'The lineup is empty'), value: '', hint: t('tv.tvm.emptyHint', 'Choose Add channels above to start it.') });
+  return r;
+}
+
+function tvSectionRows() {
+  var lu = tvm.lineup, r = [tvBackRow(t('tv.tvm.backLineup', '\u2039 Lineup'))];
+  var sec = null, si = -1;
+  (lu ? lu.sections : []).forEach(function (x, i) { if (x.id === tvm.sid) { sec = x; si = i; } });
+  if (!sec) { r.push({ label: t('tv.loading', 'Loading…'), value: '' }); return r; }
+  // Each press moves the start on to the next hundred and one, as broadcasters number their sections; past 9901, back to following on.
+  var next = sec.from ? Math.floor(sec.from / 100) * 100 + 101 : Math.floor(sec.start / 100) * 100 + 101;
+  if (next > 9901) next = 0;
+  r.push(head(tvSectionTitle(sec)));
+  r.push({ label: t('tv.tvm.startAt', 'Numbers start at'), value: sec.from ? String(sec.from) : t('tv.tvm.followOn', 'Follows on, at {n}', { n: sec.start }),
+           act: 'tvFrom', next: next, press: next ? t('tv.tvm.fromPress', 'Press OK to start at {n}', { n: next }) : t('tv.tvm.followPress', 'Press OK to follow on from the section before'),
+           hint: t('tv.tvm.fromHint', 'A section can start at a number of its own, as 101 Entertainment and 401 Sport do on a broadcaster’s guide. Any number can be typed on the browser dashboard.') });
+  if (si > 0) r.push({ label: t('home.tvm.secUp', 'Move the section up'), value: '', act: 'tvMoveSection', to: si - 1, press: t('tv.tvm.movePress', 'Press OK to move it') });
+  if (si < lu.sections.length - 1) r.push({ label: t('home.tvm.secDown', 'Move the section down'), value: '', act: 'tvMoveSection', to: si + 1, press: t('tv.tvm.movePress', 'Press OK to move it') });
+  r.push({ label: t('home.tvm.removeSection', 'Remove the section'), value: '', act: 'tvRemoveSection', key: sec.id, press: t('tv.tvm.removePress', 'Press OK twice to remove it'),
+           hint: sec.kind === 'group' ? t('tv.tvm.removeGroupHint', 'Its channels leave the lineup; the group stays on the provider’s list to add again.') : t('tv.tvm.removePickHint', 'Its channels leave the lineup.') });
+  var list = lu.channels.filter(function (c) { return c.sid === sec.id; });
+  r.push(head(t('home.tv.channels', '{n} channels', { n: list.length })));
+  list.forEach(function (c) {
+    r.push({ label: c.number + '  ' + c.name, value: c.fav ? '\u2605' : '', cls: c.fav ? 'on' : '', act: c.missing ? null : 'tvStar', key: c.id, on: !!c.fav,
+             press: c.fav ? t('tv.tvm.unstarPress', 'Press OK to take it off Home’s row') : t('tv.tvm.starPress', 'Press OK to star it for Home’s row'),
+             hint: c.renamed ? t('tv.tvm.renamedHint', 'Listed by the provider as {name}.', { name: c.provName }) : t('tv.tvm.starHint', 'Starred channels make Glasshouse Home’s Internet TV row.') });
+  });
+  return r;
+}
+
+function tvGroupsRows() {
+  var r = [tvBackRow(t('tv.tvm.backLineup', '\u2039 Lineup'))];
+  var g = tvm.groups;
+  if (!g) { r.push({ label: tvm.pl === null && tvm.lineup ? t('tv.tvm.noPlaylist', 'No playlist read yet') : t('tv.loading', 'Loading…'), value: '' }); return r; }
+  r.push(head(t('tv.tvm.groupsHead', '{name}: {n} groups', { name: tvm.plName, n: g.groups.length })));
+  g.groups.forEach(function (x) {
+    if (x.hidden) return;
+    r.push({ label: x.name || t('home.tv.ungrouped', 'Channels'),
+             value: x.section ? t('home.tvm.wholeGroup', 'Whole group') : x.inLineup ? t('home.tvm.someOf', '{n} of {total}', { n: x.inLineup, total: x.count }) : String(x.count),
+             cls: x.section ? 'on' : '', act: 'tvGroupOpen', key: x.name, press: t('tv.tvm.groupPress', 'Press OK to open the group'),
+             hint: t('tv.tvm.groupsHint', 'Groups hidden on the browser dashboard are left out. Hide one from inside it.') });
+  });
+  return r;
+}
+
+function tvGroupRows() {
+  var r = [tvBackRow(t('tv.tvm.backGroups', '\u2039 Groups'))];
+  var g = tvm.group, lu = tvm.lineup;
+  if (!g) return r;
+  var gr = tvm.groups && tvm.groups.groups.filter(function (x) { return x.name === g.name; })[0];
+  var inLineup = {};
+  (lu ? lu.channels : []).forEach(function (c) { inLineup[c.id] = c; });
+  r.push(head(g.name + (g.total ? '  ' + t('home.tv.channels', '{n} channels', { n: g.total }) : '')));
+  if (gr && gr.section) r.push({ label: t('tv.tvm.wholeIn', 'The whole group is in the lineup'), value: '', cls: 'on',
+                               hint: t('tv.tvm.wholeInHint', 'Remove it from its section in the lineup. Channels below can be taken out one by one.') });
+  else r.push({ label: t('home.tvm.addGroup', 'Add the whole group'), value: '', cls: 'act', act: 'tvAddGroup', key: g.name,
+                press: t('tv.tvm.addGroupPress', 'Press OK to add it as a section'),
+                hint: t('tv.tvm.addGroupHint', 'A section of its own that follows the provider: channels it adds later join, and ones it drops go.') });
+  r.push({ label: t('home.tvm.hide', 'Hide this group'), value: '', act: 'tvHide', key: g.name, press: t('tv.tvm.hidePress', 'Press OK to hide it from these lists'),
+           hint: t('tv.tvm.hideHint', 'For the groups never watched: other countries, films, adult. Shown again from the browser dashboard.') });
+  g.list.forEach(function (c) {
+    var id = tvm.pl + ':' + c.key, l = inLineup[id], off = c.headers || c.drm || c.unsupported;
+    r.push({ label: (l ? l.number + '  ' : '') + c.name, value: l ? t('tv.tvm.inLineup', 'In the lineup') : off ? t('home.tvm.unplayable', 'Can’t be played here') : '',
+             cls: l ? 'on' : '', act: off && !l ? null : 'tvToggle', key: id, on: !!l,
+             channel: { pl: tvm.pl, key: c.key, name: c.name, group: c.group },
+             press: l ? t('tv.tvm.takeOutPress', 'Press OK to take it out of the lineup') : t('tv.tvm.addPress1', 'Press OK to add it to the lineup') });
+  });
+  if (g.loading) r.push({ label: t('tv.loading', 'Loading…'), value: '' });
+  else if (g.list.length < g.total) r.push({ label: t('home.tv.more', 'Show {n} more of {total}', { n: Math.min(100, g.total - g.list.length), total: g.total }), value: '', act: 'tvMore' });
   return r;
 }
 
@@ -1551,8 +1771,10 @@ function privacyRows(d) {
  * the first row, returns to it. A switch that changes the TV reloads the list,
  * since LG ties some consents together and one can take others with it.
  */
-var SUBLISTS = { consents: consentRows, services: serviceRows, catalog: catalogRows, homeChannels: homeChannelRows };
-var SUBTAB = { consents: 'privacy', services: 'privacy', catalog: 'apps', homeChannels: 'home' };
+var SUBLISTS = { consents: consentRows, services: serviceRows, catalog: catalogRows, homeChannels: homeChannelRows,
+  tvLineup: tvLineupRows, tvSection: tvSectionRows, tvGroups: tvGroupsRows, tvGroup: tvGroupRows };
+var SUBTAB = { consents: 'privacy', services: 'privacy', catalog: 'apps', homeChannels: 'home',
+  tvLineup: 'home', tvSection: 'home', tvGroups: 'home', tvGroup: 'home' };
 var sub = null, subFrom = 0;
 
 function buildRows(section, d) {
@@ -2425,6 +2647,7 @@ function dismissResult() {
 /* Back and Left: on the preview they discard it, while an install runs they
    do nothing (it cannot be stopped), and elsewhere they step out as usual. */
 function backOut() {
+  if (TV_PARENT[sub]) return openTv(TV_PARENT[sub]);
   if (sub !== 'catalog') return closeSub();
   var v = currentView();
   if (v === 'preview') return cancelInstall();
@@ -2962,6 +3185,10 @@ function activate() {
       var chNow = homeData.layout.channels.filter(function (id) { return id !== r.key; });
       if (!r.on) chNow.push(r.key);
       return homeLayout({ channels: chNow }, r.on ? t('tv.home.ch.removed', 'Removed from Home') : t('tv.home.ch.added', 'Added to Home'));
+    case 'homeTvRemove':
+      // The row as it stands, less this one: lib/iptv takes a channel left out of the order as removed.
+      return homeLayout({ order: { iptv: (homeData.catalogue.order.iptv || []).filter(function (id) { return id !== r.key; }) } },
+        t('tv.home.ch.removed', 'Removed from Home'));
     case 'homeWallSet':
       r.value = t('home.wall.examplesBusy', 'Downloading…');
       render();
@@ -3071,7 +3298,34 @@ function activate() {
     case 'acr':
       return send({ action: 'acr', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'open':
-      return openSub(r.key);
+      return r.key.indexOf('tv') === 0 ? openTv(r.key) : openSub(r.key);
+    case 'tvBack':
+      return backOut();
+    case 'tvSection':
+      tvm.sid = r.key;
+      return openTv('tvSection');
+    case 'tvGroupOpen':
+      tvm.group = { name: r.key, list: [], total: 0, page: 0, loading: true };
+      openTv('tvGroup');
+      return tvBrowse(0);
+    case 'tvMore':
+      return tvBrowse(tvm.group.page + 1);
+    case 'tvStar':
+      return tvEdit({ action: 'star', id: r.key, on: !r.on }, r.on ? t('tv.tvm.unstarred', 'Off Home’s row') : t('tv.tvm.starred', 'On Home’s row'));
+    case 'tvToggle':
+      return tvEdit(r.on ? { action: 'remove', ids: [r.key] } : { action: 'add', channels: [r.channel] },
+        r.on ? t('tv.tvm.removed', 'Taken out of the lineup') : t('tv.tvm.added', 'Added to the lineup'));
+    case 'tvAddGroup':
+      return tvEdit({ action: 'add-group', pl: tvm.pl, group: r.key }, t('tv.tvm.groupAdded', 'The whole group is in the lineup'));
+    case 'tvRemoveSection':
+      if (confirmFirst(r, t('tv.tvm.removeAgain', 'Press OK again to remove the section'))) return;
+      return tvEdit({ action: 'remove-section', section: r.key }, t('tv.tvm.sectionRemoved', 'Section removed'), 'tvLineup');
+    case 'tvMoveSection':
+      return tvEdit({ action: 'move-section', section: tvm.sid, to: r.to }, t('tv.tvm.moved', 'Moved'));
+    case 'tvFrom':
+      return tvEdit({ action: 'section', section: tvm.sid, from: r.next }, r.next ? t('tv.tvm.fromSet', 'Numbers start at {n}', { n: r.next }) : t('tv.tvm.fromFollow', 'Numbers follow on'));
+    case 'tvHide':
+      return tvEdit({ action: 'hide', pl: tvm.pl, groups: [r.key], hidden: true }, t('tv.tvm.hidden', 'Group hidden'), 'tvGroups');
     case 'catalogInstall':
       return startInstall(r.key);
     case 'catalogRetry':

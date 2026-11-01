@@ -413,6 +413,20 @@ step('device tiles use LG\'s CEC selection contract, or open the port without a 
   })();
 });
 
+step('opening an unstarred Internet TV channel accepts the lineup and refuses an unknown channel', function (done) {
+  start(null, { iptv: {
+    rowItems: function () { return []; },
+    lineup: function () { return { channels: [{ id: 'p0a1b2c3d:x1' }] }; }
+  } });
+  home.open({ kind: 'iptv', id: 'p0a1b2c3d:x1' }, function (r) {
+    assert.equal(r.ok, true);
+    home.open({ kind: 'iptv', id: 'p0a1b2c3d:x2' }, function (unknown) {
+      assert.equal(unknown.ok, false);
+      done();
+    });
+  });
+});
+
 step('last watched on a receiver\'s port is the device the TV last selected there', function (done) {
   start(null);
   var hdmi2 = { id: 'HDMI_2', hdmiPlugIn: true, subList: [
@@ -460,14 +474,14 @@ step('the LG Home tile cannot be hidden, and unknown rows are dropped', function
   start(null);
   home.setLayout({ hidden: { app: ['lg-home', 'netflix'] }, rows: ['ch', 'bogus'] }, function (r) {
     assert.deepEqual(r.layout.hidden.app, ['netflix']);
-    assert.deepEqual(r.layout.rows, ['ch', 'app', 'rec', 'dev']);
+    assert.deepEqual(r.layout.rows, ['ch', 'app', 'rec', 'dev', 'iptv']);
     done();
   });
 });
 
 step('a layout saved before the Recommended row gets it under Apps', function (done) {
   start({ rows: ['dev', 'app', 'ch'] });
-  assert.deepEqual(home.layout().rows, ['dev', 'app', 'rec', 'ch']);
+  assert.deepEqual(home.layout().rows, ['dev', 'app', 'rec', 'ch', 'iptv']);
   done();
 });
 
@@ -501,7 +515,7 @@ function startRecent(cb) {
   // Opened while the rows are in their own order: nothing is recorded.
   at('netflix');
   home.setLayout({ sort: { app: 'recent', dev: 'recent', ch: 'recent', bogus: 'recent' } }, function (r) {
-    assert.deepEqual(r.layout.sort, { app: 'recent', dev: 'recent', ch: 'recent', rec: 'custom' });
+    assert.deepEqual(r.layout.sort, { app: 'recent', dev: 'recent', ch: 'recent', rec: 'custom', iptv: 'custom' });
     cb();
   });
 }
@@ -555,7 +569,7 @@ step('a device\'s own tile counts for that device, and a row back in its own ord
           // Inputs held the only records, so the file goes with them.
           assert.ok(!fs.existsSync(path.join(dir, 'home-recent.json')), 'a row back in its own order forgets what was opened');
           home.setLayout({ reset: true }, function (r) {
-            assert.deepEqual(r.layout.sort, { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom' });
+            assert.deepEqual(r.layout.sort, { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' });
             done();
           });
         });
@@ -2203,6 +2217,18 @@ step('Alternative View is off until chosen, saved, and anything but alternative 
         done();
       });
     });
+  });
+});
+
+step('live preview stays off until switched on, and is saved', function (done) {
+  start(null);
+  assert.strictEqual(home.layout().livePreview, false);
+  assert.strictEqual(home.normalise({ livePreview: 'yes' }).livePreview, false, 'only true switches it on');
+  home.setLayout({ livePreview: true }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.layout.livePreview, true);
+    assert.strictEqual(home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8'))).livePreview, true);
+    done();
   });
 });
 
