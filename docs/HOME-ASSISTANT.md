@@ -328,7 +328,7 @@ action:
 
 ## Universal Media Player Setup
 
-Home Assistant's MQTT discovery has no `media_player` platform, so Glasshouse cannot create one itself. Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, with the app in front as its title, for a media control card on a dashboard.
+Home Assistant's MQTT discovery has no `media_player` platform, so Glasshouse cannot create one itself. Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, with the app in front as its title, for a media control card on a dashboard. Play and pause are sent as the remote's Play and Pause keys, so they work only in apps that act on those keys: the TV's own player does, and the Jellyfin app resumes with Play but ignores Pause.
 
 Add the following to `configuration.yaml`. Power uses the `LG TV` switch from [Switched off, and back on](#switched-off-and-back-on). The entity IDs start with the TV's `device.id`: for one set to `lg_c9`, `select.lg_tv_input_source` is `select.lg_c9_input_source`.
 
