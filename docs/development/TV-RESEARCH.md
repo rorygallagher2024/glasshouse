@@ -2238,3 +2238,30 @@ came at 50 s: about 9 s from the server answering to the view drawn. The
 first Home press after a reboot took up to 13 s on a CX (webOS 5.6.2), so a
 fixed wait from the server's start is too short for slower TVs; the page's
 own requests to the server show it is running.
+
+## Where a cold start's time goes (B8, webOS 4.4.3; C2, webOS 9.2.2)
+
+Uptime in seconds from LG's `NL_APP_LAUNCH_BEGIN` and `NL_VSC` lines in
+`/var/log/messages`, the boot hook's log and the server's log:
+
+| | B8 | C2 |
+|---|---|---|
+| Home pressed, the view on screen (webOS 4) | 25.6, 28.1 | - |
+| webosbrew runs the boot hook | 41 | 23 to 26 |
+| Server listening, with the hook's 5 s wait | 50 | 40 |
+| Server listening, without it (#1171) | 43 | 29 |
+
+On webOS 4 the Home key opens the view before webosbrew runs the hook, and the
+view only shows the Glasshouse mark until the server answers. webosbrew's own
+start-up script decides when the hook runs; Glasshouse cannot move it.
+
+Once the server answered, the view's first catalogue took 7.9 s on the B8
+and 6.6 s on the C2, against 0.75 s and 0.35 s on later requests. Every
+child process start waits its turn 150 ms apart for the server's first 30 s
+(`lib/children.js`), so the catalogue's luna calls queued behind the
+start-up reads, and the route also waited on two uncached calls from
+`status()`, 3.7 s of the B8's 7.9 s. Answered from the lists saved in
+`home-lists.json`, it took 0.1 s on the B8 and 0.02 s on the C2.
+
+Loading every module in `server/lib` takes 0.9 s on the B8 (node 0.12.2),
+and node itself 0.4 s; neither is worth shortening.
