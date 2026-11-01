@@ -340,51 +340,52 @@ media_player:
     children: []
     commands:
       turn_on:
-        service: switch.turn_on
+        action: switch.turn_on
         target:
           entity_id: switch.lg_tv
       turn_off:
-        service: switch.turn_off
+        action: switch.turn_off
         target:
           entity_id: switch.lg_tv
       volume_up:
-        service: mqtt.publish
+        action: mqtt.publish
         data:
           topic: "lgtv/command/volume"
           payload: "+1"
       volume_down:
-        service: mqtt.publish
+        action: mqtt.publish
         data:
           topic: "lgtv/command/volume"
           payload: "-1"
       volume_set:
-        service: number.set_value
+        action: number.set_value
         target:
           entity_id: number.lg_tv_volume
         data:
-          value: "{{ volume * 100 }}"
+          # Home Assistant passes the level from 0 to 1 as volume_level.
+          value: "{{ (volume_level * 100) | round | int }}"
       volume_mute:
-        service: switch.toggle
+        action: switch.toggle
         target:
           entity_id: switch.lg_tv_mute
       media_play:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_play
       media_pause:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_pause
       media_play_pause:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_play_pause
       media_stop:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_stop
       select_source:
-        service: select.select_option
+        action: select.select_option
         target:
           entity_id: select.lg_tv_input_source
         data:
@@ -413,15 +414,15 @@ A TV in standby is asleep and cannot receive commands, so it is switched back on
 1. Turn on **Wake-on-LAN** on the TV: in the web dashboard under **System &rarr; Power**, on the TV dashboard under **System &rarr; Power**, or in LG's menu under **Settings &rarr; General &rarr; Mobile TV On**. Wake-on-LAN works over Ethernet and, on most models, Wi-Fi.
 2. In Home Assistant, add the **Wake on LAN** integration (**Settings &rarr; Devices &amp; services &rarr; Add integration &rarr; Wake on LAN**) with the TV's MAC address. The address is listed under **Connections** on the TV's device page in Home Assistant, and as the **MAC Address** sensor.
 
-This creates a button that wakes the TV from standby. To make one switch that shows whether the TV is on and turns it on or off, add a template switch to `configuration.yaml`, with the TV's MAC address:
+This creates a button that wakes the TV from standby. To make one switch that shows whether the TV is on and turns it on or off, add a template switch to `configuration.yaml`, with the TV's MAC address. If it already has a `template:` key, add the `switch:` entry under it:
 
 ```yaml
-switch:
-  - platform: template
-    switches:
-      lg_tv:
-        friendly_name: "LG TV"
-        value_template: "{{ is_state('binary_sensor.lg_tv_power', 'on') }}"
+template:
+  - switch:
+      - name: "LG TV"
+        unique_id: lg_tv_power_switch
+        icon: mdi:television
+        state: "{{ is_state('binary_sensor.lg_tv_power', 'on') }}"
         turn_on:
           # Wakes a TV that is asleep in standby.
           - action: wake_on_lan.send_magic_packet
@@ -438,7 +439,6 @@ switch:
           - action: button.press
             target:
               entity_id: button.lg_tv_power_off
-        icon_template: mdi:television
 ```
 
 The `wake_on_lan.send_magic_packet` action needs `wake_on_lan:` in `configuration.yaml` if the integration was not added through the UI. Entity IDs start with the device name, `lg_tv` by default; a TV with its own name in `config.json` uses that instead.
