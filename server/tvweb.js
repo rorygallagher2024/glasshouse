@@ -923,6 +923,8 @@ if (!CLI_MODE) installer.recover();
 var publishNow = function () {};
 function appsChanged() {
   telemetry.clearCache();
+  if (piccap && piccap.clearCache) piccap.clearCache();
+  if (huesync && huesync.clearCache) huesync.clearCache();
   telemetry.refreshInstalledApps(function () { publishNow(); });
 }
 

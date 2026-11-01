@@ -18,6 +18,9 @@ var lastPublishedState = null;
 var allowControl = false;
 var pollTimer = null;
 var pollIntervalMs = 30000;
+var installedCache = null;
+var lastInstalledCheck = 0;
+var INSTALLED_CACHE_MS = 60000;
 /** @type {function(boolean): void} */
 var onAvailableChange = function () {};
 // Whether Home Assistant's PicCap Capture entity is wanted at all.
@@ -200,7 +203,8 @@ function init(opts) {
     getState: getState,
     handleMqttCommand: handleMqttCommand,
     status: status,
-    setPower: setPower
+    setPower: setPower,
+    clearCache: clearCache
   };
 }
 
@@ -211,7 +215,8 @@ function initNoop() {
     getState: function () { return null; },
     handleMqttCommand: function () { return false; },
     status: function (cb) { cb(null); },
-    setPower: function (on, cb) { cb({ ok: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') }); }
+    setPower: function (on, cb) { cb({ ok: false, error: msg('srv.piccap.unavailable', 'PicCap is not available') }); },
+    clearCache: function () {}
   };
 }
 
@@ -235,9 +240,20 @@ function migrateConfig(cfg) {
   return true;
 }
 
+function clearCache() {
+  installedCache = null;
+  lastInstalledCheck = 0;
+}
+
 /* Whether the app is on the TV: a look at its folder, without asking its service. */
 function installed() {
-  return existsQuiet(APP_DIR);
+  var now = Date.now();
+  if (installedCache !== null && now >= lastInstalledCheck && now - lastInstalledCheck < INSTALLED_CACHE_MS) {
+    return installedCache;
+  }
+  installedCache = existsQuiet(APP_DIR);
+  lastInstalledCheck = now;
+  return installedCache;
 }
 
 /*
@@ -254,4 +270,4 @@ function supportedWebos(version) {
 }
 
 module.exports = { init: init, initNoop: initNoop, installed: installed, supportedWebos: supportedWebos,
-  migrateConfig: migrateConfig, APP_DIR: APP_DIR };
+  migrateConfig: migrateConfig, clearCache: clearCache, APP_DIR: APP_DIR };

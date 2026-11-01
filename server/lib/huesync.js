@@ -19,6 +19,9 @@ var lastPublishedState = null;
 var allowControl = false;
 var pollTimer = null;
 var pollIntervalMs = 30000;
+var installedCache = null;
+var lastInstalledCheck = 0;
+var INSTALLED_CACHE_MS = 60000;
 /** @type {function(boolean): void} */
 var onAvailableChange = function () {};
 // Whether Home Assistant's Hue Sync entity is wanted at all.
@@ -225,7 +228,8 @@ function init(opts) {
     getState: getState,
     handleMqttCommand: handleMqttCommand,
     status: status,
-    setPower: setPower
+    setPower: setPower,
+    clearCache: clearCache
   };
 }
 
@@ -236,14 +240,26 @@ function initNoop() {
     getState: function () { return null; },
     handleMqttCommand: function () { return false; },
     status: function (cb) { cb(null); },
-    setPower: function (on, cb) { cb({ ok: false, error: msg('srv.huesync.unavailable', 'Hue Sync is not available') }); }
+    setPower: function (on, cb) { cb({ ok: false, error: msg('srv.huesync.unavailable', 'Hue Sync is not available') }); },
+    clearCache: function () {}
   };
+}
+
+function clearCache() {
+  installedCache = null;
+  lastInstalledCheck = 0;
 }
 
 /* Whether the app is on the TV: a look at its folder, without asking its service. */
 function installed() {
-  return existsQuiet(APP_DIR);
+  var now = Date.now();
+  if (installedCache !== null && now >= lastInstalledCheck && now - lastInstalledCheck < INSTALLED_CACHE_MS) {
+    return installedCache;
+  }
+  installedCache = existsQuiet(APP_DIR);
+  lastInstalledCheck = now;
+  return installedCache;
 }
 
-module.exports = { init: init, initNoop: initNoop, installed: installed, APP_DIR: APP_DIR,
+module.exports = { init: init, initNoop: initNoop, installed: installed, clearCache: clearCache, APP_DIR: APP_DIR,
   APP_ID: APP_ID };
