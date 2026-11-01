@@ -22,18 +22,24 @@ var LEFT_OUT = ['com.webos.app.home', 'com.tvweb.home'];
 var IMAGE_RE = /\.(jpe?g|png)$/i;
 
 var lunaFn = null;
+var excludedFn = function () { return []; };
 // appId to image path, from the last list: only those are served.
 var images = {};
 
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna || null;
+  excludedFn = opts.excluded || function () { return []; };
   images = {};
 }
 
 function luna(uri, payload, cb) {
   if (!lunaFn) return cb(null);
   lunaFn(uri, payload, function (r) { cb(r || null); });
+}
+
+function excluded(id) {
+  return LEFT_OUT.indexOf(id) !== -1 || excludedFn().indexOf(id) !== -1;
 }
 
 function list(cb) {
@@ -45,7 +51,7 @@ function list(cb) {
     images = {};
     r.recentsAppList.forEach(function (a) {
       var id = a && typeof a.appId === 'string' ? a.appId : '';
-      if (!id || seen[id] || LEFT_OUT.indexOf(id) !== -1) return;
+      if (!id || seen[id] || excluded(id)) return;
       seen[id] = true;
       // Netflix names a picture of its own; the others have the snapshot taken
       // as they were left. Snapshots are in /tmp, so an app left before the TV
@@ -61,7 +67,7 @@ function list(cb) {
 }
 
 function imagePath(id) {
-  return typeof id === 'string' && images.hasOwnProperty(id) ? images[id] : null;
+  return typeof id === 'string' && !excluded(id) && images.hasOwnProperty(id) ? images[id] : null;
 }
 
 // Only an app on the list now can be opened or closed through it.

@@ -57,6 +57,8 @@ repo.getCatalog(false, function (r) {
   assert.strictEqual(a['com.example.player'].sha256, new Array(65).join('1'));
   assert.strictEqual(a['com.example.player'].size, null);
   assert.strictEqual(a['com.example.player'].description, 'A video player');
+  assert.strictEqual(a['org.webosbrew.hbchannel'].sourceUrl, 'https://github.com/webosbrew/webos-homebrew-channel');
+  assert.strictEqual(a['com.example.player'].sourceUrl, '');
   console.log('  ✓ all pages are followed and entries without a hash are dropped');
 
   // Relative ipkUrl resolves against the manifest URL
@@ -75,6 +77,61 @@ repo.getCatalog(false, function (r) {
   };
   assert.ok(repo._parsePackage(entry('org.example.app'), 'https://example.org/'));
   assert.strictEqual(repo._parsePackage(entry('org.example.app', { ipkSize: 7465122 }), 'https://example.org/').size, 7465122);
+  [
+    'https://example.org/app', 'https://example.org/app?view=code&ref=main#readme',
+    'HTTPS://example.org:8443/team/app', 'https://[2001:db8::1]/app',
+    'https://192.0.2.1/app', 'https://example.org', 'https://example.org/project.js',
+    'https://github.com/example/app/blob/main/src/main.js#L10',
+    'https://github.com/example/app/tree/main/apps/player',
+    'https://github.com/example/app/releases/tag/v1.0.0',
+    'https://github.com.example.org/example/app/archive/main.zip',
+    'https://example.org/group/subgroup/app/-/tree/main',
+    'https://example.org/app?filename=app.ipk'
+  ].forEach(function (source) {
+    assert.strictEqual(repo._parsePackage(entry('org.example.app', { sourceUrl: source }), BASE).sourceUrl, source);
+  });
+  [
+    undefined, null, '', false, 42, {}, [], 'not a URL', '/project', '//example.org/project',
+    'http://example.org/app', 'javascript:alert(1)', 'data:text/html,<script>alert(1)</script>',
+    'https:', 'https://', 'https:///project', 'https://?query', 'https://#fragment',
+    'https://:443/app', 'https://[invalid]/app', 'https://999.999.999.999/app', 'https://example.org:bad/app',
+    'https://foo.123/app', 'https://0x100000000/app',
+    'https://example.org:65536/app', 'https://user:password@example.org/app', 'https://@example.org/app',
+    ' https://example.org/app', 'https://example.org/with space', 'https://example.org/\napp',
+    'https://example.org/' + new Array(2100).join('a'),
+    'https://example.org/\tapp', 'https://example.org/\u0000app', 'https://example.org/\u007fapp',
+    'https://example.org\\evil/app', 'https://example.org%20.evil/app', 'https://example.org^evil/app',
+    'https://example.org"onclick="alert(1)/app'
+  ].forEach(function (source) {
+    var parsed = repo._parsePackage(entry('org.example.app', { sourceUrl: source }), BASE);
+    assert.ok(parsed, 'a bad source URL must not drop the app: ' + JSON.stringify(source));
+    assert.strictEqual(parsed.sourceUrl, '', JSON.stringify(source));
+  });
+  [
+    'https://github.com/LucifersCircle/WebOS-Token-Refresh-App/releases/download/v1.0.4/com.pirate.refresh_1.0.4_all.ipk',
+    'https://github.com/LucifersCircle/WebOS-Token-Refresh-App/releases/latest/download/app.ipk?download=1#asset',
+    'https://github.com/LucifersCircle/WebOS-Token-Refresh-App/archive/refs/heads/main.zip',
+    'https://github.com/LucifersCircle/WebOS-Token-Refresh-App/archive/refs/tags/v1.0.4.tar.gz',
+    'HTTPS://GITHUB.COM/LucifersCircle/WebOS-Token-Refresh-App/releases/download/v1.0.4/app.ipk'
+  ].forEach(function (source) {
+    assert.strictEqual(repo._parsePackage(entry('org.example.app', { sourceUrl: source }), BASE).sourceUrl,
+      'https://github.com/LucifersCircle/WebOS-Token-Refresh-App');
+  });
+  [
+    'https://example.org/downloads/app.ipk', 'https://example.org/app.IPK?download=1#asset',
+    'https://github.com.example.org/example/app/releases/download/v1/app.ipk',
+    'https://example.org/github.com/example/app/releases/download/v1/app.ipk'
+  ].forEach(function (source) {
+    var parsed = repo._parsePackage(entry('org.example.app', { sourceUrl: source }), BASE);
+    assert.ok(parsed, 'a download source URL must not drop the app');
+    assert.strictEqual(parsed.sourceUrl, '', source);
+    assert.strictEqual(parsed.ipkUrl, 'https://example.org/a.ipk', 'the installation URL stays unchanged');
+  });
+  console.log('  ✓ GitHub downloads link to their repository; other package downloads have no source link');
+  var noManifestSource = entry('org.example.app');
+  noManifestSource.sourceUrl = 'https://example.org/not-declared-in-manifest';
+  assert.strictEqual(repo._parsePackage(noManifestSource, BASE).sourceUrl, '', 'only the manifest declares the source');
+  console.log('  ✓ only valid absolute HTTPS source URLs are kept, from any host');
   ["x');alert(1);//", 'a b', '../evil', '-leading', ''].forEach(function (id) {
     assert.strictEqual(repo._parsePackage(entry(id), 'https://example.org/'), null, JSON.stringify(id));
   });
@@ -126,7 +183,7 @@ function part3() {
   var extra = 'https://repos.example.net/apps.json';
   var bad = { paging: { page: 1, maxPage: 1 }, packages: [
     { id: 'com.x.http', manifest: { version: '1', ipkUrl: 'http://x.example/a.ipk', ipkHash: { sha256: new Array(65).join('a') } } },
-    { id: 'com.x.ok', title: 'Ok', manifest: { version: '1', ipkUrl: 'https://x.example/a.ipk', ipkHash: { sha256: new Array(65).join('A') } } },
+    { id: 'com.x.ok', title: 'Ok', manifest: { version: '1', sourceUrl: 'https://github.com/example/app/releases/download/v1/app.ipk', ipkUrl: 'https://x.example/a.ipk', ipkHash: { sha256: new Array(65).join('A') } } },
     { id: 'com.x.five', manifest: { version: '1.0.0.0.1', ipkUrl: 'https://x.example/f.ipk', ipkHash: { sha256: new Array(65).join('e') } } },
     { id: 'com.x.shorthash', manifest: { version: '1', ipkUrl: 'https://x.example/b.ipk', ipkHash: { sha256: 'abc' } } },
     { manifest: { version: '1', ipkUrl: 'https://x.example/c.ipk', ipkHash: { sha256: new Array(65).join('b') } } },
@@ -145,6 +202,7 @@ function part3() {
     assert.ok(a['com.x.ok'] && !a['com.x.http'] && !a['com.x.shorthash']);
     assert.ok(!main['com.x.ok'], 'an added catalog is listed apart from the Homebrew Channel\'s');
     assert.strictEqual(a['com.x.ok'].repo, extra);
+    assert.strictEqual(a['com.x.ok'].sourceUrl, 'https://github.com/example/app');
     assert.strictEqual(a['com.x.ok'].sha256, new Array(65).join('a'), 'hash is lower-cased');
     assert.strictEqual(a['io.github.rorygallagher2024.lg-webos-dashboard'].state, 'hbc');
     assert.strictEqual(a['com.tvweb.dashboard'].state, 'hbc');

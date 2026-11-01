@@ -6,11 +6,13 @@ Branch, push the branch, open a PR. This applies to "commit and push" too.
 Push to an existing PR branch rather than opening a second one for the same
 line of work. Merging is the maintainer's call.
 
-## Draft until tried on a TV
+## Draft until ready
 
-A PR that has not been tried on a real TV stays a draft, even when feedback on
-it is wanted. Mark it ready for review once it has been, with the result in its
-Testing section.
+Keep a PR in draft while any rule in docs/CONTRIBUTING.md's "Rules for a pull
+request" that applies to it is unmet, even when feedback on it is wanted:
+tried on a real TV with the result in its Testing section, checks passing,
+translated, docs updated. Mark it ready for review then. Its "Guidelines" are
+followed too, and a PR that departs from one says why.
 
 ## Docs move with the change
 
@@ -70,7 +72,8 @@ use modern JavaScript.
 - `test/` - `node test/run-all.js` runs every `test-*.js`; fixtures are real
   stats from a B8 (webOS 4), a CX (webOS 5), and a G4 and a C4 (webOS 9).
 
-Before pushing, run what CI runs: `node test/run-all.js`, `npx tsc`, and
+Before pushing, run what CI runs: `scripts/check-all.sh` runs it all side
+by side. One at a time: `node test/run-all.js`, `npx tsc`, and
 `scripts/check-es5.py`, `check-module-calls.py`, `check-ui-ids.py`,
 `check-strings.py`, `check-screensavers.py`, `check-drift.py`,
 `check-entity-stability.py` and
@@ -78,6 +81,24 @@ Before pushing, run what CI runs: `node test/run-all.js`, `npx tsc`, and
 `node scripts/check-upgrade.js`. A module
 handed to another through init() is typed with
 `/** @type {typeof import('./x')} */`, so check-module-calls.py follows it.
+
+# Working with a TV
+
+`scripts/tv.sh <address> version|app|luna|log|capture` covers the usual
+look at a rooted TV over SSH; run it with no arguments for its usage.
+
+- `luna-send` prints nothing over SSH without a terminal: use `ssh -tt`,
+  as tv.sh does, and strip the carriage returns.
+- Glasshouse lives in `/var/lib/tvweb`: its log is `tvweb.log` there and its
+  settings `config.json`. `server/deploy.sh <address>` installs a branch.
+- A TV whose `config.json` sets `host` to `127.0.0.1` answers only on the TV:
+  reach its dashboard through `ssh -L 18080:127.0.0.1:8080 root@<address>`.
+- The app in front is empty while a Home screen is, and names the input
+  (`com.webos.app.hdmi2`) while one is. An HDMI input shows another device's
+  screen: capture it only when asked. Protected video captures black.
+- Screen capture is `com.webos.service.capture/executeOneShot` on webOS 9
+  (a C2) and `com.webos.service.tv.capture` on webOS 4 (a B8); tv.sh tries
+  one, then the other.
 
 For background, open the doc for the area rather than README.md:
 docs/IMPLEMENTATION.md (platform quirks and how each subsystem works),
@@ -119,6 +140,11 @@ writing down.
 The exception is a PR's **Testing** section, which docs/CONTRIBUTING.md asks
 for: the TV and webOS version the change was tried on, what was done and seen,
 and what wasn't tested. State them as facts, briefly, not as a story.
+
+Where the change shows on a screen, put a screenshot of it in the Testing
+section: the dashboard, the TV app, Glasshouse Home or the TV's own screen.
+`scripts/tv.sh <tv> capture <out.jpg>` takes one from the TV; on webOS 4 it
+includes the HDMI picture, which webOS 5 and later capture black.
 
 Record decisions and their reasons, not the route taken to reach them.
 

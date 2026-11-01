@@ -13,17 +13,16 @@
 <body>
 
 <header>
-  <div class="hdr-left">
-    <div class="mark">
-      <div class="mark-tv"><span id="brand">&mdash;</span><span id="model" class="num">&mdash;</span></div>
-    </div>
-  </div>
-  <div class="src">
+  <div class="src now">
     <div class="st" id="state"><i></i><span>&mdash;</span></div>
     <div class="t" id="source">&mdash;</div>
     <div class="stream-info">
       <div class="stream-primary num" id="stream-primary">&mdash;</div>
     </div>
+  </div>
+  <div class="hdr-status">
+    <div class="hdr-line num" id="hdr-volume" hidden></div>
+    <div class="hdr-line" id="hdr-sleep" hidden></div>
   </div>
 </header>
 
@@ -54,7 +53,7 @@
         <path d="M358 214 L256 134 L154 214 V342 A34 34 0 0 0 188 376 H324 A34 34 0 0 0 358 342 V286 H272"
               fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span class="sidenav-title" translate="no">Glasshouse</span>
+      <span class="sidenav-titles"><span class="sidenav-title" translate="no">Glasshouse</span><span class="sidenav-tv" id="nav-tv" translate="no"></span></span>
     </span>
     <button type="button" class="nav-close" onclick="closeNav()" aria-label="Close menu" data-t-aria-label="nav.close">&times;</button>
   </div>
@@ -73,8 +72,8 @@
     <button type="button" role="tab" data-tab="picture" id="tab-btn-picture" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="12.5" rx="1.5"/><path d="M8 20.5h8"/><path d="M12 7.5v7a3.5 3.5 0 0 0 0-7z" fill="currentColor" stroke="none"/><circle cx="12" cy="11" r="3.5"/></svg><span data-t="tab.picture">Picture</span></button>
     <button type="button" role="tab" data-tab="audio"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><span data-t="tab.audio">Audio</span></button>
     <button type="button" role="tab" data-tab="screensaver" id="tab-btn-screensaver"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg><span data-t="tab.screensaver">Screensaver</span></button>
+    <button type="button" role="tab" data-tab="advanced"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span data-t="tab.system">System</span></button>
     <div class="nav-rule" role="presentation"></div>
-    <button type="button" role="tab" data-tab="advanced"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span data-t="tab.advanced">Advanced</span></button>
     <button type="button" role="tab" data-tab="servicemenu" id="tab-btn-servicemenu" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span data-t="tab.serviceMenu">Service menu</span></button>
     <button type="button" role="tab" data-tab="mqtt"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M8 11l8-4M8 13l8 4"/></svg><span translate="no">MQTT</span></button>
     <button type="button" role="tab" data-tab="server"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="7" rx="1.5"/><rect x="4" y="13" width="16" height="7" rx="1.5"/><path d="M8 7.5h.01M8 16.5h.01"/></svg><span data-t="tab.server">Server</span></button>
@@ -351,10 +350,11 @@
         <form class="toast-form" onsubmit="event.preventDefault();sendTypedText();">
           <input type="text" id="kb-text" placeholder="Focus a field on the TV, then type"
                  data-t-placeholder="ctl.keyboard.placeholder" maxlength="500" autocomplete="off" spellcheck="false"
-                 oninput="kbSyncLive()">
+                 oninput="kbSyncLive()" onkeydown="kbIgnoreBackspaceInEmptyBox(event)">
           <button type="submit" id="btn-kb-enter" data-t="ctl.keyboard.enter">Enter</button>
         </form>
         <p class="sub" id="kb-hint" data-t="ctl.keyboard.hint">Focus a text field on the TV first, such as a search box or a web address. What you type here goes to it as you type, backspace included, and Enter submits it.</p>
+        <p class="sub" id="kb-via"></p>
       </div>
     </details>
 
@@ -419,6 +419,19 @@
           <select id="so_more" class="so-more" hidden aria-label="More outputs" data-t-aria-label="sound.more.label"
             onchange="if (this.value) sendCommand('soundOutput', this.value)"></select>
         </div>
+      </div>
+      <!-- Paired Bluetooth audio devices, the same list and actions as the Audio tab. Shown only where the TV has the service. -->
+      <div class="set" id="sound-bt-set" hidden>
+        <div class="lbl" data-t="ctl.btDevice">Bluetooth device</div>
+        <div class="bt-pick" id="sound-bt-pick" aria-busy="true">
+          <select id="sound-bt-select" class="pill-sel" aria-label="Paired Bluetooth device" data-t-aria-label="ctl.btDevice.label"></select>
+          <div class="btns bt-pick-btns">
+            <button type="button" id="sound-bt-action" hidden></button>
+            <button type="button" id="sound-bt-refresh" onclick="audioBtRefresh()" data-t="audio.refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="sub" id="sound-bt-note" role="status" hidden></div>
+        <div class="err-note" id="sound-bt-error" role="alert" hidden></div>
       </div>
       <!-- Only while something plays: the TV reports no format otherwise. -->
       <div class="set" id="sound-format-set" hidden><div class="lbl"><span data-t="ctl.soundFormat">Current sound format</span> &middot; <span id="sound-format" class="num" translate="no">&mdash;</span></div></div>
@@ -546,6 +559,24 @@
   <div class="pv-sec" id="audio-sound-head" data-t="adv.sound">Sound</div>
   <div class="prot-table" id="audio-settings" data-reload="loadAudio"></div>
 
+  <div id="audio-bt" hidden>
+    <div class="pv-sec adv-sec" data-t="audio.bt.title">Bluetooth audio</div>
+    <div class="audio-head">
+      <div class="pv-sub" data-t="audio.bt.desc">Headphones and speakers paired with the TV. Find devices adds a new one: put it in pairing mode first.</div>
+      <div class="audio-bt-btns">
+        <button type="button" class="pill idle" id="audio-bt-scan-btn" onclick="audioBtScan()" data-t="audio.bt.find">Find devices</button>
+        <button type="button" class="pill idle" id="audio-bt-refresh" onclick="audioBtRefresh()" data-t="audio.refresh">Refresh</button>
+      </div>
+    </div>
+    <div class="prot-table" id="audio-bt-list" aria-busy="true"></div>
+    <div class="sub" id="audio-bt-note" role="status"></div>
+    <div id="audio-bt-scan" hidden>
+      <div class="sub" id="audio-bt-scan-note" role="status"></div>
+      <div class="prot-table" id="audio-bt-found"></div>
+    </div>
+    <div class="err-note audio-error" id="audio-bt-error" role="alert" hidden></div>
+  </div>
+
   <div class="err-note audio-error" id="audio-error" role="alert" hidden></div>
   <details class="pv-d audio-more" id="audio-more">
   <summary><span class="audio-fold"><span data-t="audio.pathTitle">Soundbar and receiver</span><span class="pv-sub" data-t="audio.pathDesc">Whether a soundbar or receiver is connected over HDMI ARC or eARC, and which audio formats the TV and the receiver say they support. Useful when Dolby Atmos or DTS doesn’t come through.</span></span></summary>
@@ -564,6 +595,13 @@
     </div>
     <p class="sub" id="audio-link-note"></p>
 
+    <div id="audio-forwarding" hidden>
+    <div class="pv-sec adv-sec" data-t="audio.overrideTitle">Experimental DTS forwarding</div>
+    <div class="prot-table">
+      <div class="prot-row"><div class="prot-main"><div class="prot-title" data-t="tv.audio.forwarding">DTS forwarding</div><div class="prot-desc" id="audio-override-desc"></div></div><div class="prot-status"><button type="button" class="pill idle" id="audio-override" onclick="audioOverride()" aria-pressed="false" aria-describedby="audio-override-desc" disabled><span data-t="audio.unavailable">Unavailable</span></button></div></div>
+    </div>
+    <p class="sub audio-helper"><a href="https://github.com/dakenf/lg-g5-dts" target="_blank" rel="noopener noreferrer" data-t="audio.helperLink">About the DTS forwarding helper</a></p>
+    </div>
 
     <details class="pv-d"><summary data-t="audio.playbackTitle">TV playback declarations</summary><p class="pv-sub" data-t="audio.playbackDesc">Formats listed by LG’s media configuration, with their declared channel limits. These describe playback resources, not what reaches an amp.</p><div class="audio-playback" id="audio-playback"></div></details>
   </div>
@@ -571,7 +609,7 @@
 </section>
 
 <section class="priv panel" id="advpane" role="tabpanel" hidden>
-  <div class="lbl" data-t="tab.advanced">Advanced</div>
+  <div class="lbl" data-t="tab.system">System</div>
   <div class="pv-sec" data-t="adv.powerStandby">Power &amp; standby</div>
   <div class="prot-table">
     <div class="prot-row" id="row-quickboot" hidden>
@@ -774,6 +812,16 @@
           stop and the TV no longer finds devices by itself.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_devdetect" onclick="toggleDeviceDetection()">&mdash;</button></div>
+    </div>
+    <div class="prot-row" id="row-locallookups" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.localLookups">Answer device scans on the TV</div>
+        <div class="prot-desc" data-t="adv.localLookups.desc">LG's device detection asks your router for the name of every address on your home network:
+          whenever the TV's Home Hub looks for devices, and on some TVs every 5 minutes, even with Auto device detection off.
+          A network-wide ad blocker such as Pi-hole shows them as hundreds of requests. Switched on, the TV answers them itself,
+          so they stay off your network. Nothing the TV shows changes.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_locallookups" onclick="toggleLocalLookups()">&mdash;</button></div>
     </div>
   </div>
 
@@ -1018,6 +1066,7 @@
       <div>
         <div class="ps-head" id="home-state">&mdash;</div>
         <div class="pv-sub" id="home-state-desc"></div>
+        <div class="pv-note warn" id="home-restart-note" hidden data-t="home.restartsApps">On this TV, switching Glasshouse Home on or off, or holding Home for LG&rsquo;s Home, restarts the TV&rsquo;s app manager, which closes the apps that are open.</div>
         <div class="pv-note warn" data-t="home.experimental">Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.</div>
       </div>
     </div>
@@ -1053,6 +1102,27 @@
         <div class="prot-desc" data-t="home.pictureDesc">In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-picture" onclick="homePicture()">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-preview-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.livePreview">Live preview</div>
+        <div class="prot-desc" data-t="home.livePreviewDesc">A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview" onclick="homeLivePreview()">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-preview-always-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewAlways">Keep the preview on</div>
+        <div class="prot-desc" data-t="home.previewAlwaysDesc">The preview runs whenever Glasshouse Home is on screen, not only while a tile with one is chosen: the HDMI input last watched, or otherwise the TV on its last channel. Choosing another input or channel moves it there.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-always" onclick="homePreviewOption('previewAlways')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-preview-tile-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewInTile">Preview in the tile</div>
+        <div class="prot-desc" data-t="home.previewInTileDesc">The preview fills the tile it shows, under the tile’s own name, rather than beside the clock.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-tile" onclick="homePreviewOption('previewInTile')">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
@@ -1130,6 +1200,13 @@
       <div id="apps-home-inputs" style="margin-top:12px"></div>
       <div class="pv-g" data-t="apps.home.parts">Parts of the Home screen</div>
       <div class="prot-table" id="apps-home-parts"></div>
+      <div id="apps-home-banner" hidden>
+        <div class="pv-g" data-t="apps.home.banner">Banner picture</div>
+        <div class="pv-sub" data-t="apps.home.banner.desc">The picture across the top of the Home screen: LG&rsquo;s, plain black, or your own. Your own is cropped to the banner&rsquo;s shape as it is now, so choose it after hiding the rows you want gone.</div>
+        <div class="btns wall-choice" id="apps-home-banner-choice"></div>
+        <input type="file" id="home-banner-file" accept="image/jpeg,image/png,image/webp" hidden onchange="homeBannerPicked(this)">
+        <div class="sub" id="apps-home-banner-note" role="status"></div>
+      </div>
       <div class="btns" style="margin-top:14px;max-width:420px">
         <button type="button" class="pill idle" id="btn-home-restore" onclick="restoreHome()" data-t="apps.home.restore">Put back LG&rsquo;s Home screen</button>
       </div>
@@ -1158,6 +1235,7 @@
   <div class="sub" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
   <div class="pv-note" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
   <div id="home-rows"></div>
+  <div id="home-recents"></div>
   <div class="btns" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
   <div class="sub" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
 
@@ -1167,7 +1245,7 @@
   <div class="home-custom">
     <label><input type="color" id="home-col-text" onchange="homeCustomColours()"> <span data-t="home.colours.text">Text</span></label>
     <label><input type="color" id="home-col-accent" onchange="homeCustomColours()"> <span data-t="home.colours.accent">Accent</span></label>
-    <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: null })" data-t="home.colours.reset">Use the default colours</button>
+    <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook() })" data-t="home.colours.reset">Use the default colours</button>
   </div>
 
   <div class="pv-sec adv-sec" data-t="home.wall.title">Wallpaper</div>
@@ -1184,6 +1262,15 @@
     </div>
   </div>
   <div class="sub" id="home-wall-upload-note" role="status"></div>
+  <div class="set home-dark"><div class="lbl"><span data-t="home.darkening">Darkening</span> &middot; <span id="home-dark-lbl" class="num">&mdash;</span></div>
+    <div class="sub" data-t="home.darkeningDesc">How much the wallpaper is darkened behind the clock and the rows, to keep them easy to read. Off shows the picture as it is.</div>
+    <div class="vol-row">
+      <div class="vol-wrap full" id="home-dark-wrap" role="group" aria-label="Darkening" data-t-aria-label="home.darkening">
+        <div class="vol-fill" id="home-dark-fill"></div>
+        <input type="range" id="home-dark-slider" min="0" max="100" step="5" value="100" aria-label="Darkening" data-t-aria-label="home.darkening">
+      </div>
+    </div>
+  </div>
   </div>
 
 </section>
@@ -1425,11 +1512,6 @@
       <div class="hint" data-t="mqtt.deviceId.hint">Lowercase letters, digits and underscores.</div>
     </div>
     <div class="cfg-f">
-      <label for="cfg-devname" data-t="mqtt.deviceName">Device name</label>
-      <input type="text" id="cfg-devname" placeholder="LG OLED TV" data-t-placeholder="header.brand.oled" autocomplete="off">
-      <div class="hint" data-t="mqtt.deviceName.hint">Shown as the device name in Home Assistant.</div>
-    </div>
-    <div class="cfg-f">
       <label for="cfg-interval" data-t="mqtt.interval">Telemetry interval</label>
       <input type="number" id="cfg-interval" placeholder="10000" translate="no" min="1000" max="600000" autocomplete="off">
       <div class="hint" data-t="mqtt.interval.hint">Milliseconds between publishes.</div>
@@ -1492,6 +1574,17 @@
           <button type="button" class="link-btn" id="upd-rollback" hidden onclick="rollbackUpdate()"></button>
         </div>
         <div class="prot-status"><span class="pill idle" id="upd-pill">&mdash;</span></div>
+      </div>
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="server.tvName.title">TV name</div>
+          <div class="prot-desc" data-t="server.tvName.desc">Shown under Glasshouse in the sidebar and as the TV's name in Home Assistant. Left empty, it is LG and the model.</div>
+          <form class="toast-form" id="tvname-form" onsubmit="event.preventDefault();saveTvName();">
+            <input type="text" id="tvname-input" maxlength="64" autocomplete="off" spellcheck="false"
+              aria-label="TV name" data-t-aria-label="server.tvName.title" oninput="this.dataset.dirty='1'">
+            <button type="submit" id="tvname-save" data-t="server.tvName.save">Save</button>
+          </form>
+        </div>
       </div>
       <div class="prot-row" id="server-health-row">
         <div class="prot-main">
@@ -1735,6 +1828,7 @@
 </main>
 
 <footer>
+  <span class="foot-tv" id="foot-tv" translate="no"></span>
   <span class="foot-end"><span id="activity-txrx" class="activity-txrx" aria-hidden="true"><span id="act-tx" class="txrx-pip"></span><span id="act-rx" class="txrx-pip"></span></span><span id="tv-name" hidden></span><a id="version" hidden target="_blank" rel="noopener noreferrer"></a><a id="version-new" hidden target="_blank" rel="noopener noreferrer"></a><button type="button" class="theme-toggle" id="theme-toggle">☾</button></span>
 </footer>
 
@@ -1777,6 +1871,7 @@
 <script src="/assets/ui/install.js"></script>
 <script src="/assets/ui/home.js"></script>
 <script src="/assets/ui/audio.js"></script>
+<script src="/assets/ui/bluetooth.js"></script>
 <script src="/assets/ui/picture.js"></script>
 <script src="/assets/ui/servicemenu.js"></script>
 <script src="/assets/ui/oled.js"></script>

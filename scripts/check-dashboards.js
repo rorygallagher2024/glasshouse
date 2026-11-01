@@ -237,6 +237,209 @@ async function visitHomePicture(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// The TV's tile, Keep the preview on and Preview in the tile.
+async function visitHomePreviewOptions(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home preview options: ' + e.message));
+  const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: ['one'], hintSeen: true, searchHintSeen: true,
+    livePreview: true, previewAlways: false, previewInTile: false, picture: false };
+  let version = 1, now = { kind: 'input', port: 1 };
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.load = function () {};
+    HTMLMediaElement.prototype.pause = function () {};
+    HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+  });
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: version,
+      apps: [{ id: 'app', title: 'App' }],
+      devices: [{ id: 'tv', name: 'TV', input: 'tv', tuner: true, port: 0, channel: { id: 'two', number: '2', name: 'Two' } },
+        { id: 'player', name: 'Player', port: 1 }],
+      channels: [{ id: 'one', name: 'One', number: '1' }], sources: { channels: 2 },
+      order: { app: ['app', 'lg-home'], dev: ['tv', 'player'], ch: ['one'] } });
+    if (url.pathname.endsWith('/now')) return reply(now);
+    if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
+    if (url.pathname.endsWith('/signal')) return reply({ ok: true, signal: true });
+    if (url.pathname.endsWith('/picture')) return reply({ ok: true, signal: { width: 1920, height: 1080, hz: 25, hdr: 'sdr' } });
+    return reply({ ok: true, build: 'preview', layoutVersion: version });
+  });
+  async function changeLayout(change) {
+    Object.assign(layout, change);
+    version++;
+    const updated = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    await page.clock.fastForward(5000);
+    await updated;
+    await page.waitForTimeout(100);
+  }
+  const source = () => page.evaluate(() => {
+    const s = document.querySelector('#pvVideo source');
+    return s ? s.getAttribute('type') + ' ' + s.getAttribute('src') : null;
+  });
+  const shownIn = () => page.evaluate(() => {
+    const pv = document.getElementById('preview'), tile = pv.parentNode.closest && pv.parentNode.closest('.tile');
+    return tile ? tile.querySelector('.nm').textContent : pv.parentNode.id;
+  });
+  async function rest() {
+    await page.clock.fastForward(400);
+    await page.waitForTimeout(100);
+    if (await page.locator('#pvVideo source').count()) await page.locator('#pvVideo').dispatchEvent('playing');
+    await page.waitForTimeout(50);
+  }
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    // Apps first: nothing to preview there unless kept on.
+    await rest();
+    if (await source()) problems.push('Home preview options: an app tile had a preview');
+    await page.keyboard.press('ArrowDown');
+    await rest();
+    if (await source() !== 'service/webos-broadcast-preview tv://two') problems.push('Home preview options: the TV tile did not preview its last channel, ' + await source());
+    if (await shownIn() !== 'now') problems.push('Home preview options: the preview was not beside the clock');
+    await changeLayout({ previewInTile: true });
+    if (await shownIn() !== 'TV') problems.push('Home preview options: Preview in the tile left it at ' + await shownIn());
+    if (await page.locator('#now.previewing').count()) problems.push('Home preview options: the top strip still named the preview in the tile');
+    // A rebuilt row keeps the preview in its tile.
+    await changeLayout({ hintSeen: false });
+    await changeLayout({ hintSeen: true });
+    if (await shownIn() !== 'TV') problems.push('Home preview options: a rebuilt row lost the preview, ' + await shownIn());
+    await page.keyboard.press('ArrowRight');
+    await rest();
+    if (await source() !== 'service/webos-external ext://hdmi:1' || await shownIn() !== 'Player') problems.push('Home preview options: the input tile did not take the preview');
+    await page.keyboard.press('ArrowUp');
+    await rest();
+    if (await source()) problems.push('Home preview options: the preview stayed with Keep the preview on off');
+    await changeLayout({ previewAlways: true });
+    await rest();
+    if (await source() !== 'service/webos-external ext://hdmi:1' || await shownIn() !== 'Player') problems.push('Home preview options: Keep the preview on did not show the input last watched');
+    now = { kind: 'app' };
+    await changeLayout({ previewInTile: false });
+    if (await shownIn() !== 'now') problems.push('Home preview options: switching Preview in the tile off left it in a tile');
+  } catch (e) {
+    problems.push('Home preview options: ' + e.message);
+  }
+  await page.close();
+}
+
+async function visitHomePreview(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home preview: ' + e.message));
+  const layout = { rows: ['dev', 'ch', 'app'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: ['one'], hintSeen: true, searchHintSeen: true,
+    livePreview: true, picture: false };
+  let version = 1, holdPicture = false, latePicture = null, holdGuide = false, lateGuide = null, lateOpen = null;
+  await page.addInitScript(() => {
+    // Desktop Chrome has no webOS media service. Deliver its playing event
+    // separately so the page still owns the dwell and metadata lifecycle.
+    window.previewPlays = 0;
+    HTMLMediaElement.prototype.load = function () {};
+    HTMLMediaElement.prototype.pause = function () {};
+    HTMLMediaElement.prototype.play = function () { window.previewPlays++; return Promise.resolve(); };
+  });
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: version,
+      apps: [], devices: [{ id: 'player', name: 'Player', port: 1 }],
+      channels: [{ id: 'one', name: 'One', number: '1' }], sources: { channels: 1 },
+      order: { app: ['lg-home'], dev: ['player'], ch: ['one'] } });
+    if (url.pathname.endsWith('/now')) return reply({ kind: null });
+    if (url.pathname.endsWith('/guide')) {
+      if (holdGuide) { holdGuide = false; lateGuide = () => reply({ ok: true, guide: {} }); return; }
+      return reply({ ok: true, guide: {} });
+    }
+    if (url.pathname.endsWith('/open')) { lateOpen = ok => reply({ ok }); return; }
+    if (url.pathname.endsWith('/signal')) return reply({ ok: true, signal: true });
+    if (url.pathname.endsWith('/picture')) {
+      const body = { ok: true, mode: { display: 'Cinema' }, light: 95, oled: true,
+        signal: { width: 1920, height: 1080, hz: 25, hdr: 'sdr' } };
+      if (holdPicture) { holdPicture = false; latePicture = () => reply(body); return; }
+      return reply(body);
+    }
+    return reply({ ok: true, build: 'preview', layoutVersion: version });
+  });
+  async function changeLayout(change) {
+    Object.assign(layout, change);
+    version++;
+    const updated = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    await page.clock.fastForward(5000);
+    await updated;
+    await page.waitForTimeout(100);
+  }
+  async function startPreview() {
+    await page.clock.fastForward(400);
+    await page.waitForSelector('#pvVideo source', { state: 'attached' });
+    await page.locator('#pvVideo').dispatchEvent('playing');
+    await page.clock.fastForward(1000);
+    await page.waitForTimeout(100);
+  }
+  async function checkDetails(on, label) {
+    if (await page.locator('#pvInfo').isVisible() !== on) problems.push('Home preview: ' + label);
+    if (on && await page.locator('#pvMode').textContent() !== 'Cinema') problems.push('Home preview: missing picture mode');
+  }
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    for (const kind of ['input', 'channel']) {
+      if (kind === 'channel') await page.keyboard.press('ArrowDown');
+      await startPreview();
+      const plays = await page.evaluate(() => window.previewPlays);
+      await checkDetails(false, kind + ' started with details disabled');
+      await changeLayout({ picture: true });
+      await checkDetails(true, kind + ' did not show details when enabled');
+      await changeLayout({ picture: false });
+      await checkDetails(false, kind + ' kept details after disabling');
+      if (await page.evaluate(() => window.previewPlays) !== plays) problems.push('Home preview: changing details restarted ' + kind);
+    }
+    await changeLayout({ livePreview: false });
+    if (await page.locator('#pvVideo source').count()) problems.push('Home preview: switching off kept its media source');
+    await page.keyboard.press('ArrowUp');
+    await changeLayout({ livePreview: true, picture: true });
+    holdPicture = true;
+    await startPreview();
+    if (!latePicture) throw new Error('no preview picture reply to delay');
+    await changeLayout({ picture: false });
+    await latePicture();
+    await page.waitForTimeout(100);
+    await checkDetails(false, 'a delayed reply restored disabled details');
+    await changeLayout({ picture: true });
+    await checkDetails(true, 'a delayed picture was unavailable after enabling details');
+    await changeLayout({ livePreview: false });
+    if (await page.locator('#preview').isVisible() || await page.locator('#pvVideo source').count()) {
+      problems.push('Home preview: switching off kept its picture or media source');
+    }
+    holdGuide = true;
+    await changeLayout({ livePreview: true });
+    await startPreview();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(100);
+    if (!lateOpen || !lateGuide) throw new Error('no launch or guide reply to delay');
+    await lateGuide();
+    await page.waitForTimeout(100);
+    await page.clock.fastForward(400);
+    if (await page.locator('#pvVideo source').count()) problems.push('Home preview: a delayed guide reopened a source after OK');
+    await lateOpen(false);
+    await page.waitForTimeout(100);
+    await page.clock.fastForward(400);
+    if (!await page.locator('#pvVideo source').count()) problems.push('Home preview: a refused launch prevented retrying its preview');
+    lateOpen = null;
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(100);
+    if (!lateOpen) throw new Error('no second launch to complete');
+    await lateOpen(true);
+    await changeLayout({ showCec: false });
+    await page.clock.fastForward(400);
+    if (await page.locator('#pvVideo source').count()) problems.push('Home preview: a catalogue refresh reopened an accepted launch');
+    await page.evaluate(() => document.dispatchEvent(new Event('webOSRelaunch')));
+    await page.waitForTimeout(100);
+    await page.clock.fastForward(400);
+    if (!await page.locator('#pvVideo source').count()) problems.push('Home preview: returning to Home kept its preview suppressed');
+  } finally { await page.close(); }
+}
+
 async function visitHomeVisibility(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home visibility: ' + e.message));
@@ -647,7 +850,10 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
     await page.keyboard.press('Enter');
     await page.waitForTimeout(120);
     if (await faded()) problems.push('Home fade: an overlay of LG\'s faded the view out');
-    if (!opened.length || opened[0].id !== 'com.webos.app.voice') problems.push('Home fade: an overlay was not opened at once');
+    // Not faded is what "at once" means; the open itself is given time, as
+    // 120 ms was too short with the other groups sharing CI's cores (#1161).
+    for (let waited = 120; !opened.length && waited < 1500; waited += 50) await page.waitForTimeout(50);
+    if (!opened.length || opened[0].id !== 'com.webos.app.voice') problems.push('Home fade: an overlay was not opened');
 
     // A failed open brings the view back.
     await page.keyboard.press('ArrowLeft');
@@ -902,6 +1108,46 @@ async function visitHomeArrangement(browser, base, problems) {
 
 
 // Each row's Order, on Glasshouse Home's own view, the Home tab and the TV app's Home section.
+/*
+ * The Home tab's Recent apps: every app listed with its switch, and hiding one
+ * saves the list with it while its tile stays on the Apps row.
+ */
+async function visitHomeRecentsHidden(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  page.on('pageerror', e => problems.push('Home Recents: ' + e.message));
+  const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    sort: { app: 'custom', dev: 'custom', ch: 'custom' }, hidden: { app: [], dev: [], ch: [] }, folder: [], channels: [],
+    hintSeen: true, searchHintSeen: true, excludedRecents: [] };
+  const saves = [];
+  await page.route('**/api/home**', route => {
+    const url = new URL(route.request().url());
+    const catalogue = { ok: true, apps: [{ id: 'one', title: 'One' }, { id: 'two', title: 'Two' }], devices: [], channels: [],
+      sources: { channels: 0 }, order: { app: ['one', 'two', 'lg-home'], dev: [], ch: [] }, layout };
+    let body = { ok: true };
+    if (url.pathname === '/api/home') body = Object.assign({ ok: true, available: true, supported: { ok: true }, enabled: true, active: true,
+      writable: true, layout, history: true }, url.searchParams.get('with') ? { catalogue, channels: [] } : {});
+    else if (url.pathname === '/api/home/catalogue') body = catalogue;
+    else if (url.pathname === '/api/home/layout') {
+      const patch = route.request().postDataJSON();
+      saves.push(patch);
+      if (patch.excludedRecents) layout.excludedRecents = patch.excludedRecents;
+      body = { ok: true, layout: JSON.parse(JSON.stringify(layout)) };
+    }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    await page.waitForFunction(() => document.querySelectorAll('#home-recents .prot-row').length === 2);
+    await page.evaluate(() => { document.querySelector('#home-recents details').open = true; });
+    await page.locator('#home-recents .prot-row').first().locator('button').click();
+    await page.waitForFunction(() => /1/.test((document.querySelector('#home-recents .home-row-move') || {}).textContent || ''));
+    if (JSON.stringify(saves) !== JSON.stringify([{ excludedRecents: ['one'] }])) problems.push('Home Recents: hiding One saved ' + JSON.stringify(saves));
+    if (layout.hidden.app.length) problems.push('Home Recents: hiding from Recents hid the tile too');
+  } catch (e) {
+    problems.push('Home Recents: ' + e.message);
+  } finally { await page.close(); }
+}
+
 async function visitHomeOrder(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   page.on('pageerror', e => problems.push('Home order: ' + e.message));
@@ -1184,15 +1430,21 @@ async function visitHomeUploads(browser, base, problems) {
  * Home at power-on among them, usable without Glasshouse Home; and
  * with Glasshouse Home on, LG's Home's layout and hidden system apps are
  * left out (lgHomeOptions in lib/routes.js offers no tile hiding then).
+ * The banner's picture shows only where the layout offers it (webOS 10).
  */
 async function visitHomeAvailability(browser, base, problems) {
-  const lgHome = enabled => ({ writable: true, glasshouseHome: enabled,
-    homeScreen: { parts: [{ id: 'banner', title: 'Banner', desc: 'The banner.', shown: true }], inputs: null, experimental: null },
+  const lgHome = (enabled, banner) => ({ writable: true, glasshouseHome: enabled,
+    homeScreen: { parts: [{ id: 'banner', title: 'Banner', desc: 'The banner.', shown: true }], inputs: null, experimental: null, banner: banner || null },
     tileHidingAvailable: !enabled, tileHidingEnabled: false, systemTiles: [], hiddenCount: 0 });
   const cases = [
     { name: 'unavailable', st: { available: false, enabled: false }, glasshouse: false },
     { name: 'LG\'s Home only', st: { available: true, enabled: false, lgHomeAvailable: true, lgHome: lgHome(false), homeAutoLaunch: false }, glasshouse: false },
-    { name: 'Glasshouse Home on', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true) }, glasshouse: true }
+    { name: 'webOS 10\'s banner', st: { available: true, enabled: false, lgHomeAvailable: true, homeAutoLaunch: false,
+      lgHome: lgHome(false, { choice: 'black', own: false, width: 3492, height: 1685 }) }, glasshouse: false, banner: true },
+    { name: 'Glasshouse Home on', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true) }, glasshouse: true },
+    // webOS 5 and 6, where each switch restarts the app manager: their note shows there only.
+    { name: 'webOS 6', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true),
+      supported: { ok: true, experimental: true, restartsApps: true } }, glasshouse: true }
   ];
   for (const c of cases) {
     const st = c.st;
@@ -1215,43 +1467,100 @@ async function visitHomeAvailability(browser, base, problems) {
         continue;
       }
       if (await page.locator('#home-hero').isVisible() !== c.glasshouse) fail('Glasshouse Home\'s switch ' + (c.glasshouse ? 'missing' : 'shown'));
+      const restarts = !!(st.supported && st.supported.restartsApps);
+      if (c.glasshouse && await page.locator('#home-restart-note').isVisible() !== restarts) {
+        fail('the note that a switch closes apps ' + (restarts ? 'missing' : 'shown on a TV it does not apply to'));
+      }
       if (await page.locator('#disc-system-tiles').isVisible() === c.glasshouse) fail('system apps ' + (c.glasshouse ? 'shown with Glasshouse Home on' : 'missing'));
       if (st.homeAutoLaunch !== undefined && (!await page.locator('#home-autolaunch').isVisible() || await page.locator('#home-autolaunch').isDisabled()))
         fail('Open Home at power-on missing or unusable');
       if (!c.glasshouse && await page.locator('#home-picture-row').isVisible()) fail('Glasshouse Home\'s options shown without it');
       if (await page.locator('#disc-homescreen').isVisible() === st.enabled) fail('LG\'s Home layout ' + (st.enabled ? 'shown with Glasshouse Home on' : 'missing'));
+      if (!st.enabled) {
+        await page.locator('#disc-homescreen summary').click();
+        if (await page.locator('#apps-home-banner').isVisible() !== !!c.banner) fail('banner picture ' + (c.banner ? 'missing' : 'shown where it cannot be changed'));
+      }
+      if (c.banner) {
+        const pressed = await page.locator('#apps-home-banner-choice button[aria-pressed="true"]').allTextContents();
+        if (pressed.join() !== 'Black') fail('banner picture chosen: ' + pressed.join());
+        if (await page.locator('#btn-home-banner-own').textContent() !== 'Your own…') fail('Your own does not ask for an upload before one is made');
+        if (await page.locator('#btn-home-banner-replace').count()) fail('Upload another offered with nothing uploaded');
+      }
     } finally { await page.close(); }
   }
 }
 
-async function visitAudio(browser, base, problems) {
+async function visitAudioOverride(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Web audio: ' + e.message));
   try {
     const state = await page.request.get(base + '/api/audio?with=settings').then(r => r.json());
     state.live.hdmi = { channels: 6, channelAllocation: 11, sampleRate: null };
-    let failed = false;
+    state.override = Object.assign({}, state.override, { available: true, verified: true, installed: true,
+      enabled: false, running: true, canDisable: true, offered: true });
+    const writes = [];
+    let failed = false, holdRead = false, readHeld, releaseRead;
     await page.route('**/api/audio*', route => {
+      if (route.request().method() === 'POST') {
+        const body = route.request().postDataJSON();
+        writes.push(body);
+        state.override.enabled = state.override.running = state.override.canDisable = body.enabled;
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, status: state }) });
+      }
       if (failed) return route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'Audio service unavailable' }) });
+      if (holdRead) {
+        holdRead = false;
+        const snapshot = JSON.stringify(state);
+        releaseRead = () => route.fulfill({ contentType: 'application/json', body: snapshot });
+        readHeld();
+        return;
+      }
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(state) });
     });
+    // A TV with no forwarding helper has no forwarding section.
+    const offered = state.override;
+    state.override = { ...offered, offered: false };
     await page.goto(base + '/?tab=audio');
-    await page.waitForFunction(() => audioState !== null);
+    await page.waitForFunction(() => audioState);
+    if (!await page.locator('#audio-forwarding').evaluate(el => el.hidden)) problems.push('Web audio: a TV with no forwarding helper shows the override');
+    state.override = offered;
+    await page.goto(base + '/?tab=audio');
+    await page.waitForFunction(() => audioState && audioState.override.running);
     if (!await page.locator('#audio-settings [data-lgs]').count()) problems.push('Audio tab: LG sound settings missing');
     if (!/HDMI channel information[\s\S]*6 channels/.test(await page.locator('#audio-path').textContent()))
       problems.push('Web audio: source channel metadata missing');
-    failed = true;
-    // The readings and their Refresh are folded below the settings.
+    // The readings, refresh button and override are folded below the settings.
     await page.locator('#audio-more > summary').click();
+    await page.locator('#audio-override').click();
+    await page.waitForFunction(() => !audioChanging);
+    if (JSON.stringify(writes) !== '[{"enabled":false}]')
+      problems.push('Audio override: a running helper without its startup marker did not offer immediate disable');
+    await page.waitForFunction(() => !document.querySelector('#audio-refresh').disabled);
+    const pendingRead = new Promise(resolve => { readHeld = resolve; });
+    holdRead = true;
+    const pendingLoad = page.evaluate(() => loadAudio(true));
+    await pendingRead;
+    await page.locator('#audio-override').click();
+    if (writes.length !== 1) problems.push('Web audio: enabled without a second press');
+    await page.locator('#audio-override').click();
+    await page.waitForFunction(() => audioState.override.enabled && !audioChanging);
+    await releaseRead();
+    await pendingLoad;
+    await page.waitForFunction(() => !document.querySelector('#audio-refresh').disabled);
+    if (await page.locator('#audio-override').getAttribute('aria-pressed') !== 'true')
+      problems.push('Web audio: a late read replaced a completed override change');
+    failed = true;
     await page.locator('#audio-refresh').click();
     await page.waitForFunction(() => !document.querySelector('#audio-error').hidden);
-    if (await page.locator('#audio-readings').isVisible() || await page.locator('#audio-settings :enabled').count())
-      problems.push('Web audio: a failed read left stale controls usable');
+    if (!await page.locator('#audio-override').isDisabled() || await page.locator('#audio-readings').isVisible() ||
+        await page.locator('#audio-settings :enabled').count()) problems.push('Web audio: a failed read left stale controls usable');
     failed = false;
     await page.locator('#audio-refresh').click();
     await page.waitForFunction(() => document.querySelector('#audio-error').hidden);
-    if (!await page.locator('#audio-readings').isVisible()) problems.push('Web audio: readings did not recover after a failed read');
-  } finally { await page.close(); }
+    if (!await page.locator('#audio-readings').isVisible() || await page.locator('#audio-override').isDisabled())
+      problems.push('Web audio: controls did not recover after a failed read');
+  } catch (e) { problems.push('Web audio: ' + e.message); }
+  await page.close();
 }
 
 async function visitHomeReadiness(browser, base, problems) {
@@ -1582,27 +1891,65 @@ async function visitTvAudio(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   page.on('pageerror', e => problems.push('TV audio: ' + e.message));
   const state = await page.request.get(base + '/api/audio?with=settings').then(r => r.json());
+  const posts = [];
   state.live.hdmi = { channels: 6, channelAllocation: 11, sampleRate: null };
   let failed = false;
-  await page.route('**/api/audio*', route => route.fulfill({ status: failed ? 503 : 200, contentType: 'application/json',
-    body: JSON.stringify(failed ? { ok: false, error: 'Audio service unavailable' } : state) }));
+  await page.route('**/api/audio*', async route => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON();
+      posts.push(body);
+      state.override.enabled = state.override.running = body.enabled;
+      state.override.canDisable = body.enabled;
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, status: state }) });
+    }
+    return route.fulfill({ status: failed ? 503 : 200, contentType: 'application/json',
+      body: JSON.stringify(failed ? { ok: false, error: 'Audio service unavailable' } : state) });
+  });
   const selected = () => page.locator('#rows .row.sel .lbl').textContent();
-  const readings = () => page.locator('#rows .row').filter({ hasText: 'Return channel' });
+  const forwarding = () => page.locator('#rows .row').filter({ has: page.locator('.bdg') });
+  const forwardingSays = word => page.waitForFunction(w => document.querySelector('.bdg').parentNode.parentNode.textContent.indexOf(w) !== -1, word);
   async function open() {
     await page.goto(base + '/assets/dashboard.html?tab=audio');
-    await page.waitForSelector(failed ? '#rows .row:has-text("Audio readings unavailable")' : '#rows .row:has-text("Return channel")');
+    await page.waitForSelector(failed ? '#rows .row:has-text("Audio readings unavailable")' : state.override.offered ? '#rows .bdg' : '#rows .row');
   }
   try {
     await open();
     if (await selected() !== 'Sound output') problems.push('TV audio: did not open on the Sound settings');
     if (!await page.locator('#rows .row').filter({ hasText: 'HDMI channel information' }).filter({ hasText: '6 channels' }).count())
       problems.push('TV audio: source channel metadata missing');
+    if (await forwarding().count() || await page.locator('#rows .row').filter({ hasText: 'DTS forwarding' }).count())
+      problems.push('TV audio: a TV with no forwarding helper shows the override');
+    // Installed but not verified: shown, and refused.
+    state.override = { ...state.override, offered: true };
+    await open();
+    await forwarding().click();
+    await page.keyboard.press('Enter');
+    if (posts.length) problems.push('TV audio: unsupported helper offered an override');
+    if (!/Experimental/.test(await forwarding().textContent())) problems.push('TV audio: missing experimental label');
+    state.override = { ...state.override, available: true, verified: true, enabled: false, running: false, canDisable: false };
+    await open();
+    await forwarding().click();
+    await page.keyboard.press('Enter');
+    if (posts.length) problems.push('TV audio: enabled without a second OK');
+    await page.keyboard.press('Enter');
+    await forwardingSays('On');
+    await page.keyboard.press('Enter');
+    await forwardingSays('Off');
+    if (JSON.stringify(posts) !== '[{"enabled":true},{"enabled":false}]') problems.push('TV audio: wrong enable/disable actions');
+    state.override.running = state.override.canDisable = true;
+    await open();
+    await forwarding().click(); await page.keyboard.press('Enter');
+    await forwardingSays('Off');
+    if (posts.length !== 3 || posts[2].enabled !== false) problems.push('TV audio: running helper without marker could not be stopped');
+    state.writable = false;
+    await open();
+    if (await forwarding().evaluate(el => el.classList.contains('doable'))) problems.push('TV audio: read-only override was actionable');
     failed = true;
     await open();
-    if (await readings().count()) problems.push('TV audio: a failed read left stale readings on screen');
+    if (await forwarding().count()) problems.push('TV audio: a failed read left the override on screen');
     failed = false;
     await page.keyboard.press('Enter');
-    await page.waitForSelector('#rows .row:has-text("Return channel")');
+    await page.waitForSelector('#rows .bdg');
     await page.goto(base + '/assets/dashboard.html?tab=options');
     await page.waitForSelector('#rows .row');
     if (await page.locator('#rows .row').filter({ hasText: /Audio capabilities|Sound output/ }).count()) problems.push('TV audio: sound still listed under System');
@@ -1691,39 +2038,48 @@ async function visitTvNonOled(browser, base, problems) {
   }
 }
 
-(async () => {
+/*
+ * Four groups side by side, each against its own server and fake TV, as the
+ * Home checks change the layout and uploads they read back. Within a group
+ * the checks run in their order here. One after another this took 97 s in
+ * CI; the slowest group sets the length now.
+ */
+function groups(web, tv) {
+  return [
+    { tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [] },
+    { tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
+      visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
+    { tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
+    { tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
+      visitHomeRecentsHidden, visitHomeUploads, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide] },
+    /*
+     * Scrolling and motion read the row's place frame by frame, and missed
+     * frames with the other groups sharing CI's four cores: 3 of 15 runs
+     * failed on them after the groups went side by side (#1126). Their server
+     * starts with the rest; they run once the rest are done.
+     */
+    { tabs: [], visits: [visitHomeScrolling, visitHomeMotion], alone: true }
+  ];
+}
+
+async function runGroup(browser, group, problems, after) {
   const server = await startServer();
+  if (after) await after;
   const base = 'http://127.0.0.1:' + server.port;
+  await visitAll(browser, group.tabs.map(t => ({ url: base + t.path, label: t.label })), problems);
+  for (const visitOne of group.visits) await visitOne(browser, base, problems);
+}
+
+(async () => {
   const browser = await chromium.launch(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {});
   const problems = [];
   const web = webTabs(), tv = tvTabs();
-  await visitAll(browser, web.map(t => ({ url: base + '/?tab=' + t, label: 'web ' + t }))
-    .concat(tv.map(t => ({ url: base + '/assets/dashboard.html?tab=' + t, label: 'TV ' + t }))), problems);
-  await visitTvDashboard(browser, base, problems);
-  await visitTvAudio(browser, base, problems);
-  await visitTvPictureWrites(browser, base, problems);
-  await visitPictureUnavailable(browser, base, problems);
-  await visitTvNonOled(browser, base, problems);
-  await visitHomeArrangement(browser, base, problems);
-  await visitHomePicture(browser, base, problems);
-  await visitHomeVisibility(browser, base, problems);
-  await visitHomeColours(browser, base, problems);
-  await visitHomeFadeAndInputs(browser, base, problems);
-  await visitHomeInputsEditor(browser, base, problems);
-  await visitHomeEditor(browser, base, problems);
-  await visitHomeOrder(browser, base, problems);
-  await visitHomeUploads(browser, base, problems);
-  await visitHomeReadiness(browser, base, problems);
-  await visitHomeAvailability(browser, base, problems);
-  await visitAudio(browser, base, problems);
-  await visitHomeRecents(browser, base, problems);
-  await visitHomeScrolling(browser, base, problems);
-  await visitHomeMotion(browser, base, problems);
-  await visitHomeGuide(browser, base, problems);
-  await visitHomeSearch(browser, base, problems);
+  const all = groups(web, tv);
+  const together = Promise.all(all.filter(g => !g.alone).map(g => runGroup(browser, g, problems)));
+  await Promise.all([together].concat(all.filter(g => g.alone).map(g => runGroup(browser, g, problems, together))));
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'TV navigation and LCD profile, Home arranging, picture, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide and search checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+              'TV navigation and LCD profile, Home arranging, picture, preview and its options, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide and search checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

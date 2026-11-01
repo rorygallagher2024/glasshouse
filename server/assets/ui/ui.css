@@ -127,16 +127,21 @@ html::-webkit-scrollbar-thumb:hover,
 
 /* ---- masthead ---- */
 header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
-.hdr-left{display:flex;align-items:flex-start;gap:18px}
-/* The masthead: the TV in the page's two voices - the kind of TV as a tracked
-   label, the model in the thin display face the big readings use. The
-   Glasshouse mark is in the sidebar's head. */
-.mark{display:flex;align-items:center}
-.mark-tv{display:flex;flex-direction:column;gap:7px}
-.mark-tv #brand{font-family:'Manrope';font-weight:500;font-size:13px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--w60)}
-.mark-tv #model{font-family:'Outfit';font-weight:200;font-size:var(--mh-model);line-height:1;
+/* The masthead: what the TV is showing, in the page's two voices - a tracked
+   label, then the source in the thin display face the big readings use, with
+   its signal under it. The TV's state, volume and sleep timer sit opposite.
+   The model is in the footer, and the TV's name under the sidebar's mark. */
+.src.now{text-align:left;min-width:0}
+.src.now .st{justify-content:flex-start;margin-bottom:7px}
+.src.now .t{font-family:'Outfit';font-weight:200;font-size:var(--mh-model);line-height:1.1;
   letter-spacing:.01em;color:var(--w100)}
+.src.now .stream-primary{justify-content:flex-start;margin-top:6px}
+.hdr-status{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.hdr-line{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--w60)}
+.foot-tv{margin-right:auto}
+.sidenav-titles{display:flex;flex-direction:column;min-width:0}
+.sidenav-tv{font-size:12px;letter-spacing:.04em;color:var(--w60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidenav-tv:empty{display:none}
 
 /* Theme toggle, at the end of the footer: a set-and-forget control, which
    left the masthead room to stay on one line at narrower widths. */
@@ -158,8 +163,11 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
 /* Stale while the TV is off, so faded - but only to .8: at .55 the picture
    mode fell to 3.4:1 on black, under AA for small text. */
 .src.dim .t,.src.dim .stream-info{opacity:.8}
-/* Hidden rather than removed, so the masthead keeps its height. */
-.src.standby .t,.src.standby .stream-info{visibility:hidden}
+/* In standby, the last source seen, labelled Last on and faded like a blank
+   screen's; with none seen, just Standby, with no label or stale signal. */
+.src.last .t,.src.last .stream-info{opacity:.8}
+.src.blank .stream-info{visibility:hidden}
+.src.blank .t{color:var(--w60)}
 /* Panel state. A blanked screen is a normal state, not a fault, so it is
    carried by weight rather than by an alarm colour. */
 .st{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--w60);
@@ -201,6 +209,7 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
   .st{justify-content:flex-start}
   .src{text-align:left}
   .stream-primary{justify-content:flex-start}
+  .hdr-status{align-items:flex-start;text-align:left}
 }
 
 /* ---- the spectacle ---- */
@@ -495,6 +504,9 @@ html.nav-hidden body.nav-open{overflow:hidden}
 #soundouts button.on:hover{color:var(--btn-on-fg);border-color:var(--w100)}
 #soundouts .span-full{grid-column:1 / -1}
 #soundouts .span-center{grid-column:1 / -1;justify-self:center;width:calc(50% - 4px)}
+/* The paired Bluetooth device chooser in Sound: the shared select, as wide and tall as the output buttons. */
+.bt-pick .pill-sel{display:block;width:100%;height:48px;margin-top:11px}
+.bt-pick-btns button[hidden]{display:none}
 #inputs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:11px}
 #inputs button{
   position:relative;display:inline-flex;align-items:center;justify-content:center;
@@ -1433,6 +1445,12 @@ button.tools-jump:active{background:var(--w80)}
 .rk-opt.on{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100)}
 /* A catalog's address is one long word. */
 .catalog-url, #apps-others-list .prot-sub{overflow-wrap:anywhere}
+#apps-catalog-list .prot-main, #apps-others-list .prot-main{overflow-wrap:anywhere}
+.catalog-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:100%}
+.catalog-source{flex:1;max-width:100%;white-space:normal;text-align:center;text-decoration:none;transition:.16s ease}
+.catalog-source:hover{background:rgba(var(--fg),.08)}
+.catalog-source:active{background:var(--w10)}
+.catalog-source:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
 /* An error under a row, styled as the page's own error banner (#offline). */
 .err-note{font-size:14px;border-left:2px solid var(--red);padding:9px 13px;background:var(--w06);color:var(--w90);margin-top:8px;max-width:64ch;overflow-wrap:anywhere}
 .err-note b{font-weight:600;margin-right:6px}
@@ -1452,6 +1470,16 @@ button.tools-jump:active{background:var(--w80)}
 .audio-more[open]>summary{margin-bottom:6px}
 .audio-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:0 0 18px}
 .audio-head .pill{flex-shrink:0;min-height:36px}
+/* The fold below draws the line that closes the list. */
+#audio-bt-list .prot-row:last-child,#audio-bt-found .prot-row:last-child{border-bottom:0}
+.audio-bt-btns{display:flex;gap:8px;flex-shrink:0}
+.audio-bt-btns .pill{min-height:36px}
+#audio-bt-scan{border-top:1px solid var(--w06);margin-top:0;padding-top:14px}
+#audio-bt-scan-note{margin:0 0 4px}
+#audio-bt-scan.none{padding-bottom:12px}
+#audio-bt-list .prot-status{display:flex;gap:8px}
+#audio-bt-note{margin:0;padding:12px 0;border-top:1px solid var(--w06)}
+#audio-bt-note:empty{display:none}
 .audio-path{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:20px 0 22px;border-block:1px solid var(--w12)}
 .audio-path>li{position:relative;padding:0 20px 0 0}
 .audio-path>li+li{padding-left:28px}
@@ -1472,6 +1500,9 @@ button.tools-jump:active{background:var(--w80)}
 .audio-playback{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;margin:10px 0}
 .audio-playback>div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--w08);font-size:14px}
 .audio-playback>div>span:last-child{color:var(--w60)}
+.audio-helper{margin:12px 0 28px}
+.audio-helper a{color:var(--w80);text-decoration-color:var(--w40);text-underline-offset:3px}
+.audio-helper a:hover{color:var(--w100)}
 .audio-error{margin:4px 0 18px}
 @media(max-width:600px){
   .audio-path{grid-template-columns:1fr;gap:18px}

@@ -32,7 +32,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 2.2 through 11 (LG's webOS 26) confirmed; tested across 2015–2026 models. Other versions likely work as well. LG names its versions two ways: [webOS version numbers](tested-tvs.md#webos-version-numbers) gives both
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 55 TVs across 38 series verified so far (LF632V, UH600V, UH6030, UH610V, UH635V, B6, B7, B8, C8, LK61, LM57, UM71, UM73, C9, CX, GX, C1, UP80, UP81, QNED82, UQ80, C2, G2, C3, B4, G3, C4, G4, UT73, UT81, C5, G5, CS, LX3, UA73, C6, NU80, QNED84). Other rooted models should work; [see full table](tested-tvs.md)
+* **Tested hardware**: 58 TVs across 41 series verified so far (LF632V, UH600V, UH6030, UH610V, UH635V, B6, B7, SJ80, B8, C8, LK61, UK63, LM57, UM71, UM73, C9, CX, GX, C1, UP80, UP81, QNED82, UQ80, C2, G2, C3, UR80, B4, G3, C4, G4, UT73, UT81, C5, G5, CS, LX3, UA73, C6, NU80, QNED84). Other rooted models should work; [see full table](tested-tvs.md)
 
 [Install](install.md){ .md-button .md-button--primary } [See the dashboard](dashboard/index.md){ .md-button }
 
@@ -84,6 +84,14 @@ Use it for remote control, app installation and removal, OLED panel care, privac
       <a href="screenshots/android-dashboard.png"><img src="screenshots/android-dashboard.png" alt="Android app showing the full-screen TV dashboard" width="280"></a>
       <br>
       <sub><a href="apps/android/">Glasshouse for Android</a> keeps a list of TVs, shows which are online, wakes them with Wake-on-LAN, and opens each dashboard full screen.</sub>
+    </p>
+
+=== "Pane (macOS)"
+
+    <p align="center">
+      <a href="apps/pane/"><img src="https://raw.githubusercontent.com/denisvinciguerra/pane-for-glasshouse/main/docs/screenshots/hero.png" alt="Pane macOS menu-bar remote" width="560"></a>
+      <br>
+      <sub><a href="apps/pane/">Pane</a> is a macOS menu-bar remote to control the TV, switch inputs, and adjust settings without opening a browser.</sub>
     </p>
 
 ## What it's for
@@ -169,6 +177,12 @@ This project is intended to give a rooted webOS TV a useful local control surfac
     ---
 
     A phone app that keeps a list of TVs, shows which are online, wakes them over Wake-on-LAN, and opens each one's dashboard full screen.
+
+-   **[Menu-bar remote for macOS](apps/pane.md)**
+
+    ---
+
+    A macOS menu-bar companion app by the community for controlling TVs, switching inputs, adjusting settings, and running keyboard shortcuts.
 
 </div>
 
