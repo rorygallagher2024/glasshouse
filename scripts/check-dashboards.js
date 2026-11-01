@@ -56,6 +56,18 @@ function answers(port) {
   });
 }
 
+
+/*
+ * Waits for what should happen, up to a few seconds, rather than a fixed time:
+ * replies arrive in real time, after a faked clock has moved on, and a slow CI
+ * runner can take longer than a wait that is enough on a laptop.
+ */
+async function waitUntil(page, ready, ms = 4000) {
+  const until = Date.now() + ms;
+  while (!(await ready()) && Date.now() < until) await page.waitForTimeout(20);
+  return ready();
+}
+
 async function startServer() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'glasshouse-dashboards-'));
   const files = require(path.join(ROOT, 'test', 'mocks', 'mock-env')).createMockEnv().files;
@@ -375,9 +387,13 @@ async function visitHomePreview(browser, base, problems) {
     await page.clock.fastForward(1000);
     await page.waitForTimeout(100);
   }
+  const waitFor = ready => waitUntil(page, ready);
   async function checkDetails(on, label) {
-    if (await page.locator('#pvInfo').isVisible() !== on) problems.push('Home preview: ' + label);
-    if (on && await page.locator('#pvMode').textContent() !== 'Cinema') problems.push('Home preview: missing picture mode');
+    // Shown details are waited for; hidden ones are checked as they are, so
+    // details that appear late are not missed.
+    const shown = on ? await waitFor(() => page.locator('#pvInfo').isVisible()) : await page.locator('#pvInfo').isVisible();
+    if (shown !== on) problems.push('Home preview: ' + label);
+    if (on && !await waitFor(async () => await page.locator('#pvMode').textContent() === 'Cinema')) problems.push('Home preview: missing picture mode');
   }
   try {
     await page.clock.install();
@@ -400,7 +416,7 @@ async function visitHomePreview(browser, base, problems) {
     await changeLayout({ livePreview: true, picture: true });
     holdPicture = true;
     await startPreview();
-    if (!latePicture) throw new Error('no preview picture reply to delay');
+    if (!await waitFor(() => !!latePicture)) throw new Error('no preview picture reply to delay');
     await changeLayout({ picture: false });
     await latePicture();
     await page.waitForTimeout(100);
@@ -415,8 +431,7 @@ async function visitHomePreview(browser, base, problems) {
     await changeLayout({ livePreview: true });
     await startPreview();
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(100);
-    if (!lateOpen || !lateGuide) throw new Error('no launch or guide reply to delay');
+    if (!await waitFor(() => !!(lateOpen && lateGuide))) throw new Error('no launch or guide reply to delay');
     await lateGuide();
     await page.waitForTimeout(100);
     await page.clock.fastForward(400);
@@ -427,8 +442,7 @@ async function visitHomePreview(browser, base, problems) {
     if (!await page.locator('#pvVideo source').count()) problems.push('Home preview: a refused launch prevented retrying its preview');
     lateOpen = null;
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(100);
-    if (!lateOpen) throw new Error('no second launch to complete');
+    if (!await waitFor(() => !!lateOpen)) throw new Error('no second launch to complete');
     await lateOpen(true);
     await changeLayout({ showCec: false });
     await page.clock.fastForward(400);
@@ -834,14 +848,14 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
     await page.waitForTimeout(80);
     if (!await faded()) problems.push('Home fade: opening a tile did not fade out');
     if (opened.length) problems.push('Home fade: the tile opened before the fade was over');
-    await page.waitForTimeout(500);
+    await waitUntil(page, () => opened.length > 0);
     if (opened.length !== 1 || opened[0].id !== 'netflix') problems.push('Home fade: the tile did not open after the fade');
     else if (opened[0].at - pressedAt < 300) problems.push('Home fade: the tile opened ' + (opened[0].at - pressedAt) + ' ms after OK, before the fade');
     // Off screen and back: dark, then in.
     await visible(true);
     if (!await faded()) problems.push('Home fade: off screen, the view was not left dark');
     await visible(false);
-    await page.waitForTimeout(500);
+    await waitUntil(page, async () => !await faded());
     if (await faded()) problems.push('Home fade: back on screen, the view did not fade in');
 
     // Search opens over Home: no fade, and opened at once.
