@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.136.0';
+var TVWEB_VERSION = '0.137.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -696,6 +696,7 @@ controls.init({
   backup: backup,
   home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
+  deviceNameChanged: function (name) { syslogForwarder.setHostname(name); },
   tvApp: tvApp,
   restartSelf: restartSelf,
   updateSummary: routes.updateSummary,
@@ -1229,6 +1230,8 @@ function setupHomeAssistant() {
   }
 
   function publishDiscovery() {
+    // The Server tab renames the TV without a restart.
+    devInfo.name = (CONFIG.device && CONFIG.device.name) || devInfo.name;
     ha.clearRetired(function (topic, payload, retain) {
       mqttClient.publish(topic, payload, retain);
     }, discPfx, devId);

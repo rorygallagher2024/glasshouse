@@ -643,6 +643,23 @@ async function toggleNtp() {
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
 
+// The TV's name, as the sidebar and Home Assistant show it. Empty puts back LG
+// and the model, which the server answers with.
+async function saveTvName() {
+  const input = q('tvname-input'), btn = q('tvname-save');
+  if (btn) { btn.disabled = true; btn.classList.add('busy'); }
+  try {
+    const r = await sendCommand('setDeviceName', input.value.trim());
+    if (r && r.ok) {
+      delete input.dataset.dirty;
+      input.value = r.name;
+      if (q('nav-tv')) q('nav-tv').textContent = r.name;
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.classList.remove('busy'); }
+  }
+}
+
 async function saveNtpServer() {
   const input = q('ntp-server'), btn = q('ntp-save');
   if (!input.value.trim()) return input.focus();

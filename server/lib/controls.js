@@ -113,6 +113,7 @@ var backupModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
 var republishDiscoveryFn = null;
+var deviceNameChangedFn = null;
 var tvAppFn = null;
 var restartSelfFn = null;
 var updateSummaryFn = null;
@@ -1328,6 +1329,23 @@ function doControl(action, value, cb) {
       if (!writeSettingsFn || !ntpModule) return cb({ ok: false, error: 'no NTP client configured' });
       return saveNtp({ enabled: value === true || value === 'on' || value === 'true' }, cb);
 
+    /*
+     * The TV's name, under Glasshouse in the dashboards and as the device in
+     * Home Assistant. Empty puts back the one made at start from the model.
+     */
+    case 'setDeviceName':
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no settings file configured' });
+      var deviceName = String(value === undefined || value === null ? '' : value).replace(/\s+/g, ' ').trim();
+      if (deviceName.length > 64) return cb({ ok: false, error: msg('srv.deviceName.tooLong', 'The name must be at most 64 characters') });
+      return writeSettingsFn({ device: { name: deviceName } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        config.device = config.device || {};
+        config.device.name = deviceName || (config.device.model ? 'LG ' + config.device.model : 'LG webOS TV');
+        if (deviceNameChangedFn) deviceNameChangedFn(config.device.name);
+        if (republishDiscoveryFn) republishDiscoveryFn();
+        cb({ ok: true, name: config.device.name });
+      });
+
     // Watch time. Home Assistant's watch-time entities come and go with it.
     case 'setHistoryEnabled':
       if (!writeSettingsFn || !historyModule) return cb({ ok: false, error: 'no history configured' });
@@ -1415,6 +1433,7 @@ function init(opts) {
   if (opts.backup) backupModule = opts.backup;
   if (opts.home) homeModule = opts.home;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;
+  if (opts.deviceNameChanged) deviceNameChangedFn = opts.deviceNameChanged;
   if (opts.tvApp) tvAppFn = opts.tvApp;
   if (opts.restartSelf) restartSelfFn = opts.restartSelf;
   if (opts.updateSummary) updateSummaryFn = opts.updateSummary;

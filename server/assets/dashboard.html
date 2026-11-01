@@ -1096,6 +1096,21 @@ function glasshouseHomeRows(d) {
                  ['showLastOn', t('home.showLast', 'Last watched'), t('home.showLastDesc', 'At the top of Glasshouse Home and on the input it was on: what the TV last showed.')],
                  ['showAppCount', t('home.showAppCount', 'App count'), t('home.showAppCountDesc', 'Beside the Apps row: how many of the TV\u2019s apps it shows.')],
                  ['showCec', t('home.showCec', 'CEC addresses'), t('home.showCecDesc', 'On each input\u2019s tile: the HDMI-CEC address of the device behind it.')]];
+    // The live preview and, while it is on, its options.
+    var pvRows = [['livePreview', t('home.livePreview', 'Live preview'), t('home.livePreviewDesc', 'A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.')]];
+    // Neither option plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
+    if (d.layout.livePreview === true && !d.supported.standalone) {
+      pvRows.push(['previewAlways', t('home.previewAlways', 'Keep the preview on'), t('home.previewAlwaysDesc', 'The preview runs whenever Glasshouse Home is on screen, not only while a tile with one is chosen: the HDMI input last watched, or otherwise the TV on its last channel. Choosing another input or channel moves it there.')]);
+      pvRows.push(['previewInTile', t('home.previewInTile', 'Preview in the tile'), t('home.previewInTileDesc', 'The preview fills the tile it shows, under the tile’s own name, rather than beside the clock.')]);
+    }
+    for (var pi = 0; pi < pvRows.length; pi++) {
+      var pvOn = d.layout[pvRows[pi][0]] === true;
+      r.push({ label: pvRows[pi][1], key: pvRows[pi][0],
+               value: pvOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: pvOn ? 'on' : 'off',
+               act: can ? 'homeFlag' : null, on: pvOn,
+               press: pvOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+               hint: pvRows[pi][2] });
+    }
     for (var si = 0; si < shows.length; si++) {
       var showOn = d.layout[shows[si][0]] !== false;
       // Alternative View's rows have no titles, so no app count beside them.
@@ -1141,8 +1156,11 @@ function glasshouseHomeRows(d) {
              press: fadeOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.fadeDesc', 'Glasshouse Home fades in as it comes on screen, and out as an app, input or channel opens.') });
     // OK steps through the presets; colours picked on the browser dashboard show as Custom.
+    // No colours chosen is the view's own look, the preset marked own.
     var presets = d.colourPresets || [], cur = d.layout.colours, at = cur ? -1 : 0;
-    for (var pi = 0; pi < presets.length; pi++) if (cur && presets[pi].text === cur.text && presets[pi].accent === cur.accent) at = pi;
+    for (var pi = 0; pi < presets.length; pi++) {
+      if (cur ? presets[pi].text === cur.text && presets[pi].accent === cur.accent : presets[pi].own) at = pi;
+    }
     if (presets.length) {
       var lookNames = { warm: t('home.colours.warm', 'Warm'), glasshouse: t('home.colours.glasshouse', 'Glasshouse'),
                         pure: t('home.colours.pure', 'Pure white'), white: t('home.colours.white', 'White'),
@@ -1155,6 +1173,14 @@ function glasshouseHomeRows(d) {
                press: t('tv.home.colours.press', 'Press OK for {name}', { name: lookNames[nextLook.id] || nextLook.id }),
                hint: t('home.colours.tvHint', 'The text and accent on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.') });
     }
+    // OK steps down from full to off; the browser dashboard's slider sets any 5% step.
+    var dark = typeof d.layout.darkening === 'number' ? d.layout.darkening : 100;
+    var darkNext = dark > 75 ? 75 : dark > 50 ? 50 : dark > 25 ? 25 : dark > 0 ? 0 : 100;
+    var darkName = function (v) { return v === 0 ? t('common.off', 'Off') : v + '%'; };
+    r.push({ label: t('home.darkening', 'Darkening'), value: darkName(dark), cls: 'act',
+             act: can ? 'homeDarkening' : null, key: darkNext,
+             press: t('tv.home.darkening.press', 'Press OK for {value}', { value: darkName(darkNext) }),
+             hint: t('home.darkeningDesc', 'How much the wallpaper is darkened behind the clock and the rows, to keep them easy to read. Off shows the picture as it is.') });
   }
   // Opening Home opens Glasshouse Home only while it has LG's Home's place.
   if (d.enabled && d.active) {
@@ -2925,6 +2951,10 @@ function activate() {
                       r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'homePicture':
       return homeLayout({ picture: !r.on });
+    case 'homeFlag':
+      var flagChange = {};
+      flagChange[r.key] = !r.on;
+      return homeLayout(flagChange);
     case 'homeShow':
       var showChange = {};
       showChange[r.key] = !r.on;
@@ -2939,9 +2969,11 @@ function activate() {
       return homeLayout({ recommended: !r.on });
     case 'homeHideUnused':
       return homeLayout({ hideUnused: !r.on });
+    case 'homeDarkening':
+      return homeLayout({ darkening: r.key });
     case 'homeColours':
-      // The first preset is the view's own colours, saved as none chosen.
-      return homeLayout({ colours: r.key.id === homeData.colourPresets[0].id ? null : { text: r.key.text, accent: r.key.accent } });
+      // The view's own look is saved as none chosen.
+      return homeLayout({ colours: r.key.own ? null : { text: r.key.text, accent: r.key.accent } });
     case 'homeOpen':
       return send({ action: 'launchApp', value: 'com.webos.app.home' });
     case 'homeRowUp':
