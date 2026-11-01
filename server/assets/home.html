@@ -75,26 +75,28 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 
 /* The preview: a live picture of the input in focus, in the plate's place on
    the strip's bottom line, with the source beside it naming what it shows.
-   The picture is the TV's video plane showing through the page, so its
-   corners stay square; the edge and the shadow are drawn over and around it. */
-#preview{-webkit-flex:0 0 auto;flex:0 0 auto;position:relative;width:432px;height:243px;margin-left:56px;background:#000;display:none;
+   200 high, its top meets the clock's and its foot the date's line, inside the
+   strip's margins. The picture is the TV's video plane showing through the
+   page, so its corners stay square; the edge and the shadow are drawn over and
+   around it. */
+#preview{-webkit-flex:0 0 auto;flex:0 0 auto;position:relative;width:356px;height:200px;margin-left:56px;background:#000;display:none;
   box-shadow:0 24px 60px rgba(0,0,0,.6)}
 #preview.on{display:block}
 #preview:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;border:1px solid rgba(244,241,234,.16);pointer-events:none}
 #preview video{display:block;width:100%;height:100%}
 #pvNote{position:absolute;left:0;top:0;right:0;bottom:0;display:none;background:#14120f;text-align:center;
-  font-size:23px;line-height:243px;color:#6b665e}
+  font-size:23px;line-height:200px;color:#6b665e}
 #preview.blank #pvNote{display:block}
 /* With Picture details on, the plate follows the preview and describes what
-   it shows, in a band hung below the picture as a reference monitor's status
-   line: nothing drawn over the video, whose own captions and tickers sit at
-   its foot. The band reaches below the strip into the space above the rows'
-   tiles, clear of the row title on the left. */
-#pvInfo{position:absolute;left:0;right:0;top:100%;padding:12px 18px 13px;display:none;
-  background:rgba(14,12,10,.84);border:1px solid rgba(244,241,234,.16);border-top:0;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+   it shows, beside the picture and level with its foot, as the date sits by
+   the clock: nothing drawn over the video, whose own captions and tickers sit
+   at its foot, and nothing below the strip. */
+#pvInfo{position:absolute;right:100%;bottom:0;width:420px;margin-right:32px;padding-bottom:2px;display:none;text-align:right}
+/* Its room is kept clear of the source, whose title then ends in an ellipsis. */
+#now #preview.info{margin-left:508px}
 #preview.info #pvInfo{display:block}
 #preview.blank #pvInfo{display:none}
-#pvTop{display:-webkit-flex;display:flex;-webkit-align-items:baseline;align-items:baseline}
+#pvTop{display:-webkit-flex;display:flex;-webkit-align-items:baseline;align-items:baseline;-webkit-justify-content:flex-end;justify-content:flex-end}
 #pvMode{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;font-family:'Outfit',sans-serif;font-size:27px;line-height:1.1;font-weight:400;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #pvLight{-webkit-flex:0 0 auto;flex:0 0 auto;margin-left:16px;font-size:19px;color:#a39d93;white-space:nowrap}
