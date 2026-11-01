@@ -206,6 +206,7 @@ async function loadAudioBluetooth() {
 function audioBtStateLabel(state) {
   return state === 'connected' ? t('audio.bt.connected', 'Connected')
     : state === 'disconnected' ? t('audio.bt.disconnected', 'Not connected')
+    : state === 'connecting' ? t('audio.bt.connecting', 'Connecting…')
     : t('audio.unknown', 'Unknown');
 }
 

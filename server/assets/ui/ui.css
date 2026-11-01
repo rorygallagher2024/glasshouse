@@ -1478,6 +1478,8 @@ button.tools-jump:active{background:var(--w80)}
 .audio-more[open]>summary{margin-bottom:6px}
 .audio-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:0 0 18px}
 .audio-head .pill{flex-shrink:0;min-height:36px}
+/* The fold below draws the line that closes the list. */
+#audio-bt-list .prot-row:last-child{border-bottom:0}
 .audio-path{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:20px 0 22px;border-block:1px solid var(--w12)}
 .audio-path>li{position:relative;padding:0 20px 0 0}
 .audio-path>li+li{padding-left:28px}
