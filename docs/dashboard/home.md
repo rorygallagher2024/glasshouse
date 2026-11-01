@@ -135,6 +135,16 @@ With **Your own** chosen:
 
 The TV app's **Wallpaper** row moves through the four choices with OK.
 
+**Darkening** sets how much the wallpaper is darkened behind the clock and the rows, which keeps them easy to read on a bright picture. It is 100% by default; the web dashboard's slider goes down in steps of 5% to **Off**, which shows the picture as it is, and the TV app's **Darkening** row steps through 100%, 75%, 50%, 25% and Off with OK.
+
+=== "Darkening 100% (default)"
+
+    ![Glasshouse Home with the Abstract afternoon wallpaper darkened behind the rows](../screenshots/home-darkening-full.jpg)
+
+=== "Darkening off"
+
+    ![The same wallpaper with no darkening](../screenshots/home-darkening-off.jpg)
+
 === "Afternoon wallpaper"
 
     ![Glasshouse Home with an uploaded afternoon wallpaper](../screenshots/home.jpg)

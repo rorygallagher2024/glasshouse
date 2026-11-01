@@ -1158,6 +1158,14 @@ function glasshouseHomeRows(d) {
                press: t('tv.home.colours.press', 'Press OK for {name}', { name: lookNames[nextLook.id] || nextLook.id }),
                hint: t('home.colours.tvHint', 'The text and accent on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.') });
     }
+    // OK steps down from full to off; the browser dashboard's slider sets any 5% step.
+    var dark = typeof d.layout.darkening === 'number' ? d.layout.darkening : 100;
+    var darkNext = dark > 75 ? 75 : dark > 50 ? 50 : dark > 25 ? 25 : dark > 0 ? 0 : 100;
+    var darkName = function (v) { return v === 0 ? t('common.off', 'Off') : v + '%'; };
+    r.push({ label: t('home.darkening', 'Darkening'), value: darkName(dark), cls: 'act',
+             act: can ? 'homeDarkening' : null, key: darkNext,
+             press: t('tv.home.darkening.press', 'Press OK for {value}', { value: darkName(darkNext) }),
+             hint: t('home.darkeningDesc', 'How much the wallpaper is darkened behind the clock and the rows, to keep them easy to read. Off shows the picture as it is.') });
   }
   // Opening Home opens Glasshouse Home only while it has LG's Home's place.
   if (d.enabled && d.active) {
@@ -2942,6 +2950,8 @@ function activate() {
       return homeLayout({ recommended: !r.on });
     case 'homeHideUnused':
       return homeLayout({ hideUnused: !r.on });
+    case 'homeDarkening':
+      return homeLayout({ darkening: r.key });
     case 'homeColours':
       // The view's own look is saved as none chosen.
       return homeLayout({ colours: r.key.own ? null : { text: r.key.text, accent: r.key.accent } });

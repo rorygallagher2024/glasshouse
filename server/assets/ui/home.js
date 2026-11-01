@@ -242,6 +242,9 @@ function renderHome() {
   renderHomeChannels();
   renderHomeWalls();
   renderHomeColours();
+  if (!homeDarkDragging) showHomeDarkening(homeLayout && typeof homeLayout.darkening === 'number' ? homeLayout.darkening : 100);
+  const darkWrap = q('home-dark-wrap');
+  if (darkWrap) darkWrap.classList.toggle('disabled', !homeWritable());
   q('home-reset').disabled = !homeWritable();
 }
 
@@ -867,3 +870,62 @@ async function homeClearUploads() {
   catch (e) { q('home-wall-upload-note').textContent = e.message; }
   await loadHome();
 }
+
+/* The wallpaper's darkening behind the text and rows, in 5% steps, saved on
+   release as OLED light is. */
+let homeDarkDragging = false;
+
+function showHomeDarkening(v) {
+  if (q('home-dark-slider')) q('home-dark-slider').value = v;
+  if (q('home-dark-fill')) q('home-dark-fill').style.width = v + '%';
+  if (q('home-dark-lbl')) q('home-dark-lbl').textContent = v === 0 ? t('common.off', 'Off') : v + '%';
+}
+
+function initHomeDarkSlider() {
+  const wrap = q('home-dark-wrap');
+  const slider = q('home-dark-slider');
+  if (!wrap || !slider) return;
+  let active = false;
+  const at = e => {
+    const r = wrap.getBoundingClientRect();
+    return Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 20) * 5));
+  };
+  const save = v => { showHomeDarkening(v); return homeSaveLayout({ darkening: v }); };
+  const stop = e => {
+    active = false;
+    homeDarkDragging = false;
+    wrap.classList.remove('dragging');
+    try { wrap.releasePointerCapture(e.pointerId); } catch (err) {}
+  };
+  wrap.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || !homeWritable()) return;
+    active = true;
+    homeDarkDragging = true;
+    wrap.classList.add('dragging');
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    showHomeDarkening(at(e));
+  });
+  wrap.addEventListener('pointermove', e => { if (active) showHomeDarkening(at(e)); });
+  wrap.addEventListener('pointerup', e => {
+    if (!active) return;
+    stop(e);
+    save(at(e));
+  });
+  wrap.addEventListener('pointercancel', e => {
+    if (!active) return;
+    stop(e);
+    showHomeDarkening(homeLayout && typeof homeLayout.darkening === 'number' ? homeLayout.darkening : 100);
+  });
+  slider.addEventListener('keydown', e => {
+    const steps = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5, PageUp: 25, PageDown: -25 };
+    let v;
+    if (steps[e.key]) v = Number(slider.value) + steps[e.key];
+    else if (e.key === 'Home') v = 0;
+    else if (e.key === 'End') v = 100;
+    else return;
+    e.preventDefault();
+    if (homeWritable()) save(Math.max(0, Math.min(100, v)));
+  });
+}
+
+initHomeDarkSlider();

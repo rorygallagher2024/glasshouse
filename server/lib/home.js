@@ -337,6 +337,9 @@ function defaults() {
     // Inputs with nothing plugged in left out of the Inputs row, rather than
     // shown greyed out.
     hideUnused: false,
+    // How strongly the wallpaper is darkened behind the text and rows, in
+    // percent of the view's own darkening; 0 leaves the picture as it is.
+    darkening: 100,
     // { text, accent } as #rrggbb, or null for the view's own colours. Pure
     // white until one is chosen.
     colours: { text: '#ffffff', accent: '#ffffff' },
@@ -404,6 +407,7 @@ function normalise(raw) {
   d.sort.rec = 'custom';
   d.hidden.rec = [];
   d.fade = raw.fade === true;
+  d.darkening = validDarkening(raw.darkening);
   d.hideUnused = raw.hideUnused === true;
   // null, saved, is the view's own look; none saved keeps the default.
   if (Object.prototype.hasOwnProperty.call(raw, 'colours')) d.colours = validColours(raw.colours);
@@ -413,6 +417,11 @@ function normalise(raw) {
   if (typeof raw.lgDefaultHome === 'string' && raw.lgDefaultHome) d.lgDefaultHome = raw.lgDefaultHome;
   d.snapshot = validSnapshot(raw.snapshot) ? raw.snapshot : null;
   return d;
+}
+
+function validDarkening(v) {
+  var n = typeof v === 'number' ? Math.round(v) : NaN;
+  return n >= 0 && n <= 100 ? n : 100;
 }
 
 function validColours(v) {
@@ -536,6 +545,7 @@ function setLayout(body, cb) {
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
+    darkening: body.darkening !== undefined ? body.darkening : c.darkening,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
@@ -563,7 +573,7 @@ function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
-    fade: c.fade, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    fade: c.fade, darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };

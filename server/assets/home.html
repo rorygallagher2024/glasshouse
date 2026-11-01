@@ -2534,6 +2534,12 @@ html.faded #stage{opacity:0}
     });
     return out;
   }
+  // The wallpaper's darkening, as a share of the scrim's own: 0 leaves the picture as it is.
+  function applyDarkening(pct) {
+    var n = typeof pct === 'number' ? pct : 100;
+    $('scrim').style.opacity = String(n / 100);
+  }
+
   function applyColours(c) {
     var key = c ? c.text + c.accent : '';
     if (key === lookShown) return;
@@ -2578,6 +2584,7 @@ html.faded #stage{opacity:0}
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
       applyColours(layout.colours);
+      applyDarkening(layout.darkening);
       if (r.layoutVersion) layoutVersion = r.layoutVersion;
       refreshPicture();
       clearTimeout(loadRetry);

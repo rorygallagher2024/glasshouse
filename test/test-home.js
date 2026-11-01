@@ -2296,6 +2296,29 @@ step('a Glasshouse Home switched on fresh is Pure white, listed first, and one w
   });
 });
 
+step('the wallpaper\'s darkening is full until set, kept from 0 to 100, and kept when not sent', function (done) {
+  start(null);
+  home.status(function (st) {
+    assert.strictEqual(st.layout.darkening, 100, 'today\'s look by default');
+    home.setLayout({ darkening: 0 }, function (r) {
+      assert.strictEqual(r.layout.darkening, 0, 'off');
+      home.setLayout({ fade: true }, function (r2) {
+        assert.strictEqual(r2.layout.darkening, 0, 'kept when not sent');
+        home.setLayout({ darkening: 140 }, function (r3) {
+          assert.strictEqual(r3.layout.darkening, 100, 'out of range is full');
+          home.setLayout({ darkening: '50' }, function (r4) {
+            assert.strictEqual(r4.layout.darkening, 100, 'only a number');
+            home.setLayout({ darkening: 42.6 }, function (r5) {
+              assert.strictEqual(r5.layout.darkening, 43);
+              done();
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
 step('only #rrggbb colours are kept, since the view writes them into its stylesheet', function (done) {
   start(null);
   var invalid = [
