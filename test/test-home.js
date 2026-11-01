@@ -549,6 +549,25 @@ step('the TV\'s tuner is the first tile in the Inputs row, on the channel it was
   });
 });
 
+step('an animated background is off unless chosen, and its colours follow the part of the day, a preset or #rrggbb of one\'s own', function (done) {
+  assert.strictEqual(home.normalise({}).wallAnim, 'off', 'no animated background unless chosen');
+  assert.strictEqual(home.normalise({ wallAnim: 'aquarium' }).wallAnim, 'aquarium');
+  ['aurora', 'glow', 'stars', 'ripples'].forEach(function (style) { assert.strictEqual(home.normalise({ wallAnim: style }).wallAnim, style); });
+  assert.strictEqual(home.normalise({ wallAnim: 'fireworks' }).wallAnim, 'off', 'and only one of those offered');
+  assert.strictEqual(home.normalise({}).animTheme, 'auto', 'its colours follow the part of the day unless chosen');
+  assert.strictEqual(home.normalise({ animTheme: 'sunset' }).animTheme, 'sunset');
+  assert.strictEqual(home.normalise({ animTheme: 'neon' }).animTheme, 'auto', 'only a preset or custom');
+  var own = home.normalise({ animTheme: 'custom', animSky: '#ABCDEF', animLight: 'red' });
+  assert.deepEqual([own.animTheme, own.animSky, own.animLight], ['custom', '#abcdef', '#4f8dff'], 'colours of one\'s own are #rrggbb');
+  start(null);
+  home.setLayout({ wallAnim: 'stars', animTheme: 'ember' }, function (r) {
+    assert.ok(r.ok);
+    assert.deepEqual([r.layout.wallAnim, r.layout.animTheme], ['stars', 'ember']);
+    assert.ok(r.layout.animThemes.some(function (th) { return th.id === 'ember' && th.sky && th.light; }), 'the presets go with the layout');
+    done();
+  });
+});
+
 step('a TV with no channels tuned has no tuner tile, and the tile will not open', function (done) {
   start(null);
   home.catalogue(function (c) {

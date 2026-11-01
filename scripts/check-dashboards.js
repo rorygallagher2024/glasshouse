@@ -323,6 +323,55 @@ async function visitHomePreviewOptions(browser, base, problems) {
   await page.close();
 }
 
+// Each animated background draws, the pictures step aside, and Off puts them back.
+async function visitHomeAnimations(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home animations: ' + e.message));
+  const layout = { rows: ['app'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] },
+    channels: [], hintSeen: true, searchHintSeen: true, wallAnim: 'off', animTheme: 'auto',
+    animThemes: [{ id: 'auto' }, { id: 'sunset', sky: '#3a0f3d', light: '#ff8a4c' }] };
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1,
+      apps: [{ id: 'app', title: 'App' }], devices: [], channels: [], sources: {}, order: { app: ['app', 'lg-home'], dev: [], ch: [] },
+      wallpapers: { available: true, slots: { morning: true, afternoon: true, evening: true, night: true }, revision: '1' } });
+    if (url.pathname.endsWith('/now')) return reply({ kind: null });
+    if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
+    return reply({ ok: true, build: 'anim', layoutVersion: 1 });
+  });
+  // Something drawn on the canvas, over the background the page sets behind it.
+  const drawn = () => page.evaluate(() => {
+    const c = document.getElementById('anim'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let lit = 0;
+    for (let i = 3; i < d.length; i += 16) if (d[i] > 8) lit++;
+    return lit;
+  });
+  const open = async style => {
+    layout.wallAnim = style;
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+  };
+  try {
+    for (const style of ['waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples']) {
+      layout.animTheme = style === 'glow' ? 'sunset' : 'auto';
+      await open(style);
+      // Ripples start with a still surface; a drop falls within a few seconds.
+      await page.waitForTimeout(style === 'ripples' ? 3500 : 800);
+      if (await page.locator('#anim.on').count() !== 1) { problems.push('Home animations: ' + style + ' did not show'); continue; }
+      if (!await drawn()) problems.push('Home animations: ' + style + ' drew nothing');
+      const pictures = await page.evaluate(() => Array.prototype.some.call(document.querySelectorAll('#wall .layer'), l => +l.style.opacity > 0));
+      if (pictures) problems.push('Home animations: the wallpaper showed under ' + style);
+    }
+    await open('off');
+    await page.waitForTimeout(800);
+    if (await page.locator('#anim.on').count()) problems.push('Home animations: Off left the canvas showing');
+  } catch (e) {
+    problems.push('Home animations: ' + e.message);
+  }
+  await page.close();
+}
+
 async function visitHomePreview(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home preview: ' + e.message));
@@ -2046,7 +2095,7 @@ async function visitTvNonOled(browser, base, problems) {
  */
 function groups(web, tv) {
   return [
-    { tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [] },
+    { tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations] },
     { tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
     { tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
@@ -2080,6 +2129,6 @@ async function runGroup(browser, group, problems, after) {
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'TV navigation and LCD profile, Home arranging, picture, preview and its options, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide and search checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+              'TV navigation and LCD profile, Home arranging, picture, preview and its options, animated backgrounds, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide and search checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

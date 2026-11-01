@@ -141,6 +141,22 @@ The TV app's **Wallpaper** row moves through the four choices with OK.
 
 **Darkening** sets how much the wallpaper is darkened behind the clock and the rows, which keeps them easy to read on a bright picture. It is 100% by default; the web dashboard's slider goes down in steps of 5% to **Off**, which shows the picture as it is, and the TV app's **Darkening** row steps through 100%, 75%, 50%, 25% and Off with OK.
 
+### Animated background
+
+**Animated background**, at the top of the Wallpaper section, draws a moving background in place of the pictures. **Off**, the default, leaves the Wallpaper choice as it was. There are seven:
+
+* **Light waves**: soft bands of light with a bright thread along their edges, as on a games console's home screen.
+* **Particles**: soft lights rising and twinkling.
+* **Aquarium**: a tank seen through its side, with light from the surface, fish at every depth, waving weed and rising bubbles.
+* **Aurora**: curtains of light hanging from the top, their lower edges swaying.
+* **Glow**: a few large, soft pools of colour drifting and blending where they meet.
+* **Constellations**: points of light drifting slowly, joined by fine lines while they are near one another.
+* **Ripples**: a still surface where now and then a drop falls and spreads in thin rings.
+
+It runs only while Glasshouse Home is on screen, drawn at half the screen's size and at most 30 frames a second; with reduced motion asked for, it is a still frame. Under one, **Darkening** eases the shade behind the clock and the rows to a little under half of what it is on a picture, as these are dark already.
+
+**Background colours**, shown while one is chosen, sets its colours: **Time of day**, the default, follows the four times of day, and the aquarium dims in the evening and at night; five presets, **Night blue**, **Sunset**, **Emerald**, **Ember** and **Silver**; or **Your own**, a background and a light colour picked on the web dashboard. In the aquarium they are the water and the light through it. The TV app's **Animated background** and **Background colours** rows move through the choices with OK.
+
 === "Darkening 100% (default)"
 
     ![Glasshouse Home with the Abstract afternoon wallpaper darkened behind the rows](../screenshots/home-darkening-full.jpg)
