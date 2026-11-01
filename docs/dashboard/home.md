@@ -7,7 +7,7 @@
 
 ## What is on screen
 
-Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour time setting), the last active source or app, and up to four rows (any row with no visible items is automatically hidden):
+Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour time setting), the last active source or app, and up to five rows (any row with no visible items is automatically hidden). When there are more rows than fit, they scroll to keep the one in focus in view:
 
 <div class="grid cards" markdown>
 
@@ -34,6 +34,12 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
     ---
 
     Favourite live TV channels added from the dashboard or TV app, showing the current broadcast programme from the TV guide when available.
+
+-   **Internet TV**
+
+    ---
+
+    The starred channels of your Internet TV lineup, chosen on the dashboard or from the row itself. Each tile shows the channel's logo, drawn as plain light type, or its initials, with what is on now and next. See [Internet TV](#internet-tv).
 
 -   **Recommended**
 
@@ -108,6 +114,158 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 When switched on under **Home** on the web dashboard or in the TV app's Home section, **Search** adds a mark in the left margin beside the rows: **Left** from the first tile of any row reaches it, and **Right** goes back. **OK** opens a search panel over the left of Glasshouse Home for films and series, typed on the TV's keyboard. While the keyboard is up the titles are single lines, with the icons of the apps that have them; once it closes each shows its poster, year, running time and apps. Editing the query clears the previous titles immediately. Up and down move between titles, left and right between apps, and OK opens the app at that title. A series opens at its start where the app allows: Prime Video and HBO Max at its first season, Disney+ and BBC iPlayer playing its first episode, Netflix at the series; Apple TV opens its latest episode. Titles only on apps the TV does not have are counted, not listed, and trailers, teasers and sneak peeks are never shown or opened. Back closes the keyboard, then the panel. Coming back from an app opened there within 30 minutes, without the TV having been switched off, finds the panel as it was left. Switched off, the mark goes and nothing typed leaves the TV.
 
 LG's search needs the TV online and LG's search server (`gb.nextlgsdp.com` on a TV in the UK) reachable. Where the ad blocker blocks that server, on **Everything** or through an uploaded hosts list, the mark is hidden on Glasshouse Home and the **Search** switch is greyed on both dashboards, with a note saying what blocks it. The switch keeps its setting, and search comes back when the blocker is set to **Ads & telemetry** or off.
+
+## Internet TV
+
+Internet TV puts channels from your own IPTV provider in a row of their own,
+below Channels. Glasshouse comes with no playlists or channels: you add the
+same **M3U link** or **Xtream login** you gave IPTV Smarters, TiviMate or a
+similar app, in the **Internet TV** section of the **Home** tab, with a guide
+(XMLTV) link if the playlist has none. An Xtream login brings its own guide.
+
+The playlist is read on the TV, in the background, and again each night;
+the guide every six hours. Each playlist shows how many live channels it has,
+when it and its guide were last read, when the account ends and how many
+streams it allows at once. **Refresh** reads it now, **Edit** changes it (a
+password left blank keeps the one saved), and **Remove** deletes it and its
+channels from the TV. A playlist that cannot be read keeps the list from
+before; one whose login is refused is not tried again until you edit or
+refresh it, as providers block an address after repeated failed logins.
+
+### Choosing channels
+
+A subscription can list tens of thousands of channels. The ones the TV
+carries are its **lineup**, up to 2,000, numbered as a broadcaster numbers
+its guide; the ones starred, up to 60, make the row on Glasshouse Home.
+**Manage channels**, in the Internet TV section of the Home tab, opens the
+lineup on a page of its own:
+
+![The Internet TV channels page](../screenshots/iptv-channels-web.jpg)
+
+Providers' names are shown tidied, as Home shows them: the tier or country
+they start with ("VIP: ", "UK| ") set small before the name, quality marks
+("ᴴᴰ", "HEVC") as small tags after it, and capitals in title case. Nothing
+is dropped, so two versions of a channel still tell apart; the provider's
+own name shows when you point at one.
+
+- **On the left**, the provider's groups, under their country or tier where
+  the provider prefixes them, with how many channels each has and how many
+  are in the lineup. **Filter groups** narrows them by name.
+  Hidden groups, ones never watched (another country, films), are listed
+  at the end and left out of searches.
+- **In the middle**, a group's channels, or those found by **Find a channel
+  by name** across the whole playlist (**Only in** narrows it to the group
+  that was open). A channel
+  in the lineup shows its number there. **Add** and **Take out** on a row
+  act on that channel at once. **Add the whole group** makes the group a
+  section of its own that follows the provider: channels it adds later
+  join, and ones it drops go. **Take the 12 out** takes out every channel of
+  the group that is in the lineup.
+- **On the right**, the lineup in number order: first **Home's row**, the
+  starred channels as the row's tiles, in order (click one to find it in
+  the lineup; **Arrange the order** lists them to drag or move with the
+  arrows; **Unstar all** empties it), then each section. A section
+  starts where the one before ends, or at a number of its own (click its
+  number: 101, 401, as Entertainment and Sport are on a broadcaster's
+  guide). Click a section's name to rename it; the arrows move it, and the
+  cross removes it. A star puts a channel on the row and takes it off; the
+  pencil, or a double click on the name, renames it (an empty name brings
+  the provider's back). Channels picked one by one go in a section that
+  keeps your order. **Empty the lineup** takes everything out.
+
+Everything in the three lists can be selected, for changes to many at once:
+click a channel (or a group's box), Shift-click for every one between, or
+the box at the top of a list for all of it, a whole group's channels
+included. A
+selection can grow over several searches or filters. The bar at the
+bottom then acts on all of it:
+
+- **Groups**: add them as whole groups, take out every channel of theirs in
+  the lineup (whole groups and channels picked from them alike), hide them
+  or show them again.
+- **Channels**: add them to the lineup, add and star them, or **Add to…** a
+  section of your own, or a new one named after their group.
+- **The lineup**: star or unstar them, **Move to…** another section of
+  picked channels or a new one (a channel moved out of a whole group stays
+  out of it), rename one, or take them out. Delete takes them out too.
+
+Each action ends the selection, so the next click starts a new one.
+
+![Every BBC One found, selected, and Add to… open on the bar](../screenshots/iptv-channels-search.jpg)
+
+**Undo**, at the top or after each change, takes back the last change, and
+again the one before, up to 20. The TV forgets them when it restarts.
+Escape clears the selection, then closes the page.
+
+On a phone the three are tabs: **Groups**, **Channels** and **Lineup**.
+
+![The lineup on a phone](../screenshots/iptv-channels-phone.jpg)
+
+The TV app's Home section opens the same lineup with **Internet TV
+channels**: the row's channels, each section with its numbers, and **Add
+channels** with the provider's groups. **OK** stars a channel or takes its
+star off, adds one from a group or takes it out, or adds a whole group;
+in a section, **Numbers start at** moves the start on to the next hundred
+and one with each press. Renaming, which needs typing, is on the browser.
+
+![Internet TV channels in the TV app](../screenshots/iptv-channels-tv-app.jpg)
+
+On the TV, the row's last tile while arranging (hold **OK**), or its only
+tile while it is empty, is **Add channels**: a panel with your playlists,
+their groups and their channels, where **OK** adds one to the lineup and
+the row, and typing searches. Channels that need a player sending its own
+headers, or are protected (DRM), are marked and cannot be added. The row's
+order is changed as the Channels row's is.
+
+On the row, names are tidied: a provider's prefix such as *VIP:* goes, and
+quality marks such as *ᴴᴰ* or *ᴿᴬᵂ* show as plain tags in the player. With
+**Live preview** on, resting on a channel plays it, silent, in the preview.
+**OK** grows the preview to the whole screen, or opens the channel there:
+
+- **OK** opens the channel list, a section of the lineup at a time; **Left** and **Right** change section,
+  **OK** on a channel switches to it, and **Back** closes it.
+- **Up**, **Down**, **CH+** and **CH−** change channel through the whole
+  lineup, and the number keys go to a channel by its number in it.
+- **Info** shows the band with what is on now and next, which also shows for
+  five seconds at each change.
+- **Back** goes back to Home, the channel still playing in the preview with
+  **Live preview** on.
+
+**Guide**, the row's last tile, or **Info** on the row, shows two and a half hours of the
+lineup's programmes at a time, from the half hour before now, with an
+amber line at the time now. **Up** and **Down** move between channels at the
+same time, **Left** and **Right** between programmes, moving the hours shown
+as they go (from two hours back to a day ahead). Above the channels, the
+favourites and the lineup's sections are tabs: **Up** from the first channel reaches them, and
+**Left** and **Right** choose one. The top of the screen names the programme
+in focus, its times and what it is about, with the channel in the preview.
+**OK** on a programme on now plays it; on one to come, it says when it
+starts. The guide comes from the playlist's guide link, or the Xtream
+account's own: its whole guide every six hours once the lineup goes beyond
+the row, and the row's channels every half hour. A channel with none says so.
+
+![The guide on a G3](../screenshots/iptv-home-guide.jpg)
+
+The remote's **Guide** button opens LG's own guide of the aerial and
+satellite channels; webOS gives it to LG before Glasshouse Home sees it.
+**The remote's Guide button**, in the Internet TV section of the Home tab,
+chooses **LG's TV guide** or **Glasshouse Home's guide**. The second opens
+Glasshouse Home at its guide from wherever the TV is, an app or an input
+included. It is the same setting as the Guide key on the Apps tab's remote
+keys, where a key can be set to anything else; the Home tab then names what
+it opens. While Glasshouse Home is switched off or has no playlist, Guide
+opens LG's guide again, and the choice comes back with them. Not offered on
+webOS 11.
+
+Only one stream plays at a time, and each is closed before the next opens, as
+many accounts allow one or two at once across the household. If someone else
+is watching on the same account, the channel may not play: **OK** tries
+again. Refreshes wait while a channel plays, and the screen saver stays away
+while one plays full screen.
+
+The links and logins are kept on the TV only. They are not shown on the
+dashboard again, and never sent to Home Assistant, the logs or a phone or
+computer; see [Security](../SECURITY.md#internet-tv).
 
 ## Wallpapers
 

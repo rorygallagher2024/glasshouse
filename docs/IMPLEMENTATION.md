@@ -62,6 +62,111 @@ The children are the five subscriptions held open for live state, to which a TV 
 
 ---
 
+## Internet TV: worker processes and published snapshots
+
+Glasshouse Home's Internet TV row (`lib/iptv.js`) reads the owner's IPTV
+playlists, which run to tens of MB with films and series in them, and XMLTV
+guides of 50 to 200 MB. None of that is read in the server, whose one thread
+also answers the remote, the dashboards and MQTT. Each job is a process of
+its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
+
+- **Started like every child**, through `children.launch`, as `nice -n 19 node
+  --max_old_space_size=64 iptv-worker.js` (24 MB for a search) in a process
+  group of its own (`detached`). The job is one JSON line on its stdin, which
+  stays open: the worker exits, killing its own curl, when it closes, so a
+  server that dies leaves no worker behind. Timeouts and cancelling kill the
+  whole group.
+- **Two lanes.** Background jobs (reading a playlist, the lineup's
+  play links and logos, the guide, now and next again) run one at a time, in
+  order, a kind for a playlist only once in the queue. Browse and search for
+  the add panels run beside them, one at a time, a new one replacing the last.
+- **Memory is measured by the server**, once a second while a worker runs:
+  the RSS in `/proc/<pid>/statm` of the worker and the curl it reports
+  starting. Over 160 MB for the background lane, 90 MB for search or 220 MB
+  between them, or with the TV's `MemAvailable` under 150 MB, the background
+  job is stopped and queued again; a search over its own share fails. A job
+  does not start below 210 MB available, nor with less than 70 MB free where
+  the snapshots live (`df`). Its output is not known before it runs, so the
+  worker counts every byte it writes and stops with `disk` once only 50 MB
+  would be left.
+- **One search at a time**: the lane is taken before the memory check
+  answers, so a search asked for meanwhile replaces it rather than starting
+  beside it.
+- **Downloads are parsed as they arrive**, through curl or wget, and never
+  saved: an M3U line by line, Xtream's JSON arrays an element at a time, an
+  XMLTV guide an element at a time, unzipped on the way when its first bytes
+  say gzip. A JSON list that never closes, or a guide that stops before
+  `</tv>`, is refused as cut off rather than its first part published. Ceilings: 300 MB downloaded, 1.5 GB unzipped, 64 KB an M3U entry
+  or JSON element, 2 MB an XMLTV element, 500,000 entries.
+- **Snapshots.** A job writes a candidate folder (`snap-`, `sel-`, `guide-`,
+  `nn-`) and reports it done; the server checks the playlist is still there
+  at the same generation, writes `current.json` pointing at it, and only once
+  that write succeeds uses it. A failed or stale candidate is deleted, so a failed refresh, an edit or a restart
+  leaves the last good snapshot published. Folders nothing points at go a
+  minute later.
+- **The server reads only small, bounded files**: `meta.json` (16 KB),
+  `groups.json` (384 KB, every group with its count), `added.json` (1 MB,
+  the lineup's channels), `nownext.json` (512 KB), a play link (4 KB) and a
+  browse or search result (96 KB), each held under its limit by the worker
+  before it reports.
+  `index.tsv`, `urls.tsv` and `keys.tsv` are read only by workers; logos and
+  guide shards are piped to Home unread.
+- **Keys.** An Xtream channel's key is its stream id. An M3U entry gets a
+  random key, carried to the next read by the SHA-1 of its full URL, else by
+  a hint (name, group, tvg-id, host and last path segment) only when exactly
+  one old key and one new entry share it: a channel whose token rotated keeps
+  its key; two whose links differ only in a token, both rotated, are not
+  guessed. A key gone after a refresh is matched again only to the one entry
+  with its name and group, else shown as gone.
+- **Schedule.** A playlist is read daily between 03:00 and 05:00, the guide
+  every six hours (an Xtream login's `xmltv.php` once the lineup goes beyond
+  the row's favourites, and its short EPG for the favourites every 30
+  minutes, each job linking the other's channels from the last guide rather
+  than dropping them), failures backing off 15 minutes, an hour, 6
+  and 24 hours, or a 429's `Retry-After` if longer. A refused login stops a
+  playlist's jobs until it is edited or refreshed. Times are kept in
+  `config.json`; overdue jobs run 3 to 8 minutes after a start or a wake.
+  While Home plays a stream it renews a 2-minute lease, and background jobs
+  wait for it, but none more than two hours past due.
+- **The lineup** (`lib/iptv-lineup.js`, pure functions over `selection.json`)
+  is sections in order: a group section names a provider group and the keys
+  taken out of it, and the select job reads the group's channels afresh each
+  time, so it follows the provider; a pick section lists channels by key, in
+  the owner's order. Channels are numbered through the sections, a section
+  starting at its own number where it has one; a channel in two sections is
+  in the first. Favourites (60, Home's row), renames and hidden groups are
+  kept beside them. The selection's generation moves only when which channels
+  are carried does, so a star, rename or new number reaches Home without the
+  select job running. At most 2,000 channels, 1,000 from a group, 100
+  sections. An edit can name many channels, groups or sections at once (a
+  lineup edit's body may be 512 KB, other POSTs 8 KB); one that is refused
+  part way leaves the selection as it was. Moving a channel out of a group
+  section adds it to the group's taken-out keys. The server keeps the
+  selection as it was before each of the last 20 edits, in memory, for Undo.
+- **Logos come in batches.** A select job the owner is waiting on fetches 12
+  new logos and publishes; later jobs, a minute apart, fetch 300 each (two a
+  second), carrying the rest by hard link, until none is left. One the owner
+  edits stops a batch rather than waiting for it. A logo that failed is not
+  asked for again for a day; 32 MB in all. Non-favourites keep 26 hours of
+  guide, 80 programmes and short descriptions, against two days for the row.
+- **The watchdog.** `tvwebctl watch` kills a child of the server still
+  running node's binary seconds later, taking it for one stuck between fork
+  and exec (node 0.12 on webOS 4). The workers run node on purpose, so it
+  passes over them, as over the remote's button reader.
+
+Measured on a G3 (webOS 9.2.2, node 16) reading from this Mac's fake provider
+and from a real one:
+
+| Job | Time | Worker and curl, peak RSS |
+| :-- | :-- | :-- |
+| Xtream account, 53,463 live channels in 860 groups | 6.8 s | 38 MB |
+| M3U, 100,008 entries (24 MB) | 13 to 15 s | 100 MB |
+| XMLTV, 202 MB (9 MB gzipped), 842,667 programmes | 48 s | 47 MB |
+| Search over the 100,008 | 0.7 to 0.8 s | 33 MB |
+
+`MemAvailable` stayed above 550 MB, and `/api/home/catalogue` answered in
+85 to 140 ms while each ran.
+
 ## Platform constraints
 
 - **Node.js v0.12 (2015)**: webOS 4.x ships Node v0.12.2. All code in `tvweb.js` is written in strict ES5 (no `let`/`const`, no arrow functions, no template literals, no `async`/`await`).

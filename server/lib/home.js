@@ -44,7 +44,9 @@ var LIVE_TV = 'com.webos.app.livetv';
 var SETTINGS = 'com.webos.service.settings/';
 
 // rec, the apps' recommendations, sits under the Apps row it follows and is not arranged tile by tile.
-var ROWS = ['app', 'rec', 'dev', 'ch'];
+// iptv, Internet TV (lib/iptv), holds the channels added from the owner's
+// playlists, in the order of its selection.json rather than home.json's.
+var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec'];
@@ -142,6 +144,8 @@ var LIST_TTL_MS = 30000;
 
 var lunaFn = null;
 var liveState = null;
+/** @type {typeof import('./iptv')} */
+var iptvModule = null;
 var historyModule = null;
 var stateDir = '/var/lib/tvweb';
 var webosVersion = null;
@@ -248,9 +252,9 @@ function defaults() {
     enabled: false,
     restorePending: false,
     rows: ROWS.slice(),
-    order: { app: [], dev: [], ch: [], rec: [] },
-    sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom' },
-    hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [] },
+    order: { app: [], dev: [], ch: [], rec: [], iptv: [] },
+    sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' },
+    hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [], iptv: [] },
     // Apps moved off the Apps row into its More apps tile, in no order of
     // their own: the folder shows them in the row's.
     folder: [],
@@ -330,6 +334,9 @@ function normalise(raw) {
     .filter(function (id) { return chHidden.indexOf(id) === -1; });
   d.order.ch = [];
   d.hidden.ch = [];
+  // Internet TV's channels are added and removed in lib/iptv, whose list is the order.
+  d.order.iptv = [];
+  d.hidden.iptv = [];
   // A hidden app shows nowhere, so it is not also in the folder.
   var appHidden = d.hidden.app;
   d.folder = stringList(raw.folder).filter(function (id) { return appHidden.indexOf(id) === -1; });
@@ -401,9 +408,10 @@ function readConfig() {
  */
 // The view reloads when this changes, so it also follows the ad blocker
 // blocking or freeing LG's search, which is not saved in the layout.
+// Internet TV's revision too: a playlist read, a guide or a channel added.
 function layoutVersion() {
   readConfig();
-  return String(configMtime) + (search.blocked() ? '-search-blocked' : '');
+  return String(configMtime) + (search.blocked() ? '-search-blocked' : '') + (iptvModule ? '-tv' + iptvModule.revision() : '');
 }
 
 function saveConfig() {
@@ -481,6 +489,8 @@ function setLayout(body, cb) {
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
   });
+  // A moved or emptied Internet TV row reorders, or removes from, its channels.
+  if (iptvModule && body.order && isArray(body.order.iptv)) iptvModule.setOrder(stringList(body.order.iptv, 100));
   if (body.reset === true) {
     var d = defaults();
     next.rows = d.rows;
@@ -659,13 +669,13 @@ function rows(cb) {
   launchPoints(function (apps) {
     devices(function (devs) {
       channelList(function (chans) {
-        recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs)); });
+        recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs, iptvModule ? iptvModule.rowItems() : null)); });
       });
     });
   });
 }
 
-function build(c, apps, devs, chans, recs) {
+function build(c, apps, devs, chans, recs, tv) {
   var appList = byUse(apps || []);
   var appIds = appList.map(function (a) { return a.id; }).concat([LG_HOME_TILE]);
   var devIds = (devs || []).map(function (d) { return d.id; });
@@ -676,7 +686,8 @@ function build(c, apps, devs, chans, recs) {
     app: ordered(c.order.app, appIds),
     dev: ordered(c.order.dev, devIds),
     ch: picked.map(function (p) { return p.id; }),
-    rec: []
+    rec: [],
+    iptv: (tv || []).map(function (t) { return t.id; })
   };
   ROWS.forEach(function (r) { if (c.sort[r] === 'recent') order[r] = lastOpenedFirst(r, order[r]); });
   // Each app's cards together, in the Apps row's order; an app hidden there,
@@ -698,10 +709,13 @@ function build(c, apps, devs, chans, recs) {
     devices: devs || [],
     channels: picked,
     recommended: cards,
+    iptv: tv || [],
+    iptvStatus: iptvModule ? iptvModule.rowStatus() : null,
     order: order,
     // recommended: false while the row is off, null when the TV gave no list.
     sources: { apps: !!apps, devices: !!devs, channels: chans ? chans.length : null,
-      recommended: c.recommended ? (recs ? recs.length : null) : false }
+      recommended: c.recommended ? (recs ? recs.length : null) : false,
+      iptv: iptvModule ? iptvModule.hasPlaylists() : false }
   };
 }
 
@@ -932,6 +946,13 @@ function open(body, cb) {
       });
     });
   }
+  if (kind === 'iptv') {
+    // The view plays the channel itself; opening it here only records it.
+    var known = iptvModule && iptvModule.rowItems().some(function (t) { return t.id === id; });
+    if (!known) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+    noteOpened('iptv', id);
+    return cb({ ok: true });
+  }
   if (kind === 'rec') {
     if (!readConfig().recommended) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
     // A card opens its app, which counts as opening the app's tile.
@@ -940,7 +961,7 @@ function open(body, cb) {
       cb({ ok: r.ok, error: r.error });
     });
   }
-  cb({ ok: false, error: 'kind must be app, dev, ch, rec or lg' });
+  cb({ ok: false, error: 'kind must be app, dev, ch, iptv, rec or lg' });
 }
 
 // A tile's callback that first records it as opened, if it opened.
@@ -1727,6 +1748,7 @@ function init(opts) {
   lunaFn = opts.luna || null;
   liveState = opts.liveState || null;
   historyModule = opts.history || null;
+  iptvModule = opts.iptv || null;
   if (opts.stateDir) stateDir = opts.stateDir;
   wallpapers.init(stateDir);
   recent.init(stateDir, opts.now);

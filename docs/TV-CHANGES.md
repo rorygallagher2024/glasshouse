@@ -30,6 +30,7 @@ riskier controls ask for confirmation in the dashboard first.
 | Watch time, while switched on in the Server tab | `/var/lib/tvweb/history`, a file for each month, kept for 13 months | **Clear history** in the Server tab, or uninstalling |
 | Daily backups, while switched on in the Server tab | `/var/lib/tvweb/backups`, one file a day, the last 7 kept | Uninstalling |
 | Install job and services run as root | `install-job.json` and `elevated.json` in `/var/lib/tvweb` | Uninstalling |
+| Internet TV playlists, their logins, the lineup chosen from them, the channels read for it, logos and guides | `/var/lib/tvweb/iptv`, mode 700, a folder for each playlist. Each read writes a new copy beside the last, and the one no longer used is deleted a minute after. A playlist of 50,000 channels takes about 15 MB; a lineup of 231 channels with their guide about 4 MB more | Removing the playlist on the Home tab, which deletes its folder at once, or uninstalling |
 
 Installed from the Homebrew Channel, uninstalling the app stops the server
 starting at boot straight away, and within a few minutes the server removes the
@@ -134,6 +135,11 @@ setup. While a phone is being used to enter Home Assistant details,
 port 8081 answers a one-time code for up to ten minutes. The server connects out
 only to the configured MQTT broker, to the NTP server when one is configured,
 and, when update checks are switched on, to GitHub's releases API. Update checks are off by default.
+
+With an IPTV playlist added on the Home tab, the server also connects to that
+provider: to read the playlist each night and its guide every six hours, the
+added channels' logos, and the stream of a channel while Glasshouse Home
+plays it.
 
 With **Share app icons** on in the MQTT tab (`iconServer` in `config.json`), port 8082 (the dashboard's
 port plus two) answers on the whole network, dual-stack like the dashboard,

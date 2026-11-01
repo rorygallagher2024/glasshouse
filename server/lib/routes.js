@@ -11,6 +11,7 @@ var say = require('./say');
 var localAddress4 = require('./util').localAddress4;
 var localAddress6 = require('./util').localAddress6;
 var listenDualStack = require('./util').listenDualStack;
+var allocBuffer = require('./util').allocBuffer;
 var hostPort = require('./util').hostPort;
 var sendIconFile = require('./iconserver').sendIconFile;
 var writeJsonAtomic = require('./util').writeJsonAtomic;
@@ -84,6 +85,8 @@ var homeModule = null;
 var clockModule = null;
 /** @type {typeof import('./home-picture')} */
 var homePictureModule = null;
+/** @type {typeof import('./iptv')} */
+var iptvModule = null;
 /** @type {typeof import('./screensavers')} */
 var screensaversModule = null;
 /** @type {typeof import('./updater')} */
@@ -738,14 +741,19 @@ function postGuard(req, res, wantType, exact) {
   return true;
 }
 
-function readJsonBody(req, res, cb) {
+function readJsonBody(req, res, cb, max) {
   if (!postGuard(req, res, 'application/json', false)) return;
-  var body = '';
+  var body = '', tooBig = false;
+  // A body in several chunks can split a character: decoding each chunk alone would garble it.
+  req.setEncoding('utf8');
   req.on('data', function (d) {
+    if (tooBig) return;
     body += d;
-    if (body.length > 8192) req.destroy();
+    // Read to the end and answer, rather than drop the connection: the page then says why.
+    if (body.length > (max || 8192)) { tooBig = true; body = ''; }
   });
   req.on('end', function () {
+    if (tooBig) return send(res, 413, JSON.stringify({ ok: false, error: 'too-big' }));
     var j = {};
     try { j = JSON.parse(body); } catch (e) {
       return send(res, 400, JSON.stringify({ ok: false, error: 'malformed JSON' }));
@@ -1221,6 +1229,96 @@ function handleHomeRoute(req, res, u, pathname) {
       }
       send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     });
+  }
+  send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+}
+
+/*
+ * A file a worker checked, piped unread: a logo (its type from its first
+ * bytes) or a guide shard. Never cached by a shared cache: a logo names the
+ * owner's provider.
+ */
+function pipeIptvFile(req, res, file, type) {
+  fs.stat(file, function (err, st) {
+    if (err || !st.isFile()) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+    function go(contentType) {
+      res.writeHead(200, { 'Content-Type': contentType, 'Content-Length': st.size, 'Cache-Control': 'private, max-age=3600' });
+      if (req.method === 'HEAD') return res.end();
+      var stream = fs.createReadStream(file);
+      stream.on('error', function () { res.end(); });
+      stream.pipe(res);
+    }
+    if (type) return go(type);
+    fs.open(file, 'r', function (e, fd) {
+      if (e) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+      var head = allocBuffer(12);
+      fs.read(fd, head, 0, 12, 0, function () {
+        fs.close(fd, function () {});
+        var t = head[0] === 0x89 && head[1] === 0x50 ? 'image/png' : head[0] === 0xff && head[1] === 0xd8 ? 'image/jpeg'
+          : head.toString('ascii', 8, 12) === 'WEBP' ? 'image/webp' : null;
+        if (!t) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+        go(t);
+      });
+    });
+  });
+}
+
+/*
+ * Internet TV (lib/iptv). Nothing here carries a playlist's URL, user name
+ * or password back, except the play URL, which only the TV itself is given:
+ * Home plays it in its own <video>.
+ */
+function handleIptvRoute(req, res, u, pathname) {
+  function reply(r) { send(res, r && r.ok === false ? 400 : 200, JSON.stringify(r)); }
+  var qs = u.query || {};
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    if (pathname === '/api/iptv/playlists') {
+      var st = iptvModule.status();
+      // Whether this page may change anything: the POSTs below say the same.
+      st.writable = !!(config.allowControl || fromTV(req));
+      return reply(st);
+    }
+    if (pathname === '/api/iptv/groups') return iptvModule.groups(String(qs.pl || ''), reply);
+    if (pathname === '/api/iptv/browse') {
+      return iptvModule.browse(String(qs.pl || ''), qs.group === undefined ? null : String(qs.group), +qs.page || 0, reply, +qs.size || 0);
+    }
+    if (pathname === '/api/iptv/lineup') return reply(iptvModule.lineup());
+    if (pathname === '/api/iptv/search') return iptvModule.search(String(qs.pl || ''), String(qs.q || ''), String(qs.group || ''), reply);
+    if (pathname === '/api/iptv/guide') {
+      var nn = iptvModule.nowNext();
+      return reply({ ok: true, guide: nn.guide, nextChange: nn.nextChange });
+    }
+    if (pathname === '/api/iptv/logo') {
+      var logo = iptvModule.logoPath(String(qs.pl || ''), String(qs.id || ''));
+      if (!logo) return send(res, 404, JSON.stringify({ ok: false, error: 'no logo' }));
+      return pipeIptvFile(req, res, logo, null);
+    }
+    if (pathname === '/api/iptv/schedule') {
+      var shard = iptvModule.schedulePath(String(qs.pl || ''), String(qs.key || ''), String(qs.day || ''));
+      if (!shard) return send(res, 404, JSON.stringify({ ok: false, error: 'no schedule' }));
+      return pipeIptvFile(req, res, shard, 'application/json');
+    }
+    if (pathname === '/api/iptv/stream') {
+      // The play URL carries the login on Xtream: for the TV's own Home only.
+      if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
+      var stream = iptvModule.streamUrl(String(qs.pl || ''), String(qs.key || ''));
+      if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      return res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, maxConnections: stream.maxConnections }));
+    }
+  }
+  if (req.method === 'POST') {
+    if (!config.allowControl && !fromTV(req)) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    // A lineup edit can name up to 2,000 channels with their names and groups.
+    return readJsonBody(req, res, function (body) {
+      if (pathname === '/api/iptv/playlists') return iptvModule.playlistsAction(body, reply);
+      if (pathname === '/api/iptv/selection') return iptvModule.setSelection(body, reply);
+      if (pathname === '/api/iptv/lineup') return iptvModule.setLineup(body, reply);
+      if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true));
+      send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+    }, pathname === '/api/iptv/lineup' ? 524288 : 8192);
   }
   send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
 }
@@ -1816,6 +1914,8 @@ function handleRequest(req, res) {
     if (homeModule) return handleHomeRoute(req, res, u, pathname);
   }
 
+  if (pathname.indexOf('/api/iptv/') === 0 && iptvModule) return handleIptvRoute(req, res, u, pathname);
+
   if (pathname === '/api/quickaccess' && req.method === 'POST') {
     if (!config.allowControl) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
@@ -1828,6 +1928,11 @@ function handleRequest(req, res) {
     });
   }
 
+  // What the remote's keys do, on its own for the Home tab's Guide button choice.
+  if (pathname === '/api/remotekeys' && req.method === 'GET') {
+    if (!remoteKeysModule) return send(res, 200, JSON.stringify({ ok: true, supported: false }));
+    return remoteKeysModule.getRemoteKeys(function (rk) { send(res, 200, JSON.stringify(rk || { ok: true, supported: false })); });
+  }
   if (pathname === '/api/remotekeys' && req.method === 'POST') {
     if (!config.allowControl) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
@@ -2055,6 +2160,7 @@ function init(opts) {
   if (opts.home) homeModule = opts.home;
   if (opts.clock) clockModule = opts.clock;
   if (opts.homePicture) homePictureModule = opts.homePicture;
+  if (opts.iptv) iptvModule = opts.iptv;
   if (opts.screensavers) screensaversModule = opts.screensavers;
   if (opts.updater) updaterModule = opts.updater;
   if (opts.logs) logsModule = opts.logs;

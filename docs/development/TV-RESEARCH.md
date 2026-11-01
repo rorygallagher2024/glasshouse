@@ -227,6 +227,68 @@ muted `<video>` with one `<source>`:
 How a busy tuner (a recording) or an encrypted channel shows to the page was
 not tried.
 
+## IPTV streams in a web page (G3, webOS 9.2.2)
+
+Measured on 31 October 2026 on an OLED55G36LA from Glasshouse Home's page,
+with an Xtream account that allows one stream (53,463 live channels behind
+Cloudflare) and a fake provider on the same network (`scripts/fake-iptv.js`):
+
+- A plain `<video>` with `src` set to the account's `live/<user>/<pass>/<id>.m3u8`
+  played it natively: a 302 to a tokenised edge URL, then HLS version 3 with
+  10-second MPEG-TS segments, 1280x720. No MSE player was needed. Desktop
+  Chrome plays the same streams natively too. The provider sent
+  `Access-Control-Allow-Origin: *`, so an MSE player in the page would also
+  have been allowed to read them.
+- Unlike an HDMI app's picture, the stream's picture is included in a
+  `com.webos.service.capture/executeOneShot` `DISPLAY` capture, as an input
+  or channel playing in a page is.
+- The account's `active_cons` (`player_api.php` with no action) read 1 of 1
+  while a channel played, and still 1 of 1 after six channel changes in about
+  five seconds, each releasing the video (`pause()`, `src` removed, `load()`)
+  before the next channel's URL was set.
+- After playing and changing channels, neither `/var/log` (messages,
+  `legacy-log`, `dbg-log` and the rest), `/tmp`'s logs nor the journal held
+  the provider's host, the user name or the password.
+- The provider answered Python's default `User-Agent` with 403 and curl's,
+  and `Glasshouse/<version>`, normally.
+- Its `get_short_epg` left out the programme on now as it neared its end: at
+  19:49 the first listed for one channel started at 20:00, where at 19:07
+  it had listed 19:00 to 20:00. It also listed some programmes twice, with and
+  without "Live:" in front.
+- While a stream plays full screen, videooutput's `MAIN` sink reads
+  `connectedSource: VDEC` for `com.webos.app.home` with `contentType: movie`
+  and the stream's width, and the media state Glasshouse reads (as for an
+  app's video) is `playing`, full screen.
+- The TV's idle screen saver came on 13 minutes after the last key, after
+  the player had been left showing a stream: panel care (eplmanager) refused
+  it and Glasshouse's idle screen saver handling (`lib/idlesaver.js`) lifted
+  the hold and asked again, which it does only when the media state is not
+  `playing`. Whether the stream had stopped by then was not seen.
+- `tvwebctl watch` killed the worker process reading a 200 MB guide three
+  seconds into it, taking a server child still running node for one stuck
+  between fork and exec (`child 14217 stuck before exec` in
+  `tvweb.restarts`).
+
+- Leaving Home for an input while a channel previewed, the TV's one
+  established connection to the stream's edge server was closed within
+  3 seconds (only `TIME_WAIT` remained). The panel's `active_cons` took
+  about 10 seconds to count a new stream and kept counting it for about a
+  minute after it closed.
+- The remote's Guide button does not reach a web page: sent as evdev 362
+  (`IR_KEY_GUIDE` 370 in `/usr/share/X11/xkb/keycodes/lg`, less xkb's 8)
+  with Glasshouse Home in front, webOS opened LG's own broadcast guide.
+  With Glasshouse's key filter set to launch `com.webos.app.home` with
+  `{ "glasshouse": "guide" }` beside the Home key's own parameters, the
+  page got them in `PalmSystem.launchParams` at its `webOSRelaunch`, from
+  Home and from HDMI 4 alike. Info
+  (evdev 358, `IR_KEY_INFO` 366) reaches the page as keyCode 457, and CH+
+  (evdev 402) as 33.
+- Left full screen from 19:51, a stream played on with no screen saver at
+  20:26, 35 minutes after the last key, the media state reading `playing`
+  throughout.
+
+webOS 7 and 10 were not tried.
+
 ## Broadcast HDR and preview metadata (G3, webOS 9.2.2)
 
 Read on 29 October 2026 from the office OLED55G36LA, during an existing

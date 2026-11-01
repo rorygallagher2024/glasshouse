@@ -1808,6 +1808,244 @@ async function visitTvNonOled(browser, base, problems) {
   }
 }
 
+/*
+ * Internet TV on Glasshouse Home, its API answered here: the row with names
+ * tidied, a stream previewed after its dwell with the lease taken, the
+ * preview grown into the player without opening the stream again, the
+ * channel list and a channel change releasing the last stream before the
+ * next, Back to Home, the guide, and the add panel while arranging. Desktop
+ * Chrome cannot play the webOS streams, so the media element is stubbed.
+ */
+async function visitHomeInternetTv(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  const fail = m => problems.push('Home Internet TV: ' + m);
+  page.on('pageerror', e => fail(e.message));
+  // What happened, in order: the page's releases and plays, and the stream requests answered here.
+  const trace = [];
+  await page.exposeFunction('traceTv', e => trace.push(e));
+  await page.addInitScript(() => {
+    window.played = [];
+    window.released = 0;
+    HTMLMediaElement.prototype.load = function () { if (!this.getAttribute('src')) { window.released++; window.traceTv('release'); } };
+    HTMLMediaElement.prototype.pause = function () {};
+    HTMLMediaElement.prototype.play = function () { window.played.push(this.getAttribute('src')); window.traceTv('play ' + this.getAttribute('src')); return Promise.resolve(); };
+    // Chrome fails the made-up stream URLs, and Home would rightly retry once;
+    // the stalls and retries are not what this checks.
+    Object.defineProperty(HTMLMediaElement.prototype, 'onerror', { set: function () {}, get: function () { return null; } });
+  });
+  const tv = [
+    { id: 'p1:x1', pl: 'p1', key: 'x1', name: 'VIP: BBC NEWS \u1d34\u1d30', group: 'UK| NEWS \u1d34\u1d30', number: '1' },
+    { id: 'p1:x2', pl: 'p1', key: 'x2', name: 'VIP: BBC WORLD NEWS \u1d34\u1d30', group: 'UK| NEWS \u1d34\u1d30', number: '2' }
+  ];
+  const now = Date.now(), half = 30 * 60000, at = Math.floor(now / half) * half;
+  const leases = [], streams = [];
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layoutVersion: 1,
+      layout: { rows: ['iptv', 'app'], order: { app: [], dev: [], ch: [], iptv: [] }, sort: {}, hidden: { app: [], dev: [], ch: [], iptv: [] },
+        channels: [], hintSeen: true, searchHintSeen: true, livePreview: true, picture: true },
+      apps: [], devices: [], channels: [], iptv: tv, iptvStatus: { count: 2, label: 'Home IPTV' },
+      sources: { channels: 0, iptv: true }, order: { app: ['lg-home'], dev: [], ch: [], iptv: ['p1:x1', 'p1:x2'] } });
+    if (url.pathname.endsWith('/now')) return reply({ kind: null });
+    return reply({ ok: true, build: 'tv', layoutVersion: 1 });
+  });
+  await page.route('**/api/iptv/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    const req = route.request();
+    if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: { 'p1:x1': [{ start: at, end: at + half * 2, title: 'The World This Weekend' }] } });
+    if (url.pathname.endsWith('/stream')) { streams.push(url.searchParams.get('key')); trace.push('request ' + url.searchParams.get('key')); return reply({ ok: true, url: 'http://s.test/' + url.searchParams.get('key') + '.m3u8', format: 'hls' }); }
+    if (url.pathname.endsWith('/lease')) { leases.push(JSON.parse(req.postData() || '{}')); return reply({ ok: true }); }
+    if (url.pathname.endsWith('/schedule')) {
+      // Filed by the UTC day each programme starts, as the worker writes them.
+      const d = new Date(at), day = d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, '0') + String(d.getUTCDate()).padStart(2, '0');
+      if (url.searchParams.get('key') !== 'x1' || url.searchParams.get('day') !== day) return route.fulfill({ status: 404, json: { ok: false } });
+      return reply([[at, at + half * 2, 'The World This Weekend', 'Reaction']]);
+    }
+    if (url.pathname.endsWith('/playlists')) return reply({ ok: true, playlists: [{ id: 'p1', label: 'Home IPTV', ready: true, channels: 2 }] });
+    if (url.pathname.endsWith('/groups')) return reply({ ok: true, groups: [{ name: 'UK| NEWS', count: 2 }], total: 1, channels: 2 });
+    return reply({ ok: true });
+  });
+  const key = code => page.evaluate(k => { for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: k, bubbles: true })); }, code);
+  const playing = () => page.locator('#pvVideo').dispatchEvent('playing');
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.row[data-key="iptv"] .tile');
+    const names = await page.locator('.row[data-key="iptv"] .tile .nm').allTextContents();
+    if (names[0] !== 'BBC News' || names[2] !== 'Guide') fail('row names ' + JSON.stringify(names));
+    await page.waitForTimeout(900);
+    if (streams[0] !== 'x1' || !(await page.evaluate(() => window.played)).includes('http://s.test/x1.m3u8')) fail('the focused channel was not previewed');
+    if (!leases.some(l => l.on === true && l.full === false)) fail('no lease while previewing');
+    await playing();
+    await page.waitForTimeout(100);
+    await key(13);
+    await page.waitForTimeout(400);
+    if (!/full/.test(await page.locator('#preview').getAttribute('class'))) fail('OK did not grow the preview to the player');
+    if (streams.length !== 1) fail('the preview grown to the player opened the stream again');
+    if (!leases.some(l => l.full === true)) fail('the player did not say it is full screen');
+    await key(13);
+    await page.waitForTimeout(300);
+    if (!/list/.test(await page.locator('#player').getAttribute('class'))) fail('OK in the player did not open the channel list');
+    const releasedBefore = await page.evaluate(() => window.released);
+    await key(40);
+    await key(13);
+    await page.waitForTimeout(900);
+    if (streams[1] !== 'x2') fail('choosing a channel in the list did not play it');
+    if (await page.evaluate(() => window.released) <= releasedBefore) fail('the last stream was not released before the next');
+    const asked = trace.lastIndexOf('request x2'), playedNext = trace.lastIndexOf('play http://s.test/x2.m3u8');
+    const releasedAt = trace.slice(0, asked).lastIndexOf('release'), lastOld = trace.slice(0, asked).lastIndexOf('play http://s.test/x1.m3u8');
+    if (!(releasedAt > lastOld && asked > releasedAt && playedNext > asked)) fail('the channel change did not release, then ask, then play: ' + trace.slice(-6).join(', '));
+    await key(461);
+    await page.waitForTimeout(300);
+    if (/playing/.test(await page.locator('#stage').getAttribute('class'))) fail('Back did not close the player');
+    // OK before the preview's dwell is over: one stream, full screen, and the preview's timer gone with it.
+    await key(37);
+    await page.waitForTimeout(800);
+    const before = streams.length;
+    await key(39);
+    await page.waitForTimeout(100);
+    await key(13);
+    await page.waitForTimeout(1500);
+    if (streams.length !== before + 1) fail('OK during the preview\'s dwell opened ' + (streams.length - before) + ' streams');
+    if (!/full/.test(await page.locator('#preview').getAttribute('class'))) fail('a late preview timer took the player\'s picture back');
+    await key(461);
+    await page.waitForTimeout(300);
+    await key(457);
+    await page.waitForSelector('#guide .gc b');
+    if (await page.locator('#guide .gc b').first().textContent() !== 'The World This Weekend') fail('the guide did not show the schedule');
+    await key(461);
+    await page.waitForTimeout(200);
+    if (/guiding/.test(await page.locator('#stage').getAttribute('class'))) fail('Back did not close the guide');
+    await key(37); await key(37); await key(37);
+    const down = () => page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 13, bubbles: true })));
+    await down();
+    await page.waitForTimeout(1000);
+    await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keyup', { keyCode: 13, bubbles: true })));
+    for (let i = 0; i < 4; i++) await key(39);
+    await key(13);
+    await page.waitForTimeout(500);
+    if (!/adding/.test(await page.locator('#stage').getAttribute('class'))) fail('the Add channels tile did not open the panel');
+    else if (!/UK News/.test(await page.locator('#adItems').textContent())) fail('the add panel did not list the playlist\'s groups');
+  } finally {
+    await page.close();
+  }
+}
+
+/*
+ * The channel manager, on the browser dashboard and in the TV app, against a
+ * made-up provider and lineup: a group added whole, a star, a selection added
+ * and taken out in one edit each, the page closed with Escape, one pane at a
+ * time on a phone, and the TV app's lists from the
+ * remote. Each edit is the POST the server would get.
+ */
+async function visitIptvChannels(browser, base, problems) {
+  const fail = m => problems.push('Internet TV channels: ' + m);
+  const posts = [];
+  const channels = [
+    { id: 'p1:x1', pl: 'p1', key: 'x1', sid: 's00000001', number: '101', name: 'Harbour News', group: 'UK | News' },
+    { id: 'p1:x2', pl: 'p1', key: 'x2', sid: 's00000001', number: '102', name: 'World Today', group: 'UK | News' }
+  ];
+  const lineup = () => ({ ok: true, revision: posts.length, max: 2000, maxFavourites: 60, cut: false,
+    sections: [{ id: 's00000001', kind: 'group', pl: 'p1', group: 'UK | News', name: '', from: 101, start: 101, end: 102, count: 2, state: 'ready', except: 0, playlist: 'Harbour TV' }],
+    channels: channels.map(c => Object.assign({}, c, { fav: posts.some(p => p.action === 'star' && p.id === c.id) })),
+    favourites: posts.filter(p => p.action === 'star').map(p => p.id) });
+  const route = async page => page.route('**/api/iptv/**', r => {
+    const url = new URL(r.request().url());
+    const reply = body => r.fulfill({ json: body });
+    if (r.request().method() === 'POST') {
+      const body = JSON.parse(r.request().postData() || '{}');
+      posts.push(body);
+      return reply({ ok: true, section: body.action === 'add-group' ? 's00000002' : null });
+    }
+    if (url.pathname.endsWith('/playlists')) return reply({ ok: true, writable: true, playlists: [{ id: 'p1', label: 'Harbour TV', ready: true, channels: 20000, groups: 3 }] });
+    if (url.pathname.endsWith('/groups')) return reply({ ok: true, total: 3, channels: 20000,
+      groups: [{ name: 'UK | News', count: 2, section: 's00000001', inLineup: 2 }, { name: 'UK | Sport', count: 2 }, { name: 'DE | Sport', count: 9, hidden: true }] });
+    if (url.pathname.endsWith('/lineup')) return reply(lineup());
+    if (url.pathname.endsWith('/browse')) return reply({ ok: true, total: 2, page: 0, channels: [
+      { key: 'x7', name: 'Harbour Sport 1', group: 'UK | Sport', pl: 'p1' }, { key: 'x8', name: 'Harbour Sport 2', group: 'UK | Sport', pl: 'p1' }] });
+    return reply({ ok: true });
+  });
+  let page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  page.on('pageerror', e => fail(e.message));
+  try {
+    await route(page);
+    await page.goto(base + '/?tab=home&tv=channels');
+    await page.waitForSelector('#tvm:not([hidden]) .tvm-g');
+    if (await page.locator('.tvm-g').count() !== 2) fail('the hidden group was listed');
+    // Shown as "Sport" under a "UK" heading: found by the provider's own name.
+    await page.click('.tvm-g[data-sel="UK | Sport"] .tvm-g-open');
+    if (await page.locator('.tvm-g-pre:has-text("UK")').count() !== 1) fail('the groups were not put under their country');
+    await page.waitForSelector('.tvm-c');
+    if (await page.locator('.tvm-c').count() !== 2) fail('the group\'s channels were not listed');
+    await page.click('button:has-text("Add the whole group")');
+    await page.waitForTimeout(300);
+    if (!posts.some(p => p.action === 'add-group' && p.group === 'UK | Sport' && p.pl === 'p1')) fail('Add the whole group did not add it: ' + JSON.stringify(posts));
+    await page.click('.tvm-sec button[aria-expanded="false"]').catch(() => {});
+    await page.waitForSelector('.tvm-lc .star');
+    await page.locator('.tvm-lc .star').first().click();
+    await page.waitForTimeout(300);
+    if (!posts.some(p => p.action === 'star' && p.id === 'p1:x1')) fail('the star did not star the channel');
+    // A run selected with Shift, and the bar adding all of it in one edit.
+    await page.click('.tvm-c >> nth=0');
+    await page.click('.tvm-c >> nth=1', { modifiers: ['Shift'] });
+    await page.waitForSelector('#tvm-dock:not([hidden])');
+    await page.click('#tvm-dock button:has-text("Add 2 to the lineup")');
+    await page.waitForTimeout(300);
+    if (!posts.some(p => p.action === 'add' && p.channels && p.channels.length === 2)) fail('the bar did not add the selected channels in one edit: ' + JSON.stringify(posts.slice(-1)));
+    // A lineup channel selected, Delete takes it out; Escape clears a selection before it closes the page.
+    await page.click('.tvm-lc .tvm-c-name >> nth=1');
+    await page.keyboard.press('Delete');
+    await page.waitForTimeout(300);
+    if (!posts.some(p => p.action === 'remove' && p.ids && p.ids[0] === 'p1:x2')) fail('Delete did not take the selected channel out');
+    await page.click('.tvm-lc .tvm-c-name >> nth=0');
+    await page.keyboard.press('Escape');
+    if (await page.locator('#tvm').isHidden()) fail('Escape closed the page rather than clearing the selection');
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    if (!(await page.locator('#tvm').isHidden())) fail('Escape did not close the page');
+    if (/tv=channels/.test(page.url())) fail('the address still opens the page');
+  } finally { await page.close(); }
+  page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.on('pageerror', e => fail(e.message));
+  try {
+    await route(page);
+    await page.goto(base + '/?tab=home&tv=channels');
+    await page.waitForSelector('#tvm-tabs button');
+    const shown = await page.locator('.tvm-pane').evaluateAll(els => els.filter(e => getComputedStyle(e).display !== 'none').length);
+    if (shown !== 1) fail(shown + ' panes shown at once on a phone');
+    await page.click('#tvm-tabs button[data-pane="lineup"]');
+    if (!(await page.locator('.tvm-pane[data-pane="lineup"]').isVisible())) fail('the Lineup tab did not show the lineup');
+  } finally { await page.close(); }
+  page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => fail('TV app: ' + e.message));
+  try {
+    await route(page);
+    await page.goto(base + '/assets/dashboard.html?tab=home');
+    // This fake TV has no Glasshouse Home, so no Home tab to open the lineup from: the lists are
+    // shown on the tab that is open instead, opened as the Home tab's row would.
+    await page.waitForFunction(() => typeof rows !== 'undefined' && rows.length > 3, null, { timeout: 15000 });
+    await page.evaluate(() => { ['tvLineup', 'tvSection', 'tvGroups', 'tvGroup'].forEach(k => { SUBTAB[k] = T().key; }); openTv('tvLineup'); });
+    await page.waitForFunction(() => rows.some(r => r.act === 'tvSection'));
+    await page.evaluate(() => { sel = rows.findIndex(r => r.key === 'tvGroups'); render(); });
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => rows.some(r => r.act === 'tvGroupOpen' && r.key === 'UK | Sport'));
+    if (await page.evaluate(() => rows.some(r => r.key === 'DE | Sport'))) fail('TV app: the hidden group was listed');
+    await page.evaluate(() => { sel = rows.findIndex(r => r.key === 'UK | Sport'); render(); });
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => rows.some(r => r.act === 'tvToggle'));
+    await page.evaluate(() => { sel = rows.findIndex(r => r.act === 'tvToggle'); render(); });
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    if (!posts.some(p => p.action === 'add' && p.channels && p.channels[0].key === 'x7')) fail('TV app: OK on a channel did not add it');
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(200);
+    if (await page.evaluate(() => sub) !== 'tvGroups') fail('TV app: Back from a group did not return to the groups');
+  } catch (e) {
+    fail('TV app: ' + e.message.split('\n')[0] + ' (tab ' + await page.evaluate(() => T().key + ', list ' + sub).catch(() => '?') + ')');
+  } finally { await page.close(); }
+}
+
 (async () => {
   const server = await startServer();
   const base = 'http://127.0.0.1:' + server.port;
@@ -1839,9 +2077,11 @@ async function visitTvNonOled(browser, base, problems) {
   await visitHomeMotion(browser, base, problems);
   await visitHomeGuide(browser, base, problems);
   await visitHomeSearch(browser, base, problems);
+  await visitHomeInternetTv(browser, base, problems);
+  await visitIptvChannels(browser, base, problems);
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'TV navigation and LCD profile, Home arranging, picture, preview, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide and search checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+              'TV navigation and LCD profile, Home arranging, picture, preview, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide, search, Internet TV and its channel manager checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

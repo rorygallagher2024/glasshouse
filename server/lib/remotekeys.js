@@ -137,6 +137,14 @@ var SCREEN_OFF = 'action:screenOff';
  * that are reported, where MQTT is on.
  */
 var HOME_ASSISTANT = 'action:homeAssistant';
+/*
+ * Glasshouse Home's Internet TV guide: the key opens Home as the Home key
+ * does, with { glasshouse: 'guide' }, and the view opens its guide. LG's
+ * filters otherwise take the Guide key for LG's own broadcast guide, and the
+ * page never sees it (G3, webOS 9.2.2). Offered while Glasshouse Home is on
+ * with an IPTV playlist (lib/iptv), where the JavaScript filter runs.
+ */
+var HOME_GUIDE = 'action:homeGuide';
 var reportedButtons = require('./remotebuttons').buttonNames;
 
 // webOS 11's native key filters; see the header.
@@ -235,6 +243,9 @@ var SubscriptionCtor = null; // luna.Subscription, to follow LG's settings
 var servicesModule = null;  // to switch LG's voice assistant off and on
 // Whether MQTT is on, for the Home Assistant choice.
 var homeAssistantOn = function () { return false; };
+// Glasshouse Home on, with an IPTV playlist: its guide is a key's choice.
+/** @type {function(): boolean} */
+var homeGuideOn = function () { return false; };
 var messagesPath = MESSAGES_LOG;
 var reapplyDelayMs = 1000;
 
@@ -254,6 +265,7 @@ function init(opts) {
   if (toastsTimer) { clearTimeout(toastsTimer); toastsTimer = null; }
   servicesModule = opts.services || null;
   homeAssistantOn = opts.homeAssistant || function () { return false; };
+  homeGuideOn = opts.homeGuide || function () { return false; };
   messagesPath = opts.messagesPath || MESSAGES_LOG;
   if (typeof opts.reapplyDelayMs === 'number') reapplyDelayMs = opts.reapplyDelayMs;
   muteToastsMs = opts.muteToastsMs || 0;
@@ -488,6 +500,11 @@ function filterSource() {
     '            }',
     '        } else if (id === ' + JSON.stringify(HOME_ASSISTANT) + ') {',
     '            // Nothing on the TV: Glasshouse reads the press from the remote itself.',
+    '        } else if (id === ' + JSON.stringify(HOME_GUIDE) + ') {',
+    '            if (pressed && !autoRepeat) {',
+    '                console.info("glasshouse keyfilter: key", key, "opens Glasshouse Home\'s guide");',
+    '                applicationManager.launch(' + JSON.stringify(HOME_APP) + ', JSON.stringify({ "activateType": "home", "launchType": "homeKey", "glasshouse": "guide" }));',
+    '            }',
     '        } else if (id === ' + JSON.stringify(SCREEN_OFF) + ') {',
     '            if (!pressed && glasshouseScreenOffArmed) console.info("glasshouse keyfilter: key", key, "turns the screen off");',
     '            glasshouseScreenOffKey(pressed, autoRepeat);',
@@ -519,12 +536,47 @@ function readChain(cb) {
 function writeKeys(map, cb, home, starting) {
   var configs = {};
   // The whole value is replaced on each write, so leaving one out clears it.
-  var value = { keys: map };
+  var value = { keys: inEffect(map) };
   if (home) value.home = home;
   if (starting) value.starting = starting;
   configs[MAP_KEY] = value;
   lunaFn('com.webos.service.config/setConfigs', { configs: configs }, function (r) {
     cb(!!(r && r.returnValue));
+  });
+}
+
+/*
+ * The keys as the filter is to act on them: one set to Glasshouse Home's
+ * guide is left to LG while Glasshouse Home is off or has no playlist, as it
+ * would only open Home. The choice stays saved, and acts again once both are
+ * back (availabilityChanged).
+ */
+function inEffect(map) {
+  var out = {}, on = null;
+  for (var k in map) {
+    if (!Object.prototype.hasOwnProperty.call(map, k)) continue;
+    if (map[k] === HOME_GUIDE) {
+      if (on === null) on = homeGuideOn();
+      if (!on) continue;
+    }
+    out[k] = map[k];
+  }
+  return out;
+}
+
+// Glasshouse Home or its playlists came or went: a key set to its guide follows.
+var lastHomeGuide = null;
+function availabilityChanged() {
+  var on = homeGuideOn();
+  if (on === lastHomeGuide) return;
+  var first = lastHomeGuide === null;
+  lastHomeGuide = on;
+  var map = readMap(), set = false;
+  for (var k in map) if (Object.prototype.hasOwnProperty.call(map, k) && map[k] === HOME_GUIDE) set = true;
+  if (!set || !lunaFn) return;
+  applyAny(function (ok) {
+    if (first && on && ok) return;
+    console.log('remotekeys: Guide ' + (on ? 'opens Glasshouse Home\'s guide' : 'left to LG while Glasshouse Home\'s guide is unavailable') + (ok ? '' : ' (not applied)'));
   });
 }
 
@@ -1191,6 +1243,7 @@ function mediaChoices() {
 function actionChoices() {
   var out = [{ id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' }];
   if (homeAssistantOn()) out.push({ id: HOME_ASSISTANT, title: msg('srv.remoteKeys.homeAssistant', 'Home Assistant'), kind: 'ha' });
+  if (homeGuideOn()) out.push({ id: HOME_GUIDE, title: msg('srv.remoteKeys.homeGuide', 'Glasshouse Home\'s guide'), kind: 'action' });
   return out;
 }
 
@@ -1476,6 +1529,7 @@ function restoreFilter(cb) {
 
 module.exports = {
   init: init,
+  availabilityChanged: availabilityChanged,
   getRemoteKeys: getRemoteKeys,
   setRemoteKey: setRemoteKey,
   setHome: setHome,

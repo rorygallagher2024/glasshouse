@@ -339,14 +339,14 @@ step('the LG Home tile cannot be hidden, and unknown rows are dropped', function
   start(null);
   home.setLayout({ hidden: { app: ['lg-home', 'netflix'] }, rows: ['ch', 'bogus'] }, function (r) {
     assert.deepEqual(r.layout.hidden.app, ['netflix']);
-    assert.deepEqual(r.layout.rows, ['ch', 'app', 'rec', 'dev']);
+    assert.deepEqual(r.layout.rows, ['ch', 'app', 'rec', 'dev', 'iptv']);
     done();
   });
 });
 
 step('a layout saved before the Recommended row gets it under Apps', function (done) {
   start({ rows: ['dev', 'app', 'ch'] });
-  assert.deepEqual(home.layout().rows, ['dev', 'app', 'rec', 'ch']);
+  assert.deepEqual(home.layout().rows, ['dev', 'app', 'rec', 'ch', 'iptv']);
   done();
 });
 
@@ -380,7 +380,7 @@ function startRecent(cb) {
   // Opened while the rows are in their own order: nothing is recorded.
   at('netflix');
   home.setLayout({ sort: { app: 'recent', dev: 'recent', ch: 'recent', bogus: 'recent' } }, function (r) {
-    assert.deepEqual(r.layout.sort, { app: 'recent', dev: 'recent', ch: 'recent', rec: 'custom' });
+    assert.deepEqual(r.layout.sort, { app: 'recent', dev: 'recent', ch: 'recent', rec: 'custom', iptv: 'custom' });
     cb();
   });
 }
@@ -434,7 +434,7 @@ step('a device\'s own tile counts for that device, and a row back in its own ord
           // Inputs held the only records, so the file goes with them.
           assert.ok(!fs.existsSync(path.join(dir, 'home-recent.json')), 'a row back in its own order forgets what was opened');
           home.setLayout({ reset: true }, function (r) {
-            assert.deepEqual(r.layout.sort, { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom' });
+            assert.deepEqual(r.layout.sort, { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' });
             done();
           });
         });
