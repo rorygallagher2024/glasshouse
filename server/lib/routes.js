@@ -149,6 +149,7 @@ var HANDOFF_MS = 10 * 60 * 1000;
 
 var UI_HTML = null;
 var UI_HTML_GZ = null;
+var UI_ETAG = null;
 var UI_MISSING = 'ui.html';   // the file named by the missing-assets page
 var ASSET_CACHE = {};
 
@@ -598,6 +599,9 @@ function loadUI() {
       return;
     }
     UI_HTML = page;
+    // From the content, not the version: a deploy of uncommitted changes keeps
+    // the version, and browsers would go on showing the page before them.
+    UI_ETAG = '"' + crypto.createHash('sha1').update(page, 'utf8').digest('hex').slice(0, 16) + '"';
     /*
      * On this thread rather than zlib's worker pool. Node 0.12's process
      * spawning can deadlock (see lunaCached), and startup launches luna-send
@@ -1234,33 +1238,26 @@ function handleRequest(req, res) {
 
   if (pathname === '/' || pathname === '/index.html') {
     if (UI_HTML) {
-      var enc = req.headers['accept-encoding'] || '';
-      var uiEtag = '"' + (displayVersionStr || '1') + '-' + (UI_HTML_GZ ? UI_HTML_GZ.length.toString(16) : Buffer.byteLength(UI_HTML).toString(16)) + '"';
-      if (req.headers && req.headers['if-none-match'] === uiEtag) {
-        res.writeHead(304, { 'ETag': uiEtag, 'Cache-Control': 'no-cache' });
+      var gzip = !!UI_HTML_GZ && (req.headers['accept-encoding'] || '').indexOf('gzip') !== -1;
+      // no-cache, not no-store: the browser keeps the page and asks each
+      // time, and an unchanged one comes back as a 304 with no body.
+      var uiHeaders = {
+        'Cache-Control': 'no-cache',
+        'ETag': UI_ETAG,
+        'Vary': 'Accept-Encoding'
+      };
+      if (req.headers['if-none-match'] === UI_ETAG) {
+        res.writeHead(304, uiHeaders);
         return res.end();
       }
-      if (UI_HTML_GZ && enc.indexOf('gzip') !== -1) {
-        res.writeHead(200, {
-          'Content-Type': 'text/html; charset=utf-8',
-          'Content-Encoding': 'gzip',
-          'Content-Length': UI_HTML_GZ.length,
-          'Cache-Control': 'no-cache',
-          'ETag': uiEtag,
-          'X-Content-Type-Options': 'nosniff',
-          'Referrer-Policy': 'no-referrer'
-        });
-        return res.end(UI_HTML_GZ);
-      }
-      res.writeHead(200, {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Content-Length': Buffer.byteLength(UI_HTML),
-        'Cache-Control': 'no-cache',
-        'ETag': uiEtag,
-        'X-Content-Type-Options': 'nosniff',
-        'Referrer-Policy': 'no-referrer'
-      });
-      return res.end(UI_HTML);
+      var uiBody = gzip ? UI_HTML_GZ : UI_HTML;
+      uiHeaders['Content-Type'] = 'text/html; charset=utf-8';
+      uiHeaders['Content-Length'] = gzip ? UI_HTML_GZ.length : Buffer.byteLength(UI_HTML);
+      if (gzip) uiHeaders['Content-Encoding'] = 'gzip';
+      uiHeaders['X-Content-Type-Options'] = 'nosniff';
+      uiHeaders['Referrer-Policy'] = 'no-referrer';
+      res.writeHead(200, uiHeaders);
+      return res.end(uiBody);
     }
     // 503, not 200: the dashboard is genuinely unavailable, and a monitor
     // polling this should see that rather than a page that says so in prose.

@@ -45,8 +45,15 @@ Older Linux kernels and Node 0.12 can encounter process deadlocks or child leaks
 2. **Internal Daemon Timeout**: Luna calls use `-w 2000` to prevent orphaned background processes if a system bus stalls.
 3. **In-Flight Concurrency Mutex**: If multiple HTTP pollers or MQTT intervals request stats simultaneously, they are coalesced into a single execution pipeline.
 4. **Memory Caching**: Telemetry is cached for 1.5 seconds, delivering sub-20ms HTTP responses with zero subprocess spawning during rapid UI updates.
-5. **Dashboard ETag Caching**: The inlined web dashboard is served with `Cache-Control: no-cache` and a version-pinned ETag, returning 304 Not Modified on revisits without re-transferring the 167 KB gzipped payload.
-6. **Deterministic MQTT Client Session**: Uses a static client ID and periodic availability reaffirmation so TV reboots or network reconnects never leave entities trapped in an "Unavailable" state.
+5. **Deterministic MQTT Client Session**: Uses a static client ID and periodic availability reaffirmation so TV reboots or network reconnects never leave entities trapped in an "Unavailable" state.
+
+### Serving the dashboard
+
+`ui.html` is served with its stylesheet and scripts put back inline, gzipped
+once at start (about 170 KB). It goes out with `Cache-Control: no-cache` and an
+ETag hashed from the page, so a browser keeps it and asks each time, and an
+unchanged page comes back as a 304 with no body. The ETag comes from the content
+rather than the version: a deploy of uncommitted changes keeps the version.
 
 ### What it costs the TV
 
