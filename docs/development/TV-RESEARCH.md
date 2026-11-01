@@ -2513,6 +2513,8 @@ Read only, from `luna-send`:
   `game` as `visible: false`; the picture mode changed, to `normal`, with a
   second toast. Game Optimizer was offered again once the device
   disconnected.
+- `removePairedDevice` takes `{address}` and answers error 1011, "There is no
+  device in paired list", for one that is not paired (C2).
 - `notifyDeviceSelectionMenuEntered` and `onDeviceSelectionMenu` refuse `{}`
   and the payloads tried as not matching their schema; scanning works without
   them.

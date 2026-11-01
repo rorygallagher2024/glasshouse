@@ -424,10 +424,10 @@
       <div class="set" id="sound-bt-set" hidden>
         <div class="lbl" data-t="ctl.btDevice">Bluetooth device</div>
         <div class="bt-pick" id="sound-bt-pick" aria-busy="true">
-          <select id="sound-bt-select" class="bt-select" aria-label="Paired Bluetooth device" data-t-aria-label="ctl.btDevice.label"></select>
+          <select id="sound-bt-select" class="pill-sel" aria-label="Paired Bluetooth device" data-t-aria-label="ctl.btDevice.label"></select>
           <div class="btns bt-pick-btns">
             <button type="button" id="sound-bt-action" hidden></button>
-            <button type="button" id="sound-bt-refresh" onclick="loadAudioBluetooth()" data-t="audio.refresh">Refresh</button>
+            <button type="button" id="sound-bt-refresh" onclick="audioBtRefresh()" data-t="audio.refresh">Refresh</button>
           </div>
         </div>
         <div class="sub" id="sound-bt-note" role="status" hidden></div>
@@ -562,10 +562,10 @@
   <div id="audio-bt" hidden>
     <div class="pv-sec adv-sec" data-t="audio.bt.title">Bluetooth audio</div>
     <div class="audio-head">
-      <div class="pv-sub" data-t="audio.bt.desc">Headphones and speakers paired with the TV. Find devices adds a new one: put it in pairing mode first. Remove one in LG’s own settings.</div>
+      <div class="pv-sub" data-t="audio.bt.desc">Headphones and speakers paired with the TV. Find devices adds a new one: put it in pairing mode first.</div>
       <div class="audio-bt-btns">
         <button type="button" class="pill idle" id="audio-bt-scan-btn" onclick="audioBtScan()" data-t="audio.bt.find">Find devices</button>
-        <button type="button" class="pill idle" id="audio-bt-refresh" onclick="loadAudioBluetooth()" data-t="audio.refresh">Refresh</button>
+        <button type="button" class="pill idle" id="audio-bt-refresh" onclick="audioBtRefresh()" data-t="audio.refresh">Refresh</button>
       </div>
     </div>
     <div class="prot-table" id="audio-bt-list" aria-busy="true"></div>

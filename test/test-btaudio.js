@@ -1,6 +1,6 @@
 /**
- * test/test-btaudio.js - Paired Bluetooth audio: the scan for new devices, and
- * pairing only a device that scan found.
+ * test/test-btaudio.js - Paired Bluetooth audio: the scan for new devices,
+ * pairing only a device that scan found, and removing a paired one.
  */
 
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
@@ -40,6 +40,10 @@ btaudio.init({
     if (uri === SRC + 'getPairedDevices') return cb({ returnValue: true, count: paired.length, devices: paired });
     if (uri === SRC + 'connect') {
       paired.push({ address: payload.address.toUpperCase(), name: 'Buds', state: 'connected', type: 'bt_audio' });
+      return cb({ returnValue: true });
+    }
+    if (uri === SRC + 'removePairedDevice') {
+      paired = paired.filter(function (d) { return d.address.toLowerCase() !== payload.address; });
       return cb({ returnValue: true });
     }
     cb({ returnValue: true });
@@ -109,6 +113,18 @@ function act(action, address) {
   assert.equal(listed.scan.running, false);
   assert.ok(/not ready/.test(listed.scan.error));
   console.log('  ✓ A refused scan ends and reports LG\'s error');
+})();
+
+(function () {
+  var r = act('remove', '00:00:00:00:00:01');
+  assert.equal(r.status, 404, 'only a paired device is removed');
+  r = act('remove', PHONES);
+  var removed = calls.filter(function (c) { return c.uri === SRC + 'removePairedDevice'; });
+  assert.deepEqual(removed[0].payload, { address: PHONES });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.settled, true, 'settled once it has left the paired list');
+  assert.ok(!r.body.devices.some(function (d) { return d.address === PHONES; }));
+  console.log('  ✓ Remove unpairs a paired device and reads it back as gone');
 })();
 
 global.setTimeout = realSetTimeout;

@@ -56,9 +56,9 @@ The Audio tab lists the audio devices paired with the TV (LG's
 **Disconnect** ask that service to connect or drop one listed device, and
 **Find devices** asks it to search for 20 seconds; **Pair** connects a device
 the search found, which pairs it with the TV, as LG's own device selection
-does. All of these happen only when the owner presses the button. Nothing is
-unpaired, the TV's Bluetooth is not switched, and the dashboard does not edit
-firmware or configuration files. LG's service handles the connection and
+does, and **Remove** unpairs one. All of these happen only when the owner
+presses the button. The TV's Bluetooth is not switched, and the dashboard does
+not edit firmware or configuration files. LG's service handles the connection and
 switches the sound output to Bluetooth; it may change the mute state, and on a
 C2 (webOS 9.2.2) LG then changes the picture mode and hides Game Optimizer
 until the device disconnects. Connecting while another device is

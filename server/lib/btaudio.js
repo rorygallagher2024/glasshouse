@@ -4,8 +4,8 @@
  *
  * LG's btaudiosrc service owns the TV-to-speaker link and routes the sound, so
  * it is used rather than the raw bluetooth2 A2DP calls. Only what the owner
- * chooses is sent: a scan for new devices when asked, and nothing connects or
- * pairs on its own. No unpairing, adapter power or reads from the remote device.
+ * chooses is sent: a scan for new devices when asked, and nothing connects,
+ * pairs or unpairs on its own. No adapter power or reads from the remote device.
  *
  * Pairing is btaudiosrc's connect on a device its scan found: it pairs, then
  * connects, as LG's own device selection does (webOS 4.4.3 and 9.2.2).
@@ -25,8 +25,16 @@ var ADDRESS = /^[0-9a-f]{2}(:[0-9a-f]{2}){5}$/i;
 var ACTIONS = {
   connect: { from: 'disconnected', to: 'connected' },
   disconnect: { from: 'connected', to: 'disconnected' },
-  pair: { from: null, to: 'connected' }
+  pair: { from: null, to: 'connected' },
+  // Settled when the device has left the paired list.
+  remove: { from: null, to: 'removed' }
 };
+var LG_METHOD = { connect: 'connect', disconnect: 'disconnect', pair: 'connect', remove: 'removePairedDevice' };
+
+function reached(devices, address, state) {
+  var device = devices.filter(function (d) { return d.address === address; })[0];
+  return state === 'removed' ? !device : !!device && device.state === state;
+}
 // LG's scan runs up to 90 s; a speaker in pairing mode answered within a few.
 var SCAN_MS = 20000;
 var scan = { running: false, found: [], error: '', sub: null, timer: null };
@@ -65,9 +73,8 @@ function readPaired(cb) {
   luna(SERVICE + 'getPairedDevices', {}, function (r) {
     if (r && r.returnValue === true && Array.isArray(r.devices)) {
       var devices = audioDevices(r);
-      if (pendingAction && (Date.now() >= pendingAction.until || devices.some(function (d) {
-        return d.address === pendingAction.address && d.state === pendingAction.state;
-      }))) pendingAction = null;
+      if (pendingAction && (Date.now() >= pendingAction.until ||
+        reached(devices, pendingAction.address, pendingAction.state))) pendingAction = null;
       return cb('ok', devices);
     }
     var text = r && typeof r.errorText === 'string' ? r.errorText : '';
@@ -199,7 +206,7 @@ function act(action, address, cb) {
       return finish(409, { ok: false, devices: devices, error: action === 'connect'
         ? msg('srv.btaudio.notDisconnected', 'that device is not disconnected') : msg('srv.btaudio.notConnected', 'that device is not connected') });
     }
-    luna(SERVICE + (action === 'pair' ? 'connect' : action), { address: device.address }, function (reply) {
+    luna(SERVICE + LG_METHOD[action], { address: device.address }, function (reply) {
       var accepted = !!reply && reply.returnValue === true;
       var refused = reply && typeof reply.errorText === 'string' ? reply.errorText : '';
       if (clearLunaCache) clearLunaCache();
@@ -207,9 +214,7 @@ function act(action, address, cb) {
       readPaired(function (readKind, after) {
         var unknown = !reply || (reply.returnValue !== true && reply.returnValue !== false && !refused);
         var body = { ok: accepted, accepted: accepted, devices: readKind === 'ok' ? after : devices, settled: false };
-        if (readKind === 'ok') {
-          after.forEach(function (d) { if (d.address === target) body.settled = d.state === wanted.to; });
-        }
+        if (readKind === 'ok') body.settled = reached(after, target, wanted.to);
         if (unknown) body.ok = true;  // A missing answer is not a refusal or proof of connection.
         body.pending = body.ok && !body.settled;
         if (body.pending) pendingAction = { address: target, state: wanted.to, until: Date.now() + SETTLE_WAIT_MS };

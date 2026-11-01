@@ -27,9 +27,9 @@ and again after a button is used; it is not polled.
 To add a new speaker or headphones, put it in pairing mode, then press
 **Find devices** on the Audio tab. The search takes 20 seconds and lists the
 audio devices it hears that are not paired yet; **Pair** pairs one and
-switches the sound to it. Remove devices in LG's own settings: the dashboard
-does not unpair, switch the TV's Bluetooth off or on, or connect anything by
-itself.
+switches the sound to it. **Remove** unpairs a device from the TV, after a
+confirmation; it has to be paired again before it can be used. The dashboard
+does not switch the TV's Bluetooth off or on, or connect anything by itself.
 
 While Bluetooth audio is connected, LG takes Game Optimizer out of the
 picture modes and may switch the picture mode, with its own message on

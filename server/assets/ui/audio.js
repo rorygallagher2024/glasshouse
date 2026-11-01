@@ -212,6 +212,14 @@ async function loadAudioBluetooth() {
   audioBtRecheck();
 }
 
+// Refresh pressed: a read can finish in a few ms, so the buttons say so for a moment.
+async function audioBtRefresh() {
+  const ids = ['audio-bt-refresh', 'sound-bt-refresh'];
+  for (const id of ids) q(id).textContent = t('audio.bt.refreshing', 'Refreshing…');
+  await Promise.all([loadAudioBluetooth(), new Promise(r => setTimeout(r, 600))]);
+  for (const id of ids) q(id).textContent = t('audio.refresh', 'Refresh');
+}
+
 // Reads again while a scan runs or a request is still settling.
 function audioBtRecheck() {
   clearTimeout(audioBtFollowTimer);
@@ -226,7 +234,7 @@ function audioBtCheckFollow() {
   const d = audioBt.devices.find(x => x.address === f.address);
   const wanted = f.action === 'disconnect' ? 'disconnected' : 'connected';
   const waited = Date.now() - f.since;
-  if (d && d.state === wanted) {
+  if (f.action === 'remove' ? !d : d && d.state === wanted) {
     audioBtFollow = null;
     audioBtNote('');
     // A device just paired leaves the scan's list, which would then read as finding nothing.
@@ -234,7 +242,7 @@ function audioBtCheckFollow() {
     loadAudio(true);
     return;
   }
-  const gaveUp = f.action !== 'disconnect' && d && d.state === 'disconnected' && waited > 6000;
+  const gaveUp = (f.action === 'connect' || f.action === 'pair') && d && d.state === 'disconnected' && waited > 6000;
   if (!gaveUp && waited < AUDIO_BT_FOLLOW_MS) return;
   audioBtFollow = null;
   audioBtNote('');
@@ -242,7 +250,9 @@ function audioBtCheckFollow() {
     ? t('audio.bt.pairFailed', 'Couldn’t pair with {name}. Check it is still in pairing mode and nearby, then find devices again.', { name: f.name })
     : f.action === 'connect'
       ? t('audio.bt.connectFailed', 'Couldn’t connect to {name}. Check it is switched on and nearby.', { name: f.name })
-      : t('audio.bt.disconnectSlow', '{name} has not disconnected yet. Refresh to check again.', { name: f.name }));
+      : f.action === 'remove'
+        ? t('audio.bt.removeSlow', '{name} is still paired. Refresh to check again.', { name: f.name })
+        : t('audio.bt.disconnectSlow', '{name} has not disconnected yet. Refresh to check again.', { name: f.name }));
 }
 
 async function audioBtScan() {
@@ -275,6 +285,7 @@ function renderAudioBluetoothScan(idle) {
   btn.disabled = !idle || scan.running;
   btn.hidden = audioBt.writable !== true;
   q('audio-bt-scan').hidden = !audioBtScanned && !scan.running && !scan.found.length;
+  q('audio-bt-scan').classList.toggle('none', !scan.found.length);
   q('audio-bt-scan-note').textContent = scan.running
     ? t('audio.bt.searching', 'Looking for speakers and headphones in pairing mode…')
     : scan.error ? t('audio.bt.scanFailed', 'The TV could not search for devices: {error}', { error: scan.error })
@@ -316,13 +327,17 @@ function renderAudioBluetooth() {
       : doing === 'disconnect' ? t('audio.bt.disconnecting', 'Disconnecting…')
       : action === 'connect' ? t('audio.bt.connect', 'Connect') : t('audio.bt.disconnect', 'Disconnect');
     const button = action
-      ? `<button type="button" class="pill ${doing ? 'busy' : action === 'connect' ? 'good' : 'idle'}" data-bt-address="${esc(d.address)}" data-bt-action="${action}"` +
+      ? `<button type="button" class="pill ${doing === action ? 'busy' : action === 'connect' ? 'good' : 'idle'}" data-bt-address="${esc(d.address)}" data-bt-action="${action}"` +
         ` aria-label="${esc(t('audio.bt.actionFor', '{action}: {name}', { action: label, name }))}"` +
         `${idle ? '' : ' disabled'}>${esc(label)}</button>`
       : '';
+    const removeLabel = doing === 'remove' ? t('audio.bt.removing', 'Removing…') : t('audio.bt.remove', 'Remove');
+    const remove = `<button type="button" class="pill ${doing === 'remove' ? 'busy' : 'bad'}" data-bt-address="${esc(d.address)}" data-bt-action="remove"` +
+      ` data-bt-name="${esc(name)}" aria-label="${esc(t('audio.bt.actionFor', '{action}: {name}', { action: removeLabel, name }))}"` +
+      `${idle ? '' : ' disabled'}>${esc(removeLabel)}</button>`;
     return '<div class="prot-row"><div class="prot-main"><div class="prot-title">' + esc(name) + '</div>' +
       '<div class="prot-desc">' + esc(audioBtStateLabel(d.state)) + '</div></div>' +
-      '<div class="prot-status">' + button + '</div></div>';
+      '<div class="prot-status">' + button + remove + '</div></div>';
   }).join('') || (audioBt.available === false || q('audio-bt-error').hidden === false ? '' :
     '<div class="prot-row"><div class="prot-main"><div class="prot-desc">' +
     esc(t('audio.bt.none', 'No paired Bluetooth audio devices.')) + '</div></div></div>');
@@ -372,7 +387,9 @@ function renderSoundBluetooth(idle) {
 async function audioBluetoothAct(address, action, foundName) {
   if (audioBtBusy || audioBtFollow) return;
   const other = audioBt.devices.find(d => d.address !== address && d.state === 'connected');
-  if (action !== 'disconnect' && other && !confirm(t('audio.bt.switchConfirm',
+  if (action === 'remove' && !confirm(t('audio.bt.removeConfirm',
+    'Remove {name} from the TV? It will need pairing again before it can be used.', { name: foundName || t('audio.bt.unnamed', 'Unnamed device') }))) return;
+  if ((action === 'connect' || action === 'pair') && other && !confirm(t('audio.bt.switchConfirm',
     'Connecting another device may disconnect {name} and change the sound output. Continue?',
     { name: other.name || t('audio.bt.unnamed', 'Unnamed device') }))) return;
   const fromControl = !!(document.activeElement && document.activeElement.closest('#sound-bt-set'));
@@ -398,6 +415,7 @@ async function audioBluetoothAct(address, action, foundName) {
     else if (!r.settled) {
       audioBtFollow = { address, action, name, since: Date.now() };
       note = action === 'pair' ? t('audio.bt.pairWait', 'Pairing with {name}…', { name })
+        : action === 'remove' ? t('audio.bt.removeWait', 'Removing {name}…', { name })
         : action === 'connect' ? t('audio.bt.connectWait', 'Connecting to {name}…', { name })
         : t('audio.bt.disconnectWait', 'Disconnecting {name}…', { name });
     }
