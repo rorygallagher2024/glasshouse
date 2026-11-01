@@ -728,6 +728,17 @@ G3 in the UK.
   `keyboardStateChange` with `detail.visibility` fires on the document, not
   the window. `com.webos.service.ime/insertText` and `sendEnterKey` type
   into it over SSH.
+- **webOS 4 (B8, 4.4.3) answers the same search** with less in each title:
+  no `type` (the result list's `domain`, `movie` or `tvshow`, gives it), no
+  `display_info` and no `action_on_click`. LG's Search there asks for the
+  detail of `content_set_id` and `content_id` joined by `|`, through
+  `serviceName` `sdp_secure`; `sdp_onnow` answers `code` `0`, `Error`, with no
+  response. On 1 November 2026 Disney+'s and Prime Video's The Office had
+  `exec_list` entries; Netflix's titles and a Prime Video film were `ERROR
+  ITEM NOT FOUND`. Netflix's `content_id` is its own launch string (`-Q
+  m=http://api-global.netflix.com/catalog/titles/...&source_type=4`). LG's
+  Search puts the `exec_id` into the app's `deeplinkingParams` itself, after
+  `getAppInfo`, or gives it as `contentTarget` where the app has none.
 
 ## Channels and the guide (G3, webOS 9.2.2)
 
@@ -1812,6 +1823,21 @@ webOS 4 next.
 - Device: 55UM7100PLB (2019 LCD), webOS 4.10.2, firmware 05.40.97,
   `core_os_kernel_version` `4.4.84-p.649.grampians.k5lp.1`, `core_os_name`
   `Rockhopper`, `webos_imagename` `starfish-dvb-secured`.
+
+## Glasshouse Home on webOS 4 (webOS 4.4.3, B8)
+
+Tested on an OLED65B8SLC (webOS 4.4.3, firmware 05.50.70) in October 2026.
+
+- **Standalone app rather than takeover:** On webOS 4 LG's launcher is an in-compositor ribbon rendered directly by LSM, triggered by Linux evdev 125 (`Qt.Key_Super_L`). Rather than mounting over an app, Glasshouse Home runs as a standalone web app `com.tvweb.home`.
+- **Compositor key filter:** Directing the remote's Home button to Glasshouse Home sets `glasshouse.remoteKeys.home` in configd. LSM's key filter (`remotekeys-filter.js`) intercepts `Qt.Key_Super_L` and launches `com.tvweb.home`.
+- **Escaping to LG ribbon:** Escaping to LG's native launcher (via the "LG Home" tile or holding Home) clears `glasshouse.remoteKeys.home` in configd and injects evdev key 125 after a 300 ms delay, and the ribbon opens over `com.tvweb.home`. If key 125 is injected while the filter is active, LSM catches it and relaunches `com.tvweb.home`. The app is not closed from outside: on 22 September 2026, closing the app in front from outside made this B8 relaunch the last input mid-teardown, after which HDMI opened no more until a reboot.
+- **Rearming:** the ribbon opens over the view, so sam's foreground stays `com.tvweb.home` while it is open, and whatever is picked from it, an input included, comes to the front after it. That change rearms the key filter, so the next Home press opens Glasshouse Home.
+- **Switching off:** the view closes itself with `window.close()` when its heartbeat answers `enabled: false`, as Back closes it.
+- **Under the screen saver:** it opens over the standalone view without hiding it, so the page went on drawing its drifting wallpaper: the web app manager at 22% and the page at 12%, the screen saver's `qml-runner` at 2% and stuttering. With the page resting while covered (wallpaper hidden and paused), they read 0.7%, 0.3% and 9.2%. With the view in front and idle, the two took about 40% between them.
+- **After a boot:** the remote key filter holds the Home key for 90 s while its `starting` notice is set, until `com.webos.app.home` is Glasshouse Home's web app, which on webOS 4 it never is; Home only showed the notice. The server then took the unanswered press for a stopped WebAppMgr, found no `systemctl` to start it with (webOS 4 runs upstart), and gave LG's ribbon the Home key. The notice is not set on webOS 4, and a press the view does not answer opens it once more before LG's ribbon is used. The boot hook opens the page before the server, which takes about a minute to answer on a B8 (4.4.3): the page's first load failed, it showed "not answering" and asked for LG's ribbon, which came up over it once the server did. On webOS 4 that request is ignored, and the page shows the fault only after a minute without the server.
+- **Which ports are plugged in:** `eim/getAllInputStatus` gives each HDMI port `activate`, `chosen`, `subCount` and `lastUniqueId`, but neither `hdmiPlugIn` nor `connected`, so Glasshouse Home showed all four as Connected with only HDMI 2 in use. The Metrics tab's reading, a CEC device behind the port (`lastUniqueId` other than 255, or `subCount`) or a link on its receiver, is used instead.
+- **Dismissal on Back:** `window.PalmSystem.platformBack()` is a no-op on standalone web apps on webOS 4; `window.close()` cleanly dismisses the app.
+- **Chromium 53 ICU locale:** `Date#toLocaleDateString(undefined, ...)` defaults to Korean (`ko`) in Chromium 53 on webOS 4; passing `'en-US'` explicitly produces English date strings.
 
 ## What the TV opens as it starts (G5, webOS 10.3.1)
 

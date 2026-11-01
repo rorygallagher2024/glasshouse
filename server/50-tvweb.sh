@@ -227,7 +227,9 @@ home_open_at_boot() {
     echo "$(date): Glasshouse Home not opened: ${front:-nothing} in front since the start on $boot_app"
     return 0
   fi
-  luna-send -n 1 luna://com.webos.applicationManager/launch '{"id":"com.webos.app.home"}' 2>/dev/null |
+  target_home=com.webos.app.home
+  [ "$webos_major" = "4" ] && target_home=com.tvweb.home
+  luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$target_home\"}" 2>/dev/null |
     grep -q '"returnValue": *true' || return 0
   home_opened=1
   # The server watches for the view from its start and opens LG's Home if it
@@ -257,6 +259,8 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): sam did not take Glasshouse Home - LG's Home kept"
   fi
+elif [ "$webos_major" = "4" ] && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
+  home_open_at_boot
 fi
 
 # LG's screen saver ships as QML up to webOS 9 and as Flutter from webOS 10.

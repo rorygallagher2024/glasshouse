@@ -13,17 +13,16 @@
 <body>
 
 <header>
-  <div class="hdr-left">
-    <div class="mark">
-      <div class="mark-tv"><span id="brand">&mdash;</span><span id="model" class="num">&mdash;</span></div>
-    </div>
-  </div>
-  <div class="src">
+  <div class="src now">
     <div class="st" id="state"><i></i><span>&mdash;</span></div>
     <div class="t" id="source">&mdash;</div>
     <div class="stream-info">
       <div class="stream-primary num" id="stream-primary">&mdash;</div>
     </div>
+  </div>
+  <div class="hdr-status">
+    <div class="hdr-line num" id="hdr-volume" hidden></div>
+    <div class="hdr-line" id="hdr-sleep" hidden></div>
   </div>
 </header>
 
@@ -54,7 +53,7 @@
         <path d="M358 214 L256 134 L154 214 V342 A34 34 0 0 0 188 376 H324 A34 34 0 0 0 358 342 V286 H272"
               fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span class="sidenav-title" translate="no">Glasshouse</span>
+      <span class="sidenav-titles"><span class="sidenav-title" translate="no">Glasshouse</span><span class="sidenav-tv" id="nav-tv" translate="no"></span></span>
     </span>
     <button type="button" class="nav-close" onclick="closeNav()" aria-label="Close menu" data-t-aria-label="nav.close">&times;</button>
   </div>
@@ -1755,6 +1754,7 @@
 </main>
 
 <footer>
+  <span class="foot-tv" id="foot-tv" translate="no"></span>
   <span class="foot-end"><span id="activity-txrx" class="activity-txrx" aria-hidden="true"><span id="act-tx" class="txrx-pip"></span><span id="act-rx" class="txrx-pip"></span></span><span id="tv-name" hidden></span><a id="version" hidden target="_blank" rel="noopener noreferrer"></a><a id="version-new" hidden target="_blank" rel="noopener noreferrer"></a><button type="button" class="theme-toggle" id="theme-toggle">☾</button></span>
 </footer>
 

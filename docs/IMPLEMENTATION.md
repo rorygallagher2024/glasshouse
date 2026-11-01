@@ -1497,7 +1497,11 @@ Video and HBO Max open at the first season's page; other apps, whose season
 links do not open (Disney+) or which have only playback links (BBC iPlayer),
 play the first episode. Apple TV and Netflix list no seasons and keep LG's
 link. An LG item id less its first `|` and LG's service tag (`AMAZON_`) is the
-app's own id, used where the detail names none. Trailers are never listed or
+app's own id, used where the detail names none. webOS 4 lists the same
+titles with neither a type nor an item id: the type is the category each is
+listed under, the item id its `content_set_id|content_id`, its detail comes
+through `sdp_secure` where `sdp_onnow` does not answer, and the id is put
+into the app's template from `getAppInfo`, as LG's Search there does. Trailers are never listed or
 opened: LG marks none, and lists Prime Video's sneak peeks as films and its
 trailers as episodes, so a title or episode is taken for one by a promo word
 (trailer, teaser, sneak peek, preview, first look) with a running time of 15
