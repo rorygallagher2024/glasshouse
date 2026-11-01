@@ -1305,6 +1305,32 @@
   </div>
 
   <div class="pv-sec adv-sec" data-t="home.wall.title">Wallpaper</div>
+  <div class="prot-table">
+    <div class="prot-row" id="home-anim-row">
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.anim">Animated background</div>
+        <div class="prot-desc" data-t="home.animDesc">Light that moves slowly behind Glasshouse Home, drawn in place of the pictures. It stops whenever Home is not on screen.</div>
+      </div>
+      <div class="prot-status home-anims" id="home-anims">
+        <button type="button" class="pill idle" data-anim="off" onclick="homeAnim('off')" data-t="home.anim.off">Off</button>
+        <button type="button" class="pill idle" data-anim="waves" onclick="homeAnim('waves')" data-t="home.anim.waves">Light waves</button>
+        <button type="button" class="pill idle" data-anim="particles" onclick="homeAnim('particles')" data-t="home.anim.particles">Particles</button>
+        <button type="button" class="pill idle" data-anim="aquarium" onclick="homeAnim('aquarium')" data-t="home.anim.aquarium">Aquarium</button>
+        <button type="button" class="pill idle" data-anim="aurora" onclick="homeAnim('aurora')" data-t="home.anim.aurora">Aurora</button>
+        <button type="button" class="pill idle" data-anim="glow" onclick="homeAnim('glow')" data-t="home.anim.glow">Glow</button>
+        <button type="button" class="pill idle" data-anim="stars" onclick="homeAnim('stars')" data-t="home.anim.stars">Constellations</button>
+        <button type="button" class="pill idle" data-anim="ripples" onclick="homeAnim('ripples')" data-t="home.anim.ripples">Ripples</button>
+      </div>
+    </div>
+  </div>
+  <div id="home-anim-colours">
+    <div class="sub" data-t="home.animColoursDesc">The colours of the animated background: following the part of the day, a preset, or a background and a light colour of your own. In the aquarium they are the water and the light through it.</div>
+    <div class="home-looks" id="home-anim-themes"></div>
+    <div class="home-custom">
+      <label><input type="color" id="home-anim-sky" onchange="homeAnimCustom()"> <span data-t="home.animSky">Background</span></label>
+      <label><input type="color" id="home-anim-light" onchange="homeAnimCustom()"> <span data-t="home.animLight">Light</span></label>
+    </div>
+  </div>
   <div class="sub" data-t="home.wall.introSets">A picture behind Glasshouse Home for each part of the day: none, one of the picture sets, or your own.</div>
   <div class="btns wall-choice" id="home-wall-choice"></div>
   <!-- The day as Glasshouse Home shows it: each part's picture across its hours, and where the day is now -->

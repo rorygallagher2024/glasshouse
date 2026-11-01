@@ -1707,6 +1707,12 @@ button.home-look:active{background:none}
 .home-look-row{position:absolute;left:10px;bottom:9px;font-size:10px;color:var(--look-text);opacity:.69}
 .home-look-screen i{position:absolute;right:10px;bottom:11px;width:7px;height:7px;border-radius:50%;background:var(--look-accent)}
 .home-look-name{font-size:13px;opacity:.8}
+/* Eight choices: under the description, across the row, rather than beside it. */
+#home-anim-row{flex-direction:column;align-items:stretch;gap:10px}
+.home-anims{display:flex;flex-wrap:wrap;gap:6px}
+.home-anims .pill{width:auto;min-width:0;flex:0 0 auto}
+.home-anim-band{position:absolute;left:-10%;right:-10%;top:52%;height:9px;border-radius:50%;opacity:.75;transform:rotate(-8deg);
+  box-shadow:0 0 10px 2px currentColor}
 .home-look.picked .home-look-name{opacity:1;font-weight:600}
 .home-look:disabled{cursor:default;opacity:.6}
 .home-custom{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin:4px 0 8px}

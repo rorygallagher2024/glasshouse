@@ -65,6 +65,19 @@ var PROMO_APPS = ['com.webos.app.lgchannels', 'com.webos.app.sportsteamsettings'
   'com.webos.app.lifeonscreen', 'amazon.alexa.view', 'com.webos.app.camera'];
 // The view's own way back to LG's Home: last in the Apps row, and never hidden.
 var LG_HOME_TILE = 'lg-home';
+// The moving backgrounds the view can draw in place of the wallpaper pictures.
+var WALL_ANIMS = ['off', 'waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
+// The moving backgrounds' colours: auto follows the part of the day; a preset
+// or custom is a background colour and a colour for the light drawn over it.
+var ANIM_THEMES = [
+  { id: 'auto' },
+  { id: 'blue', sky: '#0a1f5c', light: '#4f8dff' },
+  { id: 'sunset', sky: '#3a0f3d', light: '#ff8a4c' },
+  { id: 'emerald', sky: '#04342e', light: '#3ee0b0' },
+  { id: 'ember', sky: '#3a0808', light: '#ff5a3c' },
+  { id: 'silver', sky: '#15181e', light: '#d8dee8' }
+];
+var HEX_COLOUR = /^#[0-9a-f]{6}$/i;
 // The Inputs row's tile for the TV's own tuner, which opens Live TV.
 var TUNER_TILE = 'tv';
 /*
@@ -333,6 +346,13 @@ function defaults() {
     previewAlways: false,
     // The live preview in the tile it shows, rather than beside the clock.
     previewInTile: false,
+    // A moving background drawn by the view in place of the pictures: off,
+    // or one of WALL_ANIMS.
+    wallAnim: 'off',
+    // Their colours: one of ANIM_THEMES' ids, or custom with animSky and animLight.
+    animTheme: 'auto',
+    animSky: '#0a1f5c',
+    animLight: '#4f8dff',
     // The rows centred below the top strip, or along the bottom as on LG's Home.
     rowsBottom: false,
     // standard, or alternative: a smaller clock on the right, and the rows
@@ -417,6 +437,10 @@ function normalise(raw) {
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.previewAlways = raw.previewAlways === true;
   d.previewInTile = raw.previewInTile === true;
+  d.wallAnim = WALL_ANIMS.indexOf(raw.wallAnim) !== -1 ? raw.wallAnim : 'off';
+  d.animTheme = raw.animTheme === 'custom' || ANIM_THEMES.some(function (th) { return th.id === raw.animTheme; }) ? raw.animTheme : 'auto';
+  d.animSky = HEX_COLOUR.test(raw.animSky) ? String(raw.animSky).toLowerCase() : d.animSky;
+  d.animLight = HEX_COLOUR.test(raw.animLight) ? String(raw.animLight).toLowerCase() : d.animLight;
   d.search = raw.search === true;
   d.recommended = raw.recommended === true;
   // Its cards come and go with the apps' lists, so it keeps no order of its own.
@@ -562,6 +586,10 @@ function setLayout(body, cb) {
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
+    wallAnim: body.wallAnim !== undefined ? body.wallAnim : c.wallAnim,
+    animTheme: body.animTheme !== undefined ? body.animTheme : c.animTheme,
+    animSky: body.animSky !== undefined ? body.animSky : c.animSky,
+    animLight: body.animLight !== undefined ? body.animLight : c.animLight,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
@@ -599,7 +627,8 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, previewAlways: c.previewAlways, previewInTile: c.previewInTile, colours: c.colours,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
+    animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
 }

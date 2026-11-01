@@ -935,6 +935,21 @@ function homeItemTitle(kind, id) {
   return null;
 }
 
+function homeAnimThemeNames() {
+  return { auto: t('home.animTheme.auto', 'Time of day'), blue: t('home.animTheme.blue', 'Night blue'),
+    sunset: t('home.animTheme.sunset', 'Sunset'), emerald: t('home.animTheme.emerald', 'Emerald'),
+    ember: t('home.animTheme.ember', 'Ember'), silver: t('home.animTheme.silver', 'Silver'),
+    custom: t('home.animTheme.custom', 'Your own') };
+}
+
+// The animated backgrounds, in the order OK steps through them.
+function homeAnims() {
+  return [['off', t('home.anim.off', 'Off')], ['waves', t('home.anim.waves', 'Light waves')],
+          ['particles', t('home.anim.particles', 'Particles')], ['aquarium', t('home.anim.aquarium', 'Aquarium')],
+          ['aurora', t('home.anim.aurora', 'Aurora')], ['glow', t('home.anim.glow', 'Glow')],
+          ['stars', t('home.anim.stars', 'Constellations')], ['ripples', t('home.anim.ripples', 'Ripples')]];
+}
+
 function homeRows(d) {
   homeData = d;
   if (!d || d.ok === false || !d.supported) return [head(t('home.title', 'Glasshouse Home'))];
@@ -1290,6 +1305,23 @@ function glasshouseHomeRows(d) {
     });
     var walls = d.wallpapers || {};
     r.push(head(t('home.wall.title', 'Wallpaper')));
+    var anims = homeAnims(), animNow = d.layout ? d.layout.wallAnim || 'off' : 'off', animAt = 0, ai;
+    for (ai = 0; ai < anims.length; ai++) if (anims[ai][0] === animNow) animAt = ai;
+    var animNext = anims[(animAt + 1) % anims.length];
+    r.push({ label: t('home.anim', 'Animated background'), value: anims[animAt][1], cls: animNow === 'off' ? 'off' : 'on',
+             act: can && d.layout ? 'homeAnim' : null, key: animNext[0],
+             press: t('tv.home.colours.press', 'Press OK for {name}', { name: animNext[1] }),
+             hint: t('home.animDesc', 'Light that moves slowly behind Glasshouse Home, drawn in place of the pictures. It stops whenever Home is not on screen.') });
+    // Its colours, while one is chosen: OK steps through the presets; colours of one's own are picked in a browser.
+    if (d.layout && animNow !== 'off') {
+      var themeNames = homeAnimThemeNames(), themes = (d.layout.animThemes || []).map(function (th) { return th.id; });
+      var themeNow = d.layout.animTheme || 'auto', themeAt = themes.indexOf(themeNow);
+      var themeNext = themes[(themeAt + 1) % themes.length] || 'auto';
+      r.push({ label: t('home.animColours', 'Background colours'), value: themeNames[themeNow] || themeNow, cls: 'on',
+               act: can ? 'homeAnimTheme' : null, key: themeNext,
+               press: t('tv.home.colours.press', 'Press OK for {name}', { name: themeNames[themeNext] || themeNext }),
+               hint: t('home.animColoursTv', 'Colours of one\u2019s own are picked on the browser dashboard\u2019s Home tab.') });
+    }
     // Black, a picture set, or the owner's own, which are uploaded from a browser.
     var wallNames = { black: t('home.wall.setBlack', 'Black'), landscape: t('home.wall.setLandscape', 'Landscape'),
       abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own') };
@@ -2968,6 +3000,10 @@ function activate() {
       var flagChange = {};
       flagChange[r.key] = !r.on;
       return homeLayout(flagChange);
+    case 'homeAnim':
+      return homeLayout({ wallAnim: r.key });
+    case 'homeAnimTheme':
+      return homeLayout({ animTheme: r.key });
     case 'homeShow':
       var showChange = {};
       showChange[r.key] = !r.on;

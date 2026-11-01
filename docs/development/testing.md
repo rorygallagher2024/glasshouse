@@ -123,6 +123,11 @@ off releases its media source. Desktop media methods are stubbed; webOS
 decoding, sound and CEC still need a real TV.
 Delayed guide and catalogue replies cannot reopen a preview after **OK**;
 a refused launch or returning to Home allows it again.
+A browser check opens Glasshouse Home with each animated background and
+checks that it shows, draws on its canvas and hides the wallpaper pictures,
+and that Off takes it away. `test-home.js` checks that only the backgrounds
+offered are kept, and their colours: Time of day unless chosen, a preset, or
+`#rrggbb` of one's own.
 A second browser check covers the TV tile and the preview's options: the TV
 tile previews its last channel as a broadcast preview, an app tile previews
 nothing, **Preview in the tile** puts the preview in the tile in focus and keeps

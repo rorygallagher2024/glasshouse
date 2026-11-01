@@ -194,6 +194,13 @@ function renderHome() {
       ? t('home.searchBlockedList', 'Unavailable: the ad blocker\u2019s hosts list blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Take {host} out of the list to use it. This switch keeps its setting.', { host: searchBlocked.host })
       : t('home.searchBlockedLevel', 'Unavailable: the ad blocker\u2019s Everything setting blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Set the ad blocker to Ads & telemetry or off to use it. This switch keeps its setting.', { host: searchBlocked.host });
   }
+  // The animated background: one of four, the one in use lit.
+  const anim = (st.layout && st.layout.wallAnim) || 'off';
+  document.querySelectorAll('#home-anims [data-anim]').forEach(b => {
+    updateToggle(b, { cls: b.dataset.anim === anim ? 'good' : 'idle', label: b.textContent });
+    b.disabled = !homeWritable();
+  });
+  renderHomeAnimColours(st.layout, anim);
   // Fading, as Picture details.
   [['home-fade', 'fade'], ['home-rows-bottom', 'rowsBottom']].forEach(([id, field]) => {
     const row = q(id + '-row');
@@ -321,6 +328,44 @@ function renderHomeColours() {
   const reset = q('home-col-reset');
   const fresh = homeDefaultLook(), cur = homeLayout && homeLayout.colours;
   if (reset) reset.disabled = !can || !!(cur && cur.text === fresh.text && cur.accent === fresh.accent);
+}
+
+// The animated background's colour presets, each as a small screen with a
+// band of its light; shown while an animated background is chosen.
+function HOME_ANIM_THEME_NAMES() {
+  return { auto: t('home.animTheme.auto', 'Time of day'), blue: t('home.animTheme.blue', 'Night blue'),
+    sunset: t('home.animTheme.sunset', 'Sunset'), emerald: t('home.animTheme.emerald', 'Emerald'),
+    ember: t('home.animTheme.ember', 'Ember'), silver: t('home.animTheme.silver', 'Silver'),
+    custom: t('home.animTheme.custom', 'Your own') };
+}
+
+function renderHomeAnimColours(lay, anim) {
+  const wrap = q('home-anim-colours'), box = q('home-anim-themes');
+  if (!wrap || !box) return;
+  wrap.hidden = !lay || anim === 'off';
+  if (wrap.hidden) return;
+  const names = HOME_ANIM_THEME_NAMES();
+  const now = lay.animTheme || 'auto';
+  const can = homeWritable() && !homeSaving;
+  const sample = th => th.sky
+    ? `background:linear-gradient(#000,${th.sky})`
+    : 'background:linear-gradient(90deg,#3a1a10,#0b3456 35%,#2a0f40 70%,#0a1a4a)';
+  const line = th => th.light || '#7fb4ff';
+  const themes = (lay.animThemes || []).concat([{ id: 'custom', sky: lay.animSky, light: lay.animLight }]);
+  box.innerHTML = themes.map(th => `<button type="button" class="home-look${now === th.id ? ' picked' : ''}"
+      onclick="homeSaveLayout({ animTheme: '${th.id}' })" ${can ? '' : 'disabled'} aria-pressed="${now === th.id}"
+      style="--look-text:${line(th)}">
+      <span class="home-look-screen" style="${sample(th)}"><span class="home-anim-band" style="background:${line(th)}"></span></span>
+      <span class="home-look-name">${esc(names[th.id] || th.id)}</span>
+    </button>`).join('');
+  const sky = q('home-anim-sky'), light = q('home-anim-light');
+  if (sky && document.activeElement !== sky) sky.value = lay.animSky || '#0a1f5c';
+  if (light && document.activeElement !== light) light.value = lay.animLight || '#4f8dff';
+  [sky, light].forEach(el => { if (el) el.disabled = !can; });
+}
+
+function homeAnimCustom() {
+  homeSaveLayout({ animTheme: 'custom', animSky: q('home-anim-sky').value, animLight: q('home-anim-light').value });
 }
 
 function homeCustomColours() {
@@ -631,6 +676,10 @@ function homeSearch() {
 
 function homeAlternative() {
   homeSaveLayout({ view: homeLayout.view === 'alternative' ? 'standard' : 'alternative' });
+}
+
+function homeAnim(style) {
+  homeSaveLayout({ wallAnim: style });
 }
 
 function homeRowsBottom() {
