@@ -7,6 +7,14 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
+`test-picture-export.js` checks the read-only picture export through the LG
+settings module and the HTTP handler: raw values and missing keys, context,
+authentication, controls disabled, rejected methods and read failures. It
+asserts that only one current-picture read is made per export, without writes
+or cache invalidation. `test-picture-export-ui.js` checks the web download,
+duplicate clicks, object URL cleanup and error handling; it runs on Node 8
+and later, where the web dashboard's JavaScript parses.
+
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC
 EDID flag does not promote ARC, stale driver values do not become live audio,
