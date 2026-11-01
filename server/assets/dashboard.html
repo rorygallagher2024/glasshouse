@@ -1097,10 +1097,11 @@ function glasshouseHomeRows(d) {
                  ['showAppCount', t('home.showAppCount', 'App count'), t('home.showAppCountDesc', 'Beside the Apps row: how many of the TV\u2019s apps it shows.')],
                  ['showCec', t('home.showCec', 'CEC addresses'), t('home.showCecDesc', 'On each input\u2019s tile: the HDMI-CEC address of the device behind it.')]];
     // The live preview and, while it is on, its options.
-    var pvRows = [['livePreview', t('home.livePreview', 'Live preview'), t('home.livePreviewDesc', 'A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details under it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.')]];
-    if (d.layout.livePreview === true) {
+    var pvRows = [['livePreview', t('home.livePreview', 'Live preview'), t('home.livePreviewDesc', 'A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.')]];
+    // Neither option plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
+    if (d.layout.livePreview === true && !d.supported.standalone) {
       pvRows.push(['previewAlways', t('home.previewAlways', 'Keep the preview on'), t('home.previewAlwaysDesc', 'The preview runs whenever Glasshouse Home is on screen, not only while a tile with one is chosen: the HDMI input last watched, or otherwise the TV on its last channel. Choosing another input or channel moves it there.')]);
-      pvRows.push(['previewInTile', t('home.previewInTile', 'Preview in the tile'), t('home.previewInTileDesc', 'The preview fills the tile it shows, under the tile’s own name, rather than sitting beside the clock with the picture details under it.')]);
+      pvRows.push(['previewInTile', t('home.previewInTile', 'Preview in the tile'), t('home.previewInTileDesc', 'The preview fills the tile it shows, under the tile’s own name, rather than beside the clock.')]);
     }
     for (var pi = 0; pi < pvRows.length; pi++) {
       var pvOn = d.layout[pvRows[pi][0]] === true;

@@ -156,7 +156,8 @@ function renderHome() {
   // Its options, while it is on.
   [['home-preview-always', 'previewAlways'], ['home-preview-tile', 'previewInTile']].forEach(([id, field]) => {
     const row = q(id + '-row');
-    if (row) row.hidden = !st.supported.ok || !st.layout || st.layout.livePreview !== true;
+    // Neither plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
+    if (row) row.hidden = !st.supported.ok || st.supported.standalone === true || !st.layout || st.layout.livePreview !== true;
     const btn = q(id);
     if (!btn) return;
     const on = !!st.layout && st.layout[field] === true;
@@ -322,6 +323,8 @@ function homeItem(kind, id) {
   const list = kind === 'app' ? homeCat.apps : kind === 'dev' ? homeCat.devices : homeCat.channels;
   const it = list.find(x => x.id === id);
   if (!it) return null;
+  // The TV's own tuner: no HDMI port, as its tile on Glasshouse Home says.
+  if (kind === 'dev' && it.tuner) return { title: it.name, sub: t('ctl.liveTv', 'Live TV') };
   if (kind === 'dev' && it.unused) return { title: it.name, sub: t('home.dev.unused', 'Nothing connected'), unused: true };
   if (kind === 'dev') return { title: it.name, sub: it.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: it.port, via: it.via }) : t('home.dev.port', 'HDMI {port}', { port: it.port }) };
   if (kind === 'ch') return { title: it.number + ' ' + it.name };
