@@ -212,6 +212,7 @@ function luna(uri, p, cb) {
       { id: 'com.webos.app.music', title: 'Music', icon: '/x/music.png', visible: false },
       { id: 'com.webos.app.hdmi1', title: 'HDMI 1', lptype: 'bookmark' }
     ];
+    if (tv.newApp) r.launchPoints.push({ id: 'new.app', title: 'New', icon: '/x/new.png' });
   } else if (uri === 'com.webos.service.eim/getAllInputStatus') {
     // As a G3 reports them: a receiver with a console behind it on HDMI 2, HDMI 1 empty.
     r.devices = tv.devices || [
@@ -308,6 +309,37 @@ step('a layout saved from a dashboard changes the version the view\'s heartbeat 
       assert.notStrictEqual(after, before, 'so the view reloads its layout');
       assert.strictEqual(home.beat().layoutVersion, after, 'and stays put until the next change');
       done();
+    });
+  });
+});
+
+step('after a start the rows come from the lists last read, and a change read behind them reloads the view', function (done) {
+  start(null);
+  home.catalogue(function (c) {
+    assert.deepEqual(c.order.app, ['netflix', 'youtube.leanback.v4', 'cdp-30', 'lg-home']);
+    var held = [];
+    var slowLuna = function (uri, p, cb) {
+      if (uri === 'com.webos.applicationManager/listLaunchPoints') return held.push(function () { luna(uri, p, cb); });
+      luna(uri, p, cb);
+    };
+    var lists = fs.readFileSync(path.join(dir, 'home-lists.json'));
+    start(null, { luna: slowLuna });
+    fs.writeFileSync(path.join(dir, 'home-lists.json'), lists);
+    tv.newApp = true;
+    var before = home.beat().layoutVersion;
+    home.catalogue(function (c2) {
+      assert.deepEqual(c2.order.app, c.order.app, 'answered from the saved list while the TV is still asked');
+      until(function () { return held.length > 0; }, 2000, function () {
+        assert.strictEqual(held.length, 1, 'and the list read again behind it');
+        held.shift()();
+        until(function () { return home.beat().layoutVersion !== before; }, 2000, function () {
+          assert.notStrictEqual(home.beat().layoutVersion, before, 'a list that changed has the view reload');
+          home.catalogue(function (c3) {
+            assert.ok(c3.order.app.indexOf('new.app') !== -1, 'with the list just read');
+            done();
+          });
+        });
+      });
     });
   });
 });
@@ -1117,16 +1149,12 @@ step('webOS 5 and 6 are offered, experimental, with each switch closing the apps
         home.status(function (st11) {
           assert.strictEqual(st11.supported.ok, false, 'webOS 11 still needs the setting');
           start(null, { webosVersion: '4.4.3' });
-          home.status(function (st4off) {
-            assert.strictEqual(st4off.supported.ok, false, 'webOS 4 needs the setting too');
-            start(null, { webosVersion: '4.4.3', allowExperimental: function () { return true; } });
-            home.status(function (st4) {
-              assert.strictEqual(st4.supported.ok, true, 'offered on webOS 4 with it');
-              assert.strictEqual(st4.supported.experimental, true);
-              assert.strictEqual(st4.supported.standalone, true);
-              assert.strictEqual(st4.supported.restartsApps, undefined);
-              done();
-            });
+          home.status(function (st4) {
+            assert.strictEqual(st4.supported.ok, true, 'offered on webOS 4 without the setting');
+            assert.strictEqual(st4.supported.experimental, true);
+            assert.strictEqual(st4.supported.standalone, true);
+            assert.strictEqual(st4.supported.restartsApps, undefined);
+            done();
           });
         });
       });
@@ -2206,6 +2234,18 @@ step('Alternative View is off until chosen, saved, and anything but alternative 
   });
 });
 
+step('live preview stays off until switched on, and is saved', function (done) {
+  start(null);
+  assert.strictEqual(home.layout().livePreview, false);
+  assert.strictEqual(home.normalise({ livePreview: 'yes' }).livePreview, false, 'only true switches it on');
+  home.setLayout({ livePreview: true }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.layout.livePreview, true);
+    assert.strictEqual(home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8'))).livePreview, true);
+    done();
+  });
+});
+
 step('fading, search and leaving out inputs with nothing plugged in stay off until switched on, are saved, and outlast a reset, beside hiding inputs one by one', function (done) {
   start(null);
   assert.strictEqual(home.layout().fade, false);
@@ -2238,6 +2278,20 @@ step('fading, search and leaving out inputs with nothing plugged in stay off unt
         done();
       });
     });
+    });
+  });
+});
+
+step('a Glasshouse Home switched on fresh is Pure white, listed first, and one with its own look saved keeps it', function (done) {
+  start(null);
+  home.status(function (st) {
+    assert.deepEqual(st.layout.colours, { text: '#ffffff', accent: '#ffffff' }, 'nothing saved yet');
+    assert.strictEqual(st.colourPresets[0].id, 'pure', 'first in the list');
+    assert.ok(st.colourPresets.some(function (p) { return p.id === 'warm' && p.own; }), 'Warm is the view\'s own look');
+    start({ colours: null });
+    home.status(function (st2) {
+      assert.strictEqual(st2.layout.colours, null, 'an earlier choice of the view\'s own look stays');
+      done();
     });
   });
 });

@@ -100,14 +100,14 @@ var ESCAPE_REOPEN_MS = 8000;
 var escapeReopen = null;
 /*
  * Colours for Glasshouse Home's text and accent, chosen by both dashboards.
- * The first is the view's own, used while none is chosen. Every pair keeps
- * light text on black. The accent marks what was last on and arranging and,
- * once colours are chosen, frames the focused tile.
+ * The one marked own is the view's built-in look, saved as none chosen. Every
+ * pair keeps light text on black. The accent marks what was last on and
+ * arranging and, once colours are chosen, frames the focused tile.
  */
 var COLOUR_PRESETS = [
-  { id: 'warm', text: '#ece7df', accent: '#e9ad55' },
-  { id: 'glasshouse', text: '#ece7df', accent: '#30de61' },
   { id: 'pure', text: '#ffffff', accent: '#ffffff' },
+  { id: 'warm', text: '#ece7df', accent: '#e9ad55', own: true },
+  { id: 'glasshouse', text: '#ece7df', accent: '#30de61' },
   { id: 'white', text: '#f4f4f4', accent: '#8fb8ff' },
   { id: 'ice', text: '#d4e6f4', accent: '#5fc4ee' },
   { id: 'rose', text: '#f4dcdc', accent: '#ec7f8c' },
@@ -311,6 +311,9 @@ function defaults() {
     // The plate describing the picture of what was last on: detail many
     // won't want on a home screen, so it waits to be switched on.
     picture: false,
+    // A live picture of the input or channel whose tile is in focus: off
+    // until switched on, as it moves the TV's HDMI receiver or a tuner.
+    livePreview: false,
     // What the view shows beyond the rows: the clock and date, the last
     // source in the top strip and on its input's tile, the "n of total"
     // beside Apps, and each CEC device's address. On unless switched off, as
@@ -334,8 +337,9 @@ function defaults() {
     // Inputs with nothing plugged in left out of the Inputs row, rather than
     // shown greyed out.
     hideUnused: false,
-    // { text, accent } as #rrggbb, or null for the view's own colours.
-    colours: null,
+    // { text, accent } as #rrggbb, or null for the view's own colours. Pure
+    // white until one is chosen.
+    colours: { text: '#ffffff', accent: '#ffffff' },
     // null until chosen: the first start keeps an empty layout an earlier build left.
     hideLgHomeAtStart: null,
     // LG's Home auto launch as it was before Glasshouse Home switched it off,
@@ -389,6 +393,7 @@ function normalise(raw) {
   d.hintSeen = raw.hintSeen === true;
   d.searchHintSeen = raw.searchHintSeen === true;
   d.picture = raw.picture === true;
+  d.livePreview = raw.livePreview === true;
   SHOW_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.rowsBottom = raw.rowsBottom === true;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
@@ -400,7 +405,8 @@ function normalise(raw) {
   d.hidden.rec = [];
   d.fade = raw.fade === true;
   d.hideUnused = raw.hideUnused === true;
-  d.colours = validColours(raw.colours);
+  // null, saved, is the view's own look; none saved keeps the default.
+  if (Object.prototype.hasOwnProperty.call(raw, 'colours')) d.colours = validColours(raw.colours);
   if (typeof raw.hideLgHomeAtStart === 'boolean') d.hideLgHomeAtStart = raw.hideLgHomeAtStart;
   if (typeof raw.lgAutoLaunch === 'string' && raw.lgAutoLaunch) d.lgAutoLaunch = raw.lgAutoLaunch;
   if (typeof raw.lgAutoLaunchCheck === 'string' && raw.lgAutoLaunchCheck) d.lgAutoLaunchCheck = raw.lgAutoLaunchCheck;
@@ -454,7 +460,8 @@ function readConfig() {
 // blocking or freeing LG's search, which is not saved in the layout.
 function layoutVersion() {
   readConfig();
-  return String(configMtime) + (search.blocked() ? '-search-blocked' : '');
+  return String(configMtime) + (search.blocked() ? '-search-blocked' : '') +
+    (listsRevision ? '-lists' + listsRevision : '');
 }
 
 function saveConfig() {
@@ -519,6 +526,7 @@ function setLayout(body, cb) {
     hintSeen: body.hintSeen !== undefined ? body.hintSeen : c.hintSeen,
     searchHintSeen: body.searchHintSeen !== undefined ? body.searchHintSeen : c.searchHintSeen,
     picture: typeof body.picture === 'boolean' ? body.picture : c.picture,
+    livePreview: typeof body.livePreview === 'boolean' ? body.livePreview : c.livePreview,
     showClock: typeof body.showClock === 'boolean' ? body.showClock : c.showClock,
     rowsBottom: typeof body.rowsBottom === 'boolean' ? body.rowsBottom : c.rowsBottom,
     view: body.view !== undefined ? body.view : c.view,
@@ -554,7 +562,7 @@ function setLayout(body, cb) {
 function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
-    searchHintSeen: c.searchHintSeen, picture: c.picture, search: c.search, recommended: c.recommended,
+    searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
@@ -563,11 +571,60 @@ function layoutOf(c) {
 
 // ---------------------------------------------------------------- what it shows
 
+/*
+ * The lists the rows are built from, as last read, in home-lists.json. Every
+ * child start waits its turn just after the server starts (lib/children), so
+ * a view opened then waited on them: 7.9 s for the first catalogue on a B8
+ * (webOS 4.4.3) against 0.75 s later. Until a list is read in this run, the
+ * saved one is answered at once and read again behind it; a change bumps
+ * layoutVersion, so the view reloads on its next heartbeat.
+ */
+var savedLists = null;
+var listsRevision = 0;
+var listLoading = {};
+
+function listsFile() { return path.join(stateDir, 'home-lists.json'); }
+
+function savedList(key) {
+  if (savedLists === null) {
+    try { savedLists = JSON.parse(fs.readFileSync(listsFile(), 'utf8')) || {}; } catch (e) { savedLists = {}; }
+  }
+  return savedLists[key] || null;
+}
+
+// True when the list differs from the one saved.
+function saveList(key, value) {
+  savedList(key);
+  if (JSON.stringify(savedLists[key]) === JSON.stringify(value)) return false;
+  savedLists[key] = value;
+  try {
+    writeJsonAtomic(listsFile(), savedLists, 384);
+  } catch (e) {
+    console.error('home: could not save home-lists.json: ' + e.message);
+  }
+  return true;
+}
+
 function cached(key, ttl, load, cb) {
   var hit = listCache[key];
   if (hit && nowMs() - hit.at < ttl) return cb(hit.value);
+  var saved = hit ? null : savedList(key);
+  if (saved) {
+    cb(saved);
+    if (listLoading[key]) return;
+    listLoading[key] = true;
+    return load(function (value) {
+      listLoading[key] = false;
+      if (!value) return;
+      listCache[key] = { at: nowMs(), value: value };
+      if (saveList(key, value)) listsRevision++;
+    });
+  }
   load(function (value) {
-    if (value) listCache[key] = { at: nowMs(), value: value };
+    if (value) {
+      listCache[key] = { at: nowMs(), value: value };
+      saveList(key, value);
+    }
     cb(value);
   });
 }
@@ -782,7 +839,7 @@ function build(c, apps, devs, chans, recs) {
 // The apps' cards while the row is switched on; null when the TV gave none.
 function recommendedCards(c, cb) {
   if (!c.recommended) return cb([]);
-  recommended.cards(cb);
+  cached('rec', LIST_TTL_MS, function (done) { recommended.cards(done); }, cb);
 }
 
 /*
@@ -1246,8 +1303,8 @@ function isHomeInPlace() {
 
 function supported() {
   var v = String(webosVersion || '');
-  // Tried on a B8 only (4.4.3), so behind allowExperimentalHome, as webOS 11.
-  if (/^4\./.test(v) && allowExperimentalFn()) return { ok: true, webos: v, experimental: true, standalone: true };
+  // Tried on a B8 (4.4.3).
+  if (/^4\./.test(v)) return { ok: true, webos: v, experimental: true, standalone: true };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is the same native app as on webOS 9; sam is nudged from the
   // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0).
@@ -2170,6 +2227,16 @@ function status(cb) {
   });
 }
 
+/*
+ * What the view's catalogue carries beside the rows, without status()'s two
+ * luna calls: just after a start they wait their turn behind every other
+ * (lib/children), 3.7 s on a B8 (webOS 4.4.3).
+ */
+function viewStatus() {
+  var c = readConfig();
+  return { layout: layoutOf(c), enabled: c.enabled, supported: supported(), wallpapers: wallpapers.status() };
+}
+
 // LG's Home reads its layout from /mnt/lg/cmn_data/manifest on webOS 9 only;
 // webOS 10 and 11 have no writable layout path (TV-RESEARCH).
 function startLayoutAvailable() { return /^9\./.test(String(webosVersion || '')); }
@@ -2241,6 +2308,9 @@ function init(opts) {
   recovering = false;
   guideCache = { at: 0, data: {} };
   listCache = {};
+  savedLists = null;
+  listsRevision = 0;
+  listLoading = {};
   changing = false;
   settingsQueue = [];
   settingsBusy = false;
@@ -2388,6 +2458,7 @@ module.exports = {
   flush: recent.flush,
   status: status,
   catalogue: catalogue,
+  viewStatus: viewStatus,
   channelList: channelList,
   guide: guide,
   now: now,

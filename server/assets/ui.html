@@ -1072,6 +1072,13 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-picture" onclick="homePicture()">&mdash;</button></div>
     </div>
+    <div class="prot-row home-gh-row" id="home-preview-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.livePreview">Live preview</div>
+        <div class="prot-desc" data-t="home.livePreviewDesc">A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details under it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview" onclick="homeLivePreview()">&mdash;</button></div>
+    </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.showClock">Clock and date</div>
@@ -1148,6 +1155,13 @@
       <div id="apps-home-inputs" style="margin-top:12px"></div>
       <div class="pv-g" data-t="apps.home.parts">Parts of the Home screen</div>
       <div class="prot-table" id="apps-home-parts"></div>
+      <div id="apps-home-banner" hidden>
+        <div class="pv-g" data-t="apps.home.banner">Banner picture</div>
+        <div class="pv-sub" data-t="apps.home.banner.desc">The picture across the top of the Home screen: LG&rsquo;s, plain black, or your own. Your own is cropped to the banner&rsquo;s shape as it is now, so choose it after hiding the rows you want gone.</div>
+        <div class="btns wall-choice" id="apps-home-banner-choice"></div>
+        <input type="file" id="home-banner-file" accept="image/jpeg,image/png,image/webp" hidden onchange="homeBannerPicked(this)">
+        <div class="sub" id="apps-home-banner-note" role="status"></div>
+      </div>
       <div class="btns" style="margin-top:14px;max-width:420px">
         <button type="button" class="pill idle" id="btn-home-restore" onclick="restoreHome()" data-t="apps.home.restore">Put back LG&rsquo;s Home screen</button>
       </div>
@@ -1186,7 +1200,7 @@
   <div class="home-custom">
     <label><input type="color" id="home-col-text" onchange="homeCustomColours()"> <span data-t="home.colours.text">Text</span></label>
     <label><input type="color" id="home-col-accent" onchange="homeCustomColours()"> <span data-t="home.colours.accent">Accent</span></label>
-    <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: null })" data-t="home.colours.reset">Use the default colours</button>
+    <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook() })" data-t="home.colours.reset">Use the default colours</button>
   </div>
 
   <div class="pv-sec adv-sec" data-t="home.wall.title">Wallpaper</div>
@@ -1444,11 +1458,6 @@
       <div class="hint" data-t="mqtt.deviceId.hint">Lowercase letters, digits and underscores.</div>
     </div>
     <div class="cfg-f">
-      <label for="cfg-devname" data-t="mqtt.deviceName">Device name</label>
-      <input type="text" id="cfg-devname" placeholder="LG OLED TV" data-t-placeholder="header.brand.oled" autocomplete="off">
-      <div class="hint" data-t="mqtt.deviceName.hint">Shown as the device name in Home Assistant.</div>
-    </div>
-    <div class="cfg-f">
       <label for="cfg-interval" data-t="mqtt.interval">Telemetry interval</label>
       <input type="number" id="cfg-interval" placeholder="10000" translate="no" min="1000" max="600000" autocomplete="off">
       <div class="hint" data-t="mqtt.interval.hint">Milliseconds between publishes.</div>
@@ -1511,6 +1520,17 @@
           <button type="button" class="link-btn" id="upd-rollback" hidden onclick="rollbackUpdate()"></button>
         </div>
         <div class="prot-status"><span class="pill idle" id="upd-pill">&mdash;</span></div>
+      </div>
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="server.tvName.title">TV name</div>
+          <div class="prot-desc" data-t="server.tvName.desc">Shown under Glasshouse in the sidebar and as the TV's name in Home Assistant. Left empty, it is LG and the model.</div>
+          <form class="toast-form" id="tvname-form" onsubmit="event.preventDefault();saveTvName();">
+            <input type="text" id="tvname-input" maxlength="64" autocomplete="off" spellcheck="false"
+              aria-label="TV name" data-t-aria-label="server.tvName.title" oninput="this.dataset.dirty='1'">
+            <button type="submit" id="tvname-save" data-t="server.tvName.save">Save</button>
+          </form>
+        </div>
       </div>
       <div class="prot-row" id="server-health-row">
         <div class="prot-main">

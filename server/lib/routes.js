@@ -283,7 +283,8 @@ function validateSettings(j) {
    */
   out.device.id = trimmedString(d.id);
   if (!/^[a-z0-9_]{1,64}$/.test(out.device.id)) e.push('device id must be 1-64 characters of a-z, 0-9 or _');
-  out.device.name = trimmedString(d.name);
+  // The Server tab sets the name; a form without it keeps the one saved.
+  if (typeof d.name === 'string') out.device.name = trimmedString(d.name);
 
   // Saved with the MQTT form, whose Launch App select lists the icons' addresses.
   if (j && typeof j.iconServer === 'boolean') out.iconServer = j.iconServer;
@@ -1140,15 +1141,14 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/catalogue') {
       return homeModule.catalogue(function (c) {
-        homeModule.status(function (st) {
-          c.ok = true;
-          c.layout = st.layout;
-          c.enabled = st.enabled;
-          c.supported = st.supported;
-          c.wallpapers = st.wallpapers;
-          c.layoutVersion = homeModule.layoutVersion();
-          reply(c);
-        });
+        var st = homeModule.viewStatus();
+        c.ok = true;
+        c.layout = st.layout;
+        c.enabled = st.enabled;
+        c.supported = st.supported;
+        c.wallpapers = st.wallpapers;
+        c.layoutVersion = homeModule.layoutVersion();
+        reply(c);
       });
     }
     if (pathname === '/api/home/channels') {
@@ -1160,6 +1160,7 @@ function handleHomeRoute(req, res, u, pathname) {
       return homePictureModule.picture(String(u.query && u.query.kind || ''), Number(u.query && u.query.port), reply,
         String(u.query && u.query.app || ''));
     }
+    if (pathname === '/api/home/signal') return homePictureModule.signal(Number(u.query && u.query.port), reply);
     if (pathname === '/api/home/wallpaper') {
       var wallpaper = homeModule.wallpaperPath(String(u.query && u.query.slot || ''));
       if (!wallpaper) return send(res, 404, JSON.stringify({ ok: false, error: 'no wallpaper uploaded' }));
@@ -1795,6 +1796,18 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/homescreen/banner' && req.method === 'POST') {
+    if (!config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    if (!postGuard(req, res, 'image/jpeg', true)) return;
+    if (!homeScreenModule) return refuseUpload(req, res, 'home screen module unavailable', 503);
+    return homeScreenModule.uploadBanner(req, function (r) {
+      if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+      send(res, 200, JSON.stringify(r));
+    });
+  }
+
   if (pathname === '/api/homescreen' && req.method === 'POST') {
     if (!config.allowControl) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
@@ -1813,8 +1826,9 @@ function handleRequest(req, res) {
       }
       if (body.restore === true) return homeScreenModule.restore(done);
       if (typeof body.part === 'string') return homeScreenModule.setPart(body.part, !!body.shown, done);
+      if (typeof body.banner === 'string') return homeScreenModule.setBanner(body.banner, done);
       if (typeof body.input === 'string') return homeScreenModule.setInput(body.input, !!body.onHome, done);
-      done({ ok: false, error: 'part, input or restore expected' });
+      done({ ok: false, error: 'part, banner, input or restore expected' });
     });
   }
 

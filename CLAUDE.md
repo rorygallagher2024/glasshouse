@@ -139,6 +139,11 @@ The exception is a PR's **Testing** section, which docs/CONTRIBUTING.md asks
 for: the TV and webOS version the change was tried on, what was done and seen,
 and what wasn't tested. State them as facts, briefly, not as a story.
 
+Where the change shows on a screen, put a screenshot of it in the Testing
+section: the dashboard, the TV app, Glasshouse Home or the TV's own screen.
+`scripts/tv.sh <tv> capture <out.jpg>` takes one from the TV; on webOS 4 it
+includes the HDMI picture, which webOS 5 and later capture black.
+
 Record decisions and their reasons, not the route taken to reach them.
 
 ## Third person in PRs, commits and release notes

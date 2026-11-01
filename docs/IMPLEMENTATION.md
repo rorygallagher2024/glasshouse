@@ -65,6 +65,7 @@ The children are the five subscriptions held open for live state, to which a TV 
 ## Platform constraints
 
 - **Node.js v0.12 (2015)**: webOS 4.x ships Node v0.12.2. All code in `tvweb.js` is written in strict ES5 (no `let`/`const`, no arrow functions, no template literals, no `async`/`await`).
+- **Node 0.x keeps its heap at its peak.** On a B8 the server's live objects are about 20 MB, but its heap grew to 57 MB and stayed there, 73 MB resident. `tvwebctl` starts node 0.x with `--optimize_for_size --max_semi_space_size=1`, with which it rises from about 30 MB to 67 MB and falls back after each full collection, 47 MB on average, for the same CPU time.
 - **BusyBox `run-parts` Hook Naming**: The webosbrew startup system invokes user hooks with `run-parts /var/lib/webosbrew/init.d`. BusyBox `run-parts` strictly ignores any filename containing a dot (`.`), so the boot hook must be named `50-tvweb` without `.sh`.
 - **Luna Bus Introspection**: Control commands interact with webOS via native `luna-send` calls (`com.webos.audio`, `com.webos.service.tvpower`, `com.webos.applicationManager`, `com.webos.notification`, `com.webos.service.settings`, `com.webos.service.eim`).
 
@@ -1307,14 +1308,29 @@ over that folder, leaving every other file LG's. The parts are the side buttons
 (`globalline`, shrunk to 0 by 0 after the banner: taking it out left the screen
 black), the Quick Cards (`qcardList`) and the recommended shelf
 (`recommendedShelf`); the banner takes the height of the rows taken out, so the
-apps row stays at the bottom. The home app runs as
+apps row stays at the bottom, and with the side buttons hidden it also takes
+their width and the gap above it, reaching the screen's edges. The banner's text and picture are files in the
+same folder: the text is looked up by its English in `i18n`, a symlink to LG's
+language files under `/mnt/lg/wee/ui_l10n`, so hiding it lays an `i18n` folder
+of its own over the symlink, copied from LG's each time it is mounted with the
+two strings blank (added where a file lacks them). The picture is
+`images/<size>/bg_banner_img.png`, laid in each size folder LG has, linked
+rather than copied since `/tmp` is memory: a small black PNG, or the owner's
+JPEG under the PNG's name, which the browser crops within 3840 across to each
+shape the banner takes with the side buttons, Quick Cards and Recommended
+shown or hidden. The home app fits the picture to the banner's height and
+centres it, so one crop fills only one shape: one made with all three hidden
+(about 2.2:1 on a C4, webOS 10.2.2) showed as a small window between black
+with them back (3492 x 900, #833). The shape shown is sent first and shown; the
+rest are kept, and a part shown or hidden mounts the one for the new shape. The home app runs as
 `flutter-client -i com.webos.app.home`, so it is found by that argument pair in
 `/proc/<pid>/cmdline`, checked again just before it is sent SIGTERM, and other
 Flutter apps are left alone; a failed restart is reported to the dashboard. The
 mount goes with a restart of the TV, so `reapply()` mounts it again when the
 server starts, and does nothing while it is still mounted. The choices and a
 copy of LG's `home.xml`, which cannot be read while the overlay covers it, are
-kept in `/var/lib/tvweb`. Offered only on 10.x, where `/proc/filesystems` lists
+kept in `/var/lib/tvweb`, with the owner's banner picture
+(`home-webos10-banner-<width>x<height>.jpg`, one for each shape). Offered only on 10.x, where `/proc/filesystems` lists
 overlay and the layout is one recognised from #612's dumps, and only once
 `allowHomeLayout` is set.
 
@@ -1325,7 +1341,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 5, 6, 7, 9 and 10; webOS 11 with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab (webOS 4, 5, 6, 7, 9 and 10; webOS 11 with `allowExperimentalHome`). The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 
@@ -1450,6 +1466,17 @@ off repeats this cleanup, including from the SSH recovery command.
 The layout lives in `home.json`, shared by the Home tab and the view's arrange
 mode, and is re-read when the file changes, so `tvwebctl
 restore-glasshouse-home` over SSH is seen by a running server.
+
+The apps, inputs, channels and cards the rows are built from are kept as last
+read in `home-lists.json`. Just after the server starts, every luna call waits
+its turn 150 ms apart (`lib/children.js`), and a view opened then waited 7.9 s
+for its first catalogue on a B8 (webOS 4.4.3). Until each list has been read in
+this run, the saved one is answered at once and read again behind it; a list
+that changed bumps `layoutVersion`, so the view reloads on its next heartbeat.
+The catalogue route takes the layout and wallpapers from `viewStatus()`, which
+makes no luna calls. While Glasshouse Home is on, the boot hook starts the
+server without its 5 s wait: on webOS 4 the Home key opens the view (25 s into
+a B8's boot) before webosbrew runs the hook (41 s).
 
 A row set to Last opened (`sort` in `home.json`) is ordered by
 `home-recent.json`, the time each tile id was last opened. sam's foreground

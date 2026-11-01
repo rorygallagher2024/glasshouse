@@ -1141,8 +1141,11 @@ function glasshouseHomeRows(d) {
              press: fadeOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.fadeDesc', 'Glasshouse Home fades in as it comes on screen, and out as an app, input or channel opens.') });
     // OK steps through the presets; colours picked on the browser dashboard show as Custom.
+    // No colours chosen is the view's own look, the preset marked own.
     var presets = d.colourPresets || [], cur = d.layout.colours, at = cur ? -1 : 0;
-    for (var pi = 0; pi < presets.length; pi++) if (cur && presets[pi].text === cur.text && presets[pi].accent === cur.accent) at = pi;
+    for (var pi = 0; pi < presets.length; pi++) {
+      if (cur ? presets[pi].text === cur.text && presets[pi].accent === cur.accent : presets[pi].own) at = pi;
+    }
     if (presets.length) {
       var lookNames = { warm: t('home.colours.warm', 'Warm'), glasshouse: t('home.colours.glasshouse', 'Glasshouse'),
                         pure: t('home.colours.pure', 'Pure white'), white: t('home.colours.white', 'White'),
@@ -2940,8 +2943,8 @@ function activate() {
     case 'homeHideUnused':
       return homeLayout({ hideUnused: !r.on });
     case 'homeColours':
-      // The first preset is the view's own colours, saved as none chosen.
-      return homeLayout({ colours: r.key.id === homeData.colourPresets[0].id ? null : { text: r.key.text, accent: r.key.accent } });
+      // The view's own look is saved as none chosen.
+      return homeLayout({ colours: r.key.own ? null : { text: r.key.text, accent: r.key.accent } });
     case 'homeOpen':
       return send({ action: 'launchApp', value: 'com.webos.app.home' });
     case 'homeRowUp':

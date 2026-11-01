@@ -678,6 +678,7 @@ controls.init({
   backup: backup,
   home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
+  deviceNameChanged: function (name) { syslogForwarder.setHostname(name); },
   tvApp: tvApp,
   restartSelf: restartSelf,
   updateSummary: routes.updateSummary,
@@ -1204,6 +1205,8 @@ function setupHomeAssistant() {
   }
 
   function publishDiscovery() {
+    // The Server tab renames the TV without a restart.
+    devInfo.name = (CONFIG.device && CONFIG.device.name) || devInfo.name;
     ha.clearRetired(function (topic, payload, retain) {
       mqttClient.publish(topic, payload, retain);
     }, discPfx, devId);

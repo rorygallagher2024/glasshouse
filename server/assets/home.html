@@ -73,6 +73,38 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #plStrip{font-size:23px;height:36px;line-height:38px;color:#a39d93}
 #plStrip b{font-weight:400;color:#6b665e;margin-right:12px}
 
+/* The preview: a live picture of the input in focus, in the plate's place on
+   the strip's bottom line, with the source beside it naming what it shows.
+   200 high, its top meets the clock's and its foot the date's line, inside the
+   strip's margins. The picture is the TV's video plane showing through the
+   page, so its corners stay square; the edge and the shadow are drawn over and
+   around it. */
+#preview{-webkit-flex:0 0 auto;flex:0 0 auto;position:relative;width:356px;height:200px;margin-left:56px;background:#000;display:none;
+  box-shadow:0 24px 60px rgba(0,0,0,.6)}
+#preview.on{display:block}
+#preview:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;border:1px solid rgba(244,241,234,.16);pointer-events:none}
+#preview video{display:block;width:100%;height:100%}
+#pvNote{position:absolute;left:0;top:0;right:0;bottom:0;display:none;background:#14120f;text-align:center;
+  font-size:23px;line-height:200px;color:#6b665e}
+#preview.blank #pvNote{display:block}
+/* With Picture details on, the plate follows the preview and describes what
+   it shows, beside the picture and level with its foot, as the date sits by
+   the clock: nothing drawn over the video, whose own captions and tickers sit
+   at its foot, and nothing below the strip. */
+#pvInfo{position:absolute;right:100%;bottom:0;width:420px;margin-right:32px;padding-bottom:2px;display:none;text-align:right}
+/* Its room is kept clear of the source, whose title then ends in an ellipsis. */
+#now #preview.info{margin-left:508px}
+#preview.info #pvInfo{display:block}
+#preview.blank #pvInfo{display:none}
+#pvTop{display:-webkit-flex;display:flex;-webkit-align-items:baseline;align-items:baseline;-webkit-justify-content:flex-end;justify-content:flex-end}
+#pvMode{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;font-family:'Outfit',sans-serif;font-size:27px;line-height:1.1;font-weight:400;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pvLight{-webkit-flex:0 0 auto;flex:0 0 auto;margin-left:16px;font-size:19px;color:#a39d93;white-space:nowrap}
+#pvLight b{font-weight:400;color:#6b665e;margin-right:8px}
+#pvSig{margin-top:5px;font-size:19px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pvSig span+span{margin-left:16px}
+#now.previewing #plate{display:none}
+
 /* The rows sit centred between the clock and the arrange bar, so three rows
    land a little below where they used to and fewer settle lower. The spacers shrink first, so rows taller than the space run on down
    rather than under the clock. A row with nothing to show is left out, and
@@ -91,6 +123,14 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative #date{margin-top:8px;font-size:23px}
 .alternative #source{-webkit-order:1;order:1;border-left:0;padding-left:22px}
 .alternative #plate{-webkit-order:2;order:2;margin:0 56px 0 0}
+.alternative #preview{-webkit-order:2;order:2;margin:0 56px 0 auto}
+/* The clock is right-aligned in a box sized for any time; previewing, it hugs
+   its digits so the picture sits beside it. */
+.alternative #now.previewing #when{width:auto}
+/* Even-width figures keep the digits, and the preview beside them, still as
+   the minutes change: at the standard clock's size Outfit's own run from 245px
+   for 3:11 to 341px for 3:09. */
+.alternative #clock{font-variant-numeric:tabular-nums;-webkit-font-feature-settings:"tnum";font-feature-settings:"tnum"}
 .alternative:not(.arranging) .row > h2{display:none}
 .alternative .row{margin-bottom:10px}
 .alternative .tile{border-radius:18px;margin-right:12px;background:rgba(20,15,29,.45)}
@@ -365,6 +405,9 @@ html.faded #stage{opacity:0}
       <div id="plMode"></div>
       <div id="plStrip"></div>
     </div>
+    <div id="preview"><video id="pvVideo" muted></video>
+      <div id="pvInfo"><div id="pvTop"><div id="pvMode"></div><div id="pvLight"></div></div><div id="pvSig"></div></div>
+      <div id="pvNote" data-t="home.preview.noPicture">No picture</div></div>
   </section>
 
   <main id="rows"></main>
@@ -818,6 +861,7 @@ html.faded #stage{opacity:0}
         : inFolder(rowKey(), it.id) ? t('home.arrange.isInFolder', '{name} (in More apps)', { name: it.title })
         : (it.title || it.name);
     }
+    followPreview();
   }
 
   // ---------------------------------------------------------------- scrolling
@@ -1110,8 +1154,21 @@ html.faded #stage{opacity:0}
     $('mer').textContent = p[1];
     $('mer').hidden = !p[1];
     $('date').textContent = dateText(d);
-    var kind = '', title = '', via = '';
-    if (!layout || layout.showLastOn === false) {
+    var kind = '', title = '', via = '', pv = $('preview').className ? tilePreview.target : null;
+    if (pv) {
+      // The source names what the preview shows, and is Last watched again once it closes.
+      var it = pv.item;
+      kind = t('home.preview.live', 'Live preview');
+      if (pv.port) {
+        title = it.name;
+        via = it.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: pv.port, via: it.via }) : t('home.dev.port', 'HDMI {port}', { port: pv.port });
+      } else {
+        var shows = guideData[it.id] || [];
+        title = it.name;
+        via = shows.length ? t('home.now.channelShow', 'Channel {number}: {title}', { number: it.number, title: shows[0].title })
+          : t('home.now.channel', 'Channel {number}', { number: it.number });
+      }
+    } else if (!layout || layout.showLastOn === false) {
       // The source can arrive before its saved visibility. Keep the clock's space.
     } else if (lastOn.kind === 'input') {
       kind = t('home.now.lastWatched', 'Last watched');
@@ -1143,7 +1200,7 @@ html.faded #stage{opacity:0}
   var picture = null;
   var pictureRevision = 0;
   var pictureSource = null;
-  var HDR_NAMES = { hdr10: 'HDR10', hlg: 'HLG', dolby_vision: t('home.plate.dolby', 'Dolby Vision') };
+  var HDR_NAMES = { hdr10: 'HDR10', hlg: 'HLG', dolby_vision: t('home.plate.dolby', 'Dolby Vision'), technicolor: t('home.plate.technicolor', 'Technicolor HDR') };
 
   function refreshPicture() {
     var revision = ++pictureRevision;
@@ -1178,22 +1235,36 @@ html.faded #stage{opacity:0}
     if (s) {
       // An app's video, noted while it played: it has stopped since.
       if (s.played) sig.push(t('home.plate.played', 'Last video'));
-      sig.push(s.hz ? t('home.plate.size', '{width} \u00d7 {height} at {hz} Hz', { width: s.width, height: s.height, hz: hz(s.hz) })
-        : t('home.plate.sizeOnly', '{width} \u00d7 {height}', { width: s.width, height: s.height }));
-      if (s.chroma) sig.push(s.bits ? t('home.plate.depth', '{chroma}, {bits}-bit', { chroma: s.chroma.replace(/^YCbCr /, ''), bits: s.bits }) : s.chroma);
-      if (HDR_NAMES[s.hdr]) sig.push(HDR_NAMES[s.hdr]);
-      if (s.vrr) sig.push(t('home.plate.vrr', 'VRR'));
-      if (s.allm) sig.push(t('home.plate.allm', 'Low latency'));
+      sig = sig.concat(signalParts(s));
     } else if (lastOn.kind === 'input') {
       sig.push(t('home.plate.noSignal', 'No picture coming in'));
     }
-    $('plSig').innerHTML = sig.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
+    $('plSig').innerHTML = spans(sig);
     $('plMode').textContent = p.mode ? p.mode.display : '';
-    $('plStrip').innerHTML = p.mode && typeof p.light === 'number'
+    $('plStrip').innerHTML = lightHtml(p);
+    $('plate').className = '';
+  }
+
+  function signalParts(s) {
+    var sig = [s.interlaced && s.hz ? t('home.plate.sizeInterlaced', '{width} \u00d7 {height}i at {hz} Hz', { width: s.width, height: s.height, hz: hz(s.hz) })
+      : s.hz ? t('home.plate.size', '{width} \u00d7 {height} at {hz} Hz', { width: s.width, height: s.height, hz: hz(s.hz) })
+      : t('home.plate.sizeOnly', '{width} \u00d7 {height}', { width: s.width, height: s.height })];
+    // A channel says SDR outright: broadcast in HDR is the exception worth seeing.
+    if (s.broadcast && s.hdr === 'sdr') sig.push(t('home.plate.sdr', 'SDR'));
+    if (s.chroma) sig.push(s.bits ? t('home.plate.depth', '{chroma}, {bits}-bit', { chroma: s.chroma.replace(/^YCbCr /, ''), bits: s.bits }) : s.chroma);
+    if (HDR_NAMES[s.hdr]) sig.push(HDR_NAMES[s.hdr]);
+    if (s.vrr) sig.push(t('home.plate.vrr', 'VRR'));
+    if (s.allm) sig.push(t('home.plate.allm', 'Low latency'));
+    return sig;
+  }
+
+  function spans(list) { return list.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join(''); }
+
+  function lightHtml(p) {
+    return p.mode && typeof p.light === 'number'
       ? '<div><b>' + esc(p.oled ? t('home.plate.oledLight', 'OLED light') : t('home.plate.backlight', 'Backlight')) +
         '</b>' + esc(p.light) + '</div>'
       : '';
-    $('plate').className = '';
   }
 
   // ---------------------------------------------------------------- actions
@@ -1256,6 +1327,7 @@ html.faded #stage{opacity:0}
 
   // Off screen: dark at once, so it comes back dark and fades in.
   function darken() {
+    stopPreview();
     clearTimeout(fadeBack);
     opening = false;
     if (!fadeOn) return;
@@ -1283,10 +1355,18 @@ html.faded #stage{opacity:0}
     var kind = rowKey(), it = items(kind)[colOf(kind)];
     if (!it) return;
     if (it.folder) return openFolder();
+    // The input goes back to its own app, which opens it full screen.
+    var preview = tilePreview.target;
+    stopPreview();
+    if (preview) tilePreview.opened = preview.key;
     fadeThenOpen(it.overlay === true, function (done) {
       postJson('/api/home/open', { kind: kind, id: it.id }, function (r) {
         done(!!(r && r.ok));
-        if (!r || !r.ok) toast(t('home.openFailed', 'That did not open'), r && r.error);
+        if (!r || !r.ok) {
+          if (preview && tilePreview.opened === preview.key) tilePreview.opened = null;
+          followPreview();
+          toast(t('home.openFailed', 'That did not open'), r && r.error);
+        }
       });
     });
   }
@@ -1326,6 +1406,189 @@ html.faded #stage{opacity:0}
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
       (layout && layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
       (layout && layout.view === 'alternative' ? ' alternative' : '');
+    followPreview();
+  }
+
+  // ---------------------------------------------------------------- preview
+
+  /*
+   * A live picture of the input whose tile is in focus, once focus has rested
+   * on it. The page plays the input as an external source; on a G3 (webOS
+   * 9.2.2) it showed in about 150 ms, sent nothing over CEC and woke nothing.
+   * The TV has one HDMI receiver, so previewing another input takes it off the
+   * one that was on (back on it in under a second). Devices behind one
+   * receiver share its input, so each shows what that input shows.
+   *
+   * The video reports playing whether or not the input has a picture, so the
+   * server reads the receiver: none after a few tries, and the video lets the
+   * input go and the note says so.
+   */
+  var PREVIEW_DWELL_MS = 400;
+  var PREVIEW_START_MS = 4000;
+  var PREVIEW_SIGNAL_MS = 1000;
+  var PREVIEW_SIGNAL_TRIES = 3;
+  // A G3's decoder had no format for an HD channel 1.8 s after the picture
+  // showed, and had it 1.2 s later; SD channels are quicker.
+  var PREVIEW_CHANNEL_INFO_MS = 500;
+  var PREVIEW_CHANNEL_POLL_MS = 400;
+  var PREVIEW_CHANNEL_TRIES = 15;
+  // target: { key, row, item, port } - port for an input, 0 for a channel.
+  var tilePreview = { target: null, gen: 0, timer: null, playing: false, blank: false, info: null, details: false, opened: null };
+
+  // What the tile in focus would preview: a connected input or a TV channel.
+  // Devices on one input share its key, so moving between them keeps the picture.
+  function previewTarget() {
+    if (!layout || layout.livePreview !== true || document.hidden || opening) return null;
+    if (state.arranging || state.bar >= 0 || state.rail || recents.open || finder.open || folder.open) {
+      tilePreview.opened = null;
+      return null;
+    }
+    var row = rowKey(), it = items(row)[colOf(row)];
+    if (!it) { tilePreview.opened = null; return null; }
+    var target = null;
+    if (row === 'dev' && !it.unused && it.port >= 1 && it.port <= 4) target = { key: 'hdmi' + it.port, row: row, item: it, port: it.port };
+    if (row === 'ch' && !it.radio && it.id) target = { key: 'ch' + it.id, row: row, item: it, port: 0 };
+    // A guide or catalogue reply can repaint Home before the input opens.
+    // Keep that tile released until focus moves away or Home returns.
+    if (target && target.key === tilePreview.opened) return null;
+    tilePreview.opened = null;
+    return target;
+  }
+
+  // Called wherever focus or what covers the rows may have changed.
+  function followPreview() {
+    var next = previewTarget();
+    if (next && tilePreview.target && next.key === tilePreview.target.key) {
+      if (tilePreview.target.item !== next.item) { tilePreview.target = next; if ($('preview').className) renderNow(); }
+      var details = layout.picture === true;
+      if (details !== tilePreview.details) {
+        tilePreview.details = details;
+        renderPreviewInfo();
+        if (details && next.port && !tilePreview.info && tilePreview.playing && !tilePreview.blank) loadPreviewInfo(next, tilePreview.gen);
+      }
+      return;
+    }
+    stopPreview();
+    if (!next) return;
+    tilePreview.target = next;
+    tilePreview.details = layout.picture === true;
+    var gen = tilePreview.gen;
+    tilePreview.timer = setTimeout(function () { if (gen === tilePreview.gen) startPreview(next); }, PREVIEW_DWELL_MS);
+  }
+
+  function releaseVideo() {
+    var v = $('pvVideo');
+    if (!v.firstChild) return;
+    v.pause();
+    while (v.firstChild) v.removeChild(v.firstChild);
+    // Hiding the element keeps the input or tuner; emptied and loaded, it lets it go.
+    v.removeAttribute('src');
+    v.load();
+  }
+
+  function stopPreview() {
+    var shown = !!$('preview').className;
+    tilePreview.gen++;
+    clearTimeout(tilePreview.timer);
+    tilePreview.timer = null;
+    tilePreview.target = null;
+    tilePreview.playing = false;
+    tilePreview.blank = false;
+    tilePreview.info = null;
+    releaseVideo();
+    $('preview').className = '';
+    $('now').className = '';
+    if (!shown) return;
+    renderNow();
+    // The preview may have moved the receiver off the input the plate describes.
+    refreshPicture();
+  }
+
+  /*
+   * A channel's format is polled whether or not the band shows, as it is also
+   * how a channel off air is told: BBC FOUR HD and BBC THREE HD in the
+   * afternoon on a G3 played with no format and a black picture.
+   */
+  function loadPreviewInfo(target, gen, tries) {
+    var details = !!layout && layout.picture === true;
+    if (target.port && !details) return;
+    if (tries === undefined) tries = target.port ? 1 : PREVIEW_CHANNEL_TRIES;
+    getJson('/api/home/picture?kind=' + (target.port ? 'input&port=' + target.port : 'channel'), function (r) {
+      if (gen !== tilePreview.gen || !r || !r.ok) return;
+      // A channel's decoder reports its format a moment after the picture
+      // shows; the band waits for it, rather than showing half and growing.
+      if (!target.port && !r.signal) {
+        if (tries > 1) {
+          return setTimeout(function () { if (gen === tilePreview.gen) loadPreviewInfo(target, gen, tries - 1); }, PREVIEW_CHANNEL_POLL_MS);
+        }
+        return blankPreview();
+      }
+      tilePreview.info = r;
+      renderPreviewInfo();
+    });
+  }
+
+  function renderPreviewInfo() {
+    if (tilePreview.blank || !$('preview').className) return;
+    var p = tilePreview.info;
+    if (!layout || layout.picture !== true || !p) { $('preview').className = 'on'; return; }
+    var sig = p.signal ? signalParts(p.signal) : [];
+    $('pvMode').textContent = p.mode ? p.mode.display : '';
+    $('pvLight').innerHTML = lightHtml(p);
+    $('pvSig').innerHTML = spans(sig);
+    $('preview').className = 'on' + (p.mode || sig.length ? ' info' : '');
+  }
+
+  function blankPreview() {
+    releaseVideo();
+    tilePreview.blank = true;
+    $('preview').className = 'on blank';
+    renderNow();
+  }
+
+  /*
+   * An input plays as an external source. A channel plays as a broadcast
+   * preview: on a G3 (webOS 9.2.2) service/webos-broadcast-preview tuned
+   * tv://<channelId> in about 120 ms and left the TV's last channel as it
+   * was, where service/webos-broadcast with the same source made it the last
+   * channel.
+   */
+  function startPreview(target) {
+    var gen = tilePreview.gen, v = $('pvVideo'), s = document.createElement('source');
+    var current = function () { return gen === tilePreview.gen; };
+    v.muted = true;
+    v.defaultMuted = true;
+    s.setAttribute('type', target.port ? 'service/webos-external' : 'service/webos-broadcast-preview');
+    s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
+    v.appendChild(s);
+    v.onplaying = function () {
+      if (!current() || tilePreview.playing) return;
+      tilePreview.playing = true;
+      if (target.port) checkSignal(target.port, gen, PREVIEW_SIGNAL_TRIES);
+      // The decoder reports the channel's format a moment after it plays.
+      else setTimeout(function () { if (current()) loadPreviewInfo(target, gen); }, PREVIEW_CHANNEL_INFO_MS);
+    };
+    v.onerror = function () { if (current()) blankPreview(); };
+    v.load();
+    // Promise or undefined, by engine; the events say how it went.
+    var played = v.play();
+    if (played && played.then) played.then(null, function () {});
+    $('preview').className = 'on';
+    $('now').className = 'previewing';
+    renderNow();
+    tilePreview.timer = setTimeout(function () { if (current() && !tilePreview.playing) blankPreview(); }, PREVIEW_START_MS);
+  }
+
+  function checkSignal(port, gen, tries) {
+    setTimeout(function () {
+      if (gen !== tilePreview.gen) return;
+      getJson('/api/home/signal?port=' + port, function (r) {
+        if (gen !== tilePreview.gen) return;
+        if (r && r.ok && r.signal) return loadPreviewInfo(tilePreview.target, gen);
+        if (tries > 1) return checkSignal(port, gen, tries - 1);
+        blankPreview();
+      });
+    }, PREVIEW_SIGNAL_MS);
   }
 
   // ---------------------------------------------------------------- more apps
@@ -2419,6 +2682,7 @@ html.faded #stage{opacity:0}
   }
 
   function returned() {
+    tilePreview.opened = null;
     var dark = faded;
     if (!dark) fadeIn();
     initialEscape = false;
@@ -2474,6 +2738,7 @@ html.faded #stage{opacity:0}
   // Home pressed with the view already open reaches it as a relaunch.
   document.addEventListener('webOSRelaunch', returned);
   document.addEventListener('visibilitychange', function () { if (document.hidden) darken(); else returned(); });
+  window.addEventListener('pagehide', stopPreview);
 
   // Started dark where fading is chosen; in at the first catalogue, or before
   // long without one.
