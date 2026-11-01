@@ -212,6 +212,7 @@ function luna(uri, p, cb) {
       { id: 'com.webos.app.music', title: 'Music', icon: '/x/music.png', visible: false },
       { id: 'com.webos.app.hdmi1', title: 'HDMI 1', lptype: 'bookmark' }
     ];
+    if (tv.newApp) r.launchPoints.push({ id: 'new.app', title: 'New', icon: '/x/new.png' });
   } else if (uri === 'com.webos.service.eim/getAllInputStatus') {
     // As a G3 reports them: a receiver with a console behind it on HDMI 2, HDMI 1 empty.
     r.devices = tv.devices || [
@@ -308,6 +309,37 @@ step('a layout saved from a dashboard changes the version the view\'s heartbeat 
       assert.notStrictEqual(after, before, 'so the view reloads its layout');
       assert.strictEqual(home.beat().layoutVersion, after, 'and stays put until the next change');
       done();
+    });
+  });
+});
+
+step('after a start the rows come from the lists last read, and a change read behind them reloads the view', function (done) {
+  start(null);
+  home.catalogue(function (c) {
+    assert.deepEqual(c.order.app, ['netflix', 'youtube.leanback.v4', 'cdp-30', 'lg-home']);
+    var held = [];
+    var slowLuna = function (uri, p, cb) {
+      if (uri === 'com.webos.applicationManager/listLaunchPoints') return held.push(function () { luna(uri, p, cb); });
+      luna(uri, p, cb);
+    };
+    var lists = fs.readFileSync(path.join(dir, 'home-lists.json'));
+    start(null, { luna: slowLuna });
+    fs.writeFileSync(path.join(dir, 'home-lists.json'), lists);
+    tv.newApp = true;
+    var before = home.beat().layoutVersion;
+    home.catalogue(function (c2) {
+      assert.deepEqual(c2.order.app, c.order.app, 'answered from the saved list while the TV is still asked');
+      until(function () { return held.length > 0; }, 2000, function () {
+        assert.strictEqual(held.length, 1, 'and the list read again behind it');
+        held.shift()();
+        until(function () { return home.beat().layoutVersion !== before; }, 2000, function () {
+          assert.notStrictEqual(home.beat().layoutVersion, before, 'a list that changed has the view reload');
+          home.catalogue(function (c3) {
+            assert.ok(c3.order.app.indexOf('new.app') !== -1, 'with the list just read');
+            done();
+          });
+        });
+      });
     });
   });
 });

@@ -454,7 +454,8 @@ function readConfig() {
 // blocking or freeing LG's search, which is not saved in the layout.
 function layoutVersion() {
   readConfig();
-  return String(configMtime) + (search.blocked() ? '-search-blocked' : '');
+  return String(configMtime) + (search.blocked() ? '-search-blocked' : '') +
+    (listsRevision ? '-lists' + listsRevision : '');
 }
 
 function saveConfig() {
@@ -563,11 +564,60 @@ function layoutOf(c) {
 
 // ---------------------------------------------------------------- what it shows
 
+/*
+ * The lists the rows are built from, as last read, in home-lists.json. Every
+ * child start waits its turn just after the server starts (lib/children), so
+ * a view opened then waited on them: 7.9 s for the first catalogue on a B8
+ * (webOS 4.4.3) against 0.75 s later. Until a list is read in this run, the
+ * saved one is answered at once and read again behind it; a change bumps
+ * layoutVersion, so the view reloads on its next heartbeat.
+ */
+var savedLists = null;
+var listsRevision = 0;
+var listLoading = {};
+
+function listsFile() { return path.join(stateDir, 'home-lists.json'); }
+
+function savedList(key) {
+  if (savedLists === null) {
+    try { savedLists = JSON.parse(fs.readFileSync(listsFile(), 'utf8')) || {}; } catch (e) { savedLists = {}; }
+  }
+  return savedLists[key] || null;
+}
+
+// True when the list differs from the one saved.
+function saveList(key, value) {
+  savedList(key);
+  if (JSON.stringify(savedLists[key]) === JSON.stringify(value)) return false;
+  savedLists[key] = value;
+  try {
+    writeJsonAtomic(listsFile(), savedLists, 384);
+  } catch (e) {
+    console.error('home: could not save home-lists.json: ' + e.message);
+  }
+  return true;
+}
+
 function cached(key, ttl, load, cb) {
   var hit = listCache[key];
   if (hit && nowMs() - hit.at < ttl) return cb(hit.value);
+  var saved = hit ? null : savedList(key);
+  if (saved) {
+    cb(saved);
+    if (listLoading[key]) return;
+    listLoading[key] = true;
+    return load(function (value) {
+      listLoading[key] = false;
+      if (!value) return;
+      listCache[key] = { at: nowMs(), value: value };
+      if (saveList(key, value)) listsRevision++;
+    });
+  }
   load(function (value) {
-    if (value) listCache[key] = { at: nowMs(), value: value };
+    if (value) {
+      listCache[key] = { at: nowMs(), value: value };
+      saveList(key, value);
+    }
     cb(value);
   });
 }
@@ -782,7 +832,7 @@ function build(c, apps, devs, chans, recs) {
 // The apps' cards while the row is switched on; null when the TV gave none.
 function recommendedCards(c, cb) {
   if (!c.recommended) return cb([]);
-  recommended.cards(cb);
+  cached('rec', LIST_TTL_MS, function (done) { recommended.cards(done); }, cb);
 }
 
 /*
@@ -2170,6 +2220,16 @@ function status(cb) {
   });
 }
 
+/*
+ * What the view's catalogue carries beside the rows, without status()'s two
+ * luna calls: just after a start they wait their turn behind every other
+ * (lib/children), 3.7 s on a B8 (webOS 4.4.3).
+ */
+function viewStatus() {
+  var c = readConfig();
+  return { layout: layoutOf(c), enabled: c.enabled, supported: supported(), wallpapers: wallpapers.status() };
+}
+
 // LG's Home reads its layout from /mnt/lg/cmn_data/manifest on webOS 9 only;
 // webOS 10 and 11 have no writable layout path (TV-RESEARCH).
 function startLayoutAvailable() { return /^9\./.test(String(webosVersion || '')); }
@@ -2241,6 +2301,9 @@ function init(opts) {
   recovering = false;
   guideCache = { at: 0, data: {} };
   listCache = {};
+  savedLists = null;
+  listsRevision = 0;
+  listLoading = {};
   changing = false;
   settingsQueue = [];
   settingsBusy = false;
@@ -2388,6 +2451,7 @@ module.exports = {
   flush: recent.flush,
   status: status,
   catalogue: catalogue,
+  viewStatus: viewStatus,
   channelList: channelList,
   guide: guide,
   now: now,

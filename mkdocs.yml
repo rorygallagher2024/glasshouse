@@ -57,6 +57,7 @@ nav:
   - Glasshouse apps:
       - The TV app: apps/tv-app.md
       - Android app: apps/android.md
+      - Pane (macOS): apps/pane.md
   - Smart Home & Lighting:
       - Home Assistant:
           - Overview: HOME-ASSISTANT.md
