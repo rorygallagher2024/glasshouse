@@ -18,6 +18,8 @@ changed.
 
 ## Bluetooth audio
 
+![Bluetooth audio on a B8: a paired pair of headphones, with Find devices, Connect and Remove](../screenshots/audio-bluetooth.png)
+
 The headphones and speakers paired with the TV, each with whether it is
 connected. **Connect** or **Disconnect** one, or **Remove** it from the TV; a
 removed device has to be paired again before it can be used.
