@@ -375,3 +375,5 @@ ones; the generated remote filter opens the standalone Home app's guide
 when the Home key names it. Browser checks cover the Guide tile and
 now-and-next without favourites, and a delayed response from the previous
 provider leaving the chosen provider's groups in place.
+The audio route checks use a readable stream for request bodies, including
+the UTF-8 decoding used by every JSON POST.
