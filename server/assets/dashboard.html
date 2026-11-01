@@ -640,11 +640,16 @@ function optionRows(d) {
       r.push(logo);
     }
   }
-  if (d.deviceDetection !== undefined || dev.length) r.push(head(t('adv.devices', 'Devices')));
+  var lookups = d.privacy ? d.privacy.localLookups === true : undefined;
+  if (d.deviceDetection !== undefined || lookups !== undefined || dev.length) r.push(head(t('adv.devices', 'Devices')));
   for (var di = 0; di < dev.length; di++) r.push(lgRow(dev[di]));
   if (d.deviceDetection !== undefined) {
     r.push(toggle(t('adv.deviceDetection', 'Auto device detection'), d.deviceDetection, 'deviceDetection',
       t('tv.options.deviceDetection.hint', 'Finds devices to show on the Home Dashboard and control: a set-top box, and smart lights, plugs and switches. Newer TVs look up every address on your home network each time they switch on to do it. Switched off, the scans stop and the TV no longer finds devices by itself.')));
+  }
+  if (lookups !== undefined) {
+    r.push(toggle(t('adv.localLookups', 'Answer device scans on the TV'), lookups, 'localLookups',
+      t('tv.options.localLookups.hint', 'LG\u2019s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes.')));
   }
   if (lights.standby !== undefined || lights.hasLogo) {
     r.push(head(t('adv.frontLights', 'Front lights')));
@@ -1067,7 +1072,9 @@ function glasshouseHomeRows(d) {
            press: d.enabled ? t('tv.home.switch.off', 'Press OK to use LG Home again') : t('tv.home.switch.on', 'Press OK to use Glasshouse Home'),
            hint: d.restorePending ? t('home.restoreRetry', 'Retry restoring LG Home before switching Glasshouse Home on again.')
                  : d.enabled ? t('home.isOnDesc', 'It opens in LG\u2019s Home\u2019s place: with the Home and Back buttons, and when the TV wakes on Home.')
-                 : t('home.isOffDesc', 'Nothing of LG\u2019s is changed: Glasshouse Home is laid over LG\u2019s Home while on, and switching off takes it away.') });
+                 : t('home.isOffDesc', 'Nothing of LG\u2019s is changed: Glasshouse Home is laid over LG\u2019s Home while on, and switching off takes it away.'),
+           warn: d.supported && d.supported.restartsApps
+             ? t('home.restartsApps', 'On this TV, switching Glasshouse Home on or off, or holding Home for LG\u2019s Home, restarts the TV\u2019s app manager, which closes the apps that are open.') : undefined });
   if (!d.enabled) return r;
   r.push(head(t('home.customisation', 'Home customisation')));
   if (d.supported.ok && d.hideLgHomeAtStartAvailable !== false) {
@@ -1089,6 +1096,21 @@ function glasshouseHomeRows(d) {
                  ['showLastOn', t('home.showLast', 'Last watched'), t('home.showLastDesc', 'At the top of Glasshouse Home and on the input it was on: what the TV last showed.')],
                  ['showAppCount', t('home.showAppCount', 'App count'), t('home.showAppCountDesc', 'Beside the Apps row: how many of the TV\u2019s apps it shows.')],
                  ['showCec', t('home.showCec', 'CEC addresses'), t('home.showCecDesc', 'On each input\u2019s tile: the HDMI-CEC address of the device behind it.')]];
+    // The live preview and, while it is on, its options.
+    var pvRows = [['livePreview', t('home.livePreview', 'Live preview'), t('home.livePreviewDesc', 'A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.')]];
+    // Neither option plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
+    if (d.layout.livePreview === true && !d.supported.standalone) {
+      pvRows.push(['previewAlways', t('home.previewAlways', 'Keep the preview on'), t('home.previewAlwaysDesc', 'The preview runs whenever Glasshouse Home is on screen, not only while a tile with one is chosen: the HDMI input last watched, or otherwise the TV on its last channel. Choosing another input or channel moves it there.')]);
+      pvRows.push(['previewInTile', t('home.previewInTile', 'Preview in the tile'), t('home.previewInTileDesc', 'The preview fills the tile it shows, under the tile’s own name, rather than beside the clock.')]);
+    }
+    for (var pi = 0; pi < pvRows.length; pi++) {
+      var pvOn = d.layout[pvRows[pi][0]] === true;
+      r.push({ label: pvRows[pi][1], key: pvRows[pi][0],
+               value: pvOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: pvOn ? 'on' : 'off',
+               act: can ? 'homeFlag' : null, on: pvOn,
+               press: pvOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+               hint: pvRows[pi][2] });
+    }
     for (var si = 0; si < shows.length; si++) {
       var showOn = d.layout[shows[si][0]] !== false;
       // Alternative View's rows have no titles, so no app count beside them.
@@ -1133,9 +1155,25 @@ function glasshouseHomeRows(d) {
              act: can ? 'homeFade' : null, on: fadeOn,
              press: fadeOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.fadeDesc', 'Glasshouse Home fades in as it comes on screen, and out as an app, input or channel opens.') });
+    // The other kinds of motion, each on unless switched off.
+    [['wallDrift', t('home.motion.drift', 'Wallpaper drift'), t('home.motion.driftDesc', 'The wallpaper moves and zooms very slowly, so it never sits still on the screen.')],
+     ['wallCrossfade', t('home.motion.crossfade', 'Wallpaper cross-fade'), t('home.motion.crossfadeDesc', 'The picture fades into the next when the part of the day changes, rather than switching at once.')],
+     ['smoothScroll', t('home.motion.scroll', 'Smooth scrolling'), t('home.motion.scrollDesc', 'A row glides to the chosen tile, rather than jumping to it.')],
+     ['slidePanels', t('home.motion.slide', 'Sliding panels'), t('home.motion.slideDesc', 'Recent apps, Search and More apps slide in and out, rather than appearing at once.')]
+    ].forEach(function (m) {
+      var motionOn = d.layout[m[0]] !== false;
+      r.push({ label: m[1], key: m[0],
+               value: motionOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: motionOn ? 'on' : 'off',
+               act: can ? 'homeFlag' : null, on: motionOn,
+               press: motionOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+               hint: m[2] });
+    });
     // OK steps through the presets; colours picked on the browser dashboard show as Custom.
+    // No colours chosen is the view's own look, the preset marked own.
     var presets = d.colourPresets || [], cur = d.layout.colours, at = cur ? -1 : 0;
-    for (var pi = 0; pi < presets.length; pi++) if (cur && presets[pi].text === cur.text && presets[pi].accent === cur.accent) at = pi;
+    for (var pi = 0; pi < presets.length; pi++) {
+      if (cur ? presets[pi].text === cur.text && presets[pi].accent === cur.accent : presets[pi].own) at = pi;
+    }
     if (presets.length) {
       var lookNames = { warm: t('home.colours.warm', 'Warm'), glasshouse: t('home.colours.glasshouse', 'Glasshouse'),
                         pure: t('home.colours.pure', 'Pure white'), white: t('home.colours.white', 'White'),
@@ -1148,6 +1186,14 @@ function glasshouseHomeRows(d) {
                press: t('tv.home.colours.press', 'Press OK for {name}', { name: lookNames[nextLook.id] || nextLook.id }),
                hint: t('home.colours.tvHint', 'The text and accent on Glasshouse Home. Any colour can be picked on the browser dashboard’s Home tab.') });
     }
+    // OK steps down from full to off; the browser dashboard's slider sets any 5% step.
+    var dark = typeof d.layout.darkening === 'number' ? d.layout.darkening : 100;
+    var darkNext = dark > 75 ? 75 : dark > 50 ? 50 : dark > 25 ? 25 : dark > 0 ? 0 : 100;
+    var darkName = function (v) { return v === 0 ? t('common.off', 'Off') : v + '%'; };
+    r.push({ label: t('home.darkening', 'Darkening'), value: darkName(dark), cls: 'act',
+             act: can ? 'homeDarkening' : null, key: darkNext,
+             press: t('tv.home.darkening.press', 'Press OK for {value}', { value: darkName(darkNext) }),
+             hint: t('home.darkeningDesc', 'How much the wallpaper is darkened behind the clock and the rows, to keep them easy to read. Off shows the picture as it is.') });
   }
   // Opening Home opens Glasshouse Home only while it has LG's Home's place.
   if (d.enabled && d.active) {
@@ -1584,6 +1630,23 @@ function backRowApps() {
            hint: t('tv.backRow.apps.hint', 'Back to the Apps tab.') };
 }
 
+function nativeDtsDescription(helper) {
+  if (helper.active) {
+    if (helper.hdCarrierActive) {
+      if (helper.hdPayloadActive) return t('audio.nativeHdActive', 'DTS-HD forwarding is active. Complete DTS-HD MA or DTS:X frames are being sent over eARC. Check the receiver’s incoming format to confirm reception.');
+      if (helper.hdReady && helper.stream && helper.stream.coreOnlyFrames > 0)
+        return t('audio.nativeHdCore', 'The current stream is forwarding DTS core only.');
+      return t('audio.nativeHdPreparing', 'Preparing DTS-HD output. Playback is muted while the output settles.');
+    }
+    return t('audio.overrideActive', 'The helper reports an active compressed forwarding route. Check the receiver’s incoming format to confirm DTS reception.');
+  }
+  if (helper.running) return (helper.mode === 'hd'
+    ? t('audio.nativeHdWaiting', 'Enabled for TV apps with DTS-HD MA and DTS:X forwarding over eARC.')
+    : t('audio.nativeWaiting', 'Enabled for TV apps using the shared audio pipeline. Forwards 48 kHz DTS core over eARC; DTS-HD extensions are not forwarded.')) +
+    (helper.lastError ? ' ' + t('audio.nativeRefused', 'The last DTS stream was refused, so it did not play: {reason}', { reason: helper.lastError }) : '');
+  return t('audio.overrideStopped', 'Enabled, but its service is not running. Disable the override before retrying.');
+}
+
 // A picture setting's number as LG's menu shows it: tint as R and G, colour
 // temperature as Warm and Cool, the rest either side of 0 with a sign.
 function lgNumber(g, v) {
@@ -1741,7 +1804,7 @@ function audioRows(d) {
   ls.forEach(function (g) { if (g.section === 'sound') r.push(lgRow(g)); });
   ls.forEach(function (g) { if (g.column === 'audioFormat') r.push(lgRow(g)); });
   r.push(head(t('audio.pathTitle', 'Soundbar and receiver')));
-  var unknown = t('audio.unknown', 'Unknown'), receiver = d.receiver;
+  var unknown = t('audio.unknown', 'Unknown'), receiver = d.receiver, helper = d.override;
   var dts = null;
   d.tv.formats.forEach(function (f) { if (f.id === 'dts') dts = f; });
   r.push({ label: t('tv.system.model', 'Model'), value: d.identity.model || unknown,
@@ -1762,6 +1825,29 @@ function audioRows(d) {
       ? t('audio.linkInactive', 'No active ARC link') : receiver.link === 'unknown' ? receiver.detected ? t('audio.deviceDetected', 'HDMI audio device detected')
       : t('audio.linkUnknown', 'Link unknown') : receiver.link,
     sub: [receiver.name, receiver.port ? t('audio.receiverPort', 'HDMI {port}', { port: receiver.port }) : null].filter(Boolean).join(' · '), hint: t('tv.audio.linkHint', 'The negotiated link is separate from the eARC setting. Standard DTS can use ARC; DTS-HD needs eARC. Receiver capability declarations do not prove reception.') });
+  if (helper.offered) r.push(head(t('audio.overrideTitle', 'Experimental DTS forwarding')));
+  var on = helper.enabled || helper.running === true || helper.needsRestore === true;
+  var can = d.writable !== false && !helper.busy && (on ? helper.canDisable : helper.available);
+  var hint = on && !helper.verified ? helper.reason : helper.needsRestore
+    ? t('audio.nativeRestore', 'A previous change needs restoration. Disable forwarding before enabling it again.') : on
+    ? helper.backend === 'native-apps' ? nativeDtsDescription(helper)
+      : helper.active ? t('audio.overrideActive', 'The helper reports an active compressed forwarding route. Check the receiver’s incoming format to confirm DTS reception.')
+        : helper.running ? t('audio.overrideWaiting', 'Running and waiting for a matching DTS input on HDMI 3 over eARC.')
+          : t('audio.overrideStopped', 'Enabled, but its service is not running. Disable the override before retrying.')
+    : helper.available ? helper.backend === 'native-apps'
+      ? helper.mode === 'hd'
+        ? t('audio.nativeHdReady', 'Enable experimental DTS-HD MA and DTS:X forwarding for TV apps. Requires eARC, Pass Through and a DTS-HD receiver. Enabling restarts TV playback.')
+        : t('audio.nativeReady', 'Enable DTS core forwarding for TV apps through the shared audio pipeline. Enabling restarts TV media playback. Requires eARC and Pass Through.')
+      : t('audio.overrideReady', 'Experimental HDMI 3 to eARC forwarding is available with the checked helper. Changing it can briefly interrupt HDMI audio.')
+      : dts && dts.advertised === true && d.tv.dtsDecoder === true
+        ? t('audio.overrideNative', 'The TV already advertises DTS and has LG’s DTS decoder. Use its native audio settings first. No experimental forwarding profile is offered for this TV.')
+        : helper.reason || t('audio.overrideUnknown', 'No validated DTS forwarding helper is available for this TV.');
+  if (helper.offered) r.push({ label: t('tv.audio.forwarding', 'DTS forwarding'), badge: t('tv.audio.experimental', 'Experimental'),
+    value: helper.busy ? t('audio.changing', 'Changing…') : on ? t('common.on', 'On') : helper.available
+      ? t('common.off', 'Off') : t('audio.unavailable', 'Unavailable'),
+    cls: on ? 'warn' : 'off', act: can ? 'audioOverride' : null, on: on,
+    press: on ? t('tv.audio.disable', 'Press OK to disable the override') : t('tv.audio.enable', 'Press OK, then again, to enable the override'),
+    hint: d.writable === false ? t('tv.audio.readOnly', 'TV controls are disabled in the server configuration.') : hint });
   r.push(head(t('audio.tableCaption', 'Supported formats')));
   d.tv.formats.forEach(function (f) {
     r.push({ label: f.name, value: audioDeclaration(f.advertised),
@@ -2775,6 +2861,11 @@ function activate() {
   switch (r.act) {
     case 'audioRefresh':
       return fetchTab(true);
+    case 'audioOverride':
+      if (!r.on && confirmFirst(r, t('tv.audio.confirm', 'Press OK again to enable experimental DTS forwarding'))) return;
+      r.value = t('audio.changing', 'Changing…');
+      render();
+      return sendPost('/api/audio', { enabled: !r.on });
     case 'uninstall':
       if (!r.confirming) {
         r.confirming = true;
@@ -2874,6 +2965,10 @@ function activate() {
                       r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'homePicture':
       return homeLayout({ picture: !r.on });
+    case 'homeFlag':
+      var flagChange = {};
+      flagChange[r.key] = !r.on;
+      return homeLayout(flagChange);
     case 'homeShow':
       var showChange = {};
       showChange[r.key] = !r.on;
@@ -2888,9 +2983,11 @@ function activate() {
       return homeLayout({ recommended: !r.on });
     case 'homeHideUnused':
       return homeLayout({ hideUnused: !r.on });
+    case 'homeDarkening':
+      return homeLayout({ darkening: r.key });
     case 'homeColours':
-      // The first preset is the view's own colours, saved as none chosen.
-      return homeLayout({ colours: r.key.id === homeData.colourPresets[0].id ? null : { text: r.key.text, accent: r.key.accent } });
+      // The view's own look is saved as none chosen.
+      return homeLayout({ colours: r.key.own ? null : { text: r.key.text, accent: r.key.accent } });
     case 'homeOpen':
       return send({ action: 'launchApp', value: 'com.webos.app.home' });
     case 'homeRowUp':
@@ -2967,6 +3064,8 @@ function activate() {
       return send({ action: 'quickBoot', value: !r.on }, r.on ? t('tv.flash.quickBootOff', 'Quick Boot turned off') : t('tv.flash.quickBootOn', 'Quick Boot turned on'));
     case 'homeAutoLaunch':
       return send({ action: 'homeAutoLaunch', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
+    case 'localLookups':
+      return send({ action: 'localLookups', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'deviceDetection':
       return send({ action: 'deviceDetection', value: !r.on }, r.on ? t('tv.flash.detectionOff', 'Device detection turned off') : t('tv.flash.detectionOn', 'Device detection turned on'));
     case 'alwaysReady':

@@ -40,7 +40,8 @@ function luna(uri, payload, cb) {
   process.nextTick(function () { cb(r); });
 }
 
-recentApps.init({ luna: luna });
+var excluded = [];
+recentApps.init({ luna: luna, excluded: function () { return excluded; } });
 routes.init({ config: { allowControl: true, token: '' }, home: { recentApps: recentApps } });
 var server = http.createServer(routes.handleRequest);
 function request(body, cb, suffix) {
@@ -56,6 +57,23 @@ function request(body, cb, suffix) {
 }
 
 var steps = [
+  function (next) {
+    reset();
+    request(null, function () {
+      excluded = ['netflix'];
+      request(null, function (res) {
+        assert.equal(res.statusCode, 404, 'changing exclusions invalidates cached image access immediately');
+        request(null, function (res2, r) {
+          assert.deepEqual(r.apps.map(function (a) { return a.id; }), ['web.app']);
+          request({ action: 'closeAll' }, function () {
+            assert.ok(tv.running.indexOf('netflix') !== -1, 'excluded apps remain running');
+            excluded = [];
+            next();
+          });
+        });
+      }, '/image?id=netflix');
+    });
+  },
   function (next) {
     reset(); tv.refused = true;
     request({ action: 'close', id: 'netflix' }, function (res, r) {

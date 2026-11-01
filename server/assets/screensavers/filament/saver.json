@@ -6,6 +6,7 @@
     "es": "Filamento",
     "hu": "Izzószál",
     "it": "Filamenti",
+    "pt": "Filamento",
     "ru": "Нити"
   },
   "description": {
@@ -13,6 +14,7 @@
     "es": "Enjambres de luz que giran y dejan estelas sobre negro, cambiando de color poco a poco.",
     "hu": "Fényrajok köröznek és húznak csíkot a fekete háttéren, lassan változó színnel.",
     "it": "Sciami di luce che girano e lasciano scie sul nero, cambiando lentamente colore.",
+    "pt": "Enxames de luz que giram e deixam rastos sobre fundo preto, mudando lentamente de cor.",
     "ru": "Рои света кружат и тянутся по чёрному фону, медленно меняя цвет."
   },
   "license": "MIT",

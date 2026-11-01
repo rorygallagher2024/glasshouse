@@ -20,10 +20,10 @@
  */
 (function (root) {
   // Languages that have a file in /assets/i18n/. English needs none.
-  var LANGS = ['es', 'de', 'ru', 'hu', 'it'];
+  var LANGS = ['es', 'de', 'ru', 'hu', 'it', 'ar', 'pt'];
   // Each language in its own words, as the language list shows it, so it can
   // be found whatever the page is in.
-  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', it: 'Italiano' };
+  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', it: 'Italiano', ar: 'العربية', pt: 'Português' };
   /*
    * Languages translated only in part, with the pages they cover in full:
    * 'web' (the dashboard), 'tv' (the TV app) and 'home' (Glasshouse Home).
@@ -31,6 +31,13 @@
    * page mixes it with English; elsewhere it is used only once chosen.
    */
   var PARTIAL = { de: ['home'] };
+  /*
+   * Languages written right to left. The page is laid out that way only where
+   * it is used with a pointer: on the TV app, Glasshouse Home and the TV's setup
+   * page the remote's Left and Right still move as laid out left to right, so
+   * those keep that layout, with the text in its language.
+   */
+  var RTL = { ar: true };
 
   var dict = {};
   var lang = 'en';
@@ -87,6 +94,15 @@
       x.send(null);
       if (x.status === 200) dict = JSON.parse(x.responseText);
       document.documentElement.setAttribute('lang', lang);
+      if (RTL[lang] && page() === 'web' && !/\/setup\.html$/.test(location.pathname)) {
+        document.documentElement.setAttribute('dir', 'rtl');
+      } else if (RTL[lang]) {
+        // Laid out left to right, a title and a note beside it, both right to
+        // left, read as one run and swapped places: each span keeps its own.
+        var style = document.createElement('style');
+        style.textContent = 'span{unicode-bidi:-webkit-isolate;unicode-bidi:isolate}';
+        (document.head || document.documentElement).appendChild(style);
+      }
     } catch (e) {
       dict = {};
       lang = 'en';

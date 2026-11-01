@@ -132,7 +132,16 @@ waitFor('the server and its heartbeat', function () { return alive(serverPid()) 
           var stuck = parseInt(read(MODE + '.child'), 10);
           after(500, function () {
             if (alive(stuck)) return finish(1, 'the stuck child is still running');
-            if (serverPid() !== second || !alive(second)) return finish(1, 'the server was restarted for a stuck child');
+            // Failed once in CI (Node 20) with no restart logged; say which it was.
+            var now = serverPid();
+            if (now !== second || !alive(second)) {
+              var procs = '';
+              try { procs = child.execSync('ps -eo pid,ppid,stat,args', { encoding: 'utf8' }); } catch (e) {}
+              return finish(1, 'the server was ' + (now !== second ? 'replaced (pid ' + second + ' -> ' + now + ')' : 'gone (pid ' + second + ')') +
+                ' after a stuck child was killed\n--- processes ---\n' + procs.split('\n').filter(function (l) {
+                  return /node|tvwebctl|sh -c/.test(l);
+                }).join('\n'));
+            }
             console.log('  ✓ a child stuck as node is killed, and the server carries on');
 
             // 4. A dead server's leftover copy is cleared before a new one starts

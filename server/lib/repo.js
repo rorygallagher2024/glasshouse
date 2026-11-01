@@ -1,6 +1,8 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
 // The Homebrew Channel catalog, merged with what is installed on the TV.
 var url = require('url');
+var net = require('net');
+var validateUrl = require('./fetch').validateUrl;
 var msg = require('./say').msg;
 var PROTECTED_APP_IDS = require('./apps').PROTECTED_APP_IDS;
 var SELF_UPDATING = require('./installer').SELF_UPDATING;
@@ -50,6 +52,38 @@ function pageUrl(base, n) {
 
 function stringOrEmpty(v) { return typeof v === 'string' ? v : ''; }
 
+function safeSourceUrl(value) {
+  if (validateUrl(value) || value.slice(0, 8).toLowerCase() !== 'https://') return '';
+  if (value.indexOf('\\') !== -1) return '';
+  try {
+    // The legacy parser moves malformed host/port characters into the path.
+    var authority = value.slice(8).split(/[\/?#]/)[0];
+    var parsed = url.parse('https://' + authority);
+    if (!parsed.hostname || parsed.auth !== null) return '';
+    if (parsed.pathname !== '/' || Number(parsed.port) > 65535) return '';
+
+    // Browsers interpret a numeric final host label as an IPv4 address.
+    var lastLabel = parsed.hostname.split('.').filter(Boolean).pop();
+    var numericLabel = /^[0-9]+$/.test(lastLabel) || /^0x[0-9a-f]+$/i.test(lastLabel);
+    if ((authority.charAt(0) === '[' || numericLabel) && !net.isIP(parsed.hostname)) return '';
+
+    // Some manifests use a package download as sourceUrl.
+    var pathname = url.parse(value).pathname || '';
+    var parts = pathname.split('/');
+    if (parsed.hostname === 'github.com' && parts[1] && parts[2]) {
+      var releaseDownload = parts[3] === 'releases' &&
+        (parts[4] === 'download' || (parts[4] === 'latest' && parts[5] === 'download'));
+      if (releaseDownload || parts[3] === 'archive') {
+        return 'https://' + parsed.host + '/' + parts[1] + '/' + parts[2];
+      }
+    }
+    if (/\.ipk$/i.test(pathname)) return '';
+    return value;
+  } catch (e) {
+    return '';
+  }
+}
+
 function parsePackage(item, pageBase) {
   if (!item || typeof item !== 'object') return null;
   var m = item.manifest;
@@ -74,6 +108,7 @@ function parsePackage(item, pageBase) {
     title: stringOrEmpty(item.title) || stringOrEmpty(m.title) || id,
     description: stringOrEmpty(item.shortDescription) || stringOrEmpty(m.appDescription),
     iconUri: /^https:\/\//i.test(icon) ? icon : '',
+    sourceUrl: safeSourceUrl(m.sourceUrl),
     version: version,
     ipkUrl: ipkUrl,
     sha256: hash,

@@ -4,14 +4,15 @@ if (Number(process.versions.node.split('.')[0]) < 8) {
   console.log('test-audio-detection-ui.js: browser script skipped on legacy node');
 } else {
   var elements = {};
-  function q(id) { return elements[id] || (elements[id] = { textContent: '', innerHTML: '' }); }
+  function q(id) { return elements[id] || (elements[id] = { textContent: '', innerHTML: '', setAttribute: function () {} }); }
   var state = {
     identity: { model: 'Synthetic C9', firmware: 'test' },
     tv: { dtsDecoder: true, input: 1, playbackDeclarations: null, formats: [
       { id: 'dts', name: 'DTS', advertised: true, receiver: null }
     ] },
     receiver: { detected: true, name: 'Synthetic <soundbar>', port: 2, link: 'unknown', formatsKnown: false },
-    live: { input: null, hdmi: { channels: 6, sampleRate: null }, output: null }, outputName: 'HDMI ARC'
+    live: { input: null, hdmi: { channels: 6, sampleRate: null }, output: null }, outputName: 'HDMI ARC',
+    override: { offered: false }
   };
   var context = { q: q, currentState: state,
     t: function (key, text, values) { return text.replace(/\{(\w+)\}/g, function (match, key) { return values && values[key] !== undefined ? values[key] : match; }); },
