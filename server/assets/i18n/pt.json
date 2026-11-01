@@ -2561,5 +2561,19 @@
  "tv.audio.forwarding": {"text": "Reencaminhamento DTS", "from": "DTS forwarding"},
  "tv.audio.readOnly": {"text": "Os controlos da TV estão desativados na configuração do servidor.", "from": "TV controls are disabled in the server configuration."},
  "tv.home.darkening.press": {"text": "Prima OK para {value}", "from": "Press OK for {value}"},
- "tv.options.localLookups.hint": {"text": "A deteção de dispositivos da LG pede ao router o nome de cada endereço da sua rede doméstica, em algumas TV a cada 5 minutos. Ligado, a TV responde-lhes ela própria, por isso não saem para a sua rede. Nada do que a TV mostra muda.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."}
+ "tv.options.localLookups.hint": {"text": "A deteção de dispositivos da LG pede ao router o nome de cada endereço da sua rede doméstica, em algumas TV a cada 5 minutos. Ligado, a TV responde-lhes ela própria, por isso não saem para a sua rede. Nada do que a TV mostra muda.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
+ "home.group.start": {"text": "Ao ligar", "from": "Starting up"},
+ "home.group.layout": {"text": "Disposição", "from": "Layout"},
+ "home.group.shown": {"text": "Mostrado no Home", "from": "Shown on Home"},
+ "home.group.preview": {"text": "Pré-visualização em direto", "from": "Live preview"},
+ "home.group.search": {"text": "Pesquisa", "from": "Search"},
+ "home.group.motion": {"text": "Animações", "from": "Animations"},
+ "home.motion.drift": {"text": "Movimento da imagem de fundo", "from": "Wallpaper drift"},
+ "home.motion.driftDesc": {"text": "A imagem de fundo move-se e aproxima-se muito lentamente, para nunca ficar parada no ecrã.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.crossfade": {"text": "Transição da imagem de fundo", "from": "Wallpaper cross-fade"},
+ "home.motion.crossfadeDesc": {"text": "A imagem funde-se com a seguinte quando muda a parte do dia, em vez de mudar de repente.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
+ "home.motion.scroll": {"text": "Deslocamento suave", "from": "Smooth scrolling"},
+ "home.motion.scrollDesc": {"text": "Uma fila desliza até ao mosaico escolhido, em vez de saltar para ele.", "from": "A row glides to the chosen tile, rather than jumping to it."},
+ "home.motion.slide": {"text": "Painéis deslizantes", "from": "Sliding panels"},
+ "home.motion.slideDesc": {"text": "Aplicações recentes, Pesquisa e Mais aplicações entram e saem a deslizar, em vez de aparecerem de repente.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
 }

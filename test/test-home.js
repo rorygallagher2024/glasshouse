@@ -2286,6 +2286,26 @@ step('live preview stays off until switched on, and is saved', function (done) {
   });
 });
 
+step('each kind of motion is on until switched off, saved on its own, and only false switches it off', function (done) {
+  start(null);
+  var MOTION = ['wallDrift', 'wallCrossfade', 'smoothScroll', 'slidePanels'];
+  MOTION.forEach(function (k) { assert.strictEqual(home.layout()[k], true, k + ' starts on'); });
+  home.setLayout({ smoothScroll: false }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.layout.smoothScroll, false);
+    assert.strictEqual(r.layout.wallDrift, true, 'one is changed without the others');
+    var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+    assert.strictEqual(saved.smoothScroll, false);
+    assert.strictEqual(saved.slidePanels, true);
+    assert.strictEqual(home.normalise({ wallDrift: 'no', slidePanels: 0 }).wallDrift, true, 'only false switches one off');
+    assert.strictEqual(home.normalise({ wallDrift: 'no', slidePanels: 0 }).slidePanels, true);
+    home.setLayout({ smoothScroll: 'off' }, function (r2) {
+      assert.strictEqual(r2.layout.smoothScroll, false, 'a value that is not true or false changes nothing');
+      done();
+    });
+  });
+});
+
 step('fading, search and leaving out inputs with nothing plugged in stay off until switched on, are saved, and outlast a reset, beside hiding inputs one by one', function (done) {
   start(null);
   assert.strictEqual(home.layout().fade, false);

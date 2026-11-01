@@ -2561,5 +2561,19 @@
  "tv.audio.forwarding": {"text": "تمرير DTS", "from": "DTS forwarding"},
  "tv.audio.readOnly": {"text": "عناصر التحكم بالتلفاز معطلة في إعدادات الخادم.", "from": "TV controls are disabled in the server configuration."},
  "tv.home.darkening.press": {"text": "اضغط OK لـ {value}", "from": "Press OK for {value}"},
- "tv.options.localLookups.hint": {"text": "تطلب ميزة اكتشاف الأجهزة من LG من الموجّه اسم كل عنوان في شبكتك المنزلية، وفي بعض أجهزة التلفاز كل 5 دقائق. عند التشغيل، يرد التلفاز عليها بنفسه فتبقى خارج شبكتك. لا يتغير شيء مما يعرضه التلفاز.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."}
+ "tv.options.localLookups.hint": {"text": "تطلب ميزة اكتشاف الأجهزة من LG من الموجّه اسم كل عنوان في شبكتك المنزلية، وفي بعض أجهزة التلفاز كل 5 دقائق. عند التشغيل، يرد التلفاز عليها بنفسه فتبقى خارج شبكتك. لا يتغير شيء مما يعرضه التلفاز.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
+ "home.group.start": {"text": "عند التشغيل", "from": "Starting up"},
+ "home.group.layout": {"text": "التخطيط", "from": "Layout"},
+ "home.group.shown": {"text": "ما يظهر في Home", "from": "Shown on Home"},
+ "home.group.preview": {"text": "معاينة مباشرة", "from": "Live preview"},
+ "home.group.search": {"text": "البحث", "from": "Search"},
+ "home.group.motion": {"text": "الحركات", "from": "Animations"},
+ "home.motion.drift": {"text": "حركة الخلفية", "from": "Wallpaper drift"},
+ "home.motion.driftDesc": {"text": "تتحرك الخلفية وتقترب ببطء شديد، فلا تبقى ثابتة على الشاشة أبدًا.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.crossfade": {"text": "تلاشي الخلفية المتقاطع", "from": "Wallpaper cross-fade"},
+ "home.motion.crossfadeDesc": {"text": "تتلاشى الصورة إلى التالية عند تغيّر جزء اليوم، بدلًا من التبديل فورًا.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
+ "home.motion.scroll": {"text": "تمرير سلس", "from": "Smooth scrolling"},
+ "home.motion.scrollDesc": {"text": "ينزلق الصف إلى المربع المحدد بدلًا من القفز إليه.", "from": "A row glides to the chosen tile, rather than jumping to it."},
+ "home.motion.slide": {"text": "لوحات منزلقة", "from": "Sliding panels"},
+ "home.motion.slideDesc": {"text": "تنزلق التطبيقات الأخيرة والبحث والمزيد من التطبيقات للداخل والخارج بدلًا من الظهور فورًا.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
 }

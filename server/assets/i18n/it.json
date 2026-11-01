@@ -2561,5 +2561,19 @@
  "tv.audio.forwarding": {"text": "Inoltro DTS", "from": "DTS forwarding"},
  "tv.audio.readOnly": {"text": "I controlli della TV sono disattivati nella configurazione del server.", "from": "TV controls are disabled in the server configuration."},
  "tv.home.darkening.press": {"text": "Premi OK per {value}", "from": "Press OK for {value}"},
- "tv.options.localLookups.hint": {"text": "Il rilevamento dispositivi di LG chiede al router il nome di ogni indirizzo della rete domestica, su alcune TV ogni 5 minuti. Attivandolo, la TV risponde da sola, così restano fuori dalla tua rete. Nulla di ciò che la TV mostra cambia.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."}
+ "tv.options.localLookups.hint": {"text": "Il rilevamento dispositivi di LG chiede al router il nome di ogni indirizzo della rete domestica, su alcune TV ogni 5 minuti. Attivandolo, la TV risponde da sola, così restano fuori dalla tua rete. Nulla di ciò che la TV mostra cambia.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
+ "home.group.start": {"text": "All’avvio", "from": "Starting up"},
+ "home.group.layout": {"text": "Layout", "from": "Layout"},
+ "home.group.shown": {"text": "Mostrato in Home", "from": "Shown on Home"},
+ "home.group.preview": {"text": "Anteprima dal vivo", "from": "Live preview"},
+ "home.group.search": {"text": "Cerca", "from": "Search"},
+ "home.group.motion": {"text": "Animazioni", "from": "Animations"},
+ "home.motion.drift": {"text": "Movimento dello sfondo", "from": "Wallpaper drift"},
+ "home.motion.driftDesc": {"text": "Lo sfondo si muove e si ingrandisce molto lentamente, così non resta mai fermo sullo schermo.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.crossfade": {"text": "Dissolvenza dello sfondo", "from": "Wallpaper cross-fade"},
+ "home.motion.crossfadeDesc": {"text": "L’immagine sfuma nella successiva quando cambia la parte del giorno, invece di cambiare di colpo.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
+ "home.motion.scroll": {"text": "Scorrimento fluido", "from": "Smooth scrolling"},
+ "home.motion.scrollDesc": {"text": "Una riga scorre fino al riquadro scelto, invece di saltarci.", "from": "A row glides to the chosen tile, rather than jumping to it."},
+ "home.motion.slide": {"text": "Pannelli a scorrimento", "from": "Sliding panels"},
+ "home.motion.slideDesc": {"text": "App recenti, Cerca e Altre app entrano ed escono scorrendo, invece di comparire di colpo.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
 }

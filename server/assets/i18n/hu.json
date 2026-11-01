@@ -2561,5 +2561,19 @@
  "tv.audio.forwarding": {"text": "DTS-továbbítás", "from": "DTS forwarding"},
  "tv.audio.readOnly": {"text": "A TV vezérlése ki van kapcsolva a szerver beállításaiban.", "from": "TV controls are disabled in the server configuration."},
  "tv.home.darkening.press": {"text": "Nyomd meg az OK gombot: {value}", "from": "Press OK for {value}"},
- "tv.options.localLookups.hint": {"text": "Az LG eszközfelismerése a routertől kéri az otthoni hálózat minden címének nevét, egyes TV-ken 5 percenként. Bekapcsolva a TV maga válaszol rájuk, így nem jutnak ki a hálózatodra. Semmi nem változik abban, amit a TV mutat.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."}
+ "tv.options.localLookups.hint": {"text": "Az LG eszközfelismerése a routertől kéri az otthoni hálózat minden címének nevét, egyes TV-ken 5 percenként. Bekapcsolva a TV maga válaszol rájuk, így nem jutnak ki a hálózatodra. Semmi nem változik abban, amit a TV mutat.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
+ "home.group.start": {"text": "Indításkor", "from": "Starting up"},
+ "home.group.layout": {"text": "Elrendezés", "from": "Layout"},
+ "home.group.shown": {"text": "A Home-on látható", "from": "Shown on Home"},
+ "home.group.preview": {"text": "Élő előnézet", "from": "Live preview"},
+ "home.group.search": {"text": "Keresés", "from": "Search"},
+ "home.group.motion": {"text": "Animációk", "from": "Animations"},
+ "home.motion.drift": {"text": "Háttérkép mozgása", "from": "Wallpaper drift"},
+ "home.motion.driftDesc": {"text": "A háttérkép nagyon lassan mozog és nagyít, így sosem áll egy helyben a képernyőn.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.crossfade": {"text": "Háttérkép átúsztatása", "from": "Wallpaper cross-fade"},
+ "home.motion.crossfadeDesc": {"text": "A kép átúszik a következőbe, amikor a napszak változik, ahelyett hogy egyszerre váltana.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
+ "home.motion.scroll": {"text": "Sima görgetés", "from": "Smooth scrolling"},
+ "home.motion.scrollDesc": {"text": "A sor a kiválasztott csempéhez siklik, ahelyett hogy odaugrana.", "from": "A row glides to the chosen tile, rather than jumping to it."},
+ "home.motion.slide": {"text": "Becsúszó panelek", "from": "Sliding panels"},
+ "home.motion.slideDesc": {"text": "A Legutóbbi alkalmazások, a Keresés és a További alkalmazások be- és kicsúsznak, ahelyett hogy egyszerre jelennének meg.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
 }

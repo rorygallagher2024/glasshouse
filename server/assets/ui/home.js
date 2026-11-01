@@ -204,6 +204,14 @@ function renderHome() {
     updateToggle(btn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     btn.disabled = !homeWritable();
   });
+  HOME_MOTION.forEach(key => {
+    const btn = q('home-motion-' + key);
+    if (!btn) return;
+    btn.closest('.prot-row').hidden = !st.supported.ok;
+    const on = !st.layout || st.layout[key] !== false;
+    updateToggle(btn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    btn.disabled = !homeWritable();
+  });
   const altRow = q('home-alternative-row');
   if (altRow) altRow.hidden = !st.supported.ok;
   const alt = q('home-alternative');
@@ -257,6 +265,7 @@ function renderHome() {
   const darkWrap = q('home-dark-wrap');
   if (darkWrap) darkWrap.classList.toggle('disabled', !homeWritable());
   q('home-reset').disabled = !homeWritable();
+  homeGroupsShown();
 }
 
 const HOME_LOOK_NAMES = () => ({
@@ -630,6 +639,23 @@ function homeRowsBottom() {
 
 function homeFade() {
   homeSaveLayout({ fade: homeLayout.fade !== true });
+}
+
+// Glasshouse Home's kinds of motion other than the fade, each on unless switched off.
+const HOME_MOTION = ['wallDrift', 'wallCrossfade', 'smoothScroll', 'slidePanels'];
+function homeMotion(key) {
+  homeSaveLayout({ [key]: homeLayout[key] === false });
+}
+
+// A group shows only while it has a row to show: LG's Home leaves only Starting up.
+function homeGroupsShown() {
+  const lgHome = q('home-custom').classList.contains('lg-home');
+  document.querySelectorAll('#home-custom .home-group').forEach(g => {
+    const shown = [...g.querySelectorAll('.prot-row')].filter(r => !r.hidden && !(lgHome && r.classList.contains('home-gh-row')));
+    g.hidden = !shown.length;
+    // Hidden rows can come last, so the last shown one is marked to drop its line.
+    g.querySelectorAll('.prot-row').forEach(r => r.classList.toggle('last', r === shown[shown.length - 1]));
+  });
 }
 
 function homeHideUnused() {

@@ -1155,6 +1155,19 @@ function glasshouseHomeRows(d) {
              act: can ? 'homeFade' : null, on: fadeOn,
              press: fadeOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.fadeDesc', 'Glasshouse Home fades in as it comes on screen, and out as an app, input or channel opens.') });
+    // The other kinds of motion, each on unless switched off.
+    [['wallDrift', t('home.motion.drift', 'Wallpaper drift'), t('home.motion.driftDesc', 'The wallpaper moves and zooms very slowly, so it never sits still on the screen.')],
+     ['wallCrossfade', t('home.motion.crossfade', 'Wallpaper cross-fade'), t('home.motion.crossfadeDesc', 'The picture fades into the next when the part of the day changes, rather than switching at once.')],
+     ['smoothScroll', t('home.motion.scroll', 'Smooth scrolling'), t('home.motion.scrollDesc', 'A row glides to the chosen tile, rather than jumping to it.')],
+     ['slidePanels', t('home.motion.slide', 'Sliding panels'), t('home.motion.slideDesc', 'Recent apps, Search and More apps slide in and out, rather than appearing at once.')]
+    ].forEach(function (m) {
+      var motionOn = d.layout[m[0]] !== false;
+      r.push({ label: m[1], key: m[0],
+               value: motionOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: motionOn ? 'on' : 'off',
+               act: can ? 'homeFlag' : null, on: motionOn,
+               press: motionOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
+               hint: m[2] });
+    });
     // OK steps through the presets; colours picked on the browser dashboard show as Custom.
     // No colours chosen is the view's own look, the preset marked own.
     var presets = d.colourPresets || [], cur = d.layout.colours, at = cur ? -1 : 0;

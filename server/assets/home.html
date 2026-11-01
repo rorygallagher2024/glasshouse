@@ -392,6 +392,11 @@ html.faded #stage{opacity:0}
   .track,#toast,.tile,#folder,#folderGrid,#hits,.hit,.chip,#finder,#rail,#rail svg,#ask,html.fades #stage{-webkit-transition:none;transition:none}
   #wall .layer{-webkit-animation:none;animation:none}
 }
+/* Each kind of motion switched off on its own from the layout (applyMotion).
+   On body, as the fade's classes take html's. */
+body.no-drift #wall .layer{-webkit-animation:none;animation:none}
+body.no-crossfade #wall .layer{-webkit-transition:none;transition:none}
+body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide #folderGrid,body.no-slide #hits{-webkit-transition:none;transition:none}
 </style>
 </head>
 <body>
@@ -912,6 +917,7 @@ html.faded #stage{opacity:0}
   var nextFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
     function (f) { return setTimeout(function () { f(Date.now()); }, 16); };
   var animating = false, lastFrame = 0, lastHover = 0;
+  var smoothScroll = true; // off, a key or wheel step puts the row where it is headed at once
   var EDGE = 150;          // stage px in from a row's end where it glides
   var GLIDE_MAX = 1400;    // stage px a second, pointing at the very end
   var GLIDE_IN = 110;      // ms for a glide to gather most of its speed
@@ -1061,7 +1067,7 @@ html.faded #stage{opacity:0}
       }
       var e = tr.x - tr.target;
       if (e || tr.v) {
-        if (Math.abs(e) < 0.05 && Math.abs(tr.v) < 3) { tr.x = tr.target; tr.v = 0; }
+        if (!smoothScroll || (Math.abs(e) < 0.05 && Math.abs(tr.v) < 3)) { tr.x = tr.target; tr.v = 0; }
         else {
           // The spring solved for the frame's length, so a long frame cannot
           // make it overshoot or run away.
@@ -2631,6 +2637,12 @@ html.faded #stage{opacity:0}
     });
     return out;
   }
+  function applyMotion(l) {
+    smoothScroll = l.smoothScroll !== false;
+    document.body.className = (l.wallDrift === false ? 'no-drift ' : '') + (l.wallCrossfade === false ? 'no-crossfade ' : '') +
+      (l.slidePanels === false ? 'no-slide' : '');
+  }
+
   // The wallpaper's darkening, as a share of the scrim's own: 0 leaves the picture as it is.
   function applyDarkening(pct) {
     var n = typeof pct === 'number' ? pct : 100;
@@ -2680,6 +2692,7 @@ html.faded #stage{opacity:0}
       renderNow();
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
+      applyMotion(layout);
       applyColours(layout.colours);
       applyDarkening(layout.darkening);
       if (r.layoutVersion) layoutVersion = r.layoutVersion;

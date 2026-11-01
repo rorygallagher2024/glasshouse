@@ -2561,5 +2561,19 @@
  "tv.home.searchBlockedLevel": {"text": "El ajuste Todo del bloqueador de anuncios bloquea {host}, que la búsqueda de LG necesita. Pon Bloqueo en Anuncios y telemetría o desactívalo en Privacidad para usar la búsqueda.", "from": "The ad blocker’s Everything setting blocks {host}, which LG’s search needs. Set Blocking to Ads & telemetry or off in Privacy to use search."},
  "tv.home.searchBlockedList": {"text": "La lista de hosts del bloqueador de anuncios bloquea {host}, que la búsqueda de LG necesita. Quítalo de la lista en la pestaña Privacidad del panel web para usar la búsqueda.", "from": "The ad blocker’s hosts list blocks {host}, which LG’s search needs. Take it out of the list on the web dashboard’s Privacy tab to use search."},
  "tv.options.localLookups.hint": {"text": "La detección de dispositivos de LG pide al router el nombre de cada dirección de tu red doméstica, en algunas TV cada 5 minutos. Activado, la TV las responde ella misma, así que no salen a tu red. Nada de lo que muestra la TV cambia.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
- "tv.privacy.everything.search": {"text": "Donde bloquea la búsqueda de LG, la búsqueda de Glasshouse Home se oculta.", "from": "Where it blocks LG’s search, Glasshouse Home’s search is hidden."}
+ "tv.privacy.everything.search": {"text": "Donde bloquea la búsqueda de LG, la búsqueda de Glasshouse Home se oculta.", "from": "Where it blocks LG’s search, Glasshouse Home’s search is hidden."},
+ "home.group.start": {"text": "Al encender", "from": "Starting up"},
+ "home.group.layout": {"text": "Diseño", "from": "Layout"},
+ "home.group.shown": {"text": "Lo que muestra Home", "from": "Shown on Home"},
+ "home.group.preview": {"text": "Vista previa en directo", "from": "Live preview"},
+ "home.group.search": {"text": "Buscar", "from": "Search"},
+ "home.group.motion": {"text": "Animaciones", "from": "Animations"},
+ "home.motion.drift": {"text": "Movimiento del fondo", "from": "Wallpaper drift"},
+ "home.motion.driftDesc": {"text": "El fondo de pantalla se mueve y se acerca muy despacio, para que nunca quede quieto en la pantalla.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.crossfade": {"text": "Transición del fondo", "from": "Wallpaper cross-fade"},
+ "home.motion.crossfadeDesc": {"text": "La imagen se funde con la siguiente cuando cambia la parte del día, en lugar de cambiar de golpe.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
+ "home.motion.scroll": {"text": "Desplazamiento suave", "from": "Smooth scrolling"},
+ "home.motion.scrollDesc": {"text": "Una fila se desliza hasta el icono elegido, en lugar de saltar a él.", "from": "A row glides to the chosen tile, rather than jumping to it."},
+ "home.motion.slide": {"text": "Paneles deslizantes", "from": "Sliding panels"},
+ "home.motion.slideDesc": {"text": "Apps recientes, Buscar y Más apps entran y salen deslizándose, en lugar de aparecer de golpe.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
 }

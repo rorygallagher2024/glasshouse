@@ -1080,7 +1080,9 @@
        own options while it is on, LG's Home's layout while that is, and system apps -->
   <div id="home-custom" hidden>
   <div class="pv-sec" data-t="home.customisation">Home customisation</div>
-  <div class="prot-table" id="home-custom-table">
+  <div class="home-group" id="home-g-start">
+  <div class="pv-g" data-t="home.group.start">Starting up</div>
+  <div class="prot-table home-custom-table">
     <div class="prot-row" id="home-autolaunch-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.homeAutoLaunch">Open Home at power-on</div>
@@ -1096,40 +1098,17 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-hide-lg" onclick="homeHideLg()">&mdash;</button></div>
     </div>
-    <div class="prot-row home-gh-row" id="home-picture-row" hidden>
+  </div>
+  </div>
+  <div class="home-group" id="home-g-layout">
+  <div class="pv-g" data-t="home.group.layout">Layout</div>
+  <div class="prot-table home-custom-table">
+    <div class="prot-row home-gh-row" id="home-alternative-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.picture">Picture details</div>
-        <div class="prot-desc" data-t="home.pictureDesc">In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.</div>
+        <div class="prot-title" data-t="home.alternative">Alternative View</div>
+        <div class="prot-desc" data-t="home.alternativeDesc">A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging.</div>
       </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-picture" onclick="homePicture()">&mdash;</button></div>
-    </div>
-    <div class="prot-row home-gh-row" id="home-preview-row" hidden>
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.livePreview">Live preview</div>
-        <div class="prot-desc" data-t="home.livePreviewDesc">A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-preview" onclick="homeLivePreview()">&mdash;</button></div>
-    </div>
-    <div class="prot-row home-gh-row" id="home-preview-always-row" hidden>
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.previewAlways">Keep the preview on</div>
-        <div class="prot-desc" data-t="home.previewAlwaysDesc">The preview runs whenever Glasshouse Home is on screen, not only while a tile with one is chosen: the HDMI input last watched, or otherwise the TV on its last channel. Choosing another input or channel moves it there.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-always" onclick="homePreviewOption('previewAlways')">&mdash;</button></div>
-    </div>
-    <div class="prot-row home-gh-row" id="home-preview-tile-row" hidden>
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.previewInTile">Preview in the tile</div>
-        <div class="prot-desc" data-t="home.previewInTileDesc">The preview fills the tile it shows, under the tile’s own name, rather than beside the clock.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-tile" onclick="homePreviewOption('previewInTile')">&mdash;</button></div>
-    </div>
-    <div class="prot-row home-gh-row home-show-row" hidden>
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.showClock">Clock and date</div>
-        <div class="prot-desc" data-t="home.showClockDesc">At the top of Glasshouse Home. Switched off, the space stays empty.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-show-clock" onclick="homeShow('showClock')">&mdash;</button></div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-alternative" onclick="homeAlternative()">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row" id="home-rows-bottom-row" hidden>
       <div class="prot-main">
@@ -1138,12 +1117,17 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-rows-bottom" onclick="homeRowsBottom()">&mdash;</button></div>
     </div>
-    <div class="prot-row home-gh-row" id="home-alternative-row" hidden>
+  </div>
+  </div>
+  <div class="home-group" id="home-g-shown">
+  <div class="pv-g" data-t="home.group.shown">Shown on Home</div>
+  <div class="prot-table home-custom-table">
+    <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.alternative">Alternative View</div>
-        <div class="prot-desc" data-t="home.alternativeDesc">A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging.</div>
+        <div class="prot-title" data-t="home.showClock">Clock and date</div>
+        <div class="prot-desc" data-t="home.showClockDesc">At the top of Glasshouse Home. Switched off, the space stays empty.</div>
       </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-alternative" onclick="homeAlternative()">&mdash;</button></div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-show-clock" onclick="homeShow('showClock')">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
@@ -1167,6 +1151,44 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-cec" onclick="homeShow('showCec')">&mdash;</button></div>
     </div>
+    <div class="prot-row home-gh-row" id="home-picture-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.picture">Picture details</div>
+        <div class="prot-desc" data-t="home.pictureDesc">In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-picture" onclick="homePicture()">&mdash;</button></div>
+    </div>
+  </div>
+  </div>
+  <div class="home-group" id="home-g-preview">
+  <div class="pv-g" data-t="home.group.preview">Live preview</div>
+  <div class="prot-table home-custom-table">
+    <div class="prot-row home-gh-row" id="home-preview-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.livePreview">Live preview</div>
+        <div class="prot-desc" data-t="home.livePreviewDesc">A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview" onclick="homeLivePreview()">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-preview-always-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewAlways">Keep the preview on</div>
+        <div class="prot-desc" data-t="home.previewAlwaysDesc">The preview runs whenever Glasshouse Home is on screen, not only while a tile with one is chosen: the HDMI input last watched, or otherwise the TV on its last channel. Choosing another input or channel moves it there.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-always" onclick="homePreviewOption('previewAlways')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-preview-tile-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewInTile">Preview in the tile</div>
+        <div class="prot-desc" data-t="home.previewInTileDesc">The preview fills the tile it shows, under the tile’s own name, rather than beside the clock.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-tile" onclick="homePreviewOption('previewInTile')">&mdash;</button></div>
+    </div>
+  </div>
+  </div>
+  <div class="home-group" id="home-g-search">
+  <div class="pv-g" data-t="home.group.search">Search</div>
+  <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row" id="home-search-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.search">Search</div>
@@ -1176,6 +1198,11 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-search" onclick="homeSearch()">&mdash;</button></div>
     </div>
+  </div>
+  </div>
+  <div class="home-group" id="home-g-motion">
+  <div class="pv-g" data-t="home.group.motion">Animations</div>
+  <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row" id="home-fade-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.fade">Fade in and out</div>
@@ -1183,6 +1210,35 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-fade" onclick="homeFade()">&mdash;</button></div>
     </div>
+    <div class="prot-row home-gh-row home-motion-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.motion.drift">Wallpaper drift</div>
+        <div class="prot-desc" data-t="home.motion.driftDesc">The wallpaper moves and zooms very slowly, so it never sits still on the screen.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-motion-wallDrift" onclick="homeMotion('wallDrift')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-motion-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.motion.crossfade">Wallpaper cross-fade</div>
+        <div class="prot-desc" data-t="home.motion.crossfadeDesc">The picture fades into the next when the part of the day changes, rather than switching at once.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-motion-wallCrossfade" onclick="homeMotion('wallCrossfade')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-motion-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.motion.scroll">Smooth scrolling</div>
+        <div class="prot-desc" data-t="home.motion.scrollDesc">A row glides to the chosen tile, rather than jumping to it.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-motion-smoothScroll" onclick="homeMotion('smoothScroll')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-motion-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.motion.slide">Sliding panels</div>
+        <div class="prot-desc" data-t="home.motion.slideDesc">Recent apps, Search and More apps slide in and out, rather than appearing at once.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-motion-slidePanels" onclick="homeMotion('slidePanels')">&mdash;</button></div>
+    </div>
+  </div>
   </div>
     <details class="pv-d" id="disc-homescreen" hidden>
       <summary><span data-t="apps.home">Home screen layout</span> <span class="cur" id="apps-home-summary"></span></summary>

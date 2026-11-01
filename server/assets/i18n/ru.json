@@ -2561,5 +2561,19 @@
  "tv.audio.forwarding": {"text": "Пересылка DTS", "from": "DTS forwarding"},
  "tv.audio.readOnly": {"text": "Управление телевизором отключено в настройках сервера.", "from": "TV controls are disabled in the server configuration."},
  "tv.home.darkening.press": {"text": "Нажмите OK для {value}", "from": "Press OK for {value}"},
- "tv.options.localLookups.hint": {"text": "Обнаружение устройств LG запрашивает у роутера имя каждого адреса домашней сети, на некоторых телевизорах — каждые 5 минут. Если включить, телевизор отвечает на них сам, и они не уходят в вашу сеть. То, что показывает телевизор, не меняется.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."}
+ "tv.options.localLookups.hint": {"text": "Обнаружение устройств LG запрашивает у роутера имя каждого адреса домашней сети, на некоторых телевизорах — каждые 5 минут. Если включить, телевизор отвечает на них сам, и они не уходят в вашу сеть. То, что показывает телевизор, не меняется.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
+ "home.group.start": {"text": "При включении", "from": "Starting up"},
+ "home.group.layout": {"text": "Раскладка", "from": "Layout"},
+ "home.group.shown": {"text": "Что показывает Home", "from": "Shown on Home"},
+ "home.group.preview": {"text": "Живой предпросмотр", "from": "Live preview"},
+ "home.group.search": {"text": "Поиск", "from": "Search"},
+ "home.group.motion": {"text": "Анимация", "from": "Animations"},
+ "home.motion.drift": {"text": "Движение обоев", "from": "Wallpaper drift"},
+ "home.motion.driftDesc": {"text": "Обои очень медленно движутся и приближаются, чтобы никогда не стоять на экране неподвижно.", "from": "The wallpaper moves and zooms very slowly, so it never sits still on the screen."},
+ "home.motion.crossfade": {"text": "Плавная смена обоев", "from": "Wallpaper cross-fade"},
+ "home.motion.crossfadeDesc": {"text": "Изображение плавно переходит в следующее при смене времени суток, а не меняется сразу.", "from": "The picture fades into the next when the part of the day changes, rather than switching at once."},
+ "home.motion.scroll": {"text": "Плавная прокрутка", "from": "Smooth scrolling"},
+ "home.motion.scrollDesc": {"text": "Ряд плавно едет к выбранной плитке, а не перескакивает к ней.", "from": "A row glides to the chosen tile, rather than jumping to it."},
+ "home.motion.slide": {"text": "Выдвижные панели", "from": "Sliding panels"},
+ "home.motion.slideDesc": {"text": "«Недавние приложения», «Поиск» и «Другие приложения» выезжают и уезжают, а не появляются сразу.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
 }

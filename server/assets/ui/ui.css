@@ -943,11 +943,11 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
 /* The Server tab and Home customisation keep one column, so every control,
    and each fold's count, lines up down the right. */
-#serverpane .prot-table,#home-custom-table{display:grid;grid-template-columns:1fr}
-#advpane .prot-row,#serverpane .prot-row,#home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
+#serverpane .prot-table,.home-custom-table{display:grid;grid-template-columns:1fr}
+#advpane .prot-row,#serverpane .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
 #advpane .prot-title,#serverpane .prot-title,#homepane .prot-title{font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--w90)}
 #advpane .prot-desc,#serverpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
-#advpane .prot-status,#serverpane .prot-status,#home-custom-table .prot-status{padding-top:2px}
+#advpane .prot-status,#serverpane .prot-status,.home-custom-table .prot-status{padding-top:2px}
 #pv-adv{margin-top:clamp(36px,5vw,56px)}
 #pv-adv>summary{border-top:0;min-height:0;align-items:center}
 #pv-adv[open]>summary{margin-bottom:22px}
@@ -1600,6 +1600,9 @@ button.tools-jump:active{background:var(--w80)}
    divider under the switch; Glasshouse Home's rows leave with it. */
 #home-hero+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
 #home-custom.lg-home .home-gh-row{display:none}
+/* Each group's last row draws no line, as the next group's heading follows. */
+.home-custom-table .prot-row.last{border-bottom:0}
+.home-group+.home-group .pv-g{margin-top:34px}
 /* Its folding sections read as rows of the list above: a row's title, the
    count and the plus at the right, a row's rule beneath. */
 #home-custom .pv-d>summary{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em;
