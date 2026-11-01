@@ -37,6 +37,9 @@ var fixed = {};
 var filled = {};
 var filledCount = 0;
 
+// es, or pt-br where a region's language differs enough to have its own file.
+var LANG_CODE = /^[a-z]{2}(-[a-z]{2})?$/;
+
 var dicts = {};              // lang -> { key: { text, from } }
 var langDir = null;
 // Strings that bring their own translations instead of being in the language
@@ -72,7 +75,7 @@ function define(key, en, texts) {
   fixed[en] = { key: key, en: en, vars: null };
   for (var lang in texts) {
     if (!Object.prototype.hasOwnProperty.call(texts, lang)) continue;
-    if (lang === 'en' || !/^[a-z]{2}$/.test(lang) || typeof texts[lang] !== 'string' || !texts[lang]) continue;
+    if (lang === 'en' || !LANG_CODE.test(lang) || typeof texts[lang] !== 'string' || !texts[lang]) continue;
     if (!given[lang]) given[lang] = {};
     given[lang][key] = { text: texts[lang], from: en };
     if (dicts[lang]) dicts[lang][key] = given[lang][key];
@@ -96,8 +99,8 @@ function init(dir) {
   var files = [];
   try { files = fs.readdirSync(dir); } catch (e) { return; }
   for (var i = 0; i < files.length; i++) {
-    var m = /^([a-z]{2})\.json$/.exec(files[i]);
-    if (!m) continue;
+    var m = /^(.+)\.json$/.exec(files[i]);
+    if (!m || !LANG_CODE.test(m[1])) continue;
     try { dicts[m[1]] = JSON.parse(fs.readFileSync(path.join(dir, files[i]), 'utf8')); }
     catch (e) { console.error('strings: ' + files[i] + ' did not parse: ' + e.message); }
   }
@@ -110,7 +113,7 @@ function init(dir) {
 // The language a page asked for, if there is a file for it.
 function langOf(req) {
   var want = String((req && req.headers && req.headers['x-glasshouse-lang']) || '').toLowerCase();
-  return /^[a-z]{2}$/.test(want) && want !== 'en' && dicts[want] ? want : null;
+  return LANG_CODE.test(want) && want !== 'en' && dicts[want] ? want : null;
 }
 
 function translateText(text, dict) {

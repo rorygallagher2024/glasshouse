@@ -6,6 +6,7 @@
     "es": "Corrientes",
     "hu": "Áramlatok",
     "it": "Correnti",
+    "pt-br": "Correntes",
     "ru": "Течения"
   },
   "description": {
@@ -13,6 +14,7 @@
     "es": "Corrientes de luz que fluyen con un viento que cambia despacio, sobre negro.",
     "hu": "Fénypatakok áramlanak egy lassan változó szél mentén fekete háttéren.",
     "it": "Flussi di luce che scorrono lungo un vento che cambia lentamente, sul nero.",
+    "pt-br": "Fluxos de luz que seguem um vento em lenta mudança sobre o preto.",
     "ru": "Потоки света текут по медленно меняющемуся ветру на чёрном фоне."
   },
   "license": "MIT",
