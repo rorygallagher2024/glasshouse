@@ -6,14 +6,16 @@
     "es": "Vitalidad del panel",
     "hu": "Panelállapot",
     "it": "Parametri del pannello",
-    "ru": "Состояние панели"
+    "ru": "Состояние панели",
+    "pl": "Parametry panelu"
   },
   "description": {
     "en": "The TV's own readings - panel hours, pixel refresher countdown, temperature.",
     "es": "Las lecturas de la TV: horas de panel, cuenta atrás del refrescado y temperatura.",
     "hu": "A TV saját mért adatai: a panel üzemórái, a következő pixelfrissítésig hátralévő idő és a hőmérséklet.",
     "it": "Le letture della TV stessa: ore del pannello, conto alla rovescia del Pixel Refresher, temperatura.",
-    "ru": "Собственные показания телевизора: часы работы панели, отсчёт до обновления пикселей, температура."
+    "ru": "Собственные показания телевизора: часы работы панели, отсчёт до обновления пикселей, температура.",
+    "pl": "Odczyty telewizora: godziny panelu, odliczanie odświeżania pikseli, temperatura."
   },
   "license": "MIT",
   "uses": [

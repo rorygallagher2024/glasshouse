@@ -6,14 +6,16 @@
     "es": "Corrientes",
     "hu": "Áramlatok",
     "it": "Correnti",
-    "ru": "Течения"
+    "ru": "Течения",
+    "pl": "Prądy"
   },
   "description": {
     "en": "Streams of light flowing along a slowly changing wind on black.",
     "es": "Corrientes de luz que fluyen con un viento que cambia despacio, sobre negro.",
     "hu": "Fénypatakok áramlanak egy lassan változó szél mentén fekete háttéren.",
     "it": "Flussi di luce che scorrono lungo un vento che cambia lentamente, sul nero.",
-    "ru": "Потоки света текут по медленно меняющемуся ветру на чёрном фоне."
+    "ru": "Потоки света текут по медленно меняющемуся ветру на чёрном фоне.",
+    "pl": "Strumienie światła płynące z wolno zmieniającym się wiatrem na czerni."
   },
   "license": "MIT",
   "uses": [
