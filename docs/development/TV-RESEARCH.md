@@ -2238,3 +2238,16 @@ came at 50 s: about 9 s from the server answering to the view drawn. The
 first Home press after a reboot took up to 13 s on a CX (webOS 5.6.2), so a
 fixed wait from the server's start is too short for slower TVs; the page's
 own requests to the server show it is running.
+
+## Children that abort before exec (A1, webOS 6.5.3)
+
+On an OLED55A19LA (firmware 03.53.45, node 8.12.0), a child process can die
+of SIGABRT between fork and exec, printing ``uv_close: Assertion
+`!uv__is_closing(handle)' failed`` to the parent's log. A child started from
+inside another child's exit callback aborted every time; the same call a
+turn of the event loop later (`setImmediate` or `setTimeout 0`) did not. At
+server start, the first `iptables` call aborted on every start tried, even
+with that wait. execFile reports such a child with `err.signal` set and
+`err.killed` false, which tells it apart from one killed by its own timeout.
+The debugger rule in `devtools.js` waits a turn before each call and tries an
+aborted one once more.
