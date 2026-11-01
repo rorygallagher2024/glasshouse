@@ -59,6 +59,10 @@ var HA_ENTITIES = [
   { id: 'piccap', type: 'switch', name: 'PicCap Capture', cat: 'controls' },
   { id: 'huesync', type: 'switch', name: 'Hue Sync', cat: 'controls' },
   { id: 'screen_notification', type: 'text', name: 'Screen Notification', cat: 'controls' },
+  // Written to, never read back: an automation pushes a JSON string
+  // ({"condition":"partlycloudy","temp":14.2}) and Glasshouse Home shows it
+  // as the weather badge next to the clock. See docs/dashboard/home.md.
+  { id: 'weather', type: 'text', name: 'Weather Push', cat: 'controls' },
   { id: 'picture_mode', type: 'select', name: 'Picture Mode (Select)', cat: 'controls' },
   { id: 'energy_saving', type: 'select', name: 'Energy Saving Step', cat: 'controls' },
   { id: 'sound_output', type: 'select', name: 'Sound Output', cat: 'controls' },
@@ -910,6 +914,18 @@ function buildEntities(opts) {
           command_topic: topic.command('toast'),
           icon: 'mdi:message-text-outline',
           mode: 'text'
+        }
+      },
+      {
+        type: 'text', id: 'weather',
+        payload: {
+          name: 'Weather Push',
+          command_topic: topic.command('weather'),
+          icon: 'mdi:weather-partly-cloudy',
+          mode: 'text',
+          // No state_topic: nothing to read back, so the entity never
+          // reports a value of its own in Home Assistant.
+          entity_category: 'config'
         }
       },
       {

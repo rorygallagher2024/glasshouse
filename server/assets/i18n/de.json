@@ -679,5 +679,20 @@
  "home.search.opening": {"text": "{title} wird in {app} geöffnet", "from": "Opening {title} on {app}"},
  "home.search.rail": {"text": "Suche", "from": "Search"},
  "home.search.ready": {"text": "Filme und Serien in den Apps dieses TVs, über die LG-Suche", "from": "Films and series on this TV’s apps, from LG’s search"},
- "home.search.series": {"text": "Serie", "from": "Series"}
+ "home.search.series": {"text": "Serie", "from": "Series"},
+ "home.weather.clearNight": {"text": "Klare Nacht", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "Bewölkt", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Nebel", "from": "Fog"},
+ "home.weather.hail": {"text": "Hagel", "from": "Hail"},
+ "home.weather.lightning": {"text": "Blitze", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Gewitter", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Teilweise bewölkt", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Starkregen", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Regnerisch", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Schnee", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Schneeregen", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Sonnig", "from": "Sunny"},
+ "home.weather.windy": {"text": "Windig", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Windig", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"}
 }

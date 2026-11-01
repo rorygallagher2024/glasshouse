@@ -2575,5 +2575,20 @@
  "home.motion.scroll": {"text": "Sima görgetés", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "A sor a kiválasztott csempéhez siklik, ahelyett hogy odaugrana.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "Becsúszó panelek", "from": "Sliding panels"},
- "home.motion.slideDesc": {"text": "A Legutóbbi alkalmazások, a Keresés és a További alkalmazások be- és kicsúsznak, ahelyett hogy egyszerre jelennének meg.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
+ "home.motion.slideDesc": {"text": "A Legutóbbi alkalmazások, a Keresés és a További alkalmazások be- és kicsúsznak, ahelyett hogy egyszerre jelennének meg.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."},
+ "home.weather.clearNight": {"text": "Tiszta éjszaka", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "Felhős", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Köd", "from": "Fog"},
+ "home.weather.hail": {"text": "Jégeső", "from": "Hail"},
+ "home.weather.lightning": {"text": "Villámlás", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Zivatar", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Részben felhős", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Zuhogó eső", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Esős", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Havas", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Hóeső", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Napos", "from": "Sunny"},
+ "home.weather.windy": {"text": "Szeles", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Szeles", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Viharos időjárás", "from": "Severe weather"}
 }

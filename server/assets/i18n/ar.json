@@ -2575,5 +2575,20 @@
  "home.motion.scroll": {"text": "تمرير سلس", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "ينزلق الصف إلى المربع المحدد بدلًا من القفز إليه.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "لوحات منزلقة", "from": "Sliding panels"},
- "home.motion.slideDesc": {"text": "تنزلق التطبيقات الأخيرة والبحث والمزيد من التطبيقات للداخل والخارج بدلًا من الظهور فورًا.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
+ "home.motion.slideDesc": {"text": "تنزلق التطبيقات الأخيرة والبحث والمزيد من التطبيقات للداخل والخارج بدلًا من الظهور فورًا.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."},
+ "home.weather.clearNight": {"text": "ليلة صافية", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "غائم", "from": "Cloudy"},
+ "home.weather.fog": {"text": "ضباب", "from": "Fog"},
+ "home.weather.hail": {"text": "برَد", "from": "Hail"},
+ "home.weather.lightning": {"text": "برق", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "عواصف رعدية", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "غائم جزئياً", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "مطر غزير", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "ممطر", "from": "Rainy"},
+ "home.weather.snowy": {"text": "ثلجي", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "ثلج ومطر", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "مشمس", "from": "Sunny"},
+ "home.weather.windy": {"text": "عاصف", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "عاصف", "from": "Windy"},
+ "home.weather.exceptional": {"text": "طقس شديد الخطورة", "from": "Severe weather"}
 }

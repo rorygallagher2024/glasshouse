@@ -232,6 +232,11 @@ var foreground = '';
 // When something other than the view last came to the front, for the open watch.
 var otherOpenedAt = 0;
 var lastSource = null;
+// What ha.js's 'weather' text entity last received over MQTT (see tvweb.js's
+// dispatch and setWeather below); null until Home Assistant has pushed
+// something, so the badge stays hidden until then rather than showing a
+// stale guess.
+var weatherPush = null;
 var beatTimer = null;
 var lastBeatAt = 0;
 // What the view last said of itself, with its heartbeat: whether its page had
@@ -1034,6 +1039,29 @@ function selectedOnPort(port, cb) {
     });
     cb(picked);
   });
+}
+
+/*
+ * The weather badge's last pushed value (text.lg_tv_weather's command
+ * topic, dispatched by tvweb.js). The payload is the JSON an automation
+ * sends: {"condition":"partlycloudy","temp":14.2,"city":"Conflans"}. city
+ * is optional, shown under the temperature when present. A malformed or
+ * non-numeric push is dropped rather than shown, so a bad automation
+ * leaves the badge hidden instead of wrong.
+ */
+function setWeather(raw) {
+  var parsed = null;
+  try { parsed = JSON.parse(raw); } catch (e) { /* ignored: not JSON, badge stays as it was */ }
+  if (!parsed || typeof parsed.temp !== 'number') return;
+  weatherPush = {
+    condition: typeof parsed.condition === 'string' ? parsed.condition : null,
+    temp: parsed.temp,
+    city: typeof parsed.city === 'string' ? parsed.city : null
+  };
+}
+
+function weather(cb) {
+  cb(weatherPush ? { ok: true, condition: weatherPush.condition, temp: weatherPush.temp, city: weatherPush.city } : { ok: false });
 }
 
 /*
@@ -2530,6 +2558,8 @@ module.exports = {
   channelList: channelList,
   guide: guide,
   now: now,
+  setWeather: setWeather,
+  weather: weather,
   open: open,
   setLayout: function (body, cb) { change(function (done) { setLayout(body, done); }, cb); },
   setHideLgHomeAtStart: function (body, cb) { change(function (done) { setHideLgHomeAtStart(body, done); }, cb); },
