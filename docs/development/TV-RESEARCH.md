@@ -2495,3 +2495,24 @@ Read only, from `luna-send`:
 - After reconnecting, `audio/getSoundOut` again reported Bluetooth output and
   the same volume, but mute was off rather than its original on state. Mute
   was restored after the test. Audible playback was not checked.
+- `startDiscovery` with `{ "subscribe": true }` answers `{ returnValue: true,
+  timeOut: 90 }`, then one `{ state: "started", device: { address, name, type } }`
+  for each device it hears, `type: "bt_audio"` for speakers and headphones
+  (B8, webOS 4.4.3; C2, webOS 9.2.2). `cancelDiscovery` ends it. A
+  `startDiscovery` sent straight after a `cancelDiscovery` was once refused on
+  the C2 with error 1005, "The Bluetooth adapter(local device) is not ready".
+- `connect` with the `{address}` of a device the scan found pairs it, then
+  connects it: earbuds in pairing mode paired and connected on a C2, as in
+  LG's own device selection. The binary's strings ("Try to Pair", "No
+  discovered device. Check in paired list") show `connect` looks in the
+  discovered list first.
+- A device that is off reads `connecting` in `getPairedDevices` for over 12 s
+  after `connect` before going back to `disconnected` (B8).
+- On the C2, connecting switched the sound output to `bt_soundbar`, showed
+  LG's toast, and 2 s later `getSystemSettingValues` for `pictureMode` listed
+  `game` as `visible: false`; the picture mode changed, to `normal`, with a
+  second toast. Game Optimizer was offered again once the device
+  disconnected.
+- `notifyDeviceSelectionMenuEntered` and `onDeviceSelectionMenu` refuse `{}`
+  and the payloads tried as not matching their schema; scanning works without
+  them.

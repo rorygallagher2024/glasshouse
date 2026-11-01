@@ -53,14 +53,16 @@ riskier controls ask for confirmation in the dashboard first.
 
 The Audio tab lists the audio devices paired with the TV (LG's
 `btaudiosrc` service) when it opens or on **Refresh**. **Connect** and
-**Disconnect** ask that service to connect or drop one listed device, and only
-when the owner presses the button. Nothing is paired, unpaired or searched for,
-the TV's Bluetooth is not switched, and the dashboard does not edit firmware or
-configuration files. LG's service handles the connection and may change the
-sound output or mute state. Connecting while another device is connected asks
-for confirmation. On webOS 4.10.2, a soundbar disconnected and reconnected and
-Bluetooth output returned; reconnecting also left mute off. Audible playback
-has not yet been checked.
+**Disconnect** ask that service to connect or drop one listed device, and
+**Find devices** asks it to search for 20 seconds; **Pair** connects a device
+the search found, which pairs it with the TV, as LG's own device selection
+does. All of these happen only when the owner presses the button. Nothing is
+unpaired, the TV's Bluetooth is not switched, and the dashboard does not edit
+firmware or configuration files. LG's service handles the connection and
+switches the sound output to Bluetooth; it may change the mute state, and on a
+C2 (webOS 9.2.2) LG then changes the picture mode and hides Game Optimizer
+until the device disconnects. Connecting while another device is
+connected asks for confirmation.
 
 ## Files and startup
 

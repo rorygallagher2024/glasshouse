@@ -27,7 +27,7 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 * **OLED light and backlight:** Live slider adjusting the panel luminance level for the active picture mode.
 * **Energy saving:** Quick toggles for Auto, Off, Minimum, Medium, Maximum, and Screen off energy-saving states.
 * **Sound output routing:** Switch audio output between TV Speaker, HDMI ARC, Optical, Headphone, and Bluetooth.
-* **Bluetooth device:** under the outputs, a list of the headphones and speakers already paired with the TV, each with whether it is connected. Choose one, then **Connect** or **Disconnect** it; choosing does not connect. **Refresh** reads the list again. It is read when Sound is opened, never polled, and is the same list as on the [Audio tab](audio.md#bluetooth-audio). It follows the Controls setting, and is not shown on a TV without the service.
+* **Bluetooth device:** under the outputs, a list of the headphones and speakers already paired with the TV, each with whether it is connected. Choose one, then **Connect** or **Disconnect** it; choosing does not connect. **Refresh** reads the list again. It is read when Sound is opened, never polled, and is the same list as on the [Audio tab](audio.md#bluetooth-audio). It follows the Controls setting, and is not shown on a TV without the service. New devices are added with **Find devices** on the Audio tab.
 
 ## Panel, timers and power
 

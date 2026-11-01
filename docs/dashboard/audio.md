@@ -22,16 +22,25 @@ Under Sound on the web dashboard, and as a device chooser under **Sound** on the
 [Control tab](control.md), the headphones and speakers already paired
 with the TV, each with whether it is connected, and a **Connect** or
 **Disconnect** button. The list is read when the tab opens (or Sound is opened on Control) and on **Refresh**,
-and again after a button is used; it is not polled. Pair or remove devices in
-LG's own settings: the dashboard does not search for devices, pair, unpair,
-switch the TV's Bluetooth off or on, or connect anything by itself.
+and again after a button is used; it is not polled.
+
+To add a new speaker or headphones, put it in pairing mode, then press
+**Find devices** on the Audio tab. The search takes 20 seconds and lists the
+audio devices it hears that are not paired yet; **Pair** pairs one and
+switches the sound to it. Remove devices in LG's own settings: the dashboard
+does not unpair, switch the TV's Bluetooth off or on, or connect anything by
+itself.
+
+While Bluetooth audio is connected, LG takes Game Optimizer out of the
+picture modes and may switch the picture mode, with its own message on
+screen. Game Optimizer comes back when the device disconnects (C2, webOS 9.2.2).
 
 The buttons follow the Controls setting like the rest of the tab. Connecting
 while another device is connected asks for confirmation because it may change
-the sound output. After an action, the row shows the state the TV then reports.
-A missing reply is shown as unconfirmed, not as a failed connection. While the
-state is pending, further actions wait for a confirming read or 15 seconds;
-**Refresh** checks again. A TV without the service does not show the section.
+the sound output. After an action, the dashboard checks the state the TV
+reports for up to 40 seconds and says so if the device did not connect or
+pair; a device that is off reads as connecting for over 12 seconds before LG
+gives up. A TV without the service does not show the section.
 The TV app does not have it.
 
 ## Soundbar and receiver

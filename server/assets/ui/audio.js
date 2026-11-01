@@ -10,6 +10,13 @@ let audioBtRevision = 0;
 let audioBtBusy = null;   // { address, action } while a connect or disconnect runs
 let audioBtLoading = false;
 let audioBtSelected = null;   // the address chosen in Control > Sound
+// After a request the TV has taken but not finished: { address, action, name, since }.
+// LG reports "connecting" for over 12 s before giving up on a device that is off (B8).
+let audioBtFollow = null;
+let audioBtFollowTimer = null;
+let audioBtScanned = false;
+const AUDIO_BT_RECHECK_MS = 2000;
+const AUDIO_BT_FOLLOW_MS = 40000;
 let audioChanging = false;
 let audioArmed = false;
 let audioArmTimer = null;
@@ -184,7 +191,7 @@ async function loadAudioBluetooth() {
   const revision = ++audioBtRevision;
   audioBtLoading = true;
   audioBtWorking(true);
-  audioBtNote('');
+  if (!audioBtFollow) audioBtNote('');
   if (audioBt) renderAudioBluetooth();
   try {
     const res = await fetch(api('/api/audio/bluetooth'), { cache: 'no-store' });
@@ -200,7 +207,89 @@ async function loadAudioBluetooth() {
   }
   audioBtLoading = false;
   audioBtWorking(false);
+  audioBtCheckFollow();
   renderAudioBluetooth();
+  audioBtRecheck();
+}
+
+// Reads again while a scan runs or a request is still settling.
+function audioBtRecheck() {
+  clearTimeout(audioBtFollowTimer);
+  audioBtFollowTimer = null;
+  const scanning = !!(audioBt && audioBt.scan && audioBt.scan.running);
+  if (scanning || audioBtFollow) audioBtFollowTimer = setTimeout(loadAudioBluetooth, AUDIO_BT_RECHECK_MS);
+}
+
+function audioBtCheckFollow() {
+  const f = audioBtFollow;
+  if (!f || !audioBt) return;
+  const d = audioBt.devices.find(x => x.address === f.address);
+  const wanted = f.action === 'disconnect' ? 'disconnected' : 'connected';
+  const waited = Date.now() - f.since;
+  if (d && d.state === wanted) {
+    audioBtFollow = null;
+    audioBtNote('');
+    // A device just paired leaves the scan's list, which would then read as finding nothing.
+    if (f.action === 'pair') audioBtScanned = false;
+    loadAudio(true);
+    return;
+  }
+  const gaveUp = f.action !== 'disconnect' && d && d.state === 'disconnected' && waited > 6000;
+  if (!gaveUp && waited < AUDIO_BT_FOLLOW_MS) return;
+  audioBtFollow = null;
+  audioBtNote('');
+  audioBtError(f.action === 'pair'
+    ? t('audio.bt.pairFailed', 'Couldn’t pair with {name}. Check it is still in pairing mode and nearby, then find devices again.', { name: f.name })
+    : f.action === 'connect'
+      ? t('audio.bt.connectFailed', 'Couldn’t connect to {name}. Check it is switched on and nearby.', { name: f.name })
+      : t('audio.bt.disconnectSlow', '{name} has not disconnected yet. Refresh to check again.', { name: f.name }));
+}
+
+async function audioBtScan() {
+  if (audioBtBusy || audioBtFollow || (audioBt && audioBt.scan && audioBt.scan.running)) return;
+  audioBtError('');
+  audioBtScanned = true;
+  if (audioBt) audioBt.scan = { running: true, found: [], error: '' };
+  renderAudioBluetooth();
+  try {
+    const res = await fetch(api('/api/audio/bluetooth'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'scan' })
+    });
+    const r = await res.json();
+    if (!r || !r.ok) throw new Error((r && r.error) || t('common.unknownError', 'unknown error'));
+    if (Array.isArray(r.devices)) audioBt.devices = r.devices;
+    audioBt.scan = r.scan;
+  } catch (e) {
+    if (audioBt) audioBt.scan = { running: false, found: [], error: '' };
+    audioBtError(e.message);
+  }
+  renderAudioBluetooth();
+  audioBtRecheck();
+}
+
+function renderAudioBluetoothScan(idle) {
+  const scan = audioBt.scan || { running: false, found: [], error: '' };
+  const btn = q('audio-bt-scan-btn');
+  btn.textContent = scan.running ? t('audio.bt.finding', 'Searching…') : t('audio.bt.find', 'Find devices');
+  btn.disabled = !idle || scan.running;
+  btn.hidden = audioBt.writable !== true;
+  q('audio-bt-scan').hidden = !audioBtScanned && !scan.running && !scan.found.length;
+  q('audio-bt-scan-note').textContent = scan.running
+    ? t('audio.bt.searching', 'Looking for speakers and headphones in pairing mode…')
+    : scan.error ? t('audio.bt.scanFailed', 'The TV could not search for devices: {error}', { error: scan.error })
+    : scan.found.length ? t('audio.bt.foundNote', 'Found nearby. Pair one to add it and switch the sound to it.')
+    : t('audio.bt.noneFound', 'No new devices found. Put the speaker or headphones in pairing mode, then find devices again.');
+  q('audio-bt-found').innerHTML = scan.found.map(d => {
+    const name = d.name || t('audio.bt.unnamed', 'Unnamed device');
+    const doing = audioBtBusy && audioBtBusy.address === d.address;
+    const label = doing ? t('audio.bt.pairing', 'Pairing…') : t('audio.bt.pair', 'Pair');
+    return '<div class="prot-row"><div class="prot-main"><div class="prot-title">' + esc(name) + '</div>' +
+      '<div class="prot-desc">' + esc(t('audio.bt.notPaired', 'Not paired')) + '</div></div>' +
+      `<div class="prot-status"><button type="button" class="pill ${doing ? 'busy' : 'good'}" data-bt-address="${esc(d.address)}" data-bt-action="pair"` +
+      ` data-bt-name="${esc(name)}" aria-label="${esc(t('audio.bt.actionFor', '{action}: {name}', { action: label, name }))}"` +
+      `${idle && !scan.running ? '' : ' disabled'}>${esc(label)}</button></div></div>`;
+  }).join('');
 }
 
 function audioBtStateLabel(state) {
@@ -218,7 +307,7 @@ function renderAudioBluetooth() {
   const focused = document.activeElement && document.activeElement.closest('#audio-bt-list [data-bt-address]');
   const focusedAddress = focused && focused.dataset.btAddress;
   const writable = audioBt.writable === true;
-  const idle = writable && !audioBtBusy && !audioBtLoading;
+  const idle = writable && !audioBtBusy && !audioBtLoading && !audioBtFollow;
   q('audio-bt-list').innerHTML = audioBt.devices.map(d => {
     const name = d.name || t('audio.bt.unnamed', 'Unnamed device');
     const doing = audioBtBusy && audioBtBusy.address === d.address ? audioBtBusy.action : null;
@@ -241,6 +330,7 @@ function renderAudioBluetooth() {
     const next = q('audio-bt-list').querySelector('[data-bt-address="' + focusedAddress + '"]');
     if (next && !next.disabled) next.focus({ preventScroll: true });
   }
+  renderAudioBluetoothScan(idle);
   renderSoundBluetooth(idle);
 }
 
@@ -279,10 +369,10 @@ function renderSoundBluetooth(idle) {
 
 // The TV's reply is not taken as the result: the server reads the list again,
 // and the state in it is what the row shows.
-async function audioBluetoothAct(address, action) {
-  if (audioBtBusy) return;
+async function audioBluetoothAct(address, action, foundName) {
+  if (audioBtBusy || audioBtFollow) return;
   const other = audioBt.devices.find(d => d.address !== address && d.state === 'connected');
-  if (action === 'connect' && other && !confirm(t('audio.bt.switchConfirm',
+  if (action !== 'disconnect' && other && !confirm(t('audio.bt.switchConfirm',
     'Connecting another device may disconnect {name} and change the sound output. Continue?',
     { name: other.name || t('audio.bt.unnamed', 'Unnamed device') }))) return;
   const fromControl = !!(document.activeElement && document.activeElement.closest('#sound-bt-set'));
@@ -295,6 +385,8 @@ async function audioBluetoothAct(address, action) {
   renderAudioBluetooth();
   let error = null;
   let note = '';
+  const known = audioBt.devices.find(x => x.address === address);
+  const name = (known && known.name) || foundName || t('audio.bt.unnamed', 'Unnamed device');
   try {
     const res = await fetch(api('/api/audio/bluetooth'), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -303,13 +395,14 @@ async function audioBluetoothAct(address, action) {
     const r = await res.json();
     if (r && Array.isArray(r.devices)) audioBt.devices = r.devices;
     if (!r || !r.ok) error = (r && r.error) || t('common.unknownError', 'unknown error');
-    else if (r.pending && !r.accepted) {
-      note = t('audio.bt.unconfirmed', 'The TV has not confirmed the request. Refresh to check the connection before trying again.');
-    } else if (!r.settled) {
-      const d = audioBt.devices.find(x => x.address === address);
-      note = t('audio.bt.notYet', 'The TV took the request but still reports {name} as {state}. Refresh to check again.',
-        { name: (d && d.name) || t('audio.bt.unnamed', 'Unnamed device'), state: audioBtStateLabel(d && d.state).toLowerCase() });
+    else if (!r.settled) {
+      audioBtFollow = { address, action, name, since: Date.now() };
+      note = action === 'pair' ? t('audio.bt.pairWait', 'Pairing with {name}…', { name })
+        : action === 'connect' ? t('audio.bt.connectWait', 'Connecting to {name}…', { name })
+        : t('audio.bt.disconnectWait', 'Disconnecting {name}…', { name });
     }
+    if (action === 'pair' && audioBt.scan) audioBt.scan.running = false;
+    if (action === 'pair' && r && r.ok && r.settled) audioBtScanned = false;
   } catch (e) {
     error = e.message;
   }
@@ -320,13 +413,14 @@ async function audioBluetoothAct(address, action) {
   renderAudioBluetooth();
   const next = fromControl ? q('sound-bt-action') : q('audio-bt-list').querySelector('[data-bt-address="' + address + '"]');
   if (next && !next.disabled && !next.hidden) next.focus({ preventScroll: true });
+  audioBtRecheck();
   // A connection can change the sound output shown above.
-  loadAudio(true);
+  if (!audioBtFollow) loadAudio(true);
 }
 
 document.addEventListener('click', e => {
-  const b = e.target.closest('#audio-bt-list button[data-bt-action], #sound-bt-action');
-  if (b && !b.disabled && b.dataset.btAction) audioBluetoothAct(b.dataset.btAddress, b.dataset.btAction);
+  const b = e.target.closest('#audio-bt-list button[data-bt-action], #audio-bt-found button[data-bt-action], #sound-bt-action');
+  if (b && !b.disabled && b.dataset.btAction) audioBluetoothAct(b.dataset.btAddress, b.dataset.btAction, b.dataset.btName);
 });
 
 document.addEventListener('change', e => {
