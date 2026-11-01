@@ -1610,6 +1610,13 @@ function handleRequest(req, res) {
    * input, picture mode and dynamic range they belong to. Read fresh enough to
    * follow a change made with the remote while the tab is open.
    */
+  if (pathname === '/api/picture/export') {
+    if (req.method !== 'GET') return send(res, 405, JSON.stringify({ ok: false, error: 'GET required' }));
+    return lgSettingsModule.exportPicture(function (r) {
+      send(res, r.ok === false ? 503 : 200, JSON.stringify(r));
+    });
+  }
+
   if (pathname === '/api/picture') {
     return lgSettingsModule.collect('picture', function (r) {
       // available false where the TV offers none: both dashboards then leave the tab out.

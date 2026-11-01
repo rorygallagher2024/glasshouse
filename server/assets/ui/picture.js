@@ -63,6 +63,31 @@ function pictureError(message) {
   el.hidden = !message;
 }
 
+async function downloadPicture() {
+  const button = q('pic-export');
+  if (button.disabled) return;
+  button.disabled = true;
+  pictureError('');
+  try {
+    const res = await fetch(api('/api/picture/export'), { cache: 'no-store' });
+    const data = await res.json();
+    if (!res.ok || data.format !== 'glasshouse-picture-settings' || data.version !== 1) {
+      throw new Error(data.error || t('common.unknownError', 'unknown error'));
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    a.download = `glasshouse-picture-${data.created.slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch (e) {
+    pictureError(e.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 // The tab is shown only where the TV offers picture settings, as the Game tab
 // is only where it has a Game Optimizer.
 async function checkPictureTab() {
