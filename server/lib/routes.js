@@ -1235,18 +1235,32 @@ function handleRequest(req, res) {
   if (pathname === '/' || pathname === '/index.html') {
     if (UI_HTML) {
       var enc = req.headers['accept-encoding'] || '';
+      var uiEtag = '"' + (displayVersionStr || '1') + '-' + (UI_HTML_GZ ? UI_HTML_GZ.length.toString(16) : Buffer.byteLength(UI_HTML).toString(16)) + '"';
+      if (req.headers && req.headers['if-none-match'] === uiEtag) {
+        res.writeHead(304, { 'ETag': uiEtag, 'Cache-Control': 'no-cache' });
+        return res.end();
+      }
       if (UI_HTML_GZ && enc.indexOf('gzip') !== -1) {
         res.writeHead(200, {
           'Content-Type': 'text/html; charset=utf-8',
           'Content-Encoding': 'gzip',
           'Content-Length': UI_HTML_GZ.length,
-          'Cache-Control': 'no-store',
+          'Cache-Control': 'no-cache',
+          'ETag': uiEtag,
           'X-Content-Type-Options': 'nosniff',
           'Referrer-Policy': 'no-referrer'
         });
         return res.end(UI_HTML_GZ);
       }
-      return send(res, 200, UI_HTML, 'text/html; charset=utf-8');
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Length': Buffer.byteLength(UI_HTML),
+        'Cache-Control': 'no-cache',
+        'ETag': uiEtag,
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'no-referrer'
+      });
+      return res.end(UI_HTML);
     }
     // 503, not 200: the dashboard is genuinely unavailable, and a monitor
     // polling this should see that rather than a page that says so in prose.

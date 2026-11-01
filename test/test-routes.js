@@ -1508,4 +1508,36 @@ function createMockRes(cb) {
   }));
 })();
 
+// Root route serves ui.html with ETag and answers 304 on matching If-None-Match
+(function () {
+  var assetsDir = path.join(__dirname, '..', 'server', 'assets');
+  routes.init({
+    config: { allowControl: false, token: '', web: { enabled: true } },
+    version: '0.137.0',
+    assetPath: function (rel) {
+      var p = path.join(assetsDir, rel);
+      return fs.existsSync(p) ? p : null;
+    }
+  });
+  routes.loadUI();
+
+  routes.handleRequest(createMockReq({ url: '/' }), createMockRes(function (r200) {
+    assert.strictEqual(r200.statusCode, 200);
+    assert.strictEqual(r200.headers['Cache-Control'], 'no-cache');
+    var etag = r200.headers['ETag'];
+    assert.ok(etag, 'Root route should return an ETag');
+
+    routes.handleRequest(createMockReq({ url: '/', headers: { 'if-none-match': etag } }), createMockRes(function (r304) {
+      assert.strictEqual(r304.statusCode, 304);
+      assert.strictEqual(r304.body, '', '304 should have empty body');
+
+      routes.handleRequest(createMockReq({ url: '/index.html', headers: { 'if-none-match': etag } }), createMockRes(function (rIndex304) {
+        assert.strictEqual(rIndex304.statusCode, 304);
+        assert.strictEqual(rIndex304.body, '', '304 should have empty body');
+        console.log('  ✓ / and /index.html serve ui.html with an ETag and answer 304');
+      }));
+    }));
+  }));
+})();
+
 console.log('ALL test-routes.js assertions passed!');
