@@ -131,16 +131,34 @@ function translateText(text, dict) {
   return fill(entry.text, vars);
 }
 
-function walk(v, dict, field) {
-  if (typeof v === 'string') return field && DISPLAY_FIELDS[field] ? translateText(v, dict) : v;
+var DISPLAY_KEY_RE = /"(?:error|note|label|name|detail|desc|description|title|badge|message|hint|limitTrackingLabel|limitTrackingDetail|sharesWith|agreements|kept|cautions|consentGroups)"\s*:/;
+
+function walk(v, dict, field, onModified) {
+  if (typeof v === 'string') {
+    if (field && DISPLAY_FIELDS[field]) {
+      var next = translateText(v, dict);
+      if (next !== v) {
+        if (onModified) onModified();
+        return next;
+      }
+    }
+    return v;
+  }
   if (Array.isArray(v)) {
     // An array of strings in a display field, such as a list of names.
-    for (var i = 0; i < v.length; i++) v[i] = walk(v[i], dict, field);
+    for (var i = 0; i < v.length; i++) {
+      var item = v[i];
+      if (item && typeof item === 'object') {
+        v[i] = walk(item, dict, field, onModified);
+      } else if (field && DISPLAY_FIELDS[field] && typeof item === 'string') {
+        v[i] = walk(item, dict, field, onModified);
+      }
+    }
     return v;
   }
   if (v && typeof v === 'object') {
     for (var k in v) {
-      if (Object.prototype.hasOwnProperty.call(v, k)) v[k] = walk(v[k], dict, k);
+      if (Object.prototype.hasOwnProperty.call(v, k)) v[k] = walk(v[k], dict, k, onModified);
     }
   }
   return v;
@@ -149,10 +167,12 @@ function walk(v, dict, field) {
 // A JSON body for a response, translated in place where a page asked for a
 // language. Anything that is not JSON goes out as it came.
 function translateBody(body, lang) {
-  if (!lang || typeof body !== 'string' || !dicts[lang]) return body;
+  if (!lang || typeof body !== 'string' || !dicts[lang] || !DISPLAY_KEY_RE.test(body)) return body;
   var obj;
   try { obj = JSON.parse(body); } catch (e) { return body; }
-  return JSON.stringify(walk(obj, dicts[lang], null));
+  var changed = false;
+  walk(obj, dicts[lang], null, function () { changed = true; });
+  return changed ? JSON.stringify(obj) : body;
 }
 
 module.exports = {

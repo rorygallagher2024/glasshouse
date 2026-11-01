@@ -661,6 +661,9 @@ function updateSummary() {
 
 function send(res, code, body, type) {
   if (!type || type.indexOf('application/json') === 0) {
+    if (typeof body === 'object' && body !== null && !Buffer.isBuffer(body)) {
+      body = JSON.stringify(body);
+    }
     body = say.translateBody(body, res && res.glasshouseLang);
   }
   /*

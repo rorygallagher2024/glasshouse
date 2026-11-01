@@ -77,4 +77,11 @@ var translated = JSON.parse(say.translateBody(JSON.stringify({ detail: detail })
 assert.strictEqual(translated.detail, 'Aceptado en Términos, Privacidad y Anuncios.');
 console.log('  ✓ a sentence built from a list is translated, joining word and all');
 
+// 7. Fast path: JSON without display fields or without matching messages is returned unchanged
+var noDisplay = JSON.stringify({ ok: true, volume: 15, muted: false });
+assert.strictEqual(say.translateBody(noDisplay, 'es'), noDisplay);
+var unrecorded = JSON.stringify({ title: 'Unrecorded title', list: [1, 2, 3] });
+assert.strictEqual(say.translateBody(unrecorded, 'es'), unrecorded);
+console.log('  ✓ JSON without display fields or matching messages returns unchanged');
+
 console.log('ALL test-say.js assertions passed!\n');

@@ -1508,4 +1508,13 @@ function createMockRes(cb) {
   }));
 })();
 
+(function testSendObject() {
+  routes.send(createMockRes(function (r) {
+    assert.strictEqual(r.statusCode, 200);
+    assert.strictEqual(r.headers['Content-Type'], 'application/json');
+    assert.strictEqual(r.body, '{"ok":true,"count":42}');
+  }), 200, { ok: true, count: 42 });
+  console.log('  ✓ routes.send serializes objects directly');
+})();
+
 console.log('ALL test-routes.js assertions passed!');
