@@ -3,7 +3,7 @@
 [Pane](https://github.com/denisvinciguerra/pane-for-glasshouse) is a macOS menu-bar remote for an LG webOS TV running Glasshouse. It provides quick access to remote navigation, inputs, Picture, Audio and Game settings, HDMI ports, and live telemetry without having to open the web dashboard in a browser.
 
 > [!WARNING]
-> **Independent community project**: Pane is an independent project by [Denis Vinciguerra](https://github.com/denisvinciguerra) and is not affiliated with, maintained by, or endorsed by the Glasshouse project. Support, bug reports, and feedback should be directed to the [Pane repository issue tracker](https://github.com/denisvinciguerra/pane-for-glasshouse/issues).
+> **Independent community project**: Pane is an independent project by [Denis Vinciguerra](https://github.com/denisvinciguerra) and is not affiliated with or maintained by the Glasshouse project. Support, bug reports, and feedback should be directed to the [Pane repository issue tracker](https://github.com/denisvinciguerra/pane-for-glasshouse/issues).
 
 <p align="center" markdown>
   ![Pane popover under the macOS menu bar showing remote, inputs and pinned tiles](https://raw.githubusercontent.com/denisvinciguerra/pane-for-glasshouse/main/docs/screenshots/hero.png){ width="700" }
