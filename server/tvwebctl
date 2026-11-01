@@ -75,9 +75,10 @@ stop_app() {
 
 # Node 0.x keeps its heap at its peak: on a B8 (webOS 4, node 0.12.2) the
 # server's live objects were 18-24 MB but its heap grew to 57 MB and stayed,
-# 73 MB resident after 14 minutes. With these flags it stayed at 28-36 MB, for
-# the same CPU time (21 s in 14.5 minutes either way). Newer node is unmeasured
-# and left as it is.
+# 73 MB resident after 14 minutes. With these flags it rises from about 30 MB
+# to 67 MB over some 25 minutes and its full collection hands the heap back,
+# 47 MB on average, for the same CPU time (21 s in 14.5 minutes either way).
+# Newer node is unmeasured and left as it is.
 node_flags() {
   case "$("$NODE" --version 2>/dev/null)" in v0.*) ;; *) return 0 ;; esac
   "$NODE" --v8-options 2>/dev/null | grep -q max_semi_space_size || return 0
