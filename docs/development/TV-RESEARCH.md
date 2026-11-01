@@ -2109,6 +2109,22 @@ name.
   `lgtviot.com`; `ad`, `info` under `lgsmartad.com`.
 - No `lggalleryplus.com` in either.
 
+## Report and store log hosts (C4, webOS 10.3.1)
+
+- **sdx uploads reports to `rdx2.nextlgsdp.com`.**
+  `com.webos.service.sdx/getRdxServerUrl` answers
+  `https://US.rdx2.nextlgsdp.com/rdx/9.0.0/` on a US C4, so the older
+  `rdx2.lgtvsdp.com` names no longer cover it. It is a different name from
+  `us.nextlgsdp.com`, which sdx signs in to and the Content Store uses.
+- **The Content Store logs its requests to `elastic.lgwebostv.com`.** LG's
+  store frontend (`com.webos.app.discovery`, loaded from LG's servers) posts
+  to `<first label of its API host>.elastic.lgwebostv.com/logs/<type>`:
+  `us.` on a US TV, with `st` and `qt` test hosts mapped to `qt2`. Each post
+  carries the TV's wired MAC address and a request id, and the request logs
+  also carry the device platform, language, SDK version and FCK headers. It
+  is fire-and-forget, and with it sinkholed the store still opens and lists
+  apps.
+
 ## ACR on a CX (webOS 5.6.2)
 
 - **`acr2` starts on demand.** Its D-Bus service file is `Type=dynamic`, so
