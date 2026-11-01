@@ -29,6 +29,11 @@ If you are using AI coding assistants or automated agents, ensure they adhere to
 
 ## Rules for a pull request
 
+The rules and the guidelines below exist to keep the code good and to make
+pull requests quick to review, so they get merged sooner. A pull request that
+arrives tested, translated and documented, built the way the rest of the code
+is, needs fewer rounds of changes.
+
 Keep a pull request in draft while any of these that applies to it is unmet,
 and mark it ready for review once they are. Not every rule applies to every
 change: a docs-only change needs no TV testing or translation.
