@@ -1,0 +1,141 @@
+{
+ "subscribed": true,
+ "event": "searchResult",
+ "result": {
+  "UserUtterance": "the office",
+  "ResponseData": [
+   {
+    "ActionData": {
+     "request": {
+      "webKeyword": "the office",
+      "domain": "epg_onair,epg_program,tvshow,movie,app,youtube,freeviewplay",
+      "query": "the office"
+     },
+     "response": {
+      "code": 200,
+      "message": "OK",
+      "hit_count": 77,
+      "results": [
+       {
+        "hit_count": 1,
+        "domain": "freeviewplay",
+        "total_count": 1,
+        "doc": []
+       },
+       {
+        "hit_count": 24,
+        "domain": "tvshow",
+        "total_count": 26,
+        "doc": [
+         {
+          "thumbnail_size": "",
+          "genre": "Drama, Sitcom",
+          "content_id": "-Q m=http%3A%2F%2Fapi-global.netflix.com%2Fcatalog%2Ftitles%2Fseries%2F70136120&source_type=4&trackId=13783779&trackUrl=https%3A%2F%2Fapi-global.netflix.com%2FAPI_APP_ID_6261%3F%23Search%3F",
+          "title": "The Office (U.S.)",
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/netflix/GB/program/4231e1d2aba7129e5cca265147a753c_1_M.jpg#ADDSIZE#V295X414",
+          "content_set_id": "com.lge.meta.crawler.netflix.NetflixCrawler_en_GB",
+          "cp_thumbnail": [
+           {
+            "cp_id": "netflix",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20150421/21790820472215287LARGE_APP_ICON_130x130_webos.png",
+            "cp_set_id": "comlgemetacrawlernetflixnetflixcrawlerengb"
+           }
+          ],
+          "thumbnail_type": "original"
+         },
+         {
+          "thumbnail_size": "",
+          "genre": "Comedy",
+          "content_id": "DISNEY_page=browse&id=entity-7194f94b-8f22-4122-a12c-0beac6658bb7&seasonSequenceNumber=9&distributionPartner=lg",
+          "title": "The Office",
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/disney/GB/program/8f8bedc5fe302a76f43ae82127a2c874_1_M.jpg#ADDSIZE#H736X414",
+          "content_set_id": "MasterSet_GB",
+          "cp_thumbnail": [
+           {
+            "cp_id": "com.disney.disneyplus-prod",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20240226/38047867.png",
+            "cp_set_id": "comlgemetacrawlerdisneydisneycrawlergb"
+           }
+          ],
+          "thumbnail_type": "original"
+         },
+         {
+          "thumbnail_size": "",
+          "genre": "Comedy",
+          "content_id": "AMAZON_amzn1.dv.gti.b8b029fe-3e30-ff29-98c1-25a6b4fc140e",
+          "title": "The Office",
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/program/63475c51129fe3679ab5ceab52d4a1f_1_M.jpg#ADDSIZE#H552X414",
+          "content_set_id": "MasterSet_GB",
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png",
+            "cp_set_id": "comlgemetacrawleramazonamazoncrawlergb"
+           }
+          ],
+          "thumbnail_type": "original"
+         }
+        ]
+       },
+       {
+        "hit_count": 24,
+        "domain": "movie",
+        "total_count": 71,
+        "doc": [
+         {
+          "thumbnail_size": "",
+          "genre": "Drama, Thriller, Horror",
+          "content_id": "AMAZON_amzn1.dv.gti.6603266f-42d0-47d0-a96c-efdec5ae5fb2",
+          "title": "OFFICE",
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/amazon/GB/program/13633d64f90aa6b7577a7c41844b34f_1_M.jpg#ADDSIZE#V310X414",
+          "content_set_id": "MasterSet_GB",
+          "cp_thumbnail": [
+           {
+            "cp_id": "amazon",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20250220/38386090.png",
+            "cp_set_id": "comlgemetacrawleramazonamazoncrawlergb"
+           }
+          ],
+          "thumbnail_type": "original"
+         },
+         {
+          "thumbnail_size": "",
+          "genre": "Romance",
+          "content_id": "-Q m=http%3A%2F%2Fapi-global.netflix.com%2Fcatalog%2Ftitles%2Fmovies%2F81939823&source_type=4&trackId=13783779&trackUrl=https%3A%2F%2Fapi-global.netflix.com%2FAPI_APP_ID_6261%3F%23Search%3F",
+          "title": "Office Romance",
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/netflix/GB/program/dea6992d29925944498acff36f3fd_1_M.jpg#ADDSIZE#V295X414",
+          "content_set_id": "com.lge.meta.crawler.netflix.NetflixCrawler_en_GB",
+          "cp_thumbnail": [
+           {
+            "cp_id": "netflix",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20150421/21790820472215287LARGE_APP_ICON_130x130_webos.png",
+            "cp_set_id": "comlgemetacrawlernetflixnetflixcrawlerengb"
+           }
+          ],
+          "thumbnail_type": "original"
+         },
+         {
+          "thumbnail_size": "",
+          "genre": "Crime, International",
+          "content_id": "-Q m=http%3A%2F%2Fapi-global.netflix.com%2Fcatalog%2Ftitles%2Fmovies%2F81702144&source_type=4&trackId=13783779&trackUrl=https%3A%2F%2Fapi-global.netflix.com%2FAPI_APP_ID_6261%3F%23Search%3F",
+          "title": "Officer Black Belt",
+          "thumbnail": "http://eic-ngfts.lge.com/fts/gftsDownload.lge?biz_code=MAS&func_code=META_THUMBNAIL&file_path=/mas/netflix/GB/program/df416f7f59bb2bf2d61571665c2e83e4_1_M.jpg#ADDSIZE#V295X414",
+          "content_set_id": "com.lge.meta.crawler.netflix.NetflixCrawler_en_GB",
+          "cp_thumbnail": [
+           {
+            "cp_id": "netflix",
+            "cp_thumbnail_url": "http://ngfts.lge.com/fts/gftsDownload.lge?biz_code=META_IMG&func_code=CPLOGO&file_path=/appstore/app/icon/20150421/21790820472215287LARGE_APP_ICON_130x130_webos.png",
+            "cp_set_id": "comlgemetacrawlernetflixnetflixcrawlerengb"
+           }
+          ],
+          "thumbnail_type": "original"
+         }
+        ]
+       }
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

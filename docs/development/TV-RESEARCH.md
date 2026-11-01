@@ -728,6 +728,17 @@ G3 in the UK.
   `keyboardStateChange` with `detail.visibility` fires on the document, not
   the window. `com.webos.service.ime/insertText` and `sendEnterKey` type
   into it over SSH.
+- **webOS 4 (B8, 4.4.3) answers the same search** with less in each title:
+  no `type` (the result list's `domain`, `movie` or `tvshow`, gives it), no
+  `display_info` and no `action_on_click`. LG's Search there asks for the
+  detail of `content_set_id` and `content_id` joined by `|`, through
+  `serviceName` `sdp_secure`; `sdp_onnow` answers `code` `0`, `Error`, with no
+  response. On 1 November 2026 Disney+'s and Prime Video's The Office had
+  `exec_list` entries; Netflix's titles and a Prime Video film were `ERROR
+  ITEM NOT FOUND`. Netflix's `content_id` is its own launch string (`-Q
+  m=http://api-global.netflix.com/catalog/titles/...&source_type=4`). LG's
+  Search puts the `exec_id` into the app's `deeplinkingParams` itself, after
+  `getAppInfo`, or gives it as `contentTarget` where the app has none.
 
 ## Channels and the guide (G3, webOS 9.2.2)
 

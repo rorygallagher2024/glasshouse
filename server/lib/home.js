@@ -2186,7 +2186,7 @@ function init(opts) {
   recommended.init({ luna: lunaFn });
   search.init({ luna: lunaFn, Subscription: opts.Subscription, apps: launchPoints,
     opened: function (id) { noteOpened('app', id); }, enabled: function () { return readConfig().search; },
-    blockedBy: opts.blockedBy });
+    blockedBy: opts.blockedBy, appInfoLaunch: isStandalone });
   takeover.init({
     luna: lunaFn,
     samrescan: opts.samrescan || null,

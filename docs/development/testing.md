@@ -253,7 +253,10 @@ are listed, a listed title opens in its app at the id LG's item detail gives,
 anything not listed opens nothing, and LG's error is a failure. With a G3's
 details for Severance and The Bear, a series opens at Prime Video's first
 season and at Disney+'s first episode, and with no detail a title opens at
-its item id less LG's service tag. From the G3's answers for promo words,
+its item id less LG's service tag. A B8's answer for "the office" is listed
+by the category each title is under, its detail asked of `sdp_secure` when
+`sdp_onnow` gives none, and a title opened with the id put into the app's
+template, or as its `contentTarget` without one. From the G3's answers for promo words,
 trailers, teasers and sneak peeks are never listed while Trailer Park Boys
 and Trailer War are, a series never opens at a trailer numbered as its first
 episode, and switched off the search asks LG nothing.
