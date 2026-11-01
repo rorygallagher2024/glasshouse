@@ -469,12 +469,18 @@ step('Screen off on a streaming button switches LG\'s entry off and turns the sc
           tv.mapping.forEach(function (e) { if (e.netflix) e.netflix.isActive = true; });
           setTimeout(function () {
             assert.strictEqual(entry('netflix').isActive, false, 'set again after the screen off');
+          // A press over LG's screen saver ends it, and the screen goes off after.
+          power.state = 'Screen Saver';
+          setTimeout(function () { power.state = 'Active'; }, 300);
+          logLine(NETFLIX_LINE);
+          setTimeout(function () {
+            assert.strictEqual(power.screenOffs, 2, 'turned off once the screen saver had gone');
           // A press with the picture already off wakes the TV, and is left to.
           power.state = 'Screen Off';
           setTimeout(function () {
             logLine(NETFLIX_LINE);
             setTimeout(function () {
-              assert.strictEqual(power.screenOffs, 1);
+              assert.strictEqual(power.screenOffs, 2);
               power.state = 'Active';
               set('netflix', 'lg', '', function () {
                 assert.strictEqual(entry('netflix').isActive, true, 'put back as LG had it');
@@ -483,6 +489,7 @@ step('Screen off on a streaming button switches LG\'s entry off and turns the sc
               });
             }, POLLED);
           }, 600);
+          }, POLLED + 800);
           }, 1700);
         }, POLLED + 800);
       });

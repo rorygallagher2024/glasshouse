@@ -1105,15 +1105,17 @@ function buttonPressed(button) {
 
 /*
  * Only with the picture on: a press while it is off wakes it, and is left to.
- * A press while tvpower is still finishing a change, as just after a wake, is
- * tried again: about 1 press in 10 was lost that way on a C2 (webOS 11.2.0).
+ * A press while tvpower is still finishing a change, as just after a wake, or
+ * while LG's screen saver is up, which the press ends, is tried again for
+ * about 4 s: at 1.6 s about 1 press in 10 was still lost on a C5 (webOS
+ * 11.2.0, #1143). Each press left alone is logged, to tell the rest apart.
  * Turning the screen off is a power change, at which LG writes its streaming
  * buttons back, so a quick second press opened LG's app, or its installer,
  * before the key was set again (#1143). For a while after, LG's writes are
  * answered at once, and the keys are set again unasked, as not every write is
  * announced.
  */
-var SCREEN_OFF_TRIES = 4;
+var SCREEN_OFF_TRIES = 10;
 var SCREEN_OFF_RETRY_MS = 400;
 var FAST_REAPPLY_MS = 100;
 var FAST_REAPPLY_WINDOW_MS = 15000;
@@ -1123,17 +1125,22 @@ var screenOffAt = 0;
 function screenOffFromPress(button, tries) {
   tries = tries || 1;
   lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
-    if (!pw || pw.state !== 'Active') return;
-    if (pw.processing) {
-      if (tries < SCREEN_OFF_TRIES) setTimeout(function () { screenOffFromPress(button, tries + 1); }, SCREEN_OFF_RETRY_MS);
-      return;
+    var state = pw && pw.state;
+    if (state === 'Active' && !pw.processing) return screenOff(button);
+    if (state !== 'Active' && state !== 'Screen Saver') {
+      return console.log('remotekeys: ' + button + ' left alone: the TV is ' + (state || 'not answering'));
     }
-    lunaFn('com.webos.service.tvpower/power/turnOffScreen', {}, function (r) {
-      if (!(r && r.returnValue)) return console.log('remotekeys: ' + button + ' could not turn the screen off');
-      screenOffAt = Date.now();
-      SCREEN_OFF_REAPPLY_MS.forEach(function (ms) {
-        setTimeout(function () { applyNative(function () {}); }, ms);
-      });
+    if (tries < SCREEN_OFF_TRIES) return setTimeout(function () { screenOffFromPress(button, tries + 1); }, SCREEN_OFF_RETRY_MS);
+    console.log('remotekeys: ' + button + ' left alone: the TV was still ' + (pw.processing ? 'busy with ' + pw.processing : state) + ' after ' + tries + ' tries');
+  });
+}
+
+function screenOff(button) {
+  lunaFn('com.webos.service.tvpower/power/turnOffScreen', {}, function (r) {
+    if (!(r && r.returnValue)) return console.log('remotekeys: ' + button + ' could not turn the screen off');
+    screenOffAt = Date.now();
+    SCREEN_OFF_REAPPLY_MS.forEach(function (ms) {
+      setTimeout(function () { applyNative(function () {}); }, ms);
     });
   });
 }
