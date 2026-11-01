@@ -186,13 +186,18 @@ function loadControlBluetooth() {
   if (activeTab === 'control' && q('disc-sound').open) loadAudioBluetooth();
 }
 
-async function loadAudioBluetooth() {
+// quiet: a background re-read while a scan or request is followed, which must not
+// grey the buttons for the moment it takes, or a click then does nothing.
+async function loadAudioBluetooth(quiet) {
   if (audioBtBusy) return;
+  quiet = quiet === true;
   const revision = ++audioBtRevision;
-  audioBtLoading = true;
-  audioBtWorking(true);
-  if (!audioBtFollow) audioBtNote('');
-  if (audioBt) renderAudioBluetooth();
+  if (!quiet) {
+    audioBtLoading = true;
+    audioBtWorking(true);
+    if (!audioBtFollow) audioBtNote('');
+    if (audioBt) renderAudioBluetooth();
+  }
   try {
     const res = await fetch(api('/api/audio/bluetooth'), { cache: 'no-store' });
     const r = await res.json();
@@ -205,8 +210,10 @@ async function loadAudioBluetooth() {
     audioBt = { available: true, writable: false, devices: [] };
     audioBtError(e.message);
   }
-  audioBtLoading = false;
-  audioBtWorking(false);
+  if (!quiet) {
+    audioBtLoading = false;
+    audioBtWorking(false);
+  }
   audioBtCheckFollow();
   renderAudioBluetooth();
   audioBtRecheck();
@@ -225,7 +232,7 @@ function audioBtRecheck() {
   clearTimeout(audioBtFollowTimer);
   audioBtFollowTimer = null;
   const scanning = !!(audioBt && audioBt.scan && audioBt.scan.running);
-  if (scanning || audioBtFollow) audioBtFollowTimer = setTimeout(loadAudioBluetooth, AUDIO_BT_RECHECK_MS);
+  if (scanning || audioBtFollow) audioBtFollowTimer = setTimeout(() => loadAudioBluetooth(true), AUDIO_BT_RECHECK_MS);
 }
 
 function audioBtCheckFollow() {
@@ -299,7 +306,7 @@ function renderAudioBluetoothScan(idle) {
       '<div class="prot-desc">' + esc(t('audio.bt.notPaired', 'Not paired')) + '</div></div>' +
       `<div class="prot-status"><button type="button" class="pill ${doing ? 'busy' : 'good'}" data-bt-address="${esc(d.address)}" data-bt-action="pair"` +
       ` data-bt-name="${esc(name)}" aria-label="${esc(t('audio.bt.actionFor', '{action}: {name}', { action: label, name }))}"` +
-      `${idle && !scan.running ? '' : ' disabled'}>${esc(label)}</button></div></div>`;
+      `${idle ? '' : ' disabled'}>${esc(label)}</button></div></div>`;
   }).join('');
 }
 
