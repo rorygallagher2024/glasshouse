@@ -1458,11 +1458,6 @@
       <div class="hint" data-t="mqtt.deviceId.hint">Lowercase letters, digits and underscores.</div>
     </div>
     <div class="cfg-f">
-      <label for="cfg-devname" data-t="mqtt.deviceName">Device name</label>
-      <input type="text" id="cfg-devname" placeholder="LG OLED TV" data-t-placeholder="header.brand.oled" autocomplete="off">
-      <div class="hint" data-t="mqtt.deviceName.hint">Shown as the device name in Home Assistant.</div>
-    </div>
-    <div class="cfg-f">
       <label for="cfg-interval" data-t="mqtt.interval">Telemetry interval</label>
       <input type="number" id="cfg-interval" placeholder="10000" translate="no" min="1000" max="600000" autocomplete="off">
       <div class="hint" data-t="mqtt.interval.hint">Milliseconds between publishes.</div>
@@ -1525,6 +1520,17 @@
           <button type="button" class="link-btn" id="upd-rollback" hidden onclick="rollbackUpdate()"></button>
         </div>
         <div class="prot-status"><span class="pill idle" id="upd-pill">&mdash;</span></div>
+      </div>
+      <div class="prot-row">
+        <div class="prot-main">
+          <div class="prot-title" data-t="server.tvName.title">TV name</div>
+          <div class="prot-desc" data-t="server.tvName.desc">Shown under Glasshouse in the sidebar and as the TV's name in Home Assistant. Left empty, it is LG and the model.</div>
+          <form class="toast-form" id="tvname-form" onsubmit="event.preventDefault();saveTvName();">
+            <input type="text" id="tvname-input" maxlength="64" autocomplete="off" spellcheck="false"
+              aria-label="TV name" data-t-aria-label="server.tvName.title" oninput="this.dataset.dirty='1'">
+            <button type="submit" id="tvname-save" data-t="server.tvName.save">Save</button>
+          </form>
+        </div>
       </div>
       <div class="prot-row" id="server-health-row">
         <div class="prot-main">
