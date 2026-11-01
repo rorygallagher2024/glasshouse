@@ -1659,11 +1659,35 @@ and nothing periodic followed. A reporter's TV sent all 253 every 5 minutes
 (1.6 s each pass) alongside `www.ueiwsp.com`, and `discovery.meethue.com`
 every 1.5 to 3.5 minutes; the C2 asks for the latter too. Other C1 (webOS
 6.5.3) and C3 owners report the same with Auto device detection off.
-`iconnectivity` resolves through glibc (`getnameinfo`, from `libqse` and
-`librim_qsp`) and c-ares; `/etc/nsswitch.conf` reads `hosts: files mdns
-myhostname dns`, so `/etc/hosts` is consulted first. Its state is in
-`/mnt/lg/cmn_data/iconnectivity` (`environ.conf` holds `ueiEnable`;
-`qs_data/discovered_devices.db` was written that day with it off).
+Its state is in `/mnt/lg/cmn_data/iconnectivity` (`environ.conf` holds
+`ueiEnable`; `qs_data/discovered_devices.db` is a SQLite table of the devices
+it found).
+
+- **A sweep is asked for.** One `luna://com.webos.service.ics/iot/getAllIoTDevices`
+  call, the Home Hub's, started a pass of all 253 addresses within 5 s, with
+  the stored device list intact, and nothing followed for 6.5 minutes. With
+  no such call, 12 minutes with the device list emptied and 12 minutes with
+  `ueiEnable` on each sent none; the emptied list refilled to 17 devices
+  from other discovery. A TV that sweeps every 5 minutes has something
+  asking every 5 minutes. `ls-monitor` shows the caller: the `TX call` lines
+  to `com.webos.service.ics` name the sender and the app it acts for.
+- **`/etc/hosts` does not answer them.** With the table naming all 253
+  addresses as themselves, mounted where `iconnectivity` sees it, and
+  `gethostbyaddr` answering from it, a sweep still sent 252 PTR queries.
+  `iconnectivity` sends them to the DNS relay in `/etc/resolv.conf`
+  (`connmand`, at `127.0.0.1` and `::1`), one socket per query, without the
+  name service lookup that reads `/etc/hosts`, and `connmand` forwards them.
+  Answer device scans on the TV (#1146) was built on the opposite reading.
+- **The firewall cannot pick them out.** The C2's kernel offers only the
+  `icmp`, `udp`, `tcp` and similar matches, no `string`, `u32`, `owner` or
+  `bpf`, so a rule cannot tell a PTR query from any other DNS query, and
+  `iconnectivity` runs as root like the rest. Sending all DNS through a relay
+  on the TV would make every lookup depend on it.
+- **Its own controls.** `com.webos.service.ics/debug/setDebugCmd`
+  (`{ "debugCmd": "showTimerList" }` and others) answers `returnValue: true`
+  and logs nothing, even with the `ICS` log contexts at `debug`; its strings name IP discovery
+  methods (SubnetScan, Reverse DNS, mDNS, UPnP) and a device polling
+  interval, with no luna method found that switches one off.
 
 ## Boot and app state (webOS 9.2.2, C2)
 
