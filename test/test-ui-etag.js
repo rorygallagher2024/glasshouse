@@ -12,6 +12,7 @@ var events = require('events');
 var fs = require('fs');
 var os = require('os');
 var path = require('path');
+var zlib = require('zlib');
 var routes = require('../server/lib/routes');
 
 console.log('Running test-ui-etag.js ...');
@@ -55,9 +56,10 @@ routes.init({
 });
 routes.loadUI();
 
+var canGzip = typeof zlib.gzipSync === 'function';
 var first = request({ 'accept-encoding': 'gzip' });
 assert.strictEqual(first.code, 200);
-assert.strictEqual(first.headers['Content-Encoding'], 'gzip');
+assert.strictEqual(first.headers['Content-Encoding'], canGzip ? 'gzip' : undefined);
 assert.strictEqual(first.headers['Cache-Control'], 'no-cache');
 assert.strictEqual(first.headers.Vary, 'Accept-Encoding');
 var etag = first.headers.ETag;
