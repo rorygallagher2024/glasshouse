@@ -100,14 +100,14 @@ var ESCAPE_REOPEN_MS = 8000;
 var escapeReopen = null;
 /*
  * Colours for Glasshouse Home's text and accent, chosen by both dashboards.
- * The first is the view's own, used while none is chosen. Every pair keeps
- * light text on black. The accent marks what was last on and arranging and,
- * once colours are chosen, frames the focused tile.
+ * The one marked own is the view's built-in look, saved as none chosen. Every
+ * pair keeps light text on black. The accent marks what was last on and
+ * arranging and, once colours are chosen, frames the focused tile.
  */
 var COLOUR_PRESETS = [
-  { id: 'warm', text: '#ece7df', accent: '#e9ad55' },
-  { id: 'glasshouse', text: '#ece7df', accent: '#30de61' },
   { id: 'pure', text: '#ffffff', accent: '#ffffff' },
+  { id: 'warm', text: '#ece7df', accent: '#e9ad55', own: true },
+  { id: 'glasshouse', text: '#ece7df', accent: '#30de61' },
   { id: 'white', text: '#f4f4f4', accent: '#8fb8ff' },
   { id: 'ice', text: '#d4e6f4', accent: '#5fc4ee' },
   { id: 'rose', text: '#f4dcdc', accent: '#ec7f8c' },
@@ -337,8 +337,9 @@ function defaults() {
     // Inputs with nothing plugged in left out of the Inputs row, rather than
     // shown greyed out.
     hideUnused: false,
-    // { text, accent } as #rrggbb, or null for the view's own colours.
-    colours: null,
+    // { text, accent } as #rrggbb, or null for the view's own colours. Pure
+    // white until one is chosen.
+    colours: { text: '#ffffff', accent: '#ffffff' },
     // null until chosen: the first start keeps an empty layout an earlier build left.
     hideLgHomeAtStart: null,
     // LG's Home auto launch as it was before Glasshouse Home switched it off,
@@ -404,7 +405,8 @@ function normalise(raw) {
   d.hidden.rec = [];
   d.fade = raw.fade === true;
   d.hideUnused = raw.hideUnused === true;
-  d.colours = validColours(raw.colours);
+  // null, saved, is the view's own look; none saved keeps the default.
+  if (Object.prototype.hasOwnProperty.call(raw, 'colours')) d.colours = validColours(raw.colours);
   if (typeof raw.hideLgHomeAtStart === 'boolean') d.hideLgHomeAtStart = raw.hideLgHomeAtStart;
   if (typeof raw.lgAutoLaunch === 'string' && raw.lgAutoLaunch) d.lgAutoLaunch = raw.lgAutoLaunch;
   if (typeof raw.lgAutoLaunchCheck === 'string' && raw.lgAutoLaunchCheck) d.lgAutoLaunchCheck = raw.lgAutoLaunchCheck;

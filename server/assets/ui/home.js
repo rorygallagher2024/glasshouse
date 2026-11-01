@@ -255,11 +255,14 @@ const HOME_LOOK_NAMES = () => ({
   lilac: t('home.colours.lilac', 'Lilac')
 });
 
-// The preset matching the chosen colours, the first (the view's own) when none are chosen, or null for custom ones.
+// The view's own look, saved as no colours chosen.
+function homeOwnLook(presets) { return presets.find(p => p.own) || presets[0] || null; }
+
+// The preset matching the chosen colours, the view's own when none are chosen, or null for custom ones.
 function homeLookNow() {
   const presets = (homeStatus && homeStatus.colourPresets) || [];
   const c = homeLayout && homeLayout.colours;
-  if (!c) return presets[0] || null;
+  if (!c) return homeOwnLook(presets);
   return presets.find(p => p.text === c.text && p.accent === c.accent) || null;
 }
 
@@ -271,17 +274,17 @@ function renderHomeColours() {
   const names = HOME_LOOK_NAMES();
   const now = homeLookNow();
   const can = homeWritable() && !homeSaving;
-  // The first preset is the view's own colours, saved as none chosen.
+  // The view's own look is saved as none chosen.
   // The sample clock in each preview is a fixed time, in the TV's own hour
   // cycle.
   const lookClock = homeStatus.clockHour12 ? `9:40 ${t('common.pm', 'PM')}` : '21:40';
   box.innerHTML = presets.map((p, i) => `<button type="button" class="home-look${now && now.id === p.id ? ' picked' : ''}"
-      onclick="homeSaveLayout({ colours: ${i === 0 ? 'null' : `{ text: '${p.text}', accent: '${p.accent}' }`} })" ${can ? '' : 'disabled'}
+      onclick="homeSaveLayout({ colours: ${p.own ? 'null' : `{ text: '${p.text}', accent: '${p.accent}' }`} })" ${can ? '' : 'disabled'}
       aria-pressed="${now && now.id === p.id}" style="--look-text:${p.text};--look-accent:${p.accent}">
       <span class="home-look-screen"><span class="home-look-clock">${lookClock}</span><span class="home-look-row">${esc(t('home.row.apps', 'Apps'))}</span><i></i></span>
       <span class="home-look-name">${esc(names[p.id] || p.id)}</span>
     </button>`).join('');
-  const c = (homeLayout && homeLayout.colours) || presets[0] || { text: '#ece7df', accent: '#e9ad55' };
+  const c = (homeLayout && homeLayout.colours) || homeOwnLook(presets) || { text: '#ece7df', accent: '#e9ad55' };
   const text = q('home-col-text'), accent = q('home-col-accent');
   if (text && document.activeElement !== text) text.value = c.text;
   if (accent && document.activeElement !== accent) accent.value = c.accent;
@@ -703,7 +706,7 @@ function renderHomeWalls() {
   const busy = !homeWritable() || !!homeWallUploading || walls.uploading;
   const names = HOME_WALL_NAMES();
   const now = homeWallNow();
-  const c = (homeLayout && homeLayout.colours) || ((homeStatus.colourPresets || [])[0]) || { text: '#ece7df', accent: '#e9ad55' };
+  const c = (homeLayout && homeLayout.colours) || homeOwnLook(homeStatus.colourPresets || []) || { text: '#ece7df', accent: '#e9ad55' };
   // The owner's own pictures are uploaded to the times of day; a set's are shown as they are.
   const choice = walls.choice || 'own';
   const own = choice === 'own';

@@ -2282,6 +2282,20 @@ step('fading, search and leaving out inputs with nothing plugged in stay off unt
   });
 });
 
+step('a Glasshouse Home switched on fresh is Pure white, listed first, and one with its own look saved keeps it', function (done) {
+  start(null);
+  home.status(function (st) {
+    assert.deepEqual(st.layout.colours, { text: '#ffffff', accent: '#ffffff' }, 'nothing saved yet');
+    assert.strictEqual(st.colourPresets[0].id, 'pure', 'first in the list');
+    assert.ok(st.colourPresets.some(function (p) { return p.id === 'warm' && p.own; }), 'Warm is the view\'s own look');
+    start({ colours: null });
+    home.status(function (st2) {
+      assert.strictEqual(st2.layout.colours, null, 'an earlier choice of the view\'s own look stays');
+      done();
+    });
+  });
+});
+
 step('only #rrggbb colours are kept, since the view writes them into its stylesheet', function (done) {
   start(null);
   var invalid = [
