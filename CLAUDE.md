@@ -8,11 +8,11 @@ line of work. Merging is the maintainer's call.
 
 ## Draft until ready
 
-A PR stays a draft until it meets every rule in docs/CONTRIBUTING.md's "Rules
-for a pull request", even when feedback on it is wanted: tried on a real TV
-with the result in its Testing section, checks passing, translated, docs
-updated. Mark it ready for review then. Its "Guidelines" are followed too,
-and a PR that departs from one says why.
+Keep a PR in draft while any rule in docs/CONTRIBUTING.md's "Rules for a pull
+request" that applies to it is unmet, even when feedback on it is wanted:
+tried on a real TV with the result in its Testing section, checks passing,
+translated, docs updated. Mark it ready for review then. Its "Guidelines" are
+followed too, and a PR that departs from one says why.
 
 ## Docs move with the change
 

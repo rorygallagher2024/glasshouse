@@ -29,8 +29,9 @@ If you are using AI coding assistants or automated agents, ensure they adhere to
 
 ## Rules for a pull request
 
-These are not negotiable. Open a pull request as a draft, and mark it ready
-for review only when it meets all of them:
+Keep a pull request in draft while any of these that applies to it is unmet,
+and mark it ready for review once they are. Not every rule applies to every
+change: a docs-only change needs no TV testing or translation.
 
 * **Tried on a real TV,** with a [Testing section](#testing-details-in-the-pull-request)
   in the description and a screenshot of anything that shows on a screen.
