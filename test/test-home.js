@@ -260,6 +260,15 @@ function start(file, opts) {
 function taken() { return tv.samType === 'web' && fs.realpathSync(appDir) === fs.realpathSync(stageDir); }
 
 function wait(ms, fn) { setTimeout(fn, ms); }
+// Until check() holds or ms have passed: for a step a slow runner takes
+// longer over, such as node 0.12 on CI.
+function until(check, ms, fn) {
+  var end = Date.now() + ms;
+  (function poll() {
+    if (check() || Date.now() >= end) return fn();
+    setTimeout(poll, 10);
+  })();
+}
 
 var steps = [];
 var shard = require('./shard');
@@ -941,7 +950,9 @@ step('a refused takeover at start leaves LG\'s auto launch available', function 
     tv.settings.quickStartMode = 'off';
     tv.samRefusesWeb = true;
     home.start();
-    wait(50, function () {
+    // 50 ms was not always enough for the restore on node 0.12 on CI.
+    var settled = held ? function () { return tv.settings.homeAutoLaunch === 'on'; } : function () { return false; };
+    until(settled, held ? 2000 : 50, function () {
       assert.ok(!taken());
       assert.strictEqual(tv.settings.homeAutoLaunch, 'on', held ? 'restore a previous hold' : 'do not start a hold');
       run();
