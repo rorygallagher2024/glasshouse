@@ -2,6 +2,7 @@
 var assert = require('assert');
 var events = require('events');
 var StringDecoder = require('string_decoder').StringDecoder;
+var toBuffer = require('../server/lib/util').toBuffer;
 var fs = require('fs');
 var os = require('os');
 var path = require('path');
@@ -391,8 +392,10 @@ function createMockRes(cb) {
   var reqSplit = createMockReq({ method: 'POST', headers: { 'content-type': 'application/json' } });
   var splitResult = null;
   routes.readJsonBody(reqSplit, createMockRes(), function (data) { splitResult = data; });
-  var bytes = Buffer.from(JSON.stringify({ name: 'Первый канал ᴴᴰ' }), 'utf8');
-  var cut = bytes.indexOf(0xd0) + 1;
+  var bytes = toBuffer(JSON.stringify({ name: 'Первый канал ᴴᴰ' }), 'utf8');
+  var cut = 0;
+  while (cut < bytes.length && bytes[cut] < 128) cut++;
+  cut++;
   reqSplit.emit('data', bytes.slice(0, cut));
   reqSplit.emit('data', bytes.slice(cut));
   reqSplit.emit('end');

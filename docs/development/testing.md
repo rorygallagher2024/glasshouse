@@ -377,3 +377,5 @@ now-and-next without favourites, and a delayed response from the previous
 provider leaving the chosen provider's groups in place.
 The audio route checks use a readable stream for request bodies, including
 the UTF-8 decoding used by every JSON POST.
+The split-character route fixture uses the server's buffer helper so it
+also runs on Node 0.10 and 0.12.
