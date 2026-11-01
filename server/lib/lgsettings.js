@@ -526,6 +526,30 @@ function rowById(id) {
   return null;
 }
 
+// Read the current picture once, keeping LG's values rather than the UI's
+// defaults and conversions. Per-app settings need a different read and scope.
+function exportPicture(cb) {
+  luna('com.webos.service.settings/getSystemSettings', { category: 'picture' }, function (r) {
+    if (!r || r.returnValue !== true || !r.settings || typeof r.settings !== 'object' || Array.isArray(r.settings)) {
+      return cb({ ok: false, error: msg('srv.lgs.pictureExportFailed', 'The current picture settings could not be exported.') });
+    }
+    var settings = {};
+    ROWS.forEach(function (row) {
+      if (row.section !== 'picture' || row.category !== 'picture' || row.perApp) return;
+      var value = r.settings[row.key];
+      var available = Object.prototype.hasOwnProperty.call(r.settings, row.key) && value !== null && value !== undefined;
+      settings[row.key] = { status: available ? 'available' : 'unavailable', value: available ? value : null };
+    });
+    var dimension = {};
+    ['input', 'pictureMode', 'dynamicRange'].forEach(function (key) {
+      var value = r.dimension && r.dimension[key];
+      dimension[key] = typeof value === 'string' ? value : null;
+    });
+    cb({ format: 'glasshouse-picture-settings', version: 1, created: new Date().toISOString(),
+      dimension: dimension, settings: settings });
+  });
+}
+
 // desc: what the TV's settings service describes for the key, if it was asked.
 function rowValue(r, v, desc) {
   var out = { id: r.id, section: r.section, type: r.type || 'switch', title: r.title, desc: r.desc };
@@ -803,6 +827,7 @@ function valueToStore(r, value, desc) {
 module.exports = {
   init: init,
   collect: collect,
+  exportPicture: exportPicture,
   set: set,
   ROWS: ROWS
 };
