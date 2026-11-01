@@ -2238,3 +2238,51 @@ came at 50 s: about 9 s from the server answering to the view drawn. The
 first Home press after a reboot took up to 13 s on a CX (webOS 5.6.2), so a
 fixed wait from the server's start is too short for slower TVs; the page's
 own requests to the server show it is running.
+
+## Overlay web apps and the input bar (webOS 6.5.3, C1)
+
+Measured on an OLED77C1PUB with webOS 6.5.3, building the input bar, with
+HDMI 3 in front.
+
+- A developer web app with `"defaultWindowType": "overlay"` and
+  `"transparent": true` in its `appinfo.json` opens as
+  `_WEBOS_WINDOW_TYPE_OVERLAY` over the input: the picture shows through
+  where the page draws nothing, `getForegroundAppInfo` goes on naming
+  `com.webos.app.hdmi3`, and the remote's keys reach the page
+  (`WaylandKeyboard::OnKeyNotify` in WebAppMgr). LG's own overlays, Settings
+  and `com.webos.app.adhdmi1` to `4` among them, declare the same.
+- Without `"noSplashOnLaunch": true` and `"spinnerOnLaunch": false`, sam shows
+  its grey splash with a spinner over the picture until the page draws.
+- A page that goes on to another with `location.replace` (the
+  `http://localhost` page Glasshouse serves, as Glasshouse Home's app does)
+  was suspended after that load (`handleLoadFinished; m_suspendAtLoad : true`),
+  and its window was mapped 4.1 s later. The app's own page was mapped 0.3 to
+  0.4 s after it loaded, with its first frame: one that drew nothing until its
+  data came waited 1.4 s, one drawing what it had kept from before none.
+- `"keepAlive": true` in `appinfo.json`, and `PalmSystem.keepAlive = true`,
+  did not keep it: `window.close()` still ended it (`WEBAPP_CLOSED`).
+  WebAppMgr has `setKeepAlive`, apparently for LG's own apps only.
+- `PalmSystem.hide()` left the overlay on screen and holding the remote's
+  focus: no `NL_VSC` with `visible:false`, and focus stayed with
+  `overlaySurface`.
+- `applicationManager/launch` with `"preload": "full"` starts the app with no
+  window: `PalmSystem.launchParams` is `{"preload":"full"}` and
+  `document.hidden` true. A later launch reaches it as a relaunch
+  (`APP_RELAUNCH`), and the window was shown 0.35 s after it. WebAppMgr waits
+  for a new frame first (`Not PageFrameSwapped; Pending Show()`): a page with
+  nothing new to draw was shown 2.1 s later.
+- Launching a card window already on screen, as Glasshouse Home is, redraws
+  it, which shows as a flash on each press.
+- In the compositor's key filters, `global.isForegroundApp(id)` is true for
+  the overlay while it is up, and `global.sendKeyToFocusWindow(Qt.Key_Right,
+  pressed, 106)` reaches its page as `keyCode` 39. LG's `appLaunch.js` names
+  the Input key `WebOS.Key_webOS_InputSource` and opens
+  `com.webos.app.quickinputpicker` through `systemUIManager/launch`; the IR
+  remote (`LGE RCU`) sends it as key code 241.
+- From the app's `file://` page, a GET to `http://localhost:8080` reads its
+  answer; Glasshouse's POSTs refuse it on its `Origin` (`null`).
+  `PalmServiceBridge` calls `applicationManager/launch` for
+  `com.webos.app.hdmiN` with the app's default trust level.
+- `applicationManager/running` with `"subscribe": true` answers at once and
+  on every change to the running apps.
+

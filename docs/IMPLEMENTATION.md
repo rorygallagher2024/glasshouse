@@ -771,6 +771,41 @@ makes the service refuse new ones rather than queue them, and back on with
 in `/var/lib/tvweb` marks toasts off, and the server's start switches them back
 on from it.
 
+## The input bar
+
+The [input bar](dashboard/apps.md#input-bar) is a web app of its own,
+`com.tvweb.inputbar` (`assets/inputbar-app/`), whose `appinfo.json` asks for
+an overlay window (`"defaultWindowType": "overlay"`, `"transparent": true`)
+with no splash (`"noSplashOnLaunch": true`, `"spinnerOnLaunch": false`). The
+input stays the app in front and keeps playing under it, while the bar has
+the remote's keys. Its page is the app's own rather than one Glasshouse
+serves: it reads the inputs from `/api/home/catalogue` and what is on from
+`/api/home/now`, loads `assets/devicons.js` for the icons, and switches by
+launching the input's app itself through `PalmServiceBridge`, with the
+`uniqueId` launch parameter Glasshouse Home's tile sends for a device behind a
+receiver, since the server's POSTs refuse its `file://` origin. It keeps the
+last bar it drew in `localStorage` and draws that at once, before the server
+answers, as the window comes up only with the page's first frame.
+
+`lib/remotekeys.js` offers it as a choice where `lib/inputbar.js` allows it,
+and installs its app with `install-app.sh` before saving a key set to it; the
+last key leaving it removes the app, and so does `restore()`. The key filter
+opens it like any app, except that while it is in front
+(`global.isForegroundApp`) a further press goes to it as Right through
+`global.sendKeyToFocusWindow`, with Linux's `KEY_RIGHT` (106) as LG's
+`appLaunch.js` names it: launching a window already on screen redraws it,
+which shows as a flash. A relaunch that does reach the page moves it on too.
+
+`lib/inputbar.js` keeps the app loaded, hidden, while a key opens it and the
+TV is on: launched with `{ "preload": "full" }` 5 s after the server starts,
+5 s after each switch-on, and 0.3 s after it stops running, which it learns
+from `applicationManager/running` with `subscribe`. A preloaded page sees
+`preload` in its launch parameters, draws nothing and sets no timers until
+the press, which reaches it as a relaunch. A refused launch is tried again
+with a growing wait, five times at most until the server starts again. The
+measurements behind each choice are in
+[TV-RESEARCH.md](development/TV-RESEARCH.md#overlay-web-apps-and-the-input-bar-webos-653-c1).
+
 ## Older hardware capabilities (webOS 3.x and LCD models)
 
 Testing against 2016 hardware (such as 43UH610V-ZB and 55UH6030-UC on webOS 3.4.3) highlights several differences between older LCD platforms and modern OLED sets:

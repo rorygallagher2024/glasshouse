@@ -91,6 +91,9 @@ var LIVE_TV = 'com.webos.app.livetv';
 // LG's Home, which opens Glasshouse Home while that holds its place. Not a tile
 // on the Home screen, so not among the apps, and offered on its own.
 var HOME_APP = 'com.webos.app.home';
+// Glasshouse's input bar, an overlay app (assets/inputbar-app/).
+var INPUT_BAR = 'com.tvweb.inputbar';
+var INPUT_BAR_DIR = '/media/developer/apps/usr/palm/applications/' + INPUT_BAR;
 // The separate app earlier Glasshouse Home builds installed, now removed; a key
 // still set to it opened nothing, and is moved to HOME_APP at start.
 var LEGACY_HOME_APP = 'com.tvweb.home';
@@ -224,6 +227,13 @@ var KEYS = [
 ];
 
 var lunaFn = null;
+// Told when a key is set to open the input bar (lib/inputbar.js preloads it).
+var keySetFn = null;
+// Installs or removes the input bar's app, (action, cb) as tvweb.js's tvApp;
+// null where this server cannot.
+var barAppFn = null;
+// Whether this TV is offered the input bar (lib/inputbar.js allowed).
+var barAllowedFn = function () { return false; };
 var inputNames = null;
 var stateDir = '/var/lib/tvweb';
 var filtersDir = LG_FILTERS_DIR;
@@ -241,6 +251,9 @@ var reapplyDelayMs = 1000;
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna || null;
+  keySetFn = typeof opts.onInputBarKey === 'function' ? opts.onInputBarKey : null;
+  barAppFn = typeof opts.inputBarApp === 'function' ? opts.inputBarApp : null;
+  barAllowedFn = typeof opts.inputBarAllowed === 'function' ? opts.inputBarAllowed : function () { return false; };
   inputNames = opts.inputNames || {};
   if (opts.stateDir) stateDir = opts.stateDir;
   filtersDir = opts.filtersDir || LG_FILTERS_DIR;
@@ -394,6 +407,18 @@ function filterSource() {
     '    }',
     '}',
     '',
+    // Whether the input bar is the window in front, by the compositor's own
+    // helpers as LG's appLaunch.js uses them on webOS 6. Where they are missing
+    // the bar is opened again, and the page moves on at the relaunch instead.
+    'function glasshouseBarInFront() {',
+    '    try {',
+    '        return typeof global !== "undefined" && typeof global.isForegroundApp === "function" &&',
+    '            typeof global.sendKeyToFocusWindow === "function" && global.isForegroundApp(' + JSON.stringify(INPUT_BAR) + ') === true;',
+    '    } catch (e) {',
+    '        return false;',
+    '    }',
+    '}',
+    '',
     'function glasshousePowerChanged(payload) {',
     '    try {',
     '        var r = typeof payload === "string" ? JSON.parse(payload) : payload;',
@@ -491,6 +516,11 @@ function filterSource() {
     '        } else if (id === ' + JSON.stringify(SCREEN_OFF) + ') {',
     '            if (!pressed && glasshouseScreenOffArmed) console.info("glasshouse keyfilter: key", key, "turns the screen off");',
     '            glasshouseScreenOffKey(pressed, autoRepeat);',
+    '        } else if (id === ' + JSON.stringify(INPUT_BAR) + ' && glasshouseBarInFront()) {',
+    // Relaunching a window already on screen redraws it, which shows as a
+    // flash, so a further press goes to the bar as Right (Linux KEY_RIGHT 106,
+    // as LG's appLaunch.js names it), which moves it to the next input.
+    '            if (!autoRepeat) global.sendKeyToFocusWindow(Qt.Key_Right, pressed, 106);',
     '        } else if (pressed && !autoRepeat && id) {',
     '            console.info("glasshouse keyfilter: key", key, "opens", id);',
     // Home opened as the Home key opens it, so Glasshouse Home opens as Home.
@@ -1204,6 +1234,26 @@ function homeChoices(native) {
   return native ? [] : [{ id: HOME_APP, title: msg('srv.remoteKeys.home', 'Home'), kind: 'app' }];
 }
 
+/*
+ * The input bar as a choice, where this TV is offered it. Its app has no
+ * tile, so it is not among appChoices; choosing it installs the app, and the
+ * last key leaving it removes it. Only the JavaScript filter can hand it the
+ * further presses, so webOS 11's native keys never offer it.
+ */
+function barChoices(native) {
+  var offered = !native && !!barAppFn && barAllowedFn();
+  return offered ? [{ id: INPUT_BAR, title: msg('srv.remoteKeys.inputBar', 'Input bar'), kind: 'app' }] : [];
+}
+
+// The bar's app, removed once no key opens the bar. Its answer is not waited
+// for: the key is already set, and an app left behind does nothing.
+function dropBarIfUnused(hadBar) {
+  if (!hadBar || opensInputBar() || !barAppFn) return;
+  barAppFn('remove', function (r) {
+    if (!r || !r.ok) console.log('remotekeys: could not remove the input bar app: ' + ((r && r.error) || 'no answer'));
+  });
+}
+
 // The apps a key can open: those on the Home screen, by title.
 function appChoices(apps) {
   var seen = {};
@@ -1248,7 +1298,7 @@ function describeKeys(keys, inChain, cb, native) {
       var inputs = inputChoices();
       var media = native ? [] : actionChoices().concat(mediaChoices());
       var cc = country();
-      switchers.concat(inputs, actionChoices(), mediaChoices(), homeChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
+      switchers.concat(inputs, actionChoices(), mediaChoices(), homeChoices(false), barChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
       var out = keys.map(function (k) {
         var set = Object.prototype.hasOwnProperty.call(map, k.key);
         var id = set ? map[k.key] : null;
@@ -1269,7 +1319,7 @@ function describeKeys(keys, inChain, cb, native) {
       });
       cb({
         ok: true, supported: true, keys: out,
-        choices: switchers.concat(media, inputs, homeChoices(native), appChoices(apps)),
+        choices: switchers.concat(media, inputs, homeChoices(native), barChoices(native), appChoices(apps)),
         inChain: inChain
       });
     });
@@ -1297,28 +1347,45 @@ function setRemoteKey(key, action, id, cb) {
 
 function setOfferedKey(def, action, id, kind, cb) {
   var map = readMap();
+  var hadBar = map[def.key] === INPUT_BAR;
+  function saved(r) {
+    if (r && r.ok) dropBarIfUnused(hadBar);
+    cb(r);
+  }
   if (action === 'lg') {
     delete map[def.key];
-    return save(map, cb);
+    return save(map, saved);
   }
   if (action === 'nothing') {
     if (def.noNothing) return cb({ ok: false, error: msg('srv.remoteKeys.noNothing', 'This key cannot be set to do nothing') });
     map[def.key] = '';
-    return save(map, cb);
+    return save(map, saved);
   }
   if (action !== 'open' || !id) return cb({ ok: false, error: 'lg, nothing or open expected' });
   switcherChoices(function (switchers) {
     listApps(function (apps) {
       if (!apps) return cb({ ok: false, error: msg('srv.remoteKeys.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
       var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : [];
-      var allowed = switchers.concat(media, inputChoices(), homeChoices(kind !== 'filter'), appChoices(apps))
+      var allowed = switchers.concat(media, inputChoices(), homeChoices(kind !== 'filter'), barChoices(kind !== 'filter'), appChoices(apps))
         .some(function (c) { return c.id === id; });
       if (id === HOME_ASSISTANT && !reported(def.key)) {
         return cb({ ok: false, error: msg('srv.remoteKeys.notReported', 'Home Assistant does not receive this key\'s presses') });
       }
       if (!allowed) return cb({ ok: false, error: msg('srv.remoteKeys.unknownApp', 'That app is not on this TV') });
-      map[def.key] = id;
-      save(map, cb);
+      function store() {
+        map[def.key] = id;
+        save(map, function (r) {
+          if (r && r.ok && id === INPUT_BAR && keySetFn) keySetFn();
+          if (id !== INPUT_BAR) return saved(r);
+          cb(r);
+        });
+      }
+      if (id !== INPUT_BAR) return store();
+      // The bar's app goes on first, so a key is never set to an app that is not there.
+      barAppFn('install', function (r) {
+        if (!r || !r.ok) return cb({ ok: false, error: msg('srv.remoteKeys.inputBarInstall', 'The input bar could not be put on the TV. Try again in a moment.') });
+        store();
+      });
     });
   });
 }
@@ -1439,7 +1506,14 @@ function setStarting(text, cb) {
 // Everything as LG has it: the map deleted, the keys emptied in configd (it
 // cannot delete the value), and the filter out of the chain and deleted. On
 // webOS 11, LG's values put back instead, and the map deleted once they are.
-function restore(cb) {
+function restore(done) {
+  // The input bar's app goes with the keys that opened it, where it is on the
+  // TV. Best effort: an app left behind has no tile and nothing opens it.
+  var barThere = opensInputBar() || fs.existsSync(INPUT_BAR_DIR);
+  function cb(ok) {
+    if (!lunaFn || !barThere) return done(ok);
+    lunaFn('com.webos.appInstallService/dev/remove', { id: INPUT_BAR }, function () { done(ok); });
+  }
   if (fs.existsSync(lgFile())) {
     if (!lunaFn) return cb(false);
     return applyNative(function (ok) {
@@ -1474,8 +1548,34 @@ function restoreFilter(cb) {
   });
 }
 
+/*
+ * Every key set to the input bar back to LG's, and its app removed: the
+ * experimental switch turned off (lib/inputbar.js). cb(ok).
+ */
+function dropInputBar(cb) {
+  var map = readMap();
+  var keys = Object.keys(map).filter(function (k) { return map[k] === INPUT_BAR; });
+  if (!keys.length) {
+    if (barAppFn) return barAppFn('remove', function () { cb(true); });
+    return cb(true);
+  }
+  keys.forEach(function (k) { delete map[k]; });
+  save(map, function (r) {
+    dropBarIfUnused(true);
+    cb(!!(r && r.ok));
+  });
+}
+
+// Whether a key is set to open the input bar, which lib/inputbar.js keeps loaded.
+function opensInputBar() {
+  var map = readMap();
+  return Object.keys(map).some(function (k) { return map[k] === INPUT_BAR; });
+}
+
 module.exports = {
   init: init,
+  opensInputBar: opensInputBar,
+  dropInputBar: dropInputBar,
   getRemoteKeys: getRemoteKeys,
   setRemoteKey: setRemoteKey,
   setHome: setHome,

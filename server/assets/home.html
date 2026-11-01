@@ -102,7 +102,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative .app .fold{width:100px;height:100px;padding:9px}
 .alternative .app .fold i,.alternative .app .fold i img{width:37px;height:37px}
 .alternative .app .fold i{line-height:37px;font-size:18px}
-.alternative .dev{width:340px;height:108px}
+.alternative .dev{width:420px;height:108px}
 .alternative .dev .nm{font-size:26px}
 .alternative .dev .path,.alternative .dev .st{font-size:17px}
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
@@ -143,9 +143,14 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .app .mono{background:#2a2825;color:#ece7df;font-family:'Outfit',sans-serif;font-size:44px;font-weight:300;line-height:112px}
 .app .nm{font-size:21px;font-weight:600;margin-top:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.dev{width:380px;height:124px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
+.dev{width:470px;height:124px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
   -webkit-justify-content:space-between;justify-content:space-between}
-.dev .nm{font-family:'Outfit',sans-serif;font-size:32px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev .dhead{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;min-width:0}
+.dev .dtx{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
+.dev .dico{-webkit-flex:0 0 auto;flex:0 0 auto;width:56px;height:56px;margin-right:18px;color:#ece7df}
+.dev .dico svg{display:block;width:100%;height:100%}
+.alternative .dev .dico{width:46px;height:46px;margin-right:14px}
+.dev .nm{font-family:'Outfit',sans-serif;font-size:30px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dev .path{font-size:20px;color:#a39d93;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dev .st{font-size:19px;color:#6b665e;display:-webkit-flex;display:flex;-webkit-justify-content:space-between;justify-content:space-between}
 .dev .st em{font-style:normal}
@@ -405,6 +410,7 @@ html.faded #stage{opacity:0}
 </div>
 
 <script src="/assets/i18n.js"></script>
+<script src="/assets/devicons.js"></script>
 <script>
 /*
  * Glasshouse Home's view. Everything comes from /api/home/*: the layout shared
@@ -741,6 +747,9 @@ html.faded #stage{opacity:0}
     return '<span class="fold">' + html + '</span>';
   }
 
+  // Input tile icons, shared with the input bar (devicons.js).
+  var devIcon = window.glasshouseDevIcon;
+
   var TILE = {
     app: function (a, i) {
       if (a.folder) {
@@ -756,8 +765,8 @@ html.faded #stage{opacity:0}
       var cls = 'tile dev' + (last ? ' last' : '') + (d.unused ? ' unused' : '') + (hidden('dev', d.id) ? ' hidden' : '');
       var path = d.unused ? '' : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
                        : t('home.dev.port', 'HDMI {port}', { port: d.port });
-      return '<div class="' + cls + '" data-c="' + i + '"><div><div class="nm">' + esc(d.name) + '</div>' +
-        '<div class="path">' + esc(path) + '</div></div>' +
+      return '<div class="' + cls + '" data-c="' + i + '"><div class="dhead">' + devIcon(d) + '<div class="dtx"><div class="nm">' + esc(d.name) + '</div>' +
+        '<div class="path">' + esc(path) + '</div></div></div>' +
         '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : d.unused ? t('home.dev.unused', 'Nothing connected') : t('home.dev.connected', 'Connected')) + '</em>' +
         '<span>' + (d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' + hiddenLabel + '</div>';
     },
