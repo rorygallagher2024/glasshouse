@@ -255,6 +255,12 @@ const HOME_LOOK_NAMES = () => ({
   lilac: t('home.colours.lilac', 'Lilac')
 });
 
+// What a fresh Glasshouse Home starts with, the first preset (Pure white).
+function homeDefaultLook() {
+  const p = ((homeStatus && homeStatus.colourPresets) || [])[0];
+  return p ? { text: p.text, accent: p.accent } : { text: '#ffffff', accent: '#ffffff' };
+}
+
 // The view's own look, saved as no colours chosen.
 function homeOwnLook(presets) { return presets.find(p => p.own) || presets[0] || null; }
 
@@ -290,7 +296,8 @@ function renderHomeColours() {
   if (accent && document.activeElement !== accent) accent.value = c.accent;
   [text, accent].forEach(el => { if (el) el.disabled = !can; });
   const reset = q('home-col-reset');
-  if (reset) reset.disabled = !can || !(homeLayout && homeLayout.colours);
+  const fresh = homeDefaultLook(), cur = homeLayout && homeLayout.colours;
+  if (reset) reset.disabled = !can || !!(cur && cur.text === fresh.text && cur.accent === fresh.accent);
 }
 
 function homeCustomColours() {
