@@ -62,7 +62,7 @@ FILES="tvweb.js tvwebctl assets/ui.html assets/dashboard.html assets/favicon.svg
 assets/ui/ui.css assets/ui/core.js assets/ui/theme.js assets/ui/format.js assets/ui/readouts.js \
 assets/ui/update.js assets/ui/controls.js assets/ui/privacy.js assets/ui/lgsettings.js assets/ui/game.js \
 assets/ui/system.js assets/ui/history.js assets/ui/ssh.js assets/ui/screentime.js assets/ui/apps.js assets/ui/install.js assets/ui/home.js assets/ui/tabs.js assets/ui/servicemenu.js \
-assets/ui/oled.js assets/ui/screensavers.js assets/ui/mqtt.js assets/ui/tools.js assets/ui/search-aliases.js assets/ui/search.js assets/ui/main.js assets/ui/audio.js assets/ui/picture.js \
+assets/ui/oled.js assets/ui/screensavers.js assets/ui/mqtt.js assets/ui/tools.js assets/ui/search-aliases.js assets/ui/search.js assets/ui/main.js assets/ui/audio.js assets/ui/bluetooth.js assets/ui/picture.js \
 assets/qr.js assets/i18n.js assets/i18n/es.json assets/i18n/de.json assets/i18n/ru.json assets/i18n/hu.json assets/i18n/it.json assets/i18n/ar.json assets/setup.html assets/setup-phone.html \
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
