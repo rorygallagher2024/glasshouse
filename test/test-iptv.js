@@ -36,6 +36,15 @@ var provider = http.createServer(function (req, res) {
   if (/^\/list\.m3u/.test(u)) {
     if (mode === '500') { res.writeHead(500); return res.end('no'); }
     if (mode === '401') { res.writeHead(401); return res.end('no'); }
+    if (mode === 'large') {
+      var lines = ['#EXTM3U'];
+      for (var i = 0; i < 2000; i++) {
+        lines.push('#EXTINF:-1 group-title="Lineup",A channel with its full provider name ' + i);
+        lines.push('http://s.test/' + i + '.m3u8');
+      }
+      res.writeHead(200);
+      return res.end(lines.join('\n'));
+    }
     res.writeHead(200, { 'Content-Type': 'audio/x-mpegurl' });
     var extra = mode === 'more' ? '#EXTINF:-1 group-title="News",Late Addition\nhttp://s.test/9.m3u8?token=SECRET-TOKEN-Q\n' : '';
     return res.end('#EXTM3U url-tvg="' + base + '/guide.xml.gz"\n' +
@@ -195,6 +204,30 @@ step('an added channel gets its logo and play URL, and the guide in the playlist
         assert.equal(nn[1].title, 'Final Score');
         assert.ok(iptv.nowNext().nextChange > Date.now());
         done();
+      });
+    });
+  });
+});
+
+step('failed lineup saves leave the selection and Undo history unchanged', function (done) {
+  var before = iptv.lineup(), channel = before.channels[0];
+  var blocked = path.join(stateDir, 'iptv', 'selection.json.tmp');
+  fs.mkdirSync(blocked);
+  iptv.setLineup({ action: 'rename', id: channel.id, name: 'Refused rename' }, function (r) {
+    assert.deepEqual([r.ok, r.error], [false, 'save']);
+    assert.deepEqual(iptv.lineup(), before);
+    iptv.setLineup({ action: 'undo' }, function (u) {
+      assert.deepEqual([u.ok, u.error], [false, 'save']);
+      assert.deepEqual(iptv.lineup(), before);
+      fs.rmdirSync(blocked);
+      iptv.setLineup({ action: 'rename', id: channel.id, name: 'Saved rename' }, function (saved) {
+        assert.equal(saved.ok, true);
+        iptv.setLineup({ action: 'undo' }, function (back) {
+          assert.equal(back.ok, true);
+          assert.equal(iptv.lineup().channels[0].name, channel.name);
+          assert.equal(back.undo, before.undo);
+          done();
+        });
       });
     });
   });
@@ -441,6 +474,37 @@ step('removing a playlist takes its channels off the row and its files off the T
     assert.equal(r.ok, true);
     assert.ok(iptv.rowItems().every(function (t) { return t.pl !== m3u; }));
     wait(function () { return !fs.existsSync(path.join(stateDir, 'iptv', m3u)); }, done, 5000);
+  });
+});
+
+step('a full 2,000-channel lineup reaches the worker and publishes every play link', function (done) {
+  mode = 'large';
+  iptv.setLineup({ action: 'remove-section', sections: iptv.lineup().sections.map(function (s) { return s.id; }) }, function () {});
+  iptv.playlistsAction({ action: 'add', kind: 'm3u', url: base + '/list.m3u' }, function (r) {
+    assert.equal(r.ok, true);
+    var pl = r.id, channels = [], page = 0;
+    wait(function () { return playlistOf(pl).ready && idle(); }, function readPage() {
+      iptv.browse(pl, 'Lineup', page++, function (b) {
+        assert.equal(b.ok, true);
+        channels = channels.concat(b.channels);
+        if (channels.length < b.total) return readPage();
+        assert.equal(channels.length, 2000);
+        iptv.setLineup({ action: 'add', channels: channels }, function (added) {
+          assert.equal(added.ok, true);
+          wait(idle, function () {
+            var carried = iptv.lineup().channels.filter(function (c) { return c.pl === pl; });
+            assert.equal(carried.length, 2000);
+            assert.ok(carried.every(function (c) { return !c.pending; }), 'every channel was read by the worker');
+            assert.ok(iptv.streamUrl(pl, carried[1999].key), 'the last channel has its play link');
+            iptv.playlistsAction({ action: 'remove', id: pl }, function (removed) {
+              assert.equal(removed.ok, true);
+              mode = 'ok';
+              done();
+            });
+          });
+        });
+      }, 200);
+    });
   });
 });
 

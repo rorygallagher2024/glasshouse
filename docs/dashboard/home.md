@@ -217,7 +217,7 @@ and one with each press. Renaming, which needs typing, is on the browser.
 ![Internet TV channels in the TV app](../screenshots/iptv-channels-tv-app.jpg)
 
 On the TV, the row's last tile while arranging (hold **OK**), or its only
-tile while it is empty, is **Add channels**: a panel with your playlists,
+tile before any channels join the lineup, is **Add channels**: a panel with your playlists,
 their groups and their channels, where **OK** adds one to the lineup and
 the row, and typing searches. Channels that need a player sending its own
 headers, or are protected (DRM), are marked and cannot be added. The row's
@@ -237,7 +237,8 @@ quality marks such as *ᴴᴰ* or *ᴿᴬᵂ* show as plain tags in the player. 
 - **Back** goes back to Home, the channel still playing in the preview with
   **Live preview** on.
 
-**Guide**, the row's last tile, or **Info** on the row, shows two and a half hours of the
+**Guide** stays on the row when the lineup has channels, even with none starred.
+It, or **Info** on the row, shows two and a half hours of the
 lineup's programmes at a time, from the half hour before now, with an
 amber line at the time now. **Up** and **Down** move between channels at the
 same time, **Left** and **Right** between programmes, moving the hours shown

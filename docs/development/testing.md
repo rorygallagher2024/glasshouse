@@ -366,3 +366,12 @@ The sideload route check forces an upload to abort before its file opens,
 then confirms that the eventual descriptor closes and the staging file is
 removed. This catches Node 0.12's destroy-before-open behaviour without
 relying on the filesystem finishing within a fixed delay.
+
+The Internet TV regression checks also cover a full 2,000-channel lineup
+through real workers, a bulk add that overlaps channels already carried,
+and failed selection saves (including Undo) without changing the lineup or
+its history. Home accepts unstarred lineup channels and refuses unknown
+ones; the generated remote filter opens the standalone Home app's guide
+when the Home key names it. Browser checks cover the Guide tile and
+now-and-next without favourites, and a delayed response from the previous
+provider leaving the chosen provider's groups in place.

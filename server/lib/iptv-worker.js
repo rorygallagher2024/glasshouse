@@ -31,6 +31,8 @@ var allocBuffer = require('./util').allocBuffer;
 
 var MB = 1024 * 1024;
 var CEIL = {
+  // A full lineup carries its channel names and groups to the worker.
+  jobBytes: 4 * MB,
   downloadBytes: 300 * MB,
   unzippedBytes: 1536 * MB,
   // Files the server reads.
@@ -1117,13 +1119,11 @@ if (require.main === module) {
   var input = '';
   process.stdin.setEncoding('utf8');
   process.stdin.on('data', function (d) {
-    if (job) return;
+    if (finished || job) return;
     input += d;
+    if (Buffer.byteLength(input, 'utf8') > CEIL.jobBytes) return finish(fail('bad-job'));
     var nl = input.indexOf('\n');
-    if (nl === -1) {
-      if (input.length > 65536) { finish(fail('bad-job')); }
-      return;
-    }
+    if (nl === -1) return;
     try { job = JSON.parse(input.slice(0, nl)); } catch (e) { return finish(fail('bad-job')); }
     input = '';
     run();

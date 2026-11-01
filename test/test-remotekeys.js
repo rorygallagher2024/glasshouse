@@ -369,6 +369,10 @@ step(function (next) {
         assert.strictEqual(f.launched.length, 1, 'once, on the press');
         assert.strictEqual(f.launched[0].id, 'com.webos.app.home');
         assert.deepEqual(JSON.parse(f.launched[0].params), { activateType: 'home', launchType: 'homeKey', glasshouse: 'guide' });
+        f.tell({ keys: { guide: 'action:homeGuide' }, home: 'com.tvweb.home' });
+        f.handle(1003, true, false);
+        assert.equal(f.launched[1].id, 'com.tvweb.home', 'webOS 4 opens the standalone Home app');
+        assert.equal(JSON.parse(f.launched[1].params).glasshouse, 'guide');
         rk.getRemoteKeys(guard(function (after) {
           var guide = after.keys.filter(function (k) { return k.key === 'guide'; })[0];
           assert.strictEqual(guide.opens, 'Glasshouse Home\'s guide');

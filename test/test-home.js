@@ -413,6 +413,20 @@ step('device tiles use LG\'s CEC selection contract, or open the port without a 
   })();
 });
 
+step('opening an unstarred Internet TV channel accepts the lineup and refuses an unknown channel', function (done) {
+  start(null, { iptv: {
+    rowItems: function () { return []; },
+    lineup: function () { return { channels: [{ id: 'p0a1b2c3d:x1' }] }; }
+  } });
+  home.open({ kind: 'iptv', id: 'p0a1b2c3d:x1' }, function (r) {
+    assert.equal(r.ok, true);
+    home.open({ kind: 'iptv', id: 'p0a1b2c3d:x2' }, function (unknown) {
+      assert.equal(unknown.ok, false);
+      done();
+    });
+  });
+});
+
 step('last watched on a receiver\'s port is the device the TV last selected there', function (done) {
   start(null);
   var hdmi2 = { id: 'HDMI_2', hdmiPlugIn: true, subList: [

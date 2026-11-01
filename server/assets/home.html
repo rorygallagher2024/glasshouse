@@ -814,9 +814,10 @@ html.faded #stage{opacity:0}
       var inside = folderItems();
       if (inside.length) out.push({ id: FOLDER_TILE, title: t('home.folder.title', 'More apps'), folder: inside });
     }
-    if (kind === 'iptv' && data.sources && data.sources.iptv && (state.arranging || !out.length)) {
+    var hasLineup = data.iptvStatus && data.iptvStatus.lineup > 0;
+    if (kind === 'iptv' && data.sources && data.sources.iptv && (state.arranging || (!out.length && !hasLineup))) {
       out.push({ id: ADD_TILE, add: true, name: t('home.tv.addTitle', 'Add channels') });
-    } else if (kind === 'iptv' && out.length && !state.arranging) {
+    } else if (kind === 'iptv' && (out.length || hasLineup) && !state.arranging) {
       out.push({ id: GUIDE_TILE, guide: true, name: t('home.tv.guide', 'Guide') });
     }
     return out;
@@ -2098,7 +2099,7 @@ html.faded #stage{opacity:0}
   function pctOf(s) { return Math.max(0, Math.min(100, (Date.now() - s.start) / (s.end - s.start) * 100)); }
 
   function refreshTvGuide() {
-    if (!data || !data.iptv || !data.iptv.length) return;
+    if (!data || (!(data.iptv && data.iptv.length) && !(data.iptvStatus && data.iptvStatus.lineup > 0))) return;
     getJson('/api/iptv/guide', function (r) {
       if (!r || !r.guide) return;
       tvGuide = r.guide;

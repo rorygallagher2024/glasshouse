@@ -369,7 +369,7 @@ function run(sel, action, body, ctx) {
     if (body.section && body.section !== 'new' && (!target || target.kind !== 'pick')) return fail('section');
     var fresh = body.section === 'new';
     var lineup = ctx.lineup();
-    var full = null;
+    var full = null, addedPicks = 0;
     for (i = 0; i < list.length; i++) {
       var c = list[i], id = idOf(c);
       var inGroup = groupSectionCarrying(sel, c, ctx);
@@ -377,7 +377,7 @@ function run(sel, action, body, ctx) {
       if (inGroup && body.section && inGroup.except.indexOf(c.key) !== -1) inGroup = null;
       if (inGroup) inGroup.except = inGroup.except.filter(function (k) { return k !== c.key; });
       else if (!pickHolding(sel, id)) {
-        if (pickCount(sel) >= LIMITS.picks || (lineup.channels.length + i >= LIMITS.lineup)) return fail('lineup-full', { max: LIMITS.lineup });
+        if (pickCount(sel) >= LIMITS.picks || (lineup.channels.length + addedPicks >= LIMITS.lineup)) return fail('lineup-full', { max: LIMITS.lineup });
         if (!target && fresh) {
           // A section of their own, named and placed as asked (at the end by default).
           if (sel.sections.length >= LIMITS.sections) return fail('sections', { max: LIMITS.sections });
@@ -387,6 +387,7 @@ function run(sel, action, body, ctx) {
         if (!target) target = firstPick(sel) || newPick(sel);
         if (!target) return fail('sections', { max: LIMITS.sections });
         target.channels.push(c);
+        addedPicks++;
       }
       if (body.favourite) full = star(sel, c, true) || full;
     }

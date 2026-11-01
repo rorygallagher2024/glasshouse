@@ -75,7 +75,8 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   group of its own (`detached`). The job is one JSON line on its stdin, which
   stays open: the worker exits, killing its own curl, when it closes, so a
   server that dies leaves no worker behind. Timeouts and cancelling kill the
-  whole group.
+  whole group. The job line may be up to 4 MB, including a full lineup's
+  channel names and groups; its limit applies across chunks and to a complete line.
 - **Two lanes.** Background jobs (reading a playlist, the lineup's
   play links and logos, the guide, now and next again) run one at a time, in
   order, a kind for a playlist only once in the queue. Browse and search for
@@ -143,6 +144,7 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   part way leaves the selection as it was. Moving a channel out of a group
   section adds it to the group's taken-out keys. The server keeps the
   selection as it was before each of the last 20 edits, in memory, for Undo.
+  A failed save leaves both the selection and that history unchanged.
 - **Logos come in batches.** A select job the owner is waiting on fetches 12
   new logos and publishes; later jobs, a minute apart, fetch 300 each (two a
   second), carrying the rest by hard link, until none is left. One the owner

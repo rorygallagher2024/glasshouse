@@ -1970,14 +1970,15 @@ async function visitHomeInternetTv(browser, base, problems) {
   ];
   const now = Date.now(), half = 30 * 60000, at = Math.floor(now / half) * half;
   const leases = [], streams = [];
+  let favourites = true;
   await page.route('**/api/home/**', route => {
     const url = new URL(route.request().url());
     const reply = body => route.fulfill({ json: body });
     if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layoutVersion: 1,
       layout: { rows: ['iptv', 'app'], order: { app: [], dev: [], ch: [], iptv: [] }, sort: {}, hidden: { app: [], dev: [], ch: [], iptv: [] },
         channels: [], hintSeen: true, searchHintSeen: true, livePreview: true, picture: true },
-      apps: [], devices: [], channels: [], iptv: tv, iptvStatus: { count: 2, label: 'Home IPTV' },
-      sources: { channels: 0, iptv: true }, order: { app: ['lg-home'], dev: [], ch: [], iptv: ['p1:x1', 'p1:x2'] } });
+      apps: [], devices: [], channels: [], iptv: favourites ? tv : [], iptvStatus: { count: favourites ? 2 : 0, lineup: 2, lineupRevision: 1, label: 'Home IPTV' },
+      sources: { channels: 0, iptv: true }, order: { app: ['lg-home'], dev: [], ch: [], iptv: favourites ? ['p1:x1', 'p1:x2'] : [] } });
     if (url.pathname.endsWith('/now')) return reply({ kind: null });
     return reply({ ok: true, build: 'tv', layoutVersion: 1 });
   });
@@ -1985,6 +1986,8 @@ async function visitHomeInternetTv(browser, base, problems) {
     const url = new URL(route.request().url());
     const reply = body => route.fulfill({ json: body });
     const req = route.request();
+    if (url.pathname.endsWith('/lineup')) return reply({ ok: true, revision: 1, channels: tv,
+      sections: [{ id: 'news', kind: 'pick', name: 'News' }], favourites: favourites ? tv.map(c => c.id) : [] });
     if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: { 'p1:x1': [{ start: at, end: at + half * 2, title: 'The World This Weekend' }] } });
     if (url.pathname.endsWith('/stream')) { streams.push(url.searchParams.get('key')); trace.push('request ' + url.searchParams.get('key')); return reply({ ok: true, url: 'http://s.test/' + url.searchParams.get('key') + '.m3u8', format: 'hls' }); }
     if (url.pathname.endsWith('/lease')) { leases.push(JSON.parse(req.postData() || '{}')); return reply({ ok: true }); }
@@ -2058,6 +2061,17 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.waitForTimeout(500);
     if (!/adding/.test(await page.locator('#stage').getAttribute('class'))) fail('the Add channels tile did not open the panel');
     else if (!/UK News/.test(await page.locator('#adItems').textContent())) fail('the add panel did not list the playlist\'s groups');
+    favourites = false;
+    const loaded = page.waitForResponse(r => new URL(r.url()).pathname === '/api/iptv/lineup');
+    await page.goto(base + '/assets/home.html');
+    await loaded;
+    await page.waitForSelector('.row[data-key="iptv"] .tile');
+    if (await page.locator('.row[data-key="iptv"] .tile .nm').first().textContent() !== 'Guide') fail('a lineup without favourites has no Guide tile');
+    await key(13);
+    await page.waitForSelector('#stage.guiding .gr');
+    await key(13);
+    await page.waitForSelector('#stage.playing');
+    if (!(await page.locator('#bdNow').textContent()).includes('The World This Weekend')) fail('an unstarred channel has no now-and-next band');
   } finally {
     await page.close();
   }
@@ -2136,6 +2150,33 @@ async function visitIptvChannels(browser, base, problems) {
     await page.waitForTimeout(200);
     if (!(await page.locator('#tvm').isHidden())) fail('Escape did not close the page');
     if (/tv=channels/.test(page.url())) fail('the address still opens the page');
+    await page.route('**/api/iptv/playlists', r => r.fulfill({ json: { ok: true, writable: true,
+      playlists: [{ id: 'p1', label: 'Harbour TV', ready: true, channels: 2 }, { id: 'p2', label: 'Second TV', ready: true, channels: 1 }] } }));
+    let hold = false, release;
+    let received;
+    const held = new Promise(resolve => { received = resolve; });
+    await page.route('**/api/iptv/groups?pl=*', async r => {
+      const first = new URL(r.request().url()).searchParams.get('pl') === 'p1';
+      if (first && hold) {
+        received();
+        await new Promise(resolve => { release = resolve; });
+      }
+      await r.fulfill({ json: { ok: true, total: 1, channels: 1, groups: [{ name: first ? 'UK | News' : 'FR | News', count: 1 }] } });
+    });
+    await page.goto(base + '/?tab=home&tv=channels');
+    await page.waitForSelector('.tvm-g[data-sel="UK | News"]');
+    await page.selectOption('#tvm-pl', 'p2');
+    await page.waitForSelector('.tvm-g[data-sel="FR | News"]');
+    hold = true;
+    await page.selectOption('#tvm-pl', 'p1');
+    await held;
+    await page.selectOption('#tvm-pl', 'p2');
+    await page.waitForSelector('.tvm-g[data-sel="FR | News"]');
+    const late = page.waitForResponse(r => new URL(r.url()).pathname === '/api/iptv/groups' && new URL(r.url()).searchParams.get('pl') === 'p1');
+    release();
+    await late;
+    await page.waitForTimeout(100);
+    if (await page.locator('.tvm-g[data-sel="UK | News"]').count()) fail('a late reply replaced the chosen provider’s groups');
   } finally { await page.close(); }
   page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   page.on('pageerror', e => fail(e.message));

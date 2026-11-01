@@ -109,11 +109,15 @@ async function tvmLoad() {
 }
 
 async function tvmLoadGroups() {
-  if (!tvm.pl) { tvm.groups = null; return; }
+  const pl = tvm.pl;
+  if (!pl) { tvm.groups = null; return; }
   try {
-    const r = await homeGet('/api/iptv/groups?pl=' + encodeURIComponent(tvm.pl));
-    tvm.groups = { pl: tvm.pl, list: r.groups, total: r.total, channels: r.channels, cut: r.cut };
-  } catch (e) { tvm.groups = { pl: tvm.pl, list: [], total: 0, channels: 0, error: e.message }; }
+    const r = await homeGet('/api/iptv/groups?pl=' + encodeURIComponent(pl));
+    if (pl !== tvm.pl) return;
+    tvm.groups = { pl, list: r.groups, total: r.total, channels: r.channels, cut: r.cut };
+  } catch (e) {
+    if (pl === tvm.pl) tvm.groups = { pl, list: [], total: 0, channels: 0, error: e.message };
+  }
 }
 
 /*
@@ -1198,8 +1202,10 @@ function tvmPane(p) { tvm.pane = p; renderTvmPanes(); }
 
 async function tvmPickPlaylist(id) {
   tvm.pl = id;
+  tvm.groups = null;
   tvm.view = null;
   tvmSelClear();
+  renderTvm();
   await tvmLoadGroups();
   renderTvm();
 }

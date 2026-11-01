@@ -1195,12 +1195,16 @@ function setLineup(body, cb) {
   var before = JSON.stringify(selection);
   var r = body && body.action === 'undo' ? undoLineup() : lineupLib.apply(selection, body, lineupCtx);
   if (!r.ok) return cb(r);
-  if (r.changed && body.action !== 'undo') {
-    undoStack.push(before);
-    if (undoStack.length > UNDO_MAX) undoStack.shift();
-  }
   if (r.changed) {
-    try { saveSelection(); } catch (e) { return cb({ ok: false, error: 'save' }); }
+    try { saveSelection(); } catch (e) {
+      lineupLib.restore(selection, before);
+      return cb({ ok: false, error: 'save' });
+    }
+    if (body.action === 'undo') undoStack.pop();
+    else {
+      undoStack.push(before);
+      if (undoStack.length > UNDO_MAX) undoStack.shift();
+    }
     lineupChanged();
     if (r.composition) {
       config.playlists.forEach(function (p) {
@@ -1225,7 +1229,7 @@ function setLineup(body, cb) {
 function undoLineup() {
   if (!undoStack.length) return { ok: false, error: 'undo' };
   var carriedNow = lineupLib.carried(selection), generation = selection.generation;
-  lineupLib.restore(selection, undoStack.pop());
+  lineupLib.restore(selection, undoStack[undoStack.length - 1]);
   var composition = lineupLib.carried(selection) !== carriedNow;
   selection.generation = composition ? generation + 1 : generation;
   return { ok: true, changed: true, composition: composition };

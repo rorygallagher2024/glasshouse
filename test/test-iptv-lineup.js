@@ -239,6 +239,17 @@ test('one edit takes out whole sections and single channels together', function 
   assert.deepEqual(sel.sections[0].channels.map(function (c) { return c.key; }), ['x8']);
 });
 
+test('a bulk add counts only new picks against the lineup limit', function () {
+  var channels = [];
+  for (var i = 0; i < 2000; i++) channels.push({ pl: PL, key: 'x' + i });
+  var sel = lineup.normalise({ version: 2, sections: [{ id: 's00000001', kind: 'pick', channels: channels.slice(0, 1000) }] });
+  var ctx = ctxFor(sel, {});
+  var r = lineup.apply(sel, { action: 'add', channels: channels }, ctx);
+  assert.equal(r.ok, true);
+  assert.equal(lineup.compute(sel, ctx).channels.length, 2000);
+  assert.equal(lineup.apply(sel, { action: 'add', channels: [{ pl: PL, key: 'x2000' }] }, ctx).error, 'lineup-full');
+});
+
 test('a refused edit changes nothing, even part way through', function () {
   var sel = lineup.normalise({ version: 2, sections: [] });
   var ctx = ctxFor(sel, {});

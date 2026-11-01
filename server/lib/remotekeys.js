@@ -503,7 +503,8 @@ function filterSource() {
     '        } else if (id === ' + JSON.stringify(HOME_GUIDE) + ') {',
     '            if (pressed && !autoRepeat) {',
     '                console.info("glasshouse keyfilter: key", key, "opens Glasshouse Home\'s guide");',
-    '                applicationManager.launch(' + JSON.stringify(HOME_APP) + ', JSON.stringify({ "activateType": "home", "launchType": "homeKey", "glasshouse": "guide" }));',
+    // webOS 4 uses Glasshouse Home's standalone app, named by the Home key.
+    '                applicationManager.launch(glasshouseKeyIds[Qt.Key_Super_L] || ' + JSON.stringify(HOME_APP) + ', JSON.stringify({ "activateType": "home", "launchType": "homeKey", "glasshouse": "guide" }));',
     '            }',
     '        } else if (id === ' + JSON.stringify(SCREEN_OFF) + ') {',
     '            if (!pressed && glasshouseScreenOffArmed) console.info("glasshouse keyfilter: key", key, "turns the screen off");',

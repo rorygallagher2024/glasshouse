@@ -1055,7 +1055,7 @@ function open(body, cb) {
   }
   if (kind === 'iptv') {
     // The view plays the channel itself; opening it here only records it.
-    var known = iptvModule && iptvModule.rowItems().some(function (t) { return t.id === id; });
+    var known = iptvModule && iptvModule.lineup().channels.some(function (t) { return t.id === id; });
     if (!known) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
     noteOpened('iptv', id);
     return cb({ ok: true });
