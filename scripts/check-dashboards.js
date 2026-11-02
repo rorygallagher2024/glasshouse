@@ -2198,6 +2198,8 @@ async function visitHomeInternetTv(browser, base, problems) {
     await key(457);
     await page.waitForSelector('#stage.guiding .gr');
     await page.waitForTimeout(900);
+    await playing();
+    if (await page.locator('#srcTitle').evaluate(el => el.clientWidth) < 500) fail('the guide reserved space for hidden picture details');
     if (await page.locator('.tile #preview').count() || !await page.locator('#now #preview').isVisible()) fail('the guide left its preview in a hidden tile');
     favourites = false;
     const loaded = page.waitForResponse(r => new URL(r.url()).pathname === '/api/iptv/lineup');

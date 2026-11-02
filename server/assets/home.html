@@ -2023,7 +2023,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('pvMode').textContent = t('home.tv.stream', 'Internet stream');
     $('pvLight').innerHTML = '';
     $('pvSig').innerHTML = spans(fmt);
-    $('preview').className = 'on' + (layout.picture === true && fmt.length ? ' info' : '');
+    $('preview').className = 'on' + (!guide.open && layout.picture === true && fmt.length ? ' info' : '');
     placePreview();
   }
   function startTvPreview(target) {

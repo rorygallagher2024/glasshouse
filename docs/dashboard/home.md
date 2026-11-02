@@ -245,6 +245,8 @@ quality marks such as *ᴴᴰ* or *ᴿᴬᵂ* show as plain tags in the player. 
 to full screen; **Back** returns it to the tile without opening another stream.
 The guide keeps its preview beside the clock.
 
+![An IPTV channel previewing in its tile on a G3](../screenshots/iptv-preview-in-tile.jpg)
+
 **Guide** stays on the row when the lineup has channels, even with none starred.
 It, or **Info** on the row, shows two and a half hours of the
 lineup's programmes at a time, from the half hour before now, with an
