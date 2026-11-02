@@ -53,6 +53,7 @@ add('TV, receiver, local playback and negotiated transport stay separate', null,
   assert.strictEqual(format(st, 'mat').playback, false, 'HDMI MAT advertisement does not declare a local TrueHD decoder');
   assert.strictEqual(format(st, 'dtsx').advertised, null, 'a DTS-HD descriptor does not certify DTS:X');
   assert.strictEqual(st.live.input, null, 'AudioData with zero rate and an unstarted decoder is not live PCM');
+  assert.strictEqual(st.live.inputReadable, true, 'the driver can say what comes in, so no audio is reported, not unavailable');
   assert.strictEqual(st.live.output, null);
 });
 add('current output settings override whole-category defaults', function () {
@@ -140,6 +141,7 @@ add('C9 uses its input dimension and authoritative HAWK2 native EDID', c9Setup, 
   assert.strictEqual(st.live.hdmi.channelAllocation, 11);
   assert.strictEqual(st.live.hdmi.sampleRate, null, 'an unspecified frequency is not assumed to be 48 kHz');
   assert.strictEqual(st.live.input, null, 'an InfoFrame does not establish live audio or PCM decoding');
+  assert.strictEqual(st.live.inputReadable, false, 'with neither the input service nor the driver, what comes in cannot be read');
   assert.strictEqual(st.receiver.link, 'unknown', 'the eARC setting is not a negotiated link');
 });
 add('a failed HAWK2 read remains unknown instead of falling back to a family guess', function () {
@@ -173,6 +175,44 @@ add('non-HDMI C9 app playback does not query an arbitrary HDMI port', function (
   assert.strictEqual(st.tv.input, null); assert.strictEqual(st.live.hdmi, null); assert.strictEqual(format(st, 'dts').advertised, null);
   assert.strictEqual(calls.filter(function (entry) { return /getEdidData$/.test(entry.uri); }).length, 0);
 });
+function c9ReceiverSetup() {
+  c9Setup();
+  responses['com.webos.service.eim/getAllInputStatus'] = { returnValue: true, arcDevice: true, devices: [
+    { id: 'HDMI_2', port: 2, connected: true, hdmiPlugIn: true, subList: [
+      { id: 'SIMPLINK', cecpDevType: 5, portId: 2, osdName: 'Synthetic soundbar' }
+    ] }
+  ] };
+}
+add('C9 detects a CEC soundbar while negotiated transport stays unknown', c9ReceiverSetup, function (code, st) {
+  assert.strictEqual(st.receiver.name, 'Synthetic soundbar');
+  assert.strictEqual(st.receiver.port, 2);
+  assert.strictEqual(st.receiver.detected, true);
+  assert.strictEqual(st.receiver.connected, null);
+  assert.strictEqual(st.receiver.link, 'unknown');
+  assert.strictEqual(st.receiver.formatsKnown, false);
+  assert.strictEqual(format(st, 'dts').receiver, null);
+});
+add('a stale CEC name is not a detected receiver', function () {
+  c9ReceiverSetup(); responses['com.webos.service.eim/getAllInputStatus'].devices[0].connected = false;
+}, function (code, st) { assert.strictEqual(st.receiver.name, null); assert.strictEqual(st.receiver.detected, null); });
+add('a source player is not an audio system', function () {
+  c9ReceiverSetup(); responses['com.webos.service.eim/getAllInputStatus'].devices[0].subList[0].cecpDevType = 4;
+}, function (code, st) { assert.strictEqual(st.receiver.name, null); });
+add('unavailable EIM replies cannot identify a receiver', function () {
+  c9ReceiverSetup(); responses['com.webos.service.eim/getAllInputStatus'].returnValue = false;
+}, function (code, st) { assert.strictEqual(st.receiver.name, null); });
+add('a negative ARC-device flag cannot retain an old CEC receiver', function () {
+  c9ReceiverSetup(); responses['com.webos.service.eim/getAllInputStatus'].arcDevice = false;
+}, function (code, st) { assert.strictEqual(st.receiver.name, null); });
+add('ambiguous audio systems do not select an arbitrary port', function () {
+  c9ReceiverSetup(); var d = JSON.parse(JSON.stringify(responses['com.webos.service.eim/getAllInputStatus'].devices[0]));
+  d.id = 'HDMI_3'; d.port = 3; d.subList[0].portId = 3;
+  responses['com.webos.service.eim/getAllInputStatus'].devices.push(d);
+}, function (code, st) { assert.strictEqual(st.receiver.name, null); assert.strictEqual(st.receiver.port, null); });
+add('explicit inactive ARC state is preserved despite CEC presence', function () {
+  c9ReceiverSetup(); responses['com.webos.service.arccontroller/getARCState'] = { returnValue: true, arcActivation: 'None' };
+}, function (code, st) { assert.strictEqual(st.receiver.name, 'Synthetic soundbar'); assert.strictEqual(st.receiver.connected, false); assert.strictEqual(st.receiver.link, 'inactive'); });
+
 add('the G3 cannot execute a G5 override', null, function (code, st) {
   assert.strictEqual(code, 400);
   assert.strictEqual(st.ok, false);

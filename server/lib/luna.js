@@ -73,10 +73,24 @@ function isUnlistedLgService(service) {
 
 function noteFailure(uri, parsed) {
   if (parsed && parsed.returnValue !== false) return;
+  // A renamed service is never skipped: its other name is tried instead.
+  if (findServiceMapping(uri)) return;
   var service = uri.split('/')[0];
   if (!isUnlistedLgService(service)) return;
   if (!(service in absentUntil)) console.log('luna: ' + service + ' is not on this TV; calls to it are skipped');
   absentUntil[service] = monotonicMs() + ABSENT_MS;
+}
+
+/*
+ * No answer under the newer name, which the TV does not list, where it lists
+ * the legacy one: a 55SJ800V-ZB (webOS 3.9.3) answers nothing for an unlisted
+ * service rather than "Service does not exist" (#1137).
+ */
+function legacyOnlyListed(uri, parsed) {
+  var serviceMap = findServiceMapping(uri);
+  if (!serviceMap || _serviceName[serviceMap.newer] || parsed) return false;
+  if (!isUnlistedLgService(serviceMap.newer.slice(0, -1))) return false;
+  return !!(listedServices && listedServices[serviceMap.legacy.slice(0, -1)]);
 }
 
 function findServiceMapping(uri) {
@@ -229,7 +243,7 @@ function runNow(job) {
     // Service fallback: the first call that gets "Service does not exist"
     // switches to the legacy name and retries transparently.
     var rawUri = job.args[job.args.length - 2].replace('luna://', '');
-    if (isServiceNotFound(rawUri, parsed) && !job.serviceRetried) {
+    if ((isServiceNotFound(rawUri, parsed) || legacyOnlyListed(rawUri, parsed)) && !job.serviceRetried) {
       var serviceMap = findServiceMapping(rawUri);
       _serviceName[serviceMap.newer] = serviceMap.legacy;
       var oldUri = serviceMap.legacy + rawUri.slice(serviceMap.newer.length);

@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.135.0';
+var TVWEB_VERSION = '0.137.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -90,6 +90,7 @@ var lgSettings = require('./lib/lgsettings');
 var game = require('./lib/game');
 var piccapTransport = require('./lib/piccap');
 var audioCapabilities = require('./lib/audio');
+var btAudio = require('./lib/btaudio');
 var huesyncTransport = require('./lib/huesync');
 var remotebuttons = require('./lib/remotebuttons');
 var logsModule = require('./lib/logs');
@@ -530,8 +531,9 @@ var LIVE_STALE = {
   picture: ['"category":"picture"']
 };
 
-lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache });
+lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache, stateDir: __dirname });
 audioCapabilities.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache, hdmiReceiverMap: telemetry.hdmiReceiverMap });
+btAudio.init({ luna: luna, clearLunaCache: clearLunaCache });
 game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
 privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, watchNetwork: true });
 oled.init({ luna: luna, config: CONFIG });
@@ -678,6 +680,7 @@ controls.init({
   backup: backup,
   home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
+  deviceNameChanged: function (name) { syslogForwarder.setHostname(name); },
   tvApp: tvApp,
   restartSelf: restartSelf,
   updateSummary: routes.updateSummary,
@@ -928,6 +931,7 @@ function appsChanged() {
 routes.init({
   config: CONFIG,
   audio: audioCapabilities,
+  btAudio: btAudio,
   clock: clockFormat,
   piccapStatus: piccap.status,
   huesyncStatus: huesync.status,
@@ -1030,6 +1034,10 @@ if (!CLI_MODE) {
   if (preloadTimer.unref) preloadTimer.unref();
   var keysTimer = setTimeout(function () { remoteKeys.ensure(); }, 60000);
   if (keysTimer.unref) keysTimer.unref();
+  var heldTimer = setTimeout(function () { lgSettings.reapply(); }, 60000);
+  if (heldTimer.unref) heldTimer.unref();
+  var heldRecheck = setInterval(function () { lgSettings.reapply(); }, 60 * 60000);
+  if (heldRecheck.unref) heldRecheck.unref();
   var keysRecheck = setInterval(function () { remoteKeys.recheckNative(); }, remoteKeys.RECHECK_MS);
   if (keysRecheck.unref) keysRecheck.unref();
 }
@@ -1204,6 +1212,8 @@ function setupHomeAssistant() {
   }
 
   function publishDiscovery() {
+    // The Server tab renames the TV without a restart.
+    devInfo.name = (CONFIG.device && CONFIG.device.name) || devInfo.name;
     ha.clearRetired(function (topic, payload, retain) {
       mqttClient.publish(topic, payload, retain);
     }, discPfx, devId);
@@ -1858,7 +1868,10 @@ function startGlasshouseHome() {
     webosVersion: telemetry.detectWebosVersion(),
     port: CONFIG.port,
     samrescan: samrescan,
-    // Only to remove the separate app earlier builds installed.
+    injectKey: controls.injectKey,
+    // Which ports have something plugged in, where eim does not say (webOS 4).
+    hdmiInputs: telemetry.hdmiInputs,
+    // The standalone app on webOS 4, and removing the one earlier builds installed elsewhere.
     installApp: function (action, cb) { tvApp(action, cb, 'home-app'); },
     setHomeKey: remoteKeys.setHome,
     homeKeyApp: remoteKeys.homeApp,
@@ -1964,9 +1977,13 @@ if (!CLI_MODE) {
   liveState.state.onChange(function (ev) {
     if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) ntpClient.sync();
   });
-  // A C5 (webOS 10.3) has every app's preloading enabled again at each switch-on.
+  // A C5 (webOS 10.3) has every app's preloading enabled again at each switch-on,
+  // and LG's settings held off here may have been switched on again meanwhile.
   liveState.state.onChange(function (ev) {
-    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) preload.resend();
+    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) {
+      preload.resend();
+      lgSettings.reapply();
+    }
   });
 
   telemetry.detectDeviceInfo(function() {
