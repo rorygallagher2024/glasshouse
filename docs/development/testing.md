@@ -245,6 +245,27 @@ NO_MKDOCS_2_WARNING=1 mkdocs build
 
 Use `NO_MKDOCS_2_WARNING=1 mkdocs serve` to preview the site locally at `http://127.0.0.1:8000/glasshouse/` with live reloading.
 
+## Measuring Glasshouse Home on a TV
+
+`scripts/tv.sh <tv> frames [key ...]` measures how smoothly Glasshouse Home
+runs while keys are pressed. While `/var/lib/tvweb/home-trace` exists, the
+view records each frame, the browser's long tasks and the time its main
+functions take, and sends them with its heartbeat every 5 s. The server logs
+each as a `home: frames` line. The command creates the file, presses the keys
+through the dashboard's remote 0.15 s apart, prints the lines, and removes the
+file however it ends. For example, Home, a run along the Apps row, and Recent
+apps opened and closed:
+
+```bash
+scripts/tv.sh 192.168.1.131 frames home wait wait right right right right right right down right right wait back wait wait back
+```
+
+`over33` counts frames that took longer than two vsyncs at 60 Hz, and
+`worst` is the longest, in ms. `long` lists long tasks, which webOS 4's
+browser does not report. `fn` gives each timed function's calls, average and
+longest ms. A gap with nothing in `fn` to explain it is the browser's own
+work: style, layout, painting or decoding images.
+
 ## Local TV emulation
 
 `scripts/emulate-tv.js` runs the server inside a simulated TV environment with procfs, sysfs, Luna calls, installed apps, remote key filters, and recent apps mocked. It serves the web dashboard, the TV app dashboard, and Glasshouse Home locally for development and visual testing without physical TV hardware:
