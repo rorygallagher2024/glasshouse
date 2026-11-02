@@ -2722,5 +2722,10 @@ turn of the event loop later (`setImmediate` or `setTimeout 0`) did not. At
 server start, the first `iptables` call aborted on every start tried, even
 with that wait. execFile reports such a child with `err.signal` set and
 `err.killed` false, which tells it apart from one killed by its own timeout.
-The debugger rule in `devtools.js` waits a turn before each call and tries an
-aborted one once more.
+The debugger rule in `devtools.js` tries an aborted call once more.
+
+A CX (OLED55CX3LA, webOS 5, firmware 04.64.00, node 8.12.0) did the same to
+luna calls: the luna queue started its next `luna-send` from the exit
+callback of the one before, and in 45 minutes of use 24 calls aborted and
+were run again. Every child start (`lib/children.js`) now comes a turn of the
+event loop after it was asked for.

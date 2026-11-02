@@ -1,5 +1,5 @@
 /**
- * test/test-children.js - Urgent child starts go ahead of the launch queue, in turn
+ * test/test-children.js - Child starts come a turn later, and urgent ones go ahead of the launch queue, in turn
  */
 
 var assert = require('assert');
@@ -15,6 +15,12 @@ var util = require('../server/lib/util');
 var realMonotonicMs = util.monotonicMs;
 var lastReading = 0;
 util.monotonicMs = function () { return (lastReading = realMonotonicMs()); };
+// A start runs a turn after it was decided, so it is handed the reading then.
+var realSetImmediate = setImmediate;
+global.setImmediate = function (fn) {
+  var decidedAt = lastReading;
+  return realSetImmediate(function () { fn(decidedAt); });
+};
 var children = require('../server/lib/children');
 
 console.log('Running test-children.js ...');
@@ -22,15 +28,18 @@ console.log('Running test-children.js ...');
 var order = [];
 var startedAt = [];
 function start(name) {
-  return function () { order.push(name); startedAt.push(lastReading); };
+  return function (decidedAt) { order.push(name); startedAt.push(decidedAt); };
 }
 
-// The first start runs at once; the rest wait their gap, urgent ones first.
+// The first start comes on the next turn; the rest wait their gap, urgent
+// ones first.
 children.launch(start('a'));
 children.launch(start('b'));
 children.launch(start('c'));
 children.launch(start('u1'), true);
 children.launch(start('u2'), true);
+assert.deepEqual(order, [], 'a start waits for a later turn of the event loop');
+console.log('  ✓ a start never runs inside the turn that asked for it');
 // One queued after the urgent ones are under way still goes ahead of b and c.
 setTimeout(function () { children.launch(start('u3'), true); }, 200);
 

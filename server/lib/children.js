@@ -45,13 +45,20 @@ function drainLaunches() {
   }
   nextLaunchAt = now + gap;
   if (urgentCount) urgentCount--;
-  launches.shift()();
+  /*
+   * Never in the turn that asked: node 8.12.0 aborts a child started inside
+   * another child's exit callback (see diedEarly), and that is where most
+   * starts are asked for, as the luna queue starts its next call when one
+   * ends. An OLED55CX3LA (webOS 5) had 24 luna calls abort so in 45 minutes.
+   */
+  setImmediate(launches.shift());
   drainLaunches();
 }
 
 /**
- * Calls fn once it is this start's turn. An urgent start goes ahead of the
- * others waiting, behind earlier urgent ones; the gap still applies.
+ * Calls fn once it is this start's turn, never before launch returns. An
+ * urgent start goes ahead of the others waiting, behind earlier urgent ones;
+ * the gap still applies.
  * @param {function(): void} fn starts the child
  * @param {boolean} [urgent]
  */
