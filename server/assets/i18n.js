@@ -90,7 +90,9 @@
     if (lang === 'en') return;
     try {
       var x = new XMLHttpRequest();
-      x.open('GET', '/assets/i18n/' + lang + '.json', false);
+      // The phone's setup link answers only with its one-time code.
+      var code = /[?&]c=([0-9a-f]+)/.exec(location.search);
+      x.open('GET', '/assets/i18n/' + lang + '.json' + (code ? '?c=' + code[1] : ''), false);
       x.send(null);
       if (x.status === 200) dict = JSON.parse(x.responseText);
       document.documentElement.setAttribute('lang', lang);
