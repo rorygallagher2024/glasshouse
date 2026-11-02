@@ -54,10 +54,10 @@ function findTool(name) {
  * (uv_close: Assertion `!uv__is_closing(handle)' failed, the child dying of
  * SIGABRT): every time when it is started from inside another child's exit
  * callback, as each call here after the first would be, and now and then at
- * server start whatever starts it. The shared turn (lib/children) keeps a
- * start out of an exit callback and spaces starts out after the server
- * starts. One that died before running is tried once more: an aborted -C
- * read as "no rule" would stack a second copy.
+ * server start whatever starts it. The shared turn (lib/children) starts
+ * each from a timer, after the loop has finished closing handles, and spaces
+ * starts out after the server starts. One that died before running is tried
+ * once more: an aborted -C read as "no rule" would stack a second copy.
  */
 function iptables(tool, args, cb, retried) {
   children.launch(function () {

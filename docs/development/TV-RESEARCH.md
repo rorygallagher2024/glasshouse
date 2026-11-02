@@ -2724,8 +2724,15 @@ with that wait. execFile reports such a child with `err.signal` set and
 `err.killed` false, which tells it apart from one killed by its own timeout.
 The debugger rule in `devtools.js` tries an aborted call once more.
 
-A CX (OLED55CX3LA, webOS 5, firmware 04.64.00, node 8.12.0) did the same to
-luna calls: the luna queue started its next `luna-send` from the exit
-callback of the one before, and in 45 minutes of use 24 calls aborted and
-were run again. Every child start (`lib/children.js`) now comes a turn of the
-event loop after it was asked for.
+A CX (OLED55CX3LA, webOS 5.6.2, firmware 04.64.00, node 8.12.0, libuv
+1.19.2) aborted 24 luna calls in 45 minutes. A core of such a child shows
+why: LG's node registers a fork handler, not in libuv itself, that takes
+`uv_default_loop()`, calls `uv_close` on its handles and sets up its signal
+and async handles again. A handle already closing at fork time fails the
+assertion. A child that has just exited is one: node closes its process
+handle in the exit callback, and the close completes in the loop's closing
+phase. `setImmediate` runs before that phase, a timer after it. Of 900
+`/bin/true` starts, three running at a time, each started from another's
+callback: 9 aborted started at once, 8 from `setImmediate`, none from
+`setTimeout(fn, 0)`. Every start through `lib/children.js` now comes from a
+timer. A start that does not go through it can still abort.

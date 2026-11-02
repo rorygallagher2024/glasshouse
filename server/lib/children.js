@@ -46,17 +46,21 @@ function drainLaunches() {
   nextLaunchAt = now + gap;
   if (urgentCount) urgentCount--;
   /*
-   * Never in the turn that asked: node 8.12.0 aborts a child started inside
-   * another child's exit callback (see diedEarly), and that is where most
-   * starts are asked for, as the luna queue starts its next call when one
-   * ends. An OLED55CX3LA (webOS 5) had 24 luna calls abort so in 45 minutes.
+   * Always from a timer. LG's node 8.12.0 (webOS 5 and 6) runs a fork handler
+   * in the child that calls uv_close on the default loop's handles, and aborts
+   * the child (see diedEarly) when one is already closing: the process handle
+   * of a child that just exited is, until the loop's closing phase. The luna
+   * queue starts its next call from an exit, so starts often came then. A
+   * timer runs after that phase; setImmediate runs before it and does not help.
+   * Of 900 starts, three at a time, on an OLED55CX3LA: 9 aborted started at
+   * once, 8 from setImmediate, none from setTimeout.
    */
-  setImmediate(launches.shift());
+  setTimeout(launches.shift(), 0);
   drainLaunches();
 }
 
 /**
- * Calls fn once it is this start's turn, never before launch returns. An
+ * Calls fn once it is this start's turn, from a timer of its own. An
  * urgent start goes ahead of the others waiting, behind earlier urgent ones;
  * the gap still applies.
  * @param {function(): void} fn starts the child

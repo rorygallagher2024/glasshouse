@@ -30,12 +30,8 @@ function answer(n, err) {
 }
 function running() { return Object.keys(open).sort(); }
 
-/*
- * Lets the launch queue's 150ms start-up gaps run out before checking. The
- * wait counts from the next turn, where the starts asked for in this one run:
- * a timer already due when a slow turn ends fires ahead of them.
- */
-function settle(fn) { setImmediate(function () { setTimeout(fn, 500); }); }
+// Lets the launch queue's 150ms start-up gaps run out before checking.
+function settle(fn) { setTimeout(fn, 500); }
 
 normal('n1'); normal('n2'); normal('n3'); normal('n4');
 urgent('u1'); urgent('u2'); urgent('u3');
