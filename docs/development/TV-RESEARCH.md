@@ -1418,6 +1418,9 @@ app in front. Remote Keys puts its own filter first.
   down 114 and mute 113 acted as the remote's keys. A play/pause toggle that
   first asked `com.webos.service.acb/getForegroundAppInfo` (then
   `com.webos.media`'s) and sent pause or play did nothing.
+- **A mapped microphone button can switch the TV off.** Power off in Remote
+  keys was tested with the microphone button on an OLED65C43LA, webOS 10.3.1,
+  firmware 33.31.61. The filter requests standby through tvpower on release.
 - **A rebuild re-runs LG's `init()`s.** In Game mode each write of the key
   opened the Game Dashboard (`NL_GAMEDASHBOARD_ENTERED`,
   `"entered_by":"HotKey"` in `/var/log/messages`) on the C2. Launching an app
@@ -1675,6 +1678,28 @@ and others' work on webOS 10
 - `com.webos.service.discovery/getRecommendationData` and
   `com.webos.service.prs/listRecommendations` gave no answer within 10 s.
 
+### On webOS 4.10.2 (43UM7100PLB, webOS TV Lite)
+
+- `getAllContents` answers in the same shape under both
+  `com.webos.service.applicationmanager` and `com.webos.applicationManager`:
+  54 cards, from Prime Video and YouTube (16 each), Netflix and Disney+ (11
+  each). Pictures are 390 x 219 to 480 x 270, with an `image_4k` of 960 x 540
+  except on Netflix. Only Netflix's cards carry `onShow`.
+- **LG's Home here is `com.webos.app.fullhome`**, the one running.
+  `PreviewInterfaces.qml` reads `getAllContents`, keeps at most 16 cards an app,
+  and shows only the apps in `contentPreviewMenu`, which `ShelfList.js` takes
+  from the shelf data's `parameter.appId`. `com.webos.app.home` is on the TV too
+  and not running; it asks `getContents` per `launchPointId`.
+- **Opening a card:** LG's Home uses `onClick.launchParam` if set, otherwise the
+  app's `deeplinkingParams` with `$CONTENTID` replaced, and bare `contentTarget`
+  for a stub app. No card here set `launchParam`. Netflix, Prime Video and
+  YouTube's `deeplinkingParams` are `{"contentTarget":"$CONTENTID"}`; Disney+
+  adds `"handledBy":"app"`.
+- Launched with only `contentTarget`, as Glasshouse Home does, a Netflix card
+  opens that title's page and a YouTube card plays that video, after YouTube's
+  account picker where it shows one. The cards are listed with no account signed
+  in to YouTube, Prime Video or Disney+.
+
 ## What the player is doing (webOS 4.4.3, B8; webOS 9.2.2, C2)
 
 - The B8 answers `com.webos.service.acb/getForegroundAppInfo` with an `acbs`
@@ -1718,11 +1743,35 @@ and nothing periodic followed. A reporter's TV sent all 253 every 5 minutes
 (1.6 s each pass) alongside `www.ueiwsp.com`, and `discovery.meethue.com`
 every 1.5 to 3.5 minutes; the C2 asks for the latter too. Other C1 (webOS
 6.5.3) and C3 owners report the same with Auto device detection off.
-`iconnectivity` resolves through glibc (`getnameinfo`, from `libqse` and
-`librim_qsp`) and c-ares; `/etc/nsswitch.conf` reads `hosts: files mdns
-myhostname dns`, so `/etc/hosts` is consulted first. Its state is in
-`/mnt/lg/cmn_data/iconnectivity` (`environ.conf` holds `ueiEnable`;
-`qs_data/discovered_devices.db` was written that day with it off).
+Its state is in `/mnt/lg/cmn_data/iconnectivity` (`environ.conf` holds
+`ueiEnable`; `qs_data/discovered_devices.db` is a SQLite table of the devices
+it found).
+
+- **A sweep is asked for.** One `luna://com.webos.service.ics/iot/getAllIoTDevices`
+  call, the Home Hub's, started a pass of all 253 addresses within 5 s, with
+  the stored device list intact, and nothing followed for 6.5 minutes. With
+  no such call, 12 minutes with the device list emptied and 12 minutes with
+  `ueiEnable` on each sent none; the emptied list refilled to 17 devices
+  from other discovery. A TV that sweeps every 5 minutes has something
+  asking every 5 minutes. `ls-monitor` shows the caller: the `TX call` lines
+  to `com.webos.service.ics` name the sender and the app it acts for.
+- **`/etc/hosts` does not answer them.** With the table naming all 253
+  addresses as themselves, mounted where `iconnectivity` sees it, and
+  `gethostbyaddr` answering from it, a sweep still sent 252 PTR queries.
+  `iconnectivity` sends them to the DNS relay in `/etc/resolv.conf`
+  (`connmand`, at `127.0.0.1` and `::1`), one socket per query, without the
+  name service lookup that reads `/etc/hosts`, and `connmand` forwards them.
+  Answer device scans on the TV (#1146) was built on the opposite reading.
+- **The firewall cannot pick them out.** The C2's kernel offers only the
+  `icmp`, `udp`, `tcp` and similar matches, no `string`, `u32`, `owner` or
+  `bpf`, so a rule cannot tell a PTR query from any other DNS query, and
+  `iconnectivity` runs as root like the rest. Sending all DNS through a relay
+  on the TV would make every lookup depend on it.
+- **Its own controls.** `com.webos.service.ics/debug/setDebugCmd`
+  (`{ "debugCmd": "showTimerList" }` and others) answers `returnValue: true`
+  and logs nothing, even with the `ICS` log contexts at `debug`; its strings name IP discovery
+  methods (SubnetScan, Reverse DNS, mDNS, UPnP) and a device polling
+  interval, with no luna method found that switches one off.
 
 ## Boot and app state (webOS 9.2.2, C2)
 
@@ -2371,6 +2420,22 @@ name.
   `lgtviot.com`; `ad`, `info` under `lgsmartad.com`.
 - No `lggalleryplus.com` in either.
 
+## Report and store log hosts (C4, webOS 10.3.1)
+
+- **sdx uploads reports to `rdx2.nextlgsdp.com`.**
+  `com.webos.service.sdx/getRdxServerUrl` answers
+  `https://US.rdx2.nextlgsdp.com/rdx/9.0.0/` on a US C4, so the older
+  `rdx2.lgtvsdp.com` names no longer cover it. It is a different name from
+  `us.nextlgsdp.com`, which sdx signs in to and the Content Store uses.
+- **The Content Store logs its requests to `elastic.lgwebostv.com`.** LG's
+  store frontend (`com.webos.app.discovery`, loaded from LG's servers) posts
+  to `<first label of its API host>.elastic.lgwebostv.com/logs/<type>`:
+  `us.` on a US TV, with `st` and `qt` test hosts mapped to `qt2`. Each post
+  carries the TV's wired MAC address and a request id, and the request logs
+  also carry the device platform, language, SDK version and FCK headers. It
+  is fire-and-forget, and with it sinkholed the store still opens and lists
+  apps.
+
 ## ACR on a CX (webOS 5.6.2)
 
 - **`acr2` starts on demand.** Its D-Bus service file is `Type=dynamic`, so
@@ -2500,3 +2565,178 @@ came at 50 s: about 9 s from the server answering to the view drawn. The
 first Home press after a reboot took up to 13 s on a CX (webOS 5.6.2), so a
 fixed wait from the server's start is too short for slower TVs; the page's
 own requests to the server show it is running.
+
+## LG's cloud and its uploads on webOS 11.2 (OLED77C5PUA, firmware 43.21.31)
+
+- **The service platform is `tv.wiselg.com`.** sdx's server list,
+  `/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`, has one block, `11.0.0`,
+  naming `tv.wiselg.com` (and `tv.wiselg.cn`) for every service: `domainType`
+  `default` services (`sdp_auth`, `sdp_init`, `sdp_common`, `sdp_logging`,
+  `sdp_home`) are reached as `<country>.tv.wiselg.com`, `ric` services
+  (`sdp_apps`, `sdp_search`, `sdp_nlp`, `ibis_secure`, `ibis_stat_secure`,
+  `rdx_secure` at `rdx/10.0.0/`, `nudge_log_secure`, `cdpbeacon_secure`,
+  `lgshoplog_secure`) as `<region>.tv.wiselg.com`. `getServerUrl` answered
+  `http://US.tv.wiselg.com` and `getRdxServerUrl`
+  `https://AIC.tv.wiselg.com/rdx/10.0.0/`; `appInstallService`'s `serverInfo`
+  names `http://US.tv.wiselg.com`. `lgtvsdp.com` and `nextlgsdp.com` are not in
+  the list. `systemTimeSource` is `sdp`, so the clock comes from these hosts.
+- **uploadd is started by the bus, not its unit.**
+  `/usr/share/luna-service2/services.d/com.palm.uploadd.service` is
+  `Type=dynamic`, so a call to it runs `/usr/sbin/uploadd -v` whatever
+  `uploadd.service` is masked to; PmLogDaemon, faultmanager, prosense, rdxd,
+  alwaysready, arccontroller, iot-proxy and remotediag name it. With its unit
+  masked, it was found running 64 to 76 s after each of four boots and stopped
+  by the server's first check. It names no host: it asks sdx for
+  `getRdxServerUrl`, `getServerUrl`, `getHttpHeaderForServiceRequest` and
+  sends through `sdx/send`. It reads `option.dbgLogUpload` (true from the
+  factory) and `option.faultLogUpload` (false); PmLogDaemon, prosense and
+  remotediag read `faultLogUpload`. `/var/spool/uploadd/pending`,
+  `/var/spool/rdxd` and `/var/log/reports/librdx` were empty with rdxd masked.
+- **adlogservice.** `/mnt/lg/cmn_data/adlogservice/data/adlogservice.enc` is an
+  encrypted Python script (`script_version` 0.38, with a `backup/` record from
+  August), run by `com.webos.service.lsa` (`Type=dynamic`, which reads
+  `generalTermsAllowed`, `sdx/getHttpHeaderForServiceRequest` and the power
+  state). Its `adlogservice-config.json` enables it on `generalTermsAllowed`
+  alone. Its bytecode names `aic.api.adts.lgtvcommon.com/api/v2/advertisement`,
+  `https://{}{}.tv.wiselg.com/authr5`, `mac`, `app_id` and `channel`. Neither
+  host is in the tested blocklists of earlier releases.
+- **remotediag** (`/usr/sbin/remotediag`) names `rone-aic.lge.com`,
+  `rone-eic.lge.com`, `rone-kic.lge.com`, `rone-saic.lge.com` and `rone-tv-*`
+  siblings, and LG-internal addresses. Its unit has
+  `ConditionPathExists=/mnt/lg/cmn_data/remoteDebug/remoteDebug.sh`, absent
+  here, so it does not run.
+- **remotelogger** (`/usr/sbin/remotelogger`, running since first boot) names
+  no host or URL and holds one local socket; its strings name `/var/log/crashd`,
+  `/dev/mem`, `/dev/kmsg` and `/proc/thermalinfo/soc_temperature`.
+- **The updater** (`/usr/sbin/update`) checks `https://snu.lge.com/...laf`
+  (`snu-dev.lge.com` and an IP for test), which the Homebrew Channel's update
+  block covers; `http://nsu.lge.com:5100/` is the download CDN it uses after a
+  check answers (`responseUpdate.cdnUrl`).
+- **No preload list in configd.** `com.webos.service.preloadmanager.supportAppList`
+  is a missing config; `preloadmanager/getPreloadPolicy` answers the list, with
+  the same fields (`id`, `isEnabled`, `isAllowed`, `requiredMemory`,
+  `preloadMode`, `preloadType`, `staticPriority`), naming LG Channels, Home,
+  HDMI 2, YouTube, the browser, Prime Video and Live TV; sam's log shows the
+  preload manager launching them at each boot. The allow list is
+  `/var/preferences/webos-preload-manager-conf.json` (`version` 3).
+- **Other hosts in the firmware, not telemetry.** `lgtvonline.lge.com` is
+  connman's online check (`/etc/connman/main.conf`); `www.lge.com` and
+  `dlnadevicename.lge.com` are UPnP and DLNA descriptions; `hlm.lge.com`,
+  `dokdo.lge.com`, `wam.lge.com` and `collab.lge.com` are LG-internal
+  references in configuration; `lgthinq.com`, `lgeapi.com` and `lgtviot.com`
+  are the ThinQ account and IoT cloud (accountmanager, iot-client, iot-proxy,
+  the Matter service).
+- **No `/etc/issue`.** The release is in `/etc/starfish-release`
+  (`Rockhopper release 11.2.0-2901 (queue-qilian)`), `/etc/os-release`
+  (`VERSION_ID=11.2.0`) and `/var/run/nyx/os_info.json`; the kernel is
+  6.12.44, 64-bit, with 32-bit userspace.
+- **Usage events stay in `/var/log/messages`.** pqcontroller writes
+  `NL_PICTURE_PERIODIC_REPORT` (picture mode, backlight, `zip_code`, the app)
+  and sam `NL_APP_LAUNCH_BEGIN`; lginput2 logs each remote press. With the
+  uploaders stopped these go nowhere.
+- **LG switches `dbgLogUpload` on at boot.** `/etc/palm/defaultSettings.json`
+  has it false, yet it was true again after every start, with
+  `/var/luna/preferences/option` rewritten at boot. PmLogDaemon's strings have
+  the mechanism: `dbgWhitelist_update` asks sdx's `rdxdev_secure` service
+  (`fileInfo?version=`, on `tv.wiselg.com`), downloads `dbgWhitelist.enc`
+  through the download manager into `/mnt/lg/cmn_data/whitelist/` (version 6
+  here, `dbglogversion`), and writes
+  `{"category":"option", "settings":{"dbgLogUpload": %s}}` from the answer;
+  "UserReport Off" writes `faultLogUpload` false. uploadd subscribes to both
+  keys and answers "isDbgLogUpload flag is false" while it is off. A write of
+  false from the dashboard held until the next boot only.
+
+## C9 CEC receiver detection without the newer ARC service
+
+On an OLED65C9PUA, webOS 4.10.2/05.50.00, the 0.130 Audio view had no receiver
+name while audible DTS-HD-to-PCM 5.1 continued at Sonos. The firmware returned
+Service does not exist for `com.webos.service.arccontroller`, Unknown method
+for audio/tv/getAudioInputProperty, and exposed none of the newer
+`/proc/lgtv-driver/audio` files. `com.webos.service.eim/getAllInputStatus` did
+report `arcDevice: true` and a connected HDMI 2 with one SIMPLINK audio system
+(`cecpDevType: 5`) named Sonos Arc.
+
+The receiver reader can identify that unique connected CEC audio system and
+its port without assigning it an active return-channel type or codec list.
+Ambiguous, disconnected, non-audio or failed replies do not supply a fallback.
+A targeted read-only diagnostics deployment identified Sonos Arc on HDMI 2,
+retained the native HAWK2 DTS advertisement and six-channel source metadata,
+and the owner confirmed continued audible Multichannel PCM 5.1. All
+calibration-file hashes, white balance, OLED protections and HDMI EDIDs matched
+the pretest baseline. The TV app was not opened on the TV during the disc.
+## Where a cold start's time goes (B8, webOS 4.4.3; C2, webOS 9.2.2)
+
+Uptime in seconds from LG's `NL_APP_LAUNCH_BEGIN` and `NL_VSC` lines in
+`/var/log/messages`, the boot hook's log and the server's log:
+
+| | B8 | C2 |
+|---|---|---|
+| Home pressed, the view on screen (webOS 4) | 25.6, 28.1 | - |
+| webosbrew runs the boot hook | 41 | 23 to 26 |
+| Server listening, with the hook's 5 s wait | 50 | 40 |
+| Server listening, without it (#1171) | 43 | 29 |
+
+On webOS 4 the Home key opens the view before webosbrew runs the hook, and the
+view only shows the Glasshouse mark until the server answers. webosbrew's own
+start-up script decides when the hook runs; Glasshouse cannot move it.
+
+Once the server answered, the view's first catalogue took 7.9 s on the B8
+and 6.6 s on the C2, against 0.75 s and 0.35 s on later requests. Every
+child process start waits its turn 150 ms apart for the server's first 30 s
+(`lib/children.js`), so the catalogue's luna calls queued behind the
+start-up reads, and the route also waited on two uncached calls from
+`status()`, 3.7 s of the B8's 7.9 s. Answered from the lists saved in
+`home-lists.json`, it took 0.1 s on the B8 and 0.02 s on the C2.
+
+Loading every module in `server/lib` takes 0.9 s on the B8 (node 0.12.2),
+and node itself 0.4 s; neither is worth shortening.
+
+## Paired Bluetooth audio devices (55UM7290PTD, webOS 4.10.2)
+
+Read only, from `luna-send`:
+
+- `com.webos.service.btaudiosrc/getPairedDevices` with `{}` answered
+  `returnValue: true`, a `count` and `devices`, each with `address`, `name`,
+  `state` and `type`. The two paired devices, a soundbar and earbuds, were both
+  `type: "bt_audio"`; the one in use was `state: "connected"` and the other
+  `"disconnected"`.
+- `getConnectedDevice` with `{}` answered `connected: true` and the connected
+  device's `name`.
+- `getDeviceStatus` with `{}` was refused as not matching its schema; the
+  request it wants has not been found.
+- The service's permission list names `connect`, `disconnect`,
+  `getDeviceStatus`, `getConnectedDevice`, `getPairedDevices`,
+  `removePairedDevice`, `startDiscovery`, `cancelDiscovery` and
+  `notifyUserSelection`, among others.
+- Both `disconnect` and `connect` with `{address}` were tried through the
+  dashboard's Bluetooth endpoint. Each answered `returnValue: true` before
+  `getPairedDevices` reported the new state. Refreshing confirmed the soundbar
+  disconnected and then reconnected; `getConnectedDevice` named it again.
+  The other paired device remained disconnected. This verifies the request
+  shape on this firmware, not on other webOS versions.
+- After reconnecting, `audio/getSoundOut` again reported Bluetooth output and
+  the same volume, but mute was off rather than its original on state. Mute
+  was restored after the test. Audible playback was not checked.
+- `startDiscovery` with `{ "subscribe": true }` answers `{ returnValue: true,
+  timeOut: 90 }`, then one `{ state: "started", device: { address, name, type } }`
+  for each device it hears, `type: "bt_audio"` for speakers and headphones
+  (B8, webOS 4.4.3; C2, webOS 9.2.2). `cancelDiscovery` ends it. A
+  `startDiscovery` sent straight after a `cancelDiscovery` was once refused on
+  the C2 with error 1005, "The Bluetooth adapter(local device) is not ready".
+- `connect` with the `{address}` of a device the scan found pairs it, then
+  connects it: earbuds in pairing mode paired and connected on a C2, as in
+  LG's own device selection. The binary's strings ("Try to Pair", "No
+  discovered device. Check in paired list") show `connect` looks in the
+  discovered list first.
+- A device that is off reads `connecting` in `getPairedDevices` for over 12 s
+  after `connect` before going back to `disconnected` (B8).
+- On the C2, connecting switched the sound output to `bt_soundbar`, showed
+  LG's toast, and 2 s later `getSystemSettingValues` for `pictureMode` listed
+  `game` as `visible: false`; the picture mode changed, to `normal`, with a
+  second toast. Game Optimizer was offered again once the device
+  disconnected.
+- `removePairedDevice` takes `{address}` and answers error 1011, "There is no
+  device in paired list", for one that is not paired (C2).
+- `notifyDeviceSelectionMenuEntered` and `onDeviceSelectionMenu` refuse `{}`
+  and the payloads tried as not matching their schema; scanning works without
+  them.

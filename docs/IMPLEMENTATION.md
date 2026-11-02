@@ -47,6 +47,14 @@ Older Linux kernels and Node 0.12 can encounter process deadlocks or child leaks
 4. **Memory Caching**: Telemetry is cached for 1.5 seconds, delivering sub-20ms HTTP responses with zero subprocess spawning during rapid UI updates.
 5. **Deterministic MQTT Client Session**: Uses a static client ID and periodic availability reaffirmation so TV reboots or network reconnects never leave entities trapped in an "Unavailable" state.
 
+### Serving the dashboard
+
+`ui.html` is served with its stylesheet and scripts put back inline, gzipped
+once at start (about 170 KB). It goes out with `Cache-Control: no-cache` and an
+ETag hashed from the page, so a browser keeps it and asks each time, and an
+unchanged page comes back as a 304 with no body. The ETag comes from the content
+rather than the version: a deploy of uncommitted changes keeps the version.
+
 ### What it costs the TV
 
 Measured with `scripts/footprint.sh` on 2026-10-03, over a minute each, with MQTT publishing every 10s and no dashboard open:
@@ -764,6 +772,12 @@ the same codes as the dashboard's media buttons (play 207, pause 119, stop 128,
 rewind 168, fast forward 208, volume up 115, volume down 114, mute 113;
 volume repeats while the key is held). Those keys go through the chain again, and the
 filter names none of them, so they reach LG's filters and the app in front.
+A key set to `action:powerOff` calls `com.webos.service.tvpower/power/powerOff`
+with `reason: "remoteKey"` on release, once per press begun while the TV is on,
+including with the panel blank or a screen saver. A press begun in standby
+does not arm it, so waking with the key does not immediately switch the TV off
+again. It sends no IR command;
+an IR press reaching two TVs can still trigger both mappings.
 LG's files are never written. configd has no way to
 delete a value, so **As LG has it** on every key leaves the filter in the
 chain, passing every key on, and `tvwebctl restore-keys` takes it out, deletes
@@ -913,9 +927,9 @@ the previous boot's, so a tool that is no longer started leaves nothing behind.
 The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
 
-Nine of the twenty domains are ad, tracking and diagnostics hosts that
-nothing on the TV needs. The other eleven are **platform infrastructure rather
-than advertising**, which is why they are a separate tier:
+The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
+the TV needs. The platform tier's are **LG infrastructure rather than
+advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
 | :--- | :--- |
@@ -926,19 +940,26 @@ than advertising**, which is why they are a separate tier:
 | `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
 | `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
+| `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
+| `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
 
 `com.webos.appInstallService` names the one its own set installs from:
-`http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2. The full
-tier adds whatever that file says, so a firmware using neither is still covered.
+`http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,
+`http://US.tv.wiselg.com` on a C5 on webOS 11.2. The full tier adds whatever
+that file says, so a firmware using none of them is still covered.
 
-`wiselg.com` is not on either list, though the full tier still blocks it if
-`appInstallService` names it as its store. On webOS 11 the Content Store's
-first request goes to `<country>.tv.wiselg.com`, and a factory-reset TV asks for
-`ngfts.tv.wiselg.com` during setup
+On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
+sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names
+`<country>.tv.wiselg.com` (`US.`) for sign-in, set-up, logging and Home, and
+`<region>.tv.wiselg.com` (`AIC.`) for the Content Store, search, app usage
+statistics and the diagnostics report upload, which `getRdxServerUrl` gives as
+`https://AIC.tv.wiselg.com/rdx/10.0.0/`. The clock comes from the same servers
+(`systemTimeSource` `sdp`), so the full tier blocks them, the store host
+included, only once the clock has synced, as it does `nextlgsdp.com`. A
+factory-reset TV asks for `ngfts.tv.wiselg.com` during setup
 ([Huttunen](https://fabricati-diem.inform.social/post/deshittification-as-a-service-part2-bypassing-the-app-store-gatekeeper/)),
-which suggests it is that release's service platform, in place of the SDP
-hosts. None of the tested TVs runs webOS 11, and Huttunen reports Netflix
-being interrupted after a cold boot with it blocked.
+who reports Netflix being interrupted after a cold boot with the host blocked
+outright.
 
 The `lgtvcommon.com`, `lgtviot.com` and `ueiwsp.com` rows, and
 `smartad.lge.com` on the ads tier, come from the blocklist in
@@ -982,6 +1003,9 @@ To prevent this while preserving full platform blocking:
   entirely, and `nextlgsdp.com` is blocked immediately.
 * With an [NTP server](#setting-the-clock-from-ntp) configured, the first answer it
   gives sets the time as `sdp`, which ends the wait at once.
+* The Ads & telemetry tier's `rdx2.nextlgsdp.com` names, sdx's report upload host, get
+  the same wait. They are not the time servers, but they share their domain, and the
+  boot hook's removal goes by the domain.
 * An owner's hosts list that names `nextlgsdp.com` or a name under it gets the same wait,
   on either tier.
 
@@ -1409,14 +1433,29 @@ over that folder, leaving every other file LG's. The parts are the side buttons
 (`globalline`, shrunk to 0 by 0 after the banner: taking it out left the screen
 black), the Quick Cards (`qcardList`) and the recommended shelf
 (`recommendedShelf`); the banner takes the height of the rows taken out, so the
-apps row stays at the bottom. The home app runs as
+apps row stays at the bottom, and with the side buttons hidden it also takes
+their width and the gap above it, reaching the screen's edges. The banner's text and picture are files in the
+same folder: the text is looked up by its English in `i18n`, a symlink to LG's
+language files under `/mnt/lg/wee/ui_l10n`, so hiding it lays an `i18n` folder
+of its own over the symlink, copied from LG's each time it is mounted with the
+two strings blank (added where a file lacks them). The picture is
+`images/<size>/bg_banner_img.png`, laid in each size folder LG has, linked
+rather than copied since `/tmp` is memory: a small black PNG, or the owner's
+JPEG under the PNG's name, which the browser crops within 3840 across to each
+shape the banner takes with the side buttons, Quick Cards and Recommended
+shown or hidden. The home app fits the picture to the banner's height and
+centres it, so one crop fills only one shape: one made with all three hidden
+(about 2.2:1 on a C4, webOS 10.2.2) showed as a small window between black
+with them back (3492 x 900, #833). The shape shown is sent first and shown; the
+rest are kept, and a part shown or hidden mounts the one for the new shape. The home app runs as
 `flutter-client -i com.webos.app.home`, so it is found by that argument pair in
 `/proc/<pid>/cmdline`, checked again just before it is sent SIGTERM, and other
 Flutter apps are left alone; a failed restart is reported to the dashboard. The
 mount goes with a restart of the TV, so `reapply()` mounts it again when the
 server starts, and does nothing while it is still mounted. The choices and a
 copy of LG's `home.xml`, which cannot be read while the overlay covers it, are
-kept in `/var/lib/tvweb`. Offered only on 10.x, where `/proc/filesystems` lists
+kept in `/var/lib/tvweb`, with the owner's banner picture
+(`home-webos10-banner-<width>x<height>.jpg`, one for each shape). Offered only on 10.x, where `/proc/filesystems` lists
 overlay and the layout is one recognised from #612's dumps, and only once
 `allowHomeLayout` is set.
 
@@ -1427,7 +1466,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 5, 6, 7, 9 and 10; webOS 11 with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab (webOS 4, 5, 6, 7, 9 and 10; webOS 11 with `allowExperimentalHome`). The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 
@@ -1552,6 +1591,17 @@ off repeats this cleanup, including from the SSH recovery command.
 The layout lives in `home.json`, shared by the Home tab and the view's arrange
 mode, and is re-read when the file changes, so `tvwebctl
 restore-glasshouse-home` over SSH is seen by a running server.
+
+The apps, inputs, channels and cards the rows are built from are kept as last
+read in `home-lists.json`. Just after the server starts, every luna call waits
+its turn 150 ms apart (`lib/children.js`), and a view opened then waited 7.9 s
+for its first catalogue on a B8 (webOS 4.4.3). Until each list has been read in
+this run, the saved one is answered at once and read again behind it; a list
+that changed bumps `layoutVersion`, so the view reloads on its next heartbeat.
+The catalogue route takes the layout and wallpapers from `viewStatus()`, which
+makes no luna calls. While Glasshouse Home is on, the boot hook starts the
+server without its 5 s wait: on webOS 4 the Home key opens the view (25 s into
+a B8's boot) before webosbrew runs the hook (41 s).
 
 A row set to Last opened (`sort` in `home.json`) is ordered by
 `home-recent.json`, the time each tile id was last opened. sam's foreground

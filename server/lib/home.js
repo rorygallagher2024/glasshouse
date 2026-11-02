@@ -52,6 +52,10 @@ var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec'];
+// Each kind of motion on the view, on unless switched off: the wallpaper's
+// slow drift and its cross-fade between parts of the day, rows easing to the
+// chosen tile, and Recent apps, search and the folder sliding in.
+var MOTION_KEYS = ['wallDrift', 'wallCrossfade', 'smoothScroll', 'slidePanels'];
 // An input opened from its tile is recorded as that device, not as the whole input.
 var TILE_OPEN_MS = 15000;
 /*
@@ -63,6 +67,8 @@ var PROMO_APPS = ['com.webos.app.lgchannels', 'com.webos.app.sportsteamsettings'
   'com.webos.app.lifeonscreen', 'amazon.alexa.view', 'com.webos.app.camera'];
 // The view's own way back to LG's Home: last in the Apps row, and never hidden.
 var LG_HOME_TILE = 'lg-home';
+// The Inputs row's tile for the TV's own tuner, which opens Live TV.
+var TUNER_TILE = 'tv';
 /*
  * LG's notifications and search, reached from its Home's sidebar and from no
  * other screen. Neither has a launch point, so the Apps row lists them from
@@ -102,14 +108,14 @@ var ESCAPE_REOPEN_MS = 8000;
 var escapeReopen = null;
 /*
  * Colours for Glasshouse Home's text and accent, chosen by both dashboards.
- * The first is the view's own, used while none is chosen. Every pair keeps
- * light text on black. The accent marks what was last on and arranging and,
- * once colours are chosen, frames the focused tile.
+ * The one marked own is the view's built-in look, saved as none chosen. Every
+ * pair keeps light text on black. The accent marks what was last on and
+ * arranging and, once colours are chosen, frames the focused tile.
  */
 var COLOUR_PRESETS = [
-  { id: 'warm', text: '#ece7df', accent: '#e9ad55' },
-  { id: 'glasshouse', text: '#ece7df', accent: '#30de61' },
   { id: 'pure', text: '#ffffff', accent: '#ffffff' },
+  { id: 'warm', text: '#ece7df', accent: '#e9ad55', own: true },
+  { id: 'glasshouse', text: '#ece7df', accent: '#30de61' },
   { id: 'white', text: '#f4f4f4', accent: '#8fb8ff' },
   { id: 'ice', text: '#d4e6f4', accent: '#5fc4ee' },
   { id: 'rose', text: '#f4dcdc', accent: '#ec7f8c' },
@@ -326,6 +332,11 @@ function defaults() {
     showLastOn: true,
     showAppCount: true,
     showCec: true,
+    // The live preview kept on what was last on whenever the view is on
+    // screen, rather than only while a tile is chosen.
+    previewAlways: false,
+    // The live preview in the tile it shows, rather than beside the clock.
+    previewInTile: false,
     // The rows centred below the top strip, or along the bottom as on LG's Home.
     rowsBottom: false,
     // standard, or alternative: a smaller clock on the right, and the rows
@@ -338,11 +349,19 @@ function defaults() {
     recommended: false,
     // The view fading in as it comes on screen, and out as a tile opens.
     fade: false,
+    wallDrift: true,
+    wallCrossfade: true,
+    smoothScroll: true,
+    slidePanels: true,
     // Inputs with nothing plugged in left out of the Inputs row, rather than
     // shown greyed out.
     hideUnused: false,
-    // { text, accent } as #rrggbb, or null for the view's own colours.
-    colours: null,
+    // How strongly the wallpaper is darkened behind the text and rows, in
+    // percent of the view's own darkening; 0 leaves the picture as it is.
+    darkening: 100,
+    // { text, accent } as #rrggbb, or null for the view's own colours. Pure
+    // white until one is chosen.
+    colours: { text: '#ffffff', accent: '#ffffff' },
     // null until chosen: the first start keeps an empty layout an earlier build left.
     hideLgHomeAtStart: null,
     // LG's Home auto launch as it was before Glasshouse Home switched it off,
@@ -403,6 +422,8 @@ function normalise(raw) {
   SHOW_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.rowsBottom = raw.rowsBottom === true;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
+  d.previewAlways = raw.previewAlways === true;
+  d.previewInTile = raw.previewInTile === true;
   d.search = raw.search === true;
   d.recommended = raw.recommended === true;
   // Its cards come and go with the apps' lists, so it keeps no order of its own.
@@ -410,14 +431,22 @@ function normalise(raw) {
   d.sort.rec = 'custom';
   d.hidden.rec = [];
   d.fade = raw.fade === true;
+  MOTION_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
+  d.darkening = validDarkening(raw.darkening);
   d.hideUnused = raw.hideUnused === true;
-  d.colours = validColours(raw.colours);
+  // null, saved, is the view's own look; none saved keeps the default.
+  if (Object.prototype.hasOwnProperty.call(raw, 'colours')) d.colours = validColours(raw.colours);
   if (typeof raw.hideLgHomeAtStart === 'boolean') d.hideLgHomeAtStart = raw.hideLgHomeAtStart;
   if (typeof raw.lgAutoLaunch === 'string' && raw.lgAutoLaunch) d.lgAutoLaunch = raw.lgAutoLaunch;
   if (typeof raw.lgAutoLaunchCheck === 'string' && raw.lgAutoLaunchCheck) d.lgAutoLaunchCheck = raw.lgAutoLaunchCheck;
   if (typeof raw.lgDefaultHome === 'string' && raw.lgDefaultHome) d.lgDefaultHome = raw.lgDefaultHome;
   d.snapshot = validSnapshot(raw.snapshot) ? raw.snapshot : null;
   return d;
+}
+
+function validDarkening(v) {
+  var n = typeof v === 'number' ? Math.round(v) : NaN;
+  return n >= 0 && n <= 100 ? n : 100;
 }
 
 function validColours(v) {
@@ -466,7 +495,9 @@ function readConfig() {
 // Internet TV's revision too: a playlist read, a guide or a channel added.
 function layoutVersion() {
   readConfig();
-  return String(configMtime) + (search.blocked() ? '-search-blocked' : '') + (iptvModule ? '-tv' + iptvModule.revision() : '');
+  return String(configMtime) + (search.blocked() ? '-search-blocked' : '') +
+    (iptvModule ? '-tv' + iptvModule.revision() : '') +
+    (listsRevision ? '-lists' + listsRevision : '');
 }
 
 function saveConfig() {
@@ -538,9 +569,16 @@ function setLayout(body, cb) {
     showLastOn: typeof body.showLastOn === 'boolean' ? body.showLastOn : c.showLastOn,
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
+    previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
+    previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
+    wallDrift: typeof body.wallDrift === 'boolean' ? body.wallDrift : c.wallDrift,
+    wallCrossfade: typeof body.wallCrossfade === 'boolean' ? body.wallCrossfade : c.wallCrossfade,
+    smoothScroll: typeof body.smoothScroll === 'boolean' ? body.smoothScroll : c.smoothScroll,
+    slidePanels: typeof body.slidePanels === 'boolean' ? body.slidePanels : c.slidePanels,
+    darkening: body.darkening !== undefined ? body.darkening : c.darkening,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
@@ -570,19 +608,69 @@ function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
-    fade: c.fade, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, colours: c.colours,
+    fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
+    darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, previewAlways: c.previewAlways, previewInTile: c.previewInTile, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
 }
 
 // ---------------------------------------------------------------- what it shows
 
+/*
+ * The lists the rows are built from, as last read, in home-lists.json. Every
+ * child start waits its turn just after the server starts (lib/children), so
+ * a view opened then waited on them: 7.9 s for the first catalogue on a B8
+ * (webOS 4.4.3) against 0.75 s later. Until a list is read in this run, the
+ * saved one is answered at once and read again behind it; a change bumps
+ * layoutVersion, so the view reloads on its next heartbeat.
+ */
+var savedLists = null;
+var listsRevision = 0;
+var listLoading = {};
+
+function listsFile() { return path.join(stateDir, 'home-lists.json'); }
+
+function savedList(key) {
+  if (savedLists === null) {
+    try { savedLists = JSON.parse(fs.readFileSync(listsFile(), 'utf8')) || {}; } catch (e) { savedLists = {}; }
+  }
+  return savedLists[key] || null;
+}
+
+// True when the list differs from the one saved.
+function saveList(key, value) {
+  savedList(key);
+  if (JSON.stringify(savedLists[key]) === JSON.stringify(value)) return false;
+  savedLists[key] = value;
+  try {
+    writeJsonAtomic(listsFile(), savedLists, 384);
+  } catch (e) {
+    console.error('home: could not save home-lists.json: ' + e.message);
+  }
+  return true;
+}
+
 function cached(key, ttl, load, cb) {
   var hit = listCache[key];
   if (hit && nowMs() - hit.at < ttl) return cb(hit.value);
+  var saved = hit ? null : savedList(key);
+  if (saved) {
+    cb(saved);
+    if (listLoading[key]) return;
+    listLoading[key] = true;
+    return load(function (value) {
+      listLoading[key] = false;
+      if (!value) return;
+      listCache[key] = { at: nowMs(), value: value };
+      if (saveList(key, value)) listsRevision++;
+    });
+  }
   load(function (value) {
-    if (value) listCache[key] = { at: nowMs(), value: value };
+    if (value) {
+      listCache[key] = { at: nowMs(), value: value };
+      saveList(key, value);
+    }
     cb(value);
   });
 }
@@ -746,9 +834,12 @@ function catalogue(cb) {
 function rows(cb) {
   var c = readConfig();
   launchPoints(function (apps) {
-    devices(function (devs) {
+    devices(function (hdmi) {
       channelList(function (chans) {
+       tunerTile(chans, function (tuner) {
+        var devs = hdmi || tuner ? (tuner ? [tuner] : []).concat(hdmi || []) : null;
         recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs, iptvModule ? iptvModule.rowItems() : null)); });
+       });
       });
     });
   });
@@ -763,7 +854,7 @@ function build(c, apps, devs, chans, recs, tv) {
   picked.sort(function (a, b) { return c.channels.indexOf(a.id) - c.channels.indexOf(b.id); });
   var order = {
     app: ordered(c.order.app, appIds),
-    dev: ordered(c.order.dev, devIds),
+    dev: tunerFirst(c.order.dev, ordered(c.order.dev, devIds)),
     ch: picked.map(function (p) { return p.id; }),
     rec: [],
     iptv: (tv || []).map(function (t) { return t.id; })
@@ -801,7 +892,30 @@ function build(c, apps, devs, chans, recs, tv) {
 // The apps' cards while the row is switched on; null when the TV gave none.
 function recommendedCards(c, cb) {
   if (!c.recommended) return cb([]);
-  recommended.cards(cb);
+  cached('rec', LIST_TTL_MS, function (done) { recommended.cards(done); }, cb);
+}
+
+/*
+ * The TV's own tuner as a tile in the Inputs row, with the channel it was
+ * last on, or null on a TV with no channels tuned. Opening it opens Live TV.
+ */
+function tunerTile(chans, cb) {
+  if (!chans || !chans.length) return cb(null);
+  luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
+    var chId = r && typeof r.channelId === 'string' ? r.channelId : null;
+    /** @type {any} */
+    var hit = null;
+    chans.forEach(function (ch) { if (ch.id === chId) hit = ch; });
+    cb({ id: TUNER_TILE, name: 'TV', input: 'tv', tuner: true, port: 0, via: null, address: null,
+         channel: hit ? { id: hit.id, number: hit.number, name: hit.name } : null });
+  });
+}
+
+// The TV's tile goes first in a row arranged before it existed, rather than last.
+function tunerFirst(saved, order) {
+  var i = order.indexOf(TUNER_TILE);
+  if (i <= 0 || saved.indexOf(TUNER_TILE) !== -1) return order;
+  return [TUNER_TILE].concat(order.slice(0, i), order.slice(i + 1));
 }
 
 /*
@@ -838,6 +952,7 @@ function noteOpened(row, id) {
 function noteForeground(was, id) {
   if (was === LIVE_TV && id !== LIVE_TV) noteLiveChannel(function () {});
   if (!id || id === HOME_APP || id === LG_HOME) return;
+  if (id === LIVE_TV && was !== LIVE_TV) noteOpened('dev', TUNER_TILE);
   var m = /^com\.webos\.app\.hdmi(\d)$/.exec(id);
   if (m) {
     var fromTile = tileInput && tileInput.app === id && nowMs() - tileInput.at < TILE_OPEN_MS;
@@ -1018,6 +1133,12 @@ function open(body, cb) {
       var known = (apps || []).some(function (a) { return a.id === id; });
       if (!known) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
       launch(id, null, opened('app', id, cb));
+    });
+  }
+  if (kind === 'dev' && id === TUNER_TILE) {
+    return channelList(function (chans) {
+      if (!chans || !chans.length) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+      launch(LIVE_TV, null, opened('dev', TUNER_TILE, cb));
     });
   }
   if (kind === 'dev') {
@@ -1272,8 +1393,8 @@ function isHomeInPlace() {
 
 function supported() {
   var v = String(webosVersion || '');
-  // Tried on a B8 only (4.4.3), so behind allowExperimentalHome, as webOS 11.
-  if (/^4\./.test(v) && allowExperimentalFn()) return { ok: true, webos: v, experimental: true, standalone: true };
+  // Tried on a B8 (4.4.3).
+  if (/^4\./.test(v)) return { ok: true, webos: v, experimental: true, standalone: true };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is the same native app as on webOS 9; sam is nudged from the
   // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0).
@@ -2196,6 +2317,16 @@ function status(cb) {
   });
 }
 
+/*
+ * What the view's catalogue carries beside the rows, without status()'s two
+ * luna calls: just after a start they wait their turn behind every other
+ * (lib/children), 3.7 s on a B8 (webOS 4.4.3).
+ */
+function viewStatus() {
+  var c = readConfig();
+  return { layout: layoutOf(c), enabled: c.enabled, supported: supported(), wallpapers: wallpapers.status() };
+}
+
 // LG's Home reads its layout from /mnt/lg/cmn_data/manifest on webOS 9 only;
 // webOS 10 and 11 have no writable layout path (TV-RESEARCH).
 function startLayoutAvailable() { return /^9\./.test(String(webosVersion || '')); }
@@ -2268,6 +2399,9 @@ function init(opts) {
   recovering = false;
   guideCache = { at: 0, data: {} };
   listCache = {};
+  savedLists = null;
+  listsRevision = 0;
+  listLoading = {};
   changing = false;
   settingsQueue = [];
   settingsBusy = false;
@@ -2415,6 +2549,7 @@ module.exports = {
   flush: recent.flush,
   status: status,
   catalogue: catalogue,
+  viewStatus: viewStatus,
   channelList: channelList,
   guide: guide,
   now: now,

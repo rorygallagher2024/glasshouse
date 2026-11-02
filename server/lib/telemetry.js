@@ -225,8 +225,11 @@ function meminfo() {
   if (!raw) return out;
   var lines = raw.split('\n');
   for (var i = 0; i < lines.length; i++) {
-    var m = lines[i].match(/^(\w+):\s+(\d+)/);
-    if (m) out[m[1]] = parseInt(m[2], 10);
+    var line = lines[i];
+    if (line.indexOf('Mem') === 0 || line.indexOf('Swap') === 0) {
+      var m = line.match(/^(\w+):\s+(\d+)/);
+      if (m) out[m[1]] = parseInt(m[2], 10);
+    }
   }
   return out;
 }
@@ -288,8 +291,8 @@ function socTempMillidegrees() {
   return (t !== null && t > 0) ? t : null;
 }
 
-function socTemp() {
-  var mt = socTempMillidegrees();
+function socTemp(mt) {
+  if (mt === undefined) mt = socTempMillidegrees();
   var t = mt === null ? null : Math.round(mt / 1000);
   return t > 0 ? t : null;
 }
@@ -310,18 +313,6 @@ var CPU_WINDOW_MS = 5000;
 // publish keeps its own, so a dashboard open in standby does not shrink the
 // minute that each published figure stands for to its last few seconds.
 var cpuWindows = {};
-function readCoreTicks() {
-  var now = {};
-  var lines = (readTrimmed('/proc/stat') || '').split('\n');
-  for (var i = 0; i < lines.length; i++) {
-    var m = lines[i].match(/^cpu(\d+)\s+(.*)$/);
-    if (!m) continue;
-    var f = m[2].trim().split(/\s+/).map(Number), total = 0;
-    for (var j = 0; j < f.length; j++) total += f[j] || 0;
-    now[m[1]] = { total: total, idle: (f[3] || 0) + (f[4] || 0) };
-  }
-  return now;
-}
 
 /*
  * Time each online core has spent in each mode since boot, in USER_HZ ticks,
@@ -330,31 +321,46 @@ function readCoreTicks() {
  * counts them in user and nice already.
  */
 var CPU_MODES = ['user', 'nice', 'system', 'idle', 'iowait', 'irq', 'softirq', 'steal'];
-function cpuTimes() {
-  var out = { cpus: {}, btime: null };
-  var lines = (readTrimmed('/proc/stat') || '').split('\n');
+
+function parseProcStat(raw) {
+  var ticks = {}, times = { cpus: {}, btime: null };
+  var lines = (raw || '').split('\n');
   for (var i = 0; i < lines.length; i++) {
-    var m = lines[i].match(/^cpu(\d+)\s+(.*)$/);
-    if (m) {
-      var f = m[2].trim().split(/\s+/), modes = {};
-      for (var j = 0; j < CPU_MODES.length; j++) {
-        var v = parseInt(f[j], 10);
-        if (!isNaN(v)) modes[CPU_MODES[j]] = v;
+    var line = lines[i];
+    if (line.indexOf('cpu') === 0 && line.length > 3 && line.charAt(3) !== ' ') {
+      var m = line.match(/^cpu(\d+)\s+(.*)$/);
+      if (m) {
+        var f = m[2].trim().split(/\s+/).map(Number), total = 0, modes = {};
+        for (var j = 0; j < f.length; j++) {
+          total += f[j] || 0;
+          if (j < CPU_MODES.length && !isNaN(f[j])) modes[CPU_MODES[j]] = f[j];
+        }
+        ticks[m[1]] = { total: total, idle: (f[3] || 0) + (f[4] || 0) };
+        times.cpus[m[1]] = modes;
+        continue;
       }
-      out.cpus[m[1]] = modes;
-      continue;
     }
-    var b = lines[i].match(/^btime\s+(\d+)/);
-    if (b) out.btime = parseInt(b[1], 10);
+    if (line.indexOf('btime') === 0) {
+      var b = line.match(/^btime\s+(\d+)/);
+      if (b) times.btime = parseInt(b[1], 10);
+    }
   }
-  return out;
+  return { ticks: ticks, times: times };
 }
 
-function statCpu(totalCores, at, reader, minMs) {
+function readCoreTicks() {
+  return parseProcStat(readTrimmed('/proc/stat')).ticks;
+}
+
+function cpuTimes() {
+  return parseProcStat(readTrimmed('/proc/stat')).times;
+}
+
+function statCpu(totalCores, at, reader, minMs, ticks) {
   var t = at || Date.now();
   var w = cpuWindows[reader || 'stats'] || (cpuWindows[reader || 'stats'] = { prev: null, last: { cores: {}, overall: null } });
   if (w.prev && t - w.prev.time < (minMs === undefined ? CPU_WINDOW_MS : minMs)) return w.last;
-  var now = readCoreTicks();
+  var now = ticks || readCoreTicks();
   var prev = w.prev;
   w.prev = { time: t, ticks: now };
   if (!prev) return w.last;
@@ -414,9 +420,17 @@ function socHz() {
   return (hz >= 100e6 && hz <= 10000e6) ? hz : null;
 }
 
-function socMhz() {
-  var hz = socHz();
+function socMhz(hz) {
+  if (hz === undefined) hz = socHz();
   return hz === null ? null : Math.round(hz / 1e6);
+}
+
+var CPU_PRESENT_CACHE = null;
+function presentCpus() {
+  if (CPU_PRESENT_CACHE !== null) return CPU_PRESENT_CACHE;
+  var raw = readTrimmed('/sys/devices/system/cpu/present');
+  CPU_PRESENT_CACHE = cpuRange(raw);
+  return CPU_PRESENT_CACHE;
 }
 
 function swapBacking() {
@@ -1266,8 +1280,8 @@ function gpuClockHz() {
   return m ? parseInt(m[1], 10) : null;
 }
 
-function gpuClockMhz() {
-  var hz = gpuClockHz();
+function gpuClockMhz(hz) {
+  if (hz === undefined) hz = gpuClockHz();
   return hz === null ? null : Math.round(hz / 1000000);
 }
 
@@ -1648,6 +1662,7 @@ function clearCache() {
   lastStats = null;
   lastAppsScan = 0;
   lastLightSensorProbe = 0;
+  CPU_PRESENT_CACHE = null;
 }
 
 /*
@@ -1722,9 +1737,10 @@ function collectStats(cb) {
   var coreMatch = status.match(/load:\s*([\d\s]+)/);
   var coreSlots = coreMatch ? coreMatch[1].trim().split(/\s+/).map(Number) : [];
   var liveCpus = onlineCpus(status);
-  var present = cpuRange(readTrimmed('/sys/devices/system/cpu/present'));
+  var present = presentCpus();
   var coresTotal = present ? present.length : coreSlots.length;
-  var cpu = statCpu(coresTotal);
+  var statData = parseProcStat(readTrimmed('/proc/stat'));
+  var cpu = statCpu(coresTotal, undefined, undefined, undefined, statData.ticks);
   var coreLoads = [];
   var measured = Object.keys(cpu.cores).sort(function (a, b) { return Number(a) - Number(b); });
   if (measured.length) {
@@ -1749,8 +1765,12 @@ function collectStats(cb) {
   if (n) prevNet = n;
 
   var peInfo = getPictureEngineInfo();
-  var times = cpuTimes();
+  var times = statData.times;
   var uptimeSec = Math.floor(parseFloat(readTrimmed('/proc/uptime') || '0'));
+  var tempMilli = socTempMillidegrees();
+  var temp = socTemp(tempMilli);
+  var hz = socHz();
+  var mhz = socMhz(hz);
 
   var devCfg = (configObj && configObj.device) || {};
   var ip4 = localAddress4();
@@ -1781,8 +1801,8 @@ function collectStats(cb) {
       tcon_module: HARDWARE_INFO.tconModule
     } : null,
     remote: remoteInfo(),
-    temp: socTemp(),
-    tempMillidegrees: socTempMillidegrees(),
+    temp: temp,
+    tempMillidegrees: tempMilli,
     temps: null,
     load: cpu.overall !== null ? cpu.overall
       : coreLoads.length
@@ -1791,8 +1811,8 @@ function collectStats(cb) {
     loadPeak: coreLoads.length
       ? Math.max.apply(null, coreLoads)
       : toInt(readTrimmed('/proc/lg/pm/current_load'), null),
-    mhz: socMhz(),
-    cpuHz: socHz(),
+    mhz: mhz,
+    cpuHz: hz,
     cpuTimes: times.cpus,
     cores: coreLoads,
     coresTotal: coresTotal || coreSlots.length,
@@ -1887,8 +1907,9 @@ function collectStats(cb) {
     if (os.quickStartMode !== undefined) {
       out.quickBoot = os.quickStartMode === 'on';
     }
-    out.gpuMhz = gpuClockMhz();
-    out.gpuHz = gpuClockHz();
+    var gpuHz = gpuClockHz();
+    out.gpuMhz = gpuClockMhz(gpuHz);
+    out.gpuHz = gpuHz;
 
   lunaCachedFn('com.webos.service.settings/getSystemSettings',
        { category: 'network', keys: ['wolwowlOnOff'] }, 60000, function (nw) {

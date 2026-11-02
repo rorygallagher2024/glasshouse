@@ -56,6 +56,18 @@ function answers(port) {
   });
 }
 
+
+/*
+ * Waits for what should happen, up to a few seconds, rather than a fixed time:
+ * replies arrive in real time, after a faked clock has moved on, and a slow CI
+ * runner can take longer than a wait that is enough on a laptop.
+ */
+async function waitUntil(page, ready, ms = 4000) {
+  const until = Date.now() + ms;
+  while (!(await ready()) && Date.now() < until) await page.waitForTimeout(20);
+  return ready();
+}
+
 async function startServer() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'glasshouse-dashboards-'));
   const files = require(path.join(ROOT, 'test', 'mocks', 'mock-env')).createMockEnv().files;
@@ -237,6 +249,92 @@ async function visitHomePicture(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// The TV's tile, Keep the preview on and Preview in the tile.
+async function visitHomePreviewOptions(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home preview options: ' + e.message));
+  const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: ['one'], hintSeen: true, searchHintSeen: true,
+    livePreview: true, previewAlways: false, previewInTile: false, picture: false };
+  let version = 1, now = { kind: 'input', port: 1 };
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.load = function () {};
+    HTMLMediaElement.prototype.pause = function () {};
+    HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+  });
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: version,
+      apps: [{ id: 'app', title: 'App' }],
+      devices: [{ id: 'tv', name: 'TV', input: 'tv', tuner: true, port: 0, channel: { id: 'two', number: '2', name: 'Two' } },
+        { id: 'player', name: 'Player', port: 1 }],
+      channels: [{ id: 'one', name: 'One', number: '1' }], sources: { channels: 2 },
+      order: { app: ['app', 'lg-home'], dev: ['tv', 'player'], ch: ['one'] } });
+    if (url.pathname.endsWith('/now')) return reply(now);
+    if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
+    if (url.pathname.endsWith('/signal')) return reply({ ok: true, signal: true });
+    if (url.pathname.endsWith('/picture')) return reply({ ok: true, signal: { width: 1920, height: 1080, hz: 25, hdr: 'sdr' } });
+    return reply({ ok: true, build: 'preview', layoutVersion: version });
+  });
+  async function changeLayout(change) {
+    Object.assign(layout, change);
+    version++;
+    const updated = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    await page.clock.fastForward(5000);
+    await updated;
+    await page.waitForTimeout(100);
+  }
+  const source = () => page.evaluate(() => {
+    const s = document.querySelector('#pvVideo source');
+    return s ? s.getAttribute('type') + ' ' + s.getAttribute('src') : null;
+  });
+  const shownIn = () => page.evaluate(() => {
+    const pv = document.getElementById('preview'), tile = pv.parentNode.closest && pv.parentNode.closest('.tile');
+    return tile ? tile.querySelector('.nm').textContent : pv.parentNode.id;
+  });
+  async function rest() {
+    await page.clock.fastForward(400);
+    await page.waitForTimeout(100);
+    if (await page.locator('#pvVideo source').count()) await page.locator('#pvVideo').dispatchEvent('playing');
+    await page.waitForTimeout(50);
+  }
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    // Apps first: nothing to preview there unless kept on.
+    await rest();
+    if (await source()) problems.push('Home preview options: an app tile had a preview');
+    await page.keyboard.press('ArrowDown');
+    await rest();
+    if (await source() !== 'service/webos-broadcast-preview tv://two') problems.push('Home preview options: the TV tile did not preview its last channel, ' + await source());
+    if (await shownIn() !== 'now') problems.push('Home preview options: the preview was not beside the clock');
+    await changeLayout({ previewInTile: true });
+    if (await shownIn() !== 'TV') problems.push('Home preview options: Preview in the tile left it at ' + await shownIn());
+    if (await page.locator('#now.previewing').count()) problems.push('Home preview options: the top strip still named the preview in the tile');
+    // A rebuilt row keeps the preview in its tile.
+    await changeLayout({ hintSeen: false });
+    await changeLayout({ hintSeen: true });
+    if (await shownIn() !== 'TV') problems.push('Home preview options: a rebuilt row lost the preview, ' + await shownIn());
+    await page.keyboard.press('ArrowRight');
+    await rest();
+    if (await source() !== 'service/webos-external ext://hdmi:1' || await shownIn() !== 'Player') problems.push('Home preview options: the input tile did not take the preview');
+    await page.keyboard.press('ArrowUp');
+    await rest();
+    if (await source()) problems.push('Home preview options: the preview stayed with Keep the preview on off');
+    await changeLayout({ previewAlways: true });
+    await rest();
+    if (await source() !== 'service/webos-external ext://hdmi:1' || await shownIn() !== 'Player') problems.push('Home preview options: Keep the preview on did not show the input last watched');
+    now = { kind: 'app' };
+    await changeLayout({ previewInTile: false });
+    if (await shownIn() !== 'now') problems.push('Home preview options: switching Preview in the tile off left it in a tile');
+  } catch (e) {
+    problems.push('Home preview options: ' + e.message);
+  }
+  await page.close();
+}
+
 async function visitHomePreview(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home preview: ' + e.message));
@@ -289,9 +387,13 @@ async function visitHomePreview(browser, base, problems) {
     await page.clock.fastForward(1000);
     await page.waitForTimeout(100);
   }
+  const waitFor = ready => waitUntil(page, ready);
   async function checkDetails(on, label) {
-    if (await page.locator('#pvInfo').isVisible() !== on) problems.push('Home preview: ' + label);
-    if (on && await page.locator('#pvMode').textContent() !== 'Cinema') problems.push('Home preview: missing picture mode');
+    // Shown details are waited for; hidden ones are checked as they are, so
+    // details that appear late are not missed.
+    const shown = on ? await waitFor(() => page.locator('#pvInfo').isVisible()) : await page.locator('#pvInfo').isVisible();
+    if (shown !== on) problems.push('Home preview: ' + label);
+    if (on && !await waitFor(async () => await page.locator('#pvMode').textContent() === 'Cinema')) problems.push('Home preview: missing picture mode');
   }
   try {
     await page.clock.install();
@@ -314,7 +416,7 @@ async function visitHomePreview(browser, base, problems) {
     await changeLayout({ livePreview: true, picture: true });
     holdPicture = true;
     await startPreview();
-    if (!latePicture) throw new Error('no preview picture reply to delay');
+    if (!await waitFor(() => !!latePicture)) throw new Error('no preview picture reply to delay');
     await changeLayout({ picture: false });
     await latePicture();
     await page.waitForTimeout(100);
@@ -329,8 +431,7 @@ async function visitHomePreview(browser, base, problems) {
     await changeLayout({ livePreview: true });
     await startPreview();
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(100);
-    if (!lateOpen || !lateGuide) throw new Error('no launch or guide reply to delay');
+    if (!await waitFor(() => !!(lateOpen && lateGuide))) throw new Error('no launch or guide reply to delay');
     await lateGuide();
     await page.waitForTimeout(100);
     await page.clock.fastForward(400);
@@ -341,8 +442,7 @@ async function visitHomePreview(browser, base, problems) {
     if (!await page.locator('#pvVideo source').count()) problems.push('Home preview: a refused launch prevented retrying its preview');
     lateOpen = null;
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(100);
-    if (!lateOpen) throw new Error('no second launch to complete');
+    if (!await waitFor(() => !!lateOpen)) throw new Error('no second launch to complete');
     await lateOpen(true);
     await changeLayout({ showCec: false });
     await page.clock.fastForward(400);
@@ -748,14 +848,14 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
     await page.waitForTimeout(80);
     if (!await faded()) problems.push('Home fade: opening a tile did not fade out');
     if (opened.length) problems.push('Home fade: the tile opened before the fade was over');
-    await page.waitForTimeout(500);
+    await waitUntil(page, () => opened.length > 0);
     if (opened.length !== 1 || opened[0].id !== 'netflix') problems.push('Home fade: the tile did not open after the fade');
     else if (opened[0].at - pressedAt < 300) problems.push('Home fade: the tile opened ' + (opened[0].at - pressedAt) + ' ms after OK, before the fade');
     // Off screen and back: dark, then in.
     await visible(true);
     if (!await faded()) problems.push('Home fade: off screen, the view was not left dark');
     await visible(false);
-    await page.waitForTimeout(500);
+    await waitUntil(page, async () => !await faded());
     if (await faded()) problems.push('Home fade: back on screen, the view did not fade in');
 
     // Search opens over Home: no fade, and opened at once.
@@ -1344,14 +1444,17 @@ async function visitHomeUploads(browser, base, problems) {
  * Home at power-on among them, usable without Glasshouse Home; and
  * with Glasshouse Home on, LG's Home's layout and hidden system apps are
  * left out (lgHomeOptions in lib/routes.js offers no tile hiding then).
+ * The banner's picture shows only where the layout offers it (webOS 10).
  */
 async function visitHomeAvailability(browser, base, problems) {
-  const lgHome = enabled => ({ writable: true, glasshouseHome: enabled,
-    homeScreen: { parts: [{ id: 'banner', title: 'Banner', desc: 'The banner.', shown: true }], inputs: null, experimental: null },
+  const lgHome = (enabled, banner) => ({ writable: true, glasshouseHome: enabled,
+    homeScreen: { parts: [{ id: 'banner', title: 'Banner', desc: 'The banner.', shown: true }], inputs: null, experimental: null, banner: banner || null },
     tileHidingAvailable: !enabled, tileHidingEnabled: false, systemTiles: [], hiddenCount: 0 });
   const cases = [
     { name: 'unavailable', st: { available: false, enabled: false }, glasshouse: false },
     { name: 'LG\'s Home only', st: { available: true, enabled: false, lgHomeAvailable: true, lgHome: lgHome(false), homeAutoLaunch: false }, glasshouse: false },
+    { name: 'webOS 10\'s banner', st: { available: true, enabled: false, lgHomeAvailable: true, homeAutoLaunch: false,
+      lgHome: lgHome(false, { choice: 'black', own: false, width: 3492, height: 1685 }) }, glasshouse: false, banner: true },
     { name: 'Glasshouse Home on', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true) }, glasshouse: true },
     // webOS 5 and 6, where each switch restarts the app manager: their note shows there only.
     { name: 'webOS 6', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true),
@@ -1387,6 +1490,16 @@ async function visitHomeAvailability(browser, base, problems) {
         fail('Open Home at power-on missing or unusable');
       if (!c.glasshouse && await page.locator('#home-picture-row').isVisible()) fail('Glasshouse Home\'s options shown without it');
       if (await page.locator('#disc-homescreen').isVisible() === st.enabled) fail('LG\'s Home layout ' + (st.enabled ? 'shown with Glasshouse Home on' : 'missing'));
+      if (!st.enabled) {
+        await page.locator('#disc-homescreen summary').click();
+        if (await page.locator('#apps-home-banner').isVisible() !== !!c.banner) fail('banner picture ' + (c.banner ? 'missing' : 'shown where it cannot be changed'));
+      }
+      if (c.banner) {
+        const pressed = await page.locator('#apps-home-banner-choice button[aria-pressed="true"]').allTextContents();
+        if (pressed.join() !== 'Black') fail('banner picture chosen: ' + pressed.join());
+        if (await page.locator('#btn-home-banner-own').textContent() !== 'Your own…') fail('Your own does not ask for an upload before one is made');
+        if (await page.locator('#btn-home-banner-replace').count()) fail('Upload another offered with nothing uploaded');
+      }
     } finally { await page.close(); }
   }
 }
@@ -1970,13 +2083,13 @@ async function visitHomeInternetTv(browser, base, problems) {
   ];
   const now = Date.now(), half = 30 * 60000, at = Math.floor(now / half) * half;
   const leases = [], streams = [];
-  let favourites = true;
+  let favourites = true, previewInTile = false;
   await page.route('**/api/home/**', route => {
     const url = new URL(route.request().url());
     const reply = body => route.fulfill({ json: body });
     if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layoutVersion: 1,
       layout: { rows: ['iptv', 'app'], order: { app: [], dev: [], ch: [], iptv: [] }, sort: {}, hidden: { app: [], dev: [], ch: [], iptv: [] },
-        channels: [], hintSeen: true, searchHintSeen: true, livePreview: true, picture: true },
+        channels: [], hintSeen: true, searchHintSeen: true, livePreview: true, previewInTile, picture: true },
       apps: [], devices: [], channels: [], iptv: favourites ? tv : [], iptvStatus: { count: favourites ? 2 : 0, lineup: 2, lineupRevision: 1, label: 'Home IPTV' },
       sources: { channels: 0, iptv: true }, order: { app: ['lg-home'], dev: [], ch: [], iptv: favourites ? ['p1:x1', 'p1:x2'] : [] } });
     if (url.pathname.endsWith('/now')) return reply({ kind: null });
@@ -2061,6 +2174,25 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.waitForTimeout(500);
     if (!/adding/.test(await page.locator('#stage').getAttribute('class'))) fail('the Add channels tile did not open the panel');
     else if (!/UK News/.test(await page.locator('#adItems').textContent())) fail('the add panel did not list the playlist\'s groups');
+    previewInTile = true;
+    await page.goto(base + '/assets/home.html');
+    await page.waitForFunction(() => !!document.getElementById('pvVideo').getAttribute('src'));
+    await playing();
+    if (!await page.locator('.tile #preview').count()) fail('Preview in the tile left the IPTV preview beside the clock');
+    const beforeTile = streams.length;
+    await key(13);
+    await page.waitForTimeout(400);
+    const full = await page.locator('#preview').boundingBox();
+    if (await page.locator('.tile #preview').count() || !full || full.width < 1900 || full.height < 1060) fail('the tile preview did not fill the screen');
+    if (streams.length !== beforeTile) fail('opening the tile preview reopened its stream');
+    await key(461);
+    await page.waitForTimeout(300);
+    if (!await page.locator('.tile #preview').count()) fail('Back did not return the stream to its tile');
+    if (streams.length !== beforeTile) fail('returning to the tile reopened its stream');
+    await key(457);
+    await page.waitForSelector('#stage.guiding .gr');
+    await page.waitForTimeout(900);
+    if (await page.locator('.tile #preview').count() || !await page.locator('#now #preview').isVisible()) fail('the guide left its preview in a hidden tile');
     favourites = false;
     const loaded = page.waitForResponse(r => new URL(r.url()).pathname === '/api/iptv/lineup');
     await page.goto(base + '/assets/home.html');
@@ -2229,7 +2361,7 @@ function groups(web, tv) {
     { tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [] },
     { tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
-    { tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
+    { tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
     { tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeInternetTv, visitIptvChannels, visitHomeRecentsHidden, visitHomeUploads, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide] },
     /*
@@ -2260,6 +2392,6 @@ async function runGroup(browser, group, problems, after) {
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'TV navigation and LCD profile, Home arranging, picture, preview, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide, search, Internet TV and its channel manager checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+              'TV navigation and LCD profile, Home arranging, picture, preview and its options, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide, search, Internet TV and its channel manager checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

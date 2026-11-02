@@ -86,6 +86,14 @@ Use it for remote control, app installation and removal, OLED panel care, privac
       <sub><a href="apps/android/">Glasshouse for Android</a> keeps a list of TVs, shows which are online, wakes them with Wake-on-LAN, and opens each dashboard full screen.</sub>
     </p>
 
+=== "Pane (macOS)"
+
+    <p align="center">
+      <a href="apps/pane/"><img src="https://raw.githubusercontent.com/denisvinciguerra/pane-for-glasshouse/main/docs/screenshots/hero.png" alt="Pane macOS menu-bar remote" width="560"></a>
+      <br>
+      <sub><a href="apps/pane/">Pane</a> is a macOS menu-bar remote to control the TV, switch inputs, and adjust settings without opening a browser.</sub>
+    </p>
+
 ## What it's for
 
 This project is intended to give a rooted webOS TV a useful local control surface instead of requiring the owner to work around the TV's built-in menus, vendor services and cloud dependencies.
@@ -169,6 +177,12 @@ This project is intended to give a rooted webOS TV a useful local control surfac
     ---
 
     A phone app that keeps a list of TVs, shows which are online, wakes them over Wake-on-LAN, and opens each one's dashboard full screen.
+
+-   **[Menu-bar remote for macOS](apps/pane.md)**
+
+    ---
+
+    A macOS menu-bar companion app by the community for controlling TVs, switching inputs, adjusting settings, and running keyboard shortcuts.
 
 </div>
 

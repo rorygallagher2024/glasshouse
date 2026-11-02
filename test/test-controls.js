@@ -419,6 +419,28 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ the time server is saved and the client restarted, a mistyped one refused, and the switch keeps it');
 })();
 
+(function testDeviceName() {
+  var saved = [], republished = 0, renamed = [];
+  var config = { allowControl: true, device: { id: 'lg_c2', name: 'LG OLED42C24LA', model: 'OLED42C24LA' } };
+  controls.init({
+    config: config,
+    writeSettings: function (patch, cb) { saved.push(patch); cb(null); },
+    republishDiscovery: function () { republished++; },
+    deviceNameChanged: function (name) { renamed.push(name); }
+  });
+  controls.doControl('setDeviceName', '  Living   room ', function (res) { assert.deepEqual(res, { ok: true, name: 'Living room' }); });
+  assert.deepEqual(saved, [{ device: { name: 'Living room' } }]);
+  assert.strictEqual(config.device.name, 'Living room', 'shown at once');
+  assert.strictEqual(republished, 1, 'and sent to Home Assistant');
+  assert.deepEqual(renamed, ['Living room']);
+  controls.doControl('setDeviceName', '', function (res) { assert.strictEqual(res.name, 'LG OLED42C24LA'); });
+  assert.deepEqual(saved[1], { device: { name: '' } }, 'empty saved, so the next start names it from the model');
+  assert.strictEqual(config.device.name, 'LG OLED42C24LA', 'and LG and the model meanwhile');
+  controls.doControl('setDeviceName', new Array(66).join('x'), function (res) { assert.strictEqual(res.ok, false); });
+  assert.strictEqual(saved.length, 2, 'a name over 64 characters is not saved');
+  console.log('  ✓ the TV name is saved and applied at once, empty puts back LG and the model, and a long one is refused');
+})();
+
 // updateCheck and updateAutoCheck return unified updateSummary (including daemon health) (#712)
 (function testUpdateCheckSummary() {
   var checkedAge = null;

@@ -27,6 +27,7 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 * **OLED light and backlight:** Live slider adjusting the panel luminance level for the active picture mode.
 * **Energy saving:** Quick toggles for Auto, Off, Minimum, Medium, Maximum, and Screen off energy-saving states.
 * **Sound output routing:** Switch audio output between TV Speaker, HDMI ARC, Optical, Headphone, and Bluetooth.
+* **Bluetooth device:** choose one of the headphones or speakers paired with the TV, then **Connect** or **Disconnect** it. To add a new one, use **Find devices** on the [Audio tab](audio.md#bluetooth-audio).
 
 ## Panel, timers and power
 

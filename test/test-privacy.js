@@ -188,12 +188,61 @@ test('Customer data host cdpsvc is blocked in both Ads & telemetry and Everythin
   assert.ok(fullList.indexOf('gb.cdpsvc.lgtvcommon.com') !== -1, 'regional cdpsvc must be in full mode');
 });
 
+test('webOS 11 upload hosts are in the Ads & telemetry tier, its platform is not', function () {
+  var adsList = privacy.adBlockList('ads');
+  assert.ok(adsList.indexOf('api.adts.lgtvcommon.com') !== -1, 'the ad log script\'s host');
+  assert.ok(adsList.indexOf('aic.api.adts.lgtvcommon.com') !== -1, 'with LG\'s regional prefix');
+  assert.ok(adsList.indexOf('rone-aic.lge.com') !== -1, 'remote diagnostics');
+  assert.strictEqual(adsList.indexOf('tv.wiselg.com'), -1, 'the service platform also serves the Content Store');
+  assert.strictEqual(adsList.indexOf('aic.tv.wiselg.com'), -1);
+});
+
+test('Ads & telemetry blocks the store\'s request logs and the rdx2 report host, the latter once the clock is set', function () {
+  privacy._setSdpGraceActive(false);
+  var list = privacy.adBlockList('ads');
+  ['us.elastic.lgwebostv.com', 'us.rdx2.nextlgsdp.com', 'rdx2.nextlgsdp.com'].forEach(function (host) {
+    assert.ok(list.indexOf(host) !== -1, host + ' must be in ads mode');
+  });
+  assert.strictEqual(list.indexOf('us.nextlgsdp.com'), -1, 'the Content Store host stays reachable');
+  assert.ok(privacy.adBlockList('full').indexOf('us.rdx2.nextlgsdp.com') !== -1, 'and in full mode');
+
+  privacy._setSdpGraceActive(true);
+  list = privacy.adBlockList('ads');
+  assert.strictEqual(list.indexOf('us.rdx2.nextlgsdp.com'), -1, 'reachable while the TV waits for its clock');
+  assert.ok(list.indexOf('us.elastic.lgwebostv.com') !== -1, 'the store logs do not wait');
+  assert.ok(list.indexOf('us.rdx2.lgtvsdp.com') !== -1, 'nor does the lgtvsdp.com rdx2 host');
+  privacy._setSdpGraceActive(false);
+});
+
+test('Ads & telemetry waits for the clock and blocks rdx2.nextlgsdp.com once it is set', function () {
+  privacy._setSdpGraceActive(true);
+  var timeState = { timeValid: false, systemTimeSource: 'system' };
+  privacy.init({ luna: function (uri, params, cb) {
+    if (uri === 'com.webos.service.systemservice/time/getSystemTime') {
+      cb({ returnValue: true, timeValid: timeState.timeValid, systemTimeSource: timeState.systemTimeSource });
+    }
+  } });
+  withTable('ads', function () {
+    privacy.checkBootAdBlock();
+    assert.strictEqual(privacy.isSdpGracePeriodActive(), true, 'open while the time is invalid');
+    assert.ok(!sinkholed(mockEnv.files['/var/lib/tvweb/adblock_hosts'], 'us.rdx2.nextlgsdp.com'));
+    timeState.timeValid = true;
+    timeState.systemTimeSource = 'sdp';
+    privacy._checkSdpClockSync(false);
+    assert.strictEqual(privacy.isSdpGracePeriodActive(), false, 'closed once the sdp time is valid');
+    assert.ok(sinkholed(mockEnv.files['/var/lib/tvweb/adblock_hosts'], 'us.rdx2.nextlgsdp.com'), 'written to the table');
+  });
+  privacy._clearSdpTimer();
+});
+
 test('nextlgsdp.com is omitted while SDP grace period is active', function () {
   privacy._setSdpGraceActive(true);
   assert.strictEqual(privacy.isSdpGracePeriodActive(), true);
   var list = privacy.adBlockList('full');
   assert.strictEqual(list.indexOf('nextlgsdp.com'), -1, 'nextlgsdp omitted during grace period');
   assert.strictEqual(list.indexOf('gb.nextlgsdp.com'), -1, 'regional nextlgsdp omitted during grace period');
+  assert.strictEqual(list.indexOf('tv.wiselg.com'), -1, 'the webOS 11 platform, also the clock source, omitted during grace period');
+  assert.strictEqual(list.indexOf('aic.tv.wiselg.com'), -1, 'and its regional names');
 });
 
 test('SDP grace period is skipped when getSystemTime reports time is already valid on restart', function () {
@@ -243,6 +292,8 @@ test('SDP grace period closes and blocks nextlgsdp.com when finalized', function
   privacy._finalizeSdpBlock('done');
   assert.strictEqual(privacy.isSdpGracePeriodActive(), false);
   assert.ok(privacy.adBlockList('full').indexOf('nextlgsdp.com') !== -1);
+  assert.ok(privacy.adBlockList('full').indexOf('tv.wiselg.com') !== -1, 'the webOS 11 platform once the clock has synced');
+  assert.ok(privacy.adBlockList('full').indexOf('aic.tv.wiselg.com') !== -1, 'with LG\'s regional prefix');
 });
 
 test('SDP grace period stays open past two minutes until the time is valid from any source', function () {
