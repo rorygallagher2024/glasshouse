@@ -16,6 +16,8 @@ Shows the installed version and whether a newer release is out. **Check now** lo
 
 **Update pop-up** shows a pop-up in the browser it is switched on in when a newer release is out, over whichever tab is open, with the release's one-line summary. **Update** installs it the way **Install** does, with its progress in the pop-up, and **Dismiss** leaves it until the next release. It is off by default and kept per browser. Where controls are off, the pop-up only says it is out.
 
+**TV name** is the name under Glasshouse in the sidebar, and the TV's name in Home Assistant. Left empty, it is LG and the model, such as LG OLED42C24LA. A new name shows at once, with no restart.
+
 **Server health** shows the background process uptime and memory footprint on the TV.
 
 **Watch time** counts how long the screen is on, per app and input, for [the Metrics tab](metrics.md#watch-time) and Home Assistant. It is off by default, as it records what the household watches. **Clear history** deletes what has been kept, whether counting is on or off.

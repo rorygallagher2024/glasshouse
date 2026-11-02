@@ -30,6 +30,12 @@
  * the preload manager rewrites an app back into it about 3 s after the app
  * comes to the foreground.
  *
+ * On an OLED77C5PUA (webOS 11.2.0) configd has no supportAppList at all, while
+ * the preload manager still loads LG Channels, YouTube, the browser and Prime
+ * Video at each start. Its own getPreloadPolicy answers the same list, with the
+ * same fields, so that is read where configd has none, and only
+ * setPreloadPolicy is written there, at each start and switch-on as above.
+ *
  * Strict ES5: runs on node 0.12.
  */
 var path = require('path');
@@ -37,13 +43,15 @@ var util = require('./util');
 var msg = require('./say').msg;
 
 var KEY = 'com.webos.service.preloadmanager.supportAppList';
+var POLICY_URI = 'com.webos.service.preloadmanager/getPreloadPolicy';
 
 /*
- * Entries the TV relies on, never offered: Home, the inputs and their guide,
- * screen sharing, voice search and the web app container. Each is under
- * 100 MB, and switching one off risks a slow or broken Home or input.
+ * Entries the TV relies on, never offered: Home, the inputs (HDMI, and USB-C
+ * on a C5) and their guide, screen sharing, voice search and the web app
+ * container. Each is under 100 MB, and switching one off risks a slow or
+ * broken Home or input.
  */
-var ESSENTIAL = /^(com\.webos\.app\.(home|livetv|livemenu|hdmi\d*|miracast(-overlay)?|voice|container|inputcommon)|airplay)$/;
+var ESSENTIAL = /^(com\.webos\.app\.(home|livetv|livemenu|hdmi\d*|usbc\d*|miracast(-overlay)?|voice|container|inputcommon)|airplay)$/;
 
 var lunaFn = null;
 var stateFile = null;
@@ -70,11 +78,16 @@ function writeState(s) {
 function readList(cb) {
   lunaFn('com.webos.service.config/getConfigs', { configNames: [KEY] }, function (r) {
     var list = r && r.configs && r.configs[KEY];
-    cb(Array.isArray(list) ? list : null);
+    if (Array.isArray(list)) return cb(list, 'configd');
+    lunaFn(POLICY_URI, {}, function (p) {
+      var apps = p && p.returnValue && p.applications;
+      cb(Array.isArray(apps) ? apps : null, 'policy');
+    });
   });
 }
 
-function writeList(list, cb) {
+function writeList(list, source, cb) {
+  if (source === 'policy') return cb(true);
   var configs = {};
   configs[KEY] = list;
   lunaFn('com.webos.service.config/setConfigs', { configs: configs }, function (r) {
@@ -167,7 +180,7 @@ function setPreloadOff(id, off, cb) {
   if (!lunaFn) return cb({ ok: false, error: 'no luna wrapper' });
   id = String(id || '');
   if (!id || ESSENTIAL.test(id)) return cb({ ok: false, error: msg('srv.preload.notOffered', 'This app is not offered here') });
-  readList(function (list) {
+  readList(function (list, source) {
     if (!list) return cb({ ok: false, error: msg('srv.preload.unsupported', 'This TV has no list of preloaded apps') });
     var entry = null;
     list.forEach(function (e) { if (e && e.id === id) entry = e; });
@@ -190,7 +203,7 @@ function setPreloadOff(id, off, cb) {
       else if (e.id === id) o.isEnabled = enabled;
       return o;
     });
-    writeList(want, function (ok) {
+    writeList(want, source, function (ok) {
       if (!ok) return cb({ ok: false, error: msg('srv.preload.saveFailed', 'The TV did not save the change') });
       try { writeState(state); } catch (e) {
         return cb({ ok: false, error: msg('srv.preload.stateFailed', 'could not save the setting: {error}', { error: e.message }) });
@@ -224,15 +237,16 @@ function reapply(cb) {
   if (!lunaFn) return cb();
   var state = readState();
   if (!state.off.length || !state.lg) return cb();
-  readList(function (list) {
+  readList(function (list, source) {
     if (!list) return cb();
+    if (source === 'policy') return resend(cb);
     var want = listWithout(list, state.off);
     var lost = 0;
     state.off.forEach(function (id) {
       list.forEach(function (e) { if (e && e.id === id && e.isEnabled !== false) lost++; });
     });
     if (sameList(want, list)) return resend(cb);
-    writeList(want, function (ok) {
+    writeList(want, source, function (ok) {
       console.log('preload: ' + (ok ? 'switched ' + lost + ' app(s) off again' : 'could not switch apps off again'));
       if (!ok) return cb();
       resend(cb);
