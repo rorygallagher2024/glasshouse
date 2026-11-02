@@ -49,6 +49,15 @@ The audio coming in, where the TV sends it, and the return channel it has
 negotiated with the receiver (ARC, eARC or none). The negotiated link is
 separate from the eARC setting.
 
+Some older TVs, such as a C9, cannot say which return channel they use. When
+one soundbar or receiver is connected over HDMI, the tab then shows **HDMI
+audio device detected**, with its name and HDMI port. That says it is plugged
+in, not that ARC or eARC is working or which formats it takes.
+
+**No audio reported** means nothing is playing that the TV can see. **Live
+audio status unavailable** means the TV cannot report what audio comes in; it
+does not mean the sound has stopped.
+
 Below it, each format as the TV advertises it to the current HDMI source, and
 as the ARC or eARC receiver advertises it. Unknown stays unknown when the TV
 does not report a value. A DTS-HD entry does not establish DTS:X. A listed

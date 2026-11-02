@@ -2575,5 +2575,9 @@
  "home.motion.scroll": {"text": "تمرير سلس", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "ينزلق الصف إلى المربع المحدد بدلًا من القفز إليه.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "لوحات منزلقة", "from": "Sliding panels"},
- "home.motion.slideDesc": {"text": "تنزلق التطبيقات الأخيرة والبحث والمزيد من التطبيقات للداخل والخارج بدلًا من الظهور فورًا.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
+ "home.motion.slideDesc": {"text": "تنزلق التطبيقات الأخيرة والبحث والمزيد من التطبيقات للداخل والخارج بدلًا من الظهور فورًا.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."},
+ "audio.deviceDetected": {"text": "تم اكتشاف جهاز صوت HDMI", "from": "HDMI audio device detected"},
+ "audio.receiverDetectedUnknown": {"text": "يتعرّف التلفاز على جهاز الصوت HDMI هذا، لكنه لا يبلّغ عن نوع اتصال ARC/eARC أو التنسيقات التي يدعمها جهاز الاستقبال. تحقّق من عرض Audio In في جهاز الاستقبال للتأكد من وصول الصوت.", "from": "The TV identifies this HDMI audio device, but does not report its ARC/eARC link type or receiver formats. Check the receiver’s Audio In display to confirm reception."},
+ "audio.receiverPort": {"text": "HDMI {port}", "from": "HDMI {port}"},
+ "audio.inputUnavailable": {"text": "حالة الصوت الحالية غير متاحة", "from": "Live audio status unavailable"}
 }

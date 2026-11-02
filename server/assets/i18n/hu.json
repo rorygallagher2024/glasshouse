@@ -2575,5 +2575,9 @@
  "home.motion.scroll": {"text": "Sima görgetés", "from": "Smooth scrolling"},
  "home.motion.scrollDesc": {"text": "A sor a kiválasztott csempéhez siklik, ahelyett hogy odaugrana.", "from": "A row glides to the chosen tile, rather than jumping to it."},
  "home.motion.slide": {"text": "Becsúszó panelek", "from": "Sliding panels"},
- "home.motion.slideDesc": {"text": "A Legutóbbi alkalmazások, a Keresés és a További alkalmazások be- és kicsúsznak, ahelyett hogy egyszerre jelennének meg.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."}
+ "home.motion.slideDesc": {"text": "A Legutóbbi alkalmazások, a Keresés és a További alkalmazások be- és kicsúsznak, ahelyett hogy egyszerre jelennének meg.", "from": "Recent apps, Search and More apps slide in and out, rather than appearing at once."},
+ "audio.deviceDetected": {"text": "HDMI-hangeszköz észlelve", "from": "HDMI audio device detected"},
+ "audio.receiverDetectedUnknown": {"text": "A TV felismeri ezt a HDMI-hangeszközt, de nem jelenti az ARC/eARC kapcsolat típusát vagy a vevő formátumait. A vétel megerősítéséhez ellenőrizze a vevő Audio In kijelzését.", "from": "The TV identifies this HDMI audio device, but does not report its ARC/eARC link type or receiver formats. Check the receiver’s Audio In display to confirm reception."},
+ "audio.receiverPort": {"text": "HDMI {port}", "from": "HDMI {port}"},
+ "audio.inputUnavailable": {"text": "Az aktuális hangállapot nem érhető el", "from": "Live audio status unavailable"}
 }
