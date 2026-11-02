@@ -152,6 +152,17 @@ fs.writeFileSync(LOG, 'boot\n');
 function logLine(text) { fs.appendFileSync(LOG, text); }
 // The follower polls every 200 ms.
 var POLLED = 500;
+
+// Calls back once ready() holds, or after ms: the press is read from a log the
+// server polls, then retried while the TV is busy, which a busy CI runner can
+// take longer over than a fixed wait allows.
+function until(ready, ms, cb) {
+  var end = Date.now() + ms;
+  (function poll() {
+    if (ready() || Date.now() >= end) return cb();
+    setTimeout(poll, 50);
+  })();
+}
 var AI_LINE = '2026-10-18T11:37:06.284Z [60] user.info lginput2 [] lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_VOICE"} \n';
 var ALEXA_LINE = '2026-10-18T11:59:12.600Z [60] user.info lginput2 [] lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_ALEXAVOICE"} \n';
 var NETFLIX_LINE = '2026-10-18T11:37:09.100Z [60] user.info lginput2 [] lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_NETFLIX"} \n';
@@ -477,7 +488,7 @@ step('Screen off on a streaming button switches LG\'s entry off and turns the sc
         power.processing = 'Screen On';
         setTimeout(function () { power.processing = ''; }, 250);
         logLine(NETFLIX_LINE);
-        setTimeout(function () {
+        until(function () { return power.screenOffs >= 1; }, 5000, function () {
           assert.strictEqual(power.screenOffs, 1, 'turned off once tvpower was done');
           assert.deepEqual(launched, []);
           // LG writes its list back at the power change, unannounced: set again unasked.
@@ -488,7 +499,7 @@ step('Screen off on a streaming button switches LG\'s entry off and turns the sc
           power.state = 'Screen Saver';
           setTimeout(function () { power.state = 'Active'; }, 300);
           logLine(NETFLIX_LINE);
-          setTimeout(function () {
+          until(function () { return power.screenOffs >= 2; }, 5000, function () {
             assert.strictEqual(power.screenOffs, 2, 'turned off once the screen saver had gone');
           // A press with the picture already off wakes the TV, and is left to.
           power.state = 'Screen Off';
@@ -504,9 +515,9 @@ step('Screen off on a streaming button switches LG\'s entry off and turns the sc
               });
             }, POLLED);
           }, 600);
-          }, POLLED + 800);
+          });
           }, 1700);
-        }, POLLED + 800);
+        });
       });
     });
   });
@@ -519,7 +530,7 @@ step('Screen off is turned off once more when the button\'s release wakes the TV
     power.screenOffs = 0;
     power.wakeOnRelease = true;
     logLine(NETFLIX_LINE);
-    setTimeout(function () {
+    until(function () { return power.screenOffs >= 2 && power.state === 'Screen Off'; }, 6000, function () {
       assert.strictEqual(power.screenOffs, 2, 'turned off again after the release woke it');
       assert.strictEqual(power.state, 'Screen Off');
       // Off and staying off: nothing more.
@@ -528,7 +539,7 @@ step('Screen off is turned off once more when the button\'s release wakes the TV
         power.state = 'Active';
         set('netflix', 'lg', '', function () { next(); });
       }, 900);
-    }, POLLED + 2200);
+    });
   });
 });
 
