@@ -825,6 +825,22 @@ Reported on PR #910 on 27 October 2026.
 - **Exiting an app lands on the last input**, from LG's Exit dialog or Back on
   LG's Apps, not on Home.
 
+## Glasshouse Home's frames (C2, webOS 9.2.2; B8, webOS 4.4.3)
+
+Measured with `scripts/tv.sh <tv> frames` (testing.md), in Alternative View:
+
+- **At rest and scrolling the rows,** the C2 had no frame over 17 ms; the B8
+  had 3 over 33 ms in 30 s of moving along and between rows, the longest
+  67 ms. Home's own work per key was under 5 ms on the C2 and under 15 ms on
+  the B8, once 30 ms.
+- **Opening Recent apps** held the C2's page for 300 to 350 ms each time,
+  one long task. The cards' script took about 10 ms; with the apps'
+  screenshots (480 × 270 JPEGs of about 19 KB, five of them) left out the
+  long task went, and with them decoded off the page's thread
+  (`decoding="async"`) too, the longest frame then being 67 to 100 ms.
+- A contributor's G3 (webOS 9.2.2) missed 25 of about 480 frames in 8 s of
+  continuous scrolling (#955), which the C2 did not reproduce.
+
 ## LG Home's recent apps (G3, webOS 9.2.2)
 
 Read on 19 October 2026 from LG's Home's QML under the Glasshouse Home
