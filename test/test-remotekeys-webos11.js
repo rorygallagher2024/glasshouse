@@ -150,6 +150,11 @@ var servicesMock = {
 var LOG = path.join(dir, 'messages');
 fs.writeFileSync(LOG, 'boot\n');
 function logLine(text) { fs.appendFileSync(LOG, text); }
+// Setting a key starts the server watching the log from its end, and node's
+// watch takes its first look a moment later: a press written before that look
+// is part of what it first sees, so it never reads as a change. A press is
+// written a poll after.
+function afterWatching(fn) { setTimeout(fn, POLLED + 100); }
 // The follower polls every 200 ms.
 var POLLED = 500;
 
@@ -479,7 +484,7 @@ step('Screen off on a streaming button switches LG\'s entry off and turns the sc
     assert.ok(by.guide.noScreenOff, 'not on Guide');
     rk.setRemoteKey('guide', 'open', 'action:screenOff', function (g) {
       assert.strictEqual(g.ok, false, 'refused on Guide');
-      set('netflix', 'open', 'action:screenOff', function () {
+      set('netflix', 'open', 'action:screenOff', function () { afterWatching(function () {
         assert.strictEqual(entry('netflix').isActive, false, 'LG\'s app switched off, as for Nothing');
         assert.ok(rk.isFollowingLog());
         power.screenOffs = 0;
@@ -518,13 +523,13 @@ step('Screen off on a streaming button switches LG\'s entry off and turns the sc
           });
           }, 1700);
         });
-      });
+      }); });
     });
   });
 });
 
 step('Screen off is turned off once more when the button\'s release wakes the TV, and only once', function (next) {
-  set('netflix', 'open', 'action:screenOff', function () {
+  set('netflix', 'open', 'action:screenOff', function () { afterWatching(function () {
     power.state = 'Active';
     power.processing = '';
     power.screenOffs = 0;
@@ -540,7 +545,7 @@ step('Screen off is turned off once more when the button\'s release wakes the TV
         set('netflix', 'lg', '', function () { next(); });
       }, 900);
     });
-  });
+  }); });
 });
 
 step('the Alexa button set blocks Amazon\'s view and opens its app from the log, apart from the AI button; As LG has it releases it', function (next) {
