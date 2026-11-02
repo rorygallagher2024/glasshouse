@@ -2586,5 +2586,9 @@
  "srv.lgs.dbgLogUpload.desc": {"text": "Engedi, hogy a TV elküldje a hibakeresési naplóit az LG-nek. Egyes TV-k minden indításkor visszakapcsolják; az itt választott kikapcsolás megmarad. Az LG menüiben nincs.", "from": "Lets the TV send its debug logs to LG. Some TVs switch it back on at each start; an off chosen here is kept. Not in LG's own menus."},
  "srv.lgs.faultLogUpload": {"text": "Hibanapló feltöltése", "from": "Fault log upload"},
  "srv.lgs.faultLogUpload.desc": {"text": "Engedi, hogy a TV összeomlás- és hibajelentéseket küldjön az LG-nek. Az LG menüiben nincs.", "from": "Lets the TV send crash and fault reports to LG. Not in LG's own menus."},
- "srv.privacy.item.upload": {"text": "{name} be van kapcsolva", "from": "{name} is on"}
+ "srv.privacy.item.upload": {"text": "{name} be van kapcsolva", "from": "{name} is on"},
+ "server.ntp.notTaken": {"text": "A TV nem veszi át az időt a szervertől, így az órája még mindig {out} eltérést mutat. A Glasshouse óránként újrapróbálja.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
+ "server.ntp.outS": {"text": "{s} mp", "from": "{s} s"},
+ "server.ntp.outM": {"text": "{m} perc", "from": "{m} min"},
+ "server.ntp.outHM": {"text": "{h} óra {m} perc", "from": "{h} h {m} min"}
 }

@@ -2586,5 +2586,9 @@
  "srv.lgs.dbgLogUpload.desc": {"text": "Permite que a TV envie os seus registos de depuração para a LG. Algumas TV voltam a ligá-lo a cada arranque; desligado aqui, mantém-se desligado. Não está nos menus da LG.", "from": "Lets the TV send its debug logs to LG. Some TVs switch it back on at each start; an off chosen here is kept. Not in LG's own menus."},
  "srv.lgs.faultLogUpload": {"text": "Envio do registo de falhas", "from": "Fault log upload"},
  "srv.lgs.faultLogUpload.desc": {"text": "Permite que a TV envie relatórios de bloqueios e falhas para a LG. Não está nos menus da LG.", "from": "Lets the TV send crash and fault reports to LG. Not in LG's own menus."},
- "srv.privacy.item.upload": {"text": "{name} está ligado", "from": "{name} is on"}
+ "srv.privacy.item.upload": {"text": "{name} está ligado", "from": "{name} is on"},
+ "server.ntp.notTaken": {"text": "A TV não está a aceitar a hora do servidor, por isso o relógio continua desfasado {out}. O Glasshouse tenta de novo a cada hora.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
+ "server.ntp.outS": {"text": "{s} s", "from": "{s} s"},
+ "server.ntp.outM": {"text": "{m} min", "from": "{m} min"},
+ "server.ntp.outHM": {"text": "{h} h {m} min", "from": "{h} h {m} min"}
 }
