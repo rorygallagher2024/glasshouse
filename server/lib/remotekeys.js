@@ -1141,15 +1141,16 @@ var FAST_REAPPLY_WINDOW_MS = 15000;
 var SCREEN_OFF_REAPPLY_MS = [300, 1500];
 var screenOffAt = 0;
 
-function screenOffFromPress(button, tries) {
+// again: the second try after a release woke the screen, which is not checked for once more.
+function screenOffFromPress(button, tries, again) {
   tries = tries || 1;
   lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
     var state = pw && pw.state;
-    if (state === 'Active' && !pw.processing) return screenOff(button);
+    if (state === 'Active' && !pw.processing) return screenOff(button, again);
     if (state !== 'Active' && state !== 'Screen Saver') {
-      return console.log('remotekeys: ' + button + ' left alone: the TV is ' + (state || 'not answering'));
+      return again ? undefined : console.log('remotekeys: ' + button + ' left alone: the TV is ' + (state || 'not answering'));
     }
-    if (tries < SCREEN_OFF_TRIES) return setTimeout(function () { screenOffFromPress(button, tries + 1); }, SCREEN_OFF_RETRY_MS);
+    if (tries < SCREEN_OFF_TRIES) return setTimeout(function () { screenOffFromPress(button, tries + 1, again); }, SCREEN_OFF_RETRY_MS);
     console.log('remotekeys: ' + button + ' left alone: the TV was still ' + (pw.processing ? 'busy with ' + pw.processing : state) + ' after ' + tries + ' tries');
   });
 }
@@ -1168,7 +1169,8 @@ function screenOff(button, again) {
       lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
         if (!pw || pw.state !== 'Active') return;
         console.log('remotekeys: ' + button + ' woke the screen as it was let go; turned off again');
-        screenOff(button, true);
+        // Through the press's retries, as tvpower can still be finishing the wake.
+        screenOffFromPress(button, 1, true);
       });
     }, SCREEN_OFF_CHECK_MS);
   });

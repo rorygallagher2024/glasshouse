@@ -115,7 +115,15 @@ function luna(uri, params, cb) {
     power.screenOffs++;
     power.state = 'Screen Off';
     // The button's release waking the TV just after, as on a C5 (#1143).
-    if (power.wakeOnRelease) { power.wakeOnRelease = false; setTimeout(function () { power.state = 'Active'; }, 30); }
+    if (power.wakeOnRelease) {
+      power.wakeOnRelease = false;
+      setTimeout(function () {
+        power.state = 'Active';
+        // Still finishing the wake when Glasshouse looks again.
+        power.processing = 'Screen On';
+        setTimeout(function () { power.processing = ''; }, 700);
+      }, 30);
+    }
   } else {
     throw new Error('unexpected call ' + uri);
   }
@@ -520,7 +528,7 @@ step('Screen off is turned off once more when the button\'s release wakes the TV
         power.state = 'Active';
         set('netflix', 'lg', '', function () { next(); });
       }, 900);
-    }, POLLED + 1600);
+    }, POLLED + 2200);
   });
 });
 
