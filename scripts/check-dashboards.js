@@ -2116,6 +2116,12 @@ async function visitHomeInternetTv(browser, base, problems) {
   });
   const key = code => page.evaluate(k => { for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: k, bubbles: true })); }, code);
   const playing = () => page.locator('#pvVideo').dispatchEvent('playing');
+  const fillsTile = () => page.evaluate(() => {
+    const tile = document.querySelector('.row.active .tile.focus'), pv = document.getElementById('preview');
+    if (!tile || !pv) return false;
+    const a = tile.getBoundingClientRect(), b = pv.getBoundingClientRect();
+    return ['left', 'top', 'width', 'height'].every(k => Math.abs(a[k] - b[k]) < 2);
+  });
   try {
     await page.goto(base + '/assets/home.html');
     await page.waitForSelector('.row[data-key="iptv"] .tile');
@@ -2178,16 +2184,16 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.goto(base + '/assets/home.html');
     await page.waitForFunction(() => !!document.getElementById('pvVideo').getAttribute('src'));
     await playing();
-    if (!await page.locator('.tile #preview').count()) fail('Preview in the tile left the IPTV preview beside the clock');
+    if (!await fillsTile()) fail('Preview in the tile left the IPTV preview beside the clock');
     const beforeTile = streams.length;
     await key(13);
     await page.waitForTimeout(400);
     const full = await page.locator('#preview').boundingBox();
-    if (await page.locator('.tile #preview').count() || !full || full.width < 1900 || full.height < 1060) fail('the tile preview did not fill the screen');
+    if (!full || full.width < 1900 || full.height < 1060) fail('the tile preview did not fill the screen');
     if (streams.length !== beforeTile) fail('opening the tile preview reopened its stream');
     await key(461);
     await page.waitForTimeout(300);
-    if (!await page.locator('.tile #preview').count()) fail('Back did not return the stream to its tile');
+    if (!await fillsTile()) fail('Back did not return the stream to its tile');
     if (streams.length !== beforeTile) fail('returning to the tile reopened its stream');
     await key(457);
     await page.waitForSelector('#stage.guiding .gr');
@@ -2325,11 +2331,14 @@ async function visitIptvChannels(browser, base, problems) {
   page.on('pageerror', e => fail('TV app: ' + e.message));
   try {
     await route(page);
+    await page.route('**/api/home?*', r => r.fulfill({ json: {
+      ok: true, supported: { ok: true }, enabled: true, writable: true,
+      layout: { rows: ['iptv'], order: { iptv: [] }, sort: {}, hidden: {}, channels: [] },
+      catalogue: { sources: { iptv: true }, order: { iptv: [] }, iptv: [] }
+    } }));
     await page.goto(base + '/assets/dashboard.html?tab=home');
-    // This fake TV has no Glasshouse Home, so no Home tab to open the lineup from: the lists are
-    // shown on the tab that is open instead, opened as the Home tab's row would.
-    await page.waitForFunction(() => typeof rows !== 'undefined' && rows.length > 3, null, { timeout: 15000 });
-    await page.evaluate(() => { ['tvLineup', 'tvSection', 'tvGroups', 'tvGroup'].forEach(k => { SUBTAB[k] = T().key; }); openTv('tvLineup'); });
+    await page.locator('#rows .row').filter({ hasText: 'Internet TV channels' }).click();
+    await page.keyboard.press('Enter');
     await page.waitForFunction(() => rows.some(r => r.act === 'tvSection'));
     await page.evaluate(() => { sel = rows.findIndex(r => r.key === 'tvGroups'); render(); });
     await page.keyboard.press('Enter');

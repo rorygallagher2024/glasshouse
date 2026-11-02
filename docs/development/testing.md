@@ -398,6 +398,8 @@ provider leaving the chosen provider's groups in place.
 With **Preview in the tile** on, the browser check verifies the IPTV preview
 fills its tile, opens at full-screen size and returns without reopening the
 stream, and leaves the hidden rows when the guide opens.
+The TV app's manager check opens the lineup through the Home tab with
+Glasshouse Home enabled in its API fixture, then uses the remote keys.
 The audio route checks use a readable stream for request bodies, including
 the UTF-8 decoding used by every JSON POST.
 The split-character route fixture uses the server's buffer helper so it

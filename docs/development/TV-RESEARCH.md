@@ -469,6 +469,16 @@ Cloudflare) and a fake provider on the same network (`scripts/fake-iptv.js`):
 
 webOS 7 and 10 were not tried.
 
+On 2 November 2026, moving a playing IPTV preview's element from its tile
+back beside the clock for full-screen playback left the G3's picture black.
+The video still reported `paused: false` and `readyState: 4`, but its time
+returned to zero and `com.webos.media/getForegroundAppInfo` no longer listed
+its media session. Calling `play()` again did not recover that session.
+Keeping the element attached and positioning it over the tile preserved the
+same media ID through full screen and Back, with playback time advancing
+from 43.127 to 50.151 seconds. Internet TV uses that placement; the guide
+returns the picture beside the clock without moving its parent.
+
 ## Broadcast HDR and preview metadata (G3, webOS 9.2.2)
 
 Read on 29 October 2026 from the office OLED55G36LA, during an existing

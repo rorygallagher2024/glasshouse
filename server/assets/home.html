@@ -106,11 +106,12 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #now.previewing #plate{display:none}
 /* With Preview in the tile, the preview fills the tile it shows: the tile's
    own text over a shade on the picture's left, nothing below it. */
-#rows #preview{position:absolute;left:0;top:0;width:100%;height:100%;margin:0;box-shadow:none;border-radius:inherit;overflow:hidden;z-index:0}
-#rows #preview:after{border:0;background:-webkit-linear-gradient(left,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15));
+#rows #preview,#now #preview.intile{position:absolute;left:0;top:0;width:100%;height:100%;margin:0;box-shadow:none;border-radius:inherit;overflow:hidden;z-index:0}
+#rows #preview:after,#preview.intile:after{border:0;background:-webkit-linear-gradient(left,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15));
   background:linear-gradient(90deg,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15))}
-#rows #preview video{object-fit:cover}
-#rows #preview.info #pvInfo,#rows #preview.blank{display:none}
+#rows #preview video,#preview.intile video{object-fit:cover}
+#rows #preview.info #pvInfo,#rows #preview.blank,#preview.intile #pvInfo,#preview.intile.blank{display:none}
+.tile.tv.live{background:transparent}
 .tile.live>div{position:relative;z-index:1}
 .row .tile.live{opacity:1}
 
@@ -1168,6 +1169,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     rowsScroll.timer = setInterval(function () {
       var k = Math.min(1, (Date.now() - start) / 200);
       box.scrollTop = from + (y - from) * (1 - Math.pow(1 - k, 3));
+      if (tvPreviewTile) placeTvPreview(tvPreviewTile);
       if (k >= 1) clearInterval(rowsScroll.timer);
     }, 16);
   }
@@ -1307,6 +1309,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (busy) nextFrame(tick);
       else animating = false;
     }
+    if (tvPreviewTile) placeTvPreview(tvPreviewTile);
     if (busy) return;
     settle();
     // The minute's refresh, held back while a row moved (renderWhenStill).
@@ -1819,6 +1822,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // Where the preview sits beside the clock, to go back to from a tile.
   var previewHome = { parent: null, next: null };
+  var tvPreviewTile = null;
 
   function inTile() { return !!layout && layout.previewInTile === true && !guide.open; }
 
@@ -1830,6 +1834,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Back beside the clock: before the rows are rebuilt, and as it stops.
   function parkPreview() {
     var pv = $('preview');
+    if (tvPreviewTile) {
+      tvPreviewTile.className = tvPreviewTile.className.replace(/ live\b/g, '');
+      tvPreviewTile = null;
+      pv.className = pv.className.replace(/ intile\b/g, '');
+      pv.style.left = pv.style.top = pv.style.width = pv.style.height = pv.style.borderRadius = pv.style.clip = '';
+    }
     if (!previewHome.parent) return;
     var tile = pv.parentNode;
     if (tile === previewHome.parent) return;
@@ -1843,10 +1853,34 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!previewHome.parent) { previewHome.parent = pv.parentNode; previewHome.next = pv.nextSibling; }
     var tile = inTile() && pv.className ? previewTile(tilePreview.target) : null;
     if (!tile) return parkPreview();
+    if (tilePreview.target.tv) {
+      if (tile !== tvPreviewTile) {
+        parkPreview();
+        tvPreviewTile = tile;
+        tile.className += ' live';
+      }
+      return placeTvPreview(tile);
+    }
     if (pv.parentNode === tile) return;
     parkPreview();
     tile.appendChild(pv);
     tile.className += ' live';
+  }
+
+  // An IPTV video stays attached: moving it between parents loses its native
+  // player on webOS 9.2.2, even while paused is false and readyState is 4.
+  function placeTvPreview(tile) {
+    var pv = $('preview'), rect = tile.getBoundingClientRect(), strip = $('now').getBoundingClientRect(), scale = strip.width / 1920;
+    var wrap = tile.parentNode.parentNode.getBoundingClientRect(), rows = $('rows').getBoundingClientRect();
+    if (pv.className.indexOf(' intile') === -1) pv.className += ' intile';
+    pv.style.left = (rect.left - strip.left) / scale + 'px';
+    pv.style.top = (rect.top - strip.top) / scale + 'px';
+    pv.style.width = rect.width / scale + 'px';
+    pv.style.height = rect.height / scale + 'px';
+    pv.style.borderRadius = window.getComputedStyle(tile).borderRadius;
+    pv.style.clip = 'rect(' + Math.max(0, rows.top - rect.top) / scale + 'px,' +
+      Math.max(0, Math.min(rect.right, wrap.right) - rect.left) / scale + 'px,' +
+      Math.max(0, Math.min(rect.bottom, rows.bottom) - rect.top) / scale + 'px,' + Math.max(0, wrap.left - rect.left) / scale + 'px)';
   }
 
   // Called wherever focus or what covers the rows may have changed.
@@ -1990,6 +2024,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('pvLight').innerHTML = '';
     $('pvSig').innerHTML = spans(fmt);
     $('preview').className = 'on' + (layout.picture === true && fmt.length ? ' info' : '');
+    placePreview();
   }
   function startTvPreview(target) {
     var gen = tilePreview.gen;
