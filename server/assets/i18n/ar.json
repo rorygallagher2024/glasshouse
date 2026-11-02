@@ -2586,5 +2586,9 @@
  "srv.lgs.dbgLogUpload.desc": {"text": "يسمح للتلفاز بإرسال سجلات التصحيح إلى LG. تعيد بعض أجهزة التلفاز تشغيله عند كل بدء تشغيل؛ يُحتفظ بالإيقاف المختار هنا. غير موجود في قوائم LG.", "from": "Lets the TV send its debug logs to LG. Some TVs switch it back on at each start; an off chosen here is kept. Not in LG's own menus."},
  "srv.lgs.faultLogUpload": {"text": "رفع سجل الأعطال", "from": "Fault log upload"},
  "srv.lgs.faultLogUpload.desc": {"text": "يسمح للتلفاز بإرسال تقارير الانهيار والأعطال إلى LG. غير موجود في قوائم LG.", "from": "Lets the TV send crash and fault reports to LG. Not in LG's own menus."},
- "srv.privacy.item.upload": {"text": "{name} قيد التشغيل", "from": "{name} is on"}
+ "srv.privacy.item.upload": {"text": "{name} قيد التشغيل", "from": "{name} is on"},
+ "server.ntp.notTaken": {"text": "التلفاز لا يأخذ الوقت من الخادم، لذا لا تزال ساعته متأخرة أو متقدمة بمقدار {out}. يحاول Glasshouse مرة أخرى كل ساعة.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
+ "server.ntp.outS": {"text": "{s} ث", "from": "{s} s"},
+ "server.ntp.outM": {"text": "{m} د", "from": "{m} min"},
+ "server.ntp.outHM": {"text": "{h} س {m} د", "from": "{h} h {m} min"}
 }
