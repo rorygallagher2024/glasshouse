@@ -166,7 +166,7 @@ async function tvmEdit(body, keepView, say) {
 }
 
 async function tvmUndo() {
-  if (!tvm.lineup || !tvm.lineup.undo) return;
+  if (!tvm.lineup || !tvm.lineup.undo) return tvmToast(tvmError('undo'), false);
   tvmSelClear();
   const r = await tvmEdit({ action: 'undo' });
   if (r) tvmToast(t('home.tvm.undone', 'Undone.'), false);
@@ -787,7 +787,7 @@ function renderTvmChannels() {
         ? `<span class="tvm-state all">${esc(t('home.tvm.inAsSectionRange', 'In the lineup as {name}, {from} to {to}', { name: tvmSectionTitle(sec), from: sec.start, to: sec.end }))}</span>
            <button type="button" class="pill idle" onclick="tvmScrollTo(${tvmArg(sec.id)})">${esc(t('home.tvm.show', 'Show it'))}</button>
            <button type="button" class="pill idle" ${usable} onclick="tvmRemoveSections([${tvmArg(sec.id)}])">${esc(t('home.tvm.removeGroup', 'Remove the group'))}</button>`
-        : `<button type="button" class="pill good" ${usable} ${v.total ? '' : 'disabled'} onclick="tvmAddGroup(${tvmArg(v.group)})" title="${esc(t('home.tvm.addGroupTip', 'Channels the provider adds to the group later join too'))}">${esc(t('home.tvm.addGroup', 'Add the whole group'))}</button>
+        : `<button type="button" class="pill idle" ${usable} ${v.total ? '' : 'disabled'} onclick="tvmAddGroup(${tvmArg(v.group)})" title="${esc(t('home.tvm.addGroupTip', 'Channels the provider adds to the group later join too'))}">${esc(t('home.tvm.addGroup', 'Add the whole group'))}</button>
            ${some.length ? `<button type="button" class="pill idle" ${usable} onclick="tvmTakeOutGroup(${tvmArg(v.group)})">${esc(t('home.tvm.takeOutN', 'Take the {n} out', { n: some.length }))}</button>` : ''}`}
       </div>
       ${tvmSelAllHtml('view', v.kind === 'group' ? t('home.tvm.selectAllN', 'Select all {n}', { n: v.total.toLocaleString() }) : '')}</div>`;
@@ -798,7 +798,7 @@ function renderTvmChannels() {
       <h3>${esc(t('home.tvm.searchTitle', 'Channels named “{q}”', { q: v.q }))}</h3>
       <div class="tvm-sub">${esc(v.busy ? t('home.tv.searchingDash', 'Searching…') : total)}</div>
       <div class="tvm-actions">
-        ${addable.length > 1 ? `<button type="button" class="pill good" ${usable} onclick="tvmAddShown()">${esc(v.total > v.list.length ? t('home.tvm.addShownN', 'Add the {n} shown', { n: addable.length }) : t('home.tvm.addFound', 'Add all {n}', { n: addable.length }))}</button>` : ''}
+        ${addable.length > 1 ? `<button type="button" class="pill idle" ${usable} onclick="tvmAddShown()">${esc(v.total > v.list.length ? t('home.tvm.addShownN', 'Add the {n} shown', { n: addable.length }) : t('home.tvm.addFound', 'Add all {n}', { n: addable.length }))}</button>` : ''}
         ${v.inGroup ? `<label class="tvm-check"><input type="checkbox" ${v.scope ? 'checked' : ''} onchange="tvmScope(this.checked)"> ${esc(t('home.tvm.onlyIn', 'Only in {group}', { group: tvmGroupLabel(v.inGroup) }))}</label>` : ''}
       </div>
       ${v.list.length ? tvmSelAllHtml('view', t('home.tvm.selectAllN', 'Select all {n}', { n: v.list.length })) : ''}</div>`;
@@ -1178,7 +1178,7 @@ function renderTvmHead() {
   if (lu) parts.push(t('home.tvm.lineupCount', '{n} in the lineup, {f} on Home’s row', { n: lu.channels.length.toLocaleString(), f: lu.favourites.length }));
   box.textContent = parts.join('. ') + (parts.length ? '.' : '');
   const undo = q('tvm-undo');
-  if (undo) undo.disabled = !(lu && lu.undo) || !tvmWritable();
+  if (undo) undo.disabled = !tvmWritable();
   const sel = q('tvm-pl');
   if (sel) {
     sel.hidden = tvm.playlists.length < 2;

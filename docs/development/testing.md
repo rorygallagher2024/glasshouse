@@ -374,6 +374,10 @@ which stays at 1 when each is closed before the next opens.
 drills. The emulator starts Internet TV's overdue jobs after 5 s rather than
 3 to 8 minutes (`iptv.catchupMs` in its config).
 
+The Home tab loads Internet TV playlist settings from `assets/ui/iptv.js` and
+the channel manager from `assets/ui/tvchannels.js`; the browser check exercises
+both through their page entry points.
+
 The browser check drives Internet TV on Glasshouse Home with its API answered
 in the page: the row's names tidied, a channel previewed after its dwell with
 the lease taken, the preview grown into the player without opening the stream

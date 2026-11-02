@@ -205,6 +205,7 @@ Each action ends the selection, so the next click starts a new one.
 
 **Undo**, at the top or after each change, takes back the last change, and
 again the one before, up to 20. The TV forgets them when it restarts.
+With no saved edits, it says there is nothing to undo.
 Escape clears the selection, then closes the page.
 
 On a phone the three are tabs: **Groups**, **Channels** and **Lineup**.
