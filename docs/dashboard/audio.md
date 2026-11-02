@@ -16,6 +16,27 @@ only. Pass Through and Bitstream request encoded audio; PCM requests decoded
 audio. As in LG's menu, only the input on screen can have its audio format
 changed.
 
+## Bluetooth audio
+
+![Bluetooth audio on a B8: a paired pair of headphones, with Find devices, Connect and Remove](../screenshots/audio-bluetooth.png)
+
+The headphones and speakers paired with the TV, each with whether it is
+connected. **Connect** or **Disconnect** one, or **Remove** it from the TV; a
+removed device has to be paired again before it can be used.
+
+To add a new one, put it in pairing mode, then press **Find devices**. Devices
+found nearby are listed within a few seconds, and **Pair** adds one and
+switches the sound to it. If a device doesn't connect, the dashboard says so:
+check it is switched on and nearby.
+
+While Bluetooth audio is connected, LG takes Game Optimizer out of the picture
+modes and may switch the picture mode, with its own message on screen. Game
+Optimizer comes back when the device disconnects.
+
+Paired devices can also be connected and disconnected under **Sound** on the
+[Control tab](control.md). The section isn't shown on TVs without Bluetooth
+audio, or in the TV app.
+
 ## Soundbar and receiver
 
 ![G3 audio declarations](../screenshots/audio-g3-formats.png)
@@ -27,6 +48,15 @@ app lists it below Sound.
 The audio coming in, where the TV sends it, and the return channel it has
 negotiated with the receiver (ARC, eARC or none). The negotiated link is
 separate from the eARC setting.
+
+Some older TVs, such as a C9, cannot say which return channel they use. When
+one soundbar or receiver is connected over HDMI, the tab then shows **HDMI
+audio device detected**, with its name and HDMI port. That says it is plugged
+in, not that ARC or eARC is working or which formats it takes.
+
+**No audio reported** means nothing is playing that the TV can see. **Live
+audio status unavailable** means the TV cannot report what audio comes in; it
+does not mean the sound has stopped.
 
 Below it, each format as the TV advertises it to the current HDMI source, and
 as the ARC or eARC receiver advertises it. Unknown stays unknown when the TV

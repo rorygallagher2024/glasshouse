@@ -240,6 +240,8 @@ async function tick() {
     // so a home with several TVs can tell their dashboards apart.
     const deviceName = (d.device && d.device.name) || model;
     if (q('nav-tv') && q('nav-tv').textContent !== deviceName) q('nav-tv').textContent = deviceName;
+    const nameInput = q('tvname-input');
+    if (nameInput && document.activeElement !== nameInput && !nameInput.dataset.dirty) nameInput.value = (d.device && d.device.name) || '';
     // Only where the name is not already the model: a B8 (webOS 4.4) reports none.
     const footModel = model && deviceName.indexOf(model) === -1 ? 'LG ' + model : '';
     if (q('foot-tv')) q('foot-tv').textContent = footModel;

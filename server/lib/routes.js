@@ -64,6 +64,8 @@ var privacyModule = null;
 var lgSettingsModule = null;
 /** @type {typeof import('./audio')} */
 var audioModule = null;
+/** @type {typeof import('./btaudio')} */
+var btAudioModule = null;
 /** @type {typeof import('./game')} */
 var gameModule = null;
 /** @type {typeof import('./apps')} */
@@ -149,6 +151,7 @@ var HANDOFF_MS = 10 * 60 * 1000;
 
 var UI_HTML = null;
 var UI_HTML_GZ = null;
+var UI_ETAG = null;
 var UI_MISSING = 'ui.html';   // the file named by the missing-assets page
 var ASSET_CACHE = {};
 
@@ -283,7 +286,8 @@ function validateSettings(j) {
    */
   out.device.id = trimmedString(d.id);
   if (!/^[a-z0-9_]{1,64}$/.test(out.device.id)) e.push('device id must be 1-64 characters of a-z, 0-9 or _');
-  out.device.name = trimmedString(d.name);
+  // The Server tab sets the name; a form without it keeps the one saved.
+  if (typeof d.name === 'string') out.device.name = trimmedString(d.name);
 
   // Saved with the MQTT form, whose Launch App select lists the icons' addresses.
   if (j && typeof j.iconServer === 'boolean') out.iconServer = j.iconServer;
@@ -597,6 +601,9 @@ function loadUI() {
       return;
     }
     UI_HTML = page;
+    // From the content, not the version: a deploy of uncommitted changes keeps
+    // the version, and browsers would go on showing the page before them.
+    UI_ETAG = '"' + crypto.createHash('sha1').update(page, 'utf8').digest('hex').slice(0, 16) + '"';
     /*
      * On this thread rather than zlib's worker pool. Node 0.12's process
      * spawning can deadlock (see lunaCached), and startup launches luna-send
@@ -1233,19 +1240,26 @@ function handleRequest(req, res) {
 
   if (pathname === '/' || pathname === '/index.html') {
     if (UI_HTML) {
-      var enc = req.headers['accept-encoding'] || '';
-      if (UI_HTML_GZ && enc.indexOf('gzip') !== -1) {
-        res.writeHead(200, {
-          'Content-Type': 'text/html; charset=utf-8',
-          'Content-Encoding': 'gzip',
-          'Content-Length': UI_HTML_GZ.length,
-          'Cache-Control': 'no-store',
-          'X-Content-Type-Options': 'nosniff',
-          'Referrer-Policy': 'no-referrer'
-        });
-        return res.end(UI_HTML_GZ);
+      var gzip = !!UI_HTML_GZ && (req.headers['accept-encoding'] || '').indexOf('gzip') !== -1;
+      // no-cache, not no-store: the browser keeps the page and asks each
+      // time, and an unchanged one comes back as a 304 with no body.
+      var uiHeaders = {
+        'Cache-Control': 'no-cache',
+        'ETag': UI_ETAG,
+        'Vary': 'Accept-Encoding'
+      };
+      if (req.headers['if-none-match'] === UI_ETAG) {
+        res.writeHead(304, uiHeaders);
+        return res.end();
       }
-      return send(res, 200, UI_HTML, 'text/html; charset=utf-8');
+      var uiBody = gzip ? UI_HTML_GZ : UI_HTML;
+      uiHeaders['Content-Type'] = 'text/html; charset=utf-8';
+      uiHeaders['Content-Length'] = gzip ? UI_HTML_GZ.length : Buffer.byteLength(UI_HTML);
+      if (gzip) uiHeaders['Content-Encoding'] = 'gzip';
+      uiHeaders['X-Content-Type-Options'] = 'nosniff';
+      uiHeaders['Referrer-Policy'] = 'no-referrer';
+      res.writeHead(200, uiHeaders);
+      return res.end(uiBody);
     }
     // 503, not 200: the dashboard is genuinely unavailable, and a monitor
     // polling this should see that rather than a page that says so in prose.
@@ -1334,6 +1348,29 @@ function handleRequest(req, res) {
     return readJsonBody(req, res, function (body) {
       audioModule.setOverride(body.enabled, function (r) { send(res, r.ok ? 200 : 400, JSON.stringify(r)); });
     });
+  }
+
+  // Paired Bluetooth audio devices: read when the Audio tab opens or is
+  // refreshed, and connected or disconnected on request. Never polled.
+  if (pathname === '/api/audio/bluetooth') {
+    if (!btAudioModule) return send(res, 503, JSON.stringify({ ok: false, error: 'bluetooth audio module unavailable' }));
+    if (req.method === 'GET') {
+      return btAudioModule.list(function (r) {
+        r.writable = !!config.allowControl;
+        send(res, r.ok ? 200 : 502, JSON.stringify(r));
+      });
+    }
+    if (req.method === 'POST') {
+      if (!config.allowControl) {
+        return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+      }
+      return readJsonBody(req, res, function (body) {
+        btAudioModule.act(body.action, body.address, function (status, r) {
+          send(res, status, JSON.stringify(r));
+        });
+      });
+    }
+    return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
   }
 
   if (pathname === '/api/screensaver') {
@@ -2064,6 +2101,7 @@ function init(opts) {
   if (opts.privacy) privacyModule = opts.privacy;
   if (opts.lgSettings) lgSettingsModule = opts.lgSettings;
   if (opts.audio) audioModule = opts.audio;
+  if (opts.btAudio) btAudioModule = opts.btAudio;
   if (opts.game) gameModule = opts.game;
   if (opts.apps) appsModule = opts.apps;
   if (opts.services) servicesModule = opts.services;
