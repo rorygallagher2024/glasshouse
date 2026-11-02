@@ -71,7 +71,23 @@ function levelFrom(r) {
 
 function deviceLevelFrom(info) {
   var n = info && info.returnValue ? info.batteryLevel : null;
-  return typeof n === 'number' && n >= 0 && n <= 100 ? n : null;
+
+  if (typeof n === 'number' && n >= 0 && n <= 100) {
+    return n;
+  }
+
+  if (typeof n === 'string') {
+    switch (n.toUpperCase()) {
+      case 'HIGH':
+        return 100;
+      case 'MID':
+        return 50;
+      case 'LOW':
+        return 10;
+    }
+  }
+
+  return null;
 }
 
 /**
