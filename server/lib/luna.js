@@ -192,16 +192,8 @@ function startWaiting() {
   }
 }
 
-/*
- * A child killed by a signal it was not sent by the timeout died before
- * answering. On a 50UP81006LR (webOS 6.5, node v8.12.0) children aborted with
- * libuv's "uv_close: Assertion `!uv__is_closing(handle)' failed" at start and
- * the model name was lost; run by hand, the same call answered. Such a child
- * never reached luna-send, so running the call again is safe, writes included.
- */
-function diedEarly(err) {
-  return !!(err && err.signal && !err.killed);
-}
+// A child that died before reaching luna-send is run again (lib/children).
+var diedEarly = children.diedEarly;
 
 /*
  * Node's own limit on a child's output is 200 KB up to node 10, and a reply
