@@ -7,6 +7,7 @@
 #   scripts/tv.sh <tv> luna <uri> [json]    one luna call, as luna://<uri>, printed as JSON
 #   scripts/tv.sh <tv> log [pattern] [n]    the last n (50) lines of Glasshouse's log, or those matching
 #   scripts/tv.sh <tv> capture <out.jpg> [--hdmi]   what is on screen, saved here
+#   scripts/tv.sh <tv> frames [key ...]     Glasshouse Home's frame timing while the keys are pressed
 #
 # <tv> is its address; SSH logs in as root unless TV_SSH_USER says otherwise.
 #
@@ -18,9 +19,16 @@
 # webOS 4 has com.webos.service.tv.capture in place of com.webos.service.capture,
 # and its picture includes the HDMI video.
 #
+# frames switches Glasshouse Home's frame trace on, presses the keys through
+# the dashboard's remote (up down left right ok back home, or wait for a
+# second), 0.15 s apart, and prints what Home reported every 5 s: frames, those
+# over 33 and 100 ms, the worst gap, the browser's long tasks, and the time of
+# Home's main functions. The trace is switched off again however it ends.
+# TV_PORT is the dashboard's port (8080).
+#
 set -e
 
-[ $# -ge 2 ] || { sed -n '3,9p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+[ $# -ge 2 ] || { sed -n '3,10p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 tv=$1
 cmd=$2
 shift 2
@@ -89,9 +97,27 @@ case "$cmd" in
     on_tv "rm -f $remote"
     echo "$out ($app)"
     ;;
+  frames)
+    trace=/var/lib/tvweb/home-trace
+    port=${TV_PORT:-8080}
+    # shellcheck disable=SC2064 # $trace is fixed above
+    trap "on_tv 'rm -f $trace'" EXIT
+    on_tv "touch $trace"
+    from=$(on_tv "wc -l < /var/lib/tvweb/tvweb.log")
+    # The view starts measuring at its next beat.
+    sleep 6
+    for key in "$@"; do
+      if [ "$key" = wait ]; then sleep 1; continue; fi
+      curl -s -m 5 -o /dev/null -X POST -H 'Content-Type: application/json' \
+        -d "{\"action\":\"rcu\",\"value\":\"$key\"}" "http://$tv:$port/api/control"
+      sleep 0.15
+    done
+    sleep 6
+    on_tv "tail -n +$((from + 1)) /var/lib/tvweb/tvweb.log | grep -a 'home: frames'" | sed 's/^.*home: frames //'
+    ;;
   *)
     echo "unknown command: $cmd" >&2
-    sed -n '3,9p' "$0" | sed 's/^# \{0,1\}//' >&2
+    sed -n '3,10p' "$0" | sed 's/^# \{0,1\}//' >&2
     exit 2
     ;;
 esac

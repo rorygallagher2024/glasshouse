@@ -130,6 +130,8 @@ var MEDIA_REPEATS = { volumeUp: true, volumeDown: true };
  * TV had woken.
  */
 var SCREEN_OFF = 'action:screenOff';
+// Wait for release to avoid sending more key events as standby starts.
+var POWER_OFF = 'action:powerOff';
 /*
  * Home Assistant: the key does nothing on the TV, and its press reaches Home
  * Assistant as a Remote Button event, which lib/remotebuttons reads from the
@@ -363,6 +365,7 @@ function filterSource() {
     '// tvpower\'s state, and whether the Screen off key went down with the picture on.',
     'var glasshousePowerState = "Active";',
     'var glasshouseScreenOffArmed = false;',
+    'var glasshousePowerOffArmed = {};',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
     'function glasshouseKeyCodes() {',
@@ -388,6 +391,7 @@ function filterSource() {
     '        // Home, only while Glasshouse Home sets it.',
     '        if (typeof value.home === "string" && value.home) ids[Qt.Key_Super_L] = value.home;',
     '        glasshouseKeyIds = ids;',
+    '        glasshousePowerOffArmed = {};',
     '        glasshouseStarting = typeof value.starting === "string" ? value.starting : "";',
     '    } catch (e) {',
     '        console.warn("glasshouse keyfilter: " + e + "; keys left as they were");',
@@ -491,6 +495,14 @@ function filterSource() {
     '        } else if (id === ' + JSON.stringify(SCREEN_OFF) + ') {',
     '            if (!pressed && glasshouseScreenOffArmed) console.info("glasshouse keyfilter: key", key, "turns the screen off");',
     '            glasshouseScreenOffKey(pressed, autoRepeat);',
+    '        } else if (id === ' + JSON.stringify(POWER_OFF) + ') {',
+    '            if (pressed && !autoRepeat) {',
+    '                var state = glasshousePowerState.toLowerCase().replace(/[\\s_-]/g, "");',
+    '                glasshousePowerOffArmed[key] = state === "active" || state === "on" || state === "screenoff" || state === "screensaver";',
+    '            } else if (!pressed && glasshousePowerOffArmed[key]) {',
+    '                delete glasshousePowerOffArmed[key];',
+    '                lunaCall.send("com.webos.service.tvpower", "/power/powerOff", JSON.stringify({ "reason": "remoteKey" }), function () {});',
+    '            }',
     '        } else if (pressed && !autoRepeat && id) {',
     '            console.info("glasshouse keyfilter: key", key, "opens", id);',
     // Home opened as the Home key opens it, so Glasshouse Home opens as Home.
@@ -748,7 +760,7 @@ function nativeKeys(tv, lg) {
 // What a streaming button's entry becomes, from LG's own, or undefined for LG's.
 function mappingWanted(map, key, lgEntry) {
   if (!Object.prototype.hasOwnProperty.call(map, key)) return undefined;
-  if (!map[key]) {
+  if (!map[key] || map[key] === SCREEN_OFF) {
     var off = copyValue(lgEntry);
     off.isActive = false;
     return off;
@@ -758,7 +770,7 @@ function mappingWanted(map, key, lgEntry) {
 
 function actionWanted(map, key) {
   if (!Object.prototype.hasOwnProperty.call(map, key)) return undefined;
-  return map[key] ? { action: 'launch', id: map[key] } : { action: 'ignore', accept: true };
+  return map[key] && map[key] !== SCREEN_OFF ? { action: 'launch', id: map[key] } : { action: 'ignore', accept: true };
 }
 
 // The ? button has no setting for nothing: LG opens Accessibility for a type
@@ -962,6 +974,13 @@ function switchBlocks(map, lg, cb) {
  * found smaller, or another file, is read from its start.
  */
 var LOGGED_BUTTONS = { ai: 'KEY_VOICE', alexa: 'KEY_ALEXAVOICE' };
+/*
+ * Keys that can turn the screen off on webOS 11, by lginput2's name for them
+ * on an MR25GA (a C5, 11.2.0). There is no filter to run it in, so LG's action
+ * is switched off as for Nothing, and the press is answered from the log.
+ * Not Guide: on an HDMI input the input's app takes it and opens its own guide.
+ */
+var SCREEN_OFF_BUTTONS = { netflix: 'KEY_NETFLIX', amazon: 'KEY_AMAZON', homehub: 'KEY_HOMEDASHBOARD' };
 var BUTTON_CLICK = /NL_BUTTON_CLICK\b.*"button_type"\s*:\s*"([A-Z0-9_]+)"/;
 var PRESS_DEBOUNCE_MS = 500;
 var POLL_MS = 200;
@@ -1021,6 +1040,9 @@ function loggedTargets(map, lg) {
     var off = (NATIVE_SERVICE_KEYS[key] && lg.services[NATIVE_SERVICE_KEYS[key]]) ||
       (NATIVE_BLOCK_KEYS[key] && lg.blocks[NATIVE_BLOCK_KEYS[key]]);
     if (off) targets[LOGGED_BUTTONS[key]] = map[key];
+  });
+  Object.keys(SCREEN_OFF_BUTTONS).forEach(function (key) {
+    if (map[key] === SCREEN_OFF) targets[SCREEN_OFF_BUTTONS[key]] = SCREEN_OFF;
   });
   return targets;
 }
@@ -1087,8 +1109,70 @@ function buttonPressed(button) {
   if (MUTE_TOASTS_MS[button]) muteToasts(muteToastsMs || MUTE_TOASTS_MS[button]);
   var id = pressTargets[button];
   if (!id || !lunaFn) return;
+  if (id === SCREEN_OFF) return screenOffFromPress(button);
   lunaFn('com.webos.applicationManager/launch', { id: id }, function (r) {
     if (!(r && r.returnValue)) console.log('remotekeys: ' + button + ' could not open ' + id);
+  });
+}
+
+/*
+ * Only with the picture on: a press while it is off wakes it, and is left to.
+ * A press while tvpower is still finishing a change, as just after a wake, or
+ * while LG's screen saver is up, which the press ends, is tried again for
+ * about 4 s: at 1.6 s about 1 press in 10 was still lost on a C5 (webOS
+ * 11.2.0, #1143). Each press left alone is logged, to tell the rest apart.
+ * Turning the screen off is a power change, at which LG writes its streaming
+ * buttons back, so a quick second press opened LG's app, or its installer,
+ * before the key was set again (#1143). For a while after, LG's writes are
+ * answered at once, and the keys are set again unasked, as not every write is
+ * announced.
+ *
+ * lginput2 logs the press as the button goes down, so on a press held a little
+ * longer the screen goes off before the button is up, and the release brings
+ * the picture back: on a C5 (webOS 11.2.0) 2 presses in 6 woke it 21 and 92 ms
+ * after it went off, a black blink (#1143). Half a second after, a screen back
+ * on with no new press of the button is turned off once more.
+ */
+var SCREEN_OFF_TRIES = 10;
+var SCREEN_OFF_CHECK_MS = 500;
+var SCREEN_OFF_RETRY_MS = 400;
+var FAST_REAPPLY_MS = 100;
+var FAST_REAPPLY_WINDOW_MS = 15000;
+var SCREEN_OFF_REAPPLY_MS = [300, 1500];
+var screenOffAt = 0;
+
+// again: the second try after a release woke the screen, which is not checked for once more.
+function screenOffFromPress(button, tries, again) {
+  tries = tries || 1;
+  lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+    var state = pw && pw.state;
+    if (state === 'Active' && !pw.processing) return screenOff(button, again);
+    if (state !== 'Active' && state !== 'Screen Saver') {
+      return again ? undefined : console.log('remotekeys: ' + button + ' left alone: the TV is ' + (state || 'not answering'));
+    }
+    if (tries < SCREEN_OFF_TRIES) return setTimeout(function () { screenOffFromPress(button, tries + 1, again); }, SCREEN_OFF_RETRY_MS);
+    console.log('remotekeys: ' + button + ' left alone: the TV was still ' + (pw.processing ? 'busy with ' + pw.processing : state) + ' after ' + tries + ' tries');
+  });
+}
+
+function screenOff(button, again) {
+  lunaFn('com.webos.service.tvpower/power/turnOffScreen', {}, function (r) {
+    if (!(r && r.returnValue)) return console.log('remotekeys: ' + button + ' could not turn the screen off');
+    screenOffAt = Date.now();
+    SCREEN_OFF_REAPPLY_MS.forEach(function (ms) {
+      setTimeout(function () { applyNative(function () {}); }, ms);
+    });
+    if (again) return;
+    var pressedAt = lastPress[button];
+    setTimeout(function () {
+      if (lastPress[button] !== pressedAt) return;
+      lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+        if (!pw || pw.state !== 'Active') return;
+        console.log('remotekeys: ' + button + ' woke the screen as it was let go; turned off again');
+        // Through the press's retries, as tvpower can still be finishing the wake.
+        screenOffFromPress(button, 1, true);
+      });
+    }, SCREEN_OFF_CHECK_MS);
   });
 }
 
@@ -1121,6 +1205,7 @@ function watchLg(on) {
 
 function lgChanged() {
   if (reapplyTimer) return;
+  var fast = Date.now() - screenOffAt < FAST_REAPPLY_WINDOW_MS;
   reapplyTimer = setTimeout(function () {
     reapplyTimer = null;
     var now = Date.now();
@@ -1131,7 +1216,7 @@ function lgChanged() {
       reapplied.push(Date.now());
       console.log('remotekeys: LG put its keys back; set again' + (ok ? '' : ', and the TV did not take it'));
     });
-  }, reapplyDelayMs);
+  }, fast ? Math.min(FAST_REAPPLY_MS, reapplyDelayMs) : reapplyDelayMs);
 }
 
 /*
@@ -1187,11 +1272,19 @@ function mediaChoices() {
   return MEDIA_ACTIONS.map(function (a) { return { id: MEDIA_PREFIX + a, title: titles[a], kind: 'media' }; });
 }
 
-// Screen off, where the JavaScript filter runs, and Home Assistant where MQTT is on too.
+// Power and screen off where the JavaScript filter runs, and Home Assistant with MQTT on too.
 function actionChoices() {
-  var out = [{ id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' }];
+  var out = [
+    { id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' },
+    { id: POWER_OFF, title: msg('srv.remoteKeys.powerOff', 'Power off'), kind: 'action' }
+  ];
   if (homeAssistantOn()) out.push({ id: HOME_ASSISTANT, title: msg('srv.remoteKeys.homeAssistant', 'Home Assistant'), kind: 'ha' });
   return out;
+}
+
+// webOS 11's one action, for the keys in SCREEN_OFF_BUTTONS.
+function screenOffChoice() {
+  return [{ id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' }];
 }
 
 // Whether a key's presses reach Home Assistant, so it can be set to send them there.
@@ -1246,7 +1339,7 @@ function describeKeys(keys, inChain, cb, native) {
       var titles = {};
       (apps || []).forEach(function (a) { if (a && a.id) titles[a.id] = a.title || a.id; });
       var inputs = inputChoices();
-      var media = native ? [] : actionChoices().concat(mediaChoices());
+      var media = native ? screenOffChoice() : actionChoices().concat(mediaChoices());
       var cc = country();
       switchers.concat(inputs, actionChoices(), mediaChoices(), homeChoices(false)).forEach(function (c) { titles[c.id] = c.title; });
       var out = keys.map(function (k) {
@@ -1264,6 +1357,7 @@ function describeKeys(keys, inChain, cb, native) {
         if (k.turnsOffVoice) key.turnsOffVoice = true;
         if (k.replacesVoice) key.replacesVoice = true;
         if (native && NATIVE_BLOCK_KEYS[k.key]) key.blocksApp = true;
+        if (native && !SCREEN_OFF_BUTTONS[k.key]) key.noScreenOff = true;
         if (!native && homeAssistantOn() && reported(k.key)) key.homeAssistant = true;
         return key;
       });
@@ -1279,7 +1373,7 @@ function describeKeys(keys, inChain, cb, native) {
 /*
  * Sets a key: action 'lg' puts it back as LG has it, 'nothing' makes it do
  * nothing, 'open' opens id, an input, an app on the Home screen or LG's input
- * switcher, or sends a media control or turns the screen off where the
+ * switcher, or sends a media control or turns the TV or screen off where the
  * JavaScript filter runs. It takes
  * effect at once, through the filter's configd subscription or, on webOS 11,
  * LG's own values. cb({ ok, error }).
@@ -1310,7 +1404,7 @@ function setOfferedKey(def, action, id, kind, cb) {
   switcherChoices(function (switchers) {
     listApps(function (apps) {
       if (!apps) return cb({ ok: false, error: msg('srv.remoteKeys.noApps', 'Could not read the TV\'s apps. Try again in a moment.') });
-      var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : [];
+      var media = kind === 'filter' ? actionChoices().concat(mediaChoices()) : SCREEN_OFF_BUTTONS[def.key] ? screenOffChoice() : [];
       var allowed = switchers.concat(media, inputChoices(), homeChoices(kind !== 'filter'), appChoices(apps))
         .some(function (c) { return c.id === id; });
       if (id === HOME_ASSISTANT && !reported(def.key)) {

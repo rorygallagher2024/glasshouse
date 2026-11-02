@@ -1,7 +1,7 @@
 /**
  * test/test-home-lg-options.js - the Home tab is offered for LG's Home's own
  * options (its layout, system apps hidden from it, and Open Home at power-on)
- * on a TV without Glasshouse Home, as a B8 (webOS 4.4) is, and ?with=lghome
+ * on a TV without Glasshouse Home, as a webOS 3.8 TV is, and ?with=lghome
  * carries them. Under Glasshouse Home, hiding system apps is left out.
  *
  * Strict ES5: runs on node 0.12.
@@ -20,7 +20,7 @@ var dir = path.join(os.tmpdir(), 'home-lg-options-' + process.pid);
 fs.mkdirSync(dir);
 // The TV has LG's Open Home at power-on only where powerOn is set.
 var powerOn = false;
-home.init({ stateDir: dir, webosVersion: '4.4.3', port: 8080, luna: function (uri, params, cb) {
+home.init({ stateDir: dir, webosVersion: '3.8.0', port: 8080, luna: function (uri, params, cb) {
   if (powerOn && /getSystemSettings$/.test(uri) && params.keys && params.keys.indexOf('homeAutoLaunch') !== -1) {
     return cb({ returnValue: true, settings: { homeAutoLaunch: 'off' } });
   }
@@ -63,7 +63,7 @@ function post(url, body, cb) {
 server.listen(0, '127.0.0.1', function () {
   port = server.address().port;
   get('/api/home', function (st) {
-    assert.strictEqual(st.supported.ok, false, 'no Glasshouse Home on webOS 4.4');
+    assert.strictEqual(st.supported.ok, false, 'no Glasshouse Home on webOS 3.8');
     assert.strictEqual(st.available, true, 'the tab is there for LG\'s Home\'s options');
     assert.strictEqual(st.lgHomeAvailable, true);
     assert.strictEqual(st.lgHome, undefined, 'the options themselves only when asked for');

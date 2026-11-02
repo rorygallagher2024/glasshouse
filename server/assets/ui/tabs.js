@@ -93,6 +93,7 @@ function showTab(name) {
   if (name === 'server') loadSsh();
   if (name === 'oledcare') loadOledCare();
   if (name === 'home') loadHome();
+  if (name === 'control') loadControlBluetooth();
   if (name === 'audio') loadAudio();
   audioPolling(name === 'audio');
   if (name === 'picture') loadPicture();

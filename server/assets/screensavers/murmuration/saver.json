@@ -6,6 +6,7 @@
     "es": "Bandada",
     "hu": "Seregélyraj",
     "it": "Stormo",
+    "pt": "Revoada",
     "ru": "Стая"
   },
   "description": {
@@ -13,6 +14,7 @@
     "es": "Bandadas de luz que siguen a sus líderes en picado sobre negro.",
     "hu": "Fényrajok csapnak le vezetőik után a fekete háttéren.",
     "it": "Stormi di luce che piombano dietro ai loro capofila sul nero.",
+    "pt": "Bandos de luz que mergulham atrás dos seus líderes sobre fundo preto.",
     "ru": "Стаи света проносятся за своими вожаками по чёрному фону."
   },
   "license": "MIT",

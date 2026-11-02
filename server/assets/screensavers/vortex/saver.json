@@ -6,6 +6,7 @@
     "es": "Vórtice",
     "hu": "Örvény",
     "it": "Vortice",
+    "pt": "Vórtice",
     "ru": "Вихрь"
   },
   "description": {
@@ -13,6 +14,7 @@
     "es": "Torbellinos de luz que suben en espiral por embudos que se mecen sobre negro.",
     "hu": "Fényforgószelek kúsznak fel spirálban imbolygó tölcsérek mentén, fekete háttéren.",
     "it": "Turbini di luce che salgono a spirale lungo imbuti ondeggianti, sul nero.",
+    "pt": "Remoinhos de luz que sobem em espiral por funis oscilantes, sobre fundo preto.",
     "ru": "Световые вихри поднимаются по спирали вдоль качающихся воронок на чёрном фоне."
   },
   "license": "MIT",
