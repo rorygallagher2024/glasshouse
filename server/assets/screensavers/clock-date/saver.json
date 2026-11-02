@@ -1,0 +1,21 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Clock with date",
+    "es": "Reloj y fecha",
+    "hu": "Óra és dátum",
+    "ru": "Часы и дата"
+  },
+  "description": {
+    "en": "A digital clock with seconds, the weekday and date on black, moving to a new position every minute.",
+    "es": "Un reloj digital con segundos, el día de la semana y la fecha sobre negro, que cambia de posición cada minuto.",
+    "hu": "Digitális óra másodpercekkel, a hét napjával és a dátummal fekete háttéren, amely percenként új helyre kerül.",
+    "ru": "Цифровые часы с секундами, днём недели и датой на чёрном фоне, которые каждую минуту перемещаются на новое место."
+  },
+  "license": "MIT",
+  "uses": [
+    "level"
+  ],
+  "order": 11
+}

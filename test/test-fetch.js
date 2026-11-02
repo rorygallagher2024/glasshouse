@@ -118,7 +118,7 @@ function retries(done) {
 
         // Our own cancel is not a network failure.
         reset();
-        install('curl', 'sleep 30\nexit 7\n');
+        install('curl', 'exec sleep 30\n');
         var h = fetch.download('https://example.org/a.ipk', out, {}, function (err3) {
           assert.ok(err3 && err3.cancelled);
           setTimeout(function () {
@@ -194,7 +194,7 @@ function retries(done) {
     'while [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift;; esac; shift; done\n' +
     'echo "$out" > "' + dir + '/seen"\n' +
     'if [ "$out" = - ]; then printf "0123456789"; else printf "0123456789" > "$out"; fi\n' +
-    'if [ -f "' + dir + '/hang" ]; then sleep 30; fi\n';
+    'if [ -f "' + dir + '/hang" ]; then exec sleep 30; fi\n';
   fs.writeFileSync(path.join(dir, 'curl'), script);
   fs.chmodSync(path.join(dir, 'curl'), parseInt('755', 8));
   fetch.init({ clientDirs: [dir] });

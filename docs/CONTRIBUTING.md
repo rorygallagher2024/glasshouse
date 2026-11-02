@@ -27,6 +27,69 @@ Focus on clarity and readability. Clearly state what changed and why, keeping pu
 
 If you are using AI coding assistants or automated agents, ensure they adhere to the repository conventions in `CLAUDE.md` (symlinked as `AGENTS.md`).
 
+## Rules for a pull request
+
+The rules and the guidelines below exist to keep the code good and to make
+pull requests quick to review, so they get merged sooner. A pull request that
+arrives tested, translated and documented, built the way the rest of the code
+is, needs fewer rounds of changes.
+
+Keep a pull request in draft while any of these that applies to it is unmet,
+and mark it ready for review once they are. Not every rule applies to every
+change: a docs-only change needs no TV testing or translation.
+
+* **Tried on a real TV,** with a [Testing section](#testing-details-in-the-pull-request)
+  in the description and a screenshot of anything that shows on a screen.
+* **All checks pass:** `scripts/check-all.sh`.
+* **Translated.** Every new or changed string has its translation in each
+  language file in `server/assets/i18n/` that covers the page it is on: Arabic,
+  Spanish, Hungarian, Italian and Russian for the dashboards, and German too for
+  Glasshouse Home. `python3 scripts/check-strings.py --missing` lists what is
+  left.
+* **Docs updated:** the pages that describe what it changes, as in
+  [Docs](#docs).
+
+## Guidelines
+
+What reviews look for. Unlike the rules, these leave room for judgement: a
+pull request that departs from one says why in its description. This is a
+starting set, added to as reviews turn up more.
+
+### The dashboards' design
+
+* **Reuse what is there.** Buttons, dropdowns, rows, headings and notes use
+  the existing classes (`pill`, `pill-sel`, `prot-row`, `pv-sec`), not new
+  styles for the same thing. A new kind of element is the exception, and is
+  made to match the ones around it.
+* **Keep the design language.** Spacing, type sizes and lines between rows
+  follow the sections around a change. Check it in the dark and light themes
+  and at phone width.
+* **Colour means something.** Green is for the action that turns something on
+  or connects it, and red (`pill bad`) only for removing something. Other
+  buttons stay neutral.
+* **Every press gets an answer.** A button responds when pressed, and every
+  state says what is happening: loading, empty, in progress, failed. A button
+  is never greyed out without a visible reason.
+* **Say what the owner needs, not how it works.** Text on screen leaves out
+  services, timings and other mechanics.
+
+### Code
+
+* **One concern per file.** A server module in `server/lib/` and a dashboard
+  script in `server/assets/ui/` each handle one thing. A feature of its own,
+  or one that serves more than one tab, gets its own file rather than growing
+  another.
+* **Small functions.** A function does one job and reads without scrolling.
+  One that handles several cases in nested branches or callbacks is split, one
+  function per case, with the shared steps in helpers.
+
+### Docs
+
+* The page for a tab in `docs/dashboard/` says what each part does for the
+  owner, in a sentence or two, without how it works.
+* Findings about LG's software go in `docs/development/TV-RESEARCH.md`, and
+  anything the server changes on the TV in `docs/TV-CHANGES.md`.
+
 ## Code reviews
 
 We prefer code review comments to follow the [Conventional Comments](https://conventionalcomments.org/) standard (e.g. `praise:`, `suggestion:`, `issue:`, `nitpick:`, `question:`). This keeps feedback constructive, actionable, and makes it clear whether a comment is blocking or an optional suggestion. Refer to [conventionalcomments.org](https://conventionalcomments.org/) for the complete specification and examples.
@@ -72,6 +135,8 @@ Strings are cataloged in `server/assets/i18n/`. Refer to [Translating the dashbo
 ## Running tests and verification
 
 Before opening a pull request, run the test suite and validation scripts locally:
+
+`scripts/check-all.sh` runs all of these side by side. One at a time:
 
 ```bash
 # Run all unit and integration tests
@@ -149,7 +214,8 @@ Add a short **Testing** section to the pull request description:
 
 * the TV's model and webOS version, for example "OLED42C24LA, webOS 9.2";
 * what you did and what you saw;
-* what you didn't test, such as other webOS versions or something that needs hardware you don't have.
+* what you didn't test, such as other webOS versions or something that needs hardware you don't have;
+* where the change shows on a screen, a screenshot of it: the dashboard, the TV app, Glasshouse Home or the TV's own screen. `scripts/tv.sh <tv-ip> capture out.jpg` takes one from the TV.
 
 For example:
 

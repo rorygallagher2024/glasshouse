@@ -130,6 +130,8 @@ var MEDIA_REPEATS = { volumeUp: true, volumeDown: true };
  * TV had woken.
  */
 var SCREEN_OFF = 'action:screenOff';
+// Wait for release to avoid sending more key events as standby starts.
+var POWER_OFF = 'action:powerOff';
 /*
  * Home Assistant: the key does nothing on the TV, and its press reaches Home
  * Assistant as a Remote Button event, which lib/remotebuttons reads from the
@@ -363,6 +365,7 @@ function filterSource() {
     '// tvpower\'s state, and whether the Screen off key went down with the picture on.',
     'var glasshousePowerState = "Active";',
     'var glasshouseScreenOffArmed = false;',
+    'var glasshousePowerOffArmed = {};',
     '',
     '// Key code by name; a name this firmware lacks is left out.',
     'function glasshouseKeyCodes() {',
@@ -388,6 +391,7 @@ function filterSource() {
     '        // Home, only while Glasshouse Home sets it.',
     '        if (typeof value.home === "string" && value.home) ids[Qt.Key_Super_L] = value.home;',
     '        glasshouseKeyIds = ids;',
+    '        glasshousePowerOffArmed = {};',
     '        glasshouseStarting = typeof value.starting === "string" ? value.starting : "";',
     '    } catch (e) {',
     '        console.warn("glasshouse keyfilter: " + e + "; keys left as they were");',
@@ -491,6 +495,14 @@ function filterSource() {
     '        } else if (id === ' + JSON.stringify(SCREEN_OFF) + ') {',
     '            if (!pressed && glasshouseScreenOffArmed) console.info("glasshouse keyfilter: key", key, "turns the screen off");',
     '            glasshouseScreenOffKey(pressed, autoRepeat);',
+    '        } else if (id === ' + JSON.stringify(POWER_OFF) + ') {',
+    '            if (pressed && !autoRepeat) {',
+    '                var state = glasshousePowerState.toLowerCase().replace(/[\\s_-]/g, "");',
+    '                glasshousePowerOffArmed[key] = state === "active" || state === "on" || state === "screenoff" || state === "screensaver";',
+    '            } else if (!pressed && glasshousePowerOffArmed[key]) {',
+    '                delete glasshousePowerOffArmed[key];',
+    '                lunaCall.send("com.webos.service.tvpower", "/power/powerOff", JSON.stringify({ "reason": "remoteKey" }), function () {});',
+    '            }',
     '        } else if (pressed && !autoRepeat && id) {',
     '            console.info("glasshouse keyfilter: key", key, "opens", id);',
     // Home opened as the Home key opens it, so Glasshouse Home opens as Home.
@@ -1187,9 +1199,12 @@ function mediaChoices() {
   return MEDIA_ACTIONS.map(function (a) { return { id: MEDIA_PREFIX + a, title: titles[a], kind: 'media' }; });
 }
 
-// Screen off, where the JavaScript filter runs, and Home Assistant where MQTT is on too.
+// Power and screen off where the JavaScript filter runs, and Home Assistant with MQTT on too.
 function actionChoices() {
-  var out = [{ id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' }];
+  var out = [
+    { id: SCREEN_OFF, title: msg('srv.remoteKeys.screenOff', 'Screen off'), kind: 'action' },
+    { id: POWER_OFF, title: msg('srv.remoteKeys.powerOff', 'Power off'), kind: 'action' }
+  ];
   if (homeAssistantOn()) out.push({ id: HOME_ASSISTANT, title: msg('srv.remoteKeys.homeAssistant', 'Home Assistant'), kind: 'ha' });
   return out;
 }
@@ -1279,7 +1294,7 @@ function describeKeys(keys, inChain, cb, native) {
 /*
  * Sets a key: action 'lg' puts it back as LG has it, 'nothing' makes it do
  * nothing, 'open' opens id, an input, an app on the Home screen or LG's input
- * switcher, or sends a media control or turns the screen off where the
+ * switcher, or sends a media control or turns the TV or screen off where the
  * JavaScript filter runs. It takes
  * effect at once, through the filter's configd subscription or, on webOS 11,
  * LG's own values. cb({ ok, error }).

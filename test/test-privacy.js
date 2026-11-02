@@ -121,6 +121,36 @@ test("they are carried over when it is, so this table does not undo it", functio
 
 var AMAZOFF = ['127.0.0.1 cloudfront.xp-assets.aiv-cdn.net', '::1 cloudfront.xp-assets.aiv-cdn.net'];
 
+test('local lookups name every address on the TV\'s networks as itself, but not the TV', function () {
+  var LOCAL = '/var/lib/tvweb/local_lookups';
+  privacy._setInterfaces(function () {
+    return {
+      lo: [{ family: 'IPv4', address: '127.0.0.1', netmask: '255.0.0.0', internal: true }],
+      wlan0: [{ family: 'IPv4', address: '192.168.2.128', netmask: '255.255.255.0', internal: false },
+              { family: 'IPv6', address: 'fe80::1', netmask: 'ffff:ffff:ffff:ffff::', internal: false }],
+      eth1: [{ family: 4, address: '10.0.0.9', netmask: '255.255.0.0', internal: false }],
+      wan: [{ family: 'IPv4', address: '81.2.3.4', netmask: '255.255.255.0', internal: false }]
+    };
+  });
+  try {
+    assert.strictEqual(privacy.adBlockHostsTable('ads').indexOf('192.168.2.1\t'), -1, 'nothing while it is off');
+    mockEnv.files[LOCAL] = '';
+    var addrs = privacy.localLookupAddresses();
+    assert.strictEqual(addrs.filter(function (a) { return /^192\.168\.2\./.test(a); }).length, 253, '1 to 254, less the TV');
+    assert.strictEqual(addrs.indexOf('192.168.2.128'), -1, 'the server looks up the TV\'s own name');
+    assert.ok(addrs.indexOf('10.0.0.1') !== -1 && addrs.indexOf('10.0.0.254') !== -1, 'a wider network covers the /24 around the TV');
+    assert.strictEqual(addrs.indexOf('10.0.1.1'), -1);
+    assert.ok(!addrs.some(function (a) { return /^(81|127)\./.test(a); }), 'public and loopback addresses are left alone');
+    var table = privacy.adBlockHostsTable('off');
+    assert.ok(table.indexOf('\n192.168.2.1\t192.168.2.1\n') !== -1);
+    assert.deepEqual(privacy.foreignHostsLines(table + '192.168.2.5\tnas\n'), ['192.168.2.5\tnas'],
+      'its own lines are not carried over as another tool\'s, a real name is');
+  } finally {
+    delete mockEnv.files[LOCAL];
+    privacy._setInterfaces(function () { return {}; });
+  }
+});
+
 test("other tools' lines are told apart from the table's own and the Homebrew Channel's", function () {
   var hosts = privacy.adBlockHostsTable('ads') + '\n# webosbrew startup script\n' +
     '127.0.0.1 snu.lge.com su-dev.lge.com su.lge.com su-ssl.lge.com\n::1 snu.lge.com su-dev.lge.com su.lge.com su-ssl.lge.com\n' +
@@ -165,6 +195,44 @@ test('webOS 11 upload hosts are in the Ads & telemetry tier, its platform is not
   assert.ok(adsList.indexOf('rone-aic.lge.com') !== -1, 'remote diagnostics');
   assert.strictEqual(adsList.indexOf('tv.wiselg.com'), -1, 'the service platform also serves the Content Store');
   assert.strictEqual(adsList.indexOf('aic.tv.wiselg.com'), -1);
+});
+
+test('Ads & telemetry blocks the store\'s request logs and the rdx2 report host, the latter once the clock is set', function () {
+  privacy._setSdpGraceActive(false);
+  var list = privacy.adBlockList('ads');
+  ['us.elastic.lgwebostv.com', 'us.rdx2.nextlgsdp.com', 'rdx2.nextlgsdp.com'].forEach(function (host) {
+    assert.ok(list.indexOf(host) !== -1, host + ' must be in ads mode');
+  });
+  assert.strictEqual(list.indexOf('us.nextlgsdp.com'), -1, 'the Content Store host stays reachable');
+  assert.ok(privacy.adBlockList('full').indexOf('us.rdx2.nextlgsdp.com') !== -1, 'and in full mode');
+
+  privacy._setSdpGraceActive(true);
+  list = privacy.adBlockList('ads');
+  assert.strictEqual(list.indexOf('us.rdx2.nextlgsdp.com'), -1, 'reachable while the TV waits for its clock');
+  assert.ok(list.indexOf('us.elastic.lgwebostv.com') !== -1, 'the store logs do not wait');
+  assert.ok(list.indexOf('us.rdx2.lgtvsdp.com') !== -1, 'nor does the lgtvsdp.com rdx2 host');
+  privacy._setSdpGraceActive(false);
+});
+
+test('Ads & telemetry waits for the clock and blocks rdx2.nextlgsdp.com once it is set', function () {
+  privacy._setSdpGraceActive(true);
+  var timeState = { timeValid: false, systemTimeSource: 'system' };
+  privacy.init({ luna: function (uri, params, cb) {
+    if (uri === 'com.webos.service.systemservice/time/getSystemTime') {
+      cb({ returnValue: true, timeValid: timeState.timeValid, systemTimeSource: timeState.systemTimeSource });
+    }
+  } });
+  withTable('ads', function () {
+    privacy.checkBootAdBlock();
+    assert.strictEqual(privacy.isSdpGracePeriodActive(), true, 'open while the time is invalid');
+    assert.ok(!sinkholed(mockEnv.files['/var/lib/tvweb/adblock_hosts'], 'us.rdx2.nextlgsdp.com'));
+    timeState.timeValid = true;
+    timeState.systemTimeSource = 'sdp';
+    privacy._checkSdpClockSync(false);
+    assert.strictEqual(privacy.isSdpGracePeriodActive(), false, 'closed once the sdp time is valid');
+    assert.ok(sinkholed(mockEnv.files['/var/lib/tvweb/adblock_hosts'], 'us.rdx2.nextlgsdp.com'), 'written to the table');
+  });
+  privacy._clearSdpTimer();
 });
 
 test('nextlgsdp.com is omitted while SDP grace period is active', function () {

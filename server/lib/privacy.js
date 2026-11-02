@@ -63,12 +63,19 @@ var ADBLOCK_ADS = [
  * aic.cdpbeacon.lgtvcommon.com), and a hosts file only matches whole names. A
  * TV uses its own country code and LG's regional ones, so those are listed
  * rather than every country, which would cost the B8 ~4ms a lookup (74KB
- * table). The bare lgtvsdp.com family also serves the Content Store, which is
- * why only its rdx2 ad subdomain is here.
+ * table). The bare lgtvsdp.com and nextlgsdp.com families also serve the
+ * Content Store, which is why only their rdx2 report subdomains are here: sdx
+ * hands out us.rdx2.nextlgsdp.com as its report upload URL (getRdxServerUrl)
+ * on a C4 on webOS 10.3.1. That one waits for the clock like the time servers
+ * (see scheduleSdpBlock). The Content Store posts its request logs, with the
+ * wired MAC address, to <store host's first label>.elastic.lgwebostv.com,
+ * apart from the catalog.
  */
 var ADBLOCK_REGIONAL = [
   'info.lgsmartad.com',
   'rdx2.lgtvsdp.com',
+  'rdx2.nextlgsdp.com',
+  'elastic.lgwebostv.com',
   'ibs.lgappstv.com',
   'ibsstat.lgappstv.com',
   'cdpbeacon.lgtvcommon.com',
@@ -119,6 +126,10 @@ var ADBLOCK_PLATFORM = [
   'lgchhomeapp.lgtvcommon.com',
   'lgtviot.com',
   'ueiwsp.com',
+  // Amazon's Alexa SDK (libAVSCommon) fetches /generate_204 from it on a timer
+  // to tell whether the TV is online, while Alexa runs; blocked, Alexa reads
+  // the TV as offline.
+  'avsxappcaptiveportal.com',
   // The content CDN on webOS 11, from sdx's server list (OLED77C5PUA, 11.2.0).
   'ngfts.tv.wiselg.com'
 ];
@@ -412,7 +423,8 @@ function adBlockPlatform() {
 // This version's own names for a tier, without the owner's list.
 function ownBlockList(mode) {
   if (mode === 'off') return [];
-  return mode === 'full' ? adBlockAds().concat(adBlockPlatform()) : adBlockAds();
+  var list = mode === 'full' ? adBlockAds().concat(adBlockPlatform()) : adBlockAds();
+  return isSdpGracePeriodActive() ? list.filter(function (n) { return !isSdpName(n); }) : list;
 }
 
 function isSdpName(name) {
@@ -577,9 +589,9 @@ function applyCustom(cb, extra) {
   applyHostsTable(reply);
 }
 
-// Whether the clock wait applies: the Everything tier, or the owner's list naming the time servers.
+// Whether the clock wait applies: a tier or the owner's list naming a host under the time servers' domain.
 function waitsForSdp(mode) {
-  if (mode === 'full') return true;
+  if (mode === 'full' || (mode === 'ads' && adBlockAds().some(isSdpName))) return true;
   var c = customHosts();
   return mode !== 'off' && !!c && c.enabled && c.names.some(isSdpName);
 }
@@ -632,6 +644,85 @@ function tvUpdatesBlocked() {
   return fs.existsSync(HBC_BLOCK_UPDATES_FLAG);
 }
 
+/*
+ * LG's device detection (iconnectivity, UEI QuickSet) reverse-looks-up every
+ * address on the TV's network: three times over when its Home Hub looks for
+ * devices on a C2 (webOS 9.2.2), and every 5 minutes on other TVs with Auto
+ * device detection off, 253 lookups in 1.6 s each time (#244). It resolves
+ * through glibc and c-ares, which both read /etc/hosts first. Each address in
+ * the table named as itself answers them on the TV, with the address the
+ * lookup falls back to now, as no home router has names for them.
+ */
+var LOCAL_LOOKUPS_FLAG = '/var/lib/tvweb/local_lookups';
+var networkInterfaces = function () {
+  try { return require('os').networkInterfaces() || {}; } catch (e) { return {}; }
+};
+
+function localLookups() {
+  return fs.existsSync(LOCAL_LOOKUPS_FLAG);
+}
+
+function ip4Number(ip) {
+  var p = String(ip).split('.');
+  if (p.length !== 4) return null;
+  var n = 0;
+  for (var i = 0; i < 4; i++) {
+    var b = +p[i];
+    if (!/^\d{1,3}$/.test(p[i]) || b > 255) return null;
+    n = n * 256 + b;
+  }
+  return n;
+}
+
+function ip4Text(n) {
+  return [Math.floor(n / 16777216) % 256, Math.floor(n / 65536) % 256, Math.floor(n / 256) % 256, n % 256].join('.');
+}
+
+function isPrivate4(n) {
+  return (n >= 0x0a000000 && n <= 0x0affffff) || (n >= 0xac100000 && n <= 0xac1fffff) || (n >= 0xc0a80000 && n <= 0xc0a8ffff);
+}
+
+/*
+ * The addresses on each private IPv4 network the TV is on: its subnet where
+ * that is a /24 or smaller, otherwise the /24 around the TV, which is what the
+ * scans cover. Without the TV's own addresses: the server looks those up to
+ * name the TV.
+ */
+function localLookupAddresses() {
+  var ifaces = networkInterfaces();
+  var own = {}, out = [];
+  var nets = [];
+  Object.keys(ifaces).forEach(function (name) {
+    (ifaces[name] || []).forEach(function (e) {
+      var fam = String(e.family);
+      if (e.internal || (fam !== 'IPv4' && fam !== '4')) return;
+      var ip = ip4Number(e.address), mask = ip4Number(e.netmask || '255.255.255.0');
+      if (ip === null || mask === null || !isPrivate4(ip)) return;
+      own[e.address] = true;
+      var size = 4294967296 - mask;
+      if (!(size > 0 && size <= 256)) size = 256;
+      nets.push(ip - ip % size, size);
+    });
+  });
+  for (var i = 0; i < nets.length; i += 2) {
+    for (var h = 1; h < nets[i + 1] - 1; h++) {
+      var a = ip4Text(nets[i] + h);
+      if (!own[a] && out.indexOf(a) === -1) out.push(a);
+    }
+  }
+  return out;
+}
+
+function isLocalLookupLine(line) {
+  var parts = String(line).trim().split(/\s+/);
+  return parts.length === 2 && parts[0] === parts[1] && ip4Number(parts[0]) !== null;
+}
+
+// Whether the table must be up: for a tier, update blocking or local lookups.
+function tableWanted(mode) {
+  return mode !== 'off' || tvUpdatesBlocked() || localLookups();
+}
+
 // Both families for every name. A sinkhole with no AAAA record leaves the
 // resolver to ask DNS for one, and the connection goes through on IPv6.
 function sinkhole(lines, host) {
@@ -655,7 +746,7 @@ function foreignHostsLines(text) {
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i].trim();
     if (!line || line.charAt(0) === '#') continue;
-    if (/^(0\.0\.0\.0|::)\s/.test(line) || /localhost|ip6-/.test(line)) continue;
+    if (/^(0\.0\.0\.0|::)\s/.test(line) || /localhost|ip6-/.test(line) || isLocalLookupLine(line)) continue;
     var names = line.split(/\s+/).slice(1);
     if (names.some(function (n) { return managed.indexOf(n.toLowerCase()) !== -1; })) continue;
     if (kept.indexOf(line) === -1) kept.push(line);
@@ -687,6 +778,13 @@ function adBlockHostsTable(mode, foreign) {
   if (tvUpdatesBlocked()) {
     lines.push('', '# TV software updates, blocked by the flag the Homebrew Channel also uses');
     for (var u = 0; u < HBC_UPDATE_HOSTS.length; u++) sinkhole(lines, HBC_UPDATE_HOSTS[u]);
+  }
+  if (localLookups()) {
+    var local = localLookupAddresses();
+    if (local.length) {
+      lines.push('', '# The local network, so LG\'s device scans are answered on the TV');
+      for (var a = 0; a < local.length; a++) lines.push(local[a] + '\t' + local[a]);
+    }
   }
   if (foreign && foreign.length) {
     lines.push('', '# Kept from /etc/hosts, where other tools put them');
@@ -823,7 +921,7 @@ function applyHostsTable(cb) {
   var mode = flagMode();
   var mounted = isTableMounted();
   var done = function () { clearCache(); cb(null); };
-  if (mode !== 'off' || tvUpdatesBlocked()) {
+  if (tableWanted(mode)) {
     try {
       writeHostsTable(mode);
     } catch (e) {
@@ -882,6 +980,33 @@ function setAdBlock(mode, cb) {
   });
 }
 
+function setLocalLookups(on, cb) {
+  try {
+    if (on) fs.writeFileSync(LOCAL_LOOKUPS_FLAG, '', 'utf8');
+    else if (fs.existsSync(LOCAL_LOOKUPS_FLAG)) fs.unlinkSync(LOCAL_LOOKUPS_FLAG);
+  } catch (e) {
+    if (cb) cb({ ok: false, error: msg('srv.localLookups.saveFailed', 'could not save the setting: {error}', { error: e.message }) });
+    return;
+  }
+  applyHostsTable(function (err) {
+    if (cb) cb({ ok: !err, error: err || undefined, localLookups: localLookups() });
+  });
+}
+
+/*
+ * The TV can move to another network, or be given another address on its
+ * own: checked every 10 minutes, and the table rewritten when they change.
+ */
+var localNetworkKey = null;
+function watchLocalNetwork() {
+  if (!localLookups() || !isTableMounted()) return;
+  var key = localLookupAddresses().join(',');
+  if (localNetworkKey !== null && key !== localNetworkKey) {
+    try { writeHostsTable(flagMode()); } catch (e) {}
+  }
+  localNetworkKey = key;
+}
+
 function setTvUpdatesBlocked(on, cb) {
   try {
     if (on) fs.writeFileSync(HBC_BLOCK_UPDATES_FLAG, '', 'utf8');
@@ -901,7 +1026,7 @@ function checkBootAdBlock(cliMode) {
     // Rebuilt from the list in this version, so an update that adds names
     // takes effect without the mode being switched off and on.
     var mode = flagMode();
-    var need = mode !== 'off' || tvUpdatesBlocked();
+    var need = tableWanted(mode);
     if (need) writeHostsTable(mode);
     if (need && !isTableMounted()) {
       execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
@@ -1463,6 +1588,7 @@ function init(opts) {
   if (opts.lunaCached) lunaCached = opts.lunaCached;
   if (opts.config) config = opts.config;
   if (luna) learnCountry();
+  if (opts.watchNetwork) setInterval(watchLocalNetwork, 10 * 60 * 1000);
 }
 
 // Saved so the boot-time table is right before the settings service answers.
@@ -1492,6 +1618,10 @@ module.exports = {
   setAdBlock: setAdBlock,
   tvUpdatesBlocked: tvUpdatesBlocked,
   setTvUpdatesBlocked: setTvUpdatesBlocked,
+  localLookups: localLookups,
+  setLocalLookups: setLocalLookups,
+  localLookupAddresses: localLookupAddresses,
+  _setInterfaces: function (fn) { networkInterfaces = fn; },
   checkBootAdBlock: checkBootAdBlock,
   resetAdId: resetAdId,
   setLimitTracking: setLimitTracking,

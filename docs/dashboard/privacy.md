@@ -60,7 +60,7 @@ The built-in blocker runs directly on the TV without needing an external DNS sin
 
     Adds the hosts that carry LG's platform services:
 
-    * **What stops working:** The LG ThinQ phone app, the Content Store, firmware updates, LG Channels, and LG's search, so [Glasshouse Home's search](home.md#search) is hidden while it blocks it. (To block only firmware updates while keeping platform services, use **Block TV software updates** on the [System tab](advanced.md) instead.)
+    * **What stops working:** The LG ThinQ phone app, the Content Store, firmware updates, LG Channels, Alexa, and LG's search, so [Glasshouse Home's search](home.md#search) is hidden while it blocks it. (To block only firmware updates while keeping platform services, use **Block TV software updates** on the [System tab](advanced.md) instead.)
     * **webOS 11:** LG's platform there is `tv.wiselg.com`, which also carries the diagnostics report upload and app usage statistics. This tier blocks it, with the Content Store's host, once the clock has synced.
     * **Clock sync after a power cut:** After a cold boot, the blocker waits for the TV to set its clock from LG's time servers before blocking them. If the TV's date is still wrong and apps fail with certificate errors, set the time manually under **Settings › General › System › Time & Date** (with **Set Automatically** off).
     * **Switching back:** After switching away from **everything**, LG's built-in apps (such as Content Store or LG Channels) may take about a minute to reconnect while their browser engine's DNS cache expires.
