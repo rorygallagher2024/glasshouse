@@ -2579,5 +2579,12 @@
  "audio.deviceDetected": {"text": "Dispositivo audio HDMI rilevato", "from": "HDMI audio device detected"},
  "audio.receiverDetectedUnknown": {"text": "Il TV identifica questo dispositivo audio HDMI, ma non comunica il tipo di collegamento ARC/eARC né i formati del ricevitore. Controllare Audio In sul ricevitore per confermare la ricezione.", "from": "The TV identifies this HDMI audio device, but does not report its ARC/eARC link type or receiver formats. Check the receiver’s Audio In display to confirm reception."},
  "audio.receiverPort": {"text": "HDMI {port}", "from": "HDMI {port}"},
- "audio.inputUnavailable": {"text": "Stato audio attuale non disponibile", "from": "Live audio status unavailable"}
+ "audio.inputUnavailable": {"text": "Stato audio attuale non disponibile", "from": "Live audio status unavailable"},
+ "pv.uploads": {"text": "Invio dei log a LG", "from": "Log uploads to LG"},
+ "pv.uploads.desc": {"text": "Se la TV può inviare a LG i suoi log e le segnalazioni di guasto. I menu di LG non hanno un interruttore per questi; disattivato, restano sulla TV.", "from": "Whether the TV may send its logs and fault reports to LG. LG’s own menus have no switch for these; off keeps them on the TV."},
+ "srv.lgs.dbgLogUpload": {"text": "Invio del log di debug", "from": "Debug log upload"},
+ "srv.lgs.dbgLogUpload.desc": {"text": "Consente alla TV di inviare a LG i suoi log di debug. Alcune TV lo riattivano a ogni avvio; disattivato qui, resta tale. Non è nei menu di LG.", "from": "Lets the TV send its debug logs to LG. Some TVs switch it back on at each start; an off chosen here is kept. Not in LG's own menus."},
+ "srv.lgs.faultLogUpload": {"text": "Invio del log dei guasti", "from": "Fault log upload"},
+ "srv.lgs.faultLogUpload.desc": {"text": "Consente alla TV di inviare a LG segnalazioni di crash e guasti. Non è nei menu di LG.", "from": "Lets the TV send crash and fault reports to LG. Not in LG's own menus."},
+ "srv.privacy.item.upload": {"text": "{name} è attivo", "from": "{name} is on"}
 }

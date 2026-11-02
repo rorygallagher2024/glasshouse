@@ -102,7 +102,7 @@ var ROWS = [
   // saying false. An off chosen here is put back; see reapply.
   { id: 'dbgLogUpload', section: 'uploads', category: 'option', key: 'dbgLogUpload', on: true, off: false, hold: 'off',
     title: msg('srv.lgs.dbgLogUpload', 'Debug log upload'),
-    desc: msg('srv.lgs.dbgLogUpload.desc', 'Lets the diagnostics uploader send the TV\'s debug logs to LG. LG switches it on again at each start; off is kept here. Not in LG\'s own menus.') },
+    desc: msg('srv.lgs.dbgLogUpload.desc', 'Lets the TV send its debug logs to LG. Some TVs switch it back on at each start; an off chosen here is kept. Not in LG\'s own menus.') },
   { id: 'faultLogUpload', section: 'uploads', category: 'option', key: 'faultLogUpload', on: true, off: false, hold: 'off',
     title: msg('srv.lgs.faultLogUpload', 'Fault log upload'),
     desc: msg('srv.lgs.faultLogUpload.desc', 'Lets the TV send crash and fault reports to LG. Not in LG\'s own menus.') },

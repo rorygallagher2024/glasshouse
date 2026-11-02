@@ -2579,5 +2579,12 @@
  "audio.deviceDetected": {"text": "Dispositivo de audio HDMI detectado", "from": "HDMI audio device detected"},
  "audio.receiverDetectedUnknown": {"text": "La TV identifica este dispositivo de audio HDMI, pero no informa del tipo de enlace ARC/eARC ni de los formatos del receptor. Comprueba Audio In en el receptor para confirmar la recepción.", "from": "The TV identifies this HDMI audio device, but does not report its ARC/eARC link type or receiver formats. Check the receiver’s Audio In display to confirm reception."},
  "audio.receiverPort": {"text": "HDMI {port}", "from": "HDMI {port}"},
- "audio.inputUnavailable": {"text": "Estado del audio en directo no disponible", "from": "Live audio status unavailable"}
+ "audio.inputUnavailable": {"text": "Estado del audio en directo no disponible", "from": "Live audio status unavailable"},
+ "pv.uploads": {"text": "Envío de registros a LG", "from": "Log uploads to LG"},
+ "pv.uploads.desc": {"text": "Si la TV puede enviar sus registros e informes de fallos a LG. Los menús de LG no tienen interruptor para ellos; desactivado, se quedan en la TV.", "from": "Whether the TV may send its logs and fault reports to LG. LG’s own menus have no switch for these; off keeps them on the TV."},
+ "srv.lgs.dbgLogUpload": {"text": "Envío del registro de depuración", "from": "Debug log upload"},
+ "srv.lgs.dbgLogUpload.desc": {"text": "Permite que la TV envíe sus registros de depuración a LG. Algunas TV lo vuelven a activar en cada arranque; desactivado aquí, se mantiene. No está en los menús de LG.", "from": "Lets the TV send its debug logs to LG. Some TVs switch it back on at each start; an off chosen here is kept. Not in LG's own menus."},
+ "srv.lgs.faultLogUpload": {"text": "Envío del registro de fallos", "from": "Fault log upload"},
+ "srv.lgs.faultLogUpload.desc": {"text": "Permite que la TV envíe informes de bloqueos y fallos a LG. No está en los menús de LG.", "from": "Lets the TV send crash and fault reports to LG. Not in LG's own menus."},
+ "srv.privacy.item.upload": {"text": "{name} está activado", "from": "{name} is on"}
 }
