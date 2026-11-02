@@ -53,6 +53,7 @@ add('TV, receiver, local playback and negotiated transport stay separate', null,
   assert.strictEqual(format(st, 'mat').playback, false, 'HDMI MAT advertisement does not declare a local TrueHD decoder');
   assert.strictEqual(format(st, 'dtsx').advertised, null, 'a DTS-HD descriptor does not certify DTS:X');
   assert.strictEqual(st.live.input, null, 'AudioData with zero rate and an unstarted decoder is not live PCM');
+  assert.strictEqual(st.live.inputReadable, true, 'the driver can say what comes in, so no audio is reported, not unavailable');
   assert.strictEqual(st.live.output, null);
 });
 add('current output settings override whole-category defaults', function () {
@@ -140,6 +141,7 @@ add('C9 uses its input dimension and authoritative HAWK2 native EDID', c9Setup, 
   assert.strictEqual(st.live.hdmi.channelAllocation, 11);
   assert.strictEqual(st.live.hdmi.sampleRate, null, 'an unspecified frequency is not assumed to be 48 kHz');
   assert.strictEqual(st.live.input, null, 'an InfoFrame does not establish live audio or PCM decoding');
+  assert.strictEqual(st.live.inputReadable, false, 'with neither the input service nor the driver, what comes in cannot be read');
   assert.strictEqual(st.receiver.link, 'unknown', 'the eARC setting is not a negotiated link');
 });
 add('a failed HAWK2 read remains unknown instead of falling back to a family guess', function () {

@@ -49,13 +49,14 @@ The audio coming in, where the TV sends it, and the return channel it has
 negotiated with the receiver (ARC, eARC or none). The negotiated link is
 separate from the eARC setting.
 
-On older firmware such as a C9, LG's newer ARC status service may be absent.
-Where LG's input manager reports an ARC device and exactly one connected HDMI
-CEC audio system, the tab identifies its name and port as **HDMI audio device
-detected**. This is device detection, not proof of ARC/eARC negotiation or the
-receiver's codec support. Those remain unknown without an authoritative reply.
-**Live audio status unavailable** likewise means the firmware provides no
-supported live input reading; it does not mean the sound has stopped.
+Some older TVs, such as a C9, cannot say which return channel they use. When
+one soundbar or receiver is connected over HDMI, the tab then shows **HDMI
+audio device detected**, with its name and HDMI port. That says it is plugged
+in, not that ARC or eARC is working or which formats it takes.
+
+**No audio reported** means nothing is playing that the TV can see. **Live
+audio status unavailable** means the TV cannot report what audio comes in; it
+does not mean the sound has stopped.
 
 Below it, each format as the TV advertises it to the current HDMI source, and
 as the ARC or eARC receiver advertises it. Unknown stays unknown when the TV

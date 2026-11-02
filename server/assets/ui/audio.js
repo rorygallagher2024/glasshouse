@@ -92,7 +92,7 @@ function renderAudio() {
   q('audio-identity').textContent = [st.identity.model, st.identity.firmware,
     tv.dtsDecoder === true ? t('audio.decoderPresent', 'LG DTS decoder present') :
       tv.dtsDecoder === false ? t('audio.decoderAbsent', 'LG DTS-core decoder not registered') : null].filter(Boolean).join(' · ');
-  const noInput = t('audio.noInput', 'Live audio status unavailable');
+  const noInput = st.live.inputReadable === false ? t('audio.inputUnavailable', 'Live audio status unavailable') : t('audio.noInput', 'No audio reported');
   const source = st.live.input;
   const sourceText = source ? [source.codec, source.sampleRate ? (source.sampleRate / 1000) + ' kHz' : null].filter(Boolean).join(' · ') : noInput;
   const linkText = receiver.link === 'inactive' ? t('audio.linkInactive', 'No active ARC link') :

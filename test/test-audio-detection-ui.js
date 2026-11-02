@@ -11,7 +11,7 @@ if (Number(process.versions.node.split('.')[0]) < 8) {
       { id: 'dts', name: 'DTS', advertised: true, receiver: null }
     ] },
     receiver: { detected: true, name: 'Synthetic <soundbar>', port: 2, link: 'unknown', formatsKnown: false },
-    live: { input: null, hdmi: { channels: 6, sampleRate: null }, output: null }, outputName: 'HDMI ARC',
+    live: { input: null, inputReadable: false, hdmi: { channels: 6, sampleRate: null }, output: null }, outputName: 'HDMI ARC',
     override: { offered: false }
   };
   var context = { q: q, currentState: state,
@@ -24,7 +24,11 @@ if (Number(process.versions.node.split('.')[0]) < 8) {
   render();
   assert(q('audio-path').innerHTML.indexOf('HDMI audio device detected') !== -1);
   assert(q('audio-path').innerHTML.indexOf('Synthetic &lt;soundbar&gt; · HDMI 2') !== -1);
-  assert(q('audio-path').innerHTML.indexOf('Live audio status unavailable') !== -1);
+  assert(q('audio-path').innerHTML.indexOf('Live audio status unavailable') !== -1, 'a TV that cannot say what comes in says so');
+  state.live.inputReadable = true; render();
+  assert(q('audio-path').innerHTML.indexOf('No audio reported') !== -1, 'a TV that can, with nothing playing, reports no audio');
+  assert(q('audio-path').innerHTML.indexOf('Live audio status unavailable') === -1);
+  state.live.inputReadable = false; render();
   assert(q('audio-link-note').textContent.indexOf('does not report its ARC/eARC link type') !== -1);
   assert(q('audio-formats').innerHTML.indexOf('Unknown') !== -1);
   state.receiver.link = 'inactive'; render();

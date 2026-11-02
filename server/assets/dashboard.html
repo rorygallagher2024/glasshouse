@@ -1812,7 +1812,8 @@ function audioRows(d) {
   r.push({ label: 'DTS', value: audioDeclaration(dts && dts.advertised),
     hint: d.tv.dtsDecoder === true ? t('audio.decoderPresent', 'LG DTS decoder present') : d.tv.dtsDecoder === false
       ? t('audio.decoderAbsent', 'LG DTS-core decoder not registered') : t('tv.audio.decoderUnknown', 'DTS decoder registration is unknown.') });
-  r.push({ label: t('audio.inputNow', 'Incoming audio'), value: d.live.input ? d.live.input.codec : t('audio.noInput', 'Live audio status unavailable'),
+  r.push({ label: t('audio.inputNow', 'Incoming audio'), value: d.live.input ? d.live.input.codec : d.live.inputReadable === false
+    ? t('audio.inputUnavailable', 'Live audio status unavailable') : t('audio.noInput', 'No audio reported'),
     hint: t('tv.audio.inputHint', 'The TV’s current input reading. TV-app playback and HDMI-input forwarding use different audio paths.') });
   if (d.live.hdmi) r.push({ label: t('audio.hdmiChannels', 'HDMI channel information'),
     value: t('audio.channels', '{count} channels', { count: d.live.hdmi.channels }),

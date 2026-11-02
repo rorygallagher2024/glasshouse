@@ -410,6 +410,10 @@ function build(replies, decoder) {
   var audio = replies.input && replies.input.returnValue !== false && replies.input.audioInputProperty;
   var activeInput = Array.isArray(audio) && audio[0] && audio[0].codec ? audio[0] : null;
   var started = adecs.some(function (a) { return a.Start === '1' && /^HDMI_PORT/.test(a.Connect || ''); });
+  // Whether the TV can say what audio comes in at all: a B8 (webOS 4.4.3) has
+  // neither getAudioInputProperty nor the driver's hdmi file, where a C2 with
+  // nothing playing has both and reports no audio.
+  var inputReadable = Array.isArray(audio) || Object.keys(hdmi).length > 0;
   var liveInput = activeInput ? { codec: names.audioCodec(activeInput.codec).display,
     immersive: activeInput.immersive ? names.audioImmersive(activeInput.immersive) : null } :
     started && hdmi.AudioData === '1' && Number(hdmi.SamplingRate) > 0 ?
@@ -439,7 +443,7 @@ function build(replies, decoder) {
       formatsKnown: receiverFormats !== null },
     settings: settings,
     outputName: settings.soundOutput ? names.soundOutput(settings.soundOutput).display : null,
-    live: { input: liveInput, hdmi: hawk2 ? hdmiChannelInfo(port, replies.receiverMap) : null,
+    live: { input: liveInput, inputReadable: inputReadable, hdmi: hawk2 ? hdmiChannelInfo(port, replies.receiverMap) : null,
       output: liveInput && settings.soundOutput === 'external_arc' && link !== 'inactive' && link !== 'unknown' && sound.ARC && Number(sound.ARC.OutputChannel) > 0 ? sound.ARC.OutputCodec : null }
   };
 }
