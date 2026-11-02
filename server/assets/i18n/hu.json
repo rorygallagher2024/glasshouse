@@ -2579,5 +2579,12 @@
  "audio.deviceDetected": {"text": "HDMI-hangeszköz észlelve", "from": "HDMI audio device detected"},
  "audio.receiverDetectedUnknown": {"text": "A TV felismeri ezt a HDMI-hangeszközt, de nem jelenti az ARC/eARC kapcsolat típusát vagy a vevő formátumait. A vétel megerősítéséhez ellenőrizze a vevő Audio In kijelzését.", "from": "The TV identifies this HDMI audio device, but does not report its ARC/eARC link type or receiver formats. Check the receiver’s Audio In display to confirm reception."},
  "audio.receiverPort": {"text": "HDMI {port}", "from": "HDMI {port}"},
- "audio.inputUnavailable": {"text": "Az aktuális hangállapot nem érhető el", "from": "Live audio status unavailable"}
+ "audio.inputUnavailable": {"text": "Az aktuális hangállapot nem érhető el", "from": "Live audio status unavailable"},
+ "pv.uploads": {"text": "Naplók feltöltése az LG-nek", "from": "Log uploads to LG"},
+ "pv.uploads.desc": {"text": "Hogy a TV elküldheti-e a naplóit és hibajelentéseit az LG-nek. Az LG saját menüiben nincs ezekhez kapcsoló; kikapcsolva a TV-n maradnak.", "from": "Whether the TV may send its logs and fault reports to LG. LG’s own menus have no switch for these; off keeps them on the TV."},
+ "srv.lgs.dbgLogUpload": {"text": "Hibakeresési napló feltöltése", "from": "Debug log upload"},
+ "srv.lgs.dbgLogUpload.desc": {"text": "Engedi, hogy a TV elküldje a hibakeresési naplóit az LG-nek. Egyes TV-k minden indításkor visszakapcsolják; az itt választott kikapcsolás megmarad. Az LG menüiben nincs.", "from": "Lets the TV send its debug logs to LG. Some TVs switch it back on at each start; an off chosen here is kept. Not in LG's own menus."},
+ "srv.lgs.faultLogUpload": {"text": "Hibanapló feltöltése", "from": "Fault log upload"},
+ "srv.lgs.faultLogUpload.desc": {"text": "Engedi, hogy a TV összeomlás- és hibajelentéseket küldjön az LG-nek. Az LG menüiben nincs.", "from": "Lets the TV send crash and fault reports to LG. Not in LG's own menus."},
+ "srv.privacy.item.upload": {"text": "{name} be van kapcsolva", "from": "{name} is on"}
 }

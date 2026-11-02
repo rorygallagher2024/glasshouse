@@ -26,9 +26,10 @@ echo "$(date): starting"
 
 # Restore adblock bind-mount if enabled. Without the time servers, which the
 # Everything tier blocks: the TV sets its clock from them, and after a power
-# cut it has not yet. The server puts them back once the time is valid.
+# cut it has not yet. The server puts them back once the time is valid. On
+# webOS 11 they are tv.wiselg.com (privacy.js isSdpName).
 if [ -f /var/lib/tvweb/adblock_enabled ] && [ -f /var/lib/tvweb/adblock_hosts ]; then
-  sed -i '/nextlgsdp\.com/d' /var/lib/tvweb/adblock_hosts 2>/dev/null || true
+  sed -i '/nextlgsdp\.com/d; /tv\.wiselg\.com/d' /var/lib/tvweb/adblock_hosts 2>/dev/null || true
   # Other tools' lines (AmazOff, whose boot hook runs before this one) are
   # taken from this boot's /etc/hosts, and the last boot's are dropped. The
   # table's own lines are comments, localhost and sinkholes, and the Homebrew
