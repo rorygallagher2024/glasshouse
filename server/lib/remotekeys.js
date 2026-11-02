@@ -1042,6 +1042,8 @@ var POLL_MS = 200;
 var READ_CHUNK = 64 * 1024;
 var pressTargets = {};
 var following = false;
+var logPoll = null;
+var logStatPending = false;
 var logOffset = 0;
 var logIno = null;
 var reading = false;
@@ -1115,10 +1117,22 @@ function followPresses(targets) {
       logIno = null;
     }
     partialLine = '';
-    fs.watchFile(messagesPath, { interval: POLL_MS, persistent: false }, logChanged);
+    // fs.watchFile takes its first sample asynchronously and can miss a press
+    // logged before that sample. Our saved byte offset is the starting point.
+    logPoll = setInterval(function () {
+      if (logStatPending) return;
+      logStatPending = true;
+      var file = messagesPath;
+      fs.stat(file, function (err, st) {
+        logStatPending = false;
+        if (!err && file === messagesPath) logChanged(st);
+      });
+    }, POLL_MS);
+    if (logPoll.unref) logPoll.unref();
   } else if (!wanted && following) {
     following = false;
-    fs.unwatchFile(messagesPath, logChanged);
+    clearInterval(logPoll);
+    logPoll = null;
   }
 }
 
