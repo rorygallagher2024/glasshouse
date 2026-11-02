@@ -184,6 +184,25 @@ function records(value) {
   return Array.isArray(value) ? value.filter(function (x) { return x && typeof x === 'object' && !Array.isArray(x); }) : [];
 }
 
+// EIM can identify the CEC audio device even on webOS 4, where the newer
+// ARC capability service is absent. Detection does not prove a negotiated link.
+function detectedReceiver(reply) {
+  if (!reply || reply.returnValue !== true || reply.arcDevice !== true) return null;
+  var candidates = [];
+  records(reply.devices).forEach(function (d) {
+    var port = Number(d.port);
+    if (port < 1 || port > 4 || port !== Math.floor(port) || d.id !== 'HDMI_' + port ||
+        d.connected !== true || d.hdmiPlugIn === false) return;
+    var devices = records(d.subList).filter(function (device) {
+      return device.id === 'SIMPLINK' && device.cecpDevType === 5 &&
+        (device.portId === undefined || Number(device.portId) === port);
+    });
+    if (devices.length === 1) candidates.push({ port: port,
+      name: typeof devices[0].osdName === 'string' && devices[0].osdName ? devices[0].osdName : null });
+  });
+  return candidates.length === 1 ? candidates[0] : null;
+}
+
 function inspectDts(cb) {
   if (decoderAt && Date.now() - decoderAt < 300000) return cb(decoderCache);
   if (decoderWaiters) { decoderWaiters.push(cb); return; }
@@ -391,6 +410,10 @@ function build(replies, decoder) {
   var audio = replies.input && replies.input.returnValue !== false && replies.input.audioInputProperty;
   var activeInput = Array.isArray(audio) && audio[0] && audio[0].codec ? audio[0] : null;
   var started = adecs.some(function (a) { return a.Start === '1' && /^HDMI_PORT/.test(a.Connect || ''); });
+  // Whether the TV can say what audio comes in at all: a B8 (webOS 4.4.3) has
+  // neither getAudioInputProperty nor the driver's hdmi file, where a C2 with
+  // nothing playing has both and reports no audio.
+  var inputReadable = Array.isArray(audio) || Object.keys(hdmi).length > 0;
   var liveInput = activeInput ? { codec: names.audioCodec(activeInput.codec).display,
     immersive: activeInput.immersive ? names.audioImmersive(activeInput.immersive) : null } :
     started && hdmi.AudioData === '1' && Number(hdmi.SamplingRate) > 0 ?
@@ -399,9 +422,10 @@ function build(replies, decoder) {
   // G3 returned true there while getARCState and its driver reported ARC.
   var earc = sound.EARC && sound.EARC.EArcOnOff === 'On';
   var link = earc ? 'eARC' : arcActive ? 'ARC' : arc ? 'inactive' : 'unknown';
-  var arcPort = edid && Number(edid.arcHDMIPort) || null;
+  var detected = detectedReceiver(replies.devices);
+  var arcPort = edid && Number(edid.arcHDMIPort) || (detected ? detected.port : null);
   var devices = records(replies.devices && replies.devices.devices);
-  var receiverName = null;
+  var receiverName = detected && detected.port === arcPort ? detected.name : null;
   devices.forEach(function (d) {
     if (Number(d.port) !== arcPort) return;
     records(d.subList).forEach(function (s) {
@@ -414,11 +438,12 @@ function build(replies, decoder) {
       firmware: info.firmwareVersion || null, webos: info.sdkVersion || null, kernel: os.release() },
     tv: { edidType: edidType, input: port, dtsDecoder: decoder, formats: rows,
       playbackDeclarations: declarations ? declarations.map(function (x) { return { name: String(x.name), channels: x.channels || null }; }) : null },
-    receiver: { name: receiverName, connected: arc ? arcActive : null, link: link, port: arcPort,
+    receiver: { name: receiverName, detected: detected && detected.port === arcPort ? true : null,
+      connected: arc ? arcActive : null, link: link, port: arcPort,
       formatsKnown: receiverFormats !== null },
     settings: settings,
     outputName: settings.soundOutput ? names.soundOutput(settings.soundOutput).display : null,
-    live: { input: liveInput, hdmi: hawk2 ? hdmiChannelInfo(port, replies.receiverMap) : null,
+    live: { input: liveInput, inputReadable: inputReadable, hdmi: hawk2 ? hdmiChannelInfo(port, replies.receiverMap) : null,
       output: liveInput && settings.soundOutput === 'external_arc' && link !== 'inactive' && link !== 'unknown' && sound.ARC && Number(sound.ARC.OutputChannel) > 0 ? sound.ARC.OutputCodec : null }
   };
 }

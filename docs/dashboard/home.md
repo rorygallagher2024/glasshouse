@@ -39,7 +39,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    The titles the TV's apps put on LG's Home, such as Netflix's *Continue watching*, Prime Video's picks, Disney+, HBO Max and YouTube, as a row of cards with each app's picture, title and category. **OK** opens the app at that title. With an app in focus on the Apps row, by the keys or the pointer, the row shows only that app's cards (*From Netflix*), and **Down** reaches them; on a tile with no cards, such as an input or LG Home, it shows every app's, in the Apps row's order. An app hidden there shows none. The row starts under Apps and is moved like the others, but its cards are not arranged one by one. **Off by default**: switch it on in the Recommended row's settings on the dashboard or in the TV app. The pictures are loaded from each app's own servers, as on LG's Home; nothing else is sent. Tried on webOS 10. On a C2 with webOS 9.2 the TV listed no apps' titles, so the row stays hidden there and the switch says none are listed.
+    The titles the TV's apps put on LG's Home, such as Netflix's *Continue watching*, Prime Video's picks, Disney+, HBO Max and YouTube, as a row of cards with each app's picture, title and category. **OK** opens the app at that title. With an app in focus on the Apps row, by the keys or the pointer, the row shows only that app's cards (*From Netflix*), and **Down** reaches them; on a tile with no cards, such as an input or LG Home, it shows every app's, in the Apps row's order. An app hidden there shows none. The row starts under Apps and is moved like the others, but its cards are not arranged one by one. **Off by default**: switch it on in the Recommended row's settings on the dashboard or in the TV app. The pictures are loaded from each app's own servers, as on LG's Home; nothing else is sent. Tried on webOS 10 and on a 43UM7100PLB with webOS 4.10.2. On a C2 with webOS 9.2 the TV listed no apps' titles, so the row stays hidden there and the switch says none are listed.
 
 -   **Recent apps (`Back` button)**
 
@@ -94,11 +94,13 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ![A minimal Glasshouse Home: Alternative View with the clock, Last watched and CEC addresses off, apps and one input over the Abstract wallpaper](../screenshots/home-minimal.jpg)
 
--   **Fade in and out**
+-   **Animations**
 
     ---
 
-    When **Fade in and out** is switched on (off by default), Glasshouse Home fades out over a third of a second before an app, input, channel or recent app opens. Coming back, it stays black while its rows and the last active source refresh (at most 0.8 seconds), then fades in. **Notifications** and **Search**, which open over Home, do not fade it, and anything that fails to open fades it back in.
+    Each kind of motion has its own switch. **Fade in and out** (off by default) fades Glasshouse Home out before an app, input, channel or recent app opens, and back in when it returns. **Notifications** and **Search**, which open over Home, do not fade it.
+
+    The others are on by default: **Wallpaper drift**, the wallpaper's slow movement; **Wallpaper cross-fade**, from one part of the day's picture to the next; **Smooth scrolling**, rows gliding to the chosen tile rather than jumping; and **Sliding panels**, Recent apps, Search and More apps sliding in and out.
 
 -   **Colours & themes**
 
@@ -204,9 +206,17 @@ Rows and tiles can be arranged from the **web dashboard**, the **TV app**, or **
 
 ## Home customisation
 
-The Home tab's **Home customisation** section holds what applies to whichever Home is the TV's, in one column with each switch on the right:
+The Home tab's **Home customisation** section holds what applies to whichever Home is the TV's, grouped under headings:
 
-* While Glasshouse Home is on: **Open Home at power-on**, Glasshouse Home's own options (**Hide LG's Home while the TV starts**, **Picture details**, **Live preview**, **Keep the preview on**, **Preview in the tile**, **Clock and date**, **Rows along the bottom**, **Alternative View**, **Last watched**, **App count**, **CEC addresses**, **Search**, **Fade in and out**).
+![Home customisation on a C2, grouped under Starting up, Layout, Shown on Home, Live preview, Search and Animations](../screenshots/home-customisation.png)
+
+* While Glasshouse Home is on:
+    * **Starting up:** Open Home at power-on, Hide LG's Home while the TV starts.
+    * **Layout:** Alternative View, Rows along the bottom.
+    * **Shown on Home:** Clock and date, Last watched, App count, CEC addresses, Picture details.
+    * **Live preview:** Live preview, with Keep the preview on and Preview in the tile once it is on.
+    * **Search.**
+    * **Animations:** Fade in and out, Wallpaper drift, Wallpaper cross-fade, Smooth scrolling, Sliding panels.
 * While LG's Home is: **Open Home at power-on**, **Home screen layout** and **Hide home screen system apps**.
 
 Each appears where the TV has it. A TV Glasshouse Home is not offered on, such as a webOS 11 TV without `allowExperimentalHome`, still has the Home tab for these; there it holds Open Home at power-on and whichever of LG's Home options the TV has. The TV app's Home section has the same rows.

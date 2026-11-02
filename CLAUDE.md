@@ -6,11 +6,13 @@ Branch, push the branch, open a PR. This applies to "commit and push" too.
 Push to an existing PR branch rather than opening a second one for the same
 line of work. Merging is the maintainer's call.
 
-## Draft until tried on a TV
+## Draft until ready
 
-A PR that has not been tried on a real TV stays a draft, even when feedback on
-it is wanted. Mark it ready for review once it has been, with the result in its
-Testing section.
+Keep a PR in draft while any rule in docs/CONTRIBUTING.md's "Rules for a pull
+request" that applies to it is unmet, even when feedback on it is wanted:
+tried on a real TV with the result in its Testing section, checks passing,
+translated, docs updated. Mark it ready for review then. Its "Guidelines" are
+followed too, and a PR that departs from one says why.
 
 ## Docs move with the change
 
