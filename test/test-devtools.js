@@ -16,15 +16,17 @@ childProcess.execFile = function (file, args, opts, cb) {
   cb(answer(file, args));
 };
 
+// Each call's turn (lib/children) comes at once, so the tests stay synchronous;
+// its spacing between starts is lib/children's own test's.
+require('../server/lib/children').launch = function (fn) { fn(); };
 var devtools = require('../server/lib/devtools');
 
 var FLAG = '/var/luna/preferences/devmode_enabled';
 var TABLES = '/proc/net/ip_tables_names';
 var FILES = [FLAG, '/usr/sbin/iptables', '/usr/sbin/ip6tables', '/sbin/iptables', '/sbin/ip6tables', TABLES];
 
-// devtools.js waits a turn before each iptables call, and a moment before a
-// retry; both run here at once, as execFile answers, so each test stays
-// synchronous.
+// devtools.js waits a turn of the event loop before each iptables call, and a
+// moment before a retry; both run here at once, as execFile answers.
 var realSetImmediate = setImmediate;
 var realSetTimeout = setTimeout;
 

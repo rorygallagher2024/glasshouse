@@ -25,6 +25,7 @@
  */
 var fs = require('fs');
 var execFile = require('child_process').execFile;
+var children = require('./children');
 
 var DEVMODE_FLAG = '/var/luna/preferences/devmode_enabled';
 var RULE = ['INPUT', '-p', 'tcp', '--dport', '9998', '!', '-i', 'lo', '-j', 'DROP'];
@@ -53,17 +54,21 @@ function findTool(name) {
  * (uv_close: Assertion `!uv__is_closing(handle)' failed, the child dying of
  * SIGABRT): every time when it is started from inside another child's exit
  * callback, as each call here after the first would be, and now and then at
- * server start whatever starts it. So each call waits a turn of the event loop,
- * and one that dies of a signal nobody sent it is tried once more: an aborted
- * -C read as "no rule" would stack a second copy.
+ * server start whatever starts it. So each call takes the shared turn
+ * (lib/children), which spaces starts out after the server starts, and a turn
+ * of the event loop after it, as the turn can come at once inside an exit
+ * callback. One that died before running is tried once more: an aborted -C
+ * read as "no rule" would stack a second copy.
  */
 function iptables(tool, args, cb, retried) {
-  setImmediate(function () {
-    execFile(tool, args.concat(RULE), { timeout: 5000 }, function (err) {
-      if (err && err.signal && !err.killed && !retried) {
-        return setTimeout(function () { iptables(tool, args, cb, true); }, 200);
-      }
-      cb(err);
+  children.launch(function () {
+    setImmediate(function () {
+      execFile(tool, args.concat(RULE), { timeout: 5000 }, function (err) {
+        if (children.diedEarly(err) && !retried) {
+          return setTimeout(function () { iptables(tool, args, cb, true); }, 200);
+        }
+        cb(err);
+      });
     });
   });
 }
