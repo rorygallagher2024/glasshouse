@@ -1490,6 +1490,10 @@ reboots.
   `com.webos.app.homeconnect-overlay` through `keyaction.inputHub`),
   `KEY_MULTIKEY` (?), `KEY_GUIDE`, `KEY_VOICE` (AI), `KEY_HOME`,
   `KEY_SCREEN_REMOTE` (123), `KEY_ALEXAVOICE`, `KEY_NETFLIX`, `KEY_AMAZON`.
+  The line comes as the button goes down, not up: with Screen off on the
+  Netflix button, 2 presses in 6 on a C5 (webOS 11.2.0) had the screen off
+  and back to Active 21 and 92 ms later, a black blink, where the screen
+  went off before the button was let go and its release woke the TV (#1143).
 - **The ? button is LG's custom button.** A press launches
   `other.customShortPress` (`{ id, type: "app", params }`, LG's default the
   input picker) with mode `customkey`, a hold `other.customLongPress`
