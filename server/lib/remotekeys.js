@@ -1126,8 +1126,15 @@ function buttonPressed(button) {
  * before the key was set again (#1143). For a while after, LG's writes are
  * answered at once, and the keys are set again unasked, as not every write is
  * announced.
+ *
+ * lginput2 logs the press as the button goes down, so on a press held a little
+ * longer the screen goes off before the button is up, and the release brings
+ * the picture back: on a C5 (webOS 11.2.0) 2 presses in 6 woke it 21 and 92 ms
+ * after it went off, a black blink (#1143). Half a second after, a screen back
+ * on with no new press of the button is turned off once more.
  */
 var SCREEN_OFF_TRIES = 10;
+var SCREEN_OFF_CHECK_MS = 500;
 var SCREEN_OFF_RETRY_MS = 400;
 var FAST_REAPPLY_MS = 100;
 var FAST_REAPPLY_WINDOW_MS = 15000;
@@ -1147,13 +1154,23 @@ function screenOffFromPress(button, tries) {
   });
 }
 
-function screenOff(button) {
+function screenOff(button, again) {
   lunaFn('com.webos.service.tvpower/power/turnOffScreen', {}, function (r) {
     if (!(r && r.returnValue)) return console.log('remotekeys: ' + button + ' could not turn the screen off');
     screenOffAt = Date.now();
     SCREEN_OFF_REAPPLY_MS.forEach(function (ms) {
       setTimeout(function () { applyNative(function () {}); }, ms);
     });
+    if (again) return;
+    var pressedAt = lastPress[button];
+    setTimeout(function () {
+      if (lastPress[button] !== pressedAt) return;
+      lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+        if (!pw || pw.state !== 'Active') return;
+        console.log('remotekeys: ' + button + ' woke the screen as it was let go; turned off again');
+        screenOff(button, true);
+      });
+    }, SCREEN_OFF_CHECK_MS);
   });
 }
 

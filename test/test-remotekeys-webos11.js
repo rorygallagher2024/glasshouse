@@ -113,6 +113,9 @@ function luna(uri, params, cb) {
     if (power.processing) r.processing = power.processing;
   } else if (uri === 'com.webos.service.tvpower/power/turnOffScreen') {
     power.screenOffs++;
+    power.state = 'Screen Off';
+    // The button's release waking the TV just after, as on a C5 (#1143).
+    if (power.wakeOnRelease) { power.wakeOnRelease = false; setTimeout(function () { power.state = 'Active'; }, 30); }
   } else {
     throw new Error('unexpected call ' + uri);
   }
@@ -498,6 +501,26 @@ step('Screen off on a streaming button switches LG\'s entry off and turns the sc
         }, POLLED + 800);
       });
     });
+  });
+});
+
+step('Screen off is turned off once more when the button\'s release wakes the TV, and only once', function (next) {
+  set('netflix', 'open', 'action:screenOff', function () {
+    power.state = 'Active';
+    power.processing = '';
+    power.screenOffs = 0;
+    power.wakeOnRelease = true;
+    logLine(NETFLIX_LINE);
+    setTimeout(function () {
+      assert.strictEqual(power.screenOffs, 2, 'turned off again after the release woke it');
+      assert.strictEqual(power.state, 'Screen Off');
+      // Off and staying off: nothing more.
+      setTimeout(function () {
+        assert.strictEqual(power.screenOffs, 2);
+        power.state = 'Active';
+        set('netflix', 'lg', '', function () { next(); });
+      }, 900);
+    }, POLLED + 1600);
   });
 });
 
