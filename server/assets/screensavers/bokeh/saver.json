@@ -6,6 +6,8 @@
     "es": "Bokeh",
     "hu": "Bokeh",
     "it": "Bokeh",
+    "pl": "Bokeh",
+    "pt": "Bokeh",
     "ru": "Боке"
   },
   "description": {
@@ -13,6 +15,8 @@
     "es": "Círculos suaves de luz que aparecen y se desvanecen sobre negro.",
     "hu": "Lágy fénykörök úsznak be és ki fekete háttéren.",
     "it": "Morbidi cerchi di luce che compaiono e svaniscono sul nero.",
+    "pl": "Miękkie kręgi światła pojawiające się i znikające na czerni.",
+    "pt": "Círculos suaves de luz que surgem e se desvanecem sobre fundo preto.",
     "ru": "Мягкие круги света проплывают и тают на чёрном фоне."
   },
   "license": "MIT",

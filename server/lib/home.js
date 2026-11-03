@@ -50,6 +50,10 @@ var ROWS = ['app', 'rec', 'dev', 'ch'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec'];
+// Each kind of motion on the view, on unless switched off: the wallpaper's
+// slow drift and its cross-fade between parts of the day, rows easing to the
+// chosen tile, and Recent apps, search and the folder sliding in.
+var MOTION_KEYS = ['wallDrift', 'wallCrossfade', 'smoothScroll', 'slidePanels'];
 // An input opened from its tile is recorded as that device, not as the whole input.
 var TILE_OPEN_MS = 15000;
 /*
@@ -61,6 +65,8 @@ var PROMO_APPS = ['com.webos.app.lgchannels', 'com.webos.app.sportsteamsettings'
   'com.webos.app.lifeonscreen', 'amazon.alexa.view', 'com.webos.app.camera'];
 // The view's own way back to LG's Home: last in the Apps row, and never hidden.
 var LG_HOME_TILE = 'lg-home';
+// The Inputs row's tile for the TV's own tuner, which opens Live TV.
+var TUNER_TILE = 'tv';
 /*
  * LG's notifications and search, reached from its Home's sidebar and from no
  * other screen. Neither has a launch point, so the Apps row lists them from
@@ -87,6 +93,10 @@ var FULL_HOME_REASONS = ['aiKey', 'lastPowerOn', 'localKey', 'remoteKey', 'senio
 var WAKE_SETTLE_MS = 4500;
 // How long after opening it Home is opened once more if the input comes back in front.
 var WAKE_REOPEN_MS = 4000;
+// After a wake on webOS 11, how long the view is left before it is opened
+// again, and how long it stays closed: the times the reporter's script used.
+var WAKE11_REOPEN_MS = 4000;
+var WAKE11_CLOSED_MS = 2000;
 /*
  * Where giving LG's Home its place back restarts sam (webOS 5 and 6), the TV's
  * last-input handler puts the input or app back over LG's Home about 3 s later
@@ -96,14 +106,14 @@ var ESCAPE_REOPEN_MS = 8000;
 var escapeReopen = null;
 /*
  * Colours for Glasshouse Home's text and accent, chosen by both dashboards.
- * The first is the view's own, used while none is chosen. Every pair keeps
- * light text on black. The accent marks what was last on and arranging and,
- * once colours are chosen, frames the focused tile.
+ * The one marked own is the view's built-in look, saved as none chosen. Every
+ * pair keeps light text on black. The accent marks what was last on and
+ * arranging and, once colours are chosen, frames the focused tile.
  */
 var COLOUR_PRESETS = [
-  { id: 'warm', text: '#ece7df', accent: '#e9ad55' },
-  { id: 'glasshouse', text: '#ece7df', accent: '#30de61' },
   { id: 'pure', text: '#ffffff', accent: '#ffffff' },
+  { id: 'warm', text: '#ece7df', accent: '#e9ad55', own: true },
+  { id: 'glasshouse', text: '#ece7df', accent: '#30de61' },
   { id: 'white', text: '#f4f4f4', accent: '#8fb8ff' },
   { id: 'ice', text: '#d4e6f4', accent: '#5fc4ee' },
   { id: 'rose', text: '#f4dcdc', accent: '#ec7f8c' },
@@ -179,6 +189,8 @@ var lgHomeWatch = null;
 var lgHomeTicks = 0;
 var lgHomeHeld = false;
 var installFn = null;
+var injectKeyFn = null;
+var hdmiInputsFn = null;
 var procDir = '/proc';
 var execFn = execFile;
 var systemctlPath = '';
@@ -222,6 +234,11 @@ var otherOpenedAt = 0;
 var lastSource = null;
 var beatTimer = null;
 var lastBeatAt = 0;
+// What the view last said of itself, with its heartbeat: whether its page had
+// the keyboard's focus and was visible (#1122).
+var viewFocus = null;
+var wake11Timer = null;
+var preloadRefusalLogged = false;
 // Heartbeats since the server started, so one after a press can be told apart.
 var beats = 0;
 var holdTimer = null;
@@ -263,6 +280,9 @@ var tileInput = null;
 var channelReading = null;
 
 function configFile() { return path.join(stateDir, 'home.json'); }
+// While this file exists, the view measures its frames and sends them with
+// each beat, and they are logged (docs/development/testing.md, scripts/home-trace.sh).
+function traceFile() { return path.join(stateDir, 'home-trace'); }
 
 function luna(uri, payload, cb) {
   if (!lunaFn) return cb(null);
@@ -300,6 +320,9 @@ function defaults() {
     // The plate describing the picture of what was last on: detail many
     // won't want on a home screen, so it waits to be switched on.
     picture: false,
+    // A live picture of the input or channel whose tile is in focus: off
+    // until switched on, as it moves the TV's HDMI receiver or a tuner.
+    livePreview: false,
     // What the view shows beyond the rows: the clock and date, the last
     // source in the top strip and on its input's tile, the "n of total"
     // beside Apps, and each CEC device's address. On unless switched off, as
@@ -308,6 +331,11 @@ function defaults() {
     showLastOn: true,
     showAppCount: true,
     showCec: true,
+    // The live preview kept on what was last on whenever the view is on
+    // screen, rather than only while a tile is chosen.
+    previewAlways: false,
+    // The live preview in the tile it shows, rather than beside the clock.
+    previewInTile: false,
     // The rows centred below the top strip, or along the bottom as on LG's Home.
     rowsBottom: false,
     // standard, or alternative: a smaller clock on the right, and the rows
@@ -320,11 +348,19 @@ function defaults() {
     recommended: false,
     // The view fading in as it comes on screen, and out as a tile opens.
     fade: false,
+    wallDrift: true,
+    wallCrossfade: true,
+    smoothScroll: true,
+    slidePanels: true,
     // Inputs with nothing plugged in left out of the Inputs row, rather than
     // shown greyed out.
     hideUnused: false,
-    // { text, accent } as #rrggbb, or null for the view's own colours.
-    colours: null,
+    // How strongly the wallpaper is darkened behind the text and rows, in
+    // percent of the view's own darkening; 0 leaves the picture as it is.
+    darkening: 100,
+    // { text, accent } as #rrggbb, or null for the view's own colours. Pure
+    // white until one is chosen.
+    colours: { text: '#ffffff', accent: '#ffffff' },
     // null until chosen: the first start keeps an empty layout an earlier build left.
     hideLgHomeAtStart: null,
     // LG's Home auto launch as it was before Glasshouse Home switched it off,
@@ -378,9 +414,12 @@ function normalise(raw) {
   d.hintSeen = raw.hintSeen === true;
   d.searchHintSeen = raw.searchHintSeen === true;
   d.picture = raw.picture === true;
+  d.livePreview = raw.livePreview === true;
   SHOW_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.rowsBottom = raw.rowsBottom === true;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
+  d.previewAlways = raw.previewAlways === true;
+  d.previewInTile = raw.previewInTile === true;
   d.search = raw.search === true;
   d.recommended = raw.recommended === true;
   // Its cards come and go with the apps' lists, so it keeps no order of its own.
@@ -388,14 +427,22 @@ function normalise(raw) {
   d.sort.rec = 'custom';
   d.hidden.rec = [];
   d.fade = raw.fade === true;
+  MOTION_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
+  d.darkening = validDarkening(raw.darkening);
   d.hideUnused = raw.hideUnused === true;
-  d.colours = validColours(raw.colours);
+  // null, saved, is the view's own look; none saved keeps the default.
+  if (Object.prototype.hasOwnProperty.call(raw, 'colours')) d.colours = validColours(raw.colours);
   if (typeof raw.hideLgHomeAtStart === 'boolean') d.hideLgHomeAtStart = raw.hideLgHomeAtStart;
   if (typeof raw.lgAutoLaunch === 'string' && raw.lgAutoLaunch) d.lgAutoLaunch = raw.lgAutoLaunch;
   if (typeof raw.lgAutoLaunchCheck === 'string' && raw.lgAutoLaunchCheck) d.lgAutoLaunchCheck = raw.lgAutoLaunchCheck;
   if (typeof raw.lgDefaultHome === 'string' && raw.lgDefaultHome) d.lgDefaultHome = raw.lgDefaultHome;
   d.snapshot = validSnapshot(raw.snapshot) ? raw.snapshot : null;
   return d;
+}
+
+function validDarkening(v) {
+  var n = typeof v === 'number' ? Math.round(v) : NaN;
+  return n >= 0 && n <= 100 ? n : 100;
 }
 
 function validColours(v) {
@@ -443,7 +490,8 @@ function readConfig() {
 // blocking or freeing LG's search, which is not saved in the layout.
 function layoutVersion() {
   readConfig();
-  return String(configMtime) + (search.blocked() ? '-search-blocked' : '');
+  return String(configMtime) + (search.blocked() ? '-search-blocked' : '') +
+    (listsRevision ? '-lists' + listsRevision : '');
 }
 
 function saveConfig() {
@@ -508,15 +556,23 @@ function setLayout(body, cb) {
     hintSeen: body.hintSeen !== undefined ? body.hintSeen : c.hintSeen,
     searchHintSeen: body.searchHintSeen !== undefined ? body.searchHintSeen : c.searchHintSeen,
     picture: typeof body.picture === 'boolean' ? body.picture : c.picture,
+    livePreview: typeof body.livePreview === 'boolean' ? body.livePreview : c.livePreview,
     showClock: typeof body.showClock === 'boolean' ? body.showClock : c.showClock,
     rowsBottom: typeof body.rowsBottom === 'boolean' ? body.rowsBottom : c.rowsBottom,
     view: body.view !== undefined ? body.view : c.view,
     showLastOn: typeof body.showLastOn === 'boolean' ? body.showLastOn : c.showLastOn,
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
+    previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
+    previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
+    wallDrift: typeof body.wallDrift === 'boolean' ? body.wallDrift : c.wallDrift,
+    wallCrossfade: typeof body.wallCrossfade === 'boolean' ? body.wallCrossfade : c.wallCrossfade,
+    smoothScroll: typeof body.smoothScroll === 'boolean' ? body.smoothScroll : c.smoothScroll,
+    slidePanels: typeof body.slidePanels === 'boolean' ? body.slidePanels : c.slidePanels,
+    darkening: body.darkening !== undefined ? body.darkening : c.darkening,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
@@ -543,25 +599,75 @@ function setLayout(body, cb) {
 function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
-    searchHintSeen: c.searchHintSeen, picture: c.picture, search: c.search, recommended: c.recommended,
-    fade: c.fade, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, colours: c.colours,
+    searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
+    fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
+    darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, previewAlways: c.previewAlways, previewInTile: c.previewInTile, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
 }
 
 // ---------------------------------------------------------------- what it shows
 
+/*
+ * The lists the rows are built from, as last read, in home-lists.json. Every
+ * child start waits its turn just after the server starts (lib/children), so
+ * a view opened then waited on them: 7.9 s for the first catalogue on a B8
+ * (webOS 4.4.3) against 0.75 s later. Until a list is read in this run, the
+ * saved one is answered at once and read again behind it; a change bumps
+ * layoutVersion, so the view reloads on its next heartbeat.
+ */
+var savedLists = null;
+var listsRevision = 0;
+var listLoading = {};
+
+function listsFile() { return path.join(stateDir, 'home-lists.json'); }
+
+function savedList(key) {
+  if (savedLists === null) {
+    try { savedLists = JSON.parse(fs.readFileSync(listsFile(), 'utf8')) || {}; } catch (e) { savedLists = {}; }
+  }
+  return savedLists[key] || null;
+}
+
+// True when the list differs from the one saved.
+function saveList(key, value) {
+  savedList(key);
+  if (JSON.stringify(savedLists[key]) === JSON.stringify(value)) return false;
+  savedLists[key] = value;
+  try {
+    writeJsonAtomic(listsFile(), savedLists, 384);
+  } catch (e) {
+    console.error('home: could not save home-lists.json: ' + e.message);
+  }
+  return true;
+}
+
 function cached(key, ttl, load, cb) {
   var hit = listCache[key];
   if (hit && nowMs() - hit.at < ttl) return cb(hit.value);
+  var saved = hit ? null : savedList(key);
+  if (saved) {
+    cb(saved);
+    if (listLoading[key]) return;
+    listLoading[key] = true;
+    return load(function (value) {
+      listLoading[key] = false;
+      if (!value) return;
+      listCache[key] = { at: nowMs(), value: value };
+      if (saveList(key, value)) listsRevision++;
+    });
+  }
   load(function (value) {
-    if (value) listCache[key] = { at: nowMs(), value: value };
+    if (value) {
+      listCache[key] = { at: nowMs(), value: value };
+      saveList(key, value);
+    }
     cb(value);
   });
 }
 
-function isInputApp(id) { return /^com\.webos\.app\.(hdmi\d|livetv|av\d|comp\d)/.test(id); }
+var isInputApp = names.isInputAppId;
 
 /*
  * The apps on LG's Home, in its order, as { id, title, icon }. Saved web
@@ -624,46 +730,68 @@ function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').re
  * which: depth 2 under depth 1 on the same port. The G3 reports connected
  * true for every port, so the plug is hdmiPlugIn, where it is given.
  */
+/*
+ * eim on webOS 4 (a B8, 4.4.3) names neither hdmiPlugIn nor connected, so
+ * every port read as plugged in. The Metrics tab's reading of the ports is
+ * used there instead: a CEC device behind the port, or a link on it.
+ */
+function pluggedPorts(devs, cb) {
+  var told = devs.some(function (d) { return d && (typeof d.hdmiPlugIn === 'boolean' || typeof d.connected === 'boolean'); });
+  if (told || !hdmiInputsFn) return cb(null);
+  hdmiInputsFn(function (r) {
+    if (!r || !r.ok || !isArray(r.inputs)) return cb(null);
+    var plugged = {};
+    r.inputs.forEach(function (i) { if (i && i.id) plugged[i.id] = !!(i.deviceSeen || i.signal); });
+    cb(plugged);
+  });
+}
+
 function devices(cb) {
   cached('dev', LIST_TTL_MS, function (done) {
     luna('com.webos.service.eim/getAllInputStatus', {}, function (r) {
       if (!r || !isArray(r.devices)) return done(null);
-      var out = [];
-      r.devices.forEach(function (d) {
-        var m = d && typeof d.id === 'string' && /^HDMI_(\d)$/.exec(d.id);
-        if (!m) return;
-        var plugged = typeof d.hdmiPlugIn === 'boolean' ? d.hdmiPlugIn : d.connected !== false;
-        var port = +m[1];
-        var input = 'hdmi' + port;
-        if (!plugged) {
-          out.push({ id: input, name: 'HDMI ' + port, input: input, port: port, via: null, address: null, unused: true });
-          return;
-        }
-        var subs = (isArray(d.subList) ? d.subList : []).filter(function (s) {
-          return s && s.id === 'SIMPLINK' && typeof s.osdName === 'string' && s.osdName.trim();
-        });
-        if (!subs.length) {
-          out.push({ id: input, name: String(d.label || ('HDMI ' + port)), input: input, port: port, via: null, address: null });
-          return;
-        }
-        var top = null;
-        subs.forEach(function (s) { if (s.depth === 1 && !top) top = s.osdName.trim(); });
-        subs.forEach(function (s) {
-          var name = s.osdName.replace(/\s+/g, ' ').trim();
-          out.push({
-            id: input + ':' + slug(name),
-            name: name,
-            input: input,
-            port: port,
-            via: s.depth > 1 && top && top !== name ? top : null,
-            address: cecAddress(s.physicalAddress),
-            uniqueId: s.uniqueId
-          });
-        });
-      });
-      done(out);
+      pluggedPorts(r.devices, function (portsPlugged) { done(listDevices(r.devices, portsPlugged)); });
     });
   }, cb);
+}
+
+function listDevices(devs, portsPlugged) {
+  var out = [];
+  devs.forEach(function (d) {
+    var m = d && typeof d.id === 'string' && /^HDMI_(\d)$/.exec(d.id);
+    if (!m) return;
+    var plugged = typeof d.hdmiPlugIn === 'boolean' ? d.hdmiPlugIn
+      : portsPlugged && Object.prototype.hasOwnProperty.call(portsPlugged, d.id) ? portsPlugged[d.id]
+      : d.connected !== false;
+    var port = +m[1];
+    var input = 'hdmi' + port;
+    if (!plugged) {
+      out.push({ id: input, name: 'HDMI ' + port, input: input, port: port, via: null, address: null, unused: true });
+      return;
+    }
+    var subs = (isArray(d.subList) ? d.subList : []).filter(function (s) {
+      return s && s.id === 'SIMPLINK' && typeof s.osdName === 'string' && s.osdName.trim();
+    });
+    if (!subs.length) {
+      out.push({ id: input, name: String(d.label || ('HDMI ' + port)), input: input, port: port, via: null, address: null });
+      return;
+    }
+    var top = null;
+    subs.forEach(function (s) { if (s.depth === 1 && !top) top = s.osdName.trim(); });
+    subs.forEach(function (s) {
+      var name = s.osdName.replace(/\s+/g, ' ').trim();
+      out.push({
+        id: input + ':' + slug(name),
+        name: name,
+        input: input,
+        port: port,
+        via: s.depth > 1 && top && top !== name ? top : null,
+        address: cecAddress(s.physicalAddress),
+        uniqueId: s.uniqueId
+      });
+    });
+  });
+  return out;
 }
 
 /*
@@ -698,9 +826,12 @@ function catalogue(cb) {
 function rows(cb) {
   var c = readConfig();
   launchPoints(function (apps) {
-    devices(function (devs) {
+    devices(function (hdmi) {
       channelList(function (chans) {
+       tunerTile(chans, function (tuner) {
+        var devs = hdmi || tuner ? (tuner ? [tuner] : []).concat(hdmi || []) : null;
         recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs)); });
+       });
       });
     });
   });
@@ -715,7 +846,7 @@ function build(c, apps, devs, chans, recs) {
   picked.sort(function (a, b) { return c.channels.indexOf(a.id) - c.channels.indexOf(b.id); });
   var order = {
     app: ordered(c.order.app, appIds),
-    dev: ordered(c.order.dev, devIds),
+    dev: tunerFirst(c.order.dev, ordered(c.order.dev, devIds)),
     ch: picked.map(function (p) { return p.id; }),
     rec: []
   };
@@ -749,7 +880,30 @@ function build(c, apps, devs, chans, recs) {
 // The apps' cards while the row is switched on; null when the TV gave none.
 function recommendedCards(c, cb) {
   if (!c.recommended) return cb([]);
-  recommended.cards(cb);
+  cached('rec', LIST_TTL_MS, function (done) { recommended.cards(done); }, cb);
+}
+
+/*
+ * The TV's own tuner as a tile in the Inputs row, with the channel it was
+ * last on, or null on a TV with no channels tuned. Opening it opens Live TV.
+ */
+function tunerTile(chans, cb) {
+  if (!chans || !chans.length) return cb(null);
+  luna('com.webos.service.utp.boot/getLastChannelId', {}, function (r) {
+    var chId = r && typeof r.channelId === 'string' ? r.channelId : null;
+    /** @type {any} */
+    var hit = null;
+    chans.forEach(function (ch) { if (ch.id === chId) hit = ch; });
+    cb({ id: TUNER_TILE, name: 'TV', input: 'tv', tuner: true, port: 0, via: null, address: null,
+         channel: hit ? { id: hit.id, number: hit.number, name: hit.name } : null });
+  });
+}
+
+// The TV's tile goes first in a row arranged before it existed, rather than last.
+function tunerFirst(saved, order) {
+  var i = order.indexOf(TUNER_TILE);
+  if (i <= 0 || saved.indexOf(TUNER_TILE) !== -1) return order;
+  return [TUNER_TILE].concat(order.slice(0, i), order.slice(i + 1));
 }
 
 /*
@@ -786,6 +940,7 @@ function noteOpened(row, id) {
 function noteForeground(was, id) {
   if (was === LIVE_TV && id !== LIVE_TV) noteLiveChannel(function () {});
   if (!id || id === HOME_APP || id === LG_HOME) return;
+  if (id === LIVE_TV && was !== LIVE_TV) noteOpened('dev', TUNER_TILE);
   var m = /^com\.webos\.app\.hdmi(\d)$/.exec(id);
   if (m) {
     var fromTile = tileInput && tileInput.app === id && nowMs() - tileInput.at < TILE_OPEN_MS;
@@ -952,7 +1107,13 @@ function open(body, cb) {
   // Only the view opens tiles: asked to, it is up, whether or not it beat first.
   beats++;
   if (kind === 'lg' || (kind === 'app' && id === LG_HOME_TILE)) {
-    if (body.recovery && !viewInFront()) return cb({ ok: true, done: false });
+    /*
+     * The page's escape when its first load fails. Not on webOS 4, where LG's
+     * ribbon is a long press of Home away and is no takeover to undo: on a B8
+     * (4.4.3) the page opened at boot before the server, and the escape put
+     * LG's ribbon over it as the server came up.
+     */
+    if (body.recovery && (isStandalone() || !viewInFront())) return cb({ ok: true, done: false });
     return toLgHome('tile', cb);
   }
   if (kind === 'app') {
@@ -960,6 +1121,12 @@ function open(body, cb) {
       var known = (apps || []).some(function (a) { return a.id === id; });
       if (!known) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
       launch(id, null, opened('app', id, cb));
+    });
+  }
+  if (kind === 'dev' && id === TUNER_TILE) {
+    return channelList(function (chans) {
+      if (!chans || !chans.length) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+      launch(LIVE_TV, null, opened('dev', TUNER_TILE, cb));
     });
   }
   if (kind === 'dev') {
@@ -1022,6 +1189,21 @@ function opened(row, id, cb) {
 function toLgHome(why, cb) {
   cb = cb || function () {};
   console.log('home: opening LG\'s Home (' + why + ')');
+  /*
+   * webOS 4: LG's ribbon opens over the view, which stays where it is.
+   * Closing an app in front from outside made the B8 (webOS 4.4.3) relaunch
+   * the last input mid-teardown, and HDMI then opened no more until a reboot.
+   */
+  if (isStandalone()) {
+    escaped = true;
+    stopBeatWatch();
+    return setHomeKeyFn('', function () {
+      setTimeout(function () {
+        if (!injectKeyFn) return cb({ ok: true });
+        injectKeyFn(125, function (ok) { cb({ ok: !!ok }); }, 100);
+      }, 300);
+    });
+  }
   if (!readConfig().enabled) return launch(LG_HOME, null, cb);
   /*
    * Where the Home key opened com.webos.app.fullhome before Glasshouse Home
@@ -1057,21 +1239,40 @@ function switchTo(on, cb) {
   (function run() {
     var want = switchWant;
     var batch = switchWaiting.splice(0, switchWaiting.length);
-    (want ? takeover.take : takeover.release)(function (r) {
-      function finish() {
-        if (r.ok) holdLgHome(want);
-        if (r.ok) {
-          console.log('home: ' + (want ? 'Glasshouse Home is in LG\'s Home\'s place' : 'LG\'s Home is in its place'));
-          if (want && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
-        }
-        batch.forEach(function (f) { f(r); });
-        if (switchWaiting.length) return run();
-        switchBusy = false;
+    function finish(r) {
+      if (r.ok) holdLgHome(want);
+      if (r.ok) {
+        console.log('home: ' + (want ? 'Glasshouse Home is in LG\'s Home\'s place' : 'LG\'s Home is in its place'));
+        if (want && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
       }
-      if (!r.ok || (want && !readConfig().enabled)) return finish();
+      batch.forEach(function (f) { f(r); });
+      if (switchWaiting.length) return run();
+      switchBusy = false;
+    }
+    if (isStandalone()) {
+      if (want) {
+        return ensureApp(function (ok) {
+          if (!ok) return finish({ ok: false, error: 'could not install Glasshouse Home app' });
+          setHomeKeyFn(HOME_APP, function (k) {
+            if (!k || !k.ok) return finish({ ok: false, error: 'could not set Home key target' });
+            startingNotice(true, function () {
+              finish({ ok: true });
+            });
+          });
+        });
+      }
+      // The view closes itself when its heartbeat says it is off, as Back closes it.
+      return setHomeKeyFn('', function (k) {
+        startingNotice(false, function () {
+          finish({ ok: !!(k && k.ok) });
+        });
+      });
+    }
+    (want ? takeover.take : takeover.release)(function (r) {
+      if (!r.ok || (want && !readConfig().enabled)) return finish(r);
       startingNotice(want && readConfig().enabled, function (k) {
         if (!k || !k.ok) r = { ok: false, error: 'the TV did not take the Home key\'s starting notice' };
-        finish();
+        finish(r);
       });
     });
   })();
@@ -1085,7 +1286,9 @@ function flutterHome() {
 
 function preloadLgHome(enabled) {
   luna('com.webos.service.preloadmanager/setPreloadPolicy', { application: { id: LG_HOME, isEnabled: enabled } }, function (r) {
-    if (!r || r.returnValue === false) {
+    // Refused every time on a C5 (webOS 11.2.0), where it is asked again each minute.
+    if ((!r || r.returnValue === false) && !(enabled === false && preloadRefusalLogged)) {
+      if (!enabled) preloadRefusalLogged = true;
       console.error('home: the preload manager did not take LG\'s Home ' + (enabled ? 'back' : 'off') +
                     (r && r.errorText ? ': ' + r.errorText : ''));
     }
@@ -1161,8 +1364,18 @@ function change(action, cb) {
 
 function copy(o) { return JSON.parse(JSON.stringify(o)); }
 
+function isStandalone() {
+  return /^4\./.test(String(webosVersion || ''));
+}
+
+function isHomeInPlace() {
+  return isStandalone() ? readConfig().enabled : takeover.mounted();
+}
+
 function supported() {
   var v = String(webosVersion || '');
+  // Tried on a B8 (4.4.3).
+  if (/^4\./.test(v)) return { ok: true, webos: v, experimental: true, standalone: true };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is the same native app as on webOS 9; sam is nudged from the
   // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0).
@@ -1314,10 +1527,10 @@ function syncLgAutoLaunch(cb) {
     waiting.forEach(function (fn) { fn(ok); });
   }
   // A disable waits for an in-flight hold before restoring the saved value.
-  if (!readConfig().enabled || (!escaped && !takeover.mounted())) return restoreLgAutoLaunch(done);
+  if (!readConfig().enabled || (!escaped && !isHomeInPlace())) return restoreLgAutoLaunch(done);
   luna(SETTINGS + 'getSystemSettings', { category: 'option', keys: ['quickStartMode'] }, function (r) {
     var quickStart = r && r.settings && typeof r.settings.quickStartMode === 'string' ? r.settings.quickStartMode : '';
-    if (!readConfig().enabled || (!escaped && !takeover.mounted())) return restoreLgAutoLaunch(done);
+    if (!readConfig().enabled || (!escaped && !isHomeInPlace())) return restoreLgAutoLaunch(done);
     if (quickStart === 'on') return restoreLgAutoLaunch(done);
     if (quickStart === 'off') return holdLgAutoLaunch(done);
     // Unread, as just after a wake from Quick Start+ (a G3, webOS 9.2.2):
@@ -1330,7 +1543,7 @@ function syncLgAutoLaunch(cb) {
 function holdLgAutoLaunch(cb) {
   cb = cb || function () {};
   readSettings(['homeAutoLaunch', 'checkHomeAutoLaunchValue'], function (s) {
-    if (!readConfig().enabled || (!escaped && !takeover.mounted())) return cb(true);
+    if (!readConfig().enabled || (!escaped && !isHomeInPlace())) return cb(true);
     var value = s && typeof s.homeAutoLaunch === 'string' ? s.homeAutoLaunch : '';
     if (!value) {
       console.error('home: could not read LG\'s Home auto launch');
@@ -1383,6 +1596,7 @@ function restoreLgAutoLaunch(cb) {
  */
 function syncDefaultHome(cb) {
   cb = cb || function () {};
+  if (isStandalone()) return cb(true);
   if (defaultHomeBusy) {
     defaultHomeAgain = true;
     defaultHomeWaiting.push(cb);
@@ -1481,7 +1695,7 @@ function setAutoLaunch(on, cb) {
     waiting.forEach(function (fn) { fn(ok); });
   }
   var c = readConfig();
-  if (!c.enabled || (!escaped && !takeover.mounted())) {
+  if (!c.enabled || (!escaped && !isHomeInPlace())) {
     if (c.lgAutoLaunch !== null || c.lgAutoLaunchCheck !== null) {
       c.lgAutoLaunch = null;
       c.lgAutoLaunchCheck = null;
@@ -1492,7 +1706,7 @@ function setAutoLaunch(on, cb) {
   luna(SETTINGS + 'getSystemSettings', { category: 'option', keys: ['quickStartMode'] }, function (r) {
     var quickStart = r && r.settings && typeof r.settings.quickStartMode === 'string' ? r.settings.quickStartMode : '';
     var cur = readConfig();
-    if (cur.enabled && (escaped || takeover.mounted()) && quickStart === 'off') {
+    if (cur.enabled && (escaped || isHomeInPlace()) && quickStart === 'off') {
       cur.lgAutoLaunch = want ? 'on' : null;
       cur.lgAutoLaunchCheck = null;
       if (!saveConfig()) return finish(false);
@@ -1505,7 +1719,13 @@ function setAutoLaunch(on, cb) {
   });
 }
 
+/*
+ * Not on webOS 4: the filter waits for LG's Home's id to be Glasshouse Home's
+ * web app, which it never is there, so on a B8 (4.4.3) Home only said it was
+ * starting for 90 s after a boot. The standalone app opens as soon as it is set.
+ */
 function startingNotice(on, cb) {
+  if (isStandalone()) on = false;
   var text = on ? msg('srv.home.startingToast', 'Glasshouse Home is starting. It opens in a few seconds.') : '';
   setStartingFn(text, function (r) {
     if (!r || !r.ok) console.error('home: could not ' + (on ? 'set' : 'clear') + ' the Home key\'s starting notice');
@@ -1534,12 +1754,22 @@ function appInstalled(cb) {
   });
 }
 
+function ensureApp(cb) {
+  appInstalled(function (have) {
+    if (have === true || !installFn) return cb(have === true);
+    installFn('install', function () {
+      appInstalled(function (now) { cb(now === true); });
+    });
+  });
+}
+
 /*
  * Earlier builds set defaultApps.home and the start-up app to their own app,
  * and the remote's Home key to open it. Each that still names it is put back:
  * the start-up app as the snapshot had it, or Live TV.
  */
 function cleanLegacy(cb) {
+  if (isStandalone()) return cb(true);
   restoreLegacyScreenSaver(function (restored) {
     if (!restored) return cb(false);
     cleanLegacySettings(cb);
@@ -1609,7 +1839,7 @@ function finishLegacy(c, cb) {
  * with the app locked until the TV restarts (a G3, webOS 9.2).
  */
 function tryRemoveLegacyApp() {
-  if (!legacyAppPending || legacyAppRemoving || !installFn) return;
+  if (isStandalone() || !legacyAppPending || legacyAppRemoving || !installFn) return;
   if (foreground === HOME_APP) return;
   legacyAppRemoving = true;
   appInstalled(function (installed) {
@@ -1666,7 +1896,8 @@ function removeLegacyApp(cb) {
 // ---------------------------------------------------------------- the view
 
 function viewInFront() {
-  return foreground === LG_HOME && !escaped && readConfig().enabled && takeover.mounted();
+  var homeId = isStandalone() ? HOME_APP : LG_HOME;
+  return foreground === homeId && !escaped && readConfig().enabled && isHomeInPlace();
 }
 
 function stopBeatWatch() {
@@ -1698,27 +1929,45 @@ function watchBeat(ms) {
  * front, so the hidden view, beating no more, looked hung.
  */
 function behindAnother(cb) {
+  var homeId = isStandalone() ? HOME_APP : LG_HOME;
   luna('com.webos.surfacemanager/getForegroundWindowInfo', {}, function (r) {
     var windows = r && r.returnValue !== false && isArray(r.windows) ? r.windows : null;
-    if (!windows || windows.some(function (w) { return w && w.appId === LG_HOME; })) return cb(null);
+    if (!windows || windows.some(function (w) { return w && w.appId === homeId; })) return cb(null);
     var other = windows.filter(function (w) { return w && w.appId && w.windowType === '_WEBOS_WINDOW_TYPE_CARD'; })[0];
     cb(other ? other.appId : null);
   });
 }
 
-function beat() {
+/*
+ * Whether the view is covered: by the screen saver, or on webOS 4 by whatever
+ * is in front of the standalone app. Covered, the page rests: on a B8 (4.4.3)
+ * its drifting wallpaper kept the web app manager at 34% under the screen
+ * saver, which got 2% and stuttered.
+ */
+function viewCovered() {
+  if (powerState === 'Screen Saver') return true;
+  return isStandalone() && !!foreground && foreground !== HOME_APP;
+}
+
+function beat(body) {
   lastBeatAt = nowMs();
+  if (body && body.perf && typeof body.perf === 'object') console.log('home: frames ' + JSON.stringify(body.perf));
+  if (body && typeof body.focused === 'boolean') {
+    viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
+  }
   beats++;
   if (viewInFront()) watchBeat(BEAT_GRACE_MS);
-  return { ok: true, enabled: readConfig().enabled, build: buildId, wallpapers: wallpapers.status(),
-           layoutVersion: layoutVersion(), sleeps: sleeps };
+  return { ok: true, enabled: readConfig().enabled, covered: viewCovered(), saver: powerState === 'Screen Saver',
+           build: buildId, wallpapers: wallpapers.status(),
+           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()) };
 }
 
 function foregroundChanged(id) {
   var was = foreground;
   foreground = id;
+  var homeId = isStandalone() ? HOME_APP : LG_HOME;
   if (wakeReopen) reopenAfterWake(was, id);
-  if (id && id !== LG_HOME && id !== was) otherOpenedAt = nowMs();
+  if (id && id !== homeId && id !== was) otherOpenedAt = nowMs();
   if (wakeRequest && id && id !== was) {
     if (!wakeRequest.input && isInputApp(id)) wakeRequest.input = id;
     else if (wakeRequest.input !== id) cancelWake();
@@ -1727,13 +1976,21 @@ function foregroundChanged(id) {
   if (id !== HOME_APP && id !== LG_HOME && id) lastSource = { appId: id, at: nowMs() };
   if (!readConfig().enabled) return;
   noteForeground(was, id);
-  if (id === LG_HOME) {
-    if (was !== LG_HOME && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+  if (id === homeId) {
+    if (isStandalone()) escaped = false;
+    if (was !== homeId && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
     return;
   }
   stopBeatWatch();
   // sam names nothing in front for a moment between apps.
   if (!id || !escaped) return;
+  // webOS 4: LG's ribbon opens over the view, so anything opened from it
+  // comes after the view; Glasshouse Home has the Home key again.
+  if (isStandalone()) {
+    escaped = false;
+    setHomeKeyFn(HOME_APP, function () {});
+    return;
+  }
   var reopen = escapeReopen;
   escapeReopen = null;
   if (reopen && nowMs() <= reopen.until) {
@@ -1762,10 +2019,16 @@ function homeKey(down) {
      */
     var shortPress = homeDownAt && !wasHeld;
     homeDownAt = 0;
-    if (shortPress && escaped && foreground === LG_HOME) {
+    if (shortPress && escaped) {
       escaped = false;
-      switchTo(true, function () {});
-    } else if (shortPress && !escaped && takeover.mounted()) {
+      if (isStandalone()) {
+        setHomeKeyFn(HOME_APP, function () {
+          launch(HOME_APP, null, function () {});
+        });
+      } else if (foreground === LG_HOME) {
+        switchTo(true, function () {});
+      }
+    } else if (shortPress && !escaped && isHomeInPlace()) {
       watchOpen(false, OPEN_GRACE_MS);
     }
     return;
@@ -1785,16 +2048,17 @@ function homeKey(down) {
  */
 function reopenAfterWake(was, id) {
   var reopen = wakeReopen;
-  if (nowMs() > reopen.until || (id && id !== LG_HOME && id !== reopen.input)) {
+  var homeId = isStandalone() ? HOME_APP : LG_HOME;
+  if (nowMs() > reopen.until || (id && id !== homeId && id !== reopen.input)) {
     wakeReopen = null;
     return;
   }
-  if (id !== reopen.input || was !== LG_HOME) return;
+  if (id !== reopen.input || was !== homeId) return;
   wakeReopen = null;
   var current = readConfig();
-  if (!current.enabled || escaped || !powerActive || !takeover.mounted()) return;
+  if (!current.enabled || escaped || !powerActive || !isHomeInPlace()) return;
   console.log('home: opening Glasshouse Home again, ' + id + ' took the screen back after the wake');
-  launch(LG_HOME, null, function (res) {
+  launch(homeId, null, function (res) {
     if (!res.ok) console.error('home: could not open Glasshouse Home again after the wake');
   });
 }
@@ -1810,11 +2074,12 @@ function reopenAfterWake(was, id) {
 function watchOpen(retried, ms) {
   stopOpenWatch();
   var beatsBefore = beats, since = nowMs();
+  var homeId = isStandalone() ? HOME_APP : LG_HOME;
   function check(wait) {
     openTimer = setTimeout(function () {
       openTimer = null;
       if (beats > beatsBefore || escaped || !powerActive || !readConfig().enabled) return;
-      if (otherOpenedAt > since && foreground !== LG_HOME) return;
+      if (otherOpenedAt > since && foreground !== homeId) return;
       var left = slowOpenMs - (nowMs() - since);
       if (!retried && left > 0 && webAppMgrRunning() !== false) return check(left);
       recoverView('Glasshouse Home did not open', retried);
@@ -1831,7 +2096,22 @@ function watchOpen(retried, ms) {
  */
 function recoverView(why, retried) {
   if (recovering) return;
-  if (retried || webAppMgrRunning() !== false) return toLgHome(why);
+  if (retried) return toLgHome(why);
+  /*
+   * webOS 4 has no WebAppMgr unit to start: sam starts it with the app. On a
+   * B8 (4.4.3), the view not opening a minute after a boot was taken for that
+   * and gave LG's ribbon the Home key. It is opened once more first.
+   */
+  if (isStandalone()) {
+    recovering = true;
+    console.error('home: ' + why + '; opening it again');
+    return launch(HOME_APP, null, function () {
+      recovering = false;
+      stopBeatWatch();
+      watchOpen(true, FIRST_BEAT_GRACE_MS);
+    });
+  }
+  if (webAppMgrRunning() !== false) return toLgHome(why);
   recovering = true;
   console.error('home: ' + why + ': WebAppMgr is not running; starting it');
   startWebAppMgr(function (ok) {
@@ -1839,7 +2119,8 @@ function recoverView(why, retried) {
       recovering = false;
       return toLgHome('WebAppMgr would not start');
     }
-    launch(LG_HOME, null, function () {
+    var homeId = isStandalone() ? HOME_APP : LG_HOME;
+    launch(homeId, null, function () {
       recovering = false;
       // The page loads from cold, so its first beat is given the longer wait.
       stopBeatWatch();
@@ -1913,7 +2194,7 @@ function powerStateChanged(raw) {
   wakeRequest = request;
   function canOpen() {
     return wakeRequest === request && readConfig().enabled &&
-      names.powerState(powerState).systemOn && powerActive && !escaped && takeover.mounted() &&
+      names.powerState(powerState).systemOn && powerActive && !escaped && isHomeInPlace() &&
       isInputApp(foreground) && foreground === request.input;
   }
   wakeTimer = setTimeout(function () {
@@ -1928,7 +2209,8 @@ function powerStateChanged(raw) {
         if (FULL_HOME_REASONS.indexOf(reason) === -1 || !canOpen()) return cancelWake();
         cancelWake();
         console.log('home: opening Glasshouse Home over ' + foreground + ' after a wake by ' + reason);
-        launch(LG_HOME, null, function (res) {
+        var homeId = isStandalone() ? HOME_APP : LG_HOME;
+        launch(homeId, null, function (res) {
           if (!res.ok) return console.error('home: could not open Glasshouse Home after the wake');
           wakeReopen = { input: request.input, until: nowMs() + WAKE_REOPEN_MS };
           watchStart('after the wake', beats, nowMs());
@@ -1938,10 +2220,48 @@ function powerStateChanged(raw) {
   }, wakeSettleMs);
 }
 
+function describeViewFocus() {
+  if (!viewFocus) return 'nothing of its focus';
+  return (viewFocus.focused ? 'it had the focus' : 'it did not have the focus') +
+    (viewFocus.visible ? ' and was ' + viewFocus.visible : '') +
+    ', ' + Math.round((nowMs() - viewFocus.at) / 1000) + ' s before';
+}
+
+/*
+ * On a C5 (webOS 11.2.0), after every wake from standby, Glasshouse Home was
+ * drawn and in front, and surface-manager gave its window the focus, but the
+ * page got no keys or pointer while it went on beating. Closing it and
+ * opening it again brought them back (#1122). Done once after a wake, while
+ * it is still in front and nothing else has been opened since.
+ */
+function reopenAfterWake11() {
+  if (wake11Timer) clearTimeout(wake11Timer);
+  var since = nowMs();
+  wake11Timer = setTimeout(function () {
+    wake11Timer = null;
+    if (!powerActive || escaped || switchBusy || recovering || !readConfig().enabled || !takeover.mounted()) return;
+    if (foreground !== LG_HOME || otherOpenedAt > since) return;
+    console.log('home: opening Glasshouse Home again after the wake, as webOS 11 leaves it without the remote; ' +
+                'the view last said ' + describeViewFocus());
+    luna('com.webos.applicationManager/closeByAppId', { id: LG_HOME }, function () {
+      setTimeout(function () {
+        launch(LG_HOME, null, function (res) {
+          if (!res.ok) console.error('home: could not open Glasshouse Home again after the wake');
+        });
+      }, WAKE11_CLOSED_MS);
+    });
+  }, WAKE11_REOPEN_MS);
+}
+
 function powerChanged(active) {
   var was = powerActive;
   powerActive = active;
   if (was && !active) sleeps++;
+  if (!active && wake11Timer) {
+    clearTimeout(wake11Timer);
+    wake11Timer = null;
+  }
+  if (!was && active && flutterHome() && readConfig().enabled) reopenAfterWake11();
   if (!active) cancelWake();
   if (was !== active && readConfig().enabled) syncLgAutoLaunch();
   // The preload manager may have started over with the TV.
@@ -1962,7 +2282,7 @@ function status(cb) {
         enabled: c.enabled,
         restorePending: c.restorePending,
         // In LG's Home's place now; false while one of the ways back has LG's Home open.
-        active: takeover.mounted() && type === 'web',
+        active: isHomeInPlace() && (isStandalone() ? true : type === 'web'),
         lgHomeOpen: escaped,
         hideLgHomeAtStart: c.hideLgHomeAtStart === true,
         hideLgHomeAtStartAvailable: startLayoutAvailable(),
@@ -1977,6 +2297,16 @@ function status(cb) {
       cb(out);
     });
   });
+}
+
+/*
+ * What the view's catalogue carries beside the rows, without status()'s two
+ * luna calls: just after a start they wait their turn behind every other
+ * (lib/children), 3.7 s on a B8 (webOS 4.4.3).
+ */
+function viewStatus() {
+  var c = readConfig();
+  return { layout: layoutOf(c), enabled: c.enabled, supported: supported(), wallpapers: wallpapers.status() };
 }
 
 // LG's Home reads its layout from /mnt/lg/cmn_data/manifest on webOS 9 only;
@@ -1995,7 +2325,7 @@ function init(opts) {
   recommended.init({ luna: lunaFn });
   search.init({ luna: lunaFn, Subscription: opts.Subscription, apps: launchPoints,
     opened: function (id) { noteOpened('app', id); }, enabled: function () { return readConfig().search; },
-    blockedBy: opts.blockedBy });
+    blockedBy: opts.blockedBy, appInfoLaunch: isStandalone });
   takeover.init({
     luna: lunaFn,
     samrescan: opts.samrescan || null,
@@ -2016,6 +2346,8 @@ function init(opts) {
   lgHomeWatchMs = opts.lgHomeWatchMs || LG_HOME_WATCH_MS;
   wakeSettleMs = typeof opts.wakeSettleMs === 'number' ? opts.wakeSettleMs : WAKE_SETTLE_MS;
   installFn = opts.installApp || null;
+  if (opts.injectKey) injectKeyFn = opts.injectKey;
+  hdmiInputsFn = opts.hdmiInputs || null;
   procDir = opts.procDir || '/proc';
   slowOpenMs = typeof opts.slowOpenMs === 'number' ? opts.slowOpenMs : FIRST_BEAT_GRACE_MS;
   bootOpenedFile = opts.bootOpenedFile || BOOT_OPENED_FILE;
@@ -2048,6 +2380,9 @@ function init(opts) {
   recovering = false;
   guideCache = { at: 0, data: {} };
   listCache = {};
+  savedLists = null;
+  listsRevision = 0;
+  listLoading = {};
   changing = false;
   settingsQueue = [];
   settingsBusy = false;
@@ -2117,7 +2452,7 @@ function start() {
       homeKeysFn(true);
       handOverFn(hideApps);
     }
-    if (c.restorePending || (!c.enabled && takeover.mounted())) {
+    if (c.restorePending || (!c.enabled && !isStandalone() && takeover.mounted())) {
       return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); });
     }
     startingNotice(c.enabled);
@@ -2155,13 +2490,14 @@ function watchBootOpen() {
 function watchStart(when, beatsBefore, signSince) {
   stopOpenWatch();
   var since = nowMs(), over = foreground;
+  var homeId = isStandalone() ? HOME_APP : LG_HOME;
   function check() {
     openTimer = setTimeout(function () {
       openTimer = null;
       var waited = nowMs() - since, alive = pageSeenAt > 0 && pageSeenAt >= signSince;
       if (beats > beatsBefore) return console.log('home: the view answered ' + Math.round(waited / 1000) + ' s after opening ' + when);
       if (escaped || !powerActive || !readConfig().enabled) return;
-      if (foreground && foreground !== LG_HOME && foreground !== over && !(over === '' && isInputApp(foreground))) return;
+      if (foreground && foreground !== homeId && foreground !== over && !(over === '' && isInputApp(foreground))) return;
       if (waited < (alive ? pageLoadMs : pageSignMs)) return check();
       recoverView(alive ? 'Glasshouse Home loaded but did not answer ' + when : 'Glasshouse Home did not run ' + when, false);
     }, 1000);
@@ -2194,6 +2530,7 @@ module.exports = {
   flush: recent.flush,
   status: status,
   catalogue: catalogue,
+  viewStatus: viewStatus,
   channelList: channelList,
   guide: guide,
   now: now,
@@ -2251,10 +2588,11 @@ if (require.main === module && process.argv[2] === '--restore') {
   var lunaTransport = require('./luna');
   var rescan = require('./samrescan');
   var remoteKeys = require('./remotekeys');
+  var telemetry = require('./telemetry');
   var restoreStateDir = path.join(__dirname, '..');
   rescan.init({ luna: lunaTransport.call });
   remoteKeys.init({ luna: lunaTransport.call, stateDir: restoreStateDir });
-  init({ luna: lunaTransport.call, samrescan: rescan, stateDir: restoreStateDir, webosVersion: '9',
+  init({ luna: lunaTransport.call, samrescan: rescan, stateDir: restoreStateDir, webosVersion: telemetry.detectWebosVersion(),
     setStarting: remoteKeys.setStarting, setHomeKey: remoteKeys.setHome, homeKeyApp: remoteKeys.homeApp });
   disable(function (r) {
     console.log(r.ok ? 'home: LG\'s Home restored' : 'home: ' + r.error);
