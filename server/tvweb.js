@@ -1960,7 +1960,6 @@ if (!CLI_MODE) {
     luna: luna,
     stateDir: __dirname,
     webosVersion: telemetry.detectWebosVersion(),
-    getTVModel: function () { return (CONFIG.device && CONFIG.device.model) || ''; },
     getRemoteInfo: telemetry.readRemoteInfo,
     onLevel: function (level) {
       console.log('remote: battery ' + level + '%');

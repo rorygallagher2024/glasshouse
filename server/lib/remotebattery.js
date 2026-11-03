@@ -34,13 +34,13 @@ var settleMs = SETTLE_MS;
  * The Bluetooth read connects to the remote alongside lginput2's own
  * connection. It has been tried on webOS 9 (C2) and 10 (C4); on a webOS 5 TV
  * the remote lost its pointer and some buttons after waking, until a reboot,
- * once v0.97.0 began reading. webOS 11 is limited to the C5/MR25GA tested
- * below. Elsewhere only LG's remote service is asked.
+ * once v0.97.0 began reading. Keep pre-9 stacks on LG's own battery API;
+ * newer stacks select the paired remote and inspect its Battery Service.
  */
 var webosVersion = '';
-var getTVModel = function () { return ''; };
 var getRemoteInfo = function () { return null; };
 var attemptedMac = null;
+var attemptedStatus = 'unavailable';
 
 /** @type {function(string, Object, function(any): void): void} */
 var luna = null;
@@ -63,33 +63,51 @@ function sameAddress(a, b) {
   return !!(a && b && a.toLowerCase() === b.toLowerCase());
 }
 
-function gattSupported(model, version, remoteModel) {
-  if (!/^LGE MR\d+[A-Z]*$/i.test(remoteModel || '')) return false;
-  if (/^(9|10)\./.test(version || '')) return true;
-  // MR25GA returned 46% on this C5, webOS 11.2 / firmware 43.21.31.
-  return isTestedC5(model, version) && /^LGE MR25GA$/i.test(remoteModel);
-}
-
-function isTestedC5(model, version) {
-  return /^11\.2\./.test(version || '') && String(model || '').split('.')[0] === 'OLED77C5PUA';
-}
-
 function gattPlatformSupported() {
-  return /^(9|10)\./.test(webosVersion) ||
-    isTestedC5(getTVModel(), webosVersion);
+  var version = /^(\d+)(?:\.|$)/.exec(webosVersion);
+  return !!version && Number(version[1]) >= 9;
 }
 
 function remoteDevice(devices, mac) {
   var candidates = [];
   for (var i = 0; i < (devices || []).length; i++) {
     var d = devices[i];
-    if (d && d.paired && d.typeOfDevice === 'ble' && /^LGE MR/i.test(d.name || '') && d.address) {
-      if (mac && sameAddress(mac, d.address)) return d;
+    if (!d || !d.paired || !d.address) continue;
+    // LG's pairing identity is stronger than a Bluetooth display name, which
+    // can differ between firmware versions and replacement remote models.
+    if (mac && sameAddress(mac, d.address)) return d;
+    if (d.typeOfDevice === 'ble' && /^LGE MR/i.test(d.name || '')) {
       candidates.push(d);
     }
   }
   // Multiple saved remotes are not evidence of which one is in use.
   return !mac && candidates.length === 1 ? candidates[0] : null;
+}
+
+function sameUUID(value, uuid) {
+  if (typeof value !== 'string') return false;
+  value = value.toLowerCase();
+  if (/^[0-9a-f]{4}$/.test(value)) value = '0000' + value;
+  if (/^[0-9a-f]{8}$/.test(value)) value += '-0000-1000-8000-00805f9b34fb';
+  return value === uuid;
+}
+
+// null means the firmware did not provide a usable service list. Older
+// bluetooth2 implementations can still answer the standard read directly.
+function batteryServiceAvailable(result) {
+  if (!result || !result.returnValue || !Array.isArray(result.services) || !result.services.length) return null;
+  for (var i = 0; i < result.services.length; i++) {
+    var service = result.services[i];
+    if (!service || !sameUUID(service.service, BATTERY_SERVICE)) continue;
+    if (!Array.isArray(service.characteristics)) return null;
+    for (var j = 0; j < service.characteristics.length; j++) {
+      var characteristic = service.characteristics[j];
+      if (characteristic && sameUUID(characteristic.characteristic, BATTERY_LEVEL)) {
+        return !characteristic.properties || characteristic.properties.read !== false;
+      }
+    }
+  }
+  return false;
 }
 
 function remoteAddress(devices) {
@@ -140,6 +158,7 @@ function read(done) {
   var identity = getRemoteInfo();
   var address = identity && identity.mac;
   var source = 'mrcu';
+  var status = 'unavailable';
 
   function finish(level) {
     function end() {
@@ -147,6 +166,7 @@ function read(done) {
       if (tried) {
         dueAt = Date.now() + (level !== null ? HOUR_MS : RETRY_MS);
         attemptedMac = address;
+        attemptedStatus = status;
       }
       var current = getRemoteInfo();
       if (current && current.mac && !sameAddress(current.mac, address)) level = null;
@@ -168,14 +188,11 @@ function read(done) {
       if (info && typeof info.fwVer === 'string' && info.fwVer.length > 0 && info.fwVer !== '00.00.00.00.00.00.00.00.00.00.00') {
         firmware = info.fwVer;
       }
-      var dl = deviceLevelFrom(info);
-      if (dl !== null) {
-        if (!address && info && typeof info.bdAddress === 'string' && info.bdAddress !== '00:00:00:00:00:00') {
-          address = info.bdAddress;
-        }
-        return onResult(dl);
+      if (!address && info && info.returnValue && typeof info.bdAddress === 'string' &&
+          info.bdAddress !== '00:00:00:00:00:00') {
+        address = info.bdAddress;
       }
-      onResult(null);
+      onResult(deviceLevelFrom(info));
     });
   }
 
@@ -185,7 +202,7 @@ function read(done) {
     // updates carry true. So this answer can confirm it, never clear it.
     if (st && typeof st.connected === 'boolean') connected = st.connected;
     if (st && st.isBleRemocon === true) isBle = true;
-    if (!st || !st.returnValue || !st.connected || !isBle) return finish(null);
+    if (!st || !st.returnValue || !st.connected) return finish(null);
     // webOS 4 has the charge here (a B8's went from 49 to 63 with other
     // batteries), and its gatt/connect answers with no clientId to disconnect
     // by. Later webOS answer "-", and are read over Bluetooth.
@@ -196,8 +213,11 @@ function read(done) {
       }
       if (!gattPlatformSupported()) {
         tried = true;
+        status = 'unsupported';
         return finish(null);
       }
+      if (!isBle) return finish(null);
+      tried = true;
       readGatt();
     });
   });
@@ -208,21 +228,27 @@ function read(done) {
       if (!device) return finish(null);
       address = device.address;
       tried = true;
-      if (!gattSupported(getTVModel(), webosVersion, device.name)) return finish(null);
-      if (identity && identity.model && identity.model.toLowerCase() !== device.name.toLowerCase()) return finish(null);
       source = 'bluetooth';
       luna(BT + '/gatt/connect', { address: address }, function (c) {
         clientId = c && c.returnValue && c.clientId ? String(c.clientId) : null;
         if (!clientId) return finish(null);
         luna(BT + '/gatt/discoverServices', { address: address }, function (disc) {
           if (!disc || !disc.returnValue) return finish(null);
-          setTimeout(function () {
-            luna(BT + '/gatt/readCharacteristicValue', {
-              clientId: clientId, service: BATTERY_SERVICE, characteristic: BATTERY_LEVEL
-            }, function (r) { finish(levelFrom(r)); });
-          }, discoverMs);
+          setTimeout(readGattLevel, discoverMs);
         });
       });
+    });
+  }
+
+  function readGattLevel() {
+    luna(BT + '/gatt/getServices', { address: address }, function (services) {
+      if (batteryServiceAvailable(services) === false) {
+        status = 'unsupported';
+        return finish(null);
+      }
+      luna(BT + '/gatt/readCharacteristicValue', {
+        clientId: clientId, service: BATTERY_SERVICE, characteristic: BATTERY_LEVEL
+      }, function (r) { finish(levelFrom(r)); });
     });
   }
 }
@@ -296,12 +322,11 @@ function level(mac) {
 
 function details(remote) {
   var available = level(remote && remote.mac) !== null;
-  var supported = gattSupported(getTVModel(), webosVersion, remote && remote.model);
   return {
     batteryUpdatedAt: available && last ? last.at : null,
     batterySource: available && last ? last.source || null : null,
     batteryStatus: available ? 'available' : sameAddress(attemptedMac, remote && remote.mac)
-      ? (supported ? 'unavailable' : 'unsupported') : 'waiting'
+      ? attemptedStatus : 'waiting'
   };
 }
 
@@ -314,7 +339,6 @@ function details(remote) {
  * @param {string} [opts.stateDir] where to save the last known level
  * @param {string} [opts.stateFile] override file path for tests
  * @param {?string} [opts.webosVersion] as the TV reports it
- * @param {function(): string} [opts.getTVModel]
  * @param {function(): Object} [opts.getRemoteInfo] current pairing identity
  */
 function init(opts) {
@@ -323,9 +347,9 @@ function init(opts) {
   discoverMs = opts.discoverMs !== undefined ? opts.discoverMs : DISCOVER_MS;
   settleMs = opts.settleMs !== undefined ? opts.settleMs : SETTLE_MS;
   webosVersion = String(opts.webosVersion || '');
-  getTVModel = opts.getTVModel || function () { return ''; };
   getRemoteInfo = opts.getRemoteInfo || function () { return null; };
   attemptedMac = null;
+  attemptedStatus = 'unavailable';
   onLevel = opts.onLevel || null;
   busy = false;
   dueAt = 0;
@@ -355,7 +379,6 @@ module.exports = {
   connectionChanged: connectionChanged,
   level: level,
   details: details,
-  gattSupported: gattSupported,
   connected: function () { return connected; },
   isBle: function () { return isBle; },
   signal: function () {

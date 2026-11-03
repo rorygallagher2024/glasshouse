@@ -11,6 +11,9 @@ console.log('Running test-remotebattery.js ...');
 
 var tmpFile = path.join(require('os').tmpdir(), 'gh-battery-' + process.pid + '.json');
 var REMOTE = { paired: true, typeOfDevice: 'ble', name: 'LGE MR24', address: '00:00:5e:00:53:02' };
+var BATTERY_SERVICE = { service: '0000180f-0000-1000-8000-00805f9b34fb', characteristics: [
+  { characteristic: '00002a19-0000-1000-8000-00805f9b34fb', properties: { read: true, notify: true } }
+] };
 
 // A TV answering as a C4 (webOS 10.3.1) did, with what is asked recorded.
 function fakeLuna(opts) {
@@ -23,6 +26,10 @@ function fakeLuna(opts) {
     if (m === 'bluetooth2/device/getStatus') return cb({ returnValue: true, devices: opts.devices || [REMOTE] });
     if (m === 'bluetooth2/gatt/connect') return cb(opts.connect === undefined ? { returnValue: true, clientId: '004' } : opts.connect);
     if (m === 'bluetooth2/gatt/discoverServices') return cb(opts.discover === undefined ? { returnValue: true } : opts.discover);
+    if (m === 'bluetooth2/gatt/getServices') {
+      assert.strictEqual(payload.address, REMOTE.address);
+      return cb(opts.services === undefined ? { returnValue: true, services: [BATTERY_SERVICE] } : opts.services);
+    }
     if (m === 'bluetooth2/gatt/readCharacteristicValue') {
       assert.deepEqual(payload, { clientId: '004', service: '0000180f-0000-1000-8000-00805f9b34fb',
         characteristic: '00002a19-0000-1000-8000-00805f9b34fb' }, 'by clientId, with no address');
@@ -57,20 +64,21 @@ function check(name, opts, expectLevel, expectCalls) {
   var luna = fakeLuna(opts);
   var heard = [];
   rb.init({ luna: luna, webosVersion: opts.webosVersion || '10.3.1', discoverMs: 0,
-    getTVModel: function () { return opts.tvModel || ''; },
     getRemoteInfo: function () { return opts.remoteInfo || null; },
     onLevel: function (l) { heard.push(l); } });
   rb.read(function (level) {
     assert.strictEqual(level, expectLevel, name + ': level');
     assert.deepEqual(luna.calls, expectCalls, name + ': calls');
     assert.deepEqual(heard, expectLevel === null ? [] : [expectLevel], name + ': onLevel');
+    if (opts.expectedStatus) assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryStatus,
+      opts.expectedStatus, name + ': battery status');
     console.log('  ✓ ' + name);
     pending--;
   });
 }
 
 var ALL = ['mrcu/getConnectionStatus', 'mrcu/getDeviceInfo', 'bluetooth2/device/getStatus', 'bluetooth2/gatt/connect',
-  'bluetooth2/gatt/discoverServices', 'bluetooth2/gatt/readCharacteristicValue', 'bluetooth2/gatt/disconnect'];
+  'bluetooth2/gatt/discoverServices', 'bluetooth2/gatt/getServices', 'bluetooth2/gatt/readCharacteristicValue', 'bluetooth2/gatt/disconnect'];
 
 // Each read waits on a timer, so they run one after another.
 var steps = [
@@ -87,26 +95,52 @@ var C5_REMOTE = { paired: true, typeOfDevice: 'ble', name: 'LGE MR25GA', address
 var INFO_CALLS = ['mrcu/getConnectionStatus', 'mrcu/getDeviceInfo'];
 steps.push(function () {
   check('C5/MR25GA on webOS 11.2 reads the standard battery service after MID', {
-    webosVersion: '11.2.0', tvModel: 'OLED77C5PUA.DUSQLJR', devices: [C5_REMOTE],
+    webosVersion: '11.2.0', devices: [C5_REMOTE],
     remoteInfo: { mac: REMOTE.address.toUpperCase(), model: 'LGE MR25GA' },
     deviceInfo: { returnValue: true, batteryLevel: 'MID', bdAddress: REMOTE.address },
     read: { returnValue: true, value: { value: { bytes: [46] } } }
   }, 46, ALL);
 });
-steps.push(function () {
-  check('an untested TV model does not connect over Bluetooth', {
-    webosVersion: '11.2.0', tvModel: 'OLED77G5PUA', devices: [C5_REMOTE]
-  }, null, INFO_CALLS);
+// These are compatibility scenarios, not claims of hardware qualification.
+[
+  { version: '9.2.2', model: 'LGE MR22GN' },
+  { version: '10.3.1', model: 'LGE MR24' },
+  { version: '11.0.0', model: 'LGE MR23GN' },
+  { version: '11.2.0', model: 'LGE MR25GB' },
+  { version: '12.0.0', model: 'Replacement Remote' }
+].forEach(function (scenario) {
+  steps.push(function () {
+    check(scenario.model + ' on webOS ' + scenario.version + ' uses advertised battery support without a TV allowlist', {
+      webosVersion: scenario.version,
+      remoteInfo: { mac: REMOTE.address, model: scenario.model },
+      devices: [{ paired: true, typeOfDevice: 'ble', name: scenario.model, address: REMOTE.address }]
+    }, 61, ALL);
+  });
 });
 steps.push(function () {
-  check('an untested remote on the C5 does not connect over Bluetooth', {
-    webosVersion: '11.2.0', tvModel: 'OLED77C5PUA', devices: [REMOTE]
-  }, null, INFO_CALLS.concat('bluetooth2/device/getStatus'));
+  check('matching pairing identity accepts a different Bluetooth display name', {
+    remoteInfo: { mac: REMOTE.address, model: 'MR24GN' }
+  }, 61, ALL);
+});
+steps.push(function () {
+  check('LG device info identifies the active remote among multiple paired remotes', {
+    devices: [REMOTE, { paired: true, typeOfDevice: 'ble', name: 'LGE MR23', address: '11:22:33:44:55:66' }],
+    deviceInfo: { returnValue: true, batteryLevel: 'MID', bdAddress: REMOTE.address }
+  }, 61, ALL);
 });
 steps.push(function () {
   check('numeric LG battery data works on other TV and remote models', {
-    webosVersion: '5.6.2', tvModel: 'OLED55CX', deviceInfo: { returnValue: true, batteryLevel: 0, bdAddress: REMOTE.address }
+    webosVersion: '5.6.2', deviceInfo: { returnValue: true, batteryLevel: 0, bdAddress: REMOTE.address },
+    status: { returnValue: true, connected: true, isBleRemocon: false }
   }, 0, INFO_CALLS);
+});
+['2.0.0', '3.9.3', '4.4.3', '5.6.2', '6.4.0', '7.0.0', '8.0.0', '9.2.2', '10.3.1', '11.2.0', '12.0.0', 'unknown'].forEach(function (version) {
+  steps.push(function () {
+    check('numeric LG battery data takes precedence on webOS ' + version, {
+      webosVersion: version,
+      deviceInfo: { returnValue: true, batteryLevel: 49, bdAddress: REMOTE.address }
+    }, 49, INFO_CALLS);
+  });
 });
 steps.push(function () {
   check('a different saved remote cannot supply the active remote battery', {
@@ -120,7 +154,62 @@ steps.push(function () {
 });
 steps.push(function () {
   check('failed service discovery still releases the connection', { discover: { returnValue: false } }, null,
-    ALL.filter(function (name) { return name !== 'bluetooth2/gatt/readCharacteristicValue'; }));
+    ALL.filter(function (name) { return name !== 'bluetooth2/gatt/readCharacteristicValue' && name !== 'bluetooth2/gatt/getServices'; }));
+});
+[
+  { name: 'short UUIDs', services: [{ service: '180F', characteristics: [{ characteristic: '2A19', properties: { read: true } }] }], level: 61 },
+  { name: '32-bit UUIDs', services: [{ service: '0000180F', characteristics: [{ characteristic: '00002A19' }] }], level: 61 },
+  { name: 'no Battery Service', services: [{ service: '1800', characteristics: [] }], level: null },
+  { name: 'no Battery Level characteristic', services: [{ service: '180f', characteristics: [{ characteristic: '2a00' }] }], level: null },
+  { name: 'an unreadable Battery Level', services: [{ service: '180f', characteristics: [{ characteristic: '2a19', properties: { read: false } }] }], level: null }
+].forEach(function (scenario) {
+  steps.push(function () {
+    check('service detection handles ' + scenario.name, {
+      services: { returnValue: true, services: scenario.services },
+      expectedStatus: scenario.level === null ? 'unsupported' : 'available'
+    }, scenario.level, scenario.level === null ? ALL.filter(function (name) { return name !== 'bluetooth2/gatt/readCharacteristicValue'; }) : ALL);
+  });
+});
+[
+  { returnValue: false, errorText: 'Unknown method "getServices"' },
+  { returnValue: true, services: [] },
+  { returnValue: true, services: [{ service: '180f' }] },
+  null
+].forEach(function (services) {
+  steps.push(function () {
+    check('unavailable service enumeration retains the standard battery read', { services: services }, 61, ALL);
+  });
+});
+steps.push(function () {
+  check('firmware without either battery API reports unavailable and disconnects', {
+    deviceInfo: { returnValue: false }, services: { returnValue: false }, read: { returnValue: false },
+    expectedStatus: 'unavailable'
+  }, null, ALL);
+});
+steps.push(function () {
+  check('an unrecognized device without a pairing identity is not guessed', {
+    devices: [{ paired: true, typeOfDevice: 'ble', name: 'Keyboard', address: REMOTE.address }]
+  }, null, INFO_CALLS.concat('bluetooth2/device/getStatus'));
+});
+steps.push(function () {
+  pending++;
+  var remote = { mac: REMOTE.address, model: REMOTE.name };
+  var transport = fakeLuna();
+  rb.init({ webosVersion: '11.2.0', discoverMs: 0,
+    getRemoteInfo: function () { return remote; },
+    luna: function (uri, payload, done) {
+      if (uri === 'com.webos.service.bluetooth2/gatt/disconnect') remote = { mac: '11:22:33:44:55:66', model: 'LGE MR25GA' };
+      transport(uri, payload, done);
+    }
+  });
+  rb.read(function (level) {
+    assert.strictEqual(level, null, 'the old remote reading is discarded');
+    assert.strictEqual(rb.level(remote.mac), null, 'the replacement has no cached battery');
+    assert.strictEqual(rb.details(remote).batteryStatus, 'waiting');
+    assert.deepEqual(transport.calls, ALL, 'the old connection is still released');
+    console.log('  ✓ replacement during a read discards the old remote battery');
+    pending--;
+  });
 });
 // When it reads: at the remote's wake, at most hourly, sooner after switching on.
 steps.push(function () {
@@ -249,10 +338,10 @@ steps.push(function () {
   console.log('  ✓ tracks remote signal strength and state persistence');
 });
 
-// Bluetooth only where it has been tried: a webOS 5 TV's remote lost its
-// pointer after the read began in v0.97.0.
+// Older stacks retain LG's numeric API: a webOS 5 TV's remote lost its
+// pointer after GATT reads began in v0.97.0.
 steps.push(function () {
-  ['5.6.2', '6.4.0', '11.0.0', null].forEach(function (version) {
+  ['2.0.0', '3.0.0', '4.4.3', '5.6.2', '6.4.0', '7.0.0', '8.0.0', null, 'unknown'].forEach(function (version) {
     pending++;
     var luna = fakeLuna();
     rb.init({ luna: luna, webosVersion: version, discoverMs: 0, settleMs: 0 });
@@ -262,7 +351,7 @@ steps.push(function () {
       pending--;
     });
   });
-  console.log('  ✓ untested webOS versions do not open a Bluetooth connection');
+  console.log('  ✓ legacy and unknown webOS stacks do not open a Bluetooth connection');
 });
 
 (function next(i) {

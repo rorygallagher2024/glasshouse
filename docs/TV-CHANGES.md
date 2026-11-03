@@ -55,11 +55,13 @@ riskier controls ask for confirmation in the dashboard first.
 ## Remote battery
 
 The server asks LG’s remote service for a numeric battery level first. On
-webOS 9 and 10 with a paired LG Magic Remote, and on OLED77C5PUA/webOS 11.2
-with an MR25GA, it can also open a temporary Bluetooth GATT connection, read
-the standard Battery Service and disconnect. Reads wait for the remote to
+webOS 9 and later, it can also open a temporary Bluetooth GATT connection to
+the paired remote, check its advertised battery service, read the standard
+Battery Level and disconnect. Selection uses the current remote's identity
+rather than a TV or remote model allowlist. Reads wait for the remote to
 wake, run at most hourly after success, and retry after five minutes on failure.
-Other combinations do not open this connection. The last percentage, read time
+Older or unidentified webOS versions use only LG's numeric API because of an
+older Bluetooth-stack regression. The last percentage, read time
 and source are saved in `/var/lib/tvweb/remote-battery.json`, matched to the
 remote’s Bluetooth address. Pairing, buttons and LG’s settings are unchanged.
 

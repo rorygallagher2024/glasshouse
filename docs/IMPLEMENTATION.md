@@ -1158,17 +1158,24 @@ Bluetooth one: asked once, the same method says it is not. On webOS 4,
 `com.webos.service.mrcu/getDeviceInfo` has the charge in `batteryLevel`, so it
 is asked first, and no Bluetooth connection is made where it answers with a
 number from 0 to 100. Text such as `MID` is not converted to a percentage.
-The Bluetooth fallback checks the paired remote's model and address, and the
-TV model/webOS version: LG MR remotes on webOS 9 and 10 retain their existing
-support; webOS 11.2 is limited to OLED77C5PUA with LGE MR25GA. Other combinations
-use only LG's numeric response. On a webOS 5 TV the remote lost its pointer and
-some buttons after waking once Bluetooth reads began, until a reboot.
+The Bluetooth fallback is available on webOS 9 and later, across TV and remote
+models. The pairing address identifies the remote even when its Bluetooth name
+differs from the model in LG's pairing file. Without an address, only a single
+paired LG MR device can be selected. Pre-9 and unknown webOS versions use only
+LG's numeric response: on a webOS 5 TV the remote lost its pointer and some
+buttons after waking once Bluetooth reads began, until a reboot. A non-Bluetooth
+remote can still supply a numeric level through LG's service.
 
 lginput2 holds the remote's own connection. Each fallback read makes
-`gatt/connect`, `gatt/discoverServices`, `gatt/readCharacteristicValue` by the
-returned `clientId`, then `gatt/disconnect`, including after discovery or read
-failure. The selected device must match the current pairing address; without
-that address, multiple saved remotes are ambiguous and no connection is made.
+`gatt/connect` and `gatt/discoverServices`, then checks `gatt/getServices` for
+the standard Battery Service (`180f`) and readable Battery Level (`2a19`).
+An absent service or unreadable characteristic stops the read. Firmware that
+cannot enumerate services retains the direct standard-characteristic read.
+Short and full UUIDs are accepted. `gatt/readCharacteristicValue` uses the
+returned `clientId`; `gatt/disconnect` releases it even after discovery or read
+failure. Missing APIs or failed reads leave the percentage unavailable rather
+than estimating it. This detects the two known battery paths; proprietary
+battery protocols are not inferred from a remote's model name.
 A successful level, timestamp and source are cached by address. Replacing the
 remote invalidates the displayed reading; a reading from before restart keeps
 its original timestamp. The stats payload adds `batteryUpdatedAt`,
