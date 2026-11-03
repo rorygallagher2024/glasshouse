@@ -25,7 +25,6 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
    from sitting still on the panel; the scrim keeps the text side and the rows
    dark. */
 #wall{position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden}
-/* Under half a pixel a second, so a step every 0.5 s looks smooth: 2 frames a second, not 60. */
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
   -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}

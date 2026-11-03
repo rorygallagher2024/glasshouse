@@ -44,7 +44,6 @@ function excluded(id) {
   return LEFT_OUT.indexOf(id) !== -1 || excludedFn().indexOf(id) !== -1;
 }
 
-// The picture's address changes only with the file, so Home's browser keeps it decoded between openings.
 function fileVersion(file) {
   try {
     var st = fs.statSync(file);
