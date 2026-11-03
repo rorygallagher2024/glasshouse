@@ -1,8 +1,9 @@
 # Screen savers
 
-The **Screensaver** tab, `/?tab=screensaver`, provides fourteen alternatives to LG's default, and any added on the TV:
+The **Screensaver** tab, `/?tab=screensaver`, provides fifteen alternatives to LG's default, and any added on the TV:
 
 * Clock
+* Clock with date, the clock with seconds and the weekday and date beneath it
 * Starfield
 * Fireworks
 * Bokeh, soft circles of light drifting in and out
@@ -17,7 +18,7 @@ The **Screensaver** tab, `/?tab=screensaver`, provides fourteen alternatives to 
 * Tesseract, a four-dimensional cube turning through the fourth dimension, in fine lines of light that dim and turn violet with depth
 * Panel vitals, showing the TV's own panel hours and refresher countdown
 
-Each mode offers dim and bright variants, and visual elements continuously drift across the screen to prevent OLED burn-in or image retention. The clock and the time on Panel vitals draw 12-hour or 24-hour time as the TV's own time setting has it, and pick up a change the next time the screen saver starts.
+Each mode offers dim and bright variants, and visual elements continuously drift across the screen to prevent OLED burn-in or image retention. Both clocks and the time on Panel vitals draw 12-hour or 24-hour time as the TV's own time setting has it, and pick up a change the next time the screen saver starts.
 
 A firmware update restores the LG default.
 
@@ -33,9 +34,15 @@ One with something wrong in its folder, or whose QML would only show black, is l
 
 Glasshouse installs one there itself, as an example: **Pigs - Three Different Ones**, a pink pig, a saddleback and a razorback, big and small, flapping across a pixel-art night over Chicago. An update puts it back if it has been removed.
 
+## Screen savers from homebrew apps
+
+Homebrew Channel apps that come with a screen saver are listed too, after the others, named after the app and marked *Installed app*: Custom Screensaver, the two Aerial screen savers and Idlegif. Choose one here like any other, on any webOS Glasshouse's screen savers work on, and it stays chosen after the TV restarts. Its settings, such as which Aerial videos play, stay in its own app. With several installed, each is listed and one is in use at a time; two apps of the same name, as both Aerial ones are, show who made each.
+
+These apps can also put their screen saver in place themselves, with their own Apply and Autostart. That only works on webOS 9 and earlier, where LG's screen saver is the kind they change, and anything chosen here takes it off again, so choosing it here is the dependable way. If the app is uninstalled while its screen saver is in use, LG's comes back.
+
 On webOS 10 and later they are experimental: the tab shows a switch above the list that turns them on, after a warning, and until then only LG's default can be chosen. See [Experimental features](../experimental.md) for why.
 
-**Start screen saver** asks the TV for its screen saver. On some OLED TVs, a G3 on webOS 9.2.2 among them, LG's panel care holds the screen saver back for 30 minutes after every key press and change of app, while it dims the static parts of the picture itself, so the TV's 3-minute idle screen saver never came. Glasshouse lifts that hold when the TV asks for an idle screen saver or the button is pressed, and puts it back when the screen saver closes, so the screen saver comes after the idle time set in LG's settings and the dimming carries on while the TV is watched. Where the TV still refuses, the dashboard opens the screen saver itself, unless something is playing full screen or playback cannot be checked. Any key on the remote, including Home and the coloured buttons, or a second press of the button closes it. A failed close leaves it tracked so another press can retry. The TV does not know about a screen saver opened this way: its power state stays On, in the dashboards and in Home Assistant, and watch time counts the app beneath it. The Screen Saver sensor does show it.
+**Start screen saver** asks the TV for its screen saver. On some OLED TVs, a G3 on webOS 9.2.2 among them, LG's panel care holds the screen saver back for 30 minutes after every key press and change of app, while it dims the static parts of the picture itself, so the TV's 3-minute idle screen saver never came. Glasshouse lifts that hold when the TV asks for an idle screen saver or the button is pressed, and puts it back when the screen saver closes, so the screen saver comes after the idle time set in LG's settings and the dimming carries on while the TV is watched. An app that still refuses it, such as RetroArch played with a gamepad, is keeping the screen saver away itself, and is left alone until another app is in front or the TV turns off. Where the TV still refuses, the dashboard opens the screen saver itself, unless something is playing full screen or playback cannot be checked. Any key on the remote, including Home and the coloured buttons, or a second press of the button closes it. A failed close leaves it tracked so another press can retry. The TV does not know about a screen saver opened this way: its power state stays On, in the dashboards and in Home Assistant, and watch time counts the app beneath it. The Screen Saver sensor does show it.
 
 **Poweroff after** puts the TV in standby once a screen saver has been on for the number of minutes typed, from 1 to 1440; blank is off, the default. The count starts when the TV reports its power state as Screen Saver and starts again whenever it leaves it, so any key that closes the screen saver resets it. It applies to LG's screen saver as well as these, and needs power actions allowed (`allowPower`). A screen saver the dashboard opened itself, as above, leaves the power state at On and is not counted. The TV app steps through Off, 3, 5, 10, 20 and 30 minutes; the setting is kept in `config.json` as `screensaverPowerOffMinutes`.
 

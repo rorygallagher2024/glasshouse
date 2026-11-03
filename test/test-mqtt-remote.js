@@ -33,6 +33,13 @@ assert.strictEqual(keys.length, 20, 'every key is sent');
 assert.strictEqual(timers.length, 0, 'no key schedules a telemetry read');
 console.log('  ✓ twenty remote keys schedule no telemetry read');
 
+keys = [];
+handler('test/command/keyboardText', ' two words ');
+handler('test/command/keyboardKey', 'enter');
+assert.deepEqual(keys, ['keyboardText: two words ', 'keyboardKey:enter'], 'typed text keeps its spaces');
+assert.strictEqual(timers.length, 0, 'typing schedules no telemetry read');
+console.log('  ✓ typed text keeps its spaces and schedules no telemetry read');
+
 handler('test/command/launch', 'example.app');
 assert.strictEqual(timers.length, 1, 'other commands keep their telemetry refresh');
 console.log('  ✓ another command still schedules one');

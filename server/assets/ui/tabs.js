@@ -12,6 +12,7 @@ const TABS = {
   home:        'homepane',
   oledcare:    'oledpane',
   game:        'gamepane',
+  picture:     'picpane',
   audio:       'audiopane',
   servicemenu: 'svcpane',
   screensaver: 'sspane',
@@ -25,7 +26,7 @@ const TABS = {
 const DOCS = 'https://rorygallagher2024.github.io/glasshouse/';
 const TAB_DOCS = {
   control: 'dashboard/control/', metrics: 'dashboard/metrics/', apps: 'dashboard/apps/', home: 'dashboard/home/',
-  oledcare: 'dashboard/oled-care/', game: 'dashboard/game/', audio: 'dashboard/audio/', servicemenu: 'dashboard/service-menu/',
+  oledcare: 'dashboard/oled-care/', game: 'dashboard/game/', picture: 'dashboard/picture/', audio: 'dashboard/audio/', servicemenu: 'dashboard/service-menu/',
   screensaver: 'dashboard/screen-savers/', privacy: 'dashboard/privacy/', advanced: 'dashboard/advanced/',
   mqtt: 'HOME-ASSISTANT/', server: 'dashboard/server/', tools: 'dashboard/tools/'
 };
@@ -92,8 +93,11 @@ function showTab(name) {
   if (name === 'server') loadSsh();
   if (name === 'oledcare') loadOledCare();
   if (name === 'home') loadHome();
+  if (name === 'control') loadControlBluetooth();
   if (name === 'audio') loadAudio();
   audioPolling(name === 'audio');
+  if (name === 'picture') loadPicture();
+  picturePolling(name === 'picture');
   gamePolling(name === 'game');
   if (name === 'advanced') { loadAdvSettings(); loadUpdate(); loadScreenTime(); }
   if (name === 'servicemenu') loadServiceMenu();
@@ -127,6 +131,7 @@ if (tabsNav) {
 }
 // Reveals the Game tab on TVs with LG's Game Optimizer, and Home where Glasshouse Home is offered.
 loadGame();
+checkPictureTab();
 loadHomeAvailable();
 
 // The menu bar names the tab on show, in the page's language: the strings are

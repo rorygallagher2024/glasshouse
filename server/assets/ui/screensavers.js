@@ -43,12 +43,13 @@ function pressScreensaver(id) {
   sendCommand('screensaver');
 }
 
-// Under a saver added on the TV, who made it, its license and what it does
-// past the screen; under one that cannot be picked, why. Glasshouse's own carry nothing more.
+// Under a saver added on the TV or an installed app's, who made it, its
+// license and what it does past the screen; under one that cannot be picked,
+// why. Glasshouse's own carry nothing more.
 function ssMeta(m) {
   if (m.note) return `<div class="ss-meta bad">${esc(m.note)}</div>`;
   if (m.builtin !== false) return '';
-  const bits = [t('ss.added', 'Added on this TV')];
+  const bits = [m.fromApp ? t('ss.installedApp', 'Installed app') : t('ss.added', 'Added on this TV')];
   if (m.author) bits.push(t('ss.by', 'by {author}', { author: m.author }));
   if (m.license) bits.push(m.license);
   const cautions = (m.cautions || []).join(' ');
@@ -84,7 +85,8 @@ async function loadScreensavers() {
 
   /* LG's own screen saver is not ours to draw, so brightness is offered only
      for the ones that are. */
-  const ours = d.current !== 'stock';
+  // An installed app's has its own settings, so no brightness from here either.
+  const ours = d.current !== 'stock' && !d.modes.some(m => m.active && m.fromApp);
   q('ss-level-row').hidden = !ours;
   if (ours) {
     q('ss-level').innerHTML = [['dim', t('ss.dim', 'Dim')], ['bright', t('ss.bright', 'Bright')]].map(([id, label]) =>

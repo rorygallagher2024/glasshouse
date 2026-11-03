@@ -73,9 +73,22 @@ var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__' };
+/*
+ * Homebrew Channel apps that ship a screen saver as one QML file, which they
+ * bind-mount over LG's qml/main.qml themselves: Custom Screensaver, the two
+ * Aerial ones and Idlegif. That only works where LG's is QML (up to webOS 9),
+ * and choosing anything here takes it off again (#1067). Listed here, one is
+ * staged like Glasshouse's own. Each loads what else it needs by its full
+ * path into its own folder or state, so only the QML is staged.
+ */
+var APPS_DIR = '/media/developer/apps/usr/palm/applications';
+var APP_PREFIX = 'app-';
+var APP_SAVER_FILES = ['assets/screensaver-main.qml', 'assets/screensaver.qml'];
+var MAX_APP_QML_BYTES = 512 * 1024;
 var DEFAULT_ROOTS = [
   { dir: path.join(__dirname, '..', 'assets', 'screensavers'), builtin: true },
-  { dir: USER_SAVERS_DIR, builtin: false }
+  { dir: USER_SAVERS_DIR, builtin: false },
+  { dir: APPS_DIR, builtin: false, apps: true }
 ];
 var saverRoots = DEFAULT_ROOTS;
 var catalogCache = null;  // { list: [entries, stock first], byId: {} }
@@ -204,8 +217,46 @@ function readSaver(root, name) {
   return e;
 }
 
+// An installed app's screen saver as an entry, or null where the app has none.
+function readAppSaver(root, appId) {
+  var dir = path.join(root.dir, appId);
+  var main = null;
+  for (var i = 0; i < APP_SAVER_FILES.length && !main; i++) {
+    try { if (fs.lstatSync(path.join(dir, APP_SAVER_FILES[i])).isFile()) main = APP_SAVER_FILES[i]; } catch (e) {}
+  }
+  if (!main) return null;
+  var info = {};
+  try { info = JSON.parse(fs.readFileSync(path.join(dir, 'appinfo.json'), 'utf8')) || {}; } catch (e2) {}
+  var title = typeof info.title === 'string' && info.title ? info.title : appId;
+  var e = { id: APP_PREFIX + appId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48),
+            dir: dir, main: main, builtin: false, fromApp: appId, appTitle: title, label: title, order: 1e9, uses: [],
+            description: msg('srv.saver.fromApp', 'The screen saver from the {app} app. Any settings it has are in that app.', { app: title }),
+            version: typeof info.version === 'string' ? info.version : '',
+            author: typeof info.vendor === 'string' ? info.vendor : '', license: '' };
+  var have = parseInt(String(webosVersion || ''), 10);
+  var full = path.join(dir, main), st, src;
+  try {
+    st = fs.statSync(full);
+    if (st.size > MAX_APP_QML_BYTES) {
+      e.problem = msg('srv.saver.appTooBig', 'Its screen saver file is over {kb} KB.', { kb: String(MAX_APP_QML_BYTES / 1024) });
+      return e;
+    }
+    var stamp = st.size + ':' + st.mtime.getTime() + ':' + (have || 0);
+    var seen = qmlChecked[full];
+    if (!seen || seen.stamp !== stamp) {
+      src = fs.readFileSync(full, 'utf8');
+      seen = qmlChecked[full] = { stamp: stamp, wrong: qmlcheck.problem(src, path.basename(main), have || 0), src: src };
+    }
+    if (seen.wrong) e.problem = seen.wrong;
+    else e.cautions = qmlcheck.reaches(seen.src);
+  } catch (err) {
+    e.problem = msg('srv.saver.unreadable', 'Its folder could not be read: {error}', { error: err.message });
+  }
+  return e;
+}
+
 // Every screen saver, read from the folders again: LG's first, then
-// Glasshouse's in their order, then the TV's own by name.
+// Glasshouse's in their order, then the TV's own by name, then the apps'.
 function scanSavers() {
   var list = [], byId = { stock: STOCK };
   for (var r = 0; r < saverRoots.length; r++) {
@@ -217,10 +268,17 @@ function scanSavers() {
       if (entries[i].charAt(0) === '.') continue;   // hidden
       try { if (!fs.statSync(path.join(saverRoots[r].dir, entries[i])).isDirectory()) continue; }
       catch (e2) { continue; }
-      var entry = readSaver(saverRoots[r], entries[i]);
-      if (byId[entry.id]) continue;
+      var entry = saverRoots[r].apps ? readAppSaver(saverRoots[r], entries[i]) : readSaver(saverRoots[r], entries[i]);
+      if (!entry || byId[entry.id]) continue;
       byId[entry.id] = entry;
       found.push(entry);
+    }
+    // Two apps of the same name, as both Aerial ones are, are told apart by who made each.
+    if (saverRoots[r].apps) {
+      found.forEach(function (e) {
+        var same = found.filter(function (o) { return o.appTitle === e.appTitle; }).length > 1;
+        if (same) e.label = e.appTitle + ' (' + (e.author || e.fromApp) + ')';
+      });
     }
     found.sort(function (a, b) {
       return a.order - b.order || (a.label.toLowerCase() < b.label.toLowerCase() ? -1 : a.label.toLowerCase() > b.label.toLowerCase() ? 1 : 0);
@@ -454,7 +512,9 @@ function screensaverList() {
       // Why it cannot be picked, where something is wrong with its folder.
       note: e.problem,
       // What one added on the TV does past the screen: the network, sound.
-      cautions: e.cautions && e.cautions.length ? e.cautions : undefined
+      cautions: e.cautions && e.cautions.length ? e.cautions : undefined,
+      // The app it comes from, where it is an installed app's.
+      fromApp: e.fromApp ? e.appTitle : undefined
     });
   }
   return {
@@ -550,7 +610,8 @@ function stageSaverFiles(e, level) {
   var qmlDir = path.join(SCREENSAVER_DIR, 'qml');
   removeTree(qmlDir);
   mkdirp(qmlDir);
-  var files = saverFiles(e.dir);
+  // An app's screen saver loads the rest from its own folder.
+  var files = e.fromApp ? [] : saverFiles(e.dir);
   for (var i = 0; i < files.length; i++) {
     var rel = files[i].rel;
     if (rel === MANIFEST || rel === e.main) continue;
@@ -624,9 +685,25 @@ function setScreensaver(mode, level, cb) {
   });
 }
 
+/*
+ * An installed app's screen saver in use whose app has gone, or no longer has
+ * it: LG's back, as the staged copy may need files that went with the app.
+ */
+function appSaverGone() {
+  var m = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
+  if (!m || m.indexOf(APP_PREFIX) !== 0 || saverById(m)) return;
+  console.log('screensaver: "' + m + '" is no longer installed; putting LG\'s back');
+  setScreensaver('stock', 'dim', function (r) {
+    if (!r.ok) console.error('screensaver: could not put LG\'s back: ' + (r.error || 'unknown error'));
+  });
+}
+
+// At start, when the clock's format changes, and after an app is removed.
 function restageScreensaver() {
+  // Read again, as an app with a screen saver may have been removed.
+  scanSavers();
   var mode = screensaverMode();
-  if (mode === 'stock') return;
+  if (mode === 'stock') return appSaverGone();
   var saver = saverById(mode);
   if (!saver || saver.problem) return;
   try {

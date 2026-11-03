@@ -17,9 +17,9 @@ PicCap is optional. Glasshouse inspects the TV filesystem for PicCap's applicati
 * **If PicCap is not installed or the TV runs webOS 2:** Glasshouse never queries Luna for PicCap, starts no timers, and sends no network requests. PicCap requires webOS 3 or newer; querying its service on webOS 2 stalls the Luna bus and causes watchdog resets (#746).
 * **If PicCap is installed (webOS 3+):** Glasshouse queries PicCap's background Luna service (`org.webosbrew.piccap.service/status`) to check whether capture is active.
 
-### The toggle in Advanced Controls
+### The toggle on the System tab
 
-When PicCap is installed, the **Advanced** tab (`/?tab=advanced`) displays an **Ambient light** section with a **PicCap capture** toggle:
+When PicCap is installed, the **System** tab (`/?tab=advanced`) displays an **Ambient light** section with a **PicCap capture** toggle:
 
 * **On:** Instructs PicCap's service to start capturing (`org.webosbrew.piccap.service/start`). The ambient backlights turn on and follow the screen.
 * **Off:** Instructs PicCap to stop capturing (`org.webosbrew.piccap.service/stop`). The ambient backlights turn dark, and the TV's processor stops encoding video frames.
@@ -99,7 +99,7 @@ Once PicCap is installed and configured, Glasshouse automatically detects it on 
 ### In the Web Dashboard
 
 1. Open the Glasshouse dashboard in any browser.
-2. Go to the **Advanced** tab (`/?tab=advanced`).
+2. Go to the **System** tab (`/?tab=advanced`).
 3. Scroll down to **Ambient light**.
 4. Click the **PicCap capture** button to toggle capture on or off.
 

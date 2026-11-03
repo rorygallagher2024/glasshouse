@@ -419,6 +419,28 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ the time server is saved and the client restarted, a mistyped one refused, and the switch keeps it');
 })();
 
+(function testDeviceName() {
+  var saved = [], republished = 0, renamed = [];
+  var config = { allowControl: true, device: { id: 'lg_c2', name: 'LG OLED42C24LA', model: 'OLED42C24LA' } };
+  controls.init({
+    config: config,
+    writeSettings: function (patch, cb) { saved.push(patch); cb(null); },
+    republishDiscovery: function () { republished++; },
+    deviceNameChanged: function (name) { renamed.push(name); }
+  });
+  controls.doControl('setDeviceName', '  Living   room ', function (res) { assert.deepEqual(res, { ok: true, name: 'Living room' }); });
+  assert.deepEqual(saved, [{ device: { name: 'Living room' } }]);
+  assert.strictEqual(config.device.name, 'Living room', 'shown at once');
+  assert.strictEqual(republished, 1, 'and sent to Home Assistant');
+  assert.deepEqual(renamed, ['Living room']);
+  controls.doControl('setDeviceName', '', function (res) { assert.strictEqual(res.name, 'LG OLED42C24LA'); });
+  assert.deepEqual(saved[1], { device: { name: '' } }, 'empty saved, so the next start names it from the model');
+  assert.strictEqual(config.device.name, 'LG OLED42C24LA', 'and LG and the model meanwhile');
+  controls.doControl('setDeviceName', new Array(66).join('x'), function (res) { assert.strictEqual(res.ok, false); });
+  assert.strictEqual(saved.length, 2, 'a name over 64 characters is not saved');
+  console.log('  ✓ the TV name is saved and applied at once, empty puts back LG and the model, and a long one is refused');
+})();
+
 // updateCheck and updateAutoCheck return unified updateSummary (including daemon health) (#712)
 (function testUpdateCheckSummary() {
   var checkedAge = null;
@@ -497,6 +519,79 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ homeAutoLaunch and quickBoot coordinate with Glasshouse Home');
 })();
 
+// A notification's type is LG's toast type, and ":icon:" opening its text an icon
+(function testToastIcon() {
+  var fs = require('fs');
+  var os = require('os');
+  var path = require('path');
+  var dir = path.join(os.tmpdir(), 'toast-icons-' + process.pid);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+  fs.writeFileSync(path.join(dir, 'washer.png'), 'png');
+  var calls = [], results = [];
+  controls.init({
+    config: { allowControl: true },
+    luna: function (uri, payload, cb) { calls.push(payload); cb({ returnValue: true }); },
+    clearLunaCache: function () {},
+    telemetry: { clearCache: function () {} },
+    toastSource: 'com.webos.app.home',
+    toastIconDir: dir
+  });
+  function note(type, text) {
+    controls.doControl('toast', { type: type, text: text }, function (r) { results.push(r); });
+  }
+
+  controls.doControl('toast', ':washer: plain', function () {});
+  note('light', ':washer:   Washer done');
+  note('advanced', ':washer:Washer done');
+  note('standard', ':washer: No icon slot');
+  note('light', ':nope: Missing icon');
+  note('light', 'Time: 10:30');
+  note('light', ':@' + path.join(dir, 'washer.png') + ': By path');
+  note('light', ':@relative/washer.png: Not a path');
+  note('huge', 'Unknown type');
+
+  var src = 'com.webos.app.home', icon = path.join(dir, 'washer.png');
+  assert.deepEqual(calls[0], { sourceId: src, message: ':washer: plain' });
+  assert.deepEqual(calls[1], { sourceId: src, iconUrl: icon, type: 'light', message: 'Washer done' });
+  assert.deepEqual(calls[2], { sourceId: src, iconUrl: icon, type: 'advanced', message: 'Washer done' });
+  assert.deepEqual(calls[3], { sourceId: src, iconUrl: icon, message: 'No icon slot' });
+  assert.deepEqual(calls[4], { sourceId: src, type: 'light', message: 'Missing icon' });
+  assert.deepEqual(calls[5], { sourceId: src, type: 'light', message: 'Time: 10:30' });
+  assert.deepEqual(calls[6], { sourceId: src, iconUrl: icon, type: 'light', message: 'By path' });
+  assert.deepEqual(calls[7], { sourceId: src, type: 'light', message: ':@relative/washer.png: Not a path' });
+  assert.strictEqual(calls.length, 8);
+  assert.strictEqual(results[7].ok, false);
+  fs.unlinkSync(icon);
+  fs.rmdirSync(dir);
+  console.log('  ✓ a notification takes its type from the topic and its icon from ":icon:"');
+})();
+
+// webOS 4.4 (a B8) refuses the advanced type with "Message is not parsed": the
+// message goes out again as a plain toast, so it is still shown.
+(function testToastFallback() {
+  var calls = [], results = [];
+  controls.init({
+    config: { allowControl: true },
+    luna: function (uri, payload, cb) {
+      calls.push(payload);
+      cb(payload.type ? { returnValue: false, errorText: 'Message is not parsed' } : { returnValue: true });
+    },
+    clearLunaCache: function () {},
+    telemetry: { clearCache: function () {} },
+    toastSource: 'com.webos.app.home'
+  });
+  controls.doControl('toast', { type: 'advanced', text: 'Washer done' }, function (r) { results.push(r); });
+  assert.deepEqual(calls, [
+    { sourceId: 'com.webos.app.home', type: 'advanced', message: 'Washer done' },
+    { sourceId: 'com.webos.app.home', message: 'Washer done' }
+  ], 'sent again as a standard toast, without the icon');
+  assert.strictEqual(results[0].ok, true);
+  calls = [];
+  controls.doControl('toast', 'plain', function (r) { results.push(r); });
+  assert.strictEqual(calls.length, 1, 'a standard toast is not sent twice');
+  console.log('  ✓ a toast type the TV refuses goes out as a standard toast');
+})();
+
 // Remote keys and Home go ahead of the luna queue, and log how long they took
 (function testRcuUrgent() {
   var normal = [];
@@ -526,6 +621,94 @@ console.log('Running test-controls.js ...');
   assert.ok(/^rcu right: queued \d+ ms, luna 31 ms, ok$/.test(debugs[0]), debugs[0]);
   assert.ok(/^rcu home: queued \d+ ms, luna 31 ms, ok$/.test(debugs[1]), debugs[1]);
   console.log('  ✓ remote keys and Home use the urgent luna path and log their timing');
+})();
+
+// With LG's on-screen keyboard up, the D-pad, OK and Back go to the remote's
+// own device; typing, Enter and Backspace go to the input method service.
+(function testOnScreenKeyboard() {
+  var fs = require('fs');
+  var realOpen = fs.openSync;
+  var realWrite = fs.writeSync;
+  var realClose = fs.closeSync;
+  var realDebug = console.debug;
+  var pressed = [], urgent = [], keyboardUp = true, answers = [];
+  function setUp() {
+    controls.init({
+      config: { allowControl: true },
+      telemetry: { clearCache: function () {} },
+      luna: function (uri, payload, cb) { cb({ returnValue: true }); },
+      lunaUrgent: function (uri, payload, cb) { urgent.push(uri + ' ' + JSON.stringify(payload)); cb({ returnValue: true }); },
+      keyboardVisible: function () { return keyboardUp; }
+    });
+  }
+  fs.openSync = function () { return 99; };
+  fs.closeSync = function () {};
+  fs.writeSync = function (fd, b) {
+    if (b.readUInt16LE(8) === 1 && b.readInt32LE(12) === 1) pressed.push(b.readUInt16LE(10));
+  };
+  console.debug = function () {};
+  setUp();
+  ['up', 'down', 'left', 'right', 'ok', 'back'].forEach(function (k) {
+    controls.doControl('rcu', k, function (r) { answers.push(r); });
+  });
+  // After the releases, which follow each press by 50 ms.
+  setTimeout(function () {
+    fs.openSync = realOpen;
+    fs.writeSync = realWrite;
+    fs.closeSync = realClose;
+    console.debug = realDebug;
+    assert.deepEqual(pressed, [103, 108, 105, 106, 28, 412], 'evdev presses on the remote device');
+    assert.deepEqual(urgent, [], 'no network input key while the keyboard is up');
+    assert.strictEqual(answers.length, 6);
+    assert.ok(answers.every(function (r) { return r.ok === true; }));
+
+    // The power-off test below runs meanwhile with its own luna; only the
+    // urgent path is taken back, and the rest runs without a break.
+    controls.init({
+      lunaUrgent: function (uri, payload, cb) { urgent.push(uri + ' ' + JSON.stringify(payload)); cb({ returnValue: true }); }
+    });
+    keyboardUp = false;
+    controls.doControl('rcu', 'ok', function () {});
+    assert.deepEqual(urgent, ['com.webos.service.networkinput/test/sendKeyCode {"keyCode":28}'], 'network input again once it is gone');
+
+    urgent = [];
+    var long = new Array(controls.KEYBOARD_TEXT_MAX + 21).join('x');
+    controls.doControl('keyboardText', ' two words ', function (r) { assert.strictEqual(r.ok, true); });
+    controls.doControl('keyboardText', long, function () {});
+    controls.doControl('keyboardKey', 'backspace', function (r) { assert.strictEqual(r.ok, true); });
+    controls.doControl('keyboardKey', 'enter', function (r) { assert.strictEqual(r.ok, true); });
+    assert.deepEqual(urgent, [
+      'com.webos.service.ime/insertText {"text":" two words "}',
+      'com.webos.service.ime/insertText {"text":"' + long.slice(0, 100) + '"}',
+      'com.webos.service.ime/deleteCharacters {"count":1}',
+      'com.webos.service.ime/sendEnterKey {}'
+    ], 'in order, on the urgent path, text cut to 100');
+    controls.doControl('keyboardText', '', function (r) { assert.strictEqual(r.ok, false, 'nothing to type'); });
+    controls.doControl('keyboardKey', 'tab', function (r) { assert.strictEqual(r.ok, false); });
+    assert.strictEqual(urgent.length, 4, 'neither reaches the TV');
+    controls.init({ keyboardVisible: function () { return false; } });
+    console.log('  ✓ on-screen keyboard: D-pad, OK and Back on the remote device; text, Enter and Backspace through the input method');
+  }, 120);
+})();
+
+// The dashboard's keyboard box: what it types, and a cap on each change, as
+// every backspace is a key press of its own.
+(function testSendTextCap() {
+  var sent = [];
+  controls.init({ lunaUrgent: function (uri, payload, cb) { sent.push(uri + ' ' + JSON.stringify(payload)); cb({ returnValue: true }); } });
+  var answers = [];
+  controls.doControl('sendText', { text: 'abc', replace: 0 }, function (r) { answers.push(r.ok); });
+  controls.doControl('sendText', { text: 'd', replace: 2 }, function (r) { answers.push(r.ok); });
+  var over = new Array(controls.SEND_TEXT_MAX + 2).join('x');
+  controls.doControl('sendText', { text: over, replace: 0 }, function (r) { answers.push(r.ok); });
+  controls.doControl('sendText', { text: '', replace: controls.SEND_TEXT_MAX + 1 }, function (r) { answers.push(r.ok); });
+  assert.deepEqual(answers, [true, true, false, false], 'more than the cap is refused');
+  assert.deepEqual(sent, [
+    'com.webos.service.ime/insertText {"text":"abc"}',
+    'com.webos.service.ime/deleteCharacters {"count":2}',
+    'com.webos.service.ime/insertText {"text":"d"}'
+  ], 'deleting through the input method, in one call, then typing, on the urgent path; nothing over the cap');
+  console.log('  ✓ the keyboard box deletes and types through the input method, and refuses more than ' + controls.SEND_TEXT_MAX + ' characters at a time');
 })();
 
 // Play / Pause picks the key from what the foreground app's media reports

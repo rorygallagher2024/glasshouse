@@ -230,7 +230,7 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
                             worstPage + 'ms)' + (mqttDisabled ? ', MQTT stayed disabled' : ', telemetry kept flowing'));
 
                 var calls = fs.readFileSync(env.FAKE_LUNA_LOG, 'utf8');
-                var windowCalls = ['getForegroundAppInfo', 'getFocusedWindowInfo'];
+                var windowCalls = ['getForegroundAppInfo', 'getFocusedWindowInfo', 'getForegroundWindowInfo'];
                 windowCalls.forEach(function (method) {
                   var called = calls.indexOf('luna://com.webos.surfacemanager/' + method) !== -1;
                   if (called === !!mqttDisabled) fail(method + (mqttDisabled ? ' subscribed without MQTT' : ' never subscribed'));

@@ -182,7 +182,10 @@ function catalogRow(a, writable, from) {
     <div class="prot-status">
       ${sizeBadge ? `<span class="app-badge" title="${esc(t('apps.installed.storageTooltip', 'Storage footprint'))}">${esc(sizeBadge)}</span>` : ''}
       ${a.installedVersion !== null && a.installedVersion !== undefined && a.state !== 'store' && !uninstalling[a.id] ? `<button type="button" class="pill good" onclick="sendCommand('launchApp','${jsq(a.id)}')" ${writable ? '' : 'disabled'}>${esc(t('apps.launch.button', 'Launch'))}</button>` : ''}
-      <button type="button" class="pill ${cls}" data-app="${esc(a.id)}" data-repo="${esc(a.repo || '')}" onclick="${clickFn}"${fill} ${off ? 'disabled' : ''}>${esc(label)}</button>
+      <div class="catalog-actions">
+        ${a.sourceUrl ? `<a class="pill idle catalog-source" href="${esc(a.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(t('apps.install.viewSource', 'View source'))}</a>` : ''}
+        <button type="button" class="pill ${cls}" data-app="${esc(a.id)}" data-repo="${esc(a.repo || '')}" onclick="${clickFn}"${fill} ${off ? 'disabled' : ''}>${esc(label)}</button>
+      </div>
     </div>
   </div>`;
 }
@@ -354,7 +357,7 @@ function renderPreview(pv) {
     : t('apps.install.cpu', 'Its programs are built for a different processor than this TV\'s and may not run.');
   q('inst-screensaver').hidden = !pv.isScreensaver;
   q('inst-screensaver').textContent = pv.isScreensaver
-    ? t('apps.install.screensaver.warn', 'This app installs a custom screen saver, which will replace Glasshouse’s own screen savers.') : '';
+    ? t('apps.install.screensaver.listed', 'This app has a screen saver. Once it is installed, choose it on the Screen Saver tab, with Glasshouse’s own.') : '';
   q('inst-space').textContent = pv.freeBytes === null || pv.freeBytes === undefined ? ''
     : t('apps.install.space', 'Free space: {free}. Needed: about {need}.', { free: fmtMb(pv.freeBytes), need: fmtMb(pv.needBytes) });
   const showHash = pv.source !== 'catalog' && !!pv.sha256;

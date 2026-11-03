@@ -18,8 +18,23 @@ test('BUTTON_CODES maps 398-401 to red, green, yellow, blue', function () {
   assert.strictEqual(remotebuttons.BUTTON_CODES[401], 'blue');
 });
 
+// The Python worker reads the devices with its own copy of the codes: a code
+// added to one and not the other was never reported (#1088).
+test('the Python worker reports the same buttons by the same codes', function () {
+  var py = require('fs').readFileSync(require('path').join(__dirname, '..', 'server', 'lib', 'remotebuttons.py'), 'utf8');
+  var fromPy = {};
+  py.replace(/^\s*(\d+): '(\w+)'/mg, function (whole, code, name) { fromPy[code] = name; return whole; });
+  var fromJs = {};
+  Object.keys(remotebuttons.BUTTON_CODES).forEach(function (code) { fromJs[code] = remotebuttons.BUTTON_CODES[code]; });
+  assert.deepEqual(fromPy, fromJs);
+});
+
 test('BUTTON_CODES maps the streaming buttons', function () {
   assert.strictEqual(remotebuttons.BUTTON_CODES[1037], 'netflix');
+  // #1088: the microphone, Movies and Google Assistant, LG's codes less 8.
+  assert.strictEqual(remotebuttons.BUTTON_CODES[428], 'voice');
+  assert.strictEqual(remotebuttons.BUTTON_CODES[1083], 'movies');
+  assert.strictEqual(remotebuttons.BUTTON_CODES[1117], 'googleassistant');
   assert.strictEqual(remotebuttons.BUTTON_CODES[1043], 'lgchannels');
   assert.strictEqual(remotebuttons.BUTTON_CODES[18874397], 'lgchannels');
 });
@@ -130,7 +145,7 @@ test('remotebuttons lifecycle and status', function () {
   assert.strictEqual(Array.isArray(s.devices), true);
 });
 
-test('Home Assistant discovery builds remote_button entity with colour and streaming button events', function () {
+test('Home Assistant discovery builds remote_button entity with every reported button as an event type', function () {
   var entities = ha.buildEntities({ pfx: 'lgtv' });
   var remoteBtn = null;
   for (var i = 0; i < entities.length; i++) {
@@ -143,8 +158,10 @@ test('Home Assistant discovery builds remote_button entity with colour and strea
   assert.strictEqual(remoteBtn.type, 'event');
   assert.strictEqual(remoteBtn.payload.name, 'Remote Button');
   assert.strictEqual(remoteBtn.payload.state_topic, 'lgtv/events/button');
-  assert.deepEqual(remoteBtn.payload.event_types, ['red', 'green', 'yellow', 'blue', 'netflix',
-    'amazon', 'disneyplus', 'lgchannels', 'rakutentv', 'alexa']);
+  assert.deepEqual(remoteBtn.payload.event_types.slice().sort(), ['alexa', 'amazon', 'blue', 'disneyplus',
+    'googleassistant', 'green', 'lgchannels', 'movies', 'netflix', 'rakutentv', 'red', 'voice', 'yellow']);
+  // Each button the reader reports, and only those: Home Assistant drops an undeclared one.
+  assert.deepEqual(remoteBtn.payload.event_types, remotebuttons.buttonNames());
   assert.strictEqual(remoteBtn.payload.icon, 'mdi:remote');
 });
 

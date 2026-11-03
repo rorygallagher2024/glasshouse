@@ -139,4 +139,243 @@ lgs.ROWS.filter(function (x) { return x.id === 'soundOutput'; })[0].choices.forE
 });
 console.log('  ✓ the sound outputs have the names module\'s English');
 
+
+// 6. Picture: what the TV describes decides the rows, their values and ranges
+var pic = {
+  picture: { pictureMode: 'cinema', contrast: 85, backlight: '80', energySaving: 'off', superResolution: 'off',
+    hdrDynamicToneMapping: 'on', blackLevel: { ntsc: 'auto', pal: 'auto' }, skinColor: '0', edgeEnhancer: 'on',
+    pictureSettingModified: { cinema: false, vivid: true } },
+  aspectRatio: { arcMenuBySystem: 'off' }
+};
+var picDesc = {
+  pictureMode: { values: { arrayExt: [{ value: 'vivid' }, { value: 'cinema' }, { value: 'hdrCinema', visible: false }] } },
+  contrast: { values: { range: { min: 0, max: 100, interval: 1 } } },
+  energySaving: { values: { arrayExt: [{ value: 'auto' }, { value: 'off' }, { value: 'screen_off' }] } },
+  superResolution: { values: { arrayExt: [{ value: 'off' }, { value: 'low' }, { value: 'ultra' }] } },
+  hdrDynamicToneMapping: { values: { arrayExt: [{ value: 'on' }, { value: 'off' }] }, ui: { visible: false } },
+  truMotionMode: { values: { arrayExt: [{ value: 'off' }, { value: 'cinemaClear' }] } },
+  gamma: { values: { arrayExt: [{ value: 'low' }] }, ui: { active: false } },
+  skinColor: { values: { range: { min: -5, max: 5 } } },
+  backlight: { values: { range: { min: 0, max: 100 } } }
+};
+var picWrites = [], asked = [], onScreen = 'default', onMode = 'cinema';
+function picDescribe(payload) {
+  return { returnValue: false, results: payload.keys.filter(function (k) { return picDesc[k]; })
+    .map(function (k) { return { key: k, values: picDesc[k].values, ui: picDesc[k].ui || {} }; }) };
+}
+function picRead(payload) {
+  asked.push(payload);
+  if (payload.app_id) return { returnValue: true, settings: payload.app_id === 'com.webos.app.hdmi4' ? { truMotionMode: 'off', arcPerApp: 'original' } : {} };
+  return { returnValue: true, settings: pic[payload.category] || {}, dimension: { input: onScreen, pictureMode: onMode } };
+}
+lgs.init({
+  lunaCached: function (uri, payload, ttl, cb) {
+    if (/getForegroundAppInfo$/.test(uri)) return cb({ appId: 'com.webos.app.hdmi4' });
+    cb(/Desc$/.test(uri) ? picDescribe(payload) : picRead(payload));
+  },
+  luna: function (uri, payload, cb) {
+    if (/getForegroundAppInfo$/.test(uri)) return cb({ appId: 'com.webos.app.hdmi4' });
+    if (/Desc$/.test(uri)) return cb(picDescribe(payload));
+    if (/getSystemSettings$/.test(uri)) return cb(picRead(payload));
+    picWrites.push(payload);
+    cb({ returnValue: true });
+  },
+  clearLunaCache: function () {}
+});
+lgs.collect('picture', function (r) {
+  var by = {};
+  r.rows.forEach(function (x) { by[x.id] = x; });
+  assert.deepEqual(by.pictureMode.choices.map(function (c) { return c.label; }), ['Vivid', 'Cinema']);
+  assert.deepEqual([by.contrast.min, by.contrast.max], [0, 100]);
+  assert.deepEqual(by.energySaving.choices.map(function (c) { return c.value; }), ['auto', 'off']);
+  assert.deepEqual(by.superResolution.choices.map(function (c) { return c.label; }), ['Off', 'Low', 'Ultra']);
+  assert.strictEqual(by.skinColor.value, 0);
+  assert.strictEqual(by.backlight.value, 80, 'a number kept as text reads as a number');
+  assert.strictEqual(by.hdrDynamicToneMapping, undefined, 'a setting LG hides is left out');
+  assert.strictEqual(by.blackLevel, undefined, 'an app\'s Video Range, kept per colour system, is left out');
+  assert.strictEqual(by.edgeEnhancer, undefined, 'a key the TV keeps but does not describe is left out');
+  assert.strictEqual(by.truMotionMode.value, 'off');
+  assert.strictEqual(by.arcPerApp.value, 'original');
+  assert.deepEqual(r.dimensions.picture, { input: 'default', pictureMode: 'cinema' });
+  assert.ok(asked.some(function (a) { return a.category === 'aspectRatio' && a.app_id === 'com.webos.app.hdmi4'; }));
+});
+console.log('  ✓ picture rows take their choices, ranges and visibility from the TV');
+
+// A TV that describes none of its picture settings gets no Picture rows.
+var allDesc = picDesc;
+picDesc = {};
+lgs.collect('picture', function (r) {
+  assert.deepEqual(r.rows, [], 'nothing offered without LG\'s own choices and ranges');
+});
+picDesc = allDesc;
+console.log('  ✓ without a description of the picture settings, none are offered');
+
+// LG marks the mode as adjusted, as its own app does, and only once
+lgs.set('contrast', 80, function (r) { assert.strictEqual(r.ok, true); });
+assert.deepEqual(picWrites[0], { category: 'picture', settings: { contrast: 80, pictureSettingModified: { cinema: true, vivid: true } } });
+pic.picture.pictureSettingModified.cinema = true;
+lgs.set('contrast', 81, function (r) { assert.strictEqual(r.ok, true); });
+assert.deepEqual(picWrites[1], { category: 'picture', settings: { contrast: 81 } });
+lgs.set('contrast', 101, function (r) { assert.strictEqual(r.ok, false); });
+lgs.set('energySaving', 'screen_off', function (r) { assert.strictEqual(r.ok, false); });
+lgs.set('gamma', 'low', function (r) { assert.strictEqual(r.ok, false); });
+picDesc.contrast.ui = { visible: false };
+lgs.set('contrast', 80, function (r) { assert.strictEqual(r.ok, false); });
+delete picDesc.contrast.ui;
+picDesc.superResolution.values.arrayExt[1].active = false;
+lgs.set('superResolution', 'low', function (r) { assert.strictEqual(r.ok, false); });
+delete picDesc.superResolution.values.arrayExt[1].active;
+assert.strictEqual(picWrites.length, 2, 'hidden settings and inactive choices are not written');
+lgs.set('pictureMode', 'hdrCinema', function (r) { assert.strictEqual(r.ok, false); });
+lgs.set('pictureMode', 'vivid', function (r) { assert.strictEqual(r.ok, true); });
+assert.deepEqual(picWrites[2], { category: 'picture', settings: { pictureMode: 'vivid' } });
+console.log('  ✓ picture writes mark the mode, and refuse values, ranges and locks the TV does not allow');
+
+// Per-app settings are written for the app on screen, and Gallery is left alone
+lgs.set('truMotionMode', 'cinemaClear', function (r) { assert.strictEqual(r.ok, true); });
+assert.deepEqual(picWrites[3], { category: 'picture', settings: { truMotionMode: 'cinemaClear' }, current_app: true });
+onScreen = 'gallery';
+lgs.set('contrast', 70, function (r) { assert.strictEqual(r.ok, false); });
+assert.strictEqual(picWrites.length, 4);
+console.log('  ✓ per-app settings are written as LG writes them, and Gallery is not changed');
+
+// Colour management: where Dynamic colour offers User Selection it is Colour
+// adjustment, heads the colours and turns them on; Game mode greys them out.
+pic.picture.dynamicColor = 'off';
+pic.picture.colorManagementSaturationGreen = 0;
+picDesc.dynamicColor = { values: { arrayExt: [{ value: 'off' }, { value: 'low' }, { value: 'user' }] } };
+picDesc.colorManagementSaturationGreen = { values: { range: { min: -30, max: 30 } } };
+function cmsRows(cb) {
+  lgs.collect('picture', function (r) {
+    var by = {};
+    r.rows.forEach(function (x) { by[x.id] = x; });
+    cb(by);
+  });
+}
+cmsRows(function (by) {
+  assert.strictEqual(by.dynamicColor.group, 'cms', 'Colour adjustment heads the colours');
+  assert.strictEqual(by.dynamicColor.title, 'Colour adjustment');
+  assert.deepEqual([by.cmsSaturationGreen.active, by.cmsSaturationGreen.inactive], [false, 'colourAdjustment']);
+});
+pic.picture.dynamicColor = 'user';
+cmsRows(function (by) {
+  assert.strictEqual(by.cmsSaturationGreen.active, undefined, 'User Selection turns the colours on');
+});
+onMode = 'game';
+cmsRows(function (by) {
+  assert.deepEqual([by.cmsSaturationGreen.active, by.cmsSaturationGreen.inactive], [false, 'game']);
+  assert.strictEqual(by.dynamicColor.active, undefined, 'Colour adjustment itself stays usable');
+});
+onMode = 'cinema';
+picDesc.dynamicColor = { values: { arrayExt: [{ value: 'off' }, { value: 'low' }] } };
+pic.picture.dynamicColor = 'off';
+cmsRows(function (by) {
+  assert.strictEqual(by.dynamicColor.group, 'colour', 'without User Selection it stays Dynamic colour');
+  assert.strictEqual(by.cmsSaturationGreen.active, undefined);
+});
+console.log('  ✓ colour management follows Colour adjustment, and is greyed out in Game mode');
+
+// 7. The sound category read whole can lag a change made since: a G5 on webOS
+// 10.3 reported Digital Sound Output as auto there, and passThrough to a read
+// that names the key, as LG's menu showed. The named read wins.
+var current = { soundOutput: 'external_arc', soundOutputDigital: 'passThrough' };
+var named = [];
+lgs.init({
+  lunaCached: function (uri, payload, ttl, cb) {
+    if (/Desc$/.test(uri)) return cb({ returnValue: true, results: [] });
+    if (payload.keys) {
+      named.push(payload.keys);
+      var settings = {};
+      payload.keys.forEach(function (k) { if (current[k] !== undefined) settings[k] = current[k]; });
+      return cb({ returnValue: true, settings: settings });
+    }
+    cb({ returnValue: true, settings: { soundOutput: 'external_arc', soundOutputDigital: 'auto', soundMode: 'standard' } });
+  },
+  luna: function (uri, payload, cb) { cb({ returnValue: true }); },
+  clearLunaCache: function () {}
+});
+lgs.collect(['sound'], function (r) {
+  var by = {};
+  r.rows.forEach(function (x) { by[x.id] = x; });
+  assert.strictEqual(by.soundOutputDigital.value, 'passThrough');
+  assert.strictEqual(by.soundMode.value, 'standard', 'a key the named read leaves out keeps its whole-category value');
+  assert.strictEqual(named.length, 1);
+  assert.deepEqual(named[0].slice().sort(), ['soundMode', 'soundOutput', 'soundOutputDigital'],
+    'only keys the whole read returned are named, so an older TV is not asked for one it lacks');
+});
+// A failed named read leaves the whole-category values.
+lgs.init({
+  lunaCached: function (uri, payload, ttl, cb) {
+    if (/Desc$/.test(uri)) return cb({ returnValue: true, results: [] });
+    if (payload.keys) return cb({ returnValue: false });
+    cb({ returnValue: true, settings: { soundOutputDigital: 'auto' } });
+  },
+  luna: function (uri, payload, cb) { cb({ returnValue: true }); },
+  clearLunaCache: function () {}
+});
+lgs.collect(['sound'], function (r) {
+  assert.strictEqual(r.rows.filter(function (x) { return x.id === 'soundOutputDigital'; })[0].value, 'auto');
+});
+console.log('  ✓ sound settings read by name win over a stale whole-category read');
+
+// LG's log upload settings are true/false, not 'on'/'off', and an off is held:
+// a C5 on webOS 11.2 had dbgLogUpload true again after each start, written by
+// PmLogDaemon from LG's answer.
+var os = require('os'), fs = require('fs'), path = require('path');
+var heldDir = path.join(os.tmpdir(), 'lgs-held-' + process.pid);
+fs.mkdirSync(heldDir);
+var optionStore = { dbgLogUpload: true, faultLogUpload: false, livePromotion: 'off' };
+var uploadWrites = [];
+lgs.init({
+  stateDir: heldDir,
+  lunaCached: function (uri, payload, ttl, cb) {
+    if (/Desc$/.test(uri)) return cb({ returnValue: true, results: [] });
+    cb({ returnValue: true, settings: payload.category === 'option' ? optionStore : {} });
+  },
+  luna: function (uri, payload, cb) {
+    if (/Desc$/.test(uri)) return cb({ returnValue: true, results: [] });
+    if (/getSystemSettings$/.test(uri)) {
+      var s = {};
+      (payload.keys || []).forEach(function (k) { s[k] = optionStore[k]; });
+      return cb({ returnValue: true, settings: s });
+    }
+    uploadWrites.push(payload);
+    for (var k in payload.settings) optionStore[k] = payload.settings[k];
+    cb({ returnValue: true });
+  },
+  clearLunaCache: function () {}
+});
+lgs.collect(['promotions', 'uploads'], function (r) {
+  var by = {};
+  r.rows.forEach(function (x) { by[x.id] = x; });
+  assert.strictEqual(by.dbgLogUpload.on, true);
+  assert.strictEqual(by.dbgLogUpload.section, 'uploads');
+  assert.strictEqual(by.faultLogUpload.on, false);
+  assert.strictEqual(by.livePromotion.on, false, 'the promotions rows come with them');
+});
+lgs.reapply(function () {
+  assert.strictEqual(uploadWrites.length, 0, 'nothing held yet, nothing written');
+});
+lgs.set('dbgLogUpload', false, function (r) { assert.strictEqual(r.ok, true); });
+assert.deepEqual(uploadWrites, [{ category: 'option', settings: { dbgLogUpload: false } }], 'written as the boolean LG stores');
+assert.deepEqual(JSON.parse(fs.readFileSync(path.join(heldDir, 'lgsettings-held.json'), 'utf8')), { dbgLogUpload: false });
+// LG writes it back at boot; reapply puts the owner's off back, and only then.
+optionStore.dbgLogUpload = true;
+lgs.reapply(function () {
+  assert.deepEqual(uploadWrites[1], { category: 'option', settings: { dbgLogUpload: false } }, 'put back off');
+  assert.strictEqual(optionStore.dbgLogUpload, false);
+  lgs.reapply(function () {
+    assert.strictEqual(uploadWrites.length, 2, 'nothing written while it is still off');
+    // Switching it back on releases the hold to LG.
+    lgs.set('dbgLogUpload', true, function (r) { assert.strictEqual(r.ok, true); });
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(heldDir, 'lgsettings-held.json'), 'utf8')), {});
+    optionStore.dbgLogUpload = false;
+    lgs.reapply(function () {
+      assert.strictEqual(uploadWrites.length, 3, 'no hold after switching back on');
+      try { fs.unlinkSync(path.join(heldDir, 'lgsettings-held.json')); fs.rmdirSync(heldDir); } catch (e) {}
+      console.log('  ✓ the log upload settings read and write as true/false, and an off is put back when LG switches it on again');
+    });
+  });
+});
+
 console.log('ALL test-lgsettings.js assertions passed!\n');

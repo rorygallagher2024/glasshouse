@@ -11,6 +11,8 @@ var series = require('./fixtures/search-g3-series-detail.json');
 // What a G3 answered for "sneak peek", "dune trailer", "teaser" and "trailer":
 // promos LG lists as films and series, and real titles with the same words.
 var promos = require('./fixtures/search-g3-trailers.json');
+// A B8 (webOS 4.4.3) in the UK, for "the office": series and films, trimmed.
+var webos4 = require('./fixtures/search-b8-office.json');
 
 var INSTALLED = ['amazon', 'com.apple.appletv', 'com.wbd.stream', 'netflix', 'com.disney.disneyplus-prod', 'com.tubitv.ott.tubi'];
 var calls;
@@ -31,6 +33,9 @@ function FakeSubscription(uri, payload, appId, handlers) {
 
 // The host sdx names for search; '' for a TV whose sdx does not answer.
 var searchHost = 'GB.nextlgsdp.com';
+// As on a B8: item detail only through sdp_secure, and app templates read.
+var asWebos4 = false;
+var TEMPLATES = { amazon: '{"contentTarget":"$CONTENTID","source":"lg"}' };
 
 function luna(uri, payload, cb) {
   // The host read is not a call to LG's servers, so it is not counted.
@@ -39,7 +44,13 @@ function luna(uri, payload, cb) {
   }
   calls.push({ uri: uri, payload: payload });
   var r = { returnValue: true };
-  if (uri === 'com.webos.service.sdx/send') {
+  if (uri === 'com.webos.applicationManager/getAppInfo') {
+    r.appInfo = { id: payload.id };
+    if (TEMPLATES[payload.id]) r.appInfo.deeplinkingParams = TEMPLATES[payload.id];
+  }
+  if (uri === 'com.webos.service.sdx/send' && asWebos4 && payload.serviceName === 'sdp_onnow') {
+    r.serverResponse = { code: '0', message: 'Error' };
+  } else if (uri === 'com.webos.service.sdx/send') {
     var body = payload.bodyData;
     var item = decodeURIComponent(/item_id=([^&]*)/.exec(body)[1]), type = /item_detail_type=([^&]*)/.exec(body)[1];
     var known = series.detail[type + ' ' + item];
@@ -49,7 +60,8 @@ function luna(uri, payload, cb) {
   process.nextTick(function () { cb(r); });
 }
 
-function setUp(reply, off, blockedBy) {
+function setUp(reply, off, blockedBy, webos) {
+  asWebos4 = webos === 4;
   calls = [];
   calls.stopped = 0;
   calls.reply = reply;
@@ -62,7 +74,8 @@ function setUp(reply, off, blockedBy) {
     apps: function (cb) {
       setTimeout(function () { cb(INSTALLED.map(function (id) { return { id: id, title: id, icon: 'x.png' }; })); }, 5);
     },
-    opened: function (id) { calls.opened = id; }
+    opened: function (id) { calls.opened = id; },
+    appInfoLaunch: function () { return asWebos4; }
   });
 }
 
@@ -105,6 +118,35 @@ var tests = [
           replaceParams: { deeplinkingParams: { target: '$CONTENTID', value: 'netflix-own-id' } } });
         assert.equal(calls.opened, 'netflix');
         done();
+      });
+    });
+  },
+
+  function readsWebos4sAnswerAndOpensAsLgsSearchThereDoes(done) {
+    setUp(webos4, false, null, 4);
+    find('the office', function (r) {
+      assert.ok(r.ok);
+      var film = r.results.filter(function (t) { return t.title === 'OFFICE'; })[0];
+      assert.ok(film, 'a film listed under movie, with no type of its own');
+      assert.equal(film.kind, 'film');
+      assert.deepEqual(film.apps.map(function (a) { return a.id; }), ['amazon']);
+      var us = r.results.filter(function (t) { return t.title === 'The Office (U.S.)'; })[0];
+      assert.equal(us.kind, 'series');
+      search.open({ id: film.id, app: 'amazon' }, function (o) {
+        assert.ok(o.ok);
+        var services = calls.filter(function (c) { return c.uri === 'com.webos.service.sdx/send'; })
+          .map(function (c) { return c.payload.serviceName; });
+        assert.deepEqual(services, ['sdp_onnow', 'sdp_secure'], 'sdp_secure asked where sdp_onnow does not answer');
+        assert.ok(/item_id=MasterSet_GB%7CAMAZON_amzn1/.test(calls.filter(function (c) { return c.payload.serviceName === 'sdp_secure'; })[0].payload.bodyData));
+        var launch = calls[calls.length - 1];
+        assert.deepEqual(launch.payload, { id: 'amazon',
+          params: { contentTarget: 'amzn1.dv.gti.6603266f-42d0-47d0-a96c-efdec5ae5fb2', source: 'lg' } }, 'the id in the app\'s template');
+        search.open({ id: us.id, app: 'netflix' }, function (n) {
+          assert.ok(n.ok);
+          var launch = calls[calls.length - 1];
+          assert.equal(launch.payload.params.contentTarget, 'netflix-own-id', 'contentTarget where the app has no template');
+          done();
+        });
       });
     });
   },

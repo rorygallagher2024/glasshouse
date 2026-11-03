@@ -171,5 +171,75 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   console.log('  ✓ the pigs Glasshouse installs as an example read as an added screen saver');
 })();
 
+// 10. Clock with date is a saver of its own, following the TV's 12/24-hour setting as Clock does
+(function testClockDate() {
+  screensavers.init({
+    luna: env.mockLuna,
+    config: { port: 8080, allowControl: true },
+    saverRoots: [{ dir: BUILTIN, builtin: true }]
+  });
+  var ids = screensavers.catalog().map(function (e) { return e.id; });
+  assert.strictEqual(ids.indexOf('clock-date'), ids.indexOf('clock') + 1, 'listed beside Clock');
+
+  var clockDate = byId(screensavers.screensaverList().modes, 'clock-date');
+  assert.ok(clockDate, 'clock-date listed');
+  assert.strictEqual(clockDate.available, true, clockDate.note);
+  assert.strictEqual(clockDate.builtin, true);
+  assert.strictEqual(clockDate.label, 'Clock with date');
+  assert.deepEqual(clockDate.description, 'A digital clock with seconds, the weekday and date on black, moving to a new position every minute.');
+  assert.ok(clockDate.description.indexOf('seconds') !== -1, 'seconds are described');
+
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'clock-date';
+  env.files[path.join(APP, '.tvweb-brightness')] = 'dim';
+  screensavers.restageScreensaver();
+  var main = env.files[path.join(STAGE, 'qml', 'main.qml')];
+  assert.ok(main.indexOf('property int level: 0') !== -1, 'level filled in');
+  assert.strictEqual(main.indexOf('__TVWEB_'), -1, 'no placeholder left');
+  assert.ok(/property bool hour12: (true|false)/.test(main), 'the TV\'s 12/24-hour setting filled in');
+  assert.ok(main.indexOf('Qt.formatDate') !== -1, 'the day and date are drawn');
+  assert.ok(main.indexOf('getSeconds') !== -1, 'the seconds are drawn');
+  console.log('  ✓ Clock with date stages as its own saver, with the TV\'s 12/24-hour setting');
+})();
+
+// 11. An installed Homebrew Channel app's screen saver is listed, from its app,
+// and staged as its QML alone: it loads the rest from its own folder (#1067)
+(function testAppSavers() {
+  var APPS = path.join(__dirname, 'fixtures', 'saver-apps');
+  screensavers.init({
+    luna: env.mockLuna,
+    config: { port: 8080, allowControl: true },
+    webosVersion: '9.2.2',
+    saverRoots: [{ dir: BUILTIN, builtin: true }, { dir: APPS, builtin: false, apps: true }]
+  });
+  var modes = screensavers.screensaverList().modes;
+  var dvd = byId(modes, 'app-org-example-dvd');
+  assert.ok(dvd, 'listed by its app id');
+  assert.strictEqual(dvd.label, 'DVD Saver', 'named after its app');
+  assert.strictEqual(dvd.fromApp, 'DVD Saver');
+  assert.strictEqual(dvd.author, 'A Tester');
+  assert.strictEqual(dvd.available, true, dvd.note);
+  assert.strictEqual(dvd.builtin, false);
+  assert.strictEqual(dvd.cautions, undefined);
+  assert.deepEqual(byId(modes, 'app-org-example-aerial').cautions, ['It reaches the network.', 'It can play sound.']);
+  assert.strictEqual(byId(modes, 'app-org-example-gifs').available, true, 'Idlegif\'s file name too');
+  assert.strictEqual(byId(modes, 'app-org-example-aerial').label, 'Aerial Example (org.example.aerial)',
+    'two apps of one name are told apart, by their id where one names no vendor');
+  assert.strictEqual(byId(modes, 'app-org-other-aerial').label, 'Aerial Example (Someone Else)');
+  assert.strictEqual(byId(modes, 'app-org-example-tool'), undefined, 'an app with no screen saver is left out');
+  var newer = byId(modes, 'app-org-example-newer');
+  assert.strictEqual(newer.available, false, 'QML too new for the TV cannot be picked');
+  assert.ok(/QtQuick/.test(newer.note));
+  assert.ok(modes.indexOf(dvd) > modes.indexOf(byId(modes, 'vitals')), 'after Glasshouse\'s own');
+
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'app-org-example-aerial';
+  screensavers.restageScreensaver();
+  var main = env.files[path.join(STAGE, 'qml', 'main.qml')];
+  assert.ok(main && main.indexOf('import QtMultimedia 5.6') !== -1, 'its QML staged as main.qml');
+  assert.ok(!env.files[path.join(STAGE, 'qml', 'appinfo.json')], 'nor the app\'s other files');
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'app-org-example-removed';
+  assert.strictEqual(screensavers.screensaverMode(), 'stock', 'one whose app has gone counts as LG\'s');
+  console.log('  ✓ an installed app\'s screen saver is listed from its app and staged as its QML alone');
+})();
+
 env.restore();
 console.log('ALL test-saver-manifests.js assertions passed!');

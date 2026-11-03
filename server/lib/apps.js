@@ -1170,6 +1170,8 @@ function uninstallApp(appId, cb) {
           }
         }
         if (!stillThere || (Date.now() - start) >= 3000) {
+          // Its screen saver, if it was the one in use, goes with it.
+          screensavers.restageScreensaver();
           return refreshLauncher(function () {
             cb({ ok: true, id: appId });
           });

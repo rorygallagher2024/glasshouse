@@ -104,6 +104,11 @@ the check.
    on those pages, so none mixes it with English; elsewhere only once chosen,
    and the list marks it as partial. A language that covers every page leaves
    `PARTIAL`.
+5. A language written right to left goes in `RTL` there. The web dashboard is
+   then laid out right to left, with the D-pad kept as it is so its arrows
+   point the way they move. The TV app, Glasshouse Home and the TV's setup page
+   keep the left-to-right layout, as the remote's Left and Right move that way
+   there, with each span of text kept in its own direction.
 
 The page follows the browser's language. `?lang=es` picks one for testing.
 

@@ -40,10 +40,21 @@ jobs:
     name: Discovery validation
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - id: python
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-          cache: pip
-          cache-dependency-path: .github/workflows/home-assistant.yml
-      - run: pip install homeassistant
-      - run: ./scripts/check-ha-discovery.py
+      # Home Assistant installed, not only downloaded: with pip's download
+      # cache the install still took 41 s of the job. The key changes each
+      # week, so the weekly run takes the newest release, and with the
+      # Python version, which the environment is tied to.
+      - id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      - id: venv
+        uses: actions/cache@v6
+        with:
+          path: ~/ha-venv
+          key: ha-venv-${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ steps.week.outputs.week }}
+      - if: steps.venv.outputs.cache-hit != 'true'
+        run: python -m venv ~/ha-venv && ~/ha-venv/bin/pip install homeassistant
+      - run: ~/ha-venv/bin/python ./scripts/check-ha-discovery.py

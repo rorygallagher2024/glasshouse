@@ -16,7 +16,8 @@ let homeAvailable = null;
 const HOME_ROWS = {
   app: () => t('home.row.apps', 'Apps'),
   dev: () => t('home.row.inputs', 'Inputs'),
-  ch: () => t('home.row.channels', 'Channels')
+  ch: () => t('home.row.channels', 'Channels'),
+  rec: () => t('home.row.recommended', 'Recommended')
 };
 
 async function homeGet(path) {
@@ -94,6 +95,9 @@ function renderHome() {
   const glasshouse = st.supported.ok || st.enabled || st.restorePending;
   const hero = q('home-hero');
   if (hero) hero.hidden = !glasshouse;
+  // webOS 5 and 6, where each switch restarts the TV's app manager.
+  const restartNote = q('home-restart-note');
+  if (restartNote) restartNote.hidden = !st.supported.restartsApps;
   if (st.restorePending) {
     state.textContent = t('home.restorePending', 'LG Home restoration is incomplete');
     desc.textContent = t('home.restoreRetry', 'Retry restoring LG Home before switching Glasshouse Home on again.');
@@ -141,14 +145,38 @@ function renderHome() {
     updateToggle(pic, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     pic.disabled = !homeWritable();
   }
+  const previewRow = q('home-preview-row');
+  if (previewRow) previewRow.hidden = !st.supported.ok;
+  const previewPill = q('home-preview');
+  if (previewPill) {
+    const on = !!st.layout && st.layout.livePreview === true;
+    updateToggle(previewPill, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    previewPill.disabled = !homeWritable();
+  }
+  // Its options, while it is on.
+  [['home-preview-always', 'previewAlways'], ['home-preview-tile', 'previewInTile']].forEach(([id, field]) => {
+    const row = q(id + '-row');
+    // Neither plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
+    if (row) row.hidden = !st.supported.ok || st.supported.standalone === true || !st.layout || st.layout.livePreview !== true;
+    const btn = q(id);
+    if (!btn) return;
+    const on = !!st.layout && st.layout[field] === true;
+    updateToggle(btn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    btn.disabled = !homeWritable();
+  });
   document.querySelectorAll('.home-show-row').forEach(row => { row.hidden = !st.supported.ok; });
+  // Alternative View's rows have no titles, so no app count beside them.
+  const altView = !!st.layout && st.layout.view === 'alternative';
   HOME_SHOW.forEach(([key, id]) => {
     const el = q(id);
     if (!el) return;
     const on = !st.layout || st.layout[key] !== false;
-    updateToggle(el, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
-    el.disabled = !homeWritable();
+    const unused = key === 'showAppCount' && altView;
+    updateToggle(el, { cls: on && !unused ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    el.disabled = !homeWritable() || unused;
   });
+  const countAlt = q('home-show-count-alt');
+  if (countAlt) countAlt.hidden = !altView;
   const searchRow = q('home-search-row');
   if (searchRow) searchRow.hidden = !st.supported.ok;
   const searchPill = q('home-search');
@@ -167,7 +195,7 @@ function renderHome() {
       : t('home.searchBlockedLevel', 'Unavailable: the ad blocker\u2019s Everything setting blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Set the ad blocker to Ads & telemetry or off to use it. This switch keeps its setting.', { host: searchBlocked.host });
   }
   // Fading, as Picture details.
-  [['home-fade', 'fade']].forEach(([id, field]) => {
+  [['home-fade', 'fade'], ['home-rows-bottom', 'rowsBottom']].forEach(([id, field]) => {
     const row = q(id + '-row');
     if (row) row.hidden = !st.supported.ok;
     const btn = q(id);
@@ -176,6 +204,22 @@ function renderHome() {
     updateToggle(btn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     btn.disabled = !homeWritable();
   });
+  HOME_MOTION.forEach(key => {
+    const btn = q('home-motion-' + key);
+    if (!btn) return;
+    btn.closest('.prot-row').hidden = !st.supported.ok;
+    const on = !st.layout || st.layout[key] !== false;
+    updateToggle(btn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    btn.disabled = !homeWritable();
+  });
+  const altRow = q('home-alternative-row');
+  if (altRow) altRow.hidden = !st.supported.ok;
+  const alt = q('home-alternative');
+  if (alt) {
+    const on = !!st.layout && st.layout.view === 'alternative';
+    updateToggle(alt, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
+    alt.disabled = !homeWritable();
+  }
   const hide = q('home-hide-lg');
   if (hide) {
     const armed = homeArmed === 'hide';
@@ -213,10 +257,15 @@ function renderHome() {
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
   renderHomeRows();
+  renderHomeRecents();
   renderHomeChannels();
   renderHomeWalls();
   renderHomeColours();
+  if (!homeDarkDragging) showHomeDarkening(homeLayout && typeof homeLayout.darkening === 'number' ? homeLayout.darkening : 100);
+  const darkWrap = q('home-dark-wrap');
+  if (darkWrap) darkWrap.classList.toggle('disabled', !homeWritable());
   q('home-reset').disabled = !homeWritable();
+  homeGroupsShown();
 }
 
 const HOME_LOOK_NAMES = () => ({
@@ -229,11 +278,20 @@ const HOME_LOOK_NAMES = () => ({
   lilac: t('home.colours.lilac', 'Lilac')
 });
 
-// The preset matching the chosen colours, the first (the view's own) when none are chosen, or null for custom ones.
+// What a fresh Glasshouse Home starts with, the first preset (Pure white).
+function homeDefaultLook() {
+  const p = ((homeStatus && homeStatus.colourPresets) || [])[0];
+  return p ? { text: p.text, accent: p.accent } : { text: '#ffffff', accent: '#ffffff' };
+}
+
+// The view's own look, saved as no colours chosen.
+function homeOwnLook(presets) { return presets.find(p => p.own) || presets[0] || null; }
+
+// The preset matching the chosen colours, the view's own when none are chosen, or null for custom ones.
 function homeLookNow() {
   const presets = (homeStatus && homeStatus.colourPresets) || [];
   const c = homeLayout && homeLayout.colours;
-  if (!c) return presets[0] || null;
+  if (!c) return homeOwnLook(presets);
   return presets.find(p => p.text === c.text && p.accent === c.accent) || null;
 }
 
@@ -245,23 +303,24 @@ function renderHomeColours() {
   const names = HOME_LOOK_NAMES();
   const now = homeLookNow();
   const can = homeWritable() && !homeSaving;
-  // The first preset is the view's own colours, saved as none chosen.
+  // The view's own look is saved as none chosen.
   // The sample clock in each preview is a fixed time, in the TV's own hour
   // cycle.
   const lookClock = homeStatus.clockHour12 ? `9:40 ${t('common.pm', 'PM')}` : '21:40';
   box.innerHTML = presets.map((p, i) => `<button type="button" class="home-look${now && now.id === p.id ? ' picked' : ''}"
-      onclick="homeSaveLayout({ colours: ${i === 0 ? 'null' : `{ text: '${p.text}', accent: '${p.accent}' }`} })" ${can ? '' : 'disabled'}
+      onclick="homeSaveLayout({ colours: ${p.own ? 'null' : `{ text: '${p.text}', accent: '${p.accent}' }`} })" ${can ? '' : 'disabled'}
       aria-pressed="${now && now.id === p.id}" style="--look-text:${p.text};--look-accent:${p.accent}">
       <span class="home-look-screen"><span class="home-look-clock">${lookClock}</span><span class="home-look-row">${esc(t('home.row.apps', 'Apps'))}</span><i></i></span>
       <span class="home-look-name">${esc(names[p.id] || p.id)}</span>
     </button>`).join('');
-  const c = (homeLayout && homeLayout.colours) || presets[0] || { text: '#ece7df', accent: '#e9ad55' };
+  const c = (homeLayout && homeLayout.colours) || homeOwnLook(presets) || { text: '#ece7df', accent: '#e9ad55' };
   const text = q('home-col-text'), accent = q('home-col-accent');
   if (text && document.activeElement !== text) text.value = c.text;
   if (accent && document.activeElement !== accent) accent.value = c.accent;
   [text, accent].forEach(el => { if (el) el.disabled = !can; });
   const reset = q('home-col-reset');
-  if (reset) reset.disabled = !can || !(homeLayout && homeLayout.colours);
+  const fresh = homeDefaultLook(), cur = homeLayout && homeLayout.colours;
+  if (reset) reset.disabled = !can || !!(cur && cur.text === fresh.text && cur.accent === fresh.accent);
 }
 
 function homeCustomColours() {
@@ -273,6 +332,8 @@ function homeItem(kind, id) {
   const list = kind === 'app' ? homeCat.apps : kind === 'dev' ? homeCat.devices : homeCat.channels;
   const it = list.find(x => x.id === id);
   if (!it) return null;
+  // The TV's own tuner: no HDMI port, as its tile on Glasshouse Home says.
+  if (kind === 'dev' && it.tuner) return { title: it.name, sub: t('ctl.liveTv', 'Live TV') };
   if (kind === 'dev' && it.unused) return { title: it.name, sub: t('home.dev.unused', 'Nothing connected'), unused: true };
   if (kind === 'dev') return { title: it.name, sub: it.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: it.port, via: it.via }) : t('home.dev.port', 'HDMI {port}', { port: it.port }) };
   if (kind === 'ch') return { title: it.number + ' ' + it.name };
@@ -287,6 +348,17 @@ function renderHomeRows() {
   const open = box.children.length ? [...box.querySelectorAll('details[open]')].map(d => d.dataset.kind) : [];
   const filter = q('home-ch-filter') ? q('home-ch-filter').value : '';
   box.innerHTML = homeLayout.rows.map((kind, ri) => {
+    const rowMove = `<span class="home-row-move">
+          <button type="button" class="pill idle" ${usable && ri > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
+          <button type="button" class="pill idle" ${usable && ri < homeLayout.rows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
+        </span>`;
+    // The apps' cards come and go with their lists, so the row has its switch rather than tiles.
+    if (kind === 'rec') {
+      return `<details class="home-row" data-kind="rec"${open.includes('rec') ? ' open' : ''}>
+      <summary><span class="prot-title">${esc(HOME_ROWS.rec())}</span>${rowMove}</summary>
+      <div class="prot-table">${homeRecRow(usable)}</div>
+    </details>`;
+    }
     const order = homeCat.order[kind] || [];
     // A Last opened row is in the order the server sends; moving a tile means choosing Your order first.
     const recent = homeSort(kind) === 'recent';
@@ -314,15 +386,34 @@ function renderHomeRows() {
     }).join('');
     return `<details class="home-row" data-kind="${kind}"${open.includes(kind) ? ' open' : ''}>
       <summary><span class="prot-title">${esc(HOME_ROWS[kind]())}</span>
-        <span class="home-row-move">
-          <button type="button" class="pill idle" ${usable && ri > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
-          <button type="button" class="pill idle" ${usable && ri < homeLayout.rows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
-        </span></summary>
+        ${rowMove}</summary>
       <div class="prot-table">${homeSortRow(kind, usable)}${kind === 'dev' ? homeUnusedRow(usable) : ''}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
       ${kind === 'ch' ? homeChannelPicker() : ''}
     </details>`;
   }).join('');
   if (q('home-ch-filter')) q('home-ch-filter').value = filter;
+}
+
+// The Recommended row's switch, with how many cards the apps have listed.
+function homeRecRow(usable) {
+  const on = homeLayout.recommended === true;
+  const n = homeCat && homeCat.sources ? homeCat.sources.recommended : false;
+  const shown = (homeCat.order.rec || []).length;
+  const count = !on ? '' : n === null ? t('home.recUnavailable', 'This TV did not list any recommendations.')
+    : !shown ? t('home.recNone', 'None of this TV\u2019s apps list any yet.')
+    : t('home.recCount', '{n} on Glasshouse Home now', { n: shown });
+  return `<div class="prot-row">
+    <div class="prot-main"><div class="prot-title">${esc(t('home.recommended', 'Show the apps’ recommendations'))}</div>
+      <div class="prot-desc">${esc(t('home.recommendedDesc', 'The titles Netflix, Prime Video, Disney+, HBO Max, YouTube and other apps put on LG’s Home, such as Continue watching, as a row of cards. OK opens the app at the title. An app hidden from the Apps row shows none.'))}</div>
+      <div class="prot-desc">${esc(t('home.recommendedPrivacy', 'The cards’ pictures are loaded from each app’s own servers, as on LG’s Home.'))}</div>
+      ${count ? `<div class="prot-desc">${esc(count)}</div>` : ''}</div>
+    <div class="prot-status">${renderToggle({ id: 'home-recommended', cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off'),
+      on, disabled: !usable, onclick: 'homeRecommended()' })}</div>
+  </div>`;
+}
+
+function homeRecommended() {
+  homeSaveLayout({ recommended: homeLayout.recommended !== true });
 }
 
 // The Inputs row's one choice of what it shows.
@@ -388,6 +479,42 @@ function homeMoveRow(i, d) {
   if (j < 0 || j >= rows.length) return;
   [rows[i], rows[j]] = [rows[j], rows[i]];
   homeSaveLayout({ rows });
+}
+
+/*
+ * The apps kept out of the Recent apps panel (Back on Glasshouse Home), and
+ * their last screen with them; their tiles stay on the Apps row.
+ */
+function renderHomeRecents() {
+  const box = q('home-recents');
+  if (!box || !homeLayout || !homeCat) return;
+  const usable = homeWritable();
+  const open = box.querySelector('details[open]') !== null;
+  const out = homeLayout.excludedRecents || [];
+  const apps = (homeCat.apps || []).slice().sort((a, b) => a.title.localeCompare(b.title));
+  const rows = apps.map(a => {
+    const hidden = out.includes(a.id);
+    const icon = a.icon ? `<img class="rk-ico" src="${esc(api(a.icon))}" alt="">` : '';
+    return `<div class="prot-row home-tile${hidden ? ' home-hidden' : ''}">
+      <div class="prot-main"><div class="prot-title">${icon}<span translate="no">${esc(a.title)}</span></div></div>
+      <div class="prot-status">${renderToggle({ cls: hidden ? 'idle' : 'good',
+        label: hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
+        disabled: !usable, onclick: `homeToggleRecents('${jsq(a.id)}')` })}</div></div>`;
+  }).join('');
+  const summary = out.length ? t('home.recents.hiddenCount', '{n} hidden', { n: out.length }) : '';
+  box.innerHTML = `<details class="home-row"${open ? ' open' : ''}>
+    <summary><span class="prot-title">${esc(t('home.recents.title', 'Recent apps'))}</span>
+      <span class="home-row-move">${summary ? `<span class="sub">${esc(summary)}</span>` : ''}</span></summary>
+    <div class="sub">${esc(t('home.recents.desc', 'Apps hidden here never show in Glasshouse Home’s Recent apps (Back on Home), nor does their last screen. Their tiles stay on the Apps row.'))}</div>
+    <div class="prot-table">${rows || `<div class="sub">${esc(t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
+  </details>`;
+}
+
+function homeToggleRecents(id) {
+  const list = (homeLayout.excludedRecents || []).slice();
+  const i = list.indexOf(id);
+  if (i >= 0) list.splice(i, 1); else list.push(id);
+  homeSaveLayout({ excludedRecents: list });
 }
 
 function homeToggleTile(kind, id) {
@@ -483,8 +610,16 @@ function homePicture() {
   homeSaveLayout({ picture: homeLayout.picture !== true });
 }
 
+function homeLivePreview() {
+  homeSaveLayout({ livePreview: homeLayout.livePreview !== true });
+}
+
+function homePreviewOption(field) {
+  homeSaveLayout({ [field]: homeLayout[field] !== true });
+}
+
 // The details Glasshouse Home shows unless switched off, and their toggles.
-const HOME_SHOW = [['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec']];
+const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec']];
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });
@@ -494,8 +629,33 @@ function homeSearch() {
   homeSaveLayout({ search: homeLayout.search !== true });
 }
 
+function homeAlternative() {
+  homeSaveLayout({ view: homeLayout.view === 'alternative' ? 'standard' : 'alternative' });
+}
+
+function homeRowsBottom() {
+  homeSaveLayout({ rowsBottom: homeLayout.rowsBottom !== true });
+}
+
 function homeFade() {
   homeSaveLayout({ fade: homeLayout.fade !== true });
+}
+
+// Glasshouse Home's kinds of motion other than the fade, each on unless switched off.
+const HOME_MOTION = ['wallDrift', 'wallCrossfade', 'smoothScroll', 'slidePanels'];
+function homeMotion(key) {
+  homeSaveLayout({ [key]: homeLayout[key] === false });
+}
+
+// A group shows only while it has a row to show: LG's Home leaves only Starting up.
+function homeGroupsShown() {
+  const lgHome = q('home-custom').classList.contains('lg-home');
+  document.querySelectorAll('#home-custom .home-group').forEach(g => {
+    const shown = [...g.querySelectorAll('.prot-row')].filter(r => !r.hidden && !(lgHome && r.classList.contains('home-gh-row')));
+    g.hidden = !shown.length;
+    // Hidden rows can come last, so the last shown one is marked to drop its line.
+    g.querySelectorAll('.prot-row').forEach(r => r.classList.toggle('last', r === shown[shown.length - 1]));
+  });
 }
 
 function homeHideUnused() {
@@ -599,14 +759,22 @@ function renderHomeWalls() {
   const busy = !homeWritable() || !!homeWallUploading || walls.uploading;
   const names = HOME_WALL_NAMES();
   const now = homeWallNow();
-  const c = (homeLayout && homeLayout.colours) || ((homeStatus.colourPresets || [])[0]) || { text: '#ece7df', accent: '#e9ad55' };
+  const c = (homeLayout && homeLayout.colours) || homeOwnLook(homeStatus.colourPresets || []) || { text: '#ece7df', accent: '#e9ad55' };
+  // The owner's own pictures are uploaded to the times of day; a set's are shown as they are.
+  const choice = walls.choice || 'own';
+  const own = choice === 'own';
+  const getting = walls.fetching || (/^set:/.test(homeWallUploading || '') ? homeWallUploading.slice(4) : '');
+  const choiceBox = q('home-wall-choice');
+  if (choiceBox) {
+    const label = { black: t('home.wall.setBlack', 'Black'), landscape: t('home.wall.setLandscape', 'Landscape'),
+      abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own') };
+    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).map(name =>
+      `<button type="button" class="${name === choice ? 'on' : ''}${name === getting ? ' busy' : ''}" ${busy ? 'disabled' : ''}
+        aria-pressed="${name === choice}" onclick="homeWallSet('${name}')">${esc(name === getting ? t('home.wall.examplesBusy', 'Downloading…') : label[name] || name)}</button>`).join('');
+  }
+  q('home-wall-help').hidden = !own;
+  q('home-wall-clear').hidden = !own;
   q('home-wall-clear').disabled = busy || !walls.available;
-  // Only into times of day without a picture, so it goes once all four have one.
-  const examples = q('home-wall-examples');
-  examples.hidden = HOME_WALL_SLOTS.every(w => has[w.key]);
-  examples.disabled = busy;
-  examples.textContent = homeWallUploading === 'examples'
-    ? t('home.wall.examplesBusy', 'Downloading…') : t('home.wall.examples', 'Add example pictures');
   clearTimeout(homeWallTimer);
   if (walls.uploading) homeWallTimer = setTimeout(() => { if (activeTab === 'home') loadHome(); }, 2000);
 
@@ -618,7 +786,7 @@ function renderHomeWalls() {
     const at = (d.getHours() + d.getMinutes() / 60) / 24 * 100;
     day.innerHTML = `<div class="wall-day-bar">${parts.map(([key, from, to]) => `<button type="button" class="wall-day-part${has[key] ? ' has' : ''}${key === now ? ' now' : ''}" data-slot="${key}"
         style="flex:${to - from}${has[key] ? `;background-image:url('${esc(homeWallUrl(key, walls))}')` : ''}"
-        onclick="homeWallChoose('${key}')" ${busy ? 'disabled' : ''} title="${esc(names[key])}" aria-label="${esc(names[key])}"></button>`).join('')}
+        ${own ? `onclick="homeWallChoose('${key}')"` : 'tabindex="-1"'} ${busy || !own ? 'disabled' : ''} title="${esc(names[key])}" aria-label="${esc(names[key])}"></button>`).join('')}
       <span class="wall-day-needle" style="left:${at.toFixed(2)}%"><b>${esc(t('home.wall.now', 'Now'))}</b></span></div>
       <div class="wall-day-scale">${[0, 6, 12, 18, 24].map(h => `<span style="left:${h / 24 * 100}%">${esc(homeWallTime(h, 0))}</span>`).join('')}</div>`;
   }
@@ -627,15 +795,15 @@ function renderHomeWalls() {
   box.style.setProperty('--look-accent', c.accent);
   box.innerHTML = HOME_WALL_SLOTS.map(w => {
     const key = w.key, set = !!has[key];
-    const fetching = homeWallUploading === 'examples' && !set;
+    const fetching = !!getting;
     const sending = homeWallUploading === key || fetching || (walls.uploading && !homeWallUploading);
-    return `<div class="wall-card${set ? ' has' : ''}${key === now ? ' now' : ''}${sending ? ' busy' : ''}" data-slot="${key}">
-      <button type="button" class="wall-screen" onclick="homeWallChoose('${key}')" ${busy ? 'disabled' : ''}
+    return `<div class="wall-card${set ? ' has' : ''}${key === now ? ' now' : ''}${sending ? ' busy' : ''}${own ? '' : ' fixed'}" data-slot="${key}">
+      <button type="button" class="wall-screen" ${own ? `onclick="homeWallChoose('${key}')"` : 'tabindex="-1"'} ${busy || !own ? 'disabled' : ''}
           aria-label="${esc(t('home.wall.choose', 'Choose a picture for {name}', { name: names[key] }))}"
           ${set ? `style="background-image:url('${esc(homeWallUrl(key, walls))}')"` : ''}>
         <span class="wall-clock">${esc(homeWallTime(w.sample[0], w.sample[1]))}</span>
         <span class="wall-row">${esc(t('home.row.apps', 'Apps'))}</span><i></i>
-        ${set ? '' : `<span class="wall-add">${esc(t('home.wall.add', 'Add a picture'))}</span>`}
+        ${set || !own ? '' : `<span class="wall-add">${esc(t('home.wall.add', 'Add a picture'))}</span>`}
         ${key === now ? `<span class="wall-badge">${esc(t('home.wall.now', 'Now'))}</span>` : ''}
         ${sending ? `<span class="wall-sending">${esc(fetching ? t('home.wall.examplesBusy', 'Downloading…') : t('home.wall.uploading', 'Uploading…'))}</span>` : ''}
       </button>
@@ -643,7 +811,7 @@ function renderHomeWalls() {
         <span class="wall-name">${esc(names[key])}</span>
         <span class="wall-hours">${esc(homeWallTime(w.from, 0))} – ${esc(homeWallTime(w.to, 0))}</span>
       </div>
-      <div class="wall-actions">${set ? `<button type="button" class="wall-link" onclick="homeWallChoose('${key}')" ${busy ? 'disabled' : ''}>${esc(t('home.wall.replace', 'Replace'))}</button>
+      <div class="wall-actions">${set && own ? `<button type="button" class="wall-link" onclick="homeWallChoose('${key}')" ${busy ? 'disabled' : ''}>${esc(t('home.wall.replace', 'Replace'))}</button>
         <button type="button" class="wall-link" onclick="homeWallRemove('${key}')" ${busy ? 'disabled' : ''}>${esc(t('home.wall.remove', 'Remove'))}</button>`
         : ''}</div>
     </div>`;
@@ -651,13 +819,13 @@ function renderHomeWalls() {
   // An image dropped on a time of day, or on its part of the strip, is its picture.
   document.querySelectorAll('#home-walls .wall-screen, #home-wall-day .wall-day-part').forEach(el => {
     const slot = el.closest('[data-slot]').dataset.slot;
-    el.addEventListener('dragover', e => { if (busy) return; e.preventDefault(); el.classList.add('drop'); });
+    el.addEventListener('dragover', e => { if (busy || !own) return; e.preventDefault(); el.classList.add('drop'); });
     el.addEventListener('dragleave', () => el.classList.remove('drop'));
     el.addEventListener('drop', e => {
       e.preventDefault();
       el.classList.remove('drop');
       const file = e.dataTransfer && e.dataTransfer.files[0];
-      if (file && !busy) homeUploadWall(slot, file);
+      if (file && !busy && own) homeUploadWall(slot, file);
     });
   });
 }
@@ -728,18 +896,16 @@ async function homeWallRemove(key) {
   await loadHome();
 }
 
-// The example set (a loch at four times of day) into every time of day
-// without a picture; ones already chosen are kept.
-async function homeAddExamples() {
+// Black, a picture set, or the owner's own pictures; a set is downloaded to the
+// TV the first time it is chosen.
+async function homeWallSet(name) {
   if (!homeWritable() || homeWallUploading) return;
   const note = q('home-wall-upload-note');
   note.textContent = '';
-  homeWallUploading = 'examples';
+  homeWallUploading = 'set:' + name;
   renderHomeWalls();
-  try {
-    await homePost('/api/home/wallpapers', { examples: true });
-    note.textContent = t('home.wall.examplesDone', 'Example pictures added. Home updates within a few seconds.');
-  } catch (e) { note.textContent = e.message; }
+  try { await homePost('/api/home/wallpapers', { choose: name }); }
+  catch (e) { note.textContent = e.message; }
   finally {
     homeWallUploading = false;
     await loadHome();
@@ -754,3 +920,62 @@ async function homeClearUploads() {
   catch (e) { q('home-wall-upload-note').textContent = e.message; }
   await loadHome();
 }
+
+/* The wallpaper's darkening behind the text and rows, in 5% steps, saved on
+   release as OLED light is. */
+let homeDarkDragging = false;
+
+function showHomeDarkening(v) {
+  if (q('home-dark-slider')) q('home-dark-slider').value = v;
+  if (q('home-dark-fill')) q('home-dark-fill').style.width = v + '%';
+  if (q('home-dark-lbl')) q('home-dark-lbl').textContent = v === 0 ? t('common.off', 'Off') : v + '%';
+}
+
+function initHomeDarkSlider() {
+  const wrap = q('home-dark-wrap');
+  const slider = q('home-dark-slider');
+  if (!wrap || !slider) return;
+  let active = false;
+  const at = e => {
+    const r = wrap.getBoundingClientRect();
+    return Math.max(0, Math.min(100, Math.round(((e.clientX - r.left) / r.width) * 20) * 5));
+  };
+  const save = v => { showHomeDarkening(v); return homeSaveLayout({ darkening: v }); };
+  const stop = e => {
+    active = false;
+    homeDarkDragging = false;
+    wrap.classList.remove('dragging');
+    try { wrap.releasePointerCapture(e.pointerId); } catch (err) {}
+  };
+  wrap.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || !homeWritable()) return;
+    active = true;
+    homeDarkDragging = true;
+    wrap.classList.add('dragging');
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    showHomeDarkening(at(e));
+  });
+  wrap.addEventListener('pointermove', e => { if (active) showHomeDarkening(at(e)); });
+  wrap.addEventListener('pointerup', e => {
+    if (!active) return;
+    stop(e);
+    save(at(e));
+  });
+  wrap.addEventListener('pointercancel', e => {
+    if (!active) return;
+    stop(e);
+    showHomeDarkening(homeLayout && typeof homeLayout.darkening === 'number' ? homeLayout.darkening : 100);
+  });
+  slider.addEventListener('keydown', e => {
+    const steps = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5, PageUp: 25, PageDown: -25 };
+    let v;
+    if (steps[e.key]) v = Number(slider.value) + steps[e.key];
+    else if (e.key === 'Home') v = 0;
+    else if (e.key === 'End') v = 100;
+    else return;
+    e.preventDefault();
+    if (homeWritable()) save(Math.max(0, Math.min(100, v)));
+  });
+}
+
+initHomeDarkSlider();

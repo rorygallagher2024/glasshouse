@@ -127,16 +127,21 @@ html::-webkit-scrollbar-thumb:hover,
 
 /* ---- masthead ---- */
 header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
-.hdr-left{display:flex;align-items:flex-start;gap:18px}
-/* The masthead: the TV in the page's two voices - the kind of TV as a tracked
-   label, the model in the thin display face the big readings use. The
-   Glasshouse mark is in the sidebar's head. */
-.mark{display:flex;align-items:center}
-.mark-tv{display:flex;flex-direction:column;gap:7px}
-.mark-tv #brand{font-family:'Manrope';font-weight:500;font-size:13px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--w60)}
-.mark-tv #model{font-family:'Outfit';font-weight:200;font-size:var(--mh-model);line-height:1;
+/* The masthead: what the TV is showing, in the page's two voices - a tracked
+   label, then the source in the thin display face the big readings use, with
+   its signal under it. The TV's state, volume and sleep timer sit opposite.
+   The model is in the footer, and the TV's name under the sidebar's mark. */
+.src.now{text-align:left;min-width:0}
+.src.now .st{justify-content:flex-start;margin-bottom:7px}
+.src.now .t{font-family:'Outfit';font-weight:200;font-size:var(--mh-model);line-height:1.1;
   letter-spacing:.01em;color:var(--w100)}
+.src.now .stream-primary{justify-content:flex-start;margin-top:6px}
+.hdr-status{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.hdr-line{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--w60)}
+.foot-tv{margin-right:auto}
+.sidenav-titles{display:flex;flex-direction:column;min-width:0}
+.sidenav-tv{font-size:12px;letter-spacing:.04em;color:var(--w60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidenav-tv:empty{display:none}
 
 /* Theme toggle, at the end of the footer: a set-and-forget control, which
    left the masthead room to stay on one line at narrower widths. */
@@ -158,8 +163,11 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
 /* Stale while the TV is off, so faded - but only to .8: at .55 the picture
    mode fell to 3.4:1 on black, under AA for small text. */
 .src.dim .t,.src.dim .stream-info{opacity:.8}
-/* Hidden rather than removed, so the masthead keeps its height. */
-.src.standby .t,.src.standby .stream-info{visibility:hidden}
+/* In standby, the last source seen, labelled Last on and faded like a blank
+   screen's; with none seen, just Standby, with no label or stale signal. */
+.src.last .t,.src.last .stream-info{opacity:.8}
+.src.blank .stream-info{visibility:hidden}
+.src.blank .t{color:var(--w60)}
 /* Panel state. A blanked screen is a normal state, not a fault, so it is
    carried by weight rather than by an alarm colour. */
 .st{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--w60);
@@ -201,6 +209,7 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
   .st{justify-content:flex-start}
   .src{text-align:left}
   .stream-primary{justify-content:flex-start}
+  .hdr-status{align-items:flex-start;text-align:left}
 }
 
 /* ---- the spectacle ---- */
@@ -495,6 +504,9 @@ html.nav-hidden body.nav-open{overflow:hidden}
 #soundouts button.on:hover{color:var(--btn-on-fg);border-color:var(--w100)}
 #soundouts .span-full{grid-column:1 / -1}
 #soundouts .span-center{grid-column:1 / -1;justify-self:center;width:calc(50% - 4px)}
+/* The paired Bluetooth device chooser in Sound: the shared select, as wide and tall as the output buttons. */
+.bt-pick .pill-sel{display:block;width:100%;height:48px;margin-top:11px}
+.bt-pick-btns button[hidden]{display:none}
 #inputs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:11px}
 #inputs button{
   position:relative;display:inline-flex;align-items:center;justify-content:center;
@@ -604,6 +616,8 @@ button.pill.busy:not([style*="--p"]){
 }
 .dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,auto);
       gap:8px;max-width:260px;margin:0 auto 14px}
+/* Its arrows stay where they point in a page laid out right to left. */
+[dir=rtl] .dpad{direction:ltr}
 /* The arrows are glyphs, not words: the button voice everywhere else is
    uppercase and letter-spaced, which pushes a single glyph off centre. */
 .dpad .dp{min-height:0;height:62px;padding:0;font-size:15px;letter-spacing:0;
@@ -929,11 +943,11 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
 /* The Server tab and Home customisation keep one column, so every control,
    and each fold's count, lines up down the right. */
-#serverpane .prot-table,#home-custom-table{display:grid;grid-template-columns:1fr}
-#advpane .prot-row,#serverpane .prot-row,#home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
+#serverpane .prot-table,.home-custom-table{display:grid;grid-template-columns:1fr}
+#advpane .prot-row,#serverpane .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
 #advpane .prot-title,#serverpane .prot-title,#homepane .prot-title{font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--w90)}
 #advpane .prot-desc,#serverpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
-#advpane .prot-status,#serverpane .prot-status,#home-custom-table .prot-status{padding-top:2px}
+#advpane .prot-status,#serverpane .prot-status,.home-custom-table .prot-status{padding-top:2px}
 #pv-adv{margin-top:clamp(36px,5vw,56px)}
 #pv-adv>summary{border-top:0;min-height:0;align-items:center}
 #pv-adv[open]>summary{margin-bottom:22px}
@@ -1431,6 +1445,12 @@ button.tools-jump:active{background:var(--w80)}
 .rk-opt.on{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100)}
 /* A catalog's address is one long word. */
 .catalog-url, #apps-others-list .prot-sub{overflow-wrap:anywhere}
+#apps-catalog-list .prot-main, #apps-others-list .prot-main{overflow-wrap:anywhere}
+.catalog-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:100%}
+.catalog-source{flex:1;max-width:100%;white-space:normal;text-align:center;text-decoration:none;transition:.16s ease}
+.catalog-source:hover{background:rgba(var(--fg),.08)}
+.catalog-source:active{background:var(--w10)}
+.catalog-source:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
 /* An error under a row, styled as the page's own error banner (#offline). */
 .err-note{font-size:14px;border-left:2px solid var(--red);padding:9px 13px;background:var(--w06);color:var(--w90);margin-top:8px;max-width:64ch;overflow-wrap:anywhere}
 .err-note b{font-weight:600;margin-right:6px}
@@ -1450,6 +1470,16 @@ button.tools-jump:active{background:var(--w80)}
 .audio-more[open]>summary{margin-bottom:6px}
 .audio-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:0 0 18px}
 .audio-head .pill{flex-shrink:0;min-height:36px}
+/* The fold below draws the line that closes the list. */
+#audio-bt-list .prot-row:last-child,#audio-bt-found .prot-row:last-child{border-bottom:0}
+.audio-bt-btns{display:flex;gap:8px;flex-shrink:0}
+.audio-bt-btns .pill{min-height:36px}
+#audio-bt-scan{border-top:1px solid var(--w06);margin-top:0;padding-top:14px}
+#audio-bt-scan-note{margin:0 0 4px}
+#audio-bt-scan.none{padding-bottom:12px}
+#audio-bt-list .prot-status{display:flex;gap:8px}
+#audio-bt-note{margin:0;padding:12px 0;border-top:1px solid var(--w06)}
+#audio-bt-note:empty{display:none}
 .audio-path{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:20px 0 22px;border-block:1px solid var(--w12)}
 .audio-path>li{position:relative;padding:0 20px 0 0}
 .audio-path>li+li{padding-left:28px}
@@ -1470,6 +1500,9 @@ button.tools-jump:active{background:var(--w80)}
 .audio-playback{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;margin:10px 0}
 .audio-playback>div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--w08);font-size:14px}
 .audio-playback>div>span:last-child{color:var(--w60)}
+.audio-helper{margin:12px 0 28px}
+.audio-helper a{color:var(--w80);text-decoration-color:var(--w40);text-underline-offset:3px}
+.audio-helper a:hover{color:var(--w100)}
 .audio-error{margin:4px 0 18px}
 @media(max-width:600px){
   .audio-path{grid-template-columns:1fr;gap:18px}
@@ -1479,6 +1512,78 @@ button.tools-jump:active{background:var(--w80)}
   .audio-playback{grid-template-columns:1fr}
   .audio-formats{font-size:13px}
   .audio-formats th,.audio-formats td{padding:10px 7px}
+}
+
+/* The Picture tab. The picture mode heads it, large, since every setting
+   below is that mode's own, for the input named under it. */
+.pic-now{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:18px 32px;
+  padding:6px 0 26px;margin-bottom:clamp(30px,4vw,44px);border-bottom:1px solid var(--w25)}
+.pic-now-main{flex:1 1 360px;min-width:0}
+.pic-mode{font-family:'Outfit';font-weight:200;font-size:clamp(38px,5.6vw,64px);line-height:1;
+  letter-spacing:-.01em;color:var(--w100);overflow-wrap:anywhere}
+.pic-scope{font-size:14px;line-height:1.5;color:var(--w60);max-width:62ch;margin-top:14px}
+.pic-mode-ctl .pill-sel{min-width:200px}
+.pic-sec{margin-top:clamp(34px,4.5vw,48px)}
+#pic-groups>.pic-sec:first-child{margin-top:0}
+.pic-extra{margin:-18px 0 clamp(24px,3vw,34px)}
+#picpane .prot-table{display:grid;column-gap:clamp(30px,4vw,52px);
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
+#picpane .prot-row{align-items:flex-start;padding:16px 0}
+#picpane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
+#picpane .prot-status{padding-top:2px}
+#picpane .lgs-range input{width:150px}
+.pic-fold{margin-top:clamp(34px,4.5vw,48px)}
+.pic-fold-t{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.pic-fold-t .pv-sub{font-family:'Manrope';font-weight:400;margin:0}
+.pic-fold[open]>summary{margin-bottom:10px}
+/* A slider whose track is what it changes: red to green for tint, warm to
+   cool for colour temperature, grey to full colour for colour depth, and a
+   colour's own for white balance. The colour is the setting's meaning. */
+.lgs-track{-webkit-appearance:none;appearance:none;height:22px;background:transparent}
+.lgs-track::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--trk)}
+.lgs-track::-moz-range-track{height:4px;border-radius:2px;background:var(--trk)}
+.lgs-track::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;border-radius:50%;
+  background:var(--w100);box-shadow:0 0 0 3px var(--bg)}
+.lgs-track::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:var(--w100);box-shadow:0 0 0 3px var(--bg)}
+.lgs-track:focus-visible{outline:2px solid var(--w100);outline-offset:4px;border-radius:4px}
+.lgs-track[data-track="tint"]{--trk:linear-gradient(90deg,#FF4A3D,var(--w25) 50%,#30DE61)}
+.lgs-track[data-track="temperature"]{--trk:linear-gradient(90deg,var(--cand),var(--warm) 30%,var(--w25) 50%,var(--cool) 70%,#7FA6FF)}
+.lgs-track[data-track="saturation"]{--trk:linear-gradient(90deg,var(--w25),#FF3D7F 60%,#FF7A1A)}
+.lgs-track[data-track="red"]{--trk:linear-gradient(90deg,var(--w12),#FF4A3D)}
+.lgs-track[data-track="green"]{--trk:linear-gradient(90deg,var(--w12),#30DE61)}
+.lgs-track[data-track="blue"]{--trk:linear-gradient(90deg,var(--w12),#4C7DFF)}
+/* Colour management as a table: a colour per row, a property per column. */
+.pic-cms.off{opacity:.45}
+.pic-cms-note{margin:4px 0 12px}
+.pic-cms{display:grid;grid-template-columns:minmax(110px,.7fr) repeat(3,minmax(0,1fr));column-gap:24px;max-width:860px;margin-top:8px}
+.pic-cms>div{padding:13px 0;border-top:1px solid var(--w12);display:flex;align-items:center;min-width:0}
+.pic-cms .hh{font-size:12px;color:var(--w60);border-top:0;padding-top:0}
+.pic-cms .in{gap:10px;font-size:15px;color:var(--w100)}
+.pic-cms .lgs-range{gap:10px;width:100%}
+/* #picpane's fixed slider width would otherwise win, leaving them a third of a phone's width. */
+#picpane .pic-cms .lgs-range input{width:100%;-webkit-flex:1;flex:1;min-width:0}
+.pic-cms .lgs-range .num{min-width:4ch}
+.pic-sw{width:12px;height:12px;border-radius:50%;flex:none}
+.pic-sw[data-colour="red"]{background:#FF3030}
+.pic-sw[data-colour="green"]{background:#30DE61}
+.pic-sw[data-colour="blue"]{background:#3061FF}
+.pic-sw[data-colour="cyan"]{background:#2FD9E8}
+.pic-sw[data-colour="magenta"]{background:#E83BD8}
+.pic-sw[data-colour="yellow"]{background:#F5E52A}
+/* Each colour management slider's own label, for when the columns stack. */
+.pic-part{display:none;font-size:12px;color:var(--w60)}
+/* On a phone a slider takes its own line under its text, full width. */
+@media(max-width:600px){
+  #picpane .prot-row:has(.lgs-range){flex-wrap:wrap}
+  #picpane .prot-status:has(.lgs-range){flex-basis:100%}
+  #picpane .prot-status .lgs-range input{flex:1;width:auto}
+}
+@media(max-width:700px){
+  .pic-cms{grid-template-columns:1fr}
+  .pic-cms .hh{display:none}
+  .pic-cms .in{border-top:1px solid var(--w25);padding-top:18px}
+  .pic-cms>div:not(.in){border-top:0;padding:4px 0;flex-direction:column;align-items:stretch;gap:2px}
+  .pic-part{display:block}
 }
 
 /* The Home tab */
@@ -1495,6 +1600,9 @@ button.tools-jump:active{background:var(--w80)}
    divider under the switch; Glasshouse Home's rows leave with it. */
 #home-hero+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
 #home-custom.lg-home .home-gh-row{display:none}
+/* Each group's last row draws no line, as the next group's heading follows. */
+.home-custom-table .prot-row.last{border-bottom:0}
+.home-group+.home-group .pv-g{margin-top:34px}
 /* Its folding sections read as rows of the list above: a row's title, the
    count and the plus at the right, a row's rule beneath. */
 #home-custom .pv-d>summary{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em;
@@ -1561,6 +1669,9 @@ button.wall-screen{position:relative;display:block;width:100%;aspect-ratio:16/9;
 button.wall-screen::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45),transparent 45%,rgba(0,0,0,.4))}
 button.wall-screen:hover:not(:disabled){border-color:rgba(255,255,255,.45)}
 button.wall-screen:disabled{opacity:1;cursor:default}
+.wall-choice{max-width:560px;margin:14px 0 6px}
+/* A set's or Black's empty time of day is not a place to add a picture. */
+.wall-card.fixed:not(.has) button.wall-screen{border-style:solid;border-color:rgba(255,255,255,.12)}
 .wall-card:not(.has) button.wall-screen{border-style:dashed;border-color:rgba(255,255,255,.22)}
 .wall-card.now button.wall-screen{outline:2px solid var(--look-accent);outline-offset:3px}
 .wall-screen.drop,.wall-day-part.drop{outline:2px dashed var(--look-accent,var(--cand));outline-offset:3px}

@@ -42,6 +42,7 @@ function togglePiccap() { sendCommand('piccap', flip('btn_piccap')); }
 function toggleHuesync() { sendCommand('huesync', flip('btn_huesync')); }
 function toggleWol() { sendCommand('wakeOnLan', flip('btn_wol')); }
 function toggleDeviceDetection() { sendCommand('deviceDetection', flip('btn_devdetect')); }
+function toggleLocalLookups() { sendCommand('localLookups', flip('btn_locallookups')); }
 function toggleAlwaysReady() { sendCommand('alwaysReady', flip('btn_ar')); }
 function toggleAlwaysReadyScreen() { sendCommand('alwaysReadyScreen', flip('btn_ars')); }
 
@@ -187,7 +188,127 @@ function applyOptimistic(action, value) {
     const on = value === 'on' || value === true;
     setLease('deviceDetection', on);
     advPill('devdetect', 'btn_devdetect', on);
+  } else if (action === 'localLookups') {
+    const on = value === 'on' || value === true;
+    setLease('localLookups', on);
+    advPill('locallookups', 'btn_locallookups', on);
   }
+}
+
+// Tracks what the TV's field has actually received so far, so each keystroke
+// (including backspace) can be sent as a small diff instead of the whole line.
+let kbSynced = '';
+let kbSyncing = false;
+let kbResyncNeeded = false;
+
+function kbCommonPrefixLen(a, b) {
+  const max = Math.min(a.length, b.length);
+  let i = 0;
+  while (i < max && a[i] === b[i]) i++;
+  return i;
+}
+
+// A keystroke's change, sent on its own: sendCommand refreshes every reading
+// after each command, which held typing up when it ran for every letter.
+async function kbSend(action, value) {
+  try {
+    const r = await fetch(api('/api/control'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, value })
+    });
+    const j = await r.json();
+    // A web app the box cannot type into says so under the box, not on each key.
+    if (!j.ok && j.method !== 'none') showErr(j.error || t('common.actionFailed', 'Action failed'));
+    return j;
+  } catch (e) {
+    showErr(e.message);
+    return null;
+  }
+}
+
+// Where the server typed the last change, which it chooses by the app in front:
+// shown under the hint so a box that does nothing says which way it tried.
+function renderKeyboardRoute(method) {
+  const via = document.getElementById('kb-via');
+  if (!via) return;
+  via.textContent =
+    method === 'ime' ? t('ctl.keyboard.via.ime', 'Typed through LG\u2019s input method.')
+    : method === 'page' ? t('ctl.keyboard.via.page', 'Typed into the app\u2019s page.')
+    : method === 'keys' ? t('ctl.keyboard.via.keys', 'Typing as key presses; lowercase only.')
+    : method === 'none' ? t('ctl.keyboard.via.none', 'This app does not take typing from here. Use the keyboard it shows on the TV, or, where it opens LG\u2019s, the box types into that.')
+    : '';
+}
+
+// Backspace in a box that is already empty has nothing of the box's to delete.
+// Left alone, nothing is sent, and the page's own Backspace shortcut (the TV's
+// Back key) stays out of it: YouTube leaves its search on a Back. Deleting the
+// last character is unaffected: the box is not empty yet when the key goes down.
+// The TV's own field cannot be read, so this is judged by the box alone.
+function kbIgnoreBackspaceInEmptyBox(event) {
+  if (event.key !== 'Backspace' || event.isComposing || event.target.value !== '') return;
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+// Sends what changed in the box. full, the whole box, asks the server to pick
+// the route that suits the app in front.
+async function kbSyncLive() {
+  const el = document.getElementById('kb-text');
+  if (!el) return;
+  if (kbSyncing) { kbResyncNeeded = true; return; }
+  const cur = el.value;
+  if (cur === kbSynced) return;
+  kbSyncing = true;
+  const prefixLen = kbCommonPrefixLen(kbSynced, cur);
+  const del = kbSynced.length - prefixLen;
+  const text = cur.slice(prefixLen);
+  const sentAsOf = cur;
+  try {
+    const r = await kbSend('sendText', { text, replace: del, full: cur });
+    if (r && r.ok) {
+      kbSynced = sentAsOf;
+      renderKeyboardRoute(r.method);
+    } else if (r && r.method === 'none') {
+      renderKeyboardRoute('none');
+    } else if (r && r.sent !== undefined) {
+      // A key press cannot be read back: after part of a change went through,
+      // what the TV has is unknown, so the box starts again rather than
+      // typing any of it twice.
+      el.value = '';
+      kbSynced = '';
+      renderKeyboardRoute('');
+    }
+  } finally {
+    kbSyncing = false;
+    if (kbResyncNeeded) { kbResyncNeeded = false; kbSyncLive(); }
+  }
+}
+
+// Enter: the text is already on the TV, so this submits it by the route it
+// went: LG's input method, as its keyboard's Enter does (OK would press the key
+// LG's keyboard has in focus), Enter in an app's page, or OK for a native app.
+// The box starts again empty, as the TV's field has moved on.
+async function sendTypedText() {
+  await kbSyncLive();
+  while (kbSyncing) await new Promise(resolve => setTimeout(resolve, 50));
+  const el = document.getElementById('kb-text');
+  if (!el) return;
+  const r = await kbSend('sendText', { text: '', replace: 0, full: el.value, enter: true });
+  if (r && r.ok) renderKeyboardRoute(r.method);
+  el.value = '';
+  kbSynced = '';
+}
+
+// Whether LG's on-screen keyboard is up, where the TV says (webOS 6 and later);
+// a hint only, as some apps draw a keyboard of their own.
+function renderKeyboardHint(d) {
+  const hint = document.getElementById('kb-hint');
+  if (!hint) return;
+  hint.textContent = d.keyboardUp === true
+    ? t('ctl.keyboard.up', 'LG\u2019s keyboard is up on the TV: what you type here goes to its field as you type, backspace included, and Enter submits it.')
+    : d.keyboardUp === false
+      ? t('ctl.keyboard.down', 'LG\u2019s keyboard is not up on the TV. Select a text field there first, such as a search box or a web address. Some apps use a keyboard of their own instead.')
+      : t('ctl.keyboard.hint', 'Focus a text field on the TV first, such as a search box or a web address. What you type here goes to it as you type, backspace included, and Enter submits it.');
 }
 
 async function sendCommand(action, value) {

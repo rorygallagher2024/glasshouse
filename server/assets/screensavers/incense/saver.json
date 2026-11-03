@@ -5,12 +5,16 @@
     "en": "Incense",
     "es": "Incienso",
     "hu": "Füstölő",
+    "it": "Incenso",
+    "pt": "Incenso",
     "ru": "Благовония"
   },
   "description": {
     "en": "Thin streams of colored smoke rising and curling on black.",
     "es": "Finas columnas de humo de colores que suben y se enroscan sobre negro.",
     "hu": "Vékony színes füstcsíkok szállnak fel és kunkorodnak fekete háttéren.",
+    "it": "Sottili fili di fumo colorato che salgono e si arricciano sul nero.",
+    "pt": "Finos fios de fumo colorido que sobem e se enrolam sobre fundo preto.",
     "ru": "Тонкие струйки цветного дыма поднимаются и завиваются на чёрном фоне."
   },
   "license": "MIT",

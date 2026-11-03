@@ -18,6 +18,10 @@
  *
  * webOS 4 has no such setting (a B8 reports it missing), and there callers
  * restart sam as before. They also do if sam has not caught up in time.
+ * webOS 5 (a CX on 5.5.0-19) and webOS 6 (a C1 on 6.5.3) have neither the
+ * setting nor the block and release, so restart() is the only way to make
+ * sam read an appinfo.json again there; Glasshouse Home switches itself on
+ * and off with it.
  *
  * On webOS 7 (a 65UQ801C0SB on 7.6.0) sam watches the list as well, its
  * binary naming profile.blockedAppList, but configd holds no value until one
@@ -47,6 +51,7 @@
  * Strict ES5: runs on node 0.12.
  */
 var fs = require('fs');
+var execFile = require('child_process').execFile;
 var BLOCK_SCHEMA = '/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema';
 var SAM_BIN = '/usr/sbin/sam';
 var COUNTRY_LISTS = '/var/preferences/com.webos.applicationManager/blockedAppList';
@@ -58,6 +63,7 @@ var CHECK_POLL_MS = 500;
 var CHECK_POLLS = 16;
 
 var lunaFn = null;
+var execFn = execFile;
 var supported = null;
 var blockSchema = BLOCK_SCHEMA;
 var samBin = SAM_BIN;
@@ -70,6 +76,7 @@ var waiting = [];
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna || null;
+  execFn = opts.exec || execFile;
   supported = null;
   forceParam = null;
   if (opts.blockSchema) blockSchema = opts.blockSchema;
@@ -267,11 +274,76 @@ function rereadApp(appId, check, cb) {
   });
 }
 
+/*
+ * Restarts sam, and cb(true) once check(done) says sam has read the apps
+ * again. The last way to make sam scan: webOS 5 and 6 have neither the
+ * configd nudge nor the block and release (a CX on 5.5.0-19, a C1 on
+ * 6.5.3), so Glasshouse Home, whose appinfo.json is mounted over LG's,
+ * switches it on and off with this. The command is the one
+ * lib/apps.js restarts sam with for tile hiding: the start limit cleared
+ * first, LunaExecutable killed since it ignores SIGTERM, and the unit killed
+ * so that systemd starts it again at once; initctl on Upstart TVs. A
+ * foreground app that is neither Home nor the screen saver is opened again
+ * afterwards, so the owner is not left on the last input.
+ */
+function restart(check, cb) {
+  if (!check) return cb(false);
+  var saved = null;
+  function run() {
+    // sam and every unit that requires it, as lib/apps.js lists them: their
+    // start limit is cleared too, or a run of restarts leaves the input
+    // manager (eim) failed and the TV with no inputs.
+    var units = 'sam.service $(systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null | ' +
+                'sed -n "s/^[^A-Za-z0-9]*\\([A-Za-z0-9@._-]*\\.service\\)$/\\1/p")';
+    var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
+              'systemctl reset-failed ' + units + ' >/dev/null 2>&1 || true; ' +
+              'killall -9 LunaExecutable >/dev/null 2>&1 || true; ' +
+              'systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true; ' +
+              'elif command -v initctl >/dev/null 2>&1; then ' +
+              'initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true; ' +
+              'else ' +
+              'pkill -9 -x sam >/dev/null 2>&1 || true; ' +
+              'fi';
+    execFn('/bin/sh', ['-c', cmd], { timeout: 6000 }, function () {
+      waitFor(check, 'the restart', function (ok) {
+        startDependents(function () {
+          if (!ok || !saved) return cb(ok);
+          lunaFn('com.webos.applicationManager/launch', { id: saved }, function () { cb(ok); });
+        });
+      });
+    });
+  }
+  if (!lunaFn) return run();
+  lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (r) {
+    var id = r && r.returnValue && typeof r.appId === 'string' ? r.appId : null;
+    if (id && id !== 'com.webos.app.home' && id !== 'com.webos.app.screensaver') saved = id;
+    run();
+  });
+}
+
+/*
+ * A unit that requires sam and hit its restart limit is started again, as
+ * lib/apps.js does after a restart for tile hiding. On Upstart TVs, Upstart
+ * does not restart dependent jobs, so eim is restarted here.
+ */
+function startDependents(cb) {
+  var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
+            'for u in $(systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null | ' +
+            'sed -n "s/^[^A-Za-z0-9]*\\([A-Za-z0-9@._-]*\\.service\\)$/\\1/p"); do ' +
+            'if systemctl is-failed --quiet "$u"; then systemctl reset-failed "$u"; systemctl start --no-block "$u"; fi; ' +
+            'done; ' +
+            'elif command -v initctl >/dev/null 2>&1; then ' +
+            'initctl restart eim >/dev/null 2>&1 || true; ' +
+            'fi';
+  execFn('/bin/sh', ['-c', cmd], { timeout: 6000 }, function () { cb(); });
+}
+
 module.exports = {
   init: init,
   refresh: refresh,
   canNudge: canNudge,
   rereadApp: rereadApp,
+  restart: restart,
   KEY: KEY,
   NUDGE_ID: NUDGE_ID
 };

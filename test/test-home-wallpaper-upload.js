@@ -30,10 +30,19 @@ function request(method, url, body, headers, cb) {
   req.end(body || undefined);
 }
 var realDownload = fetchMod.download, fetched = [];
-function examples(cb) {
-  request('POST', '/api/home/wallpapers', new Buffer('{"examples":true}'), { 'Content-Type': 'application/json' }, function (code, body) {
+function choose(name, cb) {
+  request('POST', '/api/home/wallpapers', new Buffer(JSON.stringify({ choose: name })), { 'Content-Type': 'application/json' }, function (code, body) {
     cb(code, JSON.parse(body));
   });
+}
+// A directory and what is in it, by fs alone: Node 0.10 has no synchronous child process.
+function rmTree(d) {
+  if (!fs.existsSync(d)) return;
+  fs.readdirSync(d).forEach(function (name) {
+    var f = path.join(d, name);
+    if (fs.statSync(f).isDirectory()) rmTree(f); else fs.unlinkSync(f);
+  });
+  fs.rmdirSync(d);
 }
 function upload(data, headers, cb) { request('POST', '/api/home/wallpapers/upload?slot=morning', data, headers, cb); }
 function unchanged() { assert.deepEqual(fs.readFileSync(home.wallpaperPath('morning')), jpeg); }
@@ -135,45 +144,86 @@ var steps = [
     });
   },
   function (next) {
-    // The example set goes only where there is no picture: Morning's own is kept.
-    upload(jpeg, {}, function (code) {
+    // A set is downloaded when chosen, from its tag; the owner's own are kept for later.
+    upload(jpeg, {}, function (code, body) {
       assert.strictEqual(code, 200);
+      assert.strictEqual(JSON.parse(body).wallpapers.choice, 'own', 'an upload chooses the owner\'s own');
       var sum = crypto.createHash('sha256').update(jpeg).digest('hex');
-      Object.keys(wallpapers.EXAMPLES).forEach(function (key) { wallpapers.EXAMPLES[key] = sum; });
+      Object.keys(wallpapers.SETS).forEach(function (name) {
+        Object.keys(wallpapers.SETS[name].sums).forEach(function (key) { wallpapers.SETS[name].sums[key] = sum; });
+      });
       fetched = [];
       fetchMod.download = function (url, out, o, cb) { fetched.push(url); fs.writeFileSync(out, jpeg); setTimeout(function () { cb(null); }, 0); };
-      examples(function (code2, r) {
+      choose('landscape', function (code2, r) {
         assert.strictEqual(code2, 200);
-        assert.strictEqual(r.added, 3);
-        assert.deepEqual(fetched.map(function (u) { return u.replace(/^.*\//, ''); }), ['afternoon.jpg', 'evening.jpg', 'night.jpg']);
-        assert.ok(fetched.every(function (u) { return u.indexOf('https://raw.githubusercontent.com/rorygallagher2024/glasshouse-wallpapers/v1/') === 0; }));
+        assert.strictEqual(r.wallpapers.choice, 'landscape');
+        assert.deepEqual(fetched.map(function (u) { return u.replace(/^.*\/v2\//, ''); }), ['morning.jpg', 'afternoon.jpg', 'evening.jpg', 'night.jpg']);
+        assert.ok(fetched.every(function (u) { return u.indexOf('https://raw.githubusercontent.com/rorygallagher2024/glasshouse-wallpapers/v2/') === 0; }));
         assert.ok(r.wallpapers.slots.night);
-        examples(function (code3, r3) {
-          assert.strictEqual(r3.added, 0, 'nothing to add once every time of day has a picture');
+        assert.ok(/home-wallpaper-sets/.test(home.wallpaperPath('morning')));
+        assert.deepEqual(fs.readdirSync(path.join(dir, 'home-wallpaper-uploads')), ['morning.jpg'], 'the owner\'s own is kept');
+        fetched = [];
+        choose('landscape', function (code3, r3) {
+          assert.deepEqual(fetched, [], 'a set already on the TV is not downloaded again');
           next();
         });
       });
     });
   },
   function (next) {
-    // A picture that does not match its checksum is not kept.
-    request('POST', '/api/home/wallpapers', new Buffer('{"remove":"evening"}'), { 'Content-Type': 'application/json' }, function () {
-      wallpapers.EXAMPLES.evening = new Array(65).join('0');
-      examples(function (code, r) {
-        assert.strictEqual(r.ok, false);
-        assert.strictEqual(r.added, 0);
-        assert.strictEqual(r.wallpapers.slots.evening, false);
-        assert.strictEqual(r.wallpapers.uploading, false, 'the lock is released');
-        assert.deepEqual(fs.readdirSync(path.join(dir, 'home-wallpaper-uploads')).sort(), ['afternoon.jpg', 'morning.jpg', 'night.jpg']);
-        fetchMod.download = function (url, out, o, cb) { setTimeout(function () { cb(new Error('offline')); }, 0); };
-        examples(function (code2, r2) {
-          assert.strictEqual(r2.error, 'offline');
-          assert.strictEqual(r2.wallpapers.slots.evening, false);
-          fetchMod.download = realDownload;
-          request('POST', '/api/home/wallpapers', new Buffer('{"removeUploads":true}'), { 'Content-Type': 'application/json' }, function () { next(); });
+    // A picture that does not match its checksum, or a failed download, leaves the choice as it was.
+    wallpapers.SETS.abstract.sums.evening = new Array(65).join('0');
+    choose('abstract', function (code, r) {
+      assert.strictEqual(r.ok, false);
+      assert.strictEqual(r.wallpapers.choice, 'landscape');
+      assert.strictEqual(r.wallpapers.uploading, false, 'the lock is released');
+      fetchMod.download = function (url, out, o, cb) { setTimeout(function () { cb(new Error('offline')); }, 0); };
+      wallpapers.SETS.abstract.sums.evening = wallpapers.SETS.abstract.sums.morning;
+      choose('abstract', function (code2, r2) {
+        assert.strictEqual(r2.error, 'offline');
+        assert.strictEqual(r2.wallpapers.choice, 'landscape');
+        fetchMod.download = realDownload;
+        choose('nonsense', function (code3, r3) {
+          assert.strictEqual(r3.ok, false);
+          next();
         });
       });
     });
+  },
+  function (next) {
+    // Back to the owner's own: their picture shows again, and only the chosen set is kept.
+    choose('own', function (code, r) {
+      assert.strictEqual(r.wallpapers.choice, 'own');
+      assert.deepEqual(fs.readFileSync(home.wallpaperPath('morning')), jpeg);
+      assert.strictEqual(r.wallpapers.slots.evening, false);
+      assert.deepEqual(fs.readdirSync(path.join(dir, 'home-wallpaper-sets')), []);
+      choose('black', function (code2, r2) {
+        assert.strictEqual(r2.wallpapers.available, false);
+        assert.strictEqual(home.wallpaperPath('morning'), null);
+        request('POST', '/api/home/wallpapers', new Buffer('{"removeUploads":true}'), { 'Content-Type': 'application/json' }, function () { next(); });
+      });
+    });
+  },
+  function (next) {
+    // Four uploads that are exactly the landscape set, as Add example pictures
+    // left them, become that set at the first start; other uploads are the owner's own.
+    var older = path.join(dir, 'older');
+    fs.mkdirSync(older);
+    fs.mkdirSync(path.join(older, 'home-wallpaper-uploads'));
+    ['morning', 'afternoon', 'evening', 'night'].forEach(function (key) { fs.writeFileSync(path.join(older, 'home-wallpaper-uploads', key + '.jpg'), jpeg); });
+    wallpapers.init(older);
+    assert.strictEqual(wallpapers.status().choice, 'landscape');
+    assert.deepEqual(fs.readdirSync(path.join(older, 'home-wallpaper-uploads')), []);
+    assert.deepEqual(fs.readFileSync(wallpapers.image('night')), jpeg);
+    var mine = path.join(dir, 'mine');
+    fs.mkdirSync(mine);
+    fs.mkdirSync(path.join(mine, 'home-wallpaper-uploads'));
+    fs.writeFileSync(path.join(mine, 'home-wallpaper-uploads', 'morning.jpg'), jpeg.slice(0, jpeg.length - 2));
+    wallpapers.init(mine);
+    assert.strictEqual(wallpapers.status().choice, 'own');
+    [older, mine].forEach(rmTree);
+    wallpapers.init(dir);
+    next();
   }
 ];
 server.listen(0, '127.0.0.1', function () {
@@ -182,9 +232,8 @@ server.listen(0, '127.0.0.1', function () {
     var step = steps.shift();
     if (step) return step(next);
     server.close(function () {
-      fs.rmdirSync(path.join(dir, 'home-wallpaper-uploads'));
-      fs.rmdirSync(dir);
-      console.log('Home wallpaper uploads preserve existing images on failure, recover after abort, survive restart, and are removed one time of day at a time or all at once; the example set fills only empty times of day and is kept only when its checksum matches.');
+      rmTree(dir);
+      console.log('Home wallpaper uploads preserve existing images on failure, recover after abort, survive restart, and are removed one time of day at a time or all at once; a set is downloaded when chosen and kept only when its checksums match, leaving the owner\'s own; an older install\'s example pictures become the landscape set.');
     });
   }
   next();

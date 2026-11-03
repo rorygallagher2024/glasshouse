@@ -20,7 +20,7 @@
   const TAB_NAMES = {
     control: 'Control', metrics: 'Metrics', apps: 'Apps', home: 'Home',
     oledcare: 'OLED Care', game: 'Game', servicemenu: 'Service menu',
-    screensaver: 'Screensaver', privacy: 'Privacy', advanced: 'Advanced',
+    screensaver: 'Screensaver', privacy: 'Privacy', advanced: 'System',
     mqtt: 'MQTT', server: 'Server', tools: 'Tools'
   };
 
@@ -84,7 +84,7 @@
     if (!panel) return null;
     const tabMap = {
       'tab-control': 'control', 'tab-metrics': 'metrics', 'appspane': 'apps',
-      'homepane': 'home', 'oledpane': 'oledcare', 'gamepane': 'game', 'audiopane': 'audio',
+      'homepane': 'home', 'oledpane': 'oledcare', 'gamepane': 'game', 'audiopane': 'audio', 'picpane': 'picture',
       'svcpane': 'servicemenu', 'sspane': 'screensaver', 'privpane': 'privacy',
       'advpane': 'advanced', 'mqttpane': 'mqtt', 'serverpane': 'server', 'toolspane': 'tools'
     };
