@@ -171,7 +171,10 @@ var sdpCapTimer = null;
  * update blocking off, silently, so its hosts go into this table too.
  */
 var HBC_BLOCK_UPDATES_FLAG = '/var/luna/preferences/webosbrew_block_updates';
-var HBC_UPDATE_HOSTS = ['snu.lge.com', 'su-dev.lge.com', 'su.lge.com', 'su-ssl.lge.com'];
+// The four names the Homebrew Channel's startup.sh blocks, plus /usr/sbin/update's
+// dev endpoint (snu-dev) and download CDN (nsu, docs/development/TV-RESEARCH.md).
+var HBC_UPDATE_HOSTS = ['snu.lge.com', 'su.lge.com', 'su-ssl.lge.com',
+                        'snu-dev.lge.com', 'su-dev.lge.com', 'nsu.lge.com'];
 
 /*
  * The owner's own list, uploaded from the dashboard. Only its names are kept,

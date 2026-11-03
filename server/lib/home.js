@@ -284,6 +284,9 @@ var tileInput = null;
 var channelReading = null;
 
 function configFile() { return path.join(stateDir, 'home.json'); }
+// While this file exists, the view measures its frames and sends them with
+// each beat, and they are logged (docs/development/testing.md, scripts/home-trace.sh).
+function traceFile() { return path.join(stateDir, 'home-trace'); }
 
 function luna(uri, payload, cb) {
   if (!lunaFn) return cb(null);
@@ -675,7 +678,7 @@ function cached(key, ttl, load, cb) {
   });
 }
 
-function isInputApp(id) { return /^com\.webos\.app\.(hdmi\d|livetv|av\d|comp\d)/.test(id); }
+var isInputApp = names.isInputAppId;
 
 /*
  * The apps on LG's Home, in its order, as { id, title, icon }. Saved web
@@ -1970,6 +1973,7 @@ function viewCovered() {
 
 function beat(body) {
   lastBeatAt = nowMs();
+  if (body && body.perf && typeof body.perf === 'object') console.log('home: frames ' + JSON.stringify(body.perf));
   if (body && typeof body.focused === 'boolean') {
     viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
   }
@@ -1977,7 +1981,7 @@ function beat(body) {
   if (viewInFront()) watchBeat(BEAT_GRACE_MS);
   return { ok: true, enabled: readConfig().enabled, covered: viewCovered(), saver: powerState === 'Screen Saver',
            build: buildId, wallpapers: wallpapers.status(),
-           layoutVersion: layoutVersion(), sleeps: sleeps };
+           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()) };
 }
 
 function foregroundChanged(id) {

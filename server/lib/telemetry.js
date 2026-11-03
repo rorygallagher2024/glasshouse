@@ -91,6 +91,12 @@ function noteMediaSeen() {
  */
 var acbAbsent = false;
 var MEDIA_IDLE = { state: 'idle', playerType: null, fullScreen: false };
+/*
+ * cb(media, noPipe): noPipe is true where the service answered with no media
+ * pipe at all, as for an app playing through Web Audio, rather than nothing
+ * playing in a pipe it has. On a C1 (webOS 6.4), which has no acb, such an
+ * app gets an empty foregroundAppInfo from com.webos.media, as an input does.
+ */
 function readMediaState(cb, fresh) {
   var ask = fresh ? function (uri, cb2) { lunaFn(uri, {}, cb2); }
                   : function (uri, cb2) { lunaCachedFn(uri, {}, 4000, cb2); };
@@ -99,7 +105,8 @@ function readMediaState(cb, fresh) {
       var list = (m && m.returnValue !== false && Array.isArray(m.foregroundAppInfo)) ? m.foregroundAppInfo : null;
       if (!list) return cb(null);
       var app = list.filter(function (a) { return a && a.playState; })[0];
-      cb(app ? { state: String(app.playState), playerType: app.type || null, fullScreen: true } : MEDIA_IDLE);
+      if (app) return cb({ state: String(app.playState), playerType: app.type || null, fullScreen: true });
+      cb(MEDIA_IDLE, list.length === 0);
     });
   }
   if (acbAbsent) return fromMediaService();
@@ -108,7 +115,7 @@ function readMediaState(cb, fresh) {
     if (pipe && pipe.playStateNow) {
       return cb({ state: String(pipe.playStateNow), playerType: pipe.playerType || null, fullScreen: pipe.isFullScreen !== false });
     }
-    if (acb && acb.returnValue !== false && Array.isArray(acb.acbs)) return cb(MEDIA_IDLE);
+    if (acb && acb.returnValue !== false && Array.isArray(acb.acbs)) return cb(MEDIA_IDLE, !pipe);
     if (acb && /Service does not exist/.test(String(acb.errorText))) acbAbsent = true;
     fromMediaService();
   });
