@@ -6,7 +6,8 @@
  * whose supported() says yes is used; a TV with none has no Home screen
  * section. A module gives parts() as [{ id, title, desc, shown }], setPart(id,
  * shown, cb) and restore(cb), and says with inputTiles whether HDMI inputs can
- * be added as tiles there. One marked experimental is offered only once its
+ * be added as tiles there. One whose banner's picture can be changed also has
+ * banner(), setBanner(choice, cb) and uploadBanner(req, cb). One marked experimental is offered only once its
  * allowed() says yes (allowHomeLayout in config.json), and one with reapply()
  * has it called when the server starts. Supporting another webOS is a new
  * module in the list, with nothing else to change.
@@ -157,7 +158,9 @@ function getHomeScreen(cb) {
     parts: layout.parts(),
     inputs: null,
     // null, or whether the experimental feature has been switched on.
-    experimental: layout.experimental ? { allowed: layout.allowed() } : null
+    experimental: layout.experimental ? { allowed: layout.allowed() } : null,
+    // null, or the banner's picture: { choice, own, width, height }.
+    banner: layout.banner ? layout.banner() : null
   };
   if (!layout.inputTiles) return cb(out);
   inputLaunchPoints(function (lps) {
@@ -173,6 +176,16 @@ function getHomeScreen(cb) {
 function setPart(id, shown, cb) {
   if (!layout) return cb({ ok: false, error: msg('srv.home.unsupported', 'This TV\'s Home screen cannot be changed from here') });
   layout.setPart(id, shown, cb);
+}
+
+function setBanner(choice, cb) {
+  if (!layout || !layout.setBanner) return cb({ ok: false, error: msg('srv.home.unsupported', 'This TV\'s Home screen cannot be changed from here') });
+  layout.setBanner(choice, cb);
+}
+
+function uploadBanner(req, cb) {
+  if (!layout || !layout.uploadBanner) return cb({ ok: false, status: 404, error: msg('srv.home.unsupported', 'This TV\'s Home screen cannot be changed from here') });
+  layout.uploadBanner(req, cb);
 }
 
 /*
@@ -286,6 +299,8 @@ module.exports = {
   supported: supported,
   getHomeScreen: getHomeScreen,
   setPart: setPart,
+  setBanner: setBanner,
+  uploadBanner: uploadBanner,
   setInput: setInput,
   restore: restore,
   allowChanged: allowChanged,

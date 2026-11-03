@@ -6,16 +6,18 @@
     "es": "Vórtice",
     "hu": "Örvény",
     "it": "Vortice",
-    "ru": "Вихрь",
-    "pl": "Wir"
+    "pl": "Wir",
+    "pt": "Vórtice",
+    "ru": "Вихрь"
   },
   "description": {
     "en": "Whirlwinds of light spiraling up swaying funnels on black.",
     "es": "Torbellinos de luz que suben en espiral por embudos que se mecen sobre negro.",
     "hu": "Fényforgószelek kúsznak fel spirálban imbolygó tölcsérek mentén, fekete háttéren.",
     "it": "Turbini di luce che salgono a spirale lungo imbuti ondeggianti, sul nero.",
-    "ru": "Световые вихри поднимаются по спирали вдоль качающихся воронок на чёрном фоне.",
-    "pl": "Trąby światła wznoszące się spiralnie w kołyszących się lejach na czerni."
+    "pl": "Trąby światła wznoszące się spiralnie w kołyszących się lejach na czerni.",
+    "pt": "Remoinhos de luz que sobem em espiral por funis oscilantes, sobre fundo preto.",
+    "ru": "Световые вихри поднимаются по спирали вдоль качающихся воронок на чёрном фоне."
   },
   "license": "MIT",
   "uses": [

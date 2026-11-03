@@ -6,16 +6,18 @@
     "es": "Velos",
     "hu": "Fátylak",
     "it": "Veli",
-    "ru": "Вуали",
-    "pl": "Welony"
+    "pl": "Welony",
+    "pt": "Véus",
+    "ru": "Вуали"
   },
   "description": {
     "en": "Translucent ribbons of light rippling slowly across black.",
     "es": "Cintas de luz translúcidas que ondulan despacio sobre negro.",
     "hu": "Áttetsző fényszalagok hullámzanak lassan a fekete háttéren.",
     "it": "Nastri di luce traslucidi che ondeggiano lentamente sul nero.",
-    "ru": "Полупрозрачные ленты света медленно колышутся на чёрном фоне.",
-    "pl": "Półprzezroczyste wstęgi światła powoli falujące na czerni."
+    "pl": "Półprzezroczyste wstęgi światła powoli falujące na czerni.",
+    "pt": "Fitas de luz translúcidas que ondulam lentamente sobre fundo preto.",
+    "ru": "Полупрозрачные ленты света медленно колышутся на чёрном фоне."
   },
   "license": "MIT",
   "uses": [

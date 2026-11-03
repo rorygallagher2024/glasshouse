@@ -6,16 +6,18 @@
     "es": "Harmonógrafo",
     "hu": "Harmonográf",
     "it": "Armonografo",
-    "ru": "Гармонограф",
-    "pl": "Harmonograf"
+    "pl": "Harmonograf",
+    "pt": "Harmonógrafo",
+    "ru": "Гармонограф"
   },
   "description": {
     "en": "Pendulum ribbons of light weaving and fading on black.",
     "es": "Cintas de luz pendulares que se entrelazan y desvanecen sobre negro.",
     "hu": "Inga rajzolta fényszalagok fonódnak és halványulnak el fekete háttéren.",
     "it": "Nastri di luce a pendolo che si intrecciano e svaniscono sul nero.",
-    "ru": "Маятниковые ленты света сплетаются и гаснут на чёрном фоне.",
-    "pl": "Wahadłowe wstęgi światła splatające się i gasnące na czerni."
+    "pl": "Wahadłowe wstęgi światła splatające się i gasnące na czerni.",
+    "pt": "Fitas de luz pendulares que se entrelaçam e desvanecem sobre fundo preto.",
+    "ru": "Маятниковые ленты света сплетаются и гаснут на чёрном фоне."
   },
   "license": "MIT",
   "uses": [

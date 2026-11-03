@@ -92,6 +92,68 @@ function appVideo(reply) {
   return null;
 }
 
+/*
+ * A channel playing on the main sink, from a getStatus reply, or null: the
+ * tuner's video, decoded, with contentType dtv. On a G3 (webOS 9.2.2) Sky
+ * News in Glasshouse Home's preview read 544x576, scanType interlaced and
+ * frameRate 2500, in hundredths of a hertz, where an app's reads 23.976.
+ */
+function channelVideo(reply) {
+  var sinks = reply && Array.isArray(reply.video) ? reply.video : [];
+  for (var i = 0; i < sinks.length; i++) {
+    var v = sinks[i];
+    if (!v || v.sink !== 'MAIN' || v.connected !== true || v.contentType !== 'dtv') continue;
+    if (!(v.width > 0) || !(v.height > 0)) continue;
+    var rate = v.frameRate > 240 ? v.frameRate / 100 : v.frameRate;
+    var hdr = v.videoInfo && v.videoInfo.hdrType;
+    return {
+      width: v.width,
+      height: v.height,
+      hz: rate > 0 ? Math.round(rate * 100) / 100 : null,
+      interlaced: v.scanType === 'interlaced',
+      broadcast: true,
+      context: v.context || null,
+      chroma: null,
+      bits: null,
+      hdr: VIDEO_HDR.hasOwnProperty(hdr) ? VIDEO_HDR[hdr] : 'sdr',
+      vrr: false,
+      allm: false
+    };
+  }
+  return null;
+}
+
+/*
+ * LG's Live TV banner names a channel's HDR from the broadcast service, not
+ * videooutput: inputcommon's ChannelDetailBannerController reads
+ * videoInfo.HDRType or hdrType (HLG, HDR10, Prime for Technicolor, DOLBY or
+ * DolbyVision). getCurrentVideoInfo answers for whichever broadcast is
+ * playing, here Home's preview, with the same context as the MAIN sink: on a
+ * G3 (webOS 9.2.2) a 704x576 SD channel read hdrType none and IsBT2020 false.
+ * Width and height read 0 until the format arrives.
+ */
+var BROADCAST_HDR = { HLG: 'hlg', HDR10: 'hdr10', Prime: 'technicolor', DOLBY: 'dolby_vision', DolbyVision: 'dolby_vision' };
+
+function broadcastHdr(info, context) {
+  var v = info && info.videoInfo;
+  if (!v || v.content !== 'dtv' || !v.video || (context && v.context && v.context !== context)) return null;
+  var type = v.video.HDRType || v.video.hdrType;
+  return BROADCAST_HDR.hasOwnProperty(type) ? BROADCAST_HDR[type] : null;
+}
+
+function channelSignal(port, cb) {
+  luna('com.webos.service.videooutput/getStatus', {}, function (r) {
+    var signal = channelVideo(r);
+    if (!signal) return cb(null);
+    luna('com.webos.service.utp.broadcast/getCurrentVideoInfo', {}, function (info) {
+      var hdr = broadcastHdr(info, signal.context);
+      if (hdr) signal.hdr = hdr;
+      delete signal.context;
+      cb(signal);
+    });
+  });
+}
+
 function notePlaying(reply) {
   var seen = appVideo(reply);
   if (!seen) return;
@@ -190,7 +252,7 @@ function hdmiSignal(port, cb) {
 
 // The settings range a source's HDR is shown in.
 function rangeOf(hdr) {
-  return hdr === 'dolby_vision' ? 'dolbyHdr' : hdr === 'hdr10' || hdr === 'hlg' ? 'hdr' : 'sdr';
+  return hdr === 'dolby_vision' ? 'dolbyHdr' : hdr === 'technicolor' ? 'technicolorHdr' : hdr === 'hdr10' || hdr === 'hlg' ? 'hdr' : 'sdr';
 }
 
 function pictureMode(input, range, cb) {
@@ -213,8 +275,8 @@ function oledLight(input, mode, cb) {
  * The plate for what was last on: kind 'input' with its port, 'channel', or
  * 'app' with its id. cb({ ok, input, signal, range, mode, light, oled }), where
  * range is the dynamic range the signal is shown in and mode the picture mode
- * it gets. A channel is taken as SDR; an input or app with no signal to go by
- * has neither.
+ * it gets. A channel with no decoded signal is taken as SDR; an input or app
+ * with no signal to go by has neither.
  */
 function picture(kind, port, cb, appId) {
   var inputs = { input: 'hdmi' + port, channel: 'dtv', app: 'default' };
@@ -223,10 +285,13 @@ function picture(kind, port, cb, appId) {
   if (kind === 'input' && !(port >= 1 && port <= 4)) return cb({ ok: false, error: 'port 1 to 4 expected' });
   var key = kind === 'app' ? 'app:' + (appId || '') : input;
   var hit = cache[key];
-  if (hit && nowMs() - hit.at < CACHE_MS) return cb(hit.value);
+  // A channel's signal is there only while one plays, as in Home's preview,
+  // which moves from channel to channel, so it is read each time.
+  if (hit && kind !== 'channel' && nowMs() - hit.at < CACHE_MS) return cb(hit.value);
   var lastPlayed = kind === 'app' && appId && played.hasOwnProperty(appId) ? played[appId] : null;
-  (kind === 'input' ? hdmiSignal : function (p, next) { next(lastPlayed); })(port, function (signal) {
-    // A channel's signal is not read, and broadcast is almost all SDR.
+  var readSignal = kind === 'input' ? hdmiSignal : kind === 'channel' ? channelSignal : function (p, next) { next(lastPlayed); };
+  readSignal(port, function (signal) {
+    // A channel not playing is taken as SDR, as broadcast almost all is.
     var range = signal ? rangeOf(signal.hdr) : kind === 'channel' ? 'sdr' : null;
     pictureMode(input, range, function (mode) {
       oledLight(input, mode ? mode.raw : null, function (light) {
@@ -242,10 +307,25 @@ function picture(kind, port, cb, appId) {
   });
 }
 
+/*
+ * Whether HDMI input port has a picture on its receiver now, for Glasshouse
+ * Home's preview of it. The preview's video reports playing with nothing
+ * there: on a G3 (webOS 9.2.2) HDMI 2, its receiver asleep, gave loadeddata,
+ * canplay and playing, and a black picture. Read fresh each time, as the
+ * preview has just switched the receiver.
+ */
+function signal(port, cb) {
+  if (!(port >= 1 && port <= 4)) return cb({ ok: false, error: 'port 1 to 4 expected' });
+  // The plate read next must not be one cached before the receiver moved here.
+  delete cache['hdmi' + port];
+  hdmiSignal(port, function (s) { cb({ ok: true, port: port, signal: !!s }); });
+}
+
 module.exports = {
   init: init,
   want: want,
   picture: picture,
+  signal: signal,
   sourceHdr: sourceHdr,
   refreshHz: refreshHz
 };

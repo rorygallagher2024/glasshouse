@@ -569,6 +569,13 @@ async function toggleExpTileHiding() {
 // the server is kept while off, so switching back on needs no retyping.
 let ntpEditing = false;
 
+// How far out the clock is, as a person would say it: 1 h 56 min, 12 min, 40 s.
+function ntpOut(s) {
+  if (s < 60) return t('server.ntp.outS', '{s} s', { s });
+  const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60);
+  return h ? t('server.ntp.outHM', '{h} h {m} min', { h, m }) : t('server.ntp.outM', '{m} min', { m });
+}
+
 function renderNtp(n, cfg, writable) {
   const toggle = q('ntp-toggle'), form = q('ntp-form'), status = q('ntp-status'), input = q('ntp-server');
   if (!toggle) return;
@@ -594,7 +601,11 @@ function renderNtp(n, cfg, writable) {
   }
   if (!on || !n) { status.hidden = true; return; }
   status.hidden = false;
-  if (n.error) {
+  if (n.notTakenS !== null && n.notTakenS !== undefined) {
+    status.classList.add('row-err');
+    status.textContent = t('server.ntp.notTaken', 'The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour.',
+      { out: ntpOut(Math.abs(n.notTakenS)) });
+  } else if (n.error) {
     status.classList.add('row-err');
     status.textContent = t('server.ntp.failing', 'The time server has not answered, so the TV keeps the time it has. {error}', { error: n.error });
   } else {
@@ -627,6 +638,23 @@ async function toggleNtp() {
   b.disabled = true;
   const r = await sendCommand('setNtpEnabled', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
+// The TV's name, as the sidebar and Home Assistant show it. Empty puts back LG
+// and the model, which the server answers with.
+async function saveTvName() {
+  const input = q('tvname-input'), btn = q('tvname-save');
+  if (btn) { btn.disabled = true; btn.classList.add('busy'); }
+  try {
+    const r = await sendCommand('setDeviceName', input.value.trim());
+    if (r && r.ok) {
+      delete input.dataset.dirty;
+      input.value = r.name;
+      if (q('nav-tv')) q('nav-tv').textContent = r.name;
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.classList.remove('busy'); }
+  }
 }
 
 async function saveNtpServer() {

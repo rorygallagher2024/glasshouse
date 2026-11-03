@@ -49,7 +49,7 @@ jobs:
 
       # Preinstalled on ubuntu-latest.
       - name: shell scripts
-        run: shellcheck server/deploy.sh server/tvwebctl server/50-tvweb.sh tvstats.sh
+        run: shellcheck server/deploy.sh server/tvwebctl server/50-tvweb.sh tvstats.sh scripts/check-all.sh scripts/tv.sh
 
       - name: TypeScript type check
         run: npm ci && npx tsc

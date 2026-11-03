@@ -120,7 +120,9 @@ function removeUploads(cb, only) {
 
 // The browser re-encodes uploads as JPEG. Check the format and frame bounds
 // again here; no filename or image metadata becomes a filesystem path.
-function validJpeg(buf) {
+function validJpeg(buf, maxWidth, maxHeight) {
+  maxWidth = maxWidth || MAX_WIDTH;
+  maxHeight = maxHeight || MAX_HEIGHT;
   if (buf.length < 12 || buf.readUInt16BE(0) !== 65496 || buf.readUInt16BE(buf.length - 2) !== 65497) return false;
   var at = 2, components = 0, scanned = false, quantised = false, huffman = false;
   while (at + 2 <= buf.length) {
@@ -136,7 +138,7 @@ function validJpeg(buf) {
       var height = buf.readUInt16BE(at + 3), width = buf.readUInt16BE(at + 5);
       var count = buf[at + 7];
       if (components || buf[at + 2] !== 8 || (count !== 1 && count !== 3) || len !== 8 + 3 * count ||
-          !width || !height || width > MAX_WIDTH || height > MAX_HEIGHT) return false;
+          !width || !height || width > maxWidth || height > maxHeight) return false;
       components = count;
     }
     if (marker === 219) { if (len < 67) return false; quantised = true; }
@@ -163,46 +165,59 @@ function validJpeg(buf) {
   return false;
 }
 
-function upload(key, req, cb) {
-  function refused(text, code) { cb({ ok: false, error: text, status: code || 400 }); }
-  if (SLOTS.indexOf(key) === -1) return refused('unknown wallpaper slot');
-  if (uploading) return refused(msg('srv.home.wallUploading', 'Wait for the wallpaper upload to finish.'), 409);
+/*
+ * A JPEG sent as the request body, read whole: cb(null, buf), or cb(kind) with
+ * kind 'size', 'timeout' or 'image', or 'aborted' where the request was
+ * abandoned and there is no one to answer. opts: maxBytes, maxWidth, maxHeight.
+ */
+function receiveJpeg(req, opts, cb) {
   var length = String(req.headers['content-length'] || '');
-  if (req.headers['transfer-encoding'] || !/^\d{1,8}$/.test(length) || +length < 1 || +length > MAX_UPLOAD) {
-    return refused(msg('srv.home.wallUploadSize', 'The uploaded JPEG must be at most 5 MB and state its size.'), 413);
+  if (req.headers['transfer-encoding'] || !/^\d{1,8}$/.test(length) || +length < 1 || +length > opts.maxBytes) {
+    return cb('size');
   }
-  uploading = true;
   var chunks = [], got = 0, ended = false, finished = false;
-  var file = path.join(uploadsDir, key + '.jpg'), staging = file + '.part';
-  var timer = setTimeout(function () { finish(msg('srv.home.wallUploadTimeout', 'The wallpaper upload timed out.'), 408); }, 30000);
-  function finish(text, code, abandoned) {
+  var timer = setTimeout(function () { finish('timeout'); }, 30000);
+  function finish(kind, buf) {
     if (finished) return;
     finished = true;
     clearTimeout(timer);
     chunks = [];
-    uploading = false;
-    if (abandoned) return;
-    if (text) return refused(text, code);
-    cb({ ok: true, wallpapers: status() });
+    cb(kind, buf);
   }
-  req.on('aborted', function () { if (!ended) finish(null, null, true); });
-  req.on('error', function () { if (!ended) finish(null, null, true); });
-  req.on('close', function () { if (!ended) finish(null, null, true); });
+  req.on('aborted', function () { if (!ended) finish('aborted'); });
+  req.on('error', function () { if (!ended) finish('aborted'); });
+  req.on('close', function () { if (!ended) finish('aborted'); });
   req.on('data', function (chunk) {
     if (finished) return;
     got += chunk.length;
-    if (got > +length) return finish(msg('srv.home.wallUploadSize', 'The uploaded JPEG must be at most 5 MB and state its size.'), 413);
+    if (got > +length) return finish('size');
     chunks.push(chunk);
   });
   req.on('end', function () {
     if (finished) return;
     ended = true;
-    clearTimeout(timer);
     var buf = Buffer.concat(chunks);
-    chunks = [];
-    if (got !== +length || !validJpeg(buf)) {
-      return finish(msg('srv.home.wallUploadImage', 'Choose a valid JPEG up to 1920 × 1080 pixels.'));
-    }
+    if (got !== +length || !validJpeg(buf, opts.maxWidth, opts.maxHeight)) return finish('image');
+    finish(null, buf);
+  });
+}
+
+function upload(key, req, cb) {
+  function refused(text, code) { cb({ ok: false, error: text, status: code || 400 }); }
+  if (SLOTS.indexOf(key) === -1) return refused('unknown wallpaper slot');
+  if (uploading) return refused(msg('srv.home.wallUploading', 'Wait for the wallpaper upload to finish.'), 409);
+  uploading = true;
+  var file = path.join(uploadsDir, key + '.jpg'), staging = file + '.part';
+  function finish(text, code) {
+    uploading = false;
+    if (text) return refused(text, code);
+    cb({ ok: true, wallpapers: status() });
+  }
+  receiveJpeg(req, { maxBytes: MAX_UPLOAD }, function (kind, buf) {
+    if (kind === 'size') return finish(msg('srv.home.wallUploadSize', 'The uploaded JPEG must be at most 5 MB and state its size.'), 413);
+    if (kind === 'timeout') return finish(msg('srv.home.wallUploadTimeout', 'The wallpaper upload timed out.'), 408);
+    if (kind === 'image') return finish(msg('srv.home.wallUploadImage', 'Choose a valid JPEG up to 1920 × 1080 pixels.'));
+    if (kind === 'aborted') { uploading = false; return; }
     try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir); }
     catch (e) { return finish(e.message, 500); }
     execFile('df', ['-k', uploadsDir], { timeout: 5000 }, function (err, out) {
@@ -287,4 +302,4 @@ function removeSet(name) {
 }
 
 module.exports = { init: init, status: status, image: image, upload: upload, removeUploads: removeUploads,
-  choose: choose, SETS: SETS };
+  choose: choose, receiveJpeg: receiveJpeg, SETS: SETS };
