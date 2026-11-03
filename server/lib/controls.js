@@ -232,15 +232,19 @@ function sendPlayPause(cb) {
 }
 
 /*
- * The key Play / Pause last sent with no pipe to read. Pause comes first, as
- * Play / Pause is mostly pressed on something playing. com.webos.media gives
- * nothing for an external input either, so one in front keeps KEY_PLAY.
+ * The key Play / Pause last sent with no pipe to read, and to which app. Pause
+ * comes first, as Play / Pause is mostly pressed on something playing, and
+ * again for another app. com.webos.media gives nothing for an external input
+ * either, so one in front keeps KEY_PLAY.
  */
 var lastUnreadKey = null;
+var lastUnreadApp = null;
 function sendUnreadPlayPause(cb) {
   luna('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
-    if (names.isInputAppId(fg && fg.appId)) return sendMediaKey('play', cb);
-    lastUnreadKey = lastUnreadKey === 'pause' ? 'play' : 'pause';
+    var app = fg && fg.appId;
+    if (names.isInputAppId(app)) return sendMediaKey('play', cb);
+    lastUnreadKey = lastUnreadKey === 'pause' && lastUnreadApp === app ? 'play' : 'pause';
+    lastUnreadApp = app;
     sendMediaKey(lastUnreadKey, cb);
   });
 }

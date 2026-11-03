@@ -752,6 +752,8 @@ console.log('Running test-controls.js ...');
     assert.deepEqual(pressWith(idle, true), [119], 'then KEY_PAUSE again');
     pressWith({ state: 'playing', playerType: 'MSE' });
     assert.deepEqual(pressWith(idle, true), [119], 'a pipe read in between starts again from KEY_PAUSE');
+    foreground = 'another.webaudio.app';
+    assert.deepEqual(pressWith(idle, true), [119], 'another app in front starts again from KEY_PAUSE');
 
     foreground = 'com.webos.app.hdmi3';
     assert.deepEqual(pressWith(idle, true), [207], 'an input with nothing to read keeps KEY_PLAY');
