@@ -8,6 +8,7 @@
     "it": "Vortice",
     "pl": "Wir",
     "pt": "Vórtice",
+    "pt-br": "Vórtice",
     "ru": "Вихрь"
   },
   "description": {
@@ -17,6 +18,7 @@
     "it": "Turbini di luce che salgono a spirale lungo imbuti ondeggianti, sul nero.",
     "pl": "Trąby światła wznoszące się spiralnie w kołyszących się lejach na czerni.",
     "pt": "Remoinhos de luz que sobem em espiral por funis oscilantes, sobre fundo preto.",
+    "pt-br": "Redemoinhos de luz que sobem em espiral por funis oscilantes sobre o preto.",
     "ru": "Световые вихри поднимаются по спирали вдоль качающихся воронок на чёрном фоне."
   },
   "license": "MIT",

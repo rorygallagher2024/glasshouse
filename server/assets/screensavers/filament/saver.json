@@ -8,6 +8,7 @@
     "it": "Filamenti",
     "pl": "Włókna",
     "pt": "Filamento",
+    "pt-br": "Filamento",
     "ru": "Нити"
   },
   "description": {
@@ -17,6 +18,7 @@
     "it": "Sciami di luce che girano e lasciano scie sul nero, cambiando lentamente colore.",
     "pl": "Roje światła krążące i ciągnące smugi po czerni, powoli zmieniające kolor.",
     "pt": "Enxames de luz que giram e deixam rastos sobre fundo preto, mudando lentamente de cor.",
+    "pt-br": "Enxames de luz que circulam e deixam rastros sobre o preto, mudando de cor lentamente.",
     "ru": "Рои света кружат и тянутся по чёрному фону, медленно меняя цвет."
   },
   "license": "MIT",

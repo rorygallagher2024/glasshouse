@@ -8,6 +8,7 @@
     "it": "Armonografo",
     "pl": "Harmonograf",
     "pt": "Harmonógrafo",
+    "pt-br": "Harmonógrafo",
     "ru": "Гармонограф"
   },
   "description": {
@@ -17,6 +18,7 @@
     "it": "Nastri di luce a pendolo che si intrecciano e svaniscono sul nero.",
     "pl": "Wahadłowe wstęgi światła splatające się i gasnące na czerni.",
     "pt": "Fitas de luz pendulares que se entrelaçam e desvanecem sobre fundo preto.",
+    "pt-br": "Fitas de luz de pêndulo que se entrelaçam e desaparecem sobre o preto.",
     "ru": "Маятниковые ленты света сплетаются и гаснут на чёрном фоне."
   },
   "license": "MIT",

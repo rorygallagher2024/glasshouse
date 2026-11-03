@@ -8,6 +8,7 @@
     "it": "Veli",
     "pl": "Welony",
     "pt": "Véus",
+    "pt-br": "Véus",
     "ru": "Вуали"
   },
   "description": {
@@ -17,6 +18,7 @@
     "it": "Nastri di luce traslucidi che ondeggiano lentamente sul nero.",
     "pl": "Półprzezroczyste wstęgi światła powoli falujące na czerni.",
     "pt": "Fitas de luz translúcidas que ondulam lentamente sobre fundo preto.",
+    "pt-br": "Fitas translúcidas de luz que ondulam lentamente sobre o preto.",
     "ru": "Полупрозрачные ленты света медленно колышутся на чёрном фоне."
   },
   "license": "MIT",

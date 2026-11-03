@@ -8,6 +8,7 @@
     "it": "Fuochi d'artificio",
     "pl": "Fajerwerki",
     "pt": "Fogo de artifício",
+    "pt-br": "Fogos de artifício",
     "ru": "Фейерверк"
   },
   "description": {
@@ -17,6 +18,7 @@
     "it": "Esplosioni di colore sul nero, a pochi secondi di distanza.",
     "pl": "Wybuchy kolorów na czerni co kilka sekund.",
     "pt": "Explosões de cor sobre fundo preto, com alguns segundos de intervalo.",
+    "pt-br": "Explosões de cor sobre o preto, com alguns segundos de intervalo.",
     "ru": "Разноцветные вспышки на чёрном фоне каждые несколько секунд."
   },
   "license": "MIT",

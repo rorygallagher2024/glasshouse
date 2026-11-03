@@ -8,6 +8,7 @@
     "it": "Tesseratto",
     "pl": "Tesserakt",
     "pt": "Tesseract",
+    "pt-br": "Tesserato",
     "ru": "Тессеракт"
   },
   "description": {
@@ -17,6 +18,7 @@
     "it": "Un cubo a quattro dimensioni che ruota nella quarta dimensione, in sottili linee di luce.",
     "pl": "Czterowymiarowy sześcian obracający się w czwartym wymiarze, w cienkich liniach światła.",
     "pt": "Um cubo de quatro dimensões a rodar pela quarta dimensão, em finas linhas de luz.",
+    "pt-br": "Um cubo de quatro dimensões girando pela quarta dimensão, em finas linhas de luz.",
     "ru": "Четырёхмерный куб, вращающийся в четвёртом измерении, из тонких линий света."
   },
   "license": "MIT",

@@ -20,6 +20,10 @@ fs.writeFileSync(path.join(dir, 'es.json'), JSON.stringify({
   'srv.consent.acceptedUnder': { text: 'Aceptado en {agreements}.', from: 'Accepted under {agreements}.' }
 }));
 
+fs.writeFileSync(path.join(dir, 'pt-br.json'), JSON.stringify({
+  'srv.power.on': { text: 'Ligada', from: 'On' }
+}));
+
 var say = require('../server/lib/say');
 var msg = say.msg;
 say.init(dir);
@@ -38,6 +42,7 @@ console.log('  ✓ msg() returns the English, filled in');
 
 // 2. The page's language comes from its header, and only one with a file
 assert.strictEqual(say.langOf({ headers: { 'x-glasshouse-lang': 'es' } }), 'es');
+assert.strictEqual(say.langOf({ headers: { 'x-glasshouse-lang': 'pt-br' } }), 'pt-br');
 assert.strictEqual(say.langOf({ headers: { 'x-glasshouse-lang': 'fr' } }), null);
 assert.strictEqual(say.langOf({ headers: {} }), null);
 console.log('  ✓ the language is the one a page asked for, if there is a file');
@@ -50,6 +55,7 @@ var body = JSON.stringify({
   items: [{ label: running }],
   note: stale
 });
+assert.strictEqual(JSON.parse(say.translateBody(JSON.stringify({ label: on }), 'pt-br')).label, 'Ligada');
 var out = JSON.parse(say.translateBody(body, 'es'));
 assert.strictEqual(out.error, 'La actualización falló: disk full');
 assert.strictEqual(out.powerState.label, 'Encendida');

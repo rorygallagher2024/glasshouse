@@ -8,6 +8,7 @@
     "it": "Parametri del pannello",
     "pl": "Parametry panelu",
     "pt": "Estado do painel",
+    "pt-br": "Sinais do painel",
     "ru": "Состояние панели"
   },
   "description": {
@@ -17,6 +18,7 @@
     "it": "Le letture della TV stessa: ore del pannello, conto alla rovescia del Pixel Refresher, temperatura.",
     "pl": "Odczyty telewizora: godziny panelu, odliczanie odświeżania pikseli, temperatura.",
     "pt": "As leituras da própria TV: horas do painel, contagem decrescente da atualização de píxeis e temperatura.",
+    "pt-br": "As leituras da própria TV: horas do painel, contagem regressiva do Pixel Refresher e temperatura.",
     "ru": "Собственные показания телевизора: часы работы панели, отсчёт до обновления пикселей, температура."
   },
   "license": "MIT",

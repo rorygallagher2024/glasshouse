@@ -8,6 +8,7 @@
     "it": "Orologio",
     "pl": "Zegar",
     "pt": "Relógio",
+    "pt-br": "Relógio",
     "ru": "Часы"
   },
   "description": {
@@ -17,6 +18,7 @@
     "it": "Un orologio digitale sul nero, che cambia posizione ogni minuto.",
     "pl": "Cyfrowy zegar na czerni, co minutę przenoszony w nowe miejsce.",
     "pt": "Um relógio digital sobre fundo preto, que muda de posição a cada minuto.",
+    "pt-br": "Um relógio digital sobre o preto, que muda de posição a cada minuto.",
     "ru": "Цифровые часы на чёрном фоне, которые каждую минуту перемещаются на новое место."
   },
   "license": "MIT",

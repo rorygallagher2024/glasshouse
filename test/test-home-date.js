@@ -74,4 +74,8 @@ console.log('  ✓ English page unchanged');
 assert.strictEqual(dateIn('es', true), 'Sábado 24 octubre');
 console.log('  ✓ older browser: page language, month on its own');
 
+// 4. A code with its region names the locale as it is
+assert.strictEqual(dateIn('pt-br'), 'Sábado 24 outubro');
+console.log('  ✓ page language with a region');
+
 console.log('ALL test-home-date.js assertions passed!\n');

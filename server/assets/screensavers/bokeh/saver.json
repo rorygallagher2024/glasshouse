@@ -8,6 +8,7 @@
     "it": "Bokeh",
     "pl": "Bokeh",
     "pt": "Bokeh",
+    "pt-br": "Bokeh",
     "ru": "Боке"
   },
   "description": {
@@ -17,6 +18,7 @@
     "it": "Morbidi cerchi di luce che compaiono e svaniscono sul nero.",
     "pl": "Miękkie kręgi światła pojawiające się i znikające na czerni.",
     "pt": "Círculos suaves de luz que surgem e se desvanecem sobre fundo preto.",
+    "pt-br": "Círculos suaves de luz que surgem e somem sobre o preto.",
     "ru": "Мягкие круги света проплывают и тают на чёрном фоне."
   },
   "license": "MIT",
