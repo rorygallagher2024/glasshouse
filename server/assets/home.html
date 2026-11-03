@@ -347,7 +347,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   font-family:'Outfit',sans-serif;font-size:84px;line-height:116px;font-weight:300;letter-spacing:-1.5px;color:#ece7df;caret-color:#ece7df}
 #query::-webkit-input-placeholder{color:#3a3732}
 #query::placeholder{color:#3a3732}
-#status{font-size:23px;color:#a39d93;margin-top:18px;height:32px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#status{font-size:23px;color:#a39d93;margin-top:18px;overflow:hidden;text-overflow:ellipsis}
 #results{position:absolute;left:112px;right:72px;top:300px;bottom:0;overflow:hidden}
 #hits{-webkit-transition:-webkit-transform .28s cubic-bezier(.2,.7,.2,1);transition:transform .28s cubic-bezier(.2,.7,.2,1)}
 .hit{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:200px;opacity:.5;
@@ -392,6 +392,11 @@ html.faded #stage{opacity:0}
   .track,#toast,.tile,#folder,#folderGrid,#hits,.hit,.chip,#finder,#rail,#rail svg,#ask,html.fades #stage{-webkit-transition:none;transition:none}
   #wall .layer{-webkit-animation:none;animation:none}
 }
+/* Each kind of motion switched off on its own from the layout (applyMotion).
+   On body, as the fade's classes take html's. */
+body.no-drift #wall .layer{-webkit-animation:none;animation:none}
+body.no-crossfade #wall .layer{-webkit-transition:none;transition:none}
+body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide #folderGrid,body.no-slide #hits{-webkit-transition:none;transition:none}
 </style>
 </head>
 <body>
@@ -912,6 +917,7 @@ html.faded #stage{opacity:0}
   var nextFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
     function (f) { return setTimeout(function () { f(Date.now()); }, 16); };
   var animating = false, lastFrame = 0, lastHover = 0;
+  var smoothScroll = true; // off, a key or wheel step puts the row where it is headed at once
   var EDGE = 150;          // stage px in from a row's end where it glides
   var GLIDE_MAX = 1400;    // stage px a second, pointing at the very end
   var GLIDE_IN = 110;      // ms for a glide to gather most of its speed
@@ -1061,7 +1067,7 @@ html.faded #stage{opacity:0}
       }
       var e = tr.x - tr.target;
       if (e || tr.v) {
-        if (Math.abs(e) < 0.05 && Math.abs(tr.v) < 3) { tr.x = tr.target; tr.v = 0; }
+        if (!smoothScroll || (Math.abs(e) < 0.05 && Math.abs(tr.v) < 3)) { tr.x = tr.target; tr.v = 0; }
         else {
           // The spring solved for the frame's length, so a long frame cannot
           // make it overshoot or run away.
@@ -1798,9 +1804,11 @@ html.faded #stage{opacity:0}
     recents.col = Math.max(0, Math.min(recents.col, recents.apps.length - 1));
     if (!recents.apps.length) { recents.onX = false; recents.onAll = false; }
     var html = '';
+    // Decoded off the page's thread: decoded on it, the screenshots of five
+    // apps held the page 300 to 350 ms as Recent apps opened on a C2 (9.2.2).
     recents.apps.forEach(function (a, i) {
       var mono = '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>';
-      var shot = a.image ? '<img src="/api/home/recents/image?id=' + encodeURIComponent(a.id) + '&v=' + recents.stamp + '" alt="">' : mono;
+      var shot = a.image ? '<img src="/api/home/recents/image?id=' + encodeURIComponent(a.id) + '&v=' + recents.stamp + '" alt="" decoding="async">' : mono;
       html += '<div class="tile rc" data-c="' + i + '"><div class="shot">' + shot + '</div>' +
         '<div class="nm">' + esc(a.title) + '</div><span class="x">' + esc(t('home.recents.close', 'Close')) + '</span></div>';
     });
@@ -2631,6 +2639,12 @@ html.faded #stage{opacity:0}
     });
     return out;
   }
+  function applyMotion(l) {
+    smoothScroll = l.smoothScroll !== false;
+    document.body.className = (l.wallDrift === false ? 'no-drift ' : '') + (l.wallCrossfade === false ? 'no-crossfade ' : '') +
+      (l.slidePanels === false ? 'no-slide' : '');
+  }
+
   // The wallpaper's darkening, as a share of the scrim's own: 0 leaves the picture as it is.
   function applyDarkening(pct) {
     var n = typeof pct === 'number' ? pct : 100;
@@ -2680,6 +2694,7 @@ html.faded #stage{opacity:0}
       renderNow();
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
+      applyMotion(layout);
       applyColours(layout.colours);
       applyDarkening(layout.darkening);
       if (r.layoutVersion) layoutVersion = r.layoutVersion;
@@ -2734,14 +2749,90 @@ html.faded #stage{opacity:0}
    * server gone, the page says so; the page is LG's Home's app, so only the
    * server's watchdog can put LG's back (tvwebctl).
    */
+  // ---------------------------------------------------------------- frame trace
+
+  /*
+   * Off unless the server's beat asks for it (lib/home's trace file): then
+   * each frame's gap, the browser's long tasks and the time Home's main
+   * functions take go with the next beat, for measuring how smoothly Home
+   * runs (docs/development/testing.md).
+   */
+  var trace = null;
+  var traceWrapped = false;
+
+  function timed(name, fn) {
+    return function () {
+      if (!trace) return fn.apply(this, arguments);
+      var t0 = performance.now();
+      try { return fn.apply(this, arguments); } finally {
+        var ms = performance.now() - t0, s = trace.fn[name] || (trace.fn[name] = { n: 0, ms: 0, max: 0 });
+        s.n++; s.ms += ms;
+        if (ms > s.max) s.max = ms;
+      }
+    };
+  }
+
+  function startTrace() {
+    trace = { frames: 0, over33: 0, over100: 0, worst: 0, last: 0, long: [], fn: {} };
+    if (!traceWrapped) {
+      traceWrapped = true;
+      render = timed('render', render); applyFocus = timed('applyFocus', applyFocus); move = timed('move', move);
+      renderNow = timed('renderNow', renderNow); openRecents = timed('openRecents', openRecents);
+      showRecents = timed('showRecents', showRecents); load = timed('load', load);
+    }
+    var raf = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+    var mine = trace;
+    raf(function frameGap(now) {
+      if (trace !== mine) return;
+      if (mine.last) {
+        var gap = now - mine.last;
+        mine.frames++;
+        if (gap > 33.4) mine.over33++;
+        if (gap > 100) mine.over100++;
+        if (gap > mine.worst) mine.worst = gap;
+      }
+      mine.last = now;
+      raf(frameGap);
+    });
+    // Not on every engine: webOS 4's has no long-task entries.
+    try {
+      mine.observer = new PerformanceObserver(function (list) {
+        list.getEntries().forEach(function (e) { if (mine.long.length < 20) mine.long.push(Math.round(e.duration)); });
+      });
+      mine.observer.observe({ entryTypes: ['longtask'] });
+    } catch (e) {}
+  }
+
+  function stopTrace() {
+    if (trace && trace.observer) trace.observer.disconnect();
+    trace = null;
+  }
+
+  // What was measured since the last beat, starting afresh; undefined while off.
+  function takeTrace() {
+    if (!trace) return undefined;
+    var fn = {};
+    Object.keys(trace.fn).forEach(function (k) {
+      var s = trace.fn[k];
+      fn[k] = { n: s.n, avg: Math.round(s.ms / s.n * 10) / 10, max: Math.round(s.max) };
+    });
+    var out = { frames: trace.frames, over33: trace.over33, over100: trace.over100, worst: Math.round(trace.worst), long: trace.long, fn: fn };
+    trace.frames = trace.over33 = trace.over100 = trace.worst = 0;
+    trace.long = [];
+    trace.fn = {};
+    return out;
+  }
+
   function beat() {
     // With no usable catalogue, let the server's ten-second watchdog recover Home.
     if (!data || !layout) return;
     // Whether the page has the keyboard: after a wake on webOS 11 it can be
     // in front and get no keys (#1122).
-    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '' }, function (r) {
+    postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', perf: takeTrace() }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
+        if (r.trace && !trace) startTrace();
+        else if (!r.trace && trace) stopTrace();
         var standalone = !!(data && data.supported && data.supported.standalone);
         // webOS 4: switched off, the standalone view closes itself, as Back does.
         if (r.enabled === false && standalone) return window.close();

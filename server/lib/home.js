@@ -50,6 +50,10 @@ var ROWS = ['app', 'rec', 'dev', 'ch'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec'];
+// Each kind of motion on the view, on unless switched off: the wallpaper's
+// slow drift and its cross-fade between parts of the day, rows easing to the
+// chosen tile, and Recent apps, search and the folder sliding in.
+var MOTION_KEYS = ['wallDrift', 'wallCrossfade', 'smoothScroll', 'slidePanels'];
 // An input opened from its tile is recorded as that device, not as the whole input.
 var TILE_OPEN_MS = 15000;
 /*
@@ -276,6 +280,9 @@ var tileInput = null;
 var channelReading = null;
 
 function configFile() { return path.join(stateDir, 'home.json'); }
+// While this file exists, the view measures its frames and sends them with
+// each beat, and they are logged (docs/development/testing.md, scripts/home-trace.sh).
+function traceFile() { return path.join(stateDir, 'home-trace'); }
 
 function luna(uri, payload, cb) {
   if (!lunaFn) return cb(null);
@@ -341,6 +348,10 @@ function defaults() {
     recommended: false,
     // The view fading in as it comes on screen, and out as a tile opens.
     fade: false,
+    wallDrift: true,
+    wallCrossfade: true,
+    smoothScroll: true,
+    slidePanels: true,
     // Inputs with nothing plugged in left out of the Inputs row, rather than
     // shown greyed out.
     hideUnused: false,
@@ -416,6 +427,7 @@ function normalise(raw) {
   d.sort.rec = 'custom';
   d.hidden.rec = [];
   d.fade = raw.fade === true;
+  MOTION_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
   d.darkening = validDarkening(raw.darkening);
   d.hideUnused = raw.hideUnused === true;
   // null, saved, is the view's own look; none saved keeps the default.
@@ -556,6 +568,10 @@ function setLayout(body, cb) {
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
+    wallDrift: typeof body.wallDrift === 'boolean' ? body.wallDrift : c.wallDrift,
+    wallCrossfade: typeof body.wallCrossfade === 'boolean' ? body.wallCrossfade : c.wallCrossfade,
+    smoothScroll: typeof body.smoothScroll === 'boolean' ? body.smoothScroll : c.smoothScroll,
+    slidePanels: typeof body.slidePanels === 'boolean' ? body.slidePanels : c.slidePanels,
     darkening: body.darkening !== undefined ? body.darkening : c.darkening,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
     // null puts the view's own colours back.
@@ -584,7 +600,8 @@ function layoutOf(c) {
   return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
-    fade: c.fade, darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
+    darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, previewAlways: c.previewAlways, previewInTile: c.previewInTile, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
@@ -650,7 +667,7 @@ function cached(key, ttl, load, cb) {
   });
 }
 
-function isInputApp(id) { return /^com\.webos\.app\.(hdmi\d|livetv|av\d|comp\d)/.test(id); }
+var isInputApp = names.isInputAppId;
 
 /*
  * The apps on LG's Home, in its order, as { id, title, icon }. Saved web
@@ -1934,6 +1951,7 @@ function viewCovered() {
 
 function beat(body) {
   lastBeatAt = nowMs();
+  if (body && body.perf && typeof body.perf === 'object') console.log('home: frames ' + JSON.stringify(body.perf));
   if (body && typeof body.focused === 'boolean') {
     viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
   }
@@ -1941,7 +1959,7 @@ function beat(body) {
   if (viewInFront()) watchBeat(BEAT_GRACE_MS);
   return { ok: true, enabled: readConfig().enabled, covered: viewCovered(), saver: powerState === 'Screen Saver',
            build: buildId, wallpapers: wallpapers.status(),
-           layoutVersion: layoutVersion(), sleeps: sleeps };
+           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()) };
 }
 
 function foregroundChanged(id) {

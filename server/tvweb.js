@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.137.0';
+var TVWEB_VERSION = '0.138.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -531,7 +531,7 @@ var LIVE_STALE = {
   picture: ['"category":"picture"']
 };
 
-lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache });
+lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache, stateDir: __dirname });
 audioCapabilities.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache, hdmiReceiverMap: telemetry.hdmiReceiverMap });
 btAudio.init({ luna: luna, clearLunaCache: clearLunaCache });
 game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
@@ -1034,6 +1034,10 @@ if (!CLI_MODE) {
   if (preloadTimer.unref) preloadTimer.unref();
   var keysTimer = setTimeout(function () { remoteKeys.ensure(); }, 60000);
   if (keysTimer.unref) keysTimer.unref();
+  var heldTimer = setTimeout(function () { lgSettings.reapply(); }, 60000);
+  if (heldTimer.unref) heldTimer.unref();
+  var heldRecheck = setInterval(function () { lgSettings.reapply(); }, 60 * 60000);
+  if (heldRecheck.unref) heldRecheck.unref();
   var keysRecheck = setInterval(function () { remoteKeys.recheckNative(); }, remoteKeys.RECHECK_MS);
   if (keysRecheck.unref) keysRecheck.unref();
 }
@@ -1973,9 +1977,13 @@ if (!CLI_MODE) {
   liveState.state.onChange(function (ev) {
     if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) ntpClient.sync();
   });
-  // A C5 (webOS 10.3) has every app's preloading enabled again at each switch-on.
+  // A C5 (webOS 10.3) has every app's preloading enabled again at each switch-on,
+  // and LG's settings held off here may have been switched on again meanwhile.
   liveState.state.onChange(function (ev) {
-    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) preload.resend();
+    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) {
+      preload.resend();
+      lgSettings.reapply();
+    }
   });
 
   telemetry.detectDeviceInfo(function() {

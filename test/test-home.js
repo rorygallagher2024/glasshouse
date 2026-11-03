@@ -313,6 +313,23 @@ step('a layout saved from a dashboard changes the version the view\'s heartbeat 
   });
 });
 
+step('the heartbeat asks the view to measure its frames only while the trace file is there, and logs what it sends', function (done) {
+  start(null);
+  var flag = path.join(dir, 'home-trace');
+  try { fs.unlinkSync(flag); } catch (e) {}
+  assert.strictEqual(home.beat({ focused: true }).trace, false);
+  fs.writeFileSync(flag, '');
+  var logged = [], log = console.log;
+  console.log = function (line) { logged.push(String(line)); };
+  try {
+    assert.strictEqual(home.beat({ focused: true, perf: { frames: 300, over33: 1, worst: 40 } }).trace, true);
+  } finally { console.log = log; }
+  assert.ok(logged.some(function (l) { return l.indexOf('home: frames {"frames":300') === 0; }), logged.join(' | '));
+  fs.unlinkSync(flag);
+  assert.strictEqual(home.beat({ focused: true }).trace, false, 'and stops when it is removed');
+  done();
+});
+
 step('after a start the rows come from the lists last read, and a change read behind them reloads the view', function (done) {
   start(null);
   home.catalogue(function (c) {
@@ -2283,6 +2300,26 @@ step('live preview stays off until switched on, and is saved', function (done) {
     assert.strictEqual(r.layout.livePreview, true);
     assert.strictEqual(home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8'))).livePreview, true);
     done();
+  });
+});
+
+step('each kind of motion is on until switched off, saved on its own, and only false switches it off', function (done) {
+  start(null);
+  var MOTION = ['wallDrift', 'wallCrossfade', 'smoothScroll', 'slidePanels'];
+  MOTION.forEach(function (k) { assert.strictEqual(home.layout()[k], true, k + ' starts on'); });
+  home.setLayout({ smoothScroll: false }, function (r) {
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.layout.smoothScroll, false);
+    assert.strictEqual(r.layout.wallDrift, true, 'one is changed without the others');
+    var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+    assert.strictEqual(saved.smoothScroll, false);
+    assert.strictEqual(saved.slidePanels, true);
+    assert.strictEqual(home.normalise({ wallDrift: 'no', slidePanels: 0 }).wallDrift, true, 'only false switches one off');
+    assert.strictEqual(home.normalise({ wallDrift: 'no', slidePanels: 0 }).slidePanels, true);
+    home.setLayout({ smoothScroll: 'off' }, function (r2) {
+      assert.strictEqual(r2.layout.smoothScroll, false, 'a value that is not true or false changes nothing');
+      done();
+    });
   });
 });
 

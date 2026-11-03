@@ -820,9 +820,9 @@ the previous boot's, so a tool that is no longer started leaves nothing behind.
 The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
 
-Nine of the twenty domains are ad, tracking and diagnostics hosts that
-nothing on the TV needs. The other eleven are **platform infrastructure rather
-than advertising**, which is why they are a separate tier:
+The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
+the TV needs. The platform tier's are **LG infrastructure rather than
+advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
 | :--- | :--- |
@@ -833,19 +833,26 @@ than advertising**, which is why they are a separate tier:
 | `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
 | `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
+| `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
+| `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
 
 `com.webos.appInstallService` names the one its own set installs from:
-`http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2. The full
-tier adds whatever that file says, so a firmware using neither is still covered.
+`http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,
+`http://US.tv.wiselg.com` on a C5 on webOS 11.2. The full tier adds whatever
+that file says, so a firmware using none of them is still covered.
 
-`wiselg.com` is not on either list, though the full tier still blocks it if
-`appInstallService` names it as its store. On webOS 11 the Content Store's
-first request goes to `<country>.tv.wiselg.com`, and a factory-reset TV asks for
-`ngfts.tv.wiselg.com` during setup
+On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
+sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names
+`<country>.tv.wiselg.com` (`US.`) for sign-in, set-up, logging and Home, and
+`<region>.tv.wiselg.com` (`AIC.`) for the Content Store, search, app usage
+statistics and the diagnostics report upload, which `getRdxServerUrl` gives as
+`https://AIC.tv.wiselg.com/rdx/10.0.0/`. The clock comes from the same servers
+(`systemTimeSource` `sdp`), so the full tier blocks them, the store host
+included, only once the clock has synced, as it does `nextlgsdp.com`. A
+factory-reset TV asks for `ngfts.tv.wiselg.com` during setup
 ([Huttunen](https://fabricati-diem.inform.social/post/deshittification-as-a-service-part2-bypassing-the-app-store-gatekeeper/)),
-which suggests it is that release's service platform, in place of the SDP
-hosts. None of the tested TVs runs webOS 11, and Huttunen reports Netflix
-being interrupted after a cold boot with it blocked.
+who reports Netflix being interrupted after a cold boot with the host blocked
+outright.
 
 The `lgtvcommon.com`, `lgtviot.com` and `ueiwsp.com` rows, and
 `smartad.lge.com` on the ads tier, come from the blocklist in
@@ -889,6 +896,9 @@ To prevent this while preserving full platform blocking:
   entirely, and `nextlgsdp.com` is blocked immediately.
 * With an [NTP server](#setting-the-clock-from-ntp) configured, the first answer it
   gives sets the time as `sdp`, which ends the wait at once.
+* The Ads & telemetry tier's `rdx2.nextlgsdp.com` names, sdx's report upload host, get
+  the same wait. They are not the time servers, but they share their domain, and the
+  boot hook's removal goes by the domain.
 * An owner's hosts list that names `nextlgsdp.com` or a name under it gets the same wait,
   on either tier.
 
@@ -1072,6 +1082,13 @@ of each start, which is always handed over.
 the server's answer, and the service adds the time since then. Glasshouse logs
 one line when it starts, one each time it sets the clock, and one at each
 change of error state.
+
+The service can accept a time and leave the clock where it was: one TV took
+every hourly set and stayed about 6940 s out (#1201). So after each set
+`time/getSystemTime` is read back. A clock still 5 s or more from the time
+given is reported as not taking it, with the source the TV then reads from,
+and is not counted as set; it is tried again at the next hourly sync. With no
+answer from the read-back, the set counts as done.
 
 ---
 
