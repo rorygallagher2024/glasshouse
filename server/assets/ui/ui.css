@@ -1766,7 +1766,7 @@ button.home-look:active{background:none}
    A page of its own over the dashboard: the provider's groups, the channels
    of one, and the lineup. The lineup is read as the TV numbers it, so its
    numbers run down a ruler at the leading edge, a tick where each section starts;
-   the one colour is the favourites' amber (Home's row), which changes with
+   the one colour is the favourites' green (Home's row), which changes with
    a star. */
 html.tvm-on, html.tvm-on body{overflow:hidden}
 .tvm{position:fixed;inset:0;z-index:900;background:var(--bg);color:var(--w80);display:grid;grid-template-rows:auto auto minmax(0,1fr)}
@@ -1819,7 +1819,7 @@ html.tvm-on, html.tvm-on body{overflow:hidden}
 .tvm-all{display:flex;align-items:center;gap:12px;padding:12px 6px 4px;font-size:13.5px;color:var(--w70);cursor:pointer;user-select:none}
 .tvm-all:hover{color:var(--w100)}
 .tvm-scroll > .tvm-all{padding-top:4px}
-.tvm-ib.starred{color:var(--cand)}
+.tvm-ib.starred{color:var(--green)}
 
 /* the provider's groups */
 .tvm-g{display:flex;align-items:center;gap:0;border-inline-start:2px solid transparent;padding-inline-start:6px}
@@ -1863,10 +1863,10 @@ h3 .tvm-tags i{font-size:11px}
   padding:9px 6px;font-size:15px;color:var(--w70);cursor:pointer;user-select:none;min-height:48px}
 .tvm-c:hover{color:var(--w100);background:var(--w06)}
 .tvm-c.in .tvm-c-name{color:var(--w100)}
-/* In the lineup: its number there, with the green of "in", amber when starred. */
+/* In the lineup: its number there, with the green of "in" and when starred. */
 .tvm-c-in{font:300 17px 'Outfit';color:var(--w80);display:inline-flex;align-items:center;gap:8px}
 .tvm-c-in::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green)}
-.tvm-c-in.fav{color:var(--cand)}
+.tvm-c-in.fav{color:var(--green)}
 .tvm-quick{border:1px solid var(--w25);padding:5px 10px;font-size:12.5px;color:var(--w80);opacity:0;min-width:72px}
 .tvm-c:hover .tvm-quick,.tvm-quick:focus-visible{opacity:1}
 .tvm-quick.out:hover{color:var(--red);border-color:var(--red)}
@@ -1892,7 +1892,7 @@ h3 .tvm-tags i{font-size:11px}
 /* A start the owner chose rather than one that follows on. */
 .tvm-range.set .tvm-first{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:6px;text-decoration-color:var(--w60)}
 .tvm-from{width:84px;height:36px;text-align:end;font:300 22px 'Outfit'}
-.tvm-star-big{color:var(--cand);display:inline-block;transform:scale(1.6);transform-origin:right center;margin-top:8px}
+.tvm-star-big{color:var(--green);display:inline-block;transform:scale(1.6);transform-origin:right center;margin-top:8px}
 .tvm-sec-main{min-width:0}
 .tvm-sec-main h3{font:400 18px/1.25 'Manrope';color:var(--w100)}
 .tvm-h-btn{border:0;padding:0;font:inherit;color:inherit;text-align:start;background:none;overflow-wrap:break-word}
@@ -1919,7 +1919,7 @@ h3 .tvm-tags i{font-size:11px}
 @media (pointer:coarse){.tvm-lc > .tvm-cb{opacity:1}}
 .tvm-fav > .tvm-logo{margin-inline-start:4px}
 .tvm-num{text-align:end;font:300 17px 'Outfit';color:var(--w60);padding-inline-end:4px}
-.tvm-lc.fav .tvm-num,.tvm-fav .tvm-num{color:var(--cand)}
+.tvm-lc.fav .tvm-num,.tvm-fav .tvm-num{color:var(--green)}
 .tvm-lc:hover,.tvm-fav:hover{background-color:var(--w06)}
 .tvm-lc-main{min-width:0;display:flex;flex-direction:column;padding:6px 0}
 .tvm-lc .tvm-c-name,.tvm-fav .tvm-c-name{color:var(--w90);font-size:14.5px}
@@ -1948,7 +1948,7 @@ h3 .tvm-tags i{font-size:11px}
 .tvm-tile-logo::before{content:attr(data-mono);position:absolute;inset:0;display:grid;place-items:center;font:300 20px 'Outfit';color:var(--w50)}
 .tvm-tile-logo:has(img)::before{display:none}
 .tvm-tile:hover .tvm-tile-logo{box-shadow:inset 0 0 0 1px var(--w35)}
-.tvm-tile-num{font:400 14px/1 'Outfit';color:var(--cand)}
+.tvm-tile-num{font:400 14px/1 'Outfit';color:var(--green)}
 .tvm-tile-name{font-size:12px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tvm-lc.flash{animation:tvmFlash 1.4s ease-out}
 @media (prefers-reduced-motion:reduce){.tvm-lc.flash{animation:none}}
