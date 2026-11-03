@@ -290,6 +290,8 @@ console.log('Running test-ha.js ...');
     assert.strictEqual(a[1].topic, 'test/tv/telemetry');
     assert.strictEqual(byId[id].availability_mode, 'all');
   });
+  assert.strictEqual(byId.volume.json_attributes_topic, 'test/tv/telemetry');
+  assert.strictEqual(byId.volume.json_attributes_template, '{{ {"volume_level": value_json.get(\'volume\') / 100 if value_json.get(\'volume\') is number else none} | tojson }}');
   assert.strictEqual(byId.input_source.availability_topic, 'test/tv/status', 'the rest keep the flat form');
   assert.strictEqual(byId.input_source.payload_available, 'online');
   console.log('  ✓ no discovery config has both forms of availability, and volume needs both checks');
