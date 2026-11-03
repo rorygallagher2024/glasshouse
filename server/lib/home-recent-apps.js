@@ -14,6 +14,8 @@
  *
  * Strict ES5: runs on node 0.12.
  */
+var crypto = require('crypto');
+var fs = require('fs');
 var msg = require('./say').msg;
 
 var SERVICE = 'com.webos.service.recent/';
@@ -42,6 +44,14 @@ function excluded(id) {
   return LEFT_OUT.indexOf(id) !== -1 || excludedFn().indexOf(id) !== -1;
 }
 
+// The picture's address changes only with the file, so Home's browser keeps it decoded between openings.
+function fileVersion(file) {
+  try {
+    var st = fs.statSync(file);
+    return crypto.createHash('sha1').update(file + ':' + st.size + ':' + Number(st.mtime)).digest('hex').slice(0, 12);
+  } catch (e) { return ''; }
+}
+
 function list(cb) {
   luna(SERVICE + 'listRecents', {}, function (r) {
     if (!r || r.returnValue === false || Object.prototype.toString.call(r.recentsAppList) !== '[object Array]') {
@@ -60,7 +70,7 @@ function list(cb) {
         return typeof p === 'string' && p.charAt(0) === '/' && IMAGE_RE.test(p);
       })[0];
       if (image) images[id] = image;
-      apps.push({ id: id, title: String(a.title || id), image: !!image });
+      apps.push({ id: id, title: String(a.title || id), image: !!image, imageVersion: image ? fileVersion(image) : '' });
     });
     cb({ ok: true, apps: apps });
   });
