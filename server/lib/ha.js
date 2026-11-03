@@ -883,6 +883,10 @@ function buildEntities(opts) {
           command_topic: topic.command('volume'),
           state_topic: topic.telemetry,
           value_template: '{{ value_json.volume }}',
+          // Home Assistant's universal media player takes a level from 0 to 1
+          // and cannot scale one: it reads this as number.x_volume|volume_level.
+          json_attributes_topic: topic.telemetry,
+          json_attributes_template: '{{ {"volume_level": value_json.volume / 100 if value_json.volume is number else none} | tojson }}',
           min: 0,
           max: 100,
           step: 1,

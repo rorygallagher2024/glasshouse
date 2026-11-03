@@ -20,10 +20,10 @@
  */
 (function (root) {
   // Languages that have a file in /assets/i18n/. English needs none.
-  var LANGS = ['es', 'de', 'ru', 'hu', 'it', 'ar', 'pt-br'];
+  var LANGS = ['es', 'de', 'ru', 'hu', 'it', 'ar', 'pt', 'pt-br', 'pl'];
   // Each language in its own words, as the language list shows it, so it can
   // be found whatever the page is in.
-  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', it: 'Italiano', ar: 'العربية', 'pt-br': 'Português (Brasil)' };
+  var NAMES = { en: 'English', es: 'Español', de: 'Deutsch', ru: 'Русский', hu: 'Magyar', it: 'Italiano', ar: 'العربية', pt: 'Português', 'pt-br': 'Português (Brasil)', pl: 'Polski' };
   /*
    * Languages translated only in part, with the pages they cover in full:
    * 'web' (the dashboard), 'tv' (the TV app) and 'home' (Glasshouse Home).
@@ -93,7 +93,9 @@
     if (lang === 'en') return;
     try {
       var x = new XMLHttpRequest();
-      x.open('GET', '/assets/i18n/' + lang + '.json', false);
+      // The phone's setup link answers only with its one-time code.
+      var code = /[?&]c=([0-9a-f]+)/.exec(location.search);
+      x.open('GET', '/assets/i18n/' + lang + '.json' + (code ? '?c=' + code[1] : ''), false);
       x.send(null);
       if (x.status === 200) dict = JSON.parse(x.responseText);
       document.documentElement.setAttribute('lang', lang);

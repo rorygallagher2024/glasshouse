@@ -61,6 +61,19 @@ function launch(fn, urgent) {
   drainLaunches();
 }
 
+/*
+ * A child killed by a signal it was not sent by the timeout died before
+ * answering. On a 50UP81006LR (webOS 6.5, node v8.12.0) children aborted with
+ * libuv's "uv_close: Assertion `!uv__is_closing(handle)' failed" at start and
+ * the model name was lost; run by hand, the same call answered. Such a child
+ * never reached the program it was to run, so running it again is safe,
+ * writes included.
+ */
+function diedEarly(err) {
+  return !!(err && err.signal && !err.killed);
+}
+
 module.exports = {
-  launch: launch
+  launch: launch,
+  diedEarly: diedEarly
 };

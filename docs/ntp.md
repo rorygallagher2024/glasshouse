@@ -18,6 +18,7 @@ The tab then shows whether the server answered:
 
 * **On**, with when the clock was last set and last checked.
 * **No answer**, with the reason. The TV keeps the time it has, and the server is asked again every 30 seconds.
+* **Not taking the time**, with how far out the TV's clock still is. The server answered, but the TV kept its own time. It is tried again every hour.
 
 Switching it off stops it and keeps the address, so switching it back on needs no retyping.
 

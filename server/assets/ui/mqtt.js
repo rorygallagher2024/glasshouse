@@ -97,7 +97,7 @@ function updateMqttPublishPulse(st, isEnabled) {
 function renderMqttTvNode(isEnabled) {
   const nameEl = q('mqtt-node-tv-name');
   if (nameEl) {
-    nameEl.textContent = (cfgDevice && cfgDevice.name) || (q('cfg-devname') && q('cfg-devname').value) || 'LG webOS TV';
+    nameEl.textContent = (cfgDevice && cfgDevice.name) || 'LG webOS TV';
   }
   const dotEl = q('mqtt-dot-tv');
   if (dotEl) {
@@ -308,7 +308,6 @@ async function loadSettings(keepMsg) {
     q('cfg-prefix').value = m.topicPrefix;
     q('cfg-disc').value = m.discoveryPrefix;
     q('cfg-devid').value = d.id;
-    q('cfg-devname').value = d.name;
     q('cfg-interval').value = m.telemetryIntervalMs;
     q('cfg-enabled').classList.toggle('on', m.enabled);
     cfgSyncEnabled();
@@ -332,13 +331,6 @@ async function loadSettings(keepMsg) {
         });
       }
     });
-    if (q('cfg-devname') && !q('cfg-devname')._mqttBound) {
-      q('cfg-devname')._mqttBound = true;
-      q('cfg-devname').addEventListener('input', () => {
-        if (cfgDevice) cfgDevice.name = q('cfg-devname').value;
-        renderMqttTopology(cfgLastStatus);
-      });
-    }
 
     const saveBtn = q('cfg-save-btn');
     if (saveBtn) {
@@ -374,7 +366,7 @@ async function saveSettings() {
         disabled: cfgEntities.disabled || []
       }
     },
-    device: { id: q('cfg-devid').value, name: q('cfg-devname').value },
+    device: { id: q('cfg-devid').value },
     iconServer: cfgIcons
   };
   // An untouched password field means "keep the stored one", not "clear it".
