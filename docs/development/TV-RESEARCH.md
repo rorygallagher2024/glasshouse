@@ -1335,6 +1335,23 @@ rebooted, through a night in standby. lginput2's luna methods include
 `enableLoggingMotion`, `getSensorData` and `enablePrintRfStatus`, none of which
 Glasshouse calls; `getConnectionStatus` and `getDeviceInfo` left it at 0%.
 
+## MR25GA battery (C5, webOS 11.2)
+
+OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:
+`getDeviceInfo` with `deviceName: "MagicRemote_1"` returned `batteryLevel: "-"`
+and a zero address while asleep, then `batteryLevel: "MID"` and the paired
+address while awake. `lowStrength: false` is signal strength, not charge.
+The pairing file's `52(M) 35(L)` remains thresholds.
+
+On the awake LGE MR25GA, bluetooth2 `gatt/connect` returned a `clientId`.
+After `gatt/discoverServices`, reading service
+`0000180f-0000-1000-8000-00805f9b34fb`, characteristic
+`00002a19-0000-1000-8000-00805f9b34fb` with that client ID returned `bytes: [46]`.
+The characteristic supports read and notify. `gatt/disconnect` succeeded and
+LG's remote service still reported `connected: true`. This establishes a
+one-shot percentage read on this combination; other webOS 11 remotes and
+long-term standby behaviour have not been qualified.
+
 ## No firewall in the kernel (50QNED80A6A, webOS 10)
 
 A 50QNED80A6A on firmware 33.31.61 (LG's webOS 25, kernel 5.4.268, rooted

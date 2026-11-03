@@ -52,6 +52,17 @@ Nothing on the read-only root filesystem is written. Everything below other
 than the server's own files happens only when the owner switches it on, and the
 riskier controls ask for confirmation in the dashboard first.
 
+## Remote battery
+
+The server asks LG’s remote service for a numeric battery level first. On
+webOS 9 and 10 with a paired LG Magic Remote, and on OLED77C5PUA/webOS 11.2
+with an MR25GA, it can also open a temporary Bluetooth GATT connection, read
+the standard Battery Service and disconnect. Reads wait for the remote to
+wake, run at most hourly after success, and retry after five minutes on failure.
+Other combinations do not open this connection. The last percentage, read time
+and source are saved in `/var/lib/tvweb/remote-battery.json`, matched to the
+remote’s Bluetooth address. Pairing, buttons and LG’s settings are unchanged.
+
 ## Bluetooth audio
 
 The Audio tab lists the audio devices paired with the TV (LG's

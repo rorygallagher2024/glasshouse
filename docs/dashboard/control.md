@@ -38,6 +38,8 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 * **Sleep timer:** Sets a timed shutoff (Off, 10, 30, 60, 90, or 120 minutes).
 * **Power and reboot:** Switches the TV between standby and on, or performs a full operating system reboot.
 
+The **Magic remote** readout shows the paired remote model, battery percentage and last-read time. Move the remote to wake it for a reading; an unavailable battery has an explanation.
+
 ## Apps and remote tools
 
 ![Apps opened: a button for each app, the one in front marked](../screenshots/control-apps.png)

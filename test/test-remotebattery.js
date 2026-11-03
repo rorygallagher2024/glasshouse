@@ -56,7 +56,10 @@ function check(name, opts, expectLevel, expectCalls) {
   pending++;
   var luna = fakeLuna(opts);
   var heard = [];
-  rb.init({ luna: luna, webosVersion: '10.3.1', discoverMs: 0, onLevel: function (l) { heard.push(l); } });
+  rb.init({ luna: luna, webosVersion: opts.webosVersion || '10.3.1', discoverMs: 0,
+    getTVModel: function () { return opts.tvModel || ''; },
+    getRemoteInfo: function () { return opts.remoteInfo || null; },
+    onLevel: function (l) { heard.push(l); } });
   rb.read(function (level) {
     assert.strictEqual(level, expectLevel, name + ': level');
     assert.deepEqual(luna.calls, expectCalls, name + ': calls');
@@ -80,6 +83,45 @@ var steps = [
   function () { check('a failed read still disconnects', { read: { returnValue: false, errorText: 'x' } }, null, ALL); },
   function () { check('a value out of range is no level', { read: { returnValue: true, value: { value: { bytes: [255] } } } }, null, ALL); }
 ];
+var C5_REMOTE = { paired: true, typeOfDevice: 'ble', name: 'LGE MR25GA', address: REMOTE.address };
+var INFO_CALLS = ['mrcu/getConnectionStatus', 'mrcu/getDeviceInfo'];
+steps.push(function () {
+  check('C5/MR25GA on webOS 11.2 reads the standard battery service after MID', {
+    webosVersion: '11.2.0', tvModel: 'OLED77C5PUA.DUSQLJR', devices: [C5_REMOTE],
+    remoteInfo: { mac: REMOTE.address.toUpperCase(), model: 'LGE MR25GA' },
+    deviceInfo: { returnValue: true, batteryLevel: 'MID', bdAddress: REMOTE.address },
+    read: { returnValue: true, value: { value: { bytes: [46] } } }
+  }, 46, ALL);
+});
+steps.push(function () {
+  check('an untested TV model does not connect over Bluetooth', {
+    webosVersion: '11.2.0', tvModel: 'OLED77G5PUA', devices: [C5_REMOTE]
+  }, null, INFO_CALLS);
+});
+steps.push(function () {
+  check('an untested remote on the C5 does not connect over Bluetooth', {
+    webosVersion: '11.2.0', tvModel: 'OLED77C5PUA', devices: [REMOTE]
+  }, null, INFO_CALLS.concat('bluetooth2/device/getStatus'));
+});
+steps.push(function () {
+  check('numeric LG battery data works on other TV and remote models', {
+    webosVersion: '5.6.2', tvModel: 'OLED55CX', deviceInfo: { returnValue: true, batteryLevel: 0, bdAddress: REMOTE.address }
+  }, 0, INFO_CALLS);
+});
+steps.push(function () {
+  check('a different saved remote cannot supply the active remote battery', {
+    remoteInfo: { mac: '11:22:33:44:55:66', model: 'LGE MR24' },
+    deviceInfo: { returnValue: true, batteryLevel: 95, bdAddress: REMOTE.address }
+  }, null, INFO_CALLS.concat('bluetooth2/device/getStatus'));
+});
+steps.push(function () {
+  check('ambiguous paired remotes are not guessed', { devices: [REMOTE, C5_REMOTE] }, null,
+    INFO_CALLS.concat('bluetooth2/device/getStatus'));
+});
+steps.push(function () {
+  check('failed service discovery still releases the connection', { discover: { returnValue: false } }, null,
+    ALL.filter(function (name) { return name !== 'bluetooth2/gatt/readCharacteristicValue'; }));
+});
 // When it reads: at the remote's wake, at most hourly, sooner after switching on.
 steps.push(function () {
   pending++;
@@ -130,6 +172,11 @@ steps.push(function () {
   assert.strictEqual(rb.level(), 75);
   assert.strictEqual(rb.level(REMOTE.address), 75);
   assert.strictEqual(rb.level('11:22:33:44:55:66'), null, 'refused on MAC mismatch');
+  assert.strictEqual(rb.details({ mac: REMOTE.address }).batteryUpdatedAt, 1234567);
+  assert.strictEqual(rb.details({ mac: '11:22:33:44:55:66' }).batteryUpdatedAt, null);
+  util.writeJsonAtomic(tmpFile, { level: 75 });
+  rb.init({ stateFile: tmpFile });
+  assert.strictEqual(rb.level(REMOTE.address), null, 'unbound cached readings cannot follow a new remote');
   util.unlinkQuiet(tmpFile);
   console.log('  ✓ last known battery level is loaded from disk on start and keyed by MAC');
 });
@@ -144,6 +191,8 @@ steps.push(function () {
     assert.ok(saved, 'stateFile was written');
     assert.strictEqual(saved.level, 88);
     assert.strictEqual(saved.mac, REMOTE.address);
+    assert.strictEqual(saved.source, 'bluetooth');
+    assert.ok(saved.at > Date.now() - 1000);
     util.unlinkQuiet(tmpFile);
     console.log('  ✓ a successful read saves the level and MAC to disk');
     pending--;
@@ -213,7 +262,7 @@ steps.push(function () {
       pending--;
     });
   });
-  console.log('  ✓ the remote is read over Bluetooth only on webOS 9 and 10');
+  console.log('  ✓ untested webOS versions do not open a Bluetooth connection');
 });
 
 (function next(i) {

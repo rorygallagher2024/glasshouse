@@ -1156,17 +1156,26 @@ minutes after a failed one. A check every 10 minutes covers a remote kept
 awake. The subscription's updates are trusted for whether the remote is a
 Bluetooth one: asked once, the same method says it is not. On webOS 4,
 `com.webos.service.mrcu/getDeviceInfo` has the charge in `batteryLevel`, so it
-is asked first, and no Bluetooth connection is made where it answers; webOS 9
-and later answer `"-"`. The Bluetooth read is made only on webOS 9 and 10, where
-it has been tried: on a webOS 5 TV the remote lost its pointer and some buttons
-after waking once it began, until a reboot. Elsewhere the remote's battery is
-not shown. lginput2 holds the remote's own connection, and the
-Bluetooth service reads the service only over a GATT connection of its own, so
-each read there is
+is asked first, and no Bluetooth connection is made where it answers with a
+number from 0 to 100. Text such as `MID` is not converted to a percentage.
+The Bluetooth fallback checks the paired remote's model and address, and the
+TV model/webOS version: LG MR remotes on webOS 9 and 10 retain their existing
+support; webOS 11.2 is limited to OLED77C5PUA with LGE MR25GA. Other combinations
+use only LG's numeric response. On a webOS 5 TV the remote lost its pointer and
+some buttons after waking once Bluetooth reads began, until a reboot.
+
+lginput2 holds the remote's own connection. Each fallback read makes
 `gatt/connect`, `gatt/discoverServices`, `gatt/readCharacteristicValue` by the
-`clientId` that connect returned, then `gatt/disconnect`, which is made
-whatever failed after connecting. A plain level in the pairing file, should
-an older TV write one, is used until the remote has given one.
+returned `clientId`, then `gatt/disconnect`, including after discovery or read
+failure. The selected device must match the current pairing address; without
+that address, multiple saved remotes are ambiguous and no connection is made.
+A successful level, timestamp and source are cached by address. Replacing the
+remote invalidates the displayed reading; a reading from before restart keeps
+its original timestamp. The stats payload adds `batteryUpdatedAt`,
+`batterySource` and `batteryStatus` alongside the existing numeric `battery`,
+which still feeds Home Assistant and Prometheus. Control and Metrics keep the
+remote visible while a level is unavailable. A plain level in an older pairing
+file remains a fallback, with no invented read time.
 TV-RESEARCH.md has how this was found.
 
 ## Settings backups

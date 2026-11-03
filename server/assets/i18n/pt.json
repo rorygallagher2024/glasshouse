@@ -2590,5 +2590,12 @@
  "server.ntp.notTaken": {"text": "A TV não está a aceitar a hora do servidor, por isso o relógio continua desfasado {out}. O Glasshouse tenta de novo a cada hora.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
  "server.ntp.outS": {"text": "{s} s", "from": "{s} s"},
  "server.ntp.outM": {"text": "{m} min", "from": "{m} min"},
- "server.ntp.outHM": {"text": "{h} h {m} min", "from": "{h} h {m} min"}
+ "server.ntp.outHM": {"text": "{h} h {m} min", "from": "{h} h {m} min"},
+ "metrics.remote.batteryPercent": {"text": "Bateria: {level}%", "from": "Battery: {level}%"},
+ "metrics.remote.batteryUnknown": {"text": "Bateria indisponível", "from": "Battery unavailable"},
+ "metrics.remote.batteryRead": {"text": "Última leitura: {time}", "from": "Last read: {time}"},
+ "metrics.remote.batterySaved": {"text": "Último nível de bateria conhecido", "from": "Last known battery level"},
+ "metrics.remote.batteryUnsupported": {"text": "A leitura da bateria ainda não é suportada neste televisor e comando.", "from": "Battery reporting is not supported for this TV and remote yet."},
+ "metrics.remote.batteryUnavailable": {"text": "O comando ainda não forneceu um nível de bateria.", "from": "The remote has not provided a battery level yet."},
+ "metrics.remote.batteryWake": {"text": "Mova o comando para verificar a bateria.", "from": "Move the remote to check its battery."}
 }

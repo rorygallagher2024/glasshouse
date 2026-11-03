@@ -2590,5 +2590,12 @@
  "server.ntp.notTaken": {"text": "Телевизор не принимает время с сервера, поэтому его часы по-прежнему расходятся на {out}. Glasshouse пробует снова каждый час.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
  "server.ntp.outS": {"text": "{s} с", "from": "{s} s"},
  "server.ntp.outM": {"text": "{m} мин", "from": "{m} min"},
- "server.ntp.outHM": {"text": "{h} ч {m} мин", "from": "{h} h {m} min"}
+ "server.ntp.outHM": {"text": "{h} ч {m} мин", "from": "{h} h {m} min"},
+ "metrics.remote.batteryPercent": {"text": "Заряд: {level}%", "from": "Battery: {level}%"},
+ "metrics.remote.batteryUnknown": {"text": "Заряд батареи недоступен", "from": "Battery unavailable"},
+ "metrics.remote.batteryRead": {"text": "Последнее считывание: {time}", "from": "Last read: {time}"},
+ "metrics.remote.batterySaved": {"text": "Последний известный уровень заряда", "from": "Last known battery level"},
+ "metrics.remote.batteryUnsupported": {"text": "Считывание заряда пока не поддерживается для этого телевизора и пульта.", "from": "Battery reporting is not supported for this TV and remote yet."},
+ "metrics.remote.batteryUnavailable": {"text": "Пульт ещё не сообщил уровень заряда батареи.", "from": "The remote has not provided a battery level yet."},
+ "metrics.remote.batteryWake": {"text": "Подвигайте пульт, чтобы проверить заряд батареи.", "from": "Move the remote to check its battery."}
 }
