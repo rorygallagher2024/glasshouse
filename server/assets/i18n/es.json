@@ -11710,5 +11710,13 @@
   "tv.tvm.wholeInHint": {
     "text": "Quítalo desde su sección en la lista de canales. Los canales de abajo se pueden quitar uno a uno.",
     "from": "Remove it from its section in the lineup. Channels below can be taken out one by one."
+  },
+  "home.showTvLogos": {
+    "text": "Logotipos de canales",
+    "from": "Channel logos"
+  },
+  "home.showTvLogosDesc": {
+    "text": "En TV por Internet: el logotipo de la lista para cada canal. Desactivado muestra las iniciales del canal.",
+    "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."
   }
 }

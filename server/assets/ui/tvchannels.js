@@ -1037,9 +1037,11 @@ function tvmUnstarAll() {
 }
 
 // A row tile's picture: the logo, or the name's first letters as Home shows them.
+function tvmShowLogos() { return !homeLayout || homeLayout.showTvLogos !== false; }
+
 function tvmTileLogo(c) {
   const mono = esc((c.renamed ? c.name : tvmPlain(c.name)).split(/\s+/).filter(w => /^[A-Za-z0-9]/.test(w)).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase());
-  return `<span class="tvm-tile-logo" data-mono="${mono}">${c.logo ? `<img src="${esc(api(c.logo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
+  return `<span class="tvm-tile-logo" data-mono="${mono}">${c.logo && tvmShowLogos() ? `<img src="${esc(api(c.logo))}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
 }
 
 // A channel of the lineup brought into view, its section opened.
@@ -1061,6 +1063,7 @@ function tvmShowChannel(id) {
 }
 
 function tvmLogo(c) {
+  if (!tvmShowLogos()) return '';
   return c.logo ? `<img class="tvm-logo" src="${esc(api(c.logo))}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className: 'tvm-logo none' }))">`
     : '<span class="tvm-logo none"></span>';
 }

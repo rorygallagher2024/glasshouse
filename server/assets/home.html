@@ -393,7 +393,8 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    photo) keeps its colours on a small plate; one with no logo, or a broken
    one, is its initials in the number's face. */
 .tv .glyph{height:43px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden;white-space:nowrap}
-.tv .glyph img{display:block;max-width:184px;max-height:43px;width:auto;height:auto}
+.glyph img{display:block;width:auto;height:auto;-webkit-flex:0 0 auto;flex:0 0 auto;object-fit:contain}
+.tv .glyph img{max-width:184px;max-height:43px}
 .glyph img.mark{-webkit-filter:brightness(0) invert(.93) sepia(.08);filter:brightness(0) invert(.93) sepia(.08)}
 .glyph img.plate{border-radius:6px;opacity:.85}
 .glyph .mono{font-family:'Outfit',sans-serif;font-size:48px;line-height:.9;font-weight:300;letter-spacing:-.5px}
@@ -2107,7 +2108,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   function glyphHtml(it) {
     var mono = '<span class="mono">' + esc(monogram(it.name)) + '</span>';
-    if (!it.logo) return mono;
+    if (!it.logo || (layout && layout.showTvLogos === false)) return mono;
     var look = null;
     try { look = window.localStorage.getItem(LOGO_KEY + it.logo); } catch (e) {}
     if (look === 'none') return mono;
@@ -4362,7 +4363,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       refreshTvGuide();
       openAskedGuide();
       // The player keeps its frozen order; its channels' names and guide follow.
-      if (player.open) renderBand();
+      if (player.open) { renderBand(); if (player.list) renderList(); }
+      if (guide.open) renderGuide();
       if (cb) cb(true);
     });
     refreshNow(onNow);
@@ -4532,6 +4534,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     closeRecents();
     closeFolder();
     if (adder.open) closeAdder();
+    if (player.open) closePlayer();
+    if (guide.open && !guideAsked) closeGuide();
     keepSearch();
     readLaunchParams();
     updateWall();

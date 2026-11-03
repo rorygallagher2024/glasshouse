@@ -287,8 +287,9 @@ function download(url, opts, sink, cb) {
       } catch (e) { return end(e); }
       end(null);
     };
-    if (gunzip) {
+    if (gunzip && !sinkErr && code === 0) {
       gunzip.on('end', after);
+      gunzip.on('error', after);
       gunzip.end();
     } else after();
   });

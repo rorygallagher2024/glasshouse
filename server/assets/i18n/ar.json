@@ -11710,5 +11710,13 @@
   "tv.tvm.wholeInHint": {
     "text": "أزلها من قسمها في قائمة القنوات. يمكن إخراج القنوات أدناه واحدة واحدة.",
     "from": "Remove it from its section in the lineup. Channels below can be taken out one by one."
+  },
+  "home.showTvLogos": {
+    "text": "شعارات القنوات",
+    "from": "Channel logos"
+  },
+  "home.showTvLogosDesc": {
+    "text": "في تلفزيون الإنترنت: شعار قائمة التشغيل لكل قناة. عند الإيقاف تظهر الأحرف الأولى من اسم القناة.",
+    "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."
   }
 }

@@ -1081,8 +1081,13 @@ function playlistsAction(body, cb) {
       next.guide = body.guide === '' || body.guide === null ? '' : httpUrl(body.guide);
       if (body.guide && !next.guide) return cb({ ok: false, error: 'guide' });
     } else next.guide = p ? p.guide || '' : '';
-    if (p) config.playlists[config.playlists.indexOf(p)] = next;
-    else config.playlists.push(next);
+    if (p) {
+      config.playlists[config.playlists.indexOf(p)] = next;
+      queue = queue.filter(function (q) { return q.pl !== next.id; });
+      ['background', 'interactive'].forEach(function (lane) {
+        if (running[lane] && running[lane].job.pl === next.id) running[lane].cancel();
+      });
+    } else config.playlists.push(next);
     try { saveConfig(); } catch (e) { return cb({ ok: false, error: 'save' }); }
     if (!current[next.id]) current[next.id] = { snap: null, sel: null, guide: null, nownext: null, selGeneration: -1 };
     // The edited source is read now; the last good snapshot stays until then.

@@ -335,7 +335,8 @@ function homeItem(kind, id) {
   if (kind === 'iptv') {
     const tv = (homeCat.iptv || []).find(x => x.id === id);
     if (!tv) return null;
-    return { title: tv.name, icon: tv.logo, sub: tv.missing ? t('home.tv.gone', 'Not in the playlist any more') : tv.group };
+    const showLogos = !homeLayout || homeLayout.showTvLogos !== false;
+    return { title: tv.name, icon: showLogos ? tv.logo : '', sub: tv.missing ? t('home.tv.gone', 'Not in the playlist any more') : tv.group };
   }
   const list = kind === 'app' ? homeCat.apps : kind === 'dev' ? homeCat.devices : homeCat.channels;
   const it = list.find(x => x.id === id);
@@ -628,7 +629,7 @@ function homePreviewOption(field) {
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.
-const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec']];
+const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos']];
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });

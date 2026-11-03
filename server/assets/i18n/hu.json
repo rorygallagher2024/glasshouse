@@ -11710,5 +11710,13 @@
   "tv.tvm.wholeInHint": {
     "text": "Távolítsa el a csatornalista megfelelő szakaszából. Az alatta lévő csatornák egyenként is eltávolíthatók.",
     "from": "Remove it from its section in the lineup. Channels below can be taken out one by one."
+  },
+  "home.showTvLogos": {
+    "text": "Csatornalogók",
+    "from": "Channel logos"
+  },
+  "home.showTvLogosDesc": {
+    "text": "Az internetes TV-ben: a lejátszási lista logója minden csatornához. Kikapcsolva a csatorna kezdőbetűi látszanak.",
+    "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."
   }
 }

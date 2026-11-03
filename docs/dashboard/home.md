@@ -70,11 +70,11 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
     Changing **Picture details** shows or hides the strip during a preview, without restarting the picture.
     Pressing **OK** releases the preview while the input or channel opens.
 
--   **Last watched, app count and CEC addresses**
+-   **Last watched, app count, CEC addresses and channel logos**
 
     ---
 
-    **Last watched** (the top strip and the marker on that input's tile), **App count** (the "4 of 18 shown" beside Apps) and **CEC addresses** (on each input tile) are on by default, and each can be switched off from either dashboard's Home tab.
+    **Last watched** (the top strip and the marker on that input's tile), **App count** (the "4 of 18 shown" beside Apps), **CEC addresses** (on each input tile) and **Channel logos** (on Internet TV, showing the channel's initials when off) are on by default, and each can be switched off from either dashboard's Home tab.
 
     Behind a receiver, Last watched names the device the TV last selected on that port, such as the console rather than the receiver, and marks only its tile. Where the TV has not recorded one, every device on the port is named.
 
@@ -239,7 +239,7 @@ quality marks such as *ᴴᴰ* or *ᴿᴬᵂ* show as plain tags in the player. 
   lineup, and the number keys go to a channel by its number in it.
 - **Info** shows the band with what is on now and next, which also shows for
   five seconds at each change.
-- **Back** goes back to Home, the channel still playing in the preview with
+- **Back** or **Home** goes back to Home, the channel still playing in the preview with
   **Live preview** on.
 
 **Preview in the tile** also applies to Internet TV. **OK** grows that picture
@@ -379,7 +379,7 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
 * While Glasshouse Home is on:
     * **Starting up:** Open Home at power-on, Hide LG's Home while the TV starts.
     * **Layout:** Alternative View, Rows along the bottom.
-    * **Shown on Home:** Clock and date, Last watched, App count, CEC addresses, Picture details.
+    * **Shown on Home:** Clock and date, Last watched, App count, CEC addresses, Channel logos, Picture details.
     * **Live preview:** Live preview, with Keep the preview on and Preview in the tile once it is on.
     * **Search.**
     * **Animations:** Fade in and out, Wallpaper drift, Wallpaper cross-fade, Smooth scrolling, Sliding panels.

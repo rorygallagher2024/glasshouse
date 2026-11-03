@@ -11710,5 +11710,13 @@
   "tv.tvm.wholeInHint": {
     "text": "Уберите её через соответствующий раздел списка. Каналы ниже можно убирать по одному.",
     "from": "Remove it from its section in the lineup. Channels below can be taken out one by one."
+  },
+  "home.showTvLogos": {
+    "text": "Логотипы каналов",
+    "from": "Channel logos"
+  },
+  "home.showTvLogosDesc": {
+    "text": "В интернет-ТВ: логотип канала из плейлиста. Если выключено, показываются инициалы канала.",
+    "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."
   }
 }

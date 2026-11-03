@@ -1911,6 +1911,8 @@ h3 .tvm-tags i{font-size:11px}
 .tvm-lc,.tvm-fav{display:grid;grid-template-columns:var(--spine) 18px 28px minmax(0,1fr) auto 32px;align-items:center;gap:0 12px;min-height:46px;padding-inline-end:12px;
   background:linear-gradient(var(--w25),var(--w25)) calc(var(--spine) + 8px) 0/1px 100% no-repeat}
 .tvm-fav{grid-template-columns:var(--spine) 28px minmax(0,1fr) auto}
+.tvm-lc:not(:has(.tvm-logo)){grid-template-columns:var(--spine) 18px minmax(0,1fr) auto 32px}
+.tvm-fav:not(:has(.tvm-logo)){grid-template-columns:var(--spine) minmax(0,1fr) auto}
 .tvm-lc{cursor:pointer;user-select:none}
 .tvm-lc > .tvm-cb{margin-inline-start:4px;opacity:0}
 .tvm-lc:hover > .tvm-cb,.tvm-lc.sel > .tvm-cb,.tvm-lc > .tvm-cb:focus-visible,.tvm[data-selecting="lineup"] .tvm-lc > .tvm-cb{opacity:1}

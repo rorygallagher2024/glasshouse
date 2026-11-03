@@ -2212,6 +2212,9 @@ async function visitHomeInternetTv(browser, base, problems) {
     await key(13);
     await page.waitForSelector('#stage.playing');
     if (!(await page.locator('#bdNow').textContent()).includes('The World This Weekend')) fail('an unstarred channel has no now-and-next band');
+    await page.evaluate(() => document.dispatchEvent(new Event('webOSRelaunch')));
+    await page.waitForTimeout(300);
+    if (/playing/.test(await page.locator('#stage').getAttribute('class'))) fail('pressing Home did not close the player');
   } finally {
     await page.close();
   }
