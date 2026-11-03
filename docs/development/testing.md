@@ -7,6 +7,18 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
+`test-remotebattery.js` checks numeric LG responses before Bluetooth, the
+Bluetooth fallback across webOS 9–12 and multiple remote models, short/full
+service UUIDs, missing or unreadable battery characteristics, unavailable
+service enumeration, mismatched remote identities, ambiguous saved remotes,
+failure cleanup, read throttling and timestamped readings cached by Bluetooth
+address. The pre-9 Bluetooth guard and numeric readings without a BLE flag are
+covered separately. These simulated combinations establish code compatibility,
+not hardware qualification. `test-remote-battery-ui.js`
+runs the dashboard renderer against its markup on Node 16 and later, covering
+unavailable and saved readings, replacement remotes and zero percent on
+Control and Metrics. The server battery tests run on every supported Node.
+
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC
 EDID flag does not promote ARC, stale driver values do not become live audio,

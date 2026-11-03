@@ -2590,5 +2590,12 @@
  "server.ntp.notTaken": {"text": "A TV nem veszi át az időt a szervertől, így az órája még mindig {out} eltérést mutat. A Glasshouse óránként újrapróbálja.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
  "server.ntp.outS": {"text": "{s} mp", "from": "{s} s"},
  "server.ntp.outM": {"text": "{m} perc", "from": "{m} min"},
- "server.ntp.outHM": {"text": "{h} óra {m} perc", "from": "{h} h {m} min"}
+ "server.ntp.outHM": {"text": "{h} óra {m} perc", "from": "{h} h {m} min"},
+ "metrics.remote.batteryPercent": {"text": "Elem: {level}%", "from": "Battery: {level}%"},
+ "metrics.remote.batteryUnknown": {"text": "Az elem töltöttsége nem érhető el", "from": "Battery unavailable"},
+ "metrics.remote.batteryRead": {"text": "Utolsó leolvasás: {time}", "from": "Last read: {time}"},
+ "metrics.remote.batterySaved": {"text": "Az elem utolsó ismert töltöttsége", "from": "Last known battery level"},
+ "metrics.remote.batteryUnsupported": {"text": "Az elem töltöttségének leolvasása ezen a TV-n és távirányítón még nem támogatott.", "from": "Battery reporting is not supported for this TV and remote yet."},
+ "metrics.remote.batteryUnavailable": {"text": "A távirányító még nem adott meg töltöttségi szintet.", "from": "The remote has not provided a battery level yet."},
+ "metrics.remote.batteryWake": {"text": "Mozgasd meg a távirányítót az elem töltöttségének ellenőrzéséhez.", "from": "Move the remote to check its battery."}
 }

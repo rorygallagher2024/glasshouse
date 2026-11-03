@@ -2590,5 +2590,12 @@
  "server.ntp.notTaken": {"text": "التلفاز لا يأخذ الوقت من الخادم، لذا لا تزال ساعته متأخرة أو متقدمة بمقدار {out}. يحاول Glasshouse مرة أخرى كل ساعة.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
  "server.ntp.outS": {"text": "{s} ث", "from": "{s} s"},
  "server.ntp.outM": {"text": "{m} د", "from": "{m} min"},
- "server.ntp.outHM": {"text": "{h} س {m} د", "from": "{h} h {m} min"}
+ "server.ntp.outHM": {"text": "{h} س {m} د", "from": "{h} h {m} min"},
+ "metrics.remote.batteryPercent": {"text": "البطارية: {level}%", "from": "Battery: {level}%"},
+ "metrics.remote.batteryUnknown": {"text": "مستوى البطارية غير متاح", "from": "Battery unavailable"},
+ "metrics.remote.batteryRead": {"text": "آخر قراءة: {time}", "from": "Last read: {time}"},
+ "metrics.remote.batterySaved": {"text": "آخر مستوى معروف للبطارية", "from": "Last known battery level"},
+ "metrics.remote.batteryUnsupported": {"text": "قراءة البطارية غير مدعومة بعد لهذا التلفزيون وجهاز التحكم.", "from": "Battery reporting is not supported for this TV and remote yet."},
+ "metrics.remote.batteryUnavailable": {"text": "لم يرسل جهاز التحكم مستوى البطارية بعد.", "from": "The remote has not provided a battery level yet."},
+ "metrics.remote.batteryWake": {"text": "حرّك جهاز التحكم للتحقق من البطارية.", "from": "Move the remote to check its battery."}
 }

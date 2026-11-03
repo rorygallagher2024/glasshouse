@@ -1325,7 +1325,8 @@ Its `gatt/connect` answers `appId` and no `clientId`. The C2 answers
 A user's webOS 5 TV, on v0.97.0, the first release whose read reached
 `gatt/connect`, had a remote with no pointer and some buttons ignored after the
 TV woke from standby, until a reboot. Not yet confirmed from its log; the read
-over Bluetooth is held to webOS 9 and 10 meanwhile.
+over Bluetooth is held to webOS 9 and later meanwhile. Pre-9 and unidentified
+stacks retain the numeric `mrcu/getDeviceInfo` path.
 
 On the B8, lginput2 once started a diagnostic capture, a
 `/tmp/var/log/<date>_MRCU.log` with columns for motion, RSSI, voltage,
@@ -1334,6 +1335,36 @@ temperature and gyro, beside a `ManualDevice-<remote MAC>-rawInput.dsf`. A new
 rebooted, through a night in standby. lginput2's luna methods include
 `enableLoggingMotion`, `getSensorData` and `enablePrintRfStatus`, none of which
 Glasshouse calls; `getConnectionStatus` and `getDeviceInfo` left it at 0%.
+
+## MR25GA battery (C5, webOS 11.2)
+
+OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:
+`getDeviceInfo` with `deviceName: "MagicRemote_1"` returned `batteryLevel: "-"`
+and a zero address while asleep, then `batteryLevel: "MID"` and the paired
+address while awake. `lowStrength: false` is signal strength, not charge.
+The pairing file's `52(M) 35(L)` remains thresholds.
+
+On the awake LGE MR25GA, bluetooth2 `gatt/connect` returned a `clientId`.
+After `gatt/discoverServices`, reading service
+`0000180f-0000-1000-8000-00805f9b34fb`, characteristic
+`00002a19-0000-1000-8000-00805f9b34fb` with that client ID returned `bytes: [46]`.
+The characteristic supports read and notify. `gatt/disconnect` succeeded and
+LG's remote service still reported `connected: true`. This establishes a
+one-shot percentage read on this combination; other webOS 11 remotes and
+long-term standby behaviour have not been qualified.
+
+The capability-aware reader also returned 42%. `gatt/getServices` listed
+`180f` with a `2a19` characteristic marked `read: true, notify: true`.
+After cleanup, `gatt/getStatus` reported `connected: false` and
+`discoveringServices: false`; LG's remote service remained connected.
+
+The reader therefore selects the paired remote by address and checks its
+battery capabilities, without restricting webOS 11 to this TV or remote model.
+The supported paths are LG's numeric `getDeviceInfo` response and the standard
+Bluetooth Battery Service. The [bluetooth2 API reference](https://www.webosose.org/docs/reference/ls2-api/com-webos-service-bluetooth2/#gattgetservices)
+documents service and characteristic enumeration; firmware that cannot list
+them retains the standard read. A different proprietary battery protocol would
+need captured responses and a separate reader.
 
 ## No firewall in the kernel (50QNED80A6A, webOS 10)
 

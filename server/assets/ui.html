@@ -197,6 +197,7 @@
         <div class="n num" style="margin-top:10px"><span id="remote-pct">&mdash;</span><em>%</em></div>
         <div class="track" style="margin-top:16px;margin-bottom:14px;max-width:220px"><b id="remote-gauge-fill" style="width:0%"></b></div>
       </div>
+      <div class="sub" id="remote-battery-note"></div>
       <div class="remote-meta" id="remote-meta">
         <div class="remote-meta-row" id="remote-model-row"><span class="remote-meta-lbl" data-t="metrics.remote.modelLabel">Model:</span> <span class="remote-meta-val" id="remote-model-val"></span></div>
         <div class="remote-meta-row" id="remote-fw-row"><span class="remote-meta-lbl" data-t="metrics.remote.firmwareLabel">Firmware:</span> <span class="remote-meta-val" id="remote-fw-val"></span></div>
@@ -319,6 +320,12 @@
         <button onclick="sendCommand('media','stop')" data-t="ctl.stop">Stop</button>
         <button onclick="sendCommand('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
       </div>
+    </div>
+
+    <div class="set" id="control-remote" hidden>
+      <div class="lbl" data-t="metrics.remote">Magic remote</div>
+      <div class="remote-meta-row"><span id="control-remote-model"></span><span class="pill idle" id="control-remote-battery">&mdash;</span></div>
+      <div class="sub" id="control-remote-note"></div>
     </div>
 
     <!-- Pinned to the first column: it is the one control here that people
