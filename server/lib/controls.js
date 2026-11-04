@@ -113,6 +113,8 @@ var historyModule = null;
 var backupModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
+/** @type {typeof import('./notify')} */
+var notifyModule = null;
 var republishDiscoveryFn = null;
 var deviceNameChangedFn = null;
 var tvAppFn = null;
@@ -1092,6 +1094,21 @@ function doControl(action, value, cb) {
       });
 
     case 'toast':
+      /*
+       * Een object met image, seconds of position vraagt om meer dan de native
+       * toast kan (geen positie-controle, zie webOS's createToast-documentatie) —
+       * die route naar de losse overlay-app (notify.js) i.p.v. createToast.
+       * Kale tekst of { type, text } (zonder die velden) blijft het bestaande,
+       * onveranderde pad volgen, voor volledige achterwaartse compatibiliteit.
+       */
+      if (value && typeof value === 'object' &&
+          (value.image || value.seconds !== undefined || value.position) &&
+          notifyModule) {
+        return notifyModule.showNotification(value, function (parsed) {
+          cb({ ok: !!(parsed && parsed.returnValue), error: parsed && parsed.errorText });
+        });
+      }
+
       /* Both the payload's sourceId and luna-send's -a have to name an app the
          bus already knows; "tvweb" is rejected as an Unknown Source. */
       if (value && typeof value === 'object' && TOAST_TYPES.indexOf(value.type) === -1) {
@@ -1444,6 +1461,7 @@ function init(opts) {
   if (opts.history) historyModule = opts.history;
   if (opts.backup) backupModule = opts.backup;
   if (opts.home) homeModule = opts.home;
+  if (opts.notify) notifyModule = opts.notify;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;
   if (opts.deviceNameChanged) deviceNameChangedFn = opts.deviceNameChanged;
   if (opts.tvApp) tvAppFn = opts.tvApp;

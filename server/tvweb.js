@@ -104,6 +104,9 @@ var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
 var power = require('./lib/power');
 var names = require('./lib/names');
+// NIEUW: de notify-overlay (positie/afbeelding-capabele notificaties,
+// los van de native createToast). Zie server/lib/notify.js.
+var notify = require('./lib/notify');
 var msg = say.msg;
 var luna = lunaTransport.call;
 
@@ -679,6 +682,8 @@ controls.init({
   history: history,
   backup: backup,
   home: glasshouseHome,
+  // NIEUW: geeft controls.js's 'toast'-case toegang tot de overlay-route.
+  notify: notify,
   republishDiscovery: function () { republishDiscovery(); },
   deviceNameChanged: function (name) { syslogForwarder.setHostname(name); },
   tvApp: tvApp,
@@ -1040,6 +1045,26 @@ if (!CLI_MODE) {
   if (heldRecheck.unref) heldRecheck.unref();
   var keysRecheck = setInterval(function () { remoteKeys.recheckNative(); }, remoteKeys.RECHECK_MS);
   if (keysRecheck.unref) keysRecheck.unref();
+
+  // NIEUW: de notify-overlay-app voorbereiden (juiste appinfo.json-variant
+  // voor deze webOS-versie) en installeren via het bestaande, generieke
+  // tvApp()-installatiemechanisme — hetzelfde pad dat Glasshouse Home
+  // (assets/home-app) ook gebruikt. Pas als dat gelukt is, start de
+  // heartbeat die de app warm houdt (geen laadscherm meer na een pauze).
+  var notifyAppDir = path.join(__dirname, 'assets', 'notify-app');
+  notify.installAppinfo(notifyAppDir, telemetry.detectWebosVersion(), function (err) {
+    if (err) {
+      console.error('notify: could not prepare appinfo.json: ' + err.message);
+      return;
+    }
+    tvApp('install', function (r) {
+      if (r && r.ok) {
+        notify.startHeartbeat();
+      } else {
+        console.error('notify: could not install the overlay app: ' + (r && r.error));
+      }
+    }, 'notify-app');
+  });
 }
 
 if (CLI_MODE) {

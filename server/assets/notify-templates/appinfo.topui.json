@@ -1,0 +1,20 @@
+{
+  "id": "com.tvweb.notify",
+  "version": "0.1.0",
+  "vendor": "glasshouse",
+  "type": "web",
+  "main": "index.html",
+  "title": "Glasshouse Notify",
+  "icon": "icon.png",
+  "largeIcon": "icon.png",
+  "disableBackHistoryAPI": true,
+  "resolution": "1920x1080",
+  "transparent": true,
+
+  "_COMMENT_defaultWindowType": "Op webOS 25+ gebruikt CleanYourTV-WebOS 'topui' in plaats van 'overlay' (het lichtere venstertype waar we het eerder over hadden m.b.t. het laadrondje bij app-start).",
+  "defaultWindowType": "topui",
+
+  "_COMMENT_splash": "Bevestigd via lasharor/cleanyourtv-WebOS PR #116 en #131: deze twee velden schakelen webOS' eigen standaard-opstartscherm uit voor deze app.",
+  "noSplashOnLaunch": true,
+  "spinnerOnLaunch": false
+}

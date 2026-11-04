@@ -1,0 +1,20 @@
+{
+  "id": "com.tvweb.notify",
+  "version": "0.1.0",
+  "vendor": "glasshouse",
+  "type": "web",
+  "main": "index.html",
+  "title": "Glasshouse Notify",
+  "icon": "icon.png",
+  "largeIcon": "icon.png",
+  "disableBackHistoryAPI": true,
+  "resolution": "1920x1080",
+  "transparent": true,
+
+  "_COMMENT_defaultWindowType": "Bevestigd via lasharor/cleanyourtv-WebOS issue #4: SAM op webOS 5 t/m 24 weigert 'topui' met 'Unsupported Application Type', en accepteert hier 'overlay' voor.",
+  "defaultWindowType": "overlay",
+
+  "_COMMENT_splash": "Bevestigd via lasharor/cleanyourtv-WebOS PR #116 en #131 (opgelost na issue #106, hetzelfde grijze-laadscherm-probleem dat wij ook zagen): deze twee velden schakelen webOS' eigen standaard-opstartscherm uit voor deze app, ongeacht cold start of niet.",
+  "noSplashOnLaunch": true,
+  "spinnerOnLaunch": false
+}

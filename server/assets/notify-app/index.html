@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Glasshouse Notify</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font-family: sans-serif;
+  }
+  #card {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: 640px;
+    padding: 20px 28px;
+    border-radius: 16px;
+    background: rgba(20, 20, 20, 0.88);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  #card.visible { opacity: 1; }
+  #card img {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  #card .text-block { display: flex; flex-direction: column; }
+  #card .title { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  #card .message { font-size: 18px; opacity: 0.9; }
+
+  /* Alleen-afbeelding-modus: geen achtergrondkaart/padding, de afbeelding
+     zelf is de hele notificatie (bijv. voor een camera-snapshot of
+     QR-code). Geactiveerd als title EN text beide leeg zijn, maar image
+     wel is gegeven. */
+  #card.image-only {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  #card.image-only img {
+    width: auto;
+    height: auto;
+    max-width: 480px;
+    max-height: 480px;
+    border-radius: 12px;
+    object-fit: contain;
+  }
+
+  /* Positie-varianten. top/bottom + left/center/right, zoals besproken
+     met de CleanYourTV-notify-API als referentie. */
+  .pos-top-left     { top: 40px;    left: 40px; }
+  .pos-top-center   { top: 40px;    left: 50%; transform: translateX(-50%); }
+  .pos-top-right    { top: 40px;    right: 40px; }
+  .pos-middle-left  { top: 50%; left: 40px;  transform: translateY(-50%); }
+  .pos-middle-center{ top: 50%; left: 50%;   transform: translate(-50%, -50%); }
+  .pos-middle-right { top: 50%; right: 40px; transform: translateY(-50%); }
+  .pos-bottom-left  { bottom: 40px; left: 40px; }
+  .pos-bottom-center{ bottom: 40px; left: 50%; transform: translateX(-50%); }
+  .pos-bottom-right { bottom: 40px; right: 40px; }
+</style>
+</head>
+<body>
+  <div id="card">
+    <img id="card-image" style="display:none;">
+    <div class="text-block">
+      <div class="title" id="card-title"></div>
+      <div class="message" id="card-text"></div>
+    </div>
+  </div>
+
+<script>
+  // webOS levert launch-parameters via de 'webOSLaunch' / 'webOSRelaunch'
+  // events, of via PalmSystem.launchParams() op oudere versies.
+  // ONBEVESTIGD welke van de twee op jouw webOS-versie actief is —
+  // onderstaande probeert beide, met een querystring-fallback voor
+  // lokaal testen in een gewone browser.
+  function getLaunchParams() {
+    try {
+      if (window.PalmSystem && window.PalmSystem.launchParams) {
+        return JSON.parse(window.PalmSystem.launchParams);
+      }
+    } catch (e) {}
+
+    // Fallback: querystring, handig om index.html lokaal te testen
+    // zonder een TV, bijv. index.html?title=Test&text=Hallo&seconds=5
+    var params = {};
+    var qs = window.location.search.substring(1).split('&');
+    for (var i = 0; i < qs.length; i++) {
+      var pair = qs[i].split('=');
+      if (pair[0]) params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+    }
+    return params;
+  }
+
+  // BELANGRIJK: op webOS TV 6.0+ tonen zowel PalmSystem.platformBack() als
+  // window.close() een onzichtbare "Wilt u afsluiten?"-bevestigingsdialoog
+  // in plaats van direct te sluiten (bevestigd op het officiële webOS TV-
+  // ontwikkelaarsforum). Deze app sluit zichzelf daarom NIET meer — dat zou
+  // altijd tegen die dialoog aanlopen op nieuwere versies. In plaats daarvan
+  // sluit de server de app van buitenaf met closeByAppId, wat geen
+  // bevestiging vraagt omdat het geen gebruikersactie binnen de app is.
+  // Zie server-lib/notify.js: daar wordt na 'seconds' seconden
+  // closeByAppId aangeroepen.
+
+  // Bevestigd via lasharor/cleanyourtv-WebOS issue #4: op webOS 5 verwacht
+  // WebAppMgr een gestringifyde JSON voor setInputRegion, anders faalt de
+  // call stilletjes (geen foutmelding, gewoon geen effect). We roepen 'm
+  // daarom twee keer aan: eerst gestringifyd (voor webOS 5), dan als kaal
+  // object (voor nieuwere versies die dat wel direct accepteren). Een lege
+  // input-regio zorgt ervoor dat klikken/scrollen door de kaart heen gaan
+  // naar de app die eronder draait — precies wat je wil bij een
+  // notificatie-overlay die niet interactief hoeft te zijn.
+  function clearInputRegion() {
+    try {
+      if (window.webOSSystem && window.webOSSystem.setInputRegion) {
+        try {
+          window.webOSSystem.setInputRegion(
+            JSON.stringify([{ x: 0, y: 0, width: 0, height: 0 }])
+          );
+        } catch (e) {}
+        try {
+          window.webOSSystem.setInputRegion([{ x: 0, y: 0, width: 0, height: 0 }]);
+        } catch (e) {}
+        window.webOSSystem.setKeyMask([]);
+      }
+    } catch (e) {}
+  }
+
+  // Noot: we laten hier bewust GEEN "elke toets sluit de kaart"-listener
+  // meer staan — dat zou dezelfde self-close-aanroep nodig hebben die we
+  // net hebben weggehaald. Instant wegdrukken bij een toetsdruk is een
+  // mogelijke latere uitbreiding, maar vereist eerst uitzoeken hoe de app
+  // dat door kan geven aan de server (bijv. een korte lokale HTTP-call
+  // terug naar Glasshouse), niet iets wat de app zelfstandig kan.
+
+  function render() {
+    var p = getLaunchParams();
+
+    // Een 'silent' launch is puur een heartbeat om de app op de
+    // achtergrond wakker te houden (zie notify.js) — niets tonen, niets
+    // wijzigen, gewoon meteen klaar. Dit voorkomt dat webOS' eigen
+    // "hoe lang al op de achtergrond"-klok ooit de purge-drempel haalt,
+    // zonder dat we LG's systeemconfiguratie hoeven aan te raken.
+    if (p.silent === 'true' || p.silent === true) {
+      return;
+    }
+
+    var title = p.title || '';
+    var text = p.text || '';
+    var image = p.image || '';
+    var seconds = parseInt(p.seconds, 10);
+    if (isNaN(seconds) || seconds <= 0) seconds = 10;
+    var position = p.position || 'top-right';
+
+    document.getElementById('card-title').textContent = title;
+    document.getElementById('card-text').textContent = text;
+
+    // BELANGRIJK: de pagina herlaadt niet tussen notificaties (dat is
+    // precies wat het laadscherm voorkomt), dus de <img> van een vorige
+    // notificatie blijft anders gewoon zichtbaar staan als deze nieuwe
+    // notificatie geen eigen image meegeeft. Daarom altijd expliciet
+    // tonen óf verbergen, nooit alleen tonen.
+    var img = document.getElementById('card-image');
+    if (image) {
+      img.src = image;
+      img.style.display = 'block';
+    } else {
+      img.style.display = 'none';
+      img.src = '';
+    }
+
+    // Alleen-afbeelding-modus: geen titel, geen tekst, wel een afbeelding.
+    var imageOnly = !title && !text && !!image;
+    var textBlock = document.querySelector('#card .text-block');
+    textBlock.style.display = imageOnly ? 'none' : '';
+
+    var card = document.getElementById('card');
+    card.className = 'pos-' + position.replace('-', '-') + (imageOnly ? ' image-only' : '');
+    // fade in op volgende frame, voor een nette transitie i.p.v. hard verschijnen
+    window.requestAnimationFrame(function () {
+      card.classList.add('visible');
+    });
+
+    clearInputRegion();
+
+    // Verbergen (niet de app sluiten!) na 'seconds' seconden. Dit is
+    // gewone pagina-interne CSS/JS, geen geprivilegieerde webOS-aanroep —
+    // dus geen risico op de onzichtbare bevestigingsdialoog van eerder.
+    // Elke render() (nieuwe launch of relaunch) ruimt eerst een eventuele
+    // vorige, nog lopende hide-timer op, zodat twee snel opeenvolgende
+    // notificaties elkaars timer niet door de war halen.
+    if (window._glasshouseNotifyHideTimer) {
+      window.clearTimeout(window._glasshouseNotifyHideTimer);
+    }
+    window._glasshouseNotifyHideTimer = window.setTimeout(function () {
+      card.classList.remove('visible');
+    }, seconds * 1000);
+  }
+
+  document.addEventListener('webOSLaunch', render);
+
+  // BELANGRIJK: 'launch' op een app die al draait, herlaadt de pagina NIET
+  // — hij haalt de bestaande instantie gewoon weer naar voren. Zonder deze
+  // listener zou de sluit-timer van de eerste keer allang verlopen zijn,
+  // en blijft de kaart daarna oneindig staan tot iemand 'm wegdrukt.
+  // 'webOSRelaunch' is het event dat webOS in dat geval wél stuurt, met de
+  // nieuwe launch-parameters — dus render() opnieuw aanroepen reset zowel
+  // de inhoud als de sluit-timer.
+  document.addEventListener('webOSRelaunch', render);
+
+  // Als geen van beide events binnen 300ms komt (bijv. lokaal testen, of
+  // een webOS-versie die ze niet stuurt), toch gewoon renderen.
+  window.setTimeout(render, 300);
+</script>
+</body>
+</html>
