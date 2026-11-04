@@ -891,12 +891,16 @@ function saverRows(d) {
   // An installed app's screen saver has its own settings, and no brightness from here.
   var appSaver = d.modes.some(function (m) { return m.active && m.fromApp; });
   if (d.writable && !busy && d.current && d.current !== 'stock' && !appSaver) {
-    var bright = d.level === 'bright';
+    var levels = d.levels || ['bright', 'dim'];
+    var levelLabels = { bright: t('ss.bright', 'Bright'), dim: t('ss.dim', 'Dim'),
+                        dimmer: t('ss.dimmer', 'Dimmer'), dimmest: t('ss.dimmest', 'Dimmest') };
+    // OK steps through the levels and starts over after the last.
+    var nextLevel = levels[(levels.indexOf(d.level) + 1) % levels.length];
     r.push(head(t('tv.saver.head.howItLooks', 'How it looks')));
-    r.push({ label: t('ss.brightness', 'Brightness'), value: bright ? t('ss.bright', 'Bright') : t('ss.dim', 'Dim'), cls: 'act', act: 'saverLevel',
-             key: d.current, next: bright ? 'dim' : 'bright',
-             press: bright ? t('tv.saver.toDim', 'Press OK for Dim') : t('tv.saver.toBright', 'Press OK for Bright'),
-             hint: t('tv.saver.brightness.hint', 'Dim suits a dark room and is kinder to the panel; bright suits a lit one.') });
+    r.push({ label: t('ss.brightness', 'Brightness'), value: levelLabels[d.level] || d.level, cls: 'act', act: 'saverLevel',
+             key: d.current, next: nextLevel,
+             press: t('tv.saver.toLevel', 'Press OK for {level}', { level: levelLabels[nextLevel] || nextLevel }),
+             hint: t('tv.saver.brightness.hint', 'Bright suits a lit room. Each step darker is kinder to the panel and suits a darker room.') });
   }
 
   // The same action as the browser dashboard's Start screen saver. From the
@@ -3035,7 +3039,8 @@ function activate() {
       return send({ action: 'setWebos10ScreensaversAllowed', value: true }, t('tv.flash.switchedOn', 'Switched on'));
     case 'saverLevel':
       return send({ action: 'screensaverMode', value: { mode: r.key, level: r.next } },
-                  r.next === 'bright' ? t('ss.bright', 'Bright') : t('ss.dim', 'Dim'));
+                  { bright: t('ss.bright', 'Bright'), dim: t('ss.dim', 'Dim'),
+                    dimmer: t('ss.dimmer', 'Dimmer'), dimmest: t('ss.dimmest', 'Dimmest') }[r.next] || r.next);
     case 'saverStart':
       return startSaverAfterRelease();
     case 'saverPowerOff':

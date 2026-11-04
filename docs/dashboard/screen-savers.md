@@ -18,7 +18,7 @@ The **Screensaver** tab, `/?tab=screensaver`, provides fifteen alternatives to L
 * Tesseract, a four-dimensional cube turning through the fourth dimension, in fine lines of light that dim and turn violet with depth
 * Panel vitals, showing the TV's own panel hours and refresher countdown
 
-Each mode offers dim and bright variants, and visual elements continuously drift across the screen to prevent OLED burn-in or image retention. Both clocks and the time on Panel vitals draw 12-hour or 24-hour time as the TV's own time setting has it, and pick up a change the next time the screen saver starts.
+Each mode offers four brightness levels: Bright, Dim, Dimmer and Dimmest. Dimmer and Dimmest draw the dim picture under a black layer of 60% and 85%, so they are darker than Dim and kinder to the panel. In the TV app, OK steps through the levels. The level is kept for the next screen saver chosen. Bright and Dim are as before, and a level an older version saved is still read. Savers added by hand without the layer look the same at Dimmer and Dimmest as at Dim. And visual elements continuously drift across the screen to prevent OLED burn-in or image retention. Both clocks and the time on Panel vitals draw 12-hour or 24-hour time as the TV's own time setting has it, and pick up a change the next time the screen saver starts.
 
 A firmware update restores the LG default.
 

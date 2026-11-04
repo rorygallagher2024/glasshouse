@@ -66,6 +66,16 @@ console.log('Running test-screensavers.js ...');
   console.log('  ✓ screensaverLevel reads bright marker and rejects unknown values');
 })();
 
+// 4b. The two levels below dim are read as they are written
+(function testLevelReadsDarkerLevels() {
+  ['dimmer', 'dimmest'].forEach(function (level) {
+    env.files[path.join(SCREENSAVER_APP_DIR, '.tvweb-brightness')] = level;
+    assert.strictEqual(screensavers.screensaverLevel(), level);
+  });
+  assert.deepEqual(screensavers.SCREENSAVER_LEVELS, ['bright', 'dim', 'dimmer', 'dimmest']);
+  console.log('  ✓ screensaverLevel reads dimmer and dimmest');
+})();
+
 // 5. screensaverList returns all modes with correct structure
 (function testScreensaverList() {
   // Reset to clock mode, dim level

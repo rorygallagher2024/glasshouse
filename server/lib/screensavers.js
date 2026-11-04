@@ -28,6 +28,11 @@ var SCREENSAVER_APP_DIR = '/usr/palm/applications/' + SCREENSAVER_APP_ID;
 var SCREENSAVER_DIR = '/var/lib/tvweb/screensaver';
 var SCREENSAVER_MARKER = '.tvweb-screensaver';
 var SCREENSAVER_LEVEL_MARKER = '.tvweb-brightness';
+// Brightest first. A saver draws bright (1) or dim (0) itself; the two below
+// dim are the same picture under a black veil of that opacity, so a saver
+// needs no colours of its own for them.
+var SCREENSAVER_LEVELS = ['bright', 'dim', 'dimmer', 'dimmest'];
+var SCREENSAVER_VEILS = { bright: 0, dim: 0, dimmer: 0.6, dimmest: 0.85 };
 // Survives a server restart, but not a TV reboot. sam also retains native
 // screen savers after dismissal, so its running list alone cannot prove ours.
 var LAUNCHED_MARKER = '/var/run/tvweb-screensaver-launched';
@@ -439,8 +444,13 @@ function switching() {
   return !!switchingSince;
 }
 
+// Anything not listed, such as a marker an earlier build wrote, is dim.
+function normalizeLevel(level) {
+  return SCREENSAVER_LEVELS.indexOf(level) !== -1 ? level : 'dim';
+}
+
 function screensaverLevel() {
-  return readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_LEVEL_MARKER)) === 'bright' ? 'bright' : 'dim';
+  return normalizeLevel(readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_LEVEL_MARKER)));
 }
 
 function screensaverMode() {
@@ -521,6 +531,7 @@ function screensaverList() {
     ok: true,
     current: cur,
     level: screensaverLevel(),
+    levels: SCREENSAVER_LEVELS,
     modes: out,
     writable: !!(configObj && configObj.allowControl),
     slowSwitch: slowSwitch(),
@@ -619,7 +630,7 @@ function stageSaverFiles(e, level) {
     fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
   fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level));
-  fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), level === 'bright' ? 'bright' : 'dim');
+  fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), normalizeLevel(level));
 }
 
 function fillSaverQml(e, qml, level) {
@@ -630,6 +641,7 @@ function fillSaverQml(e, qml, level) {
       'http://127.0.0.1:' + port + '/api/stats' + (token ? '?k=' + encodeURIComponent(token) : ''));
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, level === 'bright' ? '1' : '0');
+  qml = qml.replace(/__TVWEB_VEIL__/g, String(SCREENSAVER_VEILS[normalizeLevel(level)]));
   // The hour cycle the clock screen savers draw: the TV's own (lib/clock).
   qml = qml.replace(/__TVWEB_CLOCK12__/g, hour12Fn() ? 'true' : 'false');
   return qml;
@@ -643,7 +655,7 @@ function setScreensaver(mode, level, cb) {
   if (saver.problem) return cb({ ok: false, error: saver.problem });
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
   if (mode !== 'stock' && heldBack()) return cb({ ok: false, error: HELD_ERROR });
-  level = (level === 'bright') ? 'bright' : 'dim';
+  level = normalizeLevel(level);
 
   unmountScreensaver(function () {
     if (mode === 'stock') {
@@ -993,6 +1005,7 @@ module.exports = {
   clearStagedScreensaver: clearStagedScreensaver,
   unmountScreensaver: unmountScreensaver,
   screensaverLevel: screensaverLevel,
+  SCREENSAVER_LEVELS: SCREENSAVER_LEVELS,
   screensaverMode: screensaverMode,
   screensaverList: screensaverList,
   switching: switching,

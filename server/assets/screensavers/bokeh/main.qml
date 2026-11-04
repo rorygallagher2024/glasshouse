@@ -118,4 +118,15 @@ WebOSWindow {
         sizeVariation: Math.round(50 * win.unit)
         velocity: AngleDirection { angle: 0; angleVariation: 180; magnitude: Math.round(4 * win.unit) }
     }
+
+    // The two levels below dim: black over everything, set when the screen
+    // saver is staged. Hidden at 0 so bright and dim draw no extra layer.
+    Rectangle {
+        width: win.width
+        height: win.height
+        z: 1000
+        color: "black"
+        opacity: __TVWEB_VEIL__
+        visible: opacity > 0
+    }
 }

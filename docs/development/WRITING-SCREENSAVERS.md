@@ -116,7 +116,7 @@ Glasshouse has a token set, add `-H 'Authorization: Bearer <token>'`; control
 has to be allowed (`allowControl`). The second call starts the screen saver, or
 closes it if it is showing.
 
-Try it at both **Dim** and **Bright**, and on a TV nobody is watching.
+Try it at **Dim**, **Bright**, **Dimmer** and **Dimmest**, and on a TV nobody is watching.
 
 ## Checking before you copy
 
@@ -183,6 +183,12 @@ The reasons for each, with what was measured, are in the
 A screen saver names in `uses` what Glasshouse should fill in:
 
 * `level` - `__TVWEB_LEVEL__` becomes `0` at **Dim** and `1` at **Bright**.
+
+**Dimmer** and **Dimmest** are `0` too, with `__TVWEB_VEIL__` set to `0.6` and
+`0.85`. It is filled in whether or not `uses` has `level`, and is `0` at Dim and
+Bright. A saver that wants those levels draws a black rectangle over the whole
+window with that opacity, hidden at `0`, as the pigs do; one that doesn't looks
+the same at all three of them.
 
 Glasshouse's own can also ask for `stats`, the address of the TV's readings,
 which carries the dashboard's access token; one added on the TV is not given
