@@ -1330,7 +1330,7 @@ function handleIptvRoute(req, res, u, pathname) {
       var stream = iptvModule.streamUrl(String(qs.pl || ''), String(qs.key || ''));
       if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      return res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, maxConnections: stream.maxConnections }));
+      return res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections }));
     }
   }
   if (req.method === 'POST') {

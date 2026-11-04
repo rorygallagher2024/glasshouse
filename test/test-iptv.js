@@ -199,6 +199,7 @@ step('an added channel gets its logo and play URL, and the guide in the playlist
         var s2 = iptv.streamUrl(m3u, c.key);
         assert.equal(s2.url, 'http://s.test/1.m3u8?token=SECRET-TOKEN-Q');
         assert.equal(s2.format, 'hls');
+        assert.strictEqual(s2.account, false, 'a plain list has no account');
         var nn = iptv.nowNext().guide[m3u + ':' + c.key];
         assert.equal(nn[0].title, 'Leeds v Fulham');
         assert.equal(nn[1].title, 'Final Score');
@@ -461,6 +462,7 @@ step('channels added just before a restart get their play links at once after it
       onChange: function () { changes++; } });
     iptv.start();
     wait(function () { return iptv.streamUrl(xc, c.key); }, function () {
+      assert.strictEqual(iptv.streamUrl(xc, c.key).account, true, 'a provider\'s login is an account');
       iptv.stop();
       iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 0, onChange: function () { changes++; } });
       iptv.start();

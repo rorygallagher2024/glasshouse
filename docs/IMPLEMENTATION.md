@@ -98,6 +98,12 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   the snapshots live (`df`). Its output is not known before it runs, so the
   worker counts every byte it writes and stops with `disk` once only 50 MB
   would be left.
+- **A stream that fails** is opened once more. After a `<video>` error the second
+  try adds `gh=<time>` to the URL, as a provider's CDN may be holding a copy of
+  the playlist the TV cannot read, such as one gzipped for a client with no
+  `Accept-Encoding`. Home sends no Referer, as `localhost` gets a 204 from the
+  same CDN. The message only mentions a limit on streams for a playlist with an
+  account, which `/api/iptv/stream` reports as `account`.
 - **One search at a time**: the lane is taken before the memory check
   answers, so a search asked for meanwhile replaces it rather than starting
   beside it.

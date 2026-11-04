@@ -1283,8 +1283,9 @@ function streamUrl(id, key) {
     if (st.size > 4096) return null;
     var url = String(fs.readFileSync(f, 'utf8')).replace(/\s+$/, '');
     if (!/^https?:\/\//i.test(url)) return null;
+    var account = cache.meta[id] && cache.meta[id].account;
     return { url: url, format: /\.m3u8(\?|$)/i.test(url) ? 'hls' : /\.ts(\?|$)/i.test(url) ? 'ts' : 'unknown',
-      maxConnections: cache.meta[id] && cache.meta[id].account ? cache.meta[id].account.maxConnections : null };
+      account: !!account, maxConnections: account ? account.maxConnections : null };
   } catch (e) { return null; }
 }
 

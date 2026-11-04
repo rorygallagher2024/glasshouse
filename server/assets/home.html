@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<!-- Home runs on localhost, and some providers answer 204 to a stream asked for
+     with that Referer. Sent with none, those channels play. -->
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Glasshouse Home</title>
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
@@ -2313,6 +2316,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var gen = tvStream.gen;
     tvStream.item = it;
     tvStream.retried = false;
+    tvStream.pastCache = false;
+    tvStream.account = false;
     tvStream.onState = onState;
     tvStream.muted = !!muted;
     lease(true);
@@ -2325,6 +2330,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     getJson('/api/iptv/stream?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key), function (r) {
       if (gen !== tvStream.gen) return;
       if (!r || !r.ok || !r.url) return say('failed', r && r.error);
+      tvStream.account = !!r.account;
       var v = $('pvVideo');
       tvStream.format = r.format === 'hls' ? 'HLS' : r.format === 'ts' ? 'MPEG-TS' : '';
       // As shown now: the preview may have become the player while this was asked for.
@@ -2338,8 +2344,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       v.ontimeupdate = function () { if (gen === tvStream.gen) tvStream.waitingAt = 0; };
       v.onwaiting = v.onstalled = function () { if (gen === tvStream.gen && !tvStream.waitingAt) tvStream.waitingAt = Date.now(); };
       v.onloadedmetadata = function () { if (gen === tvStream.gen) say('format'); };
-      v.onerror = function () { if (gen === tvStream.gen) stalled(gen); };
-      v.src = r.url;
+      // An error rather than a stall: some providers' CDNs keep a bad copy of a
+      // playlist (one seen gzipped, for a player that cannot read it), so the second
+      // try asks past it.
+      v.onerror = function () { if (gen === tvStream.gen) { tvStream.pastCache = true; stalled(gen); } };
+      v.src = tvStream.pastCache ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + 'gh=' + Date.now() : r.url;
       v.load();
       var played = v.play();
       if (played && played.then) played.then(null, function () {});
@@ -2514,10 +2523,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     else if (s === 'nopicture' || s === 'failed' || s === 'stopped') {
       // Nothing plays: the stream, its lease and the screen saver's hold go.
       // The channel stays chosen, for OK to try again.
+      // Only a provider's account has a limit on streams: a plain list has no account to blame.
+      var hasAccount = tvStream.account;
       stopTvStream();
       player.failed = true;
       renderPmsg(s === 'stopped' ? t('home.tv.stopped', 'The stream stopped') : t('home.tv.noStream', 'This channel isn’t playing'),
-        t('home.tv.tryAgain', 'OK tries again. If someone else is watching on this account, it may allow only one stream.'));
+        hasAccount ? t('home.tv.tryAgain', 'OK tries again. If someone else is watching on this account, it may allow only one stream.') : t('home.tv.tryAgainPlain', 'OK tries again.'));
       showBand(true);
     }
   }
