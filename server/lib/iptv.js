@@ -35,6 +35,7 @@ var fs = require('fs');
 var path = require('path');
 var crypto = require('crypto');
 var lineupLib = require('./iptv-lineup');
+var memory = require('./iptv-memory');
 var spawn = require('child_process').spawn;
 var execFile = require('child_process').execFile;
 
@@ -53,8 +54,8 @@ var GROUPS_MAX = 384 * 1024;
  */
 var BUDGET = { background: 160 * MB, interactive: 90 * MB, total: 220 * MB };
 var HEAP_MB = { background: 64, interactive: 24 };
-// Below this much MemAvailable a running job is stopped, and none starts.
-var MIN_AVAILABLE = 150 * MB;
+// How long the queue waits after a job was set aside for memory.
+var MEMORY_BACKOFF_MS = 60000;
 /*
  * A job's output is not known before it runs (an M3U writes its entries
  * once, then the index and links from them), so rather than guess it, each
@@ -121,6 +122,12 @@ var queue = [];
 var running = { background: null, interactive: null };
 var waitingReason = null;
 var lastDiskCheck = { at: 0, ok: true };
+// Measures in a row under the memory floor; no job starts before memoryWaitUntil.
+var lowCount = 0;
+var memoryWaitUntil = 0;
+// The TV's memory as last read, and how the last job was planned to run.
+var memoryRead = { available: null, total: null };
+var lastPlan = null;
 
 // ---------------------------------------------------------------- files
 
@@ -172,6 +179,7 @@ function loadState() {
   try { dir = fs.realpathSync(dir); } catch (e) {}
   var c = readSmall(file('config.json'), MB);
   config = { playlists: c && isArray(c.playlists) ? c.playlists.filter(validStored) : [] };
+  if (c && (c.memoryMode === memory.NORMAL || c.memoryMode === memory.ECONOMY)) config.memoryMode = c.memoryMode;
   selection = lineupLib.normalise(readSmall(file('selection.json'), 4 * MB));
   current = {};
   cache = { meta: {}, added: {}, nownext: {}, groups: {} };
@@ -294,6 +302,7 @@ function runWorker(job, lane, cb) {
   function end(err, result) {
     if (w.done) return;
     w.done = true;
+    job.peak = w.rss;
     clearTimeout(w.timer);
     killGroup(w);
     if (running[lane] === w) running[lane] = null;
@@ -305,7 +314,7 @@ function runWorker(job, lane, cb) {
   running[lane] = w;
   launchFn(function () {
     if (w.done) return;
-    var args = ['--max_old_space_size=' + HEAP_MB[lane], workerPath];
+    var args = ['--max_old_space_size=' + (job.heapMb || HEAP_MB[lane]), workerPath];
     var bin = nodePath;
     if (niceBin) { args = ['-n', '19', nodePath].concat(args); bin = niceBin; }
     var child;
@@ -398,7 +407,10 @@ function memAvailable(cb) {
   fs.readFile(path.join(procDir, 'meminfo'), 'utf8', function (err, text) {
     if (err) return cb(null);
     var m = /MemAvailable:\s+(\d+)\s*kB/.exec(text);
-    cb(m ? +m[1] * 1024 : null);
+    var t = /MemTotal:\s+(\d+)\s*kB/.exec(text);
+    memoryRead.available = m ? +m[1] * 1024 : null;
+    if (t) memoryRead.total = +t[1] * 1024;
+    cb(memoryRead.available, memoryRead.total);
   });
 }
 
@@ -413,10 +425,14 @@ function measure() {
   if (!bg && !ia) return stopMonitorIfIdle();
   groupRss(bg ? bg.pids : [], function (bgRss) {
     groupRss(ia ? ia.pids : [], function (iaRss) {
-      memAvailable(function (avail) {
+      memAvailable(function (avail, total) {
         if (bg && !bg.done) bg.rss = Math.max(bg.rss, bgRss);
         if (ia && !ia.done) ia.rss = Math.max(ia.rss, iaRss);
-        var low = avail !== null && avail < MIN_AVAILABLE;
+        var mode = bg && !bg.done ? bg.job.memoryMode : memory.ECONOMY;
+        var state = avail !== null ? memory.pressure(avail, total, lowCount, mode) : { count: 0, stop: false };
+        var low = state.stop;
+        lowCount = low ? 0 : state.count;
+        if (low) memoryWaitUntil = nowMs() + MEMORY_BACKOFF_MS;
         if (ia && !ia.done && iaRss > BUDGET.interactive) {
           console.error('iptv: search used ' + Math.round(iaRss / MB) + ' MB; stopped');
           ia.end({ code: 'memory' });
@@ -610,12 +626,17 @@ function startNext() {
   }
   var job = makeJob(item.type, p);
   if (!job) { queue.shift(); return pump(); }
-  memAvailable(function (avail) {
+  memAvailable(function (avail, total) {
     if (running.background || queue[0] !== item) return pump();
-    if (avail !== null && avail < MIN_AVAILABLE + 60 * MB) {
+    var waited = memoryWaitUntil - nowMs();
+    var how = lastPlan = planFor(item, p, avail, total);
+    if (waited > 0 || !how.start) {
       waitingReason = 'memory';
-      return retryLater(60000);
+      return retryLater(waited > 0 ? waited : 60000);
     }
+    job.memoryMode = how.mode;
+    job.heapMb = how.heapMb;
+    if (how.fallback) console.log('iptv: ' + job.type + ' for ' + p.id + ' runs in economy: ' + Math.round(avail / MB) + ' MB available');
     hasRoom(job, function (ok) {
       if (running.background || queue[0] !== item) return pump();
       if (!ok) {
@@ -628,7 +649,7 @@ function startNext() {
       if (job.type === 'select') {
         selectStarted[p.id] = nowMs();
         // An owner's edit is shown at once: a few new logos now, the rest by the jobs after (tick).
-        job.logoBudget = item.user ? USER_SELECT_LOGOS : 0;
+        job.logoBudget = item.user ? USER_SELECT_LOGOS : how.logos;
         job.user = !!item.user;
       }
       console.log('iptv: ' + job.type + ' for ' + p.id + ' started');
@@ -645,6 +666,19 @@ var retryTimer = null;
 function retryLater(ms) {
   if (retryTimer) return;
   retryTimer = setTimeout(function () { retryTimer = null; pump(); }, ms);
+}
+
+function memoryMode() {
+  return config.memoryMode || memory.defaultMode(memoryRead.total);
+}
+
+// How a queued job should run, from the mode, its last peak and the list's size.
+function planFor(item, p, avail, total) {
+  var meta = cache.meta[p.id];
+  var sized = item.type === 'playlist' || item.type === 'select';
+  return memory.plan({ mode: memoryMode(), total: total, available: avail, user: item.user,
+    peak: p.peak && p.peak[item.type] || 0,
+    channels: sized && meta && meta.channels || 0 });
 }
 
 // A background job's end: published, or the last good one kept.
@@ -671,6 +705,11 @@ function finished(job, err, result, item) {
   if (err) {
     dropCandidate();
     console.error('iptv: ' + job.type + ' for ' + p.id + ' failed: ' + err.code + (err.status ? ' ' + err.status : ''));
+    // A worker that died on the smaller heap has the full one next time.
+    if (job.memoryMode === memory.ECONOMY && (err.code === 'exited' || err.code === 'killed')) {
+      p.peak = p.peak || {};
+      p.peak[job.type] = memory.DIED_PEAK;
+    }
     var kind = job.type === 'playlist' ? 'playlist' : job.type === 'guide' || job.type === 'epg' ? 'guide' : null;
     if (kind) {
       var st = p.state[kind] = p.state[kind] || {};
@@ -713,6 +752,10 @@ function finished(job, err, result, item) {
   }
   var addedBefore = cache.added[p.id];
   current[p.id] = next;
+  if (job.peak) {
+    p.peak = p.peak || {};
+    p.peak[job.type] = job.peak;
+  }
   if (job.type === 'playlist') {
     p.state.playlist = { ok: t, step: 0, error: null };
     p.due.playlist = nextDaily(t);
@@ -741,7 +784,7 @@ function finished(job, err, result, item) {
   refreshCache(p.id);
   // The selection changed while it ran: once more.
   if (job.type === 'select' && job.selGeneration !== selection.generation) enqueue('select', p.id, item.user);
-  console.log('iptv: ' + job.type + ' for ' + p.id + ' published');
+  console.log('iptv: ' + job.type + ' for ' + p.id + ' published' + (job.peak ? ', peak ' + Math.round(job.peak / MB) + ' MB' : ''));
   changed();
 }
 
@@ -793,11 +836,11 @@ function interactive(type, id, opts, cb) {
   };
   slot.cancel = function (code) { slot.end({ code: code || 'cancelled' }); };
   running.interactive = slot;
-  memAvailable(function (avail) {
+  memAvailable(function (avail, total) {
     if (slot.done) return;
     // Handed to the worker, which takes the lane over.
     slot.done = true;
-    if (avail !== null && avail < MIN_AVAILABLE) {
+    if (avail !== null && avail < memory.floor(total, memory.ECONOMY)) {
       // The search goes ahead of the background job, which waits its turn again.
       var bg = running.background;
       if (bg) { bg.requeue = true; bg.end({ code: 'requeue' }); }
@@ -1033,6 +1076,12 @@ function publicPlaylist(p) {
 }
 
 function status() {
+  if (memoryRead.total === null) {
+    try {
+      var total = /MemTotal:\s+(\d+)\s*kB/.exec(fs.readFileSync(path.join(procDir, 'meminfo'), 'utf8'));
+      if (total) memoryRead.total = +total[1] * 1024;
+    } catch (e) {}
+  }
   return {
     ok: true,
     playlists: config.playlists.map(publicPlaylist),
@@ -1043,6 +1092,8 @@ function status() {
     lineupRevision: lineupRevision,
     waiting: waitingReason,
     disk: lastDiskCheck.ok ? null : { free: lastDiskCheck.free, need: lastDiskCheck.need },
+    memory: { mode: memoryMode(), fallback: !!(lastPlan && lastPlan.fallback),
+      available: memoryRead.available, needed: lastPlan ? lastPlan.needed : null },
     revision: revision
   };
 }
@@ -1055,6 +1106,16 @@ function newId() { return 'p' + crypto.randomBytes(4).toString('hex'); }
  */
 function playlistsAction(body, cb) {
   var action = body && body.action;
+  if (action === 'memory-mode') {
+    if (body.mode !== memory.NORMAL && body.mode !== memory.ECONOMY) return cb({ ok: false, error: 'mode' });
+    config.memoryMode = body.mode;
+    saveConfig();
+    lastPlan = null;
+    memoryWaitUntil = 0;
+    changed();
+    pump();
+    return cb({ ok: true });
+  }
   if (action === 'add' || action === 'edit') {
     var p = action === 'edit' ? playlist(body.id) : null;
     if (action === 'edit' && !p) return cb({ ok: false, error: 'no-playlist' });

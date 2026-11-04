@@ -89,14 +89,46 @@ function renderHomeTv() {
   }).join('');
   const waiting = homeTv.waiting === 'disk' ? t('home.tv.waitDisk', 'Waiting for space on the TV: refreshes need {mb} MB free.', { mb: homeTv.disk ? Math.round(homeTv.disk.need / 1048576) : 100 })
     : homeTv.waiting === 'playing' ? t('home.tv.waitPlaying', 'Refreshes wait while Internet TV plays.')
-    : homeTv.waiting === 'memory' ? t('home.tv.waitMemory', 'Waiting for the TV to have memory to spare.') : '';
+    : homeTv.waiting === 'memory' ? homeTvWaitMemory() : '';
   box.innerHTML = `<div class="prot-table">${rows || `<div class="sub">${esc(t('home.tv.none', 'No playlists yet.'))}</div>`}</div>
     ${waiting ? `<div class="pv-note">${esc(waiting)}</div>` : ''}
     ${homeTvForm ? homeTvFormHtml() : `<div class="btns" style="max-width:420px">
       <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('xtream')">${esc(t('home.tv.addXtream', 'Add an Xtream login'))}</button>
       <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('m3u')">${esc(t('home.tv.addM3u', 'Add an M3U link'))}</button></div>`}
     ${homeGuideKeyHtml()}
+    ${homeTvMemoryHtml()}
     ${homeTv.playlists.some(p => p.ready) ? homeTvManageHtml() : ''}`;
+}
+
+function homeTvWaitMemory() {
+  const m = homeTv.memory;
+  if (!m || !m.available || !m.needed) return t('home.tv.waitMemory', 'Waiting for the TV to have memory to spare.');
+  return t('home.tv.waitMemoryOf', 'Waiting for memory on the TV: {available} MB available of the {needed} MB this needs.', {
+    available: Math.round(m.available / 1048576), needed: Math.round(m.needed / 1048576) });
+}
+
+// Normal or economy: how much of the TV's memory Internet TV's jobs ask for.
+function homeTvMemoryHtml() {
+  const m = homeTv.memory;
+  if (!m) return '';
+  const usable = homeWritable() ? '' : 'disabled';
+  const pill = (mode, label) => `<button type="button" class="pill ${m.mode === mode ? 'on' : 'idle'}" ${usable} aria-pressed="${m.mode === mode}"
+    onclick="homeTvMemoryMode('${mode}')">${esc(label)}</button>`;
+  const desc = m.mode === 'economy'
+    ? t('home.tv.memoryEconomyDesc', 'Lists and guides ask only for the memory they need, with fewer logos at a time. For TVs with little memory.')
+    : t('home.tv.memoryNormalDesc', 'Lists and guides use the memory set aside for them. If the TV does not have it, they run as in Economy.');
+  return `<div class="prot-table"><div class="prot-row">
+    <div class="prot-main"><div class="prot-title">${esc(t('home.tv.memoryTitle', 'Memory use'))}</div>
+      <div class="prot-desc">${esc(desc)}</div>
+      ${m.fallback ? `<div class="prot-desc">${esc(t('home.tv.memoryFallback', 'The TV did not have enough memory for Normal, so the last job ran as in Economy.'))}</div>` : ''}</div>
+    <div class="prot-status">${pill('normal', t('home.tv.memoryNormal', 'Normal'))}${pill('economy', t('home.tv.memoryEconomy', 'Economy'))}</div>
+  </div></div>`;
+}
+
+async function homeTvMemoryMode(mode) {
+  try { await homePost('/api/iptv/playlists', { action: 'memory-mode', mode }); } catch (e) { showErr(e.message); }
+  await homeTvLoad();
+  renderHomeTv();
 }
 
 // The way into the channel manager (assets/ui/tvchannels.js), with what the lineup holds.

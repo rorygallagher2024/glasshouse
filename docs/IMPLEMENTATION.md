@@ -92,10 +92,19 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
 - **Memory is measured by the server**, once a second while a worker runs:
   the RSS in `/proc/<pid>/statm` of the worker and the curl it reports
   starting. Over 160 MB for the background lane, 90 MB for search or 220 MB
-  between them, or with the TV's `MemAvailable` under 150 MB, the background
-  job is stopped and queued again; a search over its own share fails. A job
-  does not start below 210 MB available, nor with less than 70 MB free where
-  the snapshots live (`df`). Its output is not known before it runs, so the
+  between them, or with the TV's `MemAvailable` under its floor for three
+  measures in a row or 30 MB under it at once, the background job is stopped and
+  queued again for at least a minute; a search over its own share fails. The
+  floor and what a job needs to start depend on the mode, `lib/iptv-memory.js`.
+  **Normal**, the default from 1.5 GB of memory: a floor of 150 MB and 210 MB to
+  start, with a 64 MB heap; with less available the job runs in economy instead.
+  **Economy**, the default below that: a floor of 12% of the TV's memory, from
+  90 MB to 150 MB, and to start that floor and the job's cost: 125% of what it
+  last used on that playlist, else 30 MB and 0.7 MB per 1,000 channels for reading
+  a list or the lineup, else 60 MB. An edit the owner is waiting on asks at most
+  20 MB over the floor. The heap is 60% of the cost, from 24 MB to 64 MB, and a
+  worker that dies on it has the full one next time; a batch of logos is 40, not
+  300. In either mode a job also needs 70 MB free where the snapshots live (`df`). Its output is not known before it runs, so the
   worker counts every byte it writes and stops with `disk` once only 50 MB
   would be left.
 - **A stream that fails** is opened once more. After a `<video>` error the second

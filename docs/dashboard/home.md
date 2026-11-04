@@ -142,6 +142,11 @@ channels from the TV. A playlist that cannot be read keeps the list from
 before; one whose login is refused is not tried again until you edit or
 refresh it, as providers block an address after repeated failed logins.
 
+**Memory use** chooses how much memory reading lists and guides may take.
+**Normal** uses the memory set aside for it, and runs as Economy when the TV
+does not have that much. **Economy** asks only for what each job needs, with fewer
+logos at a time. A TV with under 1.5 GB of memory starts on Economy.
+
 ### Choosing channels
 
 A subscription can list tens of thousands of channels. The ones the TV
