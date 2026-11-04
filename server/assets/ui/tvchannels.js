@@ -929,7 +929,7 @@ function renderTvmLineup() {
       const state = c.missing ? t('home.tv.missing', 'Not in the playlist any more') : c.pending ? t('home.tvm.pending', 'Being read') :
         c.unplayable ? t('home.tvm.unplayable', 'Can’t be played here') : '';
       return `<li class="tvm-lc${c.fav ? ' fav' : ''}${c.missing || c.unplayable ? ' bad' : ''}" data-id="${esc(c.id)}" data-sel="${esc(c.id)}"
-          ${s.kind === 'pick' && can ? `draggable="true" ondragstart="tvmDragStart(event, ${tvmArg(s.id)}, ${tvmArg(c.id)})" ondragend="tvmDragEnd()"` : ''}>
+          ${can ? `draggable="true" ondragstart="tvmDragStart(event, ${tvmArg(s.id)}, ${tvmArg(c.id)})" ondragend="tvmDragEnd()"` : ''}>
         <span class="tvm-num num">${esc(c.number)}</span>
         <input type="checkbox" class="tvm-cb" aria-label="${esc(t('home.tvm.selectCh', 'Select {name}', { name: c.name }))}">${tvmLogo(c)}
         <span class="tvm-lc-main" ondblclick="tvmStartEdit('name', ${tvmArg(c.id)})">${renaming
@@ -940,8 +940,8 @@ function renderTvmLineup() {
         <span class="tvm-row-acts">
           <button type="button" class="tvm-ib" ${usable} aria-label="${esc(t('home.tvm.rename', 'Rename'))}" title="${esc(t('home.tvm.rename', 'Rename'))}"
             onclick="tvmStartEdit('name', ${tvmArg(c.id)})">${TVM_ICON.pen}</button>
-          ${s.kind === 'pick' ? `<button type="button" class="tvm-ib" ${usable} ${i ? '' : 'disabled'} aria-label="${esc(t('home.tvm.moveUp', 'Move up'))}" title="${esc(t('home.tvm.moveUp', 'Move up'))}" onclick="tvmMovePick(${tvmArg(s.id)}, ${tvmArg(c.id)}, -1)">${TVM_ICON.moveUp}</button>
-            <button type="button" class="tvm-ib" ${usable} ${i < list.length - 1 ? '' : 'disabled'} aria-label="${esc(t('home.tvm.moveDown', 'Move down'))}" title="${esc(t('home.tvm.moveDown', 'Move down'))}" onclick="tvmMovePick(${tvmArg(s.id)}, ${tvmArg(c.id)}, 1)">${TVM_ICON.moveDown}</button>` : ''}
+          <button type="button" class="tvm-ib" ${usable} ${i ? '' : 'disabled'} aria-label="${esc(t('home.tvm.moveUp', 'Move up'))}" title="${esc(t('home.tvm.moveUp', 'Move up'))}" onclick="tvmMovePick(${tvmArg(s.id)}, ${tvmArg(c.id)}, -1)">${TVM_ICON.moveUp}</button>
+            <button type="button" class="tvm-ib" ${usable} ${i < list.length - 1 ? '' : 'disabled'} aria-label="${esc(t('home.tvm.moveDown', 'Move down'))}" title="${esc(t('home.tvm.moveDown', 'Move down'))}" onclick="tvmMovePick(${tvmArg(s.id)}, ${tvmArg(c.id)}, 1)">${TVM_ICON.moveDown}</button>
           <button type="button" class="tvm-ib" ${usable} aria-label="${esc(t('home.tvm.takeOut', 'Take out of the lineup'))}" title="${esc(t('home.tvm.takeOut', 'Take out of the lineup'))}"
             onclick="tvmEdit({ action: 'remove', ids: [${tvmArg(c.id)}] }, false, () => t('home.tvm.said.outOne', 'Took {name} out of the lineup.', { name: ${tvmArg(c.renamed ? c.name : tvmPlain(c.name))} }))">${TVM_ICON.cross}</button>
         </span>
@@ -951,7 +951,7 @@ function renderTvmLineup() {
       </li>`;
     }).join('');
     return `<section class="tvm-sec${s.state !== 'ready' ? ' wait' : ''}" id="tvm-sec-${esc(s.id)}" data-sid="${esc(s.id)}"
-        ${s.kind === 'pick' ? `ondragover="tvmDragOver(event)" ondrop="tvmDrop(event, ${tvmArg(s.id)})"` : ''}>
+        ondragover="tvmDragOver(event)" ondrop="tvmDrop(event, ${tvmArg(s.id)})">
       <div class="tvm-sec-head">
         <div class="tvm-spine">${fromEdit
           ? `<input class="tvm-input tvm-from num" id="tvm-from" type="number" min="1" max="9999" value="${esc(s.from || s.start)}" aria-label="${esc(t('home.tvm.startAt', 'Numbers start at'))}"

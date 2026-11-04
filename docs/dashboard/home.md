@@ -174,8 +174,9 @@ own name shows when you point at one.
   in the lineup shows its number there. **Add** and **Take out** on a row
   act on that channel at once. **Add the whole group** makes the group a
   section of its own that follows the provider: channels it adds later
-  join, and ones it drops go. **Take the 12 out** takes out every channel of
-  the group that is in the lineup.
+  join, and ones it drops go. Drag its channels to order them; a channel the
+  provider adds later goes at the end. **Take the 12 out** takes out every
+  channel of the group that is in the lineup.
 - **On the right**, the lineup in number order: first **Home's row**, the
   starred channels as the row's tiles, in order (click one to find it in
   the lineup; **Arrange the order** lists them to drag or move with the

@@ -97,6 +97,7 @@ function normalise(raw) {
       from: typeof s.from === 'number' && s.from >= 0 && s.from <= 9999 ? Math.floor(s.from) : 0 };
     if (out.kind === 'group') {
       if (typeof s.pl !== 'string' || !PL_RE.test(s.pl) || typeof s.group !== 'string') return;
+      if (isArray(s.order)) out.order = s.order.filter(function (k) { return typeof k === 'string' && KEY_RE.test(k); }).slice(0, LIMITS.lineup);
       out.pl = s.pl;
       out.group = s.group.slice(0, 120);
       out.except = (isArray(s.except) ? s.except : []).filter(function (k) { return typeof k === 'string' && KEY_RE.test(k); }).slice(0, LIMITS.except);
@@ -178,7 +179,16 @@ function applyRematch(sel, pl, moves) {
   function move(c) {
     if (c.pl === pl && moves.hasOwnProperty(c.key) && KEY_RE.test(moves[c.key])) { c.key = moves[c.key]; touched = true; }
   }
-  sel.sections.forEach(function (s) { if (s.kind === 'pick') s.channels.forEach(move); });
+  sel.sections.forEach(function (s) {
+    if (s.kind === 'pick') s.channels.forEach(move);
+    else if (s.pl === pl && s.order) {
+      s.order = s.order.map(function (k) {
+        if (!moves.hasOwnProperty(k) || !KEY_RE.test(moves[k])) return k;
+        touched = true;
+        return moves[k];
+      });
+    }
+  });
   sel.favourites.forEach(move);
   Object.keys(sel.names).forEach(function (id) {
     var r = splitId(id);
@@ -211,6 +221,18 @@ function dropPlaylist(sel, pl) {
  * ctx.added(pl) is the select job's published document for a playlist (its
  * channels, and each group section's keys); ctx.hasPlaylist(pl).
  */
+// A group's channels in the order the owner dragged them to; any others, as a provider's new ones, after.
+function inOwnerOrder(keys, order) {
+  if (!order || !order.length) return keys;
+  var has = {}, placed = {}, out = [];
+  keys.forEach(function (k) { has[k] = true; });
+  order.forEach(function (k) {
+    if (has[k] && !placed[k]) { placed[k] = true; out.push(k); }
+  });
+  keys.forEach(function (k) { if (!placed[k]) out.push(k); });
+  return out;
+}
+
 function compute(sel, ctx) {
   var sections = [], channels = [], byId = {}, next = 1, cut = false;
   var favs = {};
@@ -256,7 +278,7 @@ function compute(sel, ctx) {
         // Taken out since the select job last read the group: out now, not after it runs again.
         var except = {};
         s.except.forEach(function (k) { except[k] = true; });
-        keys.forEach(function (k) { if (!except[k] && push(s, s.pl, k, null)) out.count++; });
+        inOwnerOrder(keys, s.order).forEach(function (k) { if (!except[k] && push(s, s.pl, k, null)) out.count++; });
         if (added.groupsCut && added.groupsCut[s.id]) out.cut = true;
       }
     } else {
@@ -450,9 +472,14 @@ function run(sel, action, body, ctx) {
     return { ok: true, section: s.id };
   }
   if (action === 'order') {
-    // A pick section's channels in a new order; any not named keep theirs, after.
+    // A section's channels in a new order; any not named keep theirs, after.
     s = sectionById(sel, body.section);
-    if (!s || s.kind !== 'pick' || !isArray(body.ids)) return fail('section');
+    if (!s || !isArray(body.ids)) return fail('section');
+    if (s.kind === 'group') {
+      s.order = body.ids.map(splitId).filter(function (r) { return r && r.pl === s.pl; })
+        .map(function (r) { return r.key; }).slice(0, LIMITS.lineup);
+      return { ok: true };
+    }
     var byId = {};
     s.channels.forEach(function (c) { byId[idOf(c)] = c; });
     var out = [];

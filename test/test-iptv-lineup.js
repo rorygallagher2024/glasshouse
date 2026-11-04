@@ -260,4 +260,38 @@ test('a refused edit changes nothing, even part way through', function () {
   assert.equal(JSON.stringify(sel), before);
 });
 
+test('a whole group keeps the order it is dragged to, with new channels after', function () {
+  var pl = 'p12345678', sel = lineup.normalise(null);
+  var groups = { };
+  var ctx = {
+    hasPlaylist: function () { return true; },
+    groupNames: function () { return ['News']; },
+    added: function () {
+      var chans = {};
+      ['a1', 'a2', 'a3', 'a4'].forEach(function (k) { chans[k] = { name: k, group: 'News', number: '' }; });
+      return { channels: chans, groups: groups };
+    }
+  };
+  ctx.lineup = function () { return lineup.compute(sel, ctx); };
+  sel.sections.push({ id: 's00000001', kind: 'group', pl: pl, group: 'News', name: '', from: 0, except: [] });
+  groups.s00000001 = ['a1', 'a2', 'a3'];
+  var keys = function () { return lineup.compute(sel, ctx).channels.map(function (c) { return c.key; }); };
+  assert.deepEqual(keys(), ['a1', 'a2', 'a3']);
+  var r = lineup.apply(sel, { action: 'order', section: 's00000001', ids: [pl + ':a3', pl + ':a1', pl + ':a2'] }, ctx);
+  assert.equal(r.ok, true);
+  // Its channels are the same, so nothing has to be read again.
+  assert.equal(r.composition, false);
+  assert.deepEqual(keys(), ['a3', 'a1', 'a2']);
+  // A channel the provider adds goes at the end, and one it drops goes.
+  groups.s00000001 = ['a1', 'a2', 'a4'];
+  assert.deepEqual(keys(), ['a1', 'a2', 'a4']);
+  groups.s00000001 = ['a1', 'a2', 'a3', 'a4'];
+  assert.deepEqual(keys(), ['a3', 'a1', 'a2', 'a4']);
+  // Kept through a restart, and through a provider changing a channel's key.
+  sel = lineup.normalise(JSON.parse(JSON.stringify(sel)));
+  assert.deepEqual(keys(), ['a3', 'a1', 'a2', 'a4']);
+  lineup.applyRematch(sel, pl, { a3: 'b3' });
+  assert.deepEqual(sel.sections[0].order, ['b3', 'a1', 'a2']);
+});
+
 console.log('ALL test-iptv-lineup.js assertions passed!\n');
