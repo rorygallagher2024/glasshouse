@@ -749,8 +749,10 @@ button.key-hit{background:var(--w10)}
 }
 .ss-level-lbl{font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--w60);
               margin-bottom:8px}
-.ss-level-row .btns{display:flex;gap:10px;max-width:340px}
-.ss-level-row .btns button{flex:1}
+/* Four levels, some in long words: each button takes the width of its label
+   and the row wraps rather than running out of its column. */
+.ss-level-row .btns{display:flex;flex-wrap:wrap;gap:10px;max-width:520px}
+.ss-level-row .btns button{flex:1 1 auto}
 .upd{max-width:760px;margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
