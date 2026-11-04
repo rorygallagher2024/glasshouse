@@ -2928,5 +2928,6 @@
  "tv.tvm.wholeIn": {"text": "Cała grupa jest w układzie kanałów", "from": "The whole group is in the lineup"},
  "tv.tvm.wholeInHint": {"text": "Usuń ją z jej sekcji w układzie kanałów. Kanały poniżej można usuwać pojedynczo.", "from": "Remove it from its section in the lineup. Channels below can be taken out one by one."},
  "home.showTvLogos": {"text": "Logo kanałów", "from": "Channel logos"},
- "home.showTvLogosDesc": {"text": "W telewizji internetowej: logo kanału z listy odtwarzania. Wyłączenie pokazuje inicjały kanału.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."}
+ "home.showTvLogosDesc": {"text": "W telewizji internetowej: logo kanału z listy odtwarzania. Wyłączenie pokazuje inicjały kanału.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."},
+ "home.tv.tryAgainPlain": {"text": "OK ponawia próbę.", "from": "OK tries again."}
 }

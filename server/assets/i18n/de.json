@@ -714,6 +714,7 @@
  "home.tv.stopped": {"text": "Der Stream wurde angehalten", "from": "The stream stopped"},
  "home.tv.noStream": {"text": "Dieser Sender wird nicht wiedergegeben", "from": "This channel isn’t playing"},
  "home.tv.tryAgain": {"text": "OK versucht es erneut. Falls jemand anderes mit diesem Konto schaut, erlaubt es möglicherweise nur einen Stream.", "from": "OK tries again. If someone else is watching on this account, it may allow only one stream."},
+ "home.tv.tryAgainPlain": {"text": "OK versucht es erneut.", "from": "OK tries again."},
  "home.tv.now": {"text": "Jetzt", "from": "Now"},
  "home.tv.span": {"text": "{from} bis {to}", "from": "{from} to {to}"},
  "home.tv.next": {"text": "Danach", "from": "Next"},
