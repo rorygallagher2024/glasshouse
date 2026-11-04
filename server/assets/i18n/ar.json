@@ -2929,5 +2929,12 @@
  "tv.tvm.wholeInHint": {"text": "أزلها من قسمها في قائمة القنوات. يمكن إخراج القنوات أدناه واحدة واحدة.", "from": "Remove it from its section in the lineup. Channels below can be taken out one by one."},
  "home.showTvLogos": {"text": "شعارات القنوات", "from": "Channel logos"},
  "home.showTvLogosDesc": {"text": "في تلفزيون الإنترنت: شعار قائمة التشغيل لكل قناة. عند الإيقاف تظهر الأحرف الأولى من اسم القناة.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."},
- "home.tv.tryAgainPlain": {"text": "اضغط OK للمحاولة مجدداً.", "from": "OK tries again."}
+ "home.tv.tryAgainPlain": {"text": "اضغط OK للمحاولة مجدداً.", "from": "OK tries again."},
+ "home.tv.memoryTitle": {"text": "استخدام الذاكرة", "from": "Memory use"},
+ "home.tv.memoryNormal": {"text": "عادي", "from": "Normal"},
+ "home.tv.memoryEconomy": {"text": "اقتصادي", "from": "Economy"},
+ "home.tv.memoryNormalDesc": {"text": "تستخدم القوائم وأدلة البرامج الذاكرة المخصصة لها. إذا لم تتوفر في التلفزيون، فإنها تعمل كما في الوضع الاقتصادي.", "from": "Lists and guides use the memory set aside for them. If the TV does not have it, they run as in Economy."},
+ "home.tv.memoryEconomyDesc": {"text": "تطلب القوائم وأدلة البرامج الذاكرة التي تحتاجها فقط، مع عدد أقل من الشعارات في كل مرة. للتلفزيونات ذات الذاكرة المحدودة.", "from": "Lists and guides ask only for the memory they need, with fewer logos at a time. For TVs with little memory."},
+ "home.tv.memoryFallback": {"text": "لم تكن لدى التلفزيون ذاكرة كافية للوضع العادي، لذا عملت المهمة الأخيرة كما في الوضع الاقتصادي.", "from": "The TV did not have enough memory for Normal, so the last job ran as in Economy."},
+ "home.tv.waitMemoryOf": {"text": "في انتظار الذاكرة على التلفزيون: {available} ميغابايت متاحة من أصل {needed} ميغابايت مطلوبة.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."}
 }

@@ -2929,5 +2929,12 @@
  "tv.tvm.wholeInHint": {"text": "Usuń ją z jej sekcji w układzie kanałów. Kanały poniżej można usuwać pojedynczo.", "from": "Remove it from its section in the lineup. Channels below can be taken out one by one."},
  "home.showTvLogos": {"text": "Logo kanałów", "from": "Channel logos"},
  "home.showTvLogosDesc": {"text": "W telewizji internetowej: logo kanału z listy odtwarzania. Wyłączenie pokazuje inicjały kanału.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."},
- "home.tv.tryAgainPlain": {"text": "OK ponawia próbę.", "from": "OK tries again."}
+ "home.tv.tryAgainPlain": {"text": "OK ponawia próbę.", "from": "OK tries again."},
+ "home.tv.memoryTitle": {"text": "Użycie pamięci", "from": "Memory use"},
+ "home.tv.memoryNormal": {"text": "Normalny", "from": "Normal"},
+ "home.tv.memoryEconomy": {"text": "Oszczędny", "from": "Economy"},
+ "home.tv.memoryNormalDesc": {"text": "Listy i programy TV korzystają z zarezerwowanej dla nich pamięci. Jeśli telewizor jej nie ma, działają jak w trybie Oszczędnym.", "from": "Lists and guides use the memory set aside for them. If the TV does not have it, they run as in Economy."},
+ "home.tv.memoryEconomyDesc": {"text": "Listy i programy TV proszą tylko o potrzebną im pamięć, pobierając mniej logo naraz. Dla telewizorów z małą ilością pamięci.", "from": "Lists and guides ask only for the memory they need, with fewer logos at a time. For TVs with little memory."},
+ "home.tv.memoryFallback": {"text": "Telewizor nie miał dość pamięci na tryb Normalny, więc ostatnie zadanie działało jak w trybie Oszczędnym.", "from": "The TV did not have enough memory for Normal, so the last job ran as in Economy."},
+ "home.tv.waitMemoryOf": {"text": "Oczekiwanie na pamięć telewizora: dostępne {available} MB z potrzebnych {needed} MB.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."}
 }
