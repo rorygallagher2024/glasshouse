@@ -39,6 +39,7 @@ var memory = require('./iptv-memory');
 var spawn = require('child_process').spawn;
 var execFile = require('child_process').execFile;
 
+var KB = 1024;
 var MB = 1024 * 1024;
 var MINUTE = 60000;
 var HOUR = 60 * MINUTE;
@@ -408,8 +409,8 @@ function memAvailable(cb) {
     if (err) return cb(null);
     var m = /MemAvailable:\s+(\d+)\s*kB/.exec(text);
     var t = /MemTotal:\s+(\d+)\s*kB/.exec(text);
-    memoryRead.available = m ? +m[1] * 1024 : null;
-    if (t) memoryRead.total = +t[1] * 1024;
+    memoryRead.available = m ? +m[1] * KB : null;
+    if (t) memoryRead.total = +t[1] * KB;
     cb(memoryRead.available, memoryRead.total);
   });
 }
@@ -632,7 +633,7 @@ function startNext() {
     var how = lastPlan = planFor(item, p, avail, total);
     if (waited > 0 || !how.start) {
       waitingReason = 'memory';
-      return retryLater(waited > 0 ? waited : 60000);
+      return retryLater(waited > 0 ? waited : MEMORY_BACKOFF_MS);
     }
     job.memoryMode = how.mode;
     job.heapMb = how.heapMb;
@@ -1079,7 +1080,7 @@ function status() {
   if (memoryRead.total === null) {
     try {
       var total = /MemTotal:\s+(\d+)\s*kB/.exec(fs.readFileSync(path.join(procDir, 'meminfo'), 'utf8'));
-      if (total) memoryRead.total = +total[1] * 1024;
+      if (total) memoryRead.total = +total[1] * KB;
     } catch (e) {}
   }
   return {

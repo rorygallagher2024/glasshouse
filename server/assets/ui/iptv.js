@@ -9,6 +9,7 @@ let homeTv = null;          // /api/iptv/playlists
 let homeTvForm = null;      // { kind, id } while the add or edit form is open
 let homeTvArmed = null;     // playlist id waiting for Remove's second press
 let homeTvPoll = null;
+const HOME_TV_BYTES_PER_MB = 1024 * 1024;
 
 let homeGuideKey = null;   // the remote's Guide key as lib/remotekeys has it, with the choices
 async function homeTvLoad() {
@@ -104,7 +105,7 @@ function homeTvWaitMemory() {
   const m = homeTv.memory;
   if (!m || !m.available || !m.needed) return t('home.tv.waitMemory', 'Waiting for the TV to have memory to spare.');
   return t('home.tv.waitMemoryOf', 'Waiting for memory on the TV: {available} MB available of the {needed} MB this needs.', {
-    available: Math.round(m.available / 1048576), needed: Math.round(m.needed / 1048576) });
+    available: Math.round(m.available / HOME_TV_BYTES_PER_MB), needed: Math.round(m.needed / HOME_TV_BYTES_PER_MB) });
 }
 
 // Normal or economy: how much of the TV's memory Internet TV's jobs ask for.
