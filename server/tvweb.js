@@ -1051,20 +1051,33 @@ if (!CLI_MODE) {
   // tvApp()-installatiemechanisme — hetzelfde pad dat Glasshouse Home
   // (assets/home-app) ook gebruikt. Pas als dat gelukt is, start de
   // heartbeat die de app warm houdt (geen laadscherm meer na een pauze).
-  var notifyAppDir = path.join(__dirname, 'assets', 'notify-app');
-  notify.installAppinfo(notifyAppDir, telemetry.detectWebosVersion(), function (err) {
-    if (err) {
-      console.error('notify: could not prepare appinfo.json: ' + err.message);
-      return;
-    }
-    tvApp('install', function (r) {
-      if (r && r.ok) {
-        notify.startHeartbeat();
-      } else {
-        console.error('notify: could not install the overlay app: ' + (r && r.error));
+  //
+  // BELANGRIJK: dit draait, net als preload.reapply()/remoteKeys.ensure()/
+  // lgSettings.reapply() hierboven, bewust pas na een setTimeout(...,60000)
+  // — niet synchroon mee met de rest van de opstartvolgorde. Zonder die
+  // vertraging crashte de server bij het opstarten (bevestigd op een echte
+  // TV): de installatie triggert zelf meerdere luna-send-aanroepen via
+  // install-app.sh, en dat viel binnen het kwetsbare eerste-opstart-venster
+  // dat children.js's eigen throttling (STARTUP_MS/STARTUP_GAP_MS) juist
+  // probeert te beschermen tegen een bekende Node/libuv-fork-lock op
+  // oudere webOS-versies.
+  var notifyTimer = setTimeout(function () {
+    var notifyAppDir = path.join(__dirname, 'assets', 'notify-app');
+    notify.installAppinfo(notifyAppDir, telemetry.detectWebosVersion(), function (err) {
+      if (err) {
+        console.error('notify: could not prepare appinfo.json: ' + err.message);
+        return;
       }
-    }, 'notify-app');
-  });
+      tvApp('install', function (r) {
+        if (r && r.ok) {
+          notify.startHeartbeat();
+        } else {
+          console.error('notify: could not install the overlay app: ' + (r && r.error));
+        }
+      }, 'notify-app');
+    });
+  }, 60000);
+  if (notifyTimer.unref) notifyTimer.unref();
 }
 
 if (CLI_MODE) {
@@ -1741,7 +1754,19 @@ function setupHomeAssistant() {
     }
 
     if (action === 'toast') {
-      doControl('toast', val, function() {});
+      // BELANGRIJK: val is hier altijd een kale string. Een rijke
+      // notificatie (met image/seconds/position) komt als JSON-tekst
+      // binnen — die moet eerst geparsed worden, anders ziet controls.js's
+      // 'toast'-case nooit een object en valt alles terug op de native
+      // LG-toast (bevestigd op een echte TV: zonder deze parse verscheen
+      // de notificatie altijd via het ingebouwde systeem, nooit via onze
+      // overlay). Platte, niet-JSON tekst (het bestaande gebruik via
+      // text.screen_notification) blijft gewoon als string doorgaan.
+      var toastValue = val;
+      if (val && val.charAt(0) === '{') {
+        try { toastValue = JSON.parse(val); } catch (e) { toastValue = val; }
+      }
+      doControl('toast', toastValue, function() {});
       return;
     }
 
