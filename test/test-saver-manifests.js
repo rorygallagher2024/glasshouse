@@ -183,6 +183,7 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   assert.strictEqual(pigs.available, true, pigs.note);
   assert.strictEqual(pigs.builtin, false);
   assert.strictEqual(pigs.label, 'Pigs - Three Different Ones');
+  assert.strictEqual(pigs.author, 'Michael Nestrud');
   console.log('  ✓ the pigs Glasshouse installs as an example read as an added screen saver');
 })();
 

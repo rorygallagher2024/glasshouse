@@ -230,7 +230,7 @@ home_open_at_boot() {
     return 0
   fi
   target_home=com.webos.app.home
-  [ "$webos_major" = "4" ] && target_home=com.tvweb.home
+  case "$webos_major" in 3|4) target_home=com.tvweb.home ;; esac
   luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$target_home\"}" 2>/dev/null |
     grep -q '"returnValue": *true' || return 0
   # The server watches for the view from its start and opens LG's Home if it
@@ -261,7 +261,7 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): sam did not take Glasshouse Home - LG's Home kept"
   fi
-elif [ "$webos_major" = "4" ] && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
+elif { [ "$webos_major" = "3" ] || [ "$webos_major" = "4" ]; } && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
   home_open_at_boot
 fi
 

@@ -1835,6 +1835,11 @@ it found).
   300 s. It is started the same way (`Type=dynamic`,
   `/usr/palm/services/com.webos.iotframework/com.webos.iotframework`). The
   C2 on webOS 9.2.2 does not have it.
+- **An hourly sweep is left.** On an OLED65C34LA (webOS 11.2.0, firmware
+  43.21.71), with `iotframework` held down by a bind-mounted stub, the
+  5-minute sweeps stopped and a full one came an hour later, then none for
+  15 minutes. What asks for it, or whether `iconnectivity` keeps a timer of its
+  own, was not found. Holding `iconnectivity` down stops it as well.
 
 ## Boot and app state (webOS 9.2.2, C2)
 

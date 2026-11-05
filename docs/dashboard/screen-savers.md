@@ -1,26 +1,110 @@
 # Screen savers
 
-The **Screensaver** tab, `/?tab=screensaver`, provides fifteen alternatives to LG's default, and any added on the TV:
+The **Screensaver** tab, `/?tab=screensaver`, provides fifteen alternatives to LG's default screen saver, alongside support for screen savers added on the TV or bundled with homebrew applications.
 
-* Clock
-* Clock with date, the clock with seconds and the weekday and date beneath it
-* Starfield
-* Fireworks
-* Bokeh, soft circles of light drifting in and out
-* Filament, swarms of light circling and trailing across black
-* Currents, streams of light flowing along a slowly changing wind
-* Veils, translucent ribbons of light rippling across black
-* Incense, thin streams of colored smoke rising and curling
-* Murmuration, flocks of light swooping after their leaders
-* Vortex, whirlwinds of light spiraling up swaying funnels
-* Neo, columns of falling glyphs whose colors turn every minute
-* Harmonograph, pendulum ribbons of light weaving and fading on black
-* Tesseract, a four-dimensional cube turning through the fourth dimension, in fine lines of light that dim and turn violet with depth
-* Panel vitals, showing the TV's own panel hours and refresher countdown
+![Screensaver tab: screen saver list with Starfield selected, Brightness toggles, Start screen saver, and Poweroff after](../screenshots/screensaver.png)
 
 Each mode offers four brightness levels: Bright, Dim, Dimmer and Dimmest. Dimmer and Dimmest draw the dim picture under a black layer of 60% and 85%, so they are darker than Dim and kinder to the panel. In the TV app, OK steps through the levels. The level is kept for the next screen saver chosen. Bright and Dim are as before, and a level an older version saved is still read. Savers added by hand without the layer look the same at Dimmer and Dimmest as at Dim. And visual elements continuously drift across the screen to prevent OLED burn-in or image retention. Both clocks and the time on Panel vitals draw 12-hour or 24-hour time as the TV's own time setting has it, and pick up a change the next time the screen saver starts.
 
 A firmware update restores the LG default.
+
+## Controls and settings
+
+* **Brightness level:** Toggle between **Dim** and **Bright** for any screen saver mode.
+* **Start screen saver:** Immediately requests the screen saver on the TV. On certain OLED TVs, including a G3 on webOS 9.2.2, LG's panel care holds the idle screen saver back for 30 minutes after key presses or app changes while dimming static areas itself. Glasshouse lifts that hold when an idle screen saver is requested or the button is pressed, and restores it once dismissed. An app that still refuses it, such as RetroArch played with a gamepad, is keeping the screen saver away itself, and is left alone until another app is in front or the TV turns off. Where the TV still refuses, as it does with LG's own Screen Saver setting off, which some LCD TVs have by default, the dashboard opens the screen saver itself, unless something is playing full screen or playback cannot be checked. Pressing any remote key, including Home or the coloured buttons, dismisses the screen saver.
+* **Poweroff after:** Automatically switches the TV into standby once the screen saver has been active for a configured duration, from 1 to 1440 minutes (blank or 0 disables it). The timer resets if the screen saver is dismissed. This requires power actions to be enabled (`allowPower`) and is stored in `config.json` as `screensaverPowerOffMinutes`.
+
+## Built-in screen savers
+
+### Clock
+
+![Clock screen saver: digital clock on pure black](../screenshots/screensaver-clock.png)
+
+A digital clock showing hours and minutes against pure black. The readout moves to a new position across the screen every minute to prevent image retention, using the TV's 12-hour or 24-hour setting.
+
+### Clock with date
+
+![Clock with date screen saver: digital clock with seconds, weekday and date](../screenshots/screensaver-clock-date.png)
+
+A digital clock displaying seconds alongside the current weekday and date beneath it. Like Clock, it shifts position every minute to protect the panel.
+
+### Starfield
+
+![Starfield screen saver: drifting cosmic starscape with meteors](../screenshots/screensaver-starfield.png)
+
+A cosmic starscape of drifting multi-depth stars with occasional meteors leaving fading ion trails across deep space.
+
+### Fireworks
+
+![Fireworks screen saver: bursts of colour on black](../screenshots/screensaver-fireworks.png)
+
+Bursts of colour erupting on black every few seconds, launching with bright trails before crackling and showering expanding particle bursts.
+
+### Bokeh
+
+![Bokeh screen saver: soft circles of light drifting in and out](../screenshots/screensaver-bokeh.png)
+
+Soft, out-of-focus orbs of light drifting in and out of view across pure black.
+
+### Filament
+
+![Filament screen saver: swarms of light circling and trailing across black](../screenshots/screensaver-filament.png)
+
+Swarms of luminescent filaments circling and weaving across black, leaving glowing curvilinear trails that slowly cycle in colour.
+
+### Currents
+
+![Currents screen saver: streams of light flowing along a slowly changing wind](../screenshots/screensaver-currents.png)
+
+Streams of light flowing dynamically along an organic, slowly shifting wind field across the dark screen.
+
+### Veils
+
+![Veils screen saver: translucent ribbons of light rippling across black](../screenshots/screensaver-veils.png)
+
+Translucent ribbons of undulating light rippling smoothly across black like curtains of aurora.
+
+### Incense
+
+![Incense screen saver: thin streams of colored smoke rising and curling](../screenshots/screensaver-incense.png)
+
+Thin, delicate plumes of tinted smoke rising and curling upward in drifting eddies.
+
+### Murmuration
+
+![Murmuration screen saver: flocks of light swooping after their leaders](../screenshots/screensaver-murmuration.png)
+
+Flocks of light points sweeping, banking, and swooping across the display in coordinated flocking dynamics behind leader paths.
+
+### Vortex
+
+![Vortex screen saver: whirlwinds of light spiraling up swaying funnels](../screenshots/screensaver-vortex.png)
+
+Whirlwinds of light spiraling up swaying funnels on black.
+
+### Neo
+
+![Neo screen saver: columns of falling glyphs](../screenshots/screensaver-neo.png)
+
+Cascading columns of falling cryptographic glyphs, their palette turning through the colour spectrum every minute.
+
+### Harmonograph
+
+![Harmonograph screen saver: pendulum ribbons of light weaving on black](../screenshots/screensaver-harmonograph.png)
+
+Geometric pendulum ribbons of light weaving intricate Lissajous curves and fading across black as new harmonic paths are drawn.
+
+### Tesseract
+
+![Tesseract screen saver: a four-dimensional cube turning through the fourth dimension](../screenshots/screensaver-tesseract.png)
+
+A four-dimensional hypercube turning through the fourth dimension, rendered in fine lines of light that shift intensity and violet hue with depth.
+
+### Panel vitals
+
+![Panel vitals screen saver: OLED hours, refresher countdown, silicon and network readings](../screenshots/screensaver-vitals.png)
+
+A live panel diagnostics dashboard on black, showing the TV's cumulative panel hours, short clean and refresher countdowns, processor silicon, Wi-Fi link quality, and remote battery. The card cluster periodically moves to protect the panel.
 
 ## Adding your own
 
@@ -34,6 +118,12 @@ One with something wrong in its folder, or whose QML would only show black, is l
 
 Glasshouse installs one there itself, as an example: **Pigs - Three Different Ones**, a pink pig, a saddleback and a razorback, big and small, flapping across a pixel-art night over Chicago. An update puts it back if it has been removed.
 
+### Pigs - Three Different Ones
+
+![Pigs screen saver: pink pig, saddleback and razorback flapping across Chicago night](../screenshots/screensaver-pigs.png)
+
+*Bundled example screen saver installed into `/var/lib/tvweb/screensavers/pigs`.*
+
 ## Screen savers from homebrew apps
 
 Homebrew Channel apps that come with a screen saver are listed too, after the others, named after the app and marked *Installed app*: Custom Screensaver, the two Aerial screen savers and Idlegif. Choose one here like any other, on any webOS Glasshouse's screen savers work on, and it stays chosen after the TV restarts. Its settings, such as which Aerial videos play, stay in its own app. With several installed, each is listed and one is in use at a time; two apps of the same name, as both Aerial ones are, show who made each.
@@ -41,15 +131,3 @@ Homebrew Channel apps that come with a screen saver are listed too, after the ot
 These apps can also put their screen saver in place themselves, with their own Apply and Autostart. That only works on webOS 9 and earlier, where LG's screen saver is the kind they change, and anything chosen here takes it off again, so choosing it here is the dependable way. If the app is uninstalled while its screen saver is in use, LG's comes back.
 
 On webOS 10 and later they are experimental: the tab shows a switch above the list that turns them on, after a warning, and until then only LG's default can be chosen. See [Experimental features](../experimental.md) for why.
-
-**Start screen saver** asks the TV for its screen saver. On some OLED TVs, a G3 on webOS 9.2.2 among them, LG's panel care holds the screen saver back for 30 minutes after every key press and change of app, while it dims the static parts of the picture itself, so the TV's 3-minute idle screen saver never came. Glasshouse lifts that hold when the TV asks for an idle screen saver or the button is pressed, and puts it back when the screen saver closes, so the screen saver comes after the idle time set in LG's settings and the dimming carries on while the TV is watched. An app that still refuses it, such as RetroArch played with a gamepad, is keeping the screen saver away itself, and is left alone until another app is in front or the TV turns off. Where the TV still refuses, the dashboard opens the screen saver itself, unless something is playing full screen or playback cannot be checked. Any key on the remote, including Home and the coloured buttons, or a second press of the button closes it. A failed close leaves it tracked so another press can retry. The TV does not know about a screen saver opened this way: its power state stays On, in the dashboards and in Home Assistant, and watch time counts the app beneath it. The Screen Saver sensor does show it.
-
-**Poweroff after** puts the TV in standby once a screen saver has been on for the number of minutes typed, from 1 to 1440; blank is off, the default. The count starts when the TV reports its power state as Screen Saver and starts again whenever it leaves it, so any key that closes the screen saver resets it. It applies to LG's screen saver as well as these, and needs power actions allowed (`allowPower`). A screen saver the dashboard opened itself, as above, leaves the power state at On and is not counted. The TV app steps through Off, 3, 5, 10, 20 and 30 minutes; the setting is kept in `config.json` as `screensaverPowerOffMinutes`.
-
-![Screensaver tab: LG default, Clock, Starfield, Fireworks, Bokeh and Panel vitals, with brightness and a start button beside them](../screenshots/screensaver.png)
-
-*Built-in screen saver choices, including the panel-vitals display.*
-
-![Starfield screen saver on OLED: drifting stars and meteor with ion trail](../screenshots/screensaver-starfield.png)
-
-*The Starfield screen saver with continuously moving elements.*

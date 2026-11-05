@@ -1208,7 +1208,7 @@ step('webOS 11 is offered, experimental; webOS 12 and later only with allowExper
   });
 });
 
-step('webOS 5 and 6 are offered, experimental, with each switch closing the apps that are open', function (done) {
+step('webOS 5 and 6 are offered, experimental, with each switch closing the apps that are open; webOS 3 standalone only with allowExperimentalHome', function (done) {
   start(null, { webosVersion: '5.5.0' });
   home.status(function (st5) {
     assert.strictEqual(st5.supported.ok, true, 'no setting needed on a CX');
@@ -1230,7 +1230,16 @@ step('webOS 5 and 6 are offered, experimental, with each switch closing the apps
             assert.strictEqual(st4.supported.experimental, true);
             assert.strictEqual(st4.supported.standalone, true);
             assert.strictEqual(st4.supported.restartsApps, undefined);
-            done();
+            start(null, { webosVersion: '3.9.3' });
+            home.status(function (st3) {
+              assert.strictEqual(st3.supported.ok, false, 'untried on webOS 3, so not offered by default');
+              start(null, { webosVersion: '3.9.3', allowExperimental: function () { return true; } });
+              home.status(function (st3on) {
+                assert.strictEqual(st3on.supported.ok, true);
+                assert.strictEqual(st3on.supported.standalone, true, 'run as on webOS 4');
+                done();
+              });
+            });
           });
         });
       });
