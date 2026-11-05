@@ -411,6 +411,78 @@ muted `<video>` with one `<source>`:
 How a busy tuner (a recording) or an encrypted channel shows to the page was
 not tried.
 
+## IPTV streams in a web page (G3, webOS 9.2.2)
+
+Measured on 31 October 2026 on an OLED55G36LA from Glasshouse Home's page,
+with an Xtream account that allows one stream (53,463 live channels behind
+Cloudflare) and a fake provider on the same network (`scripts/fake-iptv.js`):
+
+- A plain `<video>` with `src` set to the account's `live/<user>/<pass>/<id>.m3u8`
+  played it natively: a 302 to a tokenised edge URL, then HLS version 3 with
+  10-second MPEG-TS segments, 1280x720. No MSE player was needed. Desktop
+  Chrome plays the same streams natively too. The provider sent
+  `Access-Control-Allow-Origin: *`, so an MSE player in the page would also
+  have been allowed to read them.
+- Unlike an HDMI app's picture, the stream's picture is included in a
+  `com.webos.service.capture/executeOneShot` `DISPLAY` capture, as an input
+  or channel playing in a page is.
+- The account's `active_cons` (`player_api.php` with no action) read 1 of 1
+  while a channel played, and still 1 of 1 after six channel changes in about
+  five seconds, each releasing the video (`pause()`, `src` removed, `load()`)
+  before the next channel's URL was set.
+- After playing and changing channels, neither `/var/log` (messages,
+  `legacy-log`, `dbg-log` and the rest), `/tmp`'s logs nor the journal held
+  the provider's host, the user name or the password.
+- The provider answered Python's default `User-Agent` with 403 and curl's,
+  and `Glasshouse/<version>`, normally.
+- Its `get_short_epg` left out the programme on now as it neared its end: at
+  19:49 the first listed for one channel started at 20:00, where at 19:07
+  it had listed 19:00 to 20:00. It also listed some programmes twice, with and
+  without "Live:" in front.
+- While a stream plays full screen, videooutput's `MAIN` sink reads
+  `connectedSource: VDEC` for `com.webos.app.home` with `contentType: movie`
+  and the stream's width, and the media state Glasshouse reads (as for an
+  app's video) is `playing`, full screen.
+- The TV's idle screen saver came on 13 minutes after the last key, after
+  the player had been left showing a stream: panel care (eplmanager) refused
+  it and Glasshouse's idle screen saver handling (`lib/idlesaver.js`) lifted
+  the hold and asked again, which it does only when the media state is not
+  `playing`. Whether the stream had stopped by then was not seen.
+- `tvwebctl watch` killed the worker process reading a 200 MB guide three
+  seconds into it, taking a server child still running node for one stuck
+  between fork and exec (`child 14217 stuck before exec` in
+  `tvweb.restarts`).
+
+- Leaving Home for an input while a channel previewed, the TV's one
+  established connection to the stream's edge server was closed within
+  3 seconds (only `TIME_WAIT` remained). The panel's `active_cons` took
+  about 10 seconds to count a new stream and kept counting it for about a
+  minute after it closed.
+- The remote's Guide button does not reach a web page: sent as evdev 362
+  (`IR_KEY_GUIDE` 370 in `/usr/share/X11/xkb/keycodes/lg`, less xkb's 8)
+  with Glasshouse Home in front, webOS opened LG's own broadcast guide.
+  With Glasshouse's key filter set to launch `com.webos.app.home` with
+  `{ "glasshouse": "guide" }` beside the Home key's own parameters, the
+  page got them in `PalmSystem.launchParams` at its `webOSRelaunch`, from
+  Home and from HDMI 4 alike. Info
+  (evdev 358, `IR_KEY_INFO` 366) reaches the page as keyCode 457, and CH+
+  (evdev 402) as 33.
+- Left full screen from 19:51, a stream played on with no screen saver at
+  20:26, 35 minutes after the last key, the media state reading `playing`
+  throughout.
+
+webOS 7 and 10 were not tried.
+
+On 2 November 2026, moving a playing IPTV preview's element from its tile
+back beside the clock for full-screen playback left the G3's picture black.
+The video still reported `paused: false` and `readyState: 4`, but its time
+returned to zero and `com.webos.media/getForegroundAppInfo` no longer listed
+its media session. Calling `play()` again did not recover that session.
+Keeping the element attached and positioning it over the tile preserved the
+same media ID through full screen and Back, with playback time advancing
+from 43.127 to 50.151 seconds. Internet TV uses that placement; the guide
+returns the picture beside the clock without moving its parent.
+
 ## Broadcast HDR and preview metadata (G3, webOS 9.2.2)
 
 Read on 29 October 2026 from the office OLED55G36LA, during an existing
@@ -1680,6 +1752,12 @@ and others' work on webOS 10
 - The B8 answers `com.webos.service.acb/getForegroundAppInfo` with an `acbs`
   pipeline list, each with `playStateNow` and `playerType` (`external input`
   for HDMI). The C2 has no such service ("Service does not exist").
+- A C1 (webOS 6.4.0) has no acb either. An app playing through Web Audio
+  (Afterglow, a music visualiser built as a web app) gets an empty
+  `foregroundAppInfo` from `com.webos.media`, so its state can't be read.
+  KEY_PLAYPAUSE (164) injected on the remote's device never reached it as a
+  key event; KEY_PAUSE and KEY_PLAY arrived as keyCode 19 and 415, and
+  paused and resumed it.
 - On the C2, `com.webos.media/getForegroundAppInfo` gives
   `foregroundAppInfo: [{ appId, playState, type: "media", mediaId, windowId }]`:
   YouTube read `playing`, then `paused` after the remote's Pause key, and the
@@ -1736,7 +1814,8 @@ it found).
   `iconnectivity` sends them to the DNS relay in `/etc/resolv.conf`
   (`connmand`, at `127.0.0.1` and `::1`), one socket per query, without the
   name service lookup that reads `/etc/hosts`, and `connmand` forwards them.
-  Answer device scans on the TV (#1146) was built on the opposite reading.
+  Answer device scans on the TV (#1146) was built on the opposite reading,
+  and was taken out.
 - **The firewall cannot pick them out.** The C2's kernel offers only the
   `icmp`, `udp`, `tcp` and similar matches, no `string`, `u32`, `owner` or
   `bpf`, so a rule cannot tell a PTR query from any other DNS query, and
@@ -1747,6 +1826,24 @@ it found).
   and logs nothing, even with the `ICS` log contexts at `debug`; its strings name IP discovery
   methods (SubnetScan, Reverse DNS, mDNS, UPnP) and a device polling
   interval, with no luna method found that switches one off.
+- **A stub holds it down.** `ls-hubd` starts it from
+  `/usr/share/dbus-1/system-services/com.webos.service.ics.service`
+  (`Type=dynamic`, `Exec=/usr/sbin/iconnectivity`) at each call, so killing
+  it lasts until the next one. With a script that exits at once bind-mounted
+  over `/usr/sbin/iconnectivity`, calls got no reply and nothing ran; the
+  mount reached the app jails' copies too, and one `umount` took them all
+  away, after which the next call started it again. `ps` and `pidof` do not
+  list it: its executable link in `/proc` does.
+- **What asks on webOS 11.** On an OLED65C2PUA (webOS 11.2.0, firmware
+  43.21.74), `com.webos.iotframework` called `/iot/getAllIoTDevices` every
+  300 s. It is started the same way (`Type=dynamic`,
+  `/usr/palm/services/com.webos.iotframework/com.webos.iotframework`). The
+  C2 on webOS 9.2.2 does not have it.
+- **An hourly sweep is left.** On an OLED65C34LA (webOS 11.2.0, firmware
+  43.21.71), with `iotframework` held down by a bind-mounted stub, the
+  5-minute sweeps stopped and a full one came an hour later, then none for
+  15 minutes. What asks for it, or whether `iconnectivity` keeps a timer of its
+  own, was not found. Holding `iconnectivity` down stops it as well.
 
 ## Boot and app state (webOS 9.2.2, C2)
 
@@ -1876,7 +1973,9 @@ tvpower, which from Active refuses ("The current sub state must be 'screen
 off'"), so the remote did not close it. Start screensaver launches the app
 where tvpower drops the request, except over full-screen playback, tracks it
 through sam's `running` list, and closes it on any key the remote-button
-worker reads from `/dev/input`.
+worker reads from `/dev/input`. On an LCD TV (or when Screen Saver is disabled
+in LG's settings), tvpower refuses `turnOnScreenSaver` with `screenSaverEnabled value is off`;
+falling back to launching the screensaver app directly allows the manual trigger to start it.
 
 ## Panel care holding the screen saver back (webOS 9.2.2, G3)
 

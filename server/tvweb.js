@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.138.0';
+var TVWEB_VERSION = '0.139.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -43,6 +43,7 @@ var MiniMQTT = require('./lib/mqtt');
 var ha = require('./lib/ha');
 var updater = require('./lib/updater');
 var fetchLib = require('./lib/fetch');
+var children = require('./lib/children');
 var repo = require('./lib/repo');
 var installer = require('./lib/installer');
 var privacy = require('./lib/privacy');
@@ -68,12 +69,17 @@ var homeScreen = require('./lib/homescreen');
 var glasshouseHome = null;
 /** @type {typeof import('./lib/home-picture')} */
 var homePicture = null;
+// Internet TV on Glasshouse Home (lib/iptv): where Home runs, and nowhere else.
+/** @type {typeof import('./lib/iptv')} */
+var iptv = null;
 try {
   glasshouseHome = require('./lib/home');
   homePicture = require('./lib/home-picture');
+  iptv = require('./lib/iptv');
 } catch (e) {
   glasshouseHome = null;
   homePicture = null;
+  iptv = null;
   console.error('home: Glasshouse Home could not be loaded, running without it: ' + e.message);
 }
 var telemetry = require('./lib/telemetry');
@@ -540,7 +546,7 @@ lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaC
 audioCapabilities.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache, hdmiReceiverMap: telemetry.hdmiReceiverMap });
 btAudio.init({ luna: luna, clearLunaCache: clearLunaCache });
 game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
-privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, watchNetwork: true });
+privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule });
 oled.init({ luna: luna, config: CONFIG });
 samrescan.init({ luna: luna });
 appsModule.init({ luna: luna, config: CONFIG });
@@ -549,6 +555,8 @@ servicesModule.init({ stateDir: __dirname });
 preload.init({ luna: luna, stateDir: __dirname });
 quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
 remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
+  // The Guide key can open Glasshouse Home's Internet TV guide.
+  homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
   homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); } });
 homeScreen.init({ luna: luna, config: CONFIG, inputNames: telemetry.inputNameMap, stateDir: __dirname, webosVersion: telemetry.detectWebosVersion() });
 // webOS 10's layout is an overlay mount, gone after a restart of the TV.
@@ -567,7 +575,8 @@ screensavers.init({
   watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('screensaver', on); },
   mediaState: telemetry.readMediaState
 });
-idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState });
+idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
+  watching: function () { return !!(iptv && iptv.watching()); } });
 telemetry.init({
   luna: luna,
   lunaCached: lunaCached,
@@ -844,8 +853,10 @@ function checkHomebrewChannelApp() {
       remoteKeys.restore(function (keys) {
         if (!keys) return console.error('uninstall: remote key restore failed; server kept for retry');
         forgetHomeAssistant(function () {
+          // A stub stays mounted over LG's program, even with its file deleted, until unmounted.
+          var unstub = servicesModule.stubTargets().map(function (t) { return 'umount ' + JSON.stringify(t) + ' 2>/dev/null; '; }).join('');
           child_process.spawn('/bin/sh', ['-c',
-            '/var/lib/tvweb/tvwebctl stop >/dev/null 2>&1; ' +
+            '/var/lib/tvweb/tvwebctl stop >/dev/null 2>&1; ' + unstub +
             'rm -rf /var/lib/tvweb /media/developer/temp/glasshouse-install; ' +
             'PATH=/usr/sbin:/sbin:$PATH; iptables -D ' + rule + ' 2>/dev/null; ip6tables -D ' + rule + ' 2>/dev/null; ' +
             'cd /var/lib/webosbrew/init.d && rm -f 50-tvweb 20-services.sh 20-tvweb-services; ' +
@@ -989,6 +1000,7 @@ routes.init({
   homeScreen: homeScreen,
   home: glasshouseHome,
   homePicture: homePicture,
+  iptv: iptv,
   screensavers: screensavers,
   updater: updater,
   tvApp: tvApp,
@@ -1908,7 +1920,21 @@ function startGlasshouseHome() {
   homePicture.init({ telemetry: telemetry, oled: oled, luna: luna, Subscription: lunaTransport.Subscription });
   homePicture.want('tv', (liveState.state.snapshot().power || {}).systemOn !== false);
   var homeWatchesForeground = false;
+  iptv.init({
+    stateDir: __dirname,
+    launch: children.launch,
+    // The same curl or wget the updater found, then the usual places.
+    clients: function () {
+      var list = [fetchLib.client(), CONFIG.update && CONFIG.update.client];
+      fetchLib.clientDirs().forEach(function (d) { list.push(d + '/curl', d + '/wget'); });
+      return list.filter(function (c) { return typeof c === 'string' && c; });
+    },
+    version: TVWEB_VERSION,
+    // File-only, for the emulator: how long after start overdue jobs wait.
+    catchupMs: CONFIG.iptv && typeof CONFIG.iptv.catchupMs === 'number' ? CONFIG.iptv.catchupMs : undefined
+  });
   glasshouseHome.init({
+    iptv: iptv,
     luna: luna,
     Subscription: lunaTransport.Subscription,
     blockedBy: privacy.blockedBy,
@@ -1939,6 +1965,13 @@ function startGlasshouseHome() {
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
   glasshouseHome.start();
+  iptv.start();
+  // The Guide key set to Home's guide acts only while Home is on with a playlist.
+  remoteKeys.availabilityChanged();
+  setInterval(remoteKeys.availabilityChanged, 30000);
+  liveState.state.onChange(function (ev) {
+    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) iptv.woke();
+  });
 }
 
 if (!CLI_MODE) {
@@ -1999,11 +2032,13 @@ if (!CLI_MODE) {
   process.on('SIGTERM', function () {
     history.flush();
     if (glasshouseHome) glasshouseHome.flush();
+    if (iptv) iptv.stop();
     if (process.listeners('SIGTERM').length === 1) process.exit(0);
   });
   process.on('SIGINT', function () {
     history.flush();
     if (glasshouseHome) glasshouseHome.flush();
+    if (iptv) iptv.stop();
     if (process.listeners('SIGINT').length === 1) process.exit(0);
   });
 

@@ -1,6 +1,6 @@
 // Public audio snapshots and the boundary before a privileged helper runs.
 var assert = require('assert');
-var events = require('events');
+var PassThrough = require('stream').PassThrough;
 var fs = require('fs');
 var os = require('os');
 var crypto = require('crypto');
@@ -33,14 +33,13 @@ audio.init({ luna: call, lunaCached: function (uri, params, ttl, cb) { call(uri,
   hdmiReceiverMap: function (cb) { cb({ 1: 3, 2: 2, 3: 1, 4: 0 }); } });
 
 function request(method, body, headers, callback) {
-  var req = new events.EventEmitter();
+  var req = new PassThrough();
   req.url = '/api/audio'; req.method = method;
   req.headers = headers || { host: '127.0.0.1', 'content-type': 'application/json' };
   req.connection = { remoteAddress: '127.0.0.1' };
-  req.destroy = function () {};
   var code;
   routes.handleRequest(req, { writeHead: function (n) { code = n; }, end: function (s) { callback(code, JSON.parse(s)); } });
-  if (method === 'POST') { req.emit('data', JSON.stringify(body)); req.emit('end'); }
+  if (method === 'POST') req.end(JSON.stringify(body));
 }
 function format(st, id) { return st.tv.formats.filter(function (f) { return f.id === id; })[0]; }
 function add(name, setup, check, body, headers) { cases.push({ name: name, setup: setup, check: check, body: body, headers: headers }); }
