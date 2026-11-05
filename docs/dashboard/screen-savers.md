@@ -2,7 +2,7 @@
 
 The **Screensaver** tab, `/?tab=screensaver`, provides fifteen alternatives to LG's default screen saver, alongside support for screen savers added on the TV or bundled with homebrew applications.
 
-![Screensaver tab: LG default, Clock, Starfield, Fireworks, Bokeh and Panel vitals, with brightness and a start button beside them](../screenshots/screensaver.png)
+![Screensaver tab: screen saver list with Starfield selected, Brightness toggles, Start screen saver, and Poweroff after](../screenshots/screensaver.png)
 
 *The Screensaver tab in the web dashboard.*
 
