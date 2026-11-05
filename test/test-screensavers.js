@@ -253,6 +253,35 @@ console.log('Running test-screensavers.js ...');
         assert.strictEqual(result.ok, true);
         assert.strictEqual(appLaunched, 'com.webos.app.screensaver');
         console.log('  ✓ trigger falls back to launching screensaver when tvpower returns Invalid State change Request');
+
+        // 13. trigger falls back to applicationManager/launch when tvpower returns screenSaverEnabled value is off
+        (function testTriggerFallbackScreenSaverDisabled() {
+          var saverLaunched = null;
+          var disabledLuna = function (uri, params, cb) {
+            if (uri === 'com.webos.service.tvpower/power/getPowerState') return cb({ returnValue: true, state: 'Active' });
+            if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'youtube' });
+            if (uri === 'com.webos.service.tvpower/power/turnOnScreenSaver') {
+              return cb({ returnValue: false, errorText: 'screenSaverEnabled value is off' });
+            }
+            if (uri === 'com.webos.applicationManager/launch') {
+              saverLaunched = params && params.id;
+              return cb({ returnValue: true });
+            }
+            cb({ returnValue: true });
+          };
+          screensavers.init({
+            luna: disabledLuna,
+            config: {},
+            injectKey: function () {},
+            KEY_BACK: 412,
+            mediaState: function (cb) { cb({ state: 'idle', fullScreen: false }); }
+          });
+          screensavers.trigger(function (result) {
+            assert.strictEqual(result.ok, true);
+            assert.strictEqual(saverLaunched, 'com.webos.app.screensaver');
+            console.log('  ✓ trigger falls back to launching screensaver when tvpower returns screenSaverEnabled value is off');
+          });
+        })();
       });
     })();
 

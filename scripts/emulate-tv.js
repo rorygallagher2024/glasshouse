@@ -205,6 +205,8 @@ async function main() {
     allowControl: true,
     allowPower: true,
     allowExperimentalHome: true,
+    // Internet TV's overdue jobs start 5 s after the server, not 3 to 8 minutes.
+    iptv: { catchupMs: 5000 },
     token: ''
   }, null, 2));
 

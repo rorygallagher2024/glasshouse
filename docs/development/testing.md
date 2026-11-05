@@ -97,6 +97,10 @@ EOF are dropped rather than read in a busy loop, a device with nothing to read
 yet is kept, and a device that comes back is reopened and its buttons arrive.
 The worker itself stays Python 2.7 compatible for the TV.
 
+Remote-key log checks include the first press immediately after assigning a
+key: the reader polls from its saved byte offset, so the press is not lost
+before its first read.
+
 `test-repo.js` checks declared source URLs from the Homebrew Channel and added catalogs, including missing, malformed and unsafe addresses, GitHub downloads mapped to their repository, and other `.ipk` downloads omitted without changing installation URLs. `test-catalog-ui.js` checks source-link escaping, new-tab attributes, placement beside the primary action using the idle pill style, and availability across app states and disabled controls in both lists, including corrected and omitted download links.
 
 `test-saver-manifests.js` reads screen saver folders: the order and ids, a folder with something wrong listed with the reason, staging, translated names, and what one added on the TV does past the screen. An installed homebrew app's screen saver is listed from its app, by either file name, with the same checks, an app without one is left out, only its QML is staged, and one whose app has gone counts as LG's.
@@ -113,7 +117,7 @@ The worker itself stays Python 2.7 compatible for the TV.
 
 The state-push suite checks `keyboard_visible` from the window list: pushed on change, the app under it kept as the control target, false in standby, and left out on a TV without the method. `test-controls.js` checks that remote keys go to the remote's device while the keyboard is up and that typing, Enter and Backspace reach the input method service in order, and that the Server tab's TV name is saved and applied without a restart, with empty putting back LG and the model; `test-mqtt-remote.js` that typed text keeps its spaces and schedules no telemetry read.
 
-`test-home.js` checks that switching on has sam read the mounted app before LG's Home is stopped and switching off the reverse, that on webOS 11 an LG Home started again is stopped and the preload manager told not to keep it while the place is held, both undone with the place and neither done on webOS 9 or 10, that on webOS 4 no starting notice holds the Home key and a press the view does not answer opens it once more before LG's ribbon has the key and the page's escape when its first load fails is ignored, that the heartbeat says when the view is covered, by the screen saver or on webOS 4 by what is in front, that where eim names neither `hdmiPlugIn` nor `connected`, as on a B8, the ports' HDMI reading says which are plugged in, that on webOS 11 the view is closed and opened again once after a wake while it is in front, but not where an app was opened since, after a switch-off or on other webOS, that on webOS 10 sam rereads it on a block and release and has it as the home category's app, that a server finding it mounted with an earlier release's manifest has sam read the new one even after a restart between staging and rereading, that a refused upgrade puts LG's Home back and reports failure, that webOS 4 and 10 are offered and webOS 11 only with `allowExperimentalHome`, that after a start the rows come from the lists last read while they are read again, a change among them reloading the view, that LG's files go back where sam does not take the app, the ways back to LG's Home and the return, a switch-off cut short being finished at start, what earlier builds changed being put back once, failed saves, a healthy view whose heartbeats later stop, and a short Home press that brings no heartbeat: WebAppMgr started and the view opened again where it is not running, as for a view that stops beating, LG's Home given its place where it will not start, or where it is running once the longer wait for a page still loading is over, the view kept where it answers within that wait, and nothing done when the view answers. It also checks that a view gone quiet behind another app's window is left alone, that on webOS 6 an input put back over LG's Home just after sam restarts has LG's Home opened again once, and that a C1's 6.4.0 answer of no `defaultApps` at all reads as unset. A short Home press followed by an input opened from the view, or by anything else coming to the front, keeps Glasshouse Home. A view opened after a wake or by the boot hook whose page never runs gives LG's Home its place after the short wait, one whose page runs only after the longer wait, and one that answers, or an input chosen meanwhile, keeps Glasshouse Home. It also checks that the wallpaper's darkening is 100% until set, taken from 0 to 100 and kept when not sent, that a Glasshouse Home switched on fresh is Pure white while one that saved the view's own look keeps it, that LG's layout is left alone unless the empty one is chosen, that the choice applies at once while Glasshouse Home has the place, that a TV an earlier build left on the empty layout keeps it, that LG's notifications and search are on the Apps row, marked as opening over Home, that fading and leaving out inputs with nothing plugged in stay off until switched on and outlast a reset, beside inputs hidden one by one, which are kept, and that a row set to Last opened puts what was opened last first, from the view or the remote, with the channel Live TV was on even when the view asks before Live TV has left, records nothing while Glasshouse Home is off, and forgets a row put back in its own order. `test-tvwebctl.js` also checks that a third restart in ten minutes gives LG's Home its place back. `test-remotekeys.js` checks that a mapping which could not be deleted is reported as a failed change, and that the starting notice holds Home for 90 s after the filter loads, and not at all without the compositor's timer. `test-remotekeys-webos11.js` checks webOS 11's path: LG's input switcher offered first as a choice of its own and set like an app, the streaming buttons LG has switched on, Guide, Home Hub and the ? button offered with no filter chain and left out of the JavaScript filter, the ? button refusing Nothing, the AI button switching LG's voice assistant off and back on and answering its log line once, read from a log that is appended to and replaced, and not offered without that service, the Netflix button set to Screen off switching LG's app off and turning the screen off from the log only with the picture on, after tvpower has finished a change or a screen saver the press ends has gone, and set again unasked after LG writes its list back, Screen off refused on Guide, the Alexa button blocking Amazon's view and releasing it, an already blocked view counting as blocked, toasts switched off for the Alexa press only and back on at the start after a restart, LG's list set again after LG writes it back, after a power change where nothing is announced, and at most twelve times a minute, each change written to LG's own value and only that one, LG's value put back for As LG has it, a key set again after LG sends its list again with LG's newer entry kept to put back, `restore` putting back every key, and nothing written while no key is set. `test-tesseract.js` checks the tesseract screen saver's geometry: 16 corners and 32 edges along one axis each, rotations that keep distances, a six-hour clock that starts again without a jump, and the figure staying on screen through the whole cycle.
+`test-home.js` checks that switching on has sam read the mounted app before LG's Home is stopped and switching off the reverse, that on webOS 11 an LG Home started again is stopped and the preload manager told not to keep it while the place is held, both undone with the place and neither done on webOS 9 or 10, that on webOS 4 no starting notice holds the Home key and a press the view does not answer opens it once more before LG's ribbon has the key and the page's escape when its first load fails is ignored, that the heartbeat says when the view is covered, by the screen saver or on webOS 4 by what is in front, that where eim names neither `hdmiPlugIn` nor `connected`, as on a B8, the ports' HDMI reading says which are plugged in, that on webOS 11 the view is closed and opened again once after a wake while it is in front, but not where an app was opened since, after a switch-off or on other webOS, that on webOS 10 sam rereads it on a block and release and has it as the home category's app, that a server finding it mounted with an earlier release's manifest has sam read the new one even after a restart between staging and rereading, that a refused upgrade puts LG's Home back and reports failure, that webOS 4, 10 and 11 are offered and webOS 12 and later only with `allowExperimentalHome`, that after a start the rows come from the lists last read while they are read again, a change among them reloading the view, that LG's files go back where sam does not take the app, the ways back to LG's Home and the return, a switch-off cut short being finished at start, what earlier builds changed being put back once, failed saves, a healthy view whose heartbeats later stop, and a short Home press that brings no heartbeat: WebAppMgr started and the view opened again where it is not running, as for a view that stops beating, LG's Home given its place where it will not start, or where it is running once the longer wait for a page still loading is over, the view kept where it answers within that wait, and nothing done when the view answers. It also checks that a view gone quiet behind another app's window is left alone, that on webOS 6 an input put back over LG's Home just after sam restarts has LG's Home opened again once, and that a C1's 6.4.0 answer of no `defaultApps` at all reads as unset. A short Home press followed by an input opened from the view, or by anything else coming to the front, keeps Glasshouse Home. A view opened after a wake or by the boot hook whose page never runs gives LG's Home its place after the short wait, one whose page runs only after the longer wait, and one that answers, or an input chosen meanwhile, keeps Glasshouse Home. It also checks that the wallpaper's darkening is 100% until set, taken from 0 to 100 and kept when not sent, that a Glasshouse Home switched on fresh is Pure white while one that saved the view's own look keeps it, that LG's layout is left alone unless the empty one is chosen, that the choice applies at once while Glasshouse Home has the place, that a TV an earlier build left on the empty layout keeps it, that LG's notifications and search are on the Apps row, marked as opening over Home, that fading and leaving out inputs with nothing plugged in stay off until switched on and outlast a reset, beside inputs hidden one by one, which are kept, and that a row set to Last opened puts what was opened last first, from the view or the remote, with the channel Live TV was on even when the view asks before Live TV has left, records nothing while Glasshouse Home is off, and forgets a row put back in its own order. `test-tvwebctl.js` also checks that a third restart in ten minutes gives LG's Home its place back. `test-remotekeys.js` checks that a mapping which could not be deleted is reported as a failed change, and that the starting notice holds Home for 90 s after the filter loads, and not at all without the compositor's timer. `test-remotekeys-webos11.js` checks webOS 11's path: LG's input switcher offered first as a choice of its own and set like an app, the streaming buttons LG has switched on, Guide, Home Hub and the ? button offered with no filter chain and left out of the JavaScript filter, the ? button refusing Nothing, the AI button switching LG's voice assistant off and back on and answering its log line once, read from a log that is appended to and replaced, and not offered without that service, the Netflix button set to Screen off switching LG's app off and turning the screen off from the log only with the picture on, after tvpower has finished a change or a screen saver the press ends has gone, and set again unasked after LG writes its list back, Screen off refused on Guide, the Alexa button blocking Amazon's view and releasing it, an already blocked view counting as blocked, toasts switched off for the Alexa press only and back on at the start after a restart, LG's list set again after LG writes it back, after a power change where nothing is announced, and at most twelve times a minute, each change written to LG's own value and only that one, LG's value put back for As LG has it, a key set again after LG sends its list again with LG's newer entry kept to put back, `restore` putting back every key, and nothing written while no key is set. `test-tesseract.js` checks the tesseract screen saver's geometry: 16 corners and 32 edges along one axis each, rotations that keep distances, a six-hour clock that starts again without a jump, and the figure staying on screen through the whole cycle.
 
 `test-i18n-pick.js` checks which language the pages pick: the browser's, except one translated only in part on a page it does not cover in full, and one chosen or asked for in the address on every page. A language with its region, such as `pt-br`, is picked whole, and only for that region.
 
@@ -326,7 +330,106 @@ cannot refill a closed panel, and switching search off removes its entry point.
 Home interaction fixtures mark both introductory hints as seen so hint saves
 do not count as layout edits.
 
+`test-iptv-parse.js` feeds Internet TV's readers in chunks of every size,
+from one character up: an M3U with a BOM, CRLF, a name with commas after a
+quoted group with commas, `#EXTGRP`, `#EXTVLCOPT` and `|User-Agent=` headers,
+`#KODIPROP` DRM, films and series to leave out, a bare URL, a multicast link
+and comma lists of guide links; Xtream's JSON with brackets and escaped
+quotes inside strings, and a refusal object where the list should be; an
+XMLTV guide with a DTD whose entity must not expand, CDATA, numeric entities,
+offsets and shortened times. Logins are refused by `auth` and `status`
+whatever the HTTP status, short EPG text is decoded only when it is base64 of
+UTF-8 text, a guide id matches loosely only where one guide channel does, and
+two channels whose links differ only in a rotated token keep separate keys.
+
+`test-iptv.js` runs the server module with real worker processes and curl
+against a local provider: a playlist read and published 0600 in a 0700
+folder, search leaving out a provider's `### NEWS ###` headings, an added
+channel's logo, play link and now and next from the playlist's own guide, a
+500 keeping the last list, an edit replacing it, a refused Xtream login not
+tried again until edited, a blank password keeping the saved one, no link,
+token, user name or password in any reply, the row's order and removal, a
+whole group added as a section numbered after the picks with its guide from
+the Xtream `xmltv.php`, sections moved and given start numbers, a channel
+taken out of a group staying out until added again, a rename and a star
+reaching the row, a hidden group left out of a whole-playlist search, Undo
+putting a channel taken out back at its number, and a removed playlist's
+folder deleted. It is skipped where there is no curl.
+
+`test-iptv-lineup.js` checks the lineup's rules alone: a version 1 selection
+becoming one section of favourites, numbering through sections with a start
+number already passed moved on, a channel in two sections counted once, a
+channel removed from a pick ahead of its group staying out of both, the 60
+favourites, stars kept by a channel another section still carries, renames,
+the 2,000 cap, moved keys followed, malformed entries dropped, several
+groups added or sections removed in one edit, stars for many stopping at a
+full row, channels moved out of a group into a new section and added into
+one, sections and single channels taken out in one edit, and a refused
+edit leaving the selection as it was.
+
+`scripts/fake-iptv.js` is a provider to drive Internet TV by hand or in the
+emulator (it is not deployed). It serves an M3U and an Xtream panel with
+the quirks above, logos in the styles real ones come in (and dead links), an
+XMLTV guide, and three live HLS test channels from ffmpeg, one without CORS:
+
+```bash
+node scripts/fake-iptv.js --port 8090
+node scripts/fake-iptv.js --port 8091 --channels 100000 --guide-channels 16000 --no-video
+node scripts/fake-iptv.js --port 8095 --channels 20000 --groups 120 --no-video
+```
+
+`--groups` adds that many country groups (*DE | Sport*, *FR | News* and so
+on), as a subscription of hundreds of groups lists them, for the channel
+manager.
+
+Its M3U takes `?mode=401`, `403`, `429` (with `Retry-After`), `500`, `html`,
+`gzip`, `slow` and `truncate`; a wrong Xtream password is `auth: 0` with HTTP
+200, three in a minute block the address for a minute, and its live links
+redirect to a token that expires after 90 s. It allows one connection, counted
+as a panel does, by the client address that fetched a segment in the last
+12 s, so a TV changing channel replaces its own; `/admin/state` reports
+`concurrentSessions` apart, the streams fetching segments in the last 4 s,
+which stays at 1 when each is closed before the next opens.
+`/admin/rotate` rotates every M3U token. The second command makes a
+100,000-entry playlist and a guide of about 200 MB unzipped, for the size
+drills. The emulator starts Internet TV's overdue jobs after 5 s rather than
+3 to 8 minutes (`iptv.catchupMs` in its config).
+
+The Home tab loads Internet TV playlist settings from `assets/ui/iptv.js` and
+the channel manager from `assets/ui/tvchannels.js`; the browser check exercises
+both through their page entry points.
+
+The browser check drives Internet TV on Glasshouse Home with its API answered
+in the page: the row's names tidied, a channel previewed after its dwell with
+the lease taken, the preview grown into the player without opening the stream
+again, OK during the dwell giving one stream and keeping the player's picture,
+the channel list changing channel after releasing the last stream, Back, the
+guide's schedule, and the add panel listing a playlist's groups. It then
+drives the channel manager the same way: a hidden group left out, a group's
+channels listed and added whole, a star, a Shift-click run added from the
+bar in one edit, Delete taking a selected channel out, Escape clearing a
+selection before it closes the page and its address, one pane at a time at phone width, and in the TV app, the groups,
+a channel added with OK, and Back up one list.
+
 The sideload route check forces an upload to abort before its file opens,
 then confirms that the eventual descriptor closes and the staging file is
 removed. This catches Node 0.12's destroy-before-open behaviour without
 relying on the filesystem finishing within a fixed delay.
+
+The Internet TV regression checks also cover a full 2,000-channel lineup
+through real workers, a bulk add that overlaps channels already carried,
+and failed selection saves (including Undo) without changing the lineup or
+its history. Home accepts unstarred lineup channels and refuses unknown
+ones; the generated remote filter opens the standalone Home app's guide
+when the Home key names it. Browser checks cover the Guide tile and
+now-and-next without favourites, and a delayed response from the previous
+provider leaving the chosen provider's groups in place.
+With **Preview in the tile** on, the browser check verifies the IPTV preview
+fills its tile, opens at full-screen size and returns without reopening the
+stream, and leaves the hidden rows when the guide opens.
+The TV app's manager check opens the lineup through the Home tab with
+Glasshouse Home enabled in its API fixture, then uses the remote keys.
+The audio route checks use a readable stream for request bodies, including
+the UTF-8 decoding used by every JSON POST.
+The split-character route fixture uses the server's buffer helper so it
+also runs on Node 0.10 and 0.12.

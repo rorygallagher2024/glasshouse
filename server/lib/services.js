@@ -80,6 +80,36 @@ var CATALOG = [
     desc: msg('srv.service.remotelogger.desc', 'Ships system log messages to remote servers.')
   },
   /*
+   * Started by the service hub whenever something calls it (Type=dynamic in
+   * /usr/share/dbus-1/system-services), with no unit to stop or mask, so it is
+   * held down by mounting a program that exits at once over its own: the hub
+   * then starts that instead. A reboot or an unmount puts it back.
+   * iconnectivity (com.webos.service.ics, UEI QuickSet) is what reverse-looks
+   * up every address on the TV's network (#244); iotframework asked it to every
+   * 300 s on an OLED65C2PUA (webOS 11.2.0, firmware 43.21.74). The C2 (webOS
+   * 9.2.2) has no iotframework.
+   */
+  {
+    id: 'iconnectivity',
+    bin: 'iconnectivity',
+    title: msg('srv.service.iconnectivity', 'Network Device Scans'),
+    unit: null,
+    upstart: null,
+    stub: '/usr/sbin/iconnectivity',
+    badge: msg('srv.service.badge.network', 'Network'),
+    desc: msg('srv.service.iconnectivity.desc', 'Looks up every address on the home network to find devices for the Home Hub and LG\'s device setup. Off, they find no new devices.')
+  },
+  {
+    id: 'iotframework',
+    bin: 'com.webos.iotframework',
+    title: msg('srv.service.iotframework', 'Smart Home Device Polling'),
+    unit: null,
+    upstart: null,
+    stub: '/usr/palm/services/com.webos.iotframework/com.webos.iotframework',
+    badge: msg('srv.service.badge.network', 'Network'),
+    desc: msg('srv.service.iotframework.desc', 'Asks for a scan of the home network every 5 minutes, for the Home Hub\'s smart home devices. Off, the Home Hub may not show them.')
+  },
+  /*
    * LG's voice assistant: the AI button, voice search and the microphone. Not
    * listed with the others: Remote keys switches it off while the AI button is
    * set, as with it running LG's voice screen opens over the app chosen (a C5,
@@ -114,6 +144,67 @@ var disabledFilePath = null;
 var initScriptPath = '/var/lib/webosbrew/init.d/20-tvweb-services';
 var oldInitScriptPath = '/var/lib/webosbrew/init.d/20-services.sh';
 var transientDir = '/run/systemd/transient';
+// Prefixed to a stub's path, and the mount table read, for the tests.
+var stubRoot = '';
+var mountsPath = '/proc/mounts';
+var run = execFile;
+
+function stubFile() { return path.join(stateDir, 'service-stub'); }
+function stubTarget(item) { return stubRoot + item.stub; }
+
+function isStubbed(item) {
+  var text = '';
+  try { text = fs.readFileSync(mountsPath, 'utf8'); } catch (e) { return false; }
+  var target = stubTarget(item);
+  return text.split('\n').some(function (line) { return line.split(' ')[1] === target; });
+}
+
+function writeStubFile() {
+  try {
+    if (!fs.existsSync(stateDir)) fs.mkdirSync(stateDir, 493);
+    fs.writeFileSync(stubFile(), '#!/bin/sh\nexit 0\n', { mode: 493 });
+    fs.chmodSync(stubFile(), 493);
+    return true;
+  } catch (e) { return false; }
+}
+
+// Answers once they have gone, so the list read straight after the switch shows it stopped.
+function stopPrograms(item, cb) {
+  var tries = 0;
+  (function signal() {
+    var pids = runningPrograms()[item.bin] || [];
+    if (!pids.length || tries > 6) return cb();
+    pids.forEach(function (pid) {
+      try { process.kill(pid, tries === 6 ? 'SIGKILL' : 'SIGTERM'); } catch (e) {}
+    });
+    tries++;
+    setTimeout(signal, 500);
+  })();
+}
+
+// The program found running is stopped after the mount, so the hub's next start is the stub.
+function stub(item, cb) {
+  if (isStubbed(item)) return stopPrograms(item, function () { cb(true); });
+  if (!writeStubFile()) return cb(false);
+  run('mount', ['--bind', stubFile(), stubTarget(item)], function (err) {
+    if (err) console.error('services: could not hold ' + item.id + ' down: ' + err.message);
+    stopPrograms(item, function () { cb(!err); });
+  });
+}
+
+// Each mount is undone; the hub starts the real program at the next call.
+function unstub(item, cb) {
+  if (!isStubbed(item)) return cb(true);
+  run('umount', [stubTarget(item)], function (err) {
+    if (err) console.error('services: could not put ' + item.id + ' back: ' + err.message);
+    cb(!err);
+  });
+}
+
+// For the uninstall: the paths a stub may be mounted on.
+function stubTargets() {
+  return CATALOG.filter(function (item) { return item.stub; }).map(stubTarget);
+}
 
 // The processes running, by program name, from each one's executable.
 function runningPrograms() {
@@ -142,6 +233,10 @@ function enforce() {
   if (!disabled.length) return;
   var procs = runningPrograms(), systemctl = getSystemctl(), initctl = getInitctl();
   CATALOG.forEach(function (item) {
+    if (item.stub && disabled.indexOf(item.id) !== -1 && fs.existsSync(stubTarget(item)) && !isStubbed(item)) {
+      console.log('services: ' + item.id + ' was not held down while switched off, holding it');
+      return stub(item, function () {});
+    }
     var pids = item.bin && procs[item.bin];
     if (!pids || disabled.indexOf(item.id) === -1) return;
     console.log('services: ' + item.id + ' was running while switched off, stopping it');
@@ -213,10 +308,15 @@ function syncBootScript(disabledList) {
   var lines = [
     '#!/bin/sh',
     '# tvweb managed disabled services',
-    '(',
-    'if which systemctl >/dev/null 2>&1; then',
-    '  mkdir -p /run/systemd/transient'
+    '('
   ];
+  CATALOG.forEach(function (item) {
+    if (!item.stub || disabledList.indexOf(item.id) === -1) return;
+    var target = stubTarget(item);
+    lines.push('[ -e "' + target + '" ] && [ -x "' + stubFile() + '" ] && ! grep -q " ' + target + ' " /proc/mounts && mount --bind "' + stubFile() + '" "' + target + '"');
+  });
+  lines.push('if which systemctl >/dev/null 2>&1; then');
+  lines.push('  mkdir -p /run/systemd/transient');
 
   var upstartJobs = [];
   for (var i = 0; i < CATALOG.length; i++) {
@@ -252,6 +352,7 @@ function syncBootScript(disabledList) {
 }
 
 function serviceExists(item, systemctl, initctl) {
+  if (item.stub) return fs.existsSync(stubTarget(item));
   if (systemctl && item.unit) {
     if (fs.existsSync('/etc/systemd/system/' + item.unit) ||
         fs.existsSync('/lib/systemd/system/' + item.unit) ||
@@ -272,6 +373,9 @@ function init(options) {
     stateDir = options.stateDir;
     disabledFilePath = path.join(stateDir, 'disabled_services.json');
   }
+  if (options && options.stubRoot !== undefined) stubRoot = options.stubRoot;
+  if (options && options.mounts) mountsPath = options.mounts;
+  if (options && options.run) run = options.run;
   if (options && options.initDir) {
     initScriptPath = path.join(options.initDir, path.basename(initScriptPath));
     oldInitScriptPath = path.join(options.initDir, path.basename(oldInitScriptPath));
@@ -288,6 +392,9 @@ function init(options) {
   } catch (e) {}
   // Written again at each start, so a hook from an earlier release takes this one's form.
   syncBootScript(disabled);
+  CATALOG.forEach(function (item) {
+    if (item.stub && disabled.indexOf(item.id) !== -1 && fs.existsSync(stubTarget(item))) stub(item, function () {});
+  });
 
   var systemctl = getSystemctl();
 
@@ -335,7 +442,8 @@ function getServices(cb) {
   var systemctl = getSystemctl();
   var initctl = getInitctl();
 
-  if (!systemctl && !initctl) {
+  var stubbable = CATALOG.some(function (item) { return item.stub && !item.hidden && serviceExists(item); });
+  if (!systemctl && !initctl && !stubbable) {
     return cb({ ok: true, supported: false, services: [] });
   }
 
@@ -350,7 +458,7 @@ function getServices(cb) {
         title: item.title,
         badge: item.badge,
         desc: item.desc,
-        unit: item.unit || item.upstart,
+        unit: item.unit || item.upstart || item.bin,
         disabled: disabledList.indexOf(item.id) !== -1,
         running: false
       });
@@ -422,7 +530,7 @@ function switchService(id, disabled, cb, hiddenToo) {
 
   var systemctl = getSystemctl();
   var initctl = getInitctl();
-  if (!systemctl && !initctl) {
+  if (!systemctl && !initctl && !catItem.stub) {
     return cb({ ok: false, error: msg('srv.service.unsupported', 'Service management is not supported on this platform') });
   }
 
@@ -436,7 +544,12 @@ function switchService(id, disabled, cb, hiddenToo) {
   }
   writeDisabledList(list);
 
-  if (systemctl && catItem.unit) {
+  if (catItem.stub) {
+    return (disabled ? stub : unstub)(catItem, function (ok) {
+      if (!ok) return cb({ ok: false, error: msg('srv.service.stubFailed', 'The TV did not allow the change') });
+      cb({ ok: true, id: id, disabled: !!disabled, running: false });
+    });
+  } else if (systemctl && catItem.unit) {
     var maskFile = path.join(transientDir, catItem.unit);
     if (disabled) {
       try {
@@ -489,5 +602,6 @@ module.exports = {
   switchHidden: switchHidden,
   isDisabled: isDisabled,
   available: available,
+  stubTargets: stubTargets,
   startEnforcing: startEnforcing
 };

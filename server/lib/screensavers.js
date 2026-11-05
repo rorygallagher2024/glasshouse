@@ -973,7 +973,8 @@ function trigger(cb) {
               });
             }
             idlesaver.restore();
-            if (r && r.errorText === 'Invalid State change Request') {
+            if (r && (r.errorText === 'Invalid State change Request' ||
+                      (r.errorText && r.errorText.indexOf('screenSaverEnabled') !== -1))) {
               return launchScreensaverApp(function (launched, error) {
                 if (launched) return cb({ ok: true });
                 cb({

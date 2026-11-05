@@ -43,9 +43,9 @@ change: a docs-only change needs no TV testing or translation.
 * **All checks pass:** `scripts/check-all.sh`.
 * **Translated.** Every new or changed string has its translation in each
   language file in `server/assets/i18n/` that covers the page it is on: Arabic,
-  Spanish, Hungarian, Italian and Russian for the dashboards, and German too for
-  Glasshouse Home. `python3 scripts/check-strings.py --missing` lists what is
-  left.
+  Spanish, Hungarian, Italian, European Portuguese and Russian for the dashboards,
+  and German too for Glasshouse Home.
+  `python3 scripts/check-strings.py --missing` lists what is left.
 * **Docs updated:** the pages that describe what it changes, as in
   [Docs](#docs).
 
