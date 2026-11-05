@@ -70,6 +70,129 @@ The children are the five subscriptions held open for live state, to which a TV 
 
 ---
 
+## Internet TV: worker processes and published snapshots
+
+Glasshouse Home's Internet TV row (`lib/iptv.js`) reads the owner's IPTV
+playlists, which run to tens of MB with films and series in them, and XMLTV
+guides of 50 to 200 MB. None of that is read in the server, whose one thread
+also answers the remote, the dashboards and MQTT. Each job is a process of
+its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
+
+- **Started like every child**, through `children.launch`, as `nice -n 19 node
+  --max_old_space_size=64 iptv-worker.js` (24 MB for a search) in a process
+  group of its own (`detached`). The job is one JSON line on its stdin, which
+  stays open: the worker exits, killing its own curl, when it closes, so a
+  server that dies leaves no worker behind. Timeouts and cancelling kill the
+  whole group. The job line may be up to 4 MB, including a full lineup's
+  channel names and groups; its limit applies across chunks and to a complete line.
+- **Two lanes.** Background jobs (reading a playlist, the lineup's
+  play links and logos, the guide, now and next again) run one at a time, in
+  order, a kind for a playlist only once in the queue. Browse and search for
+  the add panels run beside them, one at a time, a new one replacing the last.
+- **Memory is measured by the server**, once a second while a worker runs:
+  the RSS in `/proc/<pid>/statm` of the worker and the curl it reports
+  starting. Over 160 MB for the background lane, 90 MB for search or 220 MB
+  between them, or with the TV's `MemAvailable` under its floor for three
+  measures in a row or 30 MB under it at once, the background job is stopped and
+  queued again for at least a minute; a search over its own share fails. The
+  floor and what a job needs to start depend on the mode, `lib/iptv-memory.js`,
+  which the server picks from the TV's memory; there is no setting.
+  **Normal**, from 1.5 GB of memory: a floor of 150 MB and 210 MB to
+  start, with a 64 MB heap; with less available the job runs in economy instead.
+  **Economy**, below that: a floor of 12% of the TV's memory, from
+  90 MB to 150 MB, and to start that floor and the job's cost: 125% of what it
+  last used on that playlist, else 30 MB and 0.7 MB per 1,000 channels for reading
+  a list or the lineup, else 60 MB. An edit the owner is waiting on asks at most
+  20 MB over the floor. The heap is 60% of the cost, from 24 MB to 64 MB, and a
+  worker that dies on it has the full one next time; a batch of logos is 40, not
+  300. In either mode a job also needs 70 MB free where the snapshots live (`df`). Its output is not known before it runs, so the
+  worker counts every byte it writes and stops with `disk` once only 50 MB
+  would be left.
+- **A stream that fails** is opened once more. After a `<video>` error the second
+  try adds `gh=<time>` to the URL, as a provider's CDN may be holding a copy of
+  the playlist the TV cannot read, such as one gzipped for a client with no
+  `Accept-Encoding`. Home sends no Referer, as `localhost` gets a 204 from the
+  same CDN. The message only mentions a limit on streams for a playlist with an
+  account, which `/api/iptv/stream` reports as `account`.
+- **One search at a time**: the lane is taken before the memory check
+  answers, so a search asked for meanwhile replaces it rather than starting
+  beside it.
+- **Downloads are parsed as they arrive**, through curl or wget, and never
+  saved: an M3U line by line, Xtream's JSON arrays an element at a time, an
+  XMLTV guide an element at a time, unzipped on the way when its first bytes
+  say gzip. A JSON list that never closes, or a guide that stops before
+  `</tv>`, is refused as cut off rather than its first part published. Ceilings: 300 MB downloaded, 1.5 GB unzipped, 64 KB an M3U entry
+  or JSON element, 2 MB an XMLTV element, 500,000 entries.
+- **Snapshots.** A job writes a candidate folder (`snap-`, `sel-`, `guide-`,
+  `nn-`) and reports it done; the server checks the playlist is still there
+  at the same generation, writes `current.json` pointing at it, and only once
+  that write succeeds uses it. A failed or stale candidate is deleted, so a failed refresh, an edit or a restart
+  leaves the last good snapshot published. Folders nothing points at go a
+  minute later.
+- **The server reads only small, bounded files**: `meta.json` (16 KB),
+  `groups.json` (384 KB, every group with its count), `added.json` (1 MB,
+  the lineup's channels), `nownext.json` (512 KB), a play link (4 KB) and a
+  browse or search result (96 KB), each held under its limit by the worker
+  before it reports.
+  `index.tsv`, `urls.tsv` and `keys.tsv` are read only by workers; logos and
+  guide shards are piped to Home unread.
+- **Keys.** An Xtream channel's key is its stream id. An M3U entry gets a
+  random key, carried to the next read by the SHA-1 of its full URL, else by
+  a hint (name, group, tvg-id, host and last path segment) only when exactly
+  one old key and one new entry share it: a channel whose token rotated keeps
+  its key; two whose links differ only in a token, both rotated, are not
+  guessed. A key gone after a refresh is matched again only to the one entry
+  with its name and group, else shown as gone.
+- **Schedule.** A playlist is read daily between 03:00 and 05:00, the guide
+  every six hours (an Xtream login's `xmltv.php` once the lineup goes beyond
+  the row's favourites, and its short EPG for the favourites every 30
+  minutes, each job linking the other's channels from the last guide rather
+  than dropping them), failures backing off 15 minutes, an hour, 6
+  and 24 hours, or a 429's `Retry-After` if longer. A refused login stops a
+  playlist's jobs until it is edited or refreshed. Times are kept in
+  `config.json`; overdue jobs run 3 to 8 minutes after a start or a wake.
+  While Home plays a stream it renews a 2-minute lease, and background jobs
+  wait for it, but none more than two hours past due.
+- **The lineup** (`lib/iptv-lineup.js`, pure functions over `selection.json`)
+  is sections in order: a group section names a provider group and the keys
+  taken out of it, and the select job reads the group's channels afresh each
+  time, so it follows the provider; a pick section lists channels by key, in
+  the owner's order. Channels are numbered through the sections, a section
+  starting at its own number where it has one; a channel in two sections is
+  in the first. Favourites (60, Home's row), renames and hidden groups are
+  kept beside them. The selection's generation moves only when which channels
+  are carried does, so a star, rename or new number reaches Home without the
+  select job running. At most 2,000 channels, 1,000 from a group, 100
+  sections. An edit can name many channels, groups or sections at once (a
+  lineup edit's body may be 512 KB, other POSTs 8 KB); one that is refused
+  part way leaves the selection as it was. Moving a channel out of a group
+  section adds it to the group's taken-out keys. The server keeps the
+  selection as it was before each of the last 20 edits, in memory, for Undo.
+  A failed save leaves both the selection and that history unchanged.
+- **Logos come in batches.** A select job the owner is waiting on fetches 12
+  new logos and publishes; later jobs, a minute apart, fetch 300 each (two a
+  second), carrying the rest by hard link, until none is left. One the owner
+  edits stops a batch rather than waiting for it. A logo that failed is not
+  asked for again for a day; 32 MB in all. Non-favourites keep 26 hours of
+  guide, 80 programmes and short descriptions, against two days for the row.
+- **The watchdog.** `tvwebctl watch` kills a child of the server still
+  running node's binary seconds later, taking it for one stuck between fork
+  and exec (node 0.12 on webOS 4). The workers run node on purpose, so it
+  passes over them, as over the remote's button reader.
+
+Measured on a G3 (webOS 9.2.2, node 16) reading from this Mac's fake provider
+and from a real one:
+
+| Job | Time | Worker and curl, peak RSS |
+| :-- | :-- | :-- |
+| Xtream account, 53,463 live channels in 860 groups | 6.8 s | 38 MB |
+| M3U, 100,008 entries (24 MB) | 13 to 15 s | 100 MB |
+| XMLTV, 202 MB (9 MB gzipped), 842,667 programmes | 48 s | 47 MB |
+| Search over the 100,008 | 0.7 to 0.8 s | 33 MB |
+
+`MemAvailable` stayed above 550 MB, and `/api/home/catalogue` answered in
+85 to 140 ms while each ran.
+
 ## Platform constraints
 
 - **Node.js v0.12 (2015)**: webOS 4.x ships Node v0.12.2. All code in `tvweb.js` is written in strict ES5 (no `let`/`const`, no arrow functions, no template literals, no `async`/`await`).
@@ -259,9 +382,10 @@ Panel-lifecycle features are gated on panel type, detected once via
 `/var/luna/preferences/paneltype_oled`, the model name (`OLED...`, or one of the OLED lines
 whose model numbers lack the prefix: Flex and Objet Posé `LX`, Easel `ART9x`), or pnwash
 filesystem records. The pnwash check also runs when the model name is known, so an unlisted
-OLED without the prefix is still found. `panelUsageTime` is not a signal: LCD TVs report it too. On an LCD/QNED TV they are
+OLED without the prefix is still found. `panelUsageTime` is not a signal: LCD TVs report it too,
+and `panelcontroller/getOledCellInfo` can return all zeros (`00/00/0/00`). On an LCD/QNED TV they are
 omitted from the dashboard and withheld from MQTT discovery, with retained discovery configs
-cleared so they do not linger in Home Assistant as orphans. Reporting `0 hours` would read as a real
+cleared so they do not linger in Home Assistant as orphans. Reporting `0 hours` or a dummy cell would read as a real
 measurement.
 
 ## Deploying over ssh
@@ -820,9 +944,9 @@ the previous boot's, so a tool that is no longer started leaves nothing behind.
 The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
 
-Nine of the twenty domains are ad, tracking and diagnostics hosts that
-nothing on the TV needs. The other eleven are **platform infrastructure rather
-than advertising**, which is why they are a separate tier:
+The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
+the TV needs. The platform tier's are **LG infrastructure rather than
+advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
 | :--- | :--- |
@@ -833,19 +957,26 @@ than advertising**, which is why they are a separate tier:
 | `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
 | `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
+| `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
+| `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
 
 `com.webos.appInstallService` names the one its own set installs from:
-`http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2. The full
-tier adds whatever that file says, so a firmware using neither is still covered.
+`http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,
+`http://US.tv.wiselg.com` on a C5 on webOS 11.2. The full tier adds whatever
+that file says, so a firmware using none of them is still covered.
 
-`wiselg.com` is not on either list, though the full tier still blocks it if
-`appInstallService` names it as its store. On webOS 11 the Content Store's
-first request goes to `<country>.tv.wiselg.com`, and a factory-reset TV asks for
-`ngfts.tv.wiselg.com` during setup
+On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
+sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names
+`<country>.tv.wiselg.com` (`US.`) for sign-in, set-up, logging and Home, and
+`<region>.tv.wiselg.com` (`AIC.`) for the Content Store, search, app usage
+statistics and the diagnostics report upload, which `getRdxServerUrl` gives as
+`https://AIC.tv.wiselg.com/rdx/10.0.0/`. The clock comes from the same servers
+(`systemTimeSource` `sdp`), so the full tier blocks them, the store host
+included, only once the clock has synced, as it does `nextlgsdp.com`. A
+factory-reset TV asks for `ngfts.tv.wiselg.com` during setup
 ([Huttunen](https://fabricati-diem.inform.social/post/deshittification-as-a-service-part2-bypassing-the-app-store-gatekeeper/)),
-which suggests it is that release's service platform, in place of the SDP
-hosts. None of the tested TVs runs webOS 11, and Huttunen reports Netflix
-being interrupted after a cold boot with it blocked.
+who reports Netflix being interrupted after a cold boot with the host blocked
+outright.
 
 The `lgtvcommon.com`, `lgtviot.com` and `ueiwsp.com` rows, and
 `smartad.lge.com` on the ads tier, come from the blocklist in
@@ -889,6 +1020,9 @@ To prevent this while preserving full platform blocking:
   entirely, and `nextlgsdp.com` is blocked immediately.
 * With an [NTP server](#setting-the-clock-from-ntp) configured, the first answer it
   gives sets the time as `sdp`, which ends the wait at once.
+* The Ads & telemetry tier's `rdx2.nextlgsdp.com` names, sdx's report upload host, get
+  the same wait. They are not the time servers, but they share their domain, and the
+  boot hook's removal goes by the domain.
 * An owner's hosts list that names `nextlgsdp.com` or a name under it gets the same wait,
   on either tier.
 
@@ -1072,6 +1206,13 @@ of each start, which is always handed over.
 the server's answer, and the service adds the time since then. Glasshouse logs
 one line when it starts, one each time it sets the clock, and one at each
 change of error state.
+
+The service can accept a time and leave the clock where it was: one TV took
+every hourly set and stayed about 6940 s out (#1201). So after each set
+`time/getSystemTime` is read back. A clock still 5 s or more from the time
+given is reported as not taking it, with the source the TV then reads from,
+and is not counted as set; it is tried again at the next hourly sync. With no
+answer from the read-back, the set counts as done.
 
 ---
 
@@ -1349,7 +1490,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 4, 5, 6, 7, 9 and 10; webOS 11 with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab (webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3, standalone as on webOS 4, and later versions with `allowExperimentalHome`). The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 
@@ -1509,7 +1650,9 @@ on the offered list, leaving Home and any newer cards alone
 A card shows the app's snapshot, or its splash where the TV has none since it
 restarted. Pictures are served only from the paths the last list named, and an
 app is opened or closed only while it is on the list. Snapshot responses use
-`private, no-store` caching. Back cancels a pending panel load; returning Home
+`private, no-cache` caching, and each card's picture address carries a version
+from the file's path, size and modification time, so an unchanged picture is
+revalidated (a 304) rather than downloaded and decoded again. Back cancels a pending panel load; returning Home
 discards replies from the previous visit. OK acts once on release.
 
 Left of any row's first tile is a search mark in the gutter, and OK there

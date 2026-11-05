@@ -488,7 +488,8 @@ function toggleRemoteKey(tile) {
   // LG's input switcher and Screen off, beside As LG has it and Nothing.
   const switchers = rkData.choices.filter(c => c.kind === 'switcher')
     .map(c => opt(c.id, `<span aria-hidden="true">⇄</span> ${esc(t('apps.remoteKeys.inputSwitcher', 'Input switcher'))}`)).join('') +
-    rkData.choices.filter(c => c.kind === 'action').map(c => opt(c.id, `<span aria-hidden="true">◼</span> ${esc(c.title)}`)).join('') +
+    // On webOS 11, Screen off only on the keys whose presses the TV logs.
+    (k.noScreenOff ? '' : rkData.choices.filter(c => c.kind === 'action').map(c => opt(c.id, `<span aria-hidden="true">◼</span> ${esc(c.title)}`)).join('')) +
     // Only on a key whose presses Home Assistant receives.
     (k.homeAssistant ? rkData.choices.filter(c => c.kind === 'ha').map(c => opt(c.id, `<span aria-hidden="true">⌂</span> ${esc(c.title)}`)).join('') : '');
   // A key set to something no longer offered (an app since removed) still shows it.
@@ -958,7 +959,10 @@ async function toggleService(serviceId, makeDisabled) {
     if (d && d.ok) {
       if (appsData && appsData.services) {
         const item = appsData.services.find(s => s.id === serviceId);
-        if (item) item.disabled = makeDisabled;
+        if (item) {
+          item.disabled = makeDisabled;
+          if (typeof d.running === 'boolean') item.running = d.running;
+        }
         renderAppsPanel();
       }
     } else {

@@ -313,6 +313,23 @@ step('a layout saved from a dashboard changes the version the view\'s heartbeat 
   });
 });
 
+step('the heartbeat asks the view to measure its frames only while the trace file is there, and logs what it sends', function (done) {
+  start(null);
+  var flag = path.join(dir, 'home-trace');
+  try { fs.unlinkSync(flag); } catch (e) {}
+  assert.strictEqual(home.beat({ focused: true }).trace, false);
+  fs.writeFileSync(flag, '');
+  var logged = [], log = console.log;
+  console.log = function (line) { logged.push(String(line)); };
+  try {
+    assert.strictEqual(home.beat({ focused: true, perf: { frames: 300, over33: 1, worst: 40 } }).trace, true);
+  } finally { console.log = log; }
+  assert.ok(logged.some(function (l) { return l.indexOf('home: frames {"frames":300') === 0; }), logged.join(' | '));
+  fs.unlinkSync(flag);
+  assert.strictEqual(home.beat({ focused: true }).trace, false, 'and stops when it is removed');
+  done();
+});
+
 step('after a start the rows come from the lists last read, and a change read behind them reloads the view', function (done) {
   start(null);
   home.catalogue(function (c) {
@@ -445,6 +462,20 @@ step('device tiles use LG\'s CEC selection contract, or open the port without a 
   })();
 });
 
+step('opening an unstarred Internet TV channel accepts the lineup and refuses an unknown channel', function (done) {
+  start(null, { iptv: {
+    rowItems: function () { return []; },
+    lineup: function () { return { channels: [{ id: 'p0a1b2c3d:x1' }] }; }
+  } });
+  home.open({ kind: 'iptv', id: 'p0a1b2c3d:x1' }, function (r) {
+    assert.equal(r.ok, true);
+    home.open({ kind: 'iptv', id: 'p0a1b2c3d:x2' }, function (unknown) {
+      assert.equal(unknown.ok, false);
+      done();
+    });
+  });
+});
+
 step('last watched on a receiver\'s port is the device the TV last selected there', function (done) {
   start(null);
   var hdmi2 = { id: 'HDMI_2', hdmiPlugIn: true, subList: [
@@ -492,14 +523,14 @@ step('the LG Home tile cannot be hidden, and unknown rows are dropped', function
   start(null);
   home.setLayout({ hidden: { app: ['lg-home', 'netflix'] }, rows: ['ch', 'bogus'] }, function (r) {
     assert.deepEqual(r.layout.hidden.app, ['netflix']);
-    assert.deepEqual(r.layout.rows, ['ch', 'app', 'rec', 'dev']);
+    assert.deepEqual(r.layout.rows, ['ch', 'app', 'rec', 'dev', 'iptv']);
     done();
   });
 });
 
 step('a layout saved before the Recommended row gets it under Apps', function (done) {
   start({ rows: ['dev', 'app', 'ch'] });
-  assert.deepEqual(home.layout().rows, ['dev', 'app', 'rec', 'ch']);
+  assert.deepEqual(home.layout().rows, ['dev', 'app', 'rec', 'ch', 'iptv']);
   done();
 });
 
@@ -592,7 +623,7 @@ function startRecent(cb) {
   // Opened while the rows are in their own order: nothing is recorded.
   at('netflix');
   home.setLayout({ sort: { app: 'recent', dev: 'recent', ch: 'recent', bogus: 'recent' } }, function (r) {
-    assert.deepEqual(r.layout.sort, { app: 'recent', dev: 'recent', ch: 'recent', rec: 'custom' });
+    assert.deepEqual(r.layout.sort, { app: 'recent', dev: 'recent', ch: 'recent', rec: 'custom', iptv: 'custom' });
     cb();
   });
 }
@@ -646,7 +677,7 @@ step('a device\'s own tile counts for that device, and a row back in its own ord
           // Inputs held the only records, so the file goes with them.
           assert.ok(!fs.existsSync(path.join(dir, 'home-recent.json')), 'a row back in its own order forgets what was opened');
           home.setLayout({ reset: true }, function (r) {
-            assert.deepEqual(r.layout.sort, { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom' });
+            assert.deepEqual(r.layout.sort, { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' });
             done();
           });
         });
@@ -1167,8 +1198,8 @@ step('webOS 7, which has no defaultApps setting, still starts: it takes the plac
   });
 });
 
-step('switched on where it is not offered, as after a firmware update to webOS 11, it is switched off at start', function (done) {
-  start({ enabled: true }, { webosVersion: '11.2.0' });
+step('switched on where it is not offered, as after a firmware update to webOS 12, it is switched off at start', function (done) {
+  start({ enabled: true }, { webosVersion: '12.0.0' });
   home.start();
   wait(50, function () {
     assert.strictEqual(home.enabled(), false);
@@ -1178,20 +1209,25 @@ step('switched on where it is not offered, as after a firmware update to webOS 1
   });
 });
 
-step('webOS 11 only with allowExperimentalHome', function (done) {
+step('webOS 11 is offered, experimental; webOS 12 and later only with allowExperimentalHome', function (done) {
   start(null, { webosVersion: '11.2.0' });
-  home.status(function (st0) {
-    assert.strictEqual(st0.supported.ok, false, 'untried there, so not offered by default');
-    start(null, { webosVersion: '11.2.0', allowExperimental: function () { return true; } });
-    home.status(function (st) {
-      assert.strictEqual(st.supported.ok, true);
-      assert.strictEqual(st.supported.experimental, true);
-      done();
+  home.status(function (st11) {
+    assert.strictEqual(st11.supported.ok, true, 'no setting needed on webOS 11');
+    assert.strictEqual(st11.supported.experimental, true);
+    start(null, { webosVersion: '12.0.0' });
+    home.status(function (st0) {
+      assert.strictEqual(st0.supported.ok, false, 'untried there, so not offered by default');
+      start(null, { webosVersion: '12.0.0', allowExperimental: function () { return true; } });
+      home.status(function (st) {
+        assert.strictEqual(st.supported.ok, true);
+        assert.strictEqual(st.supported.experimental, true);
+        done();
+      });
     });
   });
 });
 
-step('webOS 5 and 6 are offered, experimental, with each switch closing the apps that are open', function (done) {
+step('webOS 5 and 6 are offered, experimental, with each switch closing the apps that are open; webOS 3 standalone only with allowExperimentalHome', function (done) {
   start(null, { webosVersion: '5.5.0' });
   home.status(function (st5) {
     assert.strictEqual(st5.supported.ok, true, 'no setting needed on a CX');
@@ -1206,14 +1242,23 @@ step('webOS 5 and 6 are offered, experimental, with each switch closing the apps
         assert.strictEqual(st9.supported.restartsApps, undefined, 'not where sam reads the files without a restart');
         start(null, { webosVersion: '11.2.0' });
         home.status(function (st11) {
-          assert.strictEqual(st11.supported.ok, false, 'webOS 11 still needs the setting');
+          assert.strictEqual(st11.supported.restartsApps, undefined, 'nor on webOS 11');
           start(null, { webosVersion: '4.4.3' });
           home.status(function (st4) {
             assert.strictEqual(st4.supported.ok, true, 'offered on webOS 4 without the setting');
             assert.strictEqual(st4.supported.experimental, true);
             assert.strictEqual(st4.supported.standalone, true);
             assert.strictEqual(st4.supported.restartsApps, undefined);
-            done();
+            start(null, { webosVersion: '3.9.3' });
+            home.status(function (st3) {
+              assert.strictEqual(st3.supported.ok, false, 'untried on webOS 3, so not offered by default');
+              start(null, { webosVersion: '3.9.3', allowExperimental: function () { return true; } });
+              home.status(function (st3on) {
+                assert.strictEqual(st3on.supported.ok, true);
+                assert.strictEqual(st3on.supported.standalone, true, 'run as on webOS 4');
+                done();
+              });
+            });
           });
         });
       });
@@ -2237,20 +2282,20 @@ step('the picture details stay off until switched on, and the server is told of 
   });
 });
 
-step('last watched, the app count and CEC addresses show until switched off, one at a time', function (done) {
+step('last watched, the app count, CEC addresses and channel logos show until switched off, one at a time', function (done) {
   start(null);
   var l = home.layout();
-  assert.deepEqual([l.showLastOn, l.showAppCount, l.showCec], [true, true, true]);
-  home.setLayout({ showCec: false }, function (r) {
-    assert.deepEqual([r.layout.showLastOn, r.layout.showAppCount, r.layout.showCec], [true, true, false]);
+  assert.deepEqual([l.showLastOn, l.showAppCount, l.showCec, l.showTvLogos], [true, true, true, true]);
+  home.setLayout({ showCec: false, showTvLogos: false }, function (r) {
+    assert.deepEqual([r.layout.showLastOn, r.layout.showAppCount, r.layout.showCec, r.layout.showTvLogos], [true, true, false, false]);
     home.setLayout({ showLastOn: false, showAppCount: 'no' }, function (r2) {
-      assert.deepEqual([r2.layout.showLastOn, r2.layout.showAppCount, r2.layout.showCec], [false, true, false]);
+      assert.deepEqual([r2.layout.showLastOn, r2.layout.showAppCount, r2.layout.showCec, r2.layout.showTvLogos], [false, true, false, false]);
       var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
-      assert.deepEqual([saved.showLastOn, saved.showAppCount, saved.showCec], [false, true, false]);
+      assert.deepEqual([saved.showLastOn, saved.showAppCount, saved.showCec, saved.showTvLogos], [false, true, false, false]);
       home.setLayout({ showAppCount: false }, function (r3) {
-        assert.deepEqual([r3.layout.showLastOn, r3.layout.showAppCount, r3.layout.showCec], [false, false, false]);
-        home.setLayout({ showLastOn: true, showAppCount: true, showCec: true }, function (r4) {
-          assert.deepEqual([r4.layout.showLastOn, r4.layout.showAppCount, r4.layout.showCec], [true, true, true]);
+        assert.deepEqual([r3.layout.showLastOn, r3.layout.showAppCount, r3.layout.showCec, r3.layout.showTvLogos], [false, false, false, false]);
+        home.setLayout({ showLastOn: true, showAppCount: true, showCec: true, showTvLogos: true }, function (r4) {
+          assert.deepEqual([r4.layout.showLastOn, r4.layout.showAppCount, r4.layout.showCec, r4.layout.showTvLogos], [true, true, true, true]);
           done();
         });
       });

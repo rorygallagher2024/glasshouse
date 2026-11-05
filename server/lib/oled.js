@@ -382,9 +382,13 @@ function refreshOledStats(picSettings, pState, cb) {
 
 function readPanelControllerInfo(cb) {
   if (!luna) return cb(null);
+  if (isOled === false) return cb(null);
   luna('com.webos.service.panelcontroller/getOledCellInfo', {}, function (cellRes) {
+    var rawCell = cellRes && cellRes.cellInfo;
+    var cell = (rawCell && /[1-9a-zA-Z]/.test(rawCell)) ? rawCell : null;
+    if (!cell) return cb(null);
     var out = {
-      cell: (cellRes && cellRes.cellInfo) ? cellRes.cellInfo : null,
+      cell: cell,
       tconFirmware: null,
       tconModule: null
     };

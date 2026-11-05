@@ -318,4 +318,64 @@ lgs.collect(['sound'], function (r) {
 });
 console.log('  ✓ sound settings read by name win over a stale whole-category read');
 
+// LG's log upload settings are true/false, not 'on'/'off', and an off is held:
+// a C5 on webOS 11.2 had dbgLogUpload true again after each start, written by
+// PmLogDaemon from LG's answer.
+var os = require('os'), fs = require('fs'), path = require('path');
+var heldDir = path.join(os.tmpdir(), 'lgs-held-' + process.pid);
+fs.mkdirSync(heldDir);
+var optionStore = { dbgLogUpload: true, faultLogUpload: false, livePromotion: 'off' };
+var uploadWrites = [];
+lgs.init({
+  stateDir: heldDir,
+  lunaCached: function (uri, payload, ttl, cb) {
+    if (/Desc$/.test(uri)) return cb({ returnValue: true, results: [] });
+    cb({ returnValue: true, settings: payload.category === 'option' ? optionStore : {} });
+  },
+  luna: function (uri, payload, cb) {
+    if (/Desc$/.test(uri)) return cb({ returnValue: true, results: [] });
+    if (/getSystemSettings$/.test(uri)) {
+      var s = {};
+      (payload.keys || []).forEach(function (k) { s[k] = optionStore[k]; });
+      return cb({ returnValue: true, settings: s });
+    }
+    uploadWrites.push(payload);
+    for (var k in payload.settings) optionStore[k] = payload.settings[k];
+    cb({ returnValue: true });
+  },
+  clearLunaCache: function () {}
+});
+lgs.collect(['promotions', 'uploads'], function (r) {
+  var by = {};
+  r.rows.forEach(function (x) { by[x.id] = x; });
+  assert.strictEqual(by.dbgLogUpload.on, true);
+  assert.strictEqual(by.dbgLogUpload.section, 'uploads');
+  assert.strictEqual(by.faultLogUpload.on, false);
+  assert.strictEqual(by.livePromotion.on, false, 'the promotions rows come with them');
+});
+lgs.reapply(function () {
+  assert.strictEqual(uploadWrites.length, 0, 'nothing held yet, nothing written');
+});
+lgs.set('dbgLogUpload', false, function (r) { assert.strictEqual(r.ok, true); });
+assert.deepEqual(uploadWrites, [{ category: 'option', settings: { dbgLogUpload: false } }], 'written as the boolean LG stores');
+assert.deepEqual(JSON.parse(fs.readFileSync(path.join(heldDir, 'lgsettings-held.json'), 'utf8')), { dbgLogUpload: false });
+// LG writes it back at boot; reapply puts the owner's off back, and only then.
+optionStore.dbgLogUpload = true;
+lgs.reapply(function () {
+  assert.deepEqual(uploadWrites[1], { category: 'option', settings: { dbgLogUpload: false } }, 'put back off');
+  assert.strictEqual(optionStore.dbgLogUpload, false);
+  lgs.reapply(function () {
+    assert.strictEqual(uploadWrites.length, 2, 'nothing written while it is still off');
+    // Switching it back on releases the hold to LG.
+    lgs.set('dbgLogUpload', true, function (r) { assert.strictEqual(r.ok, true); });
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(heldDir, 'lgsettings-held.json'), 'utf8')), {});
+    optionStore.dbgLogUpload = false;
+    lgs.reapply(function () {
+      assert.strictEqual(uploadWrites.length, 3, 'no hold after switching back on');
+      try { fs.unlinkSync(path.join(heldDir, 'lgsettings-held.json')); fs.rmdirSync(heldDir); } catch (e) {}
+      console.log('  ✓ the log upload settings read and write as true/false, and an off is put back when LG switches it on again');
+    });
+  });
+});
+
 console.log('ALL test-lgsettings.js assertions passed!\n');
