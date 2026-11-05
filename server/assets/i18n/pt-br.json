@@ -1531,7 +1531,7 @@
  "srv.home.unknownPart": {"text": "Essa parte da tela inicial não existe", "from": "There is no such part of the Home screen"},
  "srv.home.unknownTile": {"text": "isso não está no Glasshouse Home", "from": "that is not on Glasshouse Home"},
  "srv.home.unsupported": {"text": "A tela inicial desta TV não pode ser alterada por aqui", "from": "This TV's Home screen cannot be changed from here"},
- "srv.home.untested": {"text": "O Glasshouse Home só foi testado nos webOS 5, 6, 7, 9 e 10. Esta TV usa o webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 5, 6, 7, 9 and 10. This TV runs webOS {version}."},
+ "srv.home.untested": {"text": "O Glasshouse Home só foi testado nos webOS 4, 5, 6, 7, 9, 10 e 11. Esta TV usa o webOS {version}.", "from": "Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9, 10 and 11. This TV runs webOS {version}."},
  "srv.home.wallChoice": {"text": "escolha de papel de parede desconhecida", "from": "unknown wallpaper choice"},
  "srv.home.wallExampleBad": {"text": "Um papel de parede não foi baixado íntegro. Tente de novo mais tarde.", "from": "A wallpaper did not download intact. Try again later."},
  "srv.home.wallSlot": {"text": "espaço de papel de parede desconhecido", "from": "unknown wallpaper slot"},
