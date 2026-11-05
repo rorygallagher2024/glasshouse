@@ -354,8 +354,12 @@ whole group added as a section numbered after the picks with its guide from
 the Xtream `xmltv.php`, sections moved and given start numbers, a channel
 taken out of a group staying out until added again, a rename and a star
 reaching the row, a hidden group left out of a whole-playlist search, Undo
-putting a channel taken out back at its number, and a removed playlist's
-folder deleted. It is skipped where there is no curl.
+putting a channel taken out back at its number, a removed playlist's
+folder deleted, and a channel whose variant playlist names FairPlay found to
+be protected once checked, marked in the lineup and given no play link,
+while one with a plain AES-128 key is not. It is skipped where there is no
+curl. `test-iptv-drm.js` checks which HLS keys the TV's player cannot use,
+and the resolving of a master playlist's first variant.
 
 `test-iptv-lineup.js` checks the lineup's rules alone: a version 1 selection
 becoming one section of favourites, numbering through sections with a start
