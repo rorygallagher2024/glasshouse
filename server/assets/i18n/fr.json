@@ -67,14 +67,6 @@
   "from": "Shows the LG logo as the TV switches on and off. LG calls this LG Logo Display.",
   "text": "Affiche le logo LG à l'allumage et à l'extinction de la TV. LG appelle cela LG Logo Display."
  },
- "adv.localLookups": {
-  "from": "Answer device scans on the TV",
-  "text": "Répondre aux scans d'appareils sur la TV"
- },
- "adv.localLookups.desc": {
-  "from": "LG's device detection asks your router for the name of every address on your home network: whenever the TV's Home Hub looks for devices, and on some TVs every 5 minutes, even with Auto device detection off. A network-wide ad blocker such as Pi-hole shows them as hundreds of requests. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes.",
-  "text": "La détection d'appareils de LG demande au routeur le nom de chaque adresse du réseau domestique : à chaque fois que le Home Hub de la TV cherche des appareils, et sur certaines TV toutes les 5 minutes, même avec la Détection auto désactivée. Un bloqueur de pub réseau comme Pi-hole les affiche comme des centaines de requêtes. Activée, la TV y répond elle-même, ce qui les garde hors du réseau. Rien de ce qu'affiche la TV ne change."
- },
  "adv.logoLight": {
   "from": "Logo light",
   "text": "Lumière du logo"
@@ -8527,10 +8519,6 @@
   "from": "{items} and {last}",
   "text": "{items} et {last}"
  },
- "srv.localLookups.saveFailed": {
-  "from": "could not save the setting: {error}",
-  "text": "impossible d'enregistrer le réglage : {error}"
- },
  "srv.mqtt.dropped": {
   "from": "connection dropped, retrying",
   "text": "connexion perdue, nouvelle tentative"
@@ -10626,10 +10614,6 @@
  "tv.options.lgLogo.shown": {
   "from": "Shown",
   "text": "Affiché"
- },
- "tv.options.localLookups.hint": {
-  "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes.",
-  "text": "La détection d'appareils de LG demande au routeur le nom de chaque adresse du réseau domestique, sur certaines TV toutes les 5 minutes. Activée, la TV y répond elle-même, ce qui les garde hors du réseau. Rien de ce qu'affiche la TV ne change."
  },
  "tv.options.logoLight.hint": {
   "from": "The lit LG logo on the front of the TV.",
