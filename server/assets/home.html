@@ -1804,7 +1804,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!layout || layout.livePreview !== true || document.hidden || opening) return null;
     if (guide.open) {
       var gi = guide.list[guide.row];
-      return gi ? { key: 'tv' + gi.id, row: 'iptv', item: gi, port: 0, tv: true } : null;
+      // As on the row: a channel that cannot play is not previewed.
+      return gi && playable(gi) ? { key: 'tv' + gi.id, row: 'iptv', item: gi, port: 0, tv: true } : null;
     }
     if (state.arranging || recents.open || finder.open || folder.open || adder.open) {
       tilePreview.opened = null;
@@ -2547,6 +2548,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (!r || r.protected !== true) return;
       it.unplayable = 'drm';
       if (player.open && player.failed && tvStream.item === it) renderPmsg(t('home.tv.drm', 'Protected (DRM): can’t play here'), '');
+      if (guide.open) renderGuide();
     });
   }
 
@@ -2968,7 +2970,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('srcKind').textContent = p && p.start <= Date.now() && Date.now() < p.end ? t('home.tv.onNow', 'On now') : t('home.tv.guide', 'Guide');
     $('srcTitle').textContent = p ? p.title : it ? it.name : ' ';
     $('srcVia').textContent = it ? (p ? t('home.tv.guideVia', '{name}, {from} to {to}', { name: it.name, from: hm(new Date(p.start)), to: hm(new Date(p.end)) })
-      : t('home.tv.guideNone', 'No guide for these hours')) : ' ';
+      : tvUnplayable(it) || t('home.tv.guideNone', 'No guide for these hours')) : ' ';
     $('srcDesc').textContent = p ? p.desc : '';
   }
 
