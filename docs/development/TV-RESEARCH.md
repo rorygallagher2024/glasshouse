@@ -2892,7 +2892,10 @@ screenSaver` kept.
   bridge is put into every frame, so a website cannot be shown in the screen
   saver without what it runs being able to use the TV's services. A frame
   without `sandbox` kept the screen saver up as well.
-- **A request from Home was refused.** `turnOnScreenSaver` from Home answered
-  `Invalid State change Request` while panel care held the screen saver for
-  `com.webos.app.home`; an idle timeout started it as usual.
+- **A parked request refuses the next ones.** After a day of switching
+  screen savers, `getPowerState` read `Active` with `processing: "Screen
+  Saver Ready"`, and every `turnOnScreenSaver` answered `Invalid State change
+  Request`. Launching `com.webos.app.screensaver` directly left it running
+  but not on screen. Panel care was off, so it was not the hold above. A
+  reboot cleared it, and the same request from Home then started it.
 
