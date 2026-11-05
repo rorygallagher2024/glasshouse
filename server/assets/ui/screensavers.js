@@ -107,10 +107,11 @@ async function loadScreensavers() {
                ${locked ? 'disabled' : ''}>${label}</button>`).join('');
   }
 
-  // The animation picked from the one in use's options, where it has them.
+  // The option picked from the one in use's, where it has them.
   const active = d.modes.find(m => m.active);
   const choices = active && active.choices;
   q('ss-choice-row').hidden = !choices;
+  if (choices) q('ss-choice-lbl').textContent = active.choicesLabel || t('ss.choice', 'Animation');
   if (choices) renderSsPick(choices, d.choice, locked);
   else ssPickOpen(false);
   renderSsAdd(d);

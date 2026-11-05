@@ -21,7 +21,28 @@ function ssChoices() {
     var name = seen[e.label] ? e.label + ' (' + e.id + ')' : e.label;
     seen[name] = true;
     return [e.id, name];
+  }).concat(renamedChoices());
+}
+/*
+ * A screen saver now one of another's options stays in the list under its old
+ * name, so an automation that picks it still works. It is sent by its old id,
+ * which the server takes as the other with that option, and is shown while
+ * that option is in use.
+ */
+function renamedChoices() {
+  var out = [];
+  Object.keys(screensavers.RENAMED).forEach(function (id) {
+    var r = screensavers.RENAMED[id], to = screensavers.catalog().filter(function (e) { return e.id === r.mode && !e.problem; })[0];
+    if (to) out.push([id, r.label, r.mode + '/' + r.choice]);
   });
+  return out;
+}
+// The name to show for what the TV reports: the mode, or the mode and option.
+function ssStateTemplate(choices) {
+  var m = {};
+  choices.forEach(function (c) { m[c[2] || c[0]] = c[1]; });
+  return '{% set m = ' + JSON.stringify(m) + ' %}' +
+    '{{ m.get(value_json.screensaverMode ~ "/" ~ (value_json.screensaverChoice or ""), m.get(value_json.screensaverMode, "LG default")) }}';
 }
 function ssMap(choices, byLabel) {
   var m = {};
@@ -1250,7 +1271,7 @@ function buildEntities(opts) {
           state_topic: topic.telemetry,
           options: ssc.map(function (c) { return c[1]; }),
           command_template: '{{ ' + JSON.stringify(ssMap(ssc, true)) + '[value] }}',
-          value_template: '{{ ' + JSON.stringify(ssMap(ssc, false)) + '.get(value_json.screensaverMode, "LG default") }}',
+          value_template: ssStateTemplate(ssc),
           icon: 'mdi:television-shimmer'
         }
       },

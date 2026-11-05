@@ -13,7 +13,7 @@ A firmware update restores the LG default.
 ## Controls and settings
 
 * **Brightness level:** Toggle between **Dim** and **Bright** for any screen saver mode that draws at either. A web page that draws at one brightness has neither.
-* **Animation:** For a screen saver with several animations to pick from (its `saver.json` lists them as `choices`), a list under Brightness picks the one it shows. It stays picked when the brightness changes.
+* **Options:** For a screen saver with options to pick from (its `saver.json` lists them as `choices`), a list under Brightness picks the one it shows: Clock's **Show**, or **Animation** for one with several animations. It stays picked when the brightness changes.
 * **Start screen saver:** Immediately requests the screen saver on the TV. On certain OLED TVs, including a G3 on webOS 9.2.2, LG's panel care holds the idle screen saver back for 30 minutes after key presses or app changes while dimming static areas itself. Glasshouse lifts that hold when an idle screen saver is requested or the button is pressed, and restores it once dismissed. An app that still refuses it, such as RetroArch played with a gamepad, is keeping the screen saver away itself, and is left alone until another app is in front or the TV turns off. Where the TV still refuses, as it does with LG's own Screen Saver setting off, which some LCD TVs have by default, the dashboard opens the screen saver itself, unless something is playing full screen or playback cannot be checked. Pressing any remote key, including Home or the coloured buttons, dismisses the screen saver.
 * **Poweroff after:** Automatically switches the TV into standby once the screen saver has been active for a configured duration, from 1 to 1440 minutes (blank or 0 disables it). The timer resets if the screen saver is dismissed. This requires power actions to be enabled (`allowPower`) and is stored in `config.json` as `screensaverPowerOffMinutes`.
 
@@ -25,11 +25,11 @@ A firmware update restores the LG default.
 
 A digital clock showing hours and minutes against pure black. The readout moves to a new position across the screen every minute to prevent image retention, using the TV's 12-hour or 24-hour setting.
 
-### Clock with date
+**Show** picks **Time** or **Time, seconds and date**, which adds the seconds and the weekday and date beneath:
 
-![Clock with date screen saver: digital clock with seconds, weekday and date](../screenshots/screensaver-clock-date.png)
+![Clock screen saver with seconds, weekday and date](../screenshots/screensaver-clock-date.png)
 
-A digital clock displaying seconds alongside the current weekday and date beneath it. Like Clock, it shifts position every minute to protect the panel.
+Clock with date used to be a screen saver of its own. A TV that had it in use keeps it, as Clock with that option, and Home Assistant and the API still take `clock-date`.
 
 ### Starfield
 

@@ -172,7 +172,8 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   console.log('  ✓ the pigs Glasshouse installs as an example read as an added screen saver');
 })();
 
-// 10. Clock with date is a saver of its own, following the TV's 12/24-hour setting as Clock does
+// 10. Clock's Show option draws the seconds and date, and Clock with date's old
+// id, stored on a TV or sent by an automation, is taken as Clock with that option
 (function testClockDate() {
   screensavers.init({
     luna: env.mockLuna,
@@ -180,26 +181,43 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
     saverRoots: [{ dir: BUILTIN, builtin: true }]
   });
   var ids = screensavers.catalog().map(function (e) { return e.id; });
-  assert.strictEqual(ids.indexOf('clock-date'), ids.indexOf('clock') + 1, 'listed beside Clock');
+  assert.strictEqual(ids.indexOf('clock-date'), -1, 'no longer a saver of its own');
 
-  var clockDate = byId(screensavers.screensaverList().modes, 'clock-date');
-  assert.ok(clockDate, 'clock-date listed');
-  assert.strictEqual(clockDate.available, true, clockDate.note);
-  assert.strictEqual(clockDate.builtin, true);
-  assert.strictEqual(clockDate.label, 'Clock with date');
-  assert.deepEqual(clockDate.description, 'A digital clock with seconds, the weekday and date on black, moving to a new position every minute.');
-  assert.ok(clockDate.description.indexOf('seconds') !== -1, 'seconds are described');
+  // Its folder, which an update leaves behind, is not listed either.
+  screensavers.init({
+    luna: env.mockLuna,
+    config: { port: 8080, allowControl: true },
+    saverRoots: [{ dir: BUILTIN, builtin: true }, { dir: path.join(__dirname, 'fixtures', 'savers-left-behind'), builtin: true }]
+  });
+  ids = screensavers.catalog().map(function (e) { return e.id; });
+  assert.strictEqual(ids.indexOf('clock-date'), -1, 'the folder an update leaves is not listed');
 
-  env.files[path.join(APP, '.tvweb-screensaver')] = 'clock-date';
+  var clock = byId(screensavers.screensaverList().modes, 'clock');
+  assert.strictEqual(clock.choicesLabel, 'Show');
+  assert.deepEqual(clock.choices.map(function (c) { return c.id; }), ['time', 'date']);
+  assert.strictEqual(clock.choice, 'time', 'the time alone by default, as Clock always was');
+
+  function staged() { return env.files[path.join(STAGE, 'qml', 'main.qml')]; }
+
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'clock';
   env.files[path.join(APP, '.tvweb-brightness')] = 'dim';
+  delete env.files[path.join(APP, '.tvweb-choice')];
   screensavers.restageScreensaver();
-  var main = env.files[path.join(STAGE, 'qml', 'main.qml')];
-  assert.ok(main.indexOf('property int level: 0') !== -1, 'level filled in');
-  assert.strictEqual(main.indexOf('__TVWEB_'), -1, 'no placeholder left');
-  assert.ok(/property bool hour12: (true|false)/.test(main), 'the TV\'s 12/24-hour setting filled in');
-  assert.ok(main.indexOf('Qt.formatDate') !== -1, 'the day and date are drawn');
-  assert.ok(main.indexOf('getSeconds') !== -1, 'the seconds are drawn');
-  console.log('  ✓ Clock with date stages as its own saver, with the TV\'s 12/24-hour setting');
+  assert.ok(staged().indexOf('property bool withDate: false') !== -1, 'time alone');
+  assert.strictEqual(staged().indexOf('__TVWEB_'), -1, 'no placeholder left');
+  assert.ok(/property bool hour12: (true|false)/.test(staged()), 'the TV\'s 12/24-hour setting filled in');
+
+  // A TV that had Clock with date in use before the update.
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'clock-date';
+  assert.strictEqual(screensavers.screensaverMode(), 'clock', 'the old id reads as Clock');
+  assert.strictEqual(screensavers.screensaverChoice(), 'date', 'with the date');
+  screensavers.restageScreensaver();
+  assert.ok(staged().indexOf('property bool withDate: true') !== -1, 'restaged with the date');
+  assert.ok(staged().indexOf('Qt.formatDate') !== -1, 'the day and date are drawn');
+  assert.strictEqual(env.files[path.join(STAGE, '.tvweb-screensaver')], 'clock', 'stored again under its new id');
+  assert.strictEqual(env.files[path.join(STAGE, '.tvweb-choice')], 'date');
+  assert.strictEqual(byId(screensavers.screensaverList().modes, 'clock').active, true, 'shown as Clock in use');
+  console.log('  \u2713 Clock with date is Clock\'s Show option, and its old id still works');
 })();
 
 // 11. An installed Homebrew Channel app's screen saver is listed, from its app,

@@ -32,6 +32,12 @@ var SCREENSAVER_LEVEL_MARKER = '.tvweb-brightness';
 var WEB_DIR = 'web';
 // The option picked from a screen saver's choices, staged beside the level.
 var SCREENSAVER_CHOICE_MARKER = '.tvweb-choice';
+/*
+ * Screen savers folded into another's options, by their old id: what a TV that
+ * had one in use stored, and what an automation may still send. Clock with date
+ * was its own folder until options could be given to a QML screen saver.
+ */
+var RENAMED = { 'clock-date': { mode: 'clock', choice: 'date', label: 'Clock with date' } };
 // Survives a server restart, but not a TV reboot. sam also retains native
 // screen savers after dismissal, so its running list alone cannot prove ours.
 var LAUNCHED_MARKER = '/var/run/tvweb-screensaver-launched';
@@ -256,7 +262,7 @@ function readSaver(root, name) {
 function isArray(v) { return Object.prototype.toString.call(v) === '[object Array]'; }
 
 /*
- * saver.json's choices: { default, options: [{ id, name, value, group }] },
+ * saver.json's choices: { label, default, options: [{ id, name, value, group }] },
  * a list the dashboard offers as a dropdown, under the group's heading where
  * an option has one, the picked option's value put in for __TVWEB_CHOICE__.
  * The options or the reason they cannot be read.
@@ -265,6 +271,11 @@ function readChoices(c, saverId) {
   var bad = msg('srv.saver.badChoices', '{file}: choices needs options, each with an id, a name and a short value without spaces or quotes, and a default naming one of them.', { file: MANIFEST });
   if (!c || typeof c !== 'object' || !isArray(c.options) || !c.options.length || c.options.length > MAX_CHOICES) return bad;
   var out = { options: [], def: c['default'] }, seen = {};
+  if (c.label !== undefined) {
+    var label = manifestText(c.label);
+    if (!label) return bad;
+    out.label = say.define('saver.' + saverId + '.choices', label.en, label);
+  }
   for (var i = 0; i < c.options.length; i++) {
     var o = c.options[i], name = o && manifestText(o.name), group = o && o.group !== undefined ? manifestText(o.group) : null;
     if (!o || typeof o.id !== 'string' || !CHOICE_ID.test(o.id) || !name ||
@@ -344,6 +355,9 @@ function scanSavers() {
     var found = [];
     for (var i = 0; i < entries.length; i++) {
       if (entries[i].charAt(0) === '.') continue;   // hidden
+      // An update adds files but removes none, so one folded into another's
+      // options is still there after it.
+      if (saverRoots[r].builtin && RENAMED[entries[i]]) continue;
       try { if (!fs.statSync(path.join(saverRoots[r].dir, entries[i])).isDirectory()) continue; }
       catch (e2) { continue; }
       var entry = saverRoots[r].apps ? readAppSaver(saverRoots[r], entries[i]) : readSaver(saverRoots[r], entries[i]);
@@ -528,7 +542,8 @@ function screensaverLevel() {
 // The option in use from the screen saver's choices, or its default.
 function screensaverChoice(e) {
   if (!e || !e.choices) return undefined;
-  var picked = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_CHOICE_MARKER));
+  var stored = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
+  var picked = RENAMED[stored] ? RENAMED[stored].choice : readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_CHOICE_MARKER));
   return pickChoice(e, picked);
 }
 function pickChoice(e, id) {
@@ -537,6 +552,7 @@ function pickChoice(e, id) {
 
 function screensaverMode() {
   var m = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
+  if (RENAMED[m]) m = RENAMED[m].mode;
   var e = m && m !== 'stock' ? saverById(m) : null;
   return e && !e.problem ? m : 'stock';
 }
@@ -614,7 +630,9 @@ function screensaverList() {
       uploaded: e.uploaded || undefined,
       // Options to pick from, and the one in use (or its default).
       choices: e.choices ? e.choices.options.map(function (o) { return { id: o.id, label: o.label, group: o.group }; }) : undefined,
-      choice: e.choices ? (e.id === cur ? screensaverChoice(e) : e.choices.def) : undefined
+      choice: e.choices ? (e.id === cur ? screensaverChoice(e) : e.choices.def) : undefined,
+      // What the dropdown is called, where the screen saver names it.
+      choicesLabel: e.choices ? e.choices.label : undefined
     });
   }
   return {
@@ -766,6 +784,10 @@ function fillSaverQml(e, qml, level, choice) {
 
 // choice: one of the saver's options, where it has them; its default otherwise.
 function setScreensaver(mode, level, cb, choice) {
+  if (RENAMED[mode]) {
+    if (choice === undefined) choice = RENAMED[mode].choice;
+    mode = RENAMED[mode].mode;
+  }
   // Read again, so a saver just added on the TV can be picked.
   if (mode !== 'stock') scanSavers();
   var saver = mode === 'stock' ? STOCK : saverById(mode);
@@ -906,6 +928,10 @@ function restageScreensaver() {
     var staged = stagedMain(saver);
     var before = fs.existsSync(staged) ? fs.readFileSync(staged, 'utf8') : '';
     stageSaverFiles(saver, screensaverLevel(), screensaverChoice(saver));
+    // An old id stored is written again as the one it now is.
+    if (RENAMED[readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER))]) {
+      fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), mode);
+    }
     if (fs.readFileSync(staged, 'utf8') !== before) {
       console.log('screensaver: restaged "' + mode + '" from a newer copy');
     }
@@ -1202,6 +1228,7 @@ module.exports = {
   allowedAnyway: allowedAnyway,
   setScreensaver: setScreensaver,
   screensaverChoice: function () { return screensaverChoice(saverById(screensaverMode())); },
+  RENAMED: RENAMED,
   uploadHtml: uploadHtml,
   removeUploaded: removeUploaded,
   restageScreensaver: restageScreensaver,
