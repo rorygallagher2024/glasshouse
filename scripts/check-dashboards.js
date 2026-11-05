@@ -2170,6 +2170,13 @@ async function visitHomeInternetTv(browser, base, problems) {
     await key(457);
     await page.waitForSelector('#guide .gc b');
     if (await page.locator('#guide .gc b').first().textContent() !== 'The World This Weekend') fail('the guide did not show the schedule');
+    const guideRow = () => page.locator('#gBody .gr.focus').getAttribute('data-g');
+    await key(34);
+    await page.waitForTimeout(100);
+    if (await guideRow() !== '1') fail('Channel down did not turn the guide a page, to its last channel');
+    await key(33);
+    await page.waitForTimeout(100);
+    if (await guideRow() !== '0') fail('Channel up did not turn the guide back a page');
     await key(461);
     await page.waitForTimeout(200);
     if (/guiding/.test(await page.locator('#stage').getAttribute('class'))) fail('Back did not close the guide');

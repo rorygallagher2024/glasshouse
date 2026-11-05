@@ -2913,7 +2913,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       times += '<span style="left:' + Math.round((t0 - guide.start) * k) + 'px">' + esc(hm(new Date(t0))) + '</span>';
     }
     $('gTimes').innerHTML = times;
-    var visible = Math.floor(($('gBody').clientHeight || 674) / GUIDE_ROW_PX);
+    var visible = guideRowsShown();
     if (guide.row < guide.top) guide.top = guide.row;
     if (guide.row >= guide.top + visible) guide.top = guide.row - visible + 1;
     var html = '';
@@ -2955,6 +2955,19 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('srcDesc').textContent = p ? p.desc : '';
   }
 
+  function guideRowsShown() {
+    return Math.max(1, Math.floor(($('gBody').clientHeight || 674) / GUIDE_ROW_PX));
+  }
+
+  // Channel up and down turn a page: the rows move by a screenful, focus keeping its place on screen.
+  function guidePage(dir) {
+    var shown = guideRowsShown(), last = guide.list.length - 1;
+    var top = Math.max(0, Math.min(Math.max(0, last - shown + 1), guide.top + dir * shown));
+    guide.row = Math.max(0, Math.min(last, guide.row + (top - guide.top || dir * shown)));
+    guide.top = top;
+    guide.tabs = false;
+  }
+
   function guideShift(ms) {
     var min = Math.floor((Date.now() - GUIDE_BACK_MS) / HALF_HOUR) * HALF_HOUR, max = Date.now() + GUIDE_AHEAD_MS;
     guide.start = Math.max(min, Math.min(max, guide.start + ms));
@@ -2962,6 +2975,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function guideKey(k) {
     if (k === KEY.back) return closeGuide();
+    if (k === KEY.chUp || k === KEY.chDown) {
+      if (!guide.list.length) return;
+      guidePage(k === KEY.chUp ? -1 : 1);
+      return renderGuide();
+    }
     var it = guide.list[guide.row];
     if (guide.tabs) {
       if (k === KEY.left || k === KEY.right) {

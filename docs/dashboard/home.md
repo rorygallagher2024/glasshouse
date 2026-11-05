@@ -254,7 +254,8 @@ It, or **Info** on the row, shows two and a half hours of the
 lineup's programmes at a time, from the half hour before now, with an
 amber line at the time now. **Up** and **Down** move between channels at the
 same time, **Left** and **Right** between programmes, moving the hours shown
-as they go (from two hours back to a day ahead). Above the channels, the
+as they go (from two hours back to a day ahead). **Channel up** and
+**Channel down** turn a page of channels at a time. Above the channels, the
 favourites and the lineup's sections are tabs: **Up** from the first channel reaches them, and
 **Left** and **Right** choose one. The top of the screen names the programme
 in focus, its times and what it is about, with the channel in the preview.
