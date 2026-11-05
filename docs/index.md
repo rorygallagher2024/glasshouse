@@ -104,7 +104,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     ---
 
-    A replacement Home app with full control over what displays, and no ads. This feature is currently only available on webOS 7, 9 and 10 TVs.
+    A replacement Home app with full control over what displays, and no ads, with a row of Internet TV channels from your own IPTV playlist. Available on webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3 and later versions can try it with a setting.
 
 -   **[Controlling the TV without the cloud](dashboard/control.md)**
 
