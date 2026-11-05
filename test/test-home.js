@@ -1179,8 +1179,8 @@ step('webOS 7, which has no defaultApps setting, still starts: it takes the plac
   });
 });
 
-step('switched on where it is not offered, as after a firmware update to webOS 11, it is switched off at start', function (done) {
-  start({ enabled: true }, { webosVersion: '11.2.0' });
+step('switched on where it is not offered, as after a firmware update to webOS 12, it is switched off at start', function (done) {
+  start({ enabled: true }, { webosVersion: '12.0.0' });
   home.start();
   wait(50, function () {
     assert.strictEqual(home.enabled(), false);
@@ -1190,15 +1190,20 @@ step('switched on where it is not offered, as after a firmware update to webOS 1
   });
 });
 
-step('webOS 11 only with allowExperimentalHome', function (done) {
+step('webOS 11 is offered, experimental; webOS 12 and later only with allowExperimentalHome', function (done) {
   start(null, { webosVersion: '11.2.0' });
-  home.status(function (st0) {
-    assert.strictEqual(st0.supported.ok, false, 'untried there, so not offered by default');
-    start(null, { webosVersion: '11.2.0', allowExperimental: function () { return true; } });
-    home.status(function (st) {
-      assert.strictEqual(st.supported.ok, true);
-      assert.strictEqual(st.supported.experimental, true);
-      done();
+  home.status(function (st11) {
+    assert.strictEqual(st11.supported.ok, true, 'no setting needed on webOS 11');
+    assert.strictEqual(st11.supported.experimental, true);
+    start(null, { webosVersion: '12.0.0' });
+    home.status(function (st0) {
+      assert.strictEqual(st0.supported.ok, false, 'untried there, so not offered by default');
+      start(null, { webosVersion: '12.0.0', allowExperimental: function () { return true; } });
+      home.status(function (st) {
+        assert.strictEqual(st.supported.ok, true);
+        assert.strictEqual(st.supported.experimental, true);
+        done();
+      });
     });
   });
 });
@@ -1218,7 +1223,7 @@ step('webOS 5 and 6 are offered, experimental, with each switch closing the apps
         assert.strictEqual(st9.supported.restartsApps, undefined, 'not where sam reads the files without a restart');
         start(null, { webosVersion: '11.2.0' });
         home.status(function (st11) {
-          assert.strictEqual(st11.supported.ok, false, 'webOS 11 still needs the setting');
+          assert.strictEqual(st11.supported.restartsApps, undefined, 'nor on webOS 11');
           start(null, { webosVersion: '4.4.3' });
           home.status(function (st4) {
             assert.strictEqual(st4.supported.ok, true, 'offered on webOS 4 without the setting');

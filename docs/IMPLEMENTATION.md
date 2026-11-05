@@ -366,9 +366,10 @@ Panel-lifecycle features are gated on panel type, detected once via
 `/var/luna/preferences/paneltype_oled`, the model name (`OLED...`, or one of the OLED lines
 whose model numbers lack the prefix: Flex and Objet Posé `LX`, Easel `ART9x`), or pnwash
 filesystem records. The pnwash check also runs when the model name is known, so an unlisted
-OLED without the prefix is still found. `panelUsageTime` is not a signal: LCD TVs report it too. On an LCD/QNED TV they are
+OLED without the prefix is still found. `panelUsageTime` is not a signal: LCD TVs report it too,
+and `panelcontroller/getOledCellInfo` can return all zeros (`00/00/0/00`). On an LCD/QNED TV they are
 omitted from the dashboard and withheld from MQTT discovery, with retained discovery configs
-cleared so they do not linger in Home Assistant as orphans. Reporting `0 hours` would read as a real
+cleared so they do not linger in Home Assistant as orphans. Reporting `0 hours` or a dummy cell would read as a real
 measurement.
 
 ## Deploying over ssh
@@ -1473,7 +1474,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 4, 5, 6, 7, 9 and 10; webOS 11 with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab (webOS 4, 5, 6, 7, 9, 10 and 11; later versions with `allowExperimentalHome`). The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 

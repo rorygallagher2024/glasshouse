@@ -562,7 +562,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 </style>
 </head>
 <body>
-<div id="stage" class="no-search">
+<div id="stage" class="no-search no-clock">
   <div id="wall"><div class="layer"></div><div class="layer"></div></div>
   <div id="scrim"></div>
 
@@ -1731,7 +1731,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function stageClass() {
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
-      (layout && layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
+      (!layout || layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
       (layout && layout.view === 'alternative' ? ' alternative' : '') + (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
       (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '');
     followPreview();
@@ -4334,12 +4334,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       data = r;
       loadLineup();
       layout = r.layout;
-      renderNow();
       if (!searchOn()) { closeSearch(); state.rail = false; }
       setFadeOn(layout.fade === true);
       applyMotion(layout);
       applyColours(layout.colours);
       applyDarkening(layout.darkening);
+      stageClass();
+      renderNow();
       if (r.layoutVersion) layoutVersion = r.layoutVersion;
       refreshPicture();
       clearTimeout(loadRetry);

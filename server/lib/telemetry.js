@@ -1534,6 +1534,10 @@ function detectWebosVersion(sdkVersion) {
   return null;
 }
 
+function isDummyCell(cell) {
+  return !cell || !/[1-9a-zA-Z]/.test(cell);
+}
+
 function detectHardwareInfo(sdkVersion, cb) {
   HARDWARE_INFO.webos = detectWebosVersion(sdkVersion);
   var envRaw = readTrimmed('/var/luna/preferences/environmentCondition');
@@ -1561,16 +1565,32 @@ function detectHardwareInfo(sdkVersion, cb) {
     return;
   }
 
-  lunaFn('com.webos.service.panelcontroller/getOledCellInfo', {}, function (cellRes) {
-    if (cellRes && cellRes.cellInfo) HARDWARE_INFO.cell = cellRes.cellInfo;
-    lunaFn('com.webos.service.panelcontroller/getOledTconInfo', {}, function (tconRes) {
-      if (tconRes && tconRes.tconParamForInstart) {
-        HARDWARE_INFO.tconFirmware = tconRes.tconParamForInstart.tconFpgaFirmwareVer || null;
-        HARDWARE_INFO.tconModule = tconRes.tconParamForInstart.tconModuleInfo || null;
+  function readSiliconInfo() {
+    lunaFn('com.webos.service.panelcontroller/getOledCellInfo', {}, function (cellRes) {
+      if (cellRes && cellRes.cellInfo && !isDummyCell(cellRes.cellInfo)) {
+        HARDWARE_INFO.cell = cellRes.cellInfo;
       }
-      if (cb) cb();
+      lunaFn('com.webos.service.panelcontroller/getOledTconInfo', {}, function (tconRes) {
+        if (HARDWARE_INFO.cell && tconRes && tconRes.tconParamForInstart) {
+          HARDWARE_INFO.tconFirmware = tconRes.tconParamForInstart.tconFpgaFirmwareVer || null;
+          HARDWARE_INFO.tconModule = tconRes.tconParamForInstart.tconModuleInfo || null;
+        }
+        if (cb) cb();
+      });
     });
-  });
+  }
+
+  if (oledModule && typeof oledModule.detectOled === 'function') {
+    oledModule.detectOled(function (isOled) {
+      if (!isOled) {
+        if (cb) cb();
+        return;
+      }
+      readSiliconInfo();
+    });
+  } else {
+    readSiliconInfo();
+  }
 }
 
 // Tries left, and the wait between them, when the model name does not come

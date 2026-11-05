@@ -509,7 +509,7 @@ async function tick() {
     } else {
       q('spec-arch-item').hidden = true;
     }
-    if (d.panel_silicon && d.panel_silicon.cell) {
+    if (d.panel_silicon && d.panel_silicon.cell && /[1-9a-zA-Z]/.test(d.panel_silicon.cell)) {
       q('spec-silicon-item').hidden = false;
       q('spec-silicon').textContent = d.panel_silicon.cell;
       hasHw = true;

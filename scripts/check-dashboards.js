@@ -505,6 +505,9 @@ async function visitHomeVisibility(browser, base, problems) {
     await firstNow;
     await page.waitForTimeout(50);
     if ((await page.locator('#srcTitle').textContent()).trim()) problems.push('Home visibility: last watched appeared before the layout loaded');
+    if (await page.evaluate(() => getComputedStyle(document.getElementById('when')).visibility) !== 'hidden') {
+      problems.push('Home visibility: the clock appeared before the layout loaded');
+    }
     await release();
     await page.waitForSelector('.tile');
     const clock = await check(false);
