@@ -1670,6 +1670,9 @@ button.wall-screen::before{content:'';position:absolute;inset:0;background:linea
 button.wall-screen:hover:not(:disabled){border-color:rgba(255,255,255,.45)}
 button.wall-screen:disabled{opacity:1;cursor:default}
 .wall-choice{max-width:560px;margin:14px 0 6px}
+/* Seven scenes with names of every length: each as wide as its name. */
+.wall-choice.scenes{display:flex;flex-wrap:wrap;max-width:none}
+.wall-choice.scenes button{flex:0 0 auto;padding:0 18px;white-space:nowrap}
 /* A set's or Black's empty time of day is not a place to add a picture. */
 .wall-card.fixed:not(.has) button.wall-screen{border-style:solid;border-color:rgba(255,255,255,.12)}
 .wall-card:not(.has) button.wall-screen{border-style:dashed;border-color:rgba(255,255,255,.22)}

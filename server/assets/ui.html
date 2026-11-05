@@ -1305,38 +1305,36 @@
     <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook() })" data-t="home.colours.reset">Use the default colours</button>
   </div>
 
-  <div class="pv-sec adv-sec" data-t="home.wall.title">Wallpaper</div>
-  <div class="prot-table">
-    <div class="prot-row" id="home-anim-row">
-      <div class="prot-main">
-        <div class="prot-title" data-t="home.anim">Animated background</div>
-        <div class="prot-desc" data-t="home.animDesc">Light that moves slowly behind Glasshouse Home, drawn in place of the pictures. It stops whenever Home is not on screen.</div>
+  <div class="pv-sec adv-sec" data-t="home.bg.title">Background</div>
+  <div class="sub" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
+  <div class="btns wall-choice" id="home-bg-kind"></div>
+  <div id="home-bg-pictures">
+    <div class="sub" data-t="home.wall.introPictures">A picture for each part of the day: one of the picture sets, or your own.</div>
+    <div class="btns wall-choice" id="home-wall-choice"></div>
+    <!-- The day as Glasshouse Home shows it: each part's picture across its hours, and where the day is now -->
+    <div class="wall-day" id="home-wall-day"></div>
+    <div class="wall-cards" id="home-walls"></div>
+    <input type="file" id="home-wall-file" accept="image/jpeg,image/png,image/webp" hidden onchange="homeWallPicked(this)">
+    <div class="wall-foot">
+      <div class="sub" id="home-wall-help" data-t="home.wall.uploadHelp">JPEG, PNG or WebP, up to 25 MB. Images are resized to fit 1920 × 1080, the size Glasshouse Home is drawn at, before upload, and fill the screen.</div>
+      <div class="wall-foot-btns">
+        <button type="button" class="pill idle" id="home-wall-clear" onclick="homeClearUploads()" data-t="home.wall.clearAll">Remove all</button>
       </div>
-      <div class="prot-status"><select class="pill-sel" id="home-anim-sel" aria-label="Animated background" data-t-aria-label="home.anim"
-        onchange="homeAnim(this.value)"></select></div>
+    </div>
+    <div class="sub" id="home-wall-upload-note" role="status"></div>
+  </div>
+  <div id="home-bg-animated">
+    <div class="sub" data-t="home.animDesc">Light that moves slowly behind Glasshouse Home. It stops whenever Home is not on screen.</div>
+    <div class="btns wall-choice scenes" id="home-anim-scenes"></div>
+    <div id="home-anim-colours">
+      <div class="sub" data-t="home.animColoursDesc">Its colours: following the part of the day, a preset, or a background and a light colour of your own. In the aquarium they are the water and the light through it.</div>
+      <div class="home-looks" id="home-anim-themes"></div>
+      <div class="home-custom">
+        <label><input type="color" id="home-anim-sky" onchange="homeAnimCustom()"> <span data-t="home.animSky">Background</span></label>
+        <label><input type="color" id="home-anim-light" onchange="homeAnimCustom()"> <span data-t="home.animLight">Light</span></label>
+      </div>
     </div>
   </div>
-  <div id="home-anim-colours">
-    <div class="sub" data-t="home.animColoursDesc">The colours of the animated background: following the part of the day, a preset, or a background and a light colour of your own. In the aquarium they are the water and the light through it.</div>
-    <div class="home-looks" id="home-anim-themes"></div>
-    <div class="home-custom">
-      <label><input type="color" id="home-anim-sky" onchange="homeAnimCustom()"> <span data-t="home.animSky">Background</span></label>
-      <label><input type="color" id="home-anim-light" onchange="homeAnimCustom()"> <span data-t="home.animLight">Light</span></label>
-    </div>
-  </div>
-  <div class="sub" data-t="home.wall.introSets">A picture behind Glasshouse Home for each part of the day: none, one of the picture sets, or your own.</div>
-  <div class="btns wall-choice" id="home-wall-choice"></div>
-  <!-- The day as Glasshouse Home shows it: each part's picture across its hours, and where the day is now -->
-  <div class="wall-day" id="home-wall-day"></div>
-  <div class="wall-cards" id="home-walls"></div>
-  <input type="file" id="home-wall-file" accept="image/jpeg,image/png,image/webp" hidden onchange="homeWallPicked(this)">
-  <div class="wall-foot">
-    <div class="sub" id="home-wall-help" data-t="home.wall.uploadHelp">JPEG, PNG or WebP, up to 25 MB. Images are resized to fit 1920 × 1080, the size Glasshouse Home is drawn at, before upload, and fill the screen.</div>
-    <div class="wall-foot-btns">
-      <button type="button" class="pill idle" id="home-wall-clear" onclick="homeClearUploads()" data-t="home.wall.clearAll">Remove all</button>
-    </div>
-  </div>
-  <div class="sub" id="home-wall-upload-note" role="status"></div>
   <div class="set home-dark"><div class="lbl"><span data-t="home.darkening">Darkening</span> &middot; <span id="home-dark-lbl" class="num">&mdash;</span></div>
     <div class="sub" data-t="home.darkeningDesc">How much the wallpaper is darkened behind the clock and the rows, to keep them easy to read. Off shows the picture as it is.</div>
     <div class="vol-row">

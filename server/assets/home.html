@@ -568,7 +568,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 </head>
 <body>
 <div id="stage" class="no-search no-clock">
-  <div id="wall"><canvas id="anim" width="960" height="540"></canvas><div class="layer"></div><div class="layer"></div></div>
+  <div id="wall"><canvas id="anim" width="0" height="0"></canvas><div class="layer"></div><div class="layer"></div></div>
   <div id="scrim"></div>
 
   <section id="now">
@@ -4304,11 +4304,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * A moving background in place of the wallpaper pictures: light waves,
    * floating particles, or an aquarium seen through its side. It is drawn on
    * a canvas at half the screen's size, which the page scales up (the
-   * shapes are soft, so nothing is lost), at most 30 times a second, and
-   * only while Home is on screen. Waves and particles take the colours of
+   * shapes are soft, so nothing is lost), at most 30 times a second (20 before
+   * webOS 9), and only while Home is on screen. Waves and particles take the colours of
    * the part of the day the pictures follow; the aquarium dims at night.
    */
-  var ANIM_W = 960, ANIM_H = 540, ANIM_FRAME_MS = 33;
+  var ANIM_W = 960, ANIM_H = 540;
+  /*
+   * 30 frames a second, or 20 before webOS 9. Most of a background's cost is
+   * the page drawn again each frame, whatever the canvas holds: on a B8
+   * (webOS 4.4.3) a canvas only cleared took 53% of a core at 30 and 32% at
+   * 20, and at 30 moving along the rows dropped frames.
+   */
+  function animFrameMs() {
+    return data && data.supported && parseInt(data.supported.webos, 10) < 9 ? 50 : 33;
+  }
   var ANIM_PALETTES = {
     morning:   { top: '#1e0e08', bottom: '#3a1a10', hues: ['#ff9a5a', '#ffc874', '#ff6f8e'] },
     afternoon: { top: '#04192e', bottom: '#0b3456', hues: ['#3fb4ff', '#7fe0ff', '#5a7dff'] },
@@ -4316,7 +4325,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     night:     { top: '#06102e', bottom: '#0e2160', hues: ['#4f7bff', '#8fa4ff', '#b48bff'] }
   };
   var ANIM_DIM = { morning: 0.9, afternoon: 1, evening: 0.75, night: 0.45 };
-  var anim = { style: 'off', raf: 0, last: 0, t: 0, scene: null, ctx: null, still: false, stillByDrift: false };
+  var anim = { style: 'off', raf: 0, last: 0, t: 0, scene: null, ctx: null, still: false };
 
   function rnd(a, b) { return a + Math.random() * (b - a); }
 
@@ -4361,11 +4370,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // The gradient behind waves and particles is the canvas's own background,
   // set when it changes; each frame only clears the canvas over it.
   var animSky = '';
-  function animBackdrop(ctx, top, bottom) {
-    var sky = top + ',' + bottom;
+  function animBackdrop(ctx, top, bottom, over) {
+    var sky = top + ',' + bottom + (over || '');
     if (sky !== animSky) {
       animSky = sky;
-      $('anim').style.background = 'linear-gradient(' + top + ',' + bottom + ')';
+      $('anim').style.background = (over ? over + ',' : '') + 'linear-gradient(' + top + ',' + bottom + ')';
     }
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
@@ -4382,8 +4391,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     build: function () {
       var bands = [];
       for (var i = 0; i < 3; i++) {
-        bands.push({ y: 0.3 + i * 0.13 + rnd(-0.03, 0.03), amp: rnd(40, 70), f1: rnd(0.0035, 0.006), f2: rnd(0.0015, 0.003),
-                     s1: rnd(0.35, 0.55) * (i % 2 ? -1 : 1), s2: rnd(0.2, 0.35), ph: rnd(0, 6.28),
+        bands.push({ y: 0.3 + i * 0.13 + rnd(-0.03, 0.03), amp: rnd(30, 55), f1: rnd(0.0035, 0.006), f2: rnd(0.0015, 0.003),
+                     s1: rnd(0.2, 0.32) * (i % 2 ? -1 : 1), s2: rnd(0.12, 0.2), ph: rnd(0, 6.28),
                      tilt: rnd(-0.22, 0.22), w: rnd(14, 30), hue: i % 3 });
       }
       return { bands: bands, top: [], bottom: [] };
@@ -4407,23 +4416,23 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         for (var x = -WAVE_STEP; x <= ANIM_W + WAVE_STEP; x += WAVE_STEP, n++) {
           var y = r.y * ANIM_H + (x / ANIM_W - 0.5) * r.tilt * ANIM_H +
             Math.sin(x * r.f1 + t * r.s1 + r.ph) * r.amp + Math.sin(x * r.f2 - t * r.s2 + r.ph * 1.7) * r.amp * 0.6;
-          var w = r.w * (0.55 + 0.45 * Math.sin(x * 0.004 + t * 0.4 + r.ph));
+          var w = r.w * (0.55 + 0.45 * Math.sin(x * 0.004 + t * 0.25 + r.ph));
           top[n] = { x: x, y: y - w };
           bottom[n] = { x: x, y: y + w };
         }
         top.length = bottom.length = n;
-        ctx.globalAlpha = 0.16;
+        ctx.globalAlpha = 0.12;
         ctx.fillStyle = pal.hues[r.hue];
         ctx.beginPath();
         WAVES.curve(ctx, top, 0, true);
         WAVES.curve(ctx, bottom, n - 1, false);
         ctx.closePath();
         ctx.fill();
-        ctx.globalAlpha = 0.55;
+        ctx.globalAlpha = 0.4;
         ctx.strokeStyle = pal.hues[r.hue];
         ctx.lineWidth = 1.5;
         ctx.beginPath(); WAVES.curve(ctx, top, 0, true); ctx.stroke();
-        ctx.globalAlpha = 0.3;
+        ctx.globalAlpha = 0.22;
         ctx.beginPath(); WAVES.curve(ctx, bottom, 0, true); ctx.stroke();
       }
       ctx.globalAlpha = 1;
@@ -4476,6 +4485,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // An aquarium through its side: light from the surface, fish at every
   // depth, waving weed and rising bubbles over a sandy floor.
+  // The floor picture's height: the bed reaches at most 77 px above the bottom, a rock 17 px more.
+  var AQUARIUM_FLOOR_H = 120;
   var FISH_COLOURS = ['#ff8a3d', '#ffd23f', '#4fc3ff', '#ff5e7e', '#9be15d', '#c18cff'];
   var AQUARIUM = {
     fish: function (onScreen) {
@@ -4495,14 +4506,88 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       for (i = 0; i < 6; i++) rays.push({ x: rnd(0.05, 0.95) * ANIM_W, w: rnd(30, 90), ph: rnd(0, 6.28), sp: rnd(0.05, 0.15) });
       for (i = 0; i < 6; i++) rocks.push({ x: rnd(0, ANIM_W), w: rnd(26, 70), h: rnd(14, 34) });
       for (i = 0; i < 3; i++) vents.push({ x: rnd(0.1, 0.9) * ANIM_W, next: rnd(0, 1) });
-      return { bed: bed, fish: fish, weeds: weeds, rays: rays, rocks: rocks, vents: vents, bubbles: [] };
+      return { bed: bed, fish: fish, weeds: weeds, rays: rays, rocks: rocks, vents: vents, bubbles: [], floor: null, rayFill: null, rayKey: '' };
+    },
+    floor: function (s) {
+      var c = document.createElement('canvas'), top = ANIM_H - AQUARIUM_FLOOR_H, i;
+      c.width = ANIM_W;
+      c.height = AQUARIUM_FLOOR_H;
+      var x = c.getContext('2d');
+      x.translate(0, -top);
+      var g = x.createLinearGradient(0, ANIM_H - 80, 0, ANIM_H);
+      g.addColorStop(0, '#4a4030');
+      g.addColorStop(1, '#1b1710');
+      x.fillStyle = g;
+      x.beginPath();
+      x.moveTo(0, ANIM_H);
+      for (i = 0; i < s.bed.length; i++) x.lineTo(s.bed[i].x, s.bed[i].y);
+      x.lineTo(ANIM_W + 40, ANIM_H);
+      x.closePath();
+      x.fill();
+      x.fillStyle = '#1c2026';
+      for (i = 0; i < s.rocks.length; i++) {
+        var k = s.rocks[i], ky = AQUARIUM.bedAt(s, k.x);
+        x.save();
+        x.translate(k.x, ky + 4);
+        x.scale(1, k.h / k.w);
+        x.beginPath();
+        x.arc(0, 0, k.w / 2, Math.PI, Math.PI * 2);
+        x.fill();
+        x.restore();
+      }
+      return c;
     },
     bedAt: function (s, x) {
       var i = Math.max(0, Math.min(s.bed.length - 2, Math.floor(x / 40))), a = s.bed[i], b = s.bed[i + 1];
       return a.y + (b.y - a.y) * ((x - a.x) / 40);
     },
+    /*
+     * A fish but its tail, drawn once into a picture of its own, as each was
+     * four or five shapes a frame and the fish a fifth of the aquarium's
+     * drawing on a B8 (webOS 4.4). Facing right, with its origin where the
+     * body's centre is.
+     */
+    fishSprite: function (f) {
+      var size = f.size, pad = 2, c = document.createElement('canvas');
+      var ox = size + pad, oy = size * 0.72 + pad;
+      c.width = Math.ceil(ox + size + pad);
+      c.height = Math.ceil(oy + size * 0.48 + pad);
+      var x = c.getContext('2d');
+      x.translate(ox, oy);
+      x.fillStyle = f.colour;
+      // Fin on top.
+      x.beginPath();
+      x.moveTo(-size * 0.3, -size * 0.38);
+      x.lineTo(size * 0.05, -size * 0.72);
+      x.lineTo(size * 0.25, -size * 0.36);
+      x.closePath();
+      x.fill();
+      // Body.
+      x.save();
+      x.scale(1, 0.48);
+      x.beginPath();
+      x.arc(0, 0, size, 0, Math.PI * 2);
+      x.fill();
+      if (f.depth >= 0.4) {
+        x.globalAlpha = 0.22;
+        x.fillStyle = '#ffffff';
+        x.beginPath();
+        x.arc(size * 0.1, -size * 0.35, size * 0.6, 0, Math.PI * 2);
+        x.fill();
+      }
+      x.restore();
+      if (f.depth >= 0.4) {
+        x.globalAlpha = 1;
+        x.fillStyle = '#0b1620';
+        x.beginPath();
+        x.arc(size * 0.55, -size * 0.08, size * 0.1, 0, Math.PI * 2);
+        x.fill();
+      }
+      return { canvas: c, ox: ox, oy: oy };
+    },
     drawFish: function (ctx, f, t) {
       var size = f.size, y = f.y + Math.sin(t * 0.6 + f.ph) * 6;
+      if (!f.sprite) f.sprite = AQUARIUM.fishSprite(f);
       ctx.save();
       ctx.translate(f.x, y);
       ctx.scale(f.dir, 1);
@@ -4519,34 +4604,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       ctx.closePath();
       ctx.fill();
       ctx.restore();
-      // Fin on top.
-      ctx.beginPath();
-      ctx.moveTo(-size * 0.3, -size * 0.38);
-      ctx.lineTo(size * 0.05, -size * 0.72);
-      ctx.lineTo(size * 0.25, -size * 0.36);
-      ctx.closePath();
-      ctx.fill();
-      // Body.
-      ctx.save();
-      ctx.scale(1, 0.48);
-      ctx.beginPath();
-      ctx.arc(0, 0, size, 0, Math.PI * 2);
-      ctx.fill();
-      if (f.depth >= 0.4) {
-        ctx.globalAlpha = 0.22;
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(size * 0.1, -size * 0.35, size * 0.6, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-      if (f.depth >= 0.4) {
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = '#0b1620';
-        ctx.beginPath();
-        ctx.arc(size * 0.55, -size * 0.08, size * 0.1, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      ctx.drawImage(f.sprite.canvas, -f.sprite.ox, -f.sprite.oy);
       ctx.restore();
     },
     draw: function (ctx, s, t, dt) {
@@ -4556,20 +4614,21 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var dim = c ? 1 : ANIM_DIM[wallSlot().key] || 1;
       var water = c ? c.sky : '#0e5a80', deep = c ? mixColour(c.sky, '#000000', 0.8) : '#021624';
       var ray = c ? mixColour(c.light, '#ffffff', 0.4) : '#beebff';
-      animBackdrop(ctx, water, deep);
-      g = ctx.createLinearGradient(0, ANIM_H * 0.35, 0, ANIM_H);
-      g.addColorStop(0, rgba(deep, 0));
-      g.addColorStop(1, rgba(deep, 0.8));
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, ANIM_W, ANIM_H);
-      // Light from the surface.
+      // The water darkening with depth is part of the canvas's own
+      // background, drawn once rather than over the whole canvas each frame.
+      animBackdrop(ctx, water, deep, 'linear-gradient(' + rgba(deep, 0) + ' 35%,' + rgba(deep, 0.8) + ')');
+      // Light from the surface: one gradient for every ray, made when its colour changes.
+      var rayKey = ray + (c ? 1 : 0);
+      if (s.rayKey !== rayKey) {
+        s.rayKey = rayKey;
+        s.rayFill = ctx.createLinearGradient(0, 0, 0, ANIM_H * 0.85);
+        s.rayFill.addColorStop(0, rgba(ray, c ? 0.14 : 0.10));
+        s.rayFill.addColorStop(1, rgba(ray, 0));
+      }
       ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = s.rayFill;
       for (i = 0; i < s.rays.length; i++) {
         var r = s.rays[i], sway = Math.sin(t * r.sp + r.ph) * 40;
-        g = ctx.createLinearGradient(0, 0, 0, ANIM_H * 0.85);
-        g.addColorStop(0, rgba(ray, c ? 0.14 : 0.10));
-        g.addColorStop(1, rgba(ray, 0));
-        ctx.fillStyle = g;
         ctx.beginPath();
         ctx.moveTo(r.x - r.w / 2, 0);
         ctx.lineTo(r.x + r.w / 2, 0);
@@ -4592,28 +4651,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       ctx.stroke();
       // Fish far back, behind the weed.
       for (i = 0; i < s.fish.length; i++) if (s.fish[i].depth < 0.4) AQUARIUM.drawFish(ctx, s.fish[i], t);
-      // The floor, its rocks and weed.
-      g = ctx.createLinearGradient(0, ANIM_H - 80, 0, ANIM_H);
-      g.addColorStop(0, '#4a4030');
-      g.addColorStop(1, '#1b1710');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(0, ANIM_H);
-      for (i = 0; i < s.bed.length; i++) ctx.lineTo(s.bed[i].x, s.bed[i].y);
-      ctx.lineTo(ANIM_W + 40, ANIM_H);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#1c2026';
-      for (i = 0; i < s.rocks.length; i++) {
-        var k = s.rocks[i], ky = AQUARIUM.bedAt(s, k.x);
-        ctx.save();
-        ctx.translate(k.x, ky + 4);
-        ctx.scale(1, k.h / k.w);
-        ctx.beginPath();
-        ctx.arc(0, 0, k.w / 2, Math.PI, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
+      // The floor and its rocks never move: drawn once into a picture of their own.
+      if (!s.floor) s.floor = AQUARIUM.floor(s);
+      ctx.drawImage(s.floor, 0, ANIM_H - AQUARIUM_FLOOR_H);
       ctx.lineCap = 'round';
       for (i = 0; i < s.weeds.length; i++) {
         var w = s.weeds[i], by = AQUARIUM.bedAt(s, w.x);
@@ -4635,17 +4675,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           s.bubbles.push({ x: v.x + rnd(-4, 4), y: AQUARIUM.bedAt(s, v.x) - 5, r: rnd(1.2, 3.4), v: rnd(25, 45), ph: rnd(0, 6.28) });
         }
       }
+      // Every bubble in one stroke: on a B8 (webOS 4.4) a stroke each cost
+      // a sixth of the aquarium's drawing.
       ctx.strokeStyle = 'rgba(210,240,255,0.55)';
       ctx.lineWidth = 1;
+      ctx.beginPath();
       for (i = s.bubbles.length - 1; i >= 0; i--) {
         var b = s.bubbles[i];
         b.y -= b.v * dt;
         b.x += Math.sin(t * 3 + b.ph) * 0.3;
         if (b.y < 14) { s.bubbles.splice(i, 1); continue; }
-        ctx.beginPath();
+        ctx.moveTo(b.x + b.r, b.y);
         ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-        ctx.stroke();
       }
+      ctx.stroke();
       // Fish swim on, and one that has left is followed by a new one.
       for (i = 0; i < s.fish.length; i++) {
         var f = s.fish[i];
@@ -4827,8 +4870,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function animFrame(now) {
     anim.raf = window.requestAnimationFrame(animFrame);
-    if (anim.last && now - anim.last < ANIM_FRAME_MS) return;
-    var dt = anim.last ? Math.min(0.1, (now - anim.last) / 1000) : ANIM_FRAME_MS / 1000;
+    var frameMs = animFrameMs();
+    // A few ms short of the interval, so a 60 Hz screen's frames are not skipped by rounding.
+    if (anim.last && now - anim.last < frameMs - 4) return;
+    var dt = anim.last ? Math.min(0.1, (now - anim.last) / 1000) : frameMs / 1000;
     anim.last = now;
     anim.t += dt;
     animDraw(dt);
@@ -4840,11 +4885,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     anim.last = 0;
   }
 
-  // Runs while Home is on screen; with reduced motion asked for, or Wallpaper
-  // drift switched off, one still frame.
+  // Runs while Home is on screen; with reduced motion asked for, one still frame.
   function animRun() {
     if (anim.style === 'off' || anim.raf || document.hidden || document.documentElement.classList.contains('resting')) return;
-    anim.still = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || !!(layout && layout.wallDrift === false);
+    anim.still = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     if (anim.still) { anim.t = 20; animDraw(0); return; }
     anim.raf = window.requestAnimationFrame(animFrame);
   }
@@ -4852,22 +4896,24 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Follows the layout's choice; the pictures step aside while one runs.
   function syncAnim() {
     var want = layout && ANIM_SCENES[layout.wallAnim] ? layout.wallAnim : 'off';
-    if (want === anim.style) {
-      // Wallpaper drift switched on or off: the loop is started again to follow it.
-      var still = !!(layout && layout.wallDrift === false);
-      if (want !== 'off' && still !== anim.stillByDrift) { anim.stillByDrift = still; animStop(); animRun(); }
-      return false;
-    }
-    anim.stillByDrift = !!(layout && layout.wallDrift === false);
+    if (want === anim.style) return false;
     animStop();
     anim.style = want;
     var canvas = $('anim');
     applyDarkening(layout && layout.darkening);
     if (want === 'off') {
+      // Its pixels are given back too: a canvas keeps them while it has a
+      // size, even hidden. On a B8 (webOS 4.4.3), 9 MB of what Aquarium took
+      // stayed after it was switched off; given back, 6 MB did.
       canvas.className = '';
+      canvas.width = canvas.height = 0;
+      canvas.style.background = '';
+      animSky = '';
+      anim.ctx = null;
       anim.scene = null;
       return true;
     }
+    if (canvas.width !== ANIM_W) { canvas.width = ANIM_W; canvas.height = ANIM_H; }
     if (!anim.ctx) anim.ctx = canvas.getContext('2d');
     anim.scene = ANIM_SCENES[want].build();
     anim.t = 0;

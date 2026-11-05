@@ -378,6 +378,7 @@ async function visitHomeAnimations(browser, base, problems) {
     await open('off');
     await page.waitForTimeout(800);
     if (await page.locator('#anim.on').count()) problems.push('Home animations: Off left the canvas showing');
+    if (await page.evaluate(() => document.getElementById('anim').width)) problems.push('Home animations: with none chosen, the canvas held pixels');
   } catch (e) {
     problems.push('Home animations: ' + e.message);
   }
@@ -1451,9 +1452,14 @@ async function visitHomeUploads(browser, base, problems) {
   try {
     await page.goto(base + '/?tab=home');
     await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && homeCat);
-    // With Black chosen, a time of day is not a place to upload.
+    // With None chosen, the pictures' settings are not shown; Pictures shows
+    // the sets, without Black, which None is.
+    await page.waitForSelector('#home-bg-kind button');
+    if (await page.locator('#home-bg-pictures').isVisible()) problems.push('Home uploads: the pictures showed with None chosen');
+    await page.locator('#home-bg-kind button', { hasText: 'Pictures' }).click();
     await page.waitForSelector('#home-wall-choice button');
-    if (!await card(page, 'morning').locator('.wall-screen').isDisabled()) problems.push('Home uploads: a time of day took uploads with Black chosen');
+    if (await page.locator('#home-wall-choice button', { hasText: 'Black' }).count()) problems.push('Home uploads: Black was offered among the pictures');
+    if (!await card(page, 'morning').locator('.wall-screen').isDisabled()) problems.push('Home uploads: a time of day took uploads with a picture set chosen');
     await page.locator('#home-wall-choice button', { hasText: 'Your own' }).click();
     await ready(page);
     // Choosing Morning opens the file chooser for it.
