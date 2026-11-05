@@ -1388,8 +1388,9 @@ function change(action, cb) {
 
 function copy(o) { return JSON.parse(JSON.stringify(o)); }
 
+// webOS 3 is taken to have the same ribbon as webOS 4, untried.
 function isStandalone() {
-  return /^4\./.test(String(webosVersion || ''));
+  return /^[34]\./.test(String(webosVersion || ''));
 }
 
 function isHomeInPlace() {
@@ -1399,7 +1400,7 @@ function isHomeInPlace() {
 function supported() {
   var v = String(webosVersion || '');
   // Tried on a B8 (4.4.3).
-  if (/^4\./.test(v)) return { ok: true, webos: v, experimental: true, standalone: true };
+  if (/^4\./.test(v) || (/^3\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true, standalone: true };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is the same native app as on webOS 9; sam is nudged from the
   // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0).
