@@ -121,33 +121,22 @@ test("they are carried over when it is, so this table does not undo it", functio
 
 var AMAZOFF = ['127.0.0.1 cloudfront.xp-assets.aiv-cdn.net', '::1 cloudfront.xp-assets.aiv-cdn.net'];
 
-test('local lookups name every address on the TV\'s networks as itself, but not the TV', function () {
-  var LOCAL = '/var/lib/tvweb/local_lookups';
-  privacy._setInterfaces(function () {
-    return {
-      lo: [{ family: 'IPv4', address: '127.0.0.1', netmask: '255.0.0.0', internal: true }],
-      wlan0: [{ family: 'IPv4', address: '192.168.2.128', netmask: '255.255.255.0', internal: false },
-              { family: 'IPv6', address: 'fe80::1', netmask: 'ffff:ffff:ffff:ffff::', internal: false }],
-      eth1: [{ family: 4, address: '10.0.0.9', netmask: '255.255.0.0', internal: false }],
-      wan: [{ family: 'IPv4', address: '81.2.3.4', netmask: '255.255.255.0', internal: false }]
-    };
-  });
+test('a table left with Answer device scans on the TV is rebuilt without its lines, and its flag removed', function () {
+  var LOCAL = '/var/lib/tvweb/local_lookups', TABLE = '/var/lib/tvweb/adblock_hosts';
+  var saved = mockEnv.files['/etc/hosts'];
+  var left = privacy.adBlockHostsTable('ads') + '\n# The local network\n192.168.2.1\t192.168.2.1\n192.168.2.2\t192.168.2.2\n192.168.2.5\tnas\n';
+  mockEnv.files['/etc/hosts'] = left;
+  mockEnv.files[TABLE] = left;
+  mockEnv.files[LOCAL] = '';
   try {
-    assert.strictEqual(privacy.adBlockHostsTable('ads').indexOf('192.168.2.1\t'), -1, 'nothing while it is off');
-    mockEnv.files[LOCAL] = '';
-    var addrs = privacy.localLookupAddresses();
-    assert.strictEqual(addrs.filter(function (a) { return /^192\.168\.2\./.test(a); }).length, 253, '1 to 254, less the TV');
-    assert.strictEqual(addrs.indexOf('192.168.2.128'), -1, 'the server looks up the TV\'s own name');
-    assert.ok(addrs.indexOf('10.0.0.1') !== -1 && addrs.indexOf('10.0.0.254') !== -1, 'a wider network covers the /24 around the TV');
-    assert.strictEqual(addrs.indexOf('10.0.1.1'), -1);
-    assert.ok(!addrs.some(function (a) { return /^(81|127)\./.test(a); }), 'public and loopback addresses are left alone');
-    var table = privacy.adBlockHostsTable('off');
-    assert.ok(table.indexOf('\n192.168.2.1\t192.168.2.1\n') !== -1);
-    assert.deepEqual(privacy.foreignHostsLines(table + '192.168.2.5\tnas\n'), ['192.168.2.5\tnas'],
-      'its own lines are not carried over as another tool\'s, a real name is');
+    privacy.checkBootAdBlock(false);
+    assert.strictEqual(mockEnv.files[LOCAL], undefined, 'the flag is gone');
+    assert.strictEqual(mockEnv.files[TABLE].indexOf('192.168.2.1\t192.168.2.1'), -1, 'its lines are gone');
+    assert.ok(mockEnv.files[TABLE].indexOf('192.168.2.5\tnas') !== -1, 'a real name is kept');
   } finally {
     delete mockEnv.files[LOCAL];
-    privacy._setInterfaces(function () { return {}; });
+    if (saved === undefined) delete mockEnv.files['/etc/hosts'];
+    else mockEnv.files['/etc/hosts'] = saved;
   }
 });
 

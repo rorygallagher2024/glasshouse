@@ -1810,7 +1810,8 @@ it found).
   `iconnectivity` sends them to the DNS relay in `/etc/resolv.conf`
   (`connmand`, at `127.0.0.1` and `::1`), one socket per query, without the
   name service lookup that reads `/etc/hosts`, and `connmand` forwards them.
-  Answer device scans on the TV (#1146) was built on the opposite reading.
+  Answer device scans on the TV (#1146) was built on the opposite reading,
+  and was taken out.
 - **The firewall cannot pick them out.** The C2's kernel offers only the
   `icmp`, `udp`, `tcp` and similar matches, no `string`, `u32`, `owner` or
   `bpf`, so a rule cannot tell a PTR query from any other DNS query, and
@@ -1821,6 +1822,19 @@ it found).
   and logs nothing, even with the `ICS` log contexts at `debug`; its strings name IP discovery
   methods (SubnetScan, Reverse DNS, mDNS, UPnP) and a device polling
   interval, with no luna method found that switches one off.
+- **A stub holds it down.** `ls-hubd` starts it from
+  `/usr/share/dbus-1/system-services/com.webos.service.ics.service`
+  (`Type=dynamic`, `Exec=/usr/sbin/iconnectivity`) at each call, so killing
+  it lasts until the next one. With a script that exits at once bind-mounted
+  over `/usr/sbin/iconnectivity`, calls got no reply and nothing ran; the
+  mount reached the app jails' copies too, and one `umount` took them all
+  away, after which the next call started it again. `ps` and `pidof` do not
+  list it: its executable link in `/proc` does.
+- **What asks on webOS 11.** On an OLED65C2PUA (webOS 11.2.0, firmware
+  43.21.74), `com.webos.iotframework` called `/iot/getAllIoTDevices` every
+  300 s. It is started the same way (`Type=dynamic`,
+  `/usr/palm/services/com.webos.iotframework/com.webos.iotframework`). The
+  C2 on webOS 9.2.2 does not have it.
 
 ## Boot and app state (webOS 9.2.2, C2)
 

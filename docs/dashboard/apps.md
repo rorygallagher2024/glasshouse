@@ -98,6 +98,8 @@ Switching an app off frees its memory once the app is next closed or the TV rest
 
 Stops background services that most TVs don't need, such as the connected-car listener, the USB camera watcher, and LG's diagnostics and telemetry uploaders. Only the services present on the TV are listed. A service switched off stays off across restarts, and is stopped again if something on the TV starts it.
 
+**Network Device Scans** stops LG's device detection looking up every address on the home network, which a network-wide ad blocker such as Pi-hole shows as hundreds of requests, whenever the Home Hub looks for devices and on some TVs every 5 minutes. **Smart Home Device Polling**, on webOS 11, is what asks for those scans every 5 minutes. With either off, the Home Hub finds no new devices.
+
 ## Notes
 
 * Live TV, Settings, Home, the HDMI inputs, the Homebrew Channel and Glasshouse itself are protected: they can't be hidden or uninstalled.
