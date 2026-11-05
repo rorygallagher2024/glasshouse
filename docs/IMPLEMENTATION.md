@@ -1526,7 +1526,9 @@ on the offered list, leaving Home and any newer cards alone
 A card shows the app's snapshot, or its splash where the TV has none since it
 restarted. Pictures are served only from the paths the last list named, and an
 app is opened or closed only while it is on the list. Snapshot responses use
-`private, no-store` caching. Back cancels a pending panel load; returning Home
+`private, no-cache` caching, and each card's picture address carries a version
+from the file's path, size and modification time, so an unchanged picture is
+revalidated (a 304) rather than downloaded and decoded again. Back cancels a pending panel load; returning Home
 discards replies from the previous visit. OK acts once on release.
 
 Left of any row's first tile is a search mark in the gutter, and OK there
