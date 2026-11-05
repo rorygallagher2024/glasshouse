@@ -157,10 +157,10 @@ webos_major=$(sed -n 's/.*webOS[^0-9]*\([0-9][0-9]*\)\..*/\1/p' /etc/issue 2>/de
 # page as Home from then on. Where sam does not take it, LG's files go back
 # under it, its own layout too, and it restarts on that. The server does the
 # same at its start, for a hook that did not run.
-# On webOS 10 and 11 LG's Home is a Flutter app run as
-# "flutter-client -i com.webos.app.home"; webOS 11 only with
-# allowExperimentalHome in config.json. sam ignores the nudge there (above), so
-# the app is reread with a block and release first.
+# On webOS 10 and later LG's Home is a Flutter app run as
+# "flutter-client -i com.webos.app.home"; webOS 12 and later, where it is
+# untried, only with allowExperimentalHome in config.json. sam ignores the
+# nudge there (above), so the app is reread with a block and release first.
 # On webOS 5 (a CX on 5.5.0-19) and webOS 6 (a C1 on 6.5.3) there is neither
 # the configd list nor the block and release, so sam is restarted, as
 # lib/samrescan.js does for the switch.
@@ -172,12 +172,13 @@ home_os=0
 [ "$webos_major" = "10" ] && home_os=1
 [ "$webos_major" = "5" ] && home_os=1
 [ "$webos_major" = "6" ] && home_os=1
-if [ "$webos_major" = "11" ]; then
+[ "$webos_major" = "11" ] && home_os=1
+if [ "${webos_major:-0}" -ge 12 ] 2>/dev/null; then
   grep -q '"allowExperimentalHome"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null && home_os=1
 fi
 # A block and release cut short leaves Home blocked across boots, as for the
 # screen saver below, so it is released at every boot where it is ever blocked.
-if [ "$webos_major" = "10" ] || [ "$webos_major" = "11" ]; then
+if [ "${webos_major:-0}" -ge 10 ] 2>/dev/null; then
   luna-send -n 1 luna://com.webos.applicationManager/releaseBlockSystemApp '{"id":"com.webos.app.home"}' >/dev/null 2>&1 || true
 fi
 lg_home_pids() {
@@ -229,7 +230,7 @@ home_open_at_boot() {
     return 0
   fi
   target_home=com.webos.app.home
-  [ "$webos_major" = "4" ] && target_home=com.tvweb.home
+  case "$webos_major" in 3|4) target_home=com.tvweb.home ;; esac
   luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$target_home\"}" 2>/dev/null |
     grep -q '"returnValue": *true' || return 0
   # The server watches for the view from its start and opens LG's Home if it
@@ -260,7 +261,7 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): sam did not take Glasshouse Home - LG's Home kept"
   fi
-elif [ "$webos_major" = "4" ] && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
+elif { [ "$webos_major" = "3" ] || [ "$webos_major" = "4" ]; } && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
   home_open_at_boot
 fi
 

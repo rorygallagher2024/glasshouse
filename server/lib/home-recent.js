@@ -12,7 +12,7 @@ var fs = require('fs');
 var path = require('path');
 var writeJsonAtomic = require('./util').writeJsonAtomic;
 
-var ROWS = ['app', 'dev', 'ch'];
+var ROWS = ['app', 'dev', 'ch', 'iptv'];
 // Ids kept per row; the oldest go first. A row holds a few dozen tiles.
 var MAX_IDS = 100;
 // Opening several tiles in a row writes the file once.
@@ -31,7 +31,7 @@ function init(stateDir, now) {
   times = null;
 }
 
-function empty() { return { app: {}, dev: {}, ch: {} }; }
+function empty() { return { app: {}, dev: {}, ch: {}, iptv: {} }; }
 
 function load() {
   if (times) return times;

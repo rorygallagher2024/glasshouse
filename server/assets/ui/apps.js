@@ -1019,7 +1019,10 @@ async function toggleService(serviceId, makeDisabled) {
     if (d && d.ok) {
       if (appsData && appsData.services) {
         const item = appsData.services.find(s => s.id === serviceId);
-        if (item) item.disabled = makeDisabled;
+        if (item) {
+          item.disabled = makeDisabled;
+          if (typeof d.running === 'boolean') item.running = d.running;
+        }
         renderAppsPanel();
       }
     } else {

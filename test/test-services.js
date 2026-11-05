@@ -25,9 +25,9 @@ console.log('Running test-services.js ...');
     assert.strictEqual(!ids[item.id], true, 'item id must be unique: ' + item.id);
     ids[item.id] = true;
 
-    // Must have at least a systemd unit or an upstart job name
-    var hasTarget = !!(item.unit || item.upstart);
-    assert.strictEqual(hasTarget, true, 'service ' + item.id + ' must declare unit or upstart');
+    // A systemd unit, an upstart job, or the program a stub is mounted over
+    var hasTarget = !!(item.unit || item.upstart || item.stub);
+    assert.strictEqual(hasTarget, true, 'service ' + item.id + ' must declare unit, upstart or stub');
   }
 
   assert.strictEqual('mycar' in ids, true);
@@ -116,4 +116,44 @@ console.log('Running test-services.js ...');
   console.log('  ✓ init drops retired services from the switched-off list');
 })();
 
-console.log('ALL test-services.js assertions passed!\n');
+// A service the hub starts on demand is held down by a stub mounted over its
+// program, at the switch, at start and in the boot hook, and put back by unmounting.
+(function testStubbedService() {
+  var dir = path.join(os.tmpdir(), 'tvweb-services-stub-' + process.pid);
+  var root = path.join(dir, 'root'), initDir = path.join(dir, 'init.d'), mounts = path.join(dir, 'mounts');
+  [dir, initDir, root, root + '/usr', root + '/usr/sbin'].forEach(function (d) { fs.mkdirSync(d); });
+  var target = root + '/usr/sbin/iconnectivity';
+  fs.writeFileSync(target, 'lg');
+  fs.writeFileSync(mounts, '/dev/root / squashfs ro 0 0\n');
+  var calls = [];
+  function fakeRun(cmd, args, cb) {
+    calls.push([cmd].concat(args).join(' '));
+    if (cmd === 'mount') fs.appendFileSync(mounts, 'tmpfs ' + args[2] + ' tmpfs rw 0 0\n');
+    if (cmd === 'umount') fs.writeFileSync(mounts, fs.readFileSync(mounts, 'utf8').split('\n').filter(function (l) { return l.split(' ')[1] !== args[0]; }).join('\n'));
+    setImmediate(function () { cb(null, '', ''); });
+  }
+  services.init({ stateDir: dir, initDir: initDir, stubRoot: root, mounts: mounts, run: fakeRun });
+  assert.deepEqual(services.stubTargets().indexOf(target) !== -1, true, 'the uninstall knows where to unmount');
+  services.getServices(function (r) {
+    var listed = r.services.filter(function (x) { return x.id === 'iconnectivity'; })[0];
+    assert.ok(listed, 'listed where its program is there');
+    assert.strictEqual(r.services.some(function (x) { return x.id === 'iotframework'; }), false, 'not where it is not');
+    services.toggleService('iconnectivity', true, function (off) {
+      assert.strictEqual(off.ok, true);
+      assert.deepEqual(calls, ['mount --bind ' + path.join(dir, 'service-stub') + ' ' + target]);
+      assert.strictEqual(fs.readFileSync(path.join(dir, 'service-stub'), 'utf8'), '#!/bin/sh\nexit 0\n');
+      var hook = fs.readFileSync(path.join(initDir, '20-tvweb-services'), 'utf8');
+      assert.ok(hook.indexOf('mount --bind "' + path.join(dir, 'service-stub') + '" "' + target + '"') !== -1, 'the boot hook mounts it again');
+      services.toggleService('iconnectivity', true, function () {
+        assert.strictEqual(calls.length, 1, 'not mounted twice');
+        services.toggleService('iconnectivity', false, function (on) {
+          assert.strictEqual(on.ok, true);
+          assert.deepEqual(calls.slice(1), ['umount ' + target]);
+          assert.strictEqual(fs.existsSync(path.join(initDir, '20-tvweb-services')), false, 'no hook with nothing switched off');
+          console.log('  ✓ a service the hub starts on demand is held down by a stub mounted over its program, and put back');
+          console.log('ALL test-services.js assertions passed!\n');
+        });
+      });
+    });
+  });
+})();

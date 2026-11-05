@@ -94,6 +94,14 @@ Use it for remote control, app installation and removal, OLED panel care, privac
       <sub><a href="apps/pane/">Pane</a> is a macOS menu-bar remote to control the TV, switch inputs, and adjust settings without opening a browser.</sub>
     </p>
 
+=== "Pane (iOS)"
+
+    <p align="center">
+      <a href="apps/pane-ios/"><img src="https://raw.githubusercontent.com/denisvinciguerra/pane-for-glasshouse/main/docs/screenshots/iphone-remote.png" alt="Pane on an iPhone" width="220"></a>
+      <br>
+      <sub><a href="apps/pane-ios/">Pane for iPhone and iPad</a> brings the remote to the couch with sources, picture settings, and pinned shortcuts.</sub>
+    </p>
+
 ## What it's for
 
 This project is intended to give a rooted webOS TV a useful local control surface instead of requiring the owner to work around the TV's built-in menus, vendor services and cloud dependencies.
@@ -104,7 +112,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     ---
 
-    A replacement Home app with full control over what displays, and no ads. This feature is currently only available on webOS 7, 9 and 10 TVs.
+    A replacement Home app with full control over what displays, and no ads, with a row of Internet TV channels from your own IPTV playlist. Available on webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3 and later versions can try it with a setting.
 
 -   **[Controlling the TV without the cloud](dashboard/control.md)**
 
@@ -183,6 +191,12 @@ This project is intended to give a rooted webOS TV a useful local control surfac
     ---
 
     A macOS menu-bar companion app by the community for controlling TVs, switching inputs, adjusting settings, and running keyboard shortcuts.
+
+-   **[Remote for iPhone and iPad](apps/pane-ios.md)**
+
+    ---
+
+    An iOS and iPadOS companion app by the community for couch remote control, input switching, picture settings, and pinned shortcuts.
 
 </div>
 
