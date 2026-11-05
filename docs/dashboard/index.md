@@ -94,7 +94,7 @@ The top of every tab shows what the TV is doing: its state (On, Screen off, Scre
 
 </div>
 
-For companion applications, see [Glasshouse apps](../apps/tv-app.md), including [The TV app](../apps/tv-app.md) on the TV's home screen, [Glasshouse for Android](../apps/android.md), and [Pane for macOS](../apps/pane.md).
+For companion applications, see [Glasshouse apps](../apps/tv-app.md), including [The TV app](../apps/tv-app.md) on the TV's home screen, [Glasshouse for Android](../apps/android.md), [Pane for macOS](../apps/pane.md), and [Pane for iPhone and iPad](../apps/pane-ios.md).
 
 The page works with no internet access, and has a dark/light mode toggle (via the UI or `/?theme=light`).
 
