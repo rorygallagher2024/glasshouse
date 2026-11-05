@@ -69,6 +69,11 @@ function levelFrom(r) {
   return typeof n === 'number' && n >= 0 && n <= 100 ? n : null;
 }
 
+/*
+ * A percentage, or one of three steps: an MR19 on a C9 (webOS 4.5, remote
+ * firmware 18.61.13.19358) answered "MID". The steps are given as 100, 50 and 10
+ * so the sensor stays a percentage, with LOW under the usual low-battery alerts.
+ */
 function deviceLevelFrom(info) {
   var n = info && info.returnValue ? info.batteryLevel : null;
 
