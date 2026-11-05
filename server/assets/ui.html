@@ -1312,16 +1312,8 @@
         <div class="prot-title" data-t="home.anim">Animated background</div>
         <div class="prot-desc" data-t="home.animDesc">Light that moves slowly behind Glasshouse Home, drawn in place of the pictures. It stops whenever Home is not on screen.</div>
       </div>
-      <div class="prot-status home-anims" id="home-anims">
-        <button type="button" class="pill idle" data-anim="off" onclick="homeAnim('off')" data-t="home.anim.off">Off</button>
-        <button type="button" class="pill idle" data-anim="waves" onclick="homeAnim('waves')" data-t="home.anim.waves">Light waves</button>
-        <button type="button" class="pill idle" data-anim="particles" onclick="homeAnim('particles')" data-t="home.anim.particles">Particles</button>
-        <button type="button" class="pill idle" data-anim="aquarium" onclick="homeAnim('aquarium')" data-t="home.anim.aquarium">Aquarium</button>
-        <button type="button" class="pill idle" data-anim="aurora" onclick="homeAnim('aurora')" data-t="home.anim.aurora">Aurora</button>
-        <button type="button" class="pill idle" data-anim="glow" onclick="homeAnim('glow')" data-t="home.anim.glow">Glow</button>
-        <button type="button" class="pill idle" data-anim="stars" onclick="homeAnim('stars')" data-t="home.anim.stars">Constellations</button>
-        <button type="button" class="pill idle" data-anim="ripples" onclick="homeAnim('ripples')" data-t="home.anim.ripples">Ripples</button>
-      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-anim-sel" aria-label="Animated background" data-t-aria-label="home.anim"
+        onchange="homeAnim(this.value)"></select></div>
     </div>
   </div>
   <div id="home-anim-colours">

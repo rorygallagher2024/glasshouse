@@ -196,12 +196,18 @@ function renderHome() {
       ? t('home.searchBlockedList', 'Unavailable: the ad blocker\u2019s hosts list blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Take {host} out of the list to use it. This switch keeps its setting.', { host: searchBlocked.host })
       : t('home.searchBlockedLevel', 'Unavailable: the ad blocker\u2019s Everything setting blocks {host}, which LG\u2019s search needs, so the search mark is hidden on Glasshouse Home. Set the ad blocker to Ads & telemetry or off to use it. This switch keeps its setting.', { host: searchBlocked.host });
   }
-  // The animated background: one of four, the one in use lit.
+  // The animated background: off or one of seven.
   const anim = (st.layout && st.layout.wallAnim) || 'off';
-  document.querySelectorAll('#home-anims [data-anim]').forEach(b => {
-    updateToggle(b, { cls: b.dataset.anim === anim ? 'good' : 'idle', label: b.textContent });
-    b.disabled = !homeWritable();
-  });
+  const animSel = q('home-anim-sel');
+  if (animSel) {
+    const names = { off: t('home.anim.off', 'Off'), waves: t('home.anim.waves', 'Light waves'), particles: t('home.anim.particles', 'Particles'),
+      aquarium: t('home.anim.aquarium', 'Aquarium'), aurora: t('home.anim.aurora', 'Aurora'), glow: t('home.anim.glow', 'Glow'),
+      stars: t('home.anim.stars', 'Constellations'), ripples: t('home.anim.ripples', 'Ripples') };
+    if (document.activeElement !== animSel) {
+      animSel.innerHTML = Object.keys(names).map(k => `<option value="${k}"${k === anim ? ' selected' : ''}>${esc(names[k])}</option>`).join('');
+    }
+    animSel.disabled = !homeWritable();
+  }
   renderHomeAnimColours(st.layout, anim);
   // Fading, as Picture details.
   [['home-fade', 'fade'], ['home-rows-bottom', 'rowsBottom']].forEach(([id, field]) => {

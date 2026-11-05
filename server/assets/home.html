@@ -698,7 +698,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var coveredSince = 0;
   function rest(on) {
     var cl = document.documentElement.classList;
-    if (on !== cl.contains('resting')) cl.toggle('resting', on);
+    if (on === cl.contains('resting')) return;
+    cl.toggle('resting', on);
+    // Covered, the page is not hidden (webOS 4 keeps it running behind the app
+    // in front), so the animated background is stopped here as well.
+    if (!anim) return;
+    if (on) animStop();
+    else animRun();
   }
 
   var data = null;       // the catalogue: apps, devices, channels, order
@@ -4310,7 +4316,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     night:     { top: '#06102e', bottom: '#0e2160', hues: ['#4f7bff', '#8fa4ff', '#b48bff'] }
   };
   var ANIM_DIM = { morning: 0.9, afternoon: 1, evening: 0.75, night: 0.45 };
-  var anim = { style: 'off', raf: 0, last: 0, t: 0, scene: null, ctx: null, still: false };
+  var anim = { style: 'off', raf: 0, last: 0, t: 0, scene: null, ctx: null, still: false, stillByDrift: false };
 
   function rnd(a, b) { return a + Math.random() * (b - a); }
 
@@ -4834,9 +4840,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     anim.last = 0;
   }
 
-  // Runs while Home is on screen; with reduced motion asked for, one still frame.
+  // Runs while Home is on screen; with reduced motion asked for, or Wallpaper
+  // drift switched off, one still frame.
   function animRun() {
-    if (anim.style === 'off' || anim.raf || document.hidden) return;
+    if (anim.style === 'off' || anim.raf || document.hidden || document.documentElement.classList.contains('resting')) return;
+    anim.still = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || !!(layout && layout.wallDrift === false);
     if (anim.still) { anim.t = 20; animDraw(0); return; }
     anim.raf = window.requestAnimationFrame(animFrame);
   }
@@ -4844,7 +4852,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Follows the layout's choice; the pictures step aside while one runs.
   function syncAnim() {
     var want = layout && ANIM_SCENES[layout.wallAnim] ? layout.wallAnim : 'off';
-    if (want === anim.style) return false;
+    if (want === anim.style) {
+      // Wallpaper drift switched on or off: the loop is started again to follow it.
+      var still = !!(layout && layout.wallDrift === false);
+      if (want !== 'off' && still !== anim.stillByDrift) { anim.stillByDrift = still; animStop(); animRun(); }
+      return false;
+    }
+    anim.stillByDrift = !!(layout && layout.wallDrift === false);
     animStop();
     anim.style = want;
     var canvas = $('anim');
@@ -4855,7 +4869,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       return true;
     }
     if (!anim.ctx) anim.ctx = canvas.getContext('2d');
-    anim.still = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     anim.scene = ANIM_SCENES[want].build();
     anim.t = 0;
     canvas.className = 'on';

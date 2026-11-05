@@ -1709,8 +1709,6 @@ button.home-look:active{background:none}
 .home-look-name{font-size:13px;opacity:.8}
 /* Eight choices: under the description, across the row, rather than beside it. */
 #home-anim-row{flex-direction:column;align-items:stretch;gap:10px}
-.home-anims{display:flex;flex-wrap:wrap;gap:6px}
-.home-anims .pill{width:auto;min-width:0;flex:0 0 auto}
 .home-anim-band{position:absolute;left:-10%;right:-10%;top:52%;height:9px;border-radius:50%;opacity:.75;transform:rotate(-8deg);
   box-shadow:0 0 10px 2px currentColor}
 .home-look.picked .home-look-name{opacity:1;font-weight:600}
