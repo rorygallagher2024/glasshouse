@@ -30,7 +30,7 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #wall{position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden}
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
-  -webkit-animation:drift 180s ease-in-out infinite alternate;animation:drift 180s ease-in-out infinite alternate}
+  -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}
 /* At rest while covered: the wallpaper is not drawn or animated under the screen
    saver or another app. */
 html.resting #wall{visibility:hidden}
@@ -3392,7 +3392,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // apps held the page 300 to 350 ms as Recent apps opened on a C2 (9.2.2).
     recents.apps.forEach(function (a, i) {
       var mono = '<span class="mono">' + esc(String(a.title).charAt(0)) + '</span>';
-      var shot = a.image ? '<img src="/api/home/recents/image?id=' + encodeURIComponent(a.id) + '&v=' + recents.stamp + '" alt="" decoding="async">' : mono;
+      var shot = a.image ? '<img src="/api/home/recents/image?id=' + encodeURIComponent(a.id) + '&v=' + encodeURIComponent(a.imageVersion || recents.stamp) + '" alt="" decoding="async">' : mono;
       html += '<div class="tile rc" data-c="' + i + '"><div class="shot">' + shot + '</div>' +
         '<div class="nm">' + esc(a.title) + '</div><span class="x">' + esc(t('home.recents.close', 'Close')) + '</span></div>';
     });
