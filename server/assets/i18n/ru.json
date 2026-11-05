@@ -3010,6 +3010,8 @@
  "srv.saver.uploadNotHtml": {"text": "Этот файл не является HTML-страницей.", "from": "That file is not an HTML page."},
  "srv.saver.uploadSize": {"text": "Страница должна быть не больше 5 МБ и сообщать свой размер.", "from": "The page must be at most 5 MB and state its size."},
  "srv.saver.uploadTimeout": {"text": "Загрузка заняла слишком много времени.", "from": "The upload timed out."},
+ "srv.saver.stuck": {"text": "Телевизор завис при запуске заставки и не запустит другую, пока его не перезагрузят. Перезагрузите телевизор, чтобы это исправить.", "from": "The TV is stuck starting a screen saver and refuses to start another until it is restarted. Restart the TV to clear it."},
+ "srv.saver.notClosed": {"text": "заставка на телевизоре не закрылась, поэтому переключение не выполнено", "from": "the screen saver on the TV did not close, so the switch was left undone"},
  "ss.choice": {"text": "Анимация", "from": "Animation"},
  "ss.upload": {"text": "Добавить HTML-заставку", "from": "Add an HTML screen saver"},
  "ss.upload.add": {"text": "Добавить", "from": "Add"},

@@ -3010,6 +3010,8 @@
  "srv.saver.uploadNotHtml": {"text": "Esse ficheiro não é uma página HTML.", "from": "That file is not an HTML page."},
  "srv.saver.uploadSize": {"text": "A página tem de ter no máximo 5 MB e indicar o seu tamanho.", "from": "The page must be at most 5 MB and state its size."},
  "srv.saver.uploadTimeout": {"text": "O carregamento demorou demasiado.", "from": "The upload timed out."},
+ "srv.saver.stuck": {"text": "A TV ficou presa a iniciar uma proteção de ecrã e recusa iniciar outra até ser reiniciada. Reinicie a TV para resolver.", "from": "The TV is stuck starting a screen saver and refuses to start another until it is restarted. Restart the TV to clear it."},
+ "srv.saver.notClosed": {"text": "a proteção de ecrã na TV não fechou, por isso a mudança não foi feita", "from": "the screen saver on the TV did not close, so the switch was left undone"},
  "ss.choice": {"text": "Animação", "from": "Animation"},
  "ss.upload": {"text": "Adicionar uma proteção de ecrã HTML", "from": "Add an HTML screen saver"},
  "ss.upload.add": {"text": "Adicionar", "from": "Add"},

@@ -3010,6 +3010,8 @@
  "srv.saver.uploadNotHtml": {"text": "هذا الملف ليس صفحة HTML.", "from": "That file is not an HTML page."},
  "srv.saver.uploadSize": {"text": "يجب ألا تتجاوز الصفحة 5 ميغابايت وأن تذكر حجمها.", "from": "The page must be at most 5 MB and state its size."},
  "srv.saver.uploadTimeout": {"text": "استغرق الرفع وقتاً طويلاً.", "from": "The upload timed out."},
+ "srv.saver.stuck": {"text": "التلفاز عالق أثناء تشغيل شاشة توقف ويرفض تشغيل غيرها حتى إعادة تشغيله. أعد تشغيل التلفاز لإصلاح ذلك.", "from": "The TV is stuck starting a screen saver and refuses to start another until it is restarted. Restart the TV to clear it."},
+ "srv.saver.notClosed": {"text": "لم تُغلق شاشة التوقف على التلفاز، لذا لم يتم التبديل", "from": "the screen saver on the TV did not close, so the switch was left undone"},
  "ss.choice": {"text": "الحركة", "from": "Animation"},
  "ss.upload": {"text": "إضافة شاشة توقف HTML", "from": "Add an HTML screen saver"},
  "ss.upload.add": {"text": "إضافة", "from": "Add"},

@@ -48,10 +48,17 @@ var STOCK_TYPE_FILE = '/var/lib/tvweb/screensaver-stock-type';
 // Once set while sam restarted for a switch; sam is no longer restarted, so it
 // stays clear, and the dashboards' notice for it does not show.
 var SWITCH_TIMEOUT_MS = 150000;
+// Half-second looks for a screen saver closed before a switch to be gone.
+var CLOSE_LOOKS = 16;
+// After a switch, before the new one is asked for in place of one closed for it.
+var SHOW_AGAIN_MS = 3000;
+// How long tvpower may sit at "Screen Saver Ready" before it counts as stuck.
+var STUCK_CHECK_MS = 3000;
 var SWITCHING_ERROR = msg('srv.saver.switching', 'The TV is still switching screen savers. Try again in a minute.');
 var HELD_ERROR = msg('srv.saver.held', 'Custom screen savers are turned off on this TV for now, as they have not been tried on its webOS version. Before 0.98.1, on webOS 10, they could leave the picture, the sound and HDMI control off until the TV was unplugged. One already in use stays until the TV is next fully restarted.');
 // The switch is undone rather than sam restarted, the step behind #366.
 var LOST_ERROR = msg('srv.saver.lost', 'The TV has lost track of its screen saver app and did not find it again. Restarting the TV brings it back.');
+var STUCK_ERROR = msg('srv.saver.stuck', 'The TV is stuck starting a screen saver and refuses to start another until it is restarted. Restart the TV to clear it.');
 var NOT_TAKEN_ERROR = msg('srv.saver.notTaken', 'The TV did not take the new screen saver without restarting its app manager, which has left the picture or sound off on some TVs, so LG\'s screen saver is kept.');
 var STOCK_LATER_ERROR = msg('srv.saver.stockLater', 'LG\'s screen saver is set, and the TV uses it from its next restart: it did not take the change without restarting its app manager, which has left the picture or sound off on some TVs.');
 
@@ -796,8 +803,74 @@ function setScreensaver(mode, level, cb, choice) {
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
   if (mode !== 'stock' && heldBack()) return cb({ ok: false, error: HELD_ERROR });
   level = (level === 'bright') ? 'bright' : 'dim';
+  switchTo(saver, mode, level, choice, cb);
+}
 
+/*
+ * The switch itself, with nothing on screen while it happens. sam rereading
+ * the app under a screen saver that is showing kills it, and asking tvpower
+ * for one again straight after left tvpower at "Screen Saver Ready", refusing
+ * every request until a reboot, or rebooted the TV (a C5, webOS 10.3.1). One
+ * closed with Back first, and started again once the switch is done, does
+ * neither.
+ */
+function switchTo(saver, mode, level, choice, cb) {
+  switchingSince = Date.now();
+  closeShowing(function (wasShowing, error) {
+    if (error) {
+      switchingSince = 0;
+      return cb({ ok: false, error: error, current: screensaverMode(), level: screensaverLevel(), switching: false });
+    }
+    swapScreensaver(saver, mode, level, choice, function (r) {
+      switchingSince = 0;
+      r.switching = switching();
+      cb(r);
+      if (r.ok && wasShowing && mode !== 'stock') {
+        setTimeout(function () {
+          trigger(function (t) {
+            if (!t.ok) console.log('screensaver: could not show the new one again: ' + (t.error || 'refused'));
+          });
+        }, SHOW_AGAIN_MS);
+      }
+    });
+  });
+}
 
+/*
+ * cb(wasShowing) once no screen saver is on screen: one tvpower shows is
+ * closed with Back, as the remote would, and one Glasshouse opened itself is
+ * closed. cb(wasShowing, error) where it would not close.
+ */
+function closeShowing(cb) {
+  if (!lunaFn) return cb(false);
+  if (launchedDirectly) {
+    return closeLaunched(function () {
+      setLaunched(false);
+      cb(true);
+    });
+  }
+  lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+    if (!power.isScreenSaver(power.mapState(pw && pw.state))) return cb(false);
+    if (!injectKeyFn || !keyBackVal) return cb(true, msg('srv.saver.noRemote', 'could not reach the remote input device'));
+    injectKeyFn(keyBackVal, function (ok) {
+      if (!ok) return cb(true, msg('srv.saver.noRemote', 'could not reach the remote input device'));
+      var looks = 0;
+      (function look() {
+        setTimeout(function () {
+          lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (now) {
+            var closed = now && now.state && !power.isScreenSaver(power.mapState(now.state)) &&
+              (!now.processing || now.processing === 'Screen On');
+            if (closed) return cb(true);
+            if (++looks < CLOSE_LOOKS) return look();
+            cb(true, msg('srv.saver.notClosed', 'the screen saver on the TV did not close, so the switch was left undone'));
+          });
+        }, 500);
+      })();
+    });
+  });
+}
+
+function swapScreensaver(saver, mode, level, choice, cb) {
   unmountScreensaver(function () {
     if (mode === 'stock') {
       clearStagedScreensaver();
@@ -830,7 +903,6 @@ function setScreensaver(mode, level, cb, choice) {
           ok: !err && now === mode,
           current: now,
           level: screensaverLevel(),
-          switching: switching(),
           error: (!err && now === mode) ? undefined : 'the mount did not take'
         });
       });
@@ -940,26 +1012,14 @@ function restageScreensaver() {
   }
 }
 
+// One a switch leaves running is closed, so it opens from the new files next
+// time. One on screen is left alone: switchTo closes it before a switch, and
+// one tvpower started in the moment since is not ours to restart.
 function restartScreensaverApp(cb) {
   if (!lunaFn) return cb();
   lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
-    var isSS = power.isScreenSaver(power.mapState(pw && pw.state));
-    if (!isSS) {
-      return lunaFn('com.webos.applicationManager/closeByAppId',
-                    { id: 'com.webos.app.screensaver' }, function () { cb(); });
-    }
-    if (!injectKeyFn || !keyBackVal) {
-      return cb();
-    }
-    injectKeyFn(keyBackVal, function () {
-      setTimeout(function () {
-        lunaFn('com.webos.applicationManager/closeByAppId', { id: 'com.webos.app.screensaver' }, function () {
-          setTimeout(function () {
-            lunaFn('com.webos.service.tvpower/power/turnOnScreenSaver', {}, function () { cb(); });
-          }, 1500);
-        });
-      }, 1500);
-    });
+    if (power.isScreenSaver(power.mapState(pw && pw.state))) return cb();
+    lunaFn('com.webos.applicationManager/closeByAppId', { id: SCREENSAVER_APP_ID }, function () { cb(); });
   });
 }
 
@@ -1127,12 +1187,29 @@ function refusedAfterRequest(cb) {
   })();
 }
 
+// tvpower at "Screen Saver Ready" with no screen saver showing: where it stays,
+// it refuses every request until the TV restarts.
+function readyLingers(pw) {
+  return !!(pw && pw.processing === 'Screen Saver Ready' && !power.isScreenSaver(power.mapState(pw.state)));
+}
+
 function trigger(cb) {
   if (!lunaFn) return cb({ ok: false, error: 'luna bus not available' });
   // Asking tvpower for a screen saver while sam is down can park it at
   // "Screen Saver Ready" until a reboot.
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
-  lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+  lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (first) {
+    if (!readyLingers(first)) return withPower(first);
+    // tvpower passes through it for a moment on the way to a screen saver.
+    setTimeout(function () {
+      lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (again) {
+        if (readyLingers(again)) return cb({ ok: false, error: STUCK_ERROR });
+        withPower(again);
+      });
+    }, STUCK_CHECK_MS);
+  });
+
+  function withPower(pw) {
     var isSS = power.isScreenSaver(power.mapState(pw && pw.state));
     if (isSS) {
       if (!injectKeyFn || !keyBackVal) {
@@ -1204,7 +1281,7 @@ function trigger(cb) {
         });
       });
     });
-  });
+  }
 }
 
 module.exports = {

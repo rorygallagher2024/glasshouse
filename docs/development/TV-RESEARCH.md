@@ -2892,10 +2892,17 @@ screenSaver` kept.
   bridge is put into every frame, so a website cannot be shown in the screen
   saver without what it runs being able to use the TV's services. A frame
   without `sandbox` kept the screen saver up as well.
-- **A parked request refuses the next ones.** After a day of switching
-  screen savers, `getPowerState` read `Active` with `processing: "Screen
-  Saver Ready"`, and every `turnOnScreenSaver` answered `Invalid State change
-  Request`. Launching `com.webos.app.screensaver` directly left it running
-  but not on screen. Panel care was off, so it was not the hold above. A
-  reboot cleared it, and the same request from Home then started it.
+- **Rereading the app under a showing screen saver breaks tvpower.** A
+  block and release of `com.webos.app.screensaver` while one was on screen
+  killed it (`Screen Saver` to `Active` at once), and a `turnOnScreenSaver`
+  about 3 s later, from the Back, close and request Glasshouse then made,
+  launched the new one, whose window showed for under half a second. tvpower
+  then read `Active` with `processing: "Screen Saver Ready"` and answered
+  every `turnOnScreenSaver` with `Invalid State change Request` and
+  `turnOnScreen` with `power is busy`; nothing short of a reboot cleared it.
+  Reproduced on the first try from Clock to a web one; from a web one to
+  Clock the TV rebooted itself. In "Screen Saver Ready" tvpower waits on its
+  own `applicationManager/launch` of the app. Closing the showing one with
+  Back first, waiting for `Active`, then switching and asking 3 s later
+  worked in both directions, QML to QML and to and from web, every time.
 
