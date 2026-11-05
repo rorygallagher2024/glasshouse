@@ -85,6 +85,10 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   server that dies leaves no worker behind. Timeouts and cancelling kill the
   whole group. The job line may be up to 4 MB, including a full lineup's
   channel names and groups; its limit applies across chunks and to a complete line.
+- **Downloaders wait a turn** before starting curl or wget, as the debugger
+  firewall calls do. Node 8 on webOS can abort a child before exec. A downloader
+  killed by SIGABRT before any body bytes arrive is retried once after 200 ms;
+  a partial body is never replayed into the playlist or guide reader.
 - **Two lanes.** Background jobs (reading a playlist, the lineup's
   play links and logos, the guide, now and next again) run one at a time, in
   order, a kind for a playlist only once in the queue. Browse and search for

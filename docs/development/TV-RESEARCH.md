@@ -2834,3 +2834,13 @@ with that wait. execFile reports such a child with `err.signal` set and
 `err.killed` false, which tells it apart from one killed by its own timeout.
 The debugger rule in `devtools.js` waits a turn before each call and tries an
 aborted one once more.
+
+Issue [#1248](https://github.com/rorygallagher2024/glasshouse/issues/1248)
+reports the same assertion while reading Internet TV playlists on an
+OLED65CX9LA, including HTTP and Xtream sources. The worker's downloader
+previously mapped a signalled exit to `network`; this message does not prove
+a provider connection failed. A local shell killed by SIGABRT before running
+curl reproduces that result. The worker now waits an event-loop turn before
+each downloader start and retries one SIGABRT if no body bytes arrived. This
+recovery passes with injected aborts and the report's three public playlists;
+the native fault and workaround still need confirmation on the affected CX.
