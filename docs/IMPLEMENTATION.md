@@ -1118,6 +1118,13 @@ the server's answer, and the service adds the time since then. Glasshouse logs
 one line when it starts, one each time it sets the clock, and one at each
 change of error state.
 
+The service can accept a time and leave the clock where it was: one TV took
+every hourly set and stayed about 6940 s out (#1201). So after each set
+`time/getSystemTime` is read back. A clock still 5 s or more from the time
+given is reported as not taking it, with the source the TV then reads from,
+and is not counted as set; it is tried again at the next hourly sync. With no
+answer from the read-back, the set counts as done.
+
 ---
 
 ## Counting watch time

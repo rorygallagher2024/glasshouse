@@ -13,7 +13,7 @@ var tests = [];
 function test(name, fn) { tests.push([name, fn]); }
 
 var HBC_FLAG = '/var/luna/preferences/webosbrew_block_updates';
-var UPDATE_HOSTS = ['snu.lge.com', 'su-dev.lge.com', 'su.lge.com', 'su-ssl.lge.com'];
+var UPDATE_HOSTS = ['snu.lge.com', 'su.lge.com', 'su-ssl.lge.com', 'snu-dev.lge.com', 'su-dev.lge.com', 'nsu.lge.com'];
 
 function sinkholed(table, host) {
   return table.indexOf('0.0.0.0\t' + host) !== -1 && table.indexOf('::\t' + host) !== -1;

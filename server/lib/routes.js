@@ -443,63 +443,81 @@ function setupState(isDemo) {
   return st;
 }
 
+/*
+ * The phone's link while setup hands off to it: every request carries the
+ * one-time code. The page asks for its translation with that code too: without
+ * it i18n.js was refused, the page had no t(), and Save threw before sending
+ * anything (#1039).
+ */
+function handoffRequest(req, res) {
+  var u = parseUrl(req.url);
+  if (!HANDOFF.code || u.query.c !== HANDOFF.code) {
+    return send(res, 403, 'This link has expired. Start again on the TV.', 'text/plain; charset=utf-8');
+  }
+  if (u.pathname === '/' && req.method === 'GET') {
+    var page = assetPath('setup-phone.html');
+    if (!page) return send(res, 404, 'setup page missing', 'text/plain');
+    return fs.readFile(page, function (err, buf) {
+      if (err) return send(res, 500, 'could not read the setup page', 'text/plain');
+      send(res, 200, buf.toString('utf8').replace('src="/assets/i18n.js"', 'src="/assets/i18n.js?c=' + HANDOFF.code + '"'),
+           'text/html; charset=utf-8');
+    });
+  }
+  if (req.method === 'GET' && (u.pathname === '/assets/i18n.js' || /^\/assets\/i18n\/[a-z]{2}\.json$/.test(u.pathname))) {
+    var file = assetPath(u.pathname.slice('/assets/'.length));
+    if (!file) return send(res, 404, 'not found', 'text/plain');
+    return fs.readFile(file, function (err, buf) {
+      if (err) return send(res, 404, 'not found', 'text/plain');
+      res.writeHead(200, { 'Content-Type': MIME[path.extname(file)], 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+      res.end(buf);
+    });
+  }
+  if (u.pathname === '/mqtt' && req.method === 'POST') {
+    if (String(req.headers['content-type'] || '').indexOf('application/json') !== 0) {
+      return send(res, 415, JSON.stringify({ ok: false, error: 'Content-Type must be application/json' }));
+    }
+    var body = '';
+    req.on('data', function (d) { body += d; if (body.length > 4096) req.destroy(); });
+    req.on('end', function () {
+      var p = null;
+      try { p = JSON.parse(body); } catch (e) {
+        return send(res, 400, JSON.stringify({ ok: false, error: 'malformed JSON' }));
+      }
+      // The phone supplies the broker; everything else keeps its current value.
+      var cur = config.mqtt || {}, dev = config.device || {};
+      var own = ownIdentity();
+      var v = validateSettings({
+        mqtt: {
+          enabled: true, host: p.host, port: p.port, tls: !!p.tls,
+          tlsRejectUnauthorized: cur.tlsRejectUnauthorized !== false,
+          username: p.username, password: typeof p.password === 'string' ? p.password : '',
+          topicPrefix: own ? own.prefix : cur.topicPrefix, discoveryPrefix: cur.discoveryPrefix,
+          telemetryIntervalMs: cur.telemetryIntervalMs || 10000, entities: cur.entities
+        },
+        device: own ? { id: own.id, name: dev.name } : { id: dev.id, name: dev.name }
+      });
+      if (v.errors.length) {
+        return send(res, 400, JSON.stringify({ ok: false, error: v.errors.join('; ') }));
+      }
+      if (installBusyRefusal(res)) return;
+      writeSettings(v.value, function (err) {
+        if (err) return send(res, 500, JSON.stringify({ ok: false, error: msg('srv.saveSettingsFailed', 'could not save the settings') }));
+        console.log('setup: Home Assistant broker set from a phone, restarting to connect');
+        send(res, 200, JSON.stringify({ ok: true }));
+        stopHandoff();   // the code is spent
+        restartSoon(300, 'setup');
+      });
+    });
+    return;
+  }
+  send(res, 404, 'not found', 'text/plain');
+}
+
 function startHandoff(cb) {
   if (HANDOFF.server) return cb(null, handoffUrl());
   if (!localAddress4()) return cb(new Error('this TV has no network address'));
   var code = crypto.randomBytes(8).toString('hex');
-  var srv = http.createServer(function (req, res) {
-    var u = parseUrl(req.url);
-    if (!HANDOFF.code || u.query.c !== HANDOFF.code) {
-      return send(res, 403, 'This link has expired. Start again on the TV.', 'text/plain; charset=utf-8');
-    }
-    if (u.pathname === '/' && req.method === 'GET') {
-      var page = assetPath('setup-phone.html');
-      if (!page) return send(res, 404, 'setup page missing', 'text/plain');
-      return fs.readFile(page, function (err, buf) {
-        if (err) return send(res, 500, 'could not read the setup page', 'text/plain');
-        send(res, 200, buf, 'text/html; charset=utf-8');
-      });
-    }
-    if (u.pathname === '/mqtt' && req.method === 'POST') {
-      if (String(req.headers['content-type'] || '').indexOf('application/json') !== 0) {
-        return send(res, 415, JSON.stringify({ ok: false, error: 'Content-Type must be application/json' }));
-      }
-      var body = '';
-      req.on('data', function (d) { body += d; if (body.length > 4096) req.destroy(); });
-      req.on('end', function () {
-        var p = null;
-        try { p = JSON.parse(body); } catch (e) {
-          return send(res, 400, JSON.stringify({ ok: false, error: 'malformed JSON' }));
-        }
-        // The phone supplies the broker; everything else keeps its current value.
-        var cur = config.mqtt || {}, dev = config.device || {};
-        var own = ownIdentity();
-        var v = validateSettings({
-          mqtt: {
-            enabled: true, host: p.host, port: p.port, tls: !!p.tls,
-            tlsRejectUnauthorized: cur.tlsRejectUnauthorized !== false,
-            username: p.username, password: typeof p.password === 'string' ? p.password : '',
-            topicPrefix: own ? own.prefix : cur.topicPrefix, discoveryPrefix: cur.discoveryPrefix,
-            telemetryIntervalMs: cur.telemetryIntervalMs || 10000, entities: cur.entities
-          },
-          device: own ? { id: own.id, name: dev.name } : { id: dev.id, name: dev.name }
-        });
-        if (v.errors.length) {
-          return send(res, 400, JSON.stringify({ ok: false, error: v.errors.join('; ') }));
-        }
-        if (installBusyRefusal(res)) return;
-        writeSettings(v.value, function (err) {
-          if (err) return send(res, 500, JSON.stringify({ ok: false, error: msg('srv.saveSettingsFailed', 'could not save the settings') }));
-          console.log('setup: Home Assistant broker set from a phone, restarting to connect');
-          send(res, 200, JSON.stringify({ ok: true }));
-          stopHandoff();   // the code is spent
-          restartSoon(300, 'setup');
-        });
-      });
-      return;
-    }
-    send(res, 404, 'not found', 'text/plain');
-  });
+  var srv = http.createServer(handoffRequest);
   // IPv4-only if the dashboard is; dual-stack otherwise, even when the
   // dashboard is loopback-only, since the phone connects over the LAN.
   var host = config.host === '0.0.0.0' ? '0.0.0.0' : '::';
@@ -2185,6 +2203,8 @@ module.exports = {
   isSetupEmulated: isSetupEmulated,
   startHandoff: startHandoff,
   stopHandoff: stopHandoff,
+  handoffRequest: handoffRequest,
+  _setHandoffCode: function (c) { HANDOFF.code = c; },
   loadUI: loadUI,
   inlineUI: inlineUI,
   updateSummary: updateSummary,

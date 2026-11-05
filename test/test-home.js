@@ -313,6 +313,23 @@ step('a layout saved from a dashboard changes the version the view\'s heartbeat 
   });
 });
 
+step('the heartbeat asks the view to measure its frames only while the trace file is there, and logs what it sends', function (done) {
+  start(null);
+  var flag = path.join(dir, 'home-trace');
+  try { fs.unlinkSync(flag); } catch (e) {}
+  assert.strictEqual(home.beat({ focused: true }).trace, false);
+  fs.writeFileSync(flag, '');
+  var logged = [], log = console.log;
+  console.log = function (line) { logged.push(String(line)); };
+  try {
+    assert.strictEqual(home.beat({ focused: true, perf: { frames: 300, over33: 1, worst: 40 } }).trace, true);
+  } finally { console.log = log; }
+  assert.ok(logged.some(function (l) { return l.indexOf('home: frames {"frames":300') === 0; }), logged.join(' | '));
+  fs.unlinkSync(flag);
+  assert.strictEqual(home.beat({ focused: true }).trace, false, 'and stops when it is removed');
+  done();
+});
+
 step('after a start the rows come from the lists last read, and a change read behind them reloads the view', function (done) {
   start(null);
   home.catalogue(function (c) {

@@ -117,7 +117,7 @@ The state-push suite checks `keyboard_visible` from the window list: pushed on c
 
 `test-remotekeys.js` checks that the input bar is offered only where allowed, has its app installed before a key is saved, refuses the key when the install fails, has its app removed when no key opens it, by `dropInputBar` and by `restore`, and that the filter hands a press to the bar as Right while it is in front rather than opening it again; `test-inputbar.js` that the bar is offered on webOS 6, on 4, 5 and 7 to 10 with its switch, which off sets its keys back to LG's, and never on 11, and that it is preloaded while a key opens it and the TV is on, again after each close, and tried again at most five times.
 
-`test-i18n-pick.js` checks which language the pages pick: the browser's, except one translated only in part on a page it does not cover in full, and one chosen or asked for in the address on every page.
+`test-i18n-pick.js` checks which language the pages pick: the browser's, except one translated only in part on a page it does not cover in full, and one chosen or asked for in the address on every page. A language with its region, such as `pt-br`, is picked whole, and only for that region.
 
 `test-home-picture.js` reads a G3's receiver files with Glasshouse Home on screen: the signal and HDR of the input behind it, the picture mode asked for with both input and dynamic range, an empty input, and HDR from the receiver's packets (PQ, HLG, none, Dolby Vision). Only the mode for the range coming in is asked for, none without a signal, and a channel's SDR mode. It also checks that tracking runs only while Glasshouse Home, picture details and the TV are all on, that it retains an app's first video before any app plate is read, and that standby or switching either off stops it and leaves the recorded video available.
 
@@ -140,7 +140,7 @@ last watched with the focus on Apps. `test-home.js` checks the TV tile is first
 in the Inputs row on a TV with channels, absent without them, opens Live TV,
 and that both options default to off and save.
 
-`test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved.
+`test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved. It also checks that the phone's setup link serves its page, `i18n.js` and a language file with the one-time code, the page asking for `i18n.js` with it, and refuses them without.
 
 `test-stats-timeout.js` checks that a stats collection past its limit answers its callers with the last complete one, or the empty stand-in when none has finished, and carries on with no second collection started beside it; that `expireStats` does not take that fallback away; and that one given up on after 60 s answers no caller of the next.
 
@@ -247,6 +247,27 @@ NO_MKDOCS_2_WARNING=1 mkdocs build
 
 Use `NO_MKDOCS_2_WARNING=1 mkdocs serve` to preview the site locally at `http://127.0.0.1:8000/glasshouse/` with live reloading.
 
+## Measuring Glasshouse Home on a TV
+
+`scripts/tv.sh <tv> frames [key ...]` measures how smoothly Glasshouse Home
+runs while keys are pressed. While `/var/lib/tvweb/home-trace` exists, the
+view records each frame, the browser's long tasks and the time its main
+functions take, and sends them with its heartbeat every 5 s. The server logs
+each as a `home: frames` line. The command creates the file, presses the keys
+through the dashboard's remote 0.15 s apart, prints the lines, and removes the
+file however it ends. For example, Home, a run along the Apps row, and Recent
+apps opened and closed:
+
+```bash
+scripts/tv.sh 192.168.1.131 frames home wait wait right right right right right right down right right wait back wait wait back
+```
+
+`over33` counts frames that took longer than two vsyncs at 60 Hz, and
+`worst` is the longest, in ms. `long` lists long tasks, which webOS 4's
+browser does not report. `fn` gives each timed function's calls, average and
+longest ms. A gap with nothing in `fn` to explain it is the browser's own
+work: style, layout, painting or decoding images.
+
 ## Local TV emulation
 
 `scripts/emulate-tv.js` runs the server inside a simulated TV environment with procfs, sysfs, Luna calls, installed apps, remote key filters, and recent apps mocked. It serves the web dashboard, the TV app dashboard, and Glasshouse Home locally for development and visual testing without physical TV hardware:
@@ -279,7 +300,7 @@ unlisted apps and newer cards, and snapshots forbid caching. The browser
 check covers held OK acting once on release, close errors above the panel,
 and Back or a Home relaunch cancelling a delayed panel reply.
 
-`test-home-date.js` runs Glasshouse Home's date with the browser's default locale at en-US, as on webOS 10: a Russian page gets Russian words with the month as it follows a number (`24 октября`), and the line starts with a capital, an English page is unchanged, and a browser without `formatToParts` still uses the page's language. It is skipped on a node without full ICU.
+`test-home-date.js` runs Glasshouse Home's date with the browser's default locale at en-US, as on webOS 10: a Russian page gets Russian words with the month as it follows a number (`24 октября`), and the line starts with a capital, an English page is unchanged, a browser without `formatToParts` still uses the page's language, and so does a page in a language with its region. It is skipped on a node without full ICU.
 
 `test-home-search.js` feeds a G3's real answer for "Dune" to Glasshouse
 Home's search: one film on three services is one title, only the TV's apps

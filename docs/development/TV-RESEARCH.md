@@ -825,6 +825,22 @@ Reported on PR #910 on 27 October 2026.
 - **Exiting an app lands on the last input**, from LG's Exit dialog or Back on
   LG's Apps, not on Home.
 
+## Glasshouse Home's frames (C2, webOS 9.2.2; B8, webOS 4.4.3)
+
+Measured with `scripts/tv.sh <tv> frames` (testing.md), in Alternative View:
+
+- **At rest and scrolling the rows,** the C2 had no frame over 17 ms; the B8
+  had 3 over 33 ms in 30 s of moving along and between rows, the longest
+  67 ms. Home's own work per key was under 5 ms on the C2 and under 15 ms on
+  the B8, once 30 ms.
+- **Opening Recent apps** held the C2's page for 300 to 350 ms each time,
+  one long task. The cards' script took about 10 ms; with the apps'
+  screenshots (480 × 270 JPEGs of about 19 KB, five of them) left out the
+  long task went, and with them decoded off the page's thread
+  (`decoding="async"`) too, the longest frame then being 67 to 100 ms.
+- A contributor's G3 (webOS 9.2.2) missed 25 of about 480 frames in 8 s of
+  continuous scrolling (#955), which the C2 did not reproduce.
+
 ## LG Home's recent apps (G3, webOS 9.2.2)
 
 Read on 19 October 2026 from LG's Home's QML under the Glasshouse Home
@@ -1105,6 +1121,19 @@ only on webOS 9. webOS 3 and 4 have a different, plainer home app, and webOS 10
 and later have a Flutter one (its log lines come from `flutter-client`). The
 QML has code for LG's webOS 23 (`webOS23Test`, the `webOS23` app list style),
 so a webOS 8 TV may read the same layout file; that has not been tried.
+
+## The time service's sources (webOS 4.4.3, B8; webOS 9.2.2, C2)
+
+`com.webos.service.systemservice/clock/getTime` with `{ "source": name }`
+answers a source's time and priority: `manual` 0, `micom` 1, `broadcast` 2,
+`sdp` 4, with `system` the clock itself and `systemTimeSource` the source it
+follows; `ntp`, `rtc`, `local`, `network` and `user` are "not registered".
+The higher number wins: the B8, with an aerial and a `broadcast` time
+answering, followed `sdp`, as did the C2, which has no broadcast time.
+`clock/setTime` with `source: "sdp"` sets the clock on both. A reporter's TV
+answered every hourly `sdp` set and stayed about 6940 s out, the correction
+the same each hour bar a few seconds a day of drift (#1201); what it follows
+instead is not known yet.
 
 ## The clock since boot stops in suspend (webOS 4.4.3, B8)
 
@@ -1647,6 +1676,12 @@ and others' work on webOS 10
 - The B8 answers `com.webos.service.acb/getForegroundAppInfo` with an `acbs`
   pipeline list, each with `playStateNow` and `playerType` (`external input`
   for HDMI). The C2 has no such service ("Service does not exist").
+- A C1 (webOS 6.4.0) has no acb either. An app playing through Web Audio
+  (Afterglow, a music visualiser built as a web app) gets an empty
+  `foregroundAppInfo` from `com.webos.media`, so its state can't be read.
+  KEY_PLAYPAUSE (164) injected on the remote's device never reached it as a
+  key event; KEY_PAUSE and KEY_PLAY arrived as keyCode 19 and 415, and
+  paused and resumed it.
 - On the C2, `com.webos.media/getForegroundAppInfo` gives
   `foregroundAppInfo: [{ appId, playState, type: "media", mediaId, windowId }]`:
   YouTube read `playing`, then `paused` after the remote's Pause key, and the

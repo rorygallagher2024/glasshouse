@@ -32,6 +32,13 @@ var REPLY_TIMEOUT_MS = 2000;
 var MAX_ROUND_TRIP_MS = 1000;
 // clock/setTime takes whole seconds, so a smaller error is left alone.
 var MIN_STEP_MS = 1000;
+/*
+ * The time service can answer a set and leave the clock where it was: a TV
+ * whose every hourly set corrected it by the same 6940 s (#1201). So the clock
+ * is read back after each set, and one still further than this from the time
+ * given did not take it. getSystemTime's utc is whole seconds.
+ */
+var NOT_TAKEN_MS = 5000;
 // No release is older than this, so an earlier answer is wrong.
 var CLOCK_FLOOR_MS = Date.UTC(2026, 0, 1);
 
@@ -65,6 +72,9 @@ var lastAnswer = null;
 var counters = null;
 // Monotonic time the clock was last set, or null before it has been.
 var lastSetMono = null;
+// How far out the clock still was after the last set, in ms, while the TV is
+// not taking the time; null otherwise.
+var notTakenMs = null;
 
 /*
  * config.ntp as used, or null while it is off: no server, or enabled false.
@@ -334,16 +344,33 @@ function setClock(answer, gen, done) {
   var payload = setTimePayload(answer);
   luna('com.webos.service.systemservice/clock/setTime', payload, function (res) {
     if (gen !== generation) return done();
-    busy = false;
     // The luna wrapper gives null when luna-send timed out or printed no JSON.
-    if (!res) {
-      syncFailed('the time service did not answer');
+    if (!res || res.returnValue !== true) {
+      busy = false;
+      syncFailed(res ? 'the time service refused the time: ' + JSON.stringify(res) : 'the time service did not answer');
       return done();
     }
-    if (res.returnValue !== true) {
-      syncFailed('the time service refused the time: ' + JSON.stringify(res));
+    // Still busy: a sync that measured before the read-back would set again.
+    checkTaken(answer, gen, done);
+  });
+}
+
+// Reads the clock back after a set the service accepted. With no answer it
+// counts as set, as before the check.
+function checkTaken(answer, gen, done) {
+  luna('com.webos.service.systemservice/time/getSystemTime', {}, function (t) {
+    if (gen !== generation) return done();
+    busy = false;
+    var outMs = t && typeof t.utc === 'number' ? answer.at + (monotonicMs() - answer.atMono) - t.utc * 1000 : null;
+    if (outMs !== null && Math.abs(outMs) >= NOT_TAKEN_MS) {
+      counters.errors++;
+      notTakenMs = outMs;
+      setError('the TV accepted the time but its clock stayed ' + formatOffset(outMs) + ' out' +
+               (t.systemTimeSource ? ', on its ' + t.systemTimeSource + ' time' : ''));
+      schedule(RESYNC_MS);
       return done();
     }
+    notTakenMs = null;
     setError(null);
     appliedOnce = true;
     counters.sets++;
@@ -425,6 +452,7 @@ function stop() {
   lastAnswer = null;
   counters = null;
   lastSetMono = null;
+  notTakenMs = null;
 }
 
 /**
@@ -434,7 +462,7 @@ function stop() {
  * before either): ages, as the TV's clock may be the thing that is wrong.
  * Null while off.
  * @returns {?{sets: number, errors: number, last: ?Answer, server: string, port: number,
- *   error: ?string, answeredAgoS: ?number, setAgoS: ?number}}
+ *   error: ?string, answeredAgoS: ?number, setAgoS: ?number, notTakenS: ?number}}
  */
 function getStatus() {
   if (!counters) return null;
@@ -447,7 +475,8 @@ function getStatus() {
     port: settings.port,
     error: errorState,
     answeredAgoS: lastAnswer ? Math.round((now - lastAnswer.atMono) / 1000) : null,
-    setAgoS: lastSetMono !== null ? Math.round((now - lastSetMono) / 1000) : null
+    setAgoS: lastSetMono !== null ? Math.round((now - lastSetMono) / 1000) : null,
+    notTakenS: notTakenMs !== null ? Math.round(notTakenMs / 1000) : null
   };
 }
 
