@@ -1878,7 +1878,9 @@ tvpower, which from Active refuses ("The current sub state must be 'screen
 off'"), so the remote did not close it. Start screensaver launches the app
 where tvpower drops the request, except over full-screen playback, tracks it
 through sam's `running` list, and closes it on any key the remote-button
-worker reads from `/dev/input`.
+worker reads from `/dev/input`. On an LCD TV (or when Screen Saver is disabled
+in LG's settings), tvpower refuses `turnOnScreenSaver` with `screenSaverEnabled value is off`;
+falling back to launching the screensaver app directly allows the manual trigger to start it.
 
 ## Panel care holding the screen saver back (webOS 9.2.2, G3)
 
