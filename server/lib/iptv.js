@@ -180,7 +180,6 @@ function loadState() {
   try { dir = fs.realpathSync(dir); } catch (e) {}
   var c = readSmall(file('config.json'), MB);
   config = { playlists: c && isArray(c.playlists) ? c.playlists.filter(validStored) : [] };
-  if (c && (c.memoryMode === memory.NORMAL || c.memoryMode === memory.ECONOMY)) config.memoryMode = c.memoryMode;
   selection = lineupLib.normalise(readSmall(file('selection.json'), 4 * MB));
   current = {};
   cache = { meta: {}, added: {}, nownext: {}, groups: {} };
@@ -669,8 +668,9 @@ function retryLater(ms) {
   retryTimer = setTimeout(function () { retryTimer = null; pump(); }, ms);
 }
 
+// Chosen from the TV's memory, not by the owner: Normal still runs a job as Economy when memory is short.
 function memoryMode() {
-  return config.memoryMode || memory.defaultMode(memoryRead.total);
+  return memory.defaultMode(memoryRead.total);
 }
 
 // How a queued job should run, from the mode, its last peak and the list's size.
@@ -1107,16 +1107,6 @@ function newId() { return 'p' + crypto.randomBytes(4).toString('hex'); }
  */
 function playlistsAction(body, cb) {
   var action = body && body.action;
-  if (action === 'memory-mode') {
-    if (body.mode !== memory.NORMAL && body.mode !== memory.ECONOMY) return cb({ ok: false, error: 'mode' });
-    config.memoryMode = body.mode;
-    saveConfig();
-    lastPlan = null;
-    memoryWaitUntil = 0;
-    changed();
-    pump();
-    return cb({ ok: true });
-  }
   if (action === 'add' || action === 'edit') {
     var p = action === 'edit' ? playlist(body.id) : null;
     if (action === 'edit' && !p) return cb({ ok: false, error: 'no-playlist' });

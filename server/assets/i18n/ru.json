@@ -2930,11 +2930,5 @@
  "home.showTvLogos": {"text": "Логотипы каналов", "from": "Channel logos"},
  "home.showTvLogosDesc": {"text": "В интернет-ТВ: логотип канала из плейлиста. Если выключено, показываются инициалы канала.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."},
  "home.tv.tryAgainPlain": {"text": "OK повторяет попытку.", "from": "OK tries again."},
- "home.tv.memoryTitle": {"text": "Использование памяти", "from": "Memory use"},
- "home.tv.memoryNormal": {"text": "Обычный", "from": "Normal"},
- "home.tv.memoryEconomy": {"text": "Экономный", "from": "Economy"},
- "home.tv.memoryNormalDesc": {"text": "Списки и телепрограмма используют выделенную для них память. Если у ТВ её нет, они работают как в экономном режиме.", "from": "Lists and guides use the memory set aside for them. If the TV does not have it, they run as in Economy."},
- "home.tv.memoryEconomyDesc": {"text": "Списки и телепрограмма запрашивают только нужную им память и загружают меньше логотипов за раз. Для ТВ с небольшим объёмом памяти.", "from": "Lists and guides ask only for the memory they need, with fewer logos at a time. For TVs with little memory."},
- "home.tv.memoryFallback": {"text": "У ТВ не хватило памяти для обычного режима, поэтому последняя задача выполнялась как в экономном режиме.", "from": "The TV did not have enough memory for Normal, so the last job ran as in Economy."},
  "home.tv.waitMemoryOf": {"text": "Ожидание памяти на ТВ: доступно {available} МБ из необходимых {needed} МБ.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."}
 }

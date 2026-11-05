@@ -95,10 +95,11 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   between them, or with the TV's `MemAvailable` under its floor for three
   measures in a row or 30 MB under it at once, the background job is stopped and
   queued again for at least a minute; a search over its own share fails. The
-  floor and what a job needs to start depend on the mode, `lib/iptv-memory.js`.
-  **Normal**, the default from 1.5 GB of memory: a floor of 150 MB and 210 MB to
+  floor and what a job needs to start depend on the mode, `lib/iptv-memory.js`,
+  which the server picks from the TV's memory; there is no setting.
+  **Normal**, from 1.5 GB of memory: a floor of 150 MB and 210 MB to
   start, with a 64 MB heap; with less available the job runs in economy instead.
-  **Economy**, the default below that: a floor of 12% of the TV's memory, from
+  **Economy**, below that: a floor of 12% of the TV's memory, from
   90 MB to 150 MB, and to start that floor and the job's cost: 125% of what it
   last used on that playlist, else 30 MB and 0.7 MB per 1,000 channels for reading
   a list or the lineup, else 60 MB. An edit the owner is waiting on asks at most
