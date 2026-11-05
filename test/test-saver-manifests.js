@@ -218,6 +218,24 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   assert.strictEqual(env.files[path.join(STAGE, '.tvweb-choice')], 'date');
   assert.strictEqual(byId(screensavers.screensaverList().modes, 'clock').active, true, 'shown as Clock in use');
   console.log('  \u2713 Clock with date is Clock\'s Show option, and its old id still works');
+
+  // Brightness: 100% and 65% are the two levels Clock is drawn at, as Bright
+  // and Dim were; between and below, a black layer over the nearer one above.
+  delete env.files[path.join(APP, '.tvweb-choice')];
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'clock';
+  [['bright', 1, null], ['dim', 0, null], ['100', 1, null], ['65', 0, null], ['80', 1, '0.2'], ['40', 0, '0.385'], ['5', 0, '0.846']]
+    .forEach(function (c) {
+      env.files[path.join(APP, '.tvweb-brightness')] = c[0];
+      screensavers.restageScreensaver();
+      var qml = staged();
+      assert.ok(qml.indexOf('property int level: ' + c[1]) !== -1, c[0] + ': level ' + c[1]);
+      var layer = /Rectangle \{ anchors\.fill: parent; color: "black"; opacity: ([\d.]+); z: 1000000 \}\n\}\s*$/.exec(qml);
+      assert.strictEqual(layer ? layer[1] : null, c[2], c[0] + ': layer');
+    });
+  env.files[path.join(APP, '.tvweb-brightness')] = '40';
+  assert.strictEqual(screensavers.screensaverBrightness(), 40);
+  assert.strictEqual(screensavers.screensaverLevel(), 'dim', 'Dim to what still reads one');
+  console.log('  \u2713 brightness keeps Bright and Dim as they were, with a layer between and below, down to 10%');
 })();
 
 // 11. An installed Homebrew Channel app's screen saver is listed, from its app,

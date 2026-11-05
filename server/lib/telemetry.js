@@ -1914,6 +1914,7 @@ function collectStats(cb) {
       !!(screensaversModule && screensaversModule.launchedShowing());
     out.screensaverMode = screensaversModule ? screensaversModule.screensaverMode() : 'stock';
     out.screensaverLevel = screensaversModule ? screensaversModule.screensaverLevel() : 'dim';
+    out.screensaverBrightness = screensaversModule && screensaversModule.screensaverBrightness ? screensaversModule.screensaverBrightness() : undefined;
     out.screensaverChoice = screensaversModule && screensaversModule.screensaverChoice ? screensaversModule.screensaverChoice() : undefined;
 
   // The whole category, for the sleep timer and LG's On and Off Timers.

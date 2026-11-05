@@ -1068,10 +1068,12 @@ function doControl(action, value, cb) {
        * written into the same file, so setting one without the other would
        * quietly reset it.
        */
-      var ssMode = value, ssLevel = screensavers.screensaverLevel(), ssChoice;
+      var ssMode = value, ssLevel = screensavers.screensaverBrightness(), ssChoice;
       if (value && typeof value === 'object') {
         ssMode = value.mode;
+        // brightness: a percentage. level: "dim" or "bright", as before it.
         if (value.level) ssLevel = value.level;
+        if (value.brightness !== undefined) ssLevel = value.brightness;
         if (typeof value.choice === 'string') ssChoice = value.choice;
       }
       ssMode = String(ssMode || '').trim();

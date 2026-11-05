@@ -116,7 +116,7 @@ it again in the tab - or, from your computer:
 
 ```
 curl -X POST http://<tv-ip>:8080/api/control -H 'Content-Type: application/json' \
-  -d '{"action":"screensaverMode","value":{"mode":"user-my-saver","level":"dim"}}'
+  -d '{"action":"screensaverMode","value":{"mode":"user-my-saver","brightness":65}}'
 curl -X POST http://<tv-ip>:8080/api/control -H 'Content-Type: application/json' \
   -d '{"action":"screensaver","value":"start"}'
 ```
@@ -126,7 +126,7 @@ Glasshouse has a token set, add `-H 'Authorization: Bearer <token>'`; control
 has to be allowed (`allowControl`). The second call starts the screen saver, or
 closes it if it is showing.
 
-Try it at both **Dim** and **Bright**, and on a TV nobody is watching.
+Try it at 100%, 65% and 10% brightness, and on a TV nobody is watching.
 
 ## Checking before you copy
 
@@ -171,7 +171,7 @@ for a picture that can run for hours on an OLED:
 * mostly black, with small bright parts;
 * always moving, over the whole screen, with nothing in a fixed place;
 * colors that turn over time, and a random start each run;
-* dim enough at **Dim** for a dark room;
+* dim enough at 65% for a dark room;
 * no sound and no network;
 * light on the TV: about 20% of one CPU core, 30 updates a second from a
   `Timer`.
@@ -192,9 +192,12 @@ The reasons for each, with what was measured, are in the
 
 A screen saver names in `uses` what Glasshouse should fill in:
 
-* `level` - `__TVWEB_LEVEL__` becomes `0` at **Dim** and `1` at **Bright**.
-  An HTML one without it is shown in a frame with a black layer a third
-  opaque over it at **Dim**, so it needs nothing to be dimmed.
+* `level` - `__TVWEB_LEVEL__` becomes `1` above 65% brightness and `0` at 65%
+  and below. Draw `1` as the screen saver at its brightest and `0` at about two
+  thirds of that: 100% and 65% show those two as drawn, and Glasshouse lays
+  black over the nearer one above for every step between and below, down to
+  10%. One without `level` is drawn as it is at 100%, under the layer below
+  that; an HTML one is shown in a frame for it.
 * `choice` - `__TVWEB_CHOICE__` becomes the value of the option picked from
   the screen saver's `choices`, which the dashboard offers as a dropdown.
 

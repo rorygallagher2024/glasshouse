@@ -32,12 +32,19 @@ var SCREENSAVER_LEVEL_MARKER = '.tvweb-brightness';
 var WEB_DIR = 'web';
 /*
  * A web screen saver that does not draw at a level of its own is shown in a
- * frame of this page, under a black layer when dim: what it opens, a website
- * included, stays in the frame and so under the layer. A third black, as the
- * QML ones' dim ink is about two thirds of white.
+ * frame of this page, under a black layer for its brightness: what it opens,
+ * a website included, stays in the frame and so under the layer.
  */
 var DIM_FRAME = 'glasshouse-frame.html';
-var DIM_OPACITY = '0.35';
+/*
+ * Brightness is a percentage. Glasshouse's own are drawn at two levels, each
+ * tuned by hand, their dim one about two thirds as bright as their bright
+ * one: 100% is the bright level and TUNED_DIM% the dim one, each as it always
+ * was, and a black layer over the nearer level above makes every step between
+ * and below. The old Dim and Bright are these two.
+ */
+var TUNED_DIM = 65;
+var MIN_BRIGHTNESS = 10;
 // The option picked from a screen saver's choices, staged beside the level.
 var SCREENSAVER_CHOICE_MARKER = '.tvweb-choice';
 /*
@@ -550,8 +557,28 @@ function switching() {
   return !!switchingSince;
 }
 
+// A percentage from one, or from "dim" and "bright" as they were stored and sent before.
+function brightnessOf(v) {
+  if (v === 'bright') return 100;
+  var n = typeof v === 'number' ? v : (/^\d{1,3}$/.test(String(v)) ? parseInt(v, 10) : NaN);
+  if (isNaN(n)) return TUNED_DIM;
+  return Math.max(MIN_BRIGHTNESS, Math.min(100, Math.round(n)));
+}
+
+function screensaverBrightness() {
+  return brightnessOf(readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_LEVEL_MARKER)));
+}
+
+// Dim or Bright, for what still reads one of the two: Bright only at 100%.
 function screensaverLevel() {
-  return readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_LEVEL_MARKER)) === 'bright' ? 'bright' : 'dim';
+  return screensaverBrightness() >= 100 ? 'bright' : 'dim';
+}
+
+// The level a saver taking one is drawn at, and the black layer over it.
+function tunedLevel(brightness) { return brightness > TUNED_DIM ? 1 : 0; }
+function layerOpacity(e, brightness) {
+  var top = e.uses.indexOf('level') !== -1 && !tunedLevel(brightness) ? TUNED_DIM : 100;
+  return Math.round((1 - brightness / top) * 1000) / 1000;
 }
 
 // The option in use from the screen saver's choices, or its default.
@@ -651,7 +678,7 @@ function screensaverList() {
   return {
     ok: true,
     current: cur,
-    level: screensaverLevel(),
+    level: screensaverLevel(), brightness: screensaverBrightness(),
     choice: screensaverChoice(saverById(cur)),
     modes: out,
     writable: !!(configObj && configObj.allowControl),
@@ -770,9 +797,22 @@ function stageSaverFiles(e, level, choice) {
   }
   fs.writeFileSync(stagedMain(e), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice));
   if (framed(e)) fs.writeFileSync(path.join(SCREENSAVER_DIR, WEB_DIR, DIM_FRAME), framePage(e, level));
-  fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), level === 'bright' ? 'bright' : 'dim');
+  fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
   if (e.choices) fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER), choice);
   else unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
+}
+
+/*
+ * A QML screen saver with a black layer over it, as the last child of its
+ * window: drawn above everything else in it, and over nothing outside it.
+ */
+function withLayer(qml, opacity) {
+  var end = qml.lastIndexOf('}');
+  if (!(opacity > 0) || end === -1) return qml;
+  return qml.slice(0, end) +
+    '\n    // Glasshouse\'s brightness: a black layer over the screen saver.\n' +
+    '    Rectangle { anchors.fill: parent; color: "black"; opacity: ' + opacity + '; z: 1000000 }\n' +
+    qml.slice(end);
 }
 
 function framed(e) { return !!(e && e.web && e.uses.indexOf('level') === -1); }
@@ -783,7 +823,7 @@ function framePage(e, level) {
     'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}' +
     'iframe{position:fixed;top:0;left:0;width:100%;height:100%;border:0}' +
     '#dim{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;pointer-events:none;opacity:' +
-    (level === 'bright' ? '0' : DIM_OPACITY) + '}' +
+    layerOpacity(e, level) + '}' +
     '</style></head><body><iframe src="' + src + '" allow="autoplay; fullscreen; microphone"></iframe><div id="dim"></div></body></html>\n';
 }
 
@@ -798,13 +838,14 @@ function fillSaverQml(e, qml, level, choice) {
     qml = qml.replace(/__TVWEB_URL__/g,
       'http://127.0.0.1:' + port + '/api/stats' + (token ? '?k=' + encodeURIComponent(token) : ''));
   }
-  if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, level === 'bright' ? '1' : '0');
+  if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
   if (e.choices) {
     var value = e.choices.options.filter(function (o) { return o.id === choice; })[0].value;
     qml = qml.replace(/__TVWEB_CHOICE__/g, value);
   }
   // The hour cycle the clock screen savers draw: the TV's own (lib/clock).
   qml = qml.replace(/__TVWEB_CLOCK12__/g, hour12Fn() ? 'true' : 'false');
+  if (!e.web && !e.fromApp) qml = withLayer(qml, layerOpacity(e, level));
   return qml;
 }
 
@@ -821,7 +862,7 @@ function setScreensaver(mode, level, cb, choice) {
   if (saver.problem) return cb({ ok: false, error: saver.problem });
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
   if (mode !== 'stock' && heldBack()) return cb({ ok: false, error: HELD_ERROR });
-  level = (level === 'bright') ? 'bright' : 'dim';
+  level = brightnessOf(level);
   switchTo(saver, mode, level, choice, cb);
 }
 
@@ -838,7 +879,7 @@ function switchTo(saver, mode, level, choice, cb) {
   closeShowing(function (wasShowing, error) {
     if (error) {
       switchingSince = 0;
-      return cb({ ok: false, error: error, current: screensaverMode(), level: screensaverLevel(), switching: false });
+      return cb({ ok: false, error: error, current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(), switching: false });
     }
     swapScreensaver(saver, mode, level, choice, function (r) {
       switchingSince = 0;
@@ -894,7 +935,7 @@ function swapScreensaver(saver, mode, level, choice, cb) {
     if (mode === 'stock') {
       clearStagedScreensaver();
       return settleScreensaverApp(function (notTaken) {
-        cb({ ok: !notTaken && screensaverMode() === 'stock', current: screensaverMode(), level: screensaverLevel(),
+        cb({ ok: !notTaken && screensaverMode() === 'stock', current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(),
              switching: switching(), error: notTaken ? STOCK_LATER_ERROR : undefined });
       });
     }
@@ -914,14 +955,14 @@ function swapScreensaver(saver, mode, level, choice, cb) {
           // sam still runs LG's: put LG's files back under it, so they agree.
           return unmountScreensaver(function () {
             clearStagedScreensaver();
-            cb({ ok: false, current: screensaverMode(), level: screensaverLevel(), switching: switching(), error: NOT_TAKEN_ERROR });
+            cb({ ok: false, current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(), switching: switching(), error: NOT_TAKEN_ERROR });
           });
         }
         var now = screensaverMode();
         cb({
           ok: !err && now === mode,
           current: now,
-          level: screensaverLevel(),
+          level: screensaverLevel(), brightness: screensaverBrightness(),
           error: (!err && now === mode) ? undefined : 'the mount did not take'
         });
       });
@@ -1018,7 +1059,7 @@ function restageScreensaver() {
   try {
     var staged = stagedMain(saver);
     var before = fs.existsSync(staged) ? fs.readFileSync(staged, 'utf8') : '';
-    stageSaverFiles(saver, screensaverLevel(), screensaverChoice(saver));
+    stageSaverFiles(saver, screensaverBrightness(), screensaverChoice(saver));
     // An old id stored is written again as the one it now is.
     if (RENAMED[readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER))]) {
       fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), mode);
@@ -1312,6 +1353,7 @@ module.exports = {
   clearStagedScreensaver: clearStagedScreensaver,
   unmountScreensaver: unmountScreensaver,
   screensaverLevel: screensaverLevel,
+  screensaverBrightness: screensaverBrightness,
   screensaverMode: screensaverMode,
   screensaverList: screensaverList,
   switching: switching,

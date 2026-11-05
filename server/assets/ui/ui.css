@@ -752,6 +752,8 @@ button.key-hit{background:var(--w10)}
 .ss-level-lbl{font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--w60);
               margin-bottom:8px}
 .ss-level-row .btns{display:flex;gap:10px;max-width:340px}
+.ss-bright-row{max-width:340px;grid-template-columns:1fr}
+.vol-wrap.disabled{opacity:.45;pointer-events:none}
 .ss-level-row .btns button{flex:1}
 /* The Animation picker: a button, and under it a list with each group's heading. */
 .ss-pick{position:relative;max-width:340px;margin-top:11px}

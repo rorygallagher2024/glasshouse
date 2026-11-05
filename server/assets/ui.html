@@ -874,8 +874,13 @@
   </div>
   <div class="ss-side">
   <div class="ss-level-row" id="ss-level-row" hidden>
-    <div class="ss-level-lbl" data-t="ss.brightness">Brightness</div>
-    <div class="btns" id="ss-level"></div>
+    <div class="ss-level-lbl"><span data-t="ss.brightness">Brightness</span> &middot; <span id="ss-bright-lbl" class="num">&mdash;</span></div>
+    <div class="vol-row ss-bright-row">
+      <div class="vol-wrap full" id="ss-bright-wrap" role="group" aria-label="Brightness" data-t-aria-label="ss.brightness">
+        <div class="vol-fill" id="ss-bright-fill"></div>
+        <input type="range" id="ss-bright-slider" min="10" max="100" step="5" value="65" aria-label="Brightness" data-t-aria-label="ss.brightness">
+      </div>
+    </div>
   </div>
 
   <div class="ss-level-row" id="ss-choice-row" hidden>

@@ -111,6 +111,9 @@ process.nextTick(function () {
     screensavers.setScreensaver('user-weblater', 'bright', checked(function (lit) {
     assert.strictEqual(lit.ok, true, lit.error);
     assert.ok(/#dim\{[^}]*opacity:0\}/.test(env.files[path.join(STAGE, 'web', 'glasshouse-frame.html')]), 'no layer when bright');
+    screensavers.setScreensaver('user-weblater', 40, checked(function (pct) {
+    assert.strictEqual(pct.ok, true, pct.error);
+    assert.ok(/#dim\{[^}]*opacity:0\.6\}/.test(env.files[path.join(STAGE, 'web', 'glasshouse-frame.html')]), 'a layer for 40%');
     console.log('  ✓ one that draws at one brightness is dimmed by a layer over its frame, and not when bright');
 
     screensavers.setScreensaver('clock', 'dim', checked(function (s) {
@@ -122,6 +125,7 @@ process.nextTick(function () {
       console.log('  ✓ switching to a QML one stages it as before');
       env.restore();
       console.log('ALL test-screensaver-web.js assertions passed!\n');
+    }));
     }));
     }));
     }));

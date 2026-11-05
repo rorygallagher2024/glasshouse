@@ -886,12 +886,14 @@ function saverRows(d) {
   // An installed app's screen saver has its own settings, and no brightness from here.
   var appSaver = d.modes.some(function (m) { return m.active && m.fromApp; });
   if (d.writable && !busy && d.current && d.current !== 'stock' && !appSaver) {
-    var bright = d.level === 'bright';
+    var bright = typeof d.brightness === 'number' ? d.brightness : d.level === 'bright' ? 100 : 65;
     r.push(head(t('tv.saver.head.howItLooks', 'How it looks')));
-    r.push({ label: t('ss.brightness', 'Brightness'), value: bright ? t('ss.bright', 'Bright') : t('ss.dim', 'Dim'), cls: 'act', act: 'saverLevel',
-             key: d.current, next: bright ? 'dim' : 'bright',
-             press: bright ? t('tv.saver.toDim', 'Press OK for Dim') : t('tv.saver.toBright', 'Press OK for Bright'),
-             hint: t('tv.saver.brightness.hint', 'Dim suits a dark room and is kinder to the panel; bright suits a lit one.') });
+    // Adjusted with a bar, as a picture setting is, and sent once done: each
+    // value restages the screen saver.
+    r.push({ label: t('ss.brightness', 'Brightness'), value: bright + '%', cls: 'act', act: 'saverAdjust',
+             key: d.current, cur: bright, min: 10, max: 100, step: 5, fmt: 'percent', sendOnEnd: true,
+             press: t('tv.pic.adjust', 'Press OK to adjust'),
+             hint: t('tv.saver.brightness.hint', 'Lower suits a dark room and is kinder to the panel; higher suits a lit one.') });
   }
 
   // The same action as the browser dashboard's Start screen saver. From the
@@ -1928,6 +1930,7 @@ function nativeDtsDescription(helper) {
 // A picture setting's number as LG's menu shows it: tint as R and G, colour
 // temperature as Warm and Cool, the rest either side of 0 with a sign.
 function lgNumber(g, v) {
+  if (g.fmt === 'percent') return v + '%';
   if (g.min >= 0 || v === 0) return String(v);
   var fmt = g.fmt || g.track || 'signed';
   if (fmt === 'tint') return v < 0 ? t('lgs.tintRed', 'R{n}', { n: -v }) : t('lgs.tintGreen', 'G{n}', { n: v });
@@ -1970,13 +1973,14 @@ function adjustStep(dir, big) {
   var r = adjusting, range = r.max - r.min, now = Date.now();
   adjustHeld = now - adjustLastKey < 250 ? adjustHeld + 1 : 0;
   adjustLastKey = now;
-  var step = big ? Math.max(1, Math.round(range / 10)) : adjustHeld > 6 ? Math.max(1, Math.round(range / 20)) : 1;
+  var unit = r.step || 1;
+  var step = big ? Math.max(unit, Math.round(range / 10 / unit) * unit) : adjustHeld > 6 ? Math.max(unit, Math.round(range / 20 / unit) * unit) : unit;
   var next = Math.max(r.min, Math.min(r.max, r.cur + dir * step));
   if (next === r.cur) return;
   r.cur = next;
   r.value = lgNumber(r, next);
   drawAdjust();
-  pushAdjust(r);
+  if (!r.sendOnEnd) pushAdjust(r);
 }
 
 // Only the adjusted row is redrawn: redrawing the list per step stutters on
@@ -2010,7 +2014,8 @@ function pushAdjust(r) {
   var value = r.cur;
   fetch('/api/control', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'lgSetting', value: { id: r.key, value: value } })
+    body: JSON.stringify(r.act === 'saverAdjust' ? { action: 'screensaverMode', value: { mode: r.key, brightness: value } }
+      : { action: 'lgSetting', value: { id: r.key, value: value } })
   }).then(function (x) { return x.json().catch(function () { return {}; }); })
     .then(function (res) {
       adjustInFlight = false;
@@ -3349,9 +3354,8 @@ function activate() {
       }
       r.confirming = false;
       return send({ action: 'setWebos10ScreensaversAllowed', value: true }, t('tv.flash.switchedOn', 'Switched on'));
-    case 'saverLevel':
-      return send({ action: 'screensaverMode', value: { mode: r.key, level: r.next } },
-                  r.next === 'bright' ? t('ss.bright', 'Bright') : t('ss.dim', 'Dim'));
+    case 'saverAdjust':
+      return startAdjust();
     case 'saverStart':
       return startSaverAfterRelease();
     case 'saverPowerOff':

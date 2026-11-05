@@ -101,9 +101,8 @@ async function loadScreensavers() {
   const ours = d.current !== 'stock' && !d.modes.some(m => m.active && m.fromApp);
   q('ss-level-row').hidden = !ours;
   if (ours) {
-    q('ss-level').innerHTML = [['dim', t('ss.dim', 'Dim')], ['bright', t('ss.bright', 'Bright')]].map(([id, label]) =>
-      `<button class="ss-lvl${d.level === id ? ' on' : ''}" data-level="${id}"
-               ${locked ? 'disabled' : ''}>${label}</button>`).join('');
+    q('ss-bright-wrap').classList.toggle('disabled', !!locked);
+    if (!ssBrightDragging) showSsBrightness(typeof d.brightness === 'number' ? d.brightness : (d.level === 'bright' ? 100 : 65));
   }
 
   // The option picked from the one in use's, where it has them.
@@ -362,12 +361,75 @@ document.addEventListener('click', async ev => {
     return;
   }
 
-  const lvl = ev.target.closest('button.ss-lvl[data-level]');
-  if (lvl && !lvl.disabled && !lvl.classList.contains('on')) {
-    lvl.disabled = true;
-    // The mode goes with it: both are staged into the same file.
-    const r = await sendCommand('screensaverMode', { mode: ssCurrent, level: lvl.dataset.level });
-    if (!r || !r.ok) lvl.disabled = false;
-    loadScreensavers();
-  }
 });
+
+/* Brightness, in 5% steps from 10%, sent on release: each value restages the
+   screen saver, and one on screen is closed and shown again for it. 65% and
+   100% are the Dim and Bright each screen saver was drawn at before. */
+let ssBrightDragging = false;
+
+function showSsBrightness(v) {
+  q('ss-bright-slider').value = v;
+  q('ss-bright-fill').style.width = v + '%';
+  q('ss-bright-lbl').textContent = v + '%';
+}
+
+function initSsBrightSlider() {
+  const wrap = q('ss-bright-wrap'), slider = q('ss-bright-slider');
+  let active = false, keyTimer = 0;
+  const clamp = v => Math.max(10, Math.min(100, v));
+  const at = e => {
+    const r = wrap.getBoundingClientRect();
+    return clamp(Math.round(((e.clientX - r.left) / r.width) * 20) * 5);
+  };
+  const save = async v => {
+    showSsBrightness(v);
+    wrap.classList.add('disabled');
+    // The mode goes with it: both are staged into the same file.
+    await sendCommand('screensaverMode', { mode: ssCurrent, brightness: v });
+    loadScreensavers();
+  };
+  const stop = e => {
+    active = false;
+    ssBrightDragging = false;
+    wrap.classList.remove('dragging');
+    try { wrap.releasePointerCapture(e.pointerId); } catch (err) {}
+  };
+  wrap.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || wrap.classList.contains('disabled')) return;
+    active = true;
+    ssBrightDragging = true;
+    wrap.classList.add('dragging');
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    showSsBrightness(at(e));
+  });
+  wrap.addEventListener('pointermove', e => { if (active) showSsBrightness(at(e)); });
+  wrap.addEventListener('pointerup', e => {
+    if (!active) return;
+    stop(e);
+    save(at(e));
+  });
+  wrap.addEventListener('pointercancel', e => {
+    if (!active) return;
+    stop(e);
+    loadScreensavers();
+  });
+  slider.addEventListener('keydown', e => {
+    const steps = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5, PageUp: 25, PageDown: -25 };
+    let v;
+    if (steps[e.key]) v = Number(slider.value) + steps[e.key];
+    else if (e.key === 'Home') v = 10;
+    else if (e.key === 'End') v = 100;
+    else return;
+    e.preventDefault();
+    if (wrap.classList.contains('disabled')) return;
+    // Sent once the keys stop, not per step.
+    v = clamp(v);
+    showSsBrightness(v);
+    ssBrightDragging = true;
+    clearTimeout(keyTimer);
+    keyTimer = setTimeout(() => { ssBrightDragging = false; save(v); }, 700);
+  });
+}
+
+initSsBrightSlider();
