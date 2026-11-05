@@ -479,6 +479,17 @@ same media ID through full screen and Back, with playback time advancing
 from 43.127 to 50.151 seconds. Internet TV uses that placement; the guide
 returns the picture beside the clock without moving its parent.
 
+RTÉ One, RTÉ2 and RTÉ News, as listed by the public Free-TV playlist (on
+5 November 2026), never played on a B8 (webOS 4.4.3) or a C2 (webOS 9.2.2):
+the preview showed no picture. Their master playlists carry no key, but each
+variant's playlist has `#EXT-X-KEY:METHOD=SAMPLE-AES` with
+`KEYFORMAT="com.apple.streamingkeydelivery"` (FairPlay, `skd://`), and their
+segments' stream types are `0xdb` and `0xcf`, SAMPLE-AES H.264 and AAC.
+The same master with its subtitles removed, with English audio only, or one
+video variant alone failed the same way, and both TVs' OpenSSL verified
+`live.rte.ie`'s certificate (GlobalSign ECC Root CA - R5, in both TVs' store).
+Their other Irish channels in the list carried no key.
+
 ## Broadcast HDR and preview metadata (G3, webOS 9.2.2)
 
 Read on 29 October 2026 from the office OLED55G36LA, during an existing

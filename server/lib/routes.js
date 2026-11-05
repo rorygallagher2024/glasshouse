@@ -1343,6 +1343,7 @@ function handleIptvRoute(req, res, u, pathname) {
       if (pathname === '/api/iptv/selection') return iptvModule.setSelection(body, reply);
       if (pathname === '/api/iptv/lineup') return iptvModule.setLineup(body, reply);
       if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true));
+      if (pathname === '/api/iptv/check') return iptvModule.checkStream(String(body && body.pl || ''), String(body && body.key || ''), reply);
       send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     }, pathname === '/api/iptv/lineup' ? 524288 : 8192);
   }

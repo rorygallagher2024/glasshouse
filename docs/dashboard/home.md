@@ -226,8 +226,11 @@ On the TV, the row's last tile while arranging (hold **OK**), or its only
 tile before any channels join the lineup, is **Add channels**: a panel with your playlists,
 their groups and their channels, where **OK** adds one to the lineup and
 the row, and typing searches. Channels that need a player sending its own
-headers, or are protected (DRM), are marked and cannot be added. The row's
-order is changed as the Channels row's is.
+headers, or are protected (DRM), are marked and cannot be added. Some
+protected channels aren't marked in the playlist, such as RTÉ's in public
+lists. When one of those won't play, Glasshouse Home finds out why, says it
+is protected, and marks it from then on. The row's order is changed as the
+Channels row's is.
 
 On the row, names are tidied: a provider's prefix such as *VIP:* goes, and
 quality marks such as *ᴴᴰ* or *ᴿᴬᵂ* show as plain tags in the player. With
