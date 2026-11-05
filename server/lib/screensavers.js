@@ -16,7 +16,9 @@ var mkdirp = require('./util').mkdirp;
 var readTrimmed = require('./util').readTrimmed;
 var unlinkQuiet = require('./util').unlinkQuiet;
 var path = require('path');
+var crypto = require('crypto');
 var execFile = require('child_process').execFile;
+var fetchMod = require('./fetch');
 var power = require('./power');
 var idlesaver = require('./idlesaver');
 var names = require('./names');
@@ -53,6 +55,12 @@ var SCREENSAVER_CHOICE_MARKER = '.tvweb-choice';
  * was its own folder until options could be given to a QML screen saver.
  */
 var RENAMED = { 'clock-date': { mode: 'clock', choice: 'date', label: 'Clock with date' } };
+/*
+ * Files one of Glasshouse's own fetches when it is first picked, rather than
+ * shipping them: each pinned by address and sum, as the Home wallpapers are.
+ */
+var DOWNLOADS_DIR = '/var/lib/tvweb/screensaver-downloads';
+var MAX_DOWNLOAD_BYTES = 8 * 1024 * 1024;
 // Survives a server restart, but not a TV reboot. sam also retains native
 // screen savers after dismissal, so its running list alone cannot prove ours.
 var LAUNCHED_MARKER = '/var/run/tvweb-screensaver-launched';
@@ -131,6 +139,7 @@ var DEFAULT_ROOTS = [
   { dir: APPS_DIR, builtin: false, apps: true }
 ];
 var saverRoots = DEFAULT_ROOTS;
+var downloadsDir = DOWNLOADS_DIR;
 var userSaversDir = USER_SAVERS_DIR;
 var catalogCache = null;  // { list: [entries, stock first], byId: {} }
 // What qmlcheck found in each QML file, kept while the file is unchanged, as
@@ -218,6 +227,16 @@ function readSaver(root, name) {
   if ((uses.indexOf('choice') !== -1) !== !!e.choices) {
     return problem(msg('srv.saver.choiceUses', '{file}: choices and "choice" in uses go together.', { file: MANIFEST }));
   }
+  if (m.downloads !== undefined) {
+    // Only Glasshouse's own, whose addresses and sums are reviewed with it.
+    if (!root.builtin || !isArray(m.downloads) || !m.downloads.length || m.downloads.some(function (d) {
+      return !d || typeof d.file !== 'string' || !/^[\w-]+\.[\w.]+$/.test(d.file) || d.file === MANIFEST ||
+        typeof d.url !== 'string' || !/^https:\/\//.test(d.url) || typeof d.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(d.sha256);
+    })) {
+      return problem(msg('srv.saver.badDownloads', '{file}: downloads must list a file, an https address and a sha256 for each, and only Glasshouse\'s own have them.', { file: MANIFEST }));
+    }
+    e.downloads = m.downloads;
+  }
   e.uploaded = m.uploaded === true && !root.builtin;
   if (Array.isArray(m.panels) && m.panels.length === 1 && (m.panels[0] === 'oled' || m.panels[0] === 'lcd')) e.panels = m.panels[0];
   var need = m.requires && typeof m.requires.webos === 'number' ? m.requires.webos : 0;
@@ -233,6 +252,8 @@ function readSaver(root, name) {
     bytes += files[j].size;
     if (files[j].rel === e.main) hasMain = true;
   }
+  // A downloaded main is there once it has been fetched.
+  if (e.downloads && e.downloads.some(function (d) { return d.file === e.main; })) hasMain = true;
   if (!hasMain) return problem(msg('srv.saver.noMain', '{main} is missing from its folder.', { main: e.main }));
   if (files.length > MAX_SAVER_FILES || bytes > MAX_SAVER_BYTES) {
     return problem(msg('srv.saver.tooBig', 'Its folder is over the limit of {files} files and {mb} MB.',
@@ -478,6 +499,7 @@ function init(opts) {
   hour12Fn = opts.hour12 || function () { return false; };
   webosVersion = opts.webosVersion || null;
   saverRoots = opts.saverRoots || DEFAULT_ROOTS;
+  downloadsDir = opts.downloadsDir || DOWNLOADS_DIR;
   // Where uploads go: the TV's own folder, or a test's.
   userSaversDir = opts.userSaversDir || USER_SAVERS_DIR;
   catalogCache = null;
@@ -795,7 +817,14 @@ function stageSaverFiles(e, level, choice) {
     mkdirp(path.dirname(path.join(qmlDir, rel)));
     fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
-  fs.writeFileSync(stagedMain(e), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice));
+  var downloaded = {};
+  (e.downloads || []).forEach(function (d) {
+    downloaded[d.file] = true;
+    if (d.file === e.main) return;
+    fs.writeFileSync(path.join(qmlDir, d.file), fs.readFileSync(downloadFile(e, d)));
+  });
+  var mainSrc = downloaded[e.main] ? downloadFile(e, e.downloads.filter(function (d) { return d.file === e.main; })[0]) : path.join(e.dir, e.main);
+  fs.writeFileSync(stagedMain(e), fillSaverQml(e, fs.readFileSync(mainSrc, 'utf8'), level, choice));
   if (framed(e)) fs.writeFileSync(path.join(SCREENSAVER_DIR, WEB_DIR, DIM_FRAME), framePage(e, level));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
   if (e.choices) fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER), choice);
@@ -825,6 +854,40 @@ function framePage(e, level) {
     '#dim{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;pointer-events:none;opacity:' +
     layerOpacity(e, level) + '}' +
     '</style></head><body><iframe src="' + src + '" allow="autoplay; fullscreen; microphone"></iframe><div id="dim"></div></body></html>\n';
+}
+
+function downloadFile(e, d) { return path.join(downloadsDir, e.id, d.file); }
+
+function sha256Of(file) {
+  try { return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'); } catch (err) { return null; }
+}
+
+/*
+ * cb(error) once every file a screen saver fetches is on the TV and matches
+ * its sum, fetching the ones that are not. Only the one picked keeps its
+ * files: the others' are removed.
+ */
+function ensureDownloads(e, cb) {
+  try {
+    fs.readdirSync(downloadsDir).forEach(function (other) { if (other !== e.id) removeTree(path.join(downloadsDir, other)); });
+  } catch (err0) {}
+  var missing = (e.downloads || []).filter(function (d) { return sha256Of(downloadFile(e, d)) !== d.sha256; });
+  if (!missing.length) return cb(null);
+  try { mkdirp(path.join(downloadsDir, e.id)); } catch (err1) { return cb(err1.message); }
+  (function next(i) {
+    if (i >= missing.length) return cb(null);
+    var d = missing[i], file = downloadFile(e, d), part = file + '.part';
+    console.log('screensaver: fetching ' + d.file + ' for "' + e.id + '"');
+    fetchMod.download(d.url, part, { maxBytes: MAX_DOWNLOAD_BYTES }, function (err) {
+      if (err) { unlinkQuiet(part); return cb(msg('srv.saver.fetchFailed', 'Could not download it: {error}', { error: err.message })); }
+      if (sha256Of(part) !== d.sha256) {
+        unlinkQuiet(part);
+        return cb(msg('srv.saver.fetchBad', 'It did not download intact. Try again later.'));
+      }
+      try { fs.renameSync(part, file); } catch (err2) { unlinkQuiet(part); return cb(err2.message); }
+      next(i + 1);
+    });
+  })(0);
 }
 
 function stagedMain(e) {
@@ -863,6 +926,13 @@ function setScreensaver(mode, level, cb, choice) {
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
   if (mode !== 'stock' && heldBack()) return cb({ ok: false, error: HELD_ERROR });
   level = brightnessOf(level);
+  // Fetched first, so a failed download leaves the one in use as it was.
+  if (saver.downloads) {
+    return ensureDownloads(saver, function (error) {
+      if (error) return cb({ ok: false, error: error, current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(), switching: switching() });
+      switchTo(saver, mode, level, choice, cb);
+    });
+  }
   switchTo(saver, mode, level, choice, cb);
 }
 

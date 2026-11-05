@@ -1,0 +1,19 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": "Fetcher",
+  "description": "One of Glasshouse's own that fetches its page, to test with.",
+  "license": "MIT",
+  "main": "index.html",
+  "uses": ["choice"],
+  "choices": {
+    "default": "one",
+    "options": [
+      { "id": "one", "name": "One", "value": "vis=one" },
+      { "id": "two", "name": { "en": "Two", "es": "Dos" }, "value": "vis=two&preset=2" }
+    ]
+  },
+  "downloads": [
+    { "file": "page.html", "url": "https://example.com/pinned/page.html", "sha256": "f50fb4b670e0822f5ffe17785a6445ea35446a4a5ef80d981afa8369f6c9cc63" }
+  ]
+}

@@ -1,0 +1,17 @@
+<!doctype html>
+<!-- Opens the downloaded player in its screen saver mode, on the visualization
+     picked on the dashboard. The player reads the address for only three of its
+     visualizations, so the pick goes into the settings it saves for itself.
+     src=synthetic feeds it a silent made-up signal: the TV gives it no sound,
+     and some visualizations draw nothing without one. -->
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#000}</style>
+<script>
+var pick = /vis=([a-z0-9]+)&preset=(\d+)/.exec('__TVWEB_CHOICE__');
+try {
+  var settings = JSON.parse(localStorage.getItem('alchemy.settings') || '{}') || {};
+  if (pick) { settings.vis = pick[1]; settings.preset = +pick[2]; }
+  localStorage.setItem('alchemy.settings', JSON.stringify(settings));
+} catch (e) {}
+location.replace('alchemy.html?mode=screensaver&src=synthetic');
+</script>

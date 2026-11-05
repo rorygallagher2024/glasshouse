@@ -1,0 +1,2434 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "WMP Visualizers",
+    "es": "Visualizaciones de WMP",
+    "hu": "WMP-vizualizációk",
+    "it": "Visualizzazioni di WMP",
+    "pl": "Wizualizacje WMP",
+    "pt": "Visualizações do WMP",
+    "pt-br": "Visualizações do WMP",
+    "ru": "Визуализации WMP"
+  },
+  "description": {
+    "en": "Windows Media Player's visualizations and the plug-ins made for it, ported by wmp-legacy-visualizers: 398 presets in 47 visualizations, picked from the Animation list. Downloaded from GitHub the first time it is picked.",
+    "es": "Las visualizaciones de Windows Media Player y los complementos hechos para él, portados por wmp-legacy-visualizers: 398 ajustes en 47 visualizaciones, elegidos en la lista Animación. Se descarga de GitHub la primera vez que se elige.",
+    "hu": "A Windows Media Player vizualizációi és a hozzá készült bővítmények a wmp-legacy-visualizers átiratában: 398 beállítás 47 vizualizációban, az Animáció listából választhatók. Az első kiválasztáskor töltődik le a GitHubról.",
+    "it": "Le visualizzazioni di Windows Media Player e i plug-in creati per esso, portati da wmp-legacy-visualizers: 398 preset in 47 visualizzazioni, scelti dall’elenco Animazione. Viene scaricato da GitHub la prima volta che lo si sceglie.",
+    "pl": "Wizualizacje Windows Media Player i wtyczki stworzone dla niego, przeniesione przez wmp-legacy-visualizers: 398 presetów w 47 wizualizacjach, wybieranych z listy Animacja. Pobierany z GitHuba przy pierwszym wyborze.",
+    "pt": "As visualizações do Windows Media Player e os plug-ins feitos para ele, portados por wmp-legacy-visualizers: 398 predefinições em 47 visualizações, escolhidas na lista Animação. É transferido do GitHub da primeira vez que é escolhido.",
+    "pt-br": "As visualizações do Windows Media Player e os plug-ins feitos para ele, portados por wmp-legacy-visualizers: 398 predefinições em 47 visualizações, escolhidas na lista Animação. É baixado do GitHub na primeira vez que é escolhido.",
+    "ru": "Визуализации Windows Media Player и подключаемые модули для него, перенесённые проектом wmp-legacy-visualizers: 398 пресетов в 47 визуализациях, выбираются в списке «Анимация». Загружается с GitHub при первом выборе."
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/ryancircelli/wmp-legacy-visualizers",
+  "main": "index.html",
+  "uses": [
+    "choice"
+  ],
+  "requires": {
+    "webos": 10
+  },
+  "order": 150,
+  "choices": {
+    "default": "alchemy-0",
+    "options": [
+      {
+        "id": "alchemy3d-0",
+        "group": "3D Alchemy",
+        "name": "Classic",
+        "value": "vis=alchemy3d&preset=0"
+      },
+      {
+        "id": "alchemy3d-1",
+        "group": "3D Alchemy",
+        "name": "Kaleidoscope",
+        "value": "vis=alchemy3d&preset=1"
+      },
+      {
+        "id": "alchemy3d-2",
+        "group": "3D Alchemy",
+        "name": "Monoliths",
+        "value": "vis=alchemy3d&preset=2"
+      },
+      {
+        "id": "alchemy3d-3",
+        "group": "3D Alchemy",
+        "name": "Strange world",
+        "value": "vis=alchemy3d&preset=3"
+      },
+      {
+        "id": "alchemy3d-4",
+        "group": "3D Alchemy",
+        "name": "WM Museum",
+        "value": "vis=alchemy3d&preset=4"
+      },
+      {
+        "id": "alchemy3d-5",
+        "group": "3D Alchemy",
+        "name": "Draco's room",
+        "value": "vis=alchemy3d&preset=5"
+      },
+      {
+        "id": "animator-0",
+        "group": "Animator",
+        "name": "Show",
+        "value": "vis=animator&preset=0"
+      },
+      {
+        "id": "alchemy-0",
+        "group": "Alchemy",
+        "name": "Random",
+        "value": "vis=alchemy&preset=0"
+      },
+      {
+        "id": "alchemy-1",
+        "group": "Alchemy",
+        "name": "Random (WMP 9)",
+        "value": "vis=alchemy&preset=1"
+      },
+      {
+        "id": "alchemy-2",
+        "group": "Alchemy",
+        "name": "Random (WMP 10)",
+        "value": "vis=alchemy&preset=2"
+      },
+      {
+        "id": "alchemy-3",
+        "group": "Alchemy",
+        "name": "Random (WMP 11)",
+        "value": "vis=alchemy&preset=3"
+      },
+      {
+        "id": "ambience-0",
+        "group": "Ambience",
+        "name": "Random",
+        "value": "vis=ambience&preset=0"
+      },
+      {
+        "id": "ambience-1",
+        "group": "Ambience",
+        "name": "Swirl",
+        "value": "vis=ambience&preset=1"
+      },
+      {
+        "id": "ambience-2",
+        "group": "Ambience",
+        "name": "Warp",
+        "value": "vis=ambience&preset=2"
+      },
+      {
+        "id": "ambience-3",
+        "group": "Ambience",
+        "name": "Anon",
+        "value": "vis=ambience&preset=3"
+      },
+      {
+        "id": "ambience-4",
+        "group": "Ambience",
+        "name": "Falloff",
+        "value": "vis=ambience&preset=4"
+      },
+      {
+        "id": "ambience-5",
+        "group": "Ambience",
+        "name": "Water",
+        "value": "vis=ambience&preset=5"
+      },
+      {
+        "id": "ambience-6",
+        "group": "Ambience",
+        "name": "Bubble",
+        "value": "vis=ambience&preset=6"
+      },
+      {
+        "id": "ambience-7",
+        "group": "Ambience",
+        "name": "Dizzy",
+        "value": "vis=ambience&preset=7"
+      },
+      {
+        "id": "ambience-8",
+        "group": "Ambience",
+        "name": "Windmill",
+        "value": "vis=ambience&preset=8"
+      },
+      {
+        "id": "ambience-9",
+        "group": "Ambience",
+        "name": "Niagara",
+        "value": "vis=ambience&preset=9"
+      },
+      {
+        "id": "ambience-10",
+        "group": "Ambience",
+        "name": "Blender",
+        "value": "vis=ambience&preset=10"
+      },
+      {
+        "id": "ambience-11",
+        "group": "Ambience",
+        "name": "X Marks the Spot",
+        "value": "vis=ambience&preset=11"
+      },
+      {
+        "id": "ambience-12",
+        "group": "Ambience",
+        "name": "Down the Drain",
+        "value": "vis=ambience&preset=12"
+      },
+      {
+        "id": "ambience-13",
+        "group": "Ambience",
+        "name": "Thingus",
+        "value": "vis=ambience&preset=13"
+      },
+      {
+        "id": "ambience-14",
+        "group": "Ambience",
+        "name": "Random (WMP 7)",
+        "value": "vis=ambience&preset=14"
+      },
+      {
+        "id": "ambience-15",
+        "group": "Ambience",
+        "name": "Random (WMP 8)",
+        "value": "vis=ambience&preset=15"
+      },
+      {
+        "id": "ambience-16",
+        "group": "Ambience",
+        "name": "Random (WMP 9)",
+        "value": "vis=ambience&preset=16"
+      },
+      {
+        "id": "ambience-17",
+        "group": "Ambience",
+        "name": "Swirl (WMP 7-9)",
+        "value": "vis=ambience&preset=17"
+      },
+      {
+        "id": "ambience-18",
+        "group": "Ambience",
+        "name": "Warp (WMP 7-9)",
+        "value": "vis=ambience&preset=18"
+      },
+      {
+        "id": "ambience-19",
+        "group": "Ambience",
+        "name": "Anon (WMP 7-9)",
+        "value": "vis=ambience&preset=19"
+      },
+      {
+        "id": "ambience-20",
+        "group": "Ambience",
+        "name": "Water (WMP 7-9)",
+        "value": "vis=ambience&preset=20"
+      },
+      {
+        "id": "ambience-21",
+        "group": "Ambience",
+        "name": "Bubble (WMP 7-9)",
+        "value": "vis=ambience&preset=21"
+      },
+      {
+        "id": "ambience-22",
+        "group": "Ambience",
+        "name": "Dizzy (WMP 7-9)",
+        "value": "vis=ambience&preset=22"
+      },
+      {
+        "id": "ambience-23",
+        "group": "Ambience",
+        "name": "Niagara (WMP 7-8)",
+        "value": "vis=ambience&preset=23"
+      },
+      {
+        "id": "analyzed-0",
+        "group": "Analyzed",
+        "name": "Line Bars",
+        "value": "vis=analyzed&preset=0"
+      },
+      {
+        "id": "analyzed-1",
+        "group": "Analyzed",
+        "name": "Mirror Bars",
+        "value": "vis=analyzed&preset=1"
+      },
+      {
+        "id": "analyzed-2",
+        "group": "Analyzed",
+        "name": "Digital Bars",
+        "value": "vis=analyzed&preset=2"
+      },
+      {
+        "id": "analyzed-3",
+        "group": "Analyzed",
+        "name": "Line Ghost Bars",
+        "value": "vis=analyzed&preset=3"
+      },
+      {
+        "id": "analyzed-4",
+        "group": "Analyzed",
+        "name": "Mirror Ghost Bars",
+        "value": "vis=analyzed&preset=4"
+      },
+      {
+        "id": "analyzed-5",
+        "group": "Analyzed",
+        "name": "Digital Ghost Bars",
+        "value": "vis=analyzed&preset=5"
+      },
+      {
+        "id": "analyzed-6",
+        "group": "Analyzed",
+        "name": "Bar Scope",
+        "value": "vis=analyzed&preset=6"
+      },
+      {
+        "id": "analyzed-7",
+        "group": "Analyzed",
+        "name": "Dot Scope",
+        "value": "vis=analyzed&preset=7"
+      },
+      {
+        "id": "bars-0",
+        "group": "Bars and Waves",
+        "name": "Bars",
+        "value": "vis=bars&preset=0"
+      },
+      {
+        "id": "bars-1",
+        "group": "Bars and Waves",
+        "name": "Ocean Mist",
+        "value": "vis=bars&preset=1"
+      },
+      {
+        "id": "bars-2",
+        "group": "Bars and Waves",
+        "name": "Fire Storm",
+        "value": "vis=bars&preset=2"
+      },
+      {
+        "id": "bars-3",
+        "group": "Bars and Waves",
+        "name": "Scope",
+        "value": "vis=bars&preset=3"
+      },
+      {
+        "id": "bars-4",
+        "group": "Bars and Waves",
+        "name": "Bars (WMP 7-8)",
+        "value": "vis=bars&preset=4"
+      },
+      {
+        "id": "bars-5",
+        "group": "Bars and Waves",
+        "name": "Ocean Mist (WMP 7-10)",
+        "value": "vis=bars&preset=5"
+      },
+      {
+        "id": "bars-6",
+        "group": "Bars and Waves",
+        "name": "Fire Storm (WMP 7-10)",
+        "value": "vis=bars&preset=6"
+      },
+      {
+        "id": "bars-7",
+        "group": "Bars and Waves",
+        "name": "Scope (WMP 7-8)",
+        "value": "vis=bars&preset=7"
+      },
+      {
+        "id": "bars-8",
+        "group": "Bars and Waves",
+        "name": "Bars (WMP 9)",
+        "value": "vis=bars&preset=8"
+      },
+      {
+        "id": "bars-9",
+        "group": "Bars and Waves",
+        "name": "Scope (WMP 9)",
+        "value": "vis=bars&preset=9"
+      },
+      {
+        "id": "bars-10",
+        "group": "Bars and Waves",
+        "name": "Bars (WMP 10)",
+        "value": "vis=bars&preset=10"
+      },
+      {
+        "id": "bars-11",
+        "group": "Bars and Waves",
+        "name": "Scope (WMP 10)",
+        "value": "vis=bars&preset=11"
+      },
+      {
+        "id": "battery-0",
+        "group": "Battery",
+        "name": "Randomization",
+        "value": "vis=battery&preset=0"
+      },
+      {
+        "id": "battery-1",
+        "group": "Battery",
+        "name": "brightsphere",
+        "value": "vis=battery&preset=1"
+      },
+      {
+        "id": "battery-2",
+        "group": "Battery",
+        "name": "dance of the freaky circles",
+        "value": "vis=battery&preset=2"
+      },
+      {
+        "id": "battery-3",
+        "group": "Battery",
+        "name": "cominatcha",
+        "value": "vis=battery&preset=3"
+      },
+      {
+        "id": "battery-4",
+        "group": "Battery",
+        "name": "cottonstar",
+        "value": "vis=battery&preset=4"
+      },
+      {
+        "id": "battery-5",
+        "group": "Battery",
+        "name": "dandelionaid",
+        "value": "vis=battery&preset=5"
+      },
+      {
+        "id": "battery-6",
+        "group": "Battery",
+        "name": "drinkdeep",
+        "value": "vis=battery&preset=6"
+      },
+      {
+        "id": "battery-7",
+        "group": "Battery",
+        "name": "eletriarnation",
+        "value": "vis=battery&preset=7"
+      },
+      {
+        "id": "battery-8",
+        "group": "Battery",
+        "name": "event horizon",
+        "value": "vis=battery&preset=8"
+      },
+      {
+        "id": "battery-9",
+        "group": "Battery",
+        "name": "hizodge",
+        "value": "vis=battery&preset=9"
+      },
+      {
+        "id": "battery-10",
+        "group": "Battery",
+        "name": "gemstonematrix",
+        "value": "vis=battery&preset=10"
+      },
+      {
+        "id": "battery-11",
+        "group": "Battery",
+        "name": "sepiaswirl",
+        "value": "vis=battery&preset=11"
+      },
+      {
+        "id": "battery-12",
+        "group": "Battery",
+        "name": "illuminator",
+        "value": "vis=battery&preset=12"
+      },
+      {
+        "id": "battery-13",
+        "group": "Battery",
+        "name": "i see the truth",
+        "value": "vis=battery&preset=13"
+      },
+      {
+        "id": "battery-14",
+        "group": "Battery",
+        "name": "kaleidovision",
+        "value": "vis=battery&preset=14"
+      },
+      {
+        "id": "battery-15",
+        "group": "Battery",
+        "name": "chemicalnova",
+        "value": "vis=battery&preset=15"
+      },
+      {
+        "id": "battery-16",
+        "group": "Battery",
+        "name": "lotus",
+        "value": "vis=battery&preset=16"
+      },
+      {
+        "id": "battery-17",
+        "group": "Battery",
+        "name": "green is not your enemy",
+        "value": "vis=battery&preset=17"
+      },
+      {
+        "id": "battery-18",
+        "group": "Battery",
+        "name": "relatively calm",
+        "value": "vis=battery&preset=18"
+      },
+      {
+        "id": "battery-19",
+        "group": "Battery",
+        "name": "sleepyspray",
+        "value": "vis=battery&preset=19"
+      },
+      {
+        "id": "battery-20",
+        "group": "Battery",
+        "name": "smoke or water?",
+        "value": "vis=battery&preset=20"
+      },
+      {
+        "id": "battery-21",
+        "group": "Battery",
+        "name": "spider's last moment...",
+        "value": "vis=battery&preset=21"
+      },
+      {
+        "id": "battery-22",
+        "group": "Battery",
+        "name": "strawberryaid",
+        "value": "vis=battery&preset=22"
+      },
+      {
+        "id": "battery-23",
+        "group": "Battery",
+        "name": "the world",
+        "value": "vis=battery&preset=23"
+      },
+      {
+        "id": "battery-24",
+        "group": "Battery",
+        "name": "my tornado is resting",
+        "value": "vis=battery&preset=24"
+      },
+      {
+        "id": "battery-25",
+        "group": "Battery",
+        "name": "back to the groove",
+        "value": "vis=battery&preset=25"
+      },
+      {
+        "id": "battery-26",
+        "group": "Battery",
+        "name": "Randomization (WMP 8)",
+        "value": "vis=battery&preset=26"
+      },
+      {
+        "id": "battery-27",
+        "group": "Battery",
+        "name": "brightsphere (WMP 8)",
+        "value": "vis=battery&preset=27"
+      },
+      {
+        "id": "battery-28",
+        "group": "Battery",
+        "name": "dance of the freaky circles (WMP 8)",
+        "value": "vis=battery&preset=28"
+      },
+      {
+        "id": "battery-29",
+        "group": "Battery",
+        "name": "cominatcha (WMP 8)",
+        "value": "vis=battery&preset=29"
+      },
+      {
+        "id": "battery-30",
+        "group": "Battery",
+        "name": "cottonstar (WMP 8)",
+        "value": "vis=battery&preset=30"
+      },
+      {
+        "id": "battery-31",
+        "group": "Battery",
+        "name": "dandelionaid (WMP 8-10)",
+        "value": "vis=battery&preset=31"
+      },
+      {
+        "id": "battery-32",
+        "group": "Battery",
+        "name": "drinkdeep (WMP 8)",
+        "value": "vis=battery&preset=32"
+      },
+      {
+        "id": "battery-33",
+        "group": "Battery",
+        "name": "eletriarnation (WMP 8-10)",
+        "value": "vis=battery&preset=33"
+      },
+      {
+        "id": "battery-34",
+        "group": "Battery",
+        "name": "event horizon (WMP 8)",
+        "value": "vis=battery&preset=34"
+      },
+      {
+        "id": "battery-35",
+        "group": "Battery",
+        "name": "hizodge (WMP 8-10)",
+        "value": "vis=battery&preset=35"
+      },
+      {
+        "id": "battery-36",
+        "group": "Battery",
+        "name": "gemstonematrix (WMP 8-10)",
+        "value": "vis=battery&preset=36"
+      },
+      {
+        "id": "battery-37",
+        "group": "Battery",
+        "name": "sepiaswirl (WMP 8)",
+        "value": "vis=battery&preset=37"
+      },
+      {
+        "id": "battery-38",
+        "group": "Battery",
+        "name": "illuminator (WMP 8)",
+        "value": "vis=battery&preset=38"
+      },
+      {
+        "id": "battery-39",
+        "group": "Battery",
+        "name": "i see the truth (WMP 8)",
+        "value": "vis=battery&preset=39"
+      },
+      {
+        "id": "battery-40",
+        "group": "Battery",
+        "name": "kaleidovision (WMP 8)",
+        "value": "vis=battery&preset=40"
+      },
+      {
+        "id": "battery-41",
+        "group": "Battery",
+        "name": "chemicalnova (WMP 8-9)",
+        "value": "vis=battery&preset=41"
+      },
+      {
+        "id": "battery-42",
+        "group": "Battery",
+        "name": "lotus (WMP 8)",
+        "value": "vis=battery&preset=42"
+      },
+      {
+        "id": "battery-43",
+        "group": "Battery",
+        "name": "green is not your enemy (WMP 8)",
+        "value": "vis=battery&preset=43"
+      },
+      {
+        "id": "battery-44",
+        "group": "Battery",
+        "name": "relatively calm (WMP 8-10)",
+        "value": "vis=battery&preset=44"
+      },
+      {
+        "id": "battery-45",
+        "group": "Battery",
+        "name": "sleepyspray (WMP 8)",
+        "value": "vis=battery&preset=45"
+      },
+      {
+        "id": "battery-46",
+        "group": "Battery",
+        "name": "smoke or water? (WMP 8-10)",
+        "value": "vis=battery&preset=46"
+      },
+      {
+        "id": "battery-47",
+        "group": "Battery",
+        "name": "spider's last moment... (WMP 8-10)",
+        "value": "vis=battery&preset=47"
+      },
+      {
+        "id": "battery-48",
+        "group": "Battery",
+        "name": "strawberryaid (WMP 8-9)",
+        "value": "vis=battery&preset=48"
+      },
+      {
+        "id": "battery-49",
+        "group": "Battery",
+        "name": "the world (WMP 8)",
+        "value": "vis=battery&preset=49"
+      },
+      {
+        "id": "battery-50",
+        "group": "Battery",
+        "name": "my tornado is resting (WMP 8-9)",
+        "value": "vis=battery&preset=50"
+      },
+      {
+        "id": "battery-51",
+        "group": "Battery",
+        "name": "back to the groove (WMP 8-10)",
+        "value": "vis=battery&preset=51"
+      },
+      {
+        "id": "battery-52",
+        "group": "Battery",
+        "name": "Randomization (WMP 9)",
+        "value": "vis=battery&preset=52"
+      },
+      {
+        "id": "battery-53",
+        "group": "Battery",
+        "name": "brightsphere (WMP 9-10)",
+        "value": "vis=battery&preset=53"
+      },
+      {
+        "id": "battery-54",
+        "group": "Battery",
+        "name": "dance of the freaky circles (WMP 9)",
+        "value": "vis=battery&preset=54"
+      },
+      {
+        "id": "battery-55",
+        "group": "Battery",
+        "name": "cominatcha (WMP 9-11)",
+        "value": "vis=battery&preset=55"
+      },
+      {
+        "id": "battery-56",
+        "group": "Battery",
+        "name": "cottonstar (WMP 9-10)",
+        "value": "vis=battery&preset=56"
+      },
+      {
+        "id": "battery-57",
+        "group": "Battery",
+        "name": "drinkdeep (WMP 9-11)",
+        "value": "vis=battery&preset=57"
+      },
+      {
+        "id": "battery-58",
+        "group": "Battery",
+        "name": "event horizon (WMP 9-10)",
+        "value": "vis=battery&preset=58"
+      },
+      {
+        "id": "battery-59",
+        "group": "Battery",
+        "name": "sepiaswirl (WMP 9)",
+        "value": "vis=battery&preset=59"
+      },
+      {
+        "id": "battery-60",
+        "group": "Battery",
+        "name": "illuminator (WMP 9)",
+        "value": "vis=battery&preset=60"
+      },
+      {
+        "id": "battery-61",
+        "group": "Battery",
+        "name": "i see the truth (WMP 9-11)",
+        "value": "vis=battery&preset=61"
+      },
+      {
+        "id": "battery-62",
+        "group": "Battery",
+        "name": "kaleidovision (WMP 9)",
+        "value": "vis=battery&preset=62"
+      },
+      {
+        "id": "battery-63",
+        "group": "Battery",
+        "name": "lotus (WMP 9-10)",
+        "value": "vis=battery&preset=63"
+      },
+      {
+        "id": "battery-64",
+        "group": "Battery",
+        "name": "green is not your enemy (WMP 9-11)",
+        "value": "vis=battery&preset=64"
+      },
+      {
+        "id": "battery-65",
+        "group": "Battery",
+        "name": "sleepyspray (WMP 9-10)",
+        "value": "vis=battery&preset=65"
+      },
+      {
+        "id": "battery-66",
+        "group": "Battery",
+        "name": "the world (WMP 9)",
+        "value": "vis=battery&preset=66"
+      },
+      {
+        "id": "battery-67",
+        "group": "Battery",
+        "name": "Randomization (WMP 10)",
+        "value": "vis=battery&preset=67"
+      },
+      {
+        "id": "battery-68",
+        "group": "Battery",
+        "name": "dance of the freaky circles (WMP 10)",
+        "value": "vis=battery&preset=68"
+      },
+      {
+        "id": "battery-69",
+        "group": "Battery",
+        "name": "sepiaswirl (WMP 10)",
+        "value": "vis=battery&preset=69"
+      },
+      {
+        "id": "battery-70",
+        "group": "Battery",
+        "name": "illuminator (WMP 10)",
+        "value": "vis=battery&preset=70"
+      },
+      {
+        "id": "battery-71",
+        "group": "Battery",
+        "name": "kaleidovision (WMP 10)",
+        "value": "vis=battery&preset=71"
+      },
+      {
+        "id": "battery-72",
+        "group": "Battery",
+        "name": "chemicalnova (WMP 10)",
+        "value": "vis=battery&preset=72"
+      },
+      {
+        "id": "battery-73",
+        "group": "Battery",
+        "name": "strawberryaid (WMP 10)",
+        "value": "vis=battery&preset=73"
+      },
+      {
+        "id": "battery-74",
+        "group": "Battery",
+        "name": "the world (WMP 10)",
+        "value": "vis=battery&preset=74"
+      },
+      {
+        "id": "battery-75",
+        "group": "Battery",
+        "name": "my tornado is resting (WMP 10)",
+        "value": "vis=battery&preset=75"
+      },
+      {
+        "id": "battery-76",
+        "group": "Battery",
+        "name": "Randomization (WMP 11)",
+        "value": "vis=battery&preset=76"
+      },
+      {
+        "id": "battery-77",
+        "group": "Battery",
+        "name": "brightsphere (WMP 11)",
+        "value": "vis=battery&preset=77"
+      },
+      {
+        "id": "battery-78",
+        "group": "Battery",
+        "name": "dance of the freaky circles (WMP 11)",
+        "value": "vis=battery&preset=78"
+      },
+      {
+        "id": "battery-79",
+        "group": "Battery",
+        "name": "cottonstar (WMP 11)",
+        "value": "vis=battery&preset=79"
+      },
+      {
+        "id": "battery-80",
+        "group": "Battery",
+        "name": "dandelionaid (WMP 11)",
+        "value": "vis=battery&preset=80"
+      },
+      {
+        "id": "battery-81",
+        "group": "Battery",
+        "name": "eletriarnation (WMP 11)",
+        "value": "vis=battery&preset=81"
+      },
+      {
+        "id": "battery-82",
+        "group": "Battery",
+        "name": "event horizon (WMP 11)",
+        "value": "vis=battery&preset=82"
+      },
+      {
+        "id": "battery-83",
+        "group": "Battery",
+        "name": "hizodge (WMP 11)",
+        "value": "vis=battery&preset=83"
+      },
+      {
+        "id": "battery-84",
+        "group": "Battery",
+        "name": "gemstonematrix (WMP 11)",
+        "value": "vis=battery&preset=84"
+      },
+      {
+        "id": "battery-85",
+        "group": "Battery",
+        "name": "sepiaswirl (WMP 11)",
+        "value": "vis=battery&preset=85"
+      },
+      {
+        "id": "battery-86",
+        "group": "Battery",
+        "name": "illuminator (WMP 11)",
+        "value": "vis=battery&preset=86"
+      },
+      {
+        "id": "battery-87",
+        "group": "Battery",
+        "name": "kaleidovision (WMP 11)",
+        "value": "vis=battery&preset=87"
+      },
+      {
+        "id": "battery-88",
+        "group": "Battery",
+        "name": "chemicalnova (WMP 11)",
+        "value": "vis=battery&preset=88"
+      },
+      {
+        "id": "battery-89",
+        "group": "Battery",
+        "name": "lotus (WMP 11)",
+        "value": "vis=battery&preset=89"
+      },
+      {
+        "id": "battery-90",
+        "group": "Battery",
+        "name": "relatively calm (WMP 11)",
+        "value": "vis=battery&preset=90"
+      },
+      {
+        "id": "battery-91",
+        "group": "Battery",
+        "name": "sleepyspray (WMP 11)",
+        "value": "vis=battery&preset=91"
+      },
+      {
+        "id": "battery-92",
+        "group": "Battery",
+        "name": "smoke or water? (WMP 11)",
+        "value": "vis=battery&preset=92"
+      },
+      {
+        "id": "battery-93",
+        "group": "Battery",
+        "name": "spider's last moment... (WMP 11)",
+        "value": "vis=battery&preset=93"
+      },
+      {
+        "id": "battery-94",
+        "group": "Battery",
+        "name": "strawberryaid (WMP 11)",
+        "value": "vis=battery&preset=94"
+      },
+      {
+        "id": "battery-95",
+        "group": "Battery",
+        "name": "the world (WMP 11)",
+        "value": "vis=battery&preset=95"
+      },
+      {
+        "id": "battery-96",
+        "group": "Battery",
+        "name": "my tornado is resting (WMP 11)",
+        "value": "vis=battery&preset=96"
+      },
+      {
+        "id": "battery-97",
+        "group": "Battery",
+        "name": "back to the groove (WMP 11)",
+        "value": "vis=battery&preset=97"
+      },
+      {
+        "id": "blazing-0",
+        "group": "Blazing Colors",
+        "name": "Burning Dance",
+        "value": "vis=blazing&preset=0"
+      },
+      {
+        "id": "blazing-1",
+        "group": "Blazing Colors",
+        "name": "Firey Colors",
+        "value": "vis=blazing&preset=1"
+      },
+      {
+        "id": "blazing-2",
+        "group": "Blazing Colors",
+        "name": "Paint Can",
+        "value": "vis=blazing&preset=2"
+      },
+      {
+        "id": "bubbles-0",
+        "group": "Bubbles",
+        "name": "Random",
+        "value": "vis=bubbles&preset=0"
+      },
+      {
+        "id": "bubbles-1",
+        "group": "Bubbles",
+        "name": "Centered",
+        "value": "vis=bubbles&preset=1"
+      },
+      {
+        "id": "bubbles-2",
+        "group": "Bubbles",
+        "name": "Gravity",
+        "value": "vis=bubbles&preset=2"
+      },
+      {
+        "id": "bubbles-3",
+        "group": "Bubbles",
+        "name": "Pop",
+        "value": "vis=bubbles&preset=3"
+      },
+      {
+        "id": "celestial-0",
+        "group": "Celestial",
+        "name": "Balance",
+        "value": "vis=celestial&preset=0"
+      },
+      {
+        "id": "celestial-1",
+        "group": "Celestial",
+        "name": "Rhyme",
+        "value": "vis=celestial&preset=1"
+      },
+      {
+        "id": "celestial-2",
+        "group": "Celestial",
+        "name": "Reflection",
+        "value": "vis=celestial&preset=2"
+      },
+      {
+        "id": "celestial-3",
+        "group": "Celestial",
+        "name": "Harmony",
+        "value": "vis=celestial&preset=3"
+      },
+      {
+        "id": "celestial-4",
+        "group": "Celestial",
+        "name": "Mandala",
+        "value": "vis=celestial&preset=4"
+      },
+      {
+        "id": "celestial-5",
+        "group": "Celestial",
+        "name": "Synchronicity",
+        "value": "vis=celestial&preset=5"
+      },
+      {
+        "id": "celestial-6",
+        "group": "Celestial",
+        "name": "Synergy",
+        "value": "vis=celestial&preset=6"
+      },
+      {
+        "id": "celestial-7",
+        "group": "Celestial",
+        "name": "Serenity",
+        "value": "vis=celestial&preset=7"
+      },
+      {
+        "id": "celestial-8",
+        "group": "Celestial",
+        "name": "Transcendence",
+        "value": "vis=celestial&preset=8"
+      },
+      {
+        "id": "celestial-9",
+        "group": "Celestial",
+        "name": "The coyote is laughing (he is)",
+        "value": "vis=celestial&preset=9"
+      },
+      {
+        "id": "clarify-0",
+        "group": "Clarify",
+        "name": "Lucid",
+        "value": "vis=clarify&preset=0"
+      },
+      {
+        "id": "clarify-1",
+        "group": "Clarify",
+        "name": "Vivid",
+        "value": "vis=clarify&preset=1"
+      },
+      {
+        "id": "clarify-2",
+        "group": "Clarify",
+        "name": "Focus",
+        "value": "vis=clarify&preset=2"
+      },
+      {
+        "id": "clarify-3",
+        "group": "Clarify",
+        "name": "Epiphany",
+        "value": "vis=clarify&preset=3"
+      },
+      {
+        "id": "colorcubes-0",
+        "group": "Color Cubes",
+        "name": "Flower Boxes",
+        "value": "vis=colorcubes&preset=0"
+      },
+      {
+        "id": "colorcubes-1",
+        "group": "Color Cubes",
+        "name": "Rhythmic Squares",
+        "value": "vis=colorcubes&preset=1"
+      },
+      {
+        "id": "colorcubes-2",
+        "group": "Color Cubes",
+        "name": "Sheer Delight",
+        "value": "vis=colorcubes&preset=2"
+      },
+      {
+        "id": "corona-0",
+        "group": "Phthalo's Corona",
+        "name": "Corona",
+        "value": "vis=corona&preset=0"
+      },
+      {
+        "id": "corona-1",
+        "group": "Phthalo's Corona",
+        "name": "Blaze",
+        "value": "vis=corona&preset=1"
+      },
+      {
+        "id": "particle-0",
+        "group": "Particle",
+        "name": "Particle",
+        "value": "vis=particle&preset=0"
+      },
+      {
+        "id": "particle-1",
+        "group": "Particle",
+        "name": "Rotating Particle",
+        "value": "vis=particle&preset=1"
+      },
+      {
+        "id": "particle-2",
+        "group": "Particle",
+        "name": "Particle (WMP 7-8)",
+        "value": "vis=particle&preset=2"
+      },
+      {
+        "id": "particle-3",
+        "group": "Particle",
+        "name": "Rotating Particle (WMP 7-8)",
+        "value": "vis=particle&preset=3"
+      },
+      {
+        "id": "dungeon-0",
+        "group": "Dungeon Siege",
+        "name": "Poster",
+        "value": "vis=dungeon&preset=0"
+      },
+      {
+        "id": "dungeon-1",
+        "group": "Dungeon Siege",
+        "name": "Lurking in the dark lies an enemy...",
+        "value": "vis=dungeon&preset=1"
+      },
+      {
+        "id": "eclectic-0",
+        "group": "Eclectic Colors",
+        "name": "Rolling Colors",
+        "value": "vis=eclectic&preset=0"
+      },
+      {
+        "id": "eclectic-1",
+        "group": "Eclectic Colors",
+        "name": "Ribbon Rhythm",
+        "value": "vis=eclectic&preset=1"
+      },
+      {
+        "id": "eclectic-2",
+        "group": "Eclectic Colors",
+        "name": "Night Fire",
+        "value": "vis=eclectic&preset=2"
+      },
+      {
+        "id": "firedancer-0",
+        "group": "Fire Dancer",
+        "name": "Fire Dancer",
+        "value": "vis=firedancer&preset=0"
+      },
+      {
+        "id": "flashes-0",
+        "group": "Flashes",
+        "name": "Show",
+        "value": "vis=flashes&preset=0"
+      },
+      {
+        "id": "googly-0",
+        "group": "Googly Moogly!",
+        "name": "Googly Squares",
+        "value": "vis=googly&preset=0"
+      },
+      {
+        "id": "googly-1",
+        "group": "Googly Moogly!",
+        "name": "Frequency",
+        "value": "vis=googly&preset=1"
+      },
+      {
+        "id": "googly-2",
+        "group": "Googly Moogly!",
+        "name": "Waveform",
+        "value": "vis=googly&preset=2"
+      },
+      {
+        "id": "grind-0",
+        "group": "Grind(2003)",
+        "name": "Go BIG or Go Home",
+        "value": "vis=grind&preset=0"
+      },
+      {
+        "id": "kiddraw-0",
+        "group": "Kid Drawing",
+        "name": "Solo Dance",
+        "value": "vis=kiddraw&preset=0"
+      },
+      {
+        "id": "kiddraw-1",
+        "group": "Kid Drawing",
+        "name": "Surfing",
+        "value": "vis=kiddraw&preset=1"
+      },
+      {
+        "id": "wm10-0",
+        "group": "Windows Media Player 10",
+        "name": "Energy Bliss",
+        "value": "vis=wm10&preset=0"
+      },
+      {
+        "id": "wm9s-0",
+        "group": "Windows Media 9 Series",
+        "name": "Rhythm and Waves",
+        "value": "vis=wm9s&preset=0"
+      },
+      {
+        "id": "pictureviz-0",
+        "group": "Picture Viz",
+        "name": "Pop Transition",
+        "value": "vis=pictureviz&preset=0"
+      },
+      {
+        "id": "pictureviz-1",
+        "group": "Picture Viz",
+        "name": "Transparency Transition",
+        "value": "vis=pictureviz&preset=1"
+      },
+      {
+        "id": "pictureviz-2",
+        "group": "Picture Viz",
+        "name": "Zoom Transition",
+        "value": "vis=pictureviz&preset=2"
+      },
+      {
+        "id": "pictureviz-3",
+        "group": "Picture Viz",
+        "name": "Squirt Transition",
+        "value": "vis=pictureviz&preset=3"
+      },
+      {
+        "id": "pictureviz-4",
+        "group": "Picture Viz",
+        "name": "Twirl Transition",
+        "value": "vis=pictureviz&preset=4"
+      },
+      {
+        "id": "pictureviz-5",
+        "group": "Picture Viz",
+        "name": "Dissolve Transition",
+        "value": "vis=pictureviz&preset=5"
+      },
+      {
+        "id": "pictureviz-6",
+        "group": "Picture Viz",
+        "name": "Random",
+        "value": "vis=pictureviz&preset=6"
+      },
+      {
+        "id": "pictureviz2-0",
+        "group": "Picture Viz II",
+        "name": "Favorite Transitions",
+        "value": "vis=pictureviz2&preset=0"
+      },
+      {
+        "id": "pictureviz2-1",
+        "group": "Picture Viz II",
+        "name": "Random Selection - Basic Transitions",
+        "value": "vis=pictureviz2&preset=1"
+      },
+      {
+        "id": "pictureviz2-2",
+        "group": "Picture Viz II",
+        "name": "Random Selection - Geometric Transitions",
+        "value": "vis=pictureviz2&preset=2"
+      },
+      {
+        "id": "pictureviz2-3",
+        "group": "Picture Viz II",
+        "name": "Random Selection - Particle Transitions",
+        "value": "vis=pictureviz2&preset=3"
+      },
+      {
+        "id": "pictureviz2-4",
+        "group": "Picture Viz II",
+        "name": "Random Selection - All Transitions",
+        "value": "vis=pictureviz2&preset=4"
+      },
+      {
+        "id": "pictureviz2-5",
+        "group": "Picture Viz II",
+        "name": "Basic - Pop Transition",
+        "value": "vis=pictureviz2&preset=5"
+      },
+      {
+        "id": "pictureviz2-6",
+        "group": "Picture Viz II",
+        "name": "Basic - Transparency Transition",
+        "value": "vis=pictureviz2&preset=6"
+      },
+      {
+        "id": "pictureviz2-7",
+        "group": "Picture Viz II",
+        "name": "Basic - Zoom Transition",
+        "value": "vis=pictureviz2&preset=7"
+      },
+      {
+        "id": "pictureviz2-8",
+        "group": "Picture Viz II",
+        "name": "Basic - Curtains",
+        "value": "vis=pictureviz2&preset=8"
+      },
+      {
+        "id": "pictureviz2-9",
+        "group": "Picture Viz II",
+        "name": "Basic - Dissolve Transition",
+        "value": "vis=pictureviz2&preset=9"
+      },
+      {
+        "id": "pictureviz2-10",
+        "group": "Picture Viz II",
+        "name": "Basic - Toaster",
+        "value": "vis=pictureviz2&preset=10"
+      },
+      {
+        "id": "pictureviz2-11",
+        "group": "Picture Viz II",
+        "name": "Basic - Swipe",
+        "value": "vis=pictureviz2&preset=11"
+      },
+      {
+        "id": "pictureviz2-12",
+        "group": "Picture Viz II",
+        "name": "Basic - Rotate",
+        "value": "vis=pictureviz2&preset=12"
+      },
+      {
+        "id": "pictureviz2-13",
+        "group": "Picture Viz II",
+        "name": "Pattern",
+        "value": "vis=pictureviz2&preset=13"
+      },
+      {
+        "id": "pictureviz2-14",
+        "group": "Picture Viz II",
+        "name": "WetGlass",
+        "value": "vis=pictureviz2&preset=14"
+      },
+      {
+        "id": "pictureviz2-15",
+        "group": "Picture Viz II",
+        "name": "Spiral",
+        "value": "vis=pictureviz2&preset=15"
+      },
+      {
+        "id": "pictureviz2-16",
+        "group": "Picture Viz II",
+        "name": "Flourish",
+        "value": "vis=pictureviz2&preset=16"
+      },
+      {
+        "id": "pictureviz2-17",
+        "group": "Picture Viz II",
+        "name": "Undulation",
+        "value": "vis=pictureviz2&preset=17"
+      },
+      {
+        "id": "pictureviz2-18",
+        "group": "Picture Viz II",
+        "name": "SpotLight",
+        "value": "vis=pictureviz2&preset=18"
+      },
+      {
+        "id": "pictureviz2-19",
+        "group": "Picture Viz II",
+        "name": "Twirl Transition",
+        "value": "vis=pictureviz2&preset=19"
+      },
+      {
+        "id": "pictureviz2-20",
+        "group": "Picture Viz II",
+        "name": "Disperse",
+        "value": "vis=pictureviz2&preset=20"
+      },
+      {
+        "id": "pictureviz2-21",
+        "group": "Picture Viz II",
+        "name": "SeaGrass",
+        "value": "vis=pictureviz2&preset=21"
+      },
+      {
+        "id": "pictureviz2-22",
+        "group": "Picture Viz II",
+        "name": "Ripple",
+        "value": "vis=pictureviz2&preset=22"
+      },
+      {
+        "id": "pictureviz2-23",
+        "group": "Picture Viz II",
+        "name": "SquareS",
+        "value": "vis=pictureviz2&preset=23"
+      },
+      {
+        "id": "pictureviz2-24",
+        "group": "Picture Viz II",
+        "name": "Transport",
+        "value": "vis=pictureviz2&preset=24"
+      },
+      {
+        "id": "pictureviz2-25",
+        "group": "Picture Viz II",
+        "name": "Variegate",
+        "value": "vis=pictureviz2&preset=25"
+      },
+      {
+        "id": "pictureviz2-26",
+        "group": "Picture Viz II",
+        "name": "Suck Transition",
+        "value": "vis=pictureviz2&preset=26"
+      },
+      {
+        "id": "pictureviz2-27",
+        "group": "Picture Viz II",
+        "name": "Dematerialize",
+        "value": "vis=pictureviz2&preset=27"
+      },
+      {
+        "id": "pictureviz2-28",
+        "group": "Picture Viz II",
+        "name": "Spin",
+        "value": "vis=pictureviz2&preset=28"
+      },
+      {
+        "id": "pictureviz2-29",
+        "group": "Picture Viz II",
+        "name": "BullsEye",
+        "value": "vis=pictureviz2&preset=29"
+      },
+      {
+        "id": "pictureviz2-30",
+        "group": "Picture Viz II",
+        "name": "Radial",
+        "value": "vis=pictureviz2&preset=30"
+      },
+      {
+        "id": "pictureviz2-31",
+        "group": "Picture Viz II",
+        "name": "Favorite Transitions (Winter Edition)",
+        "value": "vis=pictureviz2&preset=31"
+      },
+      {
+        "id": "pictureviz2-32",
+        "group": "Picture Viz II",
+        "name": "Random Selection - Basic Transitions (Winter Edition)",
+        "value": "vis=pictureviz2&preset=32"
+      },
+      {
+        "id": "pictureviz2-33",
+        "group": "Picture Viz II",
+        "name": "Random Selection - Geometric Transitions (Winter Edition)",
+        "value": "vis=pictureviz2&preset=33"
+      },
+      {
+        "id": "pictureviz2-34",
+        "group": "Picture Viz II",
+        "name": "Random Selection - Particle Transitions (Winter Edition)",
+        "value": "vis=pictureviz2&preset=34"
+      },
+      {
+        "id": "pictureviz2-35",
+        "group": "Picture Viz II",
+        "name": "Random Selection - All Transitions (Winter Edition)",
+        "value": "vis=pictureviz2&preset=35"
+      },
+      {
+        "id": "pictureviz2-36",
+        "group": "Picture Viz II",
+        "name": "Basic - Pop Transition (Winter Edition)",
+        "value": "vis=pictureviz2&preset=36"
+      },
+      {
+        "id": "pictureviz2-37",
+        "group": "Picture Viz II",
+        "name": "Basic - Transparency Transition (Winter Edition)",
+        "value": "vis=pictureviz2&preset=37"
+      },
+      {
+        "id": "pictureviz2-38",
+        "group": "Picture Viz II",
+        "name": "Basic - Zoom Transition (Winter Edition)",
+        "value": "vis=pictureviz2&preset=38"
+      },
+      {
+        "id": "pictureviz2-39",
+        "group": "Picture Viz II",
+        "name": "Basic - Curtains (Winter Edition)",
+        "value": "vis=pictureviz2&preset=39"
+      },
+      {
+        "id": "pictureviz2-40",
+        "group": "Picture Viz II",
+        "name": "Basic - Dissolve Transition (Winter Edition)",
+        "value": "vis=pictureviz2&preset=40"
+      },
+      {
+        "id": "pictureviz2-41",
+        "group": "Picture Viz II",
+        "name": "Basic - Toaster (Winter Edition)",
+        "value": "vis=pictureviz2&preset=41"
+      },
+      {
+        "id": "pictureviz2-42",
+        "group": "Picture Viz II",
+        "name": "Basic - Swipe (Winter Edition)",
+        "value": "vis=pictureviz2&preset=42"
+      },
+      {
+        "id": "pictureviz2-43",
+        "group": "Picture Viz II",
+        "name": "Basic - Rotate (Winter Edition)",
+        "value": "vis=pictureviz2&preset=43"
+      },
+      {
+        "id": "pictureviz2-44",
+        "group": "Picture Viz II",
+        "name": "Pattern (Winter Edition)",
+        "value": "vis=pictureviz2&preset=44"
+      },
+      {
+        "id": "pictureviz2-45",
+        "group": "Picture Viz II",
+        "name": "WetGlass (Winter Edition)",
+        "value": "vis=pictureviz2&preset=45"
+      },
+      {
+        "id": "pictureviz2-46",
+        "group": "Picture Viz II",
+        "name": "Spiral (Winter Edition)",
+        "value": "vis=pictureviz2&preset=46"
+      },
+      {
+        "id": "pictureviz2-47",
+        "group": "Picture Viz II",
+        "name": "Flourish (Winter Edition)",
+        "value": "vis=pictureviz2&preset=47"
+      },
+      {
+        "id": "pictureviz2-48",
+        "group": "Picture Viz II",
+        "name": "Undulation (Winter Edition)",
+        "value": "vis=pictureviz2&preset=48"
+      },
+      {
+        "id": "pictureviz2-49",
+        "group": "Picture Viz II",
+        "name": "SpotLight (Winter Edition)",
+        "value": "vis=pictureviz2&preset=49"
+      },
+      {
+        "id": "pictureviz2-50",
+        "group": "Picture Viz II",
+        "name": "Twirl Transition (Winter Edition)",
+        "value": "vis=pictureviz2&preset=50"
+      },
+      {
+        "id": "pictureviz2-51",
+        "group": "Picture Viz II",
+        "name": "Disperse (Winter Edition)",
+        "value": "vis=pictureviz2&preset=51"
+      },
+      {
+        "id": "pictureviz2-52",
+        "group": "Picture Viz II",
+        "name": "SeaGrass (Winter Edition)",
+        "value": "vis=pictureviz2&preset=52"
+      },
+      {
+        "id": "pictureviz2-53",
+        "group": "Picture Viz II",
+        "name": "Ripple (Winter Edition)",
+        "value": "vis=pictureviz2&preset=53"
+      },
+      {
+        "id": "pictureviz2-54",
+        "group": "Picture Viz II",
+        "name": "SquareS (Winter Edition)",
+        "value": "vis=pictureviz2&preset=54"
+      },
+      {
+        "id": "pictureviz2-55",
+        "group": "Picture Viz II",
+        "name": "Transport (Winter Edition)",
+        "value": "vis=pictureviz2&preset=55"
+      },
+      {
+        "id": "pictureviz2-56",
+        "group": "Picture Viz II",
+        "name": "Variegate (Winter Edition)",
+        "value": "vis=pictureviz2&preset=56"
+      },
+      {
+        "id": "pictureviz2-57",
+        "group": "Picture Viz II",
+        "name": "Suck Transition (Winter Edition)",
+        "value": "vis=pictureviz2&preset=57"
+      },
+      {
+        "id": "pictureviz2-58",
+        "group": "Picture Viz II",
+        "name": "Dematerialize (Winter Edition)",
+        "value": "vis=pictureviz2&preset=58"
+      },
+      {
+        "id": "pictureviz2-59",
+        "group": "Picture Viz II",
+        "name": "Spin (Winter Edition)",
+        "value": "vis=pictureviz2&preset=59"
+      },
+      {
+        "id": "pictureviz2-60",
+        "group": "Picture Viz II",
+        "name": "BullsEye (Winter Edition)",
+        "value": "vis=pictureviz2&preset=60"
+      },
+      {
+        "id": "pictureviz2-61",
+        "group": "Picture Viz II",
+        "name": "Radial (Winter Edition)",
+        "value": "vis=pictureviz2&preset=61"
+      },
+      {
+        "id": "pictureviz3-0",
+        "group": "Picture Viz 3D",
+        "name": "Favorite 3D Transitions",
+        "value": "vis=pictureviz3&preset=0"
+      },
+      {
+        "id": "pictureviz3-1",
+        "group": "Picture Viz 3D",
+        "name": "Random Selection - Basic 3D",
+        "value": "vis=pictureviz3&preset=1"
+      },
+      {
+        "id": "pictureviz3-2",
+        "group": "Picture Viz 3D",
+        "name": "Random Selection - Liquid Transitions",
+        "value": "vis=pictureviz3&preset=2"
+      },
+      {
+        "id": "pictureviz3-3",
+        "group": "Picture Viz 3D",
+        "name": "Random Selection - All Transitions",
+        "value": "vis=pictureviz3&preset=3"
+      },
+      {
+        "id": "pictureviz3-4",
+        "group": "Picture Viz 3D",
+        "name": "Pop",
+        "value": "vis=pictureviz3&preset=4"
+      },
+      {
+        "id": "pictureviz3-5",
+        "group": "Picture Viz 3D",
+        "name": "Transparency",
+        "value": "vis=pictureviz3&preset=5"
+      },
+      {
+        "id": "pictureviz3-6",
+        "group": "Picture Viz 3D",
+        "name": "Zoom",
+        "value": "vis=pictureviz3&preset=6"
+      },
+      {
+        "id": "pictureviz3-7",
+        "group": "Picture Viz 3D",
+        "name": "Store",
+        "value": "vis=pictureviz3&preset=7"
+      },
+      {
+        "id": "pictureviz3-8",
+        "group": "Picture Viz 3D",
+        "name": "Spiral",
+        "value": "vis=pictureviz3&preset=8"
+      },
+      {
+        "id": "pictureviz3-9",
+        "group": "Picture Viz 3D",
+        "name": "Spin",
+        "value": "vis=pictureviz3&preset=9"
+      },
+      {
+        "id": "pictureviz3-10",
+        "group": "Picture Viz 3D",
+        "name": "Turn",
+        "value": "vis=pictureviz3&preset=10"
+      },
+      {
+        "id": "pictureviz3-11",
+        "group": "Picture Viz 3D",
+        "name": "Flip",
+        "value": "vis=pictureviz3&preset=11"
+      },
+      {
+        "id": "pictureviz3-12",
+        "group": "Picture Viz 3D",
+        "name": "Stack'm",
+        "value": "vis=pictureviz3&preset=12"
+      },
+      {
+        "id": "pictureviz3-13",
+        "group": "Picture Viz 3D",
+        "name": "Slide",
+        "value": "vis=pictureviz3&preset=13"
+      },
+      {
+        "id": "pictureviz3-14",
+        "group": "Picture Viz 3D",
+        "name": "Water Rain",
+        "value": "vis=pictureviz3&preset=14"
+      },
+      {
+        "id": "pictureviz3-15",
+        "group": "Picture Viz 3D",
+        "name": "Water Drop",
+        "value": "vis=pictureviz3&preset=15"
+      },
+      {
+        "id": "pictureviz3-16",
+        "group": "Picture Viz 3D",
+        "name": "Watery",
+        "value": "vis=pictureviz3&preset=16"
+      },
+      {
+        "id": "pictureviz3-17",
+        "group": "Picture Viz 3D",
+        "name": "Spiky Thing",
+        "value": "vis=pictureviz3&preset=17"
+      },
+      {
+        "id": "pictureviz3-18",
+        "group": "Picture Viz 3D",
+        "name": "Caldron",
+        "value": "vis=pictureviz3&preset=18"
+      },
+      {
+        "id": "pictureviz3-19",
+        "group": "Picture Viz 3D",
+        "name": "Tidal Pool",
+        "value": "vis=pictureviz3&preset=19"
+      },
+      {
+        "id": "pictureviz3-20",
+        "group": "Picture Viz 3D",
+        "name": "Wisp on water",
+        "value": "vis=pictureviz3&preset=20"
+      },
+      {
+        "id": "pictureviz3-21",
+        "group": "Picture Viz 3D",
+        "name": "Plunk",
+        "value": "vis=pictureviz3&preset=21"
+      },
+      {
+        "id": "pictureviz3-22",
+        "group": "Picture Viz 3D",
+        "name": "Flower",
+        "value": "vis=pictureviz3&preset=22"
+      },
+      {
+        "id": "pictureviz3-23",
+        "group": "Picture Viz 3D",
+        "name": "Spatter",
+        "value": "vis=pictureviz3&preset=23"
+      },
+      {
+        "id": "pictureviz3-24",
+        "group": "Picture Viz 3D",
+        "name": "Burst",
+        "value": "vis=pictureviz3&preset=24"
+      },
+      {
+        "id": "pictureviz3-25",
+        "group": "Picture Viz 3D",
+        "name": "Blast-off",
+        "value": "vis=pictureviz3&preset=25"
+      },
+      {
+        "id": "pictureviz3-26",
+        "group": "Picture Viz 3D",
+        "name": "Electric",
+        "value": "vis=pictureviz3&preset=26"
+      },
+      {
+        "id": "pictureviz3-27",
+        "group": "Picture Viz 3D",
+        "name": "Crossing",
+        "value": "vis=pictureviz3&preset=27"
+      },
+      {
+        "id": "pictureviz3-28",
+        "group": "Picture Viz 3D",
+        "name": "Sundrops",
+        "value": "vis=pictureviz3&preset=28"
+      },
+      {
+        "id": "pictureviz3-29",
+        "group": "Picture Viz 3D",
+        "name": "Volcanic",
+        "value": "vis=pictureviz3&preset=29"
+      },
+      {
+        "id": "pixeltrip-0",
+        "group": "PixelTrip",
+        "name": "PixelTrip",
+        "value": "vis=pixeltrip&preset=0"
+      },
+      {
+        "id": "plenoptic-0",
+        "group": "Plenoptic",
+        "name": "Random",
+        "value": "vis=plenoptic&preset=0"
+      },
+      {
+        "id": "plenoptic-1",
+        "group": "Plenoptic",
+        "name": "Smokey Circles",
+        "value": "vis=plenoptic&preset=1"
+      },
+      {
+        "id": "plenoptic-2",
+        "group": "Plenoptic",
+        "name": "Smokey Lines",
+        "value": "vis=plenoptic&preset=2"
+      },
+      {
+        "id": "plenoptic-3",
+        "group": "Plenoptic",
+        "name": "Vox",
+        "value": "vis=plenoptic&preset=3"
+      },
+      {
+        "id": "plenoptic-4",
+        "group": "Plenoptic",
+        "name": "Flame",
+        "value": "vis=plenoptic&preset=4"
+      },
+      {
+        "id": "plenoptic-5",
+        "group": "Plenoptic",
+        "name": "Fountain",
+        "value": "vis=plenoptic&preset=5"
+      },
+      {
+        "id": "plenoptic-6",
+        "group": "Plenoptic",
+        "name": "Spyro",
+        "value": "vis=plenoptic&preset=6"
+      },
+      {
+        "id": "plenoptic-7",
+        "group": "Plenoptic",
+        "name": "Random (WMP 8)",
+        "value": "vis=plenoptic&preset=7"
+      },
+      {
+        "id": "plenoptic-8",
+        "group": "Plenoptic",
+        "name": "Spyro (WMP 8)",
+        "value": "vis=plenoptic&preset=8"
+      },
+      {
+        "id": "plenoptic-9",
+        "group": "Plenoptic",
+        "name": "Random (WMP 7)",
+        "value": "vis=plenoptic&preset=9"
+      },
+      {
+        "id": "plenoptic-10",
+        "group": "Plenoptic",
+        "name": "Smokey Circles (WMP 7)",
+        "value": "vis=plenoptic&preset=10"
+      },
+      {
+        "id": "plenoptic-11",
+        "group": "Plenoptic",
+        "name": "Smokey Lines (WMP 7)",
+        "value": "vis=plenoptic&preset=11"
+      },
+      {
+        "id": "plenoptic-12",
+        "group": "Plenoptic",
+        "name": "Vox (WMP 7)",
+        "value": "vis=plenoptic&preset=12"
+      },
+      {
+        "id": "plenoptic-13",
+        "group": "Plenoptic",
+        "name": "Flame (WMP 7)",
+        "value": "vis=plenoptic&preset=13"
+      },
+      {
+        "id": "plenoptic-14",
+        "group": "Plenoptic",
+        "name": "Fountain (WMP 7)",
+        "value": "vis=plenoptic&preset=14"
+      },
+      {
+        "id": "plenoptic-15",
+        "group": "Plenoptic",
+        "name": "Spyro (WMP 7)",
+        "value": "vis=plenoptic&preset=15"
+      },
+      {
+        "id": "plus3d-0",
+        "group": "Plus! 3-D Visualizations",
+        "name": "Oddworld: Munch's Oddysee",
+        "value": "vis=plus3d&preset=0"
+      },
+      {
+        "id": "plus3d-1",
+        "group": "Plus! 3-D Visualizations",
+        "name": "Maxx's Kingdom",
+        "value": "vis=plus3d&preset=1"
+      },
+      {
+        "id": "plus3d-2",
+        "group": "Plus! 3-D Visualizations",
+        "name": "Undersea Wonders",
+        "value": "vis=plus3d&preset=2"
+      },
+      {
+        "id": "pulsing-0",
+        "group": "Pulsing Colors",
+        "name": "Lip Sink",
+        "value": "vis=pulsing&preset=0"
+      },
+      {
+        "id": "pulsing-1",
+        "group": "Pulsing Colors",
+        "name": "Musical Island",
+        "value": "vis=pulsing&preset=1"
+      },
+      {
+        "id": "pulsing-2",
+        "group": "Pulsing Colors",
+        "name": "Steel Rhythm",
+        "value": "vis=pulsing&preset=2"
+      },
+      {
+        "id": "ribbons-0",
+        "group": "Ribbons",
+        "name": "Random",
+        "value": "vis=ribbons&preset=0"
+      },
+      {
+        "id": "ribbons-1",
+        "group": "Ribbons",
+        "name": "Mystify",
+        "value": "vis=ribbons&preset=1"
+      },
+      {
+        "id": "ribbons-2",
+        "group": "Ribbons",
+        "name": "Ribbons",
+        "value": "vis=ribbons&preset=2"
+      },
+      {
+        "id": "ribbons-3",
+        "group": "Ribbons",
+        "name": "Dense",
+        "value": "vis=ribbons&preset=3"
+      },
+      {
+        "id": "ribbons-4",
+        "group": "Ribbons",
+        "name": "Embossed",
+        "value": "vis=ribbons&preset=4"
+      },
+      {
+        "id": "ribbons-5",
+        "group": "Ribbons",
+        "name": "More Embossed",
+        "value": "vis=ribbons&preset=5"
+      },
+      {
+        "id": "ripple-0",
+        "group": "Ripple",
+        "name": "Plaid",
+        "value": "vis=ripple&preset=0"
+      },
+      {
+        "id": "ripple-1",
+        "group": "Ripple",
+        "name": "Pool",
+        "value": "vis=ripple&preset=1"
+      },
+      {
+        "id": "ripple-2",
+        "group": "Ripple",
+        "name": "Acid",
+        "value": "vis=ripple&preset=2"
+      },
+      {
+        "id": "ripple-3",
+        "group": "Ripple",
+        "name": "Haze",
+        "value": "vis=ripple&preset=3"
+      },
+      {
+        "id": "ripple-4",
+        "group": "Ripple",
+        "name": "Hulk",
+        "value": "vis=ripple&preset=4"
+      },
+      {
+        "id": "ripple-5",
+        "group": "Ripple",
+        "name": "Solvent",
+        "value": "vis=ripple&preset=5"
+      },
+      {
+        "id": "ripple-6",
+        "group": "Ripple",
+        "name": "Vomit",
+        "value": "vis=ripple&preset=6"
+      },
+      {
+        "id": "ripple-7",
+        "group": "Ripple",
+        "name": "Slime",
+        "value": "vis=ripple&preset=7"
+      },
+      {
+        "id": "shacojin-0",
+        "group": "Shacojin",
+        "name": "Shacojin - mello",
+        "value": "vis=shacojin&preset=0"
+      },
+      {
+        "id": "shacojin-1",
+        "group": "Shacojin",
+        "name": "Shacojin - groove",
+        "value": "vis=shacojin&preset=1"
+      },
+      {
+        "id": "shacojin-2",
+        "group": "Shacojin",
+        "name": "Shacojin - chill",
+        "value": "vis=shacojin&preset=2"
+      },
+      {
+        "id": "shacojin-3",
+        "group": "Shacojin",
+        "name": "Shacojin - freak",
+        "value": "vis=shacojin&preset=3"
+      },
+      {
+        "id": "snowtime-0",
+        "group": "SnowTime",
+        "name": "Softie the Snowman",
+        "value": "vis=snowtime&preset=0"
+      },
+      {
+        "id": "spikes-0",
+        "group": "Spikes",
+        "name": "Spike",
+        "value": "vis=spikes&preset=0"
+      },
+      {
+        "id": "spikes-1",
+        "group": "Spikes",
+        "name": "Amoeba",
+        "value": "vis=spikes&preset=1"
+      },
+      {
+        "id": "startime-0",
+        "group": "StarTime",
+        "name": "Starlight",
+        "value": "vis=startime&preset=0"
+      },
+      {
+        "id": "startime-1",
+        "group": "StarTime",
+        "name": "Star Clouds",
+        "value": "vis=startime&preset=1"
+      },
+      {
+        "id": "startime-2",
+        "group": "StarTime",
+        "name": "Star Glow",
+        "value": "vis=startime&preset=2"
+      },
+      {
+        "id": "t3-0",
+        "group": "T3",
+        "name": "Rise of the Machines",
+        "value": "vis=t3&preset=0"
+      },
+      {
+        "id": "gigertron-0",
+        "group": "Gigertron 3D",
+        "name": "Cubetro",
+        "value": "vis=gigertron&preset=0"
+      },
+      {
+        "id": "gigertron-1",
+        "group": "Gigertron 3D",
+        "name": "Syntax",
+        "value": "vis=gigertron&preset=1"
+      },
+      {
+        "id": "gigertron-2",
+        "group": "Gigertron 3D",
+        "name": "Northern",
+        "value": "vis=gigertron&preset=2"
+      },
+      {
+        "id": "trilogy1-0",
+        "group": "Trilogy I",
+        "name": "Pulsar",
+        "value": "vis=trilogy1&preset=0"
+      },
+      {
+        "id": "trilogy1-1",
+        "group": "Trilogy I",
+        "name": "Wings",
+        "value": "vis=trilogy1&preset=1"
+      },
+      {
+        "id": "trilogy1-2",
+        "group": "Trilogy I",
+        "name": "Twirling",
+        "value": "vis=trilogy1&preset=2"
+      },
+      {
+        "id": "trilogy1-3",
+        "group": "Trilogy I",
+        "name": "Random Selection",
+        "value": "vis=trilogy1&preset=3"
+      },
+      {
+        "id": "trilogy2-0",
+        "group": "Trilogy II",
+        "name": "Musical Sine",
+        "value": "vis=trilogy2&preset=0"
+      },
+      {
+        "id": "trilogy2-1",
+        "group": "Trilogy II",
+        "name": "4th Dimension",
+        "value": "vis=trilogy2&preset=1"
+      },
+      {
+        "id": "trilogy2-2",
+        "group": "Trilogy II",
+        "name": "Mathical Music",
+        "value": "vis=trilogy2&preset=2"
+      },
+      {
+        "id": "trilogy2-3",
+        "group": "Trilogy II",
+        "name": "Random Selection",
+        "value": "vis=trilogy2&preset=3"
+      },
+      {
+        "id": "trilogy3-0",
+        "group": "Trilogy III",
+        "name": "Lava",
+        "value": "vis=trilogy3&preset=0"
+      },
+      {
+        "id": "trilogy3-1",
+        "group": "Trilogy III",
+        "name": "Mystic Cloud",
+        "value": "vis=trilogy3&preset=1"
+      },
+      {
+        "id": "trilogy3-2",
+        "group": "Trilogy III",
+        "name": "Undulation",
+        "value": "vis=trilogy3&preset=2"
+      },
+      {
+        "id": "trilogy3-3",
+        "group": "Trilogy III",
+        "name": "Random Selection",
+        "value": "vis=trilogy3&preset=3"
+      },
+      {
+        "id": "twistedpixel-0",
+        "group": "TwistedPixel",
+        "name": "TwistedPixel Preset Vis",
+        "value": "vis=twistedpixel&preset=0"
+      },
+      {
+        "id": "betterbars-0",
+        "group": "Better Bars",
+        "name": "Bars",
+        "value": "vis=betterbars&preset=0"
+      },
+      {
+        "id": "betterbars-1",
+        "group": "Better Bars",
+        "name": "Stereo Scope",
+        "value": "vis=betterbars&preset=1"
+      },
+      {
+        "id": "betterbars-2",
+        "group": "Better Bars",
+        "name": "Scan",
+        "value": "vis=betterbars&preset=2"
+      },
+      {
+        "id": "wm3dspectrum-0",
+        "group": "3D Spectrum Analyzer",
+        "name": "Rose Garden",
+        "value": "vis=wm3dspectrum&preset=0"
+      },
+      {
+        "id": "wm3dspectrum-1",
+        "group": "3D Spectrum Analyzer",
+        "name": "City Lights",
+        "value": "vis=wm3dspectrum&preset=1"
+      },
+      {
+        "id": "wm3dspectrum-2",
+        "group": "3D Spectrum Analyzer",
+        "name": "Rose Garden Points",
+        "value": "vis=wm3dspectrum&preset=2"
+      },
+      {
+        "id": "wm3dspectrum-3",
+        "group": "3D Spectrum Analyzer",
+        "name": "City Lights Points",
+        "value": "vis=wm3dspectrum&preset=3"
+      },
+      {
+        "id": "wm3dspectrum-4",
+        "group": "3D Spectrum Analyzer",
+        "name": "Rose Garden - Smooth",
+        "value": "vis=wm3dspectrum&preset=4"
+      },
+      {
+        "id": "wm3dspectrum-5",
+        "group": "3D Spectrum Analyzer",
+        "name": "City Lights - Smooth",
+        "value": "vis=wm3dspectrum&preset=5"
+      },
+      {
+        "id": "wm3dspectrum-6",
+        "group": "3D Spectrum Analyzer",
+        "name": "Rose Garden Points - Smooth",
+        "value": "vis=wm3dspectrum&preset=6"
+      },
+      {
+        "id": "wm3dspectrum-7",
+        "group": "3D Spectrum Analyzer",
+        "name": "City Lights Points - Smooth",
+        "value": "vis=wm3dspectrum&preset=7"
+      },
+      {
+        "id": "goom-0",
+        "group": "Goom",
+        "name": "Goom at 320x240",
+        "value": "vis=goom&preset=0"
+      },
+      {
+        "id": "goom-1",
+        "group": "Goom",
+        "name": "Goom at 480x360",
+        "value": "vis=goom&preset=1"
+      },
+      {
+        "id": "goom-2",
+        "group": "Goom",
+        "name": "Goom at 640x480",
+        "value": "vis=goom&preset=2"
+      },
+      {
+        "id": "goom-3",
+        "group": "Goom",
+        "name": "Goom at 800x600",
+        "value": "vis=goom&preset=3"
+      },
+      {
+        "id": "musical-0",
+        "group": "Musical Colors",
+        "name": "Night Lights",
+        "value": "vis=musical&preset=0"
+      },
+      {
+        "id": "musical-1",
+        "group": "Musical Colors",
+        "name": "Colors in Motion",
+        "value": "vis=musical&preset=1"
+      },
+      {
+        "id": "musical-2",
+        "group": "Musical Colors",
+        "name": "Aurora",
+        "value": "vis=musical&preset=2"
+      },
+      {
+        "id": "musical-3",
+        "group": "Musical Colors",
+        "name": "Rhythmic Colors",
+        "value": "vis=musical&preset=3"
+      },
+      {
+        "id": "musical-4",
+        "group": "Musical Colors",
+        "name": "Star Power",
+        "value": "vis=musical&preset=4"
+      },
+      {
+        "id": "musical-5",
+        "group": "Musical Colors",
+        "name": "Electric Green",
+        "value": "vis=musical&preset=5"
+      },
+      {
+        "id": "musical-6",
+        "group": "Musical Colors",
+        "name": "Soft Fire",
+        "value": "vis=musical&preset=6"
+      },
+      {
+        "id": "musical-7",
+        "group": "Musical Colors",
+        "name": "Silky Wave",
+        "value": "vis=musical&preset=7"
+      },
+      {
+        "id": "musical-8",
+        "group": "Musical Colors",
+        "name": "CutOut",
+        "value": "vis=musical&preset=8"
+      },
+      {
+        "id": "musical-9",
+        "group": "Musical Colors",
+        "name": "Rolling Fire",
+        "value": "vis=musical&preset=9"
+      },
+      {
+        "id": "musical-10",
+        "group": "Musical Colors",
+        "name": "Water Spray",
+        "value": "vis=musical&preset=10"
+      },
+      {
+        "id": "musical-11",
+        "group": "Musical Colors",
+        "name": "Acid Rock",
+        "value": "vis=musical&preset=11"
+      },
+      {
+        "id": "musical-12",
+        "group": "Musical Colors",
+        "name": "Hard Rock",
+        "value": "vis=musical&preset=12"
+      },
+      {
+        "id": "musical-13",
+        "group": "Musical Colors",
+        "name": "Hot Spray",
+        "value": "vis=musical&preset=13"
+      },
+      {
+        "id": "musical-14",
+        "group": "Musical Colors",
+        "name": "Yellow Swirl",
+        "value": "vis=musical&preset=14"
+      },
+      {
+        "id": "musical-15",
+        "group": "Musical Colors",
+        "name": "Blue Flame",
+        "value": "vis=musical&preset=15"
+      },
+      {
+        "id": "musical-16",
+        "group": "Musical Colors",
+        "name": "Critter Rock",
+        "value": "vis=musical&preset=16"
+      },
+      {
+        "id": "musical-17",
+        "group": "Musical Colors",
+        "name": "Electric Rainbow",
+        "value": "vis=musical&preset=17"
+      },
+      {
+        "id": "musical-18",
+        "group": "Musical Colors",
+        "name": "Neon Highway",
+        "value": "vis=musical&preset=18"
+      },
+      {
+        "id": "musical-19",
+        "group": "Musical Colors",
+        "name": "Ice Crystals",
+        "value": "vis=musical&preset=19"
+      },
+      {
+        "id": "musical-20",
+        "group": "Musical Colors",
+        "name": "WinMe 3D (WMP 7)",
+        "value": "vis=musical&preset=20"
+      },
+      {
+        "id": "yule-0",
+        "group": "Yule Log",
+        "name": "Yule Log",
+        "value": "vis=yule&preset=0"
+      }
+    ]
+  },
+  "downloads": [
+    {
+      "file": "alchemy.html",
+      "url": "https://raw.githubusercontent.com/ryancircelli/wmp-legacy-visualizers/706e97a5447075a1b51826b988fea810889492ad/app/alchemy.html",
+      "sha256": "cb7d8a125de4c1ceda86e5753fbc5de2031f3c2daa228ec63f8071be1e5dc071"
+    }
+  ]
+}

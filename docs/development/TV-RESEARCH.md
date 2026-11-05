@@ -2869,8 +2869,8 @@ screenSaver` kept.
 - **The web app manager runs it as the screen saver.** Launched through
   `com.webos.applicationManager/launch`, the page drew full screen over Home,
   `getPowerState` answered `Screen Saver`, and the app in front stayed
-  `com.webos.app.home`. A 1.3 MB single-file page with WebGL and WebAssembly ran
-  there.
+  `com.webos.app.home`. A 1.3 MB single-file page with WebGL and WebAssembly
+  (wmp-legacy-visualizers' Alchemy) ran there.
 - **A key ends it, as it ends LG's.** One remote key (Down, sent through the
   network input service) took the TV back to `Active` and Home; the page did
   nothing to end itself.
