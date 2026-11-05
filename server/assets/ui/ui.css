@@ -729,7 +729,9 @@ button.key-hit{background:var(--w10)}
 /* The one in use is marked, not dimmed: it is the answer to what is running,
    so it should read as the strongest thing on the panel. */
 .ss-card.on,.ss-card.on:hover{background:rgba(var(--fg),.03);color:inherit;font-weight:400;
-         box-shadow:inset 3px 0 0 var(--green);cursor:default;opacity:1}
+         box-shadow:inset 3px 0 0 var(--green);cursor:default;opacity:1;
+         /* Not the white edge of an "on" button: a row keeps its own rule. */
+         border-color:var(--w12)}
 .ss-name{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em}
 .ss-desc{font-size:14px;color:var(--w60);margin-top:3px;line-height:1.45;max-width:60ch}
 .ss-meta{font-size:12px;color:var(--w60);margin-top:4px;letter-spacing:.02em}
@@ -751,6 +753,37 @@ button.key-hit{background:var(--w10)}
               margin-bottom:8px}
 .ss-level-row .btns{display:flex;gap:10px;max-width:340px}
 .ss-level-row .btns button{flex:1}
+/* The Animation picker: a button, and under it a list with each group's heading. */
+.ss-pick{position:relative;max-width:340px;margin-top:11px}
+.ss-pick-btn{display:block;width:100%;height:48px;text-align:left;text-transform:none;letter-spacing:.02em;
+  font:500 14px 'Manrope';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-pick-btn .grp{color:var(--w60);margin-right:6px}
+.ss-pick-list{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);max-height:min(420px,60vh);overflow-y:auto;
+  overscroll-behavior:contain;background:var(--bg);border:1px solid var(--edge);border-radius:2px;
+  box-shadow:0 12px 32px rgba(0,0,0,.45);padding:0 0 6px}
+.ss-pick-list:focus{outline:none}
+.ss-pick-head{position:sticky;top:0;z-index:1;background:var(--bg);padding:14px 14px 6px;border-top:1px solid var(--w12);
+  font:700 11px 'Manrope';letter-spacing:.14em;text-transform:uppercase;color:var(--w60)}
+.ss-pick-head:first-child{border-top:0}
+.ss-pick-opt{padding:8px 14px 8px 24px;font-size:14px;color:var(--w90);cursor:pointer}
+.ss-pick-opt:hover,.ss-pick-opt.act{background:rgba(var(--fg),.07);color:var(--w100)}
+.ss-pick-opt[aria-selected="true"]{color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
+/* An uploaded one's row: the card, with Remove over its right end. */
+.ss-row{position:relative;flex:none}
+.ss-row .ss-card{padding-right:120px}
+.ss-row .ss-remove{position:absolute;right:16px;top:50%;transform:translateY(-50%)}
+/* The last row: an action, not a screen saver. */
+#ss-cards>:last-child .ss-card,#ss-cards>.ss-card:last-child{border-bottom:1px solid var(--w12)}
+.ss-add-open .ss-name::before{content:'+';display:inline-block;width:1.2em;color:var(--w60)}
+.ss-add-open .ss-name,.ss-add-open .ss-desc{color:var(--w60)}
+.ss-add-open:hover .ss-name{color:var(--w100)}
+.ss-add-form{padding:12px 16px 16px;box-shadow:inset 3px 0 0 var(--w40)}
+#ss-upload-name{flex:1 1 0;min-width:0}
+.ss-upload-note:empty{display:none}
+.ss-upload-note{margin-top:8px}
+.ss-upload-pick{display:flex;align-items:center;gap:14px;margin-top:11px;min-width:0}
+#ss-upload-btn:disabled{opacity:.35;cursor:default}
+.ss-upload-pick .sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .upd{max-width:760px;margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
@@ -823,6 +856,12 @@ span.pill.good::before,span.pill.warn::before,span.pill.bad::before{
   content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
 /* The arrow is drawn here, in the text's colour, with room to its right: the
    browser's own sat against the right edge. */
+/* A select's own background is transparent, and Chrome on Windows draws the
+   open list on white whatever the theme: the options carry the theme's colours. */
+select option,select optgroup{background-color:var(--bg);color:var(--w100)}
+/* A group's heading reads as a heading, not as one more option. */
+select optgroup{color:var(--w60);font-weight:700;font-style:normal}
+select optgroup option{color:var(--w100);font-weight:400}
 .pill-sel{font:500 12.5px 'Manrope';letter-spacing:.08em;height:32px;min-width:116px;padding:0 30px 0 10px;
           color:var(--w100);background-color:transparent;border:1px solid var(--edge);border-radius:2px;cursor:pointer;
           -webkit-appearance:none;appearance:none;

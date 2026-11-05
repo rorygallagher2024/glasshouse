@@ -12,7 +12,8 @@ A firmware update restores the LG default.
 
 ## Controls and settings
 
-* **Brightness level:** Toggle between **Dim** and **Bright** for any screen saver mode.
+* **Brightness level:** Toggle between **Dim** and **Bright** for any screen saver mode that draws at either. A web page that draws at one brightness has neither.
+* **Animation:** For a screen saver with several animations to pick from (its `saver.json` lists them as `choices`), a list under Brightness picks the one it shows. It stays picked when the brightness changes.
 * **Start screen saver:** Immediately requests the screen saver on the TV. On certain OLED TVs, including a G3 on webOS 9.2.2, LG's panel care holds the idle screen saver back for 30 minutes after key presses or app changes while dimming static areas itself. Glasshouse lifts that hold when an idle screen saver is requested or the button is pressed, and restores it once dismissed. An app that still refuses it, such as RetroArch played with a gamepad, is keeping the screen saver away itself, and is left alone until another app is in front or the TV turns off. Where the TV still refuses, as it does with LG's own Screen Saver setting off, which some LCD TVs have by default, the dashboard opens the screen saver itself, unless something is playing full screen or playback cannot be checked. Pressing any remote key, including Home or the coloured buttons, dismisses the screen saver.
 * **Poweroff after:** Automatically switches the TV into standby once the screen saver has been active for a configured duration, from 1 to 1440 minutes (blank or 0 disables it). The timer resets if the screen saver is dismissed. This requires power actions to be enabled (`allowPower`) and is stored in `config.json` as `screensaverPowerOffMinutes`.
 
@@ -109,6 +110,12 @@ A four-dimensional hypercube turning through the fourth dimension, rendered in f
 A live panel diagnostics dashboard on black, showing the TV's cumulative panel hours, short clean and refresher countdowns, processor silicon, Wi-Fi link quality, and remote battery. The card cluster periodically moves to protect the panel.
 
 ## Adding your own
+
+### An HTML page
+
+**Add an HTML screen saver**, the last row of the list, takes one web page from your computer: **Choose HTML file**, give it a name (the file's name until you type one), and **Add**. It becomes a screen saver on the TV, listed with the others and marked *Uploaded from the dashboard*, and is picked like any other. The page is shown full screen at 1920 × 1080 with a black background, and any key on the remote ends it. It has to hold everything it needs, scripts, styles and pictures included, up to 5 MB, as only that one file is sent. What it does past the screen, such as reaching the network, is noted under it. Like a QML screen saver, a page runs as LG's own screen saver app and can use the TV's services, so add only pages you trust. An uploaded one has **Remove** in its row once another screen saver is in use.
+
+### A folder
 
 A screen saver added on the TV is a folder in `/var/lib/tvweb/screensavers/`, named as you like within a few rules (lowercase letters, digits and `-`, up to 32 characters; see the format below), holding a `saver.json` that names and describes it, its QML, and anything else it uses. The tab lists it after Glasshouse's own, marked *Added on this TV* with its author and license, and a Glasshouse update leaves the folder alone. To add one, copy its folder there and open the tab:
 

@@ -10,6 +10,16 @@ A screen saver is a folder in `/var/lib/tvweb/screensavers/` on the TV holding
 a `saver.json` and some QML. It is QML, the language of Qt Quick, run by the
 TV's own screen saver app, so it can do what QML can.
 
+It can be a web page instead: `main` names an `.html` file, and the TV's web
+app manager runs the folder as a web app in the screen saver's window
+(tried on webOS 10). It runs as LG's own app, so its scripts can call the
+TV's services through `PalmServiceBridge`, as QML can through
+`LunaService`. The rest of this page is about QML; for a page, the
+folder rules, `uses` and the placeholders are the same, and the QML checks
+do not apply. A single page with everything inside it can also be added
+from the dashboard, with **Add an HTML screen saver** on the Screen savers
+tab, without a folder of your own.
+
 ## Start from the example
 
 Glasshouse installs one there itself, **Pigs - Three Different Ones**. On the
@@ -183,6 +193,8 @@ The reasons for each, with what was measured, are in the
 A screen saver names in `uses` what Glasshouse should fill in:
 
 * `level` - `__TVWEB_LEVEL__` becomes `0` at **Dim** and `1` at **Bright**.
+* `choice` - `__TVWEB_CHOICE__` becomes the value of the option picked from
+  the screen saver's `choices`, which the dashboard offers as a dropdown.
 
 Glasshouse's own can also ask for `stats`, the address of the TV's readings,
 which carries the dashboard's access token; one added on the TV is not given
@@ -238,7 +250,8 @@ A screen saver listed but greyed out shows the reason under it:
 | saver.json could not be read | Fix the JSON; the error says where. |
 | saver.json is in format ... | It was made for a newer Glasshouse; update Glasshouse. |
 | saver.json needs a name, a description and a version | Add the missing field. |
-| main must name a .qml file in the folder | `main` is a file name such as `main.qml`, in the folder itself. |
+| main must name a .qml or .html file in the folder | `main` is a file name such as `main.qml` or `index.html`, in the folder itself. |
+| choices needs options ... / choices and "choice" in uses go together | Give `choices` a `default` and `options`, each with `id`, `name` and `value`, and add `"choice"` to `uses`. |
 | uses has "..." / uses must be a list | `uses` is a list of `level`. |
 | It asks for the TV's readings | Take `stats` out of `uses`. |
 | It needs webOS ... or later | The TV is older than `requires.webos` allows. |

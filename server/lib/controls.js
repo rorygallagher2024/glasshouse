@@ -1068,15 +1068,22 @@ function doControl(action, value, cb) {
        * written into the same file, so setting one without the other would
        * quietly reset it.
        */
-      var ssMode = value, ssLevel = screensavers.screensaverLevel();
+      var ssMode = value, ssLevel = screensavers.screensaverLevel(), ssChoice;
       if (value && typeof value === 'object') {
         ssMode = value.mode;
         if (value.level) ssLevel = value.level;
+        if (typeof value.choice === 'string') ssChoice = value.choice;
       }
-      return screensavers.setScreensaver(String(ssMode || '').trim(), ssLevel, function (r) {
+      ssMode = String(ssMode || '').trim();
+      // The option in use stays with a change of level, as the level does with a change of option.
+      if (ssChoice === undefined && ssMode === screensavers.screensaverMode()) ssChoice = screensavers.screensaverChoice();
+      return screensavers.setScreensaver(ssMode, ssLevel, function (r) {
         telemetry.clearCache();
         cb(r);
-      });
+      }, ssChoice);
+
+    case 'screensaverRemove':
+      return screensavers.removeUploaded(value, cb);
 
     case 'screensaver':
       return screensavers.trigger(function (r) {

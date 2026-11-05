@@ -2248,6 +2248,18 @@ function handleRequest(req, res) {
     return;
   }
 
+  // An HTML page from the dashboard, added as a screen saver.
+  if (pathname === '/api/screensaver/upload' && req.method === 'POST') {
+    if (!config.allowControl && !fromTV(req)) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    if (!postGuard(req, res, 'text/html', false)) return;
+    return screensaversModule.uploadHtml(String(u.query && u.query.name || ''), String(u.query && u.query.file || ''), req, function (r) {
+      if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+      send(res, 200, JSON.stringify(r));
+    });
+  }
+
   if (pathname === '/api/control' && req.method === 'POST') {
     var ctype = String(req.headers['content-type'] || '').toLowerCase();
     if (ctype.indexOf('application/json') !== 0) {
