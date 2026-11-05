@@ -17,7 +17,8 @@ const HOME_ROWS = {
   app: () => t('home.row.apps', 'Apps'),
   dev: () => t('home.row.inputs', 'Inputs'),
   ch: () => t('home.row.channels', 'Channels'),
-  rec: () => t('home.row.recommended', 'Recommended')
+  rec: () => t('home.row.recommended', 'Recommended'),
+  iptv: () => t('home.row.iptv', 'Internet TV')
 };
 
 async function homeGet(path) {
@@ -57,6 +58,7 @@ async function loadHome(afterSave) {
     homeCat = cat;
     homeLayout = st.layout;
   } catch (e) { showErr(e.message); return; }
+  await homeTvLoad();
   setHomeAvailable(homeStatus);
   if (!homeAvailable && activeTab === 'home') return showTab('control');
   renderHome();
@@ -257,6 +259,7 @@ function renderHome() {
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
   renderHomeRows();
+  renderHomeTv();
   renderHomeRecents();
   renderHomeChannels();
   renderHomeWalls();
@@ -329,6 +332,12 @@ function homeCustomColours() {
 
 function homeItem(kind, id) {
   if (kind === 'app' && id === 'lg-home') return { title: t('home.lgHome', 'LG Home'), lg: true };
+  if (kind === 'iptv') {
+    const tv = (homeCat.iptv || []).find(x => x.id === id);
+    if (!tv) return null;
+    const showLogos = !homeLayout || homeLayout.showTvLogos !== false;
+    return { title: tv.name, icon: showLogos ? tv.logo : '', sub: tv.missing ? t('home.tv.gone', 'Not in the playlist any more') : tv.group };
+  }
   const list = kind === 'app' ? homeCat.apps : kind === 'dev' ? homeCat.devices : homeCat.channels;
   const it = list.find(x => x.id === id);
   if (!it) return null;
@@ -379,6 +388,7 @@ function renderHomeRows() {
           <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">↑</button>
           <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">↓</button>
           ${kind === 'app' ? homePlaceSelect(id, it, hidden, folded, usable) :
+            kind === 'iptv' ? `<button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeTvRemoveFromRow('${jsq(id)}')">${esc(t('home.ch.remove', 'Remove'))}</button>` :
             kind === 'ch' ? `<button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeToggleChannel('${jsq(id)}')">${esc(t('home.ch.remove', 'Remove'))}</button>` :
             renderToggle({ cls: hidden ? 'idle' : 'good', label: hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
               disabled: !usable, onclick: `homeToggleTile('${kind}', '${jsq(id)}')` })}
@@ -387,7 +397,7 @@ function renderHomeRows() {
     return `<details class="home-row" data-kind="${kind}"${open.includes(kind) ? ' open' : ''}>
       <summary><span class="prot-title">${esc(HOME_ROWS[kind]())}</span>
         ${rowMove}</summary>
-      <div class="prot-table">${homeSortRow(kind, usable)}${kind === 'dev' ? homeUnusedRow(usable) : ''}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
+      <div class="prot-table">${homeSortRow(kind, usable)}${kind === 'dev' ? homeUnusedRow(usable) : ''}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
       ${kind === 'ch' ? homeChannelPicker() : ''}
     </details>`;
   }).join('');
@@ -619,7 +629,7 @@ function homePreviewOption(field) {
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.
-const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec']];
+const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos']];
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });
