@@ -1046,6 +1046,8 @@ G3 in the UK.
   `channelNumber`, `channelName`, `Radio`, `skipped` and `Invisible`: 182
   terrestrial channels in London. `com.webos.service.iepg/getChannelList`
   answered with none.
+- On a 65SM8500PLA (webOS 4.10.1) with satellite channels tuned, the same
+  call took 3.6 s and answered with 4.6 MB through `luna-send -f`.
 - `com.webos.service.apiadapter/tv/openChannel { channelId }` tunes and
   brings Live TV to the front, from any app. Launching `com.webos.app.livetv`
   with `channelId` or `channelNumber` does not change the channel while Live
