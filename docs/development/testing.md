@@ -298,7 +298,8 @@ has not recorded one.
 `test-home-recent-apps.js` exercises the recent-app HTTP routes: refused and
 unconfirmed stops retain their cards for retry, unavailable running lists
 report failure, Close all stops web and native apps while preserving Home,
-unlisted apps and newer cards, and snapshots forbid caching. The browser
+unlisted apps and newer cards, and snapshots stay out of shared caches while an
+unchanged one keeps its address and is answered with a 304. The browser
 check covers held OK acting once on release, close errors above the panel,
 and Back or a Home relaunch cancelling a delayed panel reply.
 
