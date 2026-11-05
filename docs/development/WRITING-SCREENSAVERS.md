@@ -193,6 +193,8 @@ The reasons for each, with what was measured, are in the
 A screen saver names in `uses` what Glasshouse should fill in:
 
 * `level` - `__TVWEB_LEVEL__` becomes `0` at **Dim** and `1` at **Bright**.
+  An HTML one without it is shown in a frame with a black layer a third
+  opaque over it at **Dim**, so it needs nothing to be dimmed.
 * `choice` - `__TVWEB_CHOICE__` becomes the value of the option picked from
   the screen saver's `choices`, which the dashboard offers as a dropdown.
 

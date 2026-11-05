@@ -99,8 +99,19 @@ process.nextTick(function () {
     screensavers.setScreensaver('user-weblater', 'dim', checked(function (w) {
     assert.strictEqual(w.ok, true, w.error);
     assert.strictEqual(rereads, before + 1, 'sam read it again, though the type is the same');
-    assert.strictEqual(samMain, 'web/later.html', 'and holds the new page');
+    // It draws at one brightness, so it is shown in a frame under a dim layer.
+    assert.strictEqual(samMain, 'web/glasshouse-frame.html', 'and holds the new page');
+    var frame = env.files[path.join(STAGE, 'web', 'glasshouse-frame.html')];
+    assert.ok(frame.indexOf('<iframe src="later.html"') !== -1, 'its page in the frame');
+    assert.ok(/#dim\{[^}]*opacity:0\.35/.test(frame), 'under the dim layer');
+    assert.ok(env.files[path.join(STAGE, 'web', 'later.html')], 'its page staged beside it');
+    assert.strictEqual(screensavers.screensaverList().modes.filter(function (m) { return m.id === 'user-weblater'; })[0].fixedLevel, undefined, 'Dim and Bright offered');
     console.log('  ✓ moving between two web screen savers with differently named pages has sam read the manifest again');
+
+    screensavers.setScreensaver('user-weblater', 'bright', checked(function (lit) {
+    assert.strictEqual(lit.ok, true, lit.error);
+    assert.ok(/#dim\{[^}]*opacity:0\}/.test(env.files[path.join(STAGE, 'web', 'glasshouse-frame.html')]), 'no layer when bright');
+    console.log('  ✓ one that draws at one brightness is dimmed by a layer over its frame, and not when bright');
 
     screensavers.setScreensaver('clock', 'dim', checked(function (s) {
       assert.strictEqual(s.ok, true, s.error);
@@ -111,6 +122,7 @@ process.nextTick(function () {
       console.log('  ✓ switching to a QML one stages it as before');
       env.restore();
       console.log('ALL test-screensaver-web.js assertions passed!\n');
+    }));
     }));
     }));
   }));

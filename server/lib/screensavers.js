@@ -30,6 +30,14 @@ var SCREENSAVER_MARKER = '.tvweb-screensaver';
 var SCREENSAVER_LEVEL_MARKER = '.tvweb-brightness';
 // Where a web screen saver's folder is staged, beside the QML ones' qml folder.
 var WEB_DIR = 'web';
+/*
+ * A web screen saver that does not draw at a level of its own is shown in a
+ * frame of this page, under a black layer when dim: what it opens, a website
+ * included, stays in the frame and so under the layer. A third black, as the
+ * QML ones' dim ink is about two thirds of white.
+ */
+var DIM_FRAME = 'glasshouse-frame.html';
+var DIM_OPACITY = '0.35';
 // The option picked from a screen saver's choices, staged beside the level.
 var SCREENSAVER_CHOICE_MARKER = '.tvweb-choice';
 /*
@@ -631,8 +639,6 @@ function screensaverList() {
       // The app it comes from, where it is an installed app's.
       fromApp: e.fromApp ? e.appTitle : undefined,
       web: e.web || undefined,
-      // A web page that draws at one brightness has no Dim and Bright.
-      fixedLevel: e.web && e.uses.indexOf('level') === -1 ? true : undefined,
       // Uploaded from the dashboard, so it can be removed from there.
       uploaded: e.uploaded || undefined,
       // Options to pick from, and the one in use (or its default).
@@ -675,7 +681,7 @@ function stageScreensaverAppinfo(e) {
   try {
     var info = JSON.parse(stock);
     info.type = e && e.web ? 'web' : 'qml';
-    info.main = e && e.web ? WEB_DIR + '/' + e.main : 'qml/main.qml';
+    info.main = e && e.web ? WEB_DIR + '/' + (framed(e) ? DIM_FRAME : e.main) : 'qml/main.qml';
     out = JSON.stringify(info, null, 2);
   } catch (e) {
     console.error('screensaver: stock appinfo.json did not parse, staging it unchanged: ' + e.message);
@@ -763,9 +769,22 @@ function stageSaverFiles(e, level, choice) {
     fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
   fs.writeFileSync(stagedMain(e), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice));
+  if (framed(e)) fs.writeFileSync(path.join(SCREENSAVER_DIR, WEB_DIR, DIM_FRAME), framePage(e, level));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), level === 'bright' ? 'bright' : 'dim');
   if (e.choices) fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER), choice);
   else unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
+}
+
+function framed(e) { return !!(e && e.web && e.uses.indexOf('level') === -1); }
+
+function framePage(e, level) {
+  var src = e.main.split('/').map(encodeURIComponent).join('/');
+  return '<!DOCTYPE html>\n<html><head><meta charset="utf-8"><title>Screen Saver</title><style>' +
+    'html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}' +
+    'iframe{position:fixed;top:0;left:0;width:100%;height:100%;border:0}' +
+    '#dim{position:fixed;top:0;left:0;width:100%;height:100%;background:#000;pointer-events:none;opacity:' +
+    (level === 'bright' ? '0' : DIM_OPACITY) + '}' +
+    '</style></head><body><iframe src="' + src + '" allow="autoplay; fullscreen; microphone"></iframe><div id="dim"></div></body></html>\n';
 }
 
 function stagedMain(e) {

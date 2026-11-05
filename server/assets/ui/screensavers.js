@@ -98,8 +98,7 @@ async function loadScreensavers() {
   /* LG's own screen saver is not ours to draw, so brightness is offered only
      for the ones that are. */
   // An installed app's has its own settings, so no brightness from here either.
-  // Nor for a web page that draws at one brightness.
-  const ours = d.current !== 'stock' && !d.modes.some(m => m.active && (m.fromApp || m.fixedLevel));
+  const ours = d.current !== 'stock' && !d.modes.some(m => m.active && m.fromApp);
   q('ss-level-row').hidden = !ours;
   if (ours) {
     q('ss-level').innerHTML = [['dim', t('ss.dim', 'Dim')], ['bright', t('ss.bright', 'Bright')]].map(([id, label]) =>
