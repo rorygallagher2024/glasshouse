@@ -2479,8 +2479,6 @@
  "srv.btaudio.pending": {"text": "az előző csatlakozási kérés még nincs megerősítve; várj, és frissíts, mielőtt újra próbálod", "from": "the previous connection request is not confirmed yet; wait and refresh before trying again"},
  "srv.btaudio.readFailed": {"text": "a TV nem jelentette a párosított Bluetooth-audioeszközeit", "from": "the TV did not report its paired Bluetooth audio devices"},
  "srv.btaudio.refused": {"text": "a TV elutasította a kérést: {error}", "from": "the TV refused the request: {error}"},
- "adv.localLookups": {"text": "Eszközkeresések megválaszolása a TV-n", "from": "Answer device scans on the TV"},
- "adv.localLookups.desc": {"text": "Az LG eszközfelismerése a routertől kéri az otthoni hálózat minden címének nevét: valahányszor a TV Home Hubja eszközöket keres, és egyes TV-ken 5 percenként, kikapcsolt automatikus eszközfelismerés mellett is. Egy hálózati reklámszűrő, például a Pi-hole, ezeket kérések százaiként mutatja. Bekapcsolva a TV maga válaszol rájuk, így nem jutnak ki a hálózatodra. Semmi nem változik abban, amit a TV mutat.", "from": "LG's device detection asks your router for the name of every address on your home network: whenever the TV's Home Hub looks for devices, and on some TVs every 5 minutes, even with Auto device detection off. A network-wide ad blocker such as Pi-hole shows them as hundreds of requests. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
  "apps.home.banner": {"text": "Bannerkép", "from": "Banner picture"},
  "apps.home.banner.black": {"text": "Fekete", "from": "Black"},
  "apps.home.banner.desc": {"text": "A kezdőképernyő tetején lévő kép: az LG-é, egyszerű fekete vagy saját kép. A saját kép a banner jelenlegi alakjára lesz vágva, ezért a nem kívánt sorok elrejtése után válassza ki.", "from": "The picture across the top of the Home screen: LG’s, plain black, or your own. Your own is cropped to the banner’s shape as it is now, so choose it after hiding the rows you want gone."},
@@ -2552,7 +2550,6 @@
  "srv.home.bannerUploading": {"text": "Várd meg, amíg a kép feltöltése befejeződik.", "from": "Wait for the picture to finish uploading."},
  "srv.home.noOwnBanner": {"text": "Előbb tölts fel egy képet", "from": "Upload a picture first"},
  "srv.home.unknownBanner": {"text": "Nincs ilyen bannerkép", "from": "There is no such banner picture"},
- "srv.localLookups.saveFailed": {"text": "nem sikerült menteni a beállítást: {error}", "from": "could not save the setting: {error}"},
  "srv.remoteKeys.powerOff": {"text": "Kikapcsolás", "from": "Power off"},
  "tv.audio.confirm": {"text": "Nyomja meg újra az OK gombot a kísérleti DTS-továbbítás bekapcsolásához", "from": "Press OK again to enable experimental DTS forwarding"},
  "tv.audio.disable": {"text": "Nyomja meg az OK gombot a felülbírálás kikapcsolásához", "from": "Press OK to disable the override"},
@@ -2561,7 +2558,6 @@
  "tv.audio.forwarding": {"text": "DTS-továbbítás", "from": "DTS forwarding"},
  "tv.audio.readOnly": {"text": "A TV vezérlése ki van kapcsolva a szerver beállításaiban.", "from": "TV controls are disabled in the server configuration."},
  "tv.home.darkening.press": {"text": "Nyomja meg az OK gombot: {value}", "from": "Press OK for {value}"},
- "tv.options.localLookups.hint": {"text": "Az LG eszközfelismerése a routertől kéri az otthoni hálózat minden címének nevét, egyes TV-ken 5 percenként. Bekapcsolva a TV maga válaszol rájuk, így nem jutnak ki a hálózatodra. Semmi nem változik abban, amit a TV mutat.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
  "home.group.start": {"text": "Indításkor", "from": "Starting up"},
  "home.group.layout": {"text": "Elrendezés", "from": "Layout"},
  "home.group.shown": {"text": "A Home-on látható", "from": "Shown on Home"},
@@ -2590,5 +2586,11 @@
  "server.ntp.notTaken": {"text": "A TV nem veszi át az időt a szervertől, így az órája még mindig {out} eltérést mutat. A Glasshouse óránként újrapróbálja.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
  "server.ntp.outS": {"text": "{s} mp", "from": "{s} s"},
  "server.ntp.outM": {"text": "{m} perc", "from": "{m} min"},
- "server.ntp.outHM": {"text": "{h} óra {m} perc", "from": "{h} h {m} min"}
+ "server.ntp.outHM": {"text": "{h} óra {m} perc", "from": "{h} h {m} min"},
+ "srv.service.badge.network": {"text": "Hálózat", "from": "Network"},
+ "srv.service.iconnectivity": {"text": "Hálózati eszközkeresés", "from": "Network Device Scans"},
+ "srv.service.iconnectivity.desc": {"text": "Az otthoni hálózat minden címét lekérdezi, hogy eszközöket találjon a Home Hub és az LG eszközbeállítása számára. Kikapcsolva nem találnak új eszközt.", "from": "Looks up every address on the home network to find devices for the Home Hub and LG's device setup. Off, they find no new devices."},
+ "srv.service.iotframework": {"text": "Okosotthon-eszközök lekérdezése", "from": "Smart Home Device Polling"},
+ "srv.service.iotframework.desc": {"text": "5 percenként kéri az otthoni hálózat átvizsgálását a Home Hub okosotthon-eszközeihez. Kikapcsolva a Home Hub talán nem mutatja őket.", "from": "Asks for a scan of the home network every 5 minutes, for the Home Hub's smart home devices. Off, the Home Hub may not show them."},
+ "srv.service.stubFailed": {"text": "A TV nem engedte a változtatást", "from": "The TV did not allow the change"}
 }

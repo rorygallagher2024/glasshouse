@@ -535,7 +535,7 @@ lgSettings.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaC
 audioCapabilities.init({ luna: luna, lunaCached: lunaCached, clearLunaCache: clearLunaCache, hdmiReceiverMap: telemetry.hdmiReceiverMap });
 btAudio.init({ luna: luna, clearLunaCache: clearLunaCache });
 game.init({ lunaCached: lunaCached, inputKey: telemetry.inputKey });
-privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule, watchNetwork: true });
+privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: lgSettings, services: servicesModule });
 oled.init({ luna: luna, config: CONFIG });
 samrescan.init({ luna: luna });
 appsModule.init({ luna: luna, config: CONFIG });
@@ -818,8 +818,10 @@ function checkHomebrewChannelApp() {
       remoteKeys.restore(function (keys) {
         if (!keys) return console.error('uninstall: remote key restore failed; server kept for retry');
         forgetHomeAssistant(function () {
+          // A stub stays mounted over LG's program, even with its file deleted, until unmounted.
+          var unstub = servicesModule.stubTargets().map(function (t) { return 'umount ' + JSON.stringify(t) + ' 2>/dev/null; '; }).join('');
           child_process.spawn('/bin/sh', ['-c',
-            '/var/lib/tvweb/tvwebctl stop >/dev/null 2>&1; ' +
+            '/var/lib/tvweb/tvwebctl stop >/dev/null 2>&1; ' + unstub +
             'rm -rf /var/lib/tvweb /media/developer/temp/glasshouse-install; ' +
             'PATH=/usr/sbin:/sbin:$PATH; iptables -D ' + rule + ' 2>/dev/null; ip6tables -D ' + rule + ' 2>/dev/null; ' +
             'cd /var/lib/webosbrew/init.d && rm -f 50-tvweb 20-services.sh 20-tvweb-services; ' +

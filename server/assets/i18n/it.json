@@ -2490,8 +2490,6 @@
  "srv.btaudio.pending": {"text": "la richiesta di connessione precedente non è ancora confermata; attendi e aggiorna prima di riprovare", "from": "the previous connection request is not confirmed yet; wait and refresh before trying again"},
  "srv.btaudio.readFailed": {"text": "la TV non ha indicato i suoi dispositivi audio Bluetooth associati", "from": "the TV did not report its paired Bluetooth audio devices"},
  "srv.btaudio.refused": {"text": "la TV ha rifiutato la richiesta: {error}", "from": "the TV refused the request: {error}"},
- "adv.localLookups": {"text": "Rispondi sulla TV alle ricerche di dispositivi", "from": "Answer device scans on the TV"},
- "adv.localLookups.desc": {"text": "Il rilevamento dispositivi di LG chiede al router il nome di ogni indirizzo della rete domestica: ogni volta che l’Home Hub della TV cerca dispositivi e, su alcune TV, ogni 5 minuti, anche con il rilevamento automatico dei dispositivi disattivato. Un blocco pubblicità di rete come Pi-hole le mostra come centinaia di richieste. Attivandolo, la TV risponde da sola, così restano fuori dalla tua rete. Nulla di ciò che la TV mostra cambia.", "from": "LG's device detection asks your router for the name of every address on your home network: whenever the TV's Home Hub looks for devices, and on some TVs every 5 minutes, even with Auto device detection off. A network-wide ad blocker such as Pi-hole shows them as hundreds of requests. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
  "apps.home.banner": {"text": "Immagine del banner", "from": "Banner picture"},
  "apps.home.banner.black": {"text": "Nero", "from": "Black"},
  "apps.home.banner.desc": {"text": "L’immagine in cima alla schermata Home: quella di LG, nero pieno o una tua. La tua viene ritagliata sulla forma attuale del banner, quindi sceglila dopo aver nascosto le righe che non vuoi.", "from": "The picture across the top of the Home screen: LG’s, plain black, or your own. Your own is cropped to the banner’s shape as it is now, so choose it after hiding the rows you want gone."},
@@ -2552,7 +2550,6 @@
  "srv.home.bannerUploading": {"text": "Attendi che l’immagine finisca di caricarsi.", "from": "Wait for the picture to finish uploading."},
  "srv.home.noOwnBanner": {"text": "Carica prima un’immagine", "from": "Upload a picture first"},
  "srv.home.unknownBanner": {"text": "Questa immagine del banner non esiste", "from": "There is no such banner picture"},
- "srv.localLookups.saveFailed": {"text": "impossibile salvare l’impostazione: {error}", "from": "could not save the setting: {error}"},
  "srv.remoteKeys.powerOff": {"text": "Spegni", "from": "Power off"},
  "tv.audio.confirm": {"text": "Premi di nuovo OK per attivare l’inoltro DTS sperimentale", "from": "Press OK again to enable experimental DTS forwarding"},
  "tv.audio.disable": {"text": "Premi OK per disattivare l’override", "from": "Press OK to disable the override"},
@@ -2561,7 +2558,6 @@
  "tv.audio.forwarding": {"text": "Inoltro DTS", "from": "DTS forwarding"},
  "tv.audio.readOnly": {"text": "I controlli della TV sono disattivati nella configurazione del server.", "from": "TV controls are disabled in the server configuration."},
  "tv.home.darkening.press": {"text": "Premi OK per {value}", "from": "Press OK for {value}"},
- "tv.options.localLookups.hint": {"text": "Il rilevamento dispositivi di LG chiede al router il nome di ogni indirizzo della rete domestica, su alcune TV ogni 5 minuti. Attivandolo, la TV risponde da sola, così restano fuori dalla tua rete. Nulla di ciò che la TV mostra cambia.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
  "home.group.start": {"text": "All’avvio", "from": "Starting up"},
  "home.group.layout": {"text": "Layout", "from": "Layout"},
  "home.group.shown": {"text": "Mostrato in Home", "from": "Shown on Home"},
@@ -2590,5 +2586,11 @@
  "server.ntp.notTaken": {"text": "La TV non sta prendendo l’ora dal server, quindi il suo orologio è ancora sfasato di {out}. Glasshouse riprova ogni ora.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
  "server.ntp.outS": {"text": "{s} s", "from": "{s} s"},
  "server.ntp.outM": {"text": "{m} min", "from": "{m} min"},
- "server.ntp.outHM": {"text": "{h} h {m} min", "from": "{h} h {m} min"}
+ "server.ntp.outHM": {"text": "{h} h {m} min", "from": "{h} h {m} min"},
+ "srv.service.badge.network": {"text": "Rete", "from": "Network"},
+ "srv.service.iconnectivity": {"text": "Ricerca dispositivi in rete", "from": "Network Device Scans"},
+ "srv.service.iconnectivity.desc": {"text": "Interroga ogni indirizzo della rete domestica per trovare dispositivi per l'Home Hub e la configurazione dei dispositivi di LG. Disattivato, non trovano nuovi dispositivi.", "from": "Looks up every address on the home network to find devices for the Home Hub and LG's device setup. Off, they find no new devices."},
+ "srv.service.iotframework": {"text": "Interrogazione dei dispositivi smart home", "from": "Smart Home Device Polling"},
+ "srv.service.iotframework.desc": {"text": "Chiede una scansione della rete domestica ogni 5 minuti per i dispositivi smart home dell'Home Hub. Disattivato, l'Home Hub potrebbe non mostrarli.", "from": "Asks for a scan of the home network every 5 minutes, for the Home Hub's smart home devices. Off, the Home Hub may not show them."},
+ "srv.service.stubFailed": {"text": "La TV non ha consentito la modifica", "from": "The TV did not allow the change"}
 }

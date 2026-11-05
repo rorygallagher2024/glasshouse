@@ -2408,8 +2408,6 @@
  "adv.homeAutoLaunch.desc": {"text": "Abre la pantalla de inicio al encender la TV, en lugar de quedarse en la última entrada. LG lo llama Home Auto Launch.", "from": "Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch."},
  "adv.huesync": {"text": "Transmisión de Hue Sync", "from": "Hue Sync streaming"},
  "adv.huesync.desc": {"text": "Inicia y detiene la transmisión de color que la app Hue Sync envía a una luz Philips Ambience. Desactivado detiene la transmisión y, con ella, la luz.", "from": "Starts and stops the colour stream the Hue Sync app sends to a Philips Ambience light. Off stops the stream, and the light with it."},
- "adv.localLookups": {"text": "Responder en la TV a las búsquedas de dispositivos", "from": "Answer device scans on the TV"},
- "adv.localLookups.desc": {"text": "La detección de dispositivos de LG pide al router el nombre de cada dirección de tu red doméstica: cada vez que el Home Hub de la TV busca dispositivos y, en algunas TV, cada 5 minutos, incluso con la detección automática de dispositivos desactivada. Un bloqueador de anuncios para toda la red, como Pi-hole, las muestra como cientos de solicitudes. Activado, la TV las responde ella misma, así que no salen a tu red. Nada de lo que muestra la TV cambia.", "from": "LG's device detection asks your router for the name of every address on your home network: whenever the TV's Home Hub looks for devices, and on some TVs every 5 minutes, even with Auto device detection off. A network-wide ad blocker such as Pi-hole shows them as hundreds of requests. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
  "apps.home.banner": {"text": "Imagen del banner", "from": "Banner picture"},
  "apps.home.banner.black": {"text": "Negro", "from": "Black"},
  "apps.home.banner.desc": {"text": "La imagen de la parte superior de la pantalla de inicio: la de LG, negro liso o una tuya. La tuya se recorta a la forma que tiene ahora el banner, así que elígela después de ocultar las filas que no quieras.", "from": "The picture across the top of the Home screen: LG’s, plain black, or your own. Your own is cropped to the banner’s shape as it is now, so choose it after hiding the rows you want gone."},
@@ -2525,7 +2523,6 @@
  "srv.huesync.didnotstart": {"text": "Hue Sync no empezó a transmitir", "from": "Hue Sync did not start streaming"},
  "srv.huesync.refused": {"text": "Hue Sync rechazó la solicitud", "from": "Hue Sync refused the request"},
  "srv.huesync.unavailable": {"text": "Hue Sync no está disponible", "from": "Hue Sync is not available"},
- "srv.localLookups.saveFailed": {"text": "no se pudo guardar el ajuste: {error}", "from": "could not save the setting: {error}"},
  "srv.remoteKeys.powerOff": {"text": "Apagar", "from": "Power off"},
  "srv.saver.badFolder": {"text": "El nombre de su carpeta, \"{name}\", solo puede tener letras minúsculas, dígitos y -, empezar por una letra o un dígito y tener hasta 32 caracteres.", "from": "Its folder name, \"{name}\", can only have lowercase letters, digits and -, starting with a letter or digit, up to 32 characters."},
  "srv.saver.badMain": {"text": "{file}: main debe indicar un archivo .qml de la carpeta.", "from": "{file}: main must name a .qml file in the folder."},
@@ -2560,7 +2557,6 @@
  "tv.home.darkening.press": {"text": "Pulsa OK para {value}", "from": "Press OK for {value}"},
  "tv.home.searchBlockedLevel": {"text": "El ajuste Todo del bloqueador de anuncios bloquea {host}, que la búsqueda de LG necesita. Pon Bloqueo en Anuncios y telemetría o desactívalo en Privacidad para usar la búsqueda.", "from": "The ad blocker’s Everything setting blocks {host}, which LG’s search needs. Set Blocking to Ads & telemetry or off in Privacy to use search."},
  "tv.home.searchBlockedList": {"text": "La lista de hosts del bloqueador de anuncios bloquea {host}, que la búsqueda de LG necesita. Quítalo de la lista en la pestaña Privacidad del panel web para usar la búsqueda.", "from": "The ad blocker’s hosts list blocks {host}, which LG’s search needs. Take it out of the list on the web dashboard’s Privacy tab to use search."},
- "tv.options.localLookups.hint": {"text": "La detección de dispositivos de LG pide al router el nombre de cada dirección de tu red doméstica, en algunas TV cada 5 minutos. Activado, la TV las responde ella misma, así que no salen a tu red. Nada de lo que muestra la TV cambia.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
  "tv.privacy.everything.search": {"text": "Donde bloquea la búsqueda de LG, la búsqueda de Glasshouse Home se oculta.", "from": "Where it blocks LG’s search, Glasshouse Home’s search is hidden."},
  "home.group.start": {"text": "Al encender", "from": "Starting up"},
  "home.group.layout": {"text": "Diseño", "from": "Layout"},
@@ -2590,5 +2586,11 @@
  "server.ntp.notTaken": {"text": "La TV no está tomando la hora del servidor, así que su reloj sigue desfasado {out}. Glasshouse lo vuelve a intentar cada hora.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
  "server.ntp.outS": {"text": "{s} s", "from": "{s} s"},
  "server.ntp.outM": {"text": "{m} min", "from": "{m} min"},
- "server.ntp.outHM": {"text": "{h} h {m} min", "from": "{h} h {m} min"}
+ "server.ntp.outHM": {"text": "{h} h {m} min", "from": "{h} h {m} min"},
+ "srv.service.badge.network": {"text": "Red", "from": "Network"},
+ "srv.service.iconnectivity": {"text": "Búsqueda de dispositivos en la red", "from": "Network Device Scans"},
+ "srv.service.iconnectivity.desc": {"text": "Consulta cada dirección de la red doméstica para encontrar dispositivos para el Home Hub y la configuración de dispositivos de LG. Desactivado, no encuentran dispositivos nuevos.", "from": "Looks up every address on the home network to find devices for the Home Hub and LG's device setup. Off, they find no new devices."},
+ "srv.service.iotframework": {"text": "Sondeo de dispositivos del hogar inteligente", "from": "Smart Home Device Polling"},
+ "srv.service.iotframework.desc": {"text": "Pide una búsqueda en la red doméstica cada 5 minutos para los dispositivos del hogar inteligente del Home Hub. Desactivado, puede que el Home Hub no los muestre.", "from": "Asks for a scan of the home network every 5 minutes, for the Home Hub's smart home devices. Off, the Home Hub may not show them."},
+ "srv.service.stubFailed": {"text": "La TV no permitió el cambio", "from": "The TV did not allow the change"}
 }

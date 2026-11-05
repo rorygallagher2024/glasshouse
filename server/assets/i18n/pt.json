@@ -2412,8 +2412,6 @@
  "srv.remoteKeys.homeAssistant": {"text": "Home Assistant", "from": "Home Assistant"},
  "apps.remoteKeys.toHomeAssistant": {"text": "Para o Home Assistant", "from": "To Home Assistant"},
  "srv.remoteKeys.notReported": {"text": "O Home Assistant não recebe os toques nesta tecla", "from": "Home Assistant does not receive this key's presses"},
- "adv.localLookups": {"text": "Responder na TV às pesquisas de dispositivos", "from": "Answer device scans on the TV"},
- "adv.localLookups.desc": {"text": "A deteção de dispositivos da LG pede ao router o nome de cada endereço da sua rede doméstica: sempre que o Home Hub da TV procura dispositivos e, em algumas TV, a cada 5 minutos, mesmo com a deteção automática de dispositivos desligada. Um bloqueador de anúncios para toda a rede, como o Pi-hole, mostra-as como centenas de pedidos. Ligado, a TV responde-lhes ela própria, por isso não saem para a sua rede. Nada do que a TV mostra muda.", "from": "LG's device detection asks your router for the name of every address on your home network: whenever the TV's Home Hub looks for devices, and on some TVs every 5 minutes, even with Auto device detection off. A network-wide ad blocker such as Pi-hole shows them as hundreds of requests. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
  "apps.home.banner": {"text": "Imagem do banner", "from": "Banner picture"},
  "apps.home.banner.black": {"text": "Preto", "from": "Black"},
  "apps.home.banner.desc": {"text": "A imagem no topo do ecrã inicial: a da LG, preto liso ou uma sua. A sua é recortada na forma que o banner tem agora, por isso escolha-a depois de ocultar as filas que não quer.", "from": "The picture across the top of the Home screen: LG’s, plain black, or your own. Your own is cropped to the banner’s shape as it is now, so choose it after hiding the rows you want gone."},
@@ -2543,7 +2541,6 @@
  "srv.home.bannerUploading": {"text": "Aguarde que a imagem acabe de carregar.", "from": "Wait for the picture to finish uploading."},
  "srv.home.noOwnBanner": {"text": "Carregue primeiro uma imagem", "from": "Upload a picture first"},
  "srv.home.unknownBanner": {"text": "Essa imagem do banner não existe", "from": "There is no such banner picture"},
- "srv.localLookups.saveFailed": {"text": "não foi possível guardar a definição: {error}", "from": "could not save the setting: {error}"},
  "srv.remoteKeys.powerOff": {"text": "Desligar", "from": "Power off"},
  "srv.typing.keyRefused": {"text": "a TV não aceitou o toque de tecla", "from": "the TV did not take the key press"},
  "srv.typing.keysTooLong": {"text": "no máximo {max} toques de teclas de cada vez", "from": "at most {max} key presses at a time"},
@@ -2561,7 +2558,6 @@
  "tv.audio.forwarding": {"text": "Reencaminhamento DTS", "from": "DTS forwarding"},
  "tv.audio.readOnly": {"text": "Os controlos da TV estão desativados na configuração do servidor.", "from": "TV controls are disabled in the server configuration."},
  "tv.home.darkening.press": {"text": "Prima OK para {value}", "from": "Press OK for {value}"},
- "tv.options.localLookups.hint": {"text": "A deteção de dispositivos da LG pede ao router o nome de cada endereço da sua rede doméstica, em algumas TV a cada 5 minutos. Ligado, a TV responde-lhes ela própria, por isso não saem para a sua rede. Nada do que a TV mostra muda.", "from": "LG’s device detection asks your router for the name of every address on your home network, on some TVs every 5 minutes. Switched on, the TV answers them itself, so they stay off your network. Nothing the TV shows changes."},
  "home.group.start": {"text": "Ao ligar", "from": "Starting up"},
  "home.group.layout": {"text": "Disposição", "from": "Layout"},
  "home.group.shown": {"text": "Mostrado no Home", "from": "Shown on Home"},
@@ -2590,5 +2586,11 @@
  "server.ntp.notTaken": {"text": "A TV não está a aceitar a hora do servidor, por isso o relógio continua desfasado {out}. O Glasshouse tenta de novo a cada hora.", "from": "The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour."},
  "server.ntp.outS": {"text": "{s} s", "from": "{s} s"},
  "server.ntp.outM": {"text": "{m} min", "from": "{m} min"},
- "server.ntp.outHM": {"text": "{h} h {m} min", "from": "{h} h {m} min"}
+ "server.ntp.outHM": {"text": "{h} h {m} min", "from": "{h} h {m} min"},
+ "srv.service.badge.network": {"text": "Rede", "from": "Network"},
+ "srv.service.iconnectivity": {"text": "Pesquisa de dispositivos na rede", "from": "Network Device Scans"},
+ "srv.service.iconnectivity.desc": {"text": "Consulta cada endereço da rede doméstica para encontrar dispositivos para o Home Hub e a configuração de dispositivos da LG. Desligado, não encontram dispositivos novos.", "from": "Looks up every address on the home network to find devices for the Home Hub and LG's device setup. Off, they find no new devices."},
+ "srv.service.iotframework": {"text": "Consulta de dispositivos da casa inteligente", "from": "Smart Home Device Polling"},
+ "srv.service.iotframework.desc": {"text": "Pede uma pesquisa da rede doméstica a cada 5 minutos para os dispositivos da casa inteligente do Home Hub. Desligado, o Home Hub pode não os mostrar.", "from": "Asks for a scan of the home network every 5 minutes, for the Home Hub's smart home devices. Off, the Home Hub may not show them."},
+ "srv.service.stubFailed": {"text": "A TV não permitiu a alteração", "from": "The TV did not allow the change"}
 }
