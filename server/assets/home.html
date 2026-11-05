@@ -773,8 +773,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var x = new XMLHttpRequest();
     x.open(method, url, true);
     // Search waits ten seconds server-side; a series launch can need three
-    // detail reads before opening the app.
-    x.timeout = url === '/api/home/search' ? 12000 : url === '/api/home/search/open' ? 20000 : 8000;
+    // detail reads before opening the app, and a DRM check two playlist reads.
+    x.timeout = url === '/api/home/search' ? 12000 : url === '/api/home/search/open' || url === '/api/iptv/check' ? 20000 : 8000;
     if (body !== null) x.setRequestHeader('Content-Type', 'application/json');
     x.onload = function () {
       var j = null;
@@ -1804,7 +1804,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!layout || layout.livePreview !== true || document.hidden || opening) return null;
     if (guide.open) {
       var gi = guide.list[guide.row];
-      return gi ? { key: 'tv' + gi.id, row: 'iptv', item: gi, port: 0, tv: true } : null;
+      // As on the row: a channel that cannot play is not previewed.
+      return gi && playable(gi) ? { key: 'tv' + gi.id, row: 'iptv', item: gi, port: 0, tv: true } : null;
     }
     if (state.arranging || recents.open || finder.open || folder.open || adder.open) {
       tilePreview.opened = null;
@@ -2372,6 +2373,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       releaseVideo();
       tvStream.item = it;
       if (cb) cb('stopped');
+      checkProtected(it);
       return;
     }
     tvStream.retried = true;
@@ -2531,6 +2533,23 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         hasAccount ? t('home.tv.tryAgain', 'OK tries again. If someone else is watching on this account, it may allow only one stream.') : t('home.tv.tryAgainPlain', 'OK tries again.'));
       showBand(true);
     }
+  }
+
+  /*
+   * A channel that would not play may carry DRM its playlist does not
+   * declare: the server reads its stream's playlists once, and marks it in
+   * the lineup if so. Asked once a visit for each channel.
+   */
+  var protectedAsked = {};
+  function checkProtected(it) {
+    if (!it || !it.pl || !it.key || protectedAsked[it.id]) return;
+    protectedAsked[it.id] = true;
+    postJson('/api/iptv/check', { pl: it.pl, key: it.key }, function (r) {
+      if (!r || r.protected !== true) return;
+      it.unplayable = 'drm';
+      if (player.open && player.failed && tvStream.item === it) renderPmsg(t('home.tv.drm', 'Protected (DRM): can’t play here'), '');
+      if (guide.open) renderGuide();
+    });
   }
 
   function renderPmsg(title, detail) {
@@ -2951,7 +2970,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('srcKind').textContent = p && p.start <= Date.now() && Date.now() < p.end ? t('home.tv.onNow', 'On now') : t('home.tv.guide', 'Guide');
     $('srcTitle').textContent = p ? p.title : it ? it.name : ' ';
     $('srcVia').textContent = it ? (p ? t('home.tv.guideVia', '{name}, {from} to {to}', { name: it.name, from: hm(new Date(p.start)), to: hm(new Date(p.end)) })
-      : t('home.tv.guideNone', 'No guide for these hours')) : ' ';
+      : tvUnplayable(it) || t('home.tv.guideNone', 'No guide for these hours')) : ' ';
     $('srcDesc').textContent = p ? p.desc : '';
   }
 

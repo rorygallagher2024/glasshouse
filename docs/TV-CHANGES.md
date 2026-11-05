@@ -196,7 +196,8 @@ and, when update checks are switched on, to GitHub's releases API. Update checks
 With an IPTV playlist added on the Home tab, the server also connects to that
 provider: to read the playlist each night and its guide every six hours, the
 added channels' logos, and the stream of a channel while Glasshouse Home
-plays it.
+plays it. When a channel won't play, the server reads that stream's playlist,
+and its first variant's, once an hour at most, to see whether it is protected.
 
 With **Share app icons** on in the MQTT tab (`iconServer` in `config.json`), port 8082 (the dashboard's
 port plus two) answers on the whole network, dual-stack like the dashboard,

@@ -33,6 +33,22 @@ var provider = http.createServer(function (req, res) {
   var u = req.url;
   hits[u.split('?')[0]] = (hits[u.split('?')[0]] || 0) + 1;
   var base = 'http://127.0.0.1:' + provider.address().port;
+  // FairPlay named only in the variant's playlist, as RTÉ's channels had it.
+  if (u === '/locked.m3u') {
+    res.writeHead(200);
+    return res.end('#EXTM3U\n#EXTINF:-1 group-title="Locked",Locked One\n' + base + '/locked/master.m3u8\n' +
+      '#EXTINF:-1 group-title="Locked",Open One\n' + base + '/open/master.m3u8\n');
+  }
+  if (/^\/(locked|open)\/master\.m3u8$/.test(u)) {
+    res.writeHead(200);
+    return res.end('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=2000000\nvideo.m3u8?w=30\n');
+  }
+  if (/^\/(locked|open)\/video\.m3u8/.test(u)) {
+    res.writeHead(200);
+    return res.end('#EXTM3U\n#EXT-X-TARGETDURATION:4\n' + (u.indexOf('/locked/') === 0 ?
+      '#EXT-X-KEY:METHOD=SAMPLE-AES,URI="skd://1234",KEYFORMAT="com.apple.streamingkeydelivery",KEYFORMATVERSIONS="1"\n' :
+      '#EXT-X-KEY:METHOD=AES-128,URI="key.bin"\n') + '#EXTINF:4,\n1.ts\n');
+  }
   if (/^\/list\.m3u/.test(u)) {
     if (mode === '500') { res.writeHead(500); return res.end('no'); }
     if (mode === '401') { res.writeHead(401); return res.end('no'); }
@@ -502,6 +518,37 @@ step('a full 2,000-channel lineup reaches the worker and publishes every play li
               assert.equal(removed.ok, true);
               mode = 'ok';
               done();
+            });
+          });
+        });
+      }, 200);
+    });
+  });
+});
+
+step('a channel with DRM its playlist does not declare is found after it fails, and marked in the lineup', function (done) {
+  iptv.playlistsAction({ action: 'add', kind: 'm3u', url: base + '/locked.m3u' }, function (r) {
+    assert.equal(r.ok, true);
+    var pl = r.id;
+    wait(function () { return playlistOf(pl).ready && idle(); }, function () {
+      iptv.browse(pl, 'Locked', 0, function (b) {
+        iptv.setLineup({ action: 'add', channels: b.channels }, function (added) {
+          assert.equal(added.ok, true);
+          wait(idle, function () {
+            var byName = {};
+            iptv.lineup().channels.filter(function (c) { return c.pl === pl; }).forEach(function (c) { byName[c.name] = c; });
+            var locked = byName['Locked One'], open = byName['Open One'];
+            assert.ok(iptv.streamUrl(pl, locked.key), 'nothing is known before it fails');
+            iptv.checkStream(pl, open.key, function (o) {
+              assert.deepEqual([o.ok, o.protected], [true, false], 'AES-128 with a plain key plays');
+              iptv.checkStream(pl, locked.key, function (l) {
+                assert.deepEqual([l.ok, l.protected], [true, true], 'FairPlay in the variant is found');
+                var now = iptv.lineup().channels.filter(function (c) { return c.key === locked.key && c.pl === pl; })[0];
+                assert.equal(now.unplayable, 'drm', 'the lineup marks it');
+                assert.equal(iptv.streamUrl(pl, locked.key), null, 'and its link is no longer given out');
+                assert.deepEqual(JSON.parse(fs.readFileSync(path.join(stateDir, 'iptv', pl, 'protected.json'), 'utf8')), [locked.key]);
+                iptv.playlistsAction({ action: 'remove', id: pl }, function () { done(); });
+              });
             });
           });
         });
