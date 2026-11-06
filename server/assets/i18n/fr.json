@@ -23,9 +23,17 @@
   "from": "Auto device detection",
   "text": "Détection auto des appareils"
  },
- "adv.deviceDetection.desc": {
-  "from": "Lets the TV find devices at home that it can show on its Home Dashboard and control: a set-top box on an HDMI input, and smart lights, plugs and switches on your network. On newer TVs it looks up every address on your home network each time the TV switches on, which a network-wide ad blocker such as Pi-hole shows as hundreds of requests. Switched off, the scans stop and the TV no longer finds devices by itself.",
-  "text": "Permet à la TV de trouver les appareils du foyer à afficher sur son Tableau de bord domestique et à contrôler : un boîtier sur une entrée HDMI, ou des lampes, prises et interrupteurs connectés sur le réseau. Sur les TV récentes, elle interroge chaque adresse du réseau domestique à chaque allumage, ce qu'un bloqueur de pub réseau comme Pi-hole affiche comme des centaines de requêtes. Désactivée, les scans s'arrêtent et la TV ne trouve plus d'appareils seule."
+ "adv.deviceDetection.descLg": {
+  "from": "LG’s own setting. Lets the TV find devices at home that it can show on its Home Dashboard and control: a set-top box on an HDMI input, and smart lights, plugs and switches on your network. On some TVs, webOS 11 among them, the TV still looks up every address on your home network with this off; Network device scans stops that.",
+  "text": "Le réglage de LG. Permet à la TV de trouver les appareils du foyer à afficher sur son Tableau de bord domestique et à contrôler : un boîtier sur une entrée HDMI, et des lampes, prises et interrupteurs connectés sur votre réseau. Sur certaines TV, dont celles sous webOS 11, la TV interroge quand même chaque adresse de votre réseau local avec ce réglage désactivé ; Analyses du réseau l'en empêche."
+ },
+ "adv.deviceScans": {
+  "from": "Network device scans",
+  "text": "Analyses du réseau"
+ },
+ "adv.deviceScans.desc": {
+  "from": "Glasshouse’s switch for the scans themselves: the TV looking up every address on your home network, which a network-wide ad blocker such as Pi-hole shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG’s device setup.",
+  "text": "Le réglage de Glasshouse pour les analyses elles-mêmes : la TV qui interroge chaque adresse de votre réseau local, ce qu'un bloqueur de publicités pour tout le réseau comme Pi-hole affiche sous forme de centaines de requêtes. Désactivées, elles s'arrêtent sur toutes les TV, quel que soit le réglage de Détection auto des appareils, et la TV ne trouve plus de nouveaux appareils pour le Hub domestique ni pour la configuration des appareils de LG."
  },
  "adv.devices": {
   "from": "Devices",
@@ -2047,6 +2055,90 @@
   "from": "Always shown",
   "text": "Toujours affiché"
  },
+ "home.anim.aquarium": {
+  "from": "Aquarium",
+  "text": "Aquarium"
+ },
+ "home.anim.aurora": {
+  "from": "Aurora",
+  "text": "Aurore"
+ },
+ "home.anim.glow": {
+  "from": "Glow",
+  "text": "Halo"
+ },
+ "home.anim.off": {
+  "from": "Off",
+  "text": "Désactivé"
+ },
+ "home.anim.particles": {
+  "from": "Particles",
+  "text": "Particules"
+ },
+ "home.anim.ripples": {
+  "from": "Ripples",
+  "text": "Ondulations"
+ },
+ "home.anim.stars": {
+  "from": "Constellations",
+  "text": "Constellations"
+ },
+ "home.anim.waves": {
+  "from": "Light waves",
+  "text": "Vagues de lumière"
+ },
+ "home.animColours": {
+  "from": "Background colours",
+  "text": "Couleurs de l'arrière-plan"
+ },
+ "home.animColoursDesc": {
+  "from": "Its colours: following the part of the day, a preset, or a background and a light colour of your own. In the aquarium they are the water and the light through it.",
+  "text": "Ses couleurs : selon le moment de la journée, un préréglage, ou un fond et une couleur de lumière de votre choix. Dans l'aquarium, ce sont l'eau et la lumière qui la traverse."
+ },
+ "home.animColoursTv": {
+  "from": "Colours of one’s own are picked on the browser dashboard’s Home tab.",
+  "text": "Les couleurs personnelles se choisissent dans l'onglet Accueil du tableau de bord web."
+ },
+ "home.animDesc": {
+  "from": "Light that moves slowly behind Glasshouse Home. It stops whenever Home is not on screen.",
+  "text": "Une lumière qui se déplace lentement derrière Glasshouse Home. Elle s'arrête dès que l'Accueil n'est plus à l'écran."
+ },
+ "home.animLight": {
+  "from": "Light",
+  "text": "Lumière"
+ },
+ "home.animSky": {
+  "from": "Background",
+  "text": "Fond"
+ },
+ "home.animTheme.auto": {
+  "from": "Time of day",
+  "text": "Moment de la journée"
+ },
+ "home.animTheme.blue": {
+  "from": "Night blue",
+  "text": "Bleu nuit"
+ },
+ "home.animTheme.custom": {
+  "from": "Your own",
+  "text": "Personnalisées"
+ },
+ "home.animTheme.ember": {
+  "from": "Ember",
+  "text": "Braise"
+ },
+ "home.animTheme.emerald": {
+  "from": "Emerald",
+  "text": "Émeraude"
+ },
+ "home.animTheme.silver": {
+  "from": "Silver",
+  "text": "Argent"
+ },
+ "home.animTheme.sunset": {
+  "from": "Sunset",
+  "text": "Coucher de soleil"
+ },
  "home.arrange.done": {
   "from": "Done",
   "text": "Terminé"
@@ -2155,6 +2247,30 @@
   "from": "Arranging",
   "text": "Arrangement"
  },
+ "home.bg.animated": {
+  "from": "Animated",
+  "text": "Animé"
+ },
+ "home.bg.animation": {
+  "from": "Animation",
+  "text": "Animation"
+ },
+ "home.bg.intro": {
+  "from": "What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.",
+  "text": "Ce qui se trouve derrière Glasshouse Home : rien, des images qui changent selon le moment de la journée, ou un arrière-plan animé."
+ },
+ "home.bg.none": {
+  "from": "None",
+  "text": "Aucun"
+ },
+ "home.bg.pictures": {
+  "from": "Pictures",
+  "text": "Images"
+ },
+ "home.bg.title": {
+  "from": "Background",
+  "text": "Arrière-plan"
+ },
  "home.ch.add": {
   "from": "Add",
   "text": "Ajouter"
@@ -2206,6 +2322,10 @@
  "home.ch.show": {
   "from": "Show channels",
   "text": "Afficher les chaînes"
+ },
+ "home.choose": {
+  "from": "Choose your launcher",
+  "text": "Choisissez votre lanceur"
  },
  "home.colours.accent": {
   "from": "Accent",
@@ -2271,6 +2391,10 @@
   "from": "Press again to switch on",
   "text": "Appuyez à nouveau pour activer"
  },
+ "home.custom": {
+  "from": "Custom",
+  "text": "Personnalisé"
+ },
  "home.customisation": {
   "from": "Home customisation",
   "text": "Personnalisation d'Accueil"
@@ -2315,9 +2439,9 @@
   "from": "Earlier",
   "text": "Plus tôt"
  },
- "home.experimental": {
-  "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.",
-  "text": "Expérimental : cela peut ne pas toujours fonctionner comme prévu. Glasshouse Home remplace l'écran d'accueil de LG par celui de Glasshouse. En cas de comportement anormal, maintenez Accueil sur la télécommande une seconde pour ouvrir l'Accueil de LG, ou appuyez sur Utiliser LG Home pour revenir en arrière. Pendant la première demi-minute après un démarrage à froid, Accueil affiche un message indiquant qu'il démarre."
+ "home.experimentalAny": {
+  "from": "Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG’s Home screen. If one misbehaves, hold Home on the remote for a second to open LG’s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.",
+  "text": "Expérimental : cela peut ne pas toujours fonctionner comme prévu. Glasshouse Home, Glasshouse Minimal et les lanceurs personnalisés remplacent chacun l'écran d'accueil de LG. Si l'un d'eux fonctionne mal, maintenez Accueil sur la télécommande pendant une seconde pour ouvrir l'Accueil de LG, ou choisissez Accueil LG ici pour y revenir. Pendant la première demi-minute après un démarrage à froid de la TV, l'Accueil affiche un message indiquant qu'il démarre."
  },
  "home.fade": {
   "from": "Fade in and out",
@@ -2435,6 +2559,98 @@
   "from": "Later",
   "text": "Plus tard"
  },
+ "home.launcher.address": {
+  "from": "Or open a web page",
+  "text": "Ou ouvrir une page web"
+ },
+ "home.launcher.addressDesc": {
+  "from": "A page such as a Home Assistant dashboard, shown full screen as the TV’s Home. Some sites do not allow this; Writing a launcher in the docs has the setting Home Assistant needs.",
+  "text": "Une page comme un tableau de bord Home Assistant, affichée en plein écran comme Accueil de la TV. Certains sites ne le permettent pas ; Écrire un lanceur, dans la documentation, donne le réglage dont Home Assistant a besoin."
+ },
+ "home.launcher.choose": {
+  "from": "Choose a file",
+  "text": "Choisir un fichier"
+ },
+ "home.launcher.docs": {
+  "from": "Writing a launcher",
+  "text": "Écrire un lanceur"
+ },
+ "home.launcher.doneOffCustom": {
+  "from": "Done. Press Custom above, then again, to make it the TV’s Home.",
+  "text": "Terminé. Appuyez sur Personnalisé ci-dessus, puis à nouveau, pour en faire l'Accueil de la TV."
+ },
+ "home.launcher.doneOn": {
+  "from": "Done. The TV’s Home shows it within a few seconds.",
+  "text": "Terminé. L'Accueil de la TV l'affiche d'ici quelques secondes."
+ },
+ "home.launcher.intro": {
+  "from": "A home screen of your own in Glasshouse Home’s place: a web app uploaded here, or a web page. The Home and Back buttons open it, as they do Glasshouse Home, and holding Home still opens LG’s Home. If it stops working, LG’s Home comes back by itself.",
+  "text": "Un écran d'accueil à vous à la place de Glasshouse Home : une app web envoyée ici, ou une page web. Les boutons Accueil et Retour l'ouvrent, comme pour Glasshouse Home, et maintenir Accueil ouvre toujours l'Accueil de LG. S'il cesse de fonctionner, l'Accueil de LG revient de lui-même."
+ },
+ "home.launcher.isOn": {
+  "from": "{title} is the TV’s Home",
+  "text": "{title} est l'Accueil de la TV"
+ },
+ "home.launcher.isOnDescTitle": {
+  "from": "{title} opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.",
+  "text": "{title} s'ouvre à la place de l'Accueil de LG : avec les boutons Accueil et Retour, et quand la TV se réveille sur l'Accueil."
+ },
+ "home.launcher.isOnLgOpenTitle": {
+  "from": "LG’s Home is open for now. {title} comes back when something else is opened, or Home is pressed.",
+  "text": "L'Accueil de LG est ouvert pour l'instant. {title} revient dès que quelque chose d'autre est ouvert, ou qu'on appuie sur Accueil."
+ },
+ "home.launcher.nowApp": {
+  "from": "Uploaded: {files} files, {size}",
+  "text": "Envoyé : {files} fichiers, {size}"
+ },
+ "home.launcher.nowAppOne": {
+  "from": "Uploaded: one file, {size}",
+  "text": "Envoyé : un fichier, {size}"
+ },
+ "home.launcher.nowWeb": {
+  "from": "Web page: {address}",
+  "text": "Page web : {address}"
+ },
+ "home.launcher.remove": {
+  "from": "Remove",
+  "text": "Supprimer"
+ },
+ "home.launcher.save": {
+  "from": "Use this page",
+  "text": "Utiliser cette page"
+ },
+ "home.launcher.title": {
+  "from": "Custom launcher",
+  "text": "Lanceur personnalisé"
+ },
+ "home.launcher.tooLarge": {
+  "from": "A launcher can be at most 50 MB.",
+  "text": "Un lanceur peut faire 50 Mo au maximum."
+ },
+ "home.launcher.trust": {
+  "from": "A launcher can do anything on the TV that Glasshouse can. Only use one you trust.",
+  "text": "Un lanceur peut faire sur la TV tout ce que Glasshouse peut faire. N'utilisez qu'un lanceur de confiance."
+ },
+ "home.launcher.upload": {
+  "from": "Upload a launcher",
+  "text": "Envoyer un lanceur"
+ },
+ "home.launcher.uploadDesc": {
+  "from": "A web app as an .ipk, a .zip of its folder, or a single .html file, up to 50 MB. It replaces the launcher here before it.",
+  "text": "Une app web au format .ipk, un .zip de son dossier, ou un seul fichier .html, jusqu'à 50 Mo. Il remplace le lanceur déjà présent ici."
+ },
+ "home.launcher.uploadFailed": {
+  "from": "The launcher could not be uploaded.",
+  "text": "Le lanceur n'a pas pu être envoyé."
+ },
+ "home.launcher.uploadOff": {
+  "from": "Uploading a launcher needs Install app from a URL or file switched on, on the Apps tab, or a token, as installing an app does.",
+  "text": "Envoyer un lanceur nécessite que Installer une app depuis une URL ou un fichier soit activé, dans l'onglet Apps, ou un jeton, comme pour installer une app."
+ },
+ "home.launcher.uploading": {
+  "from": "Uploading {name}…",
+  "text": "Envoi de {name}…"
+ },
  "home.layout": {
   "from": "Rows and tiles",
   "text": "Rangées et tuiles"
@@ -2442,6 +2658,10 @@
  "home.layoutDesc": {
   "from": "Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.",
   "text": "Les apps et entrées viennent de la TV : masquez celles non voulues. Les chaînes sont seulement celles ajoutées ici. Maintenir OK sur Glasshouse Home arrange la même disposition sur la TV."
+ },
+ "home.layoutDescLaunchers": {
+  "from": "Which of the TV’s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to.",
+  "text": "Quelles apps et entrées de la TV Minimal affiche, et dans quel ordre. Un lanceur à vous en tient compte s'il a été écrit pour cela."
  },
  "home.leftOut": {
   "from": "Left out",
@@ -2458,6 +2678,14 @@
  "home.livePreviewDesc": {
   "from": "A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.",
   "text": "Une image en direct sans son de l'entrée ou de la chaîne en focus sur Glasshouse Home, en haut à droite, avec les détails d'image à côté. Cela bascule la TV sur cette entrée derrière Accueil sans rien réveiller, et une chaîne affichée ainsi ne devient pas la dernière chaîne."
+ },
+ "home.minimalDesc": {
+  "from": "Glasshouse’s plainest home screen: the TV’s apps and inputs as two lists of names on black, and the time.",
+  "text": "L'écran d'accueil le plus simple de Glasshouse : les apps et entrées de la TV en deux listes de noms sur fond noir, et l'heure."
+ },
+ "home.minimalName": {
+  "from": "Glasshouse Minimal",
+  "text": "Glasshouse Minimal"
  },
  "home.motion.crossfade": {
   "from": "Wallpaper cross-fade",
@@ -2579,6 +2807,10 @@
   "from": "VRR",
   "text": "VRR"
  },
+ "home.pressAgain": {
+  "from": "Press again to confirm",
+  "text": "Appuyez à nouveau pour confirmer"
+ },
  "home.preview.live": {
   "from": "Live preview",
   "text": "Aperçu en direct"
@@ -2674,6 +2906,10 @@
  "home.restartsApps": {
   "from": "On this TV, switching Glasshouse Home on or off, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open.",
   "text": "Sur cette TV, activer ou désactiver Glasshouse Home, ou maintenir Accueil pour l'Accueil de LG, redémarre le gestionnaire d'apps de la TV, ce qui ferme les apps ouvertes."
+ },
+ "home.restartsAppsAny": {
+  "from": "On this TV, switching away from LG Home or back to it, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open.",
+  "text": "Sur cette TV, quitter Accueil LG ou y revenir, ou maintenir Accueil pour l'Accueil de LG, redémarre le gestionnaire d'apps de la TV, ce qui ferme les apps ouvertes."
  },
  "home.restorePending": {
   "from": "LG Home restoration is incomplete",
@@ -2923,9 +3159,9 @@
   "from": "Channel logos",
   "text": "Logos des chaînes"
  },
- "home.showTvLogosDesc": {
-  "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials.",
-  "text": "Sur Internet TV : le logo de chaque chaîne fourni par la playlist. Désactivé affiche les initiales de la chaîne."
+ "home.showTvLogosDescName": {
+  "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.",
+  "text": "Sur Internet TV : le logo de chaque chaîne fourni par la playlist. Désactivé affiche le nom de la chaîne à sa place."
  },
  "home.shown": {
   "from": "Shown",
@@ -2950,14 +3186,6 @@
  "home.sortRecentDesc": {
   "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order.",
   "text": "La tuile ouverte en dernier passe en premier, qu'elle ait été ouverte depuis Glasshouse Home ou non. Les tuiles pas encore ouvertes suivent dans l'ordre propre de cette rangée."
- },
- "home.switchOff": {
-  "from": "Use LG Home",
-  "text": "Utiliser LG Home"
- },
- "home.switchOn": {
-  "from": "Use Glasshouse Home",
-  "text": "Utiliser Glasshouse Home"
  },
  "home.title": {
   "from": "Glasshouse Home",
@@ -3042,6 +3270,10 @@
  "home.tv.ends": {
   "from": "account ends {date}",
   "text": "le compte se termine le {date}"
+ },
+ "home.tv.err.aborted": {
+  "from": "The TV stopped the download before it began. It tries again later.",
+  "text": "La TV a interrompu le téléchargement avant qu'il commence. Elle réessaiera plus tard."
  },
  "home.tv.err.big": {
   "from": "The playlist is larger than 300 MB.",
@@ -4083,9 +4315,9 @@
   "from": "Downloading…",
   "text": "Téléchargement…"
  },
- "home.wall.introSets": {
-  "from": "A picture behind Glasshouse Home for each part of the day: none, one of the picture sets, or your own.",
-  "text": "Une image derrière Glasshouse Home pour chaque moment de la journée : aucune, l'un des jeux d'images, ou la vôtre."
+ "home.wall.introPictures": {
+  "from": "A picture for each part of the day: one of the picture sets, or your own.",
+  "text": "Une image pour chaque moment de la journée : l'un des jeux d'images, ou la vôtre."
  },
  "home.wall.now": {
   "from": "Now",
@@ -4130,10 +4362,6 @@
  "home.wall.slotNight": {
   "from": "Night",
   "text": "Nuit"
- },
- "home.wall.title": {
-  "from": "Wallpaper",
-  "text": "Fond d'écran"
  },
  "home.wall.tooLarge": {
   "from": "The prepared image is too large. Choose a smaller image.",
@@ -5659,6 +5887,10 @@
   "from": "v{version} is out. Installing it replaces the server and restarts it.",
   "text": "La v{version} est sortie. L'installer remplace le serveur et le redémarre."
  },
+ "server.backup.acrLeftOff": {
+  "from": "Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does.",
+  "text": "La reconnaissance du contenu en direct reste désactivée : l'activer revient à accepter les conditions de LG, donc une sauvegarde ne le fait jamais."
+ },
  "server.backup.appsManual": {
   "from": "Not in the Homebrew Channel catalog, to install by hand: {names}.",
   "text": "Pas dans le catalogue de la Homebrew Channel, à installer à la main : {names}."
@@ -5667,9 +5899,9 @@
   "from": "{count} apps from the backup can be installed from the Apps tab.",
   "text": "{count} apps de la sauvegarde peuvent être installées depuis l'onglet Apps."
  },
- "server.backup.confirm": {
-  "from": "Restore the settings saved from {tv} on {date}? This changes LG’s settings on this TV.",
-  "text": "Restaurer les réglages enregistrés depuis {tv} le {date} ? Cela change les réglages de LG sur cette TV."
+ "server.backup.confirmSettings": {
+  "from": "Restore the settings saved from {tv} on {date}? This changes settings on this TV.",
+  "text": "Restaurer les réglages enregistrés depuis {tv} le {date} ? Cela modifie des réglages de cette TV."
  },
  "server.backup.daily": {
   "from": "Daily backup",
@@ -5719,9 +5951,9 @@
   "from": "Restore",
   "text": "Restaurer"
  },
- "server.backup.restored": {
-  "from": "Changed {changed} LG settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now.",
-  "text": "{changed} réglages LG changés, {same} l'étaient déjà, {skipped} ignorés car cette TV ne les a pas ou ils ne sont pas disponibles maintenant."
+ "server.backup.restoredSettings": {
+  "from": "Changed {changed} settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now.",
+  "text": "{changed} réglages modifiés, {same} l'étaient déjà, {skipped} ignorés car cette TV ne les a pas ou ils ne sont pas disponibles pour l'instant."
  },
  "server.backup.restoring": {
   "from": "Restoring…",
@@ -7098,6 +7330,70 @@
  "srv.home.launchRefused": {
   "from": "the TV would not open it",
   "text": "la TV a refusé de l'ouvrir"
+ },
+ "srv.home.launcher.address": {
+  "from": "Give a web address starting with http:// or https://.",
+  "text": "Indiquez une adresse web commençant par http:// ou https://."
+ },
+ "srv.home.launcher.busy": {
+  "from": "Wait for the launcher upload to finish.",
+  "text": "Attendez la fin de l'envoi du lanceur."
+ },
+ "srv.home.launcher.damaged": {
+  "from": "The file is damaged or not a launcher.",
+  "text": "Le fichier est endommagé ou n'est pas un lanceur."
+ },
+ "srv.home.launcher.encrypted": {
+  "from": "The zip is password-protected.",
+  "text": "Le zip est protégé par un mot de passe."
+ },
+ "srv.home.launcher.kind": {
+  "from": "Choose an .ipk, a .zip or an .html file.",
+  "text": "Choisissez un fichier .ipk, .zip ou .html."
+ },
+ "srv.home.launcher.length": {
+  "from": "The upload must state its size.",
+  "text": "L'envoi doit indiquer sa taille."
+ },
+ "srv.home.launcher.native": {
+  "from": "This launcher is a native app. Only web launchers can be used.",
+  "text": "Ce lanceur est une app native. Seuls les lanceurs web peuvent être utilisés."
+ },
+ "srv.home.launcher.noApp": {
+  "from": "The package holds no app.",
+  "text": "Le paquet ne contient aucune app."
+ },
+ "srv.home.launcher.noIndex": {
+  "from": "The launcher has no index.html, and no appinfo.json naming its start page.",
+  "text": "Le lanceur n'a pas de index.html, ni d'appinfo.json qui indique sa page de départ."
+ },
+ "srv.home.launcher.noMain": {
+  "from": "The start page appinfo.json names is not in the launcher.",
+  "text": "La page de départ indiquée par appinfo.json ne se trouve pas dans le lanceur."
+ },
+ "srv.home.launcher.none": {
+  "from": "Upload a launcher or give a web address first.",
+  "text": "Envoyez d'abord un lanceur ou indiquez une adresse web."
+ },
+ "srv.home.launcher.space": {
+  "from": "There is not enough free space on the TV for this launcher.",
+  "text": "Il n'y a pas assez d'espace libre sur la TV pour ce lanceur."
+ },
+ "srv.home.launcher.tooBig": {
+  "from": "The launcher unpacks to more than 100 MB or 5,000 files.",
+  "text": "Le lanceur se décompresse en plus de 100 Mo ou de 5 000 fichiers."
+ },
+ "srv.home.launcher.unsafe": {
+  "from": "The file holds a path outside its own folder: {path}",
+  "text": "Le fichier contient un chemin en dehors de son propre dossier : {path}"
+ },
+ "srv.home.launcher.uploadSize": {
+  "from": "A launcher can be at most 50 MB.",
+  "text": "Un lanceur peut faire 50 Mo au maximum."
+ },
+ "srv.home.launcher.zipMethod": {
+  "from": "The zip is compressed in a way that cannot be read. Make it again with standard (Deflate) compression.",
+  "text": "Le zip est compressé d'une façon qui ne peut pas être lue. Recréez-le avec la compression standard (Deflate)."
  },
  "srv.home.noLayout": {
   "from": "Could not read LG's Home screen layout",
@@ -9083,14 +9379,6 @@
   "from": "Looks up every address on the home network to find devices for the Home Hub and LG's device setup. Off, they find no new devices.",
   "text": "Interroge chaque adresse du réseau local pour trouver des appareils pour le Hub domestique et la configuration des appareils de LG. Désactivé, ils ne trouvent aucun nouvel appareil."
  },
- "srv.service.iotframework": {
-  "from": "Smart Home Device Polling",
-  "text": "Sondage des appareils domotiques"
- },
- "srv.service.iotframework.desc": {
-  "from": "Asks for a scan of the home network every 5 minutes, for the Home Hub's smart home devices. Off, the Home Hub may not show them.",
-  "text": "Demande une analyse du réseau local toutes les 5 minutes, pour les appareils domotiques du Hub domestique. Désactivé, le Hub domestique peut ne pas les afficher."
- },
  "srv.service.mycar": {
   "from": "Car-to-Home Telematics",
   "text": "Télématique voiture-maison"
@@ -10351,9 +10639,29 @@
   "from": "Press OK, then again, to hide it",
   "text": "Appuyez sur OK, puis à nouveau, pour la masquer"
  },
+ "tv.home.launcher": {
+  "from": "Custom launcher: {title}",
+  "text": "Lanceur personnalisé : {title}"
+ },
+ "tv.home.launcher.hint": {
+  "from": "Your own home screen, set up on the Home tab of the web dashboard, shown in Glasshouse Home’s place.",
+  "text": "Votre propre écran d'accueil, configuré dans l'onglet Accueil du tableau de bord web, affiché à la place de Glasshouse Home."
+ },
+ "tv.home.launcher.off": {
+  "from": "Press OK to use Glasshouse Home",
+  "text": "Appuyez sur OK pour utiliser Glasshouse Home"
+ },
+ "tv.home.launcher.on": {
+  "from": "Press OK to use the custom launcher",
+  "text": "Appuyez sur OK pour utiliser le lanceur personnalisé"
+ },
  "tv.home.lgTile.hint": {
   "from": "The way back to LG’s Home, so it always shows.",
   "text": "Le chemin de retour vers l'Accueil de LG, pour qu'il s'affiche toujours."
+ },
+ "tv.home.minimal.on": {
+  "from": "Press OK to use Minimal",
+  "text": "Appuyez sur OK pour utiliser Minimal"
  },
  "tv.home.off": {
   "from": "LG’s Home is the TV’s Home again",
@@ -10599,9 +10907,13 @@
   "from": "Switched off with the remote, the TV shows LG's Always Ready screen, such as a clock or artwork, instead of going dark, from the next time it is switched off. Uses about 30 W on an LG C2, close to what it uses when on. Home turns the TV back on from the clock; the power button switches it fully off.",
   "text": "Éteinte avec la télécommande, la TV affiche l'écran Toujours actif de LG, comme une horloge ou une œuvre, au lieu de s'éteindre complètement, dès la prochaine extinction. Consomme environ 30 W sur un LG C2, proche de sa consommation allumée. Accueil rallume la TV depuis l'horloge ; le bouton d'alimentation l'éteint complètement."
  },
- "tv.options.deviceDetection.hint": {
-  "from": "Finds devices to show on the Home Dashboard and control: a set-top box, and smart lights, plugs and switches. Newer TVs look up every address on your home network each time they switch on to do it. Switched off, the scans stop and the TV no longer finds devices by itself.",
-  "text": "Trouve les appareils à afficher sur le Tableau de bord domestique et à contrôler : un boîtier, et des lampes, prises et interrupteurs connectés. Les TV récentes interrogent chaque adresse du réseau domestique à chaque allumage pour cela. Désactivée, les scans s'arrêtent et la TV ne trouve plus d'appareils seule."
+ "tv.options.deviceDetection.hintLg": {
+  "from": "LG’s own setting: finds devices to show on the Home Dashboard and control, a set-top box and smart lights, plugs and switches. On some TVs, webOS 11 among them, the TV still looks up every address on your home network with this off; Network device scans stops that.",
+  "text": "Le réglage de LG : trouve les appareils à afficher sur le Tableau de bord domestique et à contrôler, un boîtier et des lampes, prises et interrupteurs connectés. Sur certaines TV, dont celles sous webOS 11, la TV interroge quand même chaque adresse de votre réseau local avec ce réglage désactivé ; Analyses du réseau l'en empêche."
+ },
+ "tv.options.deviceScans.hint": {
+  "from": "The TV looking up every address on your home network, which a network-wide ad blocker shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG’s device setup.",
+  "text": "La TV qui interroge chaque adresse de votre réseau local, ce qu'un bloqueur de publicités pour tout le réseau affiche sous forme de centaines de requêtes. Désactivées, elles s'arrêtent sur toutes les TV, quel que soit le réglage de Détection auto des appareils, et la TV ne trouve plus de nouveaux appareils pour le Hub domestique ni pour la configuration des appareils de LG."
  },
  "tv.options.lgLogo.hide": {
   "from": "Press OK to hide it",

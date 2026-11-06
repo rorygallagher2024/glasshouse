@@ -30,7 +30,7 @@
    * Following the browser's language, one is used only on those pages, so no
    * page mixes it with English; elsewhere it is used only once chosen.
    */
-  var PARTIAL = { de: ['home'], fr: ['web', 'home'] };
+  var PARTIAL = { de: ['home'] };
   /*
    * Languages written right to left. The page is laid out that way only where
    * it is used with a pointer: on the TV app, Glasshouse Home and the TV's setup
