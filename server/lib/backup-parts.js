@@ -214,13 +214,12 @@ var PARTS = [
     }
   },
   {
-    // Network device scans: iconnectivity, switched from the Devices section, not listed with the services above.
+    // Network device scans: off holds LG's lookup service down, as its switch in Devices does.
     id: 'deviceScans',
     action: 'deviceScans',
     valid: isBool,
     read: function (cb) {
-      if (!services.available || !services.available('iconnectivity')) return cb(undefined);
-      cb(!services.isDisabled('iconnectivity'));
+      cb(services.available('iconnectivity') ? !services.isDisabled('iconnectivity') : undefined);
     },
     write: function (v, cb) { control('deviceScans', v, cb); }
   },
