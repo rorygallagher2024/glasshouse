@@ -73,6 +73,13 @@ it before exposing it more widely.
   therefore answer only to an IP address, `localhost` or a name listed in
   `apps.hosts` in `config.json`, which is file-only. A name such as `lgtv.local`
   has to be added there to install from it.
+- **A custom launcher runs as the TV's Home app.** An uploaded launcher's page
+  runs in the app that holds LG's Home's place, which can call the TV's own
+  services, so uploading one is held to the rule for installing a package from
+  a file (`apps.sideload`, a token, or the TV itself) and to the Host check
+  above. A launcher given as a web address is shown in a frame of Glasshouse's
+  page and runs as its own site, without that access. Where a token is set,
+  the launcher's files are served only to the TV itself or with the token.
 - **`apps.repos` adds trust.** Each extra catalog listed there can offer
   packages for installation, with their hashes. Its packages are not treated
   as vetted: root for them is confirmed service by service, as for a URL, and

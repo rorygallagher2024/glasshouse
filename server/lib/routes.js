@@ -87,6 +87,8 @@ var homeModule = null;
 var clockModule = null;
 /** @type {typeof import('./home-picture')} */
 var homePictureModule = null;
+/** @type {typeof import('./home-launcher')} */
+var homeLauncherModule = null;
 /** @type {typeof import('./iptv')} */
 var iptvModule = null;
 /** @type {typeof import('./screensavers')} */
@@ -825,6 +827,11 @@ function isInstallRoute(pathname) {
   return pathname === '/api/apps/catalog' || pathname.indexOf('/api/apps/install/') === 0;
 }
 
+// A custom launcher runs as LG's Home app, so putting one in place is guarded as an install is.
+function needsAllowedHost(pathname) {
+  return isInstallRoute(pathname) || pathname.indexOf('/api/home/launcher') === 0;
+}
+
 function installError(res, text, status) {
   send(res, status || 400, JSON.stringify({ ok: false, error: text }));
 }
@@ -1144,6 +1151,8 @@ function handleHomeRoute(req, res, u, pathname) {
       var wants = String((u.query && u.query['with']) || '').split(',');
       return homeModule.status(function (st) {
         st.writable = !!config.allowControl || fromTV(req);
+        st.launcher = homeLauncherModule ? homeLauncherModule.status() : null;
+        st.launcherUpload = sideloadVia(req) !== null;
         // What the Home pane draws its colour previews' clock as.
         st.clockHour12 = clockHour12();
         // The Home tab also holds LG's Home's layout and hidden system apps, so
@@ -1228,12 +1237,23 @@ function handleHomeRoute(req, res, u, pathname) {
         reply(r);
       });
     }
+    if (pathname === '/api/home/launcher/upload' && homeLauncherModule) {
+      // It runs as the TV's Home app, so it is held to what a sideloaded package is.
+      if (!sideloadVia(req)) return sideloadRefused(res);
+      if (!postGuard(req, res, 'application/octet-stream', true)) return;
+      return homeLauncherModule.upload(req, String(u.query && u.query.name || ''), function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        reply(r);
+      });
+    }
     if (pathname === '/api/home/beat') {
       if (!postGuard(req, res, 'application/json', false)) return;
       return readJsonBody(req, res, function (body) {
         // The hour cycle the view's clock draws, which follows the TV's setting.
         var beatBody = homeModule.beat(body);
         beatBody.clockHour12 = clockHour12();
+        // Which page belongs in Home's place: the page in it reloads when this changes.
+        beatBody.launcher = homeLauncherModule ? homeLauncherModule.revision() : '';
         reply(beatBody);
       });
     }
@@ -1244,6 +1264,12 @@ function handleHomeRoute(req, res, u, pathname) {
       if (pathname === '/api/home/enable') return homeModule.enable(reply);
       if (pathname === '/api/home/disable') return homeModule.disable(reply);
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
+      if (pathname === '/api/home/launcher' && homeLauncherModule) {
+        if (typeof body.address === 'string') return homeLauncherModule.setAddress(body.address, reply);
+        if (body.remove === true) return homeLauncherModule.remove(reply);
+        if (typeof body.choose === 'boolean') return homeLauncherModule.choose(body.choose, reply);
+        return reply({ ok: false, error: 'address, remove or choose expected' });
+      }
       if (pathname === '/api/home/search') return homeModule.search.find(body && body.query, reply);
       if (pathname === '/api/home/search/open') return homeModule.search.open(body, reply);
       if (pathname === '/api/home/recents') {
@@ -1383,6 +1409,47 @@ function handleRequest(req, res) {
     return send(res, 503, missingAssetsPage(), 'text/html; charset=utf-8');
   }
 
+  /*
+   * webOS 4's Home app is installed once and opens this page, as the copy in
+   * LG's Home's place does, so a custom launcher in Glasshouse Home's place
+   * is chosen here.
+   */
+  if (pathname === '/assets/home.html' && homeLauncherModule && homeLauncherModule.chosen() &&
+      homeModule && homeModule.enabled()) {
+    res.writeHead(302, { 'Location': '/home/launcher/', 'Cache-Control': 'no-store' });
+    return res.end();
+  }
+
+  // A custom launcher (lib/home-launcher), for the TV, or with the token: it may hold the owner's own addresses or keys.
+  if ((pathname === '/home/launcher' || pathname.indexOf('/home/launcher/') === 0) && homeLauncherModule) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (pathname === '/home/launcher') {
+      res.writeHead(301, { 'Location': '/home/launcher/' });
+      return res.end();
+    }
+    var rel = pathname.slice('/home/launcher/'.length);
+    try { rel = decodeURIComponent(rel); } catch (e) { rel = null; }
+    var hit = rel === null ? null : homeLauncherModule.resolve(rel);
+    if (!hit) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+    if (hit.redirect) {
+      res.writeHead(302, { 'Location': hit.redirect, 'Cache-Control': 'no-store' });
+      return res.end();
+    }
+    var launcherHeaders = { 'Content-Type': hit.type, 'Cache-Control': 'no-cache' };
+    if (hit.body !== undefined) {
+      launcherHeaders['Content-Length'] = Buffer.byteLength(hit.body);
+      res.writeHead(200, launcherHeaders);
+      return res.end(req.method === 'HEAD' ? undefined : hit.body);
+    }
+    return fs.stat(hit.file, function (statErr, st) {
+      if (statErr) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+      launcherHeaders['Content-Length'] = st.size;
+      res.writeHead(200, launcherHeaders);
+      if (req.method === 'HEAD') return res.end();
+      fs.createReadStream(hit.file).on('error', function () { res.end(); }).pipe(res);
+    });
+  }
+
   if (pathname.indexOf('/assets/') === 0) {
     var file = assetPath(pathname.slice('/assets/'.length));
     if (!file) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
@@ -1391,7 +1458,9 @@ function handleRequest(req, res) {
     // The strings and their translations change with each release as the pages
     // do, so a day-old copy beside a new page would show text the page no
     // longer has, or miss text it now does.
-    var fresh = ext === '.html' || ext === '.json' || /(^|\/)i18n\.js$/.test(file);
+    // So is the script a custom launcher is given: a launcher written for a
+    // newer one calls what an older copy lacks.
+    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit)\.js$/.test(file);
     var cacheHdr = fresh ? 'no-cache' : 'public, max-age=86400';
     var respondWithBuf = function (buf) {
       var etag = '"' + (displayVersionStr || '1') + '-' + buf.length.toString(16) + '"';
@@ -1417,7 +1486,7 @@ function handleRequest(req, res) {
     });
   }
 
-  if (isInstallRoute(pathname) && !hostAllowed(req)) {
+  if (needsAllowedHost(pathname) && !hostAllowed(req)) {
     return send(res, 403, JSON.stringify({
       ok: false,
       error: msg('srv.install.hostRefused', 'this address is not allowed to install apps; add the name to apps.hosts in config.json, or use the TV\'s IP address')
@@ -2236,6 +2305,7 @@ function init(opts) {
   if (opts.home) homeModule = opts.home;
   if (opts.clock) clockModule = opts.clock;
   if (opts.homePicture) homePictureModule = opts.homePicture;
+  if (opts.homeLauncher) homeLauncherModule = opts.homeLauncher;
   if (opts.iptv) iptvModule = opts.iptv;
   if (opts.screensavers) screensaversModule = opts.screensavers;
   if (opts.updater) updaterModule = opts.updater;

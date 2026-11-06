@@ -379,6 +379,24 @@ Click **Use Glasshouse Home** (and confirm on the second press) in the web dashb
 > rm -rf /mnt/lg/cmn_data/manifest /tmp/checkpoint/*com.webos.app.home* /mnt/lg/cmn_data/checkpoint/*com.webos.app.home* && reboot
 > ```
 
+## Custom launcher
+
+A home screen of your own can take Glasshouse Home's place: a launcher you have written or downloaded, or a web page such as a Home Assistant dashboard. Everything above still applies to it. The Home and Back buttons open it, it opens when the TV wakes on Home, holding **Home** opens LG's Home, and if it stops working, LG's Home takes its place by itself.
+
+On the web dashboard's **Home** tab, press **Custom launcher**, then either:
+
+* **Upload a launcher:** a web app as an `.ipk` package, a `.zip` of its folder, or a single `.html` file, up to 50 MB. Native apps can't be used. As with installing an app from a file, this needs **Install app from a URL or file** switched on on the [Apps tab](apps.md#install-app-from-a-url-or-file), or a token.
+* **Or open a web page:** an address starting with `http://` or `https://`, shown full screen. Some sites refuse to be shown inside another page; Home Assistant does unless it is told to allow it ([Writing a launcher](../development/WRITING-LAUNCHERS.md#a-web-page) has the setting).
+
+With Glasshouse Home already on, the launcher takes its place within a few seconds. From LG's Home, press **Custom launcher** again to make it the TV's Home (and confirm on the second press). **Use Glasshouse Home** goes back to Glasshouse Home and keeps the launcher for later; **Remove** deletes it. Only one launcher is kept: uploading another, or giving a web address, replaces it. The TV app's **Home** section has a switch between the launcher and Glasshouse Home once one is set up.
+
+While a custom launcher is the TV's Home, Glasshouse Home's own settings (its rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
+
+> [!WARNING]
+> A launcher can do anything on the TV that Glasshouse can, so only use one you trust.
+
+[Writing a launcher](../development/WRITING-LAUNCHERS.md) covers making one: what Glasshouse adds to its page, and the calls for listing and opening the TV's apps and inputs.
+
 ## Arranging
 
 Rows and tiles can be arranged from the **web dashboard**, the **TV app**, or **directly on Glasshouse Home**:

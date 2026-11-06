@@ -1497,6 +1497,91 @@ async function visitHomeUploads(browser, base, problems) {
 }
 
 /*
+ * A custom launcher in Glasshouse Home's place. On the Home tab: its button
+ * opens the section to set one up, a web address with Glasshouse Home on
+ * becomes the TV's Home at once, Use Glasshouse Home swaps back without a
+ * second press, an upload is offered only where installing from a file is,
+ * and Remove takes it away. Then, against the real server, an uploaded page
+ * is served with window.Glasshouse ready before its own script runs.
+ */
+async function visitHomeLauncher(browser, base, problems) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  page.on('pageerror', e => problems.push('Home launcher: ' + e.message));
+  const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
+  let launcher = null, launcherUpload = true;
+  const sent = [];
+  await context.route('**/api/home**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    let body;
+    if (pathname === '/api/home/launcher') {
+      const req = route.request().postDataJSON();
+      sent.push(JSON.stringify(req));
+      if (req.address) launcher = { kind: 'web', title: 'ha.local:8123', address: req.address, chosen: !!(launcher && launcher.chosen) };
+      else if (req.remove) launcher = null;
+      else if (typeof req.choose === 'boolean') launcher.chosen = req.choose;
+      body = { ok: true, launcher };
+    } else if (pathname === '/api/home') {
+      body = { ok: true, supported: { ok: true }, installed: true, enabled: true, active: true, writable: true, layout,
+        launcher, launcherUpload, wallpapers: { choices: ['black'], choice: 'black', slots: {} } };
+    } else {
+      body = { ok: true, layout, apps: [], devices: [], channels: [], order: { app: [], dev: [], ch: [] }, sources: { channels: 0 } };
+    }
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus);
+    if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: its section showed with none set up');
+    await page.locator('#home-mode-launcher').click();
+    await page.locator('#home-launcher').waitFor();
+    if (sent.length) problems.push('Home launcher: its button changed something with none set up');
+    await page.locator('#home-launcher-url').fill('http://ha.local:8123/tv');
+    await page.locator('#home-launcher-save').click();
+    // homeStatus is set before the tab is drawn from it, so the drawn state is waited for.
+    try {
+      await page.waitForFunction(() => /ha\.local:8123/.test(document.getElementById('home-state').textContent));
+    } catch (e) { problems.push('Home launcher: the state did not name the launcher'); }
+    if (sent.join() !== '{"address":"http://ha.local:8123/tv"},{"choose":true}') problems.push('Home launcher: a web address with Glasshouse Home on sent ' + sent.join());
+    if (await page.locator('#home-more').isVisible()) problems.push('Home launcher: Glasshouse Home\'s rows showed with a launcher chosen');
+    if (!/\bon\b/.test(await page.locator('#home-mode-launcher').getAttribute('class'))) problems.push('Home launcher: its button was not marked as chosen');
+    if (!/ha\.local:8123\/tv/.test(await page.locator('#home-launcher-now-desc').textContent())) problems.push('Home launcher: the address was not shown');
+    sent.length = 0;
+    await page.locator('#home-switch').click();
+    await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-switch').className));
+    if (sent.join() !== '{"choose":false}') problems.push('Home launcher: Use Glasshouse Home sent ' + sent.join());
+    launcherUpload = false;
+    await page.evaluate(() => loadHome());
+    await page.locator('#home-launcher-upload-off').waitFor();
+    if (!await page.locator('#home-launcher-pick').isDisabled()) problems.push('Home launcher: an upload was offered where installing from a file is off');
+    await page.locator('#home-launcher-remove').click();
+    await page.waitForFunction(() => document.getElementById('home-launcher-now-row').hidden);
+    if (await page.locator('#home-launcher-now-row').isVisible()) problems.push('Home launcher: a removed launcher was still listed');
+  } finally { await context.close(); }
+
+  const tv = await browser.newContext();
+  const view = await tv.newPage();
+  view.on('pageerror', e => problems.push('Home launcher page: ' + e.message));
+  try {
+    await view.goto(base + '/');
+    const html = '<!doctype html><html><head><title>wait</title></head><body><script>' +
+      'Glasshouse.catalogue(function (e, c) { document.title = e ? "error " + e.message : "apps " + c.apps.length; });' +
+      '</script></body></html>';
+    const up = await view.evaluate(async h => (await fetch('/api/home/launcher/upload?name=check.html', {
+      method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: h })).json(), html);
+    if (!up.ok) problems.push('Home launcher: the upload was refused: ' + up.error);
+    await view.goto(base + '/home/launcher/');
+    await view.waitForFunction(() => document.title !== 'wait', null, { timeout: 15000 });
+    const title = await view.title();
+    if (!/^apps [1-9]/.test(title)) problems.push('Home launcher: the uploaded page read ' + title);
+    await view.evaluate(async () => fetch('/api/home/launcher', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remove: true }) }));
+  } catch (e) { problems.push('Home launcher page: ' + e.message); }
+  finally { await tv.close(); }
+}
+
+/*
  * The Home tab: left out where neither Glasshouse Home nor LG's Home's options
  * are offered; with LG's Home's options alone (a B8) it shows only those, Open
  * Home at power-on among them, usable without Glasshouse Home; and
@@ -2442,7 +2527,7 @@ function groups(web, tv) {
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
     { tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
     { tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
-      visitHomeInternetTv, visitIptvChannels, visitHomeRecentsHidden, visitHomeUploads, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide] },
+      visitHomeInternetTv, visitIptvChannels, visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide] },
     /*
      * Scrolling and motion read the row's place frame by frame, and missed
      * frames with the other groups sharing CI's four cores: 3 of 15 runs
@@ -2471,6 +2556,6 @@ async function runGroup(browser, group, problems, after) {
   await browser.close();
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'TV navigation and LCD profile, Home arranging, picture, preview and its options, animated backgrounds, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide, search, Internet TV and its channel manager checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+              'TV navigation and LCD profile, Home arranging, picture, preview and its options, animated backgrounds, visibility, colours, fading and inputs, update, editing, order, uploads, custom launcher, readiness, availability, recents, scrolling, motion, guide, search, Internet TV and its channel manager checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

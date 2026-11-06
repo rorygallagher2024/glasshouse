@@ -2012,7 +2012,7 @@ function beat(body) {
   }
   beats++;
   if (viewInFront()) watchBeat(BEAT_GRACE_MS);
-  return { ok: true, enabled: readConfig().enabled, covered: viewCovered(), saver: powerState === 'Screen Saver',
+  return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()) };
 }
@@ -2160,10 +2160,18 @@ function recoverView(why, retried) {
   if (isStandalone()) {
     recovering = true;
     console.error('home: ' + why + '; opening it again');
-    return launch(HOME_APP, null, function () {
-      recovering = false;
-      stopBeatWatch();
-      watchOpen(true, FIRST_BEAT_GRACE_MS);
+    /*
+     * Closed first, so its page loads afresh: launched while running, the app
+     * only comes to the front, and a custom launcher that went to another
+     * site stayed there (a B8, 4.4.3). killApp closed it there; closeByAppId
+     * leaves a web page in the background.
+     */
+    return luna('com.palm.webappmanager/killApp', { appId: HOME_APP }, function () {
+      launch(HOME_APP, null, function () {
+        recovering = false;
+        stopBeatWatch();
+        watchOpen(true, FIRST_BEAT_GRACE_MS);
+      });
     });
   }
   if (webAppMgrRunning() !== false) return toLgHome(why);
