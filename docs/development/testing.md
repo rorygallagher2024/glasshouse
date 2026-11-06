@@ -364,7 +364,8 @@ and the resolving of a master playlist's first variant.
 `test-iptv-worker.js` runs real playlist workers against a local provider with
 a shell that sends itself SIGABRT before executing curl. It checks that an
 early abort is retried once, repeated aborts stop after two attempts, and a
-partial body, ordinary network error or other signal is never retried. A
+partial body, ordinary network error or other signal is never retried, and
+two aborts are reported as such rather than as a network failure. A
 failed job leaves no partial snapshot. The native webOS libuv fault still
 needs a Node 8 TV; the test injects its downloader exit signal.
 

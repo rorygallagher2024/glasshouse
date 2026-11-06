@@ -199,10 +199,6 @@ added channels' logos, and the stream of a channel while Glasshouse Home
 plays it. When a channel won't play, the server reads that stream's playlist,
 and its first variant's, once an hour at most, to see whether it is protected.
 
-If the TV aborts a playlist, logo or guide downloader before any response body
-arrives, the server tries that download once more. It does not replay a partial
-response.
-
 With **Share app icons** on in the MQTT tab (`iconServer` in `config.json`), port 8082 (the dashboard's
 port plus two) answers on the whole network, dual-stack like the dashboard,
 with installed apps' icons at `/icons/<appId>.png` and nothing else: no other

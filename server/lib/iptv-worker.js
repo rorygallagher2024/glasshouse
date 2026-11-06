@@ -297,7 +297,7 @@ function downloadOnce(url, opts, sink, cb) {
   child.on('close', function (code, signal) {
     // Only retry an early abort: a sink that has received bytes cannot be
     // replayed without duplicating playlist entries or corrupting the guide.
-    if (signal === 'SIGABRT' && !bytes && !sinkErr) return end(fail('network'), true);
+    if (signal === 'SIGABRT' && !bytes && !sinkErr) return end(fail('aborted'), true);
     var after = function () {
       if (sinkErr) return end(sinkErr);
       if (code !== 0) return end(downloadError(bin, code, stderr, hdrFile));

@@ -36,7 +36,7 @@ function remove(p) {
 
 var cases = [
   { name: 'an early abort is retried', fault: 'if [ ! -e aborted ]; then touch aborted; kill -ABRT $$; fi', attempts: 2, ok: true },
-  { name: 'a second abort fails without a third attempt', fault: 'kill -ABRT $$', attempts: 2 },
+  { name: 'a second abort fails without a third attempt', fault: 'kill -ABRT $$', attempts: 2, code: 'aborted' },
   { name: 'a partial body is never replayed', fault: 'printf "#EXTM3U\\n#EXTINF:-1,Partial\\nhttp://example.test/partial\\n"\nkill -ABRT $$', attempts: 1 },
   { name: 'an ordinary network failure is not retried', fault: 'exit 7', attempts: 1 },
   { name: 'another signal is not treated as an early abort', fault: 'kill -TERM $$', attempts: 1 }
@@ -78,7 +78,7 @@ function run(i) {
       assert.equal(meta.channels, 1);
       assert.equal(fs.readFileSync(path.join(candidate, 'index.tsv'), 'utf8').trim().split('\n').length, 1);
     } else {
-      assert.equal(results[0].error.code, 'network', test.name);
+      assert.equal(results[0].error.code, test.code || 'network', test.name);
       assert.ok(!fs.existsSync(candidate), 'no partial snapshot survives');
     }
     var attempts = fs.readFileSync(path.join(work, 'attempts'), 'utf8').trim().split('\n').length;

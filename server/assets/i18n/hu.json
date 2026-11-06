@@ -2932,5 +2932,6 @@
  "home.showTvLogos": {"text": "Csatornalogók", "from": "Channel logos"},
  "home.showTvLogosDesc": {"text": "Az internetes TV-ben: a lejátszási lista logója minden csatornához. Kikapcsolva a csatorna kezdőbetűi látszanak.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."},
  "home.tv.tryAgainPlain": {"text": "Az OK újrapróbálja.", "from": "OK tries again."},
- "home.tv.waitMemoryOf": {"text": "Várakozás a TV memóriájára: {available} MB áll rendelkezésre a szükséges {needed} MB-ból.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."}
+ "home.tv.waitMemoryOf": {"text": "Várakozás a TV memóriájára: {available} MB áll rendelkezésre a szükséges {needed} MB-ból.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."},
+ "home.tv.err.aborted": {"text": "A TV leállította a letöltést, mielőtt elkezdődött volna. Később újra megpróbálja.", "from": "The TV stopped the download before it began. It tries again later."}
 }

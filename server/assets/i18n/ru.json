@@ -2932,5 +2932,6 @@
  "home.showTvLogos": {"text": "Логотипы каналов", "from": "Channel logos"},
  "home.showTvLogosDesc": {"text": "В интернет-ТВ: логотип канала из плейлиста. Если выключено, показываются инициалы канала.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."},
  "home.tv.tryAgainPlain": {"text": "OK повторяет попытку.", "from": "OK tries again."},
- "home.tv.waitMemoryOf": {"text": "Ожидание памяти на ТВ: доступно {available} МБ из необходимых {needed} МБ.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."}
+ "home.tv.waitMemoryOf": {"text": "Ожидание памяти на ТВ: доступно {available} МБ из необходимых {needed} МБ.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."},
+ "home.tv.err.aborted": {"text": "Телевизор остановил загрузку до её начала. Он попробует снова позже.", "from": "The TV stopped the download before it began. It tries again later."}
 }

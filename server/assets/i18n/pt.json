@@ -2932,5 +2932,6 @@
  "home.showTvLogos": {"text": "Logótipos dos canais", "from": "Channel logos"},
  "home.showTvLogosDesc": {"text": "Na TV pela Internet: o logótipo da lista de reprodução para cada canal. Desativado mostra as iniciais do canal.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials."},
  "home.tv.tryAgainPlain": {"text": "OK tenta novamente.", "from": "OK tries again."},
- "home.tv.waitMemoryOf": {"text": "A aguardar memória na TV: {available} MB disponíveis dos {needed} MB necessários.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."}
+ "home.tv.waitMemoryOf": {"text": "A aguardar memória na TV: {available} MB disponíveis dos {needed} MB necessários.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."},
+ "home.tv.err.aborted": {"text": "A TV parou a transferência antes de começar. Volta a tentar mais tarde.", "from": "The TV stopped the download before it began. It tries again later."}
 }

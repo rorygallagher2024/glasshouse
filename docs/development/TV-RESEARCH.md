@@ -2836,11 +2836,10 @@ The debugger rule in `devtools.js` waits a turn before each call and tries an
 aborted one once more.
 
 Issue [#1248](https://github.com/rorygallagher2024/glasshouse/issues/1248)
-reports the same assertion while reading Internet TV playlists on an
-OLED65CX9LA, including HTTP and Xtream sources. The worker's downloader
-previously mapped a signalled exit to `network`; this message does not prove
-a provider connection failed. A local shell killed by SIGABRT before running
-curl reproduces that result. The worker now waits an event-loop turn before
-each downloader start and retries one SIGABRT if no body bytes arrived. This
-recovery passes with injected aborts and the report's three public playlists;
-the native fault and workaround still need confirmation on the affected CX.
+shows the same assertion on an OLED65CX9LA, from the curl or wget the
+Internet TV worker starts: the worker itself goes on and reports the failed
+download. A job's later downloads start from the previous one's exit
+callback, the case that aborted every time, and its first is the process's
+first child, as the first `iptables` call at server start was. The worker
+waits a turn before each one and tries one aborted before any of its body
+arrived once more.
