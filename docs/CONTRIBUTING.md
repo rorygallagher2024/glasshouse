@@ -82,6 +82,11 @@ starting set, added to as reviews turn up more.
 * **Small functions.** A function does one job and reads without scrolling.
   One that handles several cases in nested branches or callbacks is split, one
   function per case, with the shared steps in helpers.
+* **A new setting goes in the settings backup, or says why not.** A control
+  added to `server/lib/controls.js` is either a part in
+  `server/lib/backup-parts.js` or listed in its `NOT_CARRIED` with the reason,
+  and the backup table in `docs/dashboard/server.md` follows.
+  `test/test-backup-parts.js` fails on one in neither.
 
 ### Docs
 

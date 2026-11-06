@@ -213,6 +213,12 @@ function luna(uri, p, cb) {
       { id: 'com.webos.app.hdmi1', title: 'HDMI 1', lptype: 'bookmark' }
     ];
     if (tv.newApp) r.launchPoints.push({ id: 'new.app', title: 'New', icon: '/x/new.png' });
+    // Saved web pages as a C2 (webOS 9.2.2) lists them: bookmarks of the browser.
+    if (tv.savedPages) r.launchPoints.push(
+      { id: 'com.webos.app.browser', launchPointId: '576150', lptype: 'bookmark', title: 'home assistant',
+        largeIcon: '/x/browser.png', params: { target: 'http://192.168.1.125:8123' } },
+      { id: 'com.webos.app.browser', launchPointId: '576151', lptype: 'bookmark', title: 'Weather',
+        largeIcon: '/x/browser.png', params: { target: 'https://example.com/weather' } });
   } else if (uri === 'com.webos.service.eim/getAllInputStatus') {
     // As a G3 reports them: a receiver with a console behind it on HDMI 2, HDMI 1 empty.
     r.devices = tv.devices || [
@@ -355,6 +361,30 @@ step('after a start the rows come from the lists last read, and a change read be
             assert.ok(c3.order.app.indexOf('new.app') !== -1, 'with the list just read');
             done();
           });
+        });
+      });
+    });
+  });
+});
+
+step('saved web pages are apps of their own, opened in the browser at their address', function (done) {
+  start(null);
+  tv.savedPages = true;
+  home.catalogue(function (c) {
+    assert.deepEqual(c.order.app, ['netflix', 'youtube.leanback.v4', 'cdp-30', 'page:576150', 'page:576151', 'lg-home']);
+    var page = c.apps.filter(function (a) { return a.id === 'page:576150'; })[0];
+    assert.strictEqual(page.title, 'home assistant');
+    assert.strictEqual(page.icon, '/api/home/icon?id=page%3A576150', 'the browser\'s icon, served as an app\'s');
+    assert.strictEqual(page.page, undefined, 'the address is not sent to the view');
+    assert.ok(!c.apps.some(function (a) { return a.id === 'com.webos.app.hdmi1'; }), 'input tiles stay out');
+    home.iconPath('page:576150', function (icon) {
+      assert.strictEqual(icon, '/x/browser.png');
+      home.open({ kind: 'app', id: 'page:576151' }, function (r) {
+        assert.ok(r.ok, JSON.stringify(r));
+        assert.deepEqual(tv.launches.pop(), { id: 'com.webos.app.browser', params: { target: 'https://example.com/weather' } });
+        home.open({ kind: 'app', id: 'page:999' }, function (gone) {
+          assert.strictEqual(gone.ok, false, 'a page no longer saved does not open');
+          done();
         });
       });
     });
@@ -577,6 +607,25 @@ step('the TV\'s tuner is the first tile in the Inputs row, on the channel it was
         });
       });
     });
+  });
+});
+
+step('an animated background is off unless chosen, and its colours follow the part of the day, a preset or #rrggbb of one\'s own', function (done) {
+  assert.strictEqual(home.normalise({}).wallAnim, 'off', 'no animated background unless chosen');
+  assert.strictEqual(home.normalise({ wallAnim: 'aquarium' }).wallAnim, 'aquarium');
+  ['aurora', 'glow', 'stars', 'ripples'].forEach(function (style) { assert.strictEqual(home.normalise({ wallAnim: style }).wallAnim, style); });
+  assert.strictEqual(home.normalise({ wallAnim: 'fireworks' }).wallAnim, 'off', 'and only one of those offered');
+  assert.strictEqual(home.normalise({}).animTheme, 'auto', 'its colours follow the part of the day unless chosen');
+  assert.strictEqual(home.normalise({ animTheme: 'sunset' }).animTheme, 'sunset');
+  assert.strictEqual(home.normalise({ animTheme: 'neon' }).animTheme, 'auto', 'only a preset or custom');
+  var own = home.normalise({ animTheme: 'custom', animSky: '#ABCDEF', animLight: 'red' });
+  assert.deepEqual([own.animTheme, own.animSky, own.animLight], ['custom', '#abcdef', '#4f8dff'], 'colours of one\'s own are #rrggbb');
+  start(null);
+  home.setLayout({ wallAnim: 'stars', animTheme: 'ember' }, function (r) {
+    assert.ok(r.ok);
+    assert.deepEqual([r.layout.wallAnim, r.layout.animTheme], ['stars', 'ember']);
+    assert.ok(r.layout.animThemes.some(function (th) { return th.id === 'ember' && th.sky && th.light; }), 'the presets go with the layout');
+    done();
   });
 });
 
@@ -1303,7 +1352,7 @@ step('on webOS 4, enabling installs the standalone app and sets the Home key fil
   });
 });
 
-step('on webOS 4, a Home press the view does not answer opens it again before giving LG\'s ribbon the key', function (done) {
+step('on webOS 4, a Home press the view does not answer closes it and opens it afresh before giving LG\'s ribbon the key', function (done) {
   var homeKey = '', injected = [];
   start(null, {
     webosVersion: '4.4.3',
@@ -1317,11 +1366,14 @@ step('on webOS 4, a Home press the view does not answer opens it again before gi
     assert.ok(r.ok, r.error);
     foreground('com.webos.app.hdmi2');
     tv.launched = [];
+    tv.events = [];
     home.homeKey(true);
     home.homeKey(false);
     // No systemctl on webOS 4, so no WebAppMgr unit to start.
     wait(5100, function () {
       assert.deepEqual(tv.launched, [OLD_APP], 'opened once more');
+      // Its page loads afresh, rather than one that has gone to another site coming to the front.
+      assert.ok(tv.events.indexOf('close old app') !== -1, 'closed first: ' + tv.events.join(', '));
       assert.deepEqual(injected, [], 'LG\'s ribbon not opened yet');
       assert.strictEqual(homeKey, OLD_APP, 'Home still opens Glasshouse Home');
       home.disable(function () { done(); });
@@ -1787,6 +1839,30 @@ step('held, Home opens LG\'s Home; a short press there brings Glasshouse Home ba
   });
 });
 
+// A C2 (webOS 9.2.2) did nothing for Home with the view in front, so its folder or player stayed open (#1254).
+step('a short Home press with the view in front opens it again, which reaches its page as a relaunch', function (done) {
+  start({ enabled: true });
+  home.start();
+  wait(50, function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.launched = [];
+    home.homeKey(true);
+    home.homeKey(false);
+    wait(50, function () {
+      assert.deepEqual(tv.launched, [LG_HOME], 'opened again');
+      foreground('com.webos.app.hdmi2');
+      tv.launched = [];
+      home.homeKey(true);
+      home.homeKey(false);
+      wait(50, function () {
+        assert.deepEqual(tv.launched, [], 'from another app the TV opens it itself');
+        home.disable(function () { done(); });
+      });
+    });
+  });
+});
+
 // A G4 (webOS 11.2.0) with WebAppMgr stopped under the view: sam kept naming the view in
 // front, launched it on every press, and nothing drew it, nor LG's Home.
 step('a short Home press that brings no heartbeat starts WebAppMgr and opens the view again', function (done) {
@@ -1801,7 +1877,8 @@ step('a short Home press that brings no heartbeat starts WebAppMgr and opens the
     home.homeKey(false);
     wait(5100, function () {
       assert.ok(tv.events.indexOf('systemctl start webapp-mgr.service') !== -1, 'WebAppMgr started');
-      assert.deepEqual(tv.launched, [LG_HOME], 'and the view opened again');
+      // Once for the press with the view in front, once more after WebAppMgr is started.
+      assert.deepEqual(tv.launched, [LG_HOME, LG_HOME], 'and the view opened again');
       home.beat();
       wait(5100, function () {
         assert.ok(taken(), 'beating again, Glasshouse Home keeps LG\'s Home\'s place');

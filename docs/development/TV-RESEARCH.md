@@ -924,6 +924,27 @@ Measured with `scripts/tv.sh <tv> frames` (testing.md), in Alternative View:
 - A contributor's G3 (webOS 9.2.2) missed 25 of about 480 frames in 8 s of
   continuous scrolling (#955), which the C2 did not reproduce.
 
+## Home pressed with Home in front (C2, webOS 9.2.2)
+
+- **The TV does nothing.** With Glasshouse Home in LG's Home's place and on
+  screen, a Home key press (code 773 on `/dev/input/event1`) logged
+  `IM NL_RCU_CONTROL_USE {"key_code":773}` from surface-manager and launched
+  nothing, so the page never heard of it and its folder stayed open (#1254).
+- **A launch from outside reaches the page as `webOSRelaunch`.**
+  `com.webos.applicationManager/launch` with `com.webos.app.home` while it was
+  in front did.
+- **webOS 4 differs:** the remote key filter launches `com.tvweb.home` on every
+  press, so the page hears each one (B8, 4.4.3).
+
+## Reopening webOS 4's Home app (B8, webOS 4.4.3)
+
+- **Launching `com.tvweb.home` while it runs only brings it to the front.**
+  A page in it that had navigated to another site (a custom launcher's start
+  page going to `https://example.com/`) stayed on that site through a launch
+  from the server and a press of Home.
+- **`com.palm.webappmanager/killApp` closes it,** and the next launch loads its
+  `index.html` afresh. HDMI 2 opened normally straight after.
+
 ## LG Home's recent apps (G3, webOS 9.2.2)
 
 Read on 19 October 2026 from LG's Home's QML under the Glasshouse Home
