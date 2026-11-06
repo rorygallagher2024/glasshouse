@@ -67,6 +67,13 @@ var PROMO_APPS = ['com.webos.app.lgchannels', 'com.webos.app.sportsteamsettings'
   'com.webos.app.lifeonscreen', 'amazon.alexa.view', 'com.webos.app.camera'];
 // The view's own way back to LG's Home: last in the Apps row, and never hidden.
 var LG_HOME_TILE = 'lg-home';
+/*
+ * A web page saved to the Home screen is a bookmark of LG's browser, with its
+ * address in the bookmark's target. Its tile id is this and its launch point
+ * id: several pages share the browser's app id, and no app id has a colon.
+ */
+var PAGE_PREFIX = 'page:';
+var BROWSER_APP = 'com.webos.app.browser';
 // The moving backgrounds the view can draw in place of the wallpaper pictures.
 var WALL_ANIMS = ['off', 'waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
 // The moving backgrounds' colours: auto follows the part of the day; a preset
@@ -712,10 +719,11 @@ function cached(key, ttl, load, cb) {
 var isInputApp = names.isInputAppId;
 
 /*
- * The apps on LG's Home, in its order, as { id, title, icon }. Saved web
- * pages and input tiles are bookmarks, left out: the Inputs row has the
- * inputs. An app the Apps tab hides has visible false in its appinfo and no
- * launch point; one reporting visible false is skipped all the same.
+ * The apps on LG's Home, in its order, as { id, title, icon }, with each saved
+ * web page as an app of its own that has its address as page. Input tiles are
+ * bookmarks too, left out: the Inputs row has the inputs. An app the Apps tab
+ * hides has visible false in its appinfo and no launch point; one reporting
+ * visible false is skipped all the same.
  */
 function launchPoints(cb) {
   cached('lp', LIST_TTL_MS, function (done) {
@@ -723,7 +731,14 @@ function launchPoints(cb) {
       if (!r || !isArray(r.launchPoints)) return done(null);
       var out = [];
       r.launchPoints.forEach(function (p) {
-        if (!p || typeof p.id !== 'string' || p.lptype === 'bookmark' || p.visible === false) return;
+        if (!p || typeof p.id !== 'string' || p.visible === false) return;
+        if (p.lptype === 'bookmark') {
+          var target = p.id === BROWSER_APP && p.params && p.params.target;
+          if (typeof target !== 'string' || !target || p.launchPointId == null) return;
+          out.push({ id: PAGE_PREFIX + p.launchPointId, title: String(p.title || target),
+                     icon: p.largeIcon || p.icon || '', page: target });
+          return;
+        }
         if (p.id === HOME_APP || p.id === LG_HOME || isInputApp(p.id)) return;
         out.push({ id: p.id, title: String(p.title || p.id), icon: p.largeIcon || p.icon || '' });
       });
@@ -1164,8 +1179,12 @@ function open(body, cb) {
   }
   if (kind === 'app') {
     return launchPoints(function (apps) {
-      var known = (apps || []).some(function (a) { return a.id === id; });
-      if (!known) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+      /** @type {any} */
+      var hit = null;
+      (apps || []).forEach(function (a) { if (a.id === id) hit = a; });
+      if (!hit) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+      // A saved page opens as LG's tile opens it: the browser, at its address.
+      if (hit.page) return launch(BROWSER_APP, { target: hit.page }, opened('app', id, cb));
       launch(id, null, opened('app', id, cb));
     });
   }
