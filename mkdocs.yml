@@ -90,6 +90,7 @@ nav:
       - TV research: development/TV-RESEARCH.md
       - Screen saver design: development/SCREENSAVER-DESIGN.md
       - Writing a screen saver: development/WRITING-SCREENSAVERS.md
+      - Writing a launcher: development/WRITING-LAUNCHERS.md
       - Translating the dashboards: STRINGS.md
 
 # Kept until the Homebrew Channel listing is live (webosbrew/apps-repo#261).

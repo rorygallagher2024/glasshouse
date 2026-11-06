@@ -580,6 +580,25 @@ step('the TV\'s tuner is the first tile in the Inputs row, on the channel it was
   });
 });
 
+step('an animated background is off unless chosen, and its colours follow the part of the day, a preset or #rrggbb of one\'s own', function (done) {
+  assert.strictEqual(home.normalise({}).wallAnim, 'off', 'no animated background unless chosen');
+  assert.strictEqual(home.normalise({ wallAnim: 'aquarium' }).wallAnim, 'aquarium');
+  ['aurora', 'glow', 'stars', 'ripples'].forEach(function (style) { assert.strictEqual(home.normalise({ wallAnim: style }).wallAnim, style); });
+  assert.strictEqual(home.normalise({ wallAnim: 'fireworks' }).wallAnim, 'off', 'and only one of those offered');
+  assert.strictEqual(home.normalise({}).animTheme, 'auto', 'its colours follow the part of the day unless chosen');
+  assert.strictEqual(home.normalise({ animTheme: 'sunset' }).animTheme, 'sunset');
+  assert.strictEqual(home.normalise({ animTheme: 'neon' }).animTheme, 'auto', 'only a preset or custom');
+  var own = home.normalise({ animTheme: 'custom', animSky: '#ABCDEF', animLight: 'red' });
+  assert.deepEqual([own.animTheme, own.animSky, own.animLight], ['custom', '#abcdef', '#4f8dff'], 'colours of one\'s own are #rrggbb');
+  start(null);
+  home.setLayout({ wallAnim: 'stars', animTheme: 'ember' }, function (r) {
+    assert.ok(r.ok);
+    assert.deepEqual([r.layout.wallAnim, r.layout.animTheme], ['stars', 'ember']);
+    assert.ok(r.layout.animThemes.some(function (th) { return th.id === 'ember' && th.sky && th.light; }), 'the presets go with the layout');
+    done();
+  });
+});
+
 step('a TV with no channels tuned has no tuner tile, and the tile will not open', function (done) {
   start(null);
   home.catalogue(function (c) {
@@ -1303,7 +1322,7 @@ step('on webOS 4, enabling installs the standalone app and sets the Home key fil
   });
 });
 
-step('on webOS 4, a Home press the view does not answer opens it again before giving LG\'s ribbon the key', function (done) {
+step('on webOS 4, a Home press the view does not answer closes it and opens it afresh before giving LG\'s ribbon the key', function (done) {
   var homeKey = '', injected = [];
   start(null, {
     webosVersion: '4.4.3',
@@ -1317,11 +1336,14 @@ step('on webOS 4, a Home press the view does not answer opens it again before gi
     assert.ok(r.ok, r.error);
     foreground('com.webos.app.hdmi2');
     tv.launched = [];
+    tv.events = [];
     home.homeKey(true);
     home.homeKey(false);
     // No systemctl on webOS 4, so no WebAppMgr unit to start.
     wait(5100, function () {
       assert.deepEqual(tv.launched, [OLD_APP], 'opened once more');
+      // Its page loads afresh, rather than one that has gone to another site coming to the front.
+      assert.ok(tv.events.indexOf('close old app') !== -1, 'closed first: ' + tv.events.join(', '));
       assert.deepEqual(injected, [], 'LG\'s ribbon not opened yet');
       assert.strictEqual(homeKey, OLD_APP, 'Home still opens Glasshouse Home');
       home.disable(function () { done(); });
@@ -1787,6 +1809,30 @@ step('held, Home opens LG\'s Home; a short press there brings Glasshouse Home ba
   });
 });
 
+// A C2 (webOS 9.2.2) did nothing for Home with the view in front, so its folder or player stayed open (#1254).
+step('a short Home press with the view in front opens it again, which reaches its page as a relaunch', function (done) {
+  start({ enabled: true });
+  home.start();
+  wait(50, function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.launched = [];
+    home.homeKey(true);
+    home.homeKey(false);
+    wait(50, function () {
+      assert.deepEqual(tv.launched, [LG_HOME], 'opened again');
+      foreground('com.webos.app.hdmi2');
+      tv.launched = [];
+      home.homeKey(true);
+      home.homeKey(false);
+      wait(50, function () {
+        assert.deepEqual(tv.launched, [], 'from another app the TV opens it itself');
+        home.disable(function () { done(); });
+      });
+    });
+  });
+});
+
 // A G4 (webOS 11.2.0) with WebAppMgr stopped under the view: sam kept naming the view in
 // front, launched it on every press, and nothing drew it, nor LG's Home.
 step('a short Home press that brings no heartbeat starts WebAppMgr and opens the view again', function (done) {
@@ -1801,7 +1847,8 @@ step('a short Home press that brings no heartbeat starts WebAppMgr and opens the
     home.homeKey(false);
     wait(5100, function () {
       assert.ok(tv.events.indexOf('systemctl start webapp-mgr.service') !== -1, 'WebAppMgr started');
-      assert.deepEqual(tv.launched, [LG_HOME], 'and the view opened again');
+      // Once for the press with the view in front, once more after WebAppMgr is started.
+      assert.deepEqual(tv.launched, [LG_HOME, LG_HOME], 'and the view opened again');
       home.beat();
       wait(5100, function () {
         assert.ok(taken(), 'beating again, Glasshouse Home keeps LG\'s Home\'s place');

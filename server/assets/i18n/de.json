@@ -255,10 +255,6 @@
     "text": "Früher",
     "from": "Earlier"
   },
-  "home.experimental": {
-    "text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. Wenn etwas nicht stimmt, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder drücken Sie „LG Home verwenden“, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.",
-    "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."
-  },
   "home.fault.desc": {
     "text": "Glasshouse Home kommt zurück, sobald es antwortet. Bleibt es stumm, kommt nach wenigen Minuten LGs Home zurück.",
     "from": "Glasshouse Home comes back when it answers. Should it stay silent, LG's Home comes back in a few minutes."
@@ -543,14 +539,6 @@
     "text": "Die zuletzt geöffnete Kachel steht vorn, egal ob von Glasshouse Home aus geöffnet oder nicht. Noch nicht geöffnete Kacheln folgen in der Reihenfolge dieser Reihe.",
     "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."
   },
-  "home.switchOff": {
-    "text": "LG Home verwenden",
-    "from": "Use LG Home"
-  },
-  "home.switchOn": {
-    "text": "Glasshouse Home verwenden",
-    "from": "Use Glasshouse Home"
-  },
   "home.title": {
     "text": "Glasshouse Home",
     "from": "Glasshouse Home"
@@ -578,10 +566,6 @@
   "home.wall.slotNight": {
     "text": "Nacht",
     "from": "Night"
-  },
-  "home.wall.title": {
-    "text": "Hintergrundbild",
-    "from": "Wallpaper"
   },
   "home.wall.tooLarge": {
     "text": "Das aufbereitete Bild ist zu groß. Wähle ein kleineres.",
@@ -746,5 +730,13 @@
  "home.tv.full": {"text": "Die Zeile fasst {max} Sender; zuerst einen entfernen", "from": "The row holds {max} channels; remove one first"},
  "home.tv.saveFailed": {"text": "Speichern fehlgeschlagen", "from": "That didn’t save"},
  "home.tv.added": {"text": "{name} ist in der Zeile", "from": "{name} is on the row"},
- "home.tv.removed": {"text": "{name} wurde aus der Zeile entfernt", "from": "{name} is off the row"}
+ "home.tv.removed": {"text": "{name} wurde aus der Zeile entfernt", "from": "{name} is off the row"},
+ "home.choose": {"text": "Launcher auswählen", "from": "Choose your launcher"},
+ "home.custom": {"text": "Eigener", "from": "Custom"},
+ "home.minimalName": {"text": "Glasshouse Minimal", "from": "Glasshouse Minimal"},
+ "home.pressAgain": {"text": "Zum Bestätigen erneut drücken", "from": "Press again to confirm"},
+ "home.experimentalAny": {"text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home, Glasshouse Minimal und eigene Launcher ersetzen jeweils LGs Startbildschirm. Wenn einer nicht richtig funktioniert, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder wählen Sie hier LG Home, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.", "from": "Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG’s Home screen. If one misbehaves, hold Home on the remote for a second to open LG’s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
+ "home.restartsAppsAny": {"text": "Auf diesem Fernseher startet der Wechsel weg von LG Home oder zurück, oder das Gedrückthalten von Home für LGs Startbildschirm, die App-Verwaltung des Fernsehers neu, die geöffnete Apps schließt.", "from": "On this TV, switching away from LG Home or back to it, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."},
+ "home.launcher.doneOffCustom": {"text": "Fertig. Drücken Sie oben auf Eigener und dann erneut, um ihn zum Startbildschirm des Fernsehers zu machen.", "from": "Done. Press Custom above, then again, to make it the TV’s Home."},
+ "home.showTvLogosDescName": {"text": "Bei Internet-TV: das Logo der Playlist für jeden Sender. Aus zeigt stattdessen den Namen des Senders.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."}
 }

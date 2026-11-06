@@ -209,6 +209,7 @@ function refreshCache(id) {
   var cur = current[id] || {};
   cache.meta[id] = cur.snap ? readSmall(path.join(plDir(id), cur.snap, 'meta.json'), 16 * 1024) : null;
   cache.added[id] = cur.sel ? readSmall(path.join(plDir(id), cur.sel, 'added.json'), ADDED_MAX) : null;
+  markProtected(id);
   var nn = cur.nownext ? path.join(plDir(id), cur.nownext, 'nownext.json') : cur.guide ? path.join(plDir(id), cur.guide, 'nownext.json') : null;
   cache.nownext[id] = nn ? readSmall(nn, NOWNEXT_MAX) : null;
   if (cache.groups[id] && cache.groups[id].snap !== cur.snap) delete cache.groups[id];
@@ -1341,6 +1342,104 @@ function streamUrl(id, key) {
   } catch (e) { return null; }
 }
 
+/*
+ * DRM a playlist does not declare. A channel whose stream would not play is
+ * checked once: its HLS playlist and its first variant's are read for a key
+ * <video> cannot use, and one found is kept in protected.json beside the
+ * playlist's snapshots, so the lineup marks it as DRM from then on. RTÉ's
+ * channels in a public list carried FairPlay (com.apple.streamingkeydelivery,
+ * skd://) only in each variant's playlist, never in the M3U or the master.
+ */
+var CHECK_BYTES = 256 * 1024;
+var CHECK_MS = 8000;
+var CHECK_AGAIN_MS = HOUR;
+var checkedAt = {};
+
+function protectedFile(id) { return path.join(plDir(id), 'protected.json'); }
+
+function protectedKeys(id) {
+  var list = readSmall(protectedFile(id), 64 * 1024);
+  return isArray(list) ? list.filter(function (k) { return typeof k === 'string'; }) : [];
+}
+
+function markProtected(id) {
+  var added = cache.added[id];
+  if (!added || !added.channels) return;
+  protectedKeys(id).forEach(function (k) { if (added.channels[k]) added.channels[k].drm = true; });
+}
+
+// An #EXT-X-KEY or #EXT-X-SESSION-KEY that the TV's player cannot use: any
+// method but AES-128, or a key system other than plain identity.
+function hlsProtected(text) {
+  var lines = String(text || '').split(/\r?\n/);
+  for (var i = 0; i < lines.length; i++) {
+    var m = /^#EXT-X-(?:SESSION-)?KEY:(.*)$/.exec(lines[i]);
+    if (!m) continue;
+    var method = (/(?:^|,)METHOD=([^,]*)/.exec(m[1]) || [])[1] || '';
+    var format = ((/(?:^|,)KEYFORMAT="([^"]*)"/.exec(m[1]) || [])[1] || 'identity').toLowerCase();
+    if (method === 'NONE') continue;
+    if (method === 'AES-128' && format === 'identity') continue;
+    return true;
+  }
+  return false;
+}
+
+// The first variant of a master playlist, resolved against the master's URL.
+function firstVariant(text, base) {
+  var lines = String(text || '').split(/\r?\n/), inf = false;
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i].replace(/^\s+|\s+$/g, '');
+    if (/^#EXT-X-STREAM-INF:/.test(l)) { inf = true; continue; }
+    if (inf && l && l.charAt(0) !== '#') {
+      if (/^https?:\/\//i.test(l)) return l;
+      if (l.charAt(0) === '/') return (/^(https?:\/\/[^\/]+)/i.exec(base) || [])[1] + l;
+      return base.replace(/[?#].*$/, '').replace(/[^\/]*$/, '') + l;
+    }
+  }
+  return null;
+}
+
+// A small text over the curl or wget the jobs use; cb(text or null).
+function fetchText(url, cb) {
+  var bins = clientsFn().filter(function (b) { try { return fs.statSync(b).isFile(); } catch (e) { return false; } });
+  if (!bins.length || !/^https?:\/\//i.test(url)) return cb(null);
+  var bin = bins[0], ua = 'Glasshouse/' + version;
+  var args = /wget$/.test(bin) ? ['-q', '-T', '8', '-U', ua, '-O', '-', '--', url]
+    : ['-fsSL', '--proto', '=http,https', '--proto-redir', '=http,https', '--max-time', '8', '-A', ua, '--', url];
+  execFile(bin, args, { timeout: CHECK_MS + 2000, maxBuffer: CHECK_BYTES, encoding: 'utf8' }, function (err, out) {
+    cb(err ? null : String(out));
+  });
+}
+
+/* Whether a channel that would not play is protected; cb({ ok, protected }). */
+function checkStream(id, key, cb) {
+  var s = streamUrl(id, key);
+  if (!s) return cb({ ok: true, protected: false });
+  var at = id + ':' + key;
+  if (checkedAt[at] && nowMs() - checkedAt[at] < CHECK_AGAIN_MS) return cb({ ok: true, protected: false });
+  checkedAt[at] = nowMs();
+  function found() {
+    var list = protectedKeys(id);
+    if (list.indexOf(key) === -1) list.push(key);
+    try { writeSecret(protectedFile(id), list); } catch (e) {}
+    console.log('iptv: ' + key + ' on ' + id + ' is protected (DRM), marked');
+    markProtected(id);
+    lineupChanged();
+    changed();
+    cb({ ok: true, protected: true });
+  }
+  fetchText(s.url, function (master) {
+    if (master === null) return cb({ ok: true, protected: false });
+    if (hlsProtected(master)) return found();
+    var v = firstVariant(master, s.url);
+    if (!v) return cb({ ok: true, protected: false });
+    fetchText(v, function (media) {
+      if (media !== null && hlsProtected(media)) return found();
+      cb({ ok: true, protected: false });
+    });
+  });
+}
+
 // A schedule shard for the guide grid, piped to Home unread.
 function schedulePath(id, key, day) {
   var cur = current[id] || {};
@@ -1421,6 +1520,9 @@ function stop() {
 function woke() { if (started) catchUp(); }
 
 module.exports = {
+  checkStream: checkStream,
+  hlsProtected: hlsProtected,
+  firstVariant: firstVariant,
   init: init,
   start: start,
   stop: stop,
