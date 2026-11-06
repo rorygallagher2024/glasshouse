@@ -48,7 +48,7 @@ It is off until it is switched on in this section (after a warning) or a token i
 
 ![Saved web pages, two pages with Edit and Remove buttons, and the fields for adding another](../screenshots/apps-saved-pages.png)
 
-Lists the web pages on the Home screen, each of which opens in the TV's browser. A page saved from the browser takes its whole title as its name, so a long one can be given a shorter name here. Pages can also be added, pointed at a new address, or removed.
+Lists the web pages on the Home screen, each of which opens in the TV's browser. They are on Glasshouse Home's Apps row too. A page saved from the browser takes its whole title as its name, so a long one can be given a shorter name here. Pages can also be added, pointed at a new address, or removed.
 
 ## Remote
 

@@ -113,6 +113,7 @@ var screentime = require('./lib/screentime');
 var saverPowerOff = require('./lib/saverpoweroff');
 var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
+var backupParts = require('./lib/backup-parts');
 var power = require('./lib/power');
 var names = require('./lib/names');
 var msg = say.msg;
@@ -1022,7 +1023,22 @@ routes.init({
   displayVersion: TVWEB_DISPLAY_VERSION
 });
 
+backupParts.init({
+  luna: luna,
+  control: controls.doControl,
+  config: CONFIG,
+  privacy: privacy,
+  services: servicesModule,
+  remoteKeys: remoteKeys,
+  quickAccess: quickAccess,
+  screensavers: screensavers,
+  apps: appsModule,
+  home: glasshouseHome,
+  alwaysOnSupported: telemetry.alwaysOnSupported
+});
+
 backup.init({
+  parts: backupParts,
   lgSettings: lgSettings,
   home: glasshouseHome,
   config: CONFIG,

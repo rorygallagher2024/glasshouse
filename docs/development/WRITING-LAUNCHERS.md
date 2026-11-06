@@ -113,7 +113,9 @@ behind them may change.
     a URL for an `<img>`, or null; `hidden` is true for apps the owner hid,
     such as LG's promotions, which a launcher should leave out; and `folder`
     is true for apps put in More apps, which a launcher can show apart or
-    after the rest. `result.inputs` is a list of
+    after the rest. A web page saved to the Home screen is an app here too,
+    with an id starting `page:`, and opens in the TV's browser.
+    `result.inputs` is a list of
     `{ id, title, port, tuner, unused, hidden }`: each HDMI port, or each
     device behind it that the TV knows by HDMI-CEC, with `tuner` true for the
     TV's own tuner, `unused` true for a port with nothing plugged in, and
