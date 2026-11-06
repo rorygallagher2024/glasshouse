@@ -1539,22 +1539,24 @@ async function visitHomeLauncher(browser, base, problems) {
     if (sent.length) problems.push('Home launcher: its button changed something with none set up');
     await page.locator('#home-launcher-url').fill('http://ha.local:8123/tv');
     await page.locator('#home-launcher-save').click();
-    await page.waitForFunction(() => homeStatus.launcher && homeStatus.launcher.chosen);
+    // homeStatus is set before the tab is drawn from it, so the drawn state is waited for.
+    try {
+      await page.waitForFunction(() => /ha\.local:8123/.test(document.getElementById('home-state').textContent));
+    } catch (e) { problems.push('Home launcher: the state did not name the launcher'); }
     if (sent.join() !== '{"address":"http://ha.local:8123/tv"},{"choose":true}') problems.push('Home launcher: a web address with Glasshouse Home on sent ' + sent.join());
-    if (!/ha\.local:8123/.test(await page.locator('#home-state').textContent())) problems.push('Home launcher: the state did not name the launcher');
     if (await page.locator('#home-more').isVisible()) problems.push('Home launcher: Glasshouse Home\'s rows showed with a launcher chosen');
     if (!/\bon\b/.test(await page.locator('#home-mode-launcher').getAttribute('class'))) problems.push('Home launcher: its button was not marked as chosen');
     if (!/ha\.local:8123\/tv/.test(await page.locator('#home-launcher-now-desc').textContent())) problems.push('Home launcher: the address was not shown');
     sent.length = 0;
     await page.locator('#home-switch').click();
-    await page.waitForFunction(() => !homeStatus.launcher.chosen);
+    await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-switch').className));
     if (sent.join() !== '{"choose":false}') problems.push('Home launcher: Use Glasshouse Home sent ' + sent.join());
     launcherUpload = false;
     await page.evaluate(() => loadHome());
     await page.locator('#home-launcher-upload-off').waitFor();
     if (!await page.locator('#home-launcher-pick').isDisabled()) problems.push('Home launcher: an upload was offered where installing from a file is off');
     await page.locator('#home-launcher-remove').click();
-    await page.waitForFunction(() => homeStatus.launcher === null);
+    await page.waitForFunction(() => document.getElementById('home-launcher-now-row').hidden);
     if (await page.locator('#home-launcher-now-row').isVisible()) problems.push('Home launcher: a removed launcher was still listed');
   } finally { await context.close(); }
 
