@@ -1,0 +1,7 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": "Another web page",
+  "description": "A second HTML screen saver, with a main of another name, to test with.",
+  "main": "later.html"
+}

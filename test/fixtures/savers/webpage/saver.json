@@ -1,0 +1,8 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": "A web page",
+  "description": "An HTML screen saver, to test with.",
+  "main": "index.html",
+  "uses": ["level"]
+}
