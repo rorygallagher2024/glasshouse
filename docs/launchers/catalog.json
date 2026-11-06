@@ -1,0 +1,17 @@
+{
+  "launchers": [
+    {
+      "id": "minimal",
+      "title": "Minimal",
+      "author": "Glasshouse",
+      "description": "As little on screen as will do: the TV's apps and inputs as two lists of names on black, and the time. Left and right choose between them, OK opens.",
+      "version": "1.0.0",
+      "url": "minimal/index.html",
+      "screenshot": "minimal/screenshot.jpg",
+      "kit": 1,
+      "home": "https://github.com/rorygallagher2024/glasshouse/tree/main/docs/launchers/minimal",
+      "size": 6514,
+      "sha256": "4181cf05d1cc9f99cc95c88033395328aa96be944763b921b7ad5fed036531f4"
+    }
+  ]
+}

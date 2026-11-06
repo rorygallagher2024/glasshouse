@@ -1151,7 +1151,7 @@ function handleHomeRoute(req, res, u, pathname) {
       var wants = String((u.query && u.query['with']) || '').split(',');
       return homeModule.status(function (st) {
         st.writable = !!config.allowControl || fromTV(req);
-        st.launcher = homeLauncherModule ? homeLauncherModule.status() : null;
+        st.launchers = homeLauncherModule ? homeLauncherModule.status() : null;
         st.launcherUpload = sideloadVia(req) !== null;
         // What the Home pane draws its colour previews' clock as.
         st.clockHour12 = clockHour12();
@@ -1210,6 +1210,7 @@ function handleHomeRoute(req, res, u, pathname) {
       }, 'image/jpeg');
     }
     if (pathname === '/api/home/recents') return homeModule.recentApps.list(reply);
+    if (pathname === '/api/home/launchers/catalogue' && homeLauncherModule) return homeLauncherModule.catalogue(reply);
     if (pathname === '/api/home/recents/image') {
       var snapshot = homeModule.recentApps.imagePath(u.query && u.query.id);
       if (!snapshot) return send(res, 404, JSON.stringify({ ok: false, error: 'no picture' }));
@@ -1266,9 +1267,11 @@ function handleHomeRoute(req, res, u, pathname) {
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
       if (pathname === '/api/home/launcher' && homeLauncherModule) {
         if (typeof body.address === 'string') return homeLauncherModule.setAddress(body.address, reply);
-        if (body.remove === true) return homeLauncherModule.remove(reply);
-        if (typeof body.choose === 'boolean') return homeLauncherModule.choose(body.choose, reply);
-        return reply({ ok: false, error: 'address, remove or choose expected' });
+        if (typeof body.remove === 'string') return homeLauncherModule.remove(body.remove, reply);
+        if (typeof body.choose === 'string' || body.choose === false) return homeLauncherModule.choose(body.choose, reply);
+        // From the catalogue, which is reviewed and pinned by sha256 as the Homebrew Channel's is.
+        if (typeof body.install === 'string') return homeLauncherModule.installFromCatalogue(body.install, reply);
+        return reply({ ok: false, error: 'address, remove, choose or install expected' });
       }
       if (pathname === '/api/home/search') return homeModule.search.find(body && body.query, reply);
       if (pathname === '/api/home/search/open') return homeModule.search.open(body, reply);

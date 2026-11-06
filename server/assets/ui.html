@@ -1071,20 +1071,21 @@
        chosen, or once its button is pressed to set one up -->
   <div id="home-launcher" hidden>
   <div class="pv-sec" data-t="home.launcher.title">Custom launcher</div>
-  <div class="sub" data-t="home.launcher.intro">A home screen of your own in Glasshouse Home&rsquo;s place: a web app uploaded here, or a web page. The Home and Back buttons open it, as they do Glasshouse Home, and holding Home still opens LG&rsquo;s Home. If it stops working, LG&rsquo;s Home comes back by itself.</div>
+  <div class="sub" data-t="home.launcher.introMany">A home screen in Glasshouse Home&rsquo;s place: one from the catalogue, a web app of your own, or a web page. The Home and Back buttons open it, as they do Glasshouse Home, and holding Home still opens LG&rsquo;s Home. If it stops working, LG&rsquo;s Home comes back by itself.</div>
   <div class="pv-note warn" data-t="home.launcher.trust">A launcher can do anything on the TV that Glasshouse can. Only use one you trust.</div>
+  <div id="home-launchers-kept" hidden>
+    <div class="pv-g" data-t="home.launcher.kept">Your launchers</div>
+    <div class="prot-table" id="home-launchers"></div>
+  </div>
+  <div class="pv-g" data-t="home.launcher.catalogue">From the catalogue</div>
+  <div class="sub" data-t="home.launcher.catalogueDesc">Launchers reviewed for Glasshouse, which work on every TV it runs on.</div>
+  <div class="launcher-cards" id="home-launcher-cards"></div>
+  <div class="pv-g" data-t="home.launcher.own">Your own</div>
   <div class="prot-table">
-    <div class="prot-row" id="home-launcher-now-row" hidden>
-      <div class="prot-main">
-        <div class="prot-title" id="home-launcher-now">&mdash;</div>
-        <div class="prot-desc" id="home-launcher-now-desc"></div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-launcher-remove" onclick="homeLauncherRemove()" data-t="home.launcher.remove">Remove</button></div>
-    </div>
     <div class="prot-row">
       <div class="prot-main">
         <div class="prot-title" data-t="home.launcher.upload">Upload a launcher</div>
-        <div class="prot-desc" data-t="home.launcher.uploadDesc">A web app as an .ipk, a .zip of its folder, or a single .html file, up to 50 MB. It replaces the launcher here before it.</div>
+        <div class="prot-desc" data-t="home.launcher.uploadDescOwn">A web app as an .ipk, a .zip of its folder, or a single .html file, up to 50 MB. It replaces your own launcher or web page, if there is one.</div>
         <div class="pv-note" id="home-launcher-upload-off" hidden data-t="home.launcher.uploadOff">Uploading a launcher needs Install app from a URL or file switched on, on the Apps tab, or a token, as installing an app does.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-launcher-pick" onclick="homeLauncherPick()" data-t="home.launcher.choose">Choose a file</button></div>
@@ -1102,7 +1103,7 @@
   </div>
   <input type="file" id="home-launcher-file" accept=".ipk,.zip,.html,.htm" hidden onchange="homeLauncherPicked(this)">
   <div class="sub" id="home-launcher-note" role="status"></div>
-  <div class="pv-sub"><a href="https://rorygallagher2024.github.io/glasshouse/development/WRITING-LAUNCHERS/" target="_blank" rel="noopener" data-t="home.launcher.docs">Writing a launcher</a></div>
+  <div class="pv-sub"><a href="https://rorygallagher2024.github.io/glasshouse/development/WRITING-LAUNCHERS/" target="_blank" rel="noopener" data-t="home.launcher.docsMany">Writing a launcher, and adding one to the catalogue</a></div>
   </div>
 
   <!-- Home customisation, whichever Home is the TV's: power-on, Glasshouse Home's

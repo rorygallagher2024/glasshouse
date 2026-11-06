@@ -1601,6 +1601,16 @@ button.tools-jump:active{background:var(--w80)}
 #home-hero+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
 #home-hero+#home-launcher{margin-top:clamp(34px,4.5vw,48px)}
 #home-launcher+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
+#home-launcher .pv-g{margin-top:30px}
+.launcher-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin:12px 0 8px}
+.launcher-card{border:1px solid var(--edge);display:flex;flex-direction:column}
+.launcher-card img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#000;border-bottom:1px solid var(--edge)}
+.launcher-card .lc-body{padding:14px 14px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
+.launcher-card .lc-title{font-family:'Manrope';font-weight:600;font-size:14px;color:var(--w90)}
+.launcher-card .lc-by{font-size:12px;color:var(--w60)}
+.launcher-card .lc-desc{font-size:13px;color:var(--w70);flex:1}
+.launcher-card .pill{align-self:flex-start;margin-top:8px}
+#home-launchers .prot-status{display:flex;gap:8px}
 #home-custom.lg-home .home-gh-row{display:none}
 /* Each group's last row draws no line, as the next group's heading follows. */
 .home-custom-table .prot-row.last{border-bottom:0}

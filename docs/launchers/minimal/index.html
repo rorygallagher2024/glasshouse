@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Minimal</title>
+<!--
+  Minimal: a Glasshouse launcher with as little on screen as will do. The
+  TV's apps and inputs as two lists of names, the time, and nothing else.
+
+  Left and right choose between apps and inputs, up and down move through
+  them, OK opens. Home comes back to the first app. Written in ES5 for the
+  browser on webOS 3 and 4.
+-->
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#000;color:#f2f2f2;overflow:hidden;cursor:default;
+  font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:300}
+#frame{position:absolute;top:0;left:0;width:100%;height:100%;
+  -webkit-transition:-webkit-transform 2s ease;transition:transform 2s ease}
+#time{position:absolute;top:8vh;left:9vw;font-size:2.6vh;letter-spacing:.1em;color:#6a6a6a}
+#tabs{position:absolute;top:24vh;left:9vw;font-size:2.4vh;letter-spacing:.24em;text-transform:uppercase}
+#tabs span{color:#444;margin-right:4vw;-webkit-transition:color .3s;transition:color .3s}
+#tabs span.on{color:#f2f2f2}
+#list{position:absolute;top:32vh;bottom:8vh;left:9vw;right:9vw;overflow:hidden}
+#items{position:absolute;left:0;top:0;-webkit-transition:-webkit-transform .35s ease;transition:transform .35s ease}
+.item{height:8vh;line-height:8vh;font-size:4.6vh;color:#3c3c3c;white-space:nowrap;
+  -webkit-transition:color .25s;transition:color .25s}
+.item.on{color:#f2f2f2}
+#empty{font-size:2.4vh;color:#555;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div id="frame">
+  <div id="time"></div>
+  <div id="tabs"><span id="tab-apps">Apps</span><span id="tab-inputs">Inputs</span></div>
+  <div id="list"><div id="items"></div></div>
+</div>
+<script>
+(function () {
+  var lists = { apps: [], inputs: [] };
+  var tab = 'apps';
+  var at = { apps: 0, inputs: 0 };
+  var clockTimer = null;
+
+  function $(id) { return document.getElementById(id); }
+
+  function entries() { return lists[tab]; }
+
+  function draw() {
+    $('tab-apps').className = tab === 'apps' ? 'on' : '';
+    $('tab-inputs').className = tab === 'inputs' ? 'on' : '';
+    var box = $('items');
+    box.innerHTML = '';
+    var list = entries();
+    if (!list.length) {
+      var none = document.createElement('div');
+      none.id = 'empty';
+      none.textContent = tab === 'apps' ? 'No apps yet' : 'Nothing plugged in';
+      box.appendChild(none);
+      box.style.webkitTransform = box.style.transform = '';
+      return;
+    }
+    for (var i = 0; i < list.length; i++) {
+      var el = document.createElement('div');
+      el.className = 'item' + (i === at[tab] ? ' on' : '');
+      el.textContent = list[i].title;
+      el.setAttribute('data-i', i);
+      box.appendChild(el);
+    }
+    // The chosen name stays on the list's third line once there are more above it.
+    var shift = Math.max(0, at[tab] - 2) * box.firstChild.offsetHeight;
+    box.style.webkitTransform = box.style.transform = 'translateY(' + (-shift) + 'px)';
+  }
+
+  function move(by) {
+    var n = entries().length;
+    if (!n) return;
+    at[tab] = Math.max(0, Math.min(n - 1, at[tab] + by));
+    draw();
+  }
+
+  function switchTab(to) {
+    if (to === tab) return;
+    tab = to;
+    draw();
+  }
+
+  function open() {
+    var item = entries()[at[tab]];
+    if (item) item.open();
+  }
+
+  function opener(kind, id) {
+    return function () { Glasshouse.open(kind, id); };
+  }
+
+  // Kept on the same app or input by id when the lists are read again.
+  function keepPlace(name, list) {
+    var was = lists[name][at[name]];
+    lists[name] = list;
+    at[name] = 0;
+    if (!was) return;
+    for (var i = 0; i < list.length; i++) if (list[i].id === was.id) at[name] = i;
+  }
+
+  function load() {
+    Glasshouse.catalogue(function (err, cat) {
+      // Just after the TV starts, Glasshouse may still be starting too.
+      if (err) return setTimeout(load, 2000);
+      var apps = [], inputs = [], i;
+      for (i = 0; i < cat.apps.length; i++) {
+        var a = cat.apps[i];
+        if (!a.hidden) apps.push({ id: a.id, title: a.title, open: opener('app', a.id) });
+      }
+      apps.push({ id: 'lg-home', title: 'LG Home', open: function () { Glasshouse.lgHome(); } });
+      for (i = 0; i < cat.inputs.length; i++) {
+        var d = cat.inputs[i];
+        if (!d.unused) inputs.push({ id: d.id, title: d.title, open: opener('input', d.id) });
+      }
+      keepPlace('apps', apps);
+      keepPlace('inputs', inputs);
+      draw();
+    });
+  }
+
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  function clock() {
+    var d = new Date();
+    $('time').textContent = two(d.getHours()) + ':' + two(d.getMinutes());
+  }
+  function startClock() { clock(); clockTimer = setInterval(clock, 10000); }
+
+  /*
+   * White text that never moves is what an OLED panel keeps, so the whole
+   * screen drifts by a few pixels every few minutes.
+   */
+  var drift = 0;
+  setInterval(function () {
+    drift = (drift + 1) % 4;
+    var x = [0, 10, 10, 0][drift], y = [0, 0, 8, 8][drift];
+    var t = 'translate(' + x + 'px,' + y + 'px)';
+    $('frame').style.webkitTransform = $('frame').style.transform = t;
+  }, 180000);
+
+  document.addEventListener('keydown', function (e) {
+    var k = e.keyCode;
+    if (k === 38) move(-1);
+    else if (k === 40) move(1);
+    else if (k === 37) switchTab('apps');
+    else if (k === 39) switchTab('inputs');
+    else if (k === 13) open();
+    else return;
+    e.preventDefault();
+  });
+
+  // The Magic Remote's pointer: a name under it is chosen, and a click opens it.
+  $('items').addEventListener('mouseover', function (e) {
+    var i = e.target && e.target.getAttribute && e.target.getAttribute('data-i');
+    if (i === null || i === undefined || +i === at[tab]) return;
+    at[tab] = +i;
+    draw();
+  });
+  $('items').addEventListener('click', function (e) {
+    if (e.target && e.target.getAttribute && e.target.getAttribute('data-i') !== null) open();
+  });
+  $('tab-apps').addEventListener('click', function () { switchTab('apps'); });
+  $('tab-inputs').addEventListener('click', function () { switchTab('inputs'); });
+
+  // Home comes back to the first app.
+  Glasshouse.onHome(function () {
+    tab = 'apps';
+    at.apps = 0;
+    draw();
+  });
+  // An app installed, or a device naming itself, changes the lists.
+  Glasshouse.onChanged(load);
+  // Nothing needs to tick while an app is over Home.
+  Glasshouse.onCovered(function (covered) {
+    clearInterval(clockTimer);
+    if (!covered) { startClock(); load(); }
+  });
+
+  startClock();
+  load();
+})();
+</script>
+</body>
+</html>

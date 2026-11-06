@@ -12,9 +12,12 @@ let homeWallTimer = null;
 let homeWallUploading = false;
 // null until the server says; false on a TV Glasshouse Home is not offered on.
 let homeAvailable = null;
-// The Custom launcher section, shown while one is set up or once its button is pressed.
+// The Custom launcher section, shown while one is kept or once its button is pressed.
 let homeLauncherOpen = false;
 let homeLauncherBusy = false;
+// The catalogue of launchers: null until read, { error } where it could not be.
+let homeLauncherCat = null;
+let homeLauncherCatAt = 0;
 
 const HOME_ROWS = {
   app: () => t('home.row.apps', 'Apps'),
@@ -76,7 +79,16 @@ function homeWritable() { return !!(!homeSaving && homeStatus && (homeStatus.sup
 // A launcher of the owner's own is the TV's Home, in Glasshouse Home's place.
 function homeLauncherOn() {
   const st = homeStatus;
-  return !!(st && st.enabled && st.launcher && st.launcher.chosen);
+  return !!(st && st.enabled && st.launchers && st.launchers.chosen);
+}
+
+function homeLaunchersKept() {
+  return (homeStatus && homeStatus.launchers && homeStatus.launchers.launchers) || [];
+}
+
+function homeLauncherChosen() {
+  const id = homeStatus && homeStatus.launchers && homeStatus.launchers.chosen;
+  return homeLaunchersKept().filter(l => l.id === id)[0] || null;
 }
 
 function renderHomeCustom(autoVal) {
@@ -117,7 +129,7 @@ function renderHome() {
     state.textContent = t('home.unavailable', 'Not available on this TV');
     desc.textContent = st.supported.reason || '';
   } else if (homeLauncherOn()) {
-    state.textContent = t('home.launcher.isOn', '{title} is the TV’s Home', { title: st.launcher.title });
+    state.textContent = t('home.launcher.isOn', '{title} is the TV’s Home', { title: homeLauncherChosen().title });
     desc.textContent = st.lgHomeOpen
       ? t('home.launcher.isOnLgOpen', 'LG’s Home is open for now. The custom launcher comes back when something else is opened, or Home is pressed.')
       : t('home.launcher.isOnDesc', 'The custom launcher opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.');
@@ -275,10 +287,8 @@ function renderHome() {
   const launcherBtn = q('home-mode-launcher');
   if (launcherBtn) {
     launcherBtn.hidden = !!st.restorePending || !st.supported.ok;
-    const armed = homeArmed === 'launcher';
-    launcherBtn.disabled = !homeWritable() || homeLauncherBusy;
-    launcherBtn.className = homeLauncherOn() ? 'on' : armed ? 'warn' : '';
-    launcherBtn.textContent = armed ? t('home.confirmOn', 'Press again to switch on') : t('home.launcher.button', 'Custom launcher');
+    launcherBtn.disabled = homeLauncherBusy;
+    launcherBtn.className = homeLauncherOn() ? 'on' : '';
   }
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
@@ -655,74 +665,133 @@ async function homeSwitch() {
   if (activeBtn) activeBtn.textContent = t('apps.service.updating', 'Updating…');
   try {
     // Glasshouse Home's own button: the custom launcher left set up, but not chosen.
-    if (want === 'on' && homeStatus.launcher && homeStatus.launcher.chosen) await homePost('/api/home/launcher', { choose: false });
+    if (want === 'on' && homeStatus.launchers && homeStatus.launchers.chosen) await homePost('/api/home/launcher', { choose: false });
     await homePost(want === 'on' ? '/api/home/enable' : '/api/home/disable');
   } catch (e) { showErr(e.message); }
   loadHome();
 }
 
-/*
- * The Custom launcher button: with none set up, it opens the section to set
- * one up; with Glasshouse Home on, it swaps at once; from LG's Home, it takes
- * a second press, as Glasshouse Home's own button does.
- */
+// The Custom launcher button opens the section, and reads the catalogue.
 function homeChooseLauncher() {
-  const st = homeStatus;
-  if (!st || !homeWritable() || homeLauncherOn()) return;
-  if (!st.launcher) {
-    homeLauncherOpen = true;
-    renderHome();
-    const box = q('home-launcher');
-    if (box) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
-    return;
-  }
-  if (st.enabled) { homeLauncherChoose(true); return; }
-  if (homeArmed !== 'launcher') {
-    homeArmed = 'launcher';
+  if (!homeStatus || homeLauncherOn()) return;
+  homeLauncherOpen = true;
+  renderHome();
+  const box = q('home-launcher');
+  if (box) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+
+/*
+ * A launcher kept: with Glasshouse Home on it swaps at once; from LG's Home it
+ * takes a second press, as Glasshouse Home's own button does.
+ */
+function homeLauncherUse(id) {
+  if (!homeWritable() || homeLauncherBusy) return;
+  if (homeStatus.enabled) return homeLauncherChoose(id);
+  if (homeArmed !== 'use:' + id) {
+    homeArmed = 'use:' + id;
     clearTimeout(homeArmTimer);
     homeArmTimer = setTimeout(() => { homeArmed = null; renderHome(); }, 5000);
     return renderHome();
   }
   homeArmed = null;
   clearTimeout(homeArmTimer);
-  homeLauncherChoose(true);
+  homeLauncherChoose(id);
 }
 
-async function homeLauncherChoose(want) {
+async function homeLauncherChoose(id) {
   homeLauncherBusy = true;
   renderHome();
   try {
-    await homePost('/api/home/launcher', { choose: want });
-    if (want && !homeStatus.enabled) await homePost('/api/home/enable');
+    await homePost('/api/home/launcher', { choose: id });
+    if (id !== false && !homeStatus.enabled) await homePost('/api/home/enable');
   } catch (e) { showErr(e.message); }
   homeLauncherBusy = false;
   await loadHome();
+}
+
+async function homeLauncherLoadCatalogue() {
+  homeLauncherCatAt = Date.now();
+  try {
+    const r = await homeGet('/api/home/launchers/catalogue');
+    homeLauncherCat = r.launchers;
+  } catch (e) { homeLauncherCat = { error: e.message }; }
+  renderHomeLauncher();
+}
+
+function homeLauncherDesc(l) {
+  if (l.kind === 'web') return t('home.launcher.nowWeb', 'Web page: {address}', { address: l.address });
+  if (l.source === 'catalogue') return t('home.launcher.nowCatalogue', 'From the catalogue: by {author}, version {version}', { author: l.author || '', version: l.version || '' });
+  return l.files === 1
+    ? t('home.launcher.nowAppOne', 'Uploaded: one file, {size}', { size: fmtSize(l.bytes) })
+    : t('home.launcher.nowApp', 'Uploaded: {files} files, {size}', { files: l.files, size: fmtSize(l.bytes) });
 }
 
 function renderHomeLauncher() {
   const st = homeStatus;
   const box = q('home-launcher');
   if (!box || !st) return;
-  const lc = st.launcher;
-  box.hidden = !st.supported.ok || !!st.restorePending || !(lc || homeLauncherOpen);
-  const row = q('home-launcher-now-row');
-  if (row) row.hidden = !lc;
-  if (lc) {
-    q('home-launcher-now').textContent = lc.title;
-    q('home-launcher-now-desc').textContent = lc.kind === 'web'
-      ? t('home.launcher.nowWeb', 'Web page: {address}', { address: lc.address })
-      : lc.files === 1
-        ? t('home.launcher.nowAppOne', 'Uploaded: one file, {size}', { size: fmtSize(lc.bytes) })
-        : t('home.launcher.nowApp', 'Uploaded: {files} files, {size}', { files: lc.files, size: fmtSize(lc.bytes) });
+  const kept = homeLaunchersKept();
+  box.hidden = !st.supported.ok || !!st.restorePending || !(kept.length || homeLauncherOpen);
+  if (box.hidden) return;
+  if (!homeLauncherCat || (homeLauncherCat.error && Date.now() - homeLauncherCatAt > 30000)) {
+    if (Date.now() - homeLauncherCatAt > 5000) homeLauncherLoadCatalogue();
   }
   const busy = !homeWritable() || homeLauncherBusy;
-  ['home-launcher-remove', 'home-launcher-pick', 'home-launcher-save'].forEach(id => { const b = q(id); if (b) b.disabled = busy; });
+  const chosen = st.enabled && st.launchers ? st.launchers.chosen : null;
+  q('home-launchers-kept').hidden = !kept.length;
+  q('home-launchers').innerHTML = kept.map(l => {
+    const on = l.id === chosen, armed = homeArmed === 'use:' + l.id;
+    const use = on ? t('home.launcher.inUse', 'In use') : armed ? t('home.confirmOn', 'Press again to switch on') : t('home.launcher.use', 'Use');
+    return `<div class="prot-row">
+      <div class="prot-main"><div class="prot-title">${esc(l.title)}</div><div class="prot-desc">${esc(homeLauncherDesc(l))}</div></div>
+      <div class="prot-status">
+        <button type="button" class="pill ${on ? 'good' : armed ? 'warn' : 'idle'}" ${on || busy ? 'disabled' : ''} onclick="homeLauncherUse('${esc(l.id)}')">${esc(use)}</button>
+        <button type="button" class="pill idle" ${busy ? 'disabled' : ''} onclick="homeLauncherRemove('${esc(l.id)}')">${esc(t('home.launcher.remove', 'Remove'))}</button>
+      </div>
+    </div>`;
+  }).join('');
+  const cards = q('home-launcher-cards');
+  if (!homeLauncherCat) cards.innerHTML = `<div class="sub">${esc(t('home.launcher.catalogueLoading', 'Reading the catalogue…'))}</div>`;
+  else if (homeLauncherCat.error) cards.innerHTML = `<div class="sub">${esc(homeLauncherCat.error)}</div>`;
+  else if (!homeLauncherCat.length) cards.innerHTML = `<div class="sub">${esc(t('home.launcher.catalogueEmpty', 'The catalogue is empty.'))}</div>`;
+  else cards.innerHTML = homeLauncherCat.map(c => {
+    const have = c.installed;
+    let label, can = !busy;
+    if (c.needsNewer) { label = t('home.launcher.needsNewer', 'Needs a newer Glasshouse'); can = false; }
+    else if (have === null) label = t('home.launcher.install', 'Install');
+    else if (have !== c.version) label = t('home.launcher.update', 'Update to {version}', { version: c.version });
+    else { label = t('home.launcher.installed', 'Installed'); can = false; }
+    const shot = c.screenshot ? `<img src="${esc(c.screenshot)}" alt="" loading="lazy">` : '';
+    return `<div class="launcher-card">${shot}<div class="lc-body">
+      <div class="lc-title">${esc(c.title)}</div>
+      <div class="lc-by">${esc(t('home.launcher.by', 'By {author}, version {version}', { author: c.author, version: c.version }))}</div>
+      <div class="lc-desc">${esc(c.description)}</div>
+      <button type="button" class="pill idle" ${can ? '' : 'disabled'} onclick="homeLauncherInstall('${esc(c.id)}')">${esc(label)}</button>
+    </div></div>`;
+  }).join('');
+  ['home-launcher-pick', 'home-launcher-save'].forEach(id => { const b = q(id); if (b) b.disabled = busy; });
   // Held to what installing an app from a file is.
   const uploadOff = st.launcherUpload === false;
   q('home-launcher-upload-off').hidden = !uploadOff;
   if (uploadOff) q('home-launcher-pick').disabled = true;
   const url = q('home-launcher-url');
-  if (url && lc && lc.kind === 'web' && !url.value && document.activeElement !== url) url.value = lc.address;
+  const ownWeb = kept.filter(l => l.id === 'own' && l.kind === 'web')[0];
+  if (url && ownWeb && !url.value && document.activeElement !== url) url.value = ownWeb.address;
+}
+
+async function homeLauncherInstall(id) {
+  if (!homeWritable() || homeLauncherBusy) return;
+  const note = q('home-launcher-note');
+  homeLauncherBusy = true;
+  note.textContent = t('home.launcher.installing', 'Installing…');
+  renderHome();
+  try {
+    await homePost('/api/home/launcher', { install: id });
+    note.textContent = t('home.launcher.installedNote', 'Installed. Press Use beside it to make it the TV’s Home.');
+  } catch (e) { note.textContent = e.message; }
+  homeLauncherBusy = false;
+  await loadHome();
+  homeLauncherLoadCatalogue();
 }
 
 function homeLauncherPick() {
@@ -731,14 +800,14 @@ function homeLauncherPick() {
   input.click();
 }
 
-// Set up, it becomes the TV's Home at once where Glasshouse Home already is; from LG's Home, the button says so.
-async function homeLauncherDone(r) {
+// Your own, set up: it becomes the TV's Home at once where Glasshouse Home already is.
+async function homeLauncherDone() {
   const note = q('home-launcher-note');
   if (homeStatus.enabled) {
-    if (!r.launcher.chosen) await homePost('/api/home/launcher', { choose: true });
+    await homePost('/api/home/launcher', { choose: 'own' });
     note.textContent = t('home.launcher.doneOn', 'Done. The TV’s Home shows it within a few seconds.');
   } else {
-    note.textContent = t('home.launcher.doneOff', 'Done. Press Custom launcher above to make it the TV’s Home.');
+    note.textContent = t('home.launcher.doneOffMany', 'Done. Press Use beside it to make it the TV’s Home.');
   }
 }
 
@@ -756,7 +825,7 @@ async function homeLauncherPicked(input) {
     });
     const r = await res.json();
     if (!res.ok || !r.ok) throw new Error(r.error || t('home.launcher.uploadFailed', 'The launcher could not be uploaded.'));
-    await homeLauncherDone(r);
+    await homeLauncherDone();
   } catch (e) { note.textContent = e.message; }
   homeLauncherBusy = false;
   await loadHome();
@@ -769,25 +838,26 @@ async function homeLauncherSaveAddress() {
   note.textContent = '';
   renderHome();
   try {
-    const r = await homePost('/api/home/launcher', { address: q('home-launcher-url').value.trim() });
-    await homeLauncherDone(r);
+    await homePost('/api/home/launcher', { address: q('home-launcher-url').value.trim() });
+    await homeLauncherDone();
   } catch (e) { note.textContent = e.message; }
   homeLauncherBusy = false;
   await loadHome();
 }
 
 // Removed while it is the TV's Home, Glasshouse Home takes its place.
-async function homeLauncherRemove() {
+async function homeLauncherRemove(id) {
   if (!homeWritable() || homeLauncherBusy) return;
   homeLauncherBusy = true;
   q('home-launcher-note').textContent = '';
   renderHome();
   try {
-    await homePost('/api/home/launcher', { remove: true });
-    q('home-launcher-url').value = '';
+    await homePost('/api/home/launcher', { remove: id });
+    if (id === 'own') q('home-launcher-url').value = '';
   } catch (e) { q('home-launcher-note').textContent = e.message; }
   homeLauncherBusy = false;
   await loadHome();
+  if (homeLauncherCat && !homeLauncherCat.error) homeLauncherLoadCatalogue();
 }
 
 // Hiding LG's Home is what can leave a TV without one, so switching it on takes a second press.
