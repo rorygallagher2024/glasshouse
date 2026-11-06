@@ -5165,6 +5165,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', perf: takeTrace() }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
+        // A custom launcher chosen in Glasshouse Home's place (lib/home-launcher).
+        if (r.launcher) return location.replace('/home/launcher/');
         if (r.trace && !trace) startTrace();
         else if (!r.trace && trace) stopTrace();
         var standalone = !!(data && data.supported && data.supported.standalone);

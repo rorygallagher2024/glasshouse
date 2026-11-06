@@ -1322,7 +1322,7 @@ step('on webOS 4, enabling installs the standalone app and sets the Home key fil
   });
 });
 
-step('on webOS 4, a Home press the view does not answer opens it again before giving LG\'s ribbon the key', function (done) {
+step('on webOS 4, a Home press the view does not answer closes it and opens it afresh before giving LG\'s ribbon the key', function (done) {
   var homeKey = '', injected = [];
   start(null, {
     webosVersion: '4.4.3',
@@ -1336,11 +1336,14 @@ step('on webOS 4, a Home press the view does not answer opens it again before gi
     assert.ok(r.ok, r.error);
     foreground('com.webos.app.hdmi2');
     tv.launched = [];
+    tv.events = [];
     home.homeKey(true);
     home.homeKey(false);
     // No systemctl on webOS 4, so no WebAppMgr unit to start.
     wait(5100, function () {
       assert.deepEqual(tv.launched, [OLD_APP], 'opened once more');
+      // Its page loads afresh, rather than one that has gone to another site coming to the front.
+      assert.ok(tv.events.indexOf('close old app') !== -1, 'closed first: ' + tv.events.join(', '));
       assert.deepEqual(injected, [], 'LG\'s ribbon not opened yet');
       assert.strictEqual(homeKey, OLD_APP, 'Home still opens Glasshouse Home');
       home.disable(function () { done(); });

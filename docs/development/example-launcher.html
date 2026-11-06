@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Example launcher</title>
+<!--
+  A small custom launcher for Glasshouse: the TV's apps and inputs as tiles,
+  moved through with the arrow keys and opened with OK. Upload this file on
+  the dashboard's Home tab, under Custom launcher.
+
+  Glasshouse adds its script to this page before anything else in <head>, so
+  window.Glasshouse is there when the script below runs. Written in ES5, as
+  the browser on webOS 3 and 4 needs.
+-->
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#101418;color:#e8e8e8;font-family:sans-serif;overflow:hidden}
+#clock{position:absolute;top:5vh;right:5vw;font-size:5vh;font-weight:300}
+h2{font-size:2.6vh;font-weight:400;color:#9aa4ad;margin:0 0 1.5vh 5vw}
+.row{display:flex;flex-wrap:wrap;padding:0 5vw 2.4vh}
+.tile{width:15vh;height:15vh;border-radius:1.2vh;background:#1d242b;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-size:1.7vh;text-align:center;padding:1vh;border:0.4vh solid transparent;margin:0 1.6vh 1.6vh 0}
+.tile img{width:7vh;height:7vh;object-fit:contain;margin-bottom:1vh}
+.tile.focus{border-color:#ffffff;background:#2a333c}
+#rows{position:absolute;top:16vh;left:0;right:0}
+#error{position:absolute;bottom:4vh;left:5vw;color:#ff8a80;font-size:2vh}
+</style>
+</head>
+<body>
+<div id="clock"></div>
+<div id="rows"></div>
+<div id="error"></div>
+<script>
+(function () {
+  var tiles = [];
+  var focused = 0;
+
+  function tile(row, title, icon, open) {
+    var el = document.createElement('div');
+    el.className = 'tile';
+    if (icon) {
+      var img = document.createElement('img');
+      img.src = icon;
+      el.appendChild(img);
+    }
+    el.appendChild(document.createTextNode(title));
+    el.onclick = open;
+    row.appendChild(el);
+    tiles.push({ el: el, open: open });
+  }
+
+  function section(title) {
+    var h = document.createElement('h2');
+    h.textContent = title;
+    var row = document.createElement('div');
+    row.className = 'row';
+    document.getElementById('rows').appendChild(h);
+    document.getElementById('rows').appendChild(row);
+    return row;
+  }
+
+  function show(i) {
+    if (!tiles.length) return;
+    focused = Math.max(0, Math.min(tiles.length - 1, i));
+    for (var n = 0; n < tiles.length; n++) tiles[n].el.className = n === focused ? 'tile focus' : 'tile';
+  }
+
+  function opener(kind, id) {
+    return function () {
+      Glasshouse.open(kind, id, function (err) {
+        document.getElementById('error').textContent = err ? err.message : '';
+      });
+    };
+  }
+
+  function draw(cat) {
+    var apps = section('Apps');
+    for (var i = 0; i < cat.apps.length; i++) {
+      var a = cat.apps[i];
+      if (!a.hidden) tile(apps, a.title, a.icon, opener('app', a.id));
+    }
+    tile(apps, 'LG Home', null, function () { Glasshouse.lgHome(); });
+    var inputs = section('Inputs');
+    for (var j = 0; j < cat.inputs.length; j++) {
+      var d = cat.inputs[j];
+      if (!d.unused) tile(inputs, d.title, null, opener('input', d.id));
+    }
+    show(0);
+  }
+
+  function load() {
+    Glasshouse.catalogue(function (err, cat) {
+      // Just after the TV starts, Glasshouse may still be starting too.
+      if (err) return setTimeout(load, 2000);
+      document.getElementById('rows').innerHTML = '';
+      tiles = [];
+      draw(cat);
+    });
+  }
+
+  function clock() {
+    var d = new Date();
+    document.getElementById('clock').textContent = d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
+
+  // How many tiles fit across, to move a row up or down.
+  function across() {
+    if (tiles.length < 2) return 1;
+    var top = tiles[0].el.offsetTop, n = 0;
+    while (n < tiles.length && tiles[n].el.offsetTop === top) n++;
+    return n;
+  }
+
+  document.addEventListener('keydown', function (e) {
+    var k = e.keyCode;
+    if (k === 37) show(focused - 1);
+    else if (k === 39) show(focused + 1);
+    else if (k === 38) show(focused - across());
+    else if (k === 40) show(focused + across());
+    else if (k === 13 && tiles[focused]) tiles[focused].open();
+    else return;
+    e.preventDefault();
+  });
+
+  // Nothing needs drawing while an app is over Home.
+  var clockTimer = null;
+  function start() { clock(); clockTimer = setInterval(clock, 10000); }
+  Glasshouse.onCovered(function (covered) {
+    clearInterval(clockTimer);
+    if (!covered) { start(); load(); }
+  });
+
+  start();
+  load();
+})();
+</script>
+</body>
+</html>
