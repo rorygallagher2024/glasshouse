@@ -131,7 +131,10 @@
     isCovered: function () { return covered; },
 
     // fn() when what catalogue() or channels() answer may have changed, to ask again.
-    onChanged: function (fn) { if (typeof fn === 'function') changedFns.push(fn); }
+    onChanged: function (fn) { if (typeof fn === 'function') changedFns.push(fn); },
+
+    // fn() when Home is pressed with the launcher on screen, or it is opened again from an app.
+    onHome: function (fn) { if (typeof fn === 'function') document.addEventListener('webOSRelaunch', function () { fn(); }); }
   };
 
   beat();
