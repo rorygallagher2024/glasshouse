@@ -1458,7 +1458,9 @@ function handleRequest(req, res) {
     // The strings and their translations change with each release as the pages
     // do, so a day-old copy beside a new page would show text the page no
     // longer has, or miss text it now does.
-    var fresh = ext === '.html' || ext === '.json' || /(^|\/)i18n\.js$/.test(file);
+    // So is the script a custom launcher is given: a launcher written for a
+    // newer one calls what an older copy lacks.
+    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit)\.js$/.test(file);
     var cacheHdr = fresh ? 'no-cache' : 'public, max-age=86400';
     var respondWithBuf = function (buf) {
       var etag = '"' + (displayVersionStr || '1') + '-' + buf.length.toString(16) + '"';

@@ -21,6 +21,8 @@
   var covered = false;
   var coveredSince = 0;
   var coveredFns = [];
+  var lists = null;
+  var changedFns = [];
 
   function request(method, url, body, cb) {
     var x = new XMLHttpRequest();
@@ -58,6 +60,13 @@
       }
       if (r.standalone && r.enabled === false) return window.close();
       setCovered(!!r.covered);
+      // Apps installed or removed, a device named over HDMI-CEC, channels retuned.
+      if (lists !== null && r.layoutVersion !== lists) {
+        for (var i = 0; i < changedFns.length; i++) {
+          try { changedFns[i](); } catch (e) {}
+        }
+      }
+      lists = r.layoutVersion;
       coveredSince = r.covered && !r.saver ? (coveredSince || new Date().getTime()) : 0;
       if (r.standalone && coveredSince && new Date().getTime() - coveredSince > CLOSE_BEHIND_MS) window.close();
     });
@@ -119,7 +128,10 @@
     // fn(true) while another app, an input or the screen saver is over Home; fn(false) when Home is back.
     onCovered: function (fn) { if (typeof fn === 'function') coveredFns.push(fn); },
 
-    isCovered: function () { return covered; }
+    isCovered: function () { return covered; },
+
+    // fn() when what catalogue() or channels() answer may have changed, to ask again.
+    onChanged: function (fn) { if (typeof fn === 'function') changedFns.push(fn); }
   };
 
   beat();

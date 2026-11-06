@@ -108,6 +108,12 @@ behind them may change.
 `Glasshouse.isCovered()`
 :   Whether it is covered now.
 
+`Glasshouse.onChanged(fn)`
+:   Calls `fn()` when what `catalogue()` or `channels()` answer may have
+    changed: an app installed or removed, a device behind an input naming
+    itself over HDMI-CEC, channels tuned. An input's id can change with its
+    name, so a launcher should ask again rather than keep the ids it had.
+
 `Glasshouse.version`
 :   1. Raised if a call is added.
 

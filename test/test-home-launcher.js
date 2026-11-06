@@ -143,7 +143,7 @@ var dir = path.join(os.tmpdir(), 'home-launcher-' + process.pid);
 fs.mkdirSync(dir);
 var free = 1024 * 1024 * 1024;
 home.init({ stateDir: dir, webosVersion: '9.2.2', port: 8080 });
-launcher.init({ stateDir: dir, df: function (target, cb) { cb(free); } });
+launcher.init({ stateDir: dir, version: '1.2.3', df: function (target, cb) { cb(free); } });
 routes.init({ config: { allowControl: true }, home: home, homeLauncher: launcher,
   assetPath: function (rel) { var f = path.join(__dirname, '..', 'server', 'assets', rel); return fs.existsSync(f) ? f : null; } });
 var server = http.createServer(routes.handleRequest), port;
@@ -185,7 +185,7 @@ test('a single HTML file is served with the kit first in its head', function (do
       assert.strictEqual(headers.location, '/home/launcher/index.html');
       get('/home/launcher/index.html', function (c3, page) {
         assert.strictEqual(c3, 200);
-        assert.ok(page.indexOf('<head><script src="/assets/home-kit.js"></script><title>') !== -1, page);
+        assert.ok(page.indexOf('<head><script src="/assets/home-kit.js?v=1.2.3"></script><title>') !== -1, page);
         done();
       });
     });
@@ -208,7 +208,7 @@ test('a zip of a folder is served from inside it, at the start page appinfo.json
       get('/home/launcher/', function (c2, text, headers) {
         assert.strictEqual(headers.location, '/home/launcher/app/start.html');
         get('/home/launcher/app/start.html', function (c3, page) {
-          assert.strictEqual(page, '<html><script src="/assets/home-kit.js"></script><body>start</body></html>');
+          assert.strictEqual(page, '<html><script src="/assets/home-kit.js?v=1.2.3"></script><body>start</body></html>');
           get('/home/launcher/app/style.css', function (c4, css, h4) {
             assert.strictEqual(c4, 200);
             assert.strictEqual(css, 'body{color:red}');
@@ -249,7 +249,7 @@ test('an ipk\'s web app is unpacked; a native one is refused', function (done) {
     assert.strictEqual(r.launcher.title, 'Packaged');
     assert.ok(fs.existsSync(path.join(dir, 'home-launcher', 'app', 'img', 'empty.png')));
     get('/home/launcher/index.html', function (c2, page) {
-      assert.ok(page.indexOf('<head><script src="/assets/home-kit.js"></script></head>') !== -1, page);
+      assert.ok(page.indexOf('<head><script src="/assets/home-kit.js?v=1.2.3"></script></head>') !== -1, page);
       var native = {};
       native[base + 'appinfo.json'] = JSON.stringify({ id: id, title: 'Native', main: 'bin/launcher', type: 'native' });
       native[base + 'bin/launcher'] = 'elf';
@@ -317,7 +317,7 @@ test('a web address opens in the frame, escaped, and keeps the choice', function
       get('/home/launcher/', function (c2, page) {
         assert.strictEqual(c2, 200);
         assert.ok(page.indexOf('src="http://ha.local:8123/lovelace/tv?kiosk&amp;x=&quot;y&quot;" data-launcher') !== -1, page);
-        assert.ok(page.indexOf('/assets/home-kit.js') !== -1);
+        assert.ok(page.indexOf('/assets/home-kit.js?v=1.2.3') !== -1, 'the kit, at this release\'s address');
         get('/home/launcher/other.html', function (c3) {
           assert.strictEqual(c3, 404);
           done();

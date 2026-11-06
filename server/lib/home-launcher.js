@@ -36,7 +36,10 @@ var MAX_FILES = 5000;
 var MAX_DIRECTORY = 4 * 1024 * 1024;
 var MAX_ADDRESS = 2000;
 var MAX_TITLE = 80;
-var KIT_TAG = '<script src="/assets/home-kit.js"></script>';
+// The release in its address, so a TV holding an older copy loads this one.
+var KIT_SRC = '/assets/home-kit.js';
+var KIT_TAG_PLAIN = '<script src="' + KIT_SRC + '"></script>';
+var kitTag = KIT_TAG_PLAIN;
 // Left out of a zip: what macOS adds to one made in the Finder.
 var JUNK = /^(__MACOSX|\.DS_Store|Thumbs\.db)$/;
 var NATIVE_TYPES = ['native', 'native_builtin', 'native_appshell', 'qml'];
@@ -66,6 +69,7 @@ function init(opts) {
   else if (opts.stateDir) dir = path.join(opts.stateDir, 'home-launcher');
   if (opts.webPage) webPagePath = opts.webPage;
   if (opts.df) dfFn = opts.df;
+  kitTag = opts.version ? '<script src="' + KIT_SRC + '?v=' + encodeURIComponent(opts.version) + '"></script>' : KIT_TAG_PLAIN;
   meta = null;
   busy = false;
 }
@@ -529,12 +533,12 @@ function escapeHtml(s) {
 // The script added first in the start page's head, so window.Glasshouse is there for the page's own.
 function withKit(html) {
   var head = /<head(\s[^>]*)?>/i.exec(html);
-  if (head) return html.slice(0, head.index + head[0].length) + KIT_TAG + html.slice(head.index + head[0].length);
+  if (head) return html.slice(0, head.index + head[0].length) + kitTag + html.slice(head.index + head[0].length);
   var top = /<html(\s[^>]*)?>/i.exec(html);
-  if (top) return html.slice(0, top.index + top[0].length) + KIT_TAG + html.slice(top.index + top[0].length);
+  if (top) return html.slice(0, top.index + top[0].length) + kitTag + html.slice(top.index + top[0].length);
   var doctype = /^(﻿)?\s*<!doctype[^>]*>/i.exec(html);
-  if (doctype) return doctype[0] + KIT_TAG + html.slice(doctype[0].length);
-  return KIT_TAG + html;
+  if (doctype) return doctype[0] + kitTag + html.slice(doctype[0].length);
+  return kitTag + html;
 }
 
 /*
@@ -549,7 +553,8 @@ function resolve(rel) {
     if (rel) return null;
     var page;
     try { page = fs.readFileSync(webPagePath, 'utf8'); } catch (e) { return null; }
-    return { type: TYPES['.html'], body: page.replace('src="about:blank" data-launcher', 'src="' + escapeHtml(m.address) + '" data-launcher') };
+    return { type: TYPES['.html'], body: page.replace(KIT_TAG_PLAIN, kitTag)
+      .replace('src="about:blank" data-launcher', 'src="' + escapeHtml(m.address) + '" data-launcher') };
   }
   if (!rel) return { redirect: '/home/launcher/' + m.main.split('/').map(encodeURIComponent).join('/') };
   var segs = safeSegments(rel);
