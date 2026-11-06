@@ -157,7 +157,8 @@ A second browser check covers the TV tile and the preview's options: the TV
 tile previews its last channel as a broadcast preview, an app tile previews
 nothing, **Preview in the tile** puts the preview in the tile in focus and keeps
 it there when the rows are rebuilt, and **Keep the preview on** shows the input
-last watched with the focus on Apps. `test-home.js` checks the TV tile is first
+last watched with the focus on Apps. A heartbeat saying the screen saver is over
+the view stops the preview, and the next one without it brings it back. `test-home.js` checks the TV tile is first
 in the Inputs row on a TV with channels, absent without them, opens Live TV,
 and that both options default to off and save.
 
