@@ -2921,6 +2921,7 @@
  "home.showTvLogos": {"text": "Logo kanałów", "from": "Channel logos"},
  "home.tv.tryAgainPlain": {"text": "OK ponawia próbę.", "from": "OK tries again."},
  "home.tv.waitMemoryOf": {"text": "Oczekiwanie na pamięć telewizora: dostępne {available} MB z potrzebnych {needed} MB.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."},
+ "home.tv.err.aborted": {"text": "Telewizor przerwał pobieranie, zanim się zaczęło. Spróbuje ponownie później.", "from": "The TV stopped the download before it began. It tries again later."},
  "home.anim.off": {"text": "Wyłączone", "from": "Off"},
  "home.anim.waves": {"text": "Fale światła", "from": "Light waves"},
  "home.anim.particles": {"text": "Cząsteczki", "from": "Particles"},

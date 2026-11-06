@@ -2921,6 +2921,7 @@
  "home.showTvLogos": {"text": "شعارات القنوات", "from": "Channel logos"},
  "home.tv.tryAgainPlain": {"text": "اضغط OK للمحاولة مجدداً.", "from": "OK tries again."},
  "home.tv.waitMemoryOf": {"text": "في انتظار الذاكرة على التلفزيون: {available} ميغابايت متاحة من أصل {needed} ميغابايت مطلوبة.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."},
+ "home.tv.err.aborted": {"text": "أوقف التلفزيون التنزيل قبل أن يبدأ. سيحاول مرة أخرى لاحقًا.", "from": "The TV stopped the download before it began. It tries again later."},
  "home.anim.off": {"text": "إيقاف", "from": "Off"},
  "home.anim.waves": {"text": "أمواج ضوئية", "from": "Light waves"},
  "home.anim.particles": {"text": "جسيمات", "from": "Particles"},

@@ -2940,6 +2940,7 @@
  "home.showTvLogos": {"text": "Loghi dei canali", "from": "Channel logos"},
  "home.tv.tryAgainPlain": {"text": "OK riprova.", "from": "OK tries again."},
  "home.tv.waitMemoryOf": {"text": "In attesa di memoria sulla TV: {available} MB disponibili su {needed} MB necessari.", "from": "Waiting for memory on the TV: {available} MB available of the {needed} MB this needs."},
+ "home.tv.err.aborted": {"text": "La TV ha interrotto il download prima che iniziasse. Riprova più tardi.", "from": "The TV stopped the download before it began. It tries again later."},
  "home.bg.title": {"text": "Sfondo", "from": "Background"},
  "home.bg.intro": {"text": "Cosa c'è dietro Glasshouse Home: niente, immagini che cambiano con il momento della giornata o uno sfondo in movimento.", "from": "What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background."},
  "home.bg.none": {"text": "Nessuno", "from": "None"},
