@@ -40,6 +40,10 @@ jobs:
       - name: screen saver QML matches its declared QtQuick version
         run: ./scripts/check-screensavers.py
 
+      # Reads each launcher it lists, so an entry hosted elsewhere is fetched.
+      - name: catalogue of launchers lists only Glasshouse launchers
+        run: ./scripts/check-launchers.py
+
       - name: documented entity list and deploy list match the code
         run: ./scripts/check-drift.py
 

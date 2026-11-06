@@ -1,7 +1,8 @@
 # Writing a launcher
 
-How to make a home screen of your own and use it in Glasshouse Home's place,
-without changing Glasshouse. Setting one up is on the
+How to make a home screen of your own, use it in Glasshouse Home's place
+without changing Glasshouse, and offer it to others through the catalogue of
+launchers. Setting one up is on the
 [Home tab](../dashboard/home.md#custom-launcher); this page is for writing one.
 
 A launcher is a web page. Glasshouse puts it where LG's Home was, so the Home
@@ -15,7 +16,8 @@ open.
 [example-launcher.html](example-launcher.html) is a whole launcher in one file:
 the TV's apps and inputs as tiles, moved through with the arrow keys and opened
 with OK. Download it, upload it on the Home tab under **Custom launcher**, and
-change it from there.
+change it from there. [Minimal](../launchers/minimal/index.html), the first
+launcher in the catalogue, is another, with everything the catalogue asks for.
 
 ## What can be uploaded
 
@@ -154,6 +156,65 @@ try it in a computer's browser first: open
 `http://<tv address>:<port>/home/launcher/`. `window.Glasshouse` works there
 too, and opening an app opens it on the TV. Where the dashboard has a token,
 the launcher and Glasshouse's calls answer only the TV itself.
+
+## Adding it to the catalogue
+
+The catalogue is what the Home tab lists under **From the catalogue**:
+[`docs/launchers/catalog.json`](https://github.com/rorygallagher2024/glasshouse/blob/main/docs/launchers/catalog.json)
+in Glasshouse's repository, published with these docs. A launcher is added by
+a pull request to it, and listed once the pull request is reviewed and merged.
+
+An entry:
+
+```json
+{
+  "id": "minimal",
+  "title": "Minimal",
+  "author": "Glasshouse",
+  "description": "What it looks like and how it is used, in 20 to 300 characters.",
+  "version": "1.0.0",
+  "url": "minimal/index.html",
+  "size": 6514,
+  "sha256": "…",
+  "screenshot": "minimal/screenshot.jpg",
+  "kit": 1,
+  "home": "https://github.com/…"
+}
+```
+
+- `id` is lowercase letters, digits and dashes, and stays the same across
+  versions: a TV with the launcher offers an update when `version` changes.
+- `url` is the launcher, an `.html` file or a `.zip` as above (not an `.ipk`):
+  a file beside the catalogue, in a folder of the launcher's own under
+  `docs/launchers/`, or an https address. `size` and `sha256` are its own, and a
+  TV installs it only if the download matches them, so a release elsewhere
+  must not change once listed; list a new version instead.
+- `screenshot` is a 16:9 picture of it on a TV, 960 × 540, beside the catalogue
+  or at an https address.
+- `kit` is the `Glasshouse.version` it needs. `home`, where people can find out
+  more, is optional.
+
+For a launcher kept in the repository, `scripts/check-launchers.py --update`
+writes its `size` and `sha256`.
+
+CI runs `scripts/check-launchers.py` on each pull request. A launcher in the
+catalogue must:
+
+- **list the TV's apps and inputs** with `Glasshouse.catalogue()`;
+- **go back to its start when Home is pressed**, with `Glasshouse.onHome()`;
+- **offer a way to LG's Home**, with `Glasshouse.lgHome()`;
+- **stay on its own page:** no setting `location`, `location.assign` or
+  `replace`, `window.open`, refresh tag or links to other pages;
+- **be self-contained:** no scripts, stylesheets, fonts or pictures from
+  elsewhere, so it cannot change after it was reviewed;
+- **be ES5** (`scripts/check-es5.py`), so that it runs on every TV Glasshouse
+  Home does.
+
+Review then looks at what the check cannot: that it does what its description
+says, works with a remote, and does nothing else. Try it on a TV first, from
+your own fork: put `"launcherCatalogue"` in the TV's `config.json` with the
+address of your branch's `catalog.json` (raw.githubusercontent.com works), and
+restart Glasshouse. Take it out again afterwards.
 
 ## Troubleshooting
 

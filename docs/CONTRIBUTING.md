@@ -49,6 +49,11 @@ change: a docs-only change needs no TV testing or translation.
 * **Docs updated:** the pages that describe what it changes, as in
   [Docs](#docs).
 
+A pull request that adds a launcher to the catalogue of launchers changes only
+`docs/launchers/`. [Writing a launcher](development/WRITING-LAUNCHERS.md#adding-it-to-the-catalogue)
+has what an entry needs and what `scripts/check-launchers.py` checks; its
+screenshot stands for the one a pull request would show.
+
 ## Guidelines
 
 What reviews look for. Unlike the rules, these leave room for judgement: a
