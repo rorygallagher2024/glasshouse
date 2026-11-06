@@ -88,6 +88,11 @@ gzips without `zlib.gzipSync`. The suites that run the repository's own scripts
 through `execSync`, `test-module-calls.js`, `test-tvwebctl.js` and
 `test-remote-worker.js`, skip on node 0.10.
 
+Some of what node 0.10 lacks only fails when the call is made, on a TV. It
+takes `'inherit'` only as a child's whole `stdio`, not in the list, which kept
+the remote's buttons from reaching Home Assistant on webOS 2;
+`test-spawn-stdio.js` fails on one in the server's code.
+
 `test-installer.js` checks that Glasshouse's own package install holds the
 restart and install guards, then releases both before reporting success or failure.
 
