@@ -271,7 +271,7 @@ async function visitHomePreviewOptions(browser, base, problems) {
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
     hidden: { app: [], dev: [], ch: [] }, channels: ['one'], hintSeen: true, searchHintSeen: true,
     livePreview: true, previewAlways: false, previewInTile: false, picture: false };
-  let version = 1, now = { kind: 'input', port: 1 };
+  let version = 1, now = { kind: 'input', port: 1 }, covered = false;
   await page.addInitScript(() => {
     HTMLMediaElement.prototype.load = function () {};
     HTMLMediaElement.prototype.pause = function () {};
@@ -290,7 +290,7 @@ async function visitHomePreviewOptions(browser, base, problems) {
     if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
     if (url.pathname.endsWith('/signal')) return reply({ ok: true, signal: true });
     if (url.pathname.endsWith('/picture')) return reply({ ok: true, signal: { width: 1920, height: 1080, hz: 25, hdr: 'sdr' } });
-    return reply({ ok: true, build: 'preview', layoutVersion: version });
+    return reply({ ok: true, build: 'preview', layoutVersion: version, covered, saver: covered });
   });
   async function changeLayout(change) {
     Object.assign(layout, change);
@@ -325,6 +325,17 @@ async function visitHomePreviewOptions(browser, base, problems) {
     await rest();
     if (await source() !== 'service/webos-broadcast-preview tv://two') problems.push('Home preview options: the TV tile did not preview its last channel, ' + await source());
     if (await shownIn() !== 'now') problems.push('Home preview options: the preview was not beside the clock');
+    // The screen saver over the view stops the preview, and its end brings it back (#1209).
+    const before = await source();
+    if (!before) problems.push('Home preview options: nothing previewed before the screen saver');
+    covered = true;
+    await page.clock.fastForward(5000);
+    await rest();
+    if (await source()) problems.push('Home preview options: the preview kept playing under the screen saver');
+    covered = false;
+    await page.clock.fastForward(5000);
+    await rest();
+    if (await source() !== before) problems.push('Home preview options: the preview did not come back after the screen saver, ' + await source());
     await changeLayout({ previewInTile: true });
     if (await shownIn() !== 'TV') problems.push('Home preview options: Preview in the tile left it at ' + await shownIn());
     if (await page.locator('#now.previewing').count()) problems.push('Home preview options: the top strip still named the preview in the tile');

@@ -700,7 +700,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (on === cl.contains('resting')) return;
     cl.toggle('resting', on);
     // Covered, the page is not hidden (webOS 4 keeps it running behind the app
-    // in front), so the animated background is stopped here as well.
+    // in front), so the live preview and the animated background stop here as
+    // well: under the screen saver the preview kept the tuner playing (#1209).
+    followPreview();
     if (!anim) return;
     if (on) animStop();
     else animRun();
@@ -1810,6 +1812,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Devices on one input share its key, so moving between them keeps the picture.
   function previewTarget() {
     if (!layout || layout.livePreview !== true || document.hidden || opening) return null;
+    if (document.documentElement.classList.contains('resting')) return null;
     if (guide.open) {
       var gi = guide.list[guide.row];
       // As on the row: a channel that cannot play is not previewed.
