@@ -202,6 +202,16 @@ var diedEarly = children.diedEarly;
  */
 var MAX_REPLY = 4 * 1024 * 1024;
 
+/*
+ * A satellite tuner's channel list runs to several MB and takes seconds to
+ * read. It is asked for without -f, whose indenting made the B8's 146
+ * channels 385 KB rather than 226 KB.
+ */
+var SLOW_CALLS = { 'com.webos.service.apiadapter/tv/getChannelList': true };
+var WAIT_MS = 2000;
+var SLOW_WAIT_MS = 15000;
+var SLOW_MAX_REPLY = 32 * 1024 * 1024;
+
 function run(job) {
   children.launch(function () { runNow(job); }, job.urgent);
 }
@@ -210,7 +220,8 @@ function runNow(job) {
   var startedAt = monotonicMs();
   var callUri = job.args[job.args.length - 2].replace('luna://', '');
   noteCall('call ' + callUri);
-  execFile(LUNA_SEND, job.args, { timeout: 3500, maxBuffer: MAX_REPLY }, function (err, stdout) {
+  var wait = job.slow ? SLOW_WAIT_MS : WAIT_MS;
+  execFile(LUNA_SEND, job.args, { timeout: wait + 1500, maxBuffer: job.slow ? SLOW_MAX_REPLY : MAX_REPLY }, function (err, stdout) {
     var endedAt = monotonicMs();
     noteCall('done ' + callUri + ' in ' + Math.round(endedAt - startedAt) + 'ms' +
              (err ? ' (' + (err.killed ? 'timed out' : err.signal || err.code) + ')' : ''));
@@ -264,8 +275,10 @@ function queueCall(uri, payload, cb, appId, urgent) {
     });
   }
   var args = appId ? ['-a', appId] : [];
-  args = args.concat(['-n', '1', '-w', '2000', '-f', 'luna://' + uri, JSON.stringify(payload || {})]);
-  enqueue({ args: args, cb: cb, urgent: urgent });
+  var slow = SLOW_CALLS[uri] === true;
+  args = args.concat(['-n', '1', '-w', String(slow ? SLOW_WAIT_MS : WAIT_MS)], slow ? [] : ['-f'],
+                     ['luna://' + uri, JSON.stringify(payload || {})]);
+  enqueue({ args: args, cb: cb, urgent: urgent, slow: slow });
   startWaiting();
 }
 

@@ -74,6 +74,12 @@ shows the Picture tab.
 | [`Package build`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L65-L77) | The Homebrew Channel `.ipk` still builds, and passes the Homebrew Channel's own compatibility check for webOS 2.2 and later, the oldest confirmed (a 49LF632V). |
 | [`Unit tests`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L81-L97) | Each part of the server, and one suite that starts the whole server against a fake TV and MQTT broker, with a TV that answers, one that answers late, wrongly or not at all, MQTT disabled, and a Glasshouse Home file missing, and checking the dashboard keeps answering and telemetry keeps flowing. |
 
+No unit test runs a TV's own commands on the computer it runs on. A module
+that restarts LG's services, such as `apps.js` and `samrescan.js`, takes the
+function that runs them from its `init`, and the tests pass one that records
+the command instead: run for real, the sam restart in `test-apps.js` asked a
+Linux computer for a password and could end a Mac's own processes (#918).
+
 ## On each supported TV's node
 
 The unit tests run on node 0.10 (webOS 2, a 49LF632V), 0.12 (webOS 4, the B8), 8.12 (webOS 6), 16
@@ -87,6 +93,11 @@ make temporary folders without `mkdtempSync`, and `test/test-installer.js`
 gzips without `zlib.gzipSync`. The suites that run the repository's own scripts
 through `execSync`, `test-module-calls.js`, `test-tvwebctl.js` and
 `test-remote-worker.js`, skip on node 0.10.
+
+Some of what node 0.10 lacks only fails when the call is made, on a TV. It
+takes `'inherit'` only as a child's whole `stdio`, not in the list, which kept
+the remote's buttons from reaching Home Assistant on webOS 2;
+`test-spawn-stdio.js` fails on one in the server's code.
 
 `test-installer.js` checks that Glasshouse's own package install holds the
 restart and install guards, then releases both before reporting success or failure.
@@ -113,13 +124,17 @@ before its first read.
 
 `test-luna-absent.js` checks that a failed call to an LG service missing from the TV's service files makes later calls to it fail at once, for 10 minutes, while listed services and homebrew ones keep being called, and that a renamed service the TV lists only by its legacy name moves to that name after no answer under the newer one, rather than being skipped.
 
+`test-luna-slow.js` checks that the tuner's channel list, 4.6 MB and 3.6 s on a satellite TV, is given a longer wait and a larger reply limit and is asked for without `-f`, while other calls keep their 2 s wait and `-f`.
+
 `test-window-state.js` checks that short gaps in window focus do not publish empty remote attributes, persistent gaps do, standby clears immediately, and reconnects republish the retained state. The server boot test checks that the three SurfaceManager subscriptions start only with MQTT enabled.
 
 The state-push suite checks `keyboard_visible` from the window list: pushed on change, the app under it kept as the control target, false in standby, and left out on a TV without the method. `test-controls.js` checks that remote keys go to the remote's device while the keyboard is up and that typing, Enter and Backspace reach the input method service in order, and that the Server tab's TV name is saved and applied without a restart, with empty putting back LG and the model; `test-mqtt-remote.js` that typed text keeps its spaces and schedules no telemetry read.
 
-`test-home.js` checks that switching on has sam read the mounted app before LG's Home is stopped and switching off the reverse, that on webOS 11 an LG Home started again is stopped and the preload manager told not to keep it while the place is held, both undone with the place and neither done on webOS 9 or 10, that on webOS 4 no starting notice holds the Home key and a press the view does not answer opens it once more before LG's ribbon has the key and the page's escape when its first load fails is ignored, that the heartbeat says when the view is covered, by the screen saver or on webOS 4 by what is in front, that where eim names neither `hdmiPlugIn` nor `connected`, as on a B8, the ports' HDMI reading says which are plugged in, that on webOS 11 the view is closed and opened again once after a wake while it is in front, but not where an app was opened since, after a switch-off or on other webOS, that on webOS 10 sam rereads it on a block and release and has it as the home category's app, that a server finding it mounted with an earlier release's manifest has sam read the new one even after a restart between staging and rereading, that a refused upgrade puts LG's Home back and reports failure, that webOS 4, 10 and 11 are offered and webOS 3 and webOS 12 and later only with `allowExperimentalHome`, webOS 3 as on webOS 4, that after a start the rows come from the lists last read while they are read again, a change among them reloading the view, that LG's files go back where sam does not take the app, the ways back to LG's Home and the return, a switch-off cut short being finished at start, what earlier builds changed being put back once, failed saves, a healthy view whose heartbeats later stop, and a short Home press that brings no heartbeat: WebAppMgr started and the view opened again where it is not running, as for a view that stops beating, LG's Home given its place where it will not start, or where it is running once the longer wait for a page still loading is over, the view kept where it answers within that wait, and nothing done when the view answers. It also checks that a view gone quiet behind another app's window is left alone, that on webOS 6 an input put back over LG's Home just after sam restarts has LG's Home opened again once, and that a C1's 6.4.0 answer of no `defaultApps` at all reads as unset. A short Home press followed by an input opened from the view, or by anything else coming to the front, keeps Glasshouse Home. A view opened after a wake or by the boot hook whose page never runs gives LG's Home its place after the short wait, one whose page runs only after the longer wait, and one that answers, or an input chosen meanwhile, keeps Glasshouse Home. It also checks that the wallpaper's darkening is 100% until set, taken from 0 to 100 and kept when not sent, that a Glasshouse Home switched on fresh is Pure white while one that saved the view's own look keeps it, that LG's layout is left alone unless the empty one is chosen, that the choice applies at once while Glasshouse Home has the place, that a TV an earlier build left on the empty layout keeps it, that LG's notifications and search are on the Apps row, marked as opening over Home, that fading and leaving out inputs with nothing plugged in stay off until switched on and outlast a reset, beside inputs hidden one by one, which are kept, and that a row set to Last opened puts what was opened last first, from the view or the remote, with the channel Live TV was on even when the view asks before Live TV has left, records nothing while Glasshouse Home is off, and forgets a row put back in its own order. `test-tvwebctl.js` also checks that a third restart in ten minutes gives LG's Home its place back. `test-remotekeys.js` checks that a mapping which could not be deleted is reported as a failed change, and that the starting notice holds Home for 90 s after the filter loads, and not at all without the compositor's timer. `test-remotekeys-webos11.js` checks webOS 11's path: LG's input switcher offered first as a choice of its own and set like an app, the streaming buttons LG has switched on, Guide, Home Hub and the ? button offered with no filter chain and left out of the JavaScript filter, the ? button refusing Nothing, the AI button switching LG's voice assistant off and back on and answering its log line once, read from a log that is appended to and replaced, and not offered without that service, the Netflix button set to Screen off switching LG's app off and turning the screen off from the log only with the picture on, after tvpower has finished a change or a screen saver the press ends has gone, and set again unasked after LG writes its list back, Screen off refused on Guide, the Alexa button blocking Amazon's view and releasing it, an already blocked view counting as blocked, toasts switched off for the Alexa press only and back on at the start after a restart, LG's list set again after LG writes it back, after a power change where nothing is announced, and at most twelve times a minute, each change written to LG's own value and only that one, LG's value put back for As LG has it, a key set again after LG sends its list again with LG's newer entry kept to put back, `restore` putting back every key, and nothing written while no key is set. `test-tesseract.js` checks the tesseract screen saver's geometry: 16 corners and 32 edges along one axis each, rotations that keep distances, a six-hour clock that starts again without a jump, and the figure staying on screen through the whole cycle.
+`test-home.js` checks that switching on has sam read the mounted app before LG's Home is stopped and switching off the reverse, that on webOS 11 an LG Home started again is stopped and the preload manager told not to keep it while the place is held, both undone with the place and neither done on webOS 9 or 10, that on webOS 4 no starting notice holds the Home key and a press the view does not answer closes it and opens it afresh before LG's ribbon has the key, that elsewhere a short press with the view in front opens it again, which closes its folder, guide or player, and from another app leaves the opening to the TV and the page's escape when its first load fails is ignored, that the heartbeat says when the view is covered, by the screen saver or on webOS 4 by what is in front, that where eim names neither `hdmiPlugIn` nor `connected`, as on a B8, the ports' HDMI reading says which are plugged in, that on webOS 11 the view is closed and opened again once after a wake while it is in front, but not where an app was opened since, after a switch-off or on other webOS, that on webOS 10 sam rereads it on a block and release and has it as the home category's app, that a server finding it mounted with an earlier release's manifest has sam read the new one even after a restart between staging and rereading, that a refused upgrade puts LG's Home back and reports failure, that webOS 4, 10 and 11 are offered and webOS 3 and webOS 12 and later only with `allowExperimentalHome`, webOS 3 as on webOS 4, that after a start the rows come from the lists last read while they are read again, a change among them reloading the view, that LG's files go back where sam does not take the app, the ways back to LG's Home and the return, a switch-off cut short being finished at start, what earlier builds changed being put back once, failed saves, a healthy view whose heartbeats later stop, and a short Home press that brings no heartbeat: WebAppMgr started and the view opened again where it is not running, as for a view that stops beating, LG's Home given its place where it will not start, or where it is running once the longer wait for a page still loading is over, the view kept where it answers within that wait, and nothing done when the view answers. It also checks that a view gone quiet behind another app's window is left alone, that on webOS 6 an input put back over LG's Home just after sam restarts has LG's Home opened again once, and that a C1's 6.4.0 answer of no `defaultApps` at all reads as unset. A short Home press followed by an input opened from the view, or by anything else coming to the front, keeps Glasshouse Home. A view opened after a wake or by the boot hook whose page never runs gives LG's Home its place after the short wait, one whose page runs only after the longer wait, and one that answers, or an input chosen meanwhile, keeps Glasshouse Home. It also checks that the wallpaper's darkening is 100% until set, taken from 0 to 100 and kept when not sent, that a Glasshouse Home switched on fresh is Pure white while one that saved the view's own look keeps it, that LG's layout is left alone unless the empty one is chosen, that the choice applies at once while Glasshouse Home has the place, that a TV an earlier build left on the empty layout keeps it, that LG's notifications and search are on the Apps row, marked as opening over Home, that fading and leaving out inputs with nothing plugged in stay off until switched on and outlast a reset, beside inputs hidden one by one, which are kept, and that a row set to Last opened puts what was opened last first, from the view or the remote, with the channel Live TV was on even when the view asks before Live TV has left, records nothing while Glasshouse Home is off, and forgets a row put back in its own order. `test-tvwebctl.js` also checks that a third restart in ten minutes gives LG's Home its place back. `test-remotekeys.js` checks that a mapping which could not be deleted is reported as a failed change, and that the starting notice holds Home for 90 s after the filter loads, and not at all without the compositor's timer. `test-remotekeys-webos11.js` checks webOS 11's path: LG's input switcher offered first as a choice of its own and set like an app, the streaming buttons LG has switched on, Guide, Home Hub and the ? button offered with no filter chain and left out of the JavaScript filter, the ? button refusing Nothing, the AI button switching LG's voice assistant off and back on and answering its log line once, read from a log that is appended to and replaced, and not offered without that service, the Netflix button set to Screen off switching LG's app off and turning the screen off from the log only with the picture on, after tvpower has finished a change or a screen saver the press ends has gone, and set again unasked after LG writes its list back, Screen off refused on Guide, the Alexa button blocking Amazon's view and releasing it, an already blocked view counting as blocked, toasts switched off for the Alexa press only and back on at the start after a restart, LG's list set again after LG writes it back, after a power change where nothing is announced, and at most twelve times a minute, each change written to LG's own value and only that one, LG's value put back for As LG has it, a key set again after LG sends its list again with LG's newer entry kept to put back, `restore` putting back every key, and nothing written while no key is set. `test-tesseract.js` checks the tesseract screen saver's geometry: 16 corners and 32 edges along one axis each, rotations that keep distances, a six-hour clock that starts again without a jump, and the figure staying on screen through the whole cycle.
 
 `test-i18n-pick.js` checks which language the pages pick: the browser's, except one translated only in part on a page it does not cover in full, and one chosen or asked for in the address on every page. A language with its region, such as `pt-br`, is picked whole, and only for that region.
+
+`test-home-launcher.js` puts a custom launcher in Glasshouse Home's place through the HTTP routes: a single HTML file, a zip of a folder and an ipk's web app each unpacked and served with the kit first in the start page's head, the start page and title taken from `appinfo.json` or the page, links and macOS's extra files left out of a zip, and a web address shown in the frame with its address escaped. A zip reaching outside its folder, a native app, a file of another kind and an upload the TV has no room for are refused, keeping the launcher before them. Only a launcher kept can be chosen, Home's page and the heartbeat follow the choice, Minimal, which comes with Glasshouse, is listed first, served with the kit when chosen and never removed, removing the chosen one gives Glasshouse Home its place again, and the first release's single launcher is kept as the owner's own, still chosen.
 
 `test-home-picture.js` reads a G3's receiver files with Glasshouse Home on screen: the signal and HDR of the input behind it, the picture mode asked for with both input and dynamic range, an empty input, and HDR from the receiver's packets (PQ, HLG, none, Dolby Vision). Only the mode for the range coming in is asked for, none without a signal, and a channel's SDR mode. It also checks that tracking runs only while Glasshouse Home, picture details and the TV are all on, that it retains an app's first video before any app plate is read, and that standby or switching either off stops it and leaves the recorded video available.
 
@@ -134,15 +149,33 @@ off releases its media source. Desktop media methods are stubbed; webOS
 decoding, sound and CEC still need a real TV.
 Delayed guide and catalogue replies cannot reopen a preview after **OK**;
 a refused launch or returning to Home allows it again.
+A browser check opens Glasshouse Home with each animated background and
+checks that it shows, draws on its canvas and hides the wallpaper pictures,
+and that Off takes it away and leaves the canvas without pixels. The upload
+check opens the dashboard's Background section on None, where the pictures'
+settings are hidden, and chooses Pictures, whose sets leave Black out. `test-home.js` checks that only the backgrounds
+offered are kept, and their colours: Time of day unless chosen, a preset, or
+`#rrggbb` of one's own.
+A browser check sets up a custom launcher on the Home tab: its button opens
+the section, a web address with Glasshouse Home on becomes the TV's Home at
+once, the Apps and Inputs rows stay to arrange while it is in use without
+Glasshouse Home's other settings, the four choices read LG Home, Glasshouse
+Home, Glasshouse Minimal and Custom, Custom's settings show only while it is
+chosen or being set up, and Glasshouse Minimal, Glasshouse Home and Custom
+swap without a second press, the upload is offered only where installing from a file is,
+and Remove takes it away. It
+then uploads a page to the real server and checks that `window.Glasshouse`
+lists the fake TV's apps before the page's own script runs.
 A second browser check covers the TV tile and the preview's options: the TV
 tile previews its last channel as a broadcast preview, an app tile previews
 nothing, **Preview in the tile** puts the preview in the tile in focus and keeps
 it there when the rows are rebuilt, and **Keep the preview on** shows the input
-last watched with the focus on Apps. `test-home.js` checks the TV tile is first
+last watched with the focus on Apps. A heartbeat saying the screen saver is over
+the view stops the preview, and the next one without it brings it back. `test-home.js` checks the TV tile is first
 in the Inputs row on a TV with channels, absent without them, opens Live TV,
 and that both options default to off and save.
 
-`test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved. It also checks that the phone's setup link serves its page, `i18n.js` and a language file with the one-time code, the page asking for `i18n.js` with it, and refuses them without.
+`test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved. Between uploads it waits, up to 5 s, for the last one's file to be cleared, rather than a fixed time a slow runner can outlast. It also checks that the phone's setup link serves its page, `i18n.js` and a language file with the one-time code, the page asking for `i18n.js` with it, and refuses them without.
 
 `test-stats-timeout.js` checks that a stats collection past its limit answers its callers with the last complete one, or the empty stand-in when none has finished, and carries on with no second collection started beside it; that `expireStats` does not take that fallback away; and that one given up on after 60 s answers no caller of the next.
 
@@ -231,6 +264,17 @@ The dashboard check needs Playwright and its browser:
 ```bash
 npm install --no-save playwright && npx playwright install chromium
 node scripts/check-dashboards.js
+```
+
+A check that finds a problem runs once more on its own before the run fails:
+one that passes the second time is listed as `flaky:` with what it first found,
+and does not fail the run, while one that fails twice does. CI's runners are
+shared and slower than a computer, so a check that times something rather than
+waiting for it fails there now and then. `CPU_SLOWDOWN=4` runs every page on a
+CPU slowed four times, which finds such a check before CI does:
+
+```bash
+CPU_SLOWDOWN=4 node scripts/check-dashboards.js
 ```
 
 The Home Assistant check needs Python 3.13 and the `homeassistant` package:
@@ -360,6 +404,14 @@ be protected once checked, marked in the lineup and given no play link,
 while one with a plain AES-128 key is not. It is skipped where there is no
 curl. `test-iptv-drm.js` checks which HLS keys the TV's player cannot use,
 and the resolving of a master playlist's first variant.
+
+`test-iptv-worker.js` runs real playlist workers against a local provider with
+a shell that sends itself SIGABRT before executing curl. It checks that an
+early abort is retried once, repeated aborts stop after two attempts, and a
+partial body, ordinary network error or other signal is never retried, and
+two aborts are reported as such rather than as a network failure. A
+failed job leaves no partial snapshot. The native webOS libuv fault still
+needs a Node 8 TV; the test injects its downloader exit signal.
 
 `test-iptv-lineup.js` checks the lineup's rules alone: a version 1 selection
 becoming one section of favourites, numbering through sections with a start

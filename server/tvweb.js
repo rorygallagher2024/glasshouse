@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.139.0';
+var TVWEB_VERSION = '0.140.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -69,16 +69,20 @@ var homeScreen = require('./lib/homescreen');
 var glasshouseHome = null;
 /** @type {typeof import('./lib/home-picture')} */
 var homePicture = null;
+/** @type {typeof import('./lib/home-launcher')} */
+var homeLauncher = null;
 // Internet TV on Glasshouse Home (lib/iptv): where Home runs, and nowhere else.
 /** @type {typeof import('./lib/iptv')} */
 var iptv = null;
 try {
   glasshouseHome = require('./lib/home');
   homePicture = require('./lib/home-picture');
+  homeLauncher = require('./lib/home-launcher');
   iptv = require('./lib/iptv');
 } catch (e) {
   glasshouseHome = null;
   homePicture = null;
+  homeLauncher = null;
   iptv = null;
   console.error('home: Glasshouse Home could not be loaded, running without it: ' + e.message);
 }
@@ -108,6 +112,7 @@ var screentime = require('./lib/screentime');
 var saverPowerOff = require('./lib/saverpoweroff');
 var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
+var backupParts = require('./lib/backup-parts');
 var power = require('./lib/power');
 var names = require('./lib/names');
 var msg = say.msg;
@@ -974,6 +979,7 @@ routes.init({
   homeScreen: homeScreen,
   home: glasshouseHome,
   homePicture: homePicture,
+  homeLauncher: homeLauncher,
   iptv: iptv,
   screensavers: screensavers,
   updater: updater,
@@ -998,7 +1004,22 @@ routes.init({
   displayVersion: TVWEB_DISPLAY_VERSION
 });
 
+backupParts.init({
+  luna: luna,
+  control: controls.doControl,
+  config: CONFIG,
+  privacy: privacy,
+  services: servicesModule,
+  remoteKeys: remoteKeys,
+  quickAccess: quickAccess,
+  screensavers: screensavers,
+  apps: appsModule,
+  home: glasshouseHome,
+  alwaysOnSupported: telemetry.alwaysOnSupported
+});
+
 backup.init({
+  parts: backupParts,
   lgSettings: lgSettings,
   home: glasshouseHome,
   config: CONFIG,
@@ -1913,6 +1934,7 @@ function startGlasshouseHome() {
     pictureDetails: function (on) { homePicture.want('details', on); },
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
+  homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION });
   glasshouseHome.start();
   iptv.start();
   // The Guide key set to Home's guide acts only while Home is on with a playlist.
