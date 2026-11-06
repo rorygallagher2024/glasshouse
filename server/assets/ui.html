@@ -806,12 +806,20 @@
     <div class="prot-row" id="row-devdetect" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.deviceDetection">Auto device detection</div>
-        <div class="prot-desc" data-t="adv.deviceDetection.desc">Lets the TV find devices at home that it can show on its Home Dashboard and control:
-          a set-top box on an HDMI input, and smart lights, plugs and switches on your network. On newer TVs it looks up every address on your home network each time the TV switches
-          on, which a network-wide ad blocker such as Pi-hole shows as hundreds of requests. Switched off, the scans
-          stop and the TV no longer finds devices by itself.</div>
+        <div class="prot-desc" data-t="adv.deviceDetection.descLg">LG&rsquo;s own setting. Lets the TV find devices at home that it can show on its Home Dashboard and control:
+          a set-top box on an HDMI input, and smart lights, plugs and switches on your network. On some TVs, webOS 11 among them, the TV still
+          looks up every address on your home network with this off; Network device scans stops that.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_devdetect" onclick="toggleDeviceDetection()">&mdash;</button></div>
+    </div>
+    <div class="prot-row" id="row-devscans" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.deviceScans">Network device scans</div>
+        <div class="prot-desc" data-t="adv.deviceScans.desc">Glasshouse&rsquo;s switch for the scans themselves: the TV looking up every address on your home network, which a network-wide ad blocker
+          such as Pi-hole shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new
+          devices for the Home Hub or LG&rsquo;s device setup.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_devscans" onclick="toggleDeviceScans()">&mdash;</button></div>
     </div>
   </div>
 

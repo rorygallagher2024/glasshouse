@@ -85,9 +85,10 @@ var CATALOG = [
    * held down by mounting a program that exits at once over its own: the hub
    * then starts that instead. A reboot or an unmount puts it back.
    * iconnectivity (com.webos.service.ics, UEI QuickSet) is what reverse-looks
-   * up every address on the TV's network (#244); iotframework asked it to every
-   * 300 s on an OLED65C2PUA (webOS 11.2.0, firmware 43.21.74). The C2 (webOS
-   * 9.2.2) has no iotframework.
+   * up every address on the TV's network (#244). It is switched from the
+   * Devices section, as Network device scans, beside LG's Auto device
+   * detection, which on webOS 11 does not stop it (#1260), so it is not listed
+   * with the others.
    */
   {
     id: 'iconnectivity',
@@ -97,17 +98,23 @@ var CATALOG = [
     upstart: null,
     stub: '/usr/sbin/iconnectivity',
     badge: msg('srv.service.badge.network', 'Network'),
-    desc: msg('srv.service.iconnectivity.desc', 'Looks up every address on the home network to find devices for the Home Hub and LG\'s device setup. Off, they find no new devices.')
+    desc: msg('srv.service.iconnectivity.desc', 'Looks up every address on the home network to find devices for the Home Hub and LG\'s device setup. Off, they find no new devices.'),
+    hidden: true
   },
+  /*
+   * iotframework asks iconnectivity for a scan every 300 s on webOS 11 (an
+   * OLED65C2PUA, firmware 43.21.74). Held down, an hourly sweep was left (an
+   * OLED65C34LA), and it serves the Home Hub's smart home devices, so it is no
+   * longer offered: held down by an earlier release, it is put back at start.
+   */
   {
     id: 'iotframework',
     bin: 'com.webos.iotframework',
-    title: msg('srv.service.iotframework', 'Smart Home Device Polling'),
     unit: null,
     upstart: null,
     stub: '/usr/palm/services/com.webos.iotframework/com.webos.iotframework',
-    badge: msg('srv.service.badge.network', 'Network'),
-    desc: msg('srv.service.iotframework.desc', 'Asks for a scan of the home network every 5 minutes, for the Home Hub\'s smart home devices. Off, the Home Hub may not show them.')
+    hidden: true,
+    retired: true
   },
   /*
    * LG's voice assistant: the AI button, voice search and the microphone. Not
@@ -382,7 +389,15 @@ function init(options) {
   }
 
   var disabled = readDisabledList();
-  var kept = disabled.filter(function (id) { return RETIRED.indexOf(id) === -1; });
+  // A stubbed entry no longer offered is put back, as a retired unit is unmasked below.
+  CATALOG.forEach(function (item) {
+    if (item.retired && item.stub && (disabled.indexOf(item.id) !== -1 || isStubbed(item))) {
+      unstub(item, function (ok) { if (ok) console.log('services: ' + item.id + ' put back, as it is no longer offered'); });
+    }
+  });
+  var kept = disabled.filter(function (id) {
+    return RETIRED.indexOf(id) === -1 && !CATALOG.some(function (item) { return item.id === id && item.retired; });
+  });
   if (kept.length !== disabled.length) {
     disabled = kept;
     writeDisabledList(disabled);
@@ -514,7 +529,7 @@ function toggleService(id, disabled, cb) {
   switchService(id, disabled, cb, false);
 }
 
-// For the module that owns a hidden entry: Remote keys and the voice assistant.
+// For what owns a hidden entry: Remote keys and the voice assistant, and the Devices section's network scans.
 function switchHidden(id, disabled, cb) {
   switchService(id, disabled, cb, true);
 }
@@ -524,7 +539,7 @@ function switchService(id, disabled, cb, hiddenToo) {
   for (var i = 0; i < CATALOG.length; i++) {
     if (CATALOG[i].id === id) { catItem = CATALOG[i]; break; }
   }
-  if (!catItem || (catItem.hidden && !hiddenToo)) {
+  if (!catItem || catItem.retired || (catItem.hidden && !hiddenToo)) {
     return cb({ ok: false, error: 'Unknown service ID: ' + id });
   }
 
