@@ -362,7 +362,7 @@ test('the catalogue lists what Glasshouse can use, and an entry installs beside 
   served['https://example.test/launchers/minimal/index.html'] = page;
   catalogueDoc = { launchers: [
     { id: 'minimal', title: 'Minimal', author: 'Glasshouse', version: '1.0.0', url: 'minimal/index.html',
-      sha256: sha256(page), size: page.length, screenshot: 'minimal/screenshot.jpg', kit: 1 },
+      sha256: sha256(page), size: page.length, screenshot: 'minimal/screenshot.jpg', kit: 1, network: ['api.weather.example', 'Not A Host'] },
     { id: 'own', title: 'Takes the owner\'s slot', url: 'x.html', sha256: sha256(page), size: page.length },
     { id: 'future', title: 'Future', version: '1.0.0', url: 'https://other.test/f.zip', sha256: sha256(page), size: page.length, kit: 99 },
     { id: 'Bad Id', url: 'x.html', sha256: sha256(page), size: page.length }
@@ -372,6 +372,7 @@ test('the catalogue lists what Glasshouse can use, and an entry installs beside 
     assert.deepEqual(list.map(function (l) { return l.id; }), ['minimal', 'future']);
     assert.strictEqual(list[0].screenshot, 'https://example.test/launchers/minimal/screenshot.jpg');
     assert.strictEqual(list[0].installed, null);
+    assert.deepEqual(list[0].network, ['api.weather.example'], 'the hosts it reaches, for its card');
     assert.strictEqual(list[0].url, undefined, 'where it downloads from stays on the TV');
     assert.strictEqual(list[1].needsNewer, true);
     post({ install: 'future' }, function (c1, r1) {
@@ -411,6 +412,29 @@ test('a download that does not match the catalogue is not installed', function (
     served['https://example.test/launchers/minimal/index.html'] = good;
     catalogueDoc.launchers[0].version = '1.0.0';
     done();
+  });
+});
+
+test('a launcher withdrawn from the catalogue leaves Home\'s place and cannot be chosen again', function (done) {
+  post({ choose: 'minimal' }, function (c0) {
+    assert.strictEqual(c0, 200);
+    catalogueDoc.withdrawn = [{ id: 'minimal', version: '1.0.0', reason: 'found to send what is on screen elsewhere' }];
+    // As the daily check finds it: the catalogue read afresh.
+    launcher.init(launcherOpts);
+    get('/api/home/launchers/catalogue', function (c1, text) {
+      assert.deepEqual(JSON.parse(text).launchers.map(function (l) { return l.id; }), ['future'], 'no longer offered');
+      var st = launcher.status();
+      assert.strictEqual(st.chosen, null, 'Glasshouse Home has its place');
+      assert.strictEqual(st.launchers.filter(function (l) { return l.id === 'minimal'; })[0].withdrawn, true);
+      post({ choose: 'minimal' }, function (c2, r2) {
+        assert.strictEqual(c2, 400);
+        assert.ok(/withdrawn/.test(r2.error), r2.error);
+        post({ choose: 'minimal' }, function () {
+          delete catalogueDoc.withdrawn;
+          done();
+        });
+      });
+    });
   });
 });
 

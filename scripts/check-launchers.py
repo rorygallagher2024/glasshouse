@@ -15,8 +15,22 @@ sha256 it lists, and the launcher in it must be a Glasshouse launcher:
   * it is self-contained: no scripts, styles or fonts from elsewhere, so it
     cannot change after it was reviewed
   * it is ES5 (scripts/check-es5.py), as the browser on webOS 3 and 4 needs
+  * every host it reaches is listed in the entry's "network", which the Home
+    tab shows, and none is a tracker
+  * it runs no code but its own: no eval, new Function, timers given a string,
+    import() or document.write, so nothing a service sends back can become
+    code after it was reviewed
+
+Only Glasshouse's own launchers are kept in this repository. Anyone else's is
+listed from where its author publishes it, screenshot included, with its
+source ("home") and its licence, so that their code and pictures stay theirs.
+
+A launcher hosted elsewhere that cannot be read fails only a change to its own
+entry; otherwise it is reported and passed, so that someone else's outage does
+not block an unrelated pull request. --strict, as the weekly run uses, fails it.
 
     scripts/check-launchers.py            check
+    scripts/check-launchers.py --strict   and fail a launcher that cannot be read
     scripts/check-launchers.py --update   write each launcher kept in the repo's
                                           size and sha256 into the catalogue
 """
@@ -38,6 +52,13 @@ ID_RE = re.compile(r'^[a-z0-9][a-z0-9-]{0,39}$')
 VERSION_RE = re.compile(r'^\d+\.\d+\.\d+$')
 SHA_RE = re.compile(r'^[0-9a-f]{64}$')
 MAX_SIZE = 50 * 1024 * 1024
+FIRST_PARTY = 'Glasshouse'
+HOST_RE = re.compile(r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$')
+# This project's own hosting, which only its own launchers may use.
+OWN_HOSTING = re.compile(r'^https://(rorygallagher2024\.github\.io/glasshouse/|(raw\.githubusercontent\.com|github\.com)/rorygallagher2024/glasshouse/)', re.I)
+# Hosts a launcher may not reach at all: analytics and advertising.
+TRACKERS = re.compile(r'(^|\.)(google-analytics\.com|googletagmanager\.com|doubleclick\.net|segment\.(io|com)|mixpanel\.com|'
+                      r'amplitude\.com|hotjar\.com|facebook\.net|sentry\.io|newrelic\.com|clarity\.ms|plausible\.io|matomo\.cloud)$')
 
 REQUIRED = [
     ('Glasshouse.catalogue(', 'list the TV\'s apps and inputs with Glasshouse.catalogue()'),
@@ -50,6 +71,13 @@ LEAVES = [
     (re.compile(r'\bwindow\s*\.\s*open\s*\('), 'calls window.open'),
     (re.compile(r'<meta[^>]+http-equiv\s*=\s*["\']?refresh', re.I), 'has a refresh meta tag'),
     (re.compile(r'<a\s[^>]*href\s*=\s*["\']?(?!#)', re.I), 'has a link to another page'),
+]
+RUNS_TEXT = [
+    (re.compile(r'(?<![\w.$])eval\s*\('), 'calls eval'),
+    (re.compile(r'\bnew\s+Function\s*\('), 'calls new Function'),
+    (re.compile(r'\b(setTimeout|setInterval)\s*\(\s*["\'`]'), 'gives a timer a string to run'),
+    (re.compile(r'(?<![\w.$])import\s*\('), 'calls import()'),
+    (re.compile(r'\bdocument\s*\.\s*write(ln)?\s*\('), 'calls document.write'),
 ]
 REMOTE = [
     (re.compile(r'<script[^>]+src\s*=\s*["\']?(https?:)?//', re.I), 'loads a script from elsewhere'),
@@ -67,6 +95,26 @@ def kit_version():
     if not a or not b or a.group(1) != b.group(1):
         sys.exit('home-kit.js\'s version and KIT_VERSION in lib/home-launcher.js must match')
     return int(a.group(1))
+
+
+def strip_comments(src):
+    """HTML and JavaScript comments out, so a link in a credit is not counted as a host reached."""
+    src = re.sub(r'(?s)<!--.*?-->', '', src)
+    src = re.sub(r'(?s)/\*.*?\*/', '', src)
+    return re.sub(r'(?m)(?<![:\'"\\])//.*$', '', src)
+
+
+def listed_before(entry_id):
+    """The entry as main has it, or None: a new entry, or no main to compare with."""
+    try:
+        text = subprocess.run(['git', '-C', str(ROOT), 'show', 'origin/main:docs/launchers/catalog.json'],
+                              capture_output=True, text=True, check=True).stdout
+        for e in json.loads(text).get('launchers', []):
+            if e.get('id') == entry_id:
+                return e
+    except Exception:  # noqa: BLE001 - nothing to compare with
+        return None
+    return None
 
 
 def fetch(entry):
@@ -102,10 +150,11 @@ def start_page(files):
     return 'index.html' if 'index.html' in files else None
 
 
-def check_entry(e, ids, kit, problems):
+def check_entry(e, ids, kit, problems, strict=False):
     who = 'catalogue entry %s' % e.get('id', '?')
     def bad(text):
         problems.append('%s: %s' % (who, text))
+    first_party = e.get('author') == FIRST_PARTY
 
     if not isinstance(e.get('id'), str) or not ID_RE.match(e['id']) or e['id'] == 'own':
         bad('id must be lowercase letters, digits and dashes, and not "own"')
@@ -121,14 +170,46 @@ def check_entry(e, ids, kit, problems):
     if not isinstance(e.get('version'), str) or not VERSION_RE.match(e['version']):
         bad('version must be like 1.0.0')
     url = e.get('url')
-    if not isinstance(url, str) or not re.search(r'\.(html|zip)$', url) or \
-            not (url.startswith('https://') or (DOCS / url).is_file()):
-        bad('url must be an https address, or a file beside the catalogue, of an .html or .zip')
-        return
     shot = e.get('screenshot')
-    if not isinstance(shot, str) or not re.search(r'\.(jpg|png)$', shot) or \
-            not (shot.startswith('https://') or (DOCS / shot).is_file()):
-        bad('screenshot must be a .jpg or .png, beside the catalogue or at an https address')
+    if first_party:
+        if not isinstance(url, str) or not re.search(r'\.(html|zip)$', url) or not (DOCS / url).is_file():
+            bad('url must be an .html or .zip beside the catalogue, for one of Glasshouse\'s own')
+            return
+        if not isinstance(shot, str) or not re.search(r'\.(jpg|png)$', shot) or not (DOCS / shot).is_file():
+            bad('screenshot must be a .jpg or .png beside the catalogue, for one of Glasshouse\'s own')
+    else:
+        # Someone else's launcher stays where its author publishes it.
+        if not isinstance(url, str) or not re.search(r'\.(html|zip)$', url) or not url.startswith('https://') or OWN_HOSTING.match(url):
+            bad('url must be the author\'s own https address of an .html or .zip, not a file in this repository')
+            return
+        if not isinstance(shot, str) or not re.search(r'\.(jpg|png)$', shot) or not shot.startswith('https://') or OWN_HOSTING.match(shot):
+            bad('screenshot must be a .jpg or .png at the author\'s own https address')
+        if not isinstance(e.get('home'), str) or not e['home'].startswith('https://') or OWN_HOSTING.match(e['home']):
+            bad('home must be the https address of the launcher\'s own source')
+        if not isinstance(e.get('license'), str) or not e['license'].strip() or len(e['license']) > 40:
+            bad('license must name the launcher\'s licence, such as MIT')
+        # Pinned as the launcher is, so a picture swapped after review is found.
+        if not isinstance(e.get('screenshotSha256'), str) or not SHA_RE.match(e['screenshotSha256']):
+            bad('screenshotSha256 must be the screenshot\'s sha256')
+        elif isinstance(shot, str) and shot.startswith('https://'):
+            try:
+                with urllib.request.urlopen(shot, timeout=60) as r:
+                    picture = r.read()
+                if hashlib.sha256(picture).hexdigest() != e['screenshotSha256']:
+                    bad('its screenshot does not match the screenshotSha256 listed')
+            except Exception as x:  # noqa: BLE001 - any failure to read it is the finding
+                if strict or listed_before(e.get('id')) != e:
+                    bad('its screenshot could not be read: %s' % x)
+                else:
+                    print('%s: screenshot could not be read, left to the weekly run: %s' % (who, x))
+    network = e.get('network', [])
+    if not isinstance(network, list) or len(network) > 10 or \
+            not all(isinstance(h, str) and HOST_RE.match(h) for h in network):
+        bad('network must list, in lowercase, the host names it reaches (at most 10)')
+        network = []
+    for h in network:
+        if TRACKERS.search(h):
+            bad('network lists %s, an analytics or advertising service, which a launcher may not reach' % h)
     if not isinstance(e.get('kit'), int) or not 1 <= e['kit'] <= kit:
         bad('kit must be the window.Glasshouse version it needs, 1 to %d' % kit)
     if 'home' in e and not (isinstance(e['home'], str) and e['home'].startswith('https://')):
@@ -140,7 +221,10 @@ def check_entry(e, ids, kit, problems):
     try:
         data = fetch(e)
     except Exception as x:  # noqa: BLE001 - any failure to read it is the finding
-        bad('could not be read: %s' % x)
+        if strict or not url.startswith('https://') or listed_before(e.get('id')) != e:
+            bad('could not be read: %s' % x)
+        else:
+            print('%s: could not be read, left to the weekly run: %s' % (who, x))
         return
     if len(data) != e['size'] or len(data) > MAX_SIZE:
         bad('its file is %d bytes, not the %d listed (at most %d)' % (len(data), e['size'], MAX_SIZE))
@@ -162,9 +246,18 @@ def check_entry(e, ids, kit, problems):
         if call not in every:
             bad('must %s' % need)
     for name, src in text.items():
-        for pattern, what in LEAVES + REMOTE:
+        for pattern, what in LEAVES + REMOTE + RUNS_TEXT:
             if pattern.search(src):
                 bad('%s %s' % (name, what))
+    reached = set()
+    for src in text.values():
+        for m in re.finditer(r'(?:https?|wss?)://([A-Za-z0-9.-]+)', strip_comments(src)):
+            reached.add(m.group(1).lower())
+    for h in sorted(reached):
+        if TRACKERS.search(h):
+            bad('reaches %s, an analytics or advertising service, which a launcher may not' % h)
+        elif h not in network:
+            bad('reaches %s, which network must list' % h)
     with tempfile.TemporaryDirectory() as tmp:
         paths = []
         for name, src in text.items():
@@ -203,7 +296,13 @@ def main():
     kit = kit_version()
     problems, ids = [], set()
     for e in doc['launchers']:
-        check_entry(e, ids, kit, problems)
+        check_entry(e, ids, kit, problems, strict='--strict' in sys.argv)
+    # Withdrawn: a launcher found to do harm after it was listed, which TVs take out of Home's place.
+    for w in doc.get('withdrawn', []):
+        if not isinstance(w, dict) or not isinstance(w.get('id'), str) or not ID_RE.match(w['id']) or \
+                ('version' in w and not (isinstance(w['version'], str) and VERSION_RE.match(w['version']))) or \
+                not isinstance(w.get('reason'), str) or not w['reason'].strip():
+            problems.append('withdrawn: each needs an id, a reason, and a version only if one alone is withdrawn: %s' % json.dumps(w))
     for p in problems:
         print(p)
     print('%d launcher%s in the catalogue, %d problem%s' % (len(doc['launchers']), '' if len(doc['launchers']) == 1 else 's',

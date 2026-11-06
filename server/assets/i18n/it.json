@@ -3024,5 +3024,8 @@
  "srv.home.launcher.download": {"text": "Impossibile scaricare il launcher: {error}", "from": "The launcher could not be downloaded: {error}"},
  "srv.home.launcher.newer": {"text": "Questo launcher richiede un Glasshouse più recente.", "from": "This launcher needs a newer Glasshouse."},
  "srv.home.launcher.notListed": {"text": "Quel launcher non è nel catalogo.", "from": "That launcher is not in the catalogue."},
- "tv.home.launcher.hintMany": {"text": "Una schermata Home al posto di Glasshouse Home, dal catalogo o tua, impostata nella scheda Home della dashboard web.", "from": "A home screen in Glasshouse Home’s place, from the catalogue or your own, set up on the Home tab of the web dashboard."}
+ "tv.home.launcher.hintMany": {"text": "Una schermata Home al posto di Glasshouse Home, dal catalogo o tua, impostata nella scheda Home della dashboard web.", "from": "A home screen in Glasshouse Home’s place, from the catalogue or your own, set up on the Home tab of the web dashboard."},
+ "home.launcher.network": {"text": "Si collega a {hosts}", "from": "Connects to {hosts}"},
+ "home.launcher.withdrawn": {"text": "Ritirato dal catalogo, quindi non si può più usare. Rimuovilo.", "from": "Withdrawn from the catalogue, so it can no longer be used. Remove it."},
+ "srv.home.launcher.withdrawn": {"text": "Questo launcher è stato ritirato dal catalogo.", "from": "This launcher was withdrawn from the catalogue."}
 }

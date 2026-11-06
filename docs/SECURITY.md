@@ -82,7 +82,13 @@ it before exposing it more widely.
   the launcher's files are served only to the TV itself or with the token.
   The catalogue's launchers are installed as the Homebrew Channel's apps are:
   by any client allowed to control the TV, from a list that is reviewed before
-  anything is added, each download checked against the sha256 it lists.
+  anything is added, each download checked against the sha256 it lists. A
+  card names every host its launcher reaches beyond the TV, and none may be an
+  analytics or advertising service (`scripts/check-launchers.py`). A TV
+  downloads only the file an entry pins, and only when Install or Update is
+  pressed, so a launcher changed where its author publishes it reaches no TV.
+  One found to do harm after it was listed is withdrawn in the catalogue:
+  every TV with it reads that daily, and takes it out of Home's place.
   `launcherCatalogue` in `config.json`, which is file-only, replaces that list.
 - **`apps.repos` adds trust.** Each extra catalog listed there can offer
   packages for installation, with their hashes. Its packages are not treated

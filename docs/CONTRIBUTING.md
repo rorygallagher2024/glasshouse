@@ -50,9 +50,11 @@ change: a docs-only change needs no TV testing or translation.
   [Docs](#docs).
 
 A pull request that adds a launcher to the catalogue of launchers changes only
-`docs/launchers/`. [Writing a launcher](development/WRITING-LAUNCHERS.md#adding-it-to-the-catalogue)
-has what an entry needs and what `scripts/check-launchers.py` checks; its
-screenshot stands for the one a pull request would show.
+its entry in `docs/launchers/catalog.json`: the launcher and its screenshot stay
+where its author publishes them. Its description confirms the author may
+publish it and owns or is licensed to use everything in it.
+[Writing a launcher](development/WRITING-LAUNCHERS.md#adding-it-to-the-catalogue)
+has what an entry needs and what `scripts/check-launchers.py` checks.
 
 ## Guidelines
 

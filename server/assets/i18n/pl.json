@@ -3024,5 +3024,8 @@
  "srv.home.launcher.download": {"text": "Nie udało się pobrać launchera: {error}", "from": "The launcher could not be downloaded: {error}"},
  "srv.home.launcher.newer": {"text": "Ten launcher wymaga nowszego Glasshouse.", "from": "This launcher needs a newer Glasshouse."},
  "srv.home.launcher.notListed": {"text": "Tego launchera nie ma w katalogu.", "from": "That launcher is not in the catalogue."},
- "tv.home.launcher.hintMany": {"text": "Ekran główny zamiast Glasshouse Home, z katalogu lub własny, ustawiony na karcie Home panelu internetowego.", "from": "A home screen in Glasshouse Home’s place, from the catalogue or your own, set up on the Home tab of the web dashboard."}
+ "tv.home.launcher.hintMany": {"text": "Ekran główny zamiast Glasshouse Home, z katalogu lub własny, ustawiony na karcie Home panelu internetowego.", "from": "A home screen in Glasshouse Home’s place, from the catalogue or your own, set up on the Home tab of the web dashboard."},
+ "home.launcher.network": {"text": "Łączy się z {hosts}", "from": "Connects to {hosts}"},
+ "home.launcher.withdrawn": {"text": "Wycofany z katalogu, więc nie można go już używać. Usuń go.", "from": "Withdrawn from the catalogue, so it can no longer be used. Remove it."},
+ "srv.home.launcher.withdrawn": {"text": "Ten launcher został wycofany z katalogu.", "from": "This launcher was withdrawn from the catalogue."}
 }

@@ -3024,5 +3024,8 @@
  "srv.home.launcher.download": {"text": "Не удалось загрузить лаунчер: {error}", "from": "The launcher could not be downloaded: {error}"},
  "srv.home.launcher.newer": {"text": "Этому лаунчеру нужен более новый Glasshouse.", "from": "This launcher needs a newer Glasshouse."},
  "srv.home.launcher.notListed": {"text": "Этого лаунчера нет в каталоге.", "from": "That launcher is not in the catalogue."},
- "tv.home.launcher.hintMany": {"text": "Главный экран вместо Glasshouse Home, из каталога или свой, настроенный на вкладке «Главный экран» веб-панели.", "from": "A home screen in Glasshouse Home’s place, from the catalogue or your own, set up on the Home tab of the web dashboard."}
+ "tv.home.launcher.hintMany": {"text": "Главный экран вместо Glasshouse Home, из каталога или свой, настроенный на вкладке «Главный экран» веб-панели.", "from": "A home screen in Glasshouse Home’s place, from the catalogue or your own, set up on the Home tab of the web dashboard."},
+ "home.launcher.network": {"text": "Подключается к {hosts}", "from": "Connects to {hosts}"},
+ "home.launcher.withdrawn": {"text": "Отозван из каталога, поэтому его больше нельзя использовать. Удалите его.", "from": "Withdrawn from the catalogue, so it can no longer be used. Remove it."},
+ "srv.home.launcher.withdrawn": {"text": "Этот лаунчер отозван из каталога.", "from": "This launcher was withdrawn from the catalogue."}
 }

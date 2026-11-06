@@ -164,38 +164,54 @@ The catalogue is what the Home tab lists under **From the catalogue**:
 in Glasshouse's repository, published with these docs. A launcher is added by
 a pull request to it, and listed once the pull request is reviewed and merged.
 
+**Your launcher stays yours.** The pull request adds only its entry: the
+launcher and its screenshot stay where you publish them, such as a GitHub
+release or a file in your own repository, under your own licence. Only
+Glasshouse's own launchers, such as Minimal, are kept in Glasshouse's
+repository.
+
 An entry:
 
 ```json
 {
-  "id": "minimal",
-  "title": "Minimal",
-  "author": "Glasshouse",
+  "id": "clock-and-tiles",
+  "title": "Clock and tiles",
+  "author": "Your name",
   "description": "What it looks like and how it is used, in 20 to 300 characters.",
   "version": "1.0.0",
-  "url": "minimal/index.html",
-  "size": 6514,
+  "url": "https://github.com/you/clock-and-tiles/releases/download/v1.0.0/clock-and-tiles.zip",
+  "size": 48213,
   "sha256": "…",
-  "screenshot": "minimal/screenshot.jpg",
-  "kit": 1,
-  "home": "https://github.com/…"
+  "screenshot": "https://raw.githubusercontent.com/you/clock-and-tiles/v1.0.0/screenshot.jpg",
+  "screenshotSha256": "…",
+  "home": "https://github.com/you/clock-and-tiles",
+  "license": "MIT",
+  "network": ["api.open-meteo.com"],
+  "kit": 1
 }
 ```
 
 - `id` is lowercase letters, digits and dashes, and stays the same across
   versions: a TV with the launcher offers an update when `version` changes.
-- `url` is the launcher, an `.html` file or a `.zip` as above (not an `.ipk`):
-  a file beside the catalogue, in a folder of the launcher's own under
-  `docs/launchers/`, or an https address. `size` and `sha256` are its own, and a
-  TV installs it only if the download matches them, so a release elsewhere
-  must not change once listed; list a new version instead.
-- `screenshot` is a 16:9 picture of it on a TV, 960 × 540, beside the catalogue
-  or at an https address.
-- `kit` is the `Glasshouse.version` it needs. `home`, where people can find out
-  more, is optional.
+- `url` is the launcher, an `.html` file or a `.zip` as above (not an `.ipk`),
+  at an https address of yours. `size` and `sha256` are its own, and a TV
+  installs it only if the download matches them, so a file must not change
+  once it is listed: publish a new version under a new address, and change the
+  entry. A release's own download, or a tagged file, never changes.
+- `screenshot` is a 16:9 picture of it on a TV, 960 × 540, at an https address
+  of yours, and `screenshotSha256` its own sha256, so that it too stays as
+  reviewed.
+- `home` is where its source is, and `license` its licence, such as `MIT`.
+- `network` lists every host it reaches beyond the TV, which its card on the
+  Home tab shows. Leave it out if it reaches none.
+- `kit` is the `Glasshouse.version` it needs.
 
-For a launcher kept in the repository, `scripts/check-launchers.py --update`
-writes its `size` and `sha256`.
+The pull request's description confirms that you wrote the launcher or may
+publish it, that you own or are licensed to use every picture, font and name
+in it, and that it carries no keys or passwords for anyone's service. A
+launcher is taken out of the catalogue on a valid complaint about any of
+these, or when its author asks. A TV that has it keeps it, and can remove it
+on the Home tab.
 
 CI runs `scripts/check-launchers.py` on each pull request. A launcher in the
 catalogue must:
@@ -207,14 +223,43 @@ catalogue must:
   `replace`, `window.open`, refresh tag or links to other pages;
 - **be self-contained:** no scripts, stylesheets, fonts or pictures from
   elsewhere, so it cannot change after it was reviewed;
+- **name every host it reaches** in `network`, and reach no analytics or
+  advertising service;
+- **run no code but its own:** no `eval`, `new Function`, timers given a
+  string, `import()` or `document.write`, so that nothing a service sends back
+  can become code;
 - **be ES5** (`scripts/check-es5.py`), so that it runs on every TV Glasshouse
   Home does.
 
 Review then looks at what the check cannot: that it does what its description
-says, works with a remote, and does nothing else. Try it on a TV first, from
-your own fork: put `"launcherCatalogue"` in the TV's `config.json` with the
-address of your branch's `catalog.json` (raw.githubusercontent.com works), and
-restart Glasshouse. Take it out again afterwards.
+says, works with a remote, sends nothing about the TV or its owner anywhere,
+and does nothing else. Try it on a TV first: put `"launcherCatalogue"` in the
+TV's `config.json` with the address of your fork's `catalog.json`
+(raw.githubusercontent.com works), and restart Glasshouse. Take it out again
+afterwards.
+
+Each week the whole catalogue is read again, and a launcher that can no longer
+be downloaded, or no longer matches its entry, is taken out unless its author
+fixes it.
+
+### After it is listed
+
+A TV downloads a launcher only when **Install** or **Update** is pressed, and
+only the file the entry pins, so nothing changed or added where it is
+published reaches a TV until a new version's entry is reviewed and merged.
+
+A launcher found to do harm after it was listed is withdrawn, which TVs act
+on: listed in `withdrawn` in the catalogue, with the reason, it is taken out
+of Glasshouse Home's place on every TV that has it, within a day, and can no
+longer be chosen or installed.
+
+```json
+"withdrawn": [
+  { "id": "clock-and-tiles", "version": "1.0.0", "reason": "Sent the list of apps elsewhere." }
+]
+```
+
+Without `version`, every version is withdrawn.
 
 ## Troubleshooting
 

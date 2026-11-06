@@ -1093,6 +1093,7 @@ function glasshouseHomeRows(d) {
              ? t('home.restartsApps', 'On this TV, switching Glasshouse Home on or off, or holding Home for LG\u2019s Home, restarts the TV\u2019s app manager, which closes the apps that are open.') : undefined });
   for (var li = 0; li < kept.length; li++) {
     var lc = kept[li], lcOn = lc.id === chosenId;
+    if (lc.withdrawn) continue;
     r.push({ label: t('tv.home.launcher', 'Custom launcher: {title}', { title: lc.title }), key: lc.id,
              value: lcOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: lcOn ? 'on' : 'off',
              act: can ? 'homeLauncher' : null, on: lcOn, enabled: !!d.enabled,

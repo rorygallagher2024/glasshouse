@@ -719,6 +719,7 @@ async function homeLauncherLoadCatalogue() {
 }
 
 function homeLauncherDesc(l) {
+  if (l.withdrawn) return t('home.launcher.withdrawn', 'Withdrawn from the catalogue, so it can no longer be used. Remove it.');
   if (l.kind === 'web') return t('home.launcher.nowWeb', 'Web page: {address}', { address: l.address });
   if (l.source === 'catalogue') return t('home.launcher.nowCatalogue', 'From the catalogue: by {author}, version {version}', { author: l.author || '', version: l.version || '' });
   return l.files === 1
@@ -745,7 +746,7 @@ function renderHomeLauncher() {
     return `<div class="prot-row">
       <div class="prot-main"><div class="prot-title">${esc(l.title)}</div><div class="prot-desc">${esc(homeLauncherDesc(l))}</div></div>
       <div class="prot-status">
-        <button type="button" class="pill ${on ? 'good' : armed ? 'warn' : 'idle'}" ${on || busy ? 'disabled' : ''} onclick="homeLauncherUse('${esc(l.id)}')">${esc(use)}</button>
+        ${l.withdrawn ? '' : `<button type="button" class="pill ${on ? 'good' : armed ? 'warn' : 'idle'}" ${on || busy ? 'disabled' : ''} onclick="homeLauncherUse('${esc(l.id)}')">${esc(use)}</button>`}
         <button type="button" class="pill idle" ${busy ? 'disabled' : ''} onclick="homeLauncherRemove('${esc(l.id)}')">${esc(t('home.launcher.remove', 'Remove'))}</button>
       </div>
     </div>`;
@@ -766,6 +767,7 @@ function renderHomeLauncher() {
       <div class="lc-title">${esc(c.title)}</div>
       <div class="lc-by">${esc(t('home.launcher.by', 'By {author}, version {version}', { author: c.author, version: c.version }))}</div>
       <div class="lc-desc">${esc(c.description)}</div>
+      ${c.network && c.network.length ? `<div class="lc-by">${esc(t('home.launcher.network', 'Connects to {hosts}', { hosts: c.network.join(', ') }))}</div>` : ''}
       <button type="button" class="pill idle" ${can ? '' : 'disabled'} onclick="homeLauncherInstall('${esc(c.id)}')">${esc(label)}</button>
     </div></div>`;
   }).join('');

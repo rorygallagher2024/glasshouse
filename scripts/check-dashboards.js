@@ -1529,8 +1529,8 @@ async function visitHomeLauncher(browser, base, problems) {
     } else if (pathname === '/api/home/launchers/catalogue') {
       const have = kept.filter(l => l.id === 'minimal')[0];
       body = { ok: true, launchers: [{ id: 'minimal', title: 'Minimal', author: 'Glasshouse', version: listed,
-        description: 'As little on screen as will do.', screenshot: null, installed: have ? have.version : null, needsNewer: false },
-        { id: 'future', title: 'Future', author: 'Someone', version: '2.0.0', description: 'Needs more.', screenshot: null, installed: null, needsNewer: true }] };
+        description: 'As little on screen as will do.', screenshot: null, installed: have ? have.version : null, needsNewer: false, network: [] },
+        { id: 'future', title: 'Future', author: 'Someone', version: '2.0.0', description: 'Needs more.', screenshot: null, installed: null, needsNewer: true, network: ['api.weather.example'] }] };
     } else if (pathname === '/api/home') {
       body = { ok: true, supported: { ok: true }, installed: true, enabled: true, active: true, writable: true, layout,
         launchers: status(), launcherUpload, wallpapers: { choices: ['black'], choice: 'black', slots: {} } };
@@ -1549,6 +1549,8 @@ async function visitHomeLauncher(browser, base, problems) {
     await card('Minimal').waitFor();
     if (sent.length) problems.push('Home launcher: its button changed something');
     if (!await card('Future').locator('button').isDisabled()) problems.push('Home launcher: one needing a newer Glasshouse could be installed');
+    if (!/Connects to api\.weather\.example/.test(await card('Future').textContent())) problems.push('Home launcher: a card did not say what it connects to');
+    if (/Connects to/.test(await card('Minimal').textContent())) problems.push('Home launcher: a card that connects nowhere said it did');
     await card('Minimal').getByRole('button', { name: 'Install' }).click();
     await keptRow('Minimal').waitFor();
     await card('Minimal').getByRole('button', { name: 'Installed' }).waitFor();
