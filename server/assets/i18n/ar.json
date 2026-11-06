@@ -959,7 +959,6 @@
  "server.available": {"text": "الإصدار v{version} متوفر الآن. تثبيته يستبدل الخادم ويعيد تشغيله.", "from": "v{version} is out. Installing it replaces the server and restarts it."},
  "server.backup.appsManual": {"text": "تطبيقات خارج متجر Homebrew Channel (تُثبّت يدوياً): {names}.", "from": "Not in the Homebrew Channel catalog, to install by hand: {names}."},
  "server.backup.appsToInstall": {"text": "يمكن تثبيت {count} تطبيقات من النسخة الاحتياطية عبر تبويب «التطبيقات».", "from": "{count} apps from the backup can be installed from the Apps tab."},
- "server.backup.confirm": {"text": "هل تريد استعادة الإعدادات المحفوظة من {tv} بتاريخ {date}؟ سيؤدي هذا إلى تغيير إعدادات LG على هذا التلفاز.", "from": "Restore the settings saved from {tv} on {date}? This changes LG’s settings on this TV."},
  "server.backup.daily": {"text": "النسخ الاحتياطي اليومي", "from": "Daily backup"},
  "server.backup.daily.desc": {"text": "يحفظ نسخة احتياطية على التلفاز مرة يومياً، ويحتفظ بآخر 7 نسخ لتنزيلها أو استعادتها من هنا.", "from": "Saves the same backup on the TV once a day, and keeps the last 7. Each can be downloaded or restored here."},
  "server.backup.desc": {"text": "يحفظ إعدادات الصوت والأجهزة وHDMI والإعلانات الخاصة بـ LG وإعدادات Glasshouse في ملف واحد. استعادتها على هذا التلفاز أو غيره يطبق الإعدادات المتوفرة عليه (لا يشمل إعدادات الشبكة وMQTT والألعاب).", "from": "Saves LG's sound, device, HDMI and ad settings, and Glasshouse's own, to a file. Restoring it, on this TV or another, sets those the TV has. Network access, MQTT and game settings are not included."},
@@ -972,7 +971,6 @@
  "server.backup.restore": {"text": "استعادة من ملف", "from": "Restore from file"},
  "server.backup.restoreFailed": {"text": "تعذرت الاستعادة — {error}", "from": "Could not restore — {error}"},
  "server.backup.restoreSaved": {"text": "استعادة", "from": "Restore"},
- "server.backup.restored": {"text": "تم تغيير {changed} من إعدادات LG، وكان {same} منها مضبوطاً مسبقاً، وتم تخطي {skipped} لأنها غير مدعومة أو غير متاحة حالياً.", "from": "Changed {changed} LG settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now."},
  "server.backup.restoring": {"text": "جاري الاستعادة…", "from": "Restoring…"},
  "server.backup.save": {"text": "تنزيل نسخة احتياطية", "from": "Download backup"},
  "server.backup.saveFailed": {"text": "تعذر إنشاء نسخة احتياطية — {error}", "from": "Could not make a backup — {error}"},
@@ -3007,5 +3005,8 @@
  "home.experimentalAny": {"text": "تجريبي: قد لا يعمل دائمًا كما هو متوقع. يحل كل من Glasshouse Home وGlasshouse Minimal والمشغّلات المخصصة محل شاشة LG الرئيسية. إذا تعطل أحدها، اضغط مطولًا على زر الرئيسية في جهاز التحكم لثانية لفتح شاشة LG الرئيسية، أو اختر LG Home هنا للعودة. خلال نصف الدقيقة الأولى بعد تشغيل التلفاز من البداية، تعرض الرئيسية رسالة بأنها قيد البدء.", "from": "Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG’s Home screen. If one misbehaves, hold Home on the remote for a second to open LG’s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
  "home.restartsAppsAny": {"text": "على هذا التلفاز، يؤدي التبديل من LG Home أو العودة إليه، أو الضغط المطوّل على الرئيسية لفتح شاشة LG الرئيسية، إلى إعادة تشغيل مدير تطبيقات التلفاز، مما يغلق التطبيقات المفتوحة.", "from": "On this TV, switching away from LG Home or back to it, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."},
  "home.launcher.doneOffCustom": {"text": "تم. اضغط «مخصص» في الأعلى، ثم مرة أخرى، لجعله الشاشة الرئيسية للتلفاز.", "from": "Done. Press Custom above, then again, to make it the TV’s Home."},
- "home.showTvLogosDescName": {"text": "في تلفاز الإنترنت: شعار القائمة لكل قناة. عند الإيقاف يظهر اسم القناة مكانه.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."}
+ "home.showTvLogosDescName": {"text": "في تلفاز الإنترنت: شعار القائمة لكل قناة. عند الإيقاف يظهر اسم القناة مكانه.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."},
+ "server.backup.confirmSettings": {"text": "استعادة الإعدادات المحفوظة من {tv} في {date}؟ سيؤدي ذلك إلى تغيير إعدادات هذا التلفاز.", "from": "Restore the settings saved from {tv} on {date}? This changes settings on this TV."},
+ "server.backup.restoredSettings": {"text": "تم تغيير {changed} من الإعدادات، و{same} كانت كذلك بالفعل، وتم تخطي {skipped} لأن هذا التلفاز لا يحتوي عليها أو أنها غير متاحة الآن.", "from": "Changed {changed} settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now."},
+ "server.backup.acrLeftOff": {"text": "يبقى التعرف على المحتوى المباشر متوقفًا: تشغيله يعني الموافقة على شروط LG، لذلك لا تقوم النسخة الاحتياطية بذلك أبدًا.", "from": "Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does."}
 }

@@ -1536,6 +1536,7 @@ module.exports = {
   adBlockList: adBlockList,
   ownBlockList: ownBlockList,
   parseCustomHosts: parseCustomHosts,
+  customHosts: customHosts,
   setCustomHosts: setCustomHosts,
   customSummary: customSummary,
   setAdBlock: setAdBlock,
