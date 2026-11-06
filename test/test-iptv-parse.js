@@ -170,9 +170,6 @@ assert.ok(keys2[0] !== 'k1' && keys2[0] !== 'k2' && keys2[1] !== 'k1' && keys2[1
 assert.notEqual(keys2[0], keys2[1]);
 console.log('  ✓ keys: the full URL first, a unique hint for a rotated token, and never a guess between twins');
 
-assert.equal(parse.monogram('Harbour Sport 1'), 'HS1');
-assert.equal(parse.monogram('BBC One HD'), 'BOH');
-assert.equal(parse.monogram(''), '?');
 assert.equal(parse.imageType(toBuffer([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 0, 0, 0, 0, 0])), 'image/png');
 assert.equal(parse.imageType(toBuffer('<html><body></body></html>')), null);
 assert.equal(parse.safeDerivedUrl('https://l.example/a.png'), true);

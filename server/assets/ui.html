@@ -806,12 +806,20 @@
     <div class="prot-row" id="row-devdetect" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.deviceDetection">Auto device detection</div>
-        <div class="prot-desc" data-t="adv.deviceDetection.desc">Lets the TV find devices at home that it can show on its Home Dashboard and control:
-          a set-top box on an HDMI input, and smart lights, plugs and switches on your network. On newer TVs it looks up every address on your home network each time the TV switches
-          on, which a network-wide ad blocker such as Pi-hole shows as hundreds of requests. Switched off, the scans
-          stop and the TV no longer finds devices by itself.</div>
+        <div class="prot-desc" data-t="adv.deviceDetection.descLg">LG&rsquo;s own setting. Lets the TV find devices at home that it can show on its Home Dashboard and control:
+          a set-top box on an HDMI input, and smart lights, plugs and switches on your network. On some TVs, webOS 11 among them, the TV still
+          looks up every address on your home network with this off; Network device scans stops that.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_devdetect" onclick="toggleDeviceDetection()">&mdash;</button></div>
+    </div>
+    <div class="prot-row" id="row-devscans" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.deviceScans">Network device scans</div>
+        <div class="prot-desc" data-t="adv.deviceScans.desc">Glasshouse&rsquo;s switch for the scans themselves: the TV looking up every address on your home network, which a network-wide ad blocker
+          such as Pi-hole shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new
+          devices for the Home Hub or LG&rsquo;s device setup.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_devscans" onclick="toggleDeviceScans()">&mdash;</button></div>
     </div>
   </div>
 
@@ -1056,14 +1064,51 @@
       <div>
         <div class="ps-head" id="home-state">&mdash;</div>
         <div class="pv-sub" id="home-state-desc"></div>
-        <div class="pv-note warn" id="home-restart-note" hidden data-t="home.restartsApps">On this TV, switching Glasshouse Home on or off, or holding Home for LG&rsquo;s Home, restarts the TV&rsquo;s app manager, which closes the apps that are open.</div>
-        <div class="pv-note warn" data-t="home.experimental">Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.</div>
+        <div class="pv-note warn" id="home-restart-note" hidden data-t="home.restartsAppsAny">On this TV, switching away from LG Home or back to it, or holding Home for LG&rsquo;s Home, restarts the TV&rsquo;s app manager, which closes the apps that are open.</div>
+        <div class="pv-note warn" data-t="home.experimentalAny">Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG&rsquo;s Home screen. If one misbehaves, hold Home on the remote for a second to open LG&rsquo;s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.</div>
       </div>
     </div>
-    <div class="btns" id="home-mode-btns">
-      <button type="button" id="home-mode-lg" onclick="homeChooseMode(false)">&mdash;</button>
-      <button type="button" id="home-switch" onclick="homeChooseMode(true)">&mdash;</button>
+    <div id="home-choose">
+      <div class="lbl" data-t="home.choose">Choose your launcher</div>
+      <div class="btns" id="home-mode-btns">
+        <button type="button" id="home-mode-lg" onclick="homeChooseMode(false)">&mdash;</button>
+        <button type="button" id="home-switch" onclick="homeChooseMode(true)">&mdash;</button>
+        <button type="button" id="home-mode-minimal" onclick="homeLauncherUse('minimal')">&mdash;</button>
+        <button type="button" id="home-mode-launcher" onclick="homeChooseLauncher()">&mdash;</button>
+      </div>
     </div>
+  </div>
+
+  <!-- A launcher of the owner's own in Glasshouse Home's place: shown while it is
+       chosen, or once its button is pressed to set one up -->
+  <div id="home-launcher" hidden>
+  <div class="pv-sec" data-t="home.launcher.title">Custom launcher</div>
+  <div class="sub" data-t="home.launcher.intro">A home screen of your own in Glasshouse Home&rsquo;s place: a web app uploaded here, or a web page. The Home and Back buttons open it, as they do Glasshouse Home, and holding Home still opens LG&rsquo;s Home. If it stops working, LG&rsquo;s Home comes back by itself.</div>
+  <div class="pv-note warn" data-t="home.launcher.trust">A launcher can do anything on the TV that Glasshouse can. Only use one you trust.</div>
+  <div class="prot-table" id="home-launchers"></div>
+  <div class="prot-table">
+    <div class="prot-row">
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.launcher.upload">Upload a launcher</div>
+        <div class="prot-desc" data-t="home.launcher.uploadDesc">A web app as an .ipk, a .zip of its folder, or a single .html file, up to 50 MB. It replaces the launcher here before it.</div>
+        <div class="pv-note" id="home-launcher-upload-off" hidden data-t="home.launcher.uploadOff">Uploading a launcher needs Install app from a URL or file switched on, on the Apps tab, or a token, as installing an app does.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-launcher-pick" onclick="homeLauncherPick()" data-t="home.launcher.choose">Choose a file</button></div>
+    </div>
+    <div class="prot-row">
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.launcher.address">Or open a web page</div>
+        <div class="prot-desc" data-t="home.launcher.addressDesc">A page such as a Home Assistant dashboard, shown full screen as the TV&rsquo;s Home. Some sites do not allow this; Writing a launcher in the docs has the setting Home Assistant needs.</div>
+        <form class="toast-form" onsubmit="event.preventDefault();homeLauncherSaveAddress();">
+          <input type="text" id="home-launcher-url" placeholder="https://" translate="no" maxlength="2000" autocomplete="off" spellcheck="false">
+          <button type="submit" id="home-launcher-save" data-t="home.launcher.save">Use this page</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="home-launcher-file" accept=".ipk,.zip,.html,.htm" hidden onchange="homeLauncherPicked(this)">
+  <div class="sub" id="home-launcher-note" role="status"></div>
+  <div class="pv-sub"><a href="https://rorygallagher2024.github.io/glasshouse/development/WRITING-LAUNCHERS/" target="_blank" rel="noopener" data-t="home.launcher.docs">Writing a launcher</a></div>
   </div>
 
   <!-- Home customisation, whichever Home is the TV's: power-on, Glasshouse Home's
@@ -1144,7 +1189,7 @@
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.showTvLogos">Channel logos</div>
-        <div class="prot-desc" data-t="home.showTvLogosDesc">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials.</div>
+        <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
     </div>
@@ -1284,13 +1329,15 @@
 
   <div id="home-more">
 
-  <div class="pv-sec adv-sec" data-t="home.layout">Rows and tiles</div>
-  <div class="sub" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
-  <div class="pv-note" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
-  <div id="home-rows"></div>
+  <!-- .home-arrange: also shown while a custom launcher is the TV's Home, whose apps and inputs it orders and hides -->
+  <div class="pv-sec adv-sec home-arrange" id="home-layout-title" data-t="home.layout">Rows and tiles</div>
+  <div class="sub home-arrange home-gh-only" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
+  <div class="sub home-arrange home-launcher-only" data-t="home.layoutDescLaunchers">Which of the TV&rsquo;s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to.</div>
+  <div class="pv-note home-arrange" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
+  <div class="home-arrange" id="home-rows"></div>
   <div id="home-recents"></div>
-  <div class="btns" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
-  <div class="sub" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
+  <div class="btns home-arrange" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
+  <div class="sub home-arrange" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
 
   <div class="pv-sec adv-sec" data-t="home.tv.title">Internet TV</div>
   <div class="sub" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses. It is kept on the TV and never shown here again.</div>
@@ -1305,20 +1352,36 @@
     <button type="button" id="home-col-reset" onclick="homeSaveLayout({ colours: homeDefaultLook() })" data-t="home.colours.reset">Use the default colours</button>
   </div>
 
-  <div class="pv-sec adv-sec" data-t="home.wall.title">Wallpaper</div>
-  <div class="sub" data-t="home.wall.introSets">A picture behind Glasshouse Home for each part of the day: none, one of the picture sets, or your own.</div>
-  <div class="btns wall-choice" id="home-wall-choice"></div>
-  <!-- The day as Glasshouse Home shows it: each part's picture across its hours, and where the day is now -->
-  <div class="wall-day" id="home-wall-day"></div>
-  <div class="wall-cards" id="home-walls"></div>
-  <input type="file" id="home-wall-file" accept="image/jpeg,image/png,image/webp" hidden onchange="homeWallPicked(this)">
-  <div class="wall-foot">
-    <div class="sub" id="home-wall-help" data-t="home.wall.uploadHelp">JPEG, PNG or WebP, up to 25 MB. Images are resized to fit 1920 × 1080, the size Glasshouse Home is drawn at, before upload, and fill the screen.</div>
-    <div class="wall-foot-btns">
-      <button type="button" class="pill idle" id="home-wall-clear" onclick="homeClearUploads()" data-t="home.wall.clearAll">Remove all</button>
+  <div class="pv-sec adv-sec" data-t="home.bg.title">Background</div>
+  <div class="sub" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
+  <div class="btns wall-choice" id="home-bg-kind"></div>
+  <div id="home-bg-pictures">
+    <div class="sub" data-t="home.wall.introPictures">A picture for each part of the day: one of the picture sets, or your own.</div>
+    <div class="btns wall-choice" id="home-wall-choice"></div>
+    <!-- The day as Glasshouse Home shows it: each part's picture across its hours, and where the day is now -->
+    <div class="wall-day" id="home-wall-day"></div>
+    <div class="wall-cards" id="home-walls"></div>
+    <input type="file" id="home-wall-file" accept="image/jpeg,image/png,image/webp" hidden onchange="homeWallPicked(this)">
+    <div class="wall-foot">
+      <div class="sub" id="home-wall-help" data-t="home.wall.uploadHelp">JPEG, PNG or WebP, up to 25 MB. Images are resized to fit 1920 × 1080, the size Glasshouse Home is drawn at, before upload, and fill the screen.</div>
+      <div class="wall-foot-btns">
+        <button type="button" class="pill idle" id="home-wall-clear" onclick="homeClearUploads()" data-t="home.wall.clearAll">Remove all</button>
+      </div>
+    </div>
+    <div class="sub" id="home-wall-upload-note" role="status"></div>
+  </div>
+  <div id="home-bg-animated">
+    <div class="sub" data-t="home.animDesc">Light that moves slowly behind Glasshouse Home. It stops whenever Home is not on screen.</div>
+    <div class="btns wall-choice scenes" id="home-anim-scenes"></div>
+    <div id="home-anim-colours">
+      <div class="sub" data-t="home.animColoursDesc">Its colours: following the part of the day, a preset, or a background and a light colour of your own. In the aquarium they are the water and the light through it.</div>
+      <div class="home-looks" id="home-anim-themes"></div>
+      <div class="home-custom">
+        <label><input type="color" id="home-anim-sky" onchange="homeAnimCustom()"> <span data-t="home.animSky">Background</span></label>
+        <label><input type="color" id="home-anim-light" onchange="homeAnimCustom()"> <span data-t="home.animLight">Light</span></label>
+      </div>
     </div>
   </div>
-  <div class="sub" id="home-wall-upload-note" role="status"></div>
   <div class="set home-dark"><div class="lbl"><span data-t="home.darkening">Darkening</span> &middot; <span id="home-dark-lbl" class="num">&mdash;</span></div>
     <div class="sub" data-t="home.darkeningDesc">How much the wallpaper is darkened behind the clock and the rows, to keep them easy to read. Off shows the picture as it is.</div>
     <div class="vol-row">

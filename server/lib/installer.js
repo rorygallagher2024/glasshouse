@@ -1310,5 +1310,7 @@ module.exports = {
   NAME_RE: NAME_RE,
   cmpVer: cmpVer,
   hashFile: hashFile,
-  parseDf: parseDf
+  parseDf: parseDf,
+  // The package readers, for lib/home-launcher, which unpacks a launcher's web app from an ipk.
+  archive: { reject: reject, cleanPath: cleanPath, tarWalker: tarWalker, streamTar: streamTar, readMembers: readMembers }
 };

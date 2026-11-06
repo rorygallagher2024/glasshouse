@@ -32,7 +32,7 @@ Use it for remote control, app installation and removal, OLED panel care, privac
 * **webOS**: 2.2 through 11 (LG's webOS 26) confirmed; tested across 2015–2026 models. Other versions likely work as well. LG names its versions two ways: [webOS version numbers](https://rorygallagher2024.github.io/glasshouse/tested-tvs/#webos-version-numbers) gives both
 * **Panels**: OLED (full panel wear telemetry and burn-in controls) and LCD (core dashboard, controls, and telemetry; OLED Care tab hides automatically)
 * **Access**: Rooted via [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel). Telnet or SSH. No external dependencies or internet access needed on the TV
-* **Tested hardware**: 66 TVs across 43 series verified so far (LF632V, UH600V, UH6030, UH610V, UH635V, B6, B7, SJ80, UJ63, B8, C8, LK61, UK63, LM57, UM71, UM73, C9, CX, GX, UN73, C1, UP80, UP81, QNED82, UQ80, C2, G2, C3, UR80, B4, G3, C4, G4, UT73, UT81, C5, G5, CS, LX3, UA73, C6, NU80, QNED84). Other rooted models should work; [see full table](https://rorygallagher2024.github.io/glasshouse/tested-tvs/)
+* **Tested hardware**: 67 TVs across 44 series verified so far (LF632V, UF850T, UH600V, UH6030, UH610V, UH635V, B6, B7, SJ80, UJ63, B8, C8, LK61, UK63, LM57, UM71, UM73, C9, CX, GX, UN73, C1, UP80, UP81, QNED82, UQ80, C2, G2, C3, UR80, B4, G3, C4, G4, UT73, UT81, C5, G5, CS, LX3, UA73, C6, NU80, QNED84). Other rooted models should work; [see full table](https://rorygallagher2024.github.io/glasshouse/tested-tvs/)
 
 **[Read the documentation](https://rorygallagher2024.github.io/glasshouse/)** for the features, installation, Home Assistant and security.
 
@@ -55,7 +55,7 @@ The [installation guide](https://rorygallagher2024.github.io/glasshouse/install/
 
 This project is intended to give a rooted webOS TV a useful local control surface instead of requiring the owner to work around the TV's built-in menus, vendor services and cloud dependencies.
 
-1. **[A cleaner Home screen](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).** A replacement Home app with full control over what displays, and no ads, with a row of Internet TV channels from your own IPTV playlist. Available on webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3 and later versions can try it with a setting.
+1. **[A cleaner Home screen](https://rorygallagher2024.github.io/glasshouse/dashboard/home/).** A replacement Home app with full control over what displays, and no ads, with a row of Internet TV channels from your own IPTV playlist. Or choose Glasshouse Minimal, a plainer one that comes with it, or put a launcher of your own in its place, or a web page such as a Home Assistant dashboard. Available on webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3 and later versions can try it with a setting.
 
 2. **[Controlling the TV without the cloud](https://rorygallagher2024.github.io/glasshouse/dashboard/control/).** Remote's keys, volume, inputs, power, sleep timer, comprehensive picture and sound settings, Game Optimizer, and much more.
 
