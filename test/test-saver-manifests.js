@@ -223,7 +223,7 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   // and Dim were; between and below, a black layer over the nearer one above.
   delete env.files[path.join(APP, '.tvweb-choice')];
   env.files[path.join(APP, '.tvweb-screensaver')] = 'clock';
-  [['bright', 1, null], ['dim', 0, null], ['100', 1, null], ['65', 0, null], ['80', 1, '0.2'], ['40', 0, '0.385'], ['5', 0, '0.846']]
+  [['bright', 1, null], ['dim', 0, null], ['100', 1, null], ['65', 0, null], ['80', 1, '0.2'], ['40', 0, '0.385'], ['5', 0, '0.923'], ['2', 0, '0.923']]
     .forEach(function (c) {
       env.files[path.join(APP, '.tvweb-brightness')] = c[0];
       screensavers.restageScreensaver();
@@ -235,7 +235,7 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   env.files[path.join(APP, '.tvweb-brightness')] = '40';
   assert.strictEqual(screensavers.screensaverBrightness(), 40);
   assert.strictEqual(screensavers.screensaverLevel(), 'dim', 'Dim to what still reads one');
-  console.log('  \u2713 brightness keeps Bright and Dim as they were, with a layer between and below, down to 10%');
+  console.log('  \u2713 brightness keeps Bright and Dim as they were, with a layer between and below, down to 5%');
 })();
 
 // 11. An installed Homebrew Channel app's screen saver is listed, from its app,

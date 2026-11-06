@@ -363,7 +363,7 @@ document.addEventListener('click', async ev => {
 
 });
 
-/* Brightness, in 5% steps from 10%, sent on release: each value restages the
+/* Brightness, in 5% steps from 5%, sent on release: each value restages the
    screen saver, and one on screen is closed and shown again for it. 65% and
    100% are the Dim and Bright each screen saver was drawn at before. */
 let ssBrightDragging = false;
@@ -377,7 +377,7 @@ function showSsBrightness(v) {
 function initSsBrightSlider() {
   const wrap = q('ss-bright-wrap'), slider = q('ss-bright-slider');
   let active = false, keyTimer = 0;
-  const clamp = v => Math.max(10, Math.min(100, v));
+  const clamp = v => Math.max(5, Math.min(100, v));
   const at = e => {
     const r = wrap.getBoundingClientRect();
     return clamp(Math.round(((e.clientX - r.left) / r.width) * 20) * 5);
@@ -418,7 +418,7 @@ function initSsBrightSlider() {
     const steps = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5, PageUp: 25, PageDown: -25 };
     let v;
     if (steps[e.key]) v = Number(slider.value) + steps[e.key];
-    else if (e.key === 'Home') v = 10;
+    else if (e.key === 'Home') v = 5;
     else if (e.key === 'End') v = 100;
     else return;
     e.preventDefault();

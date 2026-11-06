@@ -44,7 +44,7 @@ var DIM_FRAME = 'glasshouse-frame.html';
  * and below. The old Dim and Bright are these two.
  */
 var TUNED_DIM = 65;
-var MIN_BRIGHTNESS = 10;
+var MIN_BRIGHTNESS = 5;
 // The option picked from a screen saver's choices, staged beside the level.
 var SCREENSAVER_CHOICE_MARKER = '.tvweb-choice';
 /*

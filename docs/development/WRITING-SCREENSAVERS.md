@@ -126,7 +126,7 @@ Glasshouse has a token set, add `-H 'Authorization: Bearer <token>'`; control
 has to be allowed (`allowControl`). The second call starts the screen saver, or
 closes it if it is showing.
 
-Try it at 100%, 65% and 10% brightness, and on a TV nobody is watching.
+Try it at 100%, 65% and 5% brightness, and on a TV nobody is watching.
 
 ## Checking before you copy
 
@@ -196,7 +196,7 @@ A screen saver names in `uses` what Glasshouse should fill in:
   and below. Draw `1` as the screen saver at its brightest and `0` at about two
   thirds of that: 100% and 65% show those two as drawn, and Glasshouse lays
   black over the nearer one above for every step between and below, down to
-  10%. One without `level` is drawn as it is at 100%, under the layer below
+  5%. One without `level` is drawn as it is at 100%, under the layer below
   that; an HTML one is shown in a frame for it.
 * `choice` - `__TVWEB_CHOICE__` becomes the value of the option picked from
   the screen saver's `choices`, which the dashboard offers as a dropdown.

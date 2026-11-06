@@ -891,7 +891,7 @@ function saverRows(d) {
     // Adjusted with a bar, as a picture setting is, and sent once done: each
     // value restages the screen saver.
     r.push({ label: t('ss.brightness', 'Brightness'), value: bright + '%', cls: 'act', act: 'saverAdjust',
-             key: d.current, cur: bright, min: 10, max: 100, step: 5, fmt: 'percent', sendOnEnd: true,
+             key: d.current, cur: bright, min: 5, max: 100, step: 5, fmt: 'percent', sendOnEnd: true,
              press: t('tv.pic.adjust', 'Press OK to adjust'),
              hint: t('tv.saver.brightness.hint', 'Lower suits a dark room and is kinder to the panel; higher suits a lit one.') });
   }
