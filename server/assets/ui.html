@@ -1063,6 +1063,7 @@
     <div class="btns" id="home-mode-btns">
       <button type="button" id="home-mode-lg" onclick="homeChooseMode(false)">&mdash;</button>
       <button type="button" id="home-switch" onclick="homeChooseMode(true)">&mdash;</button>
+      <button type="button" id="home-mode-minimal" onclick="homeLauncherUse('minimal')">&mdash;</button>
       <button type="button" id="home-mode-launcher" onclick="homeChooseLauncher()" data-t="home.launcher.button">Custom launcher</button>
     </div>
   </div>
@@ -1320,7 +1321,7 @@
   <!-- .home-arrange: also shown while a custom launcher is the TV's Home, whose apps and inputs it orders and hides -->
   <div class="pv-sec adv-sec home-arrange" id="home-layout-title" data-t="home.layout">Rows and tiles</div>
   <div class="sub home-arrange home-gh-only" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
-  <div class="sub home-arrange home-launcher-only" data-t="home.layoutDescOwn">Which of the TV&rsquo;s apps and inputs the custom launcher shows, and in what order, where it was written to follow this, as the launchers in the docs are.</div>
+  <div class="sub home-arrange home-launcher-only" data-t="home.layoutDescLaunchers">Which of the TV&rsquo;s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to.</div>
   <div class="pv-note home-arrange" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
   <div class="home-arrange" id="home-rows"></div>
   <div id="home-recents"></div>

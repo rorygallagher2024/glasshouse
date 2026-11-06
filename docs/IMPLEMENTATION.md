@@ -1725,8 +1725,11 @@ and Glasshouse Home is on, the server answers that with a redirect to
 changes with the choice or a new upload, so the page in front reloads into the
 right one within a beat.
 
-Each launcher is unpacked to `/var/lib/tvweb/home-launcher/apps/<id>`, with
-`launcher.json` naming those kept and the one chosen. Zips and `.ipk`s are read
+Minimal is one of these, built in: `assets/home-minimal.html`, served from
+Glasshouse's own files with the same script added, offered on every TV and
+never removed. Each other launcher is unpacked to
+`/var/lib/tvweb/home-launcher/apps/<id>`, with `launcher.json` naming those
+kept and the one chosen. Zips and `.ipk`s are read
 in JavaScript, the `.ipk` with the installer's ar and tar readers, as not every
 webOS has `unzip`. Paths outside the folder, links and native apps are refused.
 The start page is served with `/assets/home-kit.js?v=<release>` added first in

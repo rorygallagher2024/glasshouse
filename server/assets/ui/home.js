@@ -79,13 +79,19 @@ function homeLauncherOn() {
   return !!(st && st.enabled && st.launchers && st.launchers.chosen);
 }
 
-function homeLaunchersKept() {
+// Every launcher on offer, Minimal among them.
+function homeLaunchersAll() {
   return (homeStatus && homeStatus.launchers && homeStatus.launchers.launchers) || [];
+}
+
+// Those of the owner's own, which the Custom launcher section lists.
+function homeLaunchersKept() {
+  return homeLaunchersAll().filter(l => l.source !== 'builtin');
 }
 
 function homeLauncherChosen() {
   const id = homeStatus && homeStatus.launchers && homeStatus.launchers.chosen;
-  return homeLaunchersKept().filter(l => l.id === id)[0] || null;
+  return homeLaunchersAll().filter(l => l.id === id)[0] || null;
 }
 
 function renderHomeCustom(autoVal) {
@@ -127,9 +133,10 @@ function renderHome() {
     desc.textContent = st.supported.reason || '';
   } else if (homeLauncherOn()) {
     state.textContent = t('home.launcher.isOn', '{title} is the TV’s Home', { title: homeLauncherChosen().title });
+    const title = homeLauncherChosen().title;
     desc.textContent = st.lgHomeOpen
-      ? t('home.launcher.isOnLgOpen', 'LG’s Home is open for now. The custom launcher comes back when something else is opened, or Home is pressed.')
-      : t('home.launcher.isOnDesc', 'The custom launcher opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.');
+      ? t('home.launcher.isOnLgOpenTitle', 'LG’s Home is open for now. {title} comes back when something else is opened, or Home is pressed.', { title })
+      : t('home.launcher.isOnDescTitle', '{title} opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.', { title });
   } else if (st.enabled) {
     state.textContent = t('home.isOn', 'Glasshouse Home is the TV’s Home');
     desc.textContent = st.lgHomeOpen
@@ -288,7 +295,17 @@ function renderHome() {
   if (launcherBtn) {
     launcherBtn.hidden = !!st.restorePending || !st.supported.ok;
     launcherBtn.disabled = homeLauncherBusy;
-    launcherBtn.className = homeLauncherOn() ? 'on' : '';
+    launcherBtn.className = homeLauncherOn() && st.launchers.chosen !== 'minimal' ? 'on' : '';
+  }
+  // Minimal, Glasshouse's plainest home screen, chosen as a launcher is.
+  const minimalBtn = q('home-mode-minimal');
+  if (minimalBtn) {
+    minimalBtn.hidden = !!st.restorePending || !st.supported.ok || !homeLaunchersAll().some(l => l.id === 'minimal');
+    const on = homeLauncherOn() && st.launchers.chosen === 'minimal';
+    const armed = homeArmed === 'use:minimal';
+    minimalBtn.disabled = !homeWritable() || homeLauncherBusy;
+    minimalBtn.className = on ? 'on' : armed ? 'warn' : '';
+    minimalBtn.textContent = armed ? t('home.confirmOn', 'Press again to switch on') : t('home.minimal', 'Minimal');
   }
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
@@ -688,6 +705,7 @@ function homeChooseLauncher() {
  */
 function homeLauncherUse(id) {
   if (!homeWritable() || homeLauncherBusy) return;
+  if (homeLauncherOn() && homeStatus.launchers.chosen === id) return;
   if (homeStatus.enabled) return homeLauncherChoose(id);
   if (homeArmed !== 'use:' + id) {
     homeArmed = 'use:' + id;

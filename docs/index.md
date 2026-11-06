@@ -112,7 +112,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
     ---
 
-    A replacement Home app with full control over what displays, and no ads, with a row of Internet TV channels from your own IPTV playlist. Or put a launcher of your own in its place, or a web page such as a Home Assistant dashboard. Available on webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3 and later versions can try it with a setting.
+    A replacement Home app with full control over what displays, and no ads, with a row of Internet TV channels from your own IPTV playlist. Or choose Minimal, a plainer one that comes with it, or put a launcher of your own in its place, or a web page such as a Home Assistant dashboard. Available on webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3 and later versions can try it with a setting.
 
 -   **[Controlling the TV without the cloud](dashboard/control.md)**
 

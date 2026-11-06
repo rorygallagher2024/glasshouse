@@ -1514,7 +1514,8 @@ async function visitHomeLauncher(browser, base, problems) {
     hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
   let kept = [], chosen = null, launcherUpload = true;
   const sent = [];
-  const status = () => ({ chosen, launchers: kept.map(l => Object.assign({}, l, { chosen: l.id === chosen })) });
+  const minimal = { id: 'minimal', kind: 'builtin', title: 'Minimal', source: 'builtin' };
+  const status = () => ({ chosen, launchers: [minimal].concat(kept).map(l => Object.assign({}, l, { chosen: l.id === chosen })) });
   await context.route('**/api/home**', async route => {
     const pathname = new URL(route.request().url()).pathname;
     let body;
@@ -1554,6 +1555,15 @@ async function visitHomeLauncher(browser, base, problems) {
     if (await page.locator('#home-tv').isVisible() || await page.locator('#home-looks').isVisible()) problems.push('Home launcher: Glasshouse Home\'s own settings showed with a launcher chosen');
     if (!/\bon\b/.test(await page.locator('#home-mode-launcher').getAttribute('class'))) problems.push('Home launcher: its button was not marked as chosen');
     if (!await keptRow('ha.local').getByRole('button', { name: 'In use' }).isDisabled()) problems.push('Home launcher: the one in use offered Use');
+    if (await page.locator('#home-launchers .prot-row', { hasText: 'Minimal' }).count()) problems.push('Home launcher: Minimal was listed among the owner\'s own');
+    // Minimal, Glasshouse's own, is a choice beside the others.
+    sent.length = 0;
+    await page.locator('#home-mode-minimal').click();
+    await page.waitForFunction(() => /Minimal/.test(document.getElementById('home-state').textContent));
+    if (sent.join() !== '{"choose":"minimal"}') problems.push('Home launcher: Minimal sent ' + sent.join());
+    if (!/\bon\b/.test(await page.locator('#home-mode-minimal').getAttribute('class')) ||
+        /\bon\b/.test(await page.locator('#home-mode-launcher').getAttribute('class'))) problems.push('Home launcher: Minimal\'s button was not the one marked as chosen');
+    if (!await page.locator('#home-rows .home-row[data-kind="app"]').isVisible()) problems.push('Home launcher: the Apps row was not offered with Minimal chosen');
     sent.length = 0;
     await page.locator('#home-switch').click();
     await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-switch').className));

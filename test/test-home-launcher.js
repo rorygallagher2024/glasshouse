@@ -180,8 +180,8 @@ function own() { return launcher.status().launchers.filter(function (l) { return
 test('a single HTML file is the owner\'s own, served with the kit first in its head once chosen', function (done) {
   upload('My launcher.html', buf('<!doctype html><html><head><title>x</title></head><body>hi</body></html>'), function (code, r) {
     assert.strictEqual(code, 200, JSON.stringify(r));
-    var l = r.launchers.launchers[0];
-    assert.strictEqual(l.id, 'own');
+    var l = r.launchers.launchers.filter(function (x) { return x.id === 'own'; })[0];
+    assert.strictEqual(r.launchers.launchers[0].id, 'minimal', 'Glasshouse\'s own first');
     assert.strictEqual(l.kind, 'app');
     assert.strictEqual(l.title, 'x', 'the page\'s own title');
     assert.strictEqual(r.launchers.chosen, null);
@@ -340,11 +340,36 @@ test('a web address replaces the owner\'s own upload, escaped in the frame, and 
   });
 });
 
+test('Minimal comes with Glasshouse: chosen, it is served with the kit, and it cannot be removed', function (done) {
+  var mini = launcher.status().launchers[0];
+  assert.deepEqual([mini.id, mini.source, mini.title], ['minimal', 'builtin', 'Minimal']);
+  var was = launcher.status().chosen;
+  post({ choose: 'minimal' }, function (c1, r1) {
+    assert.strictEqual(c1, 200);
+    assert.strictEqual(r1.launchers.chosen, 'minimal');
+    assert.ok(/^custom-minimal-\d+$/.test(launcher.revision()));
+    get('/home/launcher/', function (c2, page) {
+      assert.strictEqual(c2, 200);
+      assert.ok(/<head><script src="\/assets\/home-kit\.js\?v=1\.2\.3"><\/script>/.test(page), 'the kit first');
+      assert.ok(page.indexOf('<title>Minimal</title>') !== -1);
+      assert.ok(page.indexOf('Glasshouse.onHome(') !== -1);
+      get('/home/launcher/other.js', function (c3) {
+        assert.strictEqual(c3, 404, 'it has no other files');
+        post({ remove: 'minimal' }, function (c4, r4) {
+          assert.strictEqual(c4, 200);
+          assert.strictEqual(r4.launchers.launchers[0].id, 'minimal', 'still offered');
+          post({ choose: was }, function () { done(); });
+        });
+      });
+    });
+  });
+});
+
 test('removing the chosen one gives Glasshouse Home its place', function (done) {
   post({ remove: 'own' }, function (code, r) {
     assert.strictEqual(code, 200);
     assert.strictEqual(r.launchers.chosen, null);
-    assert.deepEqual(r.launchers.launchers, []);
+    assert.deepEqual(r.launchers.launchers.map(function (x) { return x.id; }), ['minimal'], 'Minimal stays');
     assert.ok(!fs.existsSync(path.join(dir, 'home-launcher', 'apps', 'own')));
     get('/home/launcher/', function (c2) {
       assert.strictEqual(c2, 404);
@@ -361,7 +386,7 @@ test('the first release\'s single launcher becomes the owner\'s own, still chose
   launcher.init(launcherOpts);
   var st = launcher.status();
   assert.strictEqual(st.chosen, 'own');
-  assert.strictEqual(st.launchers[0].title, 'Old');
+  assert.strictEqual(st.launchers.filter(function (l) { return l.id === 'own'; })[0].title, 'Old');
   assert.ok(fs.existsSync(path.join(ld, 'apps', 'own', 'index.html')));
   assert.ok(!fs.existsSync(path.join(ld, 'app')));
   get('/home/launcher/index.html', function (code, page) {

@@ -7,11 +7,12 @@
  * back to LG's Home all work as they do for Glasshouse Home. Only the page
  * that app opens differs.
  *
- * The owner's own is a web app uploaded as an .ipk, a .zip of its folder or a
- * single HTML file, or a web address. Launchers are kept by id, one of them
- * chosen, so that more than the owner's own can be offered later. Each is
- * unpacked to /var/lib/tvweb/home-launcher/apps/<id>, the chosen one served
- * from /home/launcher/, with
+ * Minimal, Glasshouse's own plainest home screen (assets/home-minimal.html),
+ * is always offered. The owner's own is a web app uploaded as an .ipk, a .zip
+ * of its folder or a single HTML file, or a web address. Launchers are kept by
+ * id, one of them chosen. An uploaded one is unpacked to
+ * /var/lib/tvweb/home-launcher/apps/<id>, the chosen one served from
+ * /home/launcher/, with
  * /assets/home-kit.js added to its start page: the heartbeat that tells the
  * server the page is up, and window.Glasshouse for its apps and inputs. A web
  * address opens in a frame of assets/home-web.html, which carries the same
@@ -40,6 +41,8 @@ var MAX_ADDRESS = 2000;
 var MAX_TITLE = 80;
 // The owner's own launcher, uploaded or a web address.
 var OWN = 'own';
+// Launchers that come with Glasshouse, served from its assets and never removed.
+var BUILTIN = { minimal: { title: 'Minimal', page: 'home-minimal.html' } };
 // The release in its address, so a TV holding an older copy loads this one.
 var KIT_SRC = '/assets/home-kit.js';
 var KIT_TAG_PLAIN = '<script src="' + KIT_SRC + '"></script>';
@@ -60,7 +63,8 @@ var TYPES = {
 };
 
 var dir = '/var/lib/tvweb/home-launcher';
-var webPagePath = path.join(__dirname, '..', 'assets', 'home-web.html');
+var assetsDir = path.join(__dirname, '..', 'assets');
+var webPagePath = path.join(assetsDir, 'home-web.html');
 var dfFn = function (target, cb) {
   execFile('df', ['-k', target], { timeout: 5000 }, function (err, out) { cb(err ? null : installer.parseDf(out)); });
 };
@@ -72,6 +76,7 @@ function init(opts) {
   if (opts.dir) dir = opts.dir;
   else if (opts.stateDir) dir = path.join(opts.stateDir, 'home-launcher');
   if (opts.webPage) webPagePath = opts.webPage;
+  if (opts.assetsDir) assetsDir = opts.assetsDir;
   if (opts.df) dfFn = opts.df;
   kitTag = opts.version ? '<script src="' + KIT_SRC + '?v=' + encodeURIComponent(opts.version) + '"></script>' : KIT_TAG_PLAIN;
   meta = null;
@@ -105,7 +110,7 @@ function readMeta() {
     } catch (e) { console.error('home: could not move the custom launcher: ' + e.message); }
   }
   if (!m || typeof m.launchers !== 'object' || !m.launchers) m = { chosen: null, rev: 0, launchers: {} };
-  if (m.chosen && !m.launchers[m.chosen]) m.chosen = null;
+  if (m.chosen && !m.launchers[m.chosen] && !BUILTIN[m.chosen]) m.chosen = null;
   meta = m;
   return meta;
 }
@@ -136,14 +141,17 @@ function describeOne(id, l, chosenId) {
   return out;
 }
 
-// What the dashboards show: each launcher kept, the owner's own first.
+// What the dashboards show: Glasshouse's own launchers, then each kept, the owner's own first.
 function status() {
   var m = readMeta();
-  var ids = Object.keys(m.launchers).sort(function (a, b) {
+  var ids = Object.keys(m.launchers).filter(function (id) { return !BUILTIN[id]; }).sort(function (a, b) {
     if (a === OWN || b === OWN) return a === OWN ? -1 : 1;
     return String(m.launchers[a].title).localeCompare(String(m.launchers[b].title));
   });
-  return { chosen: m.chosen, launchers: ids.map(function (id) { return describeOne(id, m.launchers[id], m.chosen); }) };
+  var builtin = Object.keys(BUILTIN).map(function (id) {
+    return { id: id, kind: 'builtin', title: BUILTIN[id].title, source: 'builtin', chosen: id === m.chosen };
+  });
+  return { chosen: m.chosen, launchers: builtin.concat(ids.map(function (id) { return describeOne(id, m.launchers[id], m.chosen); })) };
 }
 
 // True while one is chosen in Glasshouse Home's place.
@@ -173,7 +181,7 @@ function cleanTitle(v, fallback) {
 // id: one kept, to put in Glasshouse Home's place; false for Glasshouse Home.
 function choose(id, cb) {
   var next = copyMeta();
-  if (id !== false && !next.launchers[id]) return cb(fail(msg('srv.home.launcher.none', 'Upload a launcher or give a web address first.')));
+  if (id !== false && !next.launchers[id] && !BUILTIN[id]) return cb(fail(msg('srv.home.launcher.none', 'Upload a launcher or give a web address first.')));
   next.chosen = id === false ? null : id;
   try { saveMeta(next); } catch (e) { return cb(fail(e.message)); }
   console.log('home: ' + (id === false ? 'Glasshouse Home chosen over the custom launcher' : 'custom launcher ' + id + ' chosen'));
@@ -218,7 +226,7 @@ function setAddress(address, cb) {
 function remove(id, cb) {
   if (busy) return cb(fail(msg('srv.home.launcher.busy', 'Wait for the launcher upload to finish.')));
   var next = copyMeta();
-  if (!next.launchers[id]) return cb({ ok: true, launchers: status() });
+  if (!next.launchers[id] || BUILTIN[id]) return cb({ ok: true, launchers: status() });
   try {
     rmTree(appDir(id));
     delete next.launchers[id];
@@ -595,6 +603,12 @@ function withKit(html) {
 function resolve(rel) {
   var all = readMeta();
   var id = all.chosen;
+  if (id && BUILTIN[id]) {
+    if (rel && rel !== 'index.html') return null;
+    var own;
+    try { own = fs.readFileSync(path.join(assetsDir, BUILTIN[id].page), 'utf8'); } catch (e) { return null; }
+    return { type: TYPES['.html'], body: withKit(own) };
+  }
   var m = id ? all.launchers[id] : null;
   if (!m) return null;
   if (m.kind === 'web') {

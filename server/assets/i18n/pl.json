@@ -2969,8 +2969,6 @@
  "home.launcher.save": {"text": "Użyj tej strony", "from": "Use this page"},
  "home.launcher.remove": {"text": "Usuń", "from": "Remove"},
  "home.launcher.isOn": {"text": "{title} jest ekranem głównym telewizora", "from": "{title} is the TV’s Home"},
- "home.launcher.isOnDesc": {"text": "Własny launcher otwiera się zamiast ekranu głównego LG: przyciskami Home i Wstecz oraz gdy telewizor budzi się na ekranie głównym.", "from": "The custom launcher opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
- "home.launcher.isOnLgOpen": {"text": "Ekran główny LG jest na razie otwarty. Własny launcher wróci, gdy zostanie otwarte coś innego lub naciśnięty Home.", "from": "LG’s Home is open for now. The custom launcher comes back when something else is opened, or Home is pressed."},
  "home.launcher.nowApp": {"text": "Przesłano: plików {files}, {size}", "from": "Uploaded: {files} files, {size}"},
  "home.launcher.nowAppOne": {"text": "Przesłano: jeden plik, {size}", "from": "Uploaded: one file, {size}"},
  "home.launcher.nowWeb": {"text": "Strona internetowa: {address}", "from": "Web page: {address}"},
@@ -2995,7 +2993,6 @@
  "srv.home.launcher.uploadSize": {"text": "Launcher może mieć najwyżej 50 MB.", "from": "A launcher can be at most 50 MB."},
  "srv.home.launcher.zipMethod": {"text": "Plik zip jest skompresowany w sposób, którego nie da się odczytać. Utwórz go ponownie ze standardową kompresją (Deflate).", "from": "The zip is compressed in a way that cannot be read. Make it again with standard (Deflate) compression."},
  "tv.home.launcher": {"text": "Własny launcher: {title}", "from": "Custom launcher: {title}"},
- "tv.home.launcher.now": {"text": "Własny launcher jest teraz ekranem głównym telewizora", "from": "The custom launcher is now the TV’s Home"},
  "tv.home.launcher.off": {"text": "Naciśnij OK, aby używać Glasshouse Home", "from": "Press OK to use Glasshouse Home"},
  "tv.home.launcher.on": {"text": "Naciśnij OK, aby używać własnego launchera", "from": "Press OK to use the custom launcher"},
  "home.launcher.uploadOff": {"text": "Przesłanie launchera wymaga włączenia opcji Instaluj aplikację z adresu URL lub pliku na karcie Aplikacje albo tokenu, tak jak instalacja aplikacji.", "from": "Uploading a launcher needs Install app from a URL or file switched on, on the Apps tab, or a token, as installing an app does."},
@@ -3006,5 +3003,10 @@
  "home.launcher.uploadDesc": {"text": "Aplikacja internetowa jako .ipk, .zip jej folderu lub pojedynczy plik .html, do 50 MB. Zastępuje launcher, który był tu wcześniej.", "from": "A web app as an .ipk, a .zip of its folder, or a single .html file, up to 50 MB. It replaces the launcher here before it."},
  "home.launcher.docs": {"text": "Pisanie launchera", "from": "Writing a launcher"},
  "tv.home.launcher.hint": {"text": "Twój własny ekran główny, ustawiony na karcie Home panelu internetowego, wyświetlany zamiast Glasshouse Home.", "from": "Your own home screen, set up on the Home tab of the web dashboard, shown in Glasshouse Home’s place."},
- "home.layoutDescOwn": {"text": "Które aplikacje i wejścia telewizora pokazuje własny launcher i w jakiej kolejności, jeśli napisano go tak, by tego przestrzegał, jak launchery z dokumentacji.", "from": "Which of the TV’s apps and inputs the custom launcher shows, and in what order, where it was written to follow this, as the launchers in the docs are."}
+ "home.minimal": {"text": "Minimal", "from": "Minimal"},
+ "home.minimalDesc": {"text": "Najprostszy ekran główny Glasshouse: aplikacje i wejścia telewizora jako dwie listy nazw na czarnym tle oraz godzina.", "from": "Glasshouse’s plainest home screen: the TV’s apps and inputs as two lists of names on black, and the time."},
+ "tv.home.minimal.on": {"text": "Naciśnij OK, aby używać Minimal", "from": "Press OK to use Minimal"},
+ "home.launcher.isOnLgOpenTitle": {"text": "Ekran główny LG jest na razie otwarty. {title} wróci, gdy zostanie otwarte coś innego lub naciśnięty Home.", "from": "LG’s Home is open for now. {title} comes back when something else is opened, or Home is pressed."},
+ "home.launcher.isOnDescTitle": {"text": "{title} otwiera się zamiast ekranu głównego LG: przyciskami Home i Wstecz oraz gdy telewizor budzi się na ekranie głównym.", "from": "{title} opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
+ "home.layoutDescLaunchers": {"text": "Które aplikacje i wejścia telewizora pokazuje Minimal i w jakiej kolejności. Twój własny launcher tego przestrzega, jeśli tak go napisano.", "from": "Which of the TV’s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to."}
 }

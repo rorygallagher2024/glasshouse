@@ -379,6 +379,12 @@ Click **Use Glasshouse Home** (and confirm on the second press) in the web dashb
 > rm -rf /mnt/lg/cmn_data/manifest /tmp/checkpoint/*com.webos.app.home* /mnt/lg/cmn_data/checkpoint/*com.webos.app.home* && reboot
 > ```
 
+## Minimal
+
+**Minimal**, beside **Glasshouse Home** on the **Home** tab, is a second home screen that comes with Glasshouse, made to be as plain as it can: the TV's apps and inputs as two lists of names on black, and the time. **Left** and **Right** choose between Apps and Inputs, **Up** and **Down** move through them, and **OK** opens; **Home** comes back to the first app, and the last entry under Apps opens LG's Home. With Glasshouse Home on, pressing **Minimal** puts it in Glasshouse Home's place within a few seconds; from LG's Home it takes a second press. **Use Glasshouse Home** goes back. It works as a custom launcher does, below: the Home button, Back and waking open it, and **Rows and tiles** decides which apps and inputs it lists and in what order, with those in More apps after the rest. Every few minutes the whole screen moves a few pixels, so that the names do not stay in one place on an OLED panel.
+
+![Minimal on a C2 (webOS 9.2.2): Apps and Inputs, with the apps listed as names on black](../screenshots/launcher-minimal.jpg)
+
 ## Custom launcher
 
 A home screen of your own can take Glasshouse Home's place: a launcher you have written or downloaded, or a web page such as a Home Assistant dashboard. Everything above still applies to it. The Home and Back buttons open it, it opens when the TV wakes on Home, holding **Home** opens LG's Home, and if it stops working, LG's Home takes its place by itself.
@@ -390,7 +396,7 @@ On the web dashboard's **Home** tab, press **Custom launcher**, then either:
 
 You have one at a time: uploading another, or giving a web address, replaces it. It is listed with **Use**, to make it the TV's Home, and **Remove**. With Glasshouse Home already on, it takes Glasshouse Home's place as soon as it is set up; from LG's Home, **Use** takes a second press. **Use Glasshouse Home** goes back to Glasshouse Home and keeps the launcher for later. The TV app's **Home** section has a switch for it.
 
-While a custom launcher is the TV's Home, **Rows and tiles** stays on this tab with the Apps and Inputs rows: which apps and inputs it shows, and their order, including **Hide inputs with nothing connected**, for a launcher written to follow them, as the launchers in the docs are. Glasshouse Home's other settings (its other rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
+While Minimal or a custom launcher is the TV's Home, **Rows and tiles** stays on this tab with the Apps and Inputs rows: which apps and inputs it shows, and their order, including **Hide inputs with nothing connected**. Minimal follows them, as the example in the docs does; a launcher of your own follows them where it was written to. Glasshouse Home's other settings (its other rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
 
 > [!WARNING]
 > A launcher can do anything on the TV that Glasshouse can, so only use one you trust.

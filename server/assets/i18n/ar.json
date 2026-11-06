@@ -2969,8 +2969,6 @@
  "home.launcher.save": {"text": "استخدم هذه الصفحة", "from": "Use this page"},
  "home.launcher.remove": {"text": "إزالة", "from": "Remove"},
  "home.launcher.isOn": {"text": "{title} هو الشاشة الرئيسية للتلفاز", "from": "{title} is the TV’s Home"},
- "home.launcher.isOnDesc": {"text": "يفتح المشغّل المخصص مكان شاشة LG الرئيسية: بزرّي الرئيسية والرجوع، وعندما يستيقظ التلفاز على الشاشة الرئيسية.", "from": "The custom launcher opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
- "home.launcher.isOnLgOpen": {"text": "شاشة LG الرئيسية مفتوحة حاليًا. يعود المشغّل المخصص عند فتح شيء آخر أو الضغط على الرئيسية.", "from": "LG’s Home is open for now. The custom launcher comes back when something else is opened, or Home is pressed."},
  "home.launcher.nowApp": {"text": "تم الرفع: {files} ملفات، {size}", "from": "Uploaded: {files} files, {size}"},
  "home.launcher.nowAppOne": {"text": "تم الرفع: ملف واحد، {size}", "from": "Uploaded: one file, {size}"},
  "home.launcher.nowWeb": {"text": "صفحة ويب: {address}", "from": "Web page: {address}"},
@@ -2995,7 +2993,6 @@
  "srv.home.launcher.uploadSize": {"text": "لا يتجاوز حجم المشغّل 50 ميغابايت.", "from": "A launcher can be at most 50 MB."},
  "srv.home.launcher.zipMethod": {"text": "ملف zip مضغوط بطريقة لا يمكن قراءتها. أعد إنشاءه بالضغط القياسي (Deflate).", "from": "The zip is compressed in a way that cannot be read. Make it again with standard (Deflate) compression."},
  "tv.home.launcher": {"text": "مشغّل مخصص: {title}", "from": "Custom launcher: {title}"},
- "tv.home.launcher.now": {"text": "أصبح المشغّل المخصص الشاشة الرئيسية للتلفاز الآن", "from": "The custom launcher is now the TV’s Home"},
  "tv.home.launcher.off": {"text": "اضغط OK لاستخدام Glasshouse Home", "from": "Press OK to use Glasshouse Home"},
  "tv.home.launcher.on": {"text": "اضغط OK لاستخدام المشغّل المخصص", "from": "Press OK to use the custom launcher"},
  "home.launcher.uploadOff": {"text": "يتطلب رفع مشغّل تفعيل «تثبيت تطبيق من رابط أو ملف» في تبويب التطبيقات، أو رمزًا مميزًا، كما في تثبيت تطبيق.", "from": "Uploading a launcher needs Install app from a URL or file switched on, on the Apps tab, or a token, as installing an app does."},
@@ -3006,5 +3003,10 @@
  "home.launcher.uploadDesc": {"text": "تطبيق ويب بصيغة ‎.ipk أو ‎.zip لمجلده أو ملف ‎.html واحد، حتى 50 ميغابايت. يحل محل المشغّل الموجود هنا.", "from": "A web app as an .ipk, a .zip of its folder, or a single .html file, up to 50 MB. It replaces the launcher here before it."},
  "home.launcher.docs": {"text": "كتابة مشغّل", "from": "Writing a launcher"},
  "tv.home.launcher.hint": {"text": "شاشتك الرئيسية الخاصة، المُعدّة في تبويب Home بلوحة الويب، تُعرض مكان Glasshouse Home.", "from": "Your own home screen, set up on the Home tab of the web dashboard, shown in Glasshouse Home’s place."},
- "home.layoutDescOwn": {"text": "ما يعرضه المشغّل المخصص من تطبيقات التلفاز ومداخله، وبأي ترتيب، إن كُتب ليتبع ذلك، كمشغّلات الوثائق.", "from": "Which of the TV’s apps and inputs the custom launcher shows, and in what order, where it was written to follow this, as the launchers in the docs are."}
+ "home.minimal": {"text": "Minimal", "from": "Minimal"},
+ "home.minimalDesc": {"text": "أبسط شاشة رئيسية في Glasshouse: تطبيقات التلفاز ومداخله كقائمتين من الأسماء على خلفية سوداء، والوقت.", "from": "Glasshouse’s plainest home screen: the TV’s apps and inputs as two lists of names on black, and the time."},
+ "tv.home.minimal.on": {"text": "اضغط OK لاستخدام Minimal", "from": "Press OK to use Minimal"},
+ "home.launcher.isOnLgOpenTitle": {"text": "شاشة LG الرئيسية مفتوحة حاليًا. يعود {title} عند فتح شيء آخر أو الضغط على الرئيسية.", "from": "LG’s Home is open for now. {title} comes back when something else is opened, or Home is pressed."},
+ "home.launcher.isOnDescTitle": {"text": "يفتح {title} مكان شاشة LG الرئيسية: بزرّي الرئيسية والرجوع، وعندما يستيقظ التلفاز على الشاشة الرئيسية.", "from": "{title} opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
+ "home.layoutDescLaunchers": {"text": "ما يعرضه Minimal من تطبيقات التلفاز ومداخله، وبأي ترتيب. ويتبعه مشغّلك الخاص إن كُتب لذلك.", "from": "Which of the TV’s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to."}
 }

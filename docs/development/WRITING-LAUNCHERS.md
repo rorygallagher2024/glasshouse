@@ -15,9 +15,9 @@ open.
 [example-launcher.html](example-launcher.html) is a whole launcher in one file:
 the TV's apps and inputs as tiles, moved through with the arrow keys and opened
 with OK. Download it, upload it on the Home tab under **Custom launcher**, and
-change it from there. [minimal-launcher.html](minimal-launcher.html) is
-another, made to look as plain as it can: the apps and inputs as two lists of
-names on black.
+change it from there. Minimal, the plainest home screen that comes with
+Glasshouse, is another, as a launcher in one file:
+[`server/assets/home-minimal.html`](https://github.com/rorygallagher2024/glasshouse/blob/main/server/assets/home-minimal.html).
 
 ![Minimal on a C2 (webOS 9.2.2): Apps and Inputs, with the apps listed as names on black](../screenshots/launcher-minimal.jpg)
 

@@ -2969,8 +2969,6 @@
  "home.launcher.save": {"text": "Ez az oldal legyen", "from": "Use this page"},
  "home.launcher.remove": {"text": "Eltávolítás", "from": "Remove"},
  "home.launcher.isOn": {"text": "A(z) {title} a TV kezdőképernyője", "from": "{title} is the TV’s Home"},
- "home.launcher.isOnDesc": {"text": "A saját indító az LG kezdőképernyője helyén nyílik meg: a Home és a Vissza gombbal, és amikor a TV a kezdőképernyőre ébred.", "from": "The custom launcher opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
- "home.launcher.isOnLgOpen": {"text": "Egyelőre az LG kezdőképernyője van nyitva. A saját indító visszajön, amikor más nyílik meg, vagy megnyomják a Home gombot.", "from": "LG’s Home is open for now. The custom launcher comes back when something else is opened, or Home is pressed."},
  "home.launcher.nowApp": {"text": "Feltöltve: {files} fájl, {size}", "from": "Uploaded: {files} files, {size}"},
  "home.launcher.nowAppOne": {"text": "Feltöltve: egy fájl, {size}", "from": "Uploaded: one file, {size}"},
  "home.launcher.nowWeb": {"text": "Weboldal: {address}", "from": "Web page: {address}"},
@@ -2995,7 +2993,6 @@
  "srv.home.launcher.uploadSize": {"text": "Egy indító legfeljebb 50 MB lehet.", "from": "A launcher can be at most 50 MB."},
  "srv.home.launcher.zipMethod": {"text": "A zip olyan tömörítésű, amely nem olvasható. Készítsd el újra szabványos (Deflate) tömörítéssel.", "from": "The zip is compressed in a way that cannot be read. Make it again with standard (Deflate) compression."},
  "tv.home.launcher": {"text": "Saját indító: {title}", "from": "Custom launcher: {title}"},
- "tv.home.launcher.now": {"text": "Mostantól a saját indító a TV kezdőképernyője", "from": "The custom launcher is now the TV’s Home"},
  "tv.home.launcher.off": {"text": "Nyomd meg az OK gombot a Glasshouse Home használatához", "from": "Press OK to use Glasshouse Home"},
  "tv.home.launcher.on": {"text": "Nyomd meg az OK gombot a saját indító használatához", "from": "Press OK to use the custom launcher"},
  "home.launcher.uploadOff": {"text": "Indító feltöltéséhez be kell kapcsolni az Alkalmazás telepítése URL-ről vagy fájlból lehetőséget az Alkalmazások lapon, vagy token kell, ahogy egy alkalmazás telepítéséhez.", "from": "Uploading a launcher needs Install app from a URL or file switched on, on the Apps tab, or a token, as installing an app does."},
@@ -3006,5 +3003,10 @@
  "home.launcher.uploadDesc": {"text": "Webalkalmazás .ipk-ként, a mappája .zip-jeként vagy egyetlen .html fájlként, legfeljebb 50 MB. Lecseréli az itt lévő indítót.", "from": "A web app as an .ipk, a .zip of its folder, or a single .html file, up to 50 MB. It replaces the launcher here before it."},
  "home.launcher.docs": {"text": "Indító írása", "from": "Writing a launcher"},
  "tv.home.launcher.hint": {"text": "A saját kezdőképernyőd, amelyet a webes vezérlőpult Kezdőképernyő lapján állítottál be, a Glasshouse Home helyén.", "from": "Your own home screen, set up on the Home tab of the web dashboard, shown in Glasshouse Home’s place."},
- "home.layoutDescOwn": {"text": "A TV mely alkalmazásait és bemeneteit mutatja a saját indító, és milyen sorrendben, ha úgy írták, hogy ezt kövesse, mint a dokumentáció indítóit.", "from": "Which of the TV’s apps and inputs the custom launcher shows, and in what order, where it was written to follow this, as the launchers in the docs are."}
+ "home.minimal": {"text": "Minimal", "from": "Minimal"},
+ "home.minimalDesc": {"text": "A Glasshouse legegyszerűbb kezdőképernyője: a TV alkalmazásai és bemenetei két névlistaként feketén, és az idő.", "from": "Glasshouse’s plainest home screen: the TV’s apps and inputs as two lists of names on black, and the time."},
+ "tv.home.minimal.on": {"text": "Nyomd meg az OK gombot a Minimal használatához", "from": "Press OK to use Minimal"},
+ "home.launcher.isOnLgOpenTitle": {"text": "Egyelőre az LG kezdőképernyője van nyitva. A(z) {title} visszajön, amikor más nyílik meg, vagy megnyomják a Home gombot.", "from": "LG’s Home is open for now. {title} comes back when something else is opened, or Home is pressed."},
+ "home.launcher.isOnDescTitle": {"text": "A(z) {title} az LG kezdőképernyője helyén nyílik meg: a Home és a Vissza gombbal, és amikor a TV a kezdőképernyőre ébred.", "from": "{title} opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home."},
+ "home.layoutDescLaunchers": {"text": "A TV mely alkalmazásait és bemeneteit mutatja a Minimal, és milyen sorrendben. A saját indítód akkor követi, ha úgy írták.", "from": "Which of the TV’s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to."}
 }
