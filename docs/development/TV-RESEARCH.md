@@ -2855,3 +2855,12 @@ with that wait. execFile reports such a child with `err.signal` set and
 `err.killed` false, which tells it apart from one killed by its own timeout.
 The debugger rule in `devtools.js` waits a turn before each call and tries an
 aborted one once more.
+
+Issue [#1248](https://github.com/rorygallagher2024/glasshouse/issues/1248)
+shows the same assertion on an OLED65CX9LA, from the curl or wget the
+Internet TV worker starts: the worker itself goes on and reports the failed
+download. A job's later downloads start from the previous one's exit
+callback, the case that aborted every time, and its first is the process's
+first child, as the first `iptables` call at server start was. The worker
+waits a turn before each one and tries one aborted before any of its body
+arrived once more.

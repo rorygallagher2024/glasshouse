@@ -19,9 +19,12 @@ console.log('Running test-services.js ...');
   for (var i = 0; i < services.CATALOG.length; i++) {
     var item = services.CATALOG[i];
     assert.strictEqual(typeof item.id, 'string', 'item id must be string');
-    assert.strictEqual(typeof item.title, 'string', 'item title must be string');
-    assert.strictEqual(typeof item.desc, 'string', 'item desc must be string');
-    assert.strictEqual(typeof item.badge, 'string', 'item badge must be string');
+    // A retired entry is only put back, never shown, so it has no words.
+    if (!item.retired) {
+      assert.strictEqual(typeof item.title, 'string', 'item title must be string');
+      assert.strictEqual(typeof item.desc, 'string', 'item desc must be string');
+      assert.strictEqual(typeof item.badge, 'string', 'item badge must be string');
+    }
     assert.strictEqual(!ids[item.id], true, 'item id must be unique: ' + item.id);
     ids[item.id] = true;
 
@@ -135,25 +138,56 @@ console.log('Running test-services.js ...');
   services.init({ stateDir: dir, initDir: initDir, stubRoot: root, mounts: mounts, run: fakeRun });
   assert.deepEqual(services.stubTargets().indexOf(target) !== -1, true, 'the uninstall knows where to unmount');
   services.getServices(function (r) {
-    var listed = r.services.filter(function (x) { return x.id === 'iconnectivity'; })[0];
-    assert.ok(listed, 'listed where its program is there');
-    assert.strictEqual(r.services.some(function (x) { return x.id === 'iotframework'; }), false, 'not where it is not');
-    services.toggleService('iconnectivity', true, function (off) {
+    // Switched from the Devices section as Network device scans, beside LG's Auto device detection.
+    assert.strictEqual(r.services.some(function (x) { return x.id === 'iconnectivity'; }), false, 'not in the list');
+    assert.strictEqual(services.available('iconnectivity'), true, 'there to switch where its program is');
+    services.toggleService('iconnectivity', true, function (refused) {
+    assert.strictEqual(refused.ok, false, 'not switched as a listed service');
+    services.switchHidden('iconnectivity', true, function (off) {
       assert.strictEqual(off.ok, true);
       assert.deepEqual(calls, ['mount --bind ' + path.join(dir, 'service-stub') + ' ' + target]);
       assert.strictEqual(fs.readFileSync(path.join(dir, 'service-stub'), 'utf8'), '#!/bin/sh\nexit 0\n');
       var hook = fs.readFileSync(path.join(initDir, '20-tvweb-services'), 'utf8');
       assert.ok(hook.indexOf('mount --bind "' + path.join(dir, 'service-stub') + '" "' + target + '"') !== -1, 'the boot hook mounts it again');
-      services.toggleService('iconnectivity', true, function () {
+      services.switchHidden('iconnectivity', true, function () {
         assert.strictEqual(calls.length, 1, 'not mounted twice');
-        services.toggleService('iconnectivity', false, function (on) {
+        services.switchHidden('iconnectivity', false, function (on) {
           assert.strictEqual(on.ok, true);
           assert.deepEqual(calls.slice(1), ['umount ' + target]);
           assert.strictEqual(fs.existsSync(path.join(initDir, '20-tvweb-services')), false, 'no hook with nothing switched off');
           console.log('  ✓ a service the hub starts on demand is held down by a stub mounted over its program, and put back');
-          console.log('ALL test-services.js assertions passed!\n');
+          testRetiredStub();
         });
       });
     });
+    });
   });
 })();
+
+// Smart Home Device Polling is no longer offered: held down by an earlier release, it is put back at start.
+function testRetiredStub() {
+  var dir = path.join(os.tmpdir(), 'tvweb-services-retired-' + process.pid);
+  var root = path.join(dir, 'root'), initDir = path.join(dir, 'init.d'), mounts = path.join(dir, 'mounts');
+  var prog = '/usr/palm/services/com.webos.iotframework/com.webos.iotframework';
+  [dir, initDir, root].forEach(function (d) { fs.mkdirSync(d); });
+  fs.mkdirSync(root + '/usr'); fs.mkdirSync(root + '/usr/palm'); fs.mkdirSync(root + '/usr/palm/services');
+  fs.mkdirSync(root + '/usr/palm/services/com.webos.iotframework');
+  fs.writeFileSync(root + prog, 'lg');
+  fs.writeFileSync(mounts, 'tmpfs ' + root + prog + ' tmpfs rw 0 0\n');
+  fs.writeFileSync(path.join(dir, 'disabled_services.json'), JSON.stringify(['iotframework', 'iconnectivity']));
+  var calls = [];
+  function fakeRun(cmd, args, cb) {
+    calls.push([cmd].concat(args).join(' '));
+    setImmediate(function () { cb(null, '', ''); });
+  }
+  services.init({ stateDir: dir, initDir: initDir, stubRoot: root, mounts: mounts, run: fakeRun });
+  setImmediate(function () {
+    assert.ok(calls.indexOf('umount ' + root + prog) !== -1, 'unmounted: ' + calls.join('; '));
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'disabled_services.json'), 'utf8')), ['iconnectivity'], 'taken off the switched-off list, the rest kept');
+    services.switchHidden('iotframework', true, function (r) {
+      assert.strictEqual(r.ok, false, 'and it cannot be switched off again');
+      console.log('  ✓ Smart Home Device Polling, no longer offered, is put back at start');
+      console.log('ALL test-services.js assertions passed!\n');
+    });
+  });
+}

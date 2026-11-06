@@ -640,11 +640,16 @@ function optionRows(d) {
       r.push(logo);
     }
   }
-  if (d.deviceDetection !== undefined || dev.length) r.push(head(t('adv.devices', 'Devices')));
+  if (d.deviceDetection !== undefined || d.deviceScans !== undefined || dev.length) r.push(head(t('adv.devices', 'Devices')));
   for (var di = 0; di < dev.length; di++) r.push(lgRow(dev[di]));
   if (d.deviceDetection !== undefined) {
     r.push(toggle(t('adv.deviceDetection', 'Auto device detection'), d.deviceDetection, 'deviceDetection',
-      t('tv.options.deviceDetection.hint', 'Finds devices to show on the Home Dashboard and control: a set-top box, and smart lights, plugs and switches. Newer TVs look up every address on your home network each time they switch on to do it. Switched off, the scans stop and the TV no longer finds devices by itself.')));
+      t('tv.options.deviceDetection.hintLg', 'LG\u2019s own setting: finds devices to show on the Home Dashboard and control, a set-top box and smart lights, plugs and switches. On some TVs, webOS 11 among them, the TV still looks up every address on your home network with this off; Network device scans stops that.')));
+  }
+  // Glasshouse's own, beside LG's: the scans themselves, held down where off.
+  if (d.deviceScans !== undefined) {
+    r.push(toggle(t('adv.deviceScans', 'Network device scans'), d.deviceScans, 'deviceScans',
+      t('tv.options.deviceScans.hint', 'The TV looking up every address on your home network, which a network-wide ad blocker shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG\u2019s device setup.')));
   }
   if (lights.standby !== undefined || lights.hasLogo) {
     r.push(head(t('adv.frontLights', 'Front lights')));
@@ -3389,6 +3394,8 @@ function activate() {
       return send({ action: 'homeAutoLaunch', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'deviceDetection':
       return send({ action: 'deviceDetection', value: !r.on }, r.on ? t('tv.flash.detectionOff', 'Device detection turned off') : t('tv.flash.detectionOn', 'Device detection turned on'));
+    case 'deviceScans':
+      return send({ action: 'deviceScans', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'alwaysReady':
       return send({ action: 'alwaysReady', value: !r.on }, r.on ? t('tv.flash.willSleep', 'Will sleep when off') : t('tv.flash.willStay', 'Will stay connected when off'));
     case 'alwaysReadyScreen':
