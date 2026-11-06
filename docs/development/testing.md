@@ -74,6 +74,12 @@ shows the Picture tab.
 | [`Package build`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L65-L77) | The Homebrew Channel `.ipk` still builds, and passes the Homebrew Channel's own compatibility check for webOS 2.2 and later, the oldest confirmed (a 49LF632V). |
 | [`Unit tests`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L81-L97) | Each part of the server, and one suite that starts the whole server against a fake TV and MQTT broker, with a TV that answers, one that answers late, wrongly or not at all, MQTT disabled, and a Glasshouse Home file missing, and checking the dashboard keeps answering and telemetry keeps flowing. |
 
+No unit test runs a TV's own commands on the computer it runs on. A module
+that restarts LG's services, such as `apps.js` and `samrescan.js`, takes the
+function that runs them from its `init`, and the tests pass one that records
+the command instead: run for real, the sam restart in `test-apps.js` asked a
+Linux computer for a password and could end a Mac's own processes (#918).
+
 ## On each supported TV's node
 
 The unit tests run on node 0.10 (webOS 2, a 49LF632V), 0.12 (webOS 4, the B8), 8.12 (webOS 6), 16

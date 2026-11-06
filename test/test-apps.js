@@ -9,6 +9,19 @@ mockEnv.install();
 
 var apps = require('../server/lib/apps');
 
+// Commands apps.js would run on the TV, recorded instead: on a computer they
+// would restart its own services or ask for a password (#918).
+var ran = [];
+function fakeExec(file, args, opts, cb) {
+  ran.push(file + ' ' + (args || []).join(' '));
+  process.nextTick(function () { cb(null, '', ''); });
+  return {};
+}
+function init(opts) {
+  opts.exec = fakeExec;
+  apps.init(opts);
+}
+
 var tests = [];
 function test(name, fn) { tests.push([name, fn]); }
 
@@ -80,7 +93,7 @@ test('isProtected rejects invalid, non-string, or empty IDs', function () {
 });
 
 test('hideTile rejects protected apps and invalid IDs', function () {
-  apps.init({ config: { allowControl: true } });
+  init({ config: { allowControl: true } });
 
   apps.hideTile('com.webos.app.livetv', function (res) {
     assert.strictEqual(res.ok, false);
@@ -99,7 +112,7 @@ test('hideTile rejects protected apps and invalid IDs', function () {
 });
 
 test('uninstallApp strictly rejects protected applications', function () {
-  apps.init({ config: { allowControl: true } });
+  init({ config: { allowControl: true } });
 
   ['com.tvweb.dashboard', 'com.tvweb.home'].forEach(function (id) {
   apps.uninstallApp(id, function (res) {
@@ -133,7 +146,7 @@ test('uninstallApp invokes appInstallService and waits for removal from listApps
     cb({ returnValue: false });
   };
 
-  apps.init({
+  init({
     luna: mockLuna,
     config: { allowControl: true }
   });
@@ -204,7 +217,7 @@ test('getApps segregates removable apps and built-in system tiles', function (do
     cb({ returnValue: false });
   };
 
-  apps.init({
+  init({
     luna: mockLuna,
     config: { allowControl: true }
   });
@@ -284,7 +297,7 @@ test('getApps categorizes /media/system apps as built-in system tiles', function
     cb({ returnValue: false });
   };
 
-  apps.init({
+  init({
     luna: mockLuna,
     config: { allowControl: true }
   });
@@ -334,13 +347,13 @@ test('setTileHidingEnabled toggles flag file and requires allowControl', functio
   var flagFile = '/var/lib/tvweb/tile_hiding_enabled';
 
   // Disabled when allowControl is false
-  apps.init({ config: { allowControl: false } });
+  init({ config: { allowControl: false } });
   apps.setTileHidingEnabled(true, function (res) {
     assert.strictEqual(res.ok, false);
     assert.ok(res.error.indexOf('disabled') !== -1);
 
     // Enabled when allowControl and allowTileHiding are true
-    apps.init({
+    init({
       config: { allowControl: true, allowTileHiding: true },
       // A home screen list, so each sam restart settles instead of polling out.
       luna: function (uri, params, cb) { cb({ returnValue: true, launchPoints: [{ id: 'netflix' }] }); }
@@ -387,19 +400,20 @@ test('restartSam waits for sam to finish loading, then relaunches the foreground
     cb({ returnValue: true });
   };
 
-  apps.init({
+  init({
     luna: mockLuna,
     config: { allowControl: true, allowTileHiding: true }
   });
 
   apps.restartSam(function () {
     assert.strictEqual(launchedApp, 'com.webos.app.hdmi2', 'Must relaunch saved HDMI foreground app');
+    assert.ok(ran.some(function (c) { return /systemctl kill -s 9 sam\.service/.test(c); }), 'the restart went to the stub');
     // Not on the partial list: only once the full one has read the same three times.
     assert.ok(fullReadsAtLaunch >= 3, 'relaunched after ' + fullReadsAtLaunch + ' full reads');
 
     // Three asking at once share restarts: the first runs alone, and the other
     // two wait for one more between them, so they are answered together.
-    apps.init({
+    init({
       luna: function (uri, params, cb) {
         if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.home' });
         if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: full });
@@ -417,7 +431,7 @@ test('restartSam waits for sam to finish loading, then relaunches the foreground
         assert.strictEqual(answeredIn[1], answeredIn[2], 'the next two share one restart');
 
         var saverLaunched = false;
-        apps.init({
+        init({
           luna: function (uri, params, cb) {
             if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.screensaver' });
             if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: full });
