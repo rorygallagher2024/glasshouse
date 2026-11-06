@@ -450,6 +450,8 @@ function renderHomeRows() {
     const tiles = order.map((id, i) => {
       const it = homeItem(kind, id);
       if (!it) return '';
+      // A custom launcher offers LG's Home in its own way, not as a tile from this row.
+      if (id === 'lg-home' && homeLauncherOn()) return '';
       const hidden = kind !== 'ch' && homeLayout.hidden[kind].includes(id);
       const folded = kind === 'app' && (homeLayout.folder || []).includes(id);
       // Hidden or not, an input with nothing plugged in is left out by the row's switch.
