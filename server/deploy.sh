@@ -67,7 +67,7 @@ assets/qr.js assets/i18n.js assets/i18n/es.json assets/i18n/de.json assets/i18n/
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
 assets/dashboard-app/assets/icon80.png assets/dashboard-app/assets/icon130.png \
-assets/home.html assets/home-kit.js assets/home-web.html assets/devicons.js \
+assets/home.html assets/home-kit.js assets/home-web.html assets/home-minimal.html assets/devicons.js \
 assets/inputbar-app/appinfo.json assets/inputbar-app/index.html assets/inputbar-app/packageinfo.json \
 assets/inputbar-app/assets/icon80.png assets/inputbar-app/assets/icon130.png \
 assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \

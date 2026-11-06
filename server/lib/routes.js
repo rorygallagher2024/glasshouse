@@ -1155,7 +1155,7 @@ function handleHomeRoute(req, res, u, pathname) {
       var wants = String((u.query && u.query['with']) || '').split(',');
       return homeModule.status(function (st) {
         st.writable = !!config.allowControl || fromTV(req);
-        st.launcher = homeLauncherModule ? homeLauncherModule.status() : null;
+        st.launchers = homeLauncherModule ? homeLauncherModule.status() : null;
         st.launcherUpload = sideloadVia(req) !== null;
         // What the Home pane draws its colour previews' clock as.
         st.clockHour12 = clockHour12();
@@ -1270,8 +1270,8 @@ function handleHomeRoute(req, res, u, pathname) {
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
       if (pathname === '/api/home/launcher' && homeLauncherModule) {
         if (typeof body.address === 'string') return homeLauncherModule.setAddress(body.address, reply);
-        if (body.remove === true) return homeLauncherModule.remove(reply);
-        if (typeof body.choose === 'boolean') return homeLauncherModule.choose(body.choose, reply);
+        if (typeof body.remove === 'string') return homeLauncherModule.remove(body.remove, reply);
+        if (typeof body.choose === 'string' || body.choose === false) return homeLauncherModule.choose(body.choose, reply);
         return reply({ ok: false, error: 'address, remove or choose expected' });
       }
       if (pathname === '/api/home/search') return homeModule.search.find(body && body.query, reply);

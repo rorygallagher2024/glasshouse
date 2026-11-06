@@ -123,7 +123,7 @@ The state-push suite checks `keyboard_visible` from the window list: pushed on c
 
 `test-i18n-pick.js` checks which language the pages pick: the browser's, except one translated only in part on a page it does not cover in full, and one chosen or asked for in the address on every page. A language with its region, such as `pt-br`, is picked whole, and only for that region.
 
-`test-home-launcher.js` puts a custom launcher in Glasshouse Home's place through the HTTP routes: a single HTML file, a zip of a folder and an ipk's web app each unpacked and served with the kit first in the start page's head, the start page and title taken from `appinfo.json` or the page, links and macOS's extra files left out of a zip, and a web address shown in the frame with its address escaped. A zip reaching outside its folder, a native app, a file of another kind and an upload the TV has no room for are refused, keeping the launcher before them. It is chosen only once one is set up, Home's page and the heartbeat follow the choice, and removing it gives Glasshouse Home its place again.
+`test-home-launcher.js` puts a custom launcher in Glasshouse Home's place through the HTTP routes: a single HTML file, a zip of a folder and an ipk's web app each unpacked and served with the kit first in the start page's head, the start page and title taken from `appinfo.json` or the page, links and macOS's extra files left out of a zip, and a web address shown in the frame with its address escaped. A zip reaching outside its folder, a native app, a file of another kind and an upload the TV has no room for are refused, keeping the launcher before them. Only a launcher kept can be chosen, Home's page and the heartbeat follow the choice, Minimal, which comes with Glasshouse, is listed first, served with the kit when chosen and never removed, removing the chosen one gives Glasshouse Home its place again, and the first release's single launcher is kept as the owner's own, still chosen.
 
 `test-home-picture.js` reads a G3's receiver files with Glasshouse Home on screen: the signal and HDR of the input behind it, the picture mode asked for with both input and dynamic range, an empty input, and HDR from the receiver's packets (PQ, HLG, none, Dolby Vision). Only the mode for the range coming in is asked for, none without a signal, and a channel's SDR mode. It also checks that tracking runs only while Glasshouse Home, picture details and the TV are all on, that it retains an app's first video before any app plate is read, and that standby or switching either off stops it and leaves the recorded video available.
 
@@ -147,8 +147,12 @@ offered are kept, and their colours: Time of day unless chosen, a preset, or
 `#rrggbb` of one's own.
 A browser check sets up a custom launcher on the Home tab: its button opens
 the section, a web address with Glasshouse Home on becomes the TV's Home at
-once, Use Glasshouse Home swaps back without a second press, the upload is
-offered only where installing from a file is, and Remove takes it away. It
+once, the Apps and Inputs rows stay to arrange while it is in use without
+Glasshouse Home's other settings, the four choices read LG Home, Glasshouse
+Home, Glasshouse Minimal and Custom, Custom's settings show only while it is
+chosen or being set up, and Glasshouse Minimal, Glasshouse Home and Custom
+swap without a second press, the upload is offered only where installing from a file is,
+and Remove takes it away. It
 then uploads a page to the real server and checks that `window.Glasshouse`
 lists the fake TV's apps before the page's own script runs.
 A second browser check covers the TV tile and the preview's options: the TV
@@ -248,6 +252,17 @@ The dashboard check needs Playwright and its browser:
 ```bash
 npm install --no-save playwright && npx playwright install chromium
 node scripts/check-dashboards.js
+```
+
+A check that finds a problem runs once more on its own before the run fails:
+one that passes the second time is listed as `flaky:` with what it first found,
+and does not fail the run, while one that fails twice does. CI's runners are
+shared and slower than a computer, so a check that times something rather than
+waiting for it fails there now and then. `CPU_SLOWDOWN=4` runs every page on a
+CPU slowed four times, which finds such a check before CI does:
+
+```bash
+CPU_SLOWDOWN=4 node scripts/check-dashboards.js
 ```
 
 The Home Assistant check needs Python 3.13 and the `homeassistant` package:
