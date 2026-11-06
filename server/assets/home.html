@@ -391,15 +391,17 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .typing .chip{padding:0;margin:0 0 0 10px;background:none}
 .typing .chip img,.typing .chip .mono{width:38px;height:38px;margin:0}
 
-/* Internet TV. Its tiles keep the Channels row's box and line heights, so the
-   two rows read alike: where a tuner channel has its number in Outfit Light,
-   an Internet TV channel has its logo, drawn as warm-white type at the
-   number's height. A logo that fills its own box (a full-colour square, a
-   photo) keeps its colours on a small plate; one with no logo, or a broken
-   one, is its initials in the number's face. */
-.tv .glyph{height:43px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden;white-space:nowrap}
+/* Internet TV. Its tiles keep the Channels row's box, with the channel's logo
+   in the place of a tuner channel's number, drawn as warm-white type. A logo
+   that fills its own box (a full-colour square, a photo) keeps its colours on
+   a small plate. A channel with no logo, or a broken one, has its name there
+   instead, in the input tiles' face, and not again beneath it. The logo is
+   32px high, so the next programme clears the tile's foot. */
+.tv .glyph{height:32px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden;white-space:nowrap}
 .glyph img{display:block;width:auto;height:auto;-webkit-flex:0 0 auto;flex:0 0 auto;object-fit:contain}
-.tv .glyph img{max-width:184px;max-height:43px}
+.tv .glyph img{max-width:160px;max-height:32px}
+.tv .gname{display:block;max-width:100%;font-family:'Outfit',sans-serif;font-size:32px;line-height:32px;font-weight:400;overflow:hidden;text-overflow:ellipsis}
+.tv.nologo .nm{display:none}
 .glyph img.mark{-webkit-filter:brightness(0) invert(.93) sepia(.08);filter:brightness(0) invert(.93) sepia(.08)}
 .glyph img.plate{border-radius:6px;opacity:.85}
 .glyph .mono{font-family:'Outfit',sans-serif;font-size:48px;line-height:.9;font-weight:300;letter-spacing:-.5px}
@@ -427,7 +429,6 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 /* The band's logo: larger than a tile's, level with the name and the line below it. */
 #band .glyph{display:-webkit-flex;display:flex;-webkit-flex:0 0 auto;flex:0 0 auto;width:220px;height:96px;margin-bottom:30px;-webkit-align-items:flex-end;align-items:flex-end}
 #band .glyph img{max-width:184px;max-height:96px}
-#band .glyph .mono{font-size:72px}
 #band .txt{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
 #bdName{font-family:'Outfit',sans-serif;font-size:52px;line-height:1.1;font-weight:300;letter-spacing:-.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #bdLine{display:-webkit-flex;display:flex;-webkit-align-items:baseline;align-items:baseline;margin-top:14px;font-size:25px;white-space:nowrap}
@@ -464,7 +465,6 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .cl.focus{background:rgba(20,19,16,.86);outline-color:#ece7df;opacity:1}
 .cl .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:96px;height:34px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden}
 .cl .glyph img{display:block;max-width:84px;max-height:34px}
-.cl .glyph .mono{font-size:36px}
 .cl .n{-webkit-flex:0 0 auto;flex:0 0 auto;width:56px;font-family:'Outfit',sans-serif;font-size:30px;font-weight:300;color:#a39d93}
 .cl .c{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
 .cl .nm{font-size:25px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -491,7 +491,6 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .gr .gch{-webkit-flex:0 0 auto;flex:0 0 auto;width:300px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding-right:18px;overflow:hidden}
 .gr .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:84px;height:34px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;overflow:hidden}
 .gr .glyph img{display:block;max-width:72px;max-height:34px}
-.gr .glyph .mono{font-size:30px}
 .gr .gnm{font-size:22px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gr.focus .gnm{color:#ece7df}
 .gr .gnm em{font-style:normal;color:#6b665e;margin-right:12px;font-variant-numeric:tabular-nums}
@@ -1084,8 +1083,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           '<div class="nm">' + esc(c.name) + '</div><div class="prog quiet">' + esc(t('home.tv.addDesc', 'From your playlist')) + '</div></div>';
       }
       var bad = tvUnplayable(c), on = bad ? null : tvNow(c.id);
-      var cls = 'tile ch tv' + (bad ? ' gone' : '');
-      var body = '<div class="glyph">' + glyphHtml(c) + '</div><div class="nm">' + esc(c.name) + '</div>';
+      var cls = 'tile ch tv' + (bad ? ' gone' : '') + (hasLogo(c) ? '' : ' nologo');
+      var body = '<div class="glyph">' + glyphHtml(c, true) + '</div><div class="nm">' + esc(c.name) + '</div>';
       if (on) {
         body += '<div class="prog">' + esc(on.title) + '</div><div class="bar"><i></i></div>';
         barWidths.push(Math.round(pctOf(on) * 10) / 10 + '%');
@@ -2104,31 +2103,29 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var tvGuide = {}, tvGuideTimer = null;
   var LOGO_KEY = 'glasshouse.iptv.logo.';
 
-  // "Harbour Sport 1" -> "HS1", up to four characters.
-  function monogram(name) {
-    var words = String(name || '').replace(/[^A-Za-z0-9À-ɏ ]+/g, ' ').split(/\s+/), out = '';
-    for (var i = 0; i < words.length && out.length < 4; i++) {
-      if (!words[i]) continue;
-      out += /^\d+$/.test(words[i]) ? words[i].slice(0, 4 - out.length) : words[i].charAt(0).toUpperCase();
-    }
-    return out || '?';
-  }
-
   /*
    * A channel's logo as type. Its look is decided once, from its pixels, and
    * kept: one whose opaque pixels cover more than 60% of its box keeps its
-   * colours on a plate; any other is drawn as a warm-white silhouette.
+   * colours on a plate; any other is drawn as a warm-white silhouette. With
+   * no logo, a tile has the channel's name in its place (named); the guide,
+   * the list and the band, which name it beside, have nothing.
    */
-  function glyphHtml(it) {
-    var mono = '<span class="mono">' + esc(monogram(it.name)) + '</span>';
-    if (!it.logo || (layout && layout.showTvLogos === false)) return mono;
+  function nameHtml(it) { return '<span class="gname">' + esc(it.name) + '</span>'; }
+  function hasLogo(it) {
+    if (!it.logo || (layout && layout.showTvLogos === false)) return false;
     var look = null;
     try { look = window.localStorage.getItem(LOGO_KEY + it.logo); } catch (e) {}
-    if (look === 'none') return mono;
-    return '<img src="' + esc(it.logo) + '" alt="" data-mono="' + esc(monogram(it.name)) + '"' + (look ? ' class="' + look + '"' : ' data-judge="1" style="visibility:hidden"') + '>';
+    return look !== 'none';
+  }
+  function glyphHtml(it, named) {
+    if (!hasLogo(it)) return named ? nameHtml(it) : '';
+    var look = null;
+    try { look = window.localStorage.getItem(LOGO_KEY + it.logo); } catch (e) {}
+    return '<img src="' + esc(it.logo) + '" alt=""' + (named ? ' data-name="' + esc(it.name) + '"' : '') +
+      (look ? ' class="' + look + '"' : ' data-judge="1" style="visibility:hidden"') + '>';
   }
 
-  // Wired after each draw: judges a new logo, and puts the initials in a broken one's place.
+  // Wired after each draw: judges a new logo, and puts the name, or nothing, in a broken one's place.
   function wireGlyphs(root) {
     var imgs = (root || document).querySelectorAll('.glyph img');
     for (var i = 0; i < imgs.length; i++) {
@@ -2136,10 +2133,15 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (img.getAttribute('data-wired')) continue;
       img.setAttribute('data-wired', '1');
       img.onerror = function () {
+        var name = this.getAttribute('data-name'), parent = this.parentNode;
+        if (!parent) return;
+        if (name === null) { parent.removeChild(this); return; }
         var span = document.createElement('span');
-        span.className = 'mono';
-        span.textContent = this.getAttribute('data-mono') || '?';
-        if (this.parentNode) this.parentNode.replaceChild(span, this);
+        span.className = 'gname';
+        span.textContent = name;
+        parent.replaceChild(span, this);
+        var tile = parent.parentNode;
+        if (tile && tile.className.indexOf('nologo') === -1) tile.className += ' nologo';
       };
       if (img.getAttribute('data-judge')) {
         if (img.complete && img.naturalWidth) judgeLogo(img);

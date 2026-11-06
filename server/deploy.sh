@@ -67,7 +67,7 @@ assets/qr.js assets/i18n.js assets/i18n/es.json assets/i18n/de.json assets/i18n/
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
 assets/dashboard-app/assets/icon80.png assets/dashboard-app/assets/icon130.png \
-assets/home.html assets/home-kit.js assets/home-web.html assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \
+assets/home.html assets/home-kit.js assets/home-web.html assets/home-minimal.html assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \
 assets/home-app/assets/icon80.png assets/home-app/assets/icon130.png \
 assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \
 assets/fonts/Outfit-Light.ttf assets/fonts/Outfit-Regular.ttf \

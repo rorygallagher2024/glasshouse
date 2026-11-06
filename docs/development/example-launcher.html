@@ -83,7 +83,7 @@ h2{font-size:2.6vh;font-weight:400;color:#9aa4ad;margin:0 0 1.5vh 5vw}
     var inputs = section('Inputs');
     for (var j = 0; j < cat.inputs.length; j++) {
       var d = cat.inputs[j];
-      if (!d.unused) tile(inputs, d.title, null, opener('input', d.id));
+      if (!d.hidden) tile(inputs, d.title, null, opener('input', d.id));
     }
     show(0);
   }

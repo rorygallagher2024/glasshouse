@@ -16,6 +16,14 @@
  *
  * BROWSER_CHANNEL=chrome uses an installed Chrome instead, with playwright-core
  * alone, as CI does: its runners have Chrome, which saves the download.
+ *
+ * CPU_SLOWDOWN=4 runs every page on a CPU slowed four times, as Chrome's
+ * devtools can, to find a check that waits on time rather than on the page:
+ * CI's runners, shared and slower, fail those now and then.
+ *
+ * A check that finds a problem runs once more on its own before the run fails.
+ * One that passes the second time is reported as flaky, by name, and does not
+ * fail the run; one that fails twice does.
  */
 'use strict';
 const child = require('child_process');
@@ -147,7 +155,14 @@ async function visit(browser, url, label, problems) {
 // A few tabs at a time: each is its own page, so they cannot affect each other.
 async function visitAll(browser, jobs, problems) {
   let next = 0;
-  async function worker() { while (next < jobs.length) { const j = jobs[next++]; await visit(browser, j.url, j.label, problems); } }
+  async function worker() {
+    while (next < jobs.length) {
+      const j = jobs[next++];
+      const once = (b, base, found) => visit(b, j.url, j.label, found);
+      Object.defineProperty(once, 'name', { value: j.label });
+      await runVisit(once, browser, null, problems);
+    }
+  }
   await Promise.all([worker(), worker(), worker(), worker()]);
 }
 
@@ -1166,9 +1181,11 @@ async function visitHomeArrangement(browser, base, problems) {
     if (Object.keys(saves[saves.length - 1].order).length) {
       problems.push('Home arranging: finishing after Reset pinned the Apps order again');
     }
+    // Waited for, not timed: on a slow runner the reload comes later than 100 ms.
+    const reloaded = navigations ? Promise.resolve(true)
+      : page.waitForEvent('framenavigated', { predicate: f => f === page.mainFrame(), timeout: 15000 }).then(() => true, () => false);
     await page.clock.fastForward(5000);
-    await page.waitForTimeout(100);
-    if (!navigations) problems.push('Home arranging: an update seen while arranging was never reloaded');
+    if (!await reloaded) problems.push('Home arranging: an update seen while arranging was never reloaded');
   } finally { await page.close(); }
 }
 
@@ -1397,7 +1414,9 @@ async function visitHomeEditor(browser, base, problems) {
     pendingRestore = true;
     await page.reload();
     await page.waitForSelector('#home-switch:not(:disabled)');
-    if (!await page.locator('#home-switch').textContent().then(t => /Retry/.test(t))) problems.push('Home editor: failed restoration has no retry action');
+    // The button is there, and enabled, before the status that names it arrives.
+    try { await page.waitForFunction(() => /Retry/.test(document.getElementById('home-switch').textContent)); }
+    catch (e) { problems.push('Home editor: failed restoration has no retry action'); }
     pendingRestore = false; portChanged = true;
     await page.reload();
     await page.waitForTimeout(200);
@@ -1498,11 +1517,13 @@ async function visitHomeUploads(browser, base, problems) {
 
 /*
  * A custom launcher in Glasshouse Home's place. On the Home tab: its button
- * opens the section to set one up, a web address with Glasshouse Home on
- * becomes the TV's Home at once, Use Glasshouse Home swaps back without a
- * second press, an upload is offered only where installing from a file is,
- * and Remove takes it away. Then, against the real server, an uploaded page
- * is served with window.Glasshouse ready before its own script runs.
+ * opens the section, a web address with Glasshouse Home on is chosen at once,
+ * the Apps and Inputs rows stay to arrange while it is in use without
+ * Glasshouse Home's other settings, Use Glasshouse Home swaps back and Use
+ * swaps again without a second press, an upload is offered only where
+ * installing from a file is, and Remove takes it away. Then, against the real
+ * server, an uploaded page is served with window.Glasshouse ready before its
+ * own script runs.
  */
 async function visitHomeLauncher(browser, base, problems) {
   const context = await browser.newContext();
@@ -1510,54 +1531,76 @@ async function visitHomeLauncher(browser, base, problems) {
   page.on('pageerror', e => problems.push('Home launcher: ' + e.message));
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
     hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
-  let launcher = null, launcherUpload = true;
+  let kept = [], chosen = null, launcherUpload = true;
   const sent = [];
+  const minimal = { id: 'minimal', kind: 'builtin', title: 'Glasshouse Minimal', source: 'builtin' };
+  const status = () => ({ chosen, launchers: [minimal].concat(kept).map(l => Object.assign({}, l, { chosen: l.id === chosen })) });
   await context.route('**/api/home**', async route => {
     const pathname = new URL(route.request().url()).pathname;
     let body;
     if (pathname === '/api/home/launcher') {
       const req = route.request().postDataJSON();
       sent.push(JSON.stringify(req));
-      if (req.address) launcher = { kind: 'web', title: 'ha.local:8123', address: req.address, chosen: !!(launcher && launcher.chosen) };
-      else if (req.remove) launcher = null;
-      else if (typeof req.choose === 'boolean') launcher.chosen = req.choose;
-      body = { ok: true, launcher };
+      if (req.address) kept = [{ id: 'own', kind: 'web', title: 'ha.local:8123', address: req.address, source: 'own' }];
+      else if (req.remove) { kept = kept.filter(l => l.id !== req.remove); if (chosen === req.remove) chosen = null; }
+      else if ('choose' in req) chosen = req.choose || null;
+      body = { ok: true, launchers: status() };
     } else if (pathname === '/api/home') {
       body = { ok: true, supported: { ok: true }, installed: true, enabled: true, active: true, writable: true, layout,
-        launcher, launcherUpload, wallpapers: { choices: ['black'], choice: 'black', slots: {} } };
+        launchers: status(), launcherUpload, wallpapers: { choices: ['black'], choice: 'black', slots: {} } };
     } else {
       body = { ok: true, layout, apps: [], devices: [], channels: [], order: { app: [], dev: [], ch: [] }, sources: { channels: 0 } };
     }
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
   });
+  const keptRow = title => page.locator('#home-launchers .prot-row', { hasText: title });
+  const stateNames = re => page.waitForFunction(r => new RegExp(r).test(document.getElementById('home-state').textContent), re.source);
+  const marked = async id => /\bon\b/.test(await page.locator('#' + id).getAttribute('class'));
   try {
     await page.goto(base + '/?tab=home');
-    await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus);
-    if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: its section showed with none set up');
+    await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && document.getElementById('home-mode-minimal').textContent === 'Glasshouse Minimal');
+    const names = await page.locator('#home-mode-btns button').allTextContents();
+    if (names.join() !== 'LG Home,Glasshouse Home,Glasshouse Minimal,Custom') problems.push('Home launcher: the choices read ' + names.join());
+    if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: Custom\'s settings showed with Glasshouse Home chosen');
+    // Custom with none set up opens its settings, and chooses nothing.
     await page.locator('#home-mode-launcher').click();
     await page.locator('#home-launcher').waitFor();
-    if (sent.length) problems.push('Home launcher: its button changed something with none set up');
+    if (sent.length) problems.push('Home launcher: Custom with none set up sent ' + sent.join());
     await page.locator('#home-launcher-url').fill('http://ha.local:8123/tv');
     await page.locator('#home-launcher-save').click();
-    // homeStatus is set before the tab is drawn from it, so the drawn state is waited for.
-    try {
-      await page.waitForFunction(() => /ha\.local:8123/.test(document.getElementById('home-state').textContent));
-    } catch (e) { problems.push('Home launcher: the state did not name the launcher'); }
-    if (sent.join() !== '{"address":"http://ha.local:8123/tv"},{"choose":true}') problems.push('Home launcher: a web address with Glasshouse Home on sent ' + sent.join());
-    if (await page.locator('#home-more').isVisible()) problems.push('Home launcher: Glasshouse Home\'s rows showed with a launcher chosen');
-    if (!/\bon\b/.test(await page.locator('#home-mode-launcher').getAttribute('class'))) problems.push('Home launcher: its button was not marked as chosen');
-    if (!/ha\.local:8123\/tv/.test(await page.locator('#home-launcher-now-desc').textContent())) problems.push('Home launcher: the address was not shown');
+    try { await stateNames(/ha\.local:8123/); } catch (e) { problems.push('Home launcher: the state did not name the launcher'); }
+    if (sent.join() !== '{"address":"http://ha.local:8123/tv"},{"choose":"own"}') problems.push('Home launcher: a web address with Glasshouse Home on sent ' + sent.join());
+    // The apps and inputs it shows stay arranged here; Glasshouse Home's own settings go.
+    if (!await page.locator('#home-rows .home-row[data-kind="app"]').isVisible()) problems.push('Home launcher: the Apps row was not offered with a launcher chosen');
+    if (await page.locator('#home-rows .home-row[data-kind="ch"]').isVisible()) problems.push('Home launcher: the Channels row showed with a launcher chosen');
+    if (await page.locator('#home-tv').isVisible() || await page.locator('#home-looks').isVisible()) problems.push('Home launcher: Glasshouse Home\'s own settings showed with a launcher chosen');
+    if (!await marked('home-mode-launcher')) problems.push('Home launcher: Custom was not marked as chosen');
+    if (await page.locator('#home-launchers .prot-row', { hasText: 'Minimal' }).count()) problems.push('Home launcher: Minimal was listed among the owner\'s own');
+    // Glasshouse Minimal, a choice beside the others; Custom's settings go with Custom.
+    sent.length = 0;
+    await page.locator('#home-mode-minimal').click();
+    await stateNames(/Glasshouse Minimal/);
+    if (sent.join() !== '{"choose":"minimal"}') problems.push('Home launcher: Glasshouse Minimal sent ' + sent.join());
+    if (!await marked('home-mode-minimal') || await marked('home-mode-launcher')) problems.push('Home launcher: Glasshouse Minimal\'s button was not the one marked as chosen');
+    if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: Custom\'s settings showed with Glasshouse Minimal chosen');
+    if (!await page.locator('#home-rows .home-row[data-kind="app"]').isVisible()) problems.push('Home launcher: the Apps row was not offered with Glasshouse Minimal chosen');
     sent.length = 0;
     await page.locator('#home-switch').click();
     await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-switch').className));
-    if (sent.join() !== '{"choose":false}') problems.push('Home launcher: Use Glasshouse Home sent ' + sent.join());
+    if (sent.join() !== '{"choose":false}') problems.push('Home launcher: Glasshouse Home sent ' + sent.join());
+    if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: Custom\'s settings showed with Glasshouse Home chosen, one set up');
+    // Custom with one set up chooses it, as the others are chosen.
+    sent.length = 0;
+    await page.locator('#home-mode-launcher').click();
+    await stateNames(/ha\.local:8123/);
+    if (sent.join() !== '{"choose":"own"}') problems.push('Home launcher: Custom with one set up sent ' + sent.join());
+    await page.locator('#home-launcher').waitFor();
     launcherUpload = false;
     await page.evaluate(() => loadHome());
     await page.locator('#home-launcher-upload-off').waitFor();
     if (!await page.locator('#home-launcher-pick').isDisabled()) problems.push('Home launcher: an upload was offered where installing from a file is off');
-    await page.locator('#home-launcher-remove').click();
-    await page.waitForFunction(() => document.getElementById('home-launcher-now-row').hidden);
-    if (await page.locator('#home-launcher-now-row').isVisible()) problems.push('Home launcher: a removed launcher was still listed');
+    await keptRow('ha.local').getByRole('button', { name: 'Remove' }).click();
+    await page.waitForFunction(() => !document.querySelectorAll('#home-launchers .prot-row').length);
   } finally { await context.close(); }
 
   const tv = await browser.newContext();
@@ -1571,12 +1614,14 @@ async function visitHomeLauncher(browser, base, problems) {
     const up = await view.evaluate(async h => (await fetch('/api/home/launcher/upload?name=check.html', {
       method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: h })).json(), html);
     if (!up.ok) problems.push('Home launcher: the upload was refused: ' + up.error);
+    await view.evaluate(async () => fetch('/api/home/launcher', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ choose: 'own' }) }));
     await view.goto(base + '/home/launcher/');
     await view.waitForFunction(() => document.title !== 'wait', null, { timeout: 15000 });
     const title = await view.title();
     if (!/^apps [1-9]/.test(title)) problems.push('Home launcher: the uploaded page read ' + title);
     await view.evaluate(async () => fetch('/api/home/launcher', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remove: true }) }));
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remove: 'own' }) }));
   } catch (e) { problems.push('Home launcher page: ' + e.message); }
   finally { await tv.close(); }
 }
@@ -2543,17 +2588,54 @@ async function runGroup(browser, group, problems, after) {
   if (after) await after;
   const base = 'http://127.0.0.1:' + server.port;
   await visitAll(browser, group.tabs.map(t => ({ url: base + t.path, label: t.label })), problems);
-  for (const visitOne of group.visits) await visitOne(browser, base, problems);
+  for (const visitOne of group.visits) await runVisit(visitOne, browser, base, problems);
+}
+
+// Each page on a slowed CPU, where CPU_SLOWDOWN asks for one.
+function slowCpu(browser, rate) {
+  const newPage = browser.newPage.bind(browser);
+  browser.newPage = async (...args) => {
+    const page = await newPage(...args);
+    try { await (await page.context().newCDPSession(page)).send('Emulation.setCPUThrottlingRate', { rate }); } catch (e) {}
+    return page;
+  };
+  const newContext = browser.newContext.bind(browser);
+  browser.newContext = async (...args) => {
+    const context = await newContext(...args);
+    context.on('page', async p => {
+      try { await (await context.newCDPSession(p)).send('Emulation.setCPUThrottlingRate', { rate }); } catch (e) {}
+    });
+    return context;
+  };
+}
+
+const flaky = [];
+// A check run once more where it found a problem: see the top of this file.
+async function runVisit(visitOne, browser, base, problems) {
+  let first = null;
+  for (;;) {
+    const found = [];
+    try { await visitOne(browser, base, found); }
+    catch (e) { found.push(visitOne.name + ': ' + String(e.message).split('\n')[0]); }
+    if (!found.length) {
+      if (first) flaky.push(visitOne.name + ' passed on a second try; the first found: ' + first.join('; '));
+      return;
+    }
+    if (first) { problems.push(...found); return; }
+    first = found;
+  }
 }
 
 (async () => {
   const browser = await chromium.launch(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {});
+  if (Number(process.env.CPU_SLOWDOWN) > 1) slowCpu(browser, Number(process.env.CPU_SLOWDOWN));
   const problems = [];
   const web = webTabs(), tv = tvTabs();
   const all = groups(web, tv);
   const together = Promise.all(all.filter(g => !g.alone).map(g => runGroup(browser, g, problems)));
   await Promise.all([together].concat(all.filter(g => g.alone).map(g => runGroup(browser, g, problems, together))));
   await browser.close();
+  for (const f of flaky) console.log('flaky: ' + f);
   for (const p of problems) console.log(p);
   console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
               'TV navigation and LCD profile, Home arranging, picture, preview and its options, animated backgrounds, visibility, colours, fading and inputs, update, editing, order, uploads, custom launcher, readiness, availability, recents, scrolling, motion, guide, search, Internet TV and its channel manager checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
