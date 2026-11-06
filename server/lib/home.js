@@ -2084,6 +2084,14 @@ function homeKey(down) {
         switchTo(true, function () {});
       }
     } else if (shortPress && !escaped && isHomeInPlace()) {
+      /*
+       * Pressed with the view already in front, the TV does nothing: on a C2
+       * (webOS 9.2.2) surface-manager logged the key and launched nothing,
+       * so the folder, guide or a playing channel stayed open (#1254). A
+       * launch reaches the page as a relaunch, which closes them. webOS 4's
+       * key filter launches the view on every press already.
+       */
+      if (!isStandalone() && foreground === LG_HOME) launch(LG_HOME, null, function () {});
       watchOpen(false, OPEN_GRACE_MS);
     }
     return;

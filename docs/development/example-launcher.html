@@ -125,6 +125,8 @@ h2{font-size:2.6vh;font-weight:400;color:#9aa4ad;margin:0 0 1.5vh 5vw}
   // Nothing needs drawing while an app is over Home.
   var clockTimer = null;
   function start() { clock(); clockTimer = setInterval(clock, 10000); }
+  // Home pressed here goes back to the first tile.
+  Glasshouse.onHome(function () { show(0); });
   // An app installed, or a device naming itself, changes the tiles.
   Glasshouse.onChanged(load);
   Glasshouse.onCovered(function (covered) {
