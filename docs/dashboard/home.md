@@ -39,7 +39,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    The starred channels of your Internet TV lineup, chosen on the dashboard or from the row itself. Each tile shows the channel's logo, drawn as plain light type, or its initials, with what is on now and next. See [Internet TV](#internet-tv).
+    The starred channels of your Internet TV lineup, chosen on the dashboard or from the row itself. Each tile shows the channel's logo, drawn as plain light type, or its name where it has none, with what is on now and next. See [Internet TV](#internet-tv).
 
 -   **Recommended**
 
@@ -74,7 +74,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    **Last watched** (the top strip and the marker on that input's tile), **App count** (the "4 of 18 shown" beside Apps), **CEC addresses** (on each input tile) and **Channel logos** (on Internet TV, showing the channel's initials when off) are on by default, and each can be switched off from either dashboard's Home tab.
+    **Last watched** (the top strip and the marker on that input's tile), **App count** (the "4 of 18 shown" beside Apps), **CEC addresses** (on each input tile) and **Channel logos** (on Internet TV, showing the channel's name when off) are on by default, and each can be switched off from either dashboard's Home tab.
 
     Behind a receiver, Last watched names the device the TV last selected on that port, such as the console rather than the receiver, and marks only its tile. Where the TV has not recorded one, every device on the port is named.
 
@@ -363,7 +363,7 @@ Its colours: **Time of day**, the default, follows the four times of day, and th
 
 ## Switching it on and off
 
-Click **Use Glasshouse Home** (and confirm on the second press) in the web dashboard's **Home** tab or the TV app's **Home** section. Glasshouse Home is mounted over LG's launcher without modifying the root filesystem (on webOS 4 it runs as a standalone app, `com.tvweb.home`, with the remote's Home key intercepted by the compositor filter). Clicking **Use LG Home** (or running `tvwebctl restore-glasshouse-home` over SSH) restores LG's launcher within a few seconds. On webOS 5 and 6 each switch restarts LG's app manager (sam), so the app in front comes back a moment later and a switch takes a few seconds longer.
+Under **Choose your launcher** on the web dashboard's **Home** tab, choose **Glasshouse Home** (and confirm on the second press), or switch it on in the TV app's **Home** section. The same choice offers **LG Home**, [Glasshouse Minimal](#glasshouse-minimal) and [Custom](#custom-launcher). Glasshouse Home is mounted over LG's launcher without modifying the root filesystem (on webOS 4 it runs as a standalone app, `com.tvweb.home`, with the remote's Home key intercepted by the compositor filter). Choosing **LG Home** (or running `tvwebctl restore-glasshouse-home` over SSH) restores LG's launcher within a few seconds. On webOS 5 and 6 each switch restarts LG's app manager (sam), so the app in front comes back a moment later and a switch takes a few seconds longer.
 
 * **Reaching LG's Home without turning Glasshouse Home off:**
   * Select the **LG Home** tile at the end of the Apps row.
@@ -374,29 +374,29 @@ Click **Use Glasshouse Home** (and confirm on the second press) in the web dashb
 * **Hide LG's Home while the TV starts (webOS 9 optional setting):** Replaces LG's Home layout with a blank screen during the first seconds of a cold boot so LG's launcher never flashes on screen.
 
 > [!WARNING]
-> **If `Hide LG's Home while the TV starts` is enabled** and Glasshouse is removed manually without running `Use LG Home` or `tvwebctl restore-glasshouse-home` (for example, if a firmware update removes root), LG's Home will remain blank until its layout cache is cleared over SSH:
+> **If `Hide LG's Home while the TV starts` is enabled** and Glasshouse is removed manually without choosing **LG Home** or running `tvwebctl restore-glasshouse-home` (for example, if a firmware update removes root), LG's Home will remain blank until its layout cache is cleared over SSH:
 > ```sh
 > rm -rf /mnt/lg/cmn_data/manifest /tmp/checkpoint/*com.webos.app.home* /mnt/lg/cmn_data/checkpoint/*com.webos.app.home* && reboot
 > ```
 
-## Minimal
+## Glasshouse Minimal
 
-**Minimal**, beside **Glasshouse Home** on the **Home** tab, is a second home screen that comes with Glasshouse, made to be as plain as it can: the TV's apps and inputs as two lists of names on black, and the time. **Left** and **Right** choose between Apps and Inputs, **Up** and **Down** move through them, and **OK** opens; **Home** comes back to the first app, and the last entry under Apps opens LG's Home. With Glasshouse Home on, pressing **Minimal** puts it in Glasshouse Home's place within a few seconds; from LG's Home it takes a second press. **Use Glasshouse Home** goes back. It works as a custom launcher does, below: the Home button, Back and waking open it, and **Rows and tiles** decides which apps and inputs it lists and in what order, with those in More apps after the rest. Every few minutes the whole screen moves a few pixels, so that the names do not stay in one place on an OLED panel.
+**Glasshouse Minimal**, beside **Glasshouse Home** under **Choose your launcher**, is a second home screen that comes with Glasshouse, made to be as plain as it can: the TV's apps and inputs as two lists of names on black, and the time, in the type of the Glasshouse TV app. **Left** and **Right** choose between Apps and Inputs, **Up** and **Down** move through them, and **OK** opens; **Home** comes back to the first app, and the last entry under Apps opens LG's Home. With Glasshouse Home on, choosing **Glasshouse Minimal** puts it in Glasshouse Home's place within a few seconds; from LG's Home it takes a second press. Choosing **Glasshouse Home** goes back. It works as a custom launcher does, below: the Home button, Back and waking open it, and **Rows and tiles** decides which apps and inputs it lists and in what order, with those in More apps after the rest. Every few minutes the whole screen moves a few pixels, so that the names do not stay in one place on an OLED panel.
 
-![Minimal on a C2 (webOS 9.2.2): Apps and Inputs, with the apps listed as names on black](../screenshots/launcher-minimal.jpg)
+![Glasshouse Minimal on a C2 (webOS 9.2.2): Apps and Inputs, with the apps listed as names on black](../screenshots/launcher-minimal.jpg)
 
 ## Custom launcher
 
 A home screen of your own can take Glasshouse Home's place: a launcher you have written or downloaded, or a web page such as a Home Assistant dashboard. Everything above still applies to it. The Home and Back buttons open it, it opens when the TV wakes on Home, holding **Home** opens LG's Home, and if it stops working, LG's Home takes its place by itself.
 
-On the web dashboard's **Home** tab, press **Custom launcher**, then either:
+Under **Choose your launcher** on the web dashboard's **Home** tab, choose **Custom**. Its settings open below it, to set one up, either:
 
 * **Upload a launcher:** a web app as an `.ipk` package, a `.zip` of its folder, or a single `.html` file, up to 50 MB. Native apps can't be used. As with installing an app from a file, this needs **Install app from a URL or file** switched on on the [Apps tab](apps.md#install-app-from-a-url-or-file), or a token.
 * **Or open a web page:** an address starting with `http://` or `https://`, shown full screen. Some sites refuse to be shown inside another page; Home Assistant does unless it is told to allow it ([Writing a launcher](../development/WRITING-LAUNCHERS.md#a-web-page) has the setting).
 
-You have one at a time: uploading another, or giving a web address, replaces it. It is listed with **Use**, to make it the TV's Home, and **Remove**. With Glasshouse Home already on, it takes Glasshouse Home's place as soon as it is set up; from LG's Home, **Use** takes a second press. **Use Glasshouse Home** goes back to Glasshouse Home and keeps the launcher for later. The TV app's **Home** section has a switch for it.
+You have one at a time: uploading another, or giving a web address, replaces it, and **Remove** deletes it. With Glasshouse Home already on, it takes Glasshouse Home's place as soon as it is set up. Once one is set up, **Custom** makes it the TV's Home, as the other choices do; from LG's Home it takes a second press. Its settings show only while **Custom** is chosen. Choosing **Glasshouse Home** goes back and keeps the launcher for later. The TV app's **Home** section has a switch for it.
 
-While Minimal or a custom launcher is the TV's Home, **Rows and tiles** stays on this tab with the Apps and Inputs rows: which apps and inputs it shows, and their order, including **Hide inputs with nothing connected**. Minimal follows them, as the example in the docs does; a launcher of your own follows them where it was written to. Glasshouse Home's other settings (its other rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
+While Glasshouse Minimal or a custom launcher is the TV's Home, **Rows and tiles** stays on this tab with the Apps and Inputs rows: which apps and inputs it shows, and their order, including **Hide inputs with nothing connected**. Glasshouse Minimal follows them, as the example in the docs does; a launcher of your own follows them where it was written to. Glasshouse Home's other settings (its other rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
 
 > [!WARNING]
 > A launcher can do anything on the TV that Glasshouse can, so only use one you trust.

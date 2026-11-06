@@ -18,6 +18,7 @@
   // its memory back, as Glasshouse Home's view does; Home opens it afresh.
   var CLOSE_BEHIND_MS = 120000;
   var launcher = null;
+  var build = null;
   var covered = false;
   var coveredSince = 0;
   var coveredFns = [];
@@ -58,6 +59,9 @@
       else if ((r.launcher || '') !== launcher) {
         return location.replace(r.launcher ? '/home/launcher/' : '/assets/home.html');
       }
+      // A new release of Glasshouse: loaded again, so this script is the release's own.
+      if (build === null) build = r.build || '';
+      else if (r.build && r.build !== build) return location.reload();
       if (r.standalone && r.enabled === false) return window.close();
       setCovered(!!r.covered);
       // Apps installed or removed, a device named over HDMI-CEC, channels retuned.

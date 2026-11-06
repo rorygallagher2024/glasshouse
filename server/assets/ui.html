@@ -1056,15 +1056,18 @@
       <div>
         <div class="ps-head" id="home-state">&mdash;</div>
         <div class="pv-sub" id="home-state-desc"></div>
-        <div class="pv-note warn" id="home-restart-note" hidden data-t="home.restartsApps">On this TV, switching Glasshouse Home on or off, or holding Home for LG&rsquo;s Home, restarts the TV&rsquo;s app manager, which closes the apps that are open.</div>
-        <div class="pv-note warn" data-t="home.experimental">Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.</div>
+        <div class="pv-note warn" id="home-restart-note" hidden data-t="home.restartsAppsAny">On this TV, switching away from LG Home or back to it, or holding Home for LG&rsquo;s Home, restarts the TV&rsquo;s app manager, which closes the apps that are open.</div>
+        <div class="pv-note warn" data-t="home.experimentalAny">Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG&rsquo;s Home screen. If one misbehaves, hold Home on the remote for a second to open LG&rsquo;s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.</div>
       </div>
     </div>
-    <div class="btns" id="home-mode-btns">
-      <button type="button" id="home-mode-lg" onclick="homeChooseMode(false)">&mdash;</button>
-      <button type="button" id="home-switch" onclick="homeChooseMode(true)">&mdash;</button>
-      <button type="button" id="home-mode-minimal" onclick="homeLauncherUse('minimal')">&mdash;</button>
-      <button type="button" id="home-mode-launcher" onclick="homeChooseLauncher()" data-t="home.launcher.button">Custom launcher</button>
+    <div id="home-choose">
+      <div class="lbl" data-t="home.choose">Choose your launcher</div>
+      <div class="btns" id="home-mode-btns">
+        <button type="button" id="home-mode-lg" onclick="homeChooseMode(false)">&mdash;</button>
+        <button type="button" id="home-switch" onclick="homeChooseMode(true)">&mdash;</button>
+        <button type="button" id="home-mode-minimal" onclick="homeLauncherUse('minimal')">&mdash;</button>
+        <button type="button" id="home-mode-launcher" onclick="homeChooseLauncher()">&mdash;</button>
+      </div>
     </div>
   </div>
 
@@ -1178,7 +1181,7 @@
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.showTvLogos">Channel logos</div>
-        <div class="prot-desc" data-t="home.showTvLogosDesc">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials.</div>
+        <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
     </div>

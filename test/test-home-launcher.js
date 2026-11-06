@@ -342,7 +342,7 @@ test('a web address replaces the owner\'s own upload, escaped in the frame, and 
 
 test('Minimal comes with Glasshouse: chosen, it is served with the kit, and it cannot be removed', function (done) {
   var mini = launcher.status().launchers[0];
-  assert.deepEqual([mini.id, mini.source, mini.title], ['minimal', 'builtin', 'Minimal']);
+  assert.deepEqual([mini.id, mini.source, mini.title], ['minimal', 'builtin', 'Glasshouse Minimal']);
   var was = launcher.status().chosen;
   post({ choose: 'minimal' }, function (c1, r1) {
     assert.strictEqual(c1, 200);

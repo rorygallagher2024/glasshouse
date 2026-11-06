@@ -1725,7 +1725,7 @@ and Glasshouse Home is on, the server answers that with a redirect to
 changes with the choice or a new upload, so the page in front reloads into the
 right one within a beat.
 
-Minimal is one of these, built in: `assets/home-minimal.html`, served from
+Glasshouse Minimal is one of these, built in: `assets/home-minimal.html`, served from
 Glasshouse's own files with the same script added, offered on every TV and
 never removed. Each other launcher is unpacked to
 `/var/lib/tvweb/home-launcher/apps/<id>`, with `launcher.json` naming those

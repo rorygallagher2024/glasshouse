@@ -266,7 +266,20 @@ function renderHome() {
     });
     hide.disabled = !homeWritable();
   }
+  /*
+   * The choice of launcher: the one in use marked, and one whose press waits
+   * for a second marked as waiting. Each button keeps its name.
+   */
   const lgBtn = q('home-mode-lg');
+  const chosenId = homeLauncherOn() ? st.launchers.chosen : null;
+  const again = t('home.pressAgain', 'Press again to confirm');
+  const choice = (el, name, on, armed, hidden, disabled) => {
+    if (!el) return;
+    el.hidden = hidden;
+    el.disabled = disabled;
+    el.className = on ? 'on' : armed ? 'warn' : '';
+    el.textContent = armed ? again : name;
+  };
   if (btn) {
     const wantOn = !(st.enabled || st.restorePending);
     const armed = homeArmed === (wantOn ? 'on' : 'off');
@@ -274,39 +287,17 @@ function renderHome() {
       if (lgBtn) lgBtn.hidden = true;
       btn.disabled = !homeWritable();
       btn.className = armed ? 'warn' : '';
-      btn.textContent = armed ? t('home.confirmOff', 'Press again to use LG Home') : t('home.retryRestore', 'Retry restoring LG Home');
+      btn.textContent = armed ? again : t('home.retryRestore', 'Retry restoring LG Home');
     } else {
-      if (lgBtn) {
-        lgBtn.hidden = false;
-        lgBtn.disabled = !homeWritable();
-        lgBtn.className = !st.enabled ? 'on' : armed ? 'warn' : '';
-        lgBtn.textContent = st.enabled
-          ? (armed ? t('home.confirmOff', 'Press again to use LG Home') : t('home.switchOff', 'Use LG Home'))
-          : t('home.lgHome', 'LG Home');
-      }
-      btn.disabled = !homeWritable();
-      btn.className = st.enabled && !homeLauncherOn() ? 'on' : armed ? 'warn' : '';
-      btn.textContent = !st.enabled || homeLauncherOn()
-        ? (armed ? t('home.confirmOn', 'Press again to switch on') : t('home.switchOn', 'Use Glasshouse Home'))
-        : t('home.title', 'Glasshouse Home');
+      choice(lgBtn, t('home.lgHome', 'LG Home'), !st.enabled, st.enabled && armed, false, !homeWritable());
+      choice(btn, t('home.title', 'Glasshouse Home'), st.enabled && !chosenId, !st.enabled && armed, false, !homeWritable());
     }
   }
-  const launcherBtn = q('home-mode-launcher');
-  if (launcherBtn) {
-    launcherBtn.hidden = !!st.restorePending || !st.supported.ok;
-    launcherBtn.disabled = homeLauncherBusy;
-    launcherBtn.className = homeLauncherOn() && st.launchers.chosen !== 'minimal' ? 'on' : '';
-  }
-  // Minimal, Glasshouse's plainest home screen, chosen as a launcher is.
-  const minimalBtn = q('home-mode-minimal');
-  if (minimalBtn) {
-    minimalBtn.hidden = !!st.restorePending || !st.supported.ok || !homeLaunchersAll().some(l => l.id === 'minimal');
-    const on = homeLauncherOn() && st.launchers.chosen === 'minimal';
-    const armed = homeArmed === 'use:minimal';
-    minimalBtn.disabled = !homeWritable() || homeLauncherBusy;
-    minimalBtn.className = on ? 'on' : armed ? 'warn' : '';
-    minimalBtn.textContent = armed ? t('home.confirmOn', 'Press again to switch on') : t('home.minimal', 'Minimal');
-  }
+  const unavailable = !!st.restorePending || !st.supported.ok;
+  choice(q('home-mode-minimal'), t('home.minimalName', 'Glasshouse Minimal'), chosenId === 'minimal', homeArmed === 'use:minimal',
+    unavailable || !homeLaunchersAll().some(l => l.id === 'minimal'), !homeWritable() || homeLauncherBusy);
+  choice(q('home-mode-launcher'), t('home.custom', 'Custom'), !!chosenId && chosenId !== 'minimal', homeArmed === 'use:own',
+    unavailable, !homeWritable() || homeLauncherBusy);
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
   renderHomeRows();
@@ -654,6 +645,8 @@ function homeResetLayout() { homeSaveLayout({ reset: true }); }
 
 function homeChooseMode(wantOn) {
   if (!homeStatus) return;
+  // Custom's settings belong to Custom alone.
+  homeLauncherOpen = false;
   if (homeStatus.restorePending) { homeSwitch(); return; }
   // From the custom launcher to Glasshouse Home: the same place, another page, so no second press.
   if (wantOn && homeLauncherOn()) { homeLauncherChoose(false); return; }
@@ -690,13 +683,18 @@ async function homeSwitch() {
   loadHome();
 }
 
-// The Custom launcher button opens the section.
+/*
+ * Custom: with a launcher of the owner's own set up, it is chosen as the
+ * others are; either way its settings open below, to set one up or change it.
+ */
 function homeChooseLauncher() {
-  if (!homeStatus || homeLauncherOn()) return;
+  if (!homeStatus) return;
+  const wasOpen = homeLauncherOpen;
   homeLauncherOpen = true;
-  renderHome();
+  if (homeLaunchersKept().some(l => l.id === 'own')) homeLauncherUse('own');
+  else renderHome();
   const box = q('home-launcher');
-  if (box) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  if (box && !wasOpen) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 
 /*
@@ -705,6 +703,7 @@ function homeChooseLauncher() {
  */
 function homeLauncherUse(id) {
   if (!homeWritable() || homeLauncherBusy) return;
+  if (id !== 'own') homeLauncherOpen = false;
   if (homeLauncherOn() && homeStatus.launchers.chosen === id) return;
   if (homeStatus.enabled) return homeLauncherChoose(id);
   if (homeArmed !== 'use:' + id) {
@@ -741,21 +740,18 @@ function renderHomeLauncher() {
   const box = q('home-launcher');
   if (!box || !st) return;
   const kept = homeLaunchersKept();
-  box.hidden = !st.supported.ok || !!st.restorePending || !(kept.length || homeLauncherOpen);
+  // Only while Custom is the TV's Home, or its button was pressed to set one up.
+  const customOn = homeLauncherOn() && st.launchers.chosen !== 'minimal';
+  box.hidden = !st.supported.ok || !!st.restorePending || !(customOn || homeLauncherOpen);
   if (box.hidden) return;
   const busy = !homeWritable() || homeLauncherBusy;
   const chosen = st.enabled && st.launchers ? st.launchers.chosen : null;
-  q('home-launchers').innerHTML = kept.map(l => {
-    const on = l.id === chosen, armed = homeArmed === 'use:' + l.id;
-    const use = on ? t('home.launcher.inUse', 'In use') : armed ? t('home.confirmOn', 'Press again to switch on') : t('home.launcher.use', 'Use');
-    return `<div class="prot-row">
+  q('home-launchers').innerHTML = kept.map(l => `<div class="prot-row">
       <div class="prot-main"><div class="prot-title">${esc(l.title)}</div><div class="prot-desc">${esc(homeLauncherDesc(l))}</div></div>
       <div class="prot-status">
-        <button type="button" class="pill ${on ? 'good' : armed ? 'warn' : 'idle'}" ${on || busy ? 'disabled' : ''} onclick="homeLauncherUse('${esc(l.id)}')">${esc(use)}</button>
         <button type="button" class="pill idle" ${busy ? 'disabled' : ''} onclick="homeLauncherRemove('${esc(l.id)}')">${esc(t('home.launcher.remove', 'Remove'))}</button>
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
   ['home-launcher-pick', 'home-launcher-save'].forEach(id => { const b = q(id); if (b) b.disabled = busy; });
   // Held to what installing an app from a file is.
   const uploadOff = st.launcherUpload === false;
@@ -779,7 +775,7 @@ async function homeLauncherDone() {
     await homePost('/api/home/launcher', { choose: 'own' });
     note.textContent = t('home.launcher.doneOn', 'Done. The TV’s Home shows it within a few seconds.');
   } else {
-    note.textContent = t('home.launcher.doneOffMany', 'Done. Press Use beside it to make it the TV’s Home.');
+    note.textContent = t('home.launcher.doneOffCustom', 'Done. Press Custom above, then again, to make it the TV’s Home.');
   }
 }
 

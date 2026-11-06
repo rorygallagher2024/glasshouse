@@ -146,8 +146,10 @@ offered are kept, and their colours: Time of day unless chosen, a preset, or
 A browser check sets up a custom launcher on the Home tab: its button opens
 the section, a web address with Glasshouse Home on becomes the TV's Home at
 once, the Apps and Inputs rows stay to arrange while it is in use without
-Glasshouse Home's other settings, Minimal's button chooses it and is the one
-marked, Use Glasshouse Home and Use swap without a second press, the upload is offered only where installing from a file is,
+Glasshouse Home's other settings, the four choices read LG Home, Glasshouse
+Home, Glasshouse Minimal and Custom, Custom's settings show only while it is
+chosen or being set up, and Glasshouse Minimal, Glasshouse Home and Custom
+swap without a second press, the upload is offered only where installing from a file is,
 and Remove takes it away. It
 then uploads a page to the real server and checks that `window.Glasshouse`
 lists the fake TV's apps before the page's own script runs.
@@ -248,6 +250,17 @@ The dashboard check needs Playwright and its browser:
 ```bash
 npm install --no-save playwright && npx playwright install chromium
 node scripts/check-dashboards.js
+```
+
+A check that finds a problem runs once more on its own before the run fails:
+one that passes the second time is listed as `flaky:` with what it first found,
+and does not fail the run, while one that fails twice does. CI's runners are
+shared and slower than a computer, so a check that times something rather than
+waiting for it fails there now and then. `CPU_SLOWDOWN=4` runs every page on a
+CPU slowed four times, which finds such a check before CI does:
+
+```bash
+CPU_SLOWDOWN=4 node scripts/check-dashboards.js
 ```
 
 The Home Assistant check needs Python 3.13 and the `homeassistant` package:

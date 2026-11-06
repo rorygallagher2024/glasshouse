@@ -42,7 +42,7 @@ var MAX_TITLE = 80;
 // The owner's own launcher, uploaded or a web address.
 var OWN = 'own';
 // Launchers that come with Glasshouse, served from its assets and never removed.
-var BUILTIN = { minimal: { title: 'Minimal', page: 'home-minimal.html' } };
+var BUILTIN = { minimal: { title: 'Glasshouse Minimal', page: 'home-minimal.html' } };
 // The release in its address, so a TV holding an older copy loads this one.
 var KIT_SRC = '/assets/home-kit.js';
 var KIT_TAG_PLAIN = '<script src="' + KIT_SRC + '"></script>';
