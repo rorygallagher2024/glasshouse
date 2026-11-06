@@ -39,6 +39,7 @@ function homeTvError(e) {
   return {
     login: t('home.tv.err.login', 'The provider refused the login. Check it, then Refresh.'),
     network: t('home.tv.err.network', 'The TV couldn’t reach the provider.'),
+    aborted: t('home.tv.err.aborted', 'The TV stopped the download before it began. It tries again later.'),
     timeout: t('home.tv.err.timeout', 'The provider took too long to answer.'),
     http: t('home.tv.err.http', 'The provider answered with an error{status}.', { status }),
     busy: t('home.tv.err.busy', 'The provider asked the TV to wait{status}.', { status }),

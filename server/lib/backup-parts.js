@@ -214,6 +214,17 @@ var PARTS = [
     }
   },
   {
+    // Network device scans: iconnectivity, switched from the Devices section, not listed with the services above.
+    id: 'deviceScans',
+    action: 'deviceScans',
+    valid: isBool,
+    read: function (cb) {
+      if (!services.available || !services.available('iconnectivity')) return cb(undefined);
+      cb(!services.isDisabled('iconnectivity'));
+    },
+    write: function (v, cb) { control('deviceScans', v, cb); }
+  },
+  {
     // Each web page saved to the Home screen, as { title, address }. A restore adds those missing.
     id: 'savedPages',
     valid: function (v) {
