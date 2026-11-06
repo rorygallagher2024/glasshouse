@@ -1,5 +1,6 @@
 /*
- * Clock screen saver.
+ * Clock screen saver: the time, or the time with seconds and the day and date
+ * under it, as picked from its options.
  *
  * Mounted over com.webos.app.screensaver, so it runs as the platform's own
  * screen saver and is dismissed the same way. QtQuick 2.4 and Eos.Window are
@@ -78,138 +79,243 @@ WebOSWindow {
      */
     property bool hour12: __TVWEB_CLOCK12__
 
+    // The option picked: the seconds and the date line, or the time alone.
+    // Hidden items take no room in a Row or Column, so the time alone lays
+    // out as it did before there was a choice.
+    property bool withDate: __TVWEB_CHOICE__
+
     function two(n) { return n < 10 ? "0" + n : "" + n }
 
     Item {
         id: block
 
-        width: timeRow.width
-        height: timeRow.height
+        width: stack.width
+        height: stack.height
 
         // The move itself is slow and eased, so a glance at the screen never
         // catches it jumping.
         Behavior on x { NumberAnimation { duration: 2600; easing.type: Easing.InOutQuad } }
         Behavior on y { NumberAnimation { duration: 2600; easing.type: Easing.InOutQuad } }
 
-        Row {
-            id: timeRow
-            spacing: 0
+        Column {
+            id: stack
+            // Negative: the digits' Text box carries the font's descender, none
+            // of which is drawn, so a plain gap reads as a much larger one.
+            spacing: -Math.round(28 * win.unit)
 
-            // One Text per digit, each boxed to the width of a "0", so the
-            // clock does not shift as the time changes - these figures are
-            // proportional, and a "1" is half the width of a "0".
-            
-            Text {
-                id: gauge
-                visible: false
-                font.family: win.digitFamily
-                font.pixelSize: Math.round(232 * win.unit)
-                text: "0"
-            }
+            Row {
+                id: timeRow
+                spacing: 0
 
-            Text {
-                id: hourTens
-                width: gauge.width
-                horizontalAlignment: Text.AlignHCenter
-                font.family: win.digitFamily
-                font.pixelSize: Math.round(232 * win.unit)
-                color: win.inkBright
-                text: "0"
-            }
-            Text {
-                id: hourUnits
-                width: gauge.width
-                horizontalAlignment: Text.AlignHCenter
-                font.family: win.digitFamily
-                font.pixelSize: Math.round(232 * win.unit)
-                color: win.inkBright
-                text: "0"
-            }
-            // Drawn rather than set as a ":" so the gap either side and the
-            // pulse are ours to set, whichever face the measuring picks.
-            Item {
-                id: colon
-                width: Math.round(74 * win.unit)
-                height: gauge.height
-
-                // A second of fade each way, so it reads as a pulse rather
-                // than a flash.
-                SequentialAnimation on opacity {
-                    loops: Animation.Infinite
-                    running: true
-                    NumberAnimation { from: 1.0; to: 0.25; duration: 1000; easing.type: Easing.InOutSine }
-                    NumberAnimation { from: 0.25; to: 1.0; duration: 1000; easing.type: Easing.InOutSine }
+                // One Text per digit, each boxed to the width of a "0", so the
+                // clock does not shift as the time changes - these figures are
+                // proportional, and a "1" is half the width of a "0".
+                Text {
+                    id: gauge
+                    visible: false
+                    font.family: win.digitFamily
+                    font.pixelSize: Math.round(232 * win.unit)
+                    text: "0"
                 }
-
-                Rectangle {
-                    width: Math.round(19 * win.unit)
-                    height: width
-                    radius: width / 2
-                    color: win.inkBright
-                    x: (colon.width - width) / 2
-                    y: Math.round(colon.height * 0.36)
-                }
-                Rectangle {
-                    width: Math.round(19 * win.unit)
-                    height: width
-                    radius: width / 2
-                    color: win.inkBright
-                    x: (colon.width - width) / 2
-                    y: Math.round(colon.height * 0.63)
-                }
-            }
-            Text {
-                id: minTens
-                width: gauge.width
-                horizontalAlignment: Text.AlignHCenter
-                font.family: win.digitFamily
-                font.pixelSize: Math.round(232 * win.unit)
-                color: win.inkBright
-                text: "0"
-            }
-            Text {
-                id: minUnits
-                width: gauge.width
-                horizontalAlignment: Text.AlignHCenter
-                font.family: win.digitFamily
-                font.pixelSize: Math.round(232 * win.unit)
-                color: win.inkBright
-                text: "0"
-            }
-            // Wrapped so its own box matches the digits' height: Row places
-            // its children, and the small type wants the digits' baseline.
-            Item {
-                visible: win.hour12
-                width: merText.x + merText.width
-                height: gauge.height
 
                 Text {
-                    id: merText
-                    x: Math.round(34 * win.unit)
-                    y: parent.height - height - Math.round(14 * win.unit)
+                    id: hourTens
+                    width: gauge.width
+                    horizontalAlignment: Text.AlignHCenter
                     font.family: win.digitFamily
-                    font.pixelSize: Math.round(76 * win.unit)
+                    font.pixelSize: Math.round(232 * win.unit)
                     color: win.inkBright
-                    text: ""
+                    text: "0"
                 }
+                Text {
+                    id: hourUnits
+                    width: gauge.width
+                    horizontalAlignment: Text.AlignHCenter
+                    font.family: win.digitFamily
+                    font.pixelSize: Math.round(232 * win.unit)
+                    color: win.inkBright
+                    text: "0"
+                }
+                // Drawn rather than set as a ":" so the gap either side and the
+                // pulse are ours to set, whichever face the measuring picks.
+                Item {
+                    id: colon
+                    width: Math.round(74 * win.unit)
+                    height: gauge.height
+
+                    // A second of fade each way, so it reads as a pulse rather
+                    // than a flash.
+                    SequentialAnimation on opacity {
+                        loops: Animation.Infinite
+                        running: true
+                        NumberAnimation { from: 1.0; to: 0.25; duration: 1000; easing.type: Easing.InOutSine }
+                        NumberAnimation { from: 0.25; to: 1.0; duration: 1000; easing.type: Easing.InOutSine }
+                    }
+
+                    Rectangle {
+                        width: Math.round(19 * win.unit)
+                        height: width
+                        radius: width / 2
+                        color: win.inkBright
+                        x: (colon.width - width) / 2
+                        y: Math.round(colon.height * 0.36)
+                    }
+                    Rectangle {
+                        width: Math.round(19 * win.unit)
+                        height: width
+                        radius: width / 2
+                        color: win.inkBright
+                        x: (colon.width - width) / 2
+                        y: Math.round(colon.height * 0.63)
+                    }
+                }
+                Text {
+                    id: minTens
+                    width: gauge.width
+                    horizontalAlignment: Text.AlignHCenter
+                    font.family: win.digitFamily
+                    font.pixelSize: Math.round(232 * win.unit)
+                    color: win.inkBright
+                    text: "0"
+                }
+                Text {
+                    id: minUnits
+                    width: gauge.width
+                    horizontalAlignment: Text.AlignHCenter
+                    font.family: win.digitFamily
+                    font.pixelSize: Math.round(232 * win.unit)
+                    color: win.inkBright
+                    text: "0"
+                }
+                // The same colon again before the seconds. It starts with the
+                // one above, so the two pulse together.
+                Item {
+                    id: colonSec
+                    visible: win.withDate
+                    width: Math.round(74 * win.unit)
+                    height: gauge.height
+
+                    SequentialAnimation on opacity {
+                        loops: Animation.Infinite
+                        running: true
+                        NumberAnimation { from: 1.0; to: 0.25; duration: 1000; easing.type: Easing.InOutSine }
+                        NumberAnimation { from: 0.25; to: 1.0; duration: 1000; easing.type: Easing.InOutSine }
+                    }
+
+                    Rectangle {
+                        width: Math.round(19 * win.unit)
+                        height: width
+                        radius: width / 2
+                        color: win.inkBright
+                        x: (colonSec.width - width) / 2
+                        y: Math.round(colonSec.height * 0.36)
+                    }
+                    Rectangle {
+                        width: Math.round(19 * win.unit)
+                        height: width
+                        radius: width / 2
+                        color: win.inkBright
+                        x: (colonSec.width - width) / 2
+                        y: Math.round(colonSec.height * 0.63)
+                    }
+                }
+                Text {
+                    id: secTens
+                    visible: win.withDate
+                    width: gauge.width
+                    horizontalAlignment: Text.AlignHCenter
+                    font.family: win.digitFamily
+                    font.pixelSize: Math.round(232 * win.unit)
+                    color: win.inkBright
+                    text: "0"
+                }
+                Text {
+                    id: secUnits
+                    visible: win.withDate
+                    width: gauge.width
+                    horizontalAlignment: Text.AlignHCenter
+                    font.family: win.digitFamily
+                    font.pixelSize: Math.round(232 * win.unit)
+                    color: win.inkBright
+                    text: "0"
+                }
+                // Wrapped so its own box matches the digits' height: Row places
+                // its children, and the small type wants the digits' baseline.
+                Item {
+                    visible: win.hour12
+                    width: merText.x + merText.width
+                    height: gauge.height
+
+                    Text {
+                        id: merText
+                        x: Math.round(34 * win.unit)
+                        y: parent.height - height - Math.round(14 * win.unit)
+                        font.family: win.digitFamily
+                        font.pixelSize: Math.round(76 * win.unit)
+                        color: win.inkBright
+                        text: ""
+                    }
+                }
+            }
+
+            /*
+             * Day and date beneath the time, in the dimmer ink so the clock
+             * stays the thing read from across a room.
+             *
+             * Left to the platform's own face: the weekday is the TV's own word
+             * for it, in whatever script its language uses. Fit keeps a long
+             * one inside the clock's width rather than clipping it.
+             */
+            Text {
+                id: dateLine
+                visible: win.withDate
+                width: timeRow.width
+                height: Math.round(90 * win.unit)
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                font.pixelSize: Math.round(66 * win.unit)
+                fontSizeMode: Text.Fit
+                minimumPixelSize: Math.round(38 * win.unit)
+                color: win.inkDim
+                text: ""
             }
         }
     }
 
+    property int shownSecond: -1
+    property int shownDay: -1
+
+    /*
+     * Called four times a second, and does nothing on most of them: the
+     * seconds are written only when they change, and the date is formatted
+     * only when the day does. Formatting the date and refitting it every
+     * second was enough to lose every other tick on a slower set.
+     */
     function refresh() {
         var now = new Date();
-        var h = now.getHours();
-        var shown = h;
-        if (win.hour12) {
-            shown = (h % 12) || 12;
-            merText.text = h < 12 ? "AM" : "PM";
+        var s = now.getSeconds();
+        if (s !== win.shownSecond) {
+            win.shownSecond = s;
+            var hour = now.getHours();
+            if (win.hour12) merText.text = hour < 12 ? "AM" : "PM";
+            var h = win.two(win.hour12 ? (hour % 12) || 12 : hour);
+            var m = win.two(now.getMinutes());
+            var ss = win.two(s);
+            hourTens.text = h.charAt(0);
+            hourUnits.text = h.charAt(1);
+            minTens.text = m.charAt(0);
+            minUnits.text = m.charAt(1);
+            secTens.text = ss.charAt(0);
+            secUnits.text = ss.charAt(1);
         }
-        var hh = win.two(shown);
-        var m = win.two(now.getMinutes());
-        hourTens.text = hh.charAt(0);
-        hourUnits.text = hh.charAt(1);
-        minTens.text = m.charAt(0);
-        minUnits.text = m.charAt(1);
+        if (!win.withDate) return;
+        var day = now.getFullYear() * 1000 + now.getMonth() * 40 + now.getDate();
+        if (day !== win.shownDay) {
+            win.shownDay = day;
+            // "dddd d MMMM" keeps one order everywhere and translates the
+            // names into the TV's language.
+            dateLine.text = Qt.formatDate(now, "dddd d MMMM");
+        }
     }
 
     /*
@@ -231,7 +337,9 @@ WebOSWindow {
         block.y = ny;
     }
 
-    Timer { interval: 1000;  running: true; repeat: true; onTriggered: win.refresh() }
+    // Four checks a second, so every second lands even if a tick is late or
+    // dropped. refresh() writes only what changed.
+    Timer { interval: 250; running: true; repeat: true; onTriggered: win.refresh() }
     Timer { interval: 60000; running: true; repeat: true; onTriggered: win.move() }
 
     Component.onCompleted: {

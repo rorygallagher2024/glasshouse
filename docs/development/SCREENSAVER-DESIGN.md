@@ -185,9 +185,10 @@ files and 5 MB.
 | `manifest` | yes | The format, `1`. A folder in another format is listed but cannot be picked. |
 | `version` | yes | The screen saver's own version. |
 | `name`, `description` | yes | A string, or a map by language with `en`. The dashboard shows the viewer's language, else English. |
-| `main` | no | The QML file to start, in the folder; `main.qml` if left out. |
+| `main` | no | The file to start, in the folder: a QML file, or an HTML page, which the TV's web app manager runs as a web app in the screen saver's window. `main.qml` if left out. |
+| `choices` | no | `{"default": "a", "options": [{"id": "a", "name": "A", "value": "x=1"}]}`: options the dashboard offers as a dropdown, the picked one's `value` (letters, digits and `. = & - _`) put in for `__TVWEB_CHOICE__`. An option's `group` puts it under a heading. `label` names the dropdown, `Animation` otherwise. Clock's is an example for a QML screen saver: `"true"` or `"false"` for a `bool`. Needs `choice` in `uses`. |
 | `author`, `license`, `homepage` | no | Shown under an added one. Glasshouse's own are MIT. |
-| `uses` | no | What Glasshouse fills in: `level` puts `0` (dim) or `1` (bright) for `__TVWEB_LEVEL__`; `stats` puts the TV's stats address, with the dashboard's token, for `__TVWEB_URL__`. Only what is listed is filled in. Only Glasshouse's own are given `stats`. |
+| `uses` | no | What Glasshouse fills in: `level` puts `1` above 65% brightness and `0` at or below it for `__TVWEB_LEVEL__`, with a black layer over the screen saver for the steps between and below (a web one without it gets the layer over a frame of it); `choice` puts the picked option's value for `__TVWEB_CHOICE__`; `stats` puts the TV's stats address, with the dashboard's token, for `__TVWEB_URL__`. Only what is listed is filled in. Only Glasshouse's own are given `stats`. |
 | `requires` | no | `{"webos": 5}`: the oldest webOS it runs on. |
 | `panels` | no | `["oled"]` or `["lcd"]`, for one made for one kind of panel. |
 | `order` | no | Its place among Glasshouse's own. Added ones follow, by name. |

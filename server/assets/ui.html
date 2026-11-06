@@ -846,11 +846,53 @@
     </div>
   </div>
   <div class="ss-split">
-  <div id="ss-list" class="ss-list"></div>
+  <div id="ss-list" class="ss-list">
+    <div id="ss-cards"></div>
+    <!-- Kept out of the rendered cards, so a refresh of the list leaves what is typed and picked here. -->
+    <div class="ss-add" id="ss-add">
+      <button type="button" class="ss-card ss-add-open" id="ss-add-open" onclick="ssAddOpen(true)">
+        <div class="ss-name" data-t="ss.upload">Add an HTML screen saver</div>
+        <div class="ss-desc" data-t="ss.upload.desc">One web page, with everything it needs inside it, drawn full screen at 1920 × 1080. Any key on the remote ends it.</div>
+      </button>
+      <div class="ss-add-form" id="ss-add-form" hidden>
+        <div class="ss-name" data-t="ss.upload">Add an HTML screen saver</div>
+        <div class="ss-desc" data-t="ss.upload.desc">One web page, with everything it needs inside it, drawn full screen at 1920 × 1080. Any key on the remote ends it.</div>
+        <div class="ss-upload-pick">
+          <button type="button" class="pill idle" id="ss-upload-choose" onclick="q('ss-upload-file').click()" data-t="ss.upload.choose">Choose HTML file</button>
+          <span class="sub" id="ss-upload-chosen">&mdash;</span>
+        </div>
+        <input type="file" id="ss-upload-file" accept=".html,.htm,text/html" hidden onchange="ssHtmlPicked(this)">
+        <form class="toast-form" id="ss-upload-form" onsubmit="event.preventDefault();uploadSsHtml();">
+          <input type="text" id="ss-upload-name" maxlength="60" placeholder="Name" data-t-placeholder="ss.upload.name"
+            autocomplete="off" aria-label="Name of the screen saver" data-t-aria-label="ss.upload.nameLabel" oninput="ssUploadReady()">
+          <button type="submit" id="ss-upload-btn" data-t="ss.upload.add" disabled>Add</button>
+          <button type="button" id="ss-upload-cancel" onclick="ssAddOpen(false)" data-t="common.cancel">Cancel</button>
+        </form>
+        <div class="sub ss-upload-note" id="ss-upload-note" role="status"></div>
+      </div>
+    </div>
+  </div>
   <div class="ss-side">
   <div class="ss-level-row" id="ss-level-row" hidden>
-    <div class="ss-level-lbl" data-t="ss.brightness">Brightness</div>
-    <div class="btns" id="ss-level"></div>
+    <div class="ss-level-lbl"><span data-t="ss.brightness">Brightness</span> &middot; <span id="ss-bright-lbl" class="num">&mdash;</span></div>
+    <div class="vol-row ss-bright-row">
+      <div class="vol-wrap full" id="ss-bright-wrap" role="group" aria-label="Brightness" data-t-aria-label="ss.brightness">
+        <div class="vol-fill" id="ss-bright-fill"></div>
+        <input type="range" id="ss-bright-slider" min="5" max="100" step="5" value="65" aria-label="Brightness" data-t-aria-label="ss.brightness">
+      </div>
+    </div>
+  </div>
+
+  <div class="ss-level-row" id="ss-choice-row" hidden>
+    <div class="ss-level-lbl" id="ss-choice-lbl"></div>
+    <!-- A list of its own rather than a select: a select's open list takes no
+         headings worth the name, and some screen savers have hundreds of options. -->
+    <div class="ss-pick" id="ss-pick">
+      <button type="button" class="pill-sel ss-pick-btn" id="ss-choice" aria-haspopup="listbox" aria-expanded="false"
+        aria-labelledby="ss-choice-lbl ss-choice" onclick="ssPickOpen(q('ss-pick-list').hidden)" onkeydown="ssPickKey(event)">&mdash;</button>
+      <div class="ss-pick-list" id="ss-pick-list" role="listbox" aria-labelledby="ss-choice-lbl" tabindex="-1" hidden
+        onkeydown="ssPickKey(event)"></div>
+    </div>
   </div>
 
   <div class="ss-level-row">

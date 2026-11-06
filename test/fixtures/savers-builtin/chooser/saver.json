@@ -1,0 +1,17 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": "Chooser",
+  "description": "One of Glasshouse's own with options to pick from, to test with.",
+  "license": "MIT",
+  "main": "index.html",
+  "uses": ["choice"],
+  "choices": {
+    "default": "one",
+    "options": [
+      { "id": "one", "group": "First", "name": "One", "value": "vis=one" },
+      { "id": "two", "group": "First", "name": { "en": "Two", "es": "Dos" }, "value": "vis=two&preset=2" },
+      { "id": "three", "group": "Second", "name": "Three", "value": "vis=three" }
+    ]
+  }
+}
