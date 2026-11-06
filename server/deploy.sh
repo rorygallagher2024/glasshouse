@@ -27,9 +27,10 @@ set -e
 
 TV=""
 PERSIST=1
-# The telnet fallback opens its socket through bash's /dev/tcp, so another
-# shell cannot run this script. Checked before the first bash-only line, which
-# a POSIX shell would otherwise report as a syntax error.
+# The telnet fallback opens its socket through nc, or bash's /dev/tcp where nc
+# can't reach the TV, so another shell cannot run this script. Checked before
+# the first bash-only line, which a POSIX shell would otherwise report as a
+# syntax error.
 if [ -z "$BASH_VERSION" ]; then
   echo "deploy.sh needs bash: run it as 'bash deploy.sh <tv-ip>'" >&2
   exit 2
@@ -231,9 +232,22 @@ deploy_ssh() {
 }
 
 # ---------------------------------------------------------------- telnet
+# macOS lets only the programs it trusts reach the local network until the
+# terminal is allowed to (Privacy & Security > Local Network): Apple's own nc
+# connects while Homebrew's bash gets "No route to host" (#1227). So nc is
+# asked first, and /dev/tcp is the fallback.
+USE_NC=""
+nc_answers() {
+  command -v nc >/dev/null 2>&1 && nc -z -w 6 "$TV" "$1" >/dev/null 2>&1
+}
+
 # Does anything answer on this port within six seconds? A connection to an
 # address nothing is using would otherwise hang for over a minute.
 answers() {
+  if nc_answers "$1"; then
+    [ "$1" = 23 ] && USE_NC=1
+    return 0
+  fi
   ( exec 3<>"/dev/tcp/$TV/$1" ) 2>/dev/null &
   p=$!
   for _ in 1 2 3 4 5 6; do
@@ -247,8 +261,23 @@ answers() {
   return 1
 }
 
+# SSH that answers but would not log in: deploy.sh logs in with a key only.
+ssh_needs_key() {
+  [ -z "$FORCE_TELNET" ] && command -v ssh >/dev/null 2>&1 && answers 22
+}
+
 deploy_telnet() {
   if ! answers 23; then
+    if ssh_needs_key; then
+      cat >&2 <<EOF
+
+The TV answers SSH, but wouldn't let this computer log in without a password,
+which deploy.sh can't type. Add this computer's key to the TV: see "Moving
+from telnet to SSH" in docs/SECURITY.md, or paste it under the Server tab's
+SSH keys. Then run this again.
+EOF
+      exit 1
+    fi
     cat >&2 <<EOF
 
 Couldn't reach the TV. Check that it is on and that $TV is its address
@@ -256,18 +285,38 @@ Couldn't reach the TV. Check that it is on and that $TV is its address
 Homebrew Channel's settings: switch it on, or set up SSH - see "Moving from
 telnet to SSH" in docs/SECURITY.md.
 EOF
+    if [ "$(uname -s)" = Darwin ]; then
+      cat >&2 <<EOF
+On a Mac, also check that the terminal app may reach devices on the network:
+System Settings > Privacy & Security > Local Network.
+EOF
+    fi
     exit 1
   fi
   if [ -z "$FORCE_TELNET" ]; then
-    echo "SSH isn't set up on this TV, so installing over telnet instead."
-    echo "(SSH is safer - see \"Moving from telnet to SSH\" in docs/SECURITY.md.)"
+    if ssh_needs_key; then
+      echo "The TV answers SSH, but not without a password, so installing over telnet instead."
+      echo "(Add this computer's key to use SSH - see \"Moving from telnet to SSH\" in docs/SECURITY.md.)"
+    else
+      echo "SSH isn't set up on this TV, so installing over telnet instead."
+      echo "(SSH is safer - see \"Moving from telnet to SSH\" in docs/SECURITY.md.)"
+    fi
   fi
   echo "installing on $TV over telnet ..."
 
-  # bash can open a network connection itself, so no telnet program is needed.
-  exec 3<>"/dev/tcp/$TV/23"
-  cat <&3 > "$WORK/raw" &      # read while writing, so neither side can stall
-  reader=$!
+  # No telnet program is needed: nc, or bash's own /dev/tcp. Read while
+  # writing, so neither side can stall. A fifo carries what is sent to nc, as
+  # macOS's bash 3.2 has no coproc.
+  if [ -n "$USE_NC" ]; then
+    mkfifo "$WORK/send"
+    nc "$TV" 23 < "$WORK/send" > "$WORK/raw" &
+    reader=$!
+    exec 3> "$WORK/send"
+  else
+    exec 3<>"/dev/tcp/$TV/23"
+    cat <&3 > "$WORK/raw" &
+    reader=$!
+  fi
   sleep 1
   {
     # No prompts and no echo: otherwise every line sent comes straight back, and
@@ -331,7 +380,11 @@ PORT=$(sed -n 's/^TVWEB_PORT //p' "$WORK/out" | head -1)
 case "$PORT" in ''|*[!0-9]*) PORT=8080 ;; esac
 
 echo "checking the dashboard answers ..."
-if ! command -v curl >/dev/null 2>&1; then
+# Apple's own curl on a Mac: a Homebrew one first on the PATH may not be let
+# onto the local network (see nc_answers).
+CURL=curl
+[ "$(uname -s)" = Darwin ] && [ -x /usr/bin/curl ] && CURL=/usr/bin/curl
+if ! command -v "$CURL" >/dev/null 2>&1; then
   echo "(skipped: this computer has no curl to ask it with)"
   echo "open  http://$TV:$PORT/"
   exit 0
@@ -342,7 +395,7 @@ fi
 # command substitution would end the script on the first try, hence || true.
 answered=""
 for _ in 1 2 3 4 5 6 7 8 9 10; do
-  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 4 "http://$TV:$PORT/api/caps") || true
+  code=$("$CURL" -s -o /dev/null -w '%{http_code}' --max-time 4 "http://$TV:$PORT/api/caps") || true
   if [ -n "$code" ] && [ "$code" != 000 ]; then answered=1; break; fi
   sleep 2
 done
