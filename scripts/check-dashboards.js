@@ -1497,14 +1497,14 @@ async function visitHomeUploads(browser, base, problems) {
 }
 
 /*
- * Custom launchers in Glasshouse Home's place. On the Home tab: its button
- * opens the section and reads the catalogue, a catalogue entry installs
- * beside the owner's own and becomes Update when a newer one is listed, a
- * web address with Glasshouse Home on is chosen at once, Use swaps between
- * those kept and Use Glasshouse Home back without a second press, an upload
- * is offered only where installing from a file is, and Remove takes one away.
- * Then, against the real server, an uploaded page is served with
- * window.Glasshouse ready before its own script runs.
+ * A custom launcher in Glasshouse Home's place. On the Home tab: its button
+ * opens the section, a web address with Glasshouse Home on is chosen at once,
+ * the Apps and Inputs rows stay to arrange while it is in use without
+ * Glasshouse Home's other settings, Use Glasshouse Home swaps back and Use
+ * swaps again without a second press, an upload is offered only where
+ * installing from a file is, and Remove takes it away. Then, against the real
+ * server, an uploaded page is served with window.Glasshouse ready before its
+ * own script runs.
  */
 async function visitHomeLauncher(browser, base, problems) {
   const context = await browser.newContext();
@@ -1512,7 +1512,7 @@ async function visitHomeLauncher(browser, base, problems) {
   page.on('pageerror', e => problems.push('Home launcher: ' + e.message));
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
     hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
-  let kept = [], chosen = null, launcherUpload = true, listed = '1.0.0';
+  let kept = [], chosen = null, launcherUpload = true;
   const sent = [];
   const status = () => ({ chosen, launchers: kept.map(l => Object.assign({}, l, { chosen: l.id === chosen })) });
   await context.route('**/api/home**', async route => {
@@ -1521,16 +1521,10 @@ async function visitHomeLauncher(browser, base, problems) {
     if (pathname === '/api/home/launcher') {
       const req = route.request().postDataJSON();
       sent.push(JSON.stringify(req));
-      if (req.address) kept = [{ id: 'own', kind: 'web', title: 'ha.local:8123', address: req.address, source: 'own' }].concat(kept.filter(l => l.id !== 'own'));
-      else if (req.install) kept = kept.filter(l => l.id !== req.install).concat([{ id: req.install, kind: 'app', title: 'Minimal', source: 'catalogue', author: 'Glasshouse', version: listed, files: 1, bytes: 4000 }]);
+      if (req.address) kept = [{ id: 'own', kind: 'web', title: 'ha.local:8123', address: req.address, source: 'own' }];
       else if (req.remove) { kept = kept.filter(l => l.id !== req.remove); if (chosen === req.remove) chosen = null; }
       else if ('choose' in req) chosen = req.choose || null;
       body = { ok: true, launchers: status() };
-    } else if (pathname === '/api/home/launchers/catalogue') {
-      const have = kept.filter(l => l.id === 'minimal')[0];
-      body = { ok: true, launchers: [{ id: 'minimal', title: 'Minimal', author: 'Glasshouse', version: listed,
-        description: 'As little on screen as will do.', screenshot: null, installed: have ? have.version : null, needsNewer: false, network: [] },
-        { id: 'future', title: 'Future', author: 'Someone', version: '2.0.0', description: 'Needs more.', screenshot: null, installed: null, needsNewer: true, network: ['api.weather.example'] }] };
     } else if (pathname === '/api/home') {
       body = { ok: true, supported: { ok: true }, installed: true, enabled: true, active: true, writable: true, layout,
         launchers: status(), launcherUpload, wallpapers: { choices: ['black'], choice: 'black', slots: {} } };
@@ -1539,26 +1533,14 @@ async function visitHomeLauncher(browser, base, problems) {
     }
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
   });
-  const card = id => page.locator('.launcher-card', { hasText: id });
   const keptRow = title => page.locator('#home-launchers .prot-row', { hasText: title });
   try {
     await page.goto(base + '/?tab=home');
     await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus);
     if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: its section showed with none kept');
     await page.locator('#home-mode-launcher').click();
-    await card('Minimal').waitFor();
+    await page.locator('#home-launcher').waitFor();
     if (sent.length) problems.push('Home launcher: its button changed something');
-    if (!await card('Future').locator('button').isDisabled()) problems.push('Home launcher: one needing a newer Glasshouse could be installed');
-    if (!/Connects to api\.weather\.example/.test(await card('Future').textContent())) problems.push('Home launcher: a card did not say what it connects to');
-    if (/Connects to/.test(await card('Minimal').textContent())) problems.push('Home launcher: a card that connects nowhere said it did');
-    await card('Minimal').getByRole('button', { name: 'Install' }).click();
-    await keptRow('Minimal').waitFor();
-    await card('Minimal').getByRole('button', { name: 'Installed' }).waitFor();
-    if (sent.join() !== '{"install":"minimal"}') problems.push('Home launcher: installing sent ' + sent.join());
-    listed = '1.1.0';
-    await page.evaluate(() => homeLauncherLoadCatalogue());
-    await card('Minimal').getByRole('button', { name: 'Update to 1.1.0' }).waitFor();
-    sent.length = 0;
     await page.locator('#home-launcher-url').fill('http://ha.local:8123/tv');
     await page.locator('#home-launcher-save').click();
     // homeStatus is set before the tab is drawn from it, so the drawn state is waited for.
@@ -1571,22 +1553,21 @@ async function visitHomeLauncher(browser, base, problems) {
     if (await page.locator('#home-rows .home-row[data-kind="ch"]').isVisible()) problems.push('Home launcher: the Channels row showed with a launcher chosen');
     if (await page.locator('#home-tv').isVisible() || await page.locator('#home-looks').isVisible()) problems.push('Home launcher: Glasshouse Home\'s own settings showed with a launcher chosen');
     if (!/\bon\b/.test(await page.locator('#home-mode-launcher').getAttribute('class'))) problems.push('Home launcher: its button was not marked as chosen');
-    if ((await page.locator('#home-launchers .prot-title').allTextContents()).join() !== 'ha.local:8123,Minimal') problems.push('Home launcher: the owner\'s own was not listed first');
-    sent.length = 0;
-    await keptRow('Minimal').getByRole('button', { name: 'Use' }).click();
-    await page.waitForFunction(() => /Minimal/.test(document.getElementById('home-state').textContent));
-    if (sent.join() !== '{"choose":"minimal"}') problems.push('Home launcher: Use sent ' + sent.join());
-    if (!await keptRow('Minimal').getByRole('button', { name: 'In use' }).isDisabled()) problems.push('Home launcher: the one in use offered Use');
+    if (!await keptRow('ha.local').getByRole('button', { name: 'In use' }).isDisabled()) problems.push('Home launcher: the one in use offered Use');
     sent.length = 0;
     await page.locator('#home-switch').click();
     await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-switch').className));
     if (sent.join() !== '{"choose":false}') problems.push('Home launcher: Use Glasshouse Home sent ' + sent.join());
+    sent.length = 0;
+    await keptRow('ha.local').getByRole('button', { name: 'Use' }).click();
+    await page.waitForFunction(() => /ha\.local:8123/.test(document.getElementById('home-state').textContent));
+    if (sent.join() !== '{"choose":"own"}') problems.push('Home launcher: Use sent ' + sent.join());
     launcherUpload = false;
     await page.evaluate(() => loadHome());
     await page.locator('#home-launcher-upload-off').waitFor();
     if (!await page.locator('#home-launcher-pick').isDisabled()) problems.push('Home launcher: an upload was offered where installing from a file is off');
     await keptRow('ha.local').getByRole('button', { name: 'Remove' }).click();
-    await page.waitForFunction(() => document.querySelectorAll('#home-launchers .prot-row').length === 1);
+    await page.waitForFunction(() => !document.querySelectorAll('#home-launchers .prot-row').length);
   } finally { await context.close(); }
 
   const tv = await browser.newContext();

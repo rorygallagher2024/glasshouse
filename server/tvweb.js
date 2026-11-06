@@ -1918,10 +1918,7 @@ function startGlasshouseHome() {
     pictureDetails: function (on) { homePicture.want('details', on); },
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
-  homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION,
-    // File-only: another catalogue of launchers, to try one before it is published.
-    catalogue: typeof CONFIG.launcherCatalogue === 'string' ? CONFIG.launcherCatalogue : undefined });
-  homeLauncher.start();
+  homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION });
   glasshouseHome.start();
   iptv.start();
   // The Guide key set to Home's guide acts only while Home is on with a playlist.

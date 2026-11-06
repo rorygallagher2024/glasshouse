@@ -381,22 +381,21 @@ Click **Use Glasshouse Home** (and confirm on the second press) in the web dashb
 
 ## Custom launcher
 
-Another home screen can take Glasshouse Home's place: one from Glasshouse's catalogue of launchers, a launcher you have written or downloaded, or a web page such as a Home Assistant dashboard. Everything above still applies to it. The Home and Back buttons open it, it opens when the TV wakes on Home, holding **Home** opens LG's Home, and if it stops working, LG's Home takes its place by itself.
+A home screen of your own can take Glasshouse Home's place: a launcher you have written or downloaded, or a web page such as a Home Assistant dashboard. Everything above still applies to it. The Home and Back buttons open it, it opens when the TV wakes on Home, holding **Home** opens LG's Home, and if it stops working, LG's Home takes its place by itself.
 
-On the web dashboard's **Home** tab, press **Custom launcher**. The section it opens has three parts:
+On the web dashboard's **Home** tab, press **Custom launcher**, then either:
 
-* **From the catalogue:** launchers reviewed for Glasshouse, each with a picture and **Install**. They work on every TV Glasshouse Home runs on. When a newer version is listed, the button says **Update**. A card says which services on the internet the launcher connects to, if any. Apart from Glasshouse's own, each is made and published by its author. A launcher is only downloaded when you press **Install** or **Update**. One withdrawn from the catalogue after it was listed stops being the TV's Home within a day, Glasshouse Home takes its place, and it says so under **Your launchers** until you remove it. The first is **Minimal**, the TV's apps and inputs as two lists of names on black.
-* **Your own:** **Upload a launcher**, a web app as an `.ipk` package, a `.zip` of its folder, or a single `.html` file, up to 50 MB (native apps can't be used); **or open a web page**, an address starting with `http://` or `https://`, shown full screen. Some sites refuse to be shown inside another page; Home Assistant does unless it is told to allow it ([Writing a launcher](../development/WRITING-LAUNCHERS.md#a-web-page) has the setting). You have one of your own at a time: uploading another, or giving a web address, replaces it. As with installing an app from a file, uploading needs **Install app from a URL or file** switched on on the [Apps tab](apps.md#install-app-from-a-url-or-file), or a token.
-* **Your launchers:** each one installed or set up, with **Use** to make it the TV's Home and **Remove**.
+* **Upload a launcher:** a web app as an `.ipk` package, a `.zip` of its folder, or a single `.html` file, up to 50 MB. Native apps can't be used. As with installing an app from a file, this needs **Install app from a URL or file** switched on on the [Apps tab](apps.md#install-app-from-a-url-or-file), or a token.
+* **Or open a web page:** an address starting with `http://` or `https://`, shown full screen. Some sites refuse to be shown inside another page; Home Assistant does unless it is told to allow it ([Writing a launcher](../development/WRITING-LAUNCHERS.md#a-web-page) has the setting).
 
-With Glasshouse Home already on, **Use** puts the launcher in its place within a few seconds, and your own takes it as soon as it is set up. From LG's Home, **Use** takes a second press. **Use Glasshouse Home** goes back to Glasshouse Home and keeps the launchers for later. The TV app's **Home** section has a switch for each launcher kept.
+You have one at a time: uploading another, or giving a web address, replaces it. It is listed with **Use**, to make it the TV's Home, and **Remove**. With Glasshouse Home already on, it takes Glasshouse Home's place as soon as it is set up; from LG's Home, **Use** takes a second press. **Use Glasshouse Home** goes back to Glasshouse Home and keeps the launcher for later. The TV app's **Home** section has a switch for it.
 
-While a custom launcher is the TV's Home, **Rows and tiles** stays on this tab with the Apps and Inputs rows: which apps and inputs the launcher shows, and their order, including **Hide inputs with nothing connected**. Launchers from the catalogue follow it, Minimal listing apps put in More apps after the rest; one of your own follows it if it was written to. Glasshouse Home's other settings (its other rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
+While a custom launcher is the TV's Home, **Rows and tiles** stays on this tab with the Apps and Inputs rows: which apps and inputs it shows, and their order, including **Hide inputs with nothing connected**, for a launcher written to follow them, as the launchers in the docs are. Glasshouse Home's other settings (its other rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
 
 > [!WARNING]
-> A launcher can do anything on the TV that Glasshouse can, so only use one you trust. The catalogue's are reviewed before they are listed.
+> A launcher can do anything on the TV that Glasshouse can, so only use one you trust.
 
-[Writing a launcher](../development/WRITING-LAUNCHERS.md) covers making one, and adding it to the catalogue.
+[Writing a launcher](../development/WRITING-LAUNCHERS.md) covers making one: what Glasshouse adds to its page, and the calls for listing and opening the TV's apps and inputs.
 
 ## Arranging
 

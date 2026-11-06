@@ -143,23 +143,7 @@ var dir = path.join(os.tmpdir(), 'home-launcher-' + process.pid);
 fs.mkdirSync(dir);
 var free = 1024 * 1024 * 1024;
 home.init({ stateDir: dir, webosVersion: '9.2.2', port: 8080 });
-// The catalogue, as the docs site would serve it, and the files its entries name.
-var catalogueDoc = null, served = {}, downloads = [];
-var launcherOpts = {
-  stateDir: dir, version: '1.2.3', df: function (target, cb) { cb(free); },
-  catalogue: 'https://example.test/launchers/catalog.json',
-  getJson: function (url, cb) {
-    setTimeout(function () { catalogueDoc ? cb(null, JSON.parse(JSON.stringify(catalogueDoc))) : cb(new Error('offline')); }, 0);
-  },
-  download: function (url, file, cb) {
-    downloads.push(url);
-    setTimeout(function () {
-      if (!served[url]) return cb(new Error('http 404'));
-      fs.writeFileSync(file, served[url]);
-      cb(null);
-    }, 0);
-  }
-};
+var launcherOpts = { stateDir: dir, version: '1.2.3', df: function (target, cb) { cb(free); } };
 launcher.init(launcherOpts);
 routes.init({ config: { allowControl: true }, home: home, homeLauncher: launcher,
   assetPath: function (rel) { var f = path.join(__dirname, '..', 'server', 'assets', rel); return fs.existsSync(f) ? f : null; } });
@@ -191,7 +175,6 @@ function get(url, cb) { request('GET', url, null, null, cb); }
 var tests = [];
 function test(name, fn) { tests.push([name, fn]); }
 
-function sha256(b) { return require('crypto').createHash('sha256').update(b).digest('hex'); }
 function own() { return launcher.status().launchers.filter(function (l) { return l.id === 'own'; })[0]; }
 
 test('a single HTML file is the owner\'s own, served with the kit first in its head once chosen', function (done) {
@@ -357,99 +340,15 @@ test('a web address replaces the owner\'s own upload, escaped in the frame, and 
   });
 });
 
-test('the catalogue lists what Glasshouse can use, and an entry installs beside the owner\'s own', function (done) {
-  var page = buf('<!doctype html><html><head><title>Minimal</title></head><body>minimal</body></html>');
-  served['https://example.test/launchers/minimal/index.html'] = page;
-  catalogueDoc = { launchers: [
-    { id: 'minimal', title: 'Minimal', author: 'Glasshouse', version: '1.0.0', url: 'minimal/index.html',
-      sha256: sha256(page), size: page.length, screenshot: 'minimal/screenshot.jpg', kit: 1, network: ['api.weather.example', 'Not A Host'] },
-    { id: 'own', title: 'Takes the owner\'s slot', url: 'x.html', sha256: sha256(page), size: page.length },
-    { id: 'future', title: 'Future', version: '1.0.0', url: 'https://other.test/f.zip', sha256: sha256(page), size: page.length, kit: 99 },
-    { id: 'Bad Id', url: 'x.html', sha256: sha256(page), size: page.length }
-  ] };
-  get('/api/home/launchers/catalogue', function (c0, text) {
-    var list = JSON.parse(text).launchers;
-    assert.deepEqual(list.map(function (l) { return l.id; }), ['minimal', 'future']);
-    assert.strictEqual(list[0].screenshot, 'https://example.test/launchers/minimal/screenshot.jpg');
-    assert.strictEqual(list[0].installed, null);
-    assert.deepEqual(list[0].network, ['api.weather.example'], 'the hosts it reaches, for its card');
-    assert.strictEqual(list[0].url, undefined, 'where it downloads from stays on the TV');
-    assert.strictEqual(list[1].needsNewer, true);
-    post({ install: 'future' }, function (c1, r1) {
-      assert.strictEqual(c1, 400);
-      assert.ok(/newer Glasshouse/.test(r1.error), r1.error);
-      post({ install: 'minimal' }, function (c2, r2) {
-        assert.strictEqual(c2, 200, JSON.stringify(r2));
-        assert.strictEqual(downloads.pop(), 'https://example.test/launchers/minimal/index.html');
-        var ids = r2.launchers.launchers.map(function (l) { return l.id + ':' + l.source; });
-        assert.deepEqual(ids, ['own:own', 'minimal:catalogue'], 'the owner\'s own first, both kept');
-        assert.strictEqual(r2.launchers.launchers[1].version, '1.0.0');
-        assert.strictEqual(r2.launchers.chosen, 'own', 'installing chooses nothing');
-        get('/api/home/launchers/catalogue', function (c3, t3) {
-          assert.strictEqual(JSON.parse(t3).launchers[0].installed, '1.0.0');
-          post({ choose: 'minimal' }, function () {
-            get('/home/launcher/index.html', function (c4, p4) {
-              assert.ok(/<script src="\/assets\/home-kit\.js\?v=1\.2\.3"><\/script><title>Minimal/.test(p4), p4);
-              done();
-            });
-          });
-        });
-      });
-    });
-  });
-});
-
-test('a download that does not match the catalogue is not installed', function (done) {
-  var good = served['https://example.test/launchers/minimal/index.html'];
-  catalogueDoc.launchers[0].version = '1.1.0';
-  served['https://example.test/launchers/minimal/index.html'] = buf('<html><body>changed on the way</body></html>');
-  post({ install: 'minimal' }, function (code, r) {
-    assert.strictEqual(code, 400);
-    assert.ok(/does not match the catalogue/.test(r.error), r.error);
-    var kept = launcher.status().launchers.filter(function (l) { return l.id === 'minimal'; })[0];
-    assert.strictEqual(kept.version, '1.0.0', 'the one installed is kept');
-    assert.ok(!fs.existsSync(path.join(dir, 'home-launcher', 'download.part')));
-    served['https://example.test/launchers/minimal/index.html'] = good;
-    catalogueDoc.launchers[0].version = '1.0.0';
-    done();
-  });
-});
-
-test('a launcher withdrawn from the catalogue leaves Home\'s place and cannot be chosen again', function (done) {
-  post({ choose: 'minimal' }, function (c0) {
-    assert.strictEqual(c0, 200);
-    catalogueDoc.withdrawn = [{ id: 'minimal', version: '1.0.0', reason: 'found to send what is on screen elsewhere' }];
-    // As the daily check finds it: the catalogue read afresh.
-    launcher.init(launcherOpts);
-    get('/api/home/launchers/catalogue', function (c1, text) {
-      assert.deepEqual(JSON.parse(text).launchers.map(function (l) { return l.id; }), ['future'], 'no longer offered');
-      var st = launcher.status();
-      assert.strictEqual(st.chosen, null, 'Glasshouse Home has its place');
-      assert.strictEqual(st.launchers.filter(function (l) { return l.id === 'minimal'; })[0].withdrawn, true);
-      post({ choose: 'minimal' }, function (c2, r2) {
-        assert.strictEqual(c2, 400);
-        assert.ok(/withdrawn/.test(r2.error), r2.error);
-        post({ choose: 'minimal' }, function () {
-          delete catalogueDoc.withdrawn;
-          done();
-        });
-      });
-    });
-  });
-});
-
-test('removing the chosen one gives Glasshouse Home its place and keeps the rest', function (done) {
-  post({ remove: 'minimal' }, function (code, r) {
+test('removing the chosen one gives Glasshouse Home its place', function (done) {
+  post({ remove: 'own' }, function (code, r) {
     assert.strictEqual(code, 200);
     assert.strictEqual(r.launchers.chosen, null);
-    assert.deepEqual(r.launchers.launchers.map(function (l) { return l.id; }), ['own']);
-    assert.ok(!fs.existsSync(path.join(dir, 'home-launcher', 'apps', 'minimal')));
+    assert.deepEqual(r.launchers.launchers, []);
+    assert.ok(!fs.existsSync(path.join(dir, 'home-launcher', 'apps', 'own')));
     get('/home/launcher/', function (c2) {
       assert.strictEqual(c2, 404);
-      post({ remove: 'own' }, function (c3, r3) {
-        assert.deepEqual(r3.launchers.launchers, []);
-        done();
-      });
+      done();
     });
   });
 });

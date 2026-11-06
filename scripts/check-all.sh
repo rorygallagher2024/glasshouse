@@ -38,7 +38,6 @@ run module-calls python3 scripts/check-module-calls.py
 run ui-ids python3 scripts/check-ui-ids.py
 run strings python3 scripts/check-strings.py
 run screensavers python3 scripts/check-screensavers.py
-run launchers python3 scripts/check-launchers.py
 run drift python3 scripts/check-drift.py
 run entity-stability python3 scripts/check-entity-stability.py
 run entities python3 scripts/check-entities.py --stats test/fixtures/stats-b8-webos4.json

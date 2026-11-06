@@ -15,9 +15,6 @@ let homeAvailable = null;
 // The Custom launcher section, shown while one is kept or once its button is pressed.
 let homeLauncherOpen = false;
 let homeLauncherBusy = false;
-// The catalogue of launchers: null until read, { error } where it could not be.
-let homeLauncherCat = null;
-let homeLauncherCatAt = 0;
 
 const HOME_ROWS = {
   app: () => t('home.row.apps', 'Apps'),
@@ -676,7 +673,7 @@ async function homeSwitch() {
   loadHome();
 }
 
-// The Custom launcher button opens the section, and reads the catalogue.
+// The Custom launcher button opens the section.
 function homeChooseLauncher() {
   if (!homeStatus || homeLauncherOn()) return;
   homeLauncherOpen = true;
@@ -714,19 +711,8 @@ async function homeLauncherChoose(id) {
   await loadHome();
 }
 
-async function homeLauncherLoadCatalogue() {
-  homeLauncherCatAt = Date.now();
-  try {
-    const r = await homeGet('/api/home/launchers/catalogue');
-    homeLauncherCat = r.launchers;
-  } catch (e) { homeLauncherCat = { error: e.message }; }
-  renderHomeLauncher();
-}
-
 function homeLauncherDesc(l) {
-  if (l.withdrawn) return t('home.launcher.withdrawn', 'Withdrawn from the catalogue, so it can no longer be used. Remove it.');
   if (l.kind === 'web') return t('home.launcher.nowWeb', 'Web page: {address}', { address: l.address });
-  if (l.source === 'catalogue') return t('home.launcher.nowCatalogue', 'From the catalogue: by {author}, version {version}', { author: l.author || '', version: l.version || '' });
   return l.files === 1
     ? t('home.launcher.nowAppOne', 'Uploaded: one file, {size}', { size: fmtSize(l.bytes) })
     : t('home.launcher.nowApp', 'Uploaded: {files} files, {size}', { files: l.files, size: fmtSize(l.bytes) });
@@ -739,42 +725,18 @@ function renderHomeLauncher() {
   const kept = homeLaunchersKept();
   box.hidden = !st.supported.ok || !!st.restorePending || !(kept.length || homeLauncherOpen);
   if (box.hidden) return;
-  if (!homeLauncherCat || (homeLauncherCat.error && Date.now() - homeLauncherCatAt > 30000)) {
-    if (Date.now() - homeLauncherCatAt > 5000) homeLauncherLoadCatalogue();
-  }
   const busy = !homeWritable() || homeLauncherBusy;
   const chosen = st.enabled && st.launchers ? st.launchers.chosen : null;
-  q('home-launchers-kept').hidden = !kept.length;
   q('home-launchers').innerHTML = kept.map(l => {
     const on = l.id === chosen, armed = homeArmed === 'use:' + l.id;
     const use = on ? t('home.launcher.inUse', 'In use') : armed ? t('home.confirmOn', 'Press again to switch on') : t('home.launcher.use', 'Use');
     return `<div class="prot-row">
       <div class="prot-main"><div class="prot-title">${esc(l.title)}</div><div class="prot-desc">${esc(homeLauncherDesc(l))}</div></div>
       <div class="prot-status">
-        ${l.withdrawn ? '' : `<button type="button" class="pill ${on ? 'good' : armed ? 'warn' : 'idle'}" ${on || busy ? 'disabled' : ''} onclick="homeLauncherUse('${esc(l.id)}')">${esc(use)}</button>`}
+        <button type="button" class="pill ${on ? 'good' : armed ? 'warn' : 'idle'}" ${on || busy ? 'disabled' : ''} onclick="homeLauncherUse('${esc(l.id)}')">${esc(use)}</button>
         <button type="button" class="pill idle" ${busy ? 'disabled' : ''} onclick="homeLauncherRemove('${esc(l.id)}')">${esc(t('home.launcher.remove', 'Remove'))}</button>
       </div>
     </div>`;
-  }).join('');
-  const cards = q('home-launcher-cards');
-  if (!homeLauncherCat) cards.innerHTML = `<div class="sub">${esc(t('home.launcher.catalogueLoading', 'Reading the catalogue…'))}</div>`;
-  else if (homeLauncherCat.error) cards.innerHTML = `<div class="sub">${esc(homeLauncherCat.error)}</div>`;
-  else if (!homeLauncherCat.length) cards.innerHTML = `<div class="sub">${esc(t('home.launcher.catalogueEmpty', 'The catalogue is empty.'))}</div>`;
-  else cards.innerHTML = homeLauncherCat.map(c => {
-    const have = c.installed;
-    let label, can = !busy;
-    if (c.needsNewer) { label = t('home.launcher.needsNewer', 'Needs a newer Glasshouse'); can = false; }
-    else if (have === null) label = t('home.launcher.install', 'Install');
-    else if (have !== c.version) label = t('home.launcher.update', 'Update to {version}', { version: c.version });
-    else { label = t('home.launcher.installed', 'Installed'); can = false; }
-    const shot = c.screenshot ? `<img src="${esc(c.screenshot)}" alt="" loading="lazy">` : '';
-    return `<div class="launcher-card">${shot}<div class="lc-body">
-      <div class="lc-title">${esc(c.title)}</div>
-      <div class="lc-by">${esc(t('home.launcher.by', 'By {author}, version {version}', { author: c.author, version: c.version }))}</div>
-      <div class="lc-desc">${esc(c.description)}</div>
-      ${c.network && c.network.length ? `<div class="lc-by">${esc(t('home.launcher.network', 'Connects to {hosts}', { hosts: c.network.join(', ') }))}</div>` : ''}
-      <button type="button" class="pill idle" ${can ? '' : 'disabled'} onclick="homeLauncherInstall('${esc(c.id)}')">${esc(label)}</button>
-    </div></div>`;
   }).join('');
   ['home-launcher-pick', 'home-launcher-save'].forEach(id => { const b = q(id); if (b) b.disabled = busy; });
   // Held to what installing an app from a file is.
@@ -784,21 +746,6 @@ function renderHomeLauncher() {
   const url = q('home-launcher-url');
   const ownWeb = kept.filter(l => l.id === 'own' && l.kind === 'web')[0];
   if (url && ownWeb && !url.value && document.activeElement !== url) url.value = ownWeb.address;
-}
-
-async function homeLauncherInstall(id) {
-  if (!homeWritable() || homeLauncherBusy) return;
-  const note = q('home-launcher-note');
-  homeLauncherBusy = true;
-  note.textContent = t('home.launcher.installing', 'Installing…');
-  renderHome();
-  try {
-    await homePost('/api/home/launcher', { install: id });
-    note.textContent = t('home.launcher.installedNote', 'Installed. Press Use beside it to make it the TV’s Home.');
-  } catch (e) { note.textContent = e.message; }
-  homeLauncherBusy = false;
-  await loadHome();
-  homeLauncherLoadCatalogue();
 }
 
 function homeLauncherPick() {
@@ -864,7 +811,6 @@ async function homeLauncherRemove(id) {
   } catch (e) { q('home-launcher-note').textContent = e.message; }
   homeLauncherBusy = false;
   await loadHome();
-  if (homeLauncherCat && !homeLauncherCat.error) homeLauncherLoadCatalogue();
 }
 
 // Hiding LG's Home is what can leave a TV without one, so switching it on takes a second press.

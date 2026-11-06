@@ -1744,14 +1744,6 @@ webOS 4 a view that stops answering is closed with WebAppMgr's `killApp`
 before it is launched again, since a launch while it runs only brings back the
 page it is on.
 
-The catalogue is `docs/launchers/catalog.json`, published with these docs.
-An install reads it afresh, downloads with the curl or wget client
-(`lib/fetch.js`) and refuses a file whose size or sha256 differs. While one
-from it is kept, the server reads it five minutes after start and then daily,
-and a launcher it lists under `withdrawn` is taken out of the view's place.
-`scripts/check-launchers.py` is what holds entries to the rules in
-[Writing a launcher](development/WRITING-LAUNCHERS.md#adding-it-to-the-catalogue).
-
 ## Apps kept ready in the background
 
 webOS's preload manager keeps apps loaded so they open quickly, including ones

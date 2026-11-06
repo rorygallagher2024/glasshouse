@@ -1078,7 +1078,7 @@ function lgHomeRows(d) {
 function glasshouseHomeRows(d) {
   var r = [head(t('home.title', 'Glasshouse Home'))];
   var can = d.writable !== false;
-  // The launchers kept, from the catalogue or the owner's own, for Glasshouse Home's place.
+  // The launchers kept for Glasshouse Home's place.
   var kept = d.supported && d.supported.ok && !d.restorePending && d.launchers ? d.launchers.launchers : [];
   var chosenId = d.enabled && d.launchers ? d.launchers.chosen : null;
   var launcherOn = !!chosenId;
@@ -1093,12 +1093,11 @@ function glasshouseHomeRows(d) {
              ? t('home.restartsApps', 'On this TV, switching Glasshouse Home on or off, or holding Home for LG\u2019s Home, restarts the TV\u2019s app manager, which closes the apps that are open.') : undefined });
   for (var li = 0; li < kept.length; li++) {
     var lc = kept[li], lcOn = lc.id === chosenId;
-    if (lc.withdrawn) continue;
     r.push({ label: t('tv.home.launcher', 'Custom launcher: {title}', { title: lc.title }), key: lc.id,
              value: lcOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: lcOn ? 'on' : 'off',
              act: can ? 'homeLauncher' : null, on: lcOn, enabled: !!d.enabled,
              press: lcOn ? t('tv.home.launcher.off', 'Press OK to use Glasshouse Home') : t('tv.home.launcher.on', 'Press OK to use the custom launcher'),
-             hint: t('tv.home.launcher.hintMany', 'A home screen in Glasshouse Home\u2019s place, from the catalogue or your own, set up on the Home tab of the web dashboard.') });
+             hint: t('tv.home.launcher.hint', 'Your own home screen, set up on the Home tab of the web dashboard, shown in Glasshouse Home\u2019s place.') });
   }
   if (!d.enabled || launcherOn) return r;
   r.push(head(t('home.customisation', 'Home customisation')));
