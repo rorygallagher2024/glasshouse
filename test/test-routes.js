@@ -1033,7 +1033,18 @@ function createMockRes(cb) {
       }, 15);
     })(0);
   }
-  function later(fn) { setTimeout(fn, 120); }
+  /*
+   * After an upload: once the route's installer job or clean-up has emptied the
+   * staging directory, up to 5 s. A fixed 120 ms wait failed on a slow CI
+   * runner with the previous upload still staged.
+   */
+  function later(fn) {
+    var deadline = Date.now() + 5000;
+    setTimeout(function poll() {
+      if (staged().length && Date.now() < deadline) return setTimeout(poll, 20);
+      fn();
+    }, 120);
+  }
   var FILE = new Buffer('0123456789');
   var ok = { url: 'https://example.org/app.ipk' };
 

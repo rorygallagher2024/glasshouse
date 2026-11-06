@@ -328,12 +328,20 @@ async function visitHomePreviewOptions(browser, base, problems) {
     // The screen saver over the view stops the preview, and its end brings it back (#1209).
     const before = await source();
     if (!before) problems.push('Home preview options: nothing previewed before the screen saver');
+    // The next heartbeat's reply, not a time: on a slow runner it can arrive
+    // after a fixed fast-forward, and the preview then starts after the check.
+    const heartbeat = async () => {
+      const replied = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/beat');
+      await page.clock.fastForward(5000);
+      await replied;
+      await page.evaluate(() => 0);
+    };
     covered = true;
-    await page.clock.fastForward(5000);
+    await heartbeat();
     await rest();
     if (await source()) problems.push('Home preview options: the preview kept playing under the screen saver');
     covered = false;
-    await page.clock.fastForward(5000);
+    await heartbeat();
     await rest();
     if (await source() !== before) problems.push('Home preview options: the preview did not come back after the screen saver, ' + await source());
     await changeLayout({ previewInTile: true });
