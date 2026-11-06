@@ -58,8 +58,9 @@ console.log('  ✓ chosen, or asked for in the address, it is used on every page
 // A complete language follows the browser on every page.
 [HOME, TV, WEB].forEach(function (p) {
   assert.strictEqual(load({ browser: 'es-ES', page: p }).lang(), 'es', p);
+  assert.strictEqual(load({ browser: 'fr-FR', page: p }).lang(), 'fr', p);
 });
-assert.strictEqual(load({ browser: 'fr-FR', page: WEB }).lang(), 'en', 'a language without a file');
+assert.strictEqual(load({ browser: 'xx-XX', page: WEB }).lang(), 'en', 'a language without a file');
 console.log('  ✓ a complete language follows the browser everywhere');
 
 // A language with its region is its own: other regions are not given it.
