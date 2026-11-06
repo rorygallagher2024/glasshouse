@@ -227,6 +227,10 @@ not a live PCM signal. Native sound-output and Pass Through controls were
 exercised and their original settings restored. The PCM-only receiver did
 not provide a DTS reception test.
 
+## Muting the TV's media audio alone
+
+`com.webos.service.audiooutput/audio/mute` with `{"source":"ADEC1","sink":"MAIN","mute":true}` silences the TV's own playback while `paplay --device=ptts` still plays, and `mute: false` brings it back. The master volume and the global mute are not touched. Checked by hand with a test WAV. `audio/getStatus` answers `audio: []` while nothing has touched the connection, and after a mute lists `{"source":"ADEC1","sink":"MAIN","muted":true,"outputMode":"null"}`. The mute call's own reply says `mute`, getStatus says `muted`.
+
 ## A stale whole-category sound read (G5, webOS 10.3.1)
 
 Reported in #1007 from an OLED83G54LW, firmware 33.31.68. `getSystemSettings`
