@@ -65,7 +65,8 @@ var TILE_OPEN_MS = 15000;
  */
 var PROMO_APPS = ['com.webos.app.lgchannels', 'com.webos.app.sportsteamsettings',
   'com.webos.app.lifeonscreen', 'amazon.alexa.view', 'com.webos.app.camera'];
-// The view's own way back to LG's Home: last in the Apps row, and never hidden.
+// The view's own way back to LG's Home: last in the Apps row. It can be
+// hidden like any app; the remote's Home button still leads back.
 var LG_HOME_TILE = 'lg-home';
 // The moving backgrounds the view can draw in place of the wallpaper pictures.
 var WALL_ANIMS = ['off', 'waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
@@ -327,6 +328,9 @@ function defaults() {
     order: { app: [], dev: [], ch: [], rec: [], iptv: [] },
     sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' },
     hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [], iptv: [] },
+    // Whole rows left off the view, whatever their tiles. They still show
+    // while arranging, so that they can be moved.
+    hiddenRows: [],
     // Apps moved off the Apps row into its More apps tile, in no order of
     // their own: the folder shows them in the row's.
     folder: [],
@@ -413,11 +417,12 @@ function normalise(raw) {
     rows.splice(r === 'rec' ? rows.indexOf('app') + 1 : rows.length, 0, r);
   });
   d.rows = rows;
+  d.hiddenRows = stringList(raw.hiddenRows).filter(function (r) { return ROWS.indexOf(r) !== -1; });
   ROWS.forEach(function (r) {
     if (raw.order && typeof raw.order === 'object') d.order[r] = stringList(raw.order[r]);
     if (raw.sort && typeof raw.sort === 'object' && SORTS.indexOf(raw.sort[r]) !== -1) d.sort[r] = raw.sort[r];
     if (raw.hidden && typeof raw.hidden === 'object') {
-      d.hidden[r] = stringList(raw.hidden[r]).filter(function (id) { return !(r === 'app' && id === LG_HOME_TILE); });
+      d.hidden[r] = stringList(raw.hidden[r]);
     }
   });
   /*
@@ -582,6 +587,7 @@ function setLayout(body, cb) {
     order: perRow(body.order, c.order),
     sort: perRow(body.sort, c.sort),
     hidden: perRow(body.hidden, c.hidden),
+    hiddenRows: body.hiddenRows !== undefined ? body.hiddenRows : c.hiddenRows,
     folder: body.folder !== undefined ? body.folder : c.folder,
     excludedRecents: body.excludedRecents !== undefined ? body.excludedRecents : c.excludedRecents,
     // A moved Channels row reorders the channels themselves.
@@ -624,6 +630,7 @@ function setLayout(body, cb) {
     next.order = d.order;
     next.sort = d.sort;
     next.hidden = d.hidden;
+    next.hiddenRows = d.hiddenRows;
     next.folder = d.folder;
   }
   config = next;
@@ -638,7 +645,7 @@ function setLayout(body, cb) {
 }
 
 function layoutOf(c) {
-  return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
+  return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, hiddenRows: c.hiddenRows, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,

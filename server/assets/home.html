@@ -131,7 +131,11 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
 #rows.scrolled{-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 44px);mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 44px)}
 #rows:before,#rows:after{content:"";-webkit-flex:1 1 0;flex:1 1 0}
-/* Along the bottom, as on LG's Home: no space below the rows. */
+/* Along the bottom, as on LG's Home: the row in focus sits at the bottom and
+   the rows after it wait below the screen. A spacer the area's height above
+   the rows lets even the first row scroll down to the bottom; moving down a
+   row scrolls the rows up by one (keepRowInView). */
+.rows-bottom #rows:before{-webkit-flex:0 0 auto;flex:0 0 auto;height:100%}
 .rows-bottom #rows:after{-webkit-flex:0 0 0;flex:0 0 0}
 
 /* Alternative View (#999): a smaller clock on the right, Last watched to its
@@ -167,6 +171,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
 .row.empty{display:none}
 .arranging .row.empty{display:block}
+.arranging .row.off-row{opacity:.4}
 .slot{margin:0 112px;height:64px;line-height:60px;padding:0 22px;font-size:21px;color:#6b665e;
   border:2px dashed #2a2825;border-radius:6px}
 .arranging .row.active .slot{color:#ece7df;border-color:#e9ad55;border-style:solid}
@@ -822,6 +827,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return null;
   }
   function hidden(kind, id) { return (layout.hidden[kind] || []).indexOf(id) !== -1; }
+  // A whole row switched off in the dashboard's Home settings.
+  function rowOff(kind) { return (layout.hiddenRows || []).indexOf(kind) !== -1; }
   function inFolder(kind, id) { return kind === 'app' && (layout.folder || []).indexOf(id) !== -1; }
   // The server puts a Last opened row in that order; the view shows it as sent.
   function byRecent(kind) { return !!(layout.sort && layout.sort[kind] === 'recent'); }
@@ -834,6 +841,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function items(kind) {
     var out = [];
     // The apps' cards follow the Apps row, so arranging moves the row, not its cards.
+    if (!state.arranging && rowOff(kind)) return out;
     if (kind === 'rec') return state.arranging ? out : recCards();
     (data.order[kind] || []).forEach(function (id) {
       var it = byId(kind, id);
@@ -981,7 +989,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var tiles = '';
       list.forEach(function (it, i) { tiles += TILE[kind](it, i); });
       var note = esc(rowNote(kind, list));
-      html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + ' data-row="' + ri + '" data-key="' + kind + '">' +
+      html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + (rowOff(kind) ? ' data-off="1"' : '') + ' data-row="' + ri + '" data-key="' + kind + '">' +
         '<h2>' + esc(ROW_TITLES[kind]) + (list.length && note ? '<span>' + note + '</span>' : '') +
         '<em class="sort">' + esc(sortLabel(kind)) + '</em></h2>' +
         (list.length ? '<div class="wrap"><i class="edge l"></i><i class="edge r"></i><div class="track">' + tiles + '</div></div>'
@@ -1006,6 +1014,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // row still moving is left to finish, and settle() then keeps its focus
     // in view.
     applyFocus(true, true);
+    // Along the bottom the row in focus keeps its place as the rows are
+    // rebuilt; switched either way, the rows are placed afresh.
+    if (rowsAtBottom() || rowsAtBottom() !== wasAtBottom) keepRowInView(!rowsScroll.timer);
+    wasAtBottom = rowsAtBottom();
     placeRows();
     if (!pointing && (!animating || state.arranging)) {
       var active = document.querySelector('.row.active');
@@ -1014,7 +1026,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (folder.open) renderFolder();
     if (syncAnim()) updateWall();
   }
-  var renderedRows = '', barWidths = [];
+  var renderedRows = '', barWidths = [], wasAtBottom = false;
 
   // The minute's refresh waits for a moving row to stop (tick), so the rows
   // are not rebuilt under it. Its changes leave every tile where it was.
@@ -1122,7 +1134,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var rows = document.querySelectorAll('.row');
     for (var ri = 0; ri < rows.length; ri++) {
       var rowEl = rows[ri], kind = rowEl.getAttribute('data-key'), active = ri === state.row && state.bar < 0 && !state.rail;
-      rowEl.className = 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : '');
+      rowEl.className = 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (rowEl.getAttribute('data-off') ? ' off-row' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : '');
       var tiles = rowEl.querySelectorAll('.tile'), c = colOf(kind);
       for (var ci = 0; ci < tiles.length; ci++) {
         var on = active && ci === c;
@@ -1165,26 +1177,44 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * keep the row in focus whole, its title included.
    */
   var rowsScroll = { to: 0, timer: null };
+  function rowsAtBottom() { return !!layout && layout.rowsBottom === true; }
+  /*
+   * Along the bottom the row in focus is always brought to the bottom, its
+   * own margin below it, so only the rows before it show above and the ones
+   * after it are out of sight below the screen.
+   */
   function keepRowInView(instant) {
     var box = $('rows'), active = box.querySelector('.row.active');
     if (!active) return;
     var view = box.clientHeight, y = box.scrollTop;
     var top = active.offsetTop - 6, bottom = active.offsetTop + active.offsetHeight + 6;
-    if (bottom > y + view) y = bottom - view;
-    if (top < y) y = top;
+    if (rowsAtBottom()) {
+      y = active.offsetTop + active.offsetHeight + (parseInt(getComputedStyle(active).marginBottom, 10) || 0) - view;
+    } else {
+      if (bottom > y + view) y = bottom - view;
+      if (top < y) y = top;
+    }
     y = Math.max(0, Math.min(y, box.scrollHeight - view));
-    if (y === rowsScroll.to && Math.abs(box.scrollTop - y) < 1) return;
+    // A scroll already headed there is left to finish.
+    if (y === rowsScroll.to && (rowsScroll.timer || Math.abs(box.scrollTop - y) < 1)) return;
     rowsScroll.to = y;
-    box.className = y > 0 ? 'scrolled' : '';
+    box.className = y > firstRowTop(box) ? 'scrolled' : '';
     clearInterval(rowsScroll.timer);
+    rowsScroll.timer = null;
     if (instant) { box.scrollTop = y; return; }
     var from = box.scrollTop, start = Date.now();
     rowsScroll.timer = setInterval(function () {
       var k = Math.min(1, (Date.now() - start) / 200);
       box.scrollTop = from + (y - from) * (1 - Math.pow(1 - k, 3));
       if (tvPreviewTile) placeTvPreview(tvPreviewTile);
-      if (k >= 1) clearInterval(rowsScroll.timer);
+      if (k >= 1) { clearInterval(rowsScroll.timer); rowsScroll.timer = null; }
     }, 16);
+  }
+  // Where the first row shown starts: scrolled past it, the top edge fades.
+  function firstRowTop(box) {
+    var rows = box.querySelectorAll('.row');
+    for (var i = 0; i < rows.length; i++) if (rows[i].offsetHeight) return Math.max(0, rows[i].offsetTop - 6);
+    return 0;
   }
 
   /*
@@ -3951,8 +3981,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function toggleHidden() {
     var last = state.last;
-    // The LG Home tile is the way back to LG's Home, so it always shows.
-    if (!last || (last.kind === 'app' && last.id === LG_HOME_TILE)) return;
+    if (!last) return;
     var kind = last.kind, it = byId(kind, last.id);
     if (!it) return;
     if (kind === 'ch') {
