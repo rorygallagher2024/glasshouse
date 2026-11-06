@@ -4391,6 +4391,66 @@
   "from": "Uploading…",
   "text": "Envoi…"
  },
+ "home.weather.clearNight": {
+  "from": "Clear night",
+  "text": "Nuit claire"
+ },
+ "home.weather.cloudy": {
+  "from": "Cloudy",
+  "text": "Nuageux"
+ },
+ "home.weather.exceptional": {
+  "from": "Severe weather",
+  "text": "Intempéries"
+ },
+ "home.weather.fog": {
+  "from": "Fog",
+  "text": "Brouillard"
+ },
+ "home.weather.hail": {
+  "from": "Hail",
+  "text": "Grêle"
+ },
+ "home.weather.lightning": {
+  "from": "Lightning",
+  "text": "Éclairs"
+ },
+ "home.weather.lightningRainy": {
+  "from": "Thunderstorms",
+  "text": "Orages"
+ },
+ "home.weather.partlycloudy": {
+  "from": "Partly cloudy",
+  "text": "Partiellement nuageux"
+ },
+ "home.weather.pouring": {
+  "from": "Pouring rain",
+  "text": "Pluie battante"
+ },
+ "home.weather.rainy": {
+  "from": "Rainy",
+  "text": "Pluvieux"
+ },
+ "home.weather.snowy": {
+  "from": "Snowy",
+  "text": "Neigeux"
+ },
+ "home.weather.snowyRainy": {
+  "from": "Snow and rain",
+  "text": "Neige et pluie"
+ },
+ "home.weather.sunny": {
+  "from": "Sunny",
+  "text": "Ensoleillé"
+ },
+ "home.weather.windy": {
+  "from": "Windy",
+  "text": "Venteux"
+ },
+ "home.weather.windyVariant": {
+  "from": "Windy",
+  "text": "Venteux"
+ },
  "lang.partial": {
   "from": "{name} (partial)",
   "text": "{name} (partiel)"
