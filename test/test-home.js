@@ -1809,6 +1809,30 @@ step('held, Home opens LG\'s Home; a short press there brings Glasshouse Home ba
   });
 });
 
+// A C2 (webOS 9.2.2) did nothing for Home with the view in front, so its folder or player stayed open (#1254).
+step('a short Home press with the view in front opens it again, which reaches its page as a relaunch', function (done) {
+  start({ enabled: true });
+  home.start();
+  wait(50, function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.launched = [];
+    home.homeKey(true);
+    home.homeKey(false);
+    wait(50, function () {
+      assert.deepEqual(tv.launched, [LG_HOME], 'opened again');
+      foreground('com.webos.app.hdmi2');
+      tv.launched = [];
+      home.homeKey(true);
+      home.homeKey(false);
+      wait(50, function () {
+        assert.deepEqual(tv.launched, [], 'from another app the TV opens it itself');
+        home.disable(function () { done(); });
+      });
+    });
+  });
+});
+
 // A G4 (webOS 11.2.0) with WebAppMgr stopped under the view: sam kept naming the view in
 // front, launched it on every press, and nothing drew it, nor LG's Home.
 step('a short Home press that brings no heartbeat starts WebAppMgr and opens the view again', function (done) {
@@ -1823,7 +1847,8 @@ step('a short Home press that brings no heartbeat starts WebAppMgr and opens the
     home.homeKey(false);
     wait(5100, function () {
       assert.ok(tv.events.indexOf('systemctl start webapp-mgr.service') !== -1, 'WebAppMgr started');
-      assert.deepEqual(tv.launched, [LG_HOME], 'and the view opened again');
+      // Once for the press with the view in front, once more after WebAppMgr is started.
+      assert.deepEqual(tv.launched, [LG_HOME, LG_HOME], 'and the view opened again');
       home.beat();
       wait(5100, function () {
         assert.ok(taken(), 'beating again, Glasshouse Home keeps LG\'s Home\'s place');

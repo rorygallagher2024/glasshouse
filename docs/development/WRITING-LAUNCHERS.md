@@ -108,6 +108,11 @@ behind them may change.
 `Glasshouse.isCovered()`
 :   Whether it is covered now.
 
+`Glasshouse.onHome(fn)`
+:   Calls `fn()` when Home is pressed while the launcher is on screen, and
+    when it is opened again from an app: the time to close a menu or panel and
+    go back to the launcher's first screen.
+
 `Glasshouse.onChanged(fn)`
 :   Calls `fn()` when what `catalogue()` or `channels()` answer may have
     changed: an app installed or removed, a device behind an input naming
