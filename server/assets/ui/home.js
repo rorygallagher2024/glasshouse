@@ -326,6 +326,44 @@ function renderHomeColours() {
   if (reset) reset.disabled = !can || !!(cur && cur.text === fresh.text && cur.accent === fresh.accent);
 }
 
+// The animated background's colour presets, each as a small screen with a
+// band of its light; shown while an animated background is chosen.
+function HOME_ANIM_THEME_NAMES() {
+  return { auto: t('home.animTheme.auto', 'Time of day'), blue: t('home.animTheme.blue', 'Night blue'),
+    sunset: t('home.animTheme.sunset', 'Sunset'), emerald: t('home.animTheme.emerald', 'Emerald'),
+    ember: t('home.animTheme.ember', 'Ember'), silver: t('home.animTheme.silver', 'Silver'),
+    custom: t('home.animTheme.custom', 'Your own') };
+}
+
+function renderHomeAnimColours(lay, anim) {
+  const wrap = q('home-anim-colours'), box = q('home-anim-themes');
+  if (!wrap || !box) return;
+  wrap.hidden = !lay || anim === 'off';
+  if (wrap.hidden) return;
+  const names = HOME_ANIM_THEME_NAMES();
+  const now = lay.animTheme || 'auto';
+  const can = homeWritable() && !homeSaving;
+  const sample = th => th.sky
+    ? `background:linear-gradient(#000,${th.sky})`
+    : 'background:linear-gradient(90deg,#3a1a10,#0b3456 35%,#2a0f40 70%,#0a1a4a)';
+  const line = th => th.light || '#7fb4ff';
+  const themes = (lay.animThemes || []).concat([{ id: 'custom', sky: lay.animSky, light: lay.animLight }]);
+  box.innerHTML = themes.map(th => `<button type="button" class="home-look${now === th.id ? ' picked' : ''}"
+      onclick="homeSaveLayout({ animTheme: '${th.id}' })" ${can ? '' : 'disabled'} aria-pressed="${now === th.id}"
+      style="--look-text:${line(th)}">
+      <span class="home-look-screen" style="${sample(th)}"><span class="home-anim-band" style="background:${line(th)}"></span></span>
+      <span class="home-look-name">${esc(names[th.id] || th.id)}</span>
+    </button>`).join('');
+  const sky = q('home-anim-sky'), light = q('home-anim-light');
+  if (sky && document.activeElement !== sky) sky.value = lay.animSky || '#0a1f5c';
+  if (light && document.activeElement !== light) light.value = lay.animLight || '#4f8dff';
+  [sky, light].forEach(el => { if (el) el.disabled = !can; });
+}
+
+function homeAnimCustom() {
+  homeSaveLayout({ animTheme: 'custom', animSky: q('home-anim-sky').value, animLight: q('home-anim-light').value });
+}
+
 function homeCustomColours() {
   homeSaveLayout({ colours: { text: q('home-col-text').value, accent: q('home-col-accent').value } });
 }
@@ -643,6 +681,59 @@ function homeAlternative() {
   homeSaveLayout({ view: homeLayout.view === 'alternative' ? 'standard' : 'alternative' });
 }
 
+function homeAnim(style) {
+  homeSaveLayout({ wallAnim: style });
+}
+
+/*
+ * The background, as one choice of three with only that one's settings
+ * shown: None is no animation over the Black wallpaper, Pictures no
+ * animation over a picture set or the owner's own, Animated one of the
+ * scenes. Switching back returns to the set or scene last used here.
+ */
+const HOME_ANIMS = ['waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
+const homeBgLast = { scene: 'waves', set: 'landscape' };
+
+function homeBgKind() {
+  const anim = (homeLayout && homeLayout.wallAnim) || 'off';
+  if (anim !== 'off') return 'animated';
+  const choice = (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
+  return choice === 'black' ? 'none' : 'pictures';
+}
+
+function renderHomeBg() {
+  const kindBox = q('home-bg-kind');
+  if (!kindBox || !homeStatus) return;
+  const kind = homeBgKind(), busy = !homeWritable() || !!homeWallUploading;
+  const anim = (homeLayout && homeLayout.wallAnim) || 'off';
+  const choice = (homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
+  if (anim !== 'off') homeBgLast.scene = anim;
+  if (choice !== 'black') homeBgLast.set = choice;
+  const kinds = [['none', t('home.bg.none', 'None')], ['pictures', t('home.bg.pictures', 'Pictures')], ['animated', t('home.bg.animated', 'Animated')]];
+  kindBox.innerHTML = kinds.map(([k, label]) => `<button type="button" class="${k === kind ? 'on' : ''}" ${busy ? 'disabled' : ''}
+    aria-pressed="${k === kind}" onclick="homeBgChoose('${k}')">${esc(label)}</button>`).join('');
+  q('home-bg-pictures').hidden = kind !== 'pictures';
+  q('home-bg-animated').hidden = kind !== 'animated';
+  const dark = document.querySelector('#homepane .home-dark') || document.querySelector('.home-dark');
+  if (dark) dark.hidden = kind === 'none';
+  const names = { waves: t('home.anim.waves', 'Light waves'), particles: t('home.anim.particles', 'Particles'),
+    aquarium: t('home.anim.aquarium', 'Aquarium'), aurora: t('home.anim.aurora', 'Aurora'), glow: t('home.anim.glow', 'Glow'),
+    stars: t('home.anim.stars', 'Constellations'), ripples: t('home.anim.ripples', 'Ripples') };
+  q('home-anim-scenes').innerHTML = HOME_ANIMS.map(k => `<button type="button" class="${k === anim ? 'on' : ''}" ${busy ? 'disabled' : ''}
+    aria-pressed="${k === anim}" onclick="homeAnim('${k}')">${esc(names[k])}</button>`).join('');
+  renderHomeAnimColours(homeLayout, anim);
+}
+
+async function homeBgChoose(kind) {
+  if (!homeWritable() || homeWallUploading || kind === homeBgKind()) return;
+  const choice = (homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
+  if (kind === 'animated') return homeSaveLayout({ wallAnim: homeBgLast.scene });
+  if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
+  if (kind === 'none' && choice !== 'black') return homeWallSet('black');
+  if (kind === 'pictures' && choice === 'black') return homeWallSet(homeBgLast.set);
+  renderHomeBg();
+}
+
 function homeRowsBottom() {
   homeSaveLayout({ rowsBottom: homeLayout.rowsBottom !== true });
 }
@@ -764,6 +855,7 @@ function homeWallUrl(key, walls) {
 function renderHomeWalls() {
   const box = q('home-walls');
   if (!box || !homeStatus) return;
+  renderHomeBg();
   const walls = homeStatus.wallpapers || {};
   const has = walls.slots || {};
   const busy = !homeWritable() || !!homeWallUploading || walls.uploading;
@@ -778,7 +870,8 @@ function renderHomeWalls() {
   if (choiceBox) {
     const label = { black: t('home.wall.setBlack', 'Black'), landscape: t('home.wall.setLandscape', 'Landscape'),
       abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own') };
-    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).map(name =>
+    // Black is the background's None, chosen above.
+    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(name => name !== 'black').map(name =>
       `<button type="button" class="${name === choice ? 'on' : ''}${name === getting ? ' busy' : ''}" ${busy ? 'disabled' : ''}
         aria-pressed="${name === choice}" onclick="homeWallSet('${name}')">${esc(name === getting ? t('home.wall.examplesBusy', 'Downloading…') : label[name] || name)}</button>`).join('');
   }

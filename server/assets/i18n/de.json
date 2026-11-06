@@ -579,10 +579,6 @@
     "text": "Nacht",
     "from": "Night"
   },
-  "home.wall.title": {
-    "text": "Hintergrundbild",
-    "from": "Wallpaper"
-  },
   "home.wall.tooLarge": {
     "text": "Das aufbereitete Bild ist zu groß. Wähle ein kleineres.",
     "from": "The prepared image is too large. Choose a smaller image."

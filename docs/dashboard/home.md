@@ -290,27 +290,52 @@ The links and logins are kept on the TV only. They are not shown on the
 dashboard again, and never sent to Home Assistant, the logs or a phone or
 computer; see [Security](../SECURITY.md#internet-tv).
 
-## Wallpapers
+## Background
 
-By default, Glasshouse Home uses a pure `#000` OLED black background (and leaves the TV's [screen saver](screen-savers.md) untouched). It can instead show a picture for each of four times of day: **Morning** (06:00 to 11:00), **Afternoon** (11:00 to 17:00), **Evening** (17:00 to 21:00) and **Night** (21:00 to 06:00).
+The **Background** section chooses what is behind Glasshouse Home, and shows only the settings for that choice:
 
-The **Wallpaper** section offers four choices:
+* **None**, the default: a pure `#000` OLED black, which leaves the TV's [screen saver](screen-savers.md) untouched.
+* **Pictures**: a picture for each part of the day.
+* **Animated**: light that moves slowly behind the rows.
 
-* **Black**, the default: no picture.
+The TV app's **Background** row moves through the three with OK, followed by the rows for the one chosen.
+
+### Pictures
+
+A picture for each of four times of day: **Morning** (06:00 to 11:00), **Afternoon** (11:00 to 17:00), **Evening** (17:00 to 21:00) and **Night** (21:00 to 06:00). There are three sets to choose from:
+
 * **Landscape**, a loch at four times of day, and **Abstract**, four flowing abstract pictures. A set is downloaded to the TV when it is chosen, about 820 KB, from [glasshouse-wallpapers](https://github.com/rorygallagher2024/glasshouse-wallpapers), so it adds nothing to the Glasshouse download. Only the chosen set is kept on the TV.
-* **Your own**: pictures uploaded from the browser, one for each time of day. They are kept while a set or Black is chosen, and come back with **Your own**. Uploading a picture chooses **Your own**.
+* **Your own**: pictures uploaded from the browser, one for each time of day. They are kept while a set or another background is chosen, and come back with **Your own**. Uploading a picture chooses **Your own**.
 
-The web dashboard's **Wallpaper** section shows the day as a strip from midnight to midnight, each time of day filled with its picture across its hours and a marker at the time now, and below it each time of day as a small Glasshouse Home: its picture behind the clock in the chosen text colour, so how readable the clock will be shows before it is on the TV. The time of day showing now is marked **Now**.
+The web dashboard shows the day as a strip from midnight to midnight, each time of day filled with its picture across its hours and a marker at the time now, and below it each time of day as a small Glasshouse Home: its picture behind the clock in the chosen text colour, so how readable the clock will be shows before it is on the TV. The time of day showing now is marked **Now**.
 
 With **Your own** chosen:
 
 * Choosing a time of day, on the strip or its preview, or dropping an image on it, sets its picture. JPEG, PNG and WebP images up to 25 MB are taken; the browser scales each to fit 1920 × 1080 as a JPEG before saving it to `/var/lib/tvweb/home-wallpaper-uploads` on the TV.
-* **Replace** and **Remove** under a time of day change or remove its picture alone; one without a picture has the black background.
-* **Remove all** puts the black background back for every time of day.
+* **Replace** and **Remove** under a time of day change or remove its picture alone; one without a picture is black.
+* **Remove all** takes every picture away.
 
-The TV app's **Wallpaper** row moves through the four choices with OK.
+The TV app's **Pictures** row moves through the three sets with OK.
 
-**Darkening** sets how much the wallpaper is darkened behind the clock and the rows, which keeps them easy to read on a bright picture. It is 100% by default; the web dashboard's slider goes down in steps of 5% to **Off**, which shows the picture as it is, and the TV app's **Darkening** row steps through 100%, 75%, 50%, 25% and Off with OK.
+### Animated
+
+Seven moving backgrounds, each drawn in place of the pictures:
+
+* **Light waves**: soft bands of light with a bright thread along their edges, as on a games console's home screen.
+* **Particles**: soft lights rising and twinkling.
+* **Aquarium**: a tank seen through its side, with light from the surface, fish at every depth, waving weed and rising bubbles.
+* **Aurora**: curtains of light hanging from the top, their lower edges swaying.
+* **Glow**: a few large, soft pools of colour drifting and blending where they meet.
+* **Constellations**: points of light drifting slowly, joined by fine lines while they are near one another.
+* **Ripples**: a still surface where now and then a drop falls and spreads in thin rings.
+
+An animated background keeps the TV busy while Glasshouse Home is on screen, and moving around Home can be less smooth, more so on older TVs, where it moves a little less often to make up for it. It stops as soon as Home is covered by an app, an input or the screen saver, and with reduced motion asked for it is a still picture.
+
+Its colours: **Time of day**, the default, follows the four times of day, and the aquarium dims in the evening and at night; five presets, **Night blue**, **Sunset**, **Emerald**, **Ember** and **Silver**; or **Your own**, a background and a light colour picked on the web dashboard. In the aquarium they are the water and the light through it. The TV app's **Animation** and **Background colours** rows move through the choices with OK.
+
+### Darkening
+
+**Darkening** sets how much the background is darkened behind the clock and the rows, which keeps them easy to read on a bright picture. It is 100% by default; the web dashboard's slider goes down in steps of 5% to **Off**, which shows the picture as it is, and the TV app's **Darkening** row steps through 100%, 75%, 50%, 25% and Off with OK. Behind an animated background it is lighter, as these are dark already. With **None** chosen it is not shown.
 
 === "Darkening 100% (default)"
 
