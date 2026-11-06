@@ -3010,5 +3010,20 @@
  "home.showTvLogosDescName": {"text": "В интернет-ТВ: логотип каждого канала из плейлиста. Если выключено, на его месте показывается название канала.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."},
  "server.backup.confirmSettings": {"text": "Восстановить настройки, сохранённые с {tv} {date}? Это изменит настройки этого телевизора.", "from": "Restore the settings saved from {tv} on {date}? This changes settings on this TV."},
  "server.backup.restoredSettings": {"text": "Изменено настроек: {changed}, уже были такими: {same}, пропущено: {skipped}, так как их нет на этом телевизоре или они сейчас недоступны.", "from": "Changed {changed} settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now."},
- "server.backup.acrLeftOff": {"text": "Распознавание контента в эфире остаётся выключенным: его включение означает согласие с условиями LG, поэтому резервная копия никогда этого не делает.", "from": "Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does."}
+ "server.backup.acrLeftOff": {"text": "Распознавание контента в эфире остаётся выключенным: его включение означает согласие с условиями LG, поэтому резервная копия никогда этого не делает.", "from": "Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does."},
+ "home.weather.clearNight": {"text": "Ясная ночь", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "Облачно", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Туман", "from": "Fog"},
+ "home.weather.hail": {"text": "Град", "from": "Hail"},
+ "home.weather.lightning": {"text": "Молния", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Грозы", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Переменная облачность", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Сильный дождь", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Дождливо", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Снег", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Снег с дождём", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Солнечно", "from": "Sunny"},
+ "home.weather.windy": {"text": "Ветрено", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Ветрено", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Опасные погодные явления", "from": "Severe weather"}
 }
