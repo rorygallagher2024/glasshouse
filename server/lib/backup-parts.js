@@ -214,6 +214,16 @@ var PARTS = [
     }
   },
   {
+    // Network device scans: off holds LG's lookup service down, as its switch in Devices does.
+    id: 'deviceScans',
+    action: 'deviceScans',
+    valid: isBool,
+    read: function (cb) {
+      cb(services.available('iconnectivity') ? !services.isDisabled('iconnectivity') : undefined);
+    },
+    write: function (v, cb) { control('deviceScans', v, cb); }
+  },
+  {
     // Each web page saved to the Home screen, as { title, address }. A restore adds those missing.
     id: 'savedPages',
     valid: function (v) {

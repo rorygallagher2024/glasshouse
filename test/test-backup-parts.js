@@ -33,7 +33,8 @@ function fakeTv(opts) {
     saver: { mode: 'stock', level: 'dim' },
     config: {},
     controls: [],
-    alwaysOn: !!opts.alwaysOn
+    alwaysOn: !!opts.alwaysOn,
+    scans: opts.scans
   };
   var luna = function (uri, p, cb) {
     var r = { returnValue: true };
@@ -57,6 +58,7 @@ function fakeTv(opts) {
     if (action === 'lgLogo') tv.settings.other.lgLogoDisplay = value ? 'on' : 'off';
     if (action === 'clockHour12') tv.timeFormat = value ? 'HH12' : 'HH24';
     if (action === 'setAdBlock') tv.adBlock = value;
+    if (action === 'deviceScans') tv.scans = value;
     if (action === 'screensaverMode') tv.saver = value;
     if (action === 'screensaverPowerOff') tv.config.screensaverPowerOffMinutes = value || undefined;
     process.nextTick(function () { cb({ ok: true }); });
@@ -83,7 +85,9 @@ function fakeTv(opts) {
       getServices: function (cb) {
         cb({ ok: true, supported: true, services: Object.keys(tv.services).map(function (id) { return { id: id, disabled: tv.services[id] }; }) });
       },
-      toggleService: function (id, off, cb) { tv.controls.push(['service', id, off]); tv.services[id] = off; cb({ ok: true }); }
+      toggleService: function (id, off, cb) { tv.controls.push(['service', id, off]); tv.services[id] = off; cb({ ok: true }); },
+      available: function (id) { return id === 'iconnectivity' && tv.scans !== undefined; },
+      isDisabled: function () { return !tv.scans; }
     },
     apps: {
       addSavedPage: function (address, title, cb) { tv.controls.push(['addPage', address]); tv.pages.push({ title: title, address: address }); cb({ ok: true }); }
@@ -135,7 +139,7 @@ var C2 = {
   pages: [{ title: 'home assistant', address: 'http://192.168.1.125:8123' }],
   keys: { netflix: 'youtube.leanback.v4', amazon: null, red: '' },
   quick: { 1: 'netflix', 2: '' },
-  savers: ['stock', 'aquarium'], alwaysOn: true
+  savers: ['stock', 'aquarium'], alwaysOn: true, scans: false
 };
 
 var steps = [];
@@ -161,6 +165,7 @@ step('a backup holds LG\'s own switches, privacy, apps, keys and the screen save
       limitAdTracking: true, acr: true, adBlock: 'ads',
       adBlockList: { mode: 'add', names: ['ads.example.com'], enabled: false },
       services: { nudge: true, remotelogger: false },
+      deviceScans: false,
       savedPages: [{ title: 'home assistant', address: 'http://192.168.1.125:8123' }],
       remoteKeys: { netflix: 'youtube.leanback.v4', amazon: null, red: '' },
       quickAccess: { 1: 'netflix', 2: '' },
@@ -188,7 +193,7 @@ step('a restore sets each through its control, only where this TV has it', funct
   var tv = fakeTv({
     settings: { other: { ueiEnable: 'off' }, option: { quickStartMode: 'off', standByLight: 'off' },
                 network: { wolwowlOnOff: 'true' }, general: { alwaysOn: 'on', homeAutoLaunch: 'off' } },
-    acr: false, services: { nudge: false, contentminer: true },
+    acr: false, services: { nudge: false, contentminer: true }, scans: true,
     pages: [{ title: 'HA', address: 'http://192.168.1.125:8123' }],
     keys: { netflix: null, amazon: null }, quick: { 1: '', 2: '' }
   });
@@ -206,6 +211,7 @@ step('a restore sets each through its control, only where this TV has it', funct
     });
     assert.ok(r.lg.applied.indexOf('quickBoot') !== -1);
     assert.deepEqual(tv.services, { nudge: true, contentminer: true }, 'a service only one TV lists is left as it is');
+    assert.strictEqual(tv.scans, false, 'network device scans switched off as on the C2');
     assert.deepEqual(tv.pages.map(function (p) { return p.address; }),
       ['http://192.168.1.125:8123', 'https://example.com/weather'], 'a page already saved is not added again');
     assert.deepEqual(tv.keys, { netflix: 'youtube.leanback.v4', amazon: null }, 'a key this TV lacks is left out');
