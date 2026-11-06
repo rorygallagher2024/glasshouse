@@ -1599,6 +1599,8 @@ button.tools-jump:active{background:var(--w80)}
 /* One section for whichever Home is the TV's. Its heading's rule is the only
    divider under the switch; Glasshouse Home's rows leave with it. */
 #home-hero+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
+#home-hero+#home-launcher{margin-top:clamp(34px,4.5vw,48px)}
+#home-launcher+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
 #home-custom.lg-home .home-gh-row{display:none}
 /* Each group's last row draws no line, as the next group's heading follows. */
 .home-custom-table .prot-row.last{border-bottom:0}
@@ -1610,7 +1612,8 @@ button.tools-jump:active{background:var(--w80)}
 #home-custom .pv-d>summary::after{font-size:18px}
 #home-custom .pv-d[open]>summary{border-bottom-color:transparent}
 #home-custom .pv-d[open]{padding-bottom:16px;border-bottom:1px solid var(--w06)}
-#home-mode-btns{display:flex;flex-wrap:wrap;gap:8px;flex:0 0 auto;width:auto}
+#home-mode-btns{display:flex;flex-wrap:wrap;gap:8px;flex:0 1 auto;width:auto;max-width:100%}
+@media (max-width:640px){#home-mode-btns{width:100%}#home-mode-btns button{flex:1 1 150px;min-width:0}}
 #home-mode-btns button{min-width:176px;padding:0 18px;white-space:nowrap}
 #home-mode-btns button.warn{color:var(--cand);border-color:var(--cand)}
 #home-rows{margin-top:14px}
@@ -1670,6 +1673,9 @@ button.wall-screen::before{content:'';position:absolute;inset:0;background:linea
 button.wall-screen:hover:not(:disabled){border-color:rgba(255,255,255,.45)}
 button.wall-screen:disabled{opacity:1;cursor:default}
 .wall-choice{max-width:560px;margin:14px 0 6px}
+/* Seven scenes with names of every length: each as wide as its name. */
+.wall-choice.scenes{display:flex;flex-wrap:wrap;max-width:none}
+.wall-choice.scenes button{flex:0 0 auto;padding:0 18px;white-space:nowrap}
 /* A set's or Black's empty time of day is not a place to add a picture. */
 .wall-card.fixed:not(.has) button.wall-screen{border-style:solid;border-color:rgba(255,255,255,.12)}
 .wall-card:not(.has) button.wall-screen{border-style:dashed;border-color:rgba(255,255,255,.22)}
@@ -1707,6 +1713,10 @@ button.home-look:active{background:none}
 .home-look-row{position:absolute;left:10px;bottom:9px;font-size:10px;color:var(--look-text);opacity:.69}
 .home-look-screen i{position:absolute;right:10px;bottom:11px;width:7px;height:7px;border-radius:50%;background:var(--look-accent)}
 .home-look-name{font-size:13px;opacity:.8}
+/* Eight choices: under the description, across the row, rather than beside it. */
+#home-anim-row{flex-direction:column;align-items:stretch;gap:10px}
+.home-anim-band{position:absolute;left:-10%;right:-10%;top:52%;height:9px;border-radius:50%;opacity:.75;transform:rotate(-8deg);
+  box-shadow:0 0 10px 2px currentColor}
 .home-look.picked .home-look-name{opacity:1;font-weight:600}
 .home-look:disabled{cursor:default;opacity:.6}
 .home-custom{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin:4px 0 8px}

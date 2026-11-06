@@ -70,16 +70,20 @@ var homeScreen = require('./lib/homescreen');
 var glasshouseHome = null;
 /** @type {typeof import('./lib/home-picture')} */
 var homePicture = null;
+/** @type {typeof import('./lib/home-launcher')} */
+var homeLauncher = null;
 // Internet TV on Glasshouse Home (lib/iptv): where Home runs, and nowhere else.
 /** @type {typeof import('./lib/iptv')} */
 var iptv = null;
 try {
   glasshouseHome = require('./lib/home');
   homePicture = require('./lib/home-picture');
+  homeLauncher = require('./lib/home-launcher');
   iptv = require('./lib/iptv');
 } catch (e) {
   glasshouseHome = null;
   homePicture = null;
+  homeLauncher = null;
   iptv = null;
   console.error('home: Glasshouse Home could not be loaded, running without it: ' + e.message);
 }
@@ -993,6 +997,7 @@ routes.init({
   homeScreen: homeScreen,
   home: glasshouseHome,
   homePicture: homePicture,
+  homeLauncher: homeLauncher,
   iptv: iptv,
   screensavers: screensavers,
   updater: updater,
@@ -1938,6 +1943,7 @@ function startGlasshouseHome() {
     pictureDetails: function (on) { homePicture.want('details', on); },
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
+  homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION });
   glasshouseHome.start();
   iptv.start();
   // The Guide key set to Home's guide acts only while Home is on with a playlist.
