@@ -1,16 +1,17 @@
 # Tested TVs
 
-Confirmed on **66 TVs across 43 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **67 TVs across 44 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
 
-=== "By series (43)"
+=== "By series (44)"
 
     | Series        | Year | Panel | webOS seen        | Reports |
     | :------------ | :--- | :---- | :---------------- | :------ |
     | LF632V        | 2015 | LCD   | 2.2               | 1       |
+    | UF850T        | 2015 | LCD   | 2.2               | 1       |
     | UH600V        | 2016 | LCD   | 2.2               | 1       |
     | UH6030        | 2016 | LCD   | 3.4               | 1       |
     | UH610V        | 2016 | LCD   | 3.4               | 1       |
@@ -54,11 +55,12 @@ Confirmed on **66 TVs across 43 series** running **webOS 2.2 through 11** (LG's 
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (66)"
+=== "All reports (67)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
     | 49LF632V-ZC | 2.2.3        | —        | LCD   | Settings service under its older name; server on Node 0.10     |
+    | 55UF850T-TB | 2.2.1        | 04.05.60 | LCD   | Remote button events needed a fix for Node 0.10 ([#1256](https://github.com/rorygallagher2024/glasshouse/issues/1256)) |
     | 55UH600V-ZA | 2.2.3        | 04.26.35 | LCD   | PicCap withheld on webOS 2 to prevent watchdog reboot ([#746](https://github.com/rorygallagher2024/glasshouse/issues/746)); runs cleanly |
     | 43UH610V-ZB | 3.4.3        | 05.70.50 | LCD   | No SoC temp, eMMC wear, or OLED metrics by hardware design     |
     | 55UH6030-UC | 3.4.3        | —        | LCD   |                                                                |
