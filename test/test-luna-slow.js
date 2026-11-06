@@ -26,10 +26,12 @@ luna.call('com.webos.service.apiadapter/tv/getChannelList', {}, function () {
   assert.ok(wait(run.args) > SECONDS * 1000, 'luna-send gives up before the channel list arrives');
   assert.ok(run.opts.timeout > wait(run.args), 'node kills luna-send before its own wait is over');
   assert.ok(run.opts.maxBuffer > BYTES, 'the channel list is over the reply limit');
+  assert.strictEqual(run.args.indexOf('-f'), -1, 'the channel list is asked for indented');
   console.log('  ✓ the channel list is given the time and room it needs');
 
   luna.call('com.webos.audio/getVolume', {}, function () {
     assert.strictEqual(wait(runs[1].args), 2000, 'other calls wait longer too');
+    assert.notStrictEqual(runs[1].args.indexOf('-f'), -1, 'other calls lose -f');
     console.log('  ✓ other calls keep their wait');
   });
 });

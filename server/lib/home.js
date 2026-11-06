@@ -187,6 +187,12 @@ var WAM_UNIT = 'webapp-mgr.service';
 var SYSTEMCTLS = ['/bin/systemctl', '/usr/bin/systemctl'];
 var GUIDE_TTL_MS = 60000;
 var LIST_TTL_MS = 30000;
+/*
+ * The tuner's channels, read again less often: they change only with a
+ * retune, and a satellite list took 3.6 s to read (65SM8500PLA, webOS 4.10.1),
+ * which a request waits for once the list is out of date.
+ */
+var CHANNELS_TTL_MS = 600000;
 
 var lunaFn = null;
 var liveState = null;
@@ -857,7 +863,7 @@ function listDevices(devs, portsPlugged) {
  * adapter's tv/getChannelList, the method behind SSAP's ssap://tv/getChannelList.
  */
 function channelList(cb) {
-  cached('ch', LIST_TTL_MS, function (done) {
+  cached('ch', CHANNELS_TTL_MS, function (done) {
     luna('com.webos.service.apiadapter/tv/getChannelList', {}, function (r) {
       if (!r || r.returnValue === false || !isArray(r.channelList)) return done(null);
       var out = [];

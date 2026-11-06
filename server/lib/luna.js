@@ -202,7 +202,11 @@ var diedEarly = children.diedEarly;
  */
 var MAX_REPLY = 4 * 1024 * 1024;
 
-// A satellite tuner's channel list runs to several MB and takes seconds to read.
+/*
+ * A satellite tuner's channel list runs to several MB and takes seconds to
+ * read. It is asked for without -f, whose indenting made the B8's 146
+ * channels 385 KB rather than 226 KB.
+ */
 var SLOW_CALLS = { 'com.webos.service.apiadapter/tv/getChannelList': true };
 var WAIT_MS = 2000;
 var SLOW_WAIT_MS = 15000;
@@ -272,7 +276,8 @@ function queueCall(uri, payload, cb, appId, urgent) {
   }
   var args = appId ? ['-a', appId] : [];
   var slow = SLOW_CALLS[uri] === true;
-  args = args.concat(['-n', '1', '-w', String(slow ? SLOW_WAIT_MS : WAIT_MS), '-f', 'luna://' + uri, JSON.stringify(payload || {})]);
+  args = args.concat(['-n', '1', '-w', String(slow ? SLOW_WAIT_MS : WAIT_MS)], slow ? [] : ['-f'],
+                     ['luna://' + uri, JSON.stringify(payload || {})]);
   enqueue({ args: args, cb: cb, urgent: urgent, slow: slow });
   startWaiting();
 }
