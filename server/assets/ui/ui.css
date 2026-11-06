@@ -1611,6 +1611,11 @@ button.tools-jump:active{background:var(--w80)}
 .launcher-card .lc-desc{font-size:13px;color:var(--w70);flex:1}
 .launcher-card .pill{align-self:flex-start;margin-top:8px}
 #home-launchers .prot-status{display:flex;gap:8px}
+/* With a custom launcher in Glasshouse Home's place, only the apps and inputs it shows. */
+#home-more.for-launcher > :not(.home-arrange), #home-more.for-launcher .home-gh-only,
+#home-more:not(.for-launcher) .home-launcher-only{display:none}
+#home-more.for-launcher .home-row:not([data-kind="app"]):not([data-kind="dev"]),
+#home-more.for-launcher .home-row-move{display:none}
 #home-custom.lg-home .home-gh-row{display:none}
 /* Each group's last row draws no line, as the next group's heading follows. */
 .home-custom-table .prot-row.last{border-bottom:0}

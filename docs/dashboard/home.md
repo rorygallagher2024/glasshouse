@@ -391,7 +391,7 @@ On the web dashboard's **Home** tab, press **Custom launcher**. The section it o
 
 With Glasshouse Home already on, **Use** puts the launcher in its place within a few seconds, and your own takes it as soon as it is set up. From LG's Home, **Use** takes a second press. **Use Glasshouse Home** goes back to Glasshouse Home and keeps the launchers for later. The TV app's **Home** section has a switch for each launcher kept.
 
-While a custom launcher is the TV's Home, Glasshouse Home's own settings (its rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
+While a custom launcher is the TV's Home, **Rows and tiles** stays on this tab with the Apps and Inputs rows: which apps and inputs the launcher shows, and their order, including **Hide inputs with nothing connected**. Launchers from the catalogue follow it, Minimal listing apps put in More apps after the rest; one of your own follows it if it was written to. Glasshouse Home's other settings (its other rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
 
 > [!WARNING]
 > A launcher can do anything on the TV that Glasshouse can, so only use one you trust. The catalogue's are reviewed before they are listed.

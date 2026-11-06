@@ -61,6 +61,35 @@ For webOS 3 and 4 that means ES5 (no `let`, arrow functions or
 template literals) and CSS without `gap` in flexbox, grid or custom
 properties. Glasshouse's own pages for the TV are written that way.
 
+### Every TV Glasshouse Home runs on
+
+A launcher in the catalogue must run on all of them, from webOS 3 to 11, and
+`scripts/check-launchers.py` holds every script and stylesheet in it to
+Chromium 38: the syntax above, calls such as `fetch`, `Object.assign`,
+`String.includes`, `Element.closest`, `Map` and `Set`, and CSS such as grid,
+`gap`, custom properties, `min()`, `max()` and `clamp()`. Run it before a pull
+request:
+
+```
+python3 scripts/check-launchers.py
+```
+
+It reads code, not what the code does, so some things only a TV shows:
+
+- **Newer calls the check does not know,** such as `NodeList.forEach` or
+  `Element.append` (Chromium 51 and 54). Loop over a `NodeList` by index, and
+  use `appendChild`.
+- **The screen:** lay it out in `vh` and `vw`, or percentages, so that it fills
+  the TV's screen as Glasshouse Home does, on a 4K panel or not.
+- **The remote:** every TV has the arrow keys, OK and Back; not every TV has a
+  Magic Remote's pointer, so nothing may need it.
+- **Memory:** a webOS 4 TV has far less than a newer one to share among the
+  apps, and the launcher stays open behind every app.
+
+Try it on the oldest TV you have, and say in the pull request which TVs and
+webOS versions it was tried on, as any pull request's Testing section does. A
+launcher is tried on a webOS 4 TV before it is listed.
+
 **Keys** arrive as `keydown` events: the arrows are 37 to 40, OK is 13, Back is
 461, and the red, green, yellow and blue buttons are 403 to 406. Back has no
 page history to go back to, so a launcher can use it as it likes. Home is
@@ -78,13 +107,18 @@ calls stay as they are across Glasshouse releases; the server's own routes
 behind them may change.
 
 `Glasshouse.catalogue(cb)`
-:   The TV's apps and inputs. `result.apps` is a list of
-    `{ id, title, icon, hidden }`: `icon` is a URL for an `<img>`, or null, and
-    `hidden` is true for apps hidden on Glasshouse Home, such as LG's
-    promotions. `result.inputs` is a list of `{ id, title, port, tuner, unused }`:
-    each HDMI port, or each device behind it that the TV knows by HDMI-CEC,
-    with `tuner` true for the TV's own tuner and `unused` true for a port with
-    nothing plugged in.
+:   The TV's apps and inputs, in the order the owner arranged them on the
+    Home tab, which applies to whichever launcher is the TV's Home.
+    `result.apps` is a list of `{ id, title, icon, hidden, folder }`: `icon` is
+    a URL for an `<img>`, or null; `hidden` is true for apps the owner hid,
+    such as LG's promotions, which a launcher should leave out; and `folder`
+    is true for apps put in More apps, which a launcher can show apart or
+    after the rest. `result.inputs` is a list of
+    `{ id, title, port, tuner, unused, hidden }`: each HDMI port, or each
+    device behind it that the TV knows by HDMI-CEC, with `tuner` true for the
+    TV's own tuner, `unused` true for a port with nothing plugged in, and
+    `hidden` true for one the owner hid, or an unused one where they chose to
+    leave those out.
 
 `Glasshouse.channels(cb)`
 :   The tuner's channels, as `{ id, number, title, radio }`, in the TV's order.
@@ -216,7 +250,8 @@ on the Home tab.
 CI runs `scripts/check-launchers.py` on each pull request. A launcher in the
 catalogue must:
 
-- **list the TV's apps and inputs** with `Glasshouse.catalogue()`;
+- **list the TV's apps and inputs** with `Glasshouse.catalogue()`, in its
+  order, leaving out those marked `hidden`;
 - **go back to its start when Home is pressed**, with `Glasshouse.onHome()`;
 - **offer a way to LG's Home**, with `Glasshouse.lgHome()`;
 - **stay on its own page:** no setting `location`, `location.assign` or

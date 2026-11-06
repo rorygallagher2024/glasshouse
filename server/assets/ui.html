@@ -1324,13 +1324,15 @@
 
   <div id="home-more">
 
-  <div class="pv-sec adv-sec" data-t="home.layout">Rows and tiles</div>
-  <div class="sub" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
-  <div class="pv-note" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
-  <div id="home-rows"></div>
+  <!-- .home-arrange: also shown while a custom launcher is the TV's Home, whose apps and inputs it orders and hides -->
+  <div class="pv-sec adv-sec home-arrange" id="home-layout-title" data-t="home.layout">Rows and tiles</div>
+  <div class="sub home-arrange home-gh-only" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
+  <div class="sub home-arrange home-launcher-only" data-t="home.layoutDescLauncher">Which of the TV&rsquo;s apps and inputs the custom launcher shows, and in what order. Launchers from the catalogue follow it; one of your own can.</div>
+  <div class="pv-note home-arrange" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
+  <div class="home-arrange" id="home-rows"></div>
   <div id="home-recents"></div>
-  <div class="btns" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
-  <div class="sub" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
+  <div class="btns home-arrange" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
+  <div class="sub home-arrange" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
 
   <div class="pv-sec adv-sec" data-t="home.tv.title">Internet TV</div>
   <div class="sub" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses. It is kept on the TV and never shown here again.</div>

@@ -1566,7 +1566,10 @@ async function visitHomeLauncher(browser, base, problems) {
       await page.waitForFunction(() => /ha\.local:8123/.test(document.getElementById('home-state').textContent));
     } catch (e) { problems.push('Home launcher: the state did not name the launcher'); }
     if (sent.join() !== '{"address":"http://ha.local:8123/tv"},{"choose":"own"}') problems.push('Home launcher: a web address with Glasshouse Home on sent ' + sent.join());
-    if (await page.locator('#home-more').isVisible()) problems.push('Home launcher: Glasshouse Home\'s rows showed with a launcher chosen');
+    // The apps and inputs it shows stay arranged here; Glasshouse Home's own settings go.
+    if (!await page.locator('#home-rows .home-row[data-kind="app"]').isVisible()) problems.push('Home launcher: the Apps row was not offered with a launcher chosen');
+    if (await page.locator('#home-rows .home-row[data-kind="ch"]').isVisible()) problems.push('Home launcher: the Channels row showed with a launcher chosen');
+    if (await page.locator('#home-tv').isVisible() || await page.locator('#home-looks').isVisible()) problems.push('Home launcher: Glasshouse Home\'s own settings showed with a launcher chosen');
     if (!/\bon\b/.test(await page.locator('#home-mode-launcher').getAttribute('class'))) problems.push('Home launcher: its button was not marked as chosen');
     if ((await page.locator('#home-launchers .prot-title').allTextContents()).join() !== 'ha.local:8123,Minimal') problems.push('Home launcher: the owner\'s own was not listed first');
     sent.length = 0;

@@ -7,6 +7,7 @@ Each entry must describe itself fully, its file must match the size and
 sha256 it lists, and the launcher in it must be a Glasshouse launcher:
 
   * it lists the TV's apps and inputs:   Glasshouse.catalogue(
+  * it leaves out those the owner hid:   .hidden
   * Home brings it back to its start:    Glasshouse.onHome(
   * it offers a way to LG's Home:        Glasshouse.lgHome(
   * it stays on its own page: no setting location, location.assign or
@@ -62,6 +63,7 @@ TRACKERS = re.compile(r'(^|\.)(google-analytics\.com|googletagmanager\.com|doubl
 
 REQUIRED = [
     ('Glasshouse.catalogue(', 'list the TV\'s apps and inputs with Glasshouse.catalogue()'),
+    ('.hidden', 'leave out the apps and inputs the owner hid, which Glasshouse.catalogue() marks hidden'),
     ('Glasshouse.onHome(', 'go back to its start when Home is pressed, with Glasshouse.onHome()'),
     ('Glasshouse.lgHome(', 'offer a way to LG\'s Home with Glasshouse.lgHome()'),
 ]
@@ -261,15 +263,11 @@ def check_entry(e, ids, kit, problems, strict=False):
     with tempfile.TemporaryDirectory() as tmp:
         paths = []
         for name, src in text.items():
-            if name.endswith('.css'):
-                continue
-            # check-es5.py applies its CSS rules to the TV's pages by name.
             p = pathlib.Path(tmp) / name.replace('/', '__')
-            if name == main:
-                p = pathlib.Path(tmp) / 'index.html'
             p.write_text(src, encoding='utf-8')
             paths.append(str(p))
-        r = subprocess.run([sys.executable, str(ROOT / 'scripts' / 'check-es5.py')] + paths,
+        # --tv: every script and stylesheet is held to the oldest browser Glasshouse Home runs on.
+        r = subprocess.run([sys.executable, str(ROOT / 'scripts' / 'check-es5.py'), '--tv'] + paths,
                            capture_output=True, text=True)
         if r.returncode:
             for line in r.stdout.splitlines():

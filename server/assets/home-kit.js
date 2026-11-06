@@ -77,20 +77,42 @@
   /** @type {any} */ (window).Glasshouse = {
     version: 1,
 
-    // cb(err, { apps: [{ id, title, icon, hidden }], inputs: [{ id, title, port, tuner }] })
+    /*
+     * cb(err, { apps: [{ id, title, icon, hidden, folder }],
+     *           inputs: [{ id, title, port, tuner, unused, hidden }] }), in the
+     * order arranged on the Home tab. hidden: hidden there, or an input with
+     * nothing plugged in where the Home tab leaves those out. folder: put in
+     * More apps there, for a launcher that has a place for them.
+     */
     catalogue: function (cb) {
       cb = done(cb);
       request('GET', '/api/home/catalogue', null, function (err, c) {
         if (err) return cb(err);
-        var hidden = (c.layout && c.layout.hidden && c.layout.hidden.app) || [];
-        var apps = [], inputs = [], i;
-        for (i = 0; i < (c.apps || []).length; i++) {
-          var a = c.apps[i];
-          apps.push({ id: a.id, title: a.title, icon: a.icon || null, hidden: hidden.indexOf(a.id) !== -1 });
+        var layout = c.layout || {};
+        var hidden = layout.hidden || {};
+        var hiddenApps = hidden.app || [], hiddenInputs = hidden.dev || [], folder = layout.folder || [];
+        var order = c.order || {};
+        function inOrder(list, ids) {
+          if (!ids || !ids.length) return list.slice();
+          var byId = {}, out = [], i;
+          for (i = 0; i < list.length; i++) byId[list[i].id] = list[i];
+          for (i = 0; i < ids.length; i++) if (byId[ids[i]]) { out.push(byId[ids[i]]); delete byId[ids[i]]; }
+          for (i = 0; i < list.length; i++) if (byId[list[i].id]) out.push(list[i]);
+          return out;
         }
-        for (i = 0; i < (c.devices || []).length; i++) {
-          var d = c.devices[i];
-          inputs.push({ id: d.id, title: d.name, port: d.port || 0, tuner: d.tuner === true, unused: d.unused === true });
+        var apps = [], inputs = [], i;
+        var appList = inOrder(c.apps || [], order.app);
+        for (i = 0; i < appList.length; i++) {
+          var a = appList[i];
+          apps.push({ id: a.id, title: a.title, icon: a.icon || null,
+            hidden: hiddenApps.indexOf(a.id) !== -1, folder: folder.indexOf(a.id) !== -1 });
+        }
+        var devList = inOrder(c.devices || [], order.dev);
+        for (i = 0; i < devList.length; i++) {
+          var d = devList[i];
+          var unused = d.unused === true;
+          inputs.push({ id: d.id, title: d.name, port: d.port || 0, tuner: d.tuner === true, unused: unused,
+            hidden: hiddenInputs.indexOf(d.id) !== -1 || (unused && layout.hideUnused === true) });
         }
         cb(null, { apps: apps, inputs: inputs });
       });

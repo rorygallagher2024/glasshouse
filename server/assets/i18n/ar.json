@@ -3027,5 +3027,6 @@
  "tv.home.launcher.hintMany": {"text": "شاشة رئيسية مكان Glasshouse Home، من الكتالوج أو خاصة بك، تُعدّ في تبويب Home بلوحة الويب.", "from": "A home screen in Glasshouse Home’s place, from the catalogue or your own, set up on the Home tab of the web dashboard."},
  "home.launcher.network": {"text": "يتصل بـ {hosts}", "from": "Connects to {hosts}"},
  "home.launcher.withdrawn": {"text": "سُحب من الكتالوج، لذا لم يعد بالإمكان استخدامه. أزله.", "from": "Withdrawn from the catalogue, so it can no longer be used. Remove it."},
- "srv.home.launcher.withdrawn": {"text": "سُحب هذا المشغّل من الكتالوج.", "from": "This launcher was withdrawn from the catalogue."}
+ "srv.home.launcher.withdrawn": {"text": "سُحب هذا المشغّل من الكتالوج.", "from": "This launcher was withdrawn from the catalogue."},
+ "home.layoutDescLauncher": {"text": "ما يعرضه المشغّل المخصص من تطبيقات التلفاز ومداخله، وبأي ترتيب. تتبع مشغّلات الكتالوج ذلك؛ ويمكن لمشغّلك الخاص ذلك.", "from": "Which of the TV’s apps and inputs the custom launcher shows, and in what order. Launchers from the catalogue follow it; one of your own can."}
 }

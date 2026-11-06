@@ -1714,6 +1714,44 @@ the Search setting and blocker, so a pending lookup stops when either refuses.
 Search requests allow 12 seconds for the
 server's 10-second limit; launches allow 20 seconds for sequential detail reads.
 
+### Custom launchers
+
+`lib/home-launcher.js` puts another page in the view's place; everything that
+gets the view in front of the TV is unchanged. The app in LG's Home's place
+(or `com.tvweb.home` on webOS 3 and 4, which is installed once and never
+changes) opens `/assets/home.html` as before, and while a launcher is chosen
+and Glasshouse Home is on, the server answers that with a redirect to
+`/home/launcher/`. The heartbeat's reply carries `launcher`, a revision that
+changes with the choice or a new upload, so the page in front reloads into the
+right one within a beat.
+
+Each launcher is unpacked to `/var/lib/tvweb/home-launcher/apps/<id>`, with
+`launcher.json` naming those kept and the one chosen. Zips and `.ipk`s are read
+in JavaScript, the `.ipk` with the installer's ar and tar readers, as not every
+webOS has `unzip`. Paths outside the folder, links and native apps are refused.
+The start page is served with `/assets/home-kit.js?v=<release>` added first in
+its head: the release in the address because the TV's browser keeps scripts a
+day, and a launcher written against a newer kit would meet an older one. The
+kit sends the heartbeat (and on webOS 4 closes the page when switched off or
+two minutes behind another app, as the view does) and defines
+`window.Glasshouse`. A web address opens in a frame of `assets/home-web.html`,
+which carries the kit, so the site never runs as the Home app.
+
+The Home key with the view already in front launches nothing on webOS 9 (a
+C2), so the server launches the view again on a short press there, which
+reaches the page as `webOSRelaunch`; the kit's `onHome` passes it on. On
+webOS 4 a view that stops answering is closed with WebAppMgr's `killApp`
+before it is launched again, since a launch while it runs only brings back the
+page it is on.
+
+The catalogue is `docs/launchers/catalog.json`, published with these docs.
+An install reads it afresh, downloads with the curl or wget client
+(`lib/fetch.js`) and refuses a file whose size or sha256 differs. While one
+from it is kept, the server reads it five minutes after start and then daily,
+and a launcher it lists under `withdrawn` is taken out of the view's place.
+`scripts/check-launchers.py` is what holds entries to the rules in
+[Writing a launcher](development/WRITING-LAUNCHERS.md#adding-it-to-the-catalogue).
+
 ## Apps kept ready in the background
 
 webOS's preload manager keeps apps loaded so they open quickly, including ones

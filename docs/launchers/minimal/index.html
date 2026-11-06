@@ -107,15 +107,17 @@ html,body{height:100%;background:#000;color:#f2f2f2;overflow:hidden;cursor:defau
     Glasshouse.catalogue(function (err, cat) {
       // Just after the TV starts, Glasshouse may still be starting too.
       if (err) return setTimeout(load, 2000);
-      var apps = [], inputs = [], i;
+      // In the order arranged on the Home tab; those put in More apps come last.
+      var apps = [], later = [], inputs = [], i;
       for (i = 0; i < cat.apps.length; i++) {
         var a = cat.apps[i];
-        if (!a.hidden) apps.push({ id: a.id, title: a.title, open: opener('app', a.id) });
+        if (!a.hidden) (a.folder ? later : apps).push({ id: a.id, title: a.title, open: opener('app', a.id) });
       }
+      apps = apps.concat(later);
       apps.push({ id: 'lg-home', title: 'LG Home', open: function () { Glasshouse.lgHome(); } });
       for (i = 0; i < cat.inputs.length; i++) {
         var d = cat.inputs[i];
-        if (!d.unused) inputs.push({ id: d.id, title: d.title, open: opener('input', d.id) });
+        if (!d.hidden) inputs.push({ id: d.id, title: d.title, open: opener('input', d.id) });
       }
       keepPlace('apps', apps);
       keepPlace('inputs', inputs);

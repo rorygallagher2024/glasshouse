@@ -3027,5 +3027,6 @@
  "tv.home.launcher.hintMany": {"text": "Ekran główny zamiast Glasshouse Home, z katalogu lub własny, ustawiony na karcie Home panelu internetowego.", "from": "A home screen in Glasshouse Home’s place, from the catalogue or your own, set up on the Home tab of the web dashboard."},
  "home.launcher.network": {"text": "Łączy się z {hosts}", "from": "Connects to {hosts}"},
  "home.launcher.withdrawn": {"text": "Wycofany z katalogu, więc nie można go już używać. Usuń go.", "from": "Withdrawn from the catalogue, so it can no longer be used. Remove it."},
- "srv.home.launcher.withdrawn": {"text": "Ten launcher został wycofany z katalogu.", "from": "This launcher was withdrawn from the catalogue."}
+ "srv.home.launcher.withdrawn": {"text": "Ten launcher został wycofany z katalogu.", "from": "This launcher was withdrawn from the catalogue."},
+ "home.layoutDescLauncher": {"text": "Które aplikacje i wejścia telewizora pokazuje własny launcher i w jakiej kolejności. Launchery z katalogu tego przestrzegają; Twój własny może.", "from": "Which of the TV’s apps and inputs the custom launcher shows, and in what order. Launchers from the catalogue follow it; one of your own can."}
 }

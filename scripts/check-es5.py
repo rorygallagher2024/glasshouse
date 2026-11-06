@@ -198,24 +198,43 @@ def blank(src):
     return ''.join(out), templates
 
 
+# --tv: every file given is for the TV's browser, a custom launcher's
+# (check-launchers.py): its scripts whatever their tag, and its stylesheets.
+ALL_TV = '--tv' in sys.argv
+
+
 def check(path):
     src = path.read_text(encoding='utf-8')
     raw = src
+    tv = ALL_TV or path.name in TV_PAGES
+    if path.suffix == '.css':
+        hits = []
+        if tv:
+            for pattern, why in TV_CSS_RULES:
+                for m in re.finditer(pattern, re.sub(r'(?s)/\*.*?\*/', '', src)):
+                    hits.append((src[:m.start()].count('\n') + 1, why))
+        for ln, why in sorted(hits):
+            print('%s:%d: %s' % (path, ln, why))
+        print('%s: %d line%s, %d ES6 construct%s' % (path, src.count('\n') + 1, '' if src.count('\n') == 0 else 's',
+                                                    len(hits), '' if len(hits) == 1 else 's'))
+        return len(hits)
     if path.suffix == '.html':
         # Inline scripts only, each left on its own lines so a hit reports the
-        # page's line number; the markup around them becomes blank lines.
-        src = re.sub(r'(?s)(^|</script>).*?(<script>|$)',
+        # page's line number; the markup around them becomes blank lines. For
+        # a launcher, a script with attributes too, as long as it has no src.
+        opener = r'<script(?![^>]*\bsrc\b)[^>]*>' if ALL_TV else r'<script>'
+        src = re.sub(r'(?s)(^|</script>).*?(' + opener + r'|$)',
                      lambda m: '\n' * m.group(0).count('\n'), src)
     code, templates = blank(src)
     hits = [(ln, 'template literal - use string concatenation') for ln in templates]
     rules = list(RULES)
-    if path.name in TV_PAGES:
+    if tv:
         rules += [r for r in TV_RULES
                   if not (r[0].startswith('(?<![.\\w$])fetch') and 'window.fetch = function' in raw)]
     for pattern, why in rules:
         for m in re.finditer(pattern, code):
             hits.append((code[:m.start()].count('\n') + 1, why))
-    if path.name in TV_PAGES and path.suffix == '.html':
+    if tv and path.suffix == '.html':
         # Style blocks and attributes; scripts become blank lines.
         css = re.sub(r'(?s)<script.*?</script>', lambda m: '\n' * m.group(0).count('\n'), raw)
         for pattern, why in TV_CSS_RULES:
@@ -229,8 +248,8 @@ def check(path):
     return len(hits)
 
 
-if len(sys.argv) > 1:
-    targets = [pathlib.Path(a) for a in sys.argv[1:]]
+if [a for a in sys.argv[1:] if a != '--tv']:
+    targets = [pathlib.Path(a) for a in sys.argv[1:] if a != '--tv']
 else:
     root = pathlib.Path(__file__).resolve().parent.parent
     targets = [root / 'server' / 'tvweb.js']

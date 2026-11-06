@@ -3027,5 +3027,6 @@
  "tv.home.launcher.hintMany": {"text": "Kezdőképernyő a Glasshouse Home helyén, a katalógusból vagy saját, a webes vezérlőpult Kezdőképernyő lapján beállítva.", "from": "A home screen in Glasshouse Home’s place, from the catalogue or your own, set up on the Home tab of the web dashboard."},
  "home.launcher.network": {"text": "Kapcsolódik ide: {hosts}", "from": "Connects to {hosts}"},
  "home.launcher.withdrawn": {"text": "Visszavonták a katalógusból, ezért már nem használható. Távolítsd el.", "from": "Withdrawn from the catalogue, so it can no longer be used. Remove it."},
- "srv.home.launcher.withdrawn": {"text": "Ezt az indítót visszavonták a katalógusból.", "from": "This launcher was withdrawn from the catalogue."}
+ "srv.home.launcher.withdrawn": {"text": "Ezt az indítót visszavonták a katalógusból.", "from": "This launcher was withdrawn from the catalogue."},
+ "home.layoutDescLauncher": {"text": "A TV mely alkalmazásait és bemeneteit mutatja a saját indító, és milyen sorrendben. A katalógus indítói ezt követik; a sajátod követheti.", "from": "Which of the TV’s apps and inputs the custom launcher shows, and in what order. Launchers from the catalogue follow it; one of your own can."}
 }
