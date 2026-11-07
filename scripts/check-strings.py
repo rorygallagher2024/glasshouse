@@ -223,7 +223,7 @@ def one_literal(src, end):
 
 def scan_script(name, src, offset_line):
     code = strip_code(src)
-    for m in re.finditer(r'(?<![\w$.])t\(', code):
+    for m in re.finditer(r'(?<![\w$.])(?:I18N\.)?t\(', code):
         start = m.end()
         where = '%s:%d' % (name, offset_line + src.count('\n', 0, m.start()))
         rest = code[start:].lstrip()
@@ -283,8 +283,10 @@ for page in PAGES:
     code = ''
     for m in re.finditer(r'<script>([\s\S]*?)</script>', src):
         code += scan_script(page, m.group(1), src.count('\n', 0, m.start(1)) + 1)
-    # The scripts a page loads from assets/ui/, which the server puts back inline.
-    for rel in re.findall(r'<script src="/assets/(ui/[\w-]+\.js)"></script>', src):
+    # The page's external scripts, including helpers used only by the TV view.
+    for rel in re.findall(r'<script src="/assets/((?:ui/)?[\w-]+\.js)"></script>', src):
+        if rel in ('i18n.js', 'qr.js'):
+            continue
         code += scan_script(rel, (ASSETS / rel).read_text(encoding='utf-8'), 1)
     for el_id in rewritten_ids(code) & set(parser.keyed_ids):
         problems.append('%s: #%s is tagged data-t but the script rewrites it; key it in the script instead'

@@ -164,6 +164,7 @@ function renderHome() {
   const autoVal = autoLeased !== undefined ? autoLeased : st.homeAutoLaunch;
   if (autoRow) autoRow.hidden = autoVal === undefined;
   renderHomeCustom(autoVal);
+  renderHomeWidgets();
   const autoBtn = q('home-autolaunch');
   if (autoBtn && autoVal !== undefined) {
     const on = !!autoVal;
@@ -861,7 +862,7 @@ function homePreviewOption(field) {
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.
-const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos']];
+const HOME_SHOW = [['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos']];
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });

@@ -2039,3 +2039,14 @@ h3 .tvm-tags i{font-size:11px}
   .tvm-dock-acts{order:3;width:100%;padding:4px 0 2px}
   .tvm-dock-x{margin-inline-start:auto}
 }
+/* Widget settings reuse the Home tab's rows and controls, stacked on phones. */
+.home-widget-fields{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:12px 0 24px}
+.home-widget-fields>.prot-desc,.home-widget-search,#home-widget-results{width:100%}
+.home-widget-fields label{display:flex;align-items:center;flex-wrap:wrap;gap:8px;max-width:100%}
+.home-widget-fields input:not([type=checkbox]){min-width:0;max-width:100%;padding:8px;border:1px solid var(--w25);border-radius:6px;background:var(--bg);color:var(--w90);font:inherit;box-sizing:border-box}
+.home-widget-search{display:flex;align-items:flex-end;flex-wrap:wrap;gap:8px}
+.home-widget-actions{display:flex;flex-wrap:wrap;gap:6px}
+.home-widget-import{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:16px 0 8px}
+.home-widget-import input{max-width:100%}
+#home-widget-results .pill{white-space:normal;text-align:start;max-width:100%;margin:0 6px 6px 0}
+@media(max-width:600px){#home-widgets .prot-row{align-items:flex-start;flex-direction:column;gap:8px}.home-widget-fields label{width:100%}.home-widget-fields input:not([type=checkbox]){width:100%}}

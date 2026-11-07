@@ -1722,6 +1722,20 @@ the Search setting and blocker, so a pending lookup stops when either refuses.
 Search requests allow 12 seconds for the
 server's 10-second limit; launches allow 20 seconds for sequential detail reads.
 
+### Home widgets
+
+`lib/home-widgets.js` normalises the two-slot layout in `home.json` and reads
+weather through `fetch.getJson`, using only fixed Open-Meteo endpoints.
+`GET /api/home/widgets/weather` shares the in-memory cache and any pending
+read; `POST /api/home/widgets/locations` searches for a city only on demand.
+Layout writes use the existing Home route and guards. The TV view's
+`home-widgets-view.js` stops polling when hidden or covered and ignores replies
+from an earlier configuration. Text widgets use text nodes, with no uploaded
+code or external URLs. The existing `showClock` remains the clock's visibility
+setting, so the TV app and older dashboards preserve and edit the same layout.
+The [widget format](development/WRITING-WIDGETS.md) describes sizes, limits
+and the weather cache's lifetimes.
+
 ### Custom launchers
 
 `lib/home-launcher.js` puts another page in the view's place; everything that

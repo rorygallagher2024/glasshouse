@@ -1192,6 +1192,7 @@ function handleHomeRoute(req, res, u, pathname) {
         reply(c);
       });
     }
+    if (pathname === '/api/home/widgets/weather') return homeModule.widgets.weather(homeModule.layout().widgets, reply);
     if (pathname === '/api/home/channels') {
       return homeModule.channelList(function (list) { reply({ ok: true, channels: list, tuner: !!list }); });
     }
@@ -1259,6 +1260,7 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
+      if (pathname === '/api/home/widgets/locations') return homeModule.widgets.locations(body && body.query, reply);
       if (pathname === '/api/home/start-layout') return homeModule.setHideLgHomeAtStart(body, reply);
       if (pathname === '/api/home/wallpapers') return homeModule.setWallpapers(body, reply);
       if (pathname === '/api/home/enable') return homeModule.enable(reply);
@@ -1460,7 +1462,7 @@ function handleRequest(req, res) {
     // longer has, or miss text it now does.
     // So is the script a custom launcher is given: a launcher written for a
     // newer one calls what an older copy lacks.
-    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit)\.js$/.test(file);
+    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit|home-widgets-view)\.js$/.test(file);
     var cacheHdr = fresh ? 'no-cache' : 'public, max-age=86400';
     var respondWithBuf = function (buf) {
       var etag = '"' + (displayVersionStr || '1') + '-' + buf.length.toString(16) + '"';

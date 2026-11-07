@@ -7,6 +7,16 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
+`test-home-widgets.js` checks old-layout migration, saved widget settings,
+the two-slot limit, refusal of executable widget types and invalid locations,
+weather opt-in, shared requests, caching, failure backoff, stale expiry and
+unit changes with injected time and network replies. No live weather request
+or TV command runs. The ES5 check includes `home-widgets-view.js`; the string
+check reads external on-TV scripts as well as the web dashboard's scripts.
+The widget browser check exercises dashboard configuration and imports, Home's
+rendered settings, literal text, and pausing and resuming weather while covered.
+Its weather and city replies are fixtures; it makes no provider requests.
+
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC
 EDID flag does not promote ARC, stale driver values do not become live audio,

@@ -147,6 +147,15 @@ Glasshouse Home leaves empty rows out and centres the remaining rows below the c
 
 Glasshouse Home's text and accent colours are saved in `/var/lib/tvweb/home.json` and applied to its view within a few seconds. **Use the default colours** clears the choice.
 
+The top widget order, clock format and date visibility, weather city and unit,
+and imported text widgets are also saved in `home.json` and included in
+settings backups. Two widgets can be shown at once. Weather is off by default;
+explicit city searches use Open-Meteo's geocoding service, and enabling it
+allows forecast reads with that city's coordinates and the TV's public IP
+address. Readings stay in memory, fresh for 15 minutes, with a five-minute
+retry delay and six-hour limit on old readings. Home pauses polling while
+covered. Imported text widgets run no code and fetch nothing.
+
 Glasshouse Home's **Last watched**, **App count** and **CEC addresses** switches are saved in `/var/lib/tvweb/home.json`, on unless switched off. Both dashboards edit the same choices, which reach an open Home view through its heartbeat. The source stays hidden until the saved layout loads.
 
 While Glasshouse Home and its picture details (off by default) are on and the TV is out of standby, a read-only `videooutput/getStatus` subscription records the last video each app plays for the plate. It starts before the first Home visit and stops when either is switched off or the TV goes into standby. Recorded videos stay in memory until the server restarts. HDMI signal and picture-mode reads change no TV settings.

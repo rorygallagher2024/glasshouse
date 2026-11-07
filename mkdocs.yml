@@ -91,6 +91,7 @@ nav:
       - Screen saver design: development/SCREENSAVER-DESIGN.md
       - Writing a screen saver: development/WRITING-SCREENSAVERS.md
       - Writing a launcher: development/WRITING-LAUNCHERS.md
+      - Writing a widget: development/WRITING-WIDGETS.md
       - Translating the dashboards: STRINGS.md
 
 # Kept until the Homebrew Channel listing is live (webosbrew/apps-repo#261).

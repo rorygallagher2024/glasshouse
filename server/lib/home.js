@@ -36,6 +36,7 @@ var recent = require('./home-recent');
 var recentApps = require('./home-recent-apps');
 var search = require('./home-search');
 var recommended = require('./home-recommended');
+var widgets = require('./home-widgets');
 
 // The separate app earlier builds installed: removed, and its settings undone.
 var HOME_APP = 'com.tvweb.home';
@@ -368,6 +369,7 @@ function defaults() {
     // beside Apps, and each CEC device's address. On unless switched off, as
     // before they could be.
     showClock: true,
+    widgets: widgets.normalise(null),
     showLastOn: true,
     showAppCount: true,
     showCec: true,
@@ -467,6 +469,7 @@ function normalise(raw) {
   d.picture = raw.picture === true;
   d.livePreview = raw.livePreview === true;
   SHOW_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
+  d.widgets = widgets.normalise(raw.widgets);
   d.rowsBottom = raw.rowsBottom === true;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.previewAlways = raw.previewAlways === true;
@@ -594,6 +597,11 @@ function hideApps(ids) {
 function setLayout(body, cb) {
   var c = readConfig();
   if (!body || typeof body !== 'object') return cb({ ok: false, error: 'layout expected' });
+  if (body.widgets !== undefined && (!body.widgets || typeof body.widgets !== 'object' ||
+      !Array.isArray(body.widgets.custom) || body.widgets.custom.length > 8 ||
+      body.widgets.custom.some(function (w) { return !widgets.custom(w); }))) {
+    return cb({ ok: false, error: msg('srv.widgets.invalid', 'Use a version 1 text widget with an id, name and value (up to eight installed widgets).') });
+  }
   var next = normalise({
     enabled: c.enabled,
     restorePending: c.restorePending,
@@ -615,6 +623,7 @@ function setLayout(body, cb) {
     picture: typeof body.picture === 'boolean' ? body.picture : c.picture,
     livePreview: typeof body.livePreview === 'boolean' ? body.livePreview : c.livePreview,
     showClock: typeof body.showClock === 'boolean' ? body.showClock : c.showClock,
+    widgets: body.widgets !== undefined ? body.widgets : c.widgets,
     rowsBottom: typeof body.rowsBottom === 'boolean' ? body.rowsBottom : c.rowsBottom,
     view: body.view !== undefined ? body.view : c.view,
     showLastOn: typeof body.showLastOn === 'boolean' ? body.showLastOn : c.showLastOn,
@@ -639,6 +648,10 @@ function setLayout(body, cb) {
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
   });
+  if (widgets.count(next.widgets, next.showClock) > 2) return cb({ ok: false,
+    error: msg('srv.widgets.full', 'The top section holds two widgets. Switch one off first.') });
+  if (next.widgets.weather.enabled && !next.widgets.weather.location) return cb({ ok: false,
+    error: msg('srv.widgets.location', 'Choose a city before switching weather on.') });
   // A moved or emptied Internet TV row reorders, or removes from, its channels.
   if (iptvModule && body.order && isArray(body.order.iptv)) iptvModule.setOrder(stringList(body.order.iptv, 100));
   if (body.reset === true) {
@@ -665,7 +678,7 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, widgets: c.widgets, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
@@ -2438,6 +2451,7 @@ function init(opts) {
   recent.init(stateDir, opts.now);
   recentApps.init({ luna: lunaFn, excluded: function () { return readConfig().excludedRecents; } });
   recommended.init({ luna: lunaFn });
+  widgets.init();
   search.init({ luna: lunaFn, Subscription: opts.Subscription, apps: launchPoints,
     opened: function (id) { noteOpened('app', id); }, enabled: function () { return readConfig().search; },
     blockedBy: opts.blockedBy, appInfoLaunch: isStandalone });
@@ -2676,6 +2690,7 @@ module.exports = {
   recentApps: recentApps,
   // The view's search: films and series on the TV's apps (lib/home-search).
   search: search,
+  widgets: widgets,
   wallpaperPath: wallpapers.image,
   uploadWallpaper: function (slot, req, cb) {
     var sup = supported();

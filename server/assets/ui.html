@@ -1160,13 +1160,6 @@
   <div class="prot-table home-custom-table">
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.showClock">Clock and date</div>
-        <div class="prot-desc" data-t="home.showClockDesc">At the top of Glasshouse Home. Switched off, the space stays empty.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-show-clock" onclick="homeShow('showClock')">&mdash;</button></div>
-    </div>
-    <div class="prot-row home-gh-row home-show-row" hidden>
-      <div class="prot-main">
         <div class="prot-title" data-t="home.showLast">Last watched</div>
         <div class="prot-desc" data-t="home.showLastDesc">At the top of Glasshouse Home and on the input it was on: what the TV last showed.</div>
       </div>
@@ -1202,6 +1195,13 @@
       <div class="prot-status"><button type="button" class="pill idle" id="home-picture" onclick="homePicture()">&mdash;</button></div>
     </div>
   </div>
+  </div>
+  <div class="home-group" id="home-g-widgets">
+    <div class="pv-g" data-t="home.widgets.title">Top widgets</div>
+    <div class="prot-row home-gh-row"><div class="prot-main">
+      <div class="prot-desc" data-t="home.widgets.description">Two fixed-size widgets fit above the app rows. Move them left or right, or switch one off to make room.</div>
+      <div id="home-widgets"></div>
+    </div></div>
   </div>
   <div class="home-group" id="home-g-preview">
   <div class="pv-g" data-t="home.group.preview">Live preview</div>
@@ -2034,6 +2034,7 @@
 <script src="/assets/ui/apps.js"></script>
 <script src="/assets/ui/install.js"></script>
 <script src="/assets/ui/home.js"></script>
+<script src="/assets/ui/home-widgets.js"></script>
 <script src="/assets/ui/iptv.js"></script>
 <script src="/assets/ui/tvchannels.js"></script>
 <script src="/assets/ui/audio.js"></script>

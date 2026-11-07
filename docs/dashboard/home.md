@@ -9,6 +9,21 @@
 
 Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour time setting), the last active source or app, and up to five rows (any row with no visible items is automatically hidden). When there are more rows than fit, they scroll to keep the one in focus in view:
 
+**Top widgets** on the web dashboard holds two fixed-size widgets above the
+rows. Clock and date starts on; Weather starts off. Move widgets left or
+right, choose a clock format or hide its date, and find a city and choose
+Celsius or Fahrenheit for weather. Finding a city sends its name to
+Open-Meteo; enabling weather sends its coordinates and the TV's public IP
+address. Weather refreshes every 15 minutes while Home is visible. A failed
+read keeps the previous reading for up to six hours with a note, then shows
+**Weather unavailable**. Switching weather off stops new reads from Home.
+
+Import a [text widget](../development/WRITING-WIDGETS.md) to display a title,
+value and detail of your own, editable here. It starts off; switch a widget
+off to free a slot. Up to eight text widgets can be kept. With two widgets,
+live preview uses smaller source text so its picture and details fit.
+Custom launchers have their own layout and do not use these widgets.
+
 <div class="grid cards" markdown>
 
 -   **Apps**
@@ -84,7 +99,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    **Clock and date** is on by default; switched off, its space stays empty, so the rows do not move. **Rows along the bottom** puts the rows of apps and inputs along the bottom of the screen, as on LG's Home, rather than in the middle. It is off by default.
+    **Clock and date** is on by default and is configured under **Top widgets** on the web dashboard. The TV app also has its visibility switch. Switched off, another widget can use its slot; with no widgets on, the top strip keeps one empty slot, so the rows do not move. **Rows along the bottom** puts the rows of apps and inputs along the bottom of the screen, as on LG's Home, rather than in the middle. It is off by default.
 
     ![Glasshouse Home with the clock off and the rows along the bottom](../screenshots/home-bottom.jpg)
 

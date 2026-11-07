@@ -551,6 +551,97 @@ async function visitHomePreview(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+async function visitHomeWidgets(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  page.on('pageerror', e => problems.push('Home widgets: ' + e.message));
+  let layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true,
+    showClock: true, widgets: require('../server/lib/home-widgets').normalise(null) };
+  let version = 1, weatherReads = 0, covered = false, lastWeather = null;
+  const reply = (route, body) => route.fulfill({ json: body });
+  await page.route('**/api/home**', route => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname === '/api/home') return reply(route, { ok: true, supported: { ok: true }, enabled: true, active: true, writable: true, layout });
+    if (pathname === '/api/home/catalogue') return reply(route, { ok: true, layout, layoutVersion: String(version),
+      apps: [], devices: [], channels: [], order: { app: ['lg-home'], dev: [], ch: [] }, sources: {} });
+    if (pathname === '/api/home/layout') {
+      layout = Object.assign({}, layout, route.request().postDataJSON());
+      layout.widgets = require('../server/lib/home-widgets').normalise(layout.widgets);
+      version++;
+      return reply(route, { ok: true, layout });
+    }
+    if (pathname === '/api/home/widgets/locations') return reply(route, { ok: true,
+      locations: [{ name: 'Paris, France', latitude: 48.85, longitude: 2.35 }] });
+    if (pathname === '/api/home/widgets/weather') {
+      weatherReads++;
+      lastWeather = route;
+      return reply(route, { ok: true, available: true, stale: true, temperature: 12.5, code: 3 });
+    }
+    return reply(route, { ok: true, build: 'one', layoutVersion: String(version), covered });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    const widgets = page.locator('#home-widgets');
+    await widgets.getByRole('button', { name: 'Clock and date', exact: true }).waitFor();
+    await widgets.getByLabel('Time format', { exact: true }).selectOption('12');
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.clock.format === '12');
+    await widgets.getByLabel('Show date', { exact: true }).uncheck();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.clock.date === false);
+    await widgets.getByRole('searchbox', { name: 'City', exact: true }).fill('Paris');
+    await widgets.getByRole('button', { name: 'Find city', exact: true }).click();
+    await widgets.getByRole('button', { name: 'Paris, France', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.weather.location !== null);
+    await widgets.getByRole('button', { name: 'Weather', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.weather.enabled);
+    await widgets.getByRole('button', { name: 'Move left', exact: true }).nth(1).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.order[0] === 'weather');
+    await widgets.locator('input[type=file]').setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{') });
+    await page.locator('#err').filter({ hasText: 'Choose a valid text widget JSON file.' }).waitFor({ state: 'visible' });
+    if (layout.widgets.custom.length) problems.push('Home widgets: an invalid import changed the layout');
+    const manifest = { version: 1, type: 'text', id: 'message', name: 'Message', value: '<script>bad()</script>', detail: 'Friday' };
+    await widgets.locator('input[type=file]').setInputFiles({ name: 'message.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(manifest)) });
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom.length === 1);
+    await page.setViewportSize({ width: 390, height: 844 });
+    if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) problems.push('Home widgets: phone layout overflows');
+    // Displayed weather is a deterministic fixture; this test never reaches the provider.
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForFunction(() => document.querySelector('#widget-weather .widget-value')?.textContent === '13°C');
+    const actual = await page.evaluate(() => ({
+      first: document.querySelector('#widgets>div').id,
+      date: getComputedStyle(document.getElementById('date')).display,
+      meridiem: document.getElementById('mer').textContent,
+      stale: document.querySelector('#widget-weather .widget-status').textContent,
+      width: document.getElementById('widgets').offsetWidth,
+      statusFits: document.querySelector('#widget-weather .widget-status').getBoundingClientRect().bottom <=
+        document.getElementById('widget-weather').getBoundingClientRect().bottom + 1
+    }));
+    if (actual.first !== 'widget-weather' || actual.date !== 'none' || !actual.meridiem || !actual.stale || !actual.statusFits || actual.width !== 744) {
+      problems.push('Home widgets: settings did not reach Home: ' + JSON.stringify(actual));
+    }
+    const initialReads = weatherReads;
+    covered = true;
+    await page.clock.fastForward(5000);
+    await page.waitForFunction(() => document.documentElement.classList.contains('resting'));
+    await page.clock.fastForward(16 * 60000);
+    if (weatherReads !== initialReads) problems.push('Home widgets: weather kept polling while covered');
+    covered = false;
+    await page.clock.fastForward(5000);
+    await waitUntil(page, () => Promise.resolve(weatherReads > initialReads));
+    if (weatherReads === initialReads) problems.push('Home widgets: weather did not refresh on return');
+    layout.showClock = false;
+    layout.widgets.weather.enabled = false;
+    layout.widgets.custom[0].enabled = true;
+    version++;
+    await page.clock.fastForward(5000);
+    await page.waitForFunction(() => !!document.getElementById('widget-message'));
+    if (await page.locator('#widget-message .widget-value').textContent() !== manifest.value ||
+        await page.locator('#widget-message script').count()) problems.push('Home widgets: imported text was not treated literally');
+    if (!lastWeather) problems.push('Home widgets: weather fixture was never read');
+  } finally { await page.close(); }
+}
+
 async function visitHomeVisibility(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home visibility: ' + e.message));
@@ -2610,7 +2701,7 @@ function groups(web, tv) {
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
-    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels] },
+    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels, visitHomeWidgets] },
     /*
      * Scrolling and motion read the row's place frame by frame, and missed
      * frames with the other groups sharing CI's four cores: 3 of 15 runs

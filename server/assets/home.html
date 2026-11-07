@@ -48,12 +48,25 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #now,.row h2,.tile{text-shadow:0 1px 12px rgba(0,0,0,.55)}
 
 #now{display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;padding:0 112px;height:262px}
-#when{width:520px;-webkit-flex:0 0 auto;flex:0 0 auto}
-#clock{font-family:'Outfit',sans-serif;font-size:176px;line-height:.8;font-weight:300;letter-spacing:-4px}
+#widgets{display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;-webkit-flex:0 0 auto;flex:0 0 auto;min-width:360px;height:200px}
+#when,.home-widget{width:360px;height:200px;-webkit-flex:0 0 auto;flex:0 0 auto;overflow:hidden;box-sizing:border-box;padding-top:40px}
+#widgets>div+div{margin-left:24px}
+#clock{font-family:'Outfit',sans-serif;font-size:120px;line-height:.8;font-weight:300;letter-spacing:-3px}
+.widget-name,.widget-detail,.widget-status{font-size:23px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.widget-name{color:#a39d93}
+.widget-value{font-family:'Outfit',sans-serif;font-size:64px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.widget-detail{color:#a39d93}
+.widget-status{font-size:18px;color:#a39d93;margin-top:6px}
+.widgets-two #plate{max-width:420px;margin-left:32px}
+.widgets-two #plMode{font-size:44px}
+.widgets-two.previewing #srcTitle{font-size:44px}
+.widgets-two.previewing #srcKind,.widgets-two.previewing #srcVia{font-size:20px}
+.widgets-two #preview.info{margin-left:340px}
+.widgets-two #pvInfo{width:308px}
 /* The hour cycle, in 12-hour time only: small enough to stay inside #when,
    which is sized for the digits alone. */
 #mer{font-size:.28em;letter-spacing:0;margin-left:.1em;opacity:.75;font-weight:400}
-#date{margin-top:22px;font-size:28px;color:#a39d93;white-space:nowrap}
+#date{margin-top:22px;font-size:28px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Switched off, the clock keeps its space, so the rows and Last watched stay put. */
 .no-clock #when{visibility:hidden}
 #source{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;padding-left:24px;border-left:1px solid #2a2825;padding-bottom:2px}
@@ -137,18 +150,13 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 /* Alternative View (#999): a smaller clock on the right, Last watched to its
    left, and the rows as rounded, translucent tiles, titled only while arranging. */
 .alternative #now{padding:0 90px}
-.alternative #when{-webkit-order:3;order:3;width:420px;text-align:right}
+.alternative #widgets{-webkit-order:3;order:3;text-align:right}
 .alternative #clock{font-size:100px;line-height:1;letter-spacing:-2px}
 .alternative #date{margin-top:8px;font-size:23px}
 .alternative #source{-webkit-order:1;order:1;border-left:0;padding-left:22px}
 .alternative #plate{-webkit-order:2;order:2;margin:0 56px 0 0}
 .alternative #preview{-webkit-order:2;order:2;margin:0 56px 0 auto}
-/* The clock is right-aligned in a box sized for any time; previewing, it hugs
-   its digits so the picture sits beside it. */
-.alternative #now.previewing #when{width:auto}
-/* Even-width figures keep the digits, and the preview beside them, still as
-   the minutes change: at the standard clock's size Outfit's own run from 245px
-   for 3:11 to 341px for 3:09. */
+/* Tabular figures keep the clock's digits aligned as the minutes change. */
 .alternative #clock{font-variant-numeric:tabular-nums;-webkit-font-feature-settings:"tnum";font-feature-settings:"tnum"}
 .alternative:not(.arranging) .row > h2{display:none}
 .alternative .row{margin-bottom:10px}
@@ -571,9 +579,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   <div id="scrim"></div>
 
   <section id="now">
+    <div id="widgets">
     <div id="when">
       <div id="clock"><span id="hm">&mdash;</span><span id="mer" hidden></span></div>
       <div id="date">&mdash;</div>
+    </div>
     </div>
     <div id="source" class="none">
       <div id="srcKind">&mdash;</div>
@@ -662,6 +672,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 </div>
 
 <script src="/assets/i18n.js"></script>
+<script src="/assets/home-widgets-view.js"></script>
 <script>
 /*
  * Glasshouse Home's view. Everything comes from /api/home/*: the layout shared
@@ -699,6 +710,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var cl = document.documentElement.classList;
     if (on === cl.contains('resting')) return;
     cl.toggle('resting', on);
+    window.GlasshouseWidgets.covered(on);
     // Covered, the page is not hidden (webOS 4 keeps it running behind the app
     // in front), so the live preview and the animated background stop here as
     // well: under the screen saver the preview kept the tuner playing (#1209).
@@ -974,6 +986,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function render() {
     stageClass();
+    window.GlasshouseWidgets.render(layout);
     var html = '';
     barWidths = [];
     if (!shown(state.row)) state.row = nextShown(0, 1);
@@ -1474,10 +1487,16 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function renderNow() {
     var d = new Date();
     var p = hmParts(d);
+    var clock = layout && layout.widgets && layout.widgets.clock;
+    if (clock && clock.format !== 'tv') {
+      var h = d.getHours(), twelve = clock.format === '12';
+      p = [(twelve ? ((h % 12) || 12) : pad(h)) + ':' + pad(d.getMinutes()), twelve ? meridiem(d) : ''];
+    }
     $('hm').textContent = p[0];
     $('mer').textContent = p[1];
     $('mer').hidden = !p[1];
     $('date').textContent = dateText(d);
+    $('date').style.display = clock && clock.date === false ? 'none' : '';
     if (guide.open) return renderGuideStrip();
     var kind = '', title = '', via = '', pv = $('preview').className && !inTile() ? tilePreview.target : null;
     if (pv) {
