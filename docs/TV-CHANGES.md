@@ -223,3 +223,9 @@ limited to. An icon is only read from inside its app's own folder,
 whatever the app's `appinfo.json` names. Anyone on the network can tell which
 apps are installed by asking for their icons. Off by default. A port already in use is logged and left, and the
 dashboard and Home Assistant bridge carry on without it.
+
+Hue Sync setting controls call the installed app's own service to change its
+brightness, intensity, synchronization mode, entertainment area, per-mode
+background light and automatic start. They do not write Glasshouse configuration
+or enter backups: the settings belong to the Hue Sync app. Background-light and
+auto-start boolean writes remain to be confirmed on hardware.

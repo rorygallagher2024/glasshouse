@@ -2801,9 +2801,62 @@ async function visitIptvChannels(browser, base, problems) {
  * job, its groups together, on a machine of its own: CHECK_JOB names one;
  * without it every group runs.
  */
+async function visitHuesyncSettings(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('Hue Sync: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  const settings = { brightness: 50, intensity: 2, sync_mode: '1', current_ec: 'area-a',
+    ec_list: [{ id: 'area-a', name: '<img src=x onerror=alert(1)>' }, { id: 'area-b', name: 'TV' }],
+    background_lightning_video: true, background_lightning_games: false, auto_start: false };
+  let writable = true, supported = true, refuse = false;
+  const writes = [];
+  try {
+    await page.route('**/api/stats*', async route => {
+      const response = await route.fetch();
+      const stats = await response.json();
+      stats.huesyncStreaming = { streaming: true, writable, settings: supported ? settings : {} };
+      await route.fulfill({ json: stats });
+    });
+    await page.route('**/api/control', async route => {
+      const command = route.request().postDataJSON();
+      writes.push(command);
+      if (command.action === 'huesyncSetting' && !refuse) settings[command.value.key] = command.value.value;
+      await route.fulfill({ json: { ok: !refuse, settings } });
+    });
+    await page.goto(base + '/?tab=advanced');
+    await page.waitForSelector('#huesync-settings:not([hidden])');
+    if (await page.locator('#huesync-current_ec option').first().textContent() !== settings.ec_list[0].name) fail('area name was not rendered as text');
+    if (await page.locator('#huesync-settings img').count()) fail('area markup was interpreted');
+    const changes = [
+      ['brightness', 60], ['intensity', 3], ['sync_mode', '0'], ['current_ec', 'area-b'],
+      ['background_lightning_video', false], ['background_lightning_games', true], ['auto_start', true]
+    ];
+    for (const [key, value] of changes) {
+      const element = page.locator('#huesync-' + key);
+      if (typeof value === 'boolean') await element.setChecked(value);
+      else if (key === 'brightness') { await element.fill(String(value)); await element.dispatchEvent('change'); }
+      else await element.selectOption(String(value));
+      await page.waitForFunction(() => !huesyncSettingsBusy);
+      const command = writes[writes.length - 1];
+      if (!command || command.action !== 'huesyncSetting' || command.value.key !== key || command.value.value !== value) fail('wrong command for ' + key);
+    }
+    refuse = true;
+    await page.locator('#huesync-brightness').fill('10');
+    await page.locator('#huesync-brightness').dispatchEvent('change');
+    await page.waitForFunction(() => !huesyncSettingsBusy);
+    if (await page.locator('#huesync-brightness').inputValue() !== '60') fail('a refused write left an optimistic value visible');
+    writable = false;
+    await page.evaluate(() => tick());
+    await page.waitForFunction(() => document.querySelector('#huesync-brightness').disabled);
+    supported = false;
+    await page.evaluate(() => tick());
+    await page.waitForSelector('#huesync-settings[hidden]', { state: 'attached' });
+  } finally { await page.close(); }
+}
+
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },

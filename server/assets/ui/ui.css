@@ -2082,3 +2082,5 @@ h3 .tvm-tags i{font-size:11px}
   .tvm-dock-acts{order:3;width:100%;padding:4px 0 2px}
   .tvm-dock-x{margin-inline-start:auto}
 }
+/* Brightness is numeric, rather than a list of choices. */
+#huesync-brightness{background-image:none;padding-right:10px;width:116px}

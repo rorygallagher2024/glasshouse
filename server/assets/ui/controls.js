@@ -793,3 +793,55 @@ function updateDpadMobileDefault() {
     }
   });
 })();
+
+let huesyncSettingsBusy = false;
+let lastHuesyncSettings = {};
+async function changeHuesyncSetting(el) {
+  if (huesyncSettingsBusy) return;
+  if (el.type === 'number' && (!el.validity.valid || el.value === '')) { el.reportValidity(); return; }
+  const key = el.id.slice(8), previous = lastHuesyncSettings[key];
+  huesyncSettingsBusy = true;
+  el.disabled = true;
+  try {
+    const result = await sendCommand('huesyncSetting', { key,
+      value: el.type === 'checkbox' ? el.checked : el.type === 'number' ? Number(el.value) :
+        el.id === 'huesync-intensity' ? Number(el.value) : el.value });
+    const actual = result && result.settings ? result.settings[key] : previous;
+    if (el.type === 'checkbox') el.checked = actual === true;
+    else el.value = actual === undefined ? '' : String(actual);
+  } finally {
+    huesyncSettingsBusy = false;
+    el.disabled = false;
+    tick();
+  }
+}
+
+function renderHuesyncSettings(hs) {
+  const container = q('huesync-settings');
+  if (!container) return;
+  const settings = hs && hs.settings || {};
+  lastHuesyncSettings = settings;
+  container.hidden = Object.keys(settings).length === 0;
+  const choices = {
+    intensity: [t('adv.huesync.subtle', 'Subtle'), t('adv.huesync.moderate', 'Moderate'), t('adv.huesync.high', 'High'), t('adv.huesync.extreme', 'Extreme')].map((label, index) => ({ value: String(index), label })),
+    sync_mode: [{ value: '0', label: t('adv.huesync.video', 'Video') }, { value: '1', label: t('adv.huesync.game', 'Game') }],
+    current_ec: (settings.ec_list || []).map(area => ({ value: area.id, label: area.name }))
+  };
+  container.querySelectorAll('input, select').forEach(el => {
+    const key = el.id.slice(8), value = settings[key];
+    el.closest('.prot-row').hidden = value === undefined || (key === 'current_ec' && !choices.current_ec.length);
+    el.disabled = huesyncSettingsBusy || hs && hs.writable === false;
+    if (huesyncSettingsBusy || document.activeElement === el) return;
+    if (el.tagName === 'SELECT') {
+      el.replaceChildren();
+      (choices[key] || []).forEach(choice => {
+        const option = document.createElement('option');
+        option.value = choice.value;
+        option.textContent = choice.label;
+        el.appendChild(option);
+      });
+      el.value = String(value);
+    } else if (el.type === 'checkbox') el.checked = value === true;
+    else el.value = value === undefined ? '' : value;
+  });
+}

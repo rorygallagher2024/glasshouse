@@ -81,6 +81,13 @@ var HA_ENTITIES = [
   { id: 'input_source', type: 'select', name: 'Input Source', cat: 'controls' },
   { id: 'piccap', type: 'switch', name: 'PicCap Capture', cat: 'controls' },
   { id: 'huesync', type: 'switch', name: 'Hue Sync', cat: 'controls' },
+  { id: 'huesync_brightness', type: 'number', name: 'Hue Sync Brightness', cat: 'controls' },
+  { id: 'huesync_intensity', type: 'select', name: 'Hue Sync Intensity', cat: 'controls' },
+  { id: 'huesync_sync_mode', type: 'select', name: 'Hue Sync Synchronization mode', cat: 'controls' },
+  { id: 'huesync_current_ec', type: 'select', name: 'Hue Sync Entertainment area', cat: 'controls' },
+  { id: 'huesync_background_lightning_video', type: 'switch', name: 'Hue Sync Background light (video)', cat: 'controls' },
+  { id: 'huesync_background_lightning_games', type: 'switch', name: 'Hue Sync Background light (game)', cat: 'controls' },
+  { id: 'huesync_auto_start', type: 'switch', name: 'Hue Sync Automatic start', cat: 'controls' },
   { id: 'screen_notification', type: 'text', name: 'Screen Notification', cat: 'controls' },
   // Written to, never read back: an automation pushes a JSON string
   // ({"condition":"partlycloudy","temp":14.2}) and Glasshouse Home shows it
@@ -1564,6 +1571,51 @@ function buildEntities(opts) {
         payload_off: 'OFF',
         icon: 'mdi:television-ambient-light'
       }
+    });
+  }
+
+  if (opts.huesync && opts.huesyncSettings) {
+    var hueSettings = opts.huesyncSettings;
+    var hueFields = [["brightness", "number", "Brightness"], ["intensity", "select", "Intensity"], ["sync_mode", "select", "Synchronization mode"], ["current_ec", "select", "Entertainment area"], ["background_lightning_video", "switch", "Background light (video)"], ["background_lightning_games", "switch", "Background light (game)"], ["auto_start", "switch", "Automatic start"]];
+    hueFields.forEach(function (field) {
+      var key = field[0], type = field[1];
+      if (!Object.prototype.hasOwnProperty.call(hueSettings, key)) return;
+      var payload = {
+        name: 'Hue Sync ' + field[2],
+        command_topic: topic.command('huesync/' + key),
+        state_topic: topic.state('huesync/settings'),
+        value_template: '{{ value_json.' + key + ' | default(none) }}',
+        icon: 'mdi:television-ambient-light'
+      };
+      if (type === 'number') { payload.min = 0; payload.max = 100; payload.step = 1; payload.unit_of_measurement = '%'; }
+      if (type === 'switch') {
+        payload.payload_on = 'ON'; payload.payload_off = 'OFF';
+        payload.value_template = '{{ "ON" if value_json.' + key + ' == true else "OFF" if value_json.' + key + ' == false else none }}';
+      }
+      if (key === 'intensity') {
+        payload.options = ['Subtle', 'Moderate', 'High', 'Extreme'];
+        payload.value_template = '{{ ["Subtle", "Moderate", "High", "Extreme"][value_json.intensity | int] if value_json.intensity is defined else none }}';
+        payload.command_template = '{{ {"Subtle": 0, "Moderate": 1, "High": 2, "Extreme": 3}[value] }}';
+      }
+      if (key === 'sync_mode') {
+        payload.options = ['Video', 'Game'];
+        payload.value_template = '{{ "Video" if value_json.sync_mode == "0" else "Game" if value_json.sync_mode == "1" else none }}';
+        payload.command_template = '{{ "0" if value == "Video" else "1" }}';
+      }
+      if (key === 'current_ec') {
+        if (!hueSettings.ec_list || !hueSettings.ec_list.length) return;
+        // IDs remain unambiguous even when two areas share a name.
+        var labels = {}, areaIds = {};
+        payload.options = hueSettings.ec_list.map(function (a) {
+          var label = a.name + ' (' + a.id + ')';
+          labels[a.id] = label;
+          areaIds[label] = a.id;
+          return label;
+        });
+        payload.value_template = '{{ ' + JSON.stringify(labels) + '[value_json.current_ec] | default(none) }}';
+        payload.command_template = '{{ ' + JSON.stringify(areaIds) + '[value] }}';
+      }
+      entities.push({ type: type, id: 'huesync_' + key, payload: payload });
     });
   }
 

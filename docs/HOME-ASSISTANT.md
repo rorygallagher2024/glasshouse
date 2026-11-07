@@ -465,3 +465,8 @@ template:
 ```
 
 The `wake_on_lan.send_magic_packet` action needs `wake_on_lan:` in `configuration.yaml` if the integration was not added through the UI. Entity IDs start with the device name, `lg_tv` by default; a TV with its own name in `config.json` uses that instead.
+
+Hue Sync also discovers supported [sync settings](huesync.md#sync-settings):
+brightness, intensity, Video/Game mode, entertainment area, per-mode background
+light and automatic start. They share retained JSON settings state and use
+separate command topics. The existing streaming entity and topics are preserved.

@@ -155,3 +155,20 @@ The TV's own settings that the dashboard's System, Game and Privacy tabs change,
 | `switch` | `switch.lg_tv_smart_tips_in_settings` | Smart Tips in Settings | *Disabled by default.* Suggested settings in LG's Settings menu |
 
 </div>
+
+### Hue Sync settings
+
+These entities accompany the existing Hue Sync streaming switch, only for
+settings the app can read. All belong to Controls & Media.
+
+| Type | ID | Setting |
+| --- | --- | --- |
+| number | `huesync_brightness` | Brightness, 0–100% |
+| select | `huesync_intensity` | Subtle, Moderate, High, Extreme |
+| select | `huesync_sync_mode` | Video or Game |
+| select | `huesync_current_ec` | Entertainment area name and ID |
+| switch | `huesync_background_lightning_video` | Background light in video mode |
+| switch | `huesync_background_lightning_games` | Background light in game mode |
+| switch | `huesync_auto_start` | Automatic start |
+
+See [Hue Sync](huesync.md#sync-settings) for payloads and hardware-validation status.

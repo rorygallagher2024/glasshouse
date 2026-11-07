@@ -1294,6 +1294,7 @@ function setupHomeAssistant() {
       isOled: oled.getIsOled(),
       piccap: piccapWanted() && piccap.getState() !== null,
       huesync: huesyncWanted() && huesync.getState() !== null,
+      huesyncSettings: huesync.getSettings(),
       iconBaseUrl: iconServer.baseUrl()
     });
 
@@ -1310,6 +1311,14 @@ function setupHomeAssistant() {
         watchHistory: history.status().running,
         userEntities: (CONFIG.mqtt && CONFIG.mqtt.entities) || {}
       })
+    });
+
+    // Settings unsupported after an upgrade/removal must not leave retained controls.
+    ha.HA_ENTITIES.forEach(function (entry) {
+      if (entry.id.indexOf('huesync_') !== 0) return;
+      if (!entities.some(function (entity) { return entity.id === entry.id; })) {
+        mqttClient.publish(discPfx + '/' + entry.type + '/' + devId + '/' + entry.id + '/config', '', true);
+      }
     });
 
     for (var i = 0; i < entities.length; i++) {

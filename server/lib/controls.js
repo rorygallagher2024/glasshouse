@@ -961,6 +961,10 @@ function doControl(action, value, cb) {
         cb({ ok: !!(r && r.ok), error: r && !r.ok ? r.error : undefined });
       });
 
+    case 'huesyncSetting':
+      if (!huesync || !value || typeof value !== 'object') return cb({ ok: false, error: 'Invalid Hue Sync setting' });
+      return huesync.setSetting(value.key, value.value, cb);
+
     case 'huesync':
       // Hue Sync's streaming to a Philips Ambience light.
       if (!huesync) return cb({ ok: false, error: 'Hue Sync is not available' });

@@ -388,6 +388,7 @@ async function tick() {
       const pcVal = getLease('piccap', pc ? pc.running : undefined);
       advPill('piccap', 'btn_piccap', pc ? (pcVal !== undefined ? pcVal : pc.running) : undefined);
       const hs = d.huesyncStreaming;
+      renderHuesyncSettings(hs);
       const hsVal = getLease('huesync', hs ? hs.streaming : undefined);
       advPill('huesync', 'btn_huesync', hs ? (hsVal !== undefined ? hsVal : hs.streaming) : undefined);
       if (q('adv-piccap')) q('adv-piccap').hidden = !pc && !hs;

@@ -540,3 +540,9 @@ The audio route checks use a readable stream for request bodies, including
 the UTF-8 decoding used by every JSON POST.
 The split-character route fixture uses the server's buffer helper so it
 also runs on Node 0.10 and 0.12.
+
+`test-huesync-settings.js` covers captured Hue Sync response encodings, native
+write payloads, validation, unavailable settings, rejected and ignored writes,
+control permissions, retained MQTT JSON and discovery. The streaming regression
+suites retain their power-only fixtures. These mocks do not establish the
+background-light or automatic-start write contract on hardware.

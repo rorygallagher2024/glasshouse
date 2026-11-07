@@ -93,3 +93,9 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 ![System tab: Quick Boot, Stay connected when off, Always Ready, nightly power-down and Wake-on-LAN, the On and Off Timers, screen-time limits, system updates, LG logo, sound, HDMI inputs, devices and the standby light](../screenshots/advanced.png)
 
 *The TV's own settings, grouped as Power & standby, Timers, Screen time, System updates, Display, Sound, HDMI inputs, Devices and Front lights.*
+
+Where Hue Sync reports its settings, the Ambient light section also offers
+brightness, intensity, Video/Game mode, entertainment area, background light for
+each mode, and automatic start. Changes require control permission and readback
+confirmation. See [Hue Sync settings](../huesync.md#sync-settings), including the
+background-light and automatic-start hardware-validation status.

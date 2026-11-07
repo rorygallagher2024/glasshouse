@@ -798,6 +798,37 @@
     </div>
   </div>
 
+  <div class="prot-table" id="huesync-settings" hidden>
+    <div class="prot-row" id="row-huesync-brightness" hidden>
+      <label class="prot-main" for="huesync-brightness" data-t="adv.huesync.brightness">Brightness</label>
+      <div class="prot-status"><input class="pill-sel" type="number" min="0" max="100" step="1" id="huesync-brightness" onchange="changeHuesyncSetting(this)"></div>
+    </div>
+    <div class="prot-row" id="row-huesync-intensity" hidden>
+      <label class="prot-main" for="huesync-intensity" data-t="adv.huesync.intensity">Intensity</label>
+      <div class="prot-status"><select class="pill-sel" id="huesync-intensity" onchange="changeHuesyncSetting(this)"></select></div>
+    </div>
+    <div class="prot-row" id="row-huesync-sync_mode" hidden>
+      <label class="prot-main" for="huesync-sync_mode" data-t="adv.huesync.syncmode">Synchronization mode</label>
+      <div class="prot-status"><select class="pill-sel" id="huesync-sync_mode" onchange="changeHuesyncSetting(this)"></select></div>
+    </div>
+    <div class="prot-row" id="row-huesync-current_ec" hidden>
+      <label class="prot-main" for="huesync-current_ec" data-t="adv.huesync.currentec">Entertainment area</label>
+      <div class="prot-status"><select class="pill-sel" id="huesync-current_ec" onchange="changeHuesyncSetting(this)"></select></div>
+    </div>
+    <div class="prot-row" id="row-huesync-background_lightning_video" hidden>
+      <label class="prot-main" for="huesync-background_lightning_video" data-t="adv.huesync.backgroundlightningvideo">Background light (video)</label>
+      <div class="prot-status"><input type="checkbox" id="huesync-background_lightning_video" onchange="changeHuesyncSetting(this)"></div>
+    </div>
+    <div class="prot-row" id="row-huesync-background_lightning_games" hidden>
+      <label class="prot-main" for="huesync-background_lightning_games" data-t="adv.huesync.backgroundlightninggames">Background light (game)</label>
+      <div class="prot-status"><input type="checkbox" id="huesync-background_lightning_games" onchange="changeHuesyncSetting(this)"></div>
+    </div>
+    <div class="prot-row" id="row-huesync-auto_start" hidden>
+      <label class="prot-main" for="huesync-auto_start" data-t="adv.huesync.autostart">Automatic start</label>
+      <div class="prot-status"><input type="checkbox" id="huesync-auto_start" onchange="changeHuesyncSetting(this)"></div>
+    </div>
+  </div>
+
   <div class="pv-sec adv-sec" id="adv-hdmi" hidden data-t="adv.hdmi">HDMI inputs</div>
   <div class="hdmi-in" id="adv-lgs-hdmi" data-reload="loadAdvSettings"></div>
 

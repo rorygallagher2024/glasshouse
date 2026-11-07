@@ -25,6 +25,116 @@ var onAvailableChange = function () {};
 var wanted = function () { return true; };
 var appInstalled = function () { return installed(); };
 
+// Keys retain the spelling used by the retail app's service.
+var SETTING_KEYS = ['brightness', 'intensity', 'sync_mode', 'current_ec',
+  'background_lightning_video', 'background_lightning_games', 'auto_start'];
+var settings = {};
+var settingsEnabled = true;
+var settingsAt = 0;
+var settingsWaiters = null;
+var settingsGeneration = 0;
+var settingsTopic = '';
+var lastSettingsPayload = null;
+var settingBusy = false;
+
+function decodeSetting(key, value) {
+  if (typeof value === 'string') {
+    try { value = JSON.parse(value); } catch (e) { return undefined; }
+  }
+  if (key === 'ec_list') {
+    if (!Array.isArray(value)) return undefined;
+    var areas = [], ids = {};
+    for (var i = 0; i < value.length; i++) {
+      var area = value[i];
+      if (!area || typeof area.Id !== 'string' || !area.Id ||
+          typeof area.Name !== 'string' || ids[area.Id]) return undefined;
+      ids[area.Id] = true;
+      areas.push({ id: area.Id, name: area.Name });
+    }
+    return areas;
+  }
+  if (key === 'current_ec') return typeof value === 'string' ? value : undefined;
+  if (key === 'brightness') return typeof value === 'number' && isFinite(value) && value >= 0 && value <= 100 ? value : undefined;
+  if (key === 'intensity') return typeof value === 'number' && value >= 0 && value <= 3 && Math.floor(value) === value ? value : undefined;
+  if (key === 'sync_mode') return value === 0 || value === 1 || value === '0' || value === '1' ? String(value) : undefined;
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+function getSettings() {
+  // A detached snapshot keeps callers from changing discovery or validation.
+  return JSON.parse(JSON.stringify(settings));
+}
+
+function publishSettings() {
+  if (!settingsEnabled || !mqttClient || !mqttClient.connected) return;
+  var payload = Object.keys(settings).length ? JSON.stringify(settings) : '';
+  if (payload === lastSettingsPayload) return;
+  mqttClient.publish(settingsTopic, payload, true);
+  lastSettingsPayload = payload;
+}
+
+function readSettings(cb, force) {
+  if (!settingsEnabled || !isInstalled() || !available) return cb({});
+  if (settingsWaiters) { settingsWaiters.push(cb); return; }
+  if (!force && settingsAt && Date.now() - settingsAt < STATUS_CACHE_MS) return cb(getSettings());
+  settingsWaiters = [cb];
+  var generation = settingsGeneration;
+  var keys = SETTING_KEYS.concat(['ec_list']), next = {}, left = keys.length;
+  keys.forEach(function (key) {
+    lunaFn(SERVICE + 'get', { key: key, data: '' }, function (r) {
+      var value = r && r.returnValue === true && (!r.key || r.key === key) ? decodeSetting(key, r.value) : undefined;
+      if (value !== undefined) next[key] = value;
+      if (--left) return;
+      if (generation === settingsGeneration) {
+        var changed = JSON.stringify(settings) !== JSON.stringify(next);
+        settings = next;
+        settingsAt = Date.now();
+        publishSettings();
+        if (changed) onAvailableChange(available);
+      }
+      var callbacks = settingsWaiters;
+      settingsWaiters = null;
+      flush(callbacks, getSettings());
+    }, APP_ID);
+  });
+}
+
+function setSetting(key, value, cb) {
+  if (SETTING_KEYS.indexOf(key) === -1) return cb({ ok: false, error: 'Unknown Hue Sync setting' });
+  // HTTP requires native types; MQTT converts its textual payload explicitly.
+  var valid = key === 'sync_mode' ? value === '0' || value === '1'
+    : key === 'current_ec' ? typeof value === 'string' : decodeSetting(key, value) === value;
+  if (!valid || value === undefined) return cb({ ok: false, error: 'Invalid Hue Sync value' });
+  if (!isInstalled()) return cb({ ok: false, error: msg('srv.huesync.unavailable', 'Hue Sync is not available') });
+  if (settingBusy) return cb({ ok: false, error: 'Hue Sync setting change is busy' });
+  settingBusy = true;
+  var done = cb;
+  cb = function (result) { settingBusy = false; done(result); };
+  getStatus(function (state) {
+    if (!state.available) return cb({ ok: false, error: msg('srv.huesync.unavailable', 'Hue Sync is not available') });
+    readSettings(function (snapshot) {
+      if (!Object.prototype.hasOwnProperty.call(snapshot, key) ||
+          (key === 'current_ec' && (!snapshot.ec_list || !snapshot.ec_list.some(function (a) { return a.id === value; })))) {
+        return cb({ ok: false, error: 'Hue Sync setting is unavailable' });
+      }
+      lunaFn(SERVICE + 'set', { key: key, data: value }, function (r) {
+        // Invalidate an overlapping read; never publish its pre-write snapshot.
+        settingsGeneration++;
+        settingsAt = 0;
+        function confirm() {
+          readSettings(function (latest) {
+            cb({ ok: !!(r && r.returnValue === true && latest[key] === value), settings: latest,
+              error: r && r.returnValue === true && latest[key] === value ? undefined
+                : msg('srv.huesync.refused', 'Hue Sync refused the request') });
+          }, true);
+        }
+        if (settingsWaiters) settingsWaiters.push(function () { confirm(); });
+        else confirm();
+      }, APP_ID);
+    });
+  });
+}
+
 function isInstalled() {
   return appInstalled();
 }
@@ -55,6 +165,10 @@ function requestStatus() {
     } else if (missingService(response, raw)) {
       available = false;
       isStreaming = null;
+      settingsGeneration++;
+      settings = {};
+      settingsAt = 0;
+      publishSettings();
     }
     // Home Assistant's switch exists only while Hue Sync answers.
     if (available !== was) onAvailableChange(available);
@@ -149,6 +263,8 @@ function refreshAndPublishState(forcePublish) {
   if (!isInstalled() || !wanted()) return;
   getStatus(function (state) {
     publishState(state, forcePublish === true);
+    if (forcePublish) lastSettingsPayload = null;
+    readSettings(function () {}, true);
   }, true);
 }
 
@@ -160,6 +276,8 @@ function attachMqtt(opts) {
   opts = opts || {};
   mqttClient = opts.client || null;
   stateTopic = topics(opts.prefix).state('huesync/power');
+  settingsTopic = topics(opts.prefix).state('huesync/settings');
+  lastSettingsPayload = null;
   allowControl = opts.allowControl === true;
   if (pollTimer) clearInterval(pollTimer);
   // Poll independently of telemetry, and only while MQTT can receive the state.
@@ -173,6 +291,21 @@ function attachMqtt(opts) {
 }
 
 function handleMqttCommand(action, value, cb) {
+  var setting = action.indexOf('huesync/') === 0 ? action.slice(8) : '';
+  if (SETTING_KEYS.indexOf(setting) !== -1) {
+    if (!allowControl) {
+      if (cb) cb({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') });
+      return true;
+    }
+    var parsed = value;
+    if (setting === 'brightness' || setting === 'intensity') {
+      parsed = typeof value === 'string' && /^\d+(\.\d+)?$/.test(value) ? Number(value) : NaN;
+    } else if (setting !== 'sync_mode' && setting !== 'current_ec') {
+      parsed = value === 'ON' ? true : value === 'OFF' ? false : null;
+    }
+    setSetting(setting, parsed, cb || function () {});
+    return true;
+  }
   if (action !== 'huesync/power') return false;
   var power = String(value === undefined || value === null ? '' : value).toUpperCase();
   if (power !== 'ON' && power !== 'OFF') {
@@ -199,6 +332,10 @@ function handleMqttCommand(action, value, cb) {
 function forget() {
   available = false;
   isStreaming = null;
+  settingsGeneration++;
+  settings = {};
+  settingsAt = 0;
+  publishSettings();
   publishState(current(), true);
   onAvailableChange(false);
 }
@@ -207,13 +344,19 @@ function forget() {
 function status(cb) {
   if (!isInstalled()) return cb(null);
   getStatus(function (state) {
-    cb(state.available ? { streaming: state.isStreaming === true } : null);
+    if (!state.available) return cb(null);
+    readSettings(function (snapshot) {
+      var result = { streaming: state.isStreaming === true };
+      if (Object.keys(snapshot).length) result.settings = snapshot;
+      cb(result);
+    });
   });
 }
 
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
+  settingsEnabled = opts.settings !== false;
   if (typeof opts.onAvailableChange === 'function') onAvailableChange = opts.onAvailableChange;
   if (typeof opts.wanted === 'function') wanted = opts.wanted;
   if (typeof opts.installed === 'function') appInstalled = opts.installed;
@@ -225,6 +368,8 @@ function init(opts) {
     getState: getState,
     handleMqttCommand: handleMqttCommand,
     status: status,
+    getSettings: getSettings,
+    setSetting: setSetting,
     setPower: setPower
   };
 }
@@ -236,6 +381,8 @@ function initNoop() {
     getState: function () { return null; },
     handleMqttCommand: function () { return false; },
     status: function (cb) { cb(null); },
+    getSettings: function () { return {}; },
+    setSetting: function (key, value, cb) { cb({ ok: false, error: msg('srv.huesync.unavailable', 'Hue Sync is not available') }); },
     setPower: function (on, cb) { cb({ ok: false, error: msg('srv.huesync.unavailable', 'Hue Sync is not available') }); }
   };
 }

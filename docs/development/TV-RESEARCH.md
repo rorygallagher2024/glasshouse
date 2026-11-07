@@ -3151,3 +3151,16 @@ HDMI 3 in front.
   `com.webos.app.hdmiN` with the app's default trust level.
 - `applicationManager/running` with `"subscribe": true` answers at once and
   on every change to the running apps.
+
+### Hue Sync settings service
+
+A supplied Luna bus capture of retail Hue Sync 1.10.189 shows `/get` values
+as JSON encoded strings: brightness `50.000000`, intensity `2`, sync_mode `1`,
+current_ec as a quoted ID, and ec_list as an array containing Name and Id.
+Observed `/set` calls carry numeric brightness (40, 50, 60), numeric intensity
+(0, 1, 2), string sync_mode (`0`, `1`), and a plain entertainment-area ID.
+The capture also shows boolean reads for background_lightning_video,
+background_lightning_games and auto_start. Their setters were not captured.
+The supplied follow-up confirms brightness 0–100, intensity 0–3 as Subtle,
+Moderate, High, Extreme, and mode 0 Video / 1 Game. Background-light and
+auto-start boolean write payloads remain inferred pending hardware testing.

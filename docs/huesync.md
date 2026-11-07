@@ -103,3 +103,34 @@ In `config.json`, the following settings govern Hue Sync:
 | :--- | :--- | :--- |
 | `huesync.pollIntervalMs` | `30000` | How often (in milliseconds) Glasshouse queries the Hue Sync service for Home Assistant state updates while MQTT is connected (minimum `1000`, maximum `600000`). |
 | `mqtt.entities.disabled` | `[]` | Add `"huesync"` to this list to permanently disable the Home Assistant entity and stop all background polling for Hue Sync. |
+
+## Sync settings
+
+The web dashboard's System tab also reads brightness (0–100%), intensity
+(Subtle, Moderate, High, Extreme), synchronization mode (Video or Game),
+entertainment area, background light separately for video and games, and
+automatic start. A setting appears only when the service returns a valid value.
+Area names are displayed as text, with their IDs used for commands; areas sharing
+a name remain distinct. The area list is read from the app, not the Hue bridge.
+
+Each change is read back before success is reported. A service refusing or
+ignoring a change leaves its actual value visible. Controls require
+`allowControl`, like the streaming switch. No extra credentials are needed.
+
+Home Assistant receives a brightness number, intensity/mode/area selects and
+three switches. Their command topics are `<topicPrefix>/command/huesync/<key>`;
+retained JSON state is `<topicPrefix>/state/huesync/settings`. Keys are
+`brightness`, `intensity`, `sync_mode`, `current_ec`,
+`background_lightning_video`, `background_lightning_games` and `auto_start`.
+Direct MQTT accepts numeric brightness/intensity, mode `0` (video) or `1` (game),
+area IDs from `ec_list`, and `ON`/`OFF` for switches. Discovery supplies the
+friendly intensity and mode labels, and area names with IDs. Unsupported values are omitted from state
+and discovery instead of becoming zero or off.
+
+The background-light and automatic-start boolean writes follow the observed
+service read types but have not yet been captured or tested on hardware.
+These controls need confirmation on a TV. Nothing is deployed by the tests.
+
+![Hue Sync settings in the web dashboard](screenshots/huesync-settings.png)
+
+The screenshot uses simulated service responses; it is not a hardware test.

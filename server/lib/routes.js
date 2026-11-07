@@ -2155,7 +2155,7 @@ function handleRequest(req, res) {
           for (var k in s) copy[k] = s[k];
           if (clockModule) copy.clockHour12 = clockHour12();
           if (pc) copy.piccapCapture = pc;
-          if (hs) copy.huesyncStreaming = hs;
+          if (hs) { hs.writable = config.allowControl === true; copy.huesyncStreaming = hs; }
           if (scans !== undefined) copy.deviceScans = scans;
           // For the Control tab's keyboard box.
           if (keyboardUp !== null) copy.keyboardUp = keyboardUp;
