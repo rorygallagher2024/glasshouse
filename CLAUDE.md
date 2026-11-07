@@ -83,6 +83,10 @@ by side. One at a time: `node test/run-all.js`, `npx tsc`, and
 handed to another through init() is typed with
 `/** @type {typeof import('./x')} */`, so check-module-calls.py follows it.
 
+Tests follow "Tests" in docs/CONTRIBUTING.md: wait for events rather than
+fixed times, take timings and commands through `init`, and keep a new test
+under a second.
+
 # Working with a TV
 
 `scripts/tv.sh <address> version|app|luna|log|capture` covers the usual
