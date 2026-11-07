@@ -1602,7 +1602,10 @@ black for the server; being LG's Home's app, it cannot open LG's Home itself.
 `lib/home-takeover.js --release`, which unmounts without switching Glasshouse
 Home off, so the server takes the place again when it runs.
 The first-heartbeat watch is armed after taking Home even when the foreground
-id stays `com.webos.app.home`. A failed layout restore retains its backup and
+id stays `com.webos.app.home`. Switching the screen off ends the watch. A
+watch that fires more than 5 s later than it was set for has slept through a
+suspend, and gives the view the first heartbeat's 20 s rather than calling it
+hung. A failed layout restore retains its backup and
 reports failure for a later retry.
 
 Earlier builds made a separate app, `com.tvweb.home`, the TV's Home

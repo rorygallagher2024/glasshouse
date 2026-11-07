@@ -153,6 +153,14 @@ var LEGACY_INPUT_KEYS = ['lastInputApp', 'physicalLastInputApp'];
  */
 var BEAT_GRACE_MS = 10000;
 var FIRST_BEAT_GRACE_MS = 20000;
+/*
+ * Timers stop while the TV is suspended and the wall clock does not, so a
+ * heartbeat check this much later than it was set for has slept with the TV.
+ * Set before a suspend, it fires as the TV resumes, before the view can beat
+ * and sometimes before the screen is reported on (a 75QNED80ARA, webOS 10.3.2,
+ * #1277).
+ */
+var BEAT_LATE_MS = 5000;
 // Holding Home this long opens LG's Home.
 var HOLD_MS = 1200;
 /*
@@ -176,6 +184,8 @@ var PAGE_LOAD_MS = 90000;
 var pageSignMs = PAGE_SIGN_MS, pageLoadMs = PAGE_LOAD_MS;
 var pageSeenAt = 0;
 var slowOpenMs = FIRST_BEAT_GRACE_MS;
+var beatGraceMs = BEAT_GRACE_MS;
+var firstBeatGraceMs = FIRST_BEAT_GRACE_MS;
 /*
  * WebAppMgr runs every web app, the view among them. On a G4 (webOS 11.2.0) it
  * was stopped by a SIGTERM from outside, and its unit restarts only on a
@@ -1321,7 +1331,7 @@ function switchTo(on, cb) {
       if (r.ok) holdLgHome(want);
       if (r.ok) {
         console.log('home: ' + (want ? 'Glasshouse Home is in LG\'s Home\'s place' : 'LG\'s Home is in its place'));
-        if (want && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+        if (want && viewInFront() && powerActive) watchBeat(firstBeatGraceMs);
       }
       batch.forEach(function (f) { f(r); });
       if (switchWaiting.length) return run();
@@ -1499,7 +1509,7 @@ function enable(cb) {
     startingNotice(true);
     syncLgAutoLaunch();
     syncDefaultHome();
-    if (viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+    if (viewInFront() && powerActive) watchBeat(firstBeatGraceMs);
     console.log('home: Glasshouse Home switched on');
     cb({ ok: true });
   });
@@ -1987,10 +1997,15 @@ function stopBeatWatch() {
 
 function watchBeat(ms) {
   stopBeatWatch();
+  var setAt = nowMs();
   beatTimer = setTimeout(function () {
     beatTimer = null;
     // Switched off into standby the view stops beating; nothing is on screen to replace.
     if (!viewInFront() || !powerActive) return;
+    if (nowMs() - setAt > ms + BEAT_LATE_MS) {
+      console.log('home: heartbeat check held up by a suspend; waiting for the view');
+      return watchBeat(firstBeatGraceMs);
+    }
     function hung() {
       console.error('home: the Glasshouse Home view is not answering');
       recoverView('view not answering', false);
@@ -2036,7 +2051,7 @@ function beat(body) {
     viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
   }
   beats++;
-  if (viewInFront()) watchBeat(BEAT_GRACE_MS);
+  if (viewInFront()) watchBeat(beatGraceMs);
   return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()) };
@@ -2058,7 +2073,7 @@ function foregroundChanged(id) {
   noteForeground(was, id);
   if (id === homeId) {
     if (isStandalone()) escaped = false;
-    if (was !== homeId && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+    if (was !== homeId && viewInFront() && powerActive) watchBeat(firstBeatGraceMs);
     return;
   }
   stopBeatWatch();
@@ -2359,6 +2374,9 @@ function powerChanged(active) {
   }
   if (!was && active && flutterHome() && readConfig().enabled) reopenAfterWake11();
   if (!active) cancelWake();
+  // Off, the view need not beat. A check its beats set in Active Standby is
+  // caught as late when a suspend holds it up (watchBeat).
+  if (was && !active) stopBeatWatch();
   if (was !== active && readConfig().enabled) syncLgAutoLaunch();
   // The preload manager may have started over with the TV.
   if (!was && active && lgHomeHeld) preloadLgHome(false);
@@ -2447,6 +2465,8 @@ function init(opts) {
   hdmiInputsFn = opts.hdmiInputs || null;
   procDir = opts.procDir || '/proc';
   slowOpenMs = typeof opts.slowOpenMs === 'number' ? opts.slowOpenMs : FIRST_BEAT_GRACE_MS;
+  beatGraceMs = opts.beatGraceMs || BEAT_GRACE_MS;
+  firstBeatGraceMs = opts.firstBeatGraceMs || FIRST_BEAT_GRACE_MS;
   bootOpenedFile = opts.bootOpenedFile || BOOT_OPENED_FILE;
   pageSignMs = opts.pageSignMs || PAGE_SIGN_MS;
   pageLoadMs = opts.pageLoadMs || PAGE_LOAD_MS;

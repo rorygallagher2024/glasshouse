@@ -1245,6 +1245,15 @@ instead is not known yet.
 
 With Quick Start, the B8 suspends in standby, and `/proc/uptime` and `/proc/stat`'s `btime` leave the suspended time out: rebooted at 07:47 UTC and put in standby twice, it gave its boot as 18:18 the same day. Time since boot, and a boot time worked out from it, are wrong on such a TV after its first standby.
 
+## Timers stop in suspend (webOS 10.3.2, 75QNED80ARA)
+
+Node's timers stop while the TV is suspended, and the wall clock runs on. With
+Quick Start+, Glasshouse Home's page kept sending its heartbeat in Active
+Standby, so a heartbeat check was pending at the suspend. After five minutes
+off it fired as the TV resumed, 250 ms after the server saw the screen on in
+one wake and before it did in another, and took the view, which had not yet
+had a chance to beat, for hung (#1277).
+
 ## Keeping a TV awake while off (webOS 4.4.3, B8)
 
 The question was whether the B8 could stay reachable while switched off, as
