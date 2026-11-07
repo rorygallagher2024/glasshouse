@@ -46,10 +46,12 @@ var LG_FULLHOME = 'com.webos.app.fullhome';
 var SETTINGS = 'com.webos.service.settings/';
 
 // rec, the apps' recommendations, sits under the Apps row it follows and is not arranged tile by tile.
-var ROWS = ['app', 'rec', 'dev', 'ch'];
+// iptv, Internet TV (lib/iptv), holds the channels added from the owner's
+// playlists, in the order of its selection.json rather than home.json's.
+var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
-var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec'];
+var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
 // slow drift and its cross-fade between parts of the day, rows easing to the
 // chosen tile, and Recent apps, search and the folder sliding in.
@@ -65,6 +67,26 @@ var PROMO_APPS = ['com.webos.app.lgchannels', 'com.webos.app.sportsteamsettings'
   'com.webos.app.lifeonscreen', 'amazon.alexa.view', 'com.webos.app.camera'];
 // The view's own way back to LG's Home: last in the Apps row, and never hidden.
 var LG_HOME_TILE = 'lg-home';
+/*
+ * A web page saved to the Home screen is a bookmark of LG's browser, with its
+ * address in the bookmark's target. Its tile id is this and its launch point
+ * id: several pages share the browser's app id, and no app id has a colon.
+ */
+var PAGE_PREFIX = 'page:';
+var BROWSER_APP = 'com.webos.app.browser';
+// The moving backgrounds the view can draw in place of the wallpaper pictures.
+var WALL_ANIMS = ['off', 'waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
+// The moving backgrounds' colours: auto follows the part of the day; a preset
+// or custom is a background colour and a colour for the light drawn over it.
+var ANIM_THEMES = [
+  { id: 'auto' },
+  { id: 'blue', sky: '#0a1f5c', light: '#4f8dff' },
+  { id: 'sunset', sky: '#3a0f3d', light: '#ff8a4c' },
+  { id: 'emerald', sky: '#04342e', light: '#3ee0b0' },
+  { id: 'ember', sky: '#3a0808', light: '#ff5a3c' },
+  { id: 'silver', sky: '#15181e', light: '#d8dee8' }
+];
+var HEX_COLOUR = /^#[0-9a-f]{6}$/i;
 // The Inputs row's tile for the TV's own tuner, which opens Live TV.
 var TUNER_TILE = 'tv';
 /*
@@ -165,9 +187,17 @@ var WAM_UNIT = 'webapp-mgr.service';
 var SYSTEMCTLS = ['/bin/systemctl', '/usr/bin/systemctl'];
 var GUIDE_TTL_MS = 60000;
 var LIST_TTL_MS = 30000;
+/*
+ * The tuner's channels, read again less often: they change only with a
+ * retune, and a satellite list took 3.6 s to read (65SM8500PLA, webOS 4.10.1),
+ * which a request waits for once the list is out of date.
+ */
+var CHANNELS_TTL_MS = 600000;
 
 var lunaFn = null;
 var liveState = null;
+/** @type {typeof import('./iptv')} */
+var iptvModule = null;
 var historyModule = null;
 var stateDir = '/var/lib/tvweb';
 var webosVersion = null;
@@ -307,9 +337,9 @@ function defaults() {
     enabled: false,
     restorePending: false,
     rows: ROWS.slice(),
-    order: { app: [], dev: [], ch: [], rec: [] },
-    sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom' },
-    hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [] },
+    order: { app: [], dev: [], ch: [], rec: [], iptv: [] },
+    sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' },
+    hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [], iptv: [] },
     // Apps moved off the Apps row into its More apps tile, in no order of
     // their own: the folder shows them in the row's.
     folder: [],
@@ -331,11 +361,19 @@ function defaults() {
     showLastOn: true,
     showAppCount: true,
     showCec: true,
+    showTvLogos: true,
     // The live preview kept on what was last on whenever the view is on
     // screen, rather than only while a tile is chosen.
     previewAlways: false,
     // The live preview in the tile it shows, rather than beside the clock.
     previewInTile: false,
+    // A moving background drawn by the view in place of the pictures: off,
+    // or one of WALL_ANIMS.
+    wallAnim: 'off',
+    // Their colours: one of ANIM_THEMES' ids, or custom with animSky and animLight.
+    animTheme: 'auto',
+    animSky: '#0a1f5c',
+    animLight: '#4f8dff',
     // The rows centred below the top strip, or along the bottom as on LG's Home.
     rowsBottom: false,
     // standard, or alternative: a smaller clock on the right, and the rows
@@ -405,6 +443,9 @@ function normalise(raw) {
     .filter(function (id) { return chHidden.indexOf(id) === -1; });
   d.order.ch = [];
   d.hidden.ch = [];
+  // Internet TV's channels are added and removed in lib/iptv, whose list is the order.
+  d.order.iptv = [];
+  d.hidden.iptv = [];
   // A hidden app shows nowhere, so it is not also in the folder.
   var appHidden = d.hidden.app;
   d.folder = stringList(raw.folder).filter(function (id) { return appHidden.indexOf(id) === -1; });
@@ -420,6 +461,10 @@ function normalise(raw) {
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.previewAlways = raw.previewAlways === true;
   d.previewInTile = raw.previewInTile === true;
+  d.wallAnim = WALL_ANIMS.indexOf(raw.wallAnim) !== -1 ? raw.wallAnim : 'off';
+  d.animTheme = raw.animTheme === 'custom' || ANIM_THEMES.some(function (th) { return th.id === raw.animTheme; }) ? raw.animTheme : 'auto';
+  d.animSky = HEX_COLOUR.test(raw.animSky) ? String(raw.animSky).toLowerCase() : d.animSky;
+  d.animLight = HEX_COLOUR.test(raw.animLight) ? String(raw.animLight).toLowerCase() : d.animLight;
   d.search = raw.search === true;
   d.recommended = raw.recommended === true;
   // Its cards come and go with the apps' lists, so it keeps no order of its own.
@@ -488,9 +533,11 @@ function readConfig() {
  */
 // The view reloads when this changes, so it also follows the ad blocker
 // blocking or freeing LG's search, which is not saved in the layout.
+// Internet TV's revision too: a playlist read, a guide or a channel added.
 function layoutVersion() {
   readConfig();
   return String(configMtime) + (search.blocked() ? '-search-blocked' : '') +
+    (iptvModule ? '-tv' + iptvModule.revision() : '') +
     (listsRevision ? '-lists' + listsRevision : '');
 }
 
@@ -563,8 +610,13 @@ function setLayout(body, cb) {
     showLastOn: typeof body.showLastOn === 'boolean' ? body.showLastOn : c.showLastOn,
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
+    showTvLogos: typeof body.showTvLogos === 'boolean' ? body.showTvLogos : c.showTvLogos,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
+    wallAnim: body.wallAnim !== undefined ? body.wallAnim : c.wallAnim,
+    animTheme: body.animTheme !== undefined ? body.animTheme : c.animTheme,
+    animSky: body.animSky !== undefined ? body.animSky : c.animSky,
+    animLight: body.animLight !== undefined ? body.animLight : c.animLight,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
@@ -577,6 +629,8 @@ function setLayout(body, cb) {
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
   });
+  // A moved or emptied Internet TV row reorders, or removes from, its channels.
+  if (iptvModule && body.order && isArray(body.order.iptv)) iptvModule.setOrder(stringList(body.order.iptv, 100));
   if (body.reset === true) {
     var d = defaults();
     next.rows = d.rows;
@@ -602,7 +656,8 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, previewAlways: c.previewAlways, previewInTile: c.previewInTile, colours: c.colours,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
+    animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
 }
@@ -667,13 +722,14 @@ function cached(key, ttl, load, cb) {
   });
 }
 
-function isInputApp(id) { return /^com\.webos\.app\.(hdmi\d|livetv|av\d|comp\d)/.test(id); }
+var isInputApp = names.isInputAppId;
 
 /*
- * The apps on LG's Home, in its order, as { id, title, icon }. Saved web
- * pages and input tiles are bookmarks, left out: the Inputs row has the
- * inputs. An app the Apps tab hides has visible false in its appinfo and no
- * launch point; one reporting visible false is skipped all the same.
+ * The apps on LG's Home, in its order, as { id, title, icon }, with each saved
+ * web page as an app of its own that has its address as page. Input tiles are
+ * bookmarks too, left out: the Inputs row has the inputs. An app the Apps tab
+ * hides has visible false in its appinfo and no launch point; one reporting
+ * visible false is skipped all the same.
  */
 function launchPoints(cb) {
   cached('lp', LIST_TTL_MS, function (done) {
@@ -681,7 +737,14 @@ function launchPoints(cb) {
       if (!r || !isArray(r.launchPoints)) return done(null);
       var out = [];
       r.launchPoints.forEach(function (p) {
-        if (!p || typeof p.id !== 'string' || p.lptype === 'bookmark' || p.visible === false) return;
+        if (!p || typeof p.id !== 'string' || p.visible === false) return;
+        if (p.lptype === 'bookmark') {
+          var target = p.id === BROWSER_APP && p.params && p.params.target;
+          if (typeof target !== 'string' || !target || p.launchPointId == null) return;
+          out.push({ id: PAGE_PREFIX + p.launchPointId, title: String(p.title || target),
+                     icon: p.largeIcon || p.icon || '', page: target });
+          return;
+        }
         if (p.id === HOME_APP || p.id === LG_HOME || isInputApp(p.id)) return;
         out.push({ id: p.id, title: String(p.title || p.id), icon: p.largeIcon || p.icon || '' });
       });
@@ -800,7 +863,7 @@ function listDevices(devs, portsPlugged) {
  * adapter's tv/getChannelList, the method behind SSAP's ssap://tv/getChannelList.
  */
 function channelList(cb) {
-  cached('ch', LIST_TTL_MS, function (done) {
+  cached('ch', CHANNELS_TTL_MS, function (done) {
     luna('com.webos.service.apiadapter/tv/getChannelList', {}, function (r) {
       if (!r || r.returnValue === false || !isArray(r.channelList)) return done(null);
       var out = [];
@@ -830,14 +893,14 @@ function rows(cb) {
       channelList(function (chans) {
        tunerTile(chans, function (tuner) {
         var devs = hdmi || tuner ? (tuner ? [tuner] : []).concat(hdmi || []) : null;
-        recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs)); });
+        recommendedCards(c, function (recs) { cb(build(c, apps, devs, chans, recs, iptvModule ? iptvModule.rowItems() : null)); });
        });
       });
     });
   });
 }
 
-function build(c, apps, devs, chans, recs) {
+function build(c, apps, devs, chans, recs, tv) {
   var appList = byUse(apps || []);
   var appIds = appList.map(function (a) { return a.id; }).concat([LG_HOME_TILE]);
   var devIds = (devs || []).map(function (d) { return d.id; });
@@ -848,7 +911,8 @@ function build(c, apps, devs, chans, recs) {
     app: ordered(c.order.app, appIds),
     dev: tunerFirst(c.order.dev, ordered(c.order.dev, devIds)),
     ch: picked.map(function (p) { return p.id; }),
-    rec: []
+    rec: [],
+    iptv: (tv || []).map(function (t) { return t.id; })
   };
   ROWS.forEach(function (r) { if (c.sort[r] === 'recent') order[r] = lastOpenedFirst(r, order[r]); });
   // Each app's cards together, in the Apps row's order; an app hidden there,
@@ -870,10 +934,13 @@ function build(c, apps, devs, chans, recs) {
     devices: devs || [],
     channels: picked,
     recommended: cards,
+    iptv: tv || [],
+    iptvStatus: iptvModule ? iptvModule.rowStatus() : null,
     order: order,
     // recommended: false while the row is off, null when the TV gave no list.
     sources: { apps: !!apps, devices: !!devs, channels: chans ? chans.length : null,
-      recommended: c.recommended ? (recs ? recs.length : null) : false }
+      recommended: c.recommended ? (recs ? recs.length : null) : false,
+      iptv: iptvModule ? iptvModule.hasPlaylists() : false }
   };
 }
 
@@ -1118,8 +1185,12 @@ function open(body, cb) {
   }
   if (kind === 'app') {
     return launchPoints(function (apps) {
-      var known = (apps || []).some(function (a) { return a.id === id; });
-      if (!known) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+      /** @type {any} */
+      var hit = null;
+      (apps || []).forEach(function (a) { if (a.id === id) hit = a; });
+      if (!hit) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+      // A saved page opens as LG's tile opens it: the browser, at its address.
+      if (hit.page) return launch(BROWSER_APP, { target: hit.page }, opened('app', id, cb));
       launch(id, null, opened('app', id, cb));
     });
   }
@@ -1162,6 +1233,13 @@ function open(body, cb) {
       });
     });
   }
+  if (kind === 'iptv') {
+    // The view plays the channel itself; opening it here only records it.
+    var known = iptvModule && iptvModule.lineup().channels.some(function (t) { return t.id === id; });
+    if (!known) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+    noteOpened('iptv', id);
+    return cb({ ok: true });
+  }
   if (kind === 'rec') {
     if (!readConfig().recommended) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
     // A card opens its app, which counts as opening the app's tile.
@@ -1170,7 +1248,7 @@ function open(body, cb) {
       cb({ ok: r.ok, error: r.error });
     });
   }
-  cb({ ok: false, error: 'kind must be app, dev, ch, rec or lg' });
+  cb({ ok: false, error: 'kind must be app, dev, ch, iptv, rec or lg' });
 }
 
 // A tile's callback that first records it as opened, if it opened.
@@ -1364,8 +1442,9 @@ function change(action, cb) {
 
 function copy(o) { return JSON.parse(JSON.stringify(o)); }
 
+// webOS 3 is taken to have the same ribbon as webOS 4, untried.
 function isStandalone() {
-  return /^4\./.test(String(webosVersion || ''));
+  return /^[34]\./.test(String(webosVersion || ''));
 }
 
 function isHomeInPlace() {
@@ -1375,14 +1454,15 @@ function isHomeInPlace() {
 function supported() {
   var v = String(webosVersion || '');
   // Tried on a B8 (4.4.3).
-  if (/^4\./.test(v)) return { ok: true, webos: v, experimental: true, standalone: true };
+  if (/^4\./.test(v) || (/^3\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true, standalone: true };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is the same native app as on webOS 9; sam is nudged from the
   // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0).
   if (/^7\./.test(v)) return { ok: true, webos: v, experimental: true };
   // LG's Home is a Flutter app there, under the same id and folder (#612).
-  // Tried on a G5 (webOS 10.3.1); webOS 11 is untried and needs the setting.
-  if (/^10\./.test(v) || (/^11\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true };
+  // Tried on a G5 (webOS 10.3.1), and a C5, G3, G4 and C3 (11.2.0); a later
+  // version, not tried, needs the setting.
+  if (/^1[01]\./.test(v) || (parseInt(v, 10) >= 12 && allowExperimentalFn())) return { ok: true, webos: v, experimental: true };
   // LG's Home is a native app there too (a CX on 5.5.0-19), but sam has
   // neither the configd nudge nor the block and release, so taking its place
   // restarts sam, which both switches need (lib/samrescan), and that closes
@@ -1392,7 +1472,7 @@ function supported() {
   if (/^[56]\./.test(v)) return { ok: true, webos: v, experimental: true, restartsApps: true };
   return {
     ok: false, webos: v || null,
-    reason: msg('srv.home.untested', 'Glasshouse Home has been tried only on webOS 5, 6, 7, 9 and 10. This TV runs webOS {version}.', { version: v || '?' })
+    reason: msg('srv.home.untested', 'Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9, 10 and 11. This TV runs webOS {version}.', { version: v || '?' })
   };
 }
 
@@ -1957,7 +2037,7 @@ function beat(body) {
   }
   beats++;
   if (viewInFront()) watchBeat(BEAT_GRACE_MS);
-  return { ok: true, enabled: readConfig().enabled, covered: viewCovered(), saver: powerState === 'Screen Saver',
+  return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()) };
 }
@@ -2029,6 +2109,14 @@ function homeKey(down) {
         switchTo(true, function () {});
       }
     } else if (shortPress && !escaped && isHomeInPlace()) {
+      /*
+       * Pressed with the view already in front, the TV does nothing: on a C2
+       * (webOS 9.2.2) surface-manager logged the key and launched nothing,
+       * so the folder, guide or a playing channel stayed open (#1254). A
+       * launch reaches the page as a relaunch, which closes them. webOS 4's
+       * key filter launches the view on every press already.
+       */
+      if (!isStandalone() && foreground === LG_HOME) launch(LG_HOME, null, function () {});
       watchOpen(false, OPEN_GRACE_MS);
     }
     return;
@@ -2105,10 +2193,18 @@ function recoverView(why, retried) {
   if (isStandalone()) {
     recovering = true;
     console.error('home: ' + why + '; opening it again');
-    return launch(HOME_APP, null, function () {
-      recovering = false;
-      stopBeatWatch();
-      watchOpen(true, FIRST_BEAT_GRACE_MS);
+    /*
+     * Closed first, so its page loads afresh: launched while running, the app
+     * only comes to the front, and a custom launcher that went to another
+     * site stayed there (a B8, 4.4.3). killApp closed it there; closeByAppId
+     * leaves a web page in the background.
+     */
+    return luna('com.palm.webappmanager/killApp', { appId: HOME_APP }, function () {
+      launch(HOME_APP, null, function () {
+        recovering = false;
+        stopBeatWatch();
+        watchOpen(true, FIRST_BEAT_GRACE_MS);
+      });
     });
   }
   if (webAppMgrRunning() !== false) return toLgHome(why);
@@ -2318,6 +2414,7 @@ function init(opts) {
   lunaFn = opts.luna || null;
   liveState = opts.liveState || null;
   historyModule = opts.history || null;
+  iptvModule = opts.iptv || null;
   if (opts.stateDir) stateDir = opts.stateDir;
   wallpapers.init(stateDir);
   recent.init(stateDir, opts.now);
@@ -2440,7 +2537,7 @@ function start() {
       saveConfig();
     }
     /*
-     * Switched on where it is not offered: a webOS 10 TV updated to webOS 11,
+     * Switched on where it is not offered: a webOS 11 TV updated to webOS 12,
      * say, or allowExperimentalHome taken out. LG's Home is put back rather
      * than taken on a version it was never tried on.
      */

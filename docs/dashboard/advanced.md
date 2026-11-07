@@ -81,8 +81,8 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 
 * **SIMPLINK (HDMI-CEC):** Enables CEC control and auto power synchronization with connected devices over HDMI.
 * **IP control:** Enables external IP control protocol support.
-* **Auto device detection:** Finds devices the TV can show on its Home Dashboard and control, from set-top boxes to smart lights, plugs, and switches. On newer webOS versions, the TV looks up every address on the home network each time it boots, which local network ad blockers (such as Pi-hole) record as hundreds of requests. Turning this off stops the boot scans completely.
-* **Answer device scans on the TV:** LG's device detection also looks up every address on the home network when the TV's Home Hub looks for devices, and on some TVs every 5 minutes even with Auto device detection off. Switched on, the TV answers those lookups itself, so they no longer reach the router or an ad blocker. Off by default. The lookups never find a name on a typical home network, so nothing the TV shows changes.
+* **Auto device detection:** LG's own setting. Finds devices the TV can show on its Home Dashboard and control, from set-top boxes to smart lights, plugs, and switches. To do it, the TV looks up every address on the home network, which a network-wide ad blocker such as Pi-hole records as hundreds of requests. On some TVs, webOS 11 among them, those lookups carry on with this off.
+* **Network device scans:** Glasshouse's own switch for those lookups. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG's device setup. It stays off across restarts.
 
 ## Front lights
 

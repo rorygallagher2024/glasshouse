@@ -43,9 +43,9 @@ change: a docs-only change needs no TV testing or translation.
 * **All checks pass:** `scripts/check-all.sh`.
 * **Translated.** Every new or changed string has its translation in each
   language file in `server/assets/i18n/` that covers the page it is on: Arabic,
-  Spanish, Hungarian, Italian and Russian for the dashboards, and German too for
-  Glasshouse Home. `python3 scripts/check-strings.py --missing` lists what is
-  left.
+  Spanish, French, Hungarian, Italian, Polish, European and Brazilian
+  Portuguese and Russian for the dashboards, and German too for Glasshouse Home.
+  `python3 scripts/check-strings.py --missing` lists what is left.
 * **Docs updated:** the pages that describe what it changes, as in
   [Docs](#docs).
 
@@ -82,6 +82,11 @@ starting set, added to as reviews turn up more.
 * **Small functions.** A function does one job and reads without scrolling.
   One that handles several cases in nested branches or callbacks is split, one
   function per case, with the shared steps in helpers.
+* **A new setting goes in the settings backup, or says why not.** A control
+  added to `server/lib/controls.js` is either a part in
+  `server/lib/backup-parts.js` or listed in its `NOT_CARRIED` with the reason,
+  and the backup table in `docs/dashboard/server.md` follows.
+  `test/test-backup-parts.js` fails on one in neither.
 
 ### Docs
 

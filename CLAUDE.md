@@ -48,7 +48,8 @@ use modern JavaScript.
   `devtools` (closing the web app debugger to the network),
   `oled` (panel care, service menu), `homescreen` and `homescreen-webos9`
   (LG's Home screen layout and input tiles, one module per home app), `home`
-  (Glasshouse Home, a home screen in place of LG's), `lgsettings` (LG's own settings as
+  (Glasshouse Home, a home screen in place of LG's), `home-launcher` (a launcher of
+  the owner's own in its place), `lgsettings` (LG's own settings as
   rows), `game`, `apps` (tiles, uninstall, saved pages), `installer` and
   `repo` (installing .ipk packages, the Homebrew Channel catalog),
   `services` (background services), `screensavers`, `idlesaver` (lifting

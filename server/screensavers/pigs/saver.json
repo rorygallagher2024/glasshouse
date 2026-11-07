@@ -9,6 +9,7 @@
     "en": "A pink pig, a saddleback and a razorback, big and small, flapping across a pixel-art night over Chicago.",
     "es": "Un cerdo rosa, un saddleback y un razorback, grandes y pequeños, aleteando sobre una noche de Chicago en pixel art."
   },
+  "author": "Michael Nestrud",
   "license": "MIT",
   "uses": [
     "level"

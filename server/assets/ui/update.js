@@ -783,7 +783,7 @@ async function restoreBackupData(b) {
   }
   const from = (b.from && b.from.model) || t('server.backup.unknownTv', 'an unknown TV');
   const when = b.created ? new Date(b.created).toLocaleString() : '?';
-  if (!confirm(t('server.backup.confirm', 'Restore the settings saved from {tv} on {date}? This changes LG’s settings on this TV.', { tv: from, date: when }))) return;
+  if (!confirm(t('server.backup.confirmSettings', 'Restore the settings saved from {tv} on {date}? This changes settings on this TV.', { tv: from, date: when }))) return;
   backupMessage(t('server.backup.restoring', 'Restoring…'));
   try {
     const r = await fetch(api('/api/backup'), {
@@ -792,10 +792,13 @@ async function restoreBackupData(b) {
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || r.status);
     const lg = d.lg || {};
-    let text = t('server.backup.restored', 'Changed {changed} LG settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now.', {
-      changed: (lg.applied || []).length, same: lg.unchanged || 0, skipped: (lg.skipped || []).length
+    const skipped = lg.skipped || [];
+    const consent = skipped.filter(s => s.reason === 'consent');
+    let text = t('server.backup.restoredSettings', 'Changed {changed} settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now.', {
+      changed: (lg.applied || []).length, same: lg.unchanged || 0, skipped: skipped.length - consent.length
     });
     if ((lg.failed || []).length) text += ' ' + t('server.backup.failedSome', '{count} could not be set.', { count: lg.failed.length });
+    if (consent.length) text += ' ' + t('server.backup.acrLeftOff', 'Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does.');
     const apps = d.apps || {};
     if ((apps.toInstall || []).length) text += ' ' + t('server.backup.appsToInstall', '{count} apps from the backup can be installed from the Apps tab.', { count: apps.toInstall.length });
     if ((apps.manual || []).length) text += ' ' + t('server.backup.appsManual', 'Not in the Homebrew Channel catalog, to install by hand: {names}.', { names: apps.manual.map(a => a.title).join(', ') });

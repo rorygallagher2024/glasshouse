@@ -350,10 +350,9 @@ async function tick() {
       if (q('adv-piccap')) q('adv-piccap').hidden = !pc && !hs;
       const devVal = getLease('deviceDetection', d.deviceDetection);
       advPill('devdetect', 'btn_devdetect', devVal !== undefined ? devVal : d.deviceDetection);
-      const lookups = d.privacy ? d.privacy.localLookups === true : undefined;
-      const lookupsVal = getLease('localLookups', lookups);
-      advPill('locallookups', 'btn_locallookups', lookupsVal !== undefined ? lookupsVal : lookups);
-      if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && lookups === undefined && !advLgsDevices;
+      const scanVal = getLease('deviceScans', d.deviceScans);
+      advPill('devscans', 'btn_devscans', scanVal !== undefined ? scanVal : d.deviceScans);
+      if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && d.deviceScans === undefined && !advLgsDevices;
       if (q('tl-cur')) {
         q('tl-cur').textContent = st === 'off' ? t('common.off', 'Off') : t('ctl.sleep.minutes', '{n} min', { n: st });
       }
@@ -509,7 +508,7 @@ async function tick() {
     } else {
       q('spec-arch-item').hidden = true;
     }
-    if (d.panel_silicon && d.panel_silicon.cell) {
+    if (d.panel_silicon && d.panel_silicon.cell && /[1-9a-zA-Z]/.test(d.panel_silicon.cell)) {
       q('spec-silicon-item').hidden = false;
       q('spec-silicon').textContent = d.panel_silicon.cell;
       hasHw = true;
