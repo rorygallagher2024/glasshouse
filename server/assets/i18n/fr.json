@@ -32,8 +32,8 @@
   "text": "Analyses du réseau"
  },
  "adv.deviceScans.desc": {
-  "from": "Glasshouse’s switch for the scans themselves: the TV looking up every address on your home network, which a network-wide ad blocker such as Pi-hole shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG’s device setup.",
-  "text": "Le réglage de Glasshouse pour les analyses elles-mêmes : la TV qui interroge chaque adresse de votre réseau local, ce qu'un bloqueur de publicités pour tout le réseau comme Pi-hole affiche sous forme de centaines de requêtes. Désactivées, elles s'arrêtent sur toutes les TV, quel que soit le réglage de Détection auto des appareils, et la TV ne trouve plus de nouveaux appareils pour le Hub domestique ni pour la configuration des appareils de LG."
+  "from": "Glasshouse’s switch for the scans themselves: the TV looking up every address on your home network, which a network-wide ad blocker such as Pi-hole shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG’s device setup. Off also stops the Magic Remote controlling a set-top box through LG’s universal control.",
+  "text": "Le réglage de Glasshouse pour les analyses elles-mêmes : la TV qui interroge chaque adresse de votre réseau local, ce qu'un bloqueur de publicités pour tout le réseau comme Pi-hole affiche sous forme de centaines de requêtes. Désactivées, elles s'arrêtent sur toutes les TV, quel que soit le réglage de Détection auto des appareils, et la TV ne trouve plus de nouveaux appareils pour le Hub domestique ni pour la configuration des appareils de LG. Désactivées, elles empêchent aussi la Magic Remote de piloter un boîtier via la télécommande universelle de LG."
  },
  "adv.devices": {
   "from": "Devices",
@@ -10912,8 +10912,8 @@
   "text": "Le réglage de LG : trouve les appareils à afficher sur le Tableau de bord domestique et à contrôler, un boîtier et des lampes, prises et interrupteurs connectés. Sur certaines TV, dont celles sous webOS 11, la TV interroge quand même chaque adresse de votre réseau local avec ce réglage désactivé ; Analyses du réseau l'en empêche."
  },
  "tv.options.deviceScans.hint": {
-  "from": "The TV looking up every address on your home network, which a network-wide ad blocker shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG’s device setup.",
-  "text": "La TV qui interroge chaque adresse de votre réseau local, ce qu'un bloqueur de publicités pour tout le réseau affiche sous forme de centaines de requêtes. Désactivées, elles s'arrêtent sur toutes les TV, quel que soit le réglage de Détection auto des appareils, et la TV ne trouve plus de nouveaux appareils pour le Hub domestique ni pour la configuration des appareils de LG."
+  "from": "The TV looking up every address on your home network, which a network-wide ad blocker shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG’s device setup. Off also stops the Magic Remote controlling a set-top box through LG’s universal control.",
+  "text": "La TV qui interroge chaque adresse de votre réseau local, ce qu'un bloqueur de publicités pour tout le réseau affiche sous forme de centaines de requêtes. Désactivées, elles s'arrêtent sur toutes les TV, quel que soit le réglage de Détection auto des appareils, et la TV ne trouve plus de nouveaux appareils pour le Hub domestique ni pour la configuration des appareils de LG. Désactivées, elles empêchent aussi la Magic Remote de piloter un boîtier via la télécommande universelle de LG."
  },
  "tv.options.lgLogo.hide": {
   "from": "Press OK to hide it",
