@@ -645,12 +645,12 @@ async function visitHomeWidgets(browser, base, problems) {
     if (await page.locator('#widget-weather .wk-chart svg').count() !== 2) problems.push('Home widgets: today’s weather graphs are missing');
     await page.keyboard.press('ArrowUp');
     await page.keyboard.press('Enter');
-    await page.locator('#widget-panel').waitFor({ state: 'visible' });
-    if (await page.locator('.wp-day').count() !== 10 || await page.locator('#widget-panel .wk-chart svg').count() !== 2) {
+    await page.locator('#widget--panel').waitFor({ state: 'visible' });
+    if (await page.locator('.wp-day').count() !== 10 || await page.locator('#widget--panel .wk-chart svg').count() !== 2) {
       problems.push('Home widgets: the expanded forecast is missing days or charts');
     }
     await page.keyboard.press('Escape');
-    await page.locator('#widget-panel').waitFor({ state: 'detached' });
+    await page.locator('#widget--panel').waitFor({ state: 'detached' });
     await page.keyboard.press('ArrowDown');
     const initialReads = weatherReads;
     covered = true;
@@ -689,9 +689,9 @@ async function visitHomeWidgets(browser, base, problems) {
     // Enter expands the selected custom widget; OK closes without reopening it.
     await page.keyboard.press('ArrowUp');
     await page.keyboard.press('Enter');
-    await page.locator('#widget-panel').waitFor();
+    await page.locator('#widget--panel').waitFor();
     await page.keyboard.press('Enter');
-    await page.locator('#widget-panel').waitFor({ state: 'detached' });
+    await page.locator('#widget--panel').waitFor({ state: 'detached' });
     // Three widgets can replace Last watched once the other top plates are off.
     layout.showClock = true; layout.widgets.weather.enabled = true;
     layout.widgets.positions.clock = 'left'; layout.widgets.positions.weather = 'right';
@@ -704,12 +704,47 @@ async function visitHomeWidgets(browser, base, problems) {
     await page.keyboard.down('Enter');
     await page.clock.fastForward(800);
     await page.keyboard.up('Enter');
-    await page.locator('#widget-message').filter({ hasText: 'Centre needs Last watched off' }).waitFor();
+    await page.locator('#widget--message').filter({ hasText: 'Centre needs Last watched off' }).waitFor();
     await page.keyboard.press('ArrowLeft');
     await waitUntil(page, () => Promise.resolve(layout.widgets.positions.energy === 'left'));
     if (layout.widgets.positions.energy !== 'left' || layout.widgets.positions.clock !== 'center') problems.push('Home widgets: remote positioning did not swap occupied slots');
     await page.keyboard.press('Enter');
     await page.keyboard.press('ArrowDown');
+
+    layout.showClock = false;
+    layout.widgets = require('../server/lib/home-widgets').normalise({ custom: [
+      { version: 1, type: 'text', id: 'message', name: 'Message', value: 'Keep this text', enabled: true },
+      { version: 2, type: 'components', id: 'panel', name: 'Panel', enabled: true,
+        data: { source: 'static' }, components: [{ type: 'text', text: 'Panel content' }] },
+      { version: 1, type: 'text', id: 'panel-title', name: 'Panel title', value: 'Another widget', enabled: true }
+    ] });
+    layout.widgetPlacement = require('../server/lib/home-widget-format').placement(layout);
+    version++;
+    await page.goto(base + '/assets/home.html');
+    await page.locator('#widget-message .widget-value').waitFor();
+    await page.locator('#widget-message').focus();
+    if (await page.locator('#widget-message .widget-value').textContent() !== 'Keep this text') problems.push('Home widgets: focus help overwrote a widget named message');
+    await page.locator('#widget-panel').evaluate(element => element.click());
+    await page.getByRole('dialog', { name: 'Panel', exact: true }).waitFor();
+    if (await page.locator('#widget-panel').count() !== 1 || await page.locator('#widget-panel-title').count() !== 1) problems.push('Home widgets: dialog IDs collide with widget IDs');
+    await page.keyboard.press('Escape');
+    await page.locator('#widget--panel').waitFor({ state: 'detached' });
+
+    layout.showClock = true;
+    layout.widgets = require('../server/lib/home-widgets').normalise({ custom: [
+      { version: 1, type: 'text', id: 'constructor', name: 'Constructor', value: 'A valid id', enabled: true }
+    ] });
+    layout.widgetPlacement = require('../server/lib/home-widget-format').placement(layout);
+    version++;
+    await page.goto(base + '/assets/home.html');
+    await page.locator('#widget-constructor').waitFor();
+    await page.locator('#widget-constructor').focus();
+    await page.keyboard.down('Enter');
+    await page.clock.fastForward(800);
+    await page.keyboard.up('Enter');
+    await page.keyboard.press('ArrowRight');
+    await waitUntil(page, () => Promise.resolve(layout.widgets.positions.constructor === 'right'));
+    if (layout.widgets.positions.constructor !== 'right' || layout.widgets.positions.clock !== 'left') problems.push('Home widgets: remote placement read an inherited position for constructor');
 
   } finally { await page.close(); }
 }
@@ -827,7 +862,7 @@ async function visitWidgetStore(browser, base, problems) {
   let layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] },
     channels: [], hintSeen: true, searchHintSeen: true, showClock: true, widgets: widgets.normalise(null) };
   let catalogue = JSON.parse(JSON.stringify(require('../server/assets/widget-store/catalogue.json')));
-  let time = 0, writable = true, failInstall = false, offline = false, version = 1;
+  let time = 0, writable = true, failInstall = false, failLayout = false, offline = false, version = 1;
   const init = () => store.init({ now: () => time, fetchJson: (_url, cb) => cb(offline ? new Error('offline') : null, catalogue) });
   init();
   const display = () => Object.assign({}, layout, { widgets: widgets.forDisplay(layout.widgets), widgetPlacement: widgets.placement(layout) });
@@ -846,6 +881,7 @@ async function visitWidgetStore(browser, base, problems) {
       return reply({ ok: true, layout: display(), layoutVersion: String(version) });
     }
     if (pathname === '/api/home/layout') {
+      if (failLayout) return reply({ ok: false, error: 'Test widget save refused' });
       const next = Object.assign({}, layout, route.request().postDataJSON()); next.widgets = widgets.normalise(next.widgets);
       if (!widgets.placement(next).ok) return reply({ ok: false, error: 'Position unavailable' });
       layout = next; version++;
@@ -888,6 +924,22 @@ async function visitWidgetStore(browser, base, problems) {
     await title.fill('Saved title');
     await title.locator('..').locator('..').getByRole('button', { name: 'Save widget', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom[0].settings.title === 'Saved title');
+    await title.fill('Unsaved store title');
+    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await page.waitForFunction(() => !homeStoreLoading);
+    if (await title.inputValue() !== 'Unsaved store title') problems.push('Widget store: catalogue refresh discarded a settings draft');
+    await page.locator('#home-show-clock').click();
+    await page.waitForFunction(() => !homeSaving);
+    if (await title.inputValue() !== 'Unsaved store title') problems.push('Widget store: another save discarded a settings draft');
+    failInstall = true;
+    await title.locator('..').locator('..').getByRole('button', { name: 'Save widget', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving);
+    if (await title.inputValue() !== 'Unsaved store title' || layout.widgets.custom[0].settings.title !== 'Saved title') problems.push('Widget store: rejected configure lost its draft or changed saved settings');
+    failInstall = false;
+    await title.fill('Saved title');
+    await title.locator('..').locator('..').getByRole('button', { name: 'Save widget', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving);
+    if (await page.evaluate(id => homeWidgetDrafts.has(id), firstId)) problems.push('Widget store: successful configure retained its draft');
     await page.getByRole('combobox', { name: 'Position of Saved title', exact: true }).selectOption('left');
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions[homeLayout.widgets.custom[0].id] === 'left');
     dialog = await preview('Personal note');
@@ -898,11 +950,13 @@ async function visitWidgetStore(browser, base, problems) {
     await page.getByRole('checkbox', { name: 'Installed only', exact: true }).check();
     await page.locator('#home-store-count').filter({ hasText: 'Widgets: 1' }).waitFor();
     await page.getByRole('checkbox', { name: 'Installed only', exact: true }).uncheck();
+    await title.first().fill('Draft for the old template');
     catalogue.widgets[0].revision = '1.1.0'; catalogue.widgets[0].definition.detail = 'Updated defaults'; time += 60000;
     await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
     await page.locator('#home-widgets').getByRole('button', { name: 'Update to 1.1.0', exact: true }).first().click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom[0].template.revision === '1.1.0');
     if (!layout.widgets.custom[0].enabled || layout.widgets.custom[0].settings.title !== 'Saved title' || layout.widgets.positions[firstId] !== 'left' || layout.widgets.custom[1].template.revision !== '1.0.0') problems.push('Widget store: update lost settings, position or instance isolation');
+    if (await title.first().inputValue() !== 'Saved title' || await page.evaluate(id => homeWidgetDrafts.has(id), firstId)) problems.push('Widget store: a template update reused an old settings draft');
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#home-widgets').getByRole('button', { name: 'Export widget', exact: true }).first().click();
     const exported = JSON.parse(fs.readFileSync(await (await downloadPromise).path(), 'utf8'));
@@ -928,7 +982,48 @@ async function visitWidgetStore(browser, base, problems) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(() => { closeNav(); document.documentElement.setAttribute('data-theme', 'light'); });
     if (await dialog.evaluate(el => el.scrollWidth > el.clientWidth + 1)) problems.push('Widget store: preview overflows on a phone');
-    await page.keyboard.press('Escape');
+    await dialog.getByRole('button', { name: 'Install widget', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom.length === 3);
+    const precision = page.locator('#home-widgets').getByRole('spinbutton', { name: 'Decimal places', exact: true });
+    await precision.fill('');
+    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await page.waitForFunction(() => !homeStoreLoading);
+    if (await precision.inputValue() !== '') problems.push('Widget store: refresh converted an empty numeric draft to zero');
+    await precision.fill('1');
+    await precision.locator('..').locator('..').getByRole('button', { name: 'Save widget', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving);
+    if (layout.widgets.custom[2].settings.precision !== 1) problems.push('Widget store: numeric draft was not saved as a number');
+    const drafts = [
+      { version: 1, type: 'text', id: 'draft-text', name: 'Draft text', value: 'Saved value', detail: '' },
+      { version: 2, type: 'components', id: 'draft-components', name: 'Draft components', data: { source: 'static' }, components: [{ type: 'text', text: 'Saved message' }] }
+    ];
+    for (const definition of drafts) {
+      await page.evaluate(definition => homeWidgetImport(new File([JSON.stringify(definition)], 'widget.json', { type: 'application/json' })), definition);
+    }
+    const textEditor = page.locator('#home-widgets form').filter({ has: page.locator('[name="widgetValue"]') });
+    const componentEditor = page.locator('#home-widgets form').filter({ has: page.locator('[name="widgetJSON"]') });
+    const componentDraft = Object.assign({}, drafts[1], { name: 'Edited components' });
+    await textEditor.locator('[name="widgetValue"]').fill('Unsaved text');
+    await componentEditor.locator('textarea').fill(JSON.stringify(componentDraft));
+    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await page.waitForFunction(() => !homeStoreLoading);
+    if (await textEditor.locator('[name="widgetValue"]').inputValue() !== 'Unsaved text' || await componentEditor.locator('textarea').inputValue() !== JSON.stringify(componentDraft)) problems.push('Widget store: refresh discarded text or component drafts');
+    failLayout = true;
+    for (const editor of [textEditor, componentEditor]) {
+      await editor.getByRole('button', { name: 'Save widget', exact: true }).click();
+      await page.waitForFunction(() => !homeSaving);
+    }
+    if (await textEditor.locator('[name="widgetValue"]').inputValue() !== 'Unsaved text' || await componentEditor.locator('textarea').inputValue() !== JSON.stringify(componentDraft)) problems.push('Widget store: rejected text or component save discarded its draft');
+    failLayout = false;
+    for (const editor of [textEditor, componentEditor]) {
+      await editor.getByRole('button', { name: 'Save widget', exact: true }).click();
+      await page.waitForFunction(() => !homeSaving);
+    }
+    if (layout.widgets.custom.find(widget => widget.id === 'draft-text').value !== 'Unsaved text' || layout.widgets.custom.find(widget => widget.id === 'draft-components').name !== 'Edited components' || await page.evaluate(() => homeWidgetDrafts.has('draft-text') || homeWidgetDrafts.has('draft-components'))) problems.push('Widget store: successful text or component save did not commit and clear its draft');
+    await textEditor.locator('[name="widgetValue"]').fill('Discard on removal');
+    await page.evaluate(() => homeWidgetRemove('draft-text'));
+    await page.waitForFunction(() => !homeSaving);
+    if (await page.evaluate(() => homeWidgetDrafts.has('draft-text'))) problems.push('Widget store: removal retained an editor draft');
     writable = false;
     await page.reload();
     await page.getByRole('button', { name: 'Browse widget store', exact: true }).click();

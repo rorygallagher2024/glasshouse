@@ -1583,4 +1583,38 @@ function createMockRes(cb) {
   }));
 })();
 
+(function testWidgetBackupRestoreCapacity() {
+  var widgets = require('../server/lib/home-widgets'), custom = [], restored = [];
+  for (var i = 0; i < 8; i++) custom.push({ version: 2, type: 'components', id: 'large-' + i, name: 'Data',
+    data: { source: 'static', values: { readings: Array(241).join('x').split('').map(function () { return Array(41).join('x'); }) } },
+    components: [{ type: 'chart', field: 'readings' }] });
+  var backup = { format: 'glasshouse-backup', version: 1, home: { widgets: widgets.normalise({ custom: custom }) } };
+  var body = JSON.stringify(backup);
+  assert.ok(Buffer.byteLength(body, 'utf8') > 65536, 'valid widget backups exceed the old restore cap');
+  routes.init({ config: { allowControl: true, token: '', web: { enabled: false } },
+    installer: { isWorking: function () { return false; } },
+    backup: { restore: function (data, cb) { restored.push(data); cb({ ok: true }); } } });
+  function post(text) {
+    var req = createMockReq({ url: '/api/backup', method: 'POST', headers: { 'content-type': 'application/json' } });
+    var res = createMockRes();
+    routes.handleRequest(req, res);
+    var bytes = toBuffer(text, 'utf8');
+    for (var offset = 0; offset < bytes.length; offset += 4093) req.emit('data', bytes.slice(offset, offset + 4093));
+    req.emit('end');
+    assert.ok(!req.destroyed, 'a bounded response keeps the dashboard connection open');
+    return res;
+  }
+  assert.strictEqual(post(body).statusCode, 200);
+  assert.deepEqual(restored[0], backup, 'all eight widgets reach restore intact');
+  var unicode = JSON.stringify({ format: 'glasshouse-backup', note: Array(10001).join('é') });
+  assert.strictEqual(post(unicode).statusCode, 200);
+  assert.strictEqual(restored[1].note, Array(10001).join('é'), 'split UTF-8 characters remain intact');
+  var tooLarge = JSON.stringify({ format: 'glasshouse-backup', note: Array(400001).join('界') });
+  assert.ok(tooLarge.length < 1024 * 1024 && Buffer.byteLength(tooLarge, 'utf8') > 1024 * 1024);
+  var refused = post(tooLarge);
+  assert.strictEqual(refused.statusCode, 413, 'the cap counts bytes, not UTF-16 code units');
+  assert.strictEqual(restored.length, 2, 'oversized bodies never restore a partial backup');
+  console.log('  ✓ widget backups restore above 64 KB with UTF-8 and a bounded 1 MB refusal');
+})();
+
 console.log('ALL test-routes.js assertions passed!');

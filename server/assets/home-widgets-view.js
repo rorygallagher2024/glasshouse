@@ -76,7 +76,7 @@
   }
   function move(id, direction, done) {
     var settings = JSON.parse(JSON.stringify(config)), positions = settings.positions || {}, names = ['left', 'center', 'right'];
-    list.forEach(function (w, i) { positions[w.id] = layout.widgetPlacement && layout.widgetPlacement.positions[w.id] || (positions[w.id] !== 'auto' && positions[w.id]) || names[i]; });
+    list.forEach(function (w, i) { positions[w.id] = layout.widgetPlacement && layout.widgetPlacement.manual && layout.widgetPlacement.positions[w.id] || (positions[w.id] !== 'auto' && positions[w.id]) || names[i]; });
     var from = names.indexOf(positions[id]), to = Math.max(0, Math.min(2, from + direction));
     list.forEach(function (w) { if (w.id !== id && positions[w.id] === names[to]) positions[w.id] = names[from]; });
     positions[id] = names[to]; settings.positions = positions;

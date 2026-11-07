@@ -74,7 +74,7 @@ function template(raw) {
     keys.push(field.key); targets.push(field.target); defaults[field.key] = field.default; result.fields.push(field);
   }
   result.definition.enabled = false;
-  return resolve(result, defaults) ? result : null;
+  return Buffer.byteLength(JSON.stringify(result), 'utf8') <= 12288 && resolve(result, defaults) ? result : null;
 }
 function instance(raw) {
   if (!raw || raw.version !== 3 || raw.type !== 'store' || typeof raw.id !== 'string' || !ID.test(raw.id) || raw.id === 'clock' || raw.id === 'weather') return null;

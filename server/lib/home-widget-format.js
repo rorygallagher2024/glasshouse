@@ -58,9 +58,11 @@ function custom(raw) {
       ['static', 'weather', 'tv'].indexOf(raw.data.source) === -1 || Buffer.byteLength(JSON.stringify(raw), 'utf8') > 16384) return null;
   var compact = components(raw.components, 3), expanded = raw.expanded === undefined || Array.isArray(raw.expanded) && !raw.expanded.length ? [] : components(raw.expanded, 8);
   if (!compact || !expanded) return null;
-  return { version: 2, type: 'components', id: raw.id, name: name, enabled: raw.enabled === true,
+  var result = { version: 2, type: 'components', id: raw.id, name: name, enabled: raw.enabled === true,
     data: { source: raw.data.source, values: raw.data.source === 'static' ? values(raw.data.values || {}, 0) : {} },
     components: compact, expanded: expanded };
+  // Defaults count too: a saved definition must pass the same check on restart.
+  return Buffer.byteLength(JSON.stringify(result), 'utf8') <= 16384 ? result : null;
 }
 function weatherActive(widgets) {
   return widgets.weather.enabled || widgets.custom.some(function (w) {

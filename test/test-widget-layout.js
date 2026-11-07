@@ -29,6 +29,14 @@ state.widgets.weather.location = null;
 assert.ok(layout.plan(state, 'weather', 'right').reasons.indexOf('weatherLocation') !== -1);
 assert.strictEqual(layout.plan(state, 'unknown', 'left').ok, false);
 assert.strictEqual(layout.plan(state, 'clock', 'unknown').ok, false);
+state = base(); state.widgets.weather.enabled = false;
+state.widgets.custom = [{ version: 1, type: 'text', id: 'constructor', name: 'Constructor', value: 'Hello', enabled: true }];
+state.widgets = widgets.normalise(state.widgets);
+state.widgets.positions.clock = 'left';
+assert.deepEqual(layout.placement(state).positions, { clock: 'left', constructor: 'center' }, 'a widget named constructor still occupies a physical zone');
+state.showLastOn = true; state.picture = true;
+assert.strictEqual(layout.placement(state).ok, false, 'inherited object keys cannot hide a widget when all other zones are reserved');
+assert.strictEqual(layout.plan(state, 'clock', 'left').ok, false);
 
 // Every accepted candidate must fit all three physical zones and reservations.
 var checked = 0;

@@ -42,7 +42,7 @@
     }
     for (var j = 0; j < ids.length; j++) {
       var next = ids[j];
-      if (placed[next]) continue;
+      if (Object.prototype.hasOwnProperty.call(placed, next)) continue;
       var free = positions.filter(function (p) { return !requirements(layout, p).length && occupied.indexOf(p) === -1; })[0];
       if (!free) return { ok: false };
       placed[next] = free; occupied.push(free);

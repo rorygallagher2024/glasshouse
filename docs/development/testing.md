@@ -12,6 +12,8 @@ weather opt-in, shared requests and cache behaviour with injected replies and
 time. `test-home-widget-components.js` checks version 2 schemas, safe bindings,
 static data limits, placement reservations, custom weather opt-in, hourly and
 ten-day parsing, missing readings, unit changes and city-midnight cache expiry.
+Near-limit component definitions and store templates are checked after defaults
+are added, so every accepted definition still validates after saving and reload.
 `test/fixtures/widget-weather.json` provides deterministic hourly/daily data;
 `test/mocks/widget-forecast.js` exposes it to browser checks. No live provider
 request or TV command runs. The ES5 check includes all widget scripts.
@@ -20,7 +22,8 @@ The widget browser check exercises dashboard settings, visible placement
 requirements and disabled positions, text/component imports and JSON editing,
 invalid JSON feedback, literal text, zeros, icons and
 charts, remote expansion/closing, three-position layout, and pausing/resuming
-polling while covered. City and weather replies are fixtures. Physical-TV
+polling while covered. Widget ids such as `message`, `panel` and `panel-title`
+cannot overwrite focus help or dialog controls. City and weather replies are fixtures. Physical-TV
 rendering and remote testing remain separate requirements.
 
 `test-widget-layout.js` checks the shared drop planner, swapping, ordering,
@@ -30,7 +33,8 @@ enabled widgets for overlaps and forbidden positions. The widget-layout
 browser check uses native drag-and-drop and verifies rejected drops send no
 save, valid drops and swaps persist, requirement links focus the right control,
 tap/keyboard placement works, Alt + Left/Right reorders and retains focus,
-off widgets stay off, read-only controls cannot save, and a concurrent
+off widgets stay off, a widget named `constructor` occupies its own zone,
+read-only controls cannot save, and a concurrent
 requirement change is rejected and refreshed. It checks the board at phone
 width and shares the existing Home browser group. The ES5 check includes
 `assets/widget-layout.js`, which both dashboard and server use.
@@ -43,9 +47,17 @@ network replies and time through `init` and makes no live catalogue request.
 The store browser check covers search/category/installed filters, live sample
 previews, form settings, installation, copies, updates, exports without private
 settings, the submission URL, errors, read-only controls, phone layout and
-resolved instances reaching Home. It shares the existing Home browser group.
+resolved instances reaching Home. Text, component and store editor drafts survive
+refreshes and failed saves, including empty numeric inputs; successful saves clear
+the relevant draft. It shares the existing Home browser group.
 Check `.github/ISSUE_TEMPLATE/widget.yml` against GitHub's issue-form schema
 when changing the submission fields; GitHub exposes it from the default branch.
+
+`test-routes.js` restores an eight-widget backup above the former 64 KB limit,
+preserves UTF-8 characters split across chunks, and refuses requests above
+1 MB in bytes without restoring partial data. `test-backup.js` checks that
+exports keep widget snapshots and private settings while excluding computed
+display definitions and placement, without mutating the live layout.
 
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC

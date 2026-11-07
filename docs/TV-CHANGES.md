@@ -156,6 +156,11 @@ beside a top preview also reserve centre. The dashboard explains these rules
 and disables reserved choices; conflicting saves are refused. Home's remote
 can select, expand and position widgets.
 
+Settings backups retain widget definitions, template snapshots and private
+settings; derived display definitions and computed placement are rebuilt.
+Backup restoration accepts up to 1 MB of JSON so all eight saved widgets fit,
+and refuses larger requests before changing any settings.
+
 The dashboard's drag-and-drop widget board saves to this same layout. Reserved
 zones explain their requirements and link to the existing controls; the owner
 changes those settings explicitly. Drops keep every enabled widget in a free

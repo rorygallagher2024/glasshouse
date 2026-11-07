@@ -150,6 +150,14 @@ function rowSetting(row) {
   return row.type === 'switch' ? row.on : row.value;
 }
 
+function homeLayout() {
+  if (!home) return undefined;
+  var layout = JSON.parse(JSON.stringify(home.layout()));
+  delete layout.widgetPlacement;
+  if (layout.widgets && Array.isArray(layout.widgets.custom)) layout.widgets.custom.forEach(function (widget) { delete widget.resolved; });
+  return layout;
+}
+
 /**
  * The backup, as an object to save as JSON.
  * @param {function(Object): void} cb
@@ -172,7 +180,7 @@ function create(cb) {
         lg: lg,
         settings: settings,
         glasshouse: pickGlasshouse(config),
-        home: home ? home.layout() : undefined,
+        home: homeLayout(),
         apps: apps
       });
      });

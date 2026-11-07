@@ -10,8 +10,8 @@
       document.body.classList.toggle('widget-focused', !!selected);
     }
     function message(text) {
-      var el = document.getElementById('widget-message');
-      if (!el) { el = kit.node('div', 'widget-message'); el.id = 'widget-message'; document.getElementById('stage').appendChild(el); }
+      var el = document.getElementById('widget--message');
+      if (!el) { el = kit.node('div', 'widget-message'); el.id = 'widget--message'; document.getElementById('stage').appendChild(el); }
       el.textContent = text;
     }
     function arrange() {
@@ -90,10 +90,10 @@
       if (!w.weather && !w.components) return arrange();
       opened = id;
       message('');
-      panel = kit.node('section', 'widget-panel'); panel.id = 'widget-panel';
-      panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-labelledby', 'widget-panel-title');
+      panel = kit.node('section', 'widget-panel'); panel.id = 'widget--panel';
+      panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-labelledby', 'widget--panel-title');
       var header = kit.node('div', 'wp-header');
-      var title = kit.node('h1', '', w.title); title.id = 'widget-panel-title'; header.appendChild(title);
+      var title = kit.node('h1', '', w.title); title.id = 'widget--panel-title'; header.appendChild(title);
       var button = kit.node('button', 'wp-close', I18N.t('home.widgets.close', 'Close'));
       button.type = 'button'; button.onclick = function (e) { e.stopPropagation(); close(); };
       header.appendChild(button); panel.appendChild(header); panel.appendChild(kit.node('div', 'wp-content'));

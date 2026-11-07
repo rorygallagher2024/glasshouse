@@ -541,7 +541,7 @@ function homeSetSort(kind, value) {
   homeSaveLayout({ sort: { [kind]: value } });
 }
 
-async function homeSaveLayout(patch) {
+async function homeSaveLayout(patch, onSaved) {
   if (!homeWritable()) return;
   homeSaving = true;
   homeLoadRevision++;
@@ -550,6 +550,7 @@ async function homeSaveLayout(patch) {
     const r = await homePost('/api/home/layout', patch);
     homeLayout = r.layout;
     homeStatus.layout = r.layout;
+    if (onSaved) onSaved();
   } catch (e) { showErr(e.message); }
   await loadHome(true);
   homeSaving = false;

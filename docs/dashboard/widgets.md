@@ -68,6 +68,12 @@ Text and component edits use **Save widget**. Home picks up dashboard changes
 on its next heartbeat, normally within five seconds. Finish any Home arrange
 mode first. With every widget off, one empty space remains so rows stay put.
 
+Unsaved widget edits stay in the open dashboard during catalogue refreshes,
+other setting changes and failed saves. A successful save or removal clears
+that draft. Updating a store template starts its editor from the saved settings;
+drafts from the previous template are discarded. Reloading the page discards
+unsaved edits.
+
 ![Top widgets settings, browser preview](../screenshots/home-widgets-dashboard-preview.png)
 
 ## Use widgets with the remote

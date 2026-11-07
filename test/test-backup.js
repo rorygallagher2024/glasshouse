@@ -72,6 +72,18 @@ var PENDING = require('path').join(require('os').tmpdir(), 'gh-restore-apps-earl
 
 // 2. Restoring onto another TV
 (function () {
+  var layout = { widgetPlacement: { ok: true, manual: true, positions: { 'note-1': 'left' } },
+    widgets: { custom: [{ version: 3, id: 'note-1', template: { id: 'note' }, settings: { title: 'Private note' }, resolved: { name: 'Private note' } }] } };
+  backup.init({ lgSettings: fakeLg(C4_ROWS), config: CONFIG, home: { layout: function () { return layout; } } });
+  backup.create(function (b) {
+    assert.strictEqual(b.home.widgetPlacement, undefined, 'computed placement does not belong in the backup');
+    assert.strictEqual(b.home.widgets.custom[0].resolved, undefined, 'derived widget definitions are omitted');
+    assert.deepEqual(b.home.widgets.custom[0].settings, { title: 'Private note' }, 'private settings remain restorable');
+    assert.ok(layout.widgetPlacement && layout.widgets.custom[0].resolved, 'backup does not mutate the live layout');
+  });
+})();
+
+(function () {
   var lg = fakeLg(C4_ROWS.concat([{ id: 'refuses', section: 'devices', type: 'switch', on: false }]));
   var config = JSON.parse(JSON.stringify(CONFIG));
   var written = null;

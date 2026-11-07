@@ -201,7 +201,7 @@ Each template has `id`, semantic `revision` (`major.minor.patch`), `name`,
 `description`, `author`, `category` (`personal`, `tv`, `weather`), a version 1/2
 `definition`, up to ten `fields`, and optional `preview` data. Template ids and
 definition ids must match. Names keep 40 characters, descriptions 240 and
-authors 60. A template must fit 12 KB. Labels, names and example content belong
+authors 60. A template, including its normalised defaults, must fit 12 KB. Labels, names and example content belong
 to the author and display in the language written; dashboard controls are
 translated separately. Previews use sample data and the same component
 renderer as Home.

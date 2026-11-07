@@ -36,6 +36,10 @@ Shows the installed version and whether a newer release is out. **Check now** lo
 
 A remote key or Quick Access key set to an app the TV doesn't have is named as not set. A key, input or service only one TV has is left as it is.
 
+Home's widget definitions, store snapshots, private settings and positions are
+included. Restore accepts up to 1 MB of JSON, including layouts with eight saved
+widgets. Display definitions and computed placement are rebuilt after restoration.
+
 **Daily backup** saves the same backup on the TV once a day, in `/var/lib/tvweb/backups`, and keeps the last 7. It is off by default. Switched on, it saves that day's at once, then one each day the TV is on, as the server checks hourly. Each one kept is listed by its date with **Download** and **Restore**. Switching it off keeps those saved.
 
 **App on the TV's home screen** adds or removes [the dashboard's own app](../apps/tv-app.md), which opens it on the TV and is driven by the remote.

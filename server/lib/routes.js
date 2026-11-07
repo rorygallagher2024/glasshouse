@@ -770,14 +770,15 @@ function postGuard(req, res, wantType, exact) {
 
 function readJsonBody(req, res, cb, max) {
   if (!postGuard(req, res, 'application/json', false)) return;
-  var body = '', tooBig = false;
+  var body = '', bodyBytes = 0, tooBig = false;
   // A body in several chunks can split a character: decoding each chunk alone would garble it.
   req.setEncoding('utf8');
   req.on('data', function (d) {
     if (tooBig) return;
     body += d;
+    bodyBytes += Buffer.byteLength(d, 'utf8');
     // Read to the end and answer, rather than drop the connection: the page then says why.
-    if (body.length > (max || 8192)) { tooBig = true; body = ''; }
+    if (bodyBytes > (max || 8192)) { tooBig = true; body = ''; }
   });
   req.on('end', function () {
     if (tooBig) return send(res, 413, JSON.stringify({ ok: false, error: 'too-big' }));
@@ -2189,30 +2190,13 @@ function handleRequest(req, res) {
     if (!config.allowControl) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
     }
-    if (String(req.headers['content-type'] || '').toLowerCase().indexOf('application/json') !== 0) {
-      return send(res, 415, JSON.stringify({ ok: false, error: 'Content-Type must be application/json' }));
-    }
-    var borigin = req.headers.origin;
-    if (borigin && String(borigin).replace(/^https?:\/\//, '') !== String(req.headers.host || '')) {
-      return send(res, 403, JSON.stringify({ ok: false, error: 'cross-origin request refused' }));
-    }
-    var bbody = '';
-    req.on('data', function (d) {
-      bbody += d;
-      if (bbody.length > 65536) req.destroy();
-    });
-    req.on('end', function () {
-      var b = null;
-      try { b = JSON.parse(bbody); } catch (e) {
-        return send(res, 400, JSON.stringify({ ok: false, error: 'malformed JSON' }));
-      }
+    return readJsonBody(req, res, function (b) {
       if (installBusyRefusal(res)) return;
       backupModule.restore(b, function (r) {
         send(res, r.ok ? 200 : 400, JSON.stringify(r));
         if (r.restart) restartSoon(250, 'backup');
       });
-    });
-    return;
+    }, 1024 * 1024);
   }
 
   if (pathname === '/api/settings' && req.method === 'POST') {

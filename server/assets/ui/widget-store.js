@@ -66,10 +66,10 @@ function homeStoreFields(template, settings, disabled) {
   }).join('');
 }
 
-function homeStoreReadFields(template, form) {
+function homeStoreReadFields(template, form, preserveInput) {
   return Object.fromEntries(template.fields.map((field, index) => {
     const control = form.elements[`setting${index}`];
-    return [field.key, field.type === 'boolean' ? control.checked : field.type === 'number' ? Number(control.value) : control.value];
+    return [field.key, field.type === 'boolean' ? control.checked : field.type === 'number' && !preserveInput ? Number(control.value) : control.value];
   }));
 }
 
@@ -125,6 +125,7 @@ async function homeStoreAction(body, form) {
     const result = await homePost('/api/home/widgets/store', body);
     homeLayout = result.layout;
     homeStatus.layout = result.layout;
+    if (body.action === 'configure' || body.action === 'update') homeWidgetForgetDraft(body.id);
     if (body.action === 'install') q('home-store-preview').close();
     if (form) form.dataset.saved = 'true';
   } catch (error) { showErr(error.message); }
@@ -144,9 +145,9 @@ function homeStoreInstall() {
 
 function homeWidgetStoreFields(widget, off) {
   const update = homeStore?.widgets.find(item => item.id === widget.template.id && homeStoreNewer(item.revision, widget.template.revision));
-  return `<form class="home-widget-fields" onsubmit="event.preventDefault(); homeStoreConfigure('${widget.id}', this)">
+  return `<form class="home-widget-fields" oninput="homeWidgetRememberDraft('${widget.id}', this)" onchange="homeWidgetRememberDraft('${widget.id}', this)" onsubmit="event.preventDefault(); homeStoreConfigure('${widget.id}', this)">
     <div class="prot-desc">${esc(widget.template.name)} · ${esc(widget.template.revision)}</div>
-    ${homeStoreFields(widget.template, widget.settings, !!off)}
+    ${homeStoreFields(widget.template, homeWidgetDraft(widget) || widget.settings, !!off)}
     ${widget.template.definition.data?.source === 'weather' ? `<div class="prot-desc">${esc(t('home.store.weather', 'Uses the city and units selected under Weather. Turning this widget on permits weather requests.'))}</div>` : ''}
     <button type="submit" class="pill idle" ${off}>${esc(t('home.widgets.save', 'Save widget'))}</button>
     ${update ? `<button type="button" class="pill idle" ${off} onclick="homeStoreAction({action:'update',id:'${widget.id}'})">${esc(t('home.store.update', 'Update to {version}', { version: update.revision }))}</button>` : ''}

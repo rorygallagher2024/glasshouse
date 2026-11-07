@@ -96,6 +96,22 @@ bad = copy(fixture.widgets[0]); bad.preview = { content: Array(13000).join('x') 
 assert.strictEqual(templates.template(bad), null);
 bad = copy(fixture); bad.widgets.push(copy(bad.widgets[0]));
 assert.strictEqual(store.catalogue(bad), null, 'duplicate package ids invalidate the catalogue');
+function strings(count, length) {
+  var result = [];
+  while (result.length < count) result.push(new Array(length + 1).join('x'));
+  return result;
+}
+var boundary = { id: 'boundary', revision: '1.0.0', name: 'Boundary', description: 'Demo', author: 'Demo', category: 'personal', fields: [],
+  definition: { version: 2, type: 'components', id: 'boundary', name: 'Boundary',
+    data: { source: 'static', values: { a: strings(240, 40), b: strings(67, 10) } },
+    components: [{ type: 'data', field: 'a' }], expanded: [] } };
+for (var bi = 0; bi < 8; bi++) boundary.definition.expanded.push({ type: 'chart', field: 'a' });
+assert.ok(Buffer.byteLength(JSON.stringify(boundary), 'utf8') < 12288);
+assert.strictEqual(templates.template(boundary), null, 'catalogues cannot advertise a normalised template too large to install');
+boundary.definition.data.values.b.pop();
+var durable = templates.template(boundary);
+assert.ok(durable);
+assert.deepEqual(templates.template(durable), durable, 'an accepted near-limit template survives instance validation');
 var weather = store.change(widgets.normalise(null), { action: 'install', packageId: 'city-weather' }).widgets;
 assert.strictEqual(widgets.weatherActive(weather), false);
 weather.custom[0].enabled = true;

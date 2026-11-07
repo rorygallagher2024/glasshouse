@@ -2,6 +2,28 @@ let homeWidgetLocations = [];
 let homeWidgetSearchBusy = false;
 let homeWidgetQuery = '';
 let homeWidgetNote = '';
+const homeWidgetDrafts = new Map();
+
+function homeWidgetDraft(widget) {
+  const draft = homeWidgetDrafts.get(widget.id);
+  if (!draft) return null;
+  const template = widget.version === 3 ? JSON.stringify(widget.template) : '';
+  if (draft.version !== widget.version || draft.template !== template) {
+    homeWidgetDrafts.delete(widget.id);
+    return null;
+  }
+  return draft.values;
+}
+
+function homeWidgetRememberDraft(id, form) {
+  const widget = homeLayout.widgets.custom.find(item => item.id === id);
+  if (!widget) return;
+  const values = widget.version === 3 ? homeStoreReadFields(widget.template, form, true) : widget.version === 2
+    ? form.elements.widgetJSON.value : { name: form.elements.widgetName.value, value: form.elements.widgetValue.value, detail: form.elements.widgetDetail.value };
+  homeWidgetDrafts.set(id, { version: widget.version, template: widget.version === 3 ? JSON.stringify(widget.template) : '', values });
+}
+
+function homeWidgetForgetDraft(id) { homeWidgetDrafts.delete(id); }
 
 function homeWidgetSettings() {
   return JSON.parse(JSON.stringify(homeLayout.widgets));
@@ -53,9 +75,10 @@ function homeWidgetPosition(id, position) {
 }
 
 function homeWidgetComponentFields(widget, off) {
-  return `<form class="home-widget-fields" onsubmit="event.preventDefault(); homeWidgetComponentsSave('${widget.id}', this)">
+  const draft = homeWidgetDraft(widget);
+  return `<form class="home-widget-fields" oninput="homeWidgetRememberDraft('${widget.id}', this)" onsubmit="event.preventDefault(); homeWidgetComponentsSave('${widget.id}', this)">
     <div class="prot-desc">${esc(t('home.widgets.componentsHelp', 'Edit the component JSON. Data sources are static values, local TV statistics or weather for the selected city. Enabling a weather data widget permits weather requests.'))}</div>
-    <label class="home-widget-json">${esc(t('home.widgets.componentJSON', 'Widget JSON'))}<textarea name="widgetJSON" aria-label="${esc(t('home.widgets.componentJSON', 'Widget JSON'))}" rows="12" maxlength="16384" ${off}>${esc(JSON.stringify(widget, null, 2))}</textarea></label>
+    <label class="home-widget-json">${esc(t('home.widgets.componentJSON', 'Widget JSON'))}<textarea name="widgetJSON" aria-label="${esc(t('home.widgets.componentJSON', 'Widget JSON'))}" rows="12" maxlength="16384" ${off}>${esc(draft === null ? JSON.stringify(widget, null, 2) : draft)}</textarea></label>
     <button type="submit" class="pill idle" ${off}>${esc(t('home.widgets.save', 'Save widget'))}</button>
   </form>`;
 }
@@ -71,7 +94,7 @@ function homeWidgetComponentsSave(id, form) {
     if (!next || next.id !== id) throw new Error(t('home.widgets.keepId', 'Keep the widget id unchanged when editing.'));
     next.enabled = previous.enabled;
     widgets.custom = widgets.custom.map(w => w.id === id ? next : w);
-    homeSaveLayout({ widgets });
+    homeSaveLayout({ widgets }, () => homeWidgetForgetDraft(id));
   } catch (e) { showErr(e.message); }
 }
 
@@ -106,10 +129,11 @@ function homeWidgetWeatherFields(weather, off) {
 }
 
 function homeWidgetTextFields(widget, off) {
-  return `<form class="home-widget-fields" onsubmit="event.preventDefault(); homeWidgetTextSave('${widget.id}', this)">
-    <label>${esc(t('home.widgets.name', 'Title'))}<input name="widgetName" maxlength="40" required value="${esc(widget.name)}" ${off}></label>
-    <label>${esc(t('home.widgets.value', 'Value'))}<input name="widgetValue" maxlength="40" required value="${esc(widget.value)}" ${off}></label>
-    <label>${esc(t('home.widgets.detail', 'Detail'))}<input name="widgetDetail" maxlength="100" value="${esc(widget.detail)}" ${off}></label>
+  const values = homeWidgetDraft(widget) || widget;
+  return `<form class="home-widget-fields" oninput="homeWidgetRememberDraft('${widget.id}', this)" onsubmit="event.preventDefault(); homeWidgetTextSave('${widget.id}', this)">
+    <label>${esc(t('home.widgets.name', 'Title'))}<input name="widgetName" maxlength="40" required value="${esc(values.name)}" ${off}></label>
+    <label>${esc(t('home.widgets.value', 'Value'))}<input name="widgetValue" maxlength="40" required value="${esc(values.value)}" ${off}></label>
+    <label>${esc(t('home.widgets.detail', 'Detail'))}<input name="widgetDetail" maxlength="100" value="${esc(values.detail)}" ${off}></label>
     <button type="submit" class="pill idle" ${off}>${esc(t('home.widgets.save', 'Save widget'))}</button>
   </form>`;
 }
@@ -190,7 +214,7 @@ async function homeWidgetImport(file) {
     widget.enabled = false;
     const widgets = homeWidgetSettings();
     widgets.custom = widgets.custom.filter(w => w.id !== widget.id).concat([widget]);
-    await homeSaveLayout({ widgets });
+    await homeSaveLayout({ widgets }, () => homeWidgetForgetDraft(widget.id));
   } catch (e) { showErr(e.message); }
 }
 
@@ -198,7 +222,7 @@ function homeWidgetRemove(id) {
   const widgets = homeWidgetSettings();
   widgets.custom = widgets.custom.filter(w => w.id !== id);
   widgets.order = widgets.order.filter(key => key !== id);
-  homeSaveLayout({ widgets });
+  homeSaveLayout({ widgets }, () => homeWidgetForgetDraft(id));
 }
 
 function homeWidgetTextSave(id, form) {
@@ -207,5 +231,5 @@ function homeWidgetTextSave(id, form) {
   widget.name = form.elements.widgetName.value;
   widget.value = form.elements.widgetValue.value;
   widget.detail = form.elements.widgetDetail.value;
-  homeSaveLayout({ widgets });
+  homeSaveLayout({ widgets }, () => homeWidgetForgetDraft(id));
 }

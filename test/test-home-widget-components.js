@@ -23,6 +23,21 @@ assert.strictEqual(widgets.custom(bad), null, 'arbitrary network data sources ar
 bad = copy(rich); bad.components.push({ type: 'text', text: 'Too many' });
 assert.strictEqual(widgets.custom(bad), null);
 bad = copy(rich); bad.expanded = []; assert.ok(widgets.custom(bad));
+function strings(count, length) {
+  var result = [];
+  while (result.length < count) result.push(new Array(length + 1).join('x'));
+  return result;
+}
+var boundary = { version: 2, type: 'components', id: 'boundary', name: 'Boundary',
+  data: { source: 'static', values: { a: strings(240, 40), b: strings(147, 32) } },
+  components: [{ type: 'data', field: 'a' }], expanded: [] };
+for (var i = 0; i < 8; i++) boundary.expanded.push({ type: 'chart', field: 'a' });
+assert.ok(Buffer.byteLength(JSON.stringify(boundary), 'utf8') < 16384);
+assert.strictEqual(widgets.custom(boundary), null, 'normalised defaults cannot push a saved widget over the restart limit');
+boundary.data.values.b.pop(); boundary.data.values.b.pop();
+var durable = widgets.custom(boundary);
+assert.ok(durable);
+assert.deepEqual(widgets.custom(durable), durable, 'an accepted near-limit widget survives reload');
 bad.data.source = 'tv'; assert.deepEqual(widgets.custom(bad).data.values, {});
 bad.data.source = 'weather';
 var state = widgets.normalise({ custom: [bad] });
