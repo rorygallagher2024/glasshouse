@@ -1193,6 +1193,7 @@ function handleHomeRoute(req, res, u, pathname) {
       });
     }
     if (pathname === '/api/home/widgets/weather') return homeModule.widgets.weather(homeModule.layout().widgets, reply);
+    if (pathname === '/api/home/widgets/store') return homeModule.widgets.store.read(reply, u.query && u.query.refresh === '1');
     if (pathname === '/api/home/channels') {
       return homeModule.channelList(function (list) { reply({ ok: true, channels: list, tuner: !!list }); });
     }
@@ -1260,6 +1261,7 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
+      if (pathname === '/api/home/widgets/store') return homeModule.widgetAction(body, reply);
       if (pathname === '/api/home/widgets/locations') return homeModule.widgets.locations(body && body.query, reply);
       if (pathname === '/api/home/start-layout') return homeModule.setHideLgHomeAtStart(body, reply);
       if (pathname === '/api/home/wallpapers') return homeModule.setWallpapers(body, reply);

@@ -1,0 +1,64 @@
+{
+ "version": 1,
+ "widgets": [
+  {
+   "id": "personal-note", "revision": "1.0.0", "name": "Personal note",
+   "description": "A reminder or message for the Home screen. Works offline.",
+   "author": "Glasshouse contributors", "category": "personal",
+   "definition": { "version": 1, "type": "text", "id": "personal-note", "name": "Movie night", "value": "Friday at 20:00", "detail": "Bring popcorn" },
+   "fields": [
+    { "key": "title", "label": "Title", "type": "text", "target": "name", "default": "Movie night", "maxLength": 40 },
+    { "key": "message", "label": "Message", "type": "text", "target": "value", "default": "Friday at 20:00", "maxLength": 40 },
+    { "key": "detail", "label": "Detail", "type": "text", "target": "detail", "default": "Bring popcorn", "maxLength": 100 }
+   ]
+  },
+  {
+   "id": "tv-temperature", "revision": "1.0.0", "name": "TV temperature",
+   "description": "The TV's temperature and recent readings, where the hardware supplies them.",
+   "author": "Glasshouse contributors", "category": "tv",
+   "definition": {
+    "version": 2, "type": "components", "id": "tv-temperature", "name": "TV temperature", "data": { "source": "tv" },
+    "components": [
+     { "type": "data", "label": "Temperature", "field": "temp", "unit": "°C", "icon": "thermometer", "precision": 0 },
+     { "type": "chart", "label": "Recent readings", "field": "temps", "unit": "°C" }
+    ]
+   },
+   "fields": [
+    { "key": "title", "label": "Title", "type": "text", "target": "name", "default": "TV temperature" },
+    { "key": "precision", "label": "Decimal places", "type": "number", "target": "components.0.precision", "default": 0, "min": 0, "max": 2 },
+    { "key": "chart", "label": "Chart style", "type": "select", "target": "components.1.style", "default": "line", "options": [ { "value": "line", "label": "Line" }, { "value": "bar", "label": "Bars" } ] }
+   ],
+   "preview": { "temp": 48, "temps": [44, 45, 47, 46, 48, 48] }
+  },
+  {
+   "id": "city-weather", "revision": "1.0.0", "name": "City weather",
+   "description": "Temperature, wind and a graph for the city selected in Weather settings.",
+   "author": "Glasshouse contributors", "category": "weather",
+   "definition": {
+    "version": 2, "type": "components", "id": "city-weather", "name": "City weather", "data": { "source": "weather" },
+    "components": [
+     { "type": "data", "label": "Temperature", "field": "current.temperature", "unit": "temperature", "icon": "weather" },
+     { "type": "data", "label": "Wind", "field": "current.wind", "unit": "wind", "icon": "wind" },
+     { "type": "chart", "label": "Today", "field": "today.temperature", "labels": "today.labels", "unit": "temperature" }
+    ]
+   },
+   "fields": [ { "key": "title", "label": "Title", "type": "text", "target": "name", "default": "City weather" } ],
+   "preview": { "current": { "temperature": 13, "wind": 14, "code": 2, "isDay": true }, "units": { "temperature": "°C", "wind": "km/h" }, "today": { "temperature": [8, 9, 12, 15, 14, 11], "labels": ["06:00", "09:00", "12:00", "15:00", "18:00", "21:00"] } }
+  },
+  {
+   "id": "daily-reminder", "revision": "1.0.0", "name": "Daily reminder",
+   "description": "A short message with a built-in icon. Works offline.",
+   "author": "Glasshouse contributors", "category": "personal",
+   "definition": {
+    "version": 2, "type": "components", "id": "daily-reminder", "name": "Reminder", "data": { "source": "static" },
+    "components": [ { "type": "icon", "icon": "home", "label": "Before leaving" }, { "type": "text", "text": "Remember the keys" } ]
+   },
+   "fields": [
+    { "key": "title", "label": "Title", "type": "text", "target": "name", "default": "Reminder" },
+    { "key": "label", "label": "Label", "type": "text", "target": "components.0.label", "default": "Before leaving" },
+    { "key": "message", "label": "Message", "type": "text", "target": "components.1.text", "default": "Remember the keys", "maxLength": 100 },
+    { "key": "icon", "label": "Icon", "type": "select", "target": "components.0.icon", "default": "home", "options": [ { "value": "home", "label": "Home" }, { "value": "clock", "label": "Clock" }, { "value": "sun", "label": "Sun" } ] }
+   ]
+  }
+ ]
+}

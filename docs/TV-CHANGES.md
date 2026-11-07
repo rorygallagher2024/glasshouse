@@ -165,6 +165,19 @@ while hidden or covered. Text and static widgets fetch nothing; a TV-statistics
 widget reads the existing local stats snapshot every 60 seconds while visible.
 Definitions run no uploaded code and cannot specify external URLs.
 
+The widget store saves a validated template snapshot separately from each
+copy's settings in `home.json`, included in Home's backup. Installs start off;
+updates are explicit and preserve settings and placement. An enabled widget
+must be switched off before an update can change its data source. Opening or
+refreshing the store requests a fixed catalogue in the Glasshouse GitHub
+repository, with jsDelivr as a mirror. Search text and widget settings are not
+sent to either host. Results stay in memory for an hour, retries are limited
+to once a minute, and an offline read keeps the last catalogue or uses the
+bundled one. No additional service, app, boot hook or TV command is installed.
+Exporting a store widget excludes its copy's private settings; manual widget
+exports include their current contents. Submission opens a GitHub issue for
+review and never publishes a widget automatically.
+
 Glasshouse Home's **Last watched**, **App count** and **CEC addresses** switches are saved in `/var/lib/tvweb/home.json`, on unless switched off. Both dashboards edit the same choices, which reach an open Home view through its heartbeat. The source stays hidden until the saved layout loads.
 
 While Glasshouse Home and its picture details (off by default) are on and the TV is out of standby, a read-only `videooutput/getStatus` subscription records the last video each app plays for the plate. It starts before the first Home visit and stops when either is switched off or the TV goes into standby. Recorded videos stay in memory until the server restarts. HDMI signal and picture-mode reads change no TV settings.

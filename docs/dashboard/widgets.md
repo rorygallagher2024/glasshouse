@@ -123,6 +123,64 @@ TV statistics are not sent to the weather provider. Disabling weather keeps
 the saved city and does not erase existing backups or provider records.
 The dashboard credits [Open-Meteo](https://open-meteo.com/).
 
+## Browse the widget store
+
+Choose **Browse widget store** under Top widgets. Search by name, description
+or author, choose a category, or select **Installed only**. Search and filters
+run locally. The starter catalogue contains Personal note, Daily reminder,
+TV temperature and City weather.
+
+![Widget catalogue in the web dashboard, browser preview](../screenshots/home-widget-store-preview.png)
+
+**Preview and install** opens a preview labelled **sample data**, with the
+widget's settings below it. Editing those fields updates the preview. The
+sample is not a reading from the TV. Choose **Install widget** to save a copy;
+it starts off. Set its position and turn it on under Top widgets. The existing
+eight-saved-widget and three-visible-widget limits still apply.
+
+![Widget preview and configuration, browser preview with sample data](../screenshots/home-widget-store-dialog-preview.png)
+
+Install a widget again for a separate copy with independent settings. Installed
+store widgets have normal settings fields instead of a JSON editor. **Save
+widget** saves their configuration. Their template and settings are kept
+separately, so an **Update to…** action preserves settings, position and
+visibility. Updates apply only to the chosen copy. An incompatible update
+leaves it unchanged. If an update changes its data source, switch the widget
+off before updating, then review its requirements before enabling it again.
+
+Opening or refreshing the store requests a catalogue from GitHub, with jsDelivr
+as an alternate delivery source. Both serve the same Glasshouse repository;
+there is no separate widget repository, account, payment or hosting backend.
+The hosts receive the TV's public IP address, but search text and widget
+settings are not sent. A successful catalogue stays cached in memory for an
+hour. Refresh requests are limited to once a minute. If neither host responds,
+the last validated catalogue remains available, or the included starter
+catalogue is used. Installed widgets keep working without the catalogue.
+
+The online sources use the repository's `main` branch. While this feature is
+only in its draft PR, they may be unavailable and the included catalogue is
+used. The PR branch has a public catalogue preview; merging the PR enables
+the normal online addresses. No change to the TV is needed to browse the
+included widgets offline.
+
+### Share a widget
+
+Use **Export widget** beside an installed custom widget, then **Submit a
+widget** in the store. That link opens a prefilled GitHub issue in the
+Glasshouse repository; review and paste the JSON there. A GitHub account is
+required, and nothing is submitted until the issue is sent. Maintainers review
+submissions before adding them to the catalogue.
+
+A store export contains the template's example values, not that copy's private
+settings. A manually imported text or component widget exports its current
+contents. Review every export and remove personal messages, locations and
+credentials before sharing it.
+
+The repository also includes a **Submit a widget** issue form with fields for
+the JSON, description, category, author, licence and testing. GitHub exposes
+that named form after it reaches the default branch; the dashboard's prefilled
+issue link works before then. See [Writing a widget](../development/WRITING-WIDGETS.md#contribute-to-the-catalogue).
+
 ## Create and import widgets
 
 **Import a widget (.json)** accepts version 1 text files up to 4 KB and version

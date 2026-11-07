@@ -44,6 +44,7 @@ function components(raw, limit) {
   return list.every(function (c) { return c !== null; }) ? list : null;
 }
 function custom(raw) {
+  if (raw && raw.version === 3) return require('./home-widget-template').instance(raw);
   if (!raw || typeof raw.id !== 'string' || !/^[a-z][a-z0-9-]{0,39}$/.test(raw.id) ||
       raw.id === 'clock' || raw.id === 'weather') return null;
   var name = text(raw.name, 40);
@@ -62,7 +63,10 @@ function custom(raw) {
     components: compact, expanded: expanded };
 }
 function weatherActive(widgets) {
-  return widgets.weather.enabled || widgets.custom.some(function (w) { return w.enabled && w.version === 2 && w.data.source === 'weather'; });
+  return widgets.weather.enabled || widgets.custom.some(function (w) {
+    w = require('./home-widget-template').display(w);
+    return w.enabled && w.version === 2 && w.data.source === 'weather';
+  });
 }
 function placement(layout) {
   var widgets = layout.widgets, ids = widgets.order.filter(function (id) {
@@ -92,4 +96,4 @@ function placement(layout) {
   }
   return { ok: true, manual: true, positions: placed };
 }
-module.exports = { text: text, custom: custom, weatherActive: weatherActive, placement: placement };
+module.exports = { text: text, field: field, values: values, custom: custom, weatherActive: weatherActive, placement: placement };

@@ -3,6 +3,8 @@ var fetchJson = function (url, cb) { require('./fetch').getJson(url, cb); };
 var msg = require('./say').msg;
 var format = require('./home-widget-format');
 var forecast = require('./home-weather');
+var store = require('./home-widget-store');
+var templates = require('./home-widget-template');
 var text = format.text;
 
 function location(raw) {
@@ -68,12 +70,19 @@ function locations(query, cb) {
 }
 
 module.exports = {
+  store: store,
+  forDisplay: function (settings) {
+    var view = JSON.parse(JSON.stringify(settings));
+    view.custom.forEach(function (w) { if (w.version === 3) w.resolved = templates.display(w); });
+    return view;
+  },
   normalise: normalise, custom: custom, count: count, weather: weather, locations: locations,
   weatherActive: format.weatherActive, placement: format.placement,
   init: function (opts) {
     opts = opts || {};
     fetchJson = opts.fetchJson || require('./fetch').getJson;
     forecast.init(opts);
+    store.init(opts);
     locationBusy = false;
   }
 };

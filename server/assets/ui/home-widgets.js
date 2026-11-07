@@ -14,7 +14,7 @@ function renderHomeWidgets() {
   const busy = !homeWritable();
   const off = busy ? 'disabled' : '';
   const title = id => id === 'clock' ? t('home.showClock', 'Clock and date') : id === 'weather'
-    ? t('home.widgets.weather', 'Weather') : settings.custom.find(w => w.id === id).name;
+    ? t('home.widgets.weather', 'Weather') : (() => { const widget = settings.custom.find(w => w.id === id); return (widget.resolved || widget).name; })();
   const enabled = id => id === 'clock' ? homeLayout.showClock !== false : id === 'weather'
     ? settings.weather.enabled : settings.custom.find(w => w.id === id).enabled;
   host.innerHTML = settings.order.map((id, i) => `<div class="prot-row">
@@ -24,13 +24,14 @@ function renderHomeWidgets() {
       <button type="button" class="pill idle" ${busy || i === settings.order.length - 1 ? 'disabled' : ''} onclick="homeWidgetMove('${id}', 1)">${esc(t('home.widgets.right', 'Move right'))}</button>
       <button type="button" class="pill ${enabled(id) ? 'good' : 'idle'}" ${id === 'clock' ? 'id="home-show-clock"' : ''}
         ${off} aria-pressed="${enabled(id)}" aria-label="${esc(title(id))}" onclick="homeWidgetToggle('${id}')">${esc(enabled(id) ? t('common.on', 'On') : t('common.off', 'Off'))}</button>
-      ${id !== 'clock' && id !== 'weather' ? `<button type="button" class="pill bad" ${off} onclick="homeWidgetRemove('${id}')">${esc(t('home.ch.remove', 'Remove'))}</button>` : ''}
+      ${id !== 'clock' && id !== 'weather' ? `<button type="button" class="pill idle" onclick="homeWidgetExport('${id}')">${esc(t('home.store.export', 'Export widget'))}</button><button type="button" class="pill bad" ${off} onclick="homeWidgetRemove('${id}')">${esc(t('home.ch.remove', 'Remove'))}</button>` : ''}
     </div>
-  </div>${homeWidgetPositionFields(id, settings.positions && settings.positions[id] || 'auto', off, title(id))}${id === 'clock' ? homeWidgetClockFields(settings.clock, off) : id === 'weather' ? homeWidgetWeatherFields(settings.weather, off) : settings.custom.find(w => w.id === id).version === 2 ? homeWidgetComponentFields(settings.custom.find(w => w.id === id), off) : homeWidgetTextFields(settings.custom.find(w => w.id === id), off)}`).join('') +
+  </div>${homeWidgetPositionFields(id, settings.positions && settings.positions[id] || 'auto', off, title(id))}${id === 'clock' ? homeWidgetClockFields(settings.clock, off) : id === 'weather' ? homeWidgetWeatherFields(settings.weather, off) : settings.custom.find(w => w.id === id).version === 3 ? homeWidgetStoreFields(settings.custom.find(w => w.id === id), off) : settings.custom.find(w => w.id === id).version === 2 ? homeWidgetComponentFields(settings.custom.find(w => w.id === id), off) : homeWidgetTextFields(settings.custom.find(w => w.id === id), off)}`).join('') +
     `<label class="home-widget-import">${esc(t('home.widgets.import', 'Import a widget (.json)'))}
       <input type="file" accept=".json,application/json" ${off} onchange="homeWidgetImport(this.files[0]); this.value = ''">
     </label><div class="prot-desc">${esc(t('home.widgets.importHint', 'Import text widgets or component widgets with icons, charts and data. Imported widgets stay off until enabled.'))}
       <a href="https://rorygallagher2024.github.io/glasshouse/development/WRITING-WIDGETS/" target="_blank" rel="noopener">${esc(t('home.widgets.guide', 'Widget format'))}</a></div>`;
+  renderHomeWidgetStore();
 }
 
 function homeWidgetPositionFields(id, position, off, name) {
@@ -182,6 +183,9 @@ async function homeWidgetImport(file) {
     try { widget = JSON.parse(await file.text()); }
     catch (e) { throw new Error(t('home.widgets.invalidFile', 'Choose a valid widget JSON file.')); }
     if (!widget || typeof widget !== 'object') throw new Error(t('home.widgets.invalidFile', 'Choose a valid widget JSON file.'));
+    if (widget.revision && widget.definition && widget.fields) {
+      widget = { version: 3, type: 'store', id: widget.id, template: widget, settings: {}, enabled: false };
+    }
     if (widget.version === 1 && file.size > 4096) throw new Error(t('home.widgets.fileSize', 'A text widget file can be at most 4 KB.'));
     widget.enabled = false;
     const widgets = homeWidgetSettings();

@@ -189,6 +189,134 @@ A TV without those readings shows missing data; inspect its stats response
 before choosing other fields. This source issues no TV commands, makes no
 external request, and cannot subscribe to MQTT or Home Assistant entities.
 
+## Store templates and version 3 instances
+
+The curated catalogue lives in `server/assets/widget-store/catalogue.json` in
+the Glasshouse repository, beside the renderer. It contains `version: 1` and
+up to 64 `widgets`. The complete catalogue is limited to 512 KB. Every template
+must validate or the entire remote response is rejected. The bundled file is
+also the offline fallback.
+
+Each template has `id`, semantic `revision` (`major.minor.patch`), `name`,
+`description`, `author`, `category` (`personal`, `tv`, `weather`), a version 1/2
+`definition`, up to ten `fields`, and optional `preview` data. Template ids and
+definition ids must match. Names keep 40 characters, descriptions 240 and
+authors 60. A template must fit 12 KB. Labels, names and example content belong
+to the author and display in the language written; dashboard controls are
+translated separately. Previews use sample data and the same component
+renderer as Home.
+
+For a complete example, inspect `personal-note` in the bundled catalogue:
+
+```json
+{
+  "id": "personal-note",
+  "revision": "1.0.0",
+  "name": "Personal note",
+  "description": "A reminder or message for the Home screen. Works offline.",
+  "author": "Glasshouse contributors",
+  "category": "personal",
+  "definition": {
+    "version": 1, "type": "text", "id": "personal-note",
+    "name": "Movie night", "value": "Friday at 20:00", "detail": "Bring popcorn"
+  },
+  "fields": [
+    { "key": "title", "label": "Title", "type": "text", "target": "name", "default": "Movie night", "maxLength": 40 }
+  ]
+}
+```
+
+Fields have unique `key` and `target` values, a label, type and valid default.
+Keys start with a lowercase letter and contain up to 32 ASCII letters or
+digits. Labels keep 60 characters. Types are:
+
+| Type | Additional fields |
+| :--- | :--- |
+| `text` | `maxLength`, 1–100, default 40. |
+| `select` | One to sixteen `{ "value": "line", "label": "Line" }` options; values must fit `maxLength`. |
+| `number` | Integer values within `min` and `max`, default bounds −1000000 and 1000000. |
+| `boolean` | Literal true or false. |
+
+Allowed targets are `name`; `value` or `detail` for text definitions;
+`data.values.KEY` for a static object; or
+`components.INDEX.PROPERTY` / `expanded.INDEX.PROPERTY`, where PROPERTY is
+`text`, `label`, `field`, `unit`, `precision`, `style` or `icon`. Settings cannot
+change the data source or execute expressions. Both default and configured
+definitions must pass the underlying version 1/2 validator.
+
+Installing creates a saved instance with a unique id:
+
+```json
+{
+  "version": 3,
+  "type": "store",
+  "id": "personal-note-1",
+  "template": { "...": "complete validated template snapshot" },
+  "settings": { "title": "My notice" },
+  "enabled": false
+}
+```
+
+The `template` above is abbreviated for illustration. Actual files must contain
+the complete template. Its snapshot is stored independently of the instance's
+settings and survives an offline restart. A display-only `resolved` version 1/2
+definition is added to API responses and never persisted. Repeated installs
+create independent ids and settings. Exports share the template and its example
+defaults, excluding instance settings. Importing a template file creates a
+disabled version 3 instance; importing a saved version 3 instance is validated
+and disabled too.
+
+Updates are explicit, require a newer semantic revision and retain settings,
+position and enabled state. New fields receive defaults. Removed fields or
+values incompatible with the new schema cause the update to be refused; the
+old snapshot stays intact. An enabled instance cannot change data source in an
+update: switch it off first, update, then explicitly enable it after reviewing
+the requirements. No arbitrary URL or uploaded code is accepted.
+
+### Catalogue delivery
+
+`lib/home-widget-store.js` requests these fixed HTTPS sources only when the
+store is opened or refreshed:
+
+- [GitHub catalogue](https://raw.githubusercontent.com/rsm23/glasshouse/main/server/assets/widget-store/catalogue.json)
+- [jsDelivr mirror](https://cdn.jsdelivr.net/gh/rsm23/glasshouse@main/server/assets/widget-store/catalogue.json)
+
+Both use the same repository and `main` branch. GitHub is tried first,
+then jsDelivr; the latter is an alternate delivery path, not an independent
+catalogue. Successful results stay in memory for one hour, concurrent readers
+share a request and attempts back off for one minute. A failed or invalid
+refresh keeps the last valid result; a first offline read uses the bundled
+catalogue. Catalogue data is not written to disk. Installed snapshots and
+settings are included in the existing Home backup.
+
+Before maintainer merge, `main` may have neither file. Branch previews are
+available at [GitHub](https://raw.githubusercontent.com/rsm23/glasshouse/codex/home-widgets/server/assets/widget-store/catalogue.json)
+and [jsDelivr](https://cdn.jsdelivr.net/gh/rsm23/glasshouse@codex%2Fhome-widgets/server/assets/widget-store/catalogue.json);
+these preview URLs do not change the production source constants. CDN caches
+may delay catalogue updates; bump each changed package's revision.
+
+### Contribute to the catalogue
+
+The dashboard's **Submit a widget** opens a prefilled issue in the Glasshouse
+repository. It does not publish the widget. Export a template or a version 1/2
+definition, replace private content with examples, state its licence, and add
+a description, category, author and testing evidence. A GitHub account is
+required to submit. No credentials belong in a definition or issue.
+
+`.github/ISSUE_TEMPLATE/widget.yml` supplies the structured submission form
+once present on the default branch, as required by
+[GitHub](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository).
+The prefilled issue link does not depend on that form being available. A
+maintainer can turn a reviewed submission into a catalogue PR; submissions
+never bypass review or execute on a TV. Repository contributions use its MIT
+licence unless a compatible licence is explicitly stated and retained.
+
+To contribute through a PR, edit the catalogue in a branch, keep package ids
+stable, bump changed revisions, and run `node test/test-home-widget-store.js`
+and `scripts/check-all.sh`. The tests validate the real bundled catalogue as
+well as template settings, sources, cache fallback and updates. Follow the
+normal draft, translation, docs and TV-testing requirements.
+
 ## Remote interaction and positioning
 
 From the first row, Up enters the widget group; Left/Right choose, Down returns
@@ -223,6 +351,13 @@ switch; full configuration is on the web dashboard.
   each location containing `name`, `latitude` and `longitude`.
 - `GET /api/home/widgets/weather` returns the shared forecast when any
   weather consumer is enabled and has a valid location.
+- `GET /api/home/widgets/store` returns `{ok, widgets, source, stale,
+  fetchedAt}`. `?refresh=1` requests a refresh subject to the one-minute limit.
+- `POST /api/home/widgets/store` accepts `action: "install"` with `packageId`
+  and optional `settings`, `action: "configure"` with an instance `id` and
+  complete `settings`, or `action: "update"` with an instance `id`. It uses the
+  current validated catalogue and the existing Home save guards. A successful
+  reply contains the updated layout. Installations start off.
 
 `weather` settings include `enabled`, `location`, `units` (`celsius` or
 `fahrenheit`) and `windUnits` (`kmh`, `mph`, `ms`, `kn`). `clock` includes
@@ -238,7 +373,9 @@ all author-supplied text; SVG elements and attributes come from built-in code.
 The sources are restricted to saved values, local stats and the fixed forecast
 endpoint. Definitions are not standalone webOS apps.
 
-`lib/home-widget-format.js` validates definitions and placement;
+`lib/home-widget-template.js` validates templates and resolves saved instances;
+`lib/home-widget-store.js` validates and fetches catalogues and handles explicit
+installs, configuration and updates. `lib/home-widget-format.js` validates definitions and placement;
 `lib/home-widgets.js` normalises settings and searches cities;
 `lib/home-weather.js` parses and caches forecasts. On the TV, `widget-kit.js`
 draws components, `home-widget-panel.js` handles focus and expansion, and

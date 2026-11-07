@@ -2050,5 +2050,23 @@ h3 .tvm-tags i{font-size:11px}
 .home-widget-import input{max-width:100%}
 .home-widget-json{width:100%;display:block!important}
 .home-widget-json textarea{display:block;box-sizing:border-box;width:100%;max-width:100%;margin:8px 0;padding:12px;border:1px solid var(--w25);border-radius:6px;background:var(--bg);color:var(--w90);font:13px/1.5 monospace;resize:vertical}
+#home-widget-store{margin-top:24px}
+#home-store-results .prot-row{gap:16px}
+#home-store-preview{box-sizing:border-box;width:min(620px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;padding:24px;border:1px solid var(--w25);border-radius:12px;background:var(--bg);color:var(--w90);font:inherit}
+#home-store-preview::backdrop{background:rgba(0,0,0,.65)}
+#home-store-preview h2{margin-top:12px}
+.home-store-dialog-close{display:flex;justify-content:flex-end}
+.home-store-sample{box-sizing:border-box;width:360px;max-width:100%;min-height:200px;padding:16px;border:1px solid var(--w25);border-radius:6px;overflow-wrap:anywhere}
+#home-store-sample-body{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.home-store-text-value{font-size:24px}
+.home-store-sample .wk-component{display:flex;align-items:center;gap:12px}
+.home-store-sample .wk-component>svg{width:28px;height:28px;flex-shrink:0}
+.home-store-sample .wk-data-label{display:block;font-size:12px}
+.home-store-sample .wk-data-value{font-size:20px}
+.home-store-sample .wk-chart-caption{display:flex;justify-content:space-between;gap:8px;font-size:12px}
+.home-store-sample .wk-chart>svg{display:block;width:100%;height:auto}
+.home-store-sample .wk-empty{font-size:13px}
+#home-store-preview :focus-visible,#home-widget-store :focus-visible{outline:2px solid currentColor;outline-offset:3px}
+@media(max-width:600px){#home-store-results .prot-row{align-items:flex-start;flex-direction:column}#home-store-preview{padding:16px}}
 #home-widget-results .pill{white-space:normal;text-align:start;max-width:100%;margin:0 6px 6px 0}
 @media(max-width:600px){#home-widgets .prot-row{align-items:flex-start;flex-direction:column;gap:8px}.home-widget-fields label{width:100%}.home-widget-fields input:not([type=checkbox]){width:100%}}

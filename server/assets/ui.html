@@ -1201,6 +1201,26 @@
     <div class="prot-row home-gh-row"><div class="prot-main">
       <div class="prot-desc" data-t="home.widgets.description">Place widgets left, centre or right above the app rows. Switch Last watched off to use the centre; Picture details and the top live preview reserve the right.</div>
       <div id="home-widgets"></div>
+      <button type="button" class="pill idle" onclick="homeStoreBrowse()" data-t="home.store.browse">Browse widget store</button>
+      <div class="prot-desc" data-t="home.store.privacy">Opening the store contacts GitHub or jsDelivr. Search and filters stay on this device; widget settings are not sent.</div>
+      <section id="home-widget-store" hidden>
+        <h3 data-t="home.store.title">Widget store</h3>
+        <div class="home-widget-fields">
+          <label><span data-t="home.store.search">Search widgets</span><input id="home-store-search" type="search" maxlength="100" oninput="renderHomeWidgetStore()"></label>
+          <label><span data-t="home.store.category">Category</span><select class="pill-sel" id="home-store-category" onchange="renderHomeWidgetStore()">
+            <option value="" data-t="home.store.all">All categories</option>
+            <option value="personal" data-t="home.store.personal">Personal</option>
+            <option value="weather" data-t="home.widgets.weather">Weather</option>
+            <option value="tv" data-t="home.store.tv">TV statistics</option>
+          </select></label>
+          <label><input id="home-store-installed" type="checkbox" onchange="renderHomeWidgetStore()"><span data-t="home.store.installedOnly">Installed only</span></label>
+          <button type="button" class="pill idle" id="home-store-refresh" onclick="homeStoreBrowse()" data-t="home.store.refresh">Refresh catalogue</button>
+          <a class="pill idle" id="home-store-submit" href="https://github.com/rsm23/glasshouse/issues/new" target="_blank" rel="noopener" data-t="home.store.submit">Submit a widget</a>
+        </div>
+        <p class="prot-desc" id="home-store-note" role="status"></p>
+        <p class="prot-desc" id="home-store-count" aria-live="polite"></p>
+        <div id="home-store-results"></div>
+      </section>
     </div></div>
   </div>
   <div class="home-group" id="home-g-preview">
@@ -2016,7 +2036,22 @@
   </div>
 </div>
 
+<dialog id="home-store-preview" aria-labelledby="home-store-preview-title">
+  <form method="dialog" class="home-store-dialog-close"><button type="submit" class="pill idle" data-t="common.close">Close</button></form>
+  <h2 id="home-store-preview-title"></h2>
+  <p class="prot-desc" id="home-store-preview-description"></p>
+  <p class="prot-desc" data-t="home.store.sample">Preview with sample data</p>
+  <div class="home-store-sample"><div id="home-store-sample-title" class="prot-title"></div><div id="home-store-sample-body"></div></div>
+  <form id="home-store-preview-form" oninput="homeStorePaintPreview()" onchange="homeStorePaintPreview()" onsubmit="event.preventDefault(); homeStoreInstall()">
+    <div id="home-store-preview-fields" class="home-widget-fields"></div>
+    <p class="prot-desc" id="home-store-preview-weather" data-t="home.store.weather">Uses the city and units selected under Weather. Turning this widget on permits weather requests.</p>
+    <p class="prot-desc" id="home-store-install-note" role="status"></p>
+    <button type="submit" class="pill idle" id="home-store-install" data-t="home.store.install">Install widget</button>
+  </form>
+</dialog>
+
 <script src="/assets/i18n.js"></script>
+<script src="/assets/widget-kit.js"></script>
 <!-- The server puts these back inline as one script, in this order: see inlineUI in lib/routes.js. -->
 <script src="/assets/ui/core.js"></script>
 <script src="/assets/ui/theme.js"></script>
@@ -2035,6 +2070,7 @@
 <script src="/assets/ui/install.js"></script>
 <script src="/assets/ui/home.js"></script>
 <script src="/assets/ui/home-widgets.js"></script>
+<script src="/assets/ui/widget-store.js"></script>
 <script src="/assets/ui/iptv.js"></script>
 <script src="/assets/ui/tvchannels.js"></script>
 <script src="/assets/ui/audio.js"></script>

@@ -23,6 +23,18 @@ charts, remote expansion/closing, three-position layout, and pausing/resuming
 polling while covered. City and weather replies are fixtures. Physical-TV
 rendering and remote testing remain separate requirements.
 
+`test-home-widget-store.js` validates the real bundled catalogue, version 3
+template/settings separation, independent copies, compatible and incompatible
+updates, permission changes, persistence, safe targets, request limits,
+shared fetches, GitHub-to-jsDelivr fallback and offline browsing. It takes
+network replies and time through `init` and makes no live catalogue request.
+The store browser check covers search/category/installed filters, live sample
+previews, form settings, installation, copies, updates, exports without private
+settings, the submission URL, errors, read-only controls, phone layout and
+resolved instances reaching Home. It shares the existing Home browser group.
+Check `.github/ISSUE_TEMPLATE/widget.yml` against GitHub's issue-form schema
+when changing the submission fields; GitHub exposes it from the default branch.
+
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC
 EDID flag does not promote ARC, stale driver values do not become live audio,

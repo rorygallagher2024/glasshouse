@@ -19,6 +19,13 @@ opened with **OK**. It starts off; city search and enabled weather widgets
 send requests to Open-Meteo from the TV. The [Home widgets guide](widgets.md)
 covers positioning, remote controls, imports, privacy, backups and troubleshooting.
 
+**Browse widget store** adds search, category and installed filters, sample
+previews and settings forms. Installations start off; repeated installs have
+separate settings. Templates, examples and the reviewed submission flow live
+in the same Glasshouse repository, served through GitHub with a jsDelivr
+mirror. The [store guide](widgets.md#browse-the-widget-store) covers offline
+fallback, updates and submitting a widget.
+
 <div class="grid cards" markdown>
 
 -   **Apps**

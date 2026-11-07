@@ -1,0 +1,72 @@
+name: Submit a widget
+description: Propose a declarative Home widget for the curated catalogue.
+title: "[Widget] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Submissions are reviewed before appearing in the store. A GitHub account is required.
+        Export a widget from Home > Top widgets, or follow docs/development/WRITING-WIDGETS.md.
+        Remove personal messages, locations, credentials and other private data before sharing.
+  - type: input
+    id: name
+    attributes:
+      label: Widget name
+      description: A short name for the catalogue.
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What does the widget show, and what does it need?
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Personal
+        - TV statistics
+        - Weather
+    validations:
+      required: true
+  - type: input
+    id: author
+    attributes:
+      label: Author
+      description: The public name to show in the catalogue.
+    validations:
+      required: true
+  - type: input
+    id: licence
+    attributes:
+      label: Licence
+      description: State the licence and ownership of the submitted definition and content.
+    validations:
+      required: true
+  - type: textarea
+    id: widget
+    attributes:
+      label: Widget JSON
+      description: Paste the exported template or version 1/2 definition, with safe example values.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: preview
+    attributes:
+      label: Preview and testing
+      description: Add an optional screenshot, sample data and the TV/webOS version tested. Do not include private viewing content.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Submission checklist
+      options:
+        - label: The definition contains no credentials or private settings.
+          required: true
+        - label: The submission contains declarative JSON only, with no executable code, HTML, raw SVG or arbitrary network URLs.
+          required: true
+        - label: The stated licence permits distribution and modification of this contribution.
+          required: true

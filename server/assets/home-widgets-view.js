@@ -114,6 +114,8 @@
       var custom = settings.custom || [];
       for (var i = 0; i < custom.length; i++) {
         var w = custom[i]; if (w.id !== id || !w.enabled) continue;
+        if (w.version === 3) w = w.resolved;
+        if (!w) continue;
         addWidget({ id: id, title: w.name, value: w.value, detail: w.detail, components: w.components, expanded: w.expanded,
           source: w.data && w.data.source, values: w.data && w.data.values }, host);
       }

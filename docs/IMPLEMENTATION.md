@@ -1740,6 +1740,18 @@ existing Home guards; the existing `showClock` remains the clock's visibility
 setting. The [widget format](development/WRITING-WIDGETS.md) specifies limits,
 HTTP integration, cache lifetimes and placement rules.
 
+`lib/home-widget-template.js` stores version 3 instances as template snapshots
+and separate settings, resolving them to version 1/2 for display. Derived
+`resolved` definitions appear in responses only. `lib/home-widget-store.js`
+validates the catalogue bundled at `assets/widget-store/catalogue.json` and
+fetches its GitHub/jsDelivr copies on explicit store reads. It shares in-flight
+requests, caches for an hour and backs off a minute. Installs, settings changes
+and updates use Home's serialized change guard and layout validation. Updates
+cannot silently discard setting fields or change an enabled widget's data
+source. The modern dashboard's `ui/widget-store.js` renders sample previews
+through WidgetKit, builds field controls and opens a prefilled GitHub issue
+for submissions. No widget code or user-specified URL runs.
+
 ### Custom launchers
 
 `lib/home-launcher.js` puts another page in the view's place; everything that

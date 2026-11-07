@@ -714,6 +714,129 @@ async function visitHomeWidgets(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+async function visitWidgetStore(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1000 }, acceptDownloads: true });
+  page.on('pageerror', e => problems.push('Widget store: ' + e.message));
+  const widgets = require('../server/lib/home-widgets');
+  const store = widgets.store;
+  let layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] },
+    channels: [], hintSeen: true, searchHintSeen: true, showClock: true, widgets: widgets.normalise(null) };
+  let catalogue = JSON.parse(JSON.stringify(require('../server/assets/widget-store/catalogue.json')));
+  let time = 0, writable = true, failInstall = false, offline = false, version = 1;
+  const init = () => store.init({ now: () => time, fetchJson: (_url, cb) => cb(offline ? new Error('offline') : null, catalogue) });
+  init();
+  const display = () => Object.assign({}, layout, { widgets: widgets.forDisplay(layout.widgets), widgetPlacement: widgets.placement(layout) });
+  await page.route('**/api/home**', route => {
+    const pathname = new URL(route.request().url()).pathname;
+    const reply = json => route.fulfill({ json });
+    if (pathname === '/api/home') return reply({ ok: true, supported: { ok: true }, enabled: true, active: true, writable, layout: display() });
+    if (pathname === '/api/home/catalogue') return reply({ ok: true, layout: display(), layoutVersion: String(version), apps: [], devices: [], channels: [], order: { app: ['lg-home'], dev: [], ch: [] }, sources: {} });
+    if (pathname === '/api/home/widgets/store') {
+      if (route.request().method() === 'GET') return store.read(reply, new URL(route.request().url()).searchParams.has('refresh'));
+      const body = route.request().postDataJSON();
+      if (failInstall) return reply({ ok: false, error: 'Test installation refused' });
+      const result = store.change(layout.widgets, body);
+      if (result.error) return reply({ ok: false, error: result.error });
+      layout.widgets = widgets.normalise(result.widgets); version++;
+      return reply({ ok: true, layout: display(), layoutVersion: String(version) });
+    }
+    if (pathname === '/api/home/layout') {
+      const next = Object.assign({}, layout, route.request().postDataJSON()); next.widgets = widgets.normalise(next.widgets);
+      if (!widgets.placement(next).ok) return reply({ ok: false, error: 'Position unavailable' });
+      layout = next; version++;
+      return reply({ ok: true, layout: display(), layoutVersion: String(version) });
+    }
+    return reply({ ok: true, build: 'one', layoutVersion: String(version), covered: false });
+  });
+  const preview = async name => {
+    const row = page.locator('#home-store-results .prot-row').filter({ has: page.getByText(name, { exact: true }) });
+    await row.getByRole('button', { name: 'Preview and install', exact: true }).click();
+    return page.getByRole('dialog', { name, exact: true });
+  };
+  try {
+    await page.goto(base + '/?tab=home');
+    await page.getByRole('button', { name: 'Browse widget store', exact: true }).click();
+    await page.locator('#home-store-count').filter({ hasText: 'Widgets: 4' }).waitFor();
+    await page.getByRole('searchbox', { name: 'Search widgets', exact: true }).fill('recent readings');
+    await page.locator('#home-store-count').filter({ hasText: 'Widgets: 1' }).waitFor();
+    await page.getByRole('searchbox', { name: 'Search widgets', exact: true }).fill('no such widget');
+    await page.getByText('No widgets match these filters.', { exact: true }).waitFor();
+    await page.getByRole('searchbox', { name: 'Search widgets', exact: true }).fill('');
+    await page.getByRole('combobox', { name: 'Category', exact: true }).selectOption('weather');
+    await page.locator('#home-store-count').filter({ hasText: 'Widgets: 1' }).waitFor();
+    let dialog = await preview('City weather');
+    if (await dialog.locator('.wk-chart svg').count() !== 1) problems.push('Widget store: sample chart missing');
+    await dialog.getByText('Uses the city and units selected under Weather. Turning this widget on permits weather requests.', { exact: true }).waitFor();
+    await page.keyboard.press('Escape');
+    await page.getByRole('combobox', { name: 'Category', exact: true }).selectOption('');
+    dialog = await preview('Personal note');
+    await dialog.getByRole('textbox', { name: 'Title', exact: true }).fill('Office');
+    await dialog.getByRole('textbox', { name: 'Message', exact: true }).fill('<b>First reminder</b>');
+    if (await dialog.locator('#home-store-sample-body b').count() || await dialog.locator('#home-store-sample-body').textContent() !== '<b>First reminder</b>Bring popcorn') problems.push('Widget store: preview text was not literal');
+    await dialog.getByRole('button', { name: 'Install widget', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom.length === 1);
+    const firstId = layout.widgets.custom[0].id;
+    if (layout.widgets.custom[0].enabled || layout.widgets.custom[0].template.definition.name !== 'Movie night') problems.push('Widget store: installation changed defaults or enabled the widget');
+    await page.locator('#home-widgets').getByRole('button', { name: 'Office', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom[0].enabled);
+    const title = page.locator('#home-widgets').getByRole('textbox', { name: 'Title', exact: true });
+    await title.fill('Saved title');
+    await title.locator('..').locator('..').getByRole('button', { name: 'Save widget', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom[0].settings.title === 'Saved title');
+    await page.getByRole('combobox', { name: 'Position of Saved title', exact: true }).selectOption('left');
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions[homeLayout.widgets.custom[0].id] === 'left');
+    dialog = await preview('Personal note');
+    await dialog.getByRole('textbox', { name: 'Title', exact: true }).fill('Second');
+    await dialog.getByRole('button', { name: 'Install widget', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom.length === 2);
+    if (layout.widgets.custom[1].id === firstId || layout.widgets.custom[0].settings.title !== 'Saved title') problems.push('Widget store: instance settings were shared');
+    await page.getByRole('checkbox', { name: 'Installed only', exact: true }).check();
+    await page.locator('#home-store-count').filter({ hasText: 'Widgets: 1' }).waitFor();
+    await page.getByRole('checkbox', { name: 'Installed only', exact: true }).uncheck();
+    catalogue.widgets[0].revision = '1.1.0'; catalogue.widgets[0].definition.detail = 'Updated defaults'; time += 60000;
+    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await page.locator('#home-widgets').getByRole('button', { name: 'Update to 1.1.0', exact: true }).first().click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom[0].template.revision === '1.1.0');
+    if (!layout.widgets.custom[0].enabled || layout.widgets.custom[0].settings.title !== 'Saved title' || layout.widgets.positions[firstId] !== 'left' || layout.widgets.custom[1].template.revision !== '1.0.0') problems.push('Widget store: update lost settings, position or instance isolation');
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#home-widgets').getByRole('button', { name: 'Export widget', exact: true }).first().click();
+    const exported = JSON.parse(fs.readFileSync(await (await downloadPromise).path(), 'utf8'));
+    if (exported.settings || exported.definition.name !== 'Movie night' || exported.fields[0].default !== 'Movie night') problems.push('Widget store: export exposed instance settings');
+    const submission = new URL(await page.getByRole('link', { name: 'Submit a widget', exact: true }).getAttribute('href'));
+    if (submission.pathname !== '/rsm23/glasshouse/issues/new' || !submission.searchParams.get('body').includes('## Widget JSON')) problems.push('Widget store: prefilled submission link missing');
+    failInstall = true;
+    dialog = await preview('Daily reminder');
+    await dialog.getByRole('button', { name: 'Install widget', exact: true }).click();
+    await page.locator('#err').filter({ hasText: 'Test installation refused' }).waitFor({ state: 'visible' });
+    await page.waitForFunction(() => !homeSaving);
+    if (layout.widgets.custom.length !== 2) problems.push('Widget store: a failed installation changed saved widgets');
+    await dialog.getByRole('button', { name: 'Close', exact: true }).click(); failInstall = false;
+    offline = true; init();
+    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await page.getByText('Showing the included catalogue. Online sources are unavailable; try again later.', { exact: true }).waitFor();
+    dialog = await preview('TV temperature');
+    await dialog.getByRole('spinbutton', { name: 'Decimal places', exact: true }).fill('999');
+    if (!await dialog.getByRole('spinbutton', { name: 'Decimal places', exact: true }).evaluate(input => input.validity.rangeOverflow)) problems.push('Widget store: invalid setting did not get validation feedback');
+    await dialog.getByRole('spinbutton', { name: 'Decimal places', exact: true }).fill('2');
+    await dialog.getByRole('combobox', { name: 'Chart style', exact: true }).selectOption('bar');
+    if (await dialog.locator('.wk-chart rect').count() !== 6) problems.push('Widget store: chart setting did not update preview');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => { closeNav(); document.documentElement.setAttribute('data-theme', 'light'); });
+    if (await dialog.evaluate(el => el.scrollWidth > el.clientWidth + 1)) problems.push('Widget store: preview overflows on a phone');
+    await page.keyboard.press('Escape');
+    writable = false;
+    await page.reload();
+    await page.getByRole('button', { name: 'Browse widget store', exact: true }).click();
+    dialog = await preview('Personal note');
+    if (!await dialog.getByRole('button', { name: 'Install widget', exact: true }).isDisabled()) problems.push('Widget store: read-only installation was enabled');
+    await dialog.getByText('Widget changes are unavailable while controls are disabled or a save is in progress.', { exact: true }).waitFor();
+    await page.keyboard.press('Escape');
+    await page.goto(base + '/assets/home.html');
+    await page.locator('#widget-' + firstId).waitFor();
+    if (!(await page.locator('#widget-' + firstId).innerText()).includes('<b>First reminder</b>')) problems.push('Widget store: resolved instance did not reach Home');
+  } finally { await page.close(); }
+}
+
 async function visitHomeVisibility(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home visibility: ' + e.message));
@@ -2773,7 +2896,7 @@ function groups(web, tv) {
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
-    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels, visitHomeWidgets] },
+    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels, visitHomeWidgets, visitWidgetStore] },
     /*
      * Scrolling and motion read the row's place frame by frame, and missed
      * frames with the other groups sharing CI's four cores: 3 of 15 runs

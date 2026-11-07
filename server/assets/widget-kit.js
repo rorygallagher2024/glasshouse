@@ -37,11 +37,12 @@
     return value;
   }
   function finite(value) { return typeof value === 'number' && isFinite(value); }
+  function decimals(value) { return value === 1 || value === 2 ? value : 0; }
   function unit(key, data) {
     return data && data.units && typeof data.units[key] === 'string' ? data.units[key] : key || '';
   }
   function value(raw, precision, suffix) {
-    var v = finite(raw) ? raw.toFixed(precision || 0) : typeof raw === 'string' || typeof raw === 'boolean' ? String(raw) : '–';
+    var v = finite(raw) ? raw.toFixed(decimals(precision)) : typeof raw === 'string' || typeof raw === 'boolean' ? String(raw) : '–';
     return v + (v !== '–' && suffix ? ' ' + suffix : '');
   }
   function weatherIcon(code, day) {
@@ -105,7 +106,7 @@
     if (!small) {
       [[high, upper], [low, base]].forEach(function (pair) {
         var label = svgNode('text', { x: left - 8, y: pair[1] + 5, 'text-anchor': 'end', fill: 'currentColor' });
-        label.textContent = Number(pair[0]).toFixed(options.precision || 0); svg.appendChild(label);
+        label.textContent = Number(pair[0]).toFixed(decimals(options.precision)); svg.appendChild(label);
       });
       if (Array.isArray(labels)) [0, Math.floor((list.length - 1) / 2), list.length - 1].filter(function (i, n, a) { return a.indexOf(i) === n; }).forEach(function (i) {
         var label = svgNode('text', { x: x(i), y: 158, 'text-anchor': i === 0 ? 'start' : i === list.length - 1 ? 'end' : 'middle', fill: 'currentColor' });

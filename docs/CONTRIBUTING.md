@@ -120,6 +120,19 @@ covers.
 
 ## Code reviews
 
+### Widget catalogue contributions
+
+Widget templates and their curated catalogue live in
+`server/assets/widget-store/catalogue.json` in this repository. **Submit a
+widget** on the dashboard opens a prefilled issue; the repository's widget
+issue form becomes available on the default branch. Submissions need review
+before inclusion and must state their licence and omit private content. A
+catalogue PR keeps ids stable, bumps changed revisions and runs
+`node test/test-home-widget-store.js` and the normal checks. See
+[Writing a widget](development/WRITING-WIDGETS.md#contribute-to-the-catalogue).
+
+### Review comments
+
 We prefer code review comments to follow the [Conventional Comments](https://conventionalcomments.org/) standard (e.g. `praise:`, `suggestion:`, `issue:`, `nitpick:`, `question:`). This keeps feedback constructive, actionable, and makes it clear whether a comment is blocking or an optional suggestion. Refer to [conventionalcomments.org](https://conventionalcomments.org/) for the complete specification and examples.
 
 ## Environment and compatibility

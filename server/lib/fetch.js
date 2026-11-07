@@ -292,7 +292,7 @@ function download(url, outFile, opts, cb) {
 }
 
 /* Small JSON document, https only; cb(err, parsed). */
-function getJson(url, cb) {
+function getJson(url, cb, opts) {
   var bad = validateUrl(url);
   if (!bad && !/^https:\/\//i.test(url)) {
     bad = msg('srv.fetch.needHttps', 'the address must start with https://');
@@ -301,7 +301,7 @@ function getJson(url, cb) {
     setTimeout(function () { cb(new Error(bad)); }, 0);
     return;
   }
-  run(url, null, 'text', { maxBuffer: 8 * 1024 * 1024 }, function (err, body) {
+  run(url, null, 'text', { maxBuffer: opts && opts.maxBuffer || 8 * 1024 * 1024 }, function (err, body) {
     if (err) return cb(err);
     var doc;
     try { doc = JSON.parse(body); } catch (e) {
