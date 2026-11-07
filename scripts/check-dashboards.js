@@ -2483,7 +2483,9 @@ async function visitIptvChannels(browser, base, problems) {
     await page.click('button:has-text("Add the whole group")');
     await page.waitForTimeout(300);
     if (!posts.some(p => p.action === 'add-group' && p.group === 'UK | Sport' && p.pl === 'p1')) fail('Add the whole group did not add it: ' + JSON.stringify(posts));
-    await page.click('.tvm-sec button[aria-expanded="false"]').catch(() => {});
+    // A section folded away is opened; with none, page.click would wait out its 30 s.
+    const folded = page.locator('.tvm-sec button[aria-expanded="false"]');
+    if (await folded.count()) await folded.first().click();
     await page.waitForSelector('.tvm-lc .star');
     await page.locator('.tvm-lc .star').first().click();
     await page.waitForTimeout(300);
