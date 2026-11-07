@@ -13,7 +13,7 @@ charts. The stage scales to the display; a higher TV resolution adds no
 widget space. Up to three widgets fit, subject to the
 [placement rules](../dashboard/widgets.md#position-and-visibility).
 
-Save UTF-8 JSON and import it under **Home > Top widgets > Import a widget
+Save UTF-8 JSON and import it under **Home > Top widgets > Manage widgets > Store > Import a widget
 (.json)** on the web dashboard. A new or replacement import starts off. Up to
 eight custom definitions can be stored, whether enabled or disabled. A matching
 id replaces a definition. The dashboard edits text fields for version 1 and

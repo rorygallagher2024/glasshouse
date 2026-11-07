@@ -10,7 +10,6 @@ function homeStoreCategory(category) {
 }
 
 async function homeStoreBrowse() {
-  q('home-widget-store').hidden = false;
   if (homeStoreLoading) return;
   homeStoreLoading = true;
   homeStoreError = '';

@@ -186,9 +186,14 @@ async function homeWidgetAutomatic() {
 function homeWidgetReview(zone) {
   const reason = homeWidgetDropPlan(zone).reasons[0];
   const controls = { lastWatched: 'home-show-last', picture: 'home-picture', topPreview: 'home-preview', previewDetails: 'home-picture', weatherLocation: 'home-widget-city' };
+  if (['lastWatched', 'picture', 'topPreview', 'previewDetails'].includes(reason)) {
+    if (!homeWidgetClose()) return;
+  } else {
+    homeWidgetSelect(reason === 'weatherLocation' ? 'weather' : reason === 'footballLeagues' ? 'football' : homeWidgetLayoutSelected || 'clock');
+  }
   let control = q(controls[reason]);
-  if (reason === 'off') control = q('home-widgets').querySelector(`[data-widget-toggle="${homeWidgetLayoutSelected}"]`);
-  if (!control) control = q('home-widgets').querySelector('button[aria-pressed]');
+  if (reason === 'off') control = Array.from(q('home-widget-editors').querySelectorAll(`[data-widget-toggle="${homeWidgetLayoutSelected}"]`)).find(button => button.getClientRects().length);
+  if (!control || !control.getClientRects().length) control = q('home-widget-editor-title');
   control?.scrollIntoView({ block: 'center' });
   control?.focus();
 }

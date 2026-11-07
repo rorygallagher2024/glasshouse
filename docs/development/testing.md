@@ -62,6 +62,13 @@ settings, the submission URL, errors, read-only controls, phone layout and
 resolved instances reaching Home. Text, component and store editor drafts survive
 refreshes and failed saves, including empty numeric inputs; successful saves clear
 the relevant draft. It shares the existing Home browser group.
+Widget dashboard checks open **Manage widgets**, select its Widgets, Layout
+and Store tabs, and edit one widget at a time. They check the compact Home
+summary, returning to Home controls from layout requirements, and error
+messages inside the active dialog, including the store preview.
+They also exercise keyboard tab selection, Escape and focus restoration,
+phone list/detail navigation at 320 px in both themes, drafts surviving widget
+and tab switches, and cancelling or confirming the discard-on-close prompt.
 Check `.github/ISSUE_TEMPLATE/widget.yml` against GitHub's issue-form schema
 when changing the submission fields; GitHub exposes it from the default branch.
 

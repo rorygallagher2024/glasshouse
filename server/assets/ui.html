@@ -1198,31 +1198,9 @@
   </div>
   <div class="home-group" id="home-g-widgets">
     <div class="pv-g" data-t="home.widgets.title">Top widgets</div>
-    <div class="prot-row home-gh-row"><div class="prot-main">
-      <div class="prot-desc" data-t="home.widgets.description">Place widgets left, centre or right above the app rows. Switch Last watched off to use the centre; Picture details and the top live preview reserve the right.</div>
-      <div id="home-widget-layout"></div>
-      <div id="home-widgets"></div>
-      <button type="button" class="pill idle" onclick="homeStoreBrowse()" data-t="home.store.browse">Browse widget store</button>
-      <div class="prot-desc" data-t="home.store.privacy">Opening the store contacts GitHub or jsDelivr. Search and filters stay on this device; widget settings are not sent.</div>
-      <section id="home-widget-store" hidden>
-        <h3 data-t="home.store.title">Widget store</h3>
-        <div class="home-widget-fields">
-          <label><span data-t="home.store.search">Search widgets</span><input id="home-store-search" type="search" maxlength="100" oninput="renderHomeWidgetStore()"></label>
-          <label><span data-t="home.store.category">Category</span><select class="pill-sel" id="home-store-category" onchange="renderHomeWidgetStore()">
-            <option value="" data-t="home.store.all">All categories</option>
-            <option value="personal" data-t="home.store.personal">Personal</option>
-            <option value="weather" data-t="home.widgets.weather">Weather</option>
-            <option value="tv" data-t="home.store.tv">TV statistics</option>
-          </select></label>
-          <label><input id="home-store-installed" type="checkbox" onchange="renderHomeWidgetStore()"><span data-t="home.store.installedOnly">Installed only</span></label>
-          <button type="button" class="pill idle" id="home-store-refresh" onclick="homeStoreBrowse()" data-t="home.store.refresh">Refresh catalogue</button>
-          <a class="pill idle" id="home-store-submit" href="https://github.com/rsm23/glasshouse/issues/new" target="_blank" rel="noopener" data-t="home.store.submit">Submit a widget</a>
-        </div>
-        <p class="prot-desc" id="home-store-note" role="status"></p>
-        <p class="prot-desc" id="home-store-count" aria-live="polite"></p>
-        <div id="home-store-results"></div>
-      </section>
-    </div></div>
+    <div class="prot-row home-gh-row"><div class="prot-main"><div class="prot-desc" id="home-widget-summary"></div></div>
+      <div class="prot-status"><button type="button" id="home-widget-manage" class="pill idle" onclick="homeWidgetManage()" data-t="home.widgets.manage">Manage widgets</button></div>
+    </div>
   </div>
   <div class="home-group" id="home-g-preview">
   <div class="pv-g" data-t="home.group.preview">Live preview</div>
@@ -2037,8 +2015,51 @@
   </div>
 </div>
 
+<dialog id="home-widget-manager" aria-labelledby="home-widget-manager-title" oncancel="event.preventDefault(); homeWidgetClose()">
+  <header class="home-widget-manager-head"><h2 id="home-widget-manager-title" data-t="home.widgets.manage">Manage widgets</h2>
+    <button type="button" class="pill idle" onclick="homeWidgetClose()" data-t="common.close">Close</button></header>
+  <div class="home-widget-tabs" role="tablist" aria-label="Manage widgets" data-t-aria-label="home.widgets.manage" onkeydown="homeWidgetTabKey(event)">
+    <button type="button" role="tab" id="home-widget-tab-widgets" aria-controls="home-widget-editors" aria-selected="true" onclick="homeWidgetShowTab('widgets')" data-t="home.widgets.tabWidgets">Widgets</button>
+    <button type="button" role="tab" id="home-widget-tab-layout" aria-controls="home-widget-layout" aria-selected="false" tabindex="-1" onclick="homeWidgetShowTab('layout')" data-t="home.group.layout">Layout</button>
+    <button type="button" role="tab" id="home-widget-tab-store" aria-controls="home-widget-store" aria-selected="false" tabindex="-1" onclick="homeWidgetShowTab('store')" data-t="home.widgets.tabStore">Store</button>
+  </div>
+  <p class="prot-desc" id="home-widget-manager-note" role="status"></p>
+  <p class="prot-desc home-widget-error" data-widget-error role="alert" hidden></p>
+  <div class="home-widget-manager-body">
+    <section id="home-widget-editors" role="tabpanel" aria-labelledby="home-widget-tab-widgets">
+      <div id="home-widget-list" role="group" aria-label="Widgets" data-t-aria-label="home.widgets.tabWidgets"></div>
+      <div id="home-widgets"></div>
+    </section>
+    <section id="home-widget-layout" role="tabpanel" aria-labelledby="home-widget-tab-layout" hidden></section>
+    <section id="home-widget-store" role="tabpanel" aria-labelledby="home-widget-tab-store" hidden>
+      <p class="prot-desc" data-t="home.store.privacy">Opening the store contacts GitHub or jsDelivr. Search and filters stay on this device; widget settings are not sent.</p>
+      <div class="home-widget-fields">
+        <label><span data-t="home.store.search">Search widgets</span><input id="home-store-search" type="search" maxlength="100" oninput="renderHomeWidgetStore()"></label>
+        <label><span data-t="home.store.category">Category</span><select class="pill-sel" id="home-store-category" onchange="renderHomeWidgetStore()">
+          <option value="" data-t="home.store.all">All categories</option>
+          <option value="personal" data-t="home.store.personal">Personal</option>
+          <option value="weather" data-t="home.widgets.weather">Weather</option>
+          <option value="tv" data-t="home.store.tv">TV statistics</option>
+        </select></label>
+        <label><input id="home-store-installed" type="checkbox" onchange="renderHomeWidgetStore()"><span data-t="home.store.installedOnly">Installed only</span></label>
+        <button type="button" class="pill idle" id="home-store-refresh" onclick="homeStoreBrowse()" data-t="home.store.refresh">Refresh catalogue</button>
+        <a class="pill idle" id="home-store-submit" href="https://github.com/rsm23/glasshouse/issues/new" target="_blank" rel="noopener" data-t="home.store.submit">Submit a widget</a>
+      </div>
+      <p class="prot-desc" id="home-store-note" role="status"></p>
+      <p class="prot-desc" id="home-store-count" aria-live="polite"></p>
+      <div id="home-store-results"></div>
+      <label class="home-widget-import"><span data-t="home.widgets.import">Import a widget (.json)</span>
+        <input id="home-widget-import" type="file" accept=".json,application/json" onchange="homeWidgetImport(this.files[0]); this.value = ''">
+      </label>
+      <p class="prot-desc" data-t="home.widgets.importHint">Import text widgets or component widgets with icons, charts and data. Imported widgets stay off until enabled.</p>
+      <a href="https://rorygallagher2024.github.io/glasshouse/development/WRITING-WIDGETS/" target="_blank" rel="noopener" data-t="home.widgets.guide">Widget format</a>
+    </section>
+  </div>
+</dialog>
+
 <dialog id="home-store-preview" aria-labelledby="home-store-preview-title">
   <form method="dialog" class="home-store-dialog-close"><button type="submit" class="pill idle" data-t="common.close">Close</button></form>
+  <p class="prot-desc home-widget-error" data-widget-error role="alert" hidden></p>
   <h2 id="home-store-preview-title"></h2>
   <p class="prot-desc" id="home-store-preview-description"></p>
   <p class="prot-desc" data-t="home.store.sample">Preview with sample data</p>
@@ -2072,6 +2093,7 @@
 <script src="/assets/ui/install.js"></script>
 <script src="/assets/ui/home.js"></script>
 <script src="/assets/ui/home-widgets.js"></script>
+<script src="/assets/ui/widget-manager.js"></script>
 <script src="/assets/ui/home-football.js"></script>
 <script src="/assets/ui/widget-layout.js"></script>
 <script src="/assets/ui/widget-store.js"></script>

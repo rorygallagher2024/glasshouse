@@ -577,6 +577,7 @@ async function visitHomeFootball(browser, base, problems) {
   try {
     await page.goto(base + '/?tab=home');
     const widget = page.locator('#home-widgets');
+    await widgetManager(page, 'widgets', 'football');
     await widget.getByRole('button', { name: 'Browse leagues', exact: true }).click();
     await widget.getByRole('checkbox', { name: 'Ligue 1', exact: true }).check();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.football.leagues.length === 1);
@@ -586,9 +587,10 @@ async function visitHomeFootball(browser, base, problems) {
     await widget.getByRole('searchbox', { name: 'Find a team', exact: true }).fill('absent');
     await widget.locator('#home-football-team').getByText('No matching choices. Try another name.', { exact: true }).waitFor();
     await widget.getByRole('searchbox', { name: 'Find a team', exact: true }).fill('');
-    await widget.getByRole('button', { name: 'Football scores', exact: true }).click();
+    await page.locator('#home-widget-list').getByRole('button', { name: 'Football scores', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.football.enabled);
     await page.reload();
+    await widgetManager(page, 'widgets', 'football');
     await widget.getByRole('button', { name: 'Remove Paris Saint-Germain', exact: true }).waitFor();
     if (!layout.widgets.football.enabled || layout.widgets.football.leagues[0].id !== 'fra.1') problems.push('Football: saved selections did not survive reload');
     if (scoreReads) problems.push('Football: the settings dashboard polled live scores');
@@ -653,6 +655,18 @@ async function visitHomeFootball(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+async function widgetManager(page, tab = 'widgets', id) {
+  if (!await page.locator('#home-widget-manager').evaluate(dialog => dialog.open)) {
+    await page.getByRole('button', { name: 'Manage widgets', exact: true }).click();
+  }
+  await page.locator('#home-widget-tab-' + tab).click();
+  if (id) {
+    const back = page.getByRole('button', { name: 'Back to widgets', exact: true });
+    if (await back.isVisible()) await back.click();
+    await page.locator('#home-widget-list [data-widget-pick="' + id + '"]').click();
+  }
+}
+
 async function visitHomeWidgets(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on('pageerror', e => problems.push('Home widgets: ' + e.message));
@@ -675,6 +689,7 @@ async function visitHomeWidgets(browser, base, problems) {
     }
     if (pathname === '/api/home/widgets/locations') return reply(route, { ok: true,
       locations: [{ name: 'Paris, France', latitude: 48.85, longitude: 2.35 }] });
+    if (pathname === '/api/home/widgets/store') return reply(route, { ok: true, source: 'bundled', widgets: require('../server/assets/widget-store/catalogue.json').widgets });
     if (pathname === '/api/home/widgets/weather') {
       weatherReads++;
       lastWeather = route;
@@ -684,8 +699,19 @@ async function visitHomeWidgets(browser, base, problems) {
   });
   try {
     await page.goto(base + '/?tab=home');
+    await page.getByRole('button', { name: 'Manage widgets', exact: true }).waitFor();
+    if (await page.locator('#home-widget-manager').isVisible() || await page.locator('#home-widgets').isVisible()) problems.push('Widget manager: editors occupy the Home page before opening');
+    await widgetManager(page);
+    await page.locator('#home-widget-tab-widgets').focus();
+    await page.keyboard.press('ArrowRight');
+    if (await page.locator('#home-widget-tab-layout').getAttribute('aria-selected') !== 'true' || !await page.locator('#home-widget-layout').isVisible()) problems.push('Widget manager: arrow keys did not select and show the Layout tab');
+    await page.keyboard.press('Home');
+    if (!await page.locator('#home-widget-editors').isVisible() || await page.locator('#home-widget-layout').isVisible()) problems.push('Widget manager: tab panels are not exclusive');
+    await page.keyboard.press('Escape');
+    if (await page.locator('#home-widget-manager').isVisible() || await page.evaluate(() => document.activeElement.id) !== 'home-widget-manage') problems.push('Widget manager: Escape did not close and return focus to its opener');
+    await widgetManager(page);
     const widgets = page.locator('#home-widgets');
-    await widgets.getByRole('button', { name: 'Clock and date', exact: true }).waitFor();
+    await page.locator('#home-widget-list').getByRole('button', { name: 'Clock and date', exact: true }).waitFor();
     await widgets.getByText('Centre needs Last watched off. Right needs Picture details and the top live preview off.', { exact: true }).first().waitFor();
     if (!await widgets.getByRole('combobox', { name: 'Position of Clock and date', exact: true }).locator('option[value=center]').isDisabled()) {
       problems.push('Home widgets: reserved centre position was not explained and disabled');
@@ -700,43 +726,61 @@ async function visitHomeWidgets(browser, base, problems) {
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.clock.format === '12');
     await widgets.getByLabel('Show date', { exact: true }).uncheck();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.clock.date === false);
+    await widgetManager(page, 'widgets', 'weather');
     await widgets.getByRole('searchbox', { name: 'City', exact: true }).fill('Paris');
     await widgets.getByRole('button', { name: 'Find city', exact: true }).click();
     await widgets.getByRole('button', { name: 'Paris, France', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.weather.location !== null);
     if (await widgets.getByRole('searchbox', { name: 'City', exact: true }).inputValue() !== 'Paris, France') problems.push('Home widgets: choosing a city did not show the saved selection in the City field');
     await page.reload();
+    await widgetManager(page, 'widgets', 'weather');
     await widgets.getByRole('searchbox', { name: 'City', exact: true }).waitFor();
     if (await widgets.getByRole('searchbox', { name: 'City', exact: true }).inputValue() !== 'Paris, France') problems.push('Home widgets: reloading made the saved city disappear from the City field');
     await widgets.getByRole('searchbox', { name: 'City', exact: true }).fill('');
     await page.evaluate(() => renderHomeWidgets());
     if (await widgets.getByRole('searchbox', { name: 'City', exact: true }).inputValue() !== '' || layout.widgets.weather.location.name !== 'Paris, France') problems.push('Home widgets: clearing a city search reset the saved selection or lost the empty draft');
     await page.reload();
+    await widgetManager(page, 'widgets', 'weather');
     await widgets.getByRole('searchbox', { name: 'City', exact: true }).waitFor();
     if (await widgets.getByRole('searchbox', { name: 'City', exact: true }).inputValue() !== 'Paris, France') problems.push('Home widgets: the saved city was not restored after clearing a search and reloading');
-    await widgets.getByRole('button', { name: 'Weather', exact: true }).click();
+    await page.locator('#home-widget-list').getByRole('button', { name: 'Weather', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.weather.enabled);
-    await widgets.getByRole('button', { name: 'Move left', exact: true }).nth(1).click();
+    await widgets.getByRole('button', { name: 'Move left', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.order[0] === 'weather');
-    await widgets.locator('input[type=file]').setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{') });
-    await page.locator('#err').filter({ hasText: 'Choose a valid widget JSON file.' }).waitFor({ state: 'visible' });
+    await widgetManager(page, 'store');
+    await page.locator('#home-widget-import').setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{') });
+    await page.locator('#home-widget-manager [data-widget-error]').filter({ hasText: 'Choose a valid widget JSON file.' }).waitFor({ state: 'visible' });
     if (layout.widgets.custom.length) problems.push('Home widgets: an invalid import changed the layout');
     const manifest = { version: 1, type: 'text', id: 'message', name: 'Message', value: '<script>bad()</script>', detail: 'Friday' };
-    await widgets.locator('input[type=file]').setInputFiles({ name: 'message.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(manifest)) });
+    await page.locator('#home-widget-import').setInputFiles({ name: 'message.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(manifest)) });
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom.length === 1);
     const componentManifest = require('../docs/development/widget-examples/energy.json');
-    await widgets.locator('input[type=file]').setInputFiles({ name: 'energy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(componentManifest)) });
+    await widgetManager(page, 'store');
+    await page.locator('#home-widget-import').setInputFiles({ name: 'energy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(componentManifest)) });
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom.length === 2);
     const editor = widgets.getByRole('textbox', { name: 'Widget JSON', exact: true });
     const componentJSON = await editor.inputValue();
     await editor.fill('{');
     await editor.locator('..').locator('..').getByRole('button', { name: 'Save widget', exact: true }).click();
-    await page.locator('#err').filter({ hasText: 'Enter valid widget JSON.' }).waitFor({ state: 'visible' });
+    await page.locator('#home-widget-manager [data-widget-error]').filter({ hasText: 'Enter valid widget JSON.' }).waitFor({ state: 'visible' });
     await editor.fill(componentJSON);
     await editor.locator('..').locator('..').getByRole('button', { name: 'Save widget', exact: true }).click();
     await page.waitForFunction(() => !homeSaving);
     await page.setViewportSize({ width: 390, height: 844 });
-    if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) problems.push('Home widgets: phone layout overflows');
+    await widgetManager(page, 'widgets', 'clock');
+    await page.getByRole('button', { name: 'Back to widgets', exact: true }).click();
+    if (await widgets.isVisible() || !await page.locator('#home-widget-list').isVisible()) problems.push('Widget manager: phone Back did not return to the list');
+    await page.locator('#home-widget-list [data-widget-pick="weather"]').click();
+    if (!await widgets.isVisible() || await page.locator('#home-widget-list').isVisible()) problems.push('Widget manager: phone selection did not replace the list with its editor');
+    const manager = page.locator('#home-widget-manager');
+    for (const theme of ['dark', 'light']) {
+      await page.evaluate(theme => document.documentElement.setAttribute('data-theme', theme), theme);
+      await page.setViewportSize({ width: 320, height: 640 });
+      if (await manager.evaluate(el => el.scrollWidth > el.clientWidth + 1 || el.getBoundingClientRect().width > innerWidth)) problems.push('Widget manager: phone dialog overflows in ' + theme);
+      await widgetManager(page, 'layout');
+      await page.locator('#home-widget-tab-widgets').click();
+      if (!await widgets.isVisible()) problems.push('Widget manager: switching tabs lost the phone editor');
+    }
     // Displayed weather is a deterministic fixture; this test never reaches the provider.
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.clock.install();
@@ -889,20 +933,25 @@ async function visitWidgetLayout(browser, base, problems) {
   const zone = position => board.locator('[data-widget-zone="' + position + '"]');
   try {
     await page.goto(base + '/?tab=home');
+    await widgetManager(page, 'layout');
     await card('clock').waitFor();
     await zone('center').getByText('Switch off Last watched in Shown on Home.', { exact: false }).waitFor();
     await card('clock').dragTo(zone('center'));
     if (writes) problems.push('Widget layout: dropping into reserved centre sent a save');
     await zone('center').getByRole('button', { name: 'Review settings', exact: true }).click();
     if (await page.evaluate(() => document.activeElement.id) !== 'home-show-last') problems.push('Widget layout: requirement shortcut did not focus Last watched');
+    if (await page.locator('#home-widget-manager').isVisible()) problems.push('Widget manager: external requirement left the dashboard control behind a modal');
+    await widgetManager(page, 'layout');
     await card('clock').dragTo(zone('right'));
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions.clock === 'right');
     if (planner.placement(layout).positions.weather !== 'left') problems.push('Widget layout: automatic companion was not assigned a free zone');
     await zone('right').locator('[data-widget-id="clock"]').dragTo(zone('left'));
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions.weather === 'right');
     if (layout.widgets.positions.clock !== 'left') problems.push('Widget layout: occupied-zone drop did not swap widgets');
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
     await page.locator('#home-show-last').click();
     await page.waitForFunction(() => !homeSaving && homeLayout.showLastOn === false);
+    await widgetManager(page, 'layout');
     await card('weather').click();
     await zone('center').getByRole('button', { name: 'Place in Centre', exact: true }).focus();
     await page.keyboard.press('Enter');
@@ -921,13 +970,17 @@ async function visitWidgetLayout(browser, base, problems) {
     await page.evaluate(() => homeSaveLayout({ picture: false, previewInTile: true }));
     await card('clock').dragTo(zone('right'));
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions.clock === 'right');
-    await page.locator('#home-widgets [data-widget-toggle="notice"]').click();
+    await widgetManager(page);
+    await page.locator('#home-widget-list [data-widget-toggle="notice"]').click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom[0].enabled);
+    await widgetManager(page, 'layout');
     await card('notice').dragTo(zone('left'));
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions.notice === 'left');
     if (await board.locator('.hwl-occupant .hwl-card').count() !== 3 || planner.placement(layout).positions.weather !== 'center') problems.push('Widget layout: three occupied zones did not remain distinct after a swap');
-    await page.locator('#home-widgets [data-widget-toggle="notice"]').click();
+    await widgetManager(page);
+    await page.locator('#home-widget-list [data-widget-toggle="notice"]').click();
     await page.waitForFunction(() => !homeSaving && !homeLayout.widgets.custom[0].enabled);
+    await widgetManager(page, 'layout');
     await page.evaluate(() => {
       const widgets = homeWidgetSettings(); widgets.weather.enabled = false; widgets.weather.location = null;
       return homeSaveLayout({ widgets });
@@ -950,7 +1003,7 @@ async function visitWidgetLayout(browser, base, problems) {
     const beforeConflict = accepted;
     layout.showLastOn = true;
     await card('clock').dragTo(zone('center'));
-    await page.locator('#err').filter({ hasText: 'Layout changed. Review the zone requirements.' }).waitFor({ state: 'visible' });
+    await page.locator('#home-widget-manager [data-widget-error]').filter({ hasText: 'Layout changed. Review the zone requirements.' }).waitFor({ state: 'visible' });
     await page.waitForFunction(() => !homeSaving && homeLayout.showLastOn);
     if (accepted !== beforeConflict || layout.widgets.positions.clock !== 'right') problems.push('Widget layout: a concurrent settings change bypassed validation');
     await page.setViewportSize({ width: 390, height: 844 });
@@ -958,6 +1011,7 @@ async function visitWidgetLayout(browser, base, problems) {
     if (await board.evaluate(el => el.scrollWidth > el.clientWidth + 1 || el.getBoundingClientRect().right > innerWidth + 1)) problems.push('Widget layout: board overflows on a phone');
     writable = false;
     await page.reload();
+    await widgetManager(page, 'layout');
     await card('clock').waitFor();
     if (!await card('clock').isDisabled() || await card('clock').getAttribute('draggable') !== 'false') problems.push('Widget layout: read-only cards remained draggable');
     const readOnlyWrites = writes;
@@ -1002,13 +1056,21 @@ async function visitWidgetStore(browser, base, problems) {
     return reply({ ok: true, build: 'one', layoutVersion: String(version), covered: false });
   });
   const preview = async name => {
+    await widgetManager(page, 'store');
     const row = page.locator('#home-store-results .prot-row').filter({ has: page.getByText(name, { exact: true }) });
     await row.getByRole('button', { name: 'Preview and install', exact: true }).click();
     return page.getByRole('dialog', { name, exact: true });
   };
+  const refresh = async () => {
+    const previous = await page.evaluate(() => ({ tab: homeWidgetTab, id: homeWidgetSelected }));
+    await widgetManager(page, 'store');
+    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await page.waitForFunction(() => !homeStoreLoading);
+    if (previous.tab === 'widgets') await widgetManager(page, 'widgets', previous.id);
+  };
   try {
     await page.goto(base + '/?tab=home');
-    await page.getByRole('button', { name: 'Browse widget store', exact: true }).click();
+    await widgetManager(page, 'store');
     await page.locator('#home-store-count').filter({ hasText: 'Widgets: 4' }).waitFor();
     await page.getByRole('searchbox', { name: 'Search widgets', exact: true }).fill('recent readings');
     await page.locator('#home-store-count').filter({ hasText: 'Widgets: 1' }).waitFor();
@@ -1030,14 +1092,15 @@ async function visitWidgetStore(browser, base, problems) {
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom.length === 1);
     const firstId = layout.widgets.custom[0].id;
     if (layout.widgets.custom[0].enabled || layout.widgets.custom[0].template.definition.name !== 'Movie night') problems.push('Widget store: installation changed defaults or enabled the widget');
-    await page.locator('#home-widgets').getByRole('button', { name: 'Office', exact: true }).click();
+    await widgetManager(page, 'widgets', firstId);
+    await page.locator('#home-widget-list').getByRole('button', { name: 'Office', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom[0].enabled);
     const title = page.locator('#home-widgets').getByRole('textbox', { name: 'Title', exact: true });
     await title.fill('Saved title');
     await title.locator('..').locator('..').getByRole('button', { name: 'Save widget', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom[0].settings.title === 'Saved title');
     await title.fill('Unsaved store title');
-    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await refresh();
     await page.waitForFunction(() => !homeStoreLoading);
     if (await title.inputValue() !== 'Unsaved store title') problems.push('Widget store: catalogue refresh discarded a settings draft');
     await page.locator('#home-show-clock').click();
@@ -1062,9 +1125,10 @@ async function visitWidgetStore(browser, base, problems) {
     await page.getByRole('checkbox', { name: 'Installed only', exact: true }).check();
     await page.locator('#home-store-count').filter({ hasText: 'Widgets: 1' }).waitFor();
     await page.getByRole('checkbox', { name: 'Installed only', exact: true }).uncheck();
+    await widgetManager(page, 'widgets', firstId);
     await title.first().fill('Draft for the old template');
     catalogue.widgets[0].revision = '1.1.0'; catalogue.widgets[0].definition.detail = 'Updated defaults'; time += 60000;
-    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await refresh();
     await page.locator('#home-widgets').getByRole('button', { name: 'Update to 1.1.0', exact: true }).first().click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom[0].template.revision === '1.1.0');
     if (!layout.widgets.custom[0].enabled || layout.widgets.custom[0].settings.title !== 'Saved title' || layout.widgets.positions[firstId] !== 'left' || layout.widgets.custom[1].template.revision !== '1.0.0') problems.push('Widget store: update lost settings, position or instance isolation');
@@ -1073,17 +1137,18 @@ async function visitWidgetStore(browser, base, problems) {
     await page.locator('#home-widgets').getByRole('button', { name: 'Export widget', exact: true }).first().click();
     const exported = JSON.parse(fs.readFileSync(await (await downloadPromise).path(), 'utf8'));
     if (exported.settings || exported.definition.name !== 'Movie night' || exported.fields[0].default !== 'Movie night') problems.push('Widget store: export exposed instance settings');
+    await widgetManager(page, 'store');
     const submission = new URL(await page.getByRole('link', { name: 'Submit a widget', exact: true }).getAttribute('href'));
     if (submission.pathname !== '/rsm23/glasshouse/issues/new' || !submission.searchParams.get('body').includes('## Widget JSON')) problems.push('Widget store: prefilled submission link missing');
     failInstall = true;
     dialog = await preview('Daily reminder');
     await dialog.getByRole('button', { name: 'Install widget', exact: true }).click();
-    await page.locator('#err').filter({ hasText: 'Test installation refused' }).waitFor({ state: 'visible' });
+    await page.locator('#home-store-preview [data-widget-error]').filter({ hasText: 'Test installation refused' }).waitFor({ state: 'visible' });
     await page.waitForFunction(() => !homeSaving);
     if (layout.widgets.custom.length !== 2) problems.push('Widget store: a failed installation changed saved widgets');
     await dialog.getByRole('button', { name: 'Close', exact: true }).click(); failInstall = false;
     offline = true; init();
-    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await refresh();
     await page.getByText('Showing the included catalogue. Online sources are unavailable; try again later.', { exact: true }).waitFor();
     dialog = await preview('TV temperature');
     await dialog.getByRole('spinbutton', { name: 'Decimal places', exact: true }).fill('999');
@@ -1096,9 +1161,10 @@ async function visitWidgetStore(browser, base, problems) {
     if (await dialog.evaluate(el => el.scrollWidth > el.clientWidth + 1)) problems.push('Widget store: preview overflows on a phone');
     await dialog.getByRole('button', { name: 'Install widget', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom.length === 3);
+    await widgetManager(page, 'widgets', layout.widgets.custom[2].id);
     const precision = page.locator('#home-widgets').getByRole('spinbutton', { name: 'Decimal places', exact: true });
     await precision.fill('');
-    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await refresh();
     await page.waitForFunction(() => !homeStoreLoading);
     if (await precision.inputValue() !== '') problems.push('Widget store: refresh converted an empty numeric draft to zero');
     await precision.fill('1');
@@ -1115,30 +1181,47 @@ async function visitWidgetStore(browser, base, problems) {
     const textEditor = page.locator('#home-widgets form').filter({ has: page.locator('[name="widgetValue"]') });
     const componentEditor = page.locator('#home-widgets form').filter({ has: page.locator('[name="widgetJSON"]') });
     const componentDraft = Object.assign({}, drafts[1], { name: 'Edited components' });
+    await widgetManager(page, 'widgets', 'draft-text');
     await textEditor.locator('[name="widgetValue"]').fill('Unsaved text');
+    page.once('dialog', dialog => dialog.dismiss());
+    await page.locator('#home-widget-manager').getByRole('button', { name: 'Close', exact: true }).click();
+    if (!await page.locator('#home-widget-manager').isVisible() || await textEditor.locator('[name="widgetValue"]').inputValue() !== 'Unsaved text') problems.push('Widget manager: cancelling close lost the draft');
+    await widgetManager(page, 'widgets', 'draft-components');
     await componentEditor.locator('textarea').fill(JSON.stringify(componentDraft));
-    await page.getByRole('button', { name: 'Refresh catalogue', exact: true }).click();
+    await refresh();
     await page.waitForFunction(() => !homeStoreLoading);
-    if (await textEditor.locator('[name="widgetValue"]').inputValue() !== 'Unsaved text' || await componentEditor.locator('textarea').inputValue() !== JSON.stringify(componentDraft)) problems.push('Widget store: refresh discarded text or component drafts');
+    if (await componentEditor.locator('textarea').inputValue() !== JSON.stringify(componentDraft)) problems.push('Widget store: refresh discarded a component draft');
+    await widgetManager(page, 'widgets', 'draft-text');
+    if (await textEditor.locator('[name="widgetValue"]').inputValue() !== 'Unsaved text') problems.push('Widget store: switching widgets discarded a text draft');
     failLayout = true;
-    for (const editor of [textEditor, componentEditor]) {
+    for (const [editor, id] of [[textEditor, 'draft-text'], [componentEditor, 'draft-components']]) {
+      await widgetManager(page, 'widgets', id);
       await editor.getByRole('button', { name: 'Save widget', exact: true }).click();
       await page.waitForFunction(() => !homeSaving);
+      const actual = await editor.locator(id === 'draft-text' ? '[name="widgetValue"]' : 'textarea').inputValue();
+      if (actual !== (id === 'draft-text' ? 'Unsaved text' : JSON.stringify(componentDraft))) problems.push('Widget store: rejected save discarded the draft for ' + id);
     }
-    if (await textEditor.locator('[name="widgetValue"]').inputValue() !== 'Unsaved text' || await componentEditor.locator('textarea').inputValue() !== JSON.stringify(componentDraft)) problems.push('Widget store: rejected text or component save discarded its draft');
     failLayout = false;
-    for (const editor of [textEditor, componentEditor]) {
+    for (const [editor, id] of [[textEditor, 'draft-text'], [componentEditor, 'draft-components']]) {
+      await widgetManager(page, 'widgets', id);
       await editor.getByRole('button', { name: 'Save widget', exact: true }).click();
       await page.waitForFunction(() => !homeSaving);
     }
     if (layout.widgets.custom.find(widget => widget.id === 'draft-text').value !== 'Unsaved text' || layout.widgets.custom.find(widget => widget.id === 'draft-components').name !== 'Edited components' || await page.evaluate(() => homeWidgetDrafts.has('draft-text') || homeWidgetDrafts.has('draft-components'))) problems.push('Widget store: successful text or component save did not commit and clear its draft');
+    await widgetManager(page, 'widgets', 'draft-text');
+    await textEditor.locator('[name="widgetValue"]').fill('Discard on close');
+    page.once('dialog', dialog => dialog.accept());
+    await page.keyboard.press('Escape');
+    if (await page.locator('#home-widget-manager').isVisible() || await page.evaluate(() => homeWidgetDrafts.size)) problems.push('Widget manager: confirmed close did not discard drafts');
+    await widgetManager(page, 'widgets', 'draft-text');
+    if (await textEditor.locator('[name="widgetValue"]').inputValue() !== 'Unsaved text') problems.push('Widget manager: discarding a draft changed the saved widget');
     await textEditor.locator('[name="widgetValue"]').fill('Discard on removal');
     await page.evaluate(() => homeWidgetRemove('draft-text'));
     await page.waitForFunction(() => !homeSaving);
     if (await page.evaluate(() => homeWidgetDrafts.has('draft-text'))) problems.push('Widget store: removal retained an editor draft');
     writable = false;
     await page.reload();
-    await page.getByRole('button', { name: 'Browse widget store', exact: true }).click();
+    await widgetManager(page, 'store');
     dialog = await preview('Personal note');
     if (!await dialog.getByRole('button', { name: 'Install widget', exact: true }).isDisabled()) problems.push('Widget store: read-only installation was enabled');
     await dialog.getByText('Widget changes are unavailable while controls are disabled or a save is in progress.', { exact: true }).waitFor();

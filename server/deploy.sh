@@ -69,7 +69,7 @@ assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
 assets/dashboard-app/assets/icon80.png assets/dashboard-app/assets/icon130.png \
 assets/home.html assets/widget-kit.js assets/widget-layout.js assets/home-widget-panel.js assets/home-widgets-view.js assets/home-football-view.js assets/home-kit.js assets/home-web.html assets/home-minimal.html assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \
-assets/ui/widget-store.js assets/widget-store/catalogue.json lib/home-widget-template.js lib/home-widget-store.js \
+assets/ui/widget-store.js assets/ui/widget-manager.js assets/widget-store/catalogue.json lib/home-widget-template.js lib/home-widget-store.js \
 assets/home-app/assets/icon80.png assets/home-app/assets/icon130.png \
 assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \
 assets/fonts/Outfit-Light.ttf assets/fonts/Outfit-Regular.ttf \

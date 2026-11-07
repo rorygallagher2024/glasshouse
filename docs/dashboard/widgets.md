@@ -2,8 +2,16 @@
 
 Widgets occupy fixed 360 × 200 spaces above Glasshouse Home's app and input
 rows. Clock and date starts on; Weather, Football scores and imported widgets start off.
-Open the web dashboard, choose **Home > Home customisation > Top widgets**.
+Open the web dashboard, choose **Home > Home customisation > Top widgets >
+Manage widgets**. The Home page shows only the current placement summary.
 LG Home, Glasshouse Minimal and custom launchers have their own layouts.
+
+The dialog has three tabs: **Widgets** for visibility and settings, **Layout**
+for positions and order, and **Store** for browsing and importing. On a computer,
+select a widget in the list to edit it beside the list. Each row has an On/Off
+switch and a settings summary. On a phone, selecting a widget opens its settings;
+**Back to widgets** returns to the list. Export and Remove are in the selected
+custom widget's settings. The list and editor scroll independently on a computer.
 
 > [!NOTE]
 > The previews below use an emulated TV and sample weather in a browser.
@@ -18,7 +26,7 @@ Up to eight imported widgets can be saved. Two widgets can normally be shown;
 three fit when **Last watched**, **Picture details** and the **top live
 preview** are off.
 
-The **Widget layout** board shows **Left**, **Centre** and **Right** drop zones.
+The **Layout** tab's **Widget layout** board shows **Left**, **Centre** and **Right** drop zones.
 Drag an enabled widget from **Widget order** into a zone. Once positions are
 fixed, widgets can also be dragged from their current zones. Dropping on an
 occupied zone swaps the two widgets. On a phone, tap a widget and then
@@ -44,7 +52,7 @@ fixed positions take priority. The board keeps keyboard focus after saves.
 Dropping into a zone changes to fixed placement in either view. Remaining
 Automatic widgets take free positions. If they cannot all fit, the drop is
 blocked and explains what must be freed. Each widget's existing **Position**
-dropdown and **Move left/right** controls remain available below the board.
+dropdown and **Move left/right** controls remain available in its **Widgets** editor.
 
 The dashboard displays these requirements in the zones and beside the
 position controls, and prevents drops into reserved positions:
@@ -68,11 +76,12 @@ Text and component edits use **Save widget**. Home picks up dashboard changes
 on its next heartbeat, normally within five seconds. Finish any Home arrange
 mode first. With every widget off, one empty space remains so rows stay put.
 
-Unsaved widget edits stay in the open dashboard during catalogue refreshes,
+Unsaved widget edits stay in the dialog when switching widgets or tabs, during catalogue refreshes,
 other setting changes and failed saves. A successful save or removal clears
 that draft. Updating a store template starts its editor from the saved settings;
-drafts from the previous template are discarded. Reloading the page discards
-unsaved edits.
+drafts from the previous template are discarded. Closing the dialog with unsaved
+edits asks before discarding them; cancelling keeps the dialog and edits open.
+Reloading or leaving the page also warns about unsaved widget edits.
 
 ![Top widgets settings, browser preview](../screenshots/home-widgets-dashboard-preview.png)
 
@@ -190,7 +199,7 @@ All matches are credited to [ESPN](https://www.espn.com/soccer/scoreboard).
 
 ## Browse the widget store
 
-Choose **Browse widget store** under Top widgets. Search by name, description
+Choose **Manage widgets > Store** under Top widgets. Search by name, description
 or author, choose a category, or select **Installed only**. Search and filters
 run locally. The starter catalogue contains Personal note, Daily reminder,
 TV temperature and City weather.
@@ -200,7 +209,7 @@ TV temperature and City weather.
 **Preview and install** opens a preview labelled **sample data**, with the
 widget's settings below it. Editing those fields updates the preview. The
 sample is not a reading from the TV. Choose **Install widget** to save a copy;
-it starts off. Set its position and turn it on under Top widgets. The existing
+it starts off. Select it in **Widgets**, set its position and turn it on. The existing
 eight-saved-widget and three-visible-widget limits still apply.
 
 ![Widget preview and configuration, browser preview with sample data](../screenshots/home-widget-store-dialog-preview.png)
@@ -248,7 +257,7 @@ issue link works before then. See [Writing a widget](../development/WRITING-WIDG
 
 ## Create and import widgets
 
-**Import a widget (.json)** accepts version 1 text files up to 4 KB and version
+The **Store** tab's **Import a widget (.json)** accepts version 1 text files up to 4 KB and version
 2 component files up to 16 KB. Imports start disabled, including replacements
 with an existing id. Check the contents, free a position, then enable the
 widget. A distinct `id` creates a separate widget; filenames do not identify it.

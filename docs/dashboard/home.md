@@ -9,7 +9,7 @@
 
 Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour time setting), the last active source or app, and up to five rows (any row with no visible items is automatically hidden). When there are more rows than fit, they scroll to keep the one in focus in view:
 
-**Top widgets** on the web dashboard configures fixed-size clock, weather
+**Top widgets > Manage widgets** on the web dashboard configures fixed-size clock, weather
 and custom widgets, including icons, data values and charts. Choose Automatic,
 Left, Centre or Right positions. The **Widget layout** board supports dragging
 into zones, swapping occupied positions and reordering Automatic widgets.
@@ -22,7 +22,7 @@ opened with **OK**. It starts off; city search and enabled weather widgets
 send requests to Open-Meteo from the TV. The [Home widgets guide](widgets.md)
 covers positioning, remote controls, imports, privacy, backups and troubleshooting.
 
-**Browse widget store** adds search, category and installed filters, sample
+The dialog's **Store** tab adds search, category and installed filters, sample
 previews and settings forms. Installations start off; repeated installs have
 separate settings. Templates, examples and the reviewed submission flow live
 in the same Glasshouse repository, served through GitHub with a jsDelivr

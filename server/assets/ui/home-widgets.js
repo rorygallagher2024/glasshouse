@@ -20,6 +20,11 @@ function homeWidgetRememberDraft(id, form) {
   if (!widget) return;
   const values = widget.version === 3 ? homeStoreReadFields(widget.template, form, true) : widget.version === 2
     ? form.elements.widgetJSON.value : { name: form.elements.widgetName.value, value: form.elements.widgetValue.value, detail: form.elements.widgetDetail.value };
+  const saved = widget.version === 3 ? Object.fromEntries(widget.template.fields.map(field => [field.key,
+    Object.prototype.hasOwnProperty.call(widget.settings, field.key) ? widget.settings[field.key] : field.default])) : widget;
+  const unchanged = widget.version === 2 ? values === JSON.stringify(widget, null, 2)
+    : Object.keys(values).every(key => String(values[key]) === String(saved[key] ?? ''));
+  if (unchanged) return homeWidgetForgetDraft(id);
   homeWidgetDrafts.set(id, { version: widget.version, template: widget.version === 3 ? JSON.stringify(widget.template) : '', values });
 }
 
@@ -35,26 +40,38 @@ function renderHomeWidgets() {
   const settings = homeLayout.widgets;
   const busy = !homeWritable();
   const off = busy ? 'disabled' : '';
-  const title = id => id === 'clock' ? t('home.showClock', 'Clock and date') : id === 'weather'
-    ? t('home.widgets.weather', 'Weather') : id === 'football' ? t('home.football.title', 'Football scores') : (() => { const widget = settings.custom.find(w => w.id === id); return (widget.resolved || widget).name; })();
-  const enabled = id => id === 'clock' ? homeLayout.showClock !== false : id === 'weather'
-    ? settings.weather.enabled : id === 'football' ? settings.football.enabled : settings.custom.find(w => w.id === id).enabled;
+  if (!settings.order.includes(homeWidgetSelected)) {
+    homeWidgetSelected = settings.order[0];
+    homeWidgetMobileDetail = false;
+  }
+  settings.custom.forEach(homeWidgetDraft);
+  homeWidgetDrafts.forEach((_draft, key) => { if (!settings.custom.some(widget => widget.id === key)) homeWidgetForgetDraft(key); });
+  renderHomeWidgetSummary();
+  const focus = homeWidgetEditorFocus();
+  renderHomeWidgetList();
   renderHomeWidgetLayout();
-  host.innerHTML = settings.order.map((id, i) => `<div class="prot-row">
-    <div class="prot-main"><div class="prot-title">${esc(title(id))}</div></div>
+  const id = homeWidgetSelected, i = settings.order.indexOf(id), name = homeWidgetLayoutName(id);
+  host.innerHTML = `<button type="button" class="pill idle home-widget-back" onclick="homeWidgetBack()">${esc(t('home.widgets.back', 'Back to widgets'))}</button>
+    <div class="prot-row"><div class="prot-main"><h3 id="home-widget-editor-title" tabindex="-1">${esc(name)}</h3></div>
     <div class="prot-status home-widget-actions">
+      <button type="button" class="pill home-widget-mobile-toggle ${WidgetLayout.enabled(homeLayout, id) ? 'good' : 'idle'}" ${off} data-widget-toggle="${id}" aria-pressed="${WidgetLayout.enabled(homeLayout, id)}" aria-label="${esc(name)}" onclick="homeWidgetToggle('${id}')">${esc(WidgetLayout.enabled(homeLayout, id) ? t('common.on', 'On') : t('common.off', 'Off'))}</button>
       <button type="button" class="pill idle" ${busy || i === 0 ? 'disabled' : ''} onclick="homeWidgetMove('${id}', -1)">${esc(t('home.widgets.left', 'Move left'))}</button>
       <button type="button" class="pill idle" ${busy || i === settings.order.length - 1 ? 'disabled' : ''} onclick="homeWidgetMove('${id}', 1)">${esc(t('home.widgets.right', 'Move right'))}</button>
-      <button type="button" class="pill ${enabled(id) ? 'good' : 'idle'}" ${id === 'clock' ? 'id="home-show-clock"' : ''}
-        ${off} data-widget-toggle="${id}" aria-pressed="${enabled(id)}" aria-label="${esc(title(id))}" onclick="homeWidgetToggle('${id}')">${esc(enabled(id) ? t('common.on', 'On') : t('common.off', 'Off'))}</button>
       ${id !== 'clock' && id !== 'weather' && id !== 'football' ? `<button type="button" class="pill idle" onclick="homeWidgetExport('${id}')">${esc(t('home.store.export', 'Export widget'))}</button><button type="button" class="pill bad" ${off} onclick="homeWidgetRemove('${id}')">${esc(t('home.ch.remove', 'Remove'))}</button>` : ''}
     </div>
-  </div>${homeWidgetPositionFields(id, settings.positions && settings.positions[id] || 'auto', off, title(id))}${id === 'clock' ? homeWidgetClockFields(settings.clock, off) : id === 'weather' ? homeWidgetWeatherFields(settings.weather, off) : id === 'football' ? homeFootballFields(settings.football, off) : settings.custom.find(w => w.id === id).version === 3 ? homeWidgetStoreFields(settings.custom.find(w => w.id === id), off) : settings.custom.find(w => w.id === id).version === 2 ? homeWidgetComponentFields(settings.custom.find(w => w.id === id), off) : homeWidgetTextFields(settings.custom.find(w => w.id === id), off)}`).join('') +
-    `<label class="home-widget-import">${esc(t('home.widgets.import', 'Import a widget (.json)'))}
-      <input type="file" accept=".json,application/json" ${off} onchange="homeWidgetImport(this.files[0]); this.value = ''">
-    </label><div class="prot-desc">${esc(t('home.widgets.importHint', 'Import text widgets or component widgets with icons, charts and data. Imported widgets stay off until enabled.'))}
-      <a href="https://rorygallagher2024.github.io/glasshouse/development/WRITING-WIDGETS/" target="_blank" rel="noopener">${esc(t('home.widgets.guide', 'Widget format'))}</a></div>`;
+  </div>${homeWidgetPositionFields(id, settings.positions && settings.positions[id] || 'auto', off, name)}${homeWidgetEditorFields(id, settings, off)}`;
+  q('home-widget-import').disabled = busy;
   renderHomeWidgetStore();
+  homeWidgetRestoreFocus(focus);
+}
+
+function homeWidgetEditorFields(id, settings, off) {
+  if (id === 'clock') return homeWidgetClockFields(settings.clock, off);
+  if (id === 'weather') return homeWidgetWeatherFields(settings.weather, off);
+  if (id === 'football') return homeFootballFields(settings.football, off);
+  const widget = settings.custom.find(item => item.id === id);
+  return widget.version === 3 ? homeWidgetStoreFields(widget, off) : widget.version === 2
+    ? homeWidgetComponentFields(widget, off) : homeWidgetTextFields(widget, off);
 }
 
 function homeWidgetPositionFields(id, position, off, name) {
@@ -218,7 +235,8 @@ async function homeWidgetImport(file) {
     widget.enabled = false;
     const widgets = homeWidgetSettings();
     widgets.custom = widgets.custom.filter(w => w.id !== widget.id).concat([widget]);
-    await homeSaveLayout({ widgets }, () => homeWidgetForgetDraft(widget.id));
+    await homeSaveLayout({ widgets }, () => { homeWidgetForgetDraft(widget.id); homeWidgetSelected = widget.id; });
+    if (homeLayout.widgets.custom.some(item => item.id === widget.id)) homeWidgetSelect(widget.id);
   } catch (e) { showErr(e.message); }
 }
 

@@ -10,6 +10,7 @@ function clearErr() {
   const off = q('offline');
   const isOffline = q('panels') && q('panels').classList.contains('stale') && (Date.now() - lastOk > 6000);
   if (off && !isOffline) off.hidden = true;
+  document.querySelectorAll('[data-widget-error]').forEach(note => { note.hidden = true; note.textContent = ''; });
 }
 
 function showErr(m) {
@@ -18,6 +19,12 @@ function showErr(m) {
   if (offMsg) offMsg.style.display = 'none';
   if (e) { e.textContent = m; e.style.display = 'inline'; }
   if (off) off.hidden = false;
+  const dialog = q('home-store-preview')?.open ? q('home-store-preview') : q('home-widget-manager');
+  if (dialog?.open) {
+    const note = dialog.querySelector('[data-widget-error]');
+    note.textContent = m;
+    note.hidden = false;
+  }
   errTimer = setTimeout(clearErr, 6000);
 }
 
