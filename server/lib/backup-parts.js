@@ -380,7 +380,7 @@ var NOT_CARRIED = {
   blockTvUpdates: 'choose',
   // Rewrites LG's app list and restarts its app manager; Glasshouse Home's own hiding is in the layout.
   tileHiding: 'choose',
-  setTileHidingAllowed: 'experimental', setWebos10ScreensaversAllowed: 'experimental',
+  setTileHidingAllowed: 'experimental', setWebos10ScreensaversAllowed: 'experimental', setInputBarAllowed: 'experimental',
   setNetworkDebuggerAllowed: 'access', setDashboardPort: 'access',
   setDeviceName: 'tvName',
   // config.json's, in backup.js's GLASSHOUSE.

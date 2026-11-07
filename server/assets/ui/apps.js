@@ -404,6 +404,65 @@ function rkDoes(k, kindOf) {
   return `${icon}<span translate="no">${esc(k.opens)}</span>`;
 }
 
+/*
+ * The inputs the input bar shows, once a key opens it: Glasshouse Home's
+ * Inputs row, which the bar follows, here too so it can be arranged with
+ * Glasshouse Home switched off. Each change is saved to that same layout.
+ */
+const INPUT_BAR = 'com.tvweb.inputbar';
+let rkBarSaving = false;
+
+async function renderInputBarInputs(rk, writable) {
+  const box = q('apps-rk-bar');
+  if (!box) return;
+  const used = rk.keys.some(k => k.action === 'open' && k.id === INPUT_BAR);
+  box.hidden = !used;
+  if (!used || rkBarSaving) return;
+  let cat;
+  try { cat = await homeGet('/api/home/catalogue'); } catch (e) { box.hidden = true; return; }
+  const layout = cat.layout || {};
+  const hidden = (layout.hidden && layout.hidden.dev) || [];
+  const byId = {};
+  (cat.devices || []).forEach(d => { byId[d.id] = d; });
+  const order = (cat.order && cat.order.dev) || (cat.devices || []).map(d => d.id);
+  const pill = (on, label, attrs) => `<button type="button" class="pill ${on ? 'good' : 'idle'}" ${writable ? '' : 'disabled'} ${attrs}>${esc(label)}</button>`;
+  const rows = order.filter(id => byId[id]).map(id => {
+    const d = byId[id], shown = hidden.indexOf(id) === -1;
+    return `<div class="prot-row"><div class="prot-main">
+        <div class="prot-title" translate="no">${esc(d.name)}</div>
+        <div class="prot-desc">${esc(t('home.dev.port', 'HDMI {port}', { port: d.port }))}${d.unused ? ' · ' + esc(t('home.dev.unused', 'Nothing connected')) : ''}</div></div>
+      <div class="prot-status">${pill(shown, shown ? t('home.shown', 'Shown') : t('home.hidden', 'Hidden'),
+        `data-dev="${esc(id)}" onclick="inputBarToggleInput(this)"`)}</div></div>`;
+  });
+  const unusedOff = layout.hideUnused === true;
+  rows.push(`<div class="prot-row"><div class="prot-main">
+      <div class="prot-title">${esc(t('apps.inputBar.hideUnused', 'Hide inputs with nothing connected'))}</div></div>
+    <div class="prot-status">${pill(unusedOff, unusedOff ? t('common.on', 'On') : t('common.off', 'Off'),
+      `onclick="inputBarToggleUnused(${unusedOff ? 'false' : 'true'})"`)}</div></div>`);
+  q('apps-rk-bar-list').innerHTML = rows.join('');
+}
+
+async function inputBarSave(patch) {
+  rkBarSaving = true;
+  try { await homePost('/api/home/layout', patch); } catch (e) { showErr(e.message); }
+  rkBarSaving = false;
+  if (rkData) renderInputBarInputs(rkData, rkWritable);
+}
+
+async function inputBarToggleInput(btn) {
+  btn.disabled = true;
+  let cat;
+  try { cat = await homeGet('/api/home/catalogue'); } catch (e) { return showErr(e.message); }
+  const id = btn.dataset.dev;
+  const hidden = ((cat.layout && cat.layout.hidden && cat.layout.hidden.dev) || []).filter(x => x !== id);
+  if (btn.classList.contains('good')) hidden.push(id);
+  inputBarSave({ hidden: { dev: hidden } });
+}
+
+function inputBarToggleUnused(on) {
+  inputBarSave({ hideUnused: on });
+}
+
 function renderRemoteKeys(d) {
   const disc = q('disc-remotekeys');
   const list = q('apps-rk-list');
@@ -419,6 +478,7 @@ function renderRemoteKeys(d) {
   }
   rkData = rk;
   rkWritable = !!d.writable;
+  renderInputBarInputs(rk, rkWritable);
   // Left alone while a choice is being made in it.
   if (!list || (rkOpen && list.contains(document.activeElement))) return;
   const kinds = {};

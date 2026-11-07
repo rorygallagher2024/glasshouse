@@ -63,7 +63,7 @@ This project is intended to give a rooted webOS TV a useful local control surfac
 
 4. **[App management and debloating](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/).** Install apps from the Homebrew Channel catalog, uninstall apps, disable unnecessary background system services to free up RAM and CPU cycles, stop LG keeping apps loaded in the background that are never used, and hide non-removable built-in LG system apps from LG's Home.
 
-5. **[Remapping the remote's buttons](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/#remote-keys).** Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off.
+5. **[Remapping the remote's buttons](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/#remote-keys).** Point Netflix, Prime Video, Guide, the color keys and the TV's other shortcut buttons at any installed app, an HDMI input or Live TV, or turn them off, or have **Input** open a [strip of the HDMI inputs](https://rorygallagher2024.github.io/glasshouse/dashboard/apps/#input-bar) over the picture.
 
 6. **[Replacing the screen saver](https://rorygallagher2024.github.io/glasshouse/dashboard/screen-savers/).** Over a dozen screensavers to choose from, and customisable brightness settings.
 

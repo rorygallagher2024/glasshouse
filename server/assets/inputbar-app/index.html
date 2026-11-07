@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Glasshouse Inputs</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+/* The window is an overlay: whatever is on the input shows through. */
+html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font-family:sans-serif;color:#ece7df;cursor:default}
+#shade{position:absolute;left:0;right:0;bottom:0;height:420px;opacity:0;
+  background:-webkit-linear-gradient(top,rgba(0,0,0,0),rgba(0,0,0,.72));background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.72));
+  -webkit-transition:opacity .18s ease-out;transition:opacity .18s ease-out}
+#bar{position:absolute;left:0;right:0;bottom:72px;text-align:center;opacity:0;-webkit-transform:translateY(24px);transform:translateY(24px);
+  -webkit-transition:opacity .18s ease-out,-webkit-transform .18s ease-out;transition:opacity .18s ease-out,transform .18s ease-out}
+.on #shade,.on #bar{opacity:1}
+.on #bar{-webkit-transform:none;transform:none}
+/* Opening is at once: only closing fades. */
+.on #shade,.on #bar{-webkit-transition:none;transition:none}
+#tiles{display:inline-block;white-space:nowrap;font-size:0}
+/* The input in focus light and ringed, the rest dimmed. */
+.tile{display:inline-block;vertical-align:top;position:relative;width:360px;height:112px;margin:0 12px;padding:0 22px;border-radius:22px;text-align:left;
+  background:#2a2825;color:#fff;opacity:.75;box-shadow:0 0 0 2px rgba(255,255,255,.14),0 10px 30px rgba(0,0,0,.45);
+  -webkit-transition:opacity .12s,-webkit-transform .12s,box-shadow .12s;transition:opacity .12s,transform .12s,box-shadow .12s}
+.tile.focus{opacity:1;background:#ece7df;color:#1c1a18;-webkit-transform:scale(1.06);transform:scale(1.06);box-shadow:0 0 0 5px #fff,0 14px 40px rgba(0,0,0,.6)}
+.tile .head{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:100%}
+.dico{-webkit-flex:0 0 auto;flex:0 0 auto;width:52px;height:52px;margin-right:18px}
+.dico svg{display:block;width:100%;height:100%}
+.txt{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
+.nm{font-size:27px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.path{font-size:18px;color:#a39d93;margin-top:4px;white-space:nowrap}
+.focus .path{color:#5f5a53}
+/* The input on screen now. */
+.tile.now:after{content:"";position:absolute;left:50%;bottom:-26px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#e9ad55}
+</style>
+</head>
+<body>
+<div id="shade"></div>
+<div id="bar"><div id="tiles"></div></div>
+<script>
+/*
+ * The input bar: an overlay over the picture with the HDMI inputs Glasshouse
+ * Home shows, in its order and without the ones it hides. Each press of the
+ * remote's Input key moves to the next, round to the first (the key filter
+ * hands a press while the bar is up to it as Right), and switches to it a
+ * second later; OK switches at once, Back closes, and it closes itself when
+ * left alone. Strict ES5: the TV's own browser runs it.
+ *
+ * It is the app's own page rather than one served by Glasshouse: on a C1
+ * (webOS 6.5) WebAppMgr suspended a page the app went on to, and the window
+ * came up only 4 s after the press. Its data and the icons (devicons.js) come
+ * from the server; with the server not answering, the window just closes.
+ */
+(function () {
+  // Filled in with the dashboard's port when the app is installed.
+  var PORT = 8080;                // tvweb:port
+  var BASE = 'http://localhost:' + PORT;
+  var KEY = { left: 37, right: 39, ok: 13, back: 461, backspace: 8 };
+  var IDLE_MS = 6000;
+  // On the input already on screen there is nothing to switch to, so the bar
+  // goes sooner.
+  var IDLE_ON_NOW_MS = 3000;
+  // A press landing on another input switches to it this long after, as
+  // LG's input bar does, unless another press moves on first.
+  var SWITCH_MS = 1000;
+  var list = [], focus = 0, onPort = null, idle = null, switchTimer = null, closing = false;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function getJson(url, cb) {
+    var x = new XMLHttpRequest();
+    x.open('GET', url, true);
+    x.timeout = 4000;
+    x.onload = function () { var j = null; try { j = JSON.parse(x.responseText); } catch (e) {} cb(j); };
+    x.onerror = x.ontimeout = function () { cb(null); };
+    x.send();
+  }
+  /*
+   * Switches to the input as Glasshouse Home's tile does (lib/home.js open):
+   * its app, with the device's CEC id where it is behind a receiver. Launched
+   * from here rather than through the server, whose POSTs refuse this page's
+   * origin (file://, sent as "null").
+   */
+  function launchInput(d, cb) {
+    var params = typeof d.uniqueId === 'number' && d.uniqueId > 0 && d.uniqueId < 15 ?
+      { id: 'uniqueId', value: String(d.uniqueId) } : {};
+    try {
+      var bridge = new window.PalmServiceBridge();
+      bridge.onservicecallback = function () { cb(); };
+      bridge.call('luna://com.webos.applicationManager/launch',
+        JSON.stringify({ id: 'com.webos.app.' + d.input, params: params }));
+    } catch (e) {
+      cb();
+    }
+  }
+
+  function close() {
+    if (closing) return;
+    closing = true;
+    clearTimeout(switchTimer);
+    document.body.className = '';
+    setTimeout(function () { window.close(); }, 160);
+  }
+  function stillThere() {
+    clearTimeout(idle);
+    var onNow = list[focus] && list[focus].port === onPort;
+    idle = setTimeout(close, onNow ? IDLE_ON_NOW_MS : IDLE_MS);
+  }
+
+  // The inputs as Glasshouse Home's Inputs row has them: its order, less the
+  // hidden ones and, where it leaves them out, those with nothing connected.
+  function inputsFrom(cat) {
+    var out = [], byId = {}, layout = cat.layout || {};
+    var hidden = (layout.hidden && layout.hidden.dev) || [];
+    (cat.devices || []).forEach(function (d) { byId[d.id] = d; });
+    var order = (cat.order && cat.order.dev) || (cat.devices || []).map(function (d) { return d.id; });
+    order.forEach(function (id) {
+      var d = byId[id];
+      if (!d || hidden.indexOf(id) !== -1) return;
+      if (d.unused && layout.hideUnused === true) return;
+      out.push(d);
+    });
+    return out;
+  }
+
+  // A tile as drawn: kept with the input, so the last bar can be drawn again
+  // at once on the next open, before the server has answered.
+  function entry(d) {
+    return { id: d.id, name: d.name, port: d.port, input: d.input, uniqueId: d.uniqueId,
+             icon: window.glasshouseDevIcon(d) };
+  }
+  function render() {
+    var html = '';
+    list.forEach(function (e, i) {
+      var cls = 'tile' + (i === focus ? ' focus' : '') + (e.port === onPort ? ' now' : '');
+      html += '<div class="' + cls + '" data-i="' + i + '"><div class="head">' + e.icon +
+        '<div class="txt"><div class="nm">' + esc(e.name) + '</div><div class="path">HDMI ' + esc(e.port) + '</div></div></div></div>';
+    });
+    $('tiles').innerHTML = html;
+  }
+  // byKey: moved by the remote's keys rather than the pointer, so the
+  // switch follows on its own.
+  function setFocus(i, byKey) {
+    if (!list.length) return;
+    clearTimeout(switchTimer);
+    focus = (i + list.length) % list.length;
+    moved = true;
+    var tiles = $('tiles').children;
+    for (var k = 0; k < tiles.length; k++) {
+      tiles[k].className = 'tile' + (k === focus ? ' focus' : '') + (list[k].port === onPort ? ' now' : '');
+    }
+    stillThere();
+    if (byKey && list[focus].port !== onPort) switchTimer = setTimeout(choose, SWITCH_MS);
+  }
+  function choose() {
+    clearTimeout(switchTimer);
+    var d = list[focus];
+    if (!d || d.port === onPort) return close();
+    clearTimeout(idle);
+    launchInput(d, close);
+    // The switch happens on the TV whether or not the answer gets back here.
+    setTimeout(close, 1200);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    var k = e.keyCode;
+    if (k === KEY.right) setFocus(focus + 1, true);
+    else if (k === KEY.left) setFocus(focus - 1, true);
+    else if (k === KEY.ok) choose();
+    else if (k === KEY.back || k === KEY.backspace) close();
+    else return;
+    e.preventDefault();
+  }, true);
+  // The Magic Remote's pointer: hovering a tile focuses it, clicking switches.
+  $('tiles').addEventListener('mouseover', function (e) {
+    var el = e.target;
+    while (el && el !== this && !el.getAttribute('data-i')) el = el.parentNode;
+    if (el && el !== this) setFocus(+el.getAttribute('data-i'));
+  });
+  $('tiles').addEventListener('click', function () { choose(); });
+  var CACHE = 'glasshouse.inputbar';
+  var moved = false, waiting = 0, now = null, cat = null;
+  function focusOn(port) {
+    focus = 0;
+    for (var i = 0; i < list.length; i++) if (list[i].port === port) { focus = i; break; }
+  }
+  function show() {
+    render();
+    document.body.className = 'on';
+    stillThere();
+  }
+
+  // The icons, what is on now and the inputs, asked for together; the bar is
+  // drawn again from them where anything has changed.
+  function ready() {
+    if (--waiting > 0 || closing) return;
+    if (!cat || !window.glasshouseDevIcon) { if (!list.length) close(); return; }
+    var fresh = inputsFrom(cat).map(entry);
+    if (!fresh.length) return close();
+    var port = now && now.kind === 'input' ? now.port : null;
+    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort;
+    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port })); } catch (e) {}
+    if (same && document.body.className === 'on') return;
+    // Moved already: the focus stays on the same input where it is still there.
+    var keepId = moved && list[focus] ? list[focus].id : null;
+    list = fresh;
+    onPort = port;
+    focusOn(onPort);
+    if (keepId) for (var i = 0; i < list.length; i++) if (list[i].id === keepId) focus = i;
+    show();
+  }
+
+  /*
+   * Opening the bar: the last one drawn at once, so the window comes up with
+   * its first frame, then what the server says. Run at load and again each
+   * time the kept-alive app is opened after closing.
+   */
+  function start() {
+    clearTimeout(switchTimer);
+    closing = false;
+    moved = false;
+    try {
+      var kept = JSON.parse(window.localStorage.getItem(CACHE) || 'null');
+      if (kept && kept.list && kept.list.length) {
+        list = kept.list;
+        onPort = kept.onPort;
+        focusOn(onPort);
+        show();
+      }
+    } catch (e) {}
+    stillThere();
+    now = null;
+    cat = null;
+    waiting = window.glasshouseDevIcon ? 2 : 3;
+    if (!window.glasshouseDevIcon) {
+      var icons = document.createElement('script');
+      icons.onload = icons.onerror = ready;
+      icons.src = BASE + '/assets/devicons.js';
+      document.head.appendChild(icons);
+    }
+    getJson(BASE + '/api/home/now', function (j) { now = j; ready(); });
+    getJson(BASE + '/api/home/catalogue', function (j) { cat = j; ready(); });
+  }
+
+  /*
+   * Preloaded: the Glasshouse server starts the app hidden ({"preload":
+   * "full"}) at boot, at switch-on and after each close, so a press finds the
+   * page loaded and only the window to show. A preloaded page draws nothing
+   * and sets no timer until that press, which reaches it as a relaunch.
+   */
+  function preloaded() {
+    var p = {};
+    try { p = JSON.parse(window.PalmSystem.launchParams || '{}') || {}; } catch (e) {}
+    return !!p.preload;
+  }
+  var idleUntilOpened = preloaded();
+  // A relaunch while the bar is up is a further press that reached it that
+  // way rather than as a key: it moves on.
+  document.addEventListener('webOSRelaunch', function () {
+    if (idleUntilOpened || closing) { idleUntilOpened = false; start(); }
+    else setFocus(focus + 1, true);
+  });
+  if (idleUntilOpened) {
+    // Only the icons, so the first open draws at once.
+    var icons = document.createElement('script');
+    icons.src = BASE + '/assets/devicons.js';
+    document.head.appendChild(icons);
+  } else {
+    start();
+  }
+})();
+</script>
+</body>
+</html>
