@@ -1,6 +1,6 @@
 // The format admits data and drawing instructions, never uploaded code or URLs.
 var ICONS = ['sun', 'moon', 'cloud', 'rain', 'snow', 'storm', 'wind', 'thermometer', 'drop', 'home', 'clock', 'chart', 'weather'];
-var POSITIONS = ['auto', 'left', 'center', 'right'];
+var layout = require('../assets/widget-layout');
 function text(value, limit) {
   return typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, limit) : '';
 }
@@ -68,32 +68,4 @@ function weatherActive(widgets) {
     return w.enabled && w.version === 2 && w.data.source === 'weather';
   });
 }
-function placement(layout) {
-  var widgets = layout.widgets, ids = widgets.order.filter(function (id) {
-    return id === 'clock' ? layout.showClock !== false : id === 'weather' ? widgets.weather.enabled :
-      widgets.custom.some(function (w) { return w.id === id && w.enabled; });
-  });
-  var placed = {}, occupied = [], positions = widgets.positions;
-  var manual = ids.some(function (id) { return positions[id] && positions[id] !== 'auto'; });
-  if (!manual) return { ok: true, manual: false, positions: {} };
-  function blocked(pos) {
-    return pos === 'center' && layout.showLastOn !== false || pos === 'right' &&
-      (layout.picture || layout.livePreview && !layout.previewInTile) ||
-      pos === 'center' && layout.picture && layout.livePreview && !layout.previewInTile;
-  }
-  for (var i = 0; i < ids.length; i++) {
-    var id = ids[i], pos = positions[id] || 'auto';
-    if (pos === 'auto') continue;
-    if (blocked(pos) || occupied.indexOf(pos) !== -1) return { ok: false };
-    occupied.push(pos); placed[id] = pos;
-  }
-  for (var j = 0; j < ids.length; j++) {
-    var next = ids[j];
-    if (placed[next]) continue;
-    var free = POSITIONS.slice(1).filter(function (p) { return !blocked(p) && occupied.indexOf(p) === -1; })[0];
-    if (!free) return { ok: false };
-    placed[next] = free; occupied.push(free);
-  }
-  return { ok: true, manual: true, positions: placed };
-}
-module.exports = { text: text, field: field, values: values, custom: custom, weatherActive: weatherActive, placement: placement };
+module.exports = { text: text, field: field, values: values, custom: custom, weatherActive: weatherActive, placement: layout.placement };

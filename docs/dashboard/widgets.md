@@ -18,15 +18,36 @@ Up to eight imported widgets can be saved. Two widgets can normally be shown;
 three fit when **Last watched**, **Picture details** and the **top live
 preview** are off.
 
-Each widget's **Position** offers **Automatic**, **Left**, **Centre** and
-**Right**. Automatic keeps the ordered group used by the original layout;
-Alternative View puts that group on the right. Choosing an explicit position
-uses the corresponding part of the top section in either view. Other
-Automatic widgets take the remaining free positions. Two widgets cannot
-occupy the same position.
+The **Widget layout** board shows **Left**, **Centre** and **Right** drop zones.
+Drag an enabled widget from **Widget order** into a zone. Once positions are
+fixed, widgets can also be dragged from their current zones. Dropping on an
+occupied zone swaps the two widgets. On a phone, tap a widget and then
+**Place in…**; the same controls work with Tab and Enter.
 
-The dashboard displays these requirements beside the position controls and
-disables positions that are reserved:
+![Widget layout with a reserved centre, browser preview](../screenshots/home-widget-layout-preview.png)
+
+Every zone explains its requirements before accepting a drop. The board checks
+visibility, a saved city for weather widgets, reserved Home features, and
+whether every other enabled widget still has a free position. An off widget
+must be turned on before placing it; dropping never enables it. **Review
+settings** moves focus to the relevant existing control. Change the setting
+there, then return to the board. Features are not switched off automatically.
+
+![Fixed widget positions, browser preview](../screenshots/home-widget-layout-positioned-preview.png)
+
+**Use Automatic layout** returns the widgets to an ordered group; Alternative
+View puts that group on the right. Drag a widget before or after another in
+**Widget order** to reorder it, including off widgets. With a widget focused,
+**Alt + Left/Right** changes that order too. Order affects Automatic placement;
+fixed positions take priority. The board keeps keyboard focus after saves.
+
+Dropping into a zone changes to fixed placement in either view. Remaining
+Automatic widgets take free positions. If they cannot all fit, the drop is
+blocked and explains what must be freed. Each widget's existing **Position**
+dropdown and **Move left/right** controls remain available below the board.
+
+The dashboard displays these requirements in the zones and beside the
+position controls, and prevents drops into reserved positions:
 
 - **Centre needs Last watched off.** Open **Home > Shown on Home > Last
   watched** to hide the last used app or input and free that space. This is
@@ -36,10 +57,11 @@ disables positions that are reserved:
 - When Picture details are shown beside a top live preview, they also use
   the centre; turn either one off to free it.
 
-Use **Move left** and **Move right** to reorder the list, including disabled
-widgets. The order determines placement for Automatic widgets. Explicit
-positions take priority. Switch conflicting features off before changing a
-position; a save that would overlap another widget or top feature is refused.
+Switch conflicting features off before changing a position. A save that would
+overlap another widget or top feature is refused. The server checks the current
+settings again, so a setting changed from another dashboard during a drag
+cannot create an overlap. A failed save keeps the previous layout and refreshes
+the board's requirements.
 
 Switches, order, positions, clock settings, city and units save immediately.
 Text and component edits use **Save widget**. Home picks up dashboard changes

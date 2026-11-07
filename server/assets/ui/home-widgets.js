@@ -17,13 +17,14 @@ function renderHomeWidgets() {
     ? t('home.widgets.weather', 'Weather') : (() => { const widget = settings.custom.find(w => w.id === id); return (widget.resolved || widget).name; })();
   const enabled = id => id === 'clock' ? homeLayout.showClock !== false : id === 'weather'
     ? settings.weather.enabled : settings.custom.find(w => w.id === id).enabled;
+  renderHomeWidgetLayout();
   host.innerHTML = settings.order.map((id, i) => `<div class="prot-row">
     <div class="prot-main"><div class="prot-title">${esc(title(id))}</div></div>
     <div class="prot-status home-widget-actions">
       <button type="button" class="pill idle" ${busy || i === 0 ? 'disabled' : ''} onclick="homeWidgetMove('${id}', -1)">${esc(t('home.widgets.left', 'Move left'))}</button>
       <button type="button" class="pill idle" ${busy || i === settings.order.length - 1 ? 'disabled' : ''} onclick="homeWidgetMove('${id}', 1)">${esc(t('home.widgets.right', 'Move right'))}</button>
       <button type="button" class="pill ${enabled(id) ? 'good' : 'idle'}" ${id === 'clock' ? 'id="home-show-clock"' : ''}
-        ${off} aria-pressed="${enabled(id)}" aria-label="${esc(title(id))}" onclick="homeWidgetToggle('${id}')">${esc(enabled(id) ? t('common.on', 'On') : t('common.off', 'Off'))}</button>
+        ${off} data-widget-toggle="${id}" aria-pressed="${enabled(id)}" aria-label="${esc(title(id))}" onclick="homeWidgetToggle('${id}')">${esc(enabled(id) ? t('common.on', 'On') : t('common.off', 'Off'))}</button>
       ${id !== 'clock' && id !== 'weather' ? `<button type="button" class="pill idle" onclick="homeWidgetExport('${id}')">${esc(t('home.store.export', 'Export widget'))}</button><button type="button" class="pill bad" ${off} onclick="homeWidgetRemove('${id}')">${esc(t('home.ch.remove', 'Remove'))}</button>` : ''}
     </div>
   </div>${homeWidgetPositionFields(id, settings.positions && settings.positions[id] || 'auto', off, title(id))}${id === 'clock' ? homeWidgetClockFields(settings.clock, off) : id === 'weather' ? homeWidgetWeatherFields(settings.weather, off) : settings.custom.find(w => w.id === id).version === 3 ? homeWidgetStoreFields(settings.custom.find(w => w.id === id), off) : settings.custom.find(w => w.id === id).version === 2 ? homeWidgetComponentFields(settings.custom.find(w => w.id === id), off) : homeWidgetTextFields(settings.custom.find(w => w.id === id), off)}`).join('') +
@@ -35,9 +36,8 @@ function renderHomeWidgets() {
 }
 
 function homeWidgetPositionFields(id, position, off, name) {
-  const topPreview = homeLayout.livePreview && !homeLayout.previewInTile;
-  const previewDetails = topPreview && homeLayout.picture;
-  const blocked = value => value === 'center' && (homeLayout.showLastOn !== false || previewDetails) || value === 'right' && (homeLayout.picture || topPreview);
+  const previewDetails = WidgetLayout.requirements(homeLayout, 'center').includes('previewDetails');
+  const blocked = value => WidgetLayout.requirements(homeLayout, value).length > 0;
   return `<div class="home-widget-fields"><label>${esc(t('home.widgets.positionLabel', 'Position'))}
     <select class="pill-sel" aria-label="${esc(t('home.widgets.positionFor', 'Position of {name}', {name}))}" ${off} onchange="homeWidgetPosition('${id}', this.value)">
     ${[['auto', t('home.widgets.positionAuto', 'Automatic')], ['left', t('home.widgets.positionLeft', 'Left')], ['center', t('home.widgets.positionCenter', 'Centre')], ['right', t('home.widgets.positionRight', 'Right')]].map(([value, label]) => `<option value="${value}" ${position === value ? 'selected' : ''} ${blocked(value) ? 'disabled' : ''}>${esc(label)}</option>`).join('')}

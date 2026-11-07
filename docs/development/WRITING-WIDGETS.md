@@ -319,6 +319,23 @@ normal draft, translation, docs and TV-testing requirements.
 
 ## Remote interaction and positioning
 
+The web dashboard's **Widget layout** board provides left/centre/right zones,
+occupied-zone swaps and an Automatic-order strip. Native mouse drag-and-drop,
+tap/select plus a placement button, and keyboard controls share the same
+candidate checks. Alt + Left/Right reorders a focused strip item; focus is
+restored after a save. Off widgets can be reordered but must be explicitly
+enabled before being placed into a zone.
+
+`assets/widget-layout.js` is an ES5 module shared by the server and dashboard.
+It computes zone requirements, resolves active positions, plans swaps and
+reorders without mutating its inputs. A candidate must also fit every other
+enabled widget and have a selected city for any enabled weather consumer.
+`ui/widget-layout.js` renders the board, explains blocked zones and focuses
+the relevant setting through **Review settings**. It never changes those
+settings or enables a widget on drop. The existing layout route revalidates
+the current server state before saving; the browser preview is not authority
+to bypass a reservation that changed during a drag.
+
 From the first row, Up enters the widget group; Left/Right choose, Down returns
 to the rows. OK opens a component or weather panel; OK, Back or Escape closes
 it. Up/Down scroll the panel. Holding OK enters positioning; Clock and text

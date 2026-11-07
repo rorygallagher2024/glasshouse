@@ -23,6 +23,18 @@ charts, remote expansion/closing, three-position layout, and pausing/resuming
 polling while covered. City and weather replies are fixtures. Physical-TV
 rendering and remote testing remain separate requirements.
 
+`test-widget-layout.js` checks the shared drop planner, swapping, ordering,
+reservations, city/visibility requirements and unchanged preview inputs. It
+also checks accepted candidates across combinations of Home features and
+enabled widgets for overlaps and forbidden positions. The widget-layout
+browser check uses native drag-and-drop and verifies rejected drops send no
+save, valid drops and swaps persist, requirement links focus the right control,
+tap/keyboard placement works, Alt + Left/Right reorders and retains focus,
+off widgets stay off, read-only controls cannot save, and a concurrent
+requirement change is rejected and refreshed. It checks the board at phone
+width and shares the existing Home browser group. The ES5 check includes
+`assets/widget-layout.js`, which both dashboard and server use.
+
 `test-home-widget-store.js` validates the real bundled catalogue, version 3
 template/settings separation, independent copies, compatible and incompatible
 updates, permission changes, persistence, safe targets, request limits,

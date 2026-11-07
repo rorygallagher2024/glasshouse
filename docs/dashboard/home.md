@@ -11,7 +11,10 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
 **Top widgets** on the web dashboard configures fixed-size clock, weather
 and custom widgets, including icons, data values and charts. Choose Automatic,
-Left, Centre or Right positions. Centre needs **Last watched** off; Right
+Left, Centre or Right positions. The **Widget layout** board supports dragging
+into zones, swapping occupied positions and reordering Automatic widgets.
+Tap/select a widget and a zone as an alternative. Each zone explains unmet
+requirements before it accepts a drop. Centre needs **Last watched** off; Right
 needs **Picture details** and the **top live preview** off. These requirements
 appear beside the controls. Three widgets fit when all those features are off.
 Weather includes today's temperature and wind graphs and a 10-day forecast

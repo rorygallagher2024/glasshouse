@@ -61,14 +61,14 @@ STAGE=/var/lib/tvweb/.deploy     # on the TV; beside the install so moves are re
 
 FILES="tvweb.js tvwebctl assets/ui.html assets/dashboard.html assets/favicon.svg \
 assets/ui/ui.css assets/ui/core.js assets/ui/theme.js assets/ui/format.js assets/ui/readouts.js \
-assets/ui/update.js assets/ui/controls.js assets/ui/privacy.js assets/ui/lgsettings.js assets/ui/game.js \
+assets/ui/update.js assets/ui/controls.js assets/ui/privacy.js assets/ui/lgsettings.js assets/ui/game.js assets/ui/widget-layout.js \
 assets/ui/system.js assets/ui/history.js assets/ui/ssh.js assets/ui/screentime.js assets/ui/apps.js assets/ui/install.js assets/ui/home.js assets/ui/home-widgets.js assets/ui/iptv.js assets/ui/tvchannels.js assets/ui/tabs.js assets/ui/servicemenu.js \
 assets/ui/oled.js assets/ui/screensavers.js assets/ui/mqtt.js assets/ui/tools.js assets/ui/search-aliases.js assets/ui/search.js assets/ui/main.js assets/ui/audio.js assets/ui/bluetooth.js assets/ui/picture.js \
 assets/qr.js assets/i18n.js assets/i18n/es.json assets/i18n/de.json assets/i18n/ru.json assets/i18n/hu.json assets/i18n/it.json assets/i18n/ar.json assets/i18n/pt.json assets/i18n/pt-br.json assets/i18n/pl.json assets/i18n/fr.json assets/setup.html assets/setup-phone.html \
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
 assets/dashboard-app/assets/icon80.png assets/dashboard-app/assets/icon130.png \
-assets/home.html assets/widget-kit.js assets/home-widget-panel.js assets/home-widgets-view.js assets/home-kit.js assets/home-web.html assets/home-minimal.html assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \
+assets/home.html assets/widget-kit.js assets/widget-layout.js assets/home-widget-panel.js assets/home-widgets-view.js assets/home-kit.js assets/home-web.html assets/home-minimal.html assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \
 assets/ui/widget-store.js assets/widget-store/catalogue.json lib/home-widget-template.js lib/home-widget-store.js \
 assets/home-app/assets/icon80.png assets/home-app/assets/icon130.png \
 assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \

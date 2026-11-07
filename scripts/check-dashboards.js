@@ -714,6 +714,111 @@ async function visitHomeWidgets(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+async function visitWidgetLayout(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  page.on('pageerror', e => problems.push('Widget layout: ' + e.message));
+  const widgets = require('../server/lib/home-widgets'), planner = require('../server/assets/widget-layout');
+  let layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] },
+    channels: [], hintSeen: true, showClock: true, showLastOn: true, picture: false, livePreview: false,
+    widgets: widgets.normalise({ weather: { enabled: true, location: { name: 'Paris', latitude: 48.85, longitude: 2.35 } },
+      custom: [{ version: 1, type: 'text', id: 'notice', name: 'Notice', value: 'Hello', enabled: false }] }) };
+  let writes = 0, accepted = 0, writable = true;
+  const display = () => Object.assign({}, layout, { widgetPlacement: planner.placement(layout) });
+  await page.route('**/api/home**', route => {
+    const pathname = new URL(route.request().url()).pathname, reply = json => route.fulfill({ json });
+    if (pathname === '/api/home') return reply({ ok: true, supported: { ok: true }, enabled: true, active: true, writable, layout: display() });
+    if (pathname === '/api/home/layout') {
+      writes++;
+      const next = Object.assign({}, layout, route.request().postDataJSON()); next.widgets = widgets.normalise(next.widgets);
+      if (planner.validate(next).length) return reply({ ok: false, error: 'Layout changed. Review the zone requirements.' });
+      accepted++; layout = next;
+      return reply({ ok: true, layout: display() });
+    }
+    if (pathname === '/api/home/catalogue') return reply({ ok: true, layout: display(), apps: [], devices: [], channels: [], order: { app: ['lg-home'], dev: [], ch: [] }, sources: {} });
+    return reply({ ok: true });
+  });
+  const board = page.locator('#home-widget-layout');
+  const card = id => board.locator('.hwl-order [data-widget-id="' + id + '"]');
+  const zone = position => board.locator('[data-widget-zone="' + position + '"]');
+  try {
+    await page.goto(base + '/?tab=home');
+    await card('clock').waitFor();
+    await zone('center').getByText('Switch off Last watched in Shown on Home.', { exact: false }).waitFor();
+    await card('clock').dragTo(zone('center'));
+    if (writes) problems.push('Widget layout: dropping into reserved centre sent a save');
+    await zone('center').getByRole('button', { name: 'Review settings', exact: true }).click();
+    if (await page.evaluate(() => document.activeElement.id) !== 'home-show-last') problems.push('Widget layout: requirement shortcut did not focus Last watched');
+    await card('clock').dragTo(zone('right'));
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions.clock === 'right');
+    if (planner.placement(layout).positions.weather !== 'left') problems.push('Widget layout: automatic companion was not assigned a free zone');
+    await zone('right').locator('[data-widget-id="clock"]').dragTo(zone('left'));
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions.weather === 'right');
+    if (layout.widgets.positions.clock !== 'left') problems.push('Widget layout: occupied-zone drop did not swap widgets');
+    await page.locator('#home-show-last').click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.showLastOn === false);
+    await card('weather').click();
+    await zone('center').getByRole('button', { name: 'Place in Centre', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions.weather === 'center');
+    await board.getByRole('button', { name: 'Use Automatic layout', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions.clock === 'auto');
+    await page.evaluate(() => homeSaveLayout({ picture: true, livePreview: true, previewInTile: false }));
+    await card('clock').click();
+    await zone('right').getByText('Switch off Picture details.', { exact: false }).waitFor();
+    await zone('right').getByText('Switch off the top live preview, or use Preview in the tile.', { exact: false }).waitFor();
+    await zone('center').getByText('Picture details beside a top live preview also reserve the centre. Switch either one off to free it.', { exact: false }).waitFor();
+    await zone('left').getByText('Free another zone or switch another widget off. Every enabled widget needs a free position.', { exact: true }).waitFor();
+    const blockedWrites = writes;
+    await card('clock').dragTo(zone('right'));
+    if (writes !== blockedWrites) problems.push('Widget layout: reserved preview zone accepted a drop');
+    await page.evaluate(() => homeSaveLayout({ picture: false, previewInTile: true }));
+    await card('clock').dragTo(zone('right'));
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions.clock === 'right');
+    await page.locator('#home-widgets [data-widget-toggle="notice"]').click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom[0].enabled);
+    await card('notice').dragTo(zone('left'));
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.positions.notice === 'left');
+    if (await board.locator('.hwl-occupant .hwl-card').count() !== 3 || planner.placement(layout).positions.weather !== 'center') problems.push('Widget layout: three occupied zones did not remain distinct after a swap');
+    await page.locator('#home-widgets [data-widget-toggle="notice"]').click();
+    await page.waitForFunction(() => !homeSaving && !homeLayout.widgets.custom[0].enabled);
+    await page.evaluate(() => {
+      const widgets = homeWidgetSettings(); widgets.weather.enabled = false; widgets.weather.location = null;
+      return homeSaveLayout({ widgets });
+    });
+    await card('weather').click();
+    await zone('center').getByText('Turn this widget on before placing it.', { exact: false }).waitFor();
+    await zone('center').getByText('Choose a city before switching weather on.', { exact: false }).waitFor();
+    const offWrites = writes;
+    await card('weather').dragTo(zone('center'));
+    if (writes !== offWrites || layout.widgets.weather.enabled) problems.push('Widget layout: positioning enabled an off widget');
+    await card('notice').dragTo(card('clock'), { targetPosition: { x: 2, y: 12 } });
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.order[0] === 'notice');
+    if (layout.widgets.custom[0].enabled) problems.push('Widget layout: reordering enabled an off widget');
+    await card('notice').focus();
+    await page.keyboard.press('Alt+ArrowRight');
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.order[1] === 'notice');
+    if (await page.evaluate(() => document.activeElement.dataset.widgetId) !== 'notice') problems.push('Widget layout: keyboard reorder lost focus');
+    if (layout.widgets.custom[0].enabled) problems.push('Widget layout: keyboard reorder enabled an off widget');
+    await card('clock').click();
+    const beforeConflict = accepted;
+    layout.showLastOn = true;
+    await card('clock').dragTo(zone('center'));
+    await page.locator('#err').filter({ hasText: 'Layout changed. Review the zone requirements.' }).waitFor({ state: 'visible' });
+    await page.waitForFunction(() => !homeSaving && homeLayout.showLastOn);
+    if (accepted !== beforeConflict || layout.widgets.positions.clock !== 'right') problems.push('Widget layout: a concurrent settings change bypassed validation');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => { closeNav(); document.documentElement.setAttribute('data-theme', 'light'); });
+    if (await board.evaluate(el => el.scrollWidth > el.clientWidth + 1 || el.getBoundingClientRect().right > innerWidth + 1)) problems.push('Widget layout: board overflows on a phone');
+    writable = false;
+    await page.reload();
+    await card('clock').waitFor();
+    if (!await card('clock').isDisabled() || await card('clock').getAttribute('draggable') !== 'false') problems.push('Widget layout: read-only cards remained draggable');
+    const readOnlyWrites = writes;
+    await page.evaluate(() => homeWidgetPlace('left'));
+    if (writes !== readOnlyWrites) problems.push('Widget layout: read-only drop sent a save');
+  } finally { await page.close(); }
+}
+
 async function visitWidgetStore(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 }, acceptDownloads: true });
   page.on('pageerror', e => problems.push('Widget store: ' + e.message));
@@ -2896,7 +3001,7 @@ function groups(web, tv) {
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
-    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels, visitHomeWidgets, visitWidgetStore] },
+    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels, visitHomeWidgets, visitWidgetLayout, visitWidgetStore] },
     /*
      * Scrolling and motion read the row's place frame by frame, and missed
      * frames with the other groups sharing CI's four cores: 3 of 15 runs

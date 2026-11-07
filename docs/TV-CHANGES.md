@@ -156,6 +156,14 @@ beside a top preview also reserve centre. The dashboard explains these rules
 and disables reserved choices; conflicting saves are refused. Home's remote
 can select, expand and position widgets.
 
+The dashboard's drag-and-drop widget board saves to this same layout. Reserved
+zones explain their requirements and link to the existing controls; the owner
+changes those settings explicitly. Drops keep every enabled widget in a free
+position, swap occupying widgets and leave off widgets off. Automatic order
+can be changed by dragging or with Alt + Left/Right. The shared planner and
+server validation refuse conflicting changes, including when another dashboard
+changes a requirement during a drag.
+
 Weather and custom weather data widgets are off by default. Explicit city
 searches contact Open-Meteo's geocoding service; enabling any weather consumer
 permits hourly and 10-day forecast reads using the saved coordinates and units

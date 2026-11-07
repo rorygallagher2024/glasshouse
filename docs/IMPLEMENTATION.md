@@ -1725,8 +1725,14 @@ server's 10-second limit; launches allow 20 seconds for sequential detail reads.
 ### Home widgets
 
 `lib/home-widgets.js` normalises settings; `lib/home-widget-format.js` validates
-version 1 text and version 2 component manifests and resolves left/centre/right
-placement against Last watched, Picture details and preview reservations.
+version 1 text and version 2 component manifests. The shared ES5
+`assets/widget-layout.js` resolves positions and drop candidates against Last
+watched, Picture details, preview reservations, enabled count and weather-city
+requirements. The server's placement validator uses that same module.
+`ui/widget-layout.js` renders zones and order, handles drag/drop and keyboard
+reordering, and links unmet requirements to their existing settings. Candidate
+planning makes copies, and server-side validation still uses current settings
+when a drop is saved.
 `lib/home-weather.js` parses and caches hourly temperature/wind and ten daily
 forecasts from fixed Open-Meteo endpoints. Enabled built-in or custom weather
 widgets share `GET /api/home/widgets/weather`; city searches remain explicit.
