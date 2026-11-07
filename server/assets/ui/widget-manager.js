@@ -86,7 +86,8 @@ function homeWidgetSummary(id) {
   if (id === 'weather') return settings.weather.location
     ? settings.weather.location.name + ' · ' + (settings.weather.units === 'fahrenheit' ? '°F' : '°C')
     : t('home.widgets.chooseCity', 'Choose a city before switching weather on.');
-  if (id === 'football') return settings.football.leagues.map(league => league.name).join(', ') || t('home.football.chooseLeagues', 'Choose at least one league before switching football scores on.');
+  if (id === 'football') return (settings.football.teams.length ? settings.football.teams : settings.football.leagues).map(item => item.name).join(', ')
+    || t('home.football.chooseLeagues', 'Choose at least one league or team before switching football scores on.');
   if (id === 'clock') return settings.clock.format === '12' ? t('adv.clock12', '12-hour clock') : settings.clock.format === '24'
     ? t('home.widgets.hour24', '24-hour clock') : t('home.widgets.followTv', 'Follow the TV');
   const widget = settings.custom.find(item => item.id === id);

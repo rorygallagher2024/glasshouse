@@ -5,6 +5,12 @@ let homeFootballBusy = false;
 let homeFootballNote = '';
 let homeFootballQueries = { league: '', team: '' };
 
+function homeFootballSources(settings) {
+  return [{ id: 'fifa.friendly', name: t('home.football.nationalMen', 'National teams (men)') },
+    { id: 'fifa.friendly.w', name: t('home.football.nationalWomen', 'National teams (women)') }].concat(
+    settings.leagues.filter(item => !['fifa.friendly', 'fifa.friendly.w'].includes(item.id)));
+}
+
 function homeFootballChoices(items, selected, kind, off) {
   const query = homeFootballQueries[kind].toLowerCase();
   const found = items.some(item => item.name.toLowerCase().includes(query));
@@ -19,22 +25,22 @@ function homeFootballFields(settings, off) {
   const disabled = off || homeFootballBusy ? 'disabled' : '';
   const teams = homeFootballTeams[homeFootballLeague];
   return `<div class="home-widget-fields home-football-fields">
-    <p class="prot-desc">${esc(t('home.football.privacy', 'Football scores are off by default. Browsing leagues or teams and enabling scores connects to ESPN, which receives the TV’s public IP address and the requested leagues. No account or API key is needed.'))}
+    <p class="prot-desc">${esc(t('home.football.privacy', 'Football scores are off by default. Browsing and enabling scores connects to ESPN, which receives the TV’s public IP address and the requested competitions or teams. No account or API key is needed.'))}
       <a href="https://www.espn.com/soccer/scoreboard" target="_blank" rel="noopener">${esc(t('home.football.credit', 'Scores by ESPN'))}</a></p>
-    <p class="prot-desc">${esc(t('home.football.help', 'Choose up to eight leagues. With no team filter, all their live matches appear. Choose teams to show only their matches within those leagues.'))}</p>
+    <p class="prot-desc">${esc(t('home.football.help', 'Choose leagues for all their live matches, or select club or national teams to follow across competitions. When no selected team is playing, their latest results and dates appear. Up to eight leagues and 64 teams can be saved.'))}</p>
     <button type="button" class="pill idle" ${disabled} onclick="homeFootballBrowse()">${esc(t('home.football.browse', 'Browse leagues'))}</button>
     <p class="prot-desc" role="status">${esc(homeFootballBusy ? t('home.football.loadingChoices', 'Loading football choices…') : homeFootballNote)}</p>
     ${homeFootballLeagues.length ? `<label>${esc(t('home.football.findLeague', 'Find a league'))}<input type="search" value="${esc(homeFootballQueries.league)}" oninput="homeFootballFilter(this.value, 'league')" ${off}></label>
       ${homeFootballChoices(homeFootballLeagues, settings.leagues, 'league', disabled)}` : ''}
     <div class="home-football-selected" role="group" aria-label="${esc(t('home.football.selectedLeagues', 'Selected leagues'))}">
       ${settings.leagues.map(item => `<button type="button" class="pill idle" ${disabled} onclick="homeFootballChoose('league', '${esc(item.id)}', false)">${esc(t('home.football.removeLeague', 'Remove {name}', { name: item.name }))}</button>`).join('')}</div>
-    ${settings.leagues.length ? `<label>${esc(t('home.football.teamsFrom', 'Teams from'))}<select class="pill-sel" aria-label="${esc(t('home.football.teamsFrom', 'Teams from'))}" ${disabled} onchange="homeFootballSelectLeague(this.value)">
-      <option value="">${esc(t('home.football.chooseLeague', 'Choose a league'))}</option>${settings.leagues.map(item => `<option value="${esc(item.id)}" ${homeFootballLeague === item.id ? 'selected' : ''}>${esc(item.name)}</option>`).join('')}</select></label>` : ''}
+    <label>${esc(t('home.football.teamsFrom', 'Teams from'))}<select class="pill-sel" aria-label="${esc(t('home.football.teamsFrom', 'Teams from'))}" ${disabled} onchange="homeFootballSelectLeague(this.value)">
+      <option value="">${esc(t('home.football.chooseLeague', 'Choose a league'))}</option>${homeFootballSources(settings).map(item => `<option value="${esc(item.id)}" ${homeFootballLeague === item.id ? 'selected' : ''}>${esc(item.name)}</option>`).join('')}</select></label>
     ${Array.isArray(teams) ? `<label>${esc(t('home.football.findTeam', 'Find a team'))}<input type="search" value="${esc(homeFootballQueries.team)}" oninput="homeFootballFilter(this.value, 'team')" ${off}></label>
       ${homeFootballChoices(teams, settings.teams, 'team', disabled)}` : ''}
     <div class="home-football-selected" role="group" aria-label="${esc(t('home.football.selectedTeams', 'Selected teams'))}">
       ${settings.teams.map(item => `<button type="button" class="pill idle" ${disabled} onclick="homeFootballChoose('team', '${item.id}', false)">${esc(t('home.football.removeTeam', 'Remove {name}', { name: item.name }))}</button>`).join('')}
-      ${settings.teams.length ? `<button type="button" class="pill idle" ${disabled} onclick="homeFootballClearTeams()">${esc(t('home.football.allTeams', 'Show all teams in selected leagues'))}</button>` : ''}</div>
+      ${settings.teams.length ? `<button type="button" class="pill idle" ${disabled} onclick="homeFootballClearTeams()">${esc(t('home.football.allTeams', 'Clear team selection'))}</button>` : ''}</div>
     <p class="prot-desc">${esc(t('home.football.scrollHelp', 'Long lists scroll upward continuously. Focus the widget to pause; press OK to read all matches.'))}</p>
   </div>`;
 }
@@ -80,8 +86,8 @@ async function homeFootballChoose(kind, id, on) {
     showErr(t('home.football.limit', 'Choose at most eight leagues and 64 teams.')); renderHomeWidgets(); return;
   }
   widgets.football[key] = on ? previous.concat([item]) : previous.filter(entry => entry.id !== id);
-  if (!widgets.football.leagues.length) widgets.football.enabled = false;
-  if (!widgets.football.leagues.some(league => league.id === homeFootballLeague)) homeFootballLeague = '';
+  if (!widgets.football.leagues.length && !widgets.football.teams.length) widgets.football.enabled = false;
+  if (!homeFootballSources(widgets.football).some(league => league.id === homeFootballLeague)) homeFootballLeague = '';
   const scroll = q('home-football-' + kind)?.scrollTop || 0;
   await homeSaveLayout({ widgets });
   const host = q('home-football-' + kind);
@@ -91,5 +97,7 @@ async function homeFootballChoose(kind, id, on) {
 
 function homeFootballClearTeams() {
   if (!homeWritable() || homeFootballBusy) return;
-  const widgets = homeWidgetSettings(); widgets.football.teams = []; homeSaveLayout({ widgets });
+  const widgets = homeWidgetSettings(); widgets.football.teams = [];
+  if (!widgets.football.leagues.length) widgets.football.enabled = false;
+  homeSaveLayout({ widgets });
 }

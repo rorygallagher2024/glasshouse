@@ -33,7 +33,7 @@
       delete requests[source];
       sources[source] = data && data.ok !== false ? data : source !== 'tv' ? { available: false, matches: [] } : null;
       paintData();
-      var wait = source === 'football' ? 60000 : source === 'tv' ? 60000 : data && data.available && !data.stale ? 15 * 60000 : 5 * 60000;
+      var wait = source === 'football' ? data && data.loading ? 5000 : 60000 : source === 'tv' ? 60000 : data && data.available && !data.stale ? 15 * 60000 : 5 * 60000;
       timers[source] = setTimeout(function () { read(source); }, wait);
     });
   }
@@ -71,8 +71,9 @@
       else if (w.football) {
         w.data = sources.football;
         footballView.render(w.element.querySelector('.widget-body'), w.data, true);
-        w.element.querySelector('.widget-status').textContent = w.data && w.data.partial
-          ? I18N.t('home.football.partial', 'Some scores are unavailable') : I18N.t('home.football.credit', 'Scores by ESPN');
+        w.element.querySelector('.widget-status').textContent = w.data && w.data.loading ? I18N.t('home.football.loadingScores', 'Loading scores…')
+          : w.data && w.data.partial ? I18N.t('home.football.partial', 'Some scores are unavailable')
+          : w.data && w.data.mode === 'latest' ? I18N.t('home.football.latestCredit', 'Latest results · ESPN') : I18N.t('home.football.credit', 'Scores by ESPN');
       }
       else if (w.components) {
         w.data = dataFor(w);

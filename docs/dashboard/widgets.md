@@ -165,17 +165,28 @@ The dashboard credits [Open-Meteo](https://open-meteo.com/).
 
 ## Football scores
 
-Under **Football scores**, choose **Browse leagues**, then select up to eight
-leagues or cups. **Teams from** loads a selected competition's teams; select
-up to 64 favourites. With no team filter, every live match in the selected
-competitions appears. With favourites selected, only their matches within
-those competitions appear. A team's match outside the selected competitions
-is not included. Selections save immediately and survive restarts and backups.
+Under **Football scores**, **Teams from** offers **National teams (men)** and
+**National teams (women)** even before a league is selected. For club teams,
+choose **Browse leagues**, select a competition, then choose it under
+**Teams from**. Select up to 64 favourites across clubs and countries.
+Selected teams are followed across all their competitions, including cups and
+international friendlies, regardless of the selected leagues.
 
-Turn **Football scores** on after choosing a league and freeing a widget
-position. Removing the last league switches it off. Completed, upcoming,
-postponed and suspended matches are excluded; half-time remains included.
-An empty live list shows **No selected teams playing now**.
+Live matches take priority. When none of the selected teams is playing, the
+widget shows each team's latest completed result, with the match date in the
+TV's local time zone and a **Latest results** label. A result between two
+selected opponents appears once. A team with no available completed match has
+an explicit no-result entry; a failed lookup is marked unavailable.
+
+With no teams selected, the widget shows all live matches from up to eight
+selected leagues or cups. **Clear team selection** returns to this mode.
+This mode has no per-team results to fall back to, so an empty list shows
+**No selected teams playing now**. Upcoming, postponed and suspended matches
+are excluded; half-time remains live.
+
+Turn **Football scores** on after choosing a league or team and freeing a
+widget position. Removing the final selection switches it off. Selections
+save immediately and survive restarts and backups.
 
 Matches stack vertically. A list taller than the compact widget scrolls upward
 in a continuous loop; a list that fits stays still. Focus the widget to pause.
@@ -183,13 +194,15 @@ in a continuous loop; a list that fits stays still. Focus the widget to pause.
 Reduced-motion preferences disable automatic scrolling; the expanded list
 remains available.
 
-Scores refresh once a minute while Home is visible. Polling and scrolling
-stop while Home is hidden or covered. A failed refresh removes the affected
-league's scores and shows an unavailable message; partial results are labelled
-**Some scores are unavailable**. Scores are not guaranteed to be instant.
+Scores refresh once a minute while Home is visible. Large or slow selections
+show loading progress and retry after five seconds. Polling and scrolling stop
+while Home is hidden or covered; provider requests already queued may finish.
+An unknown live state is never replaced by historical scores. A failed refresh
+removes affected scores; partial results are labelled **Some scores are
+unavailable**. Scores are not guaranteed to be instant.
 
 Browsing leagues or teams and enabling scores makes requests from the TV to
-ESPN, which receives its public IP address and the requested competitions.
+ESPN, which receives its public IP address and the requested competitions or teams.
 Browsing does not enable score polling. No account or API key is needed.
 The integration uses ESPN's public, undocumented endpoints: competition
 coverage, delays and availability may change. League and team lists are cached

@@ -1,9 +1,11 @@
 var assert = require('assert');
 var football = require('../server/lib/home-football');
-var time = Date.UTC(2026, 10, 7, 12, 30), jobs = [], result, other;
+var time = Date.UTC(2026, 10, 7, 12, 30), jobs = [], timers = [], result, other;
 function init() {
-  jobs = [];
-  football.init({ now: function () { return time; }, fetchJson: function (url, cb) { jobs.push({ url: url, reply: cb }); } });
+  jobs = []; timers = [];
+  football.init({ now: function () { return time; }, fetchJson: function (url, cb) { jobs.push({ url: url, reply: cb }); },
+    setTimeout: function (callback, ms) { var timer = { callback: callback, ms: ms }; timers.push(timer); return timer; },
+    clearTimeout: function (timer) { timer.cancelled = true; } });
 }
 function settings() { return { enabled: true, leagues: [{ id: 'fra.1', name: 'Ligue 1' }], teams: [] }; }
 function event(id, state, status, homeScore) {
@@ -28,14 +30,6 @@ jobs[0].reply(null, board());
 assert.strictEqual(result.matches.length, 2, 'only live games and half-time appear');
 assert.strictEqual(result.matches[0].home.score, 0, 'a zero score remains zero');
 assert.deepEqual(result, other);
-chosen.teams = [{ id: '20', name: 'Away FC' }];
-football.read(chosen, function (reply) { result = reply; });
-assert.strictEqual(result.matches.length, 2, 'away-team favourites are included');
-chosen.teams[0].id = '99';
-football.read(chosen, function (reply) { result = reply; });
-assert.strictEqual(result.matches.length, 0, 'unselected teams are hidden');
-assert.strictEqual(jobs.length, 1, 'filters share the cached league feed');
-chosen.teams = [];
 time += 60000;
 football.read(chosen, function (reply) { result = reply; });
 jobs[1].reply(new Error('offline'));
@@ -72,6 +66,80 @@ assert.ok(jobs[0].url.indexOf('dates=20261108') !== -1);
 assert.ok(jobs[1].url.indexOf('dates=20261107') !== -1);
 jobs[0].reply(null, { events: [] }); jobs[1].reply(null, board());
 assert.strictEqual(result.matches.length, 2);
+
+function favourites() { return { enabled: true, leagues: [], teams: [{ id: '20', name: 'Away FC' }] }; }
+function completed(id, date, score) {
+  var item = event(id, 'post', 'STATUS_FULL_TIME', { value: score });
+  item.date = date; item.league = { name: 'International Friendly' };
+  item.competitions[0].status.type.completed = true;
+  item.competitions[0].competitors[0].score = { value: 0 };
+  return item;
+}
+var recent = completed('201', '2026-11-07T20:00Z', 3), older = completed('202', '2026-10-01T20:00Z', 1);
+init(); chosen = favourites();
+football.read(chosen, function (reply) { result = reply; });
+assert.ok(jobs[0].url.indexOf('/all/teams/20/schedule?fixture=true') !== -1, 'national teams need no league and follow all competitions');
+jobs[0].reply(null, board());
+assert.strictEqual(result.mode, 'live');
+assert.strictEqual(result.matches.length, 2, 'away-team favourites are included');
+assert.strictEqual(jobs.length, 1, 'live games take priority over all historical results');
+football.read(chosen, function (reply) { result = reply; });
+assert.strictEqual(jobs.length, 1, 'team fixture requests are shared and cached');
+
+init();
+football.read(chosen, function (reply) { result = reply; });
+jobs[0].reply(null, { events: [] });
+assert.ok(jobs[1].url.indexOf('/all/teams/20/schedule') !== -1);
+var future = completed('203', '2027-01-01T20:00Z', 5), missingDate = completed('204', '', 2);
+jobs[1].reply(null, { events: [older, future, recent, missingDate, live] });
+assert.strictEqual(result.mode, 'latest');
+assert.strictEqual(result.matches.length, 1);
+assert.strictEqual(result.matches[0].id, '201', 'the latest completed result is chosen by date, never feed order');
+assert.strictEqual(result.matches[0].date, '2026-11-07T20:00:00.000Z');
+assert.strictEqual(result.matches[0].home.score, 3, 'schedule score objects are normalised');
+assert.strictEqual(result.matches[0].away.score, 0);
+assert.strictEqual(result.matches[0].league, 'International Friendly');
+
+init(); chosen.teams.push({ id: '10', name: 'Home FC' });
+football.read(chosen, function (reply) { result = reply; });
+jobs[0].reply(null, { events: [] }); jobs[1].reply(null, { events: [] });
+jobs[2].reply(null, { events: [recent] }); jobs[3].reply(null, { events: [recent] });
+assert.strictEqual(result.matches.length, 1, 'one result can cover two selected opponents without duplicate rows');
+assert.strictEqual(result.partial, false);
+
+init();
+football.read(chosen, function (reply) { result = reply; });
+jobs[0].reply(null, { events: [] }); jobs[1].reply(null, { events: [] });
+jobs[2].reply(null, { events: [] }); jobs[3].reply(new Error('offline'));
+assert.strictEqual(result.available, true);
+assert.strictEqual(result.partial, true);
+assert.deepEqual(result.missingTeams, [{ id: '20', name: 'Away FC', unavailable: false }, { id: '10', name: 'Home FC', unavailable: true }]);
+
+init(); chosen = favourites();
+football.read(chosen, function (reply) { result = reply; });
+jobs[0].reply(new Error('offline'));
+assert.strictEqual(result.available, false);
+assert.strictEqual(jobs.length, 1, 'an unknown live state is not replaced by historical scores');
+
+init();
+football.read(chosen, function (reply) { result = reply; });
+assert.strictEqual(timers[0].ms, 15000);
+timers[0].callback();
+assert.strictEqual(result.loading, true, 'large or slow selections return progress before the HTTP timeout');
+jobs[0].reply(null, { events: [] });
+football.read(chosen, function (reply) { result = reply; });
+assert.strictEqual(jobs.length, 2, 'a timed-out reader leaves the shared fetch cache usable');
+jobs[1].reply(null, { events: [recent] });
+assert.strictEqual(result.mode, 'latest');
+assert.strictEqual(result.loading, false);
+
+init(); chosen.teams = [];
+for (var n = 1; n <= 64; n++) chosen.teams.push({ id: String(n), name: 'Team ' + n });
+football.read(chosen, function (reply) { result = reply; });
+for (var j = 0; j < 128; j++) { assert.ok(jobs[j]); jobs[j].reply(null, { events: [] }); }
+assert.strictEqual(result.loading, false);
+assert.strictEqual(result.missingTeams.length, 64, 'every selected team gets a result or an explicit no-result entry');
+assert.strictEqual(jobs.length, 128);
 
 init();
 football.teams('../../bad', function (reply) { result = reply; });

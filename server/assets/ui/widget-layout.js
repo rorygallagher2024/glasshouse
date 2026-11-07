@@ -21,7 +21,7 @@ function homeWidgetLayoutReason(reason) {
   if (reason === 'previewDetails') return t('home.widgets.previewSpace', 'Picture details beside a top live preview also reserve the centre. Switch either one off to free it.');
   if (reason === 'off') return t('home.widgets.needOn', 'Turn this widget on before placing it.');
   if (reason === 'weatherLocation') return t('home.widgets.chooseCity', 'Choose a city before switching weather on.');
-  if (reason === 'footballLeagues') return t('home.football.chooseLeagues', 'Choose at least one league before switching football scores on.');
+  if (reason === 'footballLeagues') return t('home.football.chooseLeagues', 'Choose at least one league or team before switching football scores on.');
   if (reason === 'tooMany') return t('home.widgets.needLimit', 'Switch widgets off until no more than three are enabled.');
   if (reason === 'capacity') return t('home.widgets.needSpace', 'Free another zone or switch another widget off. Every enabled widget needs a free position.');
   return t('home.widgets.chooseWidget', 'Select a widget to choose its position.');

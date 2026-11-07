@@ -31,10 +31,17 @@ rendering and remote testing remain separate requirements.
 selection, zero scores, duplicate matches, midnight coverage, shared requests,
 bounded provider concurrency, expiry, failure backoff, partial results and
 league/team discovery. Replies and time are injected; it makes no live request.
+It also checks national teams without leagues, all-competition team fixtures,
+latest completed results selected by date, object-valued scores, missing/future
+results, shared-opponent deduplication, failure versus empty results, bounded
+read deadlines with detached waiters, and all 64 selected teams.
 The football browser check shares the Home widget group and exercises league
 and team selection, persistence, team-filter clearing, phone overflow in both
 themes, scrolling only on overflow, focus pause, expansion, empty/error states
 and stopping polling while covered. Match scores in browser tests are synthetic.
+National-team choices cover men and women, persistence and removal of the last
+selection. Latest-result checks cover dates, no-result entries, the expanded
+view and continued overflow scrolling.
 The ES5 check includes `assets/home-football-view.js` alongside the other Home
 widget scripts.
 

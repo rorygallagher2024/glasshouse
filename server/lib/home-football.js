@@ -5,6 +5,9 @@ var msg = require('./say').msg;
 var BASE = 'https://site.api.espn.com/apis/site/v2/';
 var cache = {}, queue = [], running = 0;
 var FRESH_MS = 60000, RETRY_MS = 30000, CATALOGUE_MS = 6 * 60 * 60000;
+var scheduleTimer = setTimeout, cancelTimer = clearTimeout, readTimers = [];
+// Return progress before Home's 20-second HTTP timeout, even for 64 teams.
+var READ_MS = 15000;
 
 function leagueId(value) { return typeof value === 'string' && value.length <= 64 && /^[a-z0-9_]+(\.[a-z0-9_]+){1,4}$/.test(value) ? value : ''; }
 function teamId(value) { return typeof value === 'string' && /^\d{1,12}$/.test(value) ? value : ''; }
@@ -24,7 +27,7 @@ function unavailable() { return { ok: true, available: false, matches: [] }; }
 function prune() {
   var keys = Object.keys(cache).filter(function (key) { return !cache[key].pending; });
   keys.sort(function (a, b) { return cache[a].used - cache[b].used; });
-  while (Object.keys(cache).length >= 32 && keys.length) delete cache[keys.shift()];
+  while (Object.keys(cache).length >= 160 && keys.length) delete cache[keys.shift()];
 }
 function pump() {
   if (running >= 2 || !queue.length) return;
@@ -44,15 +47,23 @@ function request(key, path, parse, ttl, cb) {
   var entry = cache[key];
   if (entry) {
     entry.used = now();
-    if (entry.pending) { entry.pending.push(cb); return; }
+    if (entry.pending) { entry.pending.push(cb); return detach(entry, cb); }
     if (now() < entry.next) return cb(entry.data, entry.updated);
   } else {
     prune();
-    if (Object.keys(cache).length >= 32) return cb(null);
+    if (Object.keys(cache).length >= 160) return cb(null);
     entry = { data: null, updated: 0, next: 0, used: now(), pending: null }; cache[key] = entry;
   }
   entry.pending = [cb];
   queue.push({ entry: entry, path: path, parse: parse, ttl: ttl }); pump();
+  return detach(entry, cb);
+}
+function detach(entry, cb) {
+  return function () {
+    if (!entry.pending) return;
+    var index = entry.pending.indexOf(cb);
+    if (index !== -1) entry.pending.splice(index, 1);
+  };
 }
 function leagues(cb) {
   request('leagues', 'leagues/dropdown?region=us&lang=en&sport=soccer', function (raw) {
@@ -75,20 +86,26 @@ function teams(id, cb) {
 function competitor(raw) {
   var team = raw && raw.team;
   if (!team || !teamId(team.id) || !text(team.displayName, 80)) return null;
-  var score = typeof raw.score === 'number' || typeof raw.score === 'string' ? String(raw.score) : '';
+  var value = raw.score && typeof raw.score === 'object' ? raw.score.value : raw.score;
+  var score = typeof value === 'number' || typeof value === 'string' ? String(value) : '';
   return { id: team.id, name: text(team.shortDisplayName || team.displayName, 80), score: /^\d{1,3}$/.test(score) ? +score : null };
 }
-function match(event) {
+function match(event, completed) {
   var game = event && event.competitions && event.competitions[0], status = game && game.status || event && event.status;
   var type = status && status.type;
-  if (!game || !type || type.state !== 'in' || type.completed || /SUSPEND|POSTPONE|DELAY|CANCEL|ABANDON|INTERRUPT/.test(type.name || '')) return null;
-  var sides = Array.isArray(game.competitors) ? game.competitors : [], home = null, away = null;
-  sides.forEach(function (side) {
-    if (side && side.homeAway === 'home') home = competitor(side);
-    if (side && side.homeAway === 'away') away = competitor(side);
-  });
+  if (!game || !type || /SUSPEND|POSTPONE|DELAY|CANCEL|ABANDON|INTERRUPT/.test(type.name || '')) return null;
+  if (completed ? type.state !== 'post' || type.completed !== true : type.state !== 'in' || type.completed) return null;
+  var sides = Array.isArray(game.competitors) ? game.competitors : [];
+  var home = competitor(sides.filter(function (side) { return side && side.homeAway === 'home'; })[0]);
+  var away = competitor(sides.filter(function (side) { return side && side.homeAway === 'away'; })[0]);
   if (!home || !away || !teamId(event.id)) return null;
-  return { id: event.id, home: home, away: away, status: text(type.shortDetail || status.displayClock || type.detail, 30) };
+  var result = { id: event.id, home: home, away: away, status: text(type.shortDetail || status.displayClock || type.detail, 30), date: '' };
+  if (completed) {
+    var date = typeof event.date === 'string' ? Date.parse(event.date) : NaN;
+    if (!isFinite(date) || date > now() || home.score === null || away.score === null) return null;
+    result.date = new Date(date).toISOString();
+  }
+  return result;
 }
 function dates() {
   function day(offset) { return new Date(now() + offset * 3600000).toISOString().slice(0, 10).replace(/-/g, ''); }
@@ -98,16 +115,14 @@ function dates() {
   if (previous !== days[0]) days.push(previous);
   return days;
 }
-function scores(settings, cb) {
-  settings = normalise(settings);
-  if (!settings.enabled || !settings.leagues.length) return cb(unavailable());
+function leagueScores(settings, cb) {
   var days = dates(), total = settings.leagues.length * days.length;
   var remaining = total, matches = [], failed = 0, updated = now();
   settings.leagues.forEach(function (league) {
     days.forEach(function (day) {
       request('scores:' + league.id + ':' + day, 'sports/soccer/' + league.id + '/scoreboard?limit=1000&dates=' + day, function (raw) {
         if (!raw || !Array.isArray(raw.events)) return null;
-        return raw.events.slice(0, 1000).map(match).filter(function (item) { return item !== null; });
+        return raw.events.slice(0, 1000).map(function (event) { return match(event, false); }).filter(function (item) { return item !== null; });
       }, FRESH_MS, function (data, time) {
         if (!data) failed++;
         else {
@@ -125,7 +140,62 @@ function scores(settings, cb) {
     });
   });
 }
+function teamSchedule(team, fixtures, cb) {
+  var path = 'sports/soccer/all/teams/' + team.id + '/schedule' + (fixtures ? '?fixture=true' : '');
+  return request((fixtures ? 'fixtures:' : 'results:') + team.id, path, function (raw) {
+    if (!raw || !Array.isArray(raw.events)) return null;
+    var matches = raw.events.slice(0, 500).map(function (event) {
+      var result = match(event, !fixtures);
+      if (!result || result.home.id !== team.id && result.away.id !== team.id) return null;
+      result.league = text(event.league && event.league.name, 80);
+      return result;
+    }).filter(function (item) { return item !== null; });
+    if (fixtures) return matches;
+    matches.sort(function (a, b) { return a.date < b.date ? 1 : a.date === b.date ? 0 : -1; });
+    return matches.slice(0, 1);
+  }, FRESH_MS, cb);
+}
+function collectTeams(teams, fixtures, deadline, cb) {
+  var pending = teams.length, failed = 0, matches = [], missing = [], cancels = [], finished = false, updated = now();
+  var timer = scheduleTimer(finish, Math.max(1, deadline - now())); readTimers.push(timer);
+  function finish() {
+    if (finished) return;
+    finished = true; cancelTimer(timer);
+    var index = readTimers.indexOf(timer); if (index !== -1) readTimers.splice(index, 1);
+    cancels.forEach(function (cancel) { if (cancel) cancel(); });
+    matches.sort(function (a, b) {
+      if (!fixtures && a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return a.id < b.id ? -1 : a.id === b.id ? 0 : 1;
+    });
+    cb({ ok: true, available: matches.length > 0 || pending === 0 && failed < teams.length,
+      loading: pending > 0, partial: failed > 0 || pending > 0, updated: updated,
+      matches: matches, missingTeams: missing });
+  }
+  teams.forEach(function (team) {
+    cancels.push(teamSchedule(team, fixtures, function (data, time) {
+      if (finished) return;
+      if (!data) failed++;
+      else updated = Math.min(updated, time);
+      if (!fixtures && (!data || !data.length)) missing.push({ id: team.id, name: team.name, unavailable: !data });
+      (data || []).forEach(function (item) { if (!matches.some(function (have) { return have.id === item.id; })) matches.push(item); });
+      if (!--pending) finish();
+    }));
+  });
+}
+function scores(settings, cb) {
+  settings = normalise(settings);
+  if (!settings.enabled || !settings.leagues.length && !settings.teams.length) return cb(unavailable());
+  if (!settings.teams.length) return leagueScores(settings, cb);
+  var deadline = now() + READ_MS;
+  collectTeams(settings.teams, true, deadline, function (live) {
+    if (live.matches.length || live.partial) { live.mode = 'live'; return cb(live); }
+    collectTeams(settings.teams, false, deadline, function (results) { results.mode = 'latest'; cb(results); });
+  });
+}
 module.exports = { normalise: normalise, leagues: leagues, teams: teams, read: scores, init: function (opts) {
   opts = opts || {}; fetchJson = opts.fetchJson || require('./fetch').getJson; now = opts.now || Date.now;
+  readTimers.forEach(function (timer) { cancelTimer(timer); }); readTimers = [];
+  scheduleTimer = opts.setTimeout || setTimeout; cancelTimer = opts.clearTimeout || clearTimeout;
+  READ_MS = opts.readMs || 15000;
   cache = {}; queue = []; running = 0;
 } };

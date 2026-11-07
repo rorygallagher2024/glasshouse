@@ -557,8 +557,8 @@ async function visitHomeFootball(browser, base, problems) {
   let layout = { rows: ['app'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] }, channels: [],
     showClock: true, showLastOn: false, picture: false, livePreview: false, hintSeen: true, searchHintSeen: true,
     widgets: require('../server/lib/home-widgets').normalise(null) };
-  let version = 1, scoreReads = 0, available = true, count = 9, covered = false, scoreChange = 0;
-  const matches = () => Array.from({ length: count }, (_, i) => ({ id: String(i + 1), league: 'Ligue 1', status: "42'",
+  let version = 1, scoreReads = 0, available = true, count = 9, covered = false, scoreChange = 0, mode = 'live', missingTeams = [];
+  const matches = () => Array.from({ length: count }, (_, i) => ({ id: String(i + 1), league: 'Ligue 1', status: "42'", date: mode === 'latest' ? '2026-11-07T20:00:00.000Z' : '',
     home: { id: '160', name: 'Paris Saint-Germain', score: i + scoreChange }, away: { id: '166', name: 'Lille', score: 0 } }));
   await page.route('**/api/home**', route => {
     const pathname = new URL(route.request().url()).pathname;
@@ -570,14 +570,32 @@ async function visitHomeFootball(browser, base, problems) {
       return reply({ ok: true, layout });
     }
     if (pathname.endsWith('/football/leagues')) return reply({ ok: true, leagues: [{ id: 'fra.1', name: 'Ligue 1' }, { id: 'eng.1', name: 'Premier League' }] });
-    if (pathname.endsWith('/football/teams')) return reply({ ok: true, teams: [{ id: '160', name: 'Paris Saint-Germain' }, { id: '166', name: 'Lille' }] });
-    if (pathname.endsWith('/widgets/football')) { scoreReads++; return reply({ ok: true, available, partial: false, updated: Date.now(), matches: available ? matches() : [] }); }
+    if (pathname.endsWith('/football/teams')) {
+      const league = route.request().postDataJSON().league;
+      return reply({ ok: true, teams: league === 'fifa.friendly' ? [{ id: '478', name: 'France' }] : league === 'fifa.friendly.w'
+        ? [{ id: '2752', name: 'France' }] : [{ id: '160', name: 'Paris Saint-Germain' }, { id: '166', name: 'Lille' }] });
+    }
+    if (pathname.endsWith('/widgets/football')) { scoreReads++; return reply({ ok: true, available, partial: false, mode, missingTeams, updated: Date.now(), matches: available ? matches() : [] }); }
     return reply({ ok: true, covered, build: 'football', layoutVersion: String(version) });
   });
   try {
     await page.goto(base + '/?tab=home');
     const widget = page.locator('#home-widgets');
     await widgetManager(page, 'widgets', 'football');
+    await widget.getByLabel('Teams from', { exact: true }).selectOption('fifa.friendly');
+    await widget.getByRole('checkbox', { name: 'France', exact: true }).check();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.football.teams[0]?.id === '478');
+    await page.locator('#home-widget-list').getByRole('button', { name: 'Football scores', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.football.enabled && !homeLayout.widgets.football.leagues.length);
+    await page.reload();
+    await widgetManager(page, 'widgets', 'football');
+    await widget.getByRole('button', { name: 'Remove France', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && !homeLayout.widgets.football.enabled && !homeLayout.widgets.football.teams.length);
+    await widget.getByLabel('Teams from', { exact: true }).selectOption('fifa.friendly.w');
+    await widget.getByRole('checkbox', { name: 'France', exact: true }).check();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.football.teams[0]?.id === '2752');
+    await widget.getByRole('button', { name: 'Remove France', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && !homeLayout.widgets.football.teams.length);
     await widget.getByRole('button', { name: 'Browse leagues', exact: true }).click();
     await widget.getByRole('checkbox', { name: 'Ligue 1', exact: true }).check();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.football.leagues.length === 1);
@@ -604,7 +622,7 @@ async function visitHomeFootball(browser, base, problems) {
       if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) problems.push('Football: phone overflow in ' + theme);
     }
     await page.setViewportSize({ width: 1280, height: 900 });
-    await widget.getByRole('button', { name: 'Show all teams in selected leagues', exact: true }).click();
+    await widget.getByRole('button', { name: 'Clear team selection', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && !homeLayout.widgets.football.teams.length);
     await page.clock.install();
     await page.goto(base + '/assets/home.html');
@@ -638,6 +656,19 @@ async function visitHomeFootball(browser, base, problems) {
     if (await page.locator('#widget-football .fw-group').count() !== 1) problems.push('Football: a list that fits was duplicated');
     count = 0; await readScores();
     await page.getByText('No selected teams playing now', { exact: true }).waitFor();
+    mode = 'latest'; count = 3;
+    layout.widgets.football.teams = [{ id: '160', name: 'Paris Saint-Germain' }, { id: '478', name: 'France' }]; version++;
+    missingTeams = [{ id: '478', name: 'France', unavailable: false }];
+    await readScores();
+    await page.getByText('Latest results · ESPN', { exact: true }).waitFor();
+    await page.locator('#widget-football .fw-group:not([aria-hidden])').getByText('No completed result available', { exact: true }).waitFor();
+    if (await page.locator('#widget-football .fw-group:not([aria-hidden]) .fw-meta').filter({ hasText: '2026' }).count() !== 3) problems.push('Football: latest results omitted their dates');
+    await page.locator('#widget-football .fw-scrolling').waitFor();
+    await page.locator('#widget-football').click();
+    await page.locator('#widget--panel').getByText('Latest results · ESPN', { exact: true }).waitFor();
+    if (await page.locator('#widget--panel .fw-row').count() !== 4) problems.push('Football: expanded results omitted a team or its missing-result entry');
+    await page.keyboard.press('Escape');
+    missingTeams = []; mode = 'live';
     available = false; await readScores();
     await page.getByText('Football scores unavailable', { exact: true }).waitFor();
     if (await page.locator('#widget-football .fw-row').count()) problems.push('Football: failed refresh retained old scores');

@@ -655,8 +655,8 @@ function setLayout(body, cb) {
     error: msg('srv.widgets.position', 'Choose different widget positions. Centre needs Last watched off; right needs Picture details and the top live preview off.') });
   if (widgets.weatherActive(next.widgets) && !next.widgets.weather.location) return cb({ ok: false,
     error: msg('srv.widgets.location', 'Choose a city before switching weather on.') });
-  if (next.widgets.football.enabled && !next.widgets.football.leagues.length) return cb({ ok: false,
-    error: msg('srv.football.selection', 'Choose at least one league before switching football scores on.') });
+  if (next.widgets.football.enabled && !next.widgets.football.leagues.length && !next.widgets.football.teams.length) return cb({ ok: false,
+    error: msg('srv.football.selection', 'Choose at least one league or team before switching football scores on.') });
   // A moved or emptied Internet TV row reorders, or removes from, its channels.
   if (iptvModule && body.order && isArray(body.order.iptv)) iptvModule.setOrder(stringList(body.order.iptv, 100));
   if (body.reset === true) {

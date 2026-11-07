@@ -105,4 +105,7 @@ settings.football.leagues = [{ id: 'fra.1', name: 'Ligue 1' }];
 home.setLayout({ widgets: settings }, function (r) { assert.strictEqual(r.ok, true); });
 assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')).widgets.football, settings.football);
 home.setLayout({ rowsBottom: false }, function (r) { assert.deepEqual(r.layout.widgets.football, settings.football); });
+settings.football.leagues = [];
+settings.football.teams = [{ id: '478', name: 'France' }];
+home.setLayout({ widgets: settings }, function (r) { assert.strictEqual(r.ok, true, 'a selected national team needs no league'); });
 console.log('test-home-widgets.js passed');

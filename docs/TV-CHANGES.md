@@ -230,9 +230,11 @@ The dashboard's TV app and the Homebrew Channel's app are static pages and open 
 ## Network
 
 The optional **Football scores** Home widget reads selected football leagues
-from ESPN once a minute while Home is visible. Browsing leagues and teams also
-contacts ESPN. Requests include the TV's public IP address and the requested
-competition, with no account or API key. Selections are saved in `home.json`
+or club/national teams from ESPN once a minute while Home is visible. Selected
+teams follow all competitions and show their latest dated results when none
+are live. Browsing leagues and teams also contacts ESPN. Requests include the
+TV's public IP address and the requested competition or team, with no account
+or API key. Selections are saved in `home.json`
 and settings backups; scores and discovery caches stay in memory. The widget
 is off by default, stops polling while Home is covered, and changes no LG
 settings. See [Home widgets](dashboard/widgets.md#football-scores).

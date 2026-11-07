@@ -79,7 +79,7 @@
         if (w.data && w.data.partial) host.appendChild(kit.node('p', 'wp-status', I18N.t('home.football.partial', 'Some scores are unavailable')));
         var scores = kit.node('div', 'fw-expanded'); host.appendChild(scores);
         /** @type {any} */ (window).FootballWidget.render(scores, w.data, false);
-        host.appendChild(kit.node('p', 'wp-foot', I18N.t('home.football.credit', 'Scores by ESPN')));
+        host.appendChild(kit.node('p', 'wp-foot', w.data && w.data.mode === 'latest' ? I18N.t('home.football.latestCredit', 'Latest results · ESPN') : I18N.t('home.football.credit', 'Scores by ESPN')));
       }
       else {
         if (w.data && w.data.stale) host.appendChild(kit.node('p', 'wp-status', I18N.t('home.widgets.outdated', 'Last available weather')));

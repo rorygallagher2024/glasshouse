@@ -57,7 +57,7 @@
     if (ids.length > 2) positions.forEach(function (p) { reasons = reasons.concat(requirements(layout, p)); });
     ids.forEach(function (id) { reasons = reasons.concat(requirements(layout, (layout.widgets.positions || {})[id])); });
     if (ids.some(function (id) { return weather(layout, id); }) && !layout.widgets.weather.location) reasons.push('weatherLocation');
-    if (enabled(layout, 'football') && !layout.widgets.football.leagues.length) reasons.push('footballLeagues');
+    if (enabled(layout, 'football') && !layout.widgets.football.leagues.length && !layout.widgets.football.teams.length) reasons.push('footballLeagues');
     if (!placement(layout).ok && !reasons.length) reasons.push('capacity');
     return unique(reasons);
   }
