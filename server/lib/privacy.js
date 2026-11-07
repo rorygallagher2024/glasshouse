@@ -130,6 +130,8 @@ var ADBLOCK_PLATFORM = [
   // to tell whether the TV is online, while Alexa runs; blocked, Alexa reads
   // the TV as offline.
   'avsxappcaptiveportal.com',
+  // Google push messaging is a service endpoint, not an ad or telemetry host.
+  'mtalk.google.com',
   // The content CDN on webOS 11, from sdx's server list (OLED77C5PUA, 11.2.0).
   'ngfts.tv.wiselg.com'
 ];

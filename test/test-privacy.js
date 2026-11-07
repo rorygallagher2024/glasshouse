@@ -177,6 +177,14 @@ test('Customer data host cdpsvc is blocked in both Ads & telemetry and Everythin
   assert.ok(fullList.indexOf('gb.cdpsvc.lgtvcommon.com') !== -1, 'regional cdpsvc must be in full mode');
 });
 
+test('Google push messaging is blocked only in Everything mode, on both address families', function () {
+  assert.ok(sinkholed(privacy.adBlockHostsTable('full'), 'mtalk.google.com'));
+  ['ads', 'off'].forEach(function (mode) {
+    assert.strictEqual(privacy.adBlockList(mode).indexOf('mtalk.google.com'), -1, mode);
+    assert.strictEqual(privacy.adBlockHostsTable(mode).indexOf('mtalk.google.com'), -1, mode);
+  });
+});
+
 test('webOS 11 upload hosts are in the Ads & telemetry tier, its platform is not', function () {
   var adsList = privacy.adBlockList('ads');
   assert.ok(adsList.indexOf('api.adts.lgtvcommon.com') !== -1, 'the ad log script\'s host');

@@ -7,6 +7,9 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
+`test-privacy.js` checks that `mtalk.google.com` is sinkholed on IPv4 and IPv6
+only in the Everything tier, and stays out of the Ads & telemetry and off tables.
+
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC
 EDID flag does not promote ARC, stale driver values do not become live audio,
