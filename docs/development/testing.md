@@ -20,6 +20,7 @@ request or TV command runs. The ES5 check includes all widget scripts.
 
 The widget browser check exercises dashboard settings, visible placement
 requirements and disabled positions, text/component imports and JSON editing,
+the saved city remaining in its field after selection and dashboard reload,
 invalid JSON feedback, literal text, zeros, icons and
 charts, remote expansion/closing, three-position layout, and pausing/resuming
 polling while covered. Widget ids such as `message`, `panel` and `panel-title`

@@ -602,6 +602,16 @@ async function visitHomeWidgets(browser, base, problems) {
     await widgets.getByRole('button', { name: 'Find city', exact: true }).click();
     await widgets.getByRole('button', { name: 'Paris, France', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.weather.location !== null);
+    if (await widgets.getByRole('searchbox', { name: 'City', exact: true }).inputValue() !== 'Paris, France') problems.push('Home widgets: choosing a city did not show the saved selection in the City field');
+    await page.reload();
+    await widgets.getByRole('searchbox', { name: 'City', exact: true }).waitFor();
+    if (await widgets.getByRole('searchbox', { name: 'City', exact: true }).inputValue() !== 'Paris, France') problems.push('Home widgets: reloading made the saved city disappear from the City field');
+    await widgets.getByRole('searchbox', { name: 'City', exact: true }).fill('');
+    await page.evaluate(() => renderHomeWidgets());
+    if (await widgets.getByRole('searchbox', { name: 'City', exact: true }).inputValue() !== '' || layout.widgets.weather.location.name !== 'Paris, France') problems.push('Home widgets: clearing a city search reset the saved selection or lost the empty draft');
+    await page.reload();
+    await widgets.getByRole('searchbox', { name: 'City', exact: true }).waitFor();
+    if (await widgets.getByRole('searchbox', { name: 'City', exact: true }).inputValue() !== 'Paris, France') problems.push('Home widgets: the saved city was not restored after clearing a search and reloading');
     await widgets.getByRole('button', { name: 'Weather', exact: true }).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.weather.enabled);
     await widgets.getByRole('button', { name: 'Move left', exact: true }).nth(1).click();

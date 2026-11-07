@@ -120,6 +120,9 @@ days shows the available days.
 
 The saved city and units also feed custom widgets whose data source is
 `weather`. Such a widget can be on while the built-in Weather widget is off.
+The **City** field shows the saved selection after a dashboard reload or
+Glasshouse update. Type a different name to search for another city; clearing
+the search field leaves the saved selection in place until another result is chosen.
 To stop all weather polling from Home, switch off Weather **and** every
 custom weather data widget. There is no automatic location detection or API
 key setting.

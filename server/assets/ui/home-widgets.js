@@ -1,6 +1,6 @@
 let homeWidgetLocations = [];
 let homeWidgetSearchBusy = false;
-let homeWidgetQuery = '';
+let homeWidgetQuery = null;
 let homeWidgetNote = '';
 const homeWidgetDrafts = new Map();
 
@@ -107,6 +107,10 @@ function homeWidgetClockFields(clock, off) {
   </div>`;
 }
 
+function homeWidgetCityQuery(weather) {
+  return homeWidgetQuery === null ? weather.location?.name || '' : homeWidgetQuery;
+}
+
 function homeWidgetWeatherFields(weather, off) {
   const searchOff = off || homeWidgetSearchBusy ? 'disabled' : '';
   return `<div class="home-widget-fields">
@@ -114,7 +118,7 @@ function homeWidgetWeatherFields(weather, off) {
       <a href="https://open-meteo.com/" target="_blank" rel="noopener">${esc(t('home.widgets.credit', 'Weather data by Open-Meteo (CC BY 4.0)'))}</a></div>
     <div class="prot-desc">${esc(weather.location ? weather.location.name : t('home.widgets.chooseCity', 'Choose a city before switching weather on.'))}</div>
     <form onsubmit="event.preventDefault(); homeWidgetSearch()" class="home-widget-search">
-      <label>${esc(t('home.widgets.city', 'City'))}<input id="home-widget-city" type="search" maxlength="80" minlength="2" required value="${esc(homeWidgetQuery)}" ${searchOff} oninput="homeWidgetQuery = this.value; homeWidgetLocations = []; homeWidgetNote = ''; q('home-widget-results').innerHTML = ''"></label>
+      <label>${esc(t('home.widgets.city', 'City'))}<input id="home-widget-city" type="search" maxlength="80" minlength="2" required value="${esc(homeWidgetCityQuery(weather))}" ${searchOff} oninput="homeWidgetQuery = this.value; homeWidgetLocations = []; homeWidgetNote = ''; q('home-widget-results').innerHTML = ''"></label>
       <button type="submit" class="pill idle" ${searchOff}>${esc(homeWidgetSearchBusy ? t('home.widgets.searching', 'Searching…') : t('home.widgets.searchButton', 'Find city'))}</button>
     </form>
     <div id="home-widget-results" aria-live="polite">${homeWidgetLocations.map((loc, i) => `<button type="button" class="pill idle" ${off} onclick="homeWidgetChoose(${i})">${esc(loc.name)}</button>`).join('')}${esc(homeWidgetNote)}</div>
@@ -175,7 +179,7 @@ function homeWidgetWindUnits(units) {
 
 async function homeWidgetSearch() {
   if (!homeWritable() || homeWidgetSearchBusy) return;
-  const query = homeWidgetQuery.trim();
+  const query = homeWidgetCityQuery(homeLayout.widgets.weather).trim();
   if (query.length < 2) return;
   homeWidgetLocations = [];
   homeWidgetNote = '';
@@ -196,7 +200,7 @@ function homeWidgetChoose(index) {
   widgets.weather.location = homeWidgetLocations[index];
   homeWidgetLocations = [];
   homeWidgetNote = '';
-  homeSaveLayout({ widgets });
+  homeSaveLayout({ widgets }, () => { homeWidgetQuery = null; });
 }
 
 async function homeWidgetImport(file) {
