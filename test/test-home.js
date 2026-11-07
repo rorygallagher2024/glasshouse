@@ -2652,4 +2652,41 @@ step('a healthy view is replaced by LG\'s Home if its heartbeats later stop', fu
   });
 });
 
+// A 75QNED80ARA (webOS 10.3.2) with Quick Start+ on: the heartbeat check, held
+// up by a deep suspend, fired as the TV resumed, before the view could beat,
+// and LG's Home took over (#1277). The grace periods are shortened here.
+step('a heartbeat check held up by a suspend waits for the view, and a real hang still falls back', function (done) {
+  var clock = Date.now();
+  start(null, { now: function () { return clock; }, beatGraceMs: 100, firstBeatGraceMs: 200 });
+  home.enable(function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.launched = [];
+    clock += 300000;   // five minutes asleep, none of it on the timer's clock
+    wait(150, function () {
+      assert.deepEqual(tv.launched, [], 'waking is not a hang');
+      assert.ok(taken(), 'Glasshouse Home keeps its place');
+      wait(250, function () {
+        assert.deepEqual(tv.launched, [LG_HOME], 'with no beat after the wake, it is one');
+        done();
+      });
+    });
+  });
+});
+
+step('switching the screen off ends the heartbeat check', function (done) {
+  start(null, { beatGraceMs: 100, firstBeatGraceMs: 200 });
+  home.enable(function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.launched = [];
+    power(false);
+    power(true);   // on again at once: a check left from before would fire in 100 ms
+    wait(250, function () {
+      assert.deepEqual(tv.launched, [], 'no check carried over the switch-off');
+      done();
+    });
+  });
+});
+
 next();
