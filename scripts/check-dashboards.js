@@ -105,7 +105,7 @@ async function startServer() {
   }
   let out = '';
   const srv = child.spawn(process.execPath, [path.join(ROOT, 'test', 'mocks', 'boot-server.js'), '--config', cfg], {
-    env: Object.assign({}, process.env, { FAKE_ROOT: root, TVWEB_LUNA_SEND: fake })
+    env: Object.assign({}, process.env, { FAKE_ROOT: root, TVWEB_LUNA_SEND: fake, FAKE_LAUNCH_GAP_MS: '0' })
   });
   srv.stdout.on('data', d => { out += d; });
   srv.stderr.on('data', d => { out += d; });
@@ -119,9 +119,11 @@ async function startServer() {
 }
 
 /*
- * Done once the tab's requests have all answered and none has started for
- * QUIET_MS - a tab's script runs when its data arrives, which is where it
- * breaks - or after MAX_MS, so a slow tab cannot hold the run up.
+ * Done once each address the tab has asked for has answered once and no new
+ * one has started for QUIET_MS - a tab's script runs when its data arrives,
+ * which is where it breaks - or after MAX_MS, so a slow tab cannot hold the
+ * run up. An address asked for again is the tab polling, which never stops:
+ * counted, nearly every tab ran to MAX_MS.
  */
 const QUIET_MS = 500, MAX_MS = 4000;
 
@@ -142,8 +144,19 @@ async function visit(browser, url, label, problems) {
     if (r.status() >= 400 && !expected) problems.push(label + ': ' + r.status() + ' for ' + r.url());
   });
   let open = 0, last = Date.now();
-  page.on('request', () => { open++; last = Date.now(); });
-  const done = () => { open = Math.max(0, open - 1); last = Date.now(); };
+  const asked = new Set(), first = new Set();
+  page.on('request', r => {
+    if (asked.has(r.url())) return;
+    asked.add(r.url());
+    first.add(r);
+    open++;
+    last = Date.now();
+  });
+  const done = r => {
+    if (!first.delete(r)) return;
+    open = Math.max(0, open - 1);
+    last = Date.now();
+  };
   page.on('requestfinished', done);
   page.on('requestfailed', done);
   await page.goto(url, { waitUntil: 'load' });
@@ -2581,27 +2594,31 @@ async function visitIptvChannels(browser, base, problems) {
 }
 
 /*
- * Four groups side by side, each against its own server and fake TV, as the
- * Home checks change the layout and uploads they read back. Within a group
- * the checks run in their order here. One after another this took 97 s in
- * CI; the slowest group sets the length now.
+ * Groups side by side, each against its own server and fake TV, as the Home
+ * checks change the layout and uploads they read back. Within a group the
+ * checks run in their order here, and the slowest group sets the run's
+ * length, so they are kept about even (20 to 25 s on a laptop). CI runs each
+ * job, its groups together, on a machine of its own: CHECK_JOB names one;
+ * without it every group runs.
  */
 function groups(web, tv) {
   return [
-    { tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations] },
-    { tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations] },
+    { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
-    { tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
-    { tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
-      visitHomeInternetTv, visitIptvChannels, visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
+    { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
+      visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
+      visitHomeFadeAndInputs] },
+    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels] },
     /*
      * Scrolling and motion read the row's place frame by frame, and missed
      * frames with the other groups sharing CI's four cores: 3 of 15 runs
-     * failed on them after the groups went side by side (#1126). Their server
-     * starts with the rest; they run once the rest are done.
+     * failed on them after the groups went side by side (#1126). On CI they
+     * have a machine to themselves; run with the rest, they wait for them.
      */
-    { tabs: [], visits: [visitHomeScrolling, visitHomeMotion], alone: true }
-  ];
+    { job: 'motion', tabs: [], visits: [visitHomeScrolling, visitHomeMotion], alone: true }
+  ].filter(g => !process.env.CHECK_JOB || g.job === process.env.CHECK_JOB);
 }
 
 async function runGroup(browser, group, problems, after) {
@@ -2658,7 +2675,9 @@ async function runVisit(visitOne, browser, base, problems) {
   await browser.close();
   for (const f of flaky) console.log('flaky: ' + f);
   for (const p of problems) console.log(p);
-  console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'TV navigation and LCD profile, Home arranging, picture, preview and its options, animated backgrounds, visibility, colours, fading and inputs, update, editing, order, uploads, custom launcher, readiness, availability, recents, scrolling, motion, guide, search, Internet TV and its channel manager checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+  const opened = all.reduce((n, g) => n + g.tabs.length, 0);
+  const checks = all.reduce((n, g) => n + g.visits.length, 0);
+  console.log((process.env.CHECK_JOB ? process.env.CHECK_JOB + ': ' : '') + opened + ' tabs opened and ' + checks +
+              ' checks run, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });
