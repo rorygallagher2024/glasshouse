@@ -23,6 +23,8 @@ value and detail of your own, editable here. It starts off; switch a widget
 off to free a slot. Up to eight text widgets can be kept. With two widgets,
 live preview uses smaller source text so its picture and details fit.
 Custom launchers have their own layout and do not use these widgets.
+The [Home widgets guide](widgets.md) covers setup, text imports, privacy,
+backups and troubleshooting.
 
 <div class="grid cards" markdown>
 

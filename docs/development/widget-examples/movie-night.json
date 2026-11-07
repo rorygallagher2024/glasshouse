@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "type": "text",
+  "id": "movie-night",
+  "name": "Movie night",
+  "value": "Friday at 20:00",
+  "detail": "Bring popcorn"
+}

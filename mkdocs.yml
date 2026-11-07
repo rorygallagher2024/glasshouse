@@ -44,6 +44,7 @@ nav:
       - Metrics: dashboard/metrics.md
       - Apps: dashboard/apps.md
       - Home: dashboard/home.md
+      - Home widgets: dashboard/widgets.md
       - Privacy: dashboard/privacy.md
       - OLED Care: dashboard/oled-care.md
       - Game: dashboard/game.md

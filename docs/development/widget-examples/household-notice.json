@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "type": "text",
+  "id": "household-notice",
+  "name": "Notice",
+  "value": "Quiet hours",
+  "detail": "After 22:00"
+}
