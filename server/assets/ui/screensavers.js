@@ -89,9 +89,11 @@ async function loadScreensavers() {
   const ours = d.current !== 'stock' && !d.modes.some(m => m.active && m.fromApp);
   q('ss-level-row').hidden = !ours;
   if (ours) {
-    q('ss-level').innerHTML = [['dim', t('ss.dim', 'Dim')], ['bright', t('ss.bright', 'Bright')]].map(([id, label]) =>
+    const labels = { bright: t('ss.bright', 'Bright'), dim: t('ss.dim', 'Dim'),
+                     dimmer: t('ss.dimmer', 'Dimmer'), dimmest: t('ss.dimmest', 'Dimmest') };
+    q('ss-level').innerHTML = (d.levels || ['bright', 'dim']).map(id =>
       `<button class="ss-lvl${d.level === id ? ' on' : ''}" data-level="${id}"
-               ${locked ? 'disabled' : ''}>${label}</button>`).join('');
+               ${locked ? 'disabled' : ''}>${labels[id] || id}</button>`).join('');
   }
 
   /* Where LG's screen saver is built differently from ours, the TV has to

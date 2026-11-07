@@ -94,6 +94,21 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   console.log('  ✓ staging copies the folder and fills in only what uses asks for');
 })();
 
+// 5b. The levels below dim draw the dim picture under a black veil
+(function testDarkerLevels() {
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'clock-date';
+  [['bright', 1, '0'], ['dim', 0, '0'], ['dimmer', 0, '0.6'], ['dimmest', 0, '0.85'],
+   ['nonsense', 0, '0']].forEach(function (c) {
+    env.files[path.join(APP, '.tvweb-brightness')] = c[0];
+    screensavers.restageScreensaver();
+    var main = env.files[path.join(STAGE, 'qml', 'main.qml')];
+    assert.ok(main.indexOf('property int level: ' + c[1]) !== -1, c[0] + ': level');
+    assert.ok(main.indexOf('opacity: ' + c[2] + '\n') !== -1, c[0] + ': veil');
+    assert.strictEqual(main.indexOf('__TVWEB_'), -1, c[0] + ': no placeholder left');
+  });
+  console.log('  ✓ dimmer and dimmest stage the dim picture under a veil');
+})();
+
 // 6. A built-in that asks for stats gets the address, with the token
 (function testStats() {
   screensavers.init({
