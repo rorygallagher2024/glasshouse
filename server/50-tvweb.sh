@@ -111,6 +111,20 @@ sam_units() {
   systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null |
     sed -n 's/^[^A-Za-z0-9]*\([A-Za-z0-9@._-]*\.service\)$/\1/p'
 }
+# LG's HDMI input service subscribes to sam's foreground app only when it
+# starts, so after sam is restarted it sees no app in front and refuses every
+# EDID update for the input on screen: a source stays on the basic EDID (an
+# Apple TV sent a 55UP77 on webOS 6.5.3 only PCM). It is restarted once sam
+# answers, where the TV has it. Mirrors RESUBSCRIBE_HDMI_INPUTS in
+# lib/samrescan.js.
+hdmi_inputs_resubscribe() {
+  systemctl cat extinput-integration.service >/dev/null 2>&1 || return 0
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+    luna-send -n 1 luna://com.webos.applicationManager/getForegroundAppInfo '{}' 2>/dev/null | grep -q '"returnValue": *true' && break
+    sleep 1
+  done
+  systemctl restart --no-block extinput-integration.service >/dev/null 2>&1 || true
+}
 sam_restart() {
   if command -v systemctl >/dev/null 2>&1; then
     systemctl reset-failed sam.service >/dev/null 2>&1 || true
@@ -123,6 +137,7 @@ sam_restart() {
       systemctl reset-failed "$u"
       systemctl start --no-block "$u"
     done
+    hdmi_inputs_resubscribe
   elif command -v initctl >/dev/null 2>&1; then
     initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true
     # Upstart does not restart dependent jobs, so eim is restarted here.
@@ -383,6 +398,7 @@ elif [ "$tile_hiding_allowed" -eq 1 ] && [ ! -f /var/lib/tvweb/.from-homebrew-ch
         break
       fi
     done
+    command -v systemctl >/dev/null 2>&1 && hdmi_inputs_resubscribe
 
     # If the user was on an HDMI port or any non-home app, immediately restore it
     # so they are never stranded on the Home screen
