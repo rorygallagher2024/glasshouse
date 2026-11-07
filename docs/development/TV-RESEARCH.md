@@ -2884,3 +2884,30 @@ callback, the case that aborted every time, and its first is the process's
 first child, as the first `iptables` call at server start was. The worker
 waits a turn before each one and tries one aborted before any of its body
 arrived once more.
+
+## Source EDIDs after sam restarts (55UP77006LB, webOS 6.5.3)
+
+LG's HDMI input service, `/usr/sbin/extinput-integration`, subscribes to
+`com.webos.service.applicationmanager/getForegroundAppInfo` once, from
+`AdapterApplicationManager::initialize`, and nothing subscribes again. When
+sam is killed and comes back, the service keeps an empty foreground app:
+its log printed `[getForegroundAppId] :: appId : ` while sam itself reported
+`com.webos.app.hdmi1`. `convertAppId` maps an unmatched id to app type
+`0x0d`.
+
+`EdidControl::decideEdidType`, run with port `0xff` when an input's audio
+format setting changes, takes the input from the app type and accepts only
+types 7 to 10. Otherwise it logs `[SKIP] Don't update EDID [Cause : Invalid
+App type] [app type : 0x0d]` and leaves the input on its basic EDID. With
+the service subscribed, the same change logged `Convert HDMI port index :
+'255' => '1'` and `request HDMI(1) edid update [type : 2]`, and HDMI 1's
+Bitstream EDID changed from checksum `(48,ba)` to `(48,2b)`; PCM stayed
+`(48,8e)`.
+
+With Glasshouse Home's boot hook restarting sam (webOS 5 and 6), an Apple TV
+on HDMI 1 sent only PCM all day, which the TV passed on as PCM to an eARC
+soundbar (`KHAL_AUDIO_SNDOUT_eARC_OutputType ... codec_type 1`). After
+`systemctl restart extinput-integration` it sent MAT (`StartDecoding ADEC1
+type MAT`), passed through over eARC (`codec_type 7`), and reported Atmos
+available. Nothing requires the unit; restarting it with HDMI 1 in front
+re-wrote that input's EDID and hot-plugged it, and the app stayed in front.
