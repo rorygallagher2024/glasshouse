@@ -649,7 +649,7 @@ function optionRows(d) {
   // Glasshouse's own, beside LG's: the scans themselves, held down where off.
   if (d.deviceScans !== undefined) {
     r.push(toggle(t('adv.deviceScans', 'Network device scans'), d.deviceScans, 'deviceScans',
-      t('tv.options.deviceScans.hint', 'The TV looking up every address on your home network, which a network-wide ad blocker shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG\u2019s device setup.')));
+      t('tv.options.deviceScans.hint', 'The TV looking up every address on your home network, which a network-wide ad blocker shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG\u2019s device setup. Off also stops the Magic Remote controlling a set-top box through LG\u2019s universal control.')));
   }
   if (lights.standby !== undefined || lights.hasLogo) {
     r.push(head(t('adv.frontLights', 'Front lights')));

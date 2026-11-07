@@ -1883,6 +1883,15 @@ it found).
   5-minute sweeps stopped and a full one came an hour later, then none for
   15 minutes. What asks for it, or whether `iconnectivity` keeps a timer of its
   own, was not found. Holding `iconnectivity` down stops it as well.
+- **It is also universal control's IR blaster.** LG's settings and
+  connection apps ask `com.webos.service.ics/blaster/` (`getURLforUEIDevices`,
+  `deleteIPConnectionHistory`), and the input app reads a set-top box's set-up
+  from it. On the C2, `blaster/getURLforUEIDevices {}` answered at once with
+  QuickSet running (error 322, with no box set up) and not at all with it held
+  down. Two owners with it held down had a set-top box stop answering the
+  Magic Remote a few seconds after the TV started, and LG's Universal Remote
+  settings spin and fail, until it was back (an A1 on webOS 6.3.1, a C2;
+  #1266).
 
 ## Boot and app state (webOS 9.2.2, C2)
 

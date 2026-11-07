@@ -90,6 +90,9 @@ var CATALOG = [
    * detection, which on webOS 11 does not stop it (#1260), so it is not listed
    * with the others.
    */
+  // QuickSet is also universal control's IR blaster (com.webos.service.ics/blaster):
+  // held down, a set-top box set up for it stops answering the Magic Remote a few
+  // seconds after start, and LG's set-up hangs (#1266).
   {
     id: 'iconnectivity',
     bin: 'iconnectivity',
