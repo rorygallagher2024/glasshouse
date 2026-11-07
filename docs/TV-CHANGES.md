@@ -147,14 +147,23 @@ Glasshouse Home leaves empty rows out and centres the remaining rows below the c
 
 Glasshouse Home's text and accent colours are saved in `/var/lib/tvweb/home.json` and applied to its view within a few seconds. **Use the default colours** clears the choice.
 
-The top widget order, clock format and date visibility, weather city and unit,
-and imported text widgets are also saved in `home.json` and included in
-settings backups. Two widgets can be shown at once. Weather is off by default;
-explicit city searches use Open-Meteo's geocoding service, and enabling it
-allows forecast reads with that city's coordinates and the TV's public IP
-address. Readings stay in memory, fresh for 15 minutes, with a five-minute
-retry delay and six-hour limit on old readings. Home pauses polling while
-covered. Imported text widgets run no code and fetch nothing.
+Top widget positions, order, clock settings, weather city and units, and
+imported text or component definitions are saved in `home.json` and included
+in settings backups. Up to three fixed-size widgets fit when Last watched,
+Picture details and the top live preview are off. Centre requires Last watched
+off; right requires Picture details and the top preview off. Picture details
+beside a top preview also reserve centre. The dashboard explains these rules
+and disables reserved choices; conflicting saves are refused. Home's remote
+can select, expand and position widgets.
+
+Weather and custom weather data widgets are off by default. Explicit city
+searches contact Open-Meteo's geocoding service; enabling any weather consumer
+permits hourly and 10-day forecast reads using the saved coordinates and units
+and the TV's public IP address. Readings stay in memory, fresh for 15 minutes,
+with a five-minute retry delay and six-hour stale limit. Home pauses polling
+while hidden or covered. Text and static widgets fetch nothing; a TV-statistics
+widget reads the existing local stats snapshot every 60 seconds while visible.
+Definitions run no uploaded code and cannot specify external URLs.
 
 Glasshouse Home's **Last watched**, **App count** and **CEC addresses** switches are saved in `/var/lib/tvweb/home.json`, on unless switched off. Both dashboards edit the same choices, which reach an open Home view through its heartbeat. The source stays hidden until the saved layout loads.
 

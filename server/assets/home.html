@@ -63,6 +63,68 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .widgets-two.previewing #srcKind,.widgets-two.previewing #srcVia{font-size:20px}
 .widgets-two #preview.info{margin-left:340px}
 .widgets-two #pvInfo{width:308px}
+.home-widget:focus,#when:focus{outline:none}
+.home-widget.widget-focus,#when.widget-focus{outline:2px solid #ece7df;outline-offset:6px}
+body.widget-focused .tile.focus{outline-color:transparent}
+.widget-rich{padding:8px 0}
+.widget-rich .widget-name{font-size:20px;line-height:24px}
+.widget-rich .widget-status{font-size:15px;line-height:18px;margin-top:2px}
+.widget-weather-summary{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:46px}
+.widget-weather-summary>svg{width:34px;height:34px;margin-right:10px;-webkit-flex:0 0 auto;flex:0 0 auto}
+.widget-rich .widget-value{font-size:40px;line-height:44px}
+.widget-weather-summary .widget-detail{font-size:17px;margin-left:12px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.wk-chart{color:#e9ad55;min-width:0}
+.wk-chart-caption{display:-webkit-flex;display:flex;-webkit-justify-content:space-between;justify-content:space-between;font-size:22px;line-height:1.3;white-space:nowrap;overflow:hidden}
+.wk-range{font-size:.75em;margin-left:12px;color:#a39d93}
+.wk-chart>svg{display:block;width:100%;height:166px;font-size:18px;font-family:'Manrope',sans-serif}
+.wk-empty{color:#a39d93;font-size:23px;padding:12px 0}
+.widget-rich .wk-chart-caption{font-size:12px;line-height:16px}
+.widget-rich .wk-chart>svg{height:30px}
+.widget-rich .wk-empty{padding:3px 0;font-size:14px;line-height:27px}
+.wk-component{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;min-width:0;margin:3px 0;overflow:hidden}
+.wk-component>svg{width:32px;height:32px;margin-right:12px;-webkit-flex:0 0 auto;flex:0 0 auto}
+.wk-data-text{min-width:0}
+.wk-data-label{font-size:15px;display:inline-block;margin-right:12px;color:#a39d93}
+.wk-data-value{font-family:'Outfit',sans-serif;font-size:28px;font-weight:400}
+.wk-text,.wk-icon{font-size:22px;white-space:nowrap;text-overflow:ellipsis}
+.widget-panel{position:absolute;left:0;top:0;width:1920px;height:1080px;padding:62px 112px;background:#0a0908;z-index:30}
+.wp-header{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;margin-bottom:30px}
+.wp-header h1{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0;font-family:'Outfit',sans-serif;font-size:46px;font-weight:300;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wp-close{background:transparent;border:1px solid #a39d93;color:#ece7df;font:24px 'Manrope',sans-serif;padding:12px 28px;margin-left:32px}
+.wp-close:focus{outline:2px solid #ece7df;outline-offset:5px}
+.wp-content{height:825px;overflow-y:auto;padding:8px 12px 24px 0}
+.wp-charts{display:-webkit-flex;display:flex;margin-bottom:30px}
+.wp-charts>.wk-chart{-webkit-flex:1 1 0;flex:1 1 0;min-width:0}
+.wp-charts>.wk-chart+.wk-chart{margin-left:44px;color:#a39d93}
+.wp-content h2{font-family:'Outfit',sans-serif;font-size:34px;font-weight:400;margin:20px 0}
+.wp-days{display:-webkit-flex;display:flex}
+.wp-day{-webkit-flex:1 1 0;flex:1 1 0;min-width:0;padding:16px 10px;border-top:1px solid #2a2825;text-align:center}
+.wp-day+.wp-day{margin-left:10px}
+.wp-day-date{font-size:20px;margin-bottom:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wp-day>svg{display:block;width:48px;height:48px;margin:0 auto 12px}
+.wp-high{font-family:'Outfit',sans-serif;font-size:32px}
+.wp-low{color:#a39d93;font-size:23px;margin-bottom:14px}
+.wp-day-metric{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;font-size:17px;margin:8px 0}
+.wp-day-metric svg{width:20px;height:20px;margin-right:6px}
+.wp-foot,.wp-status{font-size:21px;color:#a39d93;margin:8px 0 24px}
+.wp-components>.wk-chart{margin-bottom:28px}
+.wp-components .wk-component{margin-bottom:24px}
+.wp-components .wk-data-label{font-size:24px}
+.wp-components .wk-data-value{font-size:42px}
+.widget-message{position:absolute;left:112px;right:112px;bottom:16px;font-size:23px;color:#ece7df;text-shadow:0 2px 8px #000;z-index:31;pointer-events:none}
+body.widget-expanded #rows,body.widget-expanded #rail{visibility:hidden}
+#now.widget-positioned #widgets{position:absolute;left:112px;right:112px;top:62px;height:200px;display:block;min-width:0;pointer-events:none}
+.widget-positioned #widgets>div{position:absolute;top:0;margin-left:0;pointer-events:auto}
+.widget-positioned #widgets>[data-position=left]{left:0}
+.widget-positioned #widgets>[data-position=center]{left:50%;margin-left:-180px}
+.widget-positioned #widgets>[data-position=right]{right:0}
+#now.widget-positioned #source{position:absolute;left:50%;margin-left:-226px;width:452px;bottom:0}
+#now.widget-positioned #plate{position:absolute;right:112px;bottom:0;margin:0;max-width:640px}
+#now.widget-positioned #preview{position:absolute;right:112px;bottom:0;margin:0}
+#now.widget-positioned #pvInfo{width:308px}
+#now.widget-positioned.previewing #source{width:400px}
+.alternative #now.widget-positioned #widgets{left:90px;right:90px;text-align:left}
+.alternative #now.widget-positioned #plate,.alternative #now.widget-positioned #preview{right:90px}
 /* The hour cycle, in 12-hour time only: small enough to stay inside #when,
    which is sized for the digits alone. */
 #mer{font-size:.28em;letter-spacing:0;margin-left:.1em;opacity:.75;font-weight:400}
@@ -672,6 +734,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 </div>
 
 <script src="/assets/i18n.js"></script>
+<script src="/assets/widget-kit.js"></script>
+<script src="/assets/home-widget-panel.js"></script>
 <script src="/assets/home-widgets-view.js"></script>
 <script>
 /*
@@ -1469,6 +1533,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var d = e.deltaY !== undefined ? e.deltaY : -e.wheelDelta;
     if (e.deltaX && Math.abs(e.deltaX) > Math.abs(d || 0)) d = e.deltaX;
     if (!d) return;
+    if (window.GlasshouseWidgets.scroll(d)) return;
     var key = hoverKey || (recents.open ? 'recents' : rowKey());
     var m = measure(key), tile = m && m.track.querySelector('.tile');
     if (!tile) return;
@@ -1731,6 +1796,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   function move(dr, dc) {
+    if (dr < 0 && !state.arranging && state.row === nextShown(0, 1) && window.GlasshouseWidgets.focus()) return;
     var onSort = colOf(rowKey()) === -1;
     // Left of any row's first tile is the search rail, outside arranging;
     // right goes back to the tile it came from.
@@ -1837,7 +1903,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       // As on the row: a channel that cannot play is not previewed.
       return gi && playable(gi) ? { key: 'tv' + gi.id, row: 'iptv', item: gi, port: 0, tv: true } : null;
     }
-    if (state.arranging || recents.open || finder.open || folder.open || adder.open) {
+    if (state.arranging || recents.open || finder.open || folder.open || adder.open || window.GlasshouseWidgets.isOpen()) {
       tilePreview.opened = null;
       return null;
     }
@@ -1928,7 +1994,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       tilePreview.target = next;
       if ($('preview').className) {
         // A rebuilt row, another tile on the same input, or the place switched on a dashboard.
-        if (inTile() !== tilePreview.inTile) { tilePreview.inTile = inTile(); $('now').className = tilePreview.inTile ? '' : 'previewing'; moved = true; }
+        if (inTile() !== tilePreview.inTile) { tilePreview.inTile = inTile(); $('now').classList.toggle('previewing', !tilePreview.inTile); moved = true; }
         placePreview();
         if (moved) renderNow();
       }
@@ -1978,7 +2044,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (wasTv) stopTvStream();
     else releaseVideo();
     $('preview').className = '';
-    $('now').className = '';
+    $('now').classList.remove('previewing');
     parkPreview();
     if (!shown) return;
     renderNow();
@@ -2067,7 +2133,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('preview').className = 'on';
     tilePreview.inTile = inTile();
     placePreview();
-    $('now').className = tilePreview.inTile ? '' : 'previewing';
+    $('now').classList.toggle('previewing', !tilePreview.inTile);
     renderNow();
     tilePreview.timer = setTimeout(function () { if (gen === tilePreview.gen && !tilePreview.playing) blankPreview(); }, TV_PREVIEW_START_MS);
   }
@@ -2096,7 +2162,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('preview').className = 'on';
     tilePreview.inTile = inTile();
     placePreview();
-    $('now').className = tilePreview.inTile ? '' : 'previewing';
+    $('now').classList.toggle('previewing', !tilePreview.inTile);
     renderNow();
     tilePreview.timer = setTimeout(function () { if (current() && !tilePreview.playing) blankPreview(); }, PREVIEW_START_MS);
   }
@@ -2519,7 +2585,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       pv.className = 'on full';
       startPlayerStream();
     }
-    $('now').className = 'previewing';
+    $('now').classList.add('previewing');
     stageClass();
     showBand();
     renderPmsg();
@@ -2629,7 +2695,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     } else {
       stopTvStream();
       pv.className = '';
-      $('now').className = '';
+      $('now').classList.remove('previewing');
     }
     stageClass();
     render();
@@ -4068,6 +4134,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     stopPointing();
     landAll();
     if (!data || !layout) return;
+    if ((window.GlasshouseWidgets.isOpen() || !player.open && !guide.open && !adder.open && !finder.open && !folder.open && !recents.open && !state.arranging) && window.GlasshouseWidgets.key(e, false)) return;
     if (player.open) {
       e.preventDefault();
       // OK held repeats on webOS: acted on once, at its first press.
@@ -4146,6 +4213,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   function onKeyUp(e) {
+    if (window.GlasshouseWidgets.key(e, true)) return;
     if (e.keyCode === KEY.back) { backDown = false; return; }
     if (e.keyCode === KEY.ok) { finder.okDown = false; player.okDown = false; adder.okDown = false; guide.okDown = false; }
     if (player.open || adder.open || guide.open) return;
@@ -4170,6 +4238,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return null;
   }
   function onPointer(e) {
+    if (window.GlasshouseWidgets.isOpen()) return;
+    if (tileAt(e.target) && !window.GlasshouseWidgets.isOpen()) window.GlasshouseWidgets.blur();
     pointerX = e.clientX;
     pointerY = e.clientY;
     pointing = true;
@@ -4222,6 +4292,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   function onClick(e) {
     if (!data || !layout || layoutBusy) return;
+    if (window.GlasshouseWidgets.isOpen()) return;
     if (player.open) return playerClick(e.target);
     if (guide.open) return guideClick(e.target);
     if (adder.open) return adderClick(e.target);
@@ -4235,6 +4306,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (finder.open) return finderClick(e.target);
     if (!state.arranging && searchOn() && within(e.target, 'rail')) return openSearch();
     var btn = e.target && e.target.id;
+    if (tileAt(e.target)) window.GlasshouseWidgets.blur();
     if (BAR.indexOf(btn) !== -1) return pressBar(BAR.indexOf(btn));
     if (state.arranging && /\bsort\b/.test(e.target.className || '')) {
       var sortRow = e.target.parentNode.parentNode;
@@ -5237,6 +5309,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   function returned() {
+    window.GlasshouseWidgets.reset();
     tilePreview.opened = null;
     var dark = faded;
     if (!dark) fadeIn();
@@ -5273,6 +5346,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   window.addEventListener('resize', fit);
+  window.GlasshouseWidgets.configure({
+    saved: function (reply) { layout = reply.layout; layoutVersion = reply.layoutVersion; renderNow(); render(); },
+    opened: function (open) { if (open) { stopPointing(); stopPreview(); } else followPreview(); },
+    canInteract: function () { return !layoutBusy && !player.open && !guide.open && !adder.open && !finder.open && !folder.open && !recents.open && !state.arranging; }
+  });
   document.addEventListener('keydown', onKeyDown, true);
   document.addEventListener('keyup', onKeyUp, true);
   document.addEventListener('mousemove', onPointer);

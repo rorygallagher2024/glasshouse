@@ -1,17 +1,25 @@
 # Writing a widget
 
-Version 1 supports declarative text widgets in Glasshouse Home's two fixed
-slots. A widget file describes its text; it contains no executable code.
-The built-in Clock and date and Weather use the same space but have their
-own settings and data handling.
+Glasshouse Home accepts declarative JSON widgets. Version 1 text widgets stay
+compatible; version 2 adds icons, bound data and SVG line or bar charts.
+Uploaded code never runs in Home's privileged web app. For setup, positions,
+remote controls and privacy, see the [Home widgets guide](../dashboard/widgets.md).
 
-For dashboard setup, screenshots and troubleshooting, see the
-[Home widgets guide](../dashboard/widgets.md).
+## Display and installation
 
-## Create and import a widget
+Each compact widget occupies **360 × 200** logical pixels in Home's
+1920 × 1080 stage. Keep labels short and use the expanded view for larger
+charts. The stage scales to the display; a higher TV resolution adds no
+widget space. Up to three widgets fit, subject to the
+[placement rules](../dashboard/widgets.md#position-and-visibility).
 
-Save this as a UTF-8 plain-text file named `movie-night.json`, or download
-the [same example](widget-examples/movie-night.json):
+Save UTF-8 JSON and import it under **Home > Top widgets > Import a widget
+(.json)** on the web dashboard. A new or replacement import starts off. Up to
+eight custom definitions can be stored, whether enabled or disabled. A matching
+id replaces a definition. The dashboard edits text fields for version 1 and
+JSON for version 2. Re-importing a file is another way to update it.
+
+## Version 1: text
 
 ```json
 {
@@ -24,312 +32,220 @@ the [same example](widget-examples/movie-night.json):
 }
 ```
 
-The [household-notice example](widget-examples/household-notice.json) is a
-second complete file. Its different id allows both to be installed.
+The import file limit is 4 KB. `name` and `value` are required, up to 40
+characters; `detail` is optional, up to 100. Strings are trimmed and control
+characters removed. Long lines are ellipsised. Text is literal, including HTML.
 
-On the web dashboard, choose **Home > Home customisation > Top widgets >
-Import a text widget (.json)**. Select the file, review its text, then
-switch it on. Free a slot first if two widgets are already enabled.
-
-An import always starts disabled, even if its file includes `"enabled":
-true`. The dashboard can edit the text with **Save widget**. Importing the
-same id replaces that widget's text and disables it again; a new id adds
-another widget at the end of the order. Up to eight text widgets can be
-installed in addition to the two built-ins.
-
-## File format
-
-The dashboard accepts files up to 4,096 bytes. JSON must use double quotes,
-with no comments or trailing commas. The file name is arbitrary; `id` is
-the widget's identity.
-
-| Field | Type | Required | Accepted value |
-| :--- | :--- | :--- | :--- |
-| `version` | Number | Yes | `1`, not the string `"1"`. |
-| `type` | String | Yes | `"text"`. |
-| `id` | String | Yes | 1–40 ASCII characters matching `^[a-z][a-z0-9-]{0,39}$`. `clock` and `weather` are reserved. |
-| `name` | String | Yes | The title, nonempty after normalisation, at most 40 string units. |
-| `value` | String | Yes | The larger value, nonempty after normalisation, at most 40 string units. |
-| `detail` | String | No | The smaller detail line, at most 100 string units; empty by default. |
-| `enabled` | Boolean | No | Saved visibility flag. Dashboard imports force it to `false`. |
-
-Text normalisation removes U+0000–U+001F and U+007F control characters,
-trims surrounding whitespace, then truncates to the field's limit.
-JavaScript string units are UTF-16 code units, so some characters count as
-two. Write each field on a single line; newlines and tabs are removed,
-not turned into visible line breaks. IDs are checked as supplied, not
-trimmed or shortened. Extra fields are discarded.
-
-Keep the visible text shorter than these storage limits where possible:
-font widths differ, and Home adds an ellipsis to lines that do not fit.
-`name` and `value` must be strings. A non-string `detail` becomes empty.
-Convert a number to a JSON string if it should appear as text.
-
-There is no placeholder or expression syntax. For example, `{time}` and
-`${temperature}` remain literal text. A value containing an address does
-not become a link or data source.
-
-## Rendering and interaction
-
-Each widget occupies 360 × 200 pixels on Home's 1920 × 1080 stage. Two
-visible widgets have 24 pixels between them. The whole stage scales to
-the TV's viewport; a higher display resolution does not create more slots.
-With none enabled, the host retains one empty slot's width.
-
-Text widgets draw three single lines: title, larger value and detail.
-They inherit Home's text colours and use its bundled fonts. There are no
-per-widget fonts, colours, dimensions or custom styles. Home's Standard
-and Alternative View both support the host; Alternative View places it on
-the right. Live preview uses smaller source text when two widgets are on.
-
-Widgets do not enter the remote's focus order. The remote and pointer
-continue to operate Home's app and input rows. A widget cannot capture OK,
-Back or arrow keys, open an app or run a command. The web dashboard
-manages its settings. A custom launcher replaces Home's page and does not
-receive this widget host or an automatic widget API.
-
-## Saved configuration
-
-Widget settings are part of `/var/lib/tvweb/home.json`. The following is
-the widget-related portion of a default Home layout, not a replacement
-for the whole file:
+## Version 2: components
 
 ```json
 {
-  "showClock": true,
-  "widgets": {
-    "order": ["clock", "weather"],
-    "clock": {
-      "format": "tv",
-      "date": true
-    },
-    "weather": {
-      "enabled": false,
-      "location": null,
-      "units": "celsius"
-    },
-    "custom": []
-  }
-}
-```
-
-| Setting | Meaning and default |
-| :--- | :--- |
-| `showClock` | Clock visibility, outside `widgets`; defaults to `true`. There is no `clock.enabled` setting. |
-| `widgets.order` | Built-in and custom ids in display order, including disabled widgets. Unknown ids and duplicates are dropped; omitted known ids are appended. |
-| `widgets.clock.format` | `"tv"`, `"12"` or `"24"`; defaults to `"tv"`. |
-| `widgets.clock.date` | Show the date unless explicitly `false`. |
-| `widgets.weather.enabled` | Enables weather reads; defaults to `false`. A valid location is required when enabling it through a layout save. |
-| `widgets.weather.location` | `null`, or an object with `name`, `latitude` and `longitude`. The name is normalised to 80 string units; coordinates must be finite numbers within ±90 and ±180 respectively. |
-| `widgets.weather.units` | `"celsius"` or `"fahrenheit"`; defaults to `"celsius"`. |
-| `widgets.custom` | At most eight text-widget objects, using the file format above and saved `enabled` flags. |
-
-The clock retains `showClock` so older dashboards and the TV app can
-change its visibility without knowing about widgets. A layout saved
-before widgets existed gets the default widget settings and preserves
-its previous clock visibility.
-
-Layout writes refuse a third enabled widget, including a clock enabled
-through the older switch. They also refuse unsupported text-widget types
-or invalid custom-widget entries. An invalid read from an edited or older
-saved file is normalised; this is different from validation of a new
-dashboard write.
-
-Settings backups carry this Home layout, including text, location and the
-weather enable flag. Weather readings themselves are not saved. Home's
-rows-and-tiles reset does not reset widgets.
-
-## Weather data and lifecycle
-
-The server uses its existing curl/wget client through `fetch.getJson`.
-This avoids relying on the old TV Node runtime's TLS support. Initial
-provider URLs are fixed; widget settings cannot supply a server URL.
-
-| Operation | Provider request |
-| :--- | :--- |
-| City search | `https://geocoding-api.open-meteo.com/v1/search`, with `count=8`, `language=en`, `format=json` and the encoded city query. |
-| Current weather | `https://api.open-meteo.com/v1/forecast`, with the saved latitude and longitude, `current=temperature_2m,weather_code` and `temperature_unit=celsius` or `fahrenheit`. |
-
-Search text is normalised to 80 string units and must have at least two
-characters. Only one city search runs at a time. Results carry a combined
-place name and validated coordinates. A successful search or location
-selection does not itself enable weather.
-
-The cache holds one location-and-unit combination in memory. A successful
-read is fresh for 15 minutes. Same-key callers share an in-flight read.
-A failed or malformed reply retains the previous valid reading for that
-key and sets a five-minute retry delay. A reading can be returned as stale
-until it is more than six hours old; after that it is unavailable.
-
-A different location or unit never receives the previous key's reading.
-If another key's request is still running, the endpoint returns unavailable
-instead of starting a second request. Home retries unavailable data after
-five minutes. Restarting the server clears the cache and pending state.
-
-The view rounds the temperature to a whole degree and groups weather codes
-into Clear, Cloudy, Fog, Rain, Snow and Thunderstorm, with Weather as the
-fallback label. It adds **Last available weather** to a stale result. See
-Open-Meteo's [current-weather fields](https://open-meteo.com/en/docs) and
-[city search](https://open-meteo.com/en/docs/geocoding-api) for the provider
-formats.
-
-The view schedules another read after 15 minutes for a fresh result, or
-five minutes for stale or unavailable data. When hidden, covered or leaving
-the page it clears the timer and aborts its browser request. On return it
-asks again; the server may answer from cache. A configuration revision
-prevents a late browser reply from updating a different widget setup.
-Aborting the browser request does not cancel a provider read already
-running on the server.
-
-The server has no periodic weather job: reads are demand-driven. An
-external caller of the weather endpoint can initiate a read while Home
-is covered if weather remains enabled. Turning weather off makes that
-endpoint return unavailable without starting another provider request.
-
-## Internal HTTP endpoints
-
-These endpoints support Glasshouse's own dashboards and Home view. They
-are internal interfaces, not a versioned public widget SDK. Use the
-dashboard for normal configuration.
-
-All use the server's existing API authentication. Where a token is set,
-network clients can use an `Authorization: Bearer` header; local TV
-requests use the existing loopback exception. JSON POSTs require
-`Content-Type: application/json`, pass the same-origin guard, and require
-controls to be enabled for network clients. See [Security](../SECURITY.md).
-
-### Read or change settings
-
-`GET /api/home` includes the layout in `layout`. The Home view obtains the
-same layout from `GET /api/home/catalogue`.
-
-`POST /api/home/layout` accepts `showClock` and `widgets` alongside the
-other Home settings. Omitting `widgets` preserves it. Supplying it replaces
-the widget configuration; its fields are not deep-merged with the previous
-one. A supplied `widgets` object must include a `custom` array, even if
-empty. Read the current layout, modify a copy and send the full widget
-object to preserve unrelated text widgets and settings.
-
-For example, this changes only clock visibility:
-
-```http
-POST /api/home/layout
-Content-Type: application/json
-
-{"showClock": false}
-```
-
-A successful save returns `ok: true`, the normalised `layout` and a
-`layoutVersion`. Home's heartbeat detects a changed version and reloads
-the layout when it is not arranging or saving.
-
-### Search for a location
-
-```http
-POST /api/home/widgets/locations
-Content-Type: application/json
-
-{"query": "Paris"}
-```
-
-An illustrative successful response is:
-
-```json
-{
-  "ok": true,
-  "locations": [
-    {
-      "name": "Paris, Île-de-France Region, France",
-      "latitude": 48.85341,
-      "longitude": 2.3488
+  "version": 2,
+  "type": "components",
+  "id": "energy",
+  "name": "Energy",
+  "data": {
+    "source": "static",
+    "values": {
+      "power": 0,
+      "history": [-4, null, 0, 6],
+      "hours": ["00:00", "06:00", "12:00", "18:00"]
     }
+  },
+  "components": [
+    { "type": "data", "icon": "home", "label": "Power", "field": "power", "unit": "W" },
+    { "type": "chart", "label": "Usage", "field": "history", "labels": "hours", "unit": "W", "style": "bar" }
+  ],
+  "expanded": [
+    { "type": "text", "text": "Sample readings" },
+    { "type": "chart", "label": "Usage", "field": "history", "labels": "hours", "unit": "W", "style": "bar" }
   ]
 }
 ```
 
-No matches gives an empty `locations` array. A short query, concurrent
-search or provider failure gives `ok: false` with a translated `error`.
+Download this [Energy example](widget-examples/energy.json), a
+[weather example](widget-examples/city-weather.json) or a
+[TV temperature example](widget-examples/tv-temperature.json).
 
-### Read weather
+The file and normalised definition must fit **16 KB**. Common fields:
 
-`GET /api/home/widgets/weather` reads the saved weather configuration. It
-does not take arbitrary query coordinates or a provider URL. Calling it
-can initiate an external request when weather is enabled and the cache
-allows a read.
+| Field | Rules |
+| :--- | :--- |
+| `version`, `type` | Exactly `2` and `"components"`. |
+| `id` | Required: a lowercase letter followed by up to 39 lowercase letters, digits or hyphens. `clock` and `weather` are reserved. |
+| `name` | Required, up to 40 characters. |
+| `enabled` | Only literal `true` enables a saved definition. Dashboard imports override it to `false`. |
+| `data.source` | Exactly `static`, `weather` or `tv`. |
+| `data.values` | Used only for `static`; ignored for other sources. |
+| `components` | One to three compact components. |
+| `expanded` | Optional; up to eight components. Omitted or empty uses the compact components in the expanded view. |
 
-Illustrative available response:
+Unknown fields are removed during normalisation. Text is trimmed and control
+characters removed. The same id syntax applies to version 1.
+
+### Component reference
+
+| Type | Fields | Result |
+| :--- | :--- | :--- |
+| `text` | Required `text` (100 characters). | A literal line of text. |
+| `icon` | Required `icon`, optional `label`. | A built-in decorative icon and label. |
+| `data` | Required `field`; optional `label`, `icon`, `unit`, `precision`. | A bound scalar value and unit. |
+| `chart` | Required `field`; optional `labels`, `label`, `unit`, `precision`, `style`. | A bound numeric series, line by default or `style: "bar"`. |
+
+Labels are limited to 40 characters and units to 16. `precision` accepts
+`0`, `1` or `2`, defaulting to zero. Icons are:
+
+`sun`, `moon`, `cloud`, `rain`, `snow`, `storm`, `wind`, `thermometer`,
+`drop`, `home`, `clock`, `chart`, `weather`.
+
+`weather` chooses its icon from `current.code` and `current.isDay`. Icon paths
+are part of Glasshouse; JSON cannot supply raw SVG. Author-supplied labels and
+text are displayed as written rather than translated by Glasshouse.
+
+### Bindings and charts
+
+`field` and `labels` are dotted paths such as `current.temperature` or
+`today.labels`: up to four segments and 100 characters, each segment beginning
+with an ASCII letter and containing letters, digits or underscores.
+`constructor`, `prototype` and `__proto__` are forbidden. Only own object
+properties can be read. Bindings are paths, with no expressions or function
+calls; array indexing is not supported.
+
+Data components display numbers, strings or booleans. Missing or non-scalar
+values show a dash. Charts accept up to 240 values. Zero and negative numbers
+are valid; null or invalid points create gaps rather than zero readings.
+Empty series show **No data available**. Flat and single-point series render
+without division by zero. The expanded chart shows a range and up to three
+labels from its parallel `labels` array. Bar charts include zero in their
+scale; line charts scale to their finite values.
+
+`unit` normally appears literally. For weather data, `"temperature"` and
+`"wind"` resolve to the selected `units.temperature` and `units.wind`, so
+changing dashboard units updates both the readings and their suffixes.
+
+## Data sources
+
+### Static values
+
+`data.values` stores local JSON values. Objects keep up to 24 allowed keys
+at each level and nesting up to depth three. Arrays keep up to 240 scalar
+numbers or strings; other entries become null. Strings keep 100 characters
+or 40 inside arrays. Invalid numbers become null. Static data is saved in
+`home.json`; it does not refresh itself or connect to a meter or service.
+
+### Weather
+
+`data.source: "weather"` binds the server's shared forecast object. Choose a
+city under the built-in Weather settings first. Enabling a custom weather
+widget opts in to weather requests even if the built-in widget is hidden.
+The dashboard states this beside its editor and weather settings. To stop
+requests from Home, disable all enabled weather consumers.
+
+The available object is shaped as follows (arrays shortened):
 
 ```json
 {
   "ok": true,
   "available": true,
   "stale": false,
-  "updated": 1700000000000,
-  "temperature": 12.4,
-  "code": 3
+  "updated": 1794052800000,
+  "temperature": 12.5,
+  "code": 2,
+  "current": { "temperature": 12.5, "code": 2, "wind": 14, "isDay": true },
+  "units": { "temperature": "°C", "wind": "km/h" },
+  "today": {
+    "date": "2026-11-07",
+    "labels": ["00:00", "01:00"],
+    "temperature": [3, 2],
+    "wind": [4, 0]
+  },
+  "daily": [
+    { "date": "2026-11-07", "code": 2, "high": 14, "low": 1, "wind": 22, "rain": 15 }
+  ]
 }
 ```
 
-`updated` is the server's successful-fetch time in Unix milliseconds,
-not the provider's observation time. `temperature` is in the saved unit;
-the response does not repeat the unit. `code` is the provider weather code.
+`today` uses the selected city's local day. `daily` has up to ten days,
+including today. `rain` is daily precipitation probability in percent, `wind`
+is maximum daily wind speed. Missing numbers are null. The top-level
+`temperature` and `code` remain for version 1 clients. Bindings cannot index
+`daily`; the built-in expanded Weather view renders those daily cards.
 
-Disabled, unconfigured, expired or otherwise unavailable weather returns:
+Forecast data comes from fixed Open-Meteo endpoints, with automatic timezone,
+hourly temperature and wind, and daily conditions, high/low, wind and rain
+probability. Results are fresh for 15 minutes. Failures back off five minutes;
+old results last up to six hours and carry `stale: true`. Cached hourly data
+from yesterday is removed at city midnight; past daily entries are filtered.
+An unavailable response is `{ "ok": true, "available": false, "stale": false }`.
+Requests in flight are shared; another city's concurrent request gets an
+unavailable response and can retry. Restarting the server clears the cache.
 
-```json
-{"ok": true, "available": false, "stale": false}
-```
+### Local TV statistics
 
-Unavailable weather is a valid HTTP 200 response. Validation and search
-errors use HTTP 400; the shared guards can also return 401 for
-authentication, 403 for controls or origin, 413 for a large JSON body and
-415 for the wrong content type. Error text follows the request's language
-and should not be used as a machine-readable error identifier.
+`data.source: "tv"` reads the existing `/api/stats` snapshot every 60 seconds
+while Home is visible. For example, `temp` is the TV temperature in Celsius
+and `temps` is its temperature history where that hardware supplies them.
+A TV without those readings shows missing data; inspect its stats response
+before choosing other fields. This source issues no TV commands, makes no
+external request, and cannot subscribe to MQTT or Home Assistant entities.
 
-## Implementation and extension points
+## Remote interaction and positioning
 
-| Source | Responsibility |
-| :--- | :--- |
-| `server/lib/home-widgets.js` | Text and location validation, defaults, order normalisation, slot counting, city search and the weather cache. |
-| `server/lib/home.js` | Saving and exposing widget settings as part of Home's layout, compatibility and layout-change notifications. |
-| `server/lib/routes.js` | Existing API guards and widget HTTP routes. |
-| `server/assets/home-widgets-view.js` | Text and weather DOM, weather polling, coverage events and stale-reply handling. |
-| `server/assets/home.html` | Fixed slot styles and the clock's time/date rendering. |
-| `server/assets/ui/home-widgets.js` | Web dashboard controls and file import. |
+From the first row, Up enters the widget group; Left/Right choose, Down returns
+to the rows. OK opens a component or weather panel; OK, Back or Escape closes
+it. Up/Down scroll the panel. Holding OK enters positioning; Clock and text
+widgets also enter positioning on a short OK. Left/Right saves a move and
+swaps an occupying widget; OK finishes. Pointer clicks open the same view.
 
-Adding a new built-in type requires validation and saved defaults, a
-renderer, dashboard settings, translations, and tests. New on-TV modules
-and assets must be included in `server/deploy.sh`. The server and TV view
-remain strict ES5, and any timed or network behaviour needs injectable
-dependencies for tests. Follow [Contributing](../CONTRIBUTING.md) and
-[Testing and CI](testing.md).
+`widgets.positions` maps ids to `auto`, `left`, `center` or `right`. Centre
+requires `showLastOn: false`. Right requires Picture details and the top live
+preview off. Picture details beside a top preview also reserve centre. The
+server refuses overlaps; the dashboard disables reserved choices and explains
+these rules before a move. All-Automatic layouts preserve the existing group
+arrangement. Explicit positions take precedence over order.
 
-Version 1 has no HTML package loader, arbitrary JavaScript plugins,
-external JSON feeds, per-widget URLs, iframe embeds, images or Home
-Assistant subscriptions. Dynamic third-party widgets need an explicit
-permission and isolation design before a new format is admitted. The
-current text renderer uses text nodes so uploaded text cannot gain Home
-app privileges.
+## Storage and HTTP integration
 
-## Validation
+Definitions, `positions`, `order`, `clock`, and `weather` live under `widgets`
+in `/var/lib/tvweb/home.json`; `showClock` remains a sibling visibility setting.
+The existing Home settings backup includes them. No extra service, boot hook
+or installed application is required. The TV app retains the existing clock
+switch; full configuration is on the web dashboard.
 
-The unit test uses injected time and provider replies:
+- `GET /api/home` returns `layout.widgets` and the computed
+  `layout.widgetPlacement` (`ok`, `manual`, `positions`).
+- `POST /api/home/layout` accepts a `widgets` object alongside other Home
+  settings, subject to the existing authentication and controls guards.
+  It validates enabled count, placement and weather location before saving.
+  Its request limit is 256 KB; other Home routes retain their 8 KB limit.
+- `POST /api/home/widgets/locations` with `{ "query": "Paris" }` searches
+  cities on demand. It returns `{ "ok": true, "locations": [...] }` with
+  each location containing `name`, `latitude` and `longitude`.
+- `GET /api/home/widgets/weather` returns the shared forecast when any
+  weather consumer is enabled and has a valid location.
 
-```sh
-node test/test-home-widgets.js
-```
+`weather` settings include `enabled`, `location`, `units` (`celsius` or
+`fahrenheit`) and `windUnits` (`kmh`, `mph`, `ms`, `kn`). `clock` includes
+`format` (`tv`, `12`, `24`) and `date`. Read and modify the existing settings
+rather than replacing unrelated Home choices. The dashboard sends the full
+widgets object for edits. Imported ids and positions survive server restarts.
 
-`visitHomeWidgets` in `scripts/check-dashboards.js` exercises the browser
-flow with fixtures: clock settings, city selection, ordering, invalid and
-valid imports, literal markup, stale labels, slot geometry and weather
-pause/resume. The normal dashboard check runs it. Before pushing, run:
+## Security and implementation
 
-```sh
-scripts/check-all.sh
-```
+There is no uploaded JavaScript, HTML, CSS, SVG, URL or executable template.
+Bindings are checked both when saved and when rendered. DOM text nodes carry
+all author-supplied text; SVG elements and attributes come from built-in code.
+The sources are restricted to saved values, local stats and the fixed forecast
+endpoint. Definitions are not standalone webOS apps.
 
-Before making the feature ready for review, test on a physical TV and
-record its model, reported webOS version and screenshots. Check both
-views with one and two widgets, live preview and picture details, remote
-navigation, return from another app, and the screen saver. Browser and
-emulator checks do not establish those hardware behaviours.
+`lib/home-widget-format.js` validates definitions and placement;
+`lib/home-widgets.js` normalises settings and searches cities;
+`lib/home-weather.js` parses and caches forecasts. On the TV, `widget-kit.js`
+draws components, `home-widget-panel.js` handles focus and expansion, and
+`home-widgets-view.js` renders the compact widgets and pauses polling when
+hidden or covered. Obsolete replies cannot replace a newer configuration.
+All on-TV code is ES5 and ships without runtime packages.
+
+Tests and fixture details are in [Testing and CI](testing.md). Run
+`scripts/check-all.sh` before pushing and follow the physical-TV testing
+requirements in [Contributing](../CONTRIBUTING.md).

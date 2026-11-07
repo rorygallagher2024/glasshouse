@@ -1,16 +1,9 @@
 // Declarative widgets never execute uploaded code in the privileged Home app.
 var fetchJson = function (url, cb) { require('./fetch').getJson(url, cb); };
 var msg = require('./say').msg;
-var now = Date.now;
-var cache = null;
-var pending = null;
-var FRESH_MS = 15 * 60 * 1000;
-var RETRY_MS = 5 * 60 * 1000;
-var STALE_MS = 6 * 60 * 60 * 1000;
-
-function text(value, limit) {
-  return typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, limit) : '';
-}
+var format = require('./home-widget-format');
+var forecast = require('./home-weather');
+var text = format.text;
 
 function location(raw) {
   if (!raw || typeof raw.latitude !== 'number' || typeof raw.longitude !== 'number' ||
@@ -19,14 +12,7 @@ function location(raw) {
   return name ? { name: name, latitude: raw.latitude, longitude: raw.longitude } : null;
 }
 
-function custom(raw) {
-  if (!raw || raw.version !== 1 || raw.type !== 'text' || typeof raw.id !== 'string' ||
-      !/^[a-z][a-z0-9-]{0,39}$/.test(raw.id) || raw.id === 'clock' || raw.id === 'weather') return null;
-  var name = text(raw.name, 40), value = text(raw.value, 40);
-  if (!name || !value) return null;
-  return { version: 1, type: 'text', id: raw.id, name: name, value: value,
-    detail: text(raw.detail, 100), enabled: raw.enabled === true };
-}
+var custom = format.custom;
 
 function normalise(raw) {
   raw = raw && typeof raw === 'object' ? raw : {};
@@ -40,10 +26,16 @@ function normalise(raw) {
     if (ids.indexOf(id) !== -1 && order.indexOf(id) === -1) order.push(id);
   });
   ids.forEach(function (id) { if (order.indexOf(id) === -1) order.push(id); });
+  var positions = {};
+  ids.forEach(function (id) {
+    var pos = raw.positions && raw.positions[id];
+    positions[id] = ['left', 'center', 'right'].indexOf(pos) !== -1 ? pos : 'auto';
+  });
   var clock = raw.clock || {};
-  return { order: order, clock: { format: clock.format === '12' || clock.format === '24' ? clock.format : 'tv', date: clock.date !== false },
+  return { order: order, positions: positions, clock: { format: clock.format === '12' || clock.format === '24' ? clock.format : 'tv', date: clock.date !== false },
     weather: { enabled: weather.enabled === true, location: location(weather.location),
-    units: weather.units === 'fahrenheit' ? 'fahrenheit' : 'celsius' }, custom: added };
+    units: weather.units === 'fahrenheit' ? 'fahrenheit' : 'celsius',
+    windUnits: ['kmh', 'mph', 'ms', 'kn'].indexOf(weather.windUnits) !== -1 ? weather.windUnits : 'kmh' }, custom: added };
 }
 
 function count(widgets, showClock) {
@@ -51,45 +43,10 @@ function count(widgets, showClock) {
     widgets.custom.filter(function (w) { return w.enabled; }).length;
 }
 
-function unavailable() {
-  return { ok: true, available: false, stale: false };
-}
-
-function weatherKey(w) { return JSON.stringify([w.location, w.units]); }
-
-function answer(entry) {
-  if (!entry.data || now() - entry.updated > STALE_MS) return unavailable();
-  return { ok: true, available: true, stale: now() - entry.updated >= FRESH_MS,
-    updated: entry.updated, temperature: entry.data.temperature, code: entry.data.code };
-}
-
 function weather(raw, cb) {
-  var w = normalise(raw).weather;
-  if (!w.enabled || !w.location) return cb(unavailable());
-  var key = weatherKey(w);
-  if (cache && cache.key === key && now() < cache.next) return cb(answer(cache));
-  if (pending) {
-    if (pending.key === key) { pending.waiters.push(cb); return; }
-    // A changed location waits for the old request to finish, without filling a queue.
-    return cb(unavailable());
-  }
-  var entry = cache && cache.key === key ? cache : { key: key, data: null, updated: 0, next: 0 };
-  var job = { key: key, waiters: [cb] };
-  pending = job;
-  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + w.location.latitude +
-    '&longitude=' + w.location.longitude + '&current=temperature_2m,weather_code&temperature_unit=' + w.units;
-  fetchJson(url, function (err, result) {
-    var current = !err && result && result.current;
-    if (current && typeof current.temperature_2m === 'number' && isFinite(current.temperature_2m) &&
-        typeof current.weather_code === 'number' && isFinite(current.weather_code)) {
-      entry.data = { temperature: current.temperature_2m, code: current.weather_code };
-      entry.updated = now();
-      entry.next = now() + FRESH_MS;
-    } else entry.next = now() + RETRY_MS;
-    cache = entry;
-    pending = null;
-    job.waiters.forEach(function (done) { done(answer(entry)); });
-  });
+  var widgets = normalise(raw), w = widgets.weather;
+  w.enabled = format.weatherActive(widgets);
+  forecast.read(w, cb);
 }
 
 var locationBusy = false;
@@ -112,12 +69,11 @@ function locations(query, cb) {
 
 module.exports = {
   normalise: normalise, custom: custom, count: count, weather: weather, locations: locations,
+  weatherActive: format.weatherActive, placement: format.placement,
   init: function (opts) {
     opts = opts || {};
     fetchJson = opts.fetchJson || require('./fetch').getJson;
-    now = opts.now || Date.now;
-    cache = null;
-    pending = null;
+    forecast.init(opts);
     locationBusy = false;
   }
 };

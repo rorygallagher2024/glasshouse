@@ -1,0 +1,83 @@
+var assert = require('assert');
+var widgets = require('../server/lib/home-widgets');
+var format = require('../server/lib/home-widget-format');
+var forecast = require('../server/lib/home-weather');
+var fixture = require('./fixtures/widget-weather.json');
+function copy(v) { return JSON.parse(JSON.stringify(v)); }
+var rich = { version: 2, type: 'components', id: 'energy', name: 'Energy', enabled: true,
+  data: { source: 'static', values: { power: 0, history: [-5, null, 0, 7], labels: ['06', '07', '08', '09'] } },
+  components: [{ type: 'icon', icon: 'home', label: 'House' }, { type: 'data', label: 'Power', field: 'power', unit: 'W', icon: 'chart' },
+    { type: 'chart', label: 'Today', field: 'history', labels: 'labels', style: 'bar' }],
+  expanded: [{ type: 'chart', label: 'Today', field: 'history', labels: 'labels' }] };
+var parsed = widgets.custom(rich);
+assert.ok(parsed);
+assert.deepEqual(widgets.custom(parsed), parsed, 'normalisation is idempotent');
+assert.strictEqual(parsed.data.values.power, 0);
+assert.deepEqual(parsed.data.values.history, [-5, null, 0, 7]);
+var bad = copy(rich); bad.components[1].field = 'constructor.prototype';
+assert.strictEqual(widgets.custom(bad), null, 'bindings cannot read inherited properties');
+bad = copy(rich); bad.components[0].icon = '<svg onload="bad()">';
+assert.strictEqual(widgets.custom(bad), null, 'icons come from the built-in set');
+bad = copy(rich); bad.data.source = 'https://example.invalid/private';
+assert.strictEqual(widgets.custom(bad), null, 'arbitrary network data sources are refused');
+bad = copy(rich); bad.components.push({ type: 'text', text: 'Too many' });
+assert.strictEqual(widgets.custom(bad), null);
+bad = copy(rich); bad.expanded = []; assert.ok(widgets.custom(bad));
+bad.data.source = 'tv'; assert.deepEqual(widgets.custom(bad).data.values, {});
+bad.data.source = 'weather';
+var state = widgets.normalise({ custom: [bad] });
+assert.strictEqual(format.weatherActive(state), true, 'a visible custom weather widget requests the configured weather');
+state.custom[0].enabled = false;
+assert.strictEqual(format.weatherActive(state), false, 'an installed but disabled data widget has no weather consent');
+var layout = { showClock: true, showLastOn: true, picture: false, livePreview: false, widgets: widgets.normalise(null) };
+layout.widgets.weather.enabled = true;
+layout.widgets.positions.clock = 'left';
+assert.deepEqual(format.placement(layout).positions, { clock: 'left', weather: 'right' });
+layout.widgets.positions.weather = 'center';
+assert.strictEqual(format.placement(layout).ok, false, 'Last watched reserves the centre');
+layout.showLastOn = false;
+assert.strictEqual(format.placement(layout).ok, true);
+layout.widgets.positions.weather = 'right'; layout.picture = true;
+assert.strictEqual(format.placement(layout).ok, false, 'Picture details reserves the right');
+layout.picture = false; layout.widgets.positions.weather = 'left';
+assert.strictEqual(format.placement(layout).ok, false, 'two widgets cannot claim the same position');
+
+var time = Date.UTC(2026, 10, 7, 12), calls = [], callback;
+forecast.init({ now: function () { return time; }, fetchJson: function (url, cb) { calls.push(url); callback = cb; } });
+var settings = { enabled: true, location: { name: 'Paris', latitude: 48.85, longitude: 2.35 }, units: 'celsius', windUnits: 'kmh' };
+var result;
+forecast.read(settings, function (r) { result = r; });
+assert.ok(calls[0].indexOf('forecast_days=10&timezone=auto') !== -1);
+assert.ok(calls[0].indexOf('wind_speed_unit=kmh') !== -1);
+callback(null, fixture);
+assert.strictEqual(result.daily.length, 10);
+assert.strictEqual(result.daily[8].low, -2);
+assert.strictEqual(result.today.temperature[2], 0);
+assert.strictEqual(result.today.wind[1], 0);
+assert.strictEqual(result.today.labels[2], '06:00');
+assert.strictEqual(result.current.wind, 14);
+assert.strictEqual(result.units.wind, 'km/h');
+time += 15 * 60000;
+forecast.read(settings, function (r) { result = r; });
+callback(null, { current: { temperature_2m: null, weather_code: 0 } });
+assert.strictEqual(result.stale, true);
+assert.strictEqual(result.daily.length, 10, 'a malformed refresh preserves the last complete forecast');
+// A forecast fetched before midnight cannot label yesterday's chart as Today.
+time = Date.UTC(2026, 10, 7, 22, 50);
+forecast.read(settings, function (r) { result = r; }); callback(null, fixture);
+time = Date.UTC(2026, 10, 7, 23, 1);
+forecast.read(settings, function (r) { result = r; });
+assert.strictEqual(result.today.date, '2026-11-08');
+assert.deepEqual(result.today.temperature, []);
+assert.strictEqual(result.daily[0].date, '2026-11-08');
+assert.strictEqual(result.daily.length, 9);
+time += 7 * 60 * 60000;
+forecast.read(settings, function (r) { result = r; }); callback(new Error('offline'));
+assert.strictEqual(result.available, false);
+settings.windUnits = 'mph';
+forecast.read(settings, function (r) { result = r; });
+var missing = copy(fixture); delete missing.hourly; missing.daily.temperature_2m_min[0] = null;
+callback(null, missing);
+assert.ok(calls[calls.length - 1].indexOf('wind_speed_unit=mph') !== -1);
+assert.strictEqual(result.units.wind, 'mph');
+console.log('test-home-widget-components.js passed');

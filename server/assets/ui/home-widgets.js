@@ -26,11 +26,52 @@ function renderHomeWidgets() {
         ${off} aria-pressed="${enabled(id)}" aria-label="${esc(title(id))}" onclick="homeWidgetToggle('${id}')">${esc(enabled(id) ? t('common.on', 'On') : t('common.off', 'Off'))}</button>
       ${id !== 'clock' && id !== 'weather' ? `<button type="button" class="pill bad" ${off} onclick="homeWidgetRemove('${id}')">${esc(t('home.ch.remove', 'Remove'))}</button>` : ''}
     </div>
-  </div>${id === 'clock' ? homeWidgetClockFields(settings.clock, off) : id === 'weather' ? homeWidgetWeatherFields(settings.weather, off) : homeWidgetTextFields(settings.custom.find(w => w.id === id), off)}`).join('') +
-    `<label class="home-widget-import">${esc(t('home.widgets.import', 'Import a text widget (.json)'))}
+  </div>${homeWidgetPositionFields(id, settings.positions && settings.positions[id] || 'auto', off, title(id))}${id === 'clock' ? homeWidgetClockFields(settings.clock, off) : id === 'weather' ? homeWidgetWeatherFields(settings.weather, off) : settings.custom.find(w => w.id === id).version === 2 ? homeWidgetComponentFields(settings.custom.find(w => w.id === id), off) : homeWidgetTextFields(settings.custom.find(w => w.id === id), off)}`).join('') +
+    `<label class="home-widget-import">${esc(t('home.widgets.import', 'Import a widget (.json)'))}
       <input type="file" accept=".json,application/json" ${off} onchange="homeWidgetImport(this.files[0]); this.value = ''">
-    </label><div class="prot-desc">${esc(t('home.widgets.importHint', 'Text widgets contain a title, value and detail line. Importing keeps them off until enabled.'))}
+    </label><div class="prot-desc">${esc(t('home.widgets.importHint', 'Import text widgets or component widgets with icons, charts and data. Imported widgets stay off until enabled.'))}
       <a href="https://rorygallagher2024.github.io/glasshouse/development/WRITING-WIDGETS/" target="_blank" rel="noopener">${esc(t('home.widgets.guide', 'Widget format'))}</a></div>`;
+}
+
+function homeWidgetPositionFields(id, position, off, name) {
+  const topPreview = homeLayout.livePreview && !homeLayout.previewInTile;
+  const previewDetails = topPreview && homeLayout.picture;
+  const blocked = value => value === 'center' && (homeLayout.showLastOn !== false || previewDetails) || value === 'right' && (homeLayout.picture || topPreview);
+  return `<div class="home-widget-fields"><label>${esc(t('home.widgets.positionLabel', 'Position'))}
+    <select class="pill-sel" aria-label="${esc(t('home.widgets.positionFor', 'Position of {name}', {name}))}" ${off} onchange="homeWidgetPosition('${id}', this.value)">
+    ${[['auto', t('home.widgets.positionAuto', 'Automatic')], ['left', t('home.widgets.positionLeft', 'Left')], ['center', t('home.widgets.positionCenter', 'Centre')], ['right', t('home.widgets.positionRight', 'Right')]].map(([value, label]) => `<option value="${value}" ${position === value ? 'selected' : ''} ${blocked(value) ? 'disabled' : ''}>${esc(label)}</option>`).join('')}
+    </select></label><div class="prot-desc">${esc(t('home.widgets.positionRules', 'Centre needs Last watched off. Right needs Picture details and the top live preview off.'))}</div>
+    ${previewDetails ? `<div class="prot-desc">${esc(t('home.widgets.previewSpace', 'Picture details beside a top live preview also reserve the centre. Switch either one off to free it.'))}</div>` : ''}</div>`;
+}
+
+function homeWidgetPosition(id, position) {
+  const widgets = homeWidgetSettings();
+  widgets.positions = widgets.positions || {};
+  widgets.positions[id] = position;
+  homeSaveLayout({ widgets });
+}
+
+function homeWidgetComponentFields(widget, off) {
+  return `<form class="home-widget-fields" onsubmit="event.preventDefault(); homeWidgetComponentsSave('${widget.id}', this)">
+    <div class="prot-desc">${esc(t('home.widgets.componentsHelp', 'Edit the component JSON. Data sources are static values, local TV statistics or weather for the selected city. Enabling a weather data widget permits weather requests.'))}</div>
+    <label class="home-widget-json">${esc(t('home.widgets.componentJSON', 'Widget JSON'))}<textarea name="widgetJSON" aria-label="${esc(t('home.widgets.componentJSON', 'Widget JSON'))}" rows="12" maxlength="16384" ${off}>${esc(JSON.stringify(widget, null, 2))}</textarea></label>
+    <button type="submit" class="pill idle" ${off}>${esc(t('home.widgets.save', 'Save widget'))}</button>
+  </form>`;
+}
+
+function homeWidgetComponentsSave(id, form) {
+  if (!homeWritable()) return;
+  try {
+    const widgets = homeWidgetSettings();
+    const previous = widgets.custom.find(w => w.id === id);
+    let next;
+    try { next = JSON.parse(form.elements.widgetJSON.value); }
+    catch (e) { throw new Error(t('home.widgets.invalidJSON', 'Enter valid widget JSON.')); }
+    if (!next || next.id !== id) throw new Error(t('home.widgets.keepId', 'Keep the widget id unchanged when editing.'));
+    next.enabled = previous.enabled;
+    widgets.custom = widgets.custom.map(w => w.id === id ? next : w);
+    homeSaveLayout({ widgets });
+  } catch (e) { showErr(e.message); }
 }
 
 function homeWidgetClockFields(clock, off) {
@@ -45,7 +86,7 @@ function homeWidgetClockFields(clock, off) {
 function homeWidgetWeatherFields(weather, off) {
   const searchOff = off || homeWidgetSearchBusy ? 'disabled' : '';
   return `<div class="home-widget-fields">
-    <div class="prot-desc">${esc(t('home.widgets.privacy', 'Weather is off by default. Searching sends the city name to Open-Meteo; enabling weather sends its coordinates and the TV’s public IP address.'))}
+    <div class="prot-desc">${esc(t('home.widgets.privacy', 'Weather is off by default. Searching sends the city name to Open-Meteo; enabling Weather or a custom weather data widget sends its coordinates and the TV’s public IP address.'))}
       <a href="https://open-meteo.com/" target="_blank" rel="noopener">${esc(t('home.widgets.credit', 'Weather data by Open-Meteo (CC BY 4.0)'))}</a></div>
     <div class="prot-desc">${esc(weather.location ? weather.location.name : t('home.widgets.chooseCity', 'Choose a city before switching weather on.'))}</div>
     <form onsubmit="event.preventDefault(); homeWidgetSearch()" class="home-widget-search">
@@ -56,6 +97,9 @@ function homeWidgetWeatherFields(weather, off) {
     <label>${esc(t('home.widgets.units', 'Temperature units'))}<select aria-label="${esc(t('home.widgets.units', 'Temperature units'))}" class="pill-sel" ${off} onchange="homeWidgetUnits(this.value)">
       <option value="celsius" ${weather.units === 'celsius' ? 'selected' : ''}>${esc(t('home.widgets.celsius', 'Celsius (°C)'))}</option>
       <option value="fahrenheit" ${weather.units === 'fahrenheit' ? 'selected' : ''}>${esc(t('home.widgets.fahrenheit', 'Fahrenheit (°F)'))}</option>
+    </select></label>
+    <label>${esc(t('home.widgets.windUnits', 'Wind units'))}<select class="pill-sel" aria-label="${esc(t('home.widgets.windUnits', 'Wind units'))}" ${off} onchange="homeWidgetWindUnits(this.value)">
+      ${[['kmh', 'km/h'], ['mph', 'mph'], ['ms', 'm/s'], ['kn', 'kn']].map(([value, label]) => `<option value="${value}" ${weather.windUnits === value ? 'selected' : ''}>${label}</option>`).join('')}
     </select></label>
   </div>`;
 }
@@ -98,6 +142,12 @@ function homeWidgetUnits(units) {
   homeSaveLayout({ widgets });
 }
 
+function homeWidgetWindUnits(units) {
+  const widgets = homeWidgetSettings();
+  widgets.weather.windUnits = units;
+  homeSaveLayout({ widgets });
+}
+
 async function homeWidgetSearch() {
   if (!homeWritable() || homeWidgetSearchBusy) return;
   const query = homeWidgetQuery.trim();
@@ -127,11 +177,12 @@ function homeWidgetChoose(index) {
 async function homeWidgetImport(file) {
   if (!file || !homeWritable()) return;
   try {
-    if (file.size > 4096) throw new Error(t('home.widgets.fileSize', 'A text widget file can be at most 4 KB.'));
+    if (file.size > 16384) throw new Error(t('home.widgets.componentSize', 'A component widget file can be at most 16 KB.'));
     let widget;
     try { widget = JSON.parse(await file.text()); }
-    catch (e) { throw new Error(t('home.widgets.invalidFile', 'Choose a valid text widget JSON file.')); }
-    if (!widget || typeof widget !== 'object') throw new Error(t('home.widgets.invalidFile', 'Choose a valid text widget JSON file.'));
+    catch (e) { throw new Error(t('home.widgets.invalidFile', 'Choose a valid widget JSON file.')); }
+    if (!widget || typeof widget !== 'object') throw new Error(t('home.widgets.invalidFile', 'Choose a valid widget JSON file.'));
+    if (widget.version === 1 && file.size > 4096) throw new Error(t('home.widgets.fileSize', 'A text widget file can be at most 4 KB.'));
     widget.enabled = false;
     const widgets = homeWidgetSettings();
     widgets.custom = widgets.custom.filter(w => w.id !== widget.id).concat([widget]);

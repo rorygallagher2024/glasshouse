@@ -7,15 +7,21 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
-`test-home-widgets.js` checks old-layout migration, saved widget settings,
-the two-slot limit, refusal of executable widget types and invalid locations,
-weather opt-in, shared requests, caching, failure backoff, stale expiry and
-unit changes with injected time and network replies. No live weather request
-or TV command runs. The ES5 check includes `home-widgets-view.js`; the string
-check reads external on-TV scripts as well as the web dashboard's scripts.
-The widget browser check exercises dashboard configuration and imports, Home's
-rendered settings, literal text, and pausing and resuming weather while covered.
-Its weather and city replies are fixtures; it makes no provider requests.
+`test-home-widgets.js` checks migration, saved settings, enabled-widget limits,
+weather opt-in, shared requests and cache behaviour with injected replies and
+time. `test-home-widget-components.js` checks version 2 schemas, safe bindings,
+static data limits, placement reservations, custom weather opt-in, hourly and
+ten-day parsing, missing readings, unit changes and city-midnight cache expiry.
+`test/fixtures/widget-weather.json` provides deterministic hourly/daily data;
+`test/mocks/widget-forecast.js` exposes it to browser checks. No live provider
+request or TV command runs. The ES5 check includes all widget scripts.
+
+The widget browser check exercises dashboard settings, visible placement
+requirements and disabled positions, text/component imports and JSON editing,
+invalid JSON feedback, literal text, zeros, icons and
+charts, remote expansion/closing, three-position layout, and pausing/resuming
+polling while covered. City and weather replies are fixtures. Physical-TV
+rendering and remote testing remain separate requirements.
 
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC

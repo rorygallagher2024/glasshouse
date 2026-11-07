@@ -9,22 +9,15 @@
 
 Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour time setting), the last active source or app, and up to five rows (any row with no visible items is automatically hidden). When there are more rows than fit, they scroll to keep the one in focus in view:
 
-**Top widgets** on the web dashboard holds two fixed-size widgets above the
-rows. Clock and date starts on; Weather starts off. Move widgets left or
-right, choose a clock format or hide its date, and find a city and choose
-Celsius or Fahrenheit for weather. Finding a city sends its name to
-Open-Meteo; enabling weather sends its coordinates and the TV's public IP
-address. Weather refreshes every 15 minutes while Home is visible. A failed
-read keeps the previous reading for up to six hours with a note, then shows
-**Weather unavailable**. Switching weather off stops new reads from Home.
-
-Import a [text widget](../development/WRITING-WIDGETS.md) to display a title,
-value and detail of your own, editable here. It starts off; switch a widget
-off to free a slot. Up to eight text widgets can be kept. With two widgets,
-live preview uses smaller source text so its picture and details fit.
-Custom launchers have their own layout and do not use these widgets.
-The [Home widgets guide](widgets.md) covers setup, text imports, privacy,
-backups and troubleshooting.
+**Top widgets** on the web dashboard configures fixed-size clock, weather
+and custom widgets, including icons, data values and charts. Choose Automatic,
+Left, Centre or Right positions. Centre needs **Last watched** off; Right
+needs **Picture details** and the **top live preview** off. These requirements
+appear beside the controls. Three widgets fit when all those features are off.
+Weather includes today's temperature and wind graphs and a 10-day forecast
+opened with **OK**. It starts off; city search and enabled weather widgets
+send requests to Open-Meteo from the TV. The [Home widgets guide](widgets.md)
+covers positioning, remote controls, imports, privacy, backups and troubleshooting.
 
 <div class="grid cards" markdown>
 

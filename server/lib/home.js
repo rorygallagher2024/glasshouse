@@ -600,7 +600,7 @@ function setLayout(body, cb) {
   if (body.widgets !== undefined && (!body.widgets || typeof body.widgets !== 'object' ||
       !Array.isArray(body.widgets.custom) || body.widgets.custom.length > 8 ||
       body.widgets.custom.some(function (w) { return !widgets.custom(w); }))) {
-    return cb({ ok: false, error: msg('srv.widgets.invalid', 'Use a version 1 text widget with an id, name and value (up to eight installed widgets).') });
+    return cb({ ok: false, error: msg('srv.widgets.invalid', 'Use a valid version 1 text widget or version 2 component widget (up to eight installed widgets).') });
   }
   var next = normalise({
     enabled: c.enabled,
@@ -648,9 +648,12 @@ function setLayout(body, cb) {
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
   });
-  if (widgets.count(next.widgets, next.showClock) > 2) return cb({ ok: false,
-    error: msg('srv.widgets.full', 'The top section holds two widgets. Switch one off first.') });
-  if (next.widgets.weather.enabled && !next.widgets.weather.location) return cb({ ok: false,
+  var widgetCount = widgets.count(next.widgets, next.showClock);
+  if (widgetCount > 3 || widgetCount > 2 && (next.showLastOn || next.picture || next.livePreview && !next.previewInTile)) return cb({ ok: false,
+    error: msg('srv.widgets.full', 'At most three widgets fit. For three, switch off Last watched, Picture details and the top live preview first.') });
+  if (!widgets.placement(next).ok) return cb({ ok: false,
+    error: msg('srv.widgets.position', 'Choose different widget positions. Centre needs Last watched off; right needs Picture details and the top live preview off.') });
+  if (widgets.weatherActive(next.widgets) && !next.widgets.weather.location) return cb({ ok: false,
     error: msg('srv.widgets.location', 'Choose a city before switching weather on.') });
   // A moved or emptied Internet TV row reorders, or removes from, its channels.
   if (iptvModule && body.order && isArray(body.order.iptv)) iptvModule.setOrder(stringList(body.order.iptv, 100));
@@ -678,7 +681,7 @@ function layoutOf(c) {
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
-    darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, widgets: c.widgets, rowsBottom: c.rowsBottom, view: c.view,
+    darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, widgets: c.widgets, widgetPlacement: widgets.placement(c), rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).

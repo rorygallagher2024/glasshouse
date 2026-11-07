@@ -1,154 +1,138 @@
 # Home widgets
 
-Widgets show information above Glasshouse Home's app and input rows. Two
-widgets can be visible at once: the built-in clock and weather, or text
-widgets of your own.
-
-Open the web dashboard on a phone or computer, choose **Home**, then find
-**Home customisation > Top widgets**. Choose **Glasshouse Home** as the
-launcher first; Glasshouse Minimal, LG Home and custom launchers have their
-own layouts and do not show these widgets.
+Widgets occupy fixed 360 × 200 spaces above Glasshouse Home's app and input
+rows. Clock and date starts on; Weather and imported widgets start off.
+Open the web dashboard, choose **Home > Home customisation > Top widgets**.
+LG Home, Glasshouse Minimal and custom launchers have their own layouts.
 
 > [!NOTE]
-> These previews come from a browser with an emulated TV and sample weather.
-> They do not establish rendering or operation on a physical TV.
+> The previews below use an emulated TV and sample weather in a browser.
+> Physical-TV rendering and remote behaviour still need testing.
 
-![Clock and weather in Glasshouse Home, browser preview with sample weather](../screenshots/home-widgets-preview.png)
+![Home widgets, browser preview](../screenshots/home-widgets-preview.png)
 
-## What is available
+## Position and visibility
 
-| Widget | Starts | Settings |
-| :--- | :--- | :--- |
-| Clock and date | On | Follow the TV's time format, use 12 or 24 hours, show or hide the date. |
-| Weather | Off | Choose a city and Celsius or Fahrenheit. |
-| Imported text | Off after each import | Edit the title, value and detail line. |
+Use **On** or **Off** to show or hide a widget without losing its settings.
+Up to eight imported widgets can be saved. Two widgets can normally be shown;
+three fit when **Last watched**, **Picture details** and the **top live
+preview** are off.
 
-The two built-in widgets are always listed. Up to eight imported text
-widgets can be kept as well, but the two-visible-widget limit includes all
-types. For example, to show weather beside a text widget, switch the clock
-off first.
+Each widget's **Position** offers **Automatic**, **Left**, **Centre** and
+**Right**. Automatic keeps the ordered group used by the original layout;
+Alternative View puts that group on the right. Choosing an explicit position
+uses the corresponding part of the top section in either view. Other
+Automatic widgets take the remaining free positions. Two widgets cannot
+occupy the same position.
 
-Widgets display information only. Arrow keys, OK and the Magic Remote
-continue to work with Home's rows; widgets have no buttons or focusable
-controls on the TV. Configure them from the web dashboard. The TV app
-retains its **Clock and date** visibility switch.
+The dashboard displays these requirements beside the position controls and
+disables positions that are reserved:
 
-## Arrange and switch widgets
+- **Centre needs Last watched off.** Open **Home > Shown on Home > Last
+  watched** to hide the last used app or input and free that space. This is
+  separate from the **Recent apps** list opened with Back.
+- **Right needs Picture details and the top live preview off.** A live
+  preview inside the focused tile does not reserve the right position.
+- When Picture details are shown beside a top live preview, they also use
+  the centre; turn either one off to free it.
 
-Use **On** or **Off** beside a widget to change its visibility. If two are
-already on, switch one off before enabling another. Switching a widget off
-keeps its settings and text.
+Use **Move left** and **Move right** to reorder the list, including disabled
+widgets. The order determines placement for Automatic widgets. Explicit
+positions take priority. Switch conflicting features off before changing a
+position; a save that would overlap another widget or top feature is refused.
 
-Use **Move left** and **Move right** to arrange the list. Only enabled
-widgets appear on Home, in their relative order in this list. Disabled
-widgets keep their positions, so moving past one may leave the visible
-order unchanged. A move button at either end is unavailable because there
-is no position beyond it.
+Switches, order, positions, clock settings, city and units save immediately.
+Text and component edits use **Save widget**. Home picks up dashboard changes
+on its next heartbeat, normally within five seconds. Finish any Home arrange
+mode first. With every widget off, one empty space remains so rows stay put.
 
-Changes to switches, order, clock settings, city and units save
-automatically. Text edits use **Save widget**. An open Home normally picks
-up saved changes on its next heartbeat, about five seconds later. Home's
-arrange mode may defer a reload until arranging ends.
+![Top widgets settings, browser preview](../screenshots/home-widgets-dashboard-preview.png)
 
-Each widget occupies the same fixed space. With no widgets enabled, Home
-keeps one empty space above the rows. Standard and Alternative View both
-support widgets; Alternative View places the widget group on the right.
-With two widgets and live preview, the source title becomes smaller so
-the picture and its details fit.
+## Use widgets with the remote
 
-![Top widgets controls on the web dashboard, browser preview](../screenshots/home-widgets-dashboard-preview.png)
+From the first visible Home row, press **Up** to focus a widget. **Left** and
+**Right** choose a widget; **Down** returns to the rows. **OK** expands Weather
+or a component widget. **Back**, **Escape** or **OK** closes the expanded
+view. Use **Up** and **Down** to scroll an expanded view. The pointer can
+select a widget too.
+
+Hold **OK** on a widget to arrange it. Clock and text widgets enter this mode
+with a short OK press too. **Left** and **Right** move it between top positions
+and swap with an occupying widget; **OK** finishes. The on-screen help states
+the centre and right requirements. If a position is reserved, the existing
+layout is kept and a message explains why.
 
 ## Clock and date
 
-Choose a **Time format**:
+Choose **Follow the TV**, **12-hour clock** or **24-hour clock**. **Show date**
+is on by default. These choices affect this widget only. The TV app retains
+the clock visibility switch; the other controls are on the web dashboard.
 
-- **Follow the TV** uses the TV's 12-hour or 24-hour setting, including
-  changes made while Home is open. This is the default.
-- **12-hour clock** shows an AM or PM marker.
-- **24-hour clock** shows hours from 00 to 23.
-
-**Show date** is on by default. Turn it off to keep only the time. These
-choices affect the widget alone: they do not change the TV's time setting,
-the dashboard clock or clock screen savers.
-
-The widget uses the time available to the TV's Home page, and the date
-follows Home's display language. It has no independent city, time zone or
-world-clock setting. A wrong time needs correcting on the TV; see
-[network time](../ntp.md) if the TV cannot synchronise its clock.
+The clock uses the TV's time and Home's display language. It has no separate
+city or time zone. Correct a wrong time on the TV; see [network time](../ntp.md).
 
 ## Weather
 
-Weather shows the selected place, current temperature rounded to a whole
-degree, and a short condition such as Clear, Cloudy, Rain or Snow. This
-version has no multi-day forecast or weather map.
+The compact widget shows a condition icon, current temperature and condition,
+and today's temperature and wind graphs. Select it with **OK** to open larger
+graphs and a **10-day forecast**, including today. Each day shows its condition,
+high and low temperatures, maximum wind speed and rain probability. Forecast
+days follow the selected city's local date. A provider response with fewer
+days shows the available days.
+
+![Expanded weather, browser preview with sample data](../screenshots/home-widgets-forecast-preview.png)
 
 ### Set it up
 
-1. Enter a city name under **City**, with at least two characters.
-2. Press **Find city**. Searching alone does not enable weather.
-3. Choose the correct result. Check the region and country where several
-   cities share a name.
-4. Choose **Celsius (°C)** or **Fahrenheit (°F)**. Celsius is the default.
-5. Switch **Weather** on. If both slots are occupied, switch another widget
-   off first.
+1. Enter at least two characters under **City**, then press **Find city**.
+2. Select a result, checking its region and country. Searching alone does
+   not enable weather.
+3. Choose Celsius or Fahrenheit, and wind units: km/h, mph, m/s or knots.
+4. Free a slot if necessary and turn **Weather** on.
 
-To change place, search again and choose another result. To stop weather
-updates from Home, switch Weather off. The chosen city and unit remain
-saved for the next time it is enabled. There is no automatic location
-detection or API-key field.
+The saved city and units also feed custom widgets whose data source is
+`weather`. Such a widget can be on while the built-in Weather widget is off.
+To stop all weather polling from Home, switch off Weather **and** every
+custom weather data widget. There is no automatic location detection or API
+key setting.
 
-### Refresh and offline behaviour
+### Refresh, missing data and privacy
 
-While Home is visible, a successful weather read schedules the next one
-15 minutes later. Returning from another app or the screen saver asks for
-weather again, using the server's cached result if it is still fresh.
-Multiple views share that cache.
+While Home is visible, successful reads refresh after 15 minutes. Failed
+reads retry after five minutes. The last successful result for the same city
+and units remains usable for six hours, labelled **Last available weather**.
+After that, Home shows **Weather unavailable**. Missing chart or forecast data
+gets an empty-state message; missing numbers use a dash. Zero is a valid
+reading. At city midnight, yesterday's hourly data is cleared until a new
+reading arrives; past forecast days are removed.
 
-If the provider cannot be reached, the server waits five minutes before
-trying again. A previous result for the same city and unit can be shown
-for up to six hours, with **Last available weather** beneath it. Once that
-reading is too old, or if there has been no successful read, Home shows
-**Weather unavailable** and a dash instead of a temperature. It continues
-to retry while visible. A server restart clears cached readings.
+All views share the server's in-memory cache, which clears on restart.
+Home pauses weather and TV-statistics polling while hidden or covered by an
+app or screen saver. A request already running on the server may still finish.
+Clock, text and static component widgets work offline.
 
-Home stops its weather polling while hidden, covered by another app or
-covered by the screen saver. A request already started on the server can
-still finish. Clock and text widgets do not need internet access.
+Weather is off by default. City searches send the entered name to Open-Meteo.
+Enabling Weather or a custom weather data widget permits requests using the
+saved coordinates, temperature and wind units. Requests originate on the TV,
+so the provider receives its public IP address. The dashboard explains this
+before enabling weather data.
 
-### Privacy and provider
+The city, units and widget definitions are saved on the TV and included in
+settings backups. Weather readings stay in memory. Static widget values and
+TV statistics are not sent to the weather provider. Disabling weather keeps
+the saved city and does not erase existing backups or provider records.
+The dashboard credits [Open-Meteo](https://open-meteo.com/).
 
-Weather is off by default. Pressing **Find city** sends the search text to
-Open-Meteo's geocoding service, even while the weather widget is off.
-Enabling weather permits forecast requests for the selected coordinates
-and temperature unit. Both kinds of request originate on the TV, so
-Open-Meteo receives its public IP address.
+## Create and import widgets
 
-The city name, coordinates and unit are stored on the TV and included in
-settings backups. Weather readings stay in memory. A text widget's
-contents are not sent to Open-Meteo. Switching Weather off keeps the saved
-location; it does not erase an exported backup or data already received by
-the provider.
+**Import a widget (.json)** accepts version 1 text files up to 4 KB and version
+2 component files up to 16 KB. Imports start disabled, including replacements
+with an existing id. Check the contents, free a position, then enable the
+widget. A distinct `id` creates a separate widget; filenames do not identify it.
 
-The dashboard credits [Open-Meteo](https://open-meteo.com/). Its
-[forecast documentation](https://open-meteo.com/en/docs),
-[geocoding documentation](https://open-meteo.com/en/docs/geocoding-api)
-and [terms](https://open-meteo.com/en/terms) describe the external service.
-
-## Create a text widget
-
-Text widgets display a title, a larger value and a smaller detail line.
-Use one for a household notice, a reminder or an event time. The text stays
-as entered until edited; a date written in a text widget does not create a
-countdown or schedule an action.
-
-1. Download the [movie-night example](../development/widget-examples/movie-night.json),
-   or save the JSON below as `movie-night.json` using a plain-text editor
-   and UTF-8 encoding.
-2. Under **Top widgets**, choose **Import a text widget (.json)** and select
-   the file. The imported widget starts off.
-3. Edit **Title**, **Value** or **Detail** if needed, then press **Save widget**.
-4. Free a slot if necessary and switch the widget on.
-5. Use **Move left** or **Move right** to position it.
+Text widgets have a title, value and detail line, editable with the dashboard's
+text fields. Download [Movie night](../development/widget-examples/movie-night.json)
+or save this as UTF-8 JSON:
 
 ```json
 {
@@ -161,53 +145,50 @@ countdown or schedule an action.
 }
 ```
 
-The import file can be at most 4 KB. The title and value are required and
-limited to 40 characters each; the detail is optional and limited to 100.
-Keep text short enough to read from the sofa. Long lines are shortened
-with an ellipsis on the TV.
+Version 2 widgets combine **text**, **icons**, **data values** and **line or bar
+charts**. They use saved static values, local TV statistics or the same
+weather data as the built-in widget. The dashboard provides a **Widget JSON**
+editor and **Save widget**. Keep the id unchanged when editing. Definitions
+can include larger components for the expanded view.
 
-If the browser opens an example as JSON instead of downloading it, save
-that page as a `.json` file before importing it.
+Try [Energy example](../development/widget-examples/energy.json),
+[City weather](../development/widget-examples/city-weather.json) or
+[TV temperature](../development/widget-examples/tv-temperature.json).
+Energy uses sample static data; it does not connect to a meter. If an example
+opens as JSON in the browser, save it as a `.json` file before importing.
 
-Importing another file with the same `id` replaces that widget's text and
-switches it off again. Use a different id to add a separate widget. The
-file name does not identify the widget; the `id` inside it does.
+Widget text is literal, including anything that resembles HTML. Icons come
+from a built-in set. Uploaded JavaScript, HTML, raw SVG, CSS, arbitrary URLs
+and Home Assistant subscriptions are not supported. See
+[Writing a widget](../development/WRITING-WIDGETS.md) for the complete schema,
+bindings, limits and API.
 
-**Remove** deletes an imported widget and its saved text from Home. It does
-not delete the original file on the computer or copies in earlier backups.
-Clock and Weather can be switched off but cannot be removed.
-
-Version 1 text widgets contain plain text. HTML appears literally; scripts,
-custom styling, images, clickable links, external data feeds and Home
-Assistant entity subscriptions are not supported. For the complete file
-format and integration details, see [Writing a widget](../development/WRITING-WIDGETS.md).
+**Remove** deletes an imported definition and its saved values, leaving the
+original file and previous backups alone. Built-in widgets cannot be removed.
 
 ## Save and restore
 
-Order, visibility, clock settings, the weather location and unit, and text
-widgets share Home's saved layout. The [settings backup](server.md#glasshouse)
-carries that layout. Restoring it can therefore restore text widgets and
-the weather opt-in setting; review the restored weather choice if the TV
-has changed location.
+Widget positions, order, visibility, contents and weather settings share
+Home's layout and its [settings backup](server.md#glasshouse). Restoring a
+backup can restore weather opt-in too; review it if the TV has moved.
 
-**Reset the layout** in Home's rows-and-tiles editor resets those rows and
-tiles. It does not reset widget settings. To return to the starting widget
-display, leave Clock and date on, choose **Follow the TV**, enable **Show
-date**, and switch Weather and imported widgets off.
+**Reset the layout** in the rows-and-tiles editor resets rows and tiles only.
+For the initial widget display, turn on Clock and date, choose **Follow the
+TV**, enable **Show date**, set widget positions to **Automatic**, and turn
+Weather and imported widgets off.
 
 ## Troubleshooting
 
 | What happens | What to check |
 | :--- | :--- |
-| Top widgets is missing | Choose Glasshouse Home as the launcher. These controls belong to its Home customisation section on the web dashboard. |
-| Controls cannot be changed | Check whether server controls are disabled or a Home change is still being saved. A read-only dashboard cannot save widgets or search for a city. |
-| A third widget will not turn on | Two widgets are already visible. Switch one off first. |
-| Weather will not turn on | Choose a city result first; entering a name without selecting a result is not enough. |
-| No cities are found | Try a longer name or a nearby city. Search results come from Open-Meteo. |
-| City search or weather is unavailable | Check the TV's internet connection and access to Open-Meteo. Search can be retried; Home retries weather automatically. |
-| Weather shows an old-reading note | The latest refresh failed. The last successful reading remains usable for up to six hours. |
-| A changed city or unit briefly shows no temperature | Readings are kept separate by location and unit. A previous request may still be finishing; Home retries unavailable weather after five minutes. |
-| Import is rejected | Check JSON syntax, the 4 KB file limit, required fields and the id format. At most eight imported text widgets can be kept. |
-| Importing a widget turns it off | Each import starts disabled, including a replacement with the same id. Enable it after checking its text. |
-| Text is cut short | The slot size is fixed. Shorten the title, value or detail; changing TV resolution does not add more space. |
-| A saved change has not reached Home | Allow the next heartbeat, finish Home's arrange mode, or leave and reopen Home. Confirm that the dashboard and Home belong to the same TV. |
+| Top widgets is missing | Choose Glasshouse Home as the launcher. |
+| Controls are unavailable | Check whether controls are disabled or a save is in progress. |
+| A position is disabled or a move fails | Read the placement requirements beside Position; hide Last watched for centre, and Picture details and the top live preview for right. Explicit widget positions must also be unique. |
+| A third widget will not turn on | Turn off Last watched, Picture details and the top live preview. |
+| Weather will not turn on | Select a city result first. Typing a name alone is insufficient. |
+| Weather still updates with Weather off | Disable custom widgets using the weather source too. |
+| City search or weather is unavailable | Check the TV's internet connection and access to Open-Meteo; Home retries weather automatically. |
+| Data shows a dash or a chart is empty | Check the binding and data source. Missing readings are distinct from zero. |
+| Import is rejected | Check JSON syntax, schema, file size and the eight-import limit. |
+| Text is cut short | Shorten labels and values to fit the fixed space. |
+| A save has not reached Home | Allow the next heartbeat or finish arranging and reopen Home. |

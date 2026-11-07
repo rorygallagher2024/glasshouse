@@ -1,0 +1,34 @@
+{
+  "version": 2,
+  "type": "components",
+  "id": "city-weather",
+  "name": "City weather",
+  "data": {
+    "source": "weather"
+  },
+  "components": [
+    {
+      "type": "data",
+      "icon": "weather",
+      "label": "Temperature",
+      "field": "current.temperature",
+      "unit": "temperature",
+      "precision": 1
+    },
+    {
+      "type": "chart",
+      "label": "Today’s temperature",
+      "field": "today.temperature",
+      "labels": "today.labels",
+      "unit": "temperature"
+    },
+    {
+      "type": "chart",
+      "label": "Today’s wind",
+      "field": "today.wind",
+      "labels": "today.labels",
+      "unit": "wind",
+      "style": "bar"
+    }
+  ]
+}

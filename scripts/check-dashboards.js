@@ -567,6 +567,7 @@ async function visitHomeWidgets(browser, base, problems) {
     if (pathname === '/api/home/layout') {
       layout = Object.assign({}, layout, route.request().postDataJSON());
       layout.widgets = require('../server/lib/home-widgets').normalise(layout.widgets);
+      layout.widgetPlacement = require('../server/lib/home-widget-format').placement(layout);
       version++;
       return reply(route, { ok: true, layout });
     }
@@ -575,7 +576,7 @@ async function visitHomeWidgets(browser, base, problems) {
     if (pathname === '/api/home/widgets/weather') {
       weatherReads++;
       lastWeather = route;
-      return reply(route, { ok: true, available: true, stale: true, temperature: 12.5, code: 3 });
+      return reply(route, require('../test/mocks/widget-forecast')());
     }
     return reply(route, { ok: true, build: 'one', layoutVersion: String(version), covered });
   });
@@ -583,6 +584,16 @@ async function visitHomeWidgets(browser, base, problems) {
     await page.goto(base + '/?tab=home');
     const widgets = page.locator('#home-widgets');
     await widgets.getByRole('button', { name: 'Clock and date', exact: true }).waitFor();
+    await widgets.getByText('Centre needs Last watched off. Right needs Picture details and the top live preview off.', { exact: true }).first().waitFor();
+    if (!await widgets.getByRole('combobox', { name: 'Position of Clock and date', exact: true }).locator('option[value=center]').isDisabled()) {
+      problems.push('Home widgets: reserved centre position was not explained and disabled');
+    }
+    await page.evaluate(() => { homeLayout.picture = true; homeLayout.livePreview = true; renderHomeWidgets(); });
+    if (!await widgets.getByRole('combobox', { name: 'Position of Clock and date', exact: true }).locator('option[value=right]').isDisabled()) {
+      problems.push('Home widgets: reserved right position was not disabled');
+    }
+    await widgets.getByText('Picture details beside a top live preview also reserve the centre. Switch either one off to free it.', { exact: true }).first().waitFor();
+    await page.evaluate(() => { homeLayout.picture = false; homeLayout.livePreview = false; renderHomeWidgets(); });
     await widgets.getByLabel('Time format', { exact: true }).selectOption('12');
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.clock.format === '12');
     await widgets.getByLabel('Show date', { exact: true }).uncheck();
@@ -596,11 +607,22 @@ async function visitHomeWidgets(browser, base, problems) {
     await widgets.getByRole('button', { name: 'Move left', exact: true }).nth(1).click();
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.order[0] === 'weather');
     await widgets.locator('input[type=file]').setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{') });
-    await page.locator('#err').filter({ hasText: 'Choose a valid text widget JSON file.' }).waitFor({ state: 'visible' });
+    await page.locator('#err').filter({ hasText: 'Choose a valid widget JSON file.' }).waitFor({ state: 'visible' });
     if (layout.widgets.custom.length) problems.push('Home widgets: an invalid import changed the layout');
     const manifest = { version: 1, type: 'text', id: 'message', name: 'Message', value: '<script>bad()</script>', detail: 'Friday' };
     await widgets.locator('input[type=file]').setInputFiles({ name: 'message.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(manifest)) });
     await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom.length === 1);
+    const componentManifest = require('../docs/development/widget-examples/energy.json');
+    await widgets.locator('input[type=file]').setInputFiles({ name: 'energy.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(componentManifest)) });
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.custom.length === 2);
+    const editor = widgets.getByRole('textbox', { name: 'Widget JSON', exact: true });
+    const componentJSON = await editor.inputValue();
+    await editor.fill('{');
+    await editor.locator('..').locator('..').getByRole('button', { name: 'Save widget', exact: true }).click();
+    await page.locator('#err').filter({ hasText: 'Enter valid widget JSON.' }).waitFor({ state: 'visible' });
+    await editor.fill(componentJSON);
+    await editor.locator('..').locator('..').getByRole('button', { name: 'Save widget', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving);
     await page.setViewportSize({ width: 390, height: 844 });
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) problems.push('Home widgets: phone layout overflows');
     // Displayed weather is a deterministic fixture; this test never reaches the provider.
@@ -620,6 +642,16 @@ async function visitHomeWidgets(browser, base, problems) {
     if (actual.first !== 'widget-weather' || actual.date !== 'none' || !actual.meridiem || !actual.stale || !actual.statusFits || actual.width !== 744) {
       problems.push('Home widgets: settings did not reach Home: ' + JSON.stringify(actual));
     }
+    if (await page.locator('#widget-weather .wk-chart svg').count() !== 2) problems.push('Home widgets: today’s weather graphs are missing');
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Enter');
+    await page.locator('#widget-panel').waitFor({ state: 'visible' });
+    if (await page.locator('.wp-day').count() !== 10 || await page.locator('#widget-panel .wk-chart svg').count() !== 2) {
+      problems.push('Home widgets: the expanded forecast is missing days or charts');
+    }
+    await page.keyboard.press('Escape');
+    await page.locator('#widget-panel').waitFor({ state: 'detached' });
+    await page.keyboard.press('ArrowDown');
     const initialReads = weatherReads;
     covered = true;
     await page.clock.fastForward(5000);
@@ -639,6 +671,46 @@ async function visitHomeWidgets(browser, base, problems) {
     if (await page.locator('#widget-message .widget-value').textContent() !== manifest.value ||
         await page.locator('#widget-message script').count()) problems.push('Home widgets: imported text was not treated literally');
     if (!lastWeather) problems.push('Home widgets: weather fixture was never read');
+    // A component widget binds zeros and negative values, with literal text.
+    layout.widgets.custom = [{ version: 2, type: 'components', id: 'energy', name: 'Energy', enabled: true,
+      data: { source: 'static', values: { power: 0, history: [-4, null, 0, 6], labels: ['00', '06', '12', '18'] } },
+      components: [{ type: 'data', label: 'Power', field: 'power', unit: 'W', icon: 'home' }, { type: 'chart', label: 'Usage', field: 'history', labels: 'labels', style: 'bar' }],
+      expanded: [] }];
+    layout.widgets = require('../server/lib/home-widgets').normalise(layout.widgets);
+    layout.showLastOn = false;
+    layout.widgets.positions.energy = 'center';
+    layout.widgetPlacement = require('../server/lib/home-widget-format').placement(layout);
+    version++;
+    await page.clock.fastForward(5000);
+    await page.locator('#widget-energy').waitFor();
+    const energy = await page.locator('#widget-energy').innerText();
+    if (!energy.includes('0 W') || await page.locator('#widget-energy svg').count() < 2) problems.push('Home widgets: data, icon or chart component did not render');
+    if (await page.locator('#widget-energy').getAttribute('data-position') !== 'center') problems.push('Home widgets: centre positioning was ignored');
+    // Enter expands the selected custom widget; OK closes without reopening it.
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Enter');
+    await page.locator('#widget-panel').waitFor();
+    await page.keyboard.press('Enter');
+    await page.locator('#widget-panel').waitFor({ state: 'detached' });
+    // Three widgets can replace Last watched once the other top plates are off.
+    layout.showClock = true; layout.widgets.weather.enabled = true;
+    layout.widgets.positions.clock = 'left'; layout.widgets.positions.weather = 'right';
+    layout.widgetPlacement = require('../server/lib/home-widget-format').placement(layout);
+    version++;
+    await page.clock.fastForward(5000);
+    await page.waitForFunction(() => document.getElementById('widget-weather') && document.getElementById('when').style.display !== 'none');
+    const positions = await page.evaluate(() => ['when', 'widget-energy', 'widget-weather'].map(id => document.getElementById(id).getBoundingClientRect().left));
+    if (!(positions[0] < positions[1] && positions[1] < positions[2])) problems.push('Home widgets: left, centre and right positions overlap or are unordered: ' + JSON.stringify(positions));
+    await page.keyboard.down('Enter');
+    await page.clock.fastForward(800);
+    await page.keyboard.up('Enter');
+    await page.locator('#widget-message').filter({ hasText: 'Centre needs Last watched off' }).waitFor();
+    await page.keyboard.press('ArrowLeft');
+    await waitUntil(page, () => Promise.resolve(layout.widgets.positions.energy === 'left'));
+    if (layout.widgets.positions.energy !== 'left' || layout.widgets.positions.clock !== 'center') problems.push('Home widgets: remote positioning did not swap occupied slots');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowDown');
+
   } finally { await page.close(); }
 }
 
