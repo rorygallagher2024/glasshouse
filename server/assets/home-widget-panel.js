@@ -75,6 +75,12 @@
       var host = panel.querySelector('.wp-content'), scroll = host.scrollTop;
       host.innerHTML = '';
       if (w.weather) weather(host, w.data);
+      else if (w.football) {
+        if (w.data && w.data.partial) host.appendChild(kit.node('p', 'wp-status', I18N.t('home.football.partial', 'Some scores are unavailable')));
+        var scores = kit.node('div', 'fw-expanded'); host.appendChild(scores);
+        /** @type {any} */ (window).FootballWidget.render(scores, w.data, false);
+        host.appendChild(kit.node('p', 'wp-foot', I18N.t('home.football.credit', 'Scores by ESPN')));
+      }
       else {
         if (w.data && w.data.stale) host.appendChild(kit.node('p', 'wp-status', I18N.t('home.widgets.outdated', 'Last available weather')));
         var content = kit.node('div', 'wp-components');
@@ -87,7 +93,7 @@
       var w = item(id);
       if (!w) return;
       focus(id);
-      if (!w.weather && !w.components) return arrange();
+      if (!w.weather && !w.components && !w.football) return arrange();
       opened = id;
       message('');
       panel = kit.node('section', 'widget-panel'); panel.id = 'widget--panel';

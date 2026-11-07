@@ -14,8 +14,8 @@ assert.strictEqual(JSON.stringify(state), original, 'a preview never changes sav
 state.widgets = plan.widgets;
 plan = layout.plan(state, 'weather', 'center');
 assert.deepEqual(plan.positions, { clock: 'left', weather: 'center' }, 'dropping on an occupied zone swaps both widgets');
-assert.deepEqual(layout.reorder(state, 'weather', 'clock', false).order, ['weather', 'clock', 'notice']);
-assert.deepEqual(layout.reorder(state, 'clock', 'weather', true).order, ['weather', 'clock', 'notice']);
+assert.deepEqual(layout.reorder(state, 'weather', 'clock', false).order, ['weather', 'clock', 'football', 'notice']);
+assert.deepEqual(layout.reorder(state, 'clock', 'weather', true).order, ['weather', 'clock', 'football', 'notice']);
 assert.deepEqual(layout.reorder(state, 'clock', 'clock', true).order, state.widgets.order);
 state = base(); state.showLastOn = true;
 assert.ok(layout.plan(state, 'clock', 'center').reasons.indexOf('lastWatched') !== -1);
@@ -53,7 +53,7 @@ for (var flags = 0; flags < 16; flags++) {
         if (!candidate.ok) return;
         checked++;
         var active = candidate.widgets.order.filter(function (key) {
-          return key === 'clock' ? state.showClock : key === 'weather' ? state.widgets.weather.enabled : state.widgets.custom[0].enabled;
+          return key === 'clock' ? state.showClock : key === 'weather' ? state.widgets.weather.enabled : key === 'football' ? false : state.widgets.custom[0].enabled;
         });
         var assigned = active.map(function (key) { return candidate.positions[key]; });
         assert.strictEqual(candidate.positions[id], target);

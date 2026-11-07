@@ -1,8 +1,9 @@
 (function () {
   var kit = /** @type {any} */ (window).WidgetKit, I18N = /** @type {any} */ (window).I18N;
   var createPanel = /** @type {any} */ (window).CreateWidgetPanel;
+  var footballView = /** @type {any} */ (window).FootballWidget;
   var layout = null, config = null, signature = '', revision = 0, paused = false, list = [];
-  var sources = { weather: null, tv: null }, requests = {}, timers = {};
+  var sources = { weather: null, tv: null, football: null }, requests = {}, timers = {};
   var onSaved = function (_reply) {}, onOpen = function (_open) {};
   var canInteract = function () { return true; };
   function el(id) { return document.getElementById(id); }
@@ -26,12 +27,13 @@
   function read(source) {
     if (paused || document.hidden || !config || !used(source) || requests[source]) return;
     var version = revision;
-    requests[source] = json('GET', source === 'weather' ? '/api/home/widgets/weather' : '/api/stats', null, function (data) {
+    var url = source === 'weather' ? '/api/home/widgets/weather' : source === 'football' ? '/api/home/widgets/football' : '/api/stats';
+    requests[source] = json('GET', url, null, function (data) {
       if (version !== revision || paused || document.hidden) return;
       delete requests[source];
-      sources[source] = data && data.ok !== false ? data : source === 'weather' ? { available: false } : null;
+      sources[source] = data && data.ok !== false ? data : source !== 'tv' ? { available: false, matches: [] } : null;
       paintData();
-      var wait = source === 'tv' ? 60000 : data && data.available && !data.stale ? 15 * 60000 : 5 * 60000;
+      var wait = source === 'football' ? 60000 : source === 'tv' ? 60000 : data && data.available && !data.stale ? 15 * 60000 : 5 * 60000;
       timers[source] = setTimeout(function () { read(source); }, wait);
     });
   }
@@ -66,6 +68,12 @@
   function paintData() {
     list.forEach(function (w) {
       if (w.weather) paintWeather(w);
+      else if (w.football) {
+        w.data = sources.football;
+        footballView.render(w.element.querySelector('.widget-body'), w.data, true);
+        w.element.querySelector('.widget-status').textContent = w.data && w.data.partial
+          ? I18N.t('home.football.partial', 'Some scores are unavailable') : I18N.t('home.football.credit', 'Scores by ESPN');
+      }
       else if (w.components) {
         w.data = dataFor(w);
         kit.render(w.element.querySelector('.widget-body'), w.components, w.data, true);
@@ -87,11 +95,11 @@
   }
   var panel = createPanel({ items: function () { return list; }, move: move, changed: function (open) { onOpen(open); } });
   function addWidget(w, host) {
-    var box = kit.node('div', 'home-widget' + (w.weather || w.components ? ' widget-rich' : ''));
+    var box = kit.node('div', 'home-widget' + (w.weather || w.components || w.football ? ' widget-rich' : '') + (w.football ? ' widget-football' : ''));
     box.id = 'widget-' + w.id;
     box.appendChild(kit.node('div', 'widget-name', w.title));
     var body = kit.node('div', 'widget-body'); box.appendChild(body);
-    if (!w.weather && !w.components) { body.appendChild(kit.node('div', 'widget-value', w.value)); body.appendChild(kit.node('div', 'widget-detail', w.detail || '')); }
+    if (!w.weather && !w.components && !w.football) { body.appendChild(kit.node('div', 'widget-value', w.value)); body.appendChild(kit.node('div', 'widget-detail', w.detail || '')); }
     box.appendChild(kit.node('div', 'widget-status'));
     host.appendChild(box); w.element = box; list.push(w);
   }
@@ -102,6 +110,7 @@
     if (signature === next) return;
     signature = next; revision++; stop();
     if (!config || JSON.stringify(config.weather) !== JSON.stringify(settings.weather)) sources.weather = null;
+    if (!config || JSON.stringify(config.football) !== JSON.stringify(settings.football)) sources.football = null;
     config = settings;
     var host = el('widgets'), clock = el('when'); host.removeChild(clock); host.innerHTML = ''; list = [];
     (settings.order || ['clock', 'weather']).forEach(function (id) {
@@ -111,6 +120,7 @@
         return;
       }
       if (id === 'weather' && settings.weather.enabled) return addWidget({ id: id, title: settings.weather.location && settings.weather.location.name || I18N.t('home.widgets.weather', 'Weather'), weather: true, source: 'weather' }, host);
+      if (id === 'football' && settings.football && settings.football.enabled) return addWidget({ id: id, title: I18N.t('home.football.title', 'Football scores'), football: true, source: 'football' }, host);
       var custom = settings.custom || [];
       for (var i = 0; i < custom.length; i++) {
         var w = custom[i]; if (w.id !== id || !w.enabled) continue;
@@ -132,17 +142,24 @@
       w.element.onclick = function (e) { e.stopPropagation(); if (canInteract()) panel.open(w.id); };
     });
     if (placement && placement.manual) list.sort(function (a, b) { return a.element.offsetLeft - b.element.offsetLeft; });
-    paintData(); read('weather'); read('tv');
+    paintData(); read('weather'); read('tv'); read('football');
   }
   /** @type {any} */ (window).GlasshouseWidgets = {
     render: render, key: panel.key, focus: panel.focus, blur: panel.blur, isOpen: panel.isOpen,
     configure: function (options) { onSaved = options.saved; onOpen = options.opened; canInteract = options.canInteract; },
     scroll: panel.scroll,
     reset: panel.reset,
-    covered: function (on) { if (paused === on) return; paused = on; revision++; stop(); if (on) panel.reset(); else { read('weather'); read('tv'); } }
+    covered: function (on) {
+      if (paused === on) return;
+      paused = on; revision++; stop(); document.body.classList.toggle('football-paused', on);
+      sources.football = null; paintData();
+      if (on) panel.reset(); else { read('weather'); read('tv'); read('football'); }
+    }
   };
   document.addEventListener('visibilitychange', function () {
-    revision++; stop(); if (document.hidden) panel.reset(); else { read('weather'); read('tv'); }
+    revision++; stop(); document.body.classList.toggle('football-paused', document.hidden);
+    sources.football = null; paintData();
+    if (document.hidden) panel.reset(); else { read('weather'); read('tv'); read('football'); }
   });
   window.addEventListener('pagehide', function () { revision++; stop(); panel.reset(); });
 })();

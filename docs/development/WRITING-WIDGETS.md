@@ -72,7 +72,7 @@ The file and normalised definition must fit **16 KB**. Common fields:
 | Field | Rules |
 | :--- | :--- |
 | `version`, `type` | Exactly `2` and `"components"`. |
-| `id` | Required: a lowercase letter followed by up to 39 lowercase letters, digits or hyphens. `clock` and `weather` are reserved. |
+| `id` | Required: a lowercase letter followed by up to 39 lowercase letters, digits or hyphens. `clock`, `weather` and `football` are reserved. |
 | `name` | Required, up to 40 characters. |
 | `enabled` | Only literal `true` enables a saved definition. Dashboard imports override it to `false`. |
 | `data.source` | Exactly `static`, `weather` or `tv`. |
@@ -82,6 +82,8 @@ The file and normalised definition must fit **16 KB**. Common fields:
 
 Unknown fields are removed during normalisation. Text is trimmed and control
 characters removed. The same id syntax applies to version 1.
+An existing custom widget named `football` is preserved under `football-custom`
+(or a numbered suffix if needed), retaining its order and position.
 
 ### Component reference
 

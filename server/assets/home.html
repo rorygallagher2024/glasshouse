@@ -69,6 +69,20 @@ body.widget-focused .tile.focus{outline-color:transparent}
 .widget-rich{padding:8px 0}
 .widget-rich .widget-name{font-size:20px;line-height:24px}
 .widget-rich .widget-status{font-size:15px;line-height:18px;margin-top:2px}
+.widget-football .widget-body{height:128px;overflow:hidden;margin-top:4px}
+.fw-row{height:64px;padding:2px 0 4px;overflow:hidden}
+.fw-side{display:-webkit-flex;display:flex;font-size:18px;line-height:22px}
+.fw-side span{min-width:0;-webkit-flex:1;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fw-side b{min-width:28px;margin-left:12px;text-align:right;font-weight:600}
+.fw-meta{font-size:13px;line-height:14px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fw-scrolling{-webkit-animation:football-scroll linear infinite;animation:football-scroll linear infinite}
+@-webkit-keyframes football-scroll{from{-webkit-transform:translateY(0)}to{-webkit-transform:translateY(-50%)}}
+@keyframes football-scroll{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.widget-focus .fw-track,.widget-expanded .fw-track,.football-paused .fw-track,html.resting .fw-track{-webkit-animation-play-state:paused;animation-play-state:paused}
+.fw-expanded .fw-row{height:auto;padding:16px 0;border-bottom:1px solid #2a2825}
+.fw-expanded .fw-side{font-size:30px;line-height:42px}
+.fw-expanded .fw-meta{font-size:20px;line-height:30px}
+@media(prefers-reduced-motion:reduce){.fw-track{-webkit-animation:none;animation:none}}
 .widget-weather-summary{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;height:46px}
 .widget-weather-summary>svg{width:34px;height:34px;margin-right:10px;-webkit-flex:0 0 auto;flex:0 0 auto}
 .widget-rich .widget-value{font-size:40px;line-height:44px}
@@ -736,6 +750,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 <script src="/assets/i18n.js"></script>
 <script src="/assets/widget-kit.js"></script>
 <script src="/assets/home-widget-panel.js"></script>
+<script src="/assets/home-football-view.js"></script>
 <script src="/assets/home-widgets-view.js"></script>
 <script>
 /*

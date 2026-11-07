@@ -27,6 +27,17 @@ polling while covered. Widget ids such as `message`, `panel` and `panel-title`
 cannot overwrite focus help or dialog controls. City and weather replies are fixtures. Physical-TV
 rendering and remote testing remain separate requirements.
 
+`test-home-football.js` checks live/half-time filtering, home and away team
+selection, zero scores, duplicate matches, midnight coverage, shared requests,
+bounded provider concurrency, expiry, failure backoff, partial results and
+league/team discovery. Replies and time are injected; it makes no live request.
+The football browser check shares the Home widget group and exercises league
+and team selection, persistence, team-filter clearing, phone overflow in both
+themes, scrolling only on overflow, focus pause, expansion, empty/error states
+and stopping polling while covered. Match scores in browser tests are synthetic.
+The ES5 check includes `assets/home-football-view.js` alongside the other Home
+widget scripts.
+
 `test-widget-layout.js` checks the shared drop planner, swapping, ordering,
 reservations, city/visibility requirements and unchanged preview inputs. It
 also checks accepted candidates across combinations of Home features and

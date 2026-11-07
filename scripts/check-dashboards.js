@@ -551,6 +551,108 @@ async function visitHomePreview(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+async function visitHomeFootball(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  page.on('pageerror', e => problems.push('Football: ' + e.message));
+  let layout = { rows: ['app'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] }, channels: [],
+    showClock: true, showLastOn: false, picture: false, livePreview: false, hintSeen: true, searchHintSeen: true,
+    widgets: require('../server/lib/home-widgets').normalise(null) };
+  let version = 1, scoreReads = 0, available = true, count = 9, covered = false, scoreChange = 0;
+  const matches = () => Array.from({ length: count }, (_, i) => ({ id: String(i + 1), league: 'Ligue 1', status: "42'",
+    home: { id: '160', name: 'Paris Saint-Germain', score: i + scoreChange }, away: { id: '166', name: 'Lille', score: 0 } }));
+  await page.route('**/api/home**', route => {
+    const pathname = new URL(route.request().url()).pathname;
+    const reply = body => route.fulfill({ json: body });
+    if (pathname === '/api/home') return reply({ ok: true, supported: { ok: true }, enabled: true, active: true, writable: true, layout });
+    if (pathname === '/api/home/catalogue') return reply({ ok: true, layout, layoutVersion: String(version), apps: [], devices: [], channels: [], order: { app: ['lg-home'], dev: [], ch: [] }, sources: {} });
+    if (pathname === '/api/home/layout') {
+      layout = Object.assign({}, layout, route.request().postDataJSON()); version++;
+      return reply({ ok: true, layout });
+    }
+    if (pathname.endsWith('/football/leagues')) return reply({ ok: true, leagues: [{ id: 'fra.1', name: 'Ligue 1' }, { id: 'eng.1', name: 'Premier League' }] });
+    if (pathname.endsWith('/football/teams')) return reply({ ok: true, teams: [{ id: '160', name: 'Paris Saint-Germain' }, { id: '166', name: 'Lille' }] });
+    if (pathname.endsWith('/widgets/football')) { scoreReads++; return reply({ ok: true, available, partial: false, updated: Date.now(), matches: available ? matches() : [] }); }
+    return reply({ ok: true, covered, build: 'football', layoutVersion: String(version) });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    const widget = page.locator('#home-widgets');
+    await widget.getByRole('button', { name: 'Browse leagues', exact: true }).click();
+    await widget.getByRole('checkbox', { name: 'Ligue 1', exact: true }).check();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.football.leagues.length === 1);
+    await widget.getByLabel('Teams from', { exact: true }).selectOption('fra.1');
+    await widget.getByRole('checkbox', { name: 'Paris Saint-Germain', exact: true }).check();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.football.teams.length === 1);
+    await widget.getByRole('searchbox', { name: 'Find a team', exact: true }).fill('absent');
+    await widget.locator('#home-football-team').getByText('No matching choices. Try another name.', { exact: true }).waitFor();
+    await widget.getByRole('searchbox', { name: 'Find a team', exact: true }).fill('');
+    await widget.getByRole('button', { name: 'Football scores', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.widgets.football.enabled);
+    await page.reload();
+    await widget.getByRole('button', { name: 'Remove Paris Saint-Germain', exact: true }).waitFor();
+    if (!layout.widgets.football.enabled || layout.widgets.football.leagues[0].id !== 'fra.1') problems.push('Football: saved selections did not survive reload');
+    if (scoreReads) problems.push('Football: the settings dashboard polled live scores');
+    await widget.getByRole('button', { name: 'Browse leagues', exact: true }).click();
+    await widget.getByRole('checkbox', { name: 'Ligue 1', exact: true }).waitFor();
+    await widget.getByLabel('Teams from', { exact: true }).selectOption('fra.1');
+    await widget.getByRole('checkbox', { name: 'Paris Saint-Germain', exact: true }).waitFor();
+    for (const theme of ['dark', 'light']) {
+      await page.evaluate(theme => { document.documentElement.setAttribute('data-theme', theme); }, theme);
+      await page.setViewportSize({ width: 390, height: 844 });
+      if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) problems.push('Football: phone overflow in ' + theme);
+    }
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await widget.getByRole('button', { name: 'Show all teams in selected leagues', exact: true }).click();
+    await page.waitForFunction(() => !homeSaving && !homeLayout.widgets.football.teams.length);
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.locator('#widget-football .fw-scrolling').waitFor();
+    await page.waitForFunction(() => getComputedStyle(document.querySelector('#widget-football .fw-track')).transform !== 'none');
+    if (await page.locator('#widget-football .fw-group[aria-hidden=true]').count() !== 1) problems.push('Football: the seamless loop has no hidden duplicate');
+    const firstTransform = await page.locator('#widget-football .fw-track').evaluate(el => getComputedStyle(el).transform);
+    await page.waitForFunction(first => getComputedStyle(document.querySelector('#widget-football .fw-track')).transform !== first, firstTransform);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    if (await page.locator('#widget-football .fw-track').evaluate(el => getComputedStyle(el).animationName) !== 'none') problems.push('Football: reduced motion did not stop automatic scrolling');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.locator('#widget-football').focus();
+    if (await page.locator('#widget-football .fw-track').evaluate(el => getComputedStyle(el).animationPlayState) !== 'paused') problems.push('Football: focusing did not pause scrolling');
+    await page.locator('#widget-football').click();
+    await page.locator('#widget--panel .fw-row').first().waitFor();
+    if (await page.locator('#widget--panel .fw-row').count() !== count) problems.push('Football: the expanded list omitted matches');
+    await page.keyboard.press('ArrowDown');
+    if (!await page.locator('#widget--panel .wp-content').evaluate(el => el.scrollTop > 0)) problems.push('Football: the expanded list did not scroll with the remote');
+    await page.keyboard.press('Escape');
+    await page.locator('#widget--panel').waitFor({ state: 'detached' });
+    const readScores = async () => {
+      const reply = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/widgets/football');
+      await page.clock.fastForward(60000); await reply;
+    };
+    await page.locator('#widget-football .fw-track').evaluate(el => { el.style.animationDelay = el.style.webkitAnimationDelay = '-5s'; });
+    await page.waitForFunction(() => Math.abs(new DOMMatrix(getComputedStyle(document.querySelector('#widget-football .fw-track')).transform).m42) >= 59);
+    scoreChange = 1; await readScores();
+    if (await page.locator('#widget-football .fw-track').evaluate(el => Math.abs(new DOMMatrix(getComputedStyle(el).transform).m42)) < 59) problems.push('Football: a score update restarted the loop');
+    count = 1; await readScores();
+    await page.locator('#widget-football .fw-scrolling').waitFor({ state: 'detached' });
+    if (await page.locator('#widget-football .fw-group').count() !== 1) problems.push('Football: a list that fits was duplicated');
+    count = 0; await readScores();
+    await page.getByText('No selected teams playing now', { exact: true }).waitFor();
+    available = false; await readScores();
+    await page.getByText('Football scores unavailable', { exact: true }).waitFor();
+    if (await page.locator('#widget-football .fw-row').count()) problems.push('Football: failed refresh retained old scores');
+    covered = true;
+    const heartbeat = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/beat');
+    await page.clock.fastForward(5000); await heartbeat;
+    await page.waitForFunction(() => document.body.classList.contains('football-paused'));
+    const before = scoreReads;
+    await page.clock.fastForward(120000);
+    if (scoreReads !== before) problems.push('Football: scores kept polling while Home was covered');
+    covered = false; available = true; count = 3;
+    const resumed = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/widgets/football');
+    await page.clock.fastForward(5000); await resumed;
+    await page.locator('#widget-football .fw-scrolling').waitFor();
+  } finally { await page.close(); }
+}
+
 async function visitHomeWidgets(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   page.on('pageerror', e => problems.push('Home widgets: ' + e.message));
@@ -3106,7 +3208,7 @@ function groups(web, tv) {
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
-    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels, visitHomeWidgets, visitWidgetLayout, visitWidgetStore] },
+    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels, visitHomeWidgets, visitWidgetLayout, visitWidgetStore, visitHomeFootball] },
     /*
      * Scrolling and motion read the row's place frame by frame, and missed
      * frames with the other groups sharing CI's four cores: 3 of 15 runs

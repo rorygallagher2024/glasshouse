@@ -46,7 +46,7 @@ function components(raw, limit) {
 function custom(raw) {
   if (raw && raw.version === 3) return require('./home-widget-template').instance(raw);
   if (!raw || typeof raw.id !== 'string' || !/^[a-z][a-z0-9-]{0,39}$/.test(raw.id) ||
-      raw.id === 'clock' || raw.id === 'weather') return null;
+      raw.id === 'clock' || raw.id === 'weather' || raw.id === 'football') return null;
   var name = text(raw.name, 40);
   if (!name) return null;
   if (raw.version === 1 && raw.type === 'text') {

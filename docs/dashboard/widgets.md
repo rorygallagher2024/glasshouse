@@ -1,7 +1,7 @@
 # Home widgets
 
 Widgets occupy fixed 360 × 200 spaces above Glasshouse Home's app and input
-rows. Clock and date starts on; Weather and imported widgets start off.
+rows. Clock and date starts on; Weather, Football scores and imported widgets start off.
 Open the web dashboard, choose **Home > Home customisation > Top widgets**.
 LG Home, Glasshouse Minimal and custom launchers have their own layouts.
 
@@ -153,6 +153,40 @@ settings backups. Weather readings stay in memory. Static widget values and
 TV statistics are not sent to the weather provider. Disabling weather keeps
 the saved city and does not erase existing backups or provider records.
 The dashboard credits [Open-Meteo](https://open-meteo.com/).
+
+## Football scores
+
+Under **Football scores**, choose **Browse leagues**, then select up to eight
+leagues or cups. **Teams from** loads a selected competition's teams; select
+up to 64 favourites. With no team filter, every live match in the selected
+competitions appears. With favourites selected, only their matches within
+those competitions appear. A team's match outside the selected competitions
+is not included. Selections save immediately and survive restarts and backups.
+
+Turn **Football scores** on after choosing a league and freeing a widget
+position. Removing the last league switches it off. Completed, upcoming,
+postponed and suspended matches are excluded; half-time remains included.
+An empty live list shows **No selected teams playing now**.
+
+Matches stack vertically. A list taller than the compact widget scrolls upward
+in a continuous loop; a list that fits stays still. Focus the widget to pause.
+**OK** opens the complete list, **Up/Down** scroll it, and **Back** closes it.
+Reduced-motion preferences disable automatic scrolling; the expanded list
+remains available.
+
+Scores refresh once a minute while Home is visible. Polling and scrolling
+stop while Home is hidden or covered. A failed refresh removes the affected
+league's scores and shows an unavailable message; partial results are labelled
+**Some scores are unavailable**. Scores are not guaranteed to be instant.
+
+Browsing leagues or teams and enabling scores makes requests from the TV to
+ESPN, which receives its public IP address and the requested competitions.
+Browsing does not enable score polling. No account or API key is needed.
+The integration uses ESPN's public, undocumented endpoints: competition
+coverage, delays and availability may change. League and team lists are cached
+in memory for six hours, scores for one minute and failed reads for 30 seconds.
+Match data is not saved in backups. Only league and team selections are saved.
+All matches are credited to [ESPN](https://www.espn.com/soccer/scoreboard).
 
 ## Browse the widget store
 
