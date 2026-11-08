@@ -74,7 +74,13 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    An icon and the current temperature, to the right of the Picture details plate (or in its place, when the plate is off), with the city and a short condition label underneath. There is no weather lookup on the TV: it shows whatever was last written to the `text.lg_tv_weather` Home Assistant entity, a JSON string such as `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}` ([entities](../HOME-ASSISTANT-ENTITIES.md)), which an automation keeps current: [an example](../HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home). `city` is optional; the condition label is translated from `condition` on the TV. It shows once something has been sent, is kept when the TV restarts, and is hidden once 3 hours pass without an update or an empty value is sent. The **Weather** switch in the Home tab's Home customisation section, and the TV app's Home section, hides it whatever Home Assistant sends.
+    An icon and the current temperature, level with the clock, with the place and a short condition label on the date's line. The **Weather** setting in the Home tab's Home customisation section chooses where it comes from:
+
+    * **From Home Assistant**, the default: whatever was last written to the `text.lg_tv_weather` entity, a JSON string such as `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}` ([entities](../HOME-ASSISTANT-ENTITIES.md)), which an automation keeps current: [an example](../HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home). `city` is optional, and the temperature is shown in the unit sent.
+    * **From the internet**: the weather from [Open-Meteo](https://open-meteo.com/) for a place you search for by name under the setting. The TV asks for it every 30 minutes while the screen is on, and sends only the place's position; nothing is asked for while the TV is off. Temperatures are in °C, or °F for a place in the US and the few other countries that use it. *Weather data by Open-Meteo.com* shows in the bottom corner while it is on screen.
+    * **Off**.
+
+    The badge shows once there is weather, is kept when the TV restarts, and is hidden once 3 hours pass without an update or, from Home Assistant, when an empty value is sent. The TV app's Home section steps through the same three; a place is chosen on the web dashboard.
 
 -   **Last watched, app count, CEC addresses and channel logos**
 
@@ -289,8 +295,14 @@ webOS 11.
 Only one stream plays at a time, and each is closed before the next opens, as
 many accounts allow one or two at once across the household. If someone else
 is watching on the same account, the channel may not play: **OK** tries
-again. Refreshes wait while a channel plays, and the screen saver stays away
-while one plays full screen.
+again. A channel that stops partway through reconnects by itself, back at
+the live point, for about a minute before it gives up. A channel from a
+provider login can play as either of the provider's two kinds of stream,
+HLS or MPEG-TS: **Yellow** in the full-screen player switches the channel
+playing, and the TV remembers it for that channel. If the choice cannot be
+saved, a message says so; **OK** reopens the channel with its saved choice.
+Refreshes wait while a channel plays, and the screen saver stays away while one plays full
+screen.
 
 The links and logins are kept on the TV only. They are not shown on the
 dashboard again, and never sent to Home Assistant, the logs or a phone or

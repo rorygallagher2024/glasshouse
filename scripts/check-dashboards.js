@@ -277,7 +277,7 @@ async function visitHomePicture(browser, base, problems) {
   } finally { await page.close(); }
 }
 
-// The weather badge: Home Assistant's last push, brought by the heartbeat.
+// The weather badge: Home Assistant's last push or Open-Meteo's, brought by the heartbeat.
 async function visitHomeWeather(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home weather: ' + e.message));
@@ -320,19 +320,87 @@ async function visitHomeWeather(browser, base, problems) {
     weather = null;
     await beat();
     if (await shown()) fail('still shown once the heartbeat brought none');
-    // The Home tab's Weather switch, off: hidden whatever Home Assistant sends.
-    weather = { condition: 'sunny', temp: 12, city: null };
-    layout.showWeather = false;
-    version++;
-    const reread = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    // Open-Meteo's weather carries its credit, in the corner, gone with the weather.
+    const credit = () => page.evaluate(() => {
+      const c = document.getElementById('wxCredit');
+      return c.textContent && getComputedStyle(c).display !== 'none' ? c.textContent : '';
+    });
+    if (await credit()) fail('Home Assistant\'s weather credited to Open-Meteo');
+    weather = { condition: 'cloudy', temp: 9.7, city: 'Glasgow', source: 'internet' };
     await beat();
-    await reread;
+    const net = await shown();
+    if (!net || net.temp !== '10°' || net.cond !== 'Cloudy') fail('Open-Meteo\'s weather was shown as ' + JSON.stringify(net));
+    if (await credit() !== 'Weather data by Open-Meteo.com') fail('Open-Meteo\'s weather shown without its credit');
+    weather = null;
     await beat();
-    if (await shown()) fail('shown with the Weather switch off');
+    if (await credit()) fail('the credit stayed once the weather went');
   } catch (e) {
     fail(e.message);
   }
   await page.close();
+}
+
+// The Home tab's Weather setting: the source, and a place found by name for
+// Open-Meteo. The search is answered here, so the check never reaches Open-Meteo.
+async function visitHomeWeatherSetting(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home weather setting: ' + e.message));
+  const fail = what => problems.push('Home weather setting: ' + what);
+  const layout = { rows: ['app'], order: { app: [] }, sort: { app: 'custom' }, hidden: { app: [] }, channels: [],
+    hintSeen: true, searchHintSeen: true, weather: 'ha', weatherPlace: null };
+  const saves = [], searches = [];
+  const glasgow = { name: 'Glasgow', admin: 'Scotland', country: 'United Kingdom', countryCode: 'GB', lat: 55.8652, lon: -4.2576 };
+  await page.route('**/api/home**', async route => {
+    const url = new URL(route.request().url());
+    let body;
+    if (url.pathname === '/api/home') body = { ok: true, supported: { ok: true }, installed: true, enabled: true, active: true, writable: true, layout, history: true };
+    else if (url.pathname.endsWith('/catalogue')) body = { ok: true, apps: [], channels: [], devices: [], layout, order: { app: ['lg-home'] } };
+    else if (url.pathname.endsWith('/weather/places')) {
+      searches.push(url.searchParams.get('q'));
+      body = { ok: true, places: url.searchParams.get('q') === 'Glasgow' ? [glasgow] : [] };
+    } else if (url.pathname.endsWith('/layout')) {
+      const patch = route.request().postDataJSON();
+      saves.push(patch);
+      if (patch.weather) layout.weather = patch.weather;
+      if (patch.weatherPlace !== undefined) layout.weatherPlace = patch.weatherPlace;
+      body = { ok: true, layout: JSON.parse(JSON.stringify(layout)) };
+    } else body = { ok: true };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    const sel = page.locator('#home-weather-sel');
+    await page.waitForFunction(() => { const s = document.getElementById('home-weather-sel'); return s && !s.disabled && s.offsetParent; });
+    if (await sel.inputValue() !== 'ha') fail('the source read ' + await sel.inputValue() + ' for Home Assistant');
+    if (await page.locator('#home-weather-place').isVisible()) fail('the place search shown for Home Assistant');
+    let saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await sel.selectOption('internet');
+    await saved;
+    await page.locator('#home-weather-place').waitFor();
+    if (!/Search for your town/.test(await page.locator('#home-weather-chosen').textContent())) fail('no prompt to choose a place');
+    await page.locator('#home-weather-q').fill('Nowhere');
+    await page.locator('#home-weather-go').click();
+    await page.locator('#home-weather-results').getByText('No places found').waitFor();
+    await page.locator('#home-weather-q').fill('Glasgow');
+    await page.locator('#home-weather-q').press('Enter');
+    const pick = page.locator('#home-weather-results button');
+    await pick.first().waitFor();
+    if (await pick.first().textContent() !== 'Glasgow, Scotland, United Kingdom') fail('a place read ' + await pick.first().textContent());
+    saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await pick.first().click();
+    await saved;
+    const last = saves[saves.length - 1];
+    if (last.weather !== 'internet' || !last.weatherPlace || last.weatherPlace.lat !== glasgow.lat) fail('choosing a place saved ' + JSON.stringify(last));
+    await page.waitForFunction(() => /Glasgow, Scotland/.test(document.getElementById('home-weather-chosen').textContent));
+    if (JSON.stringify(searches) !== '["Nowhere","Glasgow"]') fail('searched for ' + JSON.stringify(searches));
+    if (!/GeoNames/.test(await page.locator('#home-weather-place').textContent())) fail('no credit for the place search');
+    saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await sel.selectOption('off');
+    await saved;
+    await page.waitForFunction(() => document.getElementById('home-weather-place').hidden);
+  } catch (e) {
+    fail(e.message);
+  } finally { await page.close(); }
 }
 
 // The TV's tile, Keep the preview on and Preview in the tile.
@@ -2383,7 +2451,8 @@ async function visitHomeInternetTv(browser, base, problems) {
     { id: 'p1:x2', pl: 'p1', key: 'x2', name: 'VIP: BBC WORLD NEWS \u1d34\u1d30', group: 'UK| NEWS \u1d34\u1d30', number: '2' }
   ];
   const now = Date.now(), half = 30 * 60000, at = Math.floor(now / half) * half;
-  const leases = [], streams = [];
+  const leases = [], streams = [], outputs = {};
+  let refuseOutput = false, holdOutput = false, finishOutput = null;
   let favourites = true, previewInTile = false;
   await page.route('**/api/home/**', route => {
     const url = new URL(route.request().url());
@@ -2403,7 +2472,18 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (url.pathname.endsWith('/lineup')) return reply({ ok: true, revision: 1, channels: tv,
       sections: [{ id: 'news', kind: 'pick', name: 'News' }], favourites: favourites ? tv.map(c => c.id) : [] });
     if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: { 'p1:x1': [{ start: at, end: at + half * 2, title: 'The World This Weekend' }] } });
-    if (url.pathname.endsWith('/stream')) { streams.push(url.searchParams.get('key')); trace.push('request ' + url.searchParams.get('key')); return reply({ ok: true, url: 'http://s.test/' + url.searchParams.get('key') + '.m3u8', format: 'hls' }); }
+    if (url.pathname.endsWith('/stream')) {
+      const key = url.searchParams.get('key'), ts = outputs[key] === 'ts';
+      streams.push(key); trace.push('request ' + key);
+      return reply({ ok: true, url: 'http://s.test/' + key + (ts ? '.ts' : '.m3u8'), format: ts ? 'ts' : 'hls', switchable: true });
+    }
+    if (url.pathname.endsWith('/output')) {
+      const body = req.postDataJSON();
+      if (refuseOutput) return reply({ ok: false, error: 'save' });
+      outputs[body.key] = body.output;
+      if (holdOutput) { finishOutput = () => reply({ ok: true }); return; }
+      return reply({ ok: true });
+    }
     if (url.pathname.endsWith('/lease')) { leases.push(JSON.parse(req.postData() || '{}')); return reply({ ok: true }); }
     if (url.pathname.endsWith('/schedule')) {
       // Filed by the UTC day each programme starts, as the worker writes them.
@@ -2440,6 +2520,39 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (!/full/.test(await page.locator('#preview').getAttribute('class'))) fail('OK did not grow the preview to the player');
     if (streams.length !== 1) fail('the preview grown to the player opened the stream again');
     if (!await waitUntil(page, () => leases.some(l => l.full === true))) fail('the player did not say it is full screen');
+    await page.waitForFunction(() => document.getElementById('bdFmt').textContent.includes('Yellow: play as MPEG-TS'));
+    await key(405);
+    await page.waitForFunction(() => /x1\.ts/.test(document.getElementById('pvVideo').getAttribute('src')));
+    await playing();
+    if (!(await page.locator('#bdFmt').textContent()).includes('Yellow: play as HLS')) fail('Yellow did not switch the adopted preview to MPEG-TS');
+
+    refuseOutput = true;
+    const beforeRefused = streams.length;
+    await key(405);
+    await page.waitForFunction(() => document.getElementById('pmsg').textContent.includes('That didn’t save'));
+    if (streams.length !== beforeRefused) fail('a refused format save silently reopened the old stream');
+    await key(13);
+    await page.waitForFunction(() => /x1\.ts/.test(document.getElementById('pvVideo').getAttribute('src')));
+    await playing();
+    refuseOutput = false;
+
+    holdOutput = true;
+    const pendingOutput = page.waitForRequest(r => new URL(r.url()).pathname === '/api/iptv/output');
+    await key(405);
+    await pendingOutput;
+    await key(461);
+    await page.waitForFunction(() => !!document.getElementById('pvVideo').getAttribute('src'));
+    await playing();
+    await key(13);
+    const beforeLate = streams.length;
+    const lateOutput = page.waitForResponse(r => new URL(r.url()).pathname === '/api/iptv/output');
+    await finishOutput();
+    await lateOutput;
+    // A reply from the previous player must not reopen the newly adopted stream.
+    await page.waitForTimeout(100);
+    if (streams.length !== beforeLate) fail('a late format save reopened a player that had been left');
+    holdOutput = false;
+
     await key(13);
     await page.waitForSelector('#player.list');
     if (!/list/.test(await page.locator('#player').getAttribute('class'))) fail('OK in the player did not open the channel list');
@@ -2447,7 +2560,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     await key(40);
     await key(13);
     await page.waitForFunction(() => window.played.includes('http://s.test/x2.m3u8'));
-    if (streams[1] !== 'x2') fail('choosing a channel in the list did not play it');
+    if (streams[streams.length - 1] !== 'x2') fail('choosing a channel in the list did not play it');
     if (await page.evaluate(() => window.released) <= releasedBefore) fail('the last stream was not released before the next');
     const asked = trace.lastIndexOf('request x2'), playedNext = trace.lastIndexOf('play http://s.test/x2.m3u8');
     const releasedAt = trace.slice(0, asked).lastIndexOf('release'), lastOld = trace.slice(0, asked).lastIndexOf('play http://s.test/x1.m3u8');
@@ -2693,7 +2806,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

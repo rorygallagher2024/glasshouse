@@ -113,12 +113,33 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   300. In either mode a job also needs 70 MB free where the snapshots live (`df`). Its output is not known before it runs, so the
   worker counts every byte it writes and stops with `disk` once only 50 MB
   would be left.
-- **A stream that fails** is opened once more. After a `<video>` error the second
-  try adds `gh=<time>` to the URL, as a provider's CDN may be holding a copy of
-  the playlist the TV cannot read, such as one gzipped for a client with no
+- **A stream that fails** is reconnected with a fresh URL, which opens a live
+  channel at the live point. A stall is the picture's `currentTime` not
+  moving for 8 s, whatever events the `<video>` sent, or for 3 s with under
+  half a second buffered past it, as every stall logged on a provider's
+  stream had under a second; a stream that ends reconnects at once. Stuck at a hole with
+  more buffered after it, Home steps over it after 2.5 s instead. Reconnects
+  wait 0.4, 1.5, 3, 5, 8 then 10 s; a channel that has played gets eight in
+  a row, about a minute, as a provider's CDN was seen sending nothing for 30
+  to 50 s at a time, and has them all back after 30 s of playing. One that
+  never played gets two, as a one-stream account can refuse a channel change
+  for a moment, and none for no picture at all. Each reconnect adds
+  `gh=<time>` to the URL, as a provider's CDN may be holding a copy of the
+  playlist the TV cannot read, such as one gzipped for a client with no
   `Accept-Encoding`. Home sends no Referer, as `localhost` gets a 204 from the
   same CDN. The message only mentions a limit on streams for a playlist with an
   account, which `/api/iptv/stream` reports as `account`.
+- **Stream events go to the log**: Home posts each start, stall, error,
+  skipped hole, reconnect, recovery and give-up to `/api/iptv/event`, which
+  writes one `iptv: stream` line each (at most 120 an hour) with the
+  channel's key, never its URL.
+- **MPEG-TS instead of HLS**, a channel at a time: an Xtream panel serves a
+  live channel either way by the URL's extension. Yellow in Home's player
+  posts `/api/iptv/output`, which keeps the channel's key in the playlist's
+  `ts` list in `config.json`; `streamUrl` then turns its `.m3u8` into `.ts`,
+  one long download with no playlist to go stale. Offered (`switchable`) for
+  an Xtream channel unless the panel's `allowed_output_formats` lacks one of
+  the two.
 - **One search at a time**: the lane is taken before the memory check
   answers, so a search asked for meanwhile replaces it rather than starting
   beside it.
@@ -950,18 +971,22 @@ The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
 
 The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
-the TV needs. The platform tier's are **LG infrastructure rather than
+the TV needs. The platform tier's are **service infrastructure rather than
 advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
 | :--- | :--- |
 | `ngfts.lge.com`, `aic-ngfts.lge.com` | Content and firmware delivery CDN |
 | `cdplauncher.lgtvcommon.com`, `lgchhomeapp.lgtvcommon.com` | The Home launcher's recommendations and usage reports; needed by the Content Store after a factory reset |
-| `lgtviot.com` | The ThinQ cloud: the LG ThinQ app can no longer control the TV with it blocked |
+| `lgtviot.com`, `api.lgtviot.com`, `push.lgtviot.com`, `sports.lgtviot.com`, `buddy.lgtviot.com` (bare, with LG's regional prefixes and the TV's country) | The ThinQ cloud, API, push, sports and buddy services; blocking them can prevent ThinQ control and notifications |
+| `lgeapi.com` (bare, with LG's regional prefixes and the TV's country) | LG account/API service family; sign-in or store services may depend on it |
+| `connect-client.lgthinq.com`, `common.lgthinq.com` (bare and with `aic-`/`eic-`/`kic-`) | ThinQ Connect and common cloud services; the prefix uses a hyphen rather than a separate DNS label |
 | `ueiwsp.com` | Universal Electronics' identification of devices connected over HDMI-CEC |
 | `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
+| `mtalk.google.com` | [Google Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/network-configuration), used for push messages; apps using this endpoint may lose push notifications |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
-| `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
+| `nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country, plus `us.`/`gb.`/`de.`/`eu.`) | The same on webOS 9 |
+| `ibs.nextlgsdp.com`, `ibsstat.nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country) | The SDX `ibis_secure` and `ibis_stat_secure` services; blocked only in Everything, after the clock is valid |
 | `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
 | `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
 
@@ -969,6 +994,14 @@ advertising**, which is why they are a separate tier:
 `http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,
 `http://US.tv.wiselg.com` on a C5 on webOS 11.2. The full tier adds whatever
 that file says, so a firmware using none of them is still covered.
+
+Regional service families use the same bounded prefix list as the ads tier:
+LG's `aic`, `eic`, `kic` and `eu`, plus the saved TV country. Before the country
+is learned, the existing fallback countries are used. ThinQ Connect uses
+`aic-`, `eic-` and `kic-` instead. This covers reported names such as
+`de.ibs.nextlgsdp.com` and `eic-connect-client.lgthinq.com`; it is still an exact
+hosts list, not wildcard DNS blocking. Sources and the limits of the evidence
+are in [TV research](development/TV-RESEARCH.md#regional-service-coverage).
 
 On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
 sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names

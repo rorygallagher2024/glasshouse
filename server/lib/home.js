@@ -51,7 +51,9 @@ var SETTINGS = 'com.webos.service.settings/';
 var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
-var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos', 'showWeather'];
+var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos'];
+// Where the weather badge's weather comes from: nowhere, Home Assistant's pushes, or Open-Meteo.
+var WEATHER_SOURCES = ['off', 'ha', 'internet'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
 // slow drift and its cross-fade between parts of the day, rows easing to the
 // chosen tile, and Recent apps, search and the folder sliding in.
@@ -276,6 +278,8 @@ var lastSource = null;
 // What ha.js's 'weather' text entity last received over MQTT (setWeather
 // below), kept in home-weather.json so a restart does not hide it.
 var weatherPush = null;
+/** @type {typeof import('./weather')} */
+var weatherModule = null;
 /*
  * A push older than this is not shown. Home Assistant pushes when the weather
  * changes, and the docs' automation also every 30 minutes, so this only hides
@@ -387,8 +391,9 @@ function defaults() {
     showAppCount: true,
     showCec: true,
     showTvLogos: true,
-    // The weather Home Assistant sends: shown once something has been sent.
-    showWeather: true,
+    // Where the weather comes from, and the place Open-Meteo is asked about.
+    weather: 'ha',
+    weatherPlace: null,
     // The live preview kept on what was last on whenever the view is on
     // screen, rather than only while a tile is chosen.
     previewAlways: false,
@@ -485,6 +490,9 @@ function normalise(raw) {
   d.picture = raw.picture === true;
   d.livePreview = raw.livePreview === true;
   SHOW_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
+  // Before the choice, a Weather switch: off, or Home Assistant's.
+  d.weather = WEATHER_SOURCES.indexOf(raw.weather) !== -1 ? raw.weather : raw.showWeather === false ? 'off' : 'ha';
+  d.weatherPlace = weatherPlaceOf(raw.weatherPlace);
   d.rowsBottom = raw.rowsBottom === true;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.previewAlways = raw.previewAlways === true;
@@ -640,7 +648,10 @@ function setLayout(body, cb) {
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
     showTvLogos: typeof body.showTvLogos === 'boolean' ? body.showTvLogos : c.showTvLogos,
-    showWeather: typeof body.showWeather === 'boolean' ? body.showWeather : c.showWeather,
+    // showWeather is the switch an older dashboard still sends.
+    weather: body.weather !== undefined ? body.weather
+      : typeof body.showWeather === 'boolean' ? (body.showWeather ? 'ha' : 'off') : c.weather,
+    weatherPlace: body.weatherPlace !== undefined ? body.weatherPlace : c.weatherPlace,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     wallAnim: body.wallAnim !== undefined ? body.wallAnim : c.wallAnim,
@@ -676,6 +687,7 @@ function setLayout(body, cb) {
     return cb({ ok: false, error: msg('srv.home.saveFailed', 'could not save the layout') });
   }
   if (c.picture !== config.picture) pictureDetailsFn(config.picture);
+  if (config.weather === 'internet') setTimeout(internetWeatherTick, 0);
   // A row back in its own order keeps no record of what was opened.
   ROWS.forEach(function (r) { if (config.sort[r] !== 'recent') recent.forget(r); });
   cb({ ok: true, layout: layoutOf(config), layoutVersion: layoutVersion() });
@@ -687,7 +699,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showWeather: c.showWeather, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
@@ -1178,16 +1190,100 @@ function loadWeather() {
   weatherPush = w && typeof w.temp === 'number' && typeof w.at === 'number' ? w : null;
 }
 
-// The weather to show, or null where none was pushed or the last push is stale.
+// A place as the dashboard chose it from Open-Meteo's search, or null.
+function weatherPlaceOf(v) {
+  if (!v || typeof v !== 'object' || typeof v.name !== 'string' || !v.name.trim()) return null;
+  var lat = Number(v.lat), lon = Number(v.lon);
+  if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+  return {
+    name: v.name.trim().slice(0, 80),
+    admin: typeof v.admin === 'string' ? v.admin.slice(0, 80) : '',
+    country: typeof v.country === 'string' ? v.country.slice(0, 80) : '',
+    countryCode: /^[A-Za-z]{2}$/.test(v.countryCode || '') ? v.countryCode.toUpperCase() : '',
+    lat: Math.round(lat * 10000) / 10000,
+    lon: Math.round(lon * 10000) / 10000
+  };
+}
+
+function placeKey(place) { return place ? place.lat + ',' + place.lon : ''; }
+
+/*
+ * Open-Meteo's weather for the chosen place: asked for again once it is 30
+ * minutes old, only while the screen is on, and kept in
+ * home-weather-internet.json so a restart shows it at once.
+ */
+var INTERNET_WEATHER_MS = 30 * 60000;
+// After a failure, the next try waits this long rather than a minute.
+var INTERNET_RETRY_MS = 5 * 60000;
+var internetWeather = null;
+var internetFetching = false;
+var internetFailedAt = 0;
+var internetTimer = null;
+var weatherWakeMs = 2000;
+
+function internetWeatherFile() { return path.join(stateDir, 'home-weather-internet.json'); }
+
+function internetWeatherTick() {
+  var c = readConfig();
+  if (c.weather !== 'internet' || !c.weatherPlace || !weatherModule || internetFetching || !powerActive) return;
+  var key = placeKey(c.weatherPlace);
+  var fresh = internetWeather && internetWeather.place === key && nowMs() - internetWeather.at < INTERNET_WEATHER_MS;
+  if (fresh || nowMs() - internetFailedAt < INTERNET_RETRY_MS) return;
+  internetFetching = true;
+  var place = c.weatherPlace;
+  weatherModule.current(place, function (err, w) {
+    internetFetching = false;
+    if (err) {
+      internetFailedAt = nowMs();
+      return console.error('home: could not read the weather from Open-Meteo: ' + err.message);
+    }
+    internetFailedAt = 0;
+    internetWeather = { condition: w.condition, temp: w.temp, unit: w.unit, city: place.name, place: key, at: nowMs() };
+    try { writeJsonAtomic(internetWeatherFile(), internetWeather, 384); } catch (e) {}
+  });
+}
+
+function loadInternetWeather() {
+  var w = null;
+  try { w = JSON.parse(fs.readFileSync(internetWeatherFile(), 'utf8')); } catch (e) {}
+  internetWeather = w && typeof w.temp === 'number' && typeof w.at === 'number' && typeof w.place === 'string' ? w : null;
+  internetFailedAt = 0;
+  if (internetTimer) clearInterval(internetTimer);
+  internetTimer = setInterval(internetWeatherTick, 60000);
+  if (internetTimer.unref) internetTimer.unref();
+}
+
+// Places for the dashboard to choose from, by name.
+function weatherPlaces(query, lang, cb) {
+  if (!weatherModule) return cb({ ok: false, error: 'weather is not available' });
+  weatherModule.search(query, lang, function (err, places) {
+    if (err) return cb({ ok: false, error: msg('srv.home.weatherSearchFailed', 'Open-Meteo could not be reached') });
+    cb({ ok: true, places: places });
+  });
+}
+
+/*
+ * The weather to show, from the chosen source: null where it is off, where
+ * nothing has come, or where what came is over 3 hours old.
+ */
 function currentWeather() {
-  if (!weatherPush || nowMs() - weatherPush.at > WEATHER_STALE_MS) return null;
-  return { condition: weatherPush.condition, temp: weatherPush.temp, city: weatherPush.city };
+  var c = readConfig();
+  if (c.weather === 'ha') {
+    if (!weatherPush || nowMs() - weatherPush.at > WEATHER_STALE_MS) return null;
+    return { condition: weatherPush.condition, temp: weatherPush.temp, city: weatherPush.city, source: 'ha' };
+  }
+  if (c.weather === 'internet') {
+    var w = internetWeather;
+    if (!w || w.place !== placeKey(c.weatherPlace) || nowMs() - w.at > WEATHER_STALE_MS) return null;
+    return { condition: w.condition, temp: w.temp, city: w.city, source: 'internet' };
+  }
+  return null;
 }
 
 function weather(cb) {
   var w = currentWeather();
   if (!w) return cb({ ok: false });
-  cb({ ok: true, condition: w.condition, temp: w.temp, city: w.city });
+  cb({ ok: true, condition: w.condition, temp: w.temp, city: w.city, source: w.source });
 }
 
 /*
@@ -1416,7 +1512,11 @@ function switchTo(on, cb) {
         return ensureApp(function (ok) {
           if (!ok) return finish({ ok: false, error: 'could not install Glasshouse Home app' });
           setHomeKeyFn(HOME_APP, function (k) {
-            if (!k || !k.ok) return finish({ ok: false, error: 'could not set Home key target' });
+            if (!k || !k.ok) {
+              return removeStandaloneApp(function () {
+                finish({ ok: false, error: 'could not set Home key target' });
+              });
+            }
             startingNotice(true, function () {
               finish({ ok: true });
             });
@@ -1923,6 +2023,22 @@ function ensureApp(cb) {
     if (have === true || !installFn) return cb(have === true);
     installFn('install', function () {
       appInstalled(function (now) { cb(now === true); });
+    });
+  });
+}
+
+/*
+ * After a switch-on that could not give the Home key to the app: left
+ * installed, its tile only opened a page that closed itself at once, as
+ * Glasshouse Home was off (a 60UJ6519 on webOS 3.9.3, #1222). The next switch
+ * on installs it again.
+ */
+function removeStandaloneApp(cb) {
+  if (!installFn) return cb();
+  installFn('remove', function () {
+    appInstalled(function (now) {
+      if (now === false) console.log('home: Glasshouse Home\'s app removed, as it could not be the TV\'s Home');
+      cb();
     });
   });
 }
@@ -2443,6 +2559,9 @@ function reopenAfterWake11() {
 function powerChanged(active) {
   var was = powerActive;
   powerActive = active;
+  // The internet weather is asked for only while the screen is on: back on, it
+  // catches up once the network is back.
+  if (!was && active) setTimeout(internetWeatherTick, weatherWakeMs);
   if (was && !active) sleeps++;
   if (!active && wake11Timer) {
     clearTimeout(wake11Timer);
@@ -2542,6 +2661,7 @@ function init(opts) {
   procDir = opts.procDir || '/proc';
   slowOpenMs = typeof opts.slowOpenMs === 'number' ? opts.slowOpenMs : FIRST_BEAT_GRACE_MS;
   beatGraceMs = opts.beatGraceMs || BEAT_GRACE_MS;
+  weatherWakeMs = opts.weatherWakeMs !== undefined ? opts.weatherWakeMs : 2000;
   firstBeatGraceMs = opts.firstBeatGraceMs || FIRST_BEAT_GRACE_MS;
   bootOpenedFile = opts.bootOpenedFile || BOOT_OPENED_FILE;
   pageSignMs = opts.pageSignMs || PAGE_SIGN_MS;
@@ -2560,6 +2680,8 @@ function init(opts) {
   buildId = opts.build || '';
   nowMs = opts.now || Date.now;
   loadWeather();
+  weatherModule = opts.weather || null;
+  loadInternetWeather();
   config = null;
   configMtime = 0;
   wasEnabled = false;
@@ -2703,6 +2825,8 @@ function watchStart(when, beatsBefore, signSince) {
 function pageAlive() { pageSeenAt = nowMs(); }
 
 function stop() {
+  if (internetTimer) clearInterval(internetTimer);
+  internetTimer = null;
   if (lgHomeWatch) clearInterval(lgHomeWatch);
   lgHomeWatch = null;
   lgHomeHeld = false;
@@ -2729,6 +2853,7 @@ module.exports = {
   guide: guide,
   now: now,
   setWeather: setWeather,
+  weatherPlaces: weatherPlaces,
   weather: weather,
   open: open,
   setLayout: function (body, cb) { change(function (done) { setLayout(body, done); }, cb); },

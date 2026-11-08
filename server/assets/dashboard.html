@@ -1161,7 +1161,15 @@ function glasshouseHomeRows(d) {
              press: altOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.alternativeDesc', 'A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging.') });
     r.push(homeSwitchRow(d, 'showLastOn', t('home.showLast', 'Last watched'), t('home.showLastDesc', 'At the top of Glasshouse Home and on the input it was on: what the TV last showed.'), 'homeShow', d.layout.showLastOn !== false));
-    r.push(homeSwitchRow(d, 'showWeather', t('home.showWeather', 'Weather'), t('home.showWeatherDesc', 'Next to the clock: the weather Home Assistant sends, once an automation sends it.'), 'homeShow', d.layout.showWeather !== false));
+    // The weather's source; OK steps through them. A place is chosen on the web dashboard.
+    var wxNames = { off: t('common.off', 'Off'), ha: t('home.weather.fromHa', 'From Home Assistant'), internet: t('home.weather.fromInternet', 'From the internet') };
+    var wxNow = d.layout.weather || 'ha';
+    r.push({ label: t('home.weather', 'Weather'), key: 'weather', value: wxNames[wxNow], cls: wxNow === 'off' ? 'off' : 'on',
+             act: can ? 'homeWeather' : null,
+             press: t('tv.press.change', 'Press OK to change'),
+             hint: wxNow === 'internet' && !d.layout.weatherPlace
+               ? t('home.weather.tvChoosePlace', 'Choose the place on the Home tab of the web dashboard.')
+               : t('home.weatherDesc', 'Next to the clock: the weather Home Assistant sends, or the weather for a place you choose, from Open-Meteo.') });
     var moving = homeMotionRows(d).filter(function (m) { return m.on; }).length;
     r.push({ label: t('home.group.motion', 'Animations'), value: t('tv.home.someOn', '{n} of {total} on', { n: moving, total: homeMotionRows(d).length }),
              cls: 'act opens', act: 'open', key: 'homeMotion', press: t('tv.home.openList', 'Press OK to open'),
@@ -3380,6 +3388,10 @@ function activate() {
       return homeLayout({ search: !r.on });
     case 'homeAlternative':
       return homeLayout({ view: r.on ? 'standard' : 'alternative' });
+    case 'homeWeather':
+      var wxOrder = ['off', 'ha', 'internet'];
+      var wxAt = wxOrder.indexOf((homeData && homeData.layout && homeData.layout.weather) || 'ha');
+      return homeLayout({ weather: wxOrder[(wxAt + 1) % wxOrder.length] });
     case 'homeFade':
       return homeLayout({ fade: !r.on });
     case 'homeRecommended':

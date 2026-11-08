@@ -1,6 +1,6 @@
 # Tested TVs
 
-Confirmed on **69 TVs across 46 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **70 TVs across 46 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
@@ -31,7 +31,7 @@ Confirmed on **69 TVs across 46 series** running **webOS 2.2 through 11** (LG's 
     | CX            | 2020 | OLED  | 5.5 – 5.6         | 4       |
     | GX            | 2020 | OLED  | 5.6               | 1       |
     | UN73          | 2020 | LCD   | 5.6               | 1       |
-    | C1            | 2021 | OLED  | 6.x               | 2       |
+    | C1            | 2021 | OLED  | 6.3 – 6.5         | 3       |
     | G1            | 2021 | OLED  | 6.5               | 1       |
     | UP80          | 2021 | LCD   | 6.5               | 1       |
     | UP81          | 2021 | LCD   | 6.5               | 1       |
@@ -57,7 +57,7 @@ Confirmed on **69 TVs across 46 series** running **webOS 2.2 through 11** (LG's 
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (69)"
+=== "All reports (70)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
@@ -91,6 +91,7 @@ Confirmed on **69 TVs across 46 series** running **webOS 2.2 through 11** (LG's 
     | 43UN73003LC | 5.6.2        | 04.64.00 | LCD   | Glasshouse Home opened from the Home button, and an app from it ([#931](https://github.com/rorygallagher2024/glasshouse/pull/931)) |
     | OLED55C17LB | 6.x          | —        | OLED  | HDMI 2.1 diagnostics and remote battery reporting              |
     | OLED55C1PUB | 6.x (6.3+)   | 03.53.45 | OLED  | SSH install and MQTT bridge confirmed                          |
+    | OLED65C15LA | 6.5.3        | 03.53.45 | OLED  | In-app updates confirmed, 0.130.0 to 0.141.1                   |
     | 50UP81006LR | 6.5.0        | 03.51.16 | LCD   | Installed over telnet; in-app update confirmed                 |
     | 43UP80006LA | 6.5.3        | 03.53.45 | LCD   | MQTT bridge confirmed                                          |
     | OLED55G19LA | 6.5.3        | 03.53.45 | OLED  | Advertising ID reset accepted without ID change on this firmware |

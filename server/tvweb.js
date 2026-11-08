@@ -1909,7 +1909,10 @@ function startGlasshouseHome() {
     // File-only, for the emulator: how long after start overdue jobs wait.
     catchupMs: CONFIG.iptv && typeof CONFIG.iptv.catchupMs === 'number' ? CONFIG.iptv.catchupMs : undefined
   });
+  var weather = require('./lib/weather');
+  weather.init({ getJson: fetchLib.getJson });
   glasshouseHome.init({
+    weather: weather,
     iptv: iptv,
     luna: luna,
     Subscription: lunaTransport.Subscription,

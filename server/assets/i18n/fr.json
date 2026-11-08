@@ -2381,7 +2381,7 @@
  },
  "home.confirmOff": {
   "from": "Press again to use LG Home",
-  "text": "Appuyez à nouveau pour utiliser LG Home"
+  "text": "Appuyez à nouveau pour utiliser l'Accueil de LG"
  },
  "home.confirmOn": {
   "from": "Press again to switch on",
@@ -2481,7 +2481,7 @@
  },
  "home.group.shown": {
   "from": "Shown on Home",
-  "text": "Affiché sur Home"
+  "text": "Affiché sur l'Accueil"
  },
  "home.group.start": {
   "from": "Starting up",
@@ -2905,19 +2905,19 @@
  },
  "home.restartsAppsAny": {
   "from": "On this TV, switching away from LG Home or back to it, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open.",
-  "text": "Sur cette TV, quitter Accueil LG ou y revenir, ou maintenir Accueil pour l'Accueil de LG, redémarre le gestionnaire d'apps de la TV, ce qui ferme les apps ouvertes."
+  "text": "Sur cette TV, quitter l'Accueil de LG ou y revenir, ou maintenir Accueil pour l'Accueil de LG, redémarre le gestionnaire d'apps de la TV, ce qui ferme les apps ouvertes."
  },
  "home.restorePending": {
   "from": "LG Home restoration is incomplete",
-  "text": "La restauration de LG Home est incomplète"
+  "text": "La restauration de l'Accueil de LG est incomplète"
  },
  "home.restoreRetry": {
   "from": "Retry restoring LG Home before switching Glasshouse Home on again.",
-  "text": "Réessayez de restaurer LG Home avant de réactiver Glasshouse Home."
+  "text": "Réessayez de restaurer l'Accueil de LG avant de réactiver Glasshouse Home."
  },
  "home.retryRestore": {
   "from": "Retry restoring LG Home",
-  "text": "Réessayer de restaurer LG Home"
+  "text": "Réessayer de restaurer l'Accueil de LG"
  },
  "home.row.addChannels": {
   "from": "Add channels in Glasshouse’s Home settings",
@@ -3158,14 +3158,6 @@
  "home.showTvLogosDescName": {
   "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.",
   "text": "Sur Internet TV : le logo de chaque chaîne fourni par la playlist. Désactivé affiche le nom de la chaîne à sa place."
- },
- "home.showWeather": {
-  "from": "Weather",
-  "text": "Météo"
- },
- "home.showWeatherDesc": {
-  "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it.",
-  "text": "À côté de l’horloge : la météo envoyée par Home Assistant, dès qu’une automatisation l’envoie."
  },
  "home.shown": {
   "from": "Shown",
@@ -3571,6 +3563,10 @@
   "from": "Pick a playlist",
   "text": "Choisir une playlist"
  },
+ "home.tv.playAs": {
+  "text": "Jaune : lire en {format}",
+  "from": "Yellow: play as {format}"
+ },
  "home.tv.position": {
   "from": "{n} of {total}",
   "text": "{n} sur {total}"
@@ -3594,6 +3590,10 @@
  "home.tv.readingStart": {
   "from": "Reading the playlist",
   "text": "Lecture de la playlist"
+ },
+ "home.tv.reconnecting": {
+  "text": "Reconnexion à {name}",
+  "from": "Reconnecting to {name}"
  },
  "home.tv.refresh": {
   "from": "Refresh",
@@ -4395,6 +4395,14 @@
   "from": "Uploading…",
   "text": "Envoi…"
  },
+ "home.weather": {
+  "from": "Weather",
+  "text": "Météo"
+ },
+ "home.weather.choose": {
+  "from": "Search for your town, then choose it from the list.",
+  "text": "Recherchez votre ville, puis choisissez-la dans la liste."
+ },
  "home.weather.clearNight": {
   "from": "Clear night",
   "text": "Nuit claire"
@@ -4403,6 +4411,14 @@
   "from": "Cloudy",
   "text": "Nuageux"
  },
+ "home.weather.credit": {
+  "from": "Weather data by Open-Meteo.com",
+  "text": "Données météo par Open-Meteo.com"
+ },
+ "home.weather.credits": {
+  "from": "Weather data by Open-Meteo.com. Location data based on GeoNames.",
+  "text": "Données météo par Open-Meteo.com. Données de localisation basées sur GeoNames."
+ },
  "home.weather.exceptional": {
   "from": "Severe weather",
   "text": "Intempéries"
@@ -4410,6 +4426,14 @@
  "home.weather.fog": {
   "from": "Fog",
   "text": "Brouillard"
+ },
+ "home.weather.fromHa": {
+  "from": "From Home Assistant",
+  "text": "Depuis Home Assistant"
+ },
+ "home.weather.fromInternet": {
+  "from": "From the internet",
+  "text": "Depuis Internet"
  },
  "home.weather.hail": {
   "from": "Hail",
@@ -4423,9 +4447,21 @@
   "from": "Thunderstorms",
   "text": "Orages"
  },
+ "home.weather.none": {
+  "from": "No places found by that name.",
+  "text": "Aucun lieu trouvé sous ce nom."
+ },
  "home.weather.partlycloudy": {
   "from": "Partly cloudy",
   "text": "Partiellement nuageux"
+ },
+ "home.weather.placeDesc": {
+  "from": "Glasshouse asks Open-Meteo for the weather at this place every 30 minutes while the TV is on. Nothing else is sent.",
+  "text": "Glasshouse demande à Open-Meteo la météo de ce lieu toutes les 30 minutes tant que la TV est allumée. Rien d'autre n'est envoyé."
+ },
+ "home.weather.placeholder": {
+  "from": "Town or city",
+  "text": "Ville ou village"
  },
  "home.weather.pouring": {
   "from": "Pouring rain",
@@ -4434,6 +4470,22 @@
  "home.weather.rainy": {
   "from": "Rainy",
   "text": "Pluvieux"
+ },
+ "home.weather.search": {
+  "from": "Search",
+  "text": "Rechercher"
+ },
+ "home.weather.searchFailed": {
+  "from": "Could not search: {error}",
+  "text": "Recherche impossible : {error}"
+ },
+ "home.weather.searching": {
+  "from": "Searching…",
+  "text": "Recherche…"
+ },
+ "home.weather.showing": {
+  "from": "Showing the weather for {place}.",
+  "text": "Météo affichée pour {place}."
  },
  "home.weather.snowy": {
   "from": "Snowy",
@@ -4447,6 +4499,10 @@
   "from": "Sunny",
   "text": "Ensoleillé"
  },
+ "home.weather.tvChoosePlace": {
+  "from": "Choose the place on the Home tab of the web dashboard.",
+  "text": "Choisissez le lieu dans l'onglet Accueil du tableau de bord web."
+ },
  "home.weather.windy": {
   "from": "Windy",
   "text": "Venteux"
@@ -4454,6 +4510,10 @@
  "home.weather.windyVariant": {
   "from": "Windy",
   "text": "Venteux"
+ },
+ "home.weatherDesc": {
+  "from": "Next to the clock: the weather Home Assistant sends, or the weather for a place you choose, from Open-Meteo.",
+  "text": "À côté de l'horloge : la météo envoyée par Home Assistant, ou celle d'un lieu de votre choix, par Open-Meteo."
  },
  "lang.partial": {
   "from": "{name} (partial)",
@@ -4677,7 +4737,11 @@
  },
  "metrics.remote": {
   "from": "Magic remote",
-  "text": "Télécommande Magic"
+  "text": "Magic Remote"
+ },
+ "metrics.remote.batteryReadLabel": {
+  "text": "Dernière lecture :",
+  "from": "Last read:"
  },
  "metrics.remote.bluetooth": {
   "from": "Bluetooth: {address}",
@@ -4701,7 +4765,7 @@
  },
  "metrics.remote.name": {
   "from": "Magic Remote",
-  "text": "Télécommande Magic"
+  "text": "Magic Remote"
  },
  "metrics.remote.signalGood": {
   "from": "Good",
@@ -5137,7 +5201,7 @@
  },
  "oled.cycles.failures": {
   "from": "Refresher failure alerts",
-  "text": "Alertes d'échec du rafraîchisseur"
+  "text": "Alertes d'échec du nettoyage des pixels"
  },
  "oled.cycles.failures.desc": {
   "from": "Maintenance passes the TV recorded as not finishing. Normally zero.",
@@ -5153,7 +5217,7 @@
  },
  "oled.cycles.refresher": {
   "from": "Pixel refresher cycles",
-  "text": "Cycles du rafraîchisseur de pixels"
+  "text": "Cycles de nettoyage des pixels"
  },
  "oled.gsr": {
   "from": "Global Stress Reduction",
@@ -5177,7 +5241,7 @@
  },
  "oled.logo": {
   "from": "Logo Dimming",
-  "text": "Assombrissement du logo"
+  "text": "Ajuster la luminosité du logo"
  },
  "oled.logo.desc": {
   "from": "Dims only the static logos and banners a channel leaves in a corner, and leaves the rest of the picture alone.",
@@ -5221,7 +5285,7 @@
  },
  "oled.refresherIn": {
   "from": "Pixel refresher in",
-  "text": "Rafraîchisseur de pixels dans"
+  "text": "Nettoyage des pixels dans"
  },
  "oled.shift": {
   "from": "Screen Shift",
@@ -5237,7 +5301,7 @@
  },
  "oled.tpc": {
   "from": "Temporal Peak Control",
-  "text": "Contrôle de pic temporel (TPC)"
+  "text": "Contrôle temporel des pics (TPC)"
  },
  "oled.tpc.desc": {
   "from": "Lowers overall brightness when a bright image is held, which is what makes a mostly-white screen fade after a few seconds. Switching it off keeps full brightness and puts more heat through the panel.",
@@ -6965,7 +7029,7 @@
  },
  "srv.consent.acrAllowed": {
   "from": "Screen content recognition",
-  "text": "Reconnaissance du contenu d'écran"
+  "text": "Reconnaissance du contenu à l'écran"
  },
  "srv.consent.acrAllowed.detail": {
   "from": "Lets LG identify what is on your screen to profile your viewing",
@@ -7289,11 +7353,11 @@
  },
  "srv.ha.cat.oled": {
   "from": "OLED Care",
-  "text": "Entretien OLED"
+  "text": "Maintenance OLED"
  },
  "srv.ha.cat.oled.desc": {
   "from": "Panel on-time, pixel refresher countdowns, and burn-in protections.",
-  "text": "Temps d'allumage de la dalle, comptes à rebours du rafraîchisseur de pixels, et protections contre la rémanence."
+  "text": "Temps d'allumage de la dalle, comptes à rebours du nettoyage des pixels, et protections contre la rémanence."
  },
  "srv.ha.cat.system": {
   "from": "System & Telemetry",
@@ -7622,6 +7686,10 @@
  "srv.home.wallUploading": {
   "from": "Wait for the wallpaper upload to finish.",
   "text": "Attendez que l'envoi du fond d'écran se termine."
+ },
+ "srv.home.weatherSearchFailed": {
+  "from": "Open-Meteo could not be reached",
+  "text": "Open-Meteo est injoignable"
  },
  "srv.huesync.didnotstart": {
   "from": "Hue Sync did not start streaming",
@@ -8969,7 +9037,7 @@
  },
  "srv.privacy.acr": {
   "from": "Screen content recognition",
-  "text": "Reconnaissance du contenu d'écran"
+  "text": "Reconnaissance du contenu à l'écran"
  },
  "srv.privacy.acr.detail": {
   "from": "LG’s ACR captures what is on screen, from apps and HDMI alike, to work out what you watch and target ads at you.",
@@ -9437,7 +9505,7 @@
  },
  "srv.service.iconnectivity": {
   "from": "Network Device Scans",
-  "text": "Analyses des appareils du réseau"
+  "text": "Analyses du réseau"
  },
  "srv.service.iconnectivity.desc": {
   "from": "Looks up every address on the home network to find devices for the Home Hub and LG's device setup. Off, they find no new devices.",
@@ -9821,7 +9889,7 @@
  },
  "tab.oledCare": {
   "from": "OLED Care",
-  "text": "Entretien OLED"
+  "text": "Maintenance OLED"
  },
  "tab.picture": {
   "from": "Picture",
@@ -10089,7 +10157,7 @@
  },
  "tv.apps.home.hidden": {
   "from": "Hidden from Home",
-  "text": "Masquée d'Accueil"
+  "text": "Masquée de l'Accueil"
  },
  "tv.apps.home.hide": {
   "from": "Press OK to hide it",
@@ -10141,7 +10209,7 @@
  },
  "tv.apps.home.shownFlash": {
   "from": "Shown on Home",
-  "text": "Affichée sur Accueil"
+  "text": "Affichée sur l'Accueil"
  },
  "tv.apps.install.browse": {
   "from": "Browse",
@@ -10557,7 +10625,7 @@
  },
  "tv.flash.clock12": {
   "from": "12-hour clock",
-  "text": "Horloge sur 12 heures"
+  "text": "Horloge 12 heures"
  },
  "tv.flash.clock24": {
   "from": "24-hour clock",
@@ -10659,6 +10727,22 @@
   "from": "This TV has no Game Optimizer",
   "text": "Cette TV n'a pas d'Optimiseur de jeu"
  },
+ "tv.home.appsHint": {
+  "text": "Les applications affichées dans la rangée et leur ordre, leur nombre à côté et la recherche.",
+  "from": "Which apps the row shows and in what order, the app count beside it, and Search."
+ },
+ "tv.home.arrange": {
+  "text": "Ordre des rangées et réinitialisation",
+  "from": "Row order and reset"
+ },
+ "tv.home.arrangeHint": {
+  "text": "L’ordre des rangées sur Glasshouse Home et le rétablissement de la disposition initiale.",
+  "from": "The order of the rows on Glasshouse Home, and putting the layout back as it first was."
+ },
+ "tv.home.backChannels": {
+  "text": "‹ Chaînes",
+  "from": "‹ Channels"
+ },
  "tv.home.ch.add": {
   "from": "Press OK to add it",
   "text": "Appuyez sur OK pour l'ajouter"
@@ -10687,6 +10771,10 @@
   "from": "Removed from Home",
   "text": "Retirée d'Accueil"
  },
+ "tv.home.chHint": {
+  "text": "Les chaînes du téléviseur ajoutées à la rangée et leur ordre.",
+  "from": "The TV’s own channels added to the row, and their order."
+ },
  "tv.home.colours.press": {
   "from": "Press OK for {name}",
   "text": "Appuyez sur OK pour {name}"
@@ -10695,13 +10783,29 @@
   "from": "Press OK for {value}",
   "text": "Appuyez sur OK pour {value}"
  },
+ "tv.home.firstRow": {
+  "text": "{name} en premier",
+  "from": "{name} first"
+ },
  "tv.home.head.more": {
   "from": "More",
   "text": "Plus"
  },
+ "tv.home.head.reset": {
+  "text": "Réinitialiser",
+  "from": "Reset"
+ },
  "tv.home.hideLg.on": {
   "from": "Press OK, then again, to hide it",
   "text": "Appuyez sur OK, puis à nouveau, pour la masquer"
+ },
+ "tv.home.inputsHint": {
+  "text": "Les entrées affichées dans la rangée et leur ordre, et l’adresse HDMI-CEC de chaque tuile.",
+  "from": "Which inputs the row shows and in what order, and the HDMI-CEC address on each tile."
+ },
+ "tv.home.iptvHint": {
+  "text": "La sélection de chaînes de la liste IPTV, les chaînes étoilées pour cette rangée, leur ordre et leurs logos.",
+  "from": "The lineup from the IPTV playlist, the channels starred for this row, their order and their logos."
  },
  "tv.home.launcher": {
   "from": "Custom launcher: {title}",
@@ -10723,6 +10827,14 @@
   "from": "Press OK to use Minimal",
   "text": "Appuyez sur OK pour utiliser Minimal"
  },
+ "tv.home.motionHint": {
+  "text": "L’apparition et la disparition en fondu de Glasshouse Home, les mouvements et fondus du fond d’écran, et le défilement fluide des rangées et panneaux.",
+  "from": "Glasshouse Home fading in and out, the wallpaper drifting and cross-fading, and rows and panels gliding rather than jumping."
+ },
+ "tv.home.noneYet": {
+  "text": "Aucune pour le moment",
+  "from": "None yet"
+ },
  "tv.home.off": {
   "from": "LG’s Home is the TV’s Home again",
   "text": "L'Accueil de LG est de nouveau l'Accueil de la TV"
@@ -10730,6 +10842,10 @@
  "tv.home.on": {
   "from": "Glasshouse Home is now the TV’s Home",
   "text": "Glasshouse Home est maintenant l'Accueil de la TV"
+ },
+ "tv.home.onHomeN": {
+  "text": "{n} sur Home",
+  "from": "{n} on Home"
  },
  "tv.home.open": {
   "from": "Open Glasshouse Home",
@@ -10742,6 +10858,14 @@
  "tv.home.open.press": {
   "from": "Press OK to open it",
   "text": "Appuyez sur OK pour l'ouvrir"
+ },
+ "tv.home.openList": {
+  "text": "Appuyez sur OK pour ouvrir",
+  "from": "Press OK to open"
+ },
+ "tv.home.peekMore": {
+  "text": "et {n} de plus",
+  "from": "and {n} more"
  },
  "tv.home.reset.again": {
   "from": "Press OK again to reset",
@@ -10771,6 +10895,10 @@
   "from": "Press OK to move this row up",
   "text": "Appuyez sur OK pour monter cette rangée"
  },
+ "tv.home.rowsHead": {
+  "text": "Rangées",
+  "from": "Rows"
+ },
  "tv.home.searchBlockedLevel": {
   "from": "The ad blocker’s Everything setting blocks {host}, which LG’s search needs. Set Blocking to Ads & telemetry or off in Privacy to use search.",
   "text": "Le réglage Tout du bloqueur de pub bloque {host}, dont la recherche de LG a besoin. Réglez Blocage sur Pub et télémétrie ou désactivé dans Confidentialité pour utiliser la recherche."
@@ -10778,6 +10906,14 @@
  "tv.home.searchBlockedList": {
   "from": "The ad blocker’s hosts list blocks {host}, which LG’s search needs. Take it out of the list on the web dashboard’s Privacy tab to use search.",
   "text": "La liste d'hôtes du bloqueur de pub bloque {host}, dont la recherche de LG a besoin. Retirez-le de la liste dans l'onglet Confidentialité du tableau de bord web pour utiliser la recherche."
+ },
+ "tv.home.shownOf": {
+  "text": "{n} sur {total} affichés",
+  "from": "{n} of {total} shown"
+ },
+ "tv.home.someOn": {
+  "text": "{n} sur {total} activés",
+  "from": "{n} of {total} on"
  },
  "tv.home.sort.custom": {
   "from": "Press OK for your own order",
@@ -10793,7 +10929,7 @@
  },
  "tv.home.switch.off": {
   "from": "Press OK to use LG Home again",
-  "text": "Appuyez sur OK pour utiliser LG Home à nouveau"
+  "text": "Appuyez sur OK pour revenir à l'Accueil de LG"
  },
  "tv.home.switch.on": {
   "from": "Press OK to use Glasshouse Home",
@@ -10810,6 +10946,14 @@
  "tv.home.tile.show": {
   "from": "Press OK to show it",
   "text": "Appuyez sur OK pour l'afficher"
+ },
+ "tv.home.tv.addOnWeb": {
+  "text": "Une liste de lecture s’ajoute dans l’onglet Home du tableau de bord du navigateur, où son lien ou ses identifiants peuvent être saisis.",
+  "from": "A playlist is added on the browser dashboard’s Home tab, where its link or login can be typed."
+ },
+ "tv.home.tv.noPlaylist": {
+  "text": "Aucune liste de lecture",
+  "from": "No playlist"
  },
  "tv.loading": {
   "from": "Loading…",
@@ -10857,7 +11001,7 @@
  },
  "tv.oled.cancelAScheduledRefresher": {
   "from": "Cancel a scheduled refresher",
-  "text": "Annuler un rafraîchissement programmé"
+  "text": "Annuler un nettoyage des pixels programmé"
  },
  "tv.oled.cancelAScheduledRefresher.hint": {
   "from": "Clears a queued calibration so the TV does not spend an hour on it after the next switch-off.",
@@ -10885,7 +11029,7 @@
  },
  "tv.oled.logoDimming": {
   "from": "Logo dimming",
-  "text": "Atténuation des logos"
+  "text": "Ajuster la luminosité du logo"
  },
  "tv.oled.logoDimming.hint": {
   "from": "Spots a station logo that has not moved and fades it slightly. Higher settings dim more of the picture around it.",
@@ -10909,15 +11053,15 @@
  },
  "tv.oled.refresherCancelled": {
   "from": "Refresher cancelled",
-  "text": "Rafraîchissement annulé"
+  "text": "Nettoyage des pixels annulé"
  },
  "tv.oled.refresherScheduled": {
   "from": "Refresher scheduled",
-  "text": "Rafraîchissement programmé"
+  "text": "Nettoyage des pixels programmé"
  },
  "tv.oled.scheduleAPixelRefresher": {
   "from": "Schedule a pixel refresher",
-  "text": "Programmer un rafraîchissement de pixels"
+  "text": "Programmer un nettoyage des pixels"
  },
  "tv.oled.scheduleAPixelRefresher.hint": {
   "from": "Queues the long calibration for the next time the TV is switched off. It cannot run while the screen is on.",
@@ -10941,7 +11085,7 @@
  },
  "tv.oled.temporalPeakControl": {
   "from": "Temporal peak control",
-  "text": "Contrôle temporel des pics"
+  "text": "Contrôle temporel des pics (TPC)"
  },
  "tv.oled.temporalPeakControl.hint": {
   "from": "Limits how long the panel holds peak brightness, which protects it and keeps heat down. Switching it off makes burn-in more likely.",
@@ -12065,7 +12209,7 @@
  },
  "tv.update.serverHealth": {
   "from": "Server health",
-  "text": "Santé du serveur"
+  "text": "État du serveur"
  },
  "tv.update.serverHealth.hint": {
   "from": "Memory footprint and uptime of the Glasshouse background process on this TV.",
@@ -12082,25 +12226,5 @@
  "tv.viewOnly": {
   "from": "View only",
   "text": "Lecture seule"
- },
- "tv.home.appsHint": {"text": "Les applications affichées dans la rangée et leur ordre, leur nombre à côté et la recherche.", "from": "Which apps the row shows and in what order, the app count beside it, and Search."},
- "tv.home.arrange": {"text": "Ordre des rangées et réinitialisation", "from": "Row order and reset"},
- "tv.home.arrangeHint": {"text": "L’ordre des rangées sur Glasshouse Home et le rétablissement de la disposition initiale.", "from": "The order of the rows on Glasshouse Home, and putting the layout back as it first was."},
- "tv.home.backChannels": {"text": "‹ Chaînes", "from": "‹ Channels"},
- "tv.home.chHint": {"text": "Les chaînes du téléviseur ajoutées à la rangée et leur ordre.", "from": "The TV’s own channels added to the row, and their order."},
- "tv.home.firstRow": {"text": "{name} en premier", "from": "{name} first"},
- "tv.home.head.reset": {"text": "Réinitialiser", "from": "Reset"},
- "tv.home.inputsHint": {"text": "Les entrées affichées dans la rangée et leur ordre, et l’adresse HDMI-CEC de chaque tuile.", "from": "Which inputs the row shows and in what order, and the HDMI-CEC address on each tile."},
- "tv.home.iptvHint": {"text": "La sélection de chaînes de la liste IPTV, les chaînes étoilées pour cette rangée, leur ordre et leurs logos.", "from": "The lineup from the IPTV playlist, the channels starred for this row, their order and their logos."},
- "tv.home.motionHint": {"text": "L’apparition et la disparition en fondu de Glasshouse Home, les mouvements et fondus du fond d’écran, et le défilement fluide des rangées et panneaux.", "from": "Glasshouse Home fading in and out, the wallpaper drifting and cross-fading, and rows and panels gliding rather than jumping."},
- "tv.home.noneYet": {"text": "Aucune pour le moment", "from": "None yet"},
- "tv.home.onHomeN": {"text": "{n} sur Home", "from": "{n} on Home"},
- "tv.home.openList": {"text": "Appuyez sur OK pour ouvrir", "from": "Press OK to open"},
- "tv.home.peekMore": {"text": "et {n} de plus", "from": "and {n} more"},
- "tv.home.rowsHead": {"text": "Rangées", "from": "Rows"},
- "tv.home.shownOf": {"text": "{n} sur {total} affichés", "from": "{n} of {total} shown"},
- "tv.home.someOn": {"text": "{n} sur {total} activés", "from": "{n} of {total} on"},
- "tv.home.tv.addOnWeb": {"text": "Une liste de lecture s’ajoute dans l’onglet Home du tableau de bord du navigateur, où son lien ou ses identifiants peuvent être saisis.", "from": "A playlist is added on the browser dashboard’s Home tab, where its link or login can be typed."},
- "tv.home.tv.noPlaylist": {"text": "Aucune liste de lecture", "from": "No playlist"},
- "metrics.remote.batteryReadLabel": {"text": "Dernière lecture :", "from": "Last read:"}
+ }
 }
