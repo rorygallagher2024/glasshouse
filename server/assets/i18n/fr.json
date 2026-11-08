@@ -3163,6 +3163,14 @@
   "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.",
   "text": "Sur Internet TV : le logo de chaque chaîne fourni par la playlist. Désactivé affiche le nom de la chaîne à sa place."
  },
+ "home.showWeather": {
+  "from": "Weather",
+  "text": "Météo"
+ },
+ "home.showWeatherDesc": {
+  "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it.",
+  "text": "À côté de l’horloge : la météo envoyée par Home Assistant, dès qu’une automatisation l’envoie."
+ },
  "home.shown": {
   "from": "Shown",
   "text": "Affichée"

@@ -2717,7 +2717,13 @@ step('the weather Home Assistant pushes is kept across a restart, capped, hidden
     assert.strictEqual(home.beat().weather, null, 'an empty push clears it');
     home.init(lastInit);
     assert.strictEqual(home.beat().weather, null, 'and it stays cleared after a restart');
-    done();
+    assert.strictEqual(home.layout().showWeather, true, 'the Weather switch is on until switched off');
+    home.setLayout({ showWeather: false }, function (r2) {
+      assert.strictEqual(r2.layout.showWeather, false);
+      home.init(lastInit);
+      assert.strictEqual(home.layout().showWeather, false, 'and saved');
+      done();
+    });
   });
 });
 

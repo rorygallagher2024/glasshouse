@@ -3025,5 +3025,7 @@
  "home.weather.sunny": {"text": "Солнечно", "from": "Sunny"},
  "home.weather.windy": {"text": "Ветрено", "from": "Windy"},
  "home.weather.windyVariant": {"text": "Ветрено", "from": "Windy"},
- "home.weather.exceptional": {"text": "Опасные погодные явления", "from": "Severe weather"}
+ "home.weather.exceptional": {"text": "Опасные погодные явления", "from": "Severe weather"},
+ "home.showWeather": {"text": "Погода", "from": "Weather"},
+ "home.showWeatherDesc": {"text": "Рядом с часами: погода, которую отправляет Home Assistant, как только её отправит автоматизация.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."}
 }

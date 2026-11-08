@@ -3025,5 +3025,7 @@
  "home.weather.sunny": {"text": "Soalheiro", "from": "Sunny"},
  "home.weather.windy": {"text": "Ventoso", "from": "Windy"},
  "home.weather.windyVariant": {"text": "Ventoso", "from": "Windy"},
- "home.weather.exceptional": {"text": "Condições meteorológicas extremas", "from": "Severe weather"}
+ "home.weather.exceptional": {"text": "Condições meteorológicas extremas", "from": "Severe weather"},
+ "home.showWeather": {"text": "Meteorologia", "from": "Weather"},
+ "home.showWeatherDesc": {"text": "Junto ao relógio: a meteorologia que o Home Assistant envia, assim que uma automatização a enviar.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."}
 }

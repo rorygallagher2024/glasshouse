@@ -74,7 +74,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    An icon and the current temperature, to the right of the Picture details plate (or in its place, when the plate is off), with the city and a short condition label underneath. There is no weather lookup on the TV: it shows whatever was last written to the `text.lg_tv_weather` Home Assistant entity, a JSON string such as `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}` ([entities](../HOME-ASSISTANT-ENTITIES.md)), which an automation keeps current: [an example](../HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home). `city` is optional; the condition label is translated from `condition` on the TV. It shows once something has been sent, is kept when the TV restarts, and is hidden once 3 hours pass without an update or an empty value is sent.
+    An icon and the current temperature, to the right of the Picture details plate (or in its place, when the plate is off), with the city and a short condition label underneath. There is no weather lookup on the TV: it shows whatever was last written to the `text.lg_tv_weather` Home Assistant entity, a JSON string such as `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}` ([entities](../HOME-ASSISTANT-ENTITIES.md)), which an automation keeps current: [an example](../HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home). `city` is optional; the condition label is translated from `condition` on the TV. It shows once something has been sent, is kept when the TV restarts, and is hidden once 3 hours pass without an update or an empty value is sent. The **Weather** switch in the Home tab's Home customisation section, and the TV app's Home section, hides it whatever Home Assistant sends.
 
 -   **Last watched, app count, CEC addresses and channel logos**
 
@@ -439,7 +439,7 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
 * While Glasshouse Home is on:
     * **Starting up:** Open Home at power-on, Hide LG's Home while the TV starts.
     * **Layout:** Alternative View, Rows along the bottom.
-    * **Shown on Home:** Clock and date, Last watched, App count, CEC addresses, Channel logos, Picture details.
+    * **Shown on Home:** Clock and date, Last watched, App count, CEC addresses, Channel logos, Weather, Picture details.
     * **Live preview:** Live preview, with Keep the preview on and Preview in the tile once it is on.
     * **Search.**
     * **Animations:** Fade in and out, Wallpaper drift, Wallpaper cross-fade, Smooth scrolling, Sliding panels.

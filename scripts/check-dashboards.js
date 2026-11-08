@@ -283,15 +283,15 @@ async function visitHomeWeather(browser, base, problems) {
   page.on('pageerror', e => problems.push('Home weather: ' + e.message));
   const fail = what => problems.push('Home weather: ' + what);
   const layout = { rows: ['app'], order: { app: [] }, hidden: { app: [] }, channels: [], hintSeen: true, searchHintSeen: true };
-  let weather = null;
+  let weather = null, version = 1;
   await page.route('**/api/home/**', route => {
     const url = new URL(route.request().url());
     const reply = body => route.fulfill({ json: body });
-    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1,
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: version,
       apps: [{ id: 'app', title: 'App' }], devices: [], channels: [], sources: { channels: 0 }, order: { app: ['app', 'lg-home'] } });
     if (url.pathname.endsWith('/weather')) return reply(weather ? Object.assign({ ok: true }, weather) : { ok: false });
     if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
-    return reply({ ok: true, build: 'weather', layoutVersion: 1, weather });
+    return reply({ ok: true, build: 'weather', layoutVersion: version, weather });
   });
   const beat = async () => {
     const replied = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/beat');
@@ -320,6 +320,15 @@ async function visitHomeWeather(browser, base, problems) {
     weather = null;
     await beat();
     if (await shown()) fail('still shown once the heartbeat brought none');
+    // The Home tab's Weather switch, off: hidden whatever Home Assistant sends.
+    weather = { condition: 'sunny', temp: 12, city: null };
+    layout.showWeather = false;
+    version++;
+    const reread = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    await beat();
+    await reread;
+    await beat();
+    if (await shown()) fail('shown with the Weather switch off');
   } catch (e) {
     fail(e.message);
   }

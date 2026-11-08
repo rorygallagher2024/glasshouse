@@ -1686,6 +1686,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Drawn again only when it changes: the heartbeat brings it every 5 s.
   var shownWeather = null;
   function renderWeather(w) {
+    if (layout && layout.showWeather === false) w = null;
     var key = w && typeof w.temp === 'number' ? JSON.stringify([w.condition, w.temp, w.city]) : '';
     if (key === shownWeather) return;
     shownWeather = key;
