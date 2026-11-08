@@ -342,6 +342,8 @@ Home recovery checks cover a switch-off cut short, failed layout restoration and
 In the TV app, the Order check opens Apps, Inputs and Channels, changes each
 row's order and checks that Back returns to its entry. The Internet TV check
 also verifies that the entry's channel preview follows Last opened order.
+The player check waits for preview playback and leases before opening it;
+the keys for opening before the preview's delay expires are sent together.
 
 `test-home.js` also checks LG's native CEC launch contract: a receiver and a
 console on the same port select their own device IDs, a direct source selects
