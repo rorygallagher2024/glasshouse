@@ -192,7 +192,7 @@
 
     <div class="grp-sec" id="remoteblock" data-col="2" hidden>
       <div class="grp"><span data-t="metrics.remote">Magic remote</span><span class="pill idle" id="remote-pill" data-t="metrics.remote.standby">Standby</span></div>
-      <div id="remote-battery">
+      <div>
         <div class="lbl" data-t="metrics.battery">Battery</div>
         <div class="n num" style="margin-top:10px"><span id="remote-pct">&mdash;</span><em>%</em></div>
         <div class="track" style="margin-top:16px;margin-bottom:14px;max-width:220px"><b id="remote-gauge-fill" style="width:0%"></b></div>
@@ -201,6 +201,7 @@
         <div class="remote-meta-row" id="remote-model-row"><span class="remote-meta-lbl" data-t="metrics.remote.modelLabel">Model:</span> <span class="remote-meta-val" id="remote-model-val"></span></div>
         <div class="remote-meta-row" id="remote-fw-row"><span class="remote-meta-lbl" data-t="metrics.remote.firmwareLabel">Firmware:</span> <span class="remote-meta-val" id="remote-fw-val"></span></div>
         <div class="remote-meta-row" id="remote-signal-row"><span class="remote-meta-lbl" data-t="metrics.remote.signalLabel">Signal Strength:</span> <span class="remote-meta-val" id="remote-signal-val"></span></div>
+        <div class="remote-meta-row" id="remote-read-row" hidden><span class="remote-meta-lbl" data-t="metrics.remote.batteryReadLabel">Last read:</span> <span class="remote-meta-val" id="remote-read-val"></span></div>
       </div>
     </div>
 
@@ -1186,6 +1187,13 @@
         <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.showWeather">Weather</div>
+        <div class="prot-desc" data-t="home.showWeatherDesc">Next to the clock: the weather Home Assistant sends, once an automation sends it.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-show-weather" onclick="homeShow('showWeather')">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row" id="home-picture-row" hidden>
       <div class="prot-main">

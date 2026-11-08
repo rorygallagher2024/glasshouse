@@ -109,6 +109,10 @@ city or time zone. Correct a wrong time on the TV; see [network time](../ntp.md)
 
 ## Weather
 
+**Weather** under **Shown on Home** controls the separate badge sent by Home
+Assistant. Its data and visibility are independent of this widget. With fixed
+widget positions, that badge fits beside the left slot.
+
 The compact widget shows a condition icon, current temperature and condition,
 and today's temperature and wind graphs. Select it with **OK** to open larger
 graphs and a **10-day forecast**, including today. Each day shows its condition,

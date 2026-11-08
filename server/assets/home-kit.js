@@ -93,8 +93,9 @@
       request('GET', '/api/home/catalogue', null, function (err, c) {
         if (err) return cb(err);
         var layout = c.layout || {};
-        var hidden = layout.hidden || {};
+        var hidden = layout.hidden || {}, hiddenRows = layout.hiddenRows || [];
         var hiddenApps = hidden.app || [], hiddenInputs = hidden.dev || [], folder = layout.folder || [];
+        var appsOff = hiddenRows.indexOf('app') !== -1, inputsOff = hiddenRows.indexOf('dev') !== -1;
         var order = c.order || {};
         function inOrder(list, ids) {
           if (!ids || !ids.length) return list.slice();
@@ -109,14 +110,14 @@
         for (i = 0; i < appList.length; i++) {
           var a = appList[i];
           apps.push({ id: a.id, title: a.title, icon: a.icon || null,
-            hidden: hiddenApps.indexOf(a.id) !== -1, folder: folder.indexOf(a.id) !== -1 });
+            hidden: appsOff || hiddenApps.indexOf(a.id) !== -1, folder: folder.indexOf(a.id) !== -1 });
         }
         var devList = inOrder(c.devices || [], order.dev);
         for (i = 0; i < devList.length; i++) {
           var d = devList[i];
           var unused = d.unused === true;
           inputs.push({ id: d.id, title: d.name, port: d.port || 0, tuner: d.tuner === true, unused: unused,
-            hidden: hiddenInputs.indexOf(d.id) !== -1 || (unused && layout.hideUnused === true) });
+            hidden: inputsOff || hiddenInputs.indexOf(d.id) !== -1 || (unused && layout.hideUnused === true) });
         }
         cb(null, { apps: apps, inputs: inputs });
       });

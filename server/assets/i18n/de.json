@@ -1,8 +1,4 @@
 {
-  "home.alwaysShown": {
-    "text": "Immer sichtbar",
-    "from": "Always shown"
-  },
   "home.arrange.done": {
     "text": "Fertig",
     "from": "Done"
@@ -898,5 +894,20 @@
  "home.football.nationalMen": {"from": "National teams (men)", "text": "Nationalteams der Männer"},
  "home.football.nationalWomen": {"from": "National teams (women)", "text": "Nationalteams der Frauen"},
  "home.football.noResult": {"from": "No completed result available", "text": "Kein Ergebnis eines beendeten Spiels verfügbar"},
- "home.football.resultUnavailable": {"from": "Result unavailable", "text": "Ergebnis nicht verfügbar"}
+ "home.football.resultUnavailable": {"from": "Result unavailable", "text": "Ergebnis nicht verfügbar"},
+ "home.weather.clearNight": {"text": "Klare Nacht", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "Bewölkt", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Nebel", "from": "Fog"},
+ "home.weather.hail": {"text": "Hagel", "from": "Hail"},
+ "home.weather.lightning": {"text": "Blitze", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Gewitter", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Teilweise bewölkt", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Starkregen", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Regnerisch", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Schnee", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Schneeregen", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Sonnig", "from": "Sunny"},
+ "home.weather.windy": {"text": "Windig", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Windig", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"}
 }

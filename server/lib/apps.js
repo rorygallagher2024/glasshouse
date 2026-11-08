@@ -360,7 +360,7 @@ function startFailedDependents(cb) {
             'for u in ' + SAM_UNITS + '; do ' +
             'if systemctl is-failed --quiet "$u"; then ' +
             'echo "$u"; systemctl reset-failed "$u"; systemctl start --no-block "$u"; ' +
-            'fi; done; ' +
+            'fi; done; ' + samrescan.RESUBSCRIBE_HDMI_INPUTS + '; ' +
             'elif command -v initctl >/dev/null 2>&1; then ' +
             'initctl restart eim >/dev/null 2>&1 && echo "eim" || true; ' +
             'fi';

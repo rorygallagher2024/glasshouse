@@ -35,7 +35,7 @@ fallback, updates and submitting a widget.
 
     ---
 
-    Every app from LG's launcher with its native icon, and each web page saved to the Home screen, which opens in the TV's browser. LG's promotional tiles (LG Channels, Sports, Always Ready, Alexa, Camera) start hidden, and apps [Hide home screen system apps](#hide-home-screen-system-apps) was hiding stay hidden here. Includes **Notifications**, **Search**, and an always-present **LG Home** tile at the end.
+    Every app from LG's launcher with its native icon, and each web page saved to the Home screen, which opens in the TV's browser. LG's promotional tiles (LG Channels, Sports, Always Ready, Alexa, Camera) start hidden, and apps [Hide home screen system apps](#hide-home-screen-system-apps) was hiding stay hidden here. Includes **Notifications**, **Search**, and an **LG Home** tile at the end, which can be hidden like any app (the remote's **Home** button still leads back to LG's Home).
 
 -   **Magic Remote & scrolling**
 
@@ -90,6 +90,12 @@ fallback, updates and submitting a widget.
     Changing **Picture details** shows or hides the strip during a preview, without restarting the picture.
     Pressing **OK** releases the preview while the input or channel opens.
 
+-   **Weather badge**
+
+    ---
+
+    An icon and the current temperature, to the right of the Picture details plate (or in its place, when the plate is off), with the city and a short condition label underneath. There is no weather lookup on the TV: it shows whatever was last written to the `text.lg_tv_weather` Home Assistant entity, a JSON string such as `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}` ([entities](../HOME-ASSISTANT-ENTITIES.md)), which an automation keeps current: [an example](../HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home). `city` is optional; the condition label is translated from `condition` on the TV. It shows once something has been sent, is kept when the TV restarts, and is hidden once 3 hours pass without an update or an empty value is sent. The **Weather** switch in the Home tab's Home customisation section, and the TV app's Home section, hides it whatever Home Assistant sends.
+
 -   **Last watched, app count, CEC addresses and channel logos**
 
     ---
@@ -104,7 +110,7 @@ fallback, updates and submitting a widget.
 
     ---
 
-    **Clock and date** is on by default and is configured under **Top widgets** on the web dashboard. The TV app also has its visibility switch. Switched off, another widget can use its slot; with no widgets on, the top strip keeps one empty slot, so the rows do not move. **Rows along the bottom** puts the rows of apps and inputs along the bottom of the screen, as on LG's Home, rather than in the middle. It is off by default.
+    **Clock and date** is on by default and is configured under **Top widgets** on the web dashboard. The TV app also has its visibility switch. Switched off, another widget can use its slot; with no widgets on, the top strip keeps one empty slot, so the rows do not move. **Rows along the bottom** puts the rows of apps and inputs along the bottom of the screen, as on LG's Home, rather than in the middle. The row in focus sits at the bottom and the rows after it wait below the screen: moving down scrolls the rows up by one, and the rows already passed stay above. It is off by default.
 
     ![Glasshouse Home with the clock off and the rows along the bottom](../screenshots/home-bottom.jpg)
 
@@ -386,7 +392,7 @@ Its colours: **Time of day**, the default, follows the four times of day, and th
 Under **Choose your launcher** on the web dashboard's **Home** tab, choose **Glasshouse Home** (and confirm on the second press), or switch it on in the TV app's **Home** section. The same choice offers **LG Home**, [Glasshouse Minimal](#glasshouse-minimal) and [Custom](#custom-launcher). Glasshouse Home is mounted over LG's launcher without modifying the root filesystem (on webOS 4 it runs as a standalone app, `com.tvweb.home`, with the remote's Home key intercepted by the compositor filter). Choosing **LG Home** (or running `tvwebctl restore-glasshouse-home` over SSH) restores LG's launcher within a few seconds. On webOS 5 and 6 each switch restarts LG's app manager (sam), so the app in front comes back a moment later and a switch takes a few seconds longer.
 
 * **Reaching LG's Home without turning Glasshouse Home off:**
-  * Select the **LG Home** tile at the end of the Apps row.
+  * Select the **LG Home** tile at the end of the Apps row, unless it has been hidden.
   * Hold the remote's **Home** button for 1 second (a short press on LG's Home returns to Glasshouse Home).
   * Stop the Glasshouse server: if Glasshouse Home stops answering or the server is stopped/uninstalled, LG's Home automatically takes its place back.
   * Glasshouse Home not opening: if a short press of **Home** brings nothing from Glasshouse Home, LG's Home opens instead. Where the TV's web app manager, which runs Glasshouse Home, has stopped, this is decided after five seconds, and the web app manager is started again first and Glasshouse Home given one more try. Where it is running, Glasshouse Home may only be slow to load, as on the first press after a reboot, so it is given 20 seconds.
@@ -427,7 +433,8 @@ While Glasshouse Minimal or a custom launcher is the TV's Home, **Rows and tiles
 
 Rows and tiles can be arranged from the **web dashboard**, the **TV app**, or **directly on Glasshouse Home**:
 
-* **On the TV screen:** Hold **OK** on any tile to enter arrange mode. Use the D-pad (**Left/Right** to move a tile, **Up/Down** to reorder rows), **Back** to hide/show a tile or remove a channel, and the bottom bar for **Reset** and **Done**.
+* **On the TV screen:** Hold **OK** on any tile to enter arrange mode. Use the D-pad (**Left/Right** to move a tile, **Up/Down** to reorder rows), **Back** to hide/show a tile (the **LG Home** tile included) or remove a channel, and the bottom bar for **Reset** and **Done**.
+* **Hiding a whole row:** In the web dashboard, each row under **Rows and tiles** has a **Shown** / **Hidden** switch beside **Row up** and **Row down**. A hidden row is left off Glasshouse Home whatever its tiles, and shows dimmed while arranging so it can still be moved. **Reset the layout** shows every row again.
 * **More apps:** Apps that should not take up the Apps row can go into a folder instead of being hidden. While arranging, focus an app and choose **Into or out of More apps** in the bottom bar (or press the green button). The Apps row then ends with a **More apps** tile showing the first four icons; **OK** opens every app in it as a grid, and **Back** or **Home** closes the grid. The LG Home tile can go into the folder too. Hiding an app takes it out of the folder, and **Reset** empties the folder. In the web dashboard's Home tab, each app in the Apps row has a choice of **Shown**, **In More apps** or **Hidden**.
 * **Row ordering (`Your order` vs `Last opened`):** Each row can be set to stay in a fixed custom order (**Your order**) or automatically move the most recently used app, input, or channel to the front (**Last opened**, keeping **LG Home** pinned at the end).
 * **Adding and removing channels:** Apps and inputs are discovered automatically from the TV and toggled between shown and hidden (inputs with nothing plugged in can also be left out with the Inputs row's **Hide inputs with nothing connected** switch); live TV channels are added by name or number under **Add channels** and removed when no longer needed.
@@ -453,7 +460,7 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
 * While Glasshouse Home is on:
     * **Starting up:** Open Home at power-on, Hide LG's Home while the TV starts.
     * **Layout:** Alternative View, Rows along the bottom.
-    * **Shown on Home:** Clock and date, Last watched, App count, CEC addresses, Channel logos, Picture details.
+    * **Shown on Home:** Clock and date, Last watched, App count, CEC addresses, Channel logos, Weather, Picture details.
     * **Live preview:** Live preview, with Keep the preview on and Preview in the tile once it is on.
     * **Search.**
     * **Animations:** Fade in and out, Wallpaper drift, Wallpaper cross-fade, Smooth scrolling, Sliding panels.

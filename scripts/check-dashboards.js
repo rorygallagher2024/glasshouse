@@ -277,6 +277,64 @@ async function visitHomePicture(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// The weather badge: Home Assistant's last push, brought by the heartbeat.
+async function visitHomeWeather(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home weather: ' + e.message));
+  const fail = what => problems.push('Home weather: ' + what);
+  const layout = { rows: ['app'], order: { app: [] }, hidden: { app: [] }, channels: [], hintSeen: true, searchHintSeen: true };
+  let weather = null, version = 1;
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: version,
+      apps: [{ id: 'app', title: 'App' }], devices: [], channels: [], sources: { channels: 0 }, order: { app: ['app', 'lg-home'] } });
+    if (url.pathname.endsWith('/weather')) return reply(weather ? Object.assign({ ok: true }, weather) : { ok: false });
+    if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
+    return reply({ ok: true, build: 'weather', layoutVersion: version, weather });
+  });
+  const beat = async () => {
+    const replied = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/beat');
+    await page.clock.fastForward(5000);
+    await replied;
+    await page.evaluate(() => 0);
+  };
+  const shown = () => page.evaluate(() => {
+    const w = document.getElementById('weather');
+    return w.className === 'none' ? null : { svg: !!w.querySelector('#wxIcon svg'), temp: document.getElementById('wxTemp').textContent,
+      city: document.getElementById('wxCity').textContent, cond: document.getElementById('wxCond').textContent };
+  });
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    if (await shown()) fail('shown before anything was pushed');
+    weather = { condition: 'rainy', temp: 9.6, city: 'Glasgow' };
+    await beat();
+    const w = await shown();
+    if (!w || !w.svg || w.temp !== '10°' || w.city !== 'Glasgow' || w.cond !== 'Rainy') fail('a push was shown as ' + JSON.stringify(w));
+    weather = { condition: 'volcanic', temp: -2.4, city: null };
+    await beat();
+    const odd = await shown();
+    if (!odd || !odd.svg || odd.temp !== '-2°' || odd.cond !== '') fail('a condition Home Assistant does not name was shown as ' + JSON.stringify(odd));
+    weather = null;
+    await beat();
+    if (await shown()) fail('still shown once the heartbeat brought none');
+    // The Home tab's Weather switch, off: hidden whatever Home Assistant sends.
+    weather = { condition: 'sunny', temp: 12, city: null };
+    layout.showWeather = false;
+    version++;
+    const reread = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    await beat();
+    await reread;
+    await beat();
+    if (await shown()) fail('shown with the Weather switch off');
+  } catch (e) {
+    fail(e.message);
+  }
+  await page.close();
+}
+
 // The TV's tile, Keep the preview on and Preview in the tile.
 async function visitHomePreviewOptions(browser, base, problems) {
   const page = await browser.newPage();
@@ -704,7 +762,7 @@ async function visitHomeWidgets(browser, base, problems) {
   let layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
     hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true,
     showClock: true, widgets: require('../server/lib/home-widgets').normalise(null) };
-  let version = 1, weatherReads = 0, covered = false, lastWeather = null;
+  let version = 1, weatherReads = 0, covered = false, lastWeather = null, pushedWeather = null;
   const reply = (route, body) => route.fulfill({ json: body });
   await page.route('**/api/home**', route => {
     const pathname = new URL(route.request().url()).pathname;
@@ -721,16 +779,22 @@ async function visitHomeWidgets(browser, base, problems) {
     if (pathname === '/api/home/widgets/locations') return reply(route, { ok: true,
       locations: [{ name: 'Paris, France', latitude: 48.85, longitude: 2.35 }] });
     if (pathname === '/api/home/widgets/store') return reply(route, { ok: true, source: 'bundled', widgets: require('../server/assets/widget-store/catalogue.json').widgets });
+    if (pathname === '/api/home/weather') return reply(route, pushedWeather ? { ok: true, ...pushedWeather } : { ok: false });
     if (pathname === '/api/home/widgets/weather') {
       weatherReads++;
       lastWeather = route;
       return reply(route, require('../test/mocks/widget-forecast')());
     }
-    return reply(route, { ok: true, build: 'one', layoutVersion: String(version), covered });
+    return reply(route, { ok: true, build: 'one', layoutVersion: String(version), covered, weather: pushedWeather });
   });
   try {
     await page.goto(base + '/?tab=home');
     await page.getByRole('button', { name: 'Manage widgets', exact: true }).waitFor();
+    await page.locator('#home-show-weather').click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.showWeather === false);
+    if ((await page.locator('#home-show-weather').textContent()).trim() !== 'Off') problems.push('Home widgets: the Home Assistant weather switch did not update');
+    await page.locator('#home-show-weather').click();
+    await page.waitForFunction(() => !homeSaving && homeLayout.showWeather === true);
     if (await page.locator('#home-widget-manager').isVisible() || await page.locator('#home-widgets').isVisible()) problems.push('Widget manager: editors occupy the Home page before opening');
     await widgetManager(page);
     await page.locator('#home-widget-tab-widgets').focus();
@@ -888,6 +952,24 @@ async function visitHomeWidgets(browser, base, problems) {
     await page.waitForFunction(() => document.getElementById('widget-weather') && document.getElementById('when').style.display !== 'none');
     const positions = await page.evaluate(() => ['when', 'widget-energy', 'widget-weather'].map(id => document.getElementById(id).getBoundingClientRect().left));
     if (!(positions[0] < positions[1] && positions[1] < positions[2])) problems.push('Home widgets: left, centre and right positions overlap or are unordered: ' + JSON.stringify(positions));
+    pushedWeather = { condition: 'sunny', temp: 12, city: 'Home Assistant city' };
+    for (const view of ['standard', 'alternative']) {
+      layout.view = view; version++;
+      await page.clock.fastForward(5000);
+      await page.waitForFunction(view => document.getElementById('stage').classList.contains('alternative') === (view === 'alternative'), view);
+      await page.waitForFunction(() => document.getElementById('wxTemp').textContent === '12°');
+      const overlapping = await page.evaluate(() => {
+        const badge = document.getElementById('weather').getBoundingClientRect();
+        return ['when', 'widget-energy', 'widget-weather'].filter(id => {
+          const widget = document.getElementById(id).getBoundingClientRect();
+          return badge.left < widget.right && badge.right > widget.left && badge.top < widget.bottom && badge.bottom > widget.top;
+        });
+      });
+      if (overlapping.length) problems.push('Home widgets: the Home Assistant weather badge overlaps ' + overlapping.join(', ') + ' in ' + view);
+    }
+    pushedWeather = null; layout.view = 'standard'; version++;
+    await page.clock.fastForward(5000);
+    await page.waitForFunction(() => !document.getElementById('stage').classList.contains('alternative'));
     await page.keyboard.down('Enter');
     await page.clock.fastForward(800);
     await page.keyboard.up('Enter');
@@ -1336,8 +1418,8 @@ async function visitHomeVisibility(browser, base, problems) {
       when: getComputedStyle(document.getElementById('when')).visibility,
       rowTop: document.querySelector('.row').getBoundingClientRect().top,
       rowsBottom: document.getElementById('rows').getBoundingClientRect().bottom,
-      // The last row shown: an empty one is left out.
-      lastBottom: [].slice.call(document.querySelectorAll('.row')).filter(r => r.offsetHeight).pop().getBoundingClientRect().bottom
+      // The row in focus: along the bottom, the rows after it wait below the screen.
+      lastBottom: document.querySelector('.row.active').getBoundingClientRect().bottom
     }));
     const centred = await place();
     layout.showClock = false;
@@ -1347,7 +1429,7 @@ async function visitHomeVisibility(browser, base, problems) {
     await release();
     const bottom = await place();
     if (bottom.when !== 'hidden') problems.push('Home visibility: the clock stayed with it switched off');
-    // Only a row's own margin is left below the last row.
+    // Only a row's own margin is left below the row in focus.
     const gap = p => p.rowsBottom - p.lastBottom;
     if (!(bottom.rowTop > centred.rowTop) || !(gap(bottom) < gap(centred) / 3)) {
       problems.push('Home visibility: the rows are not along the bottom: ' + JSON.stringify({ centred, bottom }));
@@ -3318,7 +3400,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
@@ -3361,12 +3443,30 @@ function slowCpu(browser, rate) {
 
 const flaky = [];
 // A check run once more where it found a problem: see the top of this file.
+/*
+ * The longest one check may take. A step with no limit of its own, such as
+ * page.evaluate or page.close on a page that stopped answering, once held the
+ * home job until it was cancelled 15 minutes in, with nothing in the log to say
+ * where. Each check's time is printed as it ends, so a stall shows by name.
+ */
+const VISIT_LIMIT_MS = 60000;
+
+function withinLimit(promise, name) {
+  let timer;
+  const limit = new Promise((resolve, reject) => {
+    timer = setTimeout(() => reject(new Error('did not finish within ' + VISIT_LIMIT_MS / 1000 + ' s')), VISIT_LIMIT_MS);
+  });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
 async function runVisit(visitOne, browser, base, problems) {
   let first = null;
   for (;;) {
     const found = [];
-    try { await visitOne(browser, base, found); }
+    const startedAt = Date.now();
+    try { await withinLimit(visitOne(browser, base, found), visitOne.name); }
     catch (e) { found.push(visitOne.name + ': ' + String(e.message).split('\n')[0]); }
+    console.log('  ' + ((Date.now() - startedAt) / 1000).toFixed(1) + ' s  ' + visitOne.name + (found.length ? ' (problem)' : ''));
     if (!found.length) {
       if (first) flaky.push(visitOne.name + ' passed on a second try; the first found: ' + first.join('; '));
       return;

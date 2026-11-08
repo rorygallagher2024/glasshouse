@@ -7,7 +7,7 @@ Under its title, the tab says whether these logs are also sent to a log server o
 ### Log sources
 
 * **System (`/var/log/messages`)**: webOS system daemon logs written by PmLogDaemon, tracking system services (e.g. `sam`, `audiooutputd`, `pqcontroller`, `fancontroller`).
-* **Glasshouse (`/var/lib/tvweb/tvweb.log`)**: Output from the Glasshouse server, stamped with the TV's uptime so it interleaves with the other sources, and tagged `[INFO]`, `[WARN]`, `[ERR]` or `[DBG]`. When the file has just been trimmed, the lines kept from before are shown with it. A crash is written as `fatal:` lines with the error, its stack and the memory in use.
+* **Glasshouse (`/var/lib/tvweb/tvweb.log`)**: Output from the Glasshouse server, stamped with the TV's uptime so it interleaves with the other sources, and tagged `[INFO]`, `[WARN]`, `[ERR]` or `[DBG]`. When the file has just been trimmed, the lines kept from before are shown with it. The file outlives a restart of the TV, and lines from an earlier boot come before this boot's. A crash is written as `fatal:` lines with the error, its stack and the memory in use.
 * **Kernel (`dmesg`)**: Linux kernel ring buffer, covering device drivers, thermal alerts, USB events, and network interfaces.
 
 ### Inspection features
