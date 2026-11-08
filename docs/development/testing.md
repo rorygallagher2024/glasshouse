@@ -350,6 +350,14 @@ The models are a C2 (webOS 9.2), a B8 (webOS 4.4), a C3 (webOS 10.3), a CX (webO
 
 Home recovery checks cover a switch-off cut short, failed layout restoration and its retry, failed migration without losing the snapshot or removing the old app, closing the old app when it is left running in the background, and a missing first heartbeat when Home already has the foreground id. A refused device tile is followed by a remote input switch to check that Last opened still records the whole input. Remote-key checks cover clearing the startup notice on escape and retrying a configd write after the local map was saved. Browser checks cover pending/failed layout edits, each row's Order on the view, the Home tab and the TV app, edits attempted during an Order save and refresh, keeping unsaved moves when Order changes, clicking Order while a tile is held, first-catalogue failure, delayed readiness, the Home tab left out where Glasshouse Home is not offered, and the Apps tab's notes while it is on.
 
+In the TV app, the Order check opens Apps, Inputs and Channels, changes each
+row's order and checks that Back returns to its entry. The Internet TV check
+also verifies that the entry's channel preview follows Last opened order.
+The Apps preview counts folder contents separately and shows More apps as
+one tile, and hidden rows are marked before opening them.
+The player check waits for preview playback and leases before opening it;
+the keys for opening before the preview's delay expires are sent together.
+
 `test-home.js` also checks LG's native CEC launch contract: a receiver and a
 console on the same port select their own device IDs, a direct source selects
 its ID, and missing or unusable IDs and non-CEC inputs open the port alone.

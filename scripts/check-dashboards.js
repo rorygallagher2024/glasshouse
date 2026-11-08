@@ -1503,11 +1503,34 @@ async function visitHomeOrder(browser, base, problems) {
     await saved;
     if (saves[saves.length - 1].sort.app !== 'custom') problems.push('Home order: the Home tab did not save Your order');
 
+    layout.folder = ['two'];
+    layout.hiddenRows = ['ch'];
     await page.goto(base + '/assets/dashboard.html?tab=home');
-    await page.waitForFunction(() => document.body.innerText.indexOf('Your order') !== -1);
-    // One for Apps and one for Channels: the fixture has no inputs, and an empty row has no section.
-    const orders = await page.evaluate(() => (document.body.innerText.match(/Your order|Last opened/g) || []).length);
-    if (orders !== 2) problems.push('Home order: the TV app\'s Home section has no Order for each row');
+    for (const name of ['Apps', 'Inputs', 'Channels']) {
+      const entry = page.locator('#rows .row').filter({ hasText: new RegExp('^' + name) }).first();
+      await entry.click();
+      if (name === 'Apps') {
+        const peek = await page.locator('#hintPeek span').allTextContents();
+        if (peek.join(',') !== 'One,LG Home,More apps' || !(await entry.innerText()).includes('2 of 3 shown')) {
+          problems.push('Home order: the TV app preview counted folder apps as individual row tiles');
+        }
+      }
+      if (name === 'Channels' && !(await entry.innerText()).includes('Hidden')) problems.push('Home order: the TV app did not mark a hidden row');
+      await page.keyboard.press('Enter');
+      const order = page.locator('#rows .row.sel').filter({ hasText: /^Order/ });
+      await order.waitFor();
+      if (name === 'Apps' && !(await page.locator('#rows .row').filter({ hasText: /^Two/ }).innerText()).includes('In More apps')) {
+        problems.push('Home order: a folder app was labelled Shown in the TV app');
+      }
+      saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+      await page.keyboard.press('Enter');
+      await saved;
+      await order.filter({ hasText: 'Last opened' }).waitFor();
+      const kind = { Apps: 'app', Inputs: 'dev', Channels: 'ch' }[name];
+      if (saves[saves.length - 1].sort[kind] !== 'recent') problems.push('Home order: the TV app did not save Order for ' + name);
+      await page.keyboard.press('ArrowLeft');
+      await page.locator('#rows .row.sel').filter({ hasText: new RegExp('^' + name) }).waitFor();
+    }
   } finally { await page.close(); }
 }
 
@@ -2472,7 +2495,10 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (url.pathname.endsWith('/groups')) return reply({ ok: true, groups: [{ name: 'UK| NEWS', count: 2 }], total: 1, channels: 2 });
     return reply({ ok: true });
   });
-  const key = code => page.evaluate(k => { for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: k, bubbles: true })); }, code);
+  const keys = codes => page.evaluate(list => {
+    for (const code of list) for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: code, bubbles: true }));
+  }, codes);
+  const key = code => keys([code]);
   const playing = () => page.locator('#pvVideo').dispatchEvent('playing');
   const fillsTile = () => page.evaluate(() => {
     const tile = document.querySelector('.row.active .tile.focus'), pv = document.getElementById('preview');
@@ -2485,16 +2511,15 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.waitForSelector('.row[data-key="iptv"] .tile');
     const names = await page.locator('.row[data-key="iptv"] .tile .nm').allTextContents();
     if (names[0] !== 'BBC News' || names[2] !== 'Guide') fail('row names ' + JSON.stringify(names));
-    await page.waitForTimeout(900);
+    await page.waitForFunction(() => window.played.includes('http://s.test/x1.m3u8'));
     if (streams[0] !== 'x1' || !(await page.evaluate(() => window.played)).includes('http://s.test/x1.m3u8')) fail('the focused channel was not previewed');
-    if (!leases.some(l => l.on === true && l.full === false)) fail('no lease while previewing');
+    if (!await waitUntil(page, () => leases.some(l => l.on === true && l.full === false))) fail('no lease while previewing');
     await playing();
-    await page.waitForTimeout(100);
     await key(13);
-    await page.waitForTimeout(400);
+    await page.waitForSelector('#preview.full');
     if (!/full/.test(await page.locator('#preview').getAttribute('class'))) fail('OK did not grow the preview to the player');
     if (streams.length !== 1) fail('the preview grown to the player opened the stream again');
-    if (!leases.some(l => l.full === true)) fail('the player did not say it is full screen');
+    if (!await waitUntil(page, () => leases.some(l => l.full === true))) fail('the player did not say it is full screen');
     await page.waitForFunction(() => document.getElementById('bdFmt').textContent.includes('Yellow: play as MPEG-TS'));
     await key(405);
     await page.waitForFunction(() => /x1\.ts/.test(document.getElementById('pvVideo').getAttribute('src')));
@@ -2529,12 +2554,12 @@ async function visitHomeInternetTv(browser, base, problems) {
     holdOutput = false;
 
     await key(13);
-    await page.waitForTimeout(300);
+    await page.waitForSelector('#player.list');
     if (!/list/.test(await page.locator('#player').getAttribute('class'))) fail('OK in the player did not open the channel list');
     const releasedBefore = await page.evaluate(() => window.released);
     await key(40);
     await key(13);
-    await page.waitForTimeout(900);
+    await page.waitForFunction(() => window.played.includes('http://s.test/x2.m3u8'));
     if (streams[streams.length - 1] !== 'x2') fail('choosing a channel in the list did not play it');
     if (await page.evaluate(() => window.released) <= releasedBefore) fail('the last stream was not released before the next');
     const asked = trace.lastIndexOf('request x2'), playedNext = trace.lastIndexOf('play http://s.test/x2.m3u8');
@@ -2545,11 +2570,12 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (/playing/.test(await page.locator('#stage').getAttribute('class'))) fail('Back did not close the player');
     // OK before the preview's dwell is over: one stream, full screen, and the preview's timer gone with it.
     await key(37);
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() => document.getElementById('pvVideo').getAttribute('src') === 'http://s.test/x1.m3u8');
     const before = streams.length;
-    await key(39);
-    await page.waitForTimeout(100);
-    await key(13);
+    // One event turn keeps OK before the dwell even when the runner is busy.
+    await keys([39, 13]);
+    await page.waitForFunction(() => document.getElementById('pvVideo').getAttribute('src') === 'http://s.test/x2.m3u8');
+    // No second request may arrive from the preview timer after the player opens.
     await page.waitForTimeout(1500);
     if (streams.length !== before + 1) fail('OK during the preview\'s dwell opened ' + (streams.length - before) + ' streams');
     if (!/full/.test(await page.locator('#preview').getAttribute('class'))) fail('a late preview timer took the player\'s picture back');
@@ -2738,11 +2764,14 @@ async function visitIptvChannels(browser, base, problems) {
     await route(page);
     await page.route('**/api/home?*', r => r.fulfill({ json: {
       ok: true, supported: { ok: true }, enabled: true, writable: true,
-      layout: { rows: ['iptv'], order: { iptv: [] }, sort: {}, hidden: {}, channels: [] },
-      catalogue: { sources: { iptv: true }, order: { iptv: [] }, iptv: [] }
+      layout: { rows: ['iptv'], order: { iptv: [] }, sort: { iptv: 'recent' }, hidden: {}, channels: [] },
+      catalogue: { apps: [], devices: [], channels: [], sources: { iptv: true },
+        order: { iptv: ['p1:x2', 'p1:x1'] }, iptv: channels }
     } }));
     await page.goto(base + '/assets/dashboard.html?tab=home');
-    await page.locator('#rows .row').filter({ hasText: 'Internet TV channels' }).click();
+    await page.locator('#rows .row').filter({ hasText: /^Internet TV/ }).first().click();
+    const peek = await page.locator('#hintPeek span').allTextContents();
+    if (peek.join(',') !== 'World Today,Harbour News') fail('TV app: the row preview did not follow Last opened order: ' + peek.join(','));
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => rows.some(r => r.act === 'tvSection'));
     await page.evaluate(() => { sel = rows.findIndex(r => r.key === 'tvGroups'); render(); });
