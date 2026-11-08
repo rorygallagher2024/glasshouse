@@ -213,9 +213,9 @@ On a phone the three are tabs: **Groups**, **Channels** and **Lineup**.
 
 ![The lineup on a phone](../screenshots/iptv-channels-phone.jpg)
 
-The TV app's Home section opens the same lineup with **Internet TV
-channels**: the row's channels, each section with its numbers, and **Add
-channels** with the provider's groups. **OK** stars a channel or takes its
+The TV app's Home section opens the same lineup from its **Internet TV**
+entry: the row's order and channel logos, the row's channels, each section
+with its numbers, and **Add channels** with the provider's groups. **OK** stars a channel or takes its
 star off, adds one from a group or takes it out, or adds a whole group;
 in a section, **Numbers start at** moves the start on to the next hundred
 and one with each press. Renaming, which needs typing, is on the browser.
@@ -411,6 +411,14 @@ Rows and tiles can be arranged from the **web dashboard**, the **TV app**, or **
 * **More apps:** Apps that should not take up the Apps row can go into a folder instead of being hidden. While arranging, focus an app and choose **Into or out of More apps** in the bottom bar (or press the green button). The Apps row then ends with a **More apps** tile showing the first four icons; **OK** opens every app in it as a grid, and **Back** or **Home** closes the grid. The LG Home tile can go into the folder too. Hiding an app takes it out of the folder, and **Reset** empties the folder. In the web dashboard's Home tab, each app in the Apps row has a choice of **Shown**, **In More apps** or **Hidden**.
 * **Row ordering (`Your order` vs `Last opened`):** Each row can be set to stay in a fixed custom order (**Your order**) or automatically move the most recently used app, input, or channel to the front (**Last opened**, keeping **LG Home** pinned at the end).
 * **Adding and removing channels:** Apps and inputs are discovered automatically from the TV and toggled between shown and hidden (inputs with nothing plugged in can also be left out with the Inputs row's **Hide inputs with nothing connected** switch); live TV channels are added by name or number under **Add channels** and removed when no longer needed.
+
+In the TV app's Home section each row has one entry, in the rows' order, with
+what it holds beside it: **7 of 9 shown**, **10 on Home**. While an entry is
+chosen, the panel beside the list names the row's first tiles. **OK** opens
+the row's own list: its tiles, its order, and the settings that change only
+that row, such as **App count** and **Search** for Apps and **CEC addresses**
+for Inputs. **Back** returns to the entry. **Animations** and **Row order and
+reset** are lists of their own too.
 
 === "Arranging on the TV (hold OK)"
 

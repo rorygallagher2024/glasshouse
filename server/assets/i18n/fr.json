@@ -10751,14 +10751,6 @@
   "from": "Press OK to show it",
   "text": "Appuyez sur OK pour l'afficher"
  },
- "tv.home.tv.empty": {
-  "from": "No channels yet. Add them from the row on Glasshouse Home.",
-  "text": "Aucune chaîne pour l'instant. Ajoutez-les depuis la rangée sur Glasshouse Home."
- },
- "tv.home.tv.hint": {
-  "from": "From your IPTV playlist. Add channels from the row on Glasshouse Home, or on the browser dashboard’s Home tab.",
-  "text": "Depuis votre playlist IPTV. Ajoutez des chaînes depuis la rangée sur Glasshouse Home, ou sur l'onglet Accueil du tableau de bord dans le navigateur."
- },
  "tv.loading": {
   "from": "Loading…",
   "text": "Chargement…"
@@ -11726,22 +11718,6 @@
  "tv.tvm.lineupHead": {
   "from": "The lineup: {n} channels",
   "text": "La liste : {n} chaînes"
- },
- "tv.tvm.manage": {
-  "from": "Internet TV channels",
-  "text": "Chaînes Internet TV"
- },
- "tv.tvm.manageHint": {
-  "from": "Which of the provider’s channels the TV carries, their numbers, and the ones starred for this row.",
-  "text": "Quelles chaînes du fournisseur la TV porte, leurs numéros, et celles mises en favori pour cette rangée."
- },
- "tv.tvm.managePress": {
-  "from": "Press OK to open the lineup",
-  "text": "Appuyez sur OK pour ouvrir la liste"
- },
- "tv.tvm.manageValue": {
-  "from": "Lineup",
-  "text": "Liste"
  },
  "tv.tvm.movePress": {
   "from": "Press OK to move it",

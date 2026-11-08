@@ -1378,9 +1378,9 @@ async function visitHomeOrder(browser, base, problems) {
     if (saves[saves.length - 1].sort.app !== 'custom') problems.push('Home order: the Home tab did not save Your order');
 
     await page.goto(base + '/assets/dashboard.html?tab=home');
-    await page.waitForFunction(() => document.body.innerText.indexOf('Your order') !== -1);
-    // One for Apps and one for Channels: the fixture has no inputs, and an empty row has no section.
-    const orders = await page.evaluate(() => (document.body.innerText.match(/Your order|Last opened/g) || []).length);
+    await page.waitForFunction(() => rows.some(r => r.key === 'homeApps'));
+    // Each row's Order is in the row's own list, opened from its entry.
+    const orders = await page.evaluate(() => ['homeApps', 'homeCh'].filter(k => SUBLISTS[k](data.home).some(r => r.act === 'homeSort')).length);
     if (orders !== 2) problems.push('Home order: the TV app\'s Home section has no Order for each row');
   } finally { await page.close(); }
 }
@@ -2571,7 +2571,7 @@ async function visitIptvChannels(browser, base, problems) {
       catalogue: { sources: { iptv: true }, order: { iptv: [] }, iptv: [] }
     } }));
     await page.goto(base + '/assets/dashboard.html?tab=home');
-    await page.locator('#rows .row').filter({ hasText: 'Internet TV channels' }).click();
+    await page.locator('#rows .row').filter({ hasText: /^Internet TV/ }).first().click();
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => rows.some(r => r.act === 'tvSection'));
     await page.evaluate(() => { sel = rows.findIndex(r => r.key === 'tvGroups'); render(); });
