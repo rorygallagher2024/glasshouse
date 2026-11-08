@@ -695,6 +695,16 @@ physical Home screen displayed the title immediately, without a Home restart
 or QML modification. Updating the title can therefore show the port and EIM's
 CEC names on LG's own Home screen. Long titles use LG's scrolling text.
 
+## Home after the boot hook's sam restart (webOS 6.5.3)
+
+On a 55NANO756PR (webOS 6.5.3, firmware 03.53.46) with Quick Start+ and Open
+Home at power-on off, the boot hook's sam restart, which makes sam read
+Glasshouse Home, was followed by `SAM NL_APP_LAUNCH_BEGIN
+{"app_id":"com.webos.app.home","caller_app_id":"last_input_handler","mode":"last_input"}`
+at 43 s, over HDMI 1, which bootd had put in front at 20.5 s. LG's own Home
+stays hidden when launched that way; Glasshouse Home's page opened as a card
+window over the input. A 48C11LB (6.5.3) showed the same (#1231).
+
 ## Taking over Home (G3, webOS 9.2.2)
 
 - The Home button opens `com.webos.app.home` whatever `general.defaultApps`
@@ -1449,6 +1459,24 @@ temperature and gyro, beside a `ManualDevice-<remote MAC>-rawInput.dsf`. A new
 rebooted, through a night in standby. lginput2's luna methods include
 `enableLoggingMotion`, `getSensorData` and `enablePrintRfStatus`, none of which
 Glasshouse calls; `getConnectionStatus` and `getDeviceInfo` left it at 0%.
+
+## MR25GA battery (C5, webOS 11.2)
+
+OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:
+`getDeviceInfo` with `deviceName: "MagicRemote_1"` returned `batteryLevel: "-"`
+and a zero address while asleep, then `batteryLevel: "MID"` and the paired
+address while awake. `lowStrength: false` is signal strength, not charge, and
+the pairing file's `52(M) 35(L)` is the remote model's thresholds.
+
+On the awake LGE MR25GA, bluetooth2 `gatt/connect` returned a `clientId`.
+After `gatt/discoverServices`, `gatt/getServices` listed service `180f` with
+characteristic `2a19` (`read: true, notify: true`), and
+`gatt/readCharacteristicValue` with that `clientId` returned `bytes: [46]`
+(and `[42]` on a later read). After `gatt/disconnect`, `gatt/getStatus`
+reported `connected: false` and `discoveringServices: false`, while LG's
+remote service still reported `connected: true`. Because standby/wake cycles
+have not been tested on webOS 11, the C5 uses `getDeviceInfo`'s `"HIGH"`,
+`"MID"` and `"LOW"` steps without opening a GATT connection.
 
 ## No firewall in the kernel (50QNED80A6A, webOS 10)
 
@@ -2897,8 +2925,7 @@ turn of the event loop later (`setImmediate` or `setTimeout 0`) did not. At
 server start, the first `iptables` call aborted on every start tried, even
 with that wait. execFile reports such a child with `err.signal` set and
 `err.killed` false, which tells it apart from one killed by its own timeout.
-The debugger rule in `devtools.js` waits a turn before each call and tries an
-aborted one once more.
+The debugger rule in `devtools.js` tries an aborted call once more.
 
 Issue [#1248](https://github.com/rorygallagher2024/glasshouse/issues/1248)
 shows the same assertion on an OLED65CX9LA, from the curl or wget the
@@ -2908,3 +2935,43 @@ callback, the case that aborted every time, and its first is the process's
 first child, as the first `iptables` call at server start was. The worker
 waits a turn before each one and tries one aborted before any of its body
 arrived once more.
+
+A CX (OLED55CX3LA, webOS 5.6.2, firmware 04.64.00, node 8.12.0, libuv
+1.19.2) aborted 24 luna calls in 45 minutes. A core of such a child shows
+why: LG's node registers a fork handler, not in libuv itself, that takes
+`uv_default_loop()`, calls `uv_close` on its handles and sets up its signal
+and async handles again. A handle already closing at fork time fails the
+assertion. A child that has just exited is one: node closes its process
+handle in the exit callback, and the close completes in the loop's closing
+phase. `setImmediate` runs before that phase, a timer after it. Of 900
+`/bin/true` starts, three running at a time, each started from another's
+callback: 9 aborted started at once, 8 from `setImmediate`, none from
+`setTimeout(fn, 0)`. Every start through `lib/children.js` now comes from a
+timer. A start that does not go through it can still abort.
+
+## Source EDIDs after sam restarts (55UP77006LB, webOS 6.5.3)
+
+LG's HDMI input service, `/usr/sbin/extinput-integration`, subscribes to
+`com.webos.service.applicationmanager/getForegroundAppInfo` once, from
+`AdapterApplicationManager::initialize`, and nothing subscribes again. When
+sam is killed and comes back, the service keeps an empty foreground app:
+its log printed `[getForegroundAppId] :: appId : ` while sam itself reported
+`com.webos.app.hdmi1`. `convertAppId` maps an unmatched id to app type
+`0x0d`.
+
+`EdidControl::decideEdidType`, run with port `0xff` when an input's audio
+format setting changes, takes the input from the app type and accepts only
+types 7 to 10. Otherwise it logs `[SKIP] Don't update EDID [Cause : Invalid
+App type] [app type : 0x0d]` and leaves the input on its basic EDID. With
+the service subscribed, the same change logged `Convert HDMI port index :
+'255' => '1'` and `request HDMI(1) edid update [type : 2]`, and HDMI 1's
+Bitstream EDID changed from checksum `(48,ba)` to `(48,2b)`; PCM stayed
+`(48,8e)`.
+
+With Glasshouse Home's boot hook restarting sam (webOS 5 and 6), an Apple TV
+on HDMI 1 sent only PCM all day, which the TV passed on as PCM to an eARC
+soundbar (`KHAL_AUDIO_SNDOUT_eARC_OutputType ... codec_type 1`). After
+`systemctl restart extinput-integration` it sent MAT (`StartDecoding ADEC1
+type MAT`), passed through over eARC (`codec_type 7`), and reported Atmos
+available. Nothing requires the unit; restarting it with HDMI 1 in front
+re-wrote that input's EDID and hot-plugged it, and the app stayed in front.

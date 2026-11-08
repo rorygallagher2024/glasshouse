@@ -4,6 +4,19 @@
 
 var assert = require('assert');
 var child = require('child_process');
+var util = require('../server/lib/util');
+
+// Measure start gaps on the clock reading children.js decided each start by
+// (as test-children.js does), not Date.now() when the 0ms timer later fires.
+var realMonotonicMs = util.monotonicMs;
+var lastReading = 0;
+var decidedAt = 0;
+util.monotonicMs = function () { return (lastReading = realMonotonicMs()); };
+var realSetTimeout = setTimeout;
+global.setTimeout = function (fn, ms) {
+  var at = lastReading;
+  return realSetTimeout(function () { decidedAt = at; fn(); }, ms);
+};
 
 var runs = [];
 var script = [];
@@ -14,7 +27,7 @@ var lastOpts = null;
 child.execFile = function (file, args, opts, cb) {
   lastOpts = opts;
   runs.push(args[args.length - 2]);
-  startedAt.push(Date.now());
+  startedAt.push(decidedAt);
   var next = script.shift();
   process.nextTick(function () { cb(next.err || null, next.out || ''); });
 };
@@ -22,7 +35,7 @@ child.execFile = function (file, args, opts, cb) {
 var EventEmitter = require('events').EventEmitter;
 var spawnedAt = [];
 child.spawn = function () {
-  spawnedAt.push(Date.now());
+  spawnedAt.push(decidedAt);
   var c = new EventEmitter();
   c.stdout = new EventEmitter();
   c.stderr = new EventEmitter();
@@ -103,7 +116,7 @@ luna.call('com.webos.service.tv.systemproperty/getSystemProperties', { keys: ['m
       var both = function () {
         if (++done < 2) return;
         assert.strictEqual(runs.length, 2);
-        assert.ok(startedAt[1] - startedAt[0] >= 130, 'second start ' + (startedAt[1] - startedAt[0]) + 'ms after the first');
+        assert.ok(startedAt[1] - startedAt[0] >= 149.99, 'second start ' + (startedAt[1] - startedAt[0]) + 'ms after the first');
         console.log('  ✓ two calls made together start 150ms apart after start-up');
 
         // 5. Subscriptions wait their turn with the calls
@@ -114,9 +127,9 @@ luna.call('com.webos.service.tv.systemproperty/getSystemProperties', { keys: ['m
         subA.start(); subB.start();
         luna.call('com.webos.service.settings/getSystemSettings', {}, function () {});
         setTimeout(function () {
-          var starts = spawnedAt.concat(startedAt).sort();
+          var starts = spawnedAt.concat(startedAt).sort(function (a, b) { return a - b; });
           assert.strictEqual(starts.length, 3);
-          assert.ok(starts[1] - starts[0] >= 130 && starts[2] - starts[1] >= 130,
+          assert.ok(starts[1] - starts[0] >= 149.99 && starts[2] - starts[1] >= 149.99,
                     'starts ' + (starts[1] - starts[0]) + 'ms and ' + (starts[2] - starts[1]) + 'ms apart');
           subA.stop(); subB.stop();
           console.log('  ✓ subscriptions start in turn with calls, spaced the same');
