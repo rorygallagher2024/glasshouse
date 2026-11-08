@@ -14,7 +14,7 @@ typedef struct {
     GstAudioDecoder parent;
     GstElement *sink;
     GThread *guard;
-    gint stopping, failed, lost, retake;
+    gint stopping, failed, losing, lost, retake;
     gint lock_fd;
     gboolean owns_route, previous_bypass;
     guint lease;
@@ -98,13 +98,17 @@ static gpointer keep_route(gpointer data) {
     while (!g_atomic_int_get(&self->stopping)) {
         if (!heartbeat(self)) {
             GST_INFO_OBJECT(self, "route lease ended: another source took the output, the stream stalled or forwarding was disabled");
+            /* stop can overlap the app's return to PLAYING. */
+            g_atomic_int_set(&self->losing, 1);
             if (control(self, "stop", 0, -1)) {
                 close(self->lock_fd);
                 self->lock_fd = -1;
                 g_atomic_int_set(&self->lost, 1);
             } else {
+                record_failure(self, "lease", "the route lease was lost and its module could not be removed");
                 g_atomic_int_set(&self->failed, 1);
             }
+            g_atomic_int_set(&self->losing, 0);
             break;
         }
         g_usleep(500000);
@@ -115,10 +119,10 @@ static gpointer keep_route(gpointer data) {
 static void report_stream(GstGhDts *self, gboolean active);
 
 static void release_route(GstGhDts *self) {
-    if (self->owns_route) report_stream(self, FALSE);
     g_atomic_int_set(&self->stopping, 1);
     if (self->guard) { g_thread_join(self->guard); self->guard = NULL; }
     /* After a lost lease the module may already belong to another stream. */
+    if (self->owns_route && !g_atomic_int_get(&self->lost)) report_stream(self, FALSE);
     gboolean restored = !self->owns_route || g_atomic_int_get(&self->lost) || control(self, "stop", 0, -1);
     /* Never reconnect the PCM mixer while a compressed route could remain. */
     if (self->sink) {
@@ -128,18 +132,23 @@ static void release_route(GstGhDts *self) {
     }
     self->owns_route = FALSE;
     if (self->lock_fd >= 0) { close(self->lock_fd); self->lock_fd = -1; }
+    g_atomic_int_set(&self->lost, 0);
+    g_atomic_int_set(&self->retake, 0);
+    if (restored) g_atomic_int_set(&self->failed, 0);
 }
 
 /* A stream resumed after losing its lease starts again on the same sink. That
  * sink stays in bypass: LG recreates its renderer when the app returns, and
  * only applies pcm-bypass then. */
-static void forget_route(GstGhDts *self) {
+static gboolean forget_route(GstGhDts *self) {
     g_atomic_int_set(&self->stopping, 1);
     if (self->guard) { g_thread_join(self->guard); self->guard = NULL; }
+    if (g_atomic_int_get(&self->failed)) return FALSE;
     self->owns_route = FALSE;
     if (self->lock_fd >= 0) { close(self->lock_fd); self->lock_fd = -1; }
     g_atomic_int_set(&self->lost, 0);
     g_atomic_int_set(&self->retake, 0);
+    return TRUE;
 }
 
 static GstElement *find_native_sink(GstGhDts *self) {
@@ -167,6 +176,8 @@ static GstElement *find_native_sink(GstGhDts *self) {
             }
             g_value_unset(&item);
         }
+        /* A partial walk cannot establish that the sink is unique. */
+        if (result != GST_ITERATOR_DONE && found) { gst_object_unref(found); found = NULL; }
         gst_iterator_free(iterator);
     }
     gst_object_unref(root);
@@ -354,6 +365,7 @@ static GstFlowReturn handle_frame(GstAudioDecoder *decoder, GstBuffer *input) {
     struct dts_core_frame frame;
     GstBuffer *output;
     guint size, period;
+    gboolean waiting;
     if (!input) return GST_FLOW_OK;
     if (!gst_buffer_map(input, &source, GST_MAP_READ)) return GST_FLOW_ERROR;
     if (dts_core_header(source.data, source.size, &frame) != 1 || source.size < frame.bytes) {
@@ -365,15 +377,13 @@ static GstFlowReturn handle_frame(GstAudioDecoder *decoder, GstBuffer *input) {
         gst_buffer_unmap(input, &source);
         return refuse_stream(self, frame.little ? "unsupported-core-order" : "payload-too-large");
     }
-    if (g_atomic_int_get(&self->lost)) {
-        /* Until the app plays this stream again, the output is another app's. */
-        if (!g_atomic_int_get(&self->retake)) {
-            gst_buffer_unmap(input, &source);
-            return gst_audio_decoder_finish_frame(decoder, NULL, 1);
-        }
-        forget_route(self);
+    waiting = g_atomic_int_get(&self->losing) || g_atomic_int_get(&self->lost);
+    if (waiting && g_atomic_int_get(&self->retake)) {
+        if (!forget_route(self)) goto unavailable;
+        waiting = FALSE;
     }
-    if ((!self->owns_route && !acquire_route(self)) || g_atomic_int_get(&self->failed)) {
+    if (g_atomic_int_get(&self->failed) || (!waiting && !self->owns_route && !acquire_route(self))) {
+unavailable:
         gst_buffer_unmap(input, &source);
         if (GST_PAD_IS_FLUSHING(GST_AUDIO_DECODER_SINK_PAD(decoder))) return GST_FLOW_FLUSHING;
         GST_ELEMENT_ERROR(self, RESOURCE, SETTINGS, ("Native DTS eARC route is unavailable"), (NULL));
@@ -385,7 +395,13 @@ static GstFlowReturn handle_frame(GstAudioDecoder *decoder, GstBuffer *input) {
         gst_buffer_unmap(input, &source);
         return GST_FLOW_ERROR;
     }
-    if (self->rate) {
+    if (waiting) {
+        /* Clocked silence keeps preroll and playback moving without draining
+         * the file to EOS, or sending DTS while another app owns the output. */
+        size = period * 4;
+        memset(destination.data, 0, size);
+        GST_BUFFER_FLAG_SET(output, GST_BUFFER_FLAG_GAP);
+    } else if (self->rate) {
         size = dts_hd_burst(source.data, source.size, &frame, self->rate, destination.data);
         if (size) {
             gboolean ready = hd_ready();
@@ -433,7 +449,8 @@ static gboolean stop(GstAudioDecoder *decoder) { release_route((GstGhDts *)decod
  * lost the output take it back. */
 static GstStateChangeReturn change_state(GstElement *element, GstStateChange transition) {
     GstGhDts *self = (GstGhDts *)element;
-    if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING && g_atomic_int_get(&self->lost))
+    if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING &&
+        (g_atomic_int_get(&self->losing) || g_atomic_int_get(&self->lost)))
         g_atomic_int_set(&self->retake, 1);
     return GST_ELEMENT_CLASS(gst_gh_dts_parent_class)->change_state(element, transition);
 }

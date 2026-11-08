@@ -23,9 +23,14 @@ and EOS release the route; seek retains it so the native bypass stays valid. A s
 20 seconds without a renewal. The lease also ends as soon as another app takes
 the eARC output, as one does when it plays while a DTS app waits in the
 background. The element then removes the module and lets the stream lock go, so
-another DTS stream can start. It drops its frames until the pipeline goes from
+another DTS stream can start. It sends silence until the pipeline goes from
 paused to playing again, as uMS does when the app returns, and then takes the
 route again on the same sink.
+An app returning during route removal also requests that recovery. Stopping a
+background stream clears its handover state without replacing a newer
+stream's status.
+Silent output keeps the pipeline clocked and able to preroll while the route
+is lost; discarding buffers would consume the remaining file without waiting.
 The sink remains in bypass until route removal succeeds. A stream whose first
 frames arrive before LG's playsink has added the audiosink, as when an app
 resumes a title, waits up to two seconds for it. The existing TV

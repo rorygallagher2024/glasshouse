@@ -189,8 +189,8 @@ and the module stood down, ending the lease. uMS paused Plex's pipeline and
 played the same one again when Plex returned, so its forwarder, which had
 failed for good once its lease ended, had to take the route again: doing that
 on the same sink, left in bypass, brought DTS-HD back. Plex twice stuck on a
-grey screen when reopened with no media pipeline at all, which is the app's
-own fault rather than the forwarder's. Disney+ DD+, YouTube
+grey screen when reopened with no media pipeline at all; its cause was not
+established. Disney+ DD+, YouTube
 multichannel PCM, Netflix and live TV each took output3 from a held DTS route
 and played normally. The kernel log (`/var/log/legacy-log`) records each
 `audio_hal_earc_set_*` call with the calling thread, which separates LG's eARC
