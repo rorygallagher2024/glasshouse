@@ -21,8 +21,8 @@
  "adv.onTimer.autoOff": {"text": "Az így bekapcsolt TV két óra múlva újra kikapcsol, ha addig nem nyomnak meg egy gombot sem. Ez a TV saját Időzítők menüjében kapcsolható ki.", "from": "Switched on this way, the TV goes back off after two hours unless a button is pressed. That can be turned off in the TV's own Timers menu."},
  "adv.onTimer.desc": {"text": "Ebben az időpontban bekapcsolja a TV-t, egyszer vagy a kiválasztott napokon.", "from": "Switches the TV on at this time, once or on the days picked."},
  "adv.onTimer.time": {"text": "Bekapcsolási időzítő ideje", "from": "On Timer time"},
- "adv.piccap": {"text": "PicCap rögzítés", "from": "PicCap capture"},
- "adv.piccap.desc": {"text": "A képernyő tartalmát a PicCap Hyperion szerverére küldi, amely a TV mögötti környezeti világítást vezérli. Kikapcsolva leáll a rögzítés, és vele a világítás is.", "from": "Sends what is on screen to PicCap's Hyperion server, which drives an ambient light behind the TV. Off stops the capture, and the light with it."},
+ "adv.piccap": {"text": "PicCap engedélyezve", "from": "PicCap Enabled"},
+ "adv.piccap.desc": {"text": "A képernyő képét rögzíti a Hyperion vagy a HyperHDR számára, hogy szinkronizálja a TV mögötti világítást.", "from": "Captures the screen for Hyperion or HyperHDR to sync the lights behind the TV."},
  "adv.power": {"text": "Tápellátás", "from": "Power"},
  "adv.powerStandby": {"text": "Tápellátás és készenlét", "from": "Power & standby"},
  "adv.quickBoot": {"text": "Gyorsindítás", "from": "Quick Boot"},
@@ -2003,7 +2003,7 @@
  "adv.clock12.desc": {"text": "Az időt 21:40 helyett 9:40 PM formában mutatja a TV vezérlőpultján, a Glasshouse Home-on és az órás képernyővédőkön.", "from": "Shows the time as 9:40 PM rather than 21:40 on the TV dashboard, Glasshouse Home and the clock screen savers."},
  "adv.homeAutoLaunch": {"text": "Kezdőképernyő bekapcsoláskor", "from": "Open Home at power-on"},
  "adv.homeAutoLaunch.desc": {"text": "A TV bekapcsolásakor a Kezdőképernyőt nyitja meg, nem az utolsó bemenetet. Az LG ezt Home Auto Launch néven nevezi.", "from": "Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch."},
- "adv.huesync": {"text": "Hue Sync streamelés", "from": "Hue Sync streaming"},
+ "adv.huesync": {"text": "Hue Sync engedélyezve", "from": "Hue Sync Enabled"},
  "adv.huesync.desc": {"text": "Elindítja és leállítja a színfolyamot, amelyet a Hue Sync alkalmazás egy Philips Ambience lámpának küld. Kikapcsolva a folyam leáll, és vele a fény is.", "from": "Starts and stops the colour stream the Hue Sync app sends to a Philips Ambience light. Off stops the stream, and the light with it."},
  "common.am": {"text": "AM", "from": "AM"},
  "common.pm": {"text": "PM", "from": "PM"},
@@ -3096,5 +3096,7 @@
  "tv.saver.include": {"text": "Nyomja meg az OK gombot a véletlenszerű váltásba való felvételhez", "from": "Press OK to include in random rotation"},
  "tv.saver.random.hint": {"text": "Minden alkalommal másik képernyővédőt választ.", "from": "Picks a different screen saver each time."},
  "tv.saver.random.hintUpNext": {"text": "Minden alkalommal másik képernyővédőt választ. Következő: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
- "ambient.none": {"from": "No ambient light integrations found.", "text": "Nem található hangulatvilágítás-integráció."}
+ "ambient.none": {"from": "No ambient light integrations found.", "text": "Nem található hangulatvilágítás-integráció."},
+ "adv.huesync.title": {"from": "Hue Sync", "text": "Hue Sync"},
+ "ambient.piccap.title": {"from": "PicCap", "text": "PicCap"}
 }

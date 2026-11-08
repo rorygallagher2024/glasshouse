@@ -19,9 +19,10 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 
 ## Ambient light
 
-PicCap and Hue Sync quick toggles sit directly below Playback when their
-integrations are available. Each shows On or Off and switches independently.
-All settings are on the [Ambient light](ambient-light.md) page.
+**Hue Sync Enabled** and **PicCap Enabled** quick toggles sit directly below
+Playback, in that order. Each shows On or Off and switches independently.
+Unavailable integrations are hidden. All settings are on the
+[Ambient light](ambient-light.md) page.
 
 ![Ambient light quick toggles below Playback, simulated data](../screenshots/control-ambient.png)
 

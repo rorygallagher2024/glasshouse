@@ -1,17 +1,20 @@
 # Ambient light
 
 The **Ambient light** page (`/?tab=ambient`) follows **Home** in the sidebar.
-The TV app has the same top-level menu. Each installed integration appears when
-its service answers.
+The TV app has the same top-level menu. Available integrations have separate
+categories, **Hue Sync** first and **PicCap** second. Categories and Control
+shortcuts are hidden when an integration is unavailable, as with other optional
+Glasshouse controls. If neither is available, the page shows a short message.
 
-* **[PicCap capture](../piccap.md):** Starts or stops the screen capture sent to
+* **[Hue Sync Enabled](../huesync.md):** Starts or stops synchronization with Hue
+  lights. Brightness, intensity, Video/Game mode, entertainment area, background
+  light for each mode, automatic start and its notification are shown directly.
+* **[PicCap Enabled](../piccap.md):** Starts or stops the screen capture sent to
   Hyperion or HyperHDR.
-* **[Hue Sync](../huesync.md):** Starts or stops synchronization with Hue lights.
-  Brightness, intensity, Video/Game mode, entertainment area, background light
-  for each mode, automatic start and its notification are all shown directly.
 
 The switches are independent, so either or both integrations can run. The
-[Control](control.md) page also has quick toggles immediately below Playback.
+[Control](control.md) page has the same toggles immediately below Playback,
+with Hue Sync first.
 
 ![Ambient light page with PicCap and Hue Sync, simulated data](../screenshots/huesync-settings.png)
 

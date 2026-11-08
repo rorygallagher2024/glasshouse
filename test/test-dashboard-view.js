@@ -154,6 +154,7 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
   function options() { return sandbox.ambientRows({ ok: true, huesyncStreaming: hs }); }
   function row(key) { return options().filter(function (r) { return r.key === key; })[0]; }
   assert.strictEqual(options().filter(function (r) { return r.head && r.label === 'Hue Sync'; }).length, 1);
+  assert.strictEqual(row('streaming').label, 'Hue Sync Enabled');
   assert.strictEqual(row('streaming').act, 'huesync');
   assert.strictEqual(row('streaming').next, false);
   assert.strictEqual(row('brightness').act, 'huesyncAdjust');
@@ -199,6 +200,9 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
   var hs = { streaming: true, writable: true };
   var combined = sandbox.ambientRows({ ok: true, piccapCapture: pc, huesyncStreaming: hs });
   var capture = combined.filter(function (r) { return r.key === 'piccap'; })[0];
+  assert.deepEqual(combined.filter(function (r) { return r.head; }).map(function (r) { return r.label; }), ['Hue Sync', 'PicCap'], 'each available integration has its own category, Hue Sync first');
+  assert.strictEqual(capture.label, 'PicCap Enabled');
+  assert.ok(capture.hint.indexOf('Hyperion or HyperHDR') !== -1);
   assert.strictEqual(capture.act, 'piccap');
   assert.strictEqual(capture.next, false);
   assert.strictEqual(combined.filter(function (r) { return r.key === 'streaming'; })[0].next, false,
@@ -206,10 +210,12 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
   pc.running = false;
   pc.writable = false;
   var only = sandbox.ambientRows({ ok: true, piccapCapture: pc });
-  assert.strictEqual(only.length, 1, 'PicCap works without Hue Sync');
-  assert.strictEqual(only[0].value, 'Off');
-  assert.strictEqual(only[0].next, true);
-  assert.strictEqual(only[0].act, null, 'PicCap respects read-only mode');
+  assert.strictEqual(only.length, 2, 'PicCap has a category and switch without Hue Sync');
+  assert.strictEqual(only[0].label, 'PicCap');
+  assert.strictEqual(only[0].head, true);
+  assert.strictEqual(only[1].value, 'Off', 'an installed but stopped integration stays visible');
+  assert.strictEqual(only[1].next, true);
+  assert.strictEqual(only[1].act, null, 'PicCap respects read-only mode');
   assert.strictEqual(sandbox.SUBLISTS.huesyncMore, undefined, 'no ambient submenu remains');
   console.log('  \u2713 top-level Ambient light menu, independent integrations and empty state');
 })();

@@ -11,7 +11,7 @@
  "adv.hdmi": {"text": "Ingressi HDMI", "from": "HDMI inputs"},
  "adv.homeAutoLaunch": {"text": "Apri Home all'accensione", "from": "Open Home at power-on"},
  "adv.homeAutoLaunch.desc": {"text": "Apre la schermata Home all'accensione della TV, invece di restare sull'ultimo ingresso. LG la chiama Home Auto Launch.", "from": "Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch."},
- "adv.huesync": {"text": "Streaming Hue Sync", "from": "Hue Sync streaming"},
+ "adv.huesync": {"text": "Hue Sync abilitato", "from": "Hue Sync Enabled"},
  "adv.huesync.desc": {"text": "Avvia e ferma il flusso di colori che l'app Hue Sync invia a una luce Philips Ambience. Spento ferma il flusso, e con esso la luce.", "from": "Starts and stops the colour stream the Hue Sync app sends to a Philips Ambience light. Off stops the stream, and the light with it."},
  "adv.lgLogo": {"text": "Logo LG", "from": "LG logo"},
  "adv.lgLogo.desc": {"text": "Mostra il logo LG all'accensione e allo spegnimento della TV. LG la chiama LG Logo Display.", "from": "Shows the LG logo as the TV switches on and off. LG calls this LG Logo Display."},
@@ -27,8 +27,8 @@
  "adv.onTimer.autoOff": {"text": "Accesa in questo modo, la TV si rispegne dopo due ore se non si preme un tasto. Si può disattivare nel menu Timer della TV.", "from": "Switched on this way, the TV goes back off after two hours unless a button is pressed. That can be turned off in the TV's own Timers menu."},
  "adv.onTimer.desc": {"text": "Accende la TV a quest'ora, una volta o nei giorni scelti.", "from": "Switches the TV on at this time, once or on the days picked."},
  "adv.onTimer.time": {"text": "Ora del timer di accensione", "from": "On Timer time"},
- "adv.piccap": {"text": "Cattura PicCap", "from": "PicCap capture"},
- "adv.piccap.desc": {"text": "Invia quello che c'è sullo schermo al server Hyperion di PicCap, che pilota una luce ambientale dietro la TV. Spento ferma la cattura, e con essa la luce.", "from": "Sends what is on screen to PicCap's Hyperion server, which drives an ambient light behind the TV. Off stops the capture, and the light with it."},
+ "adv.piccap": {"text": "PicCap abilitato", "from": "PicCap Enabled"},
+ "adv.piccap.desc": {"text": "Acquisisce lo schermo per Hyperion o HyperHDR per sincronizzare le luci dietro la TV.", "from": "Captures the screen for Hyperion or HyperHDR to sync the lights behind the TV."},
  "adv.power": {"text": "Alimentazione", "from": "Power"},
  "adv.powerStandby": {"text": "Alimentazione e standby", "from": "Power & standby"},
  "adv.quickBoot": {"text": "Avvio rapido", "from": "Quick Boot"},
@@ -3096,5 +3096,7 @@
  "tv.saver.include": {"text": "Premi OK per includere nella rotazione casuale", "from": "Press OK to include in random rotation"},
  "tv.saver.random.hint": {"text": "Sceglie un salvaschermo diverso ogni volta.", "from": "Picks a different screen saver each time."},
  "tv.saver.random.hintUpNext": {"text": "Sceglie un salvaschermo diverso ogni volta. Prossimo: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
- "ambient.none": {"from": "No ambient light integrations found.", "text": "Nessuna integrazione di illuminazione ambientale trovata."}
+ "ambient.none": {"from": "No ambient light integrations found.", "text": "Nessuna integrazione di illuminazione ambientale trovata."},
+ "adv.huesync.title": {"from": "Hue Sync", "text": "Hue Sync"},
+ "ambient.piccap.title": {"from": "PicCap", "text": "PicCap"}
 }

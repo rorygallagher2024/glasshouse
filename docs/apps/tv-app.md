@@ -107,8 +107,10 @@ Removing the app changes nothing else, since the dashboard server continues to r
 
 ### Ambient light
 
-The **Ambient light** top-level menu follows Home. PicCap capture and Hue Sync
-have independent on/off switches. All Hue Sync controls are shown directly:
+The **Ambient light** top-level menu follows Home. **Hue Sync** and **PicCap**
+have their own categories, in that order, with **Hue Sync Enabled** and
+**PicCap Enabled** switches. An unavailable integration is hidden, including its
+category heading. PicCap supports Hyperion or HyperHDR. All Hue Sync controls are shown directly:
 brightness, intensity, Video/Game mode, entertainment area, background light for
 each mode, automatic start and its notification. Press OK to toggle or cycle a
 setting. For brightness, press OK, adjust with the arrows, then OK or Back to

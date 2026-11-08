@@ -392,6 +392,8 @@ async function tick() {
       renderHuesyncSettings(hs);
       const hsVal = getLease('huesync', hs ? hs.streaming : undefined);
       renderAmbientPower('huesync', hs ? (hsVal !== undefined ? hsVal : hs.streaming) : undefined);
+      q('ambient-huesync').hidden = !hs;
+      q('ambient-piccap').hidden = !pc;
       q('ambient-empty').hidden = !!pc || !!hs;
       q('control-ambient').hidden = !pc && !hs;
       const devVal = getLease('deviceDetection', d.deviceDetection);

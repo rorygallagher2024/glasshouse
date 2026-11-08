@@ -15,7 +15,7 @@ Hue Sync is optional. Glasshouse inspects the TV filesystem for the app's servic
 
 ### The Ambient light page
 
-When Hue Sync is installed, the **Ambient light** page (`/?tab=ambient`), below Home in the sidebar, shows a **Hue Sync streaming** toggle alongside PicCap capture. The **Control** page also has a quick toggle below Playback:
+When Hue Sync is installed, the **Ambient light** page (`/?tab=ambient`), below Home in the sidebar, shows a **Hue Sync** category before PicCap, with a **Hue Sync Enabled** toggle. The **Control** page also has a quick toggle below Playback:
 
 * **On:** Instructs Hue Sync's service to start streaming (`com.lighting.huesync.service/set` with `{"key":"streaming","data":true}`). The Ambience light starts following the screen. The app often does not start on an enable without saying so, so Glasshouse sends the enable, waits 3 seconds and asks the app's own state; if it still is not streaming, it sends the enable again, up to three tries in all: one click is enough.
 * **Off:** Instructs the service to stop (`data: false`). The Ambience light stops, and the app stops streaming colour with it.
@@ -68,7 +68,7 @@ action:
 
 1. Open the Glasshouse dashboard in any browser.
 2. Go to **Ambient light** (`/?tab=ambient`), below Home in the sidebar.
-3. Click **Hue Sync streaming** to start or stop syncing, or use the quick toggle below Playback on **Control**.
+3. Click **Hue Sync Enabled** to start or stop syncing, or use the quick toggle below Playback on **Control**.
 
 ### In Home Assistant
 

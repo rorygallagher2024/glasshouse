@@ -1959,6 +1959,9 @@ The TV app's Hue Sync rows are in `server/assets/dashboard.html`; both the
 Homebrew Channel launcher in `hbc/app/` and `assets/dashboard-app/` load that page.
 Its Ambient light menu follows Home and reuses the existing remote adjustment
 bar and write queue for brightness, with native-value cycles for selects. Both
-dashboards show every supported setting directly beside the independent PicCap
-capture toggle. The web Control page also shows quick toggles below Playback;
-they share state and write permissions with Ambient light.
+dashboards have separate Hue Sync and PicCap categories, in that order, with
+Hue Sync Enabled and PicCap Enabled switches. Every supported setting appears
+directly. The web Control page has the same toggles below Playback; they share
+state and write permissions with Ambient light. Status callbacks check the apps’
+install paths before calling Luna, and unavailable integrations are hidden as
+complete categories and shortcuts.

@@ -19,7 +19,7 @@ PicCap is optional. Glasshouse inspects the TV filesystem for PicCap's applicati
 
 ### The Ambient light page
 
-When PicCap is installed, **Ambient light** (`/?tab=ambient`), below Home in the sidebar and a top-level menu in the TV app, shows a **PicCap capture** toggle. **Control** also has a quick toggle below Playback:
+When PicCap is installed, **Ambient light** (`/?tab=ambient`), below Home in the sidebar and a top-level menu in the TV app, shows a **PicCap** category with a **PicCap Enabled** toggle after Hue Sync. Capture can feed Hyperion or HyperHDR. **Control** also has a quick toggle below Playback:
 
 * **On:** Instructs PicCap's service to start capturing (`org.webosbrew.piccap.service/start`). The ambient backlights turn on and follow the screen.
 * **Off:** Instructs PicCap to stop capturing (`org.webosbrew.piccap.service/stop`). The ambient backlights turn dark, and the TV's processor stops encoding video frames.
@@ -100,7 +100,7 @@ Once PicCap is installed and configured, Glasshouse automatically detects it on 
 
 1. Open the Glasshouse dashboard in any browser.
 2. Go to **Ambient light** (`/?tab=ambient`), below Home in the sidebar.
-3. Click **PicCap capture** to toggle capture, or use its quick toggle below Playback on **Control**.
+3. Click **PicCap Enabled** to toggle capture, or use its quick toggle below Playback on **Control**.
 
 ### In Home Assistant
 

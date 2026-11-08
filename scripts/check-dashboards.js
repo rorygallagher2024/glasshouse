@@ -2835,6 +2835,10 @@ async function visitHuesyncSettings(browser, base, problems) {
     if (!followsHome) fail('Ambient light does not follow Home');
     await page.locator('#tabs [data-tab="ambient"]').click();
     await page.waitForSelector('#huesync-settings:not([hidden])');
+    const categories = await page.locator('#ambient-huesync, #ambient-piccap').evaluateAll(els => els.filter(el => !el.hidden).map(el => el.querySelector('.pv-sec').textContent));
+    if (JSON.stringify(categories) !== JSON.stringify(['Hue Sync', 'PicCap'])) fail('integration categories are missing or in the wrong order');
+    if (await page.locator('#row-huesync .prot-title').textContent() !== 'Hue Sync Enabled' || await page.locator('#row-piccap .prot-title').textContent() !== 'PicCap Enabled') fail('enabled labels differ');
+    if (!(await page.locator('#row-piccap .prot-desc').textContent()).includes('Hyperion or HyperHDR')) fail('PicCap description omits a supported server');
     if (await page.locator('#huesync-settings').evaluate(el => el.closest('.panel').id) !== 'ambientpane') fail('settings are on the wrong page');
     await page.locator('#btn_piccap').click();
     await page.waitForFunction(() => document.getElementById('btn_piccap').dataset.on === '1');
@@ -2846,12 +2850,18 @@ async function visitHuesyncSettings(browser, base, problems) {
     await page.waitForSelector('#control-ambient:not([hidden])');
     const underPlayback = await page.evaluate(() => document.getElementById('control-ambient').getBoundingClientRect().top >= document.querySelector('.playback-btns').getBoundingClientRect().bottom);
     if (!underPlayback) fail('remote toggles are not below Playback');
+    const shortcuts = await page.locator('#control-ambient button').evaluateAll(els => els.map(el => el.querySelector('[data-t]').textContent));
+    if (JSON.stringify(shortcuts) !== JSON.stringify(['Hue Sync Enabled', 'PicCap Enabled'])) fail('remote shortcut order or names differ from settings');
     if (await page.locator('#ctl_piccap').getAttribute('aria-pressed') !== 'true' || await page.locator('#ctl_huesync').getAttribute('aria-pressed') !== 'false') fail('remote toggle states differ from Ambient light');
     await page.locator('#ctl_huesync').click();
     await page.waitForFunction(() => document.getElementById('ctl_huesync').getAttribute('aria-pressed') === 'true' && document.getElementById('btn_huesync').dataset.on === '1');
     await page.locator('#ctl_piccap').click();
     await page.waitForFunction(() => document.getElementById('ctl_piccap').getAttribute('aria-pressed') === 'false' && document.getElementById('btn_piccap').dataset.on === '');
     if (!streaming || piccapRunning) fail('remote quick toggles are not independent');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.waitForFunction(() => document.getElementById('control-playback').getBoundingClientRect().width > 300);
+    if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) fail('remote Enabled labels overflow on a phone');
     await page.evaluate(() => showTab('ambient'));
     if (await page.locator('#huesync-current_ec option').first().textContent() !== settings.ec_list[0].name) fail('area name was not rendered as text');
     if (await page.locator('#huesync-settings img').count()) fail('area markup was interpreted');
@@ -2914,15 +2924,18 @@ async function visitHuesyncSettings(browser, base, problems) {
     huesyncPresent = false;
     await page.evaluate(() => tick());
     await page.waitForSelector('#row-huesync[hidden]', { state: 'attached' });
-    if (!(await page.locator('#row-piccap').isVisible())) fail('PicCap disappeared with Hue Sync');
+    if (!(await page.locator('#ambient-piccap').isVisible()) || !(await page.locator('#ambient-huesync').isHidden())) fail('missing Hue Sync left an empty category or hid PicCap');
+    if (!(await page.locator('#ctl_huesync').evaluate(el => el.hidden))) fail('missing Hue Sync left its shortcut');
     piccapPresent = false;
     await page.evaluate(() => tick());
     await page.waitForSelector('#ambient-empty:not([hidden])');
-    if (!(await page.locator('#control-ambient').isHidden())) fail('empty remote toggle group remains visible');
+    if (!(await page.locator('#control-ambient').evaluate(el => el.hidden))) fail('empty remote toggle group remains visible');
     huesyncPresent = true;
     await page.evaluate(() => tick());
     await page.waitForSelector('#row-huesync:not([hidden])');
     if (await page.locator('#ambient-empty').isVisible()) fail('empty message remains with Hue Sync alone');
+    if (!(await page.locator('#ambient-piccap').isHidden()) || !(await page.locator('#ambient-huesync').isVisible())) fail('missing PicCap left an empty category or hid Hue Sync');
+    if (!(await page.locator('#ctl_piccap').evaluate(el => el.hidden))) fail('missing PicCap left its shortcut');
   } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
 }
 
@@ -2969,6 +2982,11 @@ async function visitTvHuesync(browser, base, problems) {
     });
     await page.goto(base + '/assets/dashboard.html?tab=ambient');
     await page.waitForFunction(() => rows.some(row => row.act === 'huesyncAdjust'));
+    const categories = await page.evaluate(() => rows.filter(row => row.head).map(row => row.label));
+    if (JSON.stringify(categories) !== JSON.stringify(['Hue Sync', 'PicCap'])) fail('integration categories are missing or in the wrong order');
+    const labels = await page.evaluate(() => rows.filter(row => row.key === 'streaming' || row.key === 'piccap').map(row => row.label));
+    if (JSON.stringify(labels) !== JSON.stringify(['Hue Sync Enabled', 'PicCap Enabled'])) fail('enabled labels are inconsistent');
+    if (!(await page.evaluate(() => rows.find(row => row.key === 'piccap').hint)).includes('Hyperion or HyperHDR')) fail('PicCap hint omits a supported server');
     if (await page.locator('#rows img').count()) fail('area name was interpreted as markup');
     if (await page.evaluate(() => T().key) !== 'ambient') fail('ambient controls are not a top-level menu');
     for (const value of [false, true]) {
@@ -3015,7 +3033,7 @@ async function visitTvHuesync(browser, base, problems) {
     if (writes.length !== count) fail('busy row sent a command');
     present = false;
     await page.evaluate(() => fetchTab(true));
-    await page.waitForFunction(() => rows.length === 1 && rows[0].key === 'piccap');
+    await page.waitForFunction(() => rows.length === 2 && rows[0].head && rows[0].label === 'PicCap' && rows[1].key === 'piccap');
     piccapPresent = false;
     await page.evaluate(() => fetchTab(true));
     await page.waitForFunction(() => rows.length === 1 && rows[0].label === 'No ambient light integrations found.');
@@ -3023,6 +3041,10 @@ async function visitTvHuesync(browser, base, problems) {
     await page.waitForFunction(() => T().key !== 'ambient');
     await page.keyboard.press('ArrowLeft');
     await page.waitForFunction(() => T().key === 'ambient');
+    present = true;
+    await page.evaluate(() => fetchTab(true));
+    await page.waitForFunction(() => rows.some(row => row.head && row.label === 'Hue Sync') && !rows.some(row => row.key === 'piccap'));
+    if (await page.evaluate(() => rows.some(row => row.head && row.label === 'PicCap'))) fail('missing PicCap left an empty category');
   } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
 }
 

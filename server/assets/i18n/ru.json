@@ -21,8 +21,8 @@
  "adv.onTimer.autoOff": {"text": "Включенный так телевизор снова выключится через два часа, если не нажать ни одной кнопки. Это можно отключить в меню «Таймеры» самого телевизора.", "from": "Switched on this way, the TV goes back off after two hours unless a button is pressed. That can be turned off in the TV's own Timers menu."},
  "adv.onTimer.desc": {"text": "Включает телевизор в указанное время, один раз или в выбранные дни.", "from": "Switches the TV on at this time, once or on the days picked."},
  "adv.onTimer.time": {"text": "Время таймера включения", "from": "On Timer time"},
- "adv.piccap": {"text": "Захват PicCap", "from": "PicCap capture"},
- "adv.piccap.desc": {"text": "Передает изображение с экрана на сервер Hyperion в PicCap, который управляет подсветкой за телевизором. Если выключить, захват прекращается, а с ним и подсветка.", "from": "Sends what is on screen to PicCap's Hyperion server, which drives an ambient light behind the TV. Off stops the capture, and the light with it."},
+ "adv.piccap": {"text": "PicCap включён", "from": "PicCap Enabled"},
+ "adv.piccap.desc": {"text": "Захватывает изображение экрана для Hyperion или HyperHDR, чтобы синхронизировать подсветку за телевизором.", "from": "Captures the screen for Hyperion or HyperHDR to sync the lights behind the TV."},
  "adv.power": {"text": "Питание", "from": "Power"},
  "adv.powerStandby": {"text": "Питание и ожидание", "from": "Power & standby"},
  "adv.quickBoot": {"text": "Быстрая Загрузка +", "from": "Quick Boot"},
@@ -2003,7 +2003,7 @@
  "adv.clock12.desc": {"text": "Время показывается как 9:40 PM, а не 21:40, на панели телевизора, в Glasshouse Home и на заставках с часами.", "from": "Shows the time as 9:40 PM rather than 21:40 on the TV dashboard, Glasshouse Home and the clock screen savers."},
  "adv.homeAutoLaunch": {"text": "Главный экран при включении", "from": "Open Home at power-on"},
  "adv.homeAutoLaunch.desc": {"text": "При включении телевизора открывается главный экран, а не последний вход. В LG это называется Home Auto Launch.", "from": "Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch."},
- "adv.huesync": {"text": "Трансляция Hue Sync", "from": "Hue Sync streaming"},
+ "adv.huesync": {"text": "Hue Sync включён", "from": "Hue Sync Enabled"},
  "adv.huesync.desc": {"text": "Запускает и останавливает поток цвета, который приложение Hue Sync отправляет на светильник Philips Ambience. Выключение останавливает поток, а с ним и свет.", "from": "Starts and stops the colour stream the Hue Sync app sends to a Philips Ambience light. Off stops the stream, and the light with it."},
  "common.am": {"text": "AM", "from": "AM"},
  "common.pm": {"text": "PM", "from": "PM"},
@@ -3096,5 +3096,7 @@
  "tv.saver.include": {"text": "Нажмите OK, чтобы включить в случайную ротацию", "from": "Press OK to include in random rotation"},
  "tv.saver.random.hint": {"text": "Выбирает другую заставку каждый раз.", "from": "Picks a different screen saver each time."},
  "tv.saver.random.hintUpNext": {"text": "Выбирает другую заставку каждый раз. Следующая: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
- "ambient.none": {"from": "No ambient light integrations found.", "text": "Интеграции фоновой подсветки не найдены."}
+ "ambient.none": {"from": "No ambient light integrations found.", "text": "Интеграции фоновой подсветки не найдены."},
+ "adv.huesync.title": {"from": "Hue Sync", "text": "Hue Sync"},
+ "ambient.piccap.title": {"from": "PicCap", "text": "PicCap"}
 }

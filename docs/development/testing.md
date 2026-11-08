@@ -573,8 +573,12 @@ Sync setting directly accessible, and independent PicCap/Hue Sync switches. The
 web Control shortcuts stay below Playback and share state and write permissions
 with Ambient light. Checks cover narrow/light and wide/dark layouts, native
 command types, duplicate area names, failed writes, read-only/busy states and
-disappearing integrations. `test-dashboard-view.js` also checks the TV menu
-order, flat row grouping, empty state and per-field stale permissions.
+disappearing integrations. Both dashboards check separate integration categories,
+Hue Sync before PicCap, consistent Enabled labels, and availability combinations
+with neither, either or both integrations. Missing integrations leave no empty
+headings or shortcuts. PicCap descriptions name both Hyperion and HyperHDR.
+`test-dashboard-view.js` also checks the TV menu order, flat row grouping, empty
+state and per-field stale permissions.
 `test-routes.js` verifies both integrations' write permissions. Screenshots use
 synthetic data. The Hue Sync checks wait for intercepted requests to finish
 before closing each page, so pending stats replies cannot outlive the page.

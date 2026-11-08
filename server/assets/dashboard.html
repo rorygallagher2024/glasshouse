@@ -689,15 +689,17 @@ function optionRows(d) {
 function ambientRows(d) {
   if (!d || !d.ok) return [];
   var r = [], pc = d.piccapCapture;
-  if (pc) {
-    var writable = pc.writable !== false;
-    r.push({ label: t('adv.piccap', 'PicCap capture'), value: pc.running ? t('common.on', 'On') : t('common.off', 'Off'),
-      cls: writable ? 'act' : '', act: writable ? 'piccap' : null, key: 'piccap', next: !pc.running,
-      press: pc.running ? t('tv.press.turnOff', 'Press OK to turn off') : t('tv.press.turnOn', 'Press OK to turn on') });
-  }
   if (d.huesyncStreaming) {
     r.push(head(t('adv.huesync.title', 'Hue Sync')));
     r = r.concat(huesyncRows(d.huesyncStreaming));
+  }
+  if (pc) {
+    r.push(head(t('ambient.piccap.title', 'PicCap')));
+    var writable = pc.writable !== false;
+    r.push({ label: t('adv.piccap', 'PicCap Enabled'), value: pc.running ? t('common.on', 'On') : t('common.off', 'Off'),
+      cls: writable ? 'act' : '', act: writable ? 'piccap' : null, key: 'piccap', next: !pc.running,
+      hint: t('adv.piccap.desc', 'Captures the screen for Hyperion or HyperHDR to sync the lights behind the TV.'),
+      press: pc.running ? t('tv.press.turnOff', 'Press OK to turn off') : t('tv.press.turnOn', 'Press OK to turn on') });
   }
   if (!r.length) r.push({ label: t('ambient.none', 'No ambient light integrations found.'), value: '' });
   return r;
@@ -727,7 +729,7 @@ function huesyncRows(hs) {
       cls: can(key) ? 'act' : '', act: can(key) ? 'huesyncSetting' : null,
       key: key, next: next.value, press: t('tv.game.next', 'Press OK for {name}', { name: next.label }) });
   }
-  toggle('streaming', t('adv.huesync.streaming', 'Streaming'), hs.streaming === true, 'huesync');
+  toggle('streaming', t('adv.huesync', 'Hue Sync Enabled'), hs.streaming === true, 'huesync');
   if (settings.brightness !== undefined) {
     r.push({ label: t('adv.huesync.brightness', 'Brightness'), value: withUnit(settings.brightness, '%'),
       cls: can('brightness') ? 'act' : '', act: can('brightness') ? 'huesyncAdjust' : null,
