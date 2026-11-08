@@ -936,12 +936,12 @@ function saverRows(d) {
 var homeData = null;
 
 function homeItemTitle(kind, id) {
-  var c = homeData.catalogue, list = kind === 'app' ? c.apps : kind === 'dev' ? c.devices : c.channels, i;
+  var c = homeData.catalogue, list = kind === 'app' ? c.apps : kind === 'dev' ? c.devices : kind === 'iptv' ? c.iptv : c.channels, i;
   if (kind === 'app' && id === 'lg-home') return t('home.lgHome', 'LG Home');
   for (i = 0; i < list.length; i++) {
     if (list[i].id !== id) continue;
     if (kind === 'app') return list[i].title;
-    if (kind === 'dev') return list[i].name;
+    if (kind === 'dev' || kind === 'iptv') return list[i].name;
     return list[i].number + ' ' + list[i].name;
   }
   return null;
@@ -1282,7 +1282,6 @@ function homeSwitchRow(d, key, label, hint, act, on) {
 // What a row shows on Glasshouse Home now, in its order, as names.
 function homeRowShown(kind, d) {
   var c = d.catalogue, lay = d.layout;
-  if (kind === 'iptv') return (c.iptv || []).map(function (tv) { return tv.name; });
   var names = [];
   (c.order[kind] || []).forEach(function (id) {
     var title = homeItemTitle(kind, id), dev = null, i;

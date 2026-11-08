@@ -12090,5 +12090,24 @@
  "tv.viewOnly": {
   "from": "View only",
   "text": "Lecture seule"
- }
+ },
+ "tv.home.appsHint": {"text": "Les applications affichées dans la rangée et leur ordre, leur nombre à côté et la recherche.", "from": "Which apps the row shows and in what order, the app count beside it, and Search."},
+ "tv.home.arrange": {"text": "Ordre des rangées et réinitialisation", "from": "Row order and reset"},
+ "tv.home.arrangeHint": {"text": "L’ordre des rangées sur Glasshouse Home et le rétablissement de la disposition initiale.", "from": "The order of the rows on Glasshouse Home, and putting the layout back as it first was."},
+ "tv.home.backChannels": {"text": "‹ Chaînes", "from": "‹ Channels"},
+ "tv.home.chHint": {"text": "Les chaînes du téléviseur ajoutées à la rangée et leur ordre.", "from": "The TV’s own channels added to the row, and their order."},
+ "tv.home.firstRow": {"text": "{name} en premier", "from": "{name} first"},
+ "tv.home.head.reset": {"text": "Réinitialiser", "from": "Reset"},
+ "tv.home.inputsHint": {"text": "Les entrées affichées dans la rangée et leur ordre, et l’adresse HDMI-CEC de chaque tuile.", "from": "Which inputs the row shows and in what order, and the HDMI-CEC address on each tile."},
+ "tv.home.iptvHint": {"text": "La sélection de chaînes de la liste IPTV, les chaînes étoilées pour cette rangée, leur ordre et leurs logos.", "from": "The lineup from the IPTV playlist, the channels starred for this row, their order and their logos."},
+ "tv.home.motionHint": {"text": "L’apparition et la disparition en fondu de Glasshouse Home, les mouvements et fondus du fond d’écran, et le défilement fluide des rangées et panneaux.", "from": "Glasshouse Home fading in and out, the wallpaper drifting and cross-fading, and rows and panels gliding rather than jumping."},
+ "tv.home.noneYet": {"text": "Aucune pour le moment", "from": "None yet"},
+ "tv.home.onHomeN": {"text": "{n} sur Home", "from": "{n} on Home"},
+ "tv.home.openList": {"text": "Appuyez sur OK pour ouvrir", "from": "Press OK to open"},
+ "tv.home.peekMore": {"text": "et {n} de plus", "from": "and {n} more"},
+ "tv.home.rowsHead": {"text": "Rangées", "from": "Rows"},
+ "tv.home.shownOf": {"text": "{n} sur {total} affichés", "from": "{n} of {total} shown"},
+ "tv.home.someOn": {"text": "{n} sur {total} activés", "from": "{n} of {total} on"},
+ "tv.home.tv.addOnWeb": {"text": "Une liste de lecture s’ajoute dans l’onglet Home du tableau de bord du navigateur, où son lien ou ses identifiants peuvent être saisis.", "from": "A playlist is added on the browser dashboard’s Home tab, where its link or login can be typed."},
+ "tv.home.tv.noPlaylist": {"text": "Aucune liste de lecture", "from": "No playlist"}
 }

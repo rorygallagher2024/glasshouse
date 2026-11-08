@@ -1436,10 +1436,21 @@ async function visitHomeOrder(browser, base, problems) {
     if (saves[saves.length - 1].sort.app !== 'custom') problems.push('Home order: the Home tab did not save Your order');
 
     await page.goto(base + '/assets/dashboard.html?tab=home');
-    await page.waitForFunction(() => rows.some(r => r.key === 'homeApps'));
-    // Each row's Order is in the row's own list, opened from its entry.
-    const orders = await page.evaluate(() => ['homeApps', 'homeCh'].filter(k => SUBLISTS[k](data.home).some(r => r.act === 'homeSort')).length);
-    if (orders !== 2) problems.push('Home order: the TV app\'s Home section has no Order for each row');
+    for (const name of ['Apps', 'Inputs', 'Channels']) {
+      const entry = page.locator('#rows .row').filter({ hasText: new RegExp('^' + name) }).first();
+      await entry.click();
+      await page.keyboard.press('Enter');
+      const order = page.locator('#rows .row.sel').filter({ hasText: /^Order/ });
+      await order.waitFor();
+      saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+      await page.keyboard.press('Enter');
+      await saved;
+      await order.filter({ hasText: 'Last opened' }).waitFor();
+      const kind = { Apps: 'app', Inputs: 'dev', Channels: 'ch' }[name];
+      if (saves[saves.length - 1].sort[kind] !== 'recent') problems.push('Home order: the TV app did not save Order for ' + name);
+      await page.keyboard.press('ArrowLeft');
+      await page.locator('#rows .row.sel').filter({ hasText: new RegExp('^' + name) }).waitFor();
+    }
   } finally { await page.close(); }
 }
 
@@ -2625,11 +2636,14 @@ async function visitIptvChannels(browser, base, problems) {
     await route(page);
     await page.route('**/api/home?*', r => r.fulfill({ json: {
       ok: true, supported: { ok: true }, enabled: true, writable: true,
-      layout: { rows: ['iptv'], order: { iptv: [] }, sort: {}, hidden: {}, channels: [] },
-      catalogue: { sources: { iptv: true }, order: { iptv: [] }, iptv: [] }
+      layout: { rows: ['iptv'], order: { iptv: [] }, sort: { iptv: 'recent' }, hidden: {}, channels: [] },
+      catalogue: { apps: [], devices: [], channels: [], sources: { iptv: true },
+        order: { iptv: ['p1:x2', 'p1:x1'] }, iptv: channels }
     } }));
     await page.goto(base + '/assets/dashboard.html?tab=home');
     await page.locator('#rows .row').filter({ hasText: /^Internet TV/ }).first().click();
+    const peek = await page.locator('#hintPeek span').allTextContents();
+    if (peek.join(',') !== 'World Today,Harbour News') fail('TV app: the row preview did not follow Last opened order: ' + peek.join(','));
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => rows.some(r => r.act === 'tvSection'));
     await page.evaluate(() => { sel = rows.findIndex(r => r.key === 'tvGroups'); render(); });
