@@ -1050,7 +1050,7 @@ G3 in the UK.
   Disney+ played The Bear and Loki (protected video captures black, so the
   episode was not seen). LG's catalogue offered no titles on ITVX, Channel 4,
   5, YouTube, Paramount+ or Sky Store for 14 test queries.
-- **luna-send over SSH needs stdin closed** (`< /dev/null`): without it, it
+- **luna-send over SSH needs stdin closed** (`</dev/null`): without it, it
   printed nothing and did nothing on the G3.
 - **The TV's keyboard.** A focused text field brings up LG's keyboard, which
   takes the arrows. Its Enter reaches the page as key 13; its Back closes it

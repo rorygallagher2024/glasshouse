@@ -272,11 +272,17 @@ var foreground = '';
 // When something other than the view last came to the front, for the open watch.
 var otherOpenedAt = 0;
 var lastSource = null;
-// What ha.js's 'weather' text entity last received over MQTT (see tvweb.js's
-// dispatch and setWeather below); null until Home Assistant has pushed
-// something, so the badge stays hidden until then rather than showing a
-// stale guess.
+// What ha.js's 'weather' text entity last received over MQTT (setWeather
+// below), kept in home-weather.json so a restart does not hide it.
 var weatherPush = null;
+/*
+ * A push older than this is not shown. Home Assistant pushes when the weather
+ * changes, and the docs' automation also every 30 minutes, so this only hides
+ * weather that has stopped coming.
+ */
+var WEATHER_STALE_MS = 3 * 3600000;
+// The longest city and condition shown, so one long name cannot push the clock aside.
+var WEATHER_TEXT_MAX = 40;
 var beatTimer = null;
 var lastBeatAt = 0;
 // What the view last said of itself, with its heartbeat: whether its page had
@@ -1129,19 +1135,49 @@ function selectedOnPort(port, cb) {
  * non-numeric push is dropped rather than shown, so a bad automation
  * leaves the badge hidden instead of wrong.
  */
+function weatherFile() { return path.join(stateDir, 'home-weather.json'); }
+
+function weatherText(v) {
+  if (typeof v !== 'string') return null;
+  var t = v.replace(/\s+/g, ' ').trim();
+  return t ? t.slice(0, WEATHER_TEXT_MAX) : null;
+}
+
+// An empty push, or {}, takes the badge away at once.
 function setWeather(raw) {
+  var text = String(raw == null ? '' : raw).trim();
+  if (!text || text === '{}') {
+    weatherPush = null;
+    try { fs.unlinkSync(weatherFile()); } catch (e) {}
+    return;
+  }
   var parsed = null;
-  try { parsed = JSON.parse(raw); } catch (e) { /* ignored: not JSON, badge stays as it was */ }
-  if (!parsed || typeof parsed.temp !== 'number') return;
-  weatherPush = {
-    condition: typeof parsed.condition === 'string' ? parsed.condition : null,
-    temp: parsed.temp,
-    city: typeof parsed.city === 'string' ? parsed.city : null
-  };
+  try { parsed = JSON.parse(text); } catch (e) { /* ignored: not JSON, badge stays as it was */ }
+  if (!parsed || typeof parsed.temp !== 'number' || !isFinite(parsed.temp)) return;
+  weatherPush = { condition: weatherText(parsed.condition), temp: parsed.temp, city: weatherText(parsed.city), at: nowMs() };
+  try {
+    writeJsonAtomic(weatherFile(), weatherPush, 384);
+  } catch (e) {
+    console.error('home: could not keep the weather: ' + e.message);
+  }
+}
+
+function loadWeather() {
+  var w = null;
+  try { w = JSON.parse(fs.readFileSync(weatherFile(), 'utf8')); } catch (e) {}
+  weatherPush = w && typeof w.temp === 'number' && typeof w.at === 'number' ? w : null;
+}
+
+// The weather to show, or null where none was pushed or the last push is stale.
+function currentWeather() {
+  if (!weatherPush || nowMs() - weatherPush.at > WEATHER_STALE_MS) return null;
+  return { condition: weatherPush.condition, temp: weatherPush.temp, city: weatherPush.city };
 }
 
 function weather(cb) {
-  cb(weatherPush ? { ok: true, condition: weatherPush.condition, temp: weatherPush.temp, city: weatherPush.city } : { ok: false });
+  var w = currentWeather();
+  if (!w) return cb({ ok: false });
+  cb({ ok: true, condition: w.condition, temp: w.temp, city: w.city });
 }
 
 /*
@@ -2082,7 +2118,9 @@ function beat(body) {
   if (viewInFront()) watchBeat(beatGraceMs);
   return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
            build: buildId, wallpapers: wallpapers.status(),
-           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()) };
+           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
+           // So a push shows within a heartbeat rather than at the next poll.
+           weather: currentWeather() };
 }
 
 function foregroundChanged(id) {
@@ -2511,6 +2549,7 @@ function init(opts) {
   setStartingFn = opts.setStarting || function (text, cb) { cb({ ok: true, none: true }); };
   buildId = opts.build || '';
   nowMs = opts.now || Date.now;
+  loadWeather();
   config = null;
   configMtime = 0;
   wasEnabled = false;
