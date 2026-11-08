@@ -3010,5 +3010,20 @@
  "home.showTvLogosDescName": {"text": "في تلفاز الإنترنت: شعار القائمة لكل قناة. عند الإيقاف يظهر اسم القناة مكانه.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."},
  "server.backup.confirmSettings": {"text": "استعادة الإعدادات المحفوظة من {tv} في {date}؟ سيؤدي ذلك إلى تغيير إعدادات هذا التلفاز.", "from": "Restore the settings saved from {tv} on {date}? This changes settings on this TV."},
  "server.backup.restoredSettings": {"text": "تم تغيير {changed} من الإعدادات، و{same} كانت كذلك بالفعل، وتم تخطي {skipped} لأن هذا التلفاز لا يحتوي عليها أو أنها غير متاحة الآن.", "from": "Changed {changed} settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now."},
- "server.backup.acrLeftOff": {"text": "يبقى التعرف على المحتوى المباشر متوقفًا: تشغيله يعني الموافقة على شروط LG، لذلك لا تقوم النسخة الاحتياطية بذلك أبدًا.", "from": "Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does."}
+ "server.backup.acrLeftOff": {"text": "يبقى التعرف على المحتوى المباشر متوقفًا: تشغيله يعني الموافقة على شروط LG، لذلك لا تقوم النسخة الاحتياطية بذلك أبدًا.", "from": "Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does."},
+ "home.weather.clearNight": {"text": "ليلة صافية", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "غائم", "from": "Cloudy"},
+ "home.weather.fog": {"text": "ضباب", "from": "Fog"},
+ "home.weather.hail": {"text": "برَد", "from": "Hail"},
+ "home.weather.lightning": {"text": "برق", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "عواصف رعدية", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "غائم جزئياً", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "مطر غزير", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "ممطر", "from": "Rainy"},
+ "home.weather.snowy": {"text": "ثلجي", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "ثلج ومطر", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "مشمس", "from": "Sunny"},
+ "home.weather.windy": {"text": "عاصف", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "عاصف", "from": "Windy"},
+ "home.weather.exceptional": {"text": "طقس شديد الخطورة", "from": "Severe weather"}
 }
