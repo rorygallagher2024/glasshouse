@@ -2707,12 +2707,30 @@ function slowCpu(browser, rate) {
 
 const flaky = [];
 // A check run once more where it found a problem: see the top of this file.
+/*
+ * The longest one check may take. A step with no limit of its own, such as
+ * page.evaluate or page.close on a page that stopped answering, once held the
+ * home job until it was cancelled 15 minutes in, with nothing in the log to say
+ * where. Each check's time is printed as it ends, so a stall shows by name.
+ */
+const VISIT_LIMIT_MS = 60000;
+
+function withinLimit(promise, name) {
+  let timer;
+  const limit = new Promise((resolve, reject) => {
+    timer = setTimeout(() => reject(new Error('did not finish within ' + VISIT_LIMIT_MS / 1000 + ' s')), VISIT_LIMIT_MS);
+  });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
 async function runVisit(visitOne, browser, base, problems) {
   let first = null;
   for (;;) {
     const found = [];
-    try { await visitOne(browser, base, found); }
+    const startedAt = Date.now();
+    try { await withinLimit(visitOne(browser, base, found), visitOne.name); }
     catch (e) { found.push(visitOne.name + ': ' + String(e.message).split('\n')[0]); }
+    console.log('  ' + ((Date.now() - startedAt) / 1000).toFixed(1) + ' s  ' + visitOne.name + (found.length ? ' (problem)' : ''));
     if (!found.length) {
       if (first) flaky.push(visitOne.name + ' passed on a second try; the first found: ' + first.join('; '));
       return;
