@@ -695,6 +695,16 @@ physical Home screen displayed the title immediately, without a Home restart
 or QML modification. Updating the title can therefore show the port and EIM's
 CEC names on LG's own Home screen. Long titles use LG's scrolling text.
 
+## Home after the boot hook's sam restart (webOS 6.5.3)
+
+On a 55NANO756PR (webOS 6.5.3, firmware 03.53.46) with Quick Start+ and Open
+Home at power-on off, the boot hook's sam restart, which makes sam read
+Glasshouse Home, was followed by `SAM NL_APP_LAUNCH_BEGIN
+{"app_id":"com.webos.app.home","caller_app_id":"last_input_handler","mode":"last_input"}`
+at 43 s, over HDMI 1, which bootd had put in front at 20.5 s. LG's own Home
+stays hidden when launched that way; Glasshouse Home's page opened as a card
+window over the input. A 48C11LB (6.5.3) showed the same (#1231).
+
 ## Taking over Home (G3, webOS 9.2.2)
 
 - The Home button opens `com.webos.app.home` whatever `general.defaultApps`

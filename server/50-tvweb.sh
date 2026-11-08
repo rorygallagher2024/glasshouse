@@ -238,6 +238,32 @@ home_open_at_boot() {
   : > /tmp/glasshouse-home-opened-at-boot
   echo "$(date): Glasshouse Home opened over $boot_app"
 }
+# On webOS 5 and 6 the restart that makes sam read Glasshouse Home has the TV's
+# last-input handler launch Home a few seconds later (a 55NANO756PR on 6.5.3,
+# at 43 s, #1231). LG's own Home stays hidden when launched that way; Glasshouse
+# Home is a page and opens over the input the TV started on. Where the system
+# log names that launch, and Home is in front, that input is opened again. The
+# owner's own Home press is a launch by another caller, and left alone.
+input_back_after_restart() {
+  [ -e /tmp/glasshouse-home-opened-at-boot ] && return 0
+  boot_app=$(sed -n "s/.*BootSequencer) '\([^']*\)' is foreground.*/\1/p" /var/log/bootd.log 2>/dev/null | head -n 1)
+  case "$boot_app" in
+    com.webos.app.livetv|com.webos.app.hdmi[0-9]|com.webos.app.av[0-9]|com.webos.app.comp[0-9]) ;;
+    *) return 0 ;;
+  esac
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+    if grep -q '"app_id":"com.webos.app.home","caller_app_id":"last_input_handler"' /var/log/messages 2>/dev/null; then
+      sleep 2
+      front=$(luna-send -n 1 luna://com.webos.applicationManager/getForegroundAppInfo '{}' 2>/dev/null |
+        sed -n 's/.*"appId": *"\([^"]*\)".*/\1/p')
+      [ "$front" = com.webos.app.home ] || return 0
+      luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$boot_app\"}" >/dev/null 2>&1 || true
+      echo "$(date): $boot_app opened again over the Home the restart's last-input launch opened"
+      return 0
+    fi
+    sleep 1
+  done
+}
 home_on=0
 grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null && home_on=1
 if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
@@ -254,6 +280,8 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): Glasshouse Home is in LG's Home's place"
     home_open_at_boot
+    # In the background: it waits up to 15 s, which must not hold up the start.
+    case "$webos_major" in 5|6) input_back_after_restart & ;; esac
   else
     umount "$homeapp" 2>/dev/null
     home_reread
