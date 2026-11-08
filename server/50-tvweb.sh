@@ -21,6 +21,34 @@ BOOTLOG=/var/lib/webosbrew/tvweb-boot.log
 exec >>"$BOOTLOG" 2>&1
 echo "$(date): starting"
 
+# DNS for one app (lib/appdns.js). The jailer copies the TV's resolv.conf into
+# an app's jail at each launch, and the server writes the owner's servers back
+# over it, but only once it is up: on a 50NANO753PR (webOS 6.5.3) this hook ran
+# 34 s into a boot, YouTube was opened from Home at 36 s, and the server was
+# listening at 48 s. So for the first three minutes this writes them back
+# every 0.2 s, first of all, before anything else here.
+if ls /var/lib/tvweb/appdns/*.resolv >/dev/null 2>&1; then
+  (
+    # Turns rather than the clock, which can jump when it is first set.
+    if command -v usleep >/dev/null 2>&1; then nap='usleep 200000'; turns=900; else nap='sleep 1'; turns=180; fi
+    n=0
+    while [ "$n" -lt "$turns" ]; do
+      for want in /var/lib/tvweb/appdns/*.resolv; do
+        [ -f "$want" ] || continue
+        id=${want##*/}
+        id=${id%.resolv}
+        jailed=/var/palm/jail/$id/etc/resolv.conf
+        [ -d "${jailed%/*}" ] || continue
+        [ "$(cat "$want")" = "$(cat "$jailed" 2>/dev/null)" ] && continue
+        cp "$want" "$jailed.glasshouse" && mv -f "$jailed.glasshouse" "$jailed" &&
+          echo "$(date): DNS for $id written into its jail"
+      done
+      $nap
+      n=$((n + 1))
+    done
+  ) &
+fi
+
 # Hold down the LG daemons switched off in the dashboard. Done in the delayed
 # block below, after upstart has had its go at starting them.
 

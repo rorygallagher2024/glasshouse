@@ -108,6 +108,10 @@ step('setting servers writes them into the jail and keeps them', function (done)
     assert.ok(r.ok);
     assert.equal(jailResolv('youtube.leanback.v4'), appDns.resolvText(['1.1.1.1', '1.0.0.1']));
     assert.equal(jailResolv('netflix'), CONNMAN);
+    // The boot hook's copy, for launches before the server is up.
+    assert.equal(fs.readFileSync(path.join(dir, 'appdns', 'youtube.leanback.v4.resolv'), 'utf8'),
+      appDns.resolvText(['1.1.1.1', '1.0.0.1']));
+    assert.deepEqual(fs.readdirSync(path.join(dir, 'appdns')), ['youtube.leanback.v4.resolv']);
     appDns.getAppDns(function (g) {
       var yt = g.apps.filter(function (a) { return a.id === 'youtube.leanback.v4'; })[0];
       assert.deepEqual(yt.servers, ['1.1.1.1', '1.0.0.1']);
@@ -138,6 +142,7 @@ step('clearing puts back the TV\'s copy and stops watching', function (done) {
   appDns.setAppDns('youtube.leanback.v4', '', function (r) {
     assert.ok(r.ok);
     assert.equal(jailResolv('youtube.leanback.v4'), CONNMAN);
+    assert.deepEqual(fs.readdirSync(path.join(dir, 'appdns')), []);
     makeJail('youtube.leanback.v4');
     assert.equal(fire(path.join(jails, 'youtube.leanback.v4', 'etc'), 'resolv.conf'), 0);
     assert.equal(jailResolv('youtube.leanback.v4'), CONNMAN);
@@ -149,6 +154,7 @@ step('at start, a saved app is set again, and one whose jail comes later once it
   fs.writeFileSync(path.join(dir, 'appdns.json'), JSON.stringify({ apps: { netflix: ['9.9.9.9'], 'com.lg.weather': ['1.1.1.1'] } }));
   appDns.start();
   assert.equal(jailResolv('netflix'), appDns.resolvText(['9.9.9.9']));
+  assert.deepEqual(fs.readdirSync(path.join(dir, 'appdns')).sort(), ['com.lg.weather.resolv', 'netflix.resolv']);
   makeJail('com.lg.weather');
   fire(jails, 'com.lg.weather');
   assert.equal(jailResolv('com.lg.weather'), appDns.resolvText(['1.1.1.1']));

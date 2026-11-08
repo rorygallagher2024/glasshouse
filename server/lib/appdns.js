@@ -34,6 +34,7 @@ var SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 var lunaFn = null;
 var stateFile = null;
+var hookDir = null;
 var jailRoot = '/var/palm/jail';
 var hostResolv = '/etc/resolv.conf';
 var watchFn = null;
@@ -46,6 +47,7 @@ function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna || null;
   stateFile = path.join(opts.stateDir || '/var/lib/tvweb', 'appdns.json');
+  hookDir = path.join(opts.stateDir || '/var/lib/tvweb', 'appdns');
   if (opts.jailRoot) jailRoot = opts.jailRoot;
   if (opts.hostResolv) hostResolv = opts.hostResolv;
   watchFn = opts.watch || function (p, cb) { return fs.watch(p, cb); };
@@ -61,6 +63,33 @@ function readState() {
 
 function writeState(s) {
   util.writeJsonAtomic(stateFile, { apps: s.apps });
+  writeHookFiles(s);
+}
+
+/*
+ * Each app's resolv.conf as the boot hook writes it into the jail, one
+ * <id>.resolv each, for launches before the server is up: on a 50NANO753PR
+ * (webOS 6.5.3) YouTube was opened from Home 36 s into a boot and the server
+ * was listening at 48 s.
+ */
+function writeHookFiles(s) {
+  try {
+    if (!fs.existsSync(hookDir)) fs.mkdirSync(hookDir);
+    var want = {};
+    Object.keys(s.apps).forEach(function (id) {
+      if (!SAFE_ID.test(id) || !Array.isArray(s.apps[id]) || !s.apps[id].length) return;
+      want[id + '.resolv'] = resolvText(s.apps[id]);
+    });
+    fs.readdirSync(hookDir).forEach(function (name) {
+      if (!want.hasOwnProperty(name)) fs.unlinkSync(path.join(hookDir, name));
+    });
+    Object.keys(want).forEach(function (name) {
+      var file = path.join(hookDir, name);
+      if (readFile(file) !== want[name]) fs.writeFileSync(file, want[name]);
+    });
+  } catch (e) {
+    console.error('appdns: could not write the boot hook copies: ' + e.message);
+  }
 }
 
 /*
@@ -69,7 +98,7 @@ function writeState(s) {
  */
 function parseServers(input) {
   // Arabic's comma too, as a list typed in Arabic would have.
-  var parts = Array.isArray(input) ? input : String(input == null ? '' : input).split(/[\s,;،]+/);
+  var parts = Array.isArray(input) ? input : String(input == null ? '' : input).split(/[\s,;\u060c]+/);
   var servers = [];
   for (var i = 0; i < parts.length; i++) {
     var s = String(parts[i] == null ? '' : parts[i]).trim();
@@ -193,6 +222,7 @@ function recheck() {
 function start() {
   stop();
   if (!fs.existsSync(jailRoot)) return;
+  writeHookFiles(readState());
   // A jail made at an app's first launch after a firmware update.
   rootWatcher = watchDir(jailRoot, function (event, name) {
     if (name && readState().apps[name]) { watchApp(name); ensure(name); }

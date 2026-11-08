@@ -1556,6 +1556,10 @@ ThinQ adapters, and `wap`.
   came 1.5 s before YouTube's first lookup. Rewriting it while YouTube ran
   brought no lookups to the new server in 70 s, so a running app is not
   counted on to read it again.
+- **An app can open before the server.** In one boot, Glasshouse's boot hook
+  ran 34 s in, YouTube was opened from Home at 36 s (its jail reset then), and
+  the server was listening at 48 s. That YouTube kept the TV's DNS until it
+  left the screen 7 minutes later and a new YouTube process started.
 - **Web apps cannot be told apart.** They all run in WebAppMgr, one process
   outside any jail. (webOS 4.4.3, B8; webOS 9.2.2, C2)
 

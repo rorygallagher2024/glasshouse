@@ -18,7 +18,8 @@ clock sync, then enter the table on both address families.
 
 `test-appdns.js` checks that an app's DNS servers are written into its jail's
 `resolv.conf`, written again when a watch sees the jailer's copy, taken out
-again for the TV's, and set at start for a jail made later; that only installed
+again for the TV's, and set at start for a jail made later; that the boot
+hook's copies in `appdns/` follow each change; that only installed
 apps with a jail are offered; and that addresses are checked, three at most.
 `test-appdns-ui.js` runs the Apps tab's renderer for it on Node 8 and later:
 hidden without app sandboxes, a row per app with its servers escaped, the
