@@ -3028,5 +3028,5 @@
  "home.weather.exceptional": {"text": "Tiempo severo", "from": "Severe weather"},
  "home.showWeather": {"text": "Tiempo", "from": "Weather"},
  "home.showWeatherDesc": {"text": "Junto al reloj: el tiempo que envía Home Assistant, en cuanto una automatización lo envía.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."},
- "metrics.remote.batteryRead": {"text": "Última lectura: {time}", "from": "Last read: {time}"}
+ "metrics.remote.batteryReadLabel": {"text": "Última lectura:", "from": "Last read:"}
 }

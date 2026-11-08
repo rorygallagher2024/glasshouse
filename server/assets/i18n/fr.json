@@ -12115,5 +12115,5 @@
   "from": "View only",
   "text": "Lecture seule"
  },
- "metrics.remote.batteryRead": {"text": "Dernière lecture : {time}", "from": "Last read: {time}"}
+ "metrics.remote.batteryReadLabel": {"text": "Dernière lecture :", "from": "Last read:"}
 }

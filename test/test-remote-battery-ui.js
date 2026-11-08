@@ -26,15 +26,15 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, '../server/assets/ui/readou
 context.renderRemoteBattery({ model: 'LGE MR25GA', battery: 46, batteryUpdatedAt: 1793718000000, connected: false });
 assert.strictEqual(elements['remote-pct'].textContent, 46);
 assert.strictEqual(elements['remote-model-val'].textContent, 'MR25GA');
-assert.strictEqual(elements['remote-battery-note'].hidden, false);
-assert.ok(/^Last read:/.test(elements['remote-battery-note'].textContent));
+assert.strictEqual(elements['remote-read-row'].hidden, false);
+assert.ok(elements['remote-read-val'].textContent.length > 0);
 assert.strictEqual(elements['remote-pill'].textContent, 'Standby');
 assert.strictEqual(elements.remoteblock.hidden, false);
 
 context.renderRemoteBattery({ model: 'LGE MR24', battery: null, batteryStatus: 'waiting', connected: false });
 assert.strictEqual(elements.remoteblock.hidden, true, 'hidden when no battery reading is available');
-assert.strictEqual(elements['remote-battery-note'].hidden, true);
-assert.strictEqual(elements['remote-battery-note'].textContent, '', 'old timestamp is not carried to another remote');
+assert.strictEqual(elements['remote-read-row'].hidden, true);
+assert.strictEqual(elements['remote-read-val'].textContent, '', 'old timestamp is not carried to another remote');
 
 context.renderRemoteBattery({ model: 'Other remote', battery: null, batteryStatus: 'unsupported' });
 assert.strictEqual(elements.remoteblock.hidden, true, 'hidden on unsupported TVs and remotes');
@@ -42,7 +42,7 @@ assert.strictEqual(elements.remoteblock.hidden, true, 'hidden on unsupported TVs
 context.renderRemoteBattery({ model: 'LGE MR24', battery: 0, connected: true });
 assert.strictEqual(elements['remote-pct'].textContent, 0);
 assert.strictEqual(elements['remote-gauge-fill'].style.width, '0%');
-assert.strictEqual(elements['remote-battery-note'].hidden, true);
+assert.strictEqual(elements['remote-read-row'].hidden, true);
 assert.strictEqual(elements.remoteblock.hidden, false);
 assert.strictEqual(elements['remote-pill'].textContent, 'Connected');
 

@@ -3028,5 +3028,5 @@
  "home.weather.exceptional": {"text": "Опасные погодные явления", "from": "Severe weather"},
  "home.showWeather": {"text": "Погода", "from": "Weather"},
  "home.showWeatherDesc": {"text": "Рядом с часами: погода, которую отправляет Home Assistant, как только её отправит автоматизация.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."},
- "metrics.remote.batteryRead": {"text": "Последнее считывание: {time}", "from": "Last read: {time}"}
+ "metrics.remote.batteryReadLabel": {"text": "Последнее считывание:", "from": "Last read:"}
 }

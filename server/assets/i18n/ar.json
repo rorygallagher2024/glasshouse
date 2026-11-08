@@ -3028,5 +3028,5 @@
  "home.weather.exceptional": {"text": "طقس شديد الخطورة", "from": "Severe weather"},
  "home.showWeather": {"text": "الطقس", "from": "Weather"},
  "home.showWeatherDesc": {"text": "بجانب الساعة: الطقس الذي يرسله Home Assistant، بمجرد أن ترسله أتمتة.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."},
- "metrics.remote.batteryRead": {"text": "آخر قراءة: {time}", "from": "Last read: {time}"}
+ "metrics.remote.batteryReadLabel": {"text": "آخر قراءة:", "from": "Last read:"}
 }

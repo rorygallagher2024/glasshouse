@@ -218,18 +218,16 @@ function hdmiKey(d) {
 
 function renderRemoteBattery(rem) {
   const hasBattery = !!(rem && Number.isFinite(rem.battery) && rem.battery >= 0 && rem.battery <= 100);
-  const note = q('remote-battery-note');
+  const readRow = q('remote-read-row'), readVal = q('remote-read-val');
   if (hasBattery) {
     q('remoteblock').hidden = false;
     q('remote-pct').textContent = rem.battery;
     const gFill = q('remote-gauge-fill');
     gFill.style.width = Math.max(0, Math.min(100, rem.battery)) + '%';
     gFill.style.background = rem.battery <= 15 ? 'var(--red)' : rem.battery <= 30 ? 'var(--cand)' : 'var(--green)';
-    if (note) {
-      note.hidden = !rem.batteryUpdatedAt;
-      note.textContent = rem.batteryUpdatedAt
-        ? t('metrics.remote.batteryRead', 'Last read: {time}', { time: new Date(rem.batteryUpdatedAt).toLocaleString() })
-        : '';
+    if (readRow && readVal) {
+      readRow.hidden = !rem.batteryUpdatedAt;
+      readVal.textContent = rem.batteryUpdatedAt ? new Date(rem.batteryUpdatedAt).toLocaleString() : '';
     }
     q('remote-model-val').textContent = rem.model ? rem.model.replace(/^LGE\s*/i, '') : t('metrics.remote.name', 'Magic Remote');
     q('remote-fw-val').textContent = rem.firmware || '—';
@@ -254,9 +252,9 @@ function renderRemoteBattery(rem) {
       rem.mac ? t('metrics.remote.bluetooth', 'Bluetooth: {address}', { address: rem.mac }) : ''].filter(Boolean).join(' · ');
   } else {
     q('remoteblock').hidden = true;
-    if (note) {
-      note.hidden = true;
-      note.textContent = '';
+    if (readRow && readVal) {
+      readRow.hidden = true;
+      readVal.textContent = '';
     }
   }
 }

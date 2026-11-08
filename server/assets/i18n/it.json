@@ -3028,5 +3028,5 @@
  "home.weather.exceptional": {"text": "Maltempo estremo", "from": "Severe weather"},
  "home.showWeather": {"text": "Meteo", "from": "Weather"},
  "home.showWeatherDesc": {"text": "Accanto all’orologio: il meteo inviato da Home Assistant, non appena un’automazione lo invia.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."},
- "metrics.remote.batteryRead": {"text": "Ultima lettura: {time}", "from": "Last read: {time}"}
+ "metrics.remote.batteryReadLabel": {"text": "Ultima lettura:", "from": "Last read:"}
 }
