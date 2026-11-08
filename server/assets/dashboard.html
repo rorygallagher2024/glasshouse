@@ -1129,6 +1129,15 @@ function glasshouseHomeRows(d) {
                  ['showAppCount', t('home.showAppCount', 'App count'), t('home.showAppCountDesc', 'Beside the Apps row: how many of the TV\u2019s apps it shows.')],
                  ['showCec', t('home.showCec', 'CEC addresses'), t('home.showCecDesc', 'On each input\u2019s tile: the HDMI-CEC address of the device behind it.')],
                  ['showTvLogos', t('home.showTvLogos', 'Channel logos'), t('home.showTvLogosDescName', 'On Internet TV: the playlist\u2019s logo for each channel. Off shows the channel\u2019s name in its place.')]];
+    // The weather's source; OK steps through them. A place is chosen on the web dashboard.
+    var wxNames = { off: t('common.off', 'Off'), ha: t('home.weather.fromHa', 'From Home Assistant'), internet: t('home.weather.fromInternet', 'From the internet') };
+    var wxNow = d.layout.weather || 'ha';
+    r.push({ label: t('home.weather', 'Weather'), key: 'weather', value: wxNames[wxNow], cls: wxNow === 'off' ? 'off' : 'on',
+             act: can ? 'homeWeather' : null,
+             press: t('tv.press.change', 'Press OK to change'),
+             hint: wxNow === 'internet' && !d.layout.weatherPlace
+               ? t('home.weather.tvChoosePlace', 'Choose the place on the Home tab of the web dashboard.')
+               : t('home.weatherDesc', 'Next to the clock: the weather Home Assistant sends, or the weather for a place you choose, from Open-Meteo.') });
     // The live preview and, while it is on, its options.
     var pvRows = [['livePreview', t('home.livePreview', 'Live preview'), t('home.livePreviewDesc', 'A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.')]];
     // Neither option plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
@@ -1334,12 +1343,11 @@ function glasshouseHomeRows(d) {
       order.forEach(function (id) {
         var title = homeItemTitle(kind, id);
         if (title === null) return;
-        var hidden = lay.hidden[kind].indexOf(id) !== -1, lg = kind === 'app' && id === 'lg-home';
-        r.push({ label: title, value: lg ? t('home.alwaysShown', 'Always shown') : hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
-                 cls: lg ? '' : hidden ? 'off' : 'on', act: can && !lg ? 'homeTile' : null, key: id, kind: kind, on: !hidden,
+        var hidden = lay.hidden[kind].indexOf(id) !== -1;
+        r.push({ label: title, value: hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
+                 cls: hidden ? 'off' : 'on', act: can ? 'homeTile' : null, key: id, kind: kind, on: !hidden,
                  press: hidden ? t('tv.home.tile.show', 'Press OK to show it') : t('tv.home.tile.hide', 'Press OK to hide it'),
-                 hint: lg ? t('tv.home.lgTile.hint', 'The way back to LG\u2019s Home, so it always shows.')
-                          : t('tv.home.tile.hint', 'Hold OK on Glasshouse Home to change the order of tiles.') });
+                 hint: t('tv.home.tile.hint', 'Hold OK on Glasshouse Home to change the order of tiles.') });
       });
     });
     var walls = d.wallpapers || {};
@@ -3301,6 +3309,10 @@ function activate() {
       return homeLayout({ search: !r.on });
     case 'homeAlternative':
       return homeLayout({ view: r.on ? 'standard' : 'alternative' });
+    case 'homeWeather':
+      var wxOrder = ['off', 'ha', 'internet'];
+      var wxAt = wxOrder.indexOf((homeData && homeData.layout && homeData.layout.weather) || 'ha');
+      return homeLayout({ weather: wxOrder[(wxAt + 1) % wxOrder.length] });
     case 'homeFade':
       return homeLayout({ fade: !r.on });
     case 'homeRecommended':

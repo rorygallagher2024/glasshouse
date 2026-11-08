@@ -324,6 +324,31 @@ action:
         {% for name, id in state_attr('select.lg_tv_input_source', 'input_ids').items() if id == 'hdmi2' %}{{ name }}{% endfor %}
 ```
 
+### 6. The weather on Glasshouse Home
+Glasshouse Home shows the weather next to the clock from what Home Assistant sends it, while the Home tab's **Weather** setting is **From Home Assistant**, as it is unless changed. **From the internet** shows the weather for a place you choose without Home Assistant ([Home tab](dashboard/home.md)). This sends a `weather` entity's condition and temperature whenever it changes, every 30 minutes, and when Home Assistant starts. Weather not updated for 3 hours is hidden, and sending an empty value takes it away at once.
+
+```yaml
+alias: "Weather on the TV"
+trigger:
+  - platform: state
+    entity_id: weather.home
+  - platform: time_pattern
+    minutes: "/30"
+  - platform: homeassistant
+    event: start
+action:
+  - service: text.set_value
+    target:
+      entity_id: text.lg_tv_weather
+    data:
+      value: >-
+        {{ {'condition': states('weather.home'),
+            'temp': state_attr('weather.home', 'temperature'),
+            'city': 'Glasgow'} | to_json }}
+```
+
+The temperature is shown as sent, in the unit the weather entity uses. `city` is optional.
+
 ---
 
 ## Universal Media Player Setup

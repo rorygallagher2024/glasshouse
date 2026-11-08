@@ -120,6 +120,31 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .tile.live>div{position:relative;z-index:1}
 .row .tile.live{opacity:1}
 
+/* The weather badge: an icon and the current temperature, right of the
+   plate (or alone, in its place, when the plate is off). Its weather comes
+   from Home Assistant or Open-Meteo, as the layout's 'weather' chooses, and
+   it stays hidden until there is some. */
+/* Lined up with the clock: the temperature in the clock's own size and line
+   height, so their digits share a top and a baseline, and the place and
+   conditions as the date. */
+#weather{-webkit-flex:0 0 auto;flex:0 0 auto;position:relative;margin-left:56px;white-space:nowrap}
+#weather.none{display:none}
+#wxMain{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center}
+#wxIcon{width:112px;height:112px;margin-right:20px}
+#wxIcon svg{width:112px;height:112px;display:block}
+#wxTemp{font-family:'Outfit',sans-serif;font-size:176px;line-height:.8;font-weight:300;letter-spacing:-4px}
+#wxLine{margin-top:22px;font-size:28px;color:#a39d93}
+#wxCity:not(:empty)+#wxCond:not(:empty):before{content:"\00b7";margin:0 .4em}
+/* Open-Meteo's licence (CC BY 4.0) asks for credit, not for it beside the
+   data: bottom right, clear of the toast and banner on the left. */
+#wxCredit{position:absolute;right:112px;bottom:12px;font-size:16px;font-weight:300;opacity:.45}
+.alternative #wxCredit{right:90px}
+#wxCredit:empty,.arranging #wxCredit{display:none}
+.alternative #weather{-webkit-order:4;order:4;margin:0 0 0 48px}
+.alternative #wxIcon,.alternative #wxIcon svg{width:72px;height:72px}
+.alternative #wxTemp{font-size:100px;line-height:1;letter-spacing:-2px}
+.alternative #wxLine{margin-top:8px;font-size:23px}
+
 /* The rows sit centred between the clock and the arrange bar, so three rows
    land a little below where they used to and fewer settle lower. The spacers shrink first, so rows taller than the space run on down
    rather than under the clock. A row with nothing to show is left out, and
@@ -131,7 +156,11 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
 #rows.scrolled{-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 44px);mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 44px)}
 #rows:before,#rows:after{content:"";-webkit-flex:1 1 0;flex:1 1 0}
-/* Along the bottom, as on LG's Home: no space below the rows. */
+/* Along the bottom, as on LG's Home: the row in focus sits at the bottom and
+   the rows after it wait below the screen. A spacer the area's height above
+   the rows lets even the first row scroll down to the bottom; moving down a
+   row scrolls the rows up by one (keepRowInView). */
+.rows-bottom #rows:before{-webkit-flex:0 0 auto;flex:0 0 auto;height:100%}
 .rows-bottom #rows:after{-webkit-flex:0 0 0;flex:0 0 0}
 
 /* Alternative View (#999): a smaller clock on the right, Last watched to its
@@ -167,6 +196,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
 .row.empty{display:none}
 .arranging .row.empty{display:block}
+.arranging .row.off-row{opacity:.4}
 .slot{margin:0 112px;height:64px;line-height:60px;padding:0 22px;font-size:21px;color:#6b665e;
   border:2px dashed #2a2825;border-radius:6px}
 .arranging .row.active .slot{color:#ece7df;border-color:#e9ad55;border-style:solid}
@@ -589,9 +619,17 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     <div id="preview"><video id="pvVideo" muted></video>
       <div id="pvInfo"><div id="pvTop"><div id="pvMode"></div><div id="pvLight"></div></div><div id="pvSig"></div></div>
       <div id="pvNote" data-t="home.preview.noPicture">No picture</div></div>
+    <div id="weather" class="none">
+      <div id="wxMain">
+        <div id="wxIcon"></div>
+        <div id="wxTemp">&mdash;</div>
+      </div>
+      <div id="wxLine"><span id="wxCity"></span><span id="wxCond"></span></div>
+    </div>
   </section>
 
   <main id="rows"></main>
+  <div id="wxCredit"></div>
   <div id="rail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="word" data-t="home.search.rail">Search</span></div>
   <section id="finder">
     <div id="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input id="query" type="text" autocomplete="off" spellcheck="false" maxlength="80" placeholder="Film or series" data-t-placeholder="home.search.placeholder"></div>
@@ -823,6 +861,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return null;
   }
   function hidden(kind, id) { return (layout.hidden[kind] || []).indexOf(id) !== -1; }
+  // A whole row switched off in the dashboard's Home settings.
+  function rowOff(kind) { return (layout.hiddenRows || []).indexOf(kind) !== -1; }
   function inFolder(kind, id) { return kind === 'app' && (layout.folder || []).indexOf(id) !== -1; }
   // The server puts a Last opened row in that order; the view shows it as sent.
   function byRecent(kind) { return !!(layout.sort && layout.sort[kind] === 'recent'); }
@@ -835,6 +875,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function items(kind) {
     var out = [];
     // The apps' cards follow the Apps row, so arranging moves the row, not its cards.
+    if (!state.arranging && rowOff(kind)) return out;
     if (kind === 'rec') return state.arranging ? out : recCards();
     (data.order[kind] || []).forEach(function (id) {
       var it = byId(kind, id);
@@ -982,7 +1023,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var tiles = '';
       list.forEach(function (it, i) { tiles += TILE[kind](it, i); });
       var note = esc(rowNote(kind, list));
-      html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + ' data-row="' + ri + '" data-key="' + kind + '">' +
+      html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + (rowOff(kind) ? ' data-off="1"' : '') + ' data-row="' + ri + '" data-key="' + kind + '">' +
         '<h2>' + esc(ROW_TITLES[kind]) + (list.length && note ? '<span>' + note + '</span>' : '') +
         '<em class="sort">' + esc(sortLabel(kind)) + '</em></h2>' +
         (list.length ? '<div class="wrap"><i class="edge l"></i><i class="edge r"></i><div class="track">' + tiles + '</div></div>'
@@ -1007,6 +1048,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // row still moving is left to finish, and settle() then keeps its focus
     // in view.
     applyFocus(true, true);
+    // Along the bottom the row in focus keeps its place as the rows are
+    // rebuilt; switched either way, the rows are placed afresh.
+    if (rowsAtBottom() || rowsAtBottom() !== wasAtBottom) keepRowInView(!rowsScroll.timer);
+    wasAtBottom = rowsAtBottom();
     placeRows();
     if (!pointing && (!animating || state.arranging)) {
       var active = document.querySelector('.row.active');
@@ -1015,7 +1060,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (folder.open) renderFolder();
     if (syncAnim()) updateWall();
   }
-  var renderedRows = '', barWidths = [];
+  var renderedRows = '', barWidths = [], wasAtBottom = false;
 
   // The minute's refresh waits for a moving row to stop (tick), so the rows
   // are not rebuilt under it. Its changes leave every tile where it was.
@@ -1123,7 +1168,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var rows = document.querySelectorAll('.row');
     for (var ri = 0; ri < rows.length; ri++) {
       var rowEl = rows[ri], kind = rowEl.getAttribute('data-key'), active = ri === state.row && state.bar < 0 && !state.rail;
-      rowEl.className = 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : '');
+      rowEl.className = 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (rowEl.getAttribute('data-off') ? ' off-row' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : '');
       var tiles = rowEl.querySelectorAll('.tile'), c = colOf(kind);
       for (var ci = 0; ci < tiles.length; ci++) {
         var on = active && ci === c;
@@ -1166,26 +1211,44 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * keep the row in focus whole, its title included.
    */
   var rowsScroll = { to: 0, timer: null };
+  function rowsAtBottom() { return !!layout && layout.rowsBottom === true; }
+  /*
+   * Along the bottom the row in focus is always brought to the bottom, its
+   * own margin below it, so only the rows before it show above and the ones
+   * after it are out of sight below the screen.
+   */
   function keepRowInView(instant) {
     var box = $('rows'), active = box.querySelector('.row.active');
     if (!active) return;
     var view = box.clientHeight, y = box.scrollTop;
     var top = active.offsetTop - 6, bottom = active.offsetTop + active.offsetHeight + 6;
-    if (bottom > y + view) y = bottom - view;
-    if (top < y) y = top;
+    if (rowsAtBottom()) {
+      y = active.offsetTop + active.offsetHeight + (parseInt(getComputedStyle(active).marginBottom, 10) || 0) - view;
+    } else {
+      if (bottom > y + view) y = bottom - view;
+      if (top < y) y = top;
+    }
     y = Math.max(0, Math.min(y, box.scrollHeight - view));
-    if (y === rowsScroll.to && Math.abs(box.scrollTop - y) < 1) return;
+    // A scroll already headed there is left to finish.
+    if (y === rowsScroll.to && (rowsScroll.timer || Math.abs(box.scrollTop - y) < 1)) return;
     rowsScroll.to = y;
-    box.className = y > 0 ? 'scrolled' : '';
+    box.className = y > firstRowTop(box) ? 'scrolled' : '';
     clearInterval(rowsScroll.timer);
+    rowsScroll.timer = null;
     if (instant) { box.scrollTop = y; return; }
     var from = box.scrollTop, start = Date.now();
     rowsScroll.timer = setInterval(function () {
       var k = Math.min(1, (Date.now() - start) / 200);
       box.scrollTop = from + (y - from) * (1 - Math.pow(1 - k, 3));
       if (tvPreviewTile) placeTvPreview(tvPreviewTile);
-      if (k >= 1) clearInterval(rowsScroll.timer);
+      if (k >= 1) { clearInterval(rowsScroll.timer); rowsScroll.timer = null; }
     }, 16);
+  }
+  // Where the first row shown starts: scrolled past it, the top edge fades.
+  function firstRowTop(box) {
+    var rows = box.querySelectorAll('.row');
+    for (var i = 0; i < rows.length; i++) if (rows[i].offsetHeight) return Math.max(0, rows[i].offsetTop - 6);
+    return 0;
   }
 
   /*
@@ -1595,6 +1658,88 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       ? '<div><b>' + esc(p.oled ? t('home.plate.oledLight', 'OLED light') : t('home.plate.backlight', 'Backlight')) +
         '</b>' + esc(p.light) + '</div>'
       : '';
+  }
+
+  /*
+   * The weather badge. The server only ever reports what the last MQTT
+   * push to ha.js's 'weather' entity set (see server/lib/home.js,
+   * setWeather), so this stays hidden until Home Assistant has sent
+   * something at least once.
+   */
+  /*
+   * Line icons for Home Assistant's weather conditions, drawn in the text's
+   * colour. Not emoji: a B8 (webOS 4.4) has only a subset of an emoji font,
+   * and drew these as empty boxes.
+   */
+  var WX_CLOUD = '<path d="M7 17h10a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 6.6 8.6 4.2 4.2 0 0 0 7 17z"/>';
+  var WX_CLOUD_UP = '<path d="M7 14h10a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 6.6 5.6 4.2 4.2 0 0 0 7 14z"/>';
+  var WX_SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  var WX_PARTS = {
+    'clear-night': '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    sunny: WX_SUN,
+    partlycloudy: '<circle cx="8" cy="8" r="3"/><path d="M8 2v1.5M2 8h1.5M3.8 3.8l1 1M12.2 3.8l-1 1"/>' +
+      '<path d="M9 19h9a3.5 3.5 0 0 0 .3-7 4.8 4.8 0 0 0-9.2-.9A3.9 3.9 0 0 0 9 19z"/>',
+    cloudy: WX_CLOUD,
+    fog: '<path d="M4 9h16M3 13h18M5 17h14"/>',
+    rainy: WX_CLOUD_UP + '<path d="M9 17l-1 3M13 17l-1 3M17 17l-1 3"/>',
+    pouring: WX_CLOUD_UP + '<path d="M8 16l-1.5 5M11.5 16L10 21M15 16l-1.5 5M18.5 16L17 21"/>',
+    snowy: WX_CLOUD_UP + '<path d="M9 18v.01M12 20v.01M15 18v.01M9 21v.01M15 21v.01"/>',
+    'snowy-rainy': WX_CLOUD_UP + '<path d="M9 17l-1 3M15 17l-1 3M12 19v.01"/>',
+    hail: WX_CLOUD_UP + '<circle cx="9" cy="18.5" r="1"/><circle cx="13" cy="20" r="1"/><circle cx="16" cy="17.5" r="1"/>',
+    lightning: WX_CLOUD_UP + '<path d="M13 14l-3 4h4l-3 4"/>',
+    'lightning-rainy': WX_CLOUD_UP + '<path d="M12 14l-2.5 3.5h3.5L10.5 21M16 16l-1 3"/>',
+    windy: '<path d="M3 9h11a2.5 2.5 0 1 0-2.5-2.5M3 13h15a2.5 2.5 0 1 1-2.5 2.5M3 17h7"/>',
+    exceptional: '<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.01"/>'
+  };
+  WX_PARTS['windy-variant'] = WX_PARTS.windy;
+  // A thermometer where the condition is not one of Home Assistant's.
+  var WX_OTHER = '<path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/>';
+
+  function wxIcon(condition) {
+    var body = WX_PARTS.hasOwnProperty(condition) ? WX_PARTS[condition] : WX_OTHER;
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">' +
+      body + '</svg>';
+  }
+
+  function wxLabel(condition) {
+    switch (condition) {
+      case 'clear-night': return t('home.weather.clearNight', 'Clear night');
+      case 'cloudy': return t('home.weather.cloudy', 'Cloudy');
+      case 'fog': return t('home.weather.fog', 'Fog');
+      case 'hail': return t('home.weather.hail', 'Hail');
+      case 'lightning': return t('home.weather.lightning', 'Lightning');
+      case 'lightning-rainy': return t('home.weather.lightningRainy', 'Thunderstorms');
+      case 'partlycloudy': return t('home.weather.partlycloudy', 'Partly cloudy');
+      case 'pouring': return t('home.weather.pouring', 'Pouring rain');
+      case 'rainy': return t('home.weather.rainy', 'Rainy');
+      case 'snowy': return t('home.weather.snowy', 'Snowy');
+      case 'snowy-rainy': return t('home.weather.snowyRainy', 'Snow and rain');
+      case 'sunny': return t('home.weather.sunny', 'Sunny');
+      case 'windy': return t('home.weather.windy', 'Windy');
+      case 'windy-variant': return t('home.weather.windyVariant', 'Windy');
+      case 'exceptional': return t('home.weather.exceptional', 'Severe weather');
+      default: return '';
+    }
+  }
+
+  // Drawn again only when it changes: the heartbeat brings it every 5 s.
+  var shownWeather = null;
+  function renderWeather(w) {
+    var key = w && typeof w.temp === 'number' ? JSON.stringify([w.condition, w.temp, w.city, w.source]) : '';
+    if (key === shownWeather) return;
+    shownWeather = key;
+    if (!key) { $('weather').className = 'none'; $('wxCredit').textContent = ''; return; }
+    $('wxIcon').innerHTML = wxIcon(w.condition);
+    $('wxTemp').textContent = Math.round(w.temp) + '°';
+    $('wxCity').textContent = w.city || '';
+    $('wxCond').textContent = wxLabel(w.condition);
+    // Open-Meteo's data is CC BY 4.0: credited wherever it is shown.
+    $('wxCredit').textContent = w.source === 'internet' ? t('home.weather.credit', 'Weather data by Open-Meteo.com') : '';
+    $('weather').className = '';
+  }
+
+  function refreshWeather() {
+    getJson('/api/home/weather', function (r) { renderWeather(r && r.ok ? r : null); });
   }
 
   // ---------------------------------------------------------------- actions
@@ -3956,8 +4101,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function toggleHidden() {
     var last = state.last;
-    // The LG Home tile is the way back to LG's Home, so it always shows.
-    if (!last || (last.kind === 'app' && last.id === LG_HOME_TILE)) return;
+    if (!last) return;
     var kind = last.kind, it = byId(kind, last.id);
     if (!it) return;
     if (kind === 'ch') {
@@ -5178,6 +5322,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         // webOS 4: switched off, the standalone view closes itself, as Back does.
         if (r.enabled === false && standalone) return window.close();
         rest(!!r.covered);
+        renderWeather(r.weather || null);
         // webOS 4: two minutes behind another app, not the screen saver, the
         // view closes itself to give its memory back; Home opens it afresh.
         coveredSince = r.covered && !r.saver ? (coveredSince || Date.now()) : 0;
@@ -5294,6 +5439,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // A cold start by the Guide key, too.
   guideLaunch(true);
   load();
+  refreshWeather();
   setInterval(beat, BEAT_MS);
   setInterval(function () {
     renderNow(); updateWall(); if (!document.hidden) refreshPicture();
