@@ -1381,6 +1381,25 @@ step('on webOS 4, a Home press the view does not answer closes it and opens it a
   });
 });
 
+// A 60UJ6519 (webOS 3.9.3) has no key filter for the Home key (#1222).
+step('a switch-on that cannot give the Home key to the app removes the app it installed', function (done) {
+  var actions = [];
+  start(null, {
+    webosVersion: '3.9.3',
+    allowExperimental: function () { return true; },
+    installApp: function (action, cb) { actions.push(action); tv.oldAppInstalled = action === 'install'; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { cb({ ok: false }); }
+  });
+  home.enable(function (r) {
+    assert.strictEqual(r.ok, false, 'not switched on');
+    assert.ok(/Home key/.test(r.error), r.error);
+    assert.deepEqual(actions, ['install', 'remove']);
+    assert.strictEqual(tv.oldAppInstalled, false, 'no tile left behind');
+    assert.strictEqual(home.enabled(), false);
+    done();
+  });
+});
+
 step('on webOS 4, the page\'s escape when its first load fails is ignored', function (done) {
   var injected = [];
   start(null, {

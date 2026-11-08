@@ -1342,7 +1342,11 @@ function switchTo(on, cb) {
         return ensureApp(function (ok) {
           if (!ok) return finish({ ok: false, error: 'could not install Glasshouse Home app' });
           setHomeKeyFn(HOME_APP, function (k) {
-            if (!k || !k.ok) return finish({ ok: false, error: 'could not set Home key target' });
+            if (!k || !k.ok) {
+              return removeStandaloneApp(function () {
+                finish({ ok: false, error: 'could not set Home key target' });
+              });
+            }
             startingNotice(true, function () {
               finish({ ok: true });
             });
@@ -1849,6 +1853,22 @@ function ensureApp(cb) {
     if (have === true || !installFn) return cb(have === true);
     installFn('install', function () {
       appInstalled(function (now) { cb(now === true); });
+    });
+  });
+}
+
+/*
+ * After a switch-on that could not give the Home key to the app: left
+ * installed, its tile only opened a page that closed itself at once, as
+ * Glasshouse Home was off (a 60UJ6519 on webOS 3.9.3, #1222). The next switch
+ * on installs it again.
+ */
+function removeStandaloneApp(cb) {
+  if (!installFn) return cb();
+  installFn('remove', function () {
+    appInstalled(function (now) {
+      if (now === false) console.log('home: Glasshouse Home\'s app removed, as it could not be the TV\'s Home');
+      cb();
     });
   });
 }
