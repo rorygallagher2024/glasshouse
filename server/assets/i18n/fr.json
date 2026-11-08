@@ -432,8 +432,8 @@
   "text": "1 app"
  },
  "apps.dns": {
-  "from": "DNS for one app",
-  "text": "DNS pour une app"
+  "from": "DNS app configuration",
+  "text": "Configuration DNS des apps"
  },
  "apps.dns.change": {
   "from": "Change",
@@ -442,6 +442,14 @@
  "apps.dns.desc": {
   "from": "An app here can look names up with DNS servers of its own, such as 1.1.1.1 or a Pi-hole, while everything else on the TV keeps using the TV's. A change takes effect the next time the app starts. Only apps LG runs in a sandbox of their own are listed, once they have been opened; web apps share one process and cannot have their own.",
   "text": "Une app de cette liste peut résoudre les noms avec ses propres serveurs DNS, comme 1.1.1.1 ou un Pi-hole, pendant que tout le reste de la TV continue d'utiliser ceux de la TV. Un changement prend effet au prochain démarrage de l'app. Seules les apps que LG exécute dans leur propre bac à sable sont listées, une fois qu'elles ont été ouvertes ; les apps web partagent un seul processus et ne peuvent pas avoir les leurs."
+ },
+ "apps.dns.doh.desc": {
+  "from": "Instead of addresses, an app can be given one https:// address for DNS over HTTPS, such as https://dns.nextdns.io/ followed by a NextDNS profile ID. Glasshouse then answers the app's lookups on the TV and sends each on over HTTPS, so the app finds nothing while Glasshouse is not running, as in the first minute after the TV starts.",
+  "text": "Au lieu d'adresses, une app peut recevoir une adresse https:// pour le DNS sur HTTPS, comme https://dns.nextdns.io/ suivi d'un ID de profil NextDNS. Glasshouse répond alors aux requêtes de l'app sur la TV et transmet chacune en HTTPS, si bien que l'app ne trouve rien tant que Glasshouse ne tourne pas, comme pendant la première minute après le démarrage de la TV."
+ },
+ "apps.dns.dohFailing": {
+  "from": "no answer: {error}",
+  "text": "pas de réponse : {error}"
  },
  "apps.dns.noApps": {
   "from": "No sandboxed app has been opened yet.",
@@ -452,8 +460,8 @@
   "text": "Aucun défini"
  },
  "apps.dns.placeholder": {
-  "from": "Up to 3 addresses, such as 1.1.1.1, 1.0.0.1",
-  "text": "Jusqu'à 3 adresses, comme 1.1.1.1, 1.0.0.1"
+  "from": "Up to 3 addresses, such as 1.1.1.1, 1.0.0.1, or one https:// address",
+  "text": "Jusqu'à 3 adresses, comme 1.1.1.1, 1.0.0.1, ou une adresse https://"
  },
  "apps.dns.reset": {
   "from": "Use the TV's DNS",
@@ -472,8 +480,8 @@
   "text": "1 app avec son propre DNS"
  },
  "apps.dns.tvOwn": {
-  "from": "The TV's DNS",
-  "text": "Le DNS de la TV"
+  "from": "Using TV's DNS",
+  "text": "Utilise le DNS de la TV"
  },
  "apps.group.apps": {
   "from": "Apps",
@@ -6930,6 +6938,14 @@
  "srv.appdns.badAddress": {
   "from": "not an IP address: {address}",
   "text": "ce n'est pas une adresse IP : {address}"
+ },
+ "srv.appdns.badDoh": {
+  "from": "not a DNS-over-HTTPS address: {address}",
+  "text": "ce n'est pas une adresse DNS sur HTTPS : {address}"
+ },
+ "srv.appdns.dohAlone": {
+  "from": "a DNS-over-HTTPS address goes on its own, without other servers",
+  "text": "une adresse DNS sur HTTPS s'utilise seule, sans autres serveurs"
  },
  "srv.appdns.notOffered": {
   "from": "This app cannot have its own DNS",

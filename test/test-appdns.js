@@ -64,19 +64,44 @@ makeJail('netflix');
 makeJail('lg.thinqai.adapter');      // a jail with no app: not offered
 mkdirs(path.join(jails, 'wap'));     // a jail without etc: not offered
 
-appDns.init({ luna: luna, stateDir: dir, jailRoot: jails, hostResolv: hostResolv, watch: fakeWatch });
+// lib/doh stood in for: the addresses it is told to answer on, and an error
+// for each, as its status gives.
+var forwarder = {
+  served: {},
+  errors: {},
+  serve: function (map) { this.served = map; },
+  stop: function () { this.served = {}; },
+  status: function () {
+    var out = {};
+    for (var a in this.served) out[a] = { url: this.served[a], error: this.errors[this.served[a]] || null };
+    return out;
+  }
+};
+
+appDns.init({ luna: luna, stateDir: dir, jailRoot: jails, hostResolv: hostResolv, watch: fakeWatch, doh: forwarder });
 
 var steps = [];
 function step(name, fn) { steps.push({ name: name, fn: fn }); }
 
 step('addresses are checked, kept once each, and at most three', function (done) {
-  assert.deepEqual(appDns.parseServers('1.1.1.1, 1.0.0.1').servers, ['1.1.1.1', '1.0.0.1']);
-  assert.deepEqual(appDns.parseServers(['2606:4700:4700::1111', '1.1.1.1', '1.1.1.1']).servers, ['2606:4700:4700::1111', '1.1.1.1']);
-  assert.deepEqual(appDns.parseServers('1.1.1.1، 1.0.0.1').servers, ['1.1.1.1', '1.0.0.1']);
-  assert.deepEqual(appDns.parseServers('').servers, []);
-  assert.deepEqual(appDns.parseServers(null).servers, []);
-  assert.ok(appDns.parseServers('dns.google').error);
-  assert.ok(appDns.parseServers('1.1.1.1 1.0.0.1 8.8.8.8 9.9.9.9').error);
+  assert.deepEqual(appDns.parseSetting('1.1.1.1, 1.0.0.1').servers, ['1.1.1.1', '1.0.0.1']);
+  assert.deepEqual(appDns.parseSetting(['2606:4700:4700::1111', '1.1.1.1', '1.1.1.1']).servers, ['2606:4700:4700::1111', '1.1.1.1']);
+  assert.deepEqual(appDns.parseSetting('1.1.1.1، 1.0.0.1').servers, ['1.1.1.1', '1.0.0.1']);
+  assert.deepEqual(appDns.parseSetting('').servers, []);
+  assert.deepEqual(appDns.parseSetting(null).servers, []);
+  assert.ok(appDns.parseSetting('dns.google').error);
+  assert.ok(appDns.parseSetting('1.1.1.1 1.0.0.1 8.8.8.8 9.9.9.9').error);
+  done();
+});
+
+step('a DNS-over-HTTPS address is taken on its own, and only over https', function (done) {
+  assert.equal(appDns.parseSetting(' https://dns.nextdns.io/abc123 ').doh, 'https://dns.nextdns.io/abc123');
+  assert.equal(appDns.parseSetting(['https://cloudflare-dns.com/dns-query']).doh, 'https://cloudflare-dns.com/dns-query');
+  assert.ok(appDns.parseSetting('https://dns.nextdns.io/abc123, 1.1.1.1').error);
+  assert.ok(appDns.parseSetting('http://dns.nextdns.io/abc123').error);
+  assert.ok(appDns.parseSetting('tls://dns.nextdns.io').error);
+  assert.ok(appDns.parseSetting('https://').error);
+  assert.ok(appDns.parseSetting('https://user@dns.example/q').error);
   done();
 });
 
@@ -147,6 +172,39 @@ step('clearing puts back the TV\'s copy and stops watching', function (done) {
     assert.equal(fire(path.join(jails, 'youtube.leanback.v4', 'etc'), 'resolv.conf'), 0);
     assert.equal(jailResolv('youtube.leanback.v4'), CONNMAN);
     done();
+  });
+});
+
+step('a DNS-over-HTTPS address points the app at a forwarder on the TV, one per address', function (done) {
+  var NEXT = 'https://dns.nextdns.io/abc123';
+  var CF = 'https://cloudflare-dns.com/dns-query';
+  appDns.setAppDns('netflix', NEXT, function (r) {
+    assert.ok(r.ok);
+    assert.equal(r.doh, NEXT);
+    assert.deepEqual(forwarder.served, { '127.0.53.1': NEXT });
+    assert.equal(jailResolv('netflix'), appDns.resolvText(['127.0.53.1']));
+    forwarder.errors[NEXT] = 'HTTP 403';
+    appDns.getAppDns(function (g) {
+      var nf = g.apps.filter(function (a) { return a.id === 'netflix'; })[0];
+      assert.equal(nf.doh, NEXT);
+      assert.deepEqual(nf.servers, []);
+      assert.equal(nf.dohError, 'HTTP 403');
+      // A second address sorts first, so Netflix's forwarder moves and its jail follows.
+      appDns.setAppDns('youtube.leanback.v4', CF, function (r2) {
+        assert.ok(r2.ok);
+        assert.deepEqual(forwarder.served, { '127.0.53.1': CF, '127.0.53.2': NEXT });
+        assert.equal(jailResolv('youtube.leanback.v4'), appDns.resolvText(['127.0.53.1']));
+        assert.equal(jailResolv('netflix'), appDns.resolvText(['127.0.53.2']));
+        assert.equal(fs.readFileSync(path.join(dir, 'appdns', 'netflix.resolv'), 'utf8'), appDns.resolvText(['127.0.53.2']));
+        appDns.setAppDns('youtube.leanback.v4', '', function () {
+          appDns.setAppDns('netflix', '', function () {
+            assert.deepEqual(forwarder.served, {});
+            assert.equal(jailResolv('netflix'), CONNMAN);
+            done();
+          });
+        });
+      });
+    });
   });
 });
 

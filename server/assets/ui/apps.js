@@ -952,7 +952,8 @@ function renderAppDns(d) {
   if (!disc) return;
   disc.hidden = !apps;
   if (!apps) return;
-  const numSet = apps.filter(a => a.servers.length).length;
+  const own = a => a.servers.length > 0 || !!a.doh;
+  const numSet = apps.filter(own).length;
   q('apps-dns-summary').textContent = !numSet ? t('apps.dns.noneSet', 'None set')
     : numSet === 1 ? t('apps.dns.setOne', '1 app with its own') : t('apps.dns.set', '{n} apps with their own', { n: numSet });
   if (!apps.length) {
@@ -961,14 +962,17 @@ function renderAppDns(d) {
   }
   q('apps-dns-list').innerHTML = apps.map(a => {
     const id = esc(a.id);
+    // A DNS-over-HTTPS address with the last failure to reach it, if any.
+    const uses = a.doh ? esc(a.doh) + (a.dohError ? ' &middot; ' + esc(t('apps.dns.dohFailing', 'no answer: {error}', { error: a.dohError })) : '')
+      : a.servers.length ? esc(a.servers.join(', ')) : esc(t('apps.dns.tvOwn', 'Using TV\'s DNS'));
     return `<div class="prot-row" id="dns-${id}">
       <div class="prot-main">
         <div class="prot-title" translate="no">${esc(a.title)}</div>
-        <div class="prot-desc">${a.servers.length ? esc(a.servers.join(', ')) : esc(t('apps.dns.tvOwn', 'The TV\'s DNS'))}</div>
+        <div class="prot-desc">${uses}</div>
       </div>
       <div class="prot-status page-acts">
         <button type="button" class="pill idle" onclick="editAppDns('${jsq(a.id)}')" ${d.writable ? '' : 'disabled'}>${esc(t('apps.dns.change', 'Change'))}</button>
-        ${a.servers.length ? `<button type="button" class="pill bad" onclick="saveAppDns('${jsq(a.id)}', '')" ${d.writable ? '' : 'disabled'}>${esc(t('apps.dns.reset', 'Use the TV\'s DNS'))}</button>` : ''}
+        ${own(a) ? `<button type="button" class="pill bad" onclick="saveAppDns('${jsq(a.id)}', '')" ${d.writable ? '' : 'disabled'}>${esc(t('apps.dns.reset', 'Use the TV\'s DNS'))}</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -982,8 +986,8 @@ function editAppDns(appId) {
   row.innerHTML = `<div class="prot-main">
       <div class="prot-title" translate="no">${esc(a.title)}</div>
       <form class="toast-form page-edit" onsubmit="event.preventDefault();saveAppDns('${jid}', this.querySelector('input').value)">
-        <input type="text" id="dns-in-${esc(appId)}" maxlength="200" autocomplete="off" spellcheck="false"
-          placeholder="${esc(t('apps.dns.placeholder', 'Up to 3 addresses, such as 1.1.1.1, 1.0.0.1'))}" value="${esc(a.servers.join(', '))}"
+        <input type="text" id="dns-in-${esc(appId)}" maxlength="300" autocomplete="off" spellcheck="false"
+          placeholder="${esc(t('apps.dns.placeholder', 'Up to 3 addresses, such as 1.1.1.1, 1.0.0.1, or one https:// address'))}" value="${esc(a.doh || a.servers.join(', '))}"
           aria-label="${esc(t('apps.dns.servers', 'DNS servers'))}" onkeydown="if(event.key==='Escape')renderAppDns(appsData)">
         <button type="submit">${esc(t('apps.pages.save', 'Save'))}</button>
         <button type="button" onclick="renderAppDns(appsData)">${esc(t('common.cancel', 'Cancel'))}</button>

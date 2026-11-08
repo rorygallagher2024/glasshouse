@@ -15,6 +15,10 @@
  * the copy, and a timer catches any the watch misses. YouTube asked for its
  * first name 1.5 s after the copy.
  *
+ * An app can instead be given a DNS-over-HTTPS address. resolv.conf takes
+ * only plain DNS on port 53, so the app is pointed at a loopback address that
+ * lib/doh answers on, one per DNS-over-HTTPS address, 127.0.53.1 upwards.
+ *
  * Web apps all run in WebAppMgr's one process, which is not jailed, so they
  * cannot have their own.
  *
@@ -31,8 +35,14 @@ var MAX_SERVERS = 3;
 var RECHECK_MS = 30000;
 var MARK = '# Set by Glasshouse for this app';
 var SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+var DOH_NET = '127.0.53.';
+var DOH_MAX = 250;
+// A host name, and no user name: the address goes in the clear on the dashboard.
+var DOH_URL = /^https:\/\/[^\s\/?#@]+(\/[^\s]*)?$/i;
 
 var lunaFn = null;
+/** @type {typeof import('./doh')} */
+var dohModule = null;
 var stateFile = null;
 var hookDir = null;
 var jailRoot = '/var/palm/jail';
@@ -46,6 +56,7 @@ var recheckTimer = null;
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna || null;
+  dohModule = opts.doh || null;
   stateFile = path.join(opts.stateDir || '/var/lib/tvweb', 'appdns.json');
   hookDir = path.join(opts.stateDir || '/var/lib/tvweb', 'appdns');
   if (opts.jailRoot) jailRoot = opts.jailRoot;
@@ -54,7 +65,7 @@ function init(opts) {
   if (opts.recheckMs) recheckMs = opts.recheckMs;
 }
 
-// { apps: { id: [servers] } }
+// { apps: { id: [servers] or { doh: url } } }
 function readState() {
   var s = util.readJson(stateFile, null);
   if (!s || typeof s !== 'object' || !s.apps || typeof s.apps !== 'object') return { apps: {} };
@@ -64,6 +75,32 @@ function readState() {
 function writeState(s) {
   util.writeJsonAtomic(stateFile, { apps: s.apps });
   writeHookFiles(s);
+}
+
+function dohOf(setting) {
+  return setting && !Array.isArray(setting) && typeof setting.doh === 'string' ? setting.doh : null;
+}
+
+// The loopback address lib/doh answers on for each DNS-over-HTTPS address.
+function dohAddresses(apps) {
+  var urls = [];
+  Object.keys(apps).forEach(function (id) {
+    var u = dohOf(apps[id]);
+    if (u && urls.indexOf(u) === -1) urls.push(u);
+  });
+  urls.sort();
+  var map = {};
+  urls.slice(0, DOH_MAX).forEach(function (u, i) { map[u] = DOH_NET + (i + 1); });
+  return map;
+}
+
+// The nameserver lines an app's resolv.conf gets, none for the TV's own.
+function nameserversOf(apps, id) {
+  var setting = apps[id];
+  if (Array.isArray(setting)) return setting;
+  var u = dohOf(setting);
+  var address = u && dohAddresses(apps)[u];
+  return address ? [address] : [];
 }
 
 /*
@@ -77,8 +114,9 @@ function writeHookFiles(s) {
     if (!fs.existsSync(hookDir)) fs.mkdirSync(hookDir);
     var want = {};
     Object.keys(s.apps).forEach(function (id) {
-      if (!SAFE_ID.test(id) || !Array.isArray(s.apps[id]) || !s.apps[id].length) return;
-      want[id + '.resolv'] = resolvText(s.apps[id]);
+      var servers = nameserversOf(s.apps, id);
+      if (!SAFE_ID.test(id) || !servers.length) return;
+      want[id + '.resolv'] = resolvText(servers);
     });
     fs.readdirSync(hookDir).forEach(function (name) {
       if (!want.hasOwnProperty(name)) fs.unlinkSync(path.join(hookDir, name));
@@ -93,18 +131,26 @@ function writeHookFiles(s) {
 }
 
 /*
- * Addresses from a list or from text separated by commas or spaces.
- * { servers } with none for "back to the TV's own", or { error }.
+ * What the owner typed: addresses separated by commas or spaces, or one
+ * DNS-over-HTTPS address. { servers } with none for "back to the TV's own",
+ * { doh }, or { error }.
  */
-function parseServers(input) {
+function parseSetting(input) {
   // Arabic's comma too, as a list typed in Arabic would have.
-  var parts = Array.isArray(input) ? input : String(input == null ? '' : input).split(/[\s,;\u060c]+/);
+  var parts = Array.isArray(input) ? input : String(input == null ? '' : input).split(/[\s,;،]+/);
+  parts = parts.map(function (p) { return String(p == null ? '' : p).trim(); }).filter(Boolean);
+  var doh = parts.filter(function (p) { return /^[a-z]+:\/\//i.test(p); });
+  if (doh.length) {
+    if (parts.length > 1) return { error: msg('srv.appdns.dohAlone', 'a DNS-over-HTTPS address goes on its own, without other servers') };
+    if (!DOH_URL.test(doh[0]) || doh[0].length > 300) {
+      return { error: msg('srv.appdns.badDoh', 'not a DNS-over-HTTPS address: {address}', { address: doh[0] }) };
+    }
+    return { doh: doh[0] };
+  }
   var servers = [];
   for (var i = 0; i < parts.length; i++) {
-    var s = String(parts[i] == null ? '' : parts[i]).trim();
-    if (!s) continue;
-    if (!net.isIP(s)) return { error: msg('srv.appdns.badAddress', 'not an IP address: {address}', { address: s }) };
-    if (servers.indexOf(s) === -1) servers.push(s);
+    if (!net.isIP(parts[i])) return { error: msg('srv.appdns.badAddress', 'not an IP address: {address}', { address: parts[i] }) };
+    if (servers.indexOf(parts[i]) === -1) servers.push(parts[i]);
   }
   if (servers.length > MAX_SERVERS) return { error: msg('srv.appdns.tooMany', 'at most 3 DNS servers can be used') };
   return { servers: servers };
@@ -133,8 +179,8 @@ function writeResolv(file, text) {
  * True once the jail holds them; false while the app has no jail yet.
  */
 function ensure(id) {
-  var servers = readState().apps[id];
-  if (!Array.isArray(servers) || !servers.length) return false;
+  var servers = nameserversOf(readState().apps, id);
+  if (!servers.length) return false;
   var file = resolvOf(id);
   if (!fs.existsSync(path.dirname(file))) return false;
   var want = resolvText(servers);
@@ -147,6 +193,15 @@ function ensure(id) {
   }
   console.log('appdns: ' + id + ' set to ' + servers.join(', '));
   return true;
+}
+
+// Answers on the loopback address of each DNS-over-HTTPS address in use.
+function syncForwarder(apps) {
+  if (!dohModule) return;
+  var map = {};
+  var byUrl = dohAddresses(apps);
+  Object.keys(byUrl).forEach(function (u) { map[byUrl[u]] = u; });
+  dohModule.serve(map);
 }
 
 function closeAll(list) {
@@ -204,7 +259,7 @@ function restore(id) {
 
 function configuredIds() {
   var apps = readState().apps;
-  return Object.keys(apps).filter(function (id) { return Array.isArray(apps[id]) && apps[id].length; });
+  return Object.keys(apps).filter(function (id) { return nameserversOf(apps, id).length > 0; });
 }
 
 function recheck() {
@@ -216,13 +271,16 @@ function recheck() {
 }
 
 /*
- * At server start: watches the jails of apps with servers set and writes
- * them where the copy differs. Does nothing on a TV where none are set.
+ * At server start: answers for apps with a DNS-over-HTTPS address, watches
+ * the jails of apps with servers set and writes them where the copy differs.
+ * Does nothing on a TV where none are set.
  */
 function start() {
   stop();
   if (!fs.existsSync(jailRoot)) return;
-  writeHookFiles(readState());
+  var state = readState();
+  writeHookFiles(state);
+  syncForwarder(state.apps);
   // A jail made at an app's first launch after a firmware update.
   rootWatcher = watchDir(jailRoot, function (event, name) {
     if (name && readState().apps[name]) { watchApp(name); ensure(name); }
@@ -238,6 +296,7 @@ function stop() {
   rootWatcher = null;
   if (recheckTimer) clearInterval(recheckTimer);
   recheckTimer = null;
+  if (dohModule) dohModule.stop();
 }
 
 function jailedIds() {
@@ -252,20 +311,28 @@ function jailedIds() {
 
 /*
  * The apps offered: installed, with a jail, which is made at an app's first
- * launch. cb({ ok, supported, apps: [{ id, title, servers }] }).
+ * launch. cb({ ok, supported, apps: [{ id, title, servers, doh, dohError }] }),
+ * dohError being the last failure to get an answer over HTTPS, if any.
  */
 function getAppDns(cb) {
   if (!fs.existsSync(jailRoot) || !lunaFn) return cb({ ok: true, supported: false, apps: [] });
   var jailed = jailedIds();
   var state = readState();
+  var byUrl = dohAddresses(state.apps);
+  var forwarding = dohModule ? dohModule.status() : {};
   lunaFn('com.webos.applicationManager/listApps', {}, function (la) {
     var apps = [];
     ((la && la.apps) || []).forEach(function (a) {
       if (!a || jailed.indexOf(a.id) === -1) return;
+      var setting = state.apps[a.id];
+      var doh = dohOf(setting);
+      var answering = doh ? forwarding[byUrl[doh]] : null;
       apps.push({
         id: a.id,
         title: a.title || a.id,
-        servers: Array.isArray(state.apps[a.id]) ? state.apps[a.id] : []
+        servers: Array.isArray(setting) ? setting : [],
+        doh: doh,
+        dohError: answering ? answering.error : null
       });
     });
     apps.sort(function (x, y) { return x.title.toLowerCase() < y.title.toLowerCase() ? -1 : 1; });
@@ -274,31 +341,34 @@ function getAppDns(cb) {
 }
 
 /*
- * Sets one app's DNS servers, or with none puts it back to the TV's own.
- * cb({ ok, error, servers }).
+ * Sets one app's DNS servers or DNS-over-HTTPS address, or with neither puts
+ * it back to the TV's own. cb({ ok, error, servers, doh }).
  */
 function setAppDns(id, input, cb) {
   id = String(id || '');
   if (!SAFE_ID.test(id) || jailedIds().indexOf(id) === -1) {
     return cb({ ok: false, error: msg('srv.appdns.notOffered', 'This app cannot have its own DNS') });
   }
-  var parsed = parseServers(input);
+  var parsed = parseSetting(input);
   if (parsed.error) return cb({ ok: false, error: parsed.error });
   var state = readState();
-  if (parsed.servers.length) state.apps[id] = parsed.servers;
+  if (parsed.doh) state.apps[id] = { doh: parsed.doh };
+  else if (parsed.servers.length) state.apps[id] = parsed.servers;
   else delete state.apps[id];
   try { writeState(state); } catch (e) {
     return cb({ ok: false, error: msg('srv.preload.stateFailed', 'could not save the setting: {error}', { error: e.message }) });
   }
-  if (parsed.servers.length) {
+  syncForwarder(state.apps);
+  if (state.apps[id]) {
     watchApp(id);
-    ensure(id);
   } else {
     unwatchApp(id);
     restore(id);
     console.log('appdns: ' + id + ' back to the TV\'s DNS');
   }
-  cb({ ok: true, servers: parsed.servers });
+  // Another app's forwarder address can move when one is added or taken out.
+  configuredIds().forEach(ensure);
+  cb({ ok: true, servers: parsed.servers || [], doh: parsed.doh || null });
 }
 
 module.exports = {
@@ -308,7 +378,7 @@ module.exports = {
   ensure: ensure,
   getAppDns: getAppDns,
   setAppDns: setAppDns,
-  parseServers: parseServers,
+  parseSetting: parseSetting,
   resolvText: resolvText,
   MAX_SERVERS: MAX_SERVERS
 };

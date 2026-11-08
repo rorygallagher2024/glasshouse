@@ -60,19 +60,21 @@ assert.strictEqual(element('apps-dns-summary').textContent, 'None set');
 console.log('  ✓ says so when no sandboxed app has been opened');
 
 var apps = [
-  { id: 'netflix', title: 'Net<flix>', servers: [] },
-  { id: 'youtube.leanback.v4', title: 'YouTube', servers: ['1.1.1.1', '1.0.0.1'] }
+  { id: 'com.webos.app.browser', title: 'Browser', servers: [], doh: 'https://dns.example/q?a=1&b=<2>', dohError: 'HTTP 403' },
+  { id: 'netflix', title: 'Net<flix>', servers: [], doh: null, dohError: null },
+  { id: 'youtube.leanback.v4', title: 'YouTube', servers: ['1.1.1.1', '1.0.0.1'], doh: null, dohError: null }
 ];
 render({ writable: true, appDns: apps });
 var html = element('apps-dns-list').innerHTML;
 assert.ok(html.indexOf('Net&lt;flix&gt;') >= 0 && html.indexOf('Net<flix>') < 0, 'titles are escaped');
 assert.ok(html.indexOf('1.1.1.1, 1.0.0.1') >= 0);
-assert.ok(html.indexOf('The TV\'s DNS</div>') >= 0);
-assert.strictEqual((html.match(/Use the TV's DNS/g) || []).length, 1, 'only an app with servers can be put back');
-assert.strictEqual(element('apps-dns-summary').textContent, '1 app with its own');
+assert.ok(html.indexOf('Using TV\'s DNS</div>') >= 0);
+assert.ok(html.indexOf('https://dns.example/q?a=1&amp;b=&lt;2&gt; &middot; no answer: HTTP 403') >= 0, 'the DNS-over-HTTPS address, escaped, with its error');
+assert.strictEqual((html.match(/Use the TV's DNS/g) || []).length, 2, 'only an app with its own can be put back');
+assert.strictEqual(element('apps-dns-summary').textContent, '2 apps with their own');
 render({ writable: false, appDns: apps });
-assert.strictEqual((element('apps-dns-list').innerHTML.match(/disabled/g) || []).length, 3, 'read-only disables every button');
-console.log('  ✓ a row per app with its servers, escaped, and read-only respected');
+assert.strictEqual((element('apps-dns-list').innerHTML.match(/disabled/g) || []).length, 5, 'read-only disables every button');
+console.log('  ✓ a row per app with its servers or DNS-over-HTTPS address, escaped, and read-only respected');
 
 render({ writable: true, appDns: apps });
 element('dns-youtube.leanback.v4');
