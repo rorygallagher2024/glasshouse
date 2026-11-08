@@ -2807,14 +2807,15 @@ async function visitHuesyncSettings(browser, base, problems) {
   page.on('pageerror', error => fail(error.message));
   const settings = { brightness: 50, intensity: 2, sync_mode: '1', current_ec: 'area-a',
     ec_list: [{ id: 'area-a', name: '<img src=x onerror=alert(1)>' }, { id: 'area-b', name: 'TV' }],
-    background_lightning_video: true, background_lightning_games: false, auto_start: false };
+    background_lightning_video: true, background_lightning_games: false, auto_start: false, auto_start_notification: true };
+  const diagnostics = { ready: { ready: true, supported: true }, bridge: { Connected: true, Authorized: true }, busy: false };
   let writable = true, supported = true, refuse = false;
   const writes = [];
   try {
     await page.route('**/api/stats*', async route => {
       const response = await route.fetch();
       const stats = await response.json();
-      stats.huesyncStreaming = { streaming: true, writable, settings: supported ? settings : {} };
+      stats.huesyncStreaming = { streaming: true, writable, diagnostics, settings: supported ? settings : {} };
       await route.fulfill({ json: stats });
     });
     await page.route('**/api/control', async route => {
@@ -2829,7 +2830,7 @@ async function visitHuesyncSettings(browser, base, problems) {
     if (await page.locator('#huesync-settings img').count()) fail('area markup was interpreted');
     const changes = [
       ['brightness', 60], ['intensity', 3], ['sync_mode', '0'], ['current_ec', 'area-b'],
-      ['background_lightning_video', false], ['background_lightning_games', true], ['auto_start', true]
+      ['background_lightning_video', false], ['background_lightning_games', true], ['auto_start', true], ['auto_start_notification', false]
     ];
     for (const [key, value] of changes) {
       const element = page.locator('#huesync-' + key);
@@ -2845,6 +2846,19 @@ async function visitHuesyncSettings(browser, base, problems) {
     await page.locator('#huesync-brightness').dispatchEvent('change');
     await page.waitForFunction(() => !huesyncSettingsBusy);
     if (await page.locator('#huesync-brightness').inputValue() !== '60') fail('a refused write left an optimistic value visible');
+    settings._stale = ['brightness'];
+    await page.evaluate(() => tick());
+    await page.waitForFunction(() => document.querySelector('#huesync-brightness').disabled);
+    if (!(await page.locator('#row-huesync-brightness').isVisible())) fail('a temporary failure removed the supported control');
+    delete settings._stale;
+    diagnostics.busy = true;
+    await page.evaluate(() => tick());
+    await page.waitForFunction(() => document.querySelector('#btn_huesync').disabled && document.querySelector('#huesync-auto_start').disabled);
+    diagnostics.busy = false;
+    diagnostics.bridge.Authorized = false;
+    await page.evaluate(() => tick());
+    await page.waitForFunction(() => document.querySelector('#huesync-readiness').textContent.includes('authorization'));
+    diagnostics.bridge.Authorized = true;
     writable = false;
     await page.evaluate(() => tick());
     await page.waitForFunction(() => document.querySelector('#huesync-brightness').disabled);

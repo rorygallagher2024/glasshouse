@@ -88,6 +88,11 @@ var HA_ENTITIES = [
   { id: 'huesync_background_lightning_video', type: 'switch', name: 'Hue Sync Background light (video)', cat: 'controls' },
   { id: 'huesync_background_lightning_games', type: 'switch', name: 'Hue Sync Background light (game)', cat: 'controls' },
   { id: 'huesync_auto_start', type: 'switch', name: 'Hue Sync Automatic start', cat: 'controls' },
+  { id: 'huesync_auto_start_notification', type: 'switch', name: 'Hue Sync Automatic start notification', cat: 'controls' },
+  { id: 'huesync_ready', type: 'binary_sensor', name: 'Hue Sync Ready', cat: 'diagnostics' },
+  { id: 'huesync_bridge_connected', type: 'binary_sensor', name: 'Hue Sync Bridge connected', cat: 'diagnostics' },
+  { id: 'huesync_bridge_authorized', type: 'binary_sensor', name: 'Hue Sync Bridge authorized', cat: 'diagnostics' },
+  { id: 'huesync_busy', type: 'binary_sensor', name: 'Hue Sync Busy', cat: 'diagnostics' },
   { id: 'screen_notification', type: 'text', name: 'Screen Notification', cat: 'controls' },
   // Written to, never read back: an automation pushes a JSON string
   // ({"condition":"partlycloudy","temp":14.2}) and Glasshouse Home shows it
@@ -1576,7 +1581,7 @@ function buildEntities(opts) {
 
   if (opts.huesync && opts.huesyncSettings) {
     var hueSettings = opts.huesyncSettings;
-    var hueFields = [["brightness", "number", "Brightness"], ["intensity", "select", "Intensity"], ["sync_mode", "select", "Synchronization mode"], ["current_ec", "select", "Entertainment area"], ["background_lightning_video", "switch", "Background light (video)"], ["background_lightning_games", "switch", "Background light (game)"], ["auto_start", "switch", "Automatic start"]];
+    var hueFields = [["brightness", "number", "Brightness"], ["intensity", "select", "Intensity"], ["sync_mode", "select", "Synchronization mode"], ["current_ec", "select", "Entertainment area"], ["background_lightning_video", "switch", "Background light (video)"], ["background_lightning_games", "switch", "Background light (game)"], ["auto_start", "switch", "Automatic start"], ["auto_start_notification", "switch", "Automatic start notification"]];
     hueFields.forEach(function (field) {
       var key = field[0], type = field[1];
       if (!Object.prototype.hasOwnProperty.call(hueSettings, key)) return;
@@ -1587,6 +1592,9 @@ function buildEntities(opts) {
         value_template: '{{ value_json.' + key + ' | default(none) }}',
         icon: 'mdi:television-ambient-light'
       };
+      payload.availability = [{ topic: topic.state('huesync/settings'),
+        value_template: '{{ "online" if value_json.' + key + ' is not none and "' + key + '" not in (value_json.get("_stale") or [])' +
+          (key === 'current_ec' ? ' and "ec_list" not in (value_json.get("_stale") or [])' : '') + ' else "offline" }}' }];
       if (type === 'number') { payload.min = 0; payload.max = 100; payload.step = 1; payload.unit_of_measurement = '%'; }
       if (type === 'switch') {
         payload.payload_on = 'ON'; payload.payload_off = 'OFF';
@@ -1594,7 +1602,7 @@ function buildEntities(opts) {
       }
       if (key === 'intensity') {
         payload.options = ['Subtle', 'Moderate', 'High', 'Extreme'];
-        payload.value_template = '{{ ["Subtle", "Moderate", "High", "Extreme"][value_json.intensity | int] if value_json.intensity is defined else none }}';
+        payload.value_template = '{{ ["Subtle", "Moderate", "High", "Extreme"][value_json.intensity | int] if value_json.intensity is not none else none }}';
         payload.command_template = '{{ {"Subtle": 0, "Moderate": 1, "High": 2, "Extreme": 3}[value] }}';
       }
       if (key === 'sync_mode') {
@@ -1616,6 +1624,23 @@ function buildEntities(opts) {
         payload.command_template = '{{ ' + JSON.stringify(areaIds) + '[value] }}';
       }
       entities.push({ type: type, id: 'huesync_' + key, payload: payload });
+    });
+  }
+
+  if (opts.huesync && opts.huesyncDiagnostics) {
+    var hueDiagnostics = opts.huesyncDiagnostics;
+    [['ready', 'ready', 'ready', 'Ready'], ['bridge_connected', 'bridge', 'Connected', 'Bridge connected'],
+      ['bridge_authorized', 'bridge', 'Authorized', 'Bridge authorized'], ['busy', 'busy', '', 'Busy']].forEach(function (field) {
+      var value = field[2] ? hueDiagnostics[field[1]] && hueDiagnostics[field[1]][field[2]] : hueDiagnostics[field[1]];
+      if (typeof value !== 'boolean') return;
+      var path = 'value_json.' + field[1] + (field[2] ? '.' + field[2] : '');
+      entities.push({ type: 'binary_sensor', id: 'huesync_' + field[0], payload: {
+        name: 'Hue Sync ' + field[3], entity_category: 'diagnostic',
+        state_topic: topic.state('huesync/diagnostics'),
+        value_template: '{{ "ON" if ' + path + ' == true else "OFF" if ' + path + ' == false else none }}',
+        availability: [{ topic: topic.state('huesync/diagnostics'), value_template:
+          '{{ "online" if ' + path + ' is not none and "' + field[1] + '" not in (value_json.get("_stale") or []) else "offline" }}' }]
+      } });
     });
   }
 

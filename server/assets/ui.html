@@ -798,6 +798,7 @@
     </div>
   </div>
 
+  <p class="prot-desc" id="huesync-readiness" role="status" hidden></p>
   <div class="prot-table" id="huesync-settings" hidden>
     <div class="prot-row" id="row-huesync-brightness" hidden>
       <label class="prot-main" for="huesync-brightness" data-t="adv.huesync.brightness">Brightness</label>
@@ -826,6 +827,10 @@
     <div class="prot-row" id="row-huesync-auto_start" hidden>
       <label class="prot-main" for="huesync-auto_start" data-t="adv.huesync.autostart">Automatic start</label>
       <div class="prot-status"><input type="checkbox" id="huesync-auto_start" onchange="changeHuesyncSetting(this)"></div>
+    </div>
+    <div class="prot-row" id="row-huesync-auto_start_notification" hidden>
+      <label class="prot-main" for="huesync-auto_start_notification" data-t="adv.huesync.autostartnotification">Automatic start notification</label>
+      <div class="prot-status"><input type="checkbox" id="huesync-auto_start_notification" onchange="changeHuesyncSetting(this)"></div>
     </div>
   </div>
 

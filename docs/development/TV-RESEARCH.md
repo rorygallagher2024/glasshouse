@@ -3160,7 +3160,15 @@ current_ec as a quoted ID, and ec_list as an array containing Name and Id.
 Observed `/set` calls carry numeric brightness (40, 50, 60), numeric intensity
 (0, 1, 2), string sync_mode (`0`, `1`), and a plain entertainment-area ID.
 The capture also shows boolean reads for background_lightning_video,
-background_lightning_games and auto_start. Their setters were not captured.
+background_lightning_games and auto_start. Their setters were absent from that initial capture.
 The supplied follow-up confirms brightness 0–100, intensity 0–3 as Subtle,
 Moderate, High, Extreme, and mode 0 Video / 1 Game. Background-light and
-auto-start boolean write payloads remain inferred pending hardware testing.
+auto-start boolean write payloads were initially inferred. A subsequent full
+setup/settings capture confirms `/set` boolean data for both background-light
+keys, auto_start and auto_start_notification, each in both directions. `/sub`
+with `{"subscribe":true}` supplies `{returnValue,key,value}` deltas. Values may
+be native booleans/numbers or JSON-encoded strings. Area changes report busy
+and can take approximately 1–1.24 seconds before completion. Bridge reads expose
+Connected/Authorized independently of the service's ready/supported flags.
+Only these status fields belong in diagnostics; the other bridge fields and
+pairing/support/device data must not be copied into fixtures or logs.

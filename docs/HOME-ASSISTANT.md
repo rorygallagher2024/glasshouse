@@ -468,5 +468,6 @@ The `wake_on_lan.send_magic_packet` action needs `wake_on_lan:` in `configuratio
 
 Hue Sync also discovers supported [sync settings](huesync.md#sync-settings):
 brightness, intensity, Video/Game mode, entertainment area, per-mode background
-light and automatic start. They share retained JSON settings state and use
+light, automatic start and automatic-start notifications. Ready, bridge connected,
+bridge authorized and busy diagnostics are discovered where readable. Controls share retained JSON settings state and use
 separate command topics. The existing streaming entity and topics are preserved.

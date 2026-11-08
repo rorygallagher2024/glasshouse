@@ -1935,5 +1935,19 @@ The spelling `lightning` is the service's own. Values returned as strings are
 JSON-decoded once; malformed or unsupported reads are omitted. Settings share
 a four-second read cache, coalesce concurrent reads, and invalidate overlapping
 pre-write reads. Writes are serialized and confirmed by fresh readback, without
-changing the streaming enable retry algorithm. The boolean write payloads for
-background light and automatic start still need hardware confirmation.
+changing the streaming enable retry algorithm. The fuller retail-app trace confirms boolean writes for background light,
+automatic start and `auto_start_notification`. A live `/sub` stream carries native
+booleans/numbers alongside JSON-encoded strings. An allowlist accepts only sync
+settings and sanitized ready/bridge/busy diagnostics; it discards pairing,
+device and support identifiers. Per-field revisions prevent an older one-shot
+read from overwriting a newer event. Reconnects hydrate full state. A subscription
+is retained only for connected/wanted MQTT or an active dashboard and falls back
+to polling when unavailable.
+
+Temporary read failures preserve supported fields with `_stale` availability;
+explicit unknown-key replies remove a capability. Discovery fingerprints include
+supported keys and area choices, not changing setting values. Writes share one
+operation slot, check known busy/readiness blockers and confirm fresh readback
+with bounded retries. OFF requires fresh confirmation; ON retains its existing
+stable-read/retry strategy. MQTT failures log the allowlisted setting name only,
+without command values or raw service errors.

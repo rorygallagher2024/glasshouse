@@ -96,6 +96,8 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 
 Where Hue Sync reports its settings, the Ambient light section also offers
 brightness, intensity, Video/Game mode, entertainment area, background light for
-each mode, and automatic start. Changes require control permission and readback
+each mode, automatic start and automatic-start notifications. Readiness status
+explains busy, disconnected and unauthorized states; uncertain controls stay
+visible but disabled. Changes require control permission and readback
 confirmation. See [Hue Sync settings](../huesync.md#sync-settings), including the
 background-light and automatic-start hardware-validation status.

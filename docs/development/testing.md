@@ -544,5 +544,24 @@ also runs on Node 0.10 and 0.12.
 `test-huesync-settings.js` covers captured Hue Sync response encodings, native
 write payloads, validation, unavailable settings, rejected and ignored writes,
 control permissions, retained MQTT JSON and discovery. The streaming regression
-suites retain their power-only fixtures. These mocks do not establish the
-background-light or automatic-start write contract on hardware.
+suites retain their power-only fixtures. The fuller retail-app capture establishes the boolean write protocol, but these
+mocks do not establish Glasshouse behavior on hardware.
+
+`test-huesync-events.js` uses synthetic identifiers and diagnostic objects. It
+covers native subscription values, privacy filtering, reconnect hydration,
+read/event races, transient availability, unsupported keys, external busy and
+readiness blockers, shared write serialization, delayed completion, ignored and
+delayed stops, subscription teardown and polling fallback. The dashboard check
+also exercises automatic-start notifications, stale controls remaining visible,
+busy state and authorization guidance. Never add the raw setup capture, pairing
+codes, credentials, bridge/device IDs or real entertainment-area names to tests.
+
+The drift check includes Hue Sync's dynamic entity IDs from the catalogue,
+so the documented settings and diagnostic rows are checked alongside static
+entities. Computed ID prefixes are not treated as complete entity IDs.
+
+Home Assistant discovery validation now includes the synthetic
+`test/fixtures/huesync-settings.json` settings/diagnostics. It renders all twelve
+entities with fresh, stale and missing state and checks the select command
+mappings. This covers the final templates after safe-field rewriting, where
+missing JSON properties become `none` rather than undefined.

@@ -821,6 +821,24 @@ function renderHuesyncSettings(hs) {
   if (!container) return;
   const settings = hs && hs.settings || {};
   lastHuesyncSettings = settings;
+  const diagnostics = hs && hs.diagnostics || {}, stale = settings._stale || [];
+  const notReady = diagnostics.busy === true || diagnostics.ready &&
+    (diagnostics.ready.ready === false || diagnostics.ready.supported === false) || diagnostics.bridge &&
+    (diagnostics.bridge.Connected === false || diagnostics.bridge.Authorized === false);
+  const streamingButton = q('btn_huesync');
+  if (streamingButton) streamingButton.disabled = huesyncSettingsBusy || !!notReady || hs && hs.writable === false;
+  const readiness = q('huesync-readiness');
+  if (readiness) {
+    readiness.hidden = !hs;
+    readiness.textContent = diagnostics.busy === true ? t('adv.huesync.busy', 'Hue Sync is busy')
+      : diagnostics.ready && diagnostics.ready.supported === false ? t('adv.huesync.unsupported', 'Hue Sync is unsupported on this TV')
+      : diagnostics.bridge && diagnostics.bridge.Connected === false ? t('adv.huesync.disconnected', 'Hue Bridge is disconnected')
+      : diagnostics.bridge && diagnostics.bridge.Authorized === false ? t('adv.huesync.unauthorized', 'Hue Bridge needs authorization in the Hue Sync app')
+      : diagnostics.ready && diagnostics.ready.ready === false ? t('adv.huesync.notready', 'Finish setup in the Hue Sync app')
+      : stale.length || (diagnostics._stale || []).length ? t('adv.huesync.stale', 'Some Hue Sync readings are unavailable; retrying')
+      : diagnostics.ready && diagnostics.ready.ready === true && diagnostics.bridge && diagnostics.bridge.Connected === true && diagnostics.bridge.Authorized === true ? t('adv.huesync.ready', 'Hue Sync is ready')
+      : t('adv.huesync.unknown', 'Hue Sync readiness is unknown');
+  }
   container.hidden = Object.keys(settings).length === 0;
   const choices = {
     intensity: [t('adv.huesync.subtle', 'Subtle'), t('adv.huesync.moderate', 'Moderate'), t('adv.huesync.high', 'High'), t('adv.huesync.extreme', 'Extreme')].map((label, index) => ({ value: String(index), label })),
@@ -830,7 +848,7 @@ function renderHuesyncSettings(hs) {
   container.querySelectorAll('input, select').forEach(el => {
     const key = el.id.slice(8), value = settings[key];
     el.closest('.prot-row').hidden = value === undefined || (key === 'current_ec' && !choices.current_ec.length);
-    el.disabled = huesyncSettingsBusy || hs && hs.writable === false;
+    el.disabled = huesyncSettingsBusy || hs && hs.writable === false || !!notReady || stale.includes(key) || key === 'current_ec' && stale.includes('ec_list');
     if (huesyncSettingsBusy || document.activeElement === el) return;
     if (el.tagName === 'SELECT') {
       el.replaceChildren();

@@ -5,7 +5,7 @@ var ha = require('../server/lib/ha');
 var calls = [], published = [], changes = 0, refuse = false, ignore = false, missing = false;
 var values = { streaming: '1', brightness: '50.000000', intensity: '2', sync_mode: '1',
   current_ec: '"area-a"', ec_list: JSON.stringify([{ Id: 'area-a', Name: '<TV>' }, { Id: 'area-b', Name: '<TV>' }]),
-  background_lightning_video: 'true', background_lightning_games: 'false', auto_start: 'false' };
+  background_lightning_video: 'true', background_lightning_games: 'false', auto_start: 'false', auto_start_notification: 'true' };
 function luna(uri, payload, cb, appId) {
   calls.push({ uri: uri, payload: payload });
   assert.strictEqual(appId, moduleHue.APP_ID);
@@ -16,7 +16,7 @@ function luna(uri, payload, cb, appId) {
   cb(missing ? { returnValue: false, errorText: 'Service does not exist' }
     : { returnValue: true, key: payload.key, value: values[payload.key] });
 }
-var hue = moduleHue.init({ luna: luna, installed: function () { return true; }, onAvailableChange: function () { changes++; } });
+var hue = moduleHue.init({ confirmAttempts: 1, luna: luna, installed: function () { return true; }, onAvailableChange: function () { changes++; } });
 hue.attachMqtt({ prefix: 'tv', allowControl: true, client: { connected: true,
   publish: function (topic, payload, retain) { published.push({ topic: topic, payload: payload }); assert.strictEqual(retain, true); } } });
 hue.status(function (status) {
@@ -40,8 +40,8 @@ hue.setSetting('sync_mode', 1, function (r) { assert.strictEqual(r.ok, false); }
 hue.setSetting('__proto__', true, function (r) { assert.strictEqual(r.ok, false); });
 assert.strictEqual(calls.length, before, 'invalid commands never reach Luna');
 hue.setSetting('current_ec', 'unknown', function (r) { assert.strictEqual(r.ok, false); });
-['brightness', 'intensity', 'sync_mode', 'current_ec', 'background_lightning_video', 'background_lightning_games', 'auto_start'].forEach(function (key, index) {
-  var value = [60, 3, '0', 'area-b', false, true, true][index], done = false;
+['brightness', 'intensity', 'sync_mode', 'current_ec', 'background_lightning_video', 'background_lightning_games', 'auto_start', 'auto_start_notification'].forEach(function (key, index) {
+  var value = [60, 3, '0', 'area-b', false, true, true, false][index], done = false;
   hue.setSetting(key, value, function (r) { assert.strictEqual(r.ok, true, key); assert.strictEqual(r.settings[key], value); done = true; });
   assert.ok(done);
   var lastSet = calls.filter(function (c) { return /\/set$/.test(c.uri); }).pop();
@@ -56,7 +56,7 @@ assert.ok(published.some(function (p) { return p.topic === 'tv/state/huesync/set
 var build = ha.buildEntities;
 var entities = build({ pfx: 'tv', huesync: true, huesyncSettings: hue.getSettings() });
 var settingsEntities = entities.filter(function (e) { return e.id.indexOf('huesync_') === 0; });
-assert.strictEqual(settingsEntities.length, 7);
+assert.strictEqual(settingsEntities.length, 8);
 settingsEntities.forEach(function (e) {
   assert.strictEqual(e.payload.state_topic, 'tv/state/huesync/settings');
   assert.ok(e.payload.command_topic.indexOf('tv/command/huesync/') === 0);
@@ -69,12 +69,13 @@ hue.attachMqtt({ allowControl: true });
 hue.handleMqttCommand('huesync/brightness', '70', function (r) { assert.strictEqual(r.ok, true); });
 hue.handleMqttCommand('huesync/auto_start', 'OFF', function (r) { assert.strictEqual(r.ok, true); });
 hue.handleMqttCommand('huesync/auto_start', 'garbage', function (r) { assert.strictEqual(r.ok, false); });
-// Malformed/unsupported settings disappear, rather than inventing off/zero.
+// Transient/malformed reads preserve capability and last-known values, marked stale.
 values.brightness = '50oops'; values.ec_list = '{}'; values.auto_start = 'null';
 hue.refreshAndPublishState(true);
-assert.strictEqual(hue.getSettings().brightness, undefined);
-assert.strictEqual(hue.getSettings().auto_start, undefined);
-assert.strictEqual(hue.getSettings().ec_list, undefined);
+assert.strictEqual(hue.getSettings().brightness, 70);
+assert.ok(hue.getSettings()._stale.indexOf('brightness') !== -1);
+assert.strictEqual(hue.getSettings().auto_start, false);
+assert.strictEqual(hue.getSettings().ec_list.length, 2);
 missing = true;
 hue.refreshAndPublishState(true);
 assert.deepEqual(hue.getSettings(), {});

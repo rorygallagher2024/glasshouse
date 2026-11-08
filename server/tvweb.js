@@ -663,6 +663,7 @@ function huesyncWanted() {
 }
 var huesync = huesyncTransport.init({
   luna: luna,
+  Subscription: lunaTransport.Subscription,
   pollIntervalMs: CONFIG.huesync && CONFIG.huesync.pollIntervalMs,
   wanted: huesyncWanted,
   onAvailableChange: function () { huesyncChanged(); }
@@ -1295,6 +1296,7 @@ function setupHomeAssistant() {
       piccap: piccapWanted() && piccap.getState() !== null,
       huesync: huesyncWanted() && huesync.getState() !== null,
       huesyncSettings: huesync.getSettings(),
+      huesyncDiagnostics: huesync.getDiagnostics(),
       iconBaseUrl: iconServer.baseUrl()
     });
 

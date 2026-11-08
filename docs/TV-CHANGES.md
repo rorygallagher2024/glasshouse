@@ -228,4 +228,7 @@ Hue Sync setting controls call the installed app's own service to change its
 brightness, intensity, synchronization mode, entertainment area, per-mode
 background light and automatic start. They do not write Glasshouse configuration
 or enter backups: the settings belong to the Hue Sync app. Background-light and
-auto-start boolean writes remain to be confirmed on hardware.
+auto-start setters are confirmed by a retail-app capture; Glasshouse itself
+still requires hardware testing. Automatic-start notifications use the same
+boolean setter. A read-only Hue Sync subscription updates local/MQTT status;
+pairing, reset, analytics and logging-upload actions are not invoked.
