@@ -5141,7 +5141,7 @@
  },
  "oled.cycles.failures": {
   "from": "Refresher failure alerts",
-  "text": "Alertes d'échec du rafraîchisseur"
+  "text": "Alertes d'échec du nettoyage des pixels"
  },
  "oled.cycles.failures.desc": {
   "from": "Maintenance passes the TV recorded as not finishing. Normally zero.",
@@ -5157,7 +5157,7 @@
  },
  "oled.cycles.refresher": {
   "from": "Pixel refresher cycles",
-  "text": "Cycles du rafraîchisseur de pixels"
+  "text": "Cycles de nettoyage des pixels"
  },
  "oled.gsr": {
   "from": "Global Stress Reduction",
@@ -5225,7 +5225,7 @@
  },
  "oled.refresherIn": {
   "from": "Pixel refresher in",
-  "text": "Rafraîchisseur de pixels dans"
+  "text": "Nettoyage des pixels dans"
  },
  "oled.shift": {
   "from": "Screen Shift",
@@ -7293,11 +7293,11 @@
  },
  "srv.ha.cat.oled": {
   "from": "OLED Care",
-  "text": "Entretien OLED"
+  "text": "Maintenance OLED"
  },
  "srv.ha.cat.oled.desc": {
   "from": "Panel on-time, pixel refresher countdowns, and burn-in protections.",
-  "text": "Temps d'allumage de la dalle, comptes à rebours du rafraîchisseur de pixels, et protections contre la rémanence."
+  "text": "Temps d'allumage de la dalle, comptes à rebours du nettoyage des pixels, et protections contre la rémanence."
  },
  "srv.ha.cat.system": {
   "from": "System & Telemetry",
@@ -9825,7 +9825,7 @@
  },
  "tab.oledCare": {
   "from": "OLED Care",
-  "text": "Entretien OLED"
+  "text": "Maintenance OLED"
  },
  "tab.picture": {
   "from": "Picture",
@@ -10873,7 +10873,7 @@
  },
  "tv.oled.cancelAScheduledRefresher": {
   "from": "Cancel a scheduled refresher",
-  "text": "Annuler un rafraîchissement programmé"
+  "text": "Annuler un nettoyage des pixels programmé"
  },
  "tv.oled.cancelAScheduledRefresher.hint": {
   "from": "Clears a queued calibration so the TV does not spend an hour on it after the next switch-off.",
@@ -10925,15 +10925,15 @@
  },
  "tv.oled.refresherCancelled": {
   "from": "Refresher cancelled",
-  "text": "Rafraîchissement annulé"
+  "text": "Nettoyage des pixels annulé"
  },
  "tv.oled.refresherScheduled": {
   "from": "Refresher scheduled",
-  "text": "Rafraîchissement programmé"
+  "text": "Nettoyage des pixels programmé"
  },
  "tv.oled.scheduleAPixelRefresher": {
   "from": "Schedule a pixel refresher",
-  "text": "Programmer un rafraîchissement de pixels"
+  "text": "Programmer un nettoyage des pixels"
  },
  "tv.oled.scheduleAPixelRefresher.hint": {
   "from": "Queues the long calibration for the next time the TV is switched off. It cannot run while the screen is on.",
