@@ -14,8 +14,12 @@ open.
 
 [example-launcher.html](example-launcher.html) is a whole launcher in one file:
 the TV's apps and inputs as tiles, moved through with the arrow keys and opened
-with OK. Download it, upload it on the Home tab under **Custom launcher**, and
-change it from there.
+with OK. Download it, upload it on the Home tab under **Custom**, and
+change it from there. Glasshouse Minimal, the plainest home screen that comes
+with Glasshouse, is another, as a launcher in one file:
+[`server/assets/home-minimal.html`](https://github.com/rorygallagher2024/glasshouse/blob/main/server/assets/home-minimal.html).
+
+![Glasshouse Minimal on a C2 (webOS 9.2.2): Apps and Inputs, with the apps listed as names on black](../screenshots/launcher-minimal.jpg)
 
 ## What can be uploaded
 
@@ -59,6 +63,33 @@ For webOS 3 and 4 that means ES5 (no `let`, arrow functions or
 template literals) and CSS without `gap` in flexbox, grid or custom
 properties. Glasshouse's own pages for the TV are written that way.
 
+### Every TV Glasshouse Home runs on
+
+A launcher that should run everywhere Glasshouse Home does, from webOS 3 to
+11, keeps to Chromium 38: the syntax above, no calls such as `fetch`,
+`Object.assign`, `String.includes`, `Element.closest`, `Map` or `Set`, and no
+CSS such as grid, `gap`, custom properties, `min()`, `max()` or `clamp()`.
+`scripts/check-es5.py` in Glasshouse's repository checks for these in a page
+named `index.html`:
+
+```
+python3 scripts/check-es5.py path/to/index.html
+```
+
+It reads code, not what the code does, so some things only a TV shows:
+
+- **Newer calls the check does not know,** such as `NodeList.forEach` or
+  `Element.append` (Chromium 51 and 54). Loop over a `NodeList` by index, and
+  use `appendChild`.
+- **The screen:** lay it out in `vh` and `vw`, or percentages, so that it fills
+  the TV's screen as Glasshouse Home does, on a 4K panel or not.
+- **The remote:** every TV has the arrow keys, OK and Back; not every TV has a
+  Magic Remote's pointer, so nothing should need it.
+- **Memory:** a webOS 4 TV has far less than a newer one to share among the
+  apps, and the launcher stays open behind every app.
+
+Try it on the oldest TV you have.
+
 **Keys** arrive as `keydown` events: the arrows are 37 to 40, OK is 13, Back is
 461, and the red, green, yellow and blue buttons are 403 to 406. Back has no
 page history to go back to, so a launcher can use it as it likes. Home is
@@ -76,13 +107,20 @@ calls stay as they are across Glasshouse releases; the server's own routes
 behind them may change.
 
 `Glasshouse.catalogue(cb)`
-:   The TV's apps and inputs. `result.apps` is a list of
-    `{ id, title, icon, hidden }`: `icon` is a URL for an `<img>`, or null, and
-    `hidden` is true for apps hidden on Glasshouse Home, such as LG's
-    promotions. `result.inputs` is a list of `{ id, title, port, tuner, unused }`:
-    each HDMI port, or each device behind it that the TV knows by HDMI-CEC,
-    with `tuner` true for the TV's own tuner and `unused` true for a port with
-    nothing plugged in.
+:   The TV's apps and inputs, in the order the owner arranged them on the
+    Home tab, which applies to a custom launcher as it does to Glasshouse Home.
+    `result.apps` is a list of `{ id, title, icon, hidden, folder }`: `icon` is
+    a URL for an `<img>`, or null; `hidden` is true for apps the owner hid,
+    such as LG's promotions, which a launcher should leave out; and `folder`
+    is true for apps put in More apps, which a launcher can show apart or
+    after the rest. A web page saved to the Home screen is an app here too,
+    with an id starting `page:`, and opens in the TV's browser.
+    `result.inputs` is a list of
+    `{ id, title, port, tuner, unused, hidden }`: each HDMI port, or each
+    device behind it that the TV knows by HDMI-CEC, with `tuner` true for the
+    TV's own tuner, `unused` true for a port with nothing plugged in, and
+    `hidden` true for one the owner hid, or an unused one where they chose to
+    leave those out.
 
 `Glasshouse.channels(cb)`
 :   The tuner's channels, as `{ id, number, title, radio }`, in the TV's order.

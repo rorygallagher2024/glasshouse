@@ -12,7 +12,7 @@ let homeWallTimer = null;
 let homeWallUploading = false;
 // null until the server says; false on a TV Glasshouse Home is not offered on.
 let homeAvailable = null;
-// The Custom launcher section, shown while one is set up or once its button is pressed.
+// The Custom launcher section, shown while one is kept or once its button is pressed.
 let homeLauncherOpen = false;
 let homeLauncherBusy = false;
 
@@ -76,7 +76,22 @@ function homeWritable() { return !!(!homeSaving && homeStatus && (homeStatus.sup
 // A launcher of the owner's own is the TV's Home, in Glasshouse Home's place.
 function homeLauncherOn() {
   const st = homeStatus;
-  return !!(st && st.enabled && st.launcher && st.launcher.chosen);
+  return !!(st && st.enabled && st.launchers && st.launchers.chosen);
+}
+
+// Every launcher on offer, Minimal among them.
+function homeLaunchersAll() {
+  return (homeStatus && homeStatus.launchers && homeStatus.launchers.launchers) || [];
+}
+
+// Those of the owner's own, which the Custom launcher section lists.
+function homeLaunchersKept() {
+  return homeLaunchersAll().filter(l => l.source !== 'builtin');
+}
+
+function homeLauncherChosen() {
+  const id = homeStatus && homeStatus.launchers && homeStatus.launchers.chosen;
+  return homeLaunchersAll().filter(l => l.id === id)[0] || null;
 }
 
 function renderHomeCustom(autoVal) {
@@ -117,10 +132,11 @@ function renderHome() {
     state.textContent = t('home.unavailable', 'Not available on this TV');
     desc.textContent = st.supported.reason || '';
   } else if (homeLauncherOn()) {
-    state.textContent = t('home.launcher.isOn', '{title} is the TV’s Home', { title: st.launcher.title });
+    state.textContent = t('home.launcher.isOn', '{title} is the TV’s Home', { title: homeLauncherChosen().title });
+    const title = homeLauncherChosen().title;
     desc.textContent = st.lgHomeOpen
-      ? t('home.launcher.isOnLgOpen', 'LG’s Home is open for now. The custom launcher comes back when something else is opened, or Home is pressed.')
-      : t('home.launcher.isOnDesc', 'The custom launcher opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.');
+      ? t('home.launcher.isOnLgOpenTitle', 'LG’s Home is open for now. {title} comes back when something else is opened, or Home is pressed.', { title })
+      : t('home.launcher.isOnDescTitle', '{title} opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.', { title });
   } else if (st.enabled) {
     state.textContent = t('home.isOn', 'Glasshouse Home is the TV’s Home');
     desc.textContent = st.lgHomeOpen
@@ -138,7 +154,10 @@ function renderHome() {
   // (its tile, or holding Home) leaves Glasshouse Home the TV's Home.
   if (dot) dot.className = 'ps-dot' + (st.restorePending ? ' warn' : st.enabled ? (st.active || st.lgHomeOpen ? ' good' : ' warn') : '');
   const more = q('home-more');
-  if (more) more.hidden = !st.supported.ok || !st.enabled || homeLauncherOn();
+  if (more) {
+    more.hidden = !st.supported.ok || !st.enabled;
+    more.classList.toggle('for-launcher', homeLauncherOn());
+  }
   renderHomeLauncher();
   const autoRow = q('home-autolaunch-row');
   const autoLeased = typeof getLease === 'function' ? getLease('homeAutoLaunch', st.homeAutoLaunch) : undefined;
@@ -247,7 +266,20 @@ function renderHome() {
     });
     hide.disabled = !homeWritable();
   }
+  /*
+   * The choice of launcher: the one in use marked, and one whose press waits
+   * for a second marked as waiting. Each button keeps its name.
+   */
   const lgBtn = q('home-mode-lg');
+  const chosenId = homeLauncherOn() ? st.launchers.chosen : null;
+  const again = t('home.pressAgain', 'Press again to confirm');
+  const choice = (el, name, on, armed, hidden, disabled) => {
+    if (!el) return;
+    el.hidden = hidden;
+    el.disabled = disabled;
+    el.className = on ? 'on' : armed ? 'warn' : '';
+    el.textContent = armed ? again : name;
+  };
   if (btn) {
     const wantOn = !(st.enabled || st.restorePending);
     const armed = homeArmed === (wantOn ? 'on' : 'off');
@@ -255,31 +287,17 @@ function renderHome() {
       if (lgBtn) lgBtn.hidden = true;
       btn.disabled = !homeWritable();
       btn.className = armed ? 'warn' : '';
-      btn.textContent = armed ? t('home.confirmOff', 'Press again to use LG Home') : t('home.retryRestore', 'Retry restoring LG Home');
+      btn.textContent = armed ? again : t('home.retryRestore', 'Retry restoring LG Home');
     } else {
-      if (lgBtn) {
-        lgBtn.hidden = false;
-        lgBtn.disabled = !homeWritable();
-        lgBtn.className = !st.enabled ? 'on' : armed ? 'warn' : '';
-        lgBtn.textContent = st.enabled
-          ? (armed ? t('home.confirmOff', 'Press again to use LG Home') : t('home.switchOff', 'Use LG Home'))
-          : t('home.lgHome', 'LG Home');
-      }
-      btn.disabled = !homeWritable();
-      btn.className = st.enabled && !homeLauncherOn() ? 'on' : armed ? 'warn' : '';
-      btn.textContent = !st.enabled || homeLauncherOn()
-        ? (armed ? t('home.confirmOn', 'Press again to switch on') : t('home.switchOn', 'Use Glasshouse Home'))
-        : t('home.title', 'Glasshouse Home');
+      choice(lgBtn, t('home.lgHome', 'LG Home'), !st.enabled, st.enabled && armed, false, !homeWritable());
+      choice(btn, t('home.title', 'Glasshouse Home'), st.enabled && !chosenId, !st.enabled && armed, false, !homeWritable());
     }
   }
-  const launcherBtn = q('home-mode-launcher');
-  if (launcherBtn) {
-    launcherBtn.hidden = !!st.restorePending || !st.supported.ok;
-    const armed = homeArmed === 'launcher';
-    launcherBtn.disabled = !homeWritable() || homeLauncherBusy;
-    launcherBtn.className = homeLauncherOn() ? 'on' : armed ? 'warn' : '';
-    launcherBtn.textContent = armed ? t('home.confirmOn', 'Press again to switch on') : t('home.launcher.button', 'Custom launcher');
-  }
+  const unavailable = !!st.restorePending || !st.supported.ok;
+  choice(q('home-mode-minimal'), t('home.minimalName', 'Glasshouse Minimal'), chosenId === 'minimal', homeArmed === 'use:minimal',
+    unavailable || !homeLaunchersAll().some(l => l.id === 'minimal'), !homeWritable() || homeLauncherBusy);
+  choice(q('home-mode-launcher'), t('home.custom', 'Custom'), !!chosenId && chosenId !== 'minimal', homeArmed === 'use:own',
+    unavailable, !homeWritable() || homeLauncherBusy);
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
   renderHomeRows();
@@ -441,6 +459,8 @@ function renderHomeRows() {
     const tiles = order.map((id, i) => {
       const it = homeItem(kind, id);
       if (!it) return '';
+      // A custom launcher offers LG's Home in its own way, not as a tile from this row.
+      if (id === 'lg-home' && homeLauncherOn()) return '';
       const hidden = kind !== 'ch' && homeLayout.hidden[kind].includes(id);
       const folded = kind === 'app' && (homeLayout.folder || []).includes(id);
       // Hidden or not, an input with nothing plugged in is left out by the row's switch.
@@ -632,6 +652,8 @@ function homeResetLayout() { homeSaveLayout({ reset: true }); }
 
 function homeChooseMode(wantOn) {
   if (!homeStatus) return;
+  // Custom's settings belong to Custom alone.
+  homeLauncherOpen = false;
   if (homeStatus.restorePending) { homeSwitch(); return; }
   // From the custom launcher to Glasshouse Home: the same place, another page, so no second press.
   if (wantOn && homeLauncherOn()) { homeLauncherChoose(false); return; }
@@ -662,74 +684,89 @@ async function homeSwitch() {
   if (activeBtn) activeBtn.textContent = t('apps.service.updating', 'Updating…');
   try {
     // Glasshouse Home's own button: the custom launcher left set up, but not chosen.
-    if (want === 'on' && homeStatus.launcher && homeStatus.launcher.chosen) await homePost('/api/home/launcher', { choose: false });
+    if (want === 'on' && homeStatus.launchers && homeStatus.launchers.chosen) await homePost('/api/home/launcher', { choose: false });
     await homePost(want === 'on' ? '/api/home/enable' : '/api/home/disable');
   } catch (e) { showErr(e.message); }
   loadHome();
 }
 
 /*
- * The Custom launcher button: with none set up, it opens the section to set
- * one up; with Glasshouse Home on, it swaps at once; from LG's Home, it takes
- * a second press, as Glasshouse Home's own button does.
+ * Custom: with a launcher of the owner's own set up, it is chosen as the
+ * others are; either way its settings open below, to set one up or change it.
  */
 function homeChooseLauncher() {
-  const st = homeStatus;
-  if (!st || !homeWritable() || homeLauncherOn()) return;
-  if (!st.launcher) {
-    homeLauncherOpen = true;
-    renderHome();
-    const box = q('home-launcher');
-    if (box) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
-    return;
-  }
-  if (st.enabled) { homeLauncherChoose(true); return; }
-  if (homeArmed !== 'launcher') {
-    homeArmed = 'launcher';
+  if (!homeStatus) return;
+  const wasOpen = homeLauncherOpen;
+  homeLauncherOpen = true;
+  if (homeLaunchersKept().some(l => l.id === 'own')) homeLauncherUse('own');
+  else renderHome();
+  const box = q('home-launcher');
+  if (box && !wasOpen) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+
+/*
+ * A launcher kept: with Glasshouse Home on it swaps at once; from LG's Home it
+ * takes a second press, as Glasshouse Home's own button does.
+ */
+function homeLauncherUse(id) {
+  if (!homeWritable() || homeLauncherBusy) return;
+  if (id !== 'own') homeLauncherOpen = false;
+  if (homeLauncherOn() && homeStatus.launchers.chosen === id) return;
+  if (homeStatus.enabled) return homeLauncherChoose(id);
+  if (homeArmed !== 'use:' + id) {
+    homeArmed = 'use:' + id;
     clearTimeout(homeArmTimer);
     homeArmTimer = setTimeout(() => { homeArmed = null; renderHome(); }, 5000);
     return renderHome();
   }
   homeArmed = null;
   clearTimeout(homeArmTimer);
-  homeLauncherChoose(true);
+  homeLauncherChoose(id);
 }
 
-async function homeLauncherChoose(want) {
+async function homeLauncherChoose(id) {
   homeLauncherBusy = true;
   renderHome();
   try {
-    await homePost('/api/home/launcher', { choose: want });
-    if (want && !homeStatus.enabled) await homePost('/api/home/enable');
+    await homePost('/api/home/launcher', { choose: id });
+    if (id !== false && !homeStatus.enabled) await homePost('/api/home/enable');
   } catch (e) { showErr(e.message); }
   homeLauncherBusy = false;
   await loadHome();
+}
+
+function homeLauncherDesc(l) {
+  if (l.kind === 'web') return t('home.launcher.nowWeb', 'Web page: {address}', { address: l.address });
+  return l.files === 1
+    ? t('home.launcher.nowAppOne', 'Uploaded: one file, {size}', { size: fmtSize(l.bytes) })
+    : t('home.launcher.nowApp', 'Uploaded: {files} files, {size}', { files: l.files, size: fmtSize(l.bytes) });
 }
 
 function renderHomeLauncher() {
   const st = homeStatus;
   const box = q('home-launcher');
   if (!box || !st) return;
-  const lc = st.launcher;
-  box.hidden = !st.supported.ok || !!st.restorePending || !(lc || homeLauncherOpen);
-  const row = q('home-launcher-now-row');
-  if (row) row.hidden = !lc;
-  if (lc) {
-    q('home-launcher-now').textContent = lc.title;
-    q('home-launcher-now-desc').textContent = lc.kind === 'web'
-      ? t('home.launcher.nowWeb', 'Web page: {address}', { address: lc.address })
-      : lc.files === 1
-        ? t('home.launcher.nowAppOne', 'Uploaded: one file, {size}', { size: fmtSize(lc.bytes) })
-        : t('home.launcher.nowApp', 'Uploaded: {files} files, {size}', { files: lc.files, size: fmtSize(lc.bytes) });
-  }
+  const kept = homeLaunchersKept();
+  // Only while Custom is the TV's Home, or its button was pressed to set one up.
+  const customOn = homeLauncherOn() && st.launchers.chosen !== 'minimal';
+  box.hidden = !st.supported.ok || !!st.restorePending || !(customOn || homeLauncherOpen);
+  if (box.hidden) return;
   const busy = !homeWritable() || homeLauncherBusy;
-  ['home-launcher-remove', 'home-launcher-pick', 'home-launcher-save'].forEach(id => { const b = q(id); if (b) b.disabled = busy; });
+  const chosen = st.enabled && st.launchers ? st.launchers.chosen : null;
+  q('home-launchers').innerHTML = kept.map(l => `<div class="prot-row">
+      <div class="prot-main"><div class="prot-title">${esc(l.title)}</div><div class="prot-desc">${esc(homeLauncherDesc(l))}</div></div>
+      <div class="prot-status">
+        <button type="button" class="pill idle" ${busy ? 'disabled' : ''} onclick="homeLauncherRemove('${esc(l.id)}')">${esc(t('home.launcher.remove', 'Remove'))}</button>
+      </div>
+    </div>`).join('');
+  ['home-launcher-pick', 'home-launcher-save'].forEach(id => { const b = q(id); if (b) b.disabled = busy; });
   // Held to what installing an app from a file is.
   const uploadOff = st.launcherUpload === false;
   q('home-launcher-upload-off').hidden = !uploadOff;
   if (uploadOff) q('home-launcher-pick').disabled = true;
   const url = q('home-launcher-url');
-  if (url && lc && lc.kind === 'web' && !url.value && document.activeElement !== url) url.value = lc.address;
+  const ownWeb = kept.filter(l => l.id === 'own' && l.kind === 'web')[0];
+  if (url && ownWeb && !url.value && document.activeElement !== url) url.value = ownWeb.address;
 }
 
 function homeLauncherPick() {
@@ -738,14 +775,14 @@ function homeLauncherPick() {
   input.click();
 }
 
-// Set up, it becomes the TV's Home at once where Glasshouse Home already is; from LG's Home, the button says so.
-async function homeLauncherDone(r) {
+// Your own, set up: it becomes the TV's Home at once where Glasshouse Home already is.
+async function homeLauncherDone() {
   const note = q('home-launcher-note');
   if (homeStatus.enabled) {
-    if (!r.launcher.chosen) await homePost('/api/home/launcher', { choose: true });
+    await homePost('/api/home/launcher', { choose: 'own' });
     note.textContent = t('home.launcher.doneOn', 'Done. The TV’s Home shows it within a few seconds.');
   } else {
-    note.textContent = t('home.launcher.doneOff', 'Done. Press Custom launcher above to make it the TV’s Home.');
+    note.textContent = t('home.launcher.doneOffCustom', 'Done. Press Custom above, then again, to make it the TV’s Home.');
   }
 }
 
@@ -763,7 +800,7 @@ async function homeLauncherPicked(input) {
     });
     const r = await res.json();
     if (!res.ok || !r.ok) throw new Error(r.error || t('home.launcher.uploadFailed', 'The launcher could not be uploaded.'));
-    await homeLauncherDone(r);
+    await homeLauncherDone();
   } catch (e) { note.textContent = e.message; }
   homeLauncherBusy = false;
   await loadHome();
@@ -776,22 +813,22 @@ async function homeLauncherSaveAddress() {
   note.textContent = '';
   renderHome();
   try {
-    const r = await homePost('/api/home/launcher', { address: q('home-launcher-url').value.trim() });
-    await homeLauncherDone(r);
+    await homePost('/api/home/launcher', { address: q('home-launcher-url').value.trim() });
+    await homeLauncherDone();
   } catch (e) { note.textContent = e.message; }
   homeLauncherBusy = false;
   await loadHome();
 }
 
 // Removed while it is the TV's Home, Glasshouse Home takes its place.
-async function homeLauncherRemove() {
+async function homeLauncherRemove(id) {
   if (!homeWritable() || homeLauncherBusy) return;
   homeLauncherBusy = true;
   q('home-launcher-note').textContent = '';
   renderHome();
   try {
-    await homePost('/api/home/launcher', { remove: true });
-    q('home-launcher-url').value = '';
+    await homePost('/api/home/launcher', { remove: id });
+    if (id === 'own') q('home-launcher-url').value = '';
   } catch (e) { q('home-launcher-note').textContent = e.message; }
   homeLauncherBusy = false;
   await loadHome();
@@ -831,7 +868,7 @@ function homePreviewOption(field) {
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.
-const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos']];
+const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos'], ['showWeather', 'home-show-weather']];
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });

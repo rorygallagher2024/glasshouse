@@ -640,11 +640,16 @@ function optionRows(d) {
       r.push(logo);
     }
   }
-  if (d.deviceDetection !== undefined || dev.length) r.push(head(t('adv.devices', 'Devices')));
+  if (d.deviceDetection !== undefined || d.deviceScans !== undefined || dev.length) r.push(head(t('adv.devices', 'Devices')));
   for (var di = 0; di < dev.length; di++) r.push(lgRow(dev[di]));
   if (d.deviceDetection !== undefined) {
     r.push(toggle(t('adv.deviceDetection', 'Auto device detection'), d.deviceDetection, 'deviceDetection',
-      t('tv.options.deviceDetection.hint', 'Finds devices to show on the Home Dashboard and control: a set-top box, and smart lights, plugs and switches. Newer TVs look up every address on your home network each time they switch on to do it. Switched off, the scans stop and the TV no longer finds devices by itself.')));
+      t('tv.options.deviceDetection.hintLg', 'LG\u2019s own setting: finds devices to show on the Home Dashboard and control, a set-top box and smart lights, plugs and switches. On some TVs, webOS 11 among them, the TV still looks up every address on your home network with this off; Network device scans stops that.')));
+  }
+  // Glasshouse's own, beside LG's: the scans themselves, held down where off.
+  if (d.deviceScans !== undefined) {
+    r.push(toggle(t('adv.deviceScans', 'Network device scans'), d.deviceScans, 'deviceScans',
+      t('tv.options.deviceScans.hint', 'The TV looking up every address on your home network, which a network-wide ad blocker shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG\u2019s device setup. Off also stops the Magic Remote controlling a set-top box through LG\u2019s universal control.')));
   }
   if (lights.standby !== undefined || lights.hasLogo) {
     r.push(head(t('adv.frontLights', 'Front lights')));
@@ -1078,9 +1083,10 @@ function lgHomeRows(d) {
 function glasshouseHomeRows(d) {
   var r = [head(t('home.title', 'Glasshouse Home'))];
   var can = d.writable !== false;
-  // A launcher of the owner's own, set up on the web dashboard, in Glasshouse Home's place.
-  var lc = d.supported && d.supported.ok && !d.restorePending ? d.launcher : null;
-  var launcherOn = !!(lc && lc.chosen && d.enabled);
+  // The launchers kept for Glasshouse Home's place.
+  var kept = d.supported && d.supported.ok && !d.restorePending && d.launchers ? d.launchers.launchers : [];
+  var chosenId = d.enabled && d.launchers ? d.launchers.chosen : null;
+  var launcherOn = !!chosenId;
   r.push({ label: d.restorePending ? t('home.retryRestore', 'Retry restoring LG Home') : t('home.title', 'Glasshouse Home'),
            value: d.restorePending ? t('home.restorePending', 'LG Home restoration is incomplete') : d.enabled ? t('common.on', 'On') : t('common.off', 'Off'), cls: d.enabled ? 'on' : 'off',
            act: can ? 'homeSwitch' : null, on: d.enabled || d.restorePending,
@@ -1090,12 +1096,16 @@ function glasshouseHomeRows(d) {
                  : t('home.isOffDesc', 'Nothing of LG\u2019s is changed: Glasshouse Home is laid over LG\u2019s Home while on, and switching off takes it away.'),
            warn: d.supported && d.supported.restartsApps
              ? t('home.restartsApps', 'On this TV, switching Glasshouse Home on or off, or holding Home for LG\u2019s Home, restarts the TV\u2019s app manager, which closes the apps that are open.') : undefined });
-  if (lc) {
-    r.push({ label: t('tv.home.launcher', 'Custom launcher: {title}', { title: lc.title }),
-             value: launcherOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: launcherOn ? 'on' : 'off',
-             act: can ? 'homeLauncher' : null, on: launcherOn, enabled: !!d.enabled,
-             press: launcherOn ? t('tv.home.launcher.off', 'Press OK to use Glasshouse Home') : t('tv.home.launcher.on', 'Press OK to use the custom launcher'),
-             hint: t('tv.home.launcher.hint', 'Your own home screen, set up on the Home tab of the web dashboard, shown in Glasshouse Home\u2019s place.') });
+  for (var li = 0; li < kept.length; li++) {
+    var lc = kept[li], lcOn = lc.id === chosenId, mini = lc.source === 'builtin';
+    r.push({ label: mini ? t('home.minimalName', 'Glasshouse Minimal') : t('tv.home.launcher', 'Custom launcher: {title}', { title: lc.title }), key: lc.id,
+             title: mini ? t('home.minimalName', 'Glasshouse Minimal') : lc.title,
+             value: lcOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: lcOn ? 'on' : 'off',
+             act: can ? 'homeLauncher' : null, on: lcOn, enabled: !!d.enabled,
+             press: lcOn ? t('tv.home.launcher.off', 'Press OK to use Glasshouse Home')
+                    : mini ? t('tv.home.minimal.on', 'Press OK to use Minimal') : t('tv.home.launcher.on', 'Press OK to use the custom launcher'),
+             hint: mini ? t('home.minimalDesc', 'Glasshouse’s plainest home screen: the TV’s apps and inputs as two lists of names on black, and the time.')
+                   : t('tv.home.launcher.hint', 'Your own home screen, set up on the Home tab of the web dashboard, shown in Glasshouse Home\u2019s place.') });
   }
   if (!d.enabled || launcherOn) return r;
   r.push(head(t('home.customisation', 'Home customisation')));
@@ -1118,7 +1128,8 @@ function glasshouseHomeRows(d) {
                  ['showLastOn', t('home.showLast', 'Last watched'), t('home.showLastDesc', 'At the top of Glasshouse Home and on the input it was on: what the TV last showed.')],
                  ['showAppCount', t('home.showAppCount', 'App count'), t('home.showAppCountDesc', 'Beside the Apps row: how many of the TV\u2019s apps it shows.')],
                  ['showCec', t('home.showCec', 'CEC addresses'), t('home.showCecDesc', 'On each input\u2019s tile: the HDMI-CEC address of the device behind it.')],
-                 ['showTvLogos', t('home.showTvLogos', 'Channel logos'), t('home.showTvLogosDesc', 'On Internet TV: the playlist\u2019s logo for each channel. Off shows the channel\u2019s initials.')]];
+                 ['showTvLogos', t('home.showTvLogos', 'Channel logos'), t('home.showTvLogosDescName', 'On Internet TV: the playlist\u2019s logo for each channel. Off shows the channel\u2019s name in its place.')],
+                 ['showWeather', t('home.showWeather', 'Weather'), t('home.showWeatherDesc', 'Next to the clock: the weather Home Assistant sends, once an automation sends it.')]];
     // The live preview and, while it is on, its options.
     var pvRows = [['livePreview', t('home.livePreview', 'Live preview'), t('home.livePreviewDesc', 'A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.')]];
     // Neither option plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
@@ -3234,7 +3245,7 @@ function activate() {
     case 'homeSwitch':
       if (confirmFirst(r, r.on ? t('home.confirmOff', 'Press again to use LG Home') : t('home.confirmOn', 'Press again to switch on'))) return;
       // Switched on from here, it is Glasshouse Home's own view, not a custom launcher left chosen.
-      if (!r.on && homeData && homeData.launcher && homeData.launcher.chosen) {
+      if (!r.on && homeData && homeData.launchers && homeData.launchers.chosen) {
         return fetch('/api/home/launcher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ choose: false }) })
           .then(function () { sendPost('/api/home/enable', {}, t('tv.home.on', 'Glasshouse Home is now the TV\u2019s Home')); });
       }
@@ -3247,14 +3258,14 @@ function activate() {
       if (!r.on && !r.enabled && confirmFirst(r, t('home.confirmOn', 'Press again to switch on'))) return;
       r.value = t('apps.service.updating', 'Updating\u2026');
       render();
-      if (r.on || r.enabled) return sendPost('/api/home/launcher', { choose: !r.on }, r.on ? t('tv.home.on', 'Glasshouse Home is now the TV\u2019s Home') : t('tv.home.launcher.now', 'The custom launcher is now the TV\u2019s Home'));
+      if (r.on || r.enabled) return sendPost('/api/home/launcher', { choose: r.on ? false : r.key }, r.on ? t('tv.home.on', 'Glasshouse Home is now the TV\u2019s Home') : t('home.launcher.isOn', '{title} is the TV\u2019s Home', { title: r.title }));
       busy = true;
-      return fetch('/api/home/launcher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ choose: true }) })
+      return fetch('/api/home/launcher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ choose: r.key }) })
         .then(function (res) { return res.json(); })
         .then(function (res) {
           busy = false;
           if (!res || !res.ok) { flash((res && res.error) || t('tv.failed', 'That did not work')); return fetchTab(true); }
-          sendPost('/api/home/enable', {}, t('tv.home.launcher.now', 'The custom launcher is now the TV\u2019s Home'));
+          sendPost('/api/home/enable', {}, t('home.launcher.isOn', '{title} is the TV\u2019s Home', { title: r.title }));
         })
         .catch(function () { busy = false; flash(t('tv.failed', 'That did not work')); });
     case 'homeHideLg':
@@ -3383,6 +3394,8 @@ function activate() {
       return send({ action: 'homeAutoLaunch', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'deviceDetection':
       return send({ action: 'deviceDetection', value: !r.on }, r.on ? t('tv.flash.detectionOff', 'Device detection turned off') : t('tv.flash.detectionOn', 'Device detection turned on'));
+    case 'deviceScans':
+      return send({ action: 'deviceScans', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'alwaysReady':
       return send({ action: 'alwaysReady', value: !r.on }, r.on ? t('tv.flash.willSleep', 'Will sleep when off') : t('tv.flash.willStay', 'Will stay connected when off'));
     case 'alwaysReadyScreen':

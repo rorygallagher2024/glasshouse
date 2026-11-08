@@ -192,7 +192,7 @@
 
     <div class="grp-sec" id="remoteblock" data-col="2" hidden>
       <div class="grp"><span data-t="metrics.remote">Magic remote</span><span class="pill idle" id="remote-pill" data-t="metrics.remote.standby">Standby</span></div>
-      <div id="remote-battery">
+      <div>
         <div class="lbl" data-t="metrics.battery">Battery</div>
         <div class="n num" style="margin-top:10px"><span id="remote-pct">&mdash;</span><em>%</em></div>
         <div class="track" style="margin-top:16px;margin-bottom:14px;max-width:220px"><b id="remote-gauge-fill" style="width:0%"></b></div>
@@ -201,6 +201,7 @@
         <div class="remote-meta-row" id="remote-model-row"><span class="remote-meta-lbl" data-t="metrics.remote.modelLabel">Model:</span> <span class="remote-meta-val" id="remote-model-val"></span></div>
         <div class="remote-meta-row" id="remote-fw-row"><span class="remote-meta-lbl" data-t="metrics.remote.firmwareLabel">Firmware:</span> <span class="remote-meta-val" id="remote-fw-val"></span></div>
         <div class="remote-meta-row" id="remote-signal-row"><span class="remote-meta-lbl" data-t="metrics.remote.signalLabel">Signal Strength:</span> <span class="remote-meta-val" id="remote-signal-val"></span></div>
+        <div class="remote-meta-row" id="remote-read-row" hidden><span class="remote-meta-lbl" data-t="metrics.remote.batteryReadLabel">Last read:</span> <span class="remote-meta-val" id="remote-read-val"></span></div>
       </div>
     </div>
 
@@ -806,12 +807,21 @@
     <div class="prot-row" id="row-devdetect" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.deviceDetection">Auto device detection</div>
-        <div class="prot-desc" data-t="adv.deviceDetection.desc">Lets the TV find devices at home that it can show on its Home Dashboard and control:
-          a set-top box on an HDMI input, and smart lights, plugs and switches on your network. On newer TVs it looks up every address on your home network each time the TV switches
-          on, which a network-wide ad blocker such as Pi-hole shows as hundreds of requests. Switched off, the scans
-          stop and the TV no longer finds devices by itself.</div>
+        <div class="prot-desc" data-t="adv.deviceDetection.descLg">LG&rsquo;s own setting. Lets the TV find devices at home that it can show on its Home Dashboard and control:
+          a set-top box on an HDMI input, and smart lights, plugs and switches on your network. On some TVs, webOS 11 among them, the TV still
+          looks up every address on your home network with this off; Network device scans stops that.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_devdetect" onclick="toggleDeviceDetection()">&mdash;</button></div>
+    </div>
+    <div class="prot-row" id="row-devscans" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.deviceScans">Network device scans</div>
+        <div class="prot-desc" data-t="adv.deviceScans.desc">Glasshouse&rsquo;s switch for the scans themselves: the TV looking up every address on your home network, which a network-wide ad blocker
+          such as Pi-hole shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new
+          devices for the Home Hub or LG&rsquo;s device setup. Off also stops the Magic Remote controlling a set-top box through LG&rsquo;s
+          universal control.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_devscans" onclick="toggleDeviceScans()">&mdash;</button></div>
     </div>
   </div>
 
@@ -1056,14 +1066,18 @@
       <div>
         <div class="ps-head" id="home-state">&mdash;</div>
         <div class="pv-sub" id="home-state-desc"></div>
-        <div class="pv-note warn" id="home-restart-note" hidden data-t="home.restartsApps">On this TV, switching Glasshouse Home on or off, or holding Home for LG&rsquo;s Home, restarts the TV&rsquo;s app manager, which closes the apps that are open.</div>
-        <div class="pv-note warn" data-t="home.experimental">Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.</div>
+        <div class="pv-note warn" id="home-restart-note" hidden data-t="home.restartsAppsAny">On this TV, switching away from LG Home or back to it, or holding Home for LG&rsquo;s Home, restarts the TV&rsquo;s app manager, which closes the apps that are open.</div>
+        <div class="pv-note warn" data-t="home.experimentalAny">Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG&rsquo;s Home screen. If one misbehaves, hold Home on the remote for a second to open LG&rsquo;s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting.</div>
       </div>
     </div>
-    <div class="btns" id="home-mode-btns">
-      <button type="button" id="home-mode-lg" onclick="homeChooseMode(false)">&mdash;</button>
-      <button type="button" id="home-switch" onclick="homeChooseMode(true)">&mdash;</button>
-      <button type="button" id="home-mode-launcher" onclick="homeChooseLauncher()" data-t="home.launcher.button">Custom launcher</button>
+    <div id="home-choose">
+      <div class="lbl" data-t="home.choose">Choose your launcher</div>
+      <div class="btns" id="home-mode-btns">
+        <button type="button" id="home-mode-lg" onclick="homeChooseMode(false)">&mdash;</button>
+        <button type="button" id="home-switch" onclick="homeChooseMode(true)">&mdash;</button>
+        <button type="button" id="home-mode-minimal" onclick="homeLauncherUse('minimal')">&mdash;</button>
+        <button type="button" id="home-mode-launcher" onclick="homeChooseLauncher()">&mdash;</button>
+      </div>
     </div>
   </div>
 
@@ -1073,14 +1087,8 @@
   <div class="pv-sec" data-t="home.launcher.title">Custom launcher</div>
   <div class="sub" data-t="home.launcher.intro">A home screen of your own in Glasshouse Home&rsquo;s place: a web app uploaded here, or a web page. The Home and Back buttons open it, as they do Glasshouse Home, and holding Home still opens LG&rsquo;s Home. If it stops working, LG&rsquo;s Home comes back by itself.</div>
   <div class="pv-note warn" data-t="home.launcher.trust">A launcher can do anything on the TV that Glasshouse can. Only use one you trust.</div>
+  <div class="prot-table" id="home-launchers"></div>
   <div class="prot-table">
-    <div class="prot-row" id="home-launcher-now-row" hidden>
-      <div class="prot-main">
-        <div class="prot-title" id="home-launcher-now">&mdash;</div>
-        <div class="prot-desc" id="home-launcher-now-desc"></div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-launcher-remove" onclick="homeLauncherRemove()" data-t="home.launcher.remove">Remove</button></div>
-    </div>
     <div class="prot-row">
       <div class="prot-main">
         <div class="prot-title" data-t="home.launcher.upload">Upload a launcher</div>
@@ -1183,9 +1191,16 @@
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.showTvLogos">Channel logos</div>
-        <div class="prot-desc" data-t="home.showTvLogosDesc">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s initials.</div>
+        <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.showWeather">Weather</div>
+        <div class="prot-desc" data-t="home.showWeatherDesc">Next to the clock: the weather Home Assistant sends, once an automation sends it.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-show-weather" onclick="homeShow('showWeather')">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row" id="home-picture-row" hidden>
       <div class="prot-main">
@@ -1323,13 +1338,15 @@
 
   <div id="home-more">
 
-  <div class="pv-sec adv-sec" data-t="home.layout">Rows and tiles</div>
-  <div class="sub" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
-  <div class="pv-note" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
-  <div id="home-rows"></div>
+  <!-- .home-arrange: also shown while a custom launcher is the TV's Home, whose apps and inputs it orders and hides -->
+  <div class="pv-sec adv-sec home-arrange" id="home-layout-title" data-t="home.layout">Rows and tiles</div>
+  <div class="sub home-arrange home-gh-only" data-t="home.layoutDesc">Apps and inputs come from the TV: hide the ones not wanted. Channels are only the ones added here. Holding OK on Glasshouse Home arranges the same layout on the TV.</div>
+  <div class="sub home-arrange home-launcher-only" data-t="home.layoutDescLaunchers">Which of the TV&rsquo;s apps and inputs Minimal shows, and in what order. A launcher of your own follows this where it was written to.</div>
+  <div class="pv-note home-arrange" id="home-history-note" hidden data-t="home.historyNote">Apps are in LG's order. With History switched on in Advanced, new apps are placed by how much each is used.</div>
+  <div class="home-arrange" id="home-rows"></div>
   <div id="home-recents"></div>
-  <div class="btns" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
-  <div class="sub" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
+  <div class="btns home-arrange" style="max-width:240px"><button type="button" id="home-reset" onclick="homeResetLayout()" data-t="home.reset">Reset the layout</button></div>
+  <div class="sub home-arrange" data-t="home.resetDesc">The rows, apps and inputs go back to their first order, with LG’s promotions hidden again. Channels stay as they are.</div>
 
   <div class="pv-sec adv-sec" data-t="home.tv.title">Internet TV</div>
   <div class="sub" data-t="home.tv.intro">Channels from your IPTV provider, in a row of their own on Glasshouse Home. Add the same M3U link or Xtream login your IPTV app uses. It is kept on the TV and never shown here again.</div>

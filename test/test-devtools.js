@@ -25,9 +25,8 @@ var FLAG = '/var/luna/preferences/devmode_enabled';
 var TABLES = '/proc/net/ip_tables_names';
 var FILES = [FLAG, '/usr/sbin/iptables', '/usr/sbin/ip6tables', '/sbin/iptables', '/sbin/ip6tables', TABLES];
 
-// devtools.js waits a turn of the event loop before each iptables call, and a
-// moment before a retry; both run here at once, as execFile answers.
-var realSetImmediate = setImmediate;
+// devtools.js waits a moment before a retry; it runs here at once, as execFile
+// answers.
 var realSetTimeout = setTimeout;
 
 function tv(present, fn) {
@@ -35,10 +34,9 @@ function tv(present, fn) {
   calls = [];
   var log = console.log, warn = console.warn, error = console.error;
   console.log = console.warn = console.error = function () {};
-  global.setImmediate = global.setTimeout = function (f) { f(); };
+  global.setTimeout = function (f) { f(); };
   try { return fn(); } finally {
     console.log = log; console.warn = warn; console.error = error;
-    global.setImmediate = realSetImmediate;
     global.setTimeout = realSetTimeout;
     answer = function () { return null; };
   }

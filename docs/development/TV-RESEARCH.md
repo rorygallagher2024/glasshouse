@@ -695,6 +695,16 @@ physical Home screen displayed the title immediately, without a Home restart
 or QML modification. Updating the title can therefore show the port and EIM's
 CEC names on LG's own Home screen. Long titles use LG's scrolling text.
 
+## Home after the boot hook's sam restart (webOS 6.5.3)
+
+On a 55NANO756PR (webOS 6.5.3, firmware 03.53.46) with Quick Start+ and Open
+Home at power-on off, the boot hook's sam restart, which makes sam read
+Glasshouse Home, was followed by `SAM NL_APP_LAUNCH_BEGIN
+{"app_id":"com.webos.app.home","caller_app_id":"last_input_handler","mode":"last_input"}`
+at 43 s, over HDMI 1, which bootd had put in front at 20.5 s. LG's own Home
+stays hidden when launched that way; Glasshouse Home's page opened as a card
+window over the input. A 48C11LB (6.5.3) showed the same (#1231).
+
 ## Taking over Home (G3, webOS 9.2.2)
 
 - The Home button opens `com.webos.app.home` whatever `general.defaultApps`
@@ -1067,6 +1077,8 @@ G3 in the UK.
   `channelNumber`, `channelName`, `Radio`, `skipped` and `Invisible`: 182
   terrestrial channels in London. `com.webos.service.iepg/getChannelList`
   answered with none.
+- On a 65SM8500PLA (webOS 4.10.1) with satellite channels tuned, the same
+  call took 3.6 s and answered with 4.6 MB through `luna-send -f`.
 - `com.webos.service.apiadapter/tv/openChannel { channelId }` tunes and
   brings Live TV to the front, from any app. Launching `com.webos.app.livetv`
   with `channelId` or `channelNumber` does not change the channel while Live
@@ -1242,6 +1254,15 @@ instead is not known yet.
 ## The clock since boot stops in suspend (webOS 4.4.3, B8)
 
 With Quick Start, the B8 suspends in standby, and `/proc/uptime` and `/proc/stat`'s `btime` leave the suspended time out: rebooted at 07:47 UTC and put in standby twice, it gave its boot as 18:18 the same day. Time since boot, and a boot time worked out from it, are wrong on such a TV after its first standby.
+
+## Timers stop in suspend (webOS 10.3.2, 75QNED80ARA)
+
+Node's timers stop while the TV is suspended, and the wall clock runs on. With
+Quick Start+, Glasshouse Home's page kept sending its heartbeat in Active
+Standby, so a heartbeat check was pending at the suspend. After five minutes
+off it fired as the TV resumed, 250 ms after the server saw the screen on in
+one wake and before it did in another, and took the view, which had not yet
+had a chance to beat, for hung (#1277).
 
 ## Keeping a TV awake while off (webOS 4.4.3, B8)
 
@@ -1438,6 +1459,24 @@ temperature and gyro, beside a `ManualDevice-<remote MAC>-rawInput.dsf`. A new
 rebooted, through a night in standby. lginput2's luna methods include
 `enableLoggingMotion`, `getSensorData` and `enablePrintRfStatus`, none of which
 Glasshouse calls; `getConnectionStatus` and `getDeviceInfo` left it at 0%.
+
+## MR25GA battery (C5, webOS 11.2)
+
+OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:
+`getDeviceInfo` with `deviceName: "MagicRemote_1"` returned `batteryLevel: "-"`
+and a zero address while asleep, then `batteryLevel: "MID"` and the paired
+address while awake. `lowStrength: false` is signal strength, not charge, and
+the pairing file's `52(M) 35(L)` is the remote model's thresholds.
+
+On the awake LGE MR25GA, bluetooth2 `gatt/connect` returned a `clientId`.
+After `gatt/discoverServices`, `gatt/getServices` listed service `180f` with
+characteristic `2a19` (`read: true, notify: true`), and
+`gatt/readCharacteristicValue` with that `clientId` returned `bytes: [46]`
+(and `[42]` on a later read). After `gatt/disconnect`, `gatt/getStatus`
+reported `connected: false` and `discoveringServices: false`, while LG's
+remote service still reported `connected: true`. Because standby/wake cycles
+have not been tested on webOS 11, the C5 uses `getDeviceInfo`'s `"HIGH"`,
+`"MID"` and `"LOW"` steps without opening a GATT connection.
 
 ## No firewall in the kernel (50QNED80A6A, webOS 10)
 
@@ -1872,6 +1911,15 @@ it found).
   5-minute sweeps stopped and a full one came an hour later, then none for
   15 minutes. What asks for it, or whether `iconnectivity` keeps a timer of its
   own, was not found. Holding `iconnectivity` down stops it as well.
+- **It is also universal control's IR blaster.** LG's settings and
+  connection apps ask `com.webos.service.ics/blaster/` (`getURLforUEIDevices`,
+  `deleteIPConnectionHistory`), and the input app reads a set-top box's set-up
+  from it. On the C2, `blaster/getURLforUEIDevices {}` answered at once with
+  QuickSet running (error 322, with no box set up) and not at all with it held
+  down. Two owners with it held down had a set-top box stop answering the
+  Magic Remote a few seconds after the TV started, and LG's Universal Remote
+  settings spin and fail, until it was back (an A1 on webOS 6.3.1, a C2;
+  #1266).
 
 ## Boot and app state (webOS 9.2.2, C2)
 
@@ -2853,5 +2901,26 @@ turn of the event loop later (`setImmediate` or `setTimeout 0`) did not. At
 server start, the first `iptables` call aborted on every start tried, even
 with that wait. execFile reports such a child with `err.signal` set and
 `err.killed` false, which tells it apart from one killed by its own timeout.
-The debugger rule in `devtools.js` waits a turn before each call and tries an
-aborted one once more.
+The debugger rule in `devtools.js` tries an aborted call once more.
+
+Issue [#1248](https://github.com/rorygallagher2024/glasshouse/issues/1248)
+shows the same assertion on an OLED65CX9LA, from the curl or wget the
+Internet TV worker starts: the worker itself goes on and reports the failed
+download. A job's later downloads start from the previous one's exit
+callback, the case that aborted every time, and its first is the process's
+first child, as the first `iptables` call at server start was. The worker
+waits a turn before each one and tries one aborted before any of its body
+arrived once more.
+
+A CX (OLED55CX3LA, webOS 5.6.2, firmware 04.64.00, node 8.12.0, libuv
+1.19.2) aborted 24 luna calls in 45 minutes. A core of such a child shows
+why: LG's node registers a fork handler, not in libuv itself, that takes
+`uv_default_loop()`, calls `uv_close` on its handles and sets up its signal
+and async handles again. A handle already closing at fork time fails the
+assertion. A child that has just exited is one: node closes its process
+handle in the exit callback, and the close completes in the loop's closing
+phase. `setImmediate` runs before that phase, a timer after it. Of 900
+`/bin/true` starts, three running at a time, each started from another's
+callback: 9 aborted started at once, 8 from `setImmediate`, none from
+`setTimeout(fn, 0)`. Every start through `lib/children.js` now comes from a
+timer. A start that does not go through it can still abort.

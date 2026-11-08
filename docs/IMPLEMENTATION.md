@@ -85,6 +85,11 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   server that dies leaves no worker behind. Timeouts and cancelling kill the
   whole group. The job line may be up to 4 MB, including a full lineup's
   channel names and groups; its limit applies across chunks and to a complete line.
+- **Downloaders wait a turn** before starting curl or wget, as the debugger
+  firewall calls do. Node 8 on webOS can abort a child before exec. A downloader
+  killed by SIGABRT before any body bytes arrive is retried once after 200 ms,
+  and reported as `aborted` if it happens again;
+  a partial body is never replayed into the playlist or guide reader.
 - **Two lanes.** Background jobs (reading a playlist, the lineup's
   play links and logos, the guide, now and next again) run one at a time, in
   order, a kind for a playlist only once in the queue. Browse and search for
@@ -1280,17 +1285,25 @@ minutes after a failed one. A check every 10 minutes covers a remote kept
 awake. The subscription's updates are trusted for whether the remote is a
 Bluetooth one: asked once, the same method says it is not. On webOS 4,
 `com.webos.service.mrcu/getDeviceInfo` has the charge in `batteryLevel`, so it
-is asked first, and no Bluetooth connection is made where it answers; webOS 9
-and later answer `"-"`. The Bluetooth read is made only on webOS 9 and 10, where
-it has been tried: on a webOS 5 TV the remote lost its pointer and some buttons
-after waking once it began, until a reboot. Elsewhere the remote's battery is
-not shown. lginput2 holds the remote's own connection, and the
+is asked first, and no Bluetooth connection is made where it answers with a
+number from 0 to 100, or with `"HIGH"`, `"MID"` or `"LOW"` (an MR19 on a C9 or
+an MR25GA on a C5, given as 100, 50 and 10). The Bluetooth read is made only on
+webOS 9 and 10, where `getDeviceInfo` answers `"-"` and where it has been
+tested across standby cycles: on a webOS 5 TV the remote lost its pointer and
+some buttons after waking once Bluetooth reads began, until a reboot. The
+pairing address identifies the remote even when its Bluetooth name differs from
+the model in LG's pairing file; without an address, a single paired `LGE MR*`
+BLE device is used. lginput2 holds the remote's own connection, and the
 Bluetooth service reads the service only over a GATT connection of its own, so
-each read there is
-`gatt/connect`, `gatt/discoverServices`, `gatt/readCharacteristicValue` by the
-`clientId` that connect returned, then `gatt/disconnect`, which is made
-whatever failed after connecting. A plain level in the pairing file, should
-an older TV write one, is used until the remote has given one.
+each read there is `gatt/connect`, `gatt/discoverServices`, `gatt/getServices`
+to check that the Battery Service (`180f`) and a readable Battery Level
+(`2a19`) are present (continuing to the read where the firmware does not list
+services), `gatt/readCharacteristicValue` by the `clientId` that connect
+returned, then `gatt/disconnect`, which is made whatever failed after
+connecting. The last level, timestamp and source are saved in
+`remote-battery.json` keyed by the remote's Bluetooth address; a plain level in
+the pairing file, should an older TV write one, is used until the remote has
+given one.
 TV-RESEARCH.md has how this was found.
 
 ## Settings backups
@@ -1597,7 +1610,10 @@ black for the server; being LG's Home's app, it cannot open LG's Home itself.
 `lib/home-takeover.js --release`, which unmounts without switching Glasshouse
 Home off, so the server takes the place again when it runs.
 The first-heartbeat watch is armed after taking Home even when the foreground
-id stays `com.webos.app.home`. A failed layout restore retains its backup and
+id stays `com.webos.app.home`. Switching the screen off ends the watch. A
+watch that fires more than 5 s later than it was set for has slept through a
+suspend, and gives the view the first heartbeat's 20 s rather than calling it
+hung. A failed layout restore retains its backup and
 reports failure for a later retry.
 
 Earlier builds made a separate app, `com.tvweb.home`, the TV's Home
@@ -1713,6 +1729,39 @@ discarded if the panel has closed. Each detail read and the final launch recheck
 the Search setting and blocker, so a pending lookup stops when either refuses.
 Search requests allow 12 seconds for the
 server's 10-second limit; launches allow 20 seconds for sequential detail reads.
+
+### Custom launchers
+
+`lib/home-launcher.js` puts another page in the view's place; everything that
+gets the view in front of the TV is unchanged. The app in LG's Home's place
+(or `com.tvweb.home` on webOS 3 and 4, which is installed once and never
+changes) opens `/assets/home.html` as before, and while a launcher is chosen
+and Glasshouse Home is on, the server answers that with a redirect to
+`/home/launcher/`. The heartbeat's reply carries `launcher`, a revision that
+changes with the choice or a new upload, so the page in front reloads into the
+right one within a beat.
+
+Glasshouse Minimal is one of these, built in: `assets/home-minimal.html`, served from
+Glasshouse's own files with the same script added, offered on every TV and
+never removed. Each other launcher is unpacked to
+`/var/lib/tvweb/home-launcher/apps/<id>`, with `launcher.json` naming those
+kept and the one chosen. Zips and `.ipk`s are read
+in JavaScript, the `.ipk` with the installer's ar and tar readers, as not every
+webOS has `unzip`. Paths outside the folder, links and native apps are refused.
+The start page is served with `/assets/home-kit.js?v=<release>` added first in
+its head: the release in the address because the TV's browser keeps scripts a
+day, and a launcher written against a newer kit would meet an older one. The
+kit sends the heartbeat (and on webOS 4 closes the page when switched off or
+two minutes behind another app, as the view does) and defines
+`window.Glasshouse`. A web address opens in a frame of `assets/home-web.html`,
+which carries the kit, so the site never runs as the Home app.
+
+The Home key with the view already in front launches nothing on webOS 9 (a
+C2), so the server launches the view again on a short press there, which
+reaches the page as `webOSRelaunch`; the kit's `onHome` passes it on. On
+webOS 4 a view that stops answering is closed with WebAppMgr's `killApp`
+before it is launched again, since a launch while it runs only brings back the
+page it is on.
 
 ## Apps kept ready in the background
 

@@ -1587,9 +1587,10 @@ button.tools-jump:active{background:var(--w80)}
 }
 
 /* The Home tab */
-#home-hero{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px 24px;
-  padding:8px 0 0}
-#home-hero .ps-state{margin-bottom:0;flex:1 1 320px}
+/* The state above, then the choice of launcher across the width beneath it. */
+#home-hero{display:flex;flex-direction:column;align-items:stretch;gap:24px;padding:8px 0 0}
+#home-hero .ps-state{margin-bottom:0}
+#home-choose .lbl{margin-bottom:10px}
 #home-hero .pv-sub{margin:6px 0 0}
 /* The dot stays level with the heading's first line, however tall the
    experimental note beneath makes the block. */
@@ -1601,6 +1602,12 @@ button.tools-jump:active{background:var(--w80)}
 #home-hero+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
 #home-hero+#home-launcher{margin-top:clamp(34px,4.5vw,48px)}
 #home-launcher+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
+#home-launchers .prot-status{display:flex;gap:8px}
+/* With a custom launcher in Glasshouse Home's place, only the apps and inputs it shows. */
+#home-more.for-launcher > :not(.home-arrange), #home-more.for-launcher .home-gh-only,
+#home-more:not(.for-launcher) .home-launcher-only{display:none}
+#home-more.for-launcher .home-row:not([data-kind="app"]):not([data-kind="dev"]),
+#home-more.for-launcher .home-row-move{display:none}
 #home-custom.lg-home .home-gh-row{display:none}
 /* Each group's last row draws no line, as the next group's heading follows. */
 .home-custom-table .prot-row.last{border-bottom:0}
@@ -1612,9 +1619,12 @@ button.tools-jump:active{background:var(--w80)}
 #home-custom .pv-d>summary::after{font-size:18px}
 #home-custom .pv-d[open]>summary{border-bottom-color:transparent}
 #home-custom .pv-d[open]{padding-bottom:16px;border-bottom:1px solid var(--w06)}
-#home-mode-btns{display:flex;flex-wrap:wrap;gap:8px;flex:0 1 auto;width:auto;max-width:100%}
-@media (max-width:640px){#home-mode-btns{width:100%}#home-mode-btns button{flex:1 1 150px;min-width:0}}
-#home-mode-btns button{min-width:176px;padding:0 18px;white-space:nowrap}
+/* The choices in a row of equal boxes, a long name on two lines where the row
+   is narrow; two by two on a phone. */
+#home-mode-btns{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;max-width:880px}
+#home-mode-btns button{min-width:0;padding:6px 14px;line-height:1.3;white-space:normal}
+@media (max-width:640px){#home-mode-btns{display:grid;grid-auto-flow:row;grid-template-columns:repeat(2,1fr)}
+  #home-mode-btns button{padding:6px 10px}}
 #home-mode-btns button.warn{color:var(--cand);border-color:var(--cand)}
 #home-rows{margin-top:14px}
 .home-row{border-top:1px solid var(--edge);padding:10px 0}
