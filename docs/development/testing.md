@@ -9,6 +9,12 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 `test-privacy.js` checks that `mtalk.google.com` is sinkholed on IPv4 and IPv6
 only in the Everything tier, and stays out of the Ads & telemetry and off tables.
+Regional platform checks cover the reported German and European hosts,
+ThinQ's hyphenated prefixes, a country outside the fallback list and an
+unknown or invalid country. They check IPv4/IPv6 blocking only in Everything,
+without duplicate names, and leave connectivity checks and local proxy
+discovery unblocked. The `nextlgsdp.com`, `ibs` and `ibsstat` hosts wait for
+clock sync, then enter the table on both address families.
 
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC
