@@ -2023,6 +2023,7 @@ if (!CLI_MODE) {
     luna: luna,
     stateDir: __dirname,
     webosVersion: telemetry.detectWebosVersion(),
+    getRemoteInfo: telemetry.readRemoteInfo,
     onLevel: function (level) {
       console.log('remote: battery ' + level + '%');
       telemetry.expireStats();

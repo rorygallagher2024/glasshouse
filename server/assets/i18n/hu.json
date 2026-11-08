@@ -3040,5 +3040,6 @@
  "tv.home.shownOf": {"text": "{total} közül {n} látható", "from": "{n} of {total} shown"},
  "tv.home.someOn": {"text": "{total} közül {n} bekapcsolva", "from": "{n} of {total} on"},
  "tv.home.tv.addOnWeb": {"text": "Lejátszási listát a böngészős vezérlőpult Home lapján lehet hozzáadni, ahol beírható a hivatkozása vagy a bejelentkezési adatok.", "from": "A playlist is added on the browser dashboard’s Home tab, where its link or login can be typed."},
- "tv.home.tv.noPlaylist": {"text": "Nincs lejátszási lista", "from": "No playlist"}
+ "tv.home.tv.noPlaylist": {"text": "Nincs lejátszási lista", "from": "No playlist"},
+ "metrics.remote.batteryReadLabel": {"text": "Utolsó leolvasás:", "from": "Last read:"}
 }

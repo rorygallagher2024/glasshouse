@@ -3040,5 +3040,6 @@
  "tv.home.shownOf": {"text": "Показано {n} из {total}", "from": "{n} of {total} shown"},
  "tv.home.someOn": {"text": "Включено {n} из {total}", "from": "{n} of {total} on"},
  "tv.home.tv.addOnWeb": {"text": "Плейлист добавляется на вкладке Home панели в браузере, где можно ввести ссылку или данные для входа.", "from": "A playlist is added on the browser dashboard’s Home tab, where its link or login can be typed."},
- "tv.home.tv.noPlaylist": {"text": "Нет плейлиста", "from": "No playlist"}
+ "tv.home.tv.noPlaylist": {"text": "Нет плейлиста", "from": "No playlist"},
+ "metrics.remote.batteryReadLabel": {"text": "Последнее считывание:", "from": "Last read:"}
 }

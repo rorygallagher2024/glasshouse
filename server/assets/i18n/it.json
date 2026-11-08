@@ -3040,5 +3040,6 @@
  "tv.home.shownOf": {"text": "{n} di {total} visibili", "from": "{n} of {total} shown"},
  "tv.home.someOn": {"text": "{n} di {total} attivi", "from": "{n} of {total} on"},
  "tv.home.tv.addOnWeb": {"text": "La playlist si aggiunge nella scheda Home della dashboard del browser, dove è possibile digitare il link o le credenziali.", "from": "A playlist is added on the browser dashboard’s Home tab, where its link or login can be typed."},
- "tv.home.tv.noPlaylist": {"text": "Nessuna playlist", "from": "No playlist"}
+ "tv.home.tv.noPlaylist": {"text": "Nessuna playlist", "from": "No playlist"},
+ "metrics.remote.batteryReadLabel": {"text": "Ultima lettura:", "from": "Last read:"}
 }

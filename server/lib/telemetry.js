@@ -714,6 +714,7 @@ function remoteInfo() {
   var file = readRemoteInfo();
   if (!file) return null;
   var level = remoteBatteryModule ? remoteBatteryModule.level(file.mac) : null;
+  var batteryDetails = remoteBatteryModule ? remoteBatteryModule.details(file) : {};
   var isConn = remoteBatteryModule ? remoteBatteryModule.connected() : false;
   var isBleRem = remoteBatteryModule ? remoteBatteryModule.isBle() : true;
   var sig = remoteBatteryModule && typeof remoteBatteryModule.signal === 'function'
@@ -724,6 +725,9 @@ function remoteInfo() {
     : null);
   return {
     battery: level !== null ? level : file.battery,
+    batteryUpdatedAt: batteryDetails.batteryUpdatedAt || null,
+    batterySource: level !== null ? batteryDetails.batterySource : file.battery !== null ? 'pairing' : null,
+    batteryStatus: file.battery !== null ? 'available' : batteryDetails.batteryStatus || 'waiting',
     model: file.model,
     mac: file.mac,
     firmware: fw,
