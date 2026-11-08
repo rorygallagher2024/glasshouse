@@ -298,6 +298,21 @@ steps.push(function () {
     pending--;
   });
 });
+steps.push(function () {
+  pending++;
+  var luna = fakeLuna({ deviceInfo: { returnValue: true, batteryLevel: 'MID', bdAddress: REMOTE.address } });
+  rb.init({ luna: luna, webosVersion: '4.5.0', discoverMs: 0, settleMs: 0 });
+  rb.read(function (level) {
+    assert.strictEqual(level, 50, 'an MR19\'s MID is a percentage');
+    var low = fakeLuna({ deviceInfo: { returnValue: true, batteryLevel: 'low', bdAddress: REMOTE.address } });
+    rb.init({ luna: low, webosVersion: '4.5.0', discoverMs: 0, settleMs: 0 });
+    rb.read(function (lowLevel) {
+      assert.strictEqual(lowLevel, 10, 'LOW, in any case, is under the usual low-battery alerts');
+      console.log('  ✓ a remote that answers in steps (an MR19) is read as 100, 50 or 10');
+      pending--;
+    });
+  });
+});
 // As on the B8 and C2: the subscription says the remote is Bluetooth, the
 // one-off status asked by the read does not.
 steps.push(function () {

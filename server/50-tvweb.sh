@@ -36,7 +36,7 @@ if [ -f /var/lib/tvweb/adblock_enabled ] && [ -f /var/lib/tvweb/adblock_hosts ];
   # Channel's update block points the update servers at 127.0.0.1: privacy.js
   # foreignHostsLines tells them apart the same way.
   OWN='^[[:space:]]*(#|$)|^[[:space:]]*(0\.0\.0\.0|::)[[:space:]]|localhost|ip6-'
-  UPDATES='[[:space:]](snu|su|su-dev|su-ssl)\.lge\.com([[:space:]]|$)'
+  UPDATES='[[:space:]](snu|snu-dev|su|su-dev|su-ssl|nsu)\.lge\.com([[:space:]]|$)'
   { grep -E "$OWN" /var/lib/tvweb/adblock_hosts; grep -v -E "$OWN|$UPDATES" /etc/hosts; } \
     > /var/lib/tvweb/adblock_hosts.new 2>/dev/null \
     && cat /var/lib/tvweb/adblock_hosts.new > /var/lib/tvweb/adblock_hosts
@@ -157,10 +157,10 @@ webos_major=$(sed -n 's/.*webOS[^0-9]*\([0-9][0-9]*\)\..*/\1/p' /etc/issue 2>/de
 # page as Home from then on. Where sam does not take it, LG's files go back
 # under it, its own layout too, and it restarts on that. The server does the
 # same at its start, for a hook that did not run.
-# On webOS 10 and 11 LG's Home is a Flutter app run as
-# "flutter-client -i com.webos.app.home"; webOS 11 only with
-# allowExperimentalHome in config.json. sam ignores the nudge there (above), so
-# the app is reread with a block and release first.
+# On webOS 10 and later LG's Home is a Flutter app run as
+# "flutter-client -i com.webos.app.home"; webOS 12 and later, where it is
+# untried, only with allowExperimentalHome in config.json. sam ignores the
+# nudge there (above), so the app is reread with a block and release first.
 # On webOS 5 (a CX on 5.5.0-19) and webOS 6 (a C1 on 6.5.3) there is neither
 # the configd list nor the block and release, so sam is restarted, as
 # lib/samrescan.js does for the switch.
@@ -172,12 +172,13 @@ home_os=0
 [ "$webos_major" = "10" ] && home_os=1
 [ "$webos_major" = "5" ] && home_os=1
 [ "$webos_major" = "6" ] && home_os=1
-if [ "$webos_major" = "11" ]; then
+[ "$webos_major" = "11" ] && home_os=1
+if [ "${webos_major:-0}" -ge 12 ] 2>/dev/null; then
   grep -q '"allowExperimentalHome"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null && home_os=1
 fi
 # A block and release cut short leaves Home blocked across boots, as for the
 # screen saver below, so it is released at every boot where it is ever blocked.
-if [ "$webos_major" = "10" ] || [ "$webos_major" = "11" ]; then
+if [ "${webos_major:-0}" -ge 10 ] 2>/dev/null; then
   luna-send -n 1 luna://com.webos.applicationManager/releaseBlockSystemApp '{"id":"com.webos.app.home"}' >/dev/null 2>&1 || true
 fi
 lg_home_pids() {
@@ -229,13 +230,39 @@ home_open_at_boot() {
     return 0
   fi
   target_home=com.webos.app.home
-  [ "$webos_major" = "4" ] && target_home=com.tvweb.home
+  case "$webos_major" in 3|4) target_home=com.tvweb.home ;; esac
   luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$target_home\"}" 2>/dev/null |
     grep -q '"returnValue": *true' || return 0
   # The server watches for the view from its start and opens LG's Home if it
   # does not come (lib/home.js watchBootOpen).
   : > /tmp/glasshouse-home-opened-at-boot
   echo "$(date): Glasshouse Home opened over $boot_app"
+}
+# On webOS 5 and 6 the restart that makes sam read Glasshouse Home has the TV's
+# last-input handler launch Home a few seconds later (a 55NANO756PR on 6.5.3,
+# at 43 s, #1231). LG's own Home stays hidden when launched that way; Glasshouse
+# Home is a page and opens over the input the TV started on. Where the system
+# log names that launch, and Home is in front, that input is opened again. The
+# owner's own Home press is a launch by another caller, and left alone.
+input_back_after_restart() {
+  [ -e /tmp/glasshouse-home-opened-at-boot ] && return 0
+  boot_app=$(sed -n "s/.*BootSequencer) '\([^']*\)' is foreground.*/\1/p" /var/log/bootd.log 2>/dev/null | head -n 1)
+  case "$boot_app" in
+    com.webos.app.livetv|com.webos.app.hdmi[0-9]|com.webos.app.av[0-9]|com.webos.app.comp[0-9]) ;;
+    *) return 0 ;;
+  esac
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+    if grep -q '"app_id":"com.webos.app.home","caller_app_id":"last_input_handler"' /var/log/messages 2>/dev/null; then
+      sleep 2
+      front=$(luna-send -n 1 luna://com.webos.applicationManager/getForegroundAppInfo '{}' 2>/dev/null |
+        sed -n 's/.*"appId": *"\([^"]*\)".*/\1/p')
+      [ "$front" = com.webos.app.home ] || return 0
+      luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$boot_app\"}" >/dev/null 2>&1 || true
+      echo "$(date): $boot_app opened again over the Home the restart's last-input launch opened"
+      return 0
+    fi
+    sleep 1
+  done
 }
 home_on=0
 grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null && home_on=1
@@ -253,6 +280,8 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): Glasshouse Home is in LG's Home's place"
     home_open_at_boot
+    # In the background: it waits up to 15 s, which must not hold up the start.
+    case "$webos_major" in 5|6) input_back_after_restart & ;; esac
   else
     umount "$homeapp" 2>/dev/null
     home_reread
@@ -260,7 +289,7 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): sam did not take Glasshouse Home - LG's Home kept"
   fi
-elif [ "$webos_major" = "4" ] && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
+elif { [ "$webos_major" = "3" ] || [ "$webos_major" = "4" ]; } && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
   home_open_at_boot
 fi
 

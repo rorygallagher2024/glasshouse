@@ -324,13 +324,38 @@ action:
         {% for name, id in state_attr('select.lg_tv_input_source', 'input_ids').items() if id == 'hdmi2' %}{{ name }}{% endfor %}
 ```
 
+### 6. The weather on Glasshouse Home
+Glasshouse Home shows the weather next to the clock from what Home Assistant sends it. This sends a `weather` entity's condition and temperature whenever it changes, every 30 minutes, and when Home Assistant starts. Weather not updated for 3 hours is hidden, and sending an empty value takes it away at once.
+
+```yaml
+alias: "Weather on the TV"
+trigger:
+  - platform: state
+    entity_id: weather.home
+  - platform: time_pattern
+    minutes: "/30"
+  - platform: homeassistant
+    event: start
+action:
+  - service: text.set_value
+    target:
+      entity_id: text.lg_tv_weather
+    data:
+      value: >-
+        {{ {'condition': states('weather.home'),
+            'temp': state_attr('weather.home', 'temperature'),
+            'city': 'Glasgow'} | to_json }}
+```
+
+The temperature is shown as sent, in the unit the weather entity uses. `city` is optional.
+
 ---
 
 ## Universal Media Player Setup
 
-Home Assistant Core does not offer native MQTT discovery for `media_player` platforms. To group all the discovered volume, mute, power, playback, and source controls into a single native media player card:
+Home Assistant's MQTT discovery has no `media_player` platform, so Glasshouse cannot create one itself. Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, for a media control card on a dashboard. It takes a title only from another media player, so it shows none. Play and pause are sent as the remote's Play and Pause keys, so they work only in apps that act on those keys: the TV's own player does, and the Jellyfin app resumes with Play but ignores Pause.
 
-Add the following to `configuration.yaml`. Power uses the `LG TV` switch from [Switched off, and back on](#switched-off-and-back-on).
+Add the following to `configuration.yaml`. Power uses the `LG TV` switch from [Switched off, and back on](#switched-off-and-back-on). The entity IDs start with the TV's `device.id`: for one set to `lg_c9`, `select.lg_tv_input_source` is `select.lg_c9_input_source`.
 
 ```yaml
 media_player:
@@ -340,59 +365,63 @@ media_player:
     children: []
     commands:
       turn_on:
-        service: switch.turn_on
+        action: switch.turn_on
         target:
           entity_id: switch.lg_tv
       turn_off:
-        service: switch.turn_off
+        action: switch.turn_off
         target:
           entity_id: switch.lg_tv
       volume_up:
-        service: mqtt.publish
+        action: mqtt.publish
         data:
           topic: "lgtv/command/volume"
           payload: "+1"
       volume_down:
-        service: mqtt.publish
+        action: mqtt.publish
         data:
           topic: "lgtv/command/volume"
           payload: "-1"
       volume_set:
-        service: number.set_value
+        action: number.set_value
         target:
           entity_id: number.lg_tv_volume
         data:
-          value: "{{ volume * 100 }}"
+          # Home Assistant passes the level from 0 to 1 as volume_level.
+          value: "{{ (volume_level * 100) | round | int }}"
       volume_mute:
-        service: switch.toggle
+        action: switch.toggle
         target:
           entity_id: switch.lg_tv_mute
       media_play:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_play
       media_pause:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_pause
       media_play_pause:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_play_pause
       media_stop:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_stop
       select_source:
-        service: select.select_option
+        action: select.select_option
         target:
           entity_id: select.lg_tv_input_source
         data:
           option: "{{ source }}"
+    state_template: >-
+      {% if not is_state('switch.lg_tv', 'on') %}off
+      {% elif states('sensor.lg_tv_play_state') in ['playing', 'paused'] %}{{ states('sensor.lg_tv_play_state') }}
+      {% else %}on{% endif %}
     attributes:
-      state: switch.lg_tv
       is_volume_muted: switch.lg_tv_mute
-      volume_level: number.lg_tv_volume
+      volume_level: number.lg_tv_volume|volume_level
       source: select.lg_tv_input_source
       source_list: select.lg_tv_input_source|options
 ```
@@ -408,15 +437,15 @@ A TV in standby is asleep and cannot receive commands, so it is switched back on
 1. Turn on **Wake-on-LAN** on the TV: in the web dashboard under **System &rarr; Power**, on the TV dashboard under **System &rarr; Power**, or in LG's menu under **Settings &rarr; General &rarr; Mobile TV On**. Wake-on-LAN works over Ethernet and, on most models, Wi-Fi.
 2. In Home Assistant, add the **Wake on LAN** integration (**Settings &rarr; Devices &amp; services &rarr; Add integration &rarr; Wake on LAN**) with the TV's MAC address. The address is listed under **Connections** on the TV's device page in Home Assistant, and as the **MAC Address** sensor.
 
-This creates a button that wakes the TV from standby. To make one switch that shows whether the TV is on and turns it on or off, add a template switch to `configuration.yaml`, with the TV's MAC address:
+This creates a button that wakes the TV from standby. To make one switch that shows whether the TV is on and turns it on or off, add a template switch to `configuration.yaml`, with the TV's MAC address. If it already has a `template:` key, add the `switch:` entry under it:
 
 ```yaml
-switch:
-  - platform: template
-    switches:
-      lg_tv:
-        friendly_name: "LG TV"
-        value_template: "{{ is_state('binary_sensor.lg_tv_power', 'on') }}"
+template:
+  - switch:
+      - name: "LG TV"
+        unique_id: lg_tv_power_switch
+        icon: mdi:television
+        state: "{{ is_state('binary_sensor.lg_tv_power', 'on') }}"
         turn_on:
           # Wakes a TV that is asleep in standby.
           - action: wake_on_lan.send_magic_packet
@@ -433,7 +462,6 @@ switch:
           - action: button.press
             target:
               entity_id: button.lg_tv_power_off
-        icon_template: mdi:television
 ```
 
 The `wake_on_lan.send_magic_packet` action needs `wake_on_lan:` in `configuration.yaml` if the integration was not added through the UI. Entity IDs start with the device name, `lg_tv` by default; a TV with its own name in `config.json` uses that instead.

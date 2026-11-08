@@ -1,16 +1,17 @@
 # Tested TVs
 
-Confirmed on **59 TVs across 42 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **69 TVs across 46 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
 
-=== "By series (42)"
+=== "By series (46)"
 
     | Series        | Year | Panel | webOS seen        | Reports |
     | :------------ | :--- | :---- | :---------------- | :------ |
     | LF632V        | 2015 | LCD   | 2.2               | 1       |
+    | UF850T        | 2015 | LCD   | 2.2               | 1       |
     | UH600V        | 2016 | LCD   | 2.2               | 1       |
     | UH6030        | 2016 | LCD   | 3.4               | 1       |
     | UH610V        | 2016 | LCD   | 3.4               | 1       |
@@ -18,8 +19,9 @@ Confirmed on **59 TVs across 42 series** running **webOS 2.2 through 11** (LG's 
     | B6            | 2016 | OLED  | 3.4               | 1       |
     | B7            | 2017 | OLED  | 3.9               | 1       |
     | SJ80          | 2017 | LCD   | 3.9               | 1       |
+    | UJ63          | 2017 | LCD   | 3.9               | 1       |
     | B8            | 2018 | OLED  | 4.4               | 1       |
-    | C8            | 2018 | OLED  | 4.4               | 1       |
+    | C8            | 2018 | OLED  | 4.4               | 2       |
     | LK61          | 2018 | LCD   | 4.4               | 1       |
     | UK63          | 2018 | LCD   | 4.4               | 1       |
     | LM57          | 2019 | LCD   | 4.5               | 1       |
@@ -30,10 +32,12 @@ Confirmed on **59 TVs across 42 series** running **webOS 2.2 through 11** (LG's 
     | GX            | 2020 | OLED  | 5.6               | 1       |
     | UN73          | 2020 | LCD   | 5.6               | 1       |
     | C1            | 2021 | OLED  | 6.x               | 2       |
+    | G1            | 2021 | OLED  | 6.5               | 1       |
     | UP80          | 2021 | LCD   | 6.5               | 1       |
     | UP81          | 2021 | LCD   | 6.5               | 1       |
-    | C2            | 2022 | OLED  | 9.2, 10.3         | 2       |
-    | G2            | 2022 | OLED  | 7.4               | 1       |
+    | B2            | 2022 | OLED  | 10.3              | 1       |
+    | C2            | 2022 | OLED  | 9.2, 10.3         | 3       |
+    | G2            | 2022 | OLED  | 7.4, 10.3         | 2       |
     | QNED82        | 2022, 2025 | LCD   | 7.6, 10.3         | 2       |
     | UQ80          | 2022 | LCD   | 7.6               | 1       |
     | LX3           | 2022 | OLED  | —                 | 1       |
@@ -53,11 +57,12 @@ Confirmed on **59 TVs across 42 series** running **webOS 2.2 through 11** (LG's 
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (59)"
+=== "All reports (69)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
     | 49LF632V-ZC | 2.2.3        | —        | LCD   | Settings service under its older name; server on Node 0.10     |
+    | 55UF850T-TB | 2.2.1        | 04.05.60 | LCD   | Remote button events needed a fix for Node 0.10 ([#1256](https://github.com/rorygallagher2024/glasshouse/issues/1256)) |
     | 55UH600V-ZA | 2.2.3        | 04.26.35 | LCD   | PicCap withheld on webOS 2 to prevent watchdog reboot ([#746](https://github.com/rorygallagher2024/glasshouse/issues/746)); runs cleanly |
     | 43UH610V-ZB | 3.4.3        | 05.70.50 | LCD   | No SoC temp, eMMC wear, or OLED metrics by hardware design     |
     | 55UH6030-UC | 3.4.3        | —        | LCD   |                                                                |
@@ -65,8 +70,10 @@ Confirmed on **59 TVs across 42 series** running **webOS 2.2 through 11** (LG's 
     | OLED65B6D-Z | 3.4.3        | 05.70.55 | OLED  | Rooted with mvpd-autoroot; tracking and ads disabled; custom screen savers refused without sam restart ([#1012](https://github.com/rorygallagher2024/glasshouse/issues/1012)) |
     | OLED65B7V-Z | 3.9.3        | 06.10.65 | OLED  | No SoC temperature or eMMC wear readings                       |
     | 55SJ800V-ZB | 3.9.3        | 06.10.65 | LCD   | Working fine                                                   |
+    | 43UJ634V-ZD | 3.9.3        | 06.10.70 | LCD   | Rooted with dejavuln-autoroot; tracking and ads disabled       |
     | OLED65C8PUA | 4.4.0        | 05.50.15 | OLED  | No `getAdid` on this firmware                                  |
     | OLED65B8SLC | 4.4.3        | 05.50.70 | OLED  | Everything works. Misses a few metrics found on newer versions |
+    | OLED65C8PJA | 4.4.3        | 05.50.70 | OLED  | Working fine; adblock and screen saver confirmed               |
     | 32LK6100PLB | 4.4.3        | 05.50.70 | LCD   | Rooted with faultmanager; dashboard, apps and SSH confirmed    |
     | 55UK6300PVB | 4.4.3        | 05.50.70 | LCD   | Working; the Privacy tab's consents come back on after a restart ([#1145](https://github.com/rorygallagher2024/glasshouse/issues/1145)) |
     | 43LM5760PTC | 4.5          | —        | LCD   | Configured with panel: lcd; service and web UI confirmed       |
@@ -86,6 +93,7 @@ Confirmed on **59 TVs across 42 series** running **webOS 2.2 through 11** (LG's 
     | OLED55C1PUB | 6.x (6.3+)   | 03.53.45 | OLED  | SSH install and MQTT bridge confirmed                          |
     | 50UP81006LR | 6.5.0        | 03.51.16 | LCD   | Installed over telnet; in-app update confirmed                 |
     | 43UP80006LA | 6.5.3        | 03.53.45 | LCD   | MQTT bridge confirmed                                          |
+    | OLED55G19LA | 6.5.3        | 03.53.45 | OLED  | Advertising ID reset accepted without ID change on this firmware |
     | OLED65G29LA | 7.4.0        | 04.40.90 | OLED  | Confirmed working                                              |
     | 55QNED826QB | 7.6.0        | 04.60.90 | LCD   | Installed over SSH; MQTT bridge confirmed                      |
     | 65UQ801C0SB | 7.6.0        | 04.60.90 | LCD   | Rooted with slopbro; SSH install; Glasshouse Home confirmed    |
@@ -98,8 +106,10 @@ Confirmed on **59 TVs across 42 series** running **webOS 2.2 through 11** (LG's 
     | OLED55C31LA | 10.2.2       | 33.22.80 | OLED  | Installed over SSH; in-app updates confirmed                   |
     | OLED65CSPSA | 10.3.0       | 33.31.20 | OLED  | Reported working                                               |
     | OLED65C41LA | 10.3.0       | 33.31.24 | OLED  | Rooted with Dangbro; installed with webOS Dev Manager          |
+    | OLED48C24LA | 10.3.0       | 33.31.24 | OLED  | Rooted with DualBro / WTFBro; webOS 25 update                  |
     | OLED65C3PUA | 10.3.1       | 33.31.68 | OLED  | MQTT and volume control confirmed                              |
     | OLED55C25LB | 10.3.1       | 33.31.68 | OLED  | Reported working; screen saver confirmed                       |
+    | OLED55G2PSA | 10.3.1       | 33.31.68 | OLED  | Rooted with Homebrew Channel; Glasshouse Home, telemetry, ad blocking confirmed |
     | OLED65C4PSA | 10.3.1       | 33.31.6  | OLED  |                                                                |
     | OLED65G45LW | 10.3.1       | —        | OLED  | Rooted with Dangbro                                            |
     | OLED77C4PSA | 10.3.1       | 33.31.68 | OLED  | Rooted with Dangbro; resolution reported stuck at 1920x1081    |
@@ -109,6 +119,7 @@ Confirmed on **59 TVs across 42 series** running **webOS 2.2 through 11** (LG's 
     | 55UA73006LA | 10.3.1       | 33.31.61 | LCD   | Homebrew Channel; SSH install; dashboard and telemetry confirmed |
     | 55QNED82AUA | 10.3.1       | 33.31.61 | LCD   | Rooted with slopbro; SSH install; privacy switches, Glasshouse Home confirmed |
     | 86UR8000AUA | 10.3.2       | 33.31.75 | LCD   | Working; no firewall in its kernel, so the web app debugger stays open to the network |
+    | OLED65B2PUA | 10.3.2       | 33.31.75 | OLED  | Rooted with Homebrew Channel; SSH install; Glasshouse Home and HDMI confirmed working after reboot |
     | OLED65G5WUA | 10           | 33.30.69 | OLED  | No screen saver tab; volume stuck at +10 on optical output     |
     | 42LX3Q6LA   | —            | 33.31.68 | OLED  | Flex; model number has no OLED prefix                          |
     | 43UT73006LA | —            | —        | LCD   | Reported working                                               |

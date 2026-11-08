@@ -121,13 +121,37 @@ function levelFrom(r) {
   return validLevel(n) ? n : null;
 }
 
-function deviceLevelFrom(info) {
-  var n = info && info.returnValue ? info.batteryLevel : null;
-  return validLevel(n) ? n : null;
-}
-
+/*
+ * A percentage, or one of three steps: an MR19 on a C9 (webOS 4.5, remote
+ * firmware 18.61.13.19358) answered "MID". The steps are given as 100, 50 and 10
+ * so the sensor stays a percentage, with LOW under the usual low-battery alerts.
+ */
 function validLevel(n) {
   return typeof n === 'number' && isFinite(n) && n >= 0 && n <= 100;
+}
+
+/*
+ * A percentage, or one of three steps: an MR19 on a C9 (webOS 4.5, remote
+ * firmware 18.61.13.19358) answered "MID". The steps are given as 100, 50 and 10
+ * so the sensor stays a percentage, with LOW under the usual low-battery alerts.
+ * On webOS 9 and later, where the remote's Bluetooth Battery Service gives the
+ * exact percentage even when getDeviceInfo says "MID" (C5 on 11.2), a step is
+ * used only when GATT is not supported.
+ */
+function deviceLevelFrom(info, allowSteps) {
+  var n = info && info.returnValue ? info.batteryLevel : null;
+  if (validLevel(n)) return n;
+  if (allowSteps !== false && typeof n === 'string') {
+    switch (n.toUpperCase()) {
+      case 'HIGH':
+        return 100;
+      case 'MID':
+        return 50;
+      case 'LOW':
+        return 10;
+    }
+  }
+  return null;
 }
 
 function saveLevel(level, mac, source) {
@@ -192,7 +216,7 @@ function read(done) {
           info.bdAddress !== '00:00:00:00:00:00') {
         address = info.bdAddress;
       }
-      onResult(deviceLevelFrom(info));
+      onResult(deviceLevelFrom(info, !gattPlatformSupported()));
     });
   }
 
@@ -298,9 +322,10 @@ function start(isOn) {
       }
       var remote = getRemoteInfo();
       if (level(remote && remote.mac) === null) {
-        var dl = deviceLevelFrom(info);
+        var dl = deviceLevelFrom(info, !gattPlatformSupported());
         if (dl !== null) {
-          var mac = (info && typeof info.bdAddress === 'string' && info.bdAddress !== '00:00:00:00:00:00') ? info.bdAddress : null;
+          var mac = (info && typeof info.bdAddress === 'string' && info.bdAddress !== '00:00:00:00:00:00')
+            ? info.bdAddress : (remote && remote.mac) || null;
           if (!remote || !remote.mac || sameAddress(remote.mac, mac)) saveLevel(dl, mac, 'mrcu');
         }
       }

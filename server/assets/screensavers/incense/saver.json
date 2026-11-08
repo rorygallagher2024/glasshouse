@@ -6,7 +6,9 @@
     "es": "Incienso",
     "hu": "Füstölő",
     "it": "Incenso",
+    "pl": "Kadzidło",
     "pt": "Incenso",
+    "pt-br": "Incenso",
     "ru": "Благовония"
   },
   "description": {
@@ -14,7 +16,9 @@
     "es": "Finas columnas de humo de colores que suben y se enroscan sobre negro.",
     "hu": "Vékony színes füstcsíkok szállnak fel és kunkorodnak fekete háttéren.",
     "it": "Sottili fili di fumo colorato che salgono e si arricciano sul nero.",
+    "pl": "Cienkie strużki kolorowego dymu wznoszące się i skręcające na czerni.",
     "pt": "Finos fios de fumo colorido que sobem e se enrolam sobre fundo preto.",
+    "pt-br": "Finos fios de fumaça colorida que sobem e se enrolam sobre o preto.",
     "ru": "Тонкие струйки цветного дыма поднимаются и завиваются на чёрном фоне."
   },
   "license": "MIT",

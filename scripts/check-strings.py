@@ -343,7 +343,7 @@ if '--template' in sys.argv:
     sys.exit(0)
 
 listed = re.search(r'var LANGS = \[([^\]]*)\]', I18N_JS.read_text(encoding='utf-8'))
-listed = set(re.findall(r"'([a-z]{2})'", listed.group(1))) if listed else set()
+listed = set(re.findall(r"'([a-z]{2}(?:-[a-z]{2})?)'", listed.group(1))) if listed else set()
 files = {p.stem: p for p in sorted(LANG_DIR.glob('*.json'))} if LANG_DIR.exists() else {}
 for lang in sorted(listed - set(files)):
     problems.append('i18n.js lists "%s" but there is no i18n/%s.json' % (lang, lang))

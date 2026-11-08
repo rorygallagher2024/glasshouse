@@ -50,6 +50,20 @@ function wrap(name, both) {
 ONE.forEach(function (n) { wrap(n, false); });
 TWO.forEach(function (n) { wrap(n, true); });
 
+// The browser checks' fake TV starts its children without the gaps a real one needs.
+if (process.env.FAKE_LAUNCH_GAP_MS) {
+  var gap = Number(process.env.FAKE_LAUNCH_GAP_MS);
+  require(path.join(SERVER_DIR, 'lib', 'children')).setGaps(gap, gap);
+}
+// df is asked about a folder by its path on the TV, which is under FAKE_ROOT here.
+var childProcess = require('child_process');
+var execFileOrig = childProcess.execFile;
+childProcess.execFile = function (file, args) {
+  var a = Array.prototype.slice.call(arguments);
+  if (file === 'df' && Array.isArray(args)) a[1] = args.map(moved);
+  return execFileOrig.apply(childProcess, a);
+};
+
 // BOOT_MISSING_MODULE: a require() of that name fails as for a file not there.
 var missing = process.env.BOOT_MISSING_MODULE;
 if (missing) {

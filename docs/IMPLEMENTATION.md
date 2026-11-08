@@ -70,6 +70,134 @@ The children are the five subscriptions held open for live state, to which a TV 
 
 ---
 
+## Internet TV: worker processes and published snapshots
+
+Glasshouse Home's Internet TV row (`lib/iptv.js`) reads the owner's IPTV
+playlists, which run to tens of MB with films and series in them, and XMLTV
+guides of 50 to 200 MB. None of that is read in the server, whose one thread
+also answers the remote, the dashboards and MQTT. Each job is a process of
+its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
+
+- **Started like every child**, through `children.launch`, as `nice -n 19 node
+  --max_old_space_size=64 iptv-worker.js` (24 MB for a search) in a process
+  group of its own (`detached`). The job is one JSON line on its stdin, which
+  stays open: the worker exits, killing its own curl, when it closes, so a
+  server that dies leaves no worker behind. Timeouts and cancelling kill the
+  whole group. The job line may be up to 4 MB, including a full lineup's
+  channel names and groups; its limit applies across chunks and to a complete line.
+- **Downloaders wait a turn** before starting curl or wget, as the debugger
+  firewall calls do. Node 8 on webOS can abort a child before exec. A downloader
+  killed by SIGABRT before any body bytes arrive is retried once after 200 ms,
+  and reported as `aborted` if it happens again;
+  a partial body is never replayed into the playlist or guide reader.
+- **Two lanes.** Background jobs (reading a playlist, the lineup's
+  play links and logos, the guide, now and next again) run one at a time, in
+  order, a kind for a playlist only once in the queue. Browse and search for
+  the add panels run beside them, one at a time, a new one replacing the last.
+- **Memory is measured by the server**, once a second while a worker runs:
+  the RSS in `/proc/<pid>/statm` of the worker and the curl it reports
+  starting. Over 160 MB for the background lane, 90 MB for search or 220 MB
+  between them, or with the TV's `MemAvailable` under its floor for three
+  measures in a row or 30 MB under it at once, the background job is stopped and
+  queued again for at least a minute; a search over its own share fails. The
+  floor and what a job needs to start depend on the mode, `lib/iptv-memory.js`,
+  which the server picks from the TV's memory; there is no setting.
+  **Normal**, from 1.5 GB of memory: a floor of 150 MB and 210 MB to
+  start, with a 64 MB heap; with less available the job runs in economy instead.
+  **Economy**, below that: a floor of 12% of the TV's memory, from
+  90 MB to 150 MB, and to start that floor and the job's cost: 125% of what it
+  last used on that playlist, else 30 MB and 0.7 MB per 1,000 channels for reading
+  a list or the lineup, else 60 MB. An edit the owner is waiting on asks at most
+  20 MB over the floor. The heap is 60% of the cost, from 24 MB to 64 MB, and a
+  worker that dies on it has the full one next time; a batch of logos is 40, not
+  300. In either mode a job also needs 70 MB free where the snapshots live (`df`). Its output is not known before it runs, so the
+  worker counts every byte it writes and stops with `disk` once only 50 MB
+  would be left.
+- **A stream that fails** is opened once more. After a `<video>` error the second
+  try adds `gh=<time>` to the URL, as a provider's CDN may be holding a copy of
+  the playlist the TV cannot read, such as one gzipped for a client with no
+  `Accept-Encoding`. Home sends no Referer, as `localhost` gets a 204 from the
+  same CDN. The message only mentions a limit on streams for a playlist with an
+  account, which `/api/iptv/stream` reports as `account`.
+- **One search at a time**: the lane is taken before the memory check
+  answers, so a search asked for meanwhile replaces it rather than starting
+  beside it.
+- **Downloads are parsed as they arrive**, through curl or wget, and never
+  saved: an M3U line by line, Xtream's JSON arrays an element at a time, an
+  XMLTV guide an element at a time, unzipped on the way when its first bytes
+  say gzip. A JSON list that never closes, or a guide that stops before
+  `</tv>`, is refused as cut off rather than its first part published. Ceilings: 300 MB downloaded, 1.5 GB unzipped, 64 KB an M3U entry
+  or JSON element, 2 MB an XMLTV element, 500,000 entries.
+- **Snapshots.** A job writes a candidate folder (`snap-`, `sel-`, `guide-`,
+  `nn-`) and reports it done; the server checks the playlist is still there
+  at the same generation, writes `current.json` pointing at it, and only once
+  that write succeeds uses it. A failed or stale candidate is deleted, so a failed refresh, an edit or a restart
+  leaves the last good snapshot published. Folders nothing points at go a
+  minute later.
+- **The server reads only small, bounded files**: `meta.json` (16 KB),
+  `groups.json` (384 KB, every group with its count), `added.json` (1 MB,
+  the lineup's channels), `nownext.json` (512 KB), a play link (4 KB) and a
+  browse or search result (96 KB), each held under its limit by the worker
+  before it reports.
+  `index.tsv`, `urls.tsv` and `keys.tsv` are read only by workers; logos and
+  guide shards are piped to Home unread.
+- **Keys.** An Xtream channel's key is its stream id. An M3U entry gets a
+  random key, carried to the next read by the SHA-1 of its full URL, else by
+  a hint (name, group, tvg-id, host and last path segment) only when exactly
+  one old key and one new entry share it: a channel whose token rotated keeps
+  its key; two whose links differ only in a token, both rotated, are not
+  guessed. A key gone after a refresh is matched again only to the one entry
+  with its name and group, else shown as gone.
+- **Schedule.** A playlist is read daily between 03:00 and 05:00, the guide
+  every six hours (an Xtream login's `xmltv.php` once the lineup goes beyond
+  the row's favourites, and its short EPG for the favourites every 30
+  minutes, each job linking the other's channels from the last guide rather
+  than dropping them), failures backing off 15 minutes, an hour, 6
+  and 24 hours, or a 429's `Retry-After` if longer. A refused login stops a
+  playlist's jobs until it is edited or refreshed. Times are kept in
+  `config.json`; overdue jobs run 3 to 8 minutes after a start or a wake.
+  While Home plays a stream it renews a 2-minute lease, and background jobs
+  wait for it, but none more than two hours past due.
+- **The lineup** (`lib/iptv-lineup.js`, pure functions over `selection.json`)
+  is sections in order: a group section names a provider group and the keys
+  taken out of it, and the select job reads the group's channels afresh each
+  time, so it follows the provider; a pick section lists channels by key, in
+  the owner's order. Channels are numbered through the sections, a section
+  starting at its own number where it has one; a channel in two sections is
+  in the first. Favourites (60, Home's row), renames and hidden groups are
+  kept beside them. The selection's generation moves only when which channels
+  are carried does, so a star, rename or new number reaches Home without the
+  select job running. At most 2,000 channels, 1,000 from a group, 100
+  sections. An edit can name many channels, groups or sections at once (a
+  lineup edit's body may be 512 KB, other POSTs 8 KB); one that is refused
+  part way leaves the selection as it was. Moving a channel out of a group
+  section adds it to the group's taken-out keys. The server keeps the
+  selection as it was before each of the last 20 edits, in memory, for Undo.
+  A failed save leaves both the selection and that history unchanged.
+- **Logos come in batches.** A select job the owner is waiting on fetches 12
+  new logos and publishes; later jobs, a minute apart, fetch 300 each (two a
+  second), carrying the rest by hard link, until none is left. One the owner
+  edits stops a batch rather than waiting for it. A logo that failed is not
+  asked for again for a day; 32 MB in all. Non-favourites keep 26 hours of
+  guide, 80 programmes and short descriptions, against two days for the row.
+- **The watchdog.** `tvwebctl watch` kills a child of the server still
+  running node's binary seconds later, taking it for one stuck between fork
+  and exec (node 0.12 on webOS 4). The workers run node on purpose, so it
+  passes over them, as over the remote's button reader.
+
+Measured on a G3 (webOS 9.2.2, node 16) reading from this Mac's fake provider
+and from a real one:
+
+| Job | Time | Worker and curl, peak RSS |
+| :-- | :-- | :-- |
+| Xtream account, 53,463 live channels in 860 groups | 6.8 s | 38 MB |
+| M3U, 100,008 entries (24 MB) | 13 to 15 s | 100 MB |
+| XMLTV, 202 MB (9 MB gzipped), 842,667 programmes | 48 s | 47 MB |
+| Search over the 100,008 | 0.7 to 0.8 s | 33 MB |
+
+`MemAvailable` stayed above 550 MB, and `/api/home/catalogue` answered in
+85 to 140 ms while each ran.
+
 ## Platform constraints
 
 - **Node.js v0.12 (2015)**: webOS 4.x ships Node v0.12.2. All code in `tvweb.js` is written in strict ES5 (no `let`/`const`, no arrow functions, no template literals, no `async`/`await`).
@@ -259,9 +387,10 @@ Panel-lifecycle features are gated on panel type, detected once via
 `/var/luna/preferences/paneltype_oled`, the model name (`OLED...`, or one of the OLED lines
 whose model numbers lack the prefix: Flex and Objet Posé `LX`, Easel `ART9x`), or pnwash
 filesystem records. The pnwash check also runs when the model name is known, so an unlisted
-OLED without the prefix is still found. `panelUsageTime` is not a signal: LCD TVs report it too. On an LCD/QNED TV they are
+OLED without the prefix is still found. `panelUsageTime` is not a signal: LCD TVs report it too,
+and `panelcontroller/getOledCellInfo` can return all zeros (`00/00/0/00`). On an LCD/QNED TV they are
 omitted from the dashboard and withheld from MQTT discovery, with retained discovery configs
-cleared so they do not linger in Home Assistant as orphans. Reporting `0 hours` would read as a real
+cleared so they do not linger in Home Assistant as orphans. Reporting `0 hours` or a dummy cell would read as a real
 measurement.
 
 ## Deploying over ssh
@@ -1157,32 +1286,24 @@ awake. The subscription's updates are trusted for whether the remote is a
 Bluetooth one: asked once, the same method says it is not. On webOS 4,
 `com.webos.service.mrcu/getDeviceInfo` has the charge in `batteryLevel`, so it
 is asked first, and no Bluetooth connection is made where it answers with a
-number from 0 to 100. Text such as `MID` is not converted to a percentage.
-The Bluetooth fallback is available on webOS 9 and later, across TV and remote
-models. The pairing address identifies the remote even when its Bluetooth name
-differs from the model in LG's pairing file. Without an address, only a single
-paired LG MR device can be selected. Pre-9 and unknown webOS versions use only
-LG's numeric response: on a webOS 5 TV the remote lost its pointer and some
-buttons after waking once Bluetooth reads began, until a reboot. A non-Bluetooth
-remote can still supply a numeric level through LG's service.
-
-lginput2 holds the remote's own connection. Each fallback read makes
-`gatt/connect` and `gatt/discoverServices`, then checks `gatt/getServices` for
-the standard Battery Service (`180f`) and readable Battery Level (`2a19`).
-An absent service or unreadable characteristic stops the read. Firmware that
-cannot enumerate services retains the direct standard-characteristic read.
-Short and full UUIDs are accepted. `gatt/readCharacteristicValue` uses the
-returned `clientId`; `gatt/disconnect` releases it even after discovery or read
-failure. Missing APIs or failed reads leave the percentage unavailable rather
-than estimating it. This detects the two known battery paths; proprietary
-battery protocols are not inferred from a remote's model name.
-A successful level, timestamp and source are cached by address. Replacing the
-remote invalidates the displayed reading; a reading from before restart keeps
-its original timestamp. The stats payload adds `batteryUpdatedAt`,
-`batterySource` and `batteryStatus` alongside the existing numeric `battery`,
-which still feeds Home Assistant and Prometheus. Control and Metrics keep the
-remote visible while a level is unavailable. A plain level in an older pairing
-file remains a fallback, with no invented read time.
+number from 0 to 100, or with `"HIGH"`, `"MID"` or `"LOW"` (an MR19 on a C9,
+given as 100, 50 and 10) on webOS versions where Bluetooth is not used.
+The Bluetooth read is made on webOS 9 and later (on a C5 on webOS 11.2,
+`getDeviceInfo` answers `"MID"` while the remote's Battery Service gives the
+exact percentage); on a webOS 5 TV the remote lost its pointer and some buttons
+after waking once Bluetooth reads began, until a reboot. The pairing address
+identifies the remote even when its Bluetooth name differs from the model in
+LG's pairing file; without an address, a single paired `LGE MR*` BLE device is
+used. lginput2 holds the remote's own connection, and the Bluetooth service
+reads the service only over a GATT connection of its own, so each read there is
+`gatt/connect`, `gatt/discoverServices`, `gatt/getServices` to check that the
+Battery Service (`180f`) and a readable Battery Level (`2a19`) are present
+(continuing to the read where the firmware does not list services),
+`gatt/readCharacteristicValue` by the `clientId` that connect returned, then
+`gatt/disconnect`, which is made whatever failed after connecting. The last
+level, timestamp and source are saved in `remote-battery.json` keyed by the
+remote's Bluetooth address; a plain level in the pairing file, should an older
+TV write one, is used until the remote has given one.
 TV-RESEARCH.md has how this was found.
 
 ## Settings backups
@@ -1382,7 +1503,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 4, 5, 6, 7, 9 and 10; webOS 11 with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab (webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3, standalone as on webOS 4, and later versions with `allowExperimentalHome`). The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 
@@ -1489,7 +1610,10 @@ black for the server; being LG's Home's app, it cannot open LG's Home itself.
 `lib/home-takeover.js --release`, which unmounts without switching Glasshouse
 Home off, so the server takes the place again when it runs.
 The first-heartbeat watch is armed after taking Home even when the foreground
-id stays `com.webos.app.home`. A failed layout restore retains its backup and
+id stays `com.webos.app.home`. Switching the screen off ends the watch. A
+watch that fires more than 5 s later than it was set for has slept through a
+suspend, and gives the view the first heartbeat's 20 s rather than calling it
+hung. A failed layout restore retains its backup and
 reports failure for a later retry.
 
 Earlier builds made a separate app, `com.tvweb.home`, the TV's Home
@@ -1542,7 +1666,9 @@ on the offered list, leaving Home and any newer cards alone
 A card shows the app's snapshot, or its splash where the TV has none since it
 restarted. Pictures are served only from the paths the last list named, and an
 app is opened or closed only while it is on the list. Snapshot responses use
-`private, no-store` caching. Back cancels a pending panel load; returning Home
+`private, no-cache` caching, and each card's picture address carries a version
+from the file's path, size and modification time, so an unchanged picture is
+revalidated (a 304) rather than downloaded and decoded again. Back cancels a pending panel load; returning Home
 discards replies from the previous visit. OK acts once on release.
 
 Left of any row's first tile is a search mark in the gutter, and OK there
@@ -1603,6 +1729,39 @@ discarded if the panel has closed. Each detail read and the final launch recheck
 the Search setting and blocker, so a pending lookup stops when either refuses.
 Search requests allow 12 seconds for the
 server's 10-second limit; launches allow 20 seconds for sequential detail reads.
+
+### Custom launchers
+
+`lib/home-launcher.js` puts another page in the view's place; everything that
+gets the view in front of the TV is unchanged. The app in LG's Home's place
+(or `com.tvweb.home` on webOS 3 and 4, which is installed once and never
+changes) opens `/assets/home.html` as before, and while a launcher is chosen
+and Glasshouse Home is on, the server answers that with a redirect to
+`/home/launcher/`. The heartbeat's reply carries `launcher`, a revision that
+changes with the choice or a new upload, so the page in front reloads into the
+right one within a beat.
+
+Glasshouse Minimal is one of these, built in: `assets/home-minimal.html`, served from
+Glasshouse's own files with the same script added, offered on every TV and
+never removed. Each other launcher is unpacked to
+`/var/lib/tvweb/home-launcher/apps/<id>`, with `launcher.json` naming those
+kept and the one chosen. Zips and `.ipk`s are read
+in JavaScript, the `.ipk` with the installer's ar and tar readers, as not every
+webOS has `unzip`. Paths outside the folder, links and native apps are refused.
+The start page is served with `/assets/home-kit.js?v=<release>` added first in
+its head: the release in the address because the TV's browser keeps scripts a
+day, and a launcher written against a newer kit would meet an older one. The
+kit sends the heartbeat (and on webOS 4 closes the page when switched off or
+two minutes behind another app, as the view does) and defines
+`window.Glasshouse`. A web address opens in a frame of `assets/home-web.html`,
+which carries the kit, so the site never runs as the Home app.
+
+The Home key with the view already in front launches nothing on webOS 9 (a
+C2), so the server launches the view again on a short press there, which
+reaches the page as `webOSRelaunch`; the kit's `onHome` passes it on. On
+webOS 4 a view that stops answering is closed with WebAppMgr's `killApp`
+before it is launched again, since a launch while it runs only brings back the
+page it is on.
 
 ## Apps kept ready in the background
 

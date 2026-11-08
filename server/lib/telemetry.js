@@ -91,6 +91,12 @@ function noteMediaSeen() {
  */
 var acbAbsent = false;
 var MEDIA_IDLE = { state: 'idle', playerType: null, fullScreen: false };
+/*
+ * cb(media, noPipe): noPipe is true where the service answered with no media
+ * pipe at all, as for an app playing through Web Audio, rather than nothing
+ * playing in a pipe it has. On a C1 (webOS 6.4), which has no acb, such an
+ * app gets an empty foregroundAppInfo from com.webos.media, as an input does.
+ */
 function readMediaState(cb, fresh) {
   var ask = fresh ? function (uri, cb2) { lunaFn(uri, {}, cb2); }
                   : function (uri, cb2) { lunaCachedFn(uri, {}, 4000, cb2); };
@@ -99,7 +105,8 @@ function readMediaState(cb, fresh) {
       var list = (m && m.returnValue !== false && Array.isArray(m.foregroundAppInfo)) ? m.foregroundAppInfo : null;
       if (!list) return cb(null);
       var app = list.filter(function (a) { return a && a.playState; })[0];
-      cb(app ? { state: String(app.playState), playerType: app.type || null, fullScreen: true } : MEDIA_IDLE);
+      if (app) return cb({ state: String(app.playState), playerType: app.type || null, fullScreen: true });
+      cb(MEDIA_IDLE, list.length === 0);
     });
   }
   if (acbAbsent) return fromMediaService();
@@ -108,7 +115,7 @@ function readMediaState(cb, fresh) {
     if (pipe && pipe.playStateNow) {
       return cb({ state: String(pipe.playStateNow), playerType: pipe.playerType || null, fullScreen: pipe.isFullScreen !== false });
     }
-    if (acb && acb.returnValue !== false && Array.isArray(acb.acbs)) return cb(MEDIA_IDLE);
+    if (acb && acb.returnValue !== false && Array.isArray(acb.acbs)) return cb(MEDIA_IDLE, !pipe);
     if (acb && /Service does not exist/.test(String(acb.errorText))) acbAbsent = true;
     fromMediaService();
   });
@@ -1531,6 +1538,10 @@ function detectWebosVersion(sdkVersion) {
   return null;
 }
 
+function isDummyCell(cell) {
+  return !cell || !/[1-9a-zA-Z]/.test(cell);
+}
+
 function detectHardwareInfo(sdkVersion, cb) {
   HARDWARE_INFO.webos = detectWebosVersion(sdkVersion);
   var envRaw = readTrimmed('/var/luna/preferences/environmentCondition');
@@ -1558,16 +1569,32 @@ function detectHardwareInfo(sdkVersion, cb) {
     return;
   }
 
-  lunaFn('com.webos.service.panelcontroller/getOledCellInfo', {}, function (cellRes) {
-    if (cellRes && cellRes.cellInfo) HARDWARE_INFO.cell = cellRes.cellInfo;
-    lunaFn('com.webos.service.panelcontroller/getOledTconInfo', {}, function (tconRes) {
-      if (tconRes && tconRes.tconParamForInstart) {
-        HARDWARE_INFO.tconFirmware = tconRes.tconParamForInstart.tconFpgaFirmwareVer || null;
-        HARDWARE_INFO.tconModule = tconRes.tconParamForInstart.tconModuleInfo || null;
+  function readSiliconInfo() {
+    lunaFn('com.webos.service.panelcontroller/getOledCellInfo', {}, function (cellRes) {
+      if (cellRes && cellRes.cellInfo && !isDummyCell(cellRes.cellInfo)) {
+        HARDWARE_INFO.cell = cellRes.cellInfo;
       }
-      if (cb) cb();
+      lunaFn('com.webos.service.panelcontroller/getOledTconInfo', {}, function (tconRes) {
+        if (HARDWARE_INFO.cell && tconRes && tconRes.tconParamForInstart) {
+          HARDWARE_INFO.tconFirmware = tconRes.tconParamForInstart.tconFpgaFirmwareVer || null;
+          HARDWARE_INFO.tconModule = tconRes.tconParamForInstart.tconModuleInfo || null;
+        }
+        if (cb) cb();
+      });
     });
-  });
+  }
+
+  if (oledModule && typeof oledModule.detectOled === 'function') {
+    oledModule.detectOled(function (isOled) {
+      if (!isOled) {
+        if (cb) cb();
+        return;
+      }
+      readSiliconInfo();
+    });
+  } else {
+    readSiliconInfo();
+  }
 }
 
 // Tries left, and the wait between them, when the model name does not come
@@ -2149,8 +2176,7 @@ function collectStats(cb) {
                     adblock: {
                       enabled: privacyModule ? privacyModule.isAdBlockActive() : false,
                       count: (privacyModule && privacyModule.adBlockList) ? privacyModule.adBlockList('full').length : 0
-                    },
-                    localLookups: privacyModule && privacyModule.localLookups ? privacyModule.localLookups() : false
+                    }
                   };
                   if (!oledModule) {
                     out.capabilities = {

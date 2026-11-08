@@ -134,7 +134,7 @@ Glasshouse can be configured either directly on the TV screen with the remote or
     | `ntp.server` | `""` | Hostname of an NTP server (e.g., `"pool.ntp.org"`) to synchronize the TV's clock on boot and hourly. |
     | `syslog.server` | `""` | Remote syslog server address to forward TV and Glasshouse logs over RFC 5424 UDP (port `514`). |
     | `allowTileHiding` | `false` | Experimental: allows hiding built-in LG system tiles and apps on the home screen. |
-    | `allowExperimentalHome` | `false` | Experimental: offers [Glasshouse Home](dashboard/home.md) on webOS 11, where it is untried. |
+    | `allowExperimentalHome` | `false` | Experimental: offers [Glasshouse Home](dashboard/home.md) on webOS 3, and on webOS 12 and later, where it is untried. |
     | `allowExperimentalScreensavers` | `false` | Experimental: allows custom QML screensavers on webOS 12 and newer, which are untried there. Named `allowOnWebos10` before 0.105; that name is still read, and renamed when the server starts. |
     | `screensaverPowerOffMinutes` | unset (off) | Puts the TV in standby once a screen saver has been on this many minutes (1 to 1440). Also set from the Screensaver tab as **Poweroff after**. |
     | `allowNetworkDebugger` | `false` | Exposes the webOS app inspector on port `9998` over the local network for developers using `ares-inspect`. |
@@ -164,6 +164,7 @@ Glasshouse can be configured either directly on the TV screen with the remote or
 
 ## Troubleshooting
 
-* **Connection refused or password prompt during install.** The installer tries passwordless SSH first, then telnet. If SSH prompts for a password, make sure telnet is toggled **ON** in the TV's Homebrew Channel app settings, or run `./deploy.sh <tv-ip> --telnet` to connect directly over telnet.
+* **Connection refused or password prompt during install.** The installer tries passwordless SSH first, then telnet. If SSH prompts for a password, make sure telnet is toggled **ON** in the TV's Homebrew Channel app settings, or run `./deploy.sh <tv-ip> --telnet` to connect directly over telnet. The installer can't type a password, so to use SSH, add your computer's key first: see [moving from telnet to SSH](SECURITY.md#moving-from-telnet-to-ssh).
+* **"Couldn't reach the TV" on a Mac, though the TV is on.** macOS lets an app reach devices on your home network only once you have allowed it. Switch on your terminal app under System Settings → Privacy & Security → Local Network, then run the installer again.
 * **Nothing on port 8080.** On the TV, `/var/lib/tvweb/tvwebctl status` says whether the server is running and `/var/lib/tvweb/tvweb.log` says why it is not.
 * **Panel hours and OLED Care missing on an OLED TV**, or showing on an LCD one. Panel detection went the wrong way: set `"panel": "oled"` or `"panel": "lcd"` in `server/config.json` before a first deploy, or in `/var/lib/tvweb/config.json` on a TV that already has one.

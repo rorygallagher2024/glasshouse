@@ -13,7 +13,7 @@ function fakeLg(rows) {
   return {
     sets: sets,
     collect: function (sections, cb) {
-      assert.deepEqual(sections, ['promotions', 'sound', 'devices', 'hdmi'], 'no game settings');
+      assert.deepEqual(sections, ['promotions', 'uploads', 'sound', 'devices', 'hdmi'], 'no game or picture settings');
       cb({ ok: true, rows: rows });
     },
     set: function (id, value, cb) {

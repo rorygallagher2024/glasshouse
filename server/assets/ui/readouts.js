@@ -216,27 +216,21 @@ function hdmiKey(d) {
           diag.chroma || '', diag.hdcp || '', d.colorimetry || pe.colorimetry || '', pe.hdr_mode || ''].join('|');
 }
 
-function remoteBatteryNote(rem, hasBattery) {
-  if (hasBattery && rem.batteryUpdatedAt) {
-    return t('metrics.remote.batteryRead', 'Last read: {time}', {
-      time: new Date(rem.batteryUpdatedAt).toLocaleString()
-    });
-  }
-  if (hasBattery) return t('metrics.remote.batterySaved', 'Last known battery level');
-  if (rem.batteryStatus === 'unsupported') return t('metrics.remote.batteryUnsupported', 'Battery reporting is not supported for this TV and remote yet.');
-  if (rem.batteryStatus === 'unavailable' || rem.connected) return t('metrics.remote.batteryUnavailable', 'The remote has not provided a battery level yet.');
-  return t('metrics.remote.batteryWake', 'Move the remote to check its battery.');
-}
-
 function renderRemoteBattery(rem) {
   const hasBattery = !!(rem && Number.isFinite(rem.battery) && rem.battery >= 0 && rem.battery <= 100);
-  if (rem) {
+  const note = q('remote-battery-note');
+  if (hasBattery) {
     q('remoteblock').hidden = false;
-    q('remote-battery').hidden = !hasBattery;
-    q('remote-pct').textContent = hasBattery ? rem.battery : '—';
+    q('remote-pct').textContent = rem.battery;
     const gFill = q('remote-gauge-fill');
-    gFill.style.width = Math.max(0, Math.min(100, rem.battery || 0)) + '%';
+    gFill.style.width = Math.max(0, Math.min(100, rem.battery)) + '%';
     gFill.style.background = rem.battery <= 15 ? 'var(--red)' : rem.battery <= 30 ? 'var(--cand)' : 'var(--green)';
+    if (note) {
+      note.hidden = !rem.batteryUpdatedAt;
+      note.textContent = rem.batteryUpdatedAt
+        ? t('metrics.remote.batteryRead', 'Last read: {time}', { time: new Date(rem.batteryUpdatedAt).toLocaleString() })
+        : '';
+    }
     q('remote-model-val').textContent = rem.model ? rem.model.replace(/^LGE\s*/i, '') : t('metrics.remote.name', 'Magic Remote');
     q('remote-fw-val').textContent = rem.firmware || '—';
     if (q('remote-fw-row')) q('remote-fw-row').hidden = !rem.firmware;
@@ -260,16 +254,11 @@ function renderRemoteBattery(rem) {
       rem.mac ? t('metrics.remote.bluetooth', 'Bluetooth: {address}', { address: rem.mac }) : ''].filter(Boolean).join(' · ');
   } else {
     q('remoteblock').hidden = true;
+    if (note) {
+      note.hidden = true;
+      note.textContent = '';
+    }
   }
-  q('control-remote').hidden = !rem;
-  if (!rem) return;
-  const note = remoteBatteryNote(rem, hasBattery);
-  q('remote-battery-note').textContent = note;
-  q('control-remote-model').textContent = rem.model ? rem.model.replace(/^LGE\s*/i, '') : t('metrics.remote.name', 'Magic Remote');
-  q('control-remote-battery').textContent = hasBattery
-    ? t('metrics.remote.batteryPercent', 'Battery: {level}%', { level: rem.battery })
-    : t('metrics.remote.batteryUnknown', 'Battery unavailable');
-  q('control-remote-note').textContent = note;
 }
 
 async function tick() {
@@ -406,10 +395,9 @@ async function tick() {
       if (q('adv-piccap')) q('adv-piccap').hidden = !pc && !hs;
       const devVal = getLease('deviceDetection', d.deviceDetection);
       advPill('devdetect', 'btn_devdetect', devVal !== undefined ? devVal : d.deviceDetection);
-      const lookups = d.privacy ? d.privacy.localLookups === true : undefined;
-      const lookupsVal = getLease('localLookups', lookups);
-      advPill('locallookups', 'btn_locallookups', lookupsVal !== undefined ? lookupsVal : lookups);
-      if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && lookups === undefined && !advLgsDevices;
+      const scanVal = getLease('deviceScans', d.deviceScans);
+      advPill('devscans', 'btn_devscans', scanVal !== undefined ? scanVal : d.deviceScans);
+      if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && d.deviceScans === undefined && !advLgsDevices;
       if (q('tl-cur')) {
         q('tl-cur').textContent = st === 'off' ? t('common.off', 'Off') : t('ctl.sleep.minutes', '{n} min', { n: st });
       }
@@ -534,7 +522,7 @@ async function tick() {
     } else {
       q('spec-arch-item').hidden = true;
     }
-    if (d.panel_silicon && d.panel_silicon.cell) {
+    if (d.panel_silicon && d.panel_silicon.cell && /[1-9a-zA-Z]/.test(d.panel_silicon.cell)) {
       q('spec-silicon-item').hidden = false;
       q('spec-silicon').textContent = d.panel_silicon.cell;
       hasHw = true;

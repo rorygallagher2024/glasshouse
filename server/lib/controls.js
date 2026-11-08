@@ -20,6 +20,9 @@ var typing = require('./typing');
  * which is why it never worked.
  *
  * Over CEC to an external box, KEY_PLAY behaves as a toggle instead.
+ *
+ * On a C1 (webOS 6.4) KEY_PLAYPAUSE never reaches a web app either, while
+ * KEY_PAUSE and KEY_PLAY arrive as keyCode 19 and 415.
  */
 var RCU_KEY_CODES = {
   play: 207,
@@ -216,13 +219,34 @@ function injectKey(code, cb, delayMs) {
  * No key toggles the built-in player, so this asks what it is doing and sends
  * the other one. An external input reports "playing" whatever the box on the
  * end is doing, and KEY_PLAY is a toggle over CEC, so that path just sends it;
- * so does nothing playing.
+ * so does nothing playing. An app with no media pipe (one playing through Web
+ * Audio) can't be read, so it gets pause and play in turn.
  */
 function sendPlayPause(cb) {
-  telemetry.readMediaState(function (media) {
+  telemetry.readMediaState(function (media, noPipe) {
+    if (noPipe) return sendUnreadPlayPause(cb);
+    lastUnreadKey = null;
     var playing = !!(media && media.state === 'playing' && media.playerType !== 'external input');
     sendMediaKey(playing ? 'pause' : 'play', cb);
   }, true);
+}
+
+/*
+ * The key Play / Pause last sent with no pipe to read, and to which app. Pause
+ * comes first, as Play / Pause is mostly pressed on something playing, and
+ * again for another app. com.webos.media gives nothing for an external input
+ * either, so one in front keeps KEY_PLAY.
+ */
+var lastUnreadKey = null;
+var lastUnreadApp = null;
+function sendUnreadPlayPause(cb) {
+  luna('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+    var app = fg && fg.appId;
+    if (names.isInputAppId(app)) return sendMediaKey('play', cb);
+    lastUnreadKey = lastUnreadKey === 'pause' && lastUnreadApp === app ? 'play' : 'pause';
+    lastUnreadApp = app;
+    sendMediaKey(lastUnreadKey, cb);
+  });
 }
 
 function sendMediaKey(cmd, cb) {
@@ -845,12 +869,15 @@ function doControl(action, value, cb) {
      * tvpowerd subscribes to the key, so writing it is all LG's menu does.
      * Only on firmware that has it: a C2 on webOS 9.2 does, a B8 on 4.4 does not.
      */
-    // LG's device scans answered on the TV (lib/privacy.js).
-    case 'localLookups':
-      return privacy.setLocalLookups(value === true || value === 'on' || value === 'true', function (r) {
-        telemetry.clearCache();
-        cb(r);
-      });
+    /*
+     * Glasshouse's own, beside LG's Auto device detection: the service that
+     * looks up every address on the network, held down where off (lib/services),
+     * which LG's setting does not do on webOS 11 (#1260).
+     */
+    case 'deviceScans':
+      if (!servicesModule || !servicesModule.available('iconnectivity')) return cb({ ok: false, error: 'not on this TV' });
+      var scansOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
+      return servicesModule.switchHidden('iconnectivity', !scansOn, function (r) { cb({ ok: !!(r && r.ok), error: r && r.error }); });
 
     // LG's universal control device detection (other/ueiEnable); see telemetry.
     case 'deviceDetection':

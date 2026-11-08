@@ -58,9 +58,18 @@ console.log('  ✓ chosen, or asked for in the address, it is used on every page
 // A complete language follows the browser on every page.
 [HOME, TV, WEB].forEach(function (p) {
   assert.strictEqual(load({ browser: 'es-ES', page: p }).lang(), 'es', p);
+  assert.strictEqual(load({ browser: 'fr-FR', page: p }).lang(), 'fr', p);
 });
-assert.strictEqual(load({ browser: 'fr-FR', page: WEB }).lang(), 'en', 'a language without a file');
+assert.strictEqual(load({ browser: 'xx-XX', page: WEB }).lang(), 'en', 'a language without a file');
 console.log('  ✓ a complete language follows the browser everywhere');
+
+// A language with its region is its own: other regions are not given it.
+assert.strictEqual(load({ browser: 'pt-BR', page: WEB }).lang(), 'pt-br', 'its region, as the browser writes it');
+assert.strictEqual(load({ browser: 'pt-PT', page: WEB }).lang(), 'pt', 'another region of the language');
+assert.strictEqual(load({ browser: 'en-US', page: WEB, search: '?lang=pt-br' }).lang(), 'pt-br', 'asked for in the address');
+assert.strictEqual(load({ browser: 'en-US', page: WEB, stored: 'pt-br' }).lang(), 'pt-br', 'chosen in the list');
+assert.strictEqual(load({ browser: 'es-MX', page: WEB }).lang(), 'es', 'a region with no file of its own is the language');
+console.log('  ✓ a language with its region is picked whole');
 
 var web = load({ browser: 'en-GB', page: WEB });
 assert.strictEqual(web.complete('de'), false, 'the list marks German as partial on the dashboard');

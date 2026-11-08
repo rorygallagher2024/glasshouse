@@ -36,9 +36,7 @@ The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemet
 
     ---
 
-    Battery percentage and its last-read time, live Bluetooth status (`Connected` / `Standby`), signal strength, remote model, and firmware version. Move the remote to wake it for a reading; the last known percentage stays visible while it sleeps. Battery reporting is detected for the paired remote across TV models. The card explains when the remote or firmware exposes no supported level.
-
-    ![Magic Remote battery percentage and last-read time](../screenshots/metrics-remote-battery.jpg)
+    Battery level and when it was last read (webOS 4, and webOS 9 and later), live Bluetooth status (`Connected` / `Standby`), signal strength, remote model, and firmware version, retained across server restarts.
 
 -   **Hardware & firmware**
 
