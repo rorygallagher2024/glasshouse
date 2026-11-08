@@ -2381,7 +2381,7 @@
  },
  "home.confirmOff": {
   "from": "Press again to use LG Home",
-  "text": "Appuyez à nouveau pour utiliser LG Home"
+  "text": "Appuyez à nouveau pour utiliser l'Accueil de LG"
  },
  "home.confirmOn": {
   "from": "Press again to switch on",
@@ -2481,7 +2481,7 @@
  },
  "home.group.shown": {
   "from": "Shown on Home",
-  "text": "Affiché sur Home"
+  "text": "Affiché sur l'Accueil"
  },
  "home.group.start": {
   "from": "Starting up",
@@ -2905,19 +2905,19 @@
  },
  "home.restartsAppsAny": {
   "from": "On this TV, switching away from LG Home or back to it, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open.",
-  "text": "Sur cette TV, quitter Accueil LG ou y revenir, ou maintenir Accueil pour l'Accueil de LG, redémarre le gestionnaire d'apps de la TV, ce qui ferme les apps ouvertes."
+  "text": "Sur cette TV, quitter l'Accueil de LG ou y revenir, ou maintenir Accueil pour l'Accueil de LG, redémarre le gestionnaire d'apps de la TV, ce qui ferme les apps ouvertes."
  },
  "home.restorePending": {
   "from": "LG Home restoration is incomplete",
-  "text": "La restauration de LG Home est incomplète"
+  "text": "La restauration de l'Accueil de LG est incomplète"
  },
  "home.restoreRetry": {
   "from": "Retry restoring LG Home before switching Glasshouse Home on again.",
-  "text": "Réessayez de restaurer LG Home avant de réactiver Glasshouse Home."
+  "text": "Réessayez de restaurer l'Accueil de LG avant de réactiver Glasshouse Home."
  },
  "home.retryRestore": {
   "from": "Retry restoring LG Home",
-  "text": "Réessayer de restaurer LG Home"
+  "text": "Réessayer de restaurer l'Accueil de LG"
  },
  "home.row.addChannels": {
   "from": "Add channels in Glasshouse’s Home settings",
@@ -4731,7 +4731,7 @@
  },
  "metrics.remote": {
   "from": "Magic remote",
-  "text": "Télécommande Magic"
+  "text": "Magic Remote"
  },
  "metrics.remote.batteryReadLabel": {
   "text": "Dernière lecture :",
@@ -4759,7 +4759,7 @@
  },
  "metrics.remote.name": {
   "from": "Magic Remote",
-  "text": "Télécommande Magic"
+  "text": "Magic Remote"
  },
  "metrics.remote.signalGood": {
   "from": "Good",
@@ -5195,7 +5195,7 @@
  },
  "oled.cycles.failures": {
   "from": "Refresher failure alerts",
-  "text": "Alertes d'échec du rafraîchisseur"
+  "text": "Alertes d'échec du nettoyage des pixels"
  },
  "oled.cycles.failures.desc": {
   "from": "Maintenance passes the TV recorded as not finishing. Normally zero.",
@@ -5211,7 +5211,7 @@
  },
  "oled.cycles.refresher": {
   "from": "Pixel refresher cycles",
-  "text": "Cycles du rafraîchisseur de pixels"
+  "text": "Cycles de nettoyage des pixels"
  },
  "oled.gsr": {
   "from": "Global Stress Reduction",
@@ -5235,7 +5235,7 @@
  },
  "oled.logo": {
   "from": "Logo Dimming",
-  "text": "Assombrissement du logo"
+  "text": "Ajuster la luminosité du logo"
  },
  "oled.logo.desc": {
   "from": "Dims only the static logos and banners a channel leaves in a corner, and leaves the rest of the picture alone.",
@@ -5279,7 +5279,7 @@
  },
  "oled.refresherIn": {
   "from": "Pixel refresher in",
-  "text": "Rafraîchisseur de pixels dans"
+  "text": "Nettoyage des pixels dans"
  },
  "oled.shift": {
   "from": "Screen Shift",
@@ -5295,7 +5295,7 @@
  },
  "oled.tpc": {
   "from": "Temporal Peak Control",
-  "text": "Contrôle de pic temporel (TPC)"
+  "text": "Contrôle temporel des pics (TPC)"
  },
  "oled.tpc.desc": {
   "from": "Lowers overall brightness when a bright image is held, which is what makes a mostly-white screen fade after a few seconds. Switching it off keeps full brightness and puts more heat through the panel.",
@@ -7023,7 +7023,7 @@
  },
  "srv.consent.acrAllowed": {
   "from": "Screen content recognition",
-  "text": "Reconnaissance du contenu d'écran"
+  "text": "Reconnaissance du contenu à l'écran"
  },
  "srv.consent.acrAllowed.detail": {
   "from": "Lets LG identify what is on your screen to profile your viewing",
@@ -7347,11 +7347,11 @@
  },
  "srv.ha.cat.oled": {
   "from": "OLED Care",
-  "text": "Entretien OLED"
+  "text": "Maintenance OLED"
  },
  "srv.ha.cat.oled.desc": {
   "from": "Panel on-time, pixel refresher countdowns, and burn-in protections.",
-  "text": "Temps d'allumage de la dalle, comptes à rebours du rafraîchisseur de pixels, et protections contre la rémanence."
+  "text": "Temps d'allumage de la dalle, comptes à rebours du nettoyage des pixels, et protections contre la rémanence."
  },
  "srv.ha.cat.system": {
   "from": "System & Telemetry",
@@ -9031,7 +9031,7 @@
  },
  "srv.privacy.acr": {
   "from": "Screen content recognition",
-  "text": "Reconnaissance du contenu d'écran"
+  "text": "Reconnaissance du contenu à l'écran"
  },
  "srv.privacy.acr.detail": {
   "from": "LG’s ACR captures what is on screen, from apps and HDMI alike, to work out what you watch and target ads at you.",
@@ -9499,7 +9499,7 @@
  },
  "srv.service.iconnectivity": {
   "from": "Network Device Scans",
-  "text": "Analyses des appareils du réseau"
+  "text": "Analyses du réseau"
  },
  "srv.service.iconnectivity.desc": {
   "from": "Looks up every address on the home network to find devices for the Home Hub and LG's device setup. Off, they find no new devices.",
@@ -9883,7 +9883,7 @@
  },
  "tab.oledCare": {
   "from": "OLED Care",
-  "text": "Entretien OLED"
+  "text": "Maintenance OLED"
  },
  "tab.picture": {
   "from": "Picture",
@@ -10151,7 +10151,7 @@
  },
  "tv.apps.home.hidden": {
   "from": "Hidden from Home",
-  "text": "Masquée d'Accueil"
+  "text": "Masquée de l'Accueil"
  },
  "tv.apps.home.hide": {
   "from": "Press OK to hide it",
@@ -10203,7 +10203,7 @@
  },
  "tv.apps.home.shownFlash": {
   "from": "Shown on Home",
-  "text": "Affichée sur Accueil"
+  "text": "Affichée sur l'Accueil"
  },
  "tv.apps.install.browse": {
   "from": "Browse",
@@ -10619,7 +10619,7 @@
  },
  "tv.flash.clock12": {
   "from": "12-hour clock",
-  "text": "Horloge sur 12 heures"
+  "text": "Horloge 12 heures"
  },
  "tv.flash.clock24": {
   "from": "24-hour clock",
@@ -10855,7 +10855,7 @@
  },
  "tv.home.switch.off": {
   "from": "Press OK to use LG Home again",
-  "text": "Appuyez sur OK pour utiliser LG Home à nouveau"
+  "text": "Appuyez sur OK pour revenir à l'Accueil de LG"
  },
  "tv.home.switch.on": {
   "from": "Press OK to use Glasshouse Home",
@@ -10927,7 +10927,7 @@
  },
  "tv.oled.cancelAScheduledRefresher": {
   "from": "Cancel a scheduled refresher",
-  "text": "Annuler un rafraîchissement programmé"
+  "text": "Annuler un nettoyage des pixels programmé"
  },
  "tv.oled.cancelAScheduledRefresher.hint": {
   "from": "Clears a queued calibration so the TV does not spend an hour on it after the next switch-off.",
@@ -10955,7 +10955,7 @@
  },
  "tv.oled.logoDimming": {
   "from": "Logo dimming",
-  "text": "Atténuation des logos"
+  "text": "Ajuster la luminosité du logo"
  },
  "tv.oled.logoDimming.hint": {
   "from": "Spots a station logo that has not moved and fades it slightly. Higher settings dim more of the picture around it.",
@@ -10979,15 +10979,15 @@
  },
  "tv.oled.refresherCancelled": {
   "from": "Refresher cancelled",
-  "text": "Rafraîchissement annulé"
+  "text": "Nettoyage des pixels annulé"
  },
  "tv.oled.refresherScheduled": {
   "from": "Refresher scheduled",
-  "text": "Rafraîchissement programmé"
+  "text": "Nettoyage des pixels programmé"
  },
  "tv.oled.scheduleAPixelRefresher": {
   "from": "Schedule a pixel refresher",
-  "text": "Programmer un rafraîchissement de pixels"
+  "text": "Programmer un nettoyage des pixels"
  },
  "tv.oled.scheduleAPixelRefresher.hint": {
   "from": "Queues the long calibration for the next time the TV is switched off. It cannot run while the screen is on.",
@@ -11011,7 +11011,7 @@
  },
  "tv.oled.temporalPeakControl": {
   "from": "Temporal peak control",
-  "text": "Contrôle temporel des pics"
+  "text": "Contrôle temporel des pics (TPC)"
  },
  "tv.oled.temporalPeakControl.hint": {
   "from": "Limits how long the panel holds peak brightness, which protects it and keeps heat down. Switching it off makes burn-in more likely.",
@@ -12151,7 +12151,7 @@
  },
  "tv.update.serverHealth": {
   "from": "Server health",
-  "text": "Santé du serveur"
+  "text": "État du serveur"
  },
  "tv.update.serverHealth.hint": {
   "from": "Memory footprint and uptime of the Glasshouse background process on this TV.",
