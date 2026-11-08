@@ -20,8 +20,15 @@ DTS Express and 14-bit-packed DTS are outside both modes.
 
 The element holds an exclusive stream lock and renews a kernel lease. Stop
 and EOS release the route; seek retains it so the native bypass stays valid. A stalled producer loses its route after
-20 seconds without a renewal; it cannot resume forwarding on an expired route.
-The sink remains in bypass until route removal succeeds. The existing TV
+20 seconds without a renewal. The lease also ends as soon as another app takes
+the eARC output, as one does when it plays while a DTS app waits in the
+background. The element then removes the module and lets the stream lock go, so
+another DTS stream can start. It drops its frames until the pipeline goes from
+paused to playing again, as uMS does when the app returns, and then takes the
+route again on the same sink.
+The sink remains in bypass until route removal succeeds. A stream whose first
+frames arrive before LG's playsink has added the audiosink, as when an app
+resumes a title, waits up to two seconds for it. The existing TV
 encoder or PCM-mixer route and HAL format are saved and restored. A new
 producer releases a module left by a crashed process before acquiring its route. Only one compressed
 native stream can hold the output.

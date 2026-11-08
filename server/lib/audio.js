@@ -42,7 +42,7 @@ var NATIVE_PROFILE = {
   "kernel": "5.4.268-329.ptl4tv.5",
   "files": {
     "control.py": "826c719788508f48abd23411eacf8b44e204c225fcbe8bc2a4d9b10667739324",
-    "gst/libgstghdts.so": "01918d6ed558eab4ae7b20a43e3bcbe3283e0be7f6a489d57d69c918fde5ab20",
+    "gst/libgstghdts.so": "f9de15a7382808f70ecd6c33b57297b5a1e61367ff0ef6813f93930678b66ed2",
     "gh_dts_native-apply0.ko": "3fe32e07c7cc84be2121c5118f4d36912e6057a03546d153a1031e59afd78427",
     "gh_dts_native-apply1.ko": "dac431f8da07666e8ece36528d7b222ba89b34d877e88661265cb68584713fe5"
   }

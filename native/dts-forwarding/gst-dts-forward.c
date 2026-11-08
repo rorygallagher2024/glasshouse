@@ -14,7 +14,7 @@ typedef struct {
     GstAudioDecoder parent;
     GstElement *sink;
     GThread *guard;
-    gint stopping, failed;
+    gint stopping, failed, lost, retake;
     gint lock_fd;
     gboolean owns_route, previous_bypass;
     guint lease;
@@ -87,13 +87,24 @@ static void record_failure(GstGhDts *self, const gchar *action, const gchar *why
     g_free(json);
 }
 
+/* The lease ends when another app takes the eARC output, which happens
+ * whenever one plays while this one waits in the background. Once the module
+ * is removed the stream lock is released, so that another DTS stream can start
+ * meanwhile, and lost tells the streaming thread. That is routine, so it is not
+ * recorded as an error. A module that would not unload keeps the lock and
+ * fails the stream, as any other lost route does. */
 static gpointer keep_route(gpointer data) {
     GstGhDts *self = data;
     while (!g_atomic_int_get(&self->stopping)) {
         if (!heartbeat(self)) {
-            record_failure(self, "lease", "the route lease was lost: the module is inactive or forwarding was disabled");
-            g_atomic_int_set(&self->failed, 1);
-            control(self, "stop", 0, -1);
+            GST_INFO_OBJECT(self, "route lease ended: another source took the output, the stream stalled or forwarding was disabled");
+            if (control(self, "stop", 0, -1)) {
+                close(self->lock_fd);
+                self->lock_fd = -1;
+                g_atomic_int_set(&self->lost, 1);
+            } else {
+                g_atomic_int_set(&self->failed, 1);
+            }
             break;
         }
         g_usleep(500000);
@@ -107,7 +118,8 @@ static void release_route(GstGhDts *self) {
     if (self->owns_route) report_stream(self, FALSE);
     g_atomic_int_set(&self->stopping, 1);
     if (self->guard) { g_thread_join(self->guard); self->guard = NULL; }
-    gboolean restored = !self->owns_route || control(self, "stop", 0, -1);
+    /* After a lost lease the module may already belong to another stream. */
+    gboolean restored = !self->owns_route || g_atomic_int_get(&self->lost) || control(self, "stop", 0, -1);
     /* Never reconnect the PCM mixer while a compressed route could remain. */
     if (self->sink) {
         if (restored) g_object_set(self->sink, "pcm-bypass", self->previous_bypass, NULL);
@@ -118,6 +130,18 @@ static void release_route(GstGhDts *self) {
     if (self->lock_fd >= 0) { close(self->lock_fd); self->lock_fd = -1; }
 }
 
+/* A stream resumed after losing its lease starts again on the same sink. That
+ * sink stays in bypass: LG recreates its renderer when the app returns, and
+ * only applies pcm-bypass then. */
+static void forget_route(GstGhDts *self) {
+    g_atomic_int_set(&self->stopping, 1);
+    if (self->guard) { g_thread_join(self->guard); self->guard = NULL; }
+    self->owns_route = FALSE;
+    if (self->lock_fd >= 0) { close(self->lock_fd); self->lock_fd = -1; }
+    g_atomic_int_set(&self->lost, 0);
+    g_atomic_int_set(&self->retake, 0);
+}
+
 static GstElement *find_native_sink(GstGhDts *self) {
     GstObject *root = gst_object_ref(self), *parent;
     GstElement *found = NULL;
@@ -125,7 +149,16 @@ static GstElement *find_native_sink(GstGhDts *self) {
     if (GST_IS_BIN(root)) {
         GstIterator *iterator = gst_bin_iterate_recurse(GST_BIN(root));
         GValue item = G_VALUE_INIT;
-        while (gst_iterator_next(iterator, &item) == GST_ITERATOR_OK) {
+        GstIteratorResult result;
+        gint resyncs = 0;
+        while ((result = gst_iterator_next(iterator, &item)) == GST_ITERATOR_OK ||
+               (result == GST_ITERATOR_RESYNC && ++resyncs <= 8)) {
+            /* playsink adds its audio chain while the stream starts. */
+            if (result == GST_ITERATOR_RESYNC) {
+                if (found) { gst_object_unref(found); found = NULL; }
+                gst_iterator_resync(iterator);
+                continue;
+            }
             GstElement *element = g_value_get_object(&item);
             GstElementFactory *factory = gst_element_get_factory(element);
             if (factory && !strcmp(gst_plugin_feature_get_name(GST_PLUGIN_FEATURE(factory)), "audiosink")) {
@@ -140,8 +173,14 @@ static GstElement *find_native_sink(GstGhDts *self) {
     return found;
 }
 
+/* The first frames can arrive before LG's playsink has built its audio chain:
+ * when Plex resumed a title on the G5, the audiosink appeared 100-300 ms later,
+ * once uMS had given the video decoder back. */
+#define SINK_WAIT_US (2 * G_USEC_PER_SEC)
+
 static gboolean acquire_route(GstGhDts *self) {
     gint index = -1;
+    gint64 deadline = g_get_monotonic_time() + SINK_WAIT_US;
     gboolean bypass = FALSE;
     const gchar *why = "forwarding is disabled";
     if (access(BASE "/enabled", R_OK)) goto failed;
@@ -149,9 +188,23 @@ static gboolean acquire_route(GstGhDts *self) {
     self->lock_fd = open(BASE "/stream.lock", O_CREAT | O_RDWR | O_CLOEXEC, 0600);
     if (self->lock_fd < 0 || flock(self->lock_fd, LOCK_EX | LOCK_NB)) goto failed;
     why = "no single LG audiosink in the pipeline";
-    self->sink = find_native_sink(self);
-    if (!self->sink) goto failed;
-    g_object_get(self->sink, "index", &index, "pcm-bypass", &self->previous_bypass, NULL);
+    /* forget_route keeps the sink, and the bypass setting from before the first
+     * start, while it is still the pipeline's only audiosink. */
+    if (self->sink) {
+        GstElement *current = find_native_sink(self);
+        if (current) gst_object_unref(current);
+        if (current != self->sink) { gst_object_unref(self->sink); self->sink = NULL; }
+    }
+    if (!self->sink) {
+        while (!(self->sink = find_native_sink(self)) && g_get_monotonic_time() < deadline) {
+            /* A flush or stop while waiting is not a refusal. */
+            if (GST_PAD_IS_FLUSHING(GST_AUDIO_DECODER_SINK_PAD(self))) { why = NULL; goto failed; }
+            g_usleep(50000);
+        }
+        if (!self->sink) goto failed;
+        g_object_get(self->sink, "pcm-bypass", &self->previous_bypass, NULL);
+    }
+    g_object_get(self->sink, "index", &index, NULL);
     why = "audiosink renderer index is not 0 or 1";
     if (index != 0 && index != 1) goto failed;
     g_object_set(self->sink, "pcm-bypass", TRUE, NULL);
@@ -312,8 +365,17 @@ static GstFlowReturn handle_frame(GstAudioDecoder *decoder, GstBuffer *input) {
         gst_buffer_unmap(input, &source);
         return refuse_stream(self, frame.little ? "unsupported-core-order" : "payload-too-large");
     }
+    if (g_atomic_int_get(&self->lost)) {
+        /* Until the app plays this stream again, the output is another app's. */
+        if (!g_atomic_int_get(&self->retake)) {
+            gst_buffer_unmap(input, &source);
+            return gst_audio_decoder_finish_frame(decoder, NULL, 1);
+        }
+        forget_route(self);
+    }
     if ((!self->owns_route && !acquire_route(self)) || g_atomic_int_get(&self->failed)) {
         gst_buffer_unmap(input, &source);
+        if (GST_PAD_IS_FLUSHING(GST_AUDIO_DECODER_SINK_PAD(decoder))) return GST_FLOW_FLUSHING;
         GST_ELEMENT_ERROR(self, RESOURCE, SETTINGS, ("Native DTS eARC route is unavailable"), (NULL));
         return GST_FLOW_ERROR;
     }
@@ -365,6 +427,16 @@ static GstFlowReturn handle_frame(GstAudioDecoder *decoder, GstBuffer *input) {
  * pcm-bypass on LG's live renderer, which only applies it when the renderer is
  * created. The route is released only when the stream ends or the element stops. */
 static gboolean stop(GstAudioDecoder *decoder) { release_route((GstGhDts *)decoder); return TRUE; }
+
+/* uMS pauses an app's stream when another app comes to the front, and plays it
+ * again when the app returns: that, not any later buffer, lets a stream that
+ * lost the output take it back. */
+static GstStateChangeReturn change_state(GstElement *element, GstStateChange transition) {
+    GstGhDts *self = (GstGhDts *)element;
+    if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING && g_atomic_int_get(&self->lost))
+        g_atomic_int_set(&self->retake, 1);
+    return GST_ELEMENT_CLASS(gst_gh_dts_parent_class)->change_state(element, transition);
+}
 static gboolean sink_event(GstAudioDecoder *decoder, GstEvent *event) {
     gboolean eos = GST_EVENT_TYPE(event) == GST_EVENT_EOS;
     gboolean result = GST_AUDIO_DECODER_CLASS(gst_gh_dts_parent_class)->sink_event(decoder, event);
@@ -388,6 +460,7 @@ static void gst_gh_dts_class_init(GstGhDtsClass *class) {
     gst_element_class_add_pad_template(element, gst_pad_template_new("sink", GST_PAD_SINK, GST_PAD_ALWAYS, input));
     gst_element_class_add_pad_template(element, gst_pad_template_new("src", GST_PAD_SRC, GST_PAD_ALWAYS, output));
     gst_caps_unref(input); gst_caps_unref(output);
+    element->change_state = change_state;
     gst_element_class_set_static_metadata(element, "Native DTS eARC forwarder", "Codec/Decoder/Audio",
         "Preserves DTS and DTS-HD through LG PCM bypass and non-PCM eARC", "Glasshouse contributors");
     decoder->set_format = set_format; decoder->parse = parse_frame; decoder->handle_frame = handle_frame;
