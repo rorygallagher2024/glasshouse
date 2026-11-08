@@ -4681,7 +4681,7 @@
  },
  "metrics.remote": {
   "from": "Magic remote",
-  "text": "Télécommande Magic"
+  "text": "Magic Remote"
  },
  "metrics.remote.bluetooth": {
   "from": "Bluetooth: {address}",
@@ -4705,7 +4705,7 @@
  },
  "metrics.remote.name": {
   "from": "Magic Remote",
-  "text": "Télécommande Magic"
+  "text": "Magic Remote"
  },
  "metrics.remote.signalGood": {
   "from": "Good",
