@@ -5181,7 +5181,7 @@
  },
  "oled.logo": {
   "from": "Logo Dimming",
-  "text": "Assombrissement du logo"
+  "text": "Ajuster la luminosité du logo"
  },
  "oled.logo.desc": {
   "from": "Dims only the static logos and banners a channel leaves in a corner, and leaves the rest of the picture alone.",
@@ -10901,7 +10901,7 @@
  },
  "tv.oled.logoDimming": {
   "from": "Logo dimming",
-  "text": "Atténuation des logos"
+  "text": "Ajuster la luminosité du logo"
  },
  "tv.oled.logoDimming.hint": {
   "from": "Spots a station logo that has not moved and fades it slightly. Higher settings dim more of the picture around it.",
