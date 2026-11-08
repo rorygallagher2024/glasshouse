@@ -26,6 +26,8 @@ jobs:
   tabs:
     runs-on: ubuntu-latest
     name: Browser smoke test (${{ matrix.job }})
+    # Each job takes under a minute. A hang fails here rather than running on.
+    timeout-minutes: 5
     # Each job's groups on a machine of its own (CHECK_JOB in the script): one
     # after another they took two minutes, and scrolling and motion need the
     # processor to themselves.
