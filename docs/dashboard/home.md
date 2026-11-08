@@ -287,9 +287,12 @@ again. A channel that stops partway through reconnects by itself, back at
 the live point, for about a minute before it gives up. A channel from a
 provider login can play as either of the provider's two kinds of stream,
 HLS or MPEG-TS: **Yellow** in the full-screen player switches the channel
-playing, and the TV remembers it for that channel. Refreshes wait while
-a channel plays, and the screen saver stays away while one plays full
+playing, and the TV remembers it for that channel. If the choice cannot be
+saved, a message says so; **OK** reopens the channel with its saved choice.
+Refreshes wait while a channel plays, and the screen saver stays away while one plays full
 screen.
+
+![Internet TV player with the Yellow stream-format control on an LG C3](../screenshots/iptv-player-formats.jpg)
 
 The links and logins are kept on the TV only. They are not shown on the
 dashboard again, and never sent to Home Assistant, the logs or a phone or

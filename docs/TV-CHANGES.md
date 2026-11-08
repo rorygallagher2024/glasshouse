@@ -83,7 +83,7 @@ connected asks for confirmation.
 | Watch time, while switched on in the Server tab | `/var/lib/tvweb/history`, a file for each month, kept for 13 months | **Clear history** in the Server tab, or uninstalling |
 | Daily backups, while switched on in the Server tab | `/var/lib/tvweb/backups`, one file a day, the last 7 kept | Uninstalling |
 | Install job and services run as root | `install-job.json` and `elevated.json` in `/var/lib/tvweb` | Uninstalling |
-| Internet TV playlists, their logins, the lineup chosen from them, the channels read for it, logos and guides | `/var/lib/tvweb/iptv`, mode 700, a folder for each playlist. Each read writes a new copy beside the last, and the one no longer used is deleted a minute after. A playlist of 50,000 channels takes about 15 MB; a lineup of 231 channels with their guide about 4 MB more | Removing the playlist on the Home tab, which deletes its folder at once, or uninstalling |
+| Internet TV playlists, their logins, the lineup chosen from them, the channels read for it, logos and guides | `/var/lib/tvweb/iptv`, mode 700, a folder for each playlist. The playlist settings also keep each channel's HLS or MPEG-TS choice. Each read writes a new copy beside the last, and the one no longer used is deleted a minute after. A playlist of 50,000 channels takes about 15 MB; a lineup of 231 channels with their guide about 4 MB more | Removing the playlist on the Home tab, which deletes its folder at once, or uninstalling |
 
 Installed from the Homebrew Channel, uninstalling the app stops the server
 starting at boot straight away, and within a few minutes the server removes the

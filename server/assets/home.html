@@ -2580,6 +2580,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       tilePreview.gen++;
       clearTimeout(tilePreview.timer);
       tilePreview.target = null;
+      // The row and lineup are separate replies, with separate objects for the same channel.
+      tvStream.item = playerChannel();
       tvStream.onState = playerState;
       tvStream.muted = false;
       $('pvVideo').muted = false;
@@ -2886,9 +2888,14 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function switchFormat() {
     var it = playerChannel(), to = otherFormat();
     stopTvStream();
+    var gen = tvStream.gen;
     renderPmsg(t('home.tv.connecting', 'Connecting to {name}', { name: it.name }), to);
-    postJson('/api/iptv/output', { pl: it.pl, key: it.key, output: to === 'MPEG-TS' ? 'ts' : 'hls' }, function () {
-      if (player.open && playerChannel() === it) startPlayerStream();
+    postJson('/api/iptv/output', { pl: it.pl, key: it.key, output: to === 'MPEG-TS' ? 'ts' : 'hls' }, function (r) {
+      if (gen !== tvStream.gen || !player.open || playerChannel() !== it) return;
+      if (r && r.ok) return startPlayerStream();
+      player.failed = true;
+      renderPmsg(t('home.tv.saveFailed', 'That didn’t save'), t('home.tv.tryAgainPlain', 'OK tries again.'));
+      showBand(true);
     });
   }
 
