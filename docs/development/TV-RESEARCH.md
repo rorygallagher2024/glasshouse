@@ -178,6 +178,24 @@ pipeline returned output3 to LG's route; its idle orphaned module was removed
 when the next player acquired HD output. A subsequent native PCM Matroska clip
 reached the receiver as PCM at 48 kHz with no DTS module active.
 
+App switches on 8 November 2026, in HD mode with Plex, Disney+, YouTube,
+Netflix and live TV. When Plex resumed a title after another app had played,
+the forwarder's first frame arrived while the pipeline still held `fakevdec` in
+place of `lxvideodec` and playsink had no audio chain; the `audiosink` appeared
+100-300 ms later. Refusing then made Plex transcode to PCM in place of DTS. The
+same wait was needed, at 100 ms, on one ordinary start. When another app played
+while Plex was in the background, LG connected that app's source to output3
+and the module stood down, ending the lease. uMS paused Plex's pipeline and
+played the same one again when Plex returned, so its forwarder, which had
+failed for good once its lease ended, had to take the route again: doing that
+on the same sink, left in bypass, brought DTS-HD back. Plex twice stuck on a
+grey screen when reopened with no media pipeline at all; its cause was not
+established. Disney+ DD+, YouTube
+multichannel PCM, Netflix and live TV each took output3 from a held DTS route
+and played normally. The kernel log (`/var/log/legacy-log`) records each
+`audio_hal_earc_set_*` call with the calling thread, which separates LG's eARC
+set-up from the module's.
+
 ## C9 HAWK2 audio EDID (webOS 4.10.2)
 
 OLED65C9PUA, firmware 05.50.00, reported in #1078 on 28 October 2026.

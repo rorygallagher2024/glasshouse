@@ -40,7 +40,9 @@ reboot; the boot hook reapplies it while enabled.
 The package lives under `/var/lib/lg-dts-native`; its boot hook reapplies the
 registration while enabled. A kernel route exists only during DTS playback.
 A producer lease restores the previous route within 20 seconds of a stalled
-producer; normal stop and end-of-stream release it directly. Seeking retains
+producer, and at once when another app takes the output; normal stop and
+end-of-stream release it directly. A DTS stream that lost the output takes it
+again when its app plays it again. Seeking retains
 the route. While enabled, a DTS stream in a TV app without the eARC set-up is
 refused rather than handed back to LG's decoder. Disabling removes the
 registration and the bind mount, releases the route and restores the owned
