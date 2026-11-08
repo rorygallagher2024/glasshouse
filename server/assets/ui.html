@@ -798,8 +798,8 @@
     </div>
   </div>
 
-  <p class="prot-desc" id="huesync-readiness" role="status" hidden></p>
-  <div class="prot-table" id="huesync-settings" hidden>
+  <div id="huesync-settings" hidden>
+  <div class="prot-table">
     <div class="prot-row" id="row-huesync-brightness" hidden>
       <label class="prot-main" for="huesync-brightness" data-t="adv.huesync.brightness">Brightness</label>
       <div class="prot-status"><input class="pill-sel" type="number" min="0" max="100" step="1" id="huesync-brightness" onchange="changeHuesyncSetting(this)"></div>
@@ -816,6 +816,10 @@
       <label class="prot-main" for="huesync-current_ec" data-t="adv.huesync.currentec">Entertainment area</label>
       <div class="prot-status"><select class="pill-sel" id="huesync-current_ec" onchange="changeHuesyncSetting(this)"></select></div>
     </div>
+  </div>
+  <details class="pv-d" id="huesync-more" hidden>
+    <summary data-t="adv.huesync.more">More settings</summary>
+    <div class="prot-table">
     <div class="prot-row" id="row-huesync-background_lightning_video" hidden>
       <label class="prot-main" for="huesync-background_lightning_video" data-t="adv.huesync.backgroundlightningvideo">Background light (video)</label>
       <div class="prot-status"><input type="checkbox" id="huesync-background_lightning_video" onchange="changeHuesyncSetting(this)"></div>
@@ -832,6 +836,8 @@
       <label class="prot-main" for="huesync-auto_start_notification" data-t="adv.huesync.autostartnotification">Automatic start notification</label>
       <div class="prot-status"><input type="checkbox" id="huesync-auto_start_notification" onchange="changeHuesyncSetting(this)"></div>
     </div>
+    </div>
+  </details>
   </div>
 
   <div class="pv-sec adv-sec" id="adv-hdmi" hidden data-t="adv.hdmi">HDMI inputs</div>

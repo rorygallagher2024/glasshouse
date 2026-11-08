@@ -2828,11 +2828,15 @@ async function visitHuesyncSettings(browser, base, problems) {
     await page.waitForSelector('#huesync-settings:not([hidden])');
     if (await page.locator('#huesync-current_ec option').first().textContent() !== settings.ec_list[0].name) fail('area name was not rendered as text');
     if (await page.locator('#huesync-settings img').count()) fail('area markup was interpreted');
+    if (await page.locator('#huesync-readiness').count()) fail('readiness paragraph is still shown');
+    if (await page.locator('#huesync-more').getAttribute('open') !== null) fail('secondary settings start expanded');
+    if (await page.locator('#huesync-auto_start').isVisible()) fail('secondary settings are in the main controls');
     const changes = [
       ['brightness', 60], ['intensity', 3], ['sync_mode', '0'], ['current_ec', 'area-b'],
       ['background_lightning_video', false], ['background_lightning_games', true], ['auto_start', true], ['auto_start_notification', false]
     ];
     for (const [key, value] of changes) {
+      if (key === 'background_lightning_video') await page.locator('#huesync-more summary').click();
       const element = page.locator('#huesync-' + key);
       if (typeof value === 'boolean') await element.setChecked(value);
       else if (key === 'brightness') { await element.fill(String(value)); await element.dispatchEvent('change'); }
@@ -2857,22 +2861,118 @@ async function visitHuesyncSettings(browser, base, problems) {
     diagnostics.busy = false;
     diagnostics.bridge.Authorized = false;
     await page.evaluate(() => tick());
-    await page.waitForFunction(() => document.querySelector('#huesync-readiness').textContent.includes('authorization'));
+    await page.waitForFunction(() => document.querySelector('#huesync-intensity').disabled);
+    if (await page.locator('#huesync-readiness').count()) fail('authorization produced a persistent status paragraph');
     diagnostics.bridge.Authorized = true;
     writable = false;
     await page.evaluate(() => tick());
     await page.waitForFunction(() => document.querySelector('#huesync-brightness').disabled);
+    for (const key of ['background_lightning_video', 'background_lightning_games', 'auto_start', 'auto_start_notification']) delete settings[key];
+    await page.evaluate(() => tick());
+    await page.waitForSelector('#huesync-more[hidden]', { state: 'attached' });
+    if (!(await page.locator('#huesync-brightness').isVisible())) fail('primary controls disappeared with unsupported secondary settings');
     supported = false;
     await page.evaluate(() => tick());
     await page.waitForSelector('#huesync-settings[hidden]', { state: 'attached' });
-  } finally { await page.close(); }
+  } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
+}
+
+async function visitTvHuesync(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  const fail = message => problems.push('TV Hue Sync: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  const settings = JSON.parse(fs.readFileSync(path.join(ROOT, 'test/fixtures/huesync-settings.json'), 'utf8')).settings;
+  settings.ec_list[0].name = '<img src=x onerror=alert(1)>';
+  const diagnostics = { busy: false, bridge: { Connected: true, Authorized: true } };
+  const writes = [];
+  let writable = true, present = true, refuse = false, streaming = true;
+  async function choose(key) {
+    await page.evaluate(key => {
+      sel = rows.findIndex(row => row.key === key);
+      if (sel < 0) throw new Error('missing Hue Sync row ' + key);
+      render();
+    }, key);
+  }
+  async function press(key) {
+    await choose(key);
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => !busy);
+  }
+  try {
+    await page.route('**/api/stats*', async route => {
+      const response = await route.fetch();
+      const stats = await response.json();
+      delete stats.huesyncStreaming;
+      if (present) stats.huesyncStreaming = { streaming, writable, diagnostics, settings };
+      await route.fulfill({ json: stats });
+    });
+    await page.route('**/api/control', async route => {
+      const command = route.request().postDataJSON();
+      writes.push(command);
+      if (!refuse) {
+        if (command.action === 'huesyncSetting') settings[command.value.key] = command.value.value;
+        if (command.action === 'huesync') streaming = command.value;
+      }
+      await route.fulfill({ json: { ok: !refuse, error: refuse ? 'Synthetic failure' : undefined, settings } });
+    });
+    await page.goto(base + '/assets/dashboard.html?tab=options');
+    await page.waitForFunction(() => rows.some(row => row.act === 'huesyncAdjust'));
+    if (await page.locator('#rows img').count()) fail('area name was interpreted as markup');
+    await press('streaming');
+    if (writes[writes.length - 1].action !== 'huesync' || writes[writes.length - 1].value !== false) fail('streaming command is wrong');
+    await choose('brightness');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => !adjusting && !adjustInFlight);
+    const brightness = writes.filter(command => command.action === 'huesyncSetting' && command.value.key === 'brightness');
+    if (!brightness.length || brightness[brightness.length - 1].value.value !== 61) fail('remote brightness adjustment sent the wrong final value');
+    for (const [key, value] of [['intensity', 3], ['sync_mode', '1'], ['current_ec', 'area-example-b']]) {
+      await press(key);
+      const command = writes[writes.length - 1];
+      if (command.action !== 'huesyncSetting' || command.value.key !== key || command.value.value !== value) fail('wrong native command for ' + key);
+    }
+    await press('huesyncMore');
+    await page.waitForFunction(() => sub === 'huesyncMore');
+    if (await page.evaluate(() => rows.some(row => row.key === 'brightness'))) fail('primary settings were repeated in More settings');
+    for (const [key, value] of [['background_lightning_video', false], ['background_lightning_games', true], ['auto_start', false], ['auto_start_notification', true]]) {
+      await press(key);
+      const command = writes[writes.length - 1];
+      if (command.action !== 'huesyncSetting' || command.value.key !== key || command.value.value !== value) fail('wrong secondary command for ' + key);
+    }
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForFunction(() => sub === null);
+    refuse = true;
+    await press('intensity');
+    await page.waitForFunction(() => rows.some(row => row.key === 'intensity' && row.value === 'Extreme'));
+    if (!(await page.locator('#flash').textContent()).includes('Synthetic failure')) fail('failed command had no short error');
+    writable = false;
+    await page.evaluate(() => fetchTab(true));
+    await page.waitForFunction(() => rows.some(row => row.key === 'streaming' && !row.act));
+    const count = writes.length;
+    await press('streaming');
+    if (writes.length !== count) fail('read-only row sent a command');
+    writable = true; diagnostics.busy = true;
+    await page.evaluate(() => fetchTab(true));
+    await page.waitForFunction(() => rows.some(row => row.key === 'brightness' && !row.act));
+    await press('brightness');
+    if (writes.length !== count) fail('busy row sent a command');
+    await press('huesyncMore');
+    await page.waitForFunction(() => sub === 'huesyncMore');
+    present = false;
+    await page.evaluate(() => fetchTab(true));
+    await page.waitForFunction(() => rows.length === 1 && rows[0].act === 'close');
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForFunction(() => !rows.some(row => row.act === 'huesync' || row.key === 'huesyncMore'));
+  } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
 }
 
 function groups(web, tv) {
   return [
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
-      visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
+      visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,

@@ -827,19 +827,10 @@ function renderHuesyncSettings(hs) {
     (diagnostics.bridge.Connected === false || diagnostics.bridge.Authorized === false);
   const streamingButton = q('btn_huesync');
   if (streamingButton) streamingButton.disabled = huesyncSettingsBusy || !!notReady || hs && hs.writable === false;
-  const readiness = q('huesync-readiness');
-  if (readiness) {
-    readiness.hidden = !hs;
-    readiness.textContent = diagnostics.busy === true ? t('adv.huesync.busy', 'Hue Sync is busy')
-      : diagnostics.ready && diagnostics.ready.supported === false ? t('adv.huesync.unsupported', 'Hue Sync is unsupported on this TV')
-      : diagnostics.bridge && diagnostics.bridge.Connected === false ? t('adv.huesync.disconnected', 'Hue Bridge is disconnected')
-      : diagnostics.bridge && diagnostics.bridge.Authorized === false ? t('adv.huesync.unauthorized', 'Hue Bridge needs authorization in the Hue Sync app')
-      : diagnostics.ready && diagnostics.ready.ready === false ? t('adv.huesync.notready', 'Finish setup in the Hue Sync app')
-      : stale.length || (diagnostics._stale || []).length ? t('adv.huesync.stale', 'Some Hue Sync readings are unavailable; retrying')
-      : diagnostics.ready && diagnostics.ready.ready === true && diagnostics.bridge && diagnostics.bridge.Connected === true && diagnostics.bridge.Authorized === true ? t('adv.huesync.ready', 'Hue Sync is ready')
-      : t('adv.huesync.unknown', 'Hue Sync readiness is unknown');
-  }
-  container.hidden = Object.keys(settings).length === 0;
+  const advanced = ['background_lightning_video', 'background_lightning_games', 'auto_start', 'auto_start_notification'];
+  container.hidden = !['brightness', 'intensity', 'sync_mode', 'current_ec', ...advanced].some(key => settings[key] !== undefined);
+  const more = q('huesync-more');
+  if (more) more.hidden = !advanced.some(key => settings[key] !== undefined);
   const choices = {
     intensity: [t('adv.huesync.subtle', 'Subtle'), t('adv.huesync.moderate', 'Moderate'), t('adv.huesync.high', 'High'), t('adv.huesync.extreme', 'Extreme')].map((label, index) => ({ value: String(index), label })),
     sync_mode: [{ value: '0', label: t('adv.huesync.video', 'Video') }, { value: '1', label: t('adv.huesync.game', 'Game') }],

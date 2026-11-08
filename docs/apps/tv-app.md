@@ -104,3 +104,15 @@ The app can be added or removed at any time:
 * **From deploy.sh**: Pass `--app` to add it or `--no-app` to omit it during installation.
 
 Removing the app changes nothing else, since the dashboard server continues to run in the background and reaches any browser on the network regardless. Where a TV model will not take the app, the control is hidden and everything else works as before.
+
+### Hue Sync
+
+The **System** section includes Hue Sync where its service answers. Streaming,
+brightness, intensity, Video/Game mode and entertainment area are shown directly;
+background-light and startup switches are under **More settings**. Press OK to
+toggle or cycle a setting. Brightness uses the existing adjustment bar: OK to
+start, arrows to adjust, OK or Back to finish. Left or Back leaves More settings.
+Controls respect read-only, busy and stale states. Failed actions show a brief
+error. See [Hue Sync](../huesync.md#sync-settings).
+
+![Hue Sync controls in the TV app, simulated data](../screenshots/huesync-tv-controls.png)

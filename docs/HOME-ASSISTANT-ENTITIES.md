@@ -159,7 +159,7 @@ The TV's own settings that the dashboard's System, Game and Privacy tabs change,
 ### Hue Sync settings
 
 These entities accompany the existing Hue Sync streaming switch, only for
-settings the app can read. Controls belong to Controls & Media; status sensors belong to Diagnostics & Settings.
+settings the app can read. All belong to Controls & Media.
 
 | Type | ID | Setting |
 | --- | --- | --- |
@@ -171,9 +171,5 @@ settings the app can read. Controls belong to Controls & Media; status sensors b
 | `switch` | `switch.lg_tv_huesync_background_lightning_games` | Background light in game mode |
 | `switch` | `switch.lg_tv_huesync_auto_start` | Automatic start |
 | `switch` | `switch.lg_tv_huesync_auto_start_notification` | Automatic-start notification |
-| `binary_sensor` | `binary_sensor.lg_tv_huesync_ready` | Service ready (Diagnostics & Settings) |
-| `binary_sensor` | `binary_sensor.lg_tv_huesync_bridge_connected` | Bridge connected (Diagnostics & Settings) |
-| `binary_sensor` | `binary_sensor.lg_tv_huesync_bridge_authorized` | Bridge authorized (Diagnostics & Settings) |
-| `binary_sensor` | `binary_sensor.lg_tv_huesync_busy` | Service busy (Diagnostics & Settings) |
 
 See [Hue Sync](huesync.md#sync-settings) for payloads and hardware-validation status.

@@ -1296,7 +1296,6 @@ function setupHomeAssistant() {
       piccap: piccapWanted() && piccap.getState() !== null,
       huesync: huesyncWanted() && huesync.getState() !== null,
       huesyncSettings: huesync.getSettings(),
-      huesyncDiagnostics: huesync.getDiagnostics(),
       iconBaseUrl: iconServer.baseUrl()
     });
 

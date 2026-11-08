@@ -43,8 +43,6 @@ var revisions = {};
 var diagnostics = {};
 var discoveryShape = '';
 var diagnosticStale = {};
-var diagnosticsTopic = '';
-var lastDiagnosticsPayload = null;
 var subscriptionRetryAt = 0;
 var Subscription = null;
 var subscription = null;
@@ -55,8 +53,7 @@ var confirmAttempts = 10;
 var lifecycleTimer = null;
 
 function discoveryChanged() {
-  var shape = JSON.stringify([Object.keys(settings).sort(), settings.ec_list || [],
-    Object.keys(diagnostics).sort().map(function (key) { return [key, typeof diagnostics[key] === 'object' ? Object.keys(diagnostics[key]).sort() : []]; })]);
+  var shape = JSON.stringify([Object.keys(settings).sort(), settings.ec_list || []]);
   if (shape === discoveryShape) return;
   discoveryShape = shape;
   onAvailableChange(available);
@@ -79,14 +76,6 @@ function getDiagnostics() {
   var unknown = Object.keys(diagnosticStale).filter(function (key) { return diagnosticStale[key]; });
   if (unknown.length) result._stale = unknown;
   return result;
-}
-
-function publishDiagnostics() {
-  if (!settingsEnabled || !mqttClient || !mqttClient.connected) return;
-  var payload = Object.keys(diagnostics).length ? JSON.stringify(getDiagnostics()) : '';
-  if (payload === lastDiagnosticsPayload) return;
-  mqttClient.publish(diagnosticsTopic, payload, true);
-  lastDiagnosticsPayload = payload;
 }
 
 function blocked() {
@@ -137,7 +126,6 @@ function subscriptionMessage(message) {
       revisions[key] = (revisions[key] || 0) + 1;
       diagnostics[key] = diagnostic;
       delete diagnosticStale[key];
-      publishDiagnostics();
       discoveryChanged();
     }
   }
@@ -239,7 +227,6 @@ function readSettings(cb, force) {
       if (generation === settingsGeneration) {
         settingsAt = Date.now();
         publishSettings();
-        publishDiagnostics();
         discoveryChanged();
       }
       var callbacks = settingsWaiters;
@@ -332,7 +319,6 @@ function requestStatus() {
       diagnosticStale = {};
       settingsAt = 0;
       publishSettings();
-      publishDiagnostics();
     } else { statusFresh = false; }
     manageSubscription();
     // Home Assistant's switch exists only while Hue Sync answers.
@@ -449,7 +435,7 @@ function refreshAndPublishState(forcePublish, dashboard) {
   if (!isInstalled() || (!wanted() && !dashboard)) return;
   getStatus(function (state) {
     publishState(state, forcePublish === true);
-    if (forcePublish) { lastSettingsPayload = null; lastDiagnosticsPayload = null; }
+    if (forcePublish) lastSettingsPayload = null;
     readSettings(function () {}, true);
   }, true);
 }
@@ -463,8 +449,6 @@ function attachMqtt(opts) {
   mqttClient = opts.client || null;
   stateTopic = topics(opts.prefix).state('huesync/power');
   settingsTopic = topics(opts.prefix).state('huesync/settings');
-  diagnosticsTopic = topics(opts.prefix).state('huesync/diagnostics');
-  lastDiagnosticsPayload = null;
   lastSettingsPayload = null;
   allowControl = opts.allowControl === true;
   manageSubscription();
@@ -534,7 +518,6 @@ function forget() {
   settingsAt = 0;
   manageSubscription();
   publishSettings();
-  publishDiagnostics();
   publishState(current(), true);
   onAvailableChange(false);
 }

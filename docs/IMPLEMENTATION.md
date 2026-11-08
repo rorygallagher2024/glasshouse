@@ -1938,7 +1938,7 @@ pre-write reads. Writes are serialized and confirmed by fresh readback, without
 changing the streaming enable retry algorithm. The fuller retail-app trace confirms boolean writes for background light,
 automatic start and `auto_start_notification`. A live `/sub` stream carries native
 booleans/numbers alongside JSON-encoded strings. An allowlist accepts only sync
-settings and sanitized ready/bridge/busy diagnostics; it discards pairing,
+settings and internal ready/bridge/busy status; it discards pairing,
 device and support identifiers. Per-field revisions prevent an older one-shot
 read from overwriting a newer event. Reconnects hydrate full state. A subscription
 is retained only for connected/wanted MQTT or an active dashboard and falls back
@@ -1951,3 +1951,12 @@ operation slot, check known busy/readiness blockers and confirm fresh readback
 with bounded retries. OFF requires fresh confirmation; ON retains its existing
 stable-read/retry strategy. MQTT failures log the allowlisted setting name only,
 without command values or raw service errors.
+
+Hue Sync ready/bridge/busy status is not published to MQTT or discovered in Home
+Assistant; it is used internally for control validation and dashboard write permissions.
+
+The TV app's Hue Sync rows are in `server/assets/dashboard.html`; both the
+Homebrew Channel launcher in `hbc/app/` and `assets/dashboard-app/` load that page.
+Its System section reuses the existing remote adjustment bar and write queue
+for brightness, native-value cycles for selects and a More settings sublist for
+secondary switches. The web dashboard uses the same primary/secondary grouping.

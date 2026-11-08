@@ -29,7 +29,7 @@ var hueFixture = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'test', '
 // No filterWithholds: it only removes entities, and every one is checked.
 var entities = ha.buildEntities({
   pfx: 'tv', allowPower: true, isOled: true, piccap: true, huesync: true,
-  huesyncSettings: hueFixture.settings, huesyncDiagnostics: hueFixture.diagnostics,
+  huesyncSettings: hueFixture.settings,
   installedApps: [{ id: 'youtube.leanback.v4', title: 'YouTube' }],
   pictureModes: [{ value: 'hdrGame', label: 'HDR Game' }, { value: 'hdrVivid', label: 'HDR Vivid' }],
   lgRows: lgRows

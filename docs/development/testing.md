@@ -553,15 +553,25 @@ read/event races, transient availability, unsupported keys, external busy and
 readiness blockers, shared write serialization, delayed completion, ignored and
 delayed stops, subscription teardown and polling fallback. The dashboard check
 also exercises automatic-start notifications, stale controls remaining visible,
-busy state and authorization guidance. Never add the raw setup capture, pairing
+busy/read-only locking and secondary settings without a status paragraph. Never add the raw setup capture, pairing
 codes, credentials, bridge/device IDs or real entertainment-area names to tests.
 
 The drift check includes Hue Sync's dynamic entity IDs from the catalogue,
-so the documented settings and diagnostic rows are checked alongside static
+so the documented settings rows are checked alongside static
 entities. Computed ID prefixes are not treated as complete entity IDs.
 
 Home Assistant discovery validation now includes the synthetic
-`test/fixtures/huesync-settings.json` settings/diagnostics. It renders all twelve
-entities with fresh, stale and missing state and checks the select command
+`test/fixtures/huesync-settings.json` settings. It renders all eight controls with fresh, stale and missing state and checks the select command
 mappings. This covers the final templates after safe-field rewriting, where
 missing JSON properties become `none` rather than undefined.
+
+The Hue Sync event tests also verify that internal readiness and busy status
+create no Home Assistant diagnostic entities or diagnostic MQTT publications.
+
+Hue Sync dashboard checks cover collapsed secondary web controls and the TV
+app's remote-driven streaming, brightness bar, intensity/mode/area cycles and
+secondary toggles. They check native command types, duplicate area names, failed
+writes, read-only/busy states and disappearing support. `test-dashboard-view.js`
+also checks TV row grouping and per-field stale permissions. Screenshots use
+synthetic data. The Hue Sync checks wait for intercepted requests to finish
+before closing each page, so pending stats replies cannot outlive the page.

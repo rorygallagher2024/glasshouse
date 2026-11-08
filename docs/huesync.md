@@ -106,10 +106,13 @@ In `config.json`, the following settings govern Hue Sync:
 
 ## Sync settings
 
-The web dashboard's System tab also reads brightness (0–100%), intensity
+The web dashboard and TV app's System sections offer brightness (0–100%), intensity
 (Subtle, Moderate, High, Extreme), synchronization mode (Video or Game),
 entertainment area, background light separately for video and games, and
-automatic start, and automatic-start notifications. A setting appears only when the service returns a valid value.
+automatic start, and automatic-start notifications. Streaming, brightness,
+intensity, mode and entertainment area are shown directly. Background-light and
+startup options are under **More settings**. A setting appears only when the
+service returns a valid value.
 Area names are displayed as text, with their IDs used for commands; areas sharing
 a name remain distinct. The area list is read from the app, not the Hue bridge.
 
@@ -148,13 +151,9 @@ fresh reads for a bounded period without resending the write. Stopping also
 requires a fresh OFF readback; the existing three-attempt enable behavior stays.
 Discovery changes only when supported fields or entertainment-area choices do.
 
-The dashboard explains busy, unsupported, disconnected, unauthorized and unknown
-readiness states. Home Assistant also receives diagnostic binary sensors for
-ready, bridge connected, bridge authorized and busy when those readings exist.
-Their retained JSON source is `<topicPrefix>/state/huesync/diagnostics`; only
-allowlisted status booleans are published. Diagnostic read failures appear in
-its `_stale` list and make the affected diagnostic unavailable. Device, bridge,
-application, pairing and support identifiers are not diagnostic fields.
+Both dashboards show controls without a readiness paragraph. Failed actions
+show a brief error. Busy and readiness checks stay internal and disable controls
+when needed; Home Assistant exposes only the controls.
 
 Pairing, resets, claim certificates, analytics and logging uploads remain owned
 by the retail app. Glasshouse does not invoke those setup or telemetry actions.
@@ -162,3 +161,8 @@ by the retail app. Glasshouse does not invoke those setup or telemetry actions.
 ![Hue Sync settings in the web dashboard](screenshots/huesync-settings.png)
 
 The screenshot uses simulated service responses; it is not a hardware test.
+
+On the TV app, use **System → Hue Sync**. Press OK to toggle streaming or cycle
+intensity, mode and entertainment area. For brightness, press OK, adjust with
+the arrow keys, then press OK or Back to finish. **More settings** opens the
+secondary switches; Left or Back returns.

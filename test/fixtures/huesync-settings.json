@@ -12,10 +12,5 @@
     "background_lightning_games": false,
     "auto_start": true,
     "auto_start_notification": false
-  },
-  "diagnostics": {
-    "ready": {"ready": true, "supported": true},
-    "bridge": {"Connected": true, "Authorized": true},
-    "busy": false
   }
 }

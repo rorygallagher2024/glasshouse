@@ -122,16 +122,16 @@ async def main():
                     logged.append('%s: %s' % (type(e).__name__, e))
                 for message in sorted(set(logged)):
                     problems.append('%s.%s %s with %s: %s' % (c['type'], c['id'], key, fixture.name, message))
-    # Hue Sync topics carry settings and sanitized diagnostics, not telemetry.
+    # Hue Sync controls use their own settings topic, not telemetry.
     # Exercise freshness and missing fields after ha.js's safeFields transform.
     hue_fixture = json.loads((ROOT / 'test' / 'fixtures' / 'huesync-settings.json').read_text())
     hue_checked = 0
     for c in configs:
         conf = c['conf']
         topic = conf.get('state_topic')
-        if topic not in ('tv/state/huesync/settings', 'tv/state/huesync/diagnostics'):
+        if topic != 'tv/state/huesync/settings':
             continue
-        state = hue_fixture['diagnostics' if topic.endswith('/diagnostics') else 'settings']
+        state = hue_fixture['settings']
         own = [a for a in conf.get('availability', []) if a.get('topic') == topic]
         if len(own) != 1:
             problems.append('%s lacks Hue Sync availability' % c['id'])
@@ -160,8 +160,8 @@ async def main():
                 if got != expected:
                     problems.append('%s command for %s: %s, expected %s' % (c['id'], choice, got, expected))
         hue_checked += 1
-    if hue_checked != 12:
-        problems.append('expected 12 Hue Sync settings/diagnostics, checked %s' % hue_checked)
+    if hue_checked != 8:
+        problems.append('expected 8 Hue Sync controls, checked %s' % hue_checked)
     print('%d Hue Sync templates checked with fresh, missing and stale state' % hue_checked)
     template_log.removeHandler(catch)
     print('%d telemetry templates rendered against %d fixture TVs' % (checked, len(fixtures)))
