@@ -295,8 +295,14 @@ webOS 11.
 Only one stream plays at a time, and each is closed before the next opens, as
 many accounts allow one or two at once across the household. If someone else
 is watching on the same account, the channel may not play: **OK** tries
-again. Refreshes wait while a channel plays, and the screen saver stays away
-while one plays full screen.
+again. A channel that stops partway through reconnects by itself, back at
+the live point, for about a minute before it gives up. A channel from a
+provider login can play as either of the provider's two kinds of stream,
+HLS or MPEG-TS: **Yellow** in the full-screen player switches the channel
+playing, and the TV remembers it for that channel. If the choice cannot be
+saved, a message says so; **OK** reopens the channel with its saved choice.
+Refreshes wait while a channel plays, and the screen saver stays away while one plays full
+screen.
 
 The links and logins are kept on the TV only. They are not shown on the
 dashboard again, and never sent to Home Assistant, the logs or a phone or

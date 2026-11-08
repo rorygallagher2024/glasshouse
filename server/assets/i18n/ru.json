@@ -2594,6 +2594,8 @@
  "home.tv.bad.url": {"text": "Ссылка на плейлист должна начинаться с http:// или https://.", "from": "The playlist link must start with http:// or https://."},
  "home.tv.cantAdd": {"text": "этот канал нельзя воспроизвести на ТВ", "from": "this channel can’t play on the TV"},
  "home.tv.channels": {"text": "{n} каналов", "from": "{n} channels"},
+ "home.tv.reconnecting": {"text": "Повторное подключение к {name}", "from": "Reconnecting to {name}"},
+ "home.tv.playAs": {"text": "Жёлтая: воспроизводить как {format}", "from": "Yellow: play as {format}"},
  "home.tv.connecting": {"text": "Подключение к {name}", "from": "Connecting to {name}"},
  "home.tv.drm": {"text": "Защищено (DRM): воспроизведение недоступно", "from": "Protected (DRM): can’t play here"},
  "home.tv.drmShort": {"text": "DRM", "from": "DRM"},

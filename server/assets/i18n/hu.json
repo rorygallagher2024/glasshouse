@@ -2594,6 +2594,8 @@
  "home.tv.bad.url": {"text": "A lista hivatkozásának http:// vagy https:// kezdetűnek kell lennie.", "from": "The playlist link must start with http:// or https://."},
  "home.tv.cantAdd": {"text": "ez a csatorna nem játszható le a TV-n", "from": "this channel can’t play on the TV"},
  "home.tv.channels": {"text": "{n} csatorna", "from": "{n} channels"},
+ "home.tv.reconnecting": {"text": "Újracsatlakozás: {name}", "from": "Reconnecting to {name}"},
+ "home.tv.playAs": {"text": "Sárga: lejátszás {format} formátumban", "from": "Yellow: play as {format}"},
  "home.tv.connecting": {"text": "Csatlakozás: {name}", "from": "Connecting to {name}"},
  "home.tv.drm": {"text": "Védett (DRM): itt nem játszható le", "from": "Protected (DRM): can’t play here"},
  "home.tv.drmShort": {"text": "DRM", "from": "DRM"},

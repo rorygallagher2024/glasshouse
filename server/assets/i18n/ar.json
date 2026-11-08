@@ -2594,6 +2594,8 @@
  "home.tv.bad.url": {"text": "يجب أن يبدأ رابط قائمة التشغيل بـ http:// أو https://.", "from": "The playlist link must start with http:// or https://."},
  "home.tv.cantAdd": {"text": "لا يمكن تشغيل هذه القناة على التلفزيون", "from": "this channel can’t play on the TV"},
  "home.tv.channels": {"text": "عدد القنوات: {n}", "from": "{n} channels"},
+ "home.tv.reconnecting": {"text": "جارٍ إعادة الاتصال بـ {name}", "from": "Reconnecting to {name}"},
+ "home.tv.playAs": {"text": "الأصفر: التشغيل بصيغة {format}", "from": "Yellow: play as {format}"},
  "home.tv.connecting": {"text": "جارٍ الاتصال بـ {name}", "from": "Connecting to {name}"},
  "home.tv.drm": {"text": "محمية بنظام DRM: لا يمكن تشغيلها هنا", "from": "Protected (DRM): can’t play here"},
  "home.tv.drmShort": {"text": "DRM", "from": "DRM"},

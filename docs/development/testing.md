@@ -423,8 +423,9 @@ reaching the row, a hidden group left out of a whole-playlist search, Undo
 putting a channel taken out back at its number, a removed playlist's
 folder deleted, and a channel whose variant playlist names FairPlay found to
 be protected once checked, marked in the lineup and given no play link,
-while one with a plain AES-128 key is not. It is skipped where there is no
-curl. `test-iptv-drm.js` checks which HLS keys the TV's player cannot use,
+while one with a plain AES-128 key is not. It also checks a channel's saved
+HLS or MPEG-TS choice across a restart and stream event logging without URLs.
+It is skipped where there is no curl. `test-iptv-drm.js` checks which HLS keys the TV's player cannot use,
 and the resolving of a master playlist's first variant.
 
 `test-iptv-worker.js` runs real playlist workers against a local provider with
@@ -481,7 +482,9 @@ both through their page entry points.
 The browser check drives Internet TV on Glasshouse Home with its API answered
 in the page: the row's names tidied, a channel previewed after its dwell with
 the lease taken, the preview grown into the player without opening the stream
-again, OK during the dwell giving one stream and keeping the player's picture,
+again, Yellow switching that player to MPEG-TS, a refused format save shown
+with OK to retry, a late save reply leaving a reopened player alone, OK during
+the dwell giving one stream and keeping the player's picture,
 the channel list changing channel after releasing the last stream, Back, the
 guide's schedule, and the add panel listing a playlist's groups. It then
 drives the channel manager the same way: a hidden group left out, a group's
