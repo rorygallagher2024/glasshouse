@@ -200,6 +200,13 @@ added channels' logos, and the stream of a channel while Glasshouse Home
 plays it. When a channel won't play, the server reads that stream's playlist,
 and its first variant's, once an hour at most, to see whether it is protected.
 
+With Glasshouse Home's **Weather** set to **From the internet**, the server
+connects to Open-Meteo: `geocoding-api.open-meteo.com` for each place search on
+the Home tab, and `api.open-meteo.com` for the chosen place's current weather,
+every 30 minutes at most and only while the screen is on. Only the search text
+or the place's latitude and longitude are sent. The last reply is kept in
+`/var/lib/tvweb/home-weather-internet.json`.
+
 With **Share app icons** on in the MQTT tab (`iconServer` in `config.json`), port 8082 (the dashboard's
 port plus two) answers on the whole network, dual-stack like the dashboard,
 with installed apps' icons at `/icons/<appId>.png` and nothing else: no other

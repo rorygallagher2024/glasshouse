@@ -212,6 +212,7 @@ function renderHome() {
     updateToggle(el, { cls: on && !unused ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     el.disabled = !homeWritable() || unused;
   });
+  renderHomeWeather(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
   const searchRow = q('home-search-row');
@@ -868,7 +869,61 @@ function homePreviewOption(field) {
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.
-const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos'], ['showWeather', 'home-show-weather']];
+const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos']];
+
+/*
+ * The weather: off, from Home Assistant, or from Open-Meteo for a place found
+ * by name here. The search goes through the TV's server, which asks Open-Meteo.
+ */
+let homeWeatherFound = [];
+
+function placeLabel(p) {
+  return [p.name, p.admin, p.country].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ');
+}
+
+function renderHomeWeather(st) {
+  const sel = q('home-weather-sel');
+  if (!sel) return;
+  const source = (st.layout && st.layout.weather) || 'ha';
+  sel.value = source;
+  sel.disabled = !homeWritable();
+  const panel = q('home-weather-place');
+  panel.hidden = !st.supported.ok || source !== 'internet';
+  const place = st.layout && st.layout.weatherPlace;
+  q('home-weather-chosen').textContent = place
+    ? t('home.weather.showing', 'Showing the weather for {place}.', { place: placeLabel(place) })
+    : t('home.weather.choose', 'Search for your town, then choose it from the list.');
+  q('home-weather-go').disabled = !homeWritable();
+}
+
+function homeWeatherSource(value) {
+  homeSaveLayout({ weather: value });
+}
+
+async function homeWeatherSearch() {
+  const query = q('home-weather-q').value.trim();
+  const box = q('home-weather-results');
+  if (query.length < 2) { box.textContent = ''; return; }
+  box.textContent = t('home.weather.searching', 'Searching…');
+  try {
+    const r = await fetch(api('/api/home/weather/places?q=' + encodeURIComponent(query) + '&lang=' + encodeURIComponent(I18N.lang())));
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || r.status);
+    homeWeatherFound = d.places || [];
+    if (!homeWeatherFound.length) { box.textContent = t('home.weather.none', 'No places found by that name.'); return; }
+    box.innerHTML = homeWeatherFound.map((p, i) =>
+      `<button type="button" class="pill idle" onclick="homeWeatherPick(${i})">${esc(placeLabel(p))}</button>`).join('');
+  } catch (e) {
+    box.textContent = t('home.weather.searchFailed', 'Could not search: {error}', { error: e.message });
+  }
+}
+
+function homeWeatherPick(i) {
+  const place = homeWeatherFound[i];
+  if (!place) return;
+  q('home-weather-results').textContent = '';
+  homeSaveLayout({ weather: 'internet', weatherPlace: place });
+}
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });

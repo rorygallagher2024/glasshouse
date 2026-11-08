@@ -277,7 +277,7 @@ async function visitHomePicture(browser, base, problems) {
   } finally { await page.close(); }
 }
 
-// The weather badge: Home Assistant's last push, brought by the heartbeat.
+// The weather badge: Home Assistant's last push or Open-Meteo's, brought by the heartbeat.
 async function visitHomeWeather(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home weather: ' + e.message));
@@ -320,19 +320,87 @@ async function visitHomeWeather(browser, base, problems) {
     weather = null;
     await beat();
     if (await shown()) fail('still shown once the heartbeat brought none');
-    // The Home tab's Weather switch, off: hidden whatever Home Assistant sends.
-    weather = { condition: 'sunny', temp: 12, city: null };
-    layout.showWeather = false;
-    version++;
-    const reread = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/catalogue');
+    // Open-Meteo's weather carries its credit, in the corner, gone with the weather.
+    const credit = () => page.evaluate(() => {
+      const c = document.getElementById('wxCredit');
+      return c.textContent && getComputedStyle(c).display !== 'none' ? c.textContent : '';
+    });
+    if (await credit()) fail('Home Assistant\'s weather credited to Open-Meteo');
+    weather = { condition: 'cloudy', temp: 9.7, city: 'Glasgow', source: 'internet' };
     await beat();
-    await reread;
+    const net = await shown();
+    if (!net || net.temp !== '10°' || net.cond !== 'Cloudy') fail('Open-Meteo\'s weather was shown as ' + JSON.stringify(net));
+    if (await credit() !== 'Weather data by Open-Meteo.com') fail('Open-Meteo\'s weather shown without its credit');
+    weather = null;
     await beat();
-    if (await shown()) fail('shown with the Weather switch off');
+    if (await credit()) fail('the credit stayed once the weather went');
   } catch (e) {
     fail(e.message);
   }
   await page.close();
+}
+
+// The Home tab's Weather setting: the source, and a place found by name for
+// Open-Meteo. The search is answered here, so the check never reaches Open-Meteo.
+async function visitHomeWeatherSetting(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home weather setting: ' + e.message));
+  const fail = what => problems.push('Home weather setting: ' + what);
+  const layout = { rows: ['app'], order: { app: [] }, sort: { app: 'custom' }, hidden: { app: [] }, channels: [],
+    hintSeen: true, searchHintSeen: true, weather: 'ha', weatherPlace: null };
+  const saves = [], searches = [];
+  const glasgow = { name: 'Glasgow', admin: 'Scotland', country: 'United Kingdom', countryCode: 'GB', lat: 55.8652, lon: -4.2576 };
+  await page.route('**/api/home**', async route => {
+    const url = new URL(route.request().url());
+    let body;
+    if (url.pathname === '/api/home') body = { ok: true, supported: { ok: true }, installed: true, enabled: true, active: true, writable: true, layout, history: true };
+    else if (url.pathname.endsWith('/catalogue')) body = { ok: true, apps: [], channels: [], devices: [], layout, order: { app: ['lg-home'] } };
+    else if (url.pathname.endsWith('/weather/places')) {
+      searches.push(url.searchParams.get('q'));
+      body = { ok: true, places: url.searchParams.get('q') === 'Glasgow' ? [glasgow] : [] };
+    } else if (url.pathname.endsWith('/layout')) {
+      const patch = route.request().postDataJSON();
+      saves.push(patch);
+      if (patch.weather) layout.weather = patch.weather;
+      if (patch.weatherPlace !== undefined) layout.weatherPlace = patch.weatherPlace;
+      body = { ok: true, layout: JSON.parse(JSON.stringify(layout)) };
+    } else body = { ok: true };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    const sel = page.locator('#home-weather-sel');
+    await page.waitForFunction(() => { const s = document.getElementById('home-weather-sel'); return s && !s.disabled && s.offsetParent; });
+    if (await sel.inputValue() !== 'ha') fail('the source read ' + await sel.inputValue() + ' for Home Assistant');
+    if (await page.locator('#home-weather-place').isVisible()) fail('the place search shown for Home Assistant');
+    let saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await sel.selectOption('internet');
+    await saved;
+    await page.locator('#home-weather-place').waitFor();
+    if (!/Search for your town/.test(await page.locator('#home-weather-chosen').textContent())) fail('no prompt to choose a place');
+    await page.locator('#home-weather-q').fill('Nowhere');
+    await page.locator('#home-weather-go').click();
+    await page.locator('#home-weather-results').getByText('No places found').waitFor();
+    await page.locator('#home-weather-q').fill('Glasgow');
+    await page.locator('#home-weather-q').press('Enter');
+    const pick = page.locator('#home-weather-results button');
+    await pick.first().waitFor();
+    if (await pick.first().textContent() !== 'Glasgow, Scotland, United Kingdom') fail('a place read ' + await pick.first().textContent());
+    saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await pick.first().click();
+    await saved;
+    const last = saves[saves.length - 1];
+    if (last.weather !== 'internet' || !last.weatherPlace || last.weatherPlace.lat !== glasgow.lat) fail('choosing a place saved ' + JSON.stringify(last));
+    await page.waitForFunction(() => /Glasgow, Scotland/.test(document.getElementById('home-weather-chosen').textContent));
+    if (JSON.stringify(searches) !== '["Nowhere","Glasgow"]') fail('searched for ' + JSON.stringify(searches));
+    if (!/GeoNames/.test(await page.locator('#home-weather-place').textContent())) fail('no credit for the place search');
+    saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await sel.selectOption('off');
+    await saved;
+    await page.waitForFunction(() => document.getElementById('home-weather-place').hidden);
+  } catch (e) {
+    fail(e.message);
+  } finally { await page.close(); }
 }
 
 // The TV's tile, Keep the preview on and Preview in the tile.
@@ -2664,7 +2732,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
