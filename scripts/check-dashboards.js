@@ -105,7 +105,7 @@ async function startServer() {
   }
   let out = '';
   const srv = child.spawn(process.execPath, [path.join(ROOT, 'test', 'mocks', 'boot-server.js'), '--config', cfg], {
-    env: Object.assign({}, process.env, { FAKE_ROOT: root, TVWEB_LUNA_SEND: fake })
+    env: Object.assign({}, process.env, { FAKE_ROOT: root, TVWEB_LUNA_SEND: fake, FAKE_LAUNCH_GAP_MS: '0' })
   });
   srv.stdout.on('data', d => { out += d; });
   srv.stderr.on('data', d => { out += d; });
@@ -119,9 +119,11 @@ async function startServer() {
 }
 
 /*
- * Done once the tab's requests have all answered and none has started for
- * QUIET_MS - a tab's script runs when its data arrives, which is where it
- * breaks - or after MAX_MS, so a slow tab cannot hold the run up.
+ * Done once each address the tab has asked for has answered once and no new
+ * one has started for QUIET_MS - a tab's script runs when its data arrives,
+ * which is where it breaks - or after MAX_MS, so a slow tab cannot hold the
+ * run up. An address asked for again is the tab polling, which never stops:
+ * counted, nearly every tab ran to MAX_MS.
  */
 const QUIET_MS = 500, MAX_MS = 4000;
 
@@ -142,8 +144,19 @@ async function visit(browser, url, label, problems) {
     if (r.status() >= 400 && !expected) problems.push(label + ': ' + r.status() + ' for ' + r.url());
   });
   let open = 0, last = Date.now();
-  page.on('request', () => { open++; last = Date.now(); });
-  const done = () => { open = Math.max(0, open - 1); last = Date.now(); };
+  const asked = new Set(), first = new Set();
+  page.on('request', r => {
+    if (asked.has(r.url())) return;
+    asked.add(r.url());
+    first.add(r);
+    open++;
+    last = Date.now();
+  });
+  const done = r => {
+    if (!first.delete(r)) return;
+    open = Math.max(0, open - 1);
+    last = Date.now();
+  };
   page.on('requestfinished', done);
   page.on('requestfailed', done);
   await page.goto(url, { waitUntil: 'load' });
@@ -271,7 +284,7 @@ async function visitHomePreviewOptions(browser, base, problems) {
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
     hidden: { app: [], dev: [], ch: [] }, channels: ['one'], hintSeen: true, searchHintSeen: true,
     livePreview: true, previewAlways: false, previewInTile: false, picture: false };
-  let version = 1, now = { kind: 'input', port: 1 };
+  let version = 1, now = { kind: 'input', port: 1 }, covered = false;
   await page.addInitScript(() => {
     HTMLMediaElement.prototype.load = function () {};
     HTMLMediaElement.prototype.pause = function () {};
@@ -290,7 +303,7 @@ async function visitHomePreviewOptions(browser, base, problems) {
     if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
     if (url.pathname.endsWith('/signal')) return reply({ ok: true, signal: true });
     if (url.pathname.endsWith('/picture')) return reply({ ok: true, signal: { width: 1920, height: 1080, hz: 25, hdr: 'sdr' } });
-    return reply({ ok: true, build: 'preview', layoutVersion: version });
+    return reply({ ok: true, build: 'preview', layoutVersion: version, covered, saver: covered });
   });
   async function changeLayout(change) {
     Object.assign(layout, change);
@@ -325,6 +338,25 @@ async function visitHomePreviewOptions(browser, base, problems) {
     await rest();
     if (await source() !== 'service/webos-broadcast-preview tv://two') problems.push('Home preview options: the TV tile did not preview its last channel, ' + await source());
     if (await shownIn() !== 'now') problems.push('Home preview options: the preview was not beside the clock');
+    // The screen saver over the view stops the preview, and its end brings it back (#1209).
+    const before = await source();
+    if (!before) problems.push('Home preview options: nothing previewed before the screen saver');
+    // The next heartbeat's reply, not a time: on a slow runner it can arrive
+    // after a fixed fast-forward, and the preview then starts after the check.
+    const heartbeat = async () => {
+      const replied = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/beat');
+      await page.clock.fastForward(5000);
+      await replied;
+      await page.evaluate(() => 0);
+    };
+    covered = true;
+    await heartbeat();
+    await rest();
+    if (await source()) problems.push('Home preview options: the preview kept playing under the screen saver');
+    covered = false;
+    await heartbeat();
+    await rest();
+    if (await source() !== before) problems.push('Home preview options: the preview did not come back after the screen saver, ' + await source());
     await changeLayout({ previewInTile: true });
     if (await shownIn() !== 'TV') problems.push('Home preview options: Preview in the tile left it at ' + await shownIn());
     if (await page.locator('#now.previewing').count()) problems.push('Home preview options: the top strip still named the preview in the tile');
@@ -2464,7 +2496,9 @@ async function visitIptvChannels(browser, base, problems) {
     await page.click('button:has-text("Add the whole group")');
     await page.waitForTimeout(300);
     if (!posts.some(p => p.action === 'add-group' && p.group === 'UK | Sport' && p.pl === 'p1')) fail('Add the whole group did not add it: ' + JSON.stringify(posts));
-    await page.click('.tvm-sec button[aria-expanded="false"]').catch(() => {});
+    // A section folded away is opened; with none, page.click would wait out its 30 s.
+    const folded = page.locator('.tvm-sec button[aria-expanded="false"]');
+    if (await folded.count()) await folded.first().click();
     await page.waitForSelector('.tvm-lc .star');
     await page.locator('.tvm-lc .star').first().click();
     await page.waitForTimeout(300);
@@ -2560,27 +2594,31 @@ async function visitIptvChannels(browser, base, problems) {
 }
 
 /*
- * Four groups side by side, each against its own server and fake TV, as the
- * Home checks change the layout and uploads they read back. Within a group
- * the checks run in their order here. One after another this took 97 s in
- * CI; the slowest group sets the length now.
+ * Groups side by side, each against its own server and fake TV, as the Home
+ * checks change the layout and uploads they read back. Within a group the
+ * checks run in their order here, and the slowest group sets the run's
+ * length, so they are kept about even (20 to 25 s on a laptop). CI runs each
+ * job, its groups together, on a machine of its own: CHECK_JOB names one;
+ * without it every group runs.
  */
 function groups(web, tv) {
   return [
-    { tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations] },
-    { tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations] },
+    { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
-    { tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
-    { tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
-      visitHomeInternetTv, visitIptvChannels, visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
+    { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
+      visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
+      visitHomeFadeAndInputs] },
+    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels] },
     /*
      * Scrolling and motion read the row's place frame by frame, and missed
      * frames with the other groups sharing CI's four cores: 3 of 15 runs
-     * failed on them after the groups went side by side (#1126). Their server
-     * starts with the rest; they run once the rest are done.
+     * failed on them after the groups went side by side (#1126). On CI they
+     * have a machine to themselves; run with the rest, they wait for them.
      */
-    { tabs: [], visits: [visitHomeScrolling, visitHomeMotion], alone: true }
-  ];
+    { job: 'motion', tabs: [], visits: [visitHomeScrolling, visitHomeMotion], alone: true }
+  ].filter(g => !process.env.CHECK_JOB || g.job === process.env.CHECK_JOB);
 }
 
 async function runGroup(browser, group, problems, after) {
@@ -2637,7 +2675,9 @@ async function runVisit(visitOne, browser, base, problems) {
   await browser.close();
   for (const f of flaky) console.log('flaky: ' + f);
   for (const p of problems) console.log(p);
-  console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'TV navigation and LCD profile, Home arranging, picture, preview and its options, animated backgrounds, visibility, colours, fading and inputs, update, editing, order, uploads, custom launcher, readiness, availability, recents, scrolling, motion, guide, search, Internet TV and its channel manager checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+  const opened = all.reduce((n, g) => n + g.tabs.length, 0);
+  const checks = all.reduce((n, g) => n + g.visits.length, 0);
+  console.log((process.env.CHECK_JOB ? process.env.CHECK_JOB + ': ' : '') + opened + ' tabs opened and ' + checks +
+              ' checks run, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

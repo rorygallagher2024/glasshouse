@@ -67,6 +67,13 @@ var PROMO_APPS = ['com.webos.app.lgchannels', 'com.webos.app.sportsteamsettings'
   'com.webos.app.lifeonscreen', 'amazon.alexa.view', 'com.webos.app.camera'];
 // The view's own way back to LG's Home: last in the Apps row, and never hidden.
 var LG_HOME_TILE = 'lg-home';
+/*
+ * A web page saved to the Home screen is a bookmark of LG's browser, with its
+ * address in the bookmark's target. Its tile id is this and its launch point
+ * id: several pages share the browser's app id, and no app id has a colon.
+ */
+var PAGE_PREFIX = 'page:';
+var BROWSER_APP = 'com.webos.app.browser';
 // The moving backgrounds the view can draw in place of the wallpaper pictures.
 var WALL_ANIMS = ['off', 'waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
 // The moving backgrounds' colours: auto follows the part of the day; a preset
@@ -146,6 +153,14 @@ var LEGACY_INPUT_KEYS = ['lastInputApp', 'physicalLastInputApp'];
  */
 var BEAT_GRACE_MS = 10000;
 var FIRST_BEAT_GRACE_MS = 20000;
+/*
+ * Timers stop while the TV is suspended and the wall clock does not, so a
+ * heartbeat check this much later than it was set for has slept with the TV.
+ * Set before a suspend, it fires as the TV resumes, before the view can beat
+ * and sometimes before the screen is reported on (a 75QNED80ARA, webOS 10.3.2,
+ * #1277).
+ */
+var BEAT_LATE_MS = 5000;
 // Holding Home this long opens LG's Home.
 var HOLD_MS = 1200;
 /*
@@ -169,6 +184,8 @@ var PAGE_LOAD_MS = 90000;
 var pageSignMs = PAGE_SIGN_MS, pageLoadMs = PAGE_LOAD_MS;
 var pageSeenAt = 0;
 var slowOpenMs = FIRST_BEAT_GRACE_MS;
+var beatGraceMs = BEAT_GRACE_MS;
+var firstBeatGraceMs = FIRST_BEAT_GRACE_MS;
 /*
  * WebAppMgr runs every web app, the view among them. On a G4 (webOS 11.2.0) it
  * was stopped by a SIGTERM from outside, and its unit restarts only on a
@@ -180,6 +197,12 @@ var WAM_UNIT = 'webapp-mgr.service';
 var SYSTEMCTLS = ['/bin/systemctl', '/usr/bin/systemctl'];
 var GUIDE_TTL_MS = 60000;
 var LIST_TTL_MS = 30000;
+/*
+ * The tuner's channels, read again less often: they change only with a
+ * retune, and a satellite list took 3.6 s to read (65SM8500PLA, webOS 4.10.1),
+ * which a request waits for once the list is out of date.
+ */
+var CHANNELS_TTL_MS = 600000;
 
 var lunaFn = null;
 var liveState = null;
@@ -712,10 +735,11 @@ function cached(key, ttl, load, cb) {
 var isInputApp = names.isInputAppId;
 
 /*
- * The apps on LG's Home, in its order, as { id, title, icon }. Saved web
- * pages and input tiles are bookmarks, left out: the Inputs row has the
- * inputs. An app the Apps tab hides has visible false in its appinfo and no
- * launch point; one reporting visible false is skipped all the same.
+ * The apps on LG's Home, in its order, as { id, title, icon }, with each saved
+ * web page as an app of its own that has its address as page. Input tiles are
+ * bookmarks too, left out: the Inputs row has the inputs. An app the Apps tab
+ * hides has visible false in its appinfo and no launch point; one reporting
+ * visible false is skipped all the same.
  */
 function launchPoints(cb) {
   cached('lp', LIST_TTL_MS, function (done) {
@@ -723,7 +747,14 @@ function launchPoints(cb) {
       if (!r || !isArray(r.launchPoints)) return done(null);
       var out = [];
       r.launchPoints.forEach(function (p) {
-        if (!p || typeof p.id !== 'string' || p.lptype === 'bookmark' || p.visible === false) return;
+        if (!p || typeof p.id !== 'string' || p.visible === false) return;
+        if (p.lptype === 'bookmark') {
+          var target = p.id === BROWSER_APP && p.params && p.params.target;
+          if (typeof target !== 'string' || !target || p.launchPointId == null) return;
+          out.push({ id: PAGE_PREFIX + p.launchPointId, title: String(p.title || target),
+                     icon: p.largeIcon || p.icon || '', page: target });
+          return;
+        }
         if (p.id === HOME_APP || p.id === LG_HOME || isInputApp(p.id)) return;
         out.push({ id: p.id, title: String(p.title || p.id), icon: p.largeIcon || p.icon || '' });
       });
@@ -842,7 +873,7 @@ function listDevices(devs, portsPlugged) {
  * adapter's tv/getChannelList, the method behind SSAP's ssap://tv/getChannelList.
  */
 function channelList(cb) {
-  cached('ch', LIST_TTL_MS, function (done) {
+  cached('ch', CHANNELS_TTL_MS, function (done) {
     luna('com.webos.service.apiadapter/tv/getChannelList', {}, function (r) {
       if (!r || r.returnValue === false || !isArray(r.channelList)) return done(null);
       var out = [];
@@ -1164,8 +1195,12 @@ function open(body, cb) {
   }
   if (kind === 'app') {
     return launchPoints(function (apps) {
-      var known = (apps || []).some(function (a) { return a.id === id; });
-      if (!known) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+      /** @type {any} */
+      var hit = null;
+      (apps || []).forEach(function (a) { if (a.id === id) hit = a; });
+      if (!hit) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+      // A saved page opens as LG's tile opens it: the browser, at its address.
+      if (hit.page) return launch(BROWSER_APP, { target: hit.page }, opened('app', id, cb));
       launch(id, null, opened('app', id, cb));
     });
   }
@@ -1296,7 +1331,7 @@ function switchTo(on, cb) {
       if (r.ok) holdLgHome(want);
       if (r.ok) {
         console.log('home: ' + (want ? 'Glasshouse Home is in LG\'s Home\'s place' : 'LG\'s Home is in its place'));
-        if (want && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+        if (want && viewInFront() && powerActive) watchBeat(firstBeatGraceMs);
       }
       batch.forEach(function (f) { f(r); });
       if (switchWaiting.length) return run();
@@ -1474,7 +1509,7 @@ function enable(cb) {
     startingNotice(true);
     syncLgAutoLaunch();
     syncDefaultHome();
-    if (viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+    if (viewInFront() && powerActive) watchBeat(firstBeatGraceMs);
     console.log('home: Glasshouse Home switched on');
     cb({ ok: true });
   });
@@ -1962,10 +1997,15 @@ function stopBeatWatch() {
 
 function watchBeat(ms) {
   stopBeatWatch();
+  var setAt = nowMs();
   beatTimer = setTimeout(function () {
     beatTimer = null;
     // Switched off into standby the view stops beating; nothing is on screen to replace.
     if (!viewInFront() || !powerActive) return;
+    if (nowMs() - setAt > ms + BEAT_LATE_MS) {
+      console.log('home: heartbeat check held up by a suspend; waiting for the view');
+      return watchBeat(firstBeatGraceMs);
+    }
     function hung() {
       console.error('home: the Glasshouse Home view is not answering');
       recoverView('view not answering', false);
@@ -2011,7 +2051,7 @@ function beat(body) {
     viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
   }
   beats++;
-  if (viewInFront()) watchBeat(BEAT_GRACE_MS);
+  if (viewInFront()) watchBeat(beatGraceMs);
   return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
            build: buildId, wallpapers: wallpapers.status(),
            layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()) };
@@ -2033,7 +2073,7 @@ function foregroundChanged(id) {
   noteForeground(was, id);
   if (id === homeId) {
     if (isStandalone()) escaped = false;
-    if (was !== homeId && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+    if (was !== homeId && viewInFront() && powerActive) watchBeat(firstBeatGraceMs);
     return;
   }
   stopBeatWatch();
@@ -2334,6 +2374,9 @@ function powerChanged(active) {
   }
   if (!was && active && flutterHome() && readConfig().enabled) reopenAfterWake11();
   if (!active) cancelWake();
+  // Off, the view need not beat. A check its beats set in Active Standby is
+  // caught as late when a suspend holds it up (watchBeat).
+  if (was && !active) stopBeatWatch();
   if (was !== active && readConfig().enabled) syncLgAutoLaunch();
   // The preload manager may have started over with the TV.
   if (!was && active && lgHomeHeld) preloadLgHome(false);
@@ -2422,6 +2465,8 @@ function init(opts) {
   hdmiInputsFn = opts.hdmiInputs || null;
   procDir = opts.procDir || '/proc';
   slowOpenMs = typeof opts.slowOpenMs === 'number' ? opts.slowOpenMs : FIRST_BEAT_GRACE_MS;
+  beatGraceMs = opts.beatGraceMs || BEAT_GRACE_MS;
+  firstBeatGraceMs = opts.firstBeatGraceMs || FIRST_BEAT_GRACE_MS;
   bootOpenedFile = opts.bootOpenedFile || BOOT_OPENED_FILE;
   pageSignMs = opts.pageSignMs || PAGE_SIGN_MS;
   pageLoadMs = opts.pageLoadMs || PAGE_LOAD_MS;

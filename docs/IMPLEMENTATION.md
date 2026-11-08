@@ -85,6 +85,11 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   server that dies leaves no worker behind. Timeouts and cancelling kill the
   whole group. The job line may be up to 4 MB, including a full lineup's
   channel names and groups; its limit applies across chunks and to a complete line.
+- **Downloaders wait a turn** before starting curl or wget, as the debugger
+  firewall calls do. Node 8 on webOS can abort a child before exec. A downloader
+  killed by SIGABRT before any body bytes arrive is retried once after 200 ms,
+  and reported as `aborted` if it happens again;
+  a partial body is never replayed into the playlist or guide reader.
 - **Two lanes.** Background jobs (reading a playlist, the lineup's
   play links and logos, the guide, now and next again) run one at a time, in
   order, a kind for a playlist only once in the queue. Browse and search for
@@ -1597,7 +1602,10 @@ black for the server; being LG's Home's app, it cannot open LG's Home itself.
 `lib/home-takeover.js --release`, which unmounts without switching Glasshouse
 Home off, so the server takes the place again when it runs.
 The first-heartbeat watch is armed after taking Home even when the foreground
-id stays `com.webos.app.home`. A failed layout restore retains its backup and
+id stays `com.webos.app.home`. Switching the screen off ends the watch. A
+watch that fires more than 5 s later than it was set for has slept through a
+suspend, and gives the view the first heartbeat's 20 s rather than calling it
+hung. A failed layout restore retains its backup and
 reports failure for a later retry.
 
 Earlier builds made a separate app, `com.tvweb.home`, the TV's Home

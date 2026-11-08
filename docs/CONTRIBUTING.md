@@ -43,8 +43,8 @@ change: a docs-only change needs no TV testing or translation.
 * **All checks pass:** `scripts/check-all.sh`.
 * **Translated.** Every new or changed string has its translation in each
   language file in `server/assets/i18n/` that covers the page it is on: Arabic,
-  Spanish, Hungarian, Italian, European Portuguese and Russian for the dashboards,
-  and German too for Glasshouse Home.
+  Spanish, French, Hungarian, Italian, Polish, European and Brazilian
+  Portuguese and Russian for the dashboards, and German too for Glasshouse Home.
   `python3 scripts/check-strings.py --missing` lists what is left.
 * **Docs updated:** the pages that describe what it changes, as in
   [Docs](#docs).
@@ -82,6 +82,34 @@ starting set, added to as reviews turn up more.
 * **Small functions.** A function does one job and reads without scrolling.
   One that handles several cases in nested branches or callbacks is split, one
   function per case, with the shared steps in helpers.
+* **A new setting goes in the settings backup, or says why not.** A control
+  added to `server/lib/controls.js` is either a part in
+  `server/lib/backup-parts.js` or listed in its `NOT_CARRIED` with the reason,
+  and the backup table in `docs/dashboard/server.md` follows.
+  `test/test-backup-parts.js` fails on one in neither.
+
+### Tests
+
+[Testing and CI](development/testing.md) says what each suite and check
+covers.
+
+* **Wait for the thing, not a time.** Wait for the reply, element or state a
+  check is about (`waitForResponse`, `waitForFunction`, or polling a
+  condition), not a fixed `waitForTimeout`, which a slow CI runner can
+  outlast. A fixed wait is only for showing that something *doesn't* happen.
+* **Check before acting on something that may be absent.** An action on a
+  missing element waits out Playwright's 30 s before it fails, so `.catch()`
+  after one costs that whole wait. Use `count()` first.
+* **Don't wait on the server's real timers.** If a test needs a 10 s grace
+  period or a retry interval to pass, the module takes it from `init` and the
+  test passes a few milliseconds. Time that has to look as if it passed comes
+  from a faked clock (`now`).
+* **Never run a TV's commands for real.** A module that runs `systemctl`,
+  `mount` or `luna-send` takes the function that runs them from `init`, and
+  its tests pass one that records the command.
+* **Keep the run short.** A new unit test takes well under a second. A new
+  browser check goes in the group it shares state with, or the shortest, and
+  the pull request says how long it takes.
 
 ### Docs
 

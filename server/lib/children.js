@@ -73,7 +73,18 @@ function diedEarly(err) {
   return !!(err && err.signal && !err.killed);
 }
 
+/*
+ * The gaps, for the fake TV the browser checks start: its luna-send is a node
+ * script with no lock to inherit, and the start-up gap held each tab's 59
+ * calls 150 ms apart. Never called on a TV.
+ */
+function setGaps(gap, startupGap) {
+  GAP_MS = gap;
+  STARTUP_GAP_MS = startupGap;
+}
+
 module.exports = {
   launch: launch,
-  diedEarly: diedEarly
+  diedEarly: diedEarly,
+  setGaps: setGaps
 };

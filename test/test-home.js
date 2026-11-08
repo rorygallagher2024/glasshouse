@@ -213,6 +213,12 @@ function luna(uri, p, cb) {
       { id: 'com.webos.app.hdmi1', title: 'HDMI 1', lptype: 'bookmark' }
     ];
     if (tv.newApp) r.launchPoints.push({ id: 'new.app', title: 'New', icon: '/x/new.png' });
+    // Saved web pages as a C2 (webOS 9.2.2) lists them: bookmarks of the browser.
+    if (tv.savedPages) r.launchPoints.push(
+      { id: 'com.webos.app.browser', launchPointId: '576150', lptype: 'bookmark', title: 'home assistant',
+        largeIcon: '/x/browser.png', params: { target: 'http://192.168.1.125:8123' } },
+      { id: 'com.webos.app.browser', launchPointId: '576151', lptype: 'bookmark', title: 'Weather',
+        largeIcon: '/x/browser.png', params: { target: 'https://example.com/weather' } });
   } else if (uri === 'com.webos.service.eim/getAllInputStatus') {
     // As a G3 reports them: a receiver with a console behind it on HDMI 2, HDMI 1 empty.
     r.devices = tv.devices || [
@@ -355,6 +361,30 @@ step('after a start the rows come from the lists last read, and a change read be
             assert.ok(c3.order.app.indexOf('new.app') !== -1, 'with the list just read');
             done();
           });
+        });
+      });
+    });
+  });
+});
+
+step('saved web pages are apps of their own, opened in the browser at their address', function (done) {
+  start(null);
+  tv.savedPages = true;
+  home.catalogue(function (c) {
+    assert.deepEqual(c.order.app, ['netflix', 'youtube.leanback.v4', 'cdp-30', 'page:576150', 'page:576151', 'lg-home']);
+    var page = c.apps.filter(function (a) { return a.id === 'page:576150'; })[0];
+    assert.strictEqual(page.title, 'home assistant');
+    assert.strictEqual(page.icon, '/api/home/icon?id=page%3A576150', 'the browser\'s icon, served as an app\'s');
+    assert.strictEqual(page.page, undefined, 'the address is not sent to the view');
+    assert.ok(!c.apps.some(function (a) { return a.id === 'com.webos.app.hdmi1'; }), 'input tiles stay out');
+    home.iconPath('page:576150', function (icon) {
+      assert.strictEqual(icon, '/x/browser.png');
+      home.open({ kind: 'app', id: 'page:576151' }, function (r) {
+        assert.ok(r.ok, JSON.stringify(r));
+        assert.deepEqual(tv.launches.pop(), { id: 'com.webos.app.browser', params: { target: 'https://example.com/weather' } });
+        home.open({ kind: 'app', id: 'page:999' }, function (gone) {
+          assert.strictEqual(gone.ok, false, 'a page no longer saved does not open');
+          done();
         });
       });
     });
@@ -2618,6 +2648,43 @@ step('a healthy view is replaced by LG\'s Home if its heartbeats later stop', fu
         assert.strictEqual(home.enabled(), true, 'still switched on');
         done();
       });
+    });
+  });
+});
+
+// A 75QNED80ARA (webOS 10.3.2) with Quick Start+ on: the heartbeat check, held
+// up by a deep suspend, fired as the TV resumed, before the view could beat,
+// and LG's Home took over (#1277). The grace periods are shortened here.
+step('a heartbeat check held up by a suspend waits for the view, and a real hang still falls back', function (done) {
+  var clock = Date.now();
+  start(null, { now: function () { return clock; }, beatGraceMs: 100, firstBeatGraceMs: 200 });
+  home.enable(function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.launched = [];
+    clock += 300000;   // five minutes asleep, none of it on the timer's clock
+    wait(150, function () {
+      assert.deepEqual(tv.launched, [], 'waking is not a hang');
+      assert.ok(taken(), 'Glasshouse Home keeps its place');
+      wait(250, function () {
+        assert.deepEqual(tv.launched, [LG_HOME], 'with no beat after the wake, it is one');
+        done();
+      });
+    });
+  });
+});
+
+step('switching the screen off ends the heartbeat check', function (done) {
+  start(null, { beatGraceMs: 100, firstBeatGraceMs: 200 });
+  home.enable(function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.launched = [];
+    power(false);
+    power(true);   // on again at once: a check left from before would fire in 100 ms
+    wait(250, function () {
+      assert.deepEqual(tv.launched, [], 'no check carried over the switch-off');
+      done();
     });
   });
 });

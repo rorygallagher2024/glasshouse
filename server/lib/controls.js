@@ -869,6 +869,16 @@ function doControl(action, value, cb) {
      * tvpowerd subscribes to the key, so writing it is all LG's menu does.
      * Only on firmware that has it: a C2 on webOS 9.2 does, a B8 on 4.4 does not.
      */
+    /*
+     * Glasshouse's own, beside LG's Auto device detection: the service that
+     * looks up every address on the network, held down where off (lib/services),
+     * which LG's setting does not do on webOS 11 (#1260).
+     */
+    case 'deviceScans':
+      if (!servicesModule || !servicesModule.available('iconnectivity')) return cb({ ok: false, error: 'not on this TV' });
+      var scansOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
+      return servicesModule.switchHidden('iconnectivity', !scansOn, function (r) { cb({ ok: !!(r && r.ok), error: r && r.error }); });
+
     // LG's universal control device detection (other/ueiEnable); see telemetry.
     case 'deviceDetection':
       var ddOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
