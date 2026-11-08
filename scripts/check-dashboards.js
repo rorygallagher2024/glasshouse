@@ -1435,13 +1435,25 @@ async function visitHomeOrder(browser, base, problems) {
     await saved;
     if (saves[saves.length - 1].sort.app !== 'custom') problems.push('Home order: the Home tab did not save Your order');
 
+    layout.folder = ['two'];
+    layout.hiddenRows = ['ch'];
     await page.goto(base + '/assets/dashboard.html?tab=home');
     for (const name of ['Apps', 'Inputs', 'Channels']) {
       const entry = page.locator('#rows .row').filter({ hasText: new RegExp('^' + name) }).first();
       await entry.click();
+      if (name === 'Apps') {
+        const peek = await page.locator('#hintPeek span').allTextContents();
+        if (peek.join(',') !== 'One,LG Home,More apps' || !(await entry.innerText()).includes('2 of 3 shown')) {
+          problems.push('Home order: the TV app preview counted folder apps as individual row tiles');
+        }
+      }
+      if (name === 'Channels' && !(await entry.innerText()).includes('Hidden')) problems.push('Home order: the TV app did not mark a hidden row');
       await page.keyboard.press('Enter');
       const order = page.locator('#rows .row.sel').filter({ hasText: /^Order/ });
       await order.waitFor();
+      if (name === 'Apps' && !(await page.locator('#rows .row').filter({ hasText: /^Two/ }).innerText()).includes('In More apps')) {
+        problems.push('Home order: a folder app was labelled Shown in the TV app');
+      }
       saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
       await page.keyboard.press('Enter');
       await saved;

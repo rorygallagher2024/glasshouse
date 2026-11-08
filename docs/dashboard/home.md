@@ -426,6 +426,8 @@ the row's own list: its tiles, its order, and the settings that change only
 that row, such as **App count** and **Search** for Apps and **CEC addresses**
 for Inputs. **Back** returns to the entry. **Animations** and **Row order and
 reset** are lists of their own too.
+The Apps preview shows **More apps** in place of the apps inside it; those
+apps are labelled **In More apps** in its list. A hidden row is labelled **Hidden**.
 
 === "Arranging on the TV (hold OK)"
 

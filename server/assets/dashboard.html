@@ -1286,6 +1286,7 @@ function homeRowShown(kind, d) {
   (c.order[kind] || []).forEach(function (id) {
     var title = homeItemTitle(kind, id), dev = null, i;
     if (title === null || (lay.hidden[kind] && lay.hidden[kind].indexOf(id) !== -1)) return;
+    if (kind === 'app' && (lay.folder || []).indexOf(id) !== -1) return;
     if (kind === 'dev') {
       for (i = 0; i < c.devices.length; i++) if (c.devices[i].id === id) dev = c.devices[i];
       if (dev && dev.unused && lay.hideUnused === true) return;
@@ -1317,8 +1318,13 @@ function homeRowEntry(kind, d) {
              scan: t('tv.settings.address.scan', 'Scan to open it on your phone.') };
   }
   var shown = homeRowShown(kind, d), total = homeRowTotal(kind, d);
+  var peek = shown.slice();
+  if (kind === 'app' && (c.order.app || []).some(function (id) {
+    return (lay.folder || []).indexOf(id) !== -1 && lay.hidden.app.indexOf(id) === -1 && homeItemTitle('app', id) !== null;
+  })) peek.push(t('home.folder.title', 'More apps'));
   var value = kind === 'app' || kind === 'dev' ? t('tv.home.shownOf', '{n} of {total} shown', { n: shown.length, total: total })
     : shown.length ? t('tv.home.onHomeN', '{n} on Home', { n: shown.length }) : t('tv.home.noneYet', 'None yet');
+  if ((lay.hiddenRows || []).indexOf(kind) !== -1) value = t('home.hidden', 'Hidden');
   var hints = {
     app: t('tv.home.appsHint', 'Which apps the row shows and in what order, the app count beside it, and Search.'),
     dev: t('tv.home.inputsHint', 'Which inputs the row shows and in what order, and the HDMI-CEC address on each tile.'),
@@ -1327,7 +1333,7 @@ function homeRowEntry(kind, d) {
   };
   return { label: name, value: value, cls: 'act opens', act: 'open', key: HOME_ROW_LISTS[kind],
            press: t('tv.home.openList', 'Press OK to open'), hint: hints[kind],
-           peek: shown.slice(0, PEEK_MAX), peekMore: Math.max(0, shown.length - PEEK_MAX) };
+           peek: peek.slice(0, PEEK_MAX), peekMore: Math.max(0, peek.length - PEEK_MAX) };
 }
 
 function homeBackRow() {
@@ -1404,7 +1410,8 @@ function homeRowRows(kind, d) {
     var hid = lay.hidden[kind].indexOf(id) !== -1, dev = null, i;
     if (kind === 'dev') for (i = 0; i < c.devices.length; i++) if (c.devices[i].id === id) dev = c.devices[i];
     var out = !!(dev && dev.unused && lay.hideUnused === true);
-    r.push({ label: title, value: hid ? t('home.hidden', 'Hidden') : out ? t('home.leftOut', 'Left out') : t('home.shown', 'Shown'),
+    var folded = kind === 'app' && (lay.folder || []).indexOf(id) !== -1;
+    r.push({ label: title, value: hid ? t('home.hidden', 'Hidden') : folded ? t('home.folder.label', 'In More apps') : out ? t('home.leftOut', 'Left out') : t('home.shown', 'Shown'),
              cls: hid || out ? 'off' : 'on', act: can ? 'homeTile' : null, key: id, kind: kind, on: !hid,
              press: hid ? t('tv.home.tile.show', 'Press OK to show it') : t('tv.home.tile.hide', 'Press OK to hide it'),
              hint: t('tv.home.tile.hint', 'Hold OK on Glasshouse Home to change the order of tiles.') });
