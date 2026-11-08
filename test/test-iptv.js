@@ -487,6 +487,36 @@ step('channels added just before a restart get their play links at once after it
   });
 });
 
+step('an Xtream channel plays as MPEG-TS once chosen, after a restart too, and as HLS again', function (done) {
+  iptv.search(xc, 'harbour sport 1', '', function (s) {
+    var c = s.channels[0];
+    var hls = iptv.streamUrl(xc, c.key);
+    assert.equal(hls.format, 'hls');
+    assert.strictEqual(hls.switchable, true, 'a panel offering both can switch');
+    assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'ts' }).ok, true);
+    assert.equal(iptv.streamUrl(xc, c.key).url, hls.url.replace(/\.m3u8$/, '.ts'));
+    iptv.stop();
+    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 600000, onChange: function () { changes++; } });
+    iptv.start();
+    assert.equal(iptv.streamUrl(xc, c.key).format, 'ts', 'kept in the playlist\'s settings');
+    assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
+    assert.equal(iptv.streamUrl(xc, c.key).url, hls.url);
+    assert.equal(iptv.setOutput({ pl: m3u, key: c.key, output: 'ts' }).ok, false, 'a plain list has one kind of link');
+    done();
+  });
+});
+
+step('a stream event is one log line, with the channel\'s key and never its link', function (done) {
+  var lines = [], log = console.log;
+  console.log = function (l) { lines.push(String(l)); };
+  try {
+    assert.equal(iptv.streamEvent({ event: 'reconnecting', pl: xc, key: 'x1', full: true, why: 'stall', still: 9001, url: 'http://u:p@h/x' }).ok, true);
+    assert.equal(iptv.streamEvent({ event: 'Bad Event!' }).ok, false);
+  } finally { console.log = log; }
+  assert.deepEqual(lines, ['iptv: stream reconnecting ' + xc + ':x1 full why=stall still=9001']);
+  done();
+});
+
 step('removing a playlist takes its channels off the row and its files off the TV at once', function (done) {
   iptv.playlistsAction({ action: 'remove', id: m3u }, function (r) {
     assert.equal(r.ok, true);

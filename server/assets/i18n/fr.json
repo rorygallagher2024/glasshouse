@@ -3243,6 +3243,8 @@
   "from": "{n} channels",
   "text": "{n} chaînes"
  },
+ "home.tv.reconnecting": {"text": "Reconnexion à {name}", "from": "Reconnecting to {name}"},
+ "home.tv.playAs": {"text": "Jaune : lire en {format}", "from": "Yellow: play as {format}"},
  "home.tv.connecting": {
   "from": "Connecting to {name}",
   "text": "Connexion à {name}"

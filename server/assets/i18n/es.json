@@ -2596,6 +2596,8 @@
  "home.tv.bad.url": {"text": "El enlace de la lista debe empezar por http:// o https://.", "from": "The playlist link must start with http:// or https://."},
  "home.tv.cantAdd": {"text": "este canal no se puede reproducir en la TV", "from": "this channel can’t play on the TV"},
  "home.tv.channels": {"text": "{n} canales", "from": "{n} channels"},
+ "home.tv.reconnecting": {"text": "Reconectando con {name}", "from": "Reconnecting to {name}"},
+ "home.tv.playAs": {"text": "Amarillo: reproducir como {format}", "from": "Yellow: play as {format}"},
  "home.tv.connecting": {"text": "Conectando con {name}", "from": "Connecting to {name}"},
  "home.tv.drm": {"text": "Protegido (DRM): no se puede reproducir aquí", "from": "Protected (DRM): can’t play here"},
  "home.tv.drmShort": {"text": "DRM", "from": "DRM"},

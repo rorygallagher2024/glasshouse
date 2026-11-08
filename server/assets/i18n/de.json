@@ -694,6 +694,8 @@
  "home.tv.drm": {"text": "Geschützt (DRM): hier nicht abspielbar", "from": "Protected (DRM): can’t play here"},
  "home.tv.headers": {"text": "Benötigt einen Player, der eigene HTTP-Header sendet", "from": "Needs a player that sends its own headers"},
  "home.tv.format": {"text": "Ein Stream, den dieser Fernseher nicht öffnen kann", "from": "A stream this TV can’t open"},
+ "home.tv.reconnecting": {"text": "Verbindung mit {name} wird wiederhergestellt", "from": "Reconnecting to {name}"},
+ "home.tv.playAs": {"text": "Gelb: als {format} abspielen", "from": "Yellow: play as {format}"},
  "home.tv.connecting": {"text": "Verbindung mit {name} wird hergestellt", "from": "Connecting to {name}"},
  "home.tv.stopped": {"text": "Der Stream wurde angehalten", "from": "The stream stopped"},
  "home.tv.noStream": {"text": "Dieser Sender wird nicht wiedergegeben", "from": "This channel isn’t playing"},
