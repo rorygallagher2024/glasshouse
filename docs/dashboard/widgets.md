@@ -15,7 +15,6 @@ custom widget's settings. The list and editor scroll independently on a computer
 
 > [!NOTE]
 > The previews below use an emulated TV and sample weather in a browser.
-> Physical-TV rendering and remote behaviour still need testing.
 
 ![Home widgets, browser preview](../screenshots/home-widgets-preview.png)
 
@@ -244,11 +243,11 @@ hour. Refresh requests are limited to once a minute. If neither host responds,
 the last validated catalogue remains available, or the included starter
 catalogue is used. Installed widgets keep working without the catalogue.
 
-The online sources use the repository's `main` branch. While this feature is
-only in its draft PR, they may be unavailable and the included catalogue is
-used. The PR branch has a public catalogue preview; merging the PR enables
-the normal online addresses. No change to the TV is needed to browse the
-included widgets offline.
+The online sources currently use `rsm23/glasshouse`'s `main` branch.
+The catalogue must be published there before those addresses can serve it;
+merging into `rorygallagher2024/glasshouse` alone does not publish it on the
+fork. Until then, the included catalogue works offline. The PR branch also
+has a public catalogue preview.
 
 ### Share a widget
 

@@ -59,6 +59,41 @@ assert.strictEqual(result.partial, true, 'one missing league never looks like co
 assert.strictEqual(result.matches.length, 2, 'the same match is not duplicated across feeds');
 assert.strictEqual(jobs.length, 3);
 
+init(); chosen = settings(); result = null;
+chosen.leagues.push({ id: 'eng.1', name: 'Premier League' }, { id: 'esp.1', name: 'La Liga' });
+var leagueReplies = 0;
+football.read(chosen, function (reply) { result = reply; leagueReplies++; });
+football.read(chosen, function (reply) { other = reply; });
+assert.strictEqual(timers.length, 2, 'each league reader has its own response deadline');
+assert.strictEqual(timers[0].ms, 15000);
+assert.strictEqual(jobs.length, 2, 'league readers share the bounded provider queue');
+timers[0].callback();
+assert.strictEqual(result.loading, true, 'slow league reads return progress before Home times out');
+assert.strictEqual(result.available, false, 'pending leagues do not imply a confirmed empty scoreboard');
+assert.strictEqual(result.partial, true);
+jobs[0].reply(null, board()); jobs[1].reply(null, { events: [] }); jobs[2].reply(null, { events: [] });
+assert.strictEqual(leagueReplies, 1, 'late provider replies cannot answer a detached reader again');
+assert.deepEqual(result.matches, [], 'late replies cannot mutate the progress response');
+assert.strictEqual(other.loading, false, 'another reader still receives the completed shared requests');
+assert.strictEqual(other.matches.length, 2);
+assert.ok(timers[1].cancelled, 'completed league readers cancel their deadline');
+football.read(chosen, function (reply) { result = reply; });
+assert.strictEqual(result.loading, false, 'a retry uses the completed cache');
+assert.strictEqual(jobs.length, 3, 'a progress response leaves the shared cache usable');
+assert.ok(timers[2].cancelled, 'synchronous cache hits leave no deadline running');
+
+init(); chosen = settings();
+chosen.leagues.push({ id: 'eng.1', name: 'Premier League' });
+football.read(chosen, function (reply) { result = reply; });
+jobs[0].reply(null, board());
+timers[0].callback();
+assert.strictEqual(result.loading, true);
+assert.strictEqual(result.available, true, 'received live games remain visible while another league is pending');
+assert.strictEqual(result.matches.length, 2);
+assert.strictEqual(result.partial, true);
+jobs[1].reply(null, { events: [event('999', 'in', 'STATUS_IN_PROGRESS', '1')] });
+assert.strictEqual(result.matches.length, 2, 'a late league cannot append to an already returned match list');
+
 init(); time = Date.UTC(2026, 10, 8, 0, 30);
 football.read(settings(), function (reply) { result = reply; });
 assert.strictEqual(jobs.length, 2, 'after midnight, games from the previous UTC day remain included');

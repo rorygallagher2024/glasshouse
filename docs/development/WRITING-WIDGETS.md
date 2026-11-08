@@ -291,7 +291,10 @@ refresh keeps the last valid result; a first offline read uses the bundled
 catalogue. Catalogue data is not written to disk. Installed snapshots and
 settings are included in the existing Home backup.
 
-Before maintainer merge, `main` may have neither file. Branch previews are
+The production sources target `rsm23/glasshouse/main`. The catalogue must be
+published on that fork's `main` branch; merging into
+`rorygallagher2024/glasshouse` alone does not publish it there. The bundled
+catalogue remains available until publication. Branch previews are
 available at [GitHub](https://raw.githubusercontent.com/rsm23/glasshouse/codex/home-widgets/server/assets/widget-store/catalogue.json)
 and [jsDelivr](https://cdn.jsdelivr.net/gh/rsm23/glasshouse@codex%2Fhome-widgets/server/assets/widget-store/catalogue.json);
 these preview URLs do not change the production source constants. CDN caches

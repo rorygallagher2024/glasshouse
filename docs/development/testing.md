@@ -35,6 +35,9 @@ It also checks national teams without leagues, all-competition team fixtures,
 latest completed results selected by date, object-valued scores, missing/future
 results, shared-opponent deduplication, failure versus empty results, bounded
 read deadlines with detached waiters, and all 64 selected teams.
+League-only reads also return loading progress at the 15-second deadline,
+retain received live games, detach expired readers without affecting other
+readers or the shared cache, and ignore late replies after responding.
 The football browser check shares the Home widget group and exercises league
 and team selection, persistence, team-filter clearing, phone overflow in both
 themes, scrolling only on overflow, focus pause, expansion, empty/error states

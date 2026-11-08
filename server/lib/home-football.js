@@ -117,13 +117,24 @@ function dates() {
 }
 function leagueScores(settings, cb) {
   var days = dates(), total = settings.leagues.length * days.length;
-  var remaining = total, matches = [], failed = 0, updated = now();
+  var remaining = total, matches = [], failed = 0, updated = now(), cancels = [], finished = false;
+  var timer = scheduleTimer(finish, READ_MS); readTimers.push(timer);
+  function finish() {
+    if (finished) return;
+    finished = true; cancelTimer(timer);
+    var index = readTimers.indexOf(timer); if (index !== -1) readTimers.splice(index, 1);
+    cancels.forEach(function (cancel) { if (cancel) cancel(); });
+    matches.sort(function (a, b) { return a.id < b.id ? -1 : a.id === b.id ? 0 : 1; });
+    cb({ ok: true, available: matches.length > 0 || remaining === 0 && failed < total,
+      loading: remaining > 0, partial: failed > 0 || remaining > 0, updated: updated, matches: matches });
+  }
   settings.leagues.forEach(function (league) {
     days.forEach(function (day) {
-      request('scores:' + league.id + ':' + day, 'sports/soccer/' + league.id + '/scoreboard?limit=1000&dates=' + day, function (raw) {
+      cancels.push(request('scores:' + league.id + ':' + day, 'sports/soccer/' + league.id + '/scoreboard?limit=1000&dates=' + day, function (raw) {
         if (!raw || !Array.isArray(raw.events)) return null;
         return raw.events.slice(0, 1000).map(function (event) { return match(event, false); }).filter(function (item) { return item !== null; });
       }, FRESH_MS, function (data, time) {
+        if (finished) return;
         if (!data) failed++;
         else {
           updated = Math.min(updated, time);
@@ -133,10 +144,8 @@ function leagueScores(settings, cb) {
             var copy = JSON.parse(JSON.stringify(item)); copy.league = league.name; matches.push(copy);
           });
         }
-        if (--remaining) return;
-        matches.sort(function (a, b) { return a.id < b.id ? -1 : a.id === b.id ? 0 : 1; });
-        cb({ ok: true, available: failed < total, partial: failed > 0, updated: updated, matches: matches });
-      });
+        if (!--remaining) finish();
+      }));
     });
   });
 }
