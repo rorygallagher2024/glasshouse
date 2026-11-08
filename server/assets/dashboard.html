@@ -1335,12 +1335,11 @@ function glasshouseHomeRows(d) {
       order.forEach(function (id) {
         var title = homeItemTitle(kind, id);
         if (title === null) return;
-        var hidden = lay.hidden[kind].indexOf(id) !== -1, lg = kind === 'app' && id === 'lg-home';
-        r.push({ label: title, value: lg ? t('home.alwaysShown', 'Always shown') : hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
-                 cls: lg ? '' : hidden ? 'off' : 'on', act: can && !lg ? 'homeTile' : null, key: id, kind: kind, on: !hidden,
+        var hidden = lay.hidden[kind].indexOf(id) !== -1;
+        r.push({ label: title, value: hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
+                 cls: hidden ? 'off' : 'on', act: can ? 'homeTile' : null, key: id, kind: kind, on: !hidden,
                  press: hidden ? t('tv.home.tile.show', 'Press OK to show it') : t('tv.home.tile.hide', 'Press OK to hide it'),
-                 hint: lg ? t('tv.home.lgTile.hint', 'The way back to LG\u2019s Home, so it always shows.')
-                          : t('tv.home.tile.hint', 'Hold OK on Glasshouse Home to change the order of tiles.') });
+                 hint: t('tv.home.tile.hint', 'Hold OK on Glasshouse Home to change the order of tiles.') });
       });
     });
     var walls = d.wallpapers || {};
