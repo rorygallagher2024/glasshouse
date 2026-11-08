@@ -121,20 +121,29 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .row .tile.live{opacity:1}
 
 /* The weather badge: an icon and the current temperature, right of the
-   plate (or alone, in its place, when the plate is off). Pushed from
-   Home Assistant over MQTT (ha.js's 'weather' text entity), so it shows
-   only once something has been pushed at least once since the server
-   started. */
-#weather{-webkit-flex:0 0 auto;flex:0 0 auto;margin-left:40px;text-align:center;padding-bottom:2px;white-space:nowrap}
+   plate (or alone, in its place, when the plate is off). Its weather comes
+   from Home Assistant or Open-Meteo, as the layout's 'weather' chooses, and
+   it stays hidden until there is some. */
+/* Lined up with the clock: the temperature in the clock's own size and line
+   height, so their digits share a top and a baseline, and the place and
+   conditions as the date. */
+#weather{-webkit-flex:0 0 auto;flex:0 0 auto;position:relative;margin-left:56px;white-space:nowrap}
 #weather.none{display:none}
-#wxMain{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center}
-#wxIcon{width:72px;height:72px;margin-right:16px}
-#wxIcon svg{width:72px;height:72px;display:block}
-#wxTemp{font-family:'Outfit',sans-serif;font-size:72px;line-height:1;font-weight:400;letter-spacing:-1px}
-#wxCity{margin-top:8px;font-size:28px;color:#a39d93}
-#wxCond{margin-top:2px;font-size:22px;font-weight:300;opacity:.65}
-#wxCity:empty,#wxCond:empty{display:none}
+#wxMain{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center}
+#wxIcon{width:112px;height:112px;margin-right:20px}
+#wxIcon svg{width:112px;height:112px;display:block}
+#wxTemp{font-family:'Outfit',sans-serif;font-size:176px;line-height:.8;font-weight:300;letter-spacing:-4px}
+#wxLine{margin-top:22px;font-size:28px;color:#a39d93}
+#wxCity:not(:empty)+#wxCond:not(:empty):before{content:"\00b7";margin:0 .4em}
+/* Open-Meteo's licence (CC BY 4.0) asks for credit, not for it beside the
+   data: bottom right, clear of the toast and banner on the left. */
+#wxCredit{position:absolute;right:112px;bottom:12px;font-size:16px;font-weight:300;opacity:.45}
+.alternative #wxCredit{right:90px}
+#wxCredit:empty,.arranging #wxCredit{display:none}
 .alternative #weather{-webkit-order:4;order:4;margin:0 0 0 48px}
+.alternative #wxIcon,.alternative #wxIcon svg{width:72px;height:72px}
+.alternative #wxTemp{font-size:100px;line-height:1;letter-spacing:-2px}
+.alternative #wxLine{margin-top:8px;font-size:23px}
 
 /* The rows sit centred between the clock and the arrange bar, so three rows
    land a little below where they used to and fewer settle lower. The spacers shrink first, so rows taller than the space run on down
@@ -615,12 +624,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         <div id="wxIcon"></div>
         <div id="wxTemp">&mdash;</div>
       </div>
-      <div id="wxCity"></div>
-      <div id="wxCond"></div>
+      <div id="wxLine"><span id="wxCity"></span><span id="wxCond"></span></div>
     </div>
   </section>
 
   <main id="rows"></main>
+  <div id="wxCredit"></div>
   <div id="rail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="word" data-t="home.search.rail">Search</span></div>
   <section id="finder">
     <div id="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input id="query" type="text" autocomplete="off" spellcheck="false" maxlength="80" placeholder="Film or series" data-t-placeholder="home.search.placeholder"></div>
@@ -1716,15 +1725,16 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Drawn again only when it changes: the heartbeat brings it every 5 s.
   var shownWeather = null;
   function renderWeather(w) {
-    if (layout && layout.showWeather === false) w = null;
-    var key = w && typeof w.temp === 'number' ? JSON.stringify([w.condition, w.temp, w.city]) : '';
+    var key = w && typeof w.temp === 'number' ? JSON.stringify([w.condition, w.temp, w.city, w.source]) : '';
     if (key === shownWeather) return;
     shownWeather = key;
-    if (!key) { $('weather').className = 'none'; return; }
+    if (!key) { $('weather').className = 'none'; $('wxCredit').textContent = ''; return; }
     $('wxIcon').innerHTML = wxIcon(w.condition);
     $('wxTemp').textContent = Math.round(w.temp) + '°';
     $('wxCity').textContent = w.city || '';
     $('wxCond').textContent = wxLabel(w.condition);
+    // Open-Meteo's data is CC BY 4.0: credited wherever it is shown.
+    $('wxCredit').textContent = w.source === 'internet' ? t('home.weather.credit', 'Weather data by Open-Meteo.com') : '';
     $('weather').className = '';
   }
 

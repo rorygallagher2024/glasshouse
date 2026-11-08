@@ -1197,10 +1197,24 @@
     </div>
     <div class="prot-row home-gh-row home-show-row" hidden>
       <div class="prot-main">
-        <div class="prot-title" data-t="home.showWeather">Weather</div>
-        <div class="prot-desc" data-t="home.showWeatherDesc">Next to the clock: the weather Home Assistant sends, once an automation sends it.</div>
+        <div class="prot-title" data-t="home.weather">Weather</div>
+        <div class="prot-desc" data-t="home.weatherDesc">Next to the clock: the weather Home Assistant sends, or the weather for a place you choose, from Open-Meteo.</div>
       </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="home-show-weather" onclick="homeShow('showWeather')">&mdash;</button></div>
+      <div class="prot-status"><select class="pill-sel" id="home-weather-sel" onchange="homeWeatherSource(this.value)" aria-label="Weather" data-t-aria-label="home.weather">
+        <option value="off" data-t="common.off">Off</option>
+        <option value="ha" data-t="home.weather.fromHa">From Home Assistant</option>
+        <option value="internet" data-t="home.weather.fromInternet">From the internet</option>
+      </select></div>
+    </div>
+    <div class="home-weather-place" id="home-weather-place" hidden>
+      <div class="sub" data-t="home.weather.placeDesc">Glasshouse asks Open-Meteo for the weather at this place every 30 minutes while the TV is on. Nothing else is sent.</div>
+      <form class="toast-form" onsubmit="event.preventDefault();homeWeatherSearch();">
+        <input type="search" id="home-weather-q" maxlength="80" autocomplete="off" placeholder="Town or city" data-t-placeholder="home.weather.placeholder">
+        <button type="submit" id="home-weather-go" data-t="home.weather.search">Search</button>
+      </form>
+      <div class="home-weather-results" id="home-weather-results"></div>
+      <div class="sub" id="home-weather-chosen" role="status"></div>
+      <div class="sub home-weather-credit" data-t="home.weather.credits">Weather data by Open-Meteo.com. Location data based on GeoNames.</div>
     </div>
     <div class="prot-row home-gh-row" id="home-picture-row" hidden>
       <div class="prot-main">

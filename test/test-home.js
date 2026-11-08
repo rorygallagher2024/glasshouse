@@ -2736,12 +2736,86 @@ step('the weather Home Assistant pushes is kept across a restart, capped, hidden
     assert.strictEqual(home.beat().weather, null, 'an empty push clears it');
     home.init(lastInit);
     assert.strictEqual(home.beat().weather, null, 'and it stays cleared after a restart');
-    assert.strictEqual(home.layout().showWeather, true, 'the Weather switch is on until switched off');
+    assert.strictEqual(home.layout().weather, 'ha', 'Home Assistant until another source is chosen');
+    home.setWeather(JSON.stringify({ condition: 'rainy', temp: 9.6 }));
+    // An older dashboard's switch still works.
     home.setLayout({ showWeather: false }, function (r2) {
-      assert.strictEqual(r2.layout.showWeather, false);
+      assert.strictEqual(r2.layout.weather, 'off');
+      assert.strictEqual(home.beat().weather, null, 'off hides what was pushed');
       home.init(lastInit);
-      assert.strictEqual(home.layout().showWeather, false, 'and saved');
+      assert.strictEqual(home.layout().weather, 'off', 'and saved');
       done();
+    });
+  });
+});
+
+step('a Weather switch saved off before the source choice stays off', function (done) {
+  start({ enabled: false, showWeather: false });
+  assert.strictEqual(home.layout().weather, 'off');
+  start({ enabled: false, showWeather: true });
+  assert.strictEqual(home.layout().weather, 'ha');
+  done();
+});
+
+step('weather from the internet: asked for only with a place and the screen on, then every 30 minutes', function (done) {
+  var clock = Date.now();
+  var asked = [];
+  var reply = { condition: 'cloudy', temp: 9.7, unit: 'C' };
+  var weather = {
+    current: function (place, cb) { asked.push(place.name); cb(reply ? null : new Error('offline'), reply); },
+    search: function (q, lang, cb) { cb(null, [{ name: q, lat: 1, lon: 2 }]); }
+  };
+  var glasgow = { name: 'Glasgow', admin: 'Scotland', country: 'United Kingdom', countryCode: 'gb', lat: 55.86517, lon: -4.25763 };
+  start(null, { now: function () { return clock; }, weather: weather, weatherWakeMs: 0 });
+  home.setLayout({ weather: 'internet' }, function (r) {
+    assert.strictEqual(r.layout.weatherPlace, null);
+    wait(20, function () {
+      assert.deepEqual(asked, [], 'nothing asked without a place');
+      home.setLayout({ weatherPlace: glasgow }, function (r2) {
+        assert.deepEqual(r2.layout.weatherPlace, { name: 'Glasgow', admin: 'Scotland', country: 'United Kingdom',
+          countryCode: 'GB', lat: 55.8652, lon: -4.2576 }, 'kept to four decimals');
+        wait(20, function () {
+          assert.deepEqual(asked, ['Glasgow'], 'asked once the place is chosen');
+          assert.deepEqual(home.beat().weather, { condition: 'cloudy', temp: 9.7, city: 'Glasgow', source: 'internet' });
+          home.weatherPlaces('Glas', 'en', function (found) {
+            assert.strictEqual(found.ok, true);
+            assert.strictEqual(found.places[0].name, 'Glas');
+            // Home Assistant's pushes are not shown while the internet is chosen.
+            home.setWeather(JSON.stringify({ condition: 'sunny', temp: 20 }));
+            assert.strictEqual(home.beat().weather.temp, 9.7);
+            // A save asks again only once the last reply is 30 minutes old.
+            clock += 29 * 60000;
+            home.setLayout({ weather: 'internet' }, function () {
+              wait(20, function () {
+                assert.deepEqual(asked, ['Glasgow'], 'not again within 30 minutes');
+                clock += 2 * 60000;
+                power(false);
+                home.setLayout({ weather: 'internet' }, function () {
+                  wait(20, function () {
+                    assert.deepEqual(asked, ['Glasgow'], 'not while the screen is off');
+                    home.init(lastInit);
+                    assert.strictEqual(home.beat().weather.temp, 9.7, 'kept across a restart');
+                    power(false);
+                    reply = null;
+                    power(true);
+                    wait(20, function () {
+                      assert.deepEqual(asked, ['Glasgow', 'Glasgow'], 'asked once the screen is on again');
+                      assert.strictEqual(home.beat().weather.temp, 9.7, 'a failure keeps the last weather');
+                      clock += 3 * 3600000;
+                      assert.strictEqual(home.beat().weather, null, 'stale after 3 h');
+                      home.setLayout({ weather: 'ha' }, function () {
+                        home.setWeather(JSON.stringify({ condition: 'sunny', temp: 20 }));
+                        assert.strictEqual(home.beat().weather.temp, 20, 'Home Assistant\'s again');
+                        done();
+                      });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
     });
   });
 });
