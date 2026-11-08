@@ -130,6 +130,12 @@ steps.push(function () {
     status: { returnValue: true, connected: true, isBleRemocon: false }
   }, 0, INFO_CALLS);
 });
+steps.push(function () {
+  check('a zeroed B8 getDeviceInfo reply while asleep is not a 0% battery reading', {
+    webosVersion: '4.4.3', deviceInfo: { returnValue: true, batteryLevel: 0, bdAddress: '00:00:00:00:00:00', fwVer: '00.00.00' },
+    status: { returnValue: true, connected: true, isBleRemocon: false }
+  }, null, INFO_CALLS);
+});
 ['2.0.0', '3.9.3', '4.4.3', '5.6.2', '6.4.0', '7.0.0', '8.0.0', '9.2.2', '10.3.1', '11.2.0', '12.0.0', 'unknown'].forEach(function (version) {
   steps.push(function () {
     check('numeric LG battery data takes precedence on webOS ' + version, {

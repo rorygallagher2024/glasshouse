@@ -133,6 +133,9 @@ function validLevel(n) {
  */
 function deviceLevelFrom(info) {
   var n = info && info.returnValue ? info.batteryLevel : null;
+  // On a B8 (webOS 4.4), getDeviceInfo answers batteryLevel 0 with a zero
+  // bdAddress while the remote is asleep.
+  if (n === 0 && info && info.bdAddress === '00:00:00:00:00:00') return null;
   if (validLevel(n)) return n;
   if (typeof n === 'string') {
     switch (n.toUpperCase()) {
@@ -202,7 +205,7 @@ function read(done) {
       if (info && typeof info.lowStrength === 'boolean') {
         lowStrength = info.lowStrength;
       }
-      if (info && typeof info.fwVer === 'string' && info.fwVer.length > 0 && info.fwVer !== '00.00.00.00.00.00.00.00.00.00.00') {
+      if (info && typeof info.fwVer === 'string' && info.fwVer.length > 0 && !/^[0.]+$/.test(info.fwVer)) {
         firmware = info.fwVer;
       }
       if (!address && info && info.returnValue && typeof info.bdAddress === 'string' &&
@@ -310,15 +313,14 @@ function start(isOn) {
       if (info && typeof info.lowStrength === 'boolean') {
         lowStrength = info.lowStrength;
       }
-      if (info && typeof info.fwVer === 'string' && info.fwVer.length > 0 && info.fwVer !== '00.00.00.00.00.00.00.00.00.00.00') {
+      if (info && typeof info.fwVer === 'string' && info.fwVer.length > 0 && !/^[0.]+$/.test(info.fwVer)) {
         firmware = info.fwVer;
       }
       var remote = getRemoteInfo();
       if (level(remote && remote.mac) === null) {
         var dl = deviceLevelFrom(info);
         if (dl !== null) {
-          var mac = (info && typeof info.bdAddress === 'string' && info.bdAddress !== '00:00:00:00:00:00')
-            ? info.bdAddress : (remote && remote.mac) || null;
+          var mac = (info && typeof info.bdAddress === 'string' && info.bdAddress !== '00:00:00:00:00:00') ? info.bdAddress : null;
           if (!remote || !remote.mac || sameAddress(remote.mac, mac)) saveLevel(dl, mac, 'mrcu');
         }
       }
