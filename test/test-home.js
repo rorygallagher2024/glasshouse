@@ -261,8 +261,11 @@ function start(file, opts) {
             lgLayoutDir: layoutDir, checkpointDirs: [checkpointDir],
             setStarting: function (text, cb) { tv.starting = text; cb({ ok: true }); } };
   for (var k in opts || {}) o[k] = opts[k];
+  lastInit = o;
   home.init(o);
 }
+// The options start() gave init, for a restart that keeps the TV's files.
+var lastInit = null;
 
 function taken() { return tv.samType === 'web' && fs.realpathSync(appDir) === fs.realpathSync(stageDir); }
 
@@ -2684,6 +2687,41 @@ step('switching the screen off ends the heartbeat check', function (done) {
     power(true);   // on again at once: a check left from before would fire in 100 ms
     wait(250, function () {
       assert.deepEqual(tv.launched, [], 'no check carried over the switch-off');
+      done();
+    });
+  });
+});
+
+step('the weather Home Assistant pushes is kept across a restart, capped, hidden once stale and cleared by an empty push', function (done) {
+  var clock = Date.now();
+  var opts = { now: function () { return clock; } };
+  start(null, opts);
+  home.setWeather('not json');
+  home.setWeather('{"condition":"sunny"}');
+  assert.strictEqual(home.beat().weather, null, 'nothing shown without a numeric temperature');
+  home.setWeather(JSON.stringify({ condition: 'rainy', temp: 9.6, city: '  Glasgow   ' + new Array(60).join('x') }));
+  var w = home.beat().weather;
+  assert.strictEqual(w.condition, 'rainy');
+  assert.strictEqual(w.temp, 9.6);
+  assert.strictEqual(w.city.indexOf('Glasgow x'), 0, 'spaces folded');
+  assert.strictEqual(w.city.length, 40, 'capped');
+  // A restart reads it back from home-weather.json.
+  home.init(lastInit);
+  home.weather(function (r) {
+    assert.strictEqual(r.ok, true, 'kept across a restart');
+    assert.strictEqual(r.temp, 9.6);
+    clock += 3 * 3600000 + 1000;
+    assert.strictEqual(home.beat().weather, null, 'stale after 3 h');
+    clock -= 3 * 3600000 + 1000;
+    home.setWeather('');
+    assert.strictEqual(home.beat().weather, null, 'an empty push clears it');
+    home.init(lastInit);
+    assert.strictEqual(home.beat().weather, null, 'and it stays cleared after a restart');
+    assert.strictEqual(home.layout().showWeather, true, 'the Weather switch is on until switched off');
+    home.setLayout({ showWeather: false }, function (r2) {
+      assert.strictEqual(r2.layout.showWeather, false);
+      home.init(lastInit);
+      assert.strictEqual(home.layout().showWeather, false, 'and saved');
       done();
     });
   });

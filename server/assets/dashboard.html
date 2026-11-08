@@ -1161,6 +1161,7 @@ function glasshouseHomeRows(d) {
              press: altOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.alternativeDesc', 'A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging.') });
     r.push(homeSwitchRow(d, 'showLastOn', t('home.showLast', 'Last watched'), t('home.showLastDesc', 'At the top of Glasshouse Home and on the input it was on: what the TV last showed.'), 'homeShow', d.layout.showLastOn !== false));
+    r.push(homeSwitchRow(d, 'showWeather', t('home.showWeather', 'Weather'), t('home.showWeatherDesc', 'Next to the clock: the weather Home Assistant sends, once an automation sends it.'), 'homeShow', d.layout.showWeather !== false));
     var moving = homeMotionRows(d).filter(function (m) { return m.on; }).length;
     r.push({ label: t('home.group.motion', 'Animations'), value: t('tv.home.someOn', '{n} of {total} on', { n: moving, total: homeMotionRows(d).length }),
              cls: 'act opens', act: 'open', key: 'homeMotion', press: t('tv.home.openList', 'Press OK to open'),
