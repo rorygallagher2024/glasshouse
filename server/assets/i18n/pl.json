@@ -3010,5 +3010,22 @@
  "home.showTvLogosDescName": {"text": "W telewizji internetowej: logo z listy dla każdego kanału. Wyłączone pokazuje w jego miejscu nazwę kanału.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."},
  "server.backup.confirmSettings": {"text": "Przywrócić ustawienia zapisane z {tv} dnia {date}? To zmieni ustawienia na tym telewizorze.", "from": "Restore the settings saved from {tv} on {date}? This changes settings on this TV."},
  "server.backup.restoredSettings": {"text": "Zmieniono ustawienia: {changed}, już takie były: {same}, pominięto: {skipped}, bo ten telewizor ich nie ma lub są teraz niedostępne.", "from": "Changed {changed} settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now."},
- "server.backup.acrLeftOff": {"text": "Rozpoznawanie treści na żywo pozostaje wyłączone: włączenie go oznacza akceptację warunków LG, więc kopia zapasowa nigdy tego nie robi.", "from": "Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does."}
+ "server.backup.acrLeftOff": {"text": "Rozpoznawanie treści na żywo pozostaje wyłączone: włączenie go oznacza akceptację warunków LG, więc kopia zapasowa nigdy tego nie robi.", "from": "Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does."},
+ "home.weather.clearNight": {"text": "Bezchmurna noc", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "Pochmurno", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Mgła", "from": "Fog"},
+ "home.weather.hail": {"text": "Grad", "from": "Hail"},
+ "home.weather.lightning": {"text": "Błyskawice", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Burza", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Częściowe zachmurzenie", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Ulewa", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Deszczowo", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Śnieg", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Śnieg z deszczem", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Słonecznie", "from": "Sunny"},
+ "home.weather.windy": {"text": "Wietrznie", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Wietrznie", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Ekstremalna pogoda", "from": "Severe weather"},
+ "home.showWeather": {"text": "Pogoda", "from": "Weather"},
+ "home.showWeatherDesc": {"text": "Obok zegara: pogoda wysyłana przez Home Assistant, gdy tylko automatyzacja ją wyśle.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."}
 }

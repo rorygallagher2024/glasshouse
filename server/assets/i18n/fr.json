@@ -3163,6 +3163,14 @@
   "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.",
   "text": "Sur Internet TV : le logo de chaque chaîne fourni par la playlist. Désactivé affiche le nom de la chaîne à sa place."
  },
+ "home.showWeather": {
+  "from": "Weather",
+  "text": "Météo"
+ },
+ "home.showWeatherDesc": {
+  "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it.",
+  "text": "À côté de l’horloge : la météo envoyée par Home Assistant, dès qu’une automatisation l’envoie."
+ },
  "home.shown": {
   "from": "Shown",
   "text": "Affichée"
@@ -4390,6 +4398,66 @@
  "home.wall.uploading": {
   "from": "Uploading…",
   "text": "Envoi…"
+ },
+ "home.weather.clearNight": {
+  "from": "Clear night",
+  "text": "Nuit claire"
+ },
+ "home.weather.cloudy": {
+  "from": "Cloudy",
+  "text": "Nuageux"
+ },
+ "home.weather.exceptional": {
+  "from": "Severe weather",
+  "text": "Intempéries"
+ },
+ "home.weather.fog": {
+  "from": "Fog",
+  "text": "Brouillard"
+ },
+ "home.weather.hail": {
+  "from": "Hail",
+  "text": "Grêle"
+ },
+ "home.weather.lightning": {
+  "from": "Lightning",
+  "text": "Éclairs"
+ },
+ "home.weather.lightningRainy": {
+  "from": "Thunderstorms",
+  "text": "Orages"
+ },
+ "home.weather.partlycloudy": {
+  "from": "Partly cloudy",
+  "text": "Partiellement nuageux"
+ },
+ "home.weather.pouring": {
+  "from": "Pouring rain",
+  "text": "Pluie battante"
+ },
+ "home.weather.rainy": {
+  "from": "Rainy",
+  "text": "Pluvieux"
+ },
+ "home.weather.snowy": {
+  "from": "Snowy",
+  "text": "Neigeux"
+ },
+ "home.weather.snowyRainy": {
+  "from": "Snow and rain",
+  "text": "Neige et pluie"
+ },
+ "home.weather.sunny": {
+  "from": "Sunny",
+  "text": "Ensoleillé"
+ },
+ "home.weather.windy": {
+  "from": "Windy",
+  "text": "Venteux"
+ },
+ "home.weather.windyVariant": {
+  "from": "Windy",
+  "text": "Venteux"
  },
  "lang.partial": {
   "from": "{name} (partial)",

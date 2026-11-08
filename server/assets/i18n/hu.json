@@ -3010,5 +3010,22 @@
  "home.showTvLogosDescName": {"text": "Internetes TV-n: a lista logója minden csatornához. Kikapcsolva a csatorna neve látható a helyén.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."},
  "server.backup.confirmSettings": {"text": "Visszaállítod a(z) {tv} készülékről {date} napon mentett beállításokat? Ez módosítja a TV beállításait.", "from": "Restore the settings saved from {tv} on {date}? This changes settings on this TV."},
  "server.backup.restoredSettings": {"text": "{changed} beállítás módosult, {same} már így volt, {skipped} kimaradt, mert ezen a TV-n nincs meg, vagy most nem érhető el.", "from": "Changed {changed} settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now."},
- "server.backup.acrLeftOff": {"text": "Az élő tartalomfelismerés kikapcsolva marad: bekapcsolása elfogadja az LG feltételeit, ezért egy biztonsági mentés soha nem teszi meg.", "from": "Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does."}
+ "server.backup.acrLeftOff": {"text": "Az élő tartalomfelismerés kikapcsolva marad: bekapcsolása elfogadja az LG feltételeit, ezért egy biztonsági mentés soha nem teszi meg.", "from": "Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does."},
+ "home.weather.clearNight": {"text": "Tiszta éjszaka", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "Felhős", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Köd", "from": "Fog"},
+ "home.weather.hail": {"text": "Jégeső", "from": "Hail"},
+ "home.weather.lightning": {"text": "Villámlás", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Zivatar", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Részben felhős", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Zuhogó eső", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Esős", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Havas", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Hóeső", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Napos", "from": "Sunny"},
+ "home.weather.windy": {"text": "Szeles", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Szeles", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Viharos időjárás", "from": "Severe weather"},
+ "home.showWeather": {"text": "Időjárás", "from": "Weather"},
+ "home.showWeatherDesc": {"text": "Az óra mellett: a Home Assistant által küldött időjárás, amint egy automatizálás elküldi.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."}
 }
