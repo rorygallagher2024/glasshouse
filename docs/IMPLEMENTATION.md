@@ -950,18 +950,22 @@ The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
 
 The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
-the TV needs. The platform tier's are **LG infrastructure rather than
+the TV needs. The platform tier's are **service infrastructure rather than
 advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
 | :--- | :--- |
 | `ngfts.lge.com`, `aic-ngfts.lge.com` | Content and firmware delivery CDN |
 | `cdplauncher.lgtvcommon.com`, `lgchhomeapp.lgtvcommon.com` | The Home launcher's recommendations and usage reports; needed by the Content Store after a factory reset |
-| `lgtviot.com` | The ThinQ cloud: the LG ThinQ app can no longer control the TV with it blocked |
+| `lgtviot.com`, `api.lgtviot.com`, `push.lgtviot.com`, `sports.lgtviot.com`, `buddy.lgtviot.com` (bare, with LG's regional prefixes and the TV's country) | The ThinQ cloud, API, push, sports and buddy services; blocking them can prevent ThinQ control and notifications |
+| `lgeapi.com` (bare, with LG's regional prefixes and the TV's country) | LG account/API service family; sign-in or store services may depend on it |
+| `connect-client.lgthinq.com`, `common.lgthinq.com` (bare and with `aic-`/`eic-`/`kic-`) | ThinQ Connect and common cloud services; the prefix uses a hyphen rather than a separate DNS label |
 | `ueiwsp.com` | Universal Electronics' identification of devices connected over HDMI-CEC |
 | `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
+| `mtalk.google.com` | [Google Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/network-configuration), used for push messages; apps using this endpoint may lose push notifications |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
-| `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
+| `nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country, plus `us.`/`gb.`/`de.`/`eu.`) | The same on webOS 9 |
+| `ibs.nextlgsdp.com`, `ibsstat.nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country) | The SDX `ibis_secure` and `ibis_stat_secure` services; blocked only in Everything, after the clock is valid |
 | `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
 | `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
 
@@ -969,6 +973,14 @@ advertising**, which is why they are a separate tier:
 `http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,
 `http://US.tv.wiselg.com` on a C5 on webOS 11.2. The full tier adds whatever
 that file says, so a firmware using none of them is still covered.
+
+Regional service families use the same bounded prefix list as the ads tier:
+LG's `aic`, `eic`, `kic` and `eu`, plus the saved TV country. Before the country
+is learned, the existing fallback countries are used. ThinQ Connect uses
+`aic-`, `eic-` and `kic-` instead. This covers reported names such as
+`de.ibs.nextlgsdp.com` and `eic-connect-client.lgthinq.com`; it is still an exact
+hosts list, not wildcard DNS blocking. Sources and the limits of the evidence
+are in [TV research](development/TV-RESEARCH.md#regional-service-coverage).
 
 On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
 sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names

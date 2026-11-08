@@ -7,6 +7,15 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
+`test-privacy.js` checks that `mtalk.google.com` is sinkholed on IPv4 and IPv6
+only in the Everything tier, and stays out of the Ads & telemetry and off tables.
+Regional platform checks cover the reported German and European hosts,
+ThinQ's hyphenated prefixes, a country outside the fallback list and an
+unknown or invalid country. They check IPv4/IPv6 blocking only in Everything,
+without duplicate names, and leave connectivity checks and local proxy
+discovery unblocked. The `nextlgsdp.com`, `ibs` and `ibsstat` hosts wait for
+clock sync, then enter the table on both address families.
+
 `test-remotebattery.js` checks LG's `mrcu/getDeviceInfo` responses (numeric and
 stepped `"HIGH"` / `"MID"` / `"LOW"`, which take precedence over Bluetooth),
 Bluetooth GATT fallback on webOS 9 and 10 when `getDeviceInfo` returns `"-"`,

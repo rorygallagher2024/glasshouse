@@ -2570,6 +2570,30 @@ name.
   `lgtviot.com`; `ad`, `info` under `lgsmartad.com`.
 - No `lggalleryplus.com` in either.
 
+## Regional service coverage
+
+An owner's Pi-hole log reports `de.ibs.nextlgsdp.com`, `de.lgeapi.com`,
+`eic.lgtviot.com` and `eic-connect-client.lgthinq.com` with Everything selected.
+These are reported DNS lookups, not a project network capture or proof of a
+successful connection. A hosts entry for `nextlgsdp.com` or `lgtviot.com`
+cannot cover their subdomains.
+
+The firmware string search above names `ibs`, `ibsstat`, the ThinQ API, push,
+sports and buddy families, and LG's dotted and hyphenated regional prefixes.
+[Own Your Glass's extracted SDX configuration](https://github.com/JulioFerrero/own-your-glass/blob/main/etc/blocklist-oyg.txt)
+also identifies `ibs.nextlgsdp.com` and `ibsstat.nextlgsdp.com` as the
+`ibis_secure` and `ibis_stat_secure` services, and names `common.lgthinq.com`
+and `connect-client.lgthinq.com` for ThinQ. This establishes service names,
+not the payloads sent by each regional endpoint.
+
+Everything expands these service families with LG's known regional prefixes
+and the TV's country; ThinQ Connect uses `aic-`, `eic-` and `kic-`. Generated
+siblings are coverage derived from those patterns, not observed traffic on
+every region's TVs. They remain in Everything because account, store and
+ThinQ features may depend on them. New names under `nextlgsdp.com` keep the
+existing wait for a valid clock. `lgtvonline.lge.com` remains the connectivity
+check described below; `wpad.fritz.box` is outside the LG cloud service list.
+
 ## Report and store log hosts (C4, webOS 10.3.1)
 
 - **sdx uploads reports to `rdx2.nextlgsdp.com`.**
