@@ -1401,14 +1401,13 @@ function homeRowRows(kind, d) {
                       press: t('tv.home.ch.remove', 'Press OK to remove it'),
                       hint: t('tv.home.ch.order.hint', 'Hold OK on Glasshouse Home to change the order of channels.') });
     }
-    var hid = lay.hidden[kind].indexOf(id) !== -1, lg = kind === 'app' && id === 'lg-home', dev = null, i;
+    var hid = lay.hidden[kind].indexOf(id) !== -1, dev = null, i;
     if (kind === 'dev') for (i = 0; i < c.devices.length; i++) if (c.devices[i].id === id) dev = c.devices[i];
     var out = !!(dev && dev.unused && lay.hideUnused === true);
-    r.push({ label: title, value: lg ? t('home.alwaysShown', 'Always shown') : hid ? t('home.hidden', 'Hidden') : out ? t('home.leftOut', 'Left out') : t('home.shown', 'Shown'),
-             cls: lg ? '' : hid || out ? 'off' : 'on', act: can && !lg ? 'homeTile' : null, key: id, kind: kind, on: !hid,
+    r.push({ label: title, value: hid ? t('home.hidden', 'Hidden') : out ? t('home.leftOut', 'Left out') : t('home.shown', 'Shown'),
+             cls: hid || out ? 'off' : 'on', act: can ? 'homeTile' : null, key: id, kind: kind, on: !hid,
              press: hid ? t('tv.home.tile.show', 'Press OK to show it') : t('tv.home.tile.hide', 'Press OK to hide it'),
-             hint: lg ? t('tv.home.lgTile.hint', 'The way back to LG’s Home, so it always shows.')
-                      : t('tv.home.tile.hint', 'Hold OK on Glasshouse Home to change the order of tiles.') });
+             hint: t('tv.home.tile.hint', 'Hold OK on Glasshouse Home to change the order of tiles.') });
   });
   return r;
 }

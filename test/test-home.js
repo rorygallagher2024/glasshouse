@@ -290,6 +290,25 @@ function next() {
   s.fn(function () { console.log('  ✓ ' + s.name); next(); });
 }
 
+step('Whole rows and the LG Home tile can be hidden, and Reset shows them again', function (done) {
+  start({ hiddenRows: ['app', 'app', 'bogus', 7] });
+  assert.deepEqual(home.layout().hiddenRows, ['app'], 'known rows, once each');
+  home.setLayout({ hiddenRows: ['dev', 'app'], hidden: { app: ['lg-home'] } }, function (r) {
+    assert.deepEqual(r.layout.hiddenRows, ['dev', 'app']);
+    assert.deepEqual(r.layout.hidden.app, ['lg-home']);
+    home.setLayout({ picture: false }, function (r2) {
+      assert.deepEqual(r2.layout.hiddenRows, ['dev', 'app'], 'kept by a save that does not name it');
+      var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+      assert.deepEqual(saved.hiddenRows, ['dev', 'app']);
+      assert.deepEqual(saved.hidden.app, ['lg-home']);
+      home.setLayout({ reset: true }, function (r3) {
+        assert.deepEqual(r3.layout.hiddenRows, []);
+        done();
+      });
+    });
+  });
+});
+
 step('Recents exclusions are normalised, saved, preserved and reloaded', function (done) {
   start({ excludedRecents: ['private.app', 'private.app', 7, ''] });
   home.setLayout({ excludedRecents: ['other.app', 'other.app', null] }, function (r) {
@@ -552,10 +571,10 @@ step('channels are added and removed, never hidden, and their list is their orde
   });
 });
 
-step('the LG Home tile cannot be hidden, and unknown rows are dropped', function (done) {
+step('the LG Home tile can be hidden, and unknown rows are dropped', function (done) {
   start(null);
   home.setLayout({ hidden: { app: ['lg-home', 'netflix'] }, rows: ['ch', 'bogus'] }, function (r) {
-    assert.deepEqual(r.layout.hidden.app, ['netflix']);
+    assert.deepEqual(r.layout.hidden.app, ['lg-home', 'netflix']);
     assert.deepEqual(r.layout.rows, ['ch', 'app', 'rec', 'dev', 'iptv']);
     done();
   });
