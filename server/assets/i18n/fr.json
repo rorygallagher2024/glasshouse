@@ -4451,7 +4451,7 @@
  },
  "home.weather.placeDesc": {
   "from": "Glasshouse asks Open-Meteo for the weather at this place every 30 minutes while the TV is on. Nothing else is sent.",
-  "text": "Glasshouse demande à Open-Meteo la météo de ce lieu toutes les 30 minutes tant que le téléviseur est allumé. Rien d’autre n’est envoyé."
+  "text": "Glasshouse demande à Open-Meteo la météo de ce lieu toutes les 30 minutes tant que la TV est allumée. Rien d'autre n'est envoyé."
  },
  "home.weather.placeholder": {
   "from": "Town or city",
@@ -4495,7 +4495,7 @@
  },
  "home.weather.tvChoosePlace": {
   "from": "Choose the place on the Home tab of the web dashboard.",
-  "text": "Choisissez le lieu dans l’onglet Home du tableau de bord web."
+  "text": "Choisissez le lieu dans l'onglet Accueil du tableau de bord web."
  },
  "home.weather.windy": {
   "from": "Windy",
@@ -4507,7 +4507,7 @@
  },
  "home.weatherDesc": {
   "from": "Next to the clock: the weather Home Assistant sends, or the weather for a place you choose, from Open-Meteo.",
-  "text": "À côté de l’horloge : la météo envoyée par Home Assistant, ou celle d’un lieu de votre choix, par Open-Meteo."
+  "text": "À côté de l'horloge : la météo envoyée par Home Assistant, ou celle d'un lieu de votre choix, par Open-Meteo."
  },
  "lang.partial": {
   "from": "{name} (partial)",
