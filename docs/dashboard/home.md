@@ -292,8 +292,6 @@ saved, a message says so; **OK** reopens the channel with its saved choice.
 Refreshes wait while a channel plays, and the screen saver stays away while one plays full
 screen.
 
-![Internet TV player with the Yellow stream-format control on an LG C3](../screenshots/iptv-player-formats.jpg)
-
 The links and logins are kept on the TV only. They are not shown on the
 dashboard again, and never sent to Home Assistant, the logs or a phone or
 computer; see [Security](../SECURITY.md#internet-tv).
