@@ -94,20 +94,16 @@ var steps = [
 var C5_REMOTE = { paired: true, typeOfDevice: 'ble', name: 'LGE MR25GA', address: REMOTE.address };
 var INFO_CALLS = ['mrcu/getConnectionStatus', 'mrcu/getDeviceInfo'];
 steps.push(function () {
-  check('C5/MR25GA on webOS 11.2 reads the standard battery service after MID', {
+  check('C5/MR25GA on webOS 11.2 uses mrcu/getDeviceInfo MID without opening Bluetooth GATT', {
     webosVersion: '11.2.0', devices: [C5_REMOTE],
     remoteInfo: { mac: REMOTE.address.toUpperCase(), model: 'LGE MR25GA' },
-    deviceInfo: { returnValue: true, batteryLevel: 'MID', bdAddress: REMOTE.address },
-    read: { returnValue: true, value: { value: { bytes: [46] } } }
-  }, 46, ALL);
+    deviceInfo: { returnValue: true, batteryLevel: 'MID', bdAddress: REMOTE.address }
+  }, 50, INFO_CALLS);
 });
-// These are compatibility scenarios, not claims of hardware qualification.
 [
   { version: '9.2.2', model: 'LGE MR22GN' },
   { version: '10.3.1', model: 'LGE MR24' },
-  { version: '11.0.0', model: 'LGE MR23GN' },
-  { version: '11.2.0', model: 'LGE MR25GB' },
-  { version: '12.0.0', model: 'Replacement Remote' }
+  { version: '10.3.2', model: 'Replacement Remote' }
 ].forEach(function (scenario) {
   steps.push(function () {
     check(scenario.model + ' on webOS ' + scenario.version + ' uses advertised battery support without a TV allowlist', {
@@ -125,7 +121,7 @@ steps.push(function () {
 steps.push(function () {
   check('LG device info identifies the active remote among multiple paired remotes', {
     devices: [REMOTE, { paired: true, typeOfDevice: 'ble', name: 'LGE MR23', address: '11:22:33:44:55:66' }],
-    deviceInfo: { returnValue: true, batteryLevel: 'MID', bdAddress: REMOTE.address }
+    deviceInfo: { returnValue: true, batteryLevel: '-', bdAddress: REMOTE.address }
   }, 61, ALL);
 });
 steps.push(function () {
@@ -195,7 +191,7 @@ steps.push(function () {
   pending++;
   var remote = { mac: REMOTE.address, model: REMOTE.name };
   var transport = fakeLuna();
-  rb.init({ webosVersion: '11.2.0', discoverMs: 0,
+  rb.init({ webosVersion: '10.3.1', discoverMs: 0,
     getRemoteInfo: function () { return remote; },
     luna: function (uri, payload, done) {
       if (uri === 'com.webos.service.bluetooth2/gatt/disconnect') remote = { mac: '11:22:33:44:55:66', model: 'LGE MR25GA' };
@@ -353,10 +349,11 @@ steps.push(function () {
   console.log('  ✓ tracks remote signal strength and state persistence');
 });
 
-// Older stacks retain LG's numeric API: a webOS 5 TV's remote lost its
-// pointer after GATT reads began in v0.97.0.
+// Only webOS 9 and 10 open a Bluetooth GATT connection when getDeviceInfo
+// returns "-": a webOS 5 TV's remote lost its pointer after GATT reads began
+// in v0.97.0, and webOS 11+ has not been qualified across standby cycles.
 steps.push(function () {
-  ['2.0.0', '3.0.0', '4.4.3', '5.6.2', '6.4.0', '7.0.0', '8.0.0', null, 'unknown'].forEach(function (version) {
+  ['2.0.0', '3.0.0', '4.4.3', '5.6.2', '6.4.0', '7.0.0', '8.0.0', '11.2.0', '12.0.0', null, 'unknown'].forEach(function (version) {
     pending++;
     var luna = fakeLuna();
     rb.init({ luna: luna, webosVersion: version, discoverMs: 0, settleMs: 0 });
@@ -366,7 +363,7 @@ steps.push(function () {
       pending--;
     });
   });
-  console.log('  ✓ legacy and unknown webOS stacks do not open a Bluetooth connection');
+  console.log('  ✓ webOS stacks outside 9 and 10 do not open a Bluetooth connection');
 });
 
 (function next(i) {

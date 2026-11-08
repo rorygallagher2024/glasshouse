@@ -36,7 +36,7 @@ The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemet
 
     ---
 
-    Battery level and when it was last read (webOS 4, and webOS 9 and later), live Bluetooth status (`Connected` / `Standby`), signal strength, remote model, and firmware version, retained across server restarts.
+    Battery level and when it was last read (from LG's remote service where it reports a percentage or step, and over Bluetooth on webOS 9 and 10), live Bluetooth status (`Connected` / `Standby`), signal strength, remote model, and firmware version, retained across server restarts.
 
 -   **Hardware & firmware**
 

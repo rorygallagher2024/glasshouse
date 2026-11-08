@@ -64,8 +64,7 @@ function sameAddress(a, b) {
 }
 
 function gattPlatformSupported() {
-  var version = /^(\d+)(?:\.|$)/.exec(webosVersion);
-  return !!version && Number(version[1]) >= 9;
+  return /^(9|10)\./.test(webosVersion);
 }
 
 function remoteDevice(devices, mac) {
@@ -121,27 +120,21 @@ function levelFrom(r) {
   return validLevel(n) ? n : null;
 }
 
-/*
- * A percentage, or one of three steps: an MR19 on a C9 (webOS 4.5, remote
- * firmware 18.61.13.19358) answered "MID". The steps are given as 100, 50 and 10
- * so the sensor stays a percentage, with LOW under the usual low-battery alerts.
- */
 function validLevel(n) {
   return typeof n === 'number' && isFinite(n) && n >= 0 && n <= 100;
 }
 
 /*
  * A percentage, or one of three steps: an MR19 on a C9 (webOS 4.5, remote
- * firmware 18.61.13.19358) answered "MID". The steps are given as 100, 50 and 10
- * so the sensor stays a percentage, with LOW under the usual low-battery alerts.
- * On webOS 9 and later, where the remote's Bluetooth Battery Service gives the
- * exact percentage even when getDeviceInfo says "MID" (C5 on 11.2), a step is
- * used only when GATT is not supported.
+ * firmware 18.61.13.19358) and an MR25GA on a C5 (webOS 11.2) answered "MID".
+ * The steps are given as 100, 50 and 10 so the sensor stays a percentage, with
+ * LOW under the usual low-battery alerts, without opening a Bluetooth GATT
+ * connection.
  */
-function deviceLevelFrom(info, allowSteps) {
+function deviceLevelFrom(info) {
   var n = info && info.returnValue ? info.batteryLevel : null;
   if (validLevel(n)) return n;
-  if (allowSteps !== false && typeof n === 'string') {
+  if (typeof n === 'string') {
     switch (n.toUpperCase()) {
       case 'HIGH':
         return 100;
@@ -216,7 +209,7 @@ function read(done) {
           info.bdAddress !== '00:00:00:00:00:00') {
         address = info.bdAddress;
       }
-      onResult(deviceLevelFrom(info, !gattPlatformSupported()));
+      onResult(deviceLevelFrom(info));
     });
   }
 
@@ -322,7 +315,7 @@ function start(isOn) {
       }
       var remote = getRemoteInfo();
       if (level(remote && remote.mac) === null) {
-        var dl = deviceLevelFrom(info, !gattPlatformSupported());
+        var dl = deviceLevelFrom(info);
         if (dl !== null) {
           var mac = (info && typeof info.bdAddress === 'string' && info.bdAddress !== '00:00:00:00:00:00')
             ? info.bdAddress : (remote && remote.mac) || null;

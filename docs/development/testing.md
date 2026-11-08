@@ -8,14 +8,15 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 ## On every pull request
 
 `test-remotebattery.js` checks LG's `mrcu/getDeviceInfo` responses (numeric and
-stepped on pre-9 webOS, and Bluetooth GATT on webOS 9 and later even after a
-`"MID"` step), short and full service UUIDs, missing or unreadable battery
-characteristics, unavailable service enumeration, mismatched or ambiguous
-paired remotes, disconnect cleanup, read throttling, and readings cached by
-Bluetooth address. `test-remote-battery-ui.js` runs the dashboard's Magic Remote
-card renderer against its markup on Node 16 and later, checking that the card is
-hidden when no reading is available, shows the percentage and last-read time when
-present, and renders 0% and standby/connected states.
+stepped `"HIGH"` / `"MID"` / `"LOW"`, which take precedence over Bluetooth),
+Bluetooth GATT fallback on webOS 9 and 10 when `getDeviceInfo` returns `"-"`,
+short and full service UUIDs, missing or unreadable battery characteristics,
+unavailable service enumeration, mismatched or ambiguous paired remotes,
+disconnect cleanup, read throttling, and readings cached by Bluetooth address.
+`test-remote-battery-ui.js` runs the dashboard's Magic Remote card renderer
+against its markup on Node 16 and later, checking that the card is hidden when
+no reading is available, shows the percentage and last-read time when present,
+and renders 0% and standby/connected states.
 
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC

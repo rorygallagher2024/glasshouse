@@ -1450,7 +1450,7 @@ Its `gatt/connect` answers `appId` and no `clientId`. The C2 answers
 A user's webOS 5 TV, on v0.97.0, the first release whose read reached
 `gatt/connect`, had a remote with no pointer and some buttons ignored after the
 TV woke from standby, until a reboot. Not yet confirmed from its log; the read
-over Bluetooth is held to webOS 9 and later meanwhile.
+over Bluetooth is held to webOS 9 and 10 meanwhile.
 
 On the B8, lginput2 once started a diagnostic capture, a
 `/tmp/var/log/<date>_MRCU.log` with columns for motion, RSSI, voltage,
@@ -1474,7 +1474,9 @@ characteristic `2a19` (`read: true, notify: true`), and
 `gatt/readCharacteristicValue` with that `clientId` returned `bytes: [46]`
 (and `[42]` on a later read). After `gatt/disconnect`, `gatt/getStatus`
 reported `connected: false` and `discoveringServices: false`, while LG's
-remote service still reported `connected: true`.
+remote service still reported `connected: true`. Because standby/wake cycles
+have not been tested on webOS 11, the C5 uses `getDeviceInfo`'s `"HIGH"`,
+`"MID"` and `"LOW"` steps without opening a GATT connection.
 
 ## No firewall in the kernel (50QNED80A6A, webOS 10)
 
