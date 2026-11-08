@@ -104,6 +104,12 @@ covers.
   period or a retry interval to pass, the module takes it from `init` and the
   test passes a few milliseconds. Time that has to look as if it passed comes
   from a faked clock (`now`).
+* **Listen on port 0, or take a port from `test/ports.js`.** Suites run side
+  by side, so a port the system handed out and was closed again can be
+  another suite's by the time a server starts on it. A server the test starts
+  itself listens on 0 and reads its port back; one that is told its port
+  beforehand, such as the whole server in its own process, gets it from
+  `freePort` in `test/ports.js`.
 * **Never run a TV's commands for real.** A module that runs `systemctl`,
   `mount` or `luna-send` takes the function that runs them from `init`, and
   its tests pass one that records the command.

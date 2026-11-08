@@ -29,10 +29,7 @@ var fakeApps = {
   }
 };
 
-function freePort(cb) {
-  var s = net.createServer();
-  s.listen(0, '127.0.0.1', function () { var p = s.address().port; s.close(function () { cb(p); }); });
-}
+var freePort = require('./ports').freePort;
 
 function request(port, method, urlPath, headers, cb) {
   var req = http.request({ host: '127.0.0.1', port: port, method: method, path: urlPath, headers: headers || {} }, function (res) {
@@ -73,7 +70,7 @@ iconServer.start(function (err, started) {
   ['', '.', '..', '.hidden', 'a/b', 'a b', 'a%2e', new Array(130).join('x')].forEach(function (id) { assert.ok(!re.test(id), id); });
   console.log('  ✓ app ids are checked before anything is looked up');
 
-  freePort(function (basePort) {
+  freePort('0.0.0.0', function (basePort) {
     var config = { port: basePort - 2, iconServer: true, host: '0.0.0.0' };
     iconServer.init({ config: config, apps: fakeApps });
     iconServer.start(function (err2, started2) {
