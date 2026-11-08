@@ -2883,8 +2883,7 @@ turn of the event loop later (`setImmediate` or `setTimeout 0`) did not. At
 server start, the first `iptables` call aborted on every start tried, even
 with that wait. execFile reports such a child with `err.signal` set and
 `err.killed` false, which tells it apart from one killed by its own timeout.
-The debugger rule in `devtools.js` waits a turn before each call and tries an
-aborted one once more.
+The debugger rule in `devtools.js` tries an aborted call once more.
 
 Issue [#1248](https://github.com/rorygallagher2024/glasshouse/issues/1248)
 shows the same assertion on an OLED65CX9LA, from the curl or wget the
@@ -2894,3 +2893,16 @@ callback, the case that aborted every time, and its first is the process's
 first child, as the first `iptables` call at server start was. The worker
 waits a turn before each one and tries one aborted before any of its body
 arrived once more.
+
+A CX (OLED55CX3LA, webOS 5.6.2, firmware 04.64.00, node 8.12.0, libuv
+1.19.2) aborted 24 luna calls in 45 minutes. A core of such a child shows
+why: LG's node registers a fork handler, not in libuv itself, that takes
+`uv_default_loop()`, calls `uv_close` on its handles and sets up its signal
+and async handles again. A handle already closing at fork time fails the
+assertion. A child that has just exited is one: node closes its process
+handle in the exit callback, and the close completes in the loop's closing
+phase. `setImmediate` runs before that phase, a timer after it. Of 900
+`/bin/true` starts, three running at a time, each started from another's
+callback: 9 aborted started at once, 8 from `setImmediate`, none from
+`setTimeout(fn, 0)`. Every start through `lib/children.js` now comes from a
+timer. A start that does not go through it can still abort.
