@@ -1403,11 +1403,10 @@ step('on webOS 4, a Home press the view does not answer closes it and opens it a
   });
 });
 
-// A 60UJ6519 (webOS 3.9.3) has no key filter for the Home key (#1222).
 step('a switch-on that cannot give the Home key to the app removes the app it installed', function (done) {
   var actions = [];
   start(null, {
-    webosVersion: '3.9.3',
+    webosVersion: '4.4.3',
     allowExperimental: function () { return true; },
     installApp: function (action, cb) { actions.push(action); tv.oldAppInstalled = action === 'install'; cb({ ok: true }); },
     setHomeKey: function (id, cb) { cb({ ok: false }); }
@@ -1417,6 +1416,58 @@ step('a switch-on that cannot give the Home key to the app removes the app it in
     assert.ok(/Home key/.test(r.error), r.error);
     assert.deepEqual(actions, ['install', 'remove']);
     assert.strictEqual(tv.oldAppInstalled, false, 'no tile left behind');
+    assert.strictEqual(home.enabled(), false);
+    done();
+  });
+});
+
+// A 60UJ6519 (webOS 3.9.3) has no key filters (#1222): the Home button is read from the remote.
+step('on webOS 3, a short Home press opens Glasshouse Home and a held one leaves LG\'s ribbon, with no key filter written', function (done) {
+  var filter = [], injected = [];
+  start(null, {
+    webosVersion: '3.9.3',
+    allowExperimental: function () { return true; },
+    readsHomeKey: function () { return true; },
+    holdMs: 40,
+    installApp: function (action, cb) { tv.oldAppInstalled = action === 'install'; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { filter.push('home ' + id); cb({ ok: false }); },
+    setStarting: function (text, cb) { filter.push('starting ' + text); cb({ ok: false }); },
+    injectKey: function (code, cb) { injected.push(code); if (cb) cb(true); }
+  });
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('com.webos.app.hdmi1');
+    tv.launched = [];
+    home.homeKey(true);
+    home.homeKey(false);
+    assert.deepEqual(tv.launched, [OLD_APP], 'a short press opens it');
+    tv.launched = [];
+    home.homeKey(true);
+    wait(80, function () {
+      home.homeKey(false);
+      assert.deepEqual(tv.launched, [], 'held, LG\'s ribbon the press opened is left');
+      assert.deepEqual(injected, [], 'and no key sent to open it again');
+      home.disable(function (d) {
+        assert.ok(d.ok, d.error);
+        assert.deepEqual(filter, [], 'the TV has no key filter to write');
+        done();
+      });
+    });
+  });
+});
+
+step('on webOS 3, Glasshouse Home is not switched on where the remote cannot be read', function (done) {
+  var actions = [];
+  start(null, {
+    webosVersion: '3.9.3',
+    allowExperimental: function () { return true; },
+    readsHomeKey: function () { return false; },
+    installApp: function (action, cb) { actions.push(action); cb({ ok: true }); }
+  });
+  home.enable(function (r) {
+    assert.strictEqual(r.ok, false);
+    assert.ok(/Home button/.test(r.error), r.error);
+    assert.deepEqual(actions, [], 'nothing installed');
     assert.strictEqual(home.enabled(), false);
     done();
   });
