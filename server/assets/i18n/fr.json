@@ -2385,7 +2385,7 @@
  },
  "home.confirmOff": {
   "from": "Press again to use LG Home",
-  "text": "Appuyez à nouveau pour utiliser LG Home"
+  "text": "Appuyez à nouveau pour utiliser l'Accueil de LG"
  },
  "home.confirmOn": {
   "from": "Press again to switch on",
@@ -2485,7 +2485,7 @@
  },
  "home.group.shown": {
   "from": "Shown on Home",
-  "text": "Affiché sur Home"
+  "text": "Affiché sur l'Accueil"
  },
  "home.group.start": {
   "from": "Starting up",
@@ -2909,19 +2909,19 @@
  },
  "home.restartsAppsAny": {
   "from": "On this TV, switching away from LG Home or back to it, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open.",
-  "text": "Sur cette TV, quitter Accueil LG ou y revenir, ou maintenir Accueil pour l'Accueil de LG, redémarre le gestionnaire d'apps de la TV, ce qui ferme les apps ouvertes."
+  "text": "Sur cette TV, quitter l'Accueil de LG ou y revenir, ou maintenir Accueil pour l'Accueil de LG, redémarre le gestionnaire d'apps de la TV, ce qui ferme les apps ouvertes."
  },
  "home.restorePending": {
   "from": "LG Home restoration is incomplete",
-  "text": "La restauration de LG Home est incomplète"
+  "text": "La restauration de l'Accueil de LG est incomplète"
  },
  "home.restoreRetry": {
   "from": "Retry restoring LG Home before switching Glasshouse Home on again.",
-  "text": "Réessayez de restaurer LG Home avant de réactiver Glasshouse Home."
+  "text": "Réessayez de restaurer l'Accueil de LG avant de réactiver Glasshouse Home."
  },
  "home.retryRestore": {
   "from": "Retry restoring LG Home",
-  "text": "Réessayer de restaurer LG Home"
+  "text": "Réessayer de restaurer l'Accueil de LG"
  },
  "home.row.addChannels": {
   "from": "Add channels in Glasshouse’s Home settings",
@@ -3169,7 +3169,7 @@
  },
  "home.showWeatherDesc": {
   "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it.",
-  "text": "À côté de l’horloge : la météo envoyée par Home Assistant, dès qu’une automatisation l’envoie."
+  "text": "À côté de l'horloge : la météo envoyée par Home Assistant, dès qu'une automatisation l'envoie."
  },
  "home.shown": {
   "from": "Shown",
@@ -5241,7 +5241,7 @@
  },
  "oled.tpc": {
   "from": "Temporal Peak Control",
-  "text": "Contrôle de pic temporel (TPC)"
+  "text": "Contrôle temporel des pics (TPC)"
  },
  "oled.tpc.desc": {
   "from": "Lowers overall brightness when a bright image is held, which is what makes a mostly-white screen fade after a few seconds. Switching it off keeps full brightness and puts more heat through the panel.",
@@ -6969,7 +6969,7 @@
  },
  "srv.consent.acrAllowed": {
   "from": "Screen content recognition",
-  "text": "Reconnaissance du contenu d'écran"
+  "text": "Reconnaissance du contenu à l'écran"
  },
  "srv.consent.acrAllowed.detail": {
   "from": "Lets LG identify what is on your screen to profile your viewing",
@@ -8973,7 +8973,7 @@
  },
  "srv.privacy.acr": {
   "from": "Screen content recognition",
-  "text": "Reconnaissance du contenu d'écran"
+  "text": "Reconnaissance du contenu à l'écran"
  },
  "srv.privacy.acr.detail": {
   "from": "LG’s ACR captures what is on screen, from apps and HDMI alike, to work out what you watch and target ads at you.",
@@ -9441,7 +9441,7 @@
  },
  "srv.service.iconnectivity": {
   "from": "Network Device Scans",
-  "text": "Analyses des appareils du réseau"
+  "text": "Analyses du réseau"
  },
  "srv.service.iconnectivity.desc": {
   "from": "Looks up every address on the home network to find devices for the Home Hub and LG's device setup. Off, they find no new devices.",
@@ -10093,7 +10093,7 @@
  },
  "tv.apps.home.hidden": {
   "from": "Hidden from Home",
-  "text": "Masquée d'Accueil"
+  "text": "Masquée de l'Accueil"
  },
  "tv.apps.home.hide": {
   "from": "Press OK to hide it",
@@ -10145,7 +10145,7 @@
  },
  "tv.apps.home.shownFlash": {
   "from": "Shown on Home",
-  "text": "Affichée sur Accueil"
+  "text": "Affichée sur l'Accueil"
  },
  "tv.apps.install.browse": {
   "from": "Browse",
@@ -10561,7 +10561,7 @@
  },
  "tv.flash.clock12": {
   "from": "12-hour clock",
-  "text": "Horloge sur 12 heures"
+  "text": "Horloge 12 heures"
  },
  "tv.flash.clock24": {
   "from": "24-hour clock",
@@ -10801,7 +10801,7 @@
  },
  "tv.home.switch.off": {
   "from": "Press OK to use LG Home again",
-  "text": "Appuyez sur OK pour utiliser LG Home à nouveau"
+  "text": "Appuyez sur OK pour revenir à l'Accueil de LG"
  },
  "tv.home.switch.on": {
   "from": "Press OK to use Glasshouse Home",
@@ -10957,7 +10957,7 @@
  },
  "tv.oled.temporalPeakControl": {
   "from": "Temporal peak control",
-  "text": "Contrôle temporel des pics"
+  "text": "Contrôle temporel des pics (TPC)"
  },
  "tv.oled.temporalPeakControl.hint": {
   "from": "Limits how long the panel holds peak brightness, which protects it and keeps heat down. Switching it off makes burn-in more likely.",
@@ -12097,7 +12097,7 @@
  },
  "tv.update.serverHealth": {
   "from": "Server health",
-  "text": "Santé du serveur"
+  "text": "État du serveur"
  },
  "tv.update.serverHealth.hint": {
   "from": "Memory footprint and uptime of the Glasshouse background process on this TV.",
