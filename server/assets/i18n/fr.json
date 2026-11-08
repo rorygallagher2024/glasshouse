@@ -9571,6 +9571,14 @@
   "from": "Dim",
   "text": "Sombre"
  },
+ "ss.dimmer": {
+    "from": "Dimmer", 
+    "text": "Plus sombre"
+ },
+ "ss.dimmest": {
+    "from": "Dimmest",
+    "text": "Le plus sombre"
+ },
  "ss.dismiss": {
   "from": "Dismiss screen saver",
   "text": "Fermer l'écran de veille"
@@ -11284,8 +11292,8 @@
   "text": "De l'app {app}. Ses réglages, s'il en a, sont dans cette app."
  },
  "tv.saver.brightness.hint": {
-  "from": "Dim suits a dark room and is kinder to the panel; bright suits a lit one.",
-  "text": "Sombre convient à une pièce obscure et préserve mieux la dalle ; clair convient à une pièce éclairée."
+  "from": "Bright suits a lit room. Each step darker is kinder to the panel and suits a darker room.",
+  "text": "Clair convient à une pièce lumineuse. Chaque niveau plus sombre préserve mieux la dalle et convient à une pièce plus sombre."
  },
  "tv.saver.external": {
   "from": "Homebrew screen saver",
@@ -11339,13 +11347,9 @@
   "from": "The screen may stay dark for up to a minute, then it comes back on its own.",
   "text": "L'écran peut rester noir jusqu'à une minute, puis se rallume de lui-même."
  },
- "tv.saver.toBright": {
-  "from": "Press OK for Bright",
-  "text": "Appuyez sur OK pour Clair"
- },
- "tv.saver.toDim": {
-  "from": "Press OK for Dim",
-  "text": "Appuyez sur OK pour Sombre"
+ "tv.saver.toLevel": {
+    "from": "Press OK for {level}",
+    "text": "Appuyez sur OK pour choisir {level}"
  },
  "tv.saver.use": {
   "from": "Press OK to use this one",
