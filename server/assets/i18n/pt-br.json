@@ -3027,5 +3027,6 @@
  "home.weather.windyVariant": {"text": "Ventando", "from": "Windy"},
  "home.weather.exceptional": {"text": "Condições climáticas extremas", "from": "Severe weather"},
  "home.showWeather": {"text": "Clima", "from": "Weather"},
- "home.showWeatherDesc": {"text": "Ao lado do relógio: o clima que o Home Assistant envia, assim que uma automação o enviar.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."}
+ "home.showWeatherDesc": {"text": "Ao lado do relógio: o clima que o Home Assistant envia, assim que uma automação o enviar.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."},
+ "metrics.remote.batteryReadLabel": {"text": "Última leitura:", "from": "Last read:"}
 }

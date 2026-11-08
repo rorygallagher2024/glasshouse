@@ -3027,5 +3027,6 @@
  "home.weather.windyVariant": {"text": "Szeles", "from": "Windy"},
  "home.weather.exceptional": {"text": "Viharos időjárás", "from": "Severe weather"},
  "home.showWeather": {"text": "Időjárás", "from": "Weather"},
- "home.showWeatherDesc": {"text": "Az óra mellett: a Home Assistant által küldött időjárás, amint egy automatizálás elküldi.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."}
+ "home.showWeatherDesc": {"text": "Az óra mellett: a Home Assistant által küldött időjárás, amint egy automatizálás elküldi.", "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it."},
+ "metrics.remote.batteryReadLabel": {"text": "Utolsó leolvasás:", "from": "Last read:"}
 }

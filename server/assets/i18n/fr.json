@@ -12114,5 +12114,6 @@
  "tv.viewOnly": {
   "from": "View only",
   "text": "Lecture seule"
- }
+ },
+ "metrics.remote.batteryReadLabel": {"text": "Dernière lecture :", "from": "Last read:"}
 }
