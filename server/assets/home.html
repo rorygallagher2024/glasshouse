@@ -121,20 +121,29 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .row .tile.live{opacity:1}
 
 /* The weather badge: an icon and the current temperature, right of the
-   plate (or alone, in its place, when the plate is off). Pushed from
-   Home Assistant over MQTT (ha.js's 'weather' text entity), so it shows
-   only once something has been pushed at least once since the server
-   started. */
-#weather{-webkit-flex:0 0 auto;flex:0 0 auto;margin-left:40px;text-align:center;padding-bottom:2px;white-space:nowrap}
+   plate (or alone, in its place, when the plate is off). Its weather comes
+   from Home Assistant or Open-Meteo, as the layout's 'weather' chooses, and
+   it stays hidden until there is some. */
+/* Lined up with the clock: the temperature in the clock's own size and line
+   height, so their digits share a top and a baseline, and the place and
+   conditions as the date. */
+#weather{-webkit-flex:0 0 auto;flex:0 0 auto;position:relative;margin-left:56px;white-space:nowrap}
 #weather.none{display:none}
-#wxMain{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center}
-#wxIcon{width:72px;height:72px;margin-right:16px}
-#wxIcon svg{width:72px;height:72px;display:block}
-#wxTemp{font-family:'Outfit',sans-serif;font-size:72px;line-height:1;font-weight:400;letter-spacing:-1px}
-#wxCity{margin-top:8px;font-size:28px;color:#a39d93}
-#wxCond{margin-top:2px;font-size:22px;font-weight:300;opacity:.65}
-#wxCity:empty,#wxCond:empty{display:none}
+#wxMain{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center}
+#wxIcon{width:112px;height:112px;margin-right:20px}
+#wxIcon svg{width:112px;height:112px;display:block}
+#wxTemp{font-family:'Outfit',sans-serif;font-size:176px;line-height:.8;font-weight:300;letter-spacing:-4px}
+#wxLine{margin-top:22px;font-size:28px;color:#a39d93}
+#wxCity:not(:empty)+#wxCond:not(:empty):before{content:"\00b7";margin:0 .4em}
+/* Open-Meteo's licence (CC BY 4.0) asks for credit, not for it beside the
+   data: bottom right, clear of the toast and banner on the left. */
+#wxCredit{position:absolute;right:112px;bottom:12px;font-size:16px;font-weight:300;opacity:.45}
+.alternative #wxCredit{right:90px}
+#wxCredit:empty,.arranging #wxCredit{display:none}
 .alternative #weather{-webkit-order:4;order:4;margin:0 0 0 48px}
+.alternative #wxIcon,.alternative #wxIcon svg{width:72px;height:72px}
+.alternative #wxTemp{font-size:100px;line-height:1;letter-spacing:-2px}
+.alternative #wxLine{margin-top:8px;font-size:23px}
 
 /* The rows sit centred between the clock and the arrange bar, so three rows
    land a little below where they used to and fewer settle lower. The spacers shrink first, so rows taller than the space run on down
@@ -147,7 +156,11 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
 #rows.scrolled{-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 44px);mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 44px)}
 #rows:before,#rows:after{content:"";-webkit-flex:1 1 0;flex:1 1 0}
-/* Along the bottom, as on LG's Home: no space below the rows. */
+/* Along the bottom, as on LG's Home: the row in focus sits at the bottom and
+   the rows after it wait below the screen. A spacer the area's height above
+   the rows lets even the first row scroll down to the bottom; moving down a
+   row scrolls the rows up by one (keepRowInView). */
+.rows-bottom #rows:before{-webkit-flex:0 0 auto;flex:0 0 auto;height:100%}
 .rows-bottom #rows:after{-webkit-flex:0 0 0;flex:0 0 0}
 
 /* Alternative View (#999): a smaller clock on the right, Last watched to its
@@ -183,6 +196,7 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
 .row.empty{display:none}
 .arranging .row.empty{display:block}
+.arranging .row.off-row{opacity:.4}
 .slot{margin:0 112px;height:64px;line-height:60px;padding:0 22px;font-size:21px;color:#6b665e;
   border:2px dashed #2a2825;border-radius:6px}
 .arranging .row.active .slot{color:#ece7df;border-color:#e9ad55;border-style:solid}
@@ -610,12 +624,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         <div id="wxIcon"></div>
         <div id="wxTemp">&mdash;</div>
       </div>
-      <div id="wxCity"></div>
-      <div id="wxCond"></div>
+      <div id="wxLine"><span id="wxCity"></span><span id="wxCond"></span></div>
     </div>
   </section>
 
   <main id="rows"></main>
+  <div id="wxCredit"></div>
   <div id="rail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="word" data-t="home.search.rail">Search</span></div>
   <section id="finder">
     <div id="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input id="query" type="text" autocomplete="off" spellcheck="false" maxlength="80" placeholder="Film or series" data-t-placeholder="home.search.placeholder"></div>
@@ -847,6 +861,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return null;
   }
   function hidden(kind, id) { return (layout.hidden[kind] || []).indexOf(id) !== -1; }
+  // A whole row switched off in the dashboard's Home settings.
+  function rowOff(kind) { return (layout.hiddenRows || []).indexOf(kind) !== -1; }
   function inFolder(kind, id) { return kind === 'app' && (layout.folder || []).indexOf(id) !== -1; }
   // The server puts a Last opened row in that order; the view shows it as sent.
   function byRecent(kind) { return !!(layout.sort && layout.sort[kind] === 'recent'); }
@@ -859,6 +875,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function items(kind) {
     var out = [];
     // The apps' cards follow the Apps row, so arranging moves the row, not its cards.
+    if (!state.arranging && rowOff(kind)) return out;
     if (kind === 'rec') return state.arranging ? out : recCards();
     (data.order[kind] || []).forEach(function (id) {
       var it = byId(kind, id);
@@ -1006,7 +1023,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var tiles = '';
       list.forEach(function (it, i) { tiles += TILE[kind](it, i); });
       var note = esc(rowNote(kind, list));
-      html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + ' data-row="' + ri + '" data-key="' + kind + '">' +
+      html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + (rowOff(kind) ? ' data-off="1"' : '') + ' data-row="' + ri + '" data-key="' + kind + '">' +
         '<h2>' + esc(ROW_TITLES[kind]) + (list.length && note ? '<span>' + note + '</span>' : '') +
         '<em class="sort">' + esc(sortLabel(kind)) + '</em></h2>' +
         (list.length ? '<div class="wrap"><i class="edge l"></i><i class="edge r"></i><div class="track">' + tiles + '</div></div>'
@@ -1031,6 +1048,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // row still moving is left to finish, and settle() then keeps its focus
     // in view.
     applyFocus(true, true);
+    // Along the bottom the row in focus keeps its place as the rows are
+    // rebuilt; switched either way, the rows are placed afresh.
+    if (rowsAtBottom() || rowsAtBottom() !== wasAtBottom) keepRowInView(!rowsScroll.timer);
+    wasAtBottom = rowsAtBottom();
     placeRows();
     if (!pointing && (!animating || state.arranging)) {
       var active = document.querySelector('.row.active');
@@ -1039,7 +1060,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (folder.open) renderFolder();
     if (syncAnim()) updateWall();
   }
-  var renderedRows = '', barWidths = [];
+  var renderedRows = '', barWidths = [], wasAtBottom = false;
 
   // The minute's refresh waits for a moving row to stop (tick), so the rows
   // are not rebuilt under it. Its changes leave every tile where it was.
@@ -1147,7 +1168,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var rows = document.querySelectorAll('.row');
     for (var ri = 0; ri < rows.length; ri++) {
       var rowEl = rows[ri], kind = rowEl.getAttribute('data-key'), active = ri === state.row && state.bar < 0 && !state.rail;
-      rowEl.className = 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : '');
+      rowEl.className = 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (rowEl.getAttribute('data-off') ? ' off-row' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : '');
       var tiles = rowEl.querySelectorAll('.tile'), c = colOf(kind);
       for (var ci = 0; ci < tiles.length; ci++) {
         var on = active && ci === c;
@@ -1190,26 +1211,44 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * keep the row in focus whole, its title included.
    */
   var rowsScroll = { to: 0, timer: null };
+  function rowsAtBottom() { return !!layout && layout.rowsBottom === true; }
+  /*
+   * Along the bottom the row in focus is always brought to the bottom, its
+   * own margin below it, so only the rows before it show above and the ones
+   * after it are out of sight below the screen.
+   */
   function keepRowInView(instant) {
     var box = $('rows'), active = box.querySelector('.row.active');
     if (!active) return;
     var view = box.clientHeight, y = box.scrollTop;
     var top = active.offsetTop - 6, bottom = active.offsetTop + active.offsetHeight + 6;
-    if (bottom > y + view) y = bottom - view;
-    if (top < y) y = top;
+    if (rowsAtBottom()) {
+      y = active.offsetTop + active.offsetHeight + (parseInt(getComputedStyle(active).marginBottom, 10) || 0) - view;
+    } else {
+      if (bottom > y + view) y = bottom - view;
+      if (top < y) y = top;
+    }
     y = Math.max(0, Math.min(y, box.scrollHeight - view));
-    if (y === rowsScroll.to && Math.abs(box.scrollTop - y) < 1) return;
+    // A scroll already headed there is left to finish.
+    if (y === rowsScroll.to && (rowsScroll.timer || Math.abs(box.scrollTop - y) < 1)) return;
     rowsScroll.to = y;
-    box.className = y > 0 ? 'scrolled' : '';
+    box.className = y > firstRowTop(box) ? 'scrolled' : '';
     clearInterval(rowsScroll.timer);
+    rowsScroll.timer = null;
     if (instant) { box.scrollTop = y; return; }
     var from = box.scrollTop, start = Date.now();
     rowsScroll.timer = setInterval(function () {
       var k = Math.min(1, (Date.now() - start) / 200);
       box.scrollTop = from + (y - from) * (1 - Math.pow(1 - k, 3));
       if (tvPreviewTile) placeTvPreview(tvPreviewTile);
-      if (k >= 1) clearInterval(rowsScroll.timer);
+      if (k >= 1) { clearInterval(rowsScroll.timer); rowsScroll.timer = null; }
     }, 16);
+  }
+  // Where the first row shown starts: scrolled past it, the top edge fades.
+  function firstRowTop(box) {
+    var rows = box.querySelectorAll('.row');
+    for (var i = 0; i < rows.length; i++) if (rows[i].offsetHeight) return Math.max(0, rows[i].offsetTop - 6);
+    return 0;
   }
 
   /*
@@ -1686,15 +1725,16 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Drawn again only when it changes: the heartbeat brings it every 5 s.
   var shownWeather = null;
   function renderWeather(w) {
-    if (layout && layout.showWeather === false) w = null;
-    var key = w && typeof w.temp === 'number' ? JSON.stringify([w.condition, w.temp, w.city]) : '';
+    var key = w && typeof w.temp === 'number' ? JSON.stringify([w.condition, w.temp, w.city, w.source]) : '';
     if (key === shownWeather) return;
     shownWeather = key;
-    if (!key) { $('weather').className = 'none'; return; }
+    if (!key) { $('weather').className = 'none'; $('wxCredit').textContent = ''; return; }
     $('wxIcon').innerHTML = wxIcon(w.condition);
     $('wxTemp').textContent = Math.round(w.temp) + '°';
     $('wxCity').textContent = w.city || '';
     $('wxCond').textContent = wxLabel(w.condition);
+    // Open-Meteo's data is CC BY 4.0: credited wherever it is shown.
+    $('wxCredit').textContent = w.source === 'internet' ? t('home.weather.credit', 'Weather data by Open-Meteo.com') : '';
     $('weather').className = '';
   }
 
@@ -2041,7 +2081,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   function releaseVideo() {
     var v = $('pvVideo');
-    v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = null;
+    v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = v.onended = null;
     try { v.pause(); } catch (e) {}
     while (v.firstChild) v.removeChild(v.firstChild);
     // Hiding the element keeps the input, tuner or stream; emptied and loaded, it lets it go.
@@ -2394,10 +2434,27 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * last is torn down completely before the next opens.
    */
   // muted: the stream's own, kept here so a recovery reopens it as it is shown now.
-  var tvStream = { gen: 0, item: null, format: '', playing: false, waitingAt: 0, retried: false, watch: null, onState: null, leaseTimer: null,
-    muted: true, retryTimer: null };
+  var tvStream = { gen: 0, item: null, format: '', playing: false, watch: null, onState: null, leaseTimer: null,
+    muted: true, retryTimer: null, tries: 0, everPlayed: false, lostAt: 0, openedAt: 0 };
   var STREAM_START_MS = 12000;
+  // The picture not moving this long is a stall, whatever events the <video> sent;
+  // sooner with nothing buffered past it: every stall logged on a provider's
+  // stream had under a second buffered, so waiting longer only kept it frozen.
   var STALL_MS = 8000;
+  var STALL_EMPTY_MS = 3000;
+  // A hole in what is buffered is stepped over after this long, before reconnecting.
+  var NUDGE_MS = 2500;
+  /*
+   * Reconnects in a row before giving up. A live channel reopens at the live
+   * point. A provider's CDN was seen sending nothing for 30 to 50 s at a time,
+   * so one that has played gets about a minute; one that never has gets two,
+   * as a one-stream account can refuse a channel change for a moment.
+   */
+  var RETRIES_FIRST = 2;
+  var RETRIES_PLAYING = 8;
+  var RETRY_WAIT_MS = [400, 1500, 3000, 5000, 8000, 10000];
+  // Playing this long since the last reconnect, a stream has all its reconnects back.
+  var STEADY_MS = 30000;
 
   function stopTvStream() {
     tvStream.gen++;
@@ -2408,6 +2465,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     tvStream.item = null;
     tvStream.playing = false;
     tvStream.onState = null;
+    tvStream.lostAt = 0;
     releaseVideo();
     lease(false);
   }
@@ -2425,9 +2483,35 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (on) tvStream.leaseTimer = setInterval(send, 60000);
   }
 
+  // Into the server's log: what a drop was and whether it came back.
+  function streamEvent(event, detail) {
+    var it = tvStream.item;
+    if (!it) return;
+    var v = $('pvVideo'), q = null;
+    try { q = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality() : null; } catch (e) {}
+    var body = { event: event, pl: it.pl, key: it.key, format: tvStream.format, full: !!player.open, tries: tvStream.tries };
+    if (v.videoWidth) body.size = v.videoWidth + 'x' + v.videoHeight;
+    if (q) body.dropped = q.droppedVideoFrames;
+    for (var k in detail) if (detail.hasOwnProperty(k)) body[k] = detail[k];
+    postJson('/api/iptv/event', body);
+  }
+
+  // Seconds buffered past the picture, and the start of the next buffered range after a hole.
+  function bufferedAhead(v) {
+    var b = v.buffered, ct = v.currentTime, out = { ahead: 0, next: -1 };
+    try {
+      for (var i = 0; i < b.length; i++) {
+        if (b.start(i) <= ct + 0.05 && b.end(i) > ct) out.ahead = b.end(i) - ct;
+        else if (b.start(i) > ct && out.next < 0) out.next = b.start(i);
+      }
+    } catch (e) {}
+    return out;
+  }
+
   /*
    * Plays it in the <video>; onState(state, detail) hears 'playing',
-   * 'nopicture' (no frame in time), 'stopped' (stalled twice) and 'failed'.
+   * 'reconnecting', 'nopicture' (no frame in time), 'stopped' (reconnecting
+   * gave up) and 'failed'.
    * The URL is asked for fresh each time: an Xtream live link redirects to a
    * token that expires.
    */
@@ -2435,9 +2519,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     stopTvStream();
     var gen = tvStream.gen;
     tvStream.item = it;
-    tvStream.retried = false;
+    tvStream.tries = 0;
+    tvStream.everPlayed = false;
     tvStream.pastCache = false;
     tvStream.account = false;
+    tvStream.switchable = false;
     tvStream.onState = onState;
     tvStream.muted = !!muted;
     lease(true);
@@ -2451,65 +2537,110 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (gen !== tvStream.gen) return;
       if (!r || !r.ok || !r.url) return say('failed', r && r.error);
       tvStream.account = !!r.account;
+      tvStream.switchable = !!r.switchable;
       var v = $('pvVideo');
       tvStream.format = r.format === 'hls' ? 'HLS' : r.format === 'ts' ? 'MPEG-TS' : '';
       // As shown now: the preview may have become the player while this was asked for.
       v.muted = tvStream.muted;
       v.defaultMuted = tvStream.muted;
+      var startedAt = Date.now(), lastTime = -1, lastMove = 0, steadyFrom = 0, nudged = false;
       v.onplaying = function () {
-        if (gen !== tvStream.gen) return;
-        tvStream.waitingAt = 0;
-        if (!tvStream.playing) { tvStream.playing = true; say('playing'); }
+        if (gen !== tvStream.gen || tvStream.playing) return;
+        tvStream.playing = true;
+        steadyFrom = lastMove = Date.now();
+        if (tvStream.lostAt) {
+          streamEvent('recovered', { after: Date.now() - tvStream.lostAt });
+          tvStream.lostAt = 0;
+        } else if (!tvStream.everPlayed && player.open) streamEvent('started', { after: Date.now() - startedAt });
+        tvStream.everPlayed = true;
+        say('playing');
       };
-      v.ontimeupdate = function () { if (gen === tvStream.gen) tvStream.waitingAt = 0; };
-      v.onwaiting = v.onstalled = function () { if (gen === tvStream.gen && !tvStream.waitingAt) tvStream.waitingAt = Date.now(); };
       v.onloadedmetadata = function () { if (gen === tvStream.gen) say('format'); };
+      // A live stream has no end: one that ends was closed by the provider.
+      v.onended = function () { if (gen === tvStream.gen) lost(gen, 'ended', {}); };
       // An error rather than a stall: some providers' CDNs keep a bad copy of a
-      // playlist (one seen gzipped, for a player that cannot read it), so the second
-      // try asks past it.
-      v.onerror = function () { if (gen === tvStream.gen) { tvStream.pastCache = true; stalled(gen); } };
+      // playlist (one seen gzipped, for a player that cannot read it), so a
+      // reconnect asks past it.
+      v.onerror = function () {
+        if (gen !== tvStream.gen) return;
+        tvStream.pastCache = true;
+        lost(gen, 'error', { code: v.error ? v.error.code : 0 });
+      };
       v.src = tvStream.pastCache ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + 'gh=' + Date.now() : r.url;
       v.load();
       var played = v.play();
       if (played && played.then) played.then(null, function () {});
-      var startedAt = Date.now();
       clearInterval(tvStream.watch);
       tvStream.watch = setInterval(function () {
         if (gen !== tvStream.gen) return;
-        if (!tvStream.playing && Date.now() - startedAt > STREAM_START_MS) { clearInterval(tvStream.watch); return say('nopicture'); }
-        if (tvStream.waitingAt && Date.now() - tvStream.waitingAt > STALL_MS) stalled(gen);
+        var now = Date.now();
+        if (!tvStream.playing) {
+          if (now - startedAt > STREAM_START_MS) lost(gen, 'nopicture', {});
+          return;
+        }
+        var ct = v.currentTime;
+        if (ct !== lastTime) {
+          lastTime = ct;
+          lastMove = now;
+          nudged = false;
+          if (tvStream.tries && now - steadyFrom > STEADY_MS) tvStream.tries = 0;
+          return;
+        }
+        var still = now - lastMove, buf = bufferedAhead(v);
+        // Stuck at a hole with more buffered after it: step over it rather than reconnect.
+        if (still > NUDGE_MS && !nudged && buf.next > ct) {
+          nudged = true;
+          streamEvent('skipped', { gap: Math.round((buf.next - ct) * 10) / 10 });
+          try { v.currentTime = buf.next + 0.1; } catch (e) {}
+          return;
+        }
+        if (still > STALL_MS || (still > STALL_EMPTY_MS && buf.ahead < 0.5)) lost(gen, 'stall', { still: still, ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState, net: v.networkState });
       }, 1000);
     });
   }
 
-  // Torn down and opened once more, with a fresh URL; then left stopped.
-  function stalled(gen) {
+  /*
+   * Torn down and opened again with a fresh URL, at the live point, waiting a
+   * little longer each time; left stopped once the reconnects run out.
+   */
+  function lost(gen, why, detail) {
     if (gen !== tvStream.gen) return;
-    if (tvStream.retried) {
-      clearInterval(tvStream.watch);
-      var it = tvStream.item, cb = tvStream.onState;
+    clearInterval(tvStream.watch);
+    tvStream.watch = null;
+    detail.why = why;
+    var it = tvStream.item, cb = tvStream.onState;
+    var limit = tvStream.everPlayed ? RETRIES_PLAYING : why === 'nopicture' ? 0 : RETRIES_FIRST;
+    if (tvStream.tries >= limit) {
+      if (tvStream.lostAt) detail.lostFor = Date.now() - tvStream.lostAt;
+      streamEvent('gave-up', detail);
       tvStream.gen++;
+      tvStream.lostAt = 0;
       releaseVideo();
       tvStream.item = it;
-      if (cb) cb('stopped');
+      if (cb) cb(why === 'nopicture' && !tvStream.everPlayed ? 'nopicture' : 'stopped');
       checkProtected(it);
       return;
     }
-    tvStream.retried = true;
+    if (!tvStream.lostAt) tvStream.lostAt = Date.now();
+    var wait = RETRY_WAIT_MS[Math.min(tvStream.tries, RETRY_WAIT_MS.length - 1)];
+    tvStream.tries++;
+    detail.wait = wait;
+    streamEvent('reconnecting', detail);
     tvStream.playing = false;
-    tvStream.waitingAt = 0;
+    // Every reconnect asks past a copy of the playlist a CDN may be holding.
+    tvStream.pastCache = true;
     // Recovering, a preview is not playing: OK opens the player afresh rather than adopting it.
     if (tilePreview.target && tilePreview.target.tv) tilePreview.playing = false;
-    var keep = tvStream.item, keepCb = tvStream.onState;
+    // Its own generation: a stop or another play meanwhile strands it.
     var retryGen = ++tvStream.gen;
     releaseVideo();
-    tvStream.item = keep;
-    tvStream.onState = keepCb;
-    // Its own generation: a stop or another play meanwhile strands it.
+    tvStream.item = it;
+    tvStream.onState = cb;
+    if (cb) cb('reconnecting');
     tvStream.retryTimer = setTimeout(function () {
       tvStream.retryTimer = null;
-      if (tvStream.gen === retryGen && tvStream.item === keep) openTvStream(retryGen);
-    }, 400);
+      if (tvStream.gen === retryGen && tvStream.item === it) openTvStream(retryGen);
+    }, wait);
   }
 
   function formatText() {
@@ -2594,6 +2725,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       tilePreview.gen++;
       clearTimeout(tilePreview.timer);
       tilePreview.target = null;
+      // The row and lineup are separate replies, with separate objects for the same channel.
+      tvStream.item = playerChannel();
       tvStream.onState = playerState;
       tvStream.muted = false;
       $('pvVideo').muted = false;
@@ -2641,6 +2774,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (!player.open) return;
     if (s === 'playing') { player.failed = false; renderPmsg(); renderBand(); }
     else if (s === 'format') renderBand();
+    else if (s === 'reconnecting') renderPmsg(t('home.tv.reconnecting', 'Reconnecting to {name}', { name: tvStream.item ? tvStream.item.name : '' }));
     else if (s === 'nopicture' || s === 'failed' || s === 'stopped') {
       // Nothing plays: the stream, its lease and the screen saver's hold go.
       // The channel stays chosen, for OK to try again.
@@ -2748,7 +2882,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var fmt = formatText();
     if (it.tags && it.tags.length && !fmt.length) fmt = it.tags;
     $('bdFmt').innerHTML = (player.idx + 1 ? '<span>' + esc(t('home.tv.position', '{n} of {total}', { n: player.idx + 1, total: player.items.length })) + '</span>' : '') +
-      (fmt.length ? '<span>' + esc(fmt.join('\u2002\u2002')) + '</span>' : '');
+      (fmt.length ? '<span>' + esc(fmt.join('\u2002\u2002')) + '</span>' : '') +
+      (tvStream.switchable && tvStream.item === it && tvStream.format ? '<span>' + esc(t('home.tv.playAs', 'Yellow: play as {format}', { format: otherFormat() })) + '</span>' : '');
   }
 
   // The channel a channel up, down or number reaches, after a short dwell.
@@ -2863,6 +2998,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (k === KEY.chUp) return zapTo(player.idx + 1);
     if (k === KEY.chDown) return zapTo(player.idx - 1);
     if (k === KEY.info) return showBand();
+    if (k === KEY.yellow && !player.list && tvStream.switchable && tvStream.item === playerChannel()) return switchFormat();
     if (player.list) {
       listIdle();
       var list = groupItems();
@@ -2886,6 +3022,26 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (k === KEY.up) return zapTo(player.idx + 1);
     if (k === KEY.down) return zapTo(player.idx - 1);
     if (k === KEY.left || k === KEY.right) return openList();
+  }
+
+  function otherFormat() { return tvStream.format === 'MPEG-TS' ? 'HLS' : 'MPEG-TS'; }
+
+  /*
+   * Yellow: this channel as the provider's other kind of stream, kept for it
+   * on the TV, and opened again at the live point.
+   */
+  function switchFormat() {
+    var it = playerChannel(), to = otherFormat();
+    stopTvStream();
+    var gen = tvStream.gen;
+    renderPmsg(t('home.tv.connecting', 'Connecting to {name}', { name: it.name }), to);
+    postJson('/api/iptv/output', { pl: it.pl, key: it.key, output: to === 'MPEG-TS' ? 'ts' : 'hls' }, function (r) {
+      if (gen !== tvStream.gen || !player.open || playerChannel() !== it) return;
+      if (r && r.ok) return startPlayerStream();
+      player.failed = true;
+      renderPmsg(t('home.tv.saveFailed', 'That didn’t save'), t('home.tv.tryAgainPlain', 'OK tries again.'));
+      showBand(true);
+    });
   }
 
   function playerClick(target) {
@@ -4061,8 +4217,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function toggleHidden() {
     var last = state.last;
-    // The LG Home tile is the way back to LG's Home, so it always shows.
-    if (!last || (last.kind === 'app' && last.id === LG_HOME_TILE)) return;
+    if (!last) return;
     var kind = last.kind, it = byId(kind, last.id);
     if (!it) return;
     if (kind === 'ch') {

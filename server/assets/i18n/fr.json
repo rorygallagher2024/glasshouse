@@ -2051,10 +2051,6 @@
   "from": "A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging.",
   "text": "Une horloge plus petite à droite, et les rangées en tuiles arrondies et translucides, titrées seulement pendant l'arrangement."
  },
- "home.alwaysShown": {
-  "from": "Always shown",
-  "text": "Toujours affiché"
- },
  "home.anim.aquarium": {
   "from": "Aquarium",
   "text": "Aquarium"
@@ -3163,14 +3159,6 @@
   "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.",
   "text": "Sur Internet TV : le logo de chaque chaîne fourni par la playlist. Désactivé affiche le nom de la chaîne à sa place."
  },
- "home.showWeather": {
-  "from": "Weather",
-  "text": "Météo"
- },
- "home.showWeatherDesc": {
-  "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it.",
-  "text": "À côté de l'horloge : la météo envoyée par Home Assistant, dès qu'une automatisation l'envoie."
- },
  "home.shown": {
   "from": "Shown",
   "text": "Affichée"
@@ -3251,6 +3239,8 @@
   "from": "{n} channels",
   "text": "{n} chaînes"
  },
+ "home.tv.reconnecting": {"text": "Reconnexion à {name}", "from": "Reconnecting to {name}"},
+ "home.tv.playAs": {"text": "Jaune : lire en {format}", "from": "Yellow: play as {format}"},
  "home.tv.connecting": {
   "from": "Connecting to {name}",
   "text": "Connexion à {name}"
@@ -4399,6 +4389,14 @@
   "from": "Uploading…",
   "text": "Envoi…"
  },
+ "home.weather": {
+  "from": "Weather",
+  "text": "Météo"
+ },
+ "home.weather.choose": {
+  "from": "Search for your town, then choose it from the list.",
+  "text": "Recherchez votre ville, puis choisissez-la dans la liste."
+ },
  "home.weather.clearNight": {
   "from": "Clear night",
   "text": "Nuit claire"
@@ -4407,6 +4405,14 @@
   "from": "Cloudy",
   "text": "Nuageux"
  },
+ "home.weather.credit": {
+  "from": "Weather data by Open-Meteo.com",
+  "text": "Données météo par Open-Meteo.com"
+ },
+ "home.weather.credits": {
+  "from": "Weather data by Open-Meteo.com. Location data based on GeoNames.",
+  "text": "Données météo par Open-Meteo.com. Données de localisation basées sur GeoNames."
+ },
  "home.weather.exceptional": {
   "from": "Severe weather",
   "text": "Intempéries"
@@ -4414,6 +4420,14 @@
  "home.weather.fog": {
   "from": "Fog",
   "text": "Brouillard"
+ },
+ "home.weather.fromHa": {
+  "from": "From Home Assistant",
+  "text": "Depuis Home Assistant"
+ },
+ "home.weather.fromInternet": {
+  "from": "From the internet",
+  "text": "Depuis Internet"
  },
  "home.weather.hail": {
   "from": "Hail",
@@ -4427,9 +4441,21 @@
   "from": "Thunderstorms",
   "text": "Orages"
  },
+ "home.weather.none": {
+  "from": "No places found by that name.",
+  "text": "Aucun lieu trouvé sous ce nom."
+ },
  "home.weather.partlycloudy": {
   "from": "Partly cloudy",
   "text": "Partiellement nuageux"
+ },
+ "home.weather.placeDesc": {
+  "from": "Glasshouse asks Open-Meteo for the weather at this place every 30 minutes while the TV is on. Nothing else is sent.",
+  "text": "Glasshouse demande à Open-Meteo la météo de ce lieu toutes les 30 minutes tant que le téléviseur est allumé. Rien d’autre n’est envoyé."
+ },
+ "home.weather.placeholder": {
+  "from": "Town or city",
+  "text": "Ville ou village"
  },
  "home.weather.pouring": {
   "from": "Pouring rain",
@@ -4438,6 +4464,22 @@
  "home.weather.rainy": {
   "from": "Rainy",
   "text": "Pluvieux"
+ },
+ "home.weather.search": {
+  "from": "Search",
+  "text": "Rechercher"
+ },
+ "home.weather.searchFailed": {
+  "from": "Could not search: {error}",
+  "text": "Recherche impossible : {error}"
+ },
+ "home.weather.searching": {
+  "from": "Searching…",
+  "text": "Recherche…"
+ },
+ "home.weather.showing": {
+  "from": "Showing the weather for {place}.",
+  "text": "Météo affichée pour {place}."
  },
  "home.weather.snowy": {
   "from": "Snowy",
@@ -4451,6 +4493,10 @@
   "from": "Sunny",
   "text": "Ensoleillé"
  },
+ "home.weather.tvChoosePlace": {
+  "from": "Choose the place on the Home tab of the web dashboard.",
+  "text": "Choisissez le lieu dans l’onglet Home du tableau de bord web."
+ },
  "home.weather.windy": {
   "from": "Windy",
   "text": "Venteux"
@@ -4458,6 +4504,10 @@
  "home.weather.windyVariant": {
   "from": "Windy",
   "text": "Venteux"
+ },
+ "home.weatherDesc": {
+  "from": "Next to the clock: the weather Home Assistant sends, or the weather for a place you choose, from Open-Meteo.",
+  "text": "À côté de l’horloge : la météo envoyée par Home Assistant, ou celle d’un lieu de votre choix, par Open-Meteo."
  },
  "lang.partial": {
   "from": "{name} (partial)",
@@ -4682,6 +4732,10 @@
  "metrics.remote": {
   "from": "Magic remote",
   "text": "Magic Remote"
+ },
+ "metrics.remote.batteryReadLabel": {
+  "text": "Dernière lecture :",
+  "from": "Last read:"
  },
  "metrics.remote.bluetooth": {
   "from": "Bluetooth: {address}",
@@ -7626,6 +7680,10 @@
  "srv.home.wallUploading": {
   "from": "Wait for the wallpaper upload to finish.",
   "text": "Attendez que l'envoi du fond d'écran se termine."
+ },
+ "srv.home.weatherSearchFailed": {
+  "from": "Open-Meteo could not be reached",
+  "text": "Open-Meteo est injoignable"
  },
  "srv.huesync.didnotstart": {
   "from": "Hue Sync did not start streaming",
@@ -10722,10 +10780,6 @@
  "tv.home.launcher.on": {
   "from": "Press OK to use the custom launcher",
   "text": "Appuyez sur OK pour utiliser le lanceur personnalisé"
- },
- "tv.home.lgTile.hint": {
-  "from": "The way back to LG’s Home, so it always shows.",
-  "text": "Le chemin de retour vers l'Accueil de LG, pour qu'il s'affiche toujours."
  },
  "tv.home.minimal.on": {
   "from": "Press OK to use Minimal",

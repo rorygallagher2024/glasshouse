@@ -325,7 +325,7 @@ action:
 ```
 
 ### 6. The weather on Glasshouse Home
-Glasshouse Home shows the weather next to the clock from what Home Assistant sends it. This sends a `weather` entity's condition and temperature whenever it changes, every 30 minutes, and when Home Assistant starts. Weather not updated for 3 hours is hidden, and sending an empty value takes it away at once.
+Glasshouse Home shows the weather next to the clock from what Home Assistant sends it, while the Home tab's **Weather** setting is **From Home Assistant**, as it is unless changed. **From the internet** shows the weather for a place you choose without Home Assistant ([Home tab](dashboard/home.md)). This sends a `weather` entity's condition and temperature whenever it changes, every 30 minutes, and when Home Assistant starts. Weather not updated for 3 hours is hidden, and sending an empty value takes it away at once.
 
 ```yaml
 alias: "Weather on the TV"

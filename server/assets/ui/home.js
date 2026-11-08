@@ -212,6 +212,7 @@ function renderHome() {
     updateToggle(el, { cls: on && !unused ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     el.disabled = !homeWritable() || unused;
   });
+  renderHomeWeather(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
   const searchRow = q('home-search-row');
@@ -437,7 +438,11 @@ function renderHomeRows() {
   const open = box.children.length ? [...box.querySelectorAll('details[open]')].map(d => d.dataset.kind) : [];
   const filter = q('home-ch-filter') ? q('home-ch-filter').value : '';
   box.innerHTML = homeLayout.rows.map((kind, ri) => {
+    // A hidden row leaves the view whatever its tiles; arranging on the TV still shows it.
+    const rowOff = (homeLayout.hiddenRows || []).includes(kind);
     const rowMove = `<span class="home-row-move">
+          ${renderToggle({ cls: rowOff ? 'idle' : 'good', label: rowOff ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
+            on: !rowOff, disabled: !usable, onclick: `event.preventDefault(); homeToggleRow('${kind}')` })}
           <button type="button" class="pill idle" ${usable && ri > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
           <button type="button" class="pill idle" ${usable && ri < homeLayout.rows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
         </span>`;
@@ -469,7 +474,7 @@ function renderHomeRows() {
           ${leftOut ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>` : ''}
           <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">↑</button>
           <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">↓</button>
-          ${kind === 'app' ? homePlaceSelect(id, it, hidden, folded, usable) :
+          ${kind === 'app' ? homePlaceSelect(id, hidden, folded, usable) :
             kind === 'iptv' ? `<button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeTvRemoveFromRow('${jsq(id)}')">${esc(t('home.ch.remove', 'Remove'))}</button>` :
             kind === 'ch' ? `<button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeToggleChannel('${jsq(id)}')">${esc(t('home.ch.remove', 'Remove'))}</button>` :
             renderToggle({ cls: hidden ? 'idle' : 'good', label: hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
@@ -609,6 +614,13 @@ function homeToggleRecents(id) {
   homeSaveLayout({ excludedRecents: list });
 }
 
+function homeToggleRow(kind) {
+  const off = (homeLayout.hiddenRows || []).slice();
+  const i = off.indexOf(kind);
+  if (i >= 0) off.splice(i, 1); else off.push(kind);
+  homeSaveLayout({ hiddenRows: off });
+}
+
 function homeToggleTile(kind, id) {
   const hidden = Object.assign({}, homeLayout.hidden);
   const list = hidden[kind].slice();
@@ -618,17 +630,13 @@ function homeToggleTile(kind, id) {
   homeSaveLayout({ hidden });
 }
 
-/*
- * An app is on the Apps row, in its More apps tile, or hidden. The LG Home
- * tile is the way back to LG's Home, so it is never hidden, but it may go in
- * the folder, where it is still reached.
- */
-function homePlaceSelect(id, it, hidden, folded, usable) {
+// An app is on the Apps row, in its More apps tile, or hidden.
+function homePlaceSelect(id, hidden, folded, usable) {
   const place = hidden ? 'hidden' : folded ? 'folder' : 'row';
   const opt = (value, label) => `<option value="${value}"${place === value ? ' selected' : ''}>${esc(label)}</option>`;
   return `<select class="pill-sel" ${usable ? '' : 'disabled'} aria-label="${esc(t('home.place', 'Where it shows'))}"
       onchange="homeSetPlace('${jsq(id)}', this.value)">
-    ${opt('row', t('home.shown', 'Shown'))}${opt('folder', t('home.folder.label', 'In More apps'))}${it.lg ? '' : opt('hidden', t('home.hidden', 'Hidden'))}
+    ${opt('row', t('home.shown', 'Shown'))}${opt('folder', t('home.folder.label', 'In More apps'))}${opt('hidden', t('home.hidden', 'Hidden'))}
   </select>`;
 }
 
@@ -861,7 +869,61 @@ function homePreviewOption(field) {
 }
 
 // The details Glasshouse Home shows unless switched off, and their toggles.
-const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos'], ['showWeather', 'home-show-weather']];
+const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos']];
+
+/*
+ * The weather: off, from Home Assistant, or from Open-Meteo for a place found
+ * by name here. The search goes through the TV's server, which asks Open-Meteo.
+ */
+let homeWeatherFound = [];
+
+function placeLabel(p) {
+  return [p.name, p.admin, p.country].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ');
+}
+
+function renderHomeWeather(st) {
+  const sel = q('home-weather-sel');
+  if (!sel) return;
+  const source = (st.layout && st.layout.weather) || 'ha';
+  sel.value = source;
+  sel.disabled = !homeWritable();
+  const panel = q('home-weather-place');
+  panel.hidden = !st.supported.ok || source !== 'internet';
+  const place = st.layout && st.layout.weatherPlace;
+  q('home-weather-chosen').textContent = place
+    ? t('home.weather.showing', 'Showing the weather for {place}.', { place: placeLabel(place) })
+    : t('home.weather.choose', 'Search for your town, then choose it from the list.');
+  q('home-weather-go').disabled = !homeWritable();
+}
+
+function homeWeatherSource(value) {
+  homeSaveLayout({ weather: value });
+}
+
+async function homeWeatherSearch() {
+  const query = q('home-weather-q').value.trim();
+  const box = q('home-weather-results');
+  if (query.length < 2) { box.textContent = ''; return; }
+  box.textContent = t('home.weather.searching', 'Searching…');
+  try {
+    const r = await fetch(api('/api/home/weather/places?q=' + encodeURIComponent(query) + '&lang=' + encodeURIComponent(I18N.lang())));
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || r.status);
+    homeWeatherFound = d.places || [];
+    if (!homeWeatherFound.length) { box.textContent = t('home.weather.none', 'No places found by that name.'); return; }
+    box.innerHTML = homeWeatherFound.map((p, i) =>
+      `<button type="button" class="pill idle" onclick="homeWeatherPick(${i})">${esc(placeLabel(p))}</button>`).join('');
+  } catch (e) {
+    box.textContent = t('home.weather.searchFailed', 'Could not search: {error}', { error: e.message });
+  }
+}
+
+function homeWeatherPick(i) {
+  const place = homeWeatherFound[i];
+  if (!place) return;
+  q('home-weather-results').textContent = '';
+  homeSaveLayout({ weather: 'internet', weatherPlace: place });
+}
 
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });

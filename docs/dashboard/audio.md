@@ -123,12 +123,15 @@ stream that starts without the eARC set-up above (TV speakers selected, Pass
 Through off, or the receiver on plain ARC) is refused and does not play. The
 description then gives the reason for the last refused stream.
 
+Switching to another app releases the DTS route. The DTS app takes it back
+when playback resumes; an ordinary app switch is not reported as an error.
+
 Both modes are qualified on the OLED83G54LW with a Denon AVC-A10H, through
 Plex and LG's media service, including seek, pause, notifications, end of
 stream, player-crash recovery and disabling and re-enabling. Ordinary ARC and
 other firmware remain unqualified.
 
-![Live OLED83G54LW dashboard during native DTS-HD forwarding](../screenshots/audio-g5-native-hd.png)
+![OLED83G54LW dashboard after resuming native DTS-HD forwarding](../screenshots/audio-g5-native-handover.png)
 
 This capture is from the OLED83G54LW during native HD playback. The status
 describes frames sent by the TV; receiver identification was checked

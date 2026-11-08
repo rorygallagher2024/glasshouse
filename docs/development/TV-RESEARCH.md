@@ -178,6 +178,24 @@ pipeline returned output3 to LG's route; its idle orphaned module was removed
 when the next player acquired HD output. A subsequent native PCM Matroska clip
 reached the receiver as PCM at 48 kHz with no DTS module active.
 
+App switches on 8 November 2026, in HD mode with Plex, Disney+, YouTube,
+Netflix and live TV. When Plex resumed a title after another app had played,
+the forwarder's first frame arrived while the pipeline still held `fakevdec` in
+place of `lxvideodec` and playsink had no audio chain; the `audiosink` appeared
+100-300 ms later. Refusing then made Plex transcode to PCM in place of DTS. The
+same wait was needed, at 100 ms, on one ordinary start. When another app played
+while Plex was in the background, LG connected that app's source to output3
+and the module stood down, ending the lease. uMS paused Plex's pipeline and
+played the same one again when Plex returned, so its forwarder, which had
+failed for good once its lease ended, had to take the route again: doing that
+on the same sink, left in bypass, brought DTS-HD back. Plex twice stuck on a
+grey screen when reopened with no media pipeline at all; its cause was not
+established. Disney+ DD+, YouTube
+multichannel PCM, Netflix and live TV each took output3 from a held DTS route
+and played normally. The kernel log (`/var/log/legacy-log`) records each
+`audio_hal_earc_set_*` call with the calling thread, which separates LG's eARC
+set-up from the module's.
+
 ## C9 HAWK2 audio EDID (webOS 4.10.2)
 
 OLED65C9PUA, firmware 05.50.00, reported in #1078 on 28 October 2026.
@@ -1460,6 +1478,24 @@ rebooted, through a night in standby. lginput2's luna methods include
 `enableLoggingMotion`, `getSensorData` and `enablePrintRfStatus`, none of which
 Glasshouse calls; `getConnectionStatus` and `getDeviceInfo` left it at 0%.
 
+## MR25GA battery (C5, webOS 11.2)
+
+OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:
+`getDeviceInfo` with `deviceName: "MagicRemote_1"` returned `batteryLevel: "-"`
+and a zero address while asleep, then `batteryLevel: "MID"` and the paired
+address while awake. `lowStrength: false` is signal strength, not charge, and
+the pairing file's `52(M) 35(L)` is the remote model's thresholds.
+
+On the awake LGE MR25GA, bluetooth2 `gatt/connect` returned a `clientId`.
+After `gatt/discoverServices`, `gatt/getServices` listed service `180f` with
+characteristic `2a19` (`read: true, notify: true`), and
+`gatt/readCharacteristicValue` with that `clientId` returned `bytes: [46]`
+(and `[42]` on a later read). After `gatt/disconnect`, `gatt/getStatus`
+reported `connected: false` and `discoveringServices: false`, while LG's
+remote service still reported `connected: true`. Because standby/wake cycles
+have not been tested on webOS 11, the C5 uses `getDeviceInfo`'s `"HIGH"`,
+`"MID"` and `"LOW"` steps without opening a GATT connection.
+
 ## No firewall in the kernel (50QNED80A6A, webOS 10)
 
 A 50QNED80A6A on firmware 33.31.61 (LG's webOS 25, kernel 5.4.268, rooted
@@ -2552,6 +2588,30 @@ name.
   `lgtviot.com`; `ad`, `info` under `lgsmartad.com`.
 - No `lggalleryplus.com` in either.
 
+## Regional service coverage
+
+An owner's Pi-hole log reports `de.ibs.nextlgsdp.com`, `de.lgeapi.com`,
+`eic.lgtviot.com` and `eic-connect-client.lgthinq.com` with Everything selected.
+These are reported DNS lookups, not a project network capture or proof of a
+successful connection. A hosts entry for `nextlgsdp.com` or `lgtviot.com`
+cannot cover their subdomains.
+
+The firmware string search above names `ibs`, `ibsstat`, the ThinQ API, push,
+sports and buddy families, and LG's dotted and hyphenated regional prefixes.
+[Own Your Glass's extracted SDX configuration](https://github.com/JulioFerrero/own-your-glass/blob/main/etc/blocklist-oyg.txt)
+also identifies `ibs.nextlgsdp.com` and `ibsstat.nextlgsdp.com` as the
+`ibis_secure` and `ibis_stat_secure` services, and names `common.lgthinq.com`
+and `connect-client.lgthinq.com` for ThinQ. This establishes service names,
+not the payloads sent by each regional endpoint.
+
+Everything expands these service families with LG's known regional prefixes
+and the TV's country; ThinQ Connect uses `aic-`, `eic-` and `kic-`. Generated
+siblings are coverage derived from those patterns, not observed traffic on
+every region's TVs. They remain in Everything because account, store and
+ThinQ features may depend on them. New names under `nextlgsdp.com` keep the
+existing wait for a valid clock. `lgtvonline.lge.com` remains the connectivity
+check described below; `wpad.fritz.box` is outside the LG cloud service list.
+
 ## Report and store log hosts (C4, webOS 10.3.1)
 
 - **sdx uploads reports to `rdx2.nextlgsdp.com`.**
@@ -2906,3 +2966,30 @@ phase. `setImmediate` runs before that phase, a timer after it. Of 900
 callback: 9 aborted started at once, 8 from `setImmediate`, none from
 `setTimeout(fn, 0)`. Every start through `lib/children.js` now comes from a
 timer. A start that does not go through it can still abort.
+
+## Source EDIDs after sam restarts (55UP77006LB, webOS 6.5.3)
+
+LG's HDMI input service, `/usr/sbin/extinput-integration`, subscribes to
+`com.webos.service.applicationmanager/getForegroundAppInfo` once, from
+`AdapterApplicationManager::initialize`, and nothing subscribes again. When
+sam is killed and comes back, the service keeps an empty foreground app:
+its log printed `[getForegroundAppId] :: appId : ` while sam itself reported
+`com.webos.app.hdmi1`. `convertAppId` maps an unmatched id to app type
+`0x0d`.
+
+`EdidControl::decideEdidType`, run with port `0xff` when an input's audio
+format setting changes, takes the input from the app type and accepts only
+types 7 to 10. Otherwise it logs `[SKIP] Don't update EDID [Cause : Invalid
+App type] [app type : 0x0d]` and leaves the input on its basic EDID. With
+the service subscribed, the same change logged `Convert HDMI port index :
+'255' => '1'` and `request HDMI(1) edid update [type : 2]`, and HDMI 1's
+Bitstream EDID changed from checksum `(48,ba)` to `(48,2b)`; PCM stayed
+`(48,8e)`.
+
+With Glasshouse Home's boot hook restarting sam (webOS 5 and 6), an Apple TV
+on HDMI 1 sent only PCM all day, which the TV passed on as PCM to an eARC
+soundbar (`KHAL_AUDIO_SNDOUT_eARC_OutputType ... codec_type 1`). After
+`systemctl restart extinput-integration` it sent MAT (`StartDecoding ADEC1
+type MAT`), passed through over eARC (`codec_type 7`), and reported Atmos
+available. Nothing requires the unit; restarting it with HDMI 1 in front
+re-wrote that input's EDID and hot-plugged it, and the app stayed in front.

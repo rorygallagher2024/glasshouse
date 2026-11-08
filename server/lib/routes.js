@@ -1198,6 +1198,9 @@ function handleHomeRoute(req, res, u, pathname) {
     if (pathname === '/api/home/guide') return homeModule.guide(function (g) { reply({ ok: true, guide: g }); });
     if (pathname === '/api/home/now') return homeModule.now(reply);
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
+    if (pathname === '/api/home/weather/places') {
+      return homeModule.weatherPlaces(String(u.query && u.query.q || ''), String(u.query && u.query.lang || ''), reply);
+    }
     if (pathname === '/api/home/picture') {
       return homePictureModule.picture(String(u.query && u.query.kind || ''), Number(u.query && u.query.port), reply,
         String(u.query && u.query.app || ''));
@@ -1357,7 +1360,8 @@ function handleIptvRoute(req, res, u, pathname) {
       var stream = iptvModule.streamUrl(String(qs.pl || ''), String(qs.key || ''));
       if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
       res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      return res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections }));
+      return res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections,
+        switchable: stream.switchable }));
     }
   }
   if (req.method === 'POST') {
@@ -1370,6 +1374,8 @@ function handleIptvRoute(req, res, u, pathname) {
       if (pathname === '/api/iptv/selection') return iptvModule.setSelection(body, reply);
       if (pathname === '/api/iptv/lineup') return iptvModule.setLineup(body, reply);
       if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true));
+      if (pathname === '/api/iptv/event') return reply(iptvModule.streamEvent(body));
+      if (pathname === '/api/iptv/output') return reply(iptvModule.setOutput(body));
       if (pathname === '/api/iptv/check') return iptvModule.checkStream(String(body && body.pl || ''), String(body && body.key || ''), reply);
       send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     }, pathname === '/api/iptv/lineup' ? 524288 : 8192);

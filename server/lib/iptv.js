@@ -1129,6 +1129,7 @@ function playlistsAction(body, cb) {
       if (!next.server) return cb({ ok: false, error: 'server' });
       if (!next.user || !next.pass) return cb({ ok: false, error: 'login' });
       if (!label) next.label = hostOf(next.server);
+      if (p && p.ts) next.ts = p.ts;
     }
     if (body.guide !== undefined) {
       next.guide = body.guide === '' || body.guide === null ? '' : httpUrl(body.guide);
@@ -1337,8 +1338,13 @@ function streamUrl(id, key) {
     var url = String(fs.readFileSync(f, 'utf8')).replace(/\s+$/, '');
     if (!/^https?:\/\//i.test(url)) return null;
     var account = cache.meta[id] && cache.meta[id].account;
+    // An Xtream panel serves a live channel as HLS or as MPEG-TS, by the URL's
+    // extension; the owner can choose either for a channel (setOutput).
+    var switchable = p.kind === 'xtream' && /\.(m3u8|ts)(\?|$)/i.test(url) &&
+      !(account && isArray(account.formats) && (account.formats.indexOf('m3u8') === -1 || account.formats.indexOf('ts') === -1));
+    if (switchable && isArray(p.ts) && p.ts.indexOf(key) !== -1) url = url.replace(/\.m3u8(\?|$)/i, '.ts$1');
     return { url: url, format: /\.m3u8(\?|$)/i.test(url) ? 'hls' : /\.ts(\?|$)/i.test(url) ? 'ts' : 'unknown',
-      account: !!account, maxConnections: account ? account.maxConnections : null };
+      account: !!account, maxConnections: account ? account.maxConnections : null, switchable: switchable };
   } catch (e) { return null; }
 }
 
@@ -1455,6 +1461,53 @@ function lease(on, full) {
   return { ok: true, until: leaseUntil };
 }
 
+/*
+ * A channel of an Xtream playlist played as MPEG-TS rather than HLS, or back:
+ * one long download with no playlist to go stale, for a channel whose HLS
+ * keeps stopping. Kept with the playlist, so it lasts across refreshes.
+ */
+var TS_MAX = 2000;
+function setOutput(body) {
+  var p = playlist(body && body.pl), key = body && body.key;
+  if (!p || p.kind !== 'xtream') return { ok: false, error: 'no-playlist' };
+  if (typeof key !== 'string' || !/^[a-z][0-9a-z]{1,24}$/.test(key)) return { ok: false, error: 'key' };
+  var list = isArray(p.ts) ? p.ts.filter(function (k) { return k !== key; }) : [];
+  if (body.output === 'ts') {
+    if (list.length >= TS_MAX) return { ok: false, error: 'too-many' };
+    list.push(key);
+  }
+  var before = p.ts;
+  p.ts = list;
+  try { saveConfig(); } catch (e) { p.ts = before; return { ok: false, error: 'save' }; }
+  console.log('iptv: ' + p.id + ':' + key + ' plays as ' + (body.output === 'ts' ? 'MPEG-TS' : 'HLS'));
+  return { ok: true, output: body.output === 'ts' ? 'ts' : 'hls' };
+}
+
+/*
+ * What Home saw of a stream, a line each in the log: how long it took to
+ * start, each stall or error, each reconnect and whether it came back. At
+ * most 120 an hour, so a stream failing in a loop cannot fill the log.
+ */
+var EVENTS_PER_HOUR = 120;
+var EVENT_FIELDS = ['why', 'after', 'lostFor', 'still', 'ahead', 'gap', 'wait', 'tries', 'code', 'state', 'net', 'size', 'dropped', 'format'];
+var events = { hour: 0, count: 0 };
+function streamEvent(body) {
+  var name = body && str(body.event, 20);
+  if (!name || !/^[a-z-]+$/.test(name)) return { ok: false, error: 'event' };
+  var hour = Math.floor(nowMs() / HOUR);
+  if (hour !== events.hour) { events.hour = hour; events.count = 0; }
+  if (++events.count > EVENTS_PER_HOUR) return { ok: true };
+  var key = str(body.key, 25), p = playlist(str(body.pl, 20));
+  var parts = ['iptv: stream ' + name + ' ' + (p ? p.id : '-') + ':' + (/^[a-z][0-9a-z]{1,24}$/.test(key) ? key : '-') + (body.full ? ' full' : ' preview')];
+  EVENT_FIELDS.forEach(function (k) {
+    var v = body[k];
+    if (typeof v === 'number' && isFinite(v)) parts.push(k + '=' + Math.round(v * 10) / 10);
+    else if (typeof v === 'string' && /^[0-9A-Za-z._-]{1,20}$/.test(v)) parts.push(k + '=' + v);
+  });
+  console.log(parts.join(' '));
+  return { ok: true };
+}
+
 // ---------------------------------------------------------------- lifecycle
 
 /**
@@ -1544,6 +1597,8 @@ module.exports = {
   streamUrl: streamUrl,
   schedulePath: schedulePath,
   lease: lease,
+  streamEvent: streamEvent,
+  setOutput: setOutput,
   // Home is showing a stream full screen: lib/idlesaver leaves the screen saver held off.
   watching: function () { return nowMs() < fullUntil; },
   revision: function () { return revision; },
