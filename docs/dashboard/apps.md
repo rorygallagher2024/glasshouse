@@ -100,6 +100,14 @@ Stops background services that most TVs don't need, such as the connected-car li
 
 The TV looking up every address on the home network, which a network-wide ad blocker such as Pi-hole shows as hundreds of requests, is switched off in [Devices and connectivity](advanced.md#devices-and-connectivity), as **Network device scans**.
 
+## Network
+
+### DNS for one app
+
+An app LG runs in a sandbox of its own, such as YouTube, can look names up with DNS servers of its own: 1.1.1.1, say, or a Pi-hole on the home network, while everything else on the TV keeps using the TV's. **Change** takes up to three IPv4 or IPv6 addresses, separated by commas or spaces, and **Use the TV's DNS** puts the app back.
+
+A change takes effect the next time the app starts, including when LG starts it again in the background. An app is listed once it has been opened, since that is when its sandbox is made. Web apps all run in one shared process, so they can't have servers of their own, and the section only appears on TVs with app sandboxes. An app that picks its own DNS server, or uses DNS over HTTPS, is not affected; YouTube uses the servers set here.
+
 ## Notes
 
 * Live TV, Settings, Home, the HDMI inputs, the Homebrew Channel and Glasshouse itself are protected: they can't be hidden or uninstalled.

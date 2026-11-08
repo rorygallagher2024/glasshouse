@@ -52,7 +52,8 @@ use modern JavaScript.
   the owner's own in its place), `lgsettings` (LG's own settings as
   rows), `game`, `apps` (tiles, uninstall, saved pages), `installer` and
   `repo` (installing .ipk packages, the Homebrew Channel catalog),
-  `services` (background services), `screensavers`, `idlesaver` (lifting
+  `services` (background services), `appdns` (an app's own DNS servers,
+  written into its jail after each launch), `screensavers`, `idlesaver` (lifting
   panel care's hold on LG's idle screen saver), `updater` and `fetch`
   (self-update over curl or wget), `piccap`, `say` (server-side strings),
   `names` (raw TV values as display strings and Prometheus labels),

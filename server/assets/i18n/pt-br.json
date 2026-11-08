@@ -3055,5 +3055,21 @@
  "tv.home.shownOf": {"text": "{n} de {total} visíveis", "from": "{n} of {total} shown"},
  "tv.home.someOn": {"text": "{n} de {total} ativados", "from": "{n} of {total} on"},
  "tv.home.tv.addOnWeb": {"text": "A lista de reprodução é adicionada na aba Home do painel no navegador, onde é possível digitar o link ou os dados de acesso.", "from": "A playlist is added on the browser dashboard’s Home tab, where its link or login can be typed."},
- "tv.home.tv.noPlaylist": {"text": "Sem lista de reprodução", "from": "No playlist"}
+ "tv.home.tv.noPlaylist": {"text": "Sem lista de reprodução", "from": "No playlist"},
+ "apps.group.net": {"text": "Rede", "from": "Network"},
+ "apps.group.net.desc": {"text": "Como os apps acessam a internet.", "from": "How apps reach the internet."},
+ "apps.dns": {"text": "DNS para um app", "from": "DNS for one app"},
+ "apps.dns.desc": {"text": "Um app desta lista pode resolver nomes com servidores DNS próprios, como 1.1.1.1 ou um Pi-hole, enquanto todo o resto da TV continua usando os da TV. Uma alteração vale a partir da próxima vez que o app iniciar. Só aparecem os apps que a LG executa em uma sandbox própria, depois de terem sido abertos; apps web compartilham um único processo e não podem ter os seus.", "from": "An app here can look names up with DNS servers of its own, such as 1.1.1.1 or a Pi-hole, while everything else on the TV keeps using the TV's. A change takes effect the next time the app starts. Only apps LG runs in a sandbox of their own are listed, once they have been opened; web apps share one process and cannot have their own."},
+ "apps.dns.noneSet": {"text": "Nenhum definido", "from": "None set"},
+ "apps.dns.setOne": {"text": "1 app com DNS próprio", "from": "1 app with its own"},
+ "apps.dns.set": {"text": "{n} apps com DNS próprio", "from": "{n} apps with their own"},
+ "apps.dns.noApps": {"text": "Nenhum app em sandbox foi aberto ainda.", "from": "No sandboxed app has been opened yet."},
+ "apps.dns.tvOwn": {"text": "O DNS da TV", "from": "The TV's DNS"},
+ "apps.dns.change": {"text": "Alterar", "from": "Change"},
+ "apps.dns.reset": {"text": "Usar o DNS da TV", "from": "Use the TV's DNS"},
+ "apps.dns.placeholder": {"text": "Até 3 endereços, como 1.1.1.1, 1.0.0.1", "from": "Up to 3 addresses, such as 1.1.1.1, 1.0.0.1"},
+ "apps.dns.servers": {"text": "Servidores DNS", "from": "DNS servers"},
+ "srv.appdns.badAddress": {"text": "não é um endereço IP: {address}", "from": "not an IP address: {address}"},
+ "srv.appdns.tooMany": {"text": "é possível usar no máximo 3 servidores DNS", "from": "at most 3 DNS servers can be used"},
+ "srv.appdns.notOffered": {"text": "Este app não pode ter DNS próprio", "from": "This app cannot have its own DNS"}
 }

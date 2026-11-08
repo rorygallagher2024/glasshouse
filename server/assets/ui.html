@@ -1057,6 +1057,20 @@
       </div>
     </details>
   </div>
+
+  <div class="apps-grp" id="apps-grp-net">
+    <div class="apps-grp-h" data-t="apps.group.net">Network</div>
+    <div class="pv-sub apps-grp-d" data-t="apps.group.net.desc">How apps reach the internet.</div>
+
+    <details class="pv-d" id="disc-appdns" hidden>
+      <summary><span data-t="apps.dns">DNS for one app</span> <span class="cur" id="apps-dns-summary"></span></summary>
+      <div class="pv-sub" data-t="apps.dns.desc">An app here can look names up with DNS servers of its own, such as
+        1.1.1.1 or a Pi-hole, while everything else on the TV keeps using the TV's. A change takes effect the
+        next time the app starts. Only apps LG runs in a sandbox of their own are listed, once they have been
+        opened; web apps share one process and cannot have their own.</div>
+      <div class="prot-table" id="apps-dns-list"></div>
+    </details>
+  </div>
 </section>
 
 <section class="priv panel" id="homepane" role="tabpanel" hidden>

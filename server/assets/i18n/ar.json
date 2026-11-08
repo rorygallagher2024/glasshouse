@@ -3055,5 +3055,21 @@
  "tv.home.shownOf": {"text": "يظهر {n} من أصل {total}", "from": "{n} of {total} shown"},
  "tv.home.someOn": {"text": "{n} من أصل {total} مفعّل", "from": "{n} of {total} on"},
  "tv.home.tv.addOnWeb": {"text": "تُضاف قائمة التشغيل من تبويب Home في لوحة المتصفح، حيث يمكن كتابة الرابط أو بيانات الدخول.", "from": "A playlist is added on the browser dashboard’s Home tab, where its link or login can be typed."},
- "tv.home.tv.noPlaylist": {"text": "لا توجد قائمة تشغيل", "from": "No playlist"}
+ "tv.home.tv.noPlaylist": {"text": "لا توجد قائمة تشغيل", "from": "No playlist"},
+ "apps.group.net": {"text": "الشبكة", "from": "Network"},
+ "apps.group.net.desc": {"text": "كيف تصل التطبيقات إلى الإنترنت.", "from": "How apps reach the internet."},
+ "apps.dns": {"text": "DNS لتطبيق واحد", "from": "DNS for one app"},
+ "apps.dns.desc": {"text": "يمكن للتطبيق المدرج هنا أن يستخدم خوادم DNS خاصة به، مثل 1.1.1.1 أو Pi-hole، بينما يستمر باقي التلفاز في استخدام خوادم DNS الخاصة بالتلفاز. يسري التغيير عند تشغيل التطبيق في المرة التالية. لا تظهر هنا إلا التطبيقات التي تشغّلها LG في بيئة معزولة خاصة بها، وذلك بعد فتحها؛ أما تطبيقات الويب فتعمل كلها في عملية واحدة مشتركة ولا يمكن أن تكون لها خوادم خاصة.", "from": "An app here can look names up with DNS servers of its own, such as 1.1.1.1 or a Pi-hole, while everything else on the TV keeps using the TV's. A change takes effect the next time the app starts. Only apps LG runs in a sandbox of their own are listed, once they have been opened; web apps share one process and cannot have their own."},
+ "apps.dns.noneSet": {"text": "لم يُضبط شيء", "from": "None set"},
+ "apps.dns.setOne": {"text": "تطبيق واحد بخوادم DNS خاصة", "from": "1 app with its own"},
+ "apps.dns.set": {"text": "عدد التطبيقات بخوادم DNS خاصة: {n}", "from": "{n} apps with their own"},
+ "apps.dns.noApps": {"text": "لم يُفتح أي تطبيق معزول بعد.", "from": "No sandboxed app has been opened yet."},
+ "apps.dns.tvOwn": {"text": "DNS التلفاز", "from": "The TV's DNS"},
+ "apps.dns.change": {"text": "تغيير", "from": "Change"},
+ "apps.dns.reset": {"text": "استخدام DNS التلفاز", "from": "Use the TV's DNS"},
+ "apps.dns.placeholder": {"text": "حتى 3 عناوين، مثل 1.1.1.1, 1.0.0.1", "from": "Up to 3 addresses, such as 1.1.1.1, 1.0.0.1"},
+ "apps.dns.servers": {"text": "خوادم DNS", "from": "DNS servers"},
+ "srv.appdns.badAddress": {"text": "ليس عنوان IP: {address}", "from": "not an IP address: {address}"},
+ "srv.appdns.tooMany": {"text": "يمكن استخدام 3 خوادم DNS كحد أقصى", "from": "at most 3 DNS servers can be used"},
+ "srv.appdns.notOffered": {"text": "لا يمكن تعيين DNS خاص لهذا التطبيق", "from": "This app cannot have its own DNS"}
 }

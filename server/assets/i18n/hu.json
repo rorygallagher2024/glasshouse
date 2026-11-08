@@ -3055,5 +3055,21 @@
  "tv.home.shownOf": {"text": "{total} közül {n} látható", "from": "{n} of {total} shown"},
  "tv.home.someOn": {"text": "{total} közül {n} bekapcsolva", "from": "{n} of {total} on"},
  "tv.home.tv.addOnWeb": {"text": "Lejátszási listát a böngészős vezérlőpult Home lapján lehet hozzáadni, ahol beírható a hivatkozása vagy a bejelentkezési adatok.", "from": "A playlist is added on the browser dashboard’s Home tab, where its link or login can be typed."},
- "tv.home.tv.noPlaylist": {"text": "Nincs lejátszási lista", "from": "No playlist"}
+ "tv.home.tv.noPlaylist": {"text": "Nincs lejátszási lista", "from": "No playlist"},
+ "apps.group.net": {"text": "Hálózat", "from": "Network"},
+ "apps.group.net.desc": {"text": "Hogyan érik el az alkalmazások az internetet.", "from": "How apps reach the internet."},
+ "apps.dns": {"text": "DNS egyetlen alkalmazásnak", "from": "DNS for one app"},
+ "apps.dns.desc": {"text": "Az itt szereplő alkalmazás saját DNS-kiszolgálókkal oldhatja fel a neveket, például 1.1.1.1-gyel vagy egy Pi-hole-lal, miközben a TV minden más része továbbra is a TV DNS-ét használja. A módosítás az alkalmazás következő indításakor lép életbe. Csak azok az alkalmazások jelennek meg, amelyeket az LG saját homokozóban futtat, és csak miután megnyitották őket; a webes alkalmazások egyetlen közös folyamatban futnak, így nem kaphatnak sajátot.", "from": "An app here can look names up with DNS servers of its own, such as 1.1.1.1 or a Pi-hole, while everything else on the TV keeps using the TV's. A change takes effect the next time the app starts. Only apps LG runs in a sandbox of their own are listed, once they have been opened; web apps share one process and cannot have their own."},
+ "apps.dns.noneSet": {"text": "Nincs beállítva", "from": "None set"},
+ "apps.dns.setOne": {"text": "1 alkalmazás saját DNS-sel", "from": "1 app with its own"},
+ "apps.dns.set": {"text": "{n} alkalmazás saját DNS-sel", "from": "{n} apps with their own"},
+ "apps.dns.noApps": {"text": "Még egyetlen homokozós alkalmazást sem nyitottak meg.", "from": "No sandboxed app has been opened yet."},
+ "apps.dns.tvOwn": {"text": "A TV DNS-e", "from": "The TV's DNS"},
+ "apps.dns.change": {"text": "Módosítás", "from": "Change"},
+ "apps.dns.reset": {"text": "A TV DNS-ének használata", "from": "Use the TV's DNS"},
+ "apps.dns.placeholder": {"text": "Legfeljebb 3 cím, például 1.1.1.1, 1.0.0.1", "from": "Up to 3 addresses, such as 1.1.1.1, 1.0.0.1"},
+ "apps.dns.servers": {"text": "DNS-kiszolgálók", "from": "DNS servers"},
+ "srv.appdns.badAddress": {"text": "nem IP-cím: {address}", "from": "not an IP address: {address}"},
+ "srv.appdns.tooMany": {"text": "legfeljebb 3 DNS-kiszolgáló használható", "from": "at most 3 DNS servers can be used"},
+ "srv.appdns.notOffered": {"text": "Ennek az alkalmazásnak nem lehet saját DNS-e", "from": "This app cannot have its own DNS"}
 }

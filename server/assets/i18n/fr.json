@@ -431,6 +431,50 @@
   "from": "1 app",
   "text": "1 app"
  },
+ "apps.dns": {
+  "from": "DNS for one app",
+  "text": "DNS pour une app"
+ },
+ "apps.dns.change": {
+  "from": "Change",
+  "text": "Modifier"
+ },
+ "apps.dns.desc": {
+  "from": "An app here can look names up with DNS servers of its own, such as 1.1.1.1 or a Pi-hole, while everything else on the TV keeps using the TV's. A change takes effect the next time the app starts. Only apps LG runs in a sandbox of their own are listed, once they have been opened; web apps share one process and cannot have their own.",
+  "text": "Une app de cette liste peut résoudre les noms avec ses propres serveurs DNS, comme 1.1.1.1 ou un Pi-hole, pendant que tout le reste de la TV continue d'utiliser ceux de la TV. Un changement prend effet au prochain démarrage de l'app. Seules les apps que LG exécute dans leur propre bac à sable sont listées, une fois qu'elles ont été ouvertes ; les apps web partagent un seul processus et ne peuvent pas avoir les leurs."
+ },
+ "apps.dns.noApps": {
+  "from": "No sandboxed app has been opened yet.",
+  "text": "Aucune app isolée n'a encore été ouverte."
+ },
+ "apps.dns.noneSet": {
+  "from": "None set",
+  "text": "Aucun défini"
+ },
+ "apps.dns.placeholder": {
+  "from": "Up to 3 addresses, such as 1.1.1.1, 1.0.0.1",
+  "text": "Jusqu'à 3 adresses, comme 1.1.1.1, 1.0.0.1"
+ },
+ "apps.dns.reset": {
+  "from": "Use the TV's DNS",
+  "text": "Utiliser le DNS de la TV"
+ },
+ "apps.dns.servers": {
+  "from": "DNS servers",
+  "text": "Serveurs DNS"
+ },
+ "apps.dns.set": {
+  "from": "{n} apps with their own",
+  "text": "{n} apps avec leur propre DNS"
+ },
+ "apps.dns.setOne": {
+  "from": "1 app with its own",
+  "text": "1 app avec son propre DNS"
+ },
+ "apps.dns.tvOwn": {
+  "from": "The TV's DNS",
+  "text": "Le DNS de la TV"
+ },
  "apps.group.apps": {
   "from": "Apps",
   "text": "Apps"
@@ -454,6 +498,14 @@
  "apps.group.launch.desc": {
   "from": "What the remote’s keys open.",
   "text": "Ce qu'ouvrent les touches de la télécommande."
+ },
+ "apps.group.net": {
+  "from": "Network",
+  "text": "Réseau"
+ },
+ "apps.group.net.desc": {
+  "from": "How apps reach the internet.",
+  "text": "Comment les apps accèdent à internet."
  },
  "apps.heading": {
   "from": "Apps & Home Screen Launcher",
@@ -6874,6 +6926,18 @@
  "srv.adblock.saveFailed": {
   "from": "could not save the ad block setting: {error}",
   "text": "impossible d'enregistrer le réglage de blocage de pub : {error}"
+ },
+ "srv.appdns.badAddress": {
+  "from": "not an IP address: {address}",
+  "text": "ce n'est pas une adresse IP : {address}"
+ },
+ "srv.appdns.notOffered": {
+  "from": "This app cannot have its own DNS",
+  "text": "Cette app ne peut pas avoir son propre DNS"
+ },
+ "srv.appdns.tooMany": {
+  "from": "at most 3 DNS servers can be used",
+  "text": "3 serveurs DNS au maximum peuvent être utilisés"
  },
  "srv.apps.addRefused": {
   "from": "the TV would not add it",
