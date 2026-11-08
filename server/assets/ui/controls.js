@@ -1,4 +1,4 @@
-// The Control and Advanced tabs: power, volume, backlight, toasts, URLs and the TV's switches.
+// The Control, System and Ambient light tabs: power, volume, backlight and the TV's switches.
 
 let errTimer = null;
 function clearErr() {
@@ -41,6 +41,17 @@ function toggleLgLogo() { sendCommand('lgLogo', flip('btn_lglogo')); }
 function togglePiccap() { sendCommand('piccap', flip('btn_piccap')); }
 function toggleHuesync() { sendCommand('huesync', flip('btn_huesync')); }
 function toggleWol() { sendCommand('wakeOnLan', flip('btn_wol')); }
+
+function renderAmbientPower(which, on) {
+  advPill(which, 'btn_' + which, on);
+  const quick = q('ctl_' + which);
+  if (!quick) return;
+  quick.hidden = on === undefined;
+  if (on === undefined) return;
+  quick.classList.toggle('on', !!on);
+  quick.setAttribute('aria-pressed', String(!!on));
+  q('ctl_' + which + '_state').textContent = on ? t('common.on', 'On') : t('common.off', 'Off');
+}
 function toggleDeviceDetection() { sendCommand('deviceDetection', flip('btn_devdetect')); }
 function toggleDeviceScans() { sendCommand('deviceScans', flip('btn_devscans')); }
 function toggleAlwaysReady() { sendCommand('alwaysReady', flip('btn_ar')); }
@@ -171,11 +182,11 @@ function applyOptimistic(action, value) {
   } else if (action === 'piccap') {
     const on = value === 'on' || value === true;
     setLease('piccap', on);
-    advPill('piccap', 'btn_piccap', on);
+    renderAmbientPower('piccap', on);
   } else if (action === 'huesync') {
     const on = value === 'on' || value === true;
     setLease('huesync', on);
-    advPill('huesync', 'btn_huesync', on);
+    renderAmbientPower('huesync', on);
   } else if (action === 'standbyLight') {
     const on = value === 'on' || value === true;
     setLease('standbyLight', on);
@@ -825,12 +836,11 @@ function renderHuesyncSettings(hs) {
   const notReady = diagnostics.busy === true || diagnostics.ready &&
     (diagnostics.ready.ready === false || diagnostics.ready.supported === false) || diagnostics.bridge &&
     (diagnostics.bridge.Connected === false || diagnostics.bridge.Authorized === false);
-  const streamingButton = q('btn_huesync');
-  if (streamingButton) streamingButton.disabled = huesyncSettingsBusy || !!notReady || hs && hs.writable === false;
+  for (const id of ['btn_huesync', 'ctl_huesync']) {
+    q(id).disabled = huesyncSettingsBusy || !!notReady || hs && hs.writable === false;
+  }
   const advanced = ['background_lightning_video', 'background_lightning_games', 'auto_start', 'auto_start_notification'];
   container.hidden = !['brightness', 'intensity', 'sync_mode', 'current_ec', ...advanced].some(key => settings[key] !== undefined);
-  const more = q('huesync-more');
-  if (more) more.hidden = !advanced.some(key => settings[key] !== undefined);
   const choices = {
     intensity: [t('adv.huesync.subtle', 'Subtle'), t('adv.huesync.moderate', 'Moderate'), t('adv.huesync.high', 'High'), t('adv.huesync.extreme', 'Extreme')].map((label, index) => ({ value: String(index), label })),
     sync_mode: [{ value: '0', label: t('adv.huesync.video', 'Video') }, { value: '1', label: t('adv.huesync.game', 'Game') }],

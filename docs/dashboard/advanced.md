@@ -60,14 +60,12 @@ The limits are counted by [watch time](metrics.md#watch-time), so they apply onl
 
 * **Block TV software updates:** Stops the TV installing LG's system updates, which can take away the access Glasshouse runs with. Apps and Glasshouse's own updates are unaffected.
 
-## Display and ambient light
+## Display
 
 ![Display: the LG logo switch](../screenshots/advanced-display.png)
 
 * **12-hour clock:** Shows the time as `9:40 PM` rather than `21:40` on the TV dashboard, Glasshouse Home and the clock screen savers. Sets the TV's `timeFormat` preference (`HH12` or `HH24`), which webOS seeds as `HH12` by default and gives no menu switch for.
 * **LG logo:** Controls whether the LG logo animation displays during power-on and power-off (LG Logo Display).
-* **Ambient light (PicCap):** When PicCap is installed, captures on-screen content and streams it to a Hyperion server to drive ambient backlighting behind the TV. Turning it off stops video capture and the ambient lighting with it. See [PicCap and ambient light](../piccap.md) for how it works and setup details.
-* **Ambient light (Hue Sync):** When the Hue Sync app is installed, starts and stops its streaming of what is on screen to Philips Hue and Ambience lights. Turning it off stops the streaming and the light with it. See [Hue Sync](../huesync.md) for setup details.
 
 ## HDMI inputs
 
@@ -94,8 +92,4 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 
 *The TV's own settings, grouped as Power & standby, Timers, Screen time, System updates, Display, Sound, HDMI inputs, Devices and Front lights.*
 
-Where Hue Sync reports its settings, the Ambient light section shows streaming,
-brightness, intensity, Video/Game mode and entertainment area. **More settings**
-holds background light for each mode, automatic start and its notification.
-Unavailable controls stay visible but disabled. Failed actions show a brief
-error; there is no readiness paragraph. See [Hue Sync](../huesync.md#sync-settings).
+PicCap and Hue Sync have their own [Ambient light](ambient-light.md) page.

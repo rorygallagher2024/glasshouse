@@ -232,3 +232,8 @@ auto-start setters are confirmed by a retail-app capture; Glasshouse itself
 still requires hardware testing. Automatic-start notifications use the same
 boolean setter. A read-only Hue Sync subscription keeps the web, TV and MQTT controls current;
 pairing, reset, analytics and logging-upload actions are not invoked.
+
+Ambient light has its own top-level page after Home in both dashboards. It holds
+PicCap and all Hue Sync controls directly, with independent switches. The web
+Control page also has quick toggles below Playback, using the same commands and
+write permissions.

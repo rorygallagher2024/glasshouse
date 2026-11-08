@@ -147,11 +147,11 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
   console.log('  ✓ optionRows groups Power & standby and Timers with distinct headers');
 })();
 
-// Hue Sync has the same primary controls and a compact secondary list on TV.
+// Ambient light keeps both integrations and every Hue Sync control directly accessible.
 (function testHuesyncRows() {
   var settings = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/huesync-settings.json'), 'utf8')).settings;
   var hs = { streaming: true, writable: true, settings: settings };
-  function options() { return sandbox.optionRows({ ok: true, huesyncStreaming: hs }); }
+  function options() { return sandbox.ambientRows({ ok: true, huesyncStreaming: hs }); }
   function row(key) { return options().filter(function (r) { return r.key === key; })[0]; }
   assert.strictEqual(options().filter(function (r) { return r.head && r.label === 'Hue Sync'; }).length, 1);
   assert.strictEqual(row('streaming').act, 'huesync');
@@ -162,15 +162,13 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
   assert.strictEqual(row('intensity').next, 3, 'intensity stays numeric');
   assert.strictEqual(row('sync_mode').next, '1', 'mode stays a string');
   assert.strictEqual(row('current_ec').next, 'area-example-b', 'duplicate area names still use distinct IDs');
-  assert.strictEqual(row('auto_start'), undefined, 'secondary options are outside the main list');
-  assert.strictEqual(row('huesyncMore').act, 'open');
-  var more = sandbox.huesyncMoreRows({ ok: true, huesyncStreaming: hs });
-  assert.strictEqual(more[0].act, 'close');
-  assert.strictEqual(more.filter(function (r) { return r.act === 'huesyncSetting'; }).length, 4);
+  assert.strictEqual(row('auto_start').act, 'huesyncSetting', 'startup switches are on the main page');
+  assert.strictEqual(options().filter(function (r) { return r.act === 'huesyncSetting'; }).length, 7);
+  assert.strictEqual(options().some(function (r) { return r.act === 'open'; }), false, 'there is no settings submenu');
   hs.writable = false;
   assert.strictEqual(row('streaming').act, null);
   assert.strictEqual(row('brightness').act, null);
-  assert.strictEqual(sandbox.huesyncMoreRows({ ok: true, huesyncStreaming: hs }).filter(function (r) { return r.act === 'huesyncSetting'; }).length, 0);
+  assert.strictEqual(options().filter(function (r) { return r.act; }).length, 0, 'all controls respect read-only mode');
   hs.writable = true;
   hs.diagnostics = { busy: true };
   assert.strictEqual(row('intensity').act, null);
@@ -182,12 +180,38 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
   assert.strictEqual(row('current_ec').act, null);
   assert.strictEqual(row('intensity').act, 'huesyncSetting');
   delete settings._stale;
-  var partial = sandbox.optionRows({ ok: true, huesyncStreaming: { streaming: false, writable: true, settings: { brightness: 20 } } });
-  assert.strictEqual(partial.filter(function (r) { return r.key === 'huesyncMore'; }).length, 0, 'no empty More settings menu');
-  var empty = sandbox.optionRows({ ok: true });
+  var partial = sandbox.ambientRows({ ok: true, huesyncStreaming: { streaming: false, writable: true, settings: { brightness: 20 } } });
+  assert.strictEqual(partial.filter(function (r) { return r.key === 'auto_start'; }).length, 0, 'unsupported switches are omitted');
+  var empty = sandbox.ambientRows({ ok: true });
   assert.strictEqual(empty.filter(function (r) { return r.key === 'huesyncMore' || r.act === 'huesync'; }).length, 0);
-  assert.strictEqual(sandbox.huesyncMoreRows({ ok: true }).length, 1, 'Back remains available when Hue Sync disappears');
-  console.log('  \u2713 Hue Sync TV rows, secondary options, native values and write permissions');
+  assert.strictEqual(empty[0].label, 'No ambient light integrations found.');
+  assert.strictEqual(sandbox.optionRows({ ok: true, huesyncStreaming: hs }).some(function (r) { return r.act === 'huesync'; }), false, 'System contains no ambient light controls');
+  console.log('  \u2713 Hue Sync ambient rows, native values and write permissions');
+})();
+
+(function testAmbientIntegrations() {
+  var keys = sandbox.TABS.map(function (section) { return section.key; });
+  var ambient = sandbox.TABS[keys.indexOf('ambient')];
+  assert.strictEqual(keys.indexOf('ambient'), keys.indexOf('home') + 1, 'Ambient light follows Home');
+  assert.strictEqual(ambient.url, '/api/stats', 'ambient controls need no unrelated LG settings');
+  assert.strictEqual(ambient.build, sandbox.ambientRows);
+  var pc = { running: true, writable: true };
+  var hs = { streaming: true, writable: true };
+  var combined = sandbox.ambientRows({ ok: true, piccapCapture: pc, huesyncStreaming: hs });
+  var capture = combined.filter(function (r) { return r.key === 'piccap'; })[0];
+  assert.strictEqual(capture.act, 'piccap');
+  assert.strictEqual(capture.next, false);
+  assert.strictEqual(combined.filter(function (r) { return r.key === 'streaming'; })[0].next, false,
+    'both integrations can be on independently');
+  pc.running = false;
+  pc.writable = false;
+  var only = sandbox.ambientRows({ ok: true, piccapCapture: pc });
+  assert.strictEqual(only.length, 1, 'PicCap works without Hue Sync');
+  assert.strictEqual(only[0].value, 'Off');
+  assert.strictEqual(only[0].next, true);
+  assert.strictEqual(only[0].act, null, 'PicCap respects read-only mode');
+  assert.strictEqual(sandbox.SUBLISTS.huesyncMore, undefined, 'no ambient submenu remains');
+  console.log('  \u2713 top-level Ambient light menu, independent integrations and empty state');
 })();
 
 // 4. page() jumps through rows skipping headers and clamps to bounds

@@ -3095,5 +3095,6 @@
  "tv.saver.exclude": {"text": "Naciśnij OK, aby wykluczyć z losowej rotacji", "from": "Press OK to exclude from random rotation"},
  "tv.saver.include": {"text": "Naciśnij OK, aby dołączyć do losowej rotacji", "from": "Press OK to include in random rotation"},
  "tv.saver.random.hint": {"text": "Wybiera inny wygaszacz ekranu za każdym razem.", "from": "Picks a different screen saver each time."},
- "tv.saver.random.hintUpNext": {"text": "Wybiera inny wygaszacz ekranu za każdym razem. Następny: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
+ "tv.saver.random.hintUpNext": {"text": "Wybiera inny wygaszacz ekranu za każdym razem. Następny: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
+ "ambient.none": {"from": "No ambient light integrations found.", "text": "Nie znaleziono integracji oświetlenia otoczenia."}
 }

@@ -426,6 +426,7 @@ var TABS = [
   { key: 'audio',   label: t('tab.audio', 'Audio'),        url: '/api/audio?with=settings', build: audioRows, poll: 8000 },
   { key: 'saver',   label: t('tv.tab.screenSaver', 'Screen Saver'), url: '/api/screensaver', build: saverRows, optional: true },
   { key: 'home',    label: t('tab.home', 'Home'),         url: '/api/home?with=catalogue,channels,lghome', build: homeRows, optional: true },
+  { key: 'ambient', label: t('adv.ambient', 'Ambient light'), url: '/api/stats', build: ambientRows, poll: 5000 },
   { key: 'privacy', label: t('tab.privacy', 'Privacy'),      url: '/api/privacy',     build: privacyRows },
   { key: 'service', label: t('tv.tab.serviceMenu', 'Service Menu'), url: '/api/servicemenu', build: svcRows },
   { key: 'options', label: t('tv.tab.system', 'System'),       url: '/api/stats?with=settings', build: optionRows, poll: 5000 },
@@ -671,10 +672,6 @@ function optionRows(d) {
     if (lights.hasLogo)
       r.push(toggle(t('adv.logoLight', 'Logo light'), lights.logo, 'logoLight', t('tv.options.logoLight.hint', 'The lit LG logo on the front of the TV.')));
   }
-  if (d.huesyncStreaming) {
-    r.push(head(t('adv.huesync.title', 'Hue Sync')));
-    r = r.concat(huesyncRows(d.huesyncStreaming, false));
-  }
   // Last, away from the row the tab opens on, so a stray OK lands nowhere near them.
   if (allowPower) {
     r.push(head(t('adv.power', 'Power')));
@@ -689,11 +686,26 @@ function optionRows(d) {
   return r;
 }
 
-// The values LG's settings service accepts, in the order OK steps through them.
-var SLEEP_STEPS = ['off', '10', '30', '60', '90', '120'];
-// Hue Sync uses the same compact rows as the rest of System. Raw values/IDs
+function ambientRows(d) {
+  if (!d || !d.ok) return [];
+  var r = [], pc = d.piccapCapture;
+  if (pc) {
+    var writable = pc.writable !== false;
+    r.push({ label: t('adv.piccap', 'PicCap capture'), value: pc.running ? t('common.on', 'On') : t('common.off', 'Off'),
+      cls: writable ? 'act' : '', act: writable ? 'piccap' : null, key: 'piccap', next: !pc.running,
+      press: pc.running ? t('tv.press.turnOff', 'Press OK to turn off') : t('tv.press.turnOn', 'Press OK to turn on') });
+  }
+  if (d.huesyncStreaming) {
+    r.push(head(t('adv.huesync.title', 'Hue Sync')));
+    r = r.concat(huesyncRows(d.huesyncStreaming));
+  }
+  if (!r.length) r.push({ label: t('ambient.none', 'No ambient light integrations found.'), value: '' });
+  return r;
+}
+
+// Hue Sync uses compact rows. Raw values/IDs
 // stay on the rows; translated labels and area names are display-only.
-function huesyncRows(hs, more) {
+function huesyncRows(hs) {
   if (!hs) return [];
   var r = [], settings = hs.settings || {}, stale = settings._stale || [];
   var status = hs.diagnostics || {};
@@ -715,41 +727,32 @@ function huesyncRows(hs, more) {
       cls: can(key) ? 'act' : '', act: can(key) ? 'huesyncSetting' : null,
       key: key, next: next.value, press: t('tv.game.next', 'Press OK for {name}', { name: next.label }) });
   }
-  if (!more) {
-    toggle('streaming', t('adv.huesync.streaming', 'Streaming'), hs.streaming === true, 'huesync');
-    if (settings.brightness !== undefined) {
-      r.push({ label: t('adv.huesync.brightness', 'Brightness'), value: withUnit(settings.brightness, '%'),
-        cls: can('brightness') ? 'act' : '', act: can('brightness') ? 'huesyncAdjust' : null,
-        key: 'brightness', cur: settings.brightness, min: 0, max: 100, fmt: 'percent',
-        press: t('tv.pic.adjust', 'Press OK to adjust') });
-    }
-    choice('intensity', t('adv.huesync.intensity', 'Intensity'), [
-      { value: 0, label: t('adv.huesync.subtle', 'Subtle') }, { value: 1, label: t('adv.huesync.moderate', 'Moderate') },
-      { value: 2, label: t('adv.huesync.high', 'High') }, { value: 3, label: t('adv.huesync.extreme', 'Extreme') }
-    ]);
-    choice('sync_mode', t('adv.huesync.syncmode', 'Synchronization mode'), [
-      { value: '0', label: t('adv.huesync.video', 'Video') }, { value: '1', label: t('adv.huesync.game', 'Game') }
-    ]);
-    choice('current_ec', t('adv.huesync.currentec', 'Entertainment area'), (settings.ec_list || []).map(function (area) {
-      return { value: area.id, label: area.name };
-    }));
-    if (['background_lightning_video', 'background_lightning_games', 'auto_start', 'auto_start_notification'].some(function (key) { return settings[key] !== undefined; })) {
-      r.push({ label: t('adv.huesync.more', 'More settings'), value: '→', act: 'open', key: 'huesyncMore' });
-    }
-  } else {
-    if (settings.background_lightning_video !== undefined) toggle('background_lightning_video', t('adv.huesync.backgroundlightningvideo', 'Background light (video)'), settings.background_lightning_video);
-    if (settings.background_lightning_games !== undefined) toggle('background_lightning_games', t('adv.huesync.backgroundlightninggames', 'Background light (game)'), settings.background_lightning_games);
-    if (settings.auto_start !== undefined) toggle('auto_start', t('adv.huesync.autostart', 'Automatic start'), settings.auto_start);
-    if (settings.auto_start_notification !== undefined) toggle('auto_start_notification', t('adv.huesync.autostartnotification', 'Automatic start notification'), settings.auto_start_notification);
+  toggle('streaming', t('adv.huesync.streaming', 'Streaming'), hs.streaming === true, 'huesync');
+  if (settings.brightness !== undefined) {
+    r.push({ label: t('adv.huesync.brightness', 'Brightness'), value: withUnit(settings.brightness, '%'),
+      cls: can('brightness') ? 'act' : '', act: can('brightness') ? 'huesyncAdjust' : null,
+      key: 'brightness', cur: settings.brightness, min: 0, max: 100, fmt: 'percent',
+      press: t('tv.pic.adjust', 'Press OK to adjust') });
   }
+  choice('intensity', t('adv.huesync.intensity', 'Intensity'), [
+    { value: 0, label: t('adv.huesync.subtle', 'Subtle') }, { value: 1, label: t('adv.huesync.moderate', 'Moderate') },
+    { value: 2, label: t('adv.huesync.high', 'High') }, { value: 3, label: t('adv.huesync.extreme', 'Extreme') }
+  ]);
+  choice('sync_mode', t('adv.huesync.syncmode', 'Synchronization mode'), [
+    { value: '0', label: t('adv.huesync.video', 'Video') }, { value: '1', label: t('adv.huesync.game', 'Game') }
+  ]);
+  choice('current_ec', t('adv.huesync.currentec', 'Entertainment area'), (settings.ec_list || []).map(function (area) {
+    return { value: area.id, label: area.name };
+  }));
+  if (settings.background_lightning_video !== undefined) toggle('background_lightning_video', t('adv.huesync.backgroundlightningvideo', 'Background light (video)'), settings.background_lightning_video);
+  if (settings.background_lightning_games !== undefined) toggle('background_lightning_games', t('adv.huesync.backgroundlightninggames', 'Background light (game)'), settings.background_lightning_games);
+  if (settings.auto_start !== undefined) toggle('auto_start', t('adv.huesync.autostart', 'Automatic start'), settings.auto_start);
+  if (settings.auto_start_notification !== undefined) toggle('auto_start_notification', t('adv.huesync.autostartnotification', 'Automatic start notification'), settings.auto_start_notification);
   return r;
 }
 
-function huesyncMoreRows(d) {
-  return [{ label: t('tv.huesync.back', '‹ Hue Sync'), value: '', act: 'close',
-    press: t('tv.backRow.privacy.press', 'Press OK or Back to return') }].concat(huesyncRows(d && d.huesyncStreaming, true));
-}
-
+// The values LG's settings service accepts, in the order OK steps through them.
+var SLEEP_STEPS = ['off', '10', '30', '60', '90', '120'];
 function sleepRow(cur) {
   var words = { off: t('common.off', 'Off'), '10': t('ctl.sleep.10', '10 min'), '30': t('ctl.sleep.30', '30 min'),
                 '60': t('ctl.sleep.60', '60 min'), '90': t('ctl.sleep.90', '90 min'), '120': t('ctl.sleep.120', '120 min') };
@@ -2052,10 +2055,10 @@ function privacyRows(d) {
  * the first row, returns to it. A switch that changes the TV reloads the list,
  * since LG ties some consents together and one can take others with it.
  */
-var SUBLISTS = { huesyncMore: huesyncMoreRows, consents: consentRows, services: serviceRows, catalog: catalogRows, homeChannels: homeChannelRows,
+var SUBLISTS = { consents: consentRows, services: serviceRows, catalog: catalogRows, homeChannels: homeChannelRows,
   homeApps: homeAppsRows, homeInputs: homeInputsRows, homeCh: homeChRows, homeMotion: homeMotionListRows, homeOrder: homeOrderRows,
   tvLineup: tvLineupRows, tvSection: tvSectionRows, tvGroups: tvGroupsRows, tvGroup: tvGroupRows };
-var SUBTAB = { huesyncMore: 'options', consents: 'privacy', services: 'privacy', catalog: 'apps', homeChannels: 'home',
+var SUBTAB = { consents: 'privacy', services: 'privacy', catalog: 'apps', homeChannels: 'home',
   homeApps: 'home', homeInputs: 'home', homeCh: 'home', homeMotion: 'home', homeOrder: 'home',
   tvLineup: 'home', tvSection: 'home', tvGroups: 'home', tvGroup: 'home' };
 var sub = null, subFrom = 0;
@@ -3688,8 +3691,9 @@ function activate() {
     case 'consent':
       return send({ action: 'consent', value: { key: r.key, enabled: !r.on } },
                   r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
+    case 'piccap':
     case 'huesync':
-      return send({ action: 'huesync', value: r.next });
+      return send({ action: r.act, value: r.next });
     case 'huesyncSetting':
       return send({ action: 'huesyncSetting', value: { key: r.key, value: r.next } });
     case 'huesyncAdjust':

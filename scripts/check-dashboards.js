@@ -2809,40 +2809,77 @@ async function visitHuesyncSettings(browser, base, problems) {
     ec_list: [{ id: 'area-a', name: '<img src=x onerror=alert(1)>' }, { id: 'area-b', name: 'TV' }],
     background_lightning_video: true, background_lightning_games: false, auto_start: false, auto_start_notification: true };
   const diagnostics = { ready: { ready: true, supported: true }, bridge: { Connected: true, Authorized: true }, busy: false };
-  let writable = true, supported = true, refuse = false;
+  let writable = true, supported = true, refuse = false, streaming = true, piccapRunning = false, piccapPresent = true, huesyncPresent = true;
   const writes = [];
   try {
     await page.route('**/api/stats*', async route => {
       const response = await route.fetch();
       const stats = await response.json();
-      stats.huesyncStreaming = { streaming: true, writable, diagnostics, settings: supported ? settings : {} };
+      delete stats.piccapCapture;
+      delete stats.huesyncStreaming;
+      if (piccapPresent) stats.piccapCapture = { running: piccapRunning, writable };
+      if (huesyncPresent) stats.huesyncStreaming = { streaming, writable, diagnostics, settings: supported ? settings : {} };
       await route.fulfill({ json: stats });
     });
     await page.route('**/api/control', async route => {
       const command = route.request().postDataJSON();
       writes.push(command);
       if (command.action === 'huesyncSetting' && !refuse) settings[command.value.key] = command.value.value;
+      if (command.action === 'piccap' && !refuse) piccapRunning = command.value === 'on';
+      if (command.action === 'huesync' && !refuse) streaming = command.value === 'on';
       await route.fulfill({ json: { ok: !refuse, settings } });
     });
     await page.goto(base + '/?tab=advanced');
+    if (await page.locator('#advpane #row-piccap, #advpane #row-huesync').count()) fail('ambient controls remain in System');
+    const followsHome = await page.locator('#tabs [data-tab="ambient"]').evaluate(el => el.previousElementSibling.dataset.tab === 'home');
+    if (!followsHome) fail('Ambient light does not follow Home');
+    await page.locator('#tabs [data-tab="ambient"]').click();
     await page.waitForSelector('#huesync-settings:not([hidden])');
+    if (await page.locator('#huesync-settings').evaluate(el => el.closest('.panel').id) !== 'ambientpane') fail('settings are on the wrong page');
+    await page.locator('#btn_piccap').click();
+    await page.waitForFunction(() => document.getElementById('btn_piccap').dataset.on === '1');
+    if (!piccapRunning || !streaming || writes.some(command => command.action === 'huesync')) fail('turning on PicCap changed Hue Sync');
+    await page.locator('#btn_huesync').click();
+    await page.waitForFunction(() => document.getElementById('btn_huesync').dataset.on === '');
+    if (!piccapRunning || writes.filter(command => command.action === 'piccap').length !== 1) fail('turning off Hue Sync changed PicCap');
+    await page.evaluate(() => showTab('control'));
+    await page.waitForSelector('#control-ambient:not([hidden])');
+    const underPlayback = await page.evaluate(() => document.getElementById('control-ambient').getBoundingClientRect().top >= document.querySelector('.playback-btns').getBoundingClientRect().bottom);
+    if (!underPlayback) fail('remote toggles are not below Playback');
+    if (await page.locator('#ctl_piccap').getAttribute('aria-pressed') !== 'true' || await page.locator('#ctl_huesync').getAttribute('aria-pressed') !== 'false') fail('remote toggle states differ from Ambient light');
+    await page.locator('#ctl_huesync').click();
+    await page.waitForFunction(() => document.getElementById('ctl_huesync').getAttribute('aria-pressed') === 'true' && document.getElementById('btn_huesync').dataset.on === '1');
+    await page.locator('#ctl_piccap').click();
+    await page.waitForFunction(() => document.getElementById('ctl_piccap').getAttribute('aria-pressed') === 'false' && document.getElementById('btn_piccap').dataset.on === '');
+    if (!streaming || piccapRunning) fail('remote quick toggles are not independent');
+    await page.evaluate(() => showTab('ambient'));
     if (await page.locator('#huesync-current_ec option').first().textContent() !== settings.ec_list[0].name) fail('area name was not rendered as text');
     if (await page.locator('#huesync-settings img').count()) fail('area markup was interpreted');
     if (await page.locator('#huesync-readiness').count()) fail('readiness paragraph is still shown');
-    if (await page.locator('#huesync-more').getAttribute('open') !== null) fail('secondary settings start expanded');
-    if (await page.locator('#huesync-auto_start').isVisible()) fail('secondary settings are in the main controls');
+    if (await page.locator('#huesync-more').count()) fail('More settings submenu remains');
+    if (!(await page.locator('#huesync-auto_start').isVisible())) fail('startup switches are not directly accessible');
+    for (const [width, colorScheme] of [[390, 'light'], [1280, 'dark']]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme });
+      if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) fail('ambient page overflows at width ' + width);
+    }
     const changes = [
       ['brightness', 60], ['intensity', 3], ['sync_mode', '0'], ['current_ec', 'area-b'],
       ['background_lightning_video', false], ['background_lightning_games', true], ['auto_start', true], ['auto_start_notification', false]
     ];
     for (const [key, value] of changes) {
-      if (key === 'background_lightning_video') await page.locator('#huesync-more summary').click();
+      await page.evaluate(() => tick());
+      const reply = page.waitForResponse(response => {
+        if (new URL(response.url()).pathname !== '/api/control') return false;
+        const command = response.request().postDataJSON();
+        return command.action === 'huesyncSetting' && command.value.key === key;
+      });
       const element = page.locator('#huesync-' + key);
       if (typeof value === 'boolean') await element.setChecked(value);
       else if (key === 'brightness') { await element.fill(String(value)); await element.dispatchEvent('change'); }
       else await element.selectOption(String(value));
+      const command = (await reply).request().postDataJSON();
       await page.waitForFunction(() => !huesyncSettingsBusy);
-      const command = writes[writes.length - 1];
       if (!command || command.action !== 'huesyncSetting' || command.value.key !== key || command.value.value !== value) fail('wrong command for ' + key);
     }
     refuse = true;
@@ -2857,7 +2894,7 @@ async function visitHuesyncSettings(browser, base, problems) {
     delete settings._stale;
     diagnostics.busy = true;
     await page.evaluate(() => tick());
-    await page.waitForFunction(() => document.querySelector('#btn_huesync').disabled && document.querySelector('#huesync-auto_start').disabled);
+    await page.waitForFunction(() => document.querySelector('#btn_huesync').disabled && document.querySelector('#ctl_huesync').disabled && document.querySelector('#huesync-auto_start').disabled);
     diagnostics.busy = false;
     diagnostics.bridge.Authorized = false;
     await page.evaluate(() => tick());
@@ -2866,14 +2903,26 @@ async function visitHuesyncSettings(browser, base, problems) {
     diagnostics.bridge.Authorized = true;
     writable = false;
     await page.evaluate(() => tick());
-    await page.waitForFunction(() => document.querySelector('#huesync-brightness').disabled);
+    await page.waitForFunction(() => document.querySelector('#huesync-brightness').disabled && document.querySelector('#btn_piccap').disabled && document.querySelector('#ctl_piccap').disabled && document.querySelector('#ctl_huesync').disabled);
     for (const key of ['background_lightning_video', 'background_lightning_games', 'auto_start', 'auto_start_notification']) delete settings[key];
     await page.evaluate(() => tick());
-    await page.waitForSelector('#huesync-more[hidden]', { state: 'attached' });
+    await page.waitForSelector('#row-huesync-auto_start[hidden]', { state: 'attached' });
     if (!(await page.locator('#huesync-brightness').isVisible())) fail('primary controls disappeared with unsupported secondary settings');
     supported = false;
     await page.evaluate(() => tick());
     await page.waitForSelector('#huesync-settings[hidden]', { state: 'attached' });
+    huesyncPresent = false;
+    await page.evaluate(() => tick());
+    await page.waitForSelector('#row-huesync[hidden]', { state: 'attached' });
+    if (!(await page.locator('#row-piccap').isVisible())) fail('PicCap disappeared with Hue Sync');
+    piccapPresent = false;
+    await page.evaluate(() => tick());
+    await page.waitForSelector('#ambient-empty:not([hidden])');
+    if (!(await page.locator('#control-ambient').isHidden())) fail('empty remote toggle group remains visible');
+    huesyncPresent = true;
+    await page.evaluate(() => tick());
+    await page.waitForSelector('#row-huesync:not([hidden])');
+    if (await page.locator('#ambient-empty').isVisible()) fail('empty message remains with Hue Sync alone');
   } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
 }
 
@@ -2885,7 +2934,7 @@ async function visitTvHuesync(browser, base, problems) {
   settings.ec_list[0].name = '<img src=x onerror=alert(1)>';
   const diagnostics = { busy: false, bridge: { Connected: true, Authorized: true } };
   const writes = [];
-  let writable = true, present = true, refuse = false, streaming = true;
+  let writable = true, present = true, refuse = false, streaming = true, piccapRunning = true, piccapPresent = true;
   async function choose(key) {
     await page.evaluate(key => {
       sel = rows.findIndex(row => row.key === key);
@@ -2903,6 +2952,8 @@ async function visitTvHuesync(browser, base, problems) {
       const response = await route.fetch();
       const stats = await response.json();
       delete stats.huesyncStreaming;
+      delete stats.piccapCapture;
+      if (piccapPresent) stats.piccapCapture = { running: piccapRunning, writable };
       if (present) stats.huesyncStreaming = { streaming, writable, diagnostics, settings };
       await route.fulfill({ json: stats });
     });
@@ -2912,12 +2963,19 @@ async function visitTvHuesync(browser, base, problems) {
       if (!refuse) {
         if (command.action === 'huesyncSetting') settings[command.value.key] = command.value.value;
         if (command.action === 'huesync') streaming = command.value;
+        if (command.action === 'piccap') piccapRunning = command.value;
       }
       await route.fulfill({ json: { ok: !refuse, error: refuse ? 'Synthetic failure' : undefined, settings } });
     });
-    await page.goto(base + '/assets/dashboard.html?tab=options');
+    await page.goto(base + '/assets/dashboard.html?tab=ambient');
     await page.waitForFunction(() => rows.some(row => row.act === 'huesyncAdjust'));
     if (await page.locator('#rows img').count()) fail('area name was interpreted as markup');
+    if (await page.evaluate(() => T().key) !== 'ambient') fail('ambient controls are not a top-level menu');
+    for (const value of [false, true]) {
+      await press('piccap');
+      await page.waitForFunction(value => rows.some(row => row.key === 'piccap' && row.next === !value), value);
+      if (writes[writes.length - 1].action !== 'piccap' || writes[writes.length - 1].value !== value || !streaming) fail('PicCap command changed Hue Sync');
+    }
     await press('streaming');
     if (writes[writes.length - 1].action !== 'huesync' || writes[writes.length - 1].value !== false) fail('streaming command is wrong');
     await choose('brightness');
@@ -2933,38 +2991,38 @@ async function visitTvHuesync(browser, base, problems) {
       const command = writes[writes.length - 1];
       if (command.action !== 'huesyncSetting' || command.value.key !== key || command.value.value !== value) fail('wrong native command for ' + key);
     }
-    await press('huesyncMore');
-    await page.waitForFunction(() => sub === 'huesyncMore');
-    if (await page.evaluate(() => rows.some(row => row.key === 'brightness'))) fail('primary settings were repeated in More settings');
+    if (await page.evaluate(() => rows.some(row => row.key === 'huesyncMore') || sub !== null)) fail('More settings submenu remains');
     for (const [key, value] of [['background_lightning_video', false], ['background_lightning_games', true], ['auto_start', false], ['auto_start_notification', true]]) {
       await press(key);
       const command = writes[writes.length - 1];
       if (command.action !== 'huesyncSetting' || command.value.key !== key || command.value.value !== value) fail('wrong secondary command for ' + key);
     }
-    await page.keyboard.press('ArrowLeft');
-    await page.waitForFunction(() => sub === null);
     refuse = true;
     await press('intensity');
     await page.waitForFunction(() => rows.some(row => row.key === 'intensity' && row.value === 'Extreme'));
     if (!(await page.locator('#flash').textContent()).includes('Synthetic failure')) fail('failed command had no short error');
     writable = false;
     await page.evaluate(() => fetchTab(true));
-    await page.waitForFunction(() => rows.some(row => row.key === 'streaming' && !row.act));
+    await page.waitForFunction(() => rows.some(row => row.key === 'streaming' && !row.act) && rows.some(row => row.key === 'piccap' && !row.act));
     const count = writes.length;
     await press('streaming');
+    await press('piccap');
     if (writes.length !== count) fail('read-only row sent a command');
     writable = true; diagnostics.busy = true;
     await page.evaluate(() => fetchTab(true));
     await page.waitForFunction(() => rows.some(row => row.key === 'brightness' && !row.act));
     await press('brightness');
     if (writes.length !== count) fail('busy row sent a command');
-    await press('huesyncMore');
-    await page.waitForFunction(() => sub === 'huesyncMore');
     present = false;
     await page.evaluate(() => fetchTab(true));
-    await page.waitForFunction(() => rows.length === 1 && rows[0].act === 'close');
+    await page.waitForFunction(() => rows.length === 1 && rows[0].key === 'piccap');
+    piccapPresent = false;
+    await page.evaluate(() => fetchTab(true));
+    await page.waitForFunction(() => rows.length === 1 && rows[0].label === 'No ambient light integrations found.');
+    await page.keyboard.press('ArrowRight');
+    await page.waitForFunction(() => T().key !== 'ambient');
     await page.keyboard.press('ArrowLeft');
-    await page.waitForFunction(() => !rows.some(row => row.act === 'huesync' || row.key === 'huesyncMore'));
+    await page.waitForFunction(() => T().key === 'ambient');
   } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
 }
 

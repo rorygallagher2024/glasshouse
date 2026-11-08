@@ -553,7 +553,7 @@ read/event races, transient availability, unsupported keys, external busy and
 readiness blockers, shared write serialization, delayed completion, ignored and
 delayed stops, subscription teardown and polling fallback. The dashboard check
 also exercises automatic-start notifications, stale controls remaining visible,
-busy/read-only locking and secondary settings without a status paragraph. Never add the raw setup capture, pairing
+busy/read-only locking and all settings without a submenu or status paragraph. Never add the raw setup capture, pairing
 codes, credentials, bridge/device IDs or real entertainment-area names to tests.
 
 The drift check includes Hue Sync's dynamic entity IDs from the catalogue,
@@ -568,10 +568,13 @@ missing JSON properties become `none` rather than undefined.
 The Hue Sync event tests also verify that internal readiness and busy status
 create no Home Assistant diagnostic entities or diagnostic MQTT publications.
 
-Hue Sync dashboard checks cover collapsed secondary web controls and the TV
-app's remote-driven streaming, brightness bar, intensity/mode/area cycles and
-secondary toggles. They check native command types, duplicate area names, failed
-writes, read-only/busy states and disappearing support. `test-dashboard-view.js`
-also checks TV row grouping and per-field stale permissions. Screenshots use
+Ambient light dashboard checks cover the top-level page below Home, every Hue
+Sync setting directly accessible, and independent PicCap/Hue Sync switches. The
+web Control shortcuts stay below Playback and share state and write permissions
+with Ambient light. Checks cover narrow/light and wide/dark layouts, native
+command types, duplicate area names, failed writes, read-only/busy states and
+disappearing integrations. `test-dashboard-view.js` also checks the TV menu
+order, flat row grouping, empty state and per-field stale permissions.
+`test-routes.js` verifies both integrations' write permissions. Screenshots use
 synthetic data. The Hue Sync checks wait for intercepted requests to finish
 before closing each page, so pending stats replies cannot outlive the page.

@@ -13,9 +13,9 @@ Hue Sync is optional. Glasshouse inspects the TV filesystem for the app's servic
 * **If Hue Sync is not installed:** Glasshouse never queries its Luna service, opens no Luna subscription and sends no network requests. Nothing about it appears anywhere.
 * **If Hue Sync is installed:** Glasshouse queries its service (`com.lighting.huesync.service/get`) to check whether streaming is active.
 
-### The toggle on the System tab
+### The Ambient light page
 
-When Hue Sync is installed, the **System** tab (`/?tab=advanced`) displays an **Ambient light** section with a **Hue Sync streaming** toggle, alongside the PicCap capture row:
+When Hue Sync is installed, the **Ambient light** page (`/?tab=ambient`), below Home in the sidebar, shows a **Hue Sync streaming** toggle alongside PicCap capture. The **Control** page also has a quick toggle below Playback:
 
 * **On:** Instructs Hue Sync's service to start streaming (`com.lighting.huesync.service/set` with `{"key":"streaming","data":true}`). The Ambience light starts following the screen. The app often does not start on an enable without saying so, so Glasshouse sends the enable, waits 3 seconds and asks the app's own state; if it still is not streaming, it sends the enable again, up to three tries in all: one click is enough.
 * **Off:** Instructs the service to stop (`data: false`). The Ambience light stops, and the app stops streaming colour with it.
@@ -67,8 +67,8 @@ action:
 ### In the Web Dashboard
 
 1. Open the Glasshouse dashboard in any browser.
-2. Go to the **System** tab (`/?tab=advanced`).
-3. Scroll down to **Ambient light** and click the **Hue Sync streaming** button to start or stop streaming.
+2. Go to **Ambient light** (`/?tab=ambient`), below Home in the sidebar.
+3. Click **Hue Sync streaming** to start or stop syncing, or use the quick toggle below Playback on **Control**.
 
 ### In Home Assistant
 
@@ -106,13 +106,11 @@ In `config.json`, the following settings govern Hue Sync:
 
 ## Sync settings
 
-The web dashboard and TV app's System sections offer brightness (0–100%), intensity
+The web dashboard and TV app's **Ambient light** pages offer brightness (0–100%), intensity
 (Subtle, Moderate, High, Extreme), synchronization mode (Video or Game),
 entertainment area, background light separately for video and games, and
-automatic start, and automatic-start notifications. Streaming, brightness,
-intensity, mode and entertainment area are shown directly. Background-light and
-startup options are under **More settings**. A setting appears only when the
-service returns a valid value.
+automatic start and automatic-start notifications. All controls are shown
+directly. A setting appears only when the service returns a valid value.
 Area names are displayed as text, with their IDs used for commands; areas sharing
 a name remain distinct. The area list is read from the app, not the Hue bridge.
 
@@ -162,7 +160,7 @@ by the retail app. Glasshouse does not invoke those setup or telemetry actions.
 
 The screenshot uses simulated service responses; it is not a hardware test.
 
-On the TV app, use **System → Hue Sync**. Press OK to toggle streaming or cycle
+On the TV app, use **Ambient light** in the top-level menu, after Home. Press OK to toggle streaming or cycle
 intensity, mode and entertainment area. For brightness, press OK, adjust with
-the arrow keys, then press OK or Back to finish. **More settings** opens the
-secondary switches; Left or Back returns.
+the arrow keys, then press OK or Back to finish. Background-light and startup
+switches are on the same page. PicCap and Hue Sync can run independently.
