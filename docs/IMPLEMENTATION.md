@@ -1285,17 +1285,25 @@ minutes after a failed one. A check every 10 minutes covers a remote kept
 awake. The subscription's updates are trusted for whether the remote is a
 Bluetooth one: asked once, the same method says it is not. On webOS 4,
 `com.webos.service.mrcu/getDeviceInfo` has the charge in `batteryLevel`, so it
-is asked first, and no Bluetooth connection is made where it answers; webOS 9
-and later answer `"-"`. The Bluetooth read is made only on webOS 9 and 10, where
-it has been tried: on a webOS 5 TV the remote lost its pointer and some buttons
-after waking once it began, until a reboot. Elsewhere the remote's battery is
-not shown. lginput2 holds the remote's own connection, and the
+is asked first, and no Bluetooth connection is made where it answers with a
+number from 0 to 100, or with `"HIGH"`, `"MID"` or `"LOW"` (an MR19 on a C9 or
+an MR25GA on a C5, given as 100, 50 and 10). The Bluetooth read is made only on
+webOS 9 and 10, where `getDeviceInfo` answers `"-"` and where it has been
+tested across standby cycles: on a webOS 5 TV the remote lost its pointer and
+some buttons after waking once Bluetooth reads began, until a reboot. The
+pairing address identifies the remote even when its Bluetooth name differs from
+the model in LG's pairing file; without an address, a single paired `LGE MR*`
+BLE device is used. lginput2 holds the remote's own connection, and the
 Bluetooth service reads the service only over a GATT connection of its own, so
-each read there is
-`gatt/connect`, `gatt/discoverServices`, `gatt/readCharacteristicValue` by the
-`clientId` that connect returned, then `gatt/disconnect`, which is made
-whatever failed after connecting. A plain level in the pairing file, should
-an older TV write one, is used until the remote has given one.
+each read there is `gatt/connect`, `gatt/discoverServices`, `gatt/getServices`
+to check that the Battery Service (`180f`) and a readable Battery Level
+(`2a19`) are present (continuing to the read where the firmware does not list
+services), `gatt/readCharacteristicValue` by the `clientId` that connect
+returned, then `gatt/disconnect`, which is made whatever failed after
+connecting. The last level, timestamp and source are saved in
+`remote-battery.json` keyed by the remote's Bluetooth address; a plain level in
+the pairing file, should an older TV write one, is used until the remote has
+given one.
 TV-RESEARCH.md has how this was found.
 
 ## Settings backups

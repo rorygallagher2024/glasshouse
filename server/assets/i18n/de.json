@@ -1,8 +1,4 @@
 {
-  "home.alwaysShown": {
-    "text": "Immer sichtbar",
-    "from": "Always shown"
-  },
   "home.arrange.done": {
     "text": "Fertig",
     "from": "Done"
@@ -738,5 +734,20 @@
  "home.experimentalAny": {"text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home, Glasshouse Minimal und eigene Launcher ersetzen jeweils LGs Startbildschirm. Wenn einer nicht richtig funktioniert, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder wählen Sie hier LG Home, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.", "from": "Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG’s Home screen. If one misbehaves, hold Home on the remote for a second to open LG’s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
  "home.restartsAppsAny": {"text": "Auf diesem Fernseher startet der Wechsel weg von LG Home oder zurück, oder das Gedrückthalten von Home für LGs Startbildschirm, die App-Verwaltung des Fernsehers neu, die geöffnete Apps schließt.", "from": "On this TV, switching away from LG Home or back to it, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."},
  "home.launcher.doneOffCustom": {"text": "Fertig. Drücken Sie oben auf Eigener und dann erneut, um ihn zum Startbildschirm des Fernsehers zu machen.", "from": "Done. Press Custom above, then again, to make it the TV’s Home."},
- "home.showTvLogosDescName": {"text": "Bei Internet-TV: das Logo der Playlist für jeden Sender. Aus zeigt stattdessen den Namen des Senders.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."}
+ "home.showTvLogosDescName": {"text": "Bei Internet-TV: das Logo der Playlist für jeden Sender. Aus zeigt stattdessen den Namen des Senders.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."},
+ "home.weather.clearNight": {"text": "Klare Nacht", "from": "Clear night"},
+ "home.weather.cloudy": {"text": "Bewölkt", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Nebel", "from": "Fog"},
+ "home.weather.hail": {"text": "Hagel", "from": "Hail"},
+ "home.weather.lightning": {"text": "Blitze", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Gewitter", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Teilweise bewölkt", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Starkregen", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Regnerisch", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Schnee", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Schneeregen", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Sonnig", "from": "Sunny"},
+ "home.weather.windy": {"text": "Windig", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Windig", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"}
 }

@@ -2051,10 +2051,6 @@
   "from": "A smaller clock on the right, and the rows as rounded, translucent tiles, titled only while arranging.",
   "text": "Une horloge plus petite à droite, et les rangées en tuiles arrondies et translucides, titrées seulement pendant l'arrangement."
  },
- "home.alwaysShown": {
-  "from": "Always shown",
-  "text": "Toujours affiché"
- },
  "home.anim.aquarium": {
   "from": "Aquarium",
   "text": "Aquarium"
@@ -3162,6 +3158,14 @@
  "home.showTvLogosDescName": {
   "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.",
   "text": "Sur Internet TV : le logo de chaque chaîne fourni par la playlist. Désactivé affiche le nom de la chaîne à sa place."
+ },
+ "home.showWeather": {
+  "from": "Weather",
+  "text": "Météo"
+ },
+ "home.showWeatherDesc": {
+  "from": "Next to the clock: the weather Home Assistant sends, once an automation sends it.",
+  "text": "À côté de l’horloge : la météo envoyée par Home Assistant, dès qu’une automatisation l’envoie."
  },
  "home.shown": {
   "from": "Shown",
@@ -4390,6 +4394,66 @@
  "home.wall.uploading": {
   "from": "Uploading…",
   "text": "Envoi…"
+ },
+ "home.weather.clearNight": {
+  "from": "Clear night",
+  "text": "Nuit claire"
+ },
+ "home.weather.cloudy": {
+  "from": "Cloudy",
+  "text": "Nuageux"
+ },
+ "home.weather.exceptional": {
+  "from": "Severe weather",
+  "text": "Intempéries"
+ },
+ "home.weather.fog": {
+  "from": "Fog",
+  "text": "Brouillard"
+ },
+ "home.weather.hail": {
+  "from": "Hail",
+  "text": "Grêle"
+ },
+ "home.weather.lightning": {
+  "from": "Lightning",
+  "text": "Éclairs"
+ },
+ "home.weather.lightningRainy": {
+  "from": "Thunderstorms",
+  "text": "Orages"
+ },
+ "home.weather.partlycloudy": {
+  "from": "Partly cloudy",
+  "text": "Partiellement nuageux"
+ },
+ "home.weather.pouring": {
+  "from": "Pouring rain",
+  "text": "Pluie battante"
+ },
+ "home.weather.rainy": {
+  "from": "Rainy",
+  "text": "Pluvieux"
+ },
+ "home.weather.snowy": {
+  "from": "Snowy",
+  "text": "Neigeux"
+ },
+ "home.weather.snowyRainy": {
+  "from": "Snow and rain",
+  "text": "Neige et pluie"
+ },
+ "home.weather.sunny": {
+  "from": "Sunny",
+  "text": "Ensoleillé"
+ },
+ "home.weather.windy": {
+  "from": "Windy",
+  "text": "Venteux"
+ },
+ "home.weather.windyVariant": {
+  "from": "Windy",
+  "text": "Venteux"
  },
  "lang.partial": {
   "from": "{name} (partial)",
@@ -10655,10 +10719,6 @@
   "from": "Press OK to use the custom launcher",
   "text": "Appuyez sur OK pour utiliser le lanceur personnalisé"
  },
- "tv.home.lgTile.hint": {
-  "from": "The way back to LG’s Home, so it always shows.",
-  "text": "Le chemin de retour vers l'Accueil de LG, pour qu'il s'affiche toujours."
- },
  "tv.home.minimal.on": {
   "from": "Press OK to use Minimal",
   "text": "Appuyez sur OK pour utiliser Minimal"
@@ -12046,5 +12106,6 @@
  "tv.viewOnly": {
   "from": "View only",
   "text": "Lecture seule"
- }
+ },
+ "metrics.remote.batteryReadLabel": {"text": "Dernière lecture :", "from": "Last read:"}
 }

@@ -51,7 +51,7 @@ var SETTINGS = 'com.webos.service.settings/';
 var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
-var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos'];
+var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos', 'showWeather'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
 // slow drift and its cross-fade between parts of the day, rows easing to the
 // chosen tile, and Recent apps, search and the folder sliding in.
@@ -65,7 +65,8 @@ var TILE_OPEN_MS = 15000;
  */
 var PROMO_APPS = ['com.webos.app.lgchannels', 'com.webos.app.sportsteamsettings',
   'com.webos.app.lifeonscreen', 'amazon.alexa.view', 'com.webos.app.camera'];
-// The view's own way back to LG's Home: last in the Apps row, and never hidden.
+// The view's own way back to LG's Home: last in the Apps row. It can be
+// hidden like any app; the remote's Home button still leads back.
 var LG_HOME_TILE = 'lg-home';
 /*
  * A web page saved to the Home screen is a bookmark of LG's browser, with its
@@ -272,6 +273,17 @@ var foreground = '';
 // When something other than the view last came to the front, for the open watch.
 var otherOpenedAt = 0;
 var lastSource = null;
+// What ha.js's 'weather' text entity last received over MQTT (setWeather
+// below), kept in home-weather.json so a restart does not hide it.
+var weatherPush = null;
+/*
+ * A push older than this is not shown. Home Assistant pushes when the weather
+ * changes, and the docs' automation also every 30 minutes, so this only hides
+ * weather that has stopped coming.
+ */
+var WEATHER_STALE_MS = 3 * 3600000;
+// The longest city and condition shown, so one long name cannot push the clock aside.
+var WEATHER_TEXT_MAX = 40;
 var beatTimer = null;
 var lastBeatAt = 0;
 // What the view last said of itself, with its heartbeat: whether its page had
@@ -350,6 +362,9 @@ function defaults() {
     order: { app: [], dev: [], ch: [], rec: [], iptv: [] },
     sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' },
     hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [], iptv: [] },
+    // Whole rows left off the view, whatever their tiles. They still show
+    // while arranging, so that they can be moved.
+    hiddenRows: [],
     // Apps moved off the Apps row into its More apps tile, in no order of
     // their own: the folder shows them in the row's.
     folder: [],
@@ -372,6 +387,8 @@ function defaults() {
     showAppCount: true,
     showCec: true,
     showTvLogos: true,
+    // The weather Home Assistant sends: shown once something has been sent.
+    showWeather: true,
     // The live preview kept on what was last on whenever the view is on
     // screen, rather than only while a tile is chosen.
     previewAlways: false,
@@ -436,11 +453,12 @@ function normalise(raw) {
     rows.splice(r === 'rec' ? rows.indexOf('app') + 1 : rows.length, 0, r);
   });
   d.rows = rows;
+  d.hiddenRows = stringList(raw.hiddenRows).filter(function (r) { return ROWS.indexOf(r) !== -1; });
   ROWS.forEach(function (r) {
     if (raw.order && typeof raw.order === 'object') d.order[r] = stringList(raw.order[r]);
     if (raw.sort && typeof raw.sort === 'object' && SORTS.indexOf(raw.sort[r]) !== -1) d.sort[r] = raw.sort[r];
     if (raw.hidden && typeof raw.hidden === 'object') {
-      d.hidden[r] = stringList(raw.hidden[r]).filter(function (id) { return !(r === 'app' && id === LG_HOME_TILE); });
+      d.hidden[r] = stringList(raw.hidden[r]);
     }
   });
   /*
@@ -605,6 +623,7 @@ function setLayout(body, cb) {
     order: perRow(body.order, c.order),
     sort: perRow(body.sort, c.sort),
     hidden: perRow(body.hidden, c.hidden),
+    hiddenRows: body.hiddenRows !== undefined ? body.hiddenRows : c.hiddenRows,
     folder: body.folder !== undefined ? body.folder : c.folder,
     excludedRecents: body.excludedRecents !== undefined ? body.excludedRecents : c.excludedRecents,
     // A moved Channels row reorders the channels themselves.
@@ -621,6 +640,7 @@ function setLayout(body, cb) {
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
     showTvLogos: typeof body.showTvLogos === 'boolean' ? body.showTvLogos : c.showTvLogos,
+    showWeather: typeof body.showWeather === 'boolean' ? body.showWeather : c.showWeather,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     wallAnim: body.wallAnim !== undefined ? body.wallAnim : c.wallAnim,
@@ -647,6 +667,7 @@ function setLayout(body, cb) {
     next.order = d.order;
     next.sort = d.sort;
     next.hidden = d.hidden;
+    next.hiddenRows = d.hiddenRows;
     next.folder = d.folder;
   }
   config = next;
@@ -661,12 +682,12 @@ function setLayout(body, cb) {
 }
 
 function layoutOf(c) {
-  return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
+  return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, hiddenRows: c.hiddenRows, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showWeather: c.showWeather, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
@@ -1114,6 +1135,59 @@ function selectedOnPort(port, cb) {
     });
     cb(picked);
   });
+}
+
+/*
+ * The weather badge's last pushed value (text.lg_tv_weather's command
+ * topic, dispatched by tvweb.js). The payload is the JSON an automation
+ * sends: {"condition":"partlycloudy","temp":14.2,"city":"Conflans"}. city
+ * is optional, shown under the temperature when present. A malformed or
+ * non-numeric push is dropped rather than shown, so a bad automation
+ * leaves the badge hidden instead of wrong.
+ */
+function weatherFile() { return path.join(stateDir, 'home-weather.json'); }
+
+function weatherText(v) {
+  if (typeof v !== 'string') return null;
+  var t = v.replace(/\s+/g, ' ').trim();
+  return t ? t.slice(0, WEATHER_TEXT_MAX) : null;
+}
+
+// An empty push, or {}, takes the badge away at once.
+function setWeather(raw) {
+  var text = String(raw == null ? '' : raw).trim();
+  if (!text || text === '{}') {
+    weatherPush = null;
+    try { fs.unlinkSync(weatherFile()); } catch (e) {}
+    return;
+  }
+  var parsed = null;
+  try { parsed = JSON.parse(text); } catch (e) { /* ignored: not JSON, badge stays as it was */ }
+  if (!parsed || typeof parsed.temp !== 'number' || !isFinite(parsed.temp)) return;
+  weatherPush = { condition: weatherText(parsed.condition), temp: parsed.temp, city: weatherText(parsed.city), at: nowMs() };
+  try {
+    writeJsonAtomic(weatherFile(), weatherPush, 384);
+  } catch (e) {
+    console.error('home: could not keep the weather: ' + e.message);
+  }
+}
+
+function loadWeather() {
+  var w = null;
+  try { w = JSON.parse(fs.readFileSync(weatherFile(), 'utf8')); } catch (e) {}
+  weatherPush = w && typeof w.temp === 'number' && typeof w.at === 'number' ? w : null;
+}
+
+// The weather to show, or null where none was pushed or the last push is stale.
+function currentWeather() {
+  if (!weatherPush || nowMs() - weatherPush.at > WEATHER_STALE_MS) return null;
+  return { condition: weatherPush.condition, temp: weatherPush.temp, city: weatherPush.city };
+}
+
+function weather(cb) {
+  var w = currentWeather();
+  if (!w) return cb({ ok: false });
+  cb({ ok: true, condition: w.condition, temp: w.temp, city: w.city });
 }
 
 /*
@@ -2054,7 +2128,9 @@ function beat(body) {
   if (viewInFront()) watchBeat(beatGraceMs);
   return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
            build: buildId, wallpapers: wallpapers.status(),
-           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()) };
+           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
+           // So a push shows within a heartbeat rather than at the next poll.
+           weather: currentWeather() };
 }
 
 function foregroundChanged(id) {
@@ -2483,6 +2559,7 @@ function init(opts) {
   setStartingFn = opts.setStarting || function (text, cb) { cb({ ok: true, none: true }); };
   buildId = opts.build || '';
   nowMs = opts.now || Date.now;
+  loadWeather();
   config = null;
   configMtime = 0;
   wasEnabled = false;
@@ -2651,6 +2728,8 @@ module.exports = {
   channelList: channelList,
   guide: guide,
   now: now,
+  setWeather: setWeather,
+  weather: weather,
   open: open,
   setLayout: function (body, cb) { change(function (done) { setLayout(body, done); }, cb); },
   setHideLgHomeAtStart: function (body, cb) { change(function (done) { setHideLgHomeAtStart(body, done); }, cb); },
