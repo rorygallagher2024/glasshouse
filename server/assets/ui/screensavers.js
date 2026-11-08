@@ -89,10 +89,17 @@ async function loadScreensavers() {
   const ours = d.current !== 'stock' && !d.modes.some(m => m.active && m.fromApp);
   q('ss-level-row').hidden = !ours;
   if (ours) {
-    q('ss-level').innerHTML = [['dim', t('ss.dim', 'Dim')], ['bright', t('ss.bright', 'Bright')]].map(([id, label]) =>
-      `<button class="ss-lvl${d.level === id ? ' on' : ''}" data-level="${id}"
-               ${locked ? 'disabled' : ''}>${label}</button>`).join('');
+    q('ss-bright-wrap').classList.toggle('disabled', !!locked);
+    if (!ssBrightDragging) showSsBrightness(typeof d.brightness === 'number' ? d.brightness : (d.level === 'bright' ? 100 : 65));
   }
+
+  // The option picked from the one in use's, where it has them.
+  const active = d.modes.find(m => m.active);
+  const choices = active && active.choices;
+  q('ss-choice-row').hidden = !choices;
+  if (choices) q('ss-choice-lbl').textContent = active.choicesLabel || t('ss.choice', 'Animation');
+  if (choices) renderSsPick(choices, d.choice, locked);
+  else ssPickOpen(false);
 
   /* Where LG's screen saver is built differently from ours, the TV has to
      restart its app manager to move between them, and nothing answers until it
@@ -113,6 +120,84 @@ async function loadScreensavers() {
 
   clearTimeout(ssSwitchPoll);
   if (ssSwitching) ssSwitchPoll = setTimeout(() => { if (activeTab === 'screensaver') loadScreensavers(); }, 4000);
+}
+
+/*
+ * The Animation picker. Options in a row under the same group go under its
+ * heading; the button names the group and the option picked.
+ */
+let ssPickKey_ = '';
+function renderSsPick(choices, current, locked) {
+  const btn = q('ss-choice'), list = q('ss-pick-list');
+  const cur = choices.find(c => c.id === current) || choices[0];
+  btn.innerHTML = (cur.group ? `<span class="grp">${esc(cur.group)}</span>` : '') + esc(cur.label);
+  btn.disabled = locked;
+  // Rebuilt only when the options or the pick change, so an open list keeps where it is scrolled.
+  const key = current + '|' + choices.length + '|' + (choices[0] && choices[0].id);
+  if (key === ssPickKey_) return;
+  ssPickKey_ = key;
+  let html = '', group = null;
+  choices.forEach(c => {
+    if ((c.group || null) !== group) {
+      group = c.group || null;
+      if (group) html += `<div class="ss-pick-head" role="presentation">${esc(group)}</div>`;
+    }
+    html += `<div class="ss-pick-opt" role="option" id="ss-opt-${esc(c.id)}" data-id="${esc(c.id)}"
+      aria-selected="${c.id === cur.id ? 'true' : 'false'}">${esc(c.label)}</div>`;
+  });
+  list.innerHTML = html;
+}
+
+function ssPickOpts() { return [...q('ss-pick-list').querySelectorAll('.ss-pick-opt')]; }
+
+function ssPickOpen(open) {
+  const list = q('ss-pick-list'), btn = q('ss-choice');
+  if (open && btn.disabled) return;
+  list.hidden = !open;
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (!open) return;
+  const sel = list.querySelector('[aria-selected="true"]') || ssPickOpts()[0];
+  ssPickActive(sel);
+  list.focus();
+}
+
+// The option the arrow keys are on, kept in view below its sticky heading.
+function ssPickActive(el) {
+  const list = q('ss-pick-list');
+  ssPickOpts().forEach(o => o.classList.toggle('act', o === el));
+  if (!el) return;
+  list.setAttribute('aria-activedescendant', el.id);
+  const head = 34, top = el.offsetTop - head, bottom = el.offsetTop + el.offsetHeight;
+  if (top < list.scrollTop) list.scrollTop = top;
+  else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
+}
+
+function ssPickKey(ev) {
+  const list = q('ss-pick-list'), open = !list.hidden;
+  const opts = ssPickOpts(), at = opts.indexOf(list.querySelector('.ss-pick-opt.act'));
+  const go = i => { ev.preventDefault(); ssPickActive(opts[Math.max(0, Math.min(opts.length - 1, i))]); };
+  if (!open) {
+    if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(ev.key)) { ev.preventDefault(); ssPickOpen(true); }
+    return;
+  }
+  if (ev.key === 'ArrowDown') return go(at + 1);
+  if (ev.key === 'ArrowUp') return go(at - 1);
+  if (ev.key === 'PageDown') return go(at + 10);
+  if (ev.key === 'PageUp') return go(at - 10);
+  if (ev.key === 'Home') return go(0);
+  if (ev.key === 'End') return go(opts.length - 1);
+  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); if (opts[at]) pickSsChoice(opts[at].dataset.id); return; }
+  if (ev.key === 'Escape' || ev.key === 'Tab') { if (ev.key === 'Escape') ev.preventDefault(); ssPickOpen(false); q('ss-choice').focus(); }
+}
+
+async function pickSsChoice(id) {
+  ssPickOpen(false);
+  q('ss-choice').focus();
+  const cur = q('ss-pick-list').querySelector('[aria-selected="true"]');
+  if (cur && cur.dataset.id === id) return;
+  q('ss-choice').disabled = true;
+  await sendCommand('screensaverMode', { mode: ssCurrent, choice: id });
+  loadScreensavers();
 }
 
 /*
@@ -191,12 +276,79 @@ document.addEventListener('click', async ev => {
     return;
   }
 
-  const lvl = ev.target.closest('button.ss-lvl[data-level]');
-  if (lvl && !lvl.disabled && !lvl.classList.contains('on')) {
-    lvl.disabled = true;
-    // The mode goes with it: both are staged into the same file.
-    const r = await sendCommand('screensaverMode', { mode: ssCurrent, level: lvl.dataset.level });
-    if (!r || !r.ok) lvl.disabled = false;
-    loadScreensavers();
-  }
+  // The Animation list: an option picks it; a click anywhere else closes it.
+  const opt = ev.target.closest('.ss-pick-opt[data-id]');
+  if (opt) { pickSsChoice(opt.dataset.id); return; }
+  if (!ev.target.closest('#ss-pick') && !q('ss-pick-list').hidden) ssPickOpen(false);
 });
+
+/* Brightness, in 5% steps from 5%, sent on release: each value restages the
+   screen saver, and one on screen is closed and shown again for it. 65% and
+   100% are the Dim and Bright each screen saver was drawn at before. */
+let ssBrightDragging = false;
+
+function showSsBrightness(v) {
+  q('ss-bright-slider').value = v;
+  q('ss-bright-fill').style.width = v + '%';
+  q('ss-bright-lbl').textContent = v + '%';
+}
+
+function initSsBrightSlider() {
+  const wrap = q('ss-bright-wrap'), slider = q('ss-bright-slider');
+  let active = false, keyTimer = 0;
+  const clamp = v => Math.max(5, Math.min(100, v));
+  const at = e => {
+    const r = wrap.getBoundingClientRect();
+    return clamp(Math.round(((e.clientX - r.left) / r.width) * 20) * 5);
+  };
+  const save = async v => {
+    showSsBrightness(v);
+    wrap.classList.add('disabled');
+    // The mode goes with it: both are staged into the same file.
+    await sendCommand('screensaverMode', { mode: ssCurrent, brightness: v });
+    loadScreensavers();
+  };
+  const stop = e => {
+    active = false;
+    ssBrightDragging = false;
+    wrap.classList.remove('dragging');
+    try { wrap.releasePointerCapture(e.pointerId); } catch (err) {}
+  };
+  wrap.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || wrap.classList.contains('disabled')) return;
+    active = true;
+    ssBrightDragging = true;
+    wrap.classList.add('dragging');
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    showSsBrightness(at(e));
+  });
+  wrap.addEventListener('pointermove', e => { if (active) showSsBrightness(at(e)); });
+  wrap.addEventListener('pointerup', e => {
+    if (!active) return;
+    stop(e);
+    save(at(e));
+  });
+  wrap.addEventListener('pointercancel', e => {
+    if (!active) return;
+    stop(e);
+    loadScreensavers();
+  });
+  slider.addEventListener('keydown', e => {
+    const steps = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5, PageUp: 25, PageDown: -25 };
+    let v;
+    if (steps[e.key]) v = Number(slider.value) + steps[e.key];
+    else if (e.key === 'Home') v = 5;
+    else if (e.key === 'End') v = 100;
+    else return;
+    e.preventDefault();
+    if (wrap.classList.contains('disabled')) return;
+    // Sent once the keys stop, not per step.
+    v = clamp(v);
+    showSsBrightness(v);
+    ssBrightDragging = true;
+    clearTimeout(keyTimer);
+    keyTimer = setTimeout(() => { ssBrightDragging = false; save(v); }, 700);
+  });
+}
+
+initSsBrightSlider();
