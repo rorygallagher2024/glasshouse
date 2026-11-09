@@ -2776,9 +2776,11 @@ function restoreLegacyScreenSaver(cb) {
  * taken it already; taking it again restages the app's files for this release
  * and stops an LG Home that started before the hook.
  */
-function start() {
+// done(), for tests, once what the start set going has finished.
+function start(done) {
+  done = done || function () {};
   cleanLegacy(function (cleaned) {
-    if (!cleaned) return;
+    if (!cleaned) return done();
     var c = readConfig();
     // Saved only where it differs from the default, so a start writes nothing otherwise.
     if (c.hideLgHomeAtStart === null && takeover.blankKept()) {
@@ -2792,23 +2794,25 @@ function start() {
      */
     if (c.enabled && !supported().ok) {
       console.log('home: not offered on this TV (' + supported().reason + '); switched off');
-      return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); });
+      return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); done(); });
     }
     if (c.enabled) {
       homeKeysFn(true);
       handOverFn(hideApps);
     }
     if (c.restorePending || (!c.enabled && !isStandalone() && takeover.mounted())) {
-      return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); });
+      return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); done(); });
     }
     startingNotice(c.enabled);
     // Off, but the Home key's target was never put back: a switch-off cut short.
-    if (!c.enabled) return syncDefaultHome();
+    if (!c.enabled) return syncDefaultHome(function () { done(); });
     wasEnabled = true;
     switchTo(true, function (r) {
       if (!r.ok) console.error('home: could not take LG\'s Home\'s place: ' + r.error);
-      syncLgAutoLaunch();
-      syncDefaultHome();
+      var left = 2;
+      function synced() { if (--left === 0) done(); }
+      syncLgAutoLaunch(synced);
+      syncDefaultHome(synced);
       if (r.ok) watchBootOpen();
     });
   });

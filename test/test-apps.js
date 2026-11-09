@@ -2,6 +2,7 @@
  * test/test-apps.js - Unit tests for application management and tile hiding
  */
 
+require('./fake-clock').install();
 var assert = require('assert');
 var path = require('path');
 var mockEnv = require('./mocks/mock-env').createMockEnv();
