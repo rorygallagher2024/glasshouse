@@ -1,0 +1,17 @@
+{
+  "id": "com.tvweb.inputbar",
+  "version": "1.0.0",
+  "vendor": "tvweb",
+  "type": "web",
+  "main": "index.html",
+  "title": "Glasshouse Inputs",
+  "icon": "assets/icon80.png",
+  "largeIcon": "assets/icon130.png",
+  "resolution": "1920x1080",
+  "defaultWindowType": "overlay",
+  "transparent": true,
+  "disableBackHistoryAPI": true,
+  "noSplashOnLaunch": true,
+  "spinnerOnLaunch": false,
+  "visible": false
+}

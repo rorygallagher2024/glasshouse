@@ -3076,5 +3076,13 @@
  "srv.saver.choiceUses": {"text": "{file}: choices y \"choice\" en uses van juntos.", "from": "{file}: choices and \"choice\" in uses go together."},
  "srv.saver.stuck": {"text": "La TV se ha quedado atascada al iniciar un salvapantallas y no inicia otro hasta que se reinicie. Reinicia la TV para solucionarlo.", "from": "The TV is stuck starting a screen saver and refuses to start another until it is restarted. Restart the TV to clear it."},
  "srv.saver.notClosed": {"text": "el salvapantallas de la TV no se cerró, así que no se hizo el cambio", "from": "the screen saver on the TV did not close, so the switch was left undone"},
- "ss.choice": {"text": "Animación", "from": "Animation"}
+ "ss.choice": {"text": "Animación", "from": "Animation"},
+ "apps.inputBar": {"text": "Barra de entradas", "from": "Input bar"},
+ "apps.inputBar.desc": {"text": "Las entradas por las que avanza la barra, en el orden de Glasshouse Home. Ocultar una aquí la oculta también en Glasshouse Home.", "from": "The inputs the bar steps through, in Glasshouse Home’s order. Hiding one here hides it on Glasshouse Home too."},
+ "apps.inputBar.hideUnused": {"text": "Ocultar entradas sin nada conectado", "from": "Hide inputs with nothing connected"},
+ "server.experimental.inputBar": {"text": "Barra de entradas", "from": "Input bar"},
+ "server.experimental.inputBar.short": {"text": "Ofrece la barra de entradas en Teclas del mando, en la pestaña Aplicaciones: una franja con las entradas HDMI sobre la imagen, por la que se avanza con el botón Entrada del mando.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
+ "server.experimental.inputBar.warn": {"text": "Probado solo en webOS 4, 6 y 9. Desactivarlo devuelve a como lo tiene LG cualquier tecla que la use y elimina su aplicación.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
+ "srv.remoteKeys.inputBar": {"text": "Barra de entradas", "from": "Input bar"},
+ "srv.remoteKeys.inputBarInstall": {"text": "No se pudo instalar la barra de entradas en la TV. Inténtalo de nuevo en un momento.", "from": "The input bar could not be put on the TV. Try again in a moment."}
 }

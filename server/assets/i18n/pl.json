@@ -3076,5 +3076,13 @@
  "srv.saver.choiceUses": {"text": "{file}: choices i \"choice\" w uses muszą występować razem.", "from": "{file}: choices and \"choice\" in uses go together."},
  "srv.saver.stuck": {"text": "Telewizor zawiesił się przy uruchamianiu wygaszacza i nie uruchomi innego, dopóki nie zostanie ponownie uruchomiony. Uruchom telewizor ponownie, aby to naprawić.", "from": "The TV is stuck starting a screen saver and refuses to start another until it is restarted. Restart the TV to clear it."},
  "srv.saver.notClosed": {"text": "wygaszacz na telewizorze się nie zamknął, więc zmiana nie została wykonana", "from": "the screen saver on the TV did not close, so the switch was left undone"},
- "ss.choice": {"text": "Animacja", "from": "Animation"}
+ "ss.choice": {"text": "Animacja", "from": "Animation"},
+ "apps.inputBar": {"text": "Pasek wejść", "from": "Input bar"},
+ "apps.inputBar.desc": {"text": "Wejścia, które pasek kolejno przełącza, w kolejności z Glasshouse Home. Ukrycie wejścia tutaj ukrywa je też w Glasshouse Home.", "from": "The inputs the bar steps through, in Glasshouse Home’s order. Hiding one here hides it on Glasshouse Home too."},
+ "apps.inputBar.hideUnused": {"text": "Ukryj wejścia, do których nic nie podłączono", "from": "Hide inputs with nothing connected"},
+ "server.experimental.inputBar": {"text": "Pasek wejść", "from": "Input bar"},
+ "server.experimental.inputBar.short": {"text": "Udostępnia pasek wejść w sekcji Przyciski pilota na karcie Aplikacje: pasek wejść HDMI wyświetlany na obrazie, przełączany przyciskiem Wejście na pilocie.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
+ "server.experimental.inputBar.warn": {"text": "Przetestowano tylko na webOS 4, 6 i 9. Wyłączenie przywraca wszystkim korzystającym z niego przyciskom działanie LG i usuwa jego aplikację.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
+ "srv.remoteKeys.inputBar": {"text": "Pasek wejść", "from": "Input bar"},
+ "srv.remoteKeys.inputBarInstall": {"text": "Nie udało się zainstalować paska wejść na telewizorze. Spróbuj ponownie za chwilę.", "from": "The input bar could not be put on the TV. Try again in a moment."}
 }
