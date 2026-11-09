@@ -14,12 +14,11 @@
  * its inode, which a symlink shares. sam is a reader of whatever appinfo.json
  * the directory holds when it is told to scan.
  *
- * Most steps wait on Glasshouse Home's real timers, up to 10 s each, so
- * run-all.js runs it as 8 shards side by side.
- * @shards 16
- *
  * Strict ES5: runs on node 0.12.
  */
+// Timers run on the suite's own clock (test/fake-clock.js): a step waiting out
+// a grace period takes no real time, and cannot fire short of it on a slow runner.
+require('./fake-clock').install();
 var assert = require('assert');
 var fs = require('fs');
 var os = require('os');

@@ -1,4 +1,5 @@
 /* PicCap MQTT state and ON/OFF power control. Strict ES5. */
+require('./fake-clock').install();
 var assert = require('assert');
 var piccapModule = require('../server/lib/piccap');
 

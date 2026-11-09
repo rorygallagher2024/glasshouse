@@ -1,4 +1,5 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
+var waitFor = require('./wait-for').waitFor;
 var assert = require('assert');
 var events = require('events');
 var StringDecoder = require('string_decoder').StringDecoder;
@@ -1309,14 +1310,14 @@ function createMockRes(cb) {
 
   function oneAtATime() {
     upload({ length: 10, chunks: [new Buffer(3)], then: 'none' }, function () {});
-    setTimeout(function () {
+    waitFor(function () { return staged().length > 0; }, function () {
       upload({ length: 10, chunks: [FILE] }, function (r) {
         assert.strictEqual(r.statusCode, 409, 'a second upload is refused while one is streaming');
         initInstaller();
         try { childProcess.execSync('rm -rf "' + root + '"'); } catch (e) {}
         console.log('  ✓ sideload routes: opt-in gating, Host check first, URL checks, upload streaming and cleanup');
       });
-    }, 60);
+    }, 'the first upload to start streaming');
   }
 })();
 

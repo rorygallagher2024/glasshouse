@@ -279,7 +279,7 @@ From the repository root, `scripts/check-all.sh` runs the checks CI runs, side b
 scripts/check-all.sh
 ```
 
-`node test/run-all.js` runs only the unit tests. Words after it run only the suites whose file name contains one, as `node test/run-all.js home luna`, and `--times` lists the slowest. A failing suite's output is printed again after the results, so the end of a long CI log shows it. A suite whose header says `@shards N` is started N times, each copy running every Nth step through `test/shard.js`: `test-home.js` waits on Glasshouse Home's real timers, up to 10 s a step, and runs as 16 copies. Each of its steps sets up the TV it needs, as no copy sees the steps another runs.
+`node test/run-all.js` runs only the unit tests. Words after it run only the suites whose file name contains one, as `node test/run-all.js home luna`, and `--times` lists the slowest. A failing suite's output is printed again after the results, so the end of a long CI log shows it. A suite whose header says `@shards N` is started N times, each copy running every Nth step through `test/shard.js`; each step then sets up what it needs, as no copy sees the steps another runs. Suites whose mocks answer without real network, file or process I/O, `test-home.js` among them, run their timers on `test/fake-clock.js`: the clock jumps to the next timer whenever nothing else is left to run, so a step that waits out a 10 s grace period takes no time and can never fire short of it. Suites with real I/O wait for what they check through `test/wait-for.js`.
 
 The dashboard check needs Playwright and its browser:
 

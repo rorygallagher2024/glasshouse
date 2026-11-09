@@ -1071,7 +1071,7 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
     // Netflix, the first tile: dark at once, opened only once the fade is over.
     await page.keyboard.press('Enter');
     const pressedAt = Date.now();
-    await page.waitForTimeout(80);
+    await waitUntil(page, faded);
     if (!await faded()) problems.push('Home fade: opening a tile did not fade out');
     if (opened.length) problems.push('Home fade: the tile opened before the fade was over');
     await waitUntil(page, () => opened.length > 0);
@@ -1452,7 +1452,7 @@ async function visitHomeOrder(browser, base, problems) {
     if (await appTiles() !== 'One,Two,LG Home') problems.push('Home order: an edit can be lost while the saved order is loading');
     releaseCatalogue();
     await saved;
-    await page.waitForTimeout(200);
+    await waitUntil(page, async () => saves.length && saves[0].sort && saves[0].sort.app === 'recent' && await appTiles() === 'Two,One,LG Home');
     if (!saves.length || !saves[0].sort || saves[0].sort.app !== 'recent') problems.push('Home order: the Apps row\'s Order did not save Last opened');
     if (await appTiles() !== 'Two,One,LG Home') problems.push('Home order: arranging did not show the row in last opened order');
     // Picking a tile up keeps the order shown, now the row's own.
@@ -1578,7 +1578,7 @@ async function visitHomeEditor(browser, base, problems) {
     await page.getByRole('button', { name: 'Show channels', exact: true }).click();
     const add = id => page.locator('#home-ch-list .prot-row').filter({ hasText: id + ' ' + id.toUpperCase() }).getByRole('button', { name: 'Add', exact: true });
     await add('b').click();
-    await page.waitForTimeout(100);
+    await waitUntil(page, () => add('c').isDisabled());
     if (!await add('c').isDisabled()) problems.push('Home editor: controls remain enabled during a pending save');
     await add('c').click({ force: true });
     await page.waitForTimeout(100);
@@ -2586,10 +2586,10 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (await page.locator('#guide .gc b').first().textContent() !== 'The World This Weekend') fail('the guide did not show the schedule');
     const guideRow = () => page.locator('#gBody .gr.focus').getAttribute('data-g');
     await key(34);
-    await page.waitForTimeout(100);
+    await waitUntil(page, async () => await guideRow() === '1');
     if (await guideRow() !== '1') fail('Channel down did not turn the guide a page, to its last channel');
     await key(33);
-    await page.waitForTimeout(100);
+    await waitUntil(page, async () => await guideRow() === '0');
     if (await guideRow() !== '0') fail('Channel up did not turn the guide back a page');
     await key(461);
     await page.waitForTimeout(200);
@@ -2601,7 +2601,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keyup', { keyCode: 13, bubbles: true })));
     for (let i = 0; i < 4; i++) await key(39);
     await key(13);
-    await page.waitForTimeout(500);
+    await waitUntil(page, async () => /adding/.test(await page.locator('#stage').getAttribute('class')));
     if (!/adding/.test(await page.locator('#stage').getAttribute('class'))) fail('the Add channels tile did not open the panel');
     else if (!/UK News/.test(await page.locator('#adItems').textContent())) fail('the add panel did not list the playlist\'s groups');
     previewInTile = true;
@@ -2616,7 +2616,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (!full || full.width < 1900 || full.height < 1060) fail('the tile preview did not fill the screen');
     if (streams.length !== beforeTile) fail('opening the tile preview reopened its stream');
     await key(461);
-    await page.waitForTimeout(300);
+    await waitUntil(page, fillsTile);
     if (!await fillsTile()) fail('Back did not return the stream to its tile');
     if (streams.length !== beforeTile) fail('returning to the tile reopened its stream');
     await key(457);
@@ -2691,32 +2691,32 @@ async function visitIptvChannels(browser, base, problems) {
     await page.waitForSelector('.tvm-c');
     if (await page.locator('.tvm-c').count() !== 2) fail('the group\'s channels were not listed');
     await page.click('button:has-text("Add the whole group")');
-    await page.waitForTimeout(300);
+    await waitUntil(page, () => posts.some(p => p.action === 'add-group' && p.group === 'UK | Sport' && p.pl === 'p1'));
     if (!posts.some(p => p.action === 'add-group' && p.group === 'UK | Sport' && p.pl === 'p1')) fail('Add the whole group did not add it: ' + JSON.stringify(posts));
     // A section folded away is opened; with none, page.click would wait out its 30 s.
     const folded = page.locator('.tvm-sec button[aria-expanded="false"]');
     if (await folded.count()) await folded.first().click();
     await page.waitForSelector('.tvm-lc .star');
     await page.locator('.tvm-lc .star').first().click();
-    await page.waitForTimeout(300);
+    await waitUntil(page, () => posts.some(p => p.action === 'star' && p.id === 'p1:x1'));
     if (!posts.some(p => p.action === 'star' && p.id === 'p1:x1')) fail('the star did not star the channel');
     // A run selected with Shift, and the bar adding all of it in one edit.
     await page.click('.tvm-c >> nth=0');
     await page.click('.tvm-c >> nth=1', { modifiers: ['Shift'] });
     await page.waitForSelector('#tvm-dock:not([hidden])');
     await page.click('#tvm-dock button:has-text("Add 2 to the lineup")');
-    await page.waitForTimeout(300);
+    await waitUntil(page, () => posts.some(p => p.action === 'add' && p.channels && p.channels.length === 2));
     if (!posts.some(p => p.action === 'add' && p.channels && p.channels.length === 2)) fail('the bar did not add the selected channels in one edit: ' + JSON.stringify(posts.slice(-1)));
     // A lineup channel selected, Delete takes it out; Escape clears a selection before it closes the page.
     await page.click('.tvm-lc .tvm-c-name >> nth=1');
     await page.keyboard.press('Delete');
-    await page.waitForTimeout(300);
+    await waitUntil(page, () => posts.some(p => p.action === 'remove' && p.ids && p.ids[0] === 'p1:x2'));
     if (!posts.some(p => p.action === 'remove' && p.ids && p.ids[0] === 'p1:x2')) fail('Delete did not take the selected channel out');
     await page.click('.tvm-lc .tvm-c-name >> nth=0');
     await page.keyboard.press('Escape');
     if (await page.locator('#tvm').isHidden()) fail('Escape closed the page rather than clearing the selection');
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
+    await waitUntil(page, () => page.locator('#tvm').isHidden());
     if (!(await page.locator('#tvm').isHidden())) fail('Escape did not close the page');
     if (/tv=channels/.test(page.url())) fail('the address still opens the page');
     await page.route('**/api/iptv/playlists', r => r.fulfill({ json: { ok: true, writable: true,
@@ -2783,10 +2783,10 @@ async function visitIptvChannels(browser, base, problems) {
     await page.waitForFunction(() => rows.some(r => r.act === 'tvToggle'));
     await page.evaluate(() => { sel = rows.findIndex(r => r.act === 'tvToggle'); render(); });
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(300);
+    await waitUntil(page, () => posts.some(p => p.action === 'add' && p.channels && p.channels[0].key === 'x7'));
     if (!posts.some(p => p.action === 'add' && p.channels && p.channels[0].key === 'x7')) fail('TV app: OK on a channel did not add it');
     await page.keyboard.press('ArrowLeft');
-    await page.waitForTimeout(200);
+    await waitUntil(page, async () => await page.evaluate(() => sub) === 'tvGroups');
     if (await page.evaluate(() => sub) !== 'tvGroups') fail('TV app: Back from a group did not return to the groups');
   } catch (e) {
     fail('TV app: ' + e.message.split('\n')[0] + ' (tab ' + await page.evaluate(() => T().key + ', list ' + sub).catch(() => '?') + ')');
