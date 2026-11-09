@@ -710,10 +710,8 @@ button.key-hit{background:var(--w10)}
 /* The long lists stay one column - a consent row is a sentence, not a tile -
    but capped so the pill stays near what it describes on a wide screen. */
 .priv.panel{max-width:1180px}
-/* One list that scrolls, a row per screen saver, so more fit without the tab
-   growing: the name, and what it shows under it. */
+/* A row per screen saver: the name, and what it shows under it. */
 .ss-list{position:relative;display:flex;flex-direction:column;margin-top:22px;max-width:760px;
-         max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain;
          border:1px solid var(--w12);border-radius:3px}
 /* A row is the control, not a container with a button in it: the whole thing
    is the click target, so there is nothing to hunt for. */
@@ -741,11 +739,12 @@ button.key-hit{background:var(--w10)}
 .ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
 /* The choice on the left, and what to do with it - brightness, starting it,
-   the firmware note - beside it on a wide screen rather than below the list. */
+   the firmware note - beside it on a wide screen rather than below the list.
+   Beside them, the list scrolls within the window so the controls stay in view. */
 @media(min-width:1020px){
   .ss-split{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);gap:clamp(36px,4vw,56px);
             align-items:start}
-  .ss-split .ss-list{max-width:none}
+  .ss-split .ss-list{max-width:none;max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain}
   .ss-side{margin-top:22px;display:flex;flex-direction:column;gap:22px}
   #sspane .ss-side>*{margin-top:0}
 }
