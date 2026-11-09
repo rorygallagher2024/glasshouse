@@ -2994,6 +2994,19 @@ type MAT`), passed through over eARC (`codec_type 7`), and reported Atmos
 available. Nothing requires the unit; restarting it with HDMI 1 in front
 re-wrote that input's EDID and hot-plugged it, and the app stayed in front.
 
+## No remote key filters on webOS 3 (60UJ6519-ZA, webOS 3.9.3)
+
+- Neither `/usr/lib/qml/KeyFilters`, `/usr/lib/qt5/qml/KeyFilters` nor any
+  `KeyFilters` folder under `/usr/lib/qml` exists, and configd has no
+  `com.webos.surfacemanager.keyFilters` (`missingConfigs`, "No Entry Found").
+  Every Home press opens LG's ribbon (#1222).
+- The remote's Home is `IR_KEY_HOME`, 781 in `/usr/share/X11/xkb/keycodes/lg`
+  (773 as an evdev code), which LG maps to `Qt::Key_Super_L`, the key evdev's
+  125 (`KEY_LEFTMETA`) also gives. The same table is on webOS 4 and 9.
+- On a B8 (webOS 4.4.3), 773 written to the remote's input device
+  (`LGE RCU`, `event1`) reaches a reader of that device but opens nothing in
+  the compositor; 125 written there opens LG's ribbon.
+
 ## A web app as the screen saver (OLED65C5PUA, webOS 10.3.1)
 
 Measured on 5 November 2026, with LG's screen saver app's folder bind-mounted

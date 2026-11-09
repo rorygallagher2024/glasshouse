@@ -2,6 +2,7 @@
  * test/test-dashboard-view.js - Unit tests for TV dashboard view builders
  */
 
+require('./fake-clock').install();
 var assert = require('assert');
 var fs = require('fs');
 var path = require('path');

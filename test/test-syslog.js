@@ -4,6 +4,7 @@
  * Strict ES5 for Node 0.12.2 on webOS 4.
  */
 
+var waitFor = require('./wait-for').waitFor;
 var assert = require('assert');
 var child = require('child_process');
 var dgram = require('dgram');
@@ -199,7 +200,7 @@ function format(entry, opts) {
     got.push(buf.toString('utf8'));
     if (got.length < 3) return;
     // The counters are bumped by the send callbacks, after the datagrams leave.
-    setTimeout(function () {
+    waitFor(function () { var c = syslog.getCounters(); return c.messages.system + c.messages.glasshouse >= 3; }, function () {
       assert.ok(/^<14>1 \S+ Bedroom-TV sam - system - first after the start$/.test(got[0]), got[0]);
       assert.ok(/^<14>1 \S+ Bedroom-TV sam - system - second with <IP>$/.test(got[1]), got[1]);
       assert.ok(/^<27>1 \S+ Bedroom-TV mqtt - glasshouse - mqtt: broker refused the connection$/.test(got[2]), got[2]);
@@ -213,7 +214,7 @@ function format(entry, opts) {
       assert.strictEqual(syslog.getStatus(), null, 'no status while off');
       console.log('  ✓ lines written after the start reach a listener, and are counted');
       testSendIpv6();
-    }, 100);
+    }, 'the send callbacks to count the messages');
   });
 
   listener.bind(0, '127.0.0.1', function () {
@@ -393,7 +394,7 @@ function testFlush() {
         fs.appendFileSync(tvweb, '2026-10-08T12:00:05.000Z [5.000] [INFO] power: Active -> Active Standby\n');
         now += 1000;
         syslog.flush();
-        setTimeout(function () {
+        waitFor(function () { return got.length > 0; }, function () {
           clearTimeout(deadline);
           assert.strictEqual(got.length, 1, got.join('\n'));
           assert.ok(/ glasshouse - power: Active -> Active Standby$/.test(got[0]), got[0]);
@@ -403,7 +404,7 @@ function testFlush() {
           listener.close();
           try { fs.unlinkSync(tvweb); fs.unlinkSync(messages); fs.unlinkSync(started); fs.rmdirSync(dir); } catch (e) {}
           console.log('  ✓ a flush sends the files\' new lines at once, and only the files\'');
-        }, 100);
+        }, 'the flushed line');
       });
     }, 50);
   });

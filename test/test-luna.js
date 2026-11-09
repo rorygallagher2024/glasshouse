@@ -2,6 +2,7 @@
  * test/test-luna.js - A luna-send child that dies before answering is run once more
  */
 
+var waitFor = require('./wait-for').waitFor;
 var assert = require('assert');
 var child = require('child_process');
 var util = require('../server/lib/util');
@@ -126,7 +127,7 @@ luna.call('com.webos.service.tv.systemproperty/getSystemProperties', { keys: ['m
         var subB = new luna.Subscription('com.webos.service.tvpower/power/getPowerState', { subscribe: true }, null, {});
         subA.start(); subB.start();
         luna.call('com.webos.service.settings/getSystemSettings', {}, function () {});
-        setTimeout(function () {
+        waitFor(function () { return spawnedAt.length + startedAt.length >= 3; }, function () {
           var starts = spawnedAt.concat(startedAt).sort(function (a, b) { return a - b; });
           assert.strictEqual(starts.length, 3);
           assert.ok(starts[1] - starts[0] >= 149.99 && starts[2] - starts[1] >= 149.99,
@@ -153,7 +154,7 @@ luna.call('com.webos.service.tv.systemproperty/getSystemProperties', { keys: ['m
             console.log('  ✓ a clock stepped back does not hold starts up');
             console.log('ALL test-luna.js assertions passed!\n');
           });
-        }, 800);
+        }, 'two subscriptions and a call to start');
       };
       luna.call('com.webos.service.tvpower/power/getPowerState', {}, both);
       luna.call('com.webos.audio/getVolume', {}, both);

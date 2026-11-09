@@ -6,6 +6,7 @@
  * Strict ES5: runs on node 0.12.
  */
 
+var waitFor = require('./wait-for').waitFor;
 var assert = require('assert');
 var child = require('child_process');
 var fs = require('fs');
@@ -63,14 +64,13 @@ luna.call('com.webos.service.tvpower/power/getPowerState', {}, function () {
       lines = [];
       var sub = new luna.Subscription('com.webos.applicationManager/getForegroundAppInfo', { subscribe: true }, null, {});
       sub.start();
-      setTimeout(function () {
-        assert.ok(lines.indexOf('luna: subscribe com.webos.applicationManager/getForegroundAppInfo') !== -1, lines.join('\n'));
+      waitFor(function () { return lines.indexOf('luna: subscribe com.webos.applicationManager/getForegroundAppInfo') !== -1; }, function () {
         sub.stop();
         done();
         console.log('  ✓ at the debug level, each call logs its start and end, a timeout says so, and a subscription logs its start');
         console.log('ALL test-luna-debug.js assertions passed!\n');
         process.exit(0);
-      }, 400);
+      }, 'the subscription\'s start to be logged');
     });
   });
 });

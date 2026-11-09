@@ -2,6 +2,7 @@
  * only a listed title opens, in its app, at the id the app knows it by.
  * The answer is a real one from a G3 (webOS 9.2.2) in the UK, trimmed.
  * Strict ES5: also runs on node 0.10. */
+require('./fake-clock').install();
 var assert = require('assert');
 var search = require('../server/lib/home-search');
 var answer = require('./fixtures/search-g3-dune.json');

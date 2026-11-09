@@ -3,6 +3,7 @@
  * reverse lookup of them
  */
 
+require('./fake-clock').install();
 var assert = require('assert');
 var dns = require('dns');
 var os = require('os');
