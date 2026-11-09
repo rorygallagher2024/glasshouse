@@ -9303,6 +9303,10 @@
   "from": "Its screen saver file is over {kb} KB.",
   "text": "Son fichier d'écran de veille dépasse {kb} Ko."
  },
+ "srv.saver.badChoices": {
+  "from": "{file}: choices needs options, each with an id, a name and a short value without spaces or quotes, and a default naming one of them.",
+  "text": "{file} : choices doit avoir des options, chacune avec un id, un nom et une valeur courte sans espaces ni guillemets, et un default qui en nomme une."
+ },
  "srv.saver.badFolder": {
   "from": "Its folder name, \"{name}\", can only have lowercase letters, digits and -, starting with a letter or digit, up to 32 characters.",
   "text": "Le nom de son dossier, « {name} », ne peut contenir que des lettres minuscules, des chiffres et -, commençant par une lettre ou un chiffre, jusqu'à 32 caractères."
@@ -9318,6 +9322,10 @@
  "srv.saver.badUses": {
   "from": "{file}: uses must be a list.",
   "text": "{file} : uses doit être une liste."
+ },
+ "srv.saver.choiceUses": {
+  "from": "{file}: choices and \"choice\" in uses go together.",
+  "text": "{file} : choices et « choice » dans uses vont ensemble."
  },
  "srv.saver.format": {
   "from": "{file} is in format {format}, and this Glasshouse reads format {known}.",
@@ -9358,6 +9366,10 @@
  "srv.saver.noStats": {
   "from": "It asks for the TV's readings, which only Glasshouse's own screen savers are given.",
   "text": "Il demande les mesures de la TV, données uniquement aux écrans de veille propres de Glasshouse."
+ },
+ "srv.saver.notClosed": {
+  "from": "the screen saver on the TV did not close, so the switch was left undone",
+  "text": "l'écran de veille de la TV ne s'est pas fermé, le changement n'a donc pas été fait"
  },
  "srv.saver.notObject": {
   "from": "{file} is not a JSON object.",
@@ -9438,6 +9450,10 @@
  "srv.saver.stockLater": {
   "from": "LG's screen saver is set, and the TV uses it from its next restart: it did not take the change without restarting its app manager, which has left the picture or sound off on some TVs.",
   "text": "L'écran de veille de LG est défini, et la TV l'utilisera dès son prochain redémarrage : elle n'a pas pris le changement sans redémarrer son gestionnaire d'apps, ce qui a laissé l'image ou le son désactivés sur certaines TV."
+ },
+ "srv.saver.stuck": {
+  "from": "The TV is stuck starting a screen saver and refuses to start another until it is restarted. Restart the TV to clear it.",
+  "text": "La TV est bloquée en démarrant un écran de veille et refuse d'en démarrer un autre tant qu'elle n'a pas redémarré. Redémarrez la TV pour la débloquer."
  },
  "srv.saver.switching": {
   "from": "The TV is still switching screen savers. Try again in a minute.",
@@ -9683,10 +9699,6 @@
   "from": "Added on this TV",
   "text": "Ajouté sur cette TV"
  },
- "ss.bright": {
-  "from": "Bright",
-  "text": "Clair"
- },
  "ss.brightness": {
   "from": "Brightness",
   "text": "Luminosité"
@@ -9695,13 +9707,13 @@
   "from": "by {author}",
   "text": "par {author}"
  },
+ "ss.choice": {
+  "from": "Animation",
+  "text": "Animation"
+ },
  "ss.controlsOff": {
   "from": "Controls are disabled in config.json, so the screen saver cannot be changed from here.",
   "text": "Les contrôles sont désactivés dans config.json, donc l'écran de veille ne peut pas être changé depuis ici."
- },
- "ss.dim": {
-  "from": "Dim",
-  "text": "Sombre"
  },
  "ss.dismiss": {
   "from": "Dismiss screen saver",
@@ -11480,8 +11492,8 @@
   "text": "De l'app {app}. Ses réglages, s'il en a, sont dans cette app."
  },
  "tv.saver.brightness.hint": {
-  "from": "Dim suits a dark room and is kinder to the panel; bright suits a lit one.",
-  "text": "Sombre convient à une pièce obscure et préserve mieux la dalle ; clair convient à une pièce éclairée."
+  "from": "Lower suits a dark room and is kinder to the panel; higher suits a lit one.",
+  "text": "Plus bas convient à une pièce obscure et préserve mieux la dalle ; plus haut convient à une pièce éclairée."
  },
  "tv.saver.external": {
   "from": "Homebrew screen saver",
@@ -11534,14 +11546,6 @@
  "tv.saver.switchingScreenSavers.hint": {
   "from": "The screen may stay dark for up to a minute, then it comes back on its own.",
   "text": "L'écran peut rester noir jusqu'à une minute, puis se rallume de lui-même."
- },
- "tv.saver.toBright": {
-  "from": "Press OK for Bright",
-  "text": "Appuyez sur OK pour Clair"
- },
- "tv.saver.toDim": {
-  "from": "Press OK for Dim",
-  "text": "Appuyez sur OK pour Sombre"
  },
  "tv.saver.use": {
   "from": "Press OK to use this one",
