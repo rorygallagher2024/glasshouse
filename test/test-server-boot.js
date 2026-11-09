@@ -91,7 +91,7 @@ Broker.prototype.last = function (re) {
 
 function get(port, p, cb) {
   var t0 = Date.now(), done = false;
-  var req = http.get({ host: '127.0.0.1', port: port, path: p }, function (res) {
+  var req = http.get({ host: '127.0.0.1', port: port, path: p, agent: false }, function (res) {
     var body = '';
     res.on('data', function (c) { body += c; });
     res.on('end', function () { if (!done) { done = true; cb(res.statusCode, body, Date.now() - t0); } });
@@ -210,7 +210,7 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
                     try { st = JSON.parse(ib); } catch (e) {}
                     if (ic !== 200 || !st || st.state !== 'idle') fail('install status answered ' + ic + ': ' + ib);
                   });
-                  http.get({ host: '127.0.0.1', port: port, path: '/api/apps/catalog', headers: { host: 'evil.example' } }, function (hr) {
+                  http.get({ host: '127.0.0.1', port: port, path: '/api/apps/catalog', headers: { host: 'evil.example' }, agent: false }, function (hr) {
                     hr.resume();
                     if (hr.statusCode !== 403) fail('a foreign Host reached the catalog route: ' + hr.statusCode);
                   }).on('error', function () {});

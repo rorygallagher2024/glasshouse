@@ -54,4 +54,5 @@ setTimeout(function () {
   }
   console.log('  ✓ urgent starts go first, in the order asked, and keep the gap');
   console.log('ALL test-children.js assertions passed!\n');
+  process.exit(0);
 }, 1200);

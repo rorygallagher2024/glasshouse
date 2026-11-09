@@ -807,6 +807,7 @@ function done() {
   fs.rmdirSync(stateDir);
   fs.rmdirSync(dir);
   console.log('test-remotekeys.js passed');
+  process.exit(0);
 }
 
 run(0);

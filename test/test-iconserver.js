@@ -32,7 +32,7 @@ var fakeApps = {
 var freePort = require('./ports').freePort;
 
 function request(port, method, urlPath, headers, cb) {
-  var req = http.request({ host: '127.0.0.1', port: port, method: method, path: urlPath, headers: headers || {} }, function (res) {
+  var req = http.request({ host: '127.0.0.1', port: port, method: method, path: urlPath, headers: headers || {}, agent: false }, function (res) {
     var body = '';
     res.setEncoding('utf8');
     res.on('data', function (d) { body += d; });
@@ -169,6 +169,7 @@ iconServer.start(function (err, started) {
         iconServer.stop();
         cleanup();
         console.log('ALL test-iconserver.js assertions passed!\n');
+        process.exit(0);
       });
     });
   });

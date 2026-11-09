@@ -113,6 +113,7 @@ freePort(HOST, function (port) {
               assert.deepEqual(doh.status(), {});
               console.log('  ✓ an address no longer asked for is closed');
               console.log('test-doh.js: all passed');
+              process.exit(0);
             });
           });
         });

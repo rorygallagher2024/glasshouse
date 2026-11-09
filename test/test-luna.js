@@ -153,6 +153,7 @@ luna.call('com.webos.service.tv.systemproperty/getSystemProperties', { keys: ['m
             assert.ok(waited < 1000, 'a call waited ' + waited + 'ms after the clock stepped back');
             console.log('  ✓ a clock stepped back does not hold starts up');
             console.log('ALL test-luna.js assertions passed!\n');
+            process.exit(0);
           });
         }, 'two subscriptions and a call to start');
       };

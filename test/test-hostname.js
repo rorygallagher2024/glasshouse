@@ -52,6 +52,7 @@ function next() {
     os.networkInterfaces = origInterfaces;
     Date.now = origNow;
     console.log('ALL test-hostname.js assertions passed!\n');
+    process.exit(0);
     return;
   }
   fn(next);

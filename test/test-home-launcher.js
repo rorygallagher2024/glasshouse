@@ -152,7 +152,7 @@ var server = http.createServer(routes.handleRequest), port;
 function request(method, url, body, type, cb) {
   var h = { 'Content-Length': body ? body.length : 0 };
   if (type) h['Content-Type'] = type;
-  var req = http.request({ hostname: '127.0.0.1', port: port, method: method, path: url, headers: h }, function (res) {
+  var req = http.request({ hostname: '127.0.0.1', port: port, method: method, path: url, headers: h, agent: false }, function (res) {
     var chunks = [];
     res.on('data', function (d) { chunks.push(d); });
     res.on('end', function () { cb(res.statusCode, Buffer.concat(chunks).toString('utf8'), res.headers); });
@@ -414,6 +414,7 @@ server.listen(0, '127.0.0.1', function () {
       home.stop();
       rmTree(dir);
       console.log('test-home-launcher.js: ' + tests.length + ' passed');
+      process.exit(0);
       return;
     }
     var t = tests[i++];

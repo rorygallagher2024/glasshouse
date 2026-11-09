@@ -781,7 +781,10 @@ console.log('ALL test-controls.js assertions passed!\n');
   function next(i) {
     if (i === cases.length) {
       done = i;
-      return console.log('  ✓ a powerOff answered with a failure counts as done once the TV is switching off');
+      console.log('  ✓ a powerOff answered with a failure counts as done once the TV is switching off');
+      assert.strictEqual(done, cases.length, 'every powerOff case answered');
+      process.exit(0);
+      return;
     }
     var c = cases[i], calls = [];
     controls.init({
