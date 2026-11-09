@@ -518,6 +518,10 @@ function restartSamNow(cb) {
 
     function restoreApp(err) {
       if (savedAppId && savedAppId !== 'com.webos.app.home' && savedAppId !== 'com.webos.app.screensaver' && lunaFn) {
+        if (!samrescan.hasHdmiSignal(savedAppId)) {
+          if (cb) cb(!err);
+          return;
+        }
         var attempts = 0;
         function tryRestore() {
           attempts++;

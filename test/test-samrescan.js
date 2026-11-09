@@ -333,4 +333,47 @@ step(function () {
   }));
 });
 
+// 13. An HDMI input without an active video signal (e.g. asleep device with PHY Lock[0]) is not launched again after sam restarts.
+step(function () {
+  var hdmiDir = path.join(os.tmpdir(), 'samrescan-hdmi-' + process.pid);
+  fs.mkdirSync(hdmiDir);
+  fs.mkdirSync(path.join(hdmiDir, 'port2'));
+  // port 2 corresponds to HDMI 2 in HDMI_BASE_MAP
+  fs.writeFileSync(path.join(hdmiDir, 'port2', 'status'), '[PHY Info]=> PHY Lock[0]\nis5Vconnected[1]\n');
+
+  var tv = fakeTV(null);
+  var launches = [];
+  tv.luna = (function (inner) {
+    return function (uri, payload, cb) {
+      if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.hdmi2' });
+      if (uri === 'com.webos.applicationManager/launch') { launches.push(payload.id); return cb({ returnValue: true }); }
+      inner(uri, payload, cb);
+    };
+  })(tv.luna);
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5, portStatusDir: hdmiDir,
+                   exec: function (file, args, opts, cb) { process.nextTick(function () { cb(null); }); } });
+
+  assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi2'), false, 'PHY Lock 0 is not active');
+  assert.strictEqual(samrescan.hasHdmiSignal('netflix'), true, 'non-HDMI is always ok');
+  assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi1'), true, 'missing status file is ok');
+
+  samrescan.restart(function (done) { done(true); }, checked(function (ok) {
+    assert.strictEqual(ok, true);
+    assert.deepEqual(launches, [], 'inactive HDMI 2 was not launched');
+
+    // With active PHY Lock[1], it is launched
+    fs.writeFileSync(path.join(hdmiDir, 'port2', 'status'), '[PHY Info]=> PHY Lock[1]\nis5Vconnected[1]\n');
+    assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi2'), true, 'PHY Lock 1 is active');
+    samrescan.restart(function (done) { done(true); }, checked(function (ok2) {
+      assert.strictEqual(ok2, true);
+      assert.deepEqual(launches, ['com.webos.app.hdmi2'], 'active HDMI 2 was launched');
+      fs.unlinkSync(path.join(hdmiDir, 'port2', 'status'));
+      fs.rmdirSync(path.join(hdmiDir, 'port2'));
+      fs.rmdirSync(hdmiDir);
+      console.log('  \u2713 an inactive HDMI input is not launched again after sam restarts');
+      next();
+    }));
+  }));
+});
+
 next();
