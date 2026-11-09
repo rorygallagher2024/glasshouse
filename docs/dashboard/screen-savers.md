@@ -6,7 +6,7 @@ The **Screensaver** tab, `/?tab=screensaver`, provides fifteen alternatives to L
 
 *The Screensaver tab in the web dashboard.*
 
-Each mode can be shown from 5% to 100% brightness, designed with deep black backgrounds and continuously drifting or undulating elements to prevent OLED burn-in and image retention. Clocks and the time on Panel vitals automatically format in 12-hour or 24-hour time to match the TV's system settings.
+Each mode can be shown from 5% to 100% brightness, designed with deep black backgrounds and continuously drifting or undulating elements to prevent OLED burn-in and image retention. Clocks and the time on Panel vitals automatically format in 12-hour or 24-hour time to match the TV's system settings. On a wide screen, the screen saver list sits beside the controls and scrolls within its own box so the controls stay in view; on narrower screens and phones, it flows down the page.
 
 A firmware update restores the LG default.
 
