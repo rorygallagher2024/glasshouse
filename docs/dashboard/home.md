@@ -15,37 +15,37 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    Every app from LG's launcher with its native icon, and each web page saved to the Home screen, which opens in the TV's browser. LG's promotional tiles (LG Channels, Sports, Always Ready, Alexa, Camera) start hidden, and apps [Hide home screen system apps](#hide-home-screen-system-apps) was hiding stay hidden here. Includes **Notifications**, **Search**, and an **LG Home** tile at the end, which can be hidden like any app (the remote's **Home** button still leads back to LG's Home).
+    Installed applications with native icons, saved web pages, and quick tiles for **Notifications**, **Search**, and **LG Home**. Promotional clutter starts hidden, and apps can be reordered, hidden, or grouped into a **More apps** folder.
 
--   **Magic Remote & scrolling**
+-   **Magic Remote & navigation**
 
     ---
 
-    With the Magic Remote's pointer, hovering a tile focuses it and clicking opens it. Resting the pointer near either end of a row glides the row that way — faster the further out it points, with a soft arrow at the edge where there is more off-screen — gathering speed smoothly and braking into the last tile. The scroll wheel steps the hovered row one tile per notch, arrow keys continue from the tiles currently in view, and returning from an app preserves the focused tile and every row's scroll position.
+    Hover to focus, click to open, and rest near row edges to glide smoothly across off-screen tiles. The scroll wheel and arrow keys navigate seamlessly, preserving focused tiles and scroll positions when returning from an app.
 
 -   **Inputs & HDMI-CEC devices**
 
     ---
 
-    A **TV** tile for the TV's own tuner comes first, with the channel it was last on; selecting it opens Live TV. It is there on TVs with channels tuned, and can be hidden like any other input. After it, every HDMI port, plus separate tiles for connected HDMI-CEC devices (for example, *"HDMI 2, through STEREO 70s"*). Each HDMI or CEC tile has an icon chosen from the device's name: a controller for an Xbox or PlayStation, a handheld for a Nintendo Switch, a streaming box for an Apple TV, Roku, Chromecast or Fire TV, and a soundbar, disc, computer or cable-box icon for those, with an HDMI plug for anything else. Selecting a CEC tile wakes the device and switches receivers to that source; inactive ports appear dimmed. Inputs can be hidden one by one, like apps. Beside that, **Hide inputs with nothing connected**, a switch in the Inputs row's settings on the dashboard and in the TV app, leaves out ports with nothing plugged in instead of dimming them, marked **Left out**; they show, dimmed, while arranging, and come back as soon as something is plugged in. An input is left out if it is hidden or, with that switch on, has nothing connected.
+    Shows the TV's internal tuner and HDMI ports with device-specific icons, plus dedicated tiles for HDMI-CEC devices connected through AV receivers. Disconnected ports appear dimmed or can be hidden automatically. See [Inputs and connected devices](#inputs-and-connected-devices).
 
 -   **Channels**
 
     ---
 
-    Favourite live TV channels added from the dashboard or TV app, showing the current broadcast programme from the TV guide when available.
+    Favourite live broadcast TV channels added from the dashboard or TV app, showing current programme details from the TV guide when available.
 
 -   **Internet TV**
 
     ---
 
-    The starred channels of your Internet TV lineup, chosen on the dashboard or from the row itself. Each tile shows the channel's logo, drawn as plain light type, or its name where it has none, with what is on now and next. See [Internet TV](#internet-tv).
+    The starred channels of your Internet TV lineup, chosen on the dashboard or from the row itself, with logos and what is on now and next. See [Internet TV](#internet-tv).
 
 -   **Recommended**
 
     ---
 
-    The titles the TV's apps put on LG's Home, such as Netflix's *Continue watching*, Prime Video's picks, Disney+, HBO Max and YouTube, as a row of cards with each app's picture, title and category. **OK** opens the app at that title. With an app in focus on the Apps row, by the keys or the pointer, the row shows only that app's cards (*From Netflix*), and **Down** reaches them; on a tile with no cards, such as an input or LG Home, it shows every app's, in the Apps row's order. An app hidden there shows none. The row starts under Apps and is moved like the others, but its cards are not arranged one by one. **Off by default**: switch it on in the Recommended row's settings on the dashboard or in the TV app. The pictures are loaded from each app's own servers, as on LG's Home; nothing else is sent. Tried on webOS 10 and on a 43UM7100PLB with webOS 4.10.2. On a C2 with webOS 9.2 the TV listed no apps' titles, so the row stays hidden there and the switch says none are listed.
+    Shows continuing titles and recommendations from installed streaming apps (such as Netflix, Prime Video, Disney+, and YouTube) as a row of cards below Apps. Off by default. See [Recommended row](#recommended-row).
 
 -   **Recent apps (`Back` button)**
 
@@ -63,70 +63,70 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    When **Live preview** is switched on, resting on an input or a TV channel for a moment shows it live and silent in the top right, with its name and programme beside it. With **Picture details** on too, the plate moves beside the picture, level with its foot, and describes what it shows: the input's signal as it arrives, or the channel's resolution, frame rate and HDR as the tuner decodes it, and the picture mode and OLED light it gets. Devices behind one receiver share its HDMI input, so each shows what that input shows. An input with nothing coming in, or a channel off air, says so. Moving to another input takes the TV's HDMI receiver off the one that was on, without sending anything over CEC, and a channel previewed this way does not become the TV's last channel. The preview stops while the screen saver is over Home, and comes back when it ends. It is off by default.
-
-    Resting on the **TV** tile previews the channel it was last on. Two options show under Live preview while it is on, both off by default and not offered on webOS 4, where neither plays. **Keep the preview on** runs the preview whenever Glasshouse Home is on screen, not only while a tile with one is chosen: on the HDMI input last watched, or otherwise on the TV's last channel; choosing another input or channel moves it there. **Preview in the tile** shows it in the tile it previews, under the tile's own name, rather than beside the clock with the picture details under it.
-
-    Changing **Picture details** shows or hides the strip during a preview, without restarting the picture.
-    Pressing **OK** releases the preview while the input or channel opens.
+    Hovering an input, TV channel, or Internet TV tile displays a live, silent video preview beside the clock or directly within the tile, along with current signal and programme details. Off by default. See [Live preview](#live-preview).
 
 -   **Weather badge**
 
     ---
 
-    An icon and the current temperature, level with the clock, with the place and a short condition label on the date's line. The **Weather** setting in the Home tab's Home customisation section chooses where it comes from:
+    Displays current temperature, condition icon, and location level with the clock, sourced from Home Assistant or Open-Meteo. See [Weather badge](#weather-badge).
 
-    * **From Home Assistant**, the default: whatever was last written to the `text.lg_tv_weather` entity, a JSON string such as `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}` ([entities](../HOME-ASSISTANT-ENTITIES.md)), which an automation keeps current: [an example](../HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home). `city` is optional, and the temperature is shown in the unit sent.
-    * **From the internet**: the weather from [Open-Meteo](https://open-meteo.com/) for a place you search for by name under the setting. The TV asks for it every 30 minutes while the screen is on, and sends only the place's position; nothing is asked for while the TV is off. Temperatures are in °C, or °F for a place in the US and the few other countries that use it. *Weather data by Open-Meteo.com* shows in the bottom corner while it is on screen.
-    * **Off**.
-
-    The badge shows once there is weather, is kept when the TV restarts, and is hidden once 3 hours pass without an update or, from Home Assistant, when an empty value is sent. The TV app's Home section steps through the same three; a place is chosen on the web dashboard.
-
--   **Last watched, app count, CEC addresses and channel logos**
+-   **Badges & labels**
 
     ---
 
-    **Last watched** (the top strip and the marker on that input's tile), **App count** (the "4 of 18 shown" beside Apps), **CEC addresses** (on each input tile) and **Channel logos** (on Internet TV, showing the channel's name when off) are on by default, and each can be switched off from either dashboard's Home tab.
+    Customizable status badges across rows: **Last watched** (top banner and active input highlight), **App count** (e.g. "4 of 18 shown"), **CEC addresses** on input tiles, and **Channel logos** for Internet TV. See [Badges and labels](#badges-and-labels).
 
-    Behind a receiver, Last watched names the device the TV last selected on that port, such as the console rather than the receiver, and marks only its tile. Where the TV has not recorded one, every device on the port is named.
-
-    The top strip stays empty until the saved layout loads. Switching **Last watched** off leaves the clock in place.
-
--   **Clock and rows along the bottom**
+-   **Rows along the bottom**
 
     ---
 
-    **Clock and date** is on by default; switched off, its space stays empty, so the rows do not move. **Rows along the bottom** puts the rows of apps and inputs along the bottom of the screen, as on LG's Home, rather than in the middle. The row in focus sits at the bottom and the rows after it wait below the screen: moving down scrolls the rows up by one, and the rows already passed stay above. It is off by default.
-
-    ![Glasshouse Home with the clock off and the rows along the bottom](../screenshots/home-bottom.jpg)
+    Positions rows along the bottom of the screen (similar to LG's built-in launcher) instead of centered, scrolling subsequent rows into view as you navigate down. Off by default. See [Layout options](#layout-options).
 
 -   **Alternative View**
 
     ---
 
-    A smaller clock on the right, with Last watched and the Picture details plate to its left, and the rows as rounded, translucent tiles. Row titles show only while arranging, so **App count** is greyed out in this view. It is off by default, and works with **Rows along the bottom** and the other switches. Thanks to @wkirby86.
-
-    ![Glasshouse Home in Alternative View with the rows along the bottom](../screenshots/home-alternative.jpg)
-
-    With the clock, Last watched and CEC addresses switched off and the Abstract wallpaper, it makes a minimal Home:
-
-    ![A minimal Glasshouse Home: Alternative View with the clock, Last watched and CEC addresses off, apps and one input over the Abstract wallpaper](../screenshots/home-minimal.jpg)
+    A compact layout featuring rounded translucent tiles, a smaller clock on the right, and status indicators aligned horizontally. Can be combined with **Rows along the bottom** for a minimalist home screen. See [Layout options](#layout-options).
 
 -   **Animations**
 
     ---
 
-    Each kind of motion has its own switch. **Fade in and out** (off by default) fades Glasshouse Home out before an app, input, channel or recent app opens, and back in when it returns. **Notifications** and **Search**, which open over Home, do not fade it.
-
-    The others are on by default: **Wallpaper drift**, the wallpaper's slow movement; **Wallpaper cross-fade**, from one part of the day's picture to the next; **Smooth scrolling**, rows gliding to the chosen tile rather than jumping; and **Sliding panels**, Recent apps, Search and More apps sliding in and out.
+    Independent switches for motion and transitions: smooth row scrolling, wallpaper drift, cross-fades between times of day, sliding panels, and smooth fade transitions when opening apps or inputs. See [Animations](#animations).
 
 -   **Colours & themes**
 
     ---
 
-    Seven built-in colour presets, starting with **Pure white**, white text with a white accent, which Glasshouse Home starts with, plus custom **Text** and **Accent** colour pickers in the web dashboard (or preset cycling in the TV app). The accent colour highlights the focused tile and the last active source.
+    Seven built-in colour presets (starting with **Pure white**), plus custom **Text** and **Accent** colour pickers. The accent colour highlights focused tiles and active sources.
 
 </div>
+
+## Inputs and connected devices
+
+The **Inputs** row displays the TV's tuner and video sources:
+
+* **Live TV tuner:** A **TV** tile comes first on TVs with channels tuned, showing the last active channel; selecting it opens Live TV. It can be hidden like any other input.
+* **HDMI ports and CEC devices:** Each HDMI port is listed, alongside separate tiles for connected HDMI-CEC devices discovered through an AV receiver or soundbar (for example, *"HDMI 2, through STEREO 70s"*).
+* **Device icons:** Each input or CEC tile automatically selects an icon matching the device's name:
+    * A controller for an Xbox or PlayStation, or a handheld for a Nintendo Switch.
+    * A streaming box for an Apple TV, Roku, Chromecast, or Fire TV.
+    * A soundbar, disc player, computer, or cable-box icon for those devices.
+    * An HDMI plug for generic sources.
+* **CEC wake and receiver switching:** Selecting a CEC tile wakes the device and switches intermediary AV receivers to that source. Inactive ports appear dimmed.
+* **Hiding inputs:** Inputs can be hidden individually from the dashboard or in arrange mode.
+* **Hide inputs with nothing connected:** This switch in the Inputs row's settings on the dashboard and TV app completely omits ports with nothing plugged in instead of dimming them, marked **Left out**. They show dimmed while arranging, and return as soon as a cable or device is plugged in. An input is left out if it is hidden or, with that switch on, has nothing connected.
+
+## Recommended row
+
+The **Recommended** row surfaces content cards provided by installed streaming apps:
+
+* **Content cards:** Displays titles that apps put on LG's Home, such as Netflix's *Continue watching*, Prime Video picks, Disney+, HBO Max, and YouTube, with each app's artwork, title, and category. Pressing **OK** opens the app directly at that title.
+* **App-specific filtering:** When an app is focused in the Apps row (via remote keys or pointer), the Recommended row filters to show only cards from that service (*From Netflix*), accessible by pressing **Down**. When focusing a tile with no recommendations (such as an input or LG Home), cards from all apps are shown in the Apps row's order. Hidden apps show no recommendations.
+* **Row positioning:** The row appears under Apps by default and can be reordered like other rows, though individual cards within it are ordered by the respective streaming apps.
+* **Privacy:** Artwork is loaded directly from each app's own servers, as on LG's Home; no extra telemetry is sent.
+* **Availability:** Switched off by default in the Recommended row settings on the dashboard or TV app. Supported on webOS 10 and webOS 4.10; on TVs where the system reports no app recommendations (such as a C2 on webOS 9.2), the row remains hidden and the switch indicates none are available.
 
 ## Search
 
@@ -139,174 +139,123 @@ LG's search needs the TV online and LG's search server (`gb.nextlgsdp.com` on a 
 
 ## Internet TV
 
-Internet TV puts channels from your own IPTV provider in a row of their own,
-below Channels. Glasshouse comes with no playlists or channels: you add the
-same **M3U link** or **Xtream login** you gave IPTV Smarters, TiviMate or a
-similar app, in the **Internet TV** section of the **Home** tab, with a guide
-(XMLTV) link if the playlist has none. An Xtream login brings its own guide.
+Internet TV places channels from your IPTV provider into a dedicated row on Glasshouse Home, positioned below Channels. Glasshouse does not bundle playlists or channels; you provide your own **M3U playlist link** or **Xtream Codes login** in the **Internet TV** section of the **Home** tab, along with an optional XMLTV guide link (Xtream logins include their own guide automatically).
 
-The playlist is read on the TV, in the background, and again each night;
-the guide every six hours. Each playlist shows how many live channels it has,
-when it and its guide were last read, when the account ends and how many
-streams it allows at once. **Refresh** reads it now, **Edit** changes it (a
-password left blank keeps the one saved), and **Remove** deletes it and its
-channels from the TV. A playlist that cannot be read keeps the list from
-before; one whose login is refused is not tried again until you edit or
-refresh it, as providers block an address after repeated failed logins.
+* **Background sync:** The playlist is parsed locally on the TV upon entry and refreshed automatically every night; the TV guide (XMLTV) is updated every six hours.
+* **Account status:** Each configured playlist displays its live channel count, last sync timestamp, subscription expiry date, and maximum simultaneous streams allowed.
+* **Playlist actions:**
+    * **Refresh:** Re-reads the playlist and guide immediately.
+    * **Edit:** Updates credentials or URLs (leaving the password blank preserves the existing password).
+    * **Remove:** Deletes the playlist, cached guide, and associated channels from the TV.
+* **Failure handling:** If a playlist is temporarily unreachable, the previous channel list is retained. If login authentication is refused, automatic retries pause until edited or refreshed manually, preventing account lockouts from repeated failed attempts.
 
 ### Choosing channels
 
-A subscription can list tens of thousands of channels. The ones the TV
-carries are its **lineup**, up to 2,000, numbered as a broadcaster numbers
-its guide; the ones starred, up to 60, make the row on Glasshouse Home.
-**Manage channels**, in the Internet TV section of the Home tab, opens the
-lineup on a page of its own:
+IPTV subscriptions often contain tens of thousands of streams. Glasshouse organizes them into two tiers:
+
+* **The Lineup (up to 2,000 channels):** The active channel collection stored on the TV, numbered like a traditional broadcaster guide.
+* **Home's row (up to 60 starred channels):** The favourite channels chosen with a star to appear directly on the Glasshouse Home screen.
+
+Clicking **Manage channels** in the Internet TV section of the dashboard opens a dedicated three-column channel manager:
 
 ![The Internet TV channels page](../screenshots/iptv-channels-web.jpg)
 
-Providers' names are shown tidied, as Home shows them: the tier or country
-they start with ("VIP: ", "UK| ") set small before the name, quality marks
-("ᴴᴰ", "HEVC") as small tags after it, and capitals in title case. Nothing
-is dropped, so two versions of a channel still tell apart; the provider's
-own name shows when you point at one.
+#### Channel name cleanup
 
-- **On the left**, the provider's groups, under their country or tier where
-  the provider prefixes them, with how many channels each has and how many
-  are in the lineup. **Filter groups** narrows them by name.
-  Hidden groups, ones never watched (another country, films), are listed
-  at the end and left out of searches.
-- **In the middle**, a group's channels, or those found by **Find a channel
-  by name** across the whole playlist (**Only in** narrows it to the group
-  that was open). A channel
-  in the lineup shows its number there. **Add** and **Take out** on a row
-  act on that channel at once. **Add the whole group** makes the group a
-  section of its own that follows the provider: channels it adds later
-  join, and ones it drops go. Drag its channels to order them; a channel the
-  provider adds later goes at the end. **Take the 12 out** takes out every
-  channel of the group that is in the lineup.
-- **On the right**, the lineup in number order: first **Home's row**, the
-  starred channels as the row's tiles, in order (click one to find it in
-  the lineup; **Arrange the order** lists them to drag or move with the
-  arrows; **Unstar all** empties it), then each section. A section
-  starts where the one before ends, or at a number of its own (click its
-  number: 101, 401, as Entertainment and Sport are on a broadcaster's
-  guide). Click a section's name to rename it; the arrows move it, and the
-  cross removes it. A star puts a channel on the row and takes it off; the
-  pencil, or a double click on the name, renames it (an empty name brings
-  the provider's back). Channels picked one by one go in a section that
-  keeps your order. **Empty the lineup** takes everything out.
+Names from providers are automatically normalized for readability on the TV:
 
-Everything in the three lists can be selected, for changes to many at once:
-click a channel (or a group's box), Shift-click for every one between, or
-the box at the top of a list for all of it, a whole group's channels
-included. A
-selection can grow over several searches or filters. The bar at the
-bottom then acts on all of it:
+* Country and tier prefixes (such as `"VIP: "` or `"UK| "`) are displayed as small prefix labels.
+* Resolution and codec tags (such as `ᴴᴰ`, `ᴿᴬᵂ`, or `HEVC`) appear as small quality badges.
+* ALL-CAPS names are converted to Title Case.
+* Original provider names remain intact when hovering over a channel.
 
-- **Groups**: add them as whole groups, take out every channel of theirs in
-  the lineup (whole groups and channels picked from them alike), hide them
-  or show them again.
-- **Channels**: add them to the lineup, add and star them, or **Add to…** a
-  section of your own, or a new one named after their group.
-- **The lineup**: star or unstar them, **Move to…** another section of
-  picked channels or a new one (a channel moved out of a whole group stays
-  out of it), rename one, or take them out. Delete takes them out too.
+#### The three-column channel manager
 
-Each action ends the selection, so the next click starts a new one.
+* **On the left (Groups):**
+    * Lists the provider's channel categories grouped by country or tier, showing total channel count and how many are currently in your lineup.
+    * **Filter groups:** Quickly filters the list by category name.
+    * **Hidden groups:** Unwanted categories (foreign languages, movies, adult) can be moved to the end and excluded from searches.
+* **In the middle (Group channels & search):**
+    * Displays channels for the currently selected group, or search results from **Find a channel by name** across the whole playlist (**Only in** restricts search to the active group).
+    * Channels already in your lineup display their assigned channel number.
+    * **Add** / **Take out:** Instantly adds or removes individual channels.
+    * **Add the whole group:** Creates a dynamic lineup section that follows the provider: newly added provider channels join automatically, and dropped channels are removed. Drag channels to reorder them (new channels append to the end).
+    * **Take out group:** Removes all channels belonging to the group from the lineup at once.
+* **On the right (Lineup & Home row):**
+    * **Home's row:** Starred channels displayed at the top in row order. Click a channel to locate it in the lineup, use **Arrange the order** to reorder via drag-and-drop or arrow buttons, or click **Unstar all** to clear the row.
+    * **Lineup sections:** Numbered channel blocks. A section starts immediately after the preceding section or at a custom number (e.g. `101`, `401`, like satellite/cable guides).
+    * **Customization:** Click a section name to rename it, use arrow buttons to move sections up or down, or click the cross icon to remove a section.
+    * **Starring & renaming:** Star a channel to toggle it on Home's row; click the pencil icon (or double-click the name) to rename a channel (clearing the name restores the provider's title).
+    * **Empty the lineup:** Clears all channels and sections from the TV.
+
+#### Batch editing and keyboard shortcuts
+
+Multiple channels and groups can be selected across searches and filters:
+
+* **Selecting items:** Click a channel or group checkbox, Shift-click to select a range, or click the master checkbox at the top of a column to select all items.
+* **Bottom action bar:**
+    * **Groups:** Add selected groups, remove all their channels from the lineup, or hide/show them.
+    * **Channels:** Add selected channels to the lineup, add and star them, or choose **Add to…** to create a new section or assign them to an existing section.
+    * **Lineup:** Star/unstar selected channels, **Move to…** another section, or remove them (pressing Delete also removes selected channels).
+* **Undo:** The **Undo** button at the top reverts up to 20 recent changes (history resets when the TV restarts).
+* **Keyboard navigation:** Press Escape to clear the current selection, or press it again to exit the channel manager.
 
 ![Every BBC One found, selected, and Add to… open on the bar](../screenshots/iptv-channels-search.jpg)
 
-**Undo**, at the top or after each change, takes back the last change, and
-again the one before, up to 20. The TV forgets them when it restarts.
-With no saved edits, it says there is nothing to undo.
-Escape clears the selection, then closes the page.
+#### Mobile, TV app, and TV screen management
 
-On a phone the three are tabs: **Groups**, **Channels** and **Lineup**.
+* **On mobile phones:** The three columns are presented as swipeable tabs: **Groups**, **Channels**, and **Lineup**.
 
-![The lineup on a phone](../screenshots/iptv-channels-phone.jpg)
+    ![The lineup on a phone](../screenshots/iptv-channels-phone.jpg)
 
-The TV app's Home section opens the same lineup from its **Internet TV**
-entry: the row's order and channel logos, the row's channels, each section
-with its numbers, and **Add channels** with the provider's groups. **OK** stars a channel or takes its
-star off, adds one from a group or takes it out, or adds a whole group;
-in a section, **Numbers start at** moves the start on to the next hundred
-and one with each press. Renaming, which needs typing, is on the browser.
+* **In the TV app:** The **Internet TV** section provides remote-friendly lineup editing: view and reorder Home's row, browse provider groups, star/unstar channels with **OK**, and use **Numbers start at** to advance section numbering by hundreds. (Renaming channels requires the web dashboard).
 
-![Internet TV channels in the TV app](../screenshots/iptv-channels-tv-app.jpg)
+    ![Internet TV channels in the TV app](../screenshots/iptv-channels-tv-app.jpg)
 
-On the TV, the row's last tile while arranging (hold **OK**), or its only
-tile before any channels join the lineup, is **Add channels**: a panel with your playlists,
-their groups and their channels, where **OK** adds one to the lineup and
-the row, and typing searches. Channels that need a player sending its own
-headers, or are protected (DRM), are marked and cannot be added. Some
-protected channels aren't marked in the playlist, such as RTÉ's in public
-lists. When one of those won't play, Glasshouse Home finds out why, says it
-is protected, and marks it from then on. The row's order is changed as the
-Channels row's is.
+* **Directly on the TV screen (Add channels tile):**
+    * While arranging rows (hold **OK**), or when the lineup is empty, an **Add channels** tile appears on the row.
+    * Selecting it opens a search panel to browse playlists, groups, and channels directly from the couch.
+    * **DRM and unsupported streams:** Channels requiring custom player headers or DRM encryption are marked and cannot be added. If an unflagged DRM stream fails to play (such as RTÉ streams in public playlists), Glasshouse identifies the restriction, displays an explanatory notice, and marks the channel as protected from then on.
 
-On the row, names are tidied: a provider's prefix such as *VIP:* goes, and
-quality marks such as *ᴴᴰ* or *ᴿᴬᵂ* show as plain tags in the player. With
-**Live preview** on, resting on a channel plays it, silent, in the preview.
-**OK** grows the preview to the whole screen, or opens the channel there:
+### Full-screen player and controls
 
-- **OK** opens the channel list, a section of the lineup at a time; **Left** and **Right** change section,
-  **OK** on a channel switches to it, and **Back** closes it.
-- **Up**, **Down**, **CH+** and **CH−** change channel through the whole
-  lineup, and the number keys go to a channel by its number in it.
-- **Info** shows the band with what is on now and next, which also shows for
-  five seconds at each change.
-- **Back** or **Home** goes back to Home, the channel still playing in the preview with
-  **Live preview** on.
+When opening a channel from the Internet TV row or live preview, playback opens full screen:
 
-**Preview in the tile** also applies to Internet TV. **OK** grows that picture
-to full screen; **Back** returns it to the tile without opening another stream.
-The guide keeps its preview beside the clock.
+* **Remote navigation:**
+    * **OK:** Opens the channel list one section at a time. Use **Left** / **Right** to switch sections, **OK** to tune a channel, and **Back** to close the list.
+    * **Up / Down / CH+ / CH−:** Steps through channels across the entire lineup.
+    * **Number keys:** Directly jumps to a channel by its lineup number.
+    * **Info:** Displays the programme banner showing what is on now and next (also appears automatically for 5 seconds on each channel change).
+    * **Yellow button:** Switches between **HLS** and **MPEG-TS** stream formats for provider accounts. The TV remembers the selected stream format for each channel.
+    * **Back or Home:** Returns to Glasshouse Home. If [Live preview](#live-preview) is enabled, the channel continues playing silently in the preview.
+* **Preview in the tile:** With **Preview in the tile** enabled under Live preview settings, channels play directly inside their Home tile. Pressing **OK** smoothly expands the video to full screen, and pressing **Back** returns it to the tile without opening a new stream.
 
 ![An IPTV channel previewing in its tile on a G3](../screenshots/iptv-preview-in-tile.jpg)
 
-**Guide** stays on the row when the lineup has channels, even with none starred.
-It, or **Info** on the row, shows two and a half hours of the
-lineup's programmes at a time, from the half hour before now, with an
-amber line at the time now. **Up** and **Down** move between channels at the
-same time, **Left** and **Right** between programmes, moving the hours shown
-as they go (from two hours back to a day ahead). **Channel up** and
-**Channel down** turn a page of channels at a time. Above the channels, the
-favourites and the lineup's sections are tabs: **Up** from the first channel reaches them, and
-**Left** and **Right** choose one. The top of the screen names the programme
-in focus, its times and what it is about, with the channel in the preview.
-**OK** on a programme on now plays it; on one to come, it says when it
-starts. The guide comes from the playlist's guide link, or the Xtream
-account's own: its whole guide every six hours once the lineup goes beyond
-the row, and the row's channels every half hour. A channel with none says so.
+### Electronic Programme Guide (EPG)
+
+Whenever the lineup contains channels, a **Guide** tile remains accessible on the Internet TV row (even if no channels are currently starred):
 
 ![The guide on a G3](../screenshots/iptv-home-guide.jpg)
 
-The remote's **Guide** button opens LG's own guide of the aerial and
-satellite channels; webOS gives it to LG before Glasshouse Home sees it.
-**The remote's Guide button**, in the Internet TV section of the Home tab,
-chooses **LG's TV guide** or **Glasshouse Home's guide**. The second opens
-Glasshouse Home at its guide from wherever the TV is, an app or an input
-included. It is the same setting as the Guide key on the Apps tab's remote
-keys, where a key can be set to anything else; the Home tab then names what
-it opens. While Glasshouse Home is switched off or has no playlist, Guide
-opens LG's guide again, and the choice comes back with them. Not offered on
-webOS 11.
+* **EPG grid view:** Selecting **Guide** (or pressing **Info** while on the Internet TV row) displays a 2.5-hour programme timeline starting 30 minutes before the current time, marked with an amber vertical line at the current time.
+* **Navigation:**
+    * **Up / Down:** Moves through channels at the current time slot.
+    * **Left / Right:** Scrolls horizontally through time (from 2 hours in the past up to 24 hours ahead).
+    * **Channel Up / Channel Down:** Pages through channels a full screen at a time.
+    * **Top section tabs:** Moving **Up** from the first channel highlights section and favourites tabs; use **Left** and **Right** to switch sections.
+    * **Programme details:** The top banner displays the title, start/end times, and synopsis of the focused programme, accompanied by a live preview of the channel.
+    * **Tune / Scheduled:** Pressing **OK** on an active programme tunes to the channel; pressing **OK** on an upcoming programme shows its scheduled start time.
+* **Sync schedule:** Guide data is parsed from the playlist's XMLTV URL or Xtream account. The full guide updates every 6 hours, while starred channels on Home's row refresh every 30 minutes. Channels lacking EPG data indicate none is available.
+* **Remote Guide button mapping:** LG remotes route the physical **Guide** button to LG's broadcast tuner guide by default. In the **Internet TV** section on the Home tab, the **The remote's Guide button** setting can be switched to **Glasshouse Home's guide**, opening the Glasshouse IPTV guide from anywhere on the TV (apps, HDMI inputs, or Home). If Glasshouse Home is disabled or has no playlist, the button automatically reverts to LG's tuner guide. *(Note: Physical Guide button remapping is not available on webOS 11).*
 
-Only one stream plays at a time, and each is closed before the next opens, as
-many accounts allow one or two at once across the household. If someone else
-is watching on the same account, the channel may not play: **OK** tries
-again. A channel that stops partway through reconnects by itself, back at
-the live point, for about a minute before it gives up. A channel from a
-provider login can play as either of the provider's two kinds of stream,
-HLS or MPEG-TS: **Yellow** in the full-screen player switches the channel
-playing, and the TV remembers it for that channel. If the choice cannot be
-saved, a message says so; **OK** reopens the channel with its saved choice.
-Refreshes wait while a channel plays, and the screen saver stays away while one plays full
-screen.
+### Stream handling and reliability
 
-The links and logins are kept on the TV only. They are not shown on the
-dashboard again, and never sent to Home Assistant, the logs or a phone or
-computer; see [Security](../SECURITY.md#internet-tv).
+* **Single-stream enforcement:** Many IPTV subscriptions permit only one or two simultaneous streams across an entire household. Glasshouse ensures the active stream is cleanly closed before opening the next. If all account streams are currently occupied by other devices, pressing **OK** retries the connection.
+* **Auto-reconnection:** If a live stream drops unexpectedly, Glasshouse automatically attempts to reconnect at the live broadcast edge for up to one minute before stopping.
+* **Background efficiency:** Automatic playlist and guide refreshes pause while a channel is playing.
+* **Screen saver protection:** Screen savers stay suppressed while watching full screen.
+* **Security & privacy:** Playlist URLs and Xtream login credentials remain stored strictly on the TV (`/var/lib/tvweb`). They are never displayed on the dashboard again, never transmitted to Home Assistant, and never written to debug logs. See [Security](../SECURITY.md#internet-tv).
 
 ## Background
 
@@ -474,6 +423,66 @@ Each appears where the TV has it. A TV Glasshouse Home is not offered on, such a
 ### Open Home at power-on
 
 Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch (`general.homeAutoLaunch`). While Glasshouse Home is on, the Home it opens is Glasshouse Home (see [Switching it on and off](#switching-it-on-and-off)).
+
+### Layout options
+
+The **Layout** section configures the on-screen placement of rows and status elements:
+
+* **Clock and date:** Displayed by default in the upper left; if switched off, its space remains reserved so rows do not jump.
+* **Rows along the bottom:** Places the rows along the bottom of the screen (as on LG's launcher) rather than in the middle. The row in focus sits at the bottom and subsequent rows wait below the screen: moving down scrolls the rows up by one. Off by default.
+
+    ![Glasshouse Home with the clock off and the rows along the bottom](../screenshots/home-bottom.jpg)
+
+* **Alternative View:** A compact layout with a smaller clock on the right, status badges to its left, and rounded, translucent tiles. Row titles show only while arranging, so **App count** is greyed out. Off by default, and works with **Rows along the bottom** and the other switches:
+
+    ![Glasshouse Home in Alternative View with the rows along the bottom](../screenshots/home-alternative.jpg)
+
+    Disabling the clock, Last watched, and CEC addresses over the Abstract wallpaper creates a minimal interface:
+
+    ![A minimal Glasshouse Home: Alternative View with the clock, Last watched and CEC addresses off, apps and one input over the Abstract wallpaper](../screenshots/home-minimal.jpg)
+
+### Badges and labels
+
+Individual toggles in the **Shown on Home** section control informative badges across the interface:
+
+* **Last watched:** Displays the most recently active source in the top strip and highlights its tile. Behind an AV receiver, Last watched names the specific active downstream device (e.g. the console rather than the receiver) whenever recorded by the TV; if unrecorded, all connected devices on the port are named. The top strip stays empty until the saved layout loads. Switching it off leaves the clock in place.
+* **App count:** Displays the count of visible vs total apps (e.g. *"4 of 18 shown"*) next to the Apps row header. (Hidden in Alternative View).
+* **CEC addresses:** Displays physical HDMI-CEC port addresses (such as `1.0.0.0` or `2.1.0.0`) on each input tile.
+* **Channel logos:** Displays graphical channel logos on Internet TV tiles; when disabled, channels display plain text names instead.
+* **Picture details:** Displays the active picture preset, OLED light / backlight level, and signal format in the top-right corner.
+
+### Weather badge
+
+The weather badge displays the current temperature and an icon level with the clock, with the place and condition on the date line below. The **Weather** setting on the dashboard chooses where it comes from:
+
+* **From Home Assistant (default):** Displays whatever was last written to the `text.lg_tv_weather` entity, a JSON string such as `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}` ([entities](../HOME-ASSISTANT-ENTITIES.md)). The `city` field is optional, and the temperature is shown in the unit sent. An automation keeps this current ([example automation](../HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home)).
+* **From the internet:** Weather from [Open-Meteo](https://open-meteo.com/) for a location searched by name on the dashboard. The TV queries Open-Meteo every 30 minutes while the screen is on (sending only coordinates, never polling while the TV is off). Temperatures are in °C, or °F for US locations. *Weather data by Open-Meteo.com* appears in the bottom corner while shown.
+* **Off:** Disables the badge completely.
+
+The badge appears once data is received, is kept when the TV restarts, and is hidden once 3 hours pass without an update (or when an empty value is sent from Home Assistant).
+
+### Live preview
+
+When enabled, resting on an input or a TV channel for a moment shows it live and silent in the top right, with its name and programme beside it. Off by default.
+
+* **Picture details plate:** With [Picture details](#badges-and-labels) also enabled, the plate moves beside the preview window, level with its foot, and describes what it shows: incoming HDMI resolution, refresh rate, HDR, chroma, picture preset, and backlight/OLED light levels. Changing Picture details updates the plate during a preview without restarting video playback.
+* **AV receiver handling:** Devices connected behind an AV receiver share its HDMI input, so each shows what that input shows. Moving to another input takes the TV's HDMI receiver off the active input without sending CEC commands.
+* **Tuner channels:** Previewing a channel does not make it the TV's last-watched channel. An input with no incoming signal or a channel off-air displays a status notice.
+* **Screen saver:** The preview pauses while the screen saver runs over Home, and resumes when dismissed. Pressing **OK** releases the preview while the input or channel opens full screen.
+* **Additional options (webOS 5+):**
+    * **Preview in the tile:** Renders the preview inside the hovered tile itself, under the tile's name, rather than beside the clock.
+    * **Keep the preview on:** Runs the preview whenever Glasshouse Home is on screen, showing the last-watched HDMI input or TV channel until another is focused.
+    *(These two options are not offered on webOS 4, where background video playback in tiles is unsupported.)*
+
+### Animations
+
+Each kind of motion has its own switch:
+
+* **Fade in and out (off by default):** Fades Glasshouse Home out before an app, input, channel, or recent app opens, and back in when returning. **Notifications** and **Search** open over Home without fading.
+* **Wallpaper drift (on by default):** Slow movement of the wallpaper to protect against image retention on OLED panels.
+* **Wallpaper cross-fade (on by default):** Cross-fades smoothly from one part of the day's background to the next.
+* **Smooth scrolling (on by default):** Rows glide smoothly to the focused tile rather than jumping abruptly.
+* **Sliding panels (on by default):** Slides Recent apps, Search, and More apps smoothly in and out.
 
 ### Hide home screen system apps
 
