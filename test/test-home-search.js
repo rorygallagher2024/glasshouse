@@ -382,6 +382,10 @@ var tests = [
 ];
 
 (function next(i) {
-  if (i === tests.length) return console.log('test-home-search: ' + tests.length + ' passed');
+  if (i === tests.length) {
+    console.log('test-home-search: ' + tests.length + ' passed');
+    process.exit(0);
+    return;
+  }
   tests[i](function () { next(i + 1); });
 })(0);

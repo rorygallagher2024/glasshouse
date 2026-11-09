@@ -404,6 +404,8 @@ function testFlush() {
           listener.close();
           try { fs.unlinkSync(tvweb); fs.unlinkSync(messages); fs.unlinkSync(started); fs.rmdirSync(dir); } catch (e) {}
           console.log('  ✓ a flush sends the files\' new lines at once, and only the files\'');
+          console.log('ALL test-syslog.js assertions passed!\n');
+          process.exit(0);
         }, 'the flushed line');
       });
     }, 50);

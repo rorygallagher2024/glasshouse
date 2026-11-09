@@ -167,10 +167,17 @@ function serveUdp(address, entry, cb) {
 
 // Each message over TCP comes with its length in two bytes before it.
 function serveTcp(address, entry, cb) {
+  var conns = [];
   var server = net.createServer(function (conn) {
     var buf = util.allocBuffer(0);
+    conns.push(conn);
     conn.setTimeout(IDLE_MS, function () { conn.destroy(); });
     conn.on('error', function () { conn.destroy(); });
+    conn.on('end', function () { conn.end(); });
+    conn.on('close', function () {
+      var idx = conns.indexOf(conn);
+      if (idx !== -1) conns.splice(idx, 1);
+    });
     conn.on('data', function (d) {
       buf = Buffer.concat([buf, d]);
       while (buf.length >= 2 && buf.length >= 2 + buf.readUInt16BE(0)) {
@@ -186,6 +193,7 @@ function serveTcp(address, entry, cb) {
       }
     });
   });
+  entry.conns = conns;
   var listening = false;
   server.on('error', function (err) {
     if (!listening) return cb(err);
@@ -199,6 +207,11 @@ function close(address) {
   var e = listeners[address];
   if (!e) return;
   try { if (e.udp) e.udp.close(); } catch (err) { /* already closed */ }
+  if (e.conns) {
+    for (var i = 0; i < e.conns.length; i++) {
+      try { e.conns[i].destroy(); } catch (errConn) {}
+    }
+  }
   try { if (e.tcp) e.tcp.close(); } catch (err) { /* already closed */ }
   delete listeners[address];
 }

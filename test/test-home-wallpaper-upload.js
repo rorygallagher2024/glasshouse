@@ -21,7 +21,7 @@ var server = http.createServer(routes.handleRequest), port;
 function request(method, url, body, headers, cb) {
   var h = { 'Content-Type': 'image/jpeg', 'Content-Length': body ? body.length : 0 };
   Object.keys(headers || {}).forEach(function (key) { h[key] = headers[key]; });
-  var req = http.request({ hostname: '127.0.0.1', port: port, method: method, path: url, headers: h }, function (res) {
+  var req = http.request({ hostname: '127.0.0.1', port: port, method: method, path: url, headers: h, agent: false }, function (res) {
     var chunks = [];
     res.on('data', function (d) { chunks.push(d); });
     res.on('end', function () { cb(res.statusCode, Buffer.concat(chunks), res.headers); });
@@ -79,7 +79,7 @@ var steps = [
   },
   function (next) {
     var partial = http.request({ hostname: '127.0.0.1', port: port, method: 'POST',
-      path: '/api/home/wallpapers/upload?slot=morning',
+      path: '/api/home/wallpapers/upload?slot=morning', agent: false,
       headers: { 'Content-Type': 'image/jpeg', 'Content-Length': jpeg.length } });
     partial.on('error', function () {});
     partial.write(jpeg.slice(0, 20));
@@ -234,6 +234,7 @@ server.listen(0, '127.0.0.1', function () {
     server.close(function () {
       rmTree(dir);
       console.log('Home wallpaper uploads preserve existing images on failure, recover after abort, survive restart, and are removed one time of day at a time or all at once; a set is downloaded when chosen and kept only when its checksums match, leaving the owner\'s own; an older install\'s example pictures become the landscape set.');
+      process.exit(0);
     });
   }
   next();

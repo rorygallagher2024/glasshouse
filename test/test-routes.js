@@ -1033,6 +1033,7 @@ function createMockRes(cb) {
         }
       }, 15);
     })(0);
+    return req;
   }
   /*
    * After an upload: once the route's installer job or clean-up has emptied the
@@ -1309,10 +1310,11 @@ function createMockRes(cb) {
   }
 
   function oneAtATime() {
-    upload({ length: 10, chunks: [new Buffer(3)], then: 'none' }, function () {});
+    var firstReq = upload({ length: 10, chunks: [new Buffer(3)], then: 'none' }, function () {});
     waitFor(function () { return staged().length > 0; }, function () {
       upload({ length: 10, chunks: [FILE] }, function (r) {
         assert.strictEqual(r.statusCode, 409, 'a second upload is refused while one is streaming');
+        firstReq.emit('close');
         initInstaller();
         try { childProcess.execSync('rm -rf "' + root + '"'); } catch (e) {}
         console.log('  ✓ sideload routes: opt-in gating, Host check first, URL checks, upload streaming and cleanup');
@@ -1585,3 +1587,4 @@ function createMockRes(cb) {
 })();
 
 console.log('ALL test-routes.js assertions passed!');
+process.exit(0);

@@ -53,6 +53,7 @@ var res = {
         try { fs.unlinkSync(cfgFile); } catch (e) {}
         console.log('  ✓ a restart after a settings save waits for an install that started meanwhile');
         console.log('ALL test-restart-wait.js assertions passed!\n');
+        process.exit(0);
       }, 2600);
     }, 600);
   }
