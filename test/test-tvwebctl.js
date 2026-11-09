@@ -130,8 +130,7 @@ waitFor('the server and its heartbeat', function () { return alive(serverPid()) 
         waitFor('the stuck child to be killed', function () { return /stuck before exec/.test(read(RESTARTS)); }, 20000, function () {
           mode('beat');
           var stuck = parseInt(read(MODE + '.child'), 10);
-          after(500, function () {
-            if (alive(stuck)) return finish(1, 'the stuck child is still running');
+          waitFor('the stuck child to be gone', function () { return !alive(stuck); }, 5000, function () {
             // Failed once in CI (Node 20) with no restart logged; say which it was.
             var now = serverPid();
             if (now !== second || !alive(second)) {
@@ -151,8 +150,7 @@ waitFor('the server and its heartbeat', function () { return alive(serverPid()) 
             waitFor('the restart after the server died', function () {
               return /process gone/.test(read(RESTARTS)) && serverPid() !== second && alive(serverPid());
             }, 20000, function () {
-              after(500, function () {
-                if (alive(leftover.pid)) return finish(1, 'the leftover copy is still running');
+              waitFor('the leftover copy to be cleared', function () { return !alive(leftover.pid); }, 5000, function () {
                 console.log('  ✓ a dead server\'s leftover copy is cleared before a new one starts');
 
                 // 4b. A third restart inside ten minutes gives LG's Home its
@@ -170,8 +168,7 @@ waitFor('the server and its heartbeat', function () { return alive(serverPid()) 
                 extra.unref();
                 waitFor('the extra watchdog', function () { return watchdogs() === 2; }, 5000, function () {
                   ctl('restart');
-                  after(1000, function () {
-                    if (alive(extra.pid)) return finish(1, 'a restart left the extra watchdog running');
+                  waitFor('the extra watchdog to be cleared', function () { return !alive(extra.pid); }, 5000, function () {
                     if (watchdogs() !== 1) return finish(1, 'a restart left ' + watchdogs() + ' watchdogs');
                     ctl('start');
                     if (watchdogs() !== 1) return finish(1, 'a start beside a watchdog left ' + watchdogs());

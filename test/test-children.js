@@ -2,6 +2,7 @@
  * test/test-children.js - Child starts come from a timer, and urgent ones go ahead of the launch queue, in turn
  */
 
+require('./fake-clock').install();
 var assert = require('assert');
 var util = require('../server/lib/util');
 

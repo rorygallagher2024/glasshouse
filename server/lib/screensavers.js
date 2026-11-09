@@ -28,6 +28,23 @@ var SCREENSAVER_APP_DIR = '/usr/palm/applications/' + SCREENSAVER_APP_ID;
 var SCREENSAVER_DIR = '/var/lib/tvweb/screensaver';
 var SCREENSAVER_MARKER = '.tvweb-screensaver';
 var SCREENSAVER_LEVEL_MARKER = '.tvweb-brightness';
+/*
+ * Brightness is a percentage. Glasshouse's own are drawn at two levels, each
+ * tuned by hand, their dim one about two thirds as bright as their bright
+ * one: 100% is the bright level and TUNED_DIM% the dim one, each as it always
+ * was, and a black layer over the nearer level above makes every step between
+ * and below. The old Dim and Bright are these two.
+ */
+var TUNED_DIM = 65;
+var MIN_BRIGHTNESS = 5;
+// The option picked from a screen saver's choices, staged beside the level.
+var SCREENSAVER_CHOICE_MARKER = '.tvweb-choice';
+/*
+ * Screen savers folded into another's options, by their old id: what a TV that
+ * had one in use stored, and what an automation may still send. Clock with date
+ * was its own folder until options could be given to a QML screen saver.
+ */
+var RENAMED = { 'clock-date': { mode: 'clock', choice: 'date', label: 'Clock with date' } };
 // Survives a server restart, but not a TV reboot. sam also retains native
 // screen savers after dismissal, so its running list alone cannot prove ours.
 var LAUNCHED_MARKER = '/var/run/tvweb-screensaver-launched';
@@ -38,10 +55,17 @@ var STOCK_TYPE_FILE = '/var/lib/tvweb/screensaver-stock-type';
 // Once set while sam restarted for a switch; sam is no longer restarted, so it
 // stays clear, and the dashboards' notice for it does not show.
 var SWITCH_TIMEOUT_MS = 150000;
+// Half-second looks for a screen saver closed before a switch to be gone.
+var CLOSE_LOOKS = 16;
+// After a switch, before the new one is asked for in place of one closed for it.
+var SHOW_AGAIN_MS = 3000;
+// How long tvpower may sit at "Screen Saver Ready" before it counts as stuck.
+var STUCK_CHECK_MS = 3000;
 var SWITCHING_ERROR = msg('srv.saver.switching', 'The TV is still switching screen savers. Try again in a minute.');
 var HELD_ERROR = msg('srv.saver.held', 'Custom screen savers are turned off on this TV for now, as they have not been tried on its webOS version. Before 0.98.1, on webOS 10, they could leave the picture, the sound and HDMI control off until the TV was unplugged. One already in use stays until the TV is next fully restarted.');
 // The switch is undone rather than sam restarted, the step behind #366.
 var LOST_ERROR = msg('srv.saver.lost', 'The TV has lost track of its screen saver app and did not find it again. Restarting the TV brings it back.');
+var STUCK_ERROR = msg('srv.saver.stuck', 'The TV is stuck starting a screen saver and refuses to start another until it is restarted. Restart the TV to clear it.');
 var NOT_TAKEN_ERROR = msg('srv.saver.notTaken', 'The TV did not take the new screen saver without restarting its app manager, which has left the picture or sound off on some TVs, so LG\'s screen saver is kept.');
 var STOCK_LATER_ERROR = msg('srv.saver.stockLater', 'LG\'s screen saver is set, and the TV uses it from its next restart: it did not take the change without restarting its app manager, which has left the picture or sound off on some TVs.');
 
@@ -72,7 +96,11 @@ var FOLDER_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
 var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__' };
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__' };
+// A choice's value goes into the QML as text: kept to what a name needs.
+var CHOICE_VALUE = /^[\w.=&-]{0,100}$/;
+var CHOICE_ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
+var MAX_CHOICES = 500;
 /*
  * Homebrew Channel apps that ship a screen saver as one QML file, which they
  * bind-mount over LG's qml/main.qml themselves: Custom Screensaver, the two
@@ -167,6 +195,14 @@ function readSaver(root, name) {
   if (!root.builtin && uses.indexOf('stats') !== -1) {
     return problem(msg('srv.saver.noStats', 'It asks for the TV\'s readings, which only Glasshouse\'s own screen savers are given.'));
   }
+  if (m.choices !== undefined) {
+    var choices = readChoices(m.choices, id);
+    if (typeof choices === 'string') return problem(choices);
+    e.choices = choices;
+  }
+  if ((uses.indexOf('choice') !== -1) !== !!e.choices) {
+    return problem(msg('srv.saver.choiceUses', '{file}: choices and "choice" in uses go together.', { file: MANIFEST }));
+  }
   if (Array.isArray(m.panels) && m.panels.length === 1 && (m.panels[0] === 'oled' || m.panels[0] === 'lcd')) e.panels = m.panels[0];
   var need = m.requires && typeof m.requires.webos === 'number' ? m.requires.webos : 0;
   var have = parseInt(String(webosVersion || ''), 10);
@@ -215,6 +251,37 @@ function readSaver(root, name) {
   }
   if (!root.builtin) e.cautions = qmlcheck.reaches(sources.join('\n'));
   return e;
+}
+
+function isArray(v) { return Object.prototype.toString.call(v) === '[object Array]'; }
+
+/*
+ * saver.json's choices: { label, default, options: [{ id, name, value, group }] },
+ * a list the dashboard offers as a dropdown, under the group's heading where
+ * an option has one, the picked option's value put in for __TVWEB_CHOICE__.
+ * The options or the reason they cannot be read.
+ */
+function readChoices(c, saverId) {
+  var bad = msg('srv.saver.badChoices', '{file}: choices needs options, each with an id, a name and a short value without spaces or quotes, and a default naming one of them.', { file: MANIFEST });
+  if (!c || typeof c !== 'object' || !isArray(c.options) || !c.options.length || c.options.length > MAX_CHOICES) return bad;
+  var out = { options: [], def: c['default'] }, seen = {};
+  if (c.label !== undefined) {
+    var label = manifestText(c.label);
+    if (!label) return bad;
+    out.label = say.define('saver.' + saverId + '.choices', label.en, label);
+  }
+  for (var i = 0; i < c.options.length; i++) {
+    var o = c.options[i], name = o && manifestText(o.name), group = o && o.group !== undefined ? manifestText(o.group) : null;
+    if (!o || typeof o.id !== 'string' || !CHOICE_ID.test(o.id) || !name ||
+        typeof o.value !== 'string' || !CHOICE_VALUE.test(o.value) || (o.group !== undefined && !group)) return bad;
+    if (seen[o.id]) return bad;
+    seen[o.id] = true;
+    var opt = { id: o.id, value: o.value, label: say.define('saver.' + saverId + '.choice.' + o.id, name.en, name) };
+    if (group) opt.group = say.define('saver.' + saverId + '.group.' + group.en.toLowerCase().replace(/[^a-z0-9]+/g, '-'), group.en, group);
+    out.options.push(opt);
+  }
+  if (!out.options.some(function (x) { return x.id === out.def; })) return bad;
+  return out;
 }
 
 // An installed app's screen saver as an entry, or null where the app has none.
@@ -266,6 +333,9 @@ function scanSavers() {
     var found = [];
     for (var i = 0; i < entries.length; i++) {
       if (entries[i].charAt(0) === '.') continue;   // hidden
+      // An update adds files but removes none, so one folded into another's
+      // options is still there after it.
+      if (saverRoots[r].builtin && RENAMED[entries[i]]) continue;
       try { if (!fs.statSync(path.join(saverRoots[r].dir, entries[i])).isDirectory()) continue; }
       catch (e2) { continue; }
       var entry = saverRoots[r].apps ? readAppSaver(saverRoots[r], entries[i]) : readSaver(saverRoots[r], entries[i]);
@@ -322,6 +392,7 @@ var mediaStateFn = function (cb) { cb(null); };
 function clearStagedScreensaver() {
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER));
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER));
+  unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
   unlinkQuiet(path.join(SCREENSAVER_DIR, 'appinfo.json'));
   removeTree(path.join(SCREENSAVER_DIR, 'qml'));
 }
@@ -439,12 +510,44 @@ function switching() {
   return !!switchingSince;
 }
 
+// A percentage from one, or from "dim" and "bright" as they were stored and sent before.
+function brightnessOf(v) {
+  if (v === 'bright') return 100;
+  var n = typeof v === 'number' ? v : (/^\d{1,3}$/.test(String(v)) ? parseInt(v, 10) : NaN);
+  if (isNaN(n)) return TUNED_DIM;
+  return Math.max(MIN_BRIGHTNESS, Math.min(100, Math.round(n)));
+}
+
+function screensaverBrightness() {
+  return brightnessOf(readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_LEVEL_MARKER)));
+}
+
+// Dim or Bright, for what still reads one of the two: Bright only at 100%.
 function screensaverLevel() {
-  return readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_LEVEL_MARKER)) === 'bright' ? 'bright' : 'dim';
+  return screensaverBrightness() >= 100 ? 'bright' : 'dim';
+}
+
+// The level a saver taking one is drawn at, and the black layer over it.
+function tunedLevel(brightness) { return brightness > TUNED_DIM ? 1 : 0; }
+function layerOpacity(e, brightness) {
+  var top = e.uses.indexOf('level') !== -1 && !tunedLevel(brightness) ? TUNED_DIM : 100;
+  return Math.round((1 - brightness / top) * 1000) / 1000;
+}
+
+// The option in use from the screen saver's choices, or its default.
+function screensaverChoice(e) {
+  if (!e || !e.choices) return undefined;
+  var stored = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
+  var picked = RENAMED[stored] ? RENAMED[stored].choice : readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_CHOICE_MARKER));
+  return pickChoice(e, picked);
+}
+function pickChoice(e, id) {
+  return e.choices.options.some(function (o) { return o.id === id; }) ? id : e.choices.def;
 }
 
 function screensaverMode() {
   var m = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
+  if (RENAMED[m]) m = RENAMED[m].mode;
   var e = m && m !== 'stock' ? saverById(m) : null;
   return e && !e.problem ? m : 'stock';
 }
@@ -514,13 +617,19 @@ function screensaverList() {
       // What one added on the TV does past the screen: the network, sound.
       cautions: e.cautions && e.cautions.length ? e.cautions : undefined,
       // The app it comes from, where it is an installed app's.
-      fromApp: e.fromApp ? e.appTitle : undefined
+      fromApp: e.fromApp ? e.appTitle : undefined,
+      // Options to pick from, and the one in use (or its default).
+      choices: e.choices ? e.choices.options.map(function (o) { return { id: o.id, label: o.label, group: o.group }; }) : undefined,
+      choice: e.choices ? (e.id === cur ? screensaverChoice(e) : e.choices.def) : undefined,
+      // What the dropdown is called, where the screen saver names it.
+      choicesLabel: e.choices ? e.choices.label : undefined
     });
   }
   return {
     ok: true,
     current: cur,
-    level: screensaverLevel(),
+    level: screensaverLevel(), brightness: screensaverBrightness(),
+    choice: screensaverChoice(saverById(cur)),
     modes: out,
     writable: !!(configObj && configObj.allowControl),
     slowSwitch: slowSwitch(),
@@ -606,7 +715,8 @@ function settleScreensaverApp(cb) {
 
 // A saver's whole folder into the staged app's qml folder, its main file as
 // main.qml, with what it asked for in uses filled in.
-function stageSaverFiles(e, level) {
+function stageSaverFiles(e, level, choice) {
+  if (e.choices) choice = pickChoice(e, choice);
   var qmlDir = path.join(SCREENSAVER_DIR, 'qml');
   removeTree(qmlDir);
   mkdirp(qmlDir);
@@ -618,24 +728,49 @@ function stageSaverFiles(e, level) {
     mkdirp(path.dirname(path.join(qmlDir, rel)));
     fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
-  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level));
-  fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), level === 'bright' ? 'bright' : 'dim');
+  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice));
+  fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
+  if (e.choices) fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER), choice);
+  else unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
 }
 
-function fillSaverQml(e, qml, level) {
+/*
+ * A QML screen saver with a black layer over it, as the last child of its
+ * window: drawn above everything else in it, and over nothing outside it.
+ */
+function withLayer(qml, opacity) {
+  var end = qml.lastIndexOf('}');
+  if (!(opacity > 0) || end === -1) return qml;
+  return qml.slice(0, end) +
+    '\n    // Glasshouse\'s brightness: a black layer over the screen saver.\n' +
+    '    Rectangle { anchors.fill: parent; color: "black"; opacity: ' + opacity + '; z: 1000000 }\n' +
+    qml.slice(end);
+}
+
+function fillSaverQml(e, qml, level, choice) {
   var port = (configObj && configObj.port) || 8080;
   var token = configObj && configObj.token;
   if (e.uses.indexOf('stats') !== -1) {
     qml = qml.replace(/__TVWEB_URL__/g,
       'http://127.0.0.1:' + port + '/api/stats' + (token ? '?k=' + encodeURIComponent(token) : ''));
   }
-  if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, level === 'bright' ? '1' : '0');
+  if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
+  if (e.choices) {
+    var value = e.choices.options.filter(function (o) { return o.id === choice; })[0].value;
+    qml = qml.replace(/__TVWEB_CHOICE__/g, value);
+  }
   // The hour cycle the clock screen savers draw: the TV's own (lib/clock).
   qml = qml.replace(/__TVWEB_CLOCK12__/g, hour12Fn() ? 'true' : 'false');
+  if (!e.fromApp) qml = withLayer(qml, layerOpacity(e, level));
   return qml;
 }
 
-function setScreensaver(mode, level, cb) {
+// choice: one of the saver's options, where it has them; its default otherwise.
+function setScreensaver(mode, level, cb, choice) {
+  if (RENAMED[mode]) {
+    if (choice === undefined) choice = RENAMED[mode].choice;
+    mode = RENAMED[mode].mode;
+  }
   // Read again, so a saver just added on the TV can be picked.
   if (mode !== 'stock') scanSavers();
   var saver = mode === 'stock' ? STOCK : saverById(mode);
@@ -643,13 +778,80 @@ function setScreensaver(mode, level, cb) {
   if (saver.problem) return cb({ ok: false, error: saver.problem });
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
   if (mode !== 'stock' && heldBack()) return cb({ ok: false, error: HELD_ERROR });
-  level = (level === 'bright') ? 'bright' : 'dim';
+  level = brightnessOf(level);
+  switchTo(saver, mode, level, choice, cb);
+}
 
+/*
+ * The switch itself, with nothing on screen while it happens. sam rereading
+ * the app under a screen saver that is showing kills it, and asking tvpower
+ * for one again straight after left tvpower at "Screen Saver Ready", refusing
+ * every request until a reboot, or rebooted the TV (a C5, webOS 10.3.1). One
+ * closed with Back first, and started again once the switch is done, does
+ * neither.
+ */
+function switchTo(saver, mode, level, choice, cb) {
+  switchingSince = Date.now();
+  closeShowing(function (wasShowing, error) {
+    if (error) {
+      switchingSince = 0;
+      return cb({ ok: false, error: error, current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(), switching: false });
+    }
+    swapScreensaver(saver, mode, level, choice, function (r) {
+      switchingSince = 0;
+      r.switching = switching();
+      cb(r);
+      if (r.ok && wasShowing && mode !== 'stock') {
+        setTimeout(function () {
+          trigger(function (t) {
+            if (!t.ok) console.log('screensaver: could not show the new one again: ' + (t.error || 'refused'));
+          });
+        }, SHOW_AGAIN_MS);
+      }
+    });
+  });
+}
+
+/*
+ * cb(wasShowing) once no screen saver is on screen: one tvpower shows is
+ * closed with Back, as the remote would, and one Glasshouse opened itself is
+ * closed. cb(wasShowing, error) where it would not close.
+ */
+function closeShowing(cb) {
+  if (!lunaFn) return cb(false);
+  if (launchedDirectly) {
+    return closeLaunched(function () {
+      setLaunched(false);
+      cb(true);
+    });
+  }
+  lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+    if (!power.isScreenSaver(power.mapState(pw && pw.state))) return cb(false);
+    if (!injectKeyFn || !keyBackVal) return cb(true, msg('srv.saver.noRemote', 'could not reach the remote input device'));
+    injectKeyFn(keyBackVal, function (ok) {
+      if (!ok) return cb(true, msg('srv.saver.noRemote', 'could not reach the remote input device'));
+      var looks = 0;
+      (function look() {
+        setTimeout(function () {
+          lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (now) {
+            var closed = now && now.state && !power.isScreenSaver(power.mapState(now.state)) &&
+              (!now.processing || now.processing === 'Screen On');
+            if (closed) return cb(true);
+            if (++looks < CLOSE_LOOKS) return look();
+            cb(true, msg('srv.saver.notClosed', 'the screen saver on the TV did not close, so the switch was left undone'));
+          });
+        }, 500);
+      })();
+    });
+  });
+}
+
+function swapScreensaver(saver, mode, level, choice, cb) {
   unmountScreensaver(function () {
     if (mode === 'stock') {
       clearStagedScreensaver();
       return settleScreensaverApp(function (notTaken) {
-        cb({ ok: !notTaken && screensaverMode() === 'stock', current: screensaverMode(), level: screensaverLevel(),
+        cb({ ok: !notTaken && screensaverMode() === 'stock', current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(),
              switching: switching(), error: notTaken ? STOCK_LATER_ERROR : undefined });
       });
     }
@@ -657,7 +859,7 @@ function setScreensaver(mode, level, cb) {
     try {
       mkdirp(path.join(SCREENSAVER_DIR, 'qml'));
       stageScreensaverAppinfo();
-      stageSaverFiles(saver, level);
+      stageSaverFiles(saver, level, choice);
       fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), mode);
     } catch (e) {
       return cb({ ok: false, error: msg('srv.saver.stageFailed', 'could not stage the screen saver: {error}', { error: e.message }) });
@@ -669,15 +871,14 @@ function setScreensaver(mode, level, cb) {
           // sam still runs LG's: put LG's files back under it, so they agree.
           return unmountScreensaver(function () {
             clearStagedScreensaver();
-            cb({ ok: false, current: screensaverMode(), level: screensaverLevel(), switching: switching(), error: NOT_TAKEN_ERROR });
+            cb({ ok: false, current: screensaverMode(), level: screensaverLevel(), brightness: screensaverBrightness(), switching: switching(), error: NOT_TAKEN_ERROR });
           });
         }
         var now = screensaverMode();
         cb({
           ok: !err && now === mode,
           current: now,
-          level: screensaverLevel(),
-          switching: switching(),
+          level: screensaverLevel(), brightness: screensaverBrightness(),
           error: (!err && now === mode) ? undefined : 'the mount did not take'
         });
       });
@@ -709,7 +910,11 @@ function restageScreensaver() {
   try {
     var staged = path.join(SCREENSAVER_DIR, 'qml', 'main.qml');
     var before = fs.existsSync(staged) ? fs.readFileSync(staged, 'utf8') : '';
-    stageSaverFiles(saver, screensaverLevel());
+    stageSaverFiles(saver, screensaverBrightness(), screensaverChoice(saver));
+    // An old id stored is written again as the one it now is.
+    if (RENAMED[readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER))]) {
+      fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), mode);
+    }
     if (fs.readFileSync(staged, 'utf8') !== before) {
       console.log('screensaver: restaged "' + mode + '" from a newer copy');
     }
@@ -718,26 +923,14 @@ function restageScreensaver() {
   }
 }
 
+// One a switch leaves running is closed, so it opens from the new files next
+// time. One on screen is left alone: switchTo closes it before a switch, and
+// one tvpower started in the moment since is not ours to restart.
 function restartScreensaverApp(cb) {
   if (!lunaFn) return cb();
   lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
-    var isSS = power.isScreenSaver(power.mapState(pw && pw.state));
-    if (!isSS) {
-      return lunaFn('com.webos.applicationManager/closeByAppId',
-                    { id: 'com.webos.app.screensaver' }, function () { cb(); });
-    }
-    if (!injectKeyFn || !keyBackVal) {
-      return cb();
-    }
-    injectKeyFn(keyBackVal, function () {
-      setTimeout(function () {
-        lunaFn('com.webos.applicationManager/closeByAppId', { id: 'com.webos.app.screensaver' }, function () {
-          setTimeout(function () {
-            lunaFn('com.webos.service.tvpower/power/turnOnScreenSaver', {}, function () { cb(); });
-          }, 1500);
-        });
-      }, 1500);
-    });
+    if (power.isScreenSaver(power.mapState(pw && pw.state))) return cb();
+    lunaFn('com.webos.applicationManager/closeByAppId', { id: SCREENSAVER_APP_ID }, function () { cb(); });
   });
 }
 
@@ -905,12 +1098,29 @@ function refusedAfterRequest(cb) {
   })();
 }
 
+// tvpower at "Screen Saver Ready" with no screen saver showing: where it stays,
+// it refuses every request until the TV restarts.
+function readyLingers(pw) {
+  return !!(pw && pw.processing === 'Screen Saver Ready' && !power.isScreenSaver(power.mapState(pw.state)));
+}
+
 function trigger(cb) {
   if (!lunaFn) return cb({ ok: false, error: 'luna bus not available' });
   // Asking tvpower for a screen saver while sam is down can park it at
   // "Screen Saver Ready" until a reboot.
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
-  lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+  lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (first) {
+    if (!readyLingers(first)) return withPower(first);
+    // tvpower passes through it for a moment on the way to a screen saver.
+    setTimeout(function () {
+      lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (again) {
+        if (readyLingers(again)) return cb({ ok: false, error: STUCK_ERROR });
+        withPower(again);
+      });
+    }, STUCK_CHECK_MS);
+  });
+
+  function withPower(pw) {
     var isSS = power.isScreenSaver(power.mapState(pw && pw.state));
     if (isSS) {
       if (!injectKeyFn || !keyBackVal) {
@@ -982,7 +1192,7 @@ function trigger(cb) {
         });
       });
     });
-  });
+  }
 }
 
 module.exports = {
@@ -994,6 +1204,7 @@ module.exports = {
   clearStagedScreensaver: clearStagedScreensaver,
   unmountScreensaver: unmountScreensaver,
   screensaverLevel: screensaverLevel,
+  screensaverBrightness: screensaverBrightness,
   screensaverMode: screensaverMode,
   screensaverList: screensaverList,
   switching: switching,
@@ -1005,6 +1216,8 @@ module.exports = {
   slowSwitch: slowSwitch,
   allowedAnyway: allowedAnyway,
   setScreensaver: setScreensaver,
+  screensaverChoice: function () { return screensaverChoice(saverById(screensaverMode())); },
+  RENAMED: RENAMED,
   restageScreensaver: restageScreensaver,
   launchedShowing: launchedShowing,
   keyPressed: keyPressed,

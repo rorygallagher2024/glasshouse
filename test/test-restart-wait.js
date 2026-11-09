@@ -7,6 +7,7 @@
  *
  * Strict ES5: runs on node 0.12.
  */
+require('./fake-clock').install();
 var assert = require('assert');
 var events = require('events');
 var fs = require('fs');

@@ -137,6 +137,8 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
       env.FAKE_ROOT = root;
       env.TVWEB_LUNA_SEND = FAKE_LUNA;
       env.FAKE_LUNA_LOG = path.join(root, 'luna-calls.jsonl');
+      // Child starts without the TV's spacing between them, which nothing here is about.
+      env.FAKE_LAUNCH_GAP_MS = '0';
       if (chaos) env.FAKE_LUNA_CHAOS = '1';
       if (missingModule) env.BOOT_MISSING_MODULE = missingModule;
 

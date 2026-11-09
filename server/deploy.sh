@@ -79,8 +79,7 @@ assets/fonts/Manrope-Regular.ttf assets/fonts/Manrope-SemiBold.ttf \
 assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Manrope.txt \
 assets/screensavers/bokeh/bokeh.png assets/screensavers/bokeh/main.qml \
 assets/screensavers/bokeh/saver.json assets/screensavers/clock/main.qml \
-assets/screensavers/clock/saver.json assets/screensavers/clock-date/main.qml \
-assets/screensavers/clock-date/saver.json assets/screensavers/currents/main.qml \
+assets/screensavers/clock/saver.json assets/screensavers/currents/main.qml \
 assets/screensavers/currents/saver.json assets/screensavers/filament/main.qml \
 assets/screensavers/filament/saver.json assets/screensavers/fireworks/main.qml \
 assets/screensavers/fireworks/saver.json assets/screensavers/fireworks/star.png \

@@ -166,6 +166,7 @@ var FIRST_BEAT_GRACE_MS = 20000;
 var BEAT_LATE_MS = 5000;
 // Holding Home this long opens LG's Home.
 var HOLD_MS = 1200;
+var holdMs = HOLD_MS;
 /*
  * A short Home press has the view in front within 0.1 s (a G3, webOS 9.2.2; a
  * G5, webOS 10.3.1), and it beats as it shows. No beat this long after, and
@@ -253,6 +254,8 @@ var pictureDetailsFn = function () {};
  */
 var allowExperimentalFn = function () { return false; };
 var setHomeKeyFn = function (id, cb) { cb({ ok: true, none: true }); };
+// Whether the remote's keys can be read (lib/remotebuttons), for webOS 3's Home button.
+var readsHomeKeyFn = function () { return false; };
 /*
  * The toast the remote key filter shows for Home until Glasshouse Home is in
  * place after a cold start (lib/remotekeys setStarting), or '' while it is off.
@@ -1455,7 +1458,9 @@ function toLgHome(why, cb) {
   if (isStandalone()) {
     escaped = true;
     stopBeatWatch();
-    return setHomeKeyFn('', function () {
+    return setHomeKey('', function () {
+      // webOS 3: the press itself opened LG's ribbon.
+      if (homeKeyRead()) return cb({ ok: true });
       setTimeout(function () {
         if (!injectKeyFn) return cb({ ok: true });
         injectKeyFn(125, function (ok) { cb({ ok: !!ok }); }, 100);
@@ -1509,9 +1514,10 @@ function switchTo(on, cb) {
     }
     if (isStandalone()) {
       if (want) {
+        if (homeKeyRead() && !readsHomeKeyFn()) return finish({ ok: false, error: 'the remote\'s Home button cannot be read on this TV' });
         return ensureApp(function (ok) {
           if (!ok) return finish({ ok: false, error: 'could not install Glasshouse Home app' });
-          setHomeKeyFn(HOME_APP, function (k) {
+          setHomeKey(HOME_APP, function (k) {
             if (!k || !k.ok) {
               return removeStandaloneApp(function () {
                 finish({ ok: false, error: 'could not set Home key target' });
@@ -1524,7 +1530,7 @@ function switchTo(on, cb) {
         });
       }
       // The view closes itself when its heartbeat says it is off, as Back closes it.
-      return setHomeKeyFn('', function (k) {
+      return setHomeKey('', function (k) {
         startingNotice(false, function () {
           finish({ ok: !!(k && k.ok) });
         });
@@ -1629,6 +1635,22 @@ function copy(o) { return JSON.parse(JSON.stringify(o)); }
 // webOS 3 is taken to have the same ribbon as webOS 4, untried.
 function isStandalone() {
   return /^[34]\./.test(String(webosVersion || ''));
+}
+
+/*
+ * webOS 3 has no remote key filters (a 60UJ6519-ZA on 3.9.3 had neither the
+ * KeyFilters folders nor the configd key, #1222), so every Home press opens
+ * LG's ribbon. The press is read from the remote instead (lib/remotebuttons),
+ * and a short one opens the view over the ribbon; a held one leaves it.
+ */
+function homeKeyRead() {
+  return /^3\./.test(String(webosVersion || ''));
+}
+
+// The Home key's target in the key filter, where the TV has one.
+function setHomeKey(id, cb) {
+  if (homeKeyRead()) return cb({ ok: true, none: true });
+  setHomeKeyFn(id, cb);
 }
 
 function isHomeInPlace() {
@@ -1989,6 +2011,7 @@ function setAutoLaunch(on, cb) {
  * starting for 90 s after a boot. The standalone app opens as soon as it is set.
  */
 function startingNotice(on, cb) {
+  if (homeKeyRead()) return cb ? cb({ ok: true, none: true }) : undefined;
   if (isStandalone()) on = false;
   var text = on ? msg('srv.home.startingToast', 'Glasshouse Home is starting. It opens in a few seconds.') : '';
   setStartingFn(text, function (r) {
@@ -2103,7 +2126,7 @@ function finishLegacy(c, cb) {
     cb(true);
   }
   if (homeKeyAppFn() !== HOME_APP) return done();
-  setHomeKeyFn('', function (k) {
+  setHomeKey('', function (k) {
     if (!k || !k.ok) {
       console.error('home: the Home key still opens the old Glasshouse Home app');
       return cb(false);
@@ -2275,7 +2298,7 @@ function foregroundChanged(id) {
   // comes after the view; Glasshouse Home has the Home key again.
   if (isStandalone()) {
     escaped = false;
-    setHomeKeyFn(HOME_APP, function () {});
+    setHomeKey(HOME_APP, function () {});
     return;
   }
   var reopen = escapeReopen;
@@ -2294,7 +2317,7 @@ function foregroundChanged(id) {
 
 // The remote's Home button, as remotebuttons reports it: held, LG's Home.
 function homeKey(down) {
-  var wasHeld = !holdTimer && homeDownAt && nowMs() - homeDownAt >= HOLD_MS;
+  var wasHeld = !holdTimer && homeDownAt && nowMs() - homeDownAt >= holdMs;
   if (holdTimer) clearTimeout(holdTimer);
   holdTimer = null;
   if (!readConfig().enabled) return;
@@ -2309,12 +2332,17 @@ function homeKey(down) {
     if (shortPress && escaped) {
       escaped = false;
       if (isStandalone()) {
-        setHomeKeyFn(HOME_APP, function () {
+        setHomeKey(HOME_APP, function () {
           launch(HOME_APP, null, function () {});
         });
       } else if (foreground === LG_HOME) {
         switchTo(true, function () {});
       }
+    } else if (shortPress && !escaped && homeKeyRead()) {
+      console.log('home: the Home button was pressed; opening Glasshouse Home');
+      launch(HOME_APP, null, function (r) {
+        if (!r || !r.ok) console.error('home: could not open Glasshouse Home from the Home button');
+      });
     } else if (shortPress && !escaped && isHomeInPlace()) {
       /*
        * Pressed with the view already in front, the TV does nothing: on a C2
@@ -2333,7 +2361,7 @@ function homeKey(down) {
   holdTimer = setTimeout(function () {
     holdTimer = null;
     toLgHome('Home held');
-  }, HOLD_MS);
+  }, holdMs);
 }
 
 /*
@@ -2675,6 +2703,8 @@ function init(opts) {
   handOverFn = opts.handOverTileHiding || function () {};
   pictureDetailsFn = opts.pictureDetails || function () {};
   setHomeKeyFn = opts.setHomeKey || function (id, cb) { cb({ ok: true, none: true }); };
+  readsHomeKeyFn = opts.readsHomeKey || function () { return false; };
+  holdMs = opts.holdMs || HOLD_MS;
   homeKeyAppFn = opts.homeKeyApp || function () { return ''; };
   setStartingFn = opts.setStarting || function (text, cb) { cb({ ok: true, none: true }); };
   buildId = opts.build || '';
@@ -2746,9 +2776,11 @@ function restoreLegacyScreenSaver(cb) {
  * taken it already; taking it again restages the app's files for this release
  * and stops an LG Home that started before the hook.
  */
-function start() {
+// done(), for tests, once what the start set going has finished.
+function start(done) {
+  done = done || function () {};
   cleanLegacy(function (cleaned) {
-    if (!cleaned) return;
+    if (!cleaned) return done();
     var c = readConfig();
     // Saved only where it differs from the default, so a start writes nothing otherwise.
     if (c.hideLgHomeAtStart === null && takeover.blankKept()) {
@@ -2762,23 +2794,25 @@ function start() {
      */
     if (c.enabled && !supported().ok) {
       console.log('home: not offered on this TV (' + supported().reason + '); switched off');
-      return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); });
+      return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); done(); });
     }
     if (c.enabled) {
       homeKeysFn(true);
       handOverFn(hideApps);
     }
     if (c.restorePending || (!c.enabled && !isStandalone() && takeover.mounted())) {
-      return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); });
+      return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); done(); });
     }
     startingNotice(c.enabled);
     // Off, but the Home key's target was never put back: a switch-off cut short.
-    if (!c.enabled) return syncDefaultHome();
+    if (!c.enabled) return syncDefaultHome(function () { done(); });
     wasEnabled = true;
     switchTo(true, function (r) {
       if (!r.ok) console.error('home: could not take LG\'s Home\'s place: ' + r.error);
-      syncLgAutoLaunch();
-      syncDefaultHome();
+      var left = 2;
+      function synced() { if (--left === 0) done(); }
+      syncLgAutoLaunch(synced);
+      syncDefaultHome(synced);
       if (r.ok) watchBootOpen();
     });
   });

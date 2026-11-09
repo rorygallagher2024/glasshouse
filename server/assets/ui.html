@@ -859,8 +859,25 @@
   <div id="ss-list" class="ss-list"></div>
   <div class="ss-side">
   <div class="ss-level-row" id="ss-level-row" hidden>
-    <div class="ss-level-lbl" data-t="ss.brightness">Brightness</div>
-    <div class="btns" id="ss-level"></div>
+    <div class="ss-level-lbl"><span data-t="ss.brightness">Brightness</span> &middot; <span id="ss-bright-lbl" class="num">&mdash;</span></div>
+    <div class="vol-row ss-bright-row">
+      <div class="vol-wrap full" id="ss-bright-wrap" role="group" aria-label="Brightness" data-t-aria-label="ss.brightness">
+        <div class="vol-fill" id="ss-bright-fill"></div>
+        <input type="range" id="ss-bright-slider" min="5" max="100" step="5" value="65" aria-label="Brightness" data-t-aria-label="ss.brightness">
+      </div>
+    </div>
+  </div>
+
+  <div class="ss-level-row" id="ss-choice-row" hidden>
+    <div class="ss-level-lbl" id="ss-choice-lbl"></div>
+    <!-- A list of its own rather than a select: a select's open list takes no
+         headings worth the name, and some screen savers have hundreds of options. -->
+    <div class="ss-pick" id="ss-pick">
+      <button type="button" class="pill-sel ss-pick-btn" id="ss-choice" aria-haspopup="listbox" aria-expanded="false"
+        aria-labelledby="ss-choice-lbl ss-choice" onclick="ssPickOpen(q('ss-pick-list').hidden)" onkeydown="ssPickKey(event)">&mdash;</button>
+      <div class="ss-pick-list" id="ss-pick-list" role="listbox" aria-labelledby="ss-choice-lbl" tabindex="-1" hidden
+        onkeydown="ssPickKey(event)"></div>
+    </div>
   </div>
 
   <div class="ss-level-row">
