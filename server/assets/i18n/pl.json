@@ -3082,7 +3082,7 @@
  "apps.inputBar.hideUnused": {"text": "Ukryj wejścia, do których nic nie podłączono", "from": "Hide inputs with nothing connected"},
  "server.experimental.inputBar": {"text": "Pasek wejść", "from": "Input bar"},
  "server.experimental.inputBar.short": {"text": "Udostępnia pasek wejść w sekcji Przyciski pilota na karcie Aplikacje: pasek wejść HDMI wyświetlany na obrazie, przełączany przyciskiem Wejście na pilocie.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
- "server.experimental.inputBar.warn": {"text": "Przetestowano tylko na webOS 6 i 9. Wyłączenie przywraca wszystkim korzystającym z niego przyciskom działanie LG i usuwa jego aplikację.", "from": "Tried on webOS 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
+ "server.experimental.inputBar.warn": {"text": "Przetestowano tylko na webOS 4, 6 i 9. Wyłączenie przywraca wszystkim korzystającym z niego przyciskom działanie LG i usuwa jego aplikację.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Pasek wejść", "from": "Input bar"},
  "srv.remoteKeys.inputBarInstall": {"text": "Nie udało się zainstalować paska wejść na telewizorze. Spróbuj ponownie za chwilę.", "from": "The input bar could not be put on the TV. Try again in a moment."}
 }

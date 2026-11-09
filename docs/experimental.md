@@ -24,7 +24,7 @@ A home screen of Glasshouse's own in place of LG's, switched on from its own [Ho
 
 ## Input bar
 
-Glasshouse's own [input bar](dashboard/apps.md#input-bar), a strip of the HDMI inputs over the picture opened by a remote key, is offered without the switch on webOS 6 and 9, where it has been tried (a C1 with 6.5.3 and a C2 with 9.2.2). On webOS 4, 5, 7, 8 and 10 the switch, shown there alone, offers it under Remote keys. It is not offered on webOS 11, whose remote keys are LG's own.
+Glasshouse's own [input bar](dashboard/apps.md#input-bar), a strip of the HDMI inputs over the picture opened by a remote key, is offered without the switch on webOS 4, 6 and 9, where it has been tried (a B8 with 4.4.3, a C1 with 6.5.3 and a C2 with 9.2.2). On webOS 5, 7, 8 and 10 the switch, shown there alone, offers it under Remote keys. It is not offered on webOS 11, whose remote keys are LG's own.
 
 It relies on parts of webOS that the C1 showed but other versions may not have: a web app's window drawn over the input with the input still in front (`"defaultWindowType": "overlay"`), an app started hidden in advance (`preload`), and the compositor's key filter seeing which app is in front and handing a key to the window in focus. Where one is missing, the bar may cover the picture, open slowly or not step through the inputs.
 

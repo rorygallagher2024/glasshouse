@@ -40,7 +40,7 @@ function run(i) {
 }
 
 step(function (next) {
-  ['6.5.3', '9.2.2'].forEach(function (v) {
+  ['4.4.3', '6.5.3', '9.2.2'].forEach(function (v) {
     setUp(v);
     assert.strictEqual(bar.standing(), 'tried', 'webOS ' + v);
     assert.strictEqual(bar.allowed(), true, 'offered on webOS ' + v + ' without the switch');
@@ -60,7 +60,7 @@ step(function (next) {
   });
   setUp(null);
   assert.strictEqual(bar.standing(), 'experimental', 'a version not read is treated as untried');
-  console.log('  ✓ offered on webOS 6 and 9, from 4 to 10 with the experimental switch, and never on webOS 11 or before 4');
+  console.log('  ✓ offered on webOS 4, 6 and 9, from 5, 7, 8 and 10 with the experimental switch, and never on webOS 11 or before 4');
   next();
 });
 

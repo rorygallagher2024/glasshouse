@@ -3082,7 +3082,7 @@
  "apps.inputBar.hideUnused": {"text": "Nascondi gli ingressi senza nulla collegato", "from": "Hide inputs with nothing connected"},
  "server.experimental.inputBar": {"text": "Barra degli ingressi", "from": "Input bar"},
  "server.experimental.inputBar.short": {"text": "Offre la barra degli ingressi sotto Tasti del telecomando nella scheda App: una striscia degli ingressi HDMI sopra l’immagine, da scorrere con il tasto Ingresso del telecomando.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
- "server.experimental.inputBar.warn": {"text": "Provata solo su webOS 6 e 9. Disattivandola, i tasti che la usano tornano come impostati da LG e la sua app viene rimossa.", "from": "Tried on webOS 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
+ "server.experimental.inputBar.warn": {"text": "Provata solo su webOS 4, 6 e 9. Disattivandola, i tasti che la usano tornano come impostati da LG e la sua app viene rimossa.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Barra degli ingressi", "from": "Input bar"},
  "srv.remoteKeys.inputBarInstall": {"text": "Impossibile installare la barra degli ingressi sulla TV. Riprova tra un momento.", "from": "The input bar could not be put on the TV. Try again in a moment."}
 }
