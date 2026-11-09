@@ -1932,6 +1932,7 @@ function startGlasshouseHome() {
     setHomeKey: remoteKeys.setHome,
     homeKeyApp: remoteKeys.homeApp,
     setStarting: remoteKeys.setStarting,
+    readsHomeKey: function () { return remotebuttons.isSupported(); },
     build: TVWEB_DISPLAY_VERSION + '@' + Date.now(),
     homeKeys: function (on) {
       if (remotebuttons.isSupported()) remotebuttons.want('home', on);
