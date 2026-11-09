@@ -1697,6 +1697,114 @@ async function visitHomeUploads(browser, base, problems) {
 }
 
 /*
+ * Your own pictures, shuffled. On the Home tab: choosing it shows the
+ * collection rather than the times of day, three images chosen at once are
+ * uploaded one after another, the interval is saved, and Remove takes one
+ * picture and Remove all the rest. On the view: a picture shows, and as the
+ * minutes pass each of the others comes in turn before any comes again.
+ */
+async function visitHomeShuffle(browser, base, problems) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  page.on('pageerror', e => problems.push('Home shuffle: ' + e.message));
+  const layout = { rows: ['app'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] },
+    channels: [], hintSeen: true, searchHintSeen: true, wallAnim: 'off', wallShuffleMinutes: 10, shuffleMinutes: [1, 5, 10, 15, 30, 60] };
+  let choice = 'own', pictures = [], made = 0, image = null;
+  const saved = [];
+  const wallpapers = () => ({ available: choice === 'shuffle' ? pictures.length > 0 : false, uploading: false, choice,
+    choices: ['black', 'landscape', 'abstract', 'own', 'shuffle'], pictures: pictures.slice(), maxPictures: 50,
+    slots: { morning: false, afternoon: false, evening: false, night: false }, revision: choice + pictures.length });
+  await context.route('**/api/home**', async route => {
+    const url = new URL(route.request().url());
+    const pathname = url.pathname;
+    let body;
+    if (pathname === '/api/home/wallpaper') return route.fulfill({ contentType: 'image/jpeg', body: image || Buffer.alloc(0) });
+    if (pathname.endsWith('/upload')) {
+      if (url.searchParams.get('slot') !== 'shuffle') problems.push('Home shuffle: a picture went to a time of day');
+      image = route.request().postDataBuffer();
+      pictures.push('pic' + String(++made).padStart(6, '0'));
+      choice = 'shuffle';
+      body = { ok: true, wallpapers: wallpapers() };
+    } else if (pathname === '/api/home/wallpapers') {
+      const req = route.request().postDataJSON();
+      if (req.removePictures) pictures = [];
+      else if (req.removePicture) pictures = pictures.filter(id => id !== req.removePicture);
+      else if (req.choose) choice = req.choose;
+      body = { ok: true, wallpapers: wallpapers() };
+    } else if (pathname === '/api/home/layout') {
+      const req = route.request().postDataJSON();
+      saved.push(req);
+      Object.assign(layout, req);
+      body = { ok: true, layout, layoutVersion: 1 };
+    } else if (pathname === '/api/home') {
+      body = { ok: true, supported: { ok: true }, installed: true, enabled: true, writable: true, layout, wallpapers: wallpapers() };
+    } else if (pathname.endsWith('/catalogue')) {
+      body = { ok: true, layout, layoutVersion: 1, apps: [{ id: 'app', title: 'App' }], devices: [], channels: [], sources: {},
+        order: { app: ['app'], dev: [], ch: [] }, wallpapers: wallpapers() };
+    } else if (pathname.endsWith('/now')) {
+      body = { kind: null };
+    } else {
+      // The heartbeat carries the wallpapers too, as the server's does.
+      body = { ok: true, layout, build: 'shuffle', layoutVersion: 1, wallpapers: wallpapers(), apps: [], devices: [], channels: [], order: { app: [], dev: [], ch: [] }, sources: { channels: 0 } };
+    }
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && homeCat);
+    await page.locator('#home-wall-choice button', { hasText: 'Your own, shuffled' }).click();
+    await page.waitForSelector('#home-shuffle-add:not(:disabled)');
+    if (await page.locator('#home-walls').isVisible()) problems.push('Home shuffle: the times of day showed with the collection chosen');
+    const chooser = page.waitForEvent('filechooser');
+    await page.locator('#home-shuffle-add').click();
+    const icon = path.join(ASSETS, 'dashboard-app/assets/icon130.png');
+    await (await chooser).setFiles([icon, icon, icon]);
+    await page.waitForFunction(() => document.querySelectorAll('#home-shuffle [data-picture]').length === 3, null, { timeout: 15000 });
+    if (made !== 3) problems.push('Home shuffle: three images chosen made ' + made + ' uploads');
+    await page.selectOption('#home-shuffle-minutes', '5');
+    await page.waitForFunction(() => homeLayout && homeLayout.wallShuffleMinutes === 5);
+    if (!saved.some(r => r.wallShuffleMinutes === 5)) problems.push('Home shuffle: the interval was not saved as a number');
+    await page.locator('#home-shuffle [data-picture="pic000001"]').getByRole('button', { name: 'Remove', exact: true }).click();
+    await page.waitForFunction(() => !document.querySelector('#home-shuffle [data-picture="pic000001"]'));
+    if (pictures.length !== 2) problems.push('Home shuffle: Remove took more than one picture');
+    await page.locator('#home-wall-clear').click();
+    await page.waitForFunction(() => !document.querySelector('#home-shuffle [data-picture]'));
+    // On the view, with four pictures and a minute each.
+    pictures = ['pica', 'picb', 'picc', 'picd'].map(id => id + '00000');
+    layout.wallShuffleMinutes = 1;
+    const view = await context.newPage({ viewport: { width: 1920, height: 1080 } });
+    view.on('pageerror', e => problems.push('Home shuffle view: ' + e.message));
+    await view.clock.install();
+    await view.goto(base + '/assets/home.html');
+    // The page's own timers run only as the clock is moved on.
+    for (let i = 0; i < 40 && !await view.locator('.tile').count(); i++) {
+      await view.clock.runFor(500);
+      await view.waitForTimeout(50);
+    }
+    const shown = () => view.evaluate(() => {
+      const front = Array.prototype.filter.call(document.querySelectorAll('#wall .layer'), l => +l.style.opacity > 0)[0];
+      const m = front && /id=([0-9a-z]+)/.exec(front.style.backgroundImage);
+      return m ? m[1] : null;
+    });
+    const seen = [];
+    for (let i = 0; i < 4; i++) {
+      if (i) await view.clock.runFor(76000);
+      let id = null;
+      for (let k = 0; k < 40 && !(id = await shown()); k++) {
+        await view.clock.runFor(500);
+        await view.waitForTimeout(50);
+      }
+      seen.push(id);
+    }
+    if (new Set(seen).size !== 4 || seen.some(id => pictures.indexOf(id) === -1)) {
+      problems.push('Home shuffle: four minutes did not show each of four pictures once: ' + seen.join(', '));
+    }
+  } catch (e) {
+    problems.push('Home shuffle: ' + e.message);
+  } finally { await context.close(); }
+}
+
+/*
  * A custom launcher in Glasshouse Home's place. On the Home tab: its button
  * opens the section, a web address with Glasshouse Home on is chosen at once,
  * the Apps and Inputs rows stay to arrange while it is in use without
@@ -2808,7 +2916,7 @@ function groups(web, tv) {
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
-      visitHomeRecentsHidden, visitHomeUploads, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
+      visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
     { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels] },
     /*

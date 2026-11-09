@@ -774,7 +774,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Opened by the boot hook, the page can be up before the server, which then
   // takes about a minute (a B8, webOS 4.4.3): the logo stays until then.
   var pageOpenedAt = Date.now(), STARTING_MS = 60000;
-  var wallSlots = null, wallRevision = '';
+  var wallSlots = null, wallRevision = '', wallChoice = '', wallPictures = [];
 
   function $(id) { return document.getElementById(id); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -4566,23 +4566,63 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     for (var j = 0; j < WALL_SLOTS.length; j++) if (WALL_SLOTS[j].from <= h) slot = WALL_SLOTS[j];
     return slot;
   }
+  function readWallpapers(w) {
+    wallAvailable = !!(w && w.available);
+    wallSlots = w && w.slots;
+    wallRevision = w && w.revision || '';
+    wallChoice = w && w.choice || '';
+    wallPictures = w && w.pictures || [];
+  }
+
+  /*
+   * The owner's pictures shuffled: each stays the minutes chosen, then the
+   * next is drawn at random from those not yet shown, so every one comes
+   * round before any comes again, and never the same one twice running. One
+   * stays while Home is out of sight, and the next waits for its return.
+   */
+  var shuffle = { id: null, at: 0, seen: {} };
+  function shufflePick() {
+    var list = wallPictures, i;
+    if (!list.length) { shuffle.id = null; return null; }
+    var minutes = layout && layout.wallShuffleMinutes || 10;
+    var kept = shuffle.id !== null && list.indexOf(shuffle.id) !== -1;
+    var away = document.hidden || / resting /.test(' ' + document.documentElement.className + ' ');
+    if (kept && (away || Date.now() - shuffle.at < minutes * 60000)) return shuffle.id;
+    var fresh = [];
+    for (i = 0; i < list.length; i++) if (!shuffle.seen[list[i]] && list[i] !== shuffle.id) fresh.push(list[i]);
+    if (!fresh.length) {
+      shuffle.seen = {};
+      for (i = 0; i < list.length; i++) if (list[i] !== shuffle.id) fresh.push(list[i]);
+      if (!fresh.length) fresh = list.slice();
+    }
+    shuffle.id = fresh[Math.floor(Math.random() * fresh.length)];
+    shuffle.seen[shuffle.id] = true;
+    shuffle.at = Date.now();
+    return shuffle.id;
+  }
+
   function updateWall() {
     syncAnim();
-    var slot = wallSlot();
-    if (anim.style !== 'off' || !wallAvailable || (wallSlots && !wallSlots[slot.key])) {
+    var slot = wallSlot(), shuffled = wallChoice === 'shuffle';
+    var picture = shuffled && anim.style === 'off' && wallAvailable ? shufflePick() : null;
+    if (anim.style !== 'off' || !wallAvailable || (shuffled ? !picture : wallSlots && !wallSlots[slot.key])) {
       var blank = $('wall').querySelectorAll('.layer');
       for (var b = 0; b < blank.length; b++) { blank[b].style.opacity = 0; blank[b].style.backgroundImage = ''; }
       wallShown = null;
       return;
     }
-    var revision = wallRevision, id = slot.key + '@' + slot.strength + '@' + revision;
+    // A shuffled picture's name never changes, so it needs no revision.
+    var revision = wallRevision, id = (shuffled ? 'p:' + picture : slot.key + '@' + revision) + '@' + slot.strength;
     if (id === wallShown) return;
     var layers = $('wall').querySelectorAll('.layer');
     var next = layers[1 - wallFront], prev = layers[wallFront];
-    var src = '/api/home/wallpaper?slot=' + slot.key + '&v=' + encodeURIComponent(revision);
+    var src = shuffled ? '/api/home/wallpaper?slot=shuffle&id=' + encodeURIComponent(picture)
+      : '/api/home/wallpaper?slot=' + slot.key + '&v=' + encodeURIComponent(revision);
     var img = new Image();
     img.onload = function () {
-      if (!wallAvailable || wallRevision !== revision || wallSlot().key !== slot.key) return;
+      if (!wallAvailable || anim.style !== 'off') return;
+      if (shuffled ? wallChoice !== 'shuffle' || shuffle.id !== picture
+        : wallChoice === 'shuffle' || wallRevision !== revision || wallSlot().key !== slot.key) return;
       wallShown = id;
       next.style.backgroundImage = 'url(' + src + ')';
       next.style.opacity = slot.strength;
@@ -5304,9 +5344,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (r.layoutVersion) layoutVersion = r.layoutVersion;
       refreshPicture();
       clearTimeout(loadRetry);
-      wallAvailable = !!(r.wallpapers && r.wallpapers.available);
-      wallSlots = r.wallpapers && r.wallpapers.slots;
-      wallRevision = r.wallpapers && r.wallpapers.revision || '';
+      readWallpapers(r.wallpapers);
       updateWall();
       if (!state.arranging) render();
       if (firstLoad) { beat(); fadeIn(); }
@@ -5453,9 +5491,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         // view closes itself to give its memory back; Home opens it afresh.
         coveredSince = r.covered && !r.saver ? (coveredSince || Date.now()) : 0;
         if (standalone && coveredSince && Date.now() - coveredSince > CLOSE_BEHIND_MS) return window.close();
-        wallAvailable = !!(r.wallpapers && r.wallpapers.available);
-        wallSlots = r.wallpapers && r.wallpapers.slots;
-        wallRevision = r.wallpapers && r.wallpapers.revision || '';
+        readWallpapers(r.wallpapers);
         updateWall();
         $('fault').className = '';
         // The TV's setting can change while the view is open, so the heartbeat

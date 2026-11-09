@@ -1225,7 +1225,8 @@ function glasshouseHomeRows(d) {
           hint: t('home.bg.intro', 'What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.') });
     if (bgKind === 'pictures') {
       // A picture set or the owner's own, which are uploaded from a browser.
-      var wallNames = { landscape: t('home.wall.setLandscape', 'Landscape'), abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own') };
+      var wallNames = { landscape: t('home.wall.setLandscape', 'Landscape'), abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own'),
+        shuffle: t('home.wall.setShuffle', 'Your own, shuffled') };
       var wallChoices = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(function (n) { return n !== 'black'; });
       var wallNext = wallChoices[(wallChoices.indexOf(wallNow) + 1) % wallChoices.length];
       if (!walls.fetching) {
@@ -1233,6 +1234,16 @@ function glasshouseHomeRows(d) {
           act: can ? 'homeWallSet' : null, next: wallNext,
           press: t('tv.game.next', 'Press OK for {name}', { name: wallNames[wallNext] }),
           hint: t('home.wall.tvHintSets', 'Landscape and Abstract are downloaded to the TV when chosen. Your own pictures are uploaded on the browser dashboard’s Home tab.') });
+      }
+      if (wallNow === 'shuffle' && !walls.fetching) {
+        // How often the shuffled pictures change: OK steps through the choices.
+        var everyName = function (m) { return m === 60 ? t('home.wall.everyHour', '1 hour') : t('home.wall.everyMinutes', '{n} min', { n: m }); };
+        var everyAll = d.layout.shuffleMinutes || [1, 5, 10, 15, 30, 60], everyNow = d.layout.wallShuffleMinutes || 10;
+        var everyNext = everyAll[(everyAll.indexOf(everyNow) + 1) % everyAll.length];
+        r.push({ label: t('home.wall.shuffleEvery', 'A new picture every'), value: everyName(everyNow), cls: can ? 'act' : '',
+          act: can ? 'homeShuffleEvery' : null, key: everyNext,
+          press: t('tv.home.darkening.press', 'Press OK for {value}', { value: everyName(everyNext) }),
+          hint: t('home.wall.tvHintShuffle', '{n} pictures, shown one at a time in a random order. They are added on the browser dashboard’s Home tab.', { n: (walls.pictures || []).length }) });
       }
     }
     if (bgKind === 'animated') {
@@ -3405,6 +3416,8 @@ function activate() {
       return homeLayout({ hideUnused: !r.on });
     case 'homeDarkening':
       return homeLayout({ darkening: r.key });
+    case 'homeShuffleEvery':
+      return homeLayout({ wallShuffleMinutes: r.key });
     case 'homeColours':
       // The view's own look is saved as none chosen.
       return homeLayout({ colours: r.key.own ? null : { text: r.key.text, accent: r.key.accent } });

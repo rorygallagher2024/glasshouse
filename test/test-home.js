@@ -650,6 +650,19 @@ step('an animated background is off unless chosen, and its colours follow the pa
   });
 });
 
+step('shuffled pictures change every ten minutes unless another of the offered intervals is chosen', function (done) {
+  assert.strictEqual(home.normalise({}).wallShuffleMinutes, 10);
+  assert.strictEqual(home.normalise({ wallShuffleMinutes: 30 }).wallShuffleMinutes, 30);
+  [0, 7, '5', -1, 1e9].forEach(function (m) { assert.strictEqual(home.normalise({ wallShuffleMinutes: m }).wallShuffleMinutes, 10, String(m)); });
+  start(null);
+  home.setLayout({ wallShuffleMinutes: 1 }, function (r) {
+    assert.ok(r.ok);
+    assert.strictEqual(r.layout.wallShuffleMinutes, 1);
+    assert.deepEqual(r.layout.shuffleMinutes, [1, 5, 10, 15, 30, 60], 'the choices go with the layout');
+    done();
+  });
+});
+
 step('a TV with no channels tuned has no tuner tile, and the tile will not open', function (done) {
   start(null);
   home.catalogue(function (c) {

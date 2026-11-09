@@ -205,6 +205,67 @@ var steps = [
     });
   },
   function (next) {
+    // The shuffled collection: each upload is one more picture under a name
+    // made on the TV, and the first chooses it.
+    function post(url, cb) { request('POST', url, jpeg, {}, function (code, body) { cb(code, JSON.parse(body)); }); }
+    function json(body, cb) {
+      request('POST', '/api/home/wallpapers', new Buffer(JSON.stringify(body)), { 'Content-Type': 'application/json' }, function (code, b) { cb(code, JSON.parse(b)); });
+    }
+    choose('black', function () {
+      post('/api/home/wallpapers/upload?slot=shuffle', function (code, r) {
+        assert.strictEqual(code, 200, JSON.stringify(r));
+        assert.strictEqual(r.wallpapers.choice, 'shuffle');
+        assert.strictEqual(r.wallpapers.pictures.length, 1);
+        assert.ok(r.wallpapers.available);
+        var first = r.wallpapers.pictures[0];
+        assert.ok(/^[0-9a-z]{8,24}$/.test(first), first);
+        // While shuffled, no time of day has a picture of its own.
+        assert.strictEqual(home.wallpaperPath('morning'), null);
+        assert.deepEqual(fs.readFileSync(home.wallpaperPath('shuffle', first)), jpeg);
+        assert.strictEqual(home.wallpaperPath('shuffle', '../home-wallpaper'), null, 'a name is never a path');
+        assert.strictEqual(home.wallpaperPath('shuffle', 'zzzzzzzzzz'), null);
+        post('/api/home/wallpapers/upload?slot=shuffle', function (code2, r2) {
+          assert.strictEqual(code2, 200);
+          assert.strictEqual(r2.wallpapers.pictures.length, 2);
+          assert.strictEqual(r2.wallpapers.pictures[0], first, 'oldest first');
+          request('GET', '/api/home/wallpaper?slot=shuffle&id=' + r2.wallpapers.pictures[1], null, {}, function (code3, body3, headers3) {
+            assert.strictEqual(code3, 200);
+            assert.strictEqual(headers3['content-type'], 'image/jpeg');
+            assert.deepEqual(body3, jpeg);
+            json({ removePicture: 'nonesuch1' }, function (code4, r4) {
+              assert.strictEqual(r4.ok, false, 'an unknown picture is refused');
+              json({ removePicture: first }, function (code5, r5) {
+                assert.ok(r5.ok);
+                assert.deepEqual(r5.wallpapers.pictures, [r2.wallpapers.pictures[1]]);
+                assert.strictEqual(fs.existsSync(path.join(dir, 'home-wallpaper-shuffle', first + '.jpg')), false);
+                next();
+              });
+            });
+          });
+        });
+      });
+    });
+  },
+  function (next) {
+    // Full at its limit, which an upload is refused past; Remove all empties it.
+    var shuffleDir = path.join(dir, 'home-wallpaper-shuffle');
+    for (var i = wallpapers.status().pictures.length; i < wallpapers.MAX_SHUFFLE; i++) {
+      fs.writeFileSync(path.join(shuffleDir, 'fill' + (10000 + i) + 'ab.jpg'), jpeg);
+    }
+    assert.strictEqual(wallpapers.status().pictures.length, wallpapers.MAX_SHUFFLE);
+    request('POST', '/api/home/wallpapers/upload?slot=shuffle', jpeg, {}, function (code, body) {
+      assert.strictEqual(code, 409, body.toString());
+      assert.strictEqual(wallpapers.status().pictures.length, wallpapers.MAX_SHUFFLE);
+      request('POST', '/api/home/wallpapers', new Buffer('{"removePictures":true}'), { 'Content-Type': 'application/json' }, function (code2, body2) {
+        var r = JSON.parse(body2);
+        assert.ok(r.ok);
+        assert.deepEqual(r.wallpapers.pictures, []);
+        assert.strictEqual(r.wallpapers.available, false, 'an empty collection shows nothing');
+        choose('black', function () { next(); });
+      });
+    });
+  },
+  function (next) {
     // Four uploads that are exactly the landscape set, as Add example pictures
     // left them, become that set at the first start; other uploads are the owner's own.
     var older = path.join(dir, 'older');
@@ -233,7 +294,7 @@ server.listen(0, '127.0.0.1', function () {
     if (step) return step(next);
     server.close(function () {
       rmTree(dir);
-      console.log('Home wallpaper uploads preserve existing images on failure, recover after abort, survive restart, and are removed one time of day at a time or all at once; a set is downloaded when chosen and kept only when its checksums match, leaving the owner\'s own; an older install\'s example pictures become the landscape set.');
+      console.log('Home wallpaper uploads preserve existing images on failure, recover after abort, survive restart, and are removed one time of day at a time or all at once; a set is downloaded when chosen and kept only when its checksums match, leaving the owner\'s own; a shuffled collection takes one picture after another up to its limit, each served by its own name and removed alone or all together; an older install\'s example pictures become the landscape set.');
       process.exit(0);
     });
   }
