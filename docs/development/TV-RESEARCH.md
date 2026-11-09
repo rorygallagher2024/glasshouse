@@ -1609,6 +1609,9 @@ app in front. Remote Keys puts its own filter first.
   assistant's app on a press, while the microphone button
   (`Key_webOS_Voice`, RF 436) goes to voice control. The same file names about
   20 regional streaming buttons (Hotstar, Stan, Wavve, U-Next, TVer and others).
+  A 55QNED70A (webOS 10.3.1, Brazil) names the same set, among them
+  `Key_webOS_Globoplay`, which opens `globoplaywebos` and is on Brazilian
+  remotes.
   On a CX (webOS 5.5), the microphone button set to an app through the filter
   opened it on a press and on a hold alike, and set back to LG's own it started
   voice control again (#1034).
