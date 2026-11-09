@@ -1516,7 +1516,52 @@ note here that a C2 did not listen on 9998 was mistaken. LG's browser engine,
 switch: without a firewall, only leaving out the port switch, which needs
 WebAppMgr restarted, or turning Developer Mode off closes it.
 
-## The compositor's key filters (webOS 4.4.3, B8; webOS 9.2.2, C2)
+A 50NANO753PR on firmware 03.53.45 (webOS 6.5.3, kernel 4.4.84) has no
+`ip_tables` either, and no `tcpdump` or `strace`.
+
+## App jails and DNS (50NANO753PR, webOS 6.5.3)
+
+Native apps run in a jail, `/var/palm/jail/<id>`, made by `/usr/bin/jailer`
+from `/etc/jail_*.conf`. YouTube (`youtube.leanback.v4`, Cobalt, `"type":
+"native"`, `"privilegedJail": true`) runs in one. `/var/palm/jail` also held
+jails for Netflix, Amazon, the web browser, Jellyfin's service, LG's voice and
+ThinQ adapters, and `wap`.
+
+- **A chroot, not a container.** YouTube's process has the jail as its root
+  (`/proc/<pid>/root`) and the same mount, network and UTS namespaces as PID 1,
+  so a mount made on the TV under the jail is what the app sees, and it reaches
+  connmand's relay at `127.0.0.1:53`.
+- **resolv.conf and hosts are copies.** The jail's `etc/resolv.conf` and
+  `etc/hosts` are plain files. `jail_native_builtin.conf` names
+  `copy /etc/hosts`; nothing there names `resolv.conf`, yet it is copied too.
+  Both are written each time the jailer resets the jail, which touches
+  `jail-reset.6.5.3-47` in it: at every launch, including the preload
+  manager's own relaunches in the background after the app was killed. The
+  jail's other directories persist between launches.
+- **The hosts copy can predate the ad blocker.** After a reboot, YouTube's jail
+  was reset at 21:47:58 and Glasshouse mounted its table over `/etc/hosts` at
+  21:48:17, so YouTube had LG's 237-byte file until its next launch, which
+  copied the 5617-byte table.
+- **Cobalt uses the jail's resolver.** Its binary calls `getaddrinfo` (glibc
+  2.28 in the jail) and holds no DNS-over-HTTPS or fixed resolver names. With
+  the jail's `resolv.conf` naming a logging relay on `127.0.0.53`, YouTube
+  sent it `www.youtube.com`, `www.gstatic.com`, `i.ytimg.com`,
+  `redirector.googlevideo.com` and others, and played normally.
+- **Only a write after the copy holds.** A writable bind mount over the jail's
+  `resolv.conf` stays mounted, but the next launch copies the TV's file through
+  it. A read-only one makes the copy fail: YouTube did not start, its
+  `jail-reset` marker was gone, and a launch sent after the mount came off was
+  not logged by sam; the next one, 2 minutes 47 seconds after the failed
+  launch, started it normally. Writing the file again right after the copy worked: the copy
+  came 1.5 s before YouTube's first lookup. Rewriting it while YouTube ran
+  brought no lookups to the new server in 70 s, so a running app is not
+  counted on to read it again.
+- **An app can open before the server.** In one boot, Glasshouse's boot hook
+  ran 34 s in, YouTube was opened from Home at 36 s (its jail reset then), and
+  the server was listening at 48 s. That YouTube kept the TV's DNS until it
+  left the screen 7 minutes later and a new YouTube process started.
+- **Web apps cannot be told apart.** They all run in WebAppMgr, one process
+  outside any jail. (webOS 4.4.3, B8; webOS 9.2.2, C2)
 
 The compositor (surface-manager) runs every remote key through a chain of
 JavaScript filters named in the configd key

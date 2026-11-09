@@ -1283,8 +1283,6 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
 .page-edit button{min-height:38px;padding:0 16px}
 .page-acts{display:flex;gap:8px}
 .page-add{margin-top:16px;flex-wrap:wrap}
-.page-add-msg{margin-top:10px;color:var(--red)}
-.page-add-msg:empty{display:none}
 .page-add #page-add-url{flex:2 1 260px}
 .page-add #page-add-name{flex:1 1 160px}
 .page-add #catalog-url{flex:1 1 260px}
@@ -1482,8 +1480,9 @@ button.tools-jump:active{background:var(--w80)}
 .catalog-source:active{background:var(--w10)}
 .catalog-source:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
 /* An error under a row, styled as the page's own error banner (#offline). */
-.err-note{font-size:14px;border-left:2px solid var(--red);padding:9px 13px;background:var(--w06);color:var(--w90);margin-top:8px;max-width:64ch;overflow-wrap:anywhere}
-.err-note b{font-weight:600;margin-right:6px}
+.err-note, .page-add-msg{font-size:14px;border-left:2px solid var(--red);padding:9px 13px;background:var(--w06);color:var(--w90);margin-top:8px;max-width:64ch;overflow-wrap:anywhere}
+.err-note:empty, .page-add-msg:empty{display:none}
+.err-note b, .page-add-msg b{font-weight:600;margin-right:6px}
 /* Under a long catalog list: how many show, and the button for more. */
 .catalog-more{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:16px 0 4px}
 /* Hide home screen system apps: a hidden app's tile is dimmed. */

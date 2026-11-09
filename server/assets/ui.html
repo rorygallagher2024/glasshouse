@@ -1079,6 +1079,24 @@
       </div>
     </details>
   </div>
+
+  <div class="apps-grp" id="apps-grp-net">
+    <div class="apps-grp-h" data-t="apps.group.net">Network</div>
+    <div class="pv-sub apps-grp-d" data-t="apps.group.net.desc">How apps reach the internet.</div>
+
+    <details class="pv-d" id="disc-appdns" hidden>
+      <summary><span data-t="apps.dns">DNS app configuration</span> <span class="cur" id="apps-dns-summary"></span></summary>
+      <div class="pv-sub" data-t="apps.dns.desc">An app here can look names up with DNS servers of its own, such as
+        1.1.1.1 or a Pi-hole, while everything else on the TV keeps using the TV's. A change takes effect the
+        next time the app starts. Only apps LG runs in a sandbox of their own are listed, once they have been
+        opened; web apps share one process and cannot have their own.</div>
+      <div class="pv-sub" data-t="apps.dns.doh.desc">Instead of addresses, an app can be given one https:// address for
+        DNS over HTTPS, such as https://dns.nextdns.io/ followed by a NextDNS profile ID. Glasshouse then answers
+        the app's lookups on the TV and sends each on over HTTPS, so the app finds nothing while Glasshouse is not
+        running, as in the first minute after the TV starts.</div>
+      <div class="prot-table" id="apps-dns-list"></div>
+    </details>
+  </div>
 </section>
 
 <section class="priv panel" id="homepane" role="tabpanel" hidden>

@@ -179,6 +179,7 @@ function renderAppsPanel() {
   renderSavedPages(d);
 
   renderPreload(d);
+  renderAppDns(d);
   renderQuickAccess(d);
   renderRemoteKeys(d);
 
@@ -1000,6 +1001,86 @@ async function togglePreload(appId, makeOff) {
   }
   if (appsData) renderPreload(appsData);
   if (error) alert(t('apps.preload.failed', 'Could not change it: {error}', { error }));
+}
+
+// DNS servers of an app's own (lib/appdns.js): a row per sandboxed app, its
+// servers edited in place as a saved page's address is. appDns is null where
+// the TV has no app sandboxes, and the section stays hidden.
+function renderAppDns(d) {
+  const disc = q('disc-appdns');
+  const apps = d.appDns;
+  if (!disc) return;
+  disc.hidden = !apps;
+  if (!apps) return;
+  const own = a => a.servers.length > 0 || !!a.doh;
+  const numSet = apps.filter(own).length;
+  q('apps-dns-summary').textContent = !numSet ? t('apps.dns.noneSet', 'None set')
+    : numSet === 1 ? t('apps.dns.setOne', '1 app with its own') : t('apps.dns.set', '{n} apps with their own', { n: numSet });
+  if (!apps.length) {
+    q('apps-dns-list').innerHTML = `<div class="sub" style="padding:16px 0">${esc(t('apps.dns.noApps', 'No sandboxed app has been opened yet.'))}</div>`;
+    return;
+  }
+  q('apps-dns-list').innerHTML = apps.map(a => {
+    const id = esc(a.id);
+    // A DNS-over-HTTPS address with the last failure to reach it, if any.
+    const uses = a.doh ? esc(a.doh)
+      : a.servers.length ? esc(a.servers.join(', ')) : esc(t('apps.dns.tvOwn', 'Using TV\'s DNS'));
+    const fail = a.doh && a.dohError ? t('apps.dns.dohFailing', 'no answer: {error}', { error: a.dohError }) : '';
+    const err = fail ? `<div class="err-note" role="alert">${esc(fail.charAt(0).toUpperCase() + fail.slice(1) + '.')}</div>` : '';
+    return `<div class="prot-row" id="dns-${id}">
+      <div class="prot-main">
+        <div class="prot-title" translate="no">${esc(a.title)}</div>
+        <div class="prot-desc">${uses}</div>${err}
+      </div>
+      <div class="prot-status page-acts">
+        <button type="button" class="pill idle" onclick="editAppDns('${jsq(a.id)}')" ${d.writable ? '' : 'disabled'}>${esc(t('apps.dns.change', 'Change'))}</button>
+        ${own(a) ? `<button type="button" class="pill bad" onclick="saveAppDns('${jsq(a.id)}', '')" ${d.writable ? '' : 'disabled'}>${esc(t('apps.dns.reset', 'Use the TV\'s DNS'))}</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editAppDns(appId) {
+  const a = ((appsData && appsData.appDns) || []).find(x => x.id === appId);
+  const row = q('dns-' + appId);
+  if (!a || !row) return;
+  const jid = jsq(appId);
+  row.innerHTML = `<div class="prot-main">
+      <div class="prot-title" translate="no">${esc(a.title)}</div>
+      <form class="toast-form page-edit" onsubmit="event.preventDefault();saveAppDns('${jid}', this.querySelector('input').value)">
+        <input type="text" id="dns-in-${esc(appId)}" maxlength="300" autocomplete="off" spellcheck="false"
+          placeholder="${esc(t('apps.dns.placeholder', 'Up to 3 addresses, such as 1.1.1.1, 1.0.0.1, or one https:// address'))}" value="${esc(a.doh || a.servers.join(', '))}"
+          aria-label="${esc(t('apps.dns.servers', 'DNS servers'))}" onkeydown="if(event.key==='Escape')renderAppDns(appsData)">
+        <button type="submit">${esc(t('apps.pages.save', 'Save'))}</button>
+        <button type="button" onclick="renderAppDns(appsData)">${esc(t('common.cancel', 'Cancel'))}</button>
+      </form>
+      <div class="err-note" id="dns-msg-${esc(appId)}" role="alert"></div>
+    </div>`;
+  q('dns-in-' + appId).focus();
+}
+
+// Empty servers put the app back on the TV's DNS.
+async function saveAppDns(appId, servers) {
+  const msg = q('dns-msg-' + appId);
+  if (msg) msg.textContent = '';
+  try {
+    const r = await fetch(api('/api/appdns'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: appId, servers })
+    });
+    const j = await r.json().catch(() => ({}));
+    // A refused address leaves the field open with the reason beside it.
+    if (!r.ok || !j.ok) {
+      const e = j.error || t('apps.pages.saveFailed', 'Could not save it');
+      const text = e.charAt(0).toUpperCase() + e.slice(1) + '.';
+      if (msg) msg.textContent = text; else showErr(text);
+      return;
+    }
+  } catch (e) {
+    if (msg) msg.textContent = e.message; else showErr(e.message);
+    return;
+  }
+  loadApps();
 }
 
 async function toggleService(serviceId, makeDisabled) {
