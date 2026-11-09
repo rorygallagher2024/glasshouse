@@ -3084,5 +3084,19 @@
  "server.experimental.inputBar.short": {"text": "Disponibiliza a barra de entradas em Teclas do comando no separador Aplicações: uma faixa das entradas HDMI sobre a imagem, percorrida com a tecla Entrada do comando.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Experimentada apenas no webOS 4, 6 e 9. Desativá-la repõe como a LG tem qualquer tecla que a use e remove a aplicação.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Barra de entradas", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "Não foi possível instalar a barra de entradas na TV. Tente novamente dentro de momentos.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "Não foi possível instalar a barra de entradas na TV. Tente novamente dentro de momentos.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "home.tv.paused": {"text": "Em pausa", "from": "Paused"},
+ "home.tv.pausedLeft": {"text": "Em pausa, restam {time}", "from": "Paused, {time} left"},
+ "home.tv.behind": {"text": "{time} atrás do direto. Voltar regressa ao direto.", "from": "{time} behind live. Back goes to live."},
+ "home.tv.pauseTitle": {"text": "Pausar a TV pela Internet em direto", "from": "Pause live Internet TV"},
+ "home.tv.pauseDesc": {"text": "Pausa no comando pausa um canal em ecrã inteiro. Esquerda e direita recuam e avançam 30 segundos, e Voltar regressa ao direto. Enquanto um canal está a ser reproduzido, a TV grava-o numa pen USB, até cerca de meia hora, e apaga-o quando o canal para. Apenas canais MPEG-TS.", "from": "Pause on the remote pauses a channel played full screen. Left and right go back and forward 30 seconds, and Back goes to live again. While a channel plays, the TV records it to a USB stick, up to about half an hour, and deletes it when the channel stops. MPEG-TS channels only."},
+ "home.tv.pauseStick": {"text": "Pen USB encontrada, {gb} GB livres.", "from": "USB stick found, {gb} GB free."},
+ "home.tv.pauseNoStick": {"text": "Nenhuma pen USB com espaço encontrada: ligue uma, formatada em FAT32 ou exFAT, com pelo menos 512 MB livres.", "from": "No USB stick with room found: plug one in, formatted FAT32 or exFAT, with at least 512 MB free."},
+ "home.tv.noPause": {"text": "Este canal não pode ser pausado agora", "from": "This channel can’t pause now"},
+ "home.tv.seekTo": {"text": "{time} atrás do direto", "from": "{time} behind live"},
+ "home.tv.seekLive": {"text": "Em direto", "from": "Live"},
+ "home.tv.liveAsk": {"text": "Voltar ao direto?", "from": "Back to live?"},
+ "home.tv.liveAskDetail": {"text": "OK vai para o direto. Voltar fica aqui.", "from": "OK goes to live. Back stays here."},
+ "home.tv.zapAsk": {"text": "Mudar de canal?", "from": "Change channel?"},
+ "home.tv.zapAskDetail": {"text": "A gravação deste canal perde-se. OK muda. Voltar fica aqui.", "from": "The recording of this channel is lost. OK changes. Back stays here."}
 }

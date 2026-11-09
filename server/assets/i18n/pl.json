@@ -3084,5 +3084,19 @@
  "server.experimental.inputBar.short": {"text": "Udostępnia pasek wejść w sekcji Przyciski pilota na karcie Aplikacje: pasek wejść HDMI wyświetlany na obrazie, przełączany przyciskiem Wejście na pilocie.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Przetestowano tylko na webOS 4, 6 i 9. Wyłączenie przywraca wszystkim korzystającym z niego przyciskom działanie LG i usuwa jego aplikację.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Pasek wejść", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "Nie udało się zainstalować paska wejść na telewizorze. Spróbuj ponownie za chwilę.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "Nie udało się zainstalować paska wejść na telewizorze. Spróbuj ponownie za chwilę.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "home.tv.paused": {"text": "Wstrzymano", "from": "Paused"},
+ "home.tv.pausedLeft": {"text": "Wstrzymano, zostało {time}", "from": "Paused, {time} left"},
+ "home.tv.behind": {"text": "{time} za transmisją na żywo. Wstecz wraca na żywo.", "from": "{time} behind live. Back goes to live."},
+ "home.tv.pauseTitle": {"text": "Wstrzymywanie telewizji internetowej na żywo", "from": "Pause live Internet TV"},
+ "home.tv.pauseDesc": {"text": "Pauza na pilocie wstrzymuje kanał oglądany na pełnym ekranie. Lewo i prawo cofają i przewijają o 30 sekund, a Wstecz wraca na żywo. Podczas odtwarzania telewizor nagrywa kanał na pendrive USB, do około pół godziny, i usuwa nagranie, gdy kanał się zatrzyma. Tylko kanały MPEG-TS.", "from": "Pause on the remote pauses a channel played full screen. Left and right go back and forward 30 seconds, and Back goes to live again. While a channel plays, the TV records it to a USB stick, up to about half an hour, and deletes it when the channel stops. MPEG-TS channels only."},
+ "home.tv.pauseStick": {"text": "Znaleziono pendrive USB, wolne {gb} GB.", "from": "USB stick found, {gb} GB free."},
+ "home.tv.pauseNoStick": {"text": "Nie znaleziono pendrive’a USB z wolnym miejscem: podłącz taki, sformatowany w FAT32 lub exFAT, z co najmniej 512 MB wolnego miejsca.", "from": "No USB stick with room found: plug one in, formatted FAT32 or exFAT, with at least 512 MB free."},
+ "home.tv.noPause": {"text": "Tego kanału nie można teraz wstrzymać", "from": "This channel can’t pause now"},
+ "home.tv.seekTo": {"text": "{time} za transmisją na żywo", "from": "{time} behind live"},
+ "home.tv.seekLive": {"text": "Na żywo", "from": "Live"},
+ "home.tv.liveAsk": {"text": "Wrócić na żywo?", "from": "Back to live?"},
+ "home.tv.liveAskDetail": {"text": "OK przechodzi na żywo. Wstecz zostaje tutaj.", "from": "OK goes to live. Back stays here."},
+ "home.tv.zapAsk": {"text": "Zmienić kanał?", "from": "Change channel?"},
+ "home.tv.zapAskDetail": {"text": "Nagranie tego kanału zostanie utracone. OK zmienia. Wstecz zostaje tutaj.", "from": "The recording of this channel is lost. OK changes. Back stays here."}
 }

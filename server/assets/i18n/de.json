@@ -752,5 +752,15 @@
  "home.weather.sunny": {"text": "Sonnig", "from": "Sunny"},
  "home.weather.windy": {"text": "Windig", "from": "Windy"},
  "home.weather.windyVariant": {"text": "Windig", "from": "Windy"},
- "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"}
+ "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"},
+ "home.tv.paused": {"text": "Pausiert", "from": "Paused"},
+ "home.tv.pausedLeft": {"text": "Pausiert, noch {time}", "from": "Paused, {time} left"},
+ "home.tv.behind": {"text": "{time} hinter live. Zurück springt zu live.", "from": "{time} behind live. Back goes to live."},
+ "home.tv.noPause": {"text": "Dieser Sender kann gerade nicht pausieren", "from": "This channel can’t pause now"},
+ "home.tv.seekTo": {"text": "{time} hinter live", "from": "{time} behind live"},
+ "home.tv.seekLive": {"text": "Live", "from": "Live"},
+ "home.tv.liveAsk": {"text": "Zurück zu live?", "from": "Back to live?"},
+ "home.tv.liveAskDetail": {"text": "OK springt zu live. Zurück bleibt hier.", "from": "OK goes to live. Back stays here."},
+ "home.tv.zapAsk": {"text": "Sender wechseln?", "from": "Change channel?"},
+ "home.tv.zapAskDetail": {"text": "Die Aufnahme dieses Senders geht verloren. OK wechselt. Zurück bleibt hier.", "from": "The recording of this channel is lost. OK changes. Back stays here."}
 }

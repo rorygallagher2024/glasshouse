@@ -304,6 +304,27 @@ saved, a message says so; **OK** reopens the channel with its saved choice.
 Refreshes wait while a channel plays, and the screen saver stays away while one plays full
 screen.
 
+**Pause live Internet TV**, on the Home tab and off by default, lets
+**Pause** on the remote pause a channel played full screen. **Play** or
+Pause again goes on from the same picture. **Left** and **Right** go 30
+seconds back and forward in what was recorded, back as far as the stick
+holds and forward as far as live, with a moment's reconnect at each jump;
+the channel list is on **OK** for such a channel. The band shows how long
+the pause can last and how far behind live the channel is. Behind live,
+**Back** asks "Back to live?": **OK** goes to the live point, Back again
+stays, and at the live point Back closes the player as ever. A remote's
+**Stop** asks the same. Changing channel from behind live, with the channel
+keys, a number or the list, asks "Change channel?" the same way, as the
+recording goes with the channel. It needs a USB stick in the TV, formatted FAT32 or
+exFAT, with at least 512 MB free: while a channel plays full screen, the TV
+records it to the stick, up to 2 GB (about half an hour of an HD channel),
+and deletes the recording when the channel stops, changes or the TV goes to
+standby. A pause that reaches the start of what the stick holds plays on by
+itself. The stick is written for as long as a channel plays, about 3 GB an
+hour, which wears a cheap stick sooner. Only MPEG-TS channels can pause:
+**Yellow** switches a provider's channel to MPEG-TS. Previews on the row are
+never recorded.
+
 The links and logins are kept on the TV only. They are not shown on the
 dashboard again, and never sent to Home Assistant, the logs or a phone or
 computer; see [Security](../SECURITY.md#internet-tv).
