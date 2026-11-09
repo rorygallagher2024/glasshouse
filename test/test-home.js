@@ -94,7 +94,7 @@ function freshTv() {
   fs.writeFileSync(path.join(layoutDir, 'home_layoutShelfView.xml'), CUSTOM_LAYOUT);
   fs.mkdirSync(checkpointDir);
   fs.mkdirSync(path.join(checkpointDir, LG_HOME));
-  tv = { settings: copy(ORIGINAL), events: [], preload: [], launched: [], launches: [], samType: 'native', samCategory: null, samRefuses: false,
+  tv = { settings: copy(ORIGINAL), events: [], order: [], preload: [], launched: [], launches: [], samType: 'native', samCategory: null, samRefuses: false,
          oldAppInstalled: false, mountFails: false };
   lgRunning(true);
   wamRunning(true);
@@ -188,6 +188,7 @@ function luna(uri, p, cb) {
     }
     else if (!tv.oldAppInstalled) r = { returnValue: false, errorText: 'Invalid appId specified' };
   } else if (uri === 'com.palm.webappmanager/killApp') {
+    tv.order.push('kill ' + p.appId);
     if (p.appId === OLD_APP) {
       tv.events.push('close old app');
       tv.oldAppRunning = !!tv.oldAppStuck;
@@ -199,6 +200,7 @@ function luna(uri, p, cb) {
   } else if (uri === 'com.webos.applicationManager/closeByAppId') {
     tv.events.push('close ' + p.id);
   } else if (uri === 'com.webos.applicationManager/launch') {
+    tv.order.push('launch ' + p.id);
     tv.launched.push(p.id);
     tv.launches.push(copy(p));
     if (tv.launchFails) r.returnValue = false;
@@ -939,6 +941,96 @@ step('woken from Active Standby with auto launch held off, Glasshouse Home opens
         home.disable(function () { done(); });
       });
     });
+    });
+  });
+});
+
+step('a wake on webOS 5 to 10 closes the resident Home page before opening it', function (done) {
+  var versions = ['5.6.2', '9.2.2', '10.3.1'];
+  (function run() {
+    if (!versions.length) return done();
+    var version = versions.shift();
+    start(null, { webosVersion: version, allowExperimental: function () { return true; } });
+    tv.settings.homeAutoLaunch = 'on';
+    tv.settings.quickStartMode = 'off';
+    home.enable(function (r) {
+      assert.ok(r.ok, r.error);
+      foreground('com.webos.app.hdmi4');
+      powerState('Active');
+      powerState('Active Standby');
+      wait(20, function () {
+        tv.order = [];
+        powerState('Active');
+        wait(1700, function () {
+          assert.deepEqual(tv.order, ['kill ' + LG_HOME, 'launch ' + LG_HOME], version);
+          run();
+        });
+      });
+    });
+  })();
+});
+
+step('a wake on webOS 4 or 11 opens Home without closing the page first', function (done) {
+  // webOS 4's standalone app is already on; installing it is another test.
+  var cases = [
+    { version: '4.4.3', id: OLD_APP, enabled: true },
+    { version: '11.2.0', id: LG_HOME, enabled: false }
+  ];
+  (function run() {
+    if (!cases.length) return done();
+    var c = cases.shift();
+    start(c.enabled ? { enabled: true } : null, { webosVersion: c.version, allowExperimental: function () { return true; } });
+    tv.settings.homeAutoLaunch = 'on';
+    tv.settings.quickStartMode = 'off';
+    function wake() {
+      foreground('com.webos.app.hdmi4');
+      powerState('Active');
+      powerState('Active Standby');
+      wait(20, function () {
+        tv.order = [];
+        powerState('Active');
+        wait(1700, function () {
+          assert.deepEqual(tv.order, ['launch ' + c.id], c.version);
+          run();
+        });
+      });
+    }
+    if (c.enabled) return wake();
+    home.enable(function (r) {
+      assert.ok(r.ok, r.error);
+      wake();
+    });
+  })();
+});
+
+step('a wake cancelled while Home is closing does not open it', function (done) {
+  var arm = false;
+  start(null, { luna: function (uri, payload, cb) {
+    luna(uri, payload, function (r) {
+      if (arm && uri === 'com.palm.webappmanager/killApp') {
+        arm = false;
+        powerState('Active Standby');
+      }
+      cb(r);
+    });
+  } });
+  tv.settings.homeAutoLaunch = 'on';
+  tv.settings.quickStartMode = 'off';
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('com.webos.app.hdmi4');
+    powerState('Active');
+    powerState('Active Standby');
+    wait(20, function () {
+      tv.order = [];
+      tv.launched = [];
+      arm = true;
+      powerState('Active');
+      wait(1700, function () {
+        assert.deepEqual(tv.order, ['kill ' + LG_HOME], 'closed, and not opened after standby');
+        assert.deepEqual(tv.launched, []);
+        home.disable(function () { done(); });
+      });
     });
   });
 });
