@@ -52,6 +52,8 @@ var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos'];
+// Where the weather badge's weather comes from: nowhere, Home Assistant's pushes, or Open-Meteo.
+var WEATHER_SOURCES = ['off', 'ha', 'internet'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
 // slow drift and its cross-fade between parts of the day, rows easing to the
 // chosen tile, and Recent apps, search and the folder sliding in.
@@ -65,7 +67,8 @@ var TILE_OPEN_MS = 15000;
  */
 var PROMO_APPS = ['com.webos.app.lgchannels', 'com.webos.app.sportsteamsettings',
   'com.webos.app.lifeonscreen', 'amazon.alexa.view', 'com.webos.app.camera'];
-// The view's own way back to LG's Home: last in the Apps row, and never hidden.
+// The view's own way back to LG's Home: last in the Apps row. It can be
+// hidden like any app; the remote's Home button still leads back.
 var LG_HOME_TILE = 'lg-home';
 /*
  * A web page saved to the Home screen is a bookmark of LG's browser, with its
@@ -153,6 +156,14 @@ var LEGACY_INPUT_KEYS = ['lastInputApp', 'physicalLastInputApp'];
  */
 var BEAT_GRACE_MS = 10000;
 var FIRST_BEAT_GRACE_MS = 20000;
+/*
+ * Timers stop while the TV is suspended and the wall clock does not, so a
+ * heartbeat check this much later than it was set for has slept with the TV.
+ * Set before a suspend, it fires as the TV resumes, before the view can beat
+ * and sometimes before the screen is reported on (a 75QNED80ARA, webOS 10.3.2,
+ * #1277).
+ */
+var BEAT_LATE_MS = 5000;
 // Holding Home this long opens LG's Home.
 var HOLD_MS = 1200;
 /*
@@ -176,6 +187,8 @@ var PAGE_LOAD_MS = 90000;
 var pageSignMs = PAGE_SIGN_MS, pageLoadMs = PAGE_LOAD_MS;
 var pageSeenAt = 0;
 var slowOpenMs = FIRST_BEAT_GRACE_MS;
+var beatGraceMs = BEAT_GRACE_MS;
+var firstBeatGraceMs = FIRST_BEAT_GRACE_MS;
 /*
  * WebAppMgr runs every web app, the view among them. On a G4 (webOS 11.2.0) it
  * was stopped by a SIGTERM from outside, and its unit restarts only on a
@@ -187,6 +200,12 @@ var WAM_UNIT = 'webapp-mgr.service';
 var SYSTEMCTLS = ['/bin/systemctl', '/usr/bin/systemctl'];
 var GUIDE_TTL_MS = 60000;
 var LIST_TTL_MS = 30000;
+/*
+ * The tuner's channels, read again less often: they change only with a
+ * retune, and a satellite list took 3.6 s to read (65SM8500PLA, webOS 4.10.1),
+ * which a request waits for once the list is out of date.
+ */
+var CHANNELS_TTL_MS = 600000;
 
 var lunaFn = null;
 var liveState = null;
@@ -256,6 +275,19 @@ var foreground = '';
 // When something other than the view last came to the front, for the open watch.
 var otherOpenedAt = 0;
 var lastSource = null;
+// What ha.js's 'weather' text entity last received over MQTT (setWeather
+// below), kept in home-weather.json so a restart does not hide it.
+var weatherPush = null;
+/** @type {typeof import('./weather')} */
+var weatherModule = null;
+/*
+ * A push older than this is not shown. Home Assistant pushes when the weather
+ * changes, and the docs' automation also every 30 minutes, so this only hides
+ * weather that has stopped coming.
+ */
+var WEATHER_STALE_MS = 3 * 3600000;
+// The longest city and condition shown, so one long name cannot push the clock aside.
+var WEATHER_TEXT_MAX = 40;
 var beatTimer = null;
 var lastBeatAt = 0;
 // What the view last said of itself, with its heartbeat: whether its page had
@@ -334,6 +366,9 @@ function defaults() {
     order: { app: [], dev: [], ch: [], rec: [], iptv: [] },
     sort: { app: 'custom', dev: 'custom', ch: 'custom', rec: 'custom', iptv: 'custom' },
     hidden: { app: PROMO_APPS.slice(), dev: [], ch: [], rec: [], iptv: [] },
+    // Whole rows left off the view, whatever their tiles. They still show
+    // while arranging, so that they can be moved.
+    hiddenRows: [],
     // Apps moved off the Apps row into its More apps tile, in no order of
     // their own: the folder shows them in the row's.
     folder: [],
@@ -356,6 +391,9 @@ function defaults() {
     showAppCount: true,
     showCec: true,
     showTvLogos: true,
+    // Where the weather comes from, and the place Open-Meteo is asked about.
+    weather: 'ha',
+    weatherPlace: null,
     // The live preview kept on what was last on whenever the view is on
     // screen, rather than only while a tile is chosen.
     previewAlways: false,
@@ -420,11 +458,12 @@ function normalise(raw) {
     rows.splice(r === 'rec' ? rows.indexOf('app') + 1 : rows.length, 0, r);
   });
   d.rows = rows;
+  d.hiddenRows = stringList(raw.hiddenRows).filter(function (r) { return ROWS.indexOf(r) !== -1; });
   ROWS.forEach(function (r) {
     if (raw.order && typeof raw.order === 'object') d.order[r] = stringList(raw.order[r]);
     if (raw.sort && typeof raw.sort === 'object' && SORTS.indexOf(raw.sort[r]) !== -1) d.sort[r] = raw.sort[r];
     if (raw.hidden && typeof raw.hidden === 'object') {
-      d.hidden[r] = stringList(raw.hidden[r]).filter(function (id) { return !(r === 'app' && id === LG_HOME_TILE); });
+      d.hidden[r] = stringList(raw.hidden[r]);
     }
   });
   /*
@@ -451,6 +490,9 @@ function normalise(raw) {
   d.picture = raw.picture === true;
   d.livePreview = raw.livePreview === true;
   SHOW_KEYS.forEach(function (k) { d[k] = raw[k] !== false; });
+  // Before the choice, a Weather switch: off, or Home Assistant's.
+  d.weather = WEATHER_SOURCES.indexOf(raw.weather) !== -1 ? raw.weather : raw.showWeather === false ? 'off' : 'ha';
+  d.weatherPlace = weatherPlaceOf(raw.weatherPlace);
   d.rowsBottom = raw.rowsBottom === true;
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.previewAlways = raw.previewAlways === true;
@@ -589,6 +631,7 @@ function setLayout(body, cb) {
     order: perRow(body.order, c.order),
     sort: perRow(body.sort, c.sort),
     hidden: perRow(body.hidden, c.hidden),
+    hiddenRows: body.hiddenRows !== undefined ? body.hiddenRows : c.hiddenRows,
     folder: body.folder !== undefined ? body.folder : c.folder,
     excludedRecents: body.excludedRecents !== undefined ? body.excludedRecents : c.excludedRecents,
     // A moved Channels row reorders the channels themselves.
@@ -605,6 +648,10 @@ function setLayout(body, cb) {
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
     showTvLogos: typeof body.showTvLogos === 'boolean' ? body.showTvLogos : c.showTvLogos,
+    // showWeather is the switch an older dashboard still sends.
+    weather: body.weather !== undefined ? body.weather
+      : typeof body.showWeather === 'boolean' ? (body.showWeather ? 'ha' : 'off') : c.weather,
+    weatherPlace: body.weatherPlace !== undefined ? body.weatherPlace : c.weatherPlace,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
     wallAnim: body.wallAnim !== undefined ? body.wallAnim : c.wallAnim,
@@ -631,6 +678,7 @@ function setLayout(body, cb) {
     next.order = d.order;
     next.sort = d.sort;
     next.hidden = d.hidden;
+    next.hiddenRows = d.hiddenRows;
     next.folder = d.folder;
   }
   config = next;
@@ -639,18 +687,19 @@ function setLayout(body, cb) {
     return cb({ ok: false, error: msg('srv.home.saveFailed', 'could not save the layout') });
   }
   if (c.picture !== config.picture) pictureDetailsFn(config.picture);
+  if (config.weather === 'internet') setTimeout(internetWeatherTick, 0);
   // A row back in its own order keeps no record of what was opened.
   ROWS.forEach(function (r) { if (config.sort[r] !== 'recent') recent.forget(r); });
   cb({ ok: true, layout: layoutOf(config), layoutVersion: layoutVersion() });
 }
 
 function layoutOf(c) {
-  return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
+  return { rows: c.rows, order: c.order, sort: c.sort, hidden: c.hidden, hiddenRows: c.hiddenRows, folder: c.folder, channels: c.channels, hintSeen: c.hintSeen,
     excludedRecents: c.excludedRecents,
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
@@ -857,7 +906,7 @@ function listDevices(devs, portsPlugged) {
  * adapter's tv/getChannelList, the method behind SSAP's ssap://tv/getChannelList.
  */
 function channelList(cb) {
-  cached('ch', LIST_TTL_MS, function (done) {
+  cached('ch', CHANNELS_TTL_MS, function (done) {
     luna('com.webos.service.apiadapter/tv/getChannelList', {}, function (r) {
       if (!r || r.returnValue === false || !isArray(r.channelList)) return done(null);
       var out = [];
@@ -1101,6 +1150,143 @@ function selectedOnPort(port, cb) {
 }
 
 /*
+ * The weather badge's last pushed value (text.lg_tv_weather's command
+ * topic, dispatched by tvweb.js). The payload is the JSON an automation
+ * sends: {"condition":"partlycloudy","temp":14.2,"city":"Conflans"}. city
+ * is optional, shown under the temperature when present. A malformed or
+ * non-numeric push is dropped rather than shown, so a bad automation
+ * leaves the badge hidden instead of wrong.
+ */
+function weatherFile() { return path.join(stateDir, 'home-weather.json'); }
+
+function weatherText(v) {
+  if (typeof v !== 'string') return null;
+  var t = v.replace(/\s+/g, ' ').trim();
+  return t ? t.slice(0, WEATHER_TEXT_MAX) : null;
+}
+
+// An empty push, or {}, takes the badge away at once.
+function setWeather(raw) {
+  var text = String(raw == null ? '' : raw).trim();
+  if (!text || text === '{}') {
+    weatherPush = null;
+    try { fs.unlinkSync(weatherFile()); } catch (e) {}
+    return;
+  }
+  var parsed = null;
+  try { parsed = JSON.parse(text); } catch (e) { /* ignored: not JSON, badge stays as it was */ }
+  if (!parsed || typeof parsed.temp !== 'number' || !isFinite(parsed.temp)) return;
+  weatherPush = { condition: weatherText(parsed.condition), temp: parsed.temp, city: weatherText(parsed.city), at: nowMs() };
+  try {
+    writeJsonAtomic(weatherFile(), weatherPush, 384);
+  } catch (e) {
+    console.error('home: could not keep the weather: ' + e.message);
+  }
+}
+
+function loadWeather() {
+  var w = null;
+  try { w = JSON.parse(fs.readFileSync(weatherFile(), 'utf8')); } catch (e) {}
+  weatherPush = w && typeof w.temp === 'number' && typeof w.at === 'number' ? w : null;
+}
+
+// A place as the dashboard chose it from Open-Meteo's search, or null.
+function weatherPlaceOf(v) {
+  if (!v || typeof v !== 'object' || typeof v.name !== 'string' || !v.name.trim()) return null;
+  var lat = Number(v.lat), lon = Number(v.lon);
+  if (!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+  return {
+    name: v.name.trim().slice(0, 80),
+    admin: typeof v.admin === 'string' ? v.admin.slice(0, 80) : '',
+    country: typeof v.country === 'string' ? v.country.slice(0, 80) : '',
+    countryCode: /^[A-Za-z]{2}$/.test(v.countryCode || '') ? v.countryCode.toUpperCase() : '',
+    lat: Math.round(lat * 10000) / 10000,
+    lon: Math.round(lon * 10000) / 10000
+  };
+}
+
+function placeKey(place) { return place ? place.lat + ',' + place.lon : ''; }
+
+/*
+ * Open-Meteo's weather for the chosen place: asked for again once it is 30
+ * minutes old, only while the screen is on, and kept in
+ * home-weather-internet.json so a restart shows it at once.
+ */
+var INTERNET_WEATHER_MS = 30 * 60000;
+// After a failure, the next try waits this long rather than a minute.
+var INTERNET_RETRY_MS = 5 * 60000;
+var internetWeather = null;
+var internetFetching = false;
+var internetFailedAt = 0;
+var internetTimer = null;
+var weatherWakeMs = 2000;
+
+function internetWeatherFile() { return path.join(stateDir, 'home-weather-internet.json'); }
+
+function internetWeatherTick() {
+  var c = readConfig();
+  if (c.weather !== 'internet' || !c.weatherPlace || !weatherModule || internetFetching || !powerActive) return;
+  var key = placeKey(c.weatherPlace);
+  var fresh = internetWeather && internetWeather.place === key && nowMs() - internetWeather.at < INTERNET_WEATHER_MS;
+  if (fresh || nowMs() - internetFailedAt < INTERNET_RETRY_MS) return;
+  internetFetching = true;
+  var place = c.weatherPlace;
+  weatherModule.current(place, function (err, w) {
+    internetFetching = false;
+    if (err) {
+      internetFailedAt = nowMs();
+      return console.error('home: could not read the weather from Open-Meteo: ' + err.message);
+    }
+    internetFailedAt = 0;
+    internetWeather = { condition: w.condition, temp: w.temp, unit: w.unit, city: place.name, place: key, at: nowMs() };
+    try { writeJsonAtomic(internetWeatherFile(), internetWeather, 384); } catch (e) {}
+  });
+}
+
+function loadInternetWeather() {
+  var w = null;
+  try { w = JSON.parse(fs.readFileSync(internetWeatherFile(), 'utf8')); } catch (e) {}
+  internetWeather = w && typeof w.temp === 'number' && typeof w.at === 'number' && typeof w.place === 'string' ? w : null;
+  internetFailedAt = 0;
+  if (internetTimer) clearInterval(internetTimer);
+  internetTimer = setInterval(internetWeatherTick, 60000);
+  if (internetTimer.unref) internetTimer.unref();
+}
+
+// Places for the dashboard to choose from, by name.
+function weatherPlaces(query, lang, cb) {
+  if (!weatherModule) return cb({ ok: false, error: 'weather is not available' });
+  weatherModule.search(query, lang, function (err, places) {
+    if (err) return cb({ ok: false, error: msg('srv.home.weatherSearchFailed', 'Open-Meteo could not be reached') });
+    cb({ ok: true, places: places });
+  });
+}
+
+/*
+ * The weather to show, from the chosen source: null where it is off, where
+ * nothing has come, or where what came is over 3 hours old.
+ */
+function currentWeather() {
+  var c = readConfig();
+  if (c.weather === 'ha') {
+    if (!weatherPush || nowMs() - weatherPush.at > WEATHER_STALE_MS) return null;
+    return { condition: weatherPush.condition, temp: weatherPush.temp, city: weatherPush.city, source: 'ha' };
+  }
+  if (c.weather === 'internet') {
+    var w = internetWeather;
+    if (!w || w.place !== placeKey(c.weatherPlace) || nowMs() - w.at > WEATHER_STALE_MS) return null;
+    return { condition: w.condition, temp: w.temp, city: w.city, source: 'internet' };
+  }
+  return null;
+}
+
+function weather(cb) {
+  var w = currentWeather();
+  if (!w) return cb({ ok: false });
+  cb({ ok: true, condition: w.condition, temp: w.temp, city: w.city, source: w.source });
+}
+
+/*
  * What was in front before the view: the top strip's "what is on". An input
  * names the device the TV last selected on it, or every device on it when
  * the TV has not said; Live TV, the channel it was last on.
@@ -1315,7 +1501,7 @@ function switchTo(on, cb) {
       if (r.ok) holdLgHome(want);
       if (r.ok) {
         console.log('home: ' + (want ? 'Glasshouse Home is in LG\'s Home\'s place' : 'LG\'s Home is in its place'));
-        if (want && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+        if (want && viewInFront() && powerActive) watchBeat(firstBeatGraceMs);
       }
       batch.forEach(function (f) { f(r); });
       if (switchWaiting.length) return run();
@@ -1326,7 +1512,11 @@ function switchTo(on, cb) {
         return ensureApp(function (ok) {
           if (!ok) return finish({ ok: false, error: 'could not install Glasshouse Home app' });
           setHomeKeyFn(HOME_APP, function (k) {
-            if (!k || !k.ok) return finish({ ok: false, error: 'could not set Home key target' });
+            if (!k || !k.ok) {
+              return removeStandaloneApp(function () {
+                finish({ ok: false, error: 'could not set Home key target' });
+              });
+            }
             startingNotice(true, function () {
               finish({ ok: true });
             });
@@ -1493,7 +1683,7 @@ function enable(cb) {
     startingNotice(true);
     syncLgAutoLaunch();
     syncDefaultHome();
-    if (viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+    if (viewInFront() && powerActive) watchBeat(firstBeatGraceMs);
     console.log('home: Glasshouse Home switched on');
     cb({ ok: true });
   });
@@ -1838,6 +2028,22 @@ function ensureApp(cb) {
 }
 
 /*
+ * After a switch-on that could not give the Home key to the app: left
+ * installed, its tile only opened a page that closed itself at once, as
+ * Glasshouse Home was off (a 60UJ6519 on webOS 3.9.3, #1222). The next switch
+ * on installs it again.
+ */
+function removeStandaloneApp(cb) {
+  if (!installFn) return cb();
+  installFn('remove', function () {
+    appInstalled(function (now) {
+      if (now === false) console.log('home: Glasshouse Home\'s app removed, as it could not be the TV\'s Home');
+      cb();
+    });
+  });
+}
+
+/*
  * Earlier builds set defaultApps.home and the start-up app to their own app,
  * and the remote's Home key to open it. Each that still names it is put back:
  * the start-up app as the snapshot had it, or Live TV.
@@ -1981,10 +2187,15 @@ function stopBeatWatch() {
 
 function watchBeat(ms) {
   stopBeatWatch();
+  var setAt = nowMs();
   beatTimer = setTimeout(function () {
     beatTimer = null;
     // Switched off into standby the view stops beating; nothing is on screen to replace.
     if (!viewInFront() || !powerActive) return;
+    if (nowMs() - setAt > ms + BEAT_LATE_MS) {
+      console.log('home: heartbeat check held up by a suspend; waiting for the view');
+      return watchBeat(firstBeatGraceMs);
+    }
     function hung() {
       console.error('home: the Glasshouse Home view is not answering');
       recoverView('view not answering', false);
@@ -2030,10 +2241,12 @@ function beat(body) {
     viewFocus = { focused: body.focused, visible: String(body.visible || ''), at: lastBeatAt };
   }
   beats++;
-  if (viewInFront()) watchBeat(BEAT_GRACE_MS);
+  if (viewInFront()) watchBeat(beatGraceMs);
   return { ok: true, enabled: readConfig().enabled, standalone: isStandalone(), covered: viewCovered(), saver: powerState === 'Screen Saver',
            build: buildId, wallpapers: wallpapers.status(),
-           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()) };
+           layoutVersion: layoutVersion(), sleeps: sleeps, trace: fs.existsSync(traceFile()),
+           // So a push shows within a heartbeat rather than at the next poll.
+           weather: currentWeather() };
 }
 
 function foregroundChanged(id) {
@@ -2052,7 +2265,7 @@ function foregroundChanged(id) {
   noteForeground(was, id);
   if (id === homeId) {
     if (isStandalone()) escaped = false;
-    if (was !== homeId && viewInFront() && powerActive) watchBeat(FIRST_BEAT_GRACE_MS);
+    if (was !== homeId && viewInFront() && powerActive) watchBeat(firstBeatGraceMs);
     return;
   }
   stopBeatWatch();
@@ -2346,6 +2559,9 @@ function reopenAfterWake11() {
 function powerChanged(active) {
   var was = powerActive;
   powerActive = active;
+  // The internet weather is asked for only while the screen is on: back on, it
+  // catches up once the network is back.
+  if (!was && active) setTimeout(internetWeatherTick, weatherWakeMs);
   if (was && !active) sleeps++;
   if (!active && wake11Timer) {
     clearTimeout(wake11Timer);
@@ -2353,6 +2569,9 @@ function powerChanged(active) {
   }
   if (!was && active && flutterHome() && readConfig().enabled) reopenAfterWake11();
   if (!active) cancelWake();
+  // Off, the view need not beat. A check its beats set in Active Standby is
+  // caught as late when a suspend holds it up (watchBeat).
+  if (was && !active) stopBeatWatch();
   if (was !== active && readConfig().enabled) syncLgAutoLaunch();
   // The preload manager may have started over with the TV.
   if (!was && active && lgHomeHeld) preloadLgHome(false);
@@ -2441,6 +2660,9 @@ function init(opts) {
   hdmiInputsFn = opts.hdmiInputs || null;
   procDir = opts.procDir || '/proc';
   slowOpenMs = typeof opts.slowOpenMs === 'number' ? opts.slowOpenMs : FIRST_BEAT_GRACE_MS;
+  beatGraceMs = opts.beatGraceMs || BEAT_GRACE_MS;
+  weatherWakeMs = opts.weatherWakeMs !== undefined ? opts.weatherWakeMs : 2000;
+  firstBeatGraceMs = opts.firstBeatGraceMs || FIRST_BEAT_GRACE_MS;
   bootOpenedFile = opts.bootOpenedFile || BOOT_OPENED_FILE;
   pageSignMs = opts.pageSignMs || PAGE_SIGN_MS;
   pageLoadMs = opts.pageLoadMs || PAGE_LOAD_MS;
@@ -2457,6 +2679,9 @@ function init(opts) {
   setStartingFn = opts.setStarting || function (text, cb) { cb({ ok: true, none: true }); };
   buildId = opts.build || '';
   nowMs = opts.now || Date.now;
+  loadWeather();
+  weatherModule = opts.weather || null;
+  loadInternetWeather();
   config = null;
   configMtime = 0;
   wasEnabled = false;
@@ -2600,6 +2825,8 @@ function watchStart(when, beatsBefore, signSince) {
 function pageAlive() { pageSeenAt = nowMs(); }
 
 function stop() {
+  if (internetTimer) clearInterval(internetTimer);
+  internetTimer = null;
   if (lgHomeWatch) clearInterval(lgHomeWatch);
   lgHomeWatch = null;
   lgHomeHeld = false;
@@ -2625,6 +2852,9 @@ module.exports = {
   channelList: channelList,
   guide: guide,
   now: now,
+  setWeather: setWeather,
+  weatherPlaces: weatherPlaces,
+  weather: weather,
   open: open,
   setLayout: function (body, cb) { change(function (done) { setLayout(body, done); }, cb); },
   setHideLgHomeAtStart: function (body, cb) { change(function (done) { setHideLgHomeAtStart(body, done); }, cb); },

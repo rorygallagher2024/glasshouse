@@ -322,16 +322,30 @@ function restart(check, cb) {
 }
 
 /*
+ * LG's HDMI input service subscribes to sam's foreground app once, when it
+ * starts, and never again: after sam is restarted it sees no app in front for
+ * the rest of the boot. Its EDID control then refuses every update for the
+ * input on screen ("Invalid App type", app type 0x0d), so a source is left on
+ * the basic EDID: on a 55UP77 (webOS 6.5.3) an Apple TV sent only PCM to an
+ * eARC soundbar, and MAT once the service was restarted. Nothing requires the
+ * unit, so it is restarted with sam already answering; a TV without it is
+ * left alone. A shell command, for lib/apps.js and the boot hook's copy.
+ */
+var RESUBSCRIBE_HDMI_INPUTS = 'if systemctl cat extinput-integration.service >/dev/null 2>&1; then ' +
+                              'systemctl restart --no-block extinput-integration.service && echo extinput-integration.service; fi';
+
+/*
  * A unit that requires sam and hit its restart limit is started again, as
- * lib/apps.js does after a restart for tile hiding. On Upstart TVs, Upstart
- * does not restart dependent jobs, so eim is restarted here.
+ * lib/apps.js does after a restart for tile hiding, and the HDMI input
+ * service subscribes to sam again. On Upstart TVs, Upstart does not restart
+ * dependent jobs, so eim is restarted here.
  */
 function startDependents(cb) {
   var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
             'for u in $(systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null | ' +
             'sed -n "s/^[^A-Za-z0-9]*\\([A-Za-z0-9@._-]*\\.service\\)$/\\1/p"); do ' +
             'if systemctl is-failed --quiet "$u"; then systemctl reset-failed "$u"; systemctl start --no-block "$u"; fi; ' +
-            'done; ' +
+            'done; ' + RESUBSCRIBE_HDMI_INPUTS + '; ' +
             'elif command -v initctl >/dev/null 2>&1; then ' +
             'initctl restart eim >/dev/null 2>&1 || true; ' +
             'fi';
@@ -344,6 +358,7 @@ module.exports = {
   canNudge: canNudge,
   rereadApp: rereadApp,
   restart: restart,
+  RESUBSCRIBE_HDMI_INPUTS: RESUBSCRIBE_HDMI_INPUTS,
   KEY: KEY,
   NUDGE_ID: NUDGE_ID
 };

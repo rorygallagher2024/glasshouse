@@ -261,8 +261,11 @@ function start(file, opts) {
             lgLayoutDir: layoutDir, checkpointDirs: [checkpointDir],
             setStarting: function (text, cb) { tv.starting = text; cb({ ok: true }); } };
   for (var k in opts || {}) o[k] = opts[k];
+  lastInit = o;
   home.init(o);
 }
+// The options start() gave init, for a restart that keeps the TV's files.
+var lastInit = null;
 
 function taken() { return tv.samType === 'web' && fs.realpathSync(appDir) === fs.realpathSync(stageDir); }
 
@@ -286,6 +289,25 @@ function next() {
   if (!s) { console.log('All home tests passed.'); return process.exit(0); }
   s.fn(function () { console.log('  ✓ ' + s.name); next(); });
 }
+
+step('Whole rows and the LG Home tile can be hidden, and Reset shows them again', function (done) {
+  start({ hiddenRows: ['app', 'app', 'bogus', 7] });
+  assert.deepEqual(home.layout().hiddenRows, ['app'], 'known rows, once each');
+  home.setLayout({ hiddenRows: ['dev', 'app'], hidden: { app: ['lg-home'] } }, function (r) {
+    assert.deepEqual(r.layout.hiddenRows, ['dev', 'app']);
+    assert.deepEqual(r.layout.hidden.app, ['lg-home']);
+    home.setLayout({ picture: false }, function (r2) {
+      assert.deepEqual(r2.layout.hiddenRows, ['dev', 'app'], 'kept by a save that does not name it');
+      var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+      assert.deepEqual(saved.hiddenRows, ['dev', 'app']);
+      assert.deepEqual(saved.hidden.app, ['lg-home']);
+      home.setLayout({ reset: true }, function (r3) {
+        assert.deepEqual(r3.layout.hiddenRows, []);
+        done();
+      });
+    });
+  });
+});
 
 step('Recents exclusions are normalised, saved, preserved and reloaded', function (done) {
   start({ excludedRecents: ['private.app', 'private.app', 7, ''] });
@@ -549,10 +571,10 @@ step('channels are added and removed, never hidden, and their list is their orde
   });
 });
 
-step('the LG Home tile cannot be hidden, and unknown rows are dropped', function (done) {
+step('the LG Home tile can be hidden, and unknown rows are dropped', function (done) {
   start(null);
   home.setLayout({ hidden: { app: ['lg-home', 'netflix'] }, rows: ['ch', 'bogus'] }, function (r) {
-    assert.deepEqual(r.layout.hidden.app, ['netflix']);
+    assert.deepEqual(r.layout.hidden.app, ['lg-home', 'netflix']);
     assert.deepEqual(r.layout.rows, ['ch', 'app', 'rec', 'dev', 'iptv']);
     done();
   });
@@ -1378,6 +1400,25 @@ step('on webOS 4, a Home press the view does not answer closes it and opens it a
       assert.strictEqual(homeKey, OLD_APP, 'Home still opens Glasshouse Home');
       home.disable(function () { done(); });
     });
+  });
+});
+
+// A 60UJ6519 (webOS 3.9.3) has no key filter for the Home key (#1222).
+step('a switch-on that cannot give the Home key to the app removes the app it installed', function (done) {
+  var actions = [];
+  start(null, {
+    webosVersion: '3.9.3',
+    allowExperimental: function () { return true; },
+    installApp: function (action, cb) { actions.push(action); tv.oldAppInstalled = action === 'install'; cb({ ok: true }); },
+    setHomeKey: function (id, cb) { cb({ ok: false }); }
+  });
+  home.enable(function (r) {
+    assert.strictEqual(r.ok, false, 'not switched on');
+    assert.ok(/Home key/.test(r.error), r.error);
+    assert.deepEqual(actions, ['install', 'remove']);
+    assert.strictEqual(tv.oldAppInstalled, false, 'no tile left behind');
+    assert.strictEqual(home.enabled(), false);
+    done();
   });
 });
 
@@ -2647,6 +2688,152 @@ step('a healthy view is replaced by LG\'s Home if its heartbeats later stop', fu
         assert.strictEqual(tv.samType, 'native');
         assert.strictEqual(home.enabled(), true, 'still switched on');
         done();
+      });
+    });
+  });
+});
+
+// A 75QNED80ARA (webOS 10.3.2) with Quick Start+ on: the heartbeat check, held
+// up by a deep suspend, fired as the TV resumed, before the view could beat,
+// and LG's Home took over (#1277). The grace periods are shortened here.
+step('a heartbeat check held up by a suspend waits for the view, and a real hang still falls back', function (done) {
+  var clock = Date.now();
+  start(null, { now: function () { return clock; }, beatGraceMs: 100, firstBeatGraceMs: 200 });
+  home.enable(function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.launched = [];
+    clock += 300000;   // five minutes asleep, none of it on the timer's clock
+    wait(150, function () {
+      assert.deepEqual(tv.launched, [], 'waking is not a hang');
+      assert.ok(taken(), 'Glasshouse Home keeps its place');
+      wait(250, function () {
+        assert.deepEqual(tv.launched, [LG_HOME], 'with no beat after the wake, it is one');
+        done();
+      });
+    });
+  });
+});
+
+step('switching the screen off ends the heartbeat check', function (done) {
+  start(null, { beatGraceMs: 100, firstBeatGraceMs: 200 });
+  home.enable(function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.launched = [];
+    power(false);
+    power(true);   // on again at once: a check left from before would fire in 100 ms
+    wait(250, function () {
+      assert.deepEqual(tv.launched, [], 'no check carried over the switch-off');
+      done();
+    });
+  });
+});
+
+step('the weather Home Assistant pushes is kept across a restart, capped, hidden once stale and cleared by an empty push', function (done) {
+  var clock = Date.now();
+  var opts = { now: function () { return clock; } };
+  start(null, opts);
+  home.setWeather('not json');
+  home.setWeather('{"condition":"sunny"}');
+  assert.strictEqual(home.beat().weather, null, 'nothing shown without a numeric temperature');
+  home.setWeather(JSON.stringify({ condition: 'rainy', temp: 9.6, city: '  Glasgow   ' + new Array(60).join('x') }));
+  var w = home.beat().weather;
+  assert.strictEqual(w.condition, 'rainy');
+  assert.strictEqual(w.temp, 9.6);
+  assert.strictEqual(w.city.indexOf('Glasgow x'), 0, 'spaces folded');
+  assert.strictEqual(w.city.length, 40, 'capped');
+  // A restart reads it back from home-weather.json.
+  home.init(lastInit);
+  home.weather(function (r) {
+    assert.strictEqual(r.ok, true, 'kept across a restart');
+    assert.strictEqual(r.temp, 9.6);
+    clock += 3 * 3600000 + 1000;
+    assert.strictEqual(home.beat().weather, null, 'stale after 3 h');
+    clock -= 3 * 3600000 + 1000;
+    home.setWeather('');
+    assert.strictEqual(home.beat().weather, null, 'an empty push clears it');
+    home.init(lastInit);
+    assert.strictEqual(home.beat().weather, null, 'and it stays cleared after a restart');
+    assert.strictEqual(home.layout().weather, 'ha', 'Home Assistant until another source is chosen');
+    home.setWeather(JSON.stringify({ condition: 'rainy', temp: 9.6 }));
+    // An older dashboard's switch still works.
+    home.setLayout({ showWeather: false }, function (r2) {
+      assert.strictEqual(r2.layout.weather, 'off');
+      assert.strictEqual(home.beat().weather, null, 'off hides what was pushed');
+      home.init(lastInit);
+      assert.strictEqual(home.layout().weather, 'off', 'and saved');
+      done();
+    });
+  });
+});
+
+step('a Weather switch saved off before the source choice stays off', function (done) {
+  start({ enabled: false, showWeather: false });
+  assert.strictEqual(home.layout().weather, 'off');
+  start({ enabled: false, showWeather: true });
+  assert.strictEqual(home.layout().weather, 'ha');
+  done();
+});
+
+step('weather from the internet: asked for only with a place and the screen on, then every 30 minutes', function (done) {
+  var clock = Date.now();
+  var asked = [];
+  var reply = { condition: 'cloudy', temp: 9.7, unit: 'C' };
+  var weather = {
+    current: function (place, cb) { asked.push(place.name); cb(reply ? null : new Error('offline'), reply); },
+    search: function (q, lang, cb) { cb(null, [{ name: q, lat: 1, lon: 2 }]); }
+  };
+  var glasgow = { name: 'Glasgow', admin: 'Scotland', country: 'United Kingdom', countryCode: 'gb', lat: 55.86517, lon: -4.25763 };
+  start(null, { now: function () { return clock; }, weather: weather, weatherWakeMs: 0 });
+  home.setLayout({ weather: 'internet' }, function (r) {
+    assert.strictEqual(r.layout.weatherPlace, null);
+    wait(20, function () {
+      assert.deepEqual(asked, [], 'nothing asked without a place');
+      home.setLayout({ weatherPlace: glasgow }, function (r2) {
+        assert.deepEqual(r2.layout.weatherPlace, { name: 'Glasgow', admin: 'Scotland', country: 'United Kingdom',
+          countryCode: 'GB', lat: 55.8652, lon: -4.2576 }, 'kept to four decimals');
+        wait(20, function () {
+          assert.deepEqual(asked, ['Glasgow'], 'asked once the place is chosen');
+          assert.deepEqual(home.beat().weather, { condition: 'cloudy', temp: 9.7, city: 'Glasgow', source: 'internet' });
+          home.weatherPlaces('Glas', 'en', function (found) {
+            assert.strictEqual(found.ok, true);
+            assert.strictEqual(found.places[0].name, 'Glas');
+            // Home Assistant's pushes are not shown while the internet is chosen.
+            home.setWeather(JSON.stringify({ condition: 'sunny', temp: 20 }));
+            assert.strictEqual(home.beat().weather.temp, 9.7);
+            // A save asks again only once the last reply is 30 minutes old.
+            clock += 29 * 60000;
+            home.setLayout({ weather: 'internet' }, function () {
+              wait(20, function () {
+                assert.deepEqual(asked, ['Glasgow'], 'not again within 30 minutes');
+                clock += 2 * 60000;
+                power(false);
+                home.setLayout({ weather: 'internet' }, function () {
+                  wait(20, function () {
+                    assert.deepEqual(asked, ['Glasgow'], 'not while the screen is off');
+                    home.init(lastInit);
+                    assert.strictEqual(home.beat().weather.temp, 9.7, 'kept across a restart');
+                    power(false);
+                    reply = null;
+                    power(true);
+                    wait(20, function () {
+                      assert.deepEqual(asked, ['Glasgow', 'Glasgow'], 'asked once the screen is on again');
+                      assert.strictEqual(home.beat().weather.temp, 9.7, 'a failure keeps the last weather');
+                      clock += 3 * 3600000;
+                      assert.strictEqual(home.beat().weather, null, 'stale after 3 h');
+                      home.setLayout({ weather: 'ha' }, function () {
+                        home.setWeather(JSON.stringify({ condition: 'sunny', temp: 20 }));
+                        assert.strictEqual(home.beat().weather.temp, 20, 'Home Assistant\'s again');
+                        done();
+                      });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
       });
     });
   });

@@ -27,9 +27,10 @@ set -e
 
 TV=""
 PERSIST=1
-# The telnet fallback opens its socket through bash's /dev/tcp, so another
-# shell cannot run this script. Checked before the first bash-only line, which
-# a POSIX shell would otherwise report as a syntax error.
+# The telnet fallback opens its socket through nc, or bash's /dev/tcp where nc
+# can't reach the TV, so another shell cannot run this script. Checked before
+# the first bash-only line, which a POSIX shell would otherwise report as a
+# syntax error.
 if [ -z "$BASH_VERSION" ]; then
   echo "deploy.sh needs bash: run it as 'bash deploy.sh <tv-ip>'" >&2
   exit 2
@@ -63,7 +64,7 @@ assets/ui/ui.css assets/ui/core.js assets/ui/theme.js assets/ui/format.js assets
 assets/ui/update.js assets/ui/controls.js assets/ui/privacy.js assets/ui/lgsettings.js assets/ui/game.js \
 assets/ui/system.js assets/ui/history.js assets/ui/ssh.js assets/ui/screentime.js assets/ui/apps.js assets/ui/install.js assets/ui/home.js assets/ui/iptv.js assets/ui/tvchannels.js assets/ui/tabs.js assets/ui/servicemenu.js \
 assets/ui/oled.js assets/ui/screensavers.js assets/ui/mqtt.js assets/ui/tools.js assets/ui/search-aliases.js assets/ui/search.js assets/ui/main.js assets/ui/audio.js assets/ui/bluetooth.js assets/ui/picture.js \
-assets/qr.js assets/i18n.js assets/i18n/es.json assets/i18n/de.json assets/i18n/ru.json assets/i18n/hu.json assets/i18n/it.json assets/i18n/ar.json assets/i18n/pt.json assets/i18n/pt-br.json assets/i18n/pl.json assets/setup.html assets/setup-phone.html \
+assets/qr.js assets/i18n.js assets/i18n/es.json assets/i18n/de.json assets/i18n/ru.json assets/i18n/hu.json assets/i18n/it.json assets/i18n/ar.json assets/i18n/pt.json assets/i18n/pt-br.json assets/i18n/pl.json assets/i18n/fr.json assets/setup.html assets/setup-phone.html \
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
 assets/dashboard-app/assets/icon80.png assets/dashboard-app/assets/icon130.png \
@@ -96,7 +97,7 @@ assets/screensavers/vitals/saver.json assets/screensavers/vortex/main.qml \
 assets/screensavers/vortex/saver.json \
 screensavers/pigs/main.qml screensavers/pigs/saver.json \
 lib/mqtt.js lib/ha.js lib/updater.js lib/fetch.js lib/repo.js lib/installer.js lib/privacy.js lib/devtools.js lib/oled.js lib/screensavers.js lib/qmlcheck.js lib/saverpoweroff.js lib/idlesaver.js lib/typing.js lib/telemetry.js \
-lib/apps.js lib/samrescan.js lib/children.js lib/luna.js lib/piccap.js lib/huesync.js lib/state.js lib/mqtt-state.js lib/notifications.js lib/screentime.js lib/services.js lib/preload.js lib/quickaccess.js lib/remotekeys.js lib/homescreen.js lib/homescreen-webos9.js lib/homescreen-webos10.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/timers.js lib/util.js lib/names.js lib/prometheus.js lib/remotebuttons.js lib/remotebuttons.py lib/logs.js lib/syslog.js lib/ntp.js lib/power.js lib/history.js lib/sshkeys.js lib/remotebattery.js lib/backup.js lib/backup-parts.js lib/iconserver.js lib/home.js lib/home-picture.js lib/home-launcher.js lib/home-takeover.js lib/home-wallpapers.js lib/home-recent.js lib/clock.js lib/inputbar.js lib/home-recent-apps.js lib/home-recommended.js lib/home-search.js lib/audio.js lib/btaudio.js lib/iptv.js lib/iptv-lineup.js lib/iptv-memory.js lib/iptv-worker.js lib/iptv-parse.js"
+lib/apps.js lib/samrescan.js lib/children.js lib/luna.js lib/piccap.js lib/huesync.js lib/state.js lib/mqtt-state.js lib/notifications.js lib/screentime.js lib/services.js lib/preload.js lib/quickaccess.js lib/remotekeys.js lib/homescreen.js lib/homescreen-webos9.js lib/homescreen-webos10.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/timers.js lib/util.js lib/names.js lib/prometheus.js lib/remotebuttons.js lib/remotebuttons.py lib/logs.js lib/syslog.js lib/ntp.js lib/power.js lib/history.js lib/sshkeys.js lib/remotebattery.js lib/backup.js lib/backup-parts.js lib/iconserver.js lib/home.js lib/weather.js lib/home-picture.js lib/home-launcher.js lib/home-takeover.js lib/home-wallpapers.js lib/home-recent.js lib/clock.js lib/inputbar.js lib/home-recent-apps.js lib/home-recommended.js lib/home-search.js lib/audio.js lib/btaudio.js lib/iptv.js lib/iptv-lineup.js lib/iptv-memory.js lib/iptv-worker.js lib/iptv-parse.js"
 
 for t in tar base64 fold; do
   command -v "$t" >/dev/null 2>&1 && continue
@@ -234,9 +235,22 @@ deploy_ssh() {
 }
 
 # ---------------------------------------------------------------- telnet
+# macOS lets only the programs it trusts reach the local network until the
+# terminal is allowed to (Privacy & Security > Local Network): Apple's own nc
+# connects while Homebrew's bash gets "No route to host" (#1227). So nc is
+# asked first, and /dev/tcp is the fallback.
+USE_NC=""
+nc_answers() {
+  command -v nc >/dev/null 2>&1 && nc -z -w 6 "$TV" "$1" >/dev/null 2>&1
+}
+
 # Does anything answer on this port within six seconds? A connection to an
 # address nothing is using would otherwise hang for over a minute.
 answers() {
+  if nc_answers "$1"; then
+    [ "$1" = 23 ] && USE_NC=1
+    return 0
+  fi
   ( exec 3<>"/dev/tcp/$TV/$1" ) 2>/dev/null &
   p=$!
   for _ in 1 2 3 4 5 6; do
@@ -250,8 +264,23 @@ answers() {
   return 1
 }
 
+# SSH that answers but would not log in: deploy.sh logs in with a key only.
+ssh_needs_key() {
+  [ -z "$FORCE_TELNET" ] && command -v ssh >/dev/null 2>&1 && answers 22
+}
+
 deploy_telnet() {
   if ! answers 23; then
+    if ssh_needs_key; then
+      cat >&2 <<EOF
+
+The TV answers SSH, but wouldn't let this computer log in without a password,
+which deploy.sh can't type. Add this computer's key to the TV: see "Moving
+from telnet to SSH" in docs/SECURITY.md, or paste it under the Server tab's
+SSH keys. Then run this again.
+EOF
+      exit 1
+    fi
     cat >&2 <<EOF
 
 Couldn't reach the TV. Check that it is on and that $TV is its address
@@ -259,18 +288,38 @@ Couldn't reach the TV. Check that it is on and that $TV is its address
 Homebrew Channel's settings: switch it on, or set up SSH - see "Moving from
 telnet to SSH" in docs/SECURITY.md.
 EOF
+    if [ "$(uname -s)" = Darwin ]; then
+      cat >&2 <<EOF
+On a Mac, also check that the terminal app may reach devices on the network:
+System Settings > Privacy & Security > Local Network.
+EOF
+    fi
     exit 1
   fi
   if [ -z "$FORCE_TELNET" ]; then
-    echo "SSH isn't set up on this TV, so installing over telnet instead."
-    echo "(SSH is safer - see \"Moving from telnet to SSH\" in docs/SECURITY.md.)"
+    if ssh_needs_key; then
+      echo "The TV answers SSH, but not without a password, so installing over telnet instead."
+      echo "(Add this computer's key to use SSH - see \"Moving from telnet to SSH\" in docs/SECURITY.md.)"
+    else
+      echo "SSH isn't set up on this TV, so installing over telnet instead."
+      echo "(SSH is safer - see \"Moving from telnet to SSH\" in docs/SECURITY.md.)"
+    fi
   fi
   echo "installing on $TV over telnet ..."
 
-  # bash can open a network connection itself, so no telnet program is needed.
-  exec 3<>"/dev/tcp/$TV/23"
-  cat <&3 > "$WORK/raw" &      # read while writing, so neither side can stall
-  reader=$!
+  # No telnet program is needed: nc, or bash's own /dev/tcp. Read while
+  # writing, so neither side can stall. A fifo carries what is sent to nc, as
+  # macOS's bash 3.2 has no coproc.
+  if [ -n "$USE_NC" ]; then
+    mkfifo "$WORK/send"
+    nc "$TV" 23 < "$WORK/send" > "$WORK/raw" &
+    reader=$!
+    exec 3> "$WORK/send"
+  else
+    exec 3<>"/dev/tcp/$TV/23"
+    cat <&3 > "$WORK/raw" &
+    reader=$!
+  fi
   sleep 1
   {
     # No prompts and no echo: otherwise every line sent comes straight back, and
@@ -334,7 +383,11 @@ PORT=$(sed -n 's/^TVWEB_PORT //p' "$WORK/out" | head -1)
 case "$PORT" in ''|*[!0-9]*) PORT=8080 ;; esac
 
 echo "checking the dashboard answers ..."
-if ! command -v curl >/dev/null 2>&1; then
+# Apple's own curl on a Mac: a Homebrew one first on the PATH may not be let
+# onto the local network (see nc_answers).
+CURL=curl
+[ "$(uname -s)" = Darwin ] && [ -x /usr/bin/curl ] && CURL=/usr/bin/curl
+if ! command -v "$CURL" >/dev/null 2>&1; then
   echo "(skipped: this computer has no curl to ask it with)"
   echo "open  http://$TV:$PORT/"
   exit 0
@@ -345,7 +398,7 @@ fi
 # command substitution would end the script on the first try, hence || true.
 answered=""
 for _ in 1 2 3 4 5 6 7 8 9 10; do
-  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 4 "http://$TV:$PORT/api/caps") || true
+  code=$("$CURL" -s -o /dev/null -w '%{http_code}' --max-time 4 "http://$TV:$PORT/api/caps") || true
   if [ -n "$code" ] && [ "$code" != 000 ]; then answered=1; break; fi
   sleep 2
 done

@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.139.0';
+var TVWEB_VERSION = '0.141.1';
 
 var http = require('http');
 var fs = require('fs');
@@ -1773,6 +1773,12 @@ function setupHomeAssistant() {
       return;
     }
 
+    if (action === 'weather') {
+      // Cached for Glasshouse Home to poll; nothing on the TV to control.
+      if (glasshouseHome) glasshouseHome.setWeather(val);
+      return;
+    }
+
     if (action === 'toast') {
       doControl('toast', val, function() {});
       return;
@@ -1928,7 +1934,10 @@ function startGlasshouseHome() {
     // File-only, for the emulator: how long after start overdue jobs wait.
     catchupMs: CONFIG.iptv && typeof CONFIG.iptv.catchupMs === 'number' ? CONFIG.iptv.catchupMs : undefined
   });
+  var weather = require('./lib/weather');
+  weather.init({ getJson: fetchLib.getJson });
   glasshouseHome.init({
+    weather: weather,
     iptv: iptv,
     luna: luna,
     Subscription: lunaTransport.Subscription,
@@ -2042,6 +2051,7 @@ if (!CLI_MODE) {
     luna: luna,
     stateDir: __dirname,
     webosVersion: telemetry.detectWebosVersion(),
+    getRemoteInfo: telemetry.readRemoteInfo,
     onLevel: function (level) {
       console.log('remote: battery ' + level + '%');
       telemetry.expireStats();

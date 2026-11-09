@@ -242,10 +242,12 @@ function start() {
   var pyScript = path.join(__dirname, 'remotebuttons.py');
   var child;
 
+  // stderr as fd 2: node 0.10 (webOS 2) takes 'inherit' only as the whole
+  // stdio value, and refuses it in the list (#1256).
   try {
     if (pyBin && fs.existsSync(pyScript)) {
       child = child_process.spawn(pyBin, [pyScript], {
-        stdio: ['pipe', 'pipe', 'inherit']
+        stdio: ['pipe', 'pipe', 2]
       });
     } else {
       /** @type {any} */
@@ -254,7 +256,7 @@ function start() {
       env.UV_THREADPOOL_SIZE = '16';
       child = child_process.spawn(process.execPath, [__filename, '--worker'], {
         env: env,
-        stdio: ['pipe', 'pipe', 'inherit']
+        stdio: ['pipe', 'pipe', 2]
       });
     }
   } catch (e) {

@@ -301,6 +301,8 @@ step(function () {
     assert.strictEqual(commands.length, 3, 'the restart, its dependents started again, then the app in front: ' + commands.join(' | '));
     assert.ok(commands[0].indexOf('sam.service') !== -1, 'the restart names the unit');
     assert.ok(commands[1].indexOf('is-failed') !== -1, 'a dependent unit left failed is started again');
+    assert.ok(commands[1].indexOf('restart --no-block extinput-integration.service') !== -1,
+      'the HDMI input service subscribes to the new sam');
     assert.strictEqual(commands[2], 'launch netflix');
     assert.strictEqual(asked, 2, 'asked until sam had it');
     console.log('  \u2713 with neither nudge nor block and release, sam is restarted and the app in front opened again');

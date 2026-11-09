@@ -42,10 +42,7 @@ function rmrf(p) {
   } else fs.unlinkSync(p);
 }
 
-function freePort(cb) {
-  var s = net.createServer();
-  s.listen(0, '127.0.0.1', function () { var p = s.address().port; s.close(function () { cb(p); }); });
-}
+var freePort = require('./ports').freePort;
 
 function bufFrom(bytes) {
   return (typeof Buffer.from === 'function') ? Buffer.from(bytes) : new Buffer(bytes);

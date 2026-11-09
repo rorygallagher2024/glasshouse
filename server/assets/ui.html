@@ -192,7 +192,7 @@
 
     <div class="grp-sec" id="remoteblock" data-col="2" hidden>
       <div class="grp"><span data-t="metrics.remote">Magic remote</span><span class="pill idle" id="remote-pill" data-t="metrics.remote.standby">Standby</span></div>
-      <div id="remote-battery">
+      <div>
         <div class="lbl" data-t="metrics.battery">Battery</div>
         <div class="n num" style="margin-top:10px"><span id="remote-pct">&mdash;</span><em>%</em></div>
         <div class="track" style="margin-top:16px;margin-bottom:14px;max-width:220px"><b id="remote-gauge-fill" style="width:0%"></b></div>
@@ -201,6 +201,7 @@
         <div class="remote-meta-row" id="remote-model-row"><span class="remote-meta-lbl" data-t="metrics.remote.modelLabel">Model:</span> <span class="remote-meta-val" id="remote-model-val"></span></div>
         <div class="remote-meta-row" id="remote-fw-row"><span class="remote-meta-lbl" data-t="metrics.remote.firmwareLabel">Firmware:</span> <span class="remote-meta-val" id="remote-fw-val"></span></div>
         <div class="remote-meta-row" id="remote-signal-row"><span class="remote-meta-lbl" data-t="metrics.remote.signalLabel">Signal Strength:</span> <span class="remote-meta-val" id="remote-signal-val"></span></div>
+        <div class="remote-meta-row" id="remote-read-row" hidden><span class="remote-meta-lbl" data-t="metrics.remote.batteryReadLabel">Last read:</span> <span class="remote-meta-val" id="remote-read-val"></span></div>
       </div>
     </div>
 
@@ -817,7 +818,8 @@
         <div class="prot-title" data-t="adv.deviceScans">Network device scans</div>
         <div class="prot-desc" data-t="adv.deviceScans.desc">Glasshouse&rsquo;s switch for the scans themselves: the TV looking up every address on your home network, which a network-wide ad blocker
           such as Pi-hole shows as hundreds of requests. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new
-          devices for the Home Hub or LG&rsquo;s device setup.</div>
+          devices for the Home Hub or LG&rsquo;s device setup. Off also stops the Magic Remote controlling a set-top box through LG&rsquo;s
+          universal control.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_devscans" onclick="toggleDeviceScans()">&mdash;</button></div>
     </div>
@@ -1197,6 +1199,27 @@
         <div class="prot-desc" data-t="home.showTvLogosDescName">On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-show-tv-logos" onclick="homeShow('showTvLogos')">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row home-show-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.weather">Weather</div>
+        <div class="prot-desc" data-t="home.weatherDesc">Next to the clock: the weather Home Assistant sends, or the weather for a place you choose, from Open-Meteo.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-weather-sel" onchange="homeWeatherSource(this.value)" aria-label="Weather" data-t-aria-label="home.weather">
+        <option value="off" data-t="common.off">Off</option>
+        <option value="ha" data-t="home.weather.fromHa">From Home Assistant</option>
+        <option value="internet" data-t="home.weather.fromInternet">From the internet</option>
+      </select></div>
+    </div>
+    <div class="home-weather-place" id="home-weather-place" hidden>
+      <div class="sub" data-t="home.weather.placeDesc">Glasshouse asks Open-Meteo for the weather at this place every 30 minutes while the TV is on. Nothing else is sent.</div>
+      <form class="toast-form" onsubmit="event.preventDefault();homeWeatherSearch();">
+        <input type="search" id="home-weather-q" maxlength="80" autocomplete="off" placeholder="Town or city" data-t-placeholder="home.weather.placeholder">
+        <button type="submit" id="home-weather-go" data-t="home.weather.search">Search</button>
+      </form>
+      <div class="home-weather-results" id="home-weather-results"></div>
+      <div class="sub" id="home-weather-chosen" role="status"></div>
+      <div class="sub home-weather-credit" data-t="home.weather.credits">Weather data by Open-Meteo.com. Location data based on GeoNames.</div>
     </div>
     <div class="prot-row home-gh-row" id="home-picture-row" hidden>
       <div class="prot-main">

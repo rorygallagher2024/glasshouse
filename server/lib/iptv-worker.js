@@ -555,7 +555,7 @@ function xtreamPlaylist(src, cb) {
         var meta = { kind: 'xtream', at: Date.now(), channels: count, dropped: 0, groupsTotal: groups.order.length,
           groups: groups.list(200), headers: 0, drm: 0, guideInPlaylist: false,
           account: { expires: acct.expires, maxConnections: acct.maxConnections, activeConnections: acct.activeConnections,
-            trial: acct.trial, format: ext } };
+            trial: acct.trial, format: ext, formats: acct.formats } };
         writeMeta(tmp, meta);
         writeGroups(tmp, groups);
         cb(null, { channels: count, groups: groups.order.length });

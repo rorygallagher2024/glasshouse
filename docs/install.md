@@ -165,6 +165,7 @@ Glasshouse can be configured either directly on the TV screen with the remote or
 
 ## Troubleshooting
 
-* **Connection refused or password prompt during install.** The installer tries passwordless SSH first, then telnet. If SSH prompts for a password, make sure telnet is toggled **ON** in the TV's Homebrew Channel app settings, or run `./deploy.sh <tv-ip> --telnet` to connect directly over telnet.
+* **Connection refused or password prompt during install.** The installer tries passwordless SSH first, then telnet. If SSH prompts for a password, make sure telnet is toggled **ON** in the TV's Homebrew Channel app settings, or run `./deploy.sh <tv-ip> --telnet` to connect directly over telnet. The installer can't type a password, so to use SSH, add your computer's key first: see [moving from telnet to SSH](SECURITY.md#moving-from-telnet-to-ssh).
+* **"Couldn't reach the TV" on a Mac, though the TV is on.** macOS lets an app reach devices on your home network only once you have allowed it. Switch on your terminal app under System Settings → Privacy & Security → Local Network, then run the installer again.
 * **Nothing on port 8080.** On the TV, `/var/lib/tvweb/tvwebctl status` says whether the server is running and `/var/lib/tvweb/tvweb.log` says why it is not.
 * **Panel hours and OLED Care missing on an OLED TV**, or showing on an LCD one. Panel detection went the wrong way: set `"panel": "oled"` or `"panel": "lcd"` in `server/config.json` before a first deploy, or in `/var/lib/tvweb/config.json` on a TV that already has one.

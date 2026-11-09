@@ -15,13 +15,7 @@ var apps = require('../server/lib/apps');
 
 console.log('Running test-dashboard-port.js ...');
 
-function freePort(cb) {
-  var s = net.createServer();
-  s.listen(0, function () {
-    var p = s.address().port;
-    s.close(function () { cb(p); });
-  });
-}
+var freePort = require('./ports').freePort;
 
 function setup(config) {
   var h = { saved: [], restarts: 0 };

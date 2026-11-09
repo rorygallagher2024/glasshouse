@@ -25,7 +25,16 @@ permissions:
 jobs:
   tabs:
     runs-on: ubuntu-latest
-    name: Browser smoke test
+    name: Browser smoke test (${{ matrix.job }})
+    # Each job takes under a minute. A hang fails here rather than running on.
+    timeout-minutes: 5
+    # Each job's groups on a machine of its own (CHECK_JOB in the script): one
+    # after another they took two minutes, and scrolling and motion need the
+    # processor to themselves.
+    strategy:
+      fail-fast: false
+      matrix:
+        job: [tabs, home, motion]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -37,3 +46,4 @@ jobs:
       - run: node scripts/check-dashboards.js
         env:
           BROWSER_CHANNEL: chrome
+          CHECK_JOB: ${{ matrix.job }}

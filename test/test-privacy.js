@@ -177,6 +177,14 @@ test('Customer data host cdpsvc is blocked in both Ads & telemetry and Everythin
   assert.ok(fullList.indexOf('gb.cdpsvc.lgtvcommon.com') !== -1, 'regional cdpsvc must be in full mode');
 });
 
+test('Google push messaging is blocked only in Everything mode, on both address families', function () {
+  assert.ok(sinkholed(privacy.adBlockHostsTable('full'), 'mtalk.google.com'));
+  ['ads', 'off'].forEach(function (mode) {
+    assert.strictEqual(privacy.adBlockList(mode).indexOf('mtalk.google.com'), -1, mode);
+    assert.strictEqual(privacy.adBlockHostsTable(mode).indexOf('mtalk.google.com'), -1, mode);
+  });
+});
+
 test('webOS 11 upload hosts are in the Ads & telemetry tier, its platform is not', function () {
   var adsList = privacy.adBlockList('ads');
   assert.ok(adsList.indexOf('api.adts.lgtvcommon.com') !== -1, 'the ad log script\'s host');
@@ -184,6 +192,61 @@ test('webOS 11 upload hosts are in the Ads & telemetry tier, its platform is not
   assert.ok(adsList.indexOf('rone-aic.lge.com') !== -1, 'remote diagnostics');
   assert.strictEqual(adsList.indexOf('tv.wiselg.com'), -1, 'the service platform also serves the Content Store');
   assert.strictEqual(adsList.indexOf('aic.tv.wiselg.com'), -1);
+});
+
+test('Everything covers regional LG cloud services without blocking network detection', function () {
+  var countryFile = '/var/lib/tvweb/country';
+  var savedCountry = mockEnv.files[countryFile];
+  var savedGrace = privacy.isSdpGracePeriodActive();
+  try {
+    mockEnv.files[countryFile] = 'de';
+    privacy._setSdpGraceActive(false);
+    var table = privacy.adBlockHostsTable('full');
+    ['de.nextlgsdp.com', 'de.ibs.nextlgsdp.com', 'de.ibsstat.nextlgsdp.com',
+     'de.lgeapi.com', 'eic.lgtviot.com', 'eic.api.lgtviot.com',
+     'eic.push.lgtviot.com', 'eic.sports.lgtviot.com', 'eic.buddy.lgtviot.com',
+     'connect-client.lgthinq.com', 'aic-connect-client.lgthinq.com',
+     'eic-connect-client.lgthinq.com', 'kic-connect-client.lgthinq.com',
+     'common.lgthinq.com', 'eic-common.lgthinq.com'].forEach(function (host) {
+      assert.ok(sinkholed(table, host), host + ': both address families');
+      ['ads', 'off'].forEach(function (mode) {
+        assert.strictEqual(privacy.adBlockHostsTable(mode).indexOf(host), -1, mode + ': ' + host);
+      });
+    });
+    ['lgtvonline.lge.com', 'wpad.fritz.box', 'eic.connect-client.lgthinq.com',
+     'nl.lgeapi.com'].forEach(function (host) {
+      assert.strictEqual(table.indexOf(host), -1, host + ': not a selected service host');
+    });
+    var list = privacy.adBlockList('full');
+    assert.strictEqual(list.length, list.filter(function (host, i) { return list.indexOf(host) === i; }).length, 'no duplicate hosts');
+  } finally {
+    if (savedCountry === undefined) delete mockEnv.files[countryFile];
+    else mockEnv.files[countryFile] = savedCountry;
+    privacy._setSdpGraceActive(savedGrace);
+  }
+});
+
+test('regional platform coverage follows the TV country and has a fallback before it is learned', function () {
+  var countryFile = '/var/lib/tvweb/country';
+  var savedCountry = mockEnv.files[countryFile];
+  var savedGrace = privacy.isSdpGracePeriodActive();
+  try {
+    privacy._setSdpGraceActive(false);
+    [{ country: 'NL', prefix: 'nl' }, { country: undefined, prefix: 'de' },
+     { country: 'invalid', prefix: 'de' }].forEach(function (sample) {
+      if (sample.country === undefined) delete mockEnv.files[countryFile];
+      else mockEnv.files[countryFile] = sample.country;
+      var table = privacy.adBlockHostsTable('full');
+      ['nextlgsdp.com', 'ibs.nextlgsdp.com', 'ibsstat.nextlgsdp.com',
+       'lgeapi.com', 'api.lgtviot.com'].forEach(function (host) {
+        assert.ok(sinkholed(table, sample.prefix + '.' + host), String(sample.country) + ': ' + host);
+      });
+    });
+  } finally {
+    if (savedCountry === undefined) delete mockEnv.files[countryFile];
+    else mockEnv.files[countryFile] = savedCountry;
+    privacy._setSdpGraceActive(savedGrace);
+  }
 });
 
 test('Ads & telemetry blocks the store\'s request logs and the rdx2 report host, the latter once the clock is set', function () {
@@ -230,6 +293,10 @@ test('nextlgsdp.com is omitted while SDP grace period is active', function () {
   var list = privacy.adBlockList('full');
   assert.strictEqual(list.indexOf('nextlgsdp.com'), -1, 'nextlgsdp omitted during grace period');
   assert.strictEqual(list.indexOf('gb.nextlgsdp.com'), -1, 'regional nextlgsdp omitted during grace period');
+  assert.strictEqual(privacy.adBlockHostsTable('full').indexOf('de.nextlgsdp.com'), -1, 'German nextlgsdp stays reachable while the clock is invalid');
+  ['de.ibs.nextlgsdp.com', 'de.ibsstat.nextlgsdp.com'].forEach(function (host) {
+    assert.strictEqual(privacy.adBlockHostsTable('full').indexOf(host), -1, host + ': waits for clock sync');
+  });
   assert.strictEqual(list.indexOf('tv.wiselg.com'), -1, 'the webOS 11 platform, also the clock source, omitted during grace period');
   assert.strictEqual(list.indexOf('aic.tv.wiselg.com'), -1, 'and its regional names');
 });
@@ -248,6 +315,10 @@ test('SDP grace period is skipped when getSystemTime reports time is already val
   var fullList = privacy.adBlockList('full');
   assert.ok(fullList.indexOf('nextlgsdp.com') !== -1, 'nextlgsdp blocked after window skipped');
   assert.ok(fullList.indexOf('gb.nextlgsdp.com') !== -1, 'regional nextlgsdp blocked after window skipped');
+  assert.ok(sinkholed(privacy.adBlockHostsTable('full'), 'de.nextlgsdp.com'), 'German nextlgsdp blocked on both address families when the clock is already valid');
+  ['ads', 'off'].forEach(function (mode) {
+    assert.strictEqual(privacy.adBlockHostsTable(mode).indexOf('de.nextlgsdp.com'), -1, mode);
+  });
   privacy._clearSdpTimer();
 });
 
@@ -273,6 +344,10 @@ test('SDP grace period stays open on cold boot until timeValid with source sdp i
 
   assert.strictEqual(privacy.isSdpGracePeriodActive(), false, 'grace period closes once sdp time is valid');
   assert.ok(privacy.adBlockList('full').indexOf('nextlgsdp.com') !== -1, 'nextlgsdp blocked once synced');
+  assert.ok(sinkholed(privacy.adBlockHostsTable('full'), 'de.nextlgsdp.com'), 'German nextlgsdp blocked on both address families after cold-boot clock sync');
+  ['de.ibs.nextlgsdp.com', 'de.ibsstat.nextlgsdp.com'].forEach(function (host) {
+    assert.ok(sinkholed(privacy.adBlockHostsTable('full'), host), host + ': both address families after clock sync');
+  });
   privacy._clearSdpTimer();
 });
 

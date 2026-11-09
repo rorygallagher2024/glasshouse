@@ -1192,6 +1192,11 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
   padding:12px 0;border-bottom:1px solid var(--w06);
 }
 .prot-main{flex:1;min-width:0}
+.home-weather-place{padding:4px 0 16px;border-bottom:1px solid var(--w06)}
+.home-weather-place .toast-form{margin:12px 0}
+.home-weather-results{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.home-weather-results:empty{display:none}
+.home-weather-credit{opacity:.7;margin-top:6px}
 .prot-title{
   font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;
   color:var(--w90);letter-spacing:.02em;
