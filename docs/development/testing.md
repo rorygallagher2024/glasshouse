@@ -16,6 +16,19 @@ without duplicate names, and leave connectivity checks and local proxy
 discovery unblocked. The `nextlgsdp.com`, `ibs` and `ibsstat` hosts wait for
 clock sync, then enter the table on both address families.
 
+`test-appdns.js` checks that an app's DNS servers are written into its jail's
+`resolv.conf`, written again when a watch sees the jailer's copy, taken out
+again for the TV's, and set at start for a jail made later; that the boot
+hook's copies in `appdns/` follow each change; that only installed
+apps with a jail are offered; and that addresses are checked, three at most.
+`test-doh.js` checks the DNS server that sends lookups on over HTTPS: a query
+over UDP and over TCP goes on with ID 0 and comes back with its own, a failure
+comes back as SERVFAIL with the error kept, an answer too long for UDP sends
+the resolver to TCP, and an address no longer used is closed.
+`test-appdns-ui.js` runs the Apps tab's renderer for it on Node 8 and later:
+hidden without app sandboxes, a row per app with its servers escaped, the
+editor filled in, and a refused address shown beside the field.
+
 `test-remotebattery.js` checks LG's `mrcu/getDeviceInfo` responses (numeric and
 stepped `"HIGH"` / `"MID"` / `"LOW"`, which take precedence over Bluetooth),
 Bluetooth GATT fallback on webOS 9 and 10 when `getDeviceInfo` returns `"-"`,
