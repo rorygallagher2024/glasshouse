@@ -105,9 +105,9 @@ The app can be added or removed at any time:
 
 Removing the app changes nothing else, since the dashboard server continues to run in the background and reaches any browser on the network regardless. Where a TV model will not take the app, the control is hidden and everything else works as before.
 
-### Ambient light
+### Ambient Light
 
-The **Ambient light** top-level menu follows Home. **Hue Sync** and **PicCap**
+The **Ambient Light** top-level menu follows Home. **Hue Sync** and **PicCap**
 have their own categories, in that order, with **Hue Sync Enabled** and
 **PicCap Enabled** switches. An unavailable integration is hidden, including its
 category heading. PicCap supports Hyperion or HyperHDR. All Hue Sync controls are shown directly:
@@ -115,6 +115,6 @@ brightness, intensity, Video/Game mode, entertainment area, background light for
 each mode, automatic start and its notification. Press OK to toggle or cycle a
 setting. For brightness, press OK, adjust with the arrows, then OK or Back to
 finish. Controls respect read-only, busy and stale states; failed actions show a
-brief error. See [Ambient light](../dashboard/ambient-light.md).
+brief error. See [Ambient Light](../dashboard/ambient-light.md).
 
-![Ambient light controls in the TV app, simulated data](../screenshots/huesync-tv-controls.png)
+![Ambient Light controls in the TV app, simulated data](../screenshots/huesync-tv-controls.png)

@@ -18,7 +18,7 @@
   const TAB_ALIASES = window.GLASSHOUSE_SEARCH_ALIASES || {};
 
   const TAB_NAMES = {
-    control: 'Control', metrics: 'Metrics', apps: 'Apps', home: 'Home', ambient: 'Ambient light',
+    control: 'Control', metrics: 'Metrics', apps: 'Apps', home: 'Home', ambient: 'Ambient Light',
     oledcare: 'OLED Care', game: 'Game', servicemenu: 'Service menu',
     screensaver: 'Screensaver', privacy: 'Privacy', advanced: 'System',
     mqtt: 'MQTT', server: 'Server', tools: 'Tools'

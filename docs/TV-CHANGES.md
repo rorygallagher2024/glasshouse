@@ -233,7 +233,7 @@ still requires hardware testing. Automatic-start notifications use the same
 boolean setter. A read-only Hue Sync subscription keeps the web, TV and MQTT controls current;
 pairing, reset, analytics and logging-upload actions are not invoked.
 
-Ambient light has its own top-level page after Home in both dashboards. It holds
+Ambient Light has its own top-level page after Home in both dashboards. It holds
 separate Hue Sync and PicCap categories, in that order, with independent
 Hue Sync Enabled and PicCap Enabled switches and all supported settings shown
 directly. Unavailable integrations and their headings are hidden. The web

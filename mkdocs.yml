@@ -44,7 +44,7 @@ nav:
       - Metrics: dashboard/metrics.md
       - Apps: dashboard/apps.md
       - Home: dashboard/home.md
-      - Ambient light: dashboard/ambient-light.md
+      - Ambient Light: dashboard/ambient-light.md
       - Privacy: dashboard/privacy.md
       - OLED Care: dashboard/oled-care.md
       - Game: dashboard/game.md
@@ -65,7 +65,7 @@ nav:
           - Overview: HOME-ASSISTANT.md
           - Entities: HOME-ASSISTANT-ENTITIES.md
           - Remote button events: HOME-ASSISTANT-REMOTE-BUTTONS.md
-      - Ambient light (PicCap): piccap.md
+      - Ambient Light (PicCap): piccap.md
       - Hue Sync: huesync.md
   - Advanced & Administration:
       - Security: SECURITY.md

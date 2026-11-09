@@ -568,14 +568,14 @@ missing JSON properties become `none` rather than undefined.
 The Hue Sync event tests also verify that internal readiness and busy status
 create no Home Assistant diagnostic entities or diagnostic MQTT publications.
 
-Ambient light dashboard checks cover the top-level page below Home, every Hue
+Ambient Light dashboard checks cover the top-level page below Home, every Hue
 Sync setting directly accessible, and independent PicCap/Hue Sync switches. The
 web Control shortcuts stay below Playback and share state and write permissions
-with Ambient light. Checks cover narrow/light and wide/dark layouts, native
+with Ambient Light. Checks cover narrow/light and wide/dark layouts, native
 command types, duplicate area names, failed writes, read-only/busy states and
 disappearing integrations. Both dashboards check separate integration categories,
-Hue Sync before PicCap, consistent Enabled labels, and availability combinations
-with neither, either or both integrations. Missing integrations leave no empty
+Hue Sync before PicCap, Enabled labels in settings, shorter remote labels, and
+availability combinations with neither, either or both integrations. Missing integrations leave no empty
 headings or shortcuts. PicCap descriptions name both Hyperion and HyperHDR.
 `test-dashboard-view.js` also checks the TV menu order, flat row grouping, empty
 state and per-field stale permissions.

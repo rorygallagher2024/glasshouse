@@ -2143,7 +2143,7 @@ function handleRequest(req, res) {
   if (pathname === '/api/stats') {
     return telemetryModule.collectStats(function (s) {
       // PicCap's capture and Hue Sync's streaming, where installed, for the
-      // Ambient light tab.
+      // Ambient Light tab.
       piccapStatusFn(function (pc) {
         huesyncStatusFn(function (hs) {
           var keyboardUp = keyboardUpFn();

@@ -1,4 +1,4 @@
-// The Control, System and Ambient light tabs: power, volume, backlight and the TV's switches.
+// The Control, System and Ambient Light tabs: power, volume, backlight and the TV's switches.
 
 let errTimer = null;
 function clearErr() {

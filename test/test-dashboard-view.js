@@ -147,7 +147,7 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
   console.log('  ✓ optionRows groups Power & standby and Timers with distinct headers');
 })();
 
-// Ambient light keeps both integrations and every Hue Sync control directly accessible.
+// Ambient Light keeps both integrations and every Hue Sync control directly accessible.
 (function testHuesyncRows() {
   var settings = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/huesync-settings.json'), 'utf8')).settings;
   var hs = { streaming: true, writable: true, settings: settings };
@@ -193,7 +193,7 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
 (function testAmbientIntegrations() {
   var keys = sandbox.TABS.map(function (section) { return section.key; });
   var ambient = sandbox.TABS[keys.indexOf('ambient')];
-  assert.strictEqual(keys.indexOf('ambient'), keys.indexOf('home') + 1, 'Ambient light follows Home');
+  assert.strictEqual(keys.indexOf('ambient'), keys.indexOf('home') + 1, 'Ambient Light follows Home');
   assert.strictEqual(ambient.url, '/api/stats', 'ambient controls need no unrelated LG settings');
   assert.strictEqual(ambient.build, sandbox.ambientRows);
   var pc = { running: true, writable: true };
@@ -217,7 +217,7 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
   assert.strictEqual(only[1].next, true);
   assert.strictEqual(only[1].act, null, 'PicCap respects read-only mode');
   assert.strictEqual(sandbox.SUBLISTS.huesyncMore, undefined, 'no ambient submenu remains');
-  console.log('  \u2713 top-level Ambient light menu, independent integrations and empty state');
+  console.log('  \u2713 top-level Ambient Light menu, independent integrations and empty state');
 })();
 
 // 4. page() jumps through rows skipping headers and clamps to bounds

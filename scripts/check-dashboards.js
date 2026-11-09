@@ -2832,7 +2832,7 @@ async function visitHuesyncSettings(browser, base, problems) {
     await page.goto(base + '/?tab=advanced');
     if (await page.locator('#advpane #row-piccap, #advpane #row-huesync').count()) fail('ambient controls remain in System');
     const followsHome = await page.locator('#tabs [data-tab="ambient"]').evaluate(el => el.previousElementSibling.dataset.tab === 'home');
-    if (!followsHome) fail('Ambient light does not follow Home');
+    if (!followsHome) fail('Ambient Light does not follow Home');
     await page.locator('#tabs [data-tab="ambient"]').click();
     await page.waitForSelector('#huesync-settings:not([hidden])');
     const categories = await page.locator('#ambient-huesync, #ambient-piccap').evaluateAll(els => els.filter(el => !el.hidden).map(el => el.querySelector('.pv-sec').textContent));
@@ -2851,8 +2851,8 @@ async function visitHuesyncSettings(browser, base, problems) {
     const underPlayback = await page.evaluate(() => document.getElementById('control-ambient').getBoundingClientRect().top >= document.querySelector('.playback-btns').getBoundingClientRect().bottom);
     if (!underPlayback) fail('remote toggles are not below Playback');
     const shortcuts = await page.locator('#control-ambient button').evaluateAll(els => els.map(el => el.querySelector('[data-t]').textContent));
-    if (JSON.stringify(shortcuts) !== JSON.stringify(['Hue Sync Enabled', 'PicCap Enabled'])) fail('remote shortcut order or names differ from settings');
-    if (await page.locator('#ctl_piccap').getAttribute('aria-pressed') !== 'true' || await page.locator('#ctl_huesync').getAttribute('aria-pressed') !== 'false') fail('remote toggle states differ from Ambient light');
+    if (JSON.stringify(shortcuts) !== JSON.stringify(['Hue Sync', 'PicCap'])) fail('remote shortcut order or short labels are wrong');
+    if (await page.locator('#ctl_piccap').getAttribute('aria-pressed') !== 'true' || await page.locator('#ctl_huesync').getAttribute('aria-pressed') !== 'false') fail('remote toggle states differ from Ambient Light');
     await page.locator('#ctl_huesync').click();
     await page.waitForFunction(() => document.getElementById('ctl_huesync').getAttribute('aria-pressed') === 'true' && document.getElementById('btn_huesync').dataset.on === '1');
     await page.locator('#ctl_piccap').click();
@@ -2861,7 +2861,7 @@ async function visitHuesyncSettings(browser, base, problems) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ colorScheme: 'light' });
     await page.waitForFunction(() => document.getElementById('control-playback').getBoundingClientRect().width > 300);
-    if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) fail('remote Enabled labels overflow on a phone');
+    if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)) fail('remote labels overflow on a phone');
     await page.evaluate(() => showTab('ambient'));
     if (await page.locator('#huesync-current_ec option').first().textContent() !== settings.ec_list[0].name) fail('area name was not rendered as text');
     if (await page.locator('#huesync-settings img').count()) fail('area markup was interpreted');

@@ -66,7 +66,7 @@
     <button type="button" role="tab" data-tab="metrics"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg><span data-t="tab.metrics">Metrics</span></button>
     <button type="button" role="tab" data-tab="apps"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span data-t="tab.apps">Apps</span></button>
     <button type="button" role="tab" data-tab="home" id="tab-btn-home" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-6.5 8 6.5"/><path d="M6.5 9.5V19h11V9.5"/><path d="M10.5 19v-5h3v5"/></svg><span data-t="tab.home">Home</span></button>
-    <button type="button" role="tab" data-tab="ambient"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="7" width="12" height="10" rx="1.5"/><path d="M3 8v8M21 8v8M8 4h8M8 20h8"/></svg><span data-t="adv.ambient">Ambient light</span></button>
+    <button type="button" role="tab" data-tab="ambient"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="7" width="12" height="10" rx="1.5"/><path d="M3 8v8M21 8v8M8 4h8M8 20h8"/></svg><span data-t="adv.ambient">Ambient Light</span></button>
     <button type="button" role="tab" data-tab="privacy"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z"/></svg><span data-t="tab.privacy">Privacy</span></button>
     <button type="button" role="tab" data-tab="oledcare" id="tab-btn-oledcare" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 8.5v5M9.5 11h5"/></svg><span data-t="tab.oledCare">OLED Care</span></button>
     <button type="button" role="tab" data-tab="game" id="tab-btn-game" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10a4 4 0 0 1 4 4v1.5a3 3 0 0 1-5.4 1.8L14.5 14h-5l-1.1 1.3A3 3 0 0 1 3 13.5V12a4 4 0 0 1 4-4z"/><path d="M7.5 11v2.5M6.25 12.25h2.5M16 12h.01"/></svg><span data-t="tab.game">Game</span></button>
@@ -323,10 +323,10 @@
       </div>
 
       <div class="set" id="control-ambient" hidden>
-        <div class="lbl" data-t="adv.ambient">Ambient light</div>
+        <div class="lbl" data-t="adv.ambient">Ambient Light</div>
         <div class="btns">
-          <button type="button" id="ctl_huesync" onclick="toggleHuesync()" aria-pressed="false" hidden><span data-t="adv.huesync">Hue Sync Enabled</span> &middot; <span id="ctl_huesync_state">&mdash;</span></button>
-          <button type="button" id="ctl_piccap" onclick="togglePiccap()" aria-pressed="false" hidden><span data-t="adv.piccap">PicCap Enabled</span> &middot; <span id="ctl_piccap_state">&mdash;</span></button>
+          <button type="button" id="ctl_huesync" onclick="toggleHuesync()" aria-pressed="false" hidden><span data-t="adv.huesync.title">Hue Sync</span> &middot; <span id="ctl_huesync_state">&mdash;</span></button>
+          <button type="button" id="ctl_piccap" onclick="togglePiccap()" aria-pressed="false" hidden><span data-t="ambient.piccap.title">PicCap</span> &middot; <span id="ctl_piccap_state">&mdash;</span></button>
         </div>
       </div>
     </div>
@@ -619,7 +619,7 @@
 </section>
 
 <section class="priv panel" id="ambientpane" role="tabpanel" hidden>
-  <div class="lbl" data-t="adv.ambient">Ambient light</div>
+  <div class="lbl" data-t="adv.ambient">Ambient Light</div>
   <div class="sub" id="ambient-empty" hidden data-t="ambient.none">No ambient light integrations found.</div>
   <div id="ambient-huesync" hidden>
     <div class="pv-sec" data-t="adv.huesync.title">Hue Sync</div>

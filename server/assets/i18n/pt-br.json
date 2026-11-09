@@ -1,7 +1,7 @@
 {
  "adv.alwaysReady": {"text": "Always Ready", "from": "Always Ready"},
  "adv.alwaysReady.desc": {"text": "Ao ser desligada pelo controle remoto, a TV mostra a tela Always Ready da LG, como um relógio ou uma obra de arte, em vez de ficar apagada, a partir do próximo desligamento. Consome cerca de 30 W em uma LG C2, quase o mesmo que ligada. Na primeira vez, a TV pede OK no controle remoto. O botão Home liga a TV de novo a partir do relógio; o botão liga/desliga a desliga por completo.", "from": "Switched off with the remote, the TV shows LG's Always Ready screen, such as a clock or artwork, instead of going dark, from the next time it is switched off. Uses about 30 W on an LG C2, close to what it uses when on. The first time, the TV asks for OK on the remote. Home turns the TV back on from the clock; the power button switches it fully off."},
- "adv.ambient": {"text": "Luz ambiente", "from": "Ambient light"},
+ "adv.ambient": {"text": "Luz ambiente", "from": "Ambient Light"},
  "adv.clock12": {"text": "Relógio de 12 horas", "from": "12-hour clock"},
  "adv.clock12.desc": {"text": "Mostra a hora como 9:40 PM em vez de 21:40 no painel da TV, no Glasshouse Home e nos protetores de tela de relógio.", "from": "Shows the time as 9:40 PM rather than 21:40 on the TV dashboard, Glasshouse Home and the clock screen savers."},
  "adv.deviceDetection": {"text": "Detecção automática de dispositivos", "from": "Auto device detection"},

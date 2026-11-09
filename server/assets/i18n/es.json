@@ -16,7 +16,7 @@
  "search.unpin": {"text": "Quitar acceso directo", "from": "Remove shortcut"},
  "adv.alwaysReady": {"text": "Always Ready", "from": "Always Ready"},
  "adv.alwaysReady.desc": {"text": "Apagada con el mando, la TV muestra la pantalla Always Ready de LG, como un reloj o una obra de arte, en lugar de quedarse a oscuras, a partir del próximo apagado. Gasta unos 30 W en una LG C2, casi lo mismo que encendida. La primera vez, la TV pide confirmar con OK en el mando. Home vuelve a encender la TV desde el reloj; el botón de encendido la apaga del todo.", "from": "Switched off with the remote, the TV shows LG's Always Ready screen, such as a clock or artwork, instead of going dark, from the next time it is switched off. Uses about 30 W on an LG C2, close to what it uses when on. The first time, the TV asks for OK on the remote. Home turns the TV back on from the clock; the power button switches it fully off."},
- "adv.ambient": {"text": "Luz ambiental", "from": "Ambient light"},
+ "adv.ambient": {"text": "Luz ambiental", "from": "Ambient Light"},
  "adv.deviceDetection": {"text": "Detección automática de dispositivos", "from": "Auto device detection"},
  "adv.devices": {"text": "Dispositivos", "from": "Devices"},
  "adv.display": {"text": "Pantalla", "from": "Display"},

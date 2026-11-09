@@ -92,4 +92,4 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 
 *The TV's own settings, grouped as Power & standby, Timers, Screen time, System updates, Display, Sound, HDMI inputs, Devices and Front lights.*
 
-PicCap and Hue Sync have their own [Ambient light](ambient-light.md) page.
+PicCap and Hue Sync have their own [Ambient Light](ambient-light.md) page.

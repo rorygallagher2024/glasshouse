@@ -1,7 +1,7 @@
 {
  "adv.alwaysReady": {"text": "جاهز دائماً (Always Ready)", "from": "Always Ready"},
  "adv.alwaysReady.desc": {"text": "عند إيقاف التشغيل بالريموت، يعرض التلفاز شاشة «جاهز دائماً» من LG (مثل الساعة أو اللوحات الفنية) بدلاً من الشاشة السوداء بدءاً من المرة القادمة. يستهلك حوالي 30 واط على شاشة LG C2، وهو قريب من استهلاكه أثناء التشغيل. في المرة الأولى سيطلب التلفاز الضغط على OK في الريموت. زر الصفحة الرئيسية يعيد تشغيل التلفاز من شاشة الساعة، بينما زر الطاقة يوقفه بالكامل.", "from": "Switched off with the remote, the TV shows LG's Always Ready screen, such as a clock or artwork, instead of going dark, from the next time it is switched off. Uses about 30 W on an LG C2, close to what it uses when on. The first time, the TV asks for OK on the remote. Home turns the TV back on from the clock; the power button switches it fully off."},
- "adv.ambient": {"text": "الإضاءة المحيطة", "from": "Ambient light"},
+ "adv.ambient": {"text": "الإضاءة المحيطة", "from": "Ambient Light"},
  "adv.clock12": {"text": "نظام 12 ساعة", "from": "12-hour clock"},
  "adv.clock12.desc": {"text": "يعرض الوقت بصيغة 9:40 م بدلاً من 21:40 في لوحة تحكم التلفاز، وواجهة Glasshouse الرئيسية، وشاشات التوقف.", "from": "Shows the time as 9:40 PM rather than 21:40 on the TV dashboard, Glasshouse Home and the clock screen savers."},
  "adv.deviceDetection": {"text": "الكشف التلقائي عن الأجهزة", "from": "Auto device detection"},
