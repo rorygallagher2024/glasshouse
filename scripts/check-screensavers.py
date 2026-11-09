@@ -106,7 +106,8 @@ def check(path):
 
 SAVERS = pathlib.Path('server/assets/screensavers')
 EXAMPLES = pathlib.Path('server/screensavers')
-USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__'}
+# "ha" has one placeholder per entity the saver declares, so it has none here.
+USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__', 'ha': ''}
 
 def check_folder(d, own):
     """Problems with one saver folder's saver.json, and its main QML file."""
@@ -133,6 +134,18 @@ def check_folder(d, own):
         bad.append('saver.json: Glasshouse\'s own screen savers are MIT')
     if not own and 'stats' in m.get('uses', []):
         bad.append('saver.json: only Glasshouse\'s own screen savers are given stats')
+    entities = m.get('entities')
+    if entities is not None:
+        if not isinstance(entities, dict) or not entities or len(entities) > 12:
+            bad.append('saver.json: entities maps short names to Home Assistant entity ids, up to 12 of them')
+        else:
+            for name, eid in entities.items():
+                if not re.match(r'^[a-z][a-z0-9_]{0,31}$', str(name)):
+                    bad.append('saver.json: entity name "%s" can only have lowercase letters, digits and _, starting with a letter' % name)
+                if not isinstance(eid, str) or not re.match(r'^[a-z0-9_]+\.[a-z0-9_]+$', eid):
+                    bad.append('saver.json: entity "%s" is not a Home Assistant entity id, such as sensor.outdoor_temperature' % name)
+    if ('ha' in m.get('uses', [])) != bool(entities):
+        bad.append('saver.json: entities and "ha" in uses go together')
     if 'id' in m:
         bad.append('saver.json: no id - the folder name is the id')
     main = m.get('main', 'main.qml')
@@ -145,8 +158,12 @@ def check_folder(d, own):
         return bad + ['%s missing' % main], []
     src = qml.read_text(encoding='utf-8')
     for u, ph in USES.items():
-        if ph in src and u not in uses:
+        if ph and ph in src and u not in uses:
             bad.append('%s uses %s without "%s" in uses' % (main, ph, u))
+    # __TVWEB_HA_<name>__ for each entity the saver declares, and no other.
+    for name in sorted(set(re.findall(r'__TVWEB_HA_([a-z0-9_]*)__', src))):
+        if not entities or name not in entities:
+            bad.append('%s uses __TVWEB_HA_%s__, which saver.json does not name under entities' % (main, name))
     # Every QML file in it, as the TV checks them all.
     return bad, sorted(p for p in d.rglob('*.qml') if p.is_file())
 

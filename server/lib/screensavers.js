@@ -96,11 +96,18 @@ var FOLDER_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
 var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__' };
+// "ha" has one placeholder per entity it declares, so it carries no value here.
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', ha: '' };
 // A choice's value goes into the QML as text: kept to what a name needs.
 var CHOICE_VALUE = /^[\w.=&-]{0,100}$/;
 var CHOICE_ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
 var MAX_CHOICES = 500;
+// A screen saver's own reads: a short name it puts in __TVWEB_HA_<name>__, and
+// the Home Assistant entity it is given. Both are checked before anything is
+// staged, because a placeholder left in a QML file draws as nothing.
+var HA_NAME = /^[a-z][a-z0-9_]{0,31}$/;
+var HA_ENTITY = /^[a-z0-9_]+\.[a-z0-9_]+$/;
+var MAX_HA_ENTITIES = 12;
 /*
  * Homebrew Channel apps that ship a screen saver as one QML file, which they
  * bind-mount over LG's qml/main.qml themselves: Custom Screensaver, the two
@@ -120,6 +127,9 @@ var DEFAULT_ROOTS = [
 ];
 var saverRoots = DEFAULT_ROOTS;
 var catalogCache = null;  // { list: [entries, stock first], byId: {} }
+// The entities the screen saver on the TV declared, or null. /api/entity serves
+// these and no others, so a saver reads its own readings and nothing else.
+var stagedEntities = null;
 // What qmlcheck found in each QML file, kept while the file is unchanged, as
 // the list is read each time the tab asks: path -> { stamp, wrong, src }.
 var qmlChecked = {};
@@ -203,6 +213,16 @@ function readSaver(root, name) {
   if ((uses.indexOf('choice') !== -1) !== !!e.choices) {
     return problem(msg('srv.saver.choiceUses', '{file}: choices and "choice" in uses go together.', { file: MANIFEST }));
   }
+  // A saver's own Home Assistant readings. It is given the address of each, and
+  // the server serves those addresses and no others while it is showing.
+  if (m.entities !== undefined) {
+    var ents = readEntities(m.entities);
+    if (typeof ents === 'string') return problem(ents);
+    e.entities = ents;
+  }
+  if ((uses.indexOf('ha') !== -1) !== !!e.entities) {
+    return problem(msg('srv.saver.haUses', '{file}: entities and "ha" in uses go together.', { file: MANIFEST }));
+  }
   if (Array.isArray(m.panels) && m.panels.length === 1 && (m.panels[0] === 'oled' || m.panels[0] === 'lcd')) e.panels = m.panels[0];
   var need = m.requires && typeof m.requires.webos === 'number' ? m.requires.webos : 0;
   var have = parseInt(String(webosVersion || ''), 10);
@@ -227,9 +247,18 @@ function readSaver(root, name) {
   try { qml = fs.readFileSync(path.join(dir, e.main), 'utf8'); }
   catch (err3) { return problem(msg('srv.saver.unreadable', 'Its folder could not be read: {error}', { error: err3.message })); }
   for (var u in USES) {
-    if (qml.indexOf(USES[u]) !== -1 && uses.indexOf(u) === -1) {
+    if (USES[u] && qml.indexOf(USES[u]) !== -1 && uses.indexOf(u) === -1) {
       return problem(msg('srv.saver.undeclared', '{main} uses {placeholder} without "{use}" in uses.',
                          { main: e.main, placeholder: USES[u], use: u }));
+    }
+  }
+  // Its own reads: __TVWEB_HA_<name>__ for each entity it declares, and none
+  // other, since a name it did not declare would be left in and draw nothing.
+  var haPlaceholder = /__TVWEB_HA_([a-z0-9_]*)__/g;
+  var found;
+  while ((found = haPlaceholder.exec(qml)) !== null) {
+    if (!e.entities || !Object.prototype.hasOwnProperty.call(e.entities, found[1])) {
+      return problem(msg('srv.saver.undeclaredHa', '{main} uses {placeholder}, and saver.json does not name that entity under entities.', { main: e.main, placeholder: found[0] }));
     }
   }
   // A mistake that would leave it black, in any of its QML files. What one
@@ -282,6 +311,26 @@ function readChoices(c, saverId) {
   }
   if (!out.options.some(function (x) { return x.id === out.def; })) return bad;
   return out;
+}
+
+/*
+ * saver.json's entities: { daylight: 'sensor.westport_sun_daylight', ... }, the
+ * Home Assistant readings a screen saver draws, each put in for
+ * __TVWEB_HA_<name>__ as the address to read it from. The map or the reason it
+ * cannot be read.
+ */
+function readEntities(list) {
+  var bad = msg('srv.saver.badEntities', '{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them.', { file: MANIFEST, max: String(MAX_HA_ENTITIES) });
+  if (!list || typeof list !== 'object' || isArray(list)) return bad;
+  var out = {}, count = 0;
+  for (var name in list) {
+    if (!Object.prototype.hasOwnProperty.call(list, name)) continue;
+    var id = list[name];
+    if (!HA_NAME.test(name) || typeof id !== 'string' || !HA_ENTITY.test(id)) return bad;
+    out[name] = id;
+    if (++count > MAX_HA_ENTITIES) return bad;
+  }
+  return count ? out : bad;
 }
 
 // An installed app's screen saver as an entry, or null where the app has none.
@@ -730,6 +779,7 @@ function stageSaverFiles(e, level, choice) {
   }
   fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
+  stagedEntities = e.entities || null;
   if (e.choices) fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER), choice);
   else unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
 }
@@ -753,6 +803,14 @@ function fillSaverQml(e, qml, level, choice) {
   if (e.uses.indexOf('stats') !== -1) {
     qml = qml.replace(/__TVWEB_URL__/g,
       'http://127.0.0.1:' + port + '/api/stats' + (token ? '?k=' + encodeURIComponent(token) : ''));
+  }
+  // One address per declared entity, carrying the token like any other read.
+  if (e.entities) {
+    for (var name in e.entities) {
+      if (!Object.prototype.hasOwnProperty.call(e.entities, name)) continue;
+      qml = qml.replace(new RegExp('__TVWEB_HA_' + name + '__', 'g'),
+        'http://127.0.0.1:' + port + '/api/entity/' + e.entities[name] + (token ? '?k=' + encodeURIComponent(token) : ''));
+    }
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
   if (e.choices) {
@@ -904,7 +962,7 @@ function restageScreensaver() {
   // Read again, as an app with a screen saver may have been removed.
   scanSavers();
   var mode = screensaverMode();
-  if (mode === 'stock') return appSaverGone();
+  if (mode === 'stock') { stagedEntities = null; return appSaverGone(); }
   var saver = saverById(mode);
   if (!saver || saver.problem) return;
   try {
@@ -1195,6 +1253,11 @@ function trigger(cb) {
   }
 }
 
+// The staged screen saver's declared entities: what /api/entity may serve.
+function screensaverEntities() {
+  return stagedEntities;
+}
+
 module.exports = {
   SCREENSAVER_APP_DIR: SCREENSAVER_APP_DIR,
   SCREENSAVER_DIR: SCREENSAVER_DIR,
@@ -1219,6 +1282,7 @@ module.exports = {
   screensaverChoice: function () { return screensaverChoice(saverById(screensaverMode())); },
   RENAMED: RENAMED,
   restageScreensaver: restageScreensaver,
+  screensaverEntities: screensaverEntities,
   launchedShowing: launchedShowing,
   keyPressed: keyPressed,
   adoptLaunched: adoptLaunched,

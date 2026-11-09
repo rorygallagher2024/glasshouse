@@ -50,6 +50,7 @@ var privacy = require('./lib/privacy');
 var devtools = require('./lib/devtools');
 var oled = require('./lib/oled');
 var screensavers = require('./lib/screensavers');
+var haEntity = require('./lib/haentity');
 var idlesaver = require('./lib/idlesaver');
 var appsModule = require('./lib/apps');
 var iconServer = require('./lib/iconserver');
@@ -585,6 +586,9 @@ homeScreen.reapply();
 // The TV's own 12 or 24 hour setting, for every clock Glasshouse draws. A
 // change restages a clock screen saver, which has it written into its file.
 clockFormat.init({ luna: luna, onChange: function () { screensavers.restageScreensaver(); } });
+// The reads a screen saver's own values come from: the token stays here, in
+// config.json, and the saver only ever sees this server's address.
+haEntity.init({ config: CONFIG });
 screensavers.init({
   luna: luna,
   hour12: clockFormat.hour12,
@@ -1006,6 +1010,7 @@ routes.init({
   homeLauncher: homeLauncher,
   iptv: iptv,
   screensavers: screensavers,
+  haEntity: haEntity,
   updater: updater,
   tvApp: tvApp,
   restartSelf: restartSelf,

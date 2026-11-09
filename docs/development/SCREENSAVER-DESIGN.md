@@ -187,11 +187,46 @@ files and 5 MB.
 | `name`, `description` | yes | A string, or a map by language with `en`. The dashboard shows the viewer's language, else English. |
 | `main` | no | The QML file to start, in the folder; `main.qml` if left out. |
 | `choices` | no | `{"default": "a", "options": [{"id": "a", "name": "A", "value": "x=1"}]}`: options the dashboard offers as a dropdown, the picked one's `value` (letters, digits and `. = & - _`) put in for `__TVWEB_CHOICE__`. An option's `group` puts it under a heading. `label` names the dropdown, `Animation` otherwise. Clock's is an example: `"true"` or `"false"` for a `bool`. Needs `choice` in `uses`. |
+| `entities` | no | `{"daylight": "sensor.outdoor_daylight"}`: the Home Assistant readings it draws. Each is put in for `__TVWEB_HA_<name>__` as this server's address for that entity, carrying the dashboard's token, and the server serves the entities it declared and no others while it is the screen saver showing. Up to 12. Needs `ha` in `uses`. |
 | `author`, `license`, `homepage` | no | Shown under an added one. Glasshouse's own are MIT. |
-| `uses` | no | What Glasshouse fills in: `level` puts `1` above 65% brightness and `0` at or below it for `__TVWEB_LEVEL__`, with a black layer over the screen saver for the steps between and below; `choice` puts the picked option's value for `__TVWEB_CHOICE__`; `stats` puts the TV's stats address, with the dashboard's token, for `__TVWEB_URL__`. Only what is listed is filled in. Only Glasshouse's own are given `stats`. |
+| `uses` | no | What Glasshouse fills in: `level` puts `1` above 65% brightness and `0` at or below it for `__TVWEB_LEVEL__`, with a black layer over the screen saver for the steps between and below; `choice` puts the picked option's value for `__TVWEB_CHOICE__`; `stats` puts the TV's stats address, with the dashboard's token, for `__TVWEB_URL__`. Only what is listed is filled in. Only Glasshouse's own are given `stats`. `ha` fills in one address per entity in `entities`, below. |
 | `requires` | no | `{"webos": 5}`: the oldest webOS it runs on. |
 | `panels` | no | `["oled"]` or `["lcd"]`, for one made for one kind of panel. |
 | `order` | no | Its place among Glasshouse's own. Added ones follow, by name. |
+
+### A screen saver's own values
+
+A screen saver that draws Home Assistant values declares which ones in
+`entities`, and reads each from the address Glasshouse puts in for it:
+
+```json
+{
+  "uses": ["level", "ha"],
+  "entities": { "daylight": "sensor.outdoor_daylight" }
+}
+```
+
+```qml
+var xhr = new XMLHttpRequest();
+xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4 || xhr.status !== 200) return;
+    var d = JSON.parse(xhr.responseText);   // { ok, entity, state, attributes, updated }
+    daylightLine.text = "Daylight " + d.attributes.today_hms;
+};
+xhr.open("GET", "__TVWEB_HA_daylight__", true);
+xhr.send();
+```
+
+The address is this server's, `/api/entity/<entity id>`, with the token every
+other dashboard read takes, so no token reaches the QML. While that screen
+saver is the one on the TV, the server answers for the entities it declared and
+404s the rest, so a QML file on the TV cannot read anything it did not say it
+would. It needs `homeAssistant.url` and `homeAssistant.token` in `config.json`;
+without them the address answers 503 and the screen saver draws whatever it can
+without it.
+
+What the `state` means is the screen saver's business, not the server's: `9.11`
+hours is `9h 07m` only because the saver says so.
 
 A folder with something wrong - a `saver.json` that does not parse, a missing
 field or main file, a placeholder its `uses` does not name - is listed, with

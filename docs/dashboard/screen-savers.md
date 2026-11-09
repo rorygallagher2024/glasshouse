@@ -118,7 +118,7 @@ A screen saver added on the TV is a folder in `/var/lib/tvweb/screensavers/`, na
 scp -r my-saver root@<tv-ip>:/var/lib/tvweb/screensavers/
 ```
 
-One with something wrong in its folder, or whose QML would only show black, is listed with the reason and cannot be picked. One that reaches the network, can play sound, or can open apps says so under its name, and can still be picked. [Writing a screen saver](../development/WRITING-SCREENSAVERS.md) covers making one, and the format is in [Screen saver design principles](../development/SCREENSAVER-DESIGN.md#screen-saver-folders).
+One with something wrong in its folder, or whose QML would only show black, is listed with the reason and cannot be picked. One that reaches the network, can play sound, or can open apps says so under its name, and can still be picked. A screen saver can also draw Home Assistant values: it names the entities it wants in its `saver.json` and reads each from the address Glasshouse gives it, with the token kept on the server. [Writing a screen saver](../development/WRITING-SCREENSAVERS.md) covers making one, and the format is in [Screen saver design principles](../development/SCREENSAVER-DESIGN.md#screen-saver-folders).
 
 Glasshouse installs one there itself, as an example: **Pigs - Three Different Ones**, a pink pig, a saddleback and a razorback, big and small, flapping across a pixel-art night over Chicago. An update puts it back if it has been removed.
 

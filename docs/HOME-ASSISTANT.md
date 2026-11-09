@@ -116,6 +116,10 @@ mosquitto_sub -h <broker> -t 'lgtv/#' -v
 
 Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the same way. The Home Assistant Discovery messages are simply ignored by non-Home Assistant clients.
 
+### Screen savers reading Home Assistant
+
+A screen saver can draw values of its own from Home Assistant. It names the entities it wants in its `saver.json`, and Glasshouse gives it one address per name, served from this TV, with the token kept in `config.json`. The server answers only for the entities that screen saver declared, and only while it is the one showing, so a QML file on the TV cannot read anything it did not say it would. A screen saver added on the TV can use this; it needs `homeAssistant.url` and `homeAssistant.token` set, the same two the bridge uses. [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) has the manifest and QML for it.
+
 ---
 
 ## Entities

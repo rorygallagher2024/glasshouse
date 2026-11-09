@@ -95,6 +95,8 @@ var homeLauncherModule = null;
 var iptvModule = null;
 /** @type {typeof import('./screensavers')} */
 var screensaversModule = null;
+/** @type {typeof import('./haentity')} */
+var haEntityModule = null;
 /** @type {typeof import('./inputbar')} */
 var inputBarModule = null;
 /** @type {typeof import('./updater')} */
@@ -1576,6 +1578,33 @@ function handleRequest(req, res) {
     return send(res, 200, JSON.stringify(screensaversModule.screensaverList()));
   }
 
+  /* A screen saver's own Home Assistant readings. The saver's saver.json names
+     the entities it draws and the server hands it one address per name; this
+     serves those and nothing else while that saver is on the TV, so a QML file
+     on the TV cannot ask for anything it did not declare. */
+  if (pathname.indexOf('/api/entity/') === 0) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!haEntityModule) {
+      return send(res, 503, JSON.stringify({ ok: false, error: 'Home Assistant is not configured' }));
+    }
+    var wanted = '';
+    try { wanted = decodeURIComponent(pathname.slice('/api/entity/'.length)); } catch (e) {}
+    var declared = screensaversModule ? screensaversModule.screensaverEntities() : null;
+    var allowedId = false;
+    for (var key in declared) {
+      if (Object.prototype.hasOwnProperty.call(declared, key) && declared[key] === wanted) allowedId = true;
+    }
+    if (!allowedId) {
+      return send(res, 404, JSON.stringify({
+        ok: false,
+        error: 'the screen saver on the TV does not declare ' + wanted.slice(0, 80)
+      }));
+    }
+    return haEntityModule.read(wanted, function (r) {
+      send(res, r.ok ? 200 : 502, JSON.stringify(r));
+    });
+  }
+
   if (pathname === '/api/hdmi') {
     return telemetryModule.hdmiInputs(function (r) { send(res, 200, JSON.stringify(r)); });
   }
@@ -2341,6 +2370,7 @@ function init(opts) {
   if (opts.homeLauncher) homeLauncherModule = opts.homeLauncher;
   if (opts.iptv) iptvModule = opts.iptv;
   if (opts.screensavers) screensaversModule = opts.screensavers;
+  if (opts.haEntity) haEntityModule = opts.haEntity;
   if (opts.inputBar) inputBarModule = opts.inputBar;
   if (opts.updater) updaterModule = opts.updater;
   if (opts.logs) logsModule = opts.logs;
