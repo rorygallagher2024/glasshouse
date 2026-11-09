@@ -107,6 +107,8 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
 The **Inputs** row displays the TV's tuner and video sources:
 
+![The Inputs row on an LG C2 (webOS 9.2): TV tuner tile with tuned channel, HDMI 1, and HDMI-CEC Mac on HDMI 2 with live preview](../screenshots/home-inputs-c2.jpg)
+
 * **Live TV tuner:** A **TV** tile comes first on TVs with channels tuned, showing the last active channel; selecting it opens Live TV. It can be hidden like any other input.
 * **HDMI ports and CEC devices:** Each HDMI port is listed, alongside separate tiles for connected HDMI-CEC devices discovered through an AV receiver or soundbar (for example, *"HDMI 2, through STEREO 70s"*).
 * **Device icons:** Each input or CEC tile automatically selects an icon matching the device's name:
@@ -132,6 +134,8 @@ The **Recommended** row surfaces content cards provided by installed streaming a
 
 > [!WARNING]
 > **Sends queries to LG's search service:** Enabling **Search** sends typed search queries to LG's cloud search service (`com.webos.service.nlpmanager` / `*.nextlgsdp.com` — the same backend used by LG's built-in Search app) and nowhere else. It is **off by default** so nothing leaves the TV unless explicitly switched on.
+
+![The Search overlay and on-screen keyboard on an LG C2 (webOS 9.2)](../screenshots/home-search-c2.jpg)
 
 When switched on under **Home** on the web dashboard or in the TV app's Home section, **Search** adds a mark in the left margin beside the rows: **Left** from the first tile of any row reaches it, and **Right** goes back. **OK** opens a search panel over the left of Glasshouse Home for films and series, typed on the TV's keyboard. While the keyboard is up the titles are single lines, with the icons of the apps that have them; once it closes each shows its poster, year, running time and apps. Editing the query clears the previous titles immediately. Up and down move between titles, left and right between apps, and OK opens the app at that title. A series opens at its start where the app allows: Prime Video and HBO Max at its first season, Disney+ and BBC iPlayer playing its first episode, Netflix at the series; Apple TV opens its latest episode. Titles only on apps the TV does not have are counted, not listed, and trailers, teasers and sneak peeks are never shown or opened. Back closes the keyboard, then the panel. Coming back from an app opened there within 30 minutes, without the TV having been switched off, finds the panel as it was left. Switched off, the mark goes and nothing typed leaves the TV.
 
@@ -445,6 +449,8 @@ The **Layout** section configures the on-screen placement of rows and status ele
 
 Individual toggles in the **Shown on Home** section control informative badges across the interface:
 
+![Badges on an LG C2 (webOS 9.2): App count, CEC address, Last watched indicator, and Open-Meteo weather badge](../screenshots/home-badges-c2.jpg)
+
 * **Last watched:** Displays the most recently active source in the top strip and highlights its tile. Behind an AV receiver, Last watched names the specific active downstream device (e.g. the console rather than the receiver) whenever recorded by the TV; if unrecorded, all connected devices on the port are named. The top strip stays empty until the saved layout loads. Switching it off leaves the clock in place.
 * **App count:** Displays the count of visible vs total apps (e.g. *"4 of 18 shown"*) next to the Apps row header. (Hidden in Alternative View).
 * **CEC addresses:** Displays physical HDMI-CEC port addresses (such as `1.0.0.0` or `2.1.0.0`) on each input tile.
@@ -464,6 +470,8 @@ The badge appears once data is received, is kept when the TV restarts, and is hi
 ### Live preview
 
 When enabled, resting on an input or a TV channel for a moment shows it live and silent in the top right, with its name and programme beside it. Off by default.
+
+![Live preview and Picture details plate on an LG C2 (webOS 9.2): incoming HDMI 2 signal format, picture mode and OLED light level](../screenshots/home-live-preview-c2.jpg)
 
 * **Picture details plate:** With [Picture details](#badges-and-labels) also enabled, the plate moves beside the preview window, level with its foot, and describes what it shows: incoming HDMI resolution, refresh rate, HDR, chroma, picture preset, and backlight/OLED light levels. Changing Picture details updates the plate during a preview without restarting video playback.
 * **AV receiver handling:** Devices connected behind an AV receiver share its HDMI input, so each shows what that input shows. Moving to another input takes the TV's HDMI receiver off the active input without sending CEC commands.
@@ -525,6 +533,8 @@ It is offered on webOS 9 (LG's webOS 24), where it has been tried on a C2, and a
 On webOS 10 the section has a switch at the top, with its warning, and nothing in it changes until that is on. The parts that can be switched off there are the **Side buttons** (profile, notifications, settings and search), the **Quick Cards**, the **Recommended shelf** and the **Banner text**, the line inviting a new experience with webOS and its **Go to Apps** button. The banner stays, and **Banner picture** chooses what it shows: LG's picture, plain black, or your own. Your own is uploaded from the browser and cropped for each shape the banner can take, so it fills the banner whichever parts are shown; the banner grows into the space hidden rows leave, and with the side buttons hidden it reaches the screen's edges and top. It stops above the apps row, which LG draws on black.
 
 ### Hiding apps from Recents
+
+![The Recent apps panel on an LG C2 (webOS 9.2) opened by pressing Back](../screenshots/home-recent-apps-c2.jpg)
 
 **Recent apps**, under the rows on the Home tab, lists the apps with a **Shown** or **Hidden** switch each. A hidden app never appears in Glasshouse Home's Recent apps panel (Back on Home), and Glasshouse no longer serves its last screen, including one saved before it was hidden. Its tile stays on the Apps row; hiding a tile is the Apps row's own choice. This doesn't stop webOS taking its snapshots or change LG's own Recents.
 
