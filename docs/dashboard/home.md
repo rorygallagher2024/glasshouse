@@ -15,37 +15,37 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    Every app from LG's launcher with its native icon, and each web page saved to the Home screen, which opens in the TV's browser. LG's promotional tiles (LG Channels, Sports, Always Ready, Alexa, Camera) start hidden, and apps [Hide home screen system apps](#hide-home-screen-system-apps) was hiding stay hidden here. Includes **Notifications**, **Search**, and an **LG Home** tile at the end, which can be hidden like any app (the remote's **Home** button still leads back to LG's Home).
+    Installed applications with native icons, saved web pages, and quick tiles for **Notifications**, **Search**, and **LG Home**. Promotional clutter starts hidden, and apps can be reordered, hidden, or grouped into a **More apps** folder.
 
--   **Magic Remote & scrolling**
+-   **Magic Remote & navigation**
 
     ---
 
-    With the Magic Remote's pointer, hovering a tile focuses it and clicking opens it. Resting the pointer near either end of a row glides the row that way — faster the further out it points, with a soft arrow at the edge where there is more off-screen — gathering speed smoothly and braking into the last tile. The scroll wheel steps the hovered row one tile per notch, arrow keys continue from the tiles currently in view, and returning from an app preserves the focused tile and every row's scroll position.
+    Hover to focus, click to open, and rest near row edges to glide smoothly across off-screen tiles. The scroll wheel and arrow keys navigate seamlessly, preserving focused tiles and scroll positions when returning from an app.
 
 -   **Inputs & HDMI-CEC devices**
 
     ---
 
-    A **TV** tile for the TV's own tuner comes first, with the channel it was last on; selecting it opens Live TV. It is there on TVs with channels tuned, and can be hidden like any other input. After it, every HDMI port, plus separate tiles for connected HDMI-CEC devices (for example, *"HDMI 2, through STEREO 70s"*). Each HDMI or CEC tile has an icon chosen from the device's name: a controller for an Xbox or PlayStation, a handheld for a Nintendo Switch, a streaming box for an Apple TV, Roku, Chromecast or Fire TV, and a soundbar, disc, computer or cable-box icon for those, with an HDMI plug for anything else. Selecting a CEC tile wakes the device and switches receivers to that source; inactive ports appear dimmed. Inputs can be hidden one by one, like apps. Beside that, **Hide inputs with nothing connected**, a switch in the Inputs row's settings on the dashboard and in the TV app, leaves out ports with nothing plugged in instead of dimming them, marked **Left out**; they show, dimmed, while arranging, and come back as soon as something is plugged in. An input is left out if it is hidden or, with that switch on, has nothing connected.
+    Shows the TV's internal tuner and HDMI ports with device-specific icons, plus dedicated tiles for HDMI-CEC devices connected through AV receivers. Disconnected ports appear dimmed or can be hidden automatically. See [Inputs and connected devices](#inputs-and-connected-devices).
 
 -   **Channels**
 
     ---
 
-    Favourite live TV channels added from the dashboard or TV app, showing the current broadcast programme from the TV guide when available.
+    Favourite live broadcast TV channels added from the dashboard or TV app, showing current programme details from the TV guide when available.
 
 -   **Internet TV**
 
     ---
 
-    The starred channels of your Internet TV lineup, chosen on the dashboard or from the row itself. Each tile shows the channel's logo, drawn as plain light type, or its name where it has none, with what is on now and next. See [Internet TV](#internet-tv).
+    The starred channels of your Internet TV lineup, chosen on the dashboard or from the row itself, with logos and what is on now and next. See [Internet TV](#internet-tv).
 
 -   **Recommended**
 
     ---
 
-    The titles the TV's apps put on LG's Home, such as Netflix's *Continue watching*, Prime Video's picks, Disney+, HBO Max and YouTube, as a row of cards with each app's picture, title and category. **OK** opens the app at that title. With an app in focus on the Apps row, by the keys or the pointer, the row shows only that app's cards (*From Netflix*), and **Down** reaches them; on a tile with no cards, such as an input or LG Home, it shows every app's, in the Apps row's order. An app hidden there shows none. The row starts under Apps and is moved like the others, but its cards are not arranged one by one. **Off by default**: switch it on in the Recommended row's settings on the dashboard or in the TV app. The pictures are loaded from each app's own servers, as on LG's Home; nothing else is sent. Tried on webOS 10 and on a 43UM7100PLB with webOS 4.10.2. On a C2 with webOS 9.2 the TV listed no apps' titles, so the row stays hidden there and the switch says none are listed.
+    Shows continuing titles and recommendations from installed streaming apps (such as Netflix, Prime Video, Disney+, and YouTube) as a row of cards below Apps. Off by default. See [Recommended row](#recommended-row).
 
 -   **Recent apps (`Back` button)**
 
@@ -63,70 +63,70 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    When **Live preview** is switched on, resting on an input or a TV channel for a moment shows it live and silent in the top right, with its name and programme beside it. With **Picture details** on too, the plate moves beside the picture, level with its foot, and describes what it shows: the input's signal as it arrives, or the channel's resolution, frame rate and HDR as the tuner decodes it, and the picture mode and OLED light it gets. Devices behind one receiver share its HDMI input, so each shows what that input shows. An input with nothing coming in, or a channel off air, says so. Moving to another input takes the TV's HDMI receiver off the one that was on, without sending anything over CEC, and a channel previewed this way does not become the TV's last channel. The preview stops while the screen saver is over Home, and comes back when it ends. It is off by default.
-
-    Resting on the **TV** tile previews the channel it was last on. Two options show under Live preview while it is on, both off by default and not offered on webOS 4, where neither plays. **Keep the preview on** runs the preview whenever Glasshouse Home is on screen, not only while a tile with one is chosen: on the HDMI input last watched, or otherwise on the TV's last channel; choosing another input or channel moves it there. **Preview in the tile** shows it in the tile it previews, under the tile's own name, rather than beside the clock with the picture details under it.
-
-    Changing **Picture details** shows or hides the strip during a preview, without restarting the picture.
-    Pressing **OK** releases the preview while the input or channel opens.
+    Hovering an input, TV channel, or Internet TV tile displays a live, silent video preview beside the clock or directly within the tile, along with current signal and programme details. Off by default. See [Live preview](#live-preview).
 
 -   **Weather badge**
 
     ---
 
-    An icon and the current temperature, level with the clock, with the place and a short condition label on the date's line. The **Weather** setting in the Home tab's Home customisation section chooses where it comes from:
+    Displays current temperature, condition icon, and location level with the clock, sourced from Home Assistant or Open-Meteo. See [Weather badge](#weather-badge).
 
-    * **From Home Assistant**, the default: whatever was last written to the `text.lg_tv_weather` entity, a JSON string such as `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}` ([entities](../HOME-ASSISTANT-ENTITIES.md)), which an automation keeps current: [an example](../HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home). `city` is optional, and the temperature is shown in the unit sent.
-    * **From the internet**: the weather from [Open-Meteo](https://open-meteo.com/) for a place you search for by name under the setting. The TV asks for it every 30 minutes while the screen is on, and sends only the place's position; nothing is asked for while the TV is off. Temperatures are in °C, or °F for a place in the US and the few other countries that use it. *Weather data by Open-Meteo.com* shows in the bottom corner while it is on screen.
-    * **Off**.
-
-    The badge shows once there is weather, is kept when the TV restarts, and is hidden once 3 hours pass without an update or, from Home Assistant, when an empty value is sent. The TV app's Home section steps through the same three; a place is chosen on the web dashboard.
-
--   **Last watched, app count, CEC addresses and channel logos**
+-   **Badges & labels**
 
     ---
 
-    **Last watched** (the top strip and the marker on that input's tile), **App count** (the "4 of 18 shown" beside Apps), **CEC addresses** (on each input tile) and **Channel logos** (on Internet TV, showing the channel's name when off) are on by default, and each can be switched off from either dashboard's Home tab.
+    Customizable status badges across rows: **Last watched** (top banner and active input highlight), **App count** (e.g. "4 of 18 shown"), **CEC addresses** on input tiles, and **Channel logos** for Internet TV. See [Badges and labels](#badges-and-labels).
 
-    Behind a receiver, Last watched names the device the TV last selected on that port, such as the console rather than the receiver, and marks only its tile. Where the TV has not recorded one, every device on the port is named.
-
-    The top strip stays empty until the saved layout loads. Switching **Last watched** off leaves the clock in place.
-
--   **Clock and rows along the bottom**
+-   **Rows along the bottom**
 
     ---
 
-    **Clock and date** is on by default; switched off, its space stays empty, so the rows do not move. **Rows along the bottom** puts the rows of apps and inputs along the bottom of the screen, as on LG's Home, rather than in the middle. The row in focus sits at the bottom and the rows after it wait below the screen: moving down scrolls the rows up by one, and the rows already passed stay above. It is off by default.
-
-    ![Glasshouse Home with the clock off and the rows along the bottom](../screenshots/home-bottom.jpg)
+    Positions rows along the bottom of the screen (similar to LG's built-in launcher) instead of centered, scrolling subsequent rows into view as you navigate down. Off by default. See [Layout options](#layout-options).
 
 -   **Alternative View**
 
     ---
 
-    A smaller clock on the right, with Last watched and the Picture details plate to its left, and the rows as rounded, translucent tiles. Row titles show only while arranging, so **App count** is greyed out in this view. It is off by default, and works with **Rows along the bottom** and the other switches. Thanks to @wkirby86.
-
-    ![Glasshouse Home in Alternative View with the rows along the bottom](../screenshots/home-alternative.jpg)
-
-    With the clock, Last watched and CEC addresses switched off and the Abstract wallpaper, it makes a minimal Home:
-
-    ![A minimal Glasshouse Home: Alternative View with the clock, Last watched and CEC addresses off, apps and one input over the Abstract wallpaper](../screenshots/home-minimal.jpg)
+    A compact layout featuring rounded translucent tiles, a smaller clock on the right, and status indicators aligned horizontally. Can be combined with **Rows along the bottom** for a minimalist home screen. See [Layout options](#layout-options).
 
 -   **Animations**
 
     ---
 
-    Each kind of motion has its own switch. **Fade in and out** (off by default) fades Glasshouse Home out before an app, input, channel or recent app opens, and back in when it returns. **Notifications** and **Search**, which open over Home, do not fade it.
-
-    The others are on by default: **Wallpaper drift**, the wallpaper's slow movement; **Wallpaper cross-fade**, from one part of the day's picture to the next; **Smooth scrolling**, rows gliding to the chosen tile rather than jumping; and **Sliding panels**, Recent apps, Search and More apps sliding in and out.
+    Independent switches for motion and transitions: smooth row scrolling, wallpaper drift, cross-fades between times of day, sliding panels, and smooth fade transitions when opening apps or inputs. See [Animations](#animations).
 
 -   **Colours & themes**
 
     ---
 
-    Seven built-in colour presets, starting with **Pure white**, white text with a white accent, which Glasshouse Home starts with, plus custom **Text** and **Accent** colour pickers in the web dashboard (or preset cycling in the TV app). The accent colour highlights the focused tile and the last active source.
+    Seven built-in colour presets (starting with **Pure white**), plus custom **Text** and **Accent** colour pickers. The accent colour highlights focused tiles and active sources.
 
 </div>
+
+## Inputs and connected devices
+
+The **Inputs** row displays the TV's tuner and video sources:
+
+* **Live TV tuner:** A **TV** tile comes first on TVs with channels tuned, showing the last active channel; selecting it opens Live TV. It can be hidden like any other input.
+* **HDMI ports and CEC devices:** Each HDMI port is listed, alongside separate tiles for connected HDMI-CEC devices discovered through an AV receiver or soundbar (for example, *"HDMI 2, through STEREO 70s"*).
+* **Device icons:** Each input or CEC tile automatically selects an icon matching the device's name:
+    * A controller for an Xbox or PlayStation, or a handheld for a Nintendo Switch.
+    * A streaming box for an Apple TV, Roku, Chromecast, or Fire TV.
+    * A soundbar, disc player, computer, or cable-box icon for those devices.
+    * An HDMI plug for generic sources.
+* **CEC wake and receiver switching:** Selecting a CEC tile wakes the device and switches intermediary AV receivers to that source. Inactive ports appear dimmed.
+* **Hiding inputs:** Inputs can be hidden individually from the dashboard or in arrange mode.
+* **Hide inputs with nothing connected:** This switch in the Inputs row's settings on the dashboard and TV app completely omits ports with nothing plugged in instead of dimming them, marked **Left out**. They show dimmed while arranging, and return as soon as a cable or device is plugged in. An input is left out if it is hidden or, with that switch on, has nothing connected.
+
+## Recommended row
+
+The **Recommended** row surfaces content cards provided by installed streaming apps:
+
+* **Content cards:** Displays titles that apps put on LG's Home, such as Netflix's *Continue watching*, Prime Video picks, Disney+, HBO Max, and YouTube, with each app's artwork, title, and category. Pressing **OK** opens the app directly at that title.
+* **App-specific filtering:** When an app is focused in the Apps row (via remote keys or pointer), the Recommended row filters to show only cards from that service (*From Netflix*), accessible by pressing **Down**. When focusing a tile with no recommendations (such as an input or LG Home), cards from all apps are shown in the Apps row's order. Hidden apps show no recommendations.
+* **Row positioning:** The row appears under Apps by default and can be reordered like other rows, though individual cards within it are ordered by the respective streaming apps.
+* **Privacy:** Artwork is loaded directly from each app's own servers, as on LG's Home; no extra telemetry is sent.
+* **Availability:** Switched off by default in the Recommended row settings on the dashboard or TV app. Supported on webOS 10 and webOS 4.10; on TVs where the system reports no app recommendations (such as a C2 on webOS 9.2), the row remains hidden and the switch indicates none are available.
 
 ## Search
 
@@ -474,6 +474,66 @@ Each appears where the TV has it. A TV Glasshouse Home is not offered on, such a
 ### Open Home at power-on
 
 Opens the Home screen when the TV is switched on, rather than staying on the last input. LG calls this Home Auto Launch (`general.homeAutoLaunch`). While Glasshouse Home is on, the Home it opens is Glasshouse Home (see [Switching it on and off](#switching-it-on-and-off)).
+
+### Layout options
+
+The **Layout** section configures the on-screen placement of rows and status elements:
+
+* **Clock and date:** Displayed by default in the upper left; if switched off, its space remains reserved so rows do not jump.
+* **Rows along the bottom:** Places the rows along the bottom of the screen (as on LG's launcher) rather than in the middle. The row in focus sits at the bottom and subsequent rows wait below the screen: moving down scrolls the rows up by one. Off by default.
+
+    ![Glasshouse Home with the clock off and the rows along the bottom](../screenshots/home-bottom.jpg)
+
+* **Alternative View:** A compact layout with a smaller clock on the right, status badges to its left, and rounded, translucent tiles. Row titles show only while arranging, so **App count** is greyed out. Off by default, and works with **Rows along the bottom** and the other switches:
+
+    ![Glasshouse Home in Alternative View with the rows along the bottom](../screenshots/home-alternative.jpg)
+
+    Disabling the clock, Last watched, and CEC addresses over the Abstract wallpaper creates a minimal interface:
+
+    ![A minimal Glasshouse Home: Alternative View with the clock, Last watched and CEC addresses off, apps and one input over the Abstract wallpaper](../screenshots/home-minimal.jpg)
+
+### Badges and labels
+
+Individual toggles in the **Shown on Home** section control informative badges across the interface:
+
+* **Last watched:** Displays the most recently active source in the top strip and highlights its tile. Behind an AV receiver, Last watched names the specific active downstream device (e.g. the console rather than the receiver) whenever recorded by the TV; if unrecorded, all connected devices on the port are named. The top strip stays empty until the saved layout loads. Switching it off leaves the clock in place.
+* **App count:** Displays the count of visible vs total apps (e.g. *"4 of 18 shown"*) next to the Apps row header. (Hidden in Alternative View).
+* **CEC addresses:** Displays physical HDMI-CEC port addresses (such as `1.0.0.0` or `2.1.0.0`) on each input tile.
+* **Channel logos:** Displays graphical channel logos on Internet TV tiles; when disabled, channels display plain text names instead.
+* **Picture details:** Displays the active picture preset, OLED light / backlight level, and signal format in the top-right corner.
+
+### Weather badge
+
+The weather badge displays the current temperature and an icon level with the clock, with the place and condition on the date line below. The **Weather** setting on the dashboard chooses where it comes from:
+
+* **From Home Assistant (default):** Displays whatever was last written to the `text.lg_tv_weather` entity, a JSON string such as `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}` ([entities](../HOME-ASSISTANT-ENTITIES.md)). The `city` field is optional, and the temperature is shown in the unit sent. An automation keeps this current ([example automation](../HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home)).
+* **From the internet:** Weather from [Open-Meteo](https://open-meteo.com/) for a location searched by name on the dashboard. The TV queries Open-Meteo every 30 minutes while the screen is on (sending only coordinates, never polling while the TV is off). Temperatures are in °C, or °F for US locations. *Weather data by Open-Meteo.com* appears in the bottom corner while shown.
+* **Off:** Disables the badge completely.
+
+The badge appears once data is received, is kept when the TV restarts, and is hidden once 3 hours pass without an update (or when an empty value is sent from Home Assistant).
+
+### Live preview
+
+When enabled, resting on an input or a TV channel for a moment shows it live and silent in the top right, with its name and programme beside it. Off by default.
+
+* **Picture details plate:** With [Picture details](#badges-and-labels) also enabled, the plate moves beside the preview window, level with its foot, and describes what it shows: incoming HDMI resolution, refresh rate, HDR, chroma, picture preset, and backlight/OLED light levels. Changing Picture details updates the plate during a preview without restarting video playback.
+* **AV receiver handling:** Devices connected behind an AV receiver share its HDMI input, so each shows what that input shows. Moving to another input takes the TV's HDMI receiver off the active input without sending CEC commands.
+* **Tuner channels:** Previewing a channel does not make it the TV's last-watched channel. An input with no incoming signal or a channel off-air displays a status notice.
+* **Screen saver:** The preview pauses while the screen saver runs over Home, and resumes when dismissed. Pressing **OK** releases the preview while the input or channel opens full screen.
+* **Additional options (webOS 5+):**
+    * **Preview in the tile:** Renders the preview inside the hovered tile itself, under the tile's name, rather than beside the clock.
+    * **Keep the preview on:** Runs the preview whenever Glasshouse Home is on screen, showing the last-watched HDMI input or TV channel until another is focused.
+    *(These two options are not offered on webOS 4, where background video playback in tiles is unsupported.)*
+
+### Animations
+
+Each kind of motion has its own switch:
+
+* **Fade in and out (off by default):** Fades Glasshouse Home out before an app, input, channel, or recent app opens, and back in when returning. **Notifications** and **Search** open over Home without fading.
+* **Wallpaper drift (on by default):** Slow movement of the wallpaper to protect against image retention on OLED panels.
+* **Wallpaper cross-fade (on by default):** Cross-fades smoothly from one part of the day's background to the next.
+* **Smooth scrolling (on by default):** Rows glide smoothly to the focused tile rather than jumping abruptly.
+* **Sliding panels (on by default):** Slides Recent apps, Search, and More apps smoothly in and out.
 
 ### Hide home screen system apps
 
