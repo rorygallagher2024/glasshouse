@@ -1,12 +1,12 @@
 # Tested TVs
 
-Confirmed on **73 TVs across 49 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **75 TVs across 51 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
 * **Older firmware:** webOS 2 and 3 have fewer of LG's services, so readings and controls that rely on them are automatically omitted there.
 
-=== "By series (49)"
+=== "By series (51)"
 
     | Series        | Year | Panel | webOS seen        | Reports |
     | :------------ | :--- | :---- | :---------------- | :------ |
@@ -51,16 +51,18 @@ Confirmed on **73 TVs across 49 series** running **webOS 2.2 through 11** (LG's 
     | B4            | 2024 | OLED  | 9                 | 1       |
     | C4            | 2024 | OLED  | 9 – 10            | 5       |
     | G4            | 2024 | OLED  | 10                | 2       |
+    | QNED86        | 2024 | LCD   | 10.3              | 1       |
     | UT73          | 2024 | LCD   | —                 | 1       |
     | UT81          | 2024 | LCD   | 10                | 1       |
     | C5            | 2025 | OLED  | 10 – 11.2         | 4       |
     | G5            | 2025 | OLED  | 10 – 11           | 2       |
     | UA73          | 2025 | LCD   | 10.3.1            | 1       |
+    | UA75          | 2025 | LCD   | 10.3              | 1       |
     | C6            | 2026 | OLED  | 11.2              | 1       |
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (73)"
+=== "All reports (75)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
@@ -127,6 +129,8 @@ Confirmed on **73 TVs across 49 series** running **webOS 2.2 through 11** (LG's 
     | 86UR8000AUA | 10.3.2       | 33.31.75 | LCD   | Working; no firewall in its kernel, so the web app debugger stays open to the network |
     | OLED65B2PUA | 10.3.2       | 33.31.75 | OLED  | Rooted with Homebrew Channel; SSH install; Glasshouse Home and HDMI confirmed working after reboot |
     | 55QNED80SRA | 10.3.2       | 33.31.75 | LCD   | Rooted with slopbro; SSH install; Glasshouse Home, privacy switches and app installs confirmed |
+    | 75QNED86T6A | 10.3.2       | 33.31.75 | LCD   | Rooted with slopbro; SSH install; MQTT bridge confirmed; SoC temperature and eMMC wear reported; app install through the dashboard confirmed |
+    | 55UA75006LA | 10.3.2       | 33.31.80 | LCD   | Rooted with slopbro; SSH install; Glasshouse Home and MQTT bridge confirmed; SoC temperature and eMMC wear reported |
     | OLED65G5WUA | 10           | 33.30.69 | OLED  | No screen saver tab; volume stuck at +10 on optical output     |
     | 42LX3Q6LA   | —            | 33.31.68 | OLED  | Flex; model number has no OLED prefix                          |
     | 43UT73006LA | —            | —        | LCD   | Reported working                                               |
