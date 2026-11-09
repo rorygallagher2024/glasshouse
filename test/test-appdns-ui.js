@@ -69,7 +69,7 @@ var html = element('apps-dns-list').innerHTML;
 assert.ok(html.indexOf('Net&lt;flix&gt;') >= 0 && html.indexOf('Net<flix>') < 0, 'titles are escaped');
 assert.ok(html.indexOf('1.1.1.1, 1.0.0.1') >= 0);
 assert.ok(html.indexOf('Using TV\'s DNS</div>') >= 0);
-assert.ok(html.indexOf('https://dns.example/q?a=1&amp;b=&lt;2&gt; &middot; no answer: HTTP 403') >= 0, 'the DNS-over-HTTPS address, escaped, with its error');
+assert.ok(html.indexOf('https://dns.example/q?a=1&amp;b=&lt;2&gt;</div><div class="err-note" role="alert">No answer: HTTP 403.</div>') >= 0, 'the DNS-over-HTTPS address, escaped, with its error banner');
 assert.strictEqual((html.match(/Use the TV's DNS/g) || []).length, 2, 'only an app with its own can be put back');
 assert.strictEqual(element('apps-dns-summary').textContent, '2 apps with their own');
 render({ writable: false, appDns: apps });

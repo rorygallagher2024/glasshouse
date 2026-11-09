@@ -963,12 +963,14 @@ function renderAppDns(d) {
   q('apps-dns-list').innerHTML = apps.map(a => {
     const id = esc(a.id);
     // A DNS-over-HTTPS address with the last failure to reach it, if any.
-    const uses = a.doh ? esc(a.doh) + (a.dohError ? ' &middot; ' + esc(t('apps.dns.dohFailing', 'no answer: {error}', { error: a.dohError })) : '')
+    const uses = a.doh ? esc(a.doh)
       : a.servers.length ? esc(a.servers.join(', ')) : esc(t('apps.dns.tvOwn', 'Using TV\'s DNS'));
+    const fail = a.doh && a.dohError ? t('apps.dns.dohFailing', 'no answer: {error}', { error: a.dohError }) : '';
+    const err = fail ? `<div class="err-note" role="alert">${esc(fail.charAt(0).toUpperCase() + fail.slice(1) + '.')}</div>` : '';
     return `<div class="prot-row" id="dns-${id}">
       <div class="prot-main">
         <div class="prot-title" translate="no">${esc(a.title)}</div>
-        <div class="prot-desc">${uses}</div>
+        <div class="prot-desc">${uses}</div>${err}
       </div>
       <div class="prot-status page-acts">
         <button type="button" class="pill idle" onclick="editAppDns('${jsq(a.id)}')" ${d.writable ? '' : 'disabled'}>${esc(t('apps.dns.change', 'Change'))}</button>
@@ -992,7 +994,7 @@ function editAppDns(appId) {
         <button type="submit">${esc(t('apps.pages.save', 'Save'))}</button>
         <button type="button" onclick="renderAppDns(appsData)">${esc(t('common.cancel', 'Cancel'))}</button>
       </form>
-      <div class="sub page-add-msg" id="dns-msg-${esc(appId)}" role="alert"></div>
+      <div class="err-note" id="dns-msg-${esc(appId)}" role="alert"></div>
     </div>`;
   q('dns-in-' + appId).focus();
 }
