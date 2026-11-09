@@ -12,18 +12,62 @@
     "ru": "Часы"
   },
   "description": {
-    "en": "A digital clock on black, moving to a new position every minute.",
-    "es": "Un reloj digital sobre negro, que cambia de posición cada minuto.",
-    "hu": "Digitális óra fekete háttéren, amely percenként új helyre kerül.",
-    "it": "Un orologio digitale sul nero, che cambia posizione ogni minuto.",
-    "pl": "Cyfrowy zegar na czerni, co minutę przenoszony w nowe miejsce.",
-    "pt": "Um relógio digital sobre fundo preto, que muda de posição a cada minuto.",
-    "pt-br": "Um relógio digital sobre o preto, que muda de posição a cada minuto.",
-    "ru": "Цифровые часы на чёрном фоне, которые каждую минуту перемещаются на новое место."
+    "en": "A digital clock on black, moving to a new position every minute, with the seconds, weekday and date if picked.",
+    "es": "Un reloj digital sobre negro, que cambia de posición cada minuto, con los segundos, el día de la semana y la fecha si se eligen.",
+    "hu": "Digitális óra fekete háttéren, amely percenként új helyre kerül, igény szerint másodpercekkel, a hét napjával és a dátummal.",
+    "it": "Un orologio digitale sul nero, che cambia posizione ogni minuto, con i secondi, il giorno della settimana e la data se scelti.",
+    "pl": "Cyfrowy zegar na czerni, co minutę przenoszony w nowe miejsce, z sekundami, dniem tygodnia i datą, jeśli wybrano.",
+    "pt": "Um relógio digital sobre fundo preto, que muda de posição a cada minuto, com os segundos, o dia da semana e a data, se escolhidos.",
+    "pt-br": "Um relógio digital sobre o preto, que muda de posição a cada minuto, com os segundos, o dia da semana e a data, se escolhidos.",
+    "ru": "Цифровые часы на чёрном фоне, которые каждую минуту перемещаются на новое место, по выбору с секундами, днём недели и датой."
   },
   "license": "MIT",
   "uses": [
-    "level"
+    "level",
+    "choice"
   ],
-  "order": 10
+  "order": 10,
+  "choices": {
+    "label": {
+      "en": "Show",
+      "es": "Mostrar",
+      "hu": "Megjelenítés",
+      "it": "Mostra",
+      "pl": "Pokaż",
+      "pt": "Mostrar",
+      "pt-br": "Mostrar",
+      "ru": "Показывать"
+    },
+    "default": "time",
+    "options": [
+      {
+        "id": "time",
+        "name": {
+          "en": "Time",
+          "es": "Hora",
+          "hu": "Idő",
+          "it": "Ora",
+          "pl": "Godzina",
+          "pt": "Hora",
+          "pt-br": "Hora",
+          "ru": "Время"
+        },
+        "value": "false"
+      },
+      {
+        "id": "date",
+        "name": {
+          "en": "Time, seconds and date",
+          "es": "Hora, segundos y fecha",
+          "hu": "Idő, másodpercek és dátum",
+          "it": "Ora, secondi e data",
+          "pl": "Godzina, sekundy i data",
+          "pt": "Hora, segundos e data",
+          "pt-br": "Hora, segundos e data",
+          "ru": "Время, секунды и дата"
+        },
+        "value": "true"
+      }
+    ]
+  }
 }

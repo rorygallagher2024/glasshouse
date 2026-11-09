@@ -2,6 +2,7 @@
  * test/test-controls.js - Unit tests for TV control dispatching and validation
  */
 
+require('./fake-clock').install();
 var assert = require('assert');
 var controls = require('../server/lib/controls');
 var INPUTS = require('../server/lib/names').INPUTS;

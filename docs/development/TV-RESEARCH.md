@@ -3038,3 +3038,66 @@ soundbar (`KHAL_AUDIO_SNDOUT_eARC_OutputType ... codec_type 1`). After
 type MAT`), passed through over eARC (`codec_type 7`), and reported Atmos
 available. Nothing requires the unit; restarting it with HDMI 1 in front
 re-wrote that input's EDID and hot-plugged it, and the app stayed in front.
+
+## No remote key filters on webOS 3 (60UJ6519-ZA, webOS 3.9.3)
+
+- Neither `/usr/lib/qml/KeyFilters`, `/usr/lib/qt5/qml/KeyFilters` nor any
+  `KeyFilters` folder under `/usr/lib/qml` exists, and configd has no
+  `com.webos.surfacemanager.keyFilters` (`missingConfigs`, "No Entry Found").
+  Every Home press opens LG's ribbon (#1222).
+- The remote's Home is `IR_KEY_HOME`, 781 in `/usr/share/X11/xkb/keycodes/lg`
+  (773 as an evdev code), which LG maps to `Qt::Key_Super_L`, the key evdev's
+  125 (`KEY_LEFTMETA`) also gives. The same table is on webOS 4 and 9.
+- On a B8 (webOS 4.4.3), 773 written to the remote's input device
+  (`LGE RCU`, `event1`) reaches a reader of that device but opens nothing in
+  the compositor; 125 written there opens LG's ribbon.
+
+## A web app as the screen saver (OLED65C5PUA, webOS 10.3.1)
+
+Measured on 5 November 2026, with LG's screen saver app's folder bind-mounted
+over by Glasshouse's staged copy, its `appinfo.json` changed from `type: qml`
+to `type: web` and `main` to `web/index.html`, `defaultWindowType:
+screenSaver` kept.
+
+- **sam takes the type change.** The block and release of the one app that
+  moves it between Flutter and QML (`blockSystemApp`, `releaseBlockSystemApp`)
+  also moved it to `web`, without restarting sam.
+- **The web app manager runs it as the screen saver.** Launched through
+  `com.webos.applicationManager/launch`, the page drew full screen over Home,
+  `getPowerState` answered `Screen Saver`, and the app in front stayed
+  `com.webos.app.home`. A 1.3 MB single-file page with WebGL and WebAssembly ran
+  there.
+- **A key ends it, as it ends LG's.** One remote key (Down, sent through the
+  network input service) took the TV back to `Active` and Home; the page did
+  nothing to end itself.
+- **sam keeps the main file as well as the type.** Moving between two web
+  pages of different names (`web/index.html` to `web/probe.html`) left sam
+  opening the first, as `getAppInfo` still named it, until the block and
+  release; the type alone had not changed.
+- **A page in it can use the TV's services.** `PalmServiceBridge` is there,
+  and a page could read `com.webos.service.settings/getSystemSettings`,
+  `com.webos.applicationManager/running`, `getForegroundAppInfo` and
+  `listApps`, and `com.webos.service.tvpower/power/getPowerState`, from
+  `file://` and from a page loaded over `http://` alike. With
+  `requiredPermissions` staged as `[]` instead of LG's `["all"]`, and sam
+  having read it again, every one was still answered: the access comes with
+  the app being LG's own, not with its manifest.
+- **A frame does not shut it out.** A page loaded over `http://` in an
+  `<iframe sandbox="allow-scripts">` of a local page had `PalmServiceBridge`
+  too, and `running`, `listApps` and `getPowerState` were answered. The
+  bridge is put into every frame, so a website cannot be shown in the screen
+  saver without what it runs being able to use the TV's services. A frame
+  without `sandbox` kept the screen saver up as well.
+- **Rereading the app under a showing screen saver breaks tvpower.** A
+  block and release of `com.webos.app.screensaver` while one was on screen
+  killed it (`Screen Saver` to `Active` at once), and a `turnOnScreenSaver`
+  about 3 s later, from the Back, close and request Glasshouse then made,
+  launched the new one, whose window showed for under half a second. tvpower
+  then read `Active` with `processing: "Screen Saver Ready"` and answered
+  every `turnOnScreenSaver` with `Invalid State change Request` and
+  `turnOnScreen` with `power is busy`; nothing short of a reboot cleared it.
+  Reproduced on the first try from Clock to a web one; from a web one to
+  Clock the TV rebooted itself. In "Screen Saver Ready" tvpower waits on its
+  own `applicationManager/launch` of the app. Closing the showing one with
+  Back first, waiting for `Active`, then switching and asking 3 s later
+  worked in both directions, QML to QML and to and from web, every time.

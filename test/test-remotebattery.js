@@ -2,6 +2,7 @@
  * test/test-remotebattery.js - The Magic Remote's battery over Bluetooth
  */
 
+require('./fake-clock').install();
 var assert = require('assert');
 var path = require('path');
 var util = require('../server/lib/util');
