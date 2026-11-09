@@ -62,9 +62,15 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // A press landing on another input switches to it this long after, as
   // LG's input bar does, unless another press moves on first.
   var SWITCH_MS = 1000;
-  var list = [], focus = 0, onPort = null, idle = null, switchTimer = null, closing = false;
+  var list = [], focus = 0, onPort = null, onDevs = null, idle = null, switchTimer = null, closing = false;
 
   function $(id) { return document.getElementById(id); }
+  function isOn(e) {
+    return !!e && e.port === onPort && (!onDevs || onDevs.indexOf(e.id) !== -1);
+  }
+  function isSoleOn(e) {
+    return isOn(e) && (!onDevs || onDevs.length <= 1);
+  }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
@@ -106,7 +112,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   }
   function stillThere() {
     clearTimeout(idle);
-    var onNow = list[focus] && list[focus].port === onPort;
+    var onNow = isSoleOn(list[focus]);
     idle = setTimeout(close, onNow ? IDLE_ON_NOW_MS : IDLE_MS);
   }
 
@@ -119,7 +125,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var order = (cat.order && cat.order.dev) || (cat.devices || []).map(function (d) { return d.id; });
     order.forEach(function (id) {
       var d = byId[id];
-      if (!d || hidden.indexOf(id) !== -1) return;
+      if (!d || d.tuner || hidden.indexOf(id) !== -1) return;
       if (d.unused && layout.hideUnused === true) return;
       out.push(d);
     });
@@ -135,7 +141,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   function render() {
     var html = '';
     list.forEach(function (e, i) {
-      var cls = 'tile' + (i === focus ? ' focus' : '') + (e.port === onPort ? ' now' : '');
+      var cls = 'tile' + (i === focus ? ' focus' : '') + (isOn(e) ? ' now' : '');
       html += '<div class="' + cls + '" data-i="' + i + '"><div class="head">' + e.icon +
         '<div class="txt"><div class="nm">' + esc(e.name) + '</div><div class="path">HDMI ' + esc(e.port) + '</div></div></div></div>';
     });
@@ -150,15 +156,15 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     moved = true;
     var tiles = $('tiles').children;
     for (var k = 0; k < tiles.length; k++) {
-      tiles[k].className = 'tile' + (k === focus ? ' focus' : '') + (list[k].port === onPort ? ' now' : '');
+      tiles[k].className = 'tile' + (k === focus ? ' focus' : '') + (isOn(list[k]) ? ' now' : '');
     }
     stillThere();
-    if (byKey && list[focus].port !== onPort) switchTimer = setTimeout(choose, SWITCH_MS);
+    if (byKey && !isSoleOn(list[focus])) switchTimer = setTimeout(choose, SWITCH_MS);
   }
   function choose() {
     clearTimeout(switchTimer);
     var d = list[focus];
-    if (!d || d.port === onPort) return close();
+    if (!d || isSoleOn(d)) return close();
     clearTimeout(idle);
     launchInput(d, close);
     // The switch happens on the TV whether or not the answer gets back here.
@@ -183,9 +189,9 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   $('tiles').addEventListener('click', function () { choose(); });
   var CACHE = 'glasshouse.inputbar';
   var moved = false, waiting = 0, now = null, cat = null;
-  function focusOn(port) {
+  function focusOn() {
     focus = 0;
-    for (var i = 0; i < list.length; i++) if (list[i].port === port) { focus = i; break; }
+    for (var i = 0; i < list.length; i++) if (isOn(list[i])) { focus = i; break; }
   }
   function show() {
     render();
@@ -201,14 +207,16 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     var fresh = inputsFrom(cat).map(entry);
     if (!fresh.length) return close();
     var port = now && now.kind === 'input' ? now.port : null;
-    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort;
-    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port })); } catch (e) {}
+    var devs = now && now.kind === 'input' && Array.isArray(now.devices) ? now.devices : null;
+    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && JSON.stringify(devs) === JSON.stringify(onDevs);
+    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, onDevs: devs })); } catch (e) {}
     if (same && document.body.className === 'on') return;
     // Moved already: the focus stays on the same input where it is still there.
     var keepId = moved && list[focus] ? list[focus].id : null;
     list = fresh;
     onPort = port;
-    focusOn(onPort);
+    onDevs = devs;
+    focusOn();
     if (keepId) for (var i = 0; i < list.length; i++) if (list[i].id === keepId) focus = i;
     show();
   }
@@ -227,7 +235,8 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
       if (kept && kept.list && kept.list.length) {
         list = kept.list;
         onPort = kept.onPort;
-        focusOn(onPort);
+        onDevs = Array.isArray(kept.onDevs) ? kept.onDevs : null;
+        focusOn();
         show();
       }
     } catch (e) {}

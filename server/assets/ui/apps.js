@@ -427,7 +427,7 @@ async function renderInputBarInputs(rk, writable) {
   (cat.devices || []).forEach(d => { byId[d.id] = d; });
   const order = (cat.order && cat.order.dev) || (cat.devices || []).map(d => d.id);
   const pill = (on, label, attrs) => `<button type="button" class="pill ${on ? 'good' : 'idle'}" ${writable ? '' : 'disabled'} ${attrs}>${esc(label)}</button>`;
-  const rows = order.filter(id => byId[id]).map(id => {
+  const rows = order.filter(id => byId[id] && !byId[id].tuner).map(id => {
     const d = byId[id], shown = hidden.indexOf(id) === -1;
     return `<div class="prot-row"><div class="prot-main">
         <div class="prot-title" translate="no">${esc(d.name)}</div>

@@ -13,7 +13,8 @@
  * seen through applicationManager/running. A preloaded app has no window,
  * takes no keys and leaves the input in front as it was.
  *
- * Offered where it has been tried (webOS 6, a C1 with 6.5.3), and elsewhere
+ * Offered where it has been tried (webOS 6 and 9, a C1 with 6.5.3 and a C2
+ * with 9.2.2), and elsewhere
  * from webOS 4 to 10 once allowExperimentalInputBar is set, from the Server
  * tab. webOS 11's remote keys are LG's own and cannot hand it the further
  * presses (lib/remotekeys.js), so it is not offered there.
@@ -33,7 +34,7 @@ var AFTER_SWITCH_ON_MS = 5000;
 var MAX_FAILURES = 5;
 
 // webOS versions (major) the bar has been tried on.
-var TRIED = [6];
+var TRIED = [6, 9];
 
 var lunaFn = null;
 var wantedFn = function () { return false; };

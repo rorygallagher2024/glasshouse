@@ -95,7 +95,7 @@ It shows the inputs [Glasshouse Home](home.md)'s Inputs row shows, in its order,
 
 Choosing it for a key installs its app, a web app with no tile on the Home screen, `com.tvweb.inputbar`; setting the last key that used it to anything else removes it, as does uninstalling Glasshouse. While a key opens it and the TV is on, Glasshouse keeps the app loaded in the background, hidden and taking no keys, so a press shows it in about 0.4 s on a C1 rather than 0.7 s or more.
 
-It is offered on webOS 6, where it has been tried (a C1 with 6.5.3), and on webOS 4, 5 and 7 to 10 once switched on under **Server** → **Advanced** → **Experimental features**: see [Experimental features](../experimental.md#input-bar). webOS 11's remote keys are LG's own, and cannot hand the bar the further presses, so it is not offered there.
+It is offered on webOS 6 and 9, where it has been tried (a C1 with 6.5.3 and a C2 with 9.2.2), and on webOS 4, 5, 7, 8 and 10 once switched on under **Server** → **Advanced** → **Experimental features**: see [Experimental features](../experimental.md#input-bar). webOS 11's remote keys are LG's own, and cannot hand the bar the further presses, so it is not offered there.
 
 ## Background
 

@@ -3076,5 +3076,13 @@
  "srv.saver.choiceUses": {"text": "{file}: choices и \"choice\" в uses указываются вместе.", "from": "{file}: choices and \"choice\" in uses go together."},
  "srv.saver.stuck": {"text": "Телевизор завис при запуске заставки и не запустит другую, пока его не перезагрузят. Перезагрузите телевизор, чтобы это исправить.", "from": "The TV is stuck starting a screen saver and refuses to start another until it is restarted. Restart the TV to clear it."},
  "srv.saver.notClosed": {"text": "заставка на телевизоре не закрылась, поэтому переключение не выполнено", "from": "the screen saver on the TV did not close, so the switch was left undone"},
- "ss.choice": {"text": "Анимация", "from": "Animation"}
+ "ss.choice": {"text": "Анимация", "from": "Animation"},
+ "apps.inputBar": {"text": "Панель входов", "from": "Input bar"},
+ "apps.inputBar.desc": {"text": "Входы, которые перебирает панель, в порядке Glasshouse Home. Если скрыть вход здесь, он скроется и в Glasshouse Home.", "from": "The inputs the bar steps through, in Glasshouse Home’s order. Hiding one here hides it on Glasshouse Home too."},
+ "apps.inputBar.hideUnused": {"text": "Скрывать входы, к которым ничего не подключено", "from": "Hide inputs with nothing connected"},
+ "server.experimental.inputBar": {"text": "Панель входов", "from": "Input bar"},
+ "server.experimental.inputBar.short": {"text": "Добавляет панель входов в раздел «Кнопки пульта» на вкладке «Приложения»: полосу входов HDMI поверх изображения, переключаемую кнопкой «Вход» на пульте.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
+ "server.experimental.inputBar.warn": {"text": "Проверено только на webOS 6 и 9. При отключении всем использующим её кнопкам возвращается действие LG, а приложение удаляется.", "from": "Tried on webOS 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
+ "srv.remoteKeys.inputBar": {"text": "Панель входов", "from": "Input bar"},
+ "srv.remoteKeys.inputBarInstall": {"text": "Не удалось установить панель входов на телевизор. Повторите попытку через мгновение.", "from": "The input bar could not be put on the TV. Try again in a moment."}
 }

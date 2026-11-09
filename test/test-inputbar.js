@@ -40,10 +40,12 @@ function run(i) {
 }
 
 step(function (next) {
-  setUp('6.5.3');
-  assert.strictEqual(bar.standing(), 'tried');
-  assert.strictEqual(bar.allowed(), true, 'offered on webOS 6 without the switch');
-  setUp('9.2.2');
+  ['6.5.3', '9.2.2'].forEach(function (v) {
+    setUp(v);
+    assert.strictEqual(bar.standing(), 'tried', 'webOS ' + v);
+    assert.strictEqual(bar.allowed(), true, 'offered on webOS ' + v + ' without the switch');
+  });
+  setUp('5.5.0');
   assert.strictEqual(bar.standing(), 'experimental');
   assert.strictEqual(bar.allowed(), false, 'held back elsewhere until switched on');
   config.allowExperimentalInputBar = true;
@@ -58,12 +60,12 @@ step(function (next) {
   });
   setUp(null);
   assert.strictEqual(bar.standing(), 'experimental', 'a version not read is treated as untried');
-  console.log('  ✓ offered on webOS 6, from 4 to 10 with the experimental switch, and never on webOS 11 or before 4');
+  console.log('  ✓ offered on webOS 6 and 9, from 4 to 10 with the experimental switch, and never on webOS 11 or before 4');
   next();
 });
 
 step(function (next) {
-  setUp('9.2.2');
+  setUp('5.5.0');
   bar.setAllowed(true, function (err) {
     assert.ifError(err);
     assert.deepEqual(written.pop(), { allowExperimentalInputBar: true });
@@ -107,7 +109,7 @@ step(function (next) {
   wanted = true;
   on = false;
   bar.poke();
-  setUp('9.2.2');
+  setUp('5.5.0');
   on = true;
   bar.poke();
   realSetTimeout(function () {
