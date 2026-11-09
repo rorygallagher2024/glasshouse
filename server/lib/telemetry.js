@@ -99,6 +99,13 @@ var MEDIA_IDLE = { state: 'idle', playerType: null, fullScreen: false };
  * playing in a pipe it has. On a C1 (webOS 6.4), which has no acb, such an
  * app gets an empty foregroundAppInfo from com.webos.media, as an input does.
  */
+// An app can hold more than one player, a paused one listed before the one
+// playing: the one playing answers for it, then any with a state.
+function playingFirst(list, field) {
+  var withState = list.filter(function (p) { return p && p[field]; });
+  return withState.filter(function (p) { return String(p[field]) === 'playing'; })[0] || withState[0] || null;
+}
+
 function readMediaState(cb, fresh) {
   var ask = fresh ? function (uri, cb2) { lunaFn(uri, {}, cb2); }
                   : function (uri, cb2) { lunaCachedFn(uri, {}, 4000, cb2); };
@@ -106,14 +113,15 @@ function readMediaState(cb, fresh) {
     ask('com.webos.media/getForegroundAppInfo', function (m) {
       var list = (m && m.returnValue !== false && Array.isArray(m.foregroundAppInfo)) ? m.foregroundAppInfo : null;
       if (!list) return cb(null);
-      var app = list.filter(function (a) { return a && a.playState; })[0];
+      var app = playingFirst(list, 'playState');
       if (app) return cb({ state: String(app.playState), playerType: app.type || null, fullScreen: true });
       cb(MEDIA_IDLE, list.length === 0);
     });
   }
   if (acbAbsent) return fromMediaService();
   ask('com.webos.service.acb/getForegroundAppInfo', function (acb) {
-    var pipe = (acb && Array.isArray(acb.acbs)) ? acb.acbs[0] : null;
+    var pipes = (acb && Array.isArray(acb.acbs)) ? acb.acbs : [];
+    var pipe = playingFirst(pipes, 'playStateNow') || pipes[0];
     if (pipe && pipe.playStateNow) {
       return cb({ state: String(pipe.playStateNow), playerType: pipe.playerType || null, fullScreen: pipe.isFullScreen !== false });
     }
