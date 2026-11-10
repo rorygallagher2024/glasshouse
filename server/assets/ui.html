@@ -1280,9 +1280,16 @@
     <div class="prot-row home-gh-row" id="home-preview-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.livePreview">Live preview</div>
-        <div class="prot-desc" data-t="home.livePreviewDesc">A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
+        <div class="prot-desc" data-t="home.livePreviewDesc">A live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-preview" onclick="homeLivePreview()">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-preview-sound-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewSound">Preview sound</div>
+        <div class="prot-desc" data-t="home.previewSoundDesc">The preview plays the sound of the input or channel it shows, rather than none. Switching it changes a preview already playing.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-sound" onclick="homePreviewOption('previewSound')">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row" id="home-preview-always-row" hidden>
       <div class="prot-main">

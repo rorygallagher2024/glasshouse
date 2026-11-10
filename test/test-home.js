@@ -618,10 +618,11 @@ step('the TV\'s tuner is the first tile in the Inputs row, on the channel it was
     home.open({ kind: 'dev', id: 'tv' }, function (r) {
       assert.ok(r.ok);
       assert.deepEqual(tv.launches, [{ id: 'com.webos.app.livetv' }]);
-      home.setLayout({ order: { dev: ['hdmi1', 'tv'] }, previewAlways: true, previewInTile: true }, function (r2) {
+      home.setLayout({ order: { dev: ['hdmi1', 'tv'] }, previewAlways: true, previewInTile: true, previewSound: true }, function (r2) {
         assert.ok(r2.ok);
         assert.strictEqual(r2.layout.previewAlways, true, 'the live preview can be kept on');
         assert.strictEqual(r2.layout.previewInTile, true, 'and shown in its tile');
+        assert.strictEqual(r2.layout.previewSound, true, 'and given its sound');
         home.catalogue(function (c2) {
           assert.deepEqual(c2.order.dev.slice(0, 2), ['hdmi1', 'tv'], 'and once placed, it stays where it was put');
           done();
@@ -658,6 +659,8 @@ step('a TV with no channels tuned has no tuner tile, and the tile will not open'
     assert.strictEqual(home.normalise({}).previewAlways, false, 'the live preview is kept on only once switched on');
     assert.strictEqual(home.normalise({}).previewInTile, false, 'and beside the clock unless put in the tile');
     assert.strictEqual(home.normalise({ previewAlways: true, previewInTile: 'yes' }).previewInTile, false);
+    assert.strictEqual(home.normalise({}).previewSound, false, 'and silent unless its sound is switched on');
+    assert.strictEqual(home.normalise({ previewSound: 'yes' }).previewSound, false);
     home.open({ kind: 'dev', id: 'tv' }, function (r) {
       assert.strictEqual(r.ok, false);
       assert.deepEqual(tv.launches, []);
