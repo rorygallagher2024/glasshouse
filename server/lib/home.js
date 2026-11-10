@@ -314,6 +314,8 @@ var sleeps = 0;
 var powerState = null;
 var wakeTimer = null;
 var wakeRequest = null;
+// The close-then-open still to finish, cleared when the wake is cancelled.
+var wakeOpen = null;
 // Home opened over the input after a wake, until the input has had its chance to take it back.
 var wakeReopen = null;
 var wakeSettleMs = WAKE_SETTLE_MS;
@@ -2490,6 +2492,8 @@ function cancelWake() {
   wakeTimer = null;
   wakeRequest = null;
   wakeReopen = null;
+  // A close started for this wake must not open Home after the wake is over.
+  wakeOpen = null;
 }
 
 /*
@@ -2538,14 +2542,32 @@ function powerStateChanged(raw) {
         if (wakeRequest !== request) return;
         var reason = r && typeof r.reason === 'string' ? r.reason : '';
         if (FULL_HOME_REASONS.indexOf(reason) === -1 || !canOpen()) return cancelWake();
+        var homeId = isStandalone() ? HOME_APP : LG_HOME;
+        var over = request.input;
         cancelWake();
         console.log('home: opening Glasshouse Home over ' + foreground + ' after a wake by ' + reason);
-        var homeId = isStandalone() ? HOME_APP : LG_HOME;
-        launch(homeId, null, function (res) {
+        // Set after cancelWake, which drops a close still in flight.
+        var mine = wakeOpen = { over: over };
+        function opened(res) {
           if (!res.ok) return console.error('home: could not open Glasshouse Home after the wake');
-          wakeReopen = { input: request.input, until: nowMs() + WAKE_REOPEN_MS };
+          wakeReopen = { input: over, until: nowMs() + WAKE_REOPEN_MS };
           watchStart('after the wake', beats, nowMs());
-        });
+        }
+        function openNow() {
+          if (wakeOpen !== mine) return;
+          wakeOpen = null;
+          launch(homeId, null, opened);
+        }
+        /*
+         * The page that stayed through Active Standby keeps a video that
+         * never plays again. On a CX (webOS 5.6.2) an IPTV stream then gave
+         * up with no picture until killApp and a launch, which load a new
+         * page. launch alone brings the old one forward. webOS 11 already
+         * closes and opens the view after a wake. The close is asynchronous,
+         * so a wake cancelled meanwhile does not open Home.
+         */
+        if (isStandalone() || flutterHome()) return openNow();
+        luna('com.palm.webappmanager/killApp', { appId: homeId }, openNow);
       });
     });
   }, wakeSettleMs);

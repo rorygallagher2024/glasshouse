@@ -2204,6 +2204,14 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
 - `homeAutoLaunch` and `checkHomeAutoLaunchValue` are in category `general`;
   asked for under `option` they come back as `errorKey`.
 
+## IPTV after Active Standby (webOS 5.6.2, CX)
+
+Measured on an OLED65CX9LA, Glasshouse 0.143.0, Quick Start+ off. Active Standby, for 8 seconds and for about 3.5 hours, left the server running. The power state went Active Standby to Active, on by `remoteKey`.
+
+- Wake put `com.webos.app.livetv` in front (`bootManager`), and Glasshouse opened `com.webos.app.home` over it 4.5 s later. Both windows are `_WEBOS_WINDOW_TYPE_CARD`. Live TV was hidden as Home was shown. The view answered in 1 s, so it was the page that had stayed up.
+- An IPTV channel then received an MPEG-TS URL and gave up after 12 s with no picture and no media error (`why=nopicture`, `tries=0`). Further channels did the same, including after the screen saver. Another app on the TV played, and the same stream played on another device at the same time.
+- `killApp` of `com.webos.app.home` and a launch loaded a new page. The next channel started in 1.2 s at 1920×1080. A reboot does the same. Closing the app while it was in front made `last_input_handler` open Live TV.
+
 ## Home's launch events (webOS 5.6.2, CX)
 
 - At power-on, `com.webos.app.inputcommon` launches the default home app with
