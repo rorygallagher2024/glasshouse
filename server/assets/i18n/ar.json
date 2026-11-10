@@ -3084,5 +3084,19 @@
  "server.experimental.inputBar.short": {"text": "يتيح شريط المداخل ضمن أزرار الريموت في تبويب التطبيقات: شريط لمداخل HDMI يظهر فوق الصورة، يُتنقّل بينها بزر المدخل في الريموت.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "جُرِّب على webOS 4 و6 و9 فقط. إيقافه يعيد أي زر يستخدمه إلى إعداد LG ويزيل تطبيقه.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "شريط المداخل", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "تعذّر تثبيت شريط المداخل على التلفاز. حاول مرة أخرى بعد لحظات.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "تعذّر تثبيت شريط المداخل على التلفاز. حاول مرة أخرى بعد لحظات.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "home.wall.addPictures": {"from": "Add pictures", "text": "إضافة صور"},
+ "home.wall.everyHour": {"from": "1 hour", "text": "ساعة واحدة"},
+ "home.wall.everyMinutes": {"from": "{n} min", "text": "{n} دقيقة"},
+ "home.wall.pictureCount": {"from": "{n} of {max}", "text": "{n} من {max}"},
+ "home.wall.pictureN": {"from": "Picture {n}", "text": "صورة {n}"},
+ "home.wall.uploadedN": {"from": "{n} of {total} uploaded.", "text": "تم رفع {n} من {total}."},
+ "home.wall.uploadingOf": {"from": "Uploading {n} of {total}…", "text": "جارٍ رفع {n} من {total}…"},
+ "srv.home.wallPicture": {"from": "unknown wallpaper picture", "text": "صورة خلفية غير معروفة"},
+ "srv.home.wallShuffleFull": {"from": "The collection holds {max} pictures. Remove one to add another.", "text": "تتسع المجموعة لـ {max} صورة كحد أقصى. احذف صورة لإضافة أخرى."},
+ "home.wall.setShuffle": {"from": "Your own, shuffled", "text": "صورك الخاصة، عشوائي"},
+ "home.wall.shuffleEvery": {"from": "A new picture every", "text": "صورة جديدة كل"},
+ "home.wall.shuffleRoom": {"from": "The collection holds {max} pictures.", "text": "المجموعة تتسع لـ {max} صورة كحد أقصى."},
+ "home.wall.tvHintShuffle": {"from": "{n} pictures, shown one at a time in a random order. They are added on the browser dashboard’s Home tab.", "text": "{n} صورة، تُعرض واحدة تلو الأخرى بترتيب عشوائي. تُضاف من تبويب «الرئيسية» عبر لوحة تحكم المتصفح."},
+ "home.wall.introShuffle": {"from": "Pictures of your own, up to {max}, shown one at a time in a random order: each comes round once before any comes again.", "text": "صورك الخاصة، حتى {max} صورة، تُعرض واحدة تلو الأخرى بترتيب عشوائي: تظهر كل صورة مرة واحدة قبل تكرار أي منها."}
 }

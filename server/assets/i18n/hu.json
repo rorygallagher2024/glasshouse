@@ -3084,5 +3084,19 @@
  "server.experimental.inputBar.short": {"text": "Felkínálja a bemeneti sávot a Távirányító gombjai alatt az Alkalmazások lapon: a HDMI-bemenetek sávja a kép felett, amelyen a távirányító Bemenet gombjával lehet végiglépkedni.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Csak webOS 4, 6 és 9 rendszeren próbálták ki. Kikapcsolásakor minden gomb, amely ezt használja, visszaáll az LG beállítására, és az alkalmazása törlődik.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Bemeneti sáv", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "A bemeneti sávot nem sikerült feltenni a TV-re. Próbáld újra egy pillanat múlva.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "A bemeneti sávot nem sikerült feltenni a TV-re. Próbáld újra egy pillanat múlva.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "home.wall.addPictures": {"from": "Add pictures", "text": "Képek hozzáadása"},
+ "home.wall.everyHour": {"from": "1 hour", "text": "1 óra"},
+ "home.wall.everyMinutes": {"from": "{n} min", "text": "{n} perc"},
+ "home.wall.pictureCount": {"from": "{n} of {max}", "text": "{n} / {max}"},
+ "home.wall.pictureN": {"from": "Picture {n}", "text": "{n}. kép"},
+ "home.wall.uploadedN": {"from": "{n} of {total} uploaded.", "text": "{n} / {total} feltöltve."},
+ "home.wall.uploadingOf": {"from": "Uploading {n} of {total}…", "text": "{n} / {total} feltöltése…"},
+ "srv.home.wallPicture": {"from": "unknown wallpaper picture", "text": "ismeretlen háttérkép"},
+ "srv.home.wallShuffleFull": {"from": "The collection holds {max} pictures. Remove one to add another.", "text": "A gyűjtemény már {max} képet tartalmaz. Távolítson el egyet egy másik hozzáadásához."},
+ "home.wall.setShuffle": {"from": "Your own, shuffled", "text": "Saját, véletlenszerű"},
+ "home.wall.shuffleEvery": {"from": "A new picture every", "text": "Új kép ennyi időnként:"},
+ "home.wall.shuffleRoom": {"from": "The collection holds {max} pictures.", "text": "A gyűjtemény legfeljebb {max} képet tartalmazhat."},
+ "home.wall.tvHintShuffle": {"from": "{n} pictures, shown one at a time in a random order. They are added on the browser dashboard’s Home tab.", "text": "{n} kép, egyesével véletlenszerű sorrendben megjelenítve. A böngészős vezérlőpult Kezdőlap lapján tölthetők fel."},
+ "home.wall.introShuffle": {"from": "Pictures of your own, up to {max}, shown one at a time in a random order: each comes round once before any comes again.", "text": "Saját képek, legfeljebb {max}, véletlenszerű sorrendben, egyesével megjelenítve: mindegyik egyszer kerül sorra, mielőtt bármelyik megismétlődne."}
 }

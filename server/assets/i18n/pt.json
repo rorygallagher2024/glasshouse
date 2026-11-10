@@ -3084,5 +3084,19 @@
  "server.experimental.inputBar.short": {"text": "Disponibiliza a barra de entradas em Teclas do comando no separador Aplicações: uma faixa das entradas HDMI sobre a imagem, percorrida com a tecla Entrada do comando.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Experimentada apenas no webOS 4, 6 e 9. Desativá-la repõe como a LG tem qualquer tecla que a use e remove a aplicação.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Barra de entradas", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "Não foi possível instalar a barra de entradas na TV. Tente novamente dentro de momentos.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "Não foi possível instalar a barra de entradas na TV. Tente novamente dentro de momentos.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "home.wall.addPictures": {"from": "Add pictures", "text": "Adicionar imagens"},
+ "home.wall.everyHour": {"from": "1 hour", "text": "1 hora"},
+ "home.wall.everyMinutes": {"from": "{n} min", "text": "{n} min"},
+ "home.wall.pictureCount": {"from": "{n} of {max}", "text": "{n} de {max}"},
+ "home.wall.pictureN": {"from": "Picture {n}", "text": "Imagem {n}"},
+ "home.wall.uploadedN": {"from": "{n} of {total} uploaded.", "text": "{n} de {total} carregadas."},
+ "home.wall.uploadingOf": {"from": "Uploading {n} of {total}…", "text": "A carregar {n} de {total}…"},
+ "srv.home.wallPicture": {"from": "unknown wallpaper picture", "text": "imagem de fundo desconhecida"},
+ "srv.home.wallShuffleFull": {"from": "The collection holds {max} pictures. Remove one to add another.", "text": "A coleção já tem {max} imagens. Remova uma para adicionar outra."},
+ "home.wall.setShuffle": {"from": "Your own, shuffled", "text": "As suas, aleatório"},
+ "home.wall.shuffleEvery": {"from": "A new picture every", "text": "Uma nova imagem a cada"},
+ "home.wall.shuffleRoom": {"from": "The collection holds {max} pictures.", "text": "A coleção suporta até {max} imagens."},
+ "home.wall.tvHintShuffle": {"from": "{n} pictures, shown one at a time in a random order. They are added on the browser dashboard’s Home tab.", "text": "{n} imagens, apresentadas uma a uma em ordem aleatória. São adicionadas no separador Início do painel no browser."},
+ "home.wall.introShuffle": {"from": "Pictures of your own, up to {max}, shown one at a time in a random order: each comes round once before any comes again.", "text": "As suas próprias imagens, até {max}, apresentadas uma a uma em ordem aleatória: cada uma é exibida uma vez antes de se repetir."}
 }

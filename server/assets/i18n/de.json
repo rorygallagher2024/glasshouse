@@ -752,5 +752,19 @@
  "home.weather.sunny": {"text": "Sonnig", "from": "Sunny"},
  "home.weather.windy": {"text": "Windig", "from": "Windy"},
  "home.weather.windyVariant": {"text": "Windig", "from": "Windy"},
- "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"}
+ "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"},
+ "home.wall.addPictures": {"from": "Add pictures", "text": "Bilder hinzufügen"},
+ "home.wall.everyHour": {"from": "1 hour", "text": "1 Stunde"},
+ "home.wall.everyMinutes": {"from": "{n} min", "text": "{n} Min."},
+ "home.wall.pictureCount": {"from": "{n} of {max}", "text": "{n} von {max}"},
+ "home.wall.pictureN": {"from": "Picture {n}", "text": "Bild {n}"},
+ "home.wall.uploadedN": {"from": "{n} of {total} uploaded.", "text": "{n} von {total} hochgeladen."},
+ "home.wall.uploadingOf": {"from": "Uploading {n} of {total}…", "text": "Wird hochgeladen ({n} von {total})…"},
+ "srv.home.wallPicture": {"from": "unknown wallpaper picture", "text": "unbekanntes Hintergrundbild"},
+ "srv.home.wallShuffleFull": {"from": "The collection holds {max} pictures. Remove one to add another.", "text": "Die Sammlung enthält bereits {max} Bilder. Entferne eines, um ein weiteres hinzuzufügen."},
+ "home.wall.setShuffle": {"from": "Your own, shuffled", "text": "Eigene, zufällig"},
+ "home.wall.shuffleEvery": {"from": "A new picture every", "text": "Neues Bild alle"},
+ "home.wall.shuffleRoom": {"from": "The collection holds {max} pictures.", "text": "Die Sammlung fasst maximal {max} Bilder."},
+ "home.wall.tvHintShuffle": {"from": "{n} pictures, shown one at a time in a random order. They are added on the browser dashboard’s Home tab.", "text": "{n} Bilder, einzeln in zufälliger Reihenfolge gezeigt. Sie werden im Browser-Dashboard unter Home hinzugefügt."},
+ "home.wall.introShuffle": {"from": "Pictures of your own, up to {max}, shown one at a time in a random order: each comes round once before any comes again.", "text": "Eigene Bilder, bis zu {max}, einzeln in zufälliger Reihenfolge angezeigt: jedes kommt einmal an die Reihe, bevor sich eines wiederholt."}
 }
