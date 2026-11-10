@@ -107,7 +107,7 @@ Removing the app changes nothing else, since the dashboard server continues to r
 
 ### Ambient Light
 
-The **Ambient Light** top-level menu follows Home. **Hue Sync** and **PicCap**
+The **Ambient Light** top-level menu sits between **Audio** and **Screen Saver**. **Hue Sync** and **PicCap**
 have their own categories, in that order, with **Hue Sync Enabled** and
 **PicCap Enabled** switches. An unavailable integration is hidden, including its
 category heading. PicCap supports Hyperion or HyperHDR. All Hue Sync controls are shown directly:

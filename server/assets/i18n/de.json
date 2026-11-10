@@ -763,5 +763,7 @@
  "tv.saver.exclude": {"text": "Drücken Sie OK, um aus der Zufallsrotation auszuschließen", "from": "Press OK to exclude from random rotation"},
  "tv.saver.include": {"text": "Drücken Sie OK, um in die Zufallsrotation aufzunehmen", "from": "Press OK to include in random rotation"},
  "tv.saver.random.hint": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner.", "from": "Picks a different screen saver each time."},
- "tv.saver.random.hintUpNext": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner. Als Nächstes: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
+ "tv.saver.random.hintUpNext": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner. Als Nächstes: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
+  "adv.huesync.desc": {"text": "Startet oder stoppt die Übertragung der Bildschirmfarbdaten an den ausgewählten Entertainment-Bereich für Ambient Light.", "from": "Starts or stops streaming screen colour data to the selected entertainment area for ambient light."},
+  "adv.piccap.desc": {"text": "Startet oder stoppt die Bildschirmaufnahme für Hyperion oder HyperHDR, um Ambient Light bereitzustellen.", "from": "Starts or stops screen capture for Hyperion or HyperHDR to provide ambient light."}
 }

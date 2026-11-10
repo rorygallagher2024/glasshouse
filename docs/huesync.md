@@ -1,6 +1,6 @@
 # Hue Sync
 
-Philips' Hue Sync TV app syncs Philips Hue and Ambience lights to what is on the TV's screen. Where the app is installed on the TV, it registers a background service (`com.lighting.huesync.service`); Glasshouse toggles its streaming through that service, so the light can be switched on and off from the web dashboard or Home Assistant without opening the app on the TV or reaching for the Magic Remote.
+Philips' Hue Sync TV app syncs Philips Hue lights in the selected entertainment area to what is on the TV's screen. Where the app is installed on the TV, it registers a background service (`com.lighting.huesync.service`); Glasshouse toggles its streaming through that service, so the light can be switched on and off from the web dashboard or Home Assistant without opening the app on the TV or reaching for the Magic Remote.
 
 ---
 
@@ -17,8 +17,8 @@ Hue Sync is optional. Glasshouse inspects the TV filesystem for the app's servic
 
 When Hue Sync is installed, the **Ambient Light** page (`/?tab=ambient`), below Home in the sidebar, shows a **Hue Sync** category before PicCap, with a **Hue Sync Enabled** toggle. The **Control** page also has a quick toggle below Playback:
 
-* **On:** Instructs Hue Sync's service to start streaming (`com.lighting.huesync.service/set` with `{"key":"streaming","data":true}`). The Ambience light starts following the screen. The app often does not start on an enable without saying so, so Glasshouse sends the enable, waits 3 seconds and asks the app's own state; if it still is not streaming, it sends the enable again, up to three tries in all: one click is enough.
-* **Off:** Instructs the service to stop (`data: false`). The Ambience light stops, and the app stops streaming colour with it.
+* **On:** Instructs Hue Sync's service to start streaming (`com.lighting.huesync.service/set` with `{"key":"streaming","data":true}`). The selected entertainment area starts following the screen for ambient light. The app often does not start on an enable without saying so, so Glasshouse sends the enable, waits 3 seconds and asks the app's own state; if it still is not streaming, it sends the enable again, up to three tries in all: one click is enough.
+* **Off:** Instructs the service to stop (`data: false`). The app stops streaming colour data to the selected entertainment area.
 
 ### Home Assistant integration
 
@@ -30,7 +30,7 @@ When Hue Sync is answering on the TV, Glasshouse discovers a **Hue Sync** switch
 * **Dynamic discovery:** If Hue Sync is uninstalled or stops answering, Home Assistant discovery is automatically updated to withdraw the entity.
 
 ```yaml
-# Start the Ambience light when film night begins
+# Start ambient light when film night begins
 alias: "Living Room: Hue Sync on at film night"
 trigger:
   - platform: time
@@ -57,7 +57,7 @@ action:
 
 ## Setting up Hue Sync
 
-1. Get the Hue Sync app onto the TV and pair it with your Philips Hue or Ambience lights, following the app's own setup.
+1. Get the Hue Sync app onto the TV and pair it with your Philips Hue lights, following the app's own setup.
 2. Once the app has registered its service on the TV, Glasshouse notices it on the next check and offers the toggle; nothing is asked of TVs that do not have it.
 
 ---

@@ -424,9 +424,9 @@ var TABS = [
   { key: 'game',    label: t('tab.game', 'Game'),         url: '/api/game',        build: gameRows, optional: true },
   { key: 'picture', label: t('tab.picture', 'Picture'),      url: '/api/picture',     build: pictureRows, poll: 5000, optional: true },
   { key: 'audio',   label: t('tab.audio', 'Audio'),        url: '/api/audio?with=settings', build: audioRows, poll: 8000 },
+  { key: 'ambient', label: t('adv.ambient', 'Ambient Light'), url: '/api/stats', build: ambientRows, poll: 5000 },
   { key: 'saver',   label: t('tv.tab.screenSaver', 'Screen Saver'), url: '/api/screensaver', build: saverRows, optional: true },
   { key: 'home',    label: t('tab.home', 'Home'),         url: '/api/home?with=catalogue,channels,lghome', build: homeRows, optional: true },
-  { key: 'ambient', label: t('adv.ambient', 'Ambient Light'), url: '/api/stats', build: ambientRows, poll: 5000 },
   { key: 'privacy', label: t('tab.privacy', 'Privacy'),      url: '/api/privacy',     build: privacyRows },
   { key: 'service', label: t('tv.tab.serviceMenu', 'Service Menu'), url: '/api/servicemenu', build: svcRows },
   { key: 'options', label: t('tv.tab.system', 'System'),       url: '/api/stats?with=settings', build: optionRows, poll: 5000 },
@@ -698,7 +698,7 @@ function ambientRows(d) {
     var writable = pc.writable !== false;
     r.push({ label: t('adv.piccap', 'PicCap Enabled'), value: pc.running ? t('common.on', 'On') : t('common.off', 'Off'),
       cls: writable ? 'act' : '', act: writable ? 'piccap' : null, key: 'piccap', next: !pc.running,
-      hint: t('adv.piccap.desc', 'Captures the screen for Hyperion or HyperHDR to sync the lights behind the TV.'),
+      hint: t('adv.piccap.desc', 'Starts or stops screen capture for Hyperion or HyperHDR to provide ambient light.'),
       press: pc.running ? t('tv.press.turnOff', 'Press OK to turn off') : t('tv.press.turnOn', 'Press OK to turn on') });
   }
   if (!r.length) r.push({ label: t('ambient.none', 'No ambient light integrations found.'), value: '' });
@@ -730,6 +730,7 @@ function huesyncRows(hs) {
       key: key, next: next.value, press: t('tv.game.next', 'Press OK for {name}', { name: next.label }) });
   }
   toggle('streaming', t('adv.huesync', 'Hue Sync Enabled'), hs.streaming === true, 'huesync');
+  r[r.length - 1].hint = t('adv.huesync.desc', 'Starts or stops streaming screen colour data to the selected entertainment area for ambient light.');
   if (settings.brightness !== undefined) {
     r.push({ label: t('adv.huesync.brightness', 'Brightness'), value: withUnit(settings.brightness, '%'),
       cls: can('brightness') ? 'act' : '', act: can('brightness') ? 'huesyncAdjust' : null,

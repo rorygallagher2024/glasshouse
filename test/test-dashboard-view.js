@@ -193,7 +193,8 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
 (function testAmbientIntegrations() {
   var keys = sandbox.TABS.map(function (section) { return section.key; });
   var ambient = sandbox.TABS[keys.indexOf('ambient')];
-  assert.strictEqual(keys.indexOf('ambient'), keys.indexOf('home') + 1, 'Ambient Light follows Home');
+  assert.strictEqual(keys.indexOf('ambient'), keys.indexOf('audio') + 1, 'Ambient Light follows Audio');
+  assert.strictEqual(keys.indexOf('saver'), keys.indexOf('ambient') + 1, 'Screen Saver follows Ambient Light');
   assert.strictEqual(ambient.url, '/api/stats', 'ambient controls need no unrelated LG settings');
   assert.strictEqual(ambient.build, sandbox.ambientRows);
   var pc = { running: true, writable: true };
