@@ -292,6 +292,9 @@ and show none.
 
 From the repository root, `scripts/check-all.sh` runs the checks CI runs, side by side, and shows the output of any that fail. It runs `npm ci` only when `package-lock.json` has changed since the last install, and `--quick` leaves out the dashboard and updater checks. `check-upgrade.js` reads the committed tree, so commit first.
 
+The script requires Bash on the development computer: its `-nt` file timestamp
+comparison is supported by Bash but is not portable to POSIX `sh`.
+
 ```bash
 scripts/check-all.sh
 ```
