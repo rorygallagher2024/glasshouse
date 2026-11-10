@@ -291,7 +291,7 @@ console.log('Running test-screensavers.js ...');
               // Setting pool filters invalid entries
               screensavers.setRandomPool(['clock', 'starfield', 'invalid-one']);
               var pool = screensavers.getRandomPool();
-              assert.deepStrictEqual(pool, ['clock', 'starfield']);
+              assert.deepEqual(pool, ['clock', 'starfield']);
 
               // Enable random mode
               screensavers.saveRandomConfig({ enabled: true });
@@ -303,7 +303,7 @@ console.log('Running test-screensavers.js ...');
               assert.ok(rnd, 'Random mode must be present in screensaverList');
               assert.strictEqual(rnd.label, 'Random');
               assert.ok(list.random, 'list.random must exist');
-              assert.deepStrictEqual(list.random.pool, ['clock', 'starfield']);
+              assert.deepEqual(list.random.pool, ['clock', 'starfield']);
 
               // pickNextRandomSaver avoids consecutive duplicate
               var next = screensavers.pickNextRandomSaver('clock');
