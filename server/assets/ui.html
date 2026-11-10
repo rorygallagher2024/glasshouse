@@ -299,6 +299,15 @@
       <div class="btns" id="inputs"></div>
     </div>
 
+    <div class="set"><div class="lbl" data-t="ctl.playback">Playback</div>
+      <div class="playback-btns">
+        <button onclick="sendCommand('media','rewind')" data-t="ctl.rewind">Rewind</button>
+        <button onclick="sendCommand('media','playPause')" data-t="ctl.playPause">Play / Pause</button>
+        <button onclick="sendCommand('media','stop')" data-t="ctl.stop">Stop</button>
+        <button onclick="sendCommand('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
+      </div>
+    </div>
+
     <div class="set" data-col="0"><div class="lbl"><span data-t="ctl.volume">Volume</span> &middot; <span id="vol" class="num">&mdash;</span></div>
       <div class="vol-row" id="vol-row">
         <div class="vol-wrap" id="vol-wrap" role="group" aria-label="Volume" data-t-aria-label="ctl.volume">
@@ -310,15 +319,6 @@
           <button onclick="sendCommand('volumeStep',1)" aria-label="Volume up" data-t-aria-label="ctl.volumeUp" translate="no">+</button>
         </div>
         <button id="mute" onclick="toggleMute()" data-t="ctl.mute">Mute</button>
-      </div>
-    </div>
-
-    <div class="set"><div class="lbl" data-t="ctl.playback">Playback</div>
-      <div class="playback-btns">
-        <button onclick="sendCommand('media','rewind')" data-t="ctl.rewind">Rewind</button>
-        <button onclick="sendCommand('media','playPause')" data-t="ctl.playPause">Play / Pause</button>
-        <button onclick="sendCommand('media','stop')" data-t="ctl.stop">Stop</button>
-        <button onclick="sendCommand('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
       </div>
     </div>
 
@@ -1435,8 +1435,16 @@
   <div class="sub" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
   <div class="btns wall-choice" id="home-bg-kind"></div>
   <div id="home-bg-pictures">
-    <div class="sub" data-t="home.wall.introPictures">A picture for each part of the day: one of the picture sets, or your own.</div>
+    <div class="sub" id="home-wall-intro"></div>
     <div class="btns wall-choice" id="home-wall-choice"></div>
+    <!-- Your own, shuffled: any number of pictures, one at a time in a random order -->
+    <div id="home-wall-shuffle" hidden>
+      <div class="shuffle-every"><span data-t="home.wall.shuffleEvery">A new picture every</span>
+        <select class="pill-sel" id="home-shuffle-minutes" aria-label="A new picture every" data-t-aria-label="home.wall.shuffleEvery"
+          onchange="homeShuffleMinutes(this.value)"></select></div>
+      <div class="wall-cards" id="home-shuffle"></div>
+      <input type="file" id="home-shuffle-file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="homeShufflePicked(this)">
+    </div>
     <!-- The day as Glasshouse Home shows it: each part's picture across its hours, and where the day is now -->
     <div class="wall-day" id="home-wall-day"></div>
     <div class="wall-cards" id="home-walls"></div>

@@ -79,6 +79,8 @@ var PAGE_PREFIX = 'page:';
 var BROWSER_APP = 'com.webos.app.browser';
 // The moving backgrounds the view can draw in place of the wallpaper pictures.
 var WALL_ANIMS = ['off', 'waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
+// How many minutes each picture of the shuffled collection stays (lib/home-wallpapers).
+var SHUFFLE_MINUTES = [1, 5, 10, 15, 30, 60];
 // The moving backgrounds' colours: auto follows the part of the day; a preset
 // or custom is a background colour and a colour for the light drawn over it.
 var ANIM_THEMES = [
@@ -314,6 +316,8 @@ var sleeps = 0;
 var powerState = null;
 var wakeTimer = null;
 var wakeRequest = null;
+// The close-then-open still to finish, cleared when the wake is cancelled.
+var wakeOpen = null;
 // Home opened over the input after a wake, until the input has had its chance to take it back.
 var wakeReopen = null;
 var wakeSettleMs = WAKE_SETTLE_MS;
@@ -412,6 +416,8 @@ function defaults() {
     animTheme: 'auto',
     animSky: '#0a1f5c',
     animLight: '#4f8dff',
+    // With the owner's pictures shuffled, the minutes each stays before the next.
+    wallShuffleMinutes: 10,
     // The rows centred below the top strip, or along the bottom as on LG's Home.
     rowsBottom: false,
     // standard, or alternative: a smaller clock on the right, and the rows
@@ -508,6 +514,7 @@ function normalise(raw) {
   d.animTheme = raw.animTheme === 'custom' || ANIM_THEMES.some(function (th) { return th.id === raw.animTheme; }) ? raw.animTheme : 'auto';
   d.animSky = HEX_COLOUR.test(raw.animSky) ? String(raw.animSky).toLowerCase() : d.animSky;
   d.animLight = HEX_COLOUR.test(raw.animLight) ? String(raw.animLight).toLowerCase() : d.animLight;
+  d.wallShuffleMinutes = SHUFFLE_MINUTES.indexOf(raw.wallShuffleMinutes) !== -1 ? raw.wallShuffleMinutes : d.wallShuffleMinutes;
   d.search = raw.search === true;
   d.recommended = raw.recommended === true;
   // Its cards come and go with the apps' lists, so it keeps no order of its own.
@@ -666,6 +673,7 @@ function setLayout(body, cb) {
     animTheme: body.animTheme !== undefined ? body.animTheme : c.animTheme,
     animSky: body.animSky !== undefined ? body.animSky : c.animSky,
     animLight: body.animLight !== undefined ? body.animLight : c.animLight,
+    wallShuffleMinutes: body.wallShuffleMinutes !== undefined ? body.wallShuffleMinutes : c.wallShuffleMinutes,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
@@ -708,7 +716,8 @@ function layoutOf(c) {
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
     showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSound: c.previewSound, wallAnim: c.wallAnim,
-    animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES, colours: c.colours,
+    animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
+    wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
 }
@@ -2495,6 +2504,8 @@ function cancelWake() {
   wakeTimer = null;
   wakeRequest = null;
   wakeReopen = null;
+  // A close started for this wake must not open Home after the wake is over.
+  wakeOpen = null;
 }
 
 /*
@@ -2543,14 +2554,32 @@ function powerStateChanged(raw) {
         if (wakeRequest !== request) return;
         var reason = r && typeof r.reason === 'string' ? r.reason : '';
         if (FULL_HOME_REASONS.indexOf(reason) === -1 || !canOpen()) return cancelWake();
+        var homeId = isStandalone() ? HOME_APP : LG_HOME;
+        var over = request.input;
         cancelWake();
         console.log('home: opening Glasshouse Home over ' + foreground + ' after a wake by ' + reason);
-        var homeId = isStandalone() ? HOME_APP : LG_HOME;
-        launch(homeId, null, function (res) {
+        // Set after cancelWake, which drops a close still in flight.
+        var mine = wakeOpen = { over: over };
+        function opened(res) {
           if (!res.ok) return console.error('home: could not open Glasshouse Home after the wake');
-          wakeReopen = { input: request.input, until: nowMs() + WAKE_REOPEN_MS };
+          wakeReopen = { input: over, until: nowMs() + WAKE_REOPEN_MS };
           watchStart('after the wake', beats, nowMs());
-        });
+        }
+        function openNow() {
+          if (wakeOpen !== mine) return;
+          wakeOpen = null;
+          launch(homeId, null, opened);
+        }
+        /*
+         * The page that stayed through Active Standby keeps a video that
+         * never plays again. On a CX (webOS 5.6.2) an IPTV stream then gave
+         * up with no picture until killApp and a launch, which load a new
+         * page. launch alone brings the old one forward. webOS 11 already
+         * closes and opens the view after a wake. The close is asynchronous,
+         * so a wake cancelled meanwhile does not open Home.
+         */
+        if (isStandalone() || flutterHome()) return openNow();
+        luna('com.palm.webappmanager/killApp', { appId: homeId }, openNow);
       });
     });
   }, wakeSettleMs);
@@ -2930,8 +2959,11 @@ module.exports = {
     if (!sup.ok) return cb({ ok: false, error: sup.reason });
     if (body && body.removeUploads === true) return wallpapers.removeUploads(cb);
     if (body && typeof body.remove === 'string') return wallpapers.removeUploads(cb, body.remove);
+    // The shuffled collection: one picture, or every one.
+    if (body && typeof body.removePicture === 'string') return wallpapers.removePictures(cb, body.removePicture);
+    if (body && body.removePictures === true) return wallpapers.removePictures(cb);
     if (body && typeof body.choose === 'string') return wallpapers.choose(body.choose, cb);
-    cb({ ok: false, error: 'removeUploads, remove or choose expected' });
+    cb({ ok: false, error: 'removeUploads, remove, removePicture, removePictures or choose expected' });
   },
   normalise: normalise,
   hideApps: hideApps,
