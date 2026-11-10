@@ -1789,9 +1789,11 @@ async function visitHomeShuffle(browser, base, problems) {
     const seen = [];
     for (let i = 0; i < 4; i++) {
       if (i) await view.clock.runFor(76000);
+      // The next picture shows once it has loaded, which takes real time on a slow machine.
+      const before = seen[seen.length - 1] || null;
       let id = null;
-      for (let k = 0; k < 40 && !(id = await shown()); k++) {
-        await view.clock.runFor(500);
+      for (let k = 0; k < 100 && (!(id = await shown()) || id === before); k++) {
+        await view.clock.runFor(200);
         await view.waitForTimeout(50);
       }
       seen.push(id);
