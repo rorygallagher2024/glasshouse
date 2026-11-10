@@ -615,7 +615,7 @@ button.pill.busy:not([style*="--p"]){
   animation:btnPulse 1.2s ease-in-out infinite;
 }
 .dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,auto);
-      gap:8px;max-width:260px;margin:0 auto 14px}
+      gap:8px;max-width:260px;margin:0 auto 26px}
 /* Its arrows stay where they point in a page laid out right to left. */
 [dir=rtl] .dpad{direction:ltr}
 /* The arrows are glyphs, not words: the button voice everywhere else is

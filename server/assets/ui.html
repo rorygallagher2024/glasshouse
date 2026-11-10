@@ -299,6 +299,15 @@
       <div class="btns" id="inputs"></div>
     </div>
 
+    <div class="set"><div class="lbl" data-t="ctl.playback">Playback</div>
+      <div class="playback-btns">
+        <button onclick="sendCommand('media','rewind')" data-t="ctl.rewind">Rewind</button>
+        <button onclick="sendCommand('media','playPause')" data-t="ctl.playPause">Play / Pause</button>
+        <button onclick="sendCommand('media','stop')" data-t="ctl.stop">Stop</button>
+        <button onclick="sendCommand('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
+      </div>
+    </div>
+
     <div class="set" data-col="0"><div class="lbl"><span data-t="ctl.volume">Volume</span> &middot; <span id="vol" class="num">&mdash;</span></div>
       <div class="vol-row" id="vol-row">
         <div class="vol-wrap" id="vol-wrap" role="group" aria-label="Volume" data-t-aria-label="ctl.volume">
@@ -310,15 +319,6 @@
           <button onclick="sendCommand('volumeStep',1)" aria-label="Volume up" data-t-aria-label="ctl.volumeUp" translate="no">+</button>
         </div>
         <button id="mute" onclick="toggleMute()" data-t="ctl.mute">Mute</button>
-      </div>
-    </div>
-
-    <div class="set"><div class="lbl" data-t="ctl.playback">Playback</div>
-      <div class="playback-btns">
-        <button onclick="sendCommand('media','rewind')" data-t="ctl.rewind">Rewind</button>
-        <button onclick="sendCommand('media','playPause')" data-t="ctl.playPause">Play / Pause</button>
-        <button onclick="sendCommand('media','stop')" data-t="ctl.stop">Stop</button>
-        <button onclick="sendCommand('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
       </div>
     </div>
 
