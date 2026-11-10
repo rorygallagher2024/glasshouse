@@ -74,7 +74,7 @@ async function loadScreensavers() {
     <button class="ss-card${m.active ? ' on' : ''}" data-ss="${esc(m.id)}"
             ${(!m.available || locked) ? 'disabled' : ''}>
       <div class="ss-name"><span>${esc(m.label)}</span>${m.active ? `<span class="ss-tag">${t('ss.inUse', 'In use')}</span>` : ''}</div>
-      <div class="ss-desc">${esc(m.description)}</div>${ssMeta(m)}
+      <div class="ss-desc">${esc(m.description)}</div>${m.id === 'random' && m.active && d.staged ? `<div class="ss-meta">${t('ss.randomUpNext', 'Up next: {name}', { name: saverTitle(d.staged, d.modes) })}</div>` : ''}${ssMeta(m)}
     </button>`).join('');
   // The one in use in view, once: after that the list stays where it was scrolled to.
   const inUse = box.querySelector('.ss-card.on');
@@ -100,6 +100,13 @@ async function loadScreensavers() {
   if (choices) q('ss-choice-lbl').textContent = active.choicesLabel || t('ss.choice', 'Animation');
   if (choices) renderSsPick(choices, d.choice, locked);
   else ssPickOpen(false);
+
+  const isRandom = d.current === 'random';
+  const poolRow = q('ss-pool-row');
+  if (poolRow) {
+    poolRow.hidden = !isRandom;
+    if (isRandom) renderSsPool(d, locked);
+  }
 
   /* Where LG's screen saver is built differently from ours, the TV has to
      restart its app manager to move between them, and nothing answers until it
@@ -197,6 +204,48 @@ async function pickSsChoice(id) {
   if (cur && cur.dataset.id === id) return;
   q('ss-choice').disabled = true;
   await sendCommand('screensaverMode', { mode: ssCurrent, choice: id });
+  loadScreensavers();
+}
+
+function saverTitle(id, modes) {
+  const m = (modes || []).find(x => x.id === id);
+  return m ? m.label : id;
+}
+
+function renderSsPool(d, locked) {
+  const box = q('ss-pool-box');
+  const countEl = q('ss-pool-count');
+  if (!box) return;
+  const pool = (d.random && d.random.pool) || [];
+  const candidates = (d.modes || []).filter(m => m.id !== 'stock' && m.id !== 'random' && !m.fromApp);
+  if (countEl) countEl.textContent = t('ss.poolCount', '{n} of {total} selected', { n: pool.length, total: candidates.length });
+  const allBtn = q('ss-pool-all'), noneBtn = q('ss-pool-none');
+  if (allBtn) allBtn.disabled = locked;
+  if (noneBtn) noneBtn.disabled = locked;
+  box.innerHTML = candidates.map(m => {
+    const inPool = pool.includes(m.id);
+    const dis = locked || !m.available;
+    return `<label class="ss-pool-item${dis ? ' dis' : ''}">
+      <input type="checkbox" data-id="${esc(m.id)}" ${inPool ? 'checked' : ''} ${dis ? 'disabled' : ''} onchange="ssPoolToggle('${esc(m.id)}')">
+      <span class="ss-pool-name">${esc(m.label)}</span>
+    </label>`;
+  }).join('');
+}
+
+async function ssPoolToggle(id) {
+  await sendCommand('screensaverRandomPool', { toggle: id });
+  loadScreensavers();
+}
+
+async function ssPoolSelectAll(selectAll) {
+  let d;
+  try {
+    d = await (await fetch(api('/api/screensaver'))).json();
+  } catch (e) { return; }
+  if (!d || !d.modes) return;
+  const candidates = d.modes.filter(m => m.id !== 'stock' && m.id !== 'random' && !m.fromApp && m.available !== false);
+  const ids = selectAll ? candidates.map(m => m.id) : [];
+  await sendCommand('screensaverRandomPool', ids);
   loadScreensavers();
 }
 

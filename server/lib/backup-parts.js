@@ -335,7 +335,7 @@ var PARTS = [
     },
     read: function (cb) { cb({ mode: screensavers.screensaverMode(), level: screensavers.screensaverLevel() }); },
     refuse: function (v) {
-      var hit = screensavers.screensaverList().filter(function (s) { return s.id === v.mode; })[0];
+      var hit = screensavers.screensaverList().modes.filter(function (s) { return s.id === v.mode; })[0];
       return !hit ? 'absent' : !hit.available ? 'inactive' : null;
     },
     write: function (v, cb) { control('screensaverMode', v, cb); }
@@ -364,6 +364,7 @@ var NOT_CARRIED = {
   resetAdId: 'action', clearAdCookies: 'action', privacyAllOff: 'action', sleepTimer: 'action',
   piccap: 'action', huesync: 'action', serviceMenuOpen: 'action', tvAppInstall: 'action', tvAppRemove: 'action',
   rcu: 'action', keyboardText: 'action', keyboardKey: 'action', screensaver: 'action', toast: 'action',
+  screensaverRandomPool: 'choose',
   powerOn: 'action', powerOff: 'action', reboot: 'action', refresherSchedule: 'action', refresherCancel: 'action',
   updateCheck: 'action', update: 'action', updateRollback: 'action', clearHistory: 'action',
   // Picture settings are kept per input and picture mode, and suit the panel.

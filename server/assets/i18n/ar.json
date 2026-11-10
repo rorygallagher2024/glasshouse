@@ -3084,5 +3084,16 @@
  "server.experimental.inputBar.short": {"text": "يتيح شريط المداخل ضمن أزرار الريموت في تبويب التطبيقات: شريط لمداخل HDMI يظهر فوق الصورة، يُتنقّل بينها بزر المدخل في الريموت.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "جُرِّب على webOS 4 و6 و9 فقط. إيقافه يعيد أي زر يستخدمه إلى إعداد LG ويزيل تطبيقه.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "شريط المداخل", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "تعذّر تثبيت شريط المداخل على التلفاز. حاول مرة أخرى بعد لحظات.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "تعذّر تثبيت شريط المداخل على التلفاز. حاول مرة أخرى بعد لحظات.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "srv.saver.random": {"text": "عشوائي", "from": "Random"},
+ "srv.saver.random.desc": {"text": "يختار شاشة توقف مختلفة في كل مرة تظهر فيها شاشة التوقف.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "تم تحديد {n} من {total}", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "إلغاء تحديد الكل", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "تحديد الكل", "from": "Select all"},
+ "ss.poolTitle": {"text": "المدرجة في التدوير", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "التالي: {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "اضغط على OK للاستبعاد من التدوير العشوائي", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "اضغط على OK للتضمين في التدوير العشوائي", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "يختار شاشة توقف مختلفة في كل مرة.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "يختار شاشة توقف مختلفة في كل مرة. التالي: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
 }

@@ -3084,5 +3084,16 @@
  "server.experimental.inputBar.short": {"text": "Disponibiliza a barra de entradas em Teclas do comando no separador Aplicações: uma faixa das entradas HDMI sobre a imagem, percorrida com a tecla Entrada do comando.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Experimentada apenas no webOS 4, 6 e 9. Desativá-la repõe como a LG tem qualquer tecla que a use e remove a aplicação.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Barra de entradas", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "Não foi possível instalar a barra de entradas na TV. Tente novamente dentro de momentos.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "Não foi possível instalar a barra de entradas na TV. Tente novamente dentro de momentos.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "srv.saver.random": {"text": "Aleatório", "from": "Random"},
+ "srv.saver.random.desc": {"text": "Escolhe um protetor de ecrã diferente cada vez que o protetor aparece.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "{n} de {total} selecionados", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "Desmarcar tudo", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "Selecionar tudo", "from": "Select all"},
+ "ss.poolTitle": {"text": "Incluídos na rotação", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "A seguir: {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "Prima OK para excluir da rotação aleatória", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "Prima OK para incluir na rotação aleatória", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "Escolhe um protetor de ecrã diferente de cada vez.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "Escolhe um protetor de ecrã diferente de cada vez. A seguir: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
 }
