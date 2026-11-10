@@ -228,12 +228,13 @@ Hue Sync setting controls call the installed app's own service to change its
 brightness, intensity, synchronization mode, entertainment area, per-mode
 background light and automatic start. They do not write Glasshouse configuration
 or enter backups: the settings belong to the Hue Sync app. Background-light and
-auto-start setters are confirmed by a retail-app capture; Glasshouse itself
-still requires hardware testing. Automatic-start notifications use the same
+auto-start setters are confirmed by a retail-app capture. Automatic-start
+notifications use the same
 boolean setter. A read-only Hue Sync subscription keeps the web, TV and MQTT controls current;
 pairing, reset, analytics and logging-upload actions are not invoked.
 
-Ambient Light has its own top-level page after Home in both dashboards. It holds
+Ambient Light has its own top-level page after Home in the web dashboard and
+between Audio and Screen Saver in the TV app. It holds
 separate Hue Sync and PicCap categories, in that order, with independent
 Hue Sync Enabled and PicCap Enabled switches and all supported settings shown
 directly. Unavailable integrations and their headings are hidden. The web

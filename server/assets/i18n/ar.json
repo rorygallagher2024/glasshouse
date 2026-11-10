@@ -3098,5 +3098,20 @@
  "tv.saver.random.hintUpNext": {"text": "يختار شاشة توقف مختلفة في كل مرة. التالي: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
  "ambient.none": {"from": "No ambient light integrations found.", "text": "لم يتم العثور على أي تكاملات للإضاءة المحيطة."},
  "adv.huesync.title": {"from": "Hue Sync", "text": "Hue Sync"},
- "ambient.piccap.title": {"from": "PicCap", "text": "PicCap"}
+ "ambient.piccap.title": {"from": "PicCap", "text": "PicCap"},
+ "adv.huesync.autostart": {"text": "بدء التشغيل التلقائي", "from": "Automatic start"},
+ "adv.huesync.autostartnotification": {"text": "إشعار بدء التشغيل التلقائي", "from": "Automatic start notification"},
+ "adv.huesync.backgroundlightninggames": {"text": "الإضاءة الخلفية (الألعاب)", "from": "Background light (game)"},
+ "adv.huesync.backgroundlightningvideo": {"text": "الإضاءة الخلفية (الفيديو)", "from": "Background light (video)"},
+ "adv.huesync.brightness": {"text": "السطوع", "from": "Brightness"},
+ "adv.huesync.currentec": {"text": "منطقة الترفيه", "from": "Entertainment area"},
+ "adv.huesync.extreme": {"text": "قصوى", "from": "Extreme"},
+ "adv.huesync.game": {"text": "ألعاب", "from": "Game"},
+ "adv.huesync.high": {"text": "عالية", "from": "High"},
+ "adv.huesync.intensity": {"text": "الشدة", "from": "Intensity"},
+ "adv.huesync.moderate": {"text": "متوسطة", "from": "Moderate"},
+ "adv.huesync.subtle": {"text": "خفيفة", "from": "Subtle"},
+ "adv.huesync.syncmode": {"text": "وضع المزامنة", "from": "Synchronization mode"},
+ "adv.huesync.video": {"text": "فيديو", "from": "Video"},
+ "srv.huesync.notReady": {"text": "Hue Sync مشغول أو غير جاهز", "from": "Hue Sync is busy or not ready"}
 }

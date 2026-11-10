@@ -3098,5 +3098,20 @@
  "tv.saver.random.hintUpNext": {"text": "Minden alkalommal másik képernyővédőt választ. Következő: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
  "ambient.none": {"from": "No ambient light integrations found.", "text": "Nem található hangulatvilágítás-integráció."},
  "adv.huesync.title": {"from": "Hue Sync", "text": "Hue Sync"},
- "ambient.piccap.title": {"from": "PicCap", "text": "PicCap"}
+ "ambient.piccap.title": {"from": "PicCap", "text": "PicCap"},
+ "adv.huesync.autostart": {"text": "Automatikus indítás", "from": "Automatic start"},
+ "adv.huesync.autostartnotification": {"text": "Értesítés az automatikus indításról", "from": "Automatic start notification"},
+ "adv.huesync.backgroundlightninggames": {"text": "Háttérvilágítás (játék)", "from": "Background light (game)"},
+ "adv.huesync.backgroundlightningvideo": {"text": "Háttérvilágítás (videó)", "from": "Background light (video)"},
+ "adv.huesync.brightness": {"text": "Fényerő", "from": "Brightness"},
+ "adv.huesync.currentec": {"text": "Szórakoztató terület", "from": "Entertainment area"},
+ "adv.huesync.extreme": {"text": "Extrém", "from": "Extreme"},
+ "adv.huesync.game": {"text": "Játék", "from": "Game"},
+ "adv.huesync.high": {"text": "Magas", "from": "High"},
+ "adv.huesync.intensity": {"text": "Intenzitás", "from": "Intensity"},
+ "adv.huesync.moderate": {"text": "Mérsékelt", "from": "Moderate"},
+ "adv.huesync.subtle": {"text": "Visszafogott", "from": "Subtle"},
+ "adv.huesync.syncmode": {"text": "Szinkronizálási mód", "from": "Synchronization mode"},
+ "adv.huesync.video": {"text": "Videó", "from": "Video"},
+ "srv.huesync.notReady": {"text": "A Hue Sync foglalt vagy nem áll készen", "from": "Hue Sync is busy or not ready"}
 }

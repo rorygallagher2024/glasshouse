@@ -568,8 +568,9 @@ missing JSON properties become `none` rather than undefined.
 The Hue Sync event tests also verify that internal readiness and busy status
 create no Home Assistant diagnostic entities or diagnostic MQTT publications.
 
-Ambient Light dashboard checks cover the top-level page below Home, every Hue
-Sync setting directly accessible, and independent PicCap/Hue Sync switches. The
+Ambient Light dashboard checks cover the web page below Home, the TV menu
+between Audio and Screen Saver, every Hue Sync setting directly accessible, and
+independent PicCap/Hue Sync switches. The
 web Control shortcuts stay below Playback and share state and write permissions
 with Ambient Light. Checks cover narrow/light and wide/dark layouts, native
 command types, duplicate area names, failed writes, read-only/busy states and

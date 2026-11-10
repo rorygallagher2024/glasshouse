@@ -3098,5 +3098,20 @@
  "tv.saver.random.hintUpNext": {"text": "Sceglie un salvaschermo diverso ogni volta. Prossimo: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
  "ambient.none": {"from": "No ambient light integrations found.", "text": "Nessuna integrazione di illuminazione ambientale trovata."},
  "adv.huesync.title": {"from": "Hue Sync", "text": "Hue Sync"},
- "ambient.piccap.title": {"from": "PicCap", "text": "PicCap"}
+ "ambient.piccap.title": {"from": "PicCap", "text": "PicCap"},
+ "adv.huesync.autostart": {"text": "Avvio automatico", "from": "Automatic start"},
+ "adv.huesync.autostartnotification": {"text": "Notifica di avvio automatico", "from": "Automatic start notification"},
+ "adv.huesync.backgroundlightninggames": {"text": "Illuminazione di fondo (gioco)", "from": "Background light (game)"},
+ "adv.huesync.backgroundlightningvideo": {"text": "Illuminazione di fondo (video)", "from": "Background light (video)"},
+ "adv.huesync.brightness": {"text": "Luminosità", "from": "Brightness"},
+ "adv.huesync.currentec": {"text": "Area di intrattenimento", "from": "Entertainment area"},
+ "adv.huesync.extreme": {"text": "Estrema", "from": "Extreme"},
+ "adv.huesync.game": {"text": "Gioco", "from": "Game"},
+ "adv.huesync.high": {"text": "Alta", "from": "High"},
+ "adv.huesync.intensity": {"text": "Intensità", "from": "Intensity"},
+ "adv.huesync.moderate": {"text": "Moderata", "from": "Moderate"},
+ "adv.huesync.subtle": {"text": "Tenue", "from": "Subtle"},
+ "adv.huesync.syncmode": {"text": "Modalità di sincronizzazione", "from": "Synchronization mode"},
+ "adv.huesync.video": {"text": "Video", "from": "Video"},
+ "srv.huesync.notReady": {"text": "Hue Sync è occupato o non è pronto", "from": "Hue Sync is busy or not ready"}
 }
