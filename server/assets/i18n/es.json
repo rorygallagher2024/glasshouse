@@ -3084,5 +3084,16 @@
  "server.experimental.inputBar.short": {"text": "Ofrece la barra de entradas en Teclas del mando, en la pestaña Aplicaciones: una franja con las entradas HDMI sobre la imagen, por la que se avanza con el botón Entrada del mando.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Probado solo en webOS 4, 6 y 9. Desactivarlo devuelve a como lo tiene LG cualquier tecla que la use y elimina su aplicación.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Barra de entradas", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "No se pudo instalar la barra de entradas en la TV. Inténtalo de nuevo en un momento.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "No se pudo instalar la barra de entradas en la TV. Inténtalo de nuevo en un momento.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "srv.saver.random": {"text": "Aleatorio", "from": "Random"},
+ "srv.saver.random.desc": {"text": "Elige un salvapantallas diferente cada vez que aparece.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "{n} de {total} seleccionados", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "Deseleccionar todo", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "Seleccionar todo", "from": "Select all"},
+ "ss.poolTitle": {"text": "Incluidos en la rotación", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "A continuación: {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "Pulsa OK para excluir de la rotación aleatoria", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "Pulsa OK para incluir en la rotación aleatoria", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "Elige un salvapantallas diferente cada vez.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "Elige un salvapantallas diferente cada vez. A continuación: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
 }

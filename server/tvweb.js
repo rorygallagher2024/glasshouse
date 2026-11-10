@@ -623,6 +623,7 @@ var liveState = stateModule.init({
   onTvChange: function (ev) {
     // Leaving an input drops game.js's bind, without waiting for someone to ask.
     if (ev.group === 'application' && ev.key === 'app_id') game.appChanged(ev.value);
+    if (ev.group === 'power' && ev.key === 'state') screensavers.onPowerChange(ev.value);
     tvChanged(ev);
   }
 });

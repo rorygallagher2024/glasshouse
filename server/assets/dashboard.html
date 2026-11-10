@@ -858,6 +858,14 @@ function oledRows(d) {
   return r;
 }
 
+function saverItemTitle(modes, id) {
+  if (!modes) return id;
+  for (var i = 0; i < modes.length; i++) {
+    if (modes[i].id === id) return modes[i].label;
+  }
+  return id;
+}
+
 function saverRows(d) {
   if (!d || !d.ok || !d.modes) return [];
   var r = [head(t('tv.saver.head.screenSaver', 'Screen saver'))];
@@ -886,17 +894,41 @@ function saverRows(d) {
              hint: t('ss.external.active', 'A third-party homebrew screen saver is currently active on the TV. Selecting a Glasshouse screen saver will replace it.') });
   }
   d.modes.filter(function (m) { return m.available || (d.held && m.active); }).forEach(function (m) {
+    var hint = m.id === 'stock'
+      ? t('tv.saver.stock.hint', 'LG’s own screen saver.')
+      : m.id === 'random'
+        ? (m.active && d.staged
+            ? t('tv.saver.random.hintUpNext', 'Picks a different screen saver each time. Up next: {name}.', { name: saverItemTitle(d.modes, d.staged) })
+            : t('tv.saver.random.hint', 'Picks a different screen saver each time.'))
+        : m.fromApp ? t('tv.saver.app.hint', 'From the {app} app. Any settings it has are in that app.', { app: m.fromApp })
+        : t('tv.saver.ours.hint', 'Replaces LG’s screen saver. Everything on it drifts slowly so no pixel holds the same image.');
     r.push({ label: m.label, value: m.active ? t('ss.inUse', 'In use') : '', cls: m.active ? 'on' : '',
              act: d.writable && !busy ? 'saver' : null, key: m.id,
              press: m.active ? t('tv.saver.alreadyInUse', 'Already in use')
                : busy ? t('tv.saver.waitForSwitch', 'Wait for the switch to finish')
                : slow(m) ? t('tv.saver.useSlow', 'Press OK to use this one. The screen goes dark for about a minute')
                : t('tv.saver.use', 'Press OK to use this one'),
-             hint: m.id === 'stock'
-               ? t('tv.saver.stock.hint', 'LG’s own screen saver.')
-               : m.fromApp ? t('tv.saver.app.hint', 'From the {app} app. Any settings it has are in that app.', { app: m.fromApp })
-               : t('tv.saver.ours.hint', 'Replaces LG’s screen saver. Everything on it drifts slowly so no pixel holds the same image.') });
+             hint: hint });
   });
+
+  if (d.current === 'random' && d.writable && !busy) {
+    r.push(head(t('ss.poolTitle', 'Included in rotation')));
+    var pool = (d.random && d.random.pool) || [];
+    d.modes.forEach(function (m) {
+      if (m.id === 'stock' || m.id === 'random' || m.fromApp) return;
+      var inPool = pool.indexOf(m.id) !== -1;
+      r.push({
+        label: m.label,
+        value: inPool ? t('common.on', 'On') : t('common.off', 'Off'),
+        cls: inPool ? 'on' : 'off',
+        act: 'saverPoolToggle',
+        key: m.id,
+        press: inPool ? t('tv.saver.exclude', 'Press OK to exclude from random rotation')
+                      : t('tv.saver.include', 'Press OK to include in random rotation'),
+        hint: m.description
+      });
+    });
+  }
   // Brightness only for the screen savers drawn here, as in the browser
   // dashboard: LG's own is not ours to dim. The mode goes with it, since both
   // are staged into the same file.
@@ -3334,6 +3366,8 @@ function activate() {
       return send({ action: 'refresherCancel' }, t('tv.oled.refresherCancelled', 'Refresher cancelled'));
     case 'saver':
       return send({ action: 'screensaverMode', value: r.key });
+    case 'saverPoolToggle':
+      return send({ action: 'screensaverRandomPool', value: { toggle: r.key } });
     case 'homeSwitch':
       if (confirmFirst(r, r.on ? t('home.confirmOff', 'Press again to use LG Home') : t('home.confirmOn', 'Press again to switch on'))) return;
       // Switched on from here, it is Glasshouse Home's own view, not a custom launcher left chosen.

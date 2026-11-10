@@ -880,6 +880,15 @@
     </div>
   </div>
 
+  <div class="ss-level-row" id="ss-pool-row" hidden>
+    <div class="ss-level-lbl"><span data-t="ss.poolTitle">Included in rotation</span> &middot; <span id="ss-pool-count" class="num">&mdash;</span></div>
+    <div class="ss-pool-actions">
+      <button type="button" class="ss-pool-btn" id="ss-pool-all" onclick="ssPoolSelectAll(true)" data-t="ss.poolSelectAll">Select all</button>
+      <button type="button" class="ss-pool-btn" id="ss-pool-none" onclick="ssPoolSelectAll(false)" data-t="ss.poolDeselectAll">Deselect all</button>
+    </div>
+    <div class="ss-pool-box" id="ss-pool-box"></div>
+  </div>
+
   <div class="ss-level-row">
     <div class="ss-level-lbl" data-t="ss.showNow">Show it now</div>
     <div class="btns">

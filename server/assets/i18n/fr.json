@@ -3084,5 +3084,16 @@
  "server.experimental.inputBar.short": {"text": "Propose la barre des entrées sous Touches de la télécommande dans l’onglet Applications : un bandeau des entrées HDMI sur l’image, parcouru avec la touche Entrée de la télécommande.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Essayé sur webOS 4, 6 et 9 uniquement. La désactiver remet comme sur LG toute touche qui l’utilise et supprime son application.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Barre des entrées", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "La barre des entrées n’a pas pu être installée sur le téléviseur. Réessayez dans un instant.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "La barre des entrées n’a pas pu être installée sur le téléviseur. Réessayez dans un instant.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "srv.saver.random": {"text": "Aléatoire", "from": "Random"},
+ "srv.saver.random.desc": {"text": "Choisit un économiseur d'écran différent chaque fois que l'économiseur apparaît.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "{n} sur {total} sélectionnés", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "Tout désélectionner", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "Tout sélectionner", "from": "Select all"},
+ "ss.poolTitle": {"text": "Inclus dans la rotation", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "À suivre : {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "Appuyez sur OK pour exclure de la rotation aléatoire", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "Appuyez sur OK pour inclure dans la rotation aléatoire", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "Choisit un économiseur d'écran différent à chaque fois.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "Choisit un économiseur d'écran différent à chaque fois. À suivre : {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
 }

@@ -3084,5 +3084,16 @@
  "server.experimental.inputBar.short": {"text": "Udostępnia pasek wejść w sekcji Przyciski pilota na karcie Aplikacje: pasek wejść HDMI wyświetlany na obrazie, przełączany przyciskiem Wejście na pilocie.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Przetestowano tylko na webOS 4, 6 i 9. Wyłączenie przywraca wszystkim korzystającym z niego przyciskom działanie LG i usuwa jego aplikację.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Pasek wejść", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "Nie udało się zainstalować paska wejść na telewizorze. Spróbuj ponownie za chwilę.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "Nie udało się zainstalować paska wejść na telewizorze. Spróbuj ponownie za chwilę.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "srv.saver.random": {"text": "Losowy", "from": "Random"},
+ "srv.saver.random.desc": {"text": "Wybiera inny wygaszacz ekranu za każdym razem, gdy się pojawia.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "Wybrano {n} z {total}", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "Odznacz wszystko", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "Zaznacz wszystko", "from": "Select all"},
+ "ss.poolTitle": {"text": "Zawarte w rotacji", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "Następny: {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "Naciśnij OK, aby wykluczyć z losowej rotacji", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "Naciśnij OK, aby dołączyć do losowej rotacji", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "Wybiera inny wygaszacz ekranu za każdym razem.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "Wybiera inny wygaszacz ekranu za każdym razem. Następny: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
 }

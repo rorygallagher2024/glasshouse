@@ -769,6 +769,21 @@ button.key-hit{background:var(--w10)}
 .ss-pick-opt{padding:8px 14px 8px 24px;font-size:14px;color:var(--w90);cursor:pointer}
 .ss-pick-opt:hover,.ss-pick-opt.act{background:rgba(var(--fg),.07);color:var(--w100)}
 .ss-pick-opt[aria-selected="true"]{color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
+.ss-pool-actions{display:flex;gap:8px;margin-bottom:8px;max-width:340px}
+.ss-pool-btn{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;min-height:0;
+  color:var(--w60);border:1px solid var(--w12);border-radius:2px;background:transparent;cursor:pointer}
+.ss-pool-btn:hover:not([disabled]){color:var(--w100);background:rgba(var(--fg),.04)}
+.ss-pool-btn[disabled]{opacity:.45;cursor:default}
+.ss-pool-box{max-height:260px;overflow-y:auto;border:1px solid var(--w12);border-radius:2px;padding:4px;
+  overscroll-behavior:contain;max-width:340px}
+.ss-pool-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:2px;
+  font-size:13.5px;color:var(--w90);cursor:pointer;user-select:none;transition:background .12s}
+.ss-pool-item:hover{background:rgba(var(--fg),.04)}
+.ss-pool-item.dis{cursor:default;opacity:.45}
+.ss-pool-item.dis:hover{background:transparent}
+.ss-pool-item input[type="checkbox"]{width:16px;height:16px;margin:0;cursor:pointer;flex-shrink:0;accent-color:var(--green)}
+.ss-pool-item.dis input[type="checkbox"]{cursor:default}
+.ss-pool-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .upd{max-width:760px;margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
