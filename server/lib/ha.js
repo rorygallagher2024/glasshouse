@@ -17,7 +17,9 @@ var APP_ID_RE = require('./iconserver').APP_ID_RE;
 // [id, name] pairs, a name made unique with its id where two are the same.
 function ssChoices() {
   var seen = {};
-  return screensavers.catalog().filter(function (e) { return !e.problem; }).map(function (e) {
+  var list = screensavers.catalog().filter(function (e) { return !e.problem; });
+  if (screensavers.RANDOM) list.splice(1, 0, screensavers.RANDOM);
+  return list.map(function (e) {
     var name = seen[e.label] ? e.label + ' (' + e.id + ')' : e.label;
     seen[name] = true;
     return [e.id, name];

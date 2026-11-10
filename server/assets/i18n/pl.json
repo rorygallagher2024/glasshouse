@@ -3098,5 +3098,16 @@
  "home.tv.liveAsk": {"text": "Wrócić na żywo?", "from": "Back to live?"},
  "home.tv.liveAskDetail": {"text": "OK przechodzi na żywo. Wstecz zostaje tutaj.", "from": "OK goes to live. Back stays here."},
  "home.tv.zapAsk": {"text": "Zmienić kanał?", "from": "Change channel?"},
- "home.tv.zapAskDetail": {"text": "Nagranie tego kanału zostanie utracone. OK zmienia. Wstecz zostaje tutaj.", "from": "The recording of this channel is lost. OK changes. Back stays here."}
+ "home.tv.zapAskDetail": {"text": "Nagranie tego kanału zostanie utracone. OK zmienia. Wstecz zostaje tutaj.", "from": "The recording of this channel is lost. OK changes. Back stays here."},
+ "srv.saver.random": {"text": "Losowy", "from": "Random"},
+ "srv.saver.random.desc": {"text": "Wybiera inny wygaszacz ekranu za każdym razem, gdy się pojawia.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "Wybrano {n} z {total}", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "Odznacz wszystko", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "Zaznacz wszystko", "from": "Select all"},
+ "ss.poolTitle": {"text": "Zawarte w rotacji", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "Następny: {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "Naciśnij OK, aby wykluczyć z losowej rotacji", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "Naciśnij OK, aby dołączyć do losowej rotacji", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "Wybiera inny wygaszacz ekranu za każdym razem.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "Wybiera inny wygaszacz ekranu za każdym razem. Następny: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
 }

@@ -762,5 +762,16 @@
  "home.tv.liveAsk": {"text": "Zurück zu live?", "from": "Back to live?"},
  "home.tv.liveAskDetail": {"text": "OK springt zu live. Zurück bleibt hier.", "from": "OK goes to live. Back stays here."},
  "home.tv.zapAsk": {"text": "Sender wechseln?", "from": "Change channel?"},
- "home.tv.zapAskDetail": {"text": "Die Aufnahme dieses Senders geht verloren. OK wechselt. Zurück bleibt hier.", "from": "The recording of this channel is lost. OK changes. Back stays here."}
+ "home.tv.zapAskDetail": {"text": "Die Aufnahme dieses Senders geht verloren. OK wechselt. Zurück bleibt hier.", "from": "The recording of this channel is lost. OK changes. Back stays here."},
+ "srv.saver.random": {"text": "Zufällig", "from": "Random"},
+ "srv.saver.random.desc": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner, wenn der Bildschirmschoner angezeigt wird.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "{n} von {total} ausgewählt", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "Alle abwählen", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "Alle auswählen", "from": "Select all"},
+ "ss.poolTitle": {"text": "In Rotation enthalten", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "Als Nächstes: {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "Drücken Sie OK, um aus der Zufallsrotation auszuschließen", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "Drücken Sie OK, um in die Zufallsrotation aufzunehmen", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner. Als Nächstes: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
 }

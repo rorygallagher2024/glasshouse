@@ -3098,5 +3098,16 @@
  "home.tv.liveAsk": {"text": "Vissza az élő adáshoz?", "from": "Back to live?"},
  "home.tv.liveAskDetail": {"text": "Az OK az élő adáshoz visz. A Vissza itt marad.", "from": "OK goes to live. Back stays here."},
  "home.tv.zapAsk": {"text": "Csatornát váltasz?", "from": "Change channel?"},
- "home.tv.zapAskDetail": {"text": "A csatorna felvétele elvész. Az OK vált. A Vissza itt marad.", "from": "The recording of this channel is lost. OK changes. Back stays here."}
+ "home.tv.zapAskDetail": {"text": "A csatorna felvétele elvész. Az OK vált. A Vissza itt marad.", "from": "The recording of this channel is lost. OK changes. Back stays here."},
+ "srv.saver.random": {"text": "Véletlenszerű", "from": "Random"},
+ "srv.saver.random.desc": {"text": "Minden alkalommal másik képernyővédőt választ, amikor megjelenik.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "{n} / {total} kiválasztva", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "Összes kijelölés megszüntetése", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "Összes kijelölése", "from": "Select all"},
+ "ss.poolTitle": {"text": "Forgásban szerepel", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "Következő: {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "Nyomja meg az OK gombot a véletlenszerű váltásból való kizáráshoz", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "Nyomja meg az OK gombot a véletlenszerű váltásba való felvételhez", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "Minden alkalommal másik képernyővédőt választ.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "Minden alkalommal másik képernyővédőt választ. Következő: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
 }

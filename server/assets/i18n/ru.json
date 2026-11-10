@@ -3098,5 +3098,16 @@
  "home.tv.liveAsk": {"text": "Вернуться в прямой эфир?", "from": "Back to live?"},
  "home.tv.liveAskDetail": {"text": "OK переходит в прямой эфир. «Назад» остаётся здесь.", "from": "OK goes to live. Back stays here."},
  "home.tv.zapAsk": {"text": "Переключить канал?", "from": "Change channel?"},
- "home.tv.zapAskDetail": {"text": "Запись этого канала будет потеряна. OK переключает. «Назад» остаётся здесь.", "from": "The recording of this channel is lost. OK changes. Back stays here."}
+ "home.tv.zapAskDetail": {"text": "Запись этого канала будет потеряна. OK переключает. «Назад» остаётся здесь.", "from": "The recording of this channel is lost. OK changes. Back stays here."},
+ "srv.saver.random": {"text": "Случайная", "from": "Random"},
+ "srv.saver.random.desc": {"text": "Выбирает другую заставку при каждом появлении экрана заставки.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "Выбрано {n} из {total}", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "Снять выбор со всех", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "Выбрать все", "from": "Select all"},
+ "ss.poolTitle": {"text": "В ротации", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "Следующая: {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "Нажмите OK, чтобы исключить из случайной ротации", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "Нажмите OK, чтобы включить в случайную ротацию", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "Выбирает другую заставку каждый раз.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "Выбирает другую заставку каждый раз. Следующая: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."}
 }
