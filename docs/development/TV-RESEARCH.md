@@ -429,8 +429,10 @@ muted `<video>` with one `<source>`:
   port, in both directions, while the channel played on. On an
   `ext://hdmi:N` source, changing `muted` sent nothing over the bus, and an
   input started muted or not showed the same calls: audiod's own brief mute
-  while connecting, then the HDMI PCM on `tv_speaker`. Whether that input is
-  heard, either way, was not checked by ear; the TV's speaker volume was 0.
+  while connecting, then the HDMI PCM on `tv_speaker`. That recording was
+  made at speaker volume 0. A listening check on the same G3 at volume 10
+  confirmed HDMI 4's preview was audible with Preview sound on, silent with
+  it off, and audible again when switched back on.
 
 How a busy tuner (a recording) or an encrypted channel shows to the page was
 not tried.
