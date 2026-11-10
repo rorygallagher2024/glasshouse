@@ -1468,7 +1468,7 @@ function setupHomeAssistant() {
    * are not published (see ha.js). The rows decide which entities exist and
    * a select's options, so a change in them means republishing discovery.
    */
-  var LGS_SECTIONS = ['sound', 'devices', 'game', 'promotions'];
+  var LGS_SECTIONS = ['sound', 'devices', 'game', 'promotions', 'picture'];
   var lgsRows = [];
   var lastLgsSig = '';
 
@@ -1491,7 +1491,9 @@ function setupHomeAssistant() {
       if (cpuOwn !== null) s.load = cpuOwn;
       s.lgs = {};
       ls.rows.forEach(function (r) { s.lgs[r.id] = r.type === 'switch' ? r.on : r.value; });
-      var lgsSig = ls.rows.map(function (r) {
+      var lgsSig = ls.rows.filter(function (r) {
+        return ha.LG_SETTING_ENTITIES.some(function (e) { return e.row === r.id; });
+      }).map(function (r) {
         return r.id + (r.choices ? ':' + r.choices.map(function (c) { return c.value; }).join('|') : '');
       }).join(',');
       if (lgsSig !== lastLgsSig) {
