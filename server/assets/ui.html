@@ -1428,8 +1428,16 @@
   <div class="sub" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
   <div class="btns wall-choice" id="home-bg-kind"></div>
   <div id="home-bg-pictures">
-    <div class="sub" data-t="home.wall.introPictures">A picture for each part of the day: one of the picture sets, or your own.</div>
+    <div class="sub" id="home-wall-intro"></div>
     <div class="btns wall-choice" id="home-wall-choice"></div>
+    <!-- Your own, shuffled: any number of pictures, one at a time in a random order -->
+    <div id="home-wall-shuffle" hidden>
+      <div class="shuffle-every"><span data-t="home.wall.shuffleEvery">A new picture every</span>
+        <select class="pill-sel" id="home-shuffle-minutes" aria-label="A new picture every" data-t-aria-label="home.wall.shuffleEvery"
+          onchange="homeShuffleMinutes(this.value)"></select></div>
+      <div class="wall-cards" id="home-shuffle"></div>
+      <input type="file" id="home-shuffle-file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="homeShufflePicked(this)">
+    </div>
     <!-- The day as Glasshouse Home shows it: each part's picture across its hours, and where the day is now -->
     <div class="wall-day" id="home-wall-day"></div>
     <div class="wall-cards" id="home-walls"></div>

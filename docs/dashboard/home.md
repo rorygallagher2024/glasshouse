@@ -267,17 +267,18 @@ Whenever the lineup contains channels, a **Guide** tile remains accessible on th
 The **Background** section chooses what is behind Glasshouse Home, and shows only the settings for that choice:
 
 * **None**, the default: a pure `#000` OLED black, which leaves the TV's [screen saver](screen-savers.md) untouched.
-* **Pictures**: a picture for each part of the day.
+* **Pictures**: a picture for each part of the day, or your own pictures in a random order.
 * **Animated**: light that moves slowly behind the rows.
 
 The TV app's **Background** row moves through the three with OK, followed by the rows for the one chosen.
 
 ### Pictures
 
-A picture for each of four times of day: **Morning** (06:00 to 11:00), **Afternoon** (11:00 to 17:00), **Evening** (17:00 to 21:00) and **Night** (21:00 to 06:00). There are three sets to choose from:
+A picture for each of four times of day: **Morning** (06:00 to 11:00), **Afternoon** (11:00 to 17:00), **Evening** (17:00 to 21:00) and **Night** (21:00 to 06:00), or a collection of your own shown in turn. There are four to choose from:
 
 * **Landscape**, a loch at four times of day, and **Abstract**, four flowing abstract pictures. A set is downloaded to the TV when it is chosen, about 820 KB, from [glasshouse-wallpapers](https://github.com/rorygallagher2024/glasshouse-wallpapers), so it adds nothing to the Glasshouse download. Only the chosen set is kept on the TV.
 * **Your own**: pictures uploaded from the browser, one for each time of day. They are kept while a set or another background is chosen, and come back with **Your own**. Uploading a picture chooses **Your own**.
+* **Your own, shuffled**: up to 50 pictures uploaded from the browser, shown one at a time in a random order. Each comes round once before any comes again, and never the same one twice running. They are kept while something else is chosen, and adding one chooses **Your own, shuffled**.
 
 The web dashboard shows the day as a strip from midnight to midnight, each time of day filled with its picture across its hours and a marker at the time now, and below it each time of day as a small Glasshouse Home: its picture behind the clock in the chosen text colour, so how readable the clock will be shows before it is on the TV. The time of day showing now is marked **Now**.
 
@@ -287,7 +288,14 @@ With **Your own** chosen:
 * **Replace** and **Remove** under a time of day change or remove its picture alone; one without a picture is black.
 * **Remove all** takes every picture away.
 
-The TV app's **Pictures** row moves through the three sets with OK.
+With **Your own, shuffled** chosen, the times of day give way to the collection:
+
+* **A new picture every** sets how long each stays: 1, 5, 10 (the default), 15 or 30 minutes, or an hour. The next comes with the usual cross-fade. A picture stays while Home is out of sight, and the next waits for Home to be back on screen, so one is never changed unseen.
+* **Add pictures**, or images dropped on it, takes several at once, uploaded one after another; under it, how many there are of the 50. Each is prepared as for the times of day and saved to `/var/lib/tvweb/home-wallpaper-shuffle` on the TV under a name made there.
+* **Remove** under a picture takes it alone, and **Remove all** the whole collection.
+* Each picture shows through the black as much as the time of day's own would, more in the day and less at night.
+
+The TV app's **Pictures** row moves through the sets and your own with OK. With **Your own, shuffled**, **A new picture every** follows and moves through the intervals; the pictures are added on the web dashboard.
 
 ### Animated
 

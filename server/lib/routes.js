@@ -1213,7 +1213,7 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/signal') return homePictureModule.signal(Number(u.query && u.query.port), reply);
     if (pathname === '/api/home/wallpaper') {
-      var wallpaper = homeModule.wallpaperPath(String(u.query && u.query.slot || ''));
+      var wallpaper = homeModule.wallpaperPath(String(u.query && u.query.slot || ''), String(u.query && u.query.id || ''));
       if (!wallpaper) return send(res, 404, JSON.stringify({ ok: false, error: 'no wallpaper uploaded' }));
       return sendIconFile(req, res, wallpaper, function (status, error) {
         send(res, status, JSON.stringify({ ok: false, error: error }));

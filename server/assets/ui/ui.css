@@ -1750,6 +1750,11 @@ button.wall-screen:disabled{opacity:1;cursor:default}
 .wall-actions{display:flex;gap:14px;margin-top:4px;min-height:18px}
 button.wall-link{min-height:0;padding:0;border:0;background:none;font-size:12px;letter-spacing:.02em;text-transform:none;color:var(--w60)}
 button.wall-link:hover:not(:disabled){color:var(--w100);text-decoration:underline;text-underline-offset:3px}
+/* The shuffled collection: how often it changes, then its pictures after a card to add more. */
+.shuffle-every{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0 18px;font-size:13px;color:var(--w80)}
+.wall-count{font-size:12px;color:var(--w60);font-variant-numeric:tabular-nums}
+/* Four picture choices, the last of them a longer name. */
+#home-wall-choice{max-width:760px}
 .wall-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;margin-top:24px}
 .wall-foot .sub{max-width:64ch;margin:0}
 .wall-foot-btns{display:flex;gap:10px;flex-wrap:wrap}
