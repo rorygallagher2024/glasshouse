@@ -140,6 +140,35 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   one long download with no playlist to go stale. Offered (`switchable`) for
   an Xtream channel unless the panel's `allowed_output_formats` lacks one of
   the two.
+- **Pausing live TV** (`lib/iptv-timeshift.js`, the worker
+  `lib/iptv-timeshift-worker.js`), when switched on: Home's full-screen
+  player asks `/api/iptv/stream` with `full=1`, and for an MPEG-TS channel
+  the server starts a worker as `node --max_old_space_size=16`, through
+  `children.launch`, in a process group of its own. It records the channel
+  through curl (`-N`, with a VLC User-Agent, as a provider refused curl's own
+  with 461) to 8 MB chunk files in `glasshouse-timeshift` on a writable USB
+  stick under `/tmp/usb`, dropping the oldest past 2 GB, and serves them on
+  127.0.0.1 at a random port under a random token, which Home is given
+  instead of the provider's URL. Nothing is buffered in memory: each byte is
+  written to the stick and read back 64 KB at a time, as the TV has a few
+  hundred MB free. A paused `<video>` stops reading, TCP backpressure holds
+  the read place, and the recording goes on. A reconnect continues from the
+  place; the live point is started 6 s early (at least 256 KB), as the player
+  holds no more past the picture than it starts with and 0.3 s stalled at the
+  first hiccup; the time a pause can last is the buffer's capacity in seconds
+  (`maxBytes` over the recording's average rate, from `/api/iptv/timeshift`)
+  less the picture's own time behind live, which Home counts itself, as the
+  read place runs ahead of the picture by what the player buffers and moves
+  while it fills; `live=1` starts at the live point and `behind=<seconds>` that long
+  before it, by the recording's average byte rate, which is how Home's Back
+  (after asking) and Left and Right move: a live MPEG-TS stream cannot seek,
+  so each opens the recording again. The recording lives as
+  long as Home's lease: `lease(false)`, the lease running out, another
+  channel's play or the server stopping ends it and empties the folder.
+  While paused, Home renews the lease without `full`, so LG's screen saver
+  may come over the still picture. A provider that refuses the recorder
+  before any bytes gets a 502 passed on, and the channel plays directly for
+  ten minutes.
 - **One search at a time**: the lane is taken before the memory check
   answers, so a search asked for meanwhile replaces it rather than starting
   beside it.

@@ -449,9 +449,25 @@ putting a channel taken out back at its number, a removed playlist's
 folder deleted, and a channel whose variant playlist names FairPlay found to
 be protected once checked, marked in the lineup and given no play link,
 while one with a plain AES-128 key is not. It also checks a channel's saved
-HLS or MPEG-TS choice across a restart and stream event logging without URLs.
+HLS or MPEG-TS choice across a restart, stream event logging without URLs,
+and that pausing live TV is off by default, kept across a restart, and
+never records a preview, an HLS channel or without a USB stick.
 It is skipped where there is no curl. `test-iptv-drm.js` checks which HLS keys the TV's player cannot use,
 and the resolving of a master playlist's first variant.
+
+`test-iptv-timeshift.js` runs the recording for pausing live TV: the real
+worker records a local provider's MPEG-TS packets through curl into a folder
+standing in for a USB stick, with 20-packet chunks and a 5-chunk buffer, and
+the test reads it back as Home's player would. It checks a writable stick is
+found, the local URL carries a token and never the provider's, the provider
+is asked with a player's User-Agent, another token gets a 404, every packet
+arrives in order, a reconnect and a paused player go on from their place,
+the buffer keeps its size, back to live starts at the live point, a rewind
+past what is kept starts at the oldest packet, another
+channel and an expired lease end the recording and empty the folder, and a
+provider's refusal gives a 502 and direct play for that channel after, and
+curl aborting before exec is started again. It also checks Home's clock for
+a pause, with its unit (min or h). It is skipped where there is no curl.
 
 `test-iptv-worker.js` runs real playlist workers against a local provider with
 a shell that sends itself SIGABRT before executing curl. It checks that an

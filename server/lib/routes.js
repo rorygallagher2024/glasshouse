@@ -1363,11 +1363,18 @@ function handleIptvRoute(req, res, u, pathname) {
     if (pathname === '/api/iptv/stream') {
       // The play URL carries the login on Xtream: for the TV's own Home only.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
-      var stream = iptvModule.streamUrl(String(qs.pl || ''), String(qs.key || ''));
-      if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      return res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections,
-        switchable: stream.switchable }));
+      // full=1: the full-screen player, which may play a recording it can pause (lib/iptv-timeshift).
+      return iptvModule.playUrl(String(qs.pl || ''), String(qs.key || ''), qs.full === '1', function (stream) {
+        if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections,
+          switchable: stream.switchable, timeshift: stream.timeshift === true }));
+      });
+    }
+    if (pathname === '/api/iptv/timeshift') {
+      if (qs.pl === undefined) return iptvModule.timeshiftStatus(reply);
+      var ts = iptvModule.timeshiftStats(String(qs.pl || ''), String(qs.key || ''));
+      return reply(ts ? { ok: true, behind: ts.behind, capacity: ts.capacity, kept: ts.kept } : { ok: true, behind: null, capacity: null, kept: null });
     }
   }
   if (req.method === 'POST') {
@@ -1382,6 +1389,7 @@ function handleIptvRoute(req, res, u, pathname) {
       if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true));
       if (pathname === '/api/iptv/event') return reply(iptvModule.streamEvent(body));
       if (pathname === '/api/iptv/output') return reply(iptvModule.setOutput(body));
+      if (pathname === '/api/iptv/timeshift') return reply(iptvModule.setTimeshift(body));
       if (pathname === '/api/iptv/check') return iptvModule.checkStream(String(body && body.pl || ''), String(body && body.key || ''), reply);
       send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     }, pathname === '/api/iptv/lineup' ? 524288 : 8192);

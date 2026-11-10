@@ -476,10 +476,14 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #band .bar i{display:block;height:100%;background:#ece7df}
 #bdFmt{-webkit-flex:0 0 auto;flex:0 0 auto;margin:0 0 4px 56px;font-size:21px;color:#6b665e;white-space:nowrap;text-align:right;line-height:1.5}
 #bdFmt span{display:block}
-#pmsg{position:absolute;left:0;right:0;top:470px;text-align:center;display:none}
+/* A dark band behind it: the picture under it can be light. */
+#pmsg{position:absolute;left:0;right:0;top:430px;padding:44px 0;text-align:center;display:none;
+  background:-webkit-linear-gradient(top,rgba(0,0,0,0),rgba(0,0,0,.8) 28%,rgba(0,0,0,.8) 72%,rgba(0,0,0,0));
+  background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.8) 28%,rgba(0,0,0,.8) 72%,rgba(0,0,0,0));
+  text-shadow:0 2px 16px rgba(0,0,0,.8)}
 #pmsg.show{display:block}
 #pmsg b{display:block;font-family:'Outfit',sans-serif;font-size:56px;font-weight:300;letter-spacing:-.5px}
-#pmsg span{display:block;margin-top:14px;font-size:25px;color:#a39d93}
+#pmsg span{display:block;margin-top:14px;font-size:25px;color:#d6d0c6}
 #digits{position:absolute;right:112px;top:72px;font-family:'Outfit',sans-serif;font-size:96px;font-weight:300;line-height:1;
   display:none;text-shadow:0 2px 24px rgba(0,0,0,.7)}
 #digits.show{display:block}
@@ -726,7 +730,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var LG_HOME_TILE = 'lg-home';
   // The remote's keys as webOS reports them to a page.
   var KEY = { left: 37, up: 38, right: 39, down: 40, ok: 13, back: 461, red: 403, green: 404, yellow: 405,
-    chUp: 33, chDown: 34, info: 457 };
+    chUp: 33, chDown: 34, info: 457, play: 415, pause: 19, stop: 413 };
   // The Internet TV row's last tile while it has channels: the guide.
   var GUIDE_TILE = 'iptv-guide';
   // Internet TV's Add channels tile: last in its row while arranging, and the row's only tile while it is empty.
@@ -2444,8 +2448,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * last is torn down completely before the next opens.
    */
   // muted: the stream's own, kept here so a recovery reopens it as it is shown now.
+  // timeshift: played from the server's recording, which can pause (lib/iptv-timeshift);
+  // behindMs: time spent paused since the live point; left: seconds the recording can still hold the pause.
   var tvStream = { gen: 0, item: null, format: '', playing: false, watch: null, onState: null, leaseTimer: null,
-    muted: true, retryTimer: null, tries: 0, everPlayed: false, lostAt: 0, openedAt: 0 };
+    muted: true, retryTimer: null, tries: 0, everPlayed: false, lostAt: 0, openedAt: 0, full: false,
+    timeshift: false, paused: false, pausedAt: 0, behindMs: 0, capacity: null, tsTimer: null, tsUrl: '', noPauseAt: 0,
+    // seekTo: seconds behind live the next open starts at; seekTarget: where left and right are heading; kept: seconds the stick holds.
+    seekTo: null, seekTarget: null, seekTimer: null, kept: null };
   var STREAM_START_MS = 12000;
   // The picture not moving this long is a stall, whatever events the <video> sent;
   // sooner with nothing buffered past it: every stall logged on a provider's
@@ -2476,19 +2485,34 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     tvStream.playing = false;
     tvStream.onState = null;
     tvStream.lostAt = 0;
+    tsReset();
     releaseVideo();
     lease(false);
+  }
+
+  function tsReset() {
+    clearTimeout(tvStream.tsTimer);
+    tvStream.tsTimer = null;
+    tvStream.timeshift = false;
+    tvStream.paused = false;
+    tvStream.behindMs = 0;
+    tvStream.capacity = null;
+    tvStream.tsUrl = '';
+    clearTimeout(tvStream.seekTimer);
+    tvStream.seekTimer = null;
+    tvStream.seekTo = tvStream.seekTarget = tvStream.kept = null;
   }
 
   /*
    * Background refreshes wait while this lasts (lib/iptv), and while it says
    * full screen, LG's idle screen saver stays held off (lib/idlesaver): the
-   * TV's media state does not see a stream in this page's <video>.
+   * TV's media state does not see a stream in this page's <video>. Paused,
+   * it is not: a still picture is what the screen saver is for.
    */
   function lease(on) {
     clearInterval(tvStream.leaseTimer);
     tvStream.leaseTimer = null;
-    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open }); };
+    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open && !tvStream.paused }); };
     send();
     if (on) tvStream.leaseTimer = setInterval(send, 60000);
   }
@@ -2536,6 +2560,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     tvStream.switchable = false;
     tvStream.onState = onState;
     tvStream.muted = !!muted;
+    // The full-screen player, which the server may give a recording it can pause.
+    tvStream.full = !muted;
     lease(true);
     openTvStream(gen);
   }
@@ -2543,11 +2569,15 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function openTvStream(gen) {
     var it = tvStream.item;
     var say = function (s, d) { if (gen === tvStream.gen && tvStream.onState) tvStream.onState(s, d); };
-    getJson('/api/iptv/stream?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key), function (r) {
+    getJson('/api/iptv/stream?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key) + (tvStream.full ? '&full=1' : ''), function (r) {
       if (gen !== tvStream.gen) return;
       if (!r || !r.ok || !r.url) return say('failed', r && r.error);
       tvStream.account = !!r.account;
       tvStream.switchable = !!r.switchable;
+      tvStream.timeshift = r.timeshift === true;
+      // A new recording starts at the live point.
+      if (!tvStream.timeshift || r.url !== tvStream.tsUrl) tvStream.behindMs = 0;
+      tvStream.tsUrl = tvStream.timeshift ? r.url : '';
       var v = $('pvVideo');
       tvStream.format = r.format === 'hls' ? 'HLS' : r.format === 'ts' ? 'MPEG-TS' : '';
       // As shown now: the preview may have become the player while this was asked for.
@@ -2576,7 +2606,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         tvStream.pastCache = true;
         lost(gen, 'error', { code: v.error ? v.error.code : 0 });
       };
-      v.src = tvStream.pastCache ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + 'gh=' + Date.now() : r.url;
+      // A recording goes on from where it was, which a reconnect keeps;
+      // live=1 starts it at the live point, behind= that many seconds before it.
+      var extra = [];
+      if (tvStream.pastCache) extra.push('gh=' + Date.now());
+      if (tvStream.timeshift && tvStream.seekTo !== null) extra.push(tvStream.seekTo > 0 ? 'behind=' + tvStream.seekTo : 'live=1');
+      tvStream.seekTo = null;
+      v.src = extra.length ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + extra.join('&') : r.url;
       v.load();
       var played = v.play();
       if (played && played.then) played.then(null, function () {});
@@ -2588,6 +2624,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           if (now - startedAt > STREAM_START_MS) lost(gen, 'nopicture', {});
           return;
         }
+        // Paused on purpose: a picture that does not move is no stall.
+        if (tvStream.paused) { lastMove = now; return; }
         var ct = v.currentTime;
         if (ct !== lastTime) {
           lastTime = ct;
@@ -2637,6 +2675,13 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     detail.wait = wait;
     streamEvent('reconnecting', detail);
     tvStream.playing = false;
+    // A reconnect plays on: a pause ends with it.
+    if (tvStream.paused) {
+      tvStream.behindMs += Date.now() - tvStream.pausedAt;
+      tvStream.paused = false;
+      clearTimeout(tvStream.tsTimer);
+      tvStream.tsTimer = null;
+    }
     // Every reconnect asks past a copy of the playlist a CDN may be holding.
     tvStream.pastCache = true;
     // Recovering, a preview is not playing: OK opens the player afresh rather than adopting it.
@@ -2668,7 +2713,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * numbers reach the same channels however the row would reorder itself.
    */
   var player = { open: false, okDown: false, list: false, items: [], idx: 0, bandTimer: null, listTimer: null, group: 0, groups: [], lcol: 0,
-    digits: '', digitTimer: null, failed: false };
+    digits: '', digitTimer: null, failed: false, askLive: false, askTimer: null, askZap: null };
   var BAND_MS = 5000, LIST_IDLE_MS = 10000, DIGIT_MS = 2000, ZAP_DWELL_MS = 600, EXPAND_MS = 280;
   var zapTimer = null;
 
@@ -2710,7 +2755,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function sectionOf(it) { return tvLineup && it.sid ? it.sid : it.group || ''; }
 
   function openPlayer(it) {
-    var adopt = tilePreview.target && tilePreview.target.tv && tilePreview.target.item.id === it.id && tilePreview.playing && !tilePreview.blank;
+    var adopt = tilePreview.target && tilePreview.target.tv && tilePreview.target.item.id === it.id && tilePreview.playing && !tilePreview.blank &&
+      // An MPEG-TS preview opens again full screen when live TV may pause: from the recording, which can.
+      !(data && data.iptvStatus && data.iptvStatus.timeshift && tvStream.format === 'MPEG-TS' && !tvStream.timeshift);
     var pv = $('preview'), from = null;
     if (adopt) {
       var rect = pv.getBoundingClientRect(), stage = $('stage').getBoundingClientRect(), scale = stage.width / 1920;
@@ -2782,6 +2829,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function playerState(s) {
     if (!player.open) return;
+    if (s !== 'format') endAskLive();
     if (s === 'playing') { player.failed = false; renderPmsg(); renderBand(); }
     else if (s === 'format') renderBand();
     else if (s === 'reconnecting') renderPmsg(t('home.tv.reconnecting', 'Reconnecting to {name}', { name: tvStream.item ? tvStream.item.name : '' }));
@@ -2833,6 +2881,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     clearTimeout(player.listTimer);
     clearTimeout(zapTimer);
     clearDigits();
+    endAskLive();
     renderPmsg();
     $('player').className = '';
     var pv = $('preview');
@@ -2845,7 +2894,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         if (c !== -1) state.col.iptv = c;
       }
     }
-    var keep = layout.livePreview === true && tvStream.playing && !document.hidden && it;
+    // A paused picture is not left playing on the row.
+    var keep = layout.livePreview === true && tvStream.playing && !tvStream.paused && !document.hidden && it;
     if (keep) {
       tvStream.muted = true;
       $('pvVideo').muted = true;
@@ -2870,7 +2920,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     renderBand();
     $('player').className = 'band' + (player.list ? ' list' : '');
     clearTimeout(player.bandTimer);
-    if (stay && player.failed) return;
+    if (stay && (player.failed || tvStream.paused || tvStream.seekTarget !== null)) return;
     player.bandTimer = setTimeout(function () {
       if (player.open) $('player').className = player.list ? 'list' : '';
     }, BAND_MS);
@@ -2893,15 +2943,179 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (it.tags && it.tags.length && !fmt.length) fmt = it.tags;
     $('bdFmt').innerHTML = (player.idx + 1 ? '<span>' + esc(t('home.tv.position', '{n} of {total}', { n: player.idx + 1, total: player.items.length })) + '</span>' : '') +
       (fmt.length ? '<span>' + esc(fmt.join('\u2002\u2002')) + '</span>' : '') +
-      (tvStream.switchable && tvStream.item === it && tvStream.format ? '<span>' + esc(t('home.tv.playAs', 'Yellow: play as {format}', { format: otherFormat() })) + '</span>' : '');
+      (tvStream.switchable && tvStream.item === it && tvStream.format ? '<span>' + esc(t('home.tv.playAs', 'Yellow: play as {format}', { format: otherFormat() })) + '</span>' : '') +
+      (tvStream.item === it && tsText() ? '<span>' + esc(tsText()) + '</span>' : '');
+  }
+
+  // Minutes and seconds, or hours too, for how long a pause can last and how far behind live.
+  function clockText(secs) {
+    var s = Math.max(0, Math.round(secs)), m = Math.floor(s / 60), r = s % 60;
+    var two = function (n) { return (n < 10 ? '0' : '') + n; };
+    // With a unit, as 35:18 alone does not say whether it is minutes or hours.
+    return m >= 60 ? Math.floor(m / 60) + ':' + two(m % 60) + ':' + two(r) + ' h' : m + ':' + two(r) + ' min';
+  }
+
+  function tsText() {
+    if (!tvStream.timeshift) return Date.now() - tvStream.noPauseAt < BAND_MS ? t('home.tv.noPause', 'This channel can’t pause now') : '';
+    if (tvStream.seekTarget !== null) return tvStream.seekTarget > 0 ? t('home.tv.seekTo', '{time} behind live', { time: clockText(tvStream.seekTarget) }) : t('home.tv.seekLive', 'Live');
+    if (tvStream.paused) return tsLeft() === null ? t('home.tv.paused', 'Paused') : t('home.tv.pausedLeft', 'Paused, {time} left', { time: clockText(tsLeft()) });
+    if (tvStream.behindMs >= 1000) return t('home.tv.behind', '{time} behind live. Back goes to live.', { time: clockText(tvStream.behindMs / 1000) });
+    return '';
+  }
+
+  // How long a pause can go on: what the buffer holds at most, less the picture's
+  // time behind live. Not the server's read place, which the player's buffering moves.
+  function tsLeft() { return tvStream.capacity === null ? null : Math.max(0, tvStream.capacity - tsBehind()); }
+
+  // Seconds the picture is behind the live point, a pause still running counted.
+  function tsBehind() { return (tvStream.behindMs + (tvStream.paused ? Date.now() - tvStream.pausedAt : 0)) / 1000; }
+
+  /*
+   * Pause and play, for a channel played from the server's recording on a
+   * USB stick (lib/iptv-timeshift). The <video> pauses on a local stream,
+   * which keeps its place while the recording goes on. Left and right move
+   * 30 s back and forward in what the stick holds, and Back, behind live,
+   * asks before going to the live point (a Magic Remote has no Stop): each
+   * opens the recording again at the new place, as a live MPEG-TS stream
+   * cannot seek.
+   */
+  var TS_STEP_S = 30;
+  // Closer to live than this, Back closes the player as ever.
+  var TS_LIVE_S = 3;
+  var ASK_MS = 10000;
+  // How often a pause asks what the buffer holds at most, and redraws the time
+  // left, and how close to the end it plays on rather than lose its place.
+  var TS_POLL_MS = 1000;
+  var TS_PLAY_ON_S = 15;
+  function tsPause() {
+    if (tvStream.paused) return;
+    // Into the server's log either way, as whether the key reaches the page differs by remote.
+    streamEvent(tvStream.timeshift && tvStream.playing ? 'pause' : 'no-pause', {});
+    if (!tvStream.timeshift || !tvStream.playing) {
+      tvStream.noPauseAt = Date.now();
+      return showBand();
+    }
+    try { $('pvVideo').pause(); } catch (e) {}
+    tvStream.paused = true;
+    tvStream.pausedAt = Date.now();
+    lease(true);
+    showBand(true);
+    tsPoll();
+  }
+
+  function tsPlay() {
+    if (!tvStream.paused) return;
+    tvStream.behindMs += Date.now() - tvStream.pausedAt;
+    tvStream.paused = false;
+    tvStream.capacity = null;
+    clearTimeout(tvStream.tsTimer);
+    tvStream.tsTimer = null;
+    var played = $('pvVideo').play();
+    if (played && played.then) played.then(null, function () {});
+    lease(true);
+    showBand();
+  }
+
+  // The recording opened again that many seconds behind live, 0 the live point.
+  function tsReopen(behind) {
+    if (!tvStream.timeshift) return;
+    var it = tvStream.item, cb = tvStream.onState, gen = ++tvStream.gen;
+    clearInterval(tvStream.watch);
+    tvStream.watch = null;
+    clearTimeout(tvStream.tsTimer);
+    clearTimeout(tvStream.seekTimer);
+    clearTimeout(tvStream.retryTimer);
+    tvStream.tsTimer = tvStream.seekTimer = tvStream.retryTimer = null;
+    tvStream.seekTarget = null;
+    tvStream.paused = false;
+    tvStream.capacity = null;
+    tvStream.playing = false;
+    releaseVideo();
+    tvStream.item = it;
+    tvStream.onState = cb;
+    tvStream.behindMs = behind * 1000;
+    tvStream.seekTo = behind;
+    streamEvent(behind ? 'seek' : 'live', {});
+    lease(true);
+    openTvStream(gen);
+    showBand();
+  }
+
+  function tsCanSeek() { return tvStream.timeshift && tvStream.everPlayed && !player.failed && tvStream.item === playerChannel(); }
+
+  // Left and right: presses within a moment add up, then the recording opens there.
+  function tsSeek(delta) {
+    var from = tvStream.seekTarget !== null ? tvStream.seekTarget : tsBehind();
+    var to = Math.max(0, Math.round(from + delta));
+    if (tvStream.kept !== null) to = Math.min(to, tvStream.kept);
+    // Forward at the live point: nowhere to go.
+    if (delta < 0 && from < TS_LIVE_S && tvStream.seekTarget === null) return showBand();
+    tvStream.seekTarget = to;
+    var it = tvStream.item, gen = tvStream.gen;
+    // How much the stick holds, to stop at; the server stops there too.
+    getJson('/api/iptv/timeshift?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key), function (r) {
+      if (gen !== tvStream.gen) return;
+      tvStream.kept = r && r.ok && typeof r.kept === 'number' ? r.kept : null;
+      if (tvStream.kept !== null && tvStream.seekTarget !== null && tvStream.seekTarget > tvStream.kept) {
+        tvStream.seekTarget = tvStream.kept;
+        if (player.open) renderBand();
+      }
+    });
+    showBand(true);
+    clearTimeout(tvStream.seekTimer);
+    tvStream.seekTimer = setTimeout(function () {
+      tvStream.seekTimer = null;
+      if (gen !== tvStream.gen || tvStream.seekTarget === null) return;
+      tsReopen(tvStream.seekTarget);
+    }, ZAP_DWELL_MS);
+  }
+
+  // Back or Stop behind live, and changing channel from there: asked first,
+  // as the place in the recording is lost by it. zap: the channel's index
+  // asked about, or null for going back to live.
+  function askLive(zap) {
+    player.askLive = true;
+    player.askZap = typeof zap === 'number' ? zap : null;
+    if (player.askZap === null) renderPmsg(t('home.tv.liveAsk', 'Back to live?'), t('home.tv.liveAskDetail', 'OK goes to live. Back stays here.'));
+    else renderPmsg(t('home.tv.zapAsk', 'Change channel?'), t('home.tv.zapAskDetail', 'The recording of this channel is lost. OK changes. Back stays here.'));
+    clearTimeout(player.askTimer);
+    player.askTimer = setTimeout(function () { if (player.askLive) { endAskLive(); renderPmsg(); } }, ASK_MS);
+  }
+
+  function endAskLive() {
+    player.askLive = false;
+    player.askZap = null;
+    clearTimeout(player.askTimer);
+    player.askTimer = null;
+  }
+
+  function tsBehindLive() { return tvStream.timeshift && (tvStream.paused || tvStream.seekTarget !== null || tsBehind() > TS_LIVE_S); }
+
+  function tsPoll() {
+    clearTimeout(tvStream.tsTimer);
+    tvStream.tsTimer = null;
+    var it = tvStream.item, gen = tvStream.gen;
+    if (!tvStream.paused || !it) return;
+    getJson('/api/iptv/timeshift?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key), function (r) {
+      if (gen !== tvStream.gen || !tvStream.paused) return;
+      tvStream.capacity = r && r.ok && typeof r.capacity === 'number' ? r.capacity : null;
+      // The recording is about to reach the pause: play on rather than lose the place.
+      if (tsLeft() !== null && tsLeft() <= TS_PLAY_ON_S) return tsPlay();
+      if (player.open) renderBand();
+      tvStream.tsTimer = setTimeout(tsPoll, TS_POLL_MS);
+    });
   }
 
   // The channel a channel up, down or number reaches, after a short dwell.
-  function zapTo(idx) {
+  function zapTo(idx, confirmed) {
     if (!player.items.length) return;
-    player.idx = (idx + player.items.length) % player.items.length;
+    idx = (idx + player.items.length) % player.items.length;
+    // Behind live, the picture the recording holds goes with the channel.
+    if (!confirmed && idx !== player.idx && tsBehindLive()) { clearDigits(); return askLive(idx); }
+    player.idx = idx;
     player.failed = false;
     stopTvStream();
+    endAskLive();
     renderPmsg();
     showBand();
     if (player.list) { player.lcol = indexIn(groupItems(), playerChannel().id); renderList(); }
@@ -2998,9 +3212,18 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   function playerKey(k) {
+    if (player.askLive) {
+      // OK goes to live, or changes channel; Back, or any other key, stays.
+      var zap = player.askZap;
+      endAskLive();
+      renderPmsg();
+      if (k === KEY.ok) return zap === null ? tsReopen(0) : zapTo(zap, true);
+      return;
+    }
     if (k === KEY.back) {
       if (player.digits) return clearDigits();
       if (player.list) return closeList();
+      if (tsBehindLive()) return askLive();
       return closePlayer();
     }
     if (k >= 48 && k <= 57) return digit(k - 48);
@@ -3008,6 +3231,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (k === KEY.chUp) return zapTo(player.idx + 1);
     if (k === KEY.chDown) return zapTo(player.idx - 1);
     if (k === KEY.info) return showBand();
+    // Pause on the remote is play too, on a remote with one button for both.
+    if (k === KEY.pause) return tvStream.paused ? tsPlay() : tsPause();
+    if (k === KEY.play) return tsPlay();
+    if (k === KEY.stop) return tsBehindLive() ? askLive() : undefined;
     if (k === KEY.yellow && !player.list && tvStream.switchable && tvStream.item === playerChannel()) return switchFormat();
     if (player.list) {
       listIdle();
@@ -3031,6 +3258,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // Up and down change channel, as channel up and down do.
     if (k === KEY.up) return zapTo(player.idx + 1);
     if (k === KEY.down) return zapTo(player.idx - 1);
+    // In a recording, left and right go back and forward; OK opens the list.
+    if ((k === KEY.left || k === KEY.right) && tsCanSeek()) return tsSeek(k === KEY.left ? TS_STEP_S : -TS_STEP_S);
     if (k === KEY.left || k === KEY.right) return openList();
   }
 
