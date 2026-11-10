@@ -200,6 +200,7 @@ var LG_SETTING_ENTITIES = [
   { type: 'select', id: 'game_genre', row: 'gameGenre', name: 'Game Genre', cat: 'video', enabled: true, icon: 'mdi:gamepad-variant' },
   { type: 'select', id: 'prevent_input_delay', row: 'inputOptimization', name: 'Prevent Input Delay', cat: 'video', enabled: true, icon: 'mdi:timer-outline' },
   { type: 'switch', id: 'allm_setting', row: 'enableALLM', name: 'ALLM', cat: 'video', enabled: true, icon: 'mdi:gamepad-square' },
+  { type: 'switch', id: 'reduce_blue_light', row: 'eyeComfortMode', name: 'Reduce Blue Light', cat: 'video', enabled: true, icon: 'mdi:eye-outline' },
   { type: 'select', id: 'digital_sound_output', row: 'soundOutputDigital', name: 'Digital Sound Output', cat: 'controls', icon: 'mdi:surround-sound' },
   { type: 'number', id: 'balance', row: 'audioBalance', name: 'Balance', cat: 'controls', icon: 'mdi:scale-balance' },
   { type: 'switch', id: 'automatic_volume', row: 'autoVolume', name: 'Automatic Volume', cat: 'controls', icon: 'mdi:volume-equal' },
