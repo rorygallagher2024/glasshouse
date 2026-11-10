@@ -212,7 +212,8 @@ it there when the rows are rebuilt, and **Keep the preview on** shows the input
 last watched with the focus on Apps. A heartbeat saying the screen saver is over
 the view stops the preview, and the next one without it brings it back. `test-home.js` checks the TV tile is first
 in the Inputs row on a TV with channels, absent without them, opens Live TV,
-and that both options default to off and save.
+and that Keep the preview on, Preview in the tile and Preview sound default to
+off and save. Preview sound also rejects non-boolean values.
 
 `test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved. Between uploads it waits, up to 5 s, for the last one's file to be cleared, rather than a fixed time a slow runner can outlast. It also checks that the phone's setup link serves its page, `i18n.js` and a language file with the one-time code, the page asking for `i18n.js` with it, and refuses them without.
 
