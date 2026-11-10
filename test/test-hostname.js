@@ -3,7 +3,7 @@
  * reverse lookup of them
  */
 
-require('./fake-clock').install();
+// collectStats runs df: a simulated clock can time it out before the child replies.
 var assert = require('assert');
 var dns = require('dns');
 var os = require('os');
