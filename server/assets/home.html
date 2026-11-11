@@ -1637,13 +1637,14 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function renderPicture() {
     var p = picture;
     var s = p && p.signal;
-    if (!p || !(s || p.mode || lastOn.kind === 'input')) { $('plate').className = 'none'; return; }
+    var showNoSignal = lastOn.kind === 'input' && (!p || p.signalKnown !== false);
+    if (!p || !(s || p.mode || showNoSignal)) { $('plate').className = 'none'; return; }
     var sig = [];
     if (s) {
       // An app's video, noted while it played: it has stopped since.
       if (s.played) sig.push(t('home.plate.played', 'Last video'));
       sig = sig.concat(signalParts(s));
-    } else if (lastOn.kind === 'input') {
+    } else if (showNoSignal) {
       sig.push(t('home.plate.noSignal', 'No picture coming in'));
     }
     $('plSig').innerHTML = spans(sig);
@@ -2259,7 +2260,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (gen !== tilePreview.gen) return;
       getJson('/api/home/signal?port=' + port, function (r) {
         if (gen !== tilePreview.gen) return;
-        if (r && r.ok && r.signal) return loadPreviewInfo(tilePreview.target, gen);
+        // Boards without receiver proc files answer signal: null (unknown);
+        // let the preview keep playing rather than blanking on no reading.
+        if (r && r.ok && (r.signal || r.signal === null)) return loadPreviewInfo(tilePreview.target, gen);
         if (tries > 1) return checkSignal(port, gen, tries - 1);
         blankPreview();
       });

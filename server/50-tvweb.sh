@@ -294,7 +294,27 @@ has_hdmi_signal() {
     *) return 0 ;;
   esac
   status_file="/proc/lg/hdmi20/port$port/status"
-  [ -f "$status_file" ] || return 0
+  if [ ! -f "$status_file" ] && [ -d /proc/lgtv-driver/hdmi_status ]; then
+    status_file=""
+    for f in /proc/lgtv-driver/hdmi_status/hdmi.p[0-3]; do
+      [ -f "$f" ] || continue
+      if grep -q "^[[:space:]]*hwport:[[:space:]]*${hdmi_num}[[:space:]]*$" "$f"; then
+        status_file="$f"
+        break
+      fi
+    done
+    if [ -z "$status_file" ]; then
+      fallback="/proc/lgtv-driver/hdmi_status/hdmi.p$((hdmi_num - 1))"
+      if [ -f "$fallback" ] && ! grep -q "^[[:space:]]*hwport:" "$fallback"; then
+        status_file="$fallback"
+      fi
+    fi
+  fi
+  [ -n "$status_file" ] && [ -f "$status_file" ] || return 0
+  if grep -q '^[[:space:]]*phy_lock_status:' "$status_file"; then
+    grep -q '^[[:space:]]*phy_lock_status:[[:space:]]*1[[:space:]]*$' "$status_file" && return 0
+    return 1
+  fi
   if grep -qi 'PHY Lock' "$status_file"; then
     grep -qi 'PHY Lock\[1\]' "$status_file" && return 0
     return 1
