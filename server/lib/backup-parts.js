@@ -32,6 +32,8 @@ var screensavers = null;
 var apps = null;
 /** @type {typeof import('./home')} */
 var home = null;
+/** @type {typeof import('./resettime')} */
+var resettime = null;
 /** @type {function(function(boolean): void): void} */
 var alwaysOnSupported = function (cb) { cb(false); };
 
@@ -97,6 +99,16 @@ var PARTS = [
       });
     },
     write: function (v, cb) { control('alwaysReadyOffStart', String(v), cb); }
+  }),
+  whereAlwaysOn({
+    id: 'nightlyRefresh',
+    action: 'nightlyRefresh',
+    valid: isBool,
+    read: function (cb) {
+      if (!resettime || !resettime.supported()) return cb(undefined);
+      cb(resettime.enabled());
+    },
+    write: function (v, cb) { control('nightlyRefresh', v, cb); }
   }),
   // 'allEnabled' (with the wallpaper) or 'alwaysReady' (dark): only the first is offered.
   lgSwitch('alwaysReadyScreen', 'general', 'lifeOnScreenMode', 'alwaysReadyScreen', function (v) { return v !== 'off'; }),
@@ -404,6 +416,7 @@ function init(opts) {
   screensavers = opts.screensavers;
   apps = opts.apps;
   home = opts.home || null;
+  if (opts.resettime) resettime = opts.resettime;
   if (opts.alwaysOnSupported) alwaysOnSupported = opts.alwaysOnSupported;
 }
 

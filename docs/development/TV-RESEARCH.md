@@ -1382,6 +1382,16 @@ Timeout" in `tvpowerd`), which clears tmpfs and bind mounts; and sam came back
 as the same pid after it, so a pid check alone does not show a restart there:
 `ps -o etime` and `/proc/uptime` do.
 
+## Instant Boot Refresh and 4 h forced power-off (G4, C2, webOS 10.3.1, 9.2.2)
+
+In LG's `tvpowerd` (webOS 7 and later), when uptime passes 24 h (stock threshold `1440` min), switching the TV off initiates an Instant Boot Refresh reboot (`rebootByOnRegular`) roughly two minutes later.
+
+When the TV boots into Active Standby, `QuickBootdMgr::startActiveStandbyForcedOffTimer` checks whether `alwaysOn` is enabled. At ~11 s into boot, `settingsd` has not delivered the setting yet (which arrives at ~16.5 s). Because the in-memory flag is 0 at 11 s, `tvpowerd` arms a hardcoded 14,400 s (4-hour) forced power-off timer (`Forced Power Off Timer start(period:14400)`). When `alwaysOn: 1` arrives 5 s later, `setAlwaysOn` updates the flag but does not cancel the running timer. Exactly 14,400 s later (at 14,410 to 14,412 s of uptime), the timer fires and calls `powerOffActiveStandby("offByWarmWait")`, cutting power completely (`Active Standby -> Power Off`). This explains the 14,411 s cold power-off observed on the C4 below and on the C1 in #1199.
+
+Entering Suspend (`setPowerState`) clears the timer. When `rebootByOnRegular` occurs inside the 5-hour Nightly power-down window (e.g. 03:00–08:00), the TV transitions to Suspend roughly two minutes later, clearing the timer and preventing the 4 h forced shutdown.
+
+The refresh threshold is managed in memory via `luna://com.webos.service.qbd/getResetTime` and `com.webos.service.qbd/setResetTime {"timeMin": min}` (which forwards to `com.webos.service.aos`). Both answer `timeMin: 1440` by default. Raising `timeMin` dynamically pushes the threshold so that the reboot only fires during the nightly power-down window, avoiding daytime drops to Power Off (#1288).
+
 ## The TV's time zone (C5, webOS 10.3.1)
 
 `com.webos.service.systemservice/time/getSystemTime` gives the time zone with
