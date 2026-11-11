@@ -163,8 +163,38 @@ function writeSaver(dir, manifest, qml) {
                     assert.strictEqual(okStop.ok, true);
                     assert.strictEqual(injectedKey, true);
                     console.log('  ✓ 2..100 list overrides, QML staging, labels, and burn-in trigger guard work');
-                    env.restore();
-                    console.log('ALL test-saver-entity-list.js assertions passed!\n');
+
+                    // Default value color is white (#a8aeb6 at dim 65, #ffffff at bright 100)
+                    assert.ok(qml.indexOf('#a8aeb6') !== -1 || qml.indexOf('#ffffff') !== -1);
+                    assert.strictEqual(qml.indexOf('__TVWEB_COLOR__'), -1);
+
+                    screensavers.setSaverColor('clock', 'blue', function (nonCol) {
+                      assert.strictEqual(nonCol.ok, false);
+                      screensavers.setSaverColor('ha-display', 'neon', function (badCol) {
+                        assert.strictEqual(badCol.ok, false);
+                        screensavers.setSaverColor('ha-display', 'green', function (okCol) {
+                          assert.strictEqual(okCol.ok, true);
+                          assert.strictEqual(screensavers.screensaverColor(), 'green');
+                          var qmlGreen = fs.readFileSync(path.join(screensavers.SCREENSAVER_DIR, 'qml', 'main.qml'), 'utf8');
+                          assert.ok(qmlGreen.indexOf('#4e9960') !== -1, 'dim green hex expected at default dim brightness');
+
+                          // Bright brightness switches to bright green hex
+                          env.files['/usr/palm/applications/com.webos.app.screensaver/.tvweb-brightness'] = '100';
+                          screensavers.restageScreensaver();
+                          var qmlBright = fs.readFileSync(path.join(screensavers.SCREENSAVER_DIR, 'qml', 'main.qml'), 'utf8');
+                          assert.ok(qmlBright.indexOf('#8ce99a') !== -1, 'bright green hex expected at 100% brightness');
+
+                          var dispMode = screensavers.screensaverList().modes.filter(function (m) { return m.id === 'ha-display'; })[0];
+                          assert.strictEqual(dispMode.color, 'green');
+                          assert.strictEqual(dispMode.colors.length, 6);
+                          assert.strictEqual(dispMode.colors[0].id, 'white');
+                          console.log('  ✓ value color defaults to white and supports customizable color presets');
+
+                          env.restore();
+                          console.log('ALL test-saver-entity-list.js assertions passed!\n');
+                        });
+                      });
+                    });
                   });
                 });
               });

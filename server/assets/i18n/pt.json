@@ -3135,5 +3135,18 @@
   "ss.entityList.moveUp": {"text": "Mover para cima", "from": "Move up"},
   "ss.entityList.remove": {"text": "Remover", "from": "Remove"},
   "ss.entityList.statusNeedMore": {"text": "Adicione pelo menos {min} entidades ({count} de {max} configuradas). Alterna por ordem e desliza píxeis a cada mudança para proteger o painel OLED.", "from": "Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in."},
-  "ss.entityList.statusReady": {"text": "A alternar entre {count} de {max} entidades por ordem. Deixe em branco para usar o nome do Home Assistant.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."}
+  "ss.entityList.statusReady": {"text": "A alternar entre {count} de {max} entidades por ordem. Deixe em branco para usar o nome do Home Assistant.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."},
+  "ha.enabled.off": {"text": "Desativada. As proteções de ecrã do Home Assistant ficam desativadas mantendo o endereço e o token guardados.", "from": "Turned off. Home Assistant screen savers are disabled while keeping your saved address and token."},
+  "ha.enabled.on": {"text": "As proteções de ecrã podem ler as entidades configuradas do Home Assistant.", "from": "Screen savers can read configured Home Assistant entities."},
+  "ha.savedOff": {"text": "Guardado (a API do Home Assistant está desligada).", "from": "Saved (Home Assistant API is turned off)."},
+  "ha.status.checking": {"text": "A verificar...", "from": "Checking..."},
+  "ha.status.connected": {"text": "Ligado", "from": "Connected"},
+  "ha.summaryOff": {"text": "Desativada. Ligue acima para reativar as proteções de ecrã do Home Assistant.", "from": "Turned off. Switch on above to re-enable Home Assistant screen savers."},
+  "srv.saver.color.amber": {"text": "Âmbar", "from": "Amber"},
+  "srv.saver.color.blue": {"text": "Azul", "from": "Blue"},
+  "srv.saver.color.green": {"text": "Verde", "from": "Green"},
+  "srv.saver.color.purple": {"text": "Roxo", "from": "Purple"},
+  "srv.saver.color.red": {"text": "Vermelho", "from": "Red"},
+  "srv.saver.color.white": {"text": "Branco", "from": "White"},
+  "ss.valueColor": {"text": "Cor do valor", "from": "Value colour"}
 }

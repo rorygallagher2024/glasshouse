@@ -3135,5 +3135,18 @@
   "ss.entityList.moveUp": {"text": "Вверх", "from": "Move up"},
   "ss.entityList.remove": {"text": "Удалить", "from": "Remove"},
   "ss.entityList.statusNeedMore": {"text": "Добавьте минимум {min} сущности (настроено {count} из {max}). Показывает по очереди со сдвигом пикселей для защиты OLED-панели.", "from": "Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in."},
-  "ss.entityList.statusReady": {"text": "Чередование {count} из {max} сущностей по порядку. Оставьте пустым, чтобы использовать имя из Home Assistant.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."}
+  "ss.entityList.statusReady": {"text": "Чередование {count} из {max} сущностей по порядку. Оставьте пустым, чтобы использовать имя из Home Assistant.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."},
+  "ha.enabled.off": {"text": "Выключено. Заставки Home Assistant отключены, но адрес и токен сохранены.", "from": "Turned off. Home Assistant screen savers are disabled while keeping your saved address and token."},
+  "ha.enabled.on": {"text": "Заставки могут читать настроенные сущности Home Assistant.", "from": "Screen savers can read configured Home Assistant entities."},
+  "ha.savedOff": {"text": "Сохранено (API Home Assistant выключен).", "from": "Saved (Home Assistant API is turned off)."},
+  "ha.status.checking": {"text": "Проверка...", "from": "Checking..."},
+  "ha.status.connected": {"text": "Подключено", "from": "Connected"},
+  "ha.summaryOff": {"text": "Выключено. Включите выше, чтобы снова использовать заставки Home Assistant.", "from": "Turned off. Switch on above to re-enable Home Assistant screen savers."},
+  "srv.saver.color.amber": {"text": "Янтарный", "from": "Amber"},
+  "srv.saver.color.blue": {"text": "Синий", "from": "Blue"},
+  "srv.saver.color.green": {"text": "Зелёный", "from": "Green"},
+  "srv.saver.color.purple": {"text": "Фиолетовый", "from": "Purple"},
+  "srv.saver.color.red": {"text": "Красный", "from": "Red"},
+  "srv.saver.color.white": {"text": "Белый", "from": "White"},
+  "ss.valueColor": {"text": "Цвет значения", "from": "Value colour"}
 }

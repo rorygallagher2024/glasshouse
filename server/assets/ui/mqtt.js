@@ -2,8 +2,10 @@
 
 // ---- MQTT & Home Assistant settings ----
 let cfgPasswordSet = false;
+let cfgHaEnabled = true;
 let cfgHaUrl = '';
 let cfgHaTokenSet = false;
+let cfgHaWritable = true;
 
 function toggleMqtt() { showTab(activeTab === 'mqtt' ? 'control' : 'mqtt'); }
 
@@ -320,8 +322,10 @@ async function loadSettings(keepMsg) {
     cfgSyncTls();
 
     const ha = j.homeAssistant || {};
+    cfgHaEnabled = ha.enabled !== false;
     cfgHaUrl = ha.url || '';
     cfgHaTokenSet = !!ha.tokenSet;
+    cfgHaWritable = !!j.writable;
     const haUrlInput = q('cfg-ha-url');
     if (haUrlInput) {
       haUrlInput.value = cfgHaUrl;
@@ -339,12 +343,18 @@ async function loadSettings(keepMsg) {
     }
     const haSaveBtn = q('cfg-ha-save-btn');
     if (haSaveBtn) haSaveBtn.disabled = !j.writable;
+    const haToggleBtn = q('cfg-ha-enabled');
+    if (haToggleBtn) haToggleBtn.disabled = !j.writable;
+    renderHaEnabledToggle();
     const haMsgEl = q('cfg-ha-msg');
     if (haMsgEl && !keepMsg) {
       haMsgEl.textContent = '';
       haMsgEl.className = 'cfg-msg';
     }
-    renderHaStatus(!!(cfgHaUrl && cfgHaTokenSet), cfgHaUrl);
+    renderHaStatus(ha.status || null);
+    if (cfgHaEnabled && cfgHaUrl && cfgHaTokenSet && cfgHaWritable) {
+      checkHaStatus();
+    }
 
     if (m.entities) cfgEntities = m.entities;
     if (m.categories) cfgCategories = m.categories;
@@ -408,7 +418,7 @@ async function saveSettings() {
   const haUrl = haUrlEl ? haUrlEl.value.trim() : '';
   const haToken = haTokenEl ? haTokenEl.value.trim() : '';
   if (haUrl !== '' || haToken !== '' || cfgHaUrl !== '' || cfgHaTokenSet) {
-    body.homeAssistant = { url: haUrl };
+    body.homeAssistant = { enabled: cfgHaEnabled, url: haUrl };
     if (haToken !== '') body.homeAssistant.token = haToken;
   }
 
@@ -442,19 +452,129 @@ function openHaSettings() {
   if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function renderHaStatus(configured, url) {
+function renderHaEnabledToggle() {
+  const btn = q('cfg-ha-enabled');
+  const note = q('cfg-ha-enabled-note');
+  if (btn) btn.classList.toggle('on', cfgHaEnabled);
+  if (note) {
+    note.textContent = cfgHaEnabled
+      ? t('ha.enabled.on', 'Screen savers can read configured Home Assistant entities.')
+      : t('ha.enabled.off', 'Turned off. Home Assistant screen savers are disabled while keeping your saved address and token.');
+  }
+}
+
+async function toggleHaEnabled() {
+  if (!cfgHaWritable) return;
+  const next = !cfgHaEnabled;
+  cfgHaEnabled = next;
+  renderHaEnabledToggle();
+
+  const btn = q('cfg-ha-enabled');
+  const msgEl = q('cfg-ha-msg');
+  if (!(cfgHaUrl && cfgHaTokenSet)) {
+    renderHaStatus(null);
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (msgEl) { msgEl.textContent = t('mqtt.saving', 'Saving...'); msgEl.className = 'cfg-msg'; }
+  try {
+    const r = await fetch(api('/api/ha/save'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: next })
+    });
+    const j = await r.json();
+    if (!j.ok) {
+      cfgHaEnabled = !next;
+      renderHaEnabledToggle();
+      if (msgEl) { msgEl.textContent = j.error || t('mqtt.saveFailed', 'Save failed'); msgEl.className = 'cfg-msg bad'; }
+      return;
+    }
+    cfgHaEnabled = j.enabled !== false;
+    renderHaEnabledToggle();
+    if (typeof resetHaEntitiesCache === 'function') resetHaEntitiesCache();
+    if (typeof loadScreensavers === 'function') loadScreensavers();
+    if (!cfgHaEnabled) {
+      renderHaStatus(j.status || { state: 'disabled' });
+      if (msgEl) { msgEl.textContent = ''; msgEl.className = 'cfg-msg'; }
+      return;
+    }
+    await checkHaStatus(msgEl);
+  } catch (e) {
+    cfgHaEnabled = !next;
+    renderHaEnabledToggle();
+    if (msgEl) { msgEl.textContent = e.message; msgEl.className = 'cfg-msg bad'; }
+  } finally {
+    if (btn) btn.disabled = !cfgHaWritable;
+  }
+}
+
+function renderHaStatus(statusObj) {
   const pill = q('ha-api-pill');
   const summary = q('ha-api-summary');
+  const st = !cfgHaEnabled ? 'disabled'
+    : !(cfgHaUrl && cfgHaTokenSet) ? 'unconfigured'
+    : (statusObj && statusObj.state) || 'unknown';
   if (pill) {
-    pill.textContent = configured
-      ? t('ha.savedStatus', 'Configured')
-      : t('ha.notSet', 'Not set');
-    pill.className = 'pill ' + (configured ? 'good' : 'idle');
+    if (st === 'connected') {
+      pill.textContent = t('ha.status.connected', 'Connected');
+      pill.className = 'pill good';
+    } else if (st === 'error') {
+      pill.textContent = t('mqtt.state.error', 'Error');
+      pill.className = 'pill bad';
+    } else if (st === 'checking') {
+      pill.textContent = t('ha.status.checking', 'Checking...');
+      pill.className = 'pill warn';
+    } else if (st === 'disabled') {
+      pill.textContent = t('common.off', 'Off');
+      pill.className = 'pill idle';
+    } else if (st === 'unconfigured') {
+      pill.textContent = t('ha.notSet', 'Not set');
+      pill.className = 'pill idle';
+    } else {
+      pill.textContent = t('ha.savedStatus', 'Configured');
+      pill.className = 'pill idle';
+    }
   }
   if (summary) {
-    summary.textContent = configured && url
-      ? url
-      : t('ha.summaryEmpty', 'Screen savers cannot read Home Assistant entities until configured.');
+    if (st === 'disabled') {
+      summary.textContent = cfgHaUrl
+        ? (cfgHaUrl + ' \u2014 ' + t('ha.summaryOff', 'Turned off. Switch on above to re-enable Home Assistant screen savers.'))
+        : t('ha.summaryOff', 'Turned off. Switch on above to re-enable Home Assistant screen savers.');
+    } else if (st === 'unconfigured') {
+      summary.textContent = t('ha.summaryEmpty', 'Screen savers cannot read Home Assistant entities until configured.');
+    } else if (st === 'error' && statusObj && statusObj.error) {
+      summary.textContent = (cfgHaUrl ? cfgHaUrl + ' \u2014 ' : '') + statusObj.error;
+    } else {
+      summary.textContent = cfgHaUrl || '';
+    }
+  }
+}
+
+async function checkHaStatus(msgEl) {
+  if (!(cfgHaEnabled && cfgHaUrl && cfgHaTokenSet)) {
+    renderHaStatus(null);
+    return;
+  }
+  renderHaStatus({ state: 'checking' });
+  try {
+    const r = await fetch(api('/api/ha/test'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const j = await r.json();
+    if (j.ok) {
+      renderHaStatus({ state: 'connected', message: j.message });
+      if (msgEl) { msgEl.textContent = t('ha.connected', 'Connected: {msg}', { msg: j.message || 'OK' }); msgEl.className = 'cfg-msg good'; }
+    } else {
+      renderHaStatus({ state: 'error', error: j.error || t('ha.testFailed', 'Connection failed') });
+      if (msgEl) { msgEl.textContent = j.error || t('ha.testFailed', 'Connection failed'); msgEl.className = 'cfg-msg bad'; }
+    }
+  } catch (e) {
+    renderHaStatus({ state: 'error', error: e.message });
+    if (msgEl) { msgEl.textContent = e.message; msgEl.className = 'cfg-msg bad'; }
   }
 }
 
@@ -464,7 +584,7 @@ async function saveHaSettings() {
   if (!btn || !msgEl) return;
   const url = q('cfg-ha-url') ? q('cfg-ha-url').value.trim() : '';
   const token = q('cfg-ha-token') ? q('cfg-ha-token').value.trim() : '';
-  const payload = { url: url };
+  const payload = { enabled: cfgHaEnabled, url: url };
   if (token !== '') payload.token = token;
   else if (url === '') payload.clearToken = true;
 
@@ -484,8 +604,10 @@ async function saveHaSettings() {
       msgEl.className = 'cfg-msg bad';
       return;
     }
+    cfgHaEnabled = j.enabled !== false;
     cfgHaUrl = j.url || '';
     cfgHaTokenSet = !!j.tokenSet;
+    renderHaEnabledToggle();
     const tokenInput = q('cfg-ha-token');
     if (tokenInput) tokenInput.value = '';
     const tokenHint = q('cfg-ha-token-hint');
@@ -494,15 +616,22 @@ async function saveHaSettings() {
         ? t('ha.token.set', 'A token is set. Leave blank to keep it.')
         : t('ha.token.hint', 'From your Home Assistant profile → Long-Lived Access Tokens.');
     }
-    renderHaStatus(!!j.configured, cfgHaUrl);
     if (typeof resetHaEntitiesCache === 'function') resetHaEntitiesCache();
     if (typeof loadScreensavers === 'function') loadScreensavers();
 
     if (!j.url && !j.tokenSet) {
+      renderHaStatus(null);
       msgEl.textContent = t('ha.cleared', 'Cleared.');
       msgEl.className = 'cfg-msg';
       return;
     }
+    if (!cfgHaEnabled) {
+      renderHaStatus(j.status || { state: 'disabled' });
+      msgEl.textContent = t('ha.savedOff', 'Saved (Home Assistant API is turned off).');
+      msgEl.className = 'cfg-msg';
+      return;
+    }
+    renderHaStatus({ state: 'checking' });
     const tr = await fetch(api('/api/ha/test'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -510,9 +639,11 @@ async function saveHaSettings() {
     });
     const tj = await tr.json();
     if (tj.ok) {
+      renderHaStatus({ state: 'connected', message: tj.message });
       msgEl.textContent = t('ha.savedConnected', 'Saved — Connected: {msg}', { msg: tj.message || 'OK' });
       msgEl.className = 'cfg-msg good';
     } else {
+      renderHaStatus({ state: 'error', error: tj.error || '' });
       msgEl.textContent = t('ha.savedWarn', 'Saved (test failed: {err})', { err: tj.error || '' });
       msgEl.className = 'cfg-msg bad';
     }
@@ -542,13 +673,15 @@ async function testHaConnection() {
       body: JSON.stringify({ url: url, token: token || undefined })
     });
     const j = await r.json();
+    const unsaved = (url !== cfgHaUrl) || (token !== '');
     if (j.ok) {
-      const unsaved = (url !== cfgHaUrl) || (token !== '');
+      if (!unsaved && cfgHaEnabled) renderHaStatus({ state: 'connected', message: j.message });
       msgEl.textContent = unsaved
         ? t('ha.connectedUnsaved', 'Connected: {msg} (click Save to apply)', { msg: j.message || 'OK' })
         : t('ha.connected', 'Connected: {msg}', { msg: j.message || 'OK' });
       msgEl.className = 'cfg-msg good';
     } else {
+      if (!unsaved && cfgHaEnabled) renderHaStatus({ state: 'error', error: j.error || '' });
       msgEl.textContent = j.error || t('ha.testFailed', 'Connection failed');
       msgEl.className = 'cfg-msg bad';
     }

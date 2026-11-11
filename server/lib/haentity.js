@@ -17,19 +17,26 @@ var LIST_TIMEOUT_MS = 8000;
 var MAX_BYTES = 65536;
 var MAX_LIST_BYTES = 4 * 1024 * 1024;
 
-var cfg = { url: '', token: '' };
+var cfg = { enabled: true, url: '', token: '' };
+var lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
 
 function init(opts) {
   opts = opts || {};
   var ha = (opts.config && opts.config.homeAssistant) || {};
   cfg = {
+    enabled: ha.enabled !== false,
     url: typeof ha.url === 'string' ? ha.url.replace(/\/+$/, '') : '',
     token: typeof ha.token === 'string' ? ha.token : ''
   };
+  lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
+}
+
+function hasCredentials() {
+  return !!(/^https?:\/\//i.test(cfg.url) && cfg.token);
 }
 
 function configured() {
-  return !!(/^https?:\/\//i.test(cfg.url) && cfg.token);
+  return !!(cfg.enabled && hasCredentials());
 }
 
 /**
@@ -117,7 +124,13 @@ function read(entityId, cb) {
   }
 
   requestHaJson(cfg.url + '/api/states/' + entityId, cfg.token, { maxBytes: MAX_BYTES, label: entityId, entityId: entityId }, function (r) {
-    if (!r.ok) return cb(r);
+    if (!r.ok) {
+      if (!/^no entity /.test(r.error || '')) {
+        lastStatus = { ok: false, message: '', error: r.error || 'Error', checkedAt: Date.now() };
+      }
+      return cb(r);
+    }
+    lastStatus = { ok: true, message: lastStatus.message || 'Connected to Home Assistant', error: '', checkedAt: Date.now() };
     var body = r.body;
     if (!body || typeof body.state !== 'string') return cb({ ok: false, error: entityId + ' has no state' });
     cb({
@@ -132,14 +145,16 @@ function read(entityId, cb) {
 
 function update(ha) {
   ha = ha || {};
+  if (typeof ha.enabled === 'boolean') cfg.enabled = ha.enabled;
   if (typeof ha.url === 'string') cfg.url = ha.url.replace(/\/+$/, '');
   if (typeof ha.token === 'string') cfg.token = ha.token;
+  lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
 }
 
 function test(opts, cb) {
   cb = cb || function () {};
   opts = opts || {};
-  var testUrl = typeof opts.url === 'string' ? opts.url.replace(/\/+$/, '') : cfg.url;
+  var testUrl = typeof opts.url === 'string' && opts.url ? opts.url.replace(/\/+$/, '') : cfg.url;
   var testToken = (typeof opts.token === 'string' && opts.token) ? opts.token : cfg.token;
 
   if (!/^https?:\/\//i.test(testUrl)) {
@@ -150,10 +165,36 @@ function test(opts, cb) {
   }
 
   requestHaJson(testUrl + '/api/', testToken, { maxBytes: MAX_BYTES, label: 'Home Assistant' }, function (r) {
-    if (!r.ok) return cb(r);
+    if (!r.ok) {
+      if (cfg.enabled && testUrl === cfg.url) {
+        lastStatus = { ok: false, message: '', error: r.error || 'Connection failed', checkedAt: Date.now() };
+      }
+      return cb(r);
+    }
     var body = r.body;
-    cb({ ok: true, message: (body && body.message) || 'Connected to Home Assistant' });
+    var okMsg = (body && body.message) || 'Connected to Home Assistant';
+    if (cfg.enabled && testUrl === cfg.url) {
+      lastStatus = { ok: true, message: okMsg, error: '', checkedAt: Date.now() };
+    }
+    cb({ ok: true, message: okMsg });
   });
+}
+
+function status() {
+  var st = !cfg.enabled ? 'disabled'
+    : !hasCredentials() ? 'unconfigured'
+    : lastStatus.ok === true ? 'connected'
+    : lastStatus.ok === false ? 'error'
+    : 'unknown';
+  return {
+    enabled: cfg.enabled,
+    configured: configured(),
+    hasCredentials: hasCredentials(),
+    state: st,
+    error: lastStatus.error || '',
+    message: lastStatus.message || '',
+    checkedAt: lastStatus.checkedAt || null
+  };
 }
 
 /**
@@ -165,8 +206,15 @@ function list(cb) {
     return cb({ ok: false, error: 'Home Assistant is not configured' });
   }
   requestHaJson(cfg.url + '/api/states', cfg.token, { maxBytes: MAX_LIST_BYTES, timeoutMs: LIST_TIMEOUT_MS, label: 'Home Assistant' }, function (r) {
-    if (!r.ok) return cb(r);
-    if (!Array.isArray(r.body)) return cb({ ok: false, error: 'Home Assistant did not return an entity list' });
+    if (!r.ok) {
+      lastStatus = { ok: false, message: '', error: r.error || 'Error', checkedAt: Date.now() };
+      return cb(r);
+    }
+    if (!Array.isArray(r.body)) {
+      lastStatus = { ok: false, message: '', error: 'Home Assistant did not return an entity list', checkedAt: Date.now() };
+      return cb({ ok: false, error: 'Home Assistant did not return an entity list' });
+    }
+    lastStatus = { ok: true, message: lastStatus.message || 'API running.', error: '', checkedAt: Date.now() };
     var out = [];
     for (var i = 0; i < r.body.length; i++) {
       var item = r.body[i];
@@ -188,6 +236,8 @@ module.exports = {
   read: read,
   list: list,
   configured: configured,
+  hasCredentials: hasCredentials,
   update: update,
-  test: test
+  test: test,
+  status: status
 };

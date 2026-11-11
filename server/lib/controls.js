@@ -1109,6 +1109,13 @@ function doControl(action, value, cb) {
       }
       return screensavers.setSaverEntities(value.saver, value.entities, cb);
 
+    case 'screensaverColor':
+      if (!screensavers) return cb({ ok: false, error: 'screensavers module not available' });
+      if (!value || typeof value !== 'object' || !value.saver || !value.color) {
+        return cb({ ok: false, error: 'screensaverColor requires saver and color' });
+      }
+      return screensavers.setSaverColor(value.saver, value.color, cb);
+
     case 'toast':
       /* Both the payload's sourceId and luna-send's -a have to name an app the
          bus already knows; "tvweb" is rejected as an Unknown Source. */

@@ -106,6 +106,14 @@ async function loadScreensavers() {
   if (choices) renderSsPick(choices, d.choice, locked);
   else ssPickOpen(false);
 
+  // Value color customization where the active saver supports it.
+  const colors = active && active.colors;
+  if (q('ss-color-row')) {
+    q('ss-color-row').hidden = !(colors && colors.length);
+    if (colors && colors.length) renderSsColorPick(colors, active.color, locked);
+    else ssColorPickOpen(false);
+  }
+
   // Entities or ordered entity list declared by the active screen saver:
   const entities = active && active.entities;
   const entityList = active && active.entityList;
@@ -167,6 +175,23 @@ function renderSsPick(choices, current, locked) {
       aria-selected="${c.id === cur.id ? 'true' : 'false'}">${esc(c.label)}</div>`;
   });
   list.innerHTML = html;
+}
+
+let ssColorKey_ = '';
+function renderSsColorPick(colors, current, locked) {
+  const btn = q('ss-color'), list = q('ss-color-list');
+  if (!btn || !list) return;
+  const cur = colors.find(c => c.id === current) || colors[0];
+  btn.innerHTML = `<span class="ss-color-dot" style="background:${esc(cur.hex)}"></span><span>${esc(cur.label)}</span>`;
+  btn.disabled = locked;
+  const key = cur.id + '|' + colors.map(c => c.id + ':' + c.label).join(',');
+  if (key === ssColorKey_) return;
+  ssColorKey_ = key;
+  list.innerHTML = colors.map(c => `
+    <div class="ss-pick-opt ss-color-opt" role="option" id="ss-copt-${esc(c.id)}" data-id="${esc(c.id)}"
+      aria-selected="${c.id === cur.id ? 'true' : 'false'}">
+      <span class="ss-color-dot" style="background:${esc(c.hex)}"></span><span>${esc(c.label)}</span>
+    </div>`).join('');
 }
 
 let ssEntitiesKey_ = '';
@@ -535,23 +560,24 @@ function saveSsEntityLabel(saverId, slot, label) {
   return saveSsEntityPatch(saverId, slot, { label: label.trim() });
 }
 
-function ssPickOpts() { return [...q('ss-pick-list').querySelectorAll('.ss-pick-opt')]; }
+function ssMenuOpts(listId) { return [...q(listId).querySelectorAll('.ss-pick-opt')]; }
 
-function ssPickOpen(open) {
-  const list = q('ss-pick-list'), btn = q('ss-choice');
+function ssMenuOpen(btnId, listId, open) {
+  const list = q(listId), btn = q(btnId);
+  if (!list || !btn) return;
   if (open && btn.disabled) return;
   list.hidden = !open;
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   if (!open) return;
-  const sel = list.querySelector('[aria-selected="true"]') || ssPickOpts()[0];
-  ssPickActive(sel);
+  const sel = list.querySelector('[aria-selected="true"]') || ssMenuOpts(listId)[0];
+  ssMenuActive(listId, sel);
   list.focus();
 }
 
-// The option the arrow keys are on, kept in view below its sticky heading.
-function ssPickActive(el) {
-  const list = q('ss-pick-list');
-  ssPickOpts().forEach(o => o.classList.toggle('act', o === el));
+// The option the arrow keys are on, kept in view below any sticky heading.
+function ssMenuActive(listId, el) {
+  const list = q(listId);
+  ssMenuOpts(listId).forEach(o => o.classList.toggle('act', o === el));
   if (!el) return;
   list.setAttribute('aria-activedescendant', el.id);
   const head = 34, top = el.offsetTop - head, bottom = el.offsetTop + el.offsetHeight;
@@ -559,12 +585,12 @@ function ssPickActive(el) {
   else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
 }
 
-function ssPickKey(ev) {
-  const list = q('ss-pick-list'), open = !list.hidden;
-  const opts = ssPickOpts(), at = opts.indexOf(list.querySelector('.ss-pick-opt.act'));
-  const go = i => { ev.preventDefault(); ssPickActive(opts[Math.max(0, Math.min(opts.length - 1, i))]); };
+function ssMenuKey(ev, btnId, listId, openFn, pickFn) {
+  const list = q(listId), open = list && !list.hidden;
+  const opts = ssMenuOpts(listId), at = opts.indexOf(list && list.querySelector('.ss-pick-opt.act'));
+  const go = i => { ev.preventDefault(); ssMenuActive(listId, opts[Math.max(0, Math.min(opts.length - 1, i))]); };
   if (!open) {
-    if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(ev.key)) { ev.preventDefault(); ssPickOpen(true); }
+    if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(ev.key)) { ev.preventDefault(); openFn(true); }
     return;
   }
   if (ev.key === 'ArrowDown') return go(at + 1);
@@ -573,9 +599,12 @@ function ssPickKey(ev) {
   if (ev.key === 'PageUp') return go(at - 10);
   if (ev.key === 'Home') return go(0);
   if (ev.key === 'End') return go(opts.length - 1);
-  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); if (opts[at]) pickSsChoice(opts[at].dataset.id); return; }
-  if (ev.key === 'Escape' || ev.key === 'Tab') { if (ev.key === 'Escape') ev.preventDefault(); ssPickOpen(false); q('ss-choice').focus(); }
+  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); if (opts[at]) pickFn(opts[at].dataset.id); return; }
+  if (ev.key === 'Escape' || ev.key === 'Tab') { if (ev.key === 'Escape') ev.preventDefault(); openFn(false); q(btnId).focus(); }
 }
+
+function ssPickOpen(open) { return ssMenuOpen('ss-choice', 'ss-pick-list', open); }
+function ssPickKey(ev) { return ssMenuKey(ev, 'ss-choice', 'ss-pick-list', ssPickOpen, pickSsChoice); }
 
 async function pickSsChoice(id) {
   ssPickOpen(false);
@@ -584,6 +613,19 @@ async function pickSsChoice(id) {
   if (cur && cur.dataset.id === id) return;
   q('ss-choice').disabled = true;
   await sendCommand('screensaverMode', { mode: ssCurrent, choice: id });
+  loadScreensavers();
+}
+
+function ssColorPickOpen(open) { return ssMenuOpen('ss-color', 'ss-color-list', open); }
+function ssColorPickKey(ev) { return ssMenuKey(ev, 'ss-color', 'ss-color-list', ssColorPickOpen, pickSsColor); }
+
+async function pickSsColor(id) {
+  ssColorPickOpen(false);
+  q('ss-color').focus();
+  const cur = q('ss-color-list').querySelector('[aria-selected="true"]');
+  if (cur && cur.dataset.id === id) return;
+  q('ss-color').disabled = true;
+  await sendCommand('screensaverColor', { saver: ssCurrent, color: id });
   loadScreensavers();
 }
 
@@ -663,10 +705,13 @@ document.addEventListener('click', async ev => {
     return;
   }
 
-  // The Animation list: an option picks it; a click anywhere else closes it.
+  // Choice and colour pickers: an option picks it; a click anywhere else closes them.
+  const colorOpt = ev.target.closest('.ss-color-opt[data-id]');
+  if (colorOpt) { pickSsColor(colorOpt.dataset.id); return; }
   const opt = ev.target.closest('.ss-pick-opt[data-id]');
   if (opt) { pickSsChoice(opt.dataset.id); return; }
-  if (!ev.target.closest('#ss-pick') && !q('ss-pick-list').hidden) ssPickOpen(false);
+  if (!ev.target.closest('#ss-pick') && q('ss-pick-list') && !q('ss-pick-list').hidden) ssPickOpen(false);
+  if (!ev.target.closest('#ss-color-pick') && q('ss-color-list') && !q('ss-color-list').hidden) ssColorPickOpen(false);
   if (!ev.target.closest('.ss-ent-wrap')) ssHaCloseAll();
 });
 

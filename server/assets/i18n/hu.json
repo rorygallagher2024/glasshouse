@@ -3135,5 +3135,18 @@
   "ss.entityList.moveUp": {"text": "Mozgatás fel", "from": "Move up"},
   "ss.entityList.remove": {"text": "Eltávolítás", "from": "Remove"},
   "ss.entityList.statusNeedMore": {"text": "Adjon hozzá legalább {min} entitást ({count} / {max} beállítva). Sorban vált és minden váltáskor eltolja a pixeleket az OLED védelméért.", "from": "Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in."},
-  "ss.entityList.statusReady": {"text": "{count} / {max} entitás megjelenítése sorrendben. Üresen hagyva a Home Assistant nevét használja.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."}
+  "ss.entityList.statusReady": {"text": "{count} / {max} entitás megjelenítése sorrendben. Üresen hagyva a Home Assistant nevét használja.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."},
+  "ha.enabled.off": {"text": "Kikapcsolva. A Home Assistant képernyőkímélők le vannak tiltva, a mentett cím és token megmarad.", "from": "Turned off. Home Assistant screen savers are disabled while keeping your saved address and token."},
+  "ha.enabled.on": {"text": "A képernyőkímélők beolvashatják a beállított Home Assistant entitásokat.", "from": "Screen savers can read configured Home Assistant entities."},
+  "ha.savedOff": {"text": "Mentve (a Home Assistant API ki van kapcsolva).", "from": "Saved (Home Assistant API is turned off)."},
+  "ha.status.checking": {"text": "Ellenőrzés...", "from": "Checking..."},
+  "ha.status.connected": {"text": "Csatlakozva", "from": "Connected"},
+  "ha.summaryOff": {"text": "Kikapcsolva. Kapcsolja vissza fent a Home Assistant képernyőkímélőkhöz.", "from": "Turned off. Switch on above to re-enable Home Assistant screen savers."},
+  "srv.saver.color.amber": {"text": "Borostyán", "from": "Amber"},
+  "srv.saver.color.blue": {"text": "Kék", "from": "Blue"},
+  "srv.saver.color.green": {"text": "Zöld", "from": "Green"},
+  "srv.saver.color.purple": {"text": "Lila", "from": "Purple"},
+  "srv.saver.color.red": {"text": "Piros", "from": "Red"},
+  "srv.saver.color.white": {"text": "Fehér", "from": "White"},
+  "ss.valueColor": {"text": "Érték színe", "from": "Value colour"}
 }

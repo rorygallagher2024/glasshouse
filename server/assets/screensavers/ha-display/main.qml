@@ -1,7 +1,8 @@
 /*
  * Home Assistant: Data Display screen saver: sequences through 2 to 100
- * configured Home Assistant entities one at a time on pure black, stepping
- * along a subtle pixel orbit on every change to protect OLED panels.
+ * configured Home Assistant entities one at a time on pure black, gliding
+ * gently around the screen to protect OLED panels and handling unreachable
+ * entities gracefully.
  *
  * QtQuick 2.4 and Eos.Window 0.1 for compatibility with webOS 4 through webOS 10+.
  */
@@ -43,34 +44,34 @@ WebOSWindow {
     property real unit: win.height / 1080
     property int level: __TVWEB_LEVEL__
     property color inkBright: level > 0 ? "#ffffff" : "#a8aeb6"
-    property color inkDim:    level > 0 ? "#9ca3af" : "#5c6066"
-    property color inkAccent: level > 0 ? "#7ecaff" : "#4a8cb8"
+    property color inkDim:    level > 0 ? "#c2c8d0" : "#5c6066"
+    property color inkAccent: "__TVWEB_COLOR__"
     property int stepMs: __TVWEB_CHOICE__
     property var items: __TVWEB_HA_LIST__
 
     property int currentIndex: 0
     property int pendingIndex: 0
-    property int orbitStep: 0
+    property int probeIndex: 0
+    property bool allDown: false
     property real baseX: 0
     property real baseY: 0
     Behavior on baseX { NumberAnimation { duration: 2400; easing.type: Easing.InOutQuad } }
     Behavior on baseY { NumberAnimation { duration: 2400; easing.type: Easing.InOutQuad } }
-    property real orbitDx: 0
-    property real orbitDy: 0
 
     property string shownLabel: ""
     property string shownValue: ""
     property string shownUnit: ""
 
     property var cache: ({})
-    // Subtle multi-step pixel orbit around the current anchor position (px at 1080p).
-    property var orbitPath: [
-        [0, 0], [3, 1], [5, 4], [3, 6], [0, 7], [-3, 6],
-        [-5, 4], [-3, 1], [-2, -3], [2, -5], [5, -3], [1, -1]
-    ]
+
+    function isUnavailableState(raw) {
+        if (raw === undefined || raw === null) return true;
+        var s = String(raw);
+        return s === "" || s === "unavailable" || s === "unknown";
+    }
 
     function formatNumeric(raw) {
-        if (raw === undefined || raw === null || raw === "unavailable" || raw === "unknown") return "—";
+        if (isUnavailableState(raw)) return "—";
         var s = String(raw);
         if (/^-?\d+(\.\d+)?$/.test(s)) {
             var num = parseFloat(s);
@@ -79,11 +80,14 @@ WebOSWindow {
         return s;
     }
 
-    function applyOrbit() {
-        orbitStep = (orbitStep + 1) % orbitPath.length;
-        var pt = orbitPath[orbitStep];
-        orbitDx = Math.round(pt[0] * win.unit);
-        orbitDy = Math.round(pt[1] * win.unit);
+    function countCacheState() {
+        var live = 0, unfetched = 0;
+        if (!items) return { live: 0, unfetched: 0 };
+        for (var i = 0; i < items.length; i++) {
+            if (cache[i] === undefined) unfetched++;
+            else if (cache[i].ok) live++;
+        }
+        return { live: live, unfetched: unfetched };
     }
 
     function fetchIndex(idx, done) {
@@ -93,42 +97,80 @@ WebOSWindow {
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== 4) return;
+            var prev = cache[idx];
+            var fallbackLbl = item.label || (prev && prev.label) || item.entity || "";
             if (xhr.status === 200) {
                 try {
                     var d = JSON.parse(xhr.responseText);
                     var attrs = d.attributes || {};
-                    var u = attrs.unit_of_measurement || "";
-                    var valStr = formatNumeric(d.state);
-                    var lbl = item.label || d.label || attrs.friendly_name || item.entity || "";
-                    cache[idx] = { label: lbl, value: valStr, unit: u };
-                    if (idx === win.currentIndex) {
-                        win.shownLabel = lbl;
-                        win.shownValue = valStr;
-                        win.shownUnit = u;
+                    var lbl = item.label || d.label || attrs.friendly_name || fallbackLbl;
+                    if (isUnavailableState(d.state)) {
+                        cache[idx] = { ok: false, label: lbl, value: "—", unit: "" };
+                    } else {
+                        cache[idx] = {
+                            ok: true,
+                            label: lbl,
+                            value: formatNumeric(d.state),
+                            unit: attrs.unit_of_measurement || ""
+                        };
                     }
-                    if (done) done();
-                } catch (e) {}
-            } else {
-                var fallbackLbl = item.label || item.entity || "";
-                cache[idx] = { label: fallbackLbl, value: "—", unit: "" };
-                if (idx === win.currentIndex) {
-                    win.shownLabel = fallbackLbl;
-                    win.shownValue = "—";
-                    win.shownUnit = "";
+                } catch (e) {
+                    cache[idx] = { ok: false, label: fallbackLbl, value: "—", unit: "" };
                 }
+            } else {
+                cache[idx] = { ok: false, label: fallbackLbl, value: "—", unit: "" };
             }
+
+            if (cache[idx].ok && win.allDown) {
+                win.allDown = false;
+                win.pendingIndex = idx;
+                swapAnim.restart();
+            } else if (idx === win.currentIndex && !win.allDown) {
+                win.shownLabel = cache[idx].label;
+                win.shownValue = cache[idx].value;
+                win.shownUnit = cache[idx].unit;
+            }
+            if (done) done();
         };
         xhr.open("GET", item.url, true);
         xhr.send();
     }
 
+    function pickNextIndex() {
+        if (!items || items.length < 2) return 0;
+        var counts = countCacheState();
+        var canSkipBad = (counts.live + counts.unfetched) >= 2;
+        var skippedOne = -1;
+        for (var step = 1; step <= items.length; step++) {
+            var cand = (win.currentIndex + step) % items.length;
+            var c = cache[cand];
+            if (canSkipBad && c && !c.ok) {
+                if (skippedOne === -1) skippedOne = cand;
+                continue;
+            }
+            if (skippedOne !== -1) fetchIndex(skippedOne);
+            return cand;
+        }
+        return (win.currentIndex + 1) % items.length;
+    }
+
     function showIndex(idx) {
         if (!items || items.length < 2) {
+            win.allDown = false;
             win.shownLabel = "Home Assistant";
             win.shownValue = "Add at least 2 entities";
             win.shownUnit = "";
             return;
         }
+        var counts = countCacheState();
+        if (counts.live === 0 && counts.unfetched === 0) {
+            win.allDown = true;
+            win.shownLabel = "Home Assistant";
+            win.shownValue = "Unavailable";
+            win.shownUnit = "";
+            return;
+        }
+        win.allDown = false;
         win.currentIndex = idx;
         var entry = cache[idx];
         if (entry) {
@@ -141,13 +183,12 @@ WebOSWindow {
             win.shownValue = "…";
             win.shownUnit = "";
         }
-        // Always refresh live reading and warm up the next entity in sequence.
+        // Refresh the shown entry and warm the next candidate in sequence.
         fetchIndex(idx);
         fetchIndex((idx + 1) % items.length);
     }
 
     function commitAdvance() {
-        applyOrbit();
         showIndex(pendingIndex);
     }
 
@@ -172,8 +213,8 @@ WebOSWindow {
     Item {
         id: block
 
-        x: win.baseX + win.orbitDx
-        y: win.baseY + win.orbitDy
+        x: win.baseX
+        y: win.baseY
         width: col.width
         height: col.height
 
@@ -215,7 +256,7 @@ WebOSWindow {
                         minimumPixelSize: Math.round(64 * win.unit)
                         elide: Text.ElideRight
                         maximumLineCount: 1
-                        color: win.inkAccent
+                        color: win.allDown ? win.inkDim : win.inkAccent
                         text: win.shownValue
                     }
 
@@ -249,7 +290,12 @@ WebOSWindow {
         running: items && items.length >= 2
         repeat: true
         onTriggered: {
-            win.pendingIndex = (win.currentIndex + 1) % items.length;
+            if (win.allDown) {
+                win.probeIndex = (win.probeIndex + 1) % items.length;
+                fetchIndex(win.probeIndex);
+                return;
+            }
+            win.pendingIndex = pickNextIndex();
             swapAnim.restart();
         }
     }

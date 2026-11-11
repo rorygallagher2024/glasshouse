@@ -3135,5 +3135,18 @@
   "ss.entityList.moveUp": {"text": "تحريك لأعلى", "from": "Move up"},
   "ss.entityList.remove": {"text": "إزالة", "from": "Remove"},
   "ss.entityList.statusNeedMore": {"text": "أضف ما لا يقل عن {min} كيانات ({count} من أصل {max} مضاف). يتبدل بالترتيب ويزيح البكسلات عند كل تغيير لحماية شاشة OLED.", "from": "Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in."},
-  "ss.entityList.statusReady": {"text": "يتبدل عبر {count} من أصل {max} كيانات بالترتيب. اترك التسمية فارغة لاستخدام اسم Home Assistant.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."}
+  "ss.entityList.statusReady": {"text": "يتبدل عبر {count} من أصل {max} كيانات بالترتيب. اترك التسمية فارغة لاستخدام اسم Home Assistant.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."},
+  "ha.enabled.off": {"text": "متوقف. شاشات توقف Home Assistant معطّلة مع الاحتفاظ بالعنوان والرمز المحفوظين.", "from": "Turned off. Home Assistant screen savers are disabled while keeping your saved address and token."},
+  "ha.enabled.on": {"text": "يمكن لشاشات التوقف قراءة كيانات Home Assistant المضبوطة.", "from": "Screen savers can read configured Home Assistant entities."},
+  "ha.savedOff": {"text": "تم الحفظ (واجهة Home Assistant متوقفة).", "from": "Saved (Home Assistant API is turned off)."},
+  "ha.status.checking": {"text": "جارٍ التحقق...", "from": "Checking..."},
+  "ha.status.connected": {"text": "متصل", "from": "Connected"},
+  "ha.summaryOff": {"text": "متوقف. شغّل المفتاح أعلاه لإعادة تفعيل شاشات توقف Home Assistant.", "from": "Turned off. Switch on above to re-enable Home Assistant screen savers."},
+  "srv.saver.color.amber": {"text": "كهرماني", "from": "Amber"},
+  "srv.saver.color.blue": {"text": "أزرق", "from": "Blue"},
+  "srv.saver.color.green": {"text": "أخضر", "from": "Green"},
+  "srv.saver.color.purple": {"text": "أرجواني", "from": "Purple"},
+  "srv.saver.color.red": {"text": "أحمر", "from": "Red"},
+  "srv.saver.color.white": {"text": "أبيض", "from": "White"},
+  "ss.valueColor": {"text": "لون القيمة", "from": "Value colour"}
 }

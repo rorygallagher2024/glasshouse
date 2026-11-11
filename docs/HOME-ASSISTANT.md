@@ -132,14 +132,14 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 1. In Home Assistant, open your profile (bottom-left) → **Security** → **Long-Lived Access Tokens** → **Create Token** and copy the token.
 2. Open Glasshouse in a browser and navigate to **HA & MQTT** → **Home Assistant API**.
 3. Enter your **Home Assistant address** (for example `http://192.168.1.10:8123` or `http://homeassistant.local:8123`) and paste the **Long-Lived Access Token** (or set `homeAssistant.url` and `homeAssistant.token` in `config.json`).
-4. Click **Save** — credentials apply immediately without restarting the server — then click **Test connection** to confirm Glasshouse can reach your instance.
+4. Click **Save** — credentials apply immediately without restarting the server — and Glasshouse checks the connection to update the status badge (`Connected`, `Off`, or any error). You can switch the **Home Assistant API** button off at any time to disable Home Assistant screen savers while keeping your saved address and token.
 
-![Home Assistant API settings showing address, token saved, and Connected status](screenshots/ha-api.png)
+![Home Assistant API settings showing toggle, address, token saved, and Connected status](screenshots/ha-api.png)
 
-Once saved, two Home Assistant screen savers unlock on the **Screensaver** tab (while unconfigured, both stay greyed out so non-Home-Assistant setups cannot pick them by mistake):
+Once enabled and connected, two Home Assistant screen savers unlock on the **Screensaver** tab (while off or unconfigured, both stay greyed out so non-Home-Assistant setups cannot pick them by mistake):
 
 * [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient) — shows the TV clock, date, and up to three configurable entities with optional custom display labels.
-* [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black, shifting along a pixel orbit on every change to prevent OLED burn-in.
+* [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black.
 
 Custom QML screen savers added on the TV can read Home Assistant entities too. Each declares what it needs in `saver.json`, and Glasshouse serves only those entity IDs at local URLs without ever placing the access token in QML files. See [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) for the manifest and QML format.
 

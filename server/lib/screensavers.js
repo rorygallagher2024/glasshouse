@@ -30,6 +30,7 @@ var SCREENSAVER_DIR = '/var/lib/tvweb/screensaver';
 var SCREENSAVER_MARKER = '.tvweb-screensaver';
 var SCREENSAVER_LEVEL_MARKER = '.tvweb-brightness';
 var SCREENSAVER_ENTITIES_FILE = '/var/lib/tvweb/screensaver-entities.json';
+var SCREENSAVER_COLORS_FILE = '/var/lib/tvweb/screensaver-colors.json';
 /** @type {typeof import('./haentity') | null} */
 var haEntityModule = null;
 /*
@@ -101,7 +102,16 @@ var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 // "ha" has one placeholder per entity it declares, so it carries no value here.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', ha: '', 'ha-list': '__TVWEB_HA_LIST__' };
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', color: '__TVWEB_COLOR__' };
+var DEFAULT_SAVER_COLOR = 'white';
+var COLOR_PRESETS = [
+  { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
+  { id: 'blue', label: msg('srv.saver.color.blue', 'Blue'), bright: '#7ecaff', dim: '#4a8cb8' },
+  { id: 'green', label: msg('srv.saver.color.green', 'Green'), bright: '#8ce99a', dim: '#4e9960' },
+  { id: 'amber', label: msg('srv.saver.color.amber', 'Amber'), bright: '#ffd479', dim: '#b88635' },
+  { id: 'red', label: msg('srv.saver.color.red', 'Red'), bright: '#ff8a8a', dim: '#b35252' },
+  { id: 'purple', label: msg('srv.saver.color.purple', 'Purple'), bright: '#c5a3ff', dim: '#8265b8' }
+];
 // A choice's value goes into the QML as text: kept to what a name needs.
 var CHOICE_VALUE = /^[\w.=&-]{0,100}$/;
 var CHOICE_ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
@@ -877,6 +887,64 @@ function detectExternal() {
   return { active: active, hook: hook };
 }
 
+function screensaverColorOptions() {
+  return COLOR_PRESETS.map(function (c) { return { id: c.id, label: c.label, hex: c.bright }; });
+}
+
+function findColorPreset(id) {
+  for (var i = 0; i < COLOR_PRESETS.length; i++) {
+    if (COLOR_PRESETS[i].id === id) return COLOR_PRESETS[i];
+  }
+  return COLOR_PRESETS[0];
+}
+
+function readStoredColors() {
+  try {
+    if (fs.existsSync(SCREENSAVER_COLORS_FILE)) {
+      return JSON.parse(fs.readFileSync(SCREENSAVER_COLORS_FILE, 'utf8')) || {};
+    }
+  } catch (e) {}
+  return {};
+}
+
+function writeStoredColors(all) {
+  try {
+    writeJsonAtomic(SCREENSAVER_COLORS_FILE, all);
+  } catch (e) {
+    console.warn('screensaver: could not save color preference: ' + e.message);
+  }
+}
+
+function screensaverColor(e) {
+  if (!e || !e.uses || e.uses.indexOf('color') === -1) return undefined;
+  var stored = readStoredColors();
+  var raw = stored && stored[e.id];
+  return findColorPreset(raw).id;
+}
+
+function setSaverColor(saverId, colorId, cb) {
+  cb = cb || function () {};
+  var saver = saverById(saverId);
+  if (!saver) return cb({ ok: false, error: 'unknown screen saver: ' + saverId });
+  if (!saver.uses || saver.uses.indexOf('color') === -1) {
+    return cb({ ok: false, error: saverId + ' does not support color customization' });
+  }
+  var preset = null;
+  for (var i = 0; i < COLOR_PRESETS.length; i++) {
+    if (COLOR_PRESETS[i].id === colorId) { preset = COLOR_PRESETS[i]; break; }
+  }
+  if (!preset) return cb({ ok: false, error: 'unknown color: ' + colorId });
+  var stored = readStoredColors();
+  if (preset.id === DEFAULT_SAVER_COLOR) delete stored[saverId];
+  else stored[saverId] = preset.id;
+  writeStoredColors(stored);
+  if (screensaverMode() === saverId) {
+    restageScreensaver();
+    restartScreensaverApp(function () {});
+  }
+  cb({ ok: true, color: preset.id });
+}
+
 function screensaverList() {
   var cur = screensaverMode();
   var out = [];
@@ -886,6 +954,7 @@ function screensaverList() {
     var specs = e.entities ? effectiveSaverEntitySpecs(e) : null;
     var listItems = e.entityList ? effectiveSaverEntityList(e) : null;
     var needsHa = saverMissingHa(e);
+    var hasColor = e.uses && e.uses.indexOf('color') !== -1;
     out.push({
       id: e.id,
       label: e.label,
@@ -909,6 +978,9 @@ function screensaverList() {
       choice: e.choices ? (e.id === cur ? screensaverChoice(e) : e.choices.def) : undefined,
       // What the dropdown is called, where the screen saver names it.
       choicesLabel: e.choices ? e.choices.label : undefined,
+      // Optional value color selection for savers declaring "color" in uses.
+      color: hasColor ? screensaverColor(e) : undefined,
+      colors: hasColor ? screensaverColorOptions() : undefined,
       // Home Assistant entities declared by the saver, with effective overrides.
       entities: e.entities ? Object.keys(e.entities).map(function (k) {
         var lbl = k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
@@ -1151,6 +1223,11 @@ function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
     qml = qml.replace(/__TVWEB_HA_LIST__/g, function () { return listJson; });
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
+  if (e.uses.indexOf('color') !== -1) {
+    var preset = findColorPreset(screensaverColor(e));
+    var hex = tunedLevel(level) ? preset.bright : preset.dim;
+    qml = qml.replace(/__TVWEB_COLOR__/g, function () { return hex; });
+  }
   if (e.choices) {
     var value = e.choices.options.filter(function (o) { return o.id === choice; })[0].value;
     qml = qml.replace(/__TVWEB_CHOICE__/g, value);
@@ -1629,6 +1706,8 @@ module.exports = {
   allowedAnyway: allowedAnyway,
   setScreensaver: setScreensaver,
   setSaverEntities: setSaverEntities,
+  setSaverColor: setSaverColor,
+  screensaverColor: function () { return screensaverColor(saverById(screensaverMode())); },
   screensaverChoice: function () { return screensaverChoice(saverById(screensaverMode())); },
   RENAMED: RENAMED,
   restageScreensaver: restageScreensaver,

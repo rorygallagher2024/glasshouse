@@ -316,6 +316,7 @@ function validateHaSettings(haObj) {
   var errors = [];
   var out = {};
   if (!haObj || typeof haObj !== 'object') return { errors: ['homeAssistant must be an object'], value: out };
+  if (typeof haObj.enabled === 'boolean') out.enabled = haObj.enabled;
   if (typeof haObj.url === 'string') {
     var haUrl = trimmedString(haObj.url).replace(/\/+$/, '');
     if (haUrl && !/^https?:\/\//i.test(haUrl)) {
@@ -334,6 +335,7 @@ function validateHaSettings(haObj) {
 function applyHaConfig(haPatch) {
   if (!haPatch) return;
   config.homeAssistant = config.homeAssistant || {};
+  if (haPatch.enabled !== undefined) config.homeAssistant.enabled = haPatch.enabled;
   if (haPatch.url !== undefined) config.homeAssistant.url = haPatch.url;
   if (haPatch.token !== undefined) config.homeAssistant.token = haPatch.token;
   if (haEntityModule) haEntityModule.update(config.homeAssistant);
@@ -1106,8 +1108,11 @@ function getSettingsPayload() {
     configFile: configFilePath,
     iconServer: config.iconServer === true,
     homeAssistant: {
+      enabled: haCfg.enabled !== false,
       url: haCfg.url || '',
-      tokenSet: !!haCfg.token
+      tokenSet: !!haCfg.token,
+      configured: !!(haEntityModule && haEntityModule.configured()),
+      status: (haEntityModule && typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
     },
     mqtt: {
       enabled: !!mc.enabled,
@@ -1682,9 +1687,11 @@ function handleRequest(req, res) {
         console.log('config: saved Home Assistant API settings to ' + configFilePath);
         send(res, 200, JSON.stringify({
           ok: true,
+          enabled: config.homeAssistant.enabled !== false,
           url: config.homeAssistant.url || '',
           tokenSet: !!(config.homeAssistant.token),
-          configured: haEntityModule.configured()
+          configured: haEntityModule.configured(),
+          status: (typeof haEntityModule.status === 'function') ? haEntityModule.status() : null
         }));
       });
     });

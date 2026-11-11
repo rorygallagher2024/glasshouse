@@ -1338,5 +1338,57 @@
   "ss.entityList.statusReady": {
     "text": "Wechselt der Reihe nach durch {count} von {max} Entitäten. Feld leer lassen, um den Home Assistant-Namen zu nutzen.",
     "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."
+  },
+  "ha.enabled.off": {
+    "text": "Ausgeschaltet. Home Assistant-Bildschirmschoner sind deaktiviert, Adresse und Token bleiben gespeichert.",
+    "from": "Turned off. Home Assistant screen savers are disabled while keeping your saved address and token."
+  },
+  "ha.enabled.on": {
+    "text": "Bildschirmschoner können eingerichtete Home Assistant-Entitäten lesen.",
+    "from": "Screen savers can read configured Home Assistant entities."
+  },
+  "ha.savedOff": {
+    "text": "Gespeichert (Home Assistant-API ist ausgeschaltet).",
+    "from": "Saved (Home Assistant API is turned off)."
+  },
+  "ha.status.checking": {
+    "text": "Wird geprüft...",
+    "from": "Checking..."
+  },
+  "ha.status.connected": {
+    "text": "Verbunden",
+    "from": "Connected"
+  },
+  "ha.summaryOff": {
+    "text": "Ausgeschaltet. Oben einschalten, um Home Assistant-Bildschirmschoner wieder zu aktivieren.",
+    "from": "Turned off. Switch on above to re-enable Home Assistant screen savers."
+  },
+  "srv.saver.color.amber": {
+    "text": "Bernstein",
+    "from": "Amber"
+  },
+  "srv.saver.color.blue": {
+    "text": "Blau",
+    "from": "Blue"
+  },
+  "srv.saver.color.green": {
+    "text": "Grün",
+    "from": "Green"
+  },
+  "srv.saver.color.purple": {
+    "text": "Violett",
+    "from": "Purple"
+  },
+  "srv.saver.color.red": {
+    "text": "Rot",
+    "from": "Red"
+  },
+  "srv.saver.color.white": {
+    "text": "Weiß",
+    "from": "White"
+  },
+  "ss.valueColor": {
+    "text": "Wertfarbe",
+    "from": "Value colour"
   }
 }

@@ -107,7 +107,7 @@ def check(path):
 SAVERS = pathlib.Path('server/assets/screensavers')
 EXAMPLES = pathlib.Path('server/screensavers')
 # "ha" has one placeholder per entity the saver declares, so it has none here.
-USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__', 'ha': '', 'ha-list': '__TVWEB_HA_LIST__'}
+USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__', 'ha': '', 'ha-list': '__TVWEB_HA_LIST__', 'color': '__TVWEB_COLOR__'}
 
 def check_folder(d, own):
     """Problems with one saver folder's saver.json, and its main QML file."""

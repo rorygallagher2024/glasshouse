@@ -124,17 +124,44 @@ server.listen(0, '127.0.0.1', function () {
                       assert.ok(/http/.test(r10.error), r10.error);
                       console.log('  \u2713 update() and test() check /api/ with fallback to stored token');
 
-                      // 8. list() returns sorted entities without live state values
+                      // 8. list() returns sorted entities without live state values and updates status()
                       haEntity.list(function (r11) {
                         assert.strictEqual(r11.ok, true, r11.error);
                         assert.deepEqual(r11.entities, [
                           { id: 'lock.front_door', name: 'Front Door', unit: '' },
                           { id: 'sensor.watts', name: 'House Power', unit: 'W' }
                         ]);
+                        assert.strictEqual(haEntity.status().state, 'connected');
                         console.log('  \u2713 list() returns sorted entity metadata without exposing state values');
 
-                        server.close();
-                        console.log('ALL test-haentity.js assertions passed!');
+                        // 9. enabled toggle disables HA API without dropping saved url/token
+                        haEntity.update({ enabled: false });
+                        assert.strictEqual(haEntity.configured(), false);
+                        assert.strictEqual(haEntity.hasCredentials(), true);
+                        assert.strictEqual(haEntity.status().state, 'disabled');
+                        var beforeOff = hits;
+                        haEntity.read('sensor.outdoor_temperature', function (rOff) {
+                          assert.strictEqual(rOff.ok, false);
+                          assert.strictEqual(hits, beforeOff, 'disabled HA API must not query HA');
+
+                          haEntity.update({ enabled: true });
+                          assert.strictEqual(haEntity.configured(), true);
+                          assert.strictEqual(haEntity.status().state, 'unknown');
+                          haEntity.read('sensor.outdoor_temperature', function (rOn) {
+                            assert.strictEqual(rOn.ok, true);
+                            assert.strictEqual(haEntity.status().state, 'connected');
+
+                            // Missing single entity (404) does not poison connection health
+                            haEntity.read('sensor.missing', function (r404) {
+                              assert.strictEqual(r404.ok, false);
+                              assert.strictEqual(haEntity.status().state, 'connected');
+                              console.log('  \u2713 enabled toggle preserves credentials and status() tracks connectivity');
+
+                              server.close();
+                              console.log('ALL test-haentity.js assertions passed!');
+                            });
+                          });
+                        });
                       });
                     });
                   });

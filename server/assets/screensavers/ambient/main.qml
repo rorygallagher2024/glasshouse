@@ -43,7 +43,7 @@ WebOSWindow {
     property int level: __TVWEB_LEVEL__
     property color inkBright: level > 0 ? "#ffffff" : "#a8aeb6"
     property color inkDim:    level > 0 ? "#c2c8d0" : "#5c6066"
-    property color inkAccent: level > 0 ? "#7ecaff" : "#4a8cb8"
+    property color inkAccent: "__TVWEB_COLOR__"
     property bool hour12: __TVWEB_CLOCK12__
     property bool showLabels: __TVWEB_CHOICE__
 
