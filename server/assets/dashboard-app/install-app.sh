@@ -115,7 +115,7 @@ if [ "$ACTION" = refresh ]; then
   installed || { echo '{"ok":true,"installed":false,"refreshed":false}'; exit 0; }
   from_hbc && { echo '{"ok":true,"installed":true,"refreshed":false}'; exit 0; }
   stale=""
-  for f in appinfo.json index.html assets/icon80.png assets/icon130.png; do
+  for f in appinfo.json index.html assets/icon80.png assets/icon130.png assets/splash.png; do
     [ -f "$SRC/$f" ] || continue
     if [ "$f" = index.html ]; then
       want=$(ported "$SRC/$f" | md5sum)
@@ -157,6 +157,7 @@ mkdir -p "$APP/assets" "$PKG"
 cp "$SRC/appinfo.json" "$APP/" || exit 0
 ported "$SRC/index.html" > "$APP/index.html" || exit 0
 cp "$SRC/assets/icon80.png" "$SRC/assets/icon130.png" "$APP/assets/" 2>/dev/null
+[ -f "$SRC/assets/splash.png" ] && { cp "$SRC/assets/splash.png" "$APP/assets/" || exit 0; }
 cp "$SRC/packageinfo.json" "$PKG/" || exit 0
 
 printf '2.0\n' > "$WORK/debian-binary"

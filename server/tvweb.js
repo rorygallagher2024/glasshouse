@@ -1988,7 +1988,13 @@ function startGlasshouseHome() {
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
   homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION });
-  glasshouseHome.start();
+  glasshouseHome.start(function () {
+    if (glasshouseHome.isStandalone()) {
+      tvApp('refresh', function (r) {
+        if (r && r.refreshed && r.ok) console.log('home: app refreshed to current release');
+      }, 'home-app');
+    }
+  });
   iptv.start();
   // The Guide key set to Home's guide acts only while Home is on with a playlist.
   remoteKeys.availabilityChanged();
