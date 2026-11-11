@@ -63,7 +63,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    Hovering an input, TV channel, or Internet TV tile displays a live, silent video preview beside the clock or directly within the tile, along with current signal and programme details. Off by default. See [Live preview](#live-preview).
+    Hovering an input, TV channel, or Internet TV tile displays a live video preview beside the clock or directly within the tile, along with current signal and programme details. Silent unless **Preview sound** is on. Off by default. See [Live preview](#live-preview).
 
 -   **Weather badge**
 
@@ -227,7 +227,7 @@ When opening a channel from the Internet TV row or live preview, playback opens 
     * **Number keys:** Directly jumps to a channel by its lineup number.
     * **Info:** Displays the programme banner showing what is on now and next (also appears automatically for 5 seconds on each channel change).
     * **Yellow button:** Switches between **HLS** and **MPEG-TS** stream formats for provider accounts. The TV remembers the selected stream format for each channel.
-    * **Back or Home:** Returns to Glasshouse Home. If [Live preview](#live-preview) is enabled, the channel continues playing silently in the preview.
+    * **Back or Home:** Returns to Glasshouse Home. If [Live preview](#live-preview) is enabled, the channel continues playing in the preview, silently unless **Preview sound** is on.
 * **Preview in the tile:** With **Preview in the tile** enabled under Live preview settings, channels play directly inside their Home tile. Pressing **OK** smoothly expands the video to full screen, and pressing **Back** returns it to the tile without opening a new stream.
 
 ![An IPTV channel previewing in its tile on a G3](../screenshots/iptv-preview-in-tile.jpg)
@@ -426,7 +426,7 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
     * **Starting up:** Open Home at power-on, Hide LG's Home while the TV starts.
     * **Layout:** Alternative View, Rows along the bottom.
     * **Shown on Home:** Clock and date, Last watched, App count, CEC addresses, Channel logos, Weather, Picture details.
-    * **Live preview:** Live preview, with Keep the preview on and Preview in the tile once it is on.
+    * **Live preview:** Live preview, with Preview sound, Keep the preview on and Preview in the tile once it is on.
     * **Search.**
     * **Animations:** Fade in and out, Wallpaper drift, Wallpaper cross-fade, Smooth scrolling, Sliding panels.
 * While LG's Home is: **Open Home at power-on**, **Home screen layout** and **Hide home screen system apps**.
@@ -476,16 +476,17 @@ The badge appears once data is received, is kept when the TV restarts, and is hi
 
 ### Live preview
 
-When enabled, resting on an input or a TV channel for a moment shows it live and silent in the top right, with its name and programme beside it. Off by default.
+When enabled, resting on an input or a TV channel for a moment shows it live in the top right, with its name and programme beside it. Off by default.
 
 * **Picture details plate:** With [Picture details](#badges-and-labels) also enabled, the plate moves beside the preview window, level with its foot, and describes what it shows: incoming HDMI resolution, refresh rate, HDR, chroma, picture preset, and backlight/OLED light levels. Changing Picture details updates the plate during a preview without restarting video playback.
 * **AV receiver handling:** Devices connected behind an AV receiver share its HDMI input, so each shows what that input shows. Moving to another input takes the TV's HDMI receiver off the active input without sending CEC commands.
 * **Tuner channels:** Previewing a channel does not make it the TV's last-watched channel. An input with no incoming signal or a channel off-air displays a status notice.
 * **Screen saver:** The preview pauses while the screen saver runs over Home, and resumes when dismissed. Pressing **OK** releases the preview while the input or channel opens full screen.
 * **Additional options (webOS 5+):**
+    * **Preview sound (off by default):** Plays the sound of the input or channel in the preview. Off, the preview is silent. Switching it from a dashboard changes a preview already playing. Opening a channel full screen always has sound.
     * **Preview in the tile:** Renders the preview inside the hovered tile itself, under the tile's name, rather than beside the clock.
     * **Keep the preview on:** Runs the preview whenever Glasshouse Home is on screen, showing the last-watched HDMI input or TV channel until another is focused.
-    *(These two options are not offered on webOS 4, where background video playback in tiles is unsupported.)*
+    *(These options are not offered on webOS 4, where background video playback in tiles is unsupported and preview sound was not tried.)*
 
 ### Animations
 

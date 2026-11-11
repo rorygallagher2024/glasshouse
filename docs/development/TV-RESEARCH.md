@@ -421,6 +421,18 @@ muted `<video>` with one `<source>`:
   at 2500. The format appears a moment after `playing`.
 - The test app on screen became Glasshouse Home's last source, as any app
   does.
+- Setting the element's `muted` on a channel playing this way reaches the
+  tuner: on 10 November 2026 the page called
+  `com.webos.service.utp.broadcast/setAudioMute` with `isMuteOn` and
+  `muteOwner: com.webos.app.home`, which LG's legacy broadcast service turned
+  into `avmutemanager/setAvMute` with `muteType: audioMute` on the `adec`
+  port, in both directions, while the channel played on. On an
+  `ext://hdmi:N` source, changing `muted` sent nothing over the bus, and an
+  input started muted or not showed the same calls: audiod's own brief mute
+  while connecting, then the HDMI PCM on `tv_speaker`. That recording was
+  made at speaker volume 0. A listening check on the same G3 at volume 10
+  confirmed HDMI 4's preview was audible with Preview sound on, silent with
+  it off, and audible again when switched back on.
 
 How a busy tuner (a recording) or an encrypted channel shows to the page was
 not tried.

@@ -2058,12 +2058,25 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       Math.max(0, Math.min(rect.bottom, rows.bottom) - rect.top) / scale + 'px,' + Math.max(0, wrap.left - rect.left) / scale + 'px)';
   }
 
+  // The preview is silent unless Preview sound is on. The player always has sound.
+  function previewMuted() { return !layout || layout.previewSound !== true; }
+
+  // A preview already playing takes Preview sound switched on a dashboard.
+  function applyPreviewSound() {
+    var muted = previewMuted(), v = $('pvVideo');
+    if (tvStream.item) tvStream.muted = muted;
+    if (v.muted === muted) return;
+    v.muted = muted;
+    v.defaultMuted = muted;
+  }
+
   // Called wherever focus or what covers the rows may have changed.
   function followPreview() {
     // The player has the <video> while it is open.
     if (player.open) return;
     var next = previewTarget();
     if (next && tilePreview.target && next.key === tilePreview.target.key) {
+      applyPreviewSound();
       var moved = tilePreview.target.item !== next.item || tilePreview.target.col !== next.col || tilePreview.target.row !== next.row;
       tilePreview.target = next;
       if ($('preview').className) {
@@ -2178,7 +2191,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * channel.
    */
   /*
-   * An Internet TV channel previews muted, from the provider: no picture in
+   * An Internet TV channel previews from the provider: no picture in
    * 6 s says so, and the size and kind of stream show once it plays.
    */
   var TV_DWELL_MS = 600;
@@ -2203,7 +2216,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   function startTvPreview(target) {
     var gen = tilePreview.gen;
-    playTvStream(target.item, true, previewState(gen));
+    playTvStream(target.item, previewMuted(), previewState(gen));
     $('preview').className = 'on';
     tilePreview.inTile = inTile();
     placePreview();
@@ -2216,8 +2229,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (target.tv) return startTvPreview(target);
     var gen = tilePreview.gen, v = $('pvVideo'), s = document.createElement('source');
     var current = function () { return gen === tilePreview.gen; };
-    v.muted = true;
-    v.defaultMuted = true;
+    v.muted = previewMuted();
+    v.defaultMuted = v.muted;
     s.setAttribute('type', target.port ? 'service/webos-external' : 'service/webos-broadcast-preview');
     s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
     v.appendChild(s);
@@ -2897,8 +2910,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // A paused picture is not left playing on the row.
     var keep = layout.livePreview === true && tvStream.playing && !tvStream.paused && !document.hidden && it;
     if (keep) {
-      tvStream.muted = true;
-      $('pvVideo').muted = true;
+      tvStream.muted = previewMuted();
+      $('pvVideo').muted = tvStream.muted;
       pv.className = 'on';
       tilePreview.target = { key: 'tv' + it.id, row: 'iptv', col: indexIn(items('iptv'), it.id), item: it, port: 0, tv: true };
       tilePreview.playing = true;
