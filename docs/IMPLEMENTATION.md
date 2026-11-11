@@ -783,7 +783,8 @@ The dashboard uses the same address as a WebSocket, sending the same JSON
 objects without waiting for HTTP responses between batches. The upgrade uses
 the API token and same-origin check. POST remains for other clients and as the
 browser's fallback. `pointer.enabled` gates both forms; `pointer.transport` and
-`pointer.updatesPerSecond` are set under Experimental features. A dashboard
+`pointer.updatesPerSecond` are set under Experimental features. The rate controls
+the dashboard's batching only; the server does not throttle API clients. A dashboard
 WebSocket exists only while Pointer is open, and the last client closing drops
 the LG socket too.
 

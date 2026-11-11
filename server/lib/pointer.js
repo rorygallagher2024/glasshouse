@@ -18,7 +18,9 @@ var socket = null;
 var socketIsWebSocket = false;
 var connecting = false;
 var waiters = [];
+var idleTimer = null;
 
+var IDLE_CLOSE_MS = 5000;
 var MAX_MOVES = 120;
 var MAX_DELTA = 10000;
 
@@ -76,6 +78,8 @@ function commandsFor(body) {
 }
 
 function closeSocket() {
+  clearTimeout(idleTimer);
+  idleTimer = null;
   socketIsWebSocket = false;
   if (socket) {
     socket.removeAllListeners();
@@ -84,7 +88,15 @@ function closeSocket() {
   }
 }
 
+function closeAfterIdle() {
+  clearTimeout(idleTimer);
+  if (clients.length) return;
+  idleTimer = setTimeout(closeSocket, IDLE_CLOSE_MS);
+  if (idleTimer.unref) idleTimer.unref();
+}
+
 function failWaiters(error) {
+  if (error && waiters.length) console.error('pointer: ' + error.message);
   var pending = waiters;
   waiters = [];
   connecting = false;
@@ -165,7 +177,10 @@ function send(body, cb) {
   if (checked.error) return cb({ ok: false, error: checked.error });
   if (!isEnabled()) return cb({ ok: false, error: 'pointer input is unavailable' });
   if (socket) return writeCommands(checked.commands, function (err) {
-    if (err) closeSocket();
+    if (err) {
+      console.error('pointer: socket write failed: ' + err.message);
+      closeSocket();
+    } else closeAfterIdle();
     cb(err ? { ok: false, error: err.message } : { ok: true, count: checked.commands.length });
   });
   waiters.push(function (err) {
@@ -181,7 +196,11 @@ function send(body, cb) {
     connectSocket(reply.socketPath, function (err, connected) {
       if (err) return failWaiters(err);
       socket = connected;
-      socket.on('error', function () { closeSocket(); });
+      console.log('pointer: connected to LG network input (' + (socketIsWebSocket ? 'WebSocket' : 'Unix socket') + ')');
+      socket.on('error', function (socketError) {
+        console.error('pointer: socket error: ' + socketError.message);
+        closeSocket();
+      });
       socket.on('close', function () { if (socket === connected) socket = null; });
       failWaiters(null);
     });

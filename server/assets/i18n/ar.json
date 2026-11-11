@@ -2402,7 +2402,7 @@
  "server.experimental.pointer.short": {"text": "يضيف لوحة لمس في قسم التحكم لتحريك مؤشر التلفاز والنقر والتمرير. تم الاختبار على webOS 11؛ وقد تختلف النتائج في الإصدارات الأخرى.", "from": "Adds a trackpad under Control for moving, clicking and scrolling the TV cursor. Tested on webOS 11; other versions may behave differently."},
  "server.experimental.pointer.transport.desc": {"text": "يرسل WebSocket دون انتظار إجابات HTTP ويفتح فقط أثناء فتح المؤشر. يرسل HTTP طلبات منفصلة وقد يكون أقل سلاسة.", "from": "WebSocket sends without waiting for HTTP answers and opens only while Pointer is open. HTTP sends separate requests and may feel less smooth."},
  "server.experimental.pointer.rate": {"text": "معدل التحديث", "from": "Update rate"},
- "server.experimental.pointer.rate.desc": {"text": "عدد مرات إرسال حزم الحركة. يقلل المعدل الأقل عمل التلفاز والشبكة، وقد يزيد المعدل الأعلى السلاسة. المعدل الافتراضي والموصى به هو 120 تحديثاً في الثانية.", "from": "How often movement batches are sent. Lower rates reduce TV and network work; higher rates can feel smoother. The default and recommended rate is 120 updates per second."},
+ "server.experimental.pointer.rate.desc": {"text": "عدد مرات إرسال حزم الحركة. يقلل المعدل الأقل عمل التلفاز والشبكة، وقد يزيد المعدل الأعلى السلاسة. المعدل الافتراضي والموصى به هو 120 تحديثاً في الثانية.", "from": "How often the dashboard sends movement batches. Lower rates reduce TV and network work; higher rates can feel smoother. The default and recommended rate is 120 updates per second."},
  "server.experimental.pointer.rate.value": {"text": "{n} تحديثاً في الثانية", "from": "{n} updates per second"},
  "ctl.pointer.click": {"text": "نقر", "from": "Click"},
  "ctl.keyboard": {"text": "لوحة المفاتيح", "from": "Keyboard"},

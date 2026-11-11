@@ -1552,7 +1552,6 @@ function handleRequest(req, res) {
     if (!pointerModule || !pointerModule.isEnabled()) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
     if (!config.allowControl) return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
-    if (!pointerModule) return send(res, 503, JSON.stringify({ ok: false, error: 'pointer module unavailable' }));
     return readJsonBody(req, res, function (body) {
       pointerModule.send(body, function (r) {
         send(res, r.ok ? 200 : 400, JSON.stringify(r));
