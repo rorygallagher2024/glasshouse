@@ -976,7 +976,7 @@ function appsChanged() {
   telemetry.refreshInstalledApps(function () { publishNow(); });
 }
 
-pointer.init({ luna: luna });
+pointer.init({ luna: luna, hasService: lunaTransport.hasService });
 routes.init({
   config: CONFIG,
   pointer: pointer,

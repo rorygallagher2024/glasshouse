@@ -621,6 +621,93 @@ function initVolSlider() {
 initVolSlider();
 initBacklightSlider();
 
+// Pointer events are queued so a tap cannot overtake the movement before it.
+let pointerQueue = [];
+let pointerSending = false;
+let pointerMoveTimer = null;
+async function flushPointerQueue() {
+  if (pointerSending || !pointerQueue.length) return;
+  pointerSending = true;
+  let body = pointerQueue.shift();
+  if (body.move) {
+    while (pointerQueue.length && pointerQueue[0].move) body.move = body.move.concat(pointerQueue.shift().move);
+  }
+  try {
+    const r = await fetch(api('/api/pointer'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    const j = await r.json();
+    if (!j.ok) showErr(j.error || t('common.actionFailed', 'Action failed'));
+    else clearErr();
+  } catch (e) {
+    showErr(e.message);
+  } finally {
+    pointerSending = false;
+    flushPointerQueue();
+  }
+}
+function sendPointer(body) {
+  pointerQueue.push(body);
+  flushPointerQueue();
+}
+function queuePointerMove(dx, dy) {
+  if (pointerQueue.length && pointerQueue[pointerQueue.length - 1].move) {
+    pointerQueue[pointerQueue.length - 1].move.push({ dx, dy });
+  } else {
+    pointerQueue.push({ move: [{ dx, dy }] });
+  }
+  if (pointerMoveTimer) return;
+  pointerMoveTimer = setTimeout(() => {
+    pointerMoveTimer = null;
+    flushPointerQueue();
+  }, 8);
+}
+
+(function initPointerPad() {
+  const pad = q('pointer-pad');
+  if (!pad) return;
+  let active = null;
+  pad.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    active = { id: e.pointerId, x: e.clientX, y: e.clientY, carryX: 0, carryY: 0, moved: 0, at: Date.now() };
+    pad.classList.add('dragging');
+    try { pad.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  pad.addEventListener('pointermove', e => {
+    if (!active || e.pointerId !== active.id) return;
+    active.carryX += (e.clientX - active.x) * 1.5;
+    active.carryY += (e.clientY - active.y) * 1.5;
+    active.moved += Math.abs(e.clientX - active.x) + Math.abs(e.clientY - active.y);
+    active.x = e.clientX;
+    active.y = e.clientY;
+    const dx = active.carryX < 0 ? Math.ceil(active.carryX) : Math.floor(active.carryX);
+    const dy = active.carryY < 0 ? Math.ceil(active.carryY) : Math.floor(active.carryY);
+    if (!dx && !dy) return;
+    active.carryX -= dx;
+    active.carryY -= dy;
+    queuePointerMove(dx, dy);
+  });
+  const finish = (e, cancelled) => {
+    if (!active || e.pointerId !== active.id) return;
+    const tap = !cancelled && active.moved < 8 && Date.now() - active.at < 400;
+    active = null;
+    pad.classList.remove('dragging');
+    try { pad.releasePointerCapture(e.pointerId); } catch (err) {}
+    if (tap) sendPointer({ click: true });
+  };
+  pad.addEventListener('pointerup', e => finish(e, false));
+  pad.addEventListener('pointercancel', e => finish(e, true));
+  pad.addEventListener('wheel', e => {
+    e.preventDefault();
+    const scale = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+    const dx = Math.round(e.deltaX * scale / 40);
+    const dy = Math.round(e.deltaY * scale / 40);
+    if (dx || dy) sendPointer({ scroll: { dx, dy } });
+  }, { passive: false });
+})();
+q('pointer-click').addEventListener('click', () => sendPointer({ click: true }));
+
 function toggleMute() {
   muted = !muted;
   setLease('mute', muted);
@@ -724,6 +811,7 @@ async function powerAction(a) {
 // Switched off in config.json, the power buttons are not offered at all.
 fetch(api('/api/caps')).then(r => r.json()).then(cp => {
   if (!cp.allowPower) q('pwset').hidden = true;
+  q('disc-pointer').hidden = !cp.pointer || !cp.allowControl;
 }).catch(() => {});
 
 /*

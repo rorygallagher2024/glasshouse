@@ -9,6 +9,7 @@ var crypto = require('crypto');
 var allocBuffer = require('./util').allocBuffer;
 
 var lunaFn = null;
+var hasServiceFn = null;
 var connectFn = null;
 var socket = null;
 var socketIsWebSocket = false;
@@ -21,11 +22,13 @@ var MAX_DELTA = 10000;
 function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
+  hasServiceFn = opts.hasService || null;
   connectFn = opts.connect || null;
 }
 
 function isSupported() {
-  return typeof lunaFn === 'function';
+  return typeof lunaFn === 'function' &&
+    (!hasServiceFn || hasServiceFn('com.webos.service.networkinput'));
 }
 
 function validDelta(value) {

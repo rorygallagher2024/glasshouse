@@ -770,7 +770,7 @@ optional boolean `down` for dragging; `click`, `down` and `up` are booleans, and
 `scroll` is one `{dx, dy}` object. All deltas are integers between -10000 and
 10000. The whole request is checked before any event is sent. A successful reply
 is `{ "ok": true, "count": N }`. `/api/caps` exposes `pointer: true` where the
-server has its Luna transport.
+TV registers LG's network-input service.
 
 `lib/pointer.js` opens the socket returned by
 `com.webos.service.networkinput/getPointerInputSocket` on the first event and
