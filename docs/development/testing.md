@@ -220,6 +220,10 @@ waiting for a reverse lookup. It uses real timers because stats collection
 also waits for `df`; a simulated clock can reach the collection's timeout
 before that process replies.
 
+`test-pointer.js` checks pointer-event validation, batched LG text commands,
+big-endian Unix-socket framing, connection reuse, shutdown and refused socket
+creation.
+
 `test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved. Between uploads it waits, up to 5 s, for the last one's file to be cleared, rather than a fixed time a slow runner can outlast. It also checks that the phone's setup link serves its page, `i18n.js` and a language file with the one-time code, the page asking for `i18n.js` with it, and refuses them without.
 
 `test-stats-timeout.js` checks that a stats collection past its limit answers its callers with the last complete one, or the empty stand-in when none has finished, and carries on with no second collection started beside it; that `expireStats` does not take that fallback away; and that one given up on after 60 s answers no caller of the next.

@@ -91,6 +91,7 @@ try {
 }
 var telemetry = require('./lib/telemetry');
 var controls = require('./lib/controls');
+var pointer = require('./lib/pointer');
 var routes = require('./lib/routes');
 var prometheus = require('./lib/prometheus');
 var stateModule = require('./lib/state');
@@ -975,8 +976,10 @@ function appsChanged() {
   telemetry.refreshInstalledApps(function () { publishNow(); });
 }
 
+pointer.init({ luna: luna });
 routes.init({
   config: CONFIG,
+  pointer: pointer,
   inputBar: inputBar,
   audio: audioCapabilities,
   btAudio: btAudio,
@@ -1876,12 +1879,14 @@ function setupHomeAssistant() {
   });
 
   process.on('SIGTERM', function() {
+    pointer.stop();
     remotebuttons.stop();
     iconServer.stop();
     if (mqttClient) mqttClient.disconnect();
     process.exit(0);
   });
   process.on('SIGINT', function() {
+    pointer.stop();
     remotebuttons.stop();
     iconServer.stop();
     if (mqttClient) mqttClient.disconnect();

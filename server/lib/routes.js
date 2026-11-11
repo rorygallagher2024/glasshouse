@@ -55,6 +55,8 @@ var config = {};
 var configFilePath = '';
 /** @type {typeof import('./controls')} */
 var controlsModule = null;
+/** @type {typeof import('./pointer')} */
+var pointerModule = null;
 /** @type {typeof import('./telemetry')} */
 var telemetryModule = null;
 /** @type {typeof import('./oled')} */
@@ -1527,13 +1529,25 @@ function handleRequest(req, res) {
       origin: lanOrigin(), version: versionStr,
       fromHomebrewChannel: fromHomebrewChannel(), setupNeeded: setupPending(),
       // The hour cycle the dashboard's own clock draws.
-      clockHour12: clockHour12()
+      clockHour12: clockHour12(),
+      pointer: !!(pointerModule && pointerModule.isSupported())
     };
     // The token goes into the TV's QR codes, so a phone that scans one can use
     // what it opens. Only to the TV itself: whoever sees the screen holds the
     // remote, and the remote needs no token.
     if (config.token && fromTV(req)) caps.key = config.token;
     return send(res, 200, JSON.stringify(caps));
+  }
+
+  if (pathname === '/api/pointer') {
+    if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
+    if (!config.allowControl) return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    if (!pointerModule) return send(res, 503, JSON.stringify({ ok: false, error: 'pointer module unavailable' }));
+    return readJsonBody(req, res, function (body) {
+      pointerModule.send(body, function (r) {
+        send(res, r.ok ? 200 : 400, JSON.stringify(r));
+      });
+    });
   }
 
   if (pathname === '/api/audio' && audioModule) {
@@ -2329,6 +2343,7 @@ function init(opts) {
   if (opts.config) config = opts.config;
   if (opts.configFile) configFilePath = opts.configFile;
   if (opts.controls) controlsModule = opts.controls;
+  if (opts.pointer) pointerModule = opts.pointer;
   if (opts.telemetry) telemetryModule = opts.telemetry;
   if (opts.oled) oledModule = opts.oled;
   if (opts.privacy) privacyModule = opts.privacy;

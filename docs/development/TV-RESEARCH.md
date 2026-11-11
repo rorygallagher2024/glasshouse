@@ -3230,3 +3230,20 @@ firmware lacking that service (webOS 4), `com.webos.service.eim/getAllInputStatu
 identifies a connected audio system (`cecpDevType: 5`) and its port when
 present, falling back to HDMI 2.
 
+## Network pointer input (C3, webOS 11.2.0)
+
+Read on 11 November 2026 on an OLED77C3RLA, firmware 43.21.71.
+`com.webos.service.networkinput/getPointerInputSocket`, called from the
+Glasshouse server, returned `/tmp/netinput.pointer.sock`. Its interface declares
+`LENGTH_PREFIX_32`; `InputSocketConnection::handleData` in the 32-bit ARM
+`network-input-service` reads a four-byte big-endian payload length, rejects a
+payload over 4096 bytes, then hands the bytes to the text-command parser. A move
+is `type:move\ndx:N\ndy:N\ndown:0\n\n`, click is `type:click\n\n`, and scroll is
+`type:scroll\ndx:N\ndy:N\n\n`. `down:drag` presses while moving and `down:0`
+releases.
+
+A batch of two moves followed by a click moved to YouTube's Play button and
+started playback. Screen captures often omitted the pointer even when it was
+visible on the TV, so a missing cursor in a capture is not evidence that no move
+occurred. A direct write to `/dev/uinput` created a kernel input device, but was
+not needed and was removed.
