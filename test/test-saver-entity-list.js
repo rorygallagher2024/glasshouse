@@ -19,15 +19,27 @@ var VALID_QML = 'import QtQuick 2.4\nimport Eos.Window 0.1\nWebOSWindow {\n' +
   '  property var items: __TVWEB_HA_LIST__\n' +
   '  Text { text: items.length > 0 ? items[0].label : "" }\n}\n';
 
+function rmrfSync(dir) {
+  if (!fs.existsSync(dir)) return;
+  fs.readdirSync(dir).forEach(function (entry) {
+    var p = path.join(dir, entry);
+    if (fs.statSync(p).isDirectory()) rmrfSync(p);
+    else fs.unlinkSync(p);
+  });
+  fs.rmdirSync(dir);
+}
+
 function writeSaver(dir, manifest, qml) {
-  fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
   fs.writeFileSync(path.join(dir, 'saver.json'), JSON.stringify(manifest));
   fs.writeFileSync(path.join(dir, 'main.qml'), qml);
 }
 
 // 1. Manifest validation for entityList and ha-list uses
 (function testEntityListManifestValidation() {
-  var tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tvweb-list-manifest-'));
+  var tmpRoot = path.join(os.tmpdir(), 'tvweb-list-manifest-' + process.pid + '-' + Date.now());
+  rmrfSync(tmpRoot);
+  fs.mkdirSync(tmpRoot);
 
   writeSaver(path.join(tmpRoot, 'list-ok'), {
     manifest: 1, version: '1.0.0', name: 'Test List', description: 'Cycles entities',
@@ -70,7 +82,7 @@ function writeSaver(dir, manifest, qml) {
   assert.ok(byId['user-list-badbounds'].problem);
   console.log('  ✓ entityList and ha-list manifest validation catches bad configs');
   env.restore();
-  fs.rmSync(tmpRoot, { recursive: true, force: true });
+  rmrfSync(tmpRoot);
 })();
 
 // 2. Saving 2..100 entities, Staging __TVWEB_HA_LIST__, and OLED burn-in minimum guard
