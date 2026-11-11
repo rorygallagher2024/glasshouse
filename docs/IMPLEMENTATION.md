@@ -1540,12 +1540,15 @@ Home screen bloatware tile hiding allows built-in or preloaded system apps (whic
 ### Non-Destructive Manifest Bind-Mounts
 1. **Manifest Overrides**: For each hidden app ID, `server/lib/apps.js` stages a modified `appinfo.json` in `/var/lib/tvweb/appinfo-overrides/<id>.json` with `"visible": false`.
 2. **Multi-Base Probing**: Overrides are bind-mounted over every discovered location for the target app manifest (prioritizing `/media/system/apps/usr/palm/applications` for OTA-updated system apps, followed by `/usr/palm/applications` and flash mounts `/mnt/otncabi` / `/mnt/otycabi`).
-3. **SAM Refresh**: SAM (Surface Application Manager) reads `appinfo.json` only when it scans. It also scans when configd's `profile.blockedAppList` changes, which LG uses to block apps by region, so `lib/samrescan.js` adds an id no app has and then puts the list back exactly as it was: nothing is blocked, and SAM rereads every `appinfo.json`, overlays included, in about 2 s without restarting (on a C2 running webOS 9.2, its pid was unchanged). configd saves the list back as a user-defined value, kept across reboots and with no call to remove it, so it stays at LG's value as of the nudge even if LG's own list later changes with a firmware update or a new country. Each caller then checks SAM reports the change (`getAppInfo` visibility, or the screen saver's type). Where the TV has no such list (webOS 4) or SAM does not catch up, `apps.js` restarts SAM as before (`killall -9 LunaExecutable` and `systemctl kill -s 9 sam.service` on systemd / `initctl restart sam` on Upstart). The boot hook does the same in shell. The restart was the one thing every black-picture report in #366 had in common. sam ignores that list on webOS 10 (a C2 on 10.3.1), where `samrescan.rereadApp` asks it for one app instead with `blockSystemApp` followed by `releaseBlockSystemApp`; the screen saver switch uses that first, tile hiding does not yet.
+3. **SAM Refresh**: SAM (Surface Application Manager) reads `appinfo.json` only when it scans. Glasshouse never restarts SAM at runtime or cold boot anymore (#366, #1315); instead it makes SAM reread manifests in place using one of two mechanisms:
+   - **Per-app block and release (webOS 10–11)**: where `/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema` exists, `samrescan.rereadApps` (and `sam_reread_app` in `50-tvweb.sh`) calls `applicationManager/blockSystemApp` followed by `releaseBlockSystemApp` for each affected app (`"forceBlockSystemApp": false` where the schema asks for it).
+   - **Configd nudge (webOS 7–9)**: where configd holds LG's `profile.blockedAppList` region list, `samrescan.refresh` (and `sam_nudge` in `50-tvweb.sh`) briefly adds an unused id and puts LG's list back, causing SAM to reread every `appinfo.json` in ~2 s with its PID unchanged. configd keeps that value across reboots, so it stays at LG's value as of the nudge.
+   Each caller checks `getAppInfo` visibility afterwards. Where neither mechanism exists (webOS 4–6), enabling tile hiding or hiding a tile refuses and recommends Glasshouse Home; if SAM declines or times out on a hide, `hideTile` unmounts and removes the override cleanly.
 
 ### Cold Boot vs. Quick Start+ (Standby)
 - **Normal Usage (Quick Start+)**: LG webOS defaults to Quick Start+ (Active Standby / Suspend-to-RAM). When the TV is powered off and on with the remote, the Linux kernel, active bind-mounts, and SAM remain running in memory. The overrides remain intact, and hidden tiles never appear.
 - **Cold Boot (Full Reboot / Power Loss)**: On a true cold boot, webOS boots from an early checkpoint/snapshot (CRIU), displaying the Home screen (`com.webos.app.home`) before late userland root hooks run. The Home screen briefly shows the stock tiles for a few seconds until `devmode.service` invokes `/var/lib/webosbrew/startup.sh` &rarr; `run-parts /var/lib/webosbrew/init.d/50-tvweb`.
-- `50-tvweb` reapplies the bind-mounts from `/var/lib/tvweb/hidden_apps` in ~50ms and respawns SAM, at which point the Home screen drops the tiles from view. This brief appearance on cold boot is architectural to webOS's read-only root partition: root hooks run safely in user space without modifying rootfs systemd units.
+- `50-tvweb` reapplies the bind-mounts from `/var/lib/tvweb/hidden_apps` and asks SAM to reread in place (`sam_reread_app` per app on webOS 10–11, or `sam_nudge` on webOS 7–9) without restarting SAM. If neither mechanism succeeds at boot, the hook unmounts the overrides (`umount -l`) rather than restarting SAM.
 
 ---
 
@@ -1623,8 +1626,10 @@ stages it in `/var/lib/tvweb/home-takeover` with an `appinfo.json` naming
 `com.webos.app.home` (type `web`, `visible` false, `appCategory` `["home"]`
 as LG's has it), bind-mounts the directory over
 `/usr/palm/applications/com.webos.app.home`, and has sam read it again
-(`lib/samrescan.js`): with the nudge on webOS 9, and with a block and release
-of the one app on webOS 10, which ignores the nudge. On webOS 10 the Home
+(`lib/samrescan.js`): with the nudge on webOS 7 and 9, and with a block and release
+of the one app on webOS 10 and 11, which ignore the nudge. Neither `lib/home-takeover.js`
+nor the boot hook falls back to restarting `sam` (#366, #1315): if `sam` does not take
+the reread on takeover, LG's Home is put back and the switch fails cleanly. On webOS 10 the Home
 button opens the default app of the `home` category, which sam takes from that
 `appCategory`; without it the button does nothing
 ([research](development/TV-RESEARCH.md#glasshouse-home-on-webos-10-g5-webos-1031)).

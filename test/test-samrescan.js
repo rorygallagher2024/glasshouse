@@ -402,4 +402,50 @@ step(function () {
   next();
 });
 
+// 15. canRereadApp and rereadApps handle multiple apps sequentially via blockSystemApp.
+step(function () {
+  var schemaDir = path.join(os.tmpdir(), 'samrescan-rereadapps-' + process.pid);
+  fs.mkdirSync(schemaDir);
+  var schema = path.join(schemaDir, 'app.block.schema');
+  var missing = path.join(schemaDir, 'missing.schema');
+  fs.writeFileSync(schema, '{"properties":{"id":{},"forceBlockSystemApp":{}}}');
+
+  var tv = fakeTV(null);
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5, blockSchema: missing });
+  assert.strictEqual(samrescan.canRereadApp(), false, 'missing schema means cannot rereadApp');
+
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5, blockSchema: schema });
+  assert.strictEqual(samrescan.canRereadApp(), true, 'present schema means canRereadApp');
+
+  samrescan.rereadApps([], null, checked(function (emptyOk) {
+    assert.strictEqual(emptyOk, false, 'empty list returns false');
+    var checkedIds = [];
+    samrescan.rereadApps(['app.a', 'app.b'], function (id) {
+      return function (done) {
+        checkedIds.push(id);
+        done(tv.blocked[id] === false);
+      };
+    }, checked(function (ok) {
+      assert.strictEqual(ok, true, 'rereads all apps in order');
+      assert.deepEqual(tv.samCalls, [
+        'blockSystemApp app.a', 'releaseBlockSystemApp app.a',
+        'blockSystemApp app.b', 'releaseBlockSystemApp app.b'
+      ]);
+      assert.deepEqual(checkedIds, ['app.a', 'app.b']);
+
+      // Stops on first failure without touching later apps.
+      var tvFail = fakeTV(null, { hasBlock: false });
+      samrescan.init({ luna: tvFail.luna, nudgeMs: 5, pollMs: 5, blockSchema: schema });
+      samrescan.rereadApps(['app.a', 'app.b'], null, checked(function (okFail) {
+        assert.strictEqual(okFail, false, 'stops on refusal');
+        assert.ok(tvFail.samCalls.every(function (c) { return c.indexOf('app.b') === -1; }), 'never tries second app after first fails');
+        fs.unlinkSync(schema);
+        fs.rmdirSync(schemaDir);
+        console.log('  \u2713 canRereadApp and rereadApps reread apps sequentially and stop on refusal');
+        next();
+      }));
+    }));
+  }));
+});
+
 next();

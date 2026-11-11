@@ -330,17 +330,27 @@ function hasHdmiSignal(appId) {
   return true;
 }
 
+function canRereadApp() {
+  return fs.existsSync(blockSchema);
+}
+
+function rereadApps(ids, makeCheck, cb) {
+  if (!Array.isArray(ids) || !ids.length) return cb(false);
+  var i = 0;
+  (function next() {
+    if (i >= ids.length) return cb(true);
+    var id = ids[i++];
+    var check = makeCheck ? makeCheck(id) : null;
+    rereadApp(id, check, function (ok) {
+      if (!ok) return cb(false);
+      next();
+    });
+  })();
+}
+
 /*
- * Restarts sam, and cb(true) once check(done) says sam has read the apps
- * again. The last way to make sam scan: webOS 5 and 6 have neither the
- * configd nudge nor the block and release (a CX on 5.5.0-19, a C1 on
- * 6.5.3), so Glasshouse Home, whose appinfo.json is mounted over LG's,
- * switches it on and off with this. The command is the one
- * lib/apps.js restarts sam with for tile hiding: the start limit cleared
- * first, LunaExecutable killed since it ignores SIGTERM, and the unit killed
- * so that systemd starts it again at once; initctl on Upstart TVs. A
- * foreground app that is neither Home nor the screen saver is opened again
- * afterwards, so the owner is not left on the last input.
+ * Legacy full restart helper (retained for compatibility and tests; runtime
+ * and boot callers never restart sam anymore, #366, #1315).
  */
 function restart(check, cb) {
   if (!check) return cb(false);
@@ -413,7 +423,9 @@ module.exports = {
   init: init,
   refresh: refresh,
   canNudge: canNudge,
+  canRereadApp: canRereadApp,
   rereadApp: rereadApp,
+  rereadApps: rereadApps,
   restart: restart,
   hasHdmiSignal: hasHdmiSignal,
   RESUBSCRIBE_HDMI_INPUTS: RESUBSCRIBE_HDMI_INPUTS,

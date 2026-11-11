@@ -345,8 +345,10 @@ test('isTileHidingEnabled detects flag file and auto-migrates from hidden_apps',
   delete mockEnv.files[hiddenFile];
 });
 
-test('setTileHidingEnabled toggles flag file and requires allowControl', function (done) {
+test('setTileHidingEnabled toggles flag file, requires allowControl, and refuses without rescan', function (done) {
   var flagFile = '/var/lib/tvweb/tile_hiding_enabled';
+  var appJson = '/usr/palm/applications/com.webos.app.gallery/appinfo.json';
+  var blockSchema = '/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema';
 
   // Disabled when allowControl is false
   init({ config: { allowControl: false } });
@@ -354,127 +356,178 @@ test('setTileHidingEnabled toggles flag file and requires allowControl', functio
     assert.strictEqual(res.ok, false);
     assert.ok(res.error.indexOf('disabled') !== -1);
 
-    // Enabled when allowControl and allowTileHiding are true
-    init({
-      config: { allowControl: true, allowTileHiding: true },
-      // A home screen list, so each sam restart settles instead of polling out.
-      luna: function (uri, params, cb) { cb({ returnValue: true, launchPoints: [{ id: 'netflix' }] }); }
-    });
+    // Refuses enabling or hiding when TV has neither blockedAppList nor blockSystemApp schema (webOS 4-6)
+    mockEnv.files[appJson] = '{"id":"com.webos.app.gallery","title":"Gallery","visible":true}';
+    mockEnv.files[blockSchema] = null;
+    var noRescanLuna = function (uri, params, cb) {
+      if (uri === 'com.webos.service.config/getConfigs') return cb({ returnValue: true, configs: {}, missingConfigs: [samrescan.KEY] });
+      cb({ returnValue: true, launchPoints: [{ id: 'netflix' }] });
+    };
+    init({ luna: noRescanLuna, config: { allowControl: true, allowTileHiding: true } });
+    samrescan.init({ luna: noRescanLuna, nudgeMs: 5, pollMs: 5, blockSchema: blockSchema });
+    ran = [];
+    apps.setTileHidingEnabled(true, function (noRescanRes) {
+      assert.strictEqual(noRescanRes.ok, false);
+      assert.ok(/Glasshouse Home/.test(noRescanRes.error), noRescanRes.error);
+      assert.strictEqual(ran.length, 0, 'no mounts or restarts run on refusal');
 
-    apps.setTileHidingEnabled(true, function (r1) {
-      assert.strictEqual(r1.ok, true);
-      assert.strictEqual(r1.tileHidingEnabled, true);
-      assert.strictEqual(mockEnv.files[flagFile].trim(), '1');
+      apps.hideTile('com.webos.app.gallery', function (noHideRes) {
+        assert.strictEqual(noHideRes.ok, false);
+        assert.ok(/Glasshouse Home/.test(noHideRes.error), noHideRes.error);
+        assert.strictEqual(ran.length, 0, 'hideTile refuses cleanly without touching mounts');
 
-      apps.setTileHidingEnabled(false, function (r2) {
-        assert.strictEqual(r2.ok, true);
-        assert.strictEqual(r2.tileHidingEnabled, false);
-        assert.strictEqual(mockEnv.files[flagFile].trim(), '0');
-        if (done) done();
+        // Enabled when allowControl, allowTileHiding, and configd rescan list exist
+        var nudgeLuna = function (uri, params, cb) {
+          if (uri === 'com.webos.service.config/getConfigs') {
+            var c = {};
+            c[samrescan.KEY] = [];
+            return cb({ returnValue: true, configs: c });
+          }
+          cb({ returnValue: true, launchPoints: [{ id: 'netflix' }] });
+        };
+        init({ luna: nudgeLuna, config: { allowControl: true, allowTileHiding: true } });
+        samrescan.init({ luna: nudgeLuna, nudgeMs: 5, pollMs: 5, blockSchema: blockSchema });
+
+        apps.setTileHidingEnabled(true, function (r1) {
+          assert.strictEqual(r1.ok, true);
+          assert.strictEqual(r1.tileHidingEnabled, true);
+          assert.strictEqual(r1.samRestarted, false);
+          assert.strictEqual(mockEnv.files[flagFile].trim(), '1');
+
+          apps.setTileHidingEnabled(false, function (r2) {
+            assert.strictEqual(r2.ok, true);
+            assert.strictEqual(r2.tileHidingEnabled, false);
+            assert.strictEqual(mockEnv.files[flagFile].trim(), '0');
+            delete mockEnv.files[appJson];
+            delete mockEnv.files[blockSchema];
+            if (done) done();
+          });
+        });
       });
     });
   });
 });
 
-test('restartSam waits for sam to finish loading, then relaunches the foreground app', function (done) {
-  var launchedApp = null;
-  // sam comes back with part of the home screen first, then all of it.
+test('tile hiding on webOS 10-11 uses blockSystemApp, settles launchPoints, and rolls back refused hides', function (done) {
+  var blockSchema = '/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema';
+  var galleryJson = '/usr/palm/applications/com.webos.app.gallery/appinfo.json';
+  var musicJson = '/usr/palm/applications/com.webos.app.music/appinfo.json';
+  var galleryOvr = '/var/lib/tvweb/appinfo-overrides/com.webos.app.gallery.json';
+  var musicOvr = '/var/lib/tvweb/appinfo-overrides/com.webos.app.music.json';
+  var hiddenFile = '/var/lib/tvweb/hidden_apps';
+  var flagFile = '/var/lib/tvweb/tile_hiding_enabled';
+
+  mockEnv.files[blockSchema] = '{"properties":{"id":{},"forceBlockSystemApp":{}}}';
+  mockEnv.files[galleryJson] = '{"id":"com.webos.app.gallery","title":"Gallery","visible":true}';
+  mockEnv.files[musicJson] = '{"id":"com.webos.app.music","title":"Music","visible":true}';
+  mockEnv.files[hiddenFile] = '';
+  mockEnv.files[flagFile] = '1\n';
+
   var partial = [{ id: 'netflix' }, { id: 'youtube.leanback.v4' }];
-  var full = partial.concat([{ id: 'com.webos.app.browser' }, { id: 'com.webos.app.camera' }]);
+  var full = partial.concat([{ id: 'com.webos.app.browser' }]);
   var reads = [null, partial, partial, full, full, full, full];
-  var fullReadsAtLaunch = null;
-  var fullReads = 0;
   var lpReads = 0;
+  var settledOn = 0;
+  var visibleState = { 'com.webos.app.gallery': true, 'com.webos.app.music': true };
+  var applyVisibility = { 'com.webos.app.gallery': true };
+  var samCalls = [];
+  var mountedTargets = {};
+  ran = [];
+
+  var execWithMounts = function (file, args, opts, cb) {
+    ran.push(file + ' ' + (args || []).join(' '));
+    if (file === '/bin/mount' && (!args || args.length === 0)) {
+      var out = Object.keys(mountedTargets).map(function (t) { return '/dev/tmp ' + t + ' ext4 rw 0 0'; }).join('\n');
+      return process.nextTick(function () { cb(null, out, ''); });
+    }
+    if (file === '/bin/mount' && args && args[0] === '--bind') {
+      mountedTargets[args[2]] = true;
+    } else if (file === '/bin/umount' && args && args[1]) {
+      delete mountedTargets[args[1]];
+    }
+    process.nextTick(function () { cb(null, '', ''); });
+    return {};
+  };
+
   var mockLuna = function (uri, params, cb) {
-    if (uri === 'com.webos.applicationManager/getForegroundAppInfo') {
-      return cb({ returnValue: true, appId: 'com.webos.app.hdmi2' });
+    if (uri === 'com.webos.service.config/getConfigs') {
+      return cb({ returnValue: true, configs: {}, missingConfigs: [samrescan.KEY] });
+    }
+    if (uri === 'com.webos.applicationManager/blockSystemApp') {
+      samCalls.push(['block', params.id, params.forceBlockSystemApp]);
+      return cb({ returnValue: true });
+    }
+    if (uri === 'com.webos.applicationManager/releaseBlockSystemApp') {
+      samCalls.push(['release', params.id]);
+      if (params.id in applyVisibility) visibleState[params.id] = applyVisibility[params.id];
+      // com.webos.app.music is absent from applyVisibility so it stays visible (simulating refusal)
+      return cb({ returnValue: true });
+    }
+    if (uri === 'com.webos.applicationManager/getAppInfo') {
+      return cb({ returnValue: true, appInfo: { id: params.id, visible: visibleState[params.id] !== false } });
     }
     if (uri === 'com.webos.applicationManager/listLaunchPoints') {
       var lps = reads[Math.min(lpReads++, reads.length - 1)];
-      if (lps === full) fullReads++;
+      if (lps === full) settledOn++;
       return cb(lps ? { returnValue: true, launchPoints: lps } : { returnValue: false });
     }
-    if (uri === 'com.webos.applicationManager/launch') {
-      launchedApp = params.id;
-      fullReadsAtLaunch = fullReads;
-      return cb({ returnValue: true });
+    if (uri === 'com.webos.applicationManager/listApps') {
+      return cb({ returnValue: true, apps: [{ id: 'com.webos.app.gallery', title: 'Gallery', visible: visibleState['com.webos.app.gallery'], systemApp: true }] });
     }
     cb({ returnValue: true });
   };
 
-  init({
-    luna: mockLuna,
-    config: { allowControl: true, allowTileHiding: true }
-  });
+  apps.init({ luna: mockLuna, exec: execWithMounts, config: { allowControl: true, allowTileHiding: true } });
+  samrescan.init({ luna: mockLuna, nudgeMs: 5, pollMs: 5, blockSchema: blockSchema });
 
-  apps.restartSam(function () {
-    assert.strictEqual(launchedApp, 'com.webos.app.hdmi2', 'Must relaunch saved HDMI foreground app');
-    assert.ok(ran.some(function (c) { return /systemctl kill -s 9 sam\.service/.test(c); }), 'the restart went to the stub');
-    // Not on the partial list: only once the full one has read the same three times.
-    assert.ok(fullReadsAtLaunch >= 3, 'relaunched after ' + fullReadsAtLaunch + ' full reads');
+  // Batching: concurrent restartSamShared callers share rescan and wait for launchPoints to settle
+  var answered = 0;
+  var onBatchDone = function (restarted) {
+    assert.strictEqual(restarted, true);
+    answered++;
+    if (answered < 2) return;
+    assert.ok(settledOn >= 3, 'waited for full launchPoints reads before answering');
+    assert.ok(!ran.some(function (c) { return /kill|systemctl|initctl/.test(c); }), 'sam never restarted');
 
-    // Three asking at once share restarts: the first runs alone, and the other
-    // two wait for one more between them, so they are answered together.
-    init({
-      luna: function (uri, params, cb) {
-        if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.home' });
-        if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: full });
-        cb({ returnValue: true });
-      },
-      config: { allowControl: true, allowTileHiding: true }
+    samCalls = [];
+    applyVisibility['com.webos.app.gallery'] = false;
+    apps.hideTile('com.webos.app.gallery', function (h) {
+      assert.strictEqual(h.ok, true, h.error);
+      assert.strictEqual(h.hidden, true);
+      assert.deepEqual(samCalls, [
+        ['block', 'com.webos.app.gallery', false],
+        ['release', 'com.webos.app.gallery']
+      ]);
+      assert.ok(mockEnv.files[hiddenFile].indexOf('com.webos.app.gallery') !== -1);
+      assert.ok(!ran.some(function (c) { return /kill|systemctl|initctl/.test(c); }), 'never restarted sam for hideTile');
+
+      apps.getApps(function (g) {
+        assert.strictEqual(g.tileHidingNudge, true, 'tileHidingNudge is true when blockSystemApp schema exists');
+
+        // Refused hide rolls back mount, override json, and hidden_apps
+        apps.hideTile('com.webos.app.music', function (failRes) {
+          assert.strictEqual(failRes.ok, false);
+          assert.strictEqual(failRes.hidden, false);
+          assert.ok(failRes.error && failRes.error.length > 0);
+          assert.strictEqual(!!mountedTargets[musicJson], false, 'refused hide unmounts bind-mount');
+          assert.strictEqual(!!mockEnv.files[musicOvr], false, 'refused hide removes override file');
+          assert.strictEqual(mockEnv.files[hiddenFile].indexOf('com.webos.app.music'), -1, 'refused hide removes id from hidden_apps');
+          assert.ok(!ran.some(function (c) { return /kill|systemctl|initctl/.test(c); }), 'still never restarted sam');
+
+          delete mockEnv.files[blockSchema];
+          delete mockEnv.files[galleryJson];
+          delete mockEnv.files[musicJson];
+          delete mockEnv.files[galleryOvr];
+          delete mockEnv.files[hiddenFile];
+          delete mockEnv.files[flagFile];
+          if (done) done();
+        });
+      });
     });
-    var answeredIn = [], mark = {};
-    var answer = function (k) {
-      return function () {
-        answeredIn[k] = mark;
-        process.nextTick(function () { mark = {}; });
-        if (answeredIn.filter(Boolean).length < 3) return;
-        assert.notStrictEqual(answeredIn[0], answeredIn[1], 'the first restart is its own');
-        assert.strictEqual(answeredIn[1], answeredIn[2], 'the next two share one restart');
-
-        var saverLaunched = false;
-        init({
-          luna: function (uri, params, cb) {
-            if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.screensaver' });
-            if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: full });
-            if (uri === 'com.webos.applicationManager/launch') {
-              saverLaunched = true;
-              return cb({ returnValue: true });
-            }
-            cb({ returnValue: true });
-          },
-          config: { allowControl: true, allowTileHiding: true }
-        });
-        apps.restartSam(function () {
-          assert.strictEqual(saverLaunched, false, 'must not relaunch screensaver');
-
-          var asleepLaunched = false;
-          mockEnv.files['/proc/lg/hdmi20/port2/status'] = '[PHY Info]=> PHY Lock[0]\nis5Vconnected[1]\n';
-
-          init({
-            luna: function (uri, params, cb) {
-              if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.hdmi2' });
-              if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: full });
-              if (uri === 'com.webos.applicationManager/launch') {
-                asleepLaunched = true;
-                return cb({ returnValue: true });
-              }
-              cb({ returnValue: true });
-            },
-            config: { allowControl: true, allowTileHiding: true }
-          });
-          apps.restartSam(function () {
-            assert.strictEqual(asleepLaunched, false, 'must not relaunch asleep HDMI source');
-            delete mockEnv.files['/proc/lg/hdmi20/port2/status'];
-            if (done) done();
-          });
-        });
-      };
-    };
-    apps.restartSamShared(answer(0));
-    apps.restartSamShared(answer(1));
-    apps.restartSamShared(answer(2));
-  });
+  };
+  var e1 = { 'com.webos.app.gallery': true };
+  apps.restartSamShared(onBatchDone, e1);
+  apps.restartSamShared(onBatchDone, e1);
 });
 
 test('dirSize computes folder size on disk', function () {

@@ -1207,6 +1207,8 @@
  "srv.apps.removeRefused": {"text": "la TV non l'ha rimossa", "from": "the TV would not remove it"},
  "srv.apps.tilesGlasshouseHome": {"text": "Glasshouse Home nasconde le app da sé: disponile lì", "from": "Glasshouse Home hides apps itself: arrange them there"},
  "srv.apps.tilesHeld": {"text": "Per ora l'occultamento delle app di sistema è disattivato su questa TV. Su webOS 10 e successivi può lasciare immagine, audio e controllo HDMI spenti finché la TV non viene scollegata dalla corrente. Le app già nascoste ricompaiono al prossimo riavvio completo della TV.", "from": "Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted."},
+ "srv.apps.tilesNoRescan": {"text": "Questa TV non può nascondere le app di sistema senza riavviare sam. Usa invece Glasshouse Home.", "from": "This TV cannot hide system apps without restarting sam. Use Glasshouse Home instead."},
+ "srv.apps.tilesNotTaken": {"text": "La TV non ha applicato la modifica al riquadro senza riavviare sam, quindi è stata annullata.", "from": "The TV did not apply the tile change without restarting sam, so it was undone."},
  "srv.arOff.badHour": {"text": "l'inizio deve essere un'ora da 0 a 23", "from": "the start must be an hour from 0 to 23"},
  "srv.backup.newer": {"text": "Quel backup viene da una versione più recente di Glasshouse: aggiorna prima questa TV", "from": "That backup is from a newer Glasshouse: update this TV first"},
  "srv.backup.notBackup": {"text": "Quel file non è un backup di Glasshouse", "from": "That file is not a Glasshouse backup"},
