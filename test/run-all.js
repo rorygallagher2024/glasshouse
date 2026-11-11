@@ -56,6 +56,19 @@ suites.forEach(function (suite) {
 });
 var left = runs.length;
 var startedAt = Date.now();
+var defaultTimeoutSecs = Number(process.env.TEST_TIMEOUT_SECS) || 60;
+
+var progressTimer = setInterval(function () {
+  if (left <= 0) { clearInterval(progressTimer); return; }
+  var elapsed = Math.round((Date.now() - startedAt) / 1000);
+  var running = runs.filter(function (r) { return !r.finished; }).map(function (r) { return r.suite; });
+  if (running.length <= 4) {
+    console.log('[' + elapsed + 's] ' + (runs.length - left) + '/' + runs.length + ' done; running: ' + running.join(', '));
+  } else {
+    console.log('[' + elapsed + 's] ' + (runs.length - left) + '/' + runs.length + ' done (' + running.length + ' running)');
+  }
+}, 10000);
+if (progressTimer.unref) progressTimer.unref();
 
 runs.forEach(function (run) {
   var env = {};
@@ -63,16 +76,50 @@ runs.forEach(function (run) {
   if (run.shard) env.TEST_SHARD = run.shard;
   var proc = child.fork(path.join(testDir, run.suite), [], { silent: true, env: env });
   run.out = { stdout: '', stderr: '', code: null };
+  run.finished = false;
   proc.stdout.on('data', function (d) { run.out.stdout += d; });
   proc.stderr.on('data', function (d) { run.out.stderr += d; });
-  proc.on('close', function (code) {
+
+  var closeTimer = null;
+  var timer = null;
+
+  function finish(code) {
+    if (run.finished) return;
+    run.finished = true;
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
     run.out.code = code;
     run.ms = Date.now() - startedAt;
     if (--left === 0) report();
+  }
+
+  proc.on('exit', function (code, sig) {
+    var exitCode = (code !== null) ? code : (sig ? 128 : 1);
+    closeTimer = setTimeout(function () {
+      try { proc.kill('SIGKILL'); } catch (e) {}
+      finish(exitCode);
+    }, 500);
   });
+
+  proc.on('close', function (code) {
+    finish(code !== null ? code : 0);
+  });
+
+  var suiteTimeoutMs = (run.suite.indexOf('boot') !== -1 ? Math.max(90, defaultTimeoutSecs) : defaultTimeoutSecs) * 1000;
+  timer = setTimeout(function () {
+    if (run.finished) return;
+    run.out.stderr += '\nFAIL: ' + run.suite + (run.shard ? ' (shard ' + run.shard + ')' : '') +
+      ' timed out after ' + Math.round(suiteTimeoutMs / 1000) + 's\n';
+    try { proc.kill('SIGTERM'); } catch (e) {}
+    setTimeout(function () {
+      try { proc.kill('SIGKILL'); } catch (e) {}
+    }, 1000);
+    finish(124);
+  }, suiteTimeoutMs);
 });
 
 function report() {
+  clearInterval(progressTimer);
   var failed = {};
   runs.forEach(function (run) {
     process.stdout.write(run.out.stdout);

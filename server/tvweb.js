@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.139.0';
+var TVWEB_VERSION = '0.144.0';
 
 var http = require('http');
 var fs = require('fs');
@@ -56,8 +56,11 @@ var iconServer = require('./lib/iconserver');
 var samrescan = require('./lib/samrescan');
 var servicesModule = require('./lib/services');
 var preload = require('./lib/preload');
+var appDns = require('./lib/appdns');
+var doh = require('./lib/doh');
 var quickAccess = require('./lib/quickaccess');
 var remoteKeys = require('./lib/remotekeys');
+var inputBar = require('./lib/inputbar');
 var clockFormat = require('./lib/clock');
 var homeScreen = require('./lib/homescreen');
 /*
@@ -69,16 +72,20 @@ var homeScreen = require('./lib/homescreen');
 var glasshouseHome = null;
 /** @type {typeof import('./lib/home-picture')} */
 var homePicture = null;
+/** @type {typeof import('./lib/home-launcher')} */
+var homeLauncher = null;
 // Internet TV on Glasshouse Home (lib/iptv): where Home runs, and nowhere else.
 /** @type {typeof import('./lib/iptv')} */
 var iptv = null;
 try {
   glasshouseHome = require('./lib/home');
   homePicture = require('./lib/home-picture');
+  homeLauncher = require('./lib/home-launcher');
   iptv = require('./lib/iptv');
 } catch (e) {
   glasshouseHome = null;
   homePicture = null;
+  homeLauncher = null;
   iptv = null;
   console.error('home: Glasshouse Home could not be loaded, running without it: ' + e.message);
 }
@@ -109,6 +116,8 @@ var screentime = require('./lib/screentime');
 var saverPowerOff = require('./lib/saverpoweroff');
 var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
+var backupParts = require('./lib/backup-parts');
+var resettime = require('./lib/resettime');
 var power = require('./lib/power');
 var names = require('./lib/names');
 var msg = say.msg;
@@ -210,6 +219,7 @@ var CONFIG = {
   // untried (#366, #768). Set here or from the Server tab. It was named
   // allowOnWebos10 until 0.105, and migrateConfigFile() renames that.
   allowExperimentalScreensavers: false,
+  allowExperimentalInputBar: false,
 
   // Glasshouse Home is offered on webOS 9 and 10, where it has been tried.
   // This lets it be switched on on webOS 11 too, untried there. File-only.
@@ -229,6 +239,10 @@ var CONFIG = {
   // http://<tv>:<port + 2>/icons/<appId>.png, for a launcher on another
   // device. Also switched from the MQTT tab.
   iconServer: false,
+
+  // Nightly refresh reboot: align tvpowerd's 24-hour reboot with the nightly
+  // power-down window to avoid the 4-hour drop to cold Power Off (#1288).
+  nightlyRefresh: false,
 
   // For testing the first-run setup wizard UI without touching TV settings or restarting.
   emulateSetup: false,
@@ -553,11 +567,28 @@ appsModule.init({ luna: luna, config: CONFIG });
 iconServer.init({ config: CONFIG, apps: appsModule });
 servicesModule.init({ stateDir: __dirname });
 preload.init({ luna: luna, stateDir: __dirname });
+doh.init({});
+appDns.init({ luna: luna, stateDir: __dirname, doh: doh });
 quickAccess.init({ luna: luna, inputNames: telemetry.inputNameMap });
 remoteKeys.init({ luna: luna, subscription: lunaTransport.Subscription, services: servicesModule, inputNames: telemetry.inputNameMap, stateDir: __dirname,
   // The Guide key can open Glasshouse Home's Internet TV guide.
   homeGuide: function () { return !!(glasshouseHome && iptv && glasshouseHome.enabled() && iptv.hasPlaylists()); },
-  homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); } });
+  homeAssistant: function () { return !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host); },
+  // The input bar: offered where lib/inputbar.js allows it, its app installed
+  // when a key is set to it, and preloaded from then on.
+  inputBarAllowed: function () { return inputBar.allowed(); },
+  inputBarApp: function (action, cb) { tvApp(action, cb, 'inputbar-app'); },
+  onInputBarKey: function () { inputBar.poke(); } });
+inputBar.init({
+  luna: luna,
+  config: CONFIG,
+  webosVersion: telemetry.detectWebosVersion(),
+  writeSettings: routes.writeSettings,
+  wanted: remoteKeys.opensInputBar,
+  drop: function (cb) { remoteKeys.dropInputBar(cb); },
+  // liveState is set up further on; the bar only asks once started.
+  on: function () { return !liveState || (liveState.state.snapshot().power || {}).systemOn !== false; }
+});
 homeScreen.init({ luna: luna, config: CONFIG, inputNames: telemetry.inputNameMap, stateDir: __dirname, webosVersion: telemetry.detectWebosVersion() });
 // webOS 10's layout is an overlay mount, gone after a restart of the TV.
 homeScreen.reapply();
@@ -586,10 +617,12 @@ telemetry.init({
   screensavers: screensavers,
   game: game,
   power: power,
+  resettime: resettime,
   remoteBattery: remoteBattery,
   home: glasshouseHome,
   tvwebVersion: TVWEB_DISPLAY_VERSION
 });
+resettime.init({ luna: luna, config: CONFIG, alwaysOnSupported: telemetry.alwaysOnSupported });
 
 var liveState = stateModule.init({
   inputNameMap: telemetry.inputNameMap,
@@ -602,6 +635,7 @@ var liveState = stateModule.init({
   onTvChange: function (ev) {
     // Leaving an input drops game.js's bind, without waiting for someone to ask.
     if (ev.group === 'application' && ev.key === 'app_id') game.appChanged(ev.value);
+    if (ev.group === 'power' && ev.key === 'state') screensavers.onPowerChange(ev.value);
     tvChanged(ev);
   }
 });
@@ -696,6 +730,7 @@ remotebuttons.init({
 
 controls.init({
   luna: luna,
+  inputBar: inputBar,
   lunaUrgent: lunaTransport.callUrgent,
   piccap: piccap,
   huesync: huesync,
@@ -713,6 +748,7 @@ controls.init({
   ntp: ntpClient,
   history: history,
   backup: backup,
+  resettime: resettime,
   home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
   deviceNameChanged: function (name) { syslogForwarder.setHostname(name); },
@@ -967,6 +1003,7 @@ function appsChanged() {
 
 routes.init({
   config: CONFIG,
+  inputBar: inputBar,
   audio: audioCapabilities,
   btAudio: btAudio,
   clock: clockFormat,
@@ -995,11 +1032,13 @@ routes.init({
   apps: appsModule,
   services: servicesModule,
   preload: preload,
+  appDns: appDns,
   quickAccess: quickAccess,
   remoteKeys: remoteKeys,
   homeScreen: homeScreen,
   home: glasshouseHome,
   homePicture: homePicture,
+  homeLauncher: homeLauncher,
   iptv: iptv,
   screensavers: screensavers,
   updater: updater,
@@ -1024,7 +1063,23 @@ routes.init({
   displayVersion: TVWEB_DISPLAY_VERSION
 });
 
+backupParts.init({
+  luna: luna,
+  control: controls.doControl,
+  config: CONFIG,
+  privacy: privacy,
+  services: servicesModule,
+  remoteKeys: remoteKeys,
+  quickAccess: quickAccess,
+  screensavers: screensavers,
+  apps: appsModule,
+  home: glasshouseHome,
+  resettime: resettime,
+  alwaysOnSupported: telemetry.alwaysOnSupported
+});
+
 backup.init({
+  parts: backupParts,
   lgSettings: lgSettings,
   home: glasshouseHome,
   config: CONFIG,
@@ -1063,6 +1118,7 @@ if (!CLI_MODE) {
 }
 
 if (!CLI_MODE) servicesModule.startEnforcing();
+if (!CLI_MODE) appDns.start();
 if (!CLI_MODE) appsModule.syncLauncherPort(CONFIG.port);
 // Discovery carries the icons' address once the server is listening.
 if (!CLI_MODE) iconServer.start(function (err, started) { if (started) republishDiscovery(); });
@@ -1074,7 +1130,7 @@ if (!CLI_MODE) {
   if (keysTimer.unref) keysTimer.unref();
   var heldTimer = setTimeout(function () { lgSettings.reapply(); }, 60000);
   if (heldTimer.unref) heldTimer.unref();
-  var heldRecheck = setInterval(function () { lgSettings.reapply(); }, 60 * 60000);
+  var heldRecheck = setInterval(function () { lgSettings.reapply(); resettime.apply(); }, 60 * 60000);
   if (heldRecheck.unref) heldRecheck.unref();
   var keysRecheck = setInterval(function () { remoteKeys.recheckNative(); }, remoteKeys.RECHECK_MS);
   if (keysRecheck.unref) keysRecheck.unref();
@@ -1112,6 +1168,12 @@ if (CLI_MODE) {
         if (r && r.refreshed && r.ok) console.log('tvapp: refreshed to current release');
       });
     }
+    // The input bar's app carries its page, so it is brought up to this
+    // release however Glasshouse was updated. One that is not installed is
+    // left alone: it is installed when a key is set to it.
+    tvApp('refresh', function (r) {
+      if (r && r.refreshed && r.ok) console.log('inputbar: app refreshed to current release');
+    }, 'inputbar-app');
   });
 } else {
   console.log('server: web dashboard disabled (web.enabled: false) - mqtt bridge only');
@@ -1446,7 +1508,7 @@ function setupHomeAssistant() {
    * are not published (see ha.js). The rows decide which entities exist and
    * a select's options, so a change in them means republishing discovery.
    */
-  var LGS_SECTIONS = ['sound', 'devices', 'game', 'promotions'];
+  var LGS_SECTIONS = ['sound', 'devices', 'game', 'promotions', 'picture'];
   var lgsRows = [];
   var lastLgsSig = '';
 
@@ -1469,7 +1531,9 @@ function setupHomeAssistant() {
       if (cpuOwn !== null) s.load = cpuOwn;
       s.lgs = {};
       ls.rows.forEach(function (r) { s.lgs[r.id] = r.type === 'switch' ? r.on : r.value; });
-      var lgsSig = ls.rows.map(function (r) {
+      var lgsSig = ls.rows.filter(function (r) {
+        return ha.LG_SETTING_ENTITIES.some(function (e) { return e.row === r.id; });
+      }).map(function (r) {
         return r.id + (r.choices ? ':' + r.choices.map(function (c) { return c.value; }).join('|') : '');
       }).join(',');
       if (lgsSig !== lastLgsSig) {
@@ -1767,6 +1831,12 @@ function setupHomeAssistant() {
       return;
     }
 
+    if (action === 'weather') {
+      // Cached for Glasshouse Home to poll; nothing on the TV to control.
+      if (glasshouseHome) glasshouseHome.setWeather(val);
+      return;
+    }
+
     if (action === 'toast') {
       doControl('toast', val, function() {});
       return;
@@ -1933,7 +2003,10 @@ function startGlasshouseHome() {
     // File-only, for the emulator: how long after start overdue jobs wait.
     catchupMs: CONFIG.iptv && typeof CONFIG.iptv.catchupMs === 'number' ? CONFIG.iptv.catchupMs : undefined
   });
+  var weather = require('./lib/weather');
+  weather.init({ getJson: fetchLib.getJson });
   glasshouseHome.init({
+    weather: weather,
     iptv: iptv,
     luna: luna,
     Subscription: lunaTransport.Subscription,
@@ -1953,6 +2026,7 @@ function startGlasshouseHome() {
     setHomeKey: remoteKeys.setHome,
     homeKeyApp: remoteKeys.homeApp,
     setStarting: remoteKeys.setStarting,
+    readsHomeKey: function () { return remotebuttons.isSupported(); },
     build: TVWEB_DISPLAY_VERSION + '@' + Date.now(),
     homeKeys: function (on) {
       if (remotebuttons.isSupported()) remotebuttons.want('home', on);
@@ -1964,6 +2038,7 @@ function startGlasshouseHome() {
     pictureDetails: function (on) { homePicture.want('details', on); },
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
+  homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION });
   glasshouseHome.start();
   iptv.start();
   // The Guide key set to Home's guide acts only while Home is on with a playlist.
@@ -2000,7 +2075,10 @@ if (!CLI_MODE) {
   power.init({ luna: luna, syslog: syslogForwarder });
   power.start();
   liveState.state.onChange(function (ev) {
-    if (ev.group === 'power' && ev.key === 'state') power.stateChanged(ev.value);
+    if (ev.group === 'power' && ev.key === 'state') {
+      power.stateChanged(ev.value);
+      resettime.apply();
+    }
   });
   liveState.groups.power.onReply = idlesaver.powerReply;
   // Its own start, as the MQTT bridge starts every group only with a broker.
@@ -2046,6 +2124,7 @@ if (!CLI_MODE) {
     luna: luna,
     stateDir: __dirname,
     webosVersion: telemetry.detectWebosVersion(),
+    getRemoteInfo: telemetry.readRemoteInfo,
     onLevel: function (level) {
       console.log('remote: battery ' + level + '%');
       telemetry.expireStats();
@@ -2070,6 +2149,11 @@ if (!CLI_MODE) {
       preload.resend();
       lgSettings.reapply();
     }
+  });
+  // The input bar is preloaded while a remote key opens it and the TV is on.
+  inputBar.start();
+  liveState.state.onChange(function (ev) {
+    if (ev.group === 'power' && ev.key === 'systemOn' && ev.value === true) inputBar.poke();
   });
 
   telemetry.detectDeviceInfo(function() {

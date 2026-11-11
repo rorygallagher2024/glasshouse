@@ -214,6 +214,24 @@ function isWget(bin) { return /wget$/.test(bin); }
  * busy (429, retryAfter), limit-download, limit-unzipped, empty.
  */
 function download(url, opts, sink, cb) {
+  var retried = false;
+  function start() {
+    // Node 8 on webOS can abort a child before exec when started from a
+    // child's completion callback. Wait a turn, as lib/devtools does.
+    setImmediate(function () {
+      downloadOnce(url, opts, sink, function (err, aborted) {
+        if (aborted && !retried) {
+          retried = true;
+          return setTimeout(start, 200);
+        }
+        cb(err);
+      });
+    });
+  }
+  start();
+}
+
+function downloadOnce(url, opts, sink, cb) {
   var bin = clientFor();
   if (!bin) return cb(fail('no-client'));
   var hdrFile = path.join(job.tmp || '/tmp', 'h-' + process.pid + '-' + Date.now());
@@ -231,12 +249,12 @@ function download(url, opts, sink, cb) {
   var bytes = 0, unzipped = 0, first = true, gunzip = null, stderr = '', done = false, sinkErr = null;
   var dec = new StringDecoder('utf8');
 
-  function end(err) {
+  function end(err, aborted) {
     if (done) return;
     done = true;
     children = children.filter(function (c) { return c !== child; });
     try { fs.unlinkSync(hdrFile); } catch (e) {}
-    cb(err);
+    cb(err, aborted);
   }
   function feed(chunk) {
     if (sinkErr) return;
@@ -276,7 +294,10 @@ function download(url, opts, sink, cb) {
   });
   child.stderr.on('data', function (d) { if (stderr.length < 2000) stderr += d; });
   child.on('error', function () { end(fail('no-client')); });
-  child.on('close', function (code) {
+  child.on('close', function (code, signal) {
+    // Only retry an early abort: a sink that has received bytes cannot be
+    // replayed without duplicating playlist entries or corrupting the guide.
+    if (signal === 'SIGABRT' && !bytes && !sinkErr) return end(fail('aborted'), true);
     var after = function () {
       if (sinkErr) return end(sinkErr);
       if (code !== 0) return end(downloadError(bin, code, stderr, hdrFile));
@@ -534,7 +555,7 @@ function xtreamPlaylist(src, cb) {
         var meta = { kind: 'xtream', at: Date.now(), channels: count, dropped: 0, groupsTotal: groups.order.length,
           groups: groups.list(200), headers: 0, drm: 0, guideInPlaylist: false,
           account: { expires: acct.expires, maxConnections: acct.maxConnections, activeConnections: acct.activeConnections,
-            trial: acct.trial, format: ext } };
+            trial: acct.trial, format: ext, formats: acct.formats } };
         writeMeta(tmp, meta);
         writeGroups(tmp, groups);
         cb(null, { channels: count, groups: groups.order.length });

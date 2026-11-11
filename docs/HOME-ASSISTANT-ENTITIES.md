@@ -46,11 +46,12 @@ Every entity the TV publishes, by category. Which categories are published is se
 | `button` | `button.lg_tv_fast_forward` | Fast Forward | Presses Fast Forward on the remote |
 | `switch` | `switch.lg_tv_oled_screen_shift` | OLED Screen Shift | Pixel orbiting, on OLED TVs |
 | `select` | `select.lg_tv_oled_logo_dimming` | OLED Logo Dimming | Local logo dimming: Off, Light, High |
-| `select` | `select.lg_tv_screensaver_mode` | Screen Saver | Which screen saver the TV runs: LG default, Clock, Starfield, Fireworks, Bokeh, Harmonograph or Panel vitals. Brightness is set on the dashboard's Screensaver tab |
+| `select` | `select.lg_tv_screensaver_mode` | Screen Saver | Which screen saver the TV runs: LG default, Clock, Clock with date (Clock with its date option), Starfield, Fireworks, Bokeh, Harmonograph or Panel vitals. Brightness is set on the dashboard's Screensaver tab |
 | `button` | `button.lg_tv_screensaver` | Start Screensaver | Starts the webOS screensaver, or dismisses one that is showing. Where the TV refuses the request, it opens the screen saver itself, except while something is playing full screen or playback cannot be checked ([Screen savers](dashboard/screen-savers.md)) |
 | `text` | `text.lg_tv_play_audio_clip` | Play Audio Clip | Plays the clip at the URL it is given (up to 255 characters, `http://` or `https://`) over what the TV is showing, as a message on `play_audio` does. Its state stays empty |
 | `text` | `text.lg_tv_screen_notification` | Screen Notification | Send custom toast messages to TV screen |
-| `open_url` | `text.lg_tv_open_url` | Open Website | Open custom URL on the TV  |
+| `text` | `text.lg_tv_open_url` | Open Website | Open custom URL on the TV  |
+| `text` | `text.lg_tv_weather` | Weather Push | Write-only: set to a JSON string, `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}`, to show the weather badge next to the clock on Glasshouse Home, while its Weather setting is From Home Assistant. `condition` is any Home Assistant weather condition (`sunny`, `partlycloudy`, `rainy`, …); `city` is optional, shown under the temperature when set; a push with no numeric `temp` is ignored, an empty one clears it, and one older than 3 hours is no longer shown ([an automation](HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home)) ([Home](dashboard/home.md#what-is-on-screen)) |
 | `button` | `button.lg_tv_restart` | Restart TV | Reboots the TV (not published when `allowPower` is false) |
 | `button` | `button.lg_tv_power_off` | Power Off TV | Powers off the TV (not published when `allowPower` is false) |
 | `button` | `button.lg_tv_power_on` | Power On TV | Turns the TV back on from Active Standby, while it is still finishing panel compensation; in plain standby the bridge is offline (not published when `allowPower` is false) |
@@ -127,7 +128,7 @@ of Unknowns.
 
 ## LG settings
 
-The TV's own settings that the dashboard's System, Game and Privacy tabs change, as switches, selects and numbers. Each is published only on TVs that have it: a webOS 4 TV has no Game Optimizer, eARC or Bluetooth speaker mode, for example. Those marked disabled by default appear under the device's configuration and can be enabled in Home Assistant. An HDMI input's own settings, such as Deep Colour, are not published: LG changes them only while that input is on screen.
+The TV's own settings that the dashboard's Picture, System, Game and Privacy tabs change, as switches, selects and numbers. Each is published only on TVs that have it: a webOS 4 TV has no Game Optimizer, eARC or Bluetooth speaker mode, for example. Those marked disabled by default appear under the device's configuration and can be enabled in Home Assistant. An HDMI input's own settings, such as Deep Colour, are not published: LG changes them only while that input is on screen.
 
 | Domain | Entity ID | Name | Description |
 | :--- | :--- | :--- | :--- |
@@ -138,6 +139,7 @@ The TV's own settings that the dashboard's System, Game and Privacy tabs change,
 | `select` | `select.lg_tv_game_genre` | Game Genre | Game Optimizer genre: Standard, First-person shooter, Role-playing, Real-time strategy, Sports or User |
 | `select` | `select.lg_tv_prevent_input_delay` | Prevent Input Delay | Game Optimizer input lag reduction: Standard or Boost |
 | `switch` | `switch.lg_tv_allm_setting` | ALLM | Whether the TV switches to low-latency mode when a device starts a game |
+| `switch` | `switch.lg_tv_reduce_blue_light` | Reduce Blue Light | Warms the picture to cut blue light (LG calls this Eye Comfort Mode) |
 | `select` | `select.lg_tv_digital_sound_output` | Digital Sound Output | *Disabled by default.* Auto, PCM or Pass Through, where the TV offers them |
 | `number` | `number.lg_tv_balance` | Balance | *Disabled by default.* Left and right TV speaker balance, -50 to 50 |
 | `switch` | `switch.lg_tv_automatic_volume` | Automatic Volume | *Disabled by default.* Keeps the volume level when switching channels |

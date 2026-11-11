@@ -1,4 +1,5 @@
 /* Hue Sync MQTT state and ON/OFF power control. Strict ES5. */
+require('./fake-clock').install();
 var assert = require('assert');
 var huesyncModule = require('../server/lib/huesync');
 

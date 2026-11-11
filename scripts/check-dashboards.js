@@ -16,6 +16,14 @@
  *
  * BROWSER_CHANNEL=chrome uses an installed Chrome instead, with playwright-core
  * alone, as CI does: its runners have Chrome, which saves the download.
+ *
+ * CPU_SLOWDOWN=4 runs every page on a CPU slowed four times, as Chrome's
+ * devtools can, to find a check that waits on time rather than on the page:
+ * CI's runners, shared and slower, fail those now and then.
+ *
+ * A check that finds a problem runs once more on its own before the run fails.
+ * One that passes the second time is reported as flaky, by name, and does not
+ * fail the run; one that fails twice does.
  */
 'use strict';
 const child = require('child_process');
@@ -97,7 +105,7 @@ async function startServer() {
   }
   let out = '';
   const srv = child.spawn(process.execPath, [path.join(ROOT, 'test', 'mocks', 'boot-server.js'), '--config', cfg], {
-    env: Object.assign({}, process.env, { FAKE_ROOT: root, TVWEB_LUNA_SEND: fake })
+    env: Object.assign({}, process.env, { FAKE_ROOT: root, TVWEB_LUNA_SEND: fake, FAKE_LAUNCH_GAP_MS: '0' })
   });
   srv.stdout.on('data', d => { out += d; });
   srv.stderr.on('data', d => { out += d; });
@@ -111,9 +119,11 @@ async function startServer() {
 }
 
 /*
- * Done once the tab's requests have all answered and none has started for
- * QUIET_MS - a tab's script runs when its data arrives, which is where it
- * breaks - or after MAX_MS, so a slow tab cannot hold the run up.
+ * Done once each address the tab has asked for has answered once and no new
+ * one has started for QUIET_MS - a tab's script runs when its data arrives,
+ * which is where it breaks - or after MAX_MS, so a slow tab cannot hold the
+ * run up. An address asked for again is the tab polling, which never stops:
+ * counted, nearly every tab ran to MAX_MS.
  */
 const QUIET_MS = 500, MAX_MS = 4000;
 
@@ -134,8 +144,19 @@ async function visit(browser, url, label, problems) {
     if (r.status() >= 400 && !expected) problems.push(label + ': ' + r.status() + ' for ' + r.url());
   });
   let open = 0, last = Date.now();
-  page.on('request', () => { open++; last = Date.now(); });
-  const done = () => { open = Math.max(0, open - 1); last = Date.now(); };
+  const asked = new Set(), first = new Set();
+  page.on('request', r => {
+    if (asked.has(r.url())) return;
+    asked.add(r.url());
+    first.add(r);
+    open++;
+    last = Date.now();
+  });
+  const done = r => {
+    if (!first.delete(r)) return;
+    open = Math.max(0, open - 1);
+    last = Date.now();
+  };
   page.on('requestfinished', done);
   page.on('requestfailed', done);
   await page.goto(url, { waitUntil: 'load' });
@@ -147,7 +168,14 @@ async function visit(browser, url, label, problems) {
 // A few tabs at a time: each is its own page, so they cannot affect each other.
 async function visitAll(browser, jobs, problems) {
   let next = 0;
-  async function worker() { while (next < jobs.length) { const j = jobs[next++]; await visit(browser, j.url, j.label, problems); } }
+  async function worker() {
+    while (next < jobs.length) {
+      const j = jobs[next++];
+      const once = (b, base, found) => visit(b, j.url, j.label, found);
+      Object.defineProperty(once, 'name', { value: j.label });
+      await runVisit(once, browser, null, problems);
+    }
+  }
   await Promise.all([worker(), worker(), worker(), worker()]);
 }
 
@@ -249,6 +277,132 @@ async function visitHomePicture(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// The weather badge: Home Assistant's last push or Open-Meteo's, brought by the heartbeat.
+async function visitHomeWeather(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home weather: ' + e.message));
+  const fail = what => problems.push('Home weather: ' + what);
+  const layout = { rows: ['app'], order: { app: [] }, hidden: { app: [] }, channels: [], hintSeen: true, searchHintSeen: true };
+  let weather = null, version = 1;
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: version,
+      apps: [{ id: 'app', title: 'App' }], devices: [], channels: [], sources: { channels: 0 }, order: { app: ['app', 'lg-home'] } });
+    if (url.pathname.endsWith('/weather')) return reply(weather ? Object.assign({ ok: true }, weather) : { ok: false });
+    if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
+    return reply({ ok: true, build: 'weather', layoutVersion: version, weather });
+  });
+  const beat = async () => {
+    const replied = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/beat');
+    await page.clock.fastForward(5000);
+    await replied;
+    await page.evaluate(() => 0);
+  };
+  const shown = () => page.evaluate(() => {
+    const w = document.getElementById('weather');
+    return w.className === 'none' ? null : { svg: !!w.querySelector('#wxIcon svg'), temp: document.getElementById('wxTemp').textContent,
+      city: document.getElementById('wxCity').textContent, cond: document.getElementById('wxCond').textContent };
+  });
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    if (await shown()) fail('shown before anything was pushed');
+    weather = { condition: 'rainy', temp: 9.6, city: 'Glasgow' };
+    await beat();
+    const w = await shown();
+    if (!w || !w.svg || w.temp !== '10°' || w.city !== 'Glasgow' || w.cond !== 'Rainy') fail('a push was shown as ' + JSON.stringify(w));
+    weather = { condition: 'volcanic', temp: -2.4, city: null };
+    await beat();
+    const odd = await shown();
+    if (!odd || !odd.svg || odd.temp !== '-2°' || odd.cond !== '') fail('a condition Home Assistant does not name was shown as ' + JSON.stringify(odd));
+    weather = null;
+    await beat();
+    if (await shown()) fail('still shown once the heartbeat brought none');
+    // Open-Meteo's weather carries its credit, in the corner, gone with the weather.
+    const credit = () => page.evaluate(() => {
+      const c = document.getElementById('wxCredit');
+      return c.textContent && getComputedStyle(c).display !== 'none' ? c.textContent : '';
+    });
+    if (await credit()) fail('Home Assistant\'s weather credited to Open-Meteo');
+    weather = { condition: 'cloudy', temp: 9.7, city: 'Glasgow', source: 'internet' };
+    await beat();
+    const net = await shown();
+    if (!net || net.temp !== '10°' || net.cond !== 'Cloudy') fail('Open-Meteo\'s weather was shown as ' + JSON.stringify(net));
+    if (await credit() !== 'Weather data by Open-Meteo.com') fail('Open-Meteo\'s weather shown without its credit');
+    weather = null;
+    await beat();
+    if (await credit()) fail('the credit stayed once the weather went');
+  } catch (e) {
+    fail(e.message);
+  }
+  await page.close();
+}
+
+// The Home tab's Weather setting: the source, and a place found by name for
+// Open-Meteo. The search is answered here, so the check never reaches Open-Meteo.
+async function visitHomeWeatherSetting(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home weather setting: ' + e.message));
+  const fail = what => problems.push('Home weather setting: ' + what);
+  const layout = { rows: ['app'], order: { app: [] }, sort: { app: 'custom' }, hidden: { app: [] }, channels: [],
+    hintSeen: true, searchHintSeen: true, weather: 'ha', weatherPlace: null };
+  const saves = [], searches = [];
+  const glasgow = { name: 'Glasgow', admin: 'Scotland', country: 'United Kingdom', countryCode: 'GB', lat: 55.8652, lon: -4.2576 };
+  await page.route('**/api/home**', async route => {
+    const url = new URL(route.request().url());
+    let body;
+    if (url.pathname === '/api/home') body = { ok: true, supported: { ok: true }, installed: true, enabled: true, active: true, writable: true, layout, history: true };
+    else if (url.pathname.endsWith('/catalogue')) body = { ok: true, apps: [], channels: [], devices: [], layout, order: { app: ['lg-home'] } };
+    else if (url.pathname.endsWith('/weather/places')) {
+      searches.push(url.searchParams.get('q'));
+      body = { ok: true, places: url.searchParams.get('q') === 'Glasgow' ? [glasgow] : [] };
+    } else if (url.pathname.endsWith('/layout')) {
+      const patch = route.request().postDataJSON();
+      saves.push(patch);
+      if (patch.weather) layout.weather = patch.weather;
+      if (patch.weatherPlace !== undefined) layout.weatherPlace = patch.weatherPlace;
+      body = { ok: true, layout: JSON.parse(JSON.stringify(layout)) };
+    } else body = { ok: true };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    const sel = page.locator('#home-weather-sel');
+    await page.waitForFunction(() => { const s = document.getElementById('home-weather-sel'); return s && !s.disabled && s.offsetParent; });
+    if (await sel.inputValue() !== 'ha') fail('the source read ' + await sel.inputValue() + ' for Home Assistant');
+    if (await page.locator('#home-weather-place').isVisible()) fail('the place search shown for Home Assistant');
+    let saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await sel.selectOption('internet');
+    await saved;
+    await page.locator('#home-weather-place').waitFor();
+    if (!/Search for your town/.test(await page.locator('#home-weather-chosen').textContent())) fail('no prompt to choose a place');
+    await page.locator('#home-weather-q').fill('Nowhere');
+    await page.locator('#home-weather-go').click();
+    await page.locator('#home-weather-results').getByText('No places found').waitFor();
+    await page.locator('#home-weather-q').fill('Glasgow');
+    await page.locator('#home-weather-q').press('Enter');
+    const pick = page.locator('#home-weather-results button');
+    await pick.first().waitFor();
+    if (await pick.first().textContent() !== 'Glasgow, Scotland, United Kingdom') fail('a place read ' + await pick.first().textContent());
+    saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await pick.first().click();
+    await saved;
+    const last = saves[saves.length - 1];
+    if (last.weather !== 'internet' || !last.weatherPlace || last.weatherPlace.lat !== glasgow.lat) fail('choosing a place saved ' + JSON.stringify(last));
+    await page.waitForFunction(() => /Glasgow, Scotland/.test(document.getElementById('home-weather-chosen').textContent));
+    if (JSON.stringify(searches) !== '["Nowhere","Glasgow"]') fail('searched for ' + JSON.stringify(searches));
+    if (!/GeoNames/.test(await page.locator('#home-weather-place').textContent())) fail('no credit for the place search');
+    saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+    await sel.selectOption('off');
+    await saved;
+    await page.waitForFunction(() => document.getElementById('home-weather-place').hidden);
+  } catch (e) {
+    fail(e.message);
+  } finally { await page.close(); }
+}
+
 // The TV's tile, Keep the preview on and Preview in the tile.
 async function visitHomePreviewOptions(browser, base, problems) {
   const page = await browser.newPage();
@@ -256,7 +410,7 @@ async function visitHomePreviewOptions(browser, base, problems) {
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
     hidden: { app: [], dev: [], ch: [] }, channels: ['one'], hintSeen: true, searchHintSeen: true,
     livePreview: true, previewAlways: false, previewInTile: false, picture: false };
-  let version = 1, now = { kind: 'input', port: 1 };
+  let version = 1, now = { kind: 'input', port: 1 }, covered = false;
   await page.addInitScript(() => {
     HTMLMediaElement.prototype.load = function () {};
     HTMLMediaElement.prototype.pause = function () {};
@@ -275,7 +429,7 @@ async function visitHomePreviewOptions(browser, base, problems) {
     if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
     if (url.pathname.endsWith('/signal')) return reply({ ok: true, signal: true });
     if (url.pathname.endsWith('/picture')) return reply({ ok: true, signal: { width: 1920, height: 1080, hz: 25, hdr: 'sdr' } });
-    return reply({ ok: true, build: 'preview', layoutVersion: version });
+    return reply({ ok: true, build: 'preview', layoutVersion: version, covered, saver: covered });
   });
   async function changeLayout(change) {
     Object.assign(layout, change);
@@ -310,6 +464,25 @@ async function visitHomePreviewOptions(browser, base, problems) {
     await rest();
     if (await source() !== 'service/webos-broadcast-preview tv://two') problems.push('Home preview options: the TV tile did not preview its last channel, ' + await source());
     if (await shownIn() !== 'now') problems.push('Home preview options: the preview was not beside the clock');
+    // The screen saver over the view stops the preview, and its end brings it back (#1209).
+    const before = await source();
+    if (!before) problems.push('Home preview options: nothing previewed before the screen saver');
+    // The next heartbeat's reply, not a time: on a slow runner it can arrive
+    // after a fixed fast-forward, and the preview then starts after the check.
+    const heartbeat = async () => {
+      const replied = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/beat');
+      await page.clock.fastForward(5000);
+      await replied;
+      await page.evaluate(() => 0);
+    };
+    covered = true;
+    await heartbeat();
+    await rest();
+    if (await source()) problems.push('Home preview options: the preview kept playing under the screen saver');
+    covered = false;
+    await heartbeat();
+    await rest();
+    if (await source() !== before) problems.push('Home preview options: the preview did not come back after the screen saver, ' + await source());
     await changeLayout({ previewInTile: true });
     if (await shownIn() !== 'TV') problems.push('Home preview options: Preview in the tile left it at ' + await shownIn());
     if (await page.locator('#now.previewing').count()) problems.push('Home preview options: the top strip still named the preview in the tile');
@@ -331,6 +504,56 @@ async function visitHomePreviewOptions(browser, base, problems) {
     if (await shownIn() !== 'now') problems.push('Home preview options: switching Preview in the tile off left it in a tile');
   } catch (e) {
     problems.push('Home preview options: ' + e.message);
+  }
+  await page.close();
+}
+
+// Each animated background draws, the pictures step aside, and Off puts them back.
+async function visitHomeAnimations(browser, base, problems) {
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  page.on('pageerror', e => problems.push('Home animations: ' + e.message));
+  const layout = { rows: ['app'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] },
+    channels: [], hintSeen: true, searchHintSeen: true, wallAnim: 'off', animTheme: 'auto',
+    animThemes: [{ id: 'auto' }, { id: 'sunset', sky: '#3a0f3d', light: '#ff8a4c' }] };
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1,
+      apps: [{ id: 'app', title: 'App' }], devices: [], channels: [], sources: {}, order: { app: ['app', 'lg-home'], dev: [], ch: [] },
+      wallpapers: { available: true, slots: { morning: true, afternoon: true, evening: true, night: true }, revision: '1' } });
+    if (url.pathname.endsWith('/now')) return reply({ kind: null });
+    if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
+    return reply({ ok: true, build: 'anim', layoutVersion: 1 });
+  });
+  // Something drawn on the canvas, over the background the page sets behind it.
+  const drawn = () => page.evaluate(() => {
+    const c = document.getElementById('anim'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let lit = 0;
+    for (let i = 3; i < d.length; i += 16) if (d[i] > 8) lit++;
+    return lit;
+  });
+  const open = async style => {
+    layout.wallAnim = style;
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+  };
+  try {
+    for (const style of ['waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples']) {
+      layout.animTheme = style === 'glow' ? 'sunset' : 'auto';
+      await open(style);
+      // Ripples start with a still surface; a drop falls within a few seconds.
+      await page.waitForTimeout(style === 'ripples' ? 3500 : 800);
+      if (await page.locator('#anim.on').count() !== 1) { problems.push('Home animations: ' + style + ' did not show'); continue; }
+      if (!await drawn()) problems.push('Home animations: ' + style + ' drew nothing');
+      const pictures = await page.evaluate(() => Array.prototype.some.call(document.querySelectorAll('#wall .layer'), l => +l.style.opacity > 0));
+      if (pictures) problems.push('Home animations: the wallpaper showed under ' + style);
+    }
+    await open('off');
+    await page.waitForTimeout(800);
+    if (await page.locator('#anim.on').count()) problems.push('Home animations: Off left the canvas showing');
+    if (await page.evaluate(() => document.getElementById('anim').width)) problems.push('Home animations: with none chosen, the canvas held pixels');
+  } catch (e) {
+    problems.push('Home animations: ' + e.message);
   }
   await page.close();
 }
@@ -527,8 +750,8 @@ async function visitHomeVisibility(browser, base, problems) {
       when: getComputedStyle(document.getElementById('when')).visibility,
       rowTop: document.querySelector('.row').getBoundingClientRect().top,
       rowsBottom: document.getElementById('rows').getBoundingClientRect().bottom,
-      // The last row shown: an empty one is left out.
-      lastBottom: [].slice.call(document.querySelectorAll('.row')).filter(r => r.offsetHeight).pop().getBoundingClientRect().bottom
+      // The row in focus: along the bottom, the rows after it wait below the screen.
+      lastBottom: document.querySelector('.row.active').getBoundingClientRect().bottom
     }));
     const centred = await place();
     layout.showClock = false;
@@ -538,7 +761,7 @@ async function visitHomeVisibility(browser, base, problems) {
     await release();
     const bottom = await place();
     if (bottom.when !== 'hidden') problems.push('Home visibility: the clock stayed with it switched off');
-    // Only a row's own margin is left below the last row.
+    // Only a row's own margin is left below the row in focus.
     const gap = p => p.rowsBottom - p.lastBottom;
     if (!(bottom.rowTop > centred.rowTop) || !(gap(bottom) < gap(centred) / 3)) {
       problems.push('Home visibility: the rows are not along the bottom: ' + JSON.stringify({ centred, bottom }));
@@ -848,7 +1071,7 @@ async function visitHomeFadeAndInputs(browser, base, problems) {
     // Netflix, the first tile: dark at once, opened only once the fade is over.
     await page.keyboard.press('Enter');
     const pressedAt = Date.now();
-    await page.waitForTimeout(80);
+    await waitUntil(page, faded);
     if (!await faded()) problems.push('Home fade: opening a tile did not fade out');
     if (opened.length) problems.push('Home fade: the tile opened before the fade was over');
     await waitUntil(page, () => opened.length > 0);
@@ -1116,9 +1339,11 @@ async function visitHomeArrangement(browser, base, problems) {
     if (Object.keys(saves[saves.length - 1].order).length) {
       problems.push('Home arranging: finishing after Reset pinned the Apps order again');
     }
+    // Waited for, not timed: on a slow runner the reload comes later than 100 ms.
+    const reloaded = navigations ? Promise.resolve(true)
+      : page.waitForEvent('framenavigated', { predicate: f => f === page.mainFrame(), timeout: 15000 }).then(() => true, () => false);
     await page.clock.fastForward(5000);
-    await page.waitForTimeout(100);
-    if (!navigations) problems.push('Home arranging: an update seen while arranging was never reloaded');
+    if (!await reloaded) problems.push('Home arranging: an update seen while arranging was never reloaded');
   } finally { await page.close(); }
 }
 
@@ -1227,7 +1452,7 @@ async function visitHomeOrder(browser, base, problems) {
     if (await appTiles() !== 'One,Two,LG Home') problems.push('Home order: an edit can be lost while the saved order is loading');
     releaseCatalogue();
     await saved;
-    await page.waitForTimeout(200);
+    await waitUntil(page, async () => saves.length && saves[0].sort && saves[0].sort.app === 'recent' && await appTiles() === 'Two,One,LG Home');
     if (!saves.length || !saves[0].sort || saves[0].sort.app !== 'recent') problems.push('Home order: the Apps row\'s Order did not save Last opened');
     if (await appTiles() !== 'Two,One,LG Home') problems.push('Home order: arranging did not show the row in last opened order');
     // Picking a tile up keeps the order shown, now the row's own.
@@ -1278,11 +1503,34 @@ async function visitHomeOrder(browser, base, problems) {
     await saved;
     if (saves[saves.length - 1].sort.app !== 'custom') problems.push('Home order: the Home tab did not save Your order');
 
+    layout.folder = ['two'];
+    layout.hiddenRows = ['ch'];
     await page.goto(base + '/assets/dashboard.html?tab=home');
-    await page.waitForFunction(() => document.body.innerText.indexOf('Your order') !== -1);
-    // One for Apps and one for Channels: the fixture has no inputs, and an empty row has no section.
-    const orders = await page.evaluate(() => (document.body.innerText.match(/Your order|Last opened/g) || []).length);
-    if (orders !== 2) problems.push('Home order: the TV app\'s Home section has no Order for each row');
+    for (const name of ['Apps', 'Inputs', 'Channels']) {
+      const entry = page.locator('#rows .row').filter({ hasText: new RegExp('^' + name) }).first();
+      await entry.click();
+      if (name === 'Apps') {
+        const peek = await page.locator('#hintPeek span').allTextContents();
+        if (peek.join(',') !== 'One,LG Home,More apps' || !(await entry.innerText()).includes('2 of 3 shown')) {
+          problems.push('Home order: the TV app preview counted folder apps as individual row tiles');
+        }
+      }
+      if (name === 'Channels' && !(await entry.innerText()).includes('Hidden')) problems.push('Home order: the TV app did not mark a hidden row');
+      await page.keyboard.press('Enter');
+      const order = page.locator('#rows .row.sel').filter({ hasText: /^Order/ });
+      await order.waitFor();
+      if (name === 'Apps' && !(await page.locator('#rows .row').filter({ hasText: /^Two/ }).innerText()).includes('In More apps')) {
+        problems.push('Home order: a folder app was labelled Shown in the TV app');
+      }
+      saved = page.waitForResponse(r => new URL(r.url()).pathname === '/api/home/layout');
+      await page.keyboard.press('Enter');
+      await saved;
+      await order.filter({ hasText: 'Last opened' }).waitFor();
+      const kind = { Apps: 'app', Inputs: 'dev', Channels: 'ch' }[name];
+      if (saves[saves.length - 1].sort[kind] !== 'recent') problems.push('Home order: the TV app did not save Order for ' + name);
+      await page.keyboard.press('ArrowLeft');
+      await page.locator('#rows .row.sel').filter({ hasText: new RegExp('^' + name) }).waitFor();
+    }
   } finally { await page.close(); }
 }
 
@@ -1330,7 +1578,7 @@ async function visitHomeEditor(browser, base, problems) {
     await page.getByRole('button', { name: 'Show channels', exact: true }).click();
     const add = id => page.locator('#home-ch-list .prot-row').filter({ hasText: id + ' ' + id.toUpperCase() }).getByRole('button', { name: 'Add', exact: true });
     await add('b').click();
-    await page.waitForTimeout(100);
+    await waitUntil(page, () => add('c').isDisabled());
     if (!await add('c').isDisabled()) problems.push('Home editor: controls remain enabled during a pending save');
     await add('c').click({ force: true });
     await page.waitForTimeout(100);
@@ -1347,7 +1595,9 @@ async function visitHomeEditor(browser, base, problems) {
     pendingRestore = true;
     await page.reload();
     await page.waitForSelector('#home-switch:not(:disabled)');
-    if (!await page.locator('#home-switch').textContent().then(t => /Retry/.test(t))) problems.push('Home editor: failed restoration has no retry action');
+    // The button is there, and enabled, before the status that names it arrives.
+    try { await page.waitForFunction(() => /Retry/.test(document.getElementById('home-switch').textContent)); }
+    catch (e) { problems.push('Home editor: failed restoration has no retry action'); }
     pendingRestore = false; portChanged = true;
     await page.reload();
     await page.waitForTimeout(200);
@@ -1402,9 +1652,14 @@ async function visitHomeUploads(browser, base, problems) {
   try {
     await page.goto(base + '/?tab=home');
     await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && homeCat);
-    // With Black chosen, a time of day is not a place to upload.
+    // With None chosen, the pictures' settings are not shown; Pictures shows
+    // the sets, without Black, which None is.
+    await page.waitForSelector('#home-bg-kind button');
+    if (await page.locator('#home-bg-pictures').isVisible()) problems.push('Home uploads: the pictures showed with None chosen');
+    await page.locator('#home-bg-kind button', { hasText: 'Pictures' }).click();
     await page.waitForSelector('#home-wall-choice button');
-    if (!await card(page, 'morning').locator('.wall-screen').isDisabled()) problems.push('Home uploads: a time of day took uploads with Black chosen');
+    if (await page.locator('#home-wall-choice button', { hasText: 'Black' }).count()) problems.push('Home uploads: Black was offered among the pictures');
+    if (!await card(page, 'morning').locator('.wall-screen').isDisabled()) problems.push('Home uploads: a time of day took uploads with a picture set chosen');
     await page.locator('#home-wall-choice button', { hasText: 'Your own' }).click();
     await ready(page);
     // Choosing Morning opens the file chooser for it.
@@ -1439,6 +1694,227 @@ async function visitHomeUploads(browser, base, problems) {
     await page.locator('#home-wall-clear').click();
     await page.waitForFunction(() => !document.querySelector('.wall-card.has'));
   } finally { await context.close(); }
+}
+
+/*
+ * Your own pictures, shuffled. On the Home tab: choosing it shows the
+ * collection rather than the times of day, three images chosen at once are
+ * uploaded one after another, the interval is saved, and Remove takes one
+ * picture and Remove all the rest. On the view: a picture shows, and as the
+ * minutes pass each of the others comes in turn before any comes again.
+ */
+async function visitHomeShuffle(browser, base, problems) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  page.on('pageerror', e => problems.push('Home shuffle: ' + e.message));
+  const layout = { rows: ['app'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] },
+    channels: [], hintSeen: true, searchHintSeen: true, wallAnim: 'off', wallShuffleMinutes: 10, shuffleMinutes: [1, 5, 10, 15, 30, 60] };
+  let choice = 'own', pictures = [], made = 0, image = null;
+  const saved = [];
+  const wallpapers = () => ({ available: choice === 'shuffle' ? pictures.length > 0 : false, uploading: false, choice,
+    choices: ['black', 'landscape', 'abstract', 'own', 'shuffle'], pictures: pictures.slice(), maxPictures: 50,
+    slots: { morning: false, afternoon: false, evening: false, night: false }, revision: choice + pictures.length });
+  await context.route('**/api/home**', async route => {
+    const url = new URL(route.request().url());
+    const pathname = url.pathname;
+    let body;
+    if (pathname === '/api/home/wallpaper') return route.fulfill({ contentType: 'image/jpeg', body: image || Buffer.alloc(0) });
+    if (pathname.endsWith('/upload')) {
+      if (url.searchParams.get('slot') !== 'shuffle') problems.push('Home shuffle: a picture went to a time of day');
+      image = route.request().postDataBuffer();
+      pictures.push('pic' + String(++made).padStart(6, '0'));
+      choice = 'shuffle';
+      body = { ok: true, wallpapers: wallpapers() };
+    } else if (pathname === '/api/home/wallpapers') {
+      const req = route.request().postDataJSON();
+      if (req.removePictures) pictures = [];
+      else if (req.removePicture) pictures = pictures.filter(id => id !== req.removePicture);
+      else if (req.choose) choice = req.choose;
+      body = { ok: true, wallpapers: wallpapers() };
+    } else if (pathname === '/api/home/layout') {
+      const req = route.request().postDataJSON();
+      saved.push(req);
+      Object.assign(layout, req);
+      body = { ok: true, layout, layoutVersion: 1 };
+    } else if (pathname === '/api/home') {
+      body = { ok: true, supported: { ok: true }, installed: true, enabled: true, writable: true, layout, wallpapers: wallpapers() };
+    } else if (pathname.endsWith('/catalogue')) {
+      body = { ok: true, layout, layoutVersion: 1, apps: [{ id: 'app', title: 'App' }], devices: [], channels: [], sources: {},
+        order: { app: ['app'], dev: [], ch: [] }, wallpapers: wallpapers() };
+    } else if (pathname.endsWith('/now')) {
+      body = { kind: null };
+    } else {
+      // The heartbeat carries the wallpapers too, as the server's does.
+      body = { ok: true, layout, build: 'shuffle', layoutVersion: 1, wallpapers: wallpapers(), apps: [], devices: [], channels: [], order: { app: [], dev: [], ch: [] }, sources: { channels: 0 } };
+    }
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  try {
+    await page.goto(base + '/?tab=home');
+    await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && homeCat);
+    await page.locator('#home-wall-choice button', { hasText: 'Your own, shuffled' }).click();
+    await page.waitForSelector('#home-shuffle-add:not(:disabled)');
+    if (await page.locator('#home-walls').isVisible()) problems.push('Home shuffle: the times of day showed with the collection chosen');
+    const chooser = page.waitForEvent('filechooser');
+    await page.locator('#home-shuffle-add').click();
+    const icon = path.join(ASSETS, 'dashboard-app/assets/icon130.png');
+    await (await chooser).setFiles([icon, icon, icon]);
+    await page.waitForFunction(() => document.querySelectorAll('#home-shuffle [data-picture]').length === 3, null, { timeout: 15000 });
+    if (made !== 3) problems.push('Home shuffle: three images chosen made ' + made + ' uploads');
+    await page.selectOption('#home-shuffle-minutes', '5');
+    await page.waitForFunction(() => homeLayout && homeLayout.wallShuffleMinutes === 5);
+    if (!saved.some(r => r.wallShuffleMinutes === 5)) problems.push('Home shuffle: the interval was not saved as a number');
+    await page.locator('#home-shuffle [data-picture="pic000001"]').getByRole('button', { name: 'Remove', exact: true }).click();
+    await page.waitForFunction(() => !document.querySelector('#home-shuffle [data-picture="pic000001"]'));
+    if (pictures.length !== 2) problems.push('Home shuffle: Remove took more than one picture');
+    await page.locator('#home-wall-clear').click();
+    await page.waitForFunction(() => !document.querySelector('#home-shuffle [data-picture]'));
+    // On the view, with four pictures and a minute each.
+    pictures = ['pica', 'picb', 'picc', 'picd'].map(id => id + '00000');
+    layout.wallShuffleMinutes = 1;
+    const view = await context.newPage({ viewport: { width: 1920, height: 1080 } });
+    view.on('pageerror', e => problems.push('Home shuffle view: ' + e.message));
+    await view.clock.install();
+    await view.goto(base + '/assets/home.html');
+    // The page's own timers run only as the clock is moved on.
+    for (let i = 0; i < 40 && !await view.locator('.tile').count(); i++) {
+      await view.clock.runFor(500);
+      await view.waitForTimeout(50);
+    }
+    const shown = () => view.evaluate(() => {
+      const front = Array.prototype.filter.call(document.querySelectorAll('#wall .layer'), l => +l.style.opacity > 0)[0];
+      const m = front && /id=([0-9a-z]+)/.exec(front.style.backgroundImage);
+      return m ? m[1] : null;
+    });
+    const seen = [];
+    for (let i = 0; i < 4; i++) {
+      if (i) await view.clock.runFor(76000);
+      // The next picture shows once it has loaded, which takes real time on a slow machine.
+      const before = seen[seen.length - 1] || null;
+      let id = null;
+      for (let k = 0; k < 100 && (!(id = await shown()) || id === before); k++) {
+        await view.clock.runFor(200);
+        await view.waitForTimeout(50);
+      }
+      seen.push(id);
+    }
+    if (new Set(seen).size !== 4 || seen.some(id => pictures.indexOf(id) === -1)) {
+      problems.push('Home shuffle: four minutes did not show each of four pictures once: ' + seen.join(', '));
+    }
+  } catch (e) {
+    problems.push('Home shuffle: ' + e.message);
+  } finally { await context.close(); }
+}
+
+/*
+ * A custom launcher in Glasshouse Home's place. On the Home tab: its button
+ * opens the section, a web address with Glasshouse Home on is chosen at once,
+ * the Apps and Inputs rows stay to arrange while it is in use without
+ * Glasshouse Home's other settings, Use Glasshouse Home swaps back and Use
+ * swaps again without a second press, an upload is offered only where
+ * installing from a file is, and Remove takes it away. Then, against the real
+ * server, an uploaded page is served with window.Glasshouse ready before its
+ * own script runs.
+ */
+async function visitHomeLauncher(browser, base, problems) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  page.on('pageerror', e => problems.push('Home launcher: ' + e.message));
+  const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
+    hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true };
+  let kept = [], chosen = null, launcherUpload = true;
+  const sent = [];
+  const minimal = { id: 'minimal', kind: 'builtin', title: 'Glasshouse Minimal', source: 'builtin' };
+  const status = () => ({ chosen, launchers: [minimal].concat(kept).map(l => Object.assign({}, l, { chosen: l.id === chosen })) });
+  await context.route('**/api/home**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    let body;
+    if (pathname === '/api/home/launcher') {
+      const req = route.request().postDataJSON();
+      sent.push(JSON.stringify(req));
+      if (req.address) kept = [{ id: 'own', kind: 'web', title: 'ha.local:8123', address: req.address, source: 'own' }];
+      else if (req.remove) { kept = kept.filter(l => l.id !== req.remove); if (chosen === req.remove) chosen = null; }
+      else if ('choose' in req) chosen = req.choose || null;
+      body = { ok: true, launchers: status() };
+    } else if (pathname === '/api/home') {
+      body = { ok: true, supported: { ok: true }, installed: true, enabled: true, active: true, writable: true, layout,
+        launchers: status(), launcherUpload, wallpapers: { choices: ['black'], choice: 'black', slots: {} } };
+    } else {
+      body = { ok: true, layout, apps: [], devices: [], channels: [], order: { app: [], dev: [], ch: [] }, sources: { channels: 0 } };
+    }
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  const keptRow = title => page.locator('#home-launchers .prot-row', { hasText: title });
+  const stateNames = re => page.waitForFunction(r => new RegExp(r).test(document.getElementById('home-state').textContent), re.source);
+  const marked = async id => /\bon\b/.test(await page.locator('#' + id).getAttribute('class'));
+  try {
+    await page.goto(base + '/?tab=home');
+    await page.waitForFunction(() => typeof homeStatus !== 'undefined' && homeStatus && document.getElementById('home-mode-minimal').textContent === 'Glasshouse Minimal');
+    const names = await page.locator('#home-mode-btns button').allTextContents();
+    if (names.join() !== 'LG Home,Glasshouse Home,Glasshouse Minimal,Custom') problems.push('Home launcher: the choices read ' + names.join());
+    if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: Custom\'s settings showed with Glasshouse Home chosen');
+    // Custom with none set up opens its settings, and chooses nothing.
+    await page.locator('#home-mode-launcher').click();
+    await page.locator('#home-launcher').waitFor();
+    if (sent.length) problems.push('Home launcher: Custom with none set up sent ' + sent.join());
+    await page.locator('#home-launcher-url').fill('http://ha.local:8123/tv');
+    await page.locator('#home-launcher-save').click();
+    try { await stateNames(/ha\.local:8123/); } catch (e) { problems.push('Home launcher: the state did not name the launcher'); }
+    if (sent.join() !== '{"address":"http://ha.local:8123/tv"},{"choose":"own"}') problems.push('Home launcher: a web address with Glasshouse Home on sent ' + sent.join());
+    // The apps and inputs it shows stay arranged here; Glasshouse Home's own settings go.
+    if (!await page.locator('#home-rows .home-row[data-kind="app"]').isVisible()) problems.push('Home launcher: the Apps row was not offered with a launcher chosen');
+    if (await page.locator('#home-rows .home-row[data-kind="ch"]').isVisible()) problems.push('Home launcher: the Channels row showed with a launcher chosen');
+    if (await page.locator('#home-tv').isVisible() || await page.locator('#home-looks').isVisible()) problems.push('Home launcher: Glasshouse Home\'s own settings showed with a launcher chosen');
+    if (!await marked('home-mode-launcher')) problems.push('Home launcher: Custom was not marked as chosen');
+    if (await page.locator('#home-launchers .prot-row', { hasText: 'Minimal' }).count()) problems.push('Home launcher: Minimal was listed among the owner\'s own');
+    // Glasshouse Minimal, a choice beside the others; Custom's settings go with Custom.
+    sent.length = 0;
+    await page.locator('#home-mode-minimal').click();
+    await stateNames(/Glasshouse Minimal/);
+    if (sent.join() !== '{"choose":"minimal"}') problems.push('Home launcher: Glasshouse Minimal sent ' + sent.join());
+    if (!await marked('home-mode-minimal') || await marked('home-mode-launcher')) problems.push('Home launcher: Glasshouse Minimal\'s button was not the one marked as chosen');
+    if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: Custom\'s settings showed with Glasshouse Minimal chosen');
+    if (!await page.locator('#home-rows .home-row[data-kind="app"]').isVisible()) problems.push('Home launcher: the Apps row was not offered with Glasshouse Minimal chosen');
+    sent.length = 0;
+    await page.locator('#home-switch').click();
+    await page.waitForFunction(() => /\bon\b/.test(document.getElementById('home-switch').className));
+    if (sent.join() !== '{"choose":false}') problems.push('Home launcher: Glasshouse Home sent ' + sent.join());
+    if (await page.locator('#home-launcher').isVisible()) problems.push('Home launcher: Custom\'s settings showed with Glasshouse Home chosen, one set up');
+    // Custom with one set up chooses it, as the others are chosen.
+    sent.length = 0;
+    await page.locator('#home-mode-launcher').click();
+    await stateNames(/ha\.local:8123/);
+    if (sent.join() !== '{"choose":"own"}') problems.push('Home launcher: Custom with one set up sent ' + sent.join());
+    await page.locator('#home-launcher').waitFor();
+    launcherUpload = false;
+    await page.evaluate(() => loadHome());
+    await page.locator('#home-launcher-upload-off').waitFor();
+    if (!await page.locator('#home-launcher-pick').isDisabled()) problems.push('Home launcher: an upload was offered where installing from a file is off');
+    await keptRow('ha.local').getByRole('button', { name: 'Remove' }).click();
+    await page.waitForFunction(() => !document.querySelectorAll('#home-launchers .prot-row').length);
+  } finally { await context.close(); }
+
+  const tv = await browser.newContext();
+  const view = await tv.newPage();
+  view.on('pageerror', e => problems.push('Home launcher page: ' + e.message));
+  try {
+    await view.goto(base + '/');
+    const html = '<!doctype html><html><head><title>wait</title></head><body><script>' +
+      'Glasshouse.catalogue(function (e, c) { document.title = e ? "error " + e.message : "apps " + c.apps.length; });' +
+      '</script></body></html>';
+    const up = await view.evaluate(async h => (await fetch('/api/home/launcher/upload?name=check.html', {
+      method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: h })).json(), html);
+    if (!up.ok) problems.push('Home launcher: the upload was refused: ' + up.error);
+    await view.evaluate(async () => fetch('/api/home/launcher', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ choose: 'own' }) }));
+    await view.goto(base + '/home/launcher/');
+    await view.waitForFunction(() => document.title !== 'wait', null, { timeout: 15000 });
+    const title = await view.title();
+    if (!/^apps [1-9]/.test(title)) problems.push('Home launcher: the uploaded page read ' + title);
+    await view.evaluate(async () => fetch('/api/home/launcher', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remove: 'own' }) }));
+  } catch (e) { problems.push('Home launcher page: ' + e.message); }
+  finally { await tv.close(); }
 }
 
 /*
@@ -2085,7 +2561,8 @@ async function visitHomeInternetTv(browser, base, problems) {
     { id: 'p1:x2', pl: 'p1', key: 'x2', name: 'VIP: BBC WORLD NEWS \u1d34\u1d30', group: 'UK| NEWS \u1d34\u1d30', number: '2' }
   ];
   const now = Date.now(), half = 30 * 60000, at = Math.floor(now / half) * half;
-  const leases = [], streams = [];
+  const leases = [], streams = [], outputs = {};
+  let refuseOutput = false, holdOutput = false, finishOutput = null;
   let favourites = true, previewInTile = false;
   await page.route('**/api/home/**', route => {
     const url = new URL(route.request().url());
@@ -2105,7 +2582,18 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (url.pathname.endsWith('/lineup')) return reply({ ok: true, revision: 1, channels: tv,
       sections: [{ id: 'news', kind: 'pick', name: 'News' }], favourites: favourites ? tv.map(c => c.id) : [] });
     if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: { 'p1:x1': [{ start: at, end: at + half * 2, title: 'The World This Weekend' }] } });
-    if (url.pathname.endsWith('/stream')) { streams.push(url.searchParams.get('key')); trace.push('request ' + url.searchParams.get('key')); return reply({ ok: true, url: 'http://s.test/' + url.searchParams.get('key') + '.m3u8', format: 'hls' }); }
+    if (url.pathname.endsWith('/stream')) {
+      const key = url.searchParams.get('key'), ts = outputs[key] === 'ts';
+      streams.push(key); trace.push('request ' + key);
+      return reply({ ok: true, url: 'http://s.test/' + key + (ts ? '.ts' : '.m3u8'), format: ts ? 'ts' : 'hls', switchable: true });
+    }
+    if (url.pathname.endsWith('/output')) {
+      const body = req.postDataJSON();
+      if (refuseOutput) return reply({ ok: false, error: 'save' });
+      outputs[body.key] = body.output;
+      if (holdOutput) { finishOutput = () => reply({ ok: true }); return; }
+      return reply({ ok: true });
+    }
     if (url.pathname.endsWith('/lease')) { leases.push(JSON.parse(req.postData() || '{}')); return reply({ ok: true }); }
     if (url.pathname.endsWith('/schedule')) {
       // Filed by the UTC day each programme starts, as the worker writes them.
@@ -2117,7 +2605,10 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (url.pathname.endsWith('/groups')) return reply({ ok: true, groups: [{ name: 'UK| NEWS', count: 2 }], total: 1, channels: 2 });
     return reply({ ok: true });
   });
-  const key = code => page.evaluate(k => { for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: k, bubbles: true })); }, code);
+  const keys = codes => page.evaluate(list => {
+    for (const code of list) for (const type of ['keydown', 'keyup']) document.dispatchEvent(new KeyboardEvent(type, { keyCode: code, bubbles: true }));
+  }, codes);
+  const key = code => keys([code]);
   const playing = () => page.locator('#pvVideo').dispatchEvent('playing');
   const fillsTile = () => page.evaluate(() => {
     const tile = document.querySelector('.row.active .tile.focus'), pv = document.getElementById('preview');
@@ -2130,24 +2621,56 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.waitForSelector('.row[data-key="iptv"] .tile');
     const names = await page.locator('.row[data-key="iptv"] .tile .nm').allTextContents();
     if (names[0] !== 'BBC News' || names[2] !== 'Guide') fail('row names ' + JSON.stringify(names));
-    await page.waitForTimeout(900);
+    await page.waitForFunction(() => window.played.includes('http://s.test/x1.m3u8'));
     if (streams[0] !== 'x1' || !(await page.evaluate(() => window.played)).includes('http://s.test/x1.m3u8')) fail('the focused channel was not previewed');
-    if (!leases.some(l => l.on === true && l.full === false)) fail('no lease while previewing');
+    if (!await waitUntil(page, () => leases.some(l => l.on === true && l.full === false))) fail('no lease while previewing');
     await playing();
-    await page.waitForTimeout(100);
     await key(13);
-    await page.waitForTimeout(400);
+    await page.waitForSelector('#preview.full');
     if (!/full/.test(await page.locator('#preview').getAttribute('class'))) fail('OK did not grow the preview to the player');
     if (streams.length !== 1) fail('the preview grown to the player opened the stream again');
-    if (!leases.some(l => l.full === true)) fail('the player did not say it is full screen');
+    if (!await waitUntil(page, () => leases.some(l => l.full === true))) fail('the player did not say it is full screen');
+    await page.waitForFunction(() => document.getElementById('bdFmt').textContent.includes('Yellow: play as MPEG-TS'));
+    await key(405);
+    await page.waitForFunction(() => /x1\.ts/.test(document.getElementById('pvVideo').getAttribute('src')));
+    await playing();
+    if (!(await page.locator('#bdFmt').textContent()).includes('Yellow: play as HLS')) fail('Yellow did not switch the adopted preview to MPEG-TS');
+
+    refuseOutput = true;
+    const beforeRefused = streams.length;
+    await key(405);
+    await page.waitForFunction(() => document.getElementById('pmsg').textContent.includes('That didn’t save'));
+    if (streams.length !== beforeRefused) fail('a refused format save silently reopened the old stream');
     await key(13);
-    await page.waitForTimeout(300);
+    await page.waitForFunction(() => /x1\.ts/.test(document.getElementById('pvVideo').getAttribute('src')));
+    await playing();
+    refuseOutput = false;
+
+    holdOutput = true;
+    const pendingOutput = page.waitForRequest(r => new URL(r.url()).pathname === '/api/iptv/output');
+    await key(405);
+    await pendingOutput;
+    await key(461);
+    await page.waitForFunction(() => !!document.getElementById('pvVideo').getAttribute('src'));
+    await playing();
+    await key(13);
+    const beforeLate = streams.length;
+    const lateOutput = page.waitForResponse(r => new URL(r.url()).pathname === '/api/iptv/output');
+    await finishOutput();
+    await lateOutput;
+    // A reply from the previous player must not reopen the newly adopted stream.
+    await page.waitForTimeout(100);
+    if (streams.length !== beforeLate) fail('a late format save reopened a player that had been left');
+    holdOutput = false;
+
+    await key(13);
+    await page.waitForSelector('#player.list');
     if (!/list/.test(await page.locator('#player').getAttribute('class'))) fail('OK in the player did not open the channel list');
     const releasedBefore = await page.evaluate(() => window.released);
     await key(40);
     await key(13);
-    await page.waitForTimeout(900);
-    if (streams[1] !== 'x2') fail('choosing a channel in the list did not play it');
+    await page.waitForFunction(() => window.played.includes('http://s.test/x2.m3u8'));
+    if (streams[streams.length - 1] !== 'x2') fail('choosing a channel in the list did not play it');
     if (await page.evaluate(() => window.released) <= releasedBefore) fail('the last stream was not released before the next');
     const asked = trace.lastIndexOf('request x2'), playedNext = trace.lastIndexOf('play http://s.test/x2.m3u8');
     const releasedAt = trace.slice(0, asked).lastIndexOf('release'), lastOld = trace.slice(0, asked).lastIndexOf('play http://s.test/x1.m3u8');
@@ -2157,11 +2680,12 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (/playing/.test(await page.locator('#stage').getAttribute('class'))) fail('Back did not close the player');
     // OK before the preview's dwell is over: one stream, full screen, and the preview's timer gone with it.
     await key(37);
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() => document.getElementById('pvVideo').getAttribute('src') === 'http://s.test/x1.m3u8');
     const before = streams.length;
-    await key(39);
-    await page.waitForTimeout(100);
-    await key(13);
+    // One event turn keeps OK before the dwell even when the runner is busy.
+    await keys([39, 13]);
+    await page.waitForFunction(() => document.getElementById('pvVideo').getAttribute('src') === 'http://s.test/x2.m3u8');
+    // No second request may arrive from the preview timer after the player opens.
     await page.waitForTimeout(1500);
     if (streams.length !== before + 1) fail('OK during the preview\'s dwell opened ' + (streams.length - before) + ' streams');
     if (!/full/.test(await page.locator('#preview').getAttribute('class'))) fail('a late preview timer took the player\'s picture back');
@@ -2172,10 +2696,10 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (await page.locator('#guide .gc b').first().textContent() !== 'The World This Weekend') fail('the guide did not show the schedule');
     const guideRow = () => page.locator('#gBody .gr.focus').getAttribute('data-g');
     await key(34);
-    await page.waitForTimeout(100);
+    await waitUntil(page, async () => await guideRow() === '1');
     if (await guideRow() !== '1') fail('Channel down did not turn the guide a page, to its last channel');
     await key(33);
-    await page.waitForTimeout(100);
+    await waitUntil(page, async () => await guideRow() === '0');
     if (await guideRow() !== '0') fail('Channel up did not turn the guide back a page');
     await key(461);
     await page.waitForTimeout(200);
@@ -2187,7 +2711,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keyup', { keyCode: 13, bubbles: true })));
     for (let i = 0; i < 4; i++) await key(39);
     await key(13);
-    await page.waitForTimeout(500);
+    await waitUntil(page, async () => /adding/.test(await page.locator('#stage').getAttribute('class')));
     if (!/adding/.test(await page.locator('#stage').getAttribute('class'))) fail('the Add channels tile did not open the panel');
     else if (!/UK News/.test(await page.locator('#adItems').textContent())) fail('the add panel did not list the playlist\'s groups');
     previewInTile = true;
@@ -2202,7 +2726,7 @@ async function visitHomeInternetTv(browser, base, problems) {
     if (!full || full.width < 1900 || full.height < 1060) fail('the tile preview did not fill the screen');
     if (streams.length !== beforeTile) fail('opening the tile preview reopened its stream');
     await key(461);
-    await page.waitForTimeout(300);
+    await waitUntil(page, fillsTile);
     if (!await fillsTile()) fail('Back did not return the stream to its tile');
     if (streams.length !== beforeTile) fail('returning to the tile reopened its stream');
     await key(457);
@@ -2277,30 +2801,32 @@ async function visitIptvChannels(browser, base, problems) {
     await page.waitForSelector('.tvm-c');
     if (await page.locator('.tvm-c').count() !== 2) fail('the group\'s channels were not listed');
     await page.click('button:has-text("Add the whole group")');
-    await page.waitForTimeout(300);
+    await waitUntil(page, () => posts.some(p => p.action === 'add-group' && p.group === 'UK | Sport' && p.pl === 'p1'));
     if (!posts.some(p => p.action === 'add-group' && p.group === 'UK | Sport' && p.pl === 'p1')) fail('Add the whole group did not add it: ' + JSON.stringify(posts));
-    await page.click('.tvm-sec button[aria-expanded="false"]').catch(() => {});
+    // A section folded away is opened; with none, page.click would wait out its 30 s.
+    const folded = page.locator('.tvm-sec button[aria-expanded="false"]');
+    if (await folded.count()) await folded.first().click();
     await page.waitForSelector('.tvm-lc .star');
     await page.locator('.tvm-lc .star').first().click();
-    await page.waitForTimeout(300);
+    await waitUntil(page, () => posts.some(p => p.action === 'star' && p.id === 'p1:x1'));
     if (!posts.some(p => p.action === 'star' && p.id === 'p1:x1')) fail('the star did not star the channel');
     // A run selected with Shift, and the bar adding all of it in one edit.
     await page.click('.tvm-c >> nth=0');
     await page.click('.tvm-c >> nth=1', { modifiers: ['Shift'] });
     await page.waitForSelector('#tvm-dock:not([hidden])');
     await page.click('#tvm-dock button:has-text("Add 2 to the lineup")');
-    await page.waitForTimeout(300);
+    await waitUntil(page, () => posts.some(p => p.action === 'add' && p.channels && p.channels.length === 2));
     if (!posts.some(p => p.action === 'add' && p.channels && p.channels.length === 2)) fail('the bar did not add the selected channels in one edit: ' + JSON.stringify(posts.slice(-1)));
     // A lineup channel selected, Delete takes it out; Escape clears a selection before it closes the page.
     await page.click('.tvm-lc .tvm-c-name >> nth=1');
     await page.keyboard.press('Delete');
-    await page.waitForTimeout(300);
+    await waitUntil(page, () => posts.some(p => p.action === 'remove' && p.ids && p.ids[0] === 'p1:x2'));
     if (!posts.some(p => p.action === 'remove' && p.ids && p.ids[0] === 'p1:x2')) fail('Delete did not take the selected channel out');
     await page.click('.tvm-lc .tvm-c-name >> nth=0');
     await page.keyboard.press('Escape');
     if (await page.locator('#tvm').isHidden()) fail('Escape closed the page rather than clearing the selection');
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
+    await waitUntil(page, () => page.locator('#tvm').isHidden());
     if (!(await page.locator('#tvm').isHidden())) fail('Escape did not close the page');
     if (/tv=channels/.test(page.url())) fail('the address still opens the page');
     await page.route('**/api/iptv/playlists', r => r.fulfill({ json: { ok: true, writable: true,
@@ -2348,11 +2874,14 @@ async function visitIptvChannels(browser, base, problems) {
     await route(page);
     await page.route('**/api/home?*', r => r.fulfill({ json: {
       ok: true, supported: { ok: true }, enabled: true, writable: true,
-      layout: { rows: ['iptv'], order: { iptv: [] }, sort: {}, hidden: {}, channels: [] },
-      catalogue: { sources: { iptv: true }, order: { iptv: [] }, iptv: [] }
+      layout: { rows: ['iptv'], order: { iptv: [] }, sort: { iptv: 'recent' }, hidden: {}, channels: [] },
+      catalogue: { apps: [], devices: [], channels: [], sources: { iptv: true },
+        order: { iptv: ['p1:x2', 'p1:x1'] }, iptv: channels }
     } }));
     await page.goto(base + '/assets/dashboard.html?tab=home');
-    await page.locator('#rows .row').filter({ hasText: 'Internet TV channels' }).click();
+    await page.locator('#rows .row').filter({ hasText: /^Internet TV/ }).first().click();
+    const peek = await page.locator('#hintPeek span').allTextContents();
+    if (peek.join(',') !== 'World Today,Harbour News') fail('TV app: the row preview did not follow Last opened order: ' + peek.join(','));
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => rows.some(r => r.act === 'tvSection'));
     await page.evaluate(() => { sel = rows.findIndex(r => r.key === 'tvGroups'); render(); });
@@ -2364,10 +2893,10 @@ async function visitIptvChannels(browser, base, problems) {
     await page.waitForFunction(() => rows.some(r => r.act === 'tvToggle'));
     await page.evaluate(() => { sel = rows.findIndex(r => r.act === 'tvToggle'); render(); });
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(300);
+    await waitUntil(page, () => posts.some(p => p.action === 'add' && p.channels && p.channels[0].key === 'x7'));
     if (!posts.some(p => p.action === 'add' && p.channels && p.channels[0].key === 'x7')) fail('TV app: OK on a channel did not add it');
     await page.keyboard.press('ArrowLeft');
-    await page.waitForTimeout(200);
+    await waitUntil(page, async () => await page.evaluate(() => sub) === 'tvGroups');
     if (await page.evaluate(() => sub) !== 'tvGroups') fail('TV app: Back from a group did not return to the groups');
   } catch (e) {
     fail('TV app: ' + e.message.split('\n')[0] + ' (tab ' + await page.evaluate(() => T().key + ', list ' + sub).catch(() => '?') + ')');
@@ -2375,27 +2904,31 @@ async function visitIptvChannels(browser, base, problems) {
 }
 
 /*
- * Four groups side by side, each against its own server and fake TV, as the
- * Home checks change the layout and uploads they read back. Within a group
- * the checks run in their order here. One after another this took 97 s in
- * CI; the slowest group sets the length now.
+ * Groups side by side, each against its own server and fake TV, as the Home
+ * checks change the layout and uploads they read back. Within a group the
+ * checks run in their order here, and the slowest group sets the run's
+ * length, so they are kept about even (20 to 25 s on a laptop). CI runs each
+ * job, its groups together, on a machine of its own: CHECK_JOB names one;
+ * without it every group runs.
  */
 function groups(web, tv) {
   return [
-    { tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [] },
-    { tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations] },
+    { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled] },
-    { tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeFadeAndInputs, visitHomeOrder, visitHomeAvailability, visitHomeSearch] },
-    { tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
-      visitHomeInternetTv, visitIptvChannels, visitHomeRecentsHidden, visitHomeUploads, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
+      visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
+      visitHomeFadeAndInputs] },
+    { job: 'home', tabs: [], visits: [visitHomeInternetTv, visitIptvChannels] },
     /*
      * Scrolling and motion read the row's place frame by frame, and missed
      * frames with the other groups sharing CI's four cores: 3 of 15 runs
-     * failed on them after the groups went side by side (#1126). Their server
-     * starts with the rest; they run once the rest are done.
+     * failed on them after the groups went side by side (#1126). On CI they
+     * have a machine to themselves; run with the rest, they wait for them.
      */
-    { tabs: [], visits: [visitHomeScrolling, visitHomeMotion], alone: true }
-  ];
+    { job: 'motion', tabs: [], visits: [visitHomeScrolling, visitHomeMotion], alone: true }
+  ].filter(g => !process.env.CHECK_JOB || g.job === process.env.CHECK_JOB);
 }
 
 async function runGroup(browser, group, problems, after) {
@@ -2403,19 +2936,76 @@ async function runGroup(browser, group, problems, after) {
   if (after) await after;
   const base = 'http://127.0.0.1:' + server.port;
   await visitAll(browser, group.tabs.map(t => ({ url: base + t.path, label: t.label })), problems);
-  for (const visitOne of group.visits) await visitOne(browser, base, problems);
+  for (const visitOne of group.visits) await runVisit(visitOne, browser, base, problems);
+}
+
+// Each page on a slowed CPU, where CPU_SLOWDOWN asks for one.
+function slowCpu(browser, rate) {
+  const newPage = browser.newPage.bind(browser);
+  browser.newPage = async (...args) => {
+    const page = await newPage(...args);
+    try { await (await page.context().newCDPSession(page)).send('Emulation.setCPUThrottlingRate', { rate }); } catch (e) {}
+    return page;
+  };
+  const newContext = browser.newContext.bind(browser);
+  browser.newContext = async (...args) => {
+    const context = await newContext(...args);
+    context.on('page', async p => {
+      try { await (await context.newCDPSession(p)).send('Emulation.setCPUThrottlingRate', { rate }); } catch (e) {}
+    });
+    return context;
+  };
+}
+
+const flaky = [];
+// A check run once more where it found a problem: see the top of this file.
+/*
+ * The longest one check may take. A step with no limit of its own, such as
+ * page.evaluate or page.close on a page that stopped answering, once held the
+ * home job until it was cancelled 15 minutes in, with nothing in the log to say
+ * where. Each check's time is printed as it ends, so a stall shows by name.
+ */
+const VISIT_LIMIT_MS = 60000;
+
+function withinLimit(promise, name) {
+  let timer;
+  const limit = new Promise((resolve, reject) => {
+    timer = setTimeout(() => reject(new Error('did not finish within ' + VISIT_LIMIT_MS / 1000 + ' s')), VISIT_LIMIT_MS);
+  });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
+async function runVisit(visitOne, browser, base, problems) {
+  let first = null;
+  for (;;) {
+    const found = [];
+    const startedAt = Date.now();
+    try { await withinLimit(visitOne(browser, base, found), visitOne.name); }
+    catch (e) { found.push(visitOne.name + ': ' + String(e.message).split('\n')[0]); }
+    console.log('  ' + ((Date.now() - startedAt) / 1000).toFixed(1) + ' s  ' + visitOne.name + (found.length ? ' (problem)' : ''));
+    if (!found.length) {
+      if (first) flaky.push(visitOne.name + ' passed on a second try; the first found: ' + first.join('; '));
+      return;
+    }
+    if (first) { problems.push(...found); return; }
+    first = found;
+  }
 }
 
 (async () => {
   const browser = await chromium.launch(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {});
+  if (Number(process.env.CPU_SLOWDOWN) > 1) slowCpu(browser, Number(process.env.CPU_SLOWDOWN));
   const problems = [];
   const web = webTabs(), tv = tvTabs();
   const all = groups(web, tv);
   const together = Promise.all(all.filter(g => !g.alone).map(g => runGroup(browser, g, problems)));
   await Promise.all([together].concat(all.filter(g => g.alone).map(g => runGroup(browser, g, problems, together))));
   await browser.close();
+  for (const f of flaky) console.log('flaky: ' + f);
   for (const p of problems) console.log(p);
-  console.log((web.length + tv.length) + ' tabs opened (' + web.length + ' web, ' + tv.length + ' TV app), ' +
-              'TV navigation and LCD profile, Home arranging, picture, preview and its options, visibility, colours, fading and inputs, update, editing, order, uploads, readiness, availability, recents, scrolling, motion, guide, search, Internet TV and its channel manager checked, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
+  const opened = all.reduce((n, g) => n + g.tabs.length, 0);
+  const checks = all.reduce((n, g) => n + g.visits.length, 0);
+  console.log((process.env.CHECK_JOB ? process.env.CHECK_JOB + ': ' : '') + opened + ' tabs opened and ' + checks +
+              ' checks run, ' + problems.length + ' problem' + (problems.length === 1 ? '' : 's'));
   process.exit(problems.length ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

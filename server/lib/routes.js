@@ -75,6 +75,8 @@ var appsModule = null;
 var servicesModule = null;
 /** @type {typeof import('./preload')} */
 var preloadModule = null;
+/** @type {typeof import('./appdns')} */
+var appDnsModule = null;
 /** @type {typeof import('./quickaccess')} */
 var quickAccessModule = null;
 /** @type {typeof import('./remotekeys')} */
@@ -87,10 +89,14 @@ var homeModule = null;
 var clockModule = null;
 /** @type {typeof import('./home-picture')} */
 var homePictureModule = null;
+/** @type {typeof import('./home-launcher')} */
+var homeLauncherModule = null;
 /** @type {typeof import('./iptv')} */
 var iptvModule = null;
 /** @type {typeof import('./screensavers')} */
 var screensaversModule = null;
+/** @type {typeof import('./inputbar')} */
+var inputBarModule = null;
 /** @type {typeof import('./updater')} */
 var updaterModule = null;
 /** @type {typeof import('./logs')} */
@@ -211,7 +217,7 @@ function setupPending() {
  * those decide who may reach this server at all, and a UI that can widen its
  * own exposure defeats the point of setting them. The one exception is host,
  * from the TV itself during setup - see setNetworkAccess. Experimental feature
- * toggles (allowTileHiding, allowExperimentalScreensavers), allowNetworkDebugger and
+ * toggles (allowTileHiding, allowExperimentalScreensavers, allowExperimentalInputBar), allowNetworkDebugger and
  * prometheus.enabled are writable from the Server tab, and iconServer from the
  * MQTT tab: its port answers nothing but the icons the dashboard serves.
  */
@@ -653,6 +659,8 @@ function updateSummary() {
   s.allowNetworkDebugger = !!(config && config.allowNetworkDebugger);
   s.allowTileHiding = !!(appsModule && appsModule.tileHidingAllowed && appsModule.tileHidingAllowed());
   s.allowExperimentalScreensavers = !!(screensaversModule && screensaversModule.allowedAnyway && screensaversModule.allowedAnyway());
+  // Where the Server tab offers the input bar's switch: where it is experimental.
+  s.inputBar = inputBarModule ? inputBarModule.summary() : null;
   // Where the Server tab offers the switch: custom screen savers are experimental there.
   s.isWebos10 = !!(screensaversModule && screensaversModule.experimental && screensaversModule.experimental());
   s.homeLayout = homeScreenModule ? homeScreenModule.experimental() : null;
@@ -823,6 +831,11 @@ var MAX_REPOS = 10;
 
 function isInstallRoute(pathname) {
   return pathname === '/api/apps/catalog' || pathname.indexOf('/api/apps/install/') === 0;
+}
+
+// A custom launcher runs as LG's Home app, so putting one in place is guarded as an install is.
+function needsAllowedHost(pathname) {
+  return isInstallRoute(pathname) || pathname.indexOf('/api/home/launcher') === 0;
 }
 
 function installError(res, text, status) {
@@ -1144,6 +1157,8 @@ function handleHomeRoute(req, res, u, pathname) {
       var wants = String((u.query && u.query['with']) || '').split(',');
       return homeModule.status(function (st) {
         st.writable = !!config.allowControl || fromTV(req);
+        st.launchers = homeLauncherModule ? homeLauncherModule.status() : null;
+        st.launcherUpload = sideloadVia(req) !== null;
         // What the Home pane draws its colour previews' clock as.
         st.clockHour12 = clockHour12();
         // The Home tab also holds LG's Home's layout and hidden system apps, so
@@ -1188,13 +1203,17 @@ function handleHomeRoute(req, res, u, pathname) {
     }
     if (pathname === '/api/home/guide') return homeModule.guide(function (g) { reply({ ok: true, guide: g }); });
     if (pathname === '/api/home/now') return homeModule.now(reply);
+    if (pathname === '/api/home/weather') return homeModule.weather(reply);
+    if (pathname === '/api/home/weather/places') {
+      return homeModule.weatherPlaces(String(u.query && u.query.q || ''), String(u.query && u.query.lang || ''), reply);
+    }
     if (pathname === '/api/home/picture') {
       return homePictureModule.picture(String(u.query && u.query.kind || ''), Number(u.query && u.query.port), reply,
         String(u.query && u.query.app || ''));
     }
     if (pathname === '/api/home/signal') return homePictureModule.signal(Number(u.query && u.query.port), reply);
     if (pathname === '/api/home/wallpaper') {
-      var wallpaper = homeModule.wallpaperPath(String(u.query && u.query.slot || ''));
+      var wallpaper = homeModule.wallpaperPath(String(u.query && u.query.slot || ''), String(u.query && u.query.id || ''));
       if (!wallpaper) return send(res, 404, JSON.stringify({ ok: false, error: 'no wallpaper uploaded' }));
       return sendIconFile(req, res, wallpaper, function (status, error) {
         send(res, status, JSON.stringify({ ok: false, error: error }));
@@ -1228,12 +1247,23 @@ function handleHomeRoute(req, res, u, pathname) {
         reply(r);
       });
     }
+    if (pathname === '/api/home/launcher/upload' && homeLauncherModule) {
+      // It runs as the TV's Home app, so it is held to what a sideloaded package is.
+      if (!sideloadVia(req)) return sideloadRefused(res);
+      if (!postGuard(req, res, 'application/octet-stream', true)) return;
+      return homeLauncherModule.upload(req, String(u.query && u.query.name || ''), function (r) {
+        if (!r.ok) return refuseUpload(req, res, r.error, r.status || 400);
+        reply(r);
+      });
+    }
     if (pathname === '/api/home/beat') {
       if (!postGuard(req, res, 'application/json', false)) return;
       return readJsonBody(req, res, function (body) {
         // The hour cycle the view's clock draws, which follows the TV's setting.
         var beatBody = homeModule.beat(body);
         beatBody.clockHour12 = clockHour12();
+        // Which page belongs in Home's place: the page in it reloads when this changes.
+        beatBody.launcher = homeLauncherModule ? homeLauncherModule.revision() : '';
         reply(beatBody);
       });
     }
@@ -1244,6 +1274,12 @@ function handleHomeRoute(req, res, u, pathname) {
       if (pathname === '/api/home/enable') return homeModule.enable(reply);
       if (pathname === '/api/home/disable') return homeModule.disable(reply);
       if (pathname === '/api/home/open') return homeModule.open(body, reply);
+      if (pathname === '/api/home/launcher' && homeLauncherModule) {
+        if (typeof body.address === 'string') return homeLauncherModule.setAddress(body.address, reply);
+        if (typeof body.remove === 'string') return homeLauncherModule.remove(body.remove, reply);
+        if (typeof body.choose === 'string' || body.choose === false) return homeLauncherModule.choose(body.choose, reply);
+        return reply({ ok: false, error: 'address, remove or choose expected' });
+      }
       if (pathname === '/api/home/search') return homeModule.search.find(body && body.query, reply);
       if (pathname === '/api/home/search/open') return homeModule.search.open(body, reply);
       if (pathname === '/api/home/recents') {
@@ -1327,10 +1363,18 @@ function handleIptvRoute(req, res, u, pathname) {
     if (pathname === '/api/iptv/stream') {
       // The play URL carries the login on Xtream: for the TV's own Home only.
       if (!fromTV(req)) return send(res, 403, JSON.stringify({ ok: false, error: 'forbidden' }));
-      var stream = iptvModule.streamUrl(String(qs.pl || ''), String(qs.key || ''));
-      if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      return res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections }));
+      // full=1: the full-screen player, which may play a recording it can pause (lib/iptv-timeshift).
+      return iptvModule.playUrl(String(qs.pl || ''), String(qs.key || ''), qs.full === '1', function (stream) {
+        if (!stream) return send(res, 404, JSON.stringify({ ok: false, error: 'no-stream' }));
+        res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({ ok: true, url: stream.url, format: stream.format, account: stream.account, maxConnections: stream.maxConnections,
+          switchable: stream.switchable, timeshift: stream.timeshift === true }));
+      });
+    }
+    if (pathname === '/api/iptv/timeshift') {
+      if (qs.pl === undefined) return iptvModule.timeshiftStatus(reply);
+      var ts = iptvModule.timeshiftStats(String(qs.pl || ''), String(qs.key || ''));
+      return reply(ts ? { ok: true, behind: ts.behind, capacity: ts.capacity, kept: ts.kept } : { ok: true, behind: null, capacity: null, kept: null });
     }
   }
   if (req.method === 'POST') {
@@ -1343,6 +1387,10 @@ function handleIptvRoute(req, res, u, pathname) {
       if (pathname === '/api/iptv/selection') return iptvModule.setSelection(body, reply);
       if (pathname === '/api/iptv/lineup') return iptvModule.setLineup(body, reply);
       if (pathname === '/api/iptv/lease') return reply(iptvModule.lease(body && body.on === true, body && body.full === true));
+      if (pathname === '/api/iptv/event') return reply(iptvModule.streamEvent(body));
+      if (pathname === '/api/iptv/output') return reply(iptvModule.setOutput(body));
+      if (pathname === '/api/iptv/timeshift') return reply(iptvModule.setTimeshift(body));
+      if (pathname === '/api/iptv/check') return iptvModule.checkStream(String(body && body.pl || ''), String(body && body.key || ''), reply);
       send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     }, pathname === '/api/iptv/lineup' ? 524288 : 8192);
   }
@@ -1382,6 +1430,47 @@ function handleRequest(req, res) {
     return send(res, 503, missingAssetsPage(), 'text/html; charset=utf-8');
   }
 
+  /*
+   * webOS 4's Home app is installed once and opens this page, as the copy in
+   * LG's Home's place does, so a custom launcher in Glasshouse Home's place
+   * is chosen here.
+   */
+  if (pathname === '/assets/home.html' && homeLauncherModule && homeLauncherModule.chosen() &&
+      homeModule && homeModule.enabled()) {
+    res.writeHead(302, { 'Location': '/home/launcher/', 'Cache-Control': 'no-store' });
+    return res.end();
+  }
+
+  // A custom launcher (lib/home-launcher), for the TV, or with the token: it may hold the owner's own addresses or keys.
+  if ((pathname === '/home/launcher' || pathname.indexOf('/home/launcher/') === 0) && homeLauncherModule) {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (pathname === '/home/launcher') {
+      res.writeHead(301, { 'Location': '/home/launcher/' });
+      return res.end();
+    }
+    var rel = pathname.slice('/home/launcher/'.length);
+    try { rel = decodeURIComponent(rel); } catch (e) { rel = null; }
+    var hit = rel === null ? null : homeLauncherModule.resolve(rel);
+    if (!hit) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+    if (hit.redirect) {
+      res.writeHead(302, { 'Location': hit.redirect, 'Cache-Control': 'no-store' });
+      return res.end();
+    }
+    var launcherHeaders = { 'Content-Type': hit.type, 'Cache-Control': 'no-cache' };
+    if (hit.body !== undefined) {
+      launcherHeaders['Content-Length'] = Buffer.byteLength(hit.body);
+      res.writeHead(200, launcherHeaders);
+      return res.end(req.method === 'HEAD' ? undefined : hit.body);
+    }
+    return fs.stat(hit.file, function (statErr, st) {
+      if (statErr) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+      launcherHeaders['Content-Length'] = st.size;
+      res.writeHead(200, launcherHeaders);
+      if (req.method === 'HEAD') return res.end();
+      fs.createReadStream(hit.file).on('error', function () { res.end(); }).pipe(res);
+    });
+  }
+
   if (pathname.indexOf('/assets/') === 0) {
     var file = assetPath(pathname.slice('/assets/'.length));
     if (!file) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
@@ -1390,7 +1479,9 @@ function handleRequest(req, res) {
     // The strings and their translations change with each release as the pages
     // do, so a day-old copy beside a new page would show text the page no
     // longer has, or miss text it now does.
-    var fresh = ext === '.html' || ext === '.json' || /(^|\/)i18n\.js$/.test(file);
+    // So is the script a custom launcher is given: a launcher written for a
+    // newer one calls what an older copy lacks.
+    var fresh = ext === '.html' || ext === '.json' || /(^|\/)(i18n|home-kit)\.js$/.test(file);
     var cacheHdr = fresh ? 'no-cache' : 'public, max-age=86400';
     var respondWithBuf = function (buf) {
       var etag = '"' + (displayVersionStr || '1') + '-' + buf.length.toString(16) + '"';
@@ -1416,7 +1507,7 @@ function handleRequest(req, res) {
     });
   }
 
-  if (isInstallRoute(pathname) && !hostAllowed(req)) {
+  if (needsAllowedHost(pathname) && !hostAllowed(req)) {
     return send(res, 403, JSON.stringify({
       ok: false,
       error: msg('srv.install.hostRefused', 'this address is not allowed to install apps; add the name to apps.hosts in config.json, or use the TV\'s IP address')
@@ -1846,7 +1937,11 @@ function handleRequest(req, res) {
             if (!remoteKeysModule) return send(res, 200, JSON.stringify(d));
             remoteKeysModule.getRemoteKeys(function (rk) {
               d.remoteKeys = rk && rk.supported ? rk : null;
-              send(res, 200, JSON.stringify(d));
+              if (!appDnsModule) return send(res, 200, JSON.stringify(d));
+              appDnsModule.getAppDns(function (ad) {
+                d.appDns = ad && ad.supported ? ad.apps : null;
+                send(res, 200, JSON.stringify(d));
+              });
             });
           });
         });
@@ -2031,6 +2126,18 @@ function handleRequest(req, res) {
     });
   }
 
+  if (pathname === '/api/appdns' && req.method === 'POST') {
+    if (!config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    return readJsonBody(req, res, function (body) {
+      if (!appDnsModule) return send(res, 503, JSON.stringify({ ok: false, error: 'per-app DNS unavailable' }));
+      appDnsModule.setAppDns(body && body.id, body && body.servers, function (r) {
+        send(res, r && r.ok ? 200 : 400, JSON.stringify(r));
+      });
+    });
+  }
+
   // While switched off the endpoint does not exist: it falls through to the 404.
   if (pathname === '/api/prometheus/metrics' && prometheusEnabled()) {
     return telemetryModule.collectStats(function (s) {
@@ -2048,13 +2155,16 @@ function handleRequest(req, res) {
       piccapStatusFn(function (pc) {
         huesyncStatusFn(function (hs) {
           var keyboardUp = keyboardUpFn();
-          if (!pc && !hs && !clockModule && keyboardUp === null && u.query.with !== 'settings') return send(res, 200, JSON.stringify(s));
+          // Network device scans, Glasshouse's beside LG's Auto device detection: on unless held down.
+          var scans = servicesModule && servicesModule.available('iconnectivity') ? !servicesModule.isDisabled('iconnectivity') : undefined;
+          if (!pc && !hs && !clockModule && keyboardUp === null && scans === undefined && u.query.with !== 'settings') return send(res, 200, JSON.stringify(s));
           // Copied, since s is telemetry's cache.
           var copy = {};
           for (var k in s) copy[k] = s[k];
           if (clockModule) copy.clockHour12 = clockHour12();
           if (pc) copy.piccapCapture = pc;
           if (hs) copy.huesyncStreaming = hs;
+          if (scans !== undefined) copy.deviceScans = scans;
           // For the Control tab's keyboard box.
           if (keyboardUp !== null) copy.keyboardUp = keyboardUp;
           if (u.query.with !== 'settings') return send(res, 200, JSON.stringify(copy));
@@ -2229,14 +2339,17 @@ function init(opts) {
   if (opts.apps) appsModule = opts.apps;
   if (opts.services) servicesModule = opts.services;
   if (opts.preload) preloadModule = opts.preload;
+  if (opts.appDns) appDnsModule = opts.appDns;
   if (opts.quickAccess) quickAccessModule = opts.quickAccess;
   if (opts.remoteKeys) remoteKeysModule = opts.remoteKeys;
   if (opts.homeScreen) homeScreenModule = opts.homeScreen;
   if (opts.home) homeModule = opts.home;
   if (opts.clock) clockModule = opts.clock;
   if (opts.homePicture) homePictureModule = opts.homePicture;
+  if (opts.homeLauncher) homeLauncherModule = opts.homeLauncher;
   if (opts.iptv) iptvModule = opts.iptv;
   if (opts.screensavers) screensaversModule = opts.screensavers;
+  if (opts.inputBar) inputBarModule = opts.inputBar;
   if (opts.updater) updaterModule = opts.updater;
   if (opts.logs) logsModule = opts.logs;
   if (opts.tvApp) tvAppFn = opts.tvApp;

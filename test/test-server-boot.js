@@ -42,10 +42,7 @@ function rmrf(p) {
   } else fs.unlinkSync(p);
 }
 
-function freePort(cb) {
-  var s = net.createServer();
-  s.listen(0, '127.0.0.1', function () { var p = s.address().port; s.close(function () { cb(p); }); });
-}
+var freePort = require('./ports').freePort;
 
 function bufFrom(bytes) {
   return (typeof Buffer.from === 'function') ? Buffer.from(bytes) : new Buffer(bytes);
@@ -94,7 +91,7 @@ Broker.prototype.last = function (re) {
 
 function get(port, p, cb) {
   var t0 = Date.now(), done = false;
-  var req = http.get({ host: '127.0.0.1', port: port, path: p }, function (res) {
+  var req = http.get({ host: '127.0.0.1', port: port, path: p, agent: false }, function (res) {
     var body = '';
     res.on('data', function (c) { body += c; });
     res.on('end', function () { if (!done) { done = true; cb(res.statusCode, body, Date.now() - t0); } });
@@ -140,6 +137,8 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
       env.FAKE_ROOT = root;
       env.TVWEB_LUNA_SEND = FAKE_LUNA;
       env.FAKE_LUNA_LOG = path.join(root, 'luna-calls.jsonl');
+      // Child starts without the TV's spacing between them, which nothing here is about.
+      env.FAKE_LAUNCH_GAP_MS = '0';
       if (chaos) env.FAKE_LUNA_CHAOS = '1';
       if (missingModule) env.BOOT_MISSING_MODULE = missingModule;
 
@@ -211,7 +210,7 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
                     try { st = JSON.parse(ib); } catch (e) {}
                     if (ic !== 200 || !st || st.state !== 'idle') fail('install status answered ' + ic + ': ' + ib);
                   });
-                  http.get({ host: '127.0.0.1', port: port, path: '/api/apps/catalog', headers: { host: 'evil.example' } }, function (hr) {
+                  http.get({ host: '127.0.0.1', port: port, path: '/api/apps/catalog', headers: { host: 'evil.example' }, agent: false }, function (hr) {
                     hr.resume();
                     if (hr.statusCode !== 403) fail('a foreign Host reached the catalog route: ' + hr.statusCode);
                   }).on('error', function () {});

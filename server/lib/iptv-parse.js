@@ -570,18 +570,6 @@ function carryKeys(old, fresh, makeKey) {
   return keys;
 }
 
-// "Harbour Sport 1" -> "HS1": the tile's glyph where a logo cannot be shown.
-function monogram(name) {
-  var words = String(name || '').replace(/[^A-Za-z0-9À-ɏ ]+/g, ' ').split(/\s+/).filter(Boolean);
-  if (!words.length) return '?';
-  var out = '';
-  for (var i = 0; i < words.length && out.length < 4; i++) {
-    var w = words[i];
-    out += /^\d+$/.test(w) ? w.slice(0, 4 - out.length) : w.charAt(0).toUpperCase();
-  }
-  return out;
-}
-
 // The image types a logo may be, by their first bytes.
 function imageType(buf) {
   if (!buf || buf.length < 12) return null;
@@ -616,7 +604,6 @@ module.exports = {
   urlDigest: urlDigest,
   entryHint: entryHint,
   carryKeys: carryKeys,
-  monogram: monogram,
   imageType: imageType,
   safeDerivedUrl: safeDerivedUrl,
   clip: clip,

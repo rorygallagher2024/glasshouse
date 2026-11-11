@@ -216,6 +216,49 @@ function hdmiKey(d) {
           diag.chroma || '', diag.hdcp || '', d.colorimetry || pe.colorimetry || '', pe.hdr_mode || ''].join('|');
 }
 
+function renderRemoteBattery(rem) {
+  const hasBattery = !!(rem && Number.isFinite(rem.battery) && rem.battery >= 0 && rem.battery <= 100);
+  const readRow = q('remote-read-row'), readVal = q('remote-read-val');
+  if (hasBattery) {
+    q('remoteblock').hidden = false;
+    q('remote-pct').textContent = rem.battery;
+    const gFill = q('remote-gauge-fill');
+    gFill.style.width = Math.max(0, Math.min(100, rem.battery)) + '%';
+    gFill.style.background = rem.battery <= 15 ? 'var(--red)' : rem.battery <= 30 ? 'var(--cand)' : 'var(--green)';
+    if (readRow && readVal) {
+      readRow.hidden = !rem.batteryUpdatedAt;
+      readVal.textContent = rem.batteryUpdatedAt ? new Date(rem.batteryUpdatedAt).toLocaleString() : '';
+    }
+    q('remote-model-val').textContent = rem.model ? rem.model.replace(/^LGE\s*/i, '') : t('metrics.remote.name', 'Magic Remote');
+    q('remote-fw-val').textContent = rem.firmware || '—';
+    if (q('remote-fw-row')) q('remote-fw-row').hidden = !rem.firmware;
+    if (q('remote-signal-row')) {
+      q('remote-signal-row').hidden = !rem.signal;
+      if (rem.signal) {
+        const isWeak = rem.signal === 'weak';
+        q('remote-signal-val').textContent = isWeak ? t('metrics.remote.signalWeak', 'Weak') : t('metrics.remote.signalGood', 'Good');
+        q('remote-signal-val').style.color = isWeak ? 'var(--cand)' : '';
+      }
+    }
+    const rPill = q('remote-pill');
+    if (rPill) {
+      const isConn = !!rem.connected;
+      rPill.className = 'pill ' + (isConn ? 'good' : 'idle');
+      rPill.textContent = isConn ? t('metrics.remote.connected', 'Connected') : t('metrics.remote.standby', 'Standby');
+      rPill.title = rem.mac ? t('metrics.remote.bluetooth', 'Bluetooth: {address}', { address: rem.mac }) + ' · ' + (isConn ? t('metrics.remote.connected', 'Connected') : t('metrics.remote.standby', 'Standby')) : '';
+    }
+    q('remoteblock').title = [rem.model || t('metrics.remote.name', 'Magic Remote'),
+      rem.firmware ? t('metrics.remote.firmware', 'Firmware: {version}', { version: rem.firmware }) : '',
+      rem.mac ? t('metrics.remote.bluetooth', 'Bluetooth: {address}', { address: rem.mac }) : ''].filter(Boolean).join(' · ');
+  } else {
+    q('remoteblock').hidden = true;
+    if (readRow && readVal) {
+      readRow.hidden = true;
+      readVal.textContent = '';
+    }
+  }
+}
+
 async function tick() {
   try {
     const r = await fetch(api('/api/stats'), { cache: 'no-store' });
@@ -323,6 +366,15 @@ async function tick() {
       const arsVal = getLease('alwaysReadyScreen', d.alwaysReadyScreen);
       advPill('ars', 'btn_ars', arsVal !== undefined ? arsVal : d.alwaysReadyScreen);
       arOffRow(arVal ? d.alwaysReadyOff : undefined);
+      const nrRow = q('row-nightlyrefresh');
+      if (nrRow) {
+        const nrSupported = typeof d.nightlyRefresh === 'boolean';
+        nrRow.hidden = !(arVal && d.alwaysReadyOff && nrSupported);
+        if (!nrRow.hidden) {
+          const nrVal = getLease('nightlyRefresh', d.nightlyRefresh);
+          advPill('nightlyrefresh', 'btn_nightlyrefresh', nrVal !== undefined ? nrVal : d.nightlyRefresh);
+        }
+      }
       powerTimerRows(d.powerTimers);
       const wolVal = getLease('wakeOnLan', d.wakeOnLan);
       advPill('wol', 'btn_wol', wolVal !== undefined ? wolVal : d.wakeOnLan);
@@ -350,7 +402,9 @@ async function tick() {
       if (q('adv-piccap')) q('adv-piccap').hidden = !pc && !hs;
       const devVal = getLease('deviceDetection', d.deviceDetection);
       advPill('devdetect', 'btn_devdetect', devVal !== undefined ? devVal : d.deviceDetection);
-      if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && !advLgsDevices;
+      const scanVal = getLease('deviceScans', d.deviceScans);
+      advPill('devscans', 'btn_devscans', scanVal !== undefined ? scanVal : d.deviceScans);
+      if (q('adv-devices')) q('adv-devices').hidden = d.deviceDetection === undefined && d.deviceScans === undefined && !advLgsDevices;
       if (q('tl-cur')) {
         q('tl-cur').textContent = st === 'off' ? t('common.off', 'Off') : t('ctl.sleep.minutes', '{n} min', { n: st });
       }
@@ -359,38 +413,7 @@ async function tick() {
       if (q('snd-cur')) q('snd-cur').textContent = d.audio_output || '';
     }
 
-    const rem = d.remote;
-    const hasBattery = !!(rem && typeof rem.battery === 'number');
-    if (hasBattery) {
-      q('remoteblock').hidden = false;
-      q('remote-pct').textContent = rem.battery;
-      const gFill = q('remote-gauge-fill');
-      gFill.style.width = Math.max(5, Math.min(100, rem.battery)) + '%';
-      gFill.style.background = rem.battery <= 15 ? 'var(--red)' : rem.battery <= 30 ? 'var(--cand)' : 'var(--green)';
-      q('remote-model-val').textContent = rem.model ? rem.model.replace(/^LGE\s*/i, '') : t('metrics.remote.name', 'Magic Remote');
-      q('remote-fw-val').textContent = rem.firmware || '—';
-      if (q('remote-fw-row')) q('remote-fw-row').hidden = !rem.firmware;
-      if (q('remote-signal-row')) {
-        q('remote-signal-row').hidden = !rem.signal;
-        if (rem.signal) {
-          const isWeak = rem.signal === 'weak';
-          q('remote-signal-val').textContent = isWeak ? t('metrics.remote.signalWeak', 'Weak') : t('metrics.remote.signalGood', 'Good');
-          q('remote-signal-val').style.color = isWeak ? 'var(--cand)' : '';
-        }
-      }
-      const rPill = q('remote-pill');
-      if (rPill) {
-        const isConn = !!rem.connected;
-        rPill.className = 'pill ' + (isConn ? 'good' : 'idle');
-        rPill.textContent = isConn ? t('metrics.remote.connected', 'Connected') : t('metrics.remote.standby', 'Standby');
-        rPill.title = rem.mac ? t('metrics.remote.bluetooth', 'Bluetooth: {address}', { address: rem.mac }) + ' · ' + (isConn ? t('metrics.remote.connected', 'Connected') : t('metrics.remote.standby', 'Standby')) : '';
-      }
-      q('remoteblock').title = [rem.model || t('metrics.remote.name', 'Magic Remote'),
-        rem.firmware ? t('metrics.remote.firmware', 'Firmware: {version}', { version: rem.firmware }) : '',
-        rem.mac ? t('metrics.remote.bluetooth', 'Bluetooth: {address}', { address: rem.mac }) : ''].filter(Boolean).join(' · ');
-    } else {
-      q('remoteblock').hidden = true;
-    }
+    renderRemoteBattery(d.remote);
 
     /* The badge names the format the source is sending, and the picture
        settings' family only where the TV reports no format: in standby, or

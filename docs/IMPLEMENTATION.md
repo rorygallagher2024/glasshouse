@@ -85,6 +85,11 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   server that dies leaves no worker behind. Timeouts and cancelling kill the
   whole group. The job line may be up to 4 MB, including a full lineup's
   channel names and groups; its limit applies across chunks and to a complete line.
+- **Downloaders wait a turn** before starting curl or wget, as the debugger
+  firewall calls do. Node 8 on webOS can abort a child before exec. A downloader
+  killed by SIGABRT before any body bytes arrive is retried once after 200 ms,
+  and reported as `aborted` if it happens again;
+  a partial body is never replayed into the playlist or guide reader.
 - **Two lanes.** Background jobs (reading a playlist, the lineup's
   play links and logos, the guide, now and next again) run one at a time, in
   order, a kind for a playlist only once in the queue. Browse and search for
@@ -108,12 +113,62 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   300. In either mode a job also needs 70 MB free where the snapshots live (`df`). Its output is not known before it runs, so the
   worker counts every byte it writes and stops with `disk` once only 50 MB
   would be left.
-- **A stream that fails** is opened once more. After a `<video>` error the second
-  try adds `gh=<time>` to the URL, as a provider's CDN may be holding a copy of
-  the playlist the TV cannot read, such as one gzipped for a client with no
+- **A stream that fails** is reconnected with a fresh URL, which opens a live
+  channel at the live point. A stall is the picture's `currentTime` not
+  moving for 8 s, whatever events the `<video>` sent, or for 3 s with under
+  half a second buffered past it, as every stall logged on a provider's
+  stream had under a second; a stream that ends reconnects at once. Stuck at a hole with
+  more buffered after it, Home steps over it after 2.5 s instead. Reconnects
+  wait 0.4, 1.5, 3, 5, 8 then 10 s; a channel that has played gets eight in
+  a row, about a minute, as a provider's CDN was seen sending nothing for 30
+  to 50 s at a time, and has them all back after 30 s of playing. One that
+  never played gets two, as a one-stream account can refuse a channel change
+  for a moment, and none for no picture at all. Each reconnect adds
+  `gh=<time>` to the URL, as a provider's CDN may be holding a copy of the
+  playlist the TV cannot read, such as one gzipped for a client with no
   `Accept-Encoding`. Home sends no Referer, as `localhost` gets a 204 from the
   same CDN. The message only mentions a limit on streams for a playlist with an
   account, which `/api/iptv/stream` reports as `account`.
+- **Stream events go to the log**: Home posts each start, stall, error,
+  skipped hole, reconnect, recovery and give-up to `/api/iptv/event`, which
+  writes one `iptv: stream` line each (at most 120 an hour) with the
+  channel's key, never its URL.
+- **MPEG-TS instead of HLS**, a channel at a time: an Xtream panel serves a
+  live channel either way by the URL's extension. Yellow in Home's player
+  posts `/api/iptv/output`, which keeps the channel's key in the playlist's
+  `ts` list in `config.json`; `streamUrl` then turns its `.m3u8` into `.ts`,
+  one long download with no playlist to go stale. Offered (`switchable`) for
+  an Xtream channel unless the panel's `allowed_output_formats` lacks one of
+  the two.
+- **Pausing live TV** (`lib/iptv-timeshift.js`, the worker
+  `lib/iptv-timeshift-worker.js`), when switched on: Home's full-screen
+  player asks `/api/iptv/stream` with `full=1`, and for an MPEG-TS channel
+  the server starts a worker as `node --max_old_space_size=16`, through
+  `children.launch`, in a process group of its own. It records the channel
+  through curl (`-N`, with a VLC User-Agent, as a provider refused curl's own
+  with 461) to 8 MB chunk files in `glasshouse-timeshift` on a writable USB
+  stick under `/tmp/usb`, dropping the oldest past 2 GB, and serves them on
+  127.0.0.1 at a random port under a random token, which Home is given
+  instead of the provider's URL. Nothing is buffered in memory: each byte is
+  written to the stick and read back 64 KB at a time, as the TV has a few
+  hundred MB free. A paused `<video>` stops reading, TCP backpressure holds
+  the read place, and the recording goes on. A reconnect continues from the
+  place; the live point is started 6 s early (at least 256 KB), as the player
+  holds no more past the picture than it starts with and 0.3 s stalled at the
+  first hiccup; the time a pause can last is the buffer's capacity in seconds
+  (`maxBytes` over the recording's average rate, from `/api/iptv/timeshift`)
+  less the picture's own time behind live, which Home counts itself, as the
+  read place runs ahead of the picture by what the player buffers and moves
+  while it fills; `live=1` starts at the live point and `behind=<seconds>` that long
+  before it, by the recording's average byte rate, which is how Home's Back
+  (after asking) and Left and Right move: a live MPEG-TS stream cannot seek,
+  so each opens the recording again. The recording lives as
+  long as Home's lease: `lease(false)`, the lease running out, another
+  channel's play or the server stopping ends it and empties the folder.
+  While paused, Home renews the lease without `full`, so LG's screen saver
+  may come over the still picture. A provider that refuses the recorder
+  before any bytes gets a 502 passed on, and the channel plays directly for
+  ten minutes.
 - **One search at a time**: the lane is taken before the memory check
   answers, so a search asked for meanwhile replaces it rather than starting
   beside it.
@@ -416,7 +471,9 @@ not something to assume of other firmware, and a client the owner installed can
 be anywhere. Installed clients are tried before the stock one, each against the
 real release endpoint until one returns usable JSON. A client that does that has
 proved everything that matters. Certificate verification is never disabled: what
-comes back runs as root on the next restart.
+comes back runs as root on the next restart. If verification fails, the download
+fails immediately and is not passed to subsequent clients, preventing fallbacks
+to BusyBox `wget` implementations that bypass TLS certificate checks.
 
 **The directory is updated in place, not swapped.** `/var/lib/tvweb` holds more
 than code — `config.json`, `adblock_hosts`, `adblock_custom.json`, the staged screen saver the boot hook
@@ -910,6 +967,41 @@ makes the service refuse new ones rather than queue them, and back on with
 in `/var/lib/tvweb` marks toasts off, and the server's start switches them back
 on from it.
 
+## The input bar
+
+The [input bar](dashboard/apps.md#input-bar) is a web app of its own,
+`com.tvweb.inputbar` (`assets/inputbar-app/`), whose `appinfo.json` asks for
+an overlay window (`"defaultWindowType": "overlay"`, `"transparent": true`)
+with no splash (`"noSplashOnLaunch": true`, `"spinnerOnLaunch": false`). The
+input stays the app in front and keeps playing under it, while the bar has
+the remote's keys. Its page is the app's own rather than one Glasshouse
+serves: it reads the inputs from `/api/home/catalogue` and what is on from
+`/api/home/now`, loads `assets/devicons.js` for the icons, and switches by
+launching the input's app itself through `PalmServiceBridge`, with the
+`uniqueId` launch parameter Glasshouse Home's tile sends for a device behind a
+receiver, since the server's POSTs refuse its `file://` origin. It keeps the
+last bar it drew in `localStorage` and draws that at once, before the server
+answers, as the window comes up only with the page's first frame.
+
+`lib/remotekeys.js` offers it as a choice where `lib/inputbar.js` allows it,
+and installs its app with `install-app.sh` before saving a key set to it; the
+last key leaving it removes the app, and so does `restore()`. The key filter
+opens it like any app, except that while it is in front
+(`global.isForegroundApp`) a further press goes to it as Right through
+`global.sendKeyToFocusWindow`, with Linux's `KEY_RIGHT` (106) as LG's
+`appLaunch.js` names it: launching a window already on screen redraws it,
+which shows as a flash. A relaunch that does reach the page moves it on too.
+
+`lib/inputbar.js` keeps the app loaded, hidden, while a key opens it and the
+TV is on: launched with `{ "preload": "full" }` 5 s after the server starts,
+5 s after each switch-on, and 0.3 s after it stops running, which it learns
+from `applicationManager/running` with `subscribe`. A preloaded page sees
+`preload` in its launch parameters, draws nothing and sets no timers until
+the press, which reaches it as a relaunch. A refused launch is tried again
+with a growing wait, five times at most until the server starts again. The
+measurements behind each choice are in
+[TV-RESEARCH.md](development/TV-RESEARCH.md#overlay-web-apps-and-the-input-bar-webos-653-c1).
+
 ## Older hardware capabilities (webOS 3.x and LCD models)
 
 Testing against 2016 hardware (such as 43UH610V-ZB and 55UH6030-UC on webOS 3.4.3) highlights several differences between older LCD platforms and modern OLED sets:
@@ -945,18 +1037,22 @@ The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
 
 The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
-the TV needs. The platform tier's are **LG infrastructure rather than
+the TV needs. The platform tier's are **service infrastructure rather than
 advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
 | :--- | :--- |
 | `ngfts.lge.com`, `aic-ngfts.lge.com` | Content and firmware delivery CDN |
 | `cdplauncher.lgtvcommon.com`, `lgchhomeapp.lgtvcommon.com` | The Home launcher's recommendations and usage reports; needed by the Content Store after a factory reset |
-| `lgtviot.com` | The ThinQ cloud: the LG ThinQ app can no longer control the TV with it blocked |
+| `lgtviot.com`, `api.lgtviot.com`, `push.lgtviot.com`, `sports.lgtviot.com`, `buddy.lgtviot.com` (bare, with LG's regional prefixes and the TV's country) | The ThinQ cloud, API, push, sports and buddy services; blocking them can prevent ThinQ control and notifications |
+| `lgeapi.com` (bare, with LG's regional prefixes and the TV's country) | LG account/API service family; sign-in or store services may depend on it |
+| `connect-client.lgthinq.com`, `common.lgthinq.com` (bare and with `aic-`/`eic-`/`kic-`) | ThinQ Connect and common cloud services; the prefix uses a hyphen rather than a separate DNS label |
 | `ueiwsp.com` | Universal Electronics' identification of devices connected over HDMI-CEC |
 | `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
+| `mtalk.google.com` | [Google Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/network-configuration), used for push messages; apps using this endpoint may lose push notifications |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
-| `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
+| `nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country, plus `us.`/`gb.`/`de.`/`eu.`) | The same on webOS 9 |
+| `ibs.nextlgsdp.com`, `ibsstat.nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country) | The SDX `ibis_secure` and `ibis_stat_secure` services; blocked only in Everything, after the clock is valid |
 | `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
 | `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
 
@@ -964,6 +1060,14 @@ advertising**, which is why they are a separate tier:
 `http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,
 `http://US.tv.wiselg.com` on a C5 on webOS 11.2. The full tier adds whatever
 that file says, so a firmware using none of them is still covered.
+
+Regional service families use the same bounded prefix list as the ads tier:
+LG's `aic`, `eic`, `kic` and `eu`, plus the saved TV country. Before the country
+is learned, the existing fallback countries are used. ThinQ Connect uses
+`aic-`, `eic-` and `kic-` instead. This covers reported names such as
+`de.ibs.nextlgsdp.com` and `eic-connect-client.lgthinq.com`; it is still an exact
+hosts list, not wildcard DNS blocking. Sources and the limits of the evidence
+are in [TV research](development/TV-RESEARCH.md#regional-service-coverage).
 
 On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
 sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names
@@ -1280,17 +1384,25 @@ minutes after a failed one. A check every 10 minutes covers a remote kept
 awake. The subscription's updates are trusted for whether the remote is a
 Bluetooth one: asked once, the same method says it is not. On webOS 4,
 `com.webos.service.mrcu/getDeviceInfo` has the charge in `batteryLevel`, so it
-is asked first, and no Bluetooth connection is made where it answers; webOS 9
-and later answer `"-"`. The Bluetooth read is made only on webOS 9 and 10, where
-it has been tried: on a webOS 5 TV the remote lost its pointer and some buttons
-after waking once it began, until a reboot. Elsewhere the remote's battery is
-not shown. lginput2 holds the remote's own connection, and the
+is asked first, and no Bluetooth connection is made where it answers with a
+number from 0 to 100, or with `"HIGH"`, `"MID"` or `"LOW"` (an MR19 on a C9 or
+an MR25GA on a C5, given as 100, 50 and 10). The Bluetooth read is made only on
+webOS 9 and 10, where `getDeviceInfo` answers `"-"` and where it has been
+tested across standby cycles: on a webOS 5 TV the remote lost its pointer and
+some buttons after waking once Bluetooth reads began, until a reboot. The
+pairing address identifies the remote even when its Bluetooth name differs from
+the model in LG's pairing file; without an address, a single paired `LGE MR*`
+BLE device is used. lginput2 holds the remote's own connection, and the
 Bluetooth service reads the service only over a GATT connection of its own, so
-each read there is
-`gatt/connect`, `gatt/discoverServices`, `gatt/readCharacteristicValue` by the
-`clientId` that connect returned, then `gatt/disconnect`, which is made
-whatever failed after connecting. A plain level in the pairing file, should
-an older TV write one, is used until the remote has given one.
+each read there is `gatt/connect`, `gatt/discoverServices`, `gatt/getServices`
+to check that the Battery Service (`180f`) and a readable Battery Level
+(`2a19`) are present (continuing to the read where the firmware does not list
+services), `gatt/readCharacteristicValue` by the `clientId` that connect
+returned, then `gatt/disconnect`, which is made whatever failed after
+connecting. The last level, timestamp and source are saved in
+`remote-battery.json` keyed by the remote's Bluetooth address; a plain level in
+the pairing file, should an older TV write one, is used until the remote has
+given one.
 TV-RESEARCH.md has how this was found.
 
 ## Settings backups
@@ -1597,7 +1709,10 @@ black for the server; being LG's Home's app, it cannot open LG's Home itself.
 `lib/home-takeover.js --release`, which unmounts without switching Glasshouse
 Home off, so the server takes the place again when it runs.
 The first-heartbeat watch is armed after taking Home even when the foreground
-id stays `com.webos.app.home`. A failed layout restore retains its backup and
+id stays `com.webos.app.home`. Switching the screen off ends the watch. A
+watch that fires more than 5 s later than it was set for has slept through a
+suspend, and gives the view the first heartbeat's 20 s rather than calling it
+hung. A failed layout restore retains its backup and
 reports failure for a later retry.
 
 Earlier builds made a separate app, `com.tvweb.home`, the TV's Home
@@ -1714,6 +1829,39 @@ the Search setting and blocker, so a pending lookup stops when either refuses.
 Search requests allow 12 seconds for the
 server's 10-second limit; launches allow 20 seconds for sequential detail reads.
 
+### Custom launchers
+
+`lib/home-launcher.js` puts another page in the view's place; everything that
+gets the view in front of the TV is unchanged. The app in LG's Home's place
+(or `com.tvweb.home` on webOS 3 and 4, which is installed once and never
+changes) opens `/assets/home.html` as before, and while a launcher is chosen
+and Glasshouse Home is on, the server answers that with a redirect to
+`/home/launcher/`. The heartbeat's reply carries `launcher`, a revision that
+changes with the choice or a new upload, so the page in front reloads into the
+right one within a beat.
+
+Glasshouse Minimal is one of these, built in: `assets/home-minimal.html`, served from
+Glasshouse's own files with the same script added, offered on every TV and
+never removed. Each other launcher is unpacked to
+`/var/lib/tvweb/home-launcher/apps/<id>`, with `launcher.json` naming those
+kept and the one chosen. Zips and `.ipk`s are read
+in JavaScript, the `.ipk` with the installer's ar and tar readers, as not every
+webOS has `unzip`. Paths outside the folder, links and native apps are refused.
+The start page is served with `/assets/home-kit.js?v=<release>` added first in
+its head: the release in the address because the TV's browser keeps scripts a
+day, and a launcher written against a newer kit would meet an older one. The
+kit sends the heartbeat (and on webOS 4 closes the page when switched off or
+two minutes behind another app, as the view does) and defines
+`window.Glasshouse`. A web address opens in a frame of `assets/home-web.html`,
+which carries the kit, so the site never runs as the Home app.
+
+The Home key with the view already in front launches nothing on webOS 9 (a
+C2), so the server launches the view again on a short press there, which
+reaches the page as `webOSRelaunch`; the kit's `onHome` passes it on. On
+webOS 4 a view that stops answering is closed with WebAppMgr's `killApp`
+before it is launched again, since a launch while it runs only brings back the
+page it is on.
+
 ## Apps kept ready in the background
 
 webOS's preload manager keeps apps loaded so they open quickly, including ones
@@ -1805,6 +1953,6 @@ Hue Sync is offered where `/media/cryptofs/apps/usr/palm/services/com.lighting.h
 
 
 
-No Home wallpapers are packaged; the background is black until one is uploaded. The browser prepares personal JPEG/PNG/WebP images as JPEGs within 1920 × 1080 pixels, the `resolution` the Home app declares, which webOS web apps are drawn at. `/api/home/wallpapers/upload?slot=morning|afternoon|evening|night` accepts only `image/jpeg` with a declared size up to 5 MiB, under the usual authentication, control and Origin guards. One upload is buffered at a time, with a 30-second body deadline, frame/scan structure and dimension checks, a disk-space check and atomic replacement. The server does not decode JPEG pixels. `POST /api/home/wallpapers` with `{ "choose": "black" | "landscape" | "abstract" | "own" }` sets the wallpaper, kept in `home-wallpaper.json`. A set is downloaded the first time it is chosen, from the `v2` tag of `rorygallagher2024/glasshouse-wallpapers` into `home-wallpaper-sets/<set>/`, one picture at a time under the same lock, keeping each only if it matches the sha256 pinned in `lib/home-wallpapers.js` and passes the same JPEG checks; a failure leaves the choice as it was, and the other set is removed once one is chosen. A new set is a new tag. An upload chooses `own`. At the first start with the choice, four uploads that match the landscape set, as the earlier Add example pictures left them, are moved into it and it is chosen; any other uploads make `own` the choice. The Apps tab hides a system app by setting `visible: false` in its appinfo, and the TV's launch points, which the Apps row is built from, have no tile for such an app (AirPlay's appinfo has it from LG), so it is hidden on both Homes. On a G3 no launch point carries a `visible` field; the Apps row skips any that says `false` all the same. `home-wallpaper-uploads/<slot>.jpg`, outside the updater payload and rollback copy, is that slot's image. File revisions invalidate the browser and TV image URLs after replacement. Uploads are excluded from layout backups.
+No Home wallpapers are packaged; the background is black until one is uploaded. The browser prepares personal JPEG/PNG/WebP images as JPEGs within 1920 × 1080 pixels, the `resolution` the Home app declares, which webOS web apps are drawn at. `/api/home/wallpapers/upload?slot=morning|afternoon|evening|night` accepts only `image/jpeg` with a declared size up to 5 MiB, under the usual authentication, control and Origin guards. One upload is buffered at a time, with a 30-second body deadline, frame/scan structure and dimension checks, a disk-space check and atomic replacement. The server does not decode JPEG pixels. `POST /api/home/wallpapers` with `{ "choose": "black" | "landscape" | "abstract" | "own" | "shuffle" }` sets the wallpaper, kept in `home-wallpaper.json`. `slot=shuffle` adds a picture to the shuffled collection rather than replacing one: it is saved as `home-wallpaper-shuffle/<id>.jpg`, the id made on the TV from the time and four random bytes, at most 50 of them (a 51st is refused with 409), and the first chooses `shuffle`. The status lists them oldest first as `pictures`, with `maxPictures`; `GET /api/home/wallpaper?slot=shuffle&id=<id>` serves one, an id checked against `^[0-9a-z]{8,24}$` and never taken as a path, and as a picture's id never changes its address needs no revision. `{ "removePicture": id }` removes one and `{ "removePictures": true }` all. The layout's `wallShuffleMinutes` (1, 5, 10, 15, 30 or 60, sent as `shuffleMinutes`) is how long the view keeps each: it draws the next at random from those not shown since the collection last came round, never the one on screen, and only while it is on screen. A set is downloaded the first time it is chosen, from the `v2` tag of `rorygallagher2024/glasshouse-wallpapers` into `home-wallpaper-sets/<set>/`, one picture at a time under the same lock, keeping each only if it matches the sha256 pinned in `lib/home-wallpapers.js` and passes the same JPEG checks; a failure leaves the choice as it was, and the other set is removed once one is chosen. A new set is a new tag. An upload chooses `own`. At the first start with the choice, four uploads that match the landscape set, as the earlier Add example pictures left them, are moved into it and it is chosen; any other uploads make `own` the choice. The Apps tab hides a system app by setting `visible: false` in its appinfo, and the TV's launch points, which the Apps row is built from, have no tile for such an app (AirPlay's appinfo has it from LG), so it is hidden on both Homes. On a G3 no launch point carries a `visible` field; the Apps row skips any that says `false` all the same. `home-wallpaper-uploads/<slot>.jpg`, outside the updater payload and rollback copy, is that slot's image. File revisions invalidate the browser and TV image URLs after replacement. Uploads are excluded from layout backups.
 
 A failed Home restore persists `restorePending` with the guard stopped; both dashboards keep a retry action until all settings and the Home key are restored. HBC uninstall uses the same owner before removing the app, and skips Home service writes on TVs that never used it. App absence requires the specific `Invalid appId` response, including raw replies accompanying a non-zero luna-send exit. A failed Home layout restore makes the backup result report partial failure.

@@ -106,7 +106,7 @@ def check(path):
 
 SAVERS = pathlib.Path('server/assets/screensavers')
 EXAMPLES = pathlib.Path('server/screensavers')
-USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__'}
+USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__'}
 
 def check_folder(d, own):
     """Problems with one saver folder's saver.json, and its main QML file."""

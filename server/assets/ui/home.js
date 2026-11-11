@@ -12,6 +12,9 @@ let homeWallTimer = null;
 let homeWallUploading = false;
 // null until the server says; false on a TV Glasshouse Home is not offered on.
 let homeAvailable = null;
+// The Custom launcher section, shown while one is kept or once its button is pressed.
+let homeLauncherOpen = false;
+let homeLauncherBusy = false;
 
 const HOME_ROWS = {
   app: () => t('home.row.apps', 'Apps'),
@@ -70,10 +73,32 @@ function homeWritable() { return !!(!homeSaving && homeStatus && (homeStatus.sup
 // power-on wherever LG has it, Glasshouse Home's own options while it is on,
 // LG's Home's layout while that is, and hidden system apps, which apply to
 // either Home.
+// A launcher of the owner's own is the TV's Home, in Glasshouse Home's place.
+function homeLauncherOn() {
+  const st = homeStatus;
+  return !!(st && st.enabled && st.launchers && st.launchers.chosen);
+}
+
+// Every launcher on offer, Minimal among them.
+function homeLaunchersAll() {
+  return (homeStatus && homeStatus.launchers && homeStatus.launchers.launchers) || [];
+}
+
+// Those of the owner's own, which the Custom launcher section lists.
+function homeLaunchersKept() {
+  return homeLaunchersAll().filter(l => l.source !== 'builtin');
+}
+
+function homeLauncherChosen() {
+  const id = homeStatus && homeStatus.launchers && homeStatus.launchers.chosen;
+  return homeLaunchersAll().filter(l => l.id === id)[0] || null;
+}
+
 function renderHomeCustom(autoVal) {
   const st = homeStatus;
   const lg = st.lgHome;
-  const glasshouseOn = !!(st.enabled && st.supported.ok);
+  const inPlace = !!(st.enabled && st.supported.ok);
+  const glasshouseOn = inPlace && !homeLauncherOn();
   const box = q('home-custom');
   if (box) box.classList.toggle('lg-home', !glasshouseOn);
   const layout = q('disc-homescreen');
@@ -83,7 +108,7 @@ function renderHomeCustom(autoVal) {
     renderHomeScreen(lg);
     renderSystemTiles(lg);
   }
-  if (layout && (!lg || glasshouseOn)) layout.hidden = true;
+  if (layout && (!lg || inPlace)) layout.hidden = true;
   if (box) box.hidden = !(glasshouseOn || autoVal !== undefined || (layout && !layout.hidden) || (tiles && !tiles.hidden));
 }
 
@@ -106,6 +131,12 @@ function renderHome() {
   } else if (!st.supported.ok) {
     state.textContent = t('home.unavailable', 'Not available on this TV');
     desc.textContent = st.supported.reason || '';
+  } else if (homeLauncherOn()) {
+    state.textContent = t('home.launcher.isOn', '{title} is the TV’s Home', { title: homeLauncherChosen().title });
+    const title = homeLauncherChosen().title;
+    desc.textContent = st.lgHomeOpen
+      ? t('home.launcher.isOnLgOpenTitle', 'LG’s Home is open for now. {title} comes back when something else is opened, or Home is pressed.', { title })
+      : t('home.launcher.isOnDescTitle', '{title} opens in LG’s Home’s place: with the Home and Back buttons, and when the TV wakes on Home.', { title });
   } else if (st.enabled) {
     state.textContent = t('home.isOn', 'Glasshouse Home is the TV’s Home');
     desc.textContent = st.lgHomeOpen
@@ -123,7 +154,11 @@ function renderHome() {
   // (its tile, or holding Home) leaves Glasshouse Home the TV's Home.
   if (dot) dot.className = 'ps-dot' + (st.restorePending ? ' warn' : st.enabled ? (st.active || st.lgHomeOpen ? ' good' : ' warn') : '');
   const more = q('home-more');
-  if (more) more.hidden = !st.supported.ok || !st.enabled;
+  if (more) {
+    more.hidden = !st.supported.ok || !st.enabled;
+    more.classList.toggle('for-launcher', homeLauncherOn());
+  }
+  renderHomeLauncher();
   const autoRow = q('home-autolaunch-row');
   const autoLeased = typeof getLease === 'function' ? getLease('homeAutoLaunch', st.homeAutoLaunch) : undefined;
   const autoVal = autoLeased !== undefined ? autoLeased : st.homeAutoLaunch;
@@ -156,9 +191,10 @@ function renderHome() {
     previewPill.disabled = !homeWritable();
   }
   // Its options, while it is on.
-  [['home-preview-always', 'previewAlways'], ['home-preview-tile', 'previewInTile']].forEach(([id, field]) => {
+  [['home-preview-sound', 'previewSound'], ['home-preview-always', 'previewAlways'], ['home-preview-tile', 'previewInTile']].forEach(([id, field]) => {
     const row = q(id + '-row');
-    // Neither plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
+    // On webOS 4 (a B8, 4.4.3), where Live preview itself plays, the last two
+    // do not, and sound was not tried.
     if (row) row.hidden = !st.supported.ok || st.supported.standalone === true || !st.layout || st.layout.livePreview !== true;
     const btn = q(id);
     if (!btn) return;
@@ -177,6 +213,7 @@ function renderHome() {
     updateToggle(el, { cls: on && !unused ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     el.disabled = !homeWritable() || unused;
   });
+  renderHomeWeather(st);
   const countAlt = q('home-show-count-alt');
   if (countAlt) countAlt.hidden = !altView;
   const searchRow = q('home-search-row');
@@ -231,7 +268,20 @@ function renderHome() {
     });
     hide.disabled = !homeWritable();
   }
+  /*
+   * The choice of launcher: the one in use marked, and one whose press waits
+   * for a second marked as waiting. Each button keeps its name.
+   */
   const lgBtn = q('home-mode-lg');
+  const chosenId = homeLauncherOn() ? st.launchers.chosen : null;
+  const again = t('home.pressAgain', 'Press again to confirm');
+  const choice = (el, name, on, armed, hidden, disabled) => {
+    if (!el) return;
+    el.hidden = hidden;
+    el.disabled = disabled;
+    el.className = on ? 'on' : armed ? 'warn' : '';
+    el.textContent = armed ? again : name;
+  };
   if (btn) {
     const wantOn = !(st.enabled || st.restorePending);
     const armed = homeArmed === (wantOn ? 'on' : 'off');
@@ -239,23 +289,17 @@ function renderHome() {
       if (lgBtn) lgBtn.hidden = true;
       btn.disabled = !homeWritable();
       btn.className = armed ? 'warn' : '';
-      btn.textContent = armed ? t('home.confirmOff', 'Press again to use LG Home') : t('home.retryRestore', 'Retry restoring LG Home');
+      btn.textContent = armed ? again : t('home.retryRestore', 'Retry restoring LG Home');
     } else {
-      if (lgBtn) {
-        lgBtn.hidden = false;
-        lgBtn.disabled = !homeWritable();
-        lgBtn.className = !st.enabled ? 'on' : armed ? 'warn' : '';
-        lgBtn.textContent = st.enabled
-          ? (armed ? t('home.confirmOff', 'Press again to use LG Home') : t('home.switchOff', 'Use LG Home'))
-          : t('home.lgHome', 'LG Home');
-      }
-      btn.disabled = !homeWritable();
-      btn.className = st.enabled ? 'on' : armed ? 'warn' : '';
-      btn.textContent = !st.enabled
-        ? (armed ? t('home.confirmOn', 'Press again to switch on') : t('home.switchOn', 'Use Glasshouse Home'))
-        : t('home.title', 'Glasshouse Home');
+      choice(lgBtn, t('home.lgHome', 'LG Home'), !st.enabled, st.enabled && armed, false, !homeWritable());
+      choice(btn, t('home.title', 'Glasshouse Home'), st.enabled && !chosenId, !st.enabled && armed, false, !homeWritable());
     }
   }
+  const unavailable = !!st.restorePending || !st.supported.ok;
+  choice(q('home-mode-minimal'), t('home.minimalName', 'Glasshouse Minimal'), chosenId === 'minimal', homeArmed === 'use:minimal',
+    unavailable || !homeLaunchersAll().some(l => l.id === 'minimal'), !homeWritable() || homeLauncherBusy);
+  choice(q('home-mode-launcher'), t('home.custom', 'Custom'), !!chosenId && chosenId !== 'minimal', homeArmed === 'use:own',
+    unavailable, !homeWritable() || homeLauncherBusy);
   const hist = q('home-history-note');
   if (hist) hist.hidden = st.history;
   renderHomeRows();
@@ -326,6 +370,44 @@ function renderHomeColours() {
   if (reset) reset.disabled = !can || !!(cur && cur.text === fresh.text && cur.accent === fresh.accent);
 }
 
+// The animated background's colour presets, each as a small screen with a
+// band of its light; shown while an animated background is chosen.
+function HOME_ANIM_THEME_NAMES() {
+  return { auto: t('home.animTheme.auto', 'Time of day'), blue: t('home.animTheme.blue', 'Night blue'),
+    sunset: t('home.animTheme.sunset', 'Sunset'), emerald: t('home.animTheme.emerald', 'Emerald'),
+    ember: t('home.animTheme.ember', 'Ember'), silver: t('home.animTheme.silver', 'Silver'),
+    custom: t('home.animTheme.custom', 'Your own') };
+}
+
+function renderHomeAnimColours(lay, anim) {
+  const wrap = q('home-anim-colours'), box = q('home-anim-themes');
+  if (!wrap || !box) return;
+  wrap.hidden = !lay || anim === 'off';
+  if (wrap.hidden) return;
+  const names = HOME_ANIM_THEME_NAMES();
+  const now = lay.animTheme || 'auto';
+  const can = homeWritable() && !homeSaving;
+  const sample = th => th.sky
+    ? `background:linear-gradient(#000,${th.sky})`
+    : 'background:linear-gradient(90deg,#3a1a10,#0b3456 35%,#2a0f40 70%,#0a1a4a)';
+  const line = th => th.light || '#7fb4ff';
+  const themes = (lay.animThemes || []).concat([{ id: 'custom', sky: lay.animSky, light: lay.animLight }]);
+  box.innerHTML = themes.map(th => `<button type="button" class="home-look${now === th.id ? ' picked' : ''}"
+      onclick="homeSaveLayout({ animTheme: '${th.id}' })" ${can ? '' : 'disabled'} aria-pressed="${now === th.id}"
+      style="--look-text:${line(th)}">
+      <span class="home-look-screen" style="${sample(th)}"><span class="home-anim-band" style="background:${line(th)}"></span></span>
+      <span class="home-look-name">${esc(names[th.id] || th.id)}</span>
+    </button>`).join('');
+  const sky = q('home-anim-sky'), light = q('home-anim-light');
+  if (sky && document.activeElement !== sky) sky.value = lay.animSky || '#0a1f5c';
+  if (light && document.activeElement !== light) light.value = lay.animLight || '#4f8dff';
+  [sky, light].forEach(el => { if (el) el.disabled = !can; });
+}
+
+function homeAnimCustom() {
+  homeSaveLayout({ animTheme: 'custom', animSky: q('home-anim-sky').value, animLight: q('home-anim-light').value });
+}
+
 function homeCustomColours() {
   homeSaveLayout({ colours: { text: q('home-col-text').value, accent: q('home-col-accent').value } });
 }
@@ -357,7 +439,11 @@ function renderHomeRows() {
   const open = box.children.length ? [...box.querySelectorAll('details[open]')].map(d => d.dataset.kind) : [];
   const filter = q('home-ch-filter') ? q('home-ch-filter').value : '';
   box.innerHTML = homeLayout.rows.map((kind, ri) => {
+    // A hidden row leaves the view whatever its tiles; arranging on the TV still shows it.
+    const rowOff = (homeLayout.hiddenRows || []).includes(kind);
     const rowMove = `<span class="home-row-move">
+          ${renderToggle({ cls: rowOff ? 'idle' : 'good', label: rowOff ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
+            on: !rowOff, disabled: !usable, onclick: `event.preventDefault(); homeToggleRow('${kind}')` })}
           <button type="button" class="pill idle" ${usable && ri > 0 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, -1)">${esc(t('home.rowUp', 'Row up'))}</button>
           <button type="button" class="pill idle" ${usable && ri < homeLayout.rows.length - 1 ? '' : 'disabled'} onclick="event.preventDefault(); homeMoveRow(${ri}, 1)">${esc(t('home.rowDown', 'Row down'))}</button>
         </span>`;
@@ -375,6 +461,8 @@ function renderHomeRows() {
     const tiles = order.map((id, i) => {
       const it = homeItem(kind, id);
       if (!it) return '';
+      // A custom launcher offers LG's Home in its own way, not as a tile from this row.
+      if (id === 'lg-home' && homeLauncherOn()) return '';
       const hidden = kind !== 'ch' && homeLayout.hidden[kind].includes(id);
       const folded = kind === 'app' && (homeLayout.folder || []).includes(id);
       // Hidden or not, an input with nothing plugged in is left out by the row's switch.
@@ -387,7 +475,7 @@ function renderHomeRows() {
           ${leftOut ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>` : ''}
           <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">↑</button>
           <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">↓</button>
-          ${kind === 'app' ? homePlaceSelect(id, it, hidden, folded, usable) :
+          ${kind === 'app' ? homePlaceSelect(id, hidden, folded, usable) :
             kind === 'iptv' ? `<button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeTvRemoveFromRow('${jsq(id)}')">${esc(t('home.ch.remove', 'Remove'))}</button>` :
             kind === 'ch' ? `<button type="button" class="pill idle" ${usable ? '' : 'disabled'} onclick="homeToggleChannel('${jsq(id)}')">${esc(t('home.ch.remove', 'Remove'))}</button>` :
             renderToggle({ cls: hidden ? 'idle' : 'good', label: hidden ? t('home.hidden', 'Hidden') : t('home.shown', 'Shown'),
@@ -527,6 +615,13 @@ function homeToggleRecents(id) {
   homeSaveLayout({ excludedRecents: list });
 }
 
+function homeToggleRow(kind) {
+  const off = (homeLayout.hiddenRows || []).slice();
+  const i = off.indexOf(kind);
+  if (i >= 0) off.splice(i, 1); else off.push(kind);
+  homeSaveLayout({ hiddenRows: off });
+}
+
 function homeToggleTile(kind, id) {
   const hidden = Object.assign({}, homeLayout.hidden);
   const list = hidden[kind].slice();
@@ -536,17 +631,13 @@ function homeToggleTile(kind, id) {
   homeSaveLayout({ hidden });
 }
 
-/*
- * An app is on the Apps row, in its More apps tile, or hidden. The LG Home
- * tile is the way back to LG's Home, so it is never hidden, but it may go in
- * the folder, where it is still reached.
- */
-function homePlaceSelect(id, it, hidden, folded, usable) {
+// An app is on the Apps row, in its More apps tile, or hidden.
+function homePlaceSelect(id, hidden, folded, usable) {
   const place = hidden ? 'hidden' : folded ? 'folder' : 'row';
   const opt = (value, label) => `<option value="${value}"${place === value ? ' selected' : ''}>${esc(label)}</option>`;
   return `<select class="pill-sel" ${usable ? '' : 'disabled'} aria-label="${esc(t('home.place', 'Where it shows'))}"
       onchange="homeSetPlace('${jsq(id)}', this.value)">
-    ${opt('row', t('home.shown', 'Shown'))}${opt('folder', t('home.folder.label', 'In More apps'))}${it.lg ? '' : opt('hidden', t('home.hidden', 'Hidden'))}
+    ${opt('row', t('home.shown', 'Shown'))}${opt('folder', t('home.folder.label', 'In More apps'))}${opt('hidden', t('home.hidden', 'Hidden'))}
   </select>`;
 }
 
@@ -563,7 +654,11 @@ function homeResetLayout() { homeSaveLayout({ reset: true }); }
 
 function homeChooseMode(wantOn) {
   if (!homeStatus) return;
+  // Custom's settings belong to Custom alone.
+  homeLauncherOpen = false;
   if (homeStatus.restorePending) { homeSwitch(); return; }
+  // From the custom launcher to Glasshouse Home: the same place, another page, so no second press.
+  if (wantOn && homeLauncherOn()) { homeLauncherChoose(false); return; }
   if (Boolean(homeStatus.enabled) === Boolean(wantOn)) {
     if (wantOn && !homeStatus.supported.ok) homeSwitch();
     return;
@@ -590,9 +685,155 @@ async function homeSwitch() {
   if (lgBtn) lgBtn.disabled = true;
   if (activeBtn) activeBtn.textContent = t('apps.service.updating', 'Updating…');
   try {
+    // Glasshouse Home's own button: the custom launcher left set up, but not chosen.
+    if (want === 'on' && homeStatus.launchers && homeStatus.launchers.chosen) await homePost('/api/home/launcher', { choose: false });
     await homePost(want === 'on' ? '/api/home/enable' : '/api/home/disable');
   } catch (e) { showErr(e.message); }
   loadHome();
+}
+
+/*
+ * Custom: with a launcher of the owner's own set up, it is chosen as the
+ * others are; either way its settings open below, to set one up or change it.
+ */
+function homeChooseLauncher() {
+  if (!homeStatus) return;
+  const wasOpen = homeLauncherOpen;
+  homeLauncherOpen = true;
+  if (homeLaunchersKept().some(l => l.id === 'own')) homeLauncherUse('own');
+  else renderHome();
+  const box = q('home-launcher');
+  if (box && !wasOpen) box.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+
+/*
+ * A launcher kept: with Glasshouse Home on it swaps at once; from LG's Home it
+ * takes a second press, as Glasshouse Home's own button does.
+ */
+function homeLauncherUse(id) {
+  if (!homeWritable() || homeLauncherBusy) return;
+  if (id !== 'own') homeLauncherOpen = false;
+  if (homeLauncherOn() && homeStatus.launchers.chosen === id) return;
+  if (homeStatus.enabled) return homeLauncherChoose(id);
+  if (homeArmed !== 'use:' + id) {
+    homeArmed = 'use:' + id;
+    clearTimeout(homeArmTimer);
+    homeArmTimer = setTimeout(() => { homeArmed = null; renderHome(); }, 5000);
+    return renderHome();
+  }
+  homeArmed = null;
+  clearTimeout(homeArmTimer);
+  homeLauncherChoose(id);
+}
+
+async function homeLauncherChoose(id) {
+  homeLauncherBusy = true;
+  renderHome();
+  try {
+    await homePost('/api/home/launcher', { choose: id });
+    if (id !== false && !homeStatus.enabled) await homePost('/api/home/enable');
+  } catch (e) { showErr(e.message); }
+  homeLauncherBusy = false;
+  await loadHome();
+}
+
+function homeLauncherDesc(l) {
+  if (l.kind === 'web') return t('home.launcher.nowWeb', 'Web page: {address}', { address: l.address });
+  return l.files === 1
+    ? t('home.launcher.nowAppOne', 'Uploaded: one file, {size}', { size: fmtSize(l.bytes) })
+    : t('home.launcher.nowApp', 'Uploaded: {files} files, {size}', { files: l.files, size: fmtSize(l.bytes) });
+}
+
+function renderHomeLauncher() {
+  const st = homeStatus;
+  const box = q('home-launcher');
+  if (!box || !st) return;
+  const kept = homeLaunchersKept();
+  // Only while Custom is the TV's Home, or its button was pressed to set one up.
+  const customOn = homeLauncherOn() && st.launchers.chosen !== 'minimal';
+  box.hidden = !st.supported.ok || !!st.restorePending || !(customOn || homeLauncherOpen);
+  if (box.hidden) return;
+  const busy = !homeWritable() || homeLauncherBusy;
+  const chosen = st.enabled && st.launchers ? st.launchers.chosen : null;
+  q('home-launchers').innerHTML = kept.map(l => `<div class="prot-row">
+      <div class="prot-main"><div class="prot-title">${esc(l.title)}</div><div class="prot-desc">${esc(homeLauncherDesc(l))}</div></div>
+      <div class="prot-status">
+        <button type="button" class="pill idle" ${busy ? 'disabled' : ''} onclick="homeLauncherRemove('${esc(l.id)}')">${esc(t('home.launcher.remove', 'Remove'))}</button>
+      </div>
+    </div>`).join('');
+  ['home-launcher-pick', 'home-launcher-save'].forEach(id => { const b = q(id); if (b) b.disabled = busy; });
+  // Held to what installing an app from a file is.
+  const uploadOff = st.launcherUpload === false;
+  q('home-launcher-upload-off').hidden = !uploadOff;
+  if (uploadOff) q('home-launcher-pick').disabled = true;
+  const url = q('home-launcher-url');
+  const ownWeb = kept.filter(l => l.id === 'own' && l.kind === 'web')[0];
+  if (url && ownWeb && !url.value && document.activeElement !== url) url.value = ownWeb.address;
+}
+
+function homeLauncherPick() {
+  const input = q('home-launcher-file');
+  input.value = '';
+  input.click();
+}
+
+// Your own, set up: it becomes the TV's Home at once where Glasshouse Home already is.
+async function homeLauncherDone() {
+  const note = q('home-launcher-note');
+  if (homeStatus.enabled) {
+    await homePost('/api/home/launcher', { choose: 'own' });
+    note.textContent = t('home.launcher.doneOn', 'Done. The TV’s Home shows it within a few seconds.');
+  } else {
+    note.textContent = t('home.launcher.doneOffCustom', 'Done. Press Custom above, then again, to make it the TV’s Home.');
+  }
+}
+
+async function homeLauncherPicked(input) {
+  const file = input.files[0];
+  if (!file || !homeWritable() || homeLauncherBusy) return;
+  const note = q('home-launcher-note');
+  if (file.size > 50 * 1024 * 1024) { note.textContent = t('home.launcher.tooLarge', 'A launcher can be at most 50 MB.'); return; }
+  homeLauncherBusy = true;
+  note.textContent = t('home.launcher.uploading', 'Uploading {name}…', { name: file.name });
+  renderHome();
+  try {
+    const res = await fetch(api('/api/home/launcher/upload?name=' + encodeURIComponent(file.name)), {
+      method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file
+    });
+    const r = await res.json();
+    if (!res.ok || !r.ok) throw new Error(r.error || t('home.launcher.uploadFailed', 'The launcher could not be uploaded.'));
+    await homeLauncherDone();
+  } catch (e) { note.textContent = e.message; }
+  homeLauncherBusy = false;
+  await loadHome();
+}
+
+async function homeLauncherSaveAddress() {
+  if (!homeWritable() || homeLauncherBusy) return;
+  const note = q('home-launcher-note');
+  homeLauncherBusy = true;
+  note.textContent = '';
+  renderHome();
+  try {
+    await homePost('/api/home/launcher', { address: q('home-launcher-url').value.trim() });
+    await homeLauncherDone();
+  } catch (e) { note.textContent = e.message; }
+  homeLauncherBusy = false;
+  await loadHome();
+}
+
+// Removed while it is the TV's Home, Glasshouse Home takes its place.
+async function homeLauncherRemove(id) {
+  if (!homeWritable() || homeLauncherBusy) return;
+  homeLauncherBusy = true;
+  q('home-launcher-note').textContent = '';
+  renderHome();
+  try {
+    await homePost('/api/home/launcher', { remove: id });
+    if (id === 'own') q('home-launcher-url').value = '';
+  } catch (e) { q('home-launcher-note').textContent = e.message; }
+  homeLauncherBusy = false;
+  await loadHome();
 }
 
 // Hiding LG's Home is what can leave a TV without one, so switching it on takes a second press.
@@ -631,6 +872,60 @@ function homePreviewOption(field) {
 // The details Glasshouse Home shows unless switched off, and their toggles.
 const HOME_SHOW = [['showClock', 'home-show-clock'], ['showLastOn', 'home-show-last'], ['showAppCount', 'home-show-count'], ['showCec', 'home-show-cec'], ['showTvLogos', 'home-show-tv-logos']];
 
+/*
+ * The weather: off, from Home Assistant, or from Open-Meteo for a place found
+ * by name here. The search goes through the TV's server, which asks Open-Meteo.
+ */
+let homeWeatherFound = [];
+
+function placeLabel(p) {
+  return [p.name, p.admin, p.country].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ');
+}
+
+function renderHomeWeather(st) {
+  const sel = q('home-weather-sel');
+  if (!sel) return;
+  const source = (st.layout && st.layout.weather) || 'ha';
+  sel.value = source;
+  sel.disabled = !homeWritable();
+  const panel = q('home-weather-place');
+  panel.hidden = !st.supported.ok || source !== 'internet';
+  const place = st.layout && st.layout.weatherPlace;
+  q('home-weather-chosen').textContent = place
+    ? t('home.weather.showing', 'Showing the weather for {place}.', { place: placeLabel(place) })
+    : t('home.weather.choose', 'Search for your town, then choose it from the list.');
+  q('home-weather-go').disabled = !homeWritable();
+}
+
+function homeWeatherSource(value) {
+  homeSaveLayout({ weather: value });
+}
+
+async function homeWeatherSearch() {
+  const query = q('home-weather-q').value.trim();
+  const box = q('home-weather-results');
+  if (query.length < 2) { box.textContent = ''; return; }
+  box.textContent = t('home.weather.searching', 'Searching…');
+  try {
+    const r = await fetch(api('/api/home/weather/places?q=' + encodeURIComponent(query) + '&lang=' + encodeURIComponent(I18N.lang())));
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || r.status);
+    homeWeatherFound = d.places || [];
+    if (!homeWeatherFound.length) { box.textContent = t('home.weather.none', 'No places found by that name.'); return; }
+    box.innerHTML = homeWeatherFound.map((p, i) =>
+      `<button type="button" class="pill idle" onclick="homeWeatherPick(${i})">${esc(placeLabel(p))}</button>`).join('');
+  } catch (e) {
+    box.textContent = t('home.weather.searchFailed', 'Could not search: {error}', { error: e.message });
+  }
+}
+
+function homeWeatherPick(i) {
+  const place = homeWeatherFound[i];
+  if (!place) return;
+  q('home-weather-results').textContent = '';
+  homeSaveLayout({ weather: 'internet', weatherPlace: place });
+}
+
 function homeShow(key) {
   homeSaveLayout({ [key]: homeLayout[key] === false });
 }
@@ -641,6 +936,59 @@ function homeSearch() {
 
 function homeAlternative() {
   homeSaveLayout({ view: homeLayout.view === 'alternative' ? 'standard' : 'alternative' });
+}
+
+function homeAnim(style) {
+  homeSaveLayout({ wallAnim: style });
+}
+
+/*
+ * The background, as one choice of three with only that one's settings
+ * shown: None is no animation over the Black wallpaper, Pictures no
+ * animation over a picture set or the owner's own, Animated one of the
+ * scenes. Switching back returns to the set or scene last used here.
+ */
+const HOME_ANIMS = ['waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
+const homeBgLast = { scene: 'waves', set: 'landscape' };
+
+function homeBgKind() {
+  const anim = (homeLayout && homeLayout.wallAnim) || 'off';
+  if (anim !== 'off') return 'animated';
+  const choice = (homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
+  return choice === 'black' ? 'none' : 'pictures';
+}
+
+function renderHomeBg() {
+  const kindBox = q('home-bg-kind');
+  if (!kindBox || !homeStatus) return;
+  const kind = homeBgKind(), busy = !homeWritable() || !!homeWallUploading;
+  const anim = (homeLayout && homeLayout.wallAnim) || 'off';
+  const choice = (homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
+  if (anim !== 'off') homeBgLast.scene = anim;
+  if (choice !== 'black') homeBgLast.set = choice;
+  const kinds = [['none', t('home.bg.none', 'None')], ['pictures', t('home.bg.pictures', 'Pictures')], ['animated', t('home.bg.animated', 'Animated')]];
+  kindBox.innerHTML = kinds.map(([k, label]) => `<button type="button" class="${k === kind ? 'on' : ''}" ${busy ? 'disabled' : ''}
+    aria-pressed="${k === kind}" onclick="homeBgChoose('${k}')">${esc(label)}</button>`).join('');
+  q('home-bg-pictures').hidden = kind !== 'pictures';
+  q('home-bg-animated').hidden = kind !== 'animated';
+  const dark = document.querySelector('#homepane .home-dark') || document.querySelector('.home-dark');
+  if (dark) dark.hidden = kind === 'none';
+  const names = { waves: t('home.anim.waves', 'Light waves'), particles: t('home.anim.particles', 'Particles'),
+    aquarium: t('home.anim.aquarium', 'Aquarium'), aurora: t('home.anim.aurora', 'Aurora'), glow: t('home.anim.glow', 'Glow'),
+    stars: t('home.anim.stars', 'Constellations'), ripples: t('home.anim.ripples', 'Ripples') };
+  q('home-anim-scenes').innerHTML = HOME_ANIMS.map(k => `<button type="button" class="${k === anim ? 'on' : ''}" ${busy ? 'disabled' : ''}
+    aria-pressed="${k === anim}" onclick="homeAnim('${k}')">${esc(names[k])}</button>`).join('');
+  renderHomeAnimColours(homeLayout, anim);
+}
+
+async function homeBgChoose(kind) {
+  if (!homeWritable() || homeWallUploading || kind === homeBgKind()) return;
+  const choice = (homeStatus.wallpapers && homeStatus.wallpapers.choice) || 'own';
+  if (kind === 'animated') return homeSaveLayout({ wallAnim: homeBgLast.scene });
+  if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
+  if (kind === 'none' && choice !== 'black') return homeWallSet('black');
+  if (kind === 'pictures' && choice === 'black') return homeWallSet(homeBgLast.set);
+  renderHomeBg();
 }
 
 function homeRowsBottom() {
@@ -764,6 +1112,7 @@ function homeWallUrl(key, walls) {
 function renderHomeWalls() {
   const box = q('home-walls');
   if (!box || !homeStatus) return;
+  renderHomeBg();
   const walls = homeStatus.wallpapers || {};
   const has = walls.slots || {};
   const busy = !homeWritable() || !!homeWallUploading || walls.uploading;
@@ -777,16 +1126,26 @@ function renderHomeWalls() {
   const choiceBox = q('home-wall-choice');
   if (choiceBox) {
     const label = { black: t('home.wall.setBlack', 'Black'), landscape: t('home.wall.setLandscape', 'Landscape'),
-      abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own') };
-    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).map(name =>
+      abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own'),
+      shuffle: t('home.wall.setShuffle', 'Your own, shuffled') };
+    // Black is the background's None, chosen above.
+    choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(name => name !== 'black').map(name =>
       `<button type="button" class="${name === choice ? 'on' : ''}${name === getting ? ' busy' : ''}" ${busy ? 'disabled' : ''}
         aria-pressed="${name === choice}" onclick="homeWallSet('${name}')">${esc(name === getting ? t('home.wall.examplesBusy', 'Downloading…') : label[name] || name)}</button>`).join('');
   }
-  q('home-wall-help').hidden = !own;
-  q('home-wall-clear').hidden = !own;
-  q('home-wall-clear').disabled = busy || !walls.available;
+  const shuffled = choice === 'shuffle';
+  q('home-wall-intro').textContent = shuffled
+    ? t('home.wall.introShuffle', 'Pictures of your own, up to {max}, shown one at a time in a random order: each comes round once before any comes again.', { max: walls.maxPictures || 50 })
+    : t('home.wall.introPictures', 'A picture for each part of the day: one of the picture sets, or your own.');
+  q('home-wall-help').hidden = !own && !shuffled;
+  q('home-wall-clear').hidden = !own && !shuffled;
+  q('home-wall-clear').disabled = busy || (shuffled ? !(walls.pictures || []).length : !walls.available);
+  if (q('home-wall-day')) q('home-wall-day').hidden = shuffled;
+  box.hidden = shuffled;
+  q('home-wall-shuffle').hidden = !shuffled;
   clearTimeout(homeWallTimer);
   if (walls.uploading) homeWallTimer = setTimeout(() => { if (activeTab === 'home') loadHome(); }, 2000);
+  if (shuffled) return renderHomeShuffle(walls, busy, c);
 
   // The day strip: midnight to midnight, night split at midnight.
   const day = q('home-wall-day');
@@ -840,6 +1199,102 @@ function renderHomeWalls() {
   });
 }
 
+/*
+ * The shuffled collection: how often a new picture comes, a card to add more
+ * (several at once, or dropped on it), and each picture with Remove.
+ */
+function renderHomeShuffle(walls, busy, c) {
+  const pictures = walls.pictures || [], max = walls.maxPictures || 50, full = pictures.length >= max;
+  const minutes = (homeLayout && homeLayout.wallShuffleMinutes) || 10;
+  const sel = q('home-shuffle-minutes');
+  sel.innerHTML = ((homeLayout && homeLayout.shuffleMinutes) || [1, 5, 10, 15, 30, 60]).map(m =>
+    `<option value="${m}" ${m === minutes ? 'selected' : ''}>${esc(m === 60 ? t('home.wall.everyHour', '1 hour') : t('home.wall.everyMinutes', '{n} min', { n: m }))}</option>`).join('');
+  sel.disabled = !homeWritable();
+  const box = q('home-shuffle');
+  box.style.setProperty('--look-text', c.text);
+  box.style.setProperty('--look-accent', c.accent);
+  const sending = homeWallUploading === 'shuffle' || (walls.uploading && !homeWallUploading);
+  const adder = `<div class="wall-card${sending ? ' busy' : ''}" data-add="1">
+      <button type="button" class="wall-screen" id="home-shuffle-add" onclick="homeShuffleChoose()" ${busy || full ? 'disabled' : ''}
+          aria-label="${esc(t('home.wall.addPictures', 'Add pictures'))}">
+        ${full ? '' : `<span class="wall-add">${esc(t('home.wall.addPictures', 'Add pictures'))}</span>`}
+        ${sending ? `<span class="wall-sending">${esc(t('home.wall.uploading', 'Uploading…'))}</span>` : ''}
+      </button>
+      <div class="wall-actions"><span class="wall-count">${esc(t('home.wall.pictureCount', '{n} of {max}', { n: pictures.length, max }))}</span></div>
+    </div>`;
+  box.innerHTML = adder + pictures.map((id, i) => `<div class="wall-card has fixed" data-picture="${esc(id)}">
+      <button type="button" class="wall-screen" tabindex="-1" disabled aria-label="${esc(t('home.wall.pictureN', 'Picture {n}', { n: i + 1 }))}"
+          style="background-image:url('${esc(api('/api/home/wallpaper?slot=shuffle&id=' + encodeURIComponent(id)))}')"></button>
+      <div class="wall-actions"><button type="button" class="wall-link" onclick="homeShuffleRemove('${esc(id)}')" ${busy ? 'disabled' : ''}>${esc(t('home.wall.remove', 'Remove'))}</button></div>
+    </div>`).join('');
+  // Images dropped on the card to add are added, as many as there is room for.
+  const add = q('home-shuffle-add');
+  add.addEventListener('dragover', e => { if (busy || full) return; e.preventDefault(); add.classList.add('drop'); });
+  add.addEventListener('dragleave', () => add.classList.remove('drop'));
+  add.addEventListener('drop', e => {
+    e.preventDefault();
+    add.classList.remove('drop');
+    const files = e.dataTransfer ? Array.from(e.dataTransfer.files) : [];
+    if (files.length && !busy && !full) homeUploadShuffle(files);
+  });
+}
+
+function homeShuffleMinutes(v) {
+  homeSaveLayout({ wallShuffleMinutes: Number(v) });
+}
+
+function homeShuffleChoose() {
+  if (!homeWritable() || homeWallUploading) return;
+  const input = q('home-shuffle-file');
+  input.value = '';
+  input.click();
+}
+
+function homeShufflePicked(input) {
+  const files = Array.from(input.files || []);
+  if (files.length) homeUploadShuffle(files);
+}
+
+// One after another, as the TV takes one upload at a time; what does not fit is said.
+async function homeUploadShuffle(files) {
+  if (!homeWritable() || homeWallUploading) return;
+  const note = q('home-wall-upload-note');
+  const walls = (homeStatus && homeStatus.wallpapers) || {};
+  const room = Math.max(0, (walls.maxPictures || 50) - (walls.pictures || []).length);
+  const take = files.slice(0, room);
+  homeWallUploading = 'shuffle';
+  note.textContent = '';
+  renderHomeWalls();
+  let done = 0, failed = '';
+  for (const file of take) {
+    note.textContent = t('home.wall.uploadingOf', 'Uploading {n} of {total}…', { n: done + 1, total: take.length });
+    try {
+      const blob = await homePrepareWall(file);
+      const res = await fetch(api('/api/home/wallpapers/upload?slot=shuffle'), {
+        method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob
+      });
+      const r = await res.json();
+      if (!res.ok || !r.ok) throw new Error(r.error || t('home.wall.uploadFailed', 'The image could not be uploaded.'));
+      done++;
+    } catch (e) { failed = file.name + ': ' + e.message; }
+  }
+  homeWallUploading = false;
+  const parts = [t('home.wall.uploadedN', '{n} of {total} uploaded.', { n: done, total: files.length })];
+  if (files.length > take.length) parts.push(t('home.wall.shuffleRoom', 'The collection holds {max} pictures.', { max: walls.maxPictures || 50 }));
+  if (failed) parts.push(failed);
+  note.textContent = parts.join(' ');
+  await loadHome();
+  renderHomeWalls();
+}
+
+async function homeShuffleRemove(id) {
+  if (!homeWritable() || homeWallUploading) return;
+  q('home-wall-upload-note').textContent = '';
+  try { await homePost('/api/home/wallpapers', { removePicture: id }); }
+  catch (e) { q('home-wall-upload-note').textContent = e.message; }
+  await loadHome();
+}
+
 let homeWallSlot = null;
 function homeWallChoose(key) {
   if (!homeWritable() || homeWallUploading) return;
@@ -854,25 +1309,20 @@ function homeWallPicked(input) {
   if (file && homeWallSlot) homeUploadWall(homeWallSlot, file);
 }
 
-async function homeUploadWall(slot, file) {
-  if (!file || !homeWritable() || homeWallUploading) return;
-  const note = q('home-wall-upload-note');
-  homeWallUploading = slot;
-  note.textContent = '';
-  renderHomeWalls();
-  let url;
+// An image as the JPEG the TV takes: within 1920 x 1080, the size Glasshouse
+// Home is drawn at, which the server holds uploads to.
+async function homePrepareWall(file) {
+  if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 25 * 1024 * 1024) {
+    throw new Error(t('home.wall.chooseImage', 'Choose a JPEG, PNG or WebP image up to 25 MB.'));
+  }
+  const url = URL.createObjectURL(file);
   try {
-    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 25 * 1024 * 1024) {
-      throw new Error(t('home.wall.chooseImage', 'Choose a JPEG, PNG or WebP image up to 25 MB.'));
-    }
-    url = URL.createObjectURL(file);
     const img = new Image();
     await new Promise((resolve, reject) => {
       img.onload = resolve;
       img.onerror = () => reject(new Error(t('home.wall.unreadable', 'The image could not be opened.')));
       img.src = url;
     });
-    // Glasshouse Home is drawn at 1920 x 1080; the server refuses anything larger.
     const scale = Math.min(1, 1920 / img.naturalWidth, 1080 / img.naturalHeight);
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
@@ -883,6 +1333,18 @@ async function homeUploadWall(slot, file) {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.88));
     if (!blob || blob.size > 5 * 1024 * 1024) throw new Error(t('home.wall.tooLarge', 'The prepared image is too large. Choose a smaller image.'));
+    return blob;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+async function homeUploadWall(slot, file) {
+  if (!file || !homeWritable() || homeWallUploading) return;
+  const note = q('home-wall-upload-note');
+  homeWallUploading = slot;
+  note.textContent = '';
+  renderHomeWalls();
+  try {
+    const blob = await homePrepareWall(file);
     const res = await fetch(api('/api/home/wallpapers/upload?slot=' + slot), {
       method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob
     });
@@ -891,7 +1353,6 @@ async function homeUploadWall(slot, file) {
     note.textContent = t('home.wall.uploadDone', 'Image uploaded. Home updates within a few seconds.');
   } catch (e) { note.textContent = e.message; }
   finally {
-    if (url) URL.revokeObjectURL(url);
     homeWallUploading = false;
     await loadHome();
     renderHomeWalls();
@@ -926,7 +1387,8 @@ async function homeWallSet(name) {
 async function homeClearUploads() {
   if (!homeWritable() || homeWallUploading) return;
   q('home-wall-upload-note').textContent = '';
-  try { await homePost('/api/home/wallpapers', { removeUploads: true }); }
+  const shuffled = homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.choice === 'shuffle';
+  try { await homePost('/api/home/wallpapers', shuffled ? { removePictures: true } : { removeUploads: true }); }
   catch (e) { q('home-wall-upload-note').textContent = e.message; }
   await loadHome();
 }

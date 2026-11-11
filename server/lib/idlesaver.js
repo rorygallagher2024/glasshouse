@@ -110,7 +110,7 @@ function restore() {
       if (!ok) return retryRestore();
       restoring = false;
       forgetLift();
-      console.log('idlesaver: panel care holds the screen saver again for ' + appId);
+      console.log('idlesaver: ' + appId + '\'s screen saver setting put back as LG had it');
     });
   });
 }

@@ -365,6 +365,36 @@ test('getLogs stitches entries from rotated log tvweb.log.1 across rotation boun
   });
 });
 
+test('getLogs puts an earlier boot before this one, and a limit keeps the newest', function (done) {
+  var fs = require('fs');
+  var path = require('path');
+
+  var tmpDir = tempDir('tvweb-boots-test-');
+  var logPath = path.join(tmpDir, 'tvweb.log');
+  var oldEnv = process.env.TVWEB_LOG;
+  process.env.TVWEB_LOG = logPath;
+
+  // The first boot ran for 4000 s; the TV then restarted and uptime began again.
+  fs.writeFileSync(logPath, [
+    '2026-11-02T15:49:00.000Z [1363.000] [INFO] first boot, early',
+    '2026-11-02T16:54:55.000Z [5000.000] [INFO] first boot, late',
+    '2026-11-02T18:01:29.000Z [50.000] [INFO] second boot, early',
+    '2026-11-02T18:04:26.000Z [227.000] [INFO] second boot, late'
+  ].join('\n') + '\n', 'utf8');
+
+  logs.getLogs({ limit: 3, sources: ['glasshouse'] }, function (err, res) {
+    if (oldEnv !== undefined) process.env.TVWEB_LOG = oldEnv;
+    else delete process.env.TVWEB_LOG;
+    try { fs.unlinkSync(logPath); fs.rmdirSync(tmpDir); } catch (e) {}
+
+    assert.ifError(err);
+    assert.deepEqual(res.entries.map(function (e) { return e.msg; }),
+                     ['first boot, late', 'second boot, early', 'second boot, late']);
+    assert.deepEqual(res.entries.map(function (e) { return e.boot; }), [-1, 0, 0]);
+    if (typeof done === 'function') done();
+  });
+});
+
 test('logs.redact scrubs sensitive network and device data while preserving safe tokens', function () {
   // IP addresses
   assert.strictEqual(

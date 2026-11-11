@@ -17,11 +17,34 @@ var APP_ID_RE = require('./iconserver').APP_ID_RE;
 // [id, name] pairs, a name made unique with its id where two are the same.
 function ssChoices() {
   var seen = {};
-  return screensavers.catalog().filter(function (e) { return !e.problem; }).map(function (e) {
+  var list = screensavers.catalog().filter(function (e) { return !e.problem; });
+  if (screensavers.RANDOM) list.splice(1, 0, screensavers.RANDOM);
+  return list.map(function (e) {
     var name = seen[e.label] ? e.label + ' (' + e.id + ')' : e.label;
     seen[name] = true;
     return [e.id, name];
+  }).concat(renamedChoices());
+}
+/*
+ * A screen saver now one of another's options stays in the list under its old
+ * name, so an automation that picks it still works. It is sent by its old id,
+ * which the server takes as the other with that option, and is shown while
+ * that option is in use.
+ */
+function renamedChoices() {
+  var out = [];
+  Object.keys(screensavers.RENAMED).forEach(function (id) {
+    var r = screensavers.RENAMED[id], to = screensavers.catalog().filter(function (e) { return e.id === r.mode && !e.problem; })[0];
+    if (to) out.push([id, r.label, r.mode + '/' + r.choice]);
   });
+  return out;
+}
+// The name to show for what the TV reports: the mode, or the mode and option.
+function ssStateTemplate(choices) {
+  var m = {};
+  choices.forEach(function (c) { m[c[2] || c[0]] = c[1]; });
+  return '{% set m = ' + JSON.stringify(m) + ' %}' +
+    '{{ m.get(value_json.screensaverMode ~ "/" ~ (value_json.screensaverChoice or ""), m.get(value_json.screensaverMode, "LG default")) }}';
 }
 function ssMap(choices, byLabel) {
   var m = {};
@@ -62,6 +85,10 @@ var HA_ENTITIES = [
   { id: 'play_audio_clip', type: 'text', name: 'Play Audio Clip', cat: 'controls' },
   { id: 'screen_notification', type: 'text', name: 'Screen Notification', cat: 'controls' },
   { id: 'open_url', type: 'text', name: 'Open Website', cat: 'controls' },
+  // Written to, never read back: an automation pushes a JSON string
+  // ({"condition":"partlycloudy","temp":14.2}) and Glasshouse Home shows it
+  // as the weather badge next to the clock. See docs/dashboard/home.md.
+  { id: 'weather', type: 'text', name: 'Weather Push', cat: 'controls' },
   { id: 'picture_mode', type: 'select', name: 'Picture Mode (Select)', cat: 'controls' },
   { id: 'energy_saving', type: 'select', name: 'Energy Saving Step', cat: 'controls' },
   { id: 'sound_output', type: 'select', name: 'Sound Output', cat: 'controls' },
@@ -176,6 +203,7 @@ var LG_SETTING_ENTITIES = [
   { type: 'select', id: 'game_genre', row: 'gameGenre', name: 'Game Genre', cat: 'video', enabled: true, icon: 'mdi:gamepad-variant' },
   { type: 'select', id: 'prevent_input_delay', row: 'inputOptimization', name: 'Prevent Input Delay', cat: 'video', enabled: true, icon: 'mdi:timer-outline' },
   { type: 'switch', id: 'allm_setting', row: 'enableALLM', name: 'ALLM', cat: 'video', enabled: true, icon: 'mdi:gamepad-square' },
+  { type: 'switch', id: 'reduce_blue_light', row: 'eyeComfortMode', name: 'Reduce Blue Light', cat: 'video', enabled: true, icon: 'mdi:eye-outline' },
   { type: 'select', id: 'digital_sound_output', row: 'soundOutputDigital', name: 'Digital Sound Output', cat: 'controls', icon: 'mdi:surround-sound' },
   { type: 'number', id: 'balance', row: 'audioBalance', name: 'Balance', cat: 'controls', icon: 'mdi:scale-balance' },
   { type: 'switch', id: 'automatic_volume', row: 'autoVolume', name: 'Automatic Volume', cat: 'controls', icon: 'mdi:volume-equal' },
@@ -944,6 +972,18 @@ function buildEntities(opts) {
         }
       },
       {
+        type: 'text', id: 'weather',
+        payload: {
+          name: 'Weather Push',
+          command_topic: topic.command('weather'),
+          icon: 'mdi:weather-partly-cloudy',
+          mode: 'text',
+          // No state_topic: nothing to read back, so the entity never
+          // reports a value of its own in Home Assistant.
+          entity_category: 'config'
+        }
+      },
+      {
         type: 'sensor', id: 'oled_panel_hours',
         payload: {
           name: 'OLED Panel Hours',
@@ -1277,7 +1317,7 @@ function buildEntities(opts) {
           state_topic: topic.telemetry,
           options: ssc.map(function (c) { return c[1]; }),
           command_template: '{{ ' + JSON.stringify(ssMap(ssc, true)) + '[value] }}',
-          value_template: '{{ ' + JSON.stringify(ssMap(ssc, false)) + '.get(value_json.screensaverMode, "LG default") }}',
+          value_template: ssStateTemplate(ssc),
           icon: 'mdi:television-shimmer'
         }
       },

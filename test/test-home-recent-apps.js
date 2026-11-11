@@ -47,7 +47,7 @@ routes.init({ config: { allowControl: true, token: '' }, home: { recentApps: rec
 var server = http.createServer(routes.handleRequest);
 function request(body, cb, suffix) {
   var req = http.request({ host: '127.0.0.1', port: server.address().port,
-    path: '/api/home/recents' + (suffix || ''), method: body ? 'POST' : 'GET',
+    path: '/api/home/recents' + (suffix || ''), method: body ? 'POST' : 'GET', agent: false,
     headers: body ? { 'Content-Type': 'application/json' } : {} }, function (res) {
     var raw = '';
     res.on('data', function (d) { raw += d; });
@@ -124,7 +124,7 @@ var steps = [
         assert.equal(res.headers['cache-control'], 'private, no-cache');
         var etag = res.headers.etag;
         assert.ok(etag, 'an unchanged picture can be revalidated');
-        http.get({ host: '127.0.0.1', port: server.address().port, path: '/api/home/recents/image?id=netflix',
+        http.get({ host: '127.0.0.1', port: server.address().port, path: '/api/home/recents/image?id=netflix', agent: false,
           headers: { 'If-None-Match': etag } }, function (res2) {
           assert.equal(res2.statusCode, 304, 'an unchanged picture is not sent again');
           res2.resume();
@@ -150,4 +150,5 @@ server.listen(0, '127.0.0.1', function next() {
   if (step) return step(next);
   server.close();
   console.log('Recent-app HTTP outcomes passed.');
+  process.exit(0);
 });

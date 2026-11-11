@@ -28,6 +28,8 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
    from sitting still on the panel; the scrim keeps the text side and the rows
    dark. */
 #wall{position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden}
+#anim{position:absolute;left:0;top:0;width:1920px;height:1080px;display:none}
+#anim.on{display:block}
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
   -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}
@@ -118,6 +120,31 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .tile.live>div{position:relative;z-index:1}
 .row .tile.live{opacity:1}
 
+/* The weather badge: an icon and the current temperature, right of the
+   plate (or alone, in its place, when the plate is off). Its weather comes
+   from Home Assistant or Open-Meteo, as the layout's 'weather' chooses, and
+   it stays hidden until there is some. */
+/* Lined up with the clock: the temperature in the clock's own size and line
+   height, so their digits share a top and a baseline, and the place and
+   conditions as the date. */
+#weather{-webkit-flex:0 0 auto;flex:0 0 auto;position:relative;margin-left:56px;white-space:nowrap}
+#weather.none{display:none}
+#wxMain{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center}
+#wxIcon{width:112px;height:112px;margin-right:20px}
+#wxIcon svg{width:112px;height:112px;display:block}
+#wxTemp{font-family:'Outfit',sans-serif;font-size:176px;line-height:.8;font-weight:300;letter-spacing:-4px}
+#wxLine{margin-top:22px;font-size:28px;color:#a39d93}
+#wxCity:not(:empty)+#wxCond:not(:empty):before{content:"\00b7";margin:0 .4em}
+/* Open-Meteo's licence (CC BY 4.0) asks for credit, not for it beside the
+   data: bottom right, clear of the toast and banner on the left. */
+#wxCredit{position:absolute;right:112px;bottom:12px;font-size:16px;font-weight:300;opacity:.45}
+.alternative #wxCredit{right:90px}
+#wxCredit:empty,.arranging #wxCredit{display:none}
+.alternative #weather{-webkit-order:4;order:4;margin:0 0 0 48px}
+.alternative #wxIcon,.alternative #wxIcon svg{width:72px;height:72px}
+.alternative #wxTemp{font-size:100px;line-height:1;letter-spacing:-2px}
+.alternative #wxLine{margin-top:8px;font-size:23px}
+
 /* The rows sit centred between the clock and the arrange bar, so three rows
    land a little below where they used to and fewer settle lower. The spacers shrink first, so rows taller than the space run on down
    rather than under the clock. A row with nothing to show is left out, and
@@ -129,7 +156,11 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column}
 #rows.scrolled{-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 44px);mask-image:linear-gradient(180deg,rgba(0,0,0,0) 0,#000 44px)}
 #rows:before,#rows:after{content:"";-webkit-flex:1 1 0;flex:1 1 0}
-/* Along the bottom, as on LG's Home: no space below the rows. */
+/* Along the bottom, as on LG's Home: the row in focus sits at the bottom and
+   the rows after it wait below the screen. A spacer the area's height above
+   the rows lets even the first row scroll down to the bottom; moving down a
+   row scrolls the rows up by one (keepRowInView). */
+.rows-bottom #rows:before{-webkit-flex:0 0 auto;flex:0 0 auto;height:100%}
 .rows-bottom #rows:after{-webkit-flex:0 0 0;flex:0 0 0}
 
 /* Alternative View (#999): a smaller clock on the right, Last watched to its
@@ -159,12 +190,13 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .alternative .app .fold{width:100px;height:100px;padding:9px}
 .alternative .app .fold i,.alternative .app .fold i img{width:37px;height:37px}
 .alternative .app .fold i{line-height:37px;font-size:18px}
-.alternative .dev{width:340px;height:108px}
+.alternative .dev{width:420px;height:108px}
 .alternative .dev .nm{font-size:26px}
 .alternative .dev .path,.alternative .dev .st{font-size:17px}
 .row{-webkit-flex:0 0 auto;flex:0 0 auto}
 .row.empty{display:none}
 .arranging .row.empty{display:block}
+.arranging .row.off-row{opacity:.4}
 .slot{margin:0 112px;height:64px;line-height:60px;padding:0 22px;font-size:21px;color:#6b665e;
   border:2px dashed #2a2825;border-radius:6px}
 .arranging .row.active .slot{color:#ece7df;border-color:#e9ad55;border-style:solid}
@@ -200,9 +232,14 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .app .mono{background:#2a2825;color:#ece7df;font-family:'Outfit',sans-serif;font-size:44px;font-weight:300;line-height:112px}
 .app .nm{font-size:21px;font-weight:600;margin-top:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.dev{width:380px;height:124px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
+.dev{width:470px;height:124px;display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
   -webkit-justify-content:space-between;justify-content:space-between}
-.dev .nm{font-family:'Outfit',sans-serif;font-size:32px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dev .dhead{display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;min-width:0}
+.dev .dtx{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
+.dev .dico{-webkit-flex:0 0 auto;flex:0 0 auto;width:56px;height:56px;margin-right:18px;color:#ece7df}
+.dev .dico svg{display:block;width:100%;height:100%}
+.alternative .dev .dico{width:46px;height:46px;margin-right:14px}
+.dev .nm{font-family:'Outfit',sans-serif;font-size:30px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dev .path{font-size:20px;color:#a39d93;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dev .st{font-size:19px;color:#6b665e;display:-webkit-flex;display:flex;-webkit-justify-content:space-between;justify-content:space-between}
 .dev .st em{font-style:normal}
@@ -389,15 +426,17 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .typing .chip{padding:0;margin:0 0 0 10px;background:none}
 .typing .chip img,.typing .chip .mono{width:38px;height:38px;margin:0}
 
-/* Internet TV. Its tiles keep the Channels row's box and line heights, so the
-   two rows read alike: where a tuner channel has its number in Outfit Light,
-   an Internet TV channel has its logo, drawn as warm-white type at the
-   number's height. A logo that fills its own box (a full-colour square, a
-   photo) keeps its colours on a small plate; one with no logo, or a broken
-   one, is its initials in the number's face. */
-.tv .glyph{height:43px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden;white-space:nowrap}
+/* Internet TV. Its tiles keep the Channels row's box, with the channel's logo
+   in the place of a tuner channel's number, drawn as warm-white type. A logo
+   that fills its own box (a full-colour square, a photo) keeps its colours on
+   a small plate. A channel with no logo, or a broken one, has its name there
+   instead, in the input tiles' face, and not again beneath it. The logo is
+   32px high, so the next programme clears the tile's foot. */
+.tv .glyph{height:32px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden;white-space:nowrap}
 .glyph img{display:block;width:auto;height:auto;-webkit-flex:0 0 auto;flex:0 0 auto;object-fit:contain}
-.tv .glyph img{max-width:184px;max-height:43px}
+.tv .glyph img{max-width:160px;max-height:32px}
+.tv .gname{display:block;max-width:100%;font-family:'Outfit',sans-serif;font-size:32px;line-height:32px;font-weight:400;overflow:hidden;text-overflow:ellipsis}
+.tv.nologo .nm{display:none}
 .glyph img.mark{-webkit-filter:brightness(0) invert(.93) sepia(.08);filter:brightness(0) invert(.93) sepia(.08)}
 .glyph img.plate{border-radius:6px;opacity:.85}
 .glyph .mono{font-family:'Outfit',sans-serif;font-size:48px;line-height:.9;font-weight:300;letter-spacing:-.5px}
@@ -411,7 +450,8 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
    stream is not opened twice. The band and the channel list are drawn over
    it and go when not in use: nothing still stays on the panel. */
 .playing #now{z-index:4}
-.playing #rows,.playing #rail,.playing #wall,.playing #scrim{visibility:hidden}
+.playing #rows,.playing #rail,.playing #wall,.playing #scrim,
+.playing #when,.playing #source,.playing #plate,.playing #weather,.playing #wxCredit{visibility:hidden}
 #preview.full{position:absolute;left:0;top:0;width:1920px;height:1080px;margin:0;box-shadow:none;
   -webkit-transform-origin:0 0;transform-origin:0 0}
 #preview.full:after,#preview.full #pvInfo{display:none}
@@ -425,7 +465,6 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 /* The band's logo: larger than a tile's, level with the name and the line below it. */
 #band .glyph{display:-webkit-flex;display:flex;-webkit-flex:0 0 auto;flex:0 0 auto;width:220px;height:96px;margin-bottom:30px;-webkit-align-items:flex-end;align-items:flex-end}
 #band .glyph img{max-width:184px;max-height:96px}
-#band .glyph .mono{font-size:72px}
 #band .txt{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
 #bdName{font-family:'Outfit',sans-serif;font-size:52px;line-height:1.1;font-weight:300;letter-spacing:-.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #bdLine{display:-webkit-flex;display:flex;-webkit-align-items:baseline;align-items:baseline;margin-top:14px;font-size:25px;white-space:nowrap}
@@ -437,10 +476,14 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #band .bar i{display:block;height:100%;background:#ece7df}
 #bdFmt{-webkit-flex:0 0 auto;flex:0 0 auto;margin:0 0 4px 56px;font-size:21px;color:#6b665e;white-space:nowrap;text-align:right;line-height:1.5}
 #bdFmt span{display:block}
-#pmsg{position:absolute;left:0;right:0;top:470px;text-align:center;display:none}
+/* A dark band behind it: the picture under it can be light. */
+#pmsg{position:absolute;left:0;right:0;top:430px;padding:44px 0;text-align:center;display:none;
+  background:-webkit-linear-gradient(top,rgba(0,0,0,0),rgba(0,0,0,.8) 28%,rgba(0,0,0,.8) 72%,rgba(0,0,0,0));
+  background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.8) 28%,rgba(0,0,0,.8) 72%,rgba(0,0,0,0));
+  text-shadow:0 2px 16px rgba(0,0,0,.8)}
 #pmsg.show{display:block}
 #pmsg b{display:block;font-family:'Outfit',sans-serif;font-size:56px;font-weight:300;letter-spacing:-.5px}
-#pmsg span{display:block;margin-top:14px;font-size:25px;color:#a39d93}
+#pmsg span{display:block;margin-top:14px;font-size:25px;color:#d6d0c6}
 #digits{position:absolute;right:112px;top:72px;font-family:'Outfit',sans-serif;font-size:96px;font-weight:300;line-height:1;
   display:none;text-shadow:0 2px 24px rgba(0,0,0,.7)}
 #digits.show{display:block}
@@ -462,7 +505,6 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .cl.focus{background:rgba(20,19,16,.86);outline-color:#ece7df;opacity:1}
 .cl .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:96px;height:34px;display:-webkit-flex;display:flex;-webkit-align-items:flex-end;align-items:flex-end;overflow:hidden}
 .cl .glyph img{display:block;max-width:84px;max-height:34px}
-.cl .glyph .mono{font-size:36px}
 .cl .n{-webkit-flex:0 0 auto;flex:0 0 auto;width:56px;font-family:'Outfit',sans-serif;font-size:30px;font-weight:300;color:#a39d93}
 .cl .c{-webkit-flex:1 1 auto;flex:1 1 auto;min-width:0}
 .cl .nm{font-size:25px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -489,7 +531,6 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 .gr .gch{-webkit-flex:0 0 auto;flex:0 0 auto;width:300px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;padding-right:18px;overflow:hidden}
 .gr .glyph{-webkit-flex:0 0 auto;flex:0 0 auto;width:84px;height:34px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;overflow:hidden}
 .gr .glyph img{display:block;max-width:72px;max-height:34px}
-.gr .glyph .mono{font-size:30px}
 .gr .gnm{font-size:22px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gr.focus .gnm{color:#ece7df}
 .gr .gnm em{font-style:normal;color:#6b665e;margin-right:12px;font-variant-numeric:tabular-nums}
@@ -566,7 +607,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 </head>
 <body>
 <div id="stage" class="no-search no-clock">
-  <div id="wall"><div class="layer"></div><div class="layer"></div></div>
+  <div id="wall"><canvas id="anim" width="0" height="0"></canvas><div class="layer"></div><div class="layer"></div></div>
   <div id="scrim"></div>
 
   <section id="now">
@@ -588,9 +629,17 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     <div id="preview"><video id="pvVideo" muted></video>
       <div id="pvInfo"><div id="pvTop"><div id="pvMode"></div><div id="pvLight"></div></div><div id="pvSig"></div></div>
       <div id="pvNote" data-t="home.preview.noPicture">No picture</div></div>
+    <div id="weather" class="none">
+      <div id="wxMain">
+        <div id="wxIcon"></div>
+        <div id="wxTemp">&mdash;</div>
+      </div>
+      <div id="wxLine"><span id="wxCity"></span><span id="wxCond"></span></div>
+    </div>
   </section>
 
   <main id="rows"></main>
+  <div id="wxCredit"></div>
   <div id="rail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><span class="word" data-t="home.search.rail">Search</span></div>
   <section id="finder">
     <div id="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg><input id="query" type="text" autocomplete="off" spellcheck="false" maxlength="80" placeholder="Film or series" data-t-placeholder="home.search.placeholder"></div>
@@ -661,6 +710,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 </div>
 
 <script src="/assets/i18n.js"></script>
+<script src="/assets/devicons.js"></script>
 <script>
 /*
  * Glasshouse Home's view. Everything comes from /api/home/*: the layout shared
@@ -680,7 +730,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var LG_HOME_TILE = 'lg-home';
   // The remote's keys as webOS reports them to a page.
   var KEY = { left: 37, up: 38, right: 39, down: 40, ok: 13, back: 461, red: 403, green: 404, yellow: 405,
-    chUp: 33, chDown: 34, info: 457 };
+    chUp: 33, chDown: 34, info: 457, play: 415, pause: 19, stop: 413 };
   // The Internet TV row's last tile while it has channels: the guide.
   var GUIDE_TILE = 'iptv-guide';
   // Internet TV's Add channels tile: last in its row while arranging, and the row's only tile while it is empty.
@@ -696,7 +746,15 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var coveredSince = 0;
   function rest(on) {
     var cl = document.documentElement.classList;
-    if (on !== cl.contains('resting')) cl.toggle('resting', on);
+    if (on === cl.contains('resting')) return;
+    cl.toggle('resting', on);
+    // Covered, the page is not hidden (webOS 4 keeps it running behind the app
+    // in front), so the live preview and the animated background stop here as
+    // well: under the screen saver the preview kept the tuner playing (#1209).
+    followPreview();
+    if (!anim) return;
+    if (on) animStop();
+    else animRun();
   }
 
   var data = null;       // the catalogue: apps, devices, channels, order
@@ -720,7 +778,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Opened by the boot hook, the page can be up before the server, which then
   // takes about a minute (a B8, webOS 4.4.3): the logo stays until then.
   var pageOpenedAt = Date.now(), STARTING_MS = 60000;
-  var wallSlots = null, wallRevision = '';
+  var wallSlots = null, wallRevision = '', wallChoice = '', wallPictures = [];
 
   function $(id) { return document.getElementById(id); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -773,8 +831,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var x = new XMLHttpRequest();
     x.open(method, url, true);
     // Search waits ten seconds server-side; a series launch can need three
-    // detail reads before opening the app.
-    x.timeout = url === '/api/home/search' ? 12000 : url === '/api/home/search/open' ? 20000 : 8000;
+    // detail reads before opening the app, and a DRM check two playlist reads.
+    x.timeout = url === '/api/home/search' ? 12000 : url === '/api/home/search/open' || url === '/api/iptv/check' ? 20000 : 8000;
     if (body !== null) x.setRequestHeader('Content-Type', 'application/json');
     x.onload = function () {
       var j = null;
@@ -814,6 +872,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return null;
   }
   function hidden(kind, id) { return (layout.hidden[kind] || []).indexOf(id) !== -1; }
+  // A whole row switched off in the dashboard's Home settings.
+  function rowOff(kind) { return (layout.hiddenRows || []).indexOf(kind) !== -1; }
   function inFolder(kind, id) { return kind === 'app' && (layout.folder || []).indexOf(id) !== -1; }
   // The server puts a Last opened row in that order; the view shows it as sent.
   function byRecent(kind) { return !!(layout.sort && layout.sort[kind] === 'recent'); }
@@ -826,6 +886,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function items(kind) {
     var out = [];
     // The apps' cards follow the Apps row, so arranging moves the row, not its cards.
+    if (!state.arranging && rowOff(kind)) return out;
     if (kind === 'rec') return state.arranging ? out : recCards();
     (data.order[kind] || []).forEach(function (id) {
       var it = byId(kind, id);
@@ -973,7 +1034,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var tiles = '';
       list.forEach(function (it, i) { tiles += TILE[kind](it, i); });
       var note = esc(rowNote(kind, list));
-      html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + ' data-row="' + ri + '" data-key="' + kind + '">' +
+      html += '<section class="row"' + (list.length ? '' : ' data-empty="1"') + (rowOff(kind) ? ' data-off="1"' : '') + ' data-row="' + ri + '" data-key="' + kind + '">' +
         '<h2>' + esc(ROW_TITLES[kind]) + (list.length && note ? '<span>' + note + '</span>' : '') +
         '<em class="sort">' + esc(sortLabel(kind)) + '</em></h2>' +
         (list.length ? '<div class="wrap"><i class="edge l"></i><i class="edge r"></i><div class="track">' + tiles + '</div></div>'
@@ -998,14 +1059,19 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // row still moving is left to finish, and settle() then keeps its focus
     // in view.
     applyFocus(true, true);
+    // Along the bottom the row in focus keeps its place as the rows are
+    // rebuilt; switched either way, the rows are placed afresh.
+    if (rowsAtBottom() || rowsAtBottom() !== wasAtBottom) keepRowInView(!rowsScroll.timer);
+    wasAtBottom = rowsAtBottom();
     placeRows();
     if (!pointing && (!animating || state.arranging)) {
       var active = document.querySelector('.row.active');
       if (active) scrollTrack(active, active.querySelector('.tile.focus'), !animating);
     }
     if (folder.open) renderFolder();
+    if (syncAnim()) updateWall();
   }
-  var renderedRows = '', barWidths = [];
+  var renderedRows = '', barWidths = [], wasAtBottom = false;
 
   // The minute's refresh waits for a moving row to stop (tick), so the rows
   // are not rebuilt under it. Its changes leave every tile where it was.
@@ -1031,6 +1097,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return '<span class="fold">' + html + '</span>';
   }
 
+  // Input tile icons, shared with the input bar (devicons.js).
+  var devIcon = window.glasshouseDevIcon;
+
   var TILE = {
     app: function (a, i) {
       if (a.folder) {
@@ -1047,8 +1116,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       var cls = 'tile dev' + (last ? ' last' : '') + (d.unused ? ' unused' : '') + (hidden('dev', d.id) ? ' hidden' : '');
       var path = d.unused ? '' : d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via })
                        : t('home.dev.port', 'HDMI {port}', { port: d.port });
-      return '<div class="' + cls + '" data-c="' + i + '"><div><div class="nm">' + esc(d.name) + '</div>' +
-        '<div class="path">' + esc(path) + '</div></div>' +
+      return '<div class="' + cls + '" data-c="' + i + '"><div class="dhead">' + devIcon(d) + '<div class="dtx"><div class="nm">' + esc(d.name) + '</div>' +
+        '<div class="path">' + esc(path) + '</div></div></div>' +
         '<div class="st"><em>' + esc(last ? t('home.dev.last', 'Last watched') : d.unused ? t('home.dev.unused', 'Nothing connected') : t('home.dev.connected', 'Connected')) + '</em>' +
         '<span>' + (d.address && layout.showCec !== false ? esc(t('home.dev.cec', 'CEC {address}', { address: d.address })) : '') + '</span></div>' + hiddenLabel + '</div>';
     },
@@ -1075,8 +1144,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
           '<div class="nm">' + esc(c.name) + '</div><div class="prog quiet">' + esc(t('home.tv.addDesc', 'From your playlist')) + '</div></div>';
       }
       var bad = tvUnplayable(c), on = bad ? null : tvNow(c.id);
-      var cls = 'tile ch tv' + (bad ? ' gone' : '');
-      var body = '<div class="glyph">' + glyphHtml(c) + '</div><div class="nm">' + esc(c.name) + '</div>';
+      var cls = 'tile ch tv' + (bad ? ' gone' : '') + (hasLogo(c) ? '' : ' nologo');
+      var body = '<div class="glyph">' + glyphHtml(c, true) + '</div><div class="nm">' + esc(c.name) + '</div>';
       if (on) {
         body += '<div class="prog">' + esc(on.title) + '</div><div class="bar"><i></i></div>';
         barWidths.push(Math.round(pctOf(on) * 10) / 10 + '%');
@@ -1113,7 +1182,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var rows = document.querySelectorAll('.row');
     for (var ri = 0; ri < rows.length; ri++) {
       var rowEl = rows[ri], kind = rowEl.getAttribute('data-key'), active = ri === state.row && state.bar < 0 && !state.rail;
-      rowEl.className = 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : '');
+      rowEl.className = 'row' + (rowEl.getAttribute('data-empty') ? ' empty' : '') + (rowEl.getAttribute('data-off') ? ' off-row' : '') + (active ? ' active' : '') + (active && state.held ? ' held-row' : '');
       var tiles = rowEl.querySelectorAll('.tile'), c = colOf(kind);
       for (var ci = 0; ci < tiles.length; ci++) {
         var on = active && ci === c;
@@ -1156,26 +1225,44 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * keep the row in focus whole, its title included.
    */
   var rowsScroll = { to: 0, timer: null };
+  function rowsAtBottom() { return !!layout && layout.rowsBottom === true; }
+  /*
+   * Along the bottom the row in focus is always brought to the bottom, its
+   * own margin below it, so only the rows before it show above and the ones
+   * after it are out of sight below the screen.
+   */
   function keepRowInView(instant) {
     var box = $('rows'), active = box.querySelector('.row.active');
     if (!active) return;
     var view = box.clientHeight, y = box.scrollTop;
     var top = active.offsetTop - 6, bottom = active.offsetTop + active.offsetHeight + 6;
-    if (bottom > y + view) y = bottom - view;
-    if (top < y) y = top;
+    if (rowsAtBottom()) {
+      y = active.offsetTop + active.offsetHeight + (parseInt(getComputedStyle(active).marginBottom, 10) || 0) - view;
+    } else {
+      if (bottom > y + view) y = bottom - view;
+      if (top < y) y = top;
+    }
     y = Math.max(0, Math.min(y, box.scrollHeight - view));
-    if (y === rowsScroll.to && Math.abs(box.scrollTop - y) < 1) return;
+    // A scroll already headed there is left to finish.
+    if (y === rowsScroll.to && (rowsScroll.timer || Math.abs(box.scrollTop - y) < 1)) return;
     rowsScroll.to = y;
-    box.className = y > 0 ? 'scrolled' : '';
+    box.className = y > firstRowTop(box) ? 'scrolled' : '';
     clearInterval(rowsScroll.timer);
+    rowsScroll.timer = null;
     if (instant) { box.scrollTop = y; return; }
     var from = box.scrollTop, start = Date.now();
     rowsScroll.timer = setInterval(function () {
       var k = Math.min(1, (Date.now() - start) / 200);
       box.scrollTop = from + (y - from) * (1 - Math.pow(1 - k, 3));
       if (tvPreviewTile) placeTvPreview(tvPreviewTile);
-      if (k >= 1) clearInterval(rowsScroll.timer);
+      if (k >= 1) { clearInterval(rowsScroll.timer); rowsScroll.timer = null; }
     }, 16);
+  }
+  // Where the first row shown starts: scrolled past it, the top edge fades.
+  function firstRowTop(box) {
+    var rows = box.querySelectorAll('.row');
+    for (var i = 0; i < rows.length; i++) if (rows[i].offsetHeight) return Math.max(0, rows[i].offsetTop - 6);
+    return 0;
   }
 
   /*
@@ -1587,6 +1674,88 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       : '';
   }
 
+  /*
+   * The weather badge. The server only ever reports what the last MQTT
+   * push to ha.js's 'weather' entity set (see server/lib/home.js,
+   * setWeather), so this stays hidden until Home Assistant has sent
+   * something at least once.
+   */
+  /*
+   * Line icons for Home Assistant's weather conditions, drawn in the text's
+   * colour. Not emoji: a B8 (webOS 4.4) has only a subset of an emoji font,
+   * and drew these as empty boxes.
+   */
+  var WX_CLOUD = '<path d="M7 17h10a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 6.6 8.6 4.2 4.2 0 0 0 7 17z"/>';
+  var WX_CLOUD_UP = '<path d="M7 14h10a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 6.6 5.6 4.2 4.2 0 0 0 7 14z"/>';
+  var WX_SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  var WX_PARTS = {
+    'clear-night': '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    sunny: WX_SUN,
+    partlycloudy: '<circle cx="8" cy="8" r="3"/><path d="M8 2v1.5M2 8h1.5M3.8 3.8l1 1M12.2 3.8l-1 1"/>' +
+      '<path d="M9 19h9a3.5 3.5 0 0 0 .3-7 4.8 4.8 0 0 0-9.2-.9A3.9 3.9 0 0 0 9 19z"/>',
+    cloudy: WX_CLOUD,
+    fog: '<path d="M4 9h16M3 13h18M5 17h14"/>',
+    rainy: WX_CLOUD_UP + '<path d="M9 17l-1 3M13 17l-1 3M17 17l-1 3"/>',
+    pouring: WX_CLOUD_UP + '<path d="M8 16l-1.5 5M11.5 16L10 21M15 16l-1.5 5M18.5 16L17 21"/>',
+    snowy: WX_CLOUD_UP + '<path d="M9 18v.01M12 20v.01M15 18v.01M9 21v.01M15 21v.01"/>',
+    'snowy-rainy': WX_CLOUD_UP + '<path d="M9 17l-1 3M15 17l-1 3M12 19v.01"/>',
+    hail: WX_CLOUD_UP + '<circle cx="9" cy="18.5" r="1"/><circle cx="13" cy="20" r="1"/><circle cx="16" cy="17.5" r="1"/>',
+    lightning: WX_CLOUD_UP + '<path d="M13 14l-3 4h4l-3 4"/>',
+    'lightning-rainy': WX_CLOUD_UP + '<path d="M12 14l-2.5 3.5h3.5L10.5 21M16 16l-1 3"/>',
+    windy: '<path d="M3 9h11a2.5 2.5 0 1 0-2.5-2.5M3 13h15a2.5 2.5 0 1 1-2.5 2.5M3 17h7"/>',
+    exceptional: '<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.01"/>'
+  };
+  WX_PARTS['windy-variant'] = WX_PARTS.windy;
+  // A thermometer where the condition is not one of Home Assistant's.
+  var WX_OTHER = '<path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/>';
+
+  function wxIcon(condition) {
+    var body = WX_PARTS.hasOwnProperty(condition) ? WX_PARTS[condition] : WX_OTHER;
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">' +
+      body + '</svg>';
+  }
+
+  function wxLabel(condition) {
+    switch (condition) {
+      case 'clear-night': return t('home.weather.clearNight', 'Clear night');
+      case 'cloudy': return t('home.weather.cloudy', 'Cloudy');
+      case 'fog': return t('home.weather.fog', 'Fog');
+      case 'hail': return t('home.weather.hail', 'Hail');
+      case 'lightning': return t('home.weather.lightning', 'Lightning');
+      case 'lightning-rainy': return t('home.weather.lightningRainy', 'Thunderstorms');
+      case 'partlycloudy': return t('home.weather.partlycloudy', 'Partly cloudy');
+      case 'pouring': return t('home.weather.pouring', 'Pouring rain');
+      case 'rainy': return t('home.weather.rainy', 'Rainy');
+      case 'snowy': return t('home.weather.snowy', 'Snowy');
+      case 'snowy-rainy': return t('home.weather.snowyRainy', 'Snow and rain');
+      case 'sunny': return t('home.weather.sunny', 'Sunny');
+      case 'windy': return t('home.weather.windy', 'Windy');
+      case 'windy-variant': return t('home.weather.windyVariant', 'Windy');
+      case 'exceptional': return t('home.weather.exceptional', 'Severe weather');
+      default: return '';
+    }
+  }
+
+  // Drawn again only when it changes: the heartbeat brings it every 5 s.
+  var shownWeather = null;
+  function renderWeather(w) {
+    var key = w && typeof w.temp === 'number' ? JSON.stringify([w.condition, w.temp, w.city, w.source]) : '';
+    if (key === shownWeather) return;
+    shownWeather = key;
+    if (!key) { $('weather').className = 'none'; $('wxCredit').textContent = ''; return; }
+    $('wxIcon').innerHTML = wxIcon(w.condition);
+    $('wxTemp').textContent = Math.round(w.temp) + '°';
+    $('wxCity').textContent = w.city || '';
+    $('wxCond').textContent = wxLabel(w.condition);
+    // Open-Meteo's data is CC BY 4.0: credited wherever it is shown.
+    $('wxCredit').textContent = w.source === 'internet' ? t('home.weather.credit', 'Weather data by Open-Meteo.com') : '';
+    $('weather').className = '';
+  }
+
+  function refreshWeather() {
+    getJson('/api/home/weather', function (r) { renderWeather(r && r.ok ? r : null); });
+  }
+
   // ---------------------------------------------------------------- actions
 
   var toastTimer = null;
@@ -1802,9 +1971,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Devices on one input share its key, so moving between them keeps the picture.
   function previewTarget() {
     if (!layout || layout.livePreview !== true || document.hidden || opening) return null;
+    if (document.documentElement.classList.contains('resting')) return null;
     if (guide.open) {
       var gi = guide.list[guide.row];
-      return gi ? { key: 'tv' + gi.id, row: 'iptv', item: gi, port: 0, tv: true } : null;
+      // As on the row: a channel that cannot play is not previewed.
+      return gi && playable(gi) ? { key: 'tv' + gi.id, row: 'iptv', item: gi, port: 0, tv: true } : null;
     }
     if (state.arranging || recents.open || finder.open || folder.open || adder.open) {
       tilePreview.opened = null;
@@ -1887,12 +2058,25 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       Math.max(0, Math.min(rect.bottom, rows.bottom) - rect.top) / scale + 'px,' + Math.max(0, wrap.left - rect.left) / scale + 'px)';
   }
 
+  // The preview is silent unless Preview sound is on. The player always has sound.
+  function previewMuted() { return !layout || layout.previewSound !== true; }
+
+  // A preview already playing takes Preview sound switched on a dashboard.
+  function applyPreviewSound() {
+    var muted = previewMuted(), v = $('pvVideo');
+    if (tvStream.item) tvStream.muted = muted;
+    if (v.muted === muted) return;
+    v.muted = muted;
+    v.defaultMuted = muted;
+  }
+
   // Called wherever focus or what covers the rows may have changed.
   function followPreview() {
     // The player has the <video> while it is open.
     if (player.open) return;
     var next = previewTarget();
     if (next && tilePreview.target && next.key === tilePreview.target.key) {
+      applyPreviewSound();
       var moved = tilePreview.target.item !== next.item || tilePreview.target.col !== next.col || tilePreview.target.row !== next.row;
       tilePreview.target = next;
       if ($('preview').className) {
@@ -1924,7 +2108,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    */
   function releaseVideo() {
     var v = $('pvVideo');
-    v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = null;
+    v.onplaying = v.onerror = v.onwaiting = v.onstalled = v.ontimeupdate = v.onloadedmetadata = v.onended = null;
     try { v.pause(); } catch (e) {}
     while (v.firstChild) v.removeChild(v.firstChild);
     // Hiding the element keeps the input, tuner or stream; emptied and loaded, it lets it go.
@@ -2007,7 +2191,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * channel.
    */
   /*
-   * An Internet TV channel previews muted, from the provider: no picture in
+   * An Internet TV channel previews from the provider: no picture in
    * 6 s says so, and the size and kind of stream show once it plays.
    */
   var TV_DWELL_MS = 600;
@@ -2032,7 +2216,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   function startTvPreview(target) {
     var gen = tilePreview.gen;
-    playTvStream(target.item, true, previewState(gen));
+    playTvStream(target.item, previewMuted(), previewState(gen));
     $('preview').className = 'on';
     tilePreview.inTile = inTile();
     placePreview();
@@ -2045,8 +2229,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (target.tv) return startTvPreview(target);
     var gen = tilePreview.gen, v = $('pvVideo'), s = document.createElement('source');
     var current = function () { return gen === tilePreview.gen; };
-    v.muted = true;
-    v.defaultMuted = true;
+    v.muted = previewMuted();
+    v.defaultMuted = v.muted;
     s.setAttribute('type', target.port ? 'service/webos-external' : 'service/webos-broadcast-preview');
     s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
     v.appendChild(s);
@@ -2094,31 +2278,29 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   var tvGuide = {}, tvGuideTimer = null;
   var LOGO_KEY = 'glasshouse.iptv.logo.';
 
-  // "Harbour Sport 1" -> "HS1", up to four characters.
-  function monogram(name) {
-    var words = String(name || '').replace(/[^A-Za-z0-9À-ɏ ]+/g, ' ').split(/\s+/), out = '';
-    for (var i = 0; i < words.length && out.length < 4; i++) {
-      if (!words[i]) continue;
-      out += /^\d+$/.test(words[i]) ? words[i].slice(0, 4 - out.length) : words[i].charAt(0).toUpperCase();
-    }
-    return out || '?';
-  }
-
   /*
    * A channel's logo as type. Its look is decided once, from its pixels, and
    * kept: one whose opaque pixels cover more than 60% of its box keeps its
-   * colours on a plate; any other is drawn as a warm-white silhouette.
+   * colours on a plate; any other is drawn as a warm-white silhouette. With
+   * no logo, a tile has the channel's name in its place (named); the guide,
+   * the list and the band, which name it beside, have nothing.
    */
-  function glyphHtml(it) {
-    var mono = '<span class="mono">' + esc(monogram(it.name)) + '</span>';
-    if (!it.logo || (layout && layout.showTvLogos === false)) return mono;
+  function nameHtml(it) { return '<span class="gname">' + esc(it.name) + '</span>'; }
+  function hasLogo(it) {
+    if (!it.logo || (layout && layout.showTvLogos === false)) return false;
     var look = null;
     try { look = window.localStorage.getItem(LOGO_KEY + it.logo); } catch (e) {}
-    if (look === 'none') return mono;
-    return '<img src="' + esc(it.logo) + '" alt="" data-mono="' + esc(monogram(it.name)) + '"' + (look ? ' class="' + look + '"' : ' data-judge="1" style="visibility:hidden"') + '>';
+    return look !== 'none';
+  }
+  function glyphHtml(it, named) {
+    if (!hasLogo(it)) return named ? nameHtml(it) : '';
+    var look = null;
+    try { look = window.localStorage.getItem(LOGO_KEY + it.logo); } catch (e) {}
+    return '<img src="' + esc(it.logo) + '" alt=""' + (named ? ' data-name="' + esc(it.name) + '"' : '') +
+      (look ? ' class="' + look + '"' : ' data-judge="1" style="visibility:hidden"') + '>';
   }
 
-  // Wired after each draw: judges a new logo, and puts the initials in a broken one's place.
+  // Wired after each draw: judges a new logo, and puts the name, or nothing, in a broken one's place.
   function wireGlyphs(root) {
     var imgs = (root || document).querySelectorAll('.glyph img');
     for (var i = 0; i < imgs.length; i++) {
@@ -2126,10 +2308,15 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (img.getAttribute('data-wired')) continue;
       img.setAttribute('data-wired', '1');
       img.onerror = function () {
+        var name = this.getAttribute('data-name'), parent = this.parentNode;
+        if (!parent) return;
+        if (name === null) { parent.removeChild(this); return; }
         var span = document.createElement('span');
-        span.className = 'mono';
-        span.textContent = this.getAttribute('data-mono') || '?';
-        if (this.parentNode) this.parentNode.replaceChild(span, this);
+        span.className = 'gname';
+        span.textContent = name;
+        parent.replaceChild(span, this);
+        var tile = parent.parentNode;
+        if (tile && tile.className.indexOf('nologo') === -1) tile.className += ' nologo';
       };
       if (img.getAttribute('data-judge')) {
         if (img.complete && img.naturalWidth) judgeLogo(img);
@@ -2274,10 +2461,32 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * last is torn down completely before the next opens.
    */
   // muted: the stream's own, kept here so a recovery reopens it as it is shown now.
-  var tvStream = { gen: 0, item: null, format: '', playing: false, waitingAt: 0, retried: false, watch: null, onState: null, leaseTimer: null,
-    muted: true, retryTimer: null };
+  // timeshift: played from the server's recording, which can pause (lib/iptv-timeshift);
+  // behindMs: time spent paused since the live point; left: seconds the recording can still hold the pause.
+  var tvStream = { gen: 0, item: null, format: '', playing: false, watch: null, onState: null, leaseTimer: null,
+    muted: true, retryTimer: null, tries: 0, everPlayed: false, lostAt: 0, openedAt: 0, full: false,
+    timeshift: false, paused: false, pausedAt: 0, behindMs: 0, capacity: null, tsTimer: null, tsUrl: '', noPauseAt: 0,
+    // seekTo: seconds behind live the next open starts at; seekTarget: where left and right are heading; kept: seconds the stick holds.
+    seekTo: null, seekTarget: null, seekTimer: null, kept: null };
   var STREAM_START_MS = 12000;
+  // The picture not moving this long is a stall, whatever events the <video> sent;
+  // sooner with nothing buffered past it: every stall logged on a provider's
+  // stream had under a second buffered, so waiting longer only kept it frozen.
   var STALL_MS = 8000;
+  var STALL_EMPTY_MS = 3000;
+  // A hole in what is buffered is stepped over after this long, before reconnecting.
+  var NUDGE_MS = 2500;
+  /*
+   * Reconnects in a row before giving up. A live channel reopens at the live
+   * point. A provider's CDN was seen sending nothing for 30 to 50 s at a time,
+   * so one that has played gets about a minute; one that never has gets two,
+   * as a one-stream account can refuse a channel change for a moment.
+   */
+  var RETRIES_FIRST = 2;
+  var RETRIES_PLAYING = 8;
+  var RETRY_WAIT_MS = [400, 1500, 3000, 5000, 8000, 10000];
+  // Playing this long since the last reconnect, a stream has all its reconnects back.
+  var STEADY_MS = 30000;
 
   function stopTvStream() {
     tvStream.gen++;
@@ -2288,26 +2497,68 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     tvStream.item = null;
     tvStream.playing = false;
     tvStream.onState = null;
+    tvStream.lostAt = 0;
+    tsReset();
     releaseVideo();
     lease(false);
+  }
+
+  function tsReset() {
+    clearTimeout(tvStream.tsTimer);
+    tvStream.tsTimer = null;
+    tvStream.timeshift = false;
+    tvStream.paused = false;
+    tvStream.behindMs = 0;
+    tvStream.capacity = null;
+    tvStream.tsUrl = '';
+    clearTimeout(tvStream.seekTimer);
+    tvStream.seekTimer = null;
+    tvStream.seekTo = tvStream.seekTarget = tvStream.kept = null;
   }
 
   /*
    * Background refreshes wait while this lasts (lib/iptv), and while it says
    * full screen, LG's idle screen saver stays held off (lib/idlesaver): the
-   * TV's media state does not see a stream in this page's <video>.
+   * TV's media state does not see a stream in this page's <video>. Paused,
+   * it is not: a still picture is what the screen saver is for.
    */
   function lease(on) {
     clearInterval(tvStream.leaseTimer);
     tvStream.leaseTimer = null;
-    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open }); };
+    var send = function () { postJson('/api/iptv/lease', { on: on, full: on && player.open && !tvStream.paused }); };
     send();
     if (on) tvStream.leaseTimer = setInterval(send, 60000);
   }
 
+  // Into the server's log: what a drop was and whether it came back.
+  function streamEvent(event, detail) {
+    var it = tvStream.item;
+    if (!it) return;
+    var v = $('pvVideo'), q = null;
+    try { q = v.getVideoPlaybackQuality ? v.getVideoPlaybackQuality() : null; } catch (e) {}
+    var body = { event: event, pl: it.pl, key: it.key, format: tvStream.format, full: !!player.open, tries: tvStream.tries };
+    if (v.videoWidth) body.size = v.videoWidth + 'x' + v.videoHeight;
+    if (q) body.dropped = q.droppedVideoFrames;
+    for (var k in detail) if (detail.hasOwnProperty(k)) body[k] = detail[k];
+    postJson('/api/iptv/event', body);
+  }
+
+  // Seconds buffered past the picture, and the start of the next buffered range after a hole.
+  function bufferedAhead(v) {
+    var b = v.buffered, ct = v.currentTime, out = { ahead: 0, next: -1 };
+    try {
+      for (var i = 0; i < b.length; i++) {
+        if (b.start(i) <= ct + 0.05 && b.end(i) > ct) out.ahead = b.end(i) - ct;
+        else if (b.start(i) > ct && out.next < 0) out.next = b.start(i);
+      }
+    } catch (e) {}
+    return out;
+  }
+
   /*
    * Plays it in the <video>; onState(state, detail) hears 'playing',
-   * 'nopicture' (no frame in time), 'stopped' (stalled twice) and 'failed'.
+   * 'reconnecting', 'nopicture' (no frame in time), 'stopped' (reconnecting
+   * gave up) and 'failed'.
    * The URL is asked for fresh each time: an Xtream live link redirects to a
    * token that expires.
    */
@@ -2315,11 +2566,15 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     stopTvStream();
     var gen = tvStream.gen;
     tvStream.item = it;
-    tvStream.retried = false;
+    tvStream.tries = 0;
+    tvStream.everPlayed = false;
     tvStream.pastCache = false;
     tvStream.account = false;
+    tvStream.switchable = false;
     tvStream.onState = onState;
     tvStream.muted = !!muted;
+    // The full-screen player, which the server may give a recording it can pause.
+    tvStream.full = !muted;
     lease(true);
     openTvStream(gen);
   }
@@ -2327,68 +2582,133 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function openTvStream(gen) {
     var it = tvStream.item;
     var say = function (s, d) { if (gen === tvStream.gen && tvStream.onState) tvStream.onState(s, d); };
-    getJson('/api/iptv/stream?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key), function (r) {
+    getJson('/api/iptv/stream?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key) + (tvStream.full ? '&full=1' : ''), function (r) {
       if (gen !== tvStream.gen) return;
       if (!r || !r.ok || !r.url) return say('failed', r && r.error);
       tvStream.account = !!r.account;
+      tvStream.switchable = !!r.switchable;
+      tvStream.timeshift = r.timeshift === true;
+      // A new recording starts at the live point.
+      if (!tvStream.timeshift || r.url !== tvStream.tsUrl) tvStream.behindMs = 0;
+      tvStream.tsUrl = tvStream.timeshift ? r.url : '';
       var v = $('pvVideo');
       tvStream.format = r.format === 'hls' ? 'HLS' : r.format === 'ts' ? 'MPEG-TS' : '';
       // As shown now: the preview may have become the player while this was asked for.
       v.muted = tvStream.muted;
       v.defaultMuted = tvStream.muted;
+      var startedAt = Date.now(), lastTime = -1, lastMove = 0, steadyFrom = 0, nudged = false;
       v.onplaying = function () {
-        if (gen !== tvStream.gen) return;
-        tvStream.waitingAt = 0;
-        if (!tvStream.playing) { tvStream.playing = true; say('playing'); }
+        if (gen !== tvStream.gen || tvStream.playing) return;
+        tvStream.playing = true;
+        steadyFrom = lastMove = Date.now();
+        if (tvStream.lostAt) {
+          streamEvent('recovered', { after: Date.now() - tvStream.lostAt });
+          tvStream.lostAt = 0;
+        } else if (!tvStream.everPlayed && player.open) streamEvent('started', { after: Date.now() - startedAt });
+        tvStream.everPlayed = true;
+        say('playing');
       };
-      v.ontimeupdate = function () { if (gen === tvStream.gen) tvStream.waitingAt = 0; };
-      v.onwaiting = v.onstalled = function () { if (gen === tvStream.gen && !tvStream.waitingAt) tvStream.waitingAt = Date.now(); };
       v.onloadedmetadata = function () { if (gen === tvStream.gen) say('format'); };
+      // A live stream has no end: one that ends was closed by the provider.
+      v.onended = function () { if (gen === tvStream.gen) lost(gen, 'ended', {}); };
       // An error rather than a stall: some providers' CDNs keep a bad copy of a
-      // playlist (one seen gzipped, for a player that cannot read it), so the second
-      // try asks past it.
-      v.onerror = function () { if (gen === tvStream.gen) { tvStream.pastCache = true; stalled(gen); } };
-      v.src = tvStream.pastCache ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + 'gh=' + Date.now() : r.url;
+      // playlist (one seen gzipped, for a player that cannot read it), so a
+      // reconnect asks past it.
+      v.onerror = function () {
+        if (gen !== tvStream.gen) return;
+        tvStream.pastCache = true;
+        lost(gen, 'error', { code: v.error ? v.error.code : 0 });
+      };
+      // A recording goes on from where it was, which a reconnect keeps;
+      // live=1 starts it at the live point, behind= that many seconds before it.
+      var extra = [];
+      if (tvStream.pastCache) extra.push('gh=' + Date.now());
+      if (tvStream.timeshift && tvStream.seekTo !== null) extra.push(tvStream.seekTo > 0 ? 'behind=' + tvStream.seekTo : 'live=1');
+      tvStream.seekTo = null;
+      v.src = extra.length ? r.url + (r.url.indexOf('?') === -1 ? '?' : '&') + extra.join('&') : r.url;
       v.load();
       var played = v.play();
       if (played && played.then) played.then(null, function () {});
-      var startedAt = Date.now();
       clearInterval(tvStream.watch);
       tvStream.watch = setInterval(function () {
         if (gen !== tvStream.gen) return;
-        if (!tvStream.playing && Date.now() - startedAt > STREAM_START_MS) { clearInterval(tvStream.watch); return say('nopicture'); }
-        if (tvStream.waitingAt && Date.now() - tvStream.waitingAt > STALL_MS) stalled(gen);
+        var now = Date.now();
+        if (!tvStream.playing) {
+          if (now - startedAt > STREAM_START_MS) lost(gen, 'nopicture', {});
+          return;
+        }
+        // Paused on purpose: a picture that does not move is no stall.
+        if (tvStream.paused) { lastMove = now; return; }
+        var ct = v.currentTime;
+        if (ct !== lastTime) {
+          lastTime = ct;
+          lastMove = now;
+          nudged = false;
+          if (tvStream.tries && now - steadyFrom > STEADY_MS) tvStream.tries = 0;
+          return;
+        }
+        var still = now - lastMove, buf = bufferedAhead(v);
+        // Stuck at a hole with more buffered after it: step over it rather than reconnect.
+        if (still > NUDGE_MS && !nudged && buf.next > ct) {
+          nudged = true;
+          streamEvent('skipped', { gap: Math.round((buf.next - ct) * 10) / 10 });
+          try { v.currentTime = buf.next + 0.1; } catch (e) {}
+          return;
+        }
+        if (still > STALL_MS || (still > STALL_EMPTY_MS && buf.ahead < 0.5)) lost(gen, 'stall', { still: still, ahead: Math.round(buf.ahead * 10) / 10, state: v.readyState, net: v.networkState });
       }, 1000);
     });
   }
 
-  // Torn down and opened once more, with a fresh URL; then left stopped.
-  function stalled(gen) {
+  /*
+   * Torn down and opened again with a fresh URL, at the live point, waiting a
+   * little longer each time; left stopped once the reconnects run out.
+   */
+  function lost(gen, why, detail) {
     if (gen !== tvStream.gen) return;
-    if (tvStream.retried) {
-      clearInterval(tvStream.watch);
-      var it = tvStream.item, cb = tvStream.onState;
+    clearInterval(tvStream.watch);
+    tvStream.watch = null;
+    detail.why = why;
+    var it = tvStream.item, cb = tvStream.onState;
+    var limit = tvStream.everPlayed ? RETRIES_PLAYING : why === 'nopicture' ? 0 : RETRIES_FIRST;
+    if (tvStream.tries >= limit) {
+      if (tvStream.lostAt) detail.lostFor = Date.now() - tvStream.lostAt;
+      streamEvent('gave-up', detail);
       tvStream.gen++;
+      tvStream.lostAt = 0;
       releaseVideo();
       tvStream.item = it;
-      if (cb) cb('stopped');
+      if (cb) cb(why === 'nopicture' && !tvStream.everPlayed ? 'nopicture' : 'stopped');
+      checkProtected(it);
       return;
     }
-    tvStream.retried = true;
+    if (!tvStream.lostAt) tvStream.lostAt = Date.now();
+    var wait = RETRY_WAIT_MS[Math.min(tvStream.tries, RETRY_WAIT_MS.length - 1)];
+    tvStream.tries++;
+    detail.wait = wait;
+    streamEvent('reconnecting', detail);
     tvStream.playing = false;
-    tvStream.waitingAt = 0;
+    // A reconnect plays on: a pause ends with it.
+    if (tvStream.paused) {
+      tvStream.behindMs += Date.now() - tvStream.pausedAt;
+      tvStream.paused = false;
+      clearTimeout(tvStream.tsTimer);
+      tvStream.tsTimer = null;
+    }
+    // Every reconnect asks past a copy of the playlist a CDN may be holding.
+    tvStream.pastCache = true;
     // Recovering, a preview is not playing: OK opens the player afresh rather than adopting it.
     if (tilePreview.target && tilePreview.target.tv) tilePreview.playing = false;
-    var keep = tvStream.item, keepCb = tvStream.onState;
+    // Its own generation: a stop or another play meanwhile strands it.
     var retryGen = ++tvStream.gen;
     releaseVideo();
-    tvStream.item = keep;
-    tvStream.onState = keepCb;
-    // Its own generation: a stop or another play meanwhile strands it.
+    tvStream.item = it;
+    tvStream.onState = cb;
+    if (cb) cb('reconnecting');
     tvStream.retryTimer = setTimeout(function () {
       tvStream.retryTimer = null;
-      if (tvStream.gen === retryGen && tvStream.item === keep) openTvStream(retryGen);
-    }, 400);
+      if (tvStream.gen === retryGen && tvStream.item === it) openTvStream(retryGen);
+    }, wait);
   }
 
   function formatText() {
@@ -2406,7 +2726,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * numbers reach the same channels however the row would reorder itself.
    */
   var player = { open: false, okDown: false, list: false, items: [], idx: 0, bandTimer: null, listTimer: null, group: 0, groups: [], lcol: 0,
-    digits: '', digitTimer: null, failed: false };
+    digits: '', digitTimer: null, failed: false, askLive: false, askTimer: null, askZap: null };
   var BAND_MS = 5000, LIST_IDLE_MS = 10000, DIGIT_MS = 2000, ZAP_DWELL_MS = 600, EXPAND_MS = 280;
   var zapTimer = null;
 
@@ -2448,7 +2768,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   function sectionOf(it) { return tvLineup && it.sid ? it.sid : it.group || ''; }
 
   function openPlayer(it) {
-    var adopt = tilePreview.target && tilePreview.target.tv && tilePreview.target.item.id === it.id && tilePreview.playing && !tilePreview.blank;
+    var adopt = tilePreview.target && tilePreview.target.tv && tilePreview.target.item.id === it.id && tilePreview.playing && !tilePreview.blank &&
+      // An MPEG-TS preview opens again full screen when live TV may pause: from the recording, which can.
+      !(data && data.iptvStatus && data.iptvStatus.timeshift && tvStream.format === 'MPEG-TS' && !tvStream.timeshift);
     var pv = $('preview'), from = null;
     if (adopt) {
       var rect = pv.getBoundingClientRect(), stage = $('stage').getBoundingClientRect(), scale = stage.width / 1920;
@@ -2473,6 +2795,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       tilePreview.gen++;
       clearTimeout(tilePreview.timer);
       tilePreview.target = null;
+      // The row and lineup are separate replies, with separate objects for the same channel.
+      tvStream.item = playerChannel();
       tvStream.onState = playerState;
       tvStream.muted = false;
       $('pvVideo').muted = false;
@@ -2518,8 +2842,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function playerState(s) {
     if (!player.open) return;
+    if (s !== 'format') endAskLive();
     if (s === 'playing') { player.failed = false; renderPmsg(); renderBand(); }
     else if (s === 'format') renderBand();
+    else if (s === 'reconnecting') renderPmsg(t('home.tv.reconnecting', 'Reconnecting to {name}', { name: tvStream.item ? tvStream.item.name : '' }));
     else if (s === 'nopicture' || s === 'failed' || s === 'stopped') {
       // Nothing plays: the stream, its lease and the screen saver's hold go.
       // The channel stays chosen, for OK to try again.
@@ -2531,6 +2857,23 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         hasAccount ? t('home.tv.tryAgain', 'OK tries again. If someone else is watching on this account, it may allow only one stream.') : t('home.tv.tryAgainPlain', 'OK tries again.'));
       showBand(true);
     }
+  }
+
+  /*
+   * A channel that would not play may carry DRM its playlist does not
+   * declare: the server reads its stream's playlists once, and marks it in
+   * the lineup if so. Asked once a visit for each channel.
+   */
+  var protectedAsked = {};
+  function checkProtected(it) {
+    if (!it || !it.pl || !it.key || protectedAsked[it.id]) return;
+    protectedAsked[it.id] = true;
+    postJson('/api/iptv/check', { pl: it.pl, key: it.key }, function (r) {
+      if (!r || r.protected !== true) return;
+      it.unplayable = 'drm';
+      if (player.open && player.failed && tvStream.item === it) renderPmsg(t('home.tv.drm', 'Protected (DRM): can’t play here'), '');
+      if (guide.open) renderGuide();
+    });
   }
 
   function renderPmsg(title, detail) {
@@ -2551,6 +2894,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     clearTimeout(player.listTimer);
     clearTimeout(zapTimer);
     clearDigits();
+    endAskLive();
     renderPmsg();
     $('player').className = '';
     var pv = $('preview');
@@ -2563,10 +2907,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         if (c !== -1) state.col.iptv = c;
       }
     }
-    var keep = layout.livePreview === true && tvStream.playing && !document.hidden && it;
+    // A paused picture is not left playing on the row.
+    var keep = layout.livePreview === true && tvStream.playing && !tvStream.paused && !document.hidden && it;
     if (keep) {
-      tvStream.muted = true;
-      $('pvVideo').muted = true;
+      tvStream.muted = previewMuted();
+      $('pvVideo').muted = tvStream.muted;
       pv.className = 'on';
       tilePreview.target = { key: 'tv' + it.id, row: 'iptv', col: indexIn(items('iptv'), it.id), item: it, port: 0, tv: true };
       tilePreview.playing = true;
@@ -2588,7 +2933,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     renderBand();
     $('player').className = 'band' + (player.list ? ' list' : '');
     clearTimeout(player.bandTimer);
-    if (stay && player.failed) return;
+    if (stay && (player.failed || tvStream.paused || tvStream.seekTarget !== null)) return;
     player.bandTimer = setTimeout(function () {
       if (player.open) $('player').className = player.list ? 'list' : '';
     }, BAND_MS);
@@ -2610,15 +2955,180 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     var fmt = formatText();
     if (it.tags && it.tags.length && !fmt.length) fmt = it.tags;
     $('bdFmt').innerHTML = (player.idx + 1 ? '<span>' + esc(t('home.tv.position', '{n} of {total}', { n: player.idx + 1, total: player.items.length })) + '</span>' : '') +
-      (fmt.length ? '<span>' + esc(fmt.join('\u2002\u2002')) + '</span>' : '');
+      (fmt.length ? '<span>' + esc(fmt.join('\u2002\u2002')) + '</span>' : '') +
+      (tvStream.switchable && tvStream.item === it && tvStream.format ? '<span>' + esc(t('home.tv.playAs', 'Yellow: play as {format}', { format: otherFormat() })) + '</span>' : '') +
+      (tvStream.item === it && tsText() ? '<span>' + esc(tsText()) + '</span>' : '');
+  }
+
+  // Minutes and seconds, or hours too, for how long a pause can last and how far behind live.
+  function clockText(secs) {
+    var s = Math.max(0, Math.round(secs)), m = Math.floor(s / 60), r = s % 60;
+    var two = function (n) { return (n < 10 ? '0' : '') + n; };
+    // With a unit, as 35:18 alone does not say whether it is minutes or hours.
+    return m >= 60 ? Math.floor(m / 60) + ':' + two(m % 60) + ':' + two(r) + ' h' : m + ':' + two(r) + ' min';
+  }
+
+  function tsText() {
+    if (!tvStream.timeshift) return Date.now() - tvStream.noPauseAt < BAND_MS ? t('home.tv.noPause', 'This channel can’t pause now') : '';
+    if (tvStream.seekTarget !== null) return tvStream.seekTarget > 0 ? t('home.tv.seekTo', '{time} behind live', { time: clockText(tvStream.seekTarget) }) : t('home.tv.seekLive', 'Live');
+    if (tvStream.paused) return tsLeft() === null ? t('home.tv.paused', 'Paused') : t('home.tv.pausedLeft', 'Paused, {time} left', { time: clockText(tsLeft()) });
+    if (tvStream.behindMs >= 1000) return t('home.tv.behind', '{time} behind live. Back goes to live.', { time: clockText(tvStream.behindMs / 1000) });
+    return '';
+  }
+
+  // How long a pause can go on: what the buffer holds at most, less the picture's
+  // time behind live. Not the server's read place, which the player's buffering moves.
+  function tsLeft() { return tvStream.capacity === null ? null : Math.max(0, tvStream.capacity - tsBehind()); }
+
+  // Seconds the picture is behind the live point, a pause still running counted.
+  function tsBehind() { return (tvStream.behindMs + (tvStream.paused ? Date.now() - tvStream.pausedAt : 0)) / 1000; }
+
+  /*
+   * Pause and play, for a channel played from the server's recording on a
+   * USB stick (lib/iptv-timeshift). The <video> pauses on a local stream,
+   * which keeps its place while the recording goes on. Left and right move
+   * 30 s back and forward in what the stick holds, and Back, behind live,
+   * asks before going to the live point (a Magic Remote has no Stop): each
+   * opens the recording again at the new place, as a live MPEG-TS stream
+   * cannot seek.
+   */
+  var TS_STEP_S = 30;
+  // Closer to live than this, Back closes the player as ever.
+  var TS_LIVE_S = 3;
+  var ASK_MS = 10000;
+  // How often a pause asks what the buffer holds at most, and redraws the time
+  // left, and how close to the end it plays on rather than lose its place.
+  var TS_POLL_MS = 1000;
+  var TS_PLAY_ON_S = 15;
+  function tsPause() {
+    if (tvStream.paused) return;
+    // Into the server's log either way, as whether the key reaches the page differs by remote.
+    streamEvent(tvStream.timeshift && tvStream.playing ? 'pause' : 'no-pause', {});
+    if (!tvStream.timeshift || !tvStream.playing) {
+      tvStream.noPauseAt = Date.now();
+      return showBand();
+    }
+    try { $('pvVideo').pause(); } catch (e) {}
+    tvStream.paused = true;
+    tvStream.pausedAt = Date.now();
+    lease(true);
+    showBand(true);
+    tsPoll();
+  }
+
+  function tsPlay() {
+    if (!tvStream.paused) return;
+    tvStream.behindMs += Date.now() - tvStream.pausedAt;
+    tvStream.paused = false;
+    tvStream.capacity = null;
+    clearTimeout(tvStream.tsTimer);
+    tvStream.tsTimer = null;
+    var played = $('pvVideo').play();
+    if (played && played.then) played.then(null, function () {});
+    lease(true);
+    showBand();
+  }
+
+  // The recording opened again that many seconds behind live, 0 the live point.
+  function tsReopen(behind) {
+    if (!tvStream.timeshift) return;
+    var it = tvStream.item, cb = tvStream.onState, gen = ++tvStream.gen;
+    clearInterval(tvStream.watch);
+    tvStream.watch = null;
+    clearTimeout(tvStream.tsTimer);
+    clearTimeout(tvStream.seekTimer);
+    clearTimeout(tvStream.retryTimer);
+    tvStream.tsTimer = tvStream.seekTimer = tvStream.retryTimer = null;
+    tvStream.seekTarget = null;
+    tvStream.paused = false;
+    tvStream.capacity = null;
+    tvStream.playing = false;
+    releaseVideo();
+    tvStream.item = it;
+    tvStream.onState = cb;
+    tvStream.behindMs = behind * 1000;
+    tvStream.seekTo = behind;
+    streamEvent(behind ? 'seek' : 'live', {});
+    lease(true);
+    openTvStream(gen);
+    showBand();
+  }
+
+  function tsCanSeek() { return tvStream.timeshift && tvStream.everPlayed && !player.failed && tvStream.item === playerChannel(); }
+
+  // Left and right: presses within a moment add up, then the recording opens there.
+  function tsSeek(delta) {
+    var from = tvStream.seekTarget !== null ? tvStream.seekTarget : tsBehind();
+    var to = Math.max(0, Math.round(from + delta));
+    if (tvStream.kept !== null) to = Math.min(to, tvStream.kept);
+    // Forward at the live point: nowhere to go.
+    if (delta < 0 && from < TS_LIVE_S && tvStream.seekTarget === null) return showBand();
+    tvStream.seekTarget = to;
+    var it = tvStream.item, gen = tvStream.gen;
+    // How much the stick holds, to stop at; the server stops there too.
+    getJson('/api/iptv/timeshift?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key), function (r) {
+      if (gen !== tvStream.gen) return;
+      tvStream.kept = r && r.ok && typeof r.kept === 'number' ? r.kept : null;
+      if (tvStream.kept !== null && tvStream.seekTarget !== null && tvStream.seekTarget > tvStream.kept) {
+        tvStream.seekTarget = tvStream.kept;
+        if (player.open) renderBand();
+      }
+    });
+    showBand(true);
+    clearTimeout(tvStream.seekTimer);
+    tvStream.seekTimer = setTimeout(function () {
+      tvStream.seekTimer = null;
+      if (gen !== tvStream.gen || tvStream.seekTarget === null) return;
+      tsReopen(tvStream.seekTarget);
+    }, ZAP_DWELL_MS);
+  }
+
+  // Back or Stop behind live, and changing channel from there: asked first,
+  // as the place in the recording is lost by it. zap: the channel's index
+  // asked about, or null for going back to live.
+  function askLive(zap) {
+    player.askLive = true;
+    player.askZap = typeof zap === 'number' ? zap : null;
+    if (player.askZap === null) renderPmsg(t('home.tv.liveAsk', 'Back to live?'), t('home.tv.liveAskDetail', 'OK goes to live. Back stays here.'));
+    else renderPmsg(t('home.tv.zapAsk', 'Change channel?'), t('home.tv.zapAskDetail', 'The recording of this channel is lost. OK changes. Back stays here.'));
+    clearTimeout(player.askTimer);
+    player.askTimer = setTimeout(function () { if (player.askLive) { endAskLive(); renderPmsg(); } }, ASK_MS);
+  }
+
+  function endAskLive() {
+    player.askLive = false;
+    player.askZap = null;
+    clearTimeout(player.askTimer);
+    player.askTimer = null;
+  }
+
+  function tsBehindLive() { return tvStream.timeshift && (tvStream.paused || tvStream.seekTarget !== null || tsBehind() > TS_LIVE_S); }
+
+  function tsPoll() {
+    clearTimeout(tvStream.tsTimer);
+    tvStream.tsTimer = null;
+    var it = tvStream.item, gen = tvStream.gen;
+    if (!tvStream.paused || !it) return;
+    getJson('/api/iptv/timeshift?pl=' + encodeURIComponent(it.pl) + '&key=' + encodeURIComponent(it.key), function (r) {
+      if (gen !== tvStream.gen || !tvStream.paused) return;
+      tvStream.capacity = r && r.ok && typeof r.capacity === 'number' ? r.capacity : null;
+      // The recording is about to reach the pause: play on rather than lose the place.
+      if (tsLeft() !== null && tsLeft() <= TS_PLAY_ON_S) return tsPlay();
+      if (player.open) renderBand();
+      tvStream.tsTimer = setTimeout(tsPoll, TS_POLL_MS);
+    });
   }
 
   // The channel a channel up, down or number reaches, after a short dwell.
-  function zapTo(idx) {
+  function zapTo(idx, confirmed) {
     if (!player.items.length) return;
-    player.idx = (idx + player.items.length) % player.items.length;
+    idx = (idx + player.items.length) % player.items.length;
+    // Behind live, the picture the recording holds goes with the channel.
+    if (!confirmed && idx !== player.idx && tsBehindLive()) { clearDigits(); return askLive(idx); }
+    player.idx = idx;
     player.failed = false;
     stopTvStream();
+    endAskLive();
     renderPmsg();
     showBand();
     if (player.list) { player.lcol = indexIn(groupItems(), playerChannel().id); renderList(); }
@@ -2715,9 +3225,18 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   function playerKey(k) {
+    if (player.askLive) {
+      // OK goes to live, or changes channel; Back, or any other key, stays.
+      var zap = player.askZap;
+      endAskLive();
+      renderPmsg();
+      if (k === KEY.ok) return zap === null ? tsReopen(0) : zapTo(zap, true);
+      return;
+    }
     if (k === KEY.back) {
       if (player.digits) return clearDigits();
       if (player.list) return closeList();
+      if (tsBehindLive()) return askLive();
       return closePlayer();
     }
     if (k >= 48 && k <= 57) return digit(k - 48);
@@ -2725,6 +3244,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (k === KEY.chUp) return zapTo(player.idx + 1);
     if (k === KEY.chDown) return zapTo(player.idx - 1);
     if (k === KEY.info) return showBand();
+    // Pause on the remote is play too, on a remote with one button for both.
+    if (k === KEY.pause) return tvStream.paused ? tsPlay() : tsPause();
+    if (k === KEY.play) return tsPlay();
+    if (k === KEY.stop) return tsBehindLive() ? askLive() : undefined;
+    if (k === KEY.yellow && !player.list && tvStream.switchable && tvStream.item === playerChannel()) return switchFormat();
     if (player.list) {
       listIdle();
       var list = groupItems();
@@ -2747,7 +3271,29 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // Up and down change channel, as channel up and down do.
     if (k === KEY.up) return zapTo(player.idx + 1);
     if (k === KEY.down) return zapTo(player.idx - 1);
+    // In a recording, left and right go back and forward; OK opens the list.
+    if ((k === KEY.left || k === KEY.right) && tsCanSeek()) return tsSeek(k === KEY.left ? TS_STEP_S : -TS_STEP_S);
     if (k === KEY.left || k === KEY.right) return openList();
+  }
+
+  function otherFormat() { return tvStream.format === 'MPEG-TS' ? 'HLS' : 'MPEG-TS'; }
+
+  /*
+   * Yellow: this channel as the provider's other kind of stream, kept for it
+   * on the TV, and opened again at the live point.
+   */
+  function switchFormat() {
+    var it = playerChannel(), to = otherFormat();
+    stopTvStream();
+    var gen = tvStream.gen;
+    renderPmsg(t('home.tv.connecting', 'Connecting to {name}', { name: it.name }), to);
+    postJson('/api/iptv/output', { pl: it.pl, key: it.key, output: to === 'MPEG-TS' ? 'ts' : 'hls' }, function (r) {
+      if (gen !== tvStream.gen || !player.open || playerChannel() !== it) return;
+      if (r && r.ok) return startPlayerStream();
+      player.failed = true;
+      renderPmsg(t('home.tv.saveFailed', 'That didn’t save'), t('home.tv.tryAgainPlain', 'OK tries again.'));
+      showBand(true);
+    });
   }
 
   function playerClick(target) {
@@ -2951,7 +3497,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('srcKind').textContent = p && p.start <= Date.now() && Date.now() < p.end ? t('home.tv.onNow', 'On now') : t('home.tv.guide', 'Guide');
     $('srcTitle').textContent = p ? p.title : it ? it.name : ' ';
     $('srcVia').textContent = it ? (p ? t('home.tv.guideVia', '{name}, {from} to {to}', { name: it.name, from: hm(new Date(p.start)), to: hm(new Date(p.end)) })
-      : t('home.tv.guideNone', 'No guide for these hours')) : ' ';
+      : tvUnplayable(it) || t('home.tv.guideNone', 'No guide for these hours')) : ' ';
     $('srcDesc').textContent = p ? p.desc : '';
   }
 
@@ -3923,8 +4469,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function toggleHidden() {
     var last = state.last;
-    // The LG Home tile is the way back to LG's Home, so it always shows.
-    if (!last || (last.kind === 'app' && last.id === LG_HOME_TILE)) return;
+    if (!last) return;
     var kind = last.kind, it = byId(kind, last.id);
     if (!it) return;
     if (kind === 'ch') {
@@ -4263,22 +4808,63 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     for (var j = 0; j < WALL_SLOTS.length; j++) if (WALL_SLOTS[j].from <= h) slot = WALL_SLOTS[j];
     return slot;
   }
+  function readWallpapers(w) {
+    wallAvailable = !!(w && w.available);
+    wallSlots = w && w.slots;
+    wallRevision = w && w.revision || '';
+    wallChoice = w && w.choice || '';
+    wallPictures = w && w.pictures || [];
+  }
+
+  /*
+   * The owner's pictures shuffled: each stays the minutes chosen, then the
+   * next is drawn at random from those not yet shown, so every one comes
+   * round before any comes again, and never the same one twice running. One
+   * stays while Home is out of sight, and the next waits for its return.
+   */
+  var shuffle = { id: null, at: 0, seen: {} };
+  function shufflePick() {
+    var list = wallPictures, i;
+    if (!list.length) { shuffle.id = null; return null; }
+    var minutes = layout && layout.wallShuffleMinutes || 10;
+    var kept = shuffle.id !== null && list.indexOf(shuffle.id) !== -1;
+    var away = document.hidden || / resting /.test(' ' + document.documentElement.className + ' ');
+    if (kept && (away || Date.now() - shuffle.at < minutes * 60000)) return shuffle.id;
+    var fresh = [];
+    for (i = 0; i < list.length; i++) if (!shuffle.seen[list[i]] && list[i] !== shuffle.id) fresh.push(list[i]);
+    if (!fresh.length) {
+      shuffle.seen = {};
+      for (i = 0; i < list.length; i++) if (list[i] !== shuffle.id) fresh.push(list[i]);
+      if (!fresh.length) fresh = list.slice();
+    }
+    shuffle.id = fresh[Math.floor(Math.random() * fresh.length)];
+    shuffle.seen[shuffle.id] = true;
+    shuffle.at = Date.now();
+    return shuffle.id;
+  }
+
   function updateWall() {
-    var slot = wallSlot();
-    if (!wallAvailable || (wallSlots && !wallSlots[slot.key])) {
+    syncAnim();
+    var slot = wallSlot(), shuffled = wallChoice === 'shuffle';
+    var picture = shuffled && anim.style === 'off' && wallAvailable ? shufflePick() : null;
+    if (anim.style !== 'off' || !wallAvailable || (shuffled ? !picture : wallSlots && !wallSlots[slot.key])) {
       var blank = $('wall').querySelectorAll('.layer');
       for (var b = 0; b < blank.length; b++) { blank[b].style.opacity = 0; blank[b].style.backgroundImage = ''; }
       wallShown = null;
       return;
     }
-    var revision = wallRevision, id = slot.key + '@' + slot.strength + '@' + revision;
+    // A shuffled picture's name never changes, so it needs no revision.
+    var revision = wallRevision, id = (shuffled ? 'p:' + picture : slot.key + '@' + revision) + '@' + slot.strength;
     if (id === wallShown) return;
     var layers = $('wall').querySelectorAll('.layer');
     var next = layers[1 - wallFront], prev = layers[wallFront];
-    var src = '/api/home/wallpaper?slot=' + slot.key + '&v=' + encodeURIComponent(revision);
+    var src = shuffled ? '/api/home/wallpaper?slot=shuffle&id=' + encodeURIComponent(picture)
+      : '/api/home/wallpaper?slot=' + slot.key + '&v=' + encodeURIComponent(revision);
     var img = new Image();
     img.onload = function () {
-      if (!wallAvailable || wallRevision !== revision || wallSlot().key !== slot.key) return;
+      if (!wallAvailable || anim.style !== 'off') return;
+      if (shuffled ? wallChoice !== 'shuffle' || shuffle.id !== picture
+        : wallChoice === 'shuffle' || wallRevision !== revision || wallSlot().key !== slot.key) return;
       wallShown = id;
       next.style.backgroundImage = 'url(' + src + ')';
       next.style.opacity = slot.strength;
@@ -4286,6 +4872,630 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       wallFront = 1 - wallFront;
     };
     img.src = src;
+  }
+
+  // ---------------------------------------------------------------- animated background
+
+  /*
+   * A moving background in place of the wallpaper pictures: light waves,
+   * floating particles, or an aquarium seen through its side. It is drawn on
+   * a canvas at half the screen's size, which the page scales up (the
+   * shapes are soft, so nothing is lost), at most 30 times a second (20 before
+   * webOS 9), and only while Home is on screen. Waves and particles take the colours of
+   * the part of the day the pictures follow; the aquarium dims at night.
+   */
+  var ANIM_W = 960, ANIM_H = 540;
+  /*
+   * 30 frames a second, or 20 before webOS 9. Most of a background's cost is
+   * the page drawn again each frame, whatever the canvas holds: on a B8
+   * (webOS 4.4.3) a canvas only cleared took 53% of a core at 30 and 32% at
+   * 20, and at 30 moving along the rows dropped frames.
+   */
+  function animFrameMs() {
+    return data && data.supported && parseInt(data.supported.webos, 10) < 9 ? 50 : 33;
+  }
+  var ANIM_PALETTES = {
+    morning:   { top: '#1e0e08', bottom: '#3a1a10', hues: ['#ff9a5a', '#ffc874', '#ff6f8e'] },
+    afternoon: { top: '#04192e', bottom: '#0b3456', hues: ['#3fb4ff', '#7fe0ff', '#5a7dff'] },
+    evening:   { top: '#120624', bottom: '#2a0f40', hues: ['#b25cff', '#ff6fb0', '#5d6bff'] },
+    night:     { top: '#06102e', bottom: '#0e2160', hues: ['#4f7bff', '#8fa4ff', '#b48bff'] }
+  };
+  var ANIM_DIM = { morning: 0.9, afternoon: 1, evening: 0.75, night: 0.45 };
+  var anim = { style: 'off', raf: 0, last: 0, t: 0, scene: null, ctx: null, still: false };
+
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+
+  // Colours as #rrggbb mixed: amount 0 is a, 1 is b.
+  function mixColour(a, b, amount) {
+    var out = '#';
+    for (var i = 1; i < 7; i += 2) {
+      var x = parseInt(a.substr(i, 2), 16), y = parseInt(b.substr(i, 2), 16);
+      out += ('0' + Math.round(x + (y - x) * amount).toString(16)).slice(-2);
+    }
+    return out;
+  }
+  function rgba(hex, alpha) {
+    return 'rgba(' + parseInt(hex.substr(1, 2), 16) + ',' + parseInt(hex.substr(3, 2), 16) + ',' +
+      parseInt(hex.substr(5, 2), 16) + ',' + alpha + ')';
+  }
+
+  // The background and light colours chosen on the dashboards, or null to
+  // follow the part of the day.
+  function animColours() {
+    var theme = layout && layout.animTheme, i;
+    if (!theme || theme === 'auto') return null;
+    if (theme === 'custom') return { sky: layout.animSky || '#0a1f5c', light: layout.animLight || '#4f8dff' };
+    var list = layout.animThemes || [];
+    for (i = 0; i < list.length; i++) if (list[i].id === theme && list[i].sky) return { sky: list[i].sky, light: list[i].light };
+    return null;
+  }
+
+  var animPal = { key: '', pal: null };
+  function animPalette() {
+    var c = animColours();
+    if (!c) return ANIM_PALETTES[wallSlot().key] || ANIM_PALETTES.night;
+    var key = c.sky + c.light;
+    if (animPal.key !== key) {
+      animPal.key = key;
+      animPal.pal = { top: mixColour(c.sky, '#000000', 0.55), bottom: c.sky,
+                      hues: [c.light, mixColour(c.light, '#ffffff', 0.35), mixColour(c.light, c.sky, 0.35)] };
+    }
+    return animPal.pal;
+  }
+
+  // The gradient behind waves and particles is the canvas's own background,
+  // set when it changes; each frame only clears the canvas over it.
+  var animSky = '';
+  function animBackdrop(ctx, top, bottom, over) {
+    var sky = top + ',' + bottom + (over || '');
+    if (sky !== animSky) {
+      animSky = sky;
+      $('anim').style.background = (over ? over + ',' : '') + 'linear-gradient(' + top + ',' + bottom + ')';
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.clearRect(0, 0, ANIM_W, ANIM_H);
+  }
+
+
+  // A few soft bands of light swaying across the screen, each with a bright
+  // thread along its edges, as on a games console's home screen. Each band is
+  // worked out once a frame at a handful of points and drawn as one filled
+  // shape and two lines, joined by curves, so it stays light for the TV.
+  var WAVE_STEP = 80;
+  var WAVES = {
+    build: function () {
+      var bands = [];
+      for (var i = 0; i < 3; i++) {
+        bands.push({ y: 0.3 + i * 0.13 + rnd(-0.03, 0.03), amp: rnd(30, 55), f1: rnd(0.0035, 0.006), f2: rnd(0.0015, 0.003),
+                     s1: rnd(0.2, 0.32) * (i % 2 ? -1 : 1), s2: rnd(0.12, 0.2), ph: rnd(0, 6.28),
+                     tilt: rnd(-0.22, 0.22), w: rnd(14, 30), hue: i % 3 });
+      }
+      return { bands: bands, top: [], bottom: [] };
+    },
+    // Joins the points with curves through their midpoints.
+    curve: function (ctx, pts, from, move) {
+      var i = from;
+      if (move) ctx.moveTo(pts[i].x, pts[i].y); else ctx.lineTo(pts[i].x, pts[i].y);
+      var step = from === 0 ? 1 : -1, last = from === 0 ? pts.length - 1 : 0;
+      for (i = from; i !== last - step && i !== last; i += step) {
+        var a = pts[i + step], b = pts[i + 2 * step] || a;
+        ctx.quadraticCurveTo(a.x, a.y, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      }
+      ctx.lineTo(pts[last].x, pts[last].y);
+    },
+    draw: function (ctx, s, t) {
+      var pal = animPalette();
+      animBackdrop(ctx, pal.top, pal.bottom);
+      for (var i = 0; i < s.bands.length; i++) {
+        var r = s.bands[i], top = s.top, bottom = s.bottom, n = 0;
+        for (var x = -WAVE_STEP; x <= ANIM_W + WAVE_STEP; x += WAVE_STEP, n++) {
+          var y = r.y * ANIM_H + (x / ANIM_W - 0.5) * r.tilt * ANIM_H +
+            Math.sin(x * r.f1 + t * r.s1 + r.ph) * r.amp + Math.sin(x * r.f2 - t * r.s2 + r.ph * 1.7) * r.amp * 0.6;
+          var w = r.w * (0.55 + 0.45 * Math.sin(x * 0.004 + t * 0.25 + r.ph));
+          top[n] = { x: x, y: y - w };
+          bottom[n] = { x: x, y: y + w };
+        }
+        top.length = bottom.length = n;
+        ctx.globalAlpha = 0.12;
+        ctx.fillStyle = pal.hues[r.hue];
+        ctx.beginPath();
+        WAVES.curve(ctx, top, 0, true);
+        WAVES.curve(ctx, bottom, n - 1, false);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 0.4;
+        ctx.strokeStyle = pal.hues[r.hue];
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); WAVES.curve(ctx, top, 0, true); ctx.stroke();
+        ctx.globalAlpha = 0.22;
+        ctx.beginPath(); WAVES.curve(ctx, bottom, 0, true); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  // Soft lights of every size rising slowly and swaying, some twinkling.
+  var PARTICLES = {
+    sprite: function (colour) {
+      var c = document.createElement('canvas');
+      c.width = c.height = 64;
+      var x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, colour);
+      g.addColorStop(0.35, colour);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.globalAlpha = 1;
+      x.fillStyle = g;
+      x.fillRect(0, 0, 64, 64);
+      return c;
+    },
+    build: function () {
+      var dots = [];
+      for (var i = 0; i < 90; i++) {
+        var r = Math.pow(Math.random(), 1.8) * 30 + 2;
+        dots.push({ x: rnd(0, ANIM_W), y: rnd(0, ANIM_H), r: r, v: 5 + (1 - r / 32) * 12, sway: rnd(0.2, 0.6),
+                    amp: rnd(6, 24), ph: rnd(0, 6.28), hue: i % 3, a: r > 16 ? rnd(0.3, 0.55) : rnd(0.6, 1), tw: rnd(0.3, 1.2) });
+      }
+      return { dots: dots, sprites: null, spriteKey: '' };
+    },
+    draw: function (ctx, s, t, dt) {
+      var pal = animPalette(), key = pal.hues.join();
+      if (s.spriteKey !== key) {
+        s.sprites = pal.hues.map(PARTICLES.sprite);
+        s.spriteKey = key;
+      }
+      animBackdrop(ctx, pal.top, pal.bottom);
+      ctx.globalCompositeOperation = 'lighter';
+      for (var i = 0; i < s.dots.length; i++) {
+        var d = s.dots[i];
+        d.y -= d.v * dt;
+        if (d.y < -d.r * 2) { d.y = ANIM_H + d.r * 2; d.x = rnd(0, ANIM_W); }
+        var x = d.x + Math.sin(t * d.sway + d.ph) * d.amp;
+        ctx.globalAlpha = d.a * (0.65 + 0.35 * Math.sin(t * d.tw + d.ph));
+        ctx.drawImage(s.sprites[d.hue], x - d.r, d.y - d.r, d.r * 2, d.r * 2);
+      }
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  };
+
+  // An aquarium through its side: light from the surface, fish at every
+  // depth, waving weed and rising bubbles over a sandy floor.
+  // The floor picture's height: the bed reaches at most 77 px above the bottom, a rock 17 px more.
+  var AQUARIUM_FLOOR_H = 120;
+  var FISH_COLOURS = ['#ff8a3d', '#ffd23f', '#4fc3ff', '#ff5e7e', '#9be15d', '#c18cff'];
+  var AQUARIUM = {
+    fish: function (onScreen) {
+      var depth = Math.random(), size = 7 + depth * 16, dir = Math.random() < 0.5 ? 1 : -1;
+      return { depth: depth, size: size, dir: dir, speed: (10 + depth * 26) * rnd(0.8, 1.2),
+               y: rnd(0.12, 0.62) * ANIM_H, ph: rnd(0, 6.28),
+               x: onScreen ? rnd(0, ANIM_W) : dir > 0 ? -size * 3 : ANIM_W + size * 3,
+               colour: depth < 0.4 ? '#1d4a66' : FISH_COLOURS[Math.floor(Math.random() * FISH_COLOURS.length)] };
+    },
+    build: function () {
+      var bed = [], x, i, fish = [], weeds = [], rays = [], rocks = [], vents = [];
+      for (x = 0; x <= ANIM_W + 40; x += 40) bed.push({ x: x, y: ANIM_H - 62 + Math.sin(x * 0.01) * 10 + rnd(-5, 5) });
+      for (i = 0; i < 11; i++) fish.push(AQUARIUM.fish(true));
+      fish.sort(function (a, b) { return a.depth - b.depth; });
+      for (i = 0; i < 10; i++) weeds.push({ x: rnd(0, ANIM_W), h: rnd(70, 180), segs: 8, ph: rnd(0, 6.28), w: rnd(3, 6),
+                                            colour: ['#1f6b3a', '#2a8048', '#185a34'][i % 3] });
+      for (i = 0; i < 6; i++) rays.push({ x: rnd(0.05, 0.95) * ANIM_W, w: rnd(30, 90), ph: rnd(0, 6.28), sp: rnd(0.05, 0.15) });
+      for (i = 0; i < 6; i++) rocks.push({ x: rnd(0, ANIM_W), w: rnd(26, 70), h: rnd(14, 34) });
+      for (i = 0; i < 3; i++) vents.push({ x: rnd(0.1, 0.9) * ANIM_W, next: rnd(0, 1) });
+      return { bed: bed, fish: fish, weeds: weeds, rays: rays, rocks: rocks, vents: vents, bubbles: [], floor: null, rayFill: null, rayKey: '' };
+    },
+    floor: function (s) {
+      var c = document.createElement('canvas'), top = ANIM_H - AQUARIUM_FLOOR_H, i;
+      c.width = ANIM_W;
+      c.height = AQUARIUM_FLOOR_H;
+      var x = c.getContext('2d');
+      x.translate(0, -top);
+      var g = x.createLinearGradient(0, ANIM_H - 80, 0, ANIM_H);
+      g.addColorStop(0, '#4a4030');
+      g.addColorStop(1, '#1b1710');
+      x.fillStyle = g;
+      x.beginPath();
+      x.moveTo(0, ANIM_H);
+      for (i = 0; i < s.bed.length; i++) x.lineTo(s.bed[i].x, s.bed[i].y);
+      x.lineTo(ANIM_W + 40, ANIM_H);
+      x.closePath();
+      x.fill();
+      x.fillStyle = '#1c2026';
+      for (i = 0; i < s.rocks.length; i++) {
+        var k = s.rocks[i], ky = AQUARIUM.bedAt(s, k.x);
+        x.save();
+        x.translate(k.x, ky + 4);
+        x.scale(1, k.h / k.w);
+        x.beginPath();
+        x.arc(0, 0, k.w / 2, Math.PI, Math.PI * 2);
+        x.fill();
+        x.restore();
+      }
+      return c;
+    },
+    bedAt: function (s, x) {
+      var i = Math.max(0, Math.min(s.bed.length - 2, Math.floor(x / 40))), a = s.bed[i], b = s.bed[i + 1];
+      return a.y + (b.y - a.y) * ((x - a.x) / 40);
+    },
+    /*
+     * A fish but its tail, drawn once into a picture of its own, as each was
+     * four or five shapes a frame and the fish a fifth of the aquarium's
+     * drawing on a B8 (webOS 4.4). Facing right, with its origin where the
+     * body's centre is.
+     */
+    fishSprite: function (f) {
+      var size = f.size, pad = 2, c = document.createElement('canvas');
+      var ox = size + pad, oy = size * 0.72 + pad;
+      c.width = Math.ceil(ox + size + pad);
+      c.height = Math.ceil(oy + size * 0.48 + pad);
+      var x = c.getContext('2d');
+      x.translate(ox, oy);
+      x.fillStyle = f.colour;
+      // Fin on top.
+      x.beginPath();
+      x.moveTo(-size * 0.3, -size * 0.38);
+      x.lineTo(size * 0.05, -size * 0.72);
+      x.lineTo(size * 0.25, -size * 0.36);
+      x.closePath();
+      x.fill();
+      // Body.
+      x.save();
+      x.scale(1, 0.48);
+      x.beginPath();
+      x.arc(0, 0, size, 0, Math.PI * 2);
+      x.fill();
+      if (f.depth >= 0.4) {
+        x.globalAlpha = 0.22;
+        x.fillStyle = '#ffffff';
+        x.beginPath();
+        x.arc(size * 0.1, -size * 0.35, size * 0.6, 0, Math.PI * 2);
+        x.fill();
+      }
+      x.restore();
+      if (f.depth >= 0.4) {
+        x.globalAlpha = 1;
+        x.fillStyle = '#0b1620';
+        x.beginPath();
+        x.arc(size * 0.55, -size * 0.08, size * 0.1, 0, Math.PI * 2);
+        x.fill();
+      }
+      return { canvas: c, ox: ox, oy: oy };
+    },
+    drawFish: function (ctx, f, t) {
+      var size = f.size, y = f.y + Math.sin(t * 0.6 + f.ph) * 6;
+      if (!f.sprite) f.sprite = AQUARIUM.fishSprite(f);
+      ctx.save();
+      ctx.translate(f.x, y);
+      ctx.scale(f.dir, 1);
+      ctx.globalAlpha = f.depth < 0.4 ? 0.5 : 0.92;
+      ctx.fillStyle = f.colour;
+      // Tail, wagging.
+      ctx.save();
+      ctx.translate(-size * 0.85, 0);
+      ctx.rotate(Math.sin(t * 7 + f.ph) * 0.35);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-size * 0.65, -size * 0.42);
+      ctx.lineTo(-size * 0.65, size * 0.42);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.drawImage(f.sprite.canvas, -f.sprite.ox, -f.sprite.oy);
+      ctx.restore();
+    },
+    draw: function (ctx, s, t, dt) {
+      // The water and the light through it: the chosen colours, or the
+      // aquarium's own, dimmed with the part of the day.
+      var c = animColours(), i, x, g;
+      var dim = c ? 1 : ANIM_DIM[wallSlot().key] || 1;
+      var water = c ? c.sky : '#0e5a80', deep = c ? mixColour(c.sky, '#000000', 0.8) : '#021624';
+      var ray = c ? mixColour(c.light, '#ffffff', 0.4) : '#beebff';
+      // The water darkening with depth is part of the canvas's own
+      // background, drawn once rather than over the whole canvas each frame.
+      animBackdrop(ctx, water, deep, 'linear-gradient(' + rgba(deep, 0) + ' 35%,' + rgba(deep, 0.8) + ')');
+      // Light from the surface: one gradient for every ray, made when its colour changes.
+      var rayKey = ray + (c ? 1 : 0);
+      if (s.rayKey !== rayKey) {
+        s.rayKey = rayKey;
+        s.rayFill = ctx.createLinearGradient(0, 0, 0, ANIM_H * 0.85);
+        s.rayFill.addColorStop(0, rgba(ray, c ? 0.14 : 0.10));
+        s.rayFill.addColorStop(1, rgba(ray, 0));
+      }
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = s.rayFill;
+      for (i = 0; i < s.rays.length; i++) {
+        var r = s.rays[i], sway = Math.sin(t * r.sp + r.ph) * 40;
+        ctx.beginPath();
+        ctx.moveTo(r.x - r.w / 2, 0);
+        ctx.lineTo(r.x + r.w / 2, 0);
+        ctx.lineTo(r.x + sway + r.w * 1.6, ANIM_H * 0.85);
+        ctx.lineTo(r.x + sway - r.w * 0.4, ANIM_H * 0.85);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      // The surface, from just below it.
+      ctx.fillStyle = rgba(ray, 0.08);
+      ctx.fillRect(0, 0, ANIM_W, 12);
+      ctx.strokeStyle = rgba(ray, 0.35);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (x = 0; x <= ANIM_W; x += 12) {
+        var sy = 11 + Math.sin(x * 0.03 + t * 1.2) * 2.5 + Math.sin(x * 0.011 - t * 0.7) * 2;
+        if (x === 0) ctx.moveTo(x, sy); else ctx.lineTo(x, sy);
+      }
+      ctx.stroke();
+      // Fish far back, behind the weed.
+      for (i = 0; i < s.fish.length; i++) if (s.fish[i].depth < 0.4) AQUARIUM.drawFish(ctx, s.fish[i], t);
+      // The floor and its rocks never move: drawn once into a picture of their own.
+      if (!s.floor) s.floor = AQUARIUM.floor(s);
+      ctx.drawImage(s.floor, 0, ANIM_H - AQUARIUM_FLOOR_H);
+      ctx.lineCap = 'round';
+      for (i = 0; i < s.weeds.length; i++) {
+        var w = s.weeds[i], by = AQUARIUM.bedAt(s, w.x);
+        ctx.strokeStyle = w.colour;
+        ctx.lineWidth = w.w;
+        ctx.beginPath();
+        ctx.moveTo(w.x, by);
+        for (var sg = 1; sg <= w.segs; sg++) {
+          ctx.lineTo(w.x + Math.sin(t * 0.9 + w.ph + sg * 0.45) * sg * 1.6, by - sg * (w.h / w.segs));
+        }
+        ctx.stroke();
+      }
+      // Bubbles from a few places on the floor.
+      for (i = 0; i < s.vents.length; i++) {
+        var v = s.vents[i];
+        v.next -= dt;
+        if (v.next <= 0) {
+          v.next = rnd(0.4, 1.4);
+          s.bubbles.push({ x: v.x + rnd(-4, 4), y: AQUARIUM.bedAt(s, v.x) - 5, r: rnd(1.2, 3.4), v: rnd(25, 45), ph: rnd(0, 6.28) });
+        }
+      }
+      // Every bubble in one stroke: on a B8 (webOS 4.4) a stroke each cost
+      // a sixth of the aquarium's drawing.
+      ctx.strokeStyle = 'rgba(210,240,255,0.55)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (i = s.bubbles.length - 1; i >= 0; i--) {
+        var b = s.bubbles[i];
+        b.y -= b.v * dt;
+        b.x += Math.sin(t * 3 + b.ph) * 0.3;
+        if (b.y < 14) { s.bubbles.splice(i, 1); continue; }
+        ctx.moveTo(b.x + b.r, b.y);
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      }
+      ctx.stroke();
+      // Fish swim on, and one that has left is followed by a new one.
+      for (i = 0; i < s.fish.length; i++) {
+        var f = s.fish[i];
+        f.x += f.dir * f.speed * dt;
+        if ((f.dir > 0 && f.x > ANIM_W + f.size * 3) || (f.dir < 0 && f.x < -f.size * 3)) s.fish[i] = AQUARIUM.fish(false);
+      }
+      s.fish.sort(function (a, c) { return a.depth - c.depth; });
+      for (i = 0; i < s.fish.length; i++) if (s.fish[i].depth >= 0.4) AQUARIUM.drawFish(ctx, s.fish[i], t);
+      ctx.globalAlpha = 1;
+      if (dim < 1) {
+        ctx.fillStyle = 'rgba(0,6,16,' + (1 - dim) + ')';
+        ctx.fillRect(0, 0, ANIM_W, ANIM_H);
+      }
+    }
+  };
+
+  // Curtains of light hanging from the top, their lower edges swaying, as an
+  // aurora does: each a wavy band filled with a gradient that fades away from
+  // its edge, three fills a frame.
+  var AURORA = {
+    build: function () {
+      var veils = [];
+      for (var i = 0; i < 3; i++) {
+        veils.push({ y: 0.32 + i * 0.1 + rnd(-0.03, 0.03), amp: rnd(30, 55), f1: rnd(0.003, 0.005), f2: rnd(0.006, 0.01),
+                     s1: rnd(0.12, 0.22) * (i % 2 ? -1 : 1), s2: rnd(0.25, 0.4), ph: rnd(0, 6.28), depth: rnd(150, 230), hue: i % 3 });
+      }
+      return { veils: veils };
+    },
+    draw: function (ctx, s, t) {
+      var pal = animPalette();
+      animBackdrop(ctx, pal.top, pal.bottom);
+      ctx.globalCompositeOperation = 'lighter';
+      for (var i = 0; i < s.veils.length; i++) {
+        var v = s.veils[i], base = v.y * ANIM_H, x;
+        var g = ctx.createLinearGradient(0, base - v.depth, 0, base + v.amp);
+        g.addColorStop(0, rgba(pal.hues[v.hue], 0));
+        g.addColorStop(0.8, rgba(pal.hues[v.hue], 0.24));
+        g.addColorStop(1, rgba(pal.hues[v.hue], 0));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(-20, base - v.depth - v.amp);
+        for (x = -20; x <= ANIM_W + 20; x += 30) {
+          ctx.lineTo(x, base - v.depth + Math.sin(x * v.f2 - t * v.s2 + v.ph) * v.amp * 0.5);
+        }
+        for (x = ANIM_W + 20; x >= -20; x -= 30) {
+          ctx.lineTo(x, base + Math.sin(x * v.f1 + t * v.s1 + v.ph) * v.amp + Math.sin(x * v.f2 + t * v.s2) * v.amp * 0.3);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  };
+
+  // A few large, soft pools of colour drifting slowly and blending where they
+  // meet. Each is one disc filled with a radial gradient, kept to its own circle.
+  var GLOW = {
+    build: function () {
+      var blobs = [];
+      for (var i = 0; i < 4; i++) {
+        blobs.push({ r: rnd(220, 320), ax: rnd(0.15, 0.4), ay: rnd(0.12, 0.3), fx: rnd(0.03, 0.06), fy: rnd(0.025, 0.05),
+                     cx: rnd(0.25, 0.75), cy: rnd(0.3, 0.7), ph: rnd(0, 6.28), hue: i % 3 });
+      }
+      return { blobs: blobs };
+    },
+    draw: function (ctx, s, t) {
+      var pal = animPalette();
+      animBackdrop(ctx, pal.top, pal.bottom);
+      ctx.globalCompositeOperation = 'lighter';
+      for (var i = 0; i < s.blobs.length; i++) {
+        var b = s.blobs[i];
+        var x = (b.cx + Math.sin(t * b.fx + b.ph) * b.ax) * ANIM_W, y = (b.cy + Math.cos(t * b.fy + b.ph * 1.3) * b.ay) * ANIM_H;
+        var r = b.r * (0.9 + 0.1 * Math.sin(t * 0.2 + b.ph));
+        var g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, rgba(pal.hues[b.hue], 0.4));
+        g.addColorStop(1, rgba(pal.hues[b.hue], 0));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  };
+
+  // Points of light drifting slowly, joined by fine lines while they are near
+  // one another. The lines are drawn in a few batches by how near, rather
+  // than one stroke each.
+  var STARS_NEAR = 120, STARS_BANDS = 4;
+  var STARS = {
+    build: function () {
+      var pts = [];
+      for (var i = 0; i < 46; i++) {
+        var a = rnd(0, 6.28), v = rnd(4, 11);
+        pts.push({ x: rnd(0, ANIM_W), y: rnd(0, ANIM_H), vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: rnd(1, 2.4), ph: rnd(0, 6.28) });
+      }
+      return { pts: pts };
+    },
+    draw: function (ctx, s, t, dt) {
+      var pal = animPalette(), pts = s.pts, n = pts.length, i, j, k;
+      animBackdrop(ctx, pal.top, pal.bottom);
+      for (i = 0; i < n; i++) {
+        var p = pts[i];
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        if (p.x < -20) p.x += ANIM_W + 40; else if (p.x > ANIM_W + 20) p.x -= ANIM_W + 40;
+        if (p.y < -20) p.y += ANIM_H + 40; else if (p.y > ANIM_H + 20) p.y -= ANIM_H + 40;
+      }
+      ctx.strokeStyle = pal.hues[0];
+      ctx.lineWidth = 1;
+      for (k = 0; k < STARS_BANDS; k++) {
+        var near = STARS_NEAR * (k + 1) / STARS_BANDS, far = STARS_NEAR * k / STARS_BANDS;
+        ctx.globalAlpha = 0.42 * (1 - k / STARS_BANDS);
+        ctx.beginPath();
+        for (i = 0; i < n; i++) {
+          for (j = i + 1; j < n; j++) {
+            var dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d2 = dx * dx + dy * dy;
+            if (d2 < near * near && d2 >= far * far) { ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); }
+          }
+        }
+        ctx.stroke();
+      }
+      ctx.fillStyle = pal.hues[1];
+      for (i = 0; i < n; i++) {
+        ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 1.3 + pts[i].ph);
+        ctx.beginPath();
+        ctx.arc(pts[i].x, pts[i].y, pts[i].r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  // A still surface where now and then a drop falls and spreads in thin
+  // rings that fade, drawn flattened as water seen at a slant.
+  var RIPPLE_LIFE = 5, RIPPLE_REACH = 190;
+  var RIPPLES = {
+    build: function () {
+      return { drops: [], next: 0.3 };
+    },
+    draw: function (ctx, s, t, dt) {
+      var pal = animPalette(), i, k;
+      animBackdrop(ctx, pal.top, pal.bottom);
+      s.next -= dt;
+      if (s.next <= 0) {
+        s.next = rnd(0.9, 2.2);
+        s.drops.push({ x: rnd(0.08, 0.92) * ANIM_W, y: rnd(0.3, 0.9) * ANIM_H, age: 0, hue: Math.floor(rnd(0, 3)) });
+      }
+      ctx.lineWidth = 1.8;
+      for (i = s.drops.length - 1; i >= 0; i--) {
+        var d = s.drops[i];
+        d.age += dt;
+        if (d.age > RIPPLE_LIFE) { s.drops.splice(i, 1); continue; }
+        ctx.strokeStyle = pal.hues[d.hue];
+        // Three rings a moment apart, each growing and fading.
+        for (k = 0; k < 3; k++) {
+          var a = d.age - k * 0.45;
+          if (a <= 0) continue;
+          var life = a / RIPPLE_LIFE, r = RIPPLE_REACH * Math.sqrt(life);
+          ctx.globalAlpha = 0.75 * (1 - life) * (1 - k * 0.25);
+          ctx.beginPath();
+          ctx.save();
+          ctx.translate(d.x, d.y);
+          ctx.scale(1, 0.38);
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          ctx.restore();
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+  };
+
+  var ANIM_SCENES = { waves: WAVES, particles: PARTICLES, aquarium: AQUARIUM, aurora: AURORA, glow: GLOW, stars: STARS, ripples: RIPPLES };
+
+  function animDraw(dt) {
+    var scene = ANIM_SCENES[anim.style];
+    if (scene && anim.ctx) scene.draw(anim.ctx, anim.scene, anim.t, dt);
+  }
+
+  function animFrame(now) {
+    anim.raf = window.requestAnimationFrame(animFrame);
+    var frameMs = animFrameMs();
+    // A few ms short of the interval, so a 60 Hz screen's frames are not skipped by rounding.
+    if (anim.last && now - anim.last < frameMs - 4) return;
+    var dt = anim.last ? Math.min(0.1, (now - anim.last) / 1000) : frameMs / 1000;
+    anim.last = now;
+    anim.t += dt;
+    animDraw(dt);
+  }
+
+  function animStop() {
+    if (anim.raf) window.cancelAnimationFrame(anim.raf);
+    anim.raf = 0;
+    anim.last = 0;
+  }
+
+  // Runs while Home is on screen; with reduced motion asked for, one still frame.
+  function animRun() {
+    if (anim.style === 'off' || anim.raf || document.hidden || document.documentElement.classList.contains('resting')) return;
+    anim.still = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (anim.still) { anim.t = 20; animDraw(0); return; }
+    anim.raf = window.requestAnimationFrame(animFrame);
+  }
+
+  // Follows the layout's choice; the pictures step aside while one runs.
+  function syncAnim() {
+    var want = layout && ANIM_SCENES[layout.wallAnim] ? layout.wallAnim : 'off';
+    if (want === anim.style) return false;
+    animStop();
+    anim.style = want;
+    var canvas = $('anim');
+    applyDarkening(layout && layout.darkening);
+    if (want === 'off') {
+      // Its pixels are given back too: a canvas keeps them while it has a
+      // size, even hidden. On a B8 (webOS 4.4.3), 9 MB of what Aquarium took
+      // stayed after it was switched off; given back, 6 MB did.
+      canvas.className = '';
+      canvas.width = canvas.height = 0;
+      canvas.style.background = '';
+      animSky = '';
+      anim.ctx = null;
+      anim.scene = null;
+      return true;
+    }
+    if (canvas.width !== ANIM_W) { canvas.width = ANIM_W; canvas.height = ANIM_H; }
+    if (!anim.ctx) anim.ctx = canvas.getContext('2d');
+    anim.scene = ANIM_SCENES[want].build();
+    anim.t = 0;
+    canvas.className = 'on';
+    animRun();
+    return true;
   }
 
   // ---------------------------------------------------------------- colours
@@ -4316,9 +5526,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   // The wallpaper's darkening, as a share of the scrim's own: 0 leaves the picture as it is.
+  // The moving backgrounds are dark already, so under one the scrim made for
+  // photographs is eased to this share of it.
+  var ANIM_SCRIM = 0.42;
   function applyDarkening(pct) {
     var n = typeof pct === 'number' ? pct : 100;
-    $('scrim').style.opacity = String(n / 100);
+    $('scrim').style.opacity = String(n / 100 * (anim.style === 'off' ? 1 : ANIM_SCRIM));
   }
 
   function applyColours(c) {
@@ -4373,9 +5586,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (r.layoutVersion) layoutVersion = r.layoutVersion;
       refreshPicture();
       clearTimeout(loadRetry);
-      wallAvailable = !!(r.wallpapers && r.wallpapers.available);
-      wallSlots = r.wallpapers && r.wallpapers.slots;
-      wallRevision = r.wallpapers && r.wallpapers.revision || '';
+      readWallpapers(r.wallpapers);
       updateWall();
       if (!state.arranging) render();
       if (firstLoad) { beat(); fadeIn(); }
@@ -4509,19 +5720,20 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     postJson('/api/home/beat', { focused: document.hasFocus(), visible: document.visibilityState || '', perf: takeTrace() }, function (r) {
       if (r && r.ok) {
         beatFails = 0;
+        // A custom launcher chosen in Glasshouse Home's place (lib/home-launcher).
+        if (r.launcher) return location.replace('/home/launcher/');
         if (r.trace && !trace) startTrace();
         else if (!r.trace && trace) stopTrace();
         var standalone = !!(data && data.supported && data.supported.standalone);
         // webOS 4: switched off, the standalone view closes itself, as Back does.
         if (r.enabled === false && standalone) return window.close();
         rest(!!r.covered);
+        renderWeather(r.weather || null);
         // webOS 4: two minutes behind another app, not the screen saver, the
         // view closes itself to give its memory back; Home opens it afresh.
         coveredSince = r.covered && !r.saver ? (coveredSince || Date.now()) : 0;
         if (standalone && coveredSince && Date.now() - coveredSince > CLOSE_BEHIND_MS) return window.close();
-        wallAvailable = !!(r.wallpapers && r.wallpapers.available);
-        wallSlots = r.wallpapers && r.wallpapers.slots;
-        wallRevision = r.wallpapers && r.wallpapers.revision || '';
+        readWallpapers(r.wallpapers);
         updateWall();
         $('fault').className = '';
         // The TV's setting can change while the view is open, so the heartbeat
@@ -4615,7 +5827,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   document.addEventListener('click', onClick);
   // Home pressed with the view already open reaches it as a relaunch.
   document.addEventListener('webOSRelaunch', function () { guideLaunch(); returned(); });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) darken(); else returned(); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { animStop(); darken(); }
+    else { returned(); animRun(); }
+  });
   window.addEventListener('pagehide', function () { if (player.open) closePlayer(); stopPreview(); });
 
   // Started dark where fading is chosen; in at the first catalogue, or before
@@ -4628,6 +5843,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // A cold start by the Guide key, too.
   guideLaunch(true);
   load();
+  refreshWeather();
   setInterval(beat, BEAT_MS);
   setInterval(function () {
     renderNow(); updateWall(); if (!document.hidden) refreshPicture();

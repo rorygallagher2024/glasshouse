@@ -2,6 +2,7 @@
  * test/test-dashboard-view.js - Unit tests for TV dashboard view builders
  */
 
+require('./fake-clock').install();
 var assert = require('assert');
 var fs = require('fs');
 var path = require('path');
@@ -255,6 +256,7 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
       clearTimeout(safetyTimer);
       console.log('  ✓ Promise and fetch polyfills support webOS 2 WebKit without native ES6');
       console.log('ALL test-dashboard-view.js assertions passed!\n');
+      process.exit(0);
     }
   }
 

@@ -19,6 +19,8 @@ var readJson = require('./util').readJson;
 var unlinkQuiet = require('./util').unlinkQuiet;
 var path = require('path');
 var execFile = require('child_process').execFile;
+// Replaced by init's exec in tests, which must never restart a computer's own services.
+var execFn = execFile;
 var screensavers = require('./screensavers');
 var names = require('./names');
 
@@ -124,6 +126,7 @@ function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
   configObj = opts.config;
+  execFn = opts.exec || execFile;
   if (lunaFn) {
     releaseProtected('airplay', 'AirPlay', function () {});
     releaseBrowser();
@@ -286,7 +289,7 @@ function setTileHidingEnabled(enabled, cb) {
         function mountTarget() {
           if (j >= tgts.length) return remountNext();
           var tgt = tgts[j++];
-          execFile('/bin/mount', ['--bind', ovr, tgt], { timeout: 4000 }, function () {
+          execFn('/bin/mount', ['--bind', ovr, tgt], { timeout: 4000 }, function () {
             mountTarget();
           });
         }
@@ -357,11 +360,11 @@ function startFailedDependents(cb) {
             'for u in ' + SAM_UNITS + '; do ' +
             'if systemctl is-failed --quiet "$u"; then ' +
             'echo "$u"; systemctl reset-failed "$u"; systemctl start --no-block "$u"; ' +
-            'fi; done; ' +
+            'fi; done; ' + samrescan.RESUBSCRIBE_HDMI_INPUTS + '; ' +
             'elif command -v initctl >/dev/null 2>&1; then ' +
             'initctl restart eim >/dev/null 2>&1 && echo "eim" || true; ' +
             'fi';
-  execFile('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err, out) {
+  execFn('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err, out) {
     var started = String(out || '').trim();
     if (started) console.log('apps: started again after sam restarted: ' + started.split(/\s+/).join(', '));
     cb();
@@ -508,13 +511,17 @@ function restartSamNow(cb) {
               'pkill -9 -x sam >/dev/null 2>&1 || true; ' +
               'fi';
     samRestartedThisRun = true;
-    execFile('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err) {
+    execFn('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err) {
       if (err) console.error('apps: restartSam error: ' + err.message);
       waitForSam(function () { startFailedDependents(function () { restoreApp(err); }); });
     });
 
     function restoreApp(err) {
       if (savedAppId && savedAppId !== 'com.webos.app.home' && savedAppId !== 'com.webos.app.screensaver' && lunaFn) {
+        if (!samrescan.hasHdmiSignal(savedAppId)) {
+          if (cb) cb(!err);
+          return;
+        }
         var attempts = 0;
         function tryRestore() {
           attempts++;
@@ -548,7 +555,7 @@ function restartSamNow(cb) {
 }
 
 function isMounted(filePath, cb) {
-  execFile('/bin/mount', [], { timeout: 4000 }, function (err, stdout) {
+  execFn('/bin/mount', [], { timeout: 4000 }, function (err, stdout) {
     if (err) return cb(false);
     var pat = ' ' + filePath + ' ';
     cb(String(stdout || '').indexOf(pat) !== -1);
@@ -556,7 +563,7 @@ function isMounted(filePath, cb) {
 }
 
 function umountFile(filePath, cb) {
-  execFile('/bin/umount', ['-l', filePath], { timeout: 4000 }, function () {
+  execFn('/bin/umount', ['-l', filePath], { timeout: 4000 }, function () {
     if (cb) cb();
   });
 }
@@ -933,7 +940,7 @@ function hideTile(appId, cb) {
       }
 
       var tgt = tgts[i++];
-      execFile('/bin/mount', ['--bind', ovr, tgt], { timeout: 4000 }, function (mountErr) {
+      execFn('/bin/mount', ['--bind', ovr, tgt], { timeout: 4000 }, function (mountErr) {
         if (mountErr) mountErrors.push(mountErr.message);
         mountNext();
       });

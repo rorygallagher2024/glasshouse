@@ -45,6 +45,8 @@ var gameModule = null;
 var powerModule = null;
 /** @type {typeof import('./remotebattery')} */
 var remoteBatteryModule = null;
+/** @type {typeof import('./resettime')} */
+var resettimeModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
 var alwaysReadyScreenOn = false;
@@ -220,6 +222,7 @@ function init(opts) {
   screensaversModule = opts.screensavers;
   gameModule = opts.game;
   powerModule = opts.power || null;
+  resettimeModule = opts.resettime || null;
   remoteBatteryModule = opts.remoteBattery || null;
   homeModule = opts.home || null;
   tvwebVersionStr = opts.tvwebVersion || '0.0.0';
@@ -714,6 +717,7 @@ function remoteInfo() {
   var file = readRemoteInfo();
   if (!file) return null;
   var level = remoteBatteryModule ? remoteBatteryModule.level(file.mac) : null;
+  var batteryDetails = remoteBatteryModule ? remoteBatteryModule.details(file) : {};
   var isConn = remoteBatteryModule ? remoteBatteryModule.connected() : false;
   var isBleRem = remoteBatteryModule ? remoteBatteryModule.isBle() : true;
   var sig = remoteBatteryModule && typeof remoteBatteryModule.signal === 'function'
@@ -724,6 +728,9 @@ function remoteInfo() {
     : null);
   return {
     battery: level !== null ? level : file.battery,
+    batteryUpdatedAt: batteryDetails.batteryUpdatedAt || null,
+    batterySource: level !== null ? batteryDetails.batterySource : file.battery !== null ? 'pairing' : null,
+    batteryStatus: file.battery !== null ? 'available' : batteryDetails.batteryStatus || 'waiting',
     model: file.model,
     mac: file.mac,
     firmware: fw,
@@ -1342,6 +1349,66 @@ function hdmiPorts() {
   return ports;
 }
 
+/*
+ * The HDMI port that carries ARC / eARC. Most LG TVs wire eARC to HDMI 2,
+ * but some series (such as the B4 on webOS 9 and 10) place it on HDMI 3.
+ * arccontroller/getARCEDIDInfo reports arcHDMIPort directly where supported;
+ * on older firmware (webOS 4) without that service, a connected CEC audio
+ * receiver on eim/getAllInputStatus identifies the port, falling back to 2.
+ */
+var hdmiEarc;
+var hdmiEarcWaiters = null;
+
+function detectedArcPort(reply) {
+  if (!reply || reply.returnValue !== true || reply.arcDevice !== true || !Array.isArray(reply.devices)) return null;
+  for (var i = 0; i < reply.devices.length; i++) {
+    var d = reply.devices[i];
+    if (!d || d.connected !== true || d.hdmiPlugIn === false) continue;
+    var port = Number(d.port);
+    if (!port || port < 1 || port > 4 || port !== Math.floor(port)) {
+      port = names.hdmiPort(names.hdmiKeyForPortId(d.id));
+    }
+    if (!port || port < 1 || port > 4) continue;
+    var subs = Array.isArray(d.subList) ? d.subList : [];
+    for (var s = 0; s < subs.length; s++) {
+      var sub = subs[s];
+      if (sub && sub.id === 'SIMPLINK' && sub.cecpDevType === 5 &&
+          (sub.portId === undefined || Number(sub.portId) === port)) {
+        return port;
+      }
+    }
+  }
+  return null;
+}
+
+function hdmiEarcPort(eimRes, cb) {
+  if (hdmiEarc !== undefined) return cb(hdmiEarc);
+  var detected = detectedArcPort(eimRes);
+  var ask = lunaCachedFn || lunaFn;
+  if (!ask) return cb(detected || 2);
+  if (hdmiEarcWaiters) return hdmiEarcWaiters.push(cb);
+  hdmiEarcWaiters = [cb];
+  var onReply = function (arcEdid) {
+    var port = arcEdid && arcEdid.returnValue !== false && Number(arcEdid.arcHDMIPort);
+    if (port && port >= 1 && port <= 4) {
+      hdmiEarc = port;
+    } else if (detected) {
+      hdmiEarc = detected;
+    } else if (arcEdid && arcEdid.returnValue !== false) {
+      hdmiEarc = 2;
+    }
+    var result = hdmiEarc || detected || 2;
+    var waiting = hdmiEarcWaiters;
+    hdmiEarcWaiters = null;
+    for (var i = 0; i < waiting.length; i++) waiting[i](result);
+  };
+  if (lunaCachedFn) {
+    lunaCachedFn('com.webos.service.arccontroller/getARCEDIDInfo', {}, 300000, onReply);
+  } else {
+    lunaFn('com.webos.service.arccontroller/getARCEDIDInfo', {}, onReply);
+  }
+}
+
 function hdmiInputs(cb) {
   if (!lunaFn) return cb({ ok: false, error: 'luna bus not available' });
   hdmiReceiverMap(function (receiverMap) {
@@ -1350,39 +1417,43 @@ function hdmiInputs(cb) {
     // another app is in front of it. Only the foreground app says whether the
     // input is on screen.
     lunaCachedFn('com.webos.applicationManager/getForegroundAppInfo', {}, 4000, function (fg) {
-      var onScreen = (fg && fg.appId) || null;
-      var devs = (res && res.devices) || [];
-      var ports = hdmiPorts();
-      var signalling = [];
-      for (var p = 0; p < ports.length; p++) if (ports[p].connected) signalling.push(ports[p]);
+      hdmiEarcPort(res, function (earcPort) {
+        var onScreen = (fg && fg.appId) || null;
+        var devs = (res && res.devices) || [];
+        var ports = hdmiPorts();
+        var signalling = [];
+        for (var p = 0; p < ports.length; p++) if (ports[p].connected) signalling.push(ports[p]);
 
-      var inputs = [];
-      for (var d = 0; d < devs.length; d++) {
-        var key = names.hdmiKeyForPortId(devs[d].id);
-        if (!key) continue;
-        var hasCec = devs[d].lastUniqueId !== undefined &&
-                     devs[d].lastUniqueId !== 255 &&
-                     devs[d].lastUniqueId !== -1;
-        var seen = !!(hasCec || devs[d].hdmiPlugIn || devs[d].connected || (devs[d].subCount > 0));
-        // HDMI_2 is com.webos.app.hdmi2, for firmware that leaves appId out.
-        var appId = devs[d].appId || names.inputAppId(key);
-        inputs.push({
-          id: devs[d].id,
-          port: devs[d].port,
-          label: devs[d].label || devs[d].id,
-          appId: appId,
-          active: !!devs[d].activate && appId === onScreen,
-          deviceSeen: seen,
-          signal: null
-        });
-      }
-      for (var k = 0; k < inputs.length; k++) {
-        var receiver = receiverMap[names.hdmiPort(names.hdmiKeyForPortId(inputs[k].id))];
-        for (var r = 0; r < signalling.length; r++) {
-          if (signalling[r].port === receiver) inputs[k].signal = signalling[r];
+        var inputs = [];
+        for (var d = 0; d < devs.length; d++) {
+          var key = names.hdmiKeyForPortId(devs[d].id);
+          if (!key) continue;
+          var hasCec = devs[d].lastUniqueId !== undefined &&
+                       devs[d].lastUniqueId !== 255 &&
+                       devs[d].lastUniqueId !== -1;
+          var seen = !!(hasCec || devs[d].hdmiPlugIn || devs[d].connected || (devs[d].subCount > 0));
+          // HDMI_2 is com.webos.app.hdmi2, for firmware that leaves appId out.
+          var appId = devs[d].appId || names.inputAppId(key);
+          var portNum = names.hdmiPort(key);
+          inputs.push({
+            id: devs[d].id,
+            port: devs[d].port,
+            label: devs[d].label || devs[d].id,
+            appId: appId,
+            active: !!devs[d].activate && appId === onScreen,
+            deviceSeen: seen,
+            signal: null,
+            earc: portNum === earcPort || devs[d].port === earcPort
+          });
         }
-      }
-      cb({ ok: true, inputs: inputs, ports: ports });
+        for (var k = 0; k < inputs.length; k++) {
+          var receiver = receiverMap[names.hdmiPort(names.hdmiKeyForPortId(inputs[k].id))];
+          for (var r = 0; r < signalling.length; r++) {
+            if (signalling[r].port === receiver) inputs[k].signal = signalling[r];
+          }
+        }
+        cb({ ok: true, inputs: inputs, ports: ports, earcPort: earcPort });
+      });
     });
   });
   });
@@ -1690,6 +1761,7 @@ function clearCache() {
   lastAppsScan = 0;
   lastLightSensorProbe = 0;
   CPU_PRESENT_CACHE = null;
+  hdmiEarc = undefined;
 }
 
 /*
@@ -1914,6 +1986,8 @@ function collectStats(cb) {
       !!(screensaversModule && screensaversModule.launchedShowing());
     out.screensaverMode = screensaversModule ? screensaversModule.screensaverMode() : 'stock';
     out.screensaverLevel = screensaversModule ? screensaversModule.screensaverLevel() : 'dim';
+    out.screensaverBrightness = screensaversModule && screensaversModule.screensaverBrightness ? screensaversModule.screensaverBrightness() : undefined;
+    out.screensaverChoice = screensaversModule && screensaversModule.screensaverChoice ? screensaversModule.screensaverChoice() : undefined;
 
   // The whole category, for the sleep timer and LG's On and Off Timers.
   lunaCachedFn('com.webos.service.settings/getSystemSettings',
@@ -1979,6 +2053,9 @@ function collectStats(cb) {
         start: clockTime(gs.alwaysOnDisableStartHour, gs.alwaysOnDisableStartMinute),
         end: clockTime(gs.alwaysOnDisableEndHour, gs.alwaysOnDisableEndMinute)
       };
+      if (resettimeModule && resettimeModule.supported()) {
+        out.nightlyRefresh = resettimeModule.enabled();
+      }
     }
 
   // LG's Always Ready, a separate setting from Always-on: 'off', 'allEnabled'
@@ -2402,6 +2479,7 @@ module.exports = {
   appStorage: appStorage,
   hdmiPorts: hdmiPorts,
   hdmiInputs: hdmiInputs,
+  hdmiEarcPort: hdmiEarcPort,
   collectProcesses: collectProcesses,
   parseProcesses: parseProcesses,
   cpuProcessRows: cpuProcessRows,

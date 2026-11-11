@@ -12,7 +12,8 @@
  * worker enforced.
  *
  * Under /var/lib/tvweb/iptv/, 0700, every file 0600:
- *   config.json        playlists, their logins, refresh state      (here)
+ *   config.json        playlists, their logins, refresh state, whether
+ *                      live TV may pause (timeshift)                (here)
  *   selection.json     the lineup, the row's favourites, renames    (here, lib/iptv-lineup)
  *   <pl>/current.json  which candidate of each kind is published     (here)
  *   <pl>/snap-*        a playlist read: meta.json, groups.json, index.tsv, ... (worker)
@@ -36,6 +37,7 @@ var path = require('path');
 var crypto = require('crypto');
 var lineupLib = require('./iptv-lineup');
 var memory = require('./iptv-memory');
+var timeshift = require('./iptv-timeshift');
 var spawn = require('child_process').spawn;
 var execFile = require('child_process').execFile;
 
@@ -180,6 +182,7 @@ function loadState() {
   try { dir = fs.realpathSync(dir); } catch (e) {}
   var c = readSmall(file('config.json'), MB);
   config = { playlists: c && isArray(c.playlists) ? c.playlists.filter(validStored) : [] };
+  if (c && c.timeshift === true) config.timeshift = true;
   selection = lineupLib.normalise(readSmall(file('selection.json'), 4 * MB));
   current = {};
   cache = { meta: {}, added: {}, nownext: {}, groups: {} };
@@ -209,6 +212,7 @@ function refreshCache(id) {
   var cur = current[id] || {};
   cache.meta[id] = cur.snap ? readSmall(path.join(plDir(id), cur.snap, 'meta.json'), 16 * 1024) : null;
   cache.added[id] = cur.sel ? readSmall(path.join(plDir(id), cur.sel, 'added.json'), ADDED_MAX) : null;
+  markProtected(id);
   var nn = cur.nownext ? path.join(plDir(id), cur.nownext, 'nownext.json') : cur.guide ? path.join(plDir(id), cur.guide, 'nownext.json') : null;
   cache.nownext[id] = nn ? readSmall(nn, NOWNEXT_MAX) : null;
   if (cache.groups[id] && cache.groups[id].snap !== cur.snap) delete cache.groups[id];
@@ -1025,7 +1029,7 @@ function lineupDoc() {
 function rowStatus() {
   var lu = getLineup();
   var out = { count: lu.favourites.length, lineup: lu.channels.length, lineupRevision: lineupRevision, playlists: config.playlists.length,
-    label: null, state: null, since: null };
+    label: null, state: null, since: null, timeshift: config.timeshift === true };
   var used = {};
   lu.channels.forEach(function (c) { used[c.pl] = true; });
   var ids = Object.keys(used);
@@ -1095,6 +1099,7 @@ function status() {
     disk: lastDiskCheck.ok ? null : { free: lastDiskCheck.free, need: lastDiskCheck.need },
     memory: { mode: memoryMode(), fallback: !!(lastPlan && lastPlan.fallback),
       available: memoryRead.available, needed: lastPlan ? lastPlan.needed : null },
+    timeshift: { on: config.timeshift === true, stick: timeshift.stickNow() },
     revision: revision
   };
 }
@@ -1128,6 +1133,7 @@ function playlistsAction(body, cb) {
       if (!next.server) return cb({ ok: false, error: 'server' });
       if (!next.user || !next.pass) return cb({ ok: false, error: 'login' });
       if (!label) next.label = hostOf(next.server);
+      if (p && p.ts) next.ts = p.ts;
     }
     if (body.guide !== undefined) {
       next.guide = body.guide === '' || body.guide === null ? '' : httpUrl(body.guide);
@@ -1336,9 +1342,112 @@ function streamUrl(id, key) {
     var url = String(fs.readFileSync(f, 'utf8')).replace(/\s+$/, '');
     if (!/^https?:\/\//i.test(url)) return null;
     var account = cache.meta[id] && cache.meta[id].account;
+    // An Xtream panel serves a live channel as HLS or as MPEG-TS, by the URL's
+    // extension; the owner can choose either for a channel (setOutput).
+    var switchable = p.kind === 'xtream' && /\.(m3u8|ts)(\?|$)/i.test(url) &&
+      !(account && isArray(account.formats) && (account.formats.indexOf('m3u8') === -1 || account.formats.indexOf('ts') === -1));
+    if (switchable && isArray(p.ts) && p.ts.indexOf(key) !== -1) url = url.replace(/\.m3u8(\?|$)/i, '.ts$1');
     return { url: url, format: /\.m3u8(\?|$)/i.test(url) ? 'hls' : /\.ts(\?|$)/i.test(url) ? 'ts' : 'unknown',
-      account: !!account, maxConnections: account ? account.maxConnections : null };
+      account: !!account, maxConnections: account ? account.maxConnections : null, switchable: switchable };
   } catch (e) { return null; }
+}
+
+/*
+ * DRM a playlist does not declare. A channel whose stream would not play is
+ * checked once: its HLS playlist and its first variant's are read for a key
+ * <video> cannot use, and one found is kept in protected.json beside the
+ * playlist's snapshots, so the lineup marks it as DRM from then on. RTÉ's
+ * channels in a public list carried FairPlay (com.apple.streamingkeydelivery,
+ * skd://) only in each variant's playlist, never in the M3U or the master.
+ */
+var CHECK_BYTES = 256 * 1024;
+var CHECK_MS = 8000;
+var CHECK_AGAIN_MS = HOUR;
+var checkedAt = {};
+
+function protectedFile(id) { return path.join(plDir(id), 'protected.json'); }
+
+function protectedKeys(id) {
+  var list = readSmall(protectedFile(id), 64 * 1024);
+  return isArray(list) ? list.filter(function (k) { return typeof k === 'string'; }) : [];
+}
+
+function markProtected(id) {
+  var added = cache.added[id];
+  if (!added || !added.channels) return;
+  protectedKeys(id).forEach(function (k) { if (added.channels[k]) added.channels[k].drm = true; });
+}
+
+// An #EXT-X-KEY or #EXT-X-SESSION-KEY that the TV's player cannot use: any
+// method but AES-128, or a key system other than plain identity.
+function hlsProtected(text) {
+  var lines = String(text || '').split(/\r?\n/);
+  for (var i = 0; i < lines.length; i++) {
+    var m = /^#EXT-X-(?:SESSION-)?KEY:(.*)$/.exec(lines[i]);
+    if (!m) continue;
+    var method = (/(?:^|,)METHOD=([^,]*)/.exec(m[1]) || [])[1] || '';
+    var format = ((/(?:^|,)KEYFORMAT="([^"]*)"/.exec(m[1]) || [])[1] || 'identity').toLowerCase();
+    if (method === 'NONE') continue;
+    if (method === 'AES-128' && format === 'identity') continue;
+    return true;
+  }
+  return false;
+}
+
+// The first variant of a master playlist, resolved against the master's URL.
+function firstVariant(text, base) {
+  var lines = String(text || '').split(/\r?\n/), inf = false;
+  for (var i = 0; i < lines.length; i++) {
+    var l = lines[i].replace(/^\s+|\s+$/g, '');
+    if (/^#EXT-X-STREAM-INF:/.test(l)) { inf = true; continue; }
+    if (inf && l && l.charAt(0) !== '#') {
+      if (/^https?:\/\//i.test(l)) return l;
+      if (l.charAt(0) === '/') return (/^(https?:\/\/[^\/]+)/i.exec(base) || [])[1] + l;
+      return base.replace(/[?#].*$/, '').replace(/[^\/]*$/, '') + l;
+    }
+  }
+  return null;
+}
+
+// A small text over the curl or wget the jobs use; cb(text or null).
+function fetchText(url, cb) {
+  var bins = clientsFn().filter(function (b) { try { return fs.statSync(b).isFile(); } catch (e) { return false; } });
+  if (!bins.length || !/^https?:\/\//i.test(url)) return cb(null);
+  var bin = bins[0], ua = 'Glasshouse/' + version;
+  var args = /wget$/.test(bin) ? ['-q', '-T', '8', '-U', ua, '-O', '-', '--', url]
+    : ['-fsSL', '--proto', '=http,https', '--proto-redir', '=http,https', '--max-time', '8', '-A', ua, '--', url];
+  execFile(bin, args, { timeout: CHECK_MS + 2000, maxBuffer: CHECK_BYTES, encoding: 'utf8' }, function (err, out) {
+    cb(err ? null : String(out));
+  });
+}
+
+/* Whether a channel that would not play is protected; cb({ ok, protected }). */
+function checkStream(id, key, cb) {
+  var s = streamUrl(id, key);
+  if (!s) return cb({ ok: true, protected: false });
+  var at = id + ':' + key;
+  if (checkedAt[at] && nowMs() - checkedAt[at] < CHECK_AGAIN_MS) return cb({ ok: true, protected: false });
+  checkedAt[at] = nowMs();
+  function found() {
+    var list = protectedKeys(id);
+    if (list.indexOf(key) === -1) list.push(key);
+    try { writeSecret(protectedFile(id), list); } catch (e) {}
+    console.log('iptv: ' + key + ' on ' + id + ' is protected (DRM), marked');
+    markProtected(id);
+    lineupChanged();
+    changed();
+    cb({ ok: true, protected: true });
+  }
+  fetchText(s.url, function (master) {
+    if (master === null) return cb({ ok: true, protected: false });
+    if (hlsProtected(master)) return found();
+    var v = firstVariant(master, s.url);
+    if (!v) return cb({ ok: true, protected: false });
+    fetchText(v, function (media) {
+      if (media !== null && hlsProtected(media)) return found();
+      cb({ ok: true, protected: false });
+    });
+  });
 }
 
 // A schedule shard for the guide grid, piped to Home unread.
@@ -1349,11 +1458,104 @@ function schedulePath(id, key, day) {
   return fs.existsSync(f) ? f : null;
 }
 
+/*
+ * The URL Home plays a channel from: the provider's, or, for a channel played
+ * full screen while live TV may pause, the recording's on the TV
+ * (lib/iptv-timeshift). MPEG-TS only: an HLS channel's player fetches its
+ * own segments. A preview of the channel being recorded plays the recording
+ * too; any other channel's play ends it. cb(stream or null).
+ */
+function playUrl(id, key, full, cb) {
+  var s = streamUrl(id, key);
+  if (!s) return cb(null);
+  var at = id + ':' + key;
+  timeshift.release(at);
+  var local = timeshift.current(at);
+  if (local) { s.url = local; s.timeshift = true; return cb(s); }
+  if (!full || config.timeshift !== true || s.format !== 'ts') return cb(s);
+  timeshift.open(at, s.url, function (r) {
+    if (r) { s.url = r.url; s.timeshift = true; }
+    cb(s);
+  });
+}
+
+// How far behind live the recording of a channel plays, and the room left; null without one.
+function timeshiftStats(id, key) { return timeshift.stats(id + ':' + key); }
+
+/*
+ * Whether live Internet TV may pause, recorded to a USB stick. Off ends a
+ * recording at once and takes its files.
+ */
+function setTimeshift(body) {
+  if (!body || typeof body.on !== 'boolean') return { ok: false, error: 'on' };
+  var before = config.timeshift;
+  if (body.on) config.timeshift = true;
+  else delete config.timeshift;
+  try { saveConfig(); } catch (e) { config.timeshift = before; return { ok: false, error: 'save' }; }
+  if (!body.on) timeshift.stop();
+  console.log('iptv: live TV pause ' + (body.on ? 'on' : 'off'));
+  changed();
+  return { ok: true, on: body.on };
+}
+
+// The stick for the dashboard, looked for again: cb({ ok, on, stick }).
+function timeshiftStatus(cb) {
+  timeshift.stick(function (stick) { cb({ ok: true, on: config.timeshift === true, stick: stick }); });
+}
+
 function lease(on, full) {
   leaseUntil = on ? nowMs() + LEASE_MS : 0;
   fullUntil = on && full ? leaseUntil : 0;
+  timeshift.leased(leaseUntil);
   if (!on) pump();
   return { ok: true, until: leaseUntil };
+}
+
+/*
+ * A channel of an Xtream playlist played as MPEG-TS rather than HLS, or back:
+ * one long download with no playlist to go stale, for a channel whose HLS
+ * keeps stopping. Kept with the playlist, so it lasts across refreshes.
+ */
+var TS_MAX = 2000;
+function setOutput(body) {
+  var p = playlist(body && body.pl), key = body && body.key;
+  if (!p || p.kind !== 'xtream') return { ok: false, error: 'no-playlist' };
+  if (typeof key !== 'string' || !/^[a-z][0-9a-z]{1,24}$/.test(key)) return { ok: false, error: 'key' };
+  var list = isArray(p.ts) ? p.ts.filter(function (k) { return k !== key; }) : [];
+  if (body.output === 'ts') {
+    if (list.length >= TS_MAX) return { ok: false, error: 'too-many' };
+    list.push(key);
+  }
+  var before = p.ts;
+  p.ts = list;
+  try { saveConfig(); } catch (e) { p.ts = before; return { ok: false, error: 'save' }; }
+  console.log('iptv: ' + p.id + ':' + key + ' plays as ' + (body.output === 'ts' ? 'MPEG-TS' : 'HLS'));
+  return { ok: true, output: body.output === 'ts' ? 'ts' : 'hls' };
+}
+
+/*
+ * What Home saw of a stream, a line each in the log: how long it took to
+ * start, each stall or error, each reconnect and whether it came back. At
+ * most 120 an hour, so a stream failing in a loop cannot fill the log.
+ */
+var EVENTS_PER_HOUR = 120;
+var EVENT_FIELDS = ['why', 'after', 'lostFor', 'still', 'ahead', 'gap', 'wait', 'tries', 'code', 'state', 'net', 'size', 'dropped', 'format'];
+var events = { hour: 0, count: 0 };
+function streamEvent(body) {
+  var name = body && str(body.event, 20);
+  if (!name || !/^[a-z-]+$/.test(name)) return { ok: false, error: 'event' };
+  var hour = Math.floor(nowMs() / HOUR);
+  if (hour !== events.hour) { events.hour = hour; events.count = 0; }
+  if (++events.count > EVENTS_PER_HOUR) return { ok: true };
+  var key = str(body.key, 25), p = playlist(str(body.pl, 20));
+  var parts = ['iptv: stream ' + name + ' ' + (p ? p.id : '-') + ':' + (/^[a-z][0-9a-z]{1,24}$/.test(key) ? key : '-') + (body.full ? ' full' : ' preview')];
+  EVENT_FIELDS.forEach(function (k) {
+    var v = body[k];
+    if (typeof v === 'number' && isFinite(v)) parts.push(k + '=' + Math.round(v * 10) / 10);
+    else if (typeof v === 'string' && /^[0-9A-Za-z._-]{1,20}$/.test(v)) parts.push(k + '=' + v);
+  });
+  console.log(parts.join(' '));
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------- lifecycle
@@ -1361,7 +1563,8 @@ function lease(on, full) {
 /**
  * @param {{ stateDir?: string, launch?: function(function(): void): void, clients?: function(): string[],
  *   version?: string, nowMs?: function(): number, onChange?: function(): void, catchupMs?: number,
- *   procDir?: string, nodePath?: string }} opts
+ *   procDir?: string, nodePath?: string, usbRoot?: string, mountsFile?: string, timeshiftChunkBytes?: number,
+ *   timeshiftMaxBytes?: number, timeshiftSpareBytes?: number, timeshiftMinBytes?: number }} opts
  */
 function init(opts) {
   opts = opts || {};
@@ -1375,6 +1578,9 @@ function init(opts) {
   if (opts.procDir) procDir = opts.procDir;
   if (opts.nodePath) nodePath = opts.nodePath;
   niceBin = findNice();
+  timeshift.init({ launch: launchFn, clients: clientsFn, nodePath: nodePath, nowMs: nowMs, usbRoot: opts.usbRoot,
+    mountsFile: opts.mountsFile, chunkBytes: opts.timeshiftChunkBytes, maxBytes: opts.timeshiftMaxBytes,
+    spareBytes: opts.timeshiftSpareBytes, minBytes: opts.timeshiftMinBytes });
 }
 
 /*
@@ -1397,6 +1603,7 @@ function start() {
   if (started) return;
   started = true;
   try { loadState(); } catch (e) { console.error('iptv: could not read its state: ' + e.message); }
+  if (config.timeshift === true) timeshift.clean();
   catchUp();
   resumeOwnerWork();
   tickTimer = setInterval(tick, MINUTE);
@@ -1415,12 +1622,16 @@ function stop() {
   retryTimer = null;
   ['background', 'interactive'].forEach(function (lane) { if (running[lane]) running[lane].cancel(); });
   if (monitorTimer) { clearInterval(monitorTimer); monitorTimer = null; }
+  timeshift.stop();
 }
 
 // The TV woke: the schedule may have slept through its times.
 function woke() { if (started) catchUp(); }
 
 module.exports = {
+  checkStream: checkStream,
+  hlsProtected: hlsProtected,
+  firstVariant: firstVariant,
   init: init,
   start: start,
   stop: stop,
@@ -1440,8 +1651,14 @@ module.exports = {
   nowNext: nowNext,
   logoPath: logoPath,
   streamUrl: streamUrl,
+  playUrl: playUrl,
+  timeshiftStats: timeshiftStats,
+  setTimeshift: setTimeshift,
+  timeshiftStatus: timeshiftStatus,
   schedulePath: schedulePath,
   lease: lease,
+  streamEvent: streamEvent,
+  setOutput: setOutput,
   // Home is showing a stream full screen: lib/idlesaver leaves the screen saver held off.
   watching: function () { return nowMs() < fullUntil; },
   revision: function () { return revision; },

@@ -42,8 +42,10 @@ function togglePiccap() { sendCommand('piccap', flip('btn_piccap')); }
 function toggleHuesync() { sendCommand('huesync', flip('btn_huesync')); }
 function toggleWol() { sendCommand('wakeOnLan', flip('btn_wol')); }
 function toggleDeviceDetection() { sendCommand('deviceDetection', flip('btn_devdetect')); }
+function toggleDeviceScans() { sendCommand('deviceScans', flip('btn_devscans')); }
 function toggleAlwaysReady() { sendCommand('alwaysReady', flip('btn_ar')); }
 function toggleAlwaysReadyScreen() { sendCommand('alwaysReadyScreen', flip('btn_ars')); }
+function toggleNightlyRefresh() { sendCommand('nightlyRefresh', flip('btn_nightlyrefresh')); }
 
 function applyOptimistic(action, value) {
   if (action === 'volume') {
@@ -187,6 +189,10 @@ function applyOptimistic(action, value) {
     const on = value === 'on' || value === true;
     setLease('deviceDetection', on);
     advPill('devdetect', 'btn_devdetect', on);
+  } else if (action === 'deviceScans') {
+    const on = value === 'on' || value === true;
+    setLease('deviceScans', on);
+    advPill('devscans', 'btn_devscans', on);
   }
 }
 

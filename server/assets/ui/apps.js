@@ -179,6 +179,7 @@ function renderAppsPanel() {
   renderSavedPages(d);
 
   renderPreload(d);
+  renderAppDns(d);
   renderQuickAccess(d);
   renderRemoteKeys(d);
 
@@ -372,7 +373,7 @@ window.addEventListener('resize', () => {
 // inputs and the apps.
 const RK_GROUPS = [
   { id: 'streaming', title: () => t('apps.remoteKeys.streaming', 'Streaming buttons'),
-    keys: ['netflix', 'amazon', 'disneyplus', 'rakutentv', 'lgchannels', 'hulu', 'iplayer', 'freeviewplay', 'slingtv'] },
+    keys: ['netflix', 'amazon', 'disneyplus', 'rakutentv', 'lgchannels', 'hulu', 'iplayer', 'freeviewplay', 'slingtv', 'globoplay', 'shahid'] },
   { id: 'assistant', title: () => t('apps.remoteKeys.assistant', 'Voice assistant buttons'), keys: ['voice', 'alexa', 'googleassistant'] },
   { id: 'colour', title: () => t('apps.remoteKeys.colour', 'Color keys'), keys: ['red', 'green', 'yellow', 'blue'] },
   // Anything else, including keys a later server offers.
@@ -404,6 +405,65 @@ function rkDoes(k, kindOf) {
   return `${icon}<span translate="no">${esc(k.opens)}</span>`;
 }
 
+/*
+ * The inputs the input bar shows, once a key opens it: Glasshouse Home's
+ * Inputs row, which the bar follows, here too so it can be arranged with
+ * Glasshouse Home switched off. Each change is saved to that same layout.
+ */
+const INPUT_BAR = 'com.tvweb.inputbar';
+let rkBarSaving = false;
+
+async function renderInputBarInputs(rk, writable) {
+  const box = q('apps-rk-bar');
+  if (!box) return;
+  const used = rk.keys.some(k => k.action === 'open' && k.id === INPUT_BAR);
+  box.hidden = !used;
+  if (!used || rkBarSaving) return;
+  let cat;
+  try { cat = await homeGet('/api/home/catalogue'); } catch (e) { box.hidden = true; return; }
+  const layout = cat.layout || {};
+  const hidden = (layout.hidden && layout.hidden.dev) || [];
+  const byId = {};
+  (cat.devices || []).forEach(d => { byId[d.id] = d; });
+  const order = (cat.order && cat.order.dev) || (cat.devices || []).map(d => d.id);
+  const pill = (on, label, attrs) => `<button type="button" class="pill ${on ? 'good' : 'idle'}" ${writable ? '' : 'disabled'} ${attrs}>${esc(label)}</button>`;
+  const rows = order.filter(id => byId[id] && !byId[id].tuner).map(id => {
+    const d = byId[id], shown = hidden.indexOf(id) === -1;
+    return `<div class="prot-row"><div class="prot-main">
+        <div class="prot-title" translate="no">${esc(d.name)}</div>
+        <div class="prot-desc">${esc(t('home.dev.port', 'HDMI {port}', { port: d.port }))}${d.unused ? ' · ' + esc(t('home.dev.unused', 'Nothing connected')) : ''}</div></div>
+      <div class="prot-status">${pill(shown, shown ? t('home.shown', 'Shown') : t('home.hidden', 'Hidden'),
+        `data-dev="${esc(id)}" onclick="inputBarToggleInput(this)"`)}</div></div>`;
+  });
+  const unusedOff = layout.hideUnused === true;
+  rows.push(`<div class="prot-row"><div class="prot-main">
+      <div class="prot-title">${esc(t('apps.inputBar.hideUnused', 'Hide inputs with nothing connected'))}</div></div>
+    <div class="prot-status">${pill(unusedOff, unusedOff ? t('common.on', 'On') : t('common.off', 'Off'),
+      `onclick="inputBarToggleUnused(${unusedOff ? 'false' : 'true'})"`)}</div></div>`);
+  q('apps-rk-bar-list').innerHTML = rows.join('');
+}
+
+async function inputBarSave(patch) {
+  rkBarSaving = true;
+  try { await homePost('/api/home/layout', patch); } catch (e) { showErr(e.message); }
+  rkBarSaving = false;
+  if (rkData) renderInputBarInputs(rkData, rkWritable);
+}
+
+async function inputBarToggleInput(btn) {
+  btn.disabled = true;
+  let cat;
+  try { cat = await homeGet('/api/home/catalogue'); } catch (e) { return showErr(e.message); }
+  const id = btn.dataset.dev;
+  const hidden = ((cat.layout && cat.layout.hidden && cat.layout.hidden.dev) || []).filter(x => x !== id);
+  if (btn.classList.contains('good')) hidden.push(id);
+  inputBarSave({ hidden: { dev: hidden } });
+}
+
+function inputBarToggleUnused(on) {
+  inputBarSave({ hideUnused: on });
+}
+
 function renderRemoteKeys(d) {
   const disc = q('disc-remotekeys');
   const list = q('apps-rk-list');
@@ -419,6 +479,7 @@ function renderRemoteKeys(d) {
   }
   rkData = rk;
   rkWritable = !!d.writable;
+  renderInputBarInputs(rk, rkWritable);
   // Left alone while a choice is being made in it.
   if (!list || (rkOpen && list.contains(document.activeElement))) return;
   const kinds = {};
@@ -940,6 +1001,86 @@ async function togglePreload(appId, makeOff) {
   }
   if (appsData) renderPreload(appsData);
   if (error) alert(t('apps.preload.failed', 'Could not change it: {error}', { error }));
+}
+
+// DNS servers of an app's own (lib/appdns.js): a row per sandboxed app, its
+// servers edited in place as a saved page's address is. appDns is null where
+// the TV has no app sandboxes, and the section stays hidden.
+function renderAppDns(d) {
+  const disc = q('disc-appdns');
+  const apps = d.appDns;
+  if (!disc) return;
+  disc.hidden = !apps;
+  if (!apps) return;
+  const own = a => a.servers.length > 0 || !!a.doh;
+  const numSet = apps.filter(own).length;
+  q('apps-dns-summary').textContent = !numSet ? t('apps.dns.noneSet', 'None set')
+    : numSet === 1 ? t('apps.dns.setOne', '1 app with its own') : t('apps.dns.set', '{n} apps with their own', { n: numSet });
+  if (!apps.length) {
+    q('apps-dns-list').innerHTML = `<div class="sub" style="padding:16px 0">${esc(t('apps.dns.noApps', 'No sandboxed app has been opened yet.'))}</div>`;
+    return;
+  }
+  q('apps-dns-list').innerHTML = apps.map(a => {
+    const id = esc(a.id);
+    // A DNS-over-HTTPS address with the last failure to reach it, if any.
+    const uses = a.doh ? esc(a.doh)
+      : a.servers.length ? esc(a.servers.join(', ')) : esc(t('apps.dns.tvOwn', 'Using TV\'s DNS'));
+    const fail = a.doh && a.dohError ? t('apps.dns.dohFailing', 'no answer: {error}', { error: a.dohError }) : '';
+    const err = fail ? `<div class="err-note" role="alert">${esc(fail.charAt(0).toUpperCase() + fail.slice(1) + '.')}</div>` : '';
+    return `<div class="prot-row" id="dns-${id}">
+      <div class="prot-main">
+        <div class="prot-title" translate="no">${esc(a.title)}</div>
+        <div class="prot-desc">${uses}</div>${err}
+      </div>
+      <div class="prot-status page-acts">
+        <button type="button" class="pill idle" onclick="editAppDns('${jsq(a.id)}')" ${d.writable ? '' : 'disabled'}>${esc(t('apps.dns.change', 'Change'))}</button>
+        ${own(a) ? `<button type="button" class="pill bad" onclick="saveAppDns('${jsq(a.id)}', '')" ${d.writable ? '' : 'disabled'}>${esc(t('apps.dns.reset', 'Use the TV\'s DNS'))}</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editAppDns(appId) {
+  const a = ((appsData && appsData.appDns) || []).find(x => x.id === appId);
+  const row = q('dns-' + appId);
+  if (!a || !row) return;
+  const jid = jsq(appId);
+  row.innerHTML = `<div class="prot-main">
+      <div class="prot-title" translate="no">${esc(a.title)}</div>
+      <form class="toast-form page-edit" onsubmit="event.preventDefault();saveAppDns('${jid}', this.querySelector('input').value)">
+        <input type="text" id="dns-in-${esc(appId)}" maxlength="300" autocomplete="off" spellcheck="false"
+          placeholder="${esc(t('apps.dns.placeholder', 'Up to 3 addresses, such as 1.1.1.1, 1.0.0.1, or one https:// address'))}" value="${esc(a.doh || a.servers.join(', '))}"
+          aria-label="${esc(t('apps.dns.servers', 'DNS servers'))}" onkeydown="if(event.key==='Escape')renderAppDns(appsData)">
+        <button type="submit">${esc(t('apps.pages.save', 'Save'))}</button>
+        <button type="button" onclick="renderAppDns(appsData)">${esc(t('common.cancel', 'Cancel'))}</button>
+      </form>
+      <div class="err-note" id="dns-msg-${esc(appId)}" role="alert"></div>
+    </div>`;
+  q('dns-in-' + appId).focus();
+}
+
+// Empty servers put the app back on the TV's DNS.
+async function saveAppDns(appId, servers) {
+  const msg = q('dns-msg-' + appId);
+  if (msg) msg.textContent = '';
+  try {
+    const r = await fetch(api('/api/appdns'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: appId, servers })
+    });
+    const j = await r.json().catch(() => ({}));
+    // A refused address leaves the field open with the reason beside it.
+    if (!r.ok || !j.ok) {
+      const e = j.error || t('apps.pages.saveFailed', 'Could not save it');
+      const text = e.charAt(0).toUpperCase() + e.slice(1) + '.';
+      if (msg) msg.textContent = text; else showErr(text);
+      return;
+    }
+  } catch (e) {
+    if (msg) msg.textContent = e.message; else showErr(e.message);
+    return;
+  }
+  loadApps();
 }
 
 async function toggleService(serviceId, makeDisabled) {

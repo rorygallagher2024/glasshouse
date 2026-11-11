@@ -1,8 +1,4 @@
 {
-  "home.alwaysShown": {
-    "text": "Immer sichtbar",
-    "from": "Always shown"
-  },
   "home.arrange.done": {
     "text": "Fertig",
     "from": "Done"
@@ -254,10 +250,6 @@
   "home.earlier": {
     "text": "Früher",
     "from": "Earlier"
-  },
-  "home.experimental": {
-    "text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home ersetzt LGs Startbildschirm durch einen eigenen. Wenn etwas nicht stimmt, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder drücken Sie „LG Home verwenden“, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.",
-    "from": "Experimental: it may not always work as expected. Glasshouse Home replaces LG's Home screen with Glasshouse's own. If it misbehaves, hold Home on the remote for a second to open LG's Home, or press Use LG Home to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."
   },
   "home.fault.desc": {
     "text": "Glasshouse Home kommt zurück, sobald es antwortet. Bleibt es stumm, kommt nach wenigen Minuten LGs Home zurück.",
@@ -543,14 +535,6 @@
     "text": "Die zuletzt geöffnete Kachel steht vorn, egal ob von Glasshouse Home aus geöffnet oder nicht. Noch nicht geöffnete Kacheln folgen in der Reihenfolge dieser Reihe.",
     "from": "The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order."
   },
-  "home.switchOff": {
-    "text": "LG Home verwenden",
-    "from": "Use LG Home"
-  },
-  "home.switchOn": {
-    "text": "Glasshouse Home verwenden",
-    "from": "Use Glasshouse Home"
-  },
   "home.title": {
     "text": "Glasshouse Home",
     "from": "Glasshouse Home"
@@ -578,10 +562,6 @@
   "home.wall.slotNight": {
     "text": "Nacht",
     "from": "Night"
-  },
-  "home.wall.title": {
-    "text": "Hintergrundbild",
-    "from": "Wallpaper"
   },
   "home.wall.tooLarge": {
     "text": "Das aufbereitete Bild ist zu groß. Wähle ein kleineres.",
@@ -710,6 +690,8 @@
  "home.tv.drm": {"text": "Geschützt (DRM): hier nicht abspielbar", "from": "Protected (DRM): can’t play here"},
  "home.tv.headers": {"text": "Benötigt einen Player, der eigene HTTP-Header sendet", "from": "Needs a player that sends its own headers"},
  "home.tv.format": {"text": "Ein Stream, den dieser Fernseher nicht öffnen kann", "from": "A stream this TV can’t open"},
+ "home.tv.reconnecting": {"text": "Verbindung mit {name} wird wiederhergestellt", "from": "Reconnecting to {name}"},
+ "home.tv.playAs": {"text": "Gelb: als {format} abspielen", "from": "Yellow: play as {format}"},
  "home.tv.connecting": {"text": "Verbindung mit {name} wird hergestellt", "from": "Connecting to {name}"},
  "home.tv.stopped": {"text": "Der Stream wurde angehalten", "from": "The stream stopped"},
  "home.tv.noStream": {"text": "Dieser Sender wird nicht wiedergegeben", "from": "This channel isn’t playing"},
@@ -746,5 +728,70 @@
  "home.tv.full": {"text": "Die Zeile fasst {max} Sender; zuerst einen entfernen", "from": "The row holds {max} channels; remove one first"},
  "home.tv.saveFailed": {"text": "Speichern fehlgeschlagen", "from": "That didn’t save"},
  "home.tv.added": {"text": "{name} ist in der Zeile", "from": "{name} is on the row"},
- "home.tv.removed": {"text": "{name} wurde aus der Zeile entfernt", "from": "{name} is off the row"}
+ "home.tv.removed": {"text": "{name} wurde aus der Zeile entfernt", "from": "{name} is off the row"},
+ "home.choose": {"text": "Launcher auswählen", "from": "Choose your launcher"},
+ "home.custom": {"text": "Eigener", "from": "Custom"},
+ "home.minimalName": {"text": "Glasshouse Minimal", "from": "Glasshouse Minimal"},
+ "home.pressAgain": {"text": "Zum Bestätigen erneut drücken", "from": "Press again to confirm"},
+ "home.experimentalAny": {"text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home, Glasshouse Minimal und eigene Launcher ersetzen jeweils LGs Startbildschirm. Wenn einer nicht richtig funktioniert, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder wählen Sie hier LG Home, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.", "from": "Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG’s Home screen. If one misbehaves, hold Home on the remote for a second to open LG’s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
+ "home.restartsAppsAny": {"text": "Auf diesem Fernseher startet der Wechsel weg von LG Home oder zurück, oder das Gedrückthalten von Home für LGs Startbildschirm, die App-Verwaltung des Fernsehers neu, die geöffnete Apps schließt.", "from": "On this TV, switching away from LG Home or back to it, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."},
+ "home.launcher.doneOffCustom": {"text": "Fertig. Drücken Sie oben auf Eigener und dann erneut, um ihn zum Startbildschirm des Fernsehers zu machen.", "from": "Done. Press Custom above, then again, to make it the TV’s Home."},
+ "home.showTvLogosDescName": {"text": "Bei Internet-TV: das Logo der Playlist für jeden Sender. Aus zeigt stattdessen den Namen des Senders.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."},
+ "home.weather.clearNight": {"text": "Klare Nacht", "from": "Clear night"},
+ "home.weather.credit": {"text": "Wetterdaten von Open-Meteo.com", "from": "Weather data by Open-Meteo.com"},
+ "home.weather.cloudy": {"text": "Bewölkt", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Nebel", "from": "Fog"},
+ "home.weather.hail": {"text": "Hagel", "from": "Hail"},
+ "home.weather.lightning": {"text": "Blitze", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Gewitter", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Teilweise bewölkt", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Starkregen", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Regnerisch", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Schnee", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Schneeregen", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Sonnig", "from": "Sunny"},
+ "home.weather.windy": {"text": "Windig", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Windig", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"},
+ "home.tv.paused": {"text": "Pausiert", "from": "Paused"},
+ "home.tv.pausedLeft": {"text": "Pausiert, noch {time}", "from": "Paused, {time} left"},
+ "home.tv.behind": {"text": "{time} hinter live. Zurück springt zu live.", "from": "{time} behind live. Back goes to live."},
+ "home.tv.noPause": {"text": "Dieser Sender kann gerade nicht pausieren", "from": "This channel can’t pause now"},
+ "home.tv.seekTo": {"text": "{time} hinter live", "from": "{time} behind live"},
+ "home.tv.seekLive": {"text": "Live", "from": "Live"},
+ "home.tv.liveAsk": {"text": "Zurück zu live?", "from": "Back to live?"},
+ "home.tv.liveAskDetail": {"text": "OK springt zu live. Zurück bleibt hier.", "from": "OK goes to live. Back stays here."},
+ "home.tv.zapAsk": {"text": "Sender wechseln?", "from": "Change channel?"},
+ "home.tv.zapAskDetail": {"text": "Die Aufnahme dieses Senders geht verloren. OK wechselt. Zurück bleibt hier.", "from": "The recording of this channel is lost. OK changes. Back stays here."},
+ "srv.saver.random": {"text": "Zufällig", "from": "Random"},
+ "srv.saver.random.desc": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner, wenn der Bildschirmschoner angezeigt wird.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "{n} von {total} ausgewählt", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "Alle abwählen", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "Alle auswählen", "from": "Select all"},
+ "ss.poolTitle": {"text": "In Rotation enthalten", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "Als Nächstes: {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "Drücken Sie OK, um aus der Zufallsrotation auszuschließen", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "Drücken Sie OK, um in die Zufallsrotation aufzunehmen", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner. Als Nächstes: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
+  "adv.nightlyRefresh": {
+    "text": "Nächtlicher Neustart",
+    "from": "Nightly refresh reboot"
+  },
+  "adv.nightlyRefresh.desc": {
+    "text": "Richtet den 24-stündigen Wartungsneustart des Fernsehers am nächtlichen Ausschaltfenster aus. Verhindert einen Fehler in der LG-Software, durch den ein Neustart am Tag den Fernseher vier Stunden später vollständig ausschaltet.",
+    "from": "Aligns the TV's 24-hour maintenance reboot with your nightly power-down window. Prevents a bug in LG's software where rebooting during the day causes the TV to power off completely four hours later."
+  },
+  "tv.options.nightlyRefresh.hint": {
+    "text": "Richtet den 24-stündigen Wartungsneustart des Fernsehers am nächtlichen Ausschaltfenster aus, um ein vollständiges Ausschalten nach vier Stunden zu verhindern.",
+    "from": "Aligns the TV's 24-hour maintenance reboot with your nightly power-down window, preventing a bug in LG's software that powers off the TV completely four hours after a daytime reboot."
+  },
+  "tv.flash.nightlyRefreshOn": {
+    "text": "Nächtlicher Neustart aktiviert",
+    "from": "Nightly refresh reboot turned on"
+  },
+  "tv.flash.nightlyRefreshOff": {
+    "text": "Nächtlicher Neustart deaktiviert",
+    "from": "Nightly refresh reboot turned off"
+  }
 }

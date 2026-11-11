@@ -5,6 +5,7 @@
  * Strict ES5 and node 0.10 APIs: runs on the TV's node.
  */
 
+var waitFor = require('./wait-for').waitFor;
 var assert = require('assert');
 var fs = require('fs');
 var os = require('os');
@@ -15,13 +16,7 @@ var apps = require('../server/lib/apps');
 
 console.log('Running test-dashboard-port.js ...');
 
-function freePort(cb) {
-  var s = net.createServer();
-  s.listen(0, function () {
-    var p = s.address().port;
-    s.close(function () { cb(p); });
-  });
-}
+var freePort = require('./ports').freePort;
 
 function setup(config) {
   var h = { saved: [], restarts: 0 };
@@ -79,11 +74,11 @@ function testSaved(done) {
       assert.strictEqual(res.newPort, port);
       assert.deepEqual(h.saved, [{ port: port }]);
       assert.strictEqual(h.restarts, 0, 'the answer goes out before the restart');
-      setTimeout(function () {
+      waitFor(function () { return h.restarts > 0; }, function () {
         assert.strictEqual(h.restarts, 1, 'restarted to bind the new port');
         console.log('  ✓ a free port is saved, the answer announces the restart, then the server restarts');
         done();
-      }, 900);
+      }, 'the restart');
     });
   });
 }

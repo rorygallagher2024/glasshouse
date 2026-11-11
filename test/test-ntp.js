@@ -177,7 +177,8 @@ function reply(request, serverMs, fields) {
     { start: true, ahead: 7000000, notTaken: true, calls: 8, counted: [0, 1],
       status: function (st) {
         assert.ok(Math.abs(st.notTakenS - 7000) < 5, 'how far out it stayed: ' + st.notTakenS);
-        assert.ok(/stayed \+7000\.\d+ s out, on its broadcast time/.test(st.error), st.error);
+        // The number is checked above: the TV's whole-second clock puts it either side of 7000.
+        assert.ok(/stayed \+\d+\.\d+ s out, on its broadcast time/.test(st.error), st.error);
         assert.strictEqual(st.setAgoS, null, 'not counted as set');
       },
       why: 'the service accepts the time and the clock stays out: reported, not counted as set' },

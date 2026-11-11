@@ -615,7 +615,7 @@ button.pill.busy:not([style*="--p"]){
   animation:btnPulse 1.2s ease-in-out infinite;
 }
 .dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,auto);
-      gap:8px;max-width:260px;margin:0 auto 14px}
+      gap:8px;max-width:260px;margin:0 auto 26px}
 /* Its arrows stay where they point in a page laid out right to left. */
 [dir=rtl] .dpad{direction:ltr}
 /* The arrows are glyphs, not words: the button voice everywhere else is
@@ -710,10 +710,8 @@ button.key-hit{background:var(--w10)}
 /* The long lists stay one column - a consent row is a sentence, not a tile -
    but capped so the pill stays near what it describes on a wide screen. */
 .priv.panel{max-width:1180px}
-/* One list that scrolls, a row per screen saver, so more fit without the tab
-   growing: the name, and what it shows under it. */
+/* A row per screen saver: the name, and what it shows under it. */
 .ss-list{position:relative;display:flex;flex-direction:column;margin-top:22px;max-width:760px;
-         max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain;
          border:1px solid var(--w12);border-radius:3px}
 /* A row is the control, not a container with a button in it: the whole thing
    is the click target, so there is nothing to hunt for. */
@@ -729,7 +727,9 @@ button.key-hit{background:var(--w10)}
 /* The one in use is marked, not dimmed: it is the answer to what is running,
    so it should read as the strongest thing on the panel. */
 .ss-card.on,.ss-card.on:hover{background:rgba(var(--fg),.03);color:inherit;font-weight:400;
-         box-shadow:inset 3px 0 0 var(--green);cursor:default;opacity:1}
+         box-shadow:inset 3px 0 0 var(--green);cursor:default;opacity:1;
+         /* Not the white edge of an "on" button: a row keeps its own rule. */
+         border-color:var(--w12)}
 .ss-name{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em}
 .ss-desc{font-size:14px;color:var(--w60);margin-top:3px;line-height:1.45;max-width:60ch}
 .ss-meta{font-size:12px;color:var(--w60);margin-top:4px;letter-spacing:.02em}
@@ -739,18 +739,51 @@ button.key-hit{background:var(--w10)}
 .ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
 /* The choice on the left, and what to do with it - brightness, starting it,
-   the firmware note - beside it on a wide screen rather than below the list. */
+   the firmware note - beside it on a wide screen rather than below the list.
+   Beside them, the list scrolls within the window so the controls stay in view. */
 @media(min-width:1020px){
   .ss-split{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);gap:clamp(36px,4vw,56px);
             align-items:start}
-  .ss-split .ss-list{max-width:none}
+  .ss-split .ss-list{max-width:none;max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain}
   .ss-side{margin-top:22px;display:flex;flex-direction:column;gap:22px}
   #sspane .ss-side>*{margin-top:0}
 }
 .ss-level-lbl{font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--w60);
               margin-bottom:8px}
 .ss-level-row .btns{display:flex;gap:10px;max-width:340px}
+.ss-bright-row{max-width:340px;grid-template-columns:1fr}
+.vol-wrap.disabled{opacity:.45;pointer-events:none}
 .ss-level-row .btns button{flex:1}
+/* The Animation picker: a button, and under it a list with each group's heading. */
+.ss-pick{position:relative;max-width:340px;margin-top:11px}
+.ss-pick-btn{display:block;width:100%;height:48px;text-align:left;text-transform:none;letter-spacing:.02em;
+  font:500 14px 'Manrope';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-pick-btn .grp{color:var(--w60);margin-right:6px}
+.ss-pick-list{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);max-height:min(420px,60vh);overflow-y:auto;
+  overscroll-behavior:contain;background:var(--bg);border:1px solid var(--edge);border-radius:2px;
+  box-shadow:0 12px 32px rgba(0,0,0,.45);padding:0 0 6px}
+.ss-pick-list:focus{outline:none}
+.ss-pick-head{position:sticky;top:0;z-index:1;background:var(--bg);padding:14px 14px 6px;border-top:1px solid var(--w12);
+  font:700 11px 'Manrope';letter-spacing:.14em;text-transform:uppercase;color:var(--w60)}
+.ss-pick-head:first-child{border-top:0}
+.ss-pick-opt{padding:8px 14px 8px 24px;font-size:14px;color:var(--w90);cursor:pointer}
+.ss-pick-opt:hover,.ss-pick-opt.act{background:rgba(var(--fg),.07);color:var(--w100)}
+.ss-pick-opt[aria-selected="true"]{color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
+.ss-pool-actions{display:flex;gap:8px;margin-bottom:8px;max-width:340px}
+.ss-pool-btn{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;min-height:0;
+  color:var(--w60);border:1px solid var(--w12);border-radius:2px;background:transparent;cursor:pointer}
+.ss-pool-btn:hover:not([disabled]){color:var(--w100);background:rgba(var(--fg),.04)}
+.ss-pool-btn[disabled]{opacity:.45;cursor:default}
+.ss-pool-box{max-height:260px;overflow-y:auto;border:1px solid var(--w12);border-radius:2px;padding:4px;
+  overscroll-behavior:contain;max-width:340px}
+.ss-pool-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:2px;
+  font-size:13.5px;color:var(--w90);cursor:pointer;user-select:none;transition:background .12s}
+.ss-pool-item:hover{background:rgba(var(--fg),.04)}
+.ss-pool-item.dis{cursor:default;opacity:.45}
+.ss-pool-item.dis:hover{background:transparent}
+.ss-pool-item input[type="checkbox"]{width:16px;height:16px;margin:0;cursor:pointer;flex-shrink:0;accent-color:var(--green)}
+.ss-pool-item.dis input[type="checkbox"]{cursor:default}
+.ss-pool-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .upd{max-width:760px;margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
@@ -823,6 +856,12 @@ span.pill.good::before,span.pill.warn::before,span.pill.bad::before{
   content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
 /* The arrow is drawn here, in the text's colour, with room to its right: the
    browser's own sat against the right edge. */
+/* A select's own background is transparent, and Chrome on Windows draws the
+   open list on white whatever the theme: the options carry the theme's colours. */
+select option,select optgroup{background-color:var(--bg);color:var(--w100)}
+/* A group's heading reads as a heading, not as one more option. */
+select optgroup{color:var(--w60);font-weight:700;font-style:normal}
+select optgroup option{color:var(--w100);font-weight:400}
 .pill-sel{font:500 12.5px 'Manrope';letter-spacing:.08em;height:32px;min-width:116px;padding:0 30px 0 10px;
           color:var(--w100);background-color:transparent;border:1px solid var(--edge);border-radius:2px;cursor:pointer;
           -webkit-appearance:none;appearance:none;
@@ -1192,6 +1231,11 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
   padding:12px 0;border-bottom:1px solid var(--w06);
 }
 .prot-main{flex:1;min-width:0}
+.home-weather-place{padding:4px 0 16px;border-bottom:1px solid var(--w06)}
+.home-weather-place .toast-form{margin:12px 0}
+.home-weather-results{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.home-weather-results:empty{display:none}
+.home-weather-credit{opacity:.7;margin-top:6px}
 .prot-title{
   font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;
   color:var(--w90);letter-spacing:.02em;
@@ -1253,8 +1297,6 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
 .page-edit button{min-height:38px;padding:0 16px}
 .page-acts{display:flex;gap:8px}
 .page-add{margin-top:16px;flex-wrap:wrap}
-.page-add-msg{margin-top:10px;color:var(--red)}
-.page-add-msg:empty{display:none}
 .page-add #page-add-url{flex:2 1 260px}
 .page-add #page-add-name{flex:1 1 160px}
 .page-add #catalog-url{flex:1 1 260px}
@@ -1452,8 +1494,9 @@ button.tools-jump:active{background:var(--w80)}
 .catalog-source:active{background:var(--w10)}
 .catalog-source:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
 /* An error under a row, styled as the page's own error banner (#offline). */
-.err-note{font-size:14px;border-left:2px solid var(--red);padding:9px 13px;background:var(--w06);color:var(--w90);margin-top:8px;max-width:64ch;overflow-wrap:anywhere}
-.err-note b{font-weight:600;margin-right:6px}
+.err-note, .page-add-msg{font-size:14px;border-left:2px solid var(--red);padding:9px 13px;background:var(--w06);color:var(--w90);margin-top:8px;max-width:64ch;overflow-wrap:anywhere}
+.err-note:empty, .page-add-msg:empty{display:none}
+.err-note b, .page-add-msg b{font-weight:600;margin-right:6px}
 /* Under a long catalog list: how many show, and the button for more. */
 .catalog-more{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:16px 0 4px}
 /* Hide home screen system apps: a hidden app's tile is dimmed. */
@@ -1587,9 +1630,10 @@ button.tools-jump:active{background:var(--w80)}
 }
 
 /* The Home tab */
-#home-hero{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px 24px;
-  padding:8px 0 0}
-#home-hero .ps-state{margin-bottom:0;flex:1 1 320px}
+/* The state above, then the choice of launcher across the width beneath it. */
+#home-hero{display:flex;flex-direction:column;align-items:stretch;gap:24px;padding:8px 0 0}
+#home-hero .ps-state{margin-bottom:0}
+#home-choose .lbl{margin-bottom:10px}
 #home-hero .pv-sub{margin:6px 0 0}
 /* The dot stays level with the heading's first line, however tall the
    experimental note beneath makes the block. */
@@ -1599,6 +1643,14 @@ button.tools-jump:active{background:var(--w80)}
 /* One section for whichever Home is the TV's. Its heading's rule is the only
    divider under the switch; Glasshouse Home's rows leave with it. */
 #home-hero+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
+#home-hero+#home-launcher{margin-top:clamp(34px,4.5vw,48px)}
+#home-launcher+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
+#home-launchers .prot-status{display:flex;gap:8px}
+/* With a custom launcher in Glasshouse Home's place, only the apps and inputs it shows. */
+#home-more.for-launcher > :not(.home-arrange), #home-more.for-launcher .home-gh-only,
+#home-more:not(.for-launcher) .home-launcher-only{display:none}
+#home-more.for-launcher .home-row:not([data-kind="app"]):not([data-kind="dev"]),
+#home-more.for-launcher .home-row-move{display:none}
 #home-custom.lg-home .home-gh-row{display:none}
 /* Each group's last row draws no line, as the next group's heading follows. */
 .home-custom-table .prot-row.last{border-bottom:0}
@@ -1610,8 +1662,12 @@ button.tools-jump:active{background:var(--w80)}
 #home-custom .pv-d>summary::after{font-size:18px}
 #home-custom .pv-d[open]>summary{border-bottom-color:transparent}
 #home-custom .pv-d[open]{padding-bottom:16px;border-bottom:1px solid var(--w06)}
-#home-mode-btns{display:flex;flex-wrap:wrap;gap:8px;flex:0 0 auto;width:auto}
-#home-mode-btns button{min-width:176px;padding:0 18px;white-space:nowrap}
+/* The choices in a row of equal boxes, a long name on two lines where the row
+   is narrow; two by two on a phone. */
+#home-mode-btns{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;max-width:880px}
+#home-mode-btns button{min-width:0;padding:6px 14px;line-height:1.3;white-space:normal}
+@media (max-width:640px){#home-mode-btns{display:grid;grid-auto-flow:row;grid-template-columns:repeat(2,1fr)}
+  #home-mode-btns button{padding:6px 10px}}
 #home-mode-btns button.warn{color:var(--cand);border-color:var(--cand)}
 #home-rows{margin-top:14px}
 .home-row{border-top:1px solid var(--edge);padding:10px 0}
@@ -1670,6 +1726,9 @@ button.wall-screen::before{content:'';position:absolute;inset:0;background:linea
 button.wall-screen:hover:not(:disabled){border-color:rgba(255,255,255,.45)}
 button.wall-screen:disabled{opacity:1;cursor:default}
 .wall-choice{max-width:560px;margin:14px 0 6px}
+/* Seven scenes with names of every length: each as wide as its name. */
+.wall-choice.scenes{display:flex;flex-wrap:wrap;max-width:none}
+.wall-choice.scenes button{flex:0 0 auto;padding:0 18px;white-space:nowrap}
 /* A set's or Black's empty time of day is not a place to add a picture. */
 .wall-card.fixed:not(.has) button.wall-screen{border-style:solid;border-color:rgba(255,255,255,.12)}
 .wall-card:not(.has) button.wall-screen{border-style:dashed;border-color:rgba(255,255,255,.22)}
@@ -1691,6 +1750,11 @@ button.wall-screen:disabled{opacity:1;cursor:default}
 .wall-actions{display:flex;gap:14px;margin-top:4px;min-height:18px}
 button.wall-link{min-height:0;padding:0;border:0;background:none;font-size:12px;letter-spacing:.02em;text-transform:none;color:var(--w60)}
 button.wall-link:hover:not(:disabled){color:var(--w100);text-decoration:underline;text-underline-offset:3px}
+/* The shuffled collection: how often it changes, then its pictures after a card to add more. */
+.shuffle-every{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0 18px;font-size:13px;color:var(--w80)}
+.wall-count{font-size:12px;color:var(--w60);font-variant-numeric:tabular-nums}
+/* Four picture choices, the last of them a longer name. */
+#home-wall-choice{max-width:760px}
 .wall-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;margin-top:24px}
 .wall-foot .sub{max-width:64ch;margin:0}
 .wall-foot-btns{display:flex;gap:10px;flex-wrap:wrap}
@@ -1707,6 +1771,10 @@ button.home-look:active{background:none}
 .home-look-row{position:absolute;left:10px;bottom:9px;font-size:10px;color:var(--look-text);opacity:.69}
 .home-look-screen i{position:absolute;right:10px;bottom:11px;width:7px;height:7px;border-radius:50%;background:var(--look-accent)}
 .home-look-name{font-size:13px;opacity:.8}
+/* Eight choices: under the description, across the row, rather than beside it. */
+#home-anim-row{flex-direction:column;align-items:stretch;gap:10px}
+.home-anim-band{position:absolute;left:-10%;right:-10%;top:52%;height:9px;border-radius:50%;opacity:.75;transform:rotate(-8deg);
+  box-shadow:0 0 10px 2px currentColor}
 .home-look.picked .home-look-name{opacity:1;font-weight:600}
 .home-look:disabled{cursor:default;opacity:.6}
 .home-custom{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin:4px 0 8px}

@@ -7,6 +7,7 @@
  *
  * Strict ES5: runs on node 0.12.
  */
+require('./fake-clock').install();
 var assert = require('assert');
 var events = require('events');
 var fs = require('fs');
@@ -52,6 +53,7 @@ var res = {
         try { fs.unlinkSync(cfgFile); } catch (e) {}
         console.log('  ✓ a restart after a settings save waits for an install that started meanwhile');
         console.log('ALL test-restart-wait.js assertions passed!\n');
+        process.exit(0);
       }, 2600);
     }, 600);
   }

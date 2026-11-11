@@ -51,6 +51,7 @@
  * Strict ES5: runs on node 0.12.
  */
 var fs = require('fs');
+var path = require('path');
 var execFile = require('child_process').execFile;
 var BLOCK_SCHEMA = '/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema';
 var SAM_BIN = '/usr/sbin/sam';
@@ -61,6 +62,8 @@ var NUDGE_ID = 'io.github.rorygallagher2024.lg-webos-dashboard.rescan';
 var NUDGE_MS = 1500;
 var CHECK_POLL_MS = 500;
 var CHECK_POLLS = 16;
+var portStatusDir = '/proc/lg/hdmi20';
+var HDMI_BASE_MAP = { 1: 3, 2: 2, 3: 1, 4: 0 };
 
 var lunaFn = null;
 var execFn = execFile;
@@ -85,6 +88,7 @@ function init(opts) {
   samReadsKey = null;
   if (opts.nudgeMs !== undefined) NUDGE_MS = opts.nudgeMs;
   if (opts.pollMs !== undefined) CHECK_POLL_MS = opts.pollMs;
+  if (opts.portStatusDir) portStatusDir = opts.portStatusDir;
 }
 
 function readList(cb) {
@@ -275,6 +279,33 @@ function rereadApp(appId, check, cb) {
 }
 
 /*
+ * Whether the HDMI input has an active video signal from a connected source.
+ * Non-HDMI apps return true. An HDMI input with no signal (e.g. asleep device)
+ * returns false so restarting sam does not switch to an inactive input.
+ */
+function hasHdmiSignal(appId) {
+  if (!appId || typeof appId !== 'string') return true;
+  var m = appId.match(/hdmi([1-4])/i);
+  if (!m) return true;
+  var hdmiNum = parseInt(m[1], 10);
+  var port = HDMI_BASE_MAP[hdmiNum];
+  if (port === undefined) return true;
+  var statusFile = path.join(portStatusDir, 'port' + port, 'status');
+  var raw;
+  try {
+    raw = fs.readFileSync(statusFile, 'utf8');
+  } catch (e) {
+    return true;
+  }
+  if (!raw) return true;
+  var lock = raw.match(/PHY\s+Lock\[(\d)\]/i);
+  if (lock) return lock[1] === '1';
+  if (/connected:\s*off/i.test(raw)) return false;
+  if (/connected:\s*on/i.test(raw)) return true;
+  return true;
+}
+
+/*
  * Restarts sam, and cb(true) once check(done) says sam has read the apps
  * again. The last way to make sam scan: webOS 5 and 6 have neither the
  * configd nudge nor the block and release (a CX on 5.5.0-19, a C1 on
@@ -308,6 +339,7 @@ function restart(check, cb) {
       waitFor(check, 'the restart', function (ok) {
         startDependents(function () {
           if (!ok || !saved) return cb(ok);
+          if (!hasHdmiSignal(saved)) return cb(ok);
           lunaFn('com.webos.applicationManager/launch', { id: saved }, function () { cb(ok); });
         });
       });
@@ -322,16 +354,30 @@ function restart(check, cb) {
 }
 
 /*
+ * LG's HDMI input service subscribes to sam's foreground app once, when it
+ * starts, and never again: after sam is restarted it sees no app in front for
+ * the rest of the boot. Its EDID control then refuses every update for the
+ * input on screen ("Invalid App type", app type 0x0d), so a source is left on
+ * the basic EDID: on a 55UP77 (webOS 6.5.3) an Apple TV sent only PCM to an
+ * eARC soundbar, and MAT once the service was restarted. Nothing requires the
+ * unit, so it is restarted with sam already answering; a TV without it is
+ * left alone. A shell command, for lib/apps.js and the boot hook's copy.
+ */
+var RESUBSCRIBE_HDMI_INPUTS = 'if systemctl cat extinput-integration.service >/dev/null 2>&1; then ' +
+                              'systemctl restart --no-block extinput-integration.service && echo extinput-integration.service; fi';
+
+/*
  * A unit that requires sam and hit its restart limit is started again, as
- * lib/apps.js does after a restart for tile hiding. On Upstart TVs, Upstart
- * does not restart dependent jobs, so eim is restarted here.
+ * lib/apps.js does after a restart for tile hiding, and the HDMI input
+ * service subscribes to sam again. On Upstart TVs, Upstart does not restart
+ * dependent jobs, so eim is restarted here.
  */
 function startDependents(cb) {
   var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
             'for u in $(systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null | ' +
             'sed -n "s/^[^A-Za-z0-9]*\\([A-Za-z0-9@._-]*\\.service\\)$/\\1/p"); do ' +
             'if systemctl is-failed --quiet "$u"; then systemctl reset-failed "$u"; systemctl start --no-block "$u"; fi; ' +
-            'done; ' +
+            'done; ' + RESUBSCRIBE_HDMI_INPUTS + '; ' +
             'elif command -v initctl >/dev/null 2>&1; then ' +
             'initctl restart eim >/dev/null 2>&1 || true; ' +
             'fi';
@@ -344,6 +390,8 @@ module.exports = {
   canNudge: canNudge,
   rereadApp: rereadApp,
   restart: restart,
+  hasHdmiSignal: hasHdmiSignal,
+  RESUBSCRIBE_HDMI_INPUTS: RESUBSCRIBE_HDMI_INPUTS,
   KEY: KEY,
   NUDGE_ID: NUDGE_ID
 };

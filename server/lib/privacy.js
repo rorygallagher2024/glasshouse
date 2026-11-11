@@ -97,11 +97,17 @@ function regionPrefixes() {
   return ADBLOCK_REGION_PREFIXES.concat(/^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES);
 }
 
-function withPrefixes(names) {
-  var prefixes = regionPrefixes();
+/**
+ * @param {string[]} names
+ * @param {string[]} [prefixes]
+ * @param {string} [separator]
+ */
+function withPrefixes(names, prefixes, separator) {
+  prefixes = prefixes || regionPrefixes();
+  separator = separator || '.';
   var out = [];
   names.forEach(function (name) {
-    [name].concat(prefixes.map(function (p) { return p + '.' + name; }))
+    [name].concat(prefixes.map(function (p) { return p + separator + name; }))
       .forEach(function (h) { if (out.indexOf(h) === -1) out.push(h); });
   });
   return out;
@@ -130,14 +136,31 @@ var ADBLOCK_PLATFORM = [
   // to tell whether the TV is online, while Alexa runs; blocked, Alexa reads
   // the TV as offline.
   'avsxappcaptiveportal.com',
+  // Google push messaging is a service endpoint, not an ad or telemetry host.
+  'mtalk.google.com',
   // The content CDN on webOS 11, from sdx's server list (OLED77C5PUA, 11.2.0).
   'ngfts.tv.wiselg.com'
 ];
+
+// These carry ThinQ and account services, so regional coverage belongs only
+// in Everything. The firmware names are recorded in TV-RESEARCH.md.
+var ADBLOCK_PLATFORM_REGIONAL = [
+  'lgtviot.com',
+  'api.lgtviot.com',
+  'push.lgtviot.com',
+  'sports.lgtviot.com',
+  'buddy.lgtviot.com',
+  'lgeapi.com'
+];
+var ADBLOCK_THINQ_REGIONAL = ['connect-client.lgthinq.com', 'common.lgthinq.com'];
+// ThinQ uses a hyphen before the service name, rather than a DNS label.
+var ADBLOCK_THINQ_PREFIXES = ['aic', 'eic', 'kic'];
 
 var ADBLOCK_SDP = [
   'nextlgsdp.com',
   'us.nextlgsdp.com',
   'gb.nextlgsdp.com',
+  'de.nextlgsdp.com',
   'eu.nextlgsdp.com'
 ];
 /*
@@ -149,7 +172,8 @@ var ADBLOCK_SDP = [
  * and the clock comes from it there too (systemTimeSource "sdp"), so it waits
  * for the grace period as nextlgsdp.com does.
  */
-var ADBLOCK_SDP_REGIONAL = ['tv.wiselg.com'];
+var ADBLOCK_SDP_REGIONAL = ['tv.wiselg.com', 'nextlgsdp.com',
+                            'ibs.nextlgsdp.com', 'ibsstat.nextlgsdp.com'];
 
 function adBlockSdp() {
   return ADBLOCK_SDP.concat(withPrefixes(ADBLOCK_SDP_REGIONAL));
@@ -407,8 +431,13 @@ function isSdpGracePeriodActive() {
   return sdpGraceActive;
 }
 
+function adBlockPlatformBase() {
+  return ADBLOCK_PLATFORM.concat(withPrefixes(ADBLOCK_PLATFORM_REGIONAL),
+    withPrefixes(ADBLOCK_THINQ_REGIONAL, ADBLOCK_THINQ_PREFIXES, '-'));
+}
+
 function adBlockPlatform() {
-  var list = ADBLOCK_PLATFORM.slice();
+  var list = adBlockPlatformBase();
   var host = storeHost();
   // The TV sets its clock from the SDP servers' X-Server-Time header, not NTP
   // (systemTimeSource "sdp" on a C2, and on a C5 on webOS 11.2), so after a
@@ -694,7 +723,7 @@ function sinkhole(lines, host) {
  * switched off. 50-tvweb.sh carries the rest over at boot the same way.
  */
 function foreignHostsLines(text) {
-  var managed = adBlockAds().concat(ADBLOCK_PLATFORM, adBlockSdp(), HBC_UPDATE_HOSTS);
+  var managed = adBlockAds().concat(adBlockPlatformBase(), adBlockSdp(), HBC_UPDATE_HOSTS);
   var kept = [];
   var lines = String(text || '').split('\n');
   for (var i = 0; i < lines.length; i++) {
@@ -1536,6 +1565,7 @@ module.exports = {
   adBlockList: adBlockList,
   ownBlockList: ownBlockList,
   parseCustomHosts: parseCustomHosts,
+  customHosts: customHosts,
   setCustomHosts: setCustomHosts,
   customSummary: customSummary,
   setAdBlock: setAdBlock,

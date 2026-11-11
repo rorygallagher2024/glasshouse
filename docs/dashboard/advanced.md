@@ -18,6 +18,12 @@ It does not hold all night. For five hours every night, 01:00 to 06:00 unless ch
 
 The switch is under **System &rarr; Power** in the web dashboard and **System &rarr; Power** on the TV, and setup offers it as a third step. TVs without the setting, such as webOS 4 models, do not show it; Wake-on-LAN still wakes them from standby.
 
+### Nightly refresh reboot
+
+On webOS 7 and later, LG's power management service (`tvpowerd`) automatically reboots the TV two minutes after switch-off once uptime passes 24 hours (`rebootByOnRegular`). When this reboot occurs outside the nightly power-down window, the TV starts up directly into Active Standby and arms a four-hour forced shutdown timer before the Always-on setting has loaded from disk. Because the setting arriving does not cancel the timer, the TV cuts power completely four hours later (at 14,411 seconds of uptime), dropping into cold standby.
+
+When **Nightly refresh reboot** is enabled, Glasshouse adjusts the TV's in-memory refresh threshold (`com.webos.service.qbd/setResetTime`) on boot and around power transitions so that the maintenance reboot only fires inside your scheduled Nightly power-down window. When the reboot occurs inside the window, the TV enters deep sleep (Suspend) two minutes later, which properly clears the four-hour countdown timer and avoids daytime cold power-offs. Off by default; offered only on TVs supporting `qbd/getResetTime` with Stay connected on.
+
 ### Quick Boot
 
 Switching off puts the TV into a light sleep rather than shutting it down completely, so it starts up faster. LG calls this Quick Start+.
@@ -81,9 +87,8 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 
 * **SIMPLINK (HDMI-CEC):** Enables CEC control and auto power synchronization with connected devices over HDMI.
 * **IP control:** Enables external IP control protocol support.
-* **Auto device detection:** Finds devices the TV can show on its Home Dashboard and control, from set-top boxes to smart lights, plugs, and switches. On newer webOS versions, the TV looks up every address on the home network each time it boots, which local network ad blockers (such as Pi-hole) record as hundreds of requests. Turning this off stops the boot scans completely.
-
-LG's device detection also looks up every address on the home network when the TV's Home Hub looks for devices, and on some TVs every 5 minutes even with Auto device detection off. **Network Device Scans** under [background services](apps.md#turn-off-background-services) stops those.
+* **Auto device detection:** LG's own setting. Finds devices the TV can show on its Home Dashboard and control, from set-top boxes to smart lights, plugs, and switches. To do it, the TV looks up every address on the home network, which a network-wide ad blocker such as Pi-hole records as hundreds of requests. On some TVs, webOS 11 among them, those lookups carry on with this off.
+* **Network device scans:** Glasshouse's own switch for those lookups. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG's device setup. Off also stops the Magic Remote controlling a set-top box through LG's universal control. Leave it on if you use one. It stays off across restarts.
 
 ## Front lights
 

@@ -48,10 +48,13 @@ use modern JavaScript.
   `devtools` (closing the web app debugger to the network),
   `oled` (panel care, service menu), `homescreen` and `homescreen-webos9`
   (LG's Home screen layout and input tiles, one module per home app), `home`
-  (Glasshouse Home, a home screen in place of LG's), `lgsettings` (LG's own settings as
+  (Glasshouse Home, a home screen in place of LG's), `home-launcher` (a launcher of
+  the owner's own in its place), `lgsettings` (LG's own settings as
   rows), `game`, `apps` (tiles, uninstall, saved pages), `installer` and
   `repo` (installing .ipk packages, the Homebrew Channel catalog),
-  `services` (background services), `screensavers`, `idlesaver` (lifting
+  `services` (background services), `appdns` (an app's own DNS servers,
+  written into its jail after each launch), `doh` (a DNS server on the TV
+  that sends each query on over HTTPS, for `appdns`), `screensavers`, `idlesaver` (lifting
   panel care's hold on LG's idle screen saver), `updater` and `fetch`
   (self-update over curl or wget), `piccap`, `say` (server-side strings),
   `names` (raw TV values as display strings and Prometheus labels),
@@ -81,6 +84,10 @@ by side. One at a time: `node test/run-all.js`, `npx tsc`, and
 `node scripts/check-upgrade.js`. A module
 handed to another through init() is typed with
 `/** @type {typeof import('./x')} */`, so check-module-calls.py follows it.
+
+Tests follow "Tests" in docs/CONTRIBUTING.md: wait for events rather than
+fixed times, take timings and commands through `init`, and keep a new test
+under a second.
 
 # Working with a TV
 
