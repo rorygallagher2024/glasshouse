@@ -239,4 +239,6 @@ separate Hue Sync and PicCap categories, in that order, with independent
 Hue Sync Enabled and PicCap Enabled switches and all supported settings shown
 directly. Unavailable integrations and their headings are hidden. The web
 Control page also has quick toggles below Playback, using the same commands and
-write permissions.
+write permissions. Both dashboards hide the Ambient Light tab when neither
+integration is available; saved links then open Control on the web or Metrics
+in the TV app.

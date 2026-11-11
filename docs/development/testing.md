@@ -583,6 +583,11 @@ availability combinations with neither, either or both integrations. Missing int
 headings or shortcuts. PicCap descriptions name both Hyperion and HyperHDR.
 `test-dashboard-view.js` also checks the TV menu order, flat row grouping, empty
 state and per-field stale permissions.
+The browser checks verify that all four Hue Sync boolean settings use standard
+On/Off pill toggles, send native booleans and retain their confirmed state after
+a refused write. Both dashboards hide the Ambient Light tab when neither
+integration is available, including on deep links, and keep it for a stopped
+integration. The web tab returns when an integration becomes available again.
 `test-routes.js` verifies both integrations' write permissions. Screenshots use
 synthetic data. The Hue Sync checks wait for intercepted requests to finish
 before closing each page, so pending stats replies cannot outlive the page.

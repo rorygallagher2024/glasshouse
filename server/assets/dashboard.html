@@ -424,7 +424,7 @@ var TABS = [
   { key: 'game',    label: t('tab.game', 'Game'),         url: '/api/game',        build: gameRows, optional: true },
   { key: 'picture', label: t('tab.picture', 'Picture'),      url: '/api/picture',     build: pictureRows, poll: 5000, optional: true },
   { key: 'audio',   label: t('tab.audio', 'Audio'),        url: '/api/audio?with=settings', build: audioRows, poll: 8000 },
-  { key: 'ambient', label: t('adv.ambient', 'Ambient Light'), url: '/api/stats', build: ambientRows, poll: 5000 },
+  { key: 'ambient', label: t('adv.ambient', 'Ambient Light'), url: '/api/stats', build: ambientRows, poll: 5000, optional: true },
   { key: 'saver',   label: t('tv.tab.screenSaver', 'Screen Saver'), url: '/api/screensaver', build: saverRows, optional: true },
   { key: 'home',    label: t('tab.home', 'Home'),         url: '/api/home?with=catalogue,channels,lghome', build: homeRows, optional: true },
   { key: 'privacy', label: t('tab.privacy', 'Privacy'),      url: '/api/privacy',     build: privacyRows },
@@ -701,7 +701,6 @@ function ambientRows(d) {
       hint: t('adv.piccap.desc', 'Starts or stops screen capture for Hyperion or HyperHDR to provide ambient light.'),
       press: pc.running ? t('tv.press.turnOff', 'Press OK to turn off') : t('tv.press.turnOn', 'Press OK to turn on') });
   }
-  if (!r.length) r.push({ label: t('ambient.none', 'No ambient light integrations found.'), value: '' });
   return r;
 }
 
@@ -3171,6 +3170,7 @@ function fetchTab(keepSel) {
     .then(function (d) {
       if (T().key !== key || sub !== view) return; // the user moved on while this was in flight
       if (adjusting || adjustInFlight) return; // a picture setting is being adjusted
+      if (section.optional && removeUnavailableTab(section, d)) return;
       data[key] = d;
       rows = buildRows(section, d);
       if (initialSel !== null && initialSel < rows.length && (!rows[initialSel] || !rows[initialSel].head)) {
@@ -3941,18 +3941,26 @@ openTab(initTab, initialSel !== null);
 /* A section the TV may not have is dropped once its endpoint says so, as the
    browser dashboard hides its tab: a B8 has no Game Optimizer, and an LCD TV
    has no OLED Care. */
+function removeUnavailableTab(section, d) {
+  var i = TABS.indexOf(section);
+  if (!d || i < 0) return false;
+  var unavailable = section.key === 'ambient'
+    ? d.ok === true && !d.piccapCapture && !d.huesyncStreaming : d.available === false;
+  if (!unavailable) return false;
+  var cur = T();
+  TABS.splice(i, 1);
+  tab = Math.max(0, TABS.indexOf(cur));
+  renderTabs();
+  if (cur === section) openTab(tab);
+  return true;
+}
+
 TABS.forEach(function (section) {
   if (!section.optional) return;
   fetch(section.url, { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      var i = TABS.indexOf(section);
-      if (!d || d.available !== false || i < 0) return;
-      var cur = TABS[tab];
-      TABS.splice(i, 1);
-      tab = Math.max(0, TABS.indexOf(cur));
-      renderTabs();
-      if (cur === section) openTab(tab);
+      removeUnavailableTab(section, d);
     })
     .catch(function () {});
 });

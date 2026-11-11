@@ -807,6 +807,10 @@ function updateDpadMobileDefault() {
 
 let huesyncSettingsBusy = false;
 let lastHuesyncSettings = {};
+function renderHuesyncSettingToggle(el, on) {
+  advPill(el.id, el.id, on);
+  el.setAttribute('aria-pressed', String(on === true));
+}
 async function changeHuesyncSetting(el) {
   if (huesyncSettingsBusy) return;
   if (el.type === 'number' && (!el.validity.valid || el.value === '')) { el.reportValidity(); return; }
@@ -815,10 +819,10 @@ async function changeHuesyncSetting(el) {
   el.disabled = true;
   try {
     const result = await sendCommand('huesyncSetting', { key,
-      value: el.type === 'checkbox' ? el.checked : el.type === 'number' ? Number(el.value) :
+      value: el.tagName === 'BUTTON' ? previous !== true : el.type === 'number' ? Number(el.value) :
         el.id === 'huesync-intensity' ? Number(el.value) : el.value });
     const actual = result && result.settings ? result.settings[key] : previous;
-    if (el.type === 'checkbox') el.checked = actual === true;
+    if (el.tagName === 'BUTTON') renderHuesyncSettingToggle(el, actual);
     else el.value = actual === undefined ? '' : String(actual);
   } finally {
     huesyncSettingsBusy = false;
@@ -846,11 +850,11 @@ function renderHuesyncSettings(hs) {
     sync_mode: [{ value: '0', label: t('adv.huesync.video', 'Video') }, { value: '1', label: t('adv.huesync.game', 'Game') }],
     current_ec: (settings.ec_list || []).map(area => ({ value: area.id, label: area.name }))
   };
-  container.querySelectorAll('input, select').forEach(el => {
+  container.querySelectorAll('input, select, button').forEach(el => {
     const key = el.id.slice(8), value = settings[key];
     el.closest('.prot-row').hidden = value === undefined || (key === 'current_ec' && !choices.current_ec.length);
     el.disabled = huesyncSettingsBusy || hs && hs.writable === false || !!notReady || stale.includes(key) || key === 'current_ec' && stale.includes('ec_list');
-    if (huesyncSettingsBusy || document.activeElement === el) return;
+    if (huesyncSettingsBusy || document.activeElement === el && el.tagName !== 'BUTTON') return;
     if (el.tagName === 'SELECT') {
       el.replaceChildren();
       (choices[key] || []).forEach(choice => {
@@ -860,7 +864,7 @@ function renderHuesyncSettings(hs) {
         el.appendChild(option);
       });
       el.value = String(value);
-    } else if (el.type === 'checkbox') el.checked = value === true;
+    } else if (el.tagName === 'BUTTON') renderHuesyncSettingToggle(el, value);
     else el.value = value === undefined ? '' : value;
   });
 }

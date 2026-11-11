@@ -53,6 +53,7 @@ function reportNav() {
 }
 // null until the first telemetry says either way.
 let isOledSet = null;
+let ambientAvailable = null;
 
 function showTab(name) {
   clearErr();
@@ -70,6 +71,7 @@ function showTab(name) {
    */
   if (name === 'oledcare' && isOledSet === false) name = 'control';
   if (name === 'home' && homeAvailable === false) name = 'control';
+  if (name === 'ambient' && ambientAvailable === false) name = 'control';
   activeTab = name;
   for (const [key, id] of Object.entries(TABS)) {
     const el = q(id);

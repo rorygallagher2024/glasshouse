@@ -678,6 +678,10 @@ async function tick() {
     // If it was showing when the set turned out not to be an OLED, leave it.
     if (!isOledSet && activeTab === 'oledcare') showTab('control');
 
+    ambientAvailable = !!(d.huesyncStreaming || d.piccapCapture);
+    q('tab-btn-ambient').hidden = !ambientAvailable;
+    if (!ambientAvailable && activeTab === 'ambient') showTab('control');
+
     const ssOnInput = /^hdmi[1-4]$/.test(d.app || '') || d.app === 'livetv';
     refuseScreensaver(q('btn_ss'), ssOnInput ? SS_ONLY_IN_APPS : '');
     /* Same control on the Screensaver tab, where it says which way it will go:

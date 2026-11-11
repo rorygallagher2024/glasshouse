@@ -110,7 +110,8 @@ Removing the app changes nothing else, since the dashboard server continues to r
 The **Ambient Light** top-level menu sits between **Audio** and **Screen Saver**. **Hue Sync** and **PicCap**
 have their own categories, in that order, with **Hue Sync Enabled** and
 **PicCap Enabled** switches. An unavailable integration is hidden, including its
-category heading. PicCap supports Hyperion or HyperHDR. All Hue Sync controls are shown directly:
+category heading. The menu is omitted when neither integration is available.
+PicCap supports Hyperion or HyperHDR. All Hue Sync controls are shown directly:
 brightness, intensity, Video/Game mode, entertainment area, background light for
 each mode, automatic start and its notification. Press OK to toggle or cycle a
 setting. For brightness, press OK, adjust with the arrows, then OK or Back to

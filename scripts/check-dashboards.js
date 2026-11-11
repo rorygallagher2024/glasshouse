@@ -2835,6 +2835,12 @@ async function visitHuesyncSettings(browser, base, problems) {
     if (!followsHome) fail('Ambient Light does not follow Home');
     await page.locator('#tabs [data-tab="ambient"]').click();
     await page.waitForSelector('#huesync-settings:not([hidden])');
+    for (const key of ['background_lightning_video', 'background_lightning_games', 'auto_start', 'auto_start_notification']) {
+      const toggle = page.locator('#huesync-' + key);
+      if (!(await toggle.evaluate(el => el.tagName === 'BUTTON' && el.classList.contains('pill')))) fail(key + ' is not a standard pill toggle');
+      if (await toggle.getAttribute('aria-pressed') !== String(settings[key]) ||
+          await toggle.textContent() !== (settings[key] ? 'On' : 'Off')) fail(key + ' does not show its current state');
+    }
     const categories = await page.locator('#ambient-huesync, #ambient-piccap').evaluateAll(els => els.filter(el => !el.hidden).map(el => el.querySelector('.pv-sec').textContent));
     if (JSON.stringify(categories) !== JSON.stringify(['Hue Sync', 'PicCap'])) fail('integration categories are missing or in the wrong order');
     if (await page.locator('#row-huesync .prot-title').textContent() !== 'Hue Sync Enabled' || await page.locator('#row-piccap .prot-title').textContent() !== 'PicCap Enabled') fail('enabled labels differ');
@@ -2885,21 +2891,30 @@ async function visitHuesyncSettings(browser, base, problems) {
         return command.action === 'huesyncSetting' && command.value.key === key;
       });
       const element = page.locator('#huesync-' + key);
-      if (typeof value === 'boolean') await element.setChecked(value);
-      else if (key === 'brightness') { await element.fill(String(value)); await element.dispatchEvent('change'); }
+      if (typeof value === 'boolean') await element.click();
+      else if (key === 'brightness') { await element.fill(String(value)); await element.blur(); }
       else await element.selectOption(String(value));
       const command = (await reply).request().postDataJSON();
       await page.waitForFunction(() => !huesyncSettingsBusy);
       if (!command || command.action !== 'huesyncSetting' || command.value.key !== key || command.value.value !== value) fail('wrong command for ' + key);
+      if (typeof value === 'boolean') {
+        await page.waitForFunction(({ key, value }) => document.getElementById('huesync-' + key).getAttribute('aria-pressed') === String(value), { key, value });
+        if (!(await element.evaluate((el, value) => el.classList.contains(value ? 'good' : 'idle'), value)) ||
+            await element.textContent() !== (value ? 'On' : 'Off')) fail(key + ' pill did not update after confirmation');
+      }
     }
     refuse = true;
+    await page.locator('#huesync-auto_start').click();
+    await page.waitForFunction(() => !huesyncSettingsBusy);
+    if (await page.locator('#huesync-auto_start').getAttribute('aria-pressed') !== 'true' ||
+        !(await page.locator('#huesync-auto_start').evaluate(el => el.classList.contains('good')))) fail('a refused boolean write changed its pill state');
     await page.locator('#huesync-brightness').fill('10');
-    await page.locator('#huesync-brightness').dispatchEvent('change');
+    await page.locator('#huesync-brightness').blur();
     await page.waitForFunction(() => !huesyncSettingsBusy);
     if (await page.locator('#huesync-brightness').inputValue() !== '60') fail('a refused write left an optimistic value visible');
-    settings._stale = ['brightness'];
+    settings._stale = ['brightness', 'auto_start'];
     await page.evaluate(() => tick());
-    await page.waitForFunction(() => document.querySelector('#huesync-brightness').disabled);
+    await page.waitForFunction(() => document.querySelector('#huesync-brightness').disabled && document.querySelector('#huesync-auto_start').disabled);
     if (!(await page.locator('#row-huesync-brightness').isVisible())) fail('a temporary failure removed the supported control');
     delete settings._stale;
     diagnostics.busy = true;
@@ -2928,14 +2943,23 @@ async function visitHuesyncSettings(browser, base, problems) {
     if (!(await page.locator('#ctl_huesync').evaluate(el => el.hidden))) fail('missing Hue Sync left its shortcut');
     piccapPresent = false;
     await page.evaluate(() => tick());
-    await page.waitForSelector('#ambient-empty:not([hidden])');
+    await page.waitForFunction(() => document.getElementById('tab-btn-ambient').hidden && activeTab === 'control');
+    if (!(await page.locator('#ambientpane').isHidden())) fail('unavailable Ambient Light panel remained open');
     if (!(await page.locator('#control-ambient').evaluate(el => el.hidden))) fail('empty remote toggle group remains visible');
+    await page.evaluate(() => showTab('ambient'));
+    if (await page.evaluate(() => activeTab) === 'ambient') fail('an unavailable Ambient Light tab can still be opened');
     huesyncPresent = true;
     await page.evaluate(() => tick());
+    await page.waitForFunction(() => !document.getElementById('tab-btn-ambient').hidden);
+    await page.evaluate(() => showTab('ambient'));
     await page.waitForSelector('#row-huesync:not([hidden])');
     if (await page.locator('#ambient-empty').isVisible()) fail('empty message remains with Hue Sync alone');
     if (!(await page.locator('#ambient-piccap').isHidden()) || !(await page.locator('#ambient-huesync').isVisible())) fail('missing PicCap left an empty category or hid Hue Sync');
     if (!(await page.locator('#ctl_piccap').evaluate(el => el.hidden))) fail('missing PicCap left its shortcut');
+    huesyncPresent = false;
+    await page.goto(base + '/?tab=ambient');
+    await page.waitForFunction(() => ambientAvailable === false && activeTab === 'control');
+    if (!(await page.locator('#tab-btn-ambient').isHidden()) || !(await page.locator('#control-ambient').isHidden())) fail('a deep link offered Ambient Light with neither integration installed');
   } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
 }
 
@@ -3036,15 +3060,21 @@ async function visitTvHuesync(browser, base, problems) {
     await page.waitForFunction(() => rows.length === 2 && rows[0].head && rows[0].label === 'PicCap' && rows[1].key === 'piccap');
     piccapPresent = false;
     await page.evaluate(() => fetchTab(true));
-    await page.waitForFunction(() => rows.length === 1 && rows[0].label === 'No ambient light integrations found.');
-    await page.keyboard.press('ArrowRight');
-    await page.waitForFunction(() => T().key !== 'ambient');
-    await page.keyboard.press('ArrowLeft');
-    await page.waitForFunction(() => T().key === 'ambient');
-    present = true;
-    await page.evaluate(() => fetchTab(true));
+    await page.waitForFunction(() => !TABS.some(section => section.key === 'ambient') && T().key !== 'ambient');
+    if (await page.locator('#tabs [data-label="Ambient Light"]').count()) fail('the unavailable TV tab remained in navigation');
+    await page.reload();
+    await page.waitForFunction(() => !TABS.some(section => section.key === 'ambient') && T().key !== 'ambient');
+    const emptyText = await page.locator('#rows').textContent();
+    if (emptyText.includes('Hue Sync Enabled') || emptyText.includes('PicCap Enabled')) fail('an empty Ambient Light deep link left controls visible');
+    present = true; streaming = false;
+    await page.reload();
     await page.waitForFunction(() => rows.some(row => row.head && row.label === 'Hue Sync') && !rows.some(row => row.key === 'piccap'));
+    if (await page.evaluate(() => T().key) !== 'ambient') fail('a stopped Hue Sync integration did not retain its TV tab');
     if (await page.evaluate(() => rows.some(row => row.head && row.label === 'PicCap'))) fail('missing PicCap left an empty category');
+    present = false; piccapPresent = true; piccapRunning = false;
+    await page.reload();
+    await page.waitForFunction(() => rows.length === 2 && rows[1].key === 'piccap' && rows[1].next === true);
+    if (await page.evaluate(() => T().key) !== 'ambient') fail('a stopped PicCap integration did not retain its TV tab');
   } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
 }
 
