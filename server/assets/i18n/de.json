@@ -627,768 +627,195 @@
     "text": "Wird heruntergeladen…",
     "from": "Downloading…"
   },
-  "common.am": {
-    "text": "AM",
-    "from": "AM"
-  },
-  "common.pm": {
-    "text": "PM",
-    "from": "PM"
-  },
-  "ctl.liveTv": {
-    "text": "Live-TV",
-    "from": "Live TV"
-  },
-  "home.plate.sdr": {
-    "text": "SDR",
-    "from": "SDR"
-  },
-  "home.plate.sizeInterlaced": {
-    "text": "{width} × {height}i bei {hz} Hz",
-    "from": "{width} × {height}i at {hz} Hz"
-  },
-  "home.plate.technicolor": {
-    "text": "Technicolor HDR",
-    "from": "Technicolor HDR"
-  },
-  "home.preview.live": {
-    "text": "Live-Vorschau",
-    "from": "Live preview"
-  },
-  "home.preview.noPicture": {
-    "text": "Kein Bild",
-    "from": "No picture"
-  },
-  "home.row.recArrange": {
-    "text": "Vorschläge deiner Apps, in der Reihenfolge der Apps-Reihe",
-    "from": "Your apps’ picks, in the Apps row’s order"
-  },
-  "home.row.recFrom": {
-    "text": "Von {app}",
-    "from": "From {app}"
-  },
-  "home.row.recOff": {
-    "text": "In den Home-Einstellungen von Glasshouse einschalten",
-    "from": "Switch on in Glasshouse’s Home settings"
-  },
-  "home.row.recommended": {
-    "text": "Empfohlen",
-    "from": "Recommended"
-  },
-  "home.search.blockedLevel": {
-    "text": "Die Einstellung „Alles“ des Werbeblockers blockiert die LG-Suche. Stelle ihn im Dashboard-Tab „Datenschutz“ auf „Werbung und Telemetrie“ oder aus.",
-    "from": "The ad blocker’s Everything setting blocks LG’s search. Set it to Ads & telemetry or off on the dashboard’s Privacy tab."
-  },
-  "home.search.blockedList": {
-    "text": "Die Hosts-Liste des Werbeblockers blockiert {host}, das die LG-Suche braucht. Entferne es im Dashboard-Tab „Datenschutz“ aus der Liste.",
-    "from": "The ad blocker’s hosts list blocks {host}, which LG’s search needs. Take it out of the list on the dashboard’s Privacy tab."
-  },
-  "home.search.blockedTitle": {
-    "text": "Suche nicht verfügbar",
-    "from": "Search is unavailable"
-  },
-  "home.search.failed": {
-    "text": "Die LG-Suche hat nicht geantwortet. Sie braucht den TV online und den Werbeblocker auf „Werbung und Telemetrie“ oder aus.",
-    "from": "LG’s search did not answer. It needs the TV online, and the ad blocker on Ads & telemetry or off."
-  },
-  "home.search.film": {
-    "text": "Film",
-    "from": "Film"
-  },
-  "home.search.found": {
-    "text": "{n} Titel in den Apps dieses TVs",
-    "from": "{n} titles on this TV’s apps"
-  },
-  "home.search.foundMore": {
-    "text": "{n} Titel in den Apps dieses TVs, {more} weitere in Apps, die er nicht hat",
-    "from": "{n} titles on this TV’s apps, {more} more on apps it does not have"
-  },
-  "home.search.foundOne": {
-    "text": "1 Titel in den Apps dieses TVs",
-    "from": "1 title on this TV’s apps"
-  },
-  "home.search.foundOneMore": {
-    "text": "1 Titel in den Apps dieses TVs, {more} weitere in Apps, die er nicht hat",
-    "from": "1 title on this TV’s apps, {more} more on apps it does not have"
-  },
-  "home.search.hintDesc": {
-    "text": "Drücke auf der ersten Kachel einer Reihe nach links, um einen Film oder eine Serie zu finden und in einer App auf diesem TV zu öffnen",
-    "from": "Press left on a row’s first tile to find a film or series and open it in an app on this TV"
-  },
-  "home.search.hintTitle": {
-    "text": "Die Suche ist links neben den Reihen",
-    "from": "Search is left of the rows"
-  },
-  "home.search.hours": {
-    "text": "{h} Std.",
-    "from": "{h} h"
-  },
-  "home.search.hoursMinutes": {
-    "text": "{h} Std. {m} Min.",
-    "from": "{h} h {m} min"
-  },
-  "home.search.looking": {
-    "text": "Suche nach „{query}“",
-    "from": "Looking for “{query}”"
-  },
-  "home.search.minutes": {
-    "text": "{m} Min.",
-    "from": "{m} min"
-  },
-  "home.search.none": {
-    "text": "Nichts zu „{query}“",
-    "from": "Nothing for “{query}”"
-  },
-  "home.search.onlyElsewhere": {
-    "text": "Nichts zu „{query}“ in den Apps dieses TVs. {n} weitere in Apps, die er nicht hat.",
-    "from": "Nothing for “{query}” on this TV’s apps. {n} more on apps it does not have."
-  },
-  "home.search.opening": {
-    "text": "{title} wird in {app} geöffnet",
-    "from": "Opening {title} on {app}"
-  },
-  "home.search.rail": {
-    "text": "Suche",
-    "from": "Search"
-  },
-  "home.search.ready": {
-    "text": "Filme und Serien in den Apps dieses TVs, über die LG-Suche",
-    "from": "Films and series on this TV’s apps, from LG’s search"
-  },
-  "home.search.series": {
-    "text": "Serie",
-    "from": "Series"
-  },
-  "home.row.iptv": {
-    "text": "Internet-TV",
-    "from": "Internet TV"
-  },
-  "home.tv.gone": {
-    "text": "Nicht mehr in der Wiedergabeliste",
-    "from": "Not in the playlist any more"
-  },
-  "home.tv.ungrouped": {
-    "text": "Sender",
-    "from": "Channels"
-  },
-  "home.tv.dupe": {
-    "text": "{n} von {total}",
-    "from": "{n} of {total}"
-  },
-  "home.tv.headersShort": {
-    "text": "Benötigt eigene HTTP-Header",
-    "from": "Needs headers"
-  },
-  "home.tv.drmShort": {
-    "text": "DRM",
-    "from": "DRM"
-  },
-  "home.tv.formatShort": {
-    "text": "Nicht abspielbar",
-    "from": "Can’t play"
-  },
-  "home.tv.loadingGroup": {
-    "text": "Gruppe wird eingelesen…",
-    "from": "Reading the group…"
-  },
-  "home.tv.channels": {
-    "text": "{n} Sender",
-    "from": "{n} channels"
-  },
-  "home.tv.matchesSome": {
-    "text": "Die ersten {n} von {total}",
-    "from": "The first {n} of {total}"
-  },
-  "home.tv.myChannels": {
-    "text": "Meine Sender",
-    "from": "My channels"
-  },
-  "home.tv.rowNone": {
-    "text": "IPTV-Wiedergabeliste im Dashboard unter Home hinzufügen",
-    "from": "Add your IPTV playlist on the dashboard’s Home tab"
-  },
-  "home.search.placeholder": {
-    "text": "Film oder Serie",
-    "from": "Film or series"
-  },
-  "home.tv.addTitle": {
-    "text": "Sender hinzufügen",
-    "from": "Add channels"
-  },
-  "home.tv.find": {
-    "text": "Sender suchen",
-    "from": "Find a channel"
-  },
-  "home.tv.guide": {
-    "text": "Programmführer",
-    "from": "Guide"
-  },
-  "home.tv.rowLogin": {
-    "text": "{name} hat die Anmeldung abgelehnt: im Dashboard prüfen",
-    "from": "{name} refused the login: check it on the dashboard"
-  },
-  "home.tv.rowFailedSince": {
-    "text": "{name} nicht erreichbar, Liste vom {date} wird angezeigt",
-    "from": "Couldn’t reach {name}, showing the list from {date}"
-  },
-  "home.tv.rowFailed": {
-    "text": "{name} nicht erreichbar",
-    "from": "Couldn’t reach {name}"
-  },
-  "home.tv.rowUpdating": {
-    "text": "Wird aktualisiert",
-    "from": "Updating"
-  },
-  "home.tv.rowFrom": {
-    "text": "{n} von {name} hinzugefügt",
-    "from": "{n} added from {name}"
-  },
-  "home.tv.guideDesc": {
-    "text": "Was jetzt und später läuft",
-    "from": "What is on now and later"
-  },
-  "home.tv.addDesc": {
-    "text": "Aus der Wiedergabeliste",
-    "from": "From your playlist"
-  },
-  "home.tv.addArrange": {
-    "text": "Sender hinzufügen: OK öffnet die Liste",
-    "from": "Add channels: OK opens the list"
-  },
-  "home.tv.via": {
-    "text": "Internet-TV, {group}: {title}",
-    "from": "Internet TV, {group}: {title}"
-  },
-  "home.tv.viaGroup": {
-    "text": "Internet-TV, {group}",
-    "from": "Internet TV, {group}"
-  },
-  "home.tv.stream": {
-    "text": "Internet-Stream",
-    "from": "Internet stream"
-  },
-  "home.tv.drm": {
-    "text": "Geschützt (DRM): hier nicht abspielbar",
-    "from": "Protected (DRM): can’t play here"
-  },
-  "home.tv.headers": {
-    "text": "Benötigt einen Player, der eigene HTTP-Header sendet",
-    "from": "Needs a player that sends its own headers"
-  },
-  "home.tv.format": {
-    "text": "Ein Stream, den dieser Fernseher nicht öffnen kann",
-    "from": "A stream this TV can’t open"
-  },
-  "home.tv.reconnecting": {
-    "text": "Verbindung mit {name} wird wiederhergestellt",
-    "from": "Reconnecting to {name}"
-  },
-  "home.tv.playAs": {
-    "text": "Gelb: als {format} abspielen",
-    "from": "Yellow: play as {format}"
-  },
-  "home.tv.connecting": {
-    "text": "Verbindung mit {name} wird hergestellt",
-    "from": "Connecting to {name}"
-  },
-  "home.tv.stopped": {
-    "text": "Der Stream wurde angehalten",
-    "from": "The stream stopped"
-  },
-  "home.tv.noStream": {
-    "text": "Dieser Sender wird nicht wiedergegeben",
-    "from": "This channel isn’t playing"
-  },
-  "home.tv.tryAgain": {
-    "text": "OK versucht es erneut. Falls jemand anderes mit diesem Konto schaut, erlaubt es möglicherweise nur einen Stream.",
-    "from": "OK tries again. If someone else is watching on this account, it may allow only one stream."
-  },
-  "home.tv.tryAgainPlain": {
-    "text": "OK versucht es erneut.",
-    "from": "OK tries again."
-  },
-  "home.tv.now": {
-    "text": "Jetzt",
-    "from": "Now"
-  },
-  "home.tv.span": {
-    "text": "{from} bis {to}",
-    "from": "{from} to {to}"
-  },
-  "home.tv.next": {
-    "text": "Danach",
-    "from": "Next"
-  },
-  "home.tv.position": {
-    "text": "{n} von {total}",
-    "from": "{n} of {total}"
-  },
-  "home.tv.oneChannel": {
-    "text": "1 Sender",
-    "from": "1 channel"
-  },
-  "home.tv.noNumber": {
-    "text": "Kein Sender auf {n}",
-    "from": "No channel {n}"
-  },
-  "home.tv.guideAll": {
-    "text": "Alle",
-    "from": "All"
-  },
-  "home.tv.guideFavourites": {
-    "text": "Favoriten",
-    "from": "Favourites"
-  },
-  "home.tv.guideNone": {
-    "text": "Kein Programm für diese Uhrzeit",
-    "from": "No guide for these hours"
-  },
-  "home.tv.onNow": {
-    "text": "Läuft jetzt",
-    "from": "On now"
-  },
-  "home.tv.guideVia": {
-    "text": "{name}, {from} bis {to}",
-    "from": "{name}, {from} to {to}"
-  },
-  "home.tv.startsAt": {
-    "text": "Beginnt um {time}",
-    "from": "Starts at {time}"
-  },
-  "home.tv.finished": {
-    "text": "Bereits beendet",
-    "from": "That has finished"
-  },
-  "home.tv.loading": {
-    "text": "Wiedergabelisten werden eingelesen…",
-    "from": "Reading your playlists…"
-  },
-  "home.tv.notReady": {
-    "text": "Die Wiedergabeliste wird noch eingelesen. In einer Minute erneut versuchen.",
-    "from": "Your playlist is still being read. Try again in a minute."
-  },
-  "home.tv.noPlaylists": {
-    "text": "Zuerst eine Wiedergabeliste im Dashboard unter Home hinzufügen.",
-    "from": "Add a playlist on the dashboard’s Home tab first."
-  },
-  "home.tv.pickPlaylist": {
-    "text": "Wiedergabeliste auswählen",
-    "from": "Pick a playlist"
-  },
-  "home.tv.liveCount": {
-    "text": "{n} Live-Sender",
-    "from": "{n} live channels"
-  },
-  "home.tv.loadingGroups": {
-    "text": "{name} wird eingelesen…",
-    "from": "Reading {name}…"
-  },
-  "home.tv.failed": {
-    "text": "Laden fehlgeschlagen. Zurück und erneut versuchen.",
-    "from": "That didn’t load. Back, then try again."
-  },
-  "home.tv.groupsSome": {
-    "text": "{n} Gruppen; zum Durchsuchen aller Gruppen tippen",
-    "from": "{n} groups; type to search them all"
-  },
-  "home.tv.groupsAll": {
-    "text": "{n} Gruppen, {channels} Live-Sender",
-    "from": "{n} groups, {channels} live channels"
-  },
-  "home.tv.groupCount": {
-    "text": "{n} Sender",
-    "from": "{n} channels"
-  },
-  "home.tv.searchCrumb": {
-    "text": "„{q}“",
-    "from": "“{q}”"
-  },
-  "home.tv.searching": {
-    "text": "Suche nach „{q}“…",
-    "from": "Looking for “{q}”…"
-  },
-  "home.tv.noMatch": {
-    "text": "Kein Sender namens „{q}“",
-    "from": "Nothing called “{q}”"
-  },
-  "home.tv.matchOne": {
-    "text": "1 Sender",
-    "from": "1 channel"
-  },
-  "home.tv.cantAdd": {
-    "text": "Dieser Sender kann auf dem Fernseher nicht wiedergegeben werden",
-    "from": "this channel can’t play on the TV"
-  },
-  "home.tv.full": {
-    "text": "Die Zeile fasst {max} Sender; zuerst einen entfernen",
-    "from": "The row holds {max} channels; remove one first"
-  },
-  "home.tv.saveFailed": {
-    "text": "Speichern fehlgeschlagen",
-    "from": "That didn’t save"
-  },
-  "home.tv.added": {
-    "text": "{name} ist in der Zeile",
-    "from": "{name} is on the row"
-  },
-  "home.tv.removed": {
-    "text": "{name} wurde aus der Zeile entfernt",
-    "from": "{name} is off the row"
-  },
-  "home.choose": {
-    "text": "Launcher auswählen",
-    "from": "Choose your launcher"
-  },
-  "home.custom": {
-    "text": "Eigener",
-    "from": "Custom"
-  },
-  "home.minimalName": {
-    "text": "Glasshouse Minimal",
-    "from": "Glasshouse Minimal"
-  },
-  "home.pressAgain": {
-    "text": "Zum Bestätigen erneut drücken",
-    "from": "Press again to confirm"
-  },
-  "home.experimentalAny": {
-    "text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home, Glasshouse Minimal und eigene Launcher ersetzen jeweils LGs Startbildschirm. Wenn einer nicht richtig funktioniert, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder wählen Sie hier LG Home, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.",
-    "from": "Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG’s Home screen. If one misbehaves, hold Home on the remote for a second to open LG’s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."
-  },
-  "home.restartsAppsAny": {
-    "text": "Auf diesem Fernseher startet der Wechsel weg von LG Home oder zurück, oder das Gedrückthalten von Home für LGs Startbildschirm, die App-Verwaltung des Fernsehers neu, die geöffnete Apps schließt.",
-    "from": "On this TV, switching away from LG Home or back to it, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."
-  },
-  "home.launcher.doneOffCustom": {
-    "text": "Fertig. Drücken Sie oben auf Eigener und dann erneut, um ihn zum Startbildschirm des Fernsehers zu machen.",
-    "from": "Done. Press Custom above, then again, to make it the TV’s Home."
-  },
-  "home.showTvLogosDescName": {
-    "text": "Bei Internet-TV: das Logo der Playlist für jeden Sender. Aus zeigt stattdessen den Namen des Senders.",
-    "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."
-  },
-  "home.weather.clearNight": {
-    "text": "Klare Nacht",
-    "from": "Clear night"
-  },
-  "home.weather.credit": {
-    "text": "Wetterdaten von Open-Meteo.com",
-    "from": "Weather data by Open-Meteo.com"
-  },
-  "home.weather.cloudy": {
-    "text": "Bewölkt",
-    "from": "Cloudy"
-  },
-  "home.weather.fog": {
-    "text": "Nebel",
-    "from": "Fog"
-  },
-  "home.weather.hail": {
-    "text": "Hagel",
-    "from": "Hail"
-  },
-  "home.weather.lightning": {
-    "text": "Blitze",
-    "from": "Lightning"
-  },
-  "home.weather.lightningRainy": {
-    "text": "Gewitter",
-    "from": "Thunderstorms"
-  },
-  "home.weather.partlycloudy": {
-    "text": "Teilweise bewölkt",
-    "from": "Partly cloudy"
-  },
-  "home.weather.pouring": {
-    "text": "Starkregen",
-    "from": "Pouring rain"
-  },
-  "home.weather.rainy": {
-    "text": "Regnerisch",
-    "from": "Rainy"
-  },
-  "home.weather.snowy": {
-    "text": "Schnee",
-    "from": "Snowy"
-  },
-  "home.weather.snowyRainy": {
-    "text": "Schneeregen",
-    "from": "Snow and rain"
-  },
-  "home.weather.sunny": {
-    "text": "Sonnig",
-    "from": "Sunny"
-  },
-  "home.weather.windy": {
-    "text": "Windig",
-    "from": "Windy"
-  },
-  "home.weather.windyVariant": {
-    "text": "Windig",
-    "from": "Windy"
-  },
-  "home.weather.exceptional": {
-    "text": "Unwetter",
-    "from": "Severe weather"
-  },
-  "ha.api": {
-    "text": "Home Assistant-API",
-    "from": "Home Assistant API"
-  },
-  "ha.api.desc": {
-    "text": "Zeigt Live-Entitäten von Home Assistant in Glasshouse-Bildschirmschonern (wie Ambient) an. Verbindet sich direkt per HTTP/HTTPS ohne MQTT und speichert ohne Neustart.",
-    "from": "Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."
-  },
-  "ha.connected": {
-    "text": "Verbunden: {msg}",
-    "from": "Connected: {msg}"
-  },
-  "ha.test": {
-    "text": "Verbindung testen",
-    "from": "Test connection"
-  },
-  "ha.testFailed": {
-    "text": "Verbindung fehlgeschlagen",
-    "from": "Connection failed"
-  },
-  "ha.testing": {
-    "text": "Verbindung wird getestet...",
-    "from": "Testing connection..."
-  },
-  "ha.token": {
-    "text": "Langlebiges Zugriffstoken",
-    "from": "Long-Lived Access Token"
-  },
-  "ha.token.hint": {
-    "text": "Aus Ihrem Home Assistant-Profil → Langlebige Zugriffstoken.",
-    "from": "From your Home Assistant profile → Long-Lived Access Tokens."
-  },
-  "ha.token.set": {
-    "text": "Ein Token ist gesetzt. Leer lassen, um es beizubehalten.",
-    "from": "A token is set. Leave blank to keep it."
-  },
-  "ha.url": {
-    "text": "Home Assistant-Adresse",
-    "from": "Home Assistant address"
-  },
-  "ha.url.hint": {
-    "text": "Adresse und Port Ihrer Home Assistant-Instanz.",
-    "from": "Address and port of your Home Assistant instance."
-  },
-  "srv.saver.badEntities": {
-    "text": "{file}: entities benötigt kurze Namen mit jeweils einer Home Assistant-Entitäts-ID wie sensor.outdoor_temperature, bis zu {max} Stück.",
-    "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."
-  },
-  "srv.saver.haUses": {
-    "text": "{file}: entities und „ha“ in uses gehören zusammen.",
-    "from": "{file}: entities and \"ha\" in uses go together."
-  },
-  "srv.saver.undeclaredHa": {
-    "text": "{main} verwendet {placeholder}, und saver.json nennt diese Entität nicht unter entities.",
-    "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."
-  },
-  "ss.entities": {
-    "text": "Home Assistant-Entitäten",
-    "from": "Home Assistant Entities"
-  },
-  "ss.entities.desc": {
-    "text": "Wählen Sie die Home Assistant-Entitäten und optional kurze Anzeigenamen aus. Lassen Sie eine Entität leer, um sie auszublenden.",
-    "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."
-  },
-  "ss.haNotConfigured": {
-    "text": "Die Home Assistant-API ist nicht konfiguriert. Speichern Sie Adresse und Zugriffstoken im Reiter „HA und MQTT“.",
-    "from": "Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab."
-  },
-  "ha.cleared": {
-    "text": "Gelöscht.",
-    "from": "Cleared."
-  },
-  "ha.connectedUnsaved": {
-    "text": "Verbunden: {msg} (Zum Übernehmen auf Speichern klicken)",
-    "from": "Connected: {msg} (click Save to apply)"
-  },
-  "ha.save": {
-    "text": "Speichern",
-    "from": "Save"
-  },
-  "ha.savedConnected": {
-    "text": "Gespeichert — Verbunden: {msg}",
-    "from": "Saved — Connected: {msg}"
-  },
-  "ha.savedStatus": {
-    "text": "Konfiguriert",
-    "from": "Configured"
-  },
-  "ha.savedWarn": {
-    "text": "Gespeichert (Test fehlgeschlagen: {err})",
-    "from": "Saved (test failed: {err})"
-  },
-  "ss.chooseEntity": {
-    "text": "Entität auswählen",
-    "from": "Choose entity"
-  },
-  "ss.clearEntity": {
-    "text": "Leeren",
-    "from": "Clear"
-  },
-  "ss.entityHidden": {
-    "text": "Ausgeblendet",
-    "from": "Hidden"
-  },
-  "ss.loadingEntities": {
-    "text": "Entitäten werden geladen...",
-    "from": "Loading entities..."
-  },
-  "ss.noEntitiesMatch": {
-    "text": "Keine passenden Entitäten",
-    "from": "No matching entities"
-  },
-  "ss.openMqtt": {
-    "text": "HA- und MQTT-Einstellungen öffnen",
-    "from": "Open HA and MQTT settings"
-  },
-  "ss.sensorSlot": {
-    "text": "Sensor {n}",
-    "from": "Sensor {n}"
-  },
-  "mqtt.entities": {
-    "text": "Veröffentlichte TV-Entitäten",
-    "from": "Published TV entities"
-  },
-  "ha.notSet": {
-    "text": "Nicht eingerichtet",
-    "from": "Not set"
-  },
-  "ha.statusTitle": {
-    "text": "Status",
-    "from": "Status"
-  },
-  "ha.summaryEmpty": {
-    "text": "Bildschirmschoner können erst Home Assistant-Entitäten lesen, wenn dies eingerichtet ist.",
-    "from": "Screen savers cannot read Home Assistant entities until configured."
-  },
-  "mqtt.section": {
-    "text": "MQTT-Bridge",
-    "from": "MQTT bridge"
-  },
-  "mqtt.section.desc": {
-    "text": "Diesen Fernseher über Home Assistant oder einen MQTT-Client steuern und überwachen. Sendet Telemetrie, Sensoren und Einstellungen an Ihren Broker.",
-    "from": "Control and observe this TV from Home Assistant or an MQTT client. Publishes TV telemetry, sensors, and settings to your broker and accepts remote commands."
-  },
-  "ss.entityLabel": {
-    "text": "Beschriftung",
-    "from": "Label"
-  },
-  "ss.entityLabelPlaceholder": {
-    "text": "Home Assistant-Name (optional überschreiben)",
-    "from": "Home Assistant name (optional override)"
-  },
-  "srv.saver.badEntityList": {
-    "text": "{file}: entityList benötigt ganzzahlige min (1 bis {max}) und max (min bis {max}).",
-    "from": "{file}: entityList needs integer min (1 to {max}) and max (min to {max})."
-  },
-  "srv.saver.haListUses": {
-    "text": "{file}: entityList und \"ha-list\" in uses gehören zusammen.",
-    "from": "{file}: entityList and \"ha-list\" in uses go together."
-  },
-  "srv.saver.needsHa": {
-    "text": "Richten Sie zuerst die Home Assistant-API im Tab HA und MQTT ein.",
-    "from": "Configure the Home Assistant API on the HA and MQTT tab first."
-  },
-  "srv.saver.tooFewEntities": {
-    "text": "Fügen Sie \"{saver}\" mindestens {min} Home Assistant-Entitäten hinzu, bevor Sie ihn starten (OLED-Einbrennschutz).",
-    "from": "Add at least {min} Home Assistant entities to \"{saver}\" before starting it (OLED burn-in protection)."
-  },
-  "ss.entities.tooFew": {
-    "text": "Fügen Sie mindestens {min} Entitäten hinzu, bevor Sie diesen Bildschirmschoner starten (OLED-Einbrennschutz).",
-    "from": "Add at least {min} entities before starting this screen saver (OLED burn-in protection)."
-  },
-  "ss.entityList.addBtn": {
-    "text": "Hinzufügen",
-    "from": "Add"
-  },
-  "ss.entityList.addLabel": {
-    "text": "Entität hinzufügen",
-    "from": "Add entity"
-  },
-  "ss.entityList.addPlaceholder": {
-    "text": "Entitäts-ID suchen oder eingeben...",
-    "from": "Search or type entity ID..."
-  },
-  "ss.entityList.customLabelPlaceholder": {
-    "text": "Eigener Anzeigename (optional)",
-    "from": "Custom display label (optional)"
-  },
-  "ss.entityList.moveDown": {
-    "text": "Nach unten",
-    "from": "Move down"
-  },
-  "ss.entityList.moveUp": {
-    "text": "Nach oben",
-    "from": "Move up"
-  },
-  "ss.entityList.remove": {
-    "text": "Entfernen",
-    "from": "Remove"
-  },
-  "ss.entityList.statusNeedMore": {
-    "text": "Fügen Sie mindestens {min} Entitäten hinzu ({count} von {max} eingerichtet). Wechselt der Reihe nach und verschiebt Pixel bei jedem Wechsel zum OLED-Schutz.",
-    "from": "Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in."
-  },
-  "ss.entityList.statusReady": {
-    "text": "Wechselt der Reihe nach durch {count} von {max} Entitäten. Feld leer lassen, um den Home Assistant-Namen zu nutzen.",
-    "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."
-  },
-  "ha.enabled.off": {
-    "text": "Ausgeschaltet. Home Assistant-Bildschirmschoner sind deaktiviert, Adresse und Token bleiben gespeichert.",
-    "from": "Turned off. Home Assistant screen savers are disabled while keeping your saved address and token."
-  },
-  "ha.enabled.on": {
-    "text": "Bildschirmschoner können eingerichtete Home Assistant-Entitäten lesen.",
-    "from": "Screen savers can read configured Home Assistant entities."
-  },
-  "ha.savedOff": {
-    "text": "Gespeichert (Home Assistant-API ist ausgeschaltet).",
-    "from": "Saved (Home Assistant API is turned off)."
-  },
-  "ha.status.checking": {
-    "text": "Wird geprüft...",
-    "from": "Checking..."
-  },
-  "ha.status.connected": {
-    "text": "Verbunden",
-    "from": "Connected"
-  },
-  "ha.summaryOff": {
-    "text": "Ausgeschaltet. Oben einschalten, um Home Assistant-Bildschirmschoner wieder zu aktivieren.",
-    "from": "Turned off. Switch on above to re-enable Home Assistant screen savers."
-  },
-  "srv.saver.color.amber": {
-    "text": "Bernstein",
-    "from": "Amber"
-  },
-  "srv.saver.color.blue": {
-    "text": "Blau",
-    "from": "Blue"
-  },
-  "srv.saver.color.green": {
-    "text": "Grün",
-    "from": "Green"
-  },
-  "srv.saver.color.purple": {
-    "text": "Violett",
-    "from": "Purple"
-  },
-  "srv.saver.color.red": {
-    "text": "Rot",
-    "from": "Red"
-  },
-  "srv.saver.color.white": {
-    "text": "Weiß",
-    "from": "White"
-  },
-  "ss.valueColor": {
-    "text": "Wertfarbe",
-    "from": "Value colour"
-  }
+ "common.am": {"text": "AM", "from": "AM"},
+ "common.pm": {"text": "PM", "from": "PM"},
+ "ctl.liveTv": {"text": "Live-TV", "from": "Live TV"},
+ "home.plate.sdr": {"text": "SDR", "from": "SDR"},
+ "home.plate.sizeInterlaced": {"text": "{width} × {height}i bei {hz} Hz", "from": "{width} × {height}i at {hz} Hz"},
+ "home.plate.technicolor": {"text": "Technicolor HDR", "from": "Technicolor HDR"},
+ "home.preview.live": {"text": "Live-Vorschau", "from": "Live preview"},
+ "home.preview.noPicture": {"text": "Kein Bild", "from": "No picture"},
+ "home.row.recArrange": {"text": "Vorschläge deiner Apps, in der Reihenfolge der Apps-Reihe", "from": "Your apps’ picks, in the Apps row’s order"},
+ "home.row.recFrom": {"text": "Von {app}", "from": "From {app}"},
+ "home.row.recOff": {"text": "In den Home-Einstellungen von Glasshouse einschalten", "from": "Switch on in Glasshouse’s Home settings"},
+ "home.row.recommended": {"text": "Empfohlen", "from": "Recommended"},
+ "home.search.blockedLevel": {"text": "Die Einstellung „Alles“ des Werbeblockers blockiert die LG-Suche. Stelle ihn im Dashboard-Tab „Datenschutz“ auf „Werbung und Telemetrie“ oder aus.", "from": "The ad blocker’s Everything setting blocks LG’s search. Set it to Ads & telemetry or off on the dashboard’s Privacy tab."},
+ "home.search.blockedList": {"text": "Die Hosts-Liste des Werbeblockers blockiert {host}, das die LG-Suche braucht. Entferne es im Dashboard-Tab „Datenschutz“ aus der Liste.", "from": "The ad blocker’s hosts list blocks {host}, which LG’s search needs. Take it out of the list on the dashboard’s Privacy tab."},
+ "home.search.blockedTitle": {"text": "Suche nicht verfügbar", "from": "Search is unavailable"},
+ "home.search.failed": {"text": "Die LG-Suche hat nicht geantwortet. Sie braucht den TV online und den Werbeblocker auf „Werbung und Telemetrie“ oder aus.", "from": "LG’s search did not answer. It needs the TV online, and the ad blocker on Ads & telemetry or off."},
+ "home.search.film": {"text": "Film", "from": "Film"},
+ "home.search.found": {"text": "{n} Titel in den Apps dieses TVs", "from": "{n} titles on this TV’s apps"},
+ "home.search.foundMore": {"text": "{n} Titel in den Apps dieses TVs, {more} weitere in Apps, die er nicht hat", "from": "{n} titles on this TV’s apps, {more} more on apps it does not have"},
+ "home.search.foundOne": {"text": "1 Titel in den Apps dieses TVs", "from": "1 title on this TV’s apps"},
+ "home.search.foundOneMore": {"text": "1 Titel in den Apps dieses TVs, {more} weitere in Apps, die er nicht hat", "from": "1 title on this TV’s apps, {more} more on apps it does not have"},
+ "home.search.hintDesc": {"text": "Drücke auf der ersten Kachel einer Reihe nach links, um einen Film oder eine Serie zu finden und in einer App auf diesem TV zu öffnen", "from": "Press left on a row’s first tile to find a film or series and open it in an app on this TV"},
+ "home.search.hintTitle": {"text": "Die Suche ist links neben den Reihen", "from": "Search is left of the rows"},
+ "home.search.hours": {"text": "{h} Std.", "from": "{h} h"},
+ "home.search.hoursMinutes": {"text": "{h} Std. {m} Min.", "from": "{h} h {m} min"},
+ "home.search.looking": {"text": "Suche nach „{query}“", "from": "Looking for “{query}”"},
+ "home.search.minutes": {"text": "{m} Min.", "from": "{m} min"},
+ "home.search.none": {"text": "Nichts zu „{query}“", "from": "Nothing for “{query}”"},
+ "home.search.onlyElsewhere": {"text": "Nichts zu „{query}“ in den Apps dieses TVs. {n} weitere in Apps, die er nicht hat.", "from": "Nothing for “{query}” on this TV’s apps. {n} more on apps it does not have."},
+ "home.search.opening": {"text": "{title} wird in {app} geöffnet", "from": "Opening {title} on {app}"},
+ "home.search.rail": {"text": "Suche", "from": "Search"},
+ "home.search.ready": {"text": "Filme und Serien in den Apps dieses TVs, über die LG-Suche", "from": "Films and series on this TV’s apps, from LG’s search"},
+ "home.search.series": {"text": "Serie", "from": "Series"},
+ "home.row.iptv": {"text": "Internet-TV", "from": "Internet TV"},
+ "home.tv.gone": {"text": "Nicht mehr in der Wiedergabeliste", "from": "Not in the playlist any more"},
+ "home.tv.ungrouped": {"text": "Sender", "from": "Channels"},
+ "home.tv.dupe": {"text": "{n} von {total}", "from": "{n} of {total}"},
+ "home.tv.headersShort": {"text": "Benötigt eigene HTTP-Header", "from": "Needs headers"},
+ "home.tv.drmShort": {"text": "DRM", "from": "DRM"},
+ "home.tv.formatShort": {"text": "Nicht abspielbar", "from": "Can’t play"},
+ "home.tv.loadingGroup": {"text": "Gruppe wird eingelesen…", "from": "Reading the group…"},
+ "home.tv.channels": {"text": "{n} Sender", "from": "{n} channels"},
+ "home.tv.matchesSome": {"text": "Die ersten {n} von {total}", "from": "The first {n} of {total}"},
+ "home.tv.myChannels": {"text": "Meine Sender", "from": "My channels"},
+ "home.tv.rowNone": {"text": "IPTV-Wiedergabeliste im Dashboard unter Home hinzufügen", "from": "Add your IPTV playlist on the dashboard’s Home tab"},
+ "home.search.placeholder": {"text": "Film oder Serie", "from": "Film or series"},
+ "home.tv.addTitle": {"text": "Sender hinzufügen", "from": "Add channels"},
+ "home.tv.find": {"text": "Sender suchen", "from": "Find a channel"},
+ "home.tv.guide": {"text": "Programmführer", "from": "Guide"},
+ "home.tv.rowLogin": {"text": "{name} hat die Anmeldung abgelehnt: im Dashboard prüfen", "from": "{name} refused the login: check it on the dashboard"},
+ "home.tv.rowFailedSince": {"text": "{name} nicht erreichbar, Liste vom {date} wird angezeigt", "from": "Couldn’t reach {name}, showing the list from {date}"},
+ "home.tv.rowFailed": {"text": "{name} nicht erreichbar", "from": "Couldn’t reach {name}"},
+ "home.tv.rowUpdating": {"text": "Wird aktualisiert", "from": "Updating"},
+ "home.tv.rowFrom": {"text": "{n} von {name} hinzugefügt", "from": "{n} added from {name}"},
+ "home.tv.guideDesc": {"text": "Was jetzt und später läuft", "from": "What is on now and later"},
+ "home.tv.addDesc": {"text": "Aus der Wiedergabeliste", "from": "From your playlist"},
+ "home.tv.addArrange": {"text": "Sender hinzufügen: OK öffnet die Liste", "from": "Add channels: OK opens the list"},
+ "home.tv.via": {"text": "Internet-TV, {group}: {title}", "from": "Internet TV, {group}: {title}"},
+ "home.tv.viaGroup": {"text": "Internet-TV, {group}", "from": "Internet TV, {group}"},
+ "home.tv.stream": {"text": "Internet-Stream", "from": "Internet stream"},
+ "home.tv.drm": {"text": "Geschützt (DRM): hier nicht abspielbar", "from": "Protected (DRM): can’t play here"},
+ "home.tv.headers": {"text": "Benötigt einen Player, der eigene HTTP-Header sendet", "from": "Needs a player that sends its own headers"},
+ "home.tv.format": {"text": "Ein Stream, den dieser Fernseher nicht öffnen kann", "from": "A stream this TV can’t open"},
+ "home.tv.reconnecting": {"text": "Verbindung mit {name} wird wiederhergestellt", "from": "Reconnecting to {name}"},
+ "home.tv.playAs": {"text": "Gelb: als {format} abspielen", "from": "Yellow: play as {format}"},
+ "home.tv.connecting": {"text": "Verbindung mit {name} wird hergestellt", "from": "Connecting to {name}"},
+ "home.tv.stopped": {"text": "Der Stream wurde angehalten", "from": "The stream stopped"},
+ "home.tv.noStream": {"text": "Dieser Sender wird nicht wiedergegeben", "from": "This channel isn’t playing"},
+ "home.tv.tryAgain": {"text": "OK versucht es erneut. Falls jemand anderes mit diesem Konto schaut, erlaubt es möglicherweise nur einen Stream.", "from": "OK tries again. If someone else is watching on this account, it may allow only one stream."},
+ "home.tv.tryAgainPlain": {"text": "OK versucht es erneut.", "from": "OK tries again."},
+ "home.tv.now": {"text": "Jetzt", "from": "Now"},
+ "home.tv.span": {"text": "{from} bis {to}", "from": "{from} to {to}"},
+ "home.tv.next": {"text": "Danach", "from": "Next"},
+ "home.tv.position": {"text": "{n} von {total}", "from": "{n} of {total}"},
+ "home.tv.oneChannel": {"text": "1 Sender", "from": "1 channel"},
+ "home.tv.noNumber": {"text": "Kein Sender auf {n}", "from": "No channel {n}"},
+ "home.tv.guideAll": {"text": "Alle", "from": "All"},
+ "home.tv.guideFavourites": {"text": "Favoriten", "from": "Favourites"},
+ "home.tv.guideNone": {"text": "Kein Programm für diese Uhrzeit", "from": "No guide for these hours"},
+ "home.tv.onNow": {"text": "Läuft jetzt", "from": "On now"},
+ "home.tv.guideVia": {"text": "{name}, {from} bis {to}", "from": "{name}, {from} to {to}"},
+ "home.tv.startsAt": {"text": "Beginnt um {time}", "from": "Starts at {time}"},
+ "home.tv.finished": {"text": "Bereits beendet", "from": "That has finished"},
+ "home.tv.loading": {"text": "Wiedergabelisten werden eingelesen…", "from": "Reading your playlists…"},
+ "home.tv.notReady": {"text": "Die Wiedergabeliste wird noch eingelesen. In einer Minute erneut versuchen.", "from": "Your playlist is still being read. Try again in a minute."},
+ "home.tv.noPlaylists": {"text": "Zuerst eine Wiedergabeliste im Dashboard unter Home hinzufügen.", "from": "Add a playlist on the dashboard’s Home tab first."},
+ "home.tv.pickPlaylist": {"text": "Wiedergabeliste auswählen", "from": "Pick a playlist"},
+ "home.tv.liveCount": {"text": "{n} Live-Sender", "from": "{n} live channels"},
+ "home.tv.loadingGroups": {"text": "{name} wird eingelesen…", "from": "Reading {name}…"},
+ "home.tv.failed": {"text": "Laden fehlgeschlagen. Zurück und erneut versuchen.", "from": "That didn’t load. Back, then try again."},
+ "home.tv.groupsSome": {"text": "{n} Gruppen; zum Durchsuchen aller Gruppen tippen", "from": "{n} groups; type to search them all"},
+ "home.tv.groupsAll": {"text": "{n} Gruppen, {channels} Live-Sender", "from": "{n} groups, {channels} live channels"},
+ "home.tv.groupCount": {"text": "{n} Sender", "from": "{n} channels"},
+ "home.tv.searchCrumb": {"text": "„{q}“", "from": "“{q}”"},
+ "home.tv.searching": {"text": "Suche nach „{q}“…", "from": "Looking for “{q}”…"},
+ "home.tv.noMatch": {"text": "Kein Sender namens „{q}“", "from": "Nothing called “{q}”"},
+ "home.tv.matchOne": {"text": "1 Sender", "from": "1 channel"},
+ "home.tv.cantAdd": {"text": "Dieser Sender kann auf dem Fernseher nicht wiedergegeben werden", "from": "this channel can’t play on the TV"},
+ "home.tv.full": {"text": "Die Zeile fasst {max} Sender; zuerst einen entfernen", "from": "The row holds {max} channels; remove one first"},
+ "home.tv.saveFailed": {"text": "Speichern fehlgeschlagen", "from": "That didn’t save"},
+ "home.tv.added": {"text": "{name} ist in der Zeile", "from": "{name} is on the row"},
+ "home.tv.removed": {"text": "{name} wurde aus der Zeile entfernt", "from": "{name} is off the row"},
+ "home.choose": {"text": "Launcher auswählen", "from": "Choose your launcher"},
+ "home.custom": {"text": "Eigener", "from": "Custom"},
+ "home.minimalName": {"text": "Glasshouse Minimal", "from": "Glasshouse Minimal"},
+ "home.pressAgain": {"text": "Zum Bestätigen erneut drücken", "from": "Press again to confirm"},
+ "home.experimentalAny": {"text": "Experimentell: Es funktioniert möglicherweise nicht immer wie erwartet. Glasshouse Home, Glasshouse Minimal und eigene Launcher ersetzen jeweils LGs Startbildschirm. Wenn einer nicht richtig funktioniert, halten Sie die Home-Taste der Fernbedienung eine Sekunde gedrückt, um LGs Startbildschirm zu öffnen, oder wählen Sie hier LG Home, um zurückzuwechseln. In der ersten halben Minute nach einem Kaltstart zeigt Home eine Meldung, dass es startet.", "from": "Experimental: it may not always work as expected. Glasshouse Home, Glasshouse Minimal and custom launchers each replace LG’s Home screen. If one misbehaves, hold Home on the remote for a second to open LG’s Home, or choose LG Home here to switch back. For the first half minute after the TV starts from cold, Home shows a message that it is starting."},
+ "home.restartsAppsAny": {"text": "Auf diesem Fernseher startet der Wechsel weg von LG Home oder zurück, oder das Gedrückthalten von Home für LGs Startbildschirm, die App-Verwaltung des Fernsehers neu, die geöffnete Apps schließt.", "from": "On this TV, switching away from LG Home or back to it, or holding Home for LG’s Home, restarts the TV’s app manager, which closes the apps that are open."},
+ "home.launcher.doneOffCustom": {"text": "Fertig. Drücken Sie oben auf Eigener und dann erneut, um ihn zum Startbildschirm des Fernsehers zu machen.", "from": "Done. Press Custom above, then again, to make it the TV’s Home."},
+ "home.showTvLogosDescName": {"text": "Bei Internet-TV: das Logo der Playlist für jeden Sender. Aus zeigt stattdessen den Namen des Senders.", "from": "On Internet TV: the playlist’s logo for each channel. Off shows the channel’s name in its place."},
+ "home.weather.clearNight": {"text": "Klare Nacht", "from": "Clear night"},
+ "home.weather.credit": {"text": "Wetterdaten von Open-Meteo.com", "from": "Weather data by Open-Meteo.com"},
+ "home.weather.cloudy": {"text": "Bewölkt", "from": "Cloudy"},
+ "home.weather.fog": {"text": "Nebel", "from": "Fog"},
+ "home.weather.hail": {"text": "Hagel", "from": "Hail"},
+ "home.weather.lightning": {"text": "Blitze", "from": "Lightning"},
+ "home.weather.lightningRainy": {"text": "Gewitter", "from": "Thunderstorms"},
+ "home.weather.partlycloudy": {"text": "Teilweise bewölkt", "from": "Partly cloudy"},
+ "home.weather.pouring": {"text": "Starkregen", "from": "Pouring rain"},
+ "home.weather.rainy": {"text": "Regnerisch", "from": "Rainy"},
+ "home.weather.snowy": {"text": "Schnee", "from": "Snowy"},
+ "home.weather.snowyRainy": {"text": "Schneeregen", "from": "Snow and rain"},
+ "home.weather.sunny": {"text": "Sonnig", "from": "Sunny"},
+ "home.weather.windy": {"text": "Windig", "from": "Windy"},
+ "home.weather.windyVariant": {"text": "Windig", "from": "Windy"},
+ "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"},
+ "ha.api": {"text": "Home Assistant-API", "from": "Home Assistant API"},
+ "ha.api.desc": {"text": "Zeigt Live-Entitäten von Home Assistant in Glasshouse-Bildschirmschonern (wie Ambient) an. Verbindet sich direkt per HTTP/HTTPS ohne MQTT und speichert ohne Neustart.", "from": "Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
+ "ha.connected": {"text": "Verbunden: {msg}", "from": "Connected: {msg}"},
+ "ha.test": {"text": "Verbindung testen", "from": "Test connection"},
+ "ha.testFailed": {"text": "Verbindung fehlgeschlagen", "from": "Connection failed"},
+ "ha.testing": {"text": "Verbindung wird getestet...", "from": "Testing connection..."},
+ "ha.token": {"text": "Langlebiges Zugriffstoken", "from": "Long-Lived Access Token"},
+ "ha.token.hint": {"text": "Aus Ihrem Home Assistant-Profil → Langlebige Zugriffstoken.", "from": "From your Home Assistant profile → Long-Lived Access Tokens."},
+ "ha.token.set": {"text": "Ein Token ist gesetzt. Leer lassen, um es beizubehalten.", "from": "A token is set. Leave blank to keep it."},
+ "ha.url": {"text": "Home Assistant-Adresse", "from": "Home Assistant address"},
+ "ha.url.hint": {"text": "Adresse und Port Ihrer Home Assistant-Instanz.", "from": "Address and port of your Home Assistant instance."},
+ "srv.saver.badEntities": {"text": "{file}: entities benötigt kurze Namen mit jeweils einer Home Assistant-Entitäts-ID wie sensor.outdoor_temperature, bis zu {max} Stück.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
+ "srv.saver.haUses": {"text": "{file}: entities und „ha“ in uses gehören zusammen.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.undeclaredHa": {"text": "{main} verwendet {placeholder}, und saver.json nennt diese Entität nicht unter entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
+ "ss.entities": {"text": "Home Assistant-Entitäten", "from": "Home Assistant Entities"},
+ "ss.entities.desc": {"text": "Wählen Sie die Home Assistant-Entitäten und optional kurze Anzeigenamen aus. Lassen Sie eine Entität leer, um sie auszublenden.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},
+ "ss.haNotConfigured": {"text": "Die Home Assistant-API ist nicht konfiguriert. Speichern Sie Adresse und Zugriffstoken im Reiter „HA und MQTT“.", "from": "Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab."},
+ "ha.cleared": {"text": "Gelöscht.", "from": "Cleared."},
+ "ha.connectedUnsaved": {"text": "Verbunden: {msg} (Zum Übernehmen auf Speichern klicken)", "from": "Connected: {msg} (click Save to apply)"},
+ "ha.save": {"text": "Speichern", "from": "Save"},
+ "ha.savedConnected": {"text": "Gespeichert — Verbunden: {msg}", "from": "Saved — Connected: {msg}"},
+ "ha.savedStatus": {"text": "Konfiguriert", "from": "Configured"},
+ "ha.savedWarn": {"text": "Gespeichert (Test fehlgeschlagen: {err})", "from": "Saved (test failed: {err})"},
+ "ss.chooseEntity": {"text": "Entität auswählen", "from": "Choose entity"},
+ "ss.clearEntity": {"text": "Leeren", "from": "Clear"},
+ "ss.entityHidden": {"text": "Ausgeblendet", "from": "Hidden"},
+ "ss.loadingEntities": {"text": "Entitäten werden geladen...", "from": "Loading entities..."},
+ "ss.noEntitiesMatch": {"text": "Keine passenden Entitäten", "from": "No matching entities"},
+ "ss.openMqtt": {"text": "HA- und MQTT-Einstellungen öffnen", "from": "Open HA and MQTT settings"},
+ "ss.sensorSlot": {"text": "Sensor {n}", "from": "Sensor {n}"},
+ "mqtt.entities": {"text": "Veröffentlichte TV-Entitäten", "from": "Published TV entities"},
+ "ha.notSet": {"text": "Nicht eingerichtet", "from": "Not set"},
+ "ha.statusTitle": {"text": "Status", "from": "Status"},
+ "ha.summaryEmpty": {"text": "Bildschirmschoner können erst Home Assistant-Entitäten lesen, wenn dies eingerichtet ist.", "from": "Screen savers cannot read Home Assistant entities until configured."},
+ "mqtt.section": {"text": "MQTT-Bridge", "from": "MQTT bridge"},
+ "mqtt.section.desc": {"text": "Diesen Fernseher über Home Assistant oder einen MQTT-Client steuern und überwachen. Sendet Telemetrie, Sensoren und Einstellungen an Ihren Broker.", "from": "Control and observe this TV from Home Assistant or an MQTT client. Publishes TV telemetry, sensors, and settings to your broker and accepts remote commands."},
+ "ss.entityLabel": {"text": "Beschriftung", "from": "Label"},
+ "ss.entityLabelPlaceholder": {"text": "Home Assistant-Name (optional überschreiben)", "from": "Home Assistant name (optional override)"},
+ "srv.saver.badEntityList": {"text": "{file}: entityList benötigt ganzzahlige min (1 bis {max}) und max (min bis {max}).", "from": "{file}: entityList needs integer min (1 to {max}) and max (min to {max})."},
+ "srv.saver.haListUses": {"text": "{file}: entityList und \"ha-list\" in uses gehören zusammen.", "from": "{file}: entityList and \"ha-list\" in uses go together."},
+ "srv.saver.needsHa": {"text": "Richten Sie zuerst die Home Assistant-API im Tab HA und MQTT ein.", "from": "Configure the Home Assistant API on the HA and MQTT tab first."},
+ "srv.saver.tooFewEntities": {"text": "Fügen Sie \"{saver}\" mindestens {min} Home Assistant-Entitäten hinzu, bevor Sie ihn starten (OLED-Einbrennschutz).", "from": "Add at least {min} Home Assistant entities to \"{saver}\" before starting it (OLED burn-in protection)."},
+ "ss.entities.tooFew": {"text": "Fügen Sie mindestens {min} Entitäten hinzu, bevor Sie diesen Bildschirmschoner starten (OLED-Einbrennschutz).", "from": "Add at least {min} entities before starting this screen saver (OLED burn-in protection)."},
+ "ss.entityList.addBtn": {"text": "Hinzufügen", "from": "Add"},
+ "ss.entityList.addLabel": {"text": "Entität hinzufügen", "from": "Add entity"},
+ "ss.entityList.addPlaceholder": {"text": "Entitäts-ID suchen oder eingeben...", "from": "Search or type entity ID..."},
+ "ss.entityList.customLabelPlaceholder": {"text": "Eigener Anzeigename (optional)", "from": "Custom display label (optional)"},
+ "ss.entityList.moveDown": {"text": "Nach unten", "from": "Move down"},
+ "ss.entityList.moveUp": {"text": "Nach oben", "from": "Move up"},
+ "ss.entityList.remove": {"text": "Entfernen", "from": "Remove"},
+ "ss.entityList.statusNeedMore": {"text": "Fügen Sie mindestens {min} Entitäten hinzu ({count} von {max} eingerichtet). Wechselt der Reihe nach und verschiebt Pixel bei jedem Wechsel zum OLED-Schutz.", "from": "Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in."},
+ "ss.entityList.statusReady": {"text": "Wechselt der Reihe nach durch {count} von {max} Entitäten. Feld leer lassen, um den Home Assistant-Namen zu nutzen.", "from": "Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name."},
+ "ha.enabled.off": {"text": "Ausgeschaltet. Home Assistant-Bildschirmschoner sind deaktiviert, Adresse und Token bleiben gespeichert.", "from": "Turned off. Home Assistant screen savers are disabled while keeping your saved address and token."},
+ "ha.enabled.on": {"text": "Bildschirmschoner können eingerichtete Home Assistant-Entitäten lesen.", "from": "Screen savers can read configured Home Assistant entities."},
+ "ha.savedOff": {"text": "Gespeichert (Home Assistant-API ist ausgeschaltet).", "from": "Saved (Home Assistant API is turned off)."},
+ "ha.status.checking": {"text": "Wird geprüft...", "from": "Checking..."},
+ "ha.status.connected": {"text": "Verbunden", "from": "Connected"},
+ "ha.summaryOff": {"text": "Ausgeschaltet. Oben einschalten, um Home Assistant-Bildschirmschoner wieder zu aktivieren.", "from": "Turned off. Switch on above to re-enable Home Assistant screen savers."},
+ "srv.saver.color.amber": {"text": "Bernstein", "from": "Amber"},
+ "srv.saver.color.blue": {"text": "Blau", "from": "Blue"},
+ "srv.saver.color.green": {"text": "Grün", "from": "Green"},
+ "srv.saver.color.purple": {"text": "Violett", "from": "Purple"},
+ "srv.saver.color.red": {"text": "Rot", "from": "Red"},
+ "srv.saver.color.white": {"text": "Weiß", "from": "White"},
+ "ss.valueColor": {"text": "Wertfarbe", "from": "Value colour"}
 }

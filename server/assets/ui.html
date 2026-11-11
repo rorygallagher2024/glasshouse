@@ -882,12 +882,7 @@
 
   <div class="ss-level-row" id="ss-color-row" hidden>
     <div class="ss-level-lbl" id="ss-color-lbl" data-t="ss.valueColor">Value colour</div>
-    <div class="ss-pick" id="ss-color-pick">
-      <button type="button" class="pill-sel ss-pick-btn" id="ss-color" aria-haspopup="listbox" aria-expanded="false"
-        aria-labelledby="ss-color-lbl ss-color" onclick="ssColorPickOpen(q('ss-color-list').hidden)" onkeydown="ssColorPickKey(event)">&mdash;</button>
-      <div class="ss-pick-list" id="ss-color-list" role="listbox" aria-labelledby="ss-color-lbl" tabindex="-1" hidden
-        onkeydown="ssColorPickKey(event)"></div>
-    </div>
+    <select class="pill-sel ss-sel" id="ss-color" aria-labelledby="ss-color-lbl ss-color" onchange="pickSsColor(this.value)"></select>
   </div>
 
   <div class="ss-level-row" id="ss-entities-row" hidden>
