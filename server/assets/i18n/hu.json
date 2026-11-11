@@ -1138,6 +1138,7 @@
  "srv.daemon.uploadd.detail": {"text": "Diagnosztikai adatokat küld az LG-nek", "from": "Sends diagnostic data to LG"},
  "srv.fetch.badChars": {"text": "a cím szóközt vagy vezérlőkaraktert tartalmaz", "from": "the address contains spaces or control characters"},
  "srv.fetch.badScheme": {"text": "a címnek http:// vagy https:// előtaggal kell kezdődnie", "from": "the address must start with http:// or https://"},
+ "srv.fetch.certFailed": {"text": "A tanúsítvány ellenőrzése nem sikerült ennél: {host}. Ellenőrizze a TV dátumát és idejét, vagy a kapcsolatot.", "from": "Certificate verification failed for {host}. Check the TV's date and time, or the connection."},
  "srv.fetch.github404": {"text": "A GitHub 404-es hibát adott erre: {where} - még nincs közzétett kiadás, vagy a tároló nem látható", "from": "GitHub returned 404 for {where} - no release published yet, or the repository is not visible"},
  "srv.fetch.githubDown": {"text": "A GitHub jelenleg nem válaszol ({status}). Próbálja újra később.", "from": "GitHub is not answering at the moment ({status}). Try again later."},
  "srv.fetch.githubLimit": {"text": "A GitHub elutasította a kérést ({status}). Egy címről óránként 60 ellenőrzést enged, ezért próbálja újra egy óra múlva; ha továbbra is előfordul, lehet, hogy valami a hálózaton blokkolja.", "from": "GitHub refused the request ({status}). It allows 60 checks an hour from one address, so try again in an hour; if it keeps happening, something on the network may be blocking it."},

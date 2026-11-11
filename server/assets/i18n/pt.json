@@ -1236,6 +1236,7 @@
  "srv.daemon.uploadd.detail": {"text": "Envia dados de diagnóstico para a LG", "from": "Sends diagnostic data to LG"},
  "srv.fetch.badChars": {"text": "o endereço contém espaços ou caracteres de controlo", "from": "the address contains spaces or control characters"},
  "srv.fetch.badScheme": {"text": "o endereço tem de começar por http:// ou https://", "from": "the address must start with http:// or https://"},
+ "srv.fetch.certFailed": {"text": "A verificação do certificado falhou para {host}. Verifique a data e hora da TV ou a ligação.", "from": "Certificate verification failed for {host}. Check the TV's date and time, or the connection."},
  "srv.fetch.github404": {"text": "O GitHub devolveu 404 para {where} - ainda não foi publicada nenhuma versão, ou o repositório não está visível", "from": "GitHub returned 404 for {where} - no release published yet, or the repository is not visible"},
  "srv.fetch.githubDown": {"text": "O GitHub não está a responder de momento ({status}). Tente novamente mais tarde.", "from": "GitHub is not answering at the moment ({status}). Try again later."},
  "srv.fetch.githubLimit": {"text": "O GitHub recusou o pedido ({status}). Permite 60 verificações por hora a partir de um endereço, por isso tente novamente daqui a uma hora; se continuar a acontecer, algo na rede pode estar a bloqueá-lo.", "from": "GitHub refused the request ({status}). It allows 60 checks an hour from one address, so try again in an hour; if it keeps happening, something on the network may be blocking it."},
