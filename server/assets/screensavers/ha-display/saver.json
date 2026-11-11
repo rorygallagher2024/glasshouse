@@ -1,0 +1,144 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Home Assistant: Data Display",
+    "ar": "Home Assistant: عرض البيانات",
+    "es": "Home Assistant: Pantalla de datos",
+    "de": "Home Assistant: Datenanzeige",
+    "fr": "Home Assistant : Affichage de données",
+    "hu": "Home Assistant: Adatkijelző",
+    "it": "Home Assistant: Schermo dati",
+    "pl": "Home Assistant: Wyświetlacz danych",
+    "pt": "Home Assistant: Visor de dados",
+    "pt-br": "Home Assistant: Visor de dados",
+    "ru": "Home Assistant: Экран данных"
+  },
+  "description": {
+    "en": "Cycles through 2 to 100 Home Assistant entities one at a time on black, shifting a few pixels on every change to protect OLED panels.",
+    "ar": "يعرض من 2 إلى 100 كيان من Home Assistant بالتتابع واحداً تلو الآخر على خلفية سوداء، مع إزاحة بكسلات خفيفة عند كل تبديل لحماية الشاشة.",
+    "es": "Alterna entre 2 y 100 entidades de Home Assistant una por una sobre negro, desplazándose unos píxeles en cada cambio para proteger el panel OLED.",
+    "de": "Wechselt nacheinander durch 2 bis 100 Home Assistant-Entitäten auf Schwarz und verschiebt den Text bei jedem Wechsel um wenige Pixel zum OLED-Schutz.",
+    "fr": "Fait défiler de 2 à 100 entités Home Assistant une par une sur fond noir, en décalant de quelques pixels à chaque changement pour protéger la dalle OLED.",
+    "hu": "Egymás után megjelenít 2–100 Home Assistant entitást fekete háttéren, minden váltásnál néhány pixellel eltolva az OLED kijelző védelméért.",
+    "it": "Mostra in sequenza da 2 a 100 entità di Home Assistant una alla volta su nero, spostando di pochi pixel a ogni cambio per proteggere il pannello OLED.",
+    "pl": "Przełącza kolejno od 2 do 100 encji Home Assistant na czarnym tle, przesuwając tekst o kilka pikseli przy każdej zmianie dla ochrony matrycy OLED.",
+    "pt": "Alterna entre 2 e 100 entidades do Home Assistant uma de cada vez sobre fundo preto, deslizando alguns pixels a cada mudança para proteger o painel OLED.",
+    "pt-br": "Alterna entre 2 e 100 entidades do Home Assistant uma por vez sobre fundo preto, deslocando alguns pixels a cada mudança para proteger o painel OLED.",
+    "ru": "Поочерёдно показывает от 2 до 100 сущностей Home Assistant на чёрном фоне, смещая текст на пару пикселей при каждой смене для защиты OLED-панели."
+  },
+  "license": "MIT",
+  "uses": [
+    "level",
+    "ha-list",
+    "choice"
+  ],
+  "order": 16,
+  "choices": {
+    "label": {
+      "en": "Cycle speed",
+      "ar": "سرعة التبديل",
+      "es": "Velocidad del ciclo",
+      "de": "Wechselintervall",
+      "fr": "Vitesse de défilement",
+      "hu": "Váltási sebesség",
+      "it": "Velocità ciclo",
+      "pl": "Czas wyświetlania",
+      "pt": "Velocidade do ciclo",
+      "pt-br": "Velocidade do ciclo",
+      "ru": "Скорость смены"
+    },
+    "default": "10s",
+    "options": [
+      {
+        "id": "5s",
+        "name": {
+          "en": "Every 5 seconds",
+          "ar": "كل 5 ثوانٍ",
+          "es": "Cada 5 segundos",
+          "de": "Alle 5 Sekunden",
+          "fr": "Toutes les 5 secondes",
+          "hu": "5 másodpercenként",
+          "it": "Ogni 5 secondi",
+          "pl": "Co 5 sekund",
+          "pt": "A cada 5 segundos",
+          "pt-br": "A cada 5 segundos",
+          "ru": "Каждые 5 секунд"
+        },
+        "value": "5000"
+      },
+      {
+        "id": "10s",
+        "name": {
+          "en": "Every 10 seconds",
+          "ar": "كل 10 ثوانٍ",
+          "es": "Cada 10 segundos",
+          "de": "Alle 10 Sekunden",
+          "fr": "Toutes les 10 secondes",
+          "hu": "10 másodpercenként",
+          "it": "Ogni 10 secondi",
+          "pl": "Co 10 sekund",
+          "pt": "A cada 10 segundos",
+          "pt-br": "A cada 10 segundos",
+          "ru": "Каждые 10 секунд"
+        },
+        "value": "10000"
+      },
+      {
+        "id": "15s",
+        "name": {
+          "en": "Every 15 seconds",
+          "ar": "كل 15 ثانية",
+          "es": "Cada 15 segundos",
+          "de": "Alle 15 Sekunden",
+          "fr": "Toutes les 15 secondes",
+          "hu": "15 másodpercenként",
+          "it": "Ogni 15 secondi",
+          "pl": "Co 15 sekund",
+          "pt": "A cada 15 segundos",
+          "pt-br": "A cada 15 segundos",
+          "ru": "Каждые 15 секунд"
+        },
+        "value": "15000"
+      },
+      {
+        "id": "30s",
+        "name": {
+          "en": "Every 30 seconds",
+          "ar": "كل 30 ثانية",
+          "es": "Cada 30 segundos",
+          "de": "Alle 30 Sekunden",
+          "fr": "Toutes les 30 secondes",
+          "hu": "30 másodpercenként",
+          "it": "Ogni 30 secondi",
+          "pl": "Co 30 sekund",
+          "pt": "A cada 30 segundos",
+          "pt-br": "A cada 30 segundos",
+          "ru": "Каждые 30 секунд"
+        },
+        "value": "30000"
+      },
+      {
+        "id": "60s",
+        "name": {
+          "en": "Every minute",
+          "ar": "كل دقيقة",
+          "es": "Cada minuto",
+          "de": "Jede Minute",
+          "fr": "Toutes les minutes",
+          "hu": "Percenként",
+          "it": "Ogni minuto",
+          "pl": "Co minutę",
+          "pt": "A cada minuto",
+          "pt-br": "A cada minuto",
+          "ru": "Каждую минуту"
+        },
+        "value": "60000"
+      }
+    ]
+  },
+  "entityList": {
+    "min": 2,
+    "max": 100
+  }
+}

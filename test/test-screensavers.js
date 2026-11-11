@@ -148,7 +148,8 @@ console.log('Running test-screensavers.js ...');
   assert.ok(ids.indexOf('currents') !== -1, 'catalog must include currents');
   assert.ok(ids.indexOf('veils') !== -1, 'catalog must include veils');
   assert.ok(ids.indexOf('tesseract') !== -1, 'catalog must include tesseract');
-  assert.strictEqual(ids.length, 16, 'catalog must have exactly 16 entries');
+  assert.strictEqual(ids.length, 17, 'catalog must have exactly 17 entries');
+  assert.ok(ids.indexOf('ha-display') !== -1, 'ha-display must be in catalog');
 
   // Each of Glasshouse's own reads cleanly from its folder
   for (var i = 0; i < all.length; i++) {
@@ -279,7 +280,65 @@ console.log('Running test-screensavers.js ...');
       });
     })();
 
-    console.log('ALL test-screensavers.js assertions passed!\n');
-    env.restore();
+    // 14. HA screen savers are unavailable when Home Assistant API is unconfigured, and available once configured
+    (function testHaScreensaverGating() {
+      env.restore();
+      var configured = false;
+      var gateEnv = mockEnv.createMockEnv({
+        files: {
+          '/var/lib/tvweb/config.json': JSON.stringify({ allowControl: true }),
+          '/usr/palm/applications/com.webos.app.screensaver/appinfo.json': '{"id":"com.webos.app.screensaver","type":"qml"}',
+          '/usr/palm/applications/com.webos.app.screensaver/.tvweb-screensaver': 'clock'
+        }
+      });
+      gateEnv.install();
+      screensavers.init({
+        luna: gateEnv.mockLuna,
+        config: { allowControl: true },
+        haEntity: {
+          configured: function () { return configured; },
+          read: function (id, cb) { cb({ ok: true, entity_id: id, state: '1', attributes: {} }); }
+        },
+        injectKey: function (k, cb) { cb(true); },
+        KEY_BACK: 412,
+        mediaState: function (cb) { cb({ state: 'idle', fullScreen: false }); }
+      });
+
+      var listOff = screensavers.screensaverList();
+      assert.strictEqual(listOff.haConfigured, false);
+      var ambOff = listOff.modes.filter(function (m) { return m.id === 'ambient'; })[0];
+      var dispOff = listOff.modes.filter(function (m) { return m.id === 'ha-display'; })[0];
+      var clkOff = listOff.modes.filter(function (m) { return m.id === 'clock'; })[0];
+      assert.strictEqual(ambOff.available, false);
+      assert.strictEqual(ambOff.needsHa, true);
+      assert.strictEqual(dispOff.available, false);
+      assert.strictEqual(dispOff.needsHa, true);
+      assert.strictEqual(clkOff.available, true);
+
+      screensavers.setScreensaver('ha-display', 'dim', function (res) {
+        assert.strictEqual(res.ok, false);
+        assert.ok(res.error.indexOf('Home Assistant API') !== -1);
+
+        configured = true;
+        var listOn = screensavers.screensaverList();
+        assert.strictEqual(listOn.haConfigured, true);
+        var ambOn = listOn.modes.filter(function (m) { return m.id === 'ambient'; })[0];
+        var dispOn = listOn.modes.filter(function (m) { return m.id === 'ha-display'; })[0];
+        assert.strictEqual(ambOn.available, true);
+        assert.strictEqual(dispOn.available, true);
+        assert.strictEqual(dispOn.entityList.min, 2);
+        assert.strictEqual(dispOn.entityList.max, 100);
+
+        // Burn-in guard: trigger refuses when ha-display has fewer than min entities
+        gateEnv.files['/usr/palm/applications/com.webos.app.screensaver/.tvweb-screensaver'] = 'ha-display';
+        screensavers.trigger(function (trigErr) {
+          assert.strictEqual(trigErr.ok, false);
+          assert.ok(trigErr.error.indexOf('2') !== -1);
+          console.log('  ✓ HA screen savers gate availability on HA API and refuse <2 entities on start');
+          gateEnv.restore();
+          console.log('ALL test-screensavers.js assertions passed!\n');
+        });
+      });
+    })();
   });
 })();

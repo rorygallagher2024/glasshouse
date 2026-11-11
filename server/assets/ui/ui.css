@@ -803,6 +803,27 @@ button.key-hit{background:var(--w10)}
 .upd-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 /* What each release since the installed one brings, from its notes' summary. */
 .upd-new{margin-top:12px;max-width:62ch}
+.ss-li-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;max-width:440px;margin:2px 0 6px}
+.ss-li-head label{font-size:13px;color:var(--w90);font-weight:500}
+.ss-li-count{font-size:12px;color:var(--w60)}
+.ss-li-add{display:flex;gap:8px;align-items:stretch;max-width:440px}
+.ss-li-add .ss-ent-wrap{flex:1;min-width:0}
+.ss-li-add-btn{min-height:44px;padding:0 14px;font-size:12px;letter-spacing:.08em;flex:none}
+.ss-li-scroll{margin-top:10px;max-width:440px;max-height:360px;overflow-y:auto;overscroll-behavior:contain;
+  border:1px solid var(--w12);border-radius:2px;background:rgba(var(--fg),.015)}
+.ss-li-item{padding:8px 10px;border-bottom:1px solid var(--w12)}
+.ss-li-item:last-child{border-bottom:0}
+.ss-li-top{display:flex;align-items:flex-start;gap:8px}
+.ss-li-num{font-size:11px;color:var(--w50);min-width:20px;padding-top:2px;flex:none}
+.ss-li-info{flex:1;min-width:0}
+.ss-li-name{font-size:13px;color:var(--w90);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-li-id{font-size:11px;color:var(--w60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.ss-li-acts{display:flex;gap:4px;flex:none}
+.ss-li-acts button{width:26px;height:26px;min-height:0;padding:0;font-size:13px;line-height:1;text-transform:none;letter-spacing:0}
+.ss-li-label{margin-top:6px;padding-left:28px}
+.ss-li-label input{width:100%;box-sizing:border-box;min-height:0;height:30px;padding:0 9px;border:1px solid var(--w25);background:transparent;color:var(--w90);border-radius:2px;font:400 12.5px 'Manrope';outline:none}
+.ss-li-label input:focus{border-color:var(--w80)}
+.ss-li-label input::placeholder{color:var(--w50)}
 .upd-new-h{font-weight:500;font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--w60);margin-bottom:6px}
 .upd-new-r{margin-bottom:10px;font-size:14px;color:var(--w80);line-height:1.5}
 .upd-new-r p{margin:0 0 4px;white-space:pre-line}

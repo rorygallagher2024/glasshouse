@@ -84,6 +84,7 @@ assets/screensavers/clock/saver.json assets/screensavers/currents/main.qml \
 assets/screensavers/currents/saver.json assets/screensavers/filament/main.qml \
 assets/screensavers/filament/saver.json assets/screensavers/fireworks/main.qml \
 assets/screensavers/fireworks/saver.json assets/screensavers/fireworks/star.png \
+assets/screensavers/ha-display/main.qml assets/screensavers/ha-display/saver.json \
 assets/screensavers/harmonograph/main.qml assets/screensavers/harmonograph/saver.json \
 assets/screensavers/incense/main.qml assets/screensavers/incense/saver.json \
 assets/screensavers/murmuration/main.qml assets/screensavers/murmuration/saver.json \

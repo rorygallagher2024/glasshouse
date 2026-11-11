@@ -215,7 +215,7 @@ With an app's DNS set to a DNS-over-HTTPS address on the Apps tab, the server
 answers DNS on `127.0.53.1` upwards, port 53 over UDP and TCP, reachable only
 on the TV, and posts each of that app's lookups to the address over HTTPS.
 
-With **Share app icons** on in the MQTT tab (`iconServer` in `config.json`), port 8082 (the dashboard's
+With **Share app icons** on in the HA & MQTT tab (`iconServer` in `config.json`), port 8082 (the dashboard's
 port plus two) answers on the whole network, dual-stack like the dashboard,
 with installed apps' icons at `/icons/<appId>.png` and nothing else: no other
 paths, no listing, read-only and without a token, whatever the dashboard is

@@ -685,9 +685,11 @@ async function tick() {
                    ssOn ? t('ss.dismiss', 'Dismiss screen saver') : t('ss.start', 'Start screen saver'));
       q('ss-toggle').classList.toggle('on', ssOn);
       // Dismissing works from anywhere; only starting one needs an app.
+      const ssBlocked = (typeof ssBlockedReason === 'string' && !ssOn) ? ssBlockedReason : '';
       refuseScreensaver(q('ss-toggle'),
         !ssWritable ? t('common.controlsOff', 'Controls are disabled in config.json.')
         : ssSwitching ? SS_SWITCHING
+        : ssBlocked ? ssBlocked
         : (ssOnInput && !ssOn) ? SS_ONLY_IN_APPS : '');
     }
 

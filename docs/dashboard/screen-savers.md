@@ -15,7 +15,7 @@ A firmware update restores the LG default.
 * **Switching while one is showing:** picking another while a screen saver is on the TV closes it first, as Back on the remote would, and starts the new one a few seconds after the switch. Changing a screen saver under one that is showing left some TVs refusing every screen saver until restarted, or restarted them. Where a TV is stuck that way anyway, **Start screen saver** says so.
 * **Brightness:** A slider from 5% to 100% in 5% steps, set when it is let go. 100% and 65% are what were **Bright** and **Dim**, each screen saver drawn as designed for them; every other step lays black over the nearer one above. An installed app's screen saver has its own settings instead. On the TV app, OK on **Brightness** gives a bar that Left and Right move, sent with OK.
 * **Options:** For a screen saver with options to pick from (its `saver.json` lists them as `choices`), a list under Brightness picks the one it shows: Clock's **Show**, or **Animation** for one with several animations. It stays picked when the brightness changes.
-* **Home Assistant Entities:** For a screen saver that reads live values from Home Assistant (such as **Ambient**), inputs appear under **Home Assistant Entities** with a searchable dropdown of your Home Assistant entities and an optional custom display label per slot, without editing files on the TV. Clearing an entity field hides that slot. Requires Home Assistant API credentials to be saved in the **HA & MQTT** tab under **Home Assistant API**.
+* **Home Assistant Entities:** Screen savers that pull live readings from Home Assistant (**Home Assistant: Ambient** and **Home Assistant: Data Display**) stay greyed out until **Home Assistant API** is saved under the **HA & MQTT** tab. Once configured, **Home Assistant Entities** offers a searchable dropdown of your Home Assistant entities, optional custom display labels, and slot fields or an ordered entity list (depending on the selected screen saver), without editing files on the TV.
 * **Start screen saver:** Immediately requests the screen saver on the TV. On certain OLED TVs, including a G3 on webOS 9.2.2, LG's panel care holds the idle screen saver back for 30 minutes after key presses or app changes while dimming static areas itself. Glasshouse lifts that hold when an idle screen saver is requested or the button is pressed, and restores it once dismissed. An app that still refuses it, such as RetroArch played with a gamepad, is keeping the screen saver away itself, and is left alone until another app is in front or the TV turns off. Where the TV still refuses, as it does with LG's own Screen Saver setting off, which some LCD TVs have by default, the dashboard opens the screen saver itself, unless something is playing full screen or playback cannot be checked. Pressing any remote key, including Home or the coloured buttons, dismisses the screen saver.
 * **Poweroff after:** Automatically switches the TV into standby once the screen saver has been active for a configured duration, from 1 to 1440 minutes (blank or 0 disables it). The timer resets if the screen saver is dismissed. This requires power actions to be enabled (`allowPower`) and is stored in `config.json` as `screensaverPowerOffMinutes`.
 
@@ -33,9 +33,19 @@ A digital clock showing hours and minutes against pure black. The readout moves 
 
 Clock with date used to be a screen saver of its own. A TV that had it in use keeps it, as Clock with that option, and Home Assistant and the API still take `clock-date`.
 
-### Ambient
+### Home Assistant: Ambient
 
-A digital clock, date, and up to three live Home Assistant readings drifting smoothly across pure black to protect OLED panels, using the TV's 12-hour or 24-hour setting. **Readings** switches between **Names and values** and **Values only**, and **Sensor 1**, **Sensor 2**, and **Sensor 3** can be mapped to any Home Assistant entity with an optional custom display label (or cleared to hide) from the **Screensaver** tab once **Home Assistant API** is saved on the **HA & MQTT** tab. Sensors that are hidden, unconfigured, or unavailable stay omitted, leaving the clock and date.
+![Screensaver tab with Home Assistant: Ambient selected and three entity slots configured](../screenshots/screensaver-ha-ambient-ui.png)
+
+A digital clock, date, and up to three live Home Assistant readings drifting smoothly across pure black to protect OLED panels, using the TV's 12-hour or 24-hour setting. **Readings** switches between **Names and values** and **Values only**, and **Sensor 1**, **Sensor 2**, and **Sensor 3** can be picked from your Home Assistant entities with an optional custom display **Label** (or cleared to hide) once **Home Assistant API** is saved on the **HA & MQTT** tab. Sensors left blank or unavailable stay omitted, leaving the clock and date.
+
+### Home Assistant: Data Display
+
+![Screensaver tab with Home Assistant: Data Display selected and ordered entities configured](../screenshots/screensaver-ha-display-ui.png)
+
+Cycles sequentially through **2 to 100** configured Home Assistant entities one at a time on pure black. To guard against OLED burn-in, at least two entities are required before the screen saver can start, the display steps along a pixel orbit on every entity change, and its anchor position drifts slowly around the screen every minute.
+
+Use **Add entity** to search or enter entity IDs, reorder items with the arrow buttons, set an optional custom display **Label** per entry (blank uses Home Assistant's friendly name), and choose how quickly entries advance under **Cycle speed** (every 5, 10, 15, 30, or 60 seconds). Requires **Home Assistant API** on the **HA & MQTT** tab.
 
 ### Starfield
 

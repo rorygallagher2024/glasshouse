@@ -101,7 +101,7 @@ var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
 // "ha" has one placeholder per entity it declares, so it carries no value here.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', ha: '' };
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', ha: '', 'ha-list': '__TVWEB_HA_LIST__' };
 // A choice's value goes into the QML as text: kept to what a name needs.
 var CHOICE_VALUE = /^[\w.=&-]{0,100}$/;
 var CHOICE_ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
@@ -112,6 +112,8 @@ var MAX_CHOICES = 500;
 var HA_NAME = /^[a-z][a-z0-9_]{0,31}$/;
 var HA_ENTITY = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 var MAX_HA_ENTITIES = 12;
+var MAX_HA_LIST_ENTITIES = 100;
+var NEEDS_HA_ERROR = msg('srv.saver.needsHa', 'Configure the Home Assistant API on the HA and MQTT tab first.');
 /*
  * Homebrew Channel apps that ship a screen saver as one QML file, which they
  * bind-mount over LG's qml/main.qml themselves: Custom Screensaver, the two
@@ -228,6 +230,14 @@ function readSaver(root, name) {
   if ((uses.indexOf('ha') !== -1) !== !!e.entities) {
     return problem(msg('srv.saver.haUses', '{file}: entities and "ha" in uses go together.', { file: MANIFEST }));
   }
+  if (m.entityList !== undefined) {
+    var el = readEntityList(m.entityList);
+    if (typeof el === 'string') return problem(el);
+    e.entityList = el;
+  }
+  if ((uses.indexOf('ha-list') !== -1) !== !!e.entityList) {
+    return problem(msg('srv.saver.haListUses', '{file}: entityList and "ha-list" in uses go together.', { file: MANIFEST }));
+  }
   if (Array.isArray(m.panels) && m.panels.length === 1 && (m.panels[0] === 'oled' || m.panels[0] === 'lcd')) e.panels = m.panels[0];
   var need = m.requires && typeof m.requires.webos === 'number' ? m.requires.webos : 0;
   var have = parseInt(String(webosVersion || ''), 10);
@@ -338,6 +348,23 @@ function readEntities(list) {
   return count ? out : bad;
 }
 
+function isIntIn(v, lo, hi) {
+  return typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v >= lo && v <= hi;
+}
+
+/*
+ * saver.json's entityList: { min: 2, max: 100 }, for a screen saver that steps
+ * through a configured list of Home Assistant entities via __TVWEB_HA_LIST__.
+ */
+function readEntityList(obj) {
+  var bad = msg('srv.saver.badEntityList', '{file}: entityList needs integer min (1 to {max}) and max (min to {max}).', { file: MANIFEST, max: String(MAX_HA_LIST_ENTITIES) });
+  if (!obj || typeof obj !== 'object' || isArray(obj)) return bad;
+  var min = obj.min === undefined ? 1 : obj.min;
+  var max = obj.max === undefined ? MAX_HA_LIST_ENTITIES : obj.max;
+  if (!isIntIn(min, 1, MAX_HA_LIST_ENTITIES) || !isIntIn(max, min, MAX_HA_LIST_ENTITIES)) return bad;
+  return { min: min, max: max };
+}
+
 function readStoredEntities() {
   try {
     if (fs.existsSync(SCREENSAVER_ENTITIES_FILE)) {
@@ -385,12 +412,86 @@ function effectiveSaverEntities(e) {
   return effectiveFromSpecs(effectiveSaverEntitySpecs(e));
 }
 
+function effectiveSaverEntityList(e) {
+  if (!e || !e.entityList) return null;
+  var stored = readStoredEntities();
+  var raw = stored && stored[e.id];
+  var arr = isArray(raw) ? raw : (raw && isArray(raw.items) ? raw.items : []);
+  var out = [];
+  for (var i = 0; i < arr.length && out.length < e.entityList.max; i++) {
+    var item = arr[i];
+    var ent = '', lbl = '';
+    if (typeof item === 'string') {
+      ent = item.trim();
+    } else if (item && typeof item === 'object') {
+      ent = typeof item.entity === 'string' ? item.entity.trim() : '';
+      lbl = typeof item.label === 'string' ? item.label.trim().slice(0, 64) : '';
+    }
+    if (!ent || !HA_ENTITY.test(ent)) continue;
+    out.push({ entity: ent, customLabel: lbl });
+  }
+  return out;
+}
+
+function saverUsesHa(e) {
+  return !!(e && e.uses && (e.uses.indexOf('ha') !== -1 || e.uses.indexOf('ha-list') !== -1));
+}
+
+function saverMissingHa(e) {
+  return !!(haEntityModule && saverUsesHa(e) && !haEntityModule.configured());
+}
+
+function saverMinEntitiesError(e) {
+  if (!e || !e.entityList) return '';
+  var list = effectiveSaverEntityList(e) || [];
+  if (list.length < e.entityList.min) {
+    return msg('srv.saver.tooFewEntities',
+      'Add at least {min} Home Assistant entities to "{saver}" before starting it (OLED burn-in protection).',
+      { min: String(e.entityList.min), saver: e.label });
+  }
+  return '';
+}
+
 function setSaverEntities(saverId, newEntities, cb) {
   cb = cb || function () {};
   var saver = saverById(saverId);
   if (!saver) return cb({ ok: false, error: 'unknown screen saver: ' + saverId });
-  if (!saver.entities) return cb({ ok: false, error: saverId + ' does not declare entities' });
+  if (!saver.entities && !saver.entityList) return cb({ ok: false, error: saverId + ' does not declare entities' });
   if (!newEntities || typeof newEntities !== 'object') return cb({ ok: false, error: 'entities must be an object' });
+
+  if (saver.entityList) {
+    var listIn = isArray(newEntities) ? newEntities : (isArray(newEntities.items) ? newEntities.items : null);
+    if (!listIn) return cb({ ok: false, error: saverId + ' expects an entity list' });
+    if (listIn.length > saver.entityList.max) {
+      return cb({ ok: false, error: 'up to ' + saver.entityList.max + ' Home Assistant entities allowed' });
+    }
+    var nextList = [];
+    for (var li = 0; li < listIn.length; li++) {
+      var rawItem = listIn[li];
+      var iEnt = '', iLbl = '';
+      if (typeof rawItem === 'string') {
+        iEnt = rawItem.trim();
+      } else if (rawItem && typeof rawItem === 'object') {
+        iEnt = String(rawItem.entity || '').trim();
+        if (rawItem.label !== undefined) iLbl = String(rawItem.label || '').trim().slice(0, 64);
+      } else {
+        return cb({ ok: false, error: 'each entity entry must be a string or object' });
+      }
+      if (!iEnt || !HA_ENTITY.test(iEnt)) {
+        return cb({ ok: false, error: 'not a valid Home Assistant entity id: ' + iEnt });
+      }
+      nextList.push(iLbl ? { entity: iEnt, label: iLbl } : iEnt);
+    }
+    var storedList = readStoredEntities();
+    if (nextList.length) storedList[saverId] = nextList;
+    else delete storedList[saverId];
+    writeStoredEntities(storedList);
+    if (screensaverMode() === saverId) {
+      restageScreensaver();
+      restartScreensaverApp(function () {});
+    }
+    return cb({ ok: true });
+  }
 
   var stored = readStoredEntities();
   stored[saverId] = stored[saverId] || {};
@@ -783,19 +884,22 @@ function screensaverList() {
   for (var i = 0; i < all.length; i++) {
     var e = all[i];
     var specs = e.entities ? effectiveSaverEntitySpecs(e) : null;
+    var listItems = e.entityList ? effectiveSaverEntityList(e) : null;
+    var needsHa = saverMissingHa(e);
     out.push({
       id: e.id,
       label: e.label,
       description: e.description,
       active: e.id === cur,
-      available: e.id === 'stock' || (!heldBack() && !e.problem),
+      available: e.id === 'stock' || (!heldBack() && !e.problem && !needsHa),
+      needsHa: needsHa || undefined,
       builtin: e.builtin,
       author: e.author || undefined,
       license: e.license || undefined,
       version: e.version || undefined,
       panels: e.panels,
-      // Why it cannot be picked, where something is wrong with its folder.
-      note: e.problem,
+      // Why it cannot be picked, where something is wrong with its folder or HA API.
+      note: e.problem || (needsHa ? NEEDS_HA_ERROR : undefined),
       // What one added on the TV does past the screen: the network, sound.
       cautions: e.cautions && e.cautions.length ? e.cautions : undefined,
       // The app it comes from, where it is an installed app's.
@@ -816,7 +920,15 @@ function screensaverList() {
           customLabel: spec ? spec.customLabel : '',
           def: e.entities[k]
         };
-      }) : undefined
+      }) : undefined,
+      // Ordered list of Home Assistant entities configured for a cycling saver.
+      entityList: e.entityList ? {
+        min: e.entityList.min,
+        max: e.entityList.max,
+        items: (listItems || []).map(function (it) {
+          return { entity: it.entity, label: it.customLabel };
+        })
+      } : undefined
     });
   }
   return {
@@ -925,12 +1037,37 @@ function stageSaverFiles(e, level, choice) {
   }
   var specs = effectiveSaverEntitySpecs(e);
   var effEnts = effectiveFromSpecs(specs);
-  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice, effEnts));
+  var entityList = effectiveSaverEntityList(e);
+  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice, effEnts, entityList));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
-  stagedEntities = activeSaverEntities(effEnts);
-  stagedEntityLabels = activeSaverLabels(specs);
+  stagedEntities = mergeActiveEntities(activeSaverEntities(effEnts), entityList);
+  stagedEntityLabels = mergeActiveLabels(activeSaverLabels(specs), entityList);
   if (e.choices) fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER), choice);
   else unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
+}
+
+function mergeActiveEntities(base, entityList) {
+  var out = base;
+  if (entityList && entityList.length) {
+    if (!out) out = {};
+    for (var i = 0; i < entityList.length; i++) {
+      if (entityList[i].entity) out['list_' + i] = entityList[i].entity;
+    }
+  }
+  return out;
+}
+
+function mergeActiveLabels(base, entityList) {
+  var out = base;
+  if (entityList && entityList.length) {
+    for (var i = 0; i < entityList.length; i++) {
+      if (entityList[i].entity && entityList[i].customLabel) {
+        if (!out) out = {};
+        out[entityList[i].entity] = entityList[i].customLabel;
+      }
+    }
+  }
+  return out;
 }
 
 function effectiveFromSpecs(specs) {
@@ -981,7 +1118,7 @@ function withLayer(qml, opacity) {
     qml.slice(end);
 }
 
-function fillSaverQml(e, qml, level, choice, effEnts) {
+function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
   var port = (configObj && configObj.port) || 8080;
   var token = configObj && configObj.token;
   if (e.uses.indexOf('stats') !== -1) {
@@ -996,8 +1133,22 @@ function fillSaverQml(e, qml, level, choice, effEnts) {
       var replacement = effEnts[name]
         ? 'http://127.0.0.1:' + port + '/api/entity/' + effEnts[name] + (token ? '?k=' + encodeURIComponent(token) : '')
         : '';
-      qml = qml.replace(new RegExp('__TVWEB_HA_' + name + '__', 'g'), replacement);
+      qml = qml.replace(new RegExp('__TVWEB_HA_' + name + '__', 'g'), function () { return replacement; });
     }
+  }
+  if (e.uses.indexOf('ha-list') !== -1) {
+    entityList = entityList || effectiveSaverEntityList(e) || [];
+    var payload = [];
+    for (var li = 0; li < entityList.length; li++) {
+      var item = entityList[li];
+      payload.push({
+        entity: item.entity,
+        label: item.customLabel || '',
+        url: 'http://127.0.0.1:' + port + '/api/entity/' + item.entity + (token ? '?k=' + encodeURIComponent(token) : '')
+      });
+    }
+    var listJson = JSON.stringify(payload).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    qml = qml.replace(/__TVWEB_HA_LIST__/g, function () { return listJson; });
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
   if (e.choices) {
@@ -1021,6 +1172,7 @@ function setScreensaver(mode, level, cb, choice) {
   var saver = mode === 'stock' ? STOCK : saverById(mode);
   if (!saver) return cb({ ok: false, error: 'unknown screen saver: ' + mode });
   if (saver.problem) return cb({ ok: false, error: saver.problem });
+  if (saverMissingHa(saver) && mode !== screensaverMode()) return cb({ ok: false, error: NEEDS_HA_ERROR });
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
   if (mode !== 'stock' && heldBack()) return cb({ ok: false, error: HELD_ERROR });
   level = brightnessOf(level);
@@ -1390,6 +1542,11 @@ function trigger(cb) {
         });
       });
     }
+
+    var activeSaver = saverById(screensaverMode());
+    var minErr = saverMinEntitiesError(activeSaver);
+    if (minErr) return cb({ ok: false, error: minErr });
+    if (saverMissingHa(activeSaver)) return cb({ ok: false, error: NEEDS_HA_ERROR });
 
     lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
       var fgId = (fg && fg.appId) ? inputKeyFn(fg.appId) : '';

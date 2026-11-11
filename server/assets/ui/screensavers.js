@@ -4,6 +4,11 @@ let ssCurrent = 'stock';
 let ssWritable = true;
 let ssSwitching = false;
 let ssSwitchPoll = null;
+let ssBlockedReason = '';
+let ssPrevBlockedReason = '';
+let ssForceEntityRender = false;
+let ssListItems = [];
+let ssListMax = 100;
 
 const SS_SWITCHING = t('ss.switching',
   'The TV is switching screen savers. The screen may stay dark for up to a minute, then it comes back on its own.');
@@ -101,13 +106,21 @@ async function loadScreensavers() {
   if (choices) renderSsPick(choices, d.choice, locked);
   else ssPickOpen(false);
 
-  // Entities declared by the active screen saver:
+  // Entities or ordered entity list declared by the active screen saver:
   const entities = active && active.entities;
+  const entityList = active && active.entityList;
+  const hasEnts = !!(entities && entities.length);
+  const hasList = !!entityList;
   const entRow = q('ss-entities-row');
   if (entRow) {
-    entRow.hidden = !entities || !entities.length;
-    if (!entRow.hidden) renderSsEntities(active.id, entities, d.haConfigured, locked);
+    entRow.hidden = !hasEnts && !hasList;
+    if (hasEnts) renderSsEntities(active.id, entities, d.haConfigured, locked);
+    else if (hasList) renderSsEntityList(active.id, entityList, d.haConfigured, locked);
   }
+  ssBlockedReason = (entityList && (!entityList.items || entityList.items.length < entityList.min))
+    ? t('ss.entities.tooFew', 'Add at least {min} entities before starting this screen saver (OLED burn-in protection).', { min: entityList.min })
+    : '';
+  syncSsBlockedUi();
 
   /* Where LG's screen saver is built differently from ours, the TV has to
      restart its app manager to move between them, and nothing answers until it
@@ -330,10 +343,177 @@ function ssHaFilter(saverId, slot) {
 }
 
 function ssHaPick(saverId, slot, entityId) {
+  ssHaCloseAll();
+  if (slot === '_add') {
+    const input = document.getElementById('ss-ent-_add');
+    if (input) input.value = '';
+    addSsListEntity(saverId, entityId);
+    return;
+  }
   const input = document.getElementById('ss-ent-' + slot);
   if (input) input.value = entityId;
-  ssHaCloseAll();
   saveSsEntity(saverId, slot, entityId);
+}
+
+function syncSsBlockedUi() {
+  const btn = q('ss-toggle');
+  if (!btn) return;
+  const ssOn = btn.classList.contains('on');
+  if (!ssOn && ssBlockedReason) refuseScreensaver(btn, ssBlockedReason);
+  else if (!ssOn && ssPrevBlockedReason && btn.title === ssPrevBlockedReason) refuseScreensaver(btn, '');
+  ssPrevBlockedReason = ssBlockedReason;
+}
+
+function renderSsEntityList(saverId, entityList, haConfigured, locked) {
+  const container = q('ss-entities-list');
+  const note = q('ss-entities-note');
+  const setup = q('ss-entities-setup');
+  if (!container) return;
+
+  const items = Array.isArray(entityList.items) ? entityList.items : [];
+  ssListItems = items.map(it => ({ entity: it.entity || '', label: it.label || '' }));
+  ssListMax = entityList.max || 100;
+
+  if (note) {
+    if (haConfigured === false) {
+      note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab.');
+      note.className = 'pv-sub warn';
+    } else if (items.length < entityList.min) {
+      note.textContent = t('ss.entityList.statusNeedMore',
+        'Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in.',
+        { min: entityList.min, count: items.length, max: ssListMax });
+      note.className = 'pv-sub warn';
+    } else {
+      note.textContent = t('ss.entityList.statusReady',
+        'Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name.',
+        { count: items.length, max: ssListMax });
+      note.className = 'pv-sub';
+    }
+  }
+  if (setup) setup.hidden = haConfigured !== false;
+
+  if (haConfigured && ssHaEntities === null) ensureHaEntities();
+
+  const active = document.activeElement;
+  if (!ssForceEntityRender && active && container.contains(active)) return;
+  ssForceEntityRender = false;
+
+  const key = 'list|' + (locked ? '1' : '0') + '|' + (haConfigured ? '1' : '0') + '|' +
+    (ssHaEntities ? ssHaEntities.length : -1) + '|' + saverId + '|' + ssListMax + '|' +
+    items.map(it => it.entity + ':' + (it.label || '')).join(',');
+  if (key === ssEntitiesKey_) return;
+  ssEntitiesKey_ = key;
+
+  const addLbl = t('ss.entityList.addLabel', 'Add entity');
+  const addPh = t('ss.entityList.addPlaceholder', 'Search or type entity ID...');
+  const addBtnLbl = t('ss.entityList.addBtn', 'Add');
+  const chooseTitle = t('ss.chooseEntity', 'Choose entity');
+  const upTitle = t('ss.entityList.moveUp', 'Move up');
+  const downTitle = t('ss.entityList.moveDown', 'Move down');
+  const rmTitle = t('ss.entityList.remove', 'Remove');
+  const customPh = t('ss.entityList.customLabelPlaceholder', 'Custom display label (optional)');
+  const full = items.length >= ssListMax;
+
+  let html = `
+    <div class="ss-li-head">
+      <label for="ss-ent-_add">${esc(addLbl)}</label>
+      <span class="ss-li-count num">${items.length} / ${ssListMax}</span>
+    </div>
+    <div class="ss-li-add">
+      <div class="ss-ent-wrap">
+        <input type="text" id="ss-ent-_add" data-saver="${esc(saverId)}" placeholder="${esc(addPh)}"
+          autocomplete="off" spellcheck="false" ${(locked || full) ? 'disabled' : ''}
+          oninput="ssHaFilter('${esc(saverId)}', '_add')"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addSsListEntity('${esc(saverId)}');}">
+        ${(haConfigured && !locked && !full) ? `<button type="button" class="ss-ent-btn" title="${esc(chooseTitle)}" aria-label="${esc(chooseTitle)}" onclick="ssHaToggle('${esc(saverId)}', '_add')">&#9662;</button>` : ''}
+        <div class="ss-pick-list ss-ha-list" id="ss-ha-list-_add" hidden></div>
+      </div>
+      <button type="button" class="ss-li-add-btn" ${(locked || full) ? 'disabled' : ''} onclick="addSsListEntity('${esc(saverId)}')">${esc(addBtnLbl)}</button>
+    </div>`;
+
+  if (items.length) {
+    html += '<div class="ss-li-scroll">';
+    items.forEach((it, idx) => {
+      const hit = ssHaLookup(it.entity);
+      const displayTitle = (hit && hit.name) ? hit.name : it.entity;
+      const subId = (hit && hit.name)
+        ? (it.entity + (hit.unit ? ' \u00b7 ' + hit.unit : ''))
+        : (hit && hit.unit ? hit.unit : '');
+      const lblPh = (hit && hit.name) ? hit.name : customPh;
+      html += `
+        <div class="ss-li-item">
+          <div class="ss-li-top">
+            <span class="ss-li-num num">${idx + 1}</span>
+            <div class="ss-li-info" title="${esc(it.entity)}">
+              <div class="ss-li-name">${esc(displayTitle)}</div>
+              ${subId ? `<div class="ss-li-id">${esc(subId)}</div>` : ''}
+            </div>
+            <div class="ss-li-acts">
+              <button type="button" title="${esc(upTitle)}" aria-label="${esc(upTitle)}" ${(locked || idx === 0) ? 'disabled' : ''} onclick="moveSsListEntity('${esc(saverId)}', ${idx}, -1)">&#8593;</button>
+              <button type="button" title="${esc(downTitle)}" aria-label="${esc(downTitle)}" ${(locked || idx === items.length - 1) ? 'disabled' : ''} onclick="moveSsListEntity('${esc(saverId)}', ${idx}, 1)">&#8595;</button>
+              <button type="button" title="${esc(rmTitle)}" aria-label="${esc(rmTitle)}" ${locked ? 'disabled' : ''} onclick="removeSsListEntity('${esc(saverId)}', ${idx})">&times;</button>
+            </div>
+          </div>
+          <div class="ss-li-label">
+            <input type="text" id="ss-li-lbl-${idx}" value="${esc(it.label || '')}" maxlength="64"
+              placeholder="${esc(lblPh)}" autocomplete="off" ${locked ? 'disabled' : ''}
+              onchange="saveSsListLabel('${esc(saverId)}', ${idx}, this.value)">
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+async function commitSsEntityList(saverId, nextItems, forceRender) {
+  ssHaCloseAll();
+  const r = await sendCommand('screensaverEntities', { saver: saverId, entities: nextItems });
+  if (r && r.ok) {
+    ssListItems = nextItems;
+    ssEntitiesKey_ = '';
+    if (forceRender) ssForceEntityRender = true;
+    loadScreensavers();
+  }
+}
+
+function addSsListEntity(saverId, explicitId) {
+  const input = document.getElementById('ss-ent-_add');
+  const raw = explicitId !== undefined ? String(explicitId) : (input ? input.value : '');
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    if (input) input.focus();
+    if (ssHaEntities) ssHaToggle(saverId, '_add');
+    return;
+  }
+  if (ssListItems.length >= ssListMax) return;
+  const next = ssListItems.concat([{ entity: trimmed, label: '' }]);
+  if (input) input.value = '';
+  commitSsEntityList(saverId, next, true);
+}
+
+function moveSsListEntity(saverId, idx, dir) {
+  const target = idx + dir;
+  if (target < 0 || target >= ssListItems.length) return;
+  const next = ssListItems.slice();
+  const tmp = next[idx];
+  next[idx] = next[target];
+  next[target] = tmp;
+  commitSsEntityList(saverId, next, true);
+}
+
+function removeSsListEntity(saverId, idx) {
+  if (idx < 0 || idx >= ssListItems.length) return;
+  const next = ssListItems.slice();
+  next.splice(idx, 1);
+  commitSsEntityList(saverId, next, true);
+}
+
+function saveSsListLabel(saverId, idx, label) {
+  if (idx < 0 || idx >= ssListItems.length) return;
+  const next = ssListItems.slice();
+  next[idx] = { entity: next[idx].entity, label: String(label || '').trim() };
+  commitSsEntityList(saverId, next, false);
 }
 
 async function saveSsEntityPatch(saverId, slot, val) {

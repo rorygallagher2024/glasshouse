@@ -107,7 +107,7 @@ def check(path):
 SAVERS = pathlib.Path('server/assets/screensavers')
 EXAMPLES = pathlib.Path('server/screensavers')
 # "ha" has one placeholder per entity the saver declares, so it has none here.
-USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__', 'ha': ''}
+USES = {'level': '__TVWEB_LEVEL__', 'stats': '__TVWEB_URL__', 'choice': '__TVWEB_CHOICE__', 'ha': '', 'ha-list': '__TVWEB_HA_LIST__'}
 
 def check_folder(d, own):
     """Problems with one saver folder's saver.json, and its main QML file."""
@@ -146,6 +146,17 @@ def check_folder(d, own):
                     bad.append('saver.json: entity "%s" is not a Home Assistant entity id, such as sensor.outdoor_temperature' % name)
     if ('ha' in m.get('uses', [])) != bool(entities):
         bad.append('saver.json: entities and "ha" in uses go together')
+    entity_list = m.get('entityList')
+    if entity_list is not None:
+        if not isinstance(entity_list, dict):
+            bad.append('saver.json: entityList must be an object with min and max')
+        else:
+            emin = entity_list.get('min', 1)
+            emax = entity_list.get('max', 100)
+            if not isinstance(emin, int) or not isinstance(emax, int) or emin < 1 or emax > 100 or emax < emin:
+                bad.append('saver.json: entityList needs min/max between 1 and 100 with max >= min')
+    if ('ha-list' in m.get('uses', [])) != (entity_list is not None):
+        bad.append('saver.json: entityList and "ha-list" in uses go together')
     if 'id' in m:
         bad.append('saver.json: no id - the folder name is the id')
     main = m.get('main', 'main.qml')

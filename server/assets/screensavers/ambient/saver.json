@@ -2,17 +2,17 @@
   "manifest": 1,
   "version": "1.1.0",
   "name": {
-    "en": "Ambient",
-    "ar": "محيطي",
-    "es": "Ambiente",
-    "de": "Ambiente",
-    "fr": "Ambiance",
-    "hu": "Környezet",
-    "it": "Ambiente",
-    "pl": "Otoczenie",
-    "pt": "Ambiente",
-    "pt-br": "Ambiente",
-    "ru": "Окружение"
+    "en": "Home Assistant: Ambient",
+    "ar": "Home Assistant: محيطي",
+    "es": "Home Assistant: Ambiente",
+    "de": "Home Assistant: Ambiente",
+    "fr": "Home Assistant : Ambiance",
+    "hu": "Home Assistant: Környezet",
+    "it": "Home Assistant: Ambiente",
+    "pl": "Home Assistant: Otoczenie",
+    "pt": "Home Assistant: Ambiente",
+    "pt-br": "Home Assistant: Ambiente",
+    "ru": "Home Assistant: Окружение"
   },
   "description": {
     "en": "Time, date and up to three live Home Assistant readings, drifting on black to protect the panel.",
