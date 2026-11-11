@@ -980,8 +980,8 @@ step('woken from Active Standby with auto launch held off, Glasshouse Home opens
   });
 });
 
-step('a wake on webOS 5 to 10 closes the resident Home page before opening it', function (done) {
-  var versions = ['5.6.2', '9.2.2', '10.3.1'];
+step('a wake on webOS 7 to 10 closes the resident Home page before opening it', function (done) {
+  var versions = ['7.6.0', '9.2.2', '10.3.1'];
   (function run() {
     if (!versions.length) return done();
     var version = versions.shift();
@@ -1005,10 +1005,11 @@ step('a wake on webOS 5 to 10 closes the resident Home page before opening it', 
   })();
 });
 
-step('a wake on webOS 4 or 11 opens Home without closing the page first', function (done) {
-  // webOS 4's standalone app is already on; installing it is another test.
+step('a wake on webOS 3-6 or 11 opens Home without closing the page first', function (done) {
+  // webOS 4 and 5's standalone apps are already on; installing it is another test.
   var cases = [
     { version: '4.4.3', id: OLD_APP, enabled: true },
+    { version: '5.6.2', id: OLD_APP, enabled: true },
     { version: '11.2.0', id: LG_HOME, enabled: false }
   ];
   (function run() {
