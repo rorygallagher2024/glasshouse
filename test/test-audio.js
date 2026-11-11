@@ -413,6 +413,57 @@ add('a disable is not confirmed while changes remain to restore', function () {
   assert.strictEqual(st.status.override.needsRestore, true);
 }, { enabled: false });
 
+function realtekEdidStatus(sadBytes) {
+  var base = [], ext = [], i;
+  for (i = 0; i < 128; i++) { base.push(0); ext.push(0); }
+  [0, 255, 255, 255, 255, 255, 255, 0].forEach(function (n, idx) { base[idx] = n; });
+  base[126] = 1;
+  ext[0] = 2; ext[1] = 3; ext[2] = 4 + sadBytes.length; ext[3] = 0x40;
+  sadBytes.forEach(function (n, idx) { ext[idx + 4] = n; });
+  [base, ext].forEach(function (blk) {
+    var sum = 0;
+    for (var j = 0; j < 127; j++) sum += blk[j];
+    blk[127] = (-sum) & 255;
+  });
+  function formatBlock(name, blk) {
+    var lines = [name + ' :'];
+    for (var off = 0; off < blk.length; off += 16) {
+      lines.push(blk.slice(off, off + 16).map(function (b) {
+        return '0x' + ('0' + b.toString(16)).slice(-2);
+      }).join(',') + ',');
+    }
+    return lines.join('\n');
+  }
+  return ['===== HDMI STATUS =====', 'hwport:4', 'phy_lock_status:1',
+    formatBlock('edid_data_block0', base), formatBlock('edid_data_block1', ext)].join('\n');
+}
+
+add('Realtek reads checksummed EDID bytes from hdmi_status when hdmi20 is absent', function () {
+  mock.files['/proc/lg/hdmi20/port0/edid'] = null;
+  responses['com.webos.service.arccontroller/getARCEDIDInfo'].edidInfo = [];
+  responses['com.webos.service.config/getConfigs'].configs['tv.model.edidType'] = 'Unknown';
+  // Header 0x2f = audio tag (1) with 15 bytes: PCM, AC3, EAC3, TrueHD, DTS (no DTS-HD)
+  mock.files['/proc/lgtv-driver/hdmi_status/hdmi.p0'] = realtekEdidStatus([
+    0x2f, 0x09, 0x57, 0x07, 0x15, 0x07, 0x50, 0x55, 0x07, 0x00, 0x67, 0x04, 0x03, 0x3d, 0x07, 0x50
+  ]);
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(format(st, 'pcm').advertised, true);
+  assert.strictEqual(format(st, 'dts').advertised, true);
+  assert.strictEqual(format(st, 'dtshd').advertised, false);
+});
+
+add('Realtek bad EDID checksum stays unknown instead of reporting formats', function () {
+  mock.files['/proc/lg/hdmi20/port0/edid'] = null;
+  responses['com.webos.service.arccontroller/getARCEDIDInfo'].edidInfo = [];
+  responses['com.webos.service.config/getConfigs'].configs['tv.model.edidType'] = 'Unknown';
+  mock.files['/proc/lgtv-driver/hdmi_status/hdmi.p0'] =
+    realtekEdidStatus([0x23, 0x3d, 0x07, 0x50]).replace(/0x3d/, '0x3e');
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(format(st, 'dts').advertised, null);
+});
+
 function restore() {
   os.release = originalRelease; child.execFile = originalExec; crypto.createHash = originalHash; fs.statSync = originalStat; mock.restore();
 }
@@ -424,7 +475,7 @@ function next() {
   calls = [];
   Object.keys(fixture.files).forEach(function (key) { mock.files[key] = fixture.files[key]; });
   Object.keys(mock.files).forEach(function (key) {
-    if (/^\/(var\/lib\/lg-dts-|sys\/module\/gh_dts_native|proc\/aaudio\/|run\/systemd\/)/.test(key)) delete mock.files[key];
+    if (/^\/(var\/lib\/lg-dts-|sys\/module\/gh_dts_native|proc\/aaudio\/|run\/systemd\/|proc\/lgtv-driver\/hdmi_status\/)/.test(key)) delete mock.files[key];
   });
   child.execFile = refuseLaunch;
   crypto.createHash = originalHash;

@@ -3247,3 +3247,30 @@ started playback. Screen captures often omitted the pointer even when it was
 visible on the TV, so a missing cursor in a capture is not evidence that no move
 occurred. A direct write to `/dev/uinput` created a kernel input device, but was
 not needed and was removed.
+## Realtek HDMI receiver status (55NANO756PR, webOS 6.5.3)
+
+Reported in #1359 from a 55NANO756PR (webOS 6.5.3, firmware `03.53.46`) with a
+3840x2160 50 Hz SDR YCbCr 4:2:2 source on HDMI 1. Realtek boards have no
+`/proc/lg/hdmi20`; instead, receiver status and EDID live in
+`/proc/lgtv-driver/hdmi_status/hdmi.p0` to `hdmi.p3`:
+
+- `hwport:1` to `4` in `hdmi.p0` to `hdmi.p3` match `configd`'s
+  `inputMap.videoInputMapIndexInfo0` (`{"hdmi1":"0","hdmi2":"1","hdmi3":"2","hdmi4":"3"}`).
+- `hpd_state : 1` remained high on empty `hdmi.p1` and `hdmi.p2`;
+  `phy_lock_status:1` indicates an active locked signal and `link_hdmi_5v:1`
+  indicates +5V present from a source.
+- With the 2160p50 source active (`avi_vic:96`), `hdmi.p0` reported
+  `timing_active_w:3840`, `timing_active_h:2160`, `timing_v_freq:500` (tenths of
+  Hz), `link_frame_rate_x100_hz:5000` (hundredths of Hz),
+  `pixel_clock_khz:594000`, `timing_scan_type:1` (progressive, with
+  `timing_v_total:2250`; empty ports read `0`), `color_depth:0` alongside
+  `link_color_depth:8`, `avi_pixel_encoding:1` (`link_color_space:1`, matching
+  CTA-861 AVI byte 1 `0x31` for YCbCr 4:2:2), `allm_mode:0`, `dolby_hdr_type:0`,
+  `drm_length:26` and `drm_eotf_type:0`.
+- `edid_data_block0` and `edid_data_block1` hold two checksummed 128-byte EDID
+  blocks in comma-separated `0x..` hex rows (`edid_size :2`) on active/linked
+  `hdmi.p0`, omitted when idle.
+- Interlaced, HDR10/HLG/Dolby Vision, VRR and HDCP/FRL active samples were not
+  captured on this board (`phy_tmds_clk_khz:593500` tracked the pixel rate on
+  this TMDS link, and `hdcp_version` read `1` active vs `2` idle).
+

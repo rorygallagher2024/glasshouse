@@ -376,4 +376,30 @@ step(function () {
   }));
 });
 
+// 14. Realtek /proc/lgtv-driver/hdmi_status matches hwport rather than HDMI_BASE_MAP.
+step(function () {
+  var missingHdmi20 = path.join(os.tmpdir(), 'samrescan-no-hdmi20-' + process.pid);
+  var rtkDir = path.join(os.tmpdir(), 'samrescan-rtk-' + process.pid);
+  fs.mkdirSync(rtkDir);
+  // HDMI 1 is on hdmi.p0 (hwport:1) while hdmi.p3 has hwport:4 (opposite of HDMI_BASE_MAP)
+  fs.writeFileSync(path.join(rtkDir, 'hdmi.p0'), 'hpd_state : 1\nhwport:1\nphy_lock_status:0\n');
+  fs.writeFileSync(path.join(rtkDir, 'hdmi.p3'), 'hpd_state : 1\nhwport:4\nphy_lock_status:1\n');
+
+  var tv = fakeTV(null);
+  samrescan.init({ luna: tv.luna, nudgeMs: 5, pollMs: 5,
+                   portStatusDir: missingHdmi20, realtekStatusDir: rtkDir,
+                   exec: function (file, args, opts, cb) { process.nextTick(function () { cb(null); }); } });
+
+  assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi1'), false, 'Realtek matches hwport:1 with phy_lock_status:0');
+  fs.writeFileSync(path.join(rtkDir, 'hdmi.p0'), 'hpd_state : 1\nhwport:1\nphy_lock_status:1\n');
+  fs.writeFileSync(path.join(rtkDir, 'hdmi.p3'), 'hpd_state : 1\nhwport:4\nphy_lock_status:0\n');
+  assert.strictEqual(samrescan.hasHdmiSignal('com.webos.app.hdmi1'), true, 'Realtek matches hwport:1 with phy_lock_status:1');
+
+  fs.unlinkSync(path.join(rtkDir, 'hdmi.p0'));
+  fs.unlinkSync(path.join(rtkDir, 'hdmi.p3'));
+  fs.rmdirSync(rtkDir);
+  console.log('  \u2713 Realtek hdmi_status follows hwport and phy_lock_status');
+  next();
+});
+
 next();
