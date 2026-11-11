@@ -616,7 +616,7 @@ button.pill.busy:not([style*="--p"]){
   animation:btnPulse 1.2s ease-in-out infinite;
 }
 .dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,auto);
-      gap:8px;max-width:260px;margin:0 auto 14px}
+      gap:8px;max-width:260px;margin:0 auto 26px}
 /* Its arrows stay where they point in a page laid out right to left. */
 [dir=rtl] .dpad{direction:ltr}
 /* The arrows are glyphs, not words: the button voice everywhere else is
@@ -800,6 +800,21 @@ select.pill-sel.ss-sel{display:block;width:100%;max-width:340px;height:48px;marg
 .ss-ent-label-row input:focus,.ss-li-label input:focus{border-color:var(--w100)}
 .ss-ent-label-row input::placeholder,.ss-li-label input::placeholder{color:var(--w60)}
 .ss-ent-label-row input:disabled,.ss-li-label input:disabled{opacity:.45}
+.ss-pool-actions{display:flex;gap:8px;margin-bottom:8px;max-width:340px}
+.ss-pool-btn{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;min-height:0;
+  color:var(--w60);border:1px solid var(--w12);border-radius:2px;background:transparent;cursor:pointer}
+.ss-pool-btn:hover:not([disabled]){color:var(--w100);background:rgba(var(--fg),.04)}
+.ss-pool-btn[disabled]{opacity:.45;cursor:default}
+.ss-pool-box{max-height:260px;overflow-y:auto;border:1px solid var(--w12);border-radius:2px;padding:4px;
+  overscroll-behavior:contain;max-width:340px}
+.ss-pool-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:2px;
+  font-size:13.5px;color:var(--w90);cursor:pointer;user-select:none;transition:background .12s}
+.ss-pool-item:hover{background:rgba(var(--fg),.04)}
+.ss-pool-item.dis{cursor:default;opacity:.45}
+.ss-pool-item.dis:hover{background:transparent}
+.ss-pool-item input[type="checkbox"]{width:16px;height:16px;margin:0;cursor:pointer;flex-shrink:0;accent-color:var(--green)}
+.ss-pool-item.dis input[type="checkbox"]{cursor:default}
+.ss-pool-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .upd{max-width:760px;margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
@@ -1788,6 +1803,11 @@ button.wall-screen:disabled{opacity:1;cursor:default}
 .wall-actions{display:flex;gap:14px;margin-top:4px;min-height:18px}
 button.wall-link{min-height:0;padding:0;border:0;background:none;font-size:12px;letter-spacing:.02em;text-transform:none;color:var(--w60)}
 button.wall-link:hover:not(:disabled){color:var(--w100);text-decoration:underline;text-underline-offset:3px}
+/* The shuffled collection: how often it changes, then its pictures after a card to add more. */
+.shuffle-every{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0 18px;font-size:13px;color:var(--w80)}
+.wall-count{font-size:12px;color:var(--w60);font-variant-numeric:tabular-nums}
+/* Four picture choices, the last of them a longer name. */
+#home-wall-choice{max-width:760px}
 .wall-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;margin-top:24px}
 .wall-foot .sub{max-width:64ch;margin:0}
 .wall-foot-btns{display:flex;gap:10px;flex-wrap:wrap}

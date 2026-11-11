@@ -570,7 +570,7 @@ step(function (next) {
 });
 
 step(function (next) {
-  fs.writeFileSync(path.join(filtersDir, 'regional.js'), 'case WebOS.Key_webOS_Hulu: case WebOS.Key_webOS_IPlayer:');
+  fs.writeFileSync(path.join(filtersDir, 'regional.js'), 'case WebOS.Key_webOS_Hulu: case WebOS.Key_webOS_IPlayer: case WebOS.Key_webOS_Globoplay: case WebOS.Key_webOS_Shahid:');
   rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
   var elsewhere = function (r) {
     return r.keys.filter(function (k) { return k.elsewhere; }).map(function (k) { return k.key; });
@@ -579,9 +579,17 @@ step(function (next) {
     assert.deepEqual(elsewhere(unknown), []);
     fs.writeFileSync(path.join(stateDir, 'country'), 'GB\n');
     rk.getRemoteKeys(guard(function (gb) {
-      assert.deepEqual(elsewhere(gb), ['hulu']);
-      console.log('  ✓ a key only another country\'s remotes have is marked as from elsewhere, and none is before the country is known');
-      next();
+      assert.deepEqual(elsewhere(gb), ['hulu', 'globoplay', 'shahid']);
+      fs.writeFileSync(path.join(stateDir, 'country'), 'BR\n');
+      rk.getRemoteKeys(guard(function (br) {
+        assert.deepEqual(elsewhere(br), ['hulu', 'iplayer', 'shahid']);
+        fs.writeFileSync(path.join(stateDir, 'country'), 'AE\n');
+        rk.getRemoteKeys(guard(function (ae) {
+          assert.deepEqual(elsewhere(ae), ['hulu', 'iplayer', 'globoplay']);
+          console.log('  ✓ a key only another country\'s remotes have is marked as from elsewhere, and none is before the country is known');
+          next();
+        }));
+      }));
     }));
   }));
 });

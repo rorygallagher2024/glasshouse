@@ -337,6 +337,15 @@
    "title": "IP control",
    "desc": "Lets home automation systems control the TV over the network with LG's own protocol. Off unless something needs it.",
    "on": false
+  },
+  {
+   "id": "eyeComfortMode",
+   "section": "picture",
+   "type": "switch",
+   "title": "Reduce blue light",
+   "desc": "Warms the picture to cut blue light.",
+   "group": "colour",
+   "on": false
   }
  ]
 }

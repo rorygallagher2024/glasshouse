@@ -76,7 +76,18 @@ function retries(done) {
             console.log('  ✓ an HTTP error is not retried');
 
             reset();
-            cfg.fetch = { ip: '6' };
+            install('curl', 'echo "curl: (60) SSL certificate problem: self-signed certificate" >&2\nexit 60\n');
+            install('wget', 'echo \'{"ok":2}\'\nexit 0\n');
+            fetch.getJson('https://example.org/a.json', function (errCert) {
+              assert.ok(errCert && !errCert.offline);
+              assert.ok(/certificate/i.test(errCert.message));
+              assert.strictEqual(calls().length, 1, 'certificate error is not retried across address families');
+              var lines = fs.existsSync(log) ? fs.readFileSync(log, 'utf8').trim().split('\n') : [];
+              assert.strictEqual(lines.length, 1, 'wget is not called when curl fails certificate verification');
+              console.log('  ✓ a certificate failure (60) fails immediately and does not try other clients');
+
+              reset();
+              cfg.fetch = { ip: '6' };
             curlWorking('-6');
             fetch.getJson('https://example.org/a.json', function (err6) {
               assert.ifError(err6);
@@ -92,6 +103,7 @@ function retries(done) {
               });
             });
           });
+        });
         });
       });
     });
@@ -162,6 +174,18 @@ function retries(done) {
 })();
 
 (function testArgs() {
+  var cf = fetch._certFailure;
+  assert.strictEqual(cf('/usr/bin/curl', { code: 60 }, 'curl: (60) SSL certificate problem'), true);
+  assert.strictEqual(cf('/usr/bin/curl', { code: 51 }, 'curl: (51) SSL: certificate subject name mismatch'), true);
+  assert.strictEqual(cf('/usr/bin/curl', { code: 77 }, 'curl: (77) error setting certificate verify locations'), true);
+  assert.strictEqual(cf('/usr/bin/curl', { code: 6 }, 'curl: (6) Could not resolve host'), false);
+  assert.strictEqual(cf('/usr/bin/curl', { code: 7 }, 'curl: (7) Failed to connect'), false);
+  assert.strictEqual(cf('/usr/bin/curl', { code: 28 }, 'curl: (28) Connection timed out'), false);
+  assert.strictEqual(cf('/bin/wget', { code: 5 }, 'wget: SSL verification failure'), true);
+  assert.strictEqual(cf('/bin/wget', { code: 4 }, 'wget: network failure'), false);
+  assert.strictEqual(cf('/bin/busybox', { code: 1 }, 'wget: certificate verify failed'), true);
+  console.log('  ✓ certFailure identifies TLS verification failures for curl and wget');
+
   fetch.init({ version: '1.2.3' });
   var big = fetch._fetchArgs('/usr/bin/curl', 'https://h/x.ipk', '/tmp/x', 'big');
   assert.strictEqual(big[big.length - 2], '--');

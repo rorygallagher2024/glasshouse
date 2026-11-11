@@ -753,6 +753,47 @@
  "home.weather.windy": {"text": "Windig", "from": "Windy"},
  "home.weather.windyVariant": {"text": "Windig", "from": "Windy"},
  "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"},
+ "home.tv.paused": {"text": "Pausiert", "from": "Paused"},
+ "home.tv.pausedLeft": {"text": "Pausiert, noch {time}", "from": "Paused, {time} left"},
+ "home.tv.behind": {"text": "{time} hinter live. Zurück springt zu live.", "from": "{time} behind live. Back goes to live."},
+ "home.tv.noPause": {"text": "Dieser Sender kann gerade nicht pausieren", "from": "This channel can’t pause now"},
+ "home.tv.seekTo": {"text": "{time} hinter live", "from": "{time} behind live"},
+ "home.tv.seekLive": {"text": "Live", "from": "Live"},
+ "home.tv.liveAsk": {"text": "Zurück zu live?", "from": "Back to live?"},
+ "home.tv.liveAskDetail": {"text": "OK springt zu live. Zurück bleibt hier.", "from": "OK goes to live. Back stays here."},
+ "home.tv.zapAsk": {"text": "Sender wechseln?", "from": "Change channel?"},
+ "home.tv.zapAskDetail": {"text": "Die Aufnahme dieses Senders geht verloren. OK wechselt. Zurück bleibt hier.", "from": "The recording of this channel is lost. OK changes. Back stays here."},
+ "srv.saver.random": {"text": "Zufällig", "from": "Random"},
+ "srv.saver.random.desc": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner, wenn der Bildschirmschoner angezeigt wird.", "from": "Picks a different screen saver each time the screen saver appears."},
+ "ss.poolCount": {"text": "{n} von {total} ausgewählt", "from": "{n} of {total} selected"},
+ "ss.poolDeselectAll": {"text": "Alle abwählen", "from": "Deselect all"},
+ "ss.poolSelectAll": {"text": "Alle auswählen", "from": "Select all"},
+ "ss.poolTitle": {"text": "In Rotation enthalten", "from": "Included in rotation"},
+ "ss.randomUpNext": {"text": "Als Nächstes: {name}", "from": "Up next: {name}"},
+ "tv.saver.exclude": {"text": "Drücken Sie OK, um aus der Zufallsrotation auszuschließen", "from": "Press OK to exclude from random rotation"},
+ "tv.saver.include": {"text": "Drücken Sie OK, um in die Zufallsrotation aufzunehmen", "from": "Press OK to include in random rotation"},
+ "tv.saver.random.hint": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner.", "from": "Picks a different screen saver each time."},
+ "tv.saver.random.hintUpNext": {"text": "Wählt jedes Mal einen anderen Bildschirmschoner. Als Nächstes: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
+  "adv.nightlyRefresh": {
+    "text": "Nächtlicher Neustart",
+    "from": "Nightly refresh reboot"
+  },
+  "adv.nightlyRefresh.desc": {
+    "text": "Richtet den 24-stündigen Wartungsneustart des Fernsehers am nächtlichen Ausschaltfenster aus. Verhindert einen Fehler in der LG-Software, durch den ein Neustart am Tag den Fernseher vier Stunden später vollständig ausschaltet.",
+    "from": "Aligns the TV's 24-hour maintenance reboot with your nightly power-down window. Prevents a bug in LG's software where rebooting during the day causes the TV to power off completely four hours later."
+  },
+  "tv.options.nightlyRefresh.hint": {
+    "text": "Richtet den 24-stündigen Wartungsneustart des Fernsehers am nächtlichen Ausschaltfenster aus, um ein vollständiges Ausschalten nach vier Stunden zu verhindern.",
+    "from": "Aligns the TV's 24-hour maintenance reboot with your nightly power-down window, preventing a bug in LG's software that powers off the TV completely four hours after a daytime reboot."
+  },
+  "tv.flash.nightlyRefreshOn": {
+    "text": "Nächtlicher Neustart aktiviert",
+    "from": "Nightly refresh reboot turned on"
+  },
+  "tv.flash.nightlyRefreshOff": {
+    "text": "Nächtlicher Neustart deaktiviert",
+    "from": "Nightly refresh reboot turned off"
+  },
  "ha.api": {"text": "Home Assistant-API", "from": "Home Assistant API"},
  "ha.api.desc": {"text": "Zeigt Live-Entitäten von Home Assistant in Glasshouse-Bildschirmschonern (wie Ambient) an. Verbindet sich direkt per HTTP/HTTPS ohne MQTT und speichert ohne Neustart.", "from": "Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting."},
  "ha.connected": {"text": "Verbunden: {msg}", "from": "Connected: {msg}"},

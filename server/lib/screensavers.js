@@ -82,6 +82,17 @@ var STOCK = {
   builtin: true
 };
 
+var RANDOM = {
+  id: 'random',
+  label: msg('srv.saver.random', 'Random'),
+  description: msg('srv.saver.random.desc', 'Picks a different screen saver each time the screen saver appears.'),
+  builtin: true
+};
+
+var RANDOM_CONFIG_FILE = '/var/lib/tvweb/screensaver-random.json';
+var randomConfigFile = RANDOM_CONFIG_FILE;
+var wasInScreenSaver = false;
+
 /*
  * Screen savers are folders: one per saver, holding a saver.json, its QML and
  * anything else it uses, all of it staged together. Glasshouse's own are in
@@ -496,7 +507,7 @@ function setSaverEntities(saverId, newEntities, cb) {
     if (nextList.length) storedList[saverId] = nextList;
     else delete storedList[saverId];
     writeStoredEntities(storedList);
-    if (screensaverMode() === saverId) {
+    if (stagedScreensaver() === saverId) {
       restageScreensaver();
       restartScreensaverApp(function () {});
     }
@@ -566,7 +577,7 @@ function setSaverEntities(saverId, newEntities, cb) {
   if (Object.keys(stored[saverId]).length === 0) delete stored[saverId];
   writeStoredEntities(stored);
 
-  if (screensaverMode() === saverId) {
+  if (stagedScreensaver() === saverId) {
     restageScreensaver();
     restartScreensaverApp(function () {});
   }
@@ -734,6 +745,8 @@ function init(opts) {
   launchedDirectly = false;
   launchGeneration++;
   closeCallbacks = [];
+  randomConfigFile = (opts && opts.randomConfigFile) ? opts.randomConfigFile : RANDOM_CONFIG_FILE;
+  wasInScreenSaver = false;
 
   // Auto-heal: If the screensaver is currently stock (no active bind-mount on SCREENSAVER_APP_DIR),
   // but an orphaned marker remains in SCREENSAVER_DIR, remove it so the boot hook does not
@@ -837,11 +850,122 @@ function pickChoice(e, id) {
   return e.choices.options.some(function (o) { return o.id === id; }) ? id : e.choices.def;
 }
 
-function screensaverMode() {
+function stagedScreensaver() {
   var m = readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER));
   if (RENAMED[m]) m = RENAMED[m].mode;
   var e = m && m !== 'stock' ? saverById(m) : null;
   return e && !e.problem ? m : 'stock';
+}
+
+function screensaverMode() {
+  var staged = stagedScreensaver();
+  if (staged !== 'stock' && isRandomEnabled()) return 'random';
+  return staged;
+}
+
+function defaultRandomPool() {
+  return catalog().filter(function (e) {
+    return e.id !== 'stock' && e.id !== 'random' && !e.problem && !saverMissingHa(e) && !saverMinEntitiesError(e) && (!heldBack() || e.builtin);
+  }).map(function (e) {
+    return e.id;
+  });
+}
+
+function readRandomConfig() {
+  try {
+    var raw = fs.readFileSync(randomConfigFile, 'utf8');
+    var data = JSON.parse(raw);
+    if (data && typeof data === 'object') return data;
+  } catch (e) {}
+  return { enabled: false, pool: null };
+}
+
+function isRandomEnabled() {
+  return !!readRandomConfig().enabled;
+}
+
+function getRandomPool() {
+  var cfg = readRandomConfig();
+  var allValid = defaultRandomPool();
+  if (!Array.isArray(cfg.pool)) return allValid;
+  var filtered = cfg.pool.filter(function (id) {
+    return allValid.indexOf(id) !== -1;
+  });
+  return filtered.length > 0 ? filtered : allValid;
+}
+
+function saveRandomConfig(patch) {
+  var cur = readRandomConfig();
+  if (patch.enabled !== undefined) cur.enabled = !!patch.enabled;
+  if (patch.pool !== undefined) {
+    if (Array.isArray(patch.pool)) {
+      var allValid = defaultRandomPool();
+      cur.pool = patch.pool.filter(function (id) {
+        return allValid.indexOf(id) !== -1;
+      });
+    } else {
+      cur.pool = null;
+    }
+  }
+  try {
+    fs.writeFileSync(randomConfigFile, JSON.stringify(cur, null, 2));
+  } catch (e) {
+    console.error('screensaver: could not save random config: ' + e.message);
+  }
+}
+
+function setRandomPool(pool) {
+  if (!Array.isArray(pool)) return;
+  var allValid = defaultRandomPool();
+  var validPool = pool.filter(function (id) {
+    return allValid.indexOf(id) !== -1;
+  });
+  saveRandomConfig({ pool: validPool });
+  if (isRandomEnabled()) {
+    var cur = stagedScreensaver();
+    if (validPool.length > 0 && validPool.indexOf(cur) === -1) {
+      advanceRandomSaver();
+    }
+  }
+}
+
+function pickNextRandomSaver(currentId) {
+  var pool = getRandomPool();
+  if (!pool || pool.length === 0) pool = defaultRandomPool();
+  if (pool.length === 0) return null;
+  var candidates = pool;
+  if (pool.length > 1 && currentId) {
+    candidates = pool.filter(function (id) { return id !== currentId; });
+    if (candidates.length === 0) candidates = pool;
+  }
+  var pickedId = candidates[Math.floor(Math.random() * candidates.length)];
+  return saverById(pickedId);
+}
+
+function advanceRandomSaver() {
+  if (!isRandomEnabled()) return;
+  var curStaged = stagedScreensaver();
+  var nextSaver = pickNextRandomSaver(curStaged);
+  if (!nextSaver || nextSaver.problem) return;
+  try {
+    stageSaverFiles(nextSaver, screensaverBrightness(), screensaverChoice(nextSaver));
+    fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), nextSaver.id);
+    try { fs.writeFileSync(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER), nextSaver.id); } catch (errApp) {}
+    console.log('screensaver: random mode queued "' + nextSaver.id + '" for next screen saver');
+  } catch (e) {
+    console.error('screensaver: could not stage random screen saver: ' + e.message);
+  }
+}
+
+function onPowerChange(rawState) {
+  var raw = (rawState && typeof rawState === 'object') ? (rawState.raw || rawState.state || rawState) : rawState;
+  var isSS = power.isScreenSaver(power.mapState(raw));
+  if (wasInScreenSaver && !isSS) {
+    if (isRandomEnabled()) {
+      advanceRandomSaver();
+    }
+  }
+  wasInScreenSaver = isSS;
 }
 
 function detectExternal() {
@@ -938,7 +1062,7 @@ function setSaverColor(saverId, colorId, cb) {
   if (preset.id === DEFAULT_SAVER_COLOR) delete stored[saverId];
   else stored[saverId] = preset.id;
   writeStoredColors(stored);
-  if (screensaverMode() === saverId) {
+  if (stagedScreensaver() === saverId) {
     restageScreensaver();
     restartScreensaverApp(function () {});
   }
@@ -947,6 +1071,7 @@ function setSaverColor(saverId, colorId, cb) {
 
 function screensaverList() {
   var cur = screensaverMode();
+  var staged = isRandomEnabled() ? stagedScreensaver() : undefined;
   var out = [];
   var all = catalog();
   for (var i = 0; i < all.length; i++) {
@@ -1002,12 +1127,27 @@ function screensaverList() {
         })
       } : undefined
     });
+    if (e.id === 'stock') {
+      out.push({
+        id: 'random',
+        label: msg('srv.saver.random', 'Random'),
+        description: msg('srv.saver.random.desc', 'Picks a different screen saver each time the screen saver appears.'),
+        active: cur === 'random',
+        available: !heldBack(),
+        builtin: true
+      });
+    }
   }
-  return {
+  var res = {
     ok: true,
     current: cur,
+    staged: staged,
+    random: {
+      enabled: isRandomEnabled(),
+      pool: getRandomPool()
+    },
     level: screensaverLevel(), brightness: screensaverBrightness(),
-    choice: screensaverChoice(saverById(cur)),
+    choice: screensaverChoice(saverById(cur === 'random' ? staged : cur)),
     haConfigured: haEntityModule ? haEntityModule.configured() : false,
     modes: out,
     writable: !!(configObj && configObj.allowControl),
@@ -1023,6 +1163,9 @@ function screensaverList() {
     powerOffMinutes: saverPowerOff.minutes(),
     allowPower: !!(configObj && configObj.allowPower)
   };
+  res.filter = function (fn) { return out.filter(fn); };
+  res.map = function (fn) { return out.map(fn); };
+  return res;
 }
 
 function stageScreensaverAppinfo() {
@@ -1244,6 +1387,39 @@ function setScreensaver(mode, level, cb, choice) {
     if (choice === undefined) choice = RENAMED[mode].choice;
     mode = RENAMED[mode].mode;
   }
+  if (mode === 'random') {
+    if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
+    if (heldBack()) return cb({ ok: false, error: HELD_ERROR });
+    level = brightnessOf(level);
+    saveRandomConfig({ enabled: true });
+    var staged = stagedScreensaver();
+    var pool = getRandomPool();
+    var nextSaver = (staged && staged !== 'stock' && pool.indexOf(staged) !== -1)
+      ? saverById(staged)
+      : pickNextRandomSaver();
+    if (!nextSaver || nextSaver.problem) {
+      nextSaver = pickNextRandomSaver() || saverById('starfield') || catalog()[1];
+    }
+    if (stagedScreensaver() !== 'stock') {
+      try {
+        stageSaverFiles(nextSaver, level, screensaverChoice(nextSaver));
+        fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), nextSaver.id);
+        try { fs.writeFileSync(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER), nextSaver.id); } catch (errApp) {}
+      } catch (err) {
+        return cb({ ok: false, error: msg('srv.saver.stageFailed', 'could not stage the screen saver: {error}', { error: err.message }) });
+      }
+      return cb({
+        ok: true,
+        current: 'random',
+        staged: nextSaver.id,
+        level: screensaverLevel(),
+        brightness: screensaverBrightness(),
+        switching: false
+      });
+    }
+    return switchTo(nextSaver, 'random', level, choice, cb);
+  }
+  saveRandomConfig({ enabled: false });
   // Read again, so a saver just added on the TV can be picked.
   if (mode !== 'stock') scanSavers();
   var saver = mode === 'stock' ? STOCK : saverById(mode);
@@ -1334,7 +1510,7 @@ function swapScreensaver(saver, mode, level, choice, cb) {
       mkdirp(path.join(SCREENSAVER_DIR, 'qml'));
       stageScreensaverAppinfo();
       stageSaverFiles(saver, level, choice);
-      fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), mode);
+      fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), saver.id);
     } catch (e) {
       return cb({ ok: false, error: msg('srv.saver.stageFailed', 'could not stage the screen saver: {error}', { error: e.message }) });
     }
@@ -1350,10 +1526,10 @@ function swapScreensaver(saver, mode, level, choice, cb) {
         }
         var now = screensaverMode();
         cb({
-          ok: !err && now === mode,
+          ok: !err && (now === mode || (mode === 'random' && now === 'random')),
           current: now,
           level: screensaverLevel(), brightness: screensaverBrightness(),
-          error: (!err && now === mode) ? undefined : 'the mount did not take'
+          error: (!err && (now === mode || (mode === 'random' && now === 'random'))) ? undefined : 'the mount did not take'
         });
       });
     });
@@ -1379,21 +1555,28 @@ function restageScreensaver() {
   scanSavers();
   var mode = screensaverMode();
   if (mode === 'stock') { stagedEntities = null; stagedEntityLabels = null; return appSaverGone(); }
-  var saver = saverById(mode);
-  if (!saver || saver.problem) return;
+  var stagedId = stagedScreensaver();
+  var saver = saverById(stagedId);
+  if (!saver || saver.problem) {
+    if (isRandomEnabled()) return advanceRandomSaver();
+    return;
+  }
+  if (isRandomEnabled() && (saverMissingHa(saver) || saverMinEntitiesError(saver))) {
+    return advanceRandomSaver();
+  }
   try {
     var staged = path.join(SCREENSAVER_DIR, 'qml', 'main.qml');
     var before = fs.existsSync(staged) ? fs.readFileSync(staged, 'utf8') : '';
     stageSaverFiles(saver, screensaverBrightness(), screensaverChoice(saver));
     // An old id stored is written again as the one it now is.
     if (RENAMED[readTrimmed(path.join(SCREENSAVER_APP_DIR, SCREENSAVER_MARKER))]) {
-      fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), mode);
+      fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER), saver.id);
     }
     if (fs.readFileSync(staged, 'utf8') !== before) {
-      console.log('screensaver: restaged "' + mode + '" from a newer copy');
+      console.log('screensaver: restaged "' + saver.id + '" from a newer copy');
     }
   } catch (e) {
-    console.error('screensaver: could not restage ' + mode + ': ' + e.message);
+    console.error('screensaver: could not restage ' + saver.id + ': ' + e.message);
   }
 }
 
@@ -1473,11 +1656,15 @@ function launchedShowing() {
  * while it shows, and any of them closes it.
  */
 function setLaunched(on) {
+  var was = launchedDirectly;
   if (on) {
     try { fs.writeFileSync(LAUNCHED_MARKER, '1\n', 'utf8'); }
     catch (e) { console.error('screensaver: could not record the launched screen saver: ' + e.message); }
   } else {
     unlinkQuiet(LAUNCHED_MARKER);
+    if (was && isRandomEnabled()) {
+      advanceRandomSaver();
+    }
   }
   if (launchedDirectly === on) return;
   launchedDirectly = on;
@@ -1620,7 +1807,7 @@ function trigger(cb) {
       });
     }
 
-    var activeSaver = saverById(screensaverMode());
+    var activeSaver = saverById(stagedScreensaver());
     var minErr = saverMinEntitiesError(activeSaver);
     if (minErr) return cb({ ok: false, error: minErr });
     if (saverMissingHa(activeSaver)) return cb({ ok: false, error: NEEDS_HA_ERROR });
@@ -1707,9 +1894,27 @@ module.exports = {
   setScreensaver: setScreensaver,
   setSaverEntities: setSaverEntities,
   setSaverColor: setSaverColor,
-  screensaverColor: function () { return screensaverColor(saverById(screensaverMode())); },
-  screensaverChoice: function () { return screensaverChoice(saverById(screensaverMode())); },
+  screensaverColor: function () {
+    var mode = screensaverMode();
+    if (mode === 'random') mode = stagedScreensaver();
+    return screensaverColor(saverById(mode));
+  },
+  screensaverChoice: function () {
+    var mode = screensaverMode();
+    if (mode === 'random') mode = stagedScreensaver();
+    return screensaverChoice(saverById(mode));
+  },
   RENAMED: RENAMED,
+  RANDOM: RANDOM,
+  isRandomEnabled: isRandomEnabled,
+  getRandomPool: getRandomPool,
+  setRandomPool: setRandomPool,
+  saveRandomConfig: saveRandomConfig,
+  defaultRandomPool: defaultRandomPool,
+  pickNextRandomSaver: pickNextRandomSaver,
+  advanceRandomSaver: advanceRandomSaver,
+  onPowerChange: onPowerChange,
+  stagedScreensaver: stagedScreensaver,
   restageScreensaver: restageScreensaver,
   screensaverEntities: screensaverEntities,
   screensaverEntityLabel: screensaverEntityLabel,
