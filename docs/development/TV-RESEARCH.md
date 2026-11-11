@@ -432,7 +432,10 @@ muted `<video>` with one `<source>`:
   while connecting, then the HDMI PCM on `tv_speaker`. That recording was
   made at speaker volume 0. A listening check on the same G3 at volume 10
   confirmed HDMI 4's preview was audible with Preview sound on, silent with
-  it off, and audible again when switched back on.
+  it off, and audible again when switched back on. By contrast, on a
+  `55NANO756PR` (`webOS 6.5.3`, standalone Home, #1359), an HDMI 1 preview
+  (`ext://hdmi:1`) still played sound through the TV speakers even with
+  `<video muted>` (`Preview sound` off).
 
 How a busy tuner (a recording) or an encrypted channel shows to the page was
 not tried.

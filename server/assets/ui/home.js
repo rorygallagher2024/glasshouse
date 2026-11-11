@@ -191,11 +191,12 @@ function renderHome() {
     previewPill.disabled = !homeWritable();
   }
   // Its options, while it is on.
+  // Omitted on webOS 3 and 4 (a B8, 4.4.3), where Live preview plays but the
+  // last two do not and sound was not tried; webOS 5 and 6 also run standalone.
+  const previewOptionsOff = st.supported.previewOptions === false || (st.supported.standalone === true && !st.supported.webos);
   [['home-preview-sound', 'previewSound'], ['home-preview-always', 'previewAlways'], ['home-preview-tile', 'previewInTile']].forEach(([id, field]) => {
     const row = q(id + '-row');
-    // On webOS 4 (a B8, 4.4.3), where Live preview itself plays, the last two
-    // do not, and sound was not tried.
-    if (row) row.hidden = !st.supported.ok || st.supported.standalone === true || !st.layout || st.layout.livePreview !== true;
+    if (row) row.hidden = !st.supported.ok || previewOptionsOff || !st.layout || st.layout.livePreview !== true;
     const btn = q(id);
     if (!btn) return;
     const on = !!st.layout && st.layout[field] === true;
