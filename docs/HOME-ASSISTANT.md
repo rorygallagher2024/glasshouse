@@ -39,7 +39,7 @@ Connecting Glasshouse to Home Assistant takes only a few minutes.
 
 ### Setting it up from the dashboard
 
-1. Open the dashboard in a browser, then navigate to the **MQTT** tab (`/?tab=mqtt`).
+1. Open the dashboard in a browser, then navigate to the **HA & MQTT** tab (`/?tab=mqtt`).
 2. Fill in the broker address, port (`1883`), and credentials.
 3. Switch **MQTT bridge** to **On** and save.
 
@@ -71,7 +71,7 @@ For config-file deployments, `deploy.sh` checks for `server/config.<tv-ip>.json`
 
 The dashboard can change the broker, credentials, topic prefix and device identity — the settings that decide *where* telemetry goes — along with the Home Assistant API URL and token used by screen savers.
 
-`port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the MQTT tab ([App icons](#app-icons-for-launchers)).
+`port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the HA & MQTT tab ([App icons](#app-icons-for-launchers)).
 
 Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart.
 
@@ -118,9 +118,9 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 
 ### Screen savers reading Home Assistant
 
-A screen saver can draw values of its own from Home Assistant. It names the entities it wants in its `saver.json`, and Glasshouse gives it one address per name, served from this TV, with the token kept in `config.json`. The server answers only for the entities that screen saver declared, and only while it is the one showing, so a QML file on the TV cannot read anything it did not say it would. Built-in screen savers such as **Ambient** and custom screen savers added on the TV can use this, and their entity slots can be changed directly on the **Screensaver** tab without editing `saver.json`.
+A screen saver can draw values of its own from Home Assistant. It names the entities it wants in its `saver.json`, and Glasshouse gives it one address per name, served from this TV, with the token kept in `config.json`. The server answers only for the entities that screen saver declared, and only while it is the one showing, so a QML file on the TV cannot read anything it did not say it would. Built-in screen savers such as **Ambient** and custom screen savers added on the TV can use this, and their entity slots and optional custom display labels can be changed directly on the **Screensaver** tab without editing `saver.json`.
 
-To enable it, enter the Home Assistant instance address (`homeAssistant.url`) and a Long-Lived Access Token (`homeAssistant.token`) under **Home Assistant API** on the **MQTT** tab and click **Save** (which applies immediately without restarting the server, or set them in `config.json`). Unlike the MQTT bridge, which talks to your MQTT broker, screen saver reads use Home Assistant's REST API directly. [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) has the manifest and QML format.
+To enable it, enter the Home Assistant instance address (`homeAssistant.url`) and a Long-Lived Access Token (`homeAssistant.token`) under **Home Assistant API** on the **HA & MQTT** tab and click **Save** (which applies immediately without restarting the server, or set them in `config.json`). Unlike the MQTT bridge, which controls and observes the TV over an MQTT broker, **Home Assistant API** connects straight to Home Assistant's REST API over HTTP/HTTPS without using MQTT. [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) has the manifest and QML format.
 
 ---
 
@@ -130,7 +130,7 @@ Once connected to the MQTT broker, Home Assistant discovers the TV as a single d
 
 ### Entity Selection
 
-You can choose which entity categories are published from the **MQTT** tab in the dashboard (`/?tab=mqtt`), or fine-tune individual entities. When a category or entity is disabled, `tvweb` publishes an empty discovery payload so Home Assistant unregisters the entity immediately, without leaving orphaned unavailable entities.
+You can choose which entity categories are published from the **HA & MQTT** tab in the dashboard (`/?tab=mqtt`), or fine-tune individual entities. When a category or entity is disabled, `tvweb` publishes an empty discovery payload so Home Assistant unregisters the entity immediately, without leaving orphaned unavailable entities.
 
 Categories:
 * **Controls & Media** (`controls`): Power, volume, mute, playback buttons, apps, and input sources.

@@ -341,11 +341,10 @@ async function loadSettings(keepMsg) {
     if (haSaveBtn) haSaveBtn.disabled = !j.writable;
     const haMsgEl = q('cfg-ha-msg');
     if (haMsgEl && !keepMsg) {
-      haMsgEl.textContent = (cfgHaUrl && cfgHaTokenSet)
-        ? t('ha.savedStatus', 'Configured.')
-        : '';
+      haMsgEl.textContent = '';
       haMsgEl.className = 'cfg-msg';
     }
+    renderHaStatus(!!(cfgHaUrl && cfgHaTokenSet), cfgHaUrl);
 
     if (m.entities) cfgEntities = m.entities;
     if (m.categories) cfgCategories = m.categories;
@@ -437,6 +436,28 @@ async function saveSettings() {
   }
 }
 
+function openHaSettings() {
+  showTab('mqtt');
+  const sec = q('ha-api-section');
+  if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderHaStatus(configured, url) {
+  const pill = q('ha-api-pill');
+  const summary = q('ha-api-summary');
+  if (pill) {
+    pill.textContent = configured
+      ? t('ha.savedStatus', 'Configured')
+      : t('ha.notSet', 'Not set');
+    pill.className = 'pill ' + (configured ? 'good' : 'idle');
+  }
+  if (summary) {
+    summary.textContent = configured && url
+      ? url
+      : t('ha.summaryEmpty', 'Screen savers cannot read Home Assistant entities until configured.');
+  }
+}
+
 async function saveHaSettings() {
   const btn = q('cfg-ha-save-btn');
   const msgEl = q('cfg-ha-msg');
@@ -473,6 +494,7 @@ async function saveHaSettings() {
         ? t('ha.token.set', 'A token is set. Leave blank to keep it.')
         : t('ha.token.hint', 'From your Home Assistant profile → Long-Lived Access Tokens.');
     }
+    renderHaStatus(!!j.configured, cfgHaUrl);
     if (typeof resetHaEntitiesCache === 'function') resetHaEntitiesCache();
     if (typeof loadScreensavers === 'function') loadScreensavers();
 

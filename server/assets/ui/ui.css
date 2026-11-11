@@ -788,6 +788,15 @@ button.key-hit{background:var(--w10)}
 .ss-ha-opt-n{font-size:13px;color:var(--w100);line-height:1.3}
 .ss-ha-opt-id{font-size:11.5px;color:var(--w60);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:1px}
 .ss-ha-empty{padding:10px 12px;font-size:13px;color:var(--w60)}
+.ss-ent-label-row{display:flex;align-items:center;gap:8px;margin-top:2px}
+.ss-ent-label-row label{font-size:11.5px;color:var(--w60);min-width:44px;flex-shrink:0}
+.ss-ent-label-row input{
+  flex:1;min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:13px;
+  color:var(--w90);background:transparent;border:1px solid var(--w12);padding:7px 10px;min-height:36px;border-radius:0;outline:none
+}
+.ss-ent-label-row input:focus{border-color:var(--w80)}
+.ss-ent-label-row input::placeholder{color:var(--w50)}
+.ss-ent-label-row input:disabled{opacity:.45}
 .upd{max-width:760px;margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
@@ -1062,6 +1071,9 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 /* ---- MQTT network flow diagram ---- */
 .mqtt-net{max-width:380px;margin-top:22px;border:1px solid var(--w06);
   background:rgba(var(--fg),.02);border-radius:6px;padding:16px 16px 14px}
+.ha-api-section{border-top:1px solid var(--w12);margin-top:44px;padding-top:32px}
+.ha-status-box{max-width:380px;border:1px solid var(--w06);background:rgba(var(--fg),.02);border-radius:6px;padding:16px}
+.ha-status-box .mqtt-net-header{margin-bottom:0;justify-content:space-between}
 .mqtt-net.off .mqtt-net-node{opacity:.6}
 .mqtt-net.off .mqtt-net-link{opacity:.4}
 .mqtt-net.off .mqtt-dot{background:var(--w20)!important;border-color:var(--edge)!important;box-shadow:none!important}

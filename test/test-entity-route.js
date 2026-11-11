@@ -127,22 +127,28 @@ get('/api/entity/sensor.example_daylight?k=tok', function (status, body) {
         screensavers.restageScreensaver();
         screensavers.setSaverEntities('user-ha-reads', { daylight: 'not valid' }, function (badRes) {
           assert.strictEqual(badRes.ok, false);
-          screensavers.setSaverEntities('user-ha-reads', { daylight: 'sensor.override_daylight' }, function (okRes) {
+          screensavers.setSaverEntities('user-ha-reads', { daylight: { entity: 'sensor.override_daylight', label: 'Outside Light' } }, function (okRes) {
             assert.strictEqual(okRes.ok, true, okRes.error);
             assert.strictEqual(screensavers.screensaverEntities().daylight, 'sensor.override_daylight');
-            get('/api/entity/sensor.override_daylight?k=tok', function (status5, body5) {
-              assert.strictEqual(status5, 200, body5);
-              get('/api/entity/sensor.example_daylight?k=tok', function (status6) {
-                assert.strictEqual(status6, 404, 'old default no longer served once overridden');
-                screensavers.setSaverEntities('user-ha-reads', { daylight: '' }, function (clearRes) {
-                  assert.strictEqual(clearRes.ok, true);
-                  assert.strictEqual(screensavers.screensaverEntities().daylight, undefined, 'cleared slot is omitted from active entities');
-                  get('/api/entity/sensor.example_daylight?k=tok', function (statusClear) {
-                    assert.strictEqual(statusClear, 404, 'cleared slot refuses old default');
-                    screensavers.setSaverEntities('user-ha-reads', { daylight: null }, function (resetRes) {
-                      assert.strictEqual(resetRes.ok, true);
-                      assert.strictEqual(screensavers.screensaverEntities().daylight, 'sensor.example_daylight');
-                      console.log('  \u2713 overriding, clearing, and resetting entity slots updates what is served');
+            assert.strictEqual(screensavers.screensaverEntityLabel('sensor.override_daylight'), 'Outside Light');
+            screensavers.setSaverEntities('user-ha-reads', { daylight: { label: 'Sun Hours' } }, function (lblRes) {
+              assert.strictEqual(lblRes.ok, true);
+              assert.strictEqual(screensavers.screensaverEntities().daylight, 'sensor.override_daylight', 'partial label update preserves entity');
+              get('/api/entity/sensor.override_daylight?k=tok', function (status5, body5) {
+                assert.strictEqual(status5, 200, body5);
+                assert.strictEqual(JSON.parse(body5).label, 'Sun Hours');
+                get('/api/entity/sensor.example_daylight?k=tok', function (status6) {
+                  assert.strictEqual(status6, 404, 'old default no longer served once overridden');
+                  screensavers.setSaverEntities('user-ha-reads', { daylight: '' }, function (clearRes) {
+                    assert.strictEqual(clearRes.ok, true);
+                    assert.strictEqual(screensavers.screensaverEntities().daylight, undefined, 'cleared slot is omitted from active entities');
+                    get('/api/entity/sensor.example_daylight?k=tok', function (statusClear) {
+                      assert.strictEqual(statusClear, 404, 'cleared slot refuses old default');
+                      screensavers.setSaverEntities('user-ha-reads', { daylight: null }, function (resetRes) {
+                        assert.strictEqual(resetRes.ok, true);
+                        assert.strictEqual(screensavers.screensaverEntities().daylight, 'sensor.example_daylight');
+                        assert.strictEqual(screensavers.screensaverEntityLabel('sensor.example_daylight'), '');
+                        console.log('  \u2713 overriding, labeling, clearing, and resetting entity slots updates what is served');
 
                       // 6. POST /api/ha/test tests connection via haEntity module
                       post('/api/ha/test', { url: 'http://good:8123', token: 'abc' }, function (status7) {
@@ -192,4 +198,5 @@ get('/api/entity/sensor.example_daylight?k=tok', function (status, body) {
       });
     });
   });
+});
 });

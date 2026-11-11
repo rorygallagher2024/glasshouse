@@ -87,7 +87,7 @@ WebOSWindow {
                     var attrs = d.attributes || {};
                     var u = attrs.unit_of_measurement || "";
                     var formatted = formatVal(d.state, u);
-                    var name = formatted ? (attrs.friendly_name || "") : "";
+                    var name = formatted ? (d.label || attrs.friendly_name || "") : "";
                     setSlot(idx, formatted, name);
                 } catch (e) {}
             } else {

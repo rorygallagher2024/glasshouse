@@ -1639,6 +1639,10 @@ function handleRequest(req, res) {
       }));
     }
     return haEntityModule.read(wanted, function (r) {
+      if (r && r.ok && screensaversModule) {
+        var customLbl = screensaversModule.screensaverEntityLabel(wanted);
+        if (customLbl) r.label = customLbl;
+      }
       send(res, r.ok ? 200 : 502, JSON.stringify(r));
     });
   }

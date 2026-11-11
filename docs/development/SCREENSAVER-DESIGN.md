@@ -210,7 +210,7 @@ A screen saver that draws Home Assistant values declares which ones in
 var xhr = new XMLHttpRequest();
 xhr.onreadystatechange = function () {
     if (xhr.readyState !== 4 || xhr.status !== 200) return;
-    var d = JSON.parse(xhr.responseText);   // { ok, entity, state, attributes, updated }
+    var d = JSON.parse(xhr.responseText);   // { ok, entity, state, attributes, updated, label? }
     daylightLine.text = "Daylight " + d.attributes.today_hms;
 };
 xhr.open("GET", "__TVWEB_HA_daylight__", true);
@@ -222,9 +222,10 @@ other dashboard read takes, so no token reaches the QML. While that screen
 saver is the one on the TV, the server answers for its configured entities and
 404s the rest, so a QML file on the TV cannot read anything it did not say it
 would. The `entities` map in `saver.json` supplies the default entity ID for each
-slot, which users can override on the **Screensaver** tab without editing `saver.json`.
-It needs `homeAssistant.url` and `homeAssistant.token` configured via the **MQTT**
-tab (**Home Assistant API**) or `config.json`; without them the address answers 503
+slot, which users can override (along with an optional display `label`) on the
+**Screensaver** tab without editing `saver.json`. It needs `homeAssistant.url`
+and `homeAssistant.token` configured via the **HA & MQTT** tab
+(**Home Assistant API**) or `config.json`; without them the address answers 503
 and the screen saver draws whatever it can without it.
 
 What the `state` means is the screen saver's business, not the server's: `9.11`

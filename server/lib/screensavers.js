@@ -134,6 +134,7 @@ var catalogCache = null;  // { list: [entries, stock first], byId: {} }
 // The entities the screen saver on the TV declared, or null. /api/entity serves
 // these and no others, so a saver reads its own readings and nothing else.
 var stagedEntities = null;
+var stagedEntityLabels = null;
 // What qmlcheck found in each QML file, kept while the file is unchanged, as
 // the list is read each time the tab asks: path -> { stamp, wrong, src }.
 var qmlChecked = {};
@@ -354,22 +355,34 @@ function writeStoredEntities(all) {
   }
 }
 
-function effectiveSaverEntities(e) {
+function parseStoredSlot(raw, defEntity) {
+  if (raw === undefined || raw === null) return { entity: defEntity, customLabel: '' };
+  if (typeof raw === 'string') {
+    var ent = (raw === '' || HA_ENTITY.test(raw)) ? raw : defEntity;
+    return { entity: ent, customLabel: '' };
+  }
+  if (typeof raw === 'object') {
+    var hasEnt = typeof raw.entity === 'string' && (raw.entity === '' || HA_ENTITY.test(raw.entity));
+    var lbl = typeof raw.label === 'string' ? raw.label.trim().slice(0, 64) : '';
+    return { entity: hasEnt ? raw.entity : defEntity, customLabel: lbl };
+  }
+  return { entity: defEntity, customLabel: '' };
+}
+
+function effectiveSaverEntitySpecs(e) {
   if (!e || !e.entities) return null;
   var stored = readStoredEntities();
   var overrides = (stored && stored[e.id]) || {};
   var out = {};
   for (var k in e.entities) {
     if (!Object.prototype.hasOwnProperty.call(e.entities, k)) continue;
-    if (Object.prototype.hasOwnProperty.call(overrides, k)) {
-      if (overrides[k] === '') out[k] = '';
-      else if (HA_ENTITY.test(overrides[k])) out[k] = overrides[k];
-      else out[k] = e.entities[k];
-    } else {
-      out[k] = e.entities[k];
-    }
+    out[k] = parseStoredSlot(Object.prototype.hasOwnProperty.call(overrides, k) ? overrides[k] : undefined, e.entities[k]);
   }
   return out;
+}
+
+function effectiveSaverEntities(e) {
+  return effectiveFromSpecs(effectiveSaverEntitySpecs(e));
 }
 
 function setSaverEntities(saverId, newEntities, cb) {
@@ -385,17 +398,58 @@ function setSaverEntities(saverId, newEntities, cb) {
   for (var k in newEntities) {
     if (!Object.prototype.hasOwnProperty.call(newEntities, k)) continue;
     if (!saver.entities[k]) continue;
-    if (newEntities[k] === null) {
+    var val = newEntities[k];
+    if (val === null) {
       delete stored[saverId][k];
       continue;
     }
-    var eid = String(newEntities[k] || '').trim();
-    if (eid === '') {
-      stored[saverId][k] = '';
-    } else if (!HA_ENTITY.test(eid)) {
-      return cb({ ok: false, error: 'not a valid Home Assistant entity id: ' + eid });
+    var def = saver.entities[k];
+    var cur = parseStoredSlot(stored[saverId][k], def);
+    var nextEnt = cur.entity;
+    var nextLbl = cur.customLabel;
+    var entExplicit = Object.prototype.hasOwnProperty.call(stored[saverId], k) && (
+      typeof stored[saverId][k] === 'string' ||
+      (stored[saverId][k] && typeof stored[saverId][k] === 'object' && stored[saverId][k].entity !== undefined)
+    );
+
+    if (typeof val === 'string') {
+      var trimmed = val.trim();
+      if (trimmed !== '' && !HA_ENTITY.test(trimmed)) {
+        return cb({ ok: false, error: 'not a valid Home Assistant entity id: ' + trimmed });
+      }
+      nextEnt = trimmed;
+      entExplicit = true;
+      if (trimmed === '') nextLbl = '';
+    } else if (val && typeof val === 'object') {
+      if (val.entity !== undefined) {
+        if (val.entity === null) {
+          nextEnt = def;
+          entExplicit = false;
+        } else {
+          var oe = String(val.entity || '').trim();
+          if (oe !== '' && !HA_ENTITY.test(oe)) {
+            return cb({ ok: false, error: 'not a valid Home Assistant entity id: ' + oe });
+          }
+          nextEnt = oe;
+          entExplicit = true;
+          if (oe === '') nextLbl = '';
+        }
+      }
+      if (val.label !== undefined) {
+        nextLbl = String(val.label || '').trim().slice(0, 64);
+      }
     } else {
-      stored[saverId][k] = eid;
+      continue;
+    }
+
+    if (!entExplicit && !nextLbl) {
+      delete stored[saverId][k];
+    } else if (!nextLbl) {
+      stored[saverId][k] = nextEnt;
+    } else {
+      var rec = { label: nextLbl };
+      if (entExplicit) rec.entity = nextEnt;
+      stored[saverId][k] = rec;
     }
   }
   if (Object.keys(stored[saverId]).length === 0) delete stored[saverId];
@@ -514,6 +568,8 @@ var watchKeysFn = function () {};
 var mediaStateFn = function (cb) { cb(null); };
 
 function clearStagedScreensaver() {
+  stagedEntities = null;
+  stagedEntityLabels = null;
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER));
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER));
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
@@ -726,7 +782,7 @@ function screensaverList() {
   var all = catalog();
   for (var i = 0; i < all.length; i++) {
     var e = all[i];
-    var eff = e.entities ? effectiveSaverEntities(e) : null;
+    var specs = e.entities ? effectiveSaverEntitySpecs(e) : null;
     out.push({
       id: e.id,
       label: e.label,
@@ -752,8 +808,14 @@ function screensaverList() {
       // Home Assistant entities declared by the saver, with effective overrides.
       entities: e.entities ? Object.keys(e.entities).map(function (k) {
         var lbl = k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
-        var curEnt = (eff && Object.prototype.hasOwnProperty.call(eff, k)) ? eff[k] : e.entities[k];
-        return { id: k, label: lbl, entity: curEnt, def: e.entities[k] };
+        var spec = specs && specs[k];
+        return {
+          id: k,
+          label: lbl,
+          entity: spec ? spec.entity : e.entities[k],
+          customLabel: spec ? spec.customLabel : '',
+          def: e.entities[k]
+        };
       }) : undefined
     });
   }
@@ -861,12 +923,23 @@ function stageSaverFiles(e, level, choice) {
     mkdirp(path.dirname(path.join(qmlDir, rel)));
     fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
-  var effEnts = effectiveSaverEntities(e);
+  var specs = effectiveSaverEntitySpecs(e);
+  var effEnts = effectiveFromSpecs(specs);
   fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice, effEnts));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
   stagedEntities = activeSaverEntities(effEnts);
+  stagedEntityLabels = activeSaverLabels(specs);
   if (e.choices) fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER), choice);
   else unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
+}
+
+function effectiveFromSpecs(specs) {
+  if (!specs) return null;
+  var out = {};
+  for (var k in specs) {
+    if (Object.prototype.hasOwnProperty.call(specs, k)) out[k] = specs[k].entity;
+  }
+  return out;
 }
 
 function activeSaverEntities(effEnts) {
@@ -876,6 +949,20 @@ function activeSaverEntities(effEnts) {
     if (Object.prototype.hasOwnProperty.call(effEnts, k) && effEnts[k]) {
       if (!out) out = {};
       out[k] = effEnts[k];
+    }
+  }
+  return out;
+}
+
+function activeSaverLabels(specs) {
+  if (!specs) return null;
+  var out = null;
+  for (var k in specs) {
+    if (!Object.prototype.hasOwnProperty.call(specs, k)) continue;
+    var s = specs[k];
+    if (s.entity && s.customLabel) {
+      if (!out) out = {};
+      out[s.entity] = s.customLabel;
     }
   }
   return out;
@@ -1062,7 +1149,7 @@ function restageScreensaver() {
   // Read again, as an app with a screen saver may have been removed.
   scanSavers();
   var mode = screensaverMode();
-  if (mode === 'stock') { stagedEntities = null; return appSaverGone(); }
+  if (mode === 'stock') { stagedEntities = null; stagedEntityLabels = null; return appSaverGone(); }
   var saver = saverById(mode);
   if (!saver || saver.problem) return;
   try {
@@ -1358,6 +1445,11 @@ function screensaverEntities() {
   return stagedEntities;
 }
 
+// Optional custom label set for an active screen saver entity.
+function screensaverEntityLabel(entityId) {
+  return (stagedEntityLabels && stagedEntityLabels[entityId]) || '';
+}
+
 module.exports = {
   SCREENSAVER_APP_DIR: SCREENSAVER_APP_DIR,
   SCREENSAVER_DIR: SCREENSAVER_DIR,
@@ -1384,6 +1476,7 @@ module.exports = {
   RENAMED: RENAMED,
   restageScreensaver: restageScreensaver,
   screensaverEntities: screensaverEntities,
+  screensaverEntityLabel: screensaverEntityLabel,
   launchedShowing: launchedShowing,
   keyPressed: keyPressed,
   adoptLaunched: adoptLaunched,

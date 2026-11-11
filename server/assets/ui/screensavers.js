@@ -187,10 +187,14 @@ function ssHaSlotLabel(e) {
   return m ? t('ss.sensorSlot', 'Sensor {n}', { n: m[1] }) : e.label;
 }
 
+function ssHaLookup(entityId) {
+  if (!entityId || !ssHaEntities) return null;
+  return ssHaEntities.find(x => x.id === entityId) || null;
+}
+
 function ssHaFriendlyHint(entityId) {
   if (!entityId) return t('ss.entityHidden', 'Hidden');
-  if (!ssHaEntities) return '';
-  const hit = ssHaEntities.find(x => x.id === entityId);
+  const hit = ssHaLookup(entityId);
   if (!hit) return '';
   const parts = [];
   if (hit.name) parts.push(hit.name);
@@ -206,10 +210,10 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
 
   if (note) {
     if (haConfigured === false) {
-      note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the MQTT tab.');
+      note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab.');
       note.className = 'pv-sub warn';
     } else {
-      note.textContent = t('ss.entities.desc', 'Choose which Home Assistant entities this screen saver reads. Leave a slot blank to hide it.');
+      note.textContent = t('ss.entities.desc', 'Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it.');
       note.className = 'pv-sub';
     }
   }
@@ -223,7 +227,7 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
 
   const key = (locked ? '1' : '0') + '|' + (haConfigured ? '1' : '0') + '|' +
     (ssHaEntities ? ssHaEntities.length : -1) + '|' + saverId + '|' +
-    entities.map(e => e.id + '=' + e.entity).join(',');
+    entities.map(e => e.id + '=' + e.entity + ':' + (e.customLabel || '')).join(',');
   if (key === ssEntitiesKey_) return;
   ssEntitiesKey_ = key;
 
@@ -231,8 +235,12 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
   const hidePlaceholder = t('ss.entityHidden', 'Hidden');
   const chooseTitle = t('ss.chooseEntity', 'Choose entity');
   const clearTitle = t('ss.clearEntity', 'Clear');
+  const labelTitle = t('ss.entityLabel', 'Label');
+  const labelFallback = t('ss.entityLabelPlaceholder', 'Home Assistant name (optional override)');
   entities.forEach(e => {
+    const hit = ssHaLookup(e.entity);
     const hint = ssHaFriendlyHint(e.entity);
+    const labelPlaceholder = (hit && hit.name) ? hit.name : labelFallback;
     html += `
       <div class="ss-entity-field">
         <div class="ss-entity-head">
@@ -249,6 +257,12 @@ function renderSsEntities(saverId, entities, haConfigured, locked) {
           ${(!locked && e.entity) ? `<button type="button" class="ss-ent-btn" title="${esc(clearTitle)}" aria-label="${esc(clearTitle)}" onclick="saveSsEntity('${esc(saverId)}', '${esc(e.id)}', '')">&times;</button>` : ''}
           <div class="ss-pick-list ss-ha-list" id="ss-ha-list-${esc(e.id)}" hidden></div>
         </div>
+        ${e.entity ? `<div class="ss-ent-label-row">
+          <label for="ss-lbl-${esc(e.id)}">${esc(labelTitle)}</label>
+          <input type="text" id="ss-lbl-${esc(e.id)}" value="${esc(e.customLabel || '')}" maxlength="64"
+            placeholder="${esc(labelPlaceholder)}" autocomplete="off" ${locked ? 'disabled' : ''}
+            onchange="saveSsEntityLabel('${esc(saverId)}', '${esc(e.id)}', this.value)">
+        </div>` : ''}
       </div>`;
   });
   container.innerHTML = html;
@@ -322,13 +336,21 @@ function ssHaPick(saverId, slot, entityId) {
   saveSsEntity(saverId, slot, entityId);
 }
 
-async function saveSsEntity(saverId, slot, value) {
+async function saveSsEntityPatch(saverId, slot, val) {
   ssHaCloseAll();
   const patch = {};
-  patch[slot] = value.trim();
+  patch[slot] = val;
   await sendCommand('screensaverEntities', { saver: saverId, entities: patch });
   ssEntitiesKey_ = '';
   loadScreensavers();
+}
+
+function saveSsEntity(saverId, slot, value) {
+  return saveSsEntityPatch(saverId, slot, { entity: value.trim(), label: '' });
+}
+
+function saveSsEntityLabel(saverId, slot, label) {
+  return saveSsEntityPatch(saverId, slot, { label: label.trim() });
 }
 
 function ssPickOpts() { return [...q('ss-pick-list').querySelectorAll('.ss-pick-opt')]; }
