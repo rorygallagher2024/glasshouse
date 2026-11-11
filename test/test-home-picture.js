@@ -191,6 +191,17 @@ assert.deepEqual(signals[1], { ok: true, port: 2, signal: false }, 'HDMI 2, noth
 assert.equal(signals[2].ok, false, 'no such input');
 console.log('  ✓ the preview asks whether an input has a picture, off its own receiver');
 
+setUp({});
+homePicture.signal(1, function (r) {
+  assert.deepEqual(r, { ok: true, port: 1, signal: null }, 'absent receiver proc reports unknown signal rather than false');
+});
+homePicture.picture('input', 1, function (r) {
+  assert.equal(r.ok, true);
+  assert.equal(r.signal, null);
+  assert.equal(r.signalKnown, false);
+});
+console.log('  ✓ boards without receiver proc files leave preview signal unknown instead of claiming no picture');
+
 // Sky News in Home's preview on the G3, as videooutput's getStatus answered.
 var skyNews = { video: [
   { sink: 'MAIN', connected: true, connectedSource: 'VDEC', contentType: 'dtv', appId: 'com.webos.app.home', width: 544, height: 576,

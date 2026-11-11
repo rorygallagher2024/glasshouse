@@ -228,13 +228,16 @@ function refreshHz(status, fallback) {
 function hdmiSignal(port, cb) {
   telemetry.hdmiReceiverMap(function (map) {
     var receiver = map[port];
-    if (typeof receiver !== 'number') return cb(null);
+    if (typeof receiver !== 'number') return cb(null, false);
     var dir = '/proc/lg/hdmi20/port' + receiver + '/';
     var status = readFile(dir + 'status');
+    // Realtek and other boards without /proc/lg/hdmi20 expose no receiver file
+    // here: tell callers the signal state is unknown rather than absent.
+    if (status === null) return cb(null, false);
     var byReceiver = [];
     byReceiver[receiver] = status;
-    var found = status ? telemetry.getHdmiSignal(port, map, byReceiver) : null;
-    if (!found || !found.timing) return cb(null);
+    var found = telemetry.getHdmiSignal(port, map, byReceiver);
+    if (!found || !found.timing) return cb(null, true);
     // 8-bit is padded: DeepColorMode[ 8BIT].
     var depth = status.match(/DeepColorMode\[\s*(\d+)BIT\]/i);
     cb({
@@ -246,7 +249,7 @@ function hdmiSignal(port, cb) {
       hdr: sourceHdr(status, readFile(dir + 'pkt')),
       vrr: found.diag ? found.diag.vrr === true : false,
       allm: found.diag ? found.diag.allm === true : false
-    });
+    }, true);
   });
 }
 
@@ -290,7 +293,7 @@ function picture(kind, port, cb, appId) {
   if (hit && kind !== 'channel' && nowMs() - hit.at < CACHE_MS) return cb(hit.value);
   var lastPlayed = kind === 'app' && appId && played.hasOwnProperty(appId) ? played[appId] : null;
   var readSignal = kind === 'input' ? hdmiSignal : kind === 'channel' ? channelSignal : function (p, next) { next(lastPlayed); };
-  readSignal(port, function (signal) {
+  readSignal(port, function (signal, known) {
     // A channel not playing is taken as SDR, as broadcast almost all is.
     var range = signal ? rangeOf(signal.hdr) : kind === 'channel' ? 'sdr' : null;
     pictureMode(input, range, function (mode) {
@@ -299,6 +302,7 @@ function picture(kind, port, cb, appId) {
         (oled ? oled.detectOled : function (next) { next(false); })(function (isOled) {
           var value = { ok: true, input: input, signal: signal, range: range, mode: mode,
             light: light, oled: !!isOled };
+          if (kind === 'input' && known === false) value.signalKnown = false;
           cache[key] = { at: nowMs(), value: value };
           cb(value);
         });
@@ -312,13 +316,17 @@ function picture(kind, port, cb, appId) {
  * Home's preview of it. The preview's video reports playing with nothing
  * there: on a G3 (webOS 9.2.2) HDMI 2, its receiver asleep, gave loadeddata,
  * canplay and playing, and a black picture. Read fresh each time, as the
- * preview has just switched the receiver.
+ * preview has just switched the receiver. Where the board has no receiver
+ * status file to read (null), the signal is returned as null (unknown) so
+ * the caller does not blank a live preview.
  */
 function signal(port, cb) {
   if (!(port >= 1 && port <= 4)) return cb({ ok: false, error: 'port 1 to 4 expected' });
   // The plate read next must not be one cached before the receiver moved here.
   delete cache['hdmi' + port];
-  hdmiSignal(port, function (s) { cb({ ok: true, port: port, signal: !!s }); });
+  hdmiSignal(port, function (s, known) {
+    cb({ ok: true, port: port, signal: known === false ? null : !!s });
+  });
 }
 
 module.exports = {
