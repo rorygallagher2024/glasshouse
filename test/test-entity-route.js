@@ -33,6 +33,7 @@ env.files[path.join(APP, '.tvweb-screensaver')] = 'user-ha-reads';
 screensavers.restageScreensaver();
 
 var asked = [];
+var tested = [];
 routes.init({
   config: { allowControl: true, token: 'tok', web: { enabled: false } },
   screensavers: screensavers,
@@ -40,17 +41,23 @@ routes.init({
     read: function (id, cb) {
       asked.push(id);
       cb({ ok: true, entity: id, state: '9.1112', attributes: { unit_of_measurement: 'h' } });
+    },
+    test: function (opts, cb) {
+      tested.push(opts);
+      cb(opts.url === 'http://good:8123' ? { ok: true, message: 'API running.' } : { ok: false, error: 'bad url' });
     }
   },
   fromHomebrewChannel: function () { return false; }
 });
 
-function get(url, done) {
+function request(method, url, jsonBody, done) {
   var req = new events.EventEmitter();
   req.url = url;
-  req.method = 'GET';
+  req.method = method;
   req.headers = { host: '192.168.1.131:8080' };
+  if (method === 'POST') req.headers['content-type'] = 'application/json';
   req.connection = { remoteAddress: '192.168.1.50' };
+  req.setEncoding = function () {};
   req.destroy = function () {};
   var res = {
     statusCode: null, body: '',
@@ -62,7 +69,14 @@ function get(url, done) {
     }
   };
   routes.handleRequest(req, res);
+  if (jsonBody !== null) {
+    req.emit('data', JSON.stringify(jsonBody));
+    req.emit('end');
+  }
 }
+
+function get(url, done) { request('GET', url, null, done); }
+function post(url, body, done) { request('POST', url, body, done); }
 
 // 1. A declared entity is read, with the token the dashboard also takes.
 get('/api/entity/sensor.example_daylight?k=tok', function (status, body) {
@@ -94,8 +108,45 @@ get('/api/entity/sensor.example_daylight?k=tok', function (status, body) {
         assert.strictEqual(status4, 404, body4);
         console.log('  \u2713 a saver that declares nothing is served nothing');
 
-        env.restore();
-        console.log('ALL test-entity-route.js assertions passed!\n');
+        // 5. Overriding an entity slot restages and serves only the override.
+        env.files[path.join(APP, '.tvweb-screensaver')] = 'user-ha-reads';
+        screensavers.restageScreensaver();
+        screensavers.setSaverEntities('user-ha-reads', { daylight: 'not valid' }, function (badRes) {
+          assert.strictEqual(badRes.ok, false);
+          screensavers.setSaverEntities('user-ha-reads', { daylight: 'sensor.override_daylight' }, function (okRes) {
+            assert.strictEqual(okRes.ok, true, okRes.error);
+            assert.strictEqual(screensavers.screensaverEntities().daylight, 'sensor.override_daylight');
+            get('/api/entity/sensor.override_daylight?k=tok', function (status5, body5) {
+              assert.strictEqual(status5, 200, body5);
+              get('/api/entity/sensor.example_daylight?k=tok', function (status6) {
+                assert.strictEqual(status6, 404, 'old default no longer served once overridden');
+                screensavers.setSaverEntities('user-ha-reads', { daylight: '' }, function (resetRes) {
+                  assert.strictEqual(resetRes.ok, true);
+                  assert.strictEqual(screensavers.screensaverEntities().daylight, 'sensor.example_daylight');
+                  console.log('  \u2713 overriding and resetting entity slots updates what is served');
+
+                  // 6. POST /api/ha/test tests connection via haEntity module
+                  post('/api/ha/test', { url: 'http://good:8123', token: 'abc' }, function (status7) {
+                    assert.strictEqual(status7, 401, 'requires token when set');
+                    post('/api/ha/test?k=tok', { url: 'http://good:8123', token: 'abc' }, function (status8, body8) {
+                      assert.strictEqual(status8, 200, body8);
+                      assert.strictEqual(JSON.parse(body8).ok, true);
+                      assert.deepEqual(tested, [{ url: 'http://good:8123', token: 'abc' }]);
+                      post('/api/ha/test?k=tok', { url: 'http://bad:8123', token: 'abc' }, function (status9, body9) {
+                        assert.strictEqual(status9, 400, body9);
+                        assert.strictEqual(JSON.parse(body9).ok, false);
+                        console.log('  \u2713 /api/ha/test enforces auth and forwards to haEntity.test');
+
+                        env.restore();
+                        console.log('ALL test-entity-route.js assertions passed!\n');
+                      });
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
       });
     });
   });

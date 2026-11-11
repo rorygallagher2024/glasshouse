@@ -101,6 +101,14 @@ async function loadScreensavers() {
   if (choices) renderSsPick(choices, d.choice, locked);
   else ssPickOpen(false);
 
+  // Entities declared by the active screen saver:
+  const entities = active && active.entities;
+  const entRow = q('ss-entities-row');
+  if (entRow) {
+    entRow.hidden = !entities || !entities.length;
+    if (!entRow.hidden) renderSsEntities(active.id, entities, d.haConfigured, locked);
+  }
+
   /* Where LG's screen saver is built differently from ours, the TV has to
      restart its app manager to move between them, and nothing answers until it
      is back. Say so before, and hold the controls while it happens. */
@@ -146,6 +154,47 @@ function renderSsPick(choices, current, locked) {
       aria-selected="${c.id === cur.id ? 'true' : 'false'}">${esc(c.label)}</div>`;
   });
   list.innerHTML = html;
+}
+
+let ssEntitiesKey_ = '';
+function renderSsEntities(saverId, entities, haConfigured, locked) {
+  const container = q('ss-entities-list');
+  const note = q('ss-entities-note');
+  if (!container) return;
+
+  if (note) {
+    if (haConfigured === false) {
+      note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Set up the address and access token in the MQTT tab.');
+      note.className = 'pv-sub warn';
+    } else {
+      note.textContent = t('ss.entities.desc', 'Values are read directly from Home Assistant while this screen saver is showing.');
+      note.className = 'pv-sub';
+    }
+  }
+
+  const key = (locked ? '1' : '0') + '|' + saverId + '|' + entities.map(e => e.id + '=' + e.entity).join(',');
+  if (key === ssEntitiesKey_) return;
+  ssEntitiesKey_ = key;
+
+  let html = '';
+  entities.forEach(e => {
+    html += `
+      <div class="ss-entity-field">
+        <label for="ss-ent-${esc(e.id)}">${esc(e.label)}</label>
+        <input type="text" id="ss-ent-${esc(e.id)}" data-slot="${esc(e.id)}" value="${esc(e.entity || '')}"
+          placeholder="${esc(e.def || '')}" autocomplete="off" spellcheck="false" ${locked ? 'disabled' : ''}
+          onchange="saveSsEntity('${esc(saverId)}', '${esc(e.id)}', this.value)">
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+async function saveSsEntity(saverId, slot, value) {
+  const patch = {};
+  patch[slot] = value.trim();
+  await sendCommand('screensaverEntities', { saver: saverId, entities: patch });
+  ssEntitiesKey_ = '';
+  loadScreensavers();
 }
 
 function ssPickOpts() { return [...q('ss-pick-list').querySelectorAll('.ss-pick-opt')]; }

@@ -1,0 +1,40 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": {
+    "en": "Ambient",
+    "ar": "محيطي",
+    "es": "Ambiente",
+    "de": "Ambiente",
+    "fr": "Ambiance",
+    "hu": "Környezet",
+    "it": "Ambiente",
+    "pl": "Otoczenie",
+    "pt": "Ambiente",
+    "pt-br": "Ambiente",
+    "ru": "Окружение"
+  },
+  "description": {
+    "en": "Time, date and live Home Assistant sensor readings, drifting on black to protect the panel.",
+    "ar": "الوقت والتاريخ وقراءات حساسات Home Assistant المباشرة، تتحرك بلطف على خلفية سوداء لحماية الشاشة.",
+    "es": "Hora, fecha y lecturas de sensores de Home Assistant en vivo, desplazándose sobre negro para proteger el panel.",
+    "de": "Uhrzeit, Datum und Live-Sensormesswerte aus Home Assistant, gleitend über Schwarz zum Schutz des Panels.",
+    "fr": "Heure, date et valeurs de capteurs Home Assistant en direct, dérivant sur fond noir pour protéger la dalle.",
+    "hu": "Idő, dátum és élő Home Assistant szenzoradatok, finoman lebegve a fekete háttéren a kijelző védelméért.",
+    "it": "Ora, data e letture dei sensori di Home Assistant in tempo reale, in movimento su nero per proteggere il pannello.",
+    "pl": "Czas, data i odczyty czujników Home Assistant na żywo, przesuwające się na czerni chroniąc matrycę.",
+    "pt": "Hora, data e leituras de sensores do Home Assistant em direto, deslizando sobre preto para proteger o painel.",
+    "pt-br": "Hora, data e leituras de sensores do Home Assistant em tempo real, deslizando sobre o preto para proteger o painel.",
+    "ru": "Время, дата и показания датчиков Home Assistant в реальном времени, перемещающиеся по черному фону для защиты панели."
+  },
+  "license": "MIT",
+  "uses": [
+    "level",
+    "ha"
+  ],
+  "order": 15,
+  "entities": {
+    "climate": "sensor.outdoor_temperature",
+    "secondary": "sensor.power_consumption"
+  }
+}

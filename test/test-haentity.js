@@ -16,6 +16,11 @@ var hits = 0;
 var server = http.createServer(function (req, res) {
   hits++;
   var auth = req.headers.authorization;
+  if (req.url === '/api/') {
+    if (auth !== 'Bearer tok') { res.writeHead(401); return res.end('Unauthorized'); }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ message: 'API running.' }));
+  }
   if (req.url === ENTITY) {
     if (auth !== 'Bearer tok') { res.writeHead(401); return res.end('{}'); }
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -97,8 +102,25 @@ server.listen(0, '127.0.0.1', function () {
                 assert.strictEqual(hits, quiet, 'Home Assistant was not asked');
                 console.log('  \u2713 an unconfigured TV asks nothing and says why');
 
-                server.close();
-                console.log('ALL test-haentity.js assertions passed!');
+                // 7. update() applies new credentials and test() checks /api/
+                haEntity.update({ url: base, token: 'tok' });
+                assert.strictEqual(haEntity.configured(), true);
+                haEntity.test({}, function (r8) {
+                  assert.strictEqual(r8.ok, true, r8.error);
+                  assert.strictEqual(r8.message, 'API running.');
+                  haEntity.test({ url: base, token: 'bad' }, function (r9) {
+                    assert.strictEqual(r9.ok, false);
+                    assert.ok(/401/.test(r9.error), r9.error);
+                    haEntity.test({ url: 'ftp://bad', token: 'tok' }, function (r10) {
+                      assert.strictEqual(r10.ok, false);
+                      assert.ok(/http/.test(r10.error), r10.error);
+                      console.log('  \u2713 update() and test() check /api/ with fallback to stored token');
+
+                      server.close();
+                      console.log('ALL test-haentity.js assertions passed!');
+                    });
+                  });
+                });
               });
             });
           });

@@ -880,6 +880,12 @@
     </div>
   </div>
 
+  <div class="ss-level-row" id="ss-entities-row" hidden>
+    <div class="ss-level-lbl" data-t="ss.entities">Home Assistant Entities</div>
+    <div id="ss-entities-list"></div>
+    <div class="pv-sub" id="ss-entities-note" style="margin-top:8px"></div>
+  </div>
+
   <div class="ss-level-row">
     <div class="ss-level-lbl" data-t="ss.showNow">Show it now</div>
     <div class="btns">
@@ -1679,6 +1685,26 @@
   <div class="pv-note" data-t="mqtt.tls.note">Without TLS the username and password cross the network in
     cleartext. The config file is readable by anything with root on this TV, so use a
     broker account restricted to these topics rather than a shared one.</div>
+
+  <div class="pv-h" data-t="ha.api">Home Assistant API</div>
+  <div class="pv-sub" data-t="ha.api.desc">Used by screen savers to read live sensor readings. The token is stored on the TV and never sent to the screen saver itself.</div>
+
+  <div class="cfg-grid">
+    <div class="cfg-f">
+      <label for="cfg-ha-url" data-t="ha.url">Home Assistant address</label>
+      <input type="text" id="cfg-ha-url" placeholder="http://192.168.1.10:8123" translate="no" autocomplete="off" spellcheck="false">
+      <div class="hint" data-t="ha.url.hint">Address and port of your Home Assistant instance.</div>
+    </div>
+    <div class="cfg-f">
+      <label for="cfg-ha-token" data-t="ha.token">Long-Lived Access Token</label>
+      <input type="password" id="cfg-ha-token" autocomplete="new-password">
+      <div class="hint" id="cfg-ha-token-hint" data-t="ha.token.hint">From your Home Assistant profile &rarr; Long-Lived Access Tokens.</div>
+    </div>
+  </div>
+  <div class="cfg-btns" style="margin-top:12px;display:flex;align-items:center;gap:12px">
+    <button type="button" id="cfg-ha-test-btn" onclick="testHaConnection()" data-t="ha.test">Test connection</button>
+    <span class="cfg-msg" id="cfg-ha-msg"></span>
+  </div>
 
   <div class="pv-h" data-t="mqtt.topics">Topics &amp; identity</div>
   <div class="pv-sub" data-t="mqtt.topics.desc">Changing the device ID orphans any entities Home Assistant has

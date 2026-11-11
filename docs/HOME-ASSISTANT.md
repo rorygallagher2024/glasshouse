@@ -69,7 +69,7 @@ For config-file deployments, `deploy.sh` checks for `server/config.<tv-ip>.json`
 
 ### Which settings live where?
 
-The dashboard can change the broker, credentials, topic prefix and device identity — the settings that decide *where* telemetry goes.
+The dashboard can change the broker, credentials, topic prefix and device identity — the settings that decide *where* telemetry goes — along with the Home Assistant API URL and token used by screen savers.
 
 `port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the MQTT tab ([App icons](#app-icons-for-launchers)).
 
@@ -118,7 +118,9 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 
 ### Screen savers reading Home Assistant
 
-A screen saver can draw values of its own from Home Assistant. It names the entities it wants in its `saver.json`, and Glasshouse gives it one address per name, served from this TV, with the token kept in `config.json`. The server answers only for the entities that screen saver declared, and only while it is the one showing, so a QML file on the TV cannot read anything it did not say it would. A screen saver added on the TV can use this; it needs `homeAssistant.url` and `homeAssistant.token` set, the same two the bridge uses. [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) has the manifest and QML for it.
+A screen saver can draw values of its own from Home Assistant. It names the entities it wants in its `saver.json`, and Glasshouse gives it one address per name, served from this TV, with the token kept in `config.json`. The server answers only for the entities that screen saver declared, and only while it is the one showing, so a QML file on the TV cannot read anything it did not say it would. Built-in screen savers such as **Ambient** and custom screen savers added on the TV can use this, and their entity slots can be changed directly on the **Screensaver** tab without editing `saver.json`.
+
+To enable it, enter the Home Assistant instance address (`homeAssistant.url`) and a Long-Lived Access Token (`homeAssistant.token`) under **Home Assistant API** on the **MQTT** tab (or in `config.json`). Unlike the MQTT bridge, which talks to your MQTT broker, screen saver reads use Home Assistant's REST API directly. [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) has the manifest and QML format.
 
 ---
 

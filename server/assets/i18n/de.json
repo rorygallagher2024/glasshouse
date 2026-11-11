@@ -752,5 +752,22 @@
  "home.weather.sunny": {"text": "Sonnig", "from": "Sunny"},
  "home.weather.windy": {"text": "Windig", "from": "Windy"},
  "home.weather.windyVariant": {"text": "Windig", "from": "Windy"},
- "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"}
+ "home.weather.exceptional": {"text": "Unwetter", "from": "Severe weather"},
+ "ha.api": {"text": "Home Assistant-API", "from": "Home Assistant API"},
+ "ha.api.desc": {"text": "Wird von Bildschirmschonern verwendet, um Live-Sensorwerte auszulesen. Das Token wird auf dem Fernseher gespeichert und nie an den Bildschirmschoner übertragen.", "from": "Used by screen savers to read live sensor readings. The token is stored on the TV and never sent to the screen saver itself."},
+ "ha.connected": {"text": "Verbunden: {msg}", "from": "Connected: {msg}"},
+ "ha.test": {"text": "Verbindung testen", "from": "Test connection"},
+ "ha.testFailed": {"text": "Verbindung fehlgeschlagen", "from": "Connection failed"},
+ "ha.testing": {"text": "Verbindung wird getestet...", "from": "Testing connection..."},
+ "ha.token": {"text": "Langlebiges Zugriffstoken", "from": "Long-Lived Access Token"},
+ "ha.token.hint": {"text": "Aus Ihrem Home Assistant-Profil → Langlebige Zugriffstoken.", "from": "From your Home Assistant profile → Long-Lived Access Tokens."},
+ "ha.token.set": {"text": "Ein Token ist gesetzt. Leer lassen, um es beizubehalten.", "from": "A token is set. Leave blank to keep it."},
+ "ha.url": {"text": "Home Assistant-Adresse", "from": "Home Assistant address"},
+ "ha.url.hint": {"text": "Adresse und Port Ihrer Home Assistant-Instanz.", "from": "Address and port of your Home Assistant instance."},
+ "srv.saver.badEntities": {"text": "{file}: entities benötigt kurze Namen mit jeweils einer Home Assistant-Entitäts-ID wie sensor.outdoor_temperature, bis zu {max} Stück.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
+ "srv.saver.haUses": {"text": "{file}: entities und „ha“ in uses gehören zusammen.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.undeclaredHa": {"text": "{main} verwendet {placeholder}, und saver.json nennt diese Entität nicht unter entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
+ "ss.entities": {"text": "Home Assistant-Entitäten", "from": "Home Assistant Entities"},
+ "ss.entities.desc": {"text": "Werte werden direkt von Home Assistant gelesen, während dieser Bildschirmschoner aktiv ist.", "from": "Values are read directly from Home Assistant while this screen saver is showing."},
+ "ss.haNotConfigured": {"text": "Die Home Assistant-API ist nicht konfiguriert. Richten Sie Adresse und Zugriffstoken im Reiter „MQTT“ ein.", "from": "Home Assistant API is not configured. Set up the address and access token in the MQTT tab."}
 }

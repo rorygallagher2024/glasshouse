@@ -3084,5 +3084,22 @@
  "server.experimental.inputBar.short": {"text": "Felkínálja a bemeneti sávot a Távirányító gombjai alatt az Alkalmazások lapon: a HDMI-bemenetek sávja a kép felett, amelyen a távirányító Bemenet gombjával lehet végiglépkedni.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Csak webOS 4, 6 és 9 rendszeren próbálták ki. Kikapcsolásakor minden gomb, amely ezt használja, visszaáll az LG beállítására, és az alkalmazása törlődik.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Bemeneti sáv", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "A bemeneti sávot nem sikerült feltenni a TV-re. Próbáld újra egy pillanat múlva.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "A bemeneti sávot nem sikerült feltenni a TV-re. Próbáld újra egy pillanat múlva.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "ha.api": {"text": "Home Assistant API", "from": "Home Assistant API"},
+ "ha.api.desc": {"text": "A képernyővédők használják élő szenzoradatok kiolvasására. A tokent a TV tárolja, és soha nem jut el a képernyővédőhöz.", "from": "Used by screen savers to read live sensor readings. The token is stored on the TV and never sent to the screen saver itself."},
+ "ha.connected": {"text": "Csatlakozva: {msg}", "from": "Connected: {msg}"},
+ "ha.test": {"text": "Kapcsolat tesztelése", "from": "Test connection"},
+ "ha.testFailed": {"text": "A csatlakozás sikertelen", "from": "Connection failed"},
+ "ha.testing": {"text": "Kapcsolat tesztelése...", "from": "Testing connection..."},
+ "ha.token": {"text": "Hosszú élettartamú hozzáférési token", "from": "Long-Lived Access Token"},
+ "ha.token.hint": {"text": "A Home Assistant profilból → Hosszú élettartamú hozzáférési tokenek.", "from": "From your Home Assistant profile → Long-Lived Access Tokens."},
+ "ha.token.set": {"text": "A token be van állítva. Hagyja üresen a megtartásához.", "from": "A token is set. Leave blank to keep it."},
+ "ha.url": {"text": "Home Assistant címe", "from": "Home Assistant address"},
+ "ha.url.hint": {"text": "A Home Assistant példány címe és portja.", "from": "Address and port of your Home Assistant instance."},
+ "srv.saver.badEntities": {"text": "{file}: az entities mező rövid neveket igényel, mindegyikhez egy Home Assistant entitás-azonosítóval (pl. sensor.outdoor_temperature), legfeljebb {max} darabot.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
+ "srv.saver.haUses": {"text": "{file}: az entities és a \"ha\" a uses listában összetartoznak.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.undeclaredHa": {"text": "A(z) {main} a(z) {placeholder} értéket használja, de a saver.json nem nevezi meg az entities alatt.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
+ "ss.entities": {"text": "Home Assistant entitások", "from": "Home Assistant Entities"},
+ "ss.entities.desc": {"text": "Az értékek közvetlenül a Home Assistantból töltődnek be a képernyővédő megjelenítése alatt.", "from": "Values are read directly from Home Assistant while this screen saver is showing."},
+ "ss.haNotConfigured": {"text": "A Home Assistant API nincs konfigurálva. Állítsa be a címet és a hozzáférési tokent az MQTT fülön.", "from": "Home Assistant API is not configured. Set up the address and access token in the MQTT tab."}
 }

@@ -43,7 +43,7 @@ function read(entityId, cb) {
   if (!configured()) {
     return cb({
       ok: false,
-      error: 'Home Assistant is not configured: set homeAssistant.url and homeAssistant.token in config.json'
+      error: 'Home Assistant is not configured: set it in the MQTT tab or config.json'
     });
   }
 
@@ -115,8 +115,84 @@ function read(entityId, cb) {
   req.end();
 }
 
+function update(ha) {
+  ha = ha || {};
+  if (typeof ha.url === 'string') cfg.url = ha.url.replace(/\/+$/, '');
+  if (typeof ha.token === 'string') cfg.token = ha.token;
+}
+
+function test(opts, cb) {
+  cb = cb || function () {};
+  opts = opts || {};
+  var testUrl = typeof opts.url === 'string' ? opts.url.replace(/\/+$/, '') : cfg.url;
+  var testToken = (typeof opts.token === 'string' && opts.token) ? opts.token : cfg.token;
+
+  if (!/^https?:\/\//i.test(testUrl)) {
+    return cb({ ok: false, error: 'URL must start with http:// or https://' });
+  }
+  if (!testToken) {
+    return cb({ ok: false, error: 'A Long-Lived Access Token is required' });
+  }
+
+  var target = testUrl + '/api/';
+  var parsed = url.parse(target);
+  var lib = parsed.protocol === 'https:' ? https : http;
+  var answered = false;
+
+  function fail(error) {
+    if (answered) return;
+    answered = true;
+    cb({ ok: false, error: error });
+  }
+
+  var req = lib.request({
+    hostname: parsed.hostname,
+    port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+    path: parsed.path,
+    method: 'GET',
+    headers: {
+      'Authorization': 'Bearer ' + testToken,
+      'Accept': 'application/json'
+    }
+  }, function (res) {
+    var chunks = [];
+    res.on('data', function (c) { chunks.push(c); });
+    res.on('end', function () {
+      if (answered) return;
+      if (res.statusCode === 401) {
+        return fail('Home Assistant refused the token (401)');
+      }
+      if (res.statusCode !== 200) {
+        return fail('Home Assistant answered HTTP ' + res.statusCode);
+      }
+      var body;
+      try {
+        body = JSON.parse(chunks.join(''));
+      } catch (e) {
+        return fail('Home Assistant did not answer JSON');
+      }
+      answered = true;
+      cb({ ok: true, message: (body && body.message) || 'Connected to Home Assistant' });
+    });
+  });
+
+  req.setTimeout(TIMEOUT_MS, function () {
+    req.abort();
+    fail('Connection timed out after ' + TIMEOUT_MS + ' ms');
+  });
+  req.on('error', function (e) {
+    var code = /** @type {any} */ (e);
+    fail((code && code.code === 'ECONNREFUSED')
+      ? 'Connection refused at ' + parsed.hostname
+      : 'Could not reach Home Assistant: ' + (e && e.message ? e.message : String(e)));
+  });
+  req.end();
+}
+
 module.exports = {
   init: init,
   read: read,
-  configured: configured
+  configured: configured,
+  update: update,
+  test: test
 };

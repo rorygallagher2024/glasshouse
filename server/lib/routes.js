@@ -303,6 +303,22 @@ function validateSettings(j) {
   // Saved with the MQTT form, whose Launch App select lists the icons' addresses.
   if (j && typeof j.iconServer === 'boolean') out.iconServer = j.iconServer;
 
+  if (j && j.homeAssistant) {
+    var haObj = j.homeAssistant;
+    out.homeAssistant = {};
+    if (typeof haObj.url === 'string') {
+      var haUrl = trimmedString(haObj.url).replace(/\/+$/, '');
+      if (haUrl && !/^https?:\/\//i.test(haUrl)) {
+        e.push('Home Assistant URL must start with http:// or https://');
+      } else {
+        out.homeAssistant.url = haUrl;
+      }
+    }
+    if (typeof haObj.token === 'string') {
+      out.homeAssistant.token = trimmedString(haObj.token);
+    }
+  }
+
   return { errors: e, value: out };
 }
 
@@ -1065,12 +1081,17 @@ function handleInstallRoute(req, res, u, pathname) {
 
 function getSettingsPayload() {
   var mc = config.mqtt || {};
+  var haCfg = config.homeAssistant || {};
   var mqttStat = getMqttStatus();
   return {
     ok: true,
     writable: config.allowControl,
     configFile: configFilePath,
     iconServer: config.iconServer === true,
+    homeAssistant: {
+      url: haCfg.url || '',
+      tokenSet: !!haCfg.token
+    },
     mqtt: {
       enabled: !!mc.enabled,
       host: mc.host || '',
@@ -1602,6 +1623,21 @@ function handleRequest(req, res) {
     }
     return haEntityModule.read(wanted, function (r) {
       send(res, r.ok ? 200 : 502, JSON.stringify(r));
+    });
+  }
+
+  if (pathname === '/api/ha/test' && req.method === 'POST') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    return readJsonBody(req, res, function (body) {
+      if (!haEntityModule) return send(res, 503, JSON.stringify({ ok: false, error: 'Home Assistant module not loaded' }));
+      var testUrl = body && body.url;
+      var testToken = body && body.token;
+      haEntityModule.test({ url: testUrl, token: testToken }, function (r) {
+        send(res, r.ok ? 200 : 400, JSON.stringify(r));
+      });
     });
   }
 
@@ -2300,6 +2336,9 @@ function handleRequest(req, res) {
       writeSettings(v.value, function (err) {
         if (err) {
           return send(res, 500, JSON.stringify({ ok: false, error: 'could not write ' + configFilePath + ': ' + err.message }));
+        }
+        if (v.value.homeAssistant && haEntityModule) {
+          haEntityModule.update(v.value.homeAssistant);
         }
         console.log('config: saved to ' + configFilePath + ', restarting to apply');
         send(res, 200, JSON.stringify({ ok: true, restarting: true }));

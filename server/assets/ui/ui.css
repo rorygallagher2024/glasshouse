@@ -769,6 +769,15 @@ button.key-hit{background:var(--w10)}
 .ss-pick-opt{padding:8px 14px 8px 24px;font-size:14px;color:var(--w90);cursor:pointer}
 .ss-pick-opt:hover,.ss-pick-opt.act{background:rgba(var(--fg),.07);color:var(--w100)}
 .ss-pick-opt[aria-selected="true"]{color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
+.ss-entity-field{margin-top:12px;max-width:340px;display:flex;flex-direction:column;gap:6px}
+.ss-entity-field label{font-size:12px;color:var(--w60);letter-spacing:.02em}
+.ss-entity-field input{
+  width:100%;box-sizing:border-box;font-family:'Manrope';font-weight:400;font-size:14px;letter-spacing:.03em;
+  color:var(--w100);background:transparent;border:1px solid var(--edge);padding:12px;min-height:44px;border-radius:0;outline:none
+}
+.ss-entity-field input:focus{border-color:var(--w100)}
+.ss-entity-field input:disabled{opacity:.45}
+.ss-entity-field input::placeholder{color:var(--w60)}
 .upd{max-width:760px;margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
@@ -816,6 +825,7 @@ button.key-hit{background:var(--w10)}
 .pv-grp+.pv-grp .pv-g{margin-top:22px}
 .pv-h{font-family:'Outfit';font-weight:300;font-size:clamp(20px,2.4vw,26px);color:var(--w100);margin:22px 0 4px}
 .pv-sub{font-size:14px;color:var(--w60);max-width:62ch;margin-bottom:16px}
+.pv-sub.warn{color:var(--cand)}
 .pv-sub a{color:var(--w80);text-decoration:underline;text-underline-offset:2px}
 .pv-sub a:hover{color:var(--w100)}
 .pv-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;

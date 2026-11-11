@@ -3084,5 +3084,22 @@
  "server.experimental.inputBar.short": {"text": "Offre la barra degli ingressi sotto Tasti del telecomando nella scheda App: una striscia degli ingressi HDMI sopra l’immagine, da scorrere con il tasto Ingresso del telecomando.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Provata solo su webOS 4, 6 e 9. Disattivandola, i tasti che la usano tornano come impostati da LG e la sua app viene rimossa.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Barra degli ingressi", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "Impossibile installare la barra degli ingressi sulla TV. Riprova tra un momento.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "Impossibile installare la barra degli ingressi sulla TV. Riprova tra un momento.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "ha.api": {"text": "API Home Assistant", "from": "Home Assistant API"},
+ "ha.api.desc": {"text": "Utilizzato dai salvaschermo per leggere i valori dei sensori in tempo reale. Il token viene memorizzato sulla TV e non viene mai inviato al salvaschermo.", "from": "Used by screen savers to read live sensor readings. The token is stored on the TV and never sent to the screen saver itself."},
+ "ha.connected": {"text": "Connesso: {msg}", "from": "Connected: {msg}"},
+ "ha.test": {"text": "Verifica connessione", "from": "Test connection"},
+ "ha.testFailed": {"text": "Connessione non riuscita", "from": "Connection failed"},
+ "ha.testing": {"text": "Verifica connessione in corso...", "from": "Testing connection..."},
+ "ha.token": {"text": "Token di accesso a lungo termine", "from": "Long-Lived Access Token"},
+ "ha.token.hint": {"text": "Dal profilo Home Assistant → Token di accesso a lungo termine.", "from": "From your Home Assistant profile → Long-Lived Access Tokens."},
+ "ha.token.set": {"text": "Un token è impostato. Lascia vuoto per mantenerlo.", "from": "A token is set. Leave blank to keep it."},
+ "ha.url": {"text": "Indirizzo di Home Assistant", "from": "Home Assistant address"},
+ "ha.url.hint": {"text": "Indirizzo e porta della tua istanza di Home Assistant.", "from": "Address and port of your Home Assistant instance."},
+ "srv.saver.badEntities": {"text": "{file}: entities richiede nomi brevi, ciascuno con un ID entità di Home Assistant come sensor.outdoor_temperature, fino a un massimo di {max}.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
+ "srv.saver.haUses": {"text": "{file}: entities e \"ha\" in uses vanno insieme.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.undeclaredHa": {"text": "{main} utilizza {placeholder}, e saver.json non nomina questa entità sotto entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
+ "ss.entities": {"text": "Entità Home Assistant", "from": "Home Assistant Entities"},
+ "ss.entities.desc": {"text": "I valori vengono letti direttamente da Home Assistant durante la visualizzazione di questo salvaschermo.", "from": "Values are read directly from Home Assistant while this screen saver is showing."},
+ "ss.haNotConfigured": {"text": "L'API Home Assistant non è configurata. Imposta indirizzo e token di accesso nella scheda MQTT.", "from": "Home Assistant API is not configured. Set up the address and access token in the MQTT tab."}
 }

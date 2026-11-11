@@ -767,6 +767,32 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ Play / Pause sends pause or play from the pipe, and in turn with no pipe');
 })();
 
+// 5b. screensaverEntities control validation and delegation
+(function testScreensaverEntities() {
+  var savedArgs = null;
+  var cleared = 0;
+  controls.init({
+    config: { allowControl: true },
+    telemetry: { clearCache: function () { cleared++; } },
+    screensavers: {
+      setSaverEntities: function (id, ents, cb) {
+        savedArgs = { id: id, ents: ents };
+        cb({ ok: true });
+      }
+    }
+  });
+  controls.doControl('screensaverEntities', { saver: 'ambient' }, function (res) {
+    assert.strictEqual(res.ok, false);
+    assert.ok(/requires saver and entities/.test(res.error));
+  });
+  controls.doControl('screensaverEntities', { saver: 'ambient', entities: { climate: 'sensor.temp' } }, function (res) {
+    assert.strictEqual(res.ok, true);
+  });
+  assert.deepEqual(savedArgs, { id: 'ambient', ents: { climate: 'sensor.temp' } });
+  assert.strictEqual(cleared, 1);
+  console.log('  ✓ screensaverEntities validates arguments and delegates to screensavers');
+})();
+
 console.log('ALL test-controls.js assertions passed!\n');
 
 // 6. A powerOff answered with a failure is read back before trying again

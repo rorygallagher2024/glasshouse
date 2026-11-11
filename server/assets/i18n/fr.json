@@ -3084,5 +3084,22 @@
  "server.experimental.inputBar.short": {"text": "Propose la barre des entrées sous Touches de la télécommande dans l’onglet Applications : un bandeau des entrées HDMI sur l’image, parcouru avec la touche Entrée de la télécommande.", "from": "Offers the input bar under Remote keys on the Apps tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Essayé sur webOS 4, 6 et 9 uniquement. La désactiver remet comme sur LG toute touche qui l’utilise et supprime son application.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},
  "srv.remoteKeys.inputBar": {"text": "Barre des entrées", "from": "Input bar"},
- "srv.remoteKeys.inputBarInstall": {"text": "La barre des entrées n’a pas pu être installée sur le téléviseur. Réessayez dans un instant.", "from": "The input bar could not be put on the TV. Try again in a moment."}
+ "srv.remoteKeys.inputBarInstall": {"text": "La barre des entrées n’a pas pu être installée sur le téléviseur. Réessayez dans un instant.", "from": "The input bar could not be put on the TV. Try again in a moment."},
+ "ha.api": {"text": "API Home Assistant", "from": "Home Assistant API"},
+ "ha.api.desc": {"text": "Utilisé par les économiseurs d'écran pour lire les valeurs de capteurs en direct. Le jeton est stocké sur le téléviseur et n'est jamais transmis à l'économiseur d'écran.", "from": "Used by screen savers to read live sensor readings. The token is stored on the TV and never sent to the screen saver itself."},
+ "ha.connected": {"text": "Connecté : {msg}", "from": "Connected: {msg}"},
+ "ha.test": {"text": "Tester la connexion", "from": "Test connection"},
+ "ha.testFailed": {"text": "Échec de la connexion", "from": "Connection failed"},
+ "ha.testing": {"text": "Test de connexion en cours...", "from": "Testing connection..."},
+ "ha.token": {"text": "Jeton d'accès longue durée", "from": "Long-Lived Access Token"},
+ "ha.token.hint": {"text": "Depuis votre profil Home Assistant → Jetons d'accès longue durée.", "from": "From your Home Assistant profile → Long-Lived Access Tokens."},
+ "ha.token.set": {"text": "Un jeton est configuré. Laissez vide pour le conserver.", "from": "A token is set. Leave blank to keep it."},
+ "ha.url": {"text": "Adresse de Home Assistant", "from": "Home Assistant address"},
+ "ha.url.hint": {"text": "Adresse et port de votre instance Home Assistant.", "from": "Address and port of your Home Assistant instance."},
+ "srv.saver.badEntities": {"text": "{file} : entities nécessite des noms courts, chacun avec un identifiant d'entité Home Assistant tel que sensor.outdoor_temperature, jusqu'à {max} au maximum.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
+ "srv.saver.haUses": {"text": "{file} : entities et \"ha\" dans uses vont ensemble.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.undeclaredHa": {"text": "{main} utilise {placeholder}, et saver.json ne mentionne pas cette entité sous entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
+ "ss.entities": {"text": "Entités Home Assistant", "from": "Home Assistant Entities"},
+ "ss.entities.desc": {"text": "Les valeurs sont lues directement depuis Home Assistant lorsque cet économiseur d'écran est affiché.", "from": "Values are read directly from Home Assistant while this screen saver is showing."},
+ "ss.haNotConfigured": {"text": "L'API Home Assistant n'est pas configurée. Configurez l'adresse et le jeton d'accès dans l'onglet MQTT.", "from": "Home Assistant API is not configured. Set up the address and access token in the MQTT tab."}
 }

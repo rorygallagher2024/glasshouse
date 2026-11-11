@@ -2,6 +2,8 @@
 
 // ---- MQTT & Home Assistant settings ----
 let cfgPasswordSet = false;
+let cfgHaUrl = '';
+let cfgHaTokenSet = false;
 
 function toggleMqtt() { showTab(activeTab === 'mqtt' ? 'control' : 'mqtt'); }
 
@@ -316,6 +318,26 @@ async function loadSettings(keepMsg) {
     q('cfg-tls').classList.toggle('on', m.tls);
     q('cfg-verify').classList.toggle('on', m.tlsRejectUnauthorized);
     cfgSyncTls();
+
+    const ha = j.homeAssistant || {};
+    cfgHaUrl = ha.url || '';
+    cfgHaTokenSet = !!ha.tokenSet;
+    const haUrlInput = q('cfg-ha-url');
+    if (haUrlInput) {
+      haUrlInput.value = cfgHaUrl;
+      if (!cfgHaUrl && m.host) {
+        haUrlInput.placeholder = 'http://' + m.host + ':8123';
+      }
+    }
+    const haTokenInput = q('cfg-ha-token');
+    if (haTokenInput) haTokenInput.value = '';
+    const haTokenHint = q('cfg-ha-token-hint');
+    if (haTokenHint) {
+      haTokenHint.textContent = ha.tokenSet
+        ? t('ha.token.set', 'A token is set. Leave blank to keep it.')
+        : t('ha.token.hint', 'From your Home Assistant profile → Long-Lived Access Tokens.');
+    }
+
     if (m.entities) cfgEntities = m.entities;
     if (m.categories) cfgCategories = m.categories;
     if (m.entityCatalogue) cfgCatalogue = m.entityCatalogue;
@@ -373,6 +395,15 @@ async function saveSettings() {
   const pass = q('cfg-pass').value;
   if (pass !== '' || !cfgPasswordSet) body.mqtt.password = pass;
 
+  const haUrlEl = q('cfg-ha-url');
+  const haTokenEl = q('cfg-ha-token');
+  const haUrl = haUrlEl ? haUrlEl.value.trim() : '';
+  const haToken = haTokenEl ? haTokenEl.value.trim() : '';
+  if (haUrl !== '' || haToken !== '' || cfgHaUrl !== '' || cfgHaTokenSet) {
+    body.homeAssistant = { url: haUrl };
+    if (haToken !== '') body.homeAssistant.token = haToken;
+  }
+
   const saveBtn = q('cfg-save-btn');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.classList.add('busy'); }
   cfgMsg(t('mqtt.saving', 'Saving...'));
@@ -394,5 +425,38 @@ async function saveSettings() {
     if (saveBtn) saveBtn.disabled = false;
   } finally {
     if (saveBtn) saveBtn.classList.remove('busy');
+  }
+}
+
+async function testHaConnection() {
+  const btn = q('cfg-ha-test-btn');
+  const msgEl = q('cfg-ha-msg');
+  if (!btn || !msgEl) return;
+  const url = q('cfg-ha-url') ? q('cfg-ha-url').value.trim() : '';
+  const token = q('cfg-ha-token') ? q('cfg-ha-token').value.trim() : '';
+
+  btn.disabled = true;
+  msgEl.textContent = t('ha.testing', 'Testing connection...');
+  msgEl.className = 'cfg-msg';
+
+  try {
+    const r = await fetch(api('/api/ha/test'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url, token: token || undefined })
+    });
+    const j = await r.json();
+    if (j.ok) {
+      msgEl.textContent = t('ha.connected', 'Connected: {msg}', { msg: j.message || 'OK' });
+      msgEl.className = 'cfg-msg good';
+    } else {
+      msgEl.textContent = j.error || t('ha.testFailed', 'Connection failed');
+      msgEl.className = 'cfg-msg bad';
+    }
+  } catch (e) {
+    msgEl.textContent = e.message;
+    msgEl.className = 'cfg-msg bad';
+  } finally {
+    btn.disabled = false;
   }
 }

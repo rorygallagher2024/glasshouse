@@ -12,6 +12,7 @@ var origExistsSync = fs.existsSync;
 var origReaddirSync = fs.readdirSync;
 var origWriteFileSync = fs.writeFileSync;
 var origUnlinkSync = fs.unlinkSync;
+var origRenameSync = fs.renameSync;
 var origMkdirSync = fs.mkdirSync;
 
 function createMockEnv(overrides) {
@@ -153,6 +154,17 @@ function createMockEnv(overrides) {
     return origUnlinkSync.apply(fs, arguments);
   }
 
+  function mockRenameSync(src, dst) {
+    if (typeof src === 'string' && (src.indexOf('/var/') === 0 || src.indexOf('/tmp/') === 0 || mockFiles.hasOwnProperty(src))) {
+      if (mockFiles.hasOwnProperty(src)) {
+        mockFiles[dst] = mockFiles[src];
+        delete mockFiles[src];
+      }
+      return;
+    }
+    return origRenameSync.apply(fs, arguments);
+  }
+
   function mockMkdirSync(p) {
     if (typeof p === 'string' && (p.indexOf('/var/') === 0 || p.indexOf('/tmp/') === 0)) {
       return;
@@ -165,6 +177,7 @@ function createMockEnv(overrides) {
     fs.existsSync = mockExistsSync;
     fs.writeFileSync = mockWriteFileSync;
     fs.unlinkSync = mockUnlinkSync;
+    fs.renameSync = mockRenameSync;
     fs.mkdirSync = mockMkdirSync;
   }
 
@@ -173,6 +186,7 @@ function createMockEnv(overrides) {
     fs.existsSync = origExistsSync;
     fs.writeFileSync = origWriteFileSync;
     fs.unlinkSync = origUnlinkSync;
+    fs.renameSync = origRenameSync;
     fs.mkdirSync = origMkdirSync;
   }
 
