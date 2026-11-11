@@ -172,6 +172,10 @@ function testShippedLaunchersCarryMarker() {
 }
 
 function testShippedAppinfoResolutions() {
+  var sharedSplash = path.join(__dirname, '../server/assets/dashboard-app/assets/splash.png');
+  assert.ok(fs.existsSync(sharedSplash), 'dashboard-app ships the shared splash.png');
+  assert.ok(!fs.existsSync(path.join(__dirname, '../server/assets/home-app/assets/splash.png')),
+    'home-app reuses the shared splash.png instead of duplicating it');
   ['dashboard-app', 'home-app'].forEach(function (dir) {
     var infoPath = path.join(__dirname, '../server/assets', dir, 'appinfo.json');
     var info = JSON.parse(fs.readFileSync(infoPath, 'utf8'));
@@ -179,9 +183,8 @@ function testShippedAppinfoResolutions() {
     assert.strictEqual(info.bgColor, '#000000', dir + ' appinfo declares black background');
     assert.strictEqual(info.splashBackground, 'assets/splash.png', dir + ' appinfo declares splashBackground');
     assert.strictEqual(info.spinnerOnLaunch, false, dir + ' appinfo disables LG spinner');
-    assert.ok(fs.existsSync(path.join(__dirname, '../server/assets', dir, info.splashBackground)), dir + ' ships splash.png');
   });
-  console.log('  ✓ shipped appinfo.json files declare 1920x1080 and black Glasshouse splash');
+  console.log('  ✓ shipped appinfo.json files declare 1920x1080 and share the black Glasshouse splash');
 }
 
 testLauncherSync();

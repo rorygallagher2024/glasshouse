@@ -72,7 +72,7 @@ assets/home.html assets/home-kit.js assets/home-web.html assets/home-minimal.htm
 assets/inputbar-app/appinfo.json assets/inputbar-app/index.html assets/inputbar-app/packageinfo.json \
 assets/inputbar-app/assets/icon80.png assets/inputbar-app/assets/icon130.png \
 assets/home-app/appinfo.json assets/home-app/index.html assets/home-app/packageinfo.json \
-assets/home-app/assets/icon80.png assets/home-app/assets/icon130.png assets/home-app/assets/splash.png \
+assets/home-app/assets/icon80.png assets/home-app/assets/icon130.png \
 assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \
 assets/fonts/Outfit-Light.ttf assets/fonts/Outfit-Regular.ttf \
 assets/fonts/Manrope-Regular.ttf assets/fonts/Manrope-SemiBold.ttf \
