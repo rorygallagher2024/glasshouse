@@ -13,6 +13,7 @@ Every entity the TV publishes, by category. Which categories are published is se
 | `switch` | `switch.lg_tv_ad_blocker` | Ad & Telemetry Blocker | On-TV `/etc/hosts` blackhole for LG ad/tracking domains. On is the Ads & telemetry tier; Everything is chosen on the dashboard, and shows as on |
 | `switch` | `switch.lg_tv_piccap` | PicCap Capture | PicCap's screen capture for an ambient light, where PicCap is installed and answering |
 | `switch` | `switch.lg_tv_huesync` | Hue Sync | Hue Sync's streaming to Philips Hue and Ambience lights, where the Hue Sync app is installed and answering |
+| `switch` | `switch.lg_tv_audio_clip_mute_tv` | Mute TV During Audio Clips | Whether an audio clip sent to the `play_audio` command topic silences the TV's own audio while it plays. Kept in the config file; shown under configuration |
 | `switch` | `switch.lg_tv_standby_light` | Standby LED | Toggle standby front indicator LED |
 | `switch` | `switch.lg_tv_logo_light` | Logo Light | Toggle front illuminated TV logo |
 | `number` | `number.lg_tv_volume` | Volume | Volume slider (0–100), with the level from 0 to 1 as `volume_level` for a [universal media player](HOME-ASSISTANT.md#universal-media-player-setup). Unavailable when the level is set on an external sound device |
@@ -47,7 +48,9 @@ Every entity the TV publishes, by category. Which categories are published is se
 | `select` | `select.lg_tv_oled_logo_dimming` | OLED Logo Dimming | Local logo dimming: Off, Light, High |
 | `select` | `select.lg_tv_screensaver_mode` | Screen Saver | Which screen saver the TV runs: LG default, Clock, Clock with date (Clock with its date option), Starfield, Fireworks, Bokeh, Harmonograph or Panel vitals. Brightness is set on the dashboard's Screensaver tab |
 | `button` | `button.lg_tv_screensaver` | Start Screensaver | Starts the webOS screensaver, or dismisses one that is showing. Where the TV refuses the request, it opens the screen saver itself, except while something is playing full screen or playback cannot be checked ([Screen savers](dashboard/screen-savers.md)) |
+| `text` | `text.lg_tv_play_audio_clip` | Play Audio Clip | Plays the clip at the URL it is given (up to 255 characters, `http://` or `https://`) over what the TV is showing, as a message on `play_audio` does. Its state stays empty |
 | `text` | `text.lg_tv_screen_notification` | Screen Notification | Send custom toast messages to TV screen |
+| `text` | `text.lg_tv_open_url` | Open Website | Open custom URL on the TV  |
 | `text` | `text.lg_tv_weather` | Weather Push | Write-only: set to a JSON string, `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}`, to show the weather badge next to the clock on Glasshouse Home, while its Weather setting is From Home Assistant. `condition` is any Home Assistant weather condition (`sunny`, `partlycloudy`, `rainy`, …); `city` is optional, shown under the temperature when set; a push with no numeric `temp` is ignored, an empty one clears it, and one older than 3 hours is no longer shown ([an automation](HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home)) ([Home](dashboard/home.md#what-is-on-screen)) |
 | `button` | `button.lg_tv_restart` | Restart TV | Reboots the TV (not published when `allowPower` is false) |
 | `button` | `button.lg_tv_power_off` | Power Off TV | Powers off the TV (not published when `allowPower` is false) |
