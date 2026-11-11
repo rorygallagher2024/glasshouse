@@ -130,6 +130,7 @@ var toastSourceId = null;
 var toastIconDir = path.join(__dirname, '..', 'toast-icons');
 var tileHidingOffMsg = null;
 var writeSettingsFn = null;
+var pointerChangedFn = function () {};
 // Whether LG's on-screen keyboard is up, from the live window list.
 var keyboardVisibleFn = function () { return false; };
 
@@ -1317,6 +1318,32 @@ function doControl(action, value, cb) {
         cb({ ok: true, minutes: offMin });
       });
 
+    case 'setPointerEnabled':
+      var pointerOn = value === true || value === 'on' || value === 'true';
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ pointer: { enabled: pointerOn } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        config.pointer = config.pointer || {};
+        config.pointer.enabled = pointerOn;
+        pointerChangedFn();
+        cb(getUpdateSummary());
+      });
+
+    case 'setPointerSettings':
+      var pointerSettings = value && typeof value === 'object' ? value : {};
+      var transport = pointerSettings.transport === 'http' ? 'http' : 'websocket';
+      var rate = Number(pointerSettings.updatesPerSecond);
+      if ([60, 120, 240].indexOf(rate) === -1) return cb({ ok: false, error: 'pointer update rate must be 60, 120 or 240' });
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ pointer: { transport: transport, updatesPerSecond: rate } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        config.pointer = config.pointer || {};
+        config.pointer.transport = transport;
+        config.pointer.updatesPerSecond = rate;
+        pointerChangedFn();
+        cb(getUpdateSummary());
+      });
+
     // The input bar where it is experimental; off sets its keys back to LG's.
     case 'setInputBarAllowed':
       if (!inputBar) return cb({ ok: false, error: 'input bar unavailable' });
@@ -1490,6 +1517,7 @@ function init(opts) {
   if (opts.clearLunaCache) clearLunaCache = opts.clearLunaCache;
   if (opts.config) config = opts.config;
   if (opts.writeSettings) writeSettingsFn = opts.writeSettings;
+  if (opts.pointerChanged) pointerChangedFn = opts.pointerChanged;
   if (opts.telemetry) telemetry = opts.telemetry;
   if (opts.oled) oled = opts.oled;
   if (opts.privacy) privacy = opts.privacy;

@@ -220,6 +220,7 @@ var CONFIG = {
   // allowOnWebos10 until 0.105, and migrateConfigFile() renames that.
   allowExperimentalScreensavers: false,
   allowExperimentalInputBar: false,
+  pointer: { enabled: false, transport: 'websocket', updatesPerSecond: 120 },
 
   // Glasshouse Home is offered on webOS 9 and 10, where it has been tried.
   // This lets it be switched on on webOS 11 too, untried there. File-only.
@@ -711,6 +712,7 @@ controls.init({
   huesync: huesync,
   clearLunaCache: clearLunaCache,
   config: CONFIG,
+  pointerChanged: function () { if (!pointer.isEnabled()) pointer.stop(); },
   telemetry: telemetry,
   oled: oled,
   privacy: privacy,
@@ -976,7 +978,8 @@ function appsChanged() {
   telemetry.refreshInstalledApps(function () { publishNow(); });
 }
 
-pointer.init({ luna: luna, hasService: lunaTransport.hasService });
+pointer.init({ luna: luna, hasService: lunaTransport.hasService, config: CONFIG,
+  authed: function (req) { return routes.authed(url.parse(req.url || '/', true).query, req); } });
 routes.init({
   config: CONFIG,
   pointer: pointer,
@@ -1074,6 +1077,9 @@ if (!CLI_MODE) backup.startDaily();
 if (WEB_ENABLED && !CLI_MODE) routes.loadUI();   // otherwise nothing will serve it
 
 var server = http.createServer(routes.handleRequest);
+server.on('upgrade', function (req, socket, head) {
+  if (!pointer.handleUpgrade(req, socket, head)) socket.destroy();
+});
 
 var webEnabled = WEB_ENABLED;
 var mqttEnabled = !!(CONFIG.mqtt && CONFIG.mqtt.enabled && CONFIG.mqtt.host);

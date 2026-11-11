@@ -67,7 +67,7 @@ function readListedServices() {
 function hasService(service) {
   if (!SERVICE_DIRS_APPLY) return true;
   if (!listedServices) readListedServices();
-  return listedCount > 0 && !!listedServices[service];
+  return listedCount === 0 || !!listedServices[service];
 }
 
 function isUnlistedLgService(service) {

@@ -44,6 +44,7 @@ MockSocket.prototype.destroy = function () { this.destroyed = true; };
 var mockSocket = new MockSocket();
 var lunaCalls = 0;
 pointer.init({
+  config: { pointer: { enabled: true } },
   luna: function (uri, payload, cb) {
     lunaCalls++;
     assert.strictEqual(uri, 'com.webos.service.networkinput/getPointerInputSocket');
@@ -69,7 +70,7 @@ pointer.send({ move: [{ dx: 5, dy: -6 }], click: true }, function (result) {
     pointer.stop();
     assert.strictEqual(mockSocket.destroyed, true);
 
-    pointer.init({ luna: function (uri, payload, cb) { cb({ returnValue: false, errorText: 'denied' }); } });
+    pointer.init({ config: { pointer: { enabled: true } }, luna: function (uri, payload, cb) { cb({ returnValue: false, errorText: 'denied' }); } });
     pointer.send({ click: true }, function (failure) {
       assert.deepEqual(failure, { ok: false, error: 'denied' });
       pointer.init({});

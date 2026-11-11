@@ -779,6 +779,14 @@ reuses it. Modern TVs return a Unix socket, where each LG text command has a
 address instead; those commands go one per masked text frame. The socket is
 closed on a write error and on server shutdown.
 
+The dashboard uses the same address as a WebSocket, sending the same JSON
+objects without waiting for HTTP responses between batches. The upgrade uses
+the API token and same-origin check. POST remains for other clients and as the
+browser's fallback. `pointer.enabled` gates both forms; `pointer.transport` and
+`pointer.updatesPerSecond` are set under Experimental features. A dashboard
+WebSocket exists only while Pointer is open, and the last client closing drops
+the LG socket too.
+
 ### Where the dashboard's keyboard box types
 
 `sendText` with the box's whole content in `full` chooses a route per call

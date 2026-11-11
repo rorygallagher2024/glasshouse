@@ -661,6 +661,12 @@ function updateSummary() {
   s.allowNetworkDebugger = !!(config && config.allowNetworkDebugger);
   s.allowTileHiding = !!(appsModule && appsModule.tileHidingAllowed && appsModule.tileHidingAllowed());
   s.allowExperimentalScreensavers = !!(screensaversModule && screensaversModule.allowedAnyway && screensaversModule.allowedAnyway());
+  s.pointer = {
+    supported: !!(pointerModule && pointerModule.isSupported()),
+    enabled: !!(pointerModule && pointerModule.isEnabled()),
+    transport: config.pointer && config.pointer.transport || 'websocket',
+    updatesPerSecond: config.pointer && config.pointer.updatesPerSecond || 120
+  };
   // Where the Server tab offers the input bar's switch: where it is experimental.
   s.inputBar = inputBarModule ? inputBarModule.summary() : null;
   // Where the Server tab offers the switch: custom screen savers are experimental there.
@@ -1530,7 +1536,10 @@ function handleRequest(req, res) {
       fromHomebrewChannel: fromHomebrewChannel(), setupNeeded: setupPending(),
       // The hour cycle the dashboard's own clock draws.
       clockHour12: clockHour12(),
-      pointer: !!(pointerModule && pointerModule.isSupported())
+      pointer: !!(pointerModule && pointerModule.isEnabled()),
+      pointerSupported: !!(pointerModule && pointerModule.isSupported()),
+      pointerTransport: config.pointer && config.pointer.transport || 'websocket',
+      pointerRate: config.pointer && config.pointer.updatesPerSecond || 120
     };
     // The token goes into the TV's QR codes, so a phone that scans one can use
     // what it opens. Only to the TV itself: whoever sees the screen holds the
@@ -1540,6 +1549,7 @@ function handleRequest(req, res) {
   }
 
   if (pathname === '/api/pointer') {
+    if (!pointerModule || !pointerModule.isEnabled()) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
     if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
     if (!config.allowControl) return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
     if (!pointerModule) return send(res, 503, JSON.stringify({ ok: false, error: 'pointer module unavailable' }));

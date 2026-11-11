@@ -10,7 +10,10 @@ var allocBuffer = require('./util').allocBuffer;
 
 var lunaFn = null;
 var hasServiceFn = null;
+var authedFn = null;
 var connectFn = null;
+var config = {};
+var clients = [];
 var socket = null;
 var socketIsWebSocket = false;
 var connecting = false;
@@ -23,12 +26,18 @@ function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
   hasServiceFn = opts.hasService || null;
+  authedFn = opts.authed || null;
   connectFn = opts.connect || null;
+  config = opts.config || {};
 }
 
 function isSupported() {
   return typeof lunaFn === 'function' &&
     (!hasServiceFn || hasServiceFn('com.webos.service.networkinput'));
+}
+
+function isEnabled() {
+  return !!(config.pointer && config.pointer.enabled) && isSupported();
 }
 
 function validDelta(value) {
@@ -154,7 +163,7 @@ function writeCommands(commands, cb) {
 function send(body, cb) {
   var checked = commandsFor(body);
   if (checked.error) return cb({ ok: false, error: checked.error });
-  if (!isSupported()) return cb({ ok: false, error: 'pointer input is unavailable' });
+  if (!isEnabled()) return cb({ ok: false, error: 'pointer input is unavailable' });
   if (socket) return writeCommands(checked.commands, function (err) {
     if (err) closeSocket();
     cb(err ? { ok: false, error: err.message } : { ok: true, count: checked.commands.length });
@@ -179,7 +188,83 @@ function send(body, cb) {
   });
 }
 
+function serverFrame(payload) {
+  var body = bufferFromString(payload);
+  var headerLength = body.length < 126 ? 2 : 4;
+  var frame = allocBuffer(headerLength + body.length);
+  frame[0] = 0x81;
+  if (body.length < 126) frame[1] = body.length;
+  else {
+    frame[1] = 126;
+    frame.writeUInt16BE(body.length, 2);
+  }
+  body.copy(frame, headerLength);
+  return frame;
+}
+
+function refuseUpgrade(socket, status) {
+  socket.end('HTTP/1.1 ' + status + '\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+}
+
+function handleUpgrade(req, client, head) {
+  var pathname = String(req.url || '').split('?')[0];
+  if (pathname !== '/api/pointer') return false;
+  if (!isEnabled()) return refuseUpgrade(client, '404 Not Found'), true;
+  if (!authedFn || !authedFn(req)) return refuseUpgrade(client, '401 Unauthorized'), true;
+  var origin = String(req.headers.origin || '');
+  if (origin && origin.replace(/^https?:\/\//, '') !== String(req.headers.host || '')) {
+    return refuseUpgrade(client, '403 Forbidden'), true;
+  }
+  var key = req.headers['sec-websocket-key'];
+  if (req.headers.upgrade !== 'websocket' || typeof key !== 'string') {
+    return refuseUpgrade(client, '400 Bad Request'), true;
+  }
+  var accept = crypto.createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
+  client.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ' + accept + '\r\n\r\n');
+  clients.push(client);
+  client.on('close', function () {
+    var index = clients.indexOf(client);
+    if (index !== -1) clients.splice(index, 1);
+    if (!clients.length) closeSocket();
+  });
+  var buffered = Buffer.isBuffer(head) && head.length ? head : allocBuffer(0);
+  client.on('data', function (chunk) {
+    buffered = Buffer.concat([buffered, chunk]);
+    while (buffered.length >= 2) {
+      var finalFrame = (buffered[0] & 0x80) !== 0;
+      var opcode = buffered[0] & 0x0f;
+      var masked = (buffered[1] & 0x80) !== 0;
+      var length = buffered[1] & 0x7f;
+      var offset = 2;
+      if (length === 126) {
+        if (buffered.length < 4) return;
+        length = buffered.readUInt16BE(2);
+        offset = 4;
+      } else if (length === 127) return client.destroy();
+      if (length > 65536 || !finalFrame || !masked) return client.destroy();
+      if (masked) offset += 4;
+      if (buffered.length < offset + length) return;
+      var mask = masked ? buffered.slice(offset - 4, offset) : null;
+      var payload = allocBuffer(length);
+      buffered.copy(payload, 0, offset, offset + length);
+      for (var i = 0; i < length; i++) payload[i] ^= mask[i % 4];
+      buffered = buffered.slice(offset + length);
+      if (opcode === 8) return client.end();
+      if (opcode === 1) {
+        var body = null;
+        try { body = JSON.parse(payload.toString('utf8')); } catch (e) {}
+        send(body, function (result) {
+          if (!result.ok) client.write(serverFrame(JSON.stringify(result)));
+        });
+      }
+    }
+  });
+  client.on('error', function () { client.destroy(); });
+  return true;
+}
+
 function stop() {
+  while (clients.length) clients.shift().destroy();
   closeSocket();
   failWaiters(new Error('pointer input stopped'));
 }
@@ -189,6 +274,8 @@ module.exports = {
   commandsFor: commandsFor,
   init: init,
   isSupported: isSupported,
+  isEnabled: isEnabled,
   send: send,
+  handleUpgrade: handleUpgrade,
   stop: stop
 };

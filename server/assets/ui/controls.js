@@ -622,11 +622,27 @@ initVolSlider();
 initBacklightSlider();
 
 // Pointer events are queued so a tap cannot overtake the movement before it.
+// WebSocket avoids an HTTP round trip between batches; POST is the fallback.
 let pointerQueue = [];
 let pointerSending = false;
 let pointerMoveTimer = null;
+let pointerSocket = null;
+let pointerEnabled = false;
+let pointerTransport = 'websocket';
+let pointerRate = 120;
 async function flushPointerQueue() {
-  if (pointerSending || !pointerQueue.length) return;
+  if (!pointerQueue.length) return;
+  if (pointerSocket && pointerSocket.readyState === WebSocket.OPEN) {
+    while (pointerQueue.length) {
+      let body = pointerQueue.shift();
+      if (body.move) {
+        while (pointerQueue.length && pointerQueue[0].move) body.move = body.move.concat(pointerQueue.shift().move);
+      }
+      pointerSocket.send(JSON.stringify(body));
+    }
+    return;
+  }
+  if (pointerSending) return;
   pointerSending = true;
   let body = pointerQueue.shift();
   if (body.move) {
@@ -646,8 +662,24 @@ async function flushPointerQueue() {
     flushPointerQueue();
   }
 }
+function connectPointerSocket() {
+  if (!pointerEnabled || pointerTransport !== 'websocket' || pointerSocket || !q('disc-pointer').open) return;
+  pointerSocket = new WebSocket(api('/api/pointer').replace(/^http/, 'ws'));
+  const current = pointerSocket;
+  pointerSocket.addEventListener('open', flushPointerQueue);
+  pointerSocket.addEventListener('message', e => {
+    const result = JSON.parse(e.data);
+    if (!result.ok) showErr(result.error || t('common.actionFailed', 'Action failed'));
+  });
+  pointerSocket.addEventListener('close', () => {
+    if (pointerSocket !== current) return;
+    pointerSocket = null;
+    flushPointerQueue();
+  });
+}
 function sendPointer(body) {
   pointerQueue.push(body);
+  if (!pointerSocket) connectPointerSocket();
   flushPointerQueue();
 }
 function queuePointerMove(dx, dy) {
@@ -660,7 +692,7 @@ function queuePointerMove(dx, dy) {
   pointerMoveTimer = setTimeout(() => {
     pointerMoveTimer = null;
     flushPointerQueue();
-  }, 8);
+  }, 1000 / pointerRate);
 }
 
 (function initPointerPad() {
@@ -707,6 +739,25 @@ function queuePointerMove(dx, dy) {
   }, { passive: false });
 })();
 q('pointer-click').addEventListener('click', () => sendPointer({ click: true }));
+function closePointerSocket() {
+  if (!pointerSocket) return;
+  const current = pointerSocket;
+  pointerSocket = null;
+  current.close();
+}
+q('disc-pointer').addEventListener('toggle', () => {
+  if (q('disc-pointer').open) connectPointerSocket();
+  else closePointerSocket();
+});
+window.addEventListener('pagehide', closePointerSocket);
+function applyPointerSettings(settings) {
+  pointerEnabled = !!settings.enabled;
+  pointerTransport = settings.transport === 'http' ? 'http' : 'websocket';
+  pointerRate = [60, 120, 240].indexOf(Number(settings.updatesPerSecond)) !== -1 ? Number(settings.updatesPerSecond) : 120;
+  q('disc-pointer').hidden = !pointerEnabled || settings.allowControl === false;
+  if (!pointerEnabled || pointerTransport === 'http') closePointerSocket();
+  else connectPointerSocket();
+}
 
 function toggleMute() {
   muted = !muted;
@@ -811,7 +862,8 @@ async function powerAction(a) {
 // Switched off in config.json, the power buttons are not offered at all.
 fetch(api('/api/caps')).then(r => r.json()).then(cp => {
   if (!cp.allowPower) q('pwset').hidden = true;
-  q('disc-pointer').hidden = !cp.pointer || !cp.allowControl;
+  applyPointerSettings({ enabled: cp.pointer, transport: cp.pointerTransport,
+    updatesPerSecond: cp.pointerRate, allowControl: cp.allowControl });
 }).catch(() => {});
 
 /*
