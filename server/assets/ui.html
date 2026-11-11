@@ -650,6 +650,13 @@
       <div class="prot-status"><select class="pill-sel" id="sel_aroff" aria-label="Nightly power-down hours" data-t-aria-label="adv.nightlyOff.hours"
         onchange="sendCommand('alwaysReadyOffStart', this.value)"></select></div>
     </div>
+    <div class="prot-row" id="row-nightlyrefresh" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.nightlyRefresh">Nightly refresh reboot</div>
+        <div class="prot-desc" data-t="adv.nightlyRefresh.desc">Aligns the TV's 24-hour maintenance reboot with your nightly power-down window. Prevents a bug in LG's software where rebooting during the day causes the TV to power off completely four hours later.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_nightlyrefresh" onclick="toggleNightlyRefresh()">&mdash;</button></div>
+    </div>
     <div class="prot-row" id="row-wol" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.wol">Wake-on-LAN</div>

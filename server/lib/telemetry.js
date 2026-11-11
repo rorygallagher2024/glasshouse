@@ -45,6 +45,8 @@ var gameModule = null;
 var powerModule = null;
 /** @type {typeof import('./remotebattery')} */
 var remoteBatteryModule = null;
+/** @type {typeof import('./resettime')} */
+var resettimeModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
 var alwaysReadyScreenOn = false;
@@ -220,6 +222,7 @@ function init(opts) {
   screensaversModule = opts.screensavers;
   gameModule = opts.game;
   powerModule = opts.power || null;
+  resettimeModule = opts.resettime || null;
   remoteBatteryModule = opts.remoteBattery || null;
   homeModule = opts.home || null;
   tvwebVersionStr = opts.tvwebVersion || '0.0.0';
@@ -2050,6 +2053,9 @@ function collectStats(cb) {
         start: clockTime(gs.alwaysOnDisableStartHour, gs.alwaysOnDisableStartMinute),
         end: clockTime(gs.alwaysOnDisableEndHour, gs.alwaysOnDisableEndMinute)
       };
+      if (resettimeModule && resettimeModule.supported()) {
+        out.nightlyRefresh = resettimeModule.enabled();
+      }
     }
 
   // LG's Always Ready, a separate setting from Always-on: 'off', 'allEnabled'

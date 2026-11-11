@@ -116,6 +116,7 @@ var saverPowerOff = require('./lib/saverpoweroff');
 var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
 var backupParts = require('./lib/backup-parts');
+var resettime = require('./lib/resettime');
 var power = require('./lib/power');
 var names = require('./lib/names');
 var msg = say.msg;
@@ -237,6 +238,10 @@ var CONFIG = {
   // http://<tv>:<port + 2>/icons/<appId>.png, for a launcher on another
   // device. Also switched from the MQTT tab.
   iconServer: false,
+
+  // Nightly refresh reboot: align tvpowerd's 24-hour reboot with the nightly
+  // power-down window to avoid the 4-hour drop to cold Power Off (#1288).
+  nightlyRefresh: false,
 
   // For testing the first-run setup wizard UI without touching TV settings or restarting.
   emulateSetup: false,
@@ -607,10 +612,12 @@ telemetry.init({
   screensavers: screensavers,
   game: game,
   power: power,
+  resettime: resettime,
   remoteBattery: remoteBattery,
   home: glasshouseHome,
   tvwebVersion: TVWEB_DISPLAY_VERSION
 });
+resettime.init({ luna: luna, config: CONFIG, alwaysOnSupported: telemetry.alwaysOnSupported });
 
 var liveState = stateModule.init({
   inputNameMap: telemetry.inputNameMap,
@@ -715,6 +722,7 @@ controls.init({
   ntp: ntpClient,
   history: history,
   backup: backup,
+  resettime: resettime,
   home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
   deviceNameChanged: function (name) { syslogForwarder.setHostname(name); },
@@ -1040,6 +1048,7 @@ backupParts.init({
   screensavers: screensavers,
   apps: appsModule,
   home: glasshouseHome,
+  resettime: resettime,
   alwaysOnSupported: telemetry.alwaysOnSupported
 });
 
@@ -1095,7 +1104,7 @@ if (!CLI_MODE) {
   if (keysTimer.unref) keysTimer.unref();
   var heldTimer = setTimeout(function () { lgSettings.reapply(); }, 60000);
   if (heldTimer.unref) heldTimer.unref();
-  var heldRecheck = setInterval(function () { lgSettings.reapply(); }, 60 * 60000);
+  var heldRecheck = setInterval(function () { lgSettings.reapply(); resettime.apply(); }, 60 * 60000);
   if (heldRecheck.unref) heldRecheck.unref();
   var keysRecheck = setInterval(function () { remoteKeys.recheckNative(); }, remoteKeys.RECHECK_MS);
   if (keysRecheck.unref) keysRecheck.unref();
@@ -2015,7 +2024,10 @@ if (!CLI_MODE) {
   power.init({ luna: luna, syslog: syslogForwarder });
   power.start();
   liveState.state.onChange(function (ev) {
-    if (ev.group === 'power' && ev.key === 'state') power.stateChanged(ev.value);
+    if (ev.group === 'power' && ev.key === 'state') {
+      power.stateChanged(ev.value);
+      resettime.apply();
+    }
   });
   liveState.groups.power.onReply = idlesaver.powerReply;
   // Its own start, as the MQTT bridge starts every group only with a broker.

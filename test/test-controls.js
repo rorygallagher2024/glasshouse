@@ -520,6 +520,46 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ homeAutoLaunch and quickBoot coordinate with Glasshouse Home');
 })();
 
+(function testNightlyRefreshControl() {
+  var written = null;
+  var setEnabledVal = null;
+  var cacheCleared = 0;
+  var mockResettime = {
+    _supported: false,
+    supported: function () { return this._supported; },
+    setEnabled: function (val, cb) { setEnabledVal = val; cb({ ok: true }); }
+  };
+
+  controls.init({
+    config: { allowControl: true },
+    resettime: mockResettime,
+    writeSettings: function (patch, cb) { written = patch; cb(null); },
+    telemetry: { clearCache: function () { cacheCleared++; } }
+  });
+
+  // Unsupported TV
+  controls.doControl('nightlyRefresh', true, function (res) {
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.error.indexOf('not supported') !== -1, true);
+  });
+
+  // Supported TV
+  mockResettime._supported = true;
+  controls.doControl('nightlyRefresh', true, function (res) {
+    assert.strictEqual(res.ok, true);
+    assert.deepEqual(written, { nightlyRefresh: true });
+    assert.strictEqual(setEnabledVal, true);
+    assert.strictEqual(cacheCleared, 1);
+  });
+
+  controls.doControl('nightlyRefresh', false, function (res) {
+    assert.strictEqual(res.ok, true);
+    assert.deepEqual(written, { nightlyRefresh: false });
+    assert.strictEqual(setEnabledVal, false);
+  });
+  console.log('  ✓ nightlyRefresh control enforces support and toggles settings');
+})();
+
 // A notification's type is LG's toast type, and ":icon:" opening its text an icon
 (function testToastIcon() {
   var fs = require('fs');
