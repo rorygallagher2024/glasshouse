@@ -1447,6 +1447,7 @@
  "srv.deviceName.tooLong": {"text": "O nome deve ter no máximo 64 caracteres", "from": "The name must be at most 64 characters"},
  "srv.fetch.badChars": {"text": "o endereço contém espaços ou caracteres de controle", "from": "the address contains spaces or control characters"},
  "srv.fetch.badScheme": {"text": "o endereço deve começar com http:// ou https://", "from": "the address must start with http:// or https://"},
+ "srv.fetch.certFailed": {"text": "A verificação do certificado falhou para {host}. Verifique a data e hora da TV ou a conexão.", "from": "Certificate verification failed for {host}. Check the TV's date and time, or the connection."},
  "srv.fetch.github404": {"text": "O GitHub retornou 404 para {where} - nenhuma versão publicada ainda, ou o repositório não está visível", "from": "GitHub returned 404 for {where} - no release published yet, or the repository is not visible"},
  "srv.fetch.githubDown": {"text": "O GitHub não está respondendo no momento ({status}). Tente de novo mais tarde.", "from": "GitHub is not answering at the moment ({status}). Try again later."},
  "srv.fetch.githubLimit": {"text": "O GitHub recusou a solicitação ({status}). Ele permite 60 verificações por hora de um mesmo endereço, então tente de novo em uma hora; se continuar acontecendo, algo na rede pode estar bloqueando.", "from": "GitHub refused the request ({status}). It allows 60 checks an hour from one address, so try again in an hour; if it keeps happening, something on the network may be blocking it."},

@@ -471,7 +471,9 @@ not something to assume of other firmware, and a client the owner installed can
 be anywhere. Installed clients are tried before the stock one, each against the
 real release endpoint until one returns usable JSON. A client that does that has
 proved everything that matters. Certificate verification is never disabled: what
-comes back runs as root on the next restart.
+comes back runs as root on the next restart. If verification fails, the download
+fails immediately and is not passed to subsequent clients, preventing fallbacks
+to BusyBox `wget` implementations that bypass TLS certificate checks.
 
 **The directory is updated in place, not swapped.** `/var/lib/tvweb` holds more
 than code — `config.json`, `adblock_hosts`, `adblock_custom.json`, the staged screen saver the boot hook

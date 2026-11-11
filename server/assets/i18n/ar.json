@@ -1239,6 +1239,7 @@
  "srv.daemon.uploadd.detail": {"text": "يرسل البيانات التشخيصية إلى خوادم LG", "from": "Sends diagnostic data to LG"},
  "srv.fetch.badChars": {"text": "يحتوي العنوان على مسافات أو رموز غير صالحة", "from": "the address contains spaces or control characters"},
  "srv.fetch.badScheme": {"text": "يجب أن يبدأ العنوان بـ http:// أو https://", "from": "the address must start with http:// or https://"},
+ "srv.fetch.certFailed": {"text": "فشل التحقق من شهادة الأمان لـ {host}. تحقق من تاريخ ووقت التلفاز أو من اتصال الشبكة.", "from": "Certificate verification failed for {host}. Check the TV's date and time, or the connection."},
  "srv.fetch.github404": {"text": "أرجع GitHub خطأ 404 لـ {where} — لم يُنشر إصدار بعد أو أن المستودع غير مرئي", "from": "GitHub returned 404 for {where} - no release published yet, or the repository is not visible"},
  "srv.fetch.githubDown": {"text": "لا يستجيب GitHub حالياً ({status}). حاول مجدداً لاحقاً.", "from": "GitHub is not answering at the moment ({status}). Try again later."},
  "srv.fetch.githubLimit": {"text": "رفض GitHub الطلب ({status}). يُسمح بـ 60 فحصاً في الساعة للعنوان الواحد، لذا جرب بعد ساعة.", "from": "GitHub refused the request ({status}). It allows 60 checks an hour from one address, so try again in an hour; if it keeps happening, something on the network may be blocking it."},
