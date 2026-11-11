@@ -1935,9 +1935,15 @@ async function visitHomeAvailability(browser, base, problems) {
     { name: 'webOS 10\'s banner', st: { available: true, enabled: false, lgHomeAvailable: true, homeAutoLaunch: false,
       lgHome: lgHome(false, { choice: 'black', own: false, width: 3492, height: 1685 }) }, glasshouse: false, banner: true },
     { name: 'Glasshouse Home on', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true) }, glasshouse: true },
-    // webOS 5 and 6, where each switch restarts the app manager: their note shows there only.
+    // Keep restartsApps coverage alongside webOS 6 standalone (keeps preview options) and webOS 4 (hides them).
+    { name: 'restartsApps', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true),
+      supported: { ok: true, experimental: true, restartsApps: true } }, glasshouse: true },
     { name: 'webOS 6', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true),
-      supported: { ok: true, experimental: true, restartsApps: true } }, glasshouse: true }
+      supported: { ok: true, webos: '6.5.3', experimental: true, standalone: true },
+      layout: { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true, livePreview: true } }, glasshouse: true, previewOptions: true },
+    { name: 'webOS 4', st: { available: true, enabled: true, lgHomeAvailable: true, lgHome: lgHome(true),
+      supported: { ok: true, webos: '4.4.3', experimental: true, standalone: true, previewOptions: false },
+      layout: { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] }, hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true, livePreview: true } }, glasshouse: true, previewOptions: false }
   ];
   for (const c of cases) {
     const st = c.st;
@@ -1963,6 +1969,11 @@ async function visitHomeAvailability(browser, base, problems) {
       const restarts = !!(st.supported && st.supported.restartsApps);
       if (c.glasshouse && await page.locator('#home-restart-note').isVisible() !== restarts) {
         fail('the note that a switch closes apps ' + (restarts ? 'missing' : 'shown on a TV it does not apply to'));
+      }
+      if (c.previewOptions !== undefined) {
+        for (const id of ['#home-preview-sound-row', '#home-preview-always-row', '#home-preview-tile-row']) {
+          if (await page.locator(id).isVisible() !== c.previewOptions) fail(id + ' ' + (c.previewOptions ? 'missing' : 'shown'));
+        }
       }
       if (await page.locator('#disc-system-tiles').isVisible() === c.glasshouse) fail('system apps ' + (c.glasshouse ? 'shown with Glasshouse Home on' : 'missing'));
       if (st.homeAutoLaunch !== undefined && (!await page.locator('#home-autolaunch').isVisible() || await page.locator('#home-autolaunch').isDisabled()))
