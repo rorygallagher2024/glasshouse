@@ -506,6 +506,37 @@ step('an Xtream channel plays as MPEG-TS once chosen, after a restart too, and a
   });
 });
 
+step('live TV pause is off by default, kept, and records only an MPEG-TS channel played full screen', function (done) {
+  var ts = require('../server/lib/iptv-timeshift');
+  // No USB stick: a mounts file that lists none.
+  ts.init({ mountsFile: path.join(stateDir, 'no-mounts') });
+  iptv.search(xc, 'harbour sport 1', '', function (s) {
+    var c = s.channels[0];
+    assert.strictEqual(iptv.status().timeshift.on, false);
+    assert.equal(iptv.setTimeshift({ on: 'yes' }).ok, false);
+    assert.equal(iptv.setTimeshift({ on: true }).ok, true);
+    iptv.stop();
+    iptv.init({ stateDir: stateDir, clients: function () { return [CURL]; }, version: 'test', catchupMs: 600000, onChange: function () { changes++; } });
+    iptv.start();
+    assert.strictEqual(iptv.status().timeshift.on, true, 'kept across a restart');
+    assert.strictEqual(iptv.rowStatus().timeshift, true, 'Home knows');
+    iptv.playUrl(xc, c.key, true, function (hls) {
+      assert.ok(hls && !hls.timeshift && hls.format === 'hls', 'HLS plays directly');
+      assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'ts' }).ok, true);
+      iptv.playUrl(xc, c.key, false, function (preview) {
+        assert.ok(!preview.timeshift, 'a preview is not recorded');
+        assert.equal(ts._session(), null);
+        iptv.playUrl(xc, c.key, true, function (full) {
+          assert.ok(!full.timeshift && /\.ts$/.test(full.url), 'without a stick, the provider\'s URL');
+          assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
+          assert.equal(iptv.setTimeshift({ on: false }).ok, true);
+          done();
+        });
+      });
+    });
+  });
+});
+
 step('a stream event is one log line, with the channel\'s key and never its link', function (done) {
   var lines = [], log = console.log;
   console.log = function (l) { lines.push(String(l)); };

@@ -373,7 +373,7 @@ window.addEventListener('resize', () => {
 // inputs and the apps.
 const RK_GROUPS = [
   { id: 'streaming', title: () => t('apps.remoteKeys.streaming', 'Streaming buttons'),
-    keys: ['netflix', 'amazon', 'disneyplus', 'rakutentv', 'lgchannels', 'hulu', 'iplayer', 'freeviewplay', 'slingtv'] },
+    keys: ['netflix', 'amazon', 'disneyplus', 'rakutentv', 'lgchannels', 'hulu', 'iplayer', 'freeviewplay', 'slingtv', 'globoplay', 'shahid'] },
   { id: 'assistant', title: () => t('apps.remoteKeys.assistant', 'Voice assistant buttons'), keys: ['voice', 'alexa', 'googleassistant'] },
   { id: 'colour', title: () => t('apps.remoteKeys.colour', 'Color keys'), keys: ['red', 'green', 'yellow', 'blue'] },
   // Anything else, including keys a later server offers.

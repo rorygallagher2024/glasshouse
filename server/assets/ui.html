@@ -299,6 +299,15 @@
       <div class="btns" id="inputs"></div>
     </div>
 
+    <div class="set"><div class="lbl" data-t="ctl.playback">Playback</div>
+      <div class="playback-btns">
+        <button onclick="sendCommand('media','rewind')" data-t="ctl.rewind">Rewind</button>
+        <button onclick="sendCommand('media','playPause')" data-t="ctl.playPause">Play / Pause</button>
+        <button onclick="sendCommand('media','stop')" data-t="ctl.stop">Stop</button>
+        <button onclick="sendCommand('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
+      </div>
+    </div>
+
     <div class="set" data-col="0"><div class="lbl"><span data-t="ctl.volume">Volume</span> &middot; <span id="vol" class="num">&mdash;</span></div>
       <div class="vol-row" id="vol-row">
         <div class="vol-wrap" id="vol-wrap" role="group" aria-label="Volume" data-t-aria-label="ctl.volume">
@@ -310,15 +319,6 @@
           <button onclick="sendCommand('volumeStep',1)" aria-label="Volume up" data-t-aria-label="ctl.volumeUp" translate="no">+</button>
         </div>
         <button id="mute" onclick="toggleMute()" data-t="ctl.mute">Mute</button>
-      </div>
-    </div>
-
-    <div class="set"><div class="lbl" data-t="ctl.playback">Playback</div>
-      <div class="playback-btns">
-        <button onclick="sendCommand('media','rewind')" data-t="ctl.rewind">Rewind</button>
-        <button onclick="sendCommand('media','playPause')" data-t="ctl.playPause">Play / Pause</button>
-        <button onclick="sendCommand('media','stop')" data-t="ctl.stop">Stop</button>
-        <button onclick="sendCommand('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
       </div>
     </div>
 
@@ -880,6 +880,15 @@
     </div>
   </div>
 
+  <div class="ss-level-row" id="ss-pool-row" hidden>
+    <div class="ss-level-lbl"><span data-t="ss.poolTitle">Included in rotation</span> &middot; <span id="ss-pool-count" class="num">&mdash;</span></div>
+    <div class="ss-pool-actions">
+      <button type="button" class="ss-pool-btn" id="ss-pool-all" onclick="ssPoolSelectAll(true)" data-t="ss.poolSelectAll">Select all</button>
+      <button type="button" class="ss-pool-btn" id="ss-pool-none" onclick="ssPoolSelectAll(false)" data-t="ss.poolDeselectAll">Deselect all</button>
+    </div>
+    <div class="ss-pool-box" id="ss-pool-box"></div>
+  </div>
+
   <div class="ss-level-row">
     <div class="ss-level-lbl" data-t="ss.showNow">Show it now</div>
     <div class="btns">
@@ -1271,9 +1280,16 @@
     <div class="prot-row home-gh-row" id="home-preview-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.livePreview">Live preview</div>
-        <div class="prot-desc" data-t="home.livePreviewDesc">A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
+        <div class="prot-desc" data-t="home.livePreviewDesc">A live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-preview" onclick="homeLivePreview()">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-preview-sound-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewSound">Preview sound</div>
+        <div class="prot-desc" data-t="home.previewSoundDesc">The preview plays the sound of the input or channel it shows, rather than none. Switching it changes a preview already playing.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-sound" onclick="homePreviewOption('previewSound')">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row" id="home-preview-always-row" hidden>
       <div class="prot-main">
@@ -1419,8 +1435,16 @@
   <div class="sub" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
   <div class="btns wall-choice" id="home-bg-kind"></div>
   <div id="home-bg-pictures">
-    <div class="sub" data-t="home.wall.introPictures">A picture for each part of the day: one of the picture sets, or your own.</div>
+    <div class="sub" id="home-wall-intro"></div>
     <div class="btns wall-choice" id="home-wall-choice"></div>
+    <!-- Your own, shuffled: any number of pictures, one at a time in a random order -->
+    <div id="home-wall-shuffle" hidden>
+      <div class="shuffle-every"><span data-t="home.wall.shuffleEvery">A new picture every</span>
+        <select class="pill-sel" id="home-shuffle-minutes" aria-label="A new picture every" data-t-aria-label="home.wall.shuffleEvery"
+          onchange="homeShuffleMinutes(this.value)"></select></div>
+      <div class="wall-cards" id="home-shuffle"></div>
+      <input type="file" id="home-shuffle-file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="homeShufflePicked(this)">
+    </div>
     <!-- The day as Glasshouse Home shows it: each part's picture across its hours, and where the day is now -->
     <div class="wall-day" id="home-wall-day"></div>
     <div class="wall-cards" id="home-walls"></div>

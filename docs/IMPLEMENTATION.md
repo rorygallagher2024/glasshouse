@@ -140,6 +140,35 @@ its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
   one long download with no playlist to go stale. Offered (`switchable`) for
   an Xtream channel unless the panel's `allowed_output_formats` lacks one of
   the two.
+- **Pausing live TV** (`lib/iptv-timeshift.js`, the worker
+  `lib/iptv-timeshift-worker.js`), when switched on: Home's full-screen
+  player asks `/api/iptv/stream` with `full=1`, and for an MPEG-TS channel
+  the server starts a worker as `node --max_old_space_size=16`, through
+  `children.launch`, in a process group of its own. It records the channel
+  through curl (`-N`, with a VLC User-Agent, as a provider refused curl's own
+  with 461) to 8 MB chunk files in `glasshouse-timeshift` on a writable USB
+  stick under `/tmp/usb`, dropping the oldest past 2 GB, and serves them on
+  127.0.0.1 at a random port under a random token, which Home is given
+  instead of the provider's URL. Nothing is buffered in memory: each byte is
+  written to the stick and read back 64 KB at a time, as the TV has a few
+  hundred MB free. A paused `<video>` stops reading, TCP backpressure holds
+  the read place, and the recording goes on. A reconnect continues from the
+  place; the live point is started 6 s early (at least 256 KB), as the player
+  holds no more past the picture than it starts with and 0.3 s stalled at the
+  first hiccup; the time a pause can last is the buffer's capacity in seconds
+  (`maxBytes` over the recording's average rate, from `/api/iptv/timeshift`)
+  less the picture's own time behind live, which Home counts itself, as the
+  read place runs ahead of the picture by what the player buffers and moves
+  while it fills; `live=1` starts at the live point and `behind=<seconds>` that long
+  before it, by the recording's average byte rate, which is how Home's Back
+  (after asking) and Left and Right move: a live MPEG-TS stream cannot seek,
+  so each opens the recording again. The recording lives as
+  long as Home's lease: `lease(false)`, the lease running out, another
+  channel's play or the server stopping ends it and empties the folder.
+  While paused, Home renews the lease without `full`, so LG's screen saver
+  may come over the still picture. A provider that refuses the recorder
+  before any bytes gets a 502 passed on, and the channel plays directly for
+  ten minutes.
 - **One search at a time**: the lane is taken before the memory check
   answers, so a search asked for meanwhile replaces it rather than starting
   beside it.
@@ -442,7 +471,9 @@ not something to assume of other firmware, and a client the owner installed can
 be anywhere. Installed clients are tried before the stock one, each against the
 real release endpoint until one returns usable JSON. A client that does that has
 proved everything that matters. Certificate verification is never disabled: what
-comes back runs as root on the next restart.
+comes back runs as root on the next restart. If verification fails, the download
+fails immediately and is not passed to subsequent clients, preventing fallbacks
+to BusyBox `wget` implementations that bypass TLS certificate checks.
 
 **The directory is updated in place, not swapped.** `/var/lib/tvweb` holds more
 than code — `config.json`, `adblock_hosts`, `adblock_custom.json`, the staged screen saver the boot hook
@@ -1922,6 +1953,6 @@ Hue Sync is offered where `/media/cryptofs/apps/usr/palm/services/com.lighting.h
 
 
 
-No Home wallpapers are packaged; the background is black until one is uploaded. The browser prepares personal JPEG/PNG/WebP images as JPEGs within 1920 × 1080 pixels, the `resolution` the Home app declares, which webOS web apps are drawn at. `/api/home/wallpapers/upload?slot=morning|afternoon|evening|night` accepts only `image/jpeg` with a declared size up to 5 MiB, under the usual authentication, control and Origin guards. One upload is buffered at a time, with a 30-second body deadline, frame/scan structure and dimension checks, a disk-space check and atomic replacement. The server does not decode JPEG pixels. `POST /api/home/wallpapers` with `{ "choose": "black" | "landscape" | "abstract" | "own" }` sets the wallpaper, kept in `home-wallpaper.json`. A set is downloaded the first time it is chosen, from the `v2` tag of `rorygallagher2024/glasshouse-wallpapers` into `home-wallpaper-sets/<set>/`, one picture at a time under the same lock, keeping each only if it matches the sha256 pinned in `lib/home-wallpapers.js` and passes the same JPEG checks; a failure leaves the choice as it was, and the other set is removed once one is chosen. A new set is a new tag. An upload chooses `own`. At the first start with the choice, four uploads that match the landscape set, as the earlier Add example pictures left them, are moved into it and it is chosen; any other uploads make `own` the choice. The Apps tab hides a system app by setting `visible: false` in its appinfo, and the TV's launch points, which the Apps row is built from, have no tile for such an app (AirPlay's appinfo has it from LG), so it is hidden on both Homes. On a G3 no launch point carries a `visible` field; the Apps row skips any that says `false` all the same. `home-wallpaper-uploads/<slot>.jpg`, outside the updater payload and rollback copy, is that slot's image. File revisions invalidate the browser and TV image URLs after replacement. Uploads are excluded from layout backups.
+No Home wallpapers are packaged; the background is black until one is uploaded. The browser prepares personal JPEG/PNG/WebP images as JPEGs within 1920 × 1080 pixels, the `resolution` the Home app declares, which webOS web apps are drawn at. `/api/home/wallpapers/upload?slot=morning|afternoon|evening|night` accepts only `image/jpeg` with a declared size up to 5 MiB, under the usual authentication, control and Origin guards. One upload is buffered at a time, with a 30-second body deadline, frame/scan structure and dimension checks, a disk-space check and atomic replacement. The server does not decode JPEG pixels. `POST /api/home/wallpapers` with `{ "choose": "black" | "landscape" | "abstract" | "own" | "shuffle" }` sets the wallpaper, kept in `home-wallpaper.json`. `slot=shuffle` adds a picture to the shuffled collection rather than replacing one: it is saved as `home-wallpaper-shuffle/<id>.jpg`, the id made on the TV from the time and four random bytes, at most 50 of them (a 51st is refused with 409), and the first chooses `shuffle`. The status lists them oldest first as `pictures`, with `maxPictures`; `GET /api/home/wallpaper?slot=shuffle&id=<id>` serves one, an id checked against `^[0-9a-z]{8,24}$` and never taken as a path, and as a picture's id never changes its address needs no revision. `{ "removePicture": id }` removes one and `{ "removePictures": true }` all. The layout's `wallShuffleMinutes` (1, 5, 10, 15, 30 or 60, sent as `shuffleMinutes`) is how long the view keeps each: it draws the next at random from those not shown since the collection last came round, never the one on screen, and only while it is on screen. A set is downloaded the first time it is chosen, from the `v2` tag of `rorygallagher2024/glasshouse-wallpapers` into `home-wallpaper-sets/<set>/`, one picture at a time under the same lock, keeping each only if it matches the sha256 pinned in `lib/home-wallpapers.js` and passes the same JPEG checks; a failure leaves the choice as it was, and the other set is removed once one is chosen. A new set is a new tag. An upload chooses `own`. At the first start with the choice, four uploads that match the landscape set, as the earlier Add example pictures left them, are moved into it and it is chosen; any other uploads make `own` the choice. The Apps tab hides a system app by setting `visible: false` in its appinfo, and the TV's launch points, which the Apps row is built from, have no tile for such an app (AirPlay's appinfo has it from LG), so it is hidden on both Homes. On a G3 no launch point carries a `visible` field; the Apps row skips any that says `false` all the same. `home-wallpaper-uploads/<slot>.jpg`, outside the updater payload and rollback copy, is that slot's image. File revisions invalidate the browser and TV image URLs after replacement. Uploads are excluded from layout backups.
 
 A failed Home restore persists `restorePending` with the guard stopped; both dashboards keep a retry action until all settings and the Home key are restored. HBC uninstall uses the same owner before removing the app, and skips Home service writes on TVs that never used it. App absence requires the specific `Invalid appId` response, including raw replies accompanying a non-zero luna-send exit. A failed Home layout restore makes the backup result report partial failure.

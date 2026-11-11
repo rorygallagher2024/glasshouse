@@ -273,6 +273,79 @@ console.log('Running test-screensavers.js ...');
             assert.strictEqual(result.ok, true);
             assert.strictEqual(saverLaunched, 'com.webos.app.screensaver');
             console.log('  ✓ trigger falls back to launching screensaver when tvpower returns screenSaverEnabled value is off');
+
+            // 14. Random mode and pool functionality
+            (function testRandomScreensavers() {
+              var tmpConfig = '/tmp/test-random-config.json';
+              screensavers.init({
+                randomConfigFile: tmpConfig
+              });
+
+              // Default pool includes custom savers
+              var defPool = screensavers.defaultRandomPool();
+              assert.ok(defPool.indexOf('clock') !== -1);
+              assert.ok(defPool.indexOf('starfield') !== -1);
+              assert.strictEqual(defPool.indexOf('stock'), -1, 'stock must not be in default pool');
+              assert.strictEqual(defPool.indexOf('random'), -1, 'random must not be in default pool');
+
+              // Setting pool filters invalid entries
+              screensavers.setRandomPool(['clock', 'starfield', 'invalid-one']);
+              var pool = screensavers.getRandomPool();
+              assert.deepEqual(pool, ['clock', 'starfield']);
+
+              // Enable random mode
+              screensavers.saveRandomConfig({ enabled: true });
+              assert.strictEqual(screensavers.isRandomEnabled(), true);
+
+              // screensaverList contains random mode
+              var list = screensavers.screensaverList();
+              var rnd = list.modes.filter(function (m) { return m.id === 'random'; })[0];
+              assert.ok(rnd, 'Random mode must be present in screensaverList');
+              assert.strictEqual(rnd.label, 'Random');
+              assert.ok(list.random, 'list.random must exist');
+              assert.deepEqual(list.random.pool, ['clock', 'starfield']);
+
+              // pickNextRandomSaver avoids consecutive duplicate
+              var next = screensavers.pickNextRandomSaver('clock');
+              assert.strictEqual(next.id, 'starfield');
+              var next2 = screensavers.pickNextRandomSaver('starfield');
+              assert.strictEqual(next2.id, 'clock');
+
+              // advanceRandomSaver stages the selected saver
+              screensavers.advanceRandomSaver();
+              var staged = screensavers.stagedScreensaver();
+              assert.ok(staged === 'clock' || staged === 'starfield');
+
+              // onPowerChange: transition from Screen Saver to Active advances random saver
+              var curStaged = screensavers.stagedScreensaver();
+              screensavers.onPowerChange({ state: 'Screen Saver' });
+              screensavers.onPowerChange({ state: 'Active' });
+              var newStaged = screensavers.stagedScreensaver();
+              // With pool of 2, advancing must swap to the other saver
+              assert.notStrictEqual(newStaged, curStaged);
+
+              // Test controls doControl for screensaverRandomPool
+              var controls = require('../server/lib/controls');
+              controls.init({
+                screensavers: screensavers,
+                telemetry: { clearCache: function () {} },
+                config: { allowControl: true }
+              });
+
+              controls.doControl('screensaverRandomPool', { toggle: 'fireworks' }, function (r) {
+                assert.strictEqual(r.ok, true);
+                assert.ok(screensavers.getRandomPool().indexOf('fireworks') !== -1);
+
+                controls.doControl('screensaverRandomPool', { toggle: 'fireworks' }, function (r2) {
+                  assert.strictEqual(r2.ok, true);
+                  assert.strictEqual(screensavers.getRandomPool().indexOf('fireworks'), -1);
+
+                  // cleanup
+                  try { fs.unlinkSync(tmpConfig); } catch (e) {}
+                  console.log('  ✓ random mode, pool management, controls, and advance-on-dismiss work as expected');
+                });
+              });
+            })();
           });
         })();
       });

@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.143.0';
+var TVWEB_VERSION = '0.143.1';
 
 var http = require('http');
 var fs = require('fs');
@@ -623,6 +623,7 @@ var liveState = stateModule.init({
   onTvChange: function (ev) {
     // Leaving an input drops game.js's bind, without waiting for someone to ask.
     if (ev.group === 'application' && ev.key === 'app_id') game.appChanged(ev.value);
+    if (ev.group === 'power' && ev.key === 'state') screensavers.onPowerChange(ev.value);
     tvChanged(ev);
   }
 });
@@ -1467,7 +1468,7 @@ function setupHomeAssistant() {
    * are not published (see ha.js). The rows decide which entities exist and
    * a select's options, so a change in them means republishing discovery.
    */
-  var LGS_SECTIONS = ['sound', 'devices', 'game', 'promotions'];
+  var LGS_SECTIONS = ['sound', 'devices', 'game', 'promotions', 'picture'];
   var lgsRows = [];
   var lastLgsSig = '';
 
@@ -1490,7 +1491,9 @@ function setupHomeAssistant() {
       if (cpuOwn !== null) s.load = cpuOwn;
       s.lgs = {};
       ls.rows.forEach(function (r) { s.lgs[r.id] = r.type === 'switch' ? r.on : r.value; });
-      var lgsSig = ls.rows.map(function (r) {
+      var lgsSig = ls.rows.filter(function (r) {
+        return ha.LG_SETTING_ENTITIES.some(function (e) { return e.row === r.id; });
+      }).map(function (r) {
         return r.id + (r.choices ? ':' + r.choices.map(function (c) { return c.value; }).join('|') : '');
       }).join(',');
       if (lgsSig !== lastLgsSig) {

@@ -256,6 +256,7 @@ vm.runInNewContext(scriptMatch[1] + '\n;' + testPagingSnippet, sandbox);
       clearTimeout(safetyTimer);
       console.log('  ✓ Promise and fetch polyfills support webOS 2 WebKit without native ES6');
       console.log('ALL test-dashboard-view.js assertions passed!\n');
+      process.exit(0);
     }
   }
 

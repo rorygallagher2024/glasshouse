@@ -212,7 +212,13 @@ it there when the rows are rebuilt, and **Keep the preview on** shows the input
 last watched with the focus on Apps. A heartbeat saying the screen saver is over
 the view stops the preview, and the next one without it brings it back. `test-home.js` checks the TV tile is first
 in the Inputs row on a TV with channels, absent without them, opens Live TV,
-and that both options default to off and save.
+and that Keep the preview on, Preview in the tile and Preview sound default to
+off and save. Preview sound also rejects non-boolean values.
+
+`test-hostname.js` checks that stats include the cached local name without
+waiting for a reverse lookup. It uses real timers because stats collection
+also waits for `df`; a simulated clock can reach the collection's timeout
+before that process replies.
 
 `test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved. Between uploads it waits, up to 5 s, for the last one's file to be cleared, rather than a fixed time a slow runner can outlast. It also checks that the phone's setup link serves its page, `i18n.js` and a language file with the one-time code, the page asking for `i18n.js` with it, and refuses them without.
 
@@ -382,7 +388,7 @@ Last watched on that port names the device the TV last selected there, read
 fresh past the cached device list, and every device on the port when the TV
 has not recorded one.
 
-`test-home-wallpaper-upload.js` exercises the real HTTP boundary: rejected and interrupted uploads preserve the previous image, concurrent uploads are refused, the lock is released after an abort, an uploaded JPEG survives reinitialisation and is served with its image type, and one time of day's picture is removed alone, an unknown one refused. With the download stubbed, a chosen set is fetched from its tag and not again once on the TV, the owner's own pictures are kept while it shows, a picture that fails its checksum or download is not kept and leaves the choice as it was, and an older install's four example pictures become the landscape set while other uploads become the owner's own. The dashboard check chooses **Your own**, then Morning and uploads to it, preparing a PNG as JPEG, shows the pending upload in a second tab and the picture once done, drops an image on Evening, removes Morning alone and then all of them.
+`test-home-wallpaper-upload.js` exercises the real HTTP boundary: rejected and interrupted uploads preserve the previous image, concurrent uploads are refused, the lock is released after an abort, an uploaded JPEG survives reinitialisation and is served with its image type, and one time of day's picture is removed alone, an unknown one refused. With the download stubbed, a chosen set is fetched from its tag and not again once on the TV, the owner's own pictures are kept while it shows, a picture that fails its checksum or download is not kept and leaves the choice as it was, and an older install's four example pictures become the landscape set while other uploads become the owner's own. The dashboard check chooses **Your own**, then Morning and uploads to it, preparing a PNG as JPEG, shows the pending upload in a second tab and the picture once done, drops an image on Evening, removes Morning alone and then all of them. The same test adds pictures to the shuffled collection, which the first chooses, each under a name made on the TV and served by it, an id that is a path refused; it fills the collection to its limit, has the next upload refused, and removes one picture and then all of them; `test-home.js` checks the interval's default and that only the offered ones are kept. A second dashboard check, `visitHomeShuffle`, chooses **Your own, shuffled**, uploads three images chosen at once one after another, saves an interval, removes one picture and then the rest, and on the view, with its clock moved on a minute at a time, sees each of four pictures once in four minutes.
 
 `test-homescreen-webos10.js` checks webOS 10's Home screen layout over a stand-in folder: the banner taking the height of the rows hidden, nothing changed before the experimental switch is on, the layout put back after a restart of the TV, the banner text hidden by a copy of LG's language files with the two strings blank and LG's left alone, a black or uploaded banner picture in each size folder, an upload cropped for each shape the banner takes with the one for its shape shown and the others kept until a part shown or hidden needs them, a bad upload refused with the picture before kept, and putting LG's Home screen back forgetting the choices and the upload.
 
@@ -449,9 +455,25 @@ putting a channel taken out back at its number, a removed playlist's
 folder deleted, and a channel whose variant playlist names FairPlay found to
 be protected once checked, marked in the lineup and given no play link,
 while one with a plain AES-128 key is not. It also checks a channel's saved
-HLS or MPEG-TS choice across a restart and stream event logging without URLs.
+HLS or MPEG-TS choice across a restart, stream event logging without URLs,
+and that pausing live TV is off by default, kept across a restart, and
+never records a preview, an HLS channel or without a USB stick.
 It is skipped where there is no curl. `test-iptv-drm.js` checks which HLS keys the TV's player cannot use,
 and the resolving of a master playlist's first variant.
+
+`test-iptv-timeshift.js` runs the recording for pausing live TV: the real
+worker records a local provider's MPEG-TS packets through curl into a folder
+standing in for a USB stick, with 20-packet chunks and a 5-chunk buffer, and
+the test reads it back as Home's player would. It checks a writable stick is
+found, the local URL carries a token and never the provider's, the provider
+is asked with a player's User-Agent, another token gets a 404, every packet
+arrives in order, a reconnect and a paused player go on from their place,
+the buffer keeps its size, back to live starts at the live point, a rewind
+past what is kept starts at the oldest packet, another
+channel and an expired lease end the recording and empty the folder, and a
+provider's refusal gives a 502 and direct play for that channel after, and
+curl aborting before exec is started again. It also checks Home's clock for
+a pause, with its unit (min or h). It is skipped where there is no curl.
 
 `test-iptv-worker.js` runs real playlist workers against a local provider with
 a shell that sends itself SIGABRT before executing curl. It checks that an

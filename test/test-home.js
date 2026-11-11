@@ -94,7 +94,7 @@ function freshTv() {
   fs.writeFileSync(path.join(layoutDir, 'home_layoutShelfView.xml'), CUSTOM_LAYOUT);
   fs.mkdirSync(checkpointDir);
   fs.mkdirSync(path.join(checkpointDir, LG_HOME));
-  tv = { settings: copy(ORIGINAL), events: [], preload: [], launched: [], launches: [], samType: 'native', samCategory: null, samRefuses: false,
+  tv = { settings: copy(ORIGINAL), events: [], order: [], preload: [], launched: [], launches: [], samType: 'native', samCategory: null, samRefuses: false,
          oldAppInstalled: false, mountFails: false };
   lgRunning(true);
   wamRunning(true);
@@ -188,6 +188,7 @@ function luna(uri, p, cb) {
     }
     else if (!tv.oldAppInstalled) r = { returnValue: false, errorText: 'Invalid appId specified' };
   } else if (uri === 'com.palm.webappmanager/killApp') {
+    tv.order.push('kill ' + p.appId);
     if (p.appId === OLD_APP) {
       tv.events.push('close old app');
       tv.oldAppRunning = !!tv.oldAppStuck;
@@ -199,6 +200,7 @@ function luna(uri, p, cb) {
   } else if (uri === 'com.webos.applicationManager/closeByAppId') {
     tv.events.push('close ' + p.id);
   } else if (uri === 'com.webos.applicationManager/launch') {
+    tv.order.push('launch ' + p.id);
     tv.launched.push(p.id);
     tv.launches.push(copy(p));
     if (tv.launchFails) r.returnValue = false;
@@ -632,10 +634,11 @@ step('the TV\'s tuner is the first tile in the Inputs row, on the channel it was
     home.open({ kind: 'dev', id: 'tv' }, function (r) {
       assert.ok(r.ok);
       assert.deepEqual(tv.launches, [{ id: 'com.webos.app.livetv' }]);
-      home.setLayout({ order: { dev: ['hdmi1', 'tv'] }, previewAlways: true, previewInTile: true }, function (r2) {
+      home.setLayout({ order: { dev: ['hdmi1', 'tv'] }, previewAlways: true, previewInTile: true, previewSound: true }, function (r2) {
         assert.ok(r2.ok);
         assert.strictEqual(r2.layout.previewAlways, true, 'the live preview can be kept on');
         assert.strictEqual(r2.layout.previewInTile, true, 'and shown in its tile');
+        assert.strictEqual(r2.layout.previewSound, true, 'and given its sound');
         home.catalogue(function (c2) {
           assert.deepEqual(c2.order.dev.slice(0, 2), ['hdmi1', 'tv'], 'and once placed, it stays where it was put');
           done();
@@ -664,6 +667,19 @@ step('an animated background is off unless chosen, and its colours follow the pa
   });
 });
 
+step('shuffled pictures change every ten minutes unless another of the offered intervals is chosen', function (done) {
+  assert.strictEqual(home.normalise({}).wallShuffleMinutes, 10);
+  assert.strictEqual(home.normalise({ wallShuffleMinutes: 30 }).wallShuffleMinutes, 30);
+  [0, 7, '5', -1, 1e9].forEach(function (m) { assert.strictEqual(home.normalise({ wallShuffleMinutes: m }).wallShuffleMinutes, 10, String(m)); });
+  start(null);
+  home.setLayout({ wallShuffleMinutes: 1 }, function (r) {
+    assert.ok(r.ok);
+    assert.strictEqual(r.layout.wallShuffleMinutes, 1);
+    assert.deepEqual(r.layout.shuffleMinutes, [1, 5, 10, 15, 30, 60], 'the choices go with the layout');
+    done();
+  });
+});
+
 step('a TV with no channels tuned has no tuner tile, and the tile will not open', function (done) {
   start(null);
   home.catalogue(function (c) {
@@ -672,6 +688,8 @@ step('a TV with no channels tuned has no tuner tile, and the tile will not open'
     assert.strictEqual(home.normalise({}).previewAlways, false, 'the live preview is kept on only once switched on');
     assert.strictEqual(home.normalise({}).previewInTile, false, 'and beside the clock unless put in the tile');
     assert.strictEqual(home.normalise({ previewAlways: true, previewInTile: 'yes' }).previewInTile, false);
+    assert.strictEqual(home.normalise({}).previewSound, false, 'and silent unless its sound is switched on');
+    assert.strictEqual(home.normalise({ previewSound: 'yes' }).previewSound, false);
     home.open({ kind: 'dev', id: 'tv' }, function (r) {
       assert.strictEqual(r.ok, false);
       assert.deepEqual(tv.launches, []);
@@ -958,6 +976,96 @@ step('woken from Active Standby with auto launch held off, Glasshouse Home opens
         home.disable(function () { done(); });
       });
     });
+    });
+  });
+});
+
+step('a wake on webOS 5 to 10 closes the resident Home page before opening it', function (done) {
+  var versions = ['5.6.2', '9.2.2', '10.3.1'];
+  (function run() {
+    if (!versions.length) return done();
+    var version = versions.shift();
+    start(null, { webosVersion: version, allowExperimental: function () { return true; } });
+    tv.settings.homeAutoLaunch = 'on';
+    tv.settings.quickStartMode = 'off';
+    home.enable(function (r) {
+      assert.ok(r.ok, r.error);
+      foreground('com.webos.app.hdmi4');
+      powerState('Active');
+      powerState('Active Standby');
+      wait(20, function () {
+        tv.order = [];
+        powerState('Active');
+        wait(1700, function () {
+          assert.deepEqual(tv.order, ['kill ' + LG_HOME, 'launch ' + LG_HOME], version);
+          run();
+        });
+      });
+    });
+  })();
+});
+
+step('a wake on webOS 4 or 11 opens Home without closing the page first', function (done) {
+  // webOS 4's standalone app is already on; installing it is another test.
+  var cases = [
+    { version: '4.4.3', id: OLD_APP, enabled: true },
+    { version: '11.2.0', id: LG_HOME, enabled: false }
+  ];
+  (function run() {
+    if (!cases.length) return done();
+    var c = cases.shift();
+    start(c.enabled ? { enabled: true } : null, { webosVersion: c.version, allowExperimental: function () { return true; } });
+    tv.settings.homeAutoLaunch = 'on';
+    tv.settings.quickStartMode = 'off';
+    function wake() {
+      foreground('com.webos.app.hdmi4');
+      powerState('Active');
+      powerState('Active Standby');
+      wait(20, function () {
+        tv.order = [];
+        powerState('Active');
+        wait(1700, function () {
+          assert.deepEqual(tv.order, ['launch ' + c.id], c.version);
+          run();
+        });
+      });
+    }
+    if (c.enabled) return wake();
+    home.enable(function (r) {
+      assert.ok(r.ok, r.error);
+      wake();
+    });
+  })();
+});
+
+step('a wake cancelled while Home is closing does not open it', function (done) {
+  var arm = false;
+  start(null, { luna: function (uri, payload, cb) {
+    luna(uri, payload, function (r) {
+      if (arm && uri === 'com.palm.webappmanager/killApp') {
+        arm = false;
+        powerState('Active Standby');
+      }
+      cb(r);
+    });
+  } });
+  tv.settings.homeAutoLaunch = 'on';
+  tv.settings.quickStartMode = 'off';
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    foreground('com.webos.app.hdmi4');
+    powerState('Active');
+    powerState('Active Standby');
+    wait(20, function () {
+      tv.order = [];
+      tv.launched = [];
+      arm = true;
+      powerState('Active');
+      wait(1700, function () {
+        assert.deepEqual(tv.order, ['kill ' + LG_HOME], 'closed, and not opened after standby');
+        assert.deepEqual(tv.launched, []);
+        home.disable(function () { done(); });
+      });
     });
   });
 });

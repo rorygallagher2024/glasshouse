@@ -33,9 +33,17 @@ function Timer(fn, args, ms, every) {
   this.every = every ? Math.max(1, ms) : 0;
   this.at = now + Math.max(every ? 1 : 0, ms);
   this.seq = ++seq;
+  this.refed = true;
 }
-Timer.prototype.ref = function () { return this; };
-Timer.prototype.unref = function () { return this; };
+Timer.prototype.ref = function () { this.refed = true; pump(); return this; };
+Timer.prototype.unref = function () { this.refed = false; return this; };
+
+function hasRefed() {
+  for (var i = 0; i < timers.length; i++) {
+    if (timers[i].refed) return true;
+  }
+  return false;
+}
 
 function add(fn, ms, args, every) {
   var t = new Timer(fn, args, Math.max(0, Number(ms) || 0), every);
@@ -61,14 +69,17 @@ function earliest() {
 // One timer per turn of the real event loop, after its ticks and immediates.
 function pump() {
   if (pumping) return;
+  if (!hasRefed()) return;
   pumping = true;
   real.setImmediate(function fire() {
+    if (!hasRefed()) { pumping = false; return; }
     var t = earliest();
     if (!t) { pumping = false; return; }
     if (t.at > now) now = t.at;
     if (t.every) { t.at = now + t.every; t.seq = ++seq; } else remove(t);
     t.fn.apply(null, t.args);
-    real.setImmediate(fire);
+    if (hasRefed()) real.setImmediate(fire);
+    else pumping = false;
   });
 }
 

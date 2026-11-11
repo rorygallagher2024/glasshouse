@@ -615,7 +615,7 @@ button.pill.busy:not([style*="--p"]){
   animation:btnPulse 1.2s ease-in-out infinite;
 }
 .dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,auto);
-      gap:8px;max-width:260px;margin:0 auto 14px}
+      gap:8px;max-width:260px;margin:0 auto 26px}
 /* Its arrows stay where they point in a page laid out right to left. */
 [dir=rtl] .dpad{direction:ltr}
 /* The arrows are glyphs, not words: the button voice everywhere else is
@@ -710,10 +710,8 @@ button.key-hit{background:var(--w10)}
 /* The long lists stay one column - a consent row is a sentence, not a tile -
    but capped so the pill stays near what it describes on a wide screen. */
 .priv.panel{max-width:1180px}
-/* One list that scrolls, a row per screen saver, so more fit without the tab
-   growing: the name, and what it shows under it. */
+/* A row per screen saver: the name, and what it shows under it. */
 .ss-list{position:relative;display:flex;flex-direction:column;margin-top:22px;max-width:760px;
-         max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain;
          border:1px solid var(--w12);border-radius:3px}
 /* A row is the control, not a container with a button in it: the whole thing
    is the click target, so there is nothing to hunt for. */
@@ -741,11 +739,12 @@ button.key-hit{background:var(--w10)}
 .ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
 /* The choice on the left, and what to do with it - brightness, starting it,
-   the firmware note - beside it on a wide screen rather than below the list. */
+   the firmware note - beside it on a wide screen rather than below the list.
+   Beside them, the list scrolls within the window so the controls stay in view. */
 @media(min-width:1020px){
   .ss-split{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);gap:clamp(36px,4vw,56px);
             align-items:start}
-  .ss-split .ss-list{max-width:none}
+  .ss-split .ss-list{max-width:none;max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain}
   .ss-side{margin-top:22px;display:flex;flex-direction:column;gap:22px}
   #sspane .ss-side>*{margin-top:0}
 }
@@ -770,6 +769,21 @@ button.key-hit{background:var(--w10)}
 .ss-pick-opt{padding:8px 14px 8px 24px;font-size:14px;color:var(--w90);cursor:pointer}
 .ss-pick-opt:hover,.ss-pick-opt.act{background:rgba(var(--fg),.07);color:var(--w100)}
 .ss-pick-opt[aria-selected="true"]{color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
+.ss-pool-actions{display:flex;gap:8px;margin-bottom:8px;max-width:340px}
+.ss-pool-btn{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;min-height:0;
+  color:var(--w60);border:1px solid var(--w12);border-radius:2px;background:transparent;cursor:pointer}
+.ss-pool-btn:hover:not([disabled]){color:var(--w100);background:rgba(var(--fg),.04)}
+.ss-pool-btn[disabled]{opacity:.45;cursor:default}
+.ss-pool-box{max-height:260px;overflow-y:auto;border:1px solid var(--w12);border-radius:2px;padding:4px;
+  overscroll-behavior:contain;max-width:340px}
+.ss-pool-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:2px;
+  font-size:13.5px;color:var(--w90);cursor:pointer;user-select:none;transition:background .12s}
+.ss-pool-item:hover{background:rgba(var(--fg),.04)}
+.ss-pool-item.dis{cursor:default;opacity:.45}
+.ss-pool-item.dis:hover{background:transparent}
+.ss-pool-item input[type="checkbox"]{width:16px;height:16px;margin:0;cursor:pointer;flex-shrink:0;accent-color:var(--green)}
+.ss-pool-item.dis input[type="checkbox"]{cursor:default}
+.ss-pool-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .upd{max-width:760px;margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
@@ -1736,6 +1750,11 @@ button.wall-screen:disabled{opacity:1;cursor:default}
 .wall-actions{display:flex;gap:14px;margin-top:4px;min-height:18px}
 button.wall-link{min-height:0;padding:0;border:0;background:none;font-size:12px;letter-spacing:.02em;text-transform:none;color:var(--w60)}
 button.wall-link:hover:not(:disabled){color:var(--w100);text-decoration:underline;text-underline-offset:3px}
+/* The shuffled collection: how often it changes, then its pictures after a card to add more. */
+.shuffle-every{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0 18px;font-size:13px;color:var(--w80)}
+.wall-count{font-size:12px;color:var(--w60);font-variant-numeric:tabular-nums}
+/* Four picture choices, the last of them a longer name. */
+#home-wall-choice{max-width:760px}
 .wall-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;margin-top:24px}
 .wall-foot .sub{max-width:64ch;margin:0}
 .wall-foot-btns{display:flex;gap:10px;flex-wrap:wrap}

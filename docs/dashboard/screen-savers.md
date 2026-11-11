@@ -1,12 +1,12 @@
 # Screen savers
 
-The **Screensaver** tab, `/?tab=screensaver`, provides fifteen alternatives to LG's default screen saver, alongside support for screen savers added on the TV or bundled with homebrew applications.
+The **Screensaver** tab, `/?tab=screensaver`, provides fifteen alternatives to LG's default screen saver, alongside a **Random** rotation mode, support for screen savers added on the TV or bundled with homebrew applications.
 
 ![Screensaver tab: screen saver list with Starfield selected, Brightness toggles, Start screen saver, and Poweroff after](../screenshots/screensaver.png)
 
 *The Screensaver tab in the web dashboard.*
 
-Each mode can be shown from 5% to 100% brightness, designed with deep black backgrounds and continuously drifting or undulating elements to prevent OLED burn-in and image retention. Clocks and the time on Panel vitals automatically format in 12-hour or 24-hour time to match the TV's system settings.
+Each mode can be shown from 5% to 100% brightness, designed with deep black backgrounds and continuously drifting or undulating elements to prevent OLED burn-in and image retention. Clocks and the time on Panel vitals automatically format in 12-hour or 24-hour time to match the TV's system settings. On a wide screen, the screen saver list sits beside the controls and scrolls within its own box so the controls stay in view; on narrower screens and phones, it flows down the page.
 
 A firmware update restores the LG default.
 
@@ -15,6 +15,7 @@ A firmware update restores the LG default.
 * **Switching while one is showing:** picking another while a screen saver is on the TV closes it first, as Back on the remote would, and starts the new one a few seconds after the switch. Changing a screen saver under one that is showing left some TVs refusing every screen saver until restarted, or restarted them. Where a TV is stuck that way anyway, **Start screen saver** says so.
 * **Brightness:** A slider from 5% to 100% in 5% steps, set when it is let go. 100% and 65% are what were **Bright** and **Dim**, each screen saver drawn as designed for them; every other step lays black over the nearer one above. An installed app's screen saver has its own settings instead. On the TV app, OK on **Brightness** gives a bar that Left and Right move, sent with OK.
 * **Options:** For a screen saver with options to pick from (its `saver.json` lists them as `choices`), a list under Brightness picks the one it shows: Clock's **Show**, or **Animation** for one with several animations. It stays picked when the brightness changes.
+* **Random rotation:** Picking **Random** selects a different custom screen saver each time the screen saver appears on the TV. When active, the card shows which screen saver is up next, and an **Included in rotation** section lets individual screen savers be checked or unchecked from the rotation pool (with quick **Select all** and **Deselect all** buttons). Dismissing the active screen saver automatically rotates and stages the next selection in the background so it launches immediately when the TV next idles.
 * **Start screen saver:** Immediately requests the screen saver on the TV. On certain OLED TVs, including a G3 on webOS 9.2.2, LG's panel care holds the idle screen saver back for 30 minutes after key presses or app changes while dimming static areas itself. Glasshouse lifts that hold when an idle screen saver is requested or the button is pressed, and restores it once dismissed. An app that still refuses it, such as RetroArch played with a gamepad, is keeping the screen saver away itself, and is left alone until another app is in front or the TV turns off. Where the TV still refuses, as it does with LG's own Screen Saver setting off, which some LCD TVs have by default, the dashboard opens the screen saver itself, unless something is playing full screen or playback cannot be checked. Pressing any remote key, including Home or the coloured buttons, dismisses the screen saver.
 * **Poweroff after:** Automatically switches the TV into standby once the screen saver has been active for a configured duration, from 1 to 1440 minutes (blank or 0 disables it). The timer resets if the screen saver is dismissed. This requires power actions to be enabled (`allowPower`) and is stored in `config.json` as `screensaverPowerOffMinutes`.
 

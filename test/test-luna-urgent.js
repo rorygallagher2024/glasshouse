@@ -95,6 +95,7 @@ function retryStaysUrgent() {
         assert.deepEqual(started, ['n5', 'u4', 'n6', 'u4', 'n7']);
         console.log('  ✓ an urgent call run again stays urgent');
         console.log('ALL test-luna-urgent.js assertions passed!\n');
+        process.exit(0);
       });
     });
   });

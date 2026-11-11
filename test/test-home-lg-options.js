@@ -42,7 +42,7 @@ routes.init({ config: { allowControl: true }, home: home, apps: apps, homeScreen
 
 var server = http.createServer(routes.handleRequest), port;
 function get(url, cb) {
-  http.get({ hostname: '127.0.0.1', port: port, path: url }, function (res) {
+  http.get({ hostname: '127.0.0.1', port: port, path: url, agent: false }, function (res) {
     var body = '';
     res.on('data', function (d) { body += d; });
     res.on('end', function () { cb(JSON.parse(body)); });
@@ -50,7 +50,7 @@ function get(url, cb) {
 }
 
 function post(url, body, cb) {
-  var req = http.request({ hostname: '127.0.0.1', port: port, path: url, method: 'POST',
+  var req = http.request({ hostname: '127.0.0.1', port: port, path: url, method: 'POST', agent: false,
     headers: { 'Content-Type': 'application/json' } }, function (res) {
     var text = '';
     res.on('data', function (d) { text += d; });
@@ -92,6 +92,7 @@ server.listen(0, '127.0.0.1', function () {
               console.log('  ✓ under Glasshouse Home tile hiding is neither shown nor switched on');
               server.close();
               console.log('ALL test-home-lg-options.js assertions passed!');
+              process.exit(0);
             });
           });
         });

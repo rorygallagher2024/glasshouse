@@ -380,6 +380,7 @@ steps.push(function () {
     assert.strictEqual(rb.levelFrom(null), null);
     console.log('  ✓ the remote is the paired LG one, and only a byte from 0 to 100 is a level');
     console.log('test-remotebattery.js passed');
+    process.exit(0);
     return;
   }
   steps[i]();

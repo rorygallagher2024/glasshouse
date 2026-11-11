@@ -241,20 +241,25 @@ console.log('Running test-ha.js ...');
     { id: 'soundMode', type: 'choice', value: 'standard',
       choices: [{ value: 'standard', label: 'Standard' }, { value: 'movie', label: 'Cinema' }] },
     { id: 'audioBalance', type: 'number', value: 0, min: -50, max: 50 },
-    { id: 'btSpeakerMode', type: 'switch', on: true }
+    { id: 'btSpeakerMode', type: 'switch', on: true },
+    { id: 'eyeComfortMode', type: 'switch', on: false }
   ] });
   var by = {};
   ents.forEach(function (e) { by[e.id] = e; });
-  assert.ok(by.sound_mode && by.balance && by.bluetooth_speaker_mode);
+  assert.ok(by.sound_mode && by.balance && by.bluetooth_speaker_mode && by.reduce_blue_light);
   assert.strictEqual(by.game_genre, undefined, 'a setting the TV lacks is not published');
   assert.deepEqual(by.sound_mode.payload.options, ['Standard', 'Cinema']);
   assert.strictEqual(by.sound_mode.payload.command_topic, 'test/tv/command/lgs/soundMode');
   assert.strictEqual(by.sound_mode.payload.enabled_by_default, undefined);
+  assert.strictEqual(by.reduce_blue_light.payload.enabled_by_default, undefined);
+  assert.strictEqual(by.reduce_blue_light.payload.command_topic, 'test/tv/command/lgs/eyeComfortMode');
+  assert.strictEqual(by.reduce_blue_light.payload.icon, 'mdi:eye-outline');
   assert.strictEqual(by.balance.payload.enabled_by_default, false);
   assert.strictEqual(by.balance.payload.entity_category, 'config');
   assert.strictEqual(by.balance.payload.min, -50);
   // A retained message from before the settings were published has no lgs.
   assert.ok(by.bluetooth_speaker_mode.payload.value_template.indexOf("(value_json.get('lgs') or {})") !== -1);
+  assert.ok(by.reduce_blue_light.payload.value_template.indexOf("(value_json.get('lgs') or {})") !== -1);
   var none = ha.buildEntities({ pfx: 'test/tv' }).filter(function (e) { return e.id === 'sound_mode'; });
   assert.strictEqual(none.length, 0);
   console.log('  ✓ LG settings become entities only where the TV has them');
