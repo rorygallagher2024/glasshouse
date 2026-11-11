@@ -208,7 +208,17 @@ function packet(raw, kind) {
  */
 function sourceHdr(status, pkt) {
   if (/Dolby HDR Info\[1\]/i.test(status)) return 'dolby_vision';
-  if (!pkt) return null;
+  var dolbyRealtek = status.match(/^\s*dolby_hdr_type\s*:\s*(\d+)/m);
+  if (dolbyRealtek && dolbyRealtek[1] !== '0') return 'dolby_vision';
+  if (!pkt) {
+    if (!/===== HDMI STATUS =====/.test(status) && !/^\s*phy_lock_status\s*:/m.test(status)) return null;
+    var drmLen = status.match(/^\s*drm_length\s*:\s*(\d+)/m);
+    if (!drmLen || parseInt(drmLen[1], 10) <= 0) return 'sdr';
+    var eotfMatch = status.match(/^\s*drm_eotf_type\s*:\s*(\d+)/m);
+    if (!eotfMatch) return 'sdr';
+    var realtekEotf = names.signalEotf(parseInt(eotfMatch[1], 10));
+    return realtekEotf && realtekEotf.label === 'pq' ? 'hdr10' : realtekEotf && realtekEotf.label === 'hlg' ? 'hlg' : 'sdr';
+  }
   var drm = packet(pkt, 'DRM');
   if (!drm || drm[0] !== 0x87 || drm.length < 5) return 'sdr';
   var eotf = names.signalEotf(drm[4]);
@@ -216,12 +226,18 @@ function sourceHdr(status, pkt) {
 }
 
 /*
- * cvi_vfreq is the rate in hundredths of a hertz. Sig's own is rounded down:
- * a G3 read 23 there for a source at 24.00 Hz (VIC 93).
+ * cvi_vfreq (and Realtek's link_frame_rate_x100_hz) gives the rate in hundredths
+ * of a hertz. Sig's own is rounded down: a G3 read 23 there for a source at
+ * 24.00 Hz (VIC 93).
  */
 function refreshHz(status, fallback) {
-  var m = status.match(/cvi_vfreq\[(\d+)\]/i);
+  var m = status.match(/cvi_vfreq\[(\d+)\]/i) ||
+    status.match(/^\s*link_frame_rate_x100_hz\s*:\s*(\d+)/m);
   var hz = m ? parseInt(m[1], 10) / 100 : 0;
+  if (!(hz > 0)) {
+    var vf = status.match(/^\s*timing_v_freq\s*:\s*(\d+)/m);
+    hz = vf ? parseInt(vf[1], 10) / 10 : 0;
+  }
   return hz > 0 ? Math.round(hz * 100) / 100 : fallback;
 }
 
@@ -231,22 +247,30 @@ function hdmiSignal(port, cb) {
     if (typeof receiver !== 'number') return cb(null, false);
     var dir = '/proc/lg/hdmi20/port' + receiver + '/';
     var status = readFile(dir + 'status');
-    // Realtek and other boards without /proc/lg/hdmi20 expose no receiver file
-    // here: tell callers the signal state is unknown rather than absent.
+    var realtek = false;
+    if (status === null) {
+      status = readFile('/proc/lgtv-driver/hdmi_status/hdmi.p' + receiver);
+      realtek = status !== null;
+    }
+    // Boards without either receiver file expose no signal state: tell callers
+    // it is unknown rather than absent.
     if (status === null) return cb(null, false);
     var byReceiver = [];
     byReceiver[receiver] = status;
     var found = telemetry.getHdmiSignal(port, map, byReceiver);
     if (!found || !found.timing) return cb(null, true);
-    // 8-bit is padded: DeepColorMode[ 8BIT].
-    var depth = status.match(/DeepColorMode\[\s*(\d+)BIT\]/i);
+    // 8-bit is padded on /proc/lg/hdmi20: DeepColorMode[ 8BIT].
+    var depth = realtek
+      ? status.match(/^\s*link_color_depth\s*:\s*(\d+)/m)
+      : status.match(/DeepColorMode\[\s*(\d+)BIT\]/i);
+    var bits = depth ? parseInt(depth[1], 10) : null;
     cb({
       width: found.timing.width,
       height: found.timing.height,
       hz: refreshHz(status, found.timing.refresh_hz),
       chroma: found.diag ? found.diag.chroma : null,
-      bits: depth ? parseInt(depth[1], 10) : null,
-      hdr: sourceHdr(status, readFile(dir + 'pkt')),
+      bits: bits > 0 ? bits : null,
+      hdr: sourceHdr(status, realtek ? null : readFile(dir + 'pkt')),
       vrr: found.diag ? found.diag.vrr === true : false,
       allm: found.diag ? found.diag.allm === true : false
     }, true);

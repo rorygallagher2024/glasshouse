@@ -238,4 +238,61 @@ setUp({}, null, { status: { video: [{ sink: 'MAIN', connected: true, contentType
 homePicture.picture('channel', null, function (r) { assert.equal(r.signal, null, 'an app\'s video is not a channel'); });
 console.log('  ✓ channel format, HDR context and the matching picture mode through the public picture read');
 
+var rtkActive = [
+  '===== HDMI STATUS =====',
+  'hpd_state : 1',
+  'hwport:1',
+  'timing_v_freq:500',
+  'timing_active_w:3840',
+  'timing_active_h:2160',
+  'timing_scan_type:1',
+  'color_depth:0',
+  'allm_mode:0',
+  'dolby_hdr_type:0',
+  'drm_version:1',
+  'drm_length:26',
+  'drm_eotf_type:0',
+  'avi_pixel_encoding:1',
+  'avi_vic:96',
+  'phy_lock_status:1',
+  'link_hdmi_5v:1',
+  'link_frame_rate_x100_hz:5000',
+  'link_color_depth:8',
+  'pixel_clock_khz:594000'
+].join('\n');
+var rtkIdle = [
+  '===== HDMI STATUS =====',
+  'hpd_state : 1',
+  'hwport:2',
+  'phy_lock_status:0',
+  'link_hdmi_5v:0'
+].join('\n');
+setUp({
+  '/proc/lgtv-driver/hdmi_status/hdmi.p0': rtkActive,
+  '/proc/lgtv-driver/hdmi_status/hdmi.p2': rtkIdle
+});
+homePicture.picture('input', 4, function (r) {
+  assert.notStrictEqual(r.signalKnown, false);
+  assert.deepEqual(r.signal, {
+    width: 3840, height: 2160, hz: 50,
+    chroma: 'YCbCr 4:2:2', bits: 8, hdr: 'sdr', vrr: false, allm: false
+  });
+  assert.equal(r.mode.raw, 'cinema');
+});
+homePicture.signal(4, function (r) {
+  assert.deepEqual(r, { ok: true, port: 4, signal: true }, 'locked Realtek reports active signal');
+});
+homePicture.picture('input', 2, function (r) {
+  assert.strictEqual(r.signal, null);
+  assert.notStrictEqual(r.signalKnown, false);
+});
+homePicture.signal(2, function (r) {
+  assert.deepEqual(r, { ok: true, port: 2, signal: false }, 'unlocked Realtek with hpd_state:1 reports no signal');
+});
+assert.equal(homePicture.sourceHdr(rtkActive, null), 'sdr', 'Realtek SDR from drm_eotf_type:0');
+assert.equal(homePicture.sourceHdr(rtkActive.replace('drm_eotf_type:0', 'drm_eotf_type:2'), null), 'hdr10', 'Realtek HDR10 from drm_eotf_type:2');
+assert.equal(homePicture.sourceHdr(rtkActive.replace('drm_eotf_type:0', 'drm_eotf_type:3'), null), 'hlg', 'Realtek HLG from drm_eotf_type:3');
+assert.equal(homePicture.sourceHdr(rtkActive.replace('dolby_hdr_type:0', 'dolby_hdr_type:1'), null), 'dolby_vision', 'Realtek Dolby Vision from dolby_hdr_type');
+console.log('  ✓ Realtek hdmi_status signal, refresh rate, bit depth, and HDR metadata');
+
 console.log('ALL test-home-picture.js assertions passed!');
