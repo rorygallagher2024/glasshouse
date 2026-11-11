@@ -404,6 +404,62 @@ console.log('Running test-telemetry.js ...');
   });
 })();
 
+(function testHdmiEarcPort() {
+  telemetry.clearCache();
+  var arcEdidUri = 'com.webos.service.arccontroller/getARCEDIDInfo';
+  var origEdid = mockEnv.luna[arcEdidUri];
+  var origEim = mockEnv.luna['com.webos.service.eim/getAllInputStatus'];
+
+  // Default when arccontroller is not mocked / absent is port 2
+  telemetry.hdmiInputs(function (r) {
+    assert.strictEqual(r.earcPort, 2, 'defaults to port 2 when arccontroller is absent');
+    assert.strictEqual(r.inputs[0].earc, false, 'HDMI 1 is not eARC');
+    assert.strictEqual(r.inputs[1].earc, true, 'HDMI 2 is eARC by default');
+
+    // B4 reports arcHDMIPort: 3 from arccontroller
+    telemetry.clearCache();
+    mockEnv.luna[arcEdidUri] = { returnValue: true, arcHDMIPort: 3, eARC: true };
+    mockEnv.luna['com.webos.service.eim/getAllInputStatus'] = {
+      returnValue: true,
+      devices: [
+        { id: 'HDMI_1', port: 1, label: 'Streamer', activate: false },
+        { id: 'HDMI_2', port: 2, label: 'Blu-ray', activate: false },
+        { id: 'HDMI_3', port: 3, label: 'Sonos Soundbar', activate: true }
+      ]
+    };
+    telemetry.hdmiInputs(function (rB4) {
+      assert.strictEqual(rB4.earcPort, 3, 'B4 reports HDMI 3 as eARC port');
+      assert.strictEqual(rB4.inputs[0].earc, false, 'HDMI 1 is not eARC on B4');
+      assert.strictEqual(rB4.inputs[1].earc, false, 'HDMI 2 is not eARC on B4');
+      assert.strictEqual(rB4.inputs[2].earc, true, 'HDMI 3 is eARC on B4');
+
+      // Fallback: arccontroller absent/failed, but CEC audio receiver is detected on HDMI 2
+      telemetry.clearCache();
+      mockEnv.luna[arcEdidUri] = { returnValue: false };
+      mockEnv.luna['com.webos.service.eim/getAllInputStatus'] = {
+        returnValue: true,
+        arcDevice: true,
+        devices: [
+          { id: 'HDMI_1', port: 1, connected: true, hdmiPlugIn: true },
+          { id: 'HDMI_2', port: 2, connected: true, hdmiPlugIn: true, subList: [
+            { id: 'SIMPLINK', cecpDevType: 5, portId: 2, osdName: 'AV Receiver' }
+          ] }
+        ]
+      };
+      telemetry.hdmiInputs(function (rCec) {
+        assert.strictEqual(rCec.earcPort, 2, 'identified via detected CEC audio receiver');
+        assert.strictEqual(rCec.inputs[1].earc, true, 'HDMI 2 has eARC via CEC');
+
+        // Restore
+        telemetry.clearCache();
+        mockEnv.luna[arcEdidUri] = origEdid;
+        mockEnv.luna['com.webos.service.eim/getAllInputStatus'] = origEim;
+        console.log('  ✓ eARC port is dynamically detected from arccontroller, CEC or default');
+      });
+    });
+  });
+})();
+
 (function testHdmiSeenKept() {
   var file = '/var/lib/tvweb/hdmi_seen';
   telemetry.noteHdmiSeen({ port: 1, phy_mode: 'FRL 48 Gbps', chroma: null, allm: false, vrr: true });

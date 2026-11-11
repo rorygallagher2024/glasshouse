@@ -3204,3 +3204,15 @@ listen callback, as in "Children that abort before exec".
 A pause longer than a minute, which requests the player makes on resuming,
 and webOS 4 and 9 were not tried.
 
+## eARC port assignment across TV series (B4, webOS 10.3.2)
+
+Reported in #1336 from an OLED77B46LA, webOS 10.3.2 (firmware 33.31.75).
+While most LG OLEDs wire the eARC transceiver to HDMI 2 (B8, C9, CX, C1, C2,
+C3, G3, C4, G4), the B4 series places the physical eARC port on HDMI 3.
+
+`com.webos.service.arccontroller/getARCEDIDInfo` reports the hardware eARC port
+number in its `arcHDMIPort` field (`3` on the B4, `2` on the G3). On older
+firmware lacking that service (webOS 4), `com.webos.service.eim/getAllInputStatus`
+identifies a connected audio system (`cecpDevType: 5`) and its port when
+present, falling back to HDMI 2.
+
