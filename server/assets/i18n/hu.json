@@ -3100,6 +3100,19 @@
  "srv.saver.haUses": {"text": "{file}: az entities és a \"ha\" a uses listában összetartoznak.", "from": "{file}: entities and \"ha\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "A(z) {main} a(z) {placeholder} értéket használja, de a saver.json nem nevezi meg az entities alatt.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
  "ss.entities": {"text": "Home Assistant entitások", "from": "Home Assistant Entities"},
- "ss.entities.desc": {"text": "Az értékek közvetlenül a Home Assistantból töltődnek be a képernyővédő megjelenítése alatt.", "from": "Values are read directly from Home Assistant while this screen saver is showing."},
- "ss.haNotConfigured": {"text": "A Home Assistant API nincs konfigurálva. Állítsa be a címet és a hozzáférési tokent az MQTT fülön.", "from": "Home Assistant API is not configured. Set up the address and access token in the MQTT tab."}
+ "ss.entities.desc": {"text": "Válassza ki, mely Home Assistant entitásokat olvassa ez a képernyővédő. Hagyja üresen a mezőt az elrejtéshez.", "from": "Choose which Home Assistant entities this screen saver reads. Leave a slot blank to hide it."},
+ "ss.haNotConfigured": {"text": "A Home Assistant API nincs konfigurálva. Mentse el a címet és a hozzáférési tokent az MQTT fülön.", "from": "Home Assistant API is not configured. Save the address and access token in the MQTT tab."},
+ "ha.cleared": {"text": "Törölve.", "from": "Cleared."},
+ "ha.connectedUnsaved": {"text": "Csatlakozva: {msg} (az alkalmazáshoz kattintson a Mentésre)", "from": "Connected: {msg} (click Save to apply)"},
+ "ha.save": {"text": "Mentés", "from": "Save"},
+ "ha.savedConnected": {"text": "Mentve — Csatlakozva: {msg}", "from": "Saved — Connected: {msg}"},
+ "ha.savedStatus": {"text": "Beállítva.", "from": "Configured."},
+ "ha.savedWarn": {"text": "Mentve (teszt sikertelen: {err})", "from": "Saved (test failed: {err})"},
+ "ss.chooseEntity": {"text": "Entitás választása", "from": "Choose entity"},
+ "ss.clearEntity": {"text": "Törlés", "from": "Clear"},
+ "ss.entityHidden": {"text": "Rejtett", "from": "Hidden"},
+ "ss.loadingEntities": {"text": "Entitások betöltése...", "from": "Loading entities..."},
+ "ss.noEntitiesMatch": {"text": "Nincs egyező entitás", "from": "No matching entities"},
+ "ss.openMqtt": {"text": "MQTT beállítások megnyitása", "from": "Open MQTT settings"},
+ "ss.sensorSlot": {"text": "Szenzor {n}", "from": "Sensor {n}"}
 }

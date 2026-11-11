@@ -304,22 +304,39 @@ function validateSettings(j) {
   if (j && typeof j.iconServer === 'boolean') out.iconServer = j.iconServer;
 
   if (j && j.homeAssistant) {
-    var haObj = j.homeAssistant;
-    out.homeAssistant = {};
-    if (typeof haObj.url === 'string') {
-      var haUrl = trimmedString(haObj.url).replace(/\/+$/, '');
-      if (haUrl && !/^https?:\/\//i.test(haUrl)) {
-        e.push('Home Assistant URL must start with http:// or https://');
-      } else {
-        out.homeAssistant.url = haUrl;
-      }
-    }
-    if (typeof haObj.token === 'string') {
-      out.homeAssistant.token = trimmedString(haObj.token);
-    }
+    var haRes = validateHaSettings(j.homeAssistant);
+    for (var hi = 0; hi < haRes.errors.length; hi++) e.push(haRes.errors[hi]);
+    out.homeAssistant = haRes.value;
   }
 
   return { errors: e, value: out };
+}
+
+function validateHaSettings(haObj) {
+  var errors = [];
+  var out = {};
+  if (!haObj || typeof haObj !== 'object') return { errors: ['homeAssistant must be an object'], value: out };
+  if (typeof haObj.url === 'string') {
+    var haUrl = trimmedString(haObj.url).replace(/\/+$/, '');
+    if (haUrl && !/^https?:\/\//i.test(haUrl)) {
+      errors.push('Home Assistant URL must start with http:// or https://');
+    } else {
+      out.url = haUrl;
+    }
+  }
+  if (typeof haObj.token === 'string') {
+    var haTok = trimmedString(haObj.token);
+    if (haTok || haObj.clearToken) out.token = haTok;
+  }
+  return { errors: errors, value: out };
+}
+
+function applyHaConfig(haPatch) {
+  if (!haPatch) return;
+  config.homeAssistant = config.homeAssistant || {};
+  if (haPatch.url !== undefined) config.homeAssistant.url = haPatch.url;
+  if (haPatch.token !== undefined) config.homeAssistant.token = haPatch.token;
+  if (haEntityModule) haEntityModule.update(config.homeAssistant);
 }
 
 function writeSettings(patch, cb) {
@@ -1627,7 +1644,7 @@ function handleRequest(req, res) {
   }
 
   if (pathname === '/api/ha/test' && req.method === 'POST') {
-    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
     if (!config.allowControl) {
       return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
     }
@@ -1638,6 +1655,49 @@ function handleRequest(req, res) {
       haEntityModule.test({ url: testUrl, token: testToken }, function (r) {
         send(res, r.ok ? 200 : 400, JSON.stringify(r));
       });
+    });
+  }
+
+  if (pathname === '/api/ha/save' && req.method === 'POST') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    if (!config.allowControl) {
+      return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    }
+    return readJsonBody(req, res, function (body) {
+      if (!haEntityModule) return send(res, 503, JSON.stringify({ ok: false, error: 'Home Assistant module not loaded' }));
+      var haSaved = validateHaSettings(body);
+      if (haSaved.errors.length) {
+        return send(res, 400, JSON.stringify({ ok: false, error: haSaved.errors.join('; ') }));
+      }
+      if (installBusyRefusal(res)) return;
+      writeSettings({ homeAssistant: haSaved.value }, function (err) {
+        if (err) {
+          return send(res, 500, JSON.stringify({ ok: false, error: 'could not write ' + configFilePath + ': ' + err.message }));
+        }
+        applyHaConfig(haSaved.value);
+        console.log('config: saved Home Assistant API settings to ' + configFilePath);
+        send(res, 200, JSON.stringify({
+          ok: true,
+          url: config.homeAssistant.url || '',
+          tokenSet: !!(config.homeAssistant.token),
+          configured: haEntityModule.configured()
+        }));
+      });
+    });
+  }
+
+  if (pathname === '/api/ha/entities' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorized' }));
+    if (!haEntityModule || !haEntityModule.configured()) {
+      return send(res, 200, JSON.stringify({ ok: true, configured: false, entities: [] }));
+    }
+    return haEntityModule.list(function (r) {
+      send(res, r.ok ? 200 : 502, JSON.stringify({
+        ok: !!r.ok,
+        configured: true,
+        entities: r.entities || [],
+        error: r.error
+      }));
     });
   }
 
@@ -2337,9 +2397,7 @@ function handleRequest(req, res) {
         if (err) {
           return send(res, 500, JSON.stringify({ ok: false, error: 'could not write ' + configFilePath + ': ' + err.message }));
         }
-        if (v.value.homeAssistant && haEntityModule) {
-          haEntityModule.update(v.value.homeAssistant);
-        }
+        applyHaConfig(v.value.homeAssistant);
         console.log('config: saved to ' + configFilePath + ', restarting to apply');
         send(res, 200, JSON.stringify({ ok: true, restarting: true }));
         restartSoon(250, 'settings');

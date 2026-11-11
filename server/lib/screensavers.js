@@ -361,7 +361,13 @@ function effectiveSaverEntities(e) {
   var out = {};
   for (var k in e.entities) {
     if (!Object.prototype.hasOwnProperty.call(e.entities, k)) continue;
-    out[k] = (overrides[k] && HA_ENTITY.test(overrides[k])) ? overrides[k] : e.entities[k];
+    if (Object.prototype.hasOwnProperty.call(overrides, k)) {
+      if (overrides[k] === '') out[k] = '';
+      else if (HA_ENTITY.test(overrides[k])) out[k] = overrides[k];
+      else out[k] = e.entities[k];
+    } else {
+      out[k] = e.entities[k];
+    }
   }
   return out;
 }
@@ -379,9 +385,13 @@ function setSaverEntities(saverId, newEntities, cb) {
   for (var k in newEntities) {
     if (!Object.prototype.hasOwnProperty.call(newEntities, k)) continue;
     if (!saver.entities[k]) continue;
+    if (newEntities[k] === null) {
+      delete stored[saverId][k];
+      continue;
+    }
     var eid = String(newEntities[k] || '').trim();
     if (eid === '') {
-      delete stored[saverId][k];
+      stored[saverId][k] = '';
     } else if (!HA_ENTITY.test(eid)) {
       return cb({ ok: false, error: 'not a valid Home Assistant entity id: ' + eid });
     } else {
@@ -393,6 +403,7 @@ function setSaverEntities(saverId, newEntities, cb) {
 
   if (screensaverMode() === saverId) {
     restageScreensaver();
+    restartScreensaverApp(function () {});
   }
   cb({ ok: true });
 }
@@ -741,7 +752,8 @@ function screensaverList() {
       // Home Assistant entities declared by the saver, with effective overrides.
       entities: e.entities ? Object.keys(e.entities).map(function (k) {
         var lbl = k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
-        return { id: k, label: lbl, entity: (eff && eff[k]) || e.entities[k], def: e.entities[k] };
+        var curEnt = (eff && Object.prototype.hasOwnProperty.call(eff, k)) ? eff[k] : e.entities[k];
+        return { id: k, label: lbl, entity: curEnt, def: e.entities[k] };
       }) : undefined
     });
   }
@@ -852,9 +864,21 @@ function stageSaverFiles(e, level, choice) {
   var effEnts = effectiveSaverEntities(e);
   fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice, effEnts));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
-  stagedEntities = effEnts || null;
+  stagedEntities = activeSaverEntities(effEnts);
   if (e.choices) fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER), choice);
   else unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
+}
+
+function activeSaverEntities(effEnts) {
+  if (!effEnts) return null;
+  var out = null;
+  for (var k in effEnts) {
+    if (Object.prototype.hasOwnProperty.call(effEnts, k) && effEnts[k]) {
+      if (!out) out = {};
+      out[k] = effEnts[k];
+    }
+  }
+  return out;
 }
 
 /*
@@ -882,8 +906,10 @@ function fillSaverQml(e, qml, level, choice, effEnts) {
   if (effEnts) {
     for (var name in effEnts) {
       if (!Object.prototype.hasOwnProperty.call(effEnts, name)) continue;
-      qml = qml.replace(new RegExp('__TVWEB_HA_' + name + '__', 'g'),
-        'http://127.0.0.1:' + port + '/api/entity/' + effEnts[name] + (token ? '?k=' + encodeURIComponent(token) : ''));
+      var replacement = effEnts[name]
+        ? 'http://127.0.0.1:' + port + '/api/entity/' + effEnts[name] + (token ? '?k=' + encodeURIComponent(token) : '')
+        : '';
+      qml = qml.replace(new RegExp('__TVWEB_HA_' + name + '__', 'g'), replacement);
     }
   }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));

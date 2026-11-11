@@ -333,9 +333,18 @@ async function loadSettings(keepMsg) {
     if (haTokenInput) haTokenInput.value = '';
     const haTokenHint = q('cfg-ha-token-hint');
     if (haTokenHint) {
-      haTokenHint.textContent = ha.tokenSet
+      haTokenHint.textContent = cfgHaTokenSet
         ? t('ha.token.set', 'A token is set. Leave blank to keep it.')
         : t('ha.token.hint', 'From your Home Assistant profile → Long-Lived Access Tokens.');
+    }
+    const haSaveBtn = q('cfg-ha-save-btn');
+    if (haSaveBtn) haSaveBtn.disabled = !j.writable;
+    const haMsgEl = q('cfg-ha-msg');
+    if (haMsgEl && !keepMsg) {
+      haMsgEl.textContent = (cfgHaUrl && cfgHaTokenSet)
+        ? t('ha.savedStatus', 'Configured.')
+        : '';
+      haMsgEl.className = 'cfg-msg';
     }
 
     if (m.entities) cfgEntities = m.entities;
@@ -428,6 +437,71 @@ async function saveSettings() {
   }
 }
 
+async function saveHaSettings() {
+  const btn = q('cfg-ha-save-btn');
+  const msgEl = q('cfg-ha-msg');
+  if (!btn || !msgEl) return;
+  const url = q('cfg-ha-url') ? q('cfg-ha-url').value.trim() : '';
+  const token = q('cfg-ha-token') ? q('cfg-ha-token').value.trim() : '';
+  const payload = { url: url };
+  if (token !== '') payload.token = token;
+  else if (url === '') payload.clearToken = true;
+
+  btn.disabled = true;
+  msgEl.textContent = t('mqtt.saving', 'Saving...');
+  msgEl.className = 'cfg-msg';
+
+  try {
+    const r = await fetch(api('/api/ha/save'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const j = await r.json();
+    if (!j.ok) {
+      msgEl.textContent = j.error || t('mqtt.saveFailed', 'Save failed');
+      msgEl.className = 'cfg-msg bad';
+      return;
+    }
+    cfgHaUrl = j.url || '';
+    cfgHaTokenSet = !!j.tokenSet;
+    const tokenInput = q('cfg-ha-token');
+    if (tokenInput) tokenInput.value = '';
+    const tokenHint = q('cfg-ha-token-hint');
+    if (tokenHint) {
+      tokenHint.textContent = cfgHaTokenSet
+        ? t('ha.token.set', 'A token is set. Leave blank to keep it.')
+        : t('ha.token.hint', 'From your Home Assistant profile → Long-Lived Access Tokens.');
+    }
+    if (typeof resetHaEntitiesCache === 'function') resetHaEntitiesCache();
+    if (typeof loadScreensavers === 'function') loadScreensavers();
+
+    if (!j.url && !j.tokenSet) {
+      msgEl.textContent = t('ha.cleared', 'Cleared.');
+      msgEl.className = 'cfg-msg';
+      return;
+    }
+    const tr = await fetch(api('/api/ha/test'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const tj = await tr.json();
+    if (tj.ok) {
+      msgEl.textContent = t('ha.savedConnected', 'Saved — Connected: {msg}', { msg: tj.message || 'OK' });
+      msgEl.className = 'cfg-msg good';
+    } else {
+      msgEl.textContent = t('ha.savedWarn', 'Saved (test failed: {err})', { err: tj.error || '' });
+      msgEl.className = 'cfg-msg bad';
+    }
+  } catch (e) {
+    msgEl.textContent = e.message;
+    msgEl.className = 'cfg-msg bad';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 async function testHaConnection() {
   const btn = q('cfg-ha-test-btn');
   const msgEl = q('cfg-ha-msg');
@@ -447,7 +521,10 @@ async function testHaConnection() {
     });
     const j = await r.json();
     if (j.ok) {
-      msgEl.textContent = t('ha.connected', 'Connected: {msg}', { msg: j.message || 'OK' });
+      const unsaved = (url !== cfgHaUrl) || (token !== '');
+      msgEl.textContent = unsaved
+        ? t('ha.connectedUnsaved', 'Connected: {msg} (click Save to apply)', { msg: j.message || 'OK' })
+        : t('ha.connected', 'Connected: {msg}', { msg: j.message || 'OK' });
       msgEl.className = 'cfg-msg good';
     } else {
       msgEl.textContent = j.error || t('ha.testFailed', 'Connection failed');

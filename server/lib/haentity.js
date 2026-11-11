@@ -13,7 +13,9 @@ var https = require('https');
 var url = require('url');
 
 var TIMEOUT_MS = 5000;
+var LIST_TIMEOUT_MS = 8000;
 var MAX_BYTES = 65536;
+var MAX_LIST_BYTES = 4 * 1024 * 1024;
 
 var cfg = { url: '', token: '' };
 
@@ -28,6 +30,73 @@ function init(opts) {
 
 function configured() {
   return !!(/^https?:\/\//i.test(cfg.url) && cfg.token);
+}
+
+/**
+ * Performs a bounded GET request against Home Assistant's REST API and parses JSON.
+ */
+function requestHaJson(targetUrl, token, opts, cb) {
+  var maxBytes = (opts && opts.maxBytes) || MAX_BYTES;
+  var timeoutMs = (opts && opts.timeoutMs) || TIMEOUT_MS;
+  var label = (opts && opts.label) || 'Home Assistant';
+  var parsed = url.parse(targetUrl);
+  var lib = parsed.protocol === 'https:' ? https : http;
+  var answered = false;
+
+  function fail(error) {
+    if (answered) return;
+    answered = true;
+    cb({ ok: false, error: error });
+  }
+
+  var req = lib.request({
+    hostname: parsed.hostname,
+    port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+    path: parsed.path,
+    method: 'GET',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Accept': 'application/json'
+    }
+  }, function (res) {
+    var chunks = [];
+    var bytes = 0;
+    res.on('data', function (chunk) {
+      bytes += chunk.length;
+      if (bytes <= maxBytes) chunks.push(chunk);
+    });
+    res.on('end', function () {
+      if (answered) return;
+      if (res.statusCode !== 200) {
+        return fail(res.statusCode === 401
+          ? 'Home Assistant refused the token (401)'
+          : (res.statusCode === 404 && opts && opts.entityId)
+            ? 'no entity ' + opts.entityId + ' (404)'
+            : 'Home Assistant answered ' + res.statusCode + (opts && opts.entityId ? ' for ' + opts.entityId : ''));
+      }
+      if (bytes > maxBytes) return fail(label + ' answered more than ' + maxBytes + ' bytes');
+      var body;
+      try {
+        body = JSON.parse(chunks.join(''));
+      } catch (e) {
+        return fail(label + ' did not answer JSON');
+      }
+      answered = true;
+      cb({ ok: true, body: body });
+    });
+  });
+
+  req.setTimeout(timeoutMs, function () {
+    req.abort();
+    fail('Home Assistant did not answer within ' + timeoutMs + ' ms' + (opts && opts.entityId ? ' for ' + opts.entityId : ''));
+  });
+  req.on('error', function (e) {
+    var code = /** @type {any} */ (e);
+    fail((code && code.code === 'ECONNREFUSED')
+      ? 'Home Assistant refused the connection at ' + parsed.hostname
+      : 'could not reach Home Assistant: ' + (e && e.message ? e.message : String(e)));
+  });
+  req.end();
 }
 
 /*
@@ -47,72 +116,18 @@ function read(entityId, cb) {
     });
   }
 
-  var target = cfg.url + '/api/states/' + entityId;
-  var parsed = url.parse(target);
-  var lib = parsed.protocol === 'https:' ? https : http;
-  var answered = false;
-
-  function fail(error) {
-    if (answered) return;
-    answered = true;
-    cb({ ok: false, error: error });
-  }
-
-  var req = lib.request({
-    hostname: parsed.hostname,
-    port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
-    path: parsed.path,
-    method: 'GET',
-    headers: {
-      'Authorization': 'Bearer ' + cfg.token,
-      'Accept': 'application/json'
-    }
-  }, function (res) {
-    var chunks = [];
-    var bytes = 0;
-    res.on('data', function (chunk) {
-      bytes += chunk.length;
-      if (bytes <= MAX_BYTES) chunks.push(chunk);
-    });
-    res.on('end', function () {
-      if (answered) return;
-      if (res.statusCode !== 200) {
-        return fail(res.statusCode === 401
-          ? 'Home Assistant refused the token (401)'
-          : res.statusCode === 404
-            ? 'no entity ' + entityId + ' (404)'
-            : 'Home Assistant answered ' + res.statusCode + ' for ' + entityId);
-      }
-      if (bytes > MAX_BYTES) return fail(entityId + ' answered more than ' + MAX_BYTES + ' bytes');
-      var body;
-      try {
-        body = JSON.parse(chunks.join(''));
-      } catch (e) {
-        return fail(entityId + ' did not answer JSON');
-      }
-      if (!body || typeof body.state !== 'string') return fail(entityId + ' has no state');
-      answered = true;
-      cb({
-        ok: true,
-        entity: entityId,
-        state: body.state,
-        attributes: body.attributes && typeof body.attributes === 'object' ? body.attributes : {},
-        updated: typeof body.last_updated === 'string' ? body.last_updated : ''
-      });
+  requestHaJson(cfg.url + '/api/states/' + entityId, cfg.token, { maxBytes: MAX_BYTES, label: entityId, entityId: entityId }, function (r) {
+    if (!r.ok) return cb(r);
+    var body = r.body;
+    if (!body || typeof body.state !== 'string') return cb({ ok: false, error: entityId + ' has no state' });
+    cb({
+      ok: true,
+      entity: entityId,
+      state: body.state,
+      attributes: body.attributes && typeof body.attributes === 'object' ? body.attributes : {},
+      updated: typeof body.last_updated === 'string' ? body.last_updated : ''
     });
   });
-
-  req.setTimeout(TIMEOUT_MS, function () {
-    req.abort();
-    fail('Home Assistant did not answer within ' + TIMEOUT_MS + ' ms for ' + entityId);
-  });
-  req.on('error', function (e) {
-    var code = /** @type {any} */ (e);
-    fail((code && code.code === 'ECONNREFUSED')
-      ? 'Home Assistant refused the connection at ' + parsed.hostname
-      : 'could not reach Home Assistant: ' + (e && e.message ? e.message : String(e)));
-  });
-  req.end();
 }
 
 function update(ha) {
@@ -134,64 +149,44 @@ function test(opts, cb) {
     return cb({ ok: false, error: 'A Long-Lived Access Token is required' });
   }
 
-  var target = testUrl + '/api/';
-  var parsed = url.parse(target);
-  var lib = parsed.protocol === 'https:' ? https : http;
-  var answered = false;
+  requestHaJson(testUrl + '/api/', testToken, { maxBytes: MAX_BYTES, label: 'Home Assistant' }, function (r) {
+    if (!r.ok) return cb(r);
+    var body = r.body;
+    cb({ ok: true, message: (body && body.message) || 'Connected to Home Assistant' });
+  });
+}
 
-  function fail(error) {
-    if (answered) return;
-    answered = true;
-    cb({ ok: false, error: error });
+/**
+ * Fetches available entities (id, friendly name, unit) from Home Assistant without states.
+ */
+function list(cb) {
+  cb = cb || function () {};
+  if (!configured()) {
+    return cb({ ok: false, error: 'Home Assistant is not configured' });
   }
-
-  var req = lib.request({
-    hostname: parsed.hostname,
-    port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
-    path: parsed.path,
-    method: 'GET',
-    headers: {
-      'Authorization': 'Bearer ' + testToken,
-      'Accept': 'application/json'
+  requestHaJson(cfg.url + '/api/states', cfg.token, { maxBytes: MAX_LIST_BYTES, timeoutMs: LIST_TIMEOUT_MS, label: 'Home Assistant' }, function (r) {
+    if (!r.ok) return cb(r);
+    if (!Array.isArray(r.body)) return cb({ ok: false, error: 'Home Assistant did not return an entity list' });
+    var out = [];
+    for (var i = 0; i < r.body.length; i++) {
+      var item = r.body[i];
+      if (!item || typeof item.entity_id !== 'string') continue;
+      var attrs = item.attributes && typeof item.attributes === 'object' ? item.attributes : {};
+      out.push({
+        id: item.entity_id,
+        name: typeof attrs.friendly_name === 'string' ? attrs.friendly_name : '',
+        unit: typeof attrs.unit_of_measurement === 'string' ? attrs.unit_of_measurement : ''
+      });
     }
-  }, function (res) {
-    var chunks = [];
-    res.on('data', function (c) { chunks.push(c); });
-    res.on('end', function () {
-      if (answered) return;
-      if (res.statusCode === 401) {
-        return fail('Home Assistant refused the token (401)');
-      }
-      if (res.statusCode !== 200) {
-        return fail('Home Assistant answered HTTP ' + res.statusCode);
-      }
-      var body;
-      try {
-        body = JSON.parse(chunks.join(''));
-      } catch (e) {
-        return fail('Home Assistant did not answer JSON');
-      }
-      answered = true;
-      cb({ ok: true, message: (body && body.message) || 'Connected to Home Assistant' });
-    });
+    out.sort(function (a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
+    cb({ ok: true, entities: out });
   });
-
-  req.setTimeout(TIMEOUT_MS, function () {
-    req.abort();
-    fail('Connection timed out after ' + TIMEOUT_MS + ' ms');
-  });
-  req.on('error', function (e) {
-    var code = /** @type {any} */ (e);
-    fail((code && code.code === 'ECONNREFUSED')
-      ? 'Connection refused at ' + parsed.hostname
-      : 'Could not reach Home Assistant: ' + (e && e.message ? e.message : String(e)));
-  });
-  req.end();
 }
 
 module.exports = {
   init: init,
   read: read,
+  list: list,
   configured: configured,
   update: update,
   test: test

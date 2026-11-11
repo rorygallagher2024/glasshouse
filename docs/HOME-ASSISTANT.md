@@ -120,7 +120,7 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 
 A screen saver can draw values of its own from Home Assistant. It names the entities it wants in its `saver.json`, and Glasshouse gives it one address per name, served from this TV, with the token kept in `config.json`. The server answers only for the entities that screen saver declared, and only while it is the one showing, so a QML file on the TV cannot read anything it did not say it would. Built-in screen savers such as **Ambient** and custom screen savers added on the TV can use this, and their entity slots can be changed directly on the **Screensaver** tab without editing `saver.json`.
 
-To enable it, enter the Home Assistant instance address (`homeAssistant.url`) and a Long-Lived Access Token (`homeAssistant.token`) under **Home Assistant API** on the **MQTT** tab (or in `config.json`). Unlike the MQTT bridge, which talks to your MQTT broker, screen saver reads use Home Assistant's REST API directly. [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) has the manifest and QML format.
+To enable it, enter the Home Assistant instance address (`homeAssistant.url`) and a Long-Lived Access Token (`homeAssistant.token`) under **Home Assistant API** on the **MQTT** tab and click **Save** (which applies immediately without restarting the server, or set them in `config.json`). Unlike the MQTT bridge, which talks to your MQTT broker, screen saver reads use Home Assistant's REST API directly. [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) has the manifest and QML format.
 
 ---
 

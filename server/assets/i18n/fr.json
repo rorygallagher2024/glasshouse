@@ -3100,6 +3100,19 @@
  "srv.saver.haUses": {"text": "{file} : entities et \"ha\" dans uses vont ensemble.", "from": "{file}: entities and \"ha\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "{main} utilise {placeholder}, et saver.json ne mentionne pas cette entité sous entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
  "ss.entities": {"text": "Entités Home Assistant", "from": "Home Assistant Entities"},
- "ss.entities.desc": {"text": "Les valeurs sont lues directement depuis Home Assistant lorsque cet économiseur d'écran est affiché.", "from": "Values are read directly from Home Assistant while this screen saver is showing."},
- "ss.haNotConfigured": {"text": "L'API Home Assistant n'est pas configurée. Configurez l'adresse et le jeton d'accès dans l'onglet MQTT.", "from": "Home Assistant API is not configured. Set up the address and access token in the MQTT tab."}
+ "ss.entities.desc": {"text": "Choisissez quelles entités Home Assistant cet économiseur d'écran lit. Laissez un champ vide pour le masquer.", "from": "Choose which Home Assistant entities this screen saver reads. Leave a slot blank to hide it."},
+ "ss.haNotConfigured": {"text": "L'API Home Assistant n'est pas configurée. Enregistrez l'adresse et le jeton d'accès dans l'onglet MQTT.", "from": "Home Assistant API is not configured. Save the address and access token in the MQTT tab."},
+ "ha.cleared": {"text": "Effacé.", "from": "Cleared."},
+ "ha.connectedUnsaved": {"text": "Connecté : {msg} (cliquez sur Enregistrer pour appliquer)", "from": "Connected: {msg} (click Save to apply)"},
+ "ha.save": {"text": "Enregistrer", "from": "Save"},
+ "ha.savedConnected": {"text": "Enregistré — Connecté : {msg}", "from": "Saved — Connected: {msg}"},
+ "ha.savedStatus": {"text": "Configuré.", "from": "Configured."},
+ "ha.savedWarn": {"text": "Enregistré (échec du test : {err})", "from": "Saved (test failed: {err})"},
+ "ss.chooseEntity": {"text": "Choisir une entité", "from": "Choose entity"},
+ "ss.clearEntity": {"text": "Effacer", "from": "Clear"},
+ "ss.entityHidden": {"text": "Masqué", "from": "Hidden"},
+ "ss.loadingEntities": {"text": "Chargement des entités...", "from": "Loading entities..."},
+ "ss.noEntitiesMatch": {"text": "Aucune entité correspondante", "from": "No matching entities"},
+ "ss.openMqtt": {"text": "Ouvrir les paramètres MQTT", "from": "Open MQTT settings"},
+ "ss.sensorSlot": {"text": "Capteur {n}", "from": "Sensor {n}"}
 }

@@ -1,6 +1,6 @@
 /*
- * Ambient screen saver: a clean digital clock, date, and live Home Assistant
- * sensor readings, drifting on black to protect OLED panels.
+ * Ambient screen saver: a clean digital clock, date, and up to three live Home
+ * Assistant readings, drifting on black to protect OLED panels.
  *
  * QtQuick 2.4 and Eos.Window 0.1 for compatibility with webOS 4 through webOS 10+.
  */
@@ -45,38 +45,53 @@ WebOSWindow {
     property color inkDim:    level > 0 ? "#c2c8d0" : "#5c6066"
     property color inkAccent: level > 0 ? "#7ecaff" : "#4a8cb8"
     property bool hour12: __TVWEB_CLOCK12__
+    property bool showLabels: __TVWEB_CHOICE__
 
-    property string climateVal: ""
-    property string secondaryVal: ""
+    property string val1: ""
+    property string lbl1: ""
+    property string val2: ""
+    property string lbl2: ""
+    property string val3: ""
+    property string lbl3: ""
 
     function two(n) { return n < 10 ? "0" + n : "" + n }
 
     function formatVal(raw, unitStr) {
-        if (!raw || raw === "unavailable" || raw === "unknown") return "";
-        var num = parseFloat(raw);
-        var txt = raw;
-        if (!isNaN(num)) {
-            txt = (Math.round(num * 10) / 10).toString();
+        if (raw === undefined || raw === null || raw === "unavailable" || raw === "unknown") return "";
+        var s = String(raw);
+        var txt = s;
+        if (/^-?\d+(\.\d+)?$/.test(s)) {
+            var num = parseFloat(s);
+            if (!isNaN(num)) txt = (Math.round(num * 10) / 10).toString();
         }
         return unitStr ? (txt + " " + unitStr) : txt;
     }
 
-    function fetchSensor(url, targetProp) {
-        if (!url || url.indexOf("__TVWEB_HA_") === 0) return;
+    function setSlot(idx, val, lbl) {
+        if (idx === 1) { win.val1 = val; win.lbl1 = lbl; }
+        else if (idx === 2) { win.val2 = val; win.lbl2 = lbl; }
+        else if (idx === 3) { win.val3 = val; win.lbl3 = lbl; }
+    }
+
+    function fetchSensor(url, idx) {
+        if (!url || url.indexOf("__TVWEB_HA_") === 0) {
+            setSlot(idx, "", "");
+            return;
+        }
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function () {
             if (xhr.readyState !== 4) return;
             if (xhr.status === 200) {
                 try {
                     var d = JSON.parse(xhr.responseText);
-                    var u = (d.attributes && d.attributes.unit_of_measurement) || "";
+                    var attrs = d.attributes || {};
+                    var u = attrs.unit_of_measurement || "";
                     var formatted = formatVal(d.state, u);
-                    if (targetProp === "climate") win.climateVal = formatted;
-                    else if (targetProp === "secondary") win.secondaryVal = formatted;
+                    var name = formatted ? (attrs.friendly_name || "") : "";
+                    setSlot(idx, formatted, name);
                 } catch (e) {}
             } else {
-                if (targetProp === "climate") win.climateVal = "";
-                else if (targetProp === "secondary") win.secondaryVal = "";
+                setSlot(idx, "", "");
             }
         };
         xhr.open("GET", url, true);
@@ -84,8 +99,9 @@ WebOSWindow {
     }
 
     function fetchAll() {
-        fetchSensor("__TVWEB_HA_climate__", "climate");
-        fetchSensor("__TVWEB_HA_secondary__", "secondary");
+        fetchSensor("__TVWEB_HA_sensor_1__", 1);
+        fetchSensor("__TVWEB_HA_sensor_2__", 2);
+        fetchSensor("__TVWEB_HA_sensor_3__", 3);
     }
 
     Item {
@@ -99,144 +115,211 @@ WebOSWindow {
 
         Column {
             id: stack
-            spacing: -Math.round(18 * win.unit)
+            spacing: Math.round(10 * win.unit)
 
-            Row {
-                id: timeRow
-                spacing: 0
+            property real contentWidth: Math.max(timeRow.width, sensorsRow.width)
 
-                Text {
-                    id: gauge
-                    visible: false
-                    font.family: win.digitFamily
-                    font.pixelSize: Math.round(180 * win.unit)
-                    text: "0"
-                }
+            Item {
+                width: stack.contentWidth
+                height: timeRow.height
 
-                Text {
-                    id: hourTens
-                    width: gauge.width
-                    horizontalAlignment: Text.AlignHCenter
-                    font.family: win.digitFamily
-                    font.pixelSize: Math.round(180 * win.unit)
-                    color: win.inkBright
-                    text: "0"
-                }
-                Text {
-                    id: hourUnits
-                    width: gauge.width
-                    horizontalAlignment: Text.AlignHCenter
-                    font.family: win.digitFamily
-                    font.pixelSize: Math.round(180 * win.unit)
-                    color: win.inkBright
-                    text: "0"
-                }
-                Item {
-                    id: colon
-                    width: Math.round(58 * win.unit)
-                    height: gauge.height
-
-                    SequentialAnimation on opacity {
-                        loops: Animation.Infinite
-                        running: true
-                        NumberAnimation { to: 0.2; duration: 1000; easing.type: Easing.InOutQuad }
-                        NumberAnimation { to: 1.0; duration: 1000; easing.type: Easing.InOutQuad }
-                    }
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: Math.round(28 * win.unit)
-                        Rectangle {
-                            width: Math.round(12 * win.unit)
-                            height: Math.round(12 * win.unit)
-                            radius: Math.round(6 * win.unit)
-                            color: win.inkBright
-                        }
-                        Rectangle {
-                            width: Math.round(12 * win.unit)
-                            height: Math.round(12 * win.unit)
-                            radius: Math.round(6 * win.unit)
-                            color: win.inkBright
-                        }
-                    }
-                }
-                Text {
-                    id: minTens
-                    width: gauge.width
-                    horizontalAlignment: Text.AlignHCenter
-                    font.family: win.digitFamily
-                    font.pixelSize: Math.round(180 * win.unit)
-                    color: win.inkBright
-                    text: "0"
-                }
-                Text {
-                    id: minUnits
-                    width: gauge.width
-                    horizontalAlignment: Text.AlignHCenter
-                    font.family: win.digitFamily
-                    font.pixelSize: Math.round(180 * win.unit)
-                    color: win.inkBright
-                    text: "0"
-                }
-                Item {
-                    visible: win.hour12
-                    width: merText.x + merText.width
-                    height: gauge.height
+                Row {
+                    id: timeRow
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 0
 
                     Text {
-                        id: merText
-                        x: Math.round(24 * win.unit)
-                        y: parent.height - height - Math.round(14 * win.unit)
+                        id: gauge
+                        visible: false
                         font.family: win.digitFamily
-                        font.pixelSize: Math.round(60 * win.unit)
-                        color: win.inkDim
-                        text: ""
+                        font.pixelSize: Math.round(180 * win.unit)
+                        text: "0"
+                    }
+
+                    Text {
+                        id: hourTens
+                        width: gauge.width
+                        horizontalAlignment: Text.AlignHCenter
+                        font.family: win.digitFamily
+                        font.pixelSize: Math.round(180 * win.unit)
+                        color: win.inkBright
+                        text: "0"
+                    }
+                    Text {
+                        id: hourUnits
+                        width: gauge.width
+                        horizontalAlignment: Text.AlignHCenter
+                        font.family: win.digitFamily
+                        font.pixelSize: Math.round(180 * win.unit)
+                        color: win.inkBright
+                        text: "0"
+                    }
+                    Item {
+                        id: colon
+                        width: Math.round(58 * win.unit)
+                        height: gauge.height
+
+                        SequentialAnimation on opacity {
+                            loops: Animation.Infinite
+                            running: true
+                            NumberAnimation { to: 0.2; duration: 1000; easing.type: Easing.InOutQuad }
+                            NumberAnimation { to: 1.0; duration: 1000; easing.type: Easing.InOutQuad }
+                        }
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: Math.round(28 * win.unit)
+                            Rectangle {
+                                width: Math.round(12 * win.unit)
+                                height: Math.round(12 * win.unit)
+                                radius: Math.round(6 * win.unit)
+                                color: win.inkBright
+                            }
+                            Rectangle {
+                                width: Math.round(12 * win.unit)
+                                height: Math.round(12 * win.unit)
+                                radius: Math.round(6 * win.unit)
+                                color: win.inkBright
+                            }
+                        }
+                    }
+                    Text {
+                        id: minTens
+                        width: gauge.width
+                        horizontalAlignment: Text.AlignHCenter
+                        font.family: win.digitFamily
+                        font.pixelSize: Math.round(180 * win.unit)
+                        color: win.inkBright
+                        text: "0"
+                    }
+                    Text {
+                        id: minUnits
+                        width: gauge.width
+                        horizontalAlignment: Text.AlignHCenter
+                        font.family: win.digitFamily
+                        font.pixelSize: Math.round(180 * win.unit)
+                        color: win.inkBright
+                        text: "0"
+                    }
+                    Item {
+                        visible: win.hour12
+                        width: merText.x + merText.width
+                        height: gauge.height
+
+                        Text {
+                            id: merText
+                            x: Math.round(24 * win.unit)
+                            y: parent.height - height - Math.round(14 * win.unit)
+                            font.family: win.digitFamily
+                            font.pixelSize: Math.round(60 * win.unit)
+                            color: win.inkDim
+                            text: ""
+                        }
                     }
                 }
             }
 
             Text {
                 id: dateLine
-                width: timeRow.width
-                height: Math.round(64 * win.unit)
+                width: stack.contentWidth
+                height: Math.round(56 * win.unit)
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
-                font.pixelSize: Math.round(44 * win.unit)
+                font.pixelSize: Math.round(42 * win.unit)
                 fontSizeMode: Text.Fit
-                minimumPixelSize: Math.round(28 * win.unit)
+                minimumPixelSize: Math.round(26 * win.unit)
                 color: win.inkDim
                 text: ""
             }
 
             Item {
                 id: sensorWrap
-                width: timeRow.width
-                height: Math.round(54 * win.unit)
-                visible: (win.climateVal.length > 0 || win.secondaryVal.length > 0)
+                width: stack.contentWidth
+                height: sensorsRow.height + Math.round(16 * win.unit)
+                visible: (win.val1.length > 0 || win.val2.length > 0 || win.val3.length > 0)
 
                 Row {
-                    anchors.centerIn: parent
-                    spacing: Math.round(20 * win.unit)
+                    id: sensorsRow
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    spacing: Math.round(42 * win.unit)
 
-                    Text {
-                        visible: win.climateVal.length > 0
-                        font.pixelSize: Math.round(36 * win.unit)
-                        color: win.inkAccent
-                        text: win.climateVal
+                    Column {
+                        id: col1
+                        visible: win.val1.length > 0
+                        spacing: Math.round(4 * win.unit)
+                        property real slotWidth: Math.max(valText1.implicitWidth, (win.showLabels && win.lbl1.length > 0) ? Math.min(Math.round(280 * win.unit), lblText1.implicitWidth) : 0)
+                        Text {
+                            id: lblText1
+                            visible: win.showLabels && win.lbl1.length > 0
+                            width: col1.slotWidth
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pixelSize: Math.round(20 * win.unit)
+                            color: win.inkDim
+                            text: win.lbl1
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+                        Text {
+                            id: valText1
+                            width: col1.slotWidth
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pixelSize: Math.round(36 * win.unit)
+                            color: win.inkAccent
+                            text: win.val1
+                        }
                     }
 
-                    Text {
-                        visible: win.climateVal.length > 0 && win.secondaryVal.length > 0
-                        font.pixelSize: Math.round(36 * win.unit)
-                        color: win.inkDim
-                        text: "·"
+                    Column {
+                        id: col2
+                        visible: win.val2.length > 0
+                        spacing: Math.round(4 * win.unit)
+                        property real slotWidth: Math.max(valText2.implicitWidth, (win.showLabels && win.lbl2.length > 0) ? Math.min(Math.round(280 * win.unit), lblText2.implicitWidth) : 0)
+                        Text {
+                            id: lblText2
+                            visible: win.showLabels && win.lbl2.length > 0
+                            width: col2.slotWidth
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pixelSize: Math.round(20 * win.unit)
+                            color: win.inkDim
+                            text: win.lbl2
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+                        Text {
+                            id: valText2
+                            width: col2.slotWidth
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pixelSize: Math.round(36 * win.unit)
+                            color: win.inkAccent
+                            text: win.val2
+                        }
                     }
 
-                    Text {
-                        visible: win.secondaryVal.length > 0
-                        font.pixelSize: Math.round(36 * win.unit)
-                        color: win.inkAccent
-                        text: win.secondaryVal
+                    Column {
+                        id: col3
+                        visible: win.val3.length > 0
+                        spacing: Math.round(4 * win.unit)
+                        property real slotWidth: Math.max(valText3.implicitWidth, (win.showLabels && win.lbl3.length > 0) ? Math.min(Math.round(280 * win.unit), lblText3.implicitWidth) : 0)
+                        Text {
+                            id: lblText3
+                            visible: win.showLabels && win.lbl3.length > 0
+                            width: col3.slotWidth
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pixelSize: Math.round(20 * win.unit)
+                            color: win.inkDim
+                            text: win.lbl3
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+                        Text {
+                            id: valText3
+                            width: col3.slotWidth
+                            horizontalAlignment: Text.AlignHCenter
+                            font.pixelSize: Math.round(36 * win.unit)
+                            color: win.inkAccent
+                            text: win.val3
+                        }
                     }
                 }
             }

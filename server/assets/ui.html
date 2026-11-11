@@ -884,6 +884,9 @@
     <div class="ss-level-lbl" data-t="ss.entities">Home Assistant Entities</div>
     <div id="ss-entities-list"></div>
     <div class="pv-sub" id="ss-entities-note" style="margin-top:8px"></div>
+    <div id="ss-entities-setup" hidden style="margin-top:8px">
+      <button type="button" onclick="showTab('mqtt')" data-t="ss.openMqtt">Open MQTT settings</button>
+    </div>
   </div>
 
   <div class="ss-level-row">
@@ -1701,9 +1704,10 @@
       <div class="hint" id="cfg-ha-token-hint" data-t="ha.token.hint">From your Home Assistant profile &rarr; Long-Lived Access Tokens.</div>
     </div>
   </div>
-  <div class="cfg-btns" style="margin-top:12px;display:flex;align-items:center;gap:12px">
+  <div class="cfg-save" style="margin-top:14px">
+    <button type="button" id="cfg-ha-save-btn" onclick="saveHaSettings()" data-t="ha.save">Save</button>
     <button type="button" id="cfg-ha-test-btn" onclick="testHaConnection()" data-t="ha.test">Test connection</button>
-    <span class="cfg-msg" id="cfg-ha-msg"></span>
+    <span class="cfg-msg" id="cfg-ha-msg" role="status" aria-live="polite"></span>
   </div>
 
   <div class="pv-h" data-t="mqtt.topics">Topics &amp; identity</div>

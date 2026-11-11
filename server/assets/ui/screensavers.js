@@ -157,39 +157,173 @@ function renderSsPick(choices, current, locked) {
 }
 
 let ssEntitiesKey_ = '';
+let ssHaEntities = null;
+let ssHaLoading = false;
+
+function resetHaEntitiesCache() {
+  ssHaEntities = null;
+  ssEntitiesKey_ = '';
+}
+
+async function ensureHaEntities(onLoaded) {
+  if (ssHaEntities !== null || ssHaLoading) return;
+  ssHaLoading = true;
+  try {
+    const r = await fetch(api('/api/ha/entities'));
+    const d = await r.json();
+    if (d && d.ok && d.configured && Array.isArray(d.entities)) {
+      ssHaEntities = d.entities;
+      ssEntitiesKey_ = '';
+      if (typeof onLoaded === 'function') onLoaded();
+      else loadScreensavers();
+    }
+  } catch (e) {} finally {
+    ssHaLoading = false;
+  }
+}
+
+function ssHaSlotLabel(e) {
+  const m = /^sensor_(\d+)$/.exec(e.id);
+  return m ? t('ss.sensorSlot', 'Sensor {n}', { n: m[1] }) : e.label;
+}
+
+function ssHaFriendlyHint(entityId) {
+  if (!entityId) return t('ss.entityHidden', 'Hidden');
+  if (!ssHaEntities) return '';
+  const hit = ssHaEntities.find(x => x.id === entityId);
+  if (!hit) return '';
+  const parts = [];
+  if (hit.name) parts.push(hit.name);
+  if (hit.unit) parts.push('(' + hit.unit + ')');
+  return parts.join(' ');
+}
+
 function renderSsEntities(saverId, entities, haConfigured, locked) {
   const container = q('ss-entities-list');
   const note = q('ss-entities-note');
+  const setup = q('ss-entities-setup');
   if (!container) return;
 
   if (note) {
     if (haConfigured === false) {
-      note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Set up the address and access token in the MQTT tab.');
+      note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the MQTT tab.');
       note.className = 'pv-sub warn';
     } else {
-      note.textContent = t('ss.entities.desc', 'Values are read directly from Home Assistant while this screen saver is showing.');
+      note.textContent = t('ss.entities.desc', 'Choose which Home Assistant entities this screen saver reads. Leave a slot blank to hide it.');
       note.className = 'pv-sub';
     }
   }
+  if (setup) setup.hidden = haConfigured !== false;
 
-  const key = (locked ? '1' : '0') + '|' + saverId + '|' + entities.map(e => e.id + '=' + e.entity).join(',');
+  if (haConfigured && ssHaEntities === null) ensureHaEntities();
+
+  // Do not rebuild inputs while the user is typing in or picking from them.
+  const active = document.activeElement;
+  if (active && container.contains(active)) return;
+
+  const key = (locked ? '1' : '0') + '|' + (haConfigured ? '1' : '0') + '|' +
+    (ssHaEntities ? ssHaEntities.length : -1) + '|' + saverId + '|' +
+    entities.map(e => e.id + '=' + e.entity).join(',');
   if (key === ssEntitiesKey_) return;
   ssEntitiesKey_ = key;
 
   let html = '';
+  const hidePlaceholder = t('ss.entityHidden', 'Hidden');
+  const chooseTitle = t('ss.chooseEntity', 'Choose entity');
+  const clearTitle = t('ss.clearEntity', 'Clear');
   entities.forEach(e => {
+    const hint = ssHaFriendlyHint(e.entity);
     html += `
       <div class="ss-entity-field">
-        <label for="ss-ent-${esc(e.id)}">${esc(e.label)}</label>
-        <input type="text" id="ss-ent-${esc(e.id)}" data-slot="${esc(e.id)}" value="${esc(e.entity || '')}"
-          placeholder="${esc(e.def || '')}" autocomplete="off" spellcheck="false" ${locked ? 'disabled' : ''}
-          onchange="saveSsEntity('${esc(saverId)}', '${esc(e.id)}', this.value)">
+        <div class="ss-entity-head">
+          <label for="ss-ent-${esc(e.id)}">${esc(ssHaSlotLabel(e))}</label>
+          ${hint ? `<span class="ss-entity-hint">${esc(hint)}</span>` : ''}
+        </div>
+        <div class="ss-ent-wrap">
+          <input type="text" id="ss-ent-${esc(e.id)}" data-slot="${esc(e.id)}" data-saver="${esc(saverId)}"
+            value="${esc(e.entity || '')}" placeholder="${esc(hidePlaceholder)}"
+            autocomplete="off" spellcheck="false" ${locked ? 'disabled' : ''}
+            oninput="ssHaFilter('${esc(saverId)}', '${esc(e.id)}')"
+            onchange="saveSsEntity('${esc(saverId)}', '${esc(e.id)}', this.value)">
+          ${(haConfigured && !locked) ? `<button type="button" class="ss-ent-btn" title="${esc(chooseTitle)}" aria-label="${esc(chooseTitle)}" onclick="ssHaToggle('${esc(saverId)}', '${esc(e.id)}')">&#9662;</button>` : ''}
+          ${(!locked && e.entity) ? `<button type="button" class="ss-ent-btn" title="${esc(clearTitle)}" aria-label="${esc(clearTitle)}" onclick="saveSsEntity('${esc(saverId)}', '${esc(e.id)}', '')">&times;</button>` : ''}
+          <div class="ss-pick-list ss-ha-list" id="ss-ha-list-${esc(e.id)}" hidden></div>
+        </div>
       </div>`;
   });
   container.innerHTML = html;
 }
 
+function ssHaCloseAll() {
+  document.querySelectorAll('.ss-ha-list').forEach(el => { el.hidden = true; });
+}
+
+function ssHaRenderList(saverId, slot, filterText, showAll) {
+  const list = document.getElementById('ss-ha-list-' + slot);
+  if (!list) return;
+  if (ssHaEntities === null) {
+    list.innerHTML = `<div class="ss-ha-empty">${esc(t('ss.loadingEntities', 'Loading entities...'))}</div>`;
+    list.hidden = false;
+    ensureHaEntities(() => ssHaRenderList(saverId, slot, filterText, showAll));
+    return;
+  }
+  const tokens = showAll ? [] : String(filterText || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const matches = [];
+  for (let i = 0; i < ssHaEntities.length; i++) {
+    const item = ssHaEntities[i];
+    if (tokens.length) {
+      const hay = (item.id + ' ' + (item.name || '')).toLowerCase();
+      if (!tokens.every(tok => hay.indexOf(tok) !== -1)) continue;
+    }
+    matches.push(item);
+    if (matches.length >= 80) break;
+  }
+  if (!matches.length) {
+    list.innerHTML = `<div class="ss-ha-empty">${esc(t('ss.noEntitiesMatch', 'No matching entities'))}</div>`;
+  } else {
+    let html = '';
+    matches.forEach(item => {
+      const sub = item.name ? (item.id + (item.unit ? ' · ' + item.unit : '')) : (item.unit || '');
+      html += `<div class="ss-ha-opt" onmousedown="event.preventDefault(); ssHaPick('${esc(saverId)}', '${esc(slot)}', '${esc(item.id)}')">
+        <div class="ss-ha-opt-n">${esc(item.name || item.id)}</div>
+        ${sub ? `<div class="ss-ha-opt-id">${esc(sub)}</div>` : ''}
+      </div>`;
+    });
+    list.innerHTML = html;
+  }
+  list.hidden = false;
+}
+
+function ssHaToggle(saverId, slot) {
+  const list = document.getElementById('ss-ha-list-' + slot);
+  if (!list) return;
+  const wasHidden = list.hidden;
+  ssHaCloseAll();
+  if (wasHidden) {
+    ssHaRenderList(saverId, slot, '', true);
+    const input = document.getElementById('ss-ent-' + slot);
+    if (input) input.focus();
+  }
+}
+
+function ssHaFilter(saverId, slot) {
+  const input = document.getElementById('ss-ent-' + slot);
+  if (!input || !ssHaEntities) return;
+  ssHaCloseAll();
+  if (input.value.trim().length > 0) {
+    ssHaRenderList(saverId, slot, input.value, false);
+  }
+}
+
+function ssHaPick(saverId, slot, entityId) {
+  const input = document.getElementById('ss-ent-' + slot);
+  if (input) input.value = entityId;
+  ssHaCloseAll();
+  saveSsEntity(saverId, slot, entityId);
+}
+
 async function saveSsEntity(saverId, slot, value) {
+  ssHaCloseAll();
   const patch = {};
   patch[slot] = value.trim();
   await sendCommand('screensaverEntities', { saver: saverId, entities: patch });
@@ -329,6 +463,7 @@ document.addEventListener('click', async ev => {
   const opt = ev.target.closest('.ss-pick-opt[data-id]');
   if (opt) { pickSsChoice(opt.dataset.id); return; }
   if (!ev.target.closest('#ss-pick') && !q('ss-pick-list').hidden) ssPickOpen(false);
+  if (!ev.target.closest('.ss-ent-wrap')) ssHaCloseAll();
 });
 
 /* Brightness, in 5% steps from 5%, sent on release: each value restages the

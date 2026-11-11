@@ -3100,6 +3100,19 @@
  "srv.saver.haUses": {"text": "{file}: entities и \"ha\" в uses используются вместе.", "from": "{file}: entities and \"ha\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "{main} использует {placeholder}, а saver.json не указывает эту сущность в entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
  "ss.entities": {"text": "Сущности Home Assistant", "from": "Home Assistant Entities"},
- "ss.entities.desc": {"text": "Значения считываются напрямую из Home Assistant во время отображения этой заставки.", "from": "Values are read directly from Home Assistant while this screen saver is showing."},
- "ss.haNotConfigured": {"text": "API Home Assistant не настроен. Укажите адрес и токен доступа на вкладке MQTT.", "from": "Home Assistant API is not configured. Set up the address and access token in the MQTT tab."}
+ "ss.entities.desc": {"text": "Выберите сущности Home Assistant для этой заставки. Оставьте поле пустым, чтобы скрыть его.", "from": "Choose which Home Assistant entities this screen saver reads. Leave a slot blank to hide it."},
+ "ss.haNotConfigured": {"text": "API Home Assistant не настроен. Сохраните адрес и токен доступа на вкладке MQTT.", "from": "Home Assistant API is not configured. Save the address and access token in the MQTT tab."},
+ "ha.cleared": {"text": "Очищено.", "from": "Cleared."},
+ "ha.connectedUnsaved": {"text": "Подключено: {msg} (нажмите Сохранить для применения)", "from": "Connected: {msg} (click Save to apply)"},
+ "ha.save": {"text": "Сохранить", "from": "Save"},
+ "ha.savedConnected": {"text": "Сохранено — Подключено: {msg}", "from": "Saved — Connected: {msg}"},
+ "ha.savedStatus": {"text": "Настроено.", "from": "Configured."},
+ "ha.savedWarn": {"text": "Сохранено (ошибка проверки: {err})", "from": "Saved (test failed: {err})"},
+ "ss.chooseEntity": {"text": "Выбрать сущность", "from": "Choose entity"},
+ "ss.clearEntity": {"text": "Очистить", "from": "Clear"},
+ "ss.entityHidden": {"text": "Скрыто", "from": "Hidden"},
+ "ss.loadingEntities": {"text": "Загрузка сущностей...", "from": "Loading entities..."},
+ "ss.noEntitiesMatch": {"text": "Нет подходящих сущностей", "from": "No matching entities"},
+ "ss.openMqtt": {"text": "Открыть настройки MQTT", "from": "Open MQTT settings"},
+ "ss.sensorSlot": {"text": "Датчик {n}", "from": "Sensor {n}"}
 }

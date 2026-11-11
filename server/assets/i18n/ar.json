@@ -3100,6 +3100,19 @@
  "srv.saver.haUses": {"text": "{file}: يترابط entities و \"ha\" في uses معاً.", "from": "{file}: entities and \"ha\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "يستخدم {main} العنصر {placeholder}، بينما لا يذكر saver.json هذا الكيان ضمن entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
  "ss.entities": {"text": "كيانات Home Assistant", "from": "Home Assistant Entities"},
- "ss.entities.desc": {"text": "تُقرأ القيم مباشرة من Home Assistant أثناء عرض شاشة التوقف هذه.", "from": "Values are read directly from Home Assistant while this screen saver is showing."},
- "ss.haNotConfigured": {"text": "واجهة برمجة تطبيقات Home Assistant غير مكوّنة. اضبط العنوان ورمز الوصول في تبويب MQTT.", "from": "Home Assistant API is not configured. Set up the address and access token in the MQTT tab."}
+ "ss.entities.desc": {"text": "اختر كيانات Home Assistant التي تقرأها شاشة التوقف هذه. اترك الحقل فارغاً لإخفائه.", "from": "Choose which Home Assistant entities this screen saver reads. Leave a slot blank to hide it."},
+ "ss.haNotConfigured": {"text": "واجهة برمجة تطبيقات Home Assistant غير مكوّنة. احفظ العنوان ورمز الوصول في تبويب MQTT.", "from": "Home Assistant API is not configured. Save the address and access token in the MQTT tab."},
+ "ha.cleared": {"text": "تم المسح.", "from": "Cleared."},
+ "ha.connectedUnsaved": {"text": "متصل: {msg} (اضغط حفظ للتطبيق)", "from": "Connected: {msg} (click Save to apply)"},
+ "ha.save": {"text": "حفظ", "from": "Save"},
+ "ha.savedConnected": {"text": "تم الحفظ — متصل: {msg}", "from": "Saved — Connected: {msg}"},
+ "ha.savedStatus": {"text": "مكوّن.", "from": "Configured."},
+ "ha.savedWarn": {"text": "تم الحفظ (فشل الاختبار: {err})", "from": "Saved (test failed: {err})"},
+ "ss.chooseEntity": {"text": "اختر كياناً", "from": "Choose entity"},
+ "ss.clearEntity": {"text": "مسح", "from": "Clear"},
+ "ss.entityHidden": {"text": "مخفي", "from": "Hidden"},
+ "ss.loadingEntities": {"text": "جارٍ تحميل الكيانات...", "from": "Loading entities..."},
+ "ss.noEntitiesMatch": {"text": "لا توجد كيانات مطابقة", "from": "No matching entities"},
+ "ss.openMqtt": {"text": "فتح إعدادات MQTT", "from": "Open MQTT settings"},
+ "ss.sensorSlot": {"text": "الحساس {n}", "from": "Sensor {n}"}
 }

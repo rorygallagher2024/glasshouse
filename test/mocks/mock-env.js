@@ -13,6 +13,7 @@ var origReaddirSync = fs.readdirSync;
 var origWriteFileSync = fs.writeFileSync;
 var origUnlinkSync = fs.unlinkSync;
 var origRenameSync = fs.renameSync;
+var origChmodSync = fs.chmodSync;
 var origMkdirSync = fs.mkdirSync;
 
 function createMockEnv(overrides) {
@@ -172,12 +173,20 @@ function createMockEnv(overrides) {
     return origMkdirSync.apply(fs, arguments);
   }
 
+  function mockChmodSync(p) {
+    if (typeof p === 'string' && (p.indexOf('/var/') === 0 || p.indexOf('/tmp/') === 0 || mockFiles.hasOwnProperty(p))) {
+      return;
+    }
+    return origChmodSync.apply(fs, arguments);
+  }
+
   function install() {
     fs.readFileSync = mockReadFileSync;
     fs.existsSync = mockExistsSync;
     fs.writeFileSync = mockWriteFileSync;
     fs.unlinkSync = mockUnlinkSync;
     fs.renameSync = mockRenameSync;
+    fs.chmodSync = mockChmodSync;
     fs.mkdirSync = mockMkdirSync;
   }
 
@@ -187,6 +196,7 @@ function createMockEnv(overrides) {
     fs.writeFileSync = origWriteFileSync;
     fs.unlinkSync = origUnlinkSync;
     fs.renameSync = origRenameSync;
+    fs.chmodSync = origChmodSync;
     fs.mkdirSync = origMkdirSync;
   }
 

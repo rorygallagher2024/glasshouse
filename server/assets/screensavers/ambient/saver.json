@@ -1,6 +1,6 @@
 {
   "manifest": 1,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": {
     "en": "Ambient",
     "ar": "محيطي",
@@ -15,26 +15,80 @@
     "ru": "Окружение"
   },
   "description": {
-    "en": "Time, date and live Home Assistant sensor readings, drifting on black to protect the panel.",
-    "ar": "الوقت والتاريخ وقراءات حساسات Home Assistant المباشرة، تتحرك بلطف على خلفية سوداء لحماية الشاشة.",
-    "es": "Hora, fecha y lecturas de sensores de Home Assistant en vivo, desplazándose sobre negro para proteger el panel.",
-    "de": "Uhrzeit, Datum und Live-Sensormesswerte aus Home Assistant, gleitend über Schwarz zum Schutz des Panels.",
-    "fr": "Heure, date et valeurs de capteurs Home Assistant en direct, dérivant sur fond noir pour protéger la dalle.",
-    "hu": "Idő, dátum és élő Home Assistant szenzoradatok, finoman lebegve a fekete háttéren a kijelző védelméért.",
-    "it": "Ora, data e letture dei sensori di Home Assistant in tempo reale, in movimento su nero per proteggere il pannello.",
-    "pl": "Czas, data i odczyty czujników Home Assistant na żywo, przesuwające się na czerni chroniąc matrycę.",
-    "pt": "Hora, data e leituras de sensores do Home Assistant em direto, deslizando sobre preto para proteger o painel.",
-    "pt-br": "Hora, data e leituras de sensores do Home Assistant em tempo real, deslizando sobre o preto para proteger o painel.",
-    "ru": "Время, дата и показания датчиков Home Assistant в реальном времени, перемещающиеся по черному фону для защиты панели."
+    "en": "Time, date and up to three live Home Assistant readings, drifting on black to protect the panel.",
+    "ar": "الوقت والتاريخ وحتى ثلاث قراءات مباشرة من Home Assistant، تتحرك بلطف على خلفية سوداء لحماية الشاشة.",
+    "es": "Hora, fecha y hasta tres lecturas de Home Assistant en vivo, desplazándose sobre negro para proteger el panel.",
+    "de": "Uhrzeit, Datum und bis zu drei Live-Werte aus Home Assistant, gleitend über Schwarz zum Schutz des Panels.",
+    "fr": "Heure, date et jusqu'à trois valeurs Home Assistant en direct, dérivant sur fond noir pour protéger la dalle.",
+    "hu": "Idő, dátum és legfeljebb három élő Home Assistant érték, finoman lebegve a fekete háttéren a kijelző védelméért.",
+    "it": "Ora, data e fino a tre letture di Home Assistant in tempo reale, in movimento su nero per proteggere il pannello.",
+    "pl": "Czas, data i do trzech odczytów Home Assistant na żywo, przesuwających się na czerni chroniąc matrycę.",
+    "pt": "Hora, data e até três leituras do Home Assistant em direto, deslizando sobre preto para proteger o painel.",
+    "pt-br": "Hora, data e até três leituras do Home Assistant em tempo real, deslizando sobre o preto para proteger o painel.",
+    "ru": "Время, дата и до трех показаний Home Assistant в реальном времени, перемещающихся по черному фону для защиты панели."
   },
   "license": "MIT",
   "uses": [
     "level",
-    "ha"
+    "ha",
+    "choice"
   ],
   "order": 15,
+  "choices": {
+    "label": {
+      "en": "Readings",
+      "ar": "القراءات",
+      "es": "Lecturas",
+      "de": "Messwerte",
+      "fr": "Relevés",
+      "hu": "Értékek",
+      "it": "Letture",
+      "pl": "Odczyty",
+      "pt": "Leituras",
+      "pt-br": "Leituras",
+      "ru": "Показания"
+    },
+    "default": "labels",
+    "options": [
+      {
+        "id": "labels",
+        "name": {
+          "en": "Names and values",
+          "ar": "الأسماء والقيم",
+          "es": "Nombres y valores",
+          "de": "Namen und Werte",
+          "fr": "Noms et valeurs",
+          "hu": "Nevek és értékek",
+          "it": "Nomi e valori",
+          "pl": "Nazwy i wartości",
+          "pt": "Nomes e valores",
+          "pt-br": "Nomes e valores",
+          "ru": "Названия и значения"
+        },
+        "value": "true"
+      },
+      {
+        "id": "values",
+        "name": {
+          "en": "Values only",
+          "ar": "القيم فقط",
+          "es": "Solo valores",
+          "de": "Nur Werte",
+          "fr": "Valeurs seules",
+          "hu": "Csak az értékek",
+          "it": "Solo valori",
+          "pl": "Tylko wartości",
+          "pt": "Apenas valores",
+          "pt-br": "Apenas valores",
+          "ru": "Только значения"
+        },
+        "value": "false"
+      }
+    ]
+  },
   "entities": {
-    "climate": "sensor.outdoor_temperature",
-    "secondary": "sensor.power_consumption"
+    "sensor_1": "sensor.outdoor_temperature",
+    "sensor_2": "sensor.power_consumption",
+    "sensor_3": "sensor.indoor_temperature"
   }
 }

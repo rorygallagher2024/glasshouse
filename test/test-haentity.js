@@ -21,6 +21,14 @@ var server = http.createServer(function (req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ message: 'API running.' }));
   }
+  if (req.url === '/api/states') {
+    if (auth !== 'Bearer tok') { res.writeHead(401); return res.end('[]'); }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify([
+      { entity_id: 'sensor.watts', state: '420', attributes: { friendly_name: 'House Power', unit_of_measurement: 'W' } },
+      { entity_id: 'lock.front_door', state: 'locked', attributes: { friendly_name: 'Front Door' } }
+    ]));
+  }
   if (req.url === ENTITY) {
     if (auth !== 'Bearer tok') { res.writeHead(401); return res.end('{}'); }
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -116,8 +124,18 @@ server.listen(0, '127.0.0.1', function () {
                       assert.ok(/http/.test(r10.error), r10.error);
                       console.log('  \u2713 update() and test() check /api/ with fallback to stored token');
 
-                      server.close();
-                      console.log('ALL test-haentity.js assertions passed!');
+                      // 8. list() returns sorted entities without live state values
+                      haEntity.list(function (r11) {
+                        assert.strictEqual(r11.ok, true, r11.error);
+                        assert.deepEqual(r11.entities, [
+                          { id: 'lock.front_door', name: 'Front Door', unit: '' },
+                          { id: 'sensor.watts', name: 'House Power', unit: 'W' }
+                        ]);
+                        console.log('  \u2713 list() returns sorted entity metadata without exposing state values');
+
+                        server.close();
+                        console.log('ALL test-haentity.js assertions passed!');
+                      });
                     });
                   });
                 });
