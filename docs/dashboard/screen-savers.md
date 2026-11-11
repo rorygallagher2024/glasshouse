@@ -38,13 +38,13 @@ Clock with date used to be a screen saver of its own. A TV that had it in use ke
 
 ![Screensaver tab with Home Assistant: Ambient selected and three entity slots configured](../screenshots/screensaver-ha-ambient-ui.png)
 
-A digital clock, date, and up to three live Home Assistant readings drifting smoothly across pure black to protect OLED panels, using the TV's 12-hour or 24-hour setting. **Readings** switches between **Names and values** and **Values only**, and **Sensor 1**, **Sensor 2**, and **Sensor 3** can be picked from your Home Assistant entities with an optional custom display **Label** (or cleared to hide) once **Home Assistant API** is saved on the **HA & MQTT** tab. Sensors left blank or unavailable stay omitted, leaving the clock and date.
+A digital clock, date, and up to three live Home Assistant readings on pure black, using the TV's 12-hour or 24-hour setting. **Readings** switches between **Names and values** and **Values only**, and **Sensor 1**, **Sensor 2**, and **Sensor 3** can be picked from your Home Assistant entities with an optional custom display **Label** (or cleared to hide) once **Home Assistant API** is saved on the **HA & MQTT** tab. Sensors left blank or unavailable stay omitted, leaving the clock and date.
 
 ### Home Assistant: Data Display
 
 ![Screensaver tab with Home Assistant: Data Display selected and ordered entities configured](../screenshots/screensaver-ha-display-ui.png)
 
-Cycles sequentially through **2 to 100** configured Home Assistant entities one at a time on pure black, drifting gently across the screen to prevent OLED burn-in. At least two entities are required before the screen saver can start. Unavailable or deleted entities are skipped automatically when at least two healthy readings remain (and checked again in the background so restored entities return); if Home Assistant cannot be reached at all, a drifting unavailable notice stays on screen until connectivity returns.
+Cycles sequentially through **2 to 100** configured Home Assistant entities one at a time on pure black. At least two entities are required before the screen saver can start. Unavailable or deleted entities are skipped automatically when at least two healthy readings remain (and checked again in the background so restored entities return); if Home Assistant cannot be reached at all, a drifting unavailable notice stays on screen until connectivity returns.
 
 Use **Add entity** to search or enter entity IDs, reorder items with the arrow buttons, set an optional custom display **Label** per entry (blank uses Home Assistant's friendly name), pick a **Value colour** (White by default), and choose how quickly entries advance under **Cycle speed** (every 5, 10, 15, 30, or 60 seconds). Requires **Home Assistant API** on the **HA & MQTT** tab.
 
