@@ -2218,6 +2218,10 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
 - `homeAutoLaunch` and `checkHomeAutoLaunchValue` are in category `general`;
   asked for under `option` they come back as `errorKey`.
 
+## Widevine DRM and ESN with SAM takeover (webOS 5.6.2, CX)
+
+- Restarting `sam.service` (`killall -9 LunaExecutable` and `systemctl kill -s 9 sam.service`) or bind-mounting over `/usr/palm/applications/com.webos.app.home` breaks Widevine DRM and ESN initialization: Widevine and ESN show as "Unknown" in TV Information, and DRM streaming playback fails. Running Glasshouse Home as a standalone app (`com.tvweb.home`) directed by `remotekeys-filter.js` leaves `com.webos.app.home` and sam untouched, keeping Widevine DRM and ESN functional.
+
 ## IPTV after Active Standby (webOS 5.6.2, CX)
 
 Measured on an OLED65CX9LA, Glasshouse 0.143.0, Quick Start+ off. Active Standby, for 8 seconds and for about 3.5 hours, left the server running. The power state went Active Standby to Active, on by `remoteKey`.

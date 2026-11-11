@@ -213,11 +213,12 @@ home_os=0
 [ "$webos_major" = "7" ] && home_os=1
 [ "$webos_major" = "9" ] && home_os=1
 [ "$webos_major" = "10" ] && home_os=1
-[ "$webos_major" = "5" ] && home_os=1
-[ "$webos_major" = "6" ] && home_os=1
 [ "$webos_major" = "11" ] && home_os=1
 if [ "${webos_major:-0}" -ge 12 ] 2>/dev/null; then
   grep -q '"allowExperimentalHome"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null && home_os=1
+fi
+if [ "$home_os" -eq 0 ] && grep -q " $homeapp " /proc/mounts 2>/dev/null; then
+  umount "$homeapp" 2>/dev/null || true
 fi
 # A block and release cut short leaves Home blocked across boots, as for the
 # screen saver below, so it is released at every boot where it is ever blocked.
@@ -273,13 +274,36 @@ home_open_at_boot() {
     return 0
   fi
   target_home=com.webos.app.home
-  case "$webos_major" in 3|4) target_home=com.tvweb.home ;; esac
+  case "$webos_major" in 3|4|5|6) target_home=com.tvweb.home ;; esac
   luna-send -n 1 luna://com.webos.applicationManager/launch "{\"id\":\"$target_home\"}" 2>/dev/null |
     grep -q '"returnValue": *true' || return 0
   # The server watches for the view from its start and opens LG's Home if it
   # does not come (lib/home.js watchBootOpen).
   : > /tmp/glasshouse-home-opened-at-boot
   echo "$(date): Glasshouse Home opened over $boot_app"
+}
+has_hdmi_signal() {
+  app="$1"
+  hdmi_num=$(echo "$app" | sed -n 's/.*hdmi\([1-4]\).*/\1/p')
+  [ -z "$hdmi_num" ] && return 0
+  case "$hdmi_num" in
+    1) port=3 ;;
+    2) port=2 ;;
+    3) port=1 ;;
+    4) port=0 ;;
+    *) return 0 ;;
+  esac
+  status_file="/proc/lg/hdmi20/port$port/status"
+  [ -f "$status_file" ] || return 0
+  if grep -qi 'PHY Lock' "$status_file"; then
+    grep -qi 'PHY Lock\[1\]' "$status_file" && return 0
+    return 1
+  fi
+  if grep -qi 'connected:' "$status_file"; then
+    grep -qi 'connected:[[:space:]]*on' "$status_file" && return 0
+    return 1
+  fi
+  return 0
 }
 # On webOS 5 and 6 the restart that makes sam read Glasshouse Home has the TV's
 # last-input handler launch Home a few seconds later (a 55NANO756PR on 6.5.3,
@@ -294,9 +318,11 @@ input_back_after_restart() {
     com.webos.app.livetv|com.webos.app.hdmi[0-9]|com.webos.app.av[0-9]|com.webos.app.comp[0-9]) ;;
     *) return 0 ;;
   esac
+  has_hdmi_signal "$boot_app" || return 0
   for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
     if grep -q '"app_id":"com.webos.app.home","caller_app_id":"last_input_handler"' /var/log/messages 2>/dev/null; then
       sleep 2
+      has_hdmi_signal "$boot_app" || return 0
       front=$(luna-send -n 1 luna://com.webos.applicationManager/getForegroundAppInfo '{}' 2>/dev/null |
         sed -n 's/.*"appId": *"\([^"]*\)".*/\1/p')
       [ "$front" = com.webos.app.home ] || return 0
@@ -332,7 +358,7 @@ if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
     for pid in $(lg_home_pids); do kill "$pid" 2>/dev/null; done
     echo "$(date): sam did not take Glasshouse Home - LG's Home kept"
   fi
-elif { [ "$webos_major" = "3" ] || [ "$webos_major" = "4" ]; } && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
+elif { [ "$webos_major" = "3" ] || [ "$webos_major" = "4" ] || [ "$webos_major" = "5" ] || [ "$webos_major" = "6" ]; } && grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
   home_open_at_boot
 fi
 
@@ -459,7 +485,9 @@ elif [ "$tile_hiding_allowed" -eq 1 ] && [ ! -f /var/lib/tvweb/.from-homebrew-ch
     # If the user was on an HDMI port or any non-home app, immediately restore it
     # so they are never stranded on the Home screen
     if [ -n "$fg_app" ] && [ "$fg_app" != "com.webos.app.home" ]; then
-      luna-send -n 1 -f luna://com.webos.applicationManager/launch "{\"id\":\"$fg_app\"}" >/dev/null 2>&1 || true
+      if has_hdmi_signal "$fg_app"; then
+        luna-send -n 1 -f luna://com.webos.applicationManager/launch "{\"id\":\"$fg_app\"}" >/dev/null 2>&1 || true
+      fi
     fi
   fi
 fi

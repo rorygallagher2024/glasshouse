@@ -9,6 +9,7 @@ var mockEnv = require('./mocks/mock-env').createMockEnv();
 mockEnv.install();
 
 var apps = require('../server/lib/apps');
+var samrescan = require('../server/lib/samrescan');
 
 // Commands apps.js would run on the TV, recorded instead: on a computer they
 // would restart its own services or ask for a password (#918).
@@ -446,7 +447,27 @@ test('restartSam waits for sam to finish loading, then relaunches the foreground
         });
         apps.restartSam(function () {
           assert.strictEqual(saverLaunched, false, 'must not relaunch screensaver');
-          if (done) done();
+
+          var asleepLaunched = false;
+          mockEnv.files['/proc/lg/hdmi20/port2/status'] = '[PHY Info]=> PHY Lock[0]\nis5Vconnected[1]\n';
+
+          init({
+            luna: function (uri, params, cb) {
+              if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'com.webos.app.hdmi2' });
+              if (uri === 'com.webos.applicationManager/listLaunchPoints') return cb({ returnValue: true, launchPoints: full });
+              if (uri === 'com.webos.applicationManager/launch') {
+                asleepLaunched = true;
+                return cb({ returnValue: true });
+              }
+              cb({ returnValue: true });
+            },
+            config: { allowControl: true, allowTileHiding: true }
+          });
+          apps.restartSam(function () {
+            assert.strictEqual(asleepLaunched, false, 'must not relaunch asleep HDMI source');
+            delete mockEnv.files['/proc/lg/hdmi20/port2/status'];
+            if (done) done();
+          });
         });
       };
     };
