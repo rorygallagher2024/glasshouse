@@ -769,10 +769,10 @@ button.key-hit{background:var(--w10)}
 .ss-pick-opt{padding:8px 14px 8px 24px;font-size:14px;color:var(--w90);cursor:pointer}
 .ss-pick-opt:hover,.ss-pick-opt.act{background:rgba(var(--fg),.07);color:var(--w100)}
 .ss-pick-opt[aria-selected="true"]{color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
-.ss-entity-field{margin-top:12px;max-width:340px;display:flex;flex-direction:column;gap:5px}
+.ss-entity-field{margin-top:14px;max-width:440px;display:flex;flex-direction:column;gap:6px}
 .ss-entity-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.ss-entity-field label{font-size:12px;color:var(--w60);letter-spacing:.02em}
-.ss-entity-hint{font-size:12px;color:var(--w80);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+.ss-entity-field label{font-size:14px;color:var(--w80);font-weight:500;letter-spacing:.02em}
+.ss-entity-hint{font-size:13px;color:var(--w70);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
 .ss-ent-wrap{position:relative;display:flex;align-items:stretch}
 .ss-ent-wrap input{
   flex:1;min-width:0;box-sizing:border-box;font-family:'Manrope';font-weight:400;font-size:14px;letter-spacing:.03em;
@@ -781,22 +781,22 @@ button.key-hit{background:var(--w10)}
 .ss-ent-wrap input:focus{border-color:var(--w100)}
 .ss-ent-wrap input:disabled{opacity:.45}
 .ss-ent-wrap input::placeholder{color:var(--w60)}
-.ss-ent-btn{min-width:38px;padding:0;min-height:44px;border-left:0;font-size:14px;display:flex;align-items:center;justify-content:center}
+.ss-ent-btn{min-width:40px;padding:0;min-height:44px;border-left:0;font-size:14px;display:flex;align-items:center;justify-content:center}
 .ss-ha-list{max-height:260px;padding:4px 0}
-.ss-ha-opt{padding:8px 12px;cursor:pointer}
+.ss-ha-opt{padding:9px 12px;cursor:pointer}
 .ss-ha-opt:hover{background:rgba(var(--fg),.07)}
-.ss-ha-opt-n{font-size:13px;color:var(--w100);line-height:1.3}
-.ss-ha-opt-id{font-size:11.5px;color:var(--w60);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:1px}
-.ss-ha-empty{padding:10px 12px;font-size:13px;color:var(--w60)}
-.ss-ent-label-row{display:flex;align-items:center;gap:8px;margin-top:2px}
-.ss-ent-label-row label{font-size:11.5px;color:var(--w60);min-width:44px;flex-shrink:0}
-.ss-ent-label-row input{
-  flex:1;min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:13px;
-  color:var(--w90);background:transparent;border:1px solid var(--w12);padding:7px 10px;min-height:36px;border-radius:0;outline:none
+.ss-ha-opt-n{font-size:14px;color:var(--w100);line-height:1.35}
+.ss-ha-opt-id{font-size:13px;color:var(--w70);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:2px}
+.ss-ha-empty{padding:10px 12px;font-size:14px;color:var(--w70)}
+.ss-ent-label-row,.ss-li-label{display:flex;align-items:center;gap:10px;margin-top:6px}
+.ss-ent-label-row label,.ss-li-label label{font-size:14px;color:var(--w80);min-width:48px;flex-shrink:0}
+.ss-ent-label-row input,.ss-li-label input{
+  flex:1;min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:14px;
+  color:var(--w100);background:transparent;border:1px solid var(--edge);padding:9px 12px;min-height:42px;border-radius:0;outline:none
 }
-.ss-ent-label-row input:focus{border-color:var(--w80)}
-.ss-ent-label-row input::placeholder{color:var(--w50)}
-.ss-ent-label-row input:disabled{opacity:.45}
+.ss-ent-label-row input:focus,.ss-li-label input:focus{border-color:var(--w100)}
+.ss-ent-label-row input::placeholder,.ss-li-label input::placeholder{color:var(--w60)}
+.ss-ent-label-row input:disabled,.ss-li-label input:disabled{opacity:.45}
 .upd{max-width:760px;margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
@@ -804,26 +804,23 @@ button.key-hit{background:var(--w10)}
 /* What each release since the installed one brings, from its notes' summary. */
 .upd-new{margin-top:12px;max-width:62ch}
 .ss-li-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;max-width:440px;margin:2px 0 6px}
-.ss-li-head label{font-size:13px;color:var(--w90);font-weight:500}
-.ss-li-count{font-size:12px;color:var(--w60)}
+.ss-li-head label{font-size:14px;color:var(--w90);font-weight:500}
+.ss-li-count{font-size:13px;color:var(--w70)}
 .ss-li-add{display:flex;gap:8px;align-items:stretch;max-width:440px}
 .ss-li-add .ss-ent-wrap{flex:1;min-width:0}
-.ss-li-add-btn{min-height:44px;padding:0 14px;font-size:12px;letter-spacing:.08em;flex:none}
-.ss-li-scroll{margin-top:10px;max-width:440px;max-height:360px;overflow-y:auto;overscroll-behavior:contain;
+.ss-li-add-btn{min-height:44px;padding:0 16px;font-size:13px;letter-spacing:.08em;flex:none}
+.ss-li-scroll{margin-top:12px;max-width:440px;max-height:420px;overflow-y:auto;overscroll-behavior:contain;
   border:1px solid var(--w12);border-radius:2px;background:rgba(var(--fg),.015)}
-.ss-li-item{padding:8px 10px;border-bottom:1px solid var(--w12)}
+.ss-li-item{padding:12px;border-bottom:1px solid var(--w12)}
 .ss-li-item:last-child{border-bottom:0}
 .ss-li-top{display:flex;align-items:flex-start;gap:8px}
-.ss-li-num{font-size:11px;color:var(--w50);min-width:20px;padding-top:2px;flex:none}
+.ss-li-num{font-size:13px;color:var(--w70);min-width:20px;padding-top:2px;flex:none}
 .ss-li-info{flex:1;min-width:0}
-.ss-li-name{font-size:13px;color:var(--w90);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ss-li-id{font-size:11px;color:var(--w60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.ss-li-name{font-size:14px;color:var(--w100);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-li-id{font-size:13px;color:var(--w70);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .ss-li-acts{display:flex;gap:4px;flex:none}
-.ss-li-acts button{width:26px;height:26px;min-height:0;padding:0;font-size:13px;line-height:1;text-transform:none;letter-spacing:0}
-.ss-li-label{margin-top:6px;padding-left:28px}
-.ss-li-label input{width:100%;box-sizing:border-box;min-height:0;height:30px;padding:0 9px;border:1px solid var(--w25);background:transparent;color:var(--w90);border-radius:2px;font:400 12.5px 'Manrope';outline:none}
-.ss-li-label input:focus{border-color:var(--w80)}
-.ss-li-label input::placeholder{color:var(--w50)}
+.ss-li-acts button{width:34px;height:34px;min-height:0;padding:0;font-size:15px;line-height:1;text-transform:none;letter-spacing:0}
+.ss-li-label{margin-top:8px;padding-left:28px}
 .upd-new-h{font-weight:500;font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--w60);margin-bottom:6px}
 .upd-new-r{margin-bottom:10px;font-size:14px;color:var(--w80);line-height:1.5}
 .upd-new-r p{margin:0 0 4px;white-space:pre-line}

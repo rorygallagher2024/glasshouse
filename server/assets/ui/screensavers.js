@@ -411,6 +411,7 @@ function renderSsEntityList(saverId, entityList, haConfigured, locked) {
   const upTitle = t('ss.entityList.moveUp', 'Move up');
   const downTitle = t('ss.entityList.moveDown', 'Move down');
   const rmTitle = t('ss.entityList.remove', 'Remove');
+  const labelTitle = t('ss.entityLabel', 'Label');
   const customPh = t('ss.entityList.customLabelPlaceholder', 'Custom display label (optional)');
   const full = items.length >= ssListMax;
 
@@ -455,6 +456,7 @@ function renderSsEntityList(saverId, entityList, haConfigured, locked) {
             </div>
           </div>
           <div class="ss-li-label">
+            <label for="ss-li-lbl-${idx}">${esc(labelTitle)}</label>
             <input type="text" id="ss-li-lbl-${idx}" value="${esc(it.label || '')}" maxlength="64"
               placeholder="${esc(lblPh)}" autocomplete="off" ${locked ? 'disabled' : ''}
               onchange="saveSsListLabel('${esc(saverId)}', ${idx}, this.value)">
