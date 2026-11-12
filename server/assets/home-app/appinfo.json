@@ -7,6 +7,8 @@
   "title": "Glasshouse Home",
   "icon": "assets/icon80.png",
   "largeIcon": "assets/icon130.png",
+  "splashBackground": "assets/splash.png",
+  "spinnerOnLaunch": false,
   "iconColor": "#000000",
   "bgColor": "#000000",
   "resolution": "1920x1080",

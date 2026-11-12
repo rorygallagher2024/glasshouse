@@ -67,7 +67,7 @@ assets/ui/oled.js assets/ui/screensavers.js assets/ui/mqtt.js assets/ui/tools.js
 assets/qr.js assets/i18n.js assets/i18n/es.json assets/i18n/de.json assets/i18n/ru.json assets/i18n/hu.json assets/i18n/it.json assets/i18n/ar.json assets/i18n/pt.json assets/i18n/pt-br.json assets/i18n/pl.json assets/i18n/fr.json assets/setup.html assets/setup-phone.html \
 assets/dashboard-app/appinfo.json assets/dashboard-app/index.html \
 assets/dashboard-app/packageinfo.json assets/dashboard-app/install-app.sh \
-assets/dashboard-app/assets/icon80.png assets/dashboard-app/assets/icon130.png \
+assets/dashboard-app/assets/icon80.png assets/dashboard-app/assets/icon130.png assets/dashboard-app/assets/splash.png \
 assets/home.html assets/home-kit.js assets/home-web.html assets/home-minimal.html assets/devicons.js \
 assets/inputbar-app/appinfo.json assets/inputbar-app/index.html assets/inputbar-app/packageinfo.json \
 assets/inputbar-app/assets/icon80.png assets/inputbar-app/assets/icon130.png \

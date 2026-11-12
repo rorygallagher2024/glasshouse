@@ -1835,8 +1835,8 @@ server's 10-second limit; launches allow 20 seconds for sequential detail reads.
 
 `lib/home-launcher.js` puts another page in the view's place; everything that
 gets the view in front of the TV is unchanged. The app in LG's Home's place
-(or `com.tvweb.home` on webOS 3 and 4, which is installed once and never
-changes) opens `/assets/home.html` as before, and while a launcher is chosen
+(or `com.tvweb.home` on webOS 3 to 6, refreshed on server start once it is not in front) opens
+`/assets/home.html` as before, and while a launcher is chosen
 and Glasshouse Home is on, the server answers that with a redirect to
 `/home/launcher/`. The heartbeat's reply carries `launcher`, a revision that
 changes with the choice or a new upload, so the page in front reloads into the

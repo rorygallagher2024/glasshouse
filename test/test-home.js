@@ -231,6 +231,8 @@ function luna(uri, p, cb) {
     ];
   } else if (uri === 'com.webos.service.apiadapter/tv/getChannelList') {
     r.channelList = (tv.channels || []).map(function (id) { return { channelId: id, channelNumber: id, channelName: id }; });
+  } else if (uri === 'com.webos.applicationManager/getForegroundAppInfo') {
+    r.appId = tv.front || '';
   } else if (uri === 'com.webos.surfacemanager/getForegroundWindowInfo') {
     if (tv.windows) r.windows = copy(tv.windows);
   } else if (uri === 'com.webos.service.utp.boot/getLastChannelId') {
@@ -2964,6 +2966,31 @@ step('weather from the internet: asked for only with a place and the screen on, 
               });
             });
           });
+        });
+      });
+    });
+  });
+});
+
+step('on webOS 3 to 6 the app is refreshed only once it is not in front, since a reinstall closes it', function (done) {
+  var actions = [];
+  var install = function (action, cb) { actions.push(action); cb({ ok: true, refreshed: true }); };
+  start(null, { webosVersion: '4.4.3', appRefreshRetryMs: 20, installApp: install });
+  tv.front = OLD_APP;
+  home.refreshApp();
+  wait(80, function () {
+    assert.deepEqual(actions, [], 'not while it is the screen in front');
+    tv.front = 'com.webos.app.hdmi2';
+    foreground('com.webos.app.hdmi2');
+    until(function () { return actions.length; }, 500, function () {
+      assert.deepEqual(actions, ['refresh'], 'once, as soon as something else is in front');
+      wait(60, function () {
+        assert.deepEqual(actions, ['refresh'], 'and not again');
+        start(null, { installApp: install });
+        home.refreshApp();
+        wait(20, function () {
+          assert.deepEqual(actions, ['refresh'], 'on webOS 9 Home has no app of its own to refresh');
+          done();
         });
       });
     });

@@ -337,6 +337,13 @@ var switchWant = null;
 var switchWaiting = [];
 var legacyAppPending = false;
 var legacyAppRemoving = false;
+// The standalone app (webOS 3-6) brought up to this release: a reinstall closes
+// it if open, and there it is the home screen, so it waits until it is not.
+var appRefreshPending = false;
+var appRefreshing = false;
+var appRefreshTimer = null;
+var APP_REFRESH_RETRY_MS = 60000;
+var appRefreshRetryMs = APP_REFRESH_RETRY_MS;
 // The input app a device tile opened last, and when: { app, at }.
 var tileInput = null;
 // While the channel Live TV was left on is read, what waits for it; null otherwise.
@@ -2163,6 +2170,30 @@ function finishLegacy(c, cb) {
  * names as its process and cannot close, and a removal waits on "app closing"
  * with the app locked until the TV restarts (a G3, webOS 9.2).
  */
+function refreshApp() {
+  if (!isStandalone() || !installFn) return;
+  appRefreshPending = true;
+  tryRefreshApp();
+}
+
+function tryRefreshApp() {
+  if (!appRefreshPending || appRefreshing) return;
+  clearTimeout(appRefreshTimer);
+  appRefreshing = true;
+  luna('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+    if (!fg || fg.appId === HOME_APP) {
+      appRefreshing = false;
+      appRefreshTimer = setTimeout(tryRefreshApp, appRefreshRetryMs);
+      return;
+    }
+    installFn('refresh', function (r) {
+      appRefreshing = false;
+      appRefreshPending = false;
+      if (r && r.refreshed && r.ok) console.log('home: app refreshed to current release');
+    });
+  });
+}
+
 function tryRemoveLegacyApp() {
   if (isStandalone() || !legacyAppPending || legacyAppRemoving || !installFn) return;
   if (foreground === HOME_APP) return;
@@ -2305,6 +2336,7 @@ function foregroundChanged(id) {
     else if (wakeRequest.input !== id) cancelWake();
   }
   if (legacyAppPending) tryRemoveLegacyApp();
+  if (appRefreshPending && id !== HOME_APP) tryRefreshApp();
   if (id !== HOME_APP && id !== LG_HOME && id) lastSource = { appId: id, at: nowMs() };
   if (!readConfig().enabled) return;
   noteForeground(was, id);
@@ -2785,6 +2817,11 @@ function init(opts) {
   switchWaiting = [];
   legacyAppPending = false;
   legacyAppRemoving = false;
+  appRefreshPending = false;
+  appRefreshing = false;
+  clearTimeout(appRefreshTimer);
+  appRefreshTimer = null;
+  appRefreshRetryMs = opts.appRefreshRetryMs || APP_REFRESH_RETRY_MS;
   tileInput = null;
   channelReading = null;
   if (liveState) {
@@ -2924,6 +2961,8 @@ function stop() {
   stopOpenWatch();
   if (holdTimer) clearTimeout(holdTimer);
   holdTimer = null;
+  clearTimeout(appRefreshTimer);
+  appRefreshTimer = null;
   homeKeysFn(false);
   recent.flush();
 }
@@ -2991,6 +3030,7 @@ module.exports = {
   layout: function () { return layoutOf(readConfig()); },
   programme: programme,
   enabled: function () { return readConfig().enabled; },
+  refreshApp: refreshApp,
   autoLaunchHeld: autoLaunchHeld,
   setAutoLaunch: setAutoLaunch,
   syncAutoLaunch: syncLgAutoLaunch

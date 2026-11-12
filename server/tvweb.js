@@ -2004,7 +2004,9 @@ function startGlasshouseHome() {
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
   homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION });
-  glasshouseHome.start();
+  // Its app packages its loading page and splash at install, so it is
+  // brought up to this release, once it is not in front.
+  glasshouseHome.start(function () { glasshouseHome.refreshApp(); });
   iptv.start();
   // The Guide key set to Home's guide acts only while Home is on with a playlist.
   remoteKeys.availabilityChanged();
