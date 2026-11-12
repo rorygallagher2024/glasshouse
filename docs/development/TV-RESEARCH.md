@@ -3300,6 +3300,9 @@ started playback. Screen captures often omitted the pointer even when it was
 visible on the TV, so a missing cursor in a capture is not evidence that no move
 occurred. A direct write to `/dev/uinput` created a kernel input device, but was
 not needed and was removed.
+
+The same `/tmp/netinput.pointer.sock` Unix socket was subsequently observed working on a B8 (webOS 4.4.3) and a C2 (webOS 9.2.2).
+
 ## Realtek HDMI receiver status (55NANO756PR, webOS 6.5.3)
 
 Reported in #1359 from a 55NANO756PR (webOS 6.5.3, firmware `03.53.46`) with a

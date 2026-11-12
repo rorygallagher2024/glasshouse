@@ -10,7 +10,7 @@
   "allowOnWebos10": false,
   "allowTileHiding": false,
   "pointer": {
-    "enabled": false,
+    "enabled": true,
     "transport": "websocket",
     "updatesPerSecond": 120
   },

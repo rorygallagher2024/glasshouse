@@ -221,7 +221,7 @@ var CONFIG = {
   // allowOnWebos10 until 0.105, and migrateConfigFile() renames that.
   allowExperimentalScreensavers: false,
   allowExperimentalInputBar: false,
-  pointer: { enabled: false, transport: 'websocket', updatesPerSecond: 120 },
+  pointer: { enabled: true, transport: 'websocket', updatesPerSecond: 120 },
 
   // Glasshouse Home is offered on webOS 4 to 7 and 9 to 11, where it has been
   // tried. This lets it be switched on on webOS 3 and 12 and later too,

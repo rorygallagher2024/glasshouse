@@ -2099,6 +2099,28 @@
             <div class="sub" id="ssh-msg" hidden></div>
           </div>
         </div>
+        <div class="prot-row" id="exp-pointer-row" hidden>
+          <div class="prot-main">
+            <div class="prot-title" data-t="server.experimental.pointer">Pointer input</div>
+            <div class="prot-desc" data-t="server.experimental.pointer.short">Adds a trackpad under Control for moving, clicking and scrolling the TV cursor.</div>
+            <div id="exp-pointer-settings" hidden>
+              <div class="pointer-setting">
+                <label for="exp-pointer-transport" data-t="ctl.pointer.transport">Connection</label>
+                <select id="exp-pointer-transport">
+                  <option value="websocket" translate="no">WebSocket</option>
+                  <option value="http" translate="no">HTTP</option>
+                </select>
+              </div>
+              <div class="prot-desc" data-t="server.experimental.pointer.transport.desc">WebSocket sends without waiting for HTTP answers and opens only while Pointer is open. HTTP sends separate requests and may feel less smooth.</div>
+              <div class="pointer-setting">
+                <label for="exp-pointer-rate" data-t="server.experimental.pointer.rate">Update rate</label>
+                <select id="exp-pointer-rate"></select>
+              </div>
+              <div class="prot-desc" data-t="server.experimental.pointer.rate.desc">How often the dashboard sends movement batches. Lower rates reduce TV and network work; higher rates can feel smoother. The default and recommended rate is 120 updates per second.</div>
+            </div>
+          </div>
+          <div class="prot-status"><button type="button" class="pill idle" id="exp-pointer" onclick="toggleExpPointer()">&mdash;</button></div>
+        </div>
       </div>
 
       <div class="pv-g" data-t="server.experimental">Experimental features</div>
@@ -2124,28 +2146,6 @@
             <div class="prot-desc" data-t="server.experimental.screensaver.short">Allows the dashboard's own screen savers on webOS 12 and later, on the Screensaver tab.</div>
           </div>
           <div class="prot-status"><button type="button" class="pill idle" id="exp-screensaver" onclick="toggleExpScreensaver()">&mdash;</button></div>
-        </div>
-        <div class="prot-row" id="exp-pointer-row" hidden>
-          <div class="prot-main">
-            <div class="prot-title" data-t="server.experimental.pointer">Pointer input</div>
-            <div class="prot-desc" data-t="server.experimental.pointer.short">Adds a trackpad under Control for moving, clicking and scrolling the TV cursor. Tested on webOS 11; other versions may behave differently.</div>
-            <div id="exp-pointer-settings" hidden>
-              <div class="pointer-setting">
-                <label for="exp-pointer-transport" data-t="ctl.pointer.transport">Connection</label>
-                <select id="exp-pointer-transport">
-                  <option value="websocket" translate="no">WebSocket</option>
-                  <option value="http" translate="no">HTTP</option>
-                </select>
-              </div>
-              <div class="prot-desc" data-t="server.experimental.pointer.transport.desc">WebSocket sends without waiting for HTTP answers and opens only while Pointer is open. HTTP sends separate requests and may feel less smooth.</div>
-              <div class="pointer-setting">
-                <label for="exp-pointer-rate" data-t="server.experimental.pointer.rate">Update rate</label>
-                <select id="exp-pointer-rate"></select>
-              </div>
-              <div class="prot-desc" data-t="server.experimental.pointer.rate.desc">How often the dashboard sends movement batches. Lower rates reduce TV and network work; higher rates can feel smoother. The default and recommended rate is 120 updates per second.</div>
-            </div>
-          </div>
-          <div class="prot-status"><button type="button" class="pill idle" id="exp-pointer" onclick="toggleExpPointer()">&mdash;</button></div>
         </div>
         <div class="prot-row" id="exp-inputbar-row" hidden>
           <div class="prot-main">
