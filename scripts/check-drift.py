@@ -22,7 +22,7 @@ root = pathlib.Path(__file__).resolve().parent.parent
 doc_path = root / 'docs' / 'HOME-ASSISTANT-ENTITIES.md'
 problems = []
 
-DECL = r"type:\s*'(\w+)',\s*\n?\s*id:\s*'(\w+)'"
+DECL = r"type:\s*'(\w+)',\s*\n?\s*id:\s*'(\w+)'(?!\s*\+)"
 # | `sensor` | `sensor.lg_tv_soc_temperature` | SoC Temperature | ... |
 ROW = re.compile(r'^\|\s*`(\w+)`\s*\|\s*`(\w+)\.lg_tv_(\w+)`', re.M)
 
@@ -55,7 +55,11 @@ def published():
         t0 = src.index('var LG_SETTING_ENTITIES = [')
         t1 = src.index('\n];', t0)
         table = re.findall(DECL, src[t0:t1])
-    return set(in_array + pushed + table)
+    # Hue Sync's supported settings/diagnostics are built dynamically; their
+    # stable IDs and domains live in the entity catalogue.
+    hue_catalogue = [(domain, name) for name, domain in re.findall(
+        r"\{\s*id:\s*'(huesync_\w+)',\s*type:\s*'(\w+)'", src[:start])]
+    return set(in_array + pushed + table + hue_catalogue)
 
 
 def documented():

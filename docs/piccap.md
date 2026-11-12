@@ -1,4 +1,4 @@
-# PicCap and ambient light
+# PicCap and Ambient Light
 
 [PicCap](https://github.com/TBSniller/piccap) is an open-source background screen capture tool for rooted LG webOS TVs. It captures what is currently on screen and streams video frames over the local network to an ambient lighting server—typically [Hyperion](https://hyperion-project.org/) or [HyperHDR](https://github.com/awawa-dev/HyperHDR).
 
@@ -17,9 +17,9 @@ PicCap is optional. Glasshouse inspects the TV filesystem for PicCap's applicati
 * **If PicCap is not installed or the TV runs webOS 2:** Glasshouse never queries Luna for PicCap, starts no timers, and sends no network requests. PicCap requires webOS 3 or newer; querying its service on webOS 2 stalls the Luna bus and causes watchdog resets (#746).
 * **If PicCap is installed (webOS 3+):** Glasshouse queries PicCap's background Luna service (`org.webosbrew.piccap.service/status`) to check whether capture is active.
 
-### The toggle on the System tab
+### The Ambient Light page
 
-When PicCap is installed, the **System** tab (`/?tab=advanced`) displays an **Ambient light** section with a **PicCap capture** toggle:
+When PicCap is installed, **Ambient Light** (`/?tab=ambient`), below Home in the sidebar and a top-level menu in the TV app, shows a **PicCap** category with a **PicCap Enabled** toggle after Hue Sync. Capture can feed Hyperion or HyperHDR. **Control** also has a quick toggle below Playback:
 
 * **On:** Instructs PicCap's service to start capturing (`org.webosbrew.piccap.service/start`). The ambient backlights turn on and follow the screen.
 * **Off:** Instructs PicCap to stop capturing (`org.webosbrew.piccap.service/stop`). The ambient backlights turn dark, and the TV's processor stops encoding video frames.
@@ -99,9 +99,8 @@ Once PicCap is installed and configured, Glasshouse automatically detects it on 
 ### In the Web Dashboard
 
 1. Open the Glasshouse dashboard in any browser.
-2. Go to the **System** tab (`/?tab=advanced`).
-3. Scroll down to **Ambient light**.
-4. Click the **PicCap capture** button to toggle capture on or off.
+2. Go to **Ambient Light** (`/?tab=ambient`), below Home in the sidebar.
+3. Click **PicCap Enabled** to toggle capture, or use its quick toggle below Playback on **Control**.
 
 ### In Home Assistant
 

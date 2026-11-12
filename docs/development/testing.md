@@ -97,7 +97,7 @@ shows the Picture tab.
 | [`check-ui-ids.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L29-L30) | An element the dashboard's script reaches for that the page no longer has. |
 | [`check-module-calls.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L34-L35) | A call to something a server module no longer exports, such as a caller left behind by a rename. TypeScript reads it as `any` in JavaScript, so only this finds it. |
 | [`check-strings.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L37-L38) | Dashboard text without a translation key, English joined from pieces with `+`, and translations made from English that has since changed. [Translating the dashboards](../STRINGS.md) has the rules. |
-| [`check-screensavers.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L40-L41) | Screen saver QML that the TV's QtQuick version cannot load, and placeholders (`level`, `stats`, `choice`) a folder's `uses` does not name. |
+| [`check-screensavers.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L40-L41) | Screen saver QML that the TV's QtQuick version cannot load, `entityList` manifest bounds, and placeholders (`level`, `stats`, `choice`, `ha`, `ha-list`, `color`) a folder's `uses` does not name. |
 | [`check-drift.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L43-L44) | The [entity reference](../HOME-ASSISTANT-ENTITIES.md) out of step with the entities the server publishes, and a dashboard file missing from `deploy.sh`'s list, which would never be installed. |
 | [`check-entity-stability.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L47-L48) | A Home Assistant entity from the last release that has gone, been renamed or changed domain, which leaves it unavailable and stops every automation that used it. A deliberate removal is listed in [`scripts/retired-entities.txt`](https://github.com/rorygallagher2024/glasshouse/blob/main/scripts/retired-entities.txt) with the reason. |
 | [`shellcheck`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L51-L52) | Mistakes in `deploy.sh`, `tvwebctl`, the boot script, `check-all.sh` and `tv.sh`. |
@@ -105,7 +105,7 @@ shows the Picture tab.
 | [`check-entities.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L57-L58) | A Home Assistant entity reading a field the TV's telemetry does not have, checked against a B8's real telemetry. A field read with a fallback (`else`, or `or` another field) may be absent. |
 | [`check-upgrade.js`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L61-L62) | A release the updater already installed on a TV would refuse. The updaters of the latest release and the oldest still in use install the change in place, from a local copy, as a TV does when it updates; 0.82.0 and 0.82.1 could not be installed that way (#586). |
 | [`Package build`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L65-L77) | The Homebrew Channel `.ipk` still builds, and passes the Homebrew Channel's own compatibility check for webOS 2.2 and later, the oldest confirmed (a 49LF632V). |
-| [`Unit tests`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L81-L97) | Each part of the server, and one suite that starts the whole server against a fake TV and MQTT broker, with a TV that answers, one that answers late, wrongly or not at all, MQTT disabled, and a Glasshouse Home file missing, and checking the dashboard keeps answering and telemetry keeps flowing. |
+| [`Unit tests`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L81-L99) | Each part of the server, and one suite that starts the whole server against a fake TV and MQTT broker, with a TV that answers, one that answers late, wrongly or not at all, MQTT disabled, and a Glasshouse Home file missing, and checking the dashboard keeps answering and telemetry keeps flowing. |
 
 No unit test runs a TV's own commands on the computer it runs on. A module
 that restarts LG's services, such as `apps.js` and `samrescan.js`, takes the
@@ -116,7 +116,7 @@ Linux computer for a password and could end a Mac's own processes (#918).
 ## On each supported TV's node
 
 The unit tests run on node 0.10 (webOS 2, a 49LF632V), 0.12 (webOS 4, the B8), 8.12 (webOS 6), 16
-(webOS 9, the C2), 20 and 24, each in parallel in the [`tv-node` job](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L81-L97). A computer's node
+(webOS 9, the C2), 20 and 24, each in parallel in the [`tv-node` job](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L81-L99). A computer's node
 accepts calls an older one lacks.
 
 So the tests run on node 0.10 as well, and use none of what it lacks: no
@@ -276,7 +276,7 @@ A weather check finds the badge hidden until the heartbeat brings a push, then d
 
 Home visibility checks delay the layout reply behind the source reply: last watched stays hidden until its saved switch is known and updates as soon as a changed layout arrives. They also cover app counts, CEC addresses, older layouts with no switches, the clock keeping its place, and with the clock switched off and the rows along the bottom, the clock hidden and the rows lower, and in Alternative View the clock right of Last watched and no row titles. `test-home.js` covers saving each switch, switching them back on and ignoring non-boolean updates.
 
-The Home availability check covers a TV with neither Glasshouse Home nor LG's Home's options, which has no Home tab; one with LG's Home's options alone, which shows them, Open Home at power-on usable among them, without Glasshouse Home's switch or options; and Glasshouse Home switched on, which leaves LG's Home's layout and hidden system apps out. `test-home-lg-options.js` checks the server's side: the Home tab offered for hiding system apps on webOS 3.8, and for Open Home at power-on alone, the options only sent when asked for, no tab with none of them, and hiding system apps neither offered nor switched on under Glasshouse Home. `test-tile-hiding-handover.js` checks its handover to Glasshouse Home: the apps it hid hidden there, those in More apps kept, and sam never restarted for it.
+The Home availability check covers a TV with neither Glasshouse Home nor LG's Home's options, which has no Home tab; one with LG's Home's options alone, which shows them, Open Home at power-on usable among them, without Glasshouse Home's switch or options; Glasshouse Home switched on, which leaves LG's Home's layout and hidden system apps out; and with live preview enabled, standalone webOS 6 keeping Preview sound, Keep the preview on and Preview in the tile visible while webOS 4 hides them. `test-home-lg-options.js` checks the server's side: the Home tab offered for hiding system apps on webOS 3.8, and for Open Home at power-on alone, the options only sent when asked for, no tab with none of them, and hiding system apps neither offered nor switched on under Glasshouse Home. `test-tile-hiding-handover.js` checks its handover to Glasshouse Home: the apps it hid hidden there, those in More apps kept, and sam never restarted for it.
 
 For the TV app dashboard, checks verify the two-column layout geometry (the row list on the left and the hint pane on the right with non-zero dimensions and horizontal adjacency), remote D-pad navigation (`ArrowDown`, `ArrowUp`, `PageDown`), list translateY scrolling with the scroll arrow indicator, tab switching (`ArrowRight`, `ArrowLeft`), and that the OLED Care tab is dropped when running on a non-OLED (LCD) TV profile.
 
@@ -303,11 +303,14 @@ and show none.
 
 From the repository root, `scripts/check-all.sh` runs the checks CI runs, side by side, and shows the output of any that fail. It runs `npm ci` only when `package-lock.json` has changed since the last install, and `--quick` leaves out the dashboard and updater checks. `check-upgrade.js` reads the committed tree, so commit first.
 
+The script requires Bash on the development computer: its `-nt` file timestamp
+comparison is supported by Bash but is not portable to POSIX `sh`.
+
 ```bash
 scripts/check-all.sh
 ```
 
-`node test/run-all.js` runs only the unit tests. Words after it run only the suites whose file name contains one, as `node test/run-all.js home luna`, and `--times` lists the slowest. A failing suite's output is printed again after the results, so the end of a long CI log shows it. A suite whose header says `@shards N` is started N times, each copy running every Nth step through `test/shard.js`; each step then sets up what it needs, as no copy sees the steps another runs. Suites whose mocks answer without real network, file or process I/O, `test-home.js` among them, run their timers on `test/fake-clock.js`: the clock jumps to the next timer whenever nothing else is left to run, so a step that waits out a 10 s grace period takes no time and can never fire short of it. Suites with real I/O wait for what they check through `test/wait-for.js`.
+`node test/run-all.js` runs only the unit tests, twice as many suites at a time as the computer has processors (`TEST_CONCURRENCY` sets another number), the ones whose header says `@slow` first, so the longest, the server start-up at about 40 s, sets the total. Every suite at once (136) starved GitHub's 4-processor runners until the runner was lost and the job hung; the job now also fails after 5 minutes. Words after it run only the suites whose file name contains one, as `node test/run-all.js home luna`, and `--times` lists the slowest. A failing suite's output is printed again after the results, so the end of a long CI log shows it. A suite whose header says `@shards N` is started N times, each copy running every Nth step through `test/shard.js`; each step then sets up what it needs, as no copy sees the steps another runs. Suites whose mocks answer without real network, file or process I/O, `test-home.js` among them, run their timers on `test/fake-clock.js`: the clock jumps to the next timer whenever nothing else is left to run, so a step that waits out a 10 s grace period takes no time and can never fire short of it. Suites with real I/O wait for what they check through `test/wait-for.js`.
 
 The dashboard check needs Playwright and its browser:
 
@@ -567,3 +570,51 @@ The audio route checks use a readable stream for request bodies, including
 the UTF-8 decoding used by every JSON POST.
 The split-character route fixture uses the server's buffer helper so it
 also runs on Node 0.10 and 0.12.
+
+`test-huesync-settings.js` covers captured Hue Sync response encodings, native
+write payloads, validation, unavailable settings, rejected and ignored writes,
+control permissions, retained MQTT JSON and discovery. The streaming regression
+suites retain their power-only fixtures. The fuller retail-app capture establishes the boolean write protocol, but these
+mocks do not establish Glasshouse behavior on hardware.
+
+`test-huesync-events.js` uses synthetic identifiers and diagnostic objects. It
+covers native subscription values, privacy filtering, reconnect hydration,
+read/event races, transient availability, unsupported keys, external busy and
+readiness blockers, shared write serialization, delayed completion, ignored and
+delayed stops, subscription teardown and polling fallback. The dashboard check
+also exercises automatic-start notifications, stale controls remaining visible,
+busy/read-only locking and all settings without a submenu or status paragraph. Never add the raw setup capture, pairing
+codes, credentials, bridge/device IDs or real entertainment-area names to tests.
+
+The drift check includes Hue Sync's dynamic entity IDs from the catalogue,
+so the documented settings rows are checked alongside static
+entities. Computed ID prefixes are not treated as complete entity IDs.
+
+Home Assistant discovery validation now includes the synthetic
+`test/fixtures/huesync-settings.json` settings. It renders all eight controls with fresh, stale and missing state and checks the select command
+mappings. This covers the final templates after safe-field rewriting, where
+missing JSON properties become `none` rather than undefined.
+
+The Hue Sync event tests also verify that internal readiness and busy status
+create no Home Assistant diagnostic entities or diagnostic MQTT publications.
+
+Ambient Light dashboard checks cover the web page below Home, the TV menu
+between Audio and Screen Saver, every Hue Sync setting directly accessible, and
+independent PicCap/Hue Sync switches. The
+web Control shortcuts stay below Playback and share state and write permissions
+with Ambient Light. Checks cover narrow/light and wide/dark layouts, native
+command types, duplicate area names, failed writes, read-only/busy states and
+disappearing integrations. Both dashboards check separate integration categories,
+Hue Sync before PicCap, Enabled labels in settings, shorter remote labels, and
+availability combinations with neither, either or both integrations. Missing integrations leave no empty
+headings or shortcuts. PicCap descriptions name both Hyperion and HyperHDR.
+`test-dashboard-view.js` also checks the TV menu order, flat row grouping, empty
+state and per-field stale permissions.
+The browser checks verify that all four Hue Sync boolean settings use standard
+On/Off pill toggles, send native booleans and retain their confirmed state after
+a refused write. Both dashboards hide the Ambient Light tab when neither
+integration is available, including on deep links, and keep it for a stopped
+integration. The web tab returns when an integration becomes available again.
+`test-routes.js` verifies both integrations' write permissions. Screenshots use
+synthetic data. The Hue Sync checks wait for intercepted requests to finish
+before closing each page, so pending stats replies cannot outlive the page.

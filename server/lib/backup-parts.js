@@ -374,7 +374,7 @@ var NOT_CARRIED = {
   input: 'action', sendText: 'action', launch_app: 'action', launchApp: 'action', launch_url: 'action',
   launchUrl: 'action', close_app: 'action', closeApp: 'action', playback: 'action', media: 'action',
   resetAdId: 'action', clearAdCookies: 'action', privacyAllOff: 'action', sleepTimer: 'action',
-  piccap: 'action', huesync: 'action', serviceMenuOpen: 'action', tvAppInstall: 'action', tvAppRemove: 'action',
+  piccap: 'action', huesync: 'action', huesyncSetting: 'external Hue Sync app settings, not stored by Glasshouse', serviceMenuOpen: 'action', tvAppInstall: 'action', tvAppRemove: 'action',
   rcu: 'action', keyboardText: 'action', keyboardKey: 'action', screensaver: 'action', toast: 'action',
   screensaverRandomPool: 'choose',
   powerOn: 'action', powerOff: 'action', reboot: 'action', refresherSchedule: 'action', refresherCancel: 'action',
@@ -393,6 +393,8 @@ var NOT_CARRIED = {
   blockTvUpdates: 'choose',
   // Rewrites LG's app list and restarts its app manager; Glasshouse Home's own hiding is in the layout.
   tileHiding: 'choose',
+  // Screen saver entity slots and colors can be chosen per TV.
+  screensaverEntities: 'choose', screensaverColor: 'choose',
   setTileHidingAllowed: 'experimental', setWebos10ScreensaversAllowed: 'experimental', setInputBarAllowed: 'experimental', setPointerEnabled: 'experimental', setPointerSettings: 'experimental',
   setNetworkDebuggerAllowed: 'access', setDashboardPort: 'access',
   setDeviceName: 'tvName',

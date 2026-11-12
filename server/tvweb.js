@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.144.1';
+var TVWEB_VERSION = '0.144.2';
 
 var http = require('http');
 var fs = require('fs');
@@ -50,6 +50,7 @@ var privacy = require('./lib/privacy');
 var devtools = require('./lib/devtools');
 var oled = require('./lib/oled');
 var screensavers = require('./lib/screensavers');
+var haEntity = require('./lib/haentity');
 var idlesaver = require('./lib/idlesaver');
 var appsModule = require('./lib/apps');
 var iconServer = require('./lib/iconserver');
@@ -592,6 +593,9 @@ homeScreen.reapply();
 // The TV's own 12 or 24 hour setting, for every clock Glasshouse draws. A
 // change restages a clock screen saver, which has it written into its file.
 clockFormat.init({ luna: luna, onChange: function () { screensavers.restageScreensaver(); } });
+// The reads a screen saver's own values come from: the token stays here, in
+// config.json, and the saver only ever sees this server's address.
+haEntity.init({ config: CONFIG });
 screensavers.init({
   luna: luna,
   hour12: clockFormat.hour12,
@@ -601,7 +605,8 @@ screensavers.init({
   KEY_BACK: controls.KEY_BACK,
   inputKey: telemetry.inputKey,
   watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('screensaver', on); },
-  mediaState: telemetry.readMediaState
+  mediaState: telemetry.readMediaState,
+  haEntity: haEntity
 });
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
   watching: function () { return !!(iptv && iptv.watching()); } });
@@ -672,6 +677,7 @@ function huesyncWanted() {
 }
 var huesync = huesyncTransport.init({
   luna: luna,
+  Subscription: lunaTransport.Subscription,
   pollIntervalMs: CONFIG.huesync && CONFIG.huesync.pollIntervalMs,
   wanted: huesyncWanted,
   onAvailableChange: function () { huesyncChanged(); }
@@ -1021,6 +1027,7 @@ routes.init({
   homeLauncher: homeLauncher,
   iptv: iptv,
   screensavers: screensavers,
+  haEntity: haEntity,
   updater: updater,
   tvApp: tvApp,
   restartSelf: restartSelf,
@@ -1312,6 +1319,7 @@ function setupHomeAssistant() {
       isOled: oled.getIsOled(),
       piccap: piccapWanted() && piccap.getState() !== null,
       huesync: huesyncWanted() && huesync.getState() !== null,
+      huesyncSettings: huesync.getSettings(),
       iconBaseUrl: iconServer.baseUrl()
     });
 
@@ -1328,6 +1336,14 @@ function setupHomeAssistant() {
         watchHistory: history.status().running,
         userEntities: (CONFIG.mqtt && CONFIG.mqtt.entities) || {}
       })
+    });
+
+    // Settings unsupported after an upgrade/removal must not leave retained controls.
+    ha.HA_ENTITIES.forEach(function (entry) {
+      if (entry.id.indexOf('huesync_') !== 0) return;
+      if (!entities.some(function (entity) { return entity.id === entry.id; })) {
+        mqttClient.publish(discPfx + '/' + entry.type + '/' + devId + '/' + entry.id + '/config', '', true);
+      }
     });
 
     for (var i = 0; i < entities.length; i++) {
@@ -1999,7 +2015,9 @@ function startGlasshouseHome() {
     handOverTileHiding: function (hide) { appsModule.handOverToHome(hide); }
   });
   homeLauncher.init({ stateDir: __dirname, version: TVWEB_DISPLAY_VERSION });
-  glasshouseHome.start();
+  // Its app packages its loading page and splash at install, so it is
+  // brought up to this release, once it is not in front.
+  glasshouseHome.start(function () { glasshouseHome.refreshApp(); });
   iptv.start();
   // The Guide key set to Home's guide acts only while Home is on with a playlist.
   remoteKeys.availabilityChanged();

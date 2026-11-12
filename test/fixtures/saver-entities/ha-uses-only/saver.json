@@ -1,0 +1,12 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": "Uses without entities",
+  "description": "It asks for ha and declares nothing.",
+  "license": "MIT",
+  "uses": [
+    "level",
+    "ha"
+  ],
+  "order": 900
+}

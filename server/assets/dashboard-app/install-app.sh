@@ -14,6 +14,15 @@
 
 ACTION=${1:-install}
 SRC=${2:-/var/lib/tvweb/assets/dashboard-app}
+# Reuse shared files (such as splash.png) from dashboard-app when packaging home-app.
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+src_file() {
+  if [ -f "$SRC/$1" ]; then
+    printf '%s\n' "$SRC/$1"
+  elif [ "$1" = assets/splash.png ] && [ -f "$SCRIPT_DIR/assets/splash.png" ]; then
+    printf '%s\n' "$SCRIPT_DIR/assets/splash.png"
+  fi
+}
 # The same script installs Glasshouse Home's app (assets/home-app), named by
 # the app's own appinfo.json. Only the dashboard's app gives way to the
 # Homebrew Channel's tile: Glasshouse Home has no other.
@@ -115,12 +124,13 @@ if [ "$ACTION" = refresh ]; then
   installed || { echo '{"ok":true,"installed":false,"refreshed":false}'; exit 0; }
   from_hbc && { echo '{"ok":true,"installed":true,"refreshed":false}'; exit 0; }
   stale=""
-  for f in appinfo.json index.html assets/icon80.png assets/icon130.png; do
-    [ -f "$SRC/$f" ] || continue
+  for f in appinfo.json index.html assets/icon80.png assets/icon130.png assets/splash.png; do
+    src=$(src_file "$f")
+    [ -n "$src" ] || continue
     if [ "$f" = index.html ]; then
-      want=$(ported "$SRC/$f" | md5sum)
+      want=$(ported "$src" | md5sum)
     else
-      want=$(md5sum < "$SRC/$f")
+      want=$(md5sum < "$src")
     fi
     if [ "$want" != "$(md5sum < "$APPDIR/$f" 2>/dev/null)" ]; then
       stale=1; break
@@ -157,6 +167,8 @@ mkdir -p "$APP/assets" "$PKG"
 cp "$SRC/appinfo.json" "$APP/" || exit 0
 ported "$SRC/index.html" > "$APP/index.html" || exit 0
 cp "$SRC/assets/icon80.png" "$SRC/assets/icon130.png" "$APP/assets/" 2>/dev/null
+splash=$(src_file assets/splash.png)
+if [ -n "$splash" ]; then cp "$splash" "$APP/assets/splash.png" || exit 0; fi
 cp "$SRC/packageinfo.json" "$PKG/" || exit 0
 
 printf '2.0\n' > "$WORK/debian-binary"

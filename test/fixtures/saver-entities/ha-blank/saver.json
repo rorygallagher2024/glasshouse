@@ -1,0 +1,16 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": "Blank slot",
+  "description": "A screen saver with one slot left for the owner to fill in.",
+  "license": "MIT",
+  "uses": [
+    "level",
+    "ha"
+  ],
+  "order": 902,
+  "entities": {
+    "power": "sensor.example_power",
+    "spare": ""
+  }
+}
