@@ -458,6 +458,16 @@ becomes the remote shell's own `argv`:
   and dies when the connection closes — the server starts, publishes discovery,
   then vanishes. `start-stop-daemon -b -m` survives.
 
+Where the TV has systemd, `tvwebctl start`, `restart`, `update` and `rollback`
+run again under `systemd-run --scope`, so the server and its watchdog are in a
+scope of their own. Otherwise they are in the cgroup of whatever started them,
+and an LG service's restart kills its whole cgroup: on a 50NANO756PR
+(webOS 6) the Homebrew Channel's start-up, and with it Glasshouse, its SSH and
+telnet, ran in `webapp-mgr.service`, which some settings changes restarted
+(#1355); on a C2 (webOS 9.2.2) they ran in `ls-hubd.service`. A scope is made
+first with `/bin/true`, so where none can be made the action runs where it is,
+once. The Homebrew Channel's own SSH and telnet stay where they are.
+
 `rsync` ships with the Homebrew Channel but is broken on-device: it cannot load
 `libcrypto.so.1.1`. Use `scp`, which works over the sftp subsystem.
 
