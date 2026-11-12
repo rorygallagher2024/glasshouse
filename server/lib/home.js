@@ -226,6 +226,7 @@ var webosVersion = null;
  * manager is told not to keep LG's Home loaded (its setPreloadPolicy, not
  * configd, so a TV restarted without Glasshouse Home has LG's as it was), and
  * an LG Home that starts anyway is stopped. Both are undone with the place.
+ * The policy is also needed on webOS 10, see preloadHeld().
  */
 var LG_HOME_WATCH_MS = 10000;
 // The policy is told again once a minute: the preload manager loses it when it restarts.
@@ -1587,10 +1588,21 @@ function switchTo(on, cb) {
   })();
 }
 
-// Where the preload manager was seen starting LG's Home again (#1042). webOS
-// 10's Home is Flutter too, but Glasshouse Home held its place there without this.
+// Where the preload manager was seen starting LG's Flutter Home again behind
+// the view (#1042), which is then stopped.
 function flutterHome() {
   return parseInt(String(webosVersion || ''), 10) >= 11;
+}
+
+/*
+ * Where the preload manager is told not to keep LG's Home loaded. On a B4
+ * (webOS 10.3.2) it launched com.webos.app.home three times in 90 s while an
+ * app played a 4K stream with under 200 MB free, and the third brought
+ * Glasshouse Home in front of the app, which was closed for memory minutes
+ * later (#1372). With the policy off it launched no Home in nine minutes.
+ */
+function preloadHeld() {
+  return parseInt(String(webosVersion || ''), 10) >= 10;
 }
 
 function preloadLgHome(enabled) {
@@ -1606,7 +1618,7 @@ function preloadLgHome(enabled) {
 
 // LG's Home kept from coming back while Glasshouse Home has its place, or let back.
 function holdLgHome(on) {
-  if (!flutterHome()) return;
+  if (!preloadHeld()) return;
   if (on === lgHomeHeld) {
     if (on) preloadLgHome(false);
     return;
@@ -1623,7 +1635,7 @@ function holdLgHome(on) {
 function watchLgHome() {
   // Not while a switch runs: giving LG's Home its place back opens it.
   if (switchBusy || !switchWant || !takeover.mounted()) return;
-  if (takeover.stopLgHome()) console.log('home: LG\'s Home was started again behind Glasshouse Home; stopped it');
+  if (flutterHome() && takeover.stopLgHome()) console.log('home: LG\'s Home was started again behind Glasshouse Home; stopped it');
   if (++lgHomeTicks % LG_PRELOAD_EVERY === 0) preloadLgHome(false);
 }
 
