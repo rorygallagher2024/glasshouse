@@ -1737,6 +1737,18 @@ by luna-send still drew the view. Stopping LG's Home every few seconds and
 "isEnabled":false}}`, sent again about once a minute, kept Home opening through
 reboots.
 
+## The preload manager launching Home during playback (B4, webOS 10.3.2)
+
+Reported in #1372 from an OLED77B46LA, with Glasshouse Home in LG's Home's
+place. While Jellyfin played a 4K Dolby Vision file at 94 Mbps, with
+`MemAvailable` under 200 MB, `com.webos.service.preloadmanager` launched
+`com.webos.app.home` three times in 90 s (`preloadType` `periodic`,
+`preloadMode` `criu`). After the third, surface-manager hid Jellyfin's window
+and showed Home's, and under four minutes later Jellyfin was no longer running.
+With `setPreloadPolicy` `isEnabled: false` for `com.webos.app.home` the preload
+manager launched only HDMI 4 in nine minutes of the same file, and set back to
+`true` it launched Home 8 s later.
+
 ## Native key filters (C5, webOS 11.2.0)
 
 - **No JavaScript filters.** `surface-manager` runs on Weston

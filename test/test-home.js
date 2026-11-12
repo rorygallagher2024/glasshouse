@@ -1730,18 +1730,30 @@ step('on webOS 11 LG\'s Flutter Home is kept from coming back while Glasshouse H
   });
 });
 
-step('on webOS 9 and 10 the preload manager is left as it is', function (done) {
+// #1372: on a B4 (webOS 10.3.2) the preload manager launched Home during
+// playback, and Glasshouse Home came in front of the app.
+step('on webOS 10 the preload manager is told not to keep Home loaded, without stopping LG\'s Home; webOS 9 is left as it is', function (done) {
   start(null, {});
   home.enable(function (r) {
     assert.ok(r.ok, r.error);
-    assert.deepEqual(tv.preload, []);
+    assert.deepEqual(tv.preload, [], 'webOS 9 is left as it is');
     home.disable(function () {
-      start(null, { webosVersion: '10.3.1' });
+      start(null, { webosVersion: '10.3.2', lgHomeWatchMs: 10 });
       tv.nudgeIgnored = true;
       home.enable(function (r10) {
         assert.ok(r10.ok, r10.error);
-        assert.deepEqual(tv.preload, [], 'webOS 10 held its place without it');
-        home.disable(function () { done(); });
+        assert.deepEqual(tv.preload, [LG_HOME + ' false'], 'webOS 10: the preload manager told not to keep it');
+        tv.events = [];
+        wait(80, function () {
+          assert.ok(tv.preload.length >= 2, 'told again, as the preload manager forgets it when it restarts');
+          assert.strictEqual(tv.events.filter(function (e) { return /^stop LG/.test(e); }).length, 0,
+            'the watch does not stop LG\'s Home on webOS 10');
+          home.disable(function (d) {
+            assert.ok(d.ok, d.error);
+            assert.strictEqual(tv.preload[tv.preload.length - 1], LG_HOME + ' true', 'let back with the place');
+            done();
+          });
+        });
       });
     });
   });
