@@ -1499,6 +1499,16 @@ function hdmiInputs(cb) {
         var signalling = [];
         for (var p = 0; p < ports.length; p++) if (ports[p].connected) signalling.push(ports[p]);
 
+        /*
+         * eim's hdmiPlugIn is the device on a port, its connected the cable:
+         * on a C2 (webOS 9.2) a cable with nothing on its other end read
+         * connected true, hdmiPlugIn false, and a PC switched off at the
+         * wall hdmiPlugIn true. A B4 (webOS 10.3) and a G3 report connected
+         * true on every port, cable or not, so where every port says so it
+         * tells nothing. webOS 4 (a B8) gives neither, and CEC alone says.
+         */
+        var hdmiDevs = devs.filter(function (dev) { return dev && names.hdmiKeyForPortId(dev.id); });
+        var cableTold = hdmiDevs.some(function (dev) { return dev.connected === false; });
         var inputs = [];
         for (var d = 0; d < devs.length; d++) {
           var key = names.hdmiKeyForPortId(devs[d].id);
@@ -1506,7 +1516,9 @@ function hdmiInputs(cb) {
           var hasCec = devs[d].lastUniqueId !== undefined &&
                        devs[d].lastUniqueId !== 255 &&
                        devs[d].lastUniqueId !== -1;
-          var seen = !!(hasCec || devs[d].hdmiPlugIn || devs[d].connected || (devs[d].subCount > 0));
+          var plugIn = typeof devs[d].hdmiPlugIn === 'boolean' ? devs[d].hdmiPlugIn
+            : cableTold && devs[d].connected === true;
+          var seen = !!(hasCec || plugIn || (devs[d].subCount > 0));
           // HDMI_2 is com.webos.app.hdmi2, for firmware that leaves appId out.
           var appId = devs[d].appId || names.inputAppId(key);
           var portNum = names.hdmiPort(key);
@@ -1517,6 +1529,8 @@ function hdmiInputs(cb) {
             appId: appId,
             active: !!devs[d].activate && appId === onScreen,
             deviceSeen: seen,
+            // A cable in the port with no device on it, where the TV tells them apart.
+            cableOnly: !seen && cableTold && devs[d].connected === true,
             signal: null,
             earc: portNum === earcPort || devs[d].port === earcPort
           });

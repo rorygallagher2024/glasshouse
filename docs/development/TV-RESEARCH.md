@@ -291,6 +291,13 @@ On the same TV, unplugged HDMI 1 and HDMI 3 returned `connected: true`, but
 sublists. Where present, `hdmiPlugIn` takes precedence over `connected` for
 plug detection. The device list does not report per-device power state.
 
+On a C2 (webOS 9.2.2), `connected` follows the cable: a cable with nothing on
+its other end read `connected: true`, `hdmiPlugIn: false`, ports with no cable
+`false` for both, and a PC switched off at the wall `hdmiPlugIn: true`. A B4
+(webOS 10.3.2) reported `connected: true` on all four ports, two with no cable
+(#1382), as the G3 does. So `connected` tells a cable apart only on a TV where
+some port reports it `false`; the Metrics tab shows such a port as Cable only.
+
 ### Selecting and waking a source through a receiver (G3, webOS 9.2.2)
 
 LG's installed `InputPicker/Controllers/ConnectionsInterfaces/Interfaces.qml`
