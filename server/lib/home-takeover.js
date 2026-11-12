@@ -307,13 +307,10 @@ function samHasManifest(cb) {
 /*
  * sam reads the directory again and reports the type wanted. webOS 10 and 11
  * ignore the nudge, which costs its 8 s of polls before the block and release
- * there, so they go to the block and release first.
+ * there, so they go to the block and release first. sam is never restarted if
+ * neither method works: take() fails clean and restores LG's Home.
  */
-// Whether the last reread had to restart sam, as only webOS 5 and 6 do.
-var restartedLast = false;
-
 function reread(wantWeb, cb, check) {
-  restartedLast = false;
   if (!samrescan) return cb(false);
   check = check || function (done) {
     samType(function (type) { done(type !== null && (type === 'web') === wantWeb); });
@@ -326,15 +323,7 @@ function reread(wantWeb, cb, check) {
   }
   call(first, function (ok) {
     if (ok) return cb(true);
-    call(then, function (ok) {
-      if (ok) return cb(true);
-      // webOS 5 and 6 have neither the configd nudge nor the block and
-      // release (a CX on 5.5.0-19, a C1 on 6.5.3): there sam reads the files
-      // again only by restarting it.
-      if (!samrescan.restart) return cb(false);
-      restartedLast = true;
-      samrescan.restart(check, cb);
-    });
+    call(then, cb);
   });
 }
 
@@ -446,7 +435,7 @@ module.exports = {
   stage: stage,
   mounted: mounted,
   samType: samType,
-  restartedSam: function () { return restartedLast; },
+  restartedSam: function () { return false; },
   take: take,
   release: release,
   stopLgHome: stopLgHome,

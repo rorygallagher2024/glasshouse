@@ -2972,6 +2972,34 @@ step('weather from the internet: asked for only with a place and the screen on, 
   });
 });
 
+step('where the TV can neither nudge nor blockSystemApp, Glasshouse Home never falls back to restarting sam', function (done) {
+  start(null);
+  tv.rescanAbsent = true;
+  home.enable(function (r) {
+    assert.strictEqual(r.ok, false, 'takeover refuses when sam cannot reread');
+    assert.strictEqual(tv.events.indexOf('restart'), -1, 'never falls back to restarting sam on enable');
+    assert.strictEqual(taken(), false, 'LG Home stays in place');
+
+    // Also when switching off after an active takeover: unmounts cleanly, never restarts sam.
+    tv.rescanAbsent = false;
+    home.enable(function (rOn) {
+      assert.ok(rOn.ok, rOn.error);
+      tv.events = [];
+      tv.rescanAbsent = true;
+      home.disable(function (rOff) {
+        assert.strictEqual(rOff.ok, false, 'reports that sam did not take LG Home back');
+        assert.strictEqual(tv.events.indexOf('restart'), -1, 'never restarts sam on disable');
+        assert.strictEqual(fs.realpathSync(appDir), fs.realpathSync(lgFiles), 'bind-mount removed cleanly');
+        tv.rescanAbsent = false;
+        home.disable(function (rClean) {
+          assert.ok(rClean.ok, rClean.error);
+          done();
+        });
+      });
+    });
+  });
+});
+
 step('on webOS 3 to 6 the app is refreshed only once it is not in front, since a reinstall closes it', function (done) {
   var actions = [];
   var install = function (action, cb) { actions.push(action); cb({ ok: true, refreshed: true }); };

@@ -1067,6 +1067,7 @@
  "srv.apps.protectedUninstall": {"text": "Védett alapvető alkalmazás nem távolítható el", "from": "Protected core application cannot be uninstalled"},
  "srv.apps.removeRefused": {"text": "a TV nem távolította el", "from": "the TV would not remove it"},
  "srv.apps.tilesHeld": {"text": "A rendszeralkalmazások elrejtése ezen a TV-n egyelőre ki van kapcsolva. webOS 10 és újabb rendszeren a kép, a hang és a HDMI-vezérlés kikapcsolva maradhat, amíg a TV-t ki nem húzzák a konnektorból. A már elrejtett alkalmazások a TV következő teljes újraindítása után visszatérnek.", "from": "Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted."},
+ "srv.apps.tilesNotTaken": {"text": "A TV nem alkalmazta a módosítást az alkalmazásain, ezért visszavontuk.", "from": "The TV did not take the change to its apps, so it was undone."},
  "srv.arOff.badHour": {"text": "a kezdés 0 és 23 közötti óra lehet", "from": "the start must be an hour from 0 to 23"},
  "srv.backup.newer": {"text": "Ez a biztonsági mentés egy újabb Glasshouse-ból származik: előbb frissítse ezt a TV-t", "from": "That backup is from a newer Glasshouse: update this TV first"},
  "srv.backup.notBackup": {"text": "Ez a fájl nem Glasshouse biztonsági mentés", "from": "That file is not a Glasshouse backup"},

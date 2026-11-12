@@ -1748,6 +1748,7 @@
  "srv.apps.removeRefused": {"from": "the TV would not remove it", "text": "la TV a refusé de la retirer"},
  "srv.apps.tilesGlasshouseHome": {"from": "Glasshouse Home hides apps itself: arrange them there", "text": "Glasshouse Home masque les apps lui-même : arrangez-les là-bas"},
  "srv.apps.tilesHeld": {"from": "Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.", "text": "Masquer les apps système est désactivé sur cette TV pour l'instant. Sur webOS 10 et ultérieur, cela peut laisser l'image, le son et le contrôle HDMI désactivés jusqu'au débranchement de la TV. Les apps déjà masquées reviennent après le prochain redémarrage complet de la TV."},
+ "srv.apps.tilesNotTaken": {"text": "La TV n’a pas appliqué le changement à ses apps, il a donc été annulé.", "from": "The TV did not take the change to its apps, so it was undone."},
  "srv.arOff.badHour": {"from": "the start must be an hour from 0 to 23", "text": "le début doit être une heure entre 0 et 23"},
  "srv.audio.hostRefused": {"from": "Use the TV address to change the DTS override.", "text": "Utilisez l'adresse de la TV pour changer le forçage DTS."},
  "srv.audio.override.boolean": {"from": "Enabled must be true or false.", "text": "Enabled doit être true ou false."},

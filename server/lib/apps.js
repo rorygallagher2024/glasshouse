@@ -32,6 +32,7 @@ var PAGE_TITLES_FILE = '/var/lib/tvweb/saved_page_titles.json';
 var BROWSER_ID = 'com.webos.app.browser';
 var TILE_HIDING_FLAG_FILE = '/var/lib/tvweb/tile_hiding_enabled';
 var TILES_HELD_ERROR = msg('srv.apps.tilesHeld', 'Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.');
+var TILES_NOT_TAKEN_ERROR = msg('srv.apps.tilesNotTaken', 'The TV did not take the change to its apps, so it was undone.');
 
 var APP_BASES = [
   '/media/system/apps/usr/palm/applications',
@@ -243,63 +244,88 @@ function setTileHidingEnabled(enabled, cb) {
     return;
   }
   enabled = !!enabled;
-  if (enabled && !tileHidingAllowed()) {
-    if (cb) cb({ ok: false, error: TILES_HELD_ERROR });
-    return;
-  }
-  try {
-    mkdirp(path.dirname(TILE_HIDING_FLAG_FILE));
-    fs.writeFileSync(TILE_HIDING_FLAG_FILE, enabled ? '1\n' : '0\n', 'utf8');
-  } catch (e) {}
   if (!enabled) {
+    try {
+      mkdirp(path.dirname(TILE_HIDING_FLAG_FILE));
+      fs.writeFileSync(TILE_HIDING_FLAG_FILE, '0\n', 'utf8');
+    } catch (e) {}
     var hiddenMap = readHiddenAppsList();
     var ids = Object.keys(hiddenMap);
     var i = 0;
     function unmountNext() {
       if (i >= ids.length) {
-        return restartSam(function (restarted) {
-          if (cb) cb({ ok: true, tileHidingEnabled: false, samRestarted: restarted });
+        if (!ids.length) {
+          if (cb) cb({ ok: true, tileHidingEnabled: false, samRestarted: false });
+          return;
+        }
+        return restartSam(function (rescanned) {
+          if (cb) cb({ ok: true, tileHidingEnabled: false, samRestarted: rescanned });
         }, visibleAs(ids, true));
       }
       var appId = ids[i++];
       unmountAllForApp(appId, unmountNext);
     }
     unmountNext();
-  } else {
-    try {
-      mkdirp(path.dirname(TILE_HIDING_FLAG_FILE));
-      fs.writeFileSync(TILE_HIDING_FLAG_FILE, '1\n', 'utf8');
-    } catch (e) {}
-    var hiddenMap = readHiddenAppsList();
-    var ids = Object.keys(hiddenMap);
-    var i = 0;
-    function remountNext() {
-      if (i >= ids.length) {
-        return restartSam(function (restarted) {
-          if (cb) cb({ ok: true, tileHidingEnabled: true, samRestarted: restarted });
-        }, visibleAs(ids.filter(function (id) {
-          return fs.existsSync(path.join(OVERRIDE_DIR, id + '.json'));
-        }), false));
-      }
-      var appId = ids[i++];
-      var ovr = path.join(OVERRIDE_DIR, appId + '.json');
-      if (fs.existsSync(ovr)) {
-        var tgts = findAllAppinfoPaths(appId);
-        var j = 0;
-        function mountTarget() {
-          if (j >= tgts.length) return remountNext();
-          var tgt = tgts[j++];
-          execFn('/bin/mount', ['--bind', ovr, tgt], { timeout: 4000 }, function () {
-            mountTarget();
-          });
-        }
-        mountTarget();
-      } else {
-        remountNext();
-      }
-    }
-    remountNext();
+    return;
   }
+
+  if (!tileHidingAllowed()) {
+    if (cb) cb({ ok: false, error: TILES_HELD_ERROR });
+    return;
+  }
+  var wasEnabled = isTileHidingEnabled();
+  try {
+    mkdirp(path.dirname(TILE_HIDING_FLAG_FILE));
+    fs.writeFileSync(TILE_HIDING_FLAG_FILE, '1\n', 'utf8');
+  } catch (e) {}
+  var hiddenMap = readHiddenAppsList();
+  var ids = Object.keys(hiddenMap);
+  var i = 0;
+  var mountedIds = [];
+  function remountNext() {
+    if (i >= ids.length) {
+      if (!mountedIds.length) {
+        if (cb) cb({ ok: true, tileHidingEnabled: true, samRestarted: false });
+        return;
+      }
+      return restartSam(function (rescanned) {
+        if (!rescanned) {
+          var k = 0;
+          function undoNext() {
+            if (k >= mountedIds.length) {
+              try {
+                if (!wasEnabled) fs.writeFileSync(TILE_HIDING_FLAG_FILE, '0\n', 'utf8');
+              } catch (e) {}
+              if (cb) cb({ ok: false, tileHidingEnabled: wasEnabled, error: TILES_NOT_TAKEN_ERROR });
+              return;
+            }
+            unmountAllForApp(mountedIds[k++], undoNext);
+          }
+          undoNext();
+          return;
+        }
+        if (cb) cb({ ok: true, tileHidingEnabled: true, samRestarted: rescanned });
+      }, visibleAs(mountedIds, false));
+    }
+    var appId = ids[i++];
+    var ovr = path.join(OVERRIDE_DIR, appId + '.json');
+    if (fs.existsSync(ovr)) {
+      var tgts = findAllAppinfoPaths(appId);
+      if (tgts.length > 0) mountedIds.push(appId);
+      var j = 0;
+      function mountTarget() {
+        if (j >= tgts.length) return remountNext();
+        var tgt = tgts[j++];
+        execFn('/bin/mount', ['--bind', ovr, tgt], { timeout: 4000 }, function () {
+          mountTarget();
+        });
+      }
+      mountTarget();
+    } else {
+      remountNext();
+    }
+  }
+  remountNext();
 }
 
 /*
@@ -320,7 +346,7 @@ function handOverToHome(hide, cb) {
     if (i < ids.length) return unmountAllForApp(ids[i++], next);
     console.log('apps: tile hiding handed to Glasshouse Home (' + ids.length + ' hidden there)');
     if (!lunaFn || !ids.length) return cb(true);
-    samrescan.refresh(visibilityCheck(visibleAs(ids, true)), function (reread) {
+    rescanApps(visibleAs(ids, true), function (reread) {
       if (!reread) console.log('apps: sam did not read the apps again; they show on LG\'s Home from the next cold boot');
       cb(true);
     });
@@ -374,6 +400,11 @@ function startFailedDependents(cb) {
 var SAM_SETTLE_POLL_MS = 500;
 var SAM_SETTLE_POLLS = 24;
 
+/*
+ * sam updates asynchronously after a nudge or block-and-release: wait until
+ * listLaunchPoints settles (same three reads running, or after 12 s) before
+ * answering the caller.
+ */
 function waitForSam(cb) {
   if (!lunaFn) return cb();
   var polls = 0, last = null, same = 0;
@@ -392,10 +423,9 @@ function waitForSam(cb) {
 }
 
 /*
- * Hides and unhides each need sam restarted. Several in quick succession share
- * one: those that ask while a restart is running wait for a single next one,
- * and all are answered when it is done. Hiding six tiles on a C2 otherwise ran
- * six restarts back to back, and the Apps tab reloaded between them.
+ * Several rescan requests in quick succession share one run: callers that ask
+ * while one is running wait for a single next run, and all are answered when it
+ * is done.
  */
 var samRestartRunning = false;
 // Each waiting caller as { cb, expect }; see restartSam.
@@ -465,27 +495,64 @@ function visibilityCheck(expect) {
   };
 }
 
-/*
- * Makes sam read the apps again: a nudge where the TV has one (lib/samrescan,
- * #366), checked against expect, and otherwise a restart. cb(true) once sam
- * has them.
- */
-function restartSam(cb, expect) {
-  // Where tile hiding is not allowed, turning it off still unmounts the overrides
-  // and the tiles come back at the next full restart.
-  if (!tileHidingAllowed()) {
-    console.log('apps: sam not restarted - tile hiding is disabled in configuration (#366)');
-    if (cb) cb(false);
-    return;
+function makeSingleCheck(expect) {
+  return function (id) {
+    var one = {};
+    one[id] = expect[id];
+    return visibilityCheck(one);
+  };
+}
+
+function rescanApps(expect, cb) {
+  if (!lunaFn) return cb(false);
+  var ids = expect ? Object.keys(expect) : [];
+  function finish(reread, how) {
+    if (!reread) {
+      console.log('apps: sam did not read the apps again, and is not restarted (#366)');
+      return cb(false);
+    }
+    console.log('apps: sam read the apps again (' + how + '), without a restart');
+    waitForSam(function () { cb(true); });
   }
-  if (lunaFn) {
-    return samrescan.refresh(expect ? visibilityCheck(expect) : null, function (reread) {
-      if (!reread) return restartSamNow(cb);
-      console.log('apps: sam read the apps again, without a restart');
-      waitForSam(function () { if (cb) cb(true); });
+  if (ids.length > 0 && samrescan.canRereadApp()) {
+    return samrescan.rereadApps(ids, makeSingleCheck(expect), function (reread) {
+      finish(reread, 'block and release');
     });
   }
-  restartSamNow(cb);
+  samrescan.refresh(ids.length > 0 ? visibilityCheck(expect) : null, function (reread) {
+    finish(reread, 'nudge');
+  });
+}
+
+/*
+ * Makes sam read the apps again without restarting it: block-and-release per
+ * app on webOS 10+ (lib/samrescan.rereadApps), or the configd nudge on webOS
+ * 7/9 (samrescan.refresh). Never restarts sam (#366, #1315). cb(true) once
+ * sam has caught up, cb(false) otherwise.
+ */
+/*
+ * How this TV's sam is made to read the apps again: a block and release of
+ * each app (webOS 10 and 11), the configd nudge (webOS 7 and 9), or, where it
+ * has neither (webOS 4 to 6), a restart. A restart is kept for tile hiding
+ * there because it is the only way, and owners using LG's launcher hide tiles
+ * with it; Glasshouse Home and the newer TVs never restart sam (#366, #1315).
+ */
+function rescanMethod(cb) {
+  if (samrescan.canRereadApp()) return cb('reread');
+  samrescan.canNudge(function (has) { cb(has ? 'nudge' : 'restart'); });
+}
+
+function restartSam(cb, expect) {
+  cb = cb || function () {};
+  if (!tileHidingAllowed()) {
+    console.log('apps: sam not rescanned - tile hiding is disabled in configuration (#366)');
+    return cb(false);
+  }
+  if (!lunaFn) return restartSamNow(cb);
+  rescanMethod(function (how) {
+    if (how === 'restart') return restartSamNow(cb);
+    rescanApps(expect, cb);
+  });
 }
 
 function restartSamNow(cb) {
@@ -856,7 +923,7 @@ function getApps(cb) {
       installed.sort(function (x, y) { return String(x.title || '').localeCompare(String(y.title || '')); });
       systemTiles.sort(function (x, y) { return String(x.title || '').localeCompare(String(y.title || '')); });
 
-      // Where sam can be nudged, hidden tiles come back at boot without a sam
+      // Where sam can be nudged or reread per app, hidden tiles come back at boot without a sam
       // restart, so the brief blank screen the restart causes does not happen.
       samrescan.canNudge(function (nudge) {
         cb({
@@ -866,7 +933,7 @@ function getApps(cb) {
           savedPages: savedPages,
           hiddenCount: Object.keys(hiddenMap).length,
           tileHidingEnabled: isTileHidingEnabled(),
-          tileHidingNudge: nudge,
+          tileHidingNudge: (nudge || samrescan.canRereadApp()) ? true : nudge,
           writable: !!(configObj && configObj.allowControl)
         });
       });
@@ -911,6 +978,7 @@ function hideTile(appId, cb) {
       return cb({ ok: false, error: 'Failed to write override appinfo: ' + e.message });
     }
 
+    var wasEnabled = isTileHidingEnabled();
     var i = 0;
     var mountErrors = [];
     var mountNext = function () {
@@ -929,12 +997,29 @@ function hideTile(appId, cb) {
 
         var expect = {};
         expect[appId] = false;
-        return restartSamShared(function (restarted) {
+        return restartSamShared(function (rescanned) {
+          if (!rescanned) {
+            return unmountAllForApp(appId, function () {
+              unlinkQuiet(ovr);
+              var currentMap = readHiddenAppsList();
+              delete currentMap[appId];
+              writeHiddenAppsList(currentMap);
+              try {
+                if (!wasEnabled) fs.writeFileSync(TILE_HIDING_FLAG_FILE, '0\n', 'utf8');
+              } catch (e) {}
+              cb({
+                ok: false,
+                id: appId,
+                hidden: false,
+                error: TILES_NOT_TAKEN_ERROR
+              });
+            });
+          }
           cb({
             ok: true,
             id: appId,
             hidden: true,
-            samRestarted: restarted
+            samRestarted: rescanned
           });
         }, expect);
       }
@@ -951,7 +1036,7 @@ function hideTile(appId, cb) {
 }
 
 /**
- * Unhides a previously hidden tile by unmounting the override and restarting SAM.
+ * Unhides a previously hidden tile by unmounting the override and asking sam to reread.
  */
 function unhideTile(appId, cb) {
   if (!configObj || !configObj.allowControl) {
@@ -970,12 +1055,12 @@ function unhideTile(appId, cb) {
 
     var expect = {};
     expect[appId] = true;
-    restartSamShared(function (restarted) {
+    restartSamShared(function (rescanned) {
       cb({
         ok: true,
         id: appId,
         hidden: false,
-        samRestarted: restarted
+        samRestarted: rescanned
       });
     }, expect);
   });
@@ -990,14 +1075,18 @@ function unhideAllTiles(cb) {
   }
 
   var hiddenMap = readHiddenAppsList();
-  var ids = Object.keys(hiddenMap);
+  var allIds = Object.keys(hiddenMap);
+  var ids = allIds.slice();
 
   var unmountAllRemaining = function () {
     if (ids.length === 0) {
       writeHiddenAppsList({});
-      return restartSam(function (restarted) {
-        cb({ ok: true, restoredCount: Object.keys(hiddenMap).length, samRestarted: restarted });
-      }, visibleAs(Object.keys(hiddenMap), true));
+      if (!allIds.length) {
+        return cb({ ok: true, restoredCount: 0, samRestarted: false });
+      }
+      return restartSam(function (rescanned) {
+        cb({ ok: true, restoredCount: allIds.length, samRestarted: rescanned });
+      }, visibleAs(allIds, true));
     }
 
     var curId = ids.shift();
