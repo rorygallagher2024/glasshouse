@@ -43,6 +43,15 @@ var server = http.createServer(function (req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end('this is not json');
   }
+  if (req.url === '/api/states/sensor.split') {
+    // The degree sign's two bytes in separate chunks, as a long answer arrives.
+    var bytes = new Buffer(JSON.stringify({ state: '21', attributes: { unit_of_measurement: '\u00b0C' } }), 'utf8');
+    var cut = bytes.indexOf ? bytes.indexOf(0xb0) : -1;
+    if (cut < 0) for (var bi = 0; bi < bytes.length; bi++) if (bytes[bi] === 0xb0) { cut = bi; break; }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.write(bytes.slice(0, cut));
+    return setTimeout(function () { res.end(bytes.slice(cut)); }, 5);
+  }
   if (req.url === '/api/states/sensor.huge') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ state: '1', attributes: { pad: new Array(80000).join('x') } }));
@@ -124,6 +133,22 @@ server.listen(0, '127.0.0.1', function () {
                       assert.ok(/http/.test(r10.error), r10.error);
                       console.log('  \u2713 update() and test() check /api/ with fallback to stored token');
 
+                      // The saved token is never sent to an address other than the saved one.
+                      var elsewhere = hits;
+                      haEntity.test({ url: 'http://localhost:' + server.address().port }, function (rElse) {
+                        assert.strictEqual(rElse.ok, false);
+                        assert.ok(/Enter the token/.test(rElse.error), rElse.error);
+                        assert.strictEqual(hits, elsewhere, 'nothing was sent to the other address');
+                        haEntity.test({ url: base + '/' }, function (rSame) {
+                          assert.strictEqual(rSame.ok, true, rSame.error);
+                          console.log('  \u2713 the saved token goes only to the saved address');
+
+                          // A character split across chunks still decodes.
+                          haEntity.read('sensor.split', function (rSplit) {
+                            assert.strictEqual(rSplit.ok, true, rSplit.error);
+                            assert.strictEqual(rSplit.attributes.unit_of_measurement, '\u00b0C');
+                            console.log('  \u2713 a character split across two chunks decodes whole');
+
                       // 8. list() returns sorted entities without live state values and updates status()
                       haEntity.list(function (r11) {
                         assert.strictEqual(r11.ok, true, r11.error);
@@ -160,6 +185,9 @@ server.listen(0, '127.0.0.1', function () {
                               server.close();
                               console.log('ALL test-haentity.js assertions passed!');
                             });
+                          });
+                        });
+                      });
                           });
                         });
                       });

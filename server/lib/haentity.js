@@ -84,7 +84,9 @@ function requestHaJson(targetUrl, token, opts, cb) {
       if (bytes > maxBytes) return fail(label + ' answered more than ' + maxBytes + ' bytes');
       var body;
       try {
-        body = JSON.parse(chunks.join(''));
+        // Joined as bytes first: a character split across two chunks would
+        // otherwise decode as two replacement characters.
+        body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
       } catch (e) {
         return fail(label + ' did not answer JSON');
       }
@@ -155,13 +157,18 @@ function test(opts, cb) {
   cb = cb || function () {};
   opts = opts || {};
   var testUrl = typeof opts.url === 'string' && opts.url ? opts.url.replace(/\/+$/, '') : cfg.url;
-  var testToken = (typeof opts.token === 'string' && opts.token) ? opts.token : cfg.token;
+  // The saved token goes only to the saved address: a test of another one
+  // brings its own, or the token would be handed to whatever address is named.
+  var testToken = (typeof opts.token === 'string' && opts.token) ? opts.token
+    : testUrl === cfg.url ? cfg.token : '';
 
   if (!/^https?:\/\//i.test(testUrl)) {
     return cb({ ok: false, error: 'URL must start with http:// or https://' });
   }
   if (!testToken) {
-    return cb({ ok: false, error: 'A Long-Lived Access Token is required' });
+    return cb({ ok: false, error: cfg.token && testUrl !== cfg.url
+      ? 'Enter the token to test an address other than the saved one'
+      : 'A Long-Lived Access Token is required' });
   }
 
   requestHaJson(testUrl + '/api/', testToken, { maxBytes: MAX_BYTES, label: 'Home Assistant' }, function (r) {
