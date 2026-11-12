@@ -3,6 +3,8 @@
  *
  * Fixture packages are built here: an ar of three members, tar and gzip made
  * with node's zlib. Installs run against the fake luna-send, scripted per test.
+ *
+ * @slow: started first by run-all.js, which runs a few suites at a time.
  */
 
 var assert = require('assert');

@@ -84,6 +84,8 @@ jobs:
   # on webOS 9 (C2), and on 20 and 24. In parallel, each its own job.
   tv-node:
     runs-on: ubuntu-latest
+    # The suites take about a minute: a hang fails here, not 45 minutes later.
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:

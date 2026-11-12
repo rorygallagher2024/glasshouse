@@ -2724,7 +2724,8 @@ async function visitHomeInternetTv(browser, base, problems) {
     await key(13);
     await waitUntil(page, async () => /adding/.test(await page.locator('#stage').getAttribute('class')));
     if (!/adding/.test(await page.locator('#stage').getAttribute('class'))) fail('the Add channels tile did not open the panel');
-    else if (!/UK News/.test(await page.locator('#adItems').textContent())) fail('the add panel did not list the playlist\'s groups');
+    // The panel opens before its list of the playlist's groups is read.
+    else if (!await waitUntil(page, async () => /UK News/.test(await page.locator('#adItems').textContent()))) fail('the add panel did not list the playlist\'s groups');
     previewInTile = true;
     await page.goto(base + '/assets/home.html');
     await page.waitForFunction(() => !!document.getElementById('pvVideo').getAttribute('src'));

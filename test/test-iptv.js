@@ -2,6 +2,8 @@
  * test/test-iptv.js - Internet TV end to end: the server module starting real
  * worker processes that download from a local provider through curl, and
  * what it publishes, keeps and refuses
+ *
+ * @slow: started first by run-all.js, which runs a few suites at a time.
  */
 
 var assert = require('assert');

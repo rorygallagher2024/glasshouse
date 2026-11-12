@@ -1,5 +1,7 @@
 /**
  * test/test-mqtt.js - MiniMQTT reconnects, latency, and error reporting
+ *
+ * @slow: started first by run-all.js, which runs a few suites at a time.
  */
 
 var assert = require('assert');

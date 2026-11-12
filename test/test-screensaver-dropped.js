@@ -1,6 +1,8 @@
 /**
  * Screen saver fallback: launch, dismissal, restart recovery and refusals.
  * Strict ES5: runs on node 0.12.
+ *
+ * @slow: started first by run-all.js, which runs a few suites at a time.
  */
 var assert = require('assert');
 var env = require('./mocks/mock-env').createMockEnv();
