@@ -520,6 +520,46 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ homeAutoLaunch and quickBoot coordinate with Glasshouse Home');
 })();
 
+(function testNightlyRefreshControl() {
+  var written = null;
+  var setEnabledVal = null;
+  var cacheCleared = 0;
+  var mockResettime = {
+    _supported: false,
+    supported: function () { return this._supported; },
+    setEnabled: function (val, cb) { setEnabledVal = val; cb({ ok: true }); }
+  };
+
+  controls.init({
+    config: { allowControl: true },
+    resettime: mockResettime,
+    writeSettings: function (patch, cb) { written = patch; cb(null); },
+    telemetry: { clearCache: function () { cacheCleared++; } }
+  });
+
+  // Unsupported TV
+  controls.doControl('nightlyRefresh', true, function (res) {
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.error.indexOf('not supported') !== -1, true);
+  });
+
+  // Supported TV
+  mockResettime._supported = true;
+  controls.doControl('nightlyRefresh', true, function (res) {
+    assert.strictEqual(res.ok, true);
+    assert.deepEqual(written, { nightlyRefresh: true });
+    assert.strictEqual(setEnabledVal, true);
+    assert.strictEqual(cacheCleared, 1);
+  });
+
+  controls.doControl('nightlyRefresh', false, function (res) {
+    assert.strictEqual(res.ok, true);
+    assert.deepEqual(written, { nightlyRefresh: false });
+    assert.strictEqual(setEnabledVal, false);
+  });
+  console.log('  ✓ nightlyRefresh control enforces support and toggles settings');
+})();
+
 // A notification's type is LG's toast type, and ":icon:" opening its text an icon
 (function testToastIcon() {
   var fs = require('fs');
@@ -765,6 +805,32 @@ console.log('Running test-controls.js ...');
     fs.closeSync = realClose;
   }
   console.log('  ✓ Play / Pause sends pause or play from the pipe, and in turn with no pipe');
+})();
+
+// 5b. screensaverEntities control validation and delegation
+(function testScreensaverEntities() {
+  var savedArgs = null;
+  var cleared = 0;
+  controls.init({
+    config: { allowControl: true },
+    telemetry: { clearCache: function () { cleared++; } },
+    screensavers: {
+      setSaverEntities: function (id, ents, cb) {
+        savedArgs = { id: id, ents: ents };
+        cb({ ok: true });
+      }
+    }
+  });
+  controls.doControl('screensaverEntities', { saver: 'ambient' }, function (res) {
+    assert.strictEqual(res.ok, false);
+    assert.ok(/requires saver and entities/.test(res.error));
+  });
+  controls.doControl('screensaverEntities', { saver: 'ambient', entities: { climate: 'sensor.temp' } }, function (res) {
+    assert.strictEqual(res.ok, true);
+  });
+  assert.deepEqual(savedArgs, { id: 'ambient', ents: { climate: 'sensor.temp' } });
+  assert.strictEqual(cleared, 1);
+  console.log('  ✓ screensaverEntities validates arguments and delegates to screensavers');
 })();
 
 console.log('ALL test-controls.js assertions passed!\n');

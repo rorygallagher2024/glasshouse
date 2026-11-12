@@ -45,6 +45,8 @@ var gameModule = null;
 var powerModule = null;
 /** @type {typeof import('./remotebattery')} */
 var remoteBatteryModule = null;
+/** @type {typeof import('./resettime')} */
+var resettimeModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
 var alwaysReadyScreenOn = false;
@@ -220,6 +222,7 @@ function init(opts) {
   screensaversModule = opts.screensavers;
   gameModule = opts.game;
   powerModule = opts.power || null;
+  resettimeModule = opts.resettime || null;
   remoteBatteryModule = opts.remoteBattery || null;
   homeModule = opts.home || null;
   tvwebVersionStr = opts.tvwebVersion || '0.0.0';
@@ -611,7 +614,48 @@ var VIC_SIZES = (function () {
  * colour the total width counts characters, 2752 at 10 bits and 3300 at 12
  * for 1080p's 2200.
  */
+function readHdmiReceiverStatus(port) {
+  return readTrimmed('/proc/lg/hdmi20/port' + port + '/status') ||
+    readTrimmed('/proc/lgtv-driver/hdmi_status/hdmi.p' + port);
+}
+
+function isRealtekHdmiRaw(raw) {
+  return !!raw && (/===== HDMI STATUS =====/.test(raw) || /^\s*phy_lock_status\s*:/m.test(raw));
+}
+
+function realtekField(raw, key) {
+  var m = raw.match(new RegExp('^\\s*' + key + '\\s*:\\s*([^\\r\\n]+)', 'm'));
+  return m ? m[1].trim() : null;
+}
+
+var REALTEK_CHROMA = { '0': 'R444', '1': 'Y422', '2': 'Y444', '3': 'Y420' };
+
+function parseRealtekTiming(raw) {
+  // Realtek leaves hpd_state at 1 on empty ports; phy_lock_status gates signal lock.
+  var locked = realtekField(raw, 'phy_lock_status') === '1';
+  var width = toInt(realtekField(raw, 'timing_active_w'), 0) || toInt(realtekField(raw, 'link_video_width'), 0);
+  var height = toInt(realtekField(raw, 'timing_active_h'), 0) || toInt(realtekField(raw, 'link_video_height'), 0);
+  var rate100 = toInt(realtekField(raw, 'link_frame_rate_x100_hz'), 0);
+  var vFreq10 = toInt(realtekField(raw, 'timing_v_freq'), 0);
+  var refresh = rate100 > 0 ? Math.round(rate100 / 100) : (vFreq10 > 0 ? Math.round(vFreq10 / 10) : 0);
+  var clockKhz = toInt(realtekField(raw, 'pixel_clock_khz'), 0) || toInt(realtekField(raw, 'phy_tmds_clk_khz'), 0);
+  var vic = VIC_SIZES[toInt(realtekField(raw, 'avi_vic'), 0)];
+  if (vic && width > 0 && height > 0 && Math.abs(vic[0] - width) <= 2 && Math.abs(vic[1] - height) <= 2) {
+    width = vic[0];
+    height = vic[1];
+  }
+  var hasTiming = locked && width > 0 && height > 0;
+  return {
+    connected: locked,
+    width: hasTiming ? width : null,
+    height: hasTiming ? height : null,
+    refreshHz: hasTiming && refresh ? refresh : null,
+    pixelClockKhz: hasTiming && clockKhz ? clockKhz : null
+  };
+}
+
 function parseTiming(raw) {
+  if (isRealtekHdmiRaw(raw)) return parseRealtekTiming(raw);
   function field(re) { var m = raw.match(re); return m ? m[1].trim() : null; }
   var width = toInt(field(/horizontal-active:\s*(\d+)/), 0);
   var height = toInt(field(/vertical-active:\s*(\d+)/), 0);
@@ -664,7 +708,7 @@ function readVideoTiming(targetPort) {
 
   var anyConn = false;
   for (var i = 0; i < portsToScan.length; i++) {
-    var raw = readTrimmed('/proc/lg/hdmi20/port' + portsToScan[i] + '/status');
+    var raw = readHdmiReceiverStatus(portsToScan[i]);
     if (!raw) continue;
     var t = parseTiming(raw);
     if (!t.connected) continue;
@@ -758,7 +802,7 @@ function getActiveHdmiDiagnostics(targetPort) {
     : [0, 1, 2, 3];
 
   for (var i = 0; i < portsToScan.length; i++) {
-    var diag = hdmiDiagnostics(readTrimmed('/proc/lg/hdmi20/port' + portsToScan[i] + '/status'), portsToScan[i]);
+    var diag = hdmiDiagnostics(readHdmiReceiverStatus(portsToScan[i]), portsToScan[i]);
     if (diag) return diag;
   }
   return null;
@@ -788,6 +832,24 @@ function hdmiLinkFields(raw) {
 // The on-screen input's diagnostics, as the dashboard and Home Assistant show them.
 function hdmiDiagnostics(raw, port) {
   if (!raw) return null;
+  if (isRealtekHdmiRaw(raw)) {
+    var locked = realtekField(raw, 'phy_lock_status') === '1';
+    var has5v = realtekField(raw, 'link_hdmi_5v') === '1';
+    if (!locked && !has5v) return null;
+    var enc = locked ? realtekField(raw, 'avi_pixel_encoding') : null;
+    if (locked && enc === null) enc = realtekField(raw, 'link_color_space');
+    var chromaKey = enc !== null ? REALTEK_CHROMA[enc] : null;
+    var allm = locked ? realtekField(raw, 'allm_mode') : null;
+    return {
+      port: port,
+      phy_mode: null,
+      chroma: chromaKey ? names.hdmiChroma(chromaKey).display : null,
+      hdcp: null,
+      allm: allm === null ? null : allm === '1',
+      vrr: null,
+      qms: null
+    };
+  }
   var isConn = /connected:\s*on/i.test(raw) || /PHY\s+Lock\[1\]/i.test(raw) || /is5Vconnected\[1\]/i.test(raw);
   if (!isConn) return null;
 
@@ -816,7 +878,7 @@ function hdmiDiagnostics(raw, port) {
 // Every receiver's status file, read once for a collection, by receiver.
 function readHdmiStatus() {
   var status = [];
-  for (var p = 0; p < 4; p++) status.push(readTrimmed('/proc/lg/hdmi20/port' + p + '/status'));
+  for (var p = 0; p < 4; p++) status.push(readHdmiReceiverStatus(p));
   return status;
 }
 
@@ -841,17 +903,24 @@ function hdmiLinks(status, map) {
 
 /*
  * Whether a powered source is on each HDMI input's cable, by the input map:
- * is5Vconnected is the source's +5V on the cable, there with or without a
- * link, as from a streamer asleep. The HDMI 2.0 driver's files have no such
- * field, and their inputs are left out.
+ * is5Vconnected (or link_hdmi_5v on Realtek) is the source's +5V on the cable,
+ * there with or without a link, as from a streamer asleep. The HDMI 2.0
+ * driver's files have no such field, and their inputs are left out.
  */
 function hdmiSources(status, map) {
   var sources = [];
   for (var n = 1; n <= 4; n++) {
     var raw = typeof map[n] === 'number' ? status[map[n]] : null;
-    var fiveVolt = raw ? raw.match(/is5Vconnected\[(\d)\]/i) : null;
-    if (!fiveVolt) continue;
-    sources.push({ input: n, receiver: map[n], powered: fiveVolt[1] === '1' });
+    if (!raw) continue;
+    var powered = null;
+    if (isRealtekHdmiRaw(raw)) {
+      var v5 = realtekField(raw, 'link_hdmi_5v');
+      if (v5 === '0' || v5 === '1') powered = v5 === '1';
+    } else {
+      var fiveVolt = raw.match(/is5Vconnected\[(\d)\]/i);
+      if (fiveVolt) powered = fiveVolt[1] === '1';
+    }
+    if (powered !== null) sources.push({ input: n, receiver: map[n], powered: powered });
   }
   return sources;
 }
@@ -906,7 +975,7 @@ function getHdmiSignal(hdmiNum, map, status) {
   if (typeof hdmiNum !== 'number' || hdmiNum < 1 || hdmiNum > 4) return null;
   var p = map[hdmiNum];
   if (typeof p !== 'number' || p < 0 || p >= 4) return null;
-  var raw = status ? status[p] : readTrimmed('/proc/lg/hdmi20/port' + p + '/status');
+  var raw = status ? status[p] : readHdmiReceiverStatus(p);
   if (!raw) return null;
   var t = parseTiming(raw);
   if (!t.connected) return null;
@@ -1325,13 +1394,22 @@ function appStorage(cb) {
 function hdmiPorts() {
   var ports = [];
   for (var i = 0; i < 4; i++) {
-    var raw = readTrimmed('/proc/lg/hdmi20/port' + i + '/status');
+    var raw = readHdmiReceiverStatus(i);
     if (!raw) continue;
-    function field(re) { var m = raw.match(re); return m ? m[1].trim() : null; }
     var t = parseTiming(raw);
-    var colorDepth = field(/deep-color-mode:\s*(\S+ \S+)/) || field(/DeepColorMode\[\s*([^\]]+)\]/);
-    if (colorDepth) colorDepth = colorDepth.replace(/^[.\s]+/, '');
-    var isInterlaced = /interlaced:\s*yes/i.test(raw) || /Interlaced\[1\]/i.test(raw);
+    var colorDepth, isInterlaced;
+    if (isRealtekHdmiRaw(raw)) {
+      // color_depth stayed 0 on 8-bit 4K50 while link_color_depth held 8;
+      // timing_scan_type:1 is progressive (3840x2160p50, v_total 2250).
+      var depthVal = toInt(realtekField(raw, 'link_color_depth'), 0);
+      colorDepth = depthVal > 0 ? (depthVal + 'bit') : null;
+      isInterlaced = false;
+    } else {
+      var field = function (re) { var m = raw.match(re); return m ? m[1].trim() : null; };
+      colorDepth = field(/deep-color-mode:\s*(\S+ \S+)/) || field(/DeepColorMode\[\s*([^\]]+)\]/);
+      if (colorDepth) colorDepth = colorDepth.replace(/^[.\s]+/, '');
+      isInterlaced = /interlaced:\s*yes/i.test(raw) || /Interlaced\[1\]/i.test(raw);
+    }
 
     ports.push({
       port: i,
@@ -1346,6 +1424,66 @@ function hdmiPorts() {
   return ports;
 }
 
+/*
+ * The HDMI port that carries ARC / eARC. Most LG TVs wire eARC to HDMI 2,
+ * but some series (such as the B4 on webOS 9 and 10) place it on HDMI 3.
+ * arccontroller/getARCEDIDInfo reports arcHDMIPort directly where supported;
+ * on older firmware (webOS 4) without that service, a connected CEC audio
+ * receiver on eim/getAllInputStatus identifies the port, falling back to 2.
+ */
+var hdmiEarc;
+var hdmiEarcWaiters = null;
+
+function detectedArcPort(reply) {
+  if (!reply || reply.returnValue !== true || reply.arcDevice !== true || !Array.isArray(reply.devices)) return null;
+  for (var i = 0; i < reply.devices.length; i++) {
+    var d = reply.devices[i];
+    if (!d || d.connected !== true || d.hdmiPlugIn === false) continue;
+    var port = Number(d.port);
+    if (!port || port < 1 || port > 4 || port !== Math.floor(port)) {
+      port = names.hdmiPort(names.hdmiKeyForPortId(d.id));
+    }
+    if (!port || port < 1 || port > 4) continue;
+    var subs = Array.isArray(d.subList) ? d.subList : [];
+    for (var s = 0; s < subs.length; s++) {
+      var sub = subs[s];
+      if (sub && sub.id === 'SIMPLINK' && sub.cecpDevType === 5 &&
+          (sub.portId === undefined || Number(sub.portId) === port)) {
+        return port;
+      }
+    }
+  }
+  return null;
+}
+
+function hdmiEarcPort(eimRes, cb) {
+  if (hdmiEarc !== undefined) return cb(hdmiEarc);
+  var detected = detectedArcPort(eimRes);
+  var ask = lunaCachedFn || lunaFn;
+  if (!ask) return cb(detected || 2);
+  if (hdmiEarcWaiters) return hdmiEarcWaiters.push(cb);
+  hdmiEarcWaiters = [cb];
+  var onReply = function (arcEdid) {
+    var port = arcEdid && arcEdid.returnValue !== false && Number(arcEdid.arcHDMIPort);
+    if (port && port >= 1 && port <= 4) {
+      hdmiEarc = port;
+    } else if (detected) {
+      hdmiEarc = detected;
+    } else if (arcEdid && arcEdid.returnValue !== false) {
+      hdmiEarc = 2;
+    }
+    var result = hdmiEarc || detected || 2;
+    var waiting = hdmiEarcWaiters;
+    hdmiEarcWaiters = null;
+    for (var i = 0; i < waiting.length; i++) waiting[i](result);
+  };
+  if (lunaCachedFn) {
+    lunaCachedFn('com.webos.service.arccontroller/getARCEDIDInfo', {}, 300000, onReply);
+  } else {
+    lunaFn('com.webos.service.arccontroller/getARCEDIDInfo', {}, onReply);
+  }
+}
+
 function hdmiInputs(cb) {
   if (!lunaFn) return cb({ ok: false, error: 'luna bus not available' });
   hdmiReceiverMap(function (receiverMap) {
@@ -1354,39 +1492,43 @@ function hdmiInputs(cb) {
     // another app is in front of it. Only the foreground app says whether the
     // input is on screen.
     lunaCachedFn('com.webos.applicationManager/getForegroundAppInfo', {}, 4000, function (fg) {
-      var onScreen = (fg && fg.appId) || null;
-      var devs = (res && res.devices) || [];
-      var ports = hdmiPorts();
-      var signalling = [];
-      for (var p = 0; p < ports.length; p++) if (ports[p].connected) signalling.push(ports[p]);
+      hdmiEarcPort(res, function (earcPort) {
+        var onScreen = (fg && fg.appId) || null;
+        var devs = (res && res.devices) || [];
+        var ports = hdmiPorts();
+        var signalling = [];
+        for (var p = 0; p < ports.length; p++) if (ports[p].connected) signalling.push(ports[p]);
 
-      var inputs = [];
-      for (var d = 0; d < devs.length; d++) {
-        var key = names.hdmiKeyForPortId(devs[d].id);
-        if (!key) continue;
-        var hasCec = devs[d].lastUniqueId !== undefined &&
-                     devs[d].lastUniqueId !== 255 &&
-                     devs[d].lastUniqueId !== -1;
-        var seen = !!(hasCec || devs[d].hdmiPlugIn || devs[d].connected || (devs[d].subCount > 0));
-        // HDMI_2 is com.webos.app.hdmi2, for firmware that leaves appId out.
-        var appId = devs[d].appId || names.inputAppId(key);
-        inputs.push({
-          id: devs[d].id,
-          port: devs[d].port,
-          label: devs[d].label || devs[d].id,
-          appId: appId,
-          active: !!devs[d].activate && appId === onScreen,
-          deviceSeen: seen,
-          signal: null
-        });
-      }
-      for (var k = 0; k < inputs.length; k++) {
-        var receiver = receiverMap[names.hdmiPort(names.hdmiKeyForPortId(inputs[k].id))];
-        for (var r = 0; r < signalling.length; r++) {
-          if (signalling[r].port === receiver) inputs[k].signal = signalling[r];
+        var inputs = [];
+        for (var d = 0; d < devs.length; d++) {
+          var key = names.hdmiKeyForPortId(devs[d].id);
+          if (!key) continue;
+          var hasCec = devs[d].lastUniqueId !== undefined &&
+                       devs[d].lastUniqueId !== 255 &&
+                       devs[d].lastUniqueId !== -1;
+          var seen = !!(hasCec || devs[d].hdmiPlugIn || devs[d].connected || (devs[d].subCount > 0));
+          // HDMI_2 is com.webos.app.hdmi2, for firmware that leaves appId out.
+          var appId = devs[d].appId || names.inputAppId(key);
+          var portNum = names.hdmiPort(key);
+          inputs.push({
+            id: devs[d].id,
+            port: devs[d].port,
+            label: devs[d].label || devs[d].id,
+            appId: appId,
+            active: !!devs[d].activate && appId === onScreen,
+            deviceSeen: seen,
+            signal: null,
+            earc: portNum === earcPort || devs[d].port === earcPort
+          });
         }
-      }
-      cb({ ok: true, inputs: inputs, ports: ports });
+        for (var k = 0; k < inputs.length; k++) {
+          var receiver = receiverMap[names.hdmiPort(names.hdmiKeyForPortId(inputs[k].id))];
+          for (var r = 0; r < signalling.length; r++) {
+            if (signalling[r].port === receiver) inputs[k].signal = signalling[r];
+          }
+        }
+        cb({ ok: true, inputs: inputs, ports: ports, earcPort: earcPort });
+      });
     });
   });
   });
@@ -1694,6 +1836,7 @@ function clearCache() {
   lastAppsScan = 0;
   lastLightSensorProbe = 0;
   CPU_PRESENT_CACHE = null;
+  hdmiEarc = undefined;
 }
 
 /*
@@ -1985,6 +2128,9 @@ function collectStats(cb) {
         start: clockTime(gs.alwaysOnDisableStartHour, gs.alwaysOnDisableStartMinute),
         end: clockTime(gs.alwaysOnDisableEndHour, gs.alwaysOnDisableEndMinute)
       };
+      if (resettimeModule && resettimeModule.supported()) {
+        out.nightlyRefresh = resettimeModule.enabled();
+      }
     }
 
   // LG's Always Ready, a separate setting from Always-on: 'off', 'allEnabled'
@@ -2298,7 +2444,8 @@ function getCapabilities(extra) {
     hasRemoteInfo: !!remoteInfo(),
     hasPnwash: fs.existsSync('/mnt/lg/cmn_data/pnwash/completedOffRsCount'),
     hasCell: !!(HARDWARE_INFO && HARDWARE_INFO.cell),
-    hasHdmiProc: fs.existsSync('/proc/lg/hdmi20'),
+    hasHdmiProc: fs.existsSync('/proc/lg/hdmi20') || fs.existsSync('/proc/lgtv-driver/hdmi_status') ||
+      fs.existsSync('/proc/lgtv-driver/hdmi_status/hdmi.p0'),
     hasMediaState: hasMediaState,
     hasHdrStatus: fs.existsSync('/proc/lg/pe/hdr_status'),
     socArch: HARDWARE_INFO && HARDWARE_INFO.socArch,
@@ -2408,6 +2555,7 @@ module.exports = {
   appStorage: appStorage,
   hdmiPorts: hdmiPorts,
   hdmiInputs: hdmiInputs,
+  hdmiEarcPort: hdmiEarcPort,
   collectProcesses: collectProcesses,
   parseProcesses: parseProcesses,
   cpuProcessRows: cpuProcessRows,

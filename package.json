@@ -1,6 +1,6 @@
 {
   "name": "glasshouse",
-  "version": "0.143.1",
+  "version": "0.144.2",
   "private": true,
   "description": "Dashboard, remote control, OLED care, and Home Assistant MQTT bridge for LG webOS TVs",
   "devDependencies": {

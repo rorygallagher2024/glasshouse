@@ -79,6 +79,8 @@ var PAGE_PREFIX = 'page:';
 var BROWSER_APP = 'com.webos.app.browser';
 // The moving backgrounds the view can draw in place of the wallpaper pictures.
 var WALL_ANIMS = ['off', 'waves', 'particles', 'aquarium', 'aurora', 'glow', 'stars', 'ripples'];
+// How many minutes each picture of the shuffled collection stays (lib/home-wallpapers).
+var SHUFFLE_MINUTES = [1, 5, 10, 15, 30, 60];
 // The moving backgrounds' colours: auto follows the part of the day; a preset
 // or custom is a background colour and a colour for the light drawn over it.
 var ANIM_THEMES = [
@@ -314,6 +316,8 @@ var sleeps = 0;
 var powerState = null;
 var wakeTimer = null;
 var wakeRequest = null;
+// The close-then-open still to finish, cleared when the wake is cancelled.
+var wakeOpen = null;
 // Home opened over the input after a wake, until the input has had its chance to take it back.
 var wakeReopen = null;
 var wakeSettleMs = WAKE_SETTLE_MS;
@@ -402,6 +406,9 @@ function defaults() {
     previewAlways: false,
     // The live preview in the tile it shows, rather than beside the clock.
     previewInTile: false,
+    // The live preview's sound: muted unless switched on, as Home is often
+    // passed through on the way to something else.
+    previewSound: false,
     // A moving background drawn by the view in place of the pictures: off,
     // or one of WALL_ANIMS.
     wallAnim: 'off',
@@ -409,6 +416,8 @@ function defaults() {
     animTheme: 'auto',
     animSky: '#0a1f5c',
     animLight: '#4f8dff',
+    // With the owner's pictures shuffled, the minutes each stays before the next.
+    wallShuffleMinutes: 10,
     // The rows centred below the top strip, or along the bottom as on LG's Home.
     rowsBottom: false,
     // standard, or alternative: a smaller clock on the right, and the rows
@@ -500,10 +509,12 @@ function normalise(raw) {
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.previewAlways = raw.previewAlways === true;
   d.previewInTile = raw.previewInTile === true;
+  d.previewSound = raw.previewSound === true;
   d.wallAnim = WALL_ANIMS.indexOf(raw.wallAnim) !== -1 ? raw.wallAnim : 'off';
   d.animTheme = raw.animTheme === 'custom' || ANIM_THEMES.some(function (th) { return th.id === raw.animTheme; }) ? raw.animTheme : 'auto';
   d.animSky = HEX_COLOUR.test(raw.animSky) ? String(raw.animSky).toLowerCase() : d.animSky;
   d.animLight = HEX_COLOUR.test(raw.animLight) ? String(raw.animLight).toLowerCase() : d.animLight;
+  d.wallShuffleMinutes = SHUFFLE_MINUTES.indexOf(raw.wallShuffleMinutes) !== -1 ? raw.wallShuffleMinutes : d.wallShuffleMinutes;
   d.search = raw.search === true;
   d.recommended = raw.recommended === true;
   // Its cards come and go with the apps' lists, so it keeps no order of its own.
@@ -657,10 +668,12 @@ function setLayout(body, cb) {
     weatherPlace: body.weatherPlace !== undefined ? body.weatherPlace : c.weatherPlace,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
+    previewSound: typeof body.previewSound === 'boolean' ? body.previewSound : c.previewSound,
     wallAnim: body.wallAnim !== undefined ? body.wallAnim : c.wallAnim,
     animTheme: body.animTheme !== undefined ? body.animTheme : c.animTheme,
     animSky: body.animSky !== undefined ? body.animSky : c.animSky,
     animLight: body.animLight !== undefined ? body.animLight : c.animLight,
+    wallShuffleMinutes: body.wallShuffleMinutes !== undefined ? body.wallShuffleMinutes : c.wallShuffleMinutes,
     search: typeof body.search === 'boolean' ? body.search : c.search,
     recommended: typeof body.recommended === 'boolean' ? body.recommended : c.recommended,
     fade: typeof body.fade === 'boolean' ? body.fade : c.fade,
@@ -702,8 +715,9 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, wallAnim: c.wallAnim,
-    animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES, colours: c.colours,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
+    wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
     searchBlocked: search.blocked() };
 }
@@ -1461,10 +1475,20 @@ function toLgHome(why, cb) {
     return setHomeKey('', function () {
       // webOS 3: the press itself opened LG's ribbon.
       if (homeKeyRead()) return cb({ ok: true });
-      setTimeout(function () {
-        if (!injectKeyFn) return cb({ ok: true });
-        injectKeyFn(125, function (ok) { cb({ ok: !!ok }); }, 100);
-      }, 300);
+      readSettings(['defaultApps'], function (s) {
+        var homeApp = (s && s.defaultApps && s.defaultApps.home) || '';
+        if (homeApp && homeApp !== HOME_APP) {
+          return launch(homeApp, null, function (r) {
+            if (r && r.ok) return cb({ ok: true });
+            if (!injectKeyFn) return cb({ ok: true });
+            injectKeyFn(125, function (ok) { cb({ ok: !!ok }); }, 100);
+          });
+        }
+        setTimeout(function () {
+          if (!injectKeyFn) return cb({ ok: true });
+          injectKeyFn(125, function (ok) { cb({ ok: !!ok }); }, 100);
+        }, 300);
+      });
     });
   }
   if (!readConfig().enabled) return launch(LG_HOME, null, cb);
@@ -1632,9 +1656,11 @@ function change(action, cb) {
 
 function copy(o) { return JSON.parse(JSON.stringify(o)); }
 
-// webOS 3 is taken to have the same ribbon as webOS 4, untried.
+// webOS 3-6 run Glasshouse Home as a standalone app (com.tvweb.home) with the
+// Home key directed to it by the remote key filter, avoiding the sam restarts
+// of takeover that break Widevine DRM, ESN, and HDMI EDID audio on webOS 5 and 6.
 function isStandalone() {
-  return /^[34]\./.test(String(webosVersion || ''));
+  return /^[3456]\./.test(String(webosVersion || ''));
 }
 
 /*
@@ -1659,8 +1685,11 @@ function isHomeInPlace() {
 
 function supported() {
   var v = String(webosVersion || '');
-  // Tried on a B8 (4.4.3).
-  if (/^4\./.test(v) || (/^3\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true, standalone: true };
+  // Tried on a B8 (4.4.3), CX (5.5.0), and C1 (6.5.3). webOS 5 and 6 run
+  // standalone too, while the live preview options (Preview sound, Keep the
+  // preview on, Preview in the tile) are omitted only on webOS 3 and 4.
+  if (/^[56]\./.test(v)) return { ok: true, webos: v, experimental: true, standalone: true };
+  if (/^4\./.test(v) || (/^3\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true, standalone: true, previewOptions: false };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is the same native app as on webOS 9; sam is nudged from the
   // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0).
@@ -1669,13 +1698,6 @@ function supported() {
   // Tried on a G5 (webOS 10.3.1), and a C5, G3, G4 and C3 (11.2.0); a later
   // version, not tried, needs the setting.
   if (/^1[01]\./.test(v) || (parseInt(v, 10) >= 12 && allowExperimentalFn())) return { ok: true, webos: v, experimental: true };
-  // LG's Home is a native app there too (a CX on 5.5.0-19), but sam has
-  // neither the configd nudge nor the block and release, so taking its place
-  // restarts sam, which both switches need (lib/samrescan), and that closes
-  // the apps open: restartsApps has the dashboards say so. webOS 6 (a C1 on
-  // 6.4.0 and 6.5.3, a B1 on 6.5.3) shows the same limits. Tried on all three
-  // and a CX through #910.
-  if (/^[56]\./.test(v)) return { ok: true, webos: v, experimental: true, restartsApps: true };
   return {
     ok: false, webos: v || null,
     reason: msg('srv.home.untested', 'Glasshouse Home has been tried only on webOS 4, 5, 6, 7, 9, 10 and 11. This TV runs webOS {version}.', { version: v || '?' })
@@ -2490,6 +2512,8 @@ function cancelWake() {
   wakeTimer = null;
   wakeRequest = null;
   wakeReopen = null;
+  // A close started for this wake must not open Home after the wake is over.
+  wakeOpen = null;
 }
 
 /*
@@ -2538,14 +2562,32 @@ function powerStateChanged(raw) {
         if (wakeRequest !== request) return;
         var reason = r && typeof r.reason === 'string' ? r.reason : '';
         if (FULL_HOME_REASONS.indexOf(reason) === -1 || !canOpen()) return cancelWake();
+        var homeId = isStandalone() ? HOME_APP : LG_HOME;
+        var over = request.input;
         cancelWake();
         console.log('home: opening Glasshouse Home over ' + foreground + ' after a wake by ' + reason);
-        var homeId = isStandalone() ? HOME_APP : LG_HOME;
-        launch(homeId, null, function (res) {
+        // Set after cancelWake, which drops a close still in flight.
+        var mine = wakeOpen = { over: over };
+        function opened(res) {
           if (!res.ok) return console.error('home: could not open Glasshouse Home after the wake');
-          wakeReopen = { input: request.input, until: nowMs() + WAKE_REOPEN_MS };
+          wakeReopen = { input: over, until: nowMs() + WAKE_REOPEN_MS };
           watchStart('after the wake', beats, nowMs());
-        });
+        }
+        function openNow() {
+          if (wakeOpen !== mine) return;
+          wakeOpen = null;
+          launch(homeId, null, opened);
+        }
+        /*
+         * The page that stayed through Active Standby keeps a video that
+         * never plays again. On a CX (webOS 5.6.2) an IPTV stream then gave
+         * up with no picture until killApp and a launch, which load a new
+         * page. launch alone brings the old one forward. webOS 11 already
+         * closes and opens the view after a wake. The close is asynchronous,
+         * so a wake cancelled meanwhile does not open Home.
+         */
+        if (isStandalone() || flutterHome()) return openNow();
+        luna('com.palm.webappmanager/killApp', { appId: homeId }, openNow);
       });
     });
   }, wakeSettleMs);
@@ -2800,20 +2842,33 @@ function start(done) {
       homeKeysFn(true);
       handOverFn(hideApps);
     }
-    if (c.restorePending || (!c.enabled && !isStandalone() && takeover.mounted())) {
-      return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); done(); });
+    function clearPreviousTakeover(next) {
+      if (!isStandalone()) return next();
+      if (!takeover.mounted() && !c.lgDefaultHome) return next();
+      console.log('home: releasing previous takeover for standalone mode');
+      takeover.release(function () {
+        restoreDefaultHome(function () {
+          c = readConfig();
+          next();
+        });
+      });
     }
-    startingNotice(c.enabled);
-    // Off, but the Home key's target was never put back: a switch-off cut short.
-    if (!c.enabled) return syncDefaultHome(function () { done(); });
-    wasEnabled = true;
-    switchTo(true, function (r) {
-      if (!r.ok) console.error('home: could not take LG\'s Home\'s place: ' + r.error);
-      var left = 2;
-      function synced() { if (--left === 0) done(); }
-      syncLgAutoLaunch(synced);
-      syncDefaultHome(synced);
-      if (r.ok) watchBootOpen();
+    clearPreviousTakeover(function () {
+      if (c.restorePending || (!c.enabled && !isStandalone() && takeover.mounted())) {
+        return disable(function (r) { if (!r.ok) console.error('home: ' + r.error); done(); });
+      }
+      startingNotice(c.enabled);
+      // Off, but the Home key's target was never put back: a switch-off cut short.
+      if (!c.enabled) return syncDefaultHome(function () { done(); });
+      wasEnabled = true;
+      switchTo(true, function (r) {
+        if (!r.ok) console.error('home: could not ' + (isStandalone() ? 'enable Glasshouse Home' : 'take LG\'s Home\'s place') + ': ' + r.error);
+        var left = 2;
+        function synced() { if (--left === 0) done(); }
+        syncLgAutoLaunch(synced);
+        syncDefaultHome(synced);
+        if (r.ok) watchBootOpen();
+      });
     });
   });
 }
@@ -2925,8 +2980,11 @@ module.exports = {
     if (!sup.ok) return cb({ ok: false, error: sup.reason });
     if (body && body.removeUploads === true) return wallpapers.removeUploads(cb);
     if (body && typeof body.remove === 'string') return wallpapers.removeUploads(cb, body.remove);
+    // The shuffled collection: one picture, or every one.
+    if (body && typeof body.removePicture === 'string') return wallpapers.removePictures(cb, body.removePicture);
+    if (body && body.removePictures === true) return wallpapers.removePictures(cb);
     if (body && typeof body.choose === 'string') return wallpapers.choose(body.choose, cb);
-    cb({ ok: false, error: 'removeUploads, remove or choose expected' });
+    cb({ ok: false, error: 'removeUploads, remove, removePicture, removePictures or choose expected' });
   },
   normalise: normalise,
   hideApps: hideApps,

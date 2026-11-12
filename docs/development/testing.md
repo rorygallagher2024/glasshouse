@@ -97,7 +97,7 @@ shows the Picture tab.
 | [`check-ui-ids.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L29-L30) | An element the dashboard's script reaches for that the page no longer has. |
 | [`check-module-calls.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L34-L35) | A call to something a server module no longer exports, such as a caller left behind by a rename. TypeScript reads it as `any` in JavaScript, so only this finds it. |
 | [`check-strings.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L37-L38) | Dashboard text without a translation key, English joined from pieces with `+`, and translations made from English that has since changed. [Translating the dashboards](../STRINGS.md) has the rules. |
-| [`check-screensavers.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L40-L41) | Screen saver QML that the TV's QtQuick version cannot load, and placeholders (`level`, `stats`, `choice`) a folder's `uses` does not name. |
+| [`check-screensavers.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L40-L41) | Screen saver QML that the TV's QtQuick version cannot load, `entityList` manifest bounds, and placeholders (`level`, `stats`, `choice`, `ha`, `ha-list`, `color`) a folder's `uses` does not name. |
 | [`check-drift.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L43-L44) | The [entity reference](../HOME-ASSISTANT-ENTITIES.md) out of step with the entities the server publishes, and a dashboard file missing from `deploy.sh`'s list, which would never be installed. |
 | [`check-entity-stability.py`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L47-L48) | A Home Assistant entity from the last release that has gone, been renamed or changed domain, which leaves it unavailable and stops every automation that used it. A deliberate removal is listed in [`scripts/retired-entities.txt`](https://github.com/rorygallagher2024/glasshouse/blob/main/scripts/retired-entities.txt) with the reason. |
 | [`shellcheck`](https://github.com/rorygallagher2024/glasshouse/blob/main/.github/workflows/checks.yml#L51-L52) | Mistakes in `deploy.sh`, `tvwebctl`, the boot script, `check-all.sh` and `tv.sh`. |
@@ -212,7 +212,13 @@ it there when the rows are rebuilt, and **Keep the preview on** shows the input
 last watched with the focus on Apps. A heartbeat saying the screen saver is over
 the view stops the preview, and the next one without it brings it back. `test-home.js` checks the TV tile is first
 in the Inputs row on a TV with channels, absent without them, opens Live TV,
-and that both options default to off and save.
+and that Keep the preview on, Preview in the tile and Preview sound default to
+off and save. Preview sound also rejects non-boolean values.
+
+`test-hostname.js` checks that stats include the cached local name without
+waiting for a reverse lookup. It uses real timers because stats collection
+also waits for `df`; a simulated clock can reach the collection's timeout
+before that process replies.
 
 `test-routes.js` checks that an upload aborted before its file opens leaves no staged file, including a disconnect while disk space is being reserved. Between uploads it waits, up to 5 s, for the last one's file to be cleared, rather than a fixed time a slow runner can outlast. It also checks that the phone's setup link serves its page, `i18n.js` and a language file with the one-time code, the page asking for `i18n.js` with it, and refuses them without.
 
@@ -265,7 +271,7 @@ A weather check finds the badge hidden until the heartbeat brings a push, then d
 
 Home visibility checks delay the layout reply behind the source reply: last watched stays hidden until its saved switch is known and updates as soon as a changed layout arrives. They also cover app counts, CEC addresses, older layouts with no switches, the clock keeping its place, and with the clock switched off and the rows along the bottom, the clock hidden and the rows lower, and in Alternative View the clock right of Last watched and no row titles. `test-home.js` covers saving each switch, switching them back on and ignoring non-boolean updates.
 
-The Home availability check covers a TV with neither Glasshouse Home nor LG's Home's options, which has no Home tab; one with LG's Home's options alone, which shows them, Open Home at power-on usable among them, without Glasshouse Home's switch or options; and Glasshouse Home switched on, which leaves LG's Home's layout and hidden system apps out. `test-home-lg-options.js` checks the server's side: the Home tab offered for hiding system apps on webOS 3.8, and for Open Home at power-on alone, the options only sent when asked for, no tab with none of them, and hiding system apps neither offered nor switched on under Glasshouse Home. `test-tile-hiding-handover.js` checks its handover to Glasshouse Home: the apps it hid hidden there, those in More apps kept, and sam never restarted for it.
+The Home availability check covers a TV with neither Glasshouse Home nor LG's Home's options, which has no Home tab; one with LG's Home's options alone, which shows them, Open Home at power-on usable among them, without Glasshouse Home's switch or options; Glasshouse Home switched on, which leaves LG's Home's layout and hidden system apps out; and with live preview enabled, standalone webOS 6 keeping Preview sound, Keep the preview on and Preview in the tile visible while webOS 4 hides them. `test-home-lg-options.js` checks the server's side: the Home tab offered for hiding system apps on webOS 3.8, and for Open Home at power-on alone, the options only sent when asked for, no tab with none of them, and hiding system apps neither offered nor switched on under Glasshouse Home. `test-tile-hiding-handover.js` checks its handover to Glasshouse Home: the apps it hid hidden there, those in More apps kept, and sam never restarted for it.
 
 For the TV app dashboard, checks verify the two-column layout geometry (the row list on the left and the hint pane on the right with non-zero dimensions and horizontal adjacency), remote D-pad navigation (`ArrowDown`, `ArrowUp`, `PageDown`), list translateY scrolling with the scroll arrow indicator, tab switching (`ArrowRight`, `ArrowLeft`), and that the OLED Care tab is dropped when running on a non-OLED (LCD) TV profile.
 
@@ -385,7 +391,7 @@ Last watched on that port names the device the TV last selected there, read
 fresh past the cached device list, and every device on the port when the TV
 has not recorded one.
 
-`test-home-wallpaper-upload.js` exercises the real HTTP boundary: rejected and interrupted uploads preserve the previous image, concurrent uploads are refused, the lock is released after an abort, an uploaded JPEG survives reinitialisation and is served with its image type, and one time of day's picture is removed alone, an unknown one refused. With the download stubbed, a chosen set is fetched from its tag and not again once on the TV, the owner's own pictures are kept while it shows, a picture that fails its checksum or download is not kept and leaves the choice as it was, and an older install's four example pictures become the landscape set while other uploads become the owner's own. The dashboard check chooses **Your own**, then Morning and uploads to it, preparing a PNG as JPEG, shows the pending upload in a second tab and the picture once done, drops an image on Evening, removes Morning alone and then all of them.
+`test-home-wallpaper-upload.js` exercises the real HTTP boundary: rejected and interrupted uploads preserve the previous image, concurrent uploads are refused, the lock is released after an abort, an uploaded JPEG survives reinitialisation and is served with its image type, and one time of day's picture is removed alone, an unknown one refused. With the download stubbed, a chosen set is fetched from its tag and not again once on the TV, the owner's own pictures are kept while it shows, a picture that fails its checksum or download is not kept and leaves the choice as it was, and an older install's four example pictures become the landscape set while other uploads become the owner's own. The dashboard check chooses **Your own**, then Morning and uploads to it, preparing a PNG as JPEG, shows the pending upload in a second tab and the picture once done, drops an image on Evening, removes Morning alone and then all of them. The same test adds pictures to the shuffled collection, which the first chooses, each under a name made on the TV and served by it, an id that is a path refused; it fills the collection to its limit, has the next upload refused, and removes one picture and then all of them; `test-home.js` checks the interval's default and that only the offered ones are kept. A second dashboard check, `visitHomeShuffle`, chooses **Your own, shuffled**, uploads three images chosen at once one after another, saves an interval, removes one picture and then the rest, and on the view, with its clock moved on a minute at a time, sees each of four pictures once in four minutes.
 
 `test-homescreen-webos10.js` checks webOS 10's Home screen layout over a stand-in folder: the banner taking the height of the rows hidden, nothing changed before the experimental switch is on, the layout put back after a restart of the TV, the banner text hidden by a copy of LG's language files with the two strings blank and LG's left alone, a black or uploaded banner picture in each size folder, an upload cropped for each shape the banner takes with the one for its shape shown and the others kept until a part shown or hidden needs them, a bad upload refused with the picture before kept, and putting LG's Home screen back forgetting the choices and the upload.
 
@@ -452,9 +458,25 @@ putting a channel taken out back at its number, a removed playlist's
 folder deleted, and a channel whose variant playlist names FairPlay found to
 be protected once checked, marked in the lineup and given no play link,
 while one with a plain AES-128 key is not. It also checks a channel's saved
-HLS or MPEG-TS choice across a restart and stream event logging without URLs.
+HLS or MPEG-TS choice across a restart, stream event logging without URLs,
+and that pausing live TV is off by default, kept across a restart, and
+never records a preview, an HLS channel or without a USB stick.
 It is skipped where there is no curl. `test-iptv-drm.js` checks which HLS keys the TV's player cannot use,
 and the resolving of a master playlist's first variant.
+
+`test-iptv-timeshift.js` runs the recording for pausing live TV: the real
+worker records a local provider's MPEG-TS packets through curl into a folder
+standing in for a USB stick, with 20-packet chunks and a 5-chunk buffer, and
+the test reads it back as Home's player would. It checks a writable stick is
+found, the local URL carries a token and never the provider's, the provider
+is asked with a player's User-Agent, another token gets a 404, every packet
+arrives in order, a reconnect and a paused player go on from their place,
+the buffer keeps its size, back to live starts at the live point, a rewind
+past what is kept starts at the oldest packet, another
+channel and an expired lease end the recording and empty the folder, and a
+provider's refusal gives a 502 and direct play for that channel after, and
+curl aborting before exec is started again. It also checks Home's clock for
+a pause, with its unit (min or h). It is skipped where there is no curl.
 
 `test-iptv-worker.js` runs real playlist workers against a local provider with
 a shell that sends itself SIGABRT before executing curl. It checks that an

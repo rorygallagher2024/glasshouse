@@ -1,0 +1,15 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": "Bad entity id",
+  "description": "Its entity is not a Home Assistant id.",
+  "license": "MIT",
+  "uses": [
+    "level",
+    "ha"
+  ],
+  "order": 900,
+  "entities": {
+    "value": "not an entity id"
+  }
+}

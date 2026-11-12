@@ -12,7 +12,8 @@
  * worker enforced.
  *
  * Under /var/lib/tvweb/iptv/, 0700, every file 0600:
- *   config.json        playlists, their logins, refresh state      (here)
+ *   config.json        playlists, their logins, refresh state, whether
+ *                      live TV may pause (timeshift)                (here)
  *   selection.json     the lineup, the row's favourites, renames    (here, lib/iptv-lineup)
  *   <pl>/current.json  which candidate of each kind is published     (here)
  *   <pl>/snap-*        a playlist read: meta.json, groups.json, index.tsv, ... (worker)
@@ -36,6 +37,7 @@ var path = require('path');
 var crypto = require('crypto');
 var lineupLib = require('./iptv-lineup');
 var memory = require('./iptv-memory');
+var timeshift = require('./iptv-timeshift');
 var spawn = require('child_process').spawn;
 var execFile = require('child_process').execFile;
 
@@ -180,6 +182,7 @@ function loadState() {
   try { dir = fs.realpathSync(dir); } catch (e) {}
   var c = readSmall(file('config.json'), MB);
   config = { playlists: c && isArray(c.playlists) ? c.playlists.filter(validStored) : [] };
+  if (c && c.timeshift === true) config.timeshift = true;
   selection = lineupLib.normalise(readSmall(file('selection.json'), 4 * MB));
   current = {};
   cache = { meta: {}, added: {}, nownext: {}, groups: {} };
@@ -1026,7 +1029,7 @@ function lineupDoc() {
 function rowStatus() {
   var lu = getLineup();
   var out = { count: lu.favourites.length, lineup: lu.channels.length, lineupRevision: lineupRevision, playlists: config.playlists.length,
-    label: null, state: null, since: null };
+    label: null, state: null, since: null, timeshift: config.timeshift === true };
   var used = {};
   lu.channels.forEach(function (c) { used[c.pl] = true; });
   var ids = Object.keys(used);
@@ -1096,6 +1099,7 @@ function status() {
     disk: lastDiskCheck.ok ? null : { free: lastDiskCheck.free, need: lastDiskCheck.need },
     memory: { mode: memoryMode(), fallback: !!(lastPlan && lastPlan.fallback),
       available: memoryRead.available, needed: lastPlan ? lastPlan.needed : null },
+    timeshift: { on: config.timeshift === true, stick: timeshift.stickNow() },
     revision: revision
   };
 }
@@ -1454,9 +1458,55 @@ function schedulePath(id, key, day) {
   return fs.existsSync(f) ? f : null;
 }
 
+/*
+ * The URL Home plays a channel from: the provider's, or, for a channel played
+ * full screen while live TV may pause, the recording's on the TV
+ * (lib/iptv-timeshift). MPEG-TS only: an HLS channel's player fetches its
+ * own segments. A preview of the channel being recorded plays the recording
+ * too; any other channel's play ends it. cb(stream or null).
+ */
+function playUrl(id, key, full, cb) {
+  var s = streamUrl(id, key);
+  if (!s) return cb(null);
+  var at = id + ':' + key;
+  timeshift.release(at);
+  var local = timeshift.current(at);
+  if (local) { s.url = local; s.timeshift = true; return cb(s); }
+  if (!full || config.timeshift !== true || s.format !== 'ts') return cb(s);
+  timeshift.open(at, s.url, function (r) {
+    if (r) { s.url = r.url; s.timeshift = true; }
+    cb(s);
+  });
+}
+
+// How far behind live the recording of a channel plays, and the room left; null without one.
+function timeshiftStats(id, key) { return timeshift.stats(id + ':' + key); }
+
+/*
+ * Whether live Internet TV may pause, recorded to a USB stick. Off ends a
+ * recording at once and takes its files.
+ */
+function setTimeshift(body) {
+  if (!body || typeof body.on !== 'boolean') return { ok: false, error: 'on' };
+  var before = config.timeshift;
+  if (body.on) config.timeshift = true;
+  else delete config.timeshift;
+  try { saveConfig(); } catch (e) { config.timeshift = before; return { ok: false, error: 'save' }; }
+  if (!body.on) timeshift.stop();
+  console.log('iptv: live TV pause ' + (body.on ? 'on' : 'off'));
+  changed();
+  return { ok: true, on: body.on };
+}
+
+// The stick for the dashboard, looked for again: cb({ ok, on, stick }).
+function timeshiftStatus(cb) {
+  timeshift.stick(function (stick) { cb({ ok: true, on: config.timeshift === true, stick: stick }); });
+}
+
 function lease(on, full) {
   leaseUntil = on ? nowMs() + LEASE_MS : 0;
   fullUntil = on && full ? leaseUntil : 0;
+  timeshift.leased(leaseUntil);
   if (!on) pump();
   return { ok: true, until: leaseUntil };
 }
@@ -1513,7 +1563,8 @@ function streamEvent(body) {
 /**
  * @param {{ stateDir?: string, launch?: function(function(): void): void, clients?: function(): string[],
  *   version?: string, nowMs?: function(): number, onChange?: function(): void, catchupMs?: number,
- *   procDir?: string, nodePath?: string }} opts
+ *   procDir?: string, nodePath?: string, usbRoot?: string, mountsFile?: string, timeshiftChunkBytes?: number,
+ *   timeshiftMaxBytes?: number, timeshiftSpareBytes?: number, timeshiftMinBytes?: number }} opts
  */
 function init(opts) {
   opts = opts || {};
@@ -1527,6 +1578,9 @@ function init(opts) {
   if (opts.procDir) procDir = opts.procDir;
   if (opts.nodePath) nodePath = opts.nodePath;
   niceBin = findNice();
+  timeshift.init({ launch: launchFn, clients: clientsFn, nodePath: nodePath, nowMs: nowMs, usbRoot: opts.usbRoot,
+    mountsFile: opts.mountsFile, chunkBytes: opts.timeshiftChunkBytes, maxBytes: opts.timeshiftMaxBytes,
+    spareBytes: opts.timeshiftSpareBytes, minBytes: opts.timeshiftMinBytes });
 }
 
 /*
@@ -1549,6 +1603,7 @@ function start() {
   if (started) return;
   started = true;
   try { loadState(); } catch (e) { console.error('iptv: could not read its state: ' + e.message); }
+  if (config.timeshift === true) timeshift.clean();
   catchUp();
   resumeOwnerWork();
   tickTimer = setInterval(tick, MINUTE);
@@ -1567,6 +1622,7 @@ function stop() {
   retryTimer = null;
   ['background', 'interactive'].forEach(function (lane) { if (running[lane]) running[lane].cancel(); });
   if (monitorTimer) { clearInterval(monitorTimer); monitorTimer = null; }
+  timeshift.stop();
 }
 
 // The TV woke: the schedule may have slept through its times.
@@ -1595,6 +1651,10 @@ module.exports = {
   nowNext: nowNext,
   logoPath: logoPath,
   streamUrl: streamUrl,
+  playUrl: playUrl,
+  timeshiftStats: timeshiftStats,
+  setTimeshift: setTimeshift,
+  timeshiftStatus: timeshiftStatus,
   schedulePath: schedulePath,
   lease: lease,
   streamEvent: streamEvent,

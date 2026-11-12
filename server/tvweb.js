@@ -19,7 +19,7 @@
  * first 4096 bytes of a downloaded tvweb.js for this line (up to 0.82.2), and
  * refuses a release where it is further down (#586).
  */
-var TVWEB_VERSION = '0.143.1';
+var TVWEB_VERSION = '0.144.2';
 
 var http = require('http');
 var fs = require('fs');
@@ -50,6 +50,7 @@ var privacy = require('./lib/privacy');
 var devtools = require('./lib/devtools');
 var oled = require('./lib/oled');
 var screensavers = require('./lib/screensavers');
+var haEntity = require('./lib/haentity');
 var idlesaver = require('./lib/idlesaver');
 var appsModule = require('./lib/apps');
 var iconServer = require('./lib/iconserver');
@@ -116,6 +117,7 @@ var saverPowerOff = require('./lib/saverpoweroff');
 var remoteBattery = require('./lib/remotebattery');
 var backup = require('./lib/backup');
 var backupParts = require('./lib/backup-parts');
+var resettime = require('./lib/resettime');
 var power = require('./lib/power');
 var names = require('./lib/names');
 var msg = say.msg;
@@ -237,6 +239,10 @@ var CONFIG = {
   // http://<tv>:<port + 2>/icons/<appId>.png, for a launcher on another
   // device. Also switched from the MQTT tab.
   iconServer: false,
+
+  // Nightly refresh reboot: align tvpowerd's 24-hour reboot with the nightly
+  // power-down window to avoid the 4-hour drop to cold Power Off (#1288).
+  nightlyRefresh: false,
 
   // For testing the first-run setup wizard UI without touching TV settings or restarting.
   emulateSetup: false,
@@ -585,6 +591,9 @@ homeScreen.reapply();
 // The TV's own 12 or 24 hour setting, for every clock Glasshouse draws. A
 // change restages a clock screen saver, which has it written into its file.
 clockFormat.init({ luna: luna, onChange: function () { screensavers.restageScreensaver(); } });
+// The reads a screen saver's own values come from: the token stays here, in
+// config.json, and the saver only ever sees this server's address.
+haEntity.init({ config: CONFIG });
 screensavers.init({
   luna: luna,
   hour12: clockFormat.hour12,
@@ -594,7 +603,8 @@ screensavers.init({
   KEY_BACK: controls.KEY_BACK,
   inputKey: telemetry.inputKey,
   watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('screensaver', on); },
-  mediaState: telemetry.readMediaState
+  mediaState: telemetry.readMediaState,
+  haEntity: haEntity
 });
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
   watching: function () { return !!(iptv && iptv.watching()); } });
@@ -607,10 +617,12 @@ telemetry.init({
   screensavers: screensavers,
   game: game,
   power: power,
+  resettime: resettime,
   remoteBattery: remoteBattery,
   home: glasshouseHome,
   tvwebVersion: TVWEB_DISPLAY_VERSION
 });
+resettime.init({ luna: luna, config: CONFIG, alwaysOnSupported: telemetry.alwaysOnSupported });
 
 var liveState = stateModule.init({
   inputNameMap: telemetry.inputNameMap,
@@ -716,6 +728,7 @@ controls.init({
   ntp: ntpClient,
   history: history,
   backup: backup,
+  resettime: resettime,
   home: glasshouseHome,
   republishDiscovery: function () { republishDiscovery(); },
   deviceNameChanged: function (name) { syslogForwarder.setHostname(name); },
@@ -1008,6 +1021,7 @@ routes.init({
   homeLauncher: homeLauncher,
   iptv: iptv,
   screensavers: screensavers,
+  haEntity: haEntity,
   updater: updater,
   tvApp: tvApp,
   restartSelf: restartSelf,
@@ -1041,6 +1055,7 @@ backupParts.init({
   screensavers: screensavers,
   apps: appsModule,
   home: glasshouseHome,
+  resettime: resettime,
   alwaysOnSupported: telemetry.alwaysOnSupported
 });
 
@@ -1096,7 +1111,7 @@ if (!CLI_MODE) {
   if (keysTimer.unref) keysTimer.unref();
   var heldTimer = setTimeout(function () { lgSettings.reapply(); }, 60000);
   if (heldTimer.unref) heldTimer.unref();
-  var heldRecheck = setInterval(function () { lgSettings.reapply(); }, 60 * 60000);
+  var heldRecheck = setInterval(function () { lgSettings.reapply(); resettime.apply(); }, 60 * 60000);
   if (heldRecheck.unref) heldRecheck.unref();
   var keysRecheck = setInterval(function () { remoteKeys.recheckNative(); }, remoteKeys.RECHECK_MS);
   if (keysRecheck.unref) keysRecheck.unref();
@@ -1478,7 +1493,7 @@ function setupHomeAssistant() {
    * are not published (see ha.js). The rows decide which entities exist and
    * a select's options, so a change in them means republishing discovery.
    */
-  var LGS_SECTIONS = ['sound', 'devices', 'game', 'promotions'];
+  var LGS_SECTIONS = ['sound', 'devices', 'game', 'promotions', 'picture'];
   var lgsRows = [];
   var lastLgsSig = '';
 
@@ -1501,7 +1516,9 @@ function setupHomeAssistant() {
       if (cpuOwn !== null) s.load = cpuOwn;
       s.lgs = {};
       ls.rows.forEach(function (r) { s.lgs[r.id] = r.type === 'switch' ? r.on : r.value; });
-      var lgsSig = ls.rows.map(function (r) {
+      var lgsSig = ls.rows.filter(function (r) {
+        return ha.LG_SETTING_ENTITIES.some(function (e) { return e.row === r.id; });
+      }).map(function (r) {
         return r.id + (r.choices ? ':' + r.choices.map(function (c) { return c.value; }).join('|') : '');
       }).join(',');
       if (lgsSig !== lastLgsSig) {
@@ -2023,7 +2040,10 @@ if (!CLI_MODE) {
   power.init({ luna: luna, syslog: syslogForwarder });
   power.start();
   liveState.state.onChange(function (ev) {
-    if (ev.group === 'power' && ev.key === 'state') power.stateChanged(ev.value);
+    if (ev.group === 'power' && ev.key === 'state') {
+      power.stateChanged(ev.value);
+      resettime.apply();
+    }
   });
   liveState.groups.power.onReply = idlesaver.powerReply;
   // Its own start, as the MQTT bridge starts every group only with a broker.

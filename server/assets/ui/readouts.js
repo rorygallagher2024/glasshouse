@@ -366,6 +366,15 @@ async function tick() {
       const arsVal = getLease('alwaysReadyScreen', d.alwaysReadyScreen);
       advPill('ars', 'btn_ars', arsVal !== undefined ? arsVal : d.alwaysReadyScreen);
       arOffRow(arVal ? d.alwaysReadyOff : undefined);
+      const nrRow = q('row-nightlyrefresh');
+      if (nrRow) {
+        const nrSupported = typeof d.nightlyRefresh === 'boolean';
+        nrRow.hidden = !(arVal && d.alwaysReadyOff && nrSupported);
+        if (!nrRow.hidden) {
+          const nrVal = getLease('nightlyRefresh', d.nightlyRefresh);
+          advPill('nightlyrefresh', 'btn_nightlyrefresh', nrVal !== undefined ? nrVal : d.nightlyRefresh);
+        }
+      }
       powerTimerRows(d.powerTimers);
       const wolVal = getLease('wakeOnLan', d.wakeOnLan);
       advPill('wol', 'btn_wol', wolVal !== undefined ? wolVal : d.wakeOnLan);
@@ -694,9 +703,11 @@ async function tick() {
                    ssOn ? t('ss.dismiss', 'Dismiss screen saver') : t('ss.start', 'Start screen saver'));
       q('ss-toggle').classList.toggle('on', ssOn);
       // Dismissing works from anywhere; only starting one needs an app.
+      const ssBlocked = (typeof ssBlockedReason === 'string' && !ssOn) ? ssBlockedReason : '';
       refuseScreensaver(q('ss-toggle'),
         !ssWritable ? t('common.controlsOff', 'Controls are disabled in config.json.')
         : ssSwitching ? SS_SWITCHING
+        : ssBlocked ? ssBlocked
         : (ssOnInput && !ssOn) ? SS_ONLY_IN_APPS : '');
     }
 

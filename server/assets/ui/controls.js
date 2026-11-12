@@ -56,6 +56,7 @@ function toggleDeviceDetection() { sendCommand('deviceDetection', flip('btn_devd
 function toggleDeviceScans() { sendCommand('deviceScans', flip('btn_devscans')); }
 function toggleAlwaysReady() { sendCommand('alwaysReady', flip('btn_ar')); }
 function toggleAlwaysReadyScreen() { sendCommand('alwaysReadyScreen', flip('btn_ars')); }
+function toggleNightlyRefresh() { sendCommand('nightlyRefresh', flip('btn_nightlyrefresh')); }
 
 function applyOptimistic(action, value) {
   if (action === 'volume') {

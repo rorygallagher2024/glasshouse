@@ -421,6 +421,21 @@ muted `<video>` with one `<source>`:
   at 2500. The format appears a moment after `playing`.
 - The test app on screen became Glasshouse Home's last source, as any app
   does.
+- Setting the element's `muted` on a channel playing this way reaches the
+  tuner: on 10 November 2026 the page called
+  `com.webos.service.utp.broadcast/setAudioMute` with `isMuteOn` and
+  `muteOwner: com.webos.app.home`, which LG's legacy broadcast service turned
+  into `avmutemanager/setAvMute` with `muteType: audioMute` on the `adec`
+  port, in both directions, while the channel played on. On an
+  `ext://hdmi:N` source, changing `muted` sent nothing over the bus, and an
+  input started muted or not showed the same calls: audiod's own brief mute
+  while connecting, then the HDMI PCM on `tv_speaker`. That recording was
+  made at speaker volume 0. A listening check on the same G3 at volume 10
+  confirmed HDMI 4's preview was audible with Preview sound on, silent with
+  it off, and audible again when switched back on. By contrast, on a
+  `55NANO756PR` (`webOS 6.5.3`, standalone Home, #1359), an HDMI 1 preview
+  (`ext://hdmi:1`) still played sound through the TV speakers even with
+  `<video muted>` (`Preview sound` off).
 
 How a busy tuner (a recording) or an encrypted channel shows to the page was
 not tried.
@@ -1370,6 +1385,16 @@ Timeout" in `tvpowerd`), which clears tmpfs and bind mounts; and sam came back
 as the same pid after it, so a pid check alone does not show a restart there:
 `ps -o etime` and `/proc/uptime` do.
 
+## Instant Boot Refresh and 4 h forced power-off (G4, C2, webOS 10.3.1, 9.2.2)
+
+In LG's `tvpowerd` (webOS 7 and later), when uptime passes 24 h (stock threshold `1440` min), switching the TV off initiates an Instant Boot Refresh reboot (`rebootByOnRegular`) roughly two minutes later.
+
+When the TV boots into Active Standby, `QuickBootdMgr::startActiveStandbyForcedOffTimer` checks whether `alwaysOn` is enabled. At ~11 s into boot, `settingsd` has not delivered the setting yet (which arrives at ~16.5 s). Because the in-memory flag is 0 at 11 s, `tvpowerd` arms a hardcoded 14,400 s (4-hour) forced power-off timer (`Forced Power Off Timer start(period:14400)`). When `alwaysOn: 1` arrives 5 s later, `setAlwaysOn` updates the flag but does not cancel the running timer. Exactly 14,400 s later (at 14,410 to 14,412 s of uptime), the timer fires and calls `powerOffActiveStandby("offByWarmWait")`, cutting power completely (`Active Standby -> Power Off`). This explains the 14,411 s cold power-off observed on the C4 below and on the C1 in #1199.
+
+Entering Suspend (`setPowerState`) clears the timer. When `rebootByOnRegular` occurs inside the 5-hour Nightly power-down window (e.g. 03:00–08:00), the TV transitions to Suspend roughly two minutes later, clearing the timer and preventing the 4 h forced shutdown.
+
+The refresh threshold is managed in memory via `luna://com.webos.service.qbd/getResetTime` and `com.webos.service.qbd/setResetTime {"timeMin": min}` (which forwards to `com.webos.service.aos`). Both answer `timeMin: 1440` by default. Raising `timeMin` dynamically pushes the threshold so that the reboot only fires during the nightly power-down window, avoiding daytime drops to Power Off (#1288).
+
 ## The TV's time zone (C5, webOS 10.3.1)
 
 `com.webos.service.systemservice/time/getSystemTime` gives the time zone with
@@ -1611,7 +1636,9 @@ app in front. Remote Keys puts its own filter first.
   20 regional streaming buttons (Hotstar, Stan, Wavve, U-Next, TVer and others).
   A 55QNED70A (webOS 10.3.1, Brazil) names the same set, among them
   `Key_webOS_Globoplay`, which opens `globoplaywebos` and is on Brazilian
-  remotes.
+  remotes. An OLED77B46LA (webOS 10.3.2, United Arab Emirates) names
+  `Key_webOS_Shahid` (IR 1092, Qt 18874462), which opens `net.mbc.shahid-lgapp`
+  and is on Middle East remotes (#1348).
   On a CX (webOS 5.5), the microphone button set to an app through the filter
   opened it on a press and on a hold alike, and set back to LG's own it started
   voice control again (#1034).
@@ -2203,6 +2230,18 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
   and it came back in front.
 - `homeAutoLaunch` and `checkHomeAutoLaunchValue` are in category `general`;
   asked for under `option` they come back as `errorKey`.
+
+## Widevine DRM and ESN with SAM takeover (webOS 5.6.2, CX)
+
+- Restarting `sam.service` (`killall -9 LunaExecutable` and `systemctl kill -s 9 sam.service`) or bind-mounting over `/usr/palm/applications/com.webos.app.home` breaks Widevine DRM and ESN initialization: Widevine and ESN show as "Unknown" in TV Information, and DRM streaming playback fails. Running Glasshouse Home as a standalone app (`com.tvweb.home`) directed by `remotekeys-filter.js` leaves `com.webos.app.home` and sam untouched, keeping Widevine DRM and ESN functional.
+
+## IPTV after Active Standby (webOS 5.6.2, CX)
+
+Measured on an OLED65CX9LA, Glasshouse 0.143.0, Quick Start+ off. Active Standby, for 8 seconds and for about 3.5 hours, left the server running. The power state went Active Standby to Active, on by `remoteKey`.
+
+- Wake put `com.webos.app.livetv` in front (`bootManager`), and Glasshouse opened `com.webos.app.home` over it 4.5 s later. Both windows are `_WEBOS_WINDOW_TYPE_CARD`. Live TV was hidden as Home was shown. The view answered in 1 s, so it was the page that had stayed up.
+- An IPTV channel then received an MPEG-TS URL and gave up after 12 s with no picture and no media error (`why=nopicture`, `tries=0`). Further channels did the same, including after the screen saver. Another app on the TV played, and the same stream played on another device at the same time.
+- `killApp` of `com.webos.app.home` and a launch loaded a new page. The next channel started in 1.2 s at 1920×1080. A reboot does the same. Closing the app while it was in front made `last_input_handler` open Live TV.
 
 ## Home's launch events (webOS 5.6.2, CX)
 
@@ -3152,7 +3191,7 @@ HDMI 3 in front.
 - `applicationManager/running` with `"subscribe": true` answers at once and
   on every change to the running apps.
 
-### Hue Sync settings service
+## Hue Sync settings service
 
 A supplied Luna bus capture of retail Hue Sync 1.10.189 shows `/get` values
 as JSON encoded strings: brightness `50.000000`, intensity `2`, sync_mode `1`,
@@ -3172,3 +3211,72 @@ and can take approximately 1–1.24 seconds before completion. Bridge reads expo
 Connected/Authorized independently of the service's ready/supported flags.
 Only these status fields belong in diagnostics; the other bridge fields and
 pairing/support/device data must not be copied into fixtures or logs.
+
+## Pausing a locally served MPEG-TS stream (webOS 5.6.2, CX)
+
+Measured on 9 November 2026 on an OLED65CX9LA, with a provider's MPEG-TS
+channel recorded by curl to a USB stick and served from the TV to a page in
+`com.webos.app.browser`:
+
+- A `<video>` playing a local MPEG-TS stream that is still growing paused
+  on the current picture, held it for a minute, and resumed at the same
+  position. No HLS playlist or segments were needed.
+- The provider answered curl's own User-Agent with HTTP 461 and
+  `VLC/3.0.18 LibVLC/3.0.18` with the stream, alongside the one the TV was
+  already playing: the 461 was the User-Agent, not a limit on streams.
+- curl wrote about 0.9 MB/s; the stick takes about 30 MB/s. The CPU stayed
+  idle and about 450 MB of memory was free.
+- The stick was mounted at `/tmp/usb/sda/sda1` (tfat), with 114 GB free.
+- A process started over SSH died when the session closed unless started
+  with `setsid nohup ... </dev/null &`.
+
+In Glasshouse Home on the same TV, the Magic Remote's (MR20) Pause and Play
+reached the page and paused and resumed a channel played from the
+recording; the page takes 19 as Pause and 415 as Play, and which code each
+key sent was not logged. The MR20 has no Stop key.
+
+The worker's first curl died there with ``uv_close: Assertion
+`!uv__is_closing(handle)' failed`` when started from the server socket's
+listen callback, as in "Children that abort before exec".
+
+A pause longer than a minute, which requests the player makes on resuming,
+and webOS 4 and 9 were not tried.
+
+## eARC port assignment across TV series (B4, webOS 10.3.2)
+
+Reported in #1336 from an OLED77B46LA, webOS 10.3.2 (firmware 33.31.75).
+While most LG OLEDs wire the eARC transceiver to HDMI 2 (B8, C9, CX, C1, C2,
+C3, G3, C4, G4), the B4 series places the physical eARC port on HDMI 3.
+
+`com.webos.service.arccontroller/getARCEDIDInfo` reports the hardware eARC port
+number in its `arcHDMIPort` field (`3` on the B4, `2` on the G3). On older
+firmware lacking that service (webOS 4), `com.webos.service.eim/getAllInputStatus`
+identifies a connected audio system (`cecpDevType: 5`) and its port when
+present, falling back to HDMI 2.
+
+## Realtek HDMI receiver status (55NANO756PR, webOS 6.5.3)
+
+Reported in #1359 from a 55NANO756PR (webOS 6.5.3, firmware `03.53.46`) with a
+3840x2160 50 Hz SDR YCbCr 4:2:2 source on HDMI 1. Realtek boards have no
+`/proc/lg/hdmi20`; instead, receiver status and EDID live in
+`/proc/lgtv-driver/hdmi_status/hdmi.p0` to `hdmi.p3`:
+
+- `hwport:1` to `4` in `hdmi.p0` to `hdmi.p3` match `configd`'s
+  `inputMap.videoInputMapIndexInfo0` (`{"hdmi1":"0","hdmi2":"1","hdmi3":"2","hdmi4":"3"}`).
+- `hpd_state : 1` remained high on empty `hdmi.p1` and `hdmi.p2`;
+  `phy_lock_status:1` indicates an active locked signal and `link_hdmi_5v:1`
+  indicates +5V present from a source.
+- With the 2160p50 source active (`avi_vic:96`), `hdmi.p0` reported
+  `timing_active_w:3840`, `timing_active_h:2160`, `timing_v_freq:500` (tenths of
+  Hz), `link_frame_rate_x100_hz:5000` (hundredths of Hz),
+  `pixel_clock_khz:594000`, `timing_scan_type:1` (progressive, with
+  `timing_v_total:2250`; empty ports read `0`), `color_depth:0` alongside
+  `link_color_depth:8`, `avi_pixel_encoding:1` (`link_color_space:1`, matching
+  CTA-861 AVI byte 1 `0x31` for YCbCr 4:2:2), `allm_mode:0`, `dolby_hdr_type:0`,
+  `drm_length:26` and `drm_eotf_type:0`.
+- `edid_data_block0` and `edid_data_block1` hold two checksummed 128-byte EDID
+  blocks in comma-separated `0x..` hex rows (`edid_size :2`) on active/linked
+  `hdmi.p0`, omitted when idle.
+- Interlaced, HDR10/HLG/Dolby Vision, VRR and HDCP/FRL active samples were not
+  captured on this board (`phy_tmds_clk_khz:593500` tracked the pixel rate on
+  this TMDS link, and `hdcp_version` read `1` active vs `2` idle).

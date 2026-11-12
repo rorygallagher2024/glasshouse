@@ -12,8 +12,10 @@ let homeTvPoll = null;
 const HOME_TV_BYTES_PER_MB = 1024 * 1024;
 
 let homeGuideKey = null;   // the remote's Guide key as lib/remotekeys has it, with the choices
+let homeTvPause = null;    // /api/iptv/timeshift: whether live TV may pause, and the USB stick for it
 async function homeTvLoad() {
   try { homeTv = await homeGet('/api/iptv/playlists'); } catch (e) { homeTv = null; }
+  try { homeTvPause = await homeGet('/api/iptv/timeshift'); } catch (e) { homeTvPause = null; }
   try {
     const rk = await homeGet('/api/remotekeys');
     const key = rk.supported && (rk.keys || []).find(k => k.key === 'guide');
@@ -98,7 +100,31 @@ function renderHomeTv() {
       <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('xtream')">${esc(t('home.tv.addXtream', 'Add an Xtream login'))}</button>
       <button type="button" ${usable ? '' : 'disabled'} onclick="homeTvOpenForm('m3u')">${esc(t('home.tv.addM3u', 'Add an M3U link'))}</button></div>`}
     ${homeGuideKeyHtml()}
-    ${homeTv.playlists.some(p => p.ready) ? homeTvManageHtml() : ''}`;
+    ${homeTv.playlists.some(p => p.ready) ? homeTvManageHtml() + homeTvPauseHtml() : ''}`;
+}
+
+/*
+ * Pausing live Internet TV (lib/iptv-timeshift): the channel played full
+ * screen is recorded to a USB stick while it plays, MPEG-TS channels only.
+ */
+function homeTvPauseHtml() {
+  const p = homeTvPause;
+  if (!p) return '';
+  const stick = p.stick
+    ? t('home.tv.pauseStick', 'USB stick found, {gb} GB free.', { gb: (p.stick.free / 1073741824).toFixed(1) })
+    : t('home.tv.pauseNoStick', 'No USB stick with room found: plug one in, formatted FAT32 or exFAT, with at least 512 MB free.');
+  return `<div class="prot-table"><div class="prot-row">
+    <div class="prot-main"><div class="prot-title">${esc(t('home.tv.pauseTitle', 'Pause live Internet TV'))}</div>
+      <div class="prot-desc">${esc(t('home.tv.pauseDesc', 'Pause on the remote pauses a channel played full screen. Left and right go back and forward 30 seconds, and Back goes to live again. While a channel plays, the TV records it to a USB stick, up to about half an hour, and deletes it when the channel stops. MPEG-TS channels only.'))}</div>
+      <div class="prot-desc">${esc(stick)}</div></div>
+    <div class="prot-status"><button type="button" class="pill ${p.on ? 'good' : 'idle'}" ${homeWritable() ? '' : 'disabled'} onclick="homeTvSetPause(${p.on ? 'false' : 'true'})">${esc(p.on ? t('common.on', 'On') : t('common.off', 'Off'))}</button></div>
+  </div></div>`;
+}
+
+async function homeTvSetPause(on) {
+  try { await homePost('/api/iptv/timeshift', { on }); } catch (e) { showErr(e.message); }
+  await homeTvLoad();
+  renderHomeTv();
 }
 
 function homeTvWaitMemory() {

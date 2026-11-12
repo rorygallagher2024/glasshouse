@@ -404,6 +404,62 @@ console.log('Running test-telemetry.js ...');
   });
 })();
 
+(function testHdmiEarcPort() {
+  telemetry.clearCache();
+  var arcEdidUri = 'com.webos.service.arccontroller/getARCEDIDInfo';
+  var origEdid = mockEnv.luna[arcEdidUri];
+  var origEim = mockEnv.luna['com.webos.service.eim/getAllInputStatus'];
+
+  // Default when arccontroller is not mocked / absent is port 2
+  telemetry.hdmiInputs(function (r) {
+    assert.strictEqual(r.earcPort, 2, 'defaults to port 2 when arccontroller is absent');
+    assert.strictEqual(r.inputs[0].earc, false, 'HDMI 1 is not eARC');
+    assert.strictEqual(r.inputs[1].earc, true, 'HDMI 2 is eARC by default');
+
+    // B4 reports arcHDMIPort: 3 from arccontroller
+    telemetry.clearCache();
+    mockEnv.luna[arcEdidUri] = { returnValue: true, arcHDMIPort: 3, eARC: true };
+    mockEnv.luna['com.webos.service.eim/getAllInputStatus'] = {
+      returnValue: true,
+      devices: [
+        { id: 'HDMI_1', port: 1, label: 'Streamer', activate: false },
+        { id: 'HDMI_2', port: 2, label: 'Blu-ray', activate: false },
+        { id: 'HDMI_3', port: 3, label: 'Sonos Soundbar', activate: true }
+      ]
+    };
+    telemetry.hdmiInputs(function (rB4) {
+      assert.strictEqual(rB4.earcPort, 3, 'B4 reports HDMI 3 as eARC port');
+      assert.strictEqual(rB4.inputs[0].earc, false, 'HDMI 1 is not eARC on B4');
+      assert.strictEqual(rB4.inputs[1].earc, false, 'HDMI 2 is not eARC on B4');
+      assert.strictEqual(rB4.inputs[2].earc, true, 'HDMI 3 is eARC on B4');
+
+      // Fallback: arccontroller absent/failed, but CEC audio receiver is detected on HDMI 2
+      telemetry.clearCache();
+      mockEnv.luna[arcEdidUri] = { returnValue: false };
+      mockEnv.luna['com.webos.service.eim/getAllInputStatus'] = {
+        returnValue: true,
+        arcDevice: true,
+        devices: [
+          { id: 'HDMI_1', port: 1, connected: true, hdmiPlugIn: true },
+          { id: 'HDMI_2', port: 2, connected: true, hdmiPlugIn: true, subList: [
+            { id: 'SIMPLINK', cecpDevType: 5, portId: 2, osdName: 'AV Receiver' }
+          ] }
+        ]
+      };
+      telemetry.hdmiInputs(function (rCec) {
+        assert.strictEqual(rCec.earcPort, 2, 'identified via detected CEC audio receiver');
+        assert.strictEqual(rCec.inputs[1].earc, true, 'HDMI 2 has eARC via CEC');
+
+        // Restore
+        telemetry.clearCache();
+        mockEnv.luna[arcEdidUri] = origEdid;
+        mockEnv.luna['com.webos.service.eim/getAllInputStatus'] = origEim;
+        console.log('  ✓ eARC port is dynamically detected from arccontroller, CEC or default');
+      });
+    });
+  });
+})();
+
 (function testHdmiSeenKept() {
   var file = '/var/lib/tvweb/hdmi_seen';
   telemetry.noteHdmiSeen({ port: 1, phy_mode: 'FRL 48 Gbps', chroma: null, allm: false, vrr: true });
@@ -511,6 +567,93 @@ console.log('Running test-telemetry.js ...');
 
   mockEnv.files['/proc/lg/pe/hdr_status'] = orig;
   console.log('  ✓ getPictureEngineInfo parses active signal and drops fixed peak luminance');
+})();
+
+// 8a. Realtek /proc/lgtv-driver/hdmi_status/hdmi.p* fallback (e.g. 55NANO756PR, webOS 6.5.3)
+(function testRealtekHdmiStatus() {
+  var lg0 = mockEnv.files['/proc/lg/hdmi20/port0/status'];
+  var lg1 = mockEnv.files['/proc/lg/hdmi20/port1/status'];
+  delete mockEnv.files['/proc/lg/hdmi20/port0/status'];
+  delete mockEnv.files['/proc/lg/hdmi20/port1/status'];
+
+  mockEnv.files['/proc/lgtv-driver/hdmi_status/hdmi.p0'] = [
+    '===== HDMI STATUS =====',
+    'hpd_state : 1',
+    'hwport:1',
+    'timing_v_freq:500',
+    'timing_active_w:3840',
+    'timing_active_h:2160',
+    'timing_scan_type:1',
+    'color_depth:0',
+    'allm_mode:0',
+    'avi_pixel_encoding:1',
+    'avi_vic:96',
+    'phy_lock_status:1',
+    'link_hdmi_5v:1',
+    'link_frame_rate_x100_hz:5000',
+    'link_video_width:3840',
+    'link_video_height:2160',
+    'link_color_space:1',
+    'link_color_depth:8',
+    'pixel_clock_khz:594000'
+  ].join('\n');
+  mockEnv.files['/proc/lgtv-driver/hdmi_status/hdmi.p1'] = [
+    '===== HDMI STATUS =====',
+    'hpd_state : 1',
+    'hwport:2',
+    'timing_active_w:0',
+    'timing_active_h:0',
+    'phy_lock_status:0',
+    'link_hdmi_5v:0'
+  ].join('\n');
+  mockEnv.files['/proc/lgtv-driver/hdmi_status/hdmi.p2'] = [
+    '===== HDMI STATUS =====',
+    'hpd_state : 1',
+    'hwport:3',
+    'timing_active_w:3840',
+    'timing_active_h:2160',
+    'phy_lock_status:0',
+    'link_hdmi_5v:1'
+  ].join('\n');
+
+  var map = { 1: 0, 2: 1, 3: 2, 4: 3 };
+  assert.strictEqual(telemetry.getCapabilities({}).hasHdmiProc, true, 'Realtek hdmi_status counts as HDMI proc');
+  var ports = telemetry.hdmiPorts();
+  assert.strictEqual(ports.length, 3);
+  assert.deepEqual(ports[0], {
+    port: 0, connected: true, resolution: '3840x2160', refreshHz: 50,
+    pixelClockMhz: 594, colorDepth: '8bit', interlaced: false
+  });
+  assert.strictEqual(ports[1].connected, false, 'hpd_state alone is not a lock');
+  assert.strictEqual(ports[2].connected, false, 'sleeping 5V source with phy_lock_status:0 is not active');
+  assert.strictEqual(ports[2].resolution, null, 'stale timing on unlocked Realtek port is ignored');
+
+  assert.strictEqual(telemetry.getVideoSignal(0), '3840x2160 @ 50Hz');
+  assert.strictEqual(telemetry.getVideoSignal(1), null);
+  var sig = telemetry.getHdmiSignal(1, map);
+  assert.strictEqual(sig.signal, '3840x2160 @ 50Hz');
+  assert.deepEqual(sig.timing, { width: 3840, height: 2160, refresh_hz: 50 });
+  assert.strictEqual(sig.diag.chroma, 'YCbCr 4:2:2');
+  assert.strictEqual(sig.diag.allm, false);
+  assert.strictEqual(sig.diag.phy_mode, null);
+  assert.strictEqual(sig.diag.vrr, null);
+  assert.strictEqual(telemetry.getHdmiSignal(2, map), null);
+  assert.strictEqual(telemetry.getHdmiSignal(3, map), null);
+
+  var st = telemetry.readHdmiStatus();
+  assert.deepEqual(telemetry.hdmiSources(st, map), [
+    { input: 1, receiver: 0, powered: true },
+    { input: 2, receiver: 1, powered: false },
+    { input: 3, receiver: 2, powered: true }
+  ]);
+  assert.deepEqual(telemetry.hdmiLinks(st, map), []);
+
+  delete mockEnv.files['/proc/lgtv-driver/hdmi_status/hdmi.p0'];
+  delete mockEnv.files['/proc/lgtv-driver/hdmi_status/hdmi.p1'];
+  delete mockEnv.files['/proc/lgtv-driver/hdmi_status/hdmi.p2'];
+  mockEnv.files['/proc/lg/hdmi20/port0/status'] = lg0;
+  mockEnv.files['/proc/lg/hdmi20/port1/status'] = lg1;
+  console.log('  ✓ Realtek /proc/lgtv-driver/hdmi_status parses timing, chroma, ALLM, and 5V state');
 })();
 
 // 9. Capabilities test

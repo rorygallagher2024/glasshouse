@@ -125,7 +125,7 @@ of Unknowns.
 
 ## LG settings
 
-The TV's own settings that the dashboard's System, Game and Privacy tabs change, as switches, selects and numbers. Each is published only on TVs that have it: a webOS 4 TV has no Game Optimizer, eARC or Bluetooth speaker mode, for example. Those marked disabled by default appear under the device's configuration and can be enabled in Home Assistant. An HDMI input's own settings, such as Deep Colour, are not published: LG changes them only while that input is on screen.
+The TV's own settings that the dashboard's Picture, System, Game and Privacy tabs change, as switches, selects and numbers. Each is published only on TVs that have it: a webOS 4 TV has no Game Optimizer, eARC or Bluetooth speaker mode, for example. Those marked disabled by default appear under the device's configuration and can be enabled in Home Assistant. An HDMI input's own settings, such as Deep Colour, are not published: LG changes them only while that input is on screen.
 
 | Domain | Entity ID | Name | Description |
 | :--- | :--- | :--- | :--- |
@@ -136,6 +136,7 @@ The TV's own settings that the dashboard's System, Game and Privacy tabs change,
 | `select` | `select.lg_tv_game_genre` | Game Genre | Game Optimizer genre: Standard, First-person shooter, Role-playing, Real-time strategy, Sports or User |
 | `select` | `select.lg_tv_prevent_input_delay` | Prevent Input Delay | Game Optimizer input lag reduction: Standard or Boost |
 | `switch` | `switch.lg_tv_allm_setting` | ALLM | Whether the TV switches to low-latency mode when a device starts a game |
+| `switch` | `switch.lg_tv_reduce_blue_light` | Reduce Blue Light | Warms the picture to cut blue light (LG calls this Eye Comfort Mode) |
 | `select` | `select.lg_tv_digital_sound_output` | Digital Sound Output | *Disabled by default.* Auto, PCM or Pass Through, where the TV offers them |
 | `number` | `number.lg_tv_balance` | Balance | *Disabled by default.* Left and right TV speaker balance, -50 to 50 |
 | `switch` | `switch.lg_tv_automatic_volume` | Automatic Volume | *Disabled by default.* Keeps the volume level when switching channels |

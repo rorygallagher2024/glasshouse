@@ -191,10 +191,12 @@ function renderHome() {
     previewPill.disabled = !homeWritable();
   }
   // Its options, while it is on.
-  [['home-preview-always', 'previewAlways'], ['home-preview-tile', 'previewInTile']].forEach(([id, field]) => {
+  // Omitted on webOS 3 and 4 (a B8, 4.4.3), where Live preview plays but the
+  // last two do not and sound was not tried; webOS 5 and 6 also run standalone.
+  const previewOptionsOff = st.supported.previewOptions === false || (st.supported.standalone === true && !st.supported.webos);
+  [['home-preview-sound', 'previewSound'], ['home-preview-always', 'previewAlways'], ['home-preview-tile', 'previewInTile']].forEach(([id, field]) => {
     const row = q(id + '-row');
-    // Neither plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
-    if (row) row.hidden = !st.supported.ok || st.supported.standalone === true || !st.layout || st.layout.livePreview !== true;
+    if (row) row.hidden = !st.supported.ok || previewOptionsOff || !st.layout || st.layout.livePreview !== true;
     const btn = q(id);
     if (!btn) return;
     const on = !!st.layout && st.layout[field] === true;
@@ -1125,17 +1127,26 @@ function renderHomeWalls() {
   const choiceBox = q('home-wall-choice');
   if (choiceBox) {
     const label = { black: t('home.wall.setBlack', 'Black'), landscape: t('home.wall.setLandscape', 'Landscape'),
-      abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own') };
+      abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own'),
+      shuffle: t('home.wall.setShuffle', 'Your own, shuffled') };
     // Black is the background's None, chosen above.
     choiceBox.innerHTML = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(name => name !== 'black').map(name =>
       `<button type="button" class="${name === choice ? 'on' : ''}${name === getting ? ' busy' : ''}" ${busy ? 'disabled' : ''}
         aria-pressed="${name === choice}" onclick="homeWallSet('${name}')">${esc(name === getting ? t('home.wall.examplesBusy', 'Downloading…') : label[name] || name)}</button>`).join('');
   }
-  q('home-wall-help').hidden = !own;
-  q('home-wall-clear').hidden = !own;
-  q('home-wall-clear').disabled = busy || !walls.available;
+  const shuffled = choice === 'shuffle';
+  q('home-wall-intro').textContent = shuffled
+    ? t('home.wall.introShuffle', 'Pictures of your own, up to {max}, shown one at a time in a random order: each comes round once before any comes again.', { max: walls.maxPictures || 50 })
+    : t('home.wall.introPictures', 'A picture for each part of the day: one of the picture sets, or your own.');
+  q('home-wall-help').hidden = !own && !shuffled;
+  q('home-wall-clear').hidden = !own && !shuffled;
+  q('home-wall-clear').disabled = busy || (shuffled ? !(walls.pictures || []).length : !walls.available);
+  if (q('home-wall-day')) q('home-wall-day').hidden = shuffled;
+  box.hidden = shuffled;
+  q('home-wall-shuffle').hidden = !shuffled;
   clearTimeout(homeWallTimer);
   if (walls.uploading) homeWallTimer = setTimeout(() => { if (activeTab === 'home') loadHome(); }, 2000);
+  if (shuffled) return renderHomeShuffle(walls, busy, c);
 
   // The day strip: midnight to midnight, night split at midnight.
   const day = q('home-wall-day');
@@ -1189,6 +1200,102 @@ function renderHomeWalls() {
   });
 }
 
+/*
+ * The shuffled collection: how often a new picture comes, a card to add more
+ * (several at once, or dropped on it), and each picture with Remove.
+ */
+function renderHomeShuffle(walls, busy, c) {
+  const pictures = walls.pictures || [], max = walls.maxPictures || 50, full = pictures.length >= max;
+  const minutes = (homeLayout && homeLayout.wallShuffleMinutes) || 10;
+  const sel = q('home-shuffle-minutes');
+  sel.innerHTML = ((homeLayout && homeLayout.shuffleMinutes) || [1, 5, 10, 15, 30, 60]).map(m =>
+    `<option value="${m}" ${m === minutes ? 'selected' : ''}>${esc(m === 60 ? t('home.wall.everyHour', '1 hour') : t('home.wall.everyMinutes', '{n} min', { n: m }))}</option>`).join('');
+  sel.disabled = !homeWritable();
+  const box = q('home-shuffle');
+  box.style.setProperty('--look-text', c.text);
+  box.style.setProperty('--look-accent', c.accent);
+  const sending = homeWallUploading === 'shuffle' || (walls.uploading && !homeWallUploading);
+  const adder = `<div class="wall-card${sending ? ' busy' : ''}" data-add="1">
+      <button type="button" class="wall-screen" id="home-shuffle-add" onclick="homeShuffleChoose()" ${busy || full ? 'disabled' : ''}
+          aria-label="${esc(t('home.wall.addPictures', 'Add pictures'))}">
+        ${full ? '' : `<span class="wall-add">${esc(t('home.wall.addPictures', 'Add pictures'))}</span>`}
+        ${sending ? `<span class="wall-sending">${esc(t('home.wall.uploading', 'Uploading…'))}</span>` : ''}
+      </button>
+      <div class="wall-actions"><span class="wall-count">${esc(t('home.wall.pictureCount', '{n} of {max}', { n: pictures.length, max }))}</span></div>
+    </div>`;
+  box.innerHTML = adder + pictures.map((id, i) => `<div class="wall-card has fixed" data-picture="${esc(id)}">
+      <button type="button" class="wall-screen" tabindex="-1" disabled aria-label="${esc(t('home.wall.pictureN', 'Picture {n}', { n: i + 1 }))}"
+          style="background-image:url('${esc(api('/api/home/wallpaper?slot=shuffle&id=' + encodeURIComponent(id)))}')"></button>
+      <div class="wall-actions"><button type="button" class="wall-link" onclick="homeShuffleRemove('${esc(id)}')" ${busy ? 'disabled' : ''}>${esc(t('home.wall.remove', 'Remove'))}</button></div>
+    </div>`).join('');
+  // Images dropped on the card to add are added, as many as there is room for.
+  const add = q('home-shuffle-add');
+  add.addEventListener('dragover', e => { if (busy || full) return; e.preventDefault(); add.classList.add('drop'); });
+  add.addEventListener('dragleave', () => add.classList.remove('drop'));
+  add.addEventListener('drop', e => {
+    e.preventDefault();
+    add.classList.remove('drop');
+    const files = e.dataTransfer ? Array.from(e.dataTransfer.files) : [];
+    if (files.length && !busy && !full) homeUploadShuffle(files);
+  });
+}
+
+function homeShuffleMinutes(v) {
+  homeSaveLayout({ wallShuffleMinutes: Number(v) });
+}
+
+function homeShuffleChoose() {
+  if (!homeWritable() || homeWallUploading) return;
+  const input = q('home-shuffle-file');
+  input.value = '';
+  input.click();
+}
+
+function homeShufflePicked(input) {
+  const files = Array.from(input.files || []);
+  if (files.length) homeUploadShuffle(files);
+}
+
+// One after another, as the TV takes one upload at a time; what does not fit is said.
+async function homeUploadShuffle(files) {
+  if (!homeWritable() || homeWallUploading) return;
+  const note = q('home-wall-upload-note');
+  const walls = (homeStatus && homeStatus.wallpapers) || {};
+  const room = Math.max(0, (walls.maxPictures || 50) - (walls.pictures || []).length);
+  const take = files.slice(0, room);
+  homeWallUploading = 'shuffle';
+  note.textContent = '';
+  renderHomeWalls();
+  let done = 0, failed = '';
+  for (const file of take) {
+    note.textContent = t('home.wall.uploadingOf', 'Uploading {n} of {total}…', { n: done + 1, total: take.length });
+    try {
+      const blob = await homePrepareWall(file);
+      const res = await fetch(api('/api/home/wallpapers/upload?slot=shuffle'), {
+        method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob
+      });
+      const r = await res.json();
+      if (!res.ok || !r.ok) throw new Error(r.error || t('home.wall.uploadFailed', 'The image could not be uploaded.'));
+      done++;
+    } catch (e) { failed = file.name + ': ' + e.message; }
+  }
+  homeWallUploading = false;
+  const parts = [t('home.wall.uploadedN', '{n} of {total} uploaded.', { n: done, total: files.length })];
+  if (files.length > take.length) parts.push(t('home.wall.shuffleRoom', 'The collection holds {max} pictures.', { max: walls.maxPictures || 50 }));
+  if (failed) parts.push(failed);
+  note.textContent = parts.join(' ');
+  await loadHome();
+  renderHomeWalls();
+}
+
+async function homeShuffleRemove(id) {
+  if (!homeWritable() || homeWallUploading) return;
+  q('home-wall-upload-note').textContent = '';
+  try { await homePost('/api/home/wallpapers', { removePicture: id }); }
+  catch (e) { q('home-wall-upload-note').textContent = e.message; }
+  await loadHome();
+}
+
 let homeWallSlot = null;
 function homeWallChoose(key) {
   if (!homeWritable() || homeWallUploading) return;
@@ -1203,25 +1310,20 @@ function homeWallPicked(input) {
   if (file && homeWallSlot) homeUploadWall(homeWallSlot, file);
 }
 
-async function homeUploadWall(slot, file) {
-  if (!file || !homeWritable() || homeWallUploading) return;
-  const note = q('home-wall-upload-note');
-  homeWallUploading = slot;
-  note.textContent = '';
-  renderHomeWalls();
-  let url;
+// An image as the JPEG the TV takes: within 1920 x 1080, the size Glasshouse
+// Home is drawn at, which the server holds uploads to.
+async function homePrepareWall(file) {
+  if (!file || !/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 25 * 1024 * 1024) {
+    throw new Error(t('home.wall.chooseImage', 'Choose a JPEG, PNG or WebP image up to 25 MB.'));
+  }
+  const url = URL.createObjectURL(file);
   try {
-    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 25 * 1024 * 1024) {
-      throw new Error(t('home.wall.chooseImage', 'Choose a JPEG, PNG or WebP image up to 25 MB.'));
-    }
-    url = URL.createObjectURL(file);
     const img = new Image();
     await new Promise((resolve, reject) => {
       img.onload = resolve;
       img.onerror = () => reject(new Error(t('home.wall.unreadable', 'The image could not be opened.')));
       img.src = url;
     });
-    // Glasshouse Home is drawn at 1920 x 1080; the server refuses anything larger.
     const scale = Math.min(1, 1920 / img.naturalWidth, 1080 / img.naturalHeight);
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
@@ -1232,6 +1334,18 @@ async function homeUploadWall(slot, file) {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.88));
     if (!blob || blob.size > 5 * 1024 * 1024) throw new Error(t('home.wall.tooLarge', 'The prepared image is too large. Choose a smaller image.'));
+    return blob;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+async function homeUploadWall(slot, file) {
+  if (!file || !homeWritable() || homeWallUploading) return;
+  const note = q('home-wall-upload-note');
+  homeWallUploading = slot;
+  note.textContent = '';
+  renderHomeWalls();
+  try {
+    const blob = await homePrepareWall(file);
     const res = await fetch(api('/api/home/wallpapers/upload?slot=' + slot), {
       method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob
     });
@@ -1240,7 +1354,6 @@ async function homeUploadWall(slot, file) {
     note.textContent = t('home.wall.uploadDone', 'Image uploaded. Home updates within a few seconds.');
   } catch (e) { note.textContent = e.message; }
   finally {
-    if (url) URL.revokeObjectURL(url);
     homeWallUploading = false;
     await loadHome();
     renderHomeWalls();
@@ -1275,7 +1388,8 @@ async function homeWallSet(name) {
 async function homeClearUploads() {
   if (!homeWritable() || homeWallUploading) return;
   q('home-wall-upload-note').textContent = '';
-  try { await homePost('/api/home/wallpapers', { removeUploads: true }); }
+  const shuffled = homeStatus && homeStatus.wallpapers && homeStatus.wallpapers.choice === 'shuffle';
+  try { await homePost('/api/home/wallpapers', shuffled ? { removePictures: true } : { removeUploads: true }); }
   catch (e) { q('home-wall-upload-note').textContent = e.message; }
   await loadHome();
 }

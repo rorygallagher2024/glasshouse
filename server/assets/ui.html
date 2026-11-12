@@ -76,7 +76,7 @@
     <button type="button" role="tab" data-tab="advanced"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span data-t="tab.system">System</span></button>
     <div class="nav-rule" role="presentation"></div>
     <button type="button" role="tab" data-tab="servicemenu" id="tab-btn-servicemenu" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><span data-t="tab.serviceMenu">Service menu</span></button>
-    <button type="button" role="tab" data-tab="mqtt"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M8 11l8-4M8 13l8 4"/></svg><span translate="no">MQTT</span></button>
+    <button type="button" role="tab" data-tab="mqtt"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M8 11l8-4M8 13l8 4"/></svg><span translate="no">HA &amp; MQTT</span></button>
     <button type="button" role="tab" data-tab="server"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="7" rx="1.5"/><rect x="4" y="13" width="16" height="7" rx="1.5"/><path d="M8 7.5h.01M8 16.5h.01"/></svg><span data-t="tab.server">Server</span></button>
     <button type="button" role="tab" data-tab="tools"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M7 10l3 2.5L7 15M12.5 15h4"/></svg><span data-t="tab.tools">Tools</span></button>
   </nav>
@@ -300,20 +300,6 @@
       <div class="btns" id="inputs"></div>
     </div>
 
-    <div class="set" data-col="0"><div class="lbl"><span data-t="ctl.volume">Volume</span> &middot; <span id="vol" class="num">&mdash;</span></div>
-      <div class="vol-row" id="vol-row">
-        <div class="vol-wrap" id="vol-wrap" role="group" aria-label="Volume" data-t-aria-label="ctl.volume">
-          <div class="vol-fill" id="vol-fill"></div>
-          <input type="range" id="vol-slider" min="0" max="100" value="0" aria-label="Volume" data-t-aria-label="ctl.volume">
-        </div>
-        <div class="vol-steps" id="vol-steps" hidden>
-          <button onclick="sendCommand('volumeStep',-1)" aria-label="Volume down" data-t-aria-label="ctl.volumeDown" translate="no">&minus;</button>
-          <button onclick="sendCommand('volumeStep',1)" aria-label="Volume up" data-t-aria-label="ctl.volumeUp" translate="no">+</button>
-        </div>
-        <button id="mute" onclick="toggleMute()" data-t="ctl.mute">Mute</button>
-      </div>
-    </div>
-
     <div class="set" id="control-playback"><div class="lbl" data-t="ctl.playback">Playback</div>
       <div class="playback-btns">
         <button onclick="sendCommand('media','rewind')" data-t="ctl.rewind">Rewind</button>
@@ -328,6 +314,20 @@
           <button type="button" id="ctl_huesync" onclick="toggleHuesync()" aria-pressed="false" hidden><span data-t="adv.huesync.title">Hue Sync</span> &middot; <span id="ctl_huesync_state">&mdash;</span></button>
           <button type="button" id="ctl_piccap" onclick="togglePiccap()" aria-pressed="false" hidden><span data-t="ambient.piccap.title">PicCap</span> &middot; <span id="ctl_piccap_state">&mdash;</span></button>
         </div>
+      </div>
+    </div>
+
+    <div class="set" data-col="0"><div class="lbl"><span data-t="ctl.volume">Volume</span> &middot; <span id="vol" class="num">&mdash;</span></div>
+      <div class="vol-row" id="vol-row">
+        <div class="vol-wrap" id="vol-wrap" role="group" aria-label="Volume" data-t-aria-label="ctl.volume">
+          <div class="vol-fill" id="vol-fill"></div>
+          <input type="range" id="vol-slider" min="0" max="100" value="0" aria-label="Volume" data-t-aria-label="ctl.volume">
+        </div>
+        <div class="vol-steps" id="vol-steps" hidden>
+          <button onclick="sendCommand('volumeStep',-1)" aria-label="Volume down" data-t-aria-label="ctl.volumeDown" translate="no">&minus;</button>
+          <button onclick="sendCommand('volumeStep',1)" aria-label="Volume up" data-t-aria-label="ctl.volumeUp" translate="no">+</button>
+        </div>
+        <button id="mute" onclick="toggleMute()" data-t="ctl.mute">Mute</button>
       </div>
     </div>
 
@@ -724,6 +724,13 @@
       <div class="prot-status"><select class="pill-sel" id="sel_aroff" aria-label="Nightly power-down hours" data-t-aria-label="adv.nightlyOff.hours"
         onchange="sendCommand('alwaysReadyOffStart', this.value)"></select></div>
     </div>
+    <div class="prot-row" id="row-nightlyrefresh" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="adv.nightlyRefresh">Nightly refresh reboot</div>
+        <div class="prot-desc" data-t="adv.nightlyRefresh.desc">Aligns the TV's 24-hour maintenance reboot with your nightly power-down window. Prevents a bug in LG's software where rebooting during the day causes the TV to power off completely four hours later.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="btn_nightlyrefresh" onclick="toggleNightlyRefresh()">&mdash;</button></div>
+    </div>
     <div class="prot-row" id="row-wol" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="adv.wol">Wake-on-LAN</div>
@@ -932,6 +939,20 @@
         aria-labelledby="ss-choice-lbl ss-choice" onclick="ssPickOpen(q('ss-pick-list').hidden)" onkeydown="ssPickKey(event)">&mdash;</button>
       <div class="ss-pick-list" id="ss-pick-list" role="listbox" aria-labelledby="ss-choice-lbl" tabindex="-1" hidden
         onkeydown="ssPickKey(event)"></div>
+    </div>
+  </div>
+
+  <div class="ss-level-row" id="ss-color-row" hidden>
+    <div class="ss-level-lbl" id="ss-color-lbl" data-t="ss.valueColor">Value colour</div>
+    <select class="pill-sel ss-sel" id="ss-color" aria-labelledby="ss-color-lbl ss-color" onchange="pickSsColor(this.value)"></select>
+  </div>
+
+  <div class="ss-level-row" id="ss-entities-row" hidden>
+    <div class="ss-level-lbl" data-t="ss.entities">Home Assistant Entities</div>
+    <div id="ss-entities-list"></div>
+    <div class="pv-sub" id="ss-entities-note" style="margin-top:8px"></div>
+    <div id="ss-entities-setup" hidden style="margin-top:8px">
+      <button type="button" onclick="openHaSettings()" data-t="ss.openMqtt">Open HA and MQTT settings</button>
     </div>
   </div>
 
@@ -1335,9 +1356,16 @@
     <div class="prot-row home-gh-row" id="home-preview-row" hidden>
       <div class="prot-main">
         <div class="prot-title" data-t="home.livePreview">Live preview</div>
-        <div class="prot-desc" data-t="home.livePreviewDesc">A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
+        <div class="prot-desc" data-t="home.livePreviewDesc">A live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-preview" onclick="homeLivePreview()">&mdash;</button></div>
+    </div>
+    <div class="prot-row home-gh-row" id="home-preview-sound-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewSound">Preview sound</div>
+        <div class="prot-desc" data-t="home.previewSoundDesc">The preview plays the sound of the input or channel it shows, rather than none. Switching it changes a preview already playing.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill idle" id="home-preview-sound" onclick="homePreviewOption('previewSound')">&mdash;</button></div>
     </div>
     <div class="prot-row home-gh-row" id="home-preview-always-row" hidden>
       <div class="prot-main">
@@ -1483,8 +1511,16 @@
   <div class="sub" data-t="home.bg.intro">What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.</div>
   <div class="btns wall-choice" id="home-bg-kind"></div>
   <div id="home-bg-pictures">
-    <div class="sub" data-t="home.wall.introPictures">A picture for each part of the day: one of the picture sets, or your own.</div>
+    <div class="sub" id="home-wall-intro"></div>
     <div class="btns wall-choice" id="home-wall-choice"></div>
+    <!-- Your own, shuffled: any number of pictures, one at a time in a random order -->
+    <div id="home-wall-shuffle" hidden>
+      <div class="shuffle-every"><span data-t="home.wall.shuffleEvery">A new picture every</span>
+        <select class="pill-sel" id="home-shuffle-minutes" aria-label="A new picture every" data-t-aria-label="home.wall.shuffleEvery"
+          onchange="homeShuffleMinutes(this.value)"></select></div>
+      <div class="wall-cards" id="home-shuffle"></div>
+      <input type="file" id="home-shuffle-file" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="homeShufflePicked(this)">
+    </div>
     <!-- The day as Glasshouse Home shows it: each part's picture across its hours, and where the day is now -->
     <div class="wall-day" id="home-wall-day"></div>
     <div class="wall-cards" id="home-walls"></div>
@@ -1655,7 +1691,11 @@
 </section>
 
 <section class="priv panel" id="mqttpane" role="tabpanel" hidden>
-  <div class="lbl" translate="no">MQTT &amp; Home Assistant</div>
+  <div class="lbl" translate="no">HA &amp; MQTT</div>
+
+  <div id="mqtt-section">
+  <div class="pv-h" style="margin-top:0" data-t="mqtt.section">MQTT bridge</div>
+  <div class="pv-sub" data-t="mqtt.section.desc">Control and observe this TV from Home Assistant or an MQTT client. Publishes TV telemetry, sensors, and settings to your broker and accepts remote commands.</div>
 
   <div class="cfg-cols">
   <div class="cfg-side">
@@ -1784,7 +1824,7 @@
     </div>
   </div>
 
-  <div class="pv-h" data-t="mqtt.entities">Home Assistant entities</div>
+  <div class="pv-h" data-t="mqtt.entities">Published TV entities</div>
   <div class="pv-sub" data-t="mqtt.entities.desc">Choose which entity categories are published over MQTT Discovery.
     Disabling an entity removes it cleanly from Home Assistant without leaving an orphaned state.</div>
 
@@ -1803,6 +1843,84 @@
     <span class="cfg-msg" id="cfg-msg"></span>
   </div>
   </div>
+  </div>
+  </div>
+
+  <div class="ha-api-section" id="ha-api-section">
+    <div class="pv-h" style="margin-top:0" data-t="ha.api">Home Assistant API</div>
+    <div class="pv-sub" data-t="ha.api.desc">Display live Home Assistant entities inside Glasshouse screen savers (such as Ambient). Connects straight to Home Assistant over HTTP/HTTPS without using MQTT, and saves without restarting.</div>
+
+    <div class="cfg-cols">
+      <div class="cfg-side">
+        <div class="cfg-toggles" style="margin-top:0">
+          <button type="button" id="cfg-ha-enabled" onclick="toggleHaEnabled()" data-t="ha.api">Home Assistant API</button>
+        </div>
+        <div class="sub" id="cfg-ha-enabled-note" style="margin-top:8px"></div>
+
+        <div class="mqtt-net" id="ha-net">
+          <div class="mqtt-net-header">
+            <span class="mqtt-net-title" data-t="mqtt.net.title">Connection</span>
+          </div>
+
+          <div class="mqtt-net-flow">
+            <div class="mqtt-net-node">
+              <div class="mqtt-net-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 20h8M12 17v3"/></svg>
+              </div>
+              <div class="mqtt-net-body">
+                <div class="mqtt-net-name" id="ha-node-tv-name">&mdash;</div>
+                <div class="mqtt-net-sub" translate="no">Glasshouse</div>
+              </div>
+              <div class="mqtt-net-state">
+                <span class="mqtt-dot good" id="ha-dot-tv"></span>
+              </div>
+            </div>
+
+            <div class="mqtt-net-link">
+              <div class="mqtt-net-track">
+                <div class="mqtt-packet" id="ha-packet-read"></div>
+              </div>
+              <div class="mqtt-net-meta">
+                <span class="mqtt-net-metric" id="ha-net-metric">&mdash;</span>
+              </div>
+            </div>
+
+            <div class="mqtt-net-node" id="ha-node-server">
+              <div class="mqtt-net-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><circle cx="12" cy="14" r="2"/></svg>
+              </div>
+              <div class="mqtt-net-body">
+                <div class="mqtt-net-name" data-t="ha.net.server">Home Assistant</div>
+                <div class="mqtt-net-sub"><span id="ha-node-server-sub">&mdash;</span><span class="mqtt-tls-tag" id="ha-node-server-tls" hidden translate="no">HTTPS</span></div>
+              </div>
+              <div class="mqtt-net-state">
+                <span class="mqtt-dot idle" id="ha-dot-server"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cfg-main">
+        <div class="cfg-grid">
+          <div class="cfg-f">
+            <label for="cfg-ha-url" data-t="ha.url">Home Assistant address</label>
+            <input type="text" id="cfg-ha-url" placeholder="http://192.168.1.10:8123" translate="no" autocomplete="off" spellcheck="false">
+            <div class="hint" data-t="ha.url.hint">Address and port of your Home Assistant instance.</div>
+          </div>
+          <div class="cfg-f">
+            <label for="cfg-ha-token" data-t="ha.token">Long-Lived Access Token</label>
+            <input type="password" id="cfg-ha-token" autocomplete="new-password">
+            <div class="hint" id="cfg-ha-token-hint" data-t="ha.token.hint">From your Home Assistant profile &rarr; Long-Lived Access Tokens.</div>
+          </div>
+        </div>
+        <div class="cfg-save" style="margin-top:14px">
+          <button type="button" id="cfg-ha-save-btn" onclick="saveHaSettings()" data-t="ha.save">Save</button>
+          <button type="button" id="cfg-ha-test-btn" onclick="testHaConnection()" data-t="ha.test">Test connection</button>
+          <span class="cfg-msg" id="cfg-ha-msg" role="status" aria-live="polite"></span>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 

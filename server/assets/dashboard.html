@@ -619,6 +619,9 @@ function optionRows(d) {
                cls: 'act', act: 'arOff', start: d.alwaysReadyOff.start,
                press: t('tv.options.nightlyPowerDown.press', 'Press OK to move it an hour later'),
                hint: t('tv.options.nightlyPowerDown.hint', 'For five hours every night, LG lets a switched-off TV sleep fully. It is offline then, so Glasshouse and Home Assistant cannot reach it. LG fixes the length; choose hours when the TV is not used.') });
+    if (d.alwaysReady && d.alwaysReadyOff && typeof d.nightlyRefresh === 'boolean')
+      r.push(toggle(t('adv.nightlyRefresh', 'Nightly refresh reboot'), d.nightlyRefresh, 'nightlyRefresh',
+        t('tv.options.nightlyRefresh.hint', 'Aligns the TV\'s 24-hour maintenance reboot with your nightly power-down window, preventing a bug in LG\'s software that powers off the TV completely four hours after a daytime reboot.')));
     if (d.wakeOnLan !== undefined)
       r.push(toggle(t('adv.wol', 'Wake-on-LAN'), d.wakeOnLan, 'wakeOnLan',
         t('tv.options.wol.hint', 'Lets Home Assistant, a phone or another device on the network switch the TV on from standby. Requires Quick Boot (Quick Start+) to keep the network connection responsive while off. LG calls this Mobile TV On.')));
@@ -1245,9 +1248,13 @@ function glasshouseHomeRows(d) {
              press: picOn ? t('tv.press.switchOff', 'Press OK to switch off') : t('tv.press.switchOn', 'Press OK to switch on'),
              hint: t('home.pictureDesc', 'In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.') });
     // The live preview and, while it is on, its options.
-    var pvRows = [['livePreview', t('home.livePreview', 'Live preview'), t('home.livePreviewDesc', 'A silent live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.')]];
-    // Neither option plays on webOS 4 (a B8, 4.4.3), where Live preview itself does.
-    if (d.layout.livePreview === true && !d.supported.standalone) {
+    var pvRows = [['livePreview', t('home.livePreview', 'Live preview'), t('home.livePreviewDesc', 'A live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.')]];
+    // Omitted on webOS 3 and 4 (a B8, 4.4.3), where Live preview plays but
+    // Keep the preview on and Preview in the tile do not, and sound was not
+    // tried; webOS 5 and 6 also run standalone.
+    var previewOptionsOff = d.supported.previewOptions === false || (d.supported.standalone === true && !d.supported.webos);
+    if (d.layout.livePreview === true && !previewOptionsOff) {
+      pvRows.push(['previewSound', t('home.previewSound', 'Preview sound'), t('home.previewSoundDesc', 'The preview plays the sound of the input or channel it shows, rather than none. Switching it changes a preview already playing.')]);
       pvRows.push(['previewAlways', t('home.previewAlways', 'Keep the preview on'), t('home.previewAlwaysDesc', 'The preview runs whenever Glasshouse Home is on screen, not only while a tile with one is chosen: the HDMI input last watched, or otherwise the TV on its last channel. Choosing another input or channel moves it there.')]);
       pvRows.push(['previewInTile', t('home.previewInTile', 'Preview in the tile'), t('home.previewInTileDesc', 'The preview fills the tile it shows, under the tile’s own name, rather than beside the clock.')]);
     }
@@ -1325,7 +1332,8 @@ function glasshouseHomeRows(d) {
           hint: t('home.bg.intro', 'What is behind Glasshouse Home: nothing, pictures that change with the part of the day, or a moving background.') });
     if (bgKind === 'pictures') {
       // A picture set or the owner's own, which are uploaded from a browser.
-      var wallNames = { landscape: t('home.wall.setLandscape', 'Landscape'), abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own') };
+      var wallNames = { landscape: t('home.wall.setLandscape', 'Landscape'), abstract: t('home.wall.setAbstract', 'Abstract'), own: t('home.wall.setOwn', 'Your own'),
+        shuffle: t('home.wall.setShuffle', 'Your own, shuffled') };
       var wallChoices = (walls.choices || ['black', 'landscape', 'abstract', 'own']).filter(function (n) { return n !== 'black'; });
       var wallNext = wallChoices[(wallChoices.indexOf(wallNow) + 1) % wallChoices.length];
       if (!walls.fetching) {
@@ -1333,6 +1341,16 @@ function glasshouseHomeRows(d) {
           act: can ? 'homeWallSet' : null, next: wallNext,
           press: t('tv.game.next', 'Press OK for {name}', { name: wallNames[wallNext] }),
           hint: t('home.wall.tvHintSets', 'Landscape and Abstract are downloaded to the TV when chosen. Your own pictures are uploaded on the browser dashboard’s Home tab.') });
+      }
+      if (wallNow === 'shuffle' && !walls.fetching) {
+        // How often the shuffled pictures change: OK steps through the choices.
+        var everyName = function (m) { return m === 60 ? t('home.wall.everyHour', '1 hour') : t('home.wall.everyMinutes', '{n} min', { n: m }); };
+        var everyAll = d.layout.shuffleMinutes || [1, 5, 10, 15, 30, 60], everyNow = d.layout.wallShuffleMinutes || 10;
+        var everyNext = everyAll[(everyAll.indexOf(everyNow) + 1) % everyAll.length];
+        r.push({ label: t('home.wall.shuffleEvery', 'A new picture every'), value: everyName(everyNow), cls: can ? 'act' : '',
+          act: can ? 'homeShuffleEvery' : null, key: everyNext,
+          press: t('tv.home.darkening.press', 'Press OK for {value}', { value: everyName(everyNext) }),
+          hint: t('home.wall.tvHintShuffle', '{n} pictures, shown one at a time in a random order. They are added on the browser dashboard’s Home tab.', { n: (walls.pictures || []).length }) });
       }
     }
     if (bgKind === 'animated') {
@@ -3510,6 +3528,8 @@ function activate() {
       return homeLayout({ hideUnused: !r.on });
     case 'homeDarkening':
       return homeLayout({ darkening: r.key });
+    case 'homeShuffleEvery':
+      return homeLayout({ wallShuffleMinutes: r.key });
     case 'homeColours':
       // The view's own look is saved as none chosen.
       return homeLayout({ colours: r.key.own ? null : { text: r.key.text, accent: r.key.accent } });
@@ -3598,6 +3618,8 @@ function activate() {
       return send({ action: 'alwaysReady', value: !r.on }, r.on ? t('tv.flash.willSleep', 'Will sleep when off') : t('tv.flash.willStay', 'Will stay connected when off'));
     case 'alwaysReadyScreen':
       return send({ action: 'alwaysReadyScreen', value: !r.on }, r.on ? t('tv.flash.alwaysReadyOff', 'Always Ready turned off') : t('tv.flash.alwaysReadyOn', 'Always Ready turned on'));
+    case 'nightlyRefresh':
+      return send({ action: 'nightlyRefresh', value: !r.on }, r.on ? t('tv.flash.nightlyRefreshOff', 'Nightly refresh reboot turned off') : t('tv.flash.nightlyRefreshOn', 'Nightly refresh reboot turned on'));
     case 'clockHour12':
       clockHour12 = !r.on;
       tick();

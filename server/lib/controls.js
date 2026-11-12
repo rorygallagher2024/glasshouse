@@ -113,6 +113,8 @@ var ntpModule = null;
 var historyModule = null;
 /** @type {typeof import('./backup')} */
 var backupModule = null;
+/** @type {typeof import('./resettime')} */
+var resettimeModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
 var republishDiscoveryFn = null;
@@ -938,8 +940,23 @@ function doControl(action, value, cb) {
                     alwaysOnDisableEndHour: String((offHour + 5) % 24), alwaysOnDisableEndMinute: '0' } },
                   function (r) {
                     telemetry.clearCache();
+                    if (resettimeModule) resettimeModule.apply();
                     cb({ ok: !!(r && r.returnValue) });
                   });
+
+    case 'nightlyRefresh':
+      var nrOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
+      if (!resettimeModule || !resettimeModule.supported()) {
+        return cb({ ok: false, error: 'nightly refresh reboot is not supported on this TV' });
+      }
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ nightlyRefresh: nrOn }, function (err) {
+        if (err) return cb({ ok: false, error: err.message || String(err) });
+        if (config) config.nightlyRefresh = nrOn;
+        resettimeModule.setEnabled(nrOn, function () {
+          cb({ ok: true });
+        });
+      });
 
     // LG's On or Off Timer: { timer: 'on' or 'off', enabled, time, days }.
     case 'powerTimer':
@@ -1129,6 +1146,20 @@ function doControl(action, value, cb) {
         telemetry.clearCache();
         cb(r);
       });
+
+    case 'screensaverEntities':
+      if (!screensavers) return cb({ ok: false, error: 'screensavers module not available' });
+      if (!value || typeof value !== 'object' || !value.saver || !value.entities) {
+        return cb({ ok: false, error: 'screensaverEntities requires saver and entities' });
+      }
+      return screensavers.setSaverEntities(value.saver, value.entities, cb);
+
+    case 'screensaverColor':
+      if (!screensavers) return cb({ ok: false, error: 'screensavers module not available' });
+      if (!value || typeof value !== 'object' || !value.saver || !value.color) {
+        return cb({ ok: false, error: 'screensaverColor requires saver and color' });
+      }
+      return screensavers.setSaverColor(value.saver, value.color, cb);
 
     case 'toast':
       /* Both the payload's sourceId and luna-send's -a have to name an app the
@@ -1492,6 +1523,7 @@ function init(opts) {
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
   if (opts.backup) backupModule = opts.backup;
+  if (opts.resettime) resettimeModule = opts.resettime;
   if (opts.home) homeModule = opts.home;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;
   if (opts.deviceNameChanged) deviceNameChangedFn = opts.deviceNameChanged;

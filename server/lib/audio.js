@@ -132,13 +132,25 @@ function edidSads(bytes) {
 
 function inputSads(port, map) {
   if (!port || !map || typeof map[port] !== 'number') return null;
-  var raw = util.readTrimmed('/proc/lg/hdmi20/port' + map[port] + '/edid');
-  if (!raw) return null;
   var bytes = [];
-  raw.split(/\r?\n/).forEach(function (line) {
-    var row = /^\[0x[\da-f]+\]\s*\|((?:\s*\[0x[\da-f]{2}\]){16})\s*$/i.exec(line);
-    if (row) (row[1].match(/\[0x[\da-f]{2}\]/ig) || []).forEach(function (value) { bytes.push(parseInt(value.slice(3, -1), 16)); });
-  });
+  var raw = util.readTrimmed('/proc/lg/hdmi20/port' + map[port] + '/edid');
+  if (raw) {
+    raw.split(/\r?\n/).forEach(function (line) {
+      var row = /^\[0x[\da-f]+\]\s*\|((?:\s*\[0x[\da-f]{2}\]){16})\s*$/i.exec(line);
+      if (row) (row[1].match(/\[0x[\da-f]{2}\]/ig) || []).forEach(function (value) { bytes.push(parseInt(value.slice(3, -1), 16)); });
+    });
+  } else {
+    var status = util.readTrimmed('/proc/lgtv-driver/hdmi_status/hdmi.p' + map[port]);
+    if (status) {
+      var inBlock = false;
+      status.split(/\r?\n/).forEach(function (line) {
+        if (/^\s*edid_data_block\d+\s*:\s*$/.test(line)) { inBlock = true; return; }
+        if (!inBlock) return;
+        if (!/^\s*0x[\da-f]{2}(?:\s*,\s*0x[\da-f]{2})*\s*,?\s*$/i.test(line)) { inBlock = false; return; }
+        (line.match(/0x[\da-f]{2}/ig) || []).forEach(function (value) { bytes.push(parseInt(value, 16)); });
+      });
+    }
+  }
   for (var n = 0; n <= bytes.length - 128; n++) {
     if (bytes.slice(n, n + 8).join(',') === '0,255,255,255,255,255,255,0') return edidSads(bytes.slice(n));
   }
