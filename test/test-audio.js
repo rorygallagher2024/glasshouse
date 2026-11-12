@@ -464,6 +464,25 @@ add('Realtek bad EDID checksum stays unknown instead of reporting formats', func
   assert.strictEqual(format(st, 'dts').advertised, null);
 });
 
+add('Realtek reads HDMI incoming codec and kHz sample rate from driver files', function () {
+  c9Setup();
+  mock.files['/proc/lgtv-driver/audio/hdmi'] = 'HDMIConnected=1\nAudioData=1\nCodec=PCM\nSamplingRate=48\nN=6144\nCTS=148500\n';
+  mock.files['/proc/lgtv-driver/audio/adec.p1'] = 'AdecPortNum=1\nStart=1\nConnect=HDMI0\nSrcCodec=PCM\nSrcSamplingRate=48\nMute=0\n';
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(st.live.inputReadable, true);
+  assert.deepEqual(st.live.input, { codec: 'PCM', sampleRate: 48000 });
+});
+
+add('HDMI_PORT driver fallback preserves Hz sample rate', function () {
+  c9Setup();
+  mock.files['/proc/lgtv-driver/audio/hdmi'] = 'HDMIConnected=1\nAudioData=1\nCodec=PCM\nSamplingRate=48000\nN=6144\nCTS=148500\n';
+  mock.files['/proc/lgtv-driver/audio/adec.p1'] = 'AdecPortNum=1\nStart=1\nConnect=HDMI_PORT3\nMute=0\n';
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.deepEqual(st.live.input, { codec: 'PCM', sampleRate: 48000 });
+});
+
 function restore() {
   os.release = originalRelease; child.execFile = originalExec; crypto.createHash = originalHash; fs.statSync = originalStat; mock.restore();
 }

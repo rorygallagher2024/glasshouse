@@ -3256,6 +3256,9 @@ Reported in #1359 from a 55NANO756PR (webOS 6.5.3, firmware `03.53.46`) with a
 - `edid_data_block0` and `edid_data_block1` hold two checksummed 128-byte EDID
   blocks in comma-separated `0x..` hex rows (`edid_size :2`) on active/linked
   `hdmi.p0`, omitted when idle.
+- Under `/proc/lgtv-driver/audio/`, active HDMI decoding reported `Connect=HDMI0`
+  in `adec.p1` (rather than LG/MediaTek's `HDMI_PORT0`..`HDMI_PORT3`) and
+  `SamplingRate=48` in `hdmi` (in kHz rather than `48000` Hz).
 - Interlaced, HDR10/HLG/Dolby Vision, VRR and HDCP/FRL active samples were not
   captured on this board (`phy_tmds_clk_khz:593500` tracked the pixel rate on
   this TMDS link, and `hdcp_version` read `1` active vs `2` idle).

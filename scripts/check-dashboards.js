@@ -444,8 +444,14 @@ async function visitHomePreviewOptions(browser, base, problems) {
     return s ? s.getAttribute('type') + ' ' + s.getAttribute('src') : null;
   });
   const shownIn = () => page.evaluate(() => {
-    const pv = document.getElementById('preview'), tile = pv.parentNode.closest && pv.parentNode.closest('.tile');
-    return tile ? tile.querySelector('.nm').textContent : pv.parentNode.id;
+    const pv = document.getElementById('preview');
+    if (pv.parentNode.closest && pv.parentNode.closest('.tile')) return 'reparented:' + pv.parentNode.closest('.tile').querySelector('.nm').textContent;
+    if (!pv.classList.contains('intile')) return pv.parentNode.id;
+    const tile = document.querySelector('#rows .tile.live');
+    if (!tile) return 'unmarked:' + pv.parentNode.id;
+    const a = tile.getBoundingClientRect(), b = pv.getBoundingClientRect();
+    const aligned = ['left', 'top', 'width', 'height'].every(k => Math.abs(a[k] - b[k]) < 2);
+    return aligned ? tile.querySelector('.nm').textContent : 'misaligned:' + tile.querySelector('.nm').textContent;
   });
   async function rest() {
     await page.clock.fastForward(400);

@@ -421,15 +421,18 @@ function build(replies, decoder) {
   var adecs = [0, 1].map(function (n) { return sectionValues(util.readTrimmed('/proc/lgtv-driver/audio/adec.p' + n))['']; });
   var audio = replies.input && replies.input.returnValue !== false && replies.input.audioInputProperty;
   var activeInput = Array.isArray(audio) && audio[0] && audio[0].codec ? audio[0] : null;
-  var started = adecs.some(function (a) { return a.Start === '1' && /^HDMI_PORT/.test(a.Connect || ''); });
+  var started = adecs.some(function (a) { return a.Start === '1' && /^HDMI(?:_PORT)?\d/.test(a.Connect || ''); });
   // Whether the TV can say what audio comes in at all: a B8 (webOS 4.4.3) has
   // neither getAudioInputProperty nor the driver's hdmi file, where a C2 with
   // nothing playing has both and reports no audio.
   var inputReadable = Array.isArray(audio) || Object.keys(hdmi).length > 0;
+  // LG's driver writes SamplingRate in Hz (48000), while Realtek writes kHz (48).
+  var rawRate = Number(hdmi.SamplingRate);
+  var sampleRate = rawRate > 0 ? (rawRate < 1000 ? rawRate * 1000 : rawRate) : 0;
   var liveInput = activeInput ? { codec: names.audioCodec(activeInput.codec).display,
     immersive: activeInput.immersive ? names.audioImmersive(activeInput.immersive) : null } :
-    started && hdmi.AudioData === '1' && Number(hdmi.SamplingRate) > 0 ?
-      { codec: names.audioCodec(hdmi.Codec).display, sampleRate: Number(hdmi.SamplingRate) } : null;
+    started && hdmi.AudioData === '1' && sampleRate > 0 ?
+      { codec: names.audioCodec(hdmi.Codec).display, sampleRate: sampleRate } : null;
   // getARCEDIDInfo.eARC describes EDID policy, not the negotiated link. The
   // G3 returned true there while getARCState and its driver reported ARC.
   var earc = sound.EARC && sound.EARC.EArcOnOff === 'On';
