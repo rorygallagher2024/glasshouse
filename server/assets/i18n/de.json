@@ -859,5 +859,16 @@
  "srv.saver.color.purple": {"text": "Violett", "from": "Purple"},
  "srv.saver.color.red": {"text": "Rot", "from": "Red"},
  "srv.saver.color.white": {"text": "Weiß", "from": "White"},
- "ss.valueColor": {"text": "Wertfarbe", "from": "Value colour"}
+ "ss.valueColor": {"text": "Wertfarbe", "from": "Value colour"},
+ "ctl.pointer": {"text": "Zeiger", "from": "Pointer"},
+ "ctl.pointer.sub": {"text": "TV-Cursor bewegen", "from": "Move the TV cursor"},
+ "ctl.pointer.hint": {"text": "Zum Bewegen wischen. Zum Klicken tippen. Zum Scrollen das Mausrad nutzen.", "from": "Slide to move. Tap to click. Use the wheel to scroll."},
+ "ctl.pointer.transport": {"text": "Verbindung", "from": "Connection"},
+ "server.experimental.pointer": {"text": "Zeigereingabe", "from": "Pointer input"},
+ "server.experimental.pointer.short": {"text": "Fügt unter „Steuerung“ ein Trackpad zum Bewegen, Klicken und Scrollen des TV-Cursors hinzu. Auf webOS 11 getestet; andere Versionen können abweichen.", "from": "Adds a trackpad under Control for moving, clicking and scrolling the TV cursor. Tested on webOS 11; other versions may behave differently."},
+ "server.experimental.pointer.transport.desc": {"text": "WebSocket sendet ohne auf HTTP-Antworten zu warten und bleibt nur geöffnet, solange Zeiger offen ist. HTTP sendet einzelne Anfragen und kann weniger flüssig wirken.", "from": "WebSocket sends without waiting for HTTP answers and opens only while Pointer is open. HTTP sends separate requests and may feel less smooth."},
+ "server.experimental.pointer.rate": {"text": "Aktualisierungsrate", "from": "Update rate"},
+ "server.experimental.pointer.rate.desc": {"text": "Wie oft das Dashboard Bewegungspakete sendet. Niedrigere Raten entlasten TV und Netzwerk; höhere Raten können flüssiger wirken. Standardmäßig und empfohlen sind 120 Aktualisierungen pro Sekunde.", "from": "How often the dashboard sends movement batches. Lower rates reduce TV and network work; higher rates can feel smoother. The default and recommended rate is 120 updates per second."},
+ "server.experimental.pointer.rate.value": {"text": "{n} Aktualisierungen pro Sekunde", "from": "{n} updates per second"},
+ "ctl.pointer.click": {"text": "Klicken", "from": "Click"}
 }

@@ -9,6 +9,11 @@
   "token": "",
   "allowOnWebos10": false,
   "allowTileHiding": false,
+  "pointer": {
+    "enabled": false,
+    "transport": "websocket",
+    "updatesPerSecond": 120
+  },
   "iconServer": false,
   "piccap": {
     "pollIntervalMs": 30000

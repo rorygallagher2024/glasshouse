@@ -69,6 +69,13 @@ C2 (webOS 9.2.2) LG then changes the picture mode and hides Game Optimizer
 until the device disconnects. Connecting while another device is
 connected asks for confirmation.
 
+## Pointer input
+
+An authenticated `POST /api/pointer` opens LG's network-input pointer socket on
+demand and sends relative movement, button and scroll events through it. The
+socket is reused for later requests and closed when the server stops. No input
+device, setting or persistent file is created.
+
 ## Files and startup
 
 | Change | Where | Undone by |

@@ -1,5 +1,10 @@
 # Control
 
+**Pointer** moves the TV cursor as you slide over its pad. Tap the pad or press
+**Click** to click; a mouse wheel scrolls. Enable Pointer under Server's
+Experimental features to choose WebSocket or HTTP and the update rate. A
+WebSocket opens only while this section is open.
+
 The **Control** tab, `/?tab=control`, turns the TV into a locally controlled device over the home network, operating directly with webOS without relying on LG's cloud services or mobile applications.
 
 ## Navigation and playback

@@ -55,6 +55,8 @@ var config = {};
 var configFilePath = '';
 /** @type {typeof import('./controls')} */
 var controlsModule = null;
+/** @type {typeof import('./pointer')} */
+var pointerModule = null;
 /** @type {typeof import('./telemetry')} */
 var telemetryModule = null;
 /** @type {typeof import('./oled')} */
@@ -696,6 +698,12 @@ function updateSummary() {
   s.allowNetworkDebugger = !!(config && config.allowNetworkDebugger);
   s.allowTileHiding = !!(appsModule && appsModule.tileHidingAllowed && appsModule.tileHidingAllowed());
   s.allowExperimentalScreensavers = !!(screensaversModule && screensaversModule.allowedAnyway && screensaversModule.allowedAnyway());
+  s.pointer = {
+    supported: !!(pointerModule && pointerModule.isSupported()),
+    enabled: !!(pointerModule && pointerModule.isEnabled()),
+    transport: config.pointer && config.pointer.transport || 'websocket',
+    updatesPerSecond: config.pointer && config.pointer.updatesPerSecond || 120
+  };
   // Where the Server tab offers the input bar's switch: where it is experimental.
   s.inputBar = inputBarModule ? inputBarModule.summary() : null;
   // Where the Server tab offers the switch: custom screen savers are experimental there.
@@ -1572,13 +1580,28 @@ function handleRequest(req, res) {
       origin: lanOrigin(), version: versionStr,
       fromHomebrewChannel: fromHomebrewChannel(), setupNeeded: setupPending(),
       // The hour cycle the dashboard's own clock draws.
-      clockHour12: clockHour12()
+      clockHour12: clockHour12(),
+      pointer: !!(pointerModule && pointerModule.isEnabled()),
+      pointerSupported: !!(pointerModule && pointerModule.isSupported()),
+      pointerTransport: config.pointer && config.pointer.transport || 'websocket',
+      pointerRate: config.pointer && config.pointer.updatesPerSecond || 120
     };
     // The token goes into the TV's QR codes, so a phone that scans one can use
     // what it opens. Only to the TV itself: whoever sees the screen holds the
     // remote, and the remote needs no token.
     if (config.token && fromTV(req)) caps.key = config.token;
     return send(res, 200, JSON.stringify(caps));
+  }
+
+  if (pathname === '/api/pointer') {
+    if (!pointerModule || !pointerModule.isEnabled()) return send(res, 404, JSON.stringify({ ok: false, error: 'not found' }));
+    if (req.method !== 'POST') return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
+    if (!config.allowControl) return send(res, 403, JSON.stringify({ ok: false, error: msg('srv.controlsOff', 'controls disabled in config') }));
+    return readJsonBody(req, res, function (body) {
+      pointerModule.send(body, function (r) {
+        send(res, r.ok ? 200 : 400, JSON.stringify(r));
+      });
+    });
   }
 
   if (pathname === '/api/audio' && audioModule) {
@@ -2466,6 +2489,7 @@ function init(opts) {
   if (opts.config) config = opts.config;
   if (opts.configFile) configFilePath = opts.configFile;
   if (opts.controls) controlsModule = opts.controls;
+  if (opts.pointer) pointerModule = opts.pointer;
   if (opts.telemetry) telemetryModule = opts.telemetry;
   if (opts.oled) oledModule = opts.oled;
   if (opts.privacy) privacyModule = opts.privacy;

@@ -774,6 +774,32 @@ together can finish out of order. A key schedules no telemetry read of its own;
 an app it opens reaches Home Assistant through the foreground-app subscription.
 Each key's wait and run time is logged at debug level.
 
+### Pointer input for API clients
+
+`POST /api/pointer` accepts relative pointer events under the usual API token
+and control switch. `move` is an array of up to 120 `{dx, dy}` objects, with an
+optional boolean `down` for dragging; `click`, `down` and `up` are booleans, and
+`scroll` is one `{dx, dy}` object. All deltas are integers between -10000 and
+10000. The whole request is checked before any event is sent. A successful reply
+is `{ "ok": true, "count": N }`. `/api/caps` exposes `pointer: true` where the
+TV registers LG's network-input service.
+
+`lib/pointer.js` opens the socket returned by
+`com.webos.service.networkinput/getPointerInputSocket` on the first event and
+reuses it. Modern TVs return a Unix socket, where each LG text command has a
+32-bit big-endian length prefix. Older implementations may return a WebSocket
+address instead; those commands go one per masked text frame. The socket is
+closed on a write error and on server shutdown.
+
+The dashboard uses the same address as a WebSocket, sending the same JSON
+objects without waiting for HTTP responses between batches. The upgrade uses
+the API token and same-origin check. POST remains for other clients and as the
+browser's fallback. `pointer.enabled` gates both forms; `pointer.transport` and
+`pointer.updatesPerSecond` are set under Experimental features. The rate controls
+the dashboard's batching only; the server does not throttle API clients. A dashboard
+WebSocket exists only while Pointer is open, and the last client closing drops
+the LG socket too.
+
 ### Where the dashboard's keyboard box types
 
 `sendText` with the box's whole content in `full` chooses a route per call
