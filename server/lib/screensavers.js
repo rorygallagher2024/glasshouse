@@ -350,7 +350,7 @@ function readChoices(c, saverId) {
 }
 
 /*
- * saver.json's entities: { daylight: 'sensor.westport_sun_daylight', ... }, the
+ * saver.json's entities: { daylight: 'sensor.sun_daylight', ... }, the
  * Home Assistant readings a screen saver draws, each put in for
  * __TVWEB_HA_<name>__ as the address to read it from. The map or the reason it
  * cannot be read.
