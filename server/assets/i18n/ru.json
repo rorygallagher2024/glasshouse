@@ -556,6 +556,8 @@
  "metrics.hdmi.noInput": {"text": "нет активного входа", "from": "no active input"},
  "metrics.hdmi.noSignal": {"text": "Устройство видно, сигнала нет", "from": "Device seen, no signal"},
  "metrics.hdmi.unconnected": {"text": "Не подключен", "from": "Unconnected"},
+ "metrics.hdmi.cableOnly": {"text": "Только кабель", "from": "Cable only"},
+ "metrics.hdmi.noDevice": {"text": "На другом конце ничего нет", "from": "Nothing on the other end"},
  "metrics.memory": {"text": "Память", "from": "Memory"},
  "metrics.net.connected": {"text": "Подключено", "from": "Connected"},
  "metrics.net.up": {"text": "Отдача: {rate} КБ/с", "from": "{rate} kB/s up"},

@@ -658,6 +658,8 @@
  "metrics.hdmi.noInput": {"text": "brak aktywnego wejścia", "from": "no active input"},
  "metrics.hdmi.noSignal": {"text": "Urządzenie wykryte, brak sygnału", "from": "Device seen, no signal"},
  "metrics.hdmi.unconnected": {"text": "Niepodłączone", "from": "Unconnected"},
+ "metrics.hdmi.cableOnly": {"text": "Tylko kabel", "from": "Cable only"},
+ "metrics.hdmi.noDevice": {"text": "Nic na drugim końcu", "from": "Nothing on the other end"},
  "metrics.memory": {"text": "Pamięć", "from": "Memory"},
  "metrics.net.connected": {"text": "Połączono", "from": "Connected"},
  "metrics.net.up": {"text": "wysyłanie {rate} kB/s", "from": "{rate} kB/s up"},

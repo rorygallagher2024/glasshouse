@@ -653,6 +653,8 @@
  "metrics.hdmi.noInput": {"text": "لا يوجد مدخل نشط", "from": "no active input"},
  "metrics.hdmi.noSignal": {"text": "الجهاز متصل، لا توجد إشارة", "from": "Device seen, no signal"},
  "metrics.hdmi.unconnected": {"text": "غير متصل", "from": "Unconnected"},
+ "metrics.hdmi.cableOnly": {"text": "كابل فقط", "from": "Cable only"},
+ "metrics.hdmi.noDevice": {"text": "لا شيء في الطرف الآخر", "from": "Nothing on the other end"},
  "metrics.memory": {"text": "الذاكرة (RAM)", "from": "Memory"},
  "metrics.net.connected": {"text": "متصل", "from": "Connected"},
  "metrics.net.up": {"text": "{rate} كيلوبايت/ث رفع", "from": "{rate} kB/s up"},

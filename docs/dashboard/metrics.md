@@ -24,7 +24,7 @@ The **Metrics** tab (`/?tab=metrics`) exposes live hardware and software telemet
 
     ---
 
-    Visual port status showing physical connection state, eARC port, connected device name, resolution and refresh rate, link speed (FRL 48 Gbps or TMDS), chroma, color depth, HDCP version, and gaming flags (VRR, ALLM, QMS).
+    Visual port status showing whether a device is on each port (or, where the TV can tell, only a cable with nothing on its other end), eARC port, connected device name, resolution and refresh rate, link speed (FRL 48 Gbps or TMDS), chroma, color depth, HDCP version, and gaming flags (VRR, ALLM, QMS).
 
 -   **Active picture & sound**
 

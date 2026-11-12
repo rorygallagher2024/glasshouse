@@ -556,6 +556,8 @@
  "metrics.hdmi.noInput": {"text": "nincs aktív bemenet", "from": "no active input"},
  "metrics.hdmi.noSignal": {"text": "Eszköz észlelve, nincs jel", "from": "Device seen, no signal"},
  "metrics.hdmi.unconnected": {"text": "Nincs csatlakoztatva", "from": "Unconnected"},
+ "metrics.hdmi.cableOnly": {"text": "Csak kábel", "from": "Cable only"},
+ "metrics.hdmi.noDevice": {"text": "A másik végén nincs semmi", "from": "Nothing on the other end"},
  "metrics.memory": {"text": "Memória", "from": "Memory"},
  "metrics.net.connected": {"text": "Csatlakoztatva", "from": "Connected"},
  "metrics.net.up": {"text": "{rate} kB/s fel", "from": "{rate} kB/s up"},
