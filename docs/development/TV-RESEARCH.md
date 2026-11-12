@@ -3309,3 +3309,14 @@ Reported in #1359 from a 55NANO756PR (webOS 6.5.3, firmware `03.53.46`) with a
 - Interlaced, HDR10/HLG/Dolby Vision, VRR and HDCP/FRL active samples were not
   captured on this board (`phy_tmds_clk_khz:593500` tracked the pixel rate on
   this TMDS link, and `hdcp_version` read `1` active vs `2` idle).
+
+## Which cgroup the Homebrew Channel's start-up runs in (webOS 6 and 9)
+
+Processes started by the Homebrew Channel's start-up (`/var/lib/webosbrew/startup.sh`
+and the hooks it runs) inherit the systemd cgroup of the LG service that ran it.
+On a 50NANO756PR (webOS 6, #1355) that was `webapp-mgr.service`, holding the
+Glasshouse server, dropbear and telnetd; changing some settings, background
+services and Promotions & tips among them, restarted it, which killed all three
+until the TV was unplugged. On a C2 (webOS 9.2.2) they are in
+`ls-hubd.service`, the Luna hub. `systemd-run --scope` (systemd 250 on the C2)
+moves a command into a transient scope of its own.
