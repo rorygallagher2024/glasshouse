@@ -25,7 +25,7 @@ A home screen of Glasshouse's own in place of LG's, switched on from its own [Ho
 * webOS 4 (a B8 with 4.4.3), webOS 5 (a CX with 5.5.0) and webOS 6 (C1s with 6.4.0 and 6.5.3, and a B1 with 6.5.3), where it runs as an app of its own and the Home key is pointed at it.
 * webOS 7 (a 65UQ801C0SB with 7.6.0), webOS 9 (a G3 and a C2 with 9.2.2), webOS 10 (a G5 with 10.3.1) and webOS 11 (a C5, G3, G4 and C3 with 11.2.0), where it is laid over LG's Home app in its place.
 
-On webOS 3 and on webOS 12 and later, untried, it needs `"allowExperimentalHome": true` in `config.json`. It is not offered on webOS 8.
+On webOS 3, webOS 8, and webOS 12 and later, untried, it needs `"allowExperimentalHome": true` in `config.json`.
 
 On webOS 5 and 6 the app manager has no way to read an appinfo.json again without a restart, so each switch restarts it, which is the restart described below, and the app in front comes back a moment later. Switching it off takes it away again; no TV setting is changed. A view that stops answering, and a server that stops or keeps failing, each give LG's Home its place back.
 

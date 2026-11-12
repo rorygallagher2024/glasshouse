@@ -1404,6 +1404,23 @@ step('webOS 11 is offered, experimental; webOS 12 and later only with allowExper
   });
 });
 
+step('webOS 8 is offered only with allowExperimentalHome, using takeover', function (done) {
+  start(null, { webosVersion: '8.3.1' });
+  home.status(function (st0) {
+    assert.strictEqual(st0.supported.ok, false, 'untried there, so not offered by default');
+    home.enable(function (errRes) {
+      assert.strictEqual(errRes.ok, false, 'enable rejected without allowExperimentalHome');
+      start(null, { webosVersion: '8.3.1', allowExperimental: function () { return true; } });
+      home.status(function (st) {
+        assert.strictEqual(st.supported.ok, true);
+        assert.strictEqual(st.supported.experimental, true);
+        assert.strictEqual(st.supported.standalone, undefined, 'uses takeover rather than standalone');
+        done();
+      });
+    });
+  });
+});
+
 step('webOS 5 and 6 are offered, experimental, standalone, without restarting sam; webOS 3 standalone only with allowExperimentalHome', function (done) {
   start(null, { webosVersion: '5.5.0' });
   home.status(function (st5) {

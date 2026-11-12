@@ -246,8 +246,8 @@ webos_major=$(sed -n 's/.*webOS[^0-9]*\([0-9][0-9]*\)\..*/\1/p' /etc/issue 2>/de
 # under it, and its own layout too. The server does the same at its start,
 # for a hook that did not run.
 # On webOS 10 and later LG's Home is a Flutter app run as
-# "flutter-client -i com.webos.app.home"; webOS 12 and later, where it is
-# untried, only with allowExperimentalHome in config.json. sam ignores the
+# "flutter-client -i com.webos.app.home"; webOS 8 and webOS 12 and later, where
+# it is untried, only with allowExperimentalHome in config.json. sam ignores the
 # nudge there (above), so the app is reread with a block and release first.
 homeapp=/usr/palm/applications/com.webos.app.home
 homestage=/var/lib/tvweb/home-takeover
@@ -256,7 +256,7 @@ home_os=0
 [ "$webos_major" = "9" ] && home_os=1
 [ "$webos_major" = "10" ] && home_os=1
 [ "$webos_major" = "11" ] && home_os=1
-if [ "${webos_major:-0}" -ge 12 ] 2>/dev/null; then
+if [ "$webos_major" = "8" ] || [ "${webos_major:-0}" -ge 12 ] 2>/dev/null; then
   grep -q '"allowExperimentalHome"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null && home_os=1
 fi
 if [ "$home_os" -eq 0 ] && grep -q " $homeapp " /proc/mounts 2>/dev/null; then
@@ -329,7 +329,7 @@ grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev
 if [ "$home_os" -eq 1 ] && [ -f "$homestage/appinfo.json" ] &&
    grep -q '"enabled"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/home.json 2>/dev/null; then
   mount --bind "$homestage" "$homeapp" 2>/dev/null || true
-  if [ "$webos_major" = "9" ] || [ "$webos_major" = "7" ]; then
+  if [ "$webos_major" = "9" ] || [ "$webos_major" = "8" ] || [ "$webos_major" = "7" ]; then
     home_reread() { sam_nudge; }
   else
     home_reread() { sam_reread_app com.webos.app.home; }

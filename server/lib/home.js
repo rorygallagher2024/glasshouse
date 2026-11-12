@@ -1721,8 +1721,9 @@ function supported() {
   if (/^4\./.test(v) || (/^3\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true, standalone: true, previewOptions: false };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is the same native app as on webOS 9; sam is nudged from the
-  // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0).
-  if (/^7\./.test(v)) return { ok: true, webos: v, experimental: true };
+  // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0);
+  // webOS 8 is untried and needs allowExperimentalHome.
+  if (/^7\./.test(v) || (/^8\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true };
   // LG's Home is a Flutter app there, under the same id and folder (#612).
   // Tried on a G5 (webOS 10.3.1), and a C5, G3, G4 and C3 (11.2.0); a later
   // version, not tried, needs the setting.
