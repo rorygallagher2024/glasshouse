@@ -54,6 +54,9 @@ once at start (about 170 KB). It goes out with `Cache-Control: no-cache` and an
 ETag hashed from the page, so a browser keeps it and asks each time, and an
 unchanged page comes back as a 304 with no body. The ETag comes from the content
 rather than the version: a deploy of uncommitted changes keeps the version.
+Compressible text assets under `/assets/` are cached in memory when first read;
+where `gzipSync` is available and saves bytes, the compressed form is cached
+too and served to clients that accept gzip.
 
 ### What it costs the TV
 
