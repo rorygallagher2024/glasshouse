@@ -783,7 +783,7 @@ function applyPointerSettings(settings) {
   pointerTransport = settings.transport === 'http' ? 'http' : 'websocket';
   pointerRate = [60, 120, 240].indexOf(Number(settings.updatesPerSecond)) !== -1 ? Number(settings.updatesPerSecond) : 120;
   q('disc-pointer').hidden = !pointerEnabled || settings.allowControl === false;
-  if (!pointerEnabled || pointerTransport === 'http') closePointerSocket();
+  if (!pointerEnabled || settings.allowControl === false || pointerTransport === 'http') closePointerSocket();
   else connectPointerSocket();
 }
 

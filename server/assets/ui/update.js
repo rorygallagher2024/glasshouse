@@ -178,7 +178,7 @@ function renderUpdate(d) {
     if (!rate.options.length) [60, 120, 240].forEach(n => rate.add(new Option(t('server.experimental.pointer.rate.value', '{n} updates per second', { n }), String(n))));
     rate.value = String(d.pointer.updatesPerSecond);
     rate.disabled = !d.writable;
-    applyPointerSettings(Object.assign({ allowControl: true }, d.pointer));
+    applyPointerSettings(Object.assign({ allowControl: !!d.writable }, d.pointer));
   }
 
   // Offered where the input bar has not been tried; where it has, it needs no switch.

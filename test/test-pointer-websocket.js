@@ -15,8 +15,9 @@ MockSocket.prototype.write = function (data, cb) { this.writes.push(data); proce
 MockSocket.prototype.destroy = function () {};
 
 var output = new MockSocket();
+var pointerConfig = { allowControl: true, pointer: { enabled: true } };
 pointer.init({
-  config: { pointer: { enabled: true } },
+  config: pointerConfig,
   authed: function (req) { return req.url.indexOf('k=secret') !== -1; },
   luna: function (uri, payload, cb) { cb({ returnValue: true, socketPath: '/tmp/pointer-test' }); },
   connect: function (path, cb) { cb(null, output); }
@@ -56,8 +57,17 @@ server.listen(0, '127.0.0.1', function () {
       assert.ok(text.indexOf('type:click') !== -1);
       client.destroy();
       pointer.stop();
-      server.close();
-      console.log('  ✓ upgrade and masked pointer messages');
+      pointerConfig.allowControl = false;
+      var denied = net.connect(port, '127.0.0.1', function () {
+        denied.write('GET /api/pointer?k=secret HTTP/1.1\r\nHost: 127.0.0.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ' + key + '\r\nSec-WebSocket-Version: 13\r\n\r\n');
+      });
+      var deniedReply = '';
+      denied.on('data', function (dChunk) { deniedReply += dChunk; });
+      denied.on('end', function () {
+        assert.ok(deniedReply.indexOf('403 Forbidden') !== -1, 'expected 403 when allowControl is false');
+        server.close();
+        console.log('  ✓ upgrade and masked pointer messages');
+      });
     });
   });
 });

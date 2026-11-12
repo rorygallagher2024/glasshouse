@@ -19,10 +19,15 @@ var socketIsWebSocket = false;
 var connecting = false;
 var waiters = [];
 var idleTimer = null;
-
 var IDLE_CLOSE_MS = 5000;
+var RETRY_COOLDOWN_MS = 5000;
 var MAX_MOVES = 120;
 var MAX_DELTA = 10000;
+
+var retryAfter = 0;
+var retryMs = RETRY_COOLDOWN_MS;
+var lastError = '';
+var nowFn = Date.now;
 
 function init(opts) {
   opts = opts || {};
@@ -31,6 +36,10 @@ function init(opts) {
   authedFn = opts.authed || null;
   connectFn = opts.connect || null;
   config = opts.config || {};
+  retryMs = typeof opts.retryMs === 'number' ? opts.retryMs : RETRY_COOLDOWN_MS;
+  nowFn = typeof opts.now === 'function' ? opts.now : Date.now;
+  retryAfter = 0;
+  lastError = '';
 }
 
 function isSupported() {
@@ -96,7 +105,14 @@ function closeAfterIdle() {
 }
 
 function failWaiters(error) {
-  if (error && waiters.length) console.error('pointer: ' + error.message);
+  if (error) {
+    lastError = error.message || 'pointer input failed';
+    retryAfter = nowFn() + retryMs;
+    if (waiters.length) console.error('pointer: ' + lastError);
+  } else {
+    lastError = '';
+    retryAfter = 0;
+  }
   var pending = waiters;
   waiters = [];
   connecting = false;
@@ -183,6 +199,9 @@ function send(body, cb) {
     } else closeAfterIdle();
     cb(err ? { ok: false, error: err.message } : { ok: true, count: checked.commands.length });
   });
+  if (!connecting && nowFn() < retryAfter) {
+    return cb({ ok: false, error: lastError || 'pointer input is temporarily unavailable' });
+  }
   waiters.push(function (err) {
     if (err) return cb({ ok: false, error: err.message });
     send(body, cb);
@@ -230,6 +249,7 @@ function handleUpgrade(req, client, head) {
   if (pathname !== '/api/pointer') return false;
   if (!isEnabled()) return refuseUpgrade(client, '404 Not Found'), true;
   if (!authedFn || !authedFn(req)) return refuseUpgrade(client, '401 Unauthorized'), true;
+  if (!config.allowControl) return refuseUpgrade(client, '403 Forbidden'), true;
   var origin = String(req.headers.origin || '');
   if (origin && origin.replace(/^https?:\/\//, '') !== String(req.headers.host || '')) {
     return refuseUpgrade(client, '403 Forbidden'), true;
@@ -286,6 +306,8 @@ function stop() {
   while (clients.length) clients.shift().destroy();
   closeSocket();
   failWaiters(new Error('pointer input stopped'));
+  retryAfter = 0;
+  lastError = '';
 }
 
 module.exports = {

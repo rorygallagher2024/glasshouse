@@ -70,13 +70,29 @@ pointer.send({ move: [{ dx: 5, dy: -6 }], click: true }, function (result) {
     pointer.stop();
     assert.strictEqual(mockSocket.destroyed, true);
 
-    pointer.init({ config: { pointer: { enabled: true } }, luna: function (uri, payload, cb) { cb({ returnValue: false, errorText: 'denied' }); } });
+    var nowMs = 1000, failCalls = 0;
+    pointer.init({
+      config: { pointer: { enabled: true } },
+      now: function () { return nowMs; },
+      retryMs: 5000,
+      luna: function (uri, payload, cb) { failCalls++; cb({ returnValue: false, errorText: 'denied' }); }
+    });
     pointer.send({ click: true }, function (failure) {
       assert.deepEqual(failure, { ok: false, error: 'denied' });
-      pointer.init({});
-      pointer.send({ click: true }, function (unsupported) {
-        assert.strictEqual(unsupported.ok, false);
-        console.log('  ✓ validation, batching, framing, reuse, cleanup and failures');
+      assert.strictEqual(failCalls, 1);
+      pointer.send({ click: true }, function (cooled) {
+        assert.deepEqual(cooled, { ok: false, error: 'denied' });
+        assert.strictEqual(failCalls, 1, 'cooldown stops repeated luna calls');
+        nowMs += 5000;
+        pointer.send({ click: true }, function (retried) {
+          assert.deepEqual(retried, { ok: false, error: 'denied' });
+          assert.strictEqual(failCalls, 2, 'retries after cooldown');
+          pointer.init({});
+          pointer.send({ click: true }, function (unsupported) {
+            assert.strictEqual(unsupported.ok, false);
+            console.log('  ✓ validation, batching, framing, reuse, cleanup and failures');
+          });
+        });
       });
     });
   });
