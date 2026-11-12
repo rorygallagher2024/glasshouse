@@ -2025,45 +2025,94 @@ function collectStats(cb) {
     return flushStats(out);
   }
 
-  /*
-   * In LG's Always Ready display the TV is switched off to the user, but
-   * power/getPowerState still reads "Active"; only power2 has a sub state for
-   * it. Asked only while Always Ready is on, so TVs without it make no extra
-   * call.
-   */
-  function alwaysReadyShowing(next) {
-    if (!alwaysReadyScreenOn) return next(false);
-    lunaFn('com.webos.service.tvpower/power2/getPowerState', {}, function (p2) {
-      next(!!(p2 && p2['sub state'] === 'always on display'));
-    });
-  }
-
   hdmiReceiverMap(function (receiverMap) {
     var hdmiStatus = readHdmiStatus();
     out.hdmi_links = hdmiLinks(hdmiStatus, receiverMap);
     out.hdmi_sources = hdmiSources(hdmiStatus, receiverMap);
-  alwaysReadyShowing(function (showing) {
-  lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
-    var rawPower = pw ? (pw.state || pw.processing) : null;
-    if (showing && rawPower === 'Active') rawPower = 'Always Ready';
-    /*
-     * No answer is not "off". Mapped, a failed read reported the TV switched
-     * off, which Home Assistant showed and which swapped the MQTT will; left
-     * out, the live state keeps what it last knew.
-     */
-    out.powerState = rawPower ? power.mapState(rawPower) : null;
-    if (out.powerState) {
-      var on = powerModule ? powerModule.current() : { onReason: null, onTime: null };
-      out.powerState.onReason = on.onReason;
-      out.powerState.onTime = on.onTime;
-    }
-    out.screenSaver = power.isScreenSaver(out.powerState) ||
-      !!(screensaversModule && screensaversModule.launchedShowing());
-    out.screensaverMode = screensaversModule ? screensaversModule.screensaverMode() : 'stock';
-    out.screensaverLevel = screensaversModule ? screensaversModule.screensaverLevel() : 'dim';
-    out.screensaverBrightness = screensaversModule && screensaversModule.screensaverBrightness ? screensaversModule.screensaverBrightness() : undefined;
-    out.screensaverChoice = screensaversModule && screensaversModule.screensaverChoice ? screensaversModule.screensaverChoice() : undefined;
+    readPowerStats(out, function () {
+      readSystemAndDisplayStats(out, function () {
+        probeLightSensor(out, function () {
+          appStorage(function (st) {
+            out.appStorage = st;
+            readSoundAndMediaStats(out, function () {
+              readForegroundAndPictureStats(out, receiverMap, hdmiStatus, flushStats);
+            });
+          });
+        });
+      });
+    });
+  });
+}
 
+/*
+ * In LG's Always Ready display the TV is switched off to the user, but
+ * power/getPowerState still reads "Active"; only power2 has a sub state for
+ * it. Asked only while Always Ready is on, so TVs without it make no extra
+ * call.
+ */
+function alwaysReadyShowing(next) {
+  if (!alwaysReadyScreenOn) return next(false);
+  lunaFn('com.webos.service.tvpower/power2/getPowerState', {}, function (p2) {
+    next(!!(p2 && p2['sub state'] === 'always on display'));
+  });
+}
+
+function readPowerStats(out, done) {
+  alwaysReadyShowing(function (showing) {
+    lunaFn('com.webos.service.tvpower/power/getPowerState', {}, function (pw) {
+      var rawPower = pw ? (pw.state || pw.processing) : null;
+      if (showing && rawPower === 'Active') rawPower = 'Always Ready';
+      /*
+       * No answer is not "off". Mapped, a failed read reported the TV switched
+       * off, which Home Assistant showed and which swapped the MQTT will; left
+       * out, the live state keeps what it last knew.
+       */
+      out.powerState = rawPower ? power.mapState(rawPower) : null;
+      if (out.powerState) {
+        var on = powerModule ? powerModule.current() : { onReason: null, onTime: null };
+        out.powerState.onReason = on.onReason;
+        out.powerState.onTime = on.onTime;
+      }
+      out.screenSaver = power.isScreenSaver(out.powerState) ||
+        !!(screensaversModule && screensaversModule.launchedShowing());
+      out.screensaverMode = screensaversModule ? screensaversModule.screensaverMode() : 'stock';
+      out.screensaverLevel = screensaversModule ? screensaversModule.screensaverLevel() : 'dim';
+      out.screensaverBrightness = screensaversModule && screensaversModule.screensaverBrightness ? screensaversModule.screensaverBrightness() : undefined;
+      out.screensaverChoice = screensaversModule && screensaversModule.screensaverChoice ? screensaversModule.screensaverChoice() : undefined;
+      done();
+    });
+  });
+}
+
+function probeLightSensor(out, next) {
+  if (!hasLightSensor && lightSensorFailures >= 3 && (Date.now() - lastLightSensorProbe < 600000)) {
+    out.lightSensor = null;
+    out.backlight = null;
+    return next();
+  }
+  lastLightSensorProbe = Date.now();
+  lunaCachedFn('com.webos.service.tv.display/getLightSensorData', {}, 30000, function (ls) {
+    if (!ls || ls.returnValue === false) {
+      lightSensorFailures++;
+    } else {
+      lightSensorFailures = 0;
+    }
+    var lux = null, sd = (ls && ls.sensorData) || [];
+    for (var li = 0; li < sd.length; li++) {
+      if (sd[li].property === 'visibleLuminance' || sd[li].property === 'luminance') {
+        if (sd[li].value !== 65535 && sd[li].value !== null) lux = sd[li].value;
+      }
+    }
+    out.lightSensor = (lux === null) ? null : { lux: lux };
+    if (out.lightSensor) hasLightSensor = true;
+    out.backlight = (ls && typeof ls.backlightValue === 'number') ? ls.backlightValue : null;
+    next();
+  });
+}
+
+// One call at a time so background stats leave luna.js's second PARALLEL slot
+// free for control commands and never overlap /bin/df with luna-send.
+function readSystemAndDisplayStats(out, done) {
   // The whole category, for the sleep timer and LG's On and Off Timers.
   lunaCachedFn('com.webos.service.settings/getSystemSettings',
        { category: 'time' }, 30000, function (tm) {
@@ -2071,47 +2120,56 @@ function collectStats(cb) {
     out.powerTimers = timers.fromSettings(tm && tm.returnValue !== false ? tm.settings : null);
     if (tm && tm.returnValue !== false) powerTimersSeen = out.powerTimers || {};
 
-  lunaCachedFn('com.webos.service.settings/getSystemSettings',
-       { category: 'option', keys: ['standByLight', 'logoLight', 'powerOnLight', 'quickStartMode'] }, 60000, function (op) {
-    var os = (op && op.settings) || {};
-    out.lights = {
-      standby: os.standByLight === 'on',
-      logo: os.logoLight === 'on',
-      powerOn: os.powerOnLight === 'on',
-      hasLogo: hasLogoLight === true
-    };
-    if (os.quickStartMode !== undefined) {
-      out.quickBoot = os.quickStartMode === 'on';
-    }
-    var gpuHz = gpuClockHz();
-    out.gpuMhz = gpuClockMhz(gpuHz);
-    out.gpuHz = gpuHz;
+    lunaCachedFn('com.webos.service.settings/getSystemSettings',
+         { category: 'option', keys: ['standByLight', 'logoLight', 'powerOnLight', 'quickStartMode'] }, 60000, function (op) {
+      var os = (op && op.settings) || {};
+      out.lights = {
+        standby: os.standByLight === 'on',
+        logo: os.logoLight === 'on',
+        powerOn: os.powerOnLight === 'on',
+        hasLogo: hasLogoLight === true
+      };
+      if (os.quickStartMode !== undefined) {
+        out.quickBoot = os.quickStartMode === 'on';
+      }
+      var gpuHz = gpuClockHz();
+      out.gpuMhz = gpuClockMhz(gpuHz);
+      out.gpuHz = gpuHz;
 
-  lunaCachedFn('com.webos.service.settings/getSystemSettings',
-       { category: 'network', keys: ['wolwowlOnOff'] }, 60000, function (nw) {
-    var wol = nw && nw.settings && nw.settings.wolwowlOnOff;
-    if (wol !== undefined) out.wakeOnLan = wol === true || wol === 'true';
+      lunaCachedFn('com.webos.service.settings/getSystemSettings',
+           { category: 'network', keys: ['wolwowlOnOff'] }, 60000, function (nw) {
+        var wol = nw && nw.settings && nw.settings.wolwowlOnOff;
+        if (wol !== undefined) out.wakeOnLan = wol === true || wol === 'true';
 
-  // A C2 on webOS 9.2 has this key and a B8 on 4.4 does not, so the switch is
-  // offered only where the TV reports one.
-  lunaCachedFn('com.webos.service.settings/getSystemSettings',
-       { category: 'other', keys: ['lgLogoDisplay'] }, 60000, function (ot) {
-    var logo = ot && ot.settings && ot.settings.lgLogoDisplay;
-    if (logo !== undefined) out.lgLogo = logo === 'on' || logo === true;
+        // A C2 on webOS 9.2 has this key and a B8 on 4.4 does not, so the switch is
+        // offered only where the TV reports one.
+        lunaCachedFn('com.webos.service.settings/getSystemSettings',
+             { category: 'other', keys: ['lgLogoDisplay'] }, 60000, function (ot) {
+          var logo = ot && ot.settings && ot.settings.lgLogoDisplay;
+          if (logo !== undefined) out.lgLogo = logo === 'on' || logo === true;
 
-  /*
-   * LG's device detection (UEI QuickSet), which finds a set-top box and smart
-   * lights, plugs and switches for the Home Dashboard. On a C2 (webOS 9.2) its
-   * iconnectivity service reverse-looks-up every address on the local network,
-   * three times over, each time the TV switches on: 759 lookups in two
-   * minutes, and none with this off. Asked on its own so a TV without it does
-   * not lose the rest.
-   */
-  lunaCachedFn('com.webos.service.settings/getSystemSettings',
-       { category: 'other', keys: ['ueiEnable'] }, 60000, function (ue) {
-    var uei = ue && ue.returnValue !== false && ue.settings && ue.settings.ueiEnable;
-    if (uei !== undefined && uei !== null && uei !== false) out.deviceDetection = uei === 'on' || uei === true;
+          /*
+           * LG's device detection (UEI QuickSet), which finds a set-top box and smart
+           * lights, plugs and switches for the Home Dashboard. On a C2 (webOS 9.2) its
+           * iconnectivity service reverse-looks-up every address on the local network,
+           * three times over, each time the TV switches on: 759 lookups in two
+           * minutes, and none with this off. Asked on its own so a TV without it does
+           * not lose the rest.
+           */
+          lunaCachedFn('com.webos.service.settings/getSystemSettings',
+               { category: 'other', keys: ['ueiEnable'] }, 60000, function (ue) {
+            var uei = ue && ue.returnValue !== false && ue.settings && ue.settings.ueiEnable;
+            if (uei !== undefined && uei !== null && uei !== false) out.deviceDetection = uei === 'on' || uei === true;
 
+            readAlwaysOnAndDisplayStats(out, done);
+          });
+        });
+      });
+    });
+  });
+}
+
+function readAlwaysOnAndDisplayStats(out, done) {
   // LG's Always-on: holds the TV in Active Standby when switched off, so
   // this server stays reachable. A C2 on webOS 9.2 has it; a B8 on 4.4 does not.
   // It is suspended for five hours a night, when a switched-off TV sleeps fully.
@@ -2133,256 +2191,230 @@ function collectStats(cb) {
       }
     }
 
-  // LG's Always Ready, a separate setting from Always-on: 'off', 'allEnabled'
-  // (wallpaper) or 'alwaysReady' (dark). Asked on its own so a TV without it
-  // keeps the Always-on readings above.
-  lunaCachedFn('com.webos.service.settings/getSystemSettings',
-       { category: 'general', keys: ['lifeOnScreenMode'] }, 60000, function (lo) {
-    var los = lo && lo.returnValue !== false && lo.settings && lo.settings.lifeOnScreenMode;
-    if (los) out.alwaysReadyScreen = alwaysReadyScreenOn = los !== 'off';
+    // LG's Always Ready, a separate setting from Always-on: 'off', 'allEnabled'
+    // (wallpaper) or 'alwaysReady' (dark). Asked on its own so a TV without it
+    // keeps the Always-on readings above.
+    lunaCachedFn('com.webos.service.settings/getSystemSettings',
+         { category: 'general', keys: ['lifeOnScreenMode'] }, 60000, function (lo) {
+      var los = lo && lo.returnValue !== false && lo.settings && lo.settings.lifeOnScreenMode;
+      if (los) out.alwaysReadyScreen = alwaysReadyScreenOn = los !== 'off';
 
-  // LG's Home Auto Launch. While Glasshouse Home holds it off with Quick
-  // Start+ off, the owner's preference is kept in home.json.
-  lunaCachedFn('com.webos.service.settings/getSystemSettings',
-       { category: 'general', keys: ['homeAutoLaunch'] }, 60000, function (ha) {
-    var hal = ha && ha.returnValue !== false && ha.settings && ha.settings.homeAutoLaunch;
-    if (hal === 'on' || hal === 'off' || hal === true || hal === false) {
-      out.homeAutoLaunch = !!(homeModule && homeModule.autoLaunchHeld()) || hal === 'on' || hal === true;
-    }
-
-  lunaCachedFn('com.palm.connectionmanager/getStatus', {}, 60000, function (cm) {
-    var w = cm && cm.wifi;
-    out.ssid = (w && w.ssid) ? w.ssid : null;
-
-  function probeLightSensor(next) {
-    if (!hasLightSensor && lightSensorFailures >= 3 && (Date.now() - lastLightSensorProbe < 600000)) {
-      out.lightSensor = null;
-      out.backlight = null;
-      return next();
-    }
-    lastLightSensorProbe = Date.now();
-    lunaCachedFn('com.webos.service.tv.display/getLightSensorData', {}, 30000, function (ls) {
-      if (!ls || ls.returnValue === false) {
-        lightSensorFailures++;
-      } else {
-        lightSensorFailures = 0;
-      }
-      var lux = null, sd = (ls && ls.sensorData) || [];
-      for (var li = 0; li < sd.length; li++) {
-        if (sd[li].property === 'visibleLuminance' || sd[li].property === 'luminance') {
-          if (sd[li].value !== 65535 && sd[li].value !== null) lux = sd[li].value;
+      // LG's Home Auto Launch. While Glasshouse Home holds it off with Quick
+      // Start+ off, the owner's preference is kept in home.json.
+      lunaCachedFn('com.webos.service.settings/getSystemSettings',
+           { category: 'general', keys: ['homeAutoLaunch'] }, 60000, function (ha) {
+        var hal = ha && ha.returnValue !== false && ha.settings && ha.settings.homeAutoLaunch;
+        if (hal === 'on' || hal === 'off' || hal === true || hal === false) {
+          out.homeAutoLaunch = !!(homeModule && homeModule.autoLaunchHeld()) || hal === 'on' || hal === true;
         }
-      }
-      out.lightSensor = (lux === null) ? null : { lux: lux };
-      if (out.lightSensor) hasLightSensor = true;
-      out.backlight = (ls && typeof ls.backlightValue === 'number') ? ls.backlightValue : null;
-      next();
+
+        lunaCachedFn('com.palm.connectionmanager/getStatus', {}, 60000, function (cm) {
+          var w = cm && cm.wifi;
+          out.ssid = (w && w.ssid) ? w.ssid : null;
+
+          lunaCachedFn('com.webos.service.tv.display/getDimmingStatus', {}, 15000, function (dim) {
+            out.dimming = (dim && dim.status) || null;
+            done();
+          });
+        });
+      });
     });
-  }
+  });
+}
 
-  lunaCachedFn('com.webos.service.tv.display/getDimmingStatus', {}, 15000, function (dim) {
-    out.dimming = (dim && dim.status) || null;
-
-  probeLightSensor(function () {
-
-  appStorage(function (st) {
-    out.appStorage = st;
-
+function readSoundAndMediaStats(out, done) {
   lunaCachedFn('com.webos.audio/getSoundOut', {}, 10000, function (sound) {
     if (sound) {
       out.volume = sound.volume;
       out.muted = !!sound.muted;
     }
-  masterVolume(function (vs) {
-    // With an eARC soundbar controlling the volume, getSoundOut reports 0 and
-    // the newer service has the soundbar's level (#406).
-    if (vs) {
-      if (typeof vs.volume === 'number') out.volume = vs.volume;
-      if (typeof vs.muteStatus === 'boolean') out.muted = vs.muteStatus;
-    }
-    if (sound || vs) out.audio_output = audioOutput(vs, sound);
-    out.volume_control = routedVolumeControl(vs, sound);
-    if (out.volume_control !== 'level') out.volume = null;
-    lunaCachedFn('com.webos.service.settings/getSystemSettings',
-      { category: 'sound', keys: ['soundOutput', 'soundMode'] }, 15000,
-      function (snd) {
-        var rawSnd = (snd && snd.settings && snd.settings.soundOutput) ? snd.settings.soundOutput : (sound && sound.scenario ? sound.scenario : 'tv_speaker');
-        out.sound = {
-          output: formatSoundOutput(rawSnd),
-          output_raw: rawSnd,
-          bt_audio: btAudio,
-          mode: (snd && snd.settings && snd.settings.soundMode) || 'standard'
-        };
-        // The format of what is playing, from an app or an input alike; none
-        // while nothing plays. The last answer goes out and the next is asked
-        // for behind it: waiting on the answer only some collections got it,
-        // and the dashboard's line came and went every few seconds.
-        if (lastSoundInput) out.sound.input = lastSoundInput;
-        lunaCachedFn('com.webos.service.audio/tv/getAudioInputProperty', {}, 3000, function (ap) {
-          if (ap && ap.returnValue === false && /Unknown method/i.test(String(ap.errorText || ''))) soundFormatSupported = false;
-          if (!ap || ap.returnValue === false) return;
-          soundFormatSupported = true;
-          var prop = Array.isArray(ap.audioInputProperty) ? ap.audioInputProperty[0] : null;
-          if (!prop || !prop.codec) { lastSoundInput = null; return; }
-          var input = { codec: names.audioCodec(prop.codec).display, codec_raw: String(prop.codec) };
-          var immersive = names.audioImmersive(prop.immersive);
-          if (immersive) {
-            input.immersive = immersive.display;
-            input.immersive_raw = String(prop.immersive);
-          }
-          lastSoundInput = input;
-        });
-        // Not waited for: the list changes rarely, and Home Assistant reads
-        // the last one, which a later collection brings.
-        soundOutputs(rawSnd, function (ids) {
-          if (out.sound && ids.length) {
-            out.sound.outputs = ids.map(function (id) { return { id: id, name: names.soundOutput(id).display }; });
-          }
-        });
-
-        readMediaState(function (media) {
-        if (media && media.state !== 'idle') {
-          out.media = media;
-          noteMediaSeen();
-        } else if (media && hasMediaState) {
-          // The media service answered with nothing playing (a screen saver,
-          // the home screen): idle, where no answer at all stays unknown.
-          out.media = media;
-        }
-
-        lunaCachedFn('com.webos.applicationManager/getForegroundAppInfo', {}, 4000, function (app) {
-          var inputShown = false;
-          if (app && app.appId) {
-            var shortApp = inputKey(app.appId);
-            out.app = shortApp;
-            out.app_id = app.appId;
-            // Inputs by the names given them in the TV's settings, apps by
-            // their titles; the id only when neither is known.
-            var isInput = inputNameMap[shortApp] && inputNameMap[shortApp] !== shortApp;
-            out.app_name = inputNameMap[shortApp] || appTitles[app.appId] || shortApp;
-            out.display_title = isInput ? names.inputTitle(shortApp, inputNameMap[shortApp]) : out.app_name;
-
-            var hdmiOnScreen = names.hdmiPort(shortApp);
-            var isScreenOff = out.screenSaver || (out.powerState && (out.powerState.screenOn === false || String(out.powerState.raw || out.powerState.state || '').toLowerCase() === 'off'));
-            if (hdmiOnScreen !== null && !isScreenOff) {
-              inputShown = true;
-              var sigObj = getHdmiSignal(hdmiOnScreen, receiverMap, hdmiStatus);
-              out.signal = sigObj ? sigObj.signal : null;
-              out.signal_timing = sigObj ? sigObj.timing : null;
-              out.hdmi_diag = sigObj ? sigObj.diag : null;
-              if (out.hdmi_diag) noteHdmiSeen(out.hdmi_diag);
-            } else {
-              out.signal = null;
-              out.signal_timing = null;
-              out.hdmi_diag = null;
-            }
-          } else if (app && app.appId === '') {
-            out.signal = null;
-            out.signal_timing = null;
-            out.hdmi_diag = null;
-          }
-          if (out.screenSaver || (out.powerState && (out.powerState.screenOn === false || String(out.powerState.raw || out.powerState.state || '').toLowerCase() === 'off'))) {
-            out.signal = null;
-            out.signal_timing = null;
-            out.hdmi_diag = null;
-          }
-
-          sourceFrameRate(app, inputShown, function (fr) {
-          out.source_frame_rate = fr;
-          lunaCachedFn('com.webos.service.videooutput/getStatus', {}, 4000, function (vo) {
-          out.signal_format = signalFormat(vo);
-          lunaCachedFn('com.webos.service.settings/getSystemSettings',
-            { category: 'picture', keys: ['backlight', 'pictureMode', 'energySaving', 'screenShift', 'logoLuminanceAdjust'] },
-            10000, function (pic) {
-              var isGallery = !!((pic && pic.dimension && pic.dimension.input === 'gallery') ||
-                                 (app && typeof app.appId === 'string' && /^com\.webos\.app\.(i?gallery|galleryplus)\b/.test(app.appId)));
-              if (pic && pic.settings) {
-                var rawDr = (pic.dimension && pic.dimension.dynamicRange) ? pic.dimension.dynamicRange : null;
-                var rawMode = isGallery ? 'gallery' : (pic.settings.pictureMode || 'standard');
-                out.picture = {
-                  dynamicRange: formatDynamicRange(rawDr),
-                  // As the TV gave it, null where it gave none, which the
-                  // display string above shows as SDR.
-                  dynamicRange_raw: rawDr,
-                  mode: formatPicMode(rawMode),
-                  mode_raw: rawMode,
-                  backlight: toInt(pic.settings.backlight, 50),
-                  // As read, null where the TV gave none rather than the 50
-                  // the dashboards show.
-                  backlight_raw: toInt(pic.settings.backlight, null),
-                  energySaving: pic.settings.energySaving || 'off',
-                  screenShift: pic.settings.screenShift || 'off',
-                  logoLuminanceAdjust: pic.settings.logoLuminanceAdjust || 'off',
-                  modes: []
-                };
-              }
-              function afterModes(modes) {
-                if (out.picture) out.picture.modes = modes;
-                refreshInstalledApps(function (apps) {
-                  out.apps = apps || [];
-                  out.privacy = {
-                    adblock: {
-                      enabled: privacyModule ? privacyModule.isAdBlockActive() : false,
-                      count: (privacyModule && privacyModule.adBlockList) ? privacyModule.adBlockList('full').length : 0
-                    }
-                  };
-                  if (!oledModule) {
-                    out.capabilities = {
-                      oled: false,
-                      thermal: THERMAL_PRESENT,
-                      emmcWear: EMMC_WEAR_PRESENT
-                    };
-                    out.oled = null;
-                    return flushStats(out);
-                  }
-                  oledModule.detectOled(function (oledPanel) {
-                    out.capabilities = {
-                      oled: oledPanel,
-                      thermal: THERMAL_PRESENT,
-                      emmcWear: EMMC_WEAR_PRESENT
-                    };
-                    if (!oledPanel) {
-                      out.oled = null;
-                      return flushStats(out);
-                    }
-                    oledModule.refreshOledStats((pic && pic.settings) ? pic.settings : null, out.powerState, function (oledData) {
-                      out.oled = oledData;
-                      flushStats(out);
-                    });
-                  });
-                });
-              }
-              if (isGallery) {
-                afterModes([]);
-              } else {
-                pictureModes(afterModes);
-              }
-            }
-          );
-          });
-          });
-        });
-        });
+    masterVolume(function (vs) {
+      // With an eARC soundbar controlling the volume, getSoundOut reports 0 and
+      // the newer service has the soundbar's level (#406).
+      if (vs) {
+        if (typeof vs.volume === 'number') out.volume = vs.volume;
+        if (typeof vs.muteStatus === 'boolean') out.muted = vs.muteStatus;
       }
-    );
-  });
-  });
-  });
-  });
-  });
-  });
-  });
-  });
-  });
-  });
-  });
-  });
-  });
-  });
-  });
-  });
+      if (sound || vs) out.audio_output = audioOutput(vs, sound);
+      out.volume_control = routedVolumeControl(vs, sound);
+      if (out.volume_control !== 'level') out.volume = null;
+      lunaCachedFn('com.webos.service.settings/getSystemSettings',
+        { category: 'sound', keys: ['soundOutput', 'soundMode'] }, 15000,
+        function (snd) {
+          var rawSnd = (snd && snd.settings && snd.settings.soundOutput) ? snd.settings.soundOutput : (sound && sound.scenario ? sound.scenario : 'tv_speaker');
+          out.sound = {
+            output: formatSoundOutput(rawSnd),
+            output_raw: rawSnd,
+            bt_audio: btAudio,
+            mode: (snd && snd.settings && snd.settings.soundMode) || 'standard'
+          };
+          // The format of what is playing, from an app or an input alike; none
+          // while nothing plays. The last answer goes out and the next is asked
+          // for behind it: waiting on the answer only some collections got it,
+          // and the dashboard's line came and went every few seconds.
+          if (lastSoundInput) out.sound.input = lastSoundInput;
+          lunaCachedFn('com.webos.service.audio/tv/getAudioInputProperty', {}, 3000, function (ap) {
+            if (ap && ap.returnValue === false && /Unknown method/i.test(String(ap.errorText || ''))) soundFormatSupported = false;
+            if (!ap || ap.returnValue === false) return;
+            soundFormatSupported = true;
+            var prop = Array.isArray(ap.audioInputProperty) ? ap.audioInputProperty[0] : null;
+            if (!prop || !prop.codec) { lastSoundInput = null; return; }
+            var input = { codec: names.audioCodec(prop.codec).display, codec_raw: String(prop.codec) };
+            var immersive = names.audioImmersive(prop.immersive);
+            if (immersive) {
+              input.immersive = immersive.display;
+              input.immersive_raw = String(prop.immersive);
+            }
+            lastSoundInput = input;
+          });
+          // Not waited for: the list changes rarely, and Home Assistant reads
+          // the last one, which a later collection brings.
+          soundOutputs(rawSnd, function (ids) {
+            if (out.sound && ids.length) {
+              out.sound.outputs = ids.map(function (id) { return { id: id, name: names.soundOutput(id).display }; });
+            }
+          });
+
+          readMediaState(function (media) {
+            if (media && media.state !== 'idle') {
+              out.media = media;
+              noteMediaSeen();
+            } else if (media && hasMediaState) {
+              // The media service answered with nothing playing (a screen saver,
+              // the home screen): idle, where no answer at all stays unknown.
+              out.media = media;
+            }
+            done();
+          });
+        }
+      );
+    });
   });
 }
+
+function applyForegroundApp(out, app, receiverMap, hdmiStatus) {
+  var inputShown = false;
+  if (app && app.appId) {
+    var shortApp = inputKey(app.appId);
+    out.app = shortApp;
+    out.app_id = app.appId;
+    // Inputs by the names given them in the TV's settings, apps by
+    // their titles; the id only when neither is known.
+    var isInput = inputNameMap[shortApp] && inputNameMap[shortApp] !== shortApp;
+    out.app_name = inputNameMap[shortApp] || appTitles[app.appId] || shortApp;
+    out.display_title = isInput ? names.inputTitle(shortApp, inputNameMap[shortApp]) : out.app_name;
+
+    var hdmiOnScreen = names.hdmiPort(shortApp);
+    var isScreenOff = out.screenSaver || (out.powerState && (out.powerState.screenOn === false || String(out.powerState.raw || out.powerState.state || '').toLowerCase() === 'off'));
+    if (hdmiOnScreen !== null && !isScreenOff) {
+      inputShown = true;
+      var sigObj = getHdmiSignal(hdmiOnScreen, receiverMap, hdmiStatus);
+      out.signal = sigObj ? sigObj.signal : null;
+      out.signal_timing = sigObj ? sigObj.timing : null;
+      out.hdmi_diag = sigObj ? sigObj.diag : null;
+      if (out.hdmi_diag) noteHdmiSeen(out.hdmi_diag);
+    } else {
+      out.signal = null;
+      out.signal_timing = null;
+      out.hdmi_diag = null;
+    }
+  } else if (app && app.appId === '') {
+    out.signal = null;
+    out.signal_timing = null;
+    out.hdmi_diag = null;
+  }
+  if (out.screenSaver || (out.powerState && (out.powerState.screenOn === false || String(out.powerState.raw || out.powerState.state || '').toLowerCase() === 'off'))) {
+    out.signal = null;
+    out.signal_timing = null;
+    out.hdmi_diag = null;
+  }
+  return inputShown;
+}
+
+function readForegroundAndPictureStats(out, receiverMap, hdmiStatus, done) {
+  lunaCachedFn('com.webos.applicationManager/getForegroundAppInfo', {}, 4000, function (app) {
+    var inputShown = applyForegroundApp(out, app, receiverMap, hdmiStatus);
+    sourceFrameRate(app, inputShown, function (fr) {
+      out.source_frame_rate = fr;
+      lunaCachedFn('com.webos.service.videooutput/getStatus', {}, 4000, function (vo) {
+        out.signal_format = signalFormat(vo);
+        lunaCachedFn('com.webos.service.settings/getSystemSettings',
+          { category: 'picture', keys: ['backlight', 'pictureMode', 'energySaving', 'screenShift', 'logoLuminanceAdjust'] },
+          10000, function (pic) {
+            var isGallery = !!((pic && pic.dimension && pic.dimension.input === 'gallery') ||
+                               (app && typeof app.appId === 'string' && /^com\.webos\.app\.(i?gallery|galleryplus)\b/.test(app.appId)));
+            if (pic && pic.settings) {
+              var rawDr = (pic.dimension && pic.dimension.dynamicRange) ? pic.dimension.dynamicRange : null;
+              var rawMode = isGallery ? 'gallery' : (pic.settings.pictureMode || 'standard');
+              out.picture = {
+                dynamicRange: formatDynamicRange(rawDr),
+                // As the TV gave it, null where it gave none, which the
+                // display string above shows as SDR.
+                dynamicRange_raw: rawDr,
+                mode: formatPicMode(rawMode),
+                mode_raw: rawMode,
+                backlight: toInt(pic.settings.backlight, 50),
+                // As read, null where the TV gave none rather than the 50
+                // the dashboards show.
+                backlight_raw: toInt(pic.settings.backlight, null),
+                energySaving: pic.settings.energySaving || 'off',
+                screenShift: pic.settings.screenShift || 'off',
+                logoLuminanceAdjust: pic.settings.logoLuminanceAdjust || 'off',
+                modes: []
+              };
+            }
+            function afterModes(modes) {
+              if (out.picture) out.picture.modes = modes;
+              finishStats(out, pic, done);
+            }
+            if (isGallery) {
+              afterModes([]);
+            } else {
+              pictureModes(afterModes);
+            }
+          }
+        );
+      });
+    });
+  });
+}
+
+function finishStats(out, pic, flushStats) {
+  refreshInstalledApps(function (apps) {
+    out.apps = apps || [];
+    out.privacy = {
+      adblock: {
+        enabled: privacyModule ? privacyModule.isAdBlockActive() : false,
+        count: (privacyModule && privacyModule.adBlockList) ? privacyModule.adBlockList('full').length : 0
+      }
+    };
+    if (!oledModule) {
+      out.capabilities = {
+        oled: false,
+        thermal: THERMAL_PRESENT,
+        emmcWear: EMMC_WEAR_PRESENT
+      };
+      out.oled = null;
+      return flushStats(out);
+    }
+    oledModule.detectOled(function (oledPanel) {
+      out.capabilities = {
+        oled: oledPanel,
+        thermal: THERMAL_PRESENT,
+        emmcWear: EMMC_WEAR_PRESENT
+      };
+      if (!oledPanel) {
+        out.oled = null;
+        return flushStats(out);
+      }
+      oledModule.refreshOledStats((pic && pic.settings) ? pic.settings : null, out.powerState, function (oledData) {
+        out.oled = oledData;
+        flushStats(out);
+      });
+    });
+  });
+}
+
 
 /*
  * The frame rate of the HDMI source on screen, from game.js. Off an input, or
