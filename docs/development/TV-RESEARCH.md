@@ -268,6 +268,16 @@ Idlegif's GIFs. Custom Screensaver's DVD logo is inside the QML. They use
 QtQuick 2.4, with QtMultimedia, `WebOSServices` and `iLib` for the Aerial
 ones. aabytt's also takes over `com.webos.app.videoads` on webOS 11.
 
+On a B4 (webOS 10.3.2) with Aerial Screensaver 3.0.4, its boot hook runs
+before Glasshouse's and bind-mounts its whole `assets` folder over
+`com.webos.app.screensaver`, in the same shared peer group (`shared:40`) as
+the `/media/developer` and `/mnt/lg/appstore` mounts of the developer apps.
+A mount made on top of it propagates to that group, so it also lands over
+Aerial's own
+`/media/developer/apps/usr/palm/applications/org.aabytt.webos.custom-screensaver-aerial/assets`
+and hides the QML there (#1378). Taking Aerial's mount off first, and then
+mounting, leaves its folder as it was.
+
 ## HDMI CEC devices (G3, webOS 9.2.2)
 
 `com.webos.service.eim/getAllInputStatus` returns CEC devices in each HDMI

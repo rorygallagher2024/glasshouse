@@ -715,6 +715,21 @@ function removeTree(dir) {
   try { fs.rmdirSync(dir); } catch (e3) {}
 }
 
+// Whether the staged copy is bind-mounted over the app. The root in
+// mountinfo is the path inside its filesystem, the tail of SCREENSAVER_DIR
+// where /var or /var/lib is a mount of its own.
+function stagedCopyMounted() {
+  var lines;
+  try { lines = fs.readFileSync('/proc/self/mountinfo', 'utf8').split('\n'); } catch (e) { return false; }
+  for (var i = 0; i < lines.length; i++) {
+    var parts = lines[i].split(' ');
+    if (parts.length < 5 || parts[4] !== SCREENSAVER_APP_DIR) continue;
+    var root = parts[3];
+    if (root.length > 1 && SCREENSAVER_DIR.slice(-root.length) === root) return true;
+  }
+  return false;
+}
+
 function unmountScreensaver(cb) {
   cb = cb || function () {};
   var qmlFile = path.join(SCREENSAVER_APP_DIR, 'qml', 'main.qml');
@@ -752,8 +767,10 @@ function init(opts) {
 
   // Auto-heal: If the screensaver is currently stock (no active bind-mount on SCREENSAVER_APP_DIR),
   // but an orphaned marker remains in SCREENSAVER_DIR, remove it so the boot hook does not
-  // re-mount a stale screensaver on the next cold reboot.
-  if (screensaverMode() === 'stock') {
+  // re-mount a stale screensaver on the next cold reboot. Never while the staged copy is
+  // mounted: clearing it would empty the app, and an app's saver can read as gone only
+  // because the staged copy is mounted over its folder too, by propagation (#1378).
+  if (!stagedCopyMounted() && screensaverMode() === 'stock') {
     clearStagedScreensaver();
     rememberStockType();
   }
@@ -1880,6 +1897,7 @@ module.exports = {
   catalog: catalog,
   init: init,
   clearStagedScreensaver: clearStagedScreensaver,
+  stagedCopyMounted: stagedCopyMounted,
   unmountScreensaver: unmountScreensaver,
   screensaverLevel: screensaverLevel,
   screensaverBrightness: screensaverBrightness,

@@ -422,6 +422,16 @@ if [ -f /var/lib/tvweb/screensaver/.tvweb-screensaver ]; then
   if [ "$held" -eq 1 ]; then
     echo "$(date): custom screen saver held back (stock $stock_type, ours ${staged_type:-unknown})"
   else
+    # Aerial's own boot hook runs first and bind-mounts its assets folder over
+    # the app in a shared peer group, so a mount on top of it also lands over
+    # Aerial's assets folder, and Glasshouse then finds no saver there (#1378).
+    # Whatever is mounted there comes off first, as when one is chosen.
+    umount -l "$ssapp/qml/main.qml" 2>/dev/null
+    tries=0
+    while [ "$tries" -lt 8 ] && cut -d' ' -f5 /proc/self/mountinfo 2>/dev/null | grep -qxF "$ssapp"; do
+      umount "$ssapp" 2>/dev/null || umount -l "$ssapp" 2>/dev/null || break
+      tries=$((tries + 1))
+    done
     mount --bind /var/lib/tvweb/screensaver "$ssapp" 2>/dev/null || true
     # --no-block: stopping sam waits on every app in its cgroup, which is most
     # of a minute, and no hook may hold up boot for that.
