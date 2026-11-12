@@ -2106,7 +2106,7 @@
             <div id="exp-pointer-settings" hidden>
               <div class="pointer-setting">
                 <label for="exp-pointer-transport" data-t="ctl.pointer.transport">Connection</label>
-                <select id="exp-pointer-transport">
+                <select class="pill-sel" id="exp-pointer-transport">
                   <option value="websocket" translate="no">WebSocket</option>
                   <option value="http" translate="no">HTTP</option>
                 </select>
@@ -2114,7 +2114,7 @@
               <div class="prot-desc" data-t="server.experimental.pointer.transport.desc">WebSocket sends without waiting for HTTP answers and opens only while Pointer is open. HTTP sends separate requests and may feel less smooth.</div>
               <div class="pointer-setting">
                 <label for="exp-pointer-rate" data-t="server.experimental.pointer.rate">Update rate</label>
-                <select id="exp-pointer-rate"></select>
+                <select class="pill-sel" id="exp-pointer-rate"></select>
               </div>
               <div class="prot-desc" data-t="server.experimental.pointer.rate.desc">How often the dashboard sends movement batches. Lower rates reduce TV and network work; higher rates can feel smoother. The default and recommended rate is 120 updates per second.</div>
             </div>

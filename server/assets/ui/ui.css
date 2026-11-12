@@ -540,8 +540,8 @@ html.nav-hidden body.nav-open{overflow:hidden}
 }
 .pointer-pad:hover{border-color:var(--w70);color:var(--w80)}
 .pointer-pad.dragging{border-color:var(--w100);background:var(--w06);color:var(--w100)}
-.pointer-setting{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;font-size:13px;color:var(--w60)}
-.pointer-setting select{min-width:170px;padding:8px 10px;min-height:38px}
+.pointer-setting{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px;font-size:13px;color:var(--w60)}
+.pointer-setting .pill-sel{max-width:100%}
 /* Collapsed groups. Picture mode, sound output and the app list are
    set-and-forget: they were taking the majority of the column's height for
    the things you would least often reach for from a phone. */
