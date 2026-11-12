@@ -401,13 +401,57 @@ test('inspectIpk rejects an oversize appinfo.json', function (done) {
   }, { caps: { appinfoBytes: 200 } });
 });
 
-test('inspectIpk rejects GNU LongLink and pax headers', function (done) {
-  var kinds = ['L', 'K', 'x', 'g'];
+test('inspectIpk rejects pax headers', function (done) {
+  var kinds = ['x', 'g'];
   (function next() {
     if (!kinds.length) return done();
     var k = kinds.shift();
-    inspect(makeIpk({ extra: [tarEntry('././@LongLink', 'usr/palm/applications/com.webos.app.home\0', { type: k })] }), function (err) {
+    inspect(makeIpk({ extra: [tarEntry('././@PaxHeader', '30 path=usr/palm/applications/a\n', { type: k })] }), function (err) {
       assert.ok(/does not read/.test(err), k + ': ' + err);
+      next();
+    });
+  })();
+});
+
+function longNameEntry(type, text) {
+  return tarEntry('././@LongLink', text + '\0', { type: type });
+}
+
+test('inspectIpk reads a GNU long name as the next entry\'s path', function (done) {
+  var dir = 'usr/palm/applications/com.example.long/' + new Array(90).join('d') + '/';
+  inspect(makeIpk({ extra: [
+    longNameEntry('L', dir), tarEntry(dir.slice(0, 99), undefined, { type: '5' }),
+    longNameEntry('L', dir + 'f.str'), tarEntry(dir.slice(0, 99), 'text')
+  ] }), function (err, info) {
+    assert.ifError(err);
+    assert.deepEqual(info.apps.map(function (a) { return a.id; }), ['com.example.app', 'com.example.long']);
+    done();
+  });
+});
+
+test('inspectIpk checks a GNU long name and long link target like any other', function (done) {
+  inspect(makeIpk({ extra: [longNameEntry('L', 'usr/palm/../../etc/passwd'), tarEntry('usr/palm/x', 'x')] }), function (err) {
+    assert.ok(/unsafe path/.test(err), err);
+    inspect(makeIpk({ extra: [
+      longNameEntry('K', '../../../../../etc'),
+      tarEntry('usr/palm/applications/com.example.app/ln', undefined, { type: '2', link: 'ok' })
+    ] }), function (err2) {
+      assert.ok(/unsafe path/.test(err2), err2);
+      done();
+    });
+  });
+});
+
+test('inspectIpk rejects a GNU long name with no entry after it, or two in a row', function (done) {
+  var cases = [
+    [longNameEntry('L', 'usr/palm/applications/com.example.app/a')],
+    [longNameEntry('L', 'usr/a'), longNameEntry('L', 'usr/b'), tarEntry('usr/c', 'x')],
+    [longNameEntry('L', '')]
+  ];
+  (function next() {
+    if (!cases.length) return done();
+    inspect(makeIpk({ extra: cases.shift() }), function (err) {
+      assert.ok(/damaged/.test(err), err);
       next();
     });
   })();
