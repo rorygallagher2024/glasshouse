@@ -541,7 +541,7 @@ test('checkIds refuses the Homebrew Channel and the dashboard\'s HBC package', f
   setup();
   ['org.webosbrew.hbchannel', 'io.github.rorygallagher2024.lg-webos-dashboard'].forEach(function (p) {
     var err = installer.checkIds({ package: p, apps: [{ id: p }], services: [p + '.service'] });
-    assert.ok(/Homebrew Channel/.test(err), p + ': ' + err);
+    assert.ok(/updates itself/.test(err), p + ': ' + err);
   });
   done();
 });
