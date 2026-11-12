@@ -978,6 +978,10 @@ function doControl(action, value, cb) {
         cb({ ok: !!(r && r.ok), error: r && !r.ok ? r.error : undefined });
       });
 
+    case 'huesyncSetting':
+      if (!huesync || !value || typeof value !== 'object') return cb({ ok: false, error: 'Invalid Hue Sync setting' });
+      return huesync.setSetting(value.key, value.value, cb);
+
     case 'huesync':
       // Hue Sync's streaming to a Philips Ambience light.
       if (!huesync) return cb({ ok: false, error: 'Hue Sync is not available' });
@@ -1142,6 +1146,20 @@ function doControl(action, value, cb) {
         telemetry.clearCache();
         cb(r);
       });
+
+    case 'screensaverEntities':
+      if (!screensavers) return cb({ ok: false, error: 'screensavers module not available' });
+      if (!value || typeof value !== 'object' || !value.saver || !value.entities) {
+        return cb({ ok: false, error: 'screensaverEntities requires saver and entities' });
+      }
+      return screensavers.setSaverEntities(value.saver, value.entities, cb);
+
+    case 'screensaverColor':
+      if (!screensavers) return cb({ ok: false, error: 'screensavers module not available' });
+      if (!value || typeof value !== 'object' || !value.saver || !value.color) {
+        return cb({ ok: false, error: 'screensaverColor requires saver and color' });
+      }
+      return screensavers.setSaverColor(value.saver, value.color, cb);
 
     case 'toast':
       /* Both the payload's sourceId and luna-send's -a have to name an app the

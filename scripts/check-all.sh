@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
 # scripts/check-all.sh - the checks CI runs, side by side, before a push
 #

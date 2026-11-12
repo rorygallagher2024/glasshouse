@@ -1,4 +1,4 @@
-// The Control and Advanced tabs: power, volume, backlight, toasts, URLs and the TV's switches.
+// The Control, System and Ambient Light tabs: power, volume, backlight and the TV's switches.
 
 let errTimer = null;
 function clearErr() {
@@ -39,8 +39,36 @@ function toggleHomeAutoLaunch(id) { sendCommand('homeAutoLaunch', flip(id || 'ho
 function toggleClockHour12() { sendCommand('clockHour12', flip('btn_clock12')); }
 function toggleLgLogo() { sendCommand('lgLogo', flip('btn_lglogo')); }
 function togglePiccap() { sendCommand('piccap', flip('btn_piccap')); }
-function toggleHuesync() { sendCommand('huesync', flip('btn_huesync')); }
+// Starting can take up to ~9 s of retries on the TV, which refuses setting
+// changes meanwhile: the settings are locked for it, as a setting change
+// locks this switch.
+async function toggleHuesync() {
+  if (huesyncSettingsBusy) return;
+  const next = flip('btn_huesync');
+  huesyncSettingsBusy = true;
+  const settings = q('huesync-settings');
+  const locked = ['btn_huesync', 'ctl_huesync'].map(q)
+    .concat(settings ? [...settings.querySelectorAll('input, select, button')] : []);
+  locked.forEach(el => { if (el) el.disabled = true; });
+  try {
+    await sendCommand('huesync', next);
+  } finally {
+    huesyncSettingsBusy = false;
+    tick();
+  }
+}
 function toggleWol() { sendCommand('wakeOnLan', flip('btn_wol')); }
+
+function renderAmbientPower(which, on) {
+  advPill(which, 'btn_' + which, on);
+  const quick = q('ctl_' + which);
+  if (!quick) return;
+  quick.hidden = on === undefined;
+  if (on === undefined) return;
+  quick.classList.toggle('on', !!on);
+  quick.setAttribute('aria-pressed', String(!!on));
+  q('ctl_' + which + '_state').textContent = on ? t('common.on', 'On') : t('common.off', 'Off');
+}
 function toggleDeviceDetection() { sendCommand('deviceDetection', flip('btn_devdetect')); }
 function toggleDeviceScans() { sendCommand('deviceScans', flip('btn_devscans')); }
 function toggleAlwaysReady() { sendCommand('alwaysReady', flip('btn_ar')); }
@@ -172,11 +200,11 @@ function applyOptimistic(action, value) {
   } else if (action === 'piccap') {
     const on = value === 'on' || value === true;
     setLease('piccap', on);
-    advPill('piccap', 'btn_piccap', on);
+    renderAmbientPower('piccap', on);
   } else if (action === 'huesync') {
     const on = value === 'on' || value === true;
     setLease('huesync', on);
-    advPill('huesync', 'btn_huesync', on);
+    renderAmbientPower('huesync', on);
   } else if (action === 'standbyLight') {
     const on = value === 'on' || value === true;
     setLease('standbyLight', on);
@@ -794,3 +822,67 @@ function updateDpadMobileDefault() {
     }
   });
 })();
+
+let huesyncSettingsBusy = false;
+let lastHuesyncSettings = {};
+function renderHuesyncSettingToggle(el, on) {
+  advPill(el.id, el.id, on);
+  el.setAttribute('aria-pressed', String(on === true));
+}
+async function changeHuesyncSetting(el) {
+  if (huesyncSettingsBusy) return;
+  if (el.type === 'number' && (!el.validity.valid || el.value === '')) { el.reportValidity(); return; }
+  const key = el.id.slice(8), previous = lastHuesyncSettings[key];
+  huesyncSettingsBusy = true;
+  el.disabled = true;
+  try {
+    const result = await sendCommand('huesyncSetting', { key,
+      value: el.tagName === 'BUTTON' ? previous !== true : el.type === 'number' ? Number(el.value) :
+        el.id === 'huesync-intensity' ? Number(el.value) : el.value });
+    const actual = result && result.settings ? result.settings[key] : previous;
+    if (el.tagName === 'BUTTON') renderHuesyncSettingToggle(el, actual);
+    else el.value = actual === undefined ? '' : String(actual);
+  } finally {
+    huesyncSettingsBusy = false;
+    el.disabled = false;
+    tick();
+  }
+}
+
+function renderHuesyncSettings(hs) {
+  const container = q('huesync-settings');
+  if (!container) return;
+  const settings = hs && hs.settings || {};
+  lastHuesyncSettings = settings;
+  const diagnostics = hs && hs.diagnostics || {}, stale = settings._stale || [];
+  const notReady = diagnostics.busy === true || diagnostics.ready &&
+    (diagnostics.ready.ready === false || diagnostics.ready.supported === false) || diagnostics.bridge &&
+    (diagnostics.bridge.Connected === false || diagnostics.bridge.Authorized === false);
+  for (const id of ['btn_huesync', 'ctl_huesync']) {
+    q(id).disabled = huesyncSettingsBusy || !!notReady || hs && hs.writable === false;
+  }
+  const advanced = ['background_lightning_video', 'background_lightning_games', 'auto_start', 'auto_start_notification'];
+  container.hidden = !['brightness', 'intensity', 'sync_mode', 'current_ec', ...advanced].some(key => settings[key] !== undefined);
+  const choices = {
+    intensity: [t('adv.huesync.subtle', 'Subtle'), t('adv.huesync.moderate', 'Moderate'), t('adv.huesync.high', 'High'), t('adv.huesync.extreme', 'Extreme')].map((label, index) => ({ value: String(index), label })),
+    sync_mode: [{ value: '0', label: t('adv.huesync.video', 'Video') }, { value: '1', label: t('adv.huesync.game', 'Game') }],
+    current_ec: (settings.ec_list || []).map(area => ({ value: area.id, label: area.name }))
+  };
+  container.querySelectorAll('input, select, button').forEach(el => {
+    const key = el.id.slice(8), value = settings[key];
+    el.closest('.prot-row').hidden = value === undefined || (key === 'current_ec' && !choices.current_ec.length);
+    el.disabled = huesyncSettingsBusy || hs && hs.writable === false || !!notReady || stale.includes(key) || key === 'current_ec' && stale.includes('ec_list');
+    if (huesyncSettingsBusy || document.activeElement === el && el.tagName !== 'BUTTON') return;
+    if (el.tagName === 'SELECT') {
+      el.replaceChildren();
+      (choices[key] || []).forEach(choice => {
+        const option = document.createElement('option');
+        option.value = choice.value;
+        option.textContent = choice.label;
+        el.appendChild(option);
+      });
+      el.value = String(value);
+    } else if (el.tagName === 'BUTTON') renderHuesyncSettingToggle(el, value);
+    else el.value = value === undefined ? '' : value;
+  });
+}

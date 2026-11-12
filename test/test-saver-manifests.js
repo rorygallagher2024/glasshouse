@@ -278,5 +278,51 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
   console.log('  ✓ an installed app\'s screen saver is listed from its app and staged as its QML alone');
 })();
 
+// 13. A screen saver's own reads: the entities it declares, and none other
+(function testEntityReads() {
+  var ENTS = path.join(__dirname, 'fixtures', 'saver-entities');
+  screensavers.init({
+    luna: env.mockLuna,
+    config: { port: 8080, allowControl: true, token: 'tok' },
+    saverRoots: [{ dir: BUILTIN, builtin: true }, { dir: ENTS, builtin: false }]
+  });
+  var modes = screensavers.screensaverList().modes;
+  var good = byId(modes, 'user-ha-reads');
+  assert.ok(good, 'a saver declaring entities is listed');
+  assert.strictEqual(good.available, true, good.note);
+
+  var badId = byId(modes, 'user-ha-bad-id');
+  assert.strictEqual(badId.available, false, 'an entity id that is not one is refused');
+  assert.ok(/entity id/.test(badId.note), badId.note);
+  var noEnts = byId(modes, 'user-ha-uses-only');
+  assert.strictEqual(noEnts.available, false, 'ha in uses needs entities');
+  assert.ok(/entities and "ha"/.test(noEnts.note), noEnts.note);
+
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'user-ha-reads';
+  screensavers.restageScreensaver();
+  var main = env.files[path.join(STAGE, 'qml', 'main.qml')];
+  assert.ok(main.indexOf('http://127.0.0.1:8080/api/entity/sensor.example_daylight') !== -1,
+    'the declared entity has an address');
+  assert.strictEqual(main.indexOf('__TVWEB_HA_'), -1, 'no placeholder left');
+  assert.deepEqual(screensavers.screensaverEntities(), {
+    daylight: 'sensor.example_daylight',
+    sunrise: 'sensor.example_sunrise'
+  }, 'the staged saver is what the server serves, and nothing else');
+  console.log('  \u2713 a screen saver is given an address for each entity it declares');
+
+  // A slot left blank in saver.json is the owner's to fill in: no address, and nothing served.
+  var blank = byId(modes, 'user-ha-blank');
+  assert.strictEqual(blank.available, true, blank.note);
+  assert.strictEqual(byId(blank.entities, 'spare').entity, '', 'the blank slot is listed empty');
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'user-ha-blank';
+  screensavers.restageScreensaver();
+  var blankMain = env.files[path.join(STAGE, 'qml', 'main.qml')];
+  assert.ok(blankMain.indexOf('spareUrl: ""') !== -1, 'the blank slot has no address');
+  assert.ok(blankMain.indexOf('/api/entity/sensor.example_power') !== -1, 'the filled one has its own');
+  assert.deepEqual(screensavers.screensaverEntities(), { power: 'sensor.example_power' },
+    'a blank slot is not served');
+  console.log('  \u2713 a slot left blank in saver.json is given no address');
+})();
+
 env.restore();
 console.log('ALL test-saver-manifests.js assertions passed!');

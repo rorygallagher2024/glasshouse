@@ -15,6 +15,7 @@ var fs = require('fs');
 var mkdirp = require('./util').mkdirp;
 var readTrimmed = require('./util').readTrimmed;
 var unlinkQuiet = require('./util').unlinkQuiet;
+var writeJsonAtomic = require('./util').writeJsonAtomic;
 var path = require('path');
 var execFile = require('child_process').execFile;
 var power = require('./power');
@@ -28,6 +29,10 @@ var SCREENSAVER_APP_DIR = '/usr/palm/applications/' + SCREENSAVER_APP_ID;
 var SCREENSAVER_DIR = '/var/lib/tvweb/screensaver';
 var SCREENSAVER_MARKER = '.tvweb-screensaver';
 var SCREENSAVER_LEVEL_MARKER = '.tvweb-brightness';
+var SCREENSAVER_ENTITIES_FILE = '/var/lib/tvweb/screensaver-entities.json';
+var SCREENSAVER_COLORS_FILE = '/var/lib/tvweb/screensaver-colors.json';
+/** @type {typeof import('./haentity') | null} */
+var haEntityModule = null;
 /*
  * Brightness is a percentage. Glasshouse's own are drawn at two levels, each
  * tuned by hand, their dim one about two thirds as bright as their bright
@@ -107,11 +112,29 @@ var FOLDER_NAME = /^[a-z0-9][a-z0-9-]{0,31}$/;
 var MAX_SAVER_BYTES = 5 * 1024 * 1024;
 var MAX_SAVER_FILES = 200;
 // What a saver may ask Glasshouse to fill in, and the placeholder for each.
-var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__' };
+// "ha" has one placeholder per entity it declares, so it carries no value here.
+var USES = { level: '__TVWEB_LEVEL__', stats: '__TVWEB_URL__', choice: '__TVWEB_CHOICE__', ha: '', 'ha-list': '__TVWEB_HA_LIST__', color: '__TVWEB_COLOR__' };
+var DEFAULT_SAVER_COLOR = 'white';
+var COLOR_PRESETS = [
+  { id: 'white', label: msg('srv.saver.color.white', 'White'), bright: '#ffffff', dim: '#a8aeb6' },
+  { id: 'blue', label: msg('srv.saver.color.blue', 'Blue'), bright: '#7ecaff', dim: '#4a8cb8' },
+  { id: 'green', label: msg('srv.saver.color.green', 'Green'), bright: '#8ce99a', dim: '#4e9960' },
+  { id: 'amber', label: msg('srv.saver.color.amber', 'Amber'), bright: '#ffd479', dim: '#b88635' },
+  { id: 'red', label: msg('srv.saver.color.red', 'Red'), bright: '#ff8a8a', dim: '#b35252' },
+  { id: 'purple', label: msg('srv.saver.color.purple', 'Purple'), bright: '#c5a3ff', dim: '#8265b8' }
+];
 // A choice's value goes into the QML as text: kept to what a name needs.
 var CHOICE_VALUE = /^[\w.=&-]{0,100}$/;
 var CHOICE_ID = /^[a-z0-9][a-z0-9-]{0,31}$/;
 var MAX_CHOICES = 500;
+// A screen saver's own reads: a short name it puts in __TVWEB_HA_<name>__, and
+// the Home Assistant entity it is given. Both are checked before anything is
+// staged, because a placeholder left in a QML file draws as nothing.
+var HA_NAME = /^[a-z][a-z0-9_]{0,31}$/;
+var HA_ENTITY = /^[a-z0-9_]+\.[a-z0-9_]+$/;
+var MAX_HA_ENTITIES = 12;
+var MAX_HA_LIST_ENTITIES = 100;
+var NEEDS_HA_ERROR = msg('srv.saver.needsHa', 'Configure the Home Assistant API on the HA and MQTT tab first.');
 /*
  * Homebrew Channel apps that ship a screen saver as one QML file, which they
  * bind-mount over LG's qml/main.qml themselves: Custom Screensaver, the two
@@ -131,6 +154,10 @@ var DEFAULT_ROOTS = [
 ];
 var saverRoots = DEFAULT_ROOTS;
 var catalogCache = null;  // { list: [entries, stock first], byId: {} }
+// The entities the screen saver on the TV declared, or null. /api/entity serves
+// these and no others, so a saver reads its own readings and nothing else.
+var stagedEntities = null;
+var stagedEntityLabels = null;
 // What qmlcheck found in each QML file, kept while the file is unchanged, as
 // the list is read each time the tab asks: path -> { stamp, wrong, src }.
 var qmlChecked = {};
@@ -214,6 +241,24 @@ function readSaver(root, name) {
   if ((uses.indexOf('choice') !== -1) !== !!e.choices) {
     return problem(msg('srv.saver.choiceUses', '{file}: choices and "choice" in uses go together.', { file: MANIFEST }));
   }
+  // A saver's own Home Assistant readings. It is given the address of each, and
+  // the server serves those addresses and no others while it is showing.
+  if (m.entities !== undefined) {
+    var ents = readEntities(m.entities);
+    if (typeof ents === 'string') return problem(ents);
+    e.entities = ents;
+  }
+  if ((uses.indexOf('ha') !== -1) !== !!e.entities) {
+    return problem(msg('srv.saver.haUses', '{file}: entities and "ha" in uses go together.', { file: MANIFEST }));
+  }
+  if (m.entityList !== undefined) {
+    var el = readEntityList(m.entityList);
+    if (typeof el === 'string') return problem(el);
+    e.entityList = el;
+  }
+  if ((uses.indexOf('ha-list') !== -1) !== !!e.entityList) {
+    return problem(msg('srv.saver.haListUses', '{file}: entityList and "ha-list" in uses go together.', { file: MANIFEST }));
+  }
   if (Array.isArray(m.panels) && m.panels.length === 1 && (m.panels[0] === 'oled' || m.panels[0] === 'lcd')) e.panels = m.panels[0];
   var need = m.requires && typeof m.requires.webos === 'number' ? m.requires.webos : 0;
   var have = parseInt(String(webosVersion || ''), 10);
@@ -238,9 +283,18 @@ function readSaver(root, name) {
   try { qml = fs.readFileSync(path.join(dir, e.main), 'utf8'); }
   catch (err3) { return problem(msg('srv.saver.unreadable', 'Its folder could not be read: {error}', { error: err3.message })); }
   for (var u in USES) {
-    if (qml.indexOf(USES[u]) !== -1 && uses.indexOf(u) === -1) {
+    if (USES[u] && qml.indexOf(USES[u]) !== -1 && uses.indexOf(u) === -1) {
       return problem(msg('srv.saver.undeclared', '{main} uses {placeholder} without "{use}" in uses.',
                          { main: e.main, placeholder: USES[u], use: u }));
+    }
+  }
+  // Its own reads: __TVWEB_HA_<name>__ for each entity it declares, and none
+  // other, since a name it did not declare would be left in and draw nothing.
+  var haPlaceholder = /__TVWEB_HA_([a-z0-9_]*)__/g;
+  var found;
+  while ((found = haPlaceholder.exec(qml)) !== null) {
+    if (!e.entities || !Object.prototype.hasOwnProperty.call(e.entities, found[1])) {
+      return problem(msg('srv.saver.undeclaredHa', '{main} uses {placeholder}, and saver.json does not name that entity under entities.', { main: e.main, placeholder: found[0] }));
     }
   }
   // A mistake that would leave it black, in any of its QML files. What one
@@ -293,6 +347,243 @@ function readChoices(c, saverId) {
   }
   if (!out.options.some(function (x) { return x.id === out.def; })) return bad;
   return out;
+}
+
+/*
+ * saver.json's entities: { daylight: 'sensor.sun_daylight', ... }, the
+ * Home Assistant readings a screen saver draws, each put in for
+ * __TVWEB_HA_<name>__ as the address to read it from. The map or the reason it
+ * cannot be read.
+ */
+function readEntities(list) {
+  var bad = msg('srv.saver.badEntities', '{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them.', { file: MANIFEST, max: String(MAX_HA_ENTITIES) });
+  if (!list || typeof list !== 'object' || isArray(list)) return bad;
+  var out = {}, count = 0;
+  for (var name in list) {
+    if (!Object.prototype.hasOwnProperty.call(list, name)) continue;
+    var id = list[name];
+    // A blank id is a slot the owner fills in on the Screensaver tab: no
+    // default is better than one most Home Assistant installs do not have.
+    if (!HA_NAME.test(name) || typeof id !== 'string' || (id !== '' && !HA_ENTITY.test(id))) return bad;
+    out[name] = id;
+    if (++count > MAX_HA_ENTITIES) return bad;
+  }
+  return count ? out : bad;
+}
+
+function isIntIn(v, lo, hi) {
+  return typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v >= lo && v <= hi;
+}
+
+/*
+ * saver.json's entityList: { min: 2, max: 100 }, for a screen saver that steps
+ * through a configured list of Home Assistant entities via __TVWEB_HA_LIST__.
+ */
+function readEntityList(obj) {
+  var bad = msg('srv.saver.badEntityList', '{file}: entityList needs integer min (1 to {max}) and max (min to {max}).', { file: MANIFEST, max: String(MAX_HA_LIST_ENTITIES) });
+  if (!obj || typeof obj !== 'object' || isArray(obj)) return bad;
+  var min = obj.min === undefined ? 1 : obj.min;
+  var max = obj.max === undefined ? MAX_HA_LIST_ENTITIES : obj.max;
+  if (!isIntIn(min, 1, MAX_HA_LIST_ENTITIES) || !isIntIn(max, min, MAX_HA_LIST_ENTITIES)) return bad;
+  return { min: min, max: max };
+}
+
+function readStoredEntities() {
+  try {
+    if (fs.existsSync(SCREENSAVER_ENTITIES_FILE)) {
+      return JSON.parse(fs.readFileSync(SCREENSAVER_ENTITIES_FILE, 'utf8')) || {};
+    }
+  } catch (e) {}
+  return {};
+}
+
+function writeStoredEntities(all) {
+  try {
+    writeJsonAtomic(SCREENSAVER_ENTITIES_FILE, all);
+  } catch (e) {
+    console.warn('screensaver: could not save entity overrides: ' + e.message);
+  }
+}
+
+function parseStoredSlot(raw, defEntity) {
+  if (raw === undefined || raw === null) return { entity: defEntity, customLabel: '' };
+  if (typeof raw === 'string') {
+    var ent = (raw === '' || HA_ENTITY.test(raw)) ? raw : defEntity;
+    return { entity: ent, customLabel: '' };
+  }
+  if (typeof raw === 'object') {
+    var hasEnt = typeof raw.entity === 'string' && (raw.entity === '' || HA_ENTITY.test(raw.entity));
+    var lbl = typeof raw.label === 'string' ? raw.label.trim().slice(0, 64) : '';
+    return { entity: hasEnt ? raw.entity : defEntity, customLabel: lbl };
+  }
+  return { entity: defEntity, customLabel: '' };
+}
+
+function effectiveSaverEntitySpecs(e) {
+  if (!e || !e.entities) return null;
+  var stored = readStoredEntities();
+  var overrides = (stored && stored[e.id]) || {};
+  var out = {};
+  for (var k in e.entities) {
+    if (!Object.prototype.hasOwnProperty.call(e.entities, k)) continue;
+    out[k] = parseStoredSlot(Object.prototype.hasOwnProperty.call(overrides, k) ? overrides[k] : undefined, e.entities[k]);
+  }
+  return out;
+}
+
+function effectiveSaverEntities(e) {
+  return effectiveFromSpecs(effectiveSaverEntitySpecs(e));
+}
+
+function effectiveSaverEntityList(e) {
+  if (!e || !e.entityList) return null;
+  var stored = readStoredEntities();
+  var raw = stored && stored[e.id];
+  var arr = isArray(raw) ? raw : (raw && isArray(raw.items) ? raw.items : []);
+  var out = [];
+  for (var i = 0; i < arr.length && out.length < e.entityList.max; i++) {
+    var item = arr[i];
+    var ent = '', lbl = '';
+    if (typeof item === 'string') {
+      ent = item.trim();
+    } else if (item && typeof item === 'object') {
+      ent = typeof item.entity === 'string' ? item.entity.trim() : '';
+      lbl = typeof item.label === 'string' ? item.label.trim().slice(0, 64) : '';
+    }
+    if (!ent || !HA_ENTITY.test(ent)) continue;
+    out.push({ entity: ent, customLabel: lbl });
+  }
+  return out;
+}
+
+function saverUsesHa(e) {
+  return !!(e && e.uses && (e.uses.indexOf('ha') !== -1 || e.uses.indexOf('ha-list') !== -1));
+}
+
+function saverMissingHa(e) {
+  return !!(haEntityModule && saverUsesHa(e) && !haEntityModule.configured());
+}
+
+function saverMinEntitiesError(e) {
+  if (!e || !e.entityList) return '';
+  var list = effectiveSaverEntityList(e) || [];
+  if (list.length < e.entityList.min) {
+    return msg('srv.saver.tooFewEntities',
+      'Add at least {min} Home Assistant entities to "{saver}" before starting it (OLED burn-in protection).',
+      { min: String(e.entityList.min), saver: e.label });
+  }
+  return '';
+}
+
+function setSaverEntities(saverId, newEntities, cb) {
+  cb = cb || function () {};
+  var saver = saverById(saverId);
+  if (!saver) return cb({ ok: false, error: 'unknown screen saver: ' + saverId });
+  if (!saver.entities && !saver.entityList) return cb({ ok: false, error: saverId + ' does not declare entities' });
+  if (!newEntities || typeof newEntities !== 'object') return cb({ ok: false, error: 'entities must be an object' });
+
+  if (saver.entityList) {
+    var listIn = isArray(newEntities) ? newEntities : (isArray(newEntities.items) ? newEntities.items : null);
+    if (!listIn) return cb({ ok: false, error: saverId + ' expects an entity list' });
+    if (listIn.length > saver.entityList.max) {
+      return cb({ ok: false, error: 'up to ' + saver.entityList.max + ' Home Assistant entities allowed' });
+    }
+    var nextList = [];
+    for (var li = 0; li < listIn.length; li++) {
+      var rawItem = listIn[li];
+      var iEnt = '', iLbl = '';
+      if (typeof rawItem === 'string') {
+        iEnt = rawItem.trim();
+      } else if (rawItem && typeof rawItem === 'object') {
+        iEnt = String(rawItem.entity || '').trim();
+        if (rawItem.label !== undefined) iLbl = String(rawItem.label || '').trim().slice(0, 64);
+      } else {
+        return cb({ ok: false, error: 'each entity entry must be a string or object' });
+      }
+      if (!iEnt || !HA_ENTITY.test(iEnt)) {
+        return cb({ ok: false, error: 'not a valid Home Assistant entity id: ' + iEnt });
+      }
+      nextList.push(iLbl ? { entity: iEnt, label: iLbl } : iEnt);
+    }
+    var storedList = readStoredEntities();
+    if (nextList.length) storedList[saverId] = nextList;
+    else delete storedList[saverId];
+    writeStoredEntities(storedList);
+    if (stagedScreensaver() === saverId) {
+      restageScreensaver();
+      restartScreensaverApp(function () {});
+    }
+    return cb({ ok: true });
+  }
+
+  var stored = readStoredEntities();
+  stored[saverId] = stored[saverId] || {};
+
+  for (var k in newEntities) {
+    if (!Object.prototype.hasOwnProperty.call(newEntities, k)) continue;
+    if (!saver.entities[k]) continue;
+    var val = newEntities[k];
+    if (val === null) {
+      delete stored[saverId][k];
+      continue;
+    }
+    var def = saver.entities[k];
+    var cur = parseStoredSlot(stored[saverId][k], def);
+    var nextEnt = cur.entity;
+    var nextLbl = cur.customLabel;
+    var entExplicit = Object.prototype.hasOwnProperty.call(stored[saverId], k) && (
+      typeof stored[saverId][k] === 'string' ||
+      (stored[saverId][k] && typeof stored[saverId][k] === 'object' && stored[saverId][k].entity !== undefined)
+    );
+
+    if (typeof val === 'string') {
+      var trimmed = val.trim();
+      if (trimmed !== '' && !HA_ENTITY.test(trimmed)) {
+        return cb({ ok: false, error: 'not a valid Home Assistant entity id: ' + trimmed });
+      }
+      nextEnt = trimmed;
+      entExplicit = true;
+      if (trimmed === '') nextLbl = '';
+    } else if (val && typeof val === 'object') {
+      if (val.entity !== undefined) {
+        if (val.entity === null) {
+          nextEnt = def;
+          entExplicit = false;
+        } else {
+          var oe = String(val.entity || '').trim();
+          if (oe !== '' && !HA_ENTITY.test(oe)) {
+            return cb({ ok: false, error: 'not a valid Home Assistant entity id: ' + oe });
+          }
+          nextEnt = oe;
+          entExplicit = true;
+          if (oe === '') nextLbl = '';
+        }
+      }
+      if (val.label !== undefined) {
+        nextLbl = String(val.label || '').trim().slice(0, 64);
+      }
+    } else {
+      continue;
+    }
+
+    if (!entExplicit && !nextLbl) {
+      delete stored[saverId][k];
+    } else if (!nextLbl) {
+      stored[saverId][k] = nextEnt;
+    } else {
+      var rec = { label: nextLbl };
+      if (entExplicit) rec.entity = nextEnt;
+      stored[saverId][k] = rec;
+    }
+  }
+  if (Object.keys(stored[saverId]).length === 0) delete stored[saverId];
+  writeStoredEntities(stored);
+
+  if (stagedScreensaver() === saverId) {
+    restageScreensaver();
+    restartScreensaverApp(function () {});
+  }
+  cb({ ok: true });
 }
 
 // An installed app's screen saver as an entry, or null where the app has none.
@@ -401,6 +692,8 @@ var watchKeysFn = function () {};
 var mediaStateFn = function (cb) { cb(null); };
 
 function clearStagedScreensaver() {
+  stagedEntities = null;
+  stagedEntityLabels = null;
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_MARKER));
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER));
   unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
@@ -441,6 +734,7 @@ function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
   configObj = opts.config;
+  haEntityModule = opts.haEntity || null;
   hour12Fn = opts.hour12 || function () { return false; };
   webosVersion = opts.webosVersion || null;
   saverRoots = opts.saverRoots || DEFAULT_ROOTS;
@@ -573,7 +867,7 @@ function screensaverMode() {
 
 function defaultRandomPool() {
   return catalog().filter(function (e) {
-    return e.id !== 'stock' && e.id !== 'random' && !e.problem && (!heldBack() || e.builtin);
+    return e.id !== 'stock' && e.id !== 'random' && !e.problem && !saverMissingHa(e) && !saverMinEntitiesError(e) && (!heldBack() || e.builtin);
   }).map(function (e) {
     return e.id;
   });
@@ -719,6 +1013,64 @@ function detectExternal() {
   return { active: active, hook: hook };
 }
 
+function screensaverColorOptions() {
+  return COLOR_PRESETS.map(function (c) { return { id: c.id, label: c.label, hex: c.bright }; });
+}
+
+function findColorPreset(id) {
+  for (var i = 0; i < COLOR_PRESETS.length; i++) {
+    if (COLOR_PRESETS[i].id === id) return COLOR_PRESETS[i];
+  }
+  return COLOR_PRESETS[0];
+}
+
+function readStoredColors() {
+  try {
+    if (fs.existsSync(SCREENSAVER_COLORS_FILE)) {
+      return JSON.parse(fs.readFileSync(SCREENSAVER_COLORS_FILE, 'utf8')) || {};
+    }
+  } catch (e) {}
+  return {};
+}
+
+function writeStoredColors(all) {
+  try {
+    writeJsonAtomic(SCREENSAVER_COLORS_FILE, all);
+  } catch (e) {
+    console.warn('screensaver: could not save color preference: ' + e.message);
+  }
+}
+
+function screensaverColor(e) {
+  if (!e || !e.uses || e.uses.indexOf('color') === -1) return undefined;
+  var stored = readStoredColors();
+  var raw = stored && stored[e.id];
+  return findColorPreset(raw).id;
+}
+
+function setSaverColor(saverId, colorId, cb) {
+  cb = cb || function () {};
+  var saver = saverById(saverId);
+  if (!saver) return cb({ ok: false, error: 'unknown screen saver: ' + saverId });
+  if (!saver.uses || saver.uses.indexOf('color') === -1) {
+    return cb({ ok: false, error: saverId + ' does not support color customization' });
+  }
+  var preset = null;
+  for (var i = 0; i < COLOR_PRESETS.length; i++) {
+    if (COLOR_PRESETS[i].id === colorId) { preset = COLOR_PRESETS[i]; break; }
+  }
+  if (!preset) return cb({ ok: false, error: 'unknown color: ' + colorId });
+  var stored = readStoredColors();
+  if (preset.id === DEFAULT_SAVER_COLOR) delete stored[saverId];
+  else stored[saverId] = preset.id;
+  writeStoredColors(stored);
+  if (stagedScreensaver() === saverId) {
+    restageScreensaver();
+    restartScreensaverApp(function () {});
+  }
+  cb({ ok: true, color: preset.id });
+}
+
 function screensaverList() {
   var cur = screensaverMode();
   var staged = isRandomEnabled() ? stagedScreensaver() : undefined;
@@ -726,19 +1078,24 @@ function screensaverList() {
   var all = catalog();
   for (var i = 0; i < all.length; i++) {
     var e = all[i];
+    var specs = e.entities ? effectiveSaverEntitySpecs(e) : null;
+    var listItems = e.entityList ? effectiveSaverEntityList(e) : null;
+    var needsHa = saverMissingHa(e);
+    var hasColor = e.uses && e.uses.indexOf('color') !== -1;
     out.push({
       id: e.id,
       label: e.label,
       description: e.description,
       active: e.id === cur,
-      available: e.id === 'stock' || (!heldBack() && !e.problem),
+      available: e.id === 'stock' || (!heldBack() && !e.problem && !needsHa),
+      needsHa: needsHa || undefined,
       builtin: e.builtin,
       author: e.author || undefined,
       license: e.license || undefined,
       version: e.version || undefined,
       panels: e.panels,
-      // Why it cannot be picked, where something is wrong with its folder.
-      note: e.problem,
+      // Why it cannot be picked, where something is wrong with its folder or HA API.
+      note: e.problem || (needsHa ? NEEDS_HA_ERROR : undefined),
       // What one added on the TV does past the screen: the network, sound.
       cautions: e.cautions && e.cautions.length ? e.cautions : undefined,
       // The app it comes from, where it is an installed app's.
@@ -747,7 +1104,30 @@ function screensaverList() {
       choices: e.choices ? e.choices.options.map(function (o) { return { id: o.id, label: o.label, group: o.group }; }) : undefined,
       choice: e.choices ? (e.id === cur ? screensaverChoice(e) : e.choices.def) : undefined,
       // What the dropdown is called, where the screen saver names it.
-      choicesLabel: e.choices ? e.choices.label : undefined
+      choicesLabel: e.choices ? e.choices.label : undefined,
+      // Optional value color selection for savers declaring "color" in uses.
+      color: hasColor ? screensaverColor(e) : undefined,
+      colors: hasColor ? screensaverColorOptions() : undefined,
+      // Home Assistant entities declared by the saver, with effective overrides.
+      entities: e.entities ? Object.keys(e.entities).map(function (k) {
+        var lbl = k.replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+        var spec = specs && specs[k];
+        return {
+          id: k,
+          label: lbl,
+          entity: spec ? spec.entity : e.entities[k],
+          customLabel: spec ? spec.customLabel : '',
+          def: e.entities[k]
+        };
+      }) : undefined,
+      // Ordered list of Home Assistant entities configured for a cycling saver.
+      entityList: e.entityList ? {
+        min: e.entityList.min,
+        max: e.entityList.max,
+        items: (listItems || []).map(function (it) {
+          return { entity: it.entity, label: it.customLabel };
+        })
+      } : undefined
     });
     if (e.id === 'stock') {
       out.push({
@@ -770,6 +1150,7 @@ function screensaverList() {
     },
     level: screensaverLevel(), brightness: screensaverBrightness(),
     choice: screensaverChoice(saverById(cur === 'random' ? staged : cur)),
+    haConfigured: haEntityModule ? haEntityModule.configured() : false,
     modes: out,
     writable: !!(configObj && configObj.allowControl),
     slowSwitch: slowSwitch(),
@@ -871,10 +1252,74 @@ function stageSaverFiles(e, level, choice) {
     mkdirp(path.dirname(path.join(qmlDir, rel)));
     fs.writeFileSync(path.join(qmlDir, rel), fs.readFileSync(path.join(e.dir, rel)));
   }
-  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice));
+  var specs = effectiveSaverEntitySpecs(e);
+  var effEnts = effectiveFromSpecs(specs);
+  var entityList = effectiveSaverEntityList(e);
+  fs.writeFileSync(path.join(qmlDir, 'main.qml'), fillSaverQml(e, fs.readFileSync(path.join(e.dir, e.main), 'utf8'), level, choice, effEnts, entityList));
   fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_LEVEL_MARKER), String(level));
+  stagedEntities = mergeActiveEntities(activeSaverEntities(effEnts), entityList);
+  stagedEntityLabels = mergeActiveLabels(activeSaverLabels(specs), entityList);
   if (e.choices) fs.writeFileSync(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER), choice);
   else unlinkQuiet(path.join(SCREENSAVER_DIR, SCREENSAVER_CHOICE_MARKER));
+}
+
+function mergeActiveEntities(base, entityList) {
+  var out = base;
+  if (entityList && entityList.length) {
+    if (!out) out = {};
+    for (var i = 0; i < entityList.length; i++) {
+      if (entityList[i].entity) out['list_' + i] = entityList[i].entity;
+    }
+  }
+  return out;
+}
+
+function mergeActiveLabels(base, entityList) {
+  var out = base;
+  if (entityList && entityList.length) {
+    for (var i = 0; i < entityList.length; i++) {
+      if (entityList[i].entity && entityList[i].customLabel) {
+        if (!out) out = {};
+        out[entityList[i].entity] = entityList[i].customLabel;
+      }
+    }
+  }
+  return out;
+}
+
+function effectiveFromSpecs(specs) {
+  if (!specs) return null;
+  var out = {};
+  for (var k in specs) {
+    if (Object.prototype.hasOwnProperty.call(specs, k)) out[k] = specs[k].entity;
+  }
+  return out;
+}
+
+function activeSaverEntities(effEnts) {
+  if (!effEnts) return null;
+  var out = null;
+  for (var k in effEnts) {
+    if (Object.prototype.hasOwnProperty.call(effEnts, k) && effEnts[k]) {
+      if (!out) out = {};
+      out[k] = effEnts[k];
+    }
+  }
+  return out;
+}
+
+function activeSaverLabels(specs) {
+  if (!specs) return null;
+  var out = null;
+  for (var k in specs) {
+    if (!Object.prototype.hasOwnProperty.call(specs, k)) continue;
+    var s = specs[k];
+    if (s.entity && s.customLabel) {
+      if (!out) out = {};
+      out[s.entity] = s.customLabel;
+    }
+  }
+  return out;
 }
 
 /*
@@ -890,14 +1335,44 @@ function withLayer(qml, opacity) {
     qml.slice(end);
 }
 
-function fillSaverQml(e, qml, level, choice) {
+function fillSaverQml(e, qml, level, choice, effEnts, entityList) {
   var port = (configObj && configObj.port) || 8080;
   var token = configObj && configObj.token;
   if (e.uses.indexOf('stats') !== -1) {
     qml = qml.replace(/__TVWEB_URL__/g,
       'http://127.0.0.1:' + port + '/api/stats' + (token ? '?k=' + encodeURIComponent(token) : ''));
   }
+  effEnts = effEnts || effectiveSaverEntities(e);
+  // One address per declared entity, carrying the token like any other read.
+  if (effEnts) {
+    for (var name in effEnts) {
+      if (!Object.prototype.hasOwnProperty.call(effEnts, name)) continue;
+      var replacement = effEnts[name]
+        ? 'http://127.0.0.1:' + port + '/api/entity/' + effEnts[name] + (token ? '?k=' + encodeURIComponent(token) : '')
+        : '';
+      qml = qml.replace(new RegExp('__TVWEB_HA_' + name + '__', 'g'), function () { return replacement; });
+    }
+  }
+  if (e.uses.indexOf('ha-list') !== -1) {
+    entityList = entityList || effectiveSaverEntityList(e) || [];
+    var payload = [];
+    for (var li = 0; li < entityList.length; li++) {
+      var item = entityList[li];
+      payload.push({
+        entity: item.entity,
+        label: item.customLabel || '',
+        url: 'http://127.0.0.1:' + port + '/api/entity/' + item.entity + (token ? '?k=' + encodeURIComponent(token) : '')
+      });
+    }
+    var listJson = JSON.stringify(payload).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+    qml = qml.replace(/__TVWEB_HA_LIST__/g, function () { return listJson; });
+  }
   if (e.uses.indexOf('level') !== -1) qml = qml.replace(/__TVWEB_LEVEL__/g, String(tunedLevel(level)));
+  if (e.uses.indexOf('color') !== -1) {
+    var preset = findColorPreset(screensaverColor(e));
+    var hex = tunedLevel(level) ? preset.bright : preset.dim;
+    qml = qml.replace(/__TVWEB_COLOR__/g, function () { return hex; });
+  }
   if (e.choices) {
     var value = e.choices.options.filter(function (o) { return o.id === choice; })[0].value;
     qml = qml.replace(/__TVWEB_CHOICE__/g, value);
@@ -952,6 +1427,7 @@ function setScreensaver(mode, level, cb, choice) {
   var saver = mode === 'stock' ? STOCK : saverById(mode);
   if (!saver) return cb({ ok: false, error: 'unknown screen saver: ' + mode });
   if (saver.problem) return cb({ ok: false, error: saver.problem });
+  if (saverMissingHa(saver) && mode !== screensaverMode()) return cb({ ok: false, error: NEEDS_HA_ERROR });
   if (switching()) return cb({ ok: false, error: SWITCHING_ERROR });
   if (mode !== 'stock' && heldBack()) return cb({ ok: false, error: HELD_ERROR });
   level = brightnessOf(level);
@@ -1080,12 +1556,15 @@ function restageScreensaver() {
   // Read again, as an app with a screen saver may have been removed.
   scanSavers();
   var mode = screensaverMode();
-  if (mode === 'stock') return appSaverGone();
+  if (mode === 'stock') { stagedEntities = null; stagedEntityLabels = null; return appSaverGone(); }
   var stagedId = stagedScreensaver();
   var saver = saverById(stagedId);
   if (!saver || saver.problem) {
     if (isRandomEnabled()) return advanceRandomSaver();
     return;
+  }
+  if (isRandomEnabled() && (saverMissingHa(saver) || saverMinEntitiesError(saver))) {
+    return advanceRandomSaver();
   }
   try {
     var staged = path.join(SCREENSAVER_DIR, 'qml', 'main.qml');
@@ -1330,6 +1809,11 @@ function trigger(cb) {
       });
     }
 
+    var activeSaver = saverById(stagedScreensaver());
+    var minErr = saverMinEntitiesError(activeSaver);
+    if (minErr) return cb({ ok: false, error: minErr });
+    if (saverMissingHa(activeSaver)) return cb({ ok: false, error: NEEDS_HA_ERROR });
+
     lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
       var fgId = (fg && fg.appId) ? inputKeyFn(fg.appId) : '';
       if (names.isHdmiKey(fgId) || fgId === 'livetv') {
@@ -1379,6 +1863,16 @@ function trigger(cb) {
   }
 }
 
+// The staged screen saver's declared entities: what /api/entity may serve.
+function screensaverEntities() {
+  return stagedEntities;
+}
+
+// Optional custom label set for an active screen saver entity.
+function screensaverEntityLabel(entityId) {
+  return (stagedEntityLabels && stagedEntityLabels[entityId]) || '';
+}
+
 module.exports = {
   SCREENSAVER_APP_DIR: SCREENSAVER_APP_DIR,
   SCREENSAVER_DIR: SCREENSAVER_DIR,
@@ -1400,6 +1894,13 @@ module.exports = {
   slowSwitch: slowSwitch,
   allowedAnyway: allowedAnyway,
   setScreensaver: setScreensaver,
+  setSaverEntities: setSaverEntities,
+  setSaverColor: setSaverColor,
+  screensaverColor: function () {
+    var mode = screensaverMode();
+    if (mode === 'random') mode = stagedScreensaver();
+    return screensaverColor(saverById(mode));
+  },
   screensaverChoice: function () {
     var mode = screensaverMode();
     if (mode === 'random') mode = stagedScreensaver();
@@ -1417,6 +1918,8 @@ module.exports = {
   onPowerChange: onPowerChange,
   stagedScreensaver: stagedScreensaver,
   restageScreensaver: restageScreensaver,
+  screensaverEntities: screensaverEntities,
+  screensaverEntityLabel: screensaverEntityLabel,
   launchedShowing: launchedShowing,
   keyPressed: keyPressed,
   adoptLaunched: adoptLaunched,

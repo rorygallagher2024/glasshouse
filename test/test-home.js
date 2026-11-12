@@ -231,6 +231,8 @@ function luna(uri, p, cb) {
     ];
   } else if (uri === 'com.webos.service.apiadapter/tv/getChannelList') {
     r.channelList = (tv.channels || []).map(function (id) { return { channelId: id, channelNumber: id, channelName: id }; });
+  } else if (uri === 'com.webos.applicationManager/getForegroundAppInfo') {
+    r.appId = tv.front || '';
   } else if (uri === 'com.webos.surfacemanager/getForegroundWindowInfo') {
     if (tv.windows) r.windows = copy(tv.windows);
   } else if (uri === 'com.webos.service.utp.boot/getLastChannelId') {
@@ -1408,12 +1410,14 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
     assert.strictEqual(st5.supported.ok, true, 'no setting needed on a CX');
     assert.strictEqual(st5.supported.experimental, true);
     assert.strictEqual(st5.supported.standalone, true, 'runs standalone to protect Widevine DRM and ESN');
+    assert.strictEqual(st5.supported.previewOptions, undefined, 'webOS 5 keeps live preview options');
     assert.strictEqual(st5.supported.restartsApps, undefined);
     start(null, { webosVersion: '6.5.3' });
     home.status(function (st6) {
       assert.strictEqual(st6.supported.ok, true, 'same on a C1');
       assert.strictEqual(st6.supported.experimental, true);
       assert.strictEqual(st6.supported.standalone, true);
+      assert.strictEqual(st6.supported.previewOptions, undefined, 'webOS 6 keeps live preview options');
       assert.strictEqual(st6.supported.restartsApps, undefined);
       start(null, { webosVersion: '9.2.2' });
       home.status(function (st9) {
@@ -1426,6 +1430,7 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
             assert.strictEqual(st4.supported.ok, true, 'offered on webOS 4 without the setting');
             assert.strictEqual(st4.supported.experimental, true);
             assert.strictEqual(st4.supported.standalone, true);
+            assert.strictEqual(st4.supported.previewOptions, false, 'webOS 4 omits live preview options');
             assert.strictEqual(st4.supported.restartsApps, undefined);
             start(null, { webosVersion: '3.9.3' });
             home.status(function (st3) {
@@ -1434,6 +1439,7 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
               home.status(function (st3on) {
                 assert.strictEqual(st3on.supported.ok, true);
                 assert.strictEqual(st3on.supported.standalone, true, 'run as on webOS 4');
+                assert.strictEqual(st3on.supported.previewOptions, false, 'webOS 3 omits live preview options');
                 done();
               });
             });
@@ -2987,6 +2993,31 @@ step('where the TV can neither nudge nor blockSystemApp, Glasshouse Home never f
         tv.rescanAbsent = false;
         home.disable(function (rClean) {
           assert.ok(rClean.ok, rClean.error);
+          done();
+        });
+      });
+    });
+  });
+});
+
+step('on webOS 3 to 6 the app is refreshed only once it is not in front, since a reinstall closes it', function (done) {
+  var actions = [];
+  var install = function (action, cb) { actions.push(action); cb({ ok: true, refreshed: true }); };
+  start(null, { webosVersion: '4.4.3', appRefreshRetryMs: 20, installApp: install });
+  tv.front = OLD_APP;
+  home.refreshApp();
+  wait(80, function () {
+    assert.deepEqual(actions, [], 'not while it is the screen in front');
+    tv.front = 'com.webos.app.hdmi2';
+    foreground('com.webos.app.hdmi2');
+    until(function () { return actions.length; }, 500, function () {
+      assert.deepEqual(actions, ['refresh'], 'once, as soon as something else is in front');
+      wait(60, function () {
+        assert.deepEqual(actions, ['refresh'], 'and not again');
+        start(null, { installApp: install });
+        home.refreshApp();
+        wait(20, function () {
+          assert.deepEqual(actions, ['refresh'], 'on webOS 9 Home has no app of its own to refresh');
           done();
         });
       });

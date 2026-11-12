@@ -3,6 +3,8 @@
  *
  * Fixture packages are built here: an ar of three members, tar and gzip made
  * with node's zlib. Installs run against the fake luna-send, scripted per test.
+ *
+ * @slow: started first by run-all.js, which runs a few suites at a time.
  */
 
 var assert = require('assert');
@@ -539,7 +541,7 @@ test('checkIds refuses the Homebrew Channel and the dashboard\'s HBC package', f
   setup();
   ['org.webosbrew.hbchannel', 'io.github.rorygallagher2024.lg-webos-dashboard'].forEach(function (p) {
     var err = installer.checkIds({ package: p, apps: [{ id: p }], services: [p + '.service'] });
-    assert.ok(/Homebrew Channel/.test(err), p + ': ' + err);
+    assert.ok(/updates itself/.test(err), p + ': ' + err);
   });
   done();
 });

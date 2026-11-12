@@ -1,0 +1,95 @@
+{
+  "manifest": 1,
+  "version": "1.2.0",
+  "name": {
+    "en": "Home Assistant: Ambient",
+    "ar": "Home Assistant: محيطي",
+    "es": "Home Assistant: Ambiente",
+    "de": "Home Assistant: Ambiente",
+    "fr": "Home Assistant : Ambiance",
+    "hu": "Home Assistant: Környezet",
+    "it": "Home Assistant: Ambiente",
+    "pl": "Home Assistant: Otoczenie",
+    "pt": "Home Assistant: Ambiente",
+    "pt-br": "Home Assistant: Ambiente",
+    "ru": "Home Assistant: Окружение"
+  },
+  "description": {
+    "en": "Time, date and up to three live Home Assistant readings on black.",
+    "ar": "الوقت والتاريخ وحتى ثلاث قراءات مباشرة من Home Assistant على خلفية سوداء.",
+    "es": "Hora, fecha y hasta tres lecturas de Home Assistant en vivo sobre negro.",
+    "de": "Uhrzeit, Datum und bis zu drei Live-Werte aus Home Assistant auf Schwarz.",
+    "fr": "Heure, date et jusqu'à trois valeurs Home Assistant en direct sur fond noir.",
+    "hu": "Idő, dátum és legfeljebb három élő Home Assistant érték fekete háttéren.",
+    "it": "Ora, data e fino a tre letture di Home Assistant in tempo reale su nero.",
+    "pl": "Czas, data i do trzech odczytów Home Assistant na żywo na czarnym tle.",
+    "pt": "Hora, data e até três leituras do Home Assistant em direto sobre preto.",
+    "pt-br": "Hora, data e até três leituras do Home Assistant em tempo real sobre preto.",
+    "ru": "Время, дата и до трёх показаний Home Assistant в реальном времени на чёрном фоне."
+  },
+  "license": "MIT",
+  "uses": [
+    "level",
+    "ha",
+    "choice",
+    "color"
+  ],
+  "order": 15,
+  "choices": {
+    "label": {
+      "en": "Readings",
+      "ar": "القراءات",
+      "es": "Lecturas",
+      "de": "Messwerte",
+      "fr": "Relevés",
+      "hu": "Értékek",
+      "it": "Letture",
+      "pl": "Odczyty",
+      "pt": "Leituras",
+      "pt-br": "Leituras",
+      "ru": "Показания"
+    },
+    "default": "labels",
+    "options": [
+      {
+        "id": "labels",
+        "name": {
+          "en": "Names and values",
+          "ar": "الأسماء والقيم",
+          "es": "Nombres y valores",
+          "de": "Namen und Werte",
+          "fr": "Noms et valeurs",
+          "hu": "Nevek és értékek",
+          "it": "Nomi e valori",
+          "pl": "Nazwy i wartości",
+          "pt": "Nomes e valores",
+          "pt-br": "Nomes e valores",
+          "ru": "Названия и значения"
+        },
+        "value": "true"
+      },
+      {
+        "id": "values",
+        "name": {
+          "en": "Values only",
+          "ar": "القيم فقط",
+          "es": "Solo valores",
+          "de": "Nur Werte",
+          "fr": "Valeurs seules",
+          "hu": "Csak az értékek",
+          "it": "Solo valori",
+          "pl": "Tylko wartości",
+          "pt": "Apenas valores",
+          "pt-br": "Apenas valores",
+          "ru": "Только значения"
+        },
+        "value": "false"
+      }
+    ]
+  },
+  "entities": {
+    "sensor_1": "",
+    "sensor_2": "",
+    "sensor_3": ""
+  }
+}

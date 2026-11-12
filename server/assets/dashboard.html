@@ -424,6 +424,7 @@ var TABS = [
   { key: 'game',    label: t('tab.game', 'Game'),         url: '/api/game',        build: gameRows, optional: true },
   { key: 'picture', label: t('tab.picture', 'Picture'),      url: '/api/picture',     build: pictureRows, poll: 5000, optional: true },
   { key: 'audio',   label: t('tab.audio', 'Audio'),        url: '/api/audio?with=settings', build: audioRows, poll: 8000 },
+  { key: 'ambient', label: t('adv.ambient', 'Ambient Light'), url: '/api/stats', build: ambientRows, poll: 5000, optional: true },
   { key: 'saver',   label: t('tv.tab.screenSaver', 'Screen Saver'), url: '/api/screensaver', build: saverRows, optional: true },
   { key: 'home',    label: t('tab.home', 'Home'),         url: '/api/home?with=catalogue,channels,lghome', build: homeRows, optional: true },
   { key: 'privacy', label: t('tab.privacy', 'Privacy'),      url: '/api/privacy',     build: privacyRows },
@@ -685,6 +686,73 @@ function optionRows(d) {
              hint: t('tv.options.reboot.hint', 'A full restart of the TV, which LG\u2019s menus do not offer. It is unavailable for about a minute.') });
   }
   if (!r.length) r.push({ label: t('tv.options.nothingToSetOn', 'Nothing to set on this TV'), value: '' });
+  return r;
+}
+
+function ambientRows(d) {
+  if (!d || !d.ok) return [];
+  var r = [], pc = d.piccapCapture;
+  if (d.huesyncStreaming) {
+    r.push(head(t('adv.huesync.title', 'Hue Sync')));
+    r = r.concat(huesyncRows(d.huesyncStreaming));
+  }
+  if (pc) {
+    r.push(head(t('ambient.piccap.title', 'PicCap')));
+    var writable = pc.writable !== false;
+    r.push({ label: t('adv.piccap', 'PicCap Enabled'), value: pc.running ? t('common.on', 'On') : t('common.off', 'Off'),
+      cls: writable ? 'act' : '', act: writable ? 'piccap' : null, key: 'piccap', next: !pc.running,
+      hint: t('adv.piccap.desc', 'Starts or stops screen capture for Hyperion or HyperHDR to provide ambient light.'),
+      press: pc.running ? t('tv.press.turnOff', 'Press OK to turn off') : t('tv.press.turnOn', 'Press OK to turn on') });
+  }
+  return r;
+}
+
+// Hue Sync uses compact rows. Raw values/IDs
+// stay on the rows; translated labels and area names are display-only.
+function huesyncRows(hs) {
+  if (!hs) return [];
+  var r = [], settings = hs.settings || {}, stale = settings._stale || [];
+  var status = hs.diagnostics || {};
+  var writable = hs.writable !== false && status.busy !== true &&
+    !(status.ready && (status.ready.ready === false || status.ready.supported === false)) &&
+    !(status.bridge && (status.bridge.Connected === false || status.bridge.Authorized === false));
+  function can(key) { return writable && stale.indexOf(key) === -1 && (key !== 'current_ec' || stale.indexOf('ec_list') === -1); }
+  function toggle(key, label, on, action) {
+    r.push({ label: label, value: on ? t('common.on', 'On') : t('common.off', 'Off'),
+      cls: can(key) ? 'act' : '', act: can(key) ? (action || 'huesyncSetting') : null,
+      key: key, next: !on, press: on ? t('tv.press.turnOff', 'Press OK to turn off') : t('tv.press.turnOn', 'Press OK to turn on') });
+  }
+  function choice(key, label, choices) {
+    if (settings[key] === undefined || !choices.length) return;
+    var at = -1;
+    for (var i = 0; i < choices.length; i++) if (choices[i].value === settings[key]) at = i;
+    var next = choices[(at + 1) % choices.length];
+    r.push({ label: label, value: at < 0 ? '—' : choices[at].label,
+      cls: can(key) ? 'act' : '', act: can(key) ? 'huesyncSetting' : null,
+      key: key, next: next.value, press: t('tv.game.next', 'Press OK for {name}', { name: next.label }) });
+  }
+  toggle('streaming', t('adv.huesync', 'Hue Sync Enabled'), hs.streaming === true, 'huesync');
+  r[r.length - 1].hint = t('adv.huesync.desc', 'Starts or stops streaming screen colour data to the selected entertainment area for ambient light.');
+  if (settings.brightness !== undefined) {
+    r.push({ label: t('adv.huesync.brightness', 'Brightness'), value: withUnit(settings.brightness, '%'),
+      cls: can('brightness') ? 'act' : '', act: can('brightness') ? 'huesyncAdjust' : null,
+      key: 'brightness', cur: settings.brightness, min: 0, max: 100, fmt: 'percent',
+      press: t('tv.pic.adjust', 'Press OK to adjust') });
+  }
+  choice('intensity', t('adv.huesync.intensity', 'Intensity'), [
+    { value: 0, label: t('adv.huesync.subtle', 'Subtle') }, { value: 1, label: t('adv.huesync.moderate', 'Moderate') },
+    { value: 2, label: t('adv.huesync.high', 'High') }, { value: 3, label: t('adv.huesync.extreme', 'Extreme') }
+  ]);
+  choice('sync_mode', t('adv.huesync.syncmode', 'Synchronization mode'), [
+    { value: '0', label: t('adv.huesync.video', 'Video') }, { value: '1', label: t('adv.huesync.game', 'Game') }
+  ]);
+  choice('current_ec', t('adv.huesync.currentec', 'Entertainment area'), (settings.ec_list || []).map(function (area) {
+    return { value: area.id, label: area.name };
+  }));
+  if (settings.background_lightning_video !== undefined) toggle('background_lightning_video', t('adv.huesync.backgroundlightningvideo', 'Background light (video)'), settings.background_lightning_video);
+  if (settings.background_lightning_games !== undefined) toggle('background_lightning_games', t('adv.huesync.backgroundlightninggames', 'Background light (game)'), settings.background_lightning_games);
+  if (settings.auto_start !== undefined) toggle('auto_start', t('adv.huesync.autostart', 'Automatic start'), settings.auto_start);
+  if (settings.auto_start_notification !== undefined) toggle('auto_start_notification', t('adv.huesync.autostartnotification', 'Automatic start notification'), settings.auto_start_notification);
   return r;
 }
 
@@ -1181,9 +1249,11 @@ function glasshouseHomeRows(d) {
              hint: t('home.pictureDesc', 'In the top right of Glasshouse Home: the resolution, refresh rate and HDR of what was last on, and the picture mode and brightness it gets.') });
     // The live preview and, while it is on, its options.
     var pvRows = [['livePreview', t('home.livePreview', 'Live preview'), t('home.livePreviewDesc', 'A live picture of the input or channel in focus on Glasshouse Home, in the top right, with the picture details beside it. It switches the TV to that input behind Home without waking anything, and a channel shown this way does not become the last channel.')]];
-    // On webOS 4 (a B8, 4.4.3), where Live preview itself plays, Keep the
-    // preview on and Preview in the tile do not, and sound was not tried.
-    if (d.layout.livePreview === true && !d.supported.standalone) {
+    // Omitted on webOS 3 and 4 (a B8, 4.4.3), where Live preview plays but
+    // Keep the preview on and Preview in the tile do not, and sound was not
+    // tried; webOS 5 and 6 also run standalone.
+    var previewOptionsOff = d.supported.previewOptions === false || (d.supported.standalone === true && !d.supported.webos);
+    if (d.layout.livePreview === true && !previewOptionsOff) {
       pvRows.push(['previewSound', t('home.previewSound', 'Preview sound'), t('home.previewSoundDesc', 'The preview plays the sound of the input or channel it shows, rather than none. Switching it changes a preview already playing.')]);
       pvRows.push(['previewAlways', t('home.previewAlways', 'Keep the preview on'), t('home.previewAlwaysDesc', 'The preview runs whenever Glasshouse Home is on screen, not only while a tile with one is chosen: the HDMI input last watched, or otherwise the TV on its last channel. Choosing another input or channel moves it there.')]);
       pvRows.push(['previewInTile', t('home.previewInTile', 'Preview in the tile'), t('home.previewInTileDesc', 'The preview fills the tile it shows, under the tile’s own name, rather than beside the clock.')]);
@@ -2157,6 +2227,7 @@ function pushAdjust(r) {
   fetch('/api/control', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(r.act === 'saverAdjust' ? { action: 'screensaverMode', value: { mode: r.key, brightness: value } }
+      : r.act === 'huesyncAdjust' ? { action: 'huesyncSetting', value: { key: r.key, value: value } }
       : { action: 'lgSetting', value: { id: r.key, value: value } })
   }).then(function (x) { return x.json().catch(function () { return {}; }); })
     .then(function (res) {
@@ -3117,6 +3188,7 @@ function fetchTab(keepSel) {
     .then(function (d) {
       if (T().key !== key || sub !== view) return; // the user moved on while this was in flight
       if (adjusting || adjustInFlight) return; // a picture setting is being adjusted
+      if (section.optional && removeUnavailableTab(section, d)) return;
       data[key] = d;
       rows = buildRows(section, d);
       if (initialSel !== null && initialSel < rows.length && (!rows[initialSel] || !rows[initialSel].head)) {
@@ -3289,6 +3361,7 @@ function activate() {
   if (busy || !rows.length) return;
   var r = rows[sel];
   if (!r || !r.act) return;
+  if (adjustInFlight && (r.act === 'huesync' || r.act === 'huesyncSetting' || r.act === 'huesyncAdjust')) return;
   switch (r.act) {
     case 'audioRefresh':
       return fetchTab(true);
@@ -3643,6 +3716,12 @@ function activate() {
     case 'consent':
       return send({ action: 'consent', value: { key: r.key, enabled: !r.on } },
                   r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
+    case 'piccap':
+    case 'huesync':
+      return send({ action: r.act, value: r.next });
+    case 'huesyncSetting':
+      return send({ action: 'huesyncSetting', value: { key: r.key, value: r.next } });
+    case 'huesyncAdjust':
     case 'lgAdjust':
       return startAdjust();
     case 'lgValue':
@@ -3884,18 +3963,26 @@ openTab(initTab, initialSel !== null);
 /* A section the TV may not have is dropped once its endpoint says so, as the
    browser dashboard hides its tab: a B8 has no Game Optimizer, and an LCD TV
    has no OLED Care. */
+function removeUnavailableTab(section, d) {
+  var i = TABS.indexOf(section);
+  if (!d || i < 0) return false;
+  var unavailable = section.key === 'ambient'
+    ? d.ok === true && !d.piccapCapture && !d.huesyncStreaming : d.available === false;
+  if (!unavailable) return false;
+  var cur = T();
+  TABS.splice(i, 1);
+  tab = Math.max(0, TABS.indexOf(cur));
+  renderTabs();
+  if (cur === section) openTab(tab);
+  return true;
+}
+
 TABS.forEach(function (section) {
   if (!section.optional) return;
   fetch(section.url, { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      var i = TABS.indexOf(section);
-      if (!d || d.available !== false || i < 0) return;
-      var cur = TABS[tab];
-      TABS.splice(i, 1);
-      tab = Math.max(0, TABS.indexOf(cur));
-      renderTabs();
-      if (cur === section) openTab(tab);
+      removeUnavailableTab(section, d);
     })
     .catch(function () {});
 });

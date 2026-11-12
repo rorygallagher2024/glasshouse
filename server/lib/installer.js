@@ -590,7 +590,7 @@ function checkIds(info) {
       return msg('srv.install.id.prefix', '{id} does not begin with the package name {package}', { id: id, package: pkg });
     }
     if (selfUpdating(id)) {
-      return msg('srv.install.id.self', '{id} must be updated from the Homebrew Channel', { id: id });
+      return msg('srv.install.id.self', '{id} updates itself, so it cannot be installed from here', { id: id });
     }
     var sys = (appsMod && appsMod.isProtected(id)) || false;
     for (var p = 0; p < SYSTEM_PREFIXES.length; p++) {

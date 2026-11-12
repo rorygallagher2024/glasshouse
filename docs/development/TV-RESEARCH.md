@@ -432,7 +432,10 @@ muted `<video>` with one `<source>`:
   while connecting, then the HDMI PCM on `tv_speaker`. That recording was
   made at speaker volume 0. A listening check on the same G3 at volume 10
   confirmed HDMI 4's preview was audible with Preview sound on, silent with
-  it off, and audible again when switched back on.
+  it off, and audible again when switched back on. By contrast, on a
+  `55NANO756PR` (`webOS 6.5.3`, standalone Home, #1359), an HDMI 1 preview
+  (`ext://hdmi:1`) still played sound through the TV speakers even with
+  `<video muted>` (`Preview sound` off).
 
 How a busy tuner (a recording) or an encrypted channel shows to the page was
 not tried.
@@ -3188,6 +3191,27 @@ HDMI 3 in front.
 - `applicationManager/running` with `"subscribe": true` answers at once and
   on every change to the running apps.
 
+## Hue Sync settings service
+
+A supplied Luna bus capture of retail Hue Sync 1.10.189 shows `/get` values
+as JSON encoded strings: brightness `50.000000`, intensity `2`, sync_mode `1`,
+current_ec as a quoted ID, and ec_list as an array containing Name and Id.
+Observed `/set` calls carry numeric brightness (40, 50, 60), numeric intensity
+(0, 1, 2), string sync_mode (`0`, `1`), and a plain entertainment-area ID.
+The capture also shows boolean reads for background_lightning_video,
+background_lightning_games and auto_start. Their setters were absent from that initial capture.
+The supplied follow-up confirms brightness 0–100, intensity 0–3 as Subtle,
+Moderate, High, Extreme, and mode 0 Video / 1 Game. Background-light and
+auto-start boolean write payloads were initially inferred. A subsequent full
+setup/settings capture confirms `/set` boolean data for both background-light
+keys, auto_start and auto_start_notification, each in both directions. `/sub`
+with `{"subscribe":true}` supplies `{returnValue,key,value}` deltas. Values may
+be native booleans/numbers or JSON-encoded strings. Area changes report busy
+and can take approximately 1–1.24 seconds before completion. Bridge reads expose
+Connected/Authorized independently of the service's ready/supported flags.
+Only these status fields belong in diagnostics; the other bridge fields and
+pairing/support/device data must not be copied into fixtures or logs.
+
 ## Pausing a locally served MPEG-TS stream (webOS 5.6.2, CX)
 
 Measured on 9 November 2026 on an OLED65CX9LA, with a provider's MPEG-TS
@@ -3256,4 +3280,3 @@ Reported in #1359 from a 55NANO756PR (webOS 6.5.3, firmware `03.53.46`) with a
 - Interlaced, HDR10/HLG/Dolby Vision, VRR and HDCP/FRL active samples were not
   captured on this board (`phy_tmds_clk_khz:593500` tracked the pixel rate on
   this TMDS link, and `hdcp_version` read `1` active vs `2` idle).
-

@@ -12,6 +12,8 @@
  * runs (default 15, seven telemetry rounds).
  *
  * Strict ES5: runs on node 0.12, the B8's version.
+ *
+ * @slow: started first by run-all.js, which runs a few suites at a time.
  */
 var child = require('child_process');
 var fs = require('fs');

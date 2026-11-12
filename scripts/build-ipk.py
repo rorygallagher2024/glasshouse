@@ -100,6 +100,7 @@ def stage(app, ver):
         'id': APP_ID, 'version': ver, 'vendor': 'lg-webos-dashboard', 'type': 'web',
         'main': 'index.html', 'title': TITLE, 'appDescription': DESCRIPTION,
         'icon': 'icon80.png', 'largeIcon': 'icon130.png',
+        'splashBackground': 'splash.png', 'spinnerOnLaunch': False,
         'iconColor': '#000000', 'bgColor': '#000000', 'resolution': '1920x1080',
         'disableBackHistoryAPI': True,
     }
@@ -109,7 +110,7 @@ def stage(app, ver):
 
     put(os.path.join(app, 'appinfo.json'), json.dumps(appinfo, indent=2).encode(), 0o644)
     put(os.path.join(app, 'index.html'), page.replace('@VERSION@', ver).encode('utf-8'), 0o644)
-    for icon in ('icon80.png', 'icon130.png'):
+    for icon in ('icon80.png', 'icon130.png', 'splash.png'):
         put(os.path.join(app, icon), read(os.path.join(icons, icon)), 0o644)
     put(os.path.join(app, 'payload', 'install.sh'), read(os.path.join(HBC, 'install.sh')), 0o755)
 

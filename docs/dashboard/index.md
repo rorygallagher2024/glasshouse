@@ -32,6 +32,12 @@ The top of every tab shows what the TV is doing: its state (On, Screen off, Scre
 
     Glasshouse Home, a clean home screen in place of LG's, and Home customisation: Open Home at power-on, LG's Home screen layout and hidden system apps.
 
+-   **[Ambient Light](ambient-light.md)**
+
+    ---
+
+    PicCap capture and Hue Sync, with streaming switches and all sync settings.
+
 -   **[Privacy](privacy.md)**
 
     ---
