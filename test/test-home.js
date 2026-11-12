@@ -1410,12 +1410,14 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
     assert.strictEqual(st5.supported.ok, true, 'no setting needed on a CX');
     assert.strictEqual(st5.supported.experimental, true);
     assert.strictEqual(st5.supported.standalone, true, 'runs standalone to protect Widevine DRM and ESN');
+    assert.strictEqual(st5.supported.previewOptions, undefined, 'webOS 5 keeps live preview options');
     assert.strictEqual(st5.supported.restartsApps, undefined);
     start(null, { webosVersion: '6.5.3' });
     home.status(function (st6) {
       assert.strictEqual(st6.supported.ok, true, 'same on a C1');
       assert.strictEqual(st6.supported.experimental, true);
       assert.strictEqual(st6.supported.standalone, true);
+      assert.strictEqual(st6.supported.previewOptions, undefined, 'webOS 6 keeps live preview options');
       assert.strictEqual(st6.supported.restartsApps, undefined);
       start(null, { webosVersion: '9.2.2' });
       home.status(function (st9) {
@@ -1428,6 +1430,7 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
             assert.strictEqual(st4.supported.ok, true, 'offered on webOS 4 without the setting');
             assert.strictEqual(st4.supported.experimental, true);
             assert.strictEqual(st4.supported.standalone, true);
+            assert.strictEqual(st4.supported.previewOptions, false, 'webOS 4 omits live preview options');
             assert.strictEqual(st4.supported.restartsApps, undefined);
             start(null, { webosVersion: '3.9.3' });
             home.status(function (st3) {
@@ -1436,6 +1439,7 @@ step('webOS 5 and 6 are offered, experimental, standalone, without restarting sa
               home.status(function (st3on) {
                 assert.strictEqual(st3on.supported.ok, true);
                 assert.strictEqual(st3on.supported.standalone, true, 'run as on webOS 4');
+                assert.strictEqual(st3on.supported.previewOptions, false, 'webOS 3 omits live preview options');
                 done();
               });
             });

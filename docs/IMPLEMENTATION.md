@@ -289,6 +289,7 @@ instead:
 | `/sys/block/mmcblk0/device/pre_eol_info` | `01` Normal / `02` Warning / `03` Urgent |
 | `/mnt/lg/cmn_data/mrcu/mrcu1.info` | Magic Remote model, BDAddr, and firmware, as at pairing. Its `Battery = 52(M) 35(L)` is the remote's battery thresholds, not its charge, so the level comes from the remote (see [Reading the Magic Remote's battery](#reading-the-magic-remotes-battery)) |
 | `/proc/lg/hdmi20/port[0-3]/status` | Real-time HDMI receiver PHY mode (FRL 48 Gbps vs TMDS), chroma (RGB 4:4:4), HDCP, cable error counter, ALLM, VRR |
+| `/proc/lgtv-driver/hdmi_status/hdmi.p[0-3]` | Realtek SoCs without `/proc/lg/hdmi20`: HDMI receiver lock (`phy_lock_status`), +5V (`link_hdmi_5v`), timing, chroma, color depth, ALLM, HDR metadata, and EDID hex blocks |
 | `/proc/lg/pe/hdr_status` | Picture engine live video format, colorimetry standard (`BT.709`, `BT.2020`), and peak nit levels |
 | `/var/luna/preferences/environmentCondition` | Hardware configuration (SoC generation `_O22_`, DDR RAM, refresh rate, eye sensor) |
 
@@ -303,8 +304,9 @@ the sound outputs, logo dimming, the energy saving steps, the Pixel Refresher
 and compensation status, and the eMMC pre-end-of-life state. The dashboards'
 scripts run in the browser and keep their own translated names.
 
-The `port<n>` receivers are not numbered as the inputs are, and each keeps its
-link whichever input is on screen. configd holds the board's wiring as
+The `port<n>` receivers (or `/proc/lgtv-driver/hdmi_status/hdmi.p<n>` on Realtek
+boards) are not numbered as the inputs are, and each keeps its link whichever
+input is on screen. configd holds the board's wiring as
 `inputMap.videoInputMapIndexInfo0`, an `assignment` of `hdmi1` to `hdmi4` to a
 receiver number, or `none` for an input the board does not have. An input's
 signal is read from its own receiver only. Where configd has no map, the base

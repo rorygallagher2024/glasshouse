@@ -614,7 +614,48 @@ var VIC_SIZES = (function () {
  * colour the total width counts characters, 2752 at 10 bits and 3300 at 12
  * for 1080p's 2200.
  */
+function readHdmiReceiverStatus(port) {
+  return readTrimmed('/proc/lg/hdmi20/port' + port + '/status') ||
+    readTrimmed('/proc/lgtv-driver/hdmi_status/hdmi.p' + port);
+}
+
+function isRealtekHdmiRaw(raw) {
+  return !!raw && (/===== HDMI STATUS =====/.test(raw) || /^\s*phy_lock_status\s*:/m.test(raw));
+}
+
+function realtekField(raw, key) {
+  var m = raw.match(new RegExp('^\\s*' + key + '\\s*:\\s*([^\\r\\n]+)', 'm'));
+  return m ? m[1].trim() : null;
+}
+
+var REALTEK_CHROMA = { '0': 'R444', '1': 'Y422', '2': 'Y444', '3': 'Y420' };
+
+function parseRealtekTiming(raw) {
+  // Realtek leaves hpd_state at 1 on empty ports; phy_lock_status gates signal lock.
+  var locked = realtekField(raw, 'phy_lock_status') === '1';
+  var width = toInt(realtekField(raw, 'timing_active_w'), 0) || toInt(realtekField(raw, 'link_video_width'), 0);
+  var height = toInt(realtekField(raw, 'timing_active_h'), 0) || toInt(realtekField(raw, 'link_video_height'), 0);
+  var rate100 = toInt(realtekField(raw, 'link_frame_rate_x100_hz'), 0);
+  var vFreq10 = toInt(realtekField(raw, 'timing_v_freq'), 0);
+  var refresh = rate100 > 0 ? Math.round(rate100 / 100) : (vFreq10 > 0 ? Math.round(vFreq10 / 10) : 0);
+  var clockKhz = toInt(realtekField(raw, 'pixel_clock_khz'), 0) || toInt(realtekField(raw, 'phy_tmds_clk_khz'), 0);
+  var vic = VIC_SIZES[toInt(realtekField(raw, 'avi_vic'), 0)];
+  if (vic && width > 0 && height > 0 && Math.abs(vic[0] - width) <= 2 && Math.abs(vic[1] - height) <= 2) {
+    width = vic[0];
+    height = vic[1];
+  }
+  var hasTiming = locked && width > 0 && height > 0;
+  return {
+    connected: locked,
+    width: hasTiming ? width : null,
+    height: hasTiming ? height : null,
+    refreshHz: hasTiming && refresh ? refresh : null,
+    pixelClockKhz: hasTiming && clockKhz ? clockKhz : null
+  };
+}
+
 function parseTiming(raw) {
+  if (isRealtekHdmiRaw(raw)) return parseRealtekTiming(raw);
   function field(re) { var m = raw.match(re); return m ? m[1].trim() : null; }
   var width = toInt(field(/horizontal-active:\s*(\d+)/), 0);
   var height = toInt(field(/vertical-active:\s*(\d+)/), 0);
@@ -667,7 +708,7 @@ function readVideoTiming(targetPort) {
 
   var anyConn = false;
   for (var i = 0; i < portsToScan.length; i++) {
-    var raw = readTrimmed('/proc/lg/hdmi20/port' + portsToScan[i] + '/status');
+    var raw = readHdmiReceiverStatus(portsToScan[i]);
     if (!raw) continue;
     var t = parseTiming(raw);
     if (!t.connected) continue;
@@ -761,7 +802,7 @@ function getActiveHdmiDiagnostics(targetPort) {
     : [0, 1, 2, 3];
 
   for (var i = 0; i < portsToScan.length; i++) {
-    var diag = hdmiDiagnostics(readTrimmed('/proc/lg/hdmi20/port' + portsToScan[i] + '/status'), portsToScan[i]);
+    var diag = hdmiDiagnostics(readHdmiReceiverStatus(portsToScan[i]), portsToScan[i]);
     if (diag) return diag;
   }
   return null;
@@ -791,6 +832,24 @@ function hdmiLinkFields(raw) {
 // The on-screen input's diagnostics, as the dashboard and Home Assistant show them.
 function hdmiDiagnostics(raw, port) {
   if (!raw) return null;
+  if (isRealtekHdmiRaw(raw)) {
+    var locked = realtekField(raw, 'phy_lock_status') === '1';
+    var has5v = realtekField(raw, 'link_hdmi_5v') === '1';
+    if (!locked && !has5v) return null;
+    var enc = locked ? realtekField(raw, 'avi_pixel_encoding') : null;
+    if (locked && enc === null) enc = realtekField(raw, 'link_color_space');
+    var chromaKey = enc !== null ? REALTEK_CHROMA[enc] : null;
+    var allm = locked ? realtekField(raw, 'allm_mode') : null;
+    return {
+      port: port,
+      phy_mode: null,
+      chroma: chromaKey ? names.hdmiChroma(chromaKey).display : null,
+      hdcp: null,
+      allm: allm === null ? null : allm === '1',
+      vrr: null,
+      qms: null
+    };
+  }
   var isConn = /connected:\s*on/i.test(raw) || /PHY\s+Lock\[1\]/i.test(raw) || /is5Vconnected\[1\]/i.test(raw);
   if (!isConn) return null;
 
@@ -819,7 +878,7 @@ function hdmiDiagnostics(raw, port) {
 // Every receiver's status file, read once for a collection, by receiver.
 function readHdmiStatus() {
   var status = [];
-  for (var p = 0; p < 4; p++) status.push(readTrimmed('/proc/lg/hdmi20/port' + p + '/status'));
+  for (var p = 0; p < 4; p++) status.push(readHdmiReceiverStatus(p));
   return status;
 }
 
@@ -844,17 +903,24 @@ function hdmiLinks(status, map) {
 
 /*
  * Whether a powered source is on each HDMI input's cable, by the input map:
- * is5Vconnected is the source's +5V on the cable, there with or without a
- * link, as from a streamer asleep. The HDMI 2.0 driver's files have no such
- * field, and their inputs are left out.
+ * is5Vconnected (or link_hdmi_5v on Realtek) is the source's +5V on the cable,
+ * there with or without a link, as from a streamer asleep. The HDMI 2.0
+ * driver's files have no such field, and their inputs are left out.
  */
 function hdmiSources(status, map) {
   var sources = [];
   for (var n = 1; n <= 4; n++) {
     var raw = typeof map[n] === 'number' ? status[map[n]] : null;
-    var fiveVolt = raw ? raw.match(/is5Vconnected\[(\d)\]/i) : null;
-    if (!fiveVolt) continue;
-    sources.push({ input: n, receiver: map[n], powered: fiveVolt[1] === '1' });
+    if (!raw) continue;
+    var powered = null;
+    if (isRealtekHdmiRaw(raw)) {
+      var v5 = realtekField(raw, 'link_hdmi_5v');
+      if (v5 === '0' || v5 === '1') powered = v5 === '1';
+    } else {
+      var fiveVolt = raw.match(/is5Vconnected\[(\d)\]/i);
+      if (fiveVolt) powered = fiveVolt[1] === '1';
+    }
+    if (powered !== null) sources.push({ input: n, receiver: map[n], powered: powered });
   }
   return sources;
 }
@@ -909,7 +975,7 @@ function getHdmiSignal(hdmiNum, map, status) {
   if (typeof hdmiNum !== 'number' || hdmiNum < 1 || hdmiNum > 4) return null;
   var p = map[hdmiNum];
   if (typeof p !== 'number' || p < 0 || p >= 4) return null;
-  var raw = status ? status[p] : readTrimmed('/proc/lg/hdmi20/port' + p + '/status');
+  var raw = status ? status[p] : readHdmiReceiverStatus(p);
   if (!raw) return null;
   var t = parseTiming(raw);
   if (!t.connected) return null;
@@ -1328,13 +1394,22 @@ function appStorage(cb) {
 function hdmiPorts() {
   var ports = [];
   for (var i = 0; i < 4; i++) {
-    var raw = readTrimmed('/proc/lg/hdmi20/port' + i + '/status');
+    var raw = readHdmiReceiverStatus(i);
     if (!raw) continue;
-    function field(re) { var m = raw.match(re); return m ? m[1].trim() : null; }
     var t = parseTiming(raw);
-    var colorDepth = field(/deep-color-mode:\s*(\S+ \S+)/) || field(/DeepColorMode\[\s*([^\]]+)\]/);
-    if (colorDepth) colorDepth = colorDepth.replace(/^[.\s]+/, '');
-    var isInterlaced = /interlaced:\s*yes/i.test(raw) || /Interlaced\[1\]/i.test(raw);
+    var colorDepth, isInterlaced;
+    if (isRealtekHdmiRaw(raw)) {
+      // color_depth stayed 0 on 8-bit 4K50 while link_color_depth held 8;
+      // timing_scan_type:1 is progressive (3840x2160p50, v_total 2250).
+      var depthVal = toInt(realtekField(raw, 'link_color_depth'), 0);
+      colorDepth = depthVal > 0 ? (depthVal + 'bit') : null;
+      isInterlaced = false;
+    } else {
+      var field = function (re) { var m = raw.match(re); return m ? m[1].trim() : null; };
+      colorDepth = field(/deep-color-mode:\s*(\S+ \S+)/) || field(/DeepColorMode\[\s*([^\]]+)\]/);
+      if (colorDepth) colorDepth = colorDepth.replace(/^[.\s]+/, '');
+      isInterlaced = /interlaced:\s*yes/i.test(raw) || /Interlaced\[1\]/i.test(raw);
+    }
 
     ports.push({
       port: i,
@@ -2369,7 +2444,8 @@ function getCapabilities(extra) {
     hasRemoteInfo: !!remoteInfo(),
     hasPnwash: fs.existsSync('/mnt/lg/cmn_data/pnwash/completedOffRsCount'),
     hasCell: !!(HARDWARE_INFO && HARDWARE_INFO.cell),
-    hasHdmiProc: fs.existsSync('/proc/lg/hdmi20'),
+    hasHdmiProc: fs.existsSync('/proc/lg/hdmi20') || fs.existsSync('/proc/lgtv-driver/hdmi_status') ||
+      fs.existsSync('/proc/lgtv-driver/hdmi_status/hdmi.p0'),
     hasMediaState: hasMediaState,
     hasHdrStatus: fs.existsSync('/proc/lg/pe/hdr_status'),
     socArch: HARDWARE_INFO && HARDWARE_INFO.socArch,

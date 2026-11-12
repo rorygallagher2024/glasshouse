@@ -63,6 +63,7 @@ var NUDGE_MS = 1500;
 var CHECK_POLL_MS = 500;
 var CHECK_POLLS = 16;
 var portStatusDir = '/proc/lg/hdmi20';
+var realtekStatusDir = '/proc/lgtv-driver/hdmi_status';
 var HDMI_BASE_MAP = { 1: 3, 2: 2, 3: 1, 4: 0 };
 
 var lunaFn = null;
@@ -89,6 +90,7 @@ function init(opts) {
   if (opts.nudgeMs !== undefined) NUDGE_MS = opts.nudgeMs;
   if (opts.pollMs !== undefined) CHECK_POLL_MS = opts.pollMs;
   if (opts.portStatusDir) portStatusDir = opts.portStatusDir;
+  if (opts.realtekStatusDir) realtekStatusDir = opts.realtekStatusDir;
 }
 
 function readList(cb) {
@@ -278,6 +280,27 @@ function rereadApp(appId, check, cb) {
   });
 }
 
+function readRealtekPortStatus(hdmiNum) {
+  var fallback = null;
+  var sawHwPort = false;
+  for (var p = 0; p < 4; p++) {
+    var raw;
+    try {
+      raw = fs.readFileSync(path.join(realtekStatusDir, 'hdmi.p' + p), 'utf8');
+    } catch (e) {
+      continue;
+    }
+    var hw = raw.match(/^\s*hwport\s*:\s*(\d+)/m);
+    if (hw) {
+      sawHwPort = true;
+      if (parseInt(hw[1], 10) === hdmiNum) return raw;
+    } else if (p === hdmiNum - 1) {
+      fallback = raw;
+    }
+  }
+  return sawHwPort ? null : fallback;
+}
+
 /*
  * Whether the HDMI input has an active video signal from a connected source.
  * Non-HDMI apps return true. An HDMI input with no signal (e.g. asleep device)
@@ -291,13 +314,15 @@ function hasHdmiSignal(appId) {
   var port = HDMI_BASE_MAP[hdmiNum];
   if (port === undefined) return true;
   var statusFile = path.join(portStatusDir, 'port' + port, 'status');
-  var raw;
+  var raw = null;
   try {
     raw = fs.readFileSync(statusFile, 'utf8');
   } catch (e) {
-    return true;
+    raw = readRealtekPortStatus(hdmiNum);
   }
   if (!raw) return true;
+  var rtlLock = raw.match(/^\s*phy_lock_status\s*:\s*(\d)/m);
+  if (rtlLock) return rtlLock[1] === '1';
   var lock = raw.match(/PHY\s+Lock\[(\d)\]/i);
   if (lock) return lock[1] === '1';
   if (/connected:\s*off/i.test(raw)) return false;

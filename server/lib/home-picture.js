@@ -208,7 +208,17 @@ function packet(raw, kind) {
  */
 function sourceHdr(status, pkt) {
   if (/Dolby HDR Info\[1\]/i.test(status)) return 'dolby_vision';
-  if (!pkt) return null;
+  var dolbyRealtek = status.match(/^\s*dolby_hdr_type\s*:\s*(\d+)/m);
+  if (dolbyRealtek && dolbyRealtek[1] !== '0') return 'dolby_vision';
+  if (!pkt) {
+    if (!/===== HDMI STATUS =====/.test(status) && !/^\s*phy_lock_status\s*:/m.test(status)) return null;
+    var drmLen = status.match(/^\s*drm_length\s*:\s*(\d+)/m);
+    if (!drmLen || parseInt(drmLen[1], 10) <= 0) return 'sdr';
+    var eotfMatch = status.match(/^\s*drm_eotf_type\s*:\s*(\d+)/m);
+    if (!eotfMatch) return 'sdr';
+    var realtekEotf = names.signalEotf(parseInt(eotfMatch[1], 10));
+    return realtekEotf && realtekEotf.label === 'pq' ? 'hdr10' : realtekEotf && realtekEotf.label === 'hlg' ? 'hlg' : 'sdr';
+  }
   var drm = packet(pkt, 'DRM');
   if (!drm || drm[0] !== 0x87 || drm.length < 5) return 'sdr';
   var eotf = names.signalEotf(drm[4]);
@@ -216,37 +226,54 @@ function sourceHdr(status, pkt) {
 }
 
 /*
- * cvi_vfreq is the rate in hundredths of a hertz. Sig's own is rounded down:
- * a G3 read 23 there for a source at 24.00 Hz (VIC 93).
+ * cvi_vfreq (and Realtek's link_frame_rate_x100_hz) gives the rate in hundredths
+ * of a hertz. Sig's own is rounded down: a G3 read 23 there for a source at
+ * 24.00 Hz (VIC 93).
  */
 function refreshHz(status, fallback) {
-  var m = status.match(/cvi_vfreq\[(\d+)\]/i);
+  var m = status.match(/cvi_vfreq\[(\d+)\]/i) ||
+    status.match(/^\s*link_frame_rate_x100_hz\s*:\s*(\d+)/m);
   var hz = m ? parseInt(m[1], 10) / 100 : 0;
+  if (!(hz > 0)) {
+    var vf = status.match(/^\s*timing_v_freq\s*:\s*(\d+)/m);
+    hz = vf ? parseInt(vf[1], 10) / 10 : 0;
+  }
   return hz > 0 ? Math.round(hz * 100) / 100 : fallback;
 }
 
 function hdmiSignal(port, cb) {
   telemetry.hdmiReceiverMap(function (map) {
     var receiver = map[port];
-    if (typeof receiver !== 'number') return cb(null);
+    if (typeof receiver !== 'number') return cb(null, false);
     var dir = '/proc/lg/hdmi20/port' + receiver + '/';
     var status = readFile(dir + 'status');
+    var realtek = false;
+    if (status === null) {
+      status = readFile('/proc/lgtv-driver/hdmi_status/hdmi.p' + receiver);
+      realtek = status !== null;
+    }
+    // Boards without either receiver file expose no signal state: tell callers
+    // it is unknown rather than absent.
+    if (status === null) return cb(null, false);
     var byReceiver = [];
     byReceiver[receiver] = status;
-    var found = status ? telemetry.getHdmiSignal(port, map, byReceiver) : null;
-    if (!found || !found.timing) return cb(null);
-    // 8-bit is padded: DeepColorMode[ 8BIT].
-    var depth = status.match(/DeepColorMode\[\s*(\d+)BIT\]/i);
+    var found = telemetry.getHdmiSignal(port, map, byReceiver);
+    if (!found || !found.timing) return cb(null, true);
+    // 8-bit is padded on /proc/lg/hdmi20: DeepColorMode[ 8BIT].
+    var depth = realtek
+      ? status.match(/^\s*link_color_depth\s*:\s*(\d+)/m)
+      : status.match(/DeepColorMode\[\s*(\d+)BIT\]/i);
+    var bits = depth ? parseInt(depth[1], 10) : null;
     cb({
       width: found.timing.width,
       height: found.timing.height,
       hz: refreshHz(status, found.timing.refresh_hz),
       chroma: found.diag ? found.diag.chroma : null,
-      bits: depth ? parseInt(depth[1], 10) : null,
-      hdr: sourceHdr(status, readFile(dir + 'pkt')),
+      bits: bits > 0 ? bits : null,
+      hdr: sourceHdr(status, realtek ? null : readFile(dir + 'pkt')),
       vrr: found.diag ? found.diag.vrr === true : false,
       allm: found.diag ? found.diag.allm === true : false
-    });
+    }, true);
   });
 }
 
@@ -290,7 +317,7 @@ function picture(kind, port, cb, appId) {
   if (hit && kind !== 'channel' && nowMs() - hit.at < CACHE_MS) return cb(hit.value);
   var lastPlayed = kind === 'app' && appId && played.hasOwnProperty(appId) ? played[appId] : null;
   var readSignal = kind === 'input' ? hdmiSignal : kind === 'channel' ? channelSignal : function (p, next) { next(lastPlayed); };
-  readSignal(port, function (signal) {
+  readSignal(port, function (signal, known) {
     // A channel not playing is taken as SDR, as broadcast almost all is.
     var range = signal ? rangeOf(signal.hdr) : kind === 'channel' ? 'sdr' : null;
     pictureMode(input, range, function (mode) {
@@ -299,6 +326,7 @@ function picture(kind, port, cb, appId) {
         (oled ? oled.detectOled : function (next) { next(false); })(function (isOled) {
           var value = { ok: true, input: input, signal: signal, range: range, mode: mode,
             light: light, oled: !!isOled };
+          if (kind === 'input' && known === false) value.signalKnown = false;
           cache[key] = { at: nowMs(), value: value };
           cb(value);
         });
@@ -312,13 +340,17 @@ function picture(kind, port, cb, appId) {
  * Home's preview of it. The preview's video reports playing with nothing
  * there: on a G3 (webOS 9.2.2) HDMI 2, its receiver asleep, gave loadeddata,
  * canplay and playing, and a black picture. Read fresh each time, as the
- * preview has just switched the receiver.
+ * preview has just switched the receiver. Where the board has no receiver
+ * status file to read (null), the signal is returned as null (unknown) so
+ * the caller does not blank a live preview.
  */
 function signal(port, cb) {
   if (!(port >= 1 && port <= 4)) return cb({ ok: false, error: 'port 1 to 4 expected' });
   // The plate read next must not be one cached before the receiver moved here.
   delete cache['hdmi' + port];
-  hdmiSignal(port, function (s) { cb({ ok: true, port: port, signal: !!s }); });
+  hdmiSignal(port, function (s, known) {
+    cb({ ok: true, port: port, signal: known === false ? null : !!s });
+  });
 }
 
 module.exports = {

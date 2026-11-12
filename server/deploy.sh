@@ -77,12 +77,14 @@ assets/fonts/Outfit.ttf assets/fonts/Manrope.ttf \
 assets/fonts/Outfit-Light.ttf assets/fonts/Outfit-Regular.ttf \
 assets/fonts/Manrope-Regular.ttf assets/fonts/Manrope-SemiBold.ttf \
 assets/fonts/OFL-Outfit.txt assets/fonts/OFL-Manrope.txt \
+assets/screensavers/ambient/main.qml assets/screensavers/ambient/saver.json \
 assets/screensavers/bokeh/bokeh.png assets/screensavers/bokeh/main.qml \
 assets/screensavers/bokeh/saver.json assets/screensavers/clock/main.qml \
 assets/screensavers/clock/saver.json assets/screensavers/currents/main.qml \
 assets/screensavers/currents/saver.json assets/screensavers/filament/main.qml \
 assets/screensavers/filament/saver.json assets/screensavers/fireworks/main.qml \
 assets/screensavers/fireworks/saver.json assets/screensavers/fireworks/star.png \
+assets/screensavers/ha-display/main.qml assets/screensavers/ha-display/saver.json \
 assets/screensavers/harmonograph/main.qml assets/screensavers/harmonograph/saver.json \
 assets/screensavers/incense/main.qml assets/screensavers/incense/saver.json \
 assets/screensavers/murmuration/main.qml assets/screensavers/murmuration/saver.json \
@@ -95,7 +97,7 @@ assets/screensavers/veils/saver.json assets/screensavers/vitals/main.qml \
 assets/screensavers/vitals/saver.json assets/screensavers/vortex/main.qml \
 assets/screensavers/vortex/saver.json \
 screensavers/pigs/main.qml screensavers/pigs/saver.json \
-lib/mqtt.js lib/ha.js lib/updater.js lib/fetch.js lib/repo.js lib/installer.js lib/privacy.js lib/devtools.js lib/oled.js lib/screensavers.js lib/qmlcheck.js lib/saverpoweroff.js lib/idlesaver.js lib/typing.js lib/telemetry.js \
+lib/mqtt.js lib/ha.js lib/updater.js lib/fetch.js lib/repo.js lib/installer.js lib/privacy.js lib/devtools.js lib/oled.js lib/screensavers.js lib/qmlcheck.js lib/haentity.js lib/saverpoweroff.js lib/idlesaver.js lib/typing.js lib/telemetry.js \
 lib/apps.js lib/samrescan.js lib/children.js lib/luna.js lib/piccap.js lib/huesync.js lib/state.js lib/mqtt-state.js lib/notifications.js lib/screentime.js lib/services.js lib/preload.js lib/appdns.js lib/doh.js lib/quickaccess.js lib/remotekeys.js lib/homescreen.js lib/homescreen-webos9.js lib/homescreen-webos10.js lib/say.js lib/controls.js lib/routes.js lib/lgsettings.js lib/game.js lib/topics.js lib/timers.js lib/util.js lib/names.js lib/prometheus.js lib/remotebuttons.js lib/remotebuttons.py lib/logs.js lib/syslog.js lib/ntp.js lib/power.js lib/resettime.js lib/history.js lib/sshkeys.js lib/remotebattery.js lib/backup.js lib/backup-parts.js lib/iconserver.js lib/home.js lib/weather.js lib/home-picture.js lib/home-launcher.js lib/home-takeover.js lib/home-wallpapers.js lib/home-recent.js lib/clock.js lib/inputbar.js lib/home-recent-apps.js lib/home-recommended.js lib/home-search.js lib/audio.js lib/btaudio.js lib/iptv.js lib/iptv-lineup.js lib/iptv-memory.js lib/iptv-worker.js lib/iptv-parse.js lib/iptv-timeshift.js lib/iptv-timeshift-worker.js"
 
 for t in tar base64 fold; do
