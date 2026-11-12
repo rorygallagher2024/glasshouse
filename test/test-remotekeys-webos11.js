@@ -8,6 +8,8 @@
  * is put in the filter chain
  *
  * Strict ES5: runs on node 0.12.
+ *
+ * @slow: started first by run-all.js, which runs a few suites at a time.
  */
 var assert = require('assert');
 var fs = require('fs');
