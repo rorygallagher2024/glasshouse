@@ -22,7 +22,8 @@
  * TV is switched on the preload manager has every app enabled again, with
  * configd still holding isEnabled false, and it loaded YouTube 4 s later. So
  * setPreloadPolicy is sent again for the owner's apps at start and at every
- * switch-on. Switching an app off does not close it if it is already
+ * switch-on, and by the boot hook before the server starts, since a cold boot
+ * loaded apps before the server had sent them (#1374). Switching an app off does not close it if it is already
  * loaded (B8, webOS 4.4); it is not loaded again. Nothing here closes apps: on
  * a B8 an app closed from outside has left HDMI unable to open until a reboot.
  *

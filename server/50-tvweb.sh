@@ -203,6 +203,34 @@ sam_reports() {
   return 1
 }
 
+# Apps the owner switched off in the preload manager (lib/preload.js), sent
+# again as soon as it answers, before the server starts. On a B4 (webOS 10.3.2)
+# each switch-on had every app's preloading enabled again, and at a cold boot
+# it loaded Netflix 59 s in and the browser 61 s in, ahead of the server's own
+# resend at about 58 s, one app at a time (#1374). In the background, all at
+# once, never holding up the start.
+preload_off() {
+  [ -f /var/lib/tvweb/preload.json ] || return 0
+  off=$(tr -d '\n' < /var/lib/tvweb/preload.json |
+    sed -n 's/.*"off"[[:space:]]*:[[:space:]]*\[\([^]]*\)\].*/\1/p' | tr ',' '\n' |
+    sed 's/[[:space:]"]//g' | grep -E '^[A-Za-z0-9._-]+$')
+  [ -n "$off" ] || return 0
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+    luna-send -n 1 -w 5000 luna://com.webos.service.preloadmanager/getPreloadPolicy '{}' 2>/dev/null |
+      grep -q '"returnValue": *true' && break
+    sleep 1
+  done
+  # -w: on a C2 (webOS 9.2.2) setPreloadPolicy never answers, and luna-send
+  # waits for an answer forever without it.
+  for app in $off; do
+    luna-send -n 1 -w 5000 luna://com.webos.service.preloadmanager/setPreloadPolicy \
+      "{\"application\":{\"id\":\"$app\",\"isEnabled\":false}}" >/dev/null 2>&1 &
+  done
+  wait
+  echo "$(date): preloading switched off again for: $(echo "$off" | tr '\n' ' ')"
+}
+preload_off &
+
 webos_major=$(sed -n 's/.*webOS[^0-9]*\([0-9][0-9]*\)\..*/\1/p' /etc/issue 2>/dev/null | head -n 1)
 # A G5 (webOS 10.3.1) has no /etc/issue; "Rockhopper release 10.3.1-3006" is
 # in starfish-release, as lib/telemetry.js reads it.
