@@ -196,6 +196,29 @@ and played normally. The kernel log (`/var/log/legacy-log`) records each
 `audio_hal_earc_set_*` call with the calling thread, which separates LG's eARC
 set-up from the module's.
 
+## Native DTS playback on the B4 (webOS 10.3.2)
+
+Probed on an `OLED77B46LA` running webOS `10.3.2` (firmware `33.31.75`, Realtek
+`rtd2885p`) connected to a Sonos Arc Ultra over eARC (Glasshouse issue #1379).
+
+- **EDID and GStreamer elements**: `tv.model.edidType` reports `TrueHD+dts`.
+  GStreamer includes `dcaparse` and `omxdtsdec` / `omxdtsdec1` (`Rank primary + 1
+  (257)`), accepting `audio/x-dts`, `audio/x-dtsh`, `audio/x-dtsl`,
+  `audio/x-dtse`, `audio/x-dtsx` and `audio/x-raw`, and logs `../git/omx/gstomxaudiodec.c:788:
+  invalid property id 20 for "downmix"`.
+- **Direct GStreamer pipelines fail outside LG's media stack**: `matroskademux
+  ! decodebin` on a silent 6-channel 48 kHz `dts51.mkv` fails with `Missing
+  decoder: audio/x-unknown (audio/x-unknown, codec-id=(string)A_DTS, ...)`.
+  `dcaparse` stops with `Failed to get media type from upstream`, and feeding
+  framed `audio/x-dts,framed=(boolean)true,rate=(int)48000,channels=(int)6` into
+  `omxdtsdec` fails with `Could not initialize supporting library.`.
+- **Player path and kernel procfs**: Jellyfin direct-playing a 6-channel
+  1.5 Mbps DTS MKV outputs DTS to the Sonos Arc Ultra over eARC
+  (`starfish-media-pipeline`: `vdec: H264 high 4.1`, `adec: audio/x-dts`;
+  `audiooutputd`: `input_source: MEDIA`, `input_codec: dts`,
+  `earc_output_codec: 4`, `arc_output_codec: 4`, `sound_output: external_arc`).
+  `/proc/rtkaudio` holds only `debuginfo` (no DSP0 inventory).
+
 ## C9 HAWK2 audio EDID (webOS 4.10.2)
 
 OLED65C9PUA, firmware 05.50.00, reported in #1078 on 28 October 2026.
