@@ -43,7 +43,9 @@ and renders 0% and standby/connected states.
 `test-audio.js` exercises the public audio endpoint with captured G3/Marantz
 declarations: receiver formats remain separate from TV capabilities, an eARC
 EDID flag does not promote ARC, stale driver values do not become live audio,
-and corrupt or missing evidence remains unknown. A named read of the sound output
+and corrupt or missing evidence remains unknown. Additional driver-fallback cases
+verify both Realtek (`Connect=HDMI0` with kHz `SamplingRate=48`) and
+`HDMI_PORT*` (Hz `SamplingRate=48000`) incoming HDMI audio. A named read of the sound output
 wins over a stale whole-category read, and a refused one leaves the category's
 values. Synthetic C9 cases cover `dimension.input`, HAWK2's native EDID, invalid
 checksums/lengths/bytes, failed native reads without family fallback, and
