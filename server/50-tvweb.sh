@@ -130,9 +130,69 @@ sam_reread_app() {
   return 1
 }
 
-# Where sam has neither profile.blockedAppList nor blockSystemApp (webOS 4-6),
-# restarting sam at runtime breaks DRM/ESN, audio EDID, or hangs app launches
-# until a power cut (#366, #1315), so the boot hook never restarts sam.
+# sam is restarted only for hidden tiles on webOS 3 to 6, which have neither
+# profile.blockedAppList nor blockSystemApp, so a restart is the one way their
+# sam reads a mounted manifest again: once per cold boot, as before. Glasshouse
+# Home never restarts it, nor does anything on webOS 7 and later, where a
+# restart broke DRM/ESN and audio EDID or hung app launches until a power cut
+# (#366, #1315).
+# LG's HDMI input service subscribes to sam's foreground app only when it
+# starts, so after sam is restarted it sees no app in front and refuses every
+# EDID update for the input on screen: a source stays on the basic EDID (an
+# Apple TV sent a 55UP77 on webOS 6.5.3 only PCM). It is restarted once sam
+# answers, where the TV has it. Mirrors RESUBSCRIBE_HDMI_INPUTS in
+# lib/samrescan.js.
+hdmi_inputs_resubscribe() {
+  systemctl cat extinput-integration.service >/dev/null 2>&1 || return 0
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+    luna-send -n 1 luna://com.webos.applicationManager/getForegroundAppInfo '{}' 2>/dev/null | grep -q '"returnValue": *true' && break
+    sleep 1
+  done
+  systemctl restart --no-block extinput-integration.service >/dev/null 2>&1 || true
+}
+has_hdmi_signal() {
+  app="$1"
+  hdmi_num=$(echo "$app" | sed -n 's/.*hdmi\([1-4]\).*/\1/p')
+  [ -z "$hdmi_num" ] && return 0
+  case "$hdmi_num" in
+    1) port=3 ;;
+    2) port=2 ;;
+    3) port=1 ;;
+    4) port=0 ;;
+    *) return 0 ;;
+  esac
+  status_file="/proc/lg/hdmi20/port$port/status"
+  if [ ! -f "$status_file" ] && [ -d /proc/lgtv-driver/hdmi_status ]; then
+    status_file=""
+    for f in /proc/lgtv-driver/hdmi_status/hdmi.p[0-3]; do
+      [ -f "$f" ] || continue
+      if grep -q "^[[:space:]]*hwport:[[:space:]]*${hdmi_num}[[:space:]]*$" "$f"; then
+        status_file="$f"
+        break
+      fi
+    done
+    if [ -z "$status_file" ]; then
+      fallback="/proc/lgtv-driver/hdmi_status/hdmi.p$((hdmi_num - 1))"
+      if [ -f "$fallback" ] && ! grep -q "^[[:space:]]*hwport:" "$fallback"; then
+        status_file="$fallback"
+      fi
+    fi
+  fi
+  [ -n "$status_file" ] && [ -f "$status_file" ] || return 0
+  if grep -q '^[[:space:]]*phy_lock_status:' "$status_file"; then
+    grep -q '^[[:space:]]*phy_lock_status:[[:space:]]*1[[:space:]]*$' "$status_file" && return 0
+    return 1
+  fi
+  if grep -qi 'PHY Lock' "$status_file"; then
+    grep -qi 'PHY Lock\[1\]' "$status_file" && return 0
+    return 1
+  fi
+  if grep -qi 'connected:' "$status_file"; then
+    grep -qi 'connected:[[:space:]]*on' "$status_file" && return 0
+    return 1
+  fi
+  return 0
+}
 # Whether sam's getAppInfo for app $1 matches pattern $2 within 20s: at boot sam
 # can still be on its own first scan, and takes the nudge after it.
 sam_reports() {
@@ -374,6 +434,41 @@ elif [ "$tile_hiding_allowed" -eq 1 ] && [ ! -f /var/lib/tvweb/.from-homebrew-ch
     elif sam_nudge && sam_reports "$first_hidden" '"visible": *false'; then
       reread_tiles=1
       echo "$(date): sam read the hidden tiles, without a restart"
+    else
+      case "$webos_major" in
+        3|4|5|6)
+          # Capture the active foreground app before restarting SAM so we can restore it
+          fg_app=$(luna-send -n 1 -f luna://com.webos.applicationManager/getForegroundAppInfo '{}' 2>/dev/null | sed -n 's/.*"appId": *"\([^"]*\)".*/\1/p')
+
+          if command -v systemctl >/dev/null 2>&1; then
+            killall -9 LunaExecutable >/dev/null 2>&1 || true
+            systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true
+          elif command -v initctl >/dev/null 2>&1; then
+            initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true
+          else
+            pkill -9 -x sam >/dev/null 2>&1 || true
+          fi
+
+          # Wait for SAM to become responsive (support BusyBox usleep with fallback)
+          for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+            usleep 200000 2>/dev/null || sleep 1
+            if luna-send -n 1 -f luna://com.webos.applicationManager/getForegroundAppInfo '{}' >/dev/null 2>&1; then
+              break
+            fi
+          done
+          command -v systemctl >/dev/null 2>&1 && hdmi_inputs_resubscribe
+
+          # If the user was on an HDMI port or any non-home app, immediately restore it
+          # so they are never stranded on the Home screen
+          if [ -n "$fg_app" ] && [ "$fg_app" != "com.webos.app.home" ]; then
+            if has_hdmi_signal "$fg_app"; then
+              luna-send -n 1 -f luna://com.webos.applicationManager/launch "{\"id\":\"$fg_app\"}" >/dev/null 2>&1 || true
+            fi
+          fi
+          reread_tiles=1
+          echo "$(date): sam restarted to read the hidden tiles (webOS $webos_major has no other way)"
+          ;;
+      esac
     fi
     if [ "$reread_tiles" -ne 1 ]; then
       echo "$(date): sam could not reread hidden tiles without a restart; leaving stock tiles in place"

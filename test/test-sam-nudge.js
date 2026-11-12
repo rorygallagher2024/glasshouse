@@ -101,15 +101,15 @@ apps.refreshLauncher(checked(function (refreshed) {
       assert.strictEqual(restarts, 0, 'never restarts sam when nudge does not catch up');
       console.log('  \u2713 if sam never shows the change, it is not restarted (#366, #1315)');
 
-      // 4. No list and no blockSystemApp schema (webOS 4): never restarts sam.
+      // 4. No list and no blockSystemApp schema (webOS 4): a restart, the only way there.
       tv.list = null;
       samrescan.init({ luna: luna, nudgeMs: 5, pollMs: 5 });
       mockEnv.files[FLAG] = '1';
       mockEnv.files[HIDDEN] = 'com.webos.app.music\n';
       apps.refreshLauncher(checked(function (r4) {
-        assert.strictEqual(r4, false);
-        assert.strictEqual(restarts, 0, 'never restarts sam without rescan list');
-        console.log('  \u2713 without the list, sam is not restarted');
+        assert.strictEqual(r4, true);
+        assert.strictEqual(restarts, 1, 'restarted once: webOS 4 has no other way');
+        console.log('  \u2713 without the list or blockSystemApp (webOS 4 to 6), sam is restarted as before');
 
         // 5. webOS 10-11 (blockSystemApp schema present): hides & unhides per app without restart or cold-boot warning.
         mockEnv.files[BLOCK_SCHEMA] = '{"properties":{"id":{},"forceBlockSystemApp":{}}}';
@@ -123,14 +123,14 @@ apps.refreshLauncher(checked(function (refreshed) {
         apps.hideTile('com.webos.app.music', checked(function (h) {
           assert.strictEqual(h.ok, true, h.error);
           assert.strictEqual(h.hidden, true);
-          assert.strictEqual(restarts, 0, 'never restarts sam on webOS 10-11 hide');
+          assert.strictEqual(restarts, 1, 'never restarts sam on webOS 10-11 hide');
           assert.deepEqual(tv.samCalls, ['block:com.webos.app.music', 'release:com.webos.app.music']);
           apps.getApps(checked(function (g) {
             assert.strictEqual(g.tileHidingNudge, true, 'webOS 10-11 suppresses cold-boot sam-restart warning');
             tv.rereadApply['com.webos.app.music'] = true;
             apps.unhideTile('com.webos.app.music', checked(function (u) {
               assert.strictEqual(u.ok, true, u.error);
-              assert.strictEqual(restarts, 0, 'never restarts sam on webOS 10-11 unhide');
+              assert.strictEqual(restarts, 1, 'never restarts sam on webOS 10-11 unhide');
               delete mockEnv.files[BLOCK_SCHEMA];
               delete mockEnv.files[APP_DIR + '/com.webos.app.music/appinfo.json'];
               console.log('  \u2713 on webOS 10-11, tile hiding uses blockSystemApp and suppresses the cold-boot warning');

@@ -345,7 +345,7 @@ test('isTileHidingEnabled detects flag file and auto-migrates from hidden_apps',
   delete mockEnv.files[hiddenFile];
 });
 
-test('setTileHidingEnabled toggles flag file, requires allowControl, and refuses without rescan', function (done) {
+test('setTileHidingEnabled toggles flag file, requires allowControl, and restarts sam only on webOS 4 to 6', function (done) {
   var flagFile = '/var/lib/tvweb/tile_hiding_enabled';
   var appJson = '/usr/palm/applications/com.webos.app.gallery/appinfo.json';
   var blockSchema = '/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema';
@@ -356,7 +356,8 @@ test('setTileHidingEnabled toggles flag file, requires allowControl, and refuses
     assert.strictEqual(res.ok, false);
     assert.ok(res.error.indexOf('disabled') !== -1);
 
-    // Refuses enabling or hiding when TV has neither blockedAppList nor blockSystemApp schema (webOS 4-6)
+    // webOS 4-6: neither blockedAppList nor blockSystemApp, so tile hiding
+    // works as before, with sam restarted to read the change.
     mockEnv.files[appJson] = '{"id":"com.webos.app.gallery","title":"Gallery","visible":true}';
     mockEnv.files[blockSchema] = null;
     var noRescanLuna = function (uri, params, cb) {
@@ -366,15 +367,21 @@ test('setTileHidingEnabled toggles flag file, requires allowControl, and refuses
     init({ luna: noRescanLuna, config: { allowControl: true, allowTileHiding: true } });
     samrescan.init({ luna: noRescanLuna, nudgeMs: 5, pollMs: 5, blockSchema: blockSchema });
     ran = [];
-    apps.setTileHidingEnabled(true, function (noRescanRes) {
-      assert.strictEqual(noRescanRes.ok, false);
-      assert.ok(/Glasshouse Home/.test(noRescanRes.error), noRescanRes.error);
-      assert.strictEqual(ran.length, 0, 'no mounts or restarts run on refusal');
+    function samRestarts() {
+      return ran.filter(function (c) { return /kill|initctl restart sam/.test(JSON.stringify(c)); }).length;
+    }
+    apps.setTileHidingEnabled(true, function (oldRes) {
+      assert.strictEqual(oldRes.ok, true, oldRes.error);
+      assert.strictEqual(oldRes.tileHidingEnabled, true);
 
-      apps.hideTile('com.webos.app.gallery', function (noHideRes) {
-        assert.strictEqual(noHideRes.ok, false);
-        assert.ok(/Glasshouse Home/.test(noHideRes.error), noHideRes.error);
-        assert.strictEqual(ran.length, 0, 'hideTile refuses cleanly without touching mounts');
+      apps.hideTile('com.webos.app.gallery', function (oldHide) {
+        assert.strictEqual(oldHide.ok, true, oldHide.error);
+        assert.strictEqual(oldHide.hidden, true);
+        assert.strictEqual(samRestarts(), 1, 'sam restarted once to read the hidden tile');
+
+        apps.unhideTile('com.webos.app.gallery', function (oldUnhide) {
+          assert.strictEqual(oldUnhide.ok, true, oldUnhide.error);
+          assert.strictEqual(samRestarts(), 2, 'and once to show it again');
 
         // Enabled when allowControl, allowTileHiding, and configd rescan list exist
         var nudgeLuna = function (uri, params, cb) {
@@ -402,6 +409,7 @@ test('setTileHidingEnabled toggles flag file, requires allowControl, and refuses
             delete mockEnv.files[blockSchema];
             if (done) done();
           });
+        });
         });
       });
     });

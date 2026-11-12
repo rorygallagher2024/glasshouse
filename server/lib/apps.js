@@ -32,8 +32,7 @@ var PAGE_TITLES_FILE = '/var/lib/tvweb/saved_page_titles.json';
 var BROWSER_ID = 'com.webos.app.browser';
 var TILE_HIDING_FLAG_FILE = '/var/lib/tvweb/tile_hiding_enabled';
 var TILES_HELD_ERROR = msg('srv.apps.tilesHeld', 'Hiding system apps is turned off on this TV for now. On webOS 10 and later it can leave the picture, the sound and HDMI control off until the TV is unplugged. Apps already hidden come back after the TV is next fully restarted.');
-var TILES_NO_RESCAN_ERROR = msg('srv.apps.tilesNoRescan', 'This TV cannot hide system apps without restarting sam. Use Glasshouse Home instead.');
-var TILES_NOT_TAKEN_ERROR = msg('srv.apps.tilesNotTaken', 'The TV did not apply the tile change without restarting sam, so it was undone.');
+var TILES_NOT_TAKEN_ERROR = msg('srv.apps.tilesNotTaken', 'The TV did not take the change to its apps, so it was undone.');
 
 var APP_BASES = [
   '/media/system/apps/usr/palm/applications',
@@ -239,12 +238,6 @@ function visibleAs(ids, visible) {
   return map;
 }
 
-function canRescanTiles(cb) {
-  if (!lunaFn) return cb(false);
-  if (samrescan.canRereadApp()) return cb(true);
-  samrescan.canNudge(function (has) { cb(!!has); });
-}
-
 function setTileHidingEnabled(enabled, cb) {
   if (!configObj || !configObj.allowControl) {
     if (cb) cb({ ok: false, error: msg('srv.controlsOff.apps', 'Control is disabled in server configuration') });
@@ -280,65 +273,59 @@ function setTileHidingEnabled(enabled, cb) {
     if (cb) cb({ ok: false, error: TILES_HELD_ERROR });
     return;
   }
-  canRescanTiles(function (canRescan) {
-    if (!canRescan) {
-      if (cb) cb({ ok: false, error: TILES_NO_RESCAN_ERROR });
-      return;
-    }
-    var wasEnabled = isTileHidingEnabled();
-    try {
-      mkdirp(path.dirname(TILE_HIDING_FLAG_FILE));
-      fs.writeFileSync(TILE_HIDING_FLAG_FILE, '1\n', 'utf8');
-    } catch (e) {}
-    var hiddenMap = readHiddenAppsList();
-    var ids = Object.keys(hiddenMap);
-    var i = 0;
-    var mountedIds = [];
-    function remountNext() {
-      if (i >= ids.length) {
-        if (!mountedIds.length) {
-          if (cb) cb({ ok: true, tileHidingEnabled: true, samRestarted: false });
+  var wasEnabled = isTileHidingEnabled();
+  try {
+    mkdirp(path.dirname(TILE_HIDING_FLAG_FILE));
+    fs.writeFileSync(TILE_HIDING_FLAG_FILE, '1\n', 'utf8');
+  } catch (e) {}
+  var hiddenMap = readHiddenAppsList();
+  var ids = Object.keys(hiddenMap);
+  var i = 0;
+  var mountedIds = [];
+  function remountNext() {
+    if (i >= ids.length) {
+      if (!mountedIds.length) {
+        if (cb) cb({ ok: true, tileHidingEnabled: true, samRestarted: false });
+        return;
+      }
+      return restartSam(function (rescanned) {
+        if (!rescanned) {
+          var k = 0;
+          function undoNext() {
+            if (k >= mountedIds.length) {
+              try {
+                if (!wasEnabled) fs.writeFileSync(TILE_HIDING_FLAG_FILE, '0\n', 'utf8');
+              } catch (e) {}
+              if (cb) cb({ ok: false, tileHidingEnabled: wasEnabled, error: TILES_NOT_TAKEN_ERROR });
+              return;
+            }
+            unmountAllForApp(mountedIds[k++], undoNext);
+          }
+          undoNext();
           return;
         }
-        return restartSam(function (rescanned) {
-          if (!rescanned) {
-            var k = 0;
-            function undoNext() {
-              if (k >= mountedIds.length) {
-                try {
-                  if (!wasEnabled) fs.writeFileSync(TILE_HIDING_FLAG_FILE, '0\n', 'utf8');
-                } catch (e) {}
-                if (cb) cb({ ok: false, tileHidingEnabled: wasEnabled, error: TILES_NOT_TAKEN_ERROR });
-                return;
-              }
-              unmountAllForApp(mountedIds[k++], undoNext);
-            }
-            undoNext();
-            return;
-          }
-          if (cb) cb({ ok: true, tileHidingEnabled: true, samRestarted: rescanned });
-        }, visibleAs(mountedIds, false));
-      }
-      var appId = ids[i++];
-      var ovr = path.join(OVERRIDE_DIR, appId + '.json');
-      if (fs.existsSync(ovr)) {
-        var tgts = findAllAppinfoPaths(appId);
-        if (tgts.length > 0) mountedIds.push(appId);
-        var j = 0;
-        function mountTarget() {
-          if (j >= tgts.length) return remountNext();
-          var tgt = tgts[j++];
-          execFn('/bin/mount', ['--bind', ovr, tgt], { timeout: 4000 }, function () {
-            mountTarget();
-          });
-        }
-        mountTarget();
-      } else {
-        remountNext();
-      }
+        if (cb) cb({ ok: true, tileHidingEnabled: true, samRestarted: rescanned });
+      }, visibleAs(mountedIds, false));
     }
-    remountNext();
-  });
+    var appId = ids[i++];
+    var ovr = path.join(OVERRIDE_DIR, appId + '.json');
+    if (fs.existsSync(ovr)) {
+      var tgts = findAllAppinfoPaths(appId);
+      if (tgts.length > 0) mountedIds.push(appId);
+      var j = 0;
+      function mountTarget() {
+        if (j >= tgts.length) return remountNext();
+        var tgt = tgts[j++];
+        execFn('/bin/mount', ['--bind', ovr, tgt], { timeout: 4000 }, function () {
+          mountTarget();
+        });
+      }
+      mountTarget();
+    } else {
+      remountNext();
+    }
+  }
+  remountNext();
 }
 
 /*
@@ -364,6 +351,50 @@ function handOverToHome(hide, cb) {
       cb(true);
     });
   })();
+}
+
+/**
+ * Platform-aware fast SAM restart with active foreground app preservation.
+ * On systemd sets (C2, webOS 9), LunaExecutable (AirPlay) ignores SIGTERM and hangs
+ * systemctl restart for 90s. Killing LunaExecutable + systemctl kill -s 9 terminates
+ * the cgroup immediately, triggering systemd on-failure restart in <1s.
+ * On Upstart sets (B8, webOS 4), initctl or pkill -9 triggers upstart respawn in ~1s.
+ * If a non-home app (like an active HDMI port or Live TV) was in the foreground,
+ * it is automatically relaunched so the user is never stranded on the Home screen.
+ */
+/*
+ * sam answers while it is still loading the home screen's tiles, and a list
+ * read then is short: straight after a hide, a C2's Apps tab showed "5 hidden
+ * of 5 apps", then "4 hidden of 9". So a restart counts as done only once the
+ * launch points read the same three times running, half a second apart, or
+ * after 12s. It also keeps a run of hides from stacking restarts on a sam
+ * still starting.
+ */
+// sam and every unit that requires it, as systemctl lists them on the TV.
+var SAM_UNITS = 'sam.service $(systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null | ' +
+                'sed -n "s/^[^A-Za-z0-9]*\\([A-Za-z0-9@._-]*\\.service\\)$/\\1/p")';
+
+/*
+ * Once sam is back, a unit that requires it and was still refused - its own
+ * restart limit hit before the counters were cleared - is started again, so
+ * the TV is never left without its inputs. On Upstart TVs (webOS 4), Upstart
+ * does not restart dependent jobs when sam restarts, so eim (the input manager)
+ * is restarted here to restore its connection to sam.
+ */
+function startFailedDependents(cb) {
+  var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
+            'for u in ' + SAM_UNITS + '; do ' +
+            'if systemctl is-failed --quiet "$u"; then ' +
+            'echo "$u"; systemctl reset-failed "$u"; systemctl start --no-block "$u"; ' +
+            'fi; done; ' + samrescan.RESUBSCRIBE_HDMI_INPUTS + '; ' +
+            'elif command -v initctl >/dev/null 2>&1; then ' +
+            'initctl restart eim >/dev/null 2>&1 && echo "eim" || true; ' +
+            'fi';
+  execFn('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err, out) {
+    var started = String(out || '').trim();
+    if (started) console.log('apps: started again after sam restarted: ' + started.split(/\s+/).join(', '));
+    cb();
+  });
 }
 
 var SAM_SETTLE_POLL_MS = 500;
@@ -399,22 +430,28 @@ function waitForSam(cb) {
 var samRestartRunning = false;
 // Each waiting caller as { cb, expect }; see restartSam.
 var samRestartWaiting = [];
+var samRestartedThisRun = false;
 var FROM_HBC_FILE = '/var/lib/tvweb/.from-homebrew-channel';
 
+/*
+ * Once sam has been restarted, the home launcher stops taking in new launch
+ * points: on a B8 (webOS 4.4.3) an app installed afterwards was in
+ * listLaunchPoints but not on the ribbon until sam was restarted again. The
+ * boot hook restarts sam when tile hiding is on with apps hidden (except on a
+ * Homebrew Channel install), and the server does on each hide and unhide.
+ */
 function launcherNeedsRestart() {
+  if (samRestartedThisRun) return true;
   if (fs.existsSync(FROM_HBC_FILE)) return false;
   return isTileHidingEnabled() && Object.keys(readHiddenAppsList()).length > 0;
 }
 
-/** After an install or uninstall: nudges sam where supported, never restarting it. cb(rescanned). */
+/** After an install or uninstall: restarts sam if the launcher would otherwise miss the change. cb(restarted). */
 function refreshLauncher(cb) {
   cb = cb || function () {};
   if (!launcherNeedsRestart() || !tileHidingAllowed()) return cb(false);
-  samrescan.canNudge(function (has) {
-    if (!has) return cb(false);
-    console.log('apps: nudging sam so the home screen updates');
-    restartSamShared(cb);
-  });
+  console.log('apps: refreshing sam so the home screen updates');
+  restartSamShared(cb);
 }
 
 function restartSamShared(cb, expect) {
@@ -493,13 +530,95 @@ function rescanApps(expect, cb) {
  * 7/9 (samrescan.refresh). Never restarts sam (#366, #1315). cb(true) once
  * sam has caught up, cb(false) otherwise.
  */
+/*
+ * How this TV's sam is made to read the apps again: a block and release of
+ * each app (webOS 10 and 11), the configd nudge (webOS 7 and 9), or, where it
+ * has neither (webOS 4 to 6), a restart. A restart is kept for tile hiding
+ * there because it is the only way, and owners using LG's launcher hide tiles
+ * with it; Glasshouse Home and the newer TVs never restart sam (#366, #1315).
+ */
+function rescanMethod(cb) {
+  if (samrescan.canRereadApp()) return cb('reread');
+  samrescan.canNudge(function (has) { cb(has ? 'nudge' : 'restart'); });
+}
+
 function restartSam(cb, expect) {
   cb = cb || function () {};
   if (!tileHidingAllowed()) {
     console.log('apps: sam not rescanned - tile hiding is disabled in configuration (#366)');
     return cb(false);
   }
-  rescanApps(expect, cb);
+  if (!lunaFn) return restartSamNow(cb);
+  rescanMethod(function (how) {
+    if (how === 'restart') return restartSamNow(cb);
+    rescanApps(expect, cb);
+  });
+}
+
+function restartSamNow(cb) {
+  function executeRestart(savedAppId) {
+    /*
+     * systemd rate-limits on-failure restarts - StartLimitBurst=5 inside
+     * StartLimitIntervalSec=10s on webOS 5 and webOS 9 TVs. Hiding a run of
+     * tiles restarts sam once each, so from the sixth restart on systemd refuses
+     * and leaves the unit failed: no home screen, and the next launch lands on
+     * the last input. Clearing the counter first makes each kill look like the
+     * first. The units that require sam restart with it and have the same
+     * limit - on a C2, eim (the inputs), homelaunchpoints and criu - so theirs
+     * are cleared too: a quick run of hides left eim failed and the TV with no
+     * HDMI inputs until it was started by hand.
+     */
+    var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
+              'systemctl reset-failed ' + SAM_UNITS + ' >/dev/null 2>&1 || true; ' +
+              'killall -9 LunaExecutable >/dev/null 2>&1 || true; ' +
+              'systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true; ' +
+              'elif command -v initctl >/dev/null 2>&1; then ' +
+              'initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true; ' +
+              'else ' +
+              'pkill -9 -x sam >/dev/null 2>&1 || true; ' +
+              'fi';
+    samRestartedThisRun = true;
+    execFn('/bin/sh', ['-c', cmd], { timeout: 6000 }, function (err) {
+      if (err) console.error('apps: restartSam error: ' + err.message);
+      waitForSam(function () { startFailedDependents(function () { restoreApp(err); }); });
+    });
+
+    function restoreApp(err) {
+      if (savedAppId && savedAppId !== 'com.webos.app.home' && savedAppId !== 'com.webos.app.screensaver' && lunaFn) {
+        if (!samrescan.hasHdmiSignal(savedAppId)) {
+          if (cb) cb(!err);
+          return;
+        }
+        var attempts = 0;
+        function tryRestore() {
+          attempts++;
+          lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (resp) {
+            if (resp && resp.returnValue) {
+              lunaFn('com.webos.applicationManager/launch', { id: savedAppId }, function () {
+                if (cb) cb(!err);
+              });
+            } else if (attempts < 10) {
+              setTimeout(tryRestore, 200);
+            } else {
+              if (cb) cb(!err);
+            }
+          });
+        }
+        setTimeout(tryRestore, 300);
+      } else {
+        if (cb) cb(!err);
+      }
+    }
+  }
+
+  if (lunaFn) {
+    lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+      var savedAppId = (fg && fg.returnValue && fg.appId) ? fg.appId : null;
+      executeRestart(savedAppId);
+    });
+  } else {
+    executeRestart(null);
+  }
 }
 
 function isMounted(filePath, cb) {
@@ -842,81 +961,77 @@ function hideTile(appId, cb) {
     return cb({ ok: false, error: 'appinfo.json not found for ' + appId });
   }
 
-  canRescanTiles(function (canRescan) {
-    if (!canRescan) return cb({ ok: false, error: TILES_NO_RESCAN_ERROR });
+  unmountAllForApp(appId, function () {
+    var stock;
+    try {
+      stock = JSON.parse(fs.readFileSync(tgts[0], 'utf8'));
+    } catch (e) {
+      return cb({ ok: false, error: 'Failed to read stock appinfo: ' + e.message });
+    }
 
-    unmountAllForApp(appId, function () {
-      var stock;
-      try {
-        stock = JSON.parse(fs.readFileSync(tgts[0], 'utf8'));
-      } catch (e) {
-        return cb({ ok: false, error: 'Failed to read stock appinfo: ' + e.message });
-      }
+    stock.visible = false;
+    mkdirp(OVERRIDE_DIR);
+    var ovr = path.join(OVERRIDE_DIR, appId + '.json');
+    try {
+      fs.writeFileSync(ovr, JSON.stringify(stock, null, 2));
+    } catch (e) {
+      return cb({ ok: false, error: 'Failed to write override appinfo: ' + e.message });
+    }
 
-      stock.visible = false;
-      mkdirp(OVERRIDE_DIR);
-      var ovr = path.join(OVERRIDE_DIR, appId + '.json');
-      try {
-        fs.writeFileSync(ovr, JSON.stringify(stock, null, 2));
-      } catch (e) {
-        return cb({ ok: false, error: 'Failed to write override appinfo: ' + e.message });
-      }
-
-      var wasEnabled = isTileHidingEnabled();
-      var i = 0;
-      var mountErrors = [];
-      var mountNext = function () {
-        if (i >= tgts.length) {
-          if (mountErrors.length === tgts.length) {
-            return cb({ ok: false, error: 'Bind mount failed: ' + mountErrors.join('; ') });
-          }
-
-          var hiddenMap = readHiddenAppsList();
-          hiddenMap[appId] = true;
-          writeHiddenAppsList(hiddenMap);
-          try {
-            mkdirp(path.dirname(TILE_HIDING_FLAG_FILE));
-            fs.writeFileSync(TILE_HIDING_FLAG_FILE, '1\n', 'utf8');
-          } catch (e) {}
-
-          var expect = {};
-          expect[appId] = false;
-          return restartSamShared(function (rescanned) {
-            if (!rescanned) {
-              return unmountAllForApp(appId, function () {
-                unlinkQuiet(ovr);
-                var currentMap = readHiddenAppsList();
-                delete currentMap[appId];
-                writeHiddenAppsList(currentMap);
-                try {
-                  if (!wasEnabled) fs.writeFileSync(TILE_HIDING_FLAG_FILE, '0\n', 'utf8');
-                } catch (e) {}
-                cb({
-                  ok: false,
-                  id: appId,
-                  hidden: false,
-                  error: TILES_NOT_TAKEN_ERROR
-                });
-              });
-            }
-            cb({
-              ok: true,
-              id: appId,
-              hidden: true,
-              samRestarted: rescanned
-            });
-          }, expect);
+    var wasEnabled = isTileHidingEnabled();
+    var i = 0;
+    var mountErrors = [];
+    var mountNext = function () {
+      if (i >= tgts.length) {
+        if (mountErrors.length === tgts.length) {
+          return cb({ ok: false, error: 'Bind mount failed: ' + mountErrors.join('; ') });
         }
 
-        var tgt = tgts[i++];
-        execFn('/bin/mount', ['--bind', ovr, tgt], { timeout: 4000 }, function (mountErr) {
-          if (mountErr) mountErrors.push(mountErr.message);
-          mountNext();
-        });
-      };
+        var hiddenMap = readHiddenAppsList();
+        hiddenMap[appId] = true;
+        writeHiddenAppsList(hiddenMap);
+        try {
+          mkdirp(path.dirname(TILE_HIDING_FLAG_FILE));
+          fs.writeFileSync(TILE_HIDING_FLAG_FILE, '1\n', 'utf8');
+        } catch (e) {}
 
-      mountNext();
-    });
+        var expect = {};
+        expect[appId] = false;
+        return restartSamShared(function (rescanned) {
+          if (!rescanned) {
+            return unmountAllForApp(appId, function () {
+              unlinkQuiet(ovr);
+              var currentMap = readHiddenAppsList();
+              delete currentMap[appId];
+              writeHiddenAppsList(currentMap);
+              try {
+                if (!wasEnabled) fs.writeFileSync(TILE_HIDING_FLAG_FILE, '0\n', 'utf8');
+              } catch (e) {}
+              cb({
+                ok: false,
+                id: appId,
+                hidden: false,
+                error: TILES_NOT_TAKEN_ERROR
+              });
+            });
+          }
+          cb({
+            ok: true,
+            id: appId,
+            hidden: true,
+            samRestarted: rescanned
+          });
+        }, expect);
+      }
+
+      var tgt = tgts[i++];
+      execFn('/bin/mount', ['--bind', ovr, tgt], { timeout: 4000 }, function (mountErr) {
+        if (mountErr) mountErrors.push(mountErr.message);
+        mountNext();
+      });
+    };
+
+    mountNext();
   });
 }
 
