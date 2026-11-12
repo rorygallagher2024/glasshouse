@@ -2287,7 +2287,7 @@ function handleRequest(req, res) {
   if (pathname === '/api/stats') {
     return telemetryModule.collectStats(function (s) {
       // PicCap's capture and Hue Sync's streaming, where installed, for the
-      // Advanced tab.
+      // Ambient Light tab.
       piccapStatusFn(function (pc) {
         huesyncStatusFn(function (hs) {
           var keyboardUp = keyboardUpFn();
@@ -2298,8 +2298,8 @@ function handleRequest(req, res) {
           var copy = {};
           for (var k in s) copy[k] = s[k];
           if (clockModule) copy.clockHour12 = clockHour12();
-          if (pc) copy.piccapCapture = pc;
-          if (hs) copy.huesyncStreaming = hs;
+          if (pc) { pc.writable = config.allowControl === true; copy.piccapCapture = pc; }
+          if (hs) { hs.writable = config.allowControl === true; copy.huesyncStreaming = hs; }
           if (scans !== undefined) copy.deviceScans = scans;
           // For the Control tab's keyboard box.
           if (keyboardUp !== null) copy.keyboardUp = keyboardUp;

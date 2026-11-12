@@ -225,3 +225,22 @@ limited to. An icon is only read from inside its app's own folder,
 whatever the app's `appinfo.json` names. Anyone on the network can tell which
 apps are installed by asking for their icons. Off by default. A port already in use is logged and left, and the
 dashboard and Home Assistant bridge carry on without it.
+
+Hue Sync setting controls call the installed app's own service to change its
+brightness, intensity, synchronization mode, entertainment area, per-mode
+background light and automatic start. They do not write Glasshouse configuration
+or enter backups: the settings belong to the Hue Sync app. Background-light and
+auto-start setters are confirmed by a retail-app capture. Automatic-start
+notifications use the same
+boolean setter. A read-only Hue Sync subscription keeps the web, TV and MQTT controls current;
+pairing, reset, analytics and logging-upload actions are not invoked.
+
+Ambient Light has its own top-level page after Home in the web dashboard and
+between Audio and Screen Saver in the TV app. It holds
+separate Hue Sync and PicCap categories, in that order, with independent
+Hue Sync Enabled and PicCap Enabled switches and all supported settings shown
+directly. Unavailable integrations and their headings are hidden. The web
+Control page also has quick toggles below Playback, using the same commands and
+write permissions. Both dashboards hide the Ambient Light tab when neither
+integration is available; saved links then open Control on the web or Metrics
+in the TV app.

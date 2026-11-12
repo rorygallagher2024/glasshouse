@@ -17,6 +17,15 @@ The **Control** tab, `/?tab=control`, turns the TV into a locally controlled dev
 * **Volume and mute:** Volume slider, precision step buttons (`+` and `-`), and a one-click mute toggle.
 * **Source selection:** One-click switching across active TV inputs, including HDMI ports and Live TV, with an active indicator marking the current display source.
 
+## Ambient Light
+
+**Hue Sync** and **PicCap** quick toggles sit directly below
+Playback, in that order. Each shows On or Off and switches independently.
+Unavailable integrations are hidden. All settings are on the
+[Ambient Light](ambient-light.md) page.
+
+![Ambient Light quick toggles below Playback, simulated data](../screenshots/control-ambient.png)
+
 ## Picture and sound
 
 ![Picture opened: the picture modes, the OLED light slider and the energy saving choices](../screenshots/control-picture.png)

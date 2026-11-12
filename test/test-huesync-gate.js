@@ -28,7 +28,7 @@ function luna(uri, payload, cb) {
 }
 var publishes = [];
 var availability = [];
-var huesync = huesyncModule.init({
+var huesync = huesyncModule.init({ settings: false,
   luna: luna,
   pollIntervalMs: 1000,
   installed: function () { return installed; },

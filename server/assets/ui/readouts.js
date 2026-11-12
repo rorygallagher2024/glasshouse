@@ -395,11 +395,16 @@ async function tick() {
       if (q('adv-lights')) q('adv-lights').hidden = lights.standby === undefined && !lights.hasLogo;
       const pc = d.piccapCapture;
       const pcVal = getLease('piccap', pc ? pc.running : undefined);
-      advPill('piccap', 'btn_piccap', pc ? (pcVal !== undefined ? pcVal : pc.running) : undefined);
+      renderAmbientPower('piccap', pc ? (pcVal !== undefined ? pcVal : pc.running) : undefined);
+      for (const id of ['btn_piccap', 'ctl_piccap']) q(id).disabled = !!pc && pc.writable === false;
       const hs = d.huesyncStreaming;
+      renderHuesyncSettings(hs);
       const hsVal = getLease('huesync', hs ? hs.streaming : undefined);
-      advPill('huesync', 'btn_huesync', hs ? (hsVal !== undefined ? hsVal : hs.streaming) : undefined);
-      if (q('adv-piccap')) q('adv-piccap').hidden = !pc && !hs;
+      renderAmbientPower('huesync', hs ? (hsVal !== undefined ? hsVal : hs.streaming) : undefined);
+      q('ambient-huesync').hidden = !hs;
+      q('ambient-piccap').hidden = !pc;
+      q('ambient-empty').hidden = !!pc || !!hs;
+      q('control-ambient').hidden = !pc && !hs;
       const devVal = getLease('deviceDetection', d.deviceDetection);
       advPill('devdetect', 'btn_devdetect', devVal !== undefined ? devVal : d.deviceDetection);
       const scanVal = getLease('deviceScans', d.deviceScans);
@@ -681,6 +686,10 @@ async function tick() {
     if (q('tab-btn-oledcare')) q('tab-btn-oledcare').hidden = !isOledSet;
     // If it was showing when the set turned out not to be an OLED, leave it.
     if (!isOledSet && activeTab === 'oledcare') showTab('control');
+
+    ambientAvailable = !!(d.huesyncStreaming || d.piccapCapture);
+    q('tab-btn-ambient').hidden = !ambientAvailable;
+    if (!ambientAvailable && activeTab === 'ambient') showTab('control');
 
     const ssOnInput = /^hdmi[1-4]$/.test(d.app || '') || d.app === 'livetv';
     refuseScreensaver(q('btn_ss'), ssOnInput ? SS_ONLY_IN_APPS : '');

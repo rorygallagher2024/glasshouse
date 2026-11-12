@@ -374,7 +374,7 @@ var NOT_CARRIED = {
   input: 'action', sendText: 'action', launch_app: 'action', launchApp: 'action', launch_url: 'action',
   launchUrl: 'action', close_app: 'action', closeApp: 'action', playback: 'action', media: 'action',
   resetAdId: 'action', clearAdCookies: 'action', privacyAllOff: 'action', sleepTimer: 'action',
-  piccap: 'action', huesync: 'action', serviceMenuOpen: 'action', tvAppInstall: 'action', tvAppRemove: 'action',
+  piccap: 'action', huesync: 'action', huesyncSetting: 'external Hue Sync app settings, not stored by Glasshouse', serviceMenuOpen: 'action', tvAppInstall: 'action', tvAppRemove: 'action',
   rcu: 'action', keyboardText: 'action', keyboardKey: 'action', screensaver: 'action', toast: 'action',
   screensaverRandomPool: 'choose',
   powerOn: 'action', powerOff: 'action', reboot: 'action', refresherSchedule: 'action', refresherCancel: 'action',

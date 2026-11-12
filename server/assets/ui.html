@@ -66,6 +66,7 @@
     <button type="button" role="tab" data-tab="metrics"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg><span data-t="tab.metrics">Metrics</span></button>
     <button type="button" role="tab" data-tab="apps"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span data-t="tab.apps">Apps</span></button>
     <button type="button" role="tab" data-tab="home" id="tab-btn-home" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-6.5 8 6.5"/><path d="M6.5 9.5V19h11V9.5"/><path d="M10.5 19v-5h3v5"/></svg><span data-t="tab.home">Home</span></button>
+    <button type="button" role="tab" data-tab="ambient" id="tab-btn-ambient" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="7" width="12" height="10" rx="1.5"/><path d="M3 8v8M21 8v8M8 4h8M8 20h8"/></svg><span data-t="adv.ambient">Ambient Light</span></button>
     <button type="button" role="tab" data-tab="privacy"><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.4-3 8-7 9.5-4-1.5-7-5.1-7-9.5V6z"/></svg><span data-t="tab.privacy">Privacy</span></button>
     <button type="button" role="tab" data-tab="oledcare" id="tab-btn-oledcare" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 8.5v5M9.5 11h5"/></svg><span data-t="tab.oledCare">OLED Care</span></button>
     <button type="button" role="tab" data-tab="game" id="tab-btn-game" hidden><svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10a4 4 0 0 1 4 4v1.5a3 3 0 0 1-5.4 1.8L14.5 14h-5l-1.1 1.3A3 3 0 0 1 3 13.5V12a4 4 0 0 1 4-4z"/><path d="M7.5 11v2.5M6.25 12.25h2.5M16 12h.01"/></svg><span data-t="tab.game">Game</span></button>
@@ -299,12 +300,20 @@
       <div class="btns" id="inputs"></div>
     </div>
 
-    <div class="set"><div class="lbl" data-t="ctl.playback">Playback</div>
+    <div class="set" id="control-playback"><div class="lbl" data-t="ctl.playback">Playback</div>
       <div class="playback-btns">
         <button onclick="sendCommand('media','rewind')" data-t="ctl.rewind">Rewind</button>
         <button onclick="sendCommand('media','playPause')" data-t="ctl.playPause">Play / Pause</button>
         <button onclick="sendCommand('media','stop')" data-t="ctl.stop">Stop</button>
         <button onclick="sendCommand('media','fastForward')" data-t="ctl.fastForward">Fast Fwd</button>
+      </div>
+
+      <div class="set" id="control-ambient" hidden>
+        <div class="lbl" data-t="adv.ambient">Ambient Light</div>
+        <div class="btns">
+          <button type="button" id="ctl_huesync" onclick="toggleHuesync()" aria-pressed="false" hidden><span data-t="adv.huesync.title">Hue Sync</span> &middot; <span id="ctl_huesync_state">&mdash;</span></button>
+          <button type="button" id="ctl_piccap" onclick="togglePiccap()" aria-pressed="false" hidden><span data-t="ambient.piccap.title">PicCap</span> &middot; <span id="ctl_piccap_state">&mdash;</span></button>
+        </div>
       </div>
     </div>
 
@@ -609,6 +618,71 @@
   </details>
 </section>
 
+<section class="priv panel" id="ambientpane" role="tabpanel" hidden>
+  <div class="lbl" data-t="adv.ambient">Ambient Light</div>
+  <div class="sub" id="ambient-empty" hidden data-t="ambient.none">No ambient light integrations found.</div>
+  <div id="ambient-huesync" hidden>
+    <div class="pv-sec" data-t="adv.huesync.title">Hue Sync</div>
+    <div class="prot-table">
+      <div class="prot-row" id="row-huesync" hidden>
+        <div class="prot-main">
+          <div class="prot-title" data-t="adv.huesync">Hue Sync Enabled</div>
+          <div class="prot-desc" data-t="adv.huesync.desc">Starts or stops streaming screen colour data to the selected entertainment area for ambient light.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="btn_huesync" onclick="toggleHuesync()">&mdash;</button></div>
+      </div>
+    </div>
+    <div id="huesync-settings" hidden>
+    <div class="prot-table">
+      <div class="prot-row" id="row-huesync-brightness" hidden>
+        <label class="prot-main" for="huesync-brightness" data-t="adv.huesync.brightness">Brightness</label>
+        <div class="prot-status"><input class="pill-sel" type="number" min="0" max="100" step="1" id="huesync-brightness" onchange="changeHuesyncSetting(this)"></div>
+      </div>
+      <div class="prot-row" id="row-huesync-intensity" hidden>
+        <label class="prot-main" for="huesync-intensity" data-t="adv.huesync.intensity">Intensity</label>
+        <div class="prot-status"><select class="pill-sel" id="huesync-intensity" onchange="changeHuesyncSetting(this)"></select></div>
+      </div>
+      <div class="prot-row" id="row-huesync-sync_mode" hidden>
+        <label class="prot-main" for="huesync-sync_mode" data-t="adv.huesync.syncmode">Synchronization mode</label>
+        <div class="prot-status"><select class="pill-sel" id="huesync-sync_mode" onchange="changeHuesyncSetting(this)"></select></div>
+      </div>
+      <div class="prot-row" id="row-huesync-current_ec" hidden>
+        <label class="prot-main" for="huesync-current_ec" data-t="adv.huesync.currentec">Entertainment area</label>
+        <div class="prot-status"><select class="pill-sel" id="huesync-current_ec" onchange="changeHuesyncSetting(this)"></select></div>
+      </div>
+      <div class="prot-row" id="row-huesync-background_lightning_video" hidden>
+        <label class="prot-main" for="huesync-background_lightning_video" data-t="adv.huesync.backgroundlightningvideo">Background light (video)</label>
+        <div class="prot-status"><button type="button" class="pill idle" id="huesync-background_lightning_video" onclick="changeHuesyncSetting(this)" aria-pressed="false">&mdash;</button></div>
+      </div>
+      <div class="prot-row" id="row-huesync-background_lightning_games" hidden>
+        <label class="prot-main" for="huesync-background_lightning_games" data-t="adv.huesync.backgroundlightninggames">Background light (game)</label>
+        <div class="prot-status"><button type="button" class="pill idle" id="huesync-background_lightning_games" onclick="changeHuesyncSetting(this)" aria-pressed="false">&mdash;</button></div>
+      </div>
+      <div class="prot-row" id="row-huesync-auto_start" hidden>
+        <label class="prot-main" for="huesync-auto_start" data-t="adv.huesync.autostart">Automatic start</label>
+        <div class="prot-status"><button type="button" class="pill idle" id="huesync-auto_start" onclick="changeHuesyncSetting(this)" aria-pressed="false">&mdash;</button></div>
+      </div>
+      <div class="prot-row" id="row-huesync-auto_start_notification" hidden>
+        <label class="prot-main" for="huesync-auto_start_notification" data-t="adv.huesync.autostartnotification">Automatic start notification</label>
+        <div class="prot-status"><button type="button" class="pill idle" id="huesync-auto_start_notification" onclick="changeHuesyncSetting(this)" aria-pressed="false">&mdash;</button></div>
+      </div>
+    </div>
+    </div>
+  </div>
+  <div id="ambient-piccap" hidden>
+    <div class="pv-sec adv-sec" data-t="ambient.piccap.title">PicCap</div>
+    <div class="prot-table">
+      <div class="prot-row" id="row-piccap" hidden>
+        <div class="prot-main">
+          <div class="prot-title" data-t="adv.piccap">PicCap Enabled</div>
+          <div class="prot-desc" data-t="adv.piccap.desc">Starts or stops screen capture for Hyperion or HyperHDR to provide ambient light.</div>
+        </div>
+        <div class="prot-status"><button type="button" class="pill idle" id="btn_piccap" onclick="togglePiccap()">&mdash;</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="priv panel" id="advpane" role="tabpanel" hidden>
   <div class="lbl" data-t="tab.system">System</div>
   <div class="pv-sec" data-t="adv.powerStandby">Power &amp; standby</div>
@@ -783,25 +857,6 @@
         <div class="prot-desc" data-t="adv.lgLogo.desc">Shows the LG logo as the TV switches on and off. LG calls this LG Logo Display.</div>
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="btn_lglogo" onclick="toggleLgLogo()">&mdash;</button></div>
-    </div>
-  </div>
-
-  <!-- Only where PicCap or Hue Sync are installed. -->
-  <div class="pv-sec adv-sec" id="adv-piccap" hidden data-t="adv.ambient">Ambient light</div>
-  <div class="prot-table">
-    <div class="prot-row" id="row-piccap" hidden>
-      <div class="prot-main">
-        <div class="prot-title" data-t="adv.piccap">PicCap capture</div>
-        <div class="prot-desc" data-t="adv.piccap.desc">Sends what is on screen to PicCap's Hyperion server, which drives an ambient light behind the TV. Off stops the capture, and the light with it.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="btn_piccap" onclick="togglePiccap()">&mdash;</button></div>
-    </div>
-    <div class="prot-row" id="row-huesync" hidden>
-      <div class="prot-main">
-        <div class="prot-title" data-t="adv.huesync">Hue Sync streaming</div>
-        <div class="prot-desc" data-t="adv.huesync.desc">Starts and stops the colour stream the Hue Sync app sends to a Philips Ambience light. Off stops the stream, and the light with it.</div>
-      </div>
-      <div class="prot-status"><button type="button" class="pill idle" id="btn_huesync" onclick="toggleHuesync()">&mdash;</button></div>
     </div>
   </div>
 

@@ -31,6 +31,7 @@ Shows the installed version and whether a newer release is out. **Check now** lo
 | Ad blocking and your own hosts list, Limit ad tracking, and live content recognition when it is off | Live content recognition when it is on, and LG's other agreements: switching them on agrees to LG's terms, so that is done on the TV |
 | Background services switched off, Network device scans (which a set-top box controlled by the Magic Remote needs on), saved web pages (a restore adds those missing), remote keys and Quick Access | Hidden system apps, which restart LG's app manager to apply, and blocking LG's TV updates, to choose on each TV |
 | The screen saver and how long before the TV switches off | LG's On and Off Timers |
+| — | Hue Sync app settings, which belong to Hue Sync, and Hue Sync/PicCap streaming actions |
 | Glasshouse Home's layout | Whether Glasshouse Home is on, a custom launcher, wallpaper pictures and Internet TV playlists, which can hold logins |
 | Logging, the log server, the time server, watch time and daily backups being on, Prometheus, the daily update check | Who can reach the dashboard (port, host, token, controls), MQTT, Home Assistant API, per-screen-saver entity, colour and random pool choices, the TV's name, the experimental switches, and watch time itself |
 

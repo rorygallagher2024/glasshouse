@@ -298,6 +298,9 @@ and show none.
 
 From the repository root, `scripts/check-all.sh` runs the checks CI runs, side by side, and shows the output of any that fail. It runs `npm ci` only when `package-lock.json` has changed since the last install, and `--quick` leaves out the dashboard and updater checks. `check-upgrade.js` reads the committed tree, so commit first.
 
+The script requires Bash on the development computer: its `-nt` file timestamp
+comparison is supported by Bash but is not portable to POSIX `sh`.
+
 ```bash
 scripts/check-all.sh
 ```
@@ -562,3 +565,51 @@ The audio route checks use a readable stream for request bodies, including
 the UTF-8 decoding used by every JSON POST.
 The split-character route fixture uses the server's buffer helper so it
 also runs on Node 0.10 and 0.12.
+
+`test-huesync-settings.js` covers captured Hue Sync response encodings, native
+write payloads, validation, unavailable settings, rejected and ignored writes,
+control permissions, retained MQTT JSON and discovery. The streaming regression
+suites retain their power-only fixtures. The fuller retail-app capture establishes the boolean write protocol, but these
+mocks do not establish Glasshouse behavior on hardware.
+
+`test-huesync-events.js` uses synthetic identifiers and diagnostic objects. It
+covers native subscription values, privacy filtering, reconnect hydration,
+read/event races, transient availability, unsupported keys, external busy and
+readiness blockers, shared write serialization, delayed completion, ignored and
+delayed stops, subscription teardown and polling fallback. The dashboard check
+also exercises automatic-start notifications, stale controls remaining visible,
+busy/read-only locking and all settings without a submenu or status paragraph. Never add the raw setup capture, pairing
+codes, credentials, bridge/device IDs or real entertainment-area names to tests.
+
+The drift check includes Hue Sync's dynamic entity IDs from the catalogue,
+so the documented settings rows are checked alongside static
+entities. Computed ID prefixes are not treated as complete entity IDs.
+
+Home Assistant discovery validation now includes the synthetic
+`test/fixtures/huesync-settings.json` settings. It renders all eight controls with fresh, stale and missing state and checks the select command
+mappings. This covers the final templates after safe-field rewriting, where
+missing JSON properties become `none` rather than undefined.
+
+The Hue Sync event tests also verify that internal readiness and busy status
+create no Home Assistant diagnostic entities or diagnostic MQTT publications.
+
+Ambient Light dashboard checks cover the web page below Home, the TV menu
+between Audio and Screen Saver, every Hue Sync setting directly accessible, and
+independent PicCap/Hue Sync switches. The
+web Control shortcuts stay below Playback and share state and write permissions
+with Ambient Light. Checks cover narrow/light and wide/dark layouts, native
+command types, duplicate area names, failed writes, read-only/busy states and
+disappearing integrations. Both dashboards check separate integration categories,
+Hue Sync before PicCap, Enabled labels in settings, shorter remote labels, and
+availability combinations with neither, either or both integrations. Missing integrations leave no empty
+headings or shortcuts. PicCap descriptions name both Hyperion and HyperHDR.
+`test-dashboard-view.js` also checks the TV menu order, flat row grouping, empty
+state and per-field stale permissions.
+The browser checks verify that all four Hue Sync boolean settings use standard
+On/Off pill toggles, send native booleans and retain their confirmed state after
+a refused write. Both dashboards hide the Ambient Light tab when neither
+integration is available, including on deep links, and keep it for a stopped
+integration. The web tab returns when an integration becomes available again.
+`test-routes.js` verifies both integrations' write permissions. Screenshots use
+synthetic data. The Hue Sync checks wait for intercepted requests to finish
+before closing each page, so pending stats replies cannot outlive the page.

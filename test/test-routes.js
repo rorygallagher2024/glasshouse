@@ -93,6 +93,28 @@ function createMockRes(cb) {
   console.log('  ✓ parseUrl handles query strings and missing paths cleanly');
 })();
 
+// Both ambient-light dashboards need the same PicCap write permissions.
+(function testAmbientWritePermissions() {
+  var cfg = { allowControl: false, web: { enabled: false }, port: 8080 };
+  routes.init({ config: cfg,
+    telemetry: { collectStats: function (cb) { cb({ ok: true }); } },
+    piccapStatus: function (cb) { cb({ running: true }); },
+    huesyncStatus: function (cb) { cb({ streaming: true }); }
+  });
+  [false, true].forEach(function (writable) {
+    cfg.allowControl = writable;
+    routes.handleRequest(createMockReq({ url: '/api/stats' }), createMockRes(function (res) {
+      var state = JSON.parse(res.body);
+      assert.strictEqual(state.piccapCapture.running, true);
+      assert.strictEqual(state.huesyncStreaming.streaming, true);
+      assert.strictEqual(state.piccapCapture.writable, writable);
+      assert.strictEqual(state.huesyncStreaming.writable, writable);
+    }));
+  });
+  routes.init({ piccapStatus: function (cb) { cb(null); }, huesyncStatus: function (cb) { cb(null); } });
+  console.log('  \u2713 ambient integration state and write permissions');
+})();
+
 // The setup state gives the local addresses and the name, each with the port.
 (function testSetupStateAddress() {
   var origInterfaces = os.networkInterfaces;
