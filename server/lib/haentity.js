@@ -266,9 +266,38 @@ function list(cb) {
   });
 }
 
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+/*
+ * readMany(ids, cb) - cb({ ok, entities: { id: { state, attributes,
+ * updated } }, errors: { id: message } }). One request per entity, all in
+ * flight together: a saver asking for eight values should wait for the
+ * slowest, not for eight timeouts in turn.
+ */
+function readMany(ids, cb) {
+  cb = cb || function () {};
+  var out = {};
+  var errors = {};
+  var left = ids.length;
+  if (!left) return cb({ ok: true, entities: out, errors: errors });
+  for (var i = 0; i < ids.length; i++) {
+    (function (id) {
+      read(id, function (r) {
+        if (r.ok) {
+          out[id] = { state: r.state, attributes: r.attributes, updated: r.updated };
+        } else {
+          errors[id] = r.error || 'Home Assistant did not answer';
+        }
+        if (--left === 0) cb({ ok: true, entities: out, errors: errors });
+      });
+    })(ids[i]);
+  }
+}
+
 module.exports = {
   init: init,
   read: read,
+  readMany: readMany,
   list: list,
   configured: configured,
   hasCredentials: hasCredentials,
