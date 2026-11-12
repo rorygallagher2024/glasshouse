@@ -39,7 +39,24 @@ function toggleHomeAutoLaunch(id) { sendCommand('homeAutoLaunch', flip(id || 'ho
 function toggleClockHour12() { sendCommand('clockHour12', flip('btn_clock12')); }
 function toggleLgLogo() { sendCommand('lgLogo', flip('btn_lglogo')); }
 function togglePiccap() { sendCommand('piccap', flip('btn_piccap')); }
-function toggleHuesync() { sendCommand('huesync', flip('btn_huesync')); }
+// Starting can take up to ~9 s of retries on the TV, which refuses setting
+// changes meanwhile: the settings are locked for it, as a setting change
+// locks this switch.
+async function toggleHuesync() {
+  if (huesyncSettingsBusy) return;
+  const next = flip('btn_huesync');
+  huesyncSettingsBusy = true;
+  const settings = q('huesync-settings');
+  const locked = ['btn_huesync', 'ctl_huesync'].map(q)
+    .concat(settings ? [...settings.querySelectorAll('input, select, button')] : []);
+  locked.forEach(el => { if (el) el.disabled = true; });
+  try {
+    await sendCommand('huesync', next);
+  } finally {
+    huesyncSettingsBusy = false;
+    tick();
+  }
+}
 function toggleWol() { sendCommand('wakeOnLan', flip('btn_wol')); }
 
 function renderAmbientPower(which, on) {

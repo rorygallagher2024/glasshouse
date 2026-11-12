@@ -318,6 +318,9 @@ function requestStatus() {
       diagnostics = {};
       diagnosticStale = {};
       settingsAt = 0;
+      // Forgotten with the settings: Home Assistant drops their entities now,
+      // so the same settings read on return must announce them again.
+      discoveryShape = '';
       publishSettings();
     } else { statusFresh = false; }
     manageSubscription();
@@ -362,8 +365,9 @@ function getStatus(cb, force) {
  * it stays a quick single one.
  */
 var SET_ATTEMPTS = 3;
-var SET_CONFIRM_MS = 400;
-var SET_STABLE_MS = 3000;
+// Taken through init(), so tests need not wait the TV's own times.
+var setConfirmMs = 400;
+var setStableMs = 3000;
 
 function setAttempt(on, attempt, cb) {
   lunaFn(SERVICE + 'set', { key: 'streaming', data: on }, function (response) {
@@ -378,14 +382,14 @@ function setAttempt(on, attempt, cb) {
         if (!on && !took && latest.available && attempt < 5) {
           return setTimeout(function () {
             getStatus(function (state) { confirmStop(state, attempt + 1); }, true);
-          }, SET_CONFIRM_MS);
+          }, setConfirmMs);
         }
         finish(latest, took);
       }, true);
       function confirmStop(latest, count) {
         var took = latest.fresh === true && latest.isStreaming === false;
         if (!took && latest.available && count < 5) {
-          return setTimeout(function () { getStatus(function (state) { confirmStop(state, count + 1); }, true); }, SET_CONFIRM_MS);
+          return setTimeout(function () { getStatus(function (state) { confirmStop(state, count + 1); }, true); }, setConfirmMs);
         }
         finish(latest, took);
       }
@@ -400,7 +404,7 @@ function setAttempt(on, attempt, cb) {
                      : msg('srv.huesync.refused', 'Hue Sync refused the request'))
         });
       }
-    }, on ? SET_STABLE_MS : SET_CONFIRM_MS);
+    }, on ? setStableMs : setConfirmMs);
   }, APP_ID);
 }
 
@@ -516,6 +520,7 @@ function forget() {
   diagnostics = {};
   diagnosticStale = {};
   settingsAt = 0;
+  discoveryShape = '';
   manageSubscription();
   publishSettings();
   publishState(current(), true);
@@ -545,6 +550,8 @@ function init(opts) {
   Subscription = opts.Subscription || Subscription;
   if (opts.confirmIntervalMs >= 10) confirmIntervalMs = opts.confirmIntervalMs;
   if (opts.confirmAttempts >= 1) confirmAttempts = opts.confirmAttempts;
+  if (opts.setConfirmMs >= 10) setConfirmMs = opts.setConfirmMs;
+  if (opts.setStableMs >= 10) setStableMs = opts.setStableMs;
 
   if (typeof opts.onAvailableChange === 'function') onAvailableChange = opts.onAvailableChange;
   if (typeof opts.wanted === 'function') wanted = opts.wanted;

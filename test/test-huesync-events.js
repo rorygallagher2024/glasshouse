@@ -26,7 +26,7 @@ function luna(uri, payload, cb, appId) {
   if (/\/set$/.test(uri)) {
     writes.push([key, payload.data]);
     if (key === 'streaming') {
-      if (!ignoreStop) setTimeout(function () { values.streaming = '0'; }, 450);
+      if (!ignoreStop) setTimeout(function () { values.streaming = '0'; }, 45);
     } else if (delayed) {
       values.busy = '1';
       setTimeout(function () { values[key] = JSON.stringify(payload.data); values.busy = '0'; }, 25);
@@ -41,7 +41,9 @@ function luna(uri, payload, cb, appId) {
   cb(response);
 }
 var hue = hueModule.init({ luna: luna, installed: function () { return installed; }, Subscription: FakeSubscription,
-  confirmIntervalMs: 10, confirmAttempts: 8, onAvailableChange: function () { changes++; } });
+  confirmIntervalMs: 10, confirmAttempts: 8,
+  // A stop lands 45 ms after it is sent: after the first check, within the retries.
+  setConfirmMs: 40, setStableMs: 60, onAvailableChange: function () { changes++; } });
 hue.attachMqtt({ prefix: 'example/tv', allowControl: true, client: { connected: true,
   publish: function (topic, payload) { publishes.push([topic, payload]); } } });
 function emit(key, value) {
@@ -134,7 +136,11 @@ function testLifecycle() {
   hue.refreshAndPublishState(true);
   assert.strictEqual(hue.getState(), null);
   assert.deepEqual(hue.getSettings(), {});
+  // Back again with the same settings: discovery is announced for the
+  // switch, then again once the settings are read, so their entities return.
+  var beforeReturn = changes;
   missing = false; hue.refreshAndPublishState(true);
+  assert.strictEqual(changes - beforeReturn, 2, 'the settings entities are announced again on return');
   assert.strictEqual(subscriptions.length, 2);
   subscriptions[1].handlers.message({ returnValue: false, errorText: 'unknown method' });
   assert.strictEqual(subscriptions[1].stopped, true, 'unsupported subscription falls back to polling');
