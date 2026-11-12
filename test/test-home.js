@@ -3025,4 +3025,37 @@ step('on webOS 3 to 6 the app is refreshed only once it is not in front, since a
   });
 });
 
+// A B4 (webOS 10.3.2) with an app in front: Home ended the screen saver and
+// opened nothing, and LG's Home opened over the app 20 s later (#1377).
+step('a Home press that only ends the screen saver opens nothing, however tvpowerd orders it', function (done) {
+  start({ enabled: true });
+  home.start(function () {
+    foreground('org.jellyfin.webos');
+    powerState('Screen Saver');
+    tv.launched = [];
+    home.homeKey(true);
+    powerState('Active');   // tvpowerd, 170 ms after the button
+    home.homeKey(false);
+    wait(25000, function () {
+      assert.deepEqual(tv.launched, [], 'nothing opened over the app');
+      assert.ok(taken(), 'Glasshouse Home keeps LG\'s Home\'s place');
+      // The screen saver's end reported before the key is read.
+      powerState('Screen Saver');
+      powerState('Active');
+      home.homeKey(true);
+      home.homeKey(false);
+      wait(25000, function () {
+        assert.deepEqual(tv.launched, [], 'nor when the power change comes first');
+        // Long after the screen saver, a press over the app is a Home press as before.
+        home.homeKey(true);
+        home.homeKey(false);
+        wait(25000, function () {
+          assert.ok(tv.launched.indexOf(LG_HOME) !== -1, 'with no view opening, LG\'s Home is opened as before');
+          home.disable(function () { done(); });
+        });
+      });
+    });
+  });
+});
+
 next();
