@@ -222,6 +222,16 @@ has an unauthenticated root shell on port 23 &mdash; so treat anything stored
 there as readable by anyone on your network. `tvweb` tightens the file to `0600`
 at startup, but that is mitigation, not a fix.
 
+The Home Assistant API token, set on the **HA & MQTT** tab for the Home
+Assistant screen savers, is kept there too, as plain text, like the broker
+password. Encrypting it would not help: the server has to use it, so the key
+would sit on the same TV. It never leaves the TV through Glasshouse: the
+dashboard only reports whether one is set, backups leave it out, the screen
+savers' QML files never contain it, and it is sent only to the saved Home
+Assistant address. A long-lived token can do whatever its Home Assistant user
+can, so create it under a user made for the TV rather than an administrator,
+and revoke it from that user's profile page if the TV is ever compromised.
+
 The question that matters is not whether the bridge is authenticated (it is),
 but **what that credential is allowed to do**. Reuse your main Home Assistant
 MQTT user and a compromised TV can publish to any topic on the broker &mdash;

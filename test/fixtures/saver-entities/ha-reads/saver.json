@@ -1,0 +1,16 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": "Reads entities",
+  "description": "A screen saver drawing Home Assistant values it declares.",
+  "license": "MIT",
+  "uses": [
+    "level",
+    "ha"
+  ],
+  "order": 900,
+  "entities": {
+    "daylight": "sensor.example_daylight",
+    "sunrise": "sensor.example_sunrise"
+  }
+}

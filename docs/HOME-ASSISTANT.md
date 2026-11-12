@@ -39,7 +39,7 @@ Connecting Glasshouse to Home Assistant takes only a few minutes.
 
 ### Setting it up from the dashboard
 
-1. Open the dashboard in a browser, then navigate to the **MQTT** tab (`/?tab=mqtt`).
+1. Open the dashboard in a browser, then navigate to the **HA & MQTT** tab (`/?tab=mqtt`).
 2. Fill in the broker address, port (`1883`), and credentials.
 3. Switch **MQTT bridge** to **On** and save.
 
@@ -69,9 +69,9 @@ For config-file deployments, `deploy.sh` checks for `server/config.<tv-ip>.json`
 
 ### Which settings live where?
 
-The dashboard can change the broker, credentials, topic prefix and device identity — the settings that decide *where* telemetry goes.
+The dashboard can change the broker, credentials, topic prefix and device identity — the settings that decide *where* telemetry goes — along with the Home Assistant API URL and token used by screen savers.
 
-`port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the MQTT tab ([App icons](#app-icons-for-launchers)).
+`port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the HA & MQTT tab ([App icons](#app-icons-for-launchers)).
 
 Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart.
 
@@ -116,6 +116,33 @@ mosquitto_sub -h <broker> -t 'lgtv/#' -v
 
 Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the same way. The Home Assistant Discovery messages are simply ignored by non-Home Assistant clients.
 
+### Screen savers reading Home Assistant
+
+**Home Assistant API** and **MQTT bridge** do separate jobs and are arranged in two sections on the **HA & MQTT** tab (`/?tab=mqtt`):
+
+* **MQTT bridge** publishes the TV's telemetry, sensors, and settings to your broker and receives remote control commands from Home Assistant.
+* **Home Assistant API** connects straight from the TV to Home Assistant over HTTP/HTTPS (using Home Assistant's REST API, without MQTT) so built-in screen savers and custom QML screen savers can read live entities from your smart home.
+
+![HA & MQTT tab showing MQTT bridge and Home Assistant API separated](screenshots/mqtt.png)
+
+*The HA & MQTT tab cleanly separates the MQTT bridge (controlling and observing the TV) from the Home Assistant API (reading Home Assistant entities into screen savers).*
+
+#### Configuring the Home Assistant API
+
+1. In Home Assistant, open your profile (bottom-left) → **Security** → **Long-Lived Access Tokens** → **Create Token** and copy the token.
+2. Open Glasshouse in a browser and navigate to **HA & MQTT** → **Home Assistant API**.
+3. Enter your **Home Assistant address** (for example `http://192.168.1.10:8123` or `http://homeassistant.local:8123`) and paste the **Long-Lived Access Token** (or set `homeAssistant.url` and `homeAssistant.token` in `config.json`).
+4. Click **Save** — credentials apply immediately without restarting the server — and Glasshouse checks the connection. The **Connection** box beside the settings draws the TV and Home Assistant as the MQTT bridge's box draws the TV and its broker: the link reads **Reachable** with Home Assistant's response time and how long ago a screen saver last read an entity, **Off**, or **Unreachable** with the reason. You can switch the **Home Assistant API** button off at any time to disable Home Assistant screen savers while keeping your saved address and token.
+
+![Home Assistant API settings showing the toggle, address, saved token, and the Connection box with Home Assistant reachable](screenshots/ha-api.png)
+
+Once enabled and connected, two Home Assistant screen savers unlock on the **Screensaver** tab (while off or unconfigured, both stay greyed out so non-Home-Assistant setups cannot pick them by mistake):
+
+* [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient) — shows the TV clock, date, and up to three configurable entities with optional custom display labels.
+* [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black.
+
+Custom QML screen savers added on the TV can read Home Assistant entities too. Each declares what it needs in `saver.json`, and Glasshouse serves only those entity IDs at local URLs, so the Home Assistant token never reaches a QML file. Those URLs carry Glasshouse's own dashboard token, where one is set, as the stats URL does. See [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) for the manifest and QML format.
+
 ---
 
 ## Entities
@@ -124,7 +151,7 @@ Once connected to the MQTT broker, Home Assistant discovers the TV as a single d
 
 ### Entity Selection
 
-You can choose which entity categories are published from the **MQTT** tab in the dashboard (`/?tab=mqtt`), or fine-tune individual entities. When a category or entity is disabled, `tvweb` publishes an empty discovery payload so Home Assistant unregisters the entity immediately, without leaving orphaned unavailable entities.
+You can choose which entity categories are published from the **HA & MQTT** tab in the dashboard (`/?tab=mqtt`), or fine-tune individual entities. When a category or entity is disabled, `tvweb` publishes an empty discovery payload so Home Assistant unregisters the entity immediately, without leaving orphaned unavailable entities.
 
 Categories:
 * **Controls & Media** (`controls`): Power, volume, mute, playback buttons, apps, and input sources.

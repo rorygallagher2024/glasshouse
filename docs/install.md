@@ -139,7 +139,7 @@ Glasshouse can be configured either directly on the TV screen with the remote or
     | `allowExperimentalInputBar` | `false` | Experimental: offers the [input bar](dashboard/apps.md#input-bar) under Remote keys on webOS 5, 7, 8 and 10, where it is untried. On webOS 4, 6 and 9 it is offered without it, and on webOS 11 never. Switched off, any key using it goes back to LG's. |
     | `screensaverPowerOffMinutes` | unset (off) | Puts the TV in standby once a screen saver has been on this many minutes (1 to 1440). Also set from the Screensaver tab as **Poweroff after**. |
     | `allowNetworkDebugger` | `false` | Exposes the webOS app inspector on port `9998` over the local network for developers using `ares-inspect`. |
-    | `iconServer` | `false` | Serves installed apps' icons, read-only and without a token, at `http://<tv-ip>:8082/icons/<appId>.png` (the dashboard's port plus two), for launchers on other devices. Home Assistant's Launch App select then lists each icon's address in `app_icons`. Also switched from the MQTT tab. |
+    | `iconServer` | `false` | Serves installed apps' icons, read-only and without a token, at `http://<tv-ip>:8082/icons/<appId>.png` (the dashboard's port plus two), for launchers on other devices. Home Assistant's Launch App select then lists each icon's address in `app_icons`. Also switched from the HA & MQTT tab. |
     | `update.check` | `false` | When `true`, automatically queries GitHub once daily for new Glasshouse releases. |
 
     #### Command-line flags
