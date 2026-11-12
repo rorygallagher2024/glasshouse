@@ -7,6 +7,15 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
+`test-apphosts.js` checks old jail copies, launch resets, new jails and
+recreated `etc` directories, missed watches, atomic writes, symlink refusal,
+write failures, file modes and restoring marked copies when blocking ends.
+`test-privacy-apphosts.js` exercises the real synchronizer with simulated
+mounts: clock sync both before and after mounting, tier and custom-list
+changes, learned countries, update-only blocking, disabling and a failed
+mount. It never runs a mount command. Debounce and fallback timings come
+through `init`; the filesystem checks wait for the changed file.
+
 `test-privacy.js` checks that `mtalk.google.com` is sinkholed on IPv4 and IPv6
 only in the Everything tier, and stays out of the Ads & telemetry and off tables.
 Regional platform checks cover the reported German and European hosts,

@@ -5,6 +5,7 @@ var list = say.list;
 var fs = require('fs');
 var readTrimmed = require('./util').readTrimmed;
 var execFile = require('child_process').execFile;
+var execFn = execFile;
 
 var ADBLOCK_HOSTS_FILE = '/var/lib/tvweb/adblock_hosts';
 // The repository's old name, kept: TVs' hosts files already carry this line,
@@ -383,7 +384,7 @@ function wouldStart(service, psText) {
 }
 
 var psArgs = function (cb) {
-  execFile('/bin/ps', ['-eo', 'args'], { timeout: 4000 }, function (err, stdout) {
+  execFn('/bin/ps', ['-eo', 'args'], { timeout: 4000 }, function (err, stdout) {
     cb(String(stdout || ''));
   });
 };
@@ -410,6 +411,8 @@ var lastAdBlockCheck = 0;
 var cachedPrivacy = null;
 /** @type {typeof import('./lgsettings')} */
 var lgSettingsModule = null;
+/** @type {typeof import('./apphosts')} */
+var appHostsModule = null;
 var lastPrivacyCheck = 0;
 var consentGroups = null;
 var consentMapFound = false;
@@ -417,6 +420,10 @@ var consentMapFound = false;
 function clearCache() {
   cachedPrivacy = null;
   cachedAdBlockActive = null;
+}
+
+function syncAppHosts() {
+  if (appHostsModule) appHostsModule.sync();
 }
 
 function storeHost() {
@@ -792,10 +799,11 @@ function finalizeSdpBlock(logMsg) {
   if (!sdpGraceActive) return;
   sdpGraceActive = false;
   if (logMsg) console.log(logMsg);
-  if (waitsForSdp(flagMode()) && isTableMounted()) {
+  if (waitsForSdp(flagMode())) {
     try {
       writeHostsTable(flagMode());
       clearCache();
+      if (isTableMounted()) syncAppHosts();
     } catch (e) {}
   }
 }
@@ -896,7 +904,7 @@ function scheduleSdpBlock() {
 function applyHostsTable(cb) {
   var mode = flagMode();
   var mounted = isTableMounted();
-  var done = function () { clearCache(); cb(null); };
+  var done = function () { clearCache(); syncAppHosts(); cb(null); };
   if (tableWanted(mode)) {
     try {
       writeHostsTable(mode);
@@ -906,8 +914,8 @@ function applyHostsTable(cb) {
     if (waitsForSdp(mode)) scheduleSdpBlock();
     else clearSdpTimer();
     if (mounted) return done();
-    return execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
-      function (err) { clearCache(); cb(err ? 'could not mount the hosts table' : null); });
+    return execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
+      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   }
   clearSdpTimer();
   // Other tools' lines went into the table while it was up, and the
@@ -919,13 +927,13 @@ function applyHostsTable(cb) {
     var below = currentForeignHostsLines();
     var lost = foreign.filter(function (line) { return below.indexOf(line) === -1; });
     if (!lost.length) return done();
-    execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
-      function (err) { clearCache(); cb(err ? 'could not mount the hosts table' : null); });
+    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
+      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   };
   var liftHbc = function () {
     var hosts = readTrimmed('/etc/hosts') || '';
     if (hosts.indexOf('webosbrew startup script') === -1) return settle();
-    execFile('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { settle(); });
+    execFn('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { settle(); });
   };
   if (!mounted) return liftHbc();
   if (foreign.length) {
@@ -935,7 +943,7 @@ function applyHostsTable(cb) {
       return cb('could not write the hosts table: ' + e.message);
     }
   }
-  execFile('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { clearCache(); liftHbc(); });
+  execFn('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { clearCache(); liftHbc(); });
 }
 
 function setAdBlock(mode, cb) {
@@ -982,11 +990,14 @@ function checkBootAdBlock(cliMode) {
     var need = tableWanted(mode);
     if (need) writeHostsTable(mode);
     if (need && !isTableMounted()) {
-      execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
+      execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
         clearCache();
-        if (!err) console.log('adblock: restored /etc/hosts bind-mount from previous boot');
+        if (!err) {
+          syncAppHosts();
+          console.log('adblock: restored /etc/hosts bind-mount from previous boot');
+        }
       });
-    }
+    } else syncAppHosts();
     if (waitsForSdp(mode)) scheduleSdpBlock();
   } catch (e) {}
 }
@@ -1537,6 +1548,8 @@ function init(opts) {
   opts = opts || {};
   if (opts.lgSettings) lgSettingsModule = opts.lgSettings;
   if (opts.services) servicesModule = opts.services;
+  if (opts.appHosts !== undefined) appHostsModule = opts.appHosts;
+  execFn = opts.exec || execFile;
   if (opts.luna) luna = opts.luna;
   if (opts.lunaCached) lunaCached = opts.lunaCached;
   if (opts.config) config = opts.config;
@@ -1551,7 +1564,7 @@ function learnCountry() {
     if (!/^[a-z]{2}$/.test(cc) || cc === (readTrimmed(COUNTRY_FILE) || '').toLowerCase()) return;
     try {
       fs.writeFileSync(COUNTRY_FILE, cc, 'utf8');
-      if (isTableMounted()) writeHostsTable(flagMode());
+      if (isTableMounted()) { writeHostsTable(flagMode()); syncAppHosts(); }
     } catch (e) {}
   });
 }

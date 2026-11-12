@@ -52,6 +52,11 @@ The **Privacy** tab (`/?tab=privacy`) surfaces the TV's telemetry, advertising, 
 
 The built-in blocker runs directly on the TV without needing an external DNS sinkhole (such as Pi-hole), and automatically re-applies on boot.
 
+Apps started before the blocker or clock sync receive the updated list in
+their sandboxes too. Changes to the tier or custom list, and switching
+blocking off, also update those copies. This covers lookups that use the
+hosts file; apps that send DNS queries directly can still reach the DNS server.
+
 === "Ads & telemetry tier"
 
     Blocks LG's advertising, diagnostics, remote-diagnostics, customer-data and Alphonso screen-recognition servers, and the host LG's ad log script reports to, while leaving LG's core service platform reachable (so the Content Store, app updates, and LG ThinQ continue to work). On webOS 11 the diagnostics report upload shares its host with the Content Store, so it stays reachable on this tier; the Everything tier takes it.

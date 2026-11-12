@@ -1038,6 +1038,19 @@ the previous boot's, so a tool that is no longer started leaves nothing behind.
 The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
 
+Other app jails hold ordinary copies of `/etc/hosts`. `lib/apphosts.js`
+replaces existing copies with the current TV table after boot-time mounting,
+clock sync, country, tier, custom-list and update-block changes. It watches
+the jail root, each jail and its `etc` directory for new copies and resets;
+events are coalesced for 25 ms, with a 30 s fallback for missed or unavailable
+watches. It includes service jails that are not in the installed-app list.
+Writes are atomic, preserve the file's mode and are skipped when identical.
+Symlinks are not followed, and a mount point that cannot be renamed is left
+to its owner. No read-only bind mount is added: LG must be able to copy the
+file during launch. With the main table removed, marked jail copies receive
+the TV's ordinary file and watching stops. This does not flush app DNS caches
+or intercept clients that send DNS queries without consulting hosts.
+
 The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
 the TV needs. The platform tier's are **service infrastructure rather than
 advertising**, which is why they are a separate tier:

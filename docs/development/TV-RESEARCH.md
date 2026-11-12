@@ -2675,6 +2675,26 @@ name.
   `lgtviot.com`; `ad`, `info` under `lgsmartad.com`.
 - No `lggalleryplus.com` in either.
 
+## Stale hosts copies across clock sync (C4, webOS 10.3.1)
+
+On 12 November 2026, an OLED65C43LA running Glasshouse 0.143.1 with Everything
+enabled held a correct 9,799-byte `/etc/hosts`. `getent hosts` answered `::`
+for `de.nextlgsdp.com`, `eic.tv.wiselg.com` and `ngfts.tv.wiselg.com`.
+Chromecast's running jail held an 8,104-byte ordinary copy, byte-for-byte the
+pre-clock table, missing all 33 clock-delayed names. Its copy was dated six
+seconds before the server reported the clock already valid and skipped the
+grace period. A separate Python process chrooted into that jail resolved
+`de.nextlgsdp.com` to public IPv4 addresses; the main hosts file blocked it.
+This proves a resolver bypass through the stale copy, not which app caused
+each earlier Pi-hole entry or that an HTTPS upload succeeded.
+
+The running `lg.thinqai.adapter` and voice performer's jails held LG's
+234-byte file with no blocker entries. YouTube's copy matched the current
+table. Reboots can repeat the ordering: copying before the blocker starts
+or the clock gate closes leaves a running app behind. Synchronization must
+cover existing copies after each table change and the jailer's later resets,
+including jails for background services.
+
 ## Regional service coverage
 
 An owner's Pi-hole log reports `de.ibs.nextlgsdp.com`, `de.lgeapi.com`,
