@@ -181,6 +181,7 @@ async function refreshCfgStatus() {
     const r = await fetch(api('/api/settings'), { cache: 'no-store' });
     const j = await r.json();
     if (j.ok && j.status) renderCfgStatus(j.status);
+    if (j.ok && j.homeAssistant && j.homeAssistant.status) renderHaStatus(j.homeAssistant.status);
   } catch (e) { /* a restart drops this; the next poll picks it up */ }
 }
 
@@ -510,45 +511,77 @@ async function toggleHaEnabled() {
   }
 }
 
+// The Home Assistant API's Connection box, drawn as the MQTT bridge's is: the
+// TV, the link with how it last went, and Home Assistant at its address.
+let haLastStatus = null;
+let haLastReadMs = null;
+
+function formatHaLinkMetric(st, statusObj) {
+  if (st === 'disabled') return { text: t('common.off', 'Off'), title: '' };
+  if (st === 'unconfigured') return { text: t('ha.notSet', 'Not set'), title: '' };
+  if (st === 'checking') return { text: t('ha.status.checking', 'Checking...'), title: '' };
+  if (st === 'connected') {
+    let metric = t('mqtt.net.reachable', 'Reachable');
+    if (statusObj && statusObj.latencyMs != null) metric += ' · ' + t('mqtt.net.latency', '{ms} ms', { ms: statusObj.latencyMs });
+    if (statusObj && statusObj.lastReadMs != null) metric += ' · ' + t('ha.net.readAge', 'read {age}', { age: cfgAge(statusObj.lastReadMs) });
+    return { text: metric, title: '' };
+  }
+  if (st === 'error') {
+    const detail = (statusObj && statusObj.error) || t('mqtt.state.error', 'Error');
+    return { text: t('mqtt.net.unreachable', 'Unreachable') + ': ' + detail, title: detail };
+  }
+  return { text: t('ha.savedStatus', 'Configured'), title: '' };
+}
+
+// A packet crosses the link each time a screen saver has read since the last poll.
+function updateHaReadPulse(st, statusObj) {
+  const readMs = statusObj && statusObj.lastReadMs;
+  if (st !== 'connected' || readMs == null) { haLastReadMs = readMs == null ? null : readMs; return; }
+  if (haLastReadMs === null || readMs < haLastReadMs) triggerMqttPacket('ha-packet-read');
+  haLastReadMs = readMs;
+}
+
 function renderHaStatus(statusObj) {
-  const pill = q('ha-api-pill');
-  const summary = q('ha-api-summary');
+  if (statusObj) haLastStatus = statusObj;
+  else statusObj = haLastStatus;
   const st = !cfgHaEnabled ? 'disabled'
     : !(cfgHaUrl && cfgHaTokenSet) ? 'unconfigured'
     : (statusObj && statusObj.state) || 'unknown';
-  if (pill) {
-    if (st === 'connected') {
-      pill.textContent = t('ha.status.connected', 'Connected');
-      pill.className = 'pill good';
-    } else if (st === 'error') {
-      pill.textContent = t('mqtt.state.error', 'Error');
-      pill.className = 'pill bad';
-    } else if (st === 'checking') {
-      pill.textContent = t('ha.status.checking', 'Checking...');
-      pill.className = 'pill warn';
-    } else if (st === 'disabled') {
-      pill.textContent = t('common.off', 'Off');
-      pill.className = 'pill idle';
-    } else if (st === 'unconfigured') {
-      pill.textContent = t('ha.notSet', 'Not set');
-      pill.className = 'pill idle';
-    } else {
-      pill.textContent = t('ha.savedStatus', 'Configured');
-      pill.className = 'pill idle';
-    }
+  const isOn = st !== 'disabled' && st !== 'unconfigured';
+
+  const netEl = q('ha-net');
+  if (netEl) {
+    netEl.classList.toggle('off', !isOn);
+    netEl.classList.toggle('error', st === 'error');
   }
-  if (summary) {
-    if (st === 'disabled') {
-      summary.textContent = cfgHaUrl
-        ? (cfgHaUrl + ' \u2014 ' + t('ha.summaryOff', 'Turned off. Switch on above to re-enable Home Assistant screen savers.'))
-        : t('ha.summaryOff', 'Turned off. Switch on above to re-enable Home Assistant screen savers.');
-    } else if (st === 'unconfigured') {
-      summary.textContent = t('ha.summaryEmpty', 'Screen savers cannot read Home Assistant entities until configured.');
-    } else if (st === 'error' && statusObj && statusObj.error) {
-      summary.textContent = (cfgHaUrl ? cfgHaUrl + ' \u2014 ' : '') + statusObj.error;
-    } else {
-      summary.textContent = cfgHaUrl || '';
-    }
+  const tvName = q('ha-node-tv-name');
+  if (tvName) tvName.textContent = (cfgDevice && cfgDevice.name) || 'LG webOS TV';
+  const tvDot = q('ha-dot-tv');
+  if (tvDot) tvDot.className = 'mqtt-dot ' + (isOn ? 'good' : 'idle');
+
+  const metric = formatHaLinkMetric(st, statusObj);
+  const metricEl = q('ha-net-metric');
+  if (metricEl) {
+    metricEl.textContent = metric.text;
+    metricEl.title = metric.title;
+  }
+  updateHaReadPulse(st, statusObj);
+
+  let address = cfgHaUrl;
+  try { if (cfgHaUrl) address = new URL(cfgHaUrl).host; } catch (e) { /* shown as typed */ }
+  const sub = q('ha-node-server-sub');
+  if (sub) {
+    sub.textContent = address || t('ha.net.noAddress', 'No address set');
+    sub.title = cfgHaUrl;
+  }
+  const tls = q('ha-node-server-tls');
+  if (tls) tls.hidden = !/^https:/i.test(cfgHaUrl);
+  const serverNode = q('ha-node-server');
+  if (serverNode) serverNode.title = st === 'error' ? metric.title : '';
+  const serverDot = q('ha-dot-server');
+  if (serverDot) {
+    const dot = st === 'connected' ? 'good' : st === 'error' ? 'bad' : st === 'checking' ? 'warn' : 'idle';
+    serverDot.className = 'mqtt-dot ' + dot;
   }
 }
 

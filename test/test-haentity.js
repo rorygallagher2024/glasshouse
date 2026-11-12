@@ -172,15 +172,23 @@ server.listen(0, '127.0.0.1', function () {
                           haEntity.update({ enabled: true });
                           assert.strictEqual(haEntity.configured(), true);
                           assert.strictEqual(haEntity.status().state, 'unknown');
+                          assert.strictEqual(haEntity.status().latencyMs, null, 'no response time before an answer');
+                          assert.strictEqual(haEntity.status().lastReadMs, null, 'no read yet since the update');
                           haEntity.read('sensor.outdoor_temperature', function (rOn) {
                             assert.strictEqual(rOn.ok, true);
-                            assert.strictEqual(haEntity.status().state, 'connected');
+                            var onStatus = haEntity.status();
+                            assert.strictEqual(onStatus.state, 'connected');
+                            assert.ok(typeof onStatus.latencyMs === 'number' && onStatus.latencyMs >= 0, 'the read\'s response time');
+                            assert.ok(typeof onStatus.lastReadMs === 'number' && onStatus.lastReadMs < 1000, 'a read just now');
 
                             // Missing single entity (404) does not poison connection health
                             haEntity.read('sensor.missing', function (r404) {
                               assert.strictEqual(r404.ok, false);
                               assert.strictEqual(haEntity.status().state, 'connected');
                               console.log('  \u2713 enabled toggle preserves credentials and status() tracks connectivity');
+                              haEntity.update({ enabled: false });
+                              assert.strictEqual(haEntity.status().latencyMs, null, 'switched off, no response time is shown');
+                              console.log('  \u2713 status() carries the response time and the last read for the Connection box');
 
                               server.close();
                               console.log('ALL test-haentity.js assertions passed!');

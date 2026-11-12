@@ -132,9 +132,9 @@ Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the 
 1. In Home Assistant, open your profile (bottom-left) → **Security** → **Long-Lived Access Tokens** → **Create Token** and copy the token.
 2. Open Glasshouse in a browser and navigate to **HA & MQTT** → **Home Assistant API**.
 3. Enter your **Home Assistant address** (for example `http://192.168.1.10:8123` or `http://homeassistant.local:8123`) and paste the **Long-Lived Access Token** (or set `homeAssistant.url` and `homeAssistant.token` in `config.json`).
-4. Click **Save** — credentials apply immediately without restarting the server — and Glasshouse checks the connection to update the status badge (`Connected`, `Off`, or any error). You can switch the **Home Assistant API** button off at any time to disable Home Assistant screen savers while keeping your saved address and token.
+4. Click **Save** — credentials apply immediately without restarting the server — and Glasshouse checks the connection. The **Connection** box beside the settings draws the TV and Home Assistant as the MQTT bridge's box draws the TV and its broker: the link reads **Reachable** with Home Assistant's response time and how long ago a screen saver last read an entity, **Off**, or **Unreachable** with the reason. You can switch the **Home Assistant API** button off at any time to disable Home Assistant screen savers while keeping your saved address and token.
 
-![Home Assistant API settings showing toggle, address, token saved, and Connected status](screenshots/ha-api.png)
+![Home Assistant API settings showing the toggle, address, saved token, and the Connection box with Home Assistant reachable](screenshots/ha-api.png)
 
 Once enabled and connected, two Home Assistant screen savers unlock on the **Screensaver** tab (while off or unconfigured, both stay greyed out so non-Home-Assistant setups cannot pick them by mistake):
 

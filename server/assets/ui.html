@@ -1802,12 +1802,47 @@
         </div>
         <div class="sub" id="cfg-ha-enabled-note" style="margin-top:8px"></div>
 
-        <div class="ha-status-box">
+        <div class="mqtt-net" id="ha-net">
           <div class="mqtt-net-header">
-            <span class="mqtt-net-title" data-t="ha.statusTitle">Status</span>
-            <span class="pill idle" id="ha-api-pill">&mdash;</span>
+            <span class="mqtt-net-title" data-t="mqtt.net.title">Connection</span>
           </div>
-          <div class="sub" id="ha-api-summary" style="margin-top:10px">&mdash;</div>
+
+          <div class="mqtt-net-flow">
+            <div class="mqtt-net-node">
+              <div class="mqtt-net-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="1.5"/><path d="M8 20h8M12 17v3"/></svg>
+              </div>
+              <div class="mqtt-net-body">
+                <div class="mqtt-net-name" id="ha-node-tv-name">&mdash;</div>
+                <div class="mqtt-net-sub" translate="no">Glasshouse</div>
+              </div>
+              <div class="mqtt-net-state">
+                <span class="mqtt-dot good" id="ha-dot-tv"></span>
+              </div>
+            </div>
+
+            <div class="mqtt-net-link">
+              <div class="mqtt-net-track">
+                <div class="mqtt-packet" id="ha-packet-read"></div>
+              </div>
+              <div class="mqtt-net-meta">
+                <span class="mqtt-net-metric" id="ha-net-metric">&mdash;</span>
+              </div>
+            </div>
+
+            <div class="mqtt-net-node" id="ha-node-server">
+              <div class="mqtt-net-ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><circle cx="12" cy="14" r="2"/></svg>
+              </div>
+              <div class="mqtt-net-body">
+                <div class="mqtt-net-name" data-t="ha.net.server">Home Assistant</div>
+                <div class="mqtt-net-sub"><span id="ha-node-server-sub">&mdash;</span><span class="mqtt-tls-tag" id="ha-node-server-tls" hidden translate="no">HTTPS</span></div>
+              </div>
+              <div class="mqtt-net-state">
+                <span class="mqtt-dot idle" id="ha-dot-server"></span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

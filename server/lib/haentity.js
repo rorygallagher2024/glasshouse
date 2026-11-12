@@ -21,6 +21,10 @@ var MAX_LIST_BYTES = 8 * 1024 * 1024;
 
 var cfg = { enabled: true, url: '', token: '' };
 var lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
+// For the HA & MQTT tab's Connection box, as the MQTT one shows its broker:
+// how long Home Assistant last took to answer, and when a screen saver last read.
+var lastLatencyMs = null;
+var lastReadAt = 0;
 
 function init(opts) {
   opts = opts || {};
@@ -31,6 +35,8 @@ function init(opts) {
     token: typeof ha.token === 'string' ? ha.token : ''
   };
   lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
+  lastLatencyMs = null;
+  lastReadAt = 0;
 }
 
 function hasCredentials() {
@@ -51,6 +57,7 @@ function requestHaJson(targetUrl, token, opts, cb) {
   var parsed = url.parse(targetUrl);
   var lib = parsed.protocol === 'https:' ? https : http;
   var answered = false;
+  var startedAt = Date.now();
 
   function fail(error, tooLarge) {
     if (answered) return;
@@ -98,7 +105,7 @@ function requestHaJson(targetUrl, token, opts, cb) {
         return fail(label + ' did not answer JSON');
       }
       answered = true;
-      cb({ ok: true, body: body });
+      cb({ ok: true, body: body, ms: Date.now() - startedAt });
     });
   });
 
@@ -140,6 +147,8 @@ function read(entityId, cb) {
       return cb(r);
     }
     lastStatus = { ok: true, message: lastStatus.message || 'Connected to Home Assistant', error: '', checkedAt: Date.now() };
+    lastLatencyMs = r.ms;
+    lastReadAt = Date.now();
     var body = r.body;
     if (!body || typeof body.state !== 'string') return cb({ ok: false, error: entityId + ' has no state' });
     cb({
@@ -158,6 +167,8 @@ function update(ha) {
   if (typeof ha.url === 'string') cfg.url = ha.url.replace(/\/+$/, '');
   if (typeof ha.token === 'string') cfg.token = ha.token;
   lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
+  lastLatencyMs = null;
+  lastReadAt = 0;
 }
 
 function test(opts, cb) {
@@ -189,6 +200,7 @@ function test(opts, cb) {
     var okMsg = (body && body.message) || 'Connected to Home Assistant';
     if (cfg.enabled && testUrl === cfg.url) {
       lastStatus = { ok: true, message: okMsg, error: '', checkedAt: Date.now() };
+      lastLatencyMs = r.ms;
     }
     cb({ ok: true, message: okMsg });
   });
@@ -207,7 +219,10 @@ function status() {
     state: st,
     error: lastStatus.error || '',
     message: lastStatus.message || '',
-    checkedAt: lastStatus.checkedAt || null
+    checkedAt: lastStatus.checkedAt || null,
+    latencyMs: st === 'connected' ? lastLatencyMs : null,
+    // How long ago a screen saver last read an entity, as the MQTT box's last publish.
+    lastReadMs: lastReadAt ? Date.now() - lastReadAt : null
   };
 }
 
@@ -234,6 +249,7 @@ function list(cb) {
       return cb({ ok: false, error: 'Home Assistant did not return an entity list' });
     }
     lastStatus = { ok: true, message: lastStatus.message || 'API running.', error: '', checkedAt: Date.now() };
+    lastLatencyMs = r.ms;
     var out = [];
     for (var i = 0; i < r.body.length; i++) {
       var item = r.body[i];

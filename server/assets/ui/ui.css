@@ -1108,8 +1108,6 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .mqtt-net{max-width:380px;margin-top:22px;border:1px solid var(--w06);
   background:rgba(var(--fg),.02);border-radius:6px;padding:16px 16px 14px}
 .ha-api-section{border-top:1px solid var(--w12);margin-top:44px;padding-top:32px}
-.ha-status-box{max-width:380px;border:1px solid var(--w06);background:rgba(var(--fg),.02);border-radius:6px;padding:16px}
-.ha-status-box .mqtt-net-header{margin-bottom:0;justify-content:space-between}
 .mqtt-net.off .mqtt-net-node{opacity:.6}
 .mqtt-net.off .mqtt-net-link{opacity:.4}
 .mqtt-net.off .mqtt-dot{background:var(--w20)!important;border-color:var(--edge)!important;box-shadow:none!important}
