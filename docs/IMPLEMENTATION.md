@@ -1903,6 +1903,15 @@ sends `setPreloadPolicy` again for each app switched off, at its start and at
 every switch-on. Sent within a second of the TV reporting Active, it left
 YouTube unloaded.
 
+A cold boot is a switch-on too, and there the server is late: on a B4 (webOS
+10.3.2) with Quick Start+ off, the preload manager loaded Netflix 59 s and the
+browser 61 s in, both switched off, while the server started at 52 s and sent
+its switches one by one from 58 s (#1374). So the boot hook sends them first,
+in the background, all at once as soon as the preload manager answers, before
+it starts the server; on a C2 (webOS 9.2.2) that was 6 s after the hook began.
+Each call has a 5 s timeout (`luna-send -w`), since the C2's preload manager
+never answers `setPreloadPolicy` and `luna-send -n 1` would wait for ever.
+
 `/var/preferences/webos-preload-manager-conf.json` is not used: the preload
 manager writes an app back into it about 3 seconds after the app comes to the
 foreground, and preloads it regardless when the file is read-only.
