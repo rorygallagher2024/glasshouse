@@ -314,6 +314,16 @@ var powerActive = true;
 var sleeps = 0;
 // tvpower's raw state, null until the first reading.
 var powerState = null;
+/*
+ * A Home press that ends the screen saver opens nothing: the TV only takes the
+ * screen saver down (a B4, webOS 10.3.2, #1377). Taken for a press that opens
+ * Home, it waited for a beat that never came and opened LG's Home over the app
+ * 20 s later. tvpowerd reported the screen saver over 170 ms after the button,
+ * so a press also counts if the screen saver ended up to this long before it.
+ */
+var SAVER_PRESS_MS = 1000;
+var saverEndedAt = 0;
+var homeDownInSaver = false;
 var wakeTimer = null;
 var wakeRequest = null;
 // The close-then-open still to finish, cleared when the wake is cancelled.
@@ -2382,7 +2392,13 @@ function homeKey(down) {
      * Home once the view has its place makes the TV open the view.
      */
     var shortPress = homeDownAt && !wasHeld;
+    var endedSaver = homeDownInSaver || (saverEndedAt > 0 && homeDownAt > 0 && saverEndedAt >= homeDownAt - SAVER_PRESS_MS);
     homeDownAt = 0;
+    homeDownInSaver = false;
+    if (shortPress && endedSaver) {
+      console.log('home: the Home press ended the screen saver; the TV opens nothing for it');
+      return;
+    }
     if (shortPress && escaped) {
       escaped = false;
       if (isStandalone()) {
@@ -2411,6 +2427,7 @@ function homeKey(down) {
     return;
   }
   homeDownAt = nowMs();
+  homeDownInSaver = powerState === 'Screen Saver';
   if (escaped) return;
   holdTimer = setTimeout(function () {
     holdTimer = null;
@@ -2574,6 +2591,7 @@ function powerStateChanged(raw) {
   var was = powerState;
   powerState = String(raw || '');
   if (was === powerState) return;
+  if (was === 'Screen Saver') saverEndedAt = nowMs();
   cancelWake();
   if (was === null || names.powerState(was).systemOn || !names.powerState(powerState).systemOn) return;
   if (!readConfig().enabled) return;
@@ -2794,6 +2812,8 @@ function init(opts) {
   lastSource = null;
   powerActive = true;
   powerState = null;
+  saverEndedAt = 0;
+  homeDownInSaver = false;
   lastBeatAt = 0;
   wakeReopen = null;
   beats = 0;
