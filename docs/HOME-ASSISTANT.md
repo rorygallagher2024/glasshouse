@@ -141,7 +141,7 @@ Once enabled and connected, two Home Assistant screen savers unlock on the **Scr
 * [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient) — shows the TV clock, date, and up to three configurable entities with optional custom display labels.
 * [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black.
 
-Custom QML screen savers added on the TV can read Home Assistant entities too. Each declares what it needs in `saver.json`, and Glasshouse serves only those entity IDs at local URLs without ever placing the access token in QML files. See [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) for the manifest and QML format.
+Custom QML screen savers added on the TV can read Home Assistant entities too. Each declares what it needs in `saver.json`, and Glasshouse serves only those entity IDs at local URLs, so the Home Assistant token never reaches a QML file. Those URLs carry Glasshouse's own dashboard token, where one is set, as the stats URL does. See [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) for the manifest and QML format.
 
 ---
 

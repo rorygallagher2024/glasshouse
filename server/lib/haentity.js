@@ -15,7 +15,9 @@ var url = require('url');
 var TIMEOUT_MS = 5000;
 var LIST_TIMEOUT_MS = 8000;
 var MAX_BYTES = 65536;
-var MAX_LIST_BYTES = 4 * 1024 * 1024;
+// Every entity with all its attributes: 2.2 MB for one install, under 4 MB for
+// 4,557 entities in another. Parsed whole, so it is held in memory at once.
+var MAX_LIST_BYTES = 8 * 1024 * 1024;
 
 var cfg = { enabled: true, url: '', token: '' };
 var lastStatus = { ok: null, message: '', error: '', checkedAt: 0 };
@@ -50,10 +52,10 @@ function requestHaJson(targetUrl, token, opts, cb) {
   var lib = parsed.protocol === 'https:' ? https : http;
   var answered = false;
 
-  function fail(error) {
+  function fail(error, tooLarge) {
     if (answered) return;
     answered = true;
-    cb({ ok: false, error: error });
+    cb(tooLarge ? { ok: false, error: error, tooLarge: true } : { ok: false, error: error });
   }
 
   var req = lib.request({
@@ -70,7 +72,12 @@ function requestHaJson(targetUrl, token, opts, cb) {
     var bytes = 0;
     res.on('data', function (chunk) {
       bytes += chunk.length;
-      if (bytes <= maxBytes) chunks.push(chunk);
+      if (bytes <= maxBytes) return chunks.push(chunk);
+      // Stop downloading the rest of an answer that will be refused anyway.
+      if (res.statusCode === 200) {
+        fail(label + ' answered more than ' + maxBytes + ' bytes', true);
+        req.abort();
+      }
     });
     res.on('end', function () {
       if (answered) return;
@@ -81,7 +88,7 @@ function requestHaJson(targetUrl, token, opts, cb) {
             ? 'no entity ' + opts.entityId + ' (404)'
             : 'Home Assistant answered ' + res.statusCode + (opts && opts.entityId ? ' for ' + opts.entityId : ''));
       }
-      if (bytes > maxBytes) return fail(label + ' answered more than ' + maxBytes + ' bytes');
+      if (bytes > maxBytes) return fail(label + ' answered more than ' + maxBytes + ' bytes', true);
       var body;
       try {
         // Joined as bytes first: a character split across two chunks would
@@ -213,6 +220,11 @@ function list(cb) {
     return cb({ ok: false, error: 'Home Assistant is not configured' });
   }
   requestHaJson(cfg.url + '/api/states', cfg.token, { maxBytes: MAX_LIST_BYTES, timeoutMs: LIST_TIMEOUT_MS, label: 'Home Assistant' }, function (r) {
+    if (r.tooLarge) {
+      // Home Assistant answered, so the connection is fine: only the picker is lost.
+      return cb({ ok: false, error: 'Home Assistant has more entities than the TV can list (over ' +
+        (MAX_LIST_BYTES / 1024 / 1024) + ' MB): type entity IDs instead, such as sensor.outdoor_temperature' });
+    }
     if (!r.ok) {
       lastStatus = { ok: false, message: '', error: r.error || 'Error', checkedAt: Date.now() };
       return cb(r);

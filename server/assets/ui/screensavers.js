@@ -199,14 +199,18 @@ function renderSsColorPick(colors, current, locked) {
 let ssEntitiesKey_ = '';
 let ssHaEntities = null;
 let ssHaLoading = false;
+// Why the list could not be read, shown in place of it until the cache is reset.
+let ssHaListError = '';
 
 function resetHaEntitiesCache() {
   ssHaEntities = null;
+  ssHaListError = '';
   ssEntitiesKey_ = '';
 }
 
 async function ensureHaEntities(onLoaded) {
-  if (ssHaEntities !== null || ssHaLoading) return;
+  // A failed read is not retried on each render: the list can be 8 MB.
+  if (ssHaEntities !== null || ssHaLoading || ssHaListError) return;
   ssHaLoading = true;
   try {
     const r = await fetch(api('/api/ha/entities'));
@@ -216,6 +220,9 @@ async function ensureHaEntities(onLoaded) {
       ssEntitiesKey_ = '';
       if (typeof onLoaded === 'function') onLoaded();
       else loadScreensavers();
+    } else if (d && d.error) {
+      ssHaListError = d.error;
+      if (typeof onLoaded === 'function') onLoaded();
     }
   } catch (e) {} finally {
     ssHaLoading = false;
@@ -315,6 +322,11 @@ function ssHaCloseAll() {
 function ssHaRenderList(saverId, slot, filterText, showAll) {
   const list = document.getElementById('ss-ha-list-' + slot);
   if (!list) return;
+  if (ssHaEntities === null && ssHaListError) {
+    list.innerHTML = `<div class="ss-ha-empty">${esc(ssHaListError)}</div>`;
+    list.hidden = false;
+    return;
+  }
   if (ssHaEntities === null) {
     list.innerHTML = `<div class="ss-ha-empty">${esc(t('ss.loadingEntities', 'Loading entities...'))}</div>`;
     list.hidden = false;
