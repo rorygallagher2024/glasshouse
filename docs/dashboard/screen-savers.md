@@ -39,7 +39,7 @@ Clock with date used to be a screen saver of its own. A TV that had it in use ke
 
 ![Home Assistant: Ambient screen saver: clock, date and three Home Assistant readings on pure black](../screenshots/screensaver-ha-ambient.png)
 
-A digital clock, date, and up to three live Home Assistant readings on pure black, using the TV's 12-hour or 24-hour setting. **Readings** switches between **Names and values** and **Values only**, and **Sensor 1**, **Sensor 2**, and **Sensor 3** can be picked from your Home Assistant entities with an optional custom display **Label** (or cleared to hide) once **Home Assistant API** is saved on the **HA & MQTT** tab. Sensors left blank or unavailable stay omitted, leaving the clock and date.
+A digital clock, date, and up to three live Home Assistant readings on pure black, using the TV's 12-hour or 24-hour setting. **Readings** switches between **Names and values** and **Values only**, and **Sensor 1**, **Sensor 2**, and **Sensor 3** can be picked from your Home Assistant entities with an optional custom display **Label** (or cleared to hide) once **Home Assistant API** is saved on the **HA & MQTT** tab. The sensors start blank. Sensors left blank or unavailable stay omitted, leaving the clock and date.
 
 ![Screensaver tab with Home Assistant: Ambient selected and three entity slots configured](../screenshots/screensaver-ha-ambient-ui.png)
 

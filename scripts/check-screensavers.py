@@ -142,8 +142,9 @@ def check_folder(d, own):
             for name, eid in entities.items():
                 if not re.match(r'^[a-z][a-z0-9_]{0,31}$', str(name)):
                     bad.append('saver.json: entity name "%s" can only have lowercase letters, digits and _, starting with a letter' % name)
-                if not isinstance(eid, str) or not re.match(r'^[a-z0-9_]+\.[a-z0-9_]+$', eid):
-                    bad.append('saver.json: entity "%s" is not a Home Assistant entity id, such as sensor.outdoor_temperature' % name)
+                # Blank leaves the slot for the owner to fill in on the Screensaver tab.
+                if not isinstance(eid, str) or (eid != '' and not re.match(r'^[a-z0-9_]+\.[a-z0-9_]+$', eid)):
+                    bad.append('saver.json: entity "%s" is not a Home Assistant entity id, such as sensor.outdoor_temperature, or blank' % name)
     if ('ha' in m.get('uses', [])) != bool(entities):
         bad.append('saver.json: entities and "ha" in uses go together')
     entity_list = m.get('entityList')

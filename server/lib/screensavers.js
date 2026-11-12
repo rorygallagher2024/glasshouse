@@ -362,7 +362,9 @@ function readEntities(list) {
   for (var name in list) {
     if (!Object.prototype.hasOwnProperty.call(list, name)) continue;
     var id = list[name];
-    if (!HA_NAME.test(name) || typeof id !== 'string' || !HA_ENTITY.test(id)) return bad;
+    // A blank id is a slot the owner fills in on the Screensaver tab: no
+    // default is better than one most Home Assistant installs do not have.
+    if (!HA_NAME.test(name) || typeof id !== 'string' || (id !== '' && !HA_ENTITY.test(id))) return bad;
     out[name] = id;
     if (++count > MAX_HA_ENTITIES) return bad;
   }

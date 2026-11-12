@@ -88,8 +88,8 @@
     ]
   },
   "entities": {
-    "sensor_1": "sensor.outdoor_temperature",
-    "sensor_2": "sensor.power_consumption",
-    "sensor_3": "sensor.indoor_temperature"
+    "sensor_1": "",
+    "sensor_2": "",
+    "sensor_3": ""
   }
 }

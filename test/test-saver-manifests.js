@@ -309,6 +309,19 @@ function byId(list, id) { return list.filter(function (m) { return m.id === id; 
     sunrise: 'sensor.example_sunrise'
   }, 'the staged saver is what the server serves, and nothing else');
   console.log('  \u2713 a screen saver is given an address for each entity it declares');
+
+  // A slot left blank in saver.json is the owner's to fill in: no address, and nothing served.
+  var blank = byId(modes, 'user-ha-blank');
+  assert.strictEqual(blank.available, true, blank.note);
+  assert.strictEqual(byId(blank.entities, 'spare').entity, '', 'the blank slot is listed empty');
+  env.files[path.join(APP, '.tvweb-screensaver')] = 'user-ha-blank';
+  screensavers.restageScreensaver();
+  var blankMain = env.files[path.join(STAGE, 'qml', 'main.qml')];
+  assert.ok(blankMain.indexOf('spareUrl: ""') !== -1, 'the blank slot has no address');
+  assert.ok(blankMain.indexOf('/api/entity/sensor.example_power') !== -1, 'the filled one has its own');
+  assert.deepEqual(screensavers.screensaverEntities(), { power: 'sensor.example_power' },
+    'a blank slot is not served');
+  console.log('  \u2713 a slot left blank in saver.json is given no address');
 })();
 
 env.restore();
