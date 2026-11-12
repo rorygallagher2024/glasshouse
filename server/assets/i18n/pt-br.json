@@ -3113,7 +3113,6 @@
  "tv.saver.include": {"text": "Pressione OK para incluir na rotação aleatória", "from": "Press OK to include in random rotation"},
  "tv.saver.random.hint": {"text": "Escolhe um protetor de tela diferente a cada vez.", "from": "Picks a different screen saver each time."},
  "tv.saver.random.hintUpNext": {"text": "Escolhe um protetor de tela diferente a cada vez. A seguir: {name}.", "from": "Picks a different screen saver each time. Up next: {name}."},
-<<<<<<< HEAD
  "ambient.none": {"from": "No ambient light integrations found.", "text": "Não foram encontradas integrações de iluminação ambiente."},
  "adv.huesync.title": {"from": "Hue Sync", "text": "Hue Sync"},
  "ambient.piccap.title": {"from": "PicCap", "text": "PicCap"},
@@ -3131,8 +3130,7 @@
  "adv.huesync.subtle": {"text": "Sutil", "from": "Subtle"},
  "adv.huesync.syncmode": {"text": "Modo de sincronização", "from": "Synchronization mode"},
  "adv.huesync.video": {"text": "Vídeo", "from": "Video"},
- "srv.huesync.notReady": {"text": "O Hue Sync está ocupado ou não está pronto", "from": "Hue Sync is busy or not ready"}
-=======
+ "srv.huesync.notReady": {"text": "O Hue Sync está ocupado ou não está pronto", "from": "Hue Sync is busy or not ready"},
  "adv.nightlyRefresh": {"text": "Reinicialização noturna", "from": "Nightly refresh reboot"},
  "adv.nightlyRefresh.desc": {"text": "Alinha a reinicialização de manutenção de 24 horas da TV com a janela de desligamento noturno. Evita uma falha no software da LG onde reiniciar durante o dia desliga completamente a TV quatro horas depois.", "from": "Aligns the TV's 24-hour maintenance reboot with your nightly power-down window. Prevents a bug in LG's software where rebooting during the day causes the TV to power off completely four hours later."},
  "tv.options.nightlyRefresh.hint": {"text": "Alinha a reinicialização de manutenção de 24 horas da TV com a janela de desligamento noturno, evitando o desligamento completo quatro horas depois.", "from": "Aligns the TV's 24-hour maintenance reboot with your nightly power-down window, preventing a bug in LG's software that powers off the TV completely four hours after a daytime reboot."},
@@ -3201,5 +3199,4 @@
  "srv.saver.color.red": {"text": "Vermelho", "from": "Red"},
  "srv.saver.color.white": {"text": "Branco", "from": "White"},
  "ss.valueColor": {"text": "Cor do valor", "from": "Value colour"}
->>>>>>> origin/main
 }
