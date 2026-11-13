@@ -484,7 +484,7 @@ console.log('Running test-ha.js ...');
 })();
 
 (function () {
-  var pub = { app: 'home', app_id: 'com.webos.app.home', app_name: 'Home', media: { state: 'playing' } };
+  var pub = { app: 'home', app_id: 'com.webos.app.home', app_name: 'Home', media: { state: 'playing' }, lgs: { soundMode: 'standard' } };
   var idle = ha.mediaPlayerState(pub, '');
   assert.strictEqual(idle.media_title, null);
   assert.strictEqual(idle.media_channel, null);
@@ -496,8 +496,8 @@ console.log('Running test-ha.js ...');
   assert.strictEqual(live.sound_mode_list, 'channels');
   assert.strictEqual(live.sound_mode, 'p1:ab', 'the current channel, for the selector');
   assert.strictEqual(idle.sound_mode_list, null);
-  assert.strictEqual(live.sound_mode_current, 'tv_speaker', 'the sound mode in use, for the second line');
-  assert.strictEqual(idle.sound_mode, 'tv_speaker');
+  assert.strictEqual(live.sound_mode_current, 'standard', 'the sound mode in use, for the second line');
+  assert.strictEqual(idle.sound_mode, 'standard');
   assert.strictEqual(live.pausable, false, 'no pausing without the live TV pause setting');
   assert.strictEqual(ha.mediaPlayerState(pub, '', { name: 'TVP 1', pausable: true }).pausable, true);
   assert.strictEqual(idle.pausable, null, 'nothing to say without a channel');
@@ -536,6 +536,21 @@ console.log('Running test-ha.js ...');
   assert.strictEqual(folder.name, 'Channels');
   assert.strictEqual(folder.items[0].id, 'p1:ab');
   console.log('  ✓ the media browser lists the channels, picked through play_media, and next and previous change the channel');
+})();
+
+(function () {
+  var withRow = ha.buildEntities({
+    pfx: 'test/tv', universalMediaPlayer: true,
+    lgRows: [{ id: 'soundMode', type: 'choice', choices: [
+      { value: 'standard', label: 'Standard' },
+      { value: 'movie', label: 'Cinema' }
+    ] }]
+  }).filter(function (e) { return e.type === 'media_player'; })[0].payload;
+  assert.deepStrictEqual(withRow.commands.sound_mode, { key: 'soundMode' });
+  assert.deepStrictEqual(withRow.sound_modes, [{ id: 'standard', name: 'Standard' }, { id: 'movie', name: 'Cinema' }]);
+  var withoutRow = ha.buildEntities({ pfx: 'test/tv', universalMediaPlayer: true }).filter(function (e) { return e.type === 'media_player'; })[0].payload;
+  assert.deepStrictEqual(withoutRow.sound_modes, [], 'no Sound Mode row on the TV means no list to offer');
+  console.log('  ✓ the Sound Mode selector lists the TV\'s own sound mode row');
 })();
 
 console.log('ALL test-ha.js assertions passed!\n');

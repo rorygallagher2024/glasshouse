@@ -13,3 +13,4 @@ site/
 
 # nix-direnv's dev shell cache.
 /.direnv/
+.claude/settings.local.json

@@ -528,8 +528,14 @@ function mediaPlayerConfig(opts, topic) {
     addSource(id, appsById[id], 'launch_app', iconUrl(id));
   });
 
-  var soundOutputIds = (opts.soundOutputs && opts.soundOutputs.length) ? opts.soundOutputs : Object.keys(names.SOUND_OUTPUTS);
-  var soundOutputNamesById = soundOutputNames(soundOutputIds);
+  /*
+   * Sound Mode (Standard, Cinema, Sports...), from the same lgsettings row the
+   * native Sound Mode select already uses.
+   */
+  var soundModeRow = (opts.lgRows || []).filter(function (r) { return r.id === 'soundMode'; })[0];
+  var soundModes = soundModeRow && soundModeRow.choices
+    ? soundModeRow.choices.map(function (c) { return { id: c.value, name: c.label }; })
+    : [];
   // Internet TV's lineup, { id: 'playlist:key', name, image }: its own folder of the media browser.
   var channels = opts.channels || [];
   // Picking a channel needs play_media, which then also carries the apps of the browser (tvweb.js).
@@ -550,9 +556,8 @@ function mediaPlayerConfig(opts, topic) {
       volume_step: { key: 'volumeStep', up: 1, down: -1 },
       mute: { key: 'mute' },
       source: { key: 'input' },
-      // Sound Output (TV speaker, optical, ARC...), the same action the
-      // existing Sound Output select already sends.
-      sound_mode: { key: 'sound_output' },
+      // The TV's Sound Mode row (soundMode).
+      sound_mode: { key: 'soundMode' },
       play: { key: 'playback', value: 'play' },
       pause: { key: 'playback', value: 'pause' },
       stop: { key: 'playback', value: 'stop' },
@@ -564,7 +569,7 @@ function mediaPlayerConfig(opts, topic) {
       notify: { key: 'toast' }
     }),
     sources: sources,
-    sound_modes: soundOutputIds.map(function (id) { return { id: id, name: soundOutputNamesById[id] }; }),
+    sound_modes: soundModes,
     // Same ids as "sources" - picking a browsed item with no play_media
     // command falls back to selecting the source of that id.
     browse: [
@@ -583,7 +588,6 @@ function mediaPlayerConfig(opts, topic) {
 function mediaPlayerState(pub, iconBaseUrl, channel) {   // channel: { name, logoUrl } of Internet TV playing
   pub = pub || {};
   var media = pub.media || {};
-  var sound = pub.sound || {};
   /*
    * telemetry's media.state is 'idle' whenever nothing is actively playing,
    * which is most of the time an app is simply open (its own menus, a paused
@@ -602,12 +606,12 @@ function mediaPlayerState(pub, iconBaseUrl, channel) {   // channel: { name, log
     muted: typeof pub.muted === 'boolean' ? pub.muted : null,
     // Internet TV plays inside Home, which would otherwise show as the source.
     source: channel ? 'IPTV' : (pub.input_source || pub.app || null),
-    // Matches the existing Sound Output select's own value_template default.
+    // The TV's own Sound Mode (Standard, Cinema...) - see mediaPlayerConfig.
     // Internet TV lists its channels in the selector in place of the sound modes (the integration's sound_mode_list).
-    sound_mode: channel && channel.id ? channel.id : (sound.output_raw || 'tv_speaker'),
+    sound_mode: channel && channel.id ? channel.id : ((pub.lgs && pub.lgs.soundMode) || null),
     sound_mode_list: channel && channel.id ? 'channels' : null,
     // The sound mode in use, which the channel list in the selector hides.
-    sound_mode_current: sound.output_raw || 'tv_speaker',
+    sound_mode_current: (pub.lgs && pub.lgs.soundMode) || null,
     app_name: channel ? 'IPTV' : (pub.display_title || pub.app_name || pub.app || ''),
     app_id: appId,
     // The Internet TV channel playing full screen, when there is one.

@@ -1775,6 +1775,8 @@ function setupHomeAssistant() {
       else return console.error('mqtt: media player cannot play ' + String(pick.type));
     } else if (key === 'power') { controlAction = value ? 'powerOn' : 'powerOff'; controlValue = null; }
     else if (key === 'screen') { controlAction = value ? 'screenOn' : 'screenOff'; controlValue = null; }
+    // The TV's Sound Mode row, the same lgsettings action the native Sound Mode select sends.
+    else if (key === 'soundMode') { controlAction = 'lgSetting'; controlValue = { id: 'soundMode', value: value }; }
     doControl(controlAction, controlValue, function (r) {
       if (!r || r.ok === false) {
         console.error('mqtt: media player command ' + key + ' failed: ' + ((r && (r.error || r.errorText)) || 'unknown error'));
