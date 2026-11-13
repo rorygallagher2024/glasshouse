@@ -667,6 +667,8 @@ missing JSON properties become `none` rather than undefined.
 The Hue Sync event tests also verify that internal readiness and busy status
 create no Home Assistant diagnostic entities or diagnostic MQTT publications.
 
+The saver entity slots check gives Home Assistant: Ambient's first slot an entity and expects its Label row at once, with the field still focused, then confirms a label with Tab while typing in the next field and expects that field to keep its focus and text.
+
 The Inputs and Remote dashboard check covers the inputs and their switches, the
 Input key's choice of LG's list or the input bar, the No Signal switch, remote
 keys on the Remote tab and not the Apps tab, and no Remote tab on a TV with no

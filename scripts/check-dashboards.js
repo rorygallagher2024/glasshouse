@@ -3308,6 +3308,75 @@ async function visitInputsAndRemote(browser, base, problems) {
 }
 
 /*
+ * Home Assistant: Ambient's entity slots on the Screensaver tab: a slot given
+ * its first entity shows its Label row at once, though the field picked from
+ * still has focus (#1446), and a field tabbed to before a save keeps its focus
+ * and what was typed in it.
+ */
+async function visitSaverEntitySlots(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('Saver entity slots: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  const slots = { sensor_1: { entity: '', label: '' }, sensor_2: { entity: 'sensor.office', label: '' } };
+  let delay = 0;
+  try {
+    await page.route('**/api/screensaver', async route => {
+      try {
+        const d = await (await route.fetch()).json();
+        d.writable = true;
+        d.haConfigured = true;
+        d.held = false;
+        d.current = 'ambient';
+        d.modes.forEach(m => { m.active = m.id === 'ambient'; });
+        const ambient = d.modes.filter(m => m.id === 'ambient')[0];
+        ambient.available = true;
+        ambient.entities = Object.keys(slots).map(id => ({ id, label: id === 'sensor_1' ? 'Sensor 1' : 'Sensor 2',
+          entity: slots[id].entity, customLabel: slots[id].label, def: '' }));
+        await route.fulfill({ json: d });
+      } catch (e) { /* closed */ }
+    });
+    await page.route('**/api/ha/entities', route => route.fulfill({ json: { ok: true, configured: true,
+      entities: [{ id: 'sensor.living_room', name: 'Living room' }, { id: 'sensor.office', name: 'Office' }] } }));
+    await page.route('**/api/control', async route => {
+      const command = route.request().postDataJSON();
+      if (command.action === 'screensaverEntities') {
+        for (const [id, v] of Object.entries(command.value.entities)) {
+          if (v.entity !== undefined) slots[id].entity = v.entity;
+          if (v.label !== undefined) slots[id].label = v.label;
+        }
+      }
+      if (delay) await new Promise(r => setTimeout(r, delay));
+      await route.fulfill({ json: { ok: true } });
+    });
+    await page.goto(base + '/?tab=screensaver');
+    const first = page.locator('#ss-ent-sensor_1');
+    await first.waitFor();
+    // Typed and confirmed with Enter: the field keeps focus through the save.
+    await first.fill('sensor.living_room');
+    await first.press('Enter');
+    await first.dispatchEvent('change');
+    try { await page.locator('#ss-lbl-sensor_1').waitFor({ timeout: 3000 }); }
+    catch (e) { fail('the Label row did not appear for a slot given its first entity'); }
+    // A label confirmed with Tab, with typing begun in the next field before the save answers.
+    delay = 300;
+    const label = page.locator('#ss-lbl-sensor_1');
+    await label.fill('Lounge');
+    await label.press('Tab');
+    await page.keyboard.type('xyz');
+    await page.waitForTimeout(900);
+    const focused = await page.evaluate(() => document.activeElement && document.activeElement.id);
+    if (!focused || !focused.startsWith('ss-')) fail('focus left the fields after a save: ' + focused);
+    const typed = await page.evaluate(id => document.getElementById(id) && document.getElementById(id).value, focused);
+    if (slots.sensor_1.label !== 'Lounge') fail('the label was not saved');
+    if (focused && focused.indexOf('ss-ent-') === 0 && !/xyz$/.test(typed || '')) fail('what was typed in the next field was lost: ' + typed);
+  } catch (e) {
+    fail(e.message);
+  } finally {
+    await page.close();
+  }
+}
+
+/*
  * Groups side by side, each against its own server and fake TV, as the Home
  * checks change the layout and uploads they read back. Within a group the
  * checks run in their order here, and the slowest group sets the run's
@@ -3595,7 +3664,7 @@ async function visitTvHuesync(browser, base, problems) {
 
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitSaverEntitySlots] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
