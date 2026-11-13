@@ -53,7 +53,7 @@ Everything; shared Google service hosts, including `www.googleapis.com` and
 `clients1.google.com` through `clients4.google.com`, stay out. The
 `nextlgsdp.com`, `ibs`, `ibsstat` and known WiseLG platform and CDN names,
 including `dev-ruc-ngfts.tv.wiselg.com`, wait for clock sync, then enter the
-table on both address families. Other blockers' sinkholes are carried over
+table on both address families. AirPlay's MFi key check is skipped, through `/tmp/mfi_key_requested`, only while the table blocks the TV's country's time server: with Everything once the clock is set, not with Ads & telemetry or before the clock, a file left by the daemon gives way to the directory, and switching off removes Glasshouse's folder but leaves one still holding another tool's. Other blockers' sinkholes are carried over
 from a file Glasshouse did not write and from under the table's own `# Kept
 from /etc/hosts` header, including with only TV updates blocked, and stay when
 a tier is switched off while the tier's own names go.

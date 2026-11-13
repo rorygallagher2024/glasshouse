@@ -505,6 +505,60 @@ function clearCache() {
 
 function syncAppHosts() {
   if (appHostsModule) appHostsModule.sync();
+  syncAirplayKeyCheck();
+}
+
+/*
+ * AirPlay's first pairing after each power-on has the daemon ask
+ * com.webos.service.mfi to check the TV's MFi key with LG, through sdx's
+ * sdp_airplay service on <country>.nextlgsdp.com. With that blocked,
+ * downloadKey answers -5 and the daemon waits 10 s, longer than the iPhone,
+ * which says "Unable to Connect" (a B4, webOS 10.3.2, #1434). The daemon
+ * skips the check while /tmp/mfi_key_requested exists, and a power-on deletes
+ * that file but not a directory with something in it. So while this table
+ * blocks the TV's country's time server, the directory is kept, with a folder of
+ * Glasshouse's in it; once it does not, that folder goes, and the directory
+ * if empty, and LG's check runs again. The key itself is still read from
+ * the TV's secure store.
+ */
+var AIRPLAY_KEY_FLAG = '/tmp/mfi_key_requested';
+var AIRPLAY_KEY_MINE = 'glasshouse';
+var airplayFlagError = '';
+// The file calls it makes, for a test to give it a filesystem of its own.
+var airplayFs = fs;
+
+// The host sdx gives sdp_airplay is the TV's country's: AE.nextlgsdp.com on a
+// B4 set to the UAE. Ads & telemetry blocks rdx2.nextlgsdp.com but not it.
+function blocksSdp() {
+  if (!isTableMounted()) return false;
+  var hosts = [];
+  countryPrefixes().forEach(function (cc) { hosts.push(cc + '.nextlgsdp.com', cc + '.tv.wiselg.com'); });
+  return adBlockList(flagMode()).some(function (n) { return hosts.indexOf(n) !== -1; });
+}
+
+function syncAirplayKeyCheck() {
+  var mine = AIRPLAY_KEY_FLAG + '/' + AIRPLAY_KEY_MINE;
+  try {
+    if (blocksSdp()) {
+      var st = null;
+      try { st = airplayFs.lstatSync(AIRPLAY_KEY_FLAG); } catch (e) {}
+      // The daemon's own marker: a file, which a power-on deletes.
+      if (st && !st.isDirectory()) airplayFs.unlinkSync(AIRPLAY_KEY_FLAG);
+      if (!st || !st.isDirectory()) airplayFs.mkdirSync(AIRPLAY_KEY_FLAG);
+      if (!airplayFs.existsSync(mine)) {
+        airplayFs.mkdirSync(mine);
+        console.log('adblock: AirPlay skips LG\'s MFi key check while the time servers are blocked');
+      }
+    } else if (airplayFs.existsSync(mine)) {
+      airplayFs.rmdirSync(mine);
+      try { airplayFs.rmdirSync(AIRPLAY_KEY_FLAG); } catch (e) { /* the daemon's or another tool's, still in use */ }
+      console.log('adblock: AirPlay checks its MFi key with LG again');
+    }
+    airplayFlagError = '';
+  } catch (e) {
+    if (airplayFlagError !== e.message) console.error('adblock: could not set AirPlay\'s key check: ' + e.message);
+    airplayFlagError = e.message;
+  }
 }
 
 function storeHost() {
@@ -1650,6 +1704,7 @@ function init(opts) {
   if (opts.lgSettings) lgSettingsModule = opts.lgSettings;
   if (opts.services) servicesModule = opts.services;
   if (opts.appHosts !== undefined) appHostsModule = opts.appHosts;
+  if (opts.airplayFs) airplayFs = opts.airplayFs;
   execFn = opts.exec || execFile;
   if (opts.luna) luna = opts.luna;
   if (opts.lunaCached) lunaCached = opts.lunaCached;
