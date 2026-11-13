@@ -2895,8 +2895,13 @@ documented variant, or applicable fallback countries before it is known.
 It does not infer a variant for every country: no `de7` or `gb7` is listed.
 Those names and the exact `ruc.tv.wiselg.com` also remain reachable until the
 existing clock gate closes. Unlike the upstream project's fixed 60-second
-SDP delay, this gate requires valid time. The expanded coverage has not yet
-been tested on hardware.
+SDP delay, this gate requires valid time.
+
+The C4 owner subsequently reported testing the expanded coverage with no
+functional problems observed so far. Domains and the LAN-wide scan still
+appeared in Pi-hole during boot; no further queries were observed after
+Glasshouse was fully started during that test. This does not identify the
+requesting processes or establish the behavior of other TVs and webOS versions.
 
 ## Report and store log hosts (C4, webOS 10.3.1)
 
