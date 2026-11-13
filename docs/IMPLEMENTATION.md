@@ -1635,7 +1635,7 @@ Home screen bloatware tile hiding allows built-in or preloaded system apps (whic
 3. **SAM Refresh**: SAM (Surface Application Manager) reads `appinfo.json` only when it scans. Glasshouse makes SAM reread manifests in place where the TV has a way, and never restarts it there (#366, #1315):
    - **Per-app block and release (webOS 10–11)**: where `/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema` exists, `samrescan.rereadApps` (and `sam_reread_app` in `50-tvweb.sh`) calls `applicationManager/blockSystemApp` followed by `releaseBlockSystemApp` for each affected app (`"forceBlockSystemApp": false` where the schema asks for it).
    - **Configd nudge (webOS 7–9)**: where configd holds LG's `profile.blockedAppList` region list, `samrescan.refresh` (and `sam_nudge` in `50-tvweb.sh`) briefly adds an unused id and puts LG's list back, causing SAM to reread every `appinfo.json` in ~2 s with its PID unchanged. configd keeps that value across reboots, so it stays at LG's value as of the nudge.
-   Each caller checks `getAppInfo` visibility afterwards. If SAM declines or times out on webOS 7 and later, the change is undone (`hideTile` unmounts and removes the override) rather than restarting SAM. Where neither mechanism exists (webOS 3–6), tile hiding restarts SAM as before (`killall -9 LunaExecutable`, `systemctl kill -s 9 sam.service` with the start limits of SAM and the units that require it cleared, `initctl restart sam` on Upstart TVs such as the B8), since it is the only way SAM reads a mounted manifest there. That restart is the one left: Glasshouse Home never restarts SAM.
+   Each caller checks `getAppInfo` visibility afterwards. If SAM declines or times out on webOS 7 and later, the change is undone (`hideTile` unmounts and removes the override) rather than restarting SAM. Where neither mechanism exists (webOS 3–6), tile hiding restarts SAM as before (`killall -9 LunaExecutable`, `systemctl kill -s 9 sam.service` with the start limits of SAM and the units that require it cleared, `initctl restart sam` on Upstart TVs such as the B8), since it is the only way SAM reads a mounted manifest there. Apart from it, only Glasshouse Home's switch on webOS 7 restarts SAM, where neither mechanism took (#1412).
 
 ### Cold Boot vs. Quick Start+ (Standby)
 - **Normal Usage (Quick Start+)**: LG webOS defaults to Quick Start+ (Active Standby / Suspend-to-RAM). When the TV is powered off and on with the remote, the Linux kernel, active bind-mounts, and SAM remain running in memory. The overrides remain intact, and hidden tiles never appear.
@@ -1721,7 +1721,10 @@ as LG's has it), bind-mounts the directory over
 (`lib/samrescan.js`): with the nudge on webOS 7 and 9, and with a block and release
 of the one app on webOS 10 and 11, which ignore the nudge. Neither `lib/home-takeover.js`
 nor the boot hook falls back to restarting `sam` (#366, #1315): if `sam` does not take
-the reread on takeover, LG's Home is put back and the switch fails cleanly. On webOS 10 the Home
+the reread on takeover, LG's Home is put back and the switch fails cleanly. The one
+exception is webOS 7, where `lib/home-takeover.js` restarts `sam` when it took neither
+the nudge nor a block and release: an A2 (webOS 7.3.0) took Glasshouse Home only that
+way, as every release before 0.145.0 did it (#1412). On webOS 10 the Home
 button opens the default app of the `home` category, which sam takes from that
 `appCategory`; without it the button does nothing
 ([research](development/TV-RESEARCH.md#glasshouse-home-on-webos-10-g5-webos-1031)).

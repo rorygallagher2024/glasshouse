@@ -259,7 +259,11 @@ home_os=0
 if [ "$webos_major" = "8" ] || [ "${webos_major:-0}" -ge 12 ] 2>/dev/null; then
   grep -q '"allowExperimentalHome"[[:space:]]*:[[:space:]]*true' /var/lib/tvweb/config.json 2>/dev/null && home_os=1
 fi
-if [ "$home_os" -eq 0 ] && grep -q " $homeapp " /proc/mounts 2>/dev/null; then
+# Only Glasshouse Home's own staged copy, told by device and inode as
+# lib/home-takeover.js does: another launcher, such as CleanYourTV, may be
+# mounted here by a hook that ran before this one.
+if [ "$home_os" -eq 0 ] && grep -q " $homeapp " /proc/mounts 2>/dev/null && [ -d "$homestage" ] &&
+  [ "$(stat -c %d:%i "$homeapp")" = "$(stat -c %d:%i "$homestage")" ]; then
   umount "$homeapp" 2>/dev/null || true
 fi
 # A block and release cut short leaves Home blocked across boots, as for the

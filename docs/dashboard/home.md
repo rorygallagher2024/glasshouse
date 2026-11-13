@@ -21,7 +21,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    Hover to focus, click to open, and rest near row edges to glide smoothly across off-screen tiles. The scroll wheel and arrow keys navigate seamlessly, preserving focused tiles and scroll positions when returning from an app.
+    Hover to focus, click to open, and rest near row edges to glide smoothly across off-screen tiles. The scroll wheel and arrow keys navigate seamlessly, preserving focused tiles and scroll positions when returning from an app. **Up** and **Down** go to the tile directly above or below on screen, the left one where two sit equally under it.
 
 -   **Inputs & HDMI-CEC devices**
 
@@ -349,7 +349,7 @@ Under **Choose your launcher** on the web dashboard's **Home** tab, choose **Gla
   * Select the **LG Home** tile at the end of the Apps row, unless it has been hidden.
   * Hold the remote's **Home** button for 1 second (a short press on LG's Home returns to Glasshouse Home).
   * Stop the Glasshouse server: if Glasshouse Home stops answering or the server is stopped/uninstalled, LG's Home automatically takes its place back.
-  * Glasshouse Home not opening: if a short press of **Home** brings nothing from Glasshouse Home, LG's Home opens instead. Where the TV's web app manager, which runs Glasshouse Home, has stopped, this is decided after five seconds, and the web app manager is started again first and Glasshouse Home given one more try. Where it is running, Glasshouse Home may only be slow to load, as on the first press after a reboot, so it is given 20 seconds. A press of **Home** that only ends the screen saver opens nothing, as on LG's own Home, and is not taken for one that should open Glasshouse Home.
+  * Glasshouse Home not opening: if a short press of **Home** brings nothing from Glasshouse Home, LG's Home opens instead. Where the TV's web app manager, which runs Glasshouse Home, has stopped, this is decided after five seconds, and the web app manager is started again first and Glasshouse Home given one more try. Where it is running, Glasshouse Home may only be slow to load, as on the first press after a reboot, so it is given 20 seconds. An app opened from Glasshouse Home is given 30 seconds to show its window before Glasshouse Home counts as not answering, as some, such as Nuvio, show LG's loading screen for several seconds first. A press of **Home** that only ends the screen saver opens nothing, as on LG's own Home, and is not taken for one that should open Glasshouse Home.
 * **Cold boot & standby:** [Open Home at power-on](#open-home-at-power-on) controls whether the TV opens the Home screen when switched on or stays on the last input (LG's Home Auto Launch). With Quick Start+ (Active Standby) on, Glasshouse Home opens immediately on wake (and on TVs like the C4 on webOS 10.3.1 that start on their last input anyway, Glasshouse Home is opened over it when Open Home at power-on is on). On a cold boot (Quick Start+ off), Glasshouse Home takes over about 25–40 seconds after power-on; pressing Home during startup keeps the TV on the current input with a brief notice until ready.
 * **Hide LG's Home while the TV starts (webOS 9 optional setting):** Replaces LG's Home layout with a blank screen during the first seconds of a cold boot so LG's launcher never flashes on screen.
 
@@ -463,6 +463,7 @@ Individual toggles in the **Shown on Home** section control informative badges a
 * **CEC addresses:** Displays physical HDMI-CEC port addresses (such as `1.0.0.0` or `2.1.0.0`) on each input tile.
 * **Channel logos:** Displays graphical channel logos on Internet TV tiles; when disabled, channels display plain text names instead.
 * **Picture details:** Displays the active picture preset, OLED light / backlight level, and signal format in the top-right corner.
+* **Magic Remote pointer:** On by default. Switched off, the remote's pointer is hidden on Glasshouse Home and moving the remote no longer moves the focus, so only the arrow keys move around Home; OK opens the tile in focus. The wheel still scrolls the rows. Apps, inputs and LG's menus keep the pointer.
 
 ### Weather badge
 
@@ -480,7 +481,7 @@ When enabled, resting on an input or a TV channel for a moment shows it live in 
 
 * **Picture details plate:** With [Picture details](#badges-and-labels) also enabled, the plate moves beside the preview window, level with its foot, and describes what it shows: incoming HDMI resolution, refresh rate, HDR, chroma, picture preset, and backlight/OLED light levels. Changing Picture details updates the plate during a preview without restarting video playback.
 * **AV receiver handling:** Devices connected behind an AV receiver share its HDMI input, so each shows what that input shows. Moving to another input takes the TV's HDMI receiver off the active input without sending CEC commands.
-* **Tuner channels:** Previewing a channel does not make it the TV's last-watched channel. An input with no incoming signal or a channel off-air displays a status notice.
+* **Tuner channels:** Previewing a channel does not make it the TV's last-watched channel, except on webOS 4, whose browser plays channels only the way that does. An input with no incoming signal or a channel off-air displays a status notice; on webOS 4, which reports no signal for a channel, a channel that plays stays up.
 * **Screen saver:** The preview pauses while the screen saver runs over Home, and resumes when dismissed. Pressing **OK** releases the preview while the input or channel opens full screen.
 * **Additional options (webOS 5+):**
     * **Preview sound (off by default):** Plays the sound of the input or channel in the preview. Off, the preview is silent. Switching it from a dashboard changes a preview already playing. Opening a channel full screen always has sound.

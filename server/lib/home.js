@@ -51,7 +51,7 @@ var SETTINGS = 'com.webos.service.settings/';
 var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
-var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos'];
+var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos', 'showPointer'];
 // Where the weather badge's weather comes from: nowhere, Home Assistant's pushes, or Open-Meteo.
 var WEATHER_SOURCES = ['off', 'ha', 'internet'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
@@ -280,6 +280,16 @@ var escaped = false;
 var foreground = '';
 // When something other than the view last came to the front, for the open watch.
 var otherOpenedAt = 0;
+/*
+ * An app opened from the view, and when. Hidden for it, the view stops beating
+ * while the app has no window in front yet: Nuvio on a 55NANO756PR (webOS
+ * 6.5.3) showed LG's loading screen for about 6.5 s, and the view, taken for
+ * hung 6 s after the open, was opened again over it, which ended Nuvio's
+ * launch (#1408). Until the app is in front, or this long after the open, a
+ * view that stops beating is waited for.
+ */
+var LAUNCH_GRACE_MS = 30000;
+var launchedAt = 0;
 var lastSource = null;
 // What ha.js's 'weather' text entity last received over MQTT (setWeather
 // below), kept in home-weather.json so a restart does not hide it.
@@ -416,6 +426,8 @@ function defaults() {
     showAppCount: true,
     showCec: true,
     showTvLogos: true,
+    // The Magic Remote's pointer on the view (#1212).
+    showPointer: true,
     // Where the weather comes from, and the place Open-Meteo is asked about.
     weather: 'ha',
     weatherPlace: null,
@@ -680,6 +692,7 @@ function setLayout(body, cb) {
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
     showTvLogos: typeof body.showTvLogos === 'boolean' ? body.showTvLogos : c.showTvLogos,
+    showPointer: typeof body.showPointer === 'boolean' ? body.showPointer : c.showPointer,
     // showWeather is the switch an older dashboard still sends.
     weather: body.weather !== undefined ? body.weather
       : typeof body.showWeather === 'boolean' ? (body.showWeather ? 'ha' : 'off') : c.weather,
@@ -733,7 +746,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSound: c.previewSound, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
@@ -1339,6 +1352,9 @@ function now(cb) {
         if (chosen.length) on = chosen;
         cb({
           kind: 'input', appId: id, since: since, port: port,
+          // Under a Home screen or launcher, so not on screen: choosing it
+          // in the input bar must still switch to it.
+          behindHome: foreground === HOME_APP || foreground === LG_HOME,
           title: on.length ? on.map(function (d) { return d.name; }).join(' / ') : null,
           via: on.length === 1 ? on[0].via : null,
           devices: on.map(function (d) { return d.id; })
@@ -1469,7 +1485,10 @@ function open(body, cb) {
 // A tile's callback that first records it as opened, if it opened.
 function opened(row, id, cb) {
   return function (r) {
-    if (r && r.ok) noteOpened(row, id);
+    if (r && r.ok) {
+      noteOpened(row, id);
+      launchedAt = nowMs();
+    }
     cb(r);
   };
 }
@@ -2300,6 +2319,11 @@ function watchBeat(ms) {
       recoverView('view not answering', false);
     }
     if (webAppMgrRunning() !== true) return hung();
+    var starting = launchedAt ? LAUNCH_GRACE_MS - (nowMs() - launchedAt) : 0;
+    if (starting > 0) {
+      console.log('home: the view is hidden for an app still starting; waiting for it');
+      return watchBeat(starting);
+    }
     behindAnother(function (app) {
       if (!app) return hung();
       console.log('home: the view is behind ' + app + ', not hung');
@@ -2783,7 +2807,8 @@ function init(opts) {
     exec: opts.exec,
     kill: opts.kill,
     blankAtStart: function () { return startLayoutAvailable() && readConfig().hideLgHomeAtStart === true; },
-    blockFirst: function () { return /^1[01]\./.test(String(webosVersion || '')); }
+    blockFirst: function () { return /^1[01]\./.test(String(webosVersion || '')); },
+    restartAllowed: function () { return /^7\./.test(String(webosVersion || '')); }
   });
   webosVersion = opts.webosVersion || null;
   lgHomeWatchMs = opts.lgHomeWatchMs || LG_HOME_WATCH_MS;
@@ -2825,6 +2850,7 @@ function init(opts) {
   lastSource = null;
   powerActive = true;
   powerState = null;
+  launchedAt = 0;
   saverEndedAt = 0;
   homeDownInSaver = false;
   lastBeatAt = 0;

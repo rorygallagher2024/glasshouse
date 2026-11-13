@@ -562,10 +562,17 @@ step('last watched on a receiver\'s port is the device the TV last selected ther
   ];
   (function nextCase() {
     var c = cases.shift();
-    if (!c) return done();
+    if (!c) {
+      // Under a Home screen the input is still what was on, but not on screen.
+      foreground('com.webos.app.home');
+      return home.now(function (r) {
+        assert.deepEqual([r.kind, r.port, r.behindHome], ['input', 2, true], 'an input under Home is said to be behind it');
+        done();
+      });
+    }
     hdmi2.lastUniqueId = c.last;
     home.now(function (r) {
-      assert.deepEqual([r.kind, r.port, r.title, r.via, r.devices], ['input', 2, c.title, c.via, c.devices], 'lastUniqueId ' + c.last);
+      assert.deepEqual([r.kind, r.port, r.title, r.via, r.devices, r.behindHome], ['input', 2, c.title, c.via, c.devices, false], 'lastUniqueId ' + c.last);
       nextCase();
     });
   })();
@@ -2564,6 +2571,24 @@ step('last watched, the app count, CEC addresses and channel logos show until sw
   });
 });
 
+// #1212: the Magic Remote's pointer on Glasshouse Home, on unless switched off.
+step('the pointer is on until switched off, takes only true or false, and is saved', function (done) {
+  start(null);
+  assert.strictEqual(home.layout().showPointer, true, 'on by default');
+  home.setLayout({ showPointer: 'off' }, function (r) {
+    assert.strictEqual(r.layout.showPointer, true, 'not a boolean, left as it was');
+    home.setLayout({ showPointer: false }, function (r2) {
+      assert.strictEqual(r2.layout.showPointer, false);
+      var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+      assert.strictEqual(saved.showPointer, false, 'saved off');
+      home.setLayout({ showPointer: true }, function (r3) {
+        assert.strictEqual(r3.layout.showPointer, true);
+        done();
+      });
+    });
+  });
+});
+
 step('the clock shows until switched off, the rows sit along the bottom only when switched on, and both are saved', function (done) {
   start(null);
   var l = home.layout();
@@ -3081,6 +3106,58 @@ step('a Home press that only ends the screen saver opens nothing, however tvpowe
         wait(25000, function () {
           assert.ok(tv.launched.indexOf(LG_HOME) !== -1, 'with no view opening, LG\'s Home is opened as before');
           home.disable(function () { done(); });
+        });
+      });
+    });
+  });
+});
+
+// #1412: an A2 (webOS 7.3.0) took Glasshouse Home only through a sam restart,
+// and lost it when 0.145.0 stopped restarting sam.
+step('on webOS 7, where sam takes neither the nudge nor a block and release, Glasshouse Home takes its place through a restart', function (done) {
+  start(null, { webosVersion: '7.3.0' });
+  tv.rescanAbsent = true;
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    assert.ok(tv.events.indexOf('restart') !== -1, 'sam restarted as the last way');
+    assert.ok(taken(), 'Glasshouse Home has LG\'s Home\'s place');
+    tv.events = [];
+    home.disable(function (d) {
+      assert.ok(d.ok, d.error);
+      assert.ok(tv.events.indexOf('restart') !== -1, 'and restarted to give it back');
+      assert.strictEqual(taken(), false, 'LG\'s Home has its place again');
+      done();
+    });
+  });
+});
+
+// #1408: Nuvio on a 55NANO756PR (webOS 6.5.3) had LG's loading screen up for
+// 6.5 s, and the view, beating no more behind it, was opened again over it.
+step('an app opened from the view has time to start before the hidden view counts as hung', function (done) {
+  start({ enabled: true });
+  home.start(function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.windows = [];   // the app's loading screen: no card window yet
+    tv.launched = [];
+    home.open({ kind: 'app', id: 'netflix' }, function (r) {
+      assert.ok(r.ok, r.error);
+      wait(12000, function () {
+        assert.deepEqual(tv.launched, ['netflix'], 'nothing opened over the app while it starts');
+        foreground('netflix');
+        wait(40000, function () {
+          assert.deepEqual(tv.launched, ['netflix'], 'and nothing once it is in front');
+          // An app that never comes up: the view is checked once the grace is over.
+          foreground(LG_HOME);
+          home.beat();
+          home.open({ kind: 'app', id: 'cdp-30' }, function (r2) {
+            assert.ok(r2.ok, r2.error);
+            tv.launched = [];
+            wait(45000, function () {
+              assert.ok(tv.launched.length > 0, 'past the grace, a view that stays silent is opened again');
+              home.disable(function () { done(); });
+            });
+          });
         });
       });
     });

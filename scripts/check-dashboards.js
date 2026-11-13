@@ -278,6 +278,43 @@ async function visitHomePicture(browser, base, problems) {
 }
 
 // The weather badge: Home Assistant's last push or Open-Meteo's, brought by the heartbeat.
+// The input bar over a Home screen: the input last watched is under it, not
+// on screen, so OK on it switches to it rather than closing the bar.
+async function visitInputBarBehindHome(browser, base, problems) {
+  for (const behindHome of [true, false]) {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    const name = 'Input bar ' + (behindHome ? 'over Home' : 'over HDMI 2') + ': ';
+    page.on('pageerror', e => problems.push(name + e.message));
+    await page.addInitScript(() => {
+      window.launches = [];
+      window.PalmServiceBridge = function () {};
+      window.PalmServiceBridge.prototype.call = function (uri, body) { window.launches.push(JSON.parse(body).id); };
+      window.close = function () { window.closed = true; };
+    });
+    await page.route('http://localhost:8080/**', route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
+      if (url.pathname === '/api/home/now') return route.fulfill({ json: { kind: 'input', port: 2, devices: ['hdmi2'], behindHome } });
+      if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout: {}, order: { dev: ['hdmi1', 'hdmi2'] },
+        devices: [{ id: 'hdmi1', name: 'HDMI 1', input: 'hdmi1', port: 1 }, { id: 'hdmi2', name: 'Mac', input: 'hdmi2', port: 2 }] } });
+      return route.fulfill({ json: {} });
+    });
+    try {
+      await page.goto(base + '/assets/inputbar-app/index.html');
+      await page.waitForSelector('.tile.focus');
+      const focused = await page.textContent('.tile.focus .nm');
+      if (focused !== 'Mac') problems.push(name + 'the bar opened on ' + focused + ', not the input last watched');
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(300);
+      const launches = await page.evaluate(() => window.launches);
+      if (behindHome && launches.indexOf('com.webos.app.hdmi2') === -1) problems.push(name + 'OK on HDMI 2 did not switch to it');
+      if (!behindHome && launches.length) problems.push(name + 'OK on the input on screen launched ' + launches.join(', '));
+    } finally {
+      await page.close();
+    }
+  }
+}
+
 async function visitHomeWeather(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home weather: ' + e.message));
@@ -404,6 +441,53 @@ async function visitHomeWeatherSetting(browser, base, problems) {
 }
 
 // The TV's tile, Keep the preview on and Preview in the tile.
+// webOS 4 (a C8, 4.4.3, #1208): its browser has no broadcast-preview type, and
+// its channels report no signal, so a playing channel must not be blanked.
+async function visitHomePreviewWebos4(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home preview on webOS 4: ' + e.message));
+  const layout = { rows: ['dev'], order: { dev: [] }, hidden: { dev: [] }, channels: [], hintSeen: true, searchHintSeen: true,
+    livePreview: true, previewAlways: false, previewInTile: false, picture: false };
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.load = function () {};
+    HTMLMediaElement.prototype.pause = function () {};
+    HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+  });
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1,
+      supported: { ok: true, webos: '4.4.3', standalone: true },
+      apps: [], channels: [], sources: { channels: 1 },
+      devices: [{ id: 'tv', name: 'TV', input: 'tv', tuner: true, port: 0, channel: { id: 'two', number: '2', name: 'Two' } }],
+      order: { dev: ['tv'] } });
+    if (url.pathname.endsWith('/now')) return reply({ kind: 'input', port: 1 });
+    if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
+    // As the C8 answers: no videooutput service, so never a signal.
+    if (url.pathname.endsWith('/picture')) return reply({ ok: true, input: 'dtv', signal: null, range: 'sdr', mode: null, light: null, oled: true });
+    return reply({ ok: true, build: 'preview', layoutVersion: 1 });
+  });
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    await page.clock.fastForward(400);
+    await page.waitForTimeout(100);
+    const type = await page.evaluate(() => {
+      const s = document.querySelector('#pvVideo source');
+      return s ? s.getAttribute('type') + ' ' + s.getAttribute('src') : null;
+    });
+    if (type !== 'service/webos-broadcast tv://two') problems.push('Home preview on webOS 4: the channel did not play as service/webos-broadcast, ' + type);
+    if (type) await page.locator('#pvVideo').dispatchEvent('playing');
+    // Past every try for a signal (0.5 s, then 15 at 0.4 s).
+    for (let i = 0; i < 8; i++) { await page.clock.fastForward(1000); await page.waitForTimeout(30); }
+    const cls = await page.evaluate(() => document.getElementById('preview').className);
+    if (!/\bon\b/.test(cls) || /blank/.test(cls)) problems.push('Home preview on webOS 4: a playing channel with no signal was blanked (' + cls + ')');
+  } finally {
+    await page.close();
+  }
+}
+
 async function visitHomePreviewOptions(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home preview options: ' + e.message));
@@ -1394,6 +1478,92 @@ async function visitHomeRecentsHidden(browser, base, problems) {
   } catch (e) {
     problems.push('Home Recents: ' + e.message);
   } finally { await page.close(); }
+}
+
+// #1212: with the pointer switched off, the cursor is hidden, moving it
+// focuses nothing, and a click opens the tile in focus, once.
+async function visitHomePointerOff(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home pointer off: ' + e.message));
+  const layout = { rows: ['app'], order: { app: [] }, hidden: { app: [] }, channels: [], hintSeen: true, searchHintSeen: true,
+    showPointer: false };
+  const apps = [0, 1, 2, 3].map(i => ({ id: 'app' + i, title: 'App ' + i }));
+  const opened = [];
+  await page.addInitScript(() => {
+    window.__cursor = [];
+    window.PalmSystem = { setCursor: function (c) { window.__cursor.push(c); }, launchParams: '{}' };
+  });
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1, apps, channels: [], devices: [],
+      order: { app: apps.map(a => a.id) } });
+    if (url.pathname.endsWith('/open')) { opened.push(route.request().postDataJSON().id); return reply({ ok: true }); }
+    if (url.pathname.endsWith('/now')) return reply({});
+    return reply({ ok: true, build: 'pointer', layoutVersion: 1 });
+  });
+  const focused = () => page.evaluate(() => { const t = document.querySelector('#rows .tile.focus'); return t ? +t.getAttribute('data-c') : -1; });
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('#rows .tile.focus');
+    const cursor = await page.evaluate(() => window.__cursor.slice());
+    if (cursor[cursor.length - 1] !== 'blank') problems.push('Home pointer off: the cursor was not hidden (' + cursor.join(', ') + ')');
+    const last = await page.locator('#rows .tile[data-c="3"]').boundingBox();
+    await page.mouse.move(last.x + last.width / 2, last.y + last.height / 2);
+    await page.waitForTimeout(300);
+    if (await focused() !== 0) problems.push('Home pointer off: moving the pointer moved the focus to tile ' + await focused());
+    await page.mouse.click(last.x + last.width / 2, last.y + last.height / 2);
+    await page.waitForTimeout(500);
+    if (opened.join() !== 'app0') problems.push('Home pointer off: a click opened ' + (opened.join() || 'nothing') + ', not the tile in focus (app0)');
+  } finally {
+    await page.close();
+  }
+}
+
+// #1213: Up and Down go to the tile above or below on screen, not to the
+// tile last focused in that row: app tiles over wider input tiles.
+async function visitHomeUpDown(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home up and down: ' + e.message));
+  const layout = { rows: ['app', 'dev'], order: { app: [], dev: [] }, hidden: { app: [], dev: [] }, channels: [],
+    hintSeen: true, searchHintSeen: true };
+  const apps = [];
+  for (let i = 0; i < 8; i++) apps.push({ id: 'app' + i, title: 'App ' + i });
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1, apps, channels: [],
+      devices: [1, 2, 3, 4].map(p => ({ id: 'hdmi' + p, name: 'HDMI ' + p, input: 'hdmi' + p, port: p })),
+      order: { app: apps.map(a => a.id), dev: ['hdmi1', 'hdmi2', 'hdmi3', 'hdmi4'] } });
+    if (url.pathname.endsWith('/now')) return reply({});
+    return reply({ ok: true, build: 'updown', layoutVersion: 1 });
+  });
+  const focused = () => page.evaluate(() => {
+    const t = document.querySelector('#rows .tile.focus');
+    if (!t) return null;
+    const r = t.getBoundingClientRect();
+    return { row: t.closest('.row').getAttribute('data-key'), c: +t.getAttribute('data-c'), left: r.left, right: r.right };
+  });
+  const overlaps = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0;
+  const press = async key => { await page.keyboard.press(key); await page.waitForTimeout(700); };
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('#rows .tile.focus');
+    // Remembered in the input row: its first tile.
+    await press('ArrowDown');
+    await press('ArrowUp');
+    for (let i = 0; i < 5; i++) await press('ArrowRight');
+    const above = await focused();
+    await press('ArrowDown');
+    const below = await focused();
+    if (!above || !below || below.row !== 'dev') problems.push('Home up and down: Down did not reach the input row');
+    else if (!overlaps(above, below)) problems.push('Home up and down: Down went to input ' + below.c + ', not the one under app ' + above.c);
+    await press('ArrowUp');
+    const back = await focused();
+    if (!back || back.row !== 'app' || !overlaps(back, below)) problems.push('Home up and down: Up did not go to the app above the input');
+  } finally {
+    await page.close();
+  }
 }
 
 async function visitHomeOrder(browser, base, problems) {
@@ -3211,7 +3381,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitInputBarBehindHome, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

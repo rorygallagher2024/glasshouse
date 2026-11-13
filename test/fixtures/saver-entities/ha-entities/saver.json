@@ -1,0 +1,13 @@
+{
+  "manifest": 1,
+  "version": "1.0.0",
+  "name": "HA Entities",
+  "description": "Fixture for /api/homeassistant.",
+  "license": "MIT",
+  "uses": ["level", "ha-all"],
+  "order": 90,
+  "entities": {
+    "temp": "sensor.example_temperature",
+    "humidity": "sensor.example_humidity"
+  }
+}

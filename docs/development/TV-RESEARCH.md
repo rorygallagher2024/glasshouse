@@ -480,6 +480,14 @@ muted `<video>` with one `<source>`:
 How a busy tuner (a recording) or an encrypted channel shows to the page was
 not tried.
 
+
+On a C8 (webOS 4.4.3, #1208) the browser has no `service/webos-broadcast-preview`:
+the `service/webos-*` types in `/usr/lib/libcbe.so` are `broadcast`,
+`broadcast-cable`, `camera`, `dvr`, `external`, `photo` and `photo-camera`.
+`service/webos-broadcast` with `tv://<channelId>` played the channel in 1.5 to
+2 s. There is no `com.webos.service.videooutput` either, so a channel playing
+in the page reports no signal.
+
 ## IPTV streams in a web page (G3, webOS 9.2.2)
 
 Measured on 31 October 2026 on an OLED55G36LA from Glasshouse Home's page,
@@ -2304,6 +2312,14 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
 ## Widevine DRM and ESN with SAM takeover (webOS 5.6.2, CX)
 
 - Restarting `sam.service` (`killall -9 LunaExecutable` and `systemctl kill -s 9 sam.service`) or bind-mounting over `/usr/palm/applications/com.webos.app.home` breaks Widevine DRM and ESN initialization: Widevine and ESN show as "Unknown" in TV Information, and DRM streaming playback fails. Running Glasshouse Home as a standalone app (`com.tvweb.home`) directed by `remotekeys-filter.js` leaves `com.webos.app.home` and sam untouched, keeping Widevine DRM and ESN functional.
+
+## Widevine DRM and ESN with the bind mount (webOS 10.3.2, B4)
+
+Reported on an OLED77B46LA, webOS 10.3.2 (33.31.75), Glasshouse 0.146.2, with Glasshouse Home on (#1421).
+
+- With `/var/lib/tvweb/home-takeover` bind-mounted over `/usr/palm/applications/com.webos.app.home`, `com.webos.service.sm/crypto/checkSeStore` with `{"id":["esn","widevine"]}` reported both keys with `isOk: true`, and TV Information showed an ESN and a Widevine ID rather than "UNKNOWN", which it shows for a key that call does not return.
+- With the same mount on 0.143.1, Netflix, Prime Video and the Apple TV app played (#1315).
+- sam took the change through `blockSystemApp` and `releaseBlockSystemApp`, never a restart. Where the CX above (webOS 5.6.2) lost both keys with the mount, this TV kept them.
 
 ## IPTV after Active Standby (webOS 5.6.2, CX)
 

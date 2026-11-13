@@ -1652,6 +1652,61 @@ function handleRequest(req, res) {
     return send(res, 200, JSON.stringify(screensaversModule.screensaverList()));
   }
 
+  /* Everything the staged screen saver declared, in one answer. The saver is
+     handed this one address instead of a URL per value, so a saver with eight
+     readings makes one request. Only what that saver declared is served, and
+     the client never names an entity. */
+  if (pathname === '/api/homeassistant' && req.method === 'GET') {
+    if (!authed(u.query, req)) return send(res, 401, JSON.stringify({ ok: false, error: 'unauthorised' }));
+    if (!haEntityModule) return send(res, 503, JSON.stringify({ ok: false, error: 'Home Assistant is not configured' }));
+    var haDeclared = screensaversModule ? screensaversModule.screensaverEntities() : null;
+    var haNames = [];
+    for (var haKey in haDeclared) {
+      if (!Object.prototype.hasOwnProperty.call(haDeclared, haKey)) continue;
+      if (haDeclared[haKey]) haNames.push(haKey);
+    }
+    if (!haNames.length) {
+      return send(res, 200, JSON.stringify({ ok: true, entities: {} }));
+    }
+    if (!haEntityModule.configured()) {
+      return send(res, 200, JSON.stringify({ ok: false, configured: false, entities: {} }));
+    }
+
+    var haIds = [];
+    var haByName = {};
+    for (var hn = 0; hn < haNames.length; hn++) {
+      var haName = haNames[hn];
+      var haId = haDeclared[haName];
+      haByName[haName] = haId;
+      if (haIds.indexOf(haId) === -1) haIds.push(haId);
+    }
+
+    return haEntityModule.readMany(haIds, function (r) {
+      var haEntities = {};
+      var haErrors = {};
+      for (var i = 0; i < haNames.length; i++) {
+        var name = haNames[i];
+        var id = haByName[name];
+        if (r.entities && r.entities[id]) {
+          haEntities[name] = {
+            id: id,
+            state: r.entities[id].state,
+            attributes: r.entities[id].attributes,
+            updated: r.entities[id].updated,
+            label: screensaversModule.screensaverEntityLabel(id) || undefined
+          };
+        } else {
+          haErrors[name] = (r.errors && r.errors[id]) || 'no answer from Home Assistant';
+        }
+      }
+      send(res, 200, JSON.stringify({
+        ok: true,
+        entities: haEntities,
+        errors: Object.keys(haErrors).length ? haErrors : undefined
+      }));
+    });
+  }
+
   /* A screen saver's own Home Assistant readings. The saver's saver.json names
      the entities it draws and the server hands it one address per name; this
      serves those and nothing else while that saver is on the TV, so a QML file
