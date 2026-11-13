@@ -404,6 +404,53 @@ async function visitHomeWeatherSetting(browser, base, problems) {
 }
 
 // The TV's tile, Keep the preview on and Preview in the tile.
+// webOS 4 (a C8, 4.4.3, #1208): its browser has no broadcast-preview type, and
+// its channels report no signal, so a playing channel must not be blanked.
+async function visitHomePreviewWebos4(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home preview on webOS 4: ' + e.message));
+  const layout = { rows: ['dev'], order: { dev: [] }, hidden: { dev: [] }, channels: [], hintSeen: true, searchHintSeen: true,
+    livePreview: true, previewAlways: false, previewInTile: false, picture: false };
+  await page.addInitScript(() => {
+    HTMLMediaElement.prototype.load = function () {};
+    HTMLMediaElement.prototype.pause = function () {};
+    HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+  });
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1,
+      supported: { ok: true, webos: '4.4.3', standalone: true },
+      apps: [], channels: [], sources: { channels: 1 },
+      devices: [{ id: 'tv', name: 'TV', input: 'tv', tuner: true, port: 0, channel: { id: 'two', number: '2', name: 'Two' } }],
+      order: { dev: ['tv'] } });
+    if (url.pathname.endsWith('/now')) return reply({ kind: 'input', port: 1 });
+    if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
+    // As the C8 answers: no videooutput service, so never a signal.
+    if (url.pathname.endsWith('/picture')) return reply({ ok: true, input: 'dtv', signal: null, range: 'sdr', mode: null, light: null, oled: true });
+    return reply({ ok: true, build: 'preview', layoutVersion: 1 });
+  });
+  try {
+    await page.clock.install();
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('.tile');
+    await page.clock.fastForward(400);
+    await page.waitForTimeout(100);
+    const type = await page.evaluate(() => {
+      const s = document.querySelector('#pvVideo source');
+      return s ? s.getAttribute('type') + ' ' + s.getAttribute('src') : null;
+    });
+    if (type !== 'service/webos-broadcast tv://two') problems.push('Home preview on webOS 4: the channel did not play as service/webos-broadcast, ' + type);
+    if (type) await page.locator('#pvVideo').dispatchEvent('playing');
+    // Past every try for a signal (0.5 s, then 15 at 0.4 s).
+    for (let i = 0; i < 8; i++) { await page.clock.fastForward(1000); await page.waitForTimeout(30); }
+    const cls = await page.evaluate(() => document.getElementById('preview').className);
+    if (!/\bon\b/.test(cls) || /blank/.test(cls)) problems.push('Home preview on webOS 4: a playing channel with no signal was blanked (' + cls + ')');
+  } finally {
+    await page.close();
+  }
+}
+
 async function visitHomePreviewOptions(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home preview options: ' + e.message));
@@ -3211,7 +3258,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

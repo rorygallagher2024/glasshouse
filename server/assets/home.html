@@ -2143,6 +2143,10 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         if (tries > 1) {
           return setTimeout(function () { if (gen === tilePreview.gen) loadPreviewInfo(target, gen, tries - 1); }, PREVIEW_CHANNEL_POLL_MS);
         }
+        if (oldBroadcast() && tilePreview.playing) {
+          tilePreview.info = r;
+          return renderPreviewInfo();
+        }
         return blankPreview();
       }
       tilePreview.info = r;
@@ -2212,13 +2216,25 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     tilePreview.timer = setTimeout(function () { if (gen === tilePreview.gen && !tilePreview.playing) blankPreview(); }, TV_PREVIEW_START_MS);
   }
 
+  /*
+   * webOS 4's browser has no service/webos-broadcast-preview, and plain
+   * service/webos-broadcast plays the channel in 1.5 to 2 s there (a C8,
+   * 4.4.3, #1208), at the cost of making it the TV's last channel. Nor has
+   * webOS 4 the videooutput service a channel's signal is read from, so a
+   * channel playing there is not blanked as off air for want of one.
+   */
+  function oldBroadcast() {
+    return !!(data && data.supported && parseInt(data.supported.webos, 10) <= 4);
+  }
+
   function startPreview(target) {
     if (target.tv) return startTvPreview(target);
     var gen = tilePreview.gen, v = $('pvVideo'), s = document.createElement('source');
     var current = function () { return gen === tilePreview.gen; };
     v.muted = previewMuted();
     v.defaultMuted = v.muted;
-    s.setAttribute('type', target.port ? 'service/webos-external' : 'service/webos-broadcast-preview');
+    s.setAttribute('type', target.port ? 'service/webos-external' :
+                   oldBroadcast() ? 'service/webos-broadcast' : 'service/webos-broadcast-preview');
     s.setAttribute('src', target.port ? 'ext://hdmi:' + target.port : 'tv://' + target.item.id);
     v.appendChild(s);
     v.onplaying = function () {
