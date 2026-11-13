@@ -96,4 +96,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - run: node --version && node test/run-all.js
+      # One suite per processor here, where twice as many on GitHub's
+      # 4-processor runners lost a unit-test job's runner about once in 50.
+      - run: node --version && nproc && node test/run-all.js
+        env:
+          TEST_CONCURRENCY: 4
