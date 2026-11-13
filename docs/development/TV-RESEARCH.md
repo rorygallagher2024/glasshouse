@@ -3571,3 +3571,15 @@ A TV boots onto its last input, and the input app is started early in the boot
 `com.webos.service.eim/getAllInputStatus` lists each input with `activate`:
 false for an empty HDMI port on both TVs, and on the C2 for a port with a device
 connected (`connected: true`, a field the B8 does not have) that sends nothing.
+
+## The Homebrew Channel's update block and other hosts layers (OLED77B46LA, webOS 10.3.2)
+
+With its "Block system updates" flag set, the Homebrew Channel's start-up binds
+`/tmp/hosts` over `/etc/hosts`, with the comment
+`# This file is dynamically regenerated on boot by webosbrew startup script`
+and loopback entries for LG's update hosts. `/proc/self/mountinfo` lists it as
+root `/hosts` on a `tmpfs`. Life's Good Without Spying 0.11.3 then binds a file
+of its own, `/var/lib/webosbrew/lifesgoodwithoutspying.hosts` on ext4, built
+from a copy of `/etc/hosts`, so it carries the same comment and update entries.
+The comment alone does not say whose layer is on top; the mount table's root
+and filesystem do (#1369).

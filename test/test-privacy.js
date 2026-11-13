@@ -190,6 +190,58 @@ test("with only updates blocked, the table keeps another blocker's sinkholes, an
   }
 });
 
+// #1369: with updates switched off, only the Homebrew Channel's own layer is
+// unmounted. Life's Good Without Spying's is a copy of it, comment and all.
+test("switching updates off lifts the Homebrew Channel's layer, and leaves another tool's copy of it under the table", function () {
+  var TABLE = '/var/lib/tvweb/adblock_hosts', MOUNTS = '/proc/self/mountinfo';
+  var saved = mockEnv.files['/etc/hosts'];
+  var HBC_LAYER = '1113 50 0:36 /hosts /etc/hosts rw,relatime shared:23 - tmpfs tmpfs rw,size=733456k\n';
+  var COPY = '127.0.0.1 localhost\n# This file is dynamically regenerated on boot by webosbrew startup script\n' +
+    '127.0.0.1 snu.lge.com su-dev.lge.com su.lge.com su-ssl.lge.com\n::1 snu.lge.com su-dev.lge.com su.lge.com su-ssl.lge.com\n';
+  var ran = [];
+  privacy.init({ exec: function (file, args, opts, cb) { ran.push([file].concat(args).join(' ')); cb(null, '', ''); } });
+  function switchOff(hosts, mounts) {
+    ran = [];
+    mockEnv.files[HBC_FLAG] = '';
+    mockEnv.files['/etc/hosts'] = hosts;
+    mockEnv.files[MOUNTS] = mounts;
+    privacy.clearCache();
+    var result;
+    privacy.setTvUpdatesBlocked(false, function (r) { result = r; });
+    assert.ok(result && result.ok, JSON.stringify(result));
+  }
+  try {
+    // The Homebrew Channel's own layer on top: unmounted, as before.
+    switchOff(COPY, HBC_LAYER);
+    assert.deepEqual(ran, ['/bin/umount /etc/hosts']);
+
+    // Another tool's layer over it, made from a copy: not unmounted. The table
+    // goes over it with that tool's lines and without the update block.
+    switchOff(COPY + LGWSS.join('\n') + '\n', HBC_LAYER +
+      '1329 1113 179:59 /var/lib/webosbrew/lifesgoodwithoutspying.hosts /etc/hosts rw,nosuid,relatime shared:39 - ext4 /dev/mmcblk0p59 rw,data=ordered\n');
+    assert.deepEqual(ran, ['/bin/mount --bind ' + TABLE + ' /etc/hosts'], "the other tool's layer is not unmounted");
+    LGWSS.forEach(function (line) { assert.ok(mockEnv.files[TABLE].indexOf(line) !== -1, line + ' was dropped'); });
+    UPDATE_HOSTS.forEach(function (host) {
+      assert.ok(!sinkholed(mockEnv.files[TABLE], host) && mockEnv.files[TABLE].indexOf(host) === -1, host + ' is still blocked');
+    });
+
+    // A mount table that cannot be read: nothing is taken for the Homebrew Channel's.
+    delete mockEnv.files[MOUNTS];
+    assert.strictEqual(privacy.hbcLayerOnTop(), false);
+    // No comment in /etc/hosts: nothing more is done.
+    switchOff('127.0.0.1 localhost\n', HBC_LAYER);
+    assert.deepEqual(ran, []);
+  } finally {
+    privacy.init({ exec: require('child_process').execFile });
+    delete mockEnv.files[HBC_FLAG];
+    delete mockEnv.files[TABLE];
+    delete mockEnv.files[MOUNTS];
+    if (saved === undefined) delete mockEnv.files['/etc/hosts'];
+    else mockEnv.files['/etc/hosts'] = saved;
+    privacy.clearCache();
+  }
+});
+
 // #1434: AirPlay's key check with LG is skipped while the table blocks the
 // time servers' domain, and runs again once it does not.
 test("AirPlay's MFi key check is skipped while the table blocks LG's time servers, and only then", function () {

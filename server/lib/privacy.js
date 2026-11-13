@@ -277,6 +277,7 @@ var sdpCapTimer = null;
  * update blocking off, silently, so its hosts go into this table too.
  */
 var HBC_BLOCK_UPDATES_FLAG = '/var/luna/preferences/webosbrew_block_updates';
+var MOUNTINFO = '/proc/self/mountinfo';
 // The four names the Homebrew Channel's startup.sh blocks, plus /usr/sbin/update's
 // dev endpoint (snu-dev) and download CDN (nsu, docs/development/TV-RESEARCH.md).
 var HBC_UPDATE_HOSTS = ['snu.lge.com', 'su.lge.com', 'su-ssl.lge.com',
@@ -1051,6 +1052,29 @@ function scheduleSdpBlock() {
 }
 
 /*
+ * Whether the mount on top of /etc/hosts is the Homebrew Channel's update
+ * block: its start-up binds /tmp/hosts there, which the mount table lists as
+ * /hosts on a tmpfs (webOS 10.3.2, Homebrew Channel 0.7.3). Another tool's
+ * layer is a file of its own, and where the table cannot be read nothing is
+ * taken for the Homebrew Channel's.
+ */
+function hbcLayerOnTop() {
+  var info;
+  try { info = fs.readFileSync(MOUNTINFO, 'utf8'); } catch (e) { return false; }
+  var layers = [], parents = {};
+  info.split('\n').forEach(function (line) {
+    var sides = line.split(' - ');
+    var parts = sides[0].split(' ');
+    if (sides.length < 2 || parts[4] !== '/etc/hosts') return;
+    layers.push({ id: parts[0], root: parts[3], fstype: sides[1].split(' ')[0] });
+    parents[parts[1]] = true;
+  });
+  // The top one is the one no other is mounted on.
+  var top = layers.filter(function (l) { return !parents[l.id]; })[0];
+  return !!top && top.fstype === 'tmpfs' && top.root === '/hosts';
+}
+
+/*
  * One table carries both the ad block and the update block, so it stays
  * mounted while either is on. The Homebrew Channel mounts its own update block
  * at boot, under this one; with updates unblocked and nothing of ours to
@@ -1088,7 +1112,18 @@ function applyHostsTable(cb) {
   var liftHbc = function () {
     var hosts = readTrimmed('/etc/hosts') || '';
     if (hosts.indexOf('webosbrew startup script') === -1) return settle();
-    execFn('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { settle(); });
+    if (hbcLayerOnTop()) return execFn('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { settle(); });
+    // Another tool's layer, made from a copy of the Homebrew Channel's, comment
+    // and update block included (Life's Good Without Spying, #1369). It is left
+    // where it is, with this table over it blocking nothing but that tool's own
+    // lines, so the update block in its copy no longer applies.
+    try {
+      writeHostsTable('off');
+    } catch (e) {
+      return cb('could not write the hosts table: ' + e.message);
+    }
+    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
+      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   };
   if (!mounted) return liftHbc();
   if (foreign.length) {
@@ -1759,6 +1794,7 @@ module.exports = {
   ADBLOCK_PLATFORM: ADBLOCK_PLATFORM,
   adBlockHostsTable: adBlockHostsTable,
   foreignHostsLines: foreignHostsLines,
+  hbcLayerOnTop: hbcLayerOnTop,
   CONSENT_LABELS: CONSENT_LABELS,
   CONSENT_LOCKED: CONSENT_LOCKED,
   CONSENT_GROUPS: CONSENT_GROUPS,
