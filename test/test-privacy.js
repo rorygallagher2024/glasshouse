@@ -147,6 +147,49 @@ test("other tools' lines are told apart from the table's own and the Homebrew Ch
   assert.deepEqual(privacy.foreignHostsLines(hosts), AMAZOFF.concat(['192.168.1.5\tnas']));
 });
 
+// Life's Good Without Spying and LG App Update Blocker write nothing but sinkholes (#1370).
+var LGWSS = ['0.0.0.0 ae.lgtvsdp.com', ':: ae.lgtvsdp.com', '0.0.0.0 ad.lgsmartad.com', ':: ad.lgsmartad.com'];
+
+test("another tool's sinkholes are kept from its file, and from under this table's header in its own", function () {
+  var theirs = '127.0.0.1 localhost\n::1 localhost ip6-localhost ip6-loopback\n' + LGWSS.join('\n') + '\n';
+  assert.deepEqual(privacy.foreignHostsLines(theirs), LGWSS, 'every sinkhole in a file this table did not write');
+  var own = privacy.adBlockHostsTable('full', LGWSS);
+  var kept = privacy.foreignHostsLines(own);
+  assert.deepEqual(kept, LGWSS,
+    "this table's own sinkholes stay its own; another tool's under the header are kept, even for a name both block");
+});
+
+test("with only updates blocked, the table keeps another blocker's sinkholes, and drops a tier's when it is switched off", function () {
+  var TABLE = '/var/lib/tvweb/adblock_hosts';
+  var saved = mockEnv.files['/etc/hosts'];
+  mockEnv.files[HBC_FLAG] = '';
+  mockEnv.files['/etc/hosts'] = '127.0.0.1 localhost\n' + LGWSS.join('\n') + '\n';
+  try {
+    privacy.checkBootAdBlock(false);
+    LGWSS.forEach(function (line) {
+      assert.ok(mockEnv.files[TABLE].indexOf(line) !== -1, line + ' was dropped');
+    });
+    UPDATE_HOSTS.forEach(function (host) { assert.ok(sinkholed(mockEnv.files[TABLE], host)); });
+    // Mounted with Everything on, then switched to updates only: the tier's
+    // names go, the other blocker's stay.
+    mockEnv.files['/etc/hosts'] = privacy.adBlockHostsTable('full', LGWSS);
+    mockEnv.files['/var/lib/tvweb/adblock_enabled'] = 'full';
+    var result;
+    privacy.setAdBlock('off', function (r) { result = r; });
+    assert.ok(result && result.ok);
+    assert.ok(!sinkholed(mockEnv.files[TABLE], 'lgtviot.com'), "the tier's own names are gone");
+    LGWSS.forEach(function (line) {
+      assert.ok(mockEnv.files[TABLE].indexOf(line) !== -1, line + ' was dropped when the tier was switched off');
+    });
+  } finally {
+    delete mockEnv.files[HBC_FLAG];
+    delete mockEnv.files['/var/lib/tvweb/adblock_enabled'];
+    delete mockEnv.files[TABLE];
+    if (saved === undefined) delete mockEnv.files['/etc/hosts'];
+    else mockEnv.files['/etc/hosts'] = saved;
+  }
+});
+
 test("rewriting the mounted table keeps what other tools added to it", function () {
   var TABLE = '/var/lib/tvweb/adblock_hosts';
   var saved = mockEnv.files['/etc/hosts'];

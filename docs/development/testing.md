@@ -53,7 +53,10 @@ Everything; shared Google service hosts, including `www.googleapis.com` and
 `clients1.google.com` through `clients4.google.com`, stay out. The
 `nextlgsdp.com`, `ibs`, `ibsstat` and known WiseLG platform and CDN names,
 including `dev-ruc-ngfts.tv.wiselg.com`, wait for clock sync, then enter the
-table on both address families.
+table on both address families. Other blockers' sinkholes are carried over
+from a file Glasshouse did not write and from under the table's own `# Kept
+from /etc/hosts` header, including with only TV updates blocked, and stay when
+a tier is switched off while the tier's own names go.
 
 Content Store interface and recommendation hosts are blocked on both address
 families only in Everything, before and after clock sync. Tests cover bare
