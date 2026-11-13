@@ -104,6 +104,30 @@ var EPL = 'com.webos.service.oledepl/';
   console.log('  ✓ with neither the service nor a marker, the protections are not reported');
 })();
 
+(function testRefusedPanelHours() {
+  // An A1 (webOS 6) and a C2 (webOS 9.2) refuse both keys and have the hours
+  // in the panel controller: the refused call is not made again for a while.
+  var SYSPROP = 'com.webos.service.tv.systemproperty/getSystemProperties';
+  var r = refresh({ 'com.webos.service.panelcontroller/getPanelUsageTime': { returnValue: true, panelUsageTime: '600' } }, {});
+  assert.ok(r.calls.indexOf(SYSPROP) !== -1);
+  assert.ok(r.stats.panel_hours !== null && r.stats.panel_hours !== undefined, 'the hours come from the panel controller');
+  r.calls.length = 0;
+  r.oled.clearCache();
+  r.oled.refreshOledStats(null, null, function (o) { assert.strictEqual(o.panel_hours, r.stats.panel_hours); });
+  assert.strictEqual(r.calls.indexOf(SYSPROP), -1, 'not asked again');
+  assert.ok(r.calls.indexOf('com.webos.service.panelcontroller/getPanelUsageTime') !== -1);
+
+  // Where it answers, it is asked each time.
+  var ok = {};
+  ok[SYSPROP] = { returnValue: true, panelUsageTime: '600', lastCompensationTimestamp: '500' };
+  var r2 = refresh(ok, {});
+  r2.calls.length = 0;
+  r2.oled.clearCache();
+  r2.oled.refreshOledStats(null, null, function () {});
+  assert.ok(r2.calls.indexOf(SYSPROP) !== -1);
+  console.log('  ✓ refused panel hours are read from the panel controller without asking again');
+})();
+
 fs.existsSync = origExists;
 fs.readFileSync = origRead;
 console.log('ALL test-oled-protections.js assertions passed!');

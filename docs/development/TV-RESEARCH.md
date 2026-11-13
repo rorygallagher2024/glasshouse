@@ -981,6 +981,12 @@ Measured on 22 October 2026 on an LCD 65UQ801C0SB, firmware 04.60.90.
   in front about 6 s later, against 2 to 3 s on a G3; the screen is black
   meanwhile.
 
+## Methods and keys a TV does not have (webOS 6, A1; webOS 9.2, C2)
+
+- An OLED55A16LA (webOS 6, firmware 03.53.45) answers `com.webos.service.audio/tv/getAudioInputProperty` with an unknown-method refusal; audiod logs `LS_NO_METH ... Couldn't find method` for each call (#1418).
+- Its `com.webos.service.tv.systemproperty/getSystemProperties` has neither `panelUsageTime` nor `lastCompensationTimestamp` ("Not found any keys"), and a C2 (webOS 9.2.2) answers `{"errorCode":"ERROR_06","returnValue":false,"errorText":"Invalid argument"}` for the same keys. Both give the panel hours from `com.webos.service.panelcontroller/getPanelUsageTime`.
+- On webOS 5 and 6, a child aborted with libuv's `uv_close: Assertion '!uv__is_closing(handle)'` before running luna-send while another handle was closing; the A1 logged 314 of these over three days on 0.139 to 0.141 and none in the four days after 0.142.0, which starts each child from a timer (#1215).
+
 ## Glasshouse Home on webOS 6.4.0 (OLED55C14LB, firmware 03.41.00)
 
 Reported on PR #910 on 27 October 2026.
