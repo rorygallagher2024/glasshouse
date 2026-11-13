@@ -531,9 +531,17 @@ function setSaverEntities(saverId, newEntities, cb) {
   var stored = readStoredEntities();
   stored[saverId] = stored[saverId] || {};
 
+  // A slot the screen saver declares, whatever its default: Ambient's are blank,
+  // for the owner to fill in (#1446). One it does not declare is refused, rather
+  // than answered as saved.
+  for (var named in newEntities) {
+    if (Object.prototype.hasOwnProperty.call(newEntities, named) && !Object.prototype.hasOwnProperty.call(saver.entities, named)) {
+      return cb({ ok: false, error: saverId + ' has no entity slot named ' + named });
+    }
+  }
+
   for (var k in newEntities) {
     if (!Object.prototype.hasOwnProperty.call(newEntities, k)) continue;
-    if (!saver.entities[k]) continue;
     var val = newEntities[k];
     if (val === null) {
       delete stored[saverId][k];
