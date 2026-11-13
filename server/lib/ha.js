@@ -567,9 +567,9 @@ function mediaPlayerConfig(opts, topic) {
       // Shown as the skip-forward/skip-back buttons; this remote has no
       // track concept, so they change the channel up and down like its CH keys.
       next: { key: 'channel', value: 'up' },
-      previous: { key: 'channel', value: 'down' },
-      screen: { key: 'screen' },
-      notify: { key: 'toast' }
+      previous: { key: 'channel', value: 'down' }
+      // Display Panel and Screen Notification already cover the screen
+      // switch and notify the media_player integration would otherwise add.
     }),
     sources: sources,
     sound_modes: soundModes,
