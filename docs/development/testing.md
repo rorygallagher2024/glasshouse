@@ -195,7 +195,8 @@ restart and install guards, then releases both before reporting success or failu
 `test-remote-worker.js` runs the remote-button worker's Python tests
 (`test/test_remote_buttons.py`) under Python 3: a disconnected device and one at
 EOF are dropped rather than read in a busy loop, a device with nothing to read
-yet is kept, and a device that comes back is reopened and its buttons arrive.
+yet is kept, a device that comes back is reopened and its buttons arrive, and
+pointer movement is reported at most once a second.
 The worker itself stays Python 2.7 compatible for the TV.
 
 Remote-key log checks include the first press immediately after assigning a
@@ -212,7 +213,7 @@ before its first read.
 
 `test-remote-buttons.js` checks the codes of the buttons reported to Home Assistant, that the Python worker that reads the devices has the same codes as `remotebuttons.js`, and that the Remote Button entity declares every reported button as an event type. `test-remotekeys.js` also checks that Power off requests standby once on release, works with the panel blank, and does not switch off after a press that wakes the TV; `test-remotekeys-webos11.js` checks that native filters neither offer nor accept it. `test-remotekeys.js` checks that the Home Assistant choice is offered only with MQTT on and for those buttons, and that the filter keeps a key set to it from the TV.
 
-`test-screensaver-dropped.js` covers a refused request's fallback, remote dismissal and restart recovery, failed closes, delayed replies, and playback or source changes that must prevent a launch. `test-remote-buttons.js` checks that Home, coloured buttons and ordinary keys reach the dismissal handler through both parsed events and the worker stream, including split lines.
+`test-screensaver-dropped.js` covers a refused request's fallback, remote dismissal and restart recovery, failed closes, delayed replies, and playback or source changes that must prevent a launch, and that the pointer moving or clicking ends a Glasshouse screen saver the TV started, once for a stream of movement, while LG's own is left to end itself. `test-remote-buttons.js` checks that Home, coloured buttons and ordinary keys reach the dismissal handler through both parsed events and the worker stream, including split lines, and that pointer reports reach their handler.
 
 `test-idlesaver.js` checks that an idle screen saver refused by panel care is asked for again without its hold, and that the hold is put back when it closes or is still refused, but not over an app that has come to the front since. An app that still refuses it is not lifted again until another app is in front or the TV leaves On. Failed restores are retried, a lost policy reply remains tracked, and a server restart recovers an outstanding lift. Delayed idle callbacks respect later power changes, and a dashboard lift expires if no screen saver starts. Its own request's refusal, playback (non-preview app video on the main screen included while the media state reads idle, while Home, broadcast and inset tile previews still lift it) and a TV without `setEplAppInfo` are left alone. The assertions run on Node 0.10 and 0.12 as well as newer versions.
 

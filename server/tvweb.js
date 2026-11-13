@@ -608,6 +608,7 @@ screensavers.init({
   KEY_BACK: controls.KEY_BACK,
   inputKey: telemetry.inputKey,
   watchKeys: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('screensaver', on); },
+  watchPointer: function (on) { if (!on || remotebuttons.isSupported()) remotebuttons.want('saverPointer', on); },
   mediaState: telemetry.readMediaState,
   haEntity: haEntity
 });
@@ -708,8 +709,11 @@ remotebuttons.init({
   onHomeKey: function (down) {
     if (glasshouseHome) glasshouseHome.homeKey(down);
   },
-  onAnyKey: function () {
-    screensavers.keyPressed();
+  onAnyKey: function (code) {
+    screensavers.keyPressed(code);
+  },
+  onPointer: function () {
+    screensavers.pointerUsed();
   }
 });
 
