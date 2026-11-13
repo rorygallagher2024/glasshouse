@@ -31,6 +31,16 @@ changes, learned countries, update-only blocking, disabling and a failed
 mount. It never runs a mount command. Debounce and fallback timings come
 through `init`; the filesystem checks wait for the changed file.
 
+`test-picture-export.js` checks the read-only picture export through the LG
+settings module and the HTTP handler: values kept as read, keys the TV left
+out omitted, the per-app settings read for the app on screen and left out
+without one, context, authentication, controls disabled, rejected methods and
+read failures. It asserts that only one current-picture read is made per
+export, without writes or cache invalidation. `test-picture-export-ui.js`
+checks the web download and its file name, duplicate clicks, object URL
+cleanup and error handling; it runs on Node 8
+and later, where the web dashboard's JavaScript parses.
+
 `test-privacy.js` checks that `mtalk.google.com` is sinkholed on IPv4 and IPv6
 only in the Everything tier, and stays out of the Ads & telemetry and off tables.
 Regional platform checks cover the reported German and European hosts,
