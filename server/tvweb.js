@@ -52,6 +52,7 @@ var oled = require('./lib/oled');
 var screensavers = require('./lib/screensavers');
 var haEntity = require('./lib/haentity');
 var idlesaver = require('./lib/idlesaver');
+var nosignal = require('./lib/nosignal');
 var appsModule = require('./lib/apps');
 var iconServer = require('./lib/iconserver');
 var samrescan = require('./lib/samrescan');
@@ -614,6 +615,9 @@ screensavers.init({
 });
 idlesaver.init({ luna: luna, mediaState: telemetry.readMediaState,
   watching: function () { return !!(iptv && iptv.watching()); } });
+// A mount does not outlive a reboot: the plain No Signal screen is mounted again.
+nosignal.init({ luna: luna });
+nosignal.apply();
 telemetry.init({
   luna: luna,
   lunaCached: lunaCached,

@@ -148,6 +148,7 @@ async function loadScreensavers() {
     : (d.slowSwitch ? t('ss.slowSwitch', 'On this TV, switching to or from the LG default takes about a minute, and the screen goes dark while it does.') + ' ' : '')
       + t('ss.firmwareNote', 'Note: if a firmware update is applied, the screen saver will be restored to the LG default.'));
   renderSsPowerOff(d);
+  renderSsNoSignal(d);
   ssWritable = d.writable;
   // The status poll sets it from here on; this just saves waiting for it.
   if (ssSwitching) refuseScreensaver(q('ss-toggle'), SS_SWITCHING);
@@ -704,6 +705,34 @@ async function saveSsPowerOff() {
     btn.disabled = false; btn.classList.remove('busy');
     loadScreensavers();
   }
+}
+
+/*
+ * LG's No Signal screen as just "No Signal": offered where the TV's own screen
+ * is the one the server knows how to change.
+ */
+function renderSsNoSignal(d) {
+  const row = q('ss-nosignal-row');
+  if (!row) return;
+  const ns = d.noSignal || {};
+  row.hidden = !ns.available;
+  if (!ns.available) return;
+  q('ss-nosignal-desc').textContent = ns.on && ns.restartPending
+    ? t('ss.noSignal.pending', 'It takes effect once no input is on screen, such as at the Home screen.')
+    : t('ss.noSignal.desc', 'Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only \u201cNo Signal\u201d.');
+  updateToggle('ss-nosignal-btn', {
+    cls: ns.on ? 'good' : 'idle',
+    label: ns.on ? t('common.on', 'On') : t('common.off', 'Off'),
+    on: !!ns.on,
+    disabled: !d.writable
+  });
+}
+
+async function toggleSsNoSignal() {
+  const b = q('ss-nosignal-btn');
+  b.disabled = true;
+  await sendCommand('plainNoSignal', !b.dataset.on);
+  loadScreensavers();
 }
 
 /*

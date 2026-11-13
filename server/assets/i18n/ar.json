@@ -3227,5 +3227,10 @@
  "srv.saver.color.purple": {"text": "أرجواني", "from": "Purple"},
  "srv.saver.color.red": {"text": "أحمر", "from": "Red"},
  "srv.saver.color.white": {"text": "أبيض", "from": "White"},
- "ss.valueColor": {"text": "لون القيمة", "from": "Value colour"}
+ "ss.valueColor": {"text": "لون القيمة", "from": "Value colour"},
+ "ss.noSignal": {"text": "شاشة «لا توجد إشارة»", "from": "No Signal screen"},
+ "ss.noSignal.plain": {"text": "«لا توجد إشارة» فقط", "from": "Just “No Signal”"},
+ "ss.noSignal.desc": {"text": "تُخفي الصورة المتحركة وسطر النصيحة أسفلها، فيعرض المدخل الذي لا تصله إشارة «لا توجد إشارة» فقط.", "from": "Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only “No Signal”."},
+ "ss.noSignal.pending": {"text": "يسري عندما لا يكون أي مدخل على الشاشة، مثل الشاشة الرئيسية.", "from": "It takes effect once no input is on screen, such as at the Home screen."},
+ "tv.noSignal.on": {"text": "اضغط OK للتشغيل", "from": "Press OK to switch on"}
 }

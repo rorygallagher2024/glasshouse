@@ -1029,6 +1029,16 @@ function saverRows(d) {
     r.push(head(t('ss.powerOff', 'Poweroff after')));
     r.push(saverPowerOffRow(d.powerOffMinutes || 0, !!d.allowPower));
   }
+  // LG's No Signal screen, shown by an input with nothing coming in.
+  if (d.writable && d.noSignal && d.noSignal.available) {
+    var nsOn = !!d.noSignal.on;
+    r.push(head(t('ss.noSignal', 'No Signal screen')));
+    r.push({ label: t('ss.noSignal.plain', 'Just \u201cNo Signal\u201d'),
+             value: nsOn ? t('common.on', 'On') : t('common.off', 'Off'), cls: nsOn ? 'on' : 'off',
+             act: 'plainNoSignal', on: nsOn,
+             press: nsOn ? t('tv.saver.allow.off', 'Press OK to switch off') : t('tv.noSignal.on', 'Press OK to switch on'),
+             hint: t('ss.noSignal.desc', 'Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only \u201cNo Signal\u201d.') });
+  }
   r.push(head(t('tv.saver.head.aFirmwareUpdatePuts', 'A firmware update puts LG’s own back')));
   return r;
 }
@@ -3598,6 +3608,8 @@ function activate() {
       return startAdjust();
     case 'saverStart':
       return startSaverAfterRelease();
+    case 'plainNoSignal':
+      return send({ action: 'plainNoSignal', value: !r.on }, r.on ? t('tv.flash.switchedOff', 'Switched off') : t('tv.flash.switchedOn', 'Switched on'));
     case 'saverPowerOff':
       // Shown at once, as the sleep timer: a second OK before the poll would send the same step again.
       var offStep = r.next, offShown = saverPowerOffRow(offStep, true);

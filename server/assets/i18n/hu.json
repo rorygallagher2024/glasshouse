@@ -3241,5 +3241,10 @@
  "srv.saver.color.purple": {"text": "Lila", "from": "Purple"},
  "srv.saver.color.red": {"text": "Piros", "from": "Red"},
  "srv.saver.color.white": {"text": "Fehér", "from": "White"},
- "ss.valueColor": {"text": "Érték színe", "from": "Value colour"}
+ "ss.valueColor": {"text": "Érték színe", "from": "Value colour"},
+ "ss.noSignal": {"text": "„Nincs jel” képernyő", "from": "No Signal screen"},
+ "ss.noSignal.plain": {"text": "Csak „Nincs jel”", "from": "Just “No Signal”"},
+ "ss.noSignal.desc": {"text": "Elhagyja az animált képet és az alatta lévő tanácsot, így a jel nélküli bemenet csak a „Nincs jel” feliratot mutatja.", "from": "Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only “No Signal”."},
+ "ss.noSignal.pending": {"text": "Akkor lép életbe, amikor nincs bemenet a képernyőn, például a kezdőképernyőn.", "from": "It takes effect once no input is on screen, such as at the Home screen."},
+ "tv.noSignal.on": {"text": "Nyomja meg az OK gombot a bekapcsoláshoz", "from": "Press OK to switch on"}
 }

@@ -9,6 +9,7 @@ var execFile = require('child_process').execFile;
 var msg = require('./say').msg;
 var timers = require('./timers');
 var saverPowerOff = require('./saverpoweroff');
+var nosignal = require('./nosignal');
 var clock = require('./clock');
 var names = require('./names');
 var typing = require('./typing');
@@ -1319,6 +1320,10 @@ function doControl(action, value, cb) {
         }
         cb(getUpdateSummary());
       });
+
+    // LG's No Signal screen as just "No Signal", without the picture and advice.
+    case 'plainNoSignal':
+      return nosignal.set(value === true || value === 'on' || value === 'true', cb);
 
     // Poweroff after: minutes of screen saver before standby, 0 or blank for off.
     case 'screensaverPowerOff':
