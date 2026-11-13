@@ -51,7 +51,10 @@ async function loadPicture(fromPoll) {
     renderPicture(d, fromPoll === true);
     pictureError('');
   } catch (e) {
-    if (revision === pictureRevision && fromPoll !== true) pictureError(e.message);
+    if (revision === pictureRevision && fromPoll !== true) {
+      pictureError(e.message);
+      if (q('pic-export-table')) q('pic-export-table').hidden = true;
+    }
   } finally {
     if (revision === pictureRevision && activeTab === 'picture') picturePolling(true);
   }
@@ -61,6 +64,34 @@ function pictureError(message) {
   const el = q('pic-error');
   el.innerHTML = message ? `<b>${esc(t('pic.readFailed', 'The TV’s picture settings could not be read.'))}</b>${esc(sentence(message))}` : '';
   el.hidden = !message;
+}
+
+async function downloadPicture() {
+  const button = q('pic-export');
+  if (button.disabled) return;
+  button.disabled = true;
+  pictureError('');
+  try {
+    const res = await fetch(api('/api/picture/export'), { cache: 'no-store' });
+    const data = await res.json();
+    if (!res.ok || data.format !== 'glasshouse-picture-settings' || data.version !== 1) {
+      throw new Error(data.error || t('common.unknownError', 'unknown error'));
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+    // The input and mode tell apart several exports from one day.
+    const part = v => String(v || '').replace(/^com\.webos\.app\./, '').replace(/[^A-Za-z0-9_-]+/g, '');
+    const dim = data.dimension || {};
+    a.download = ['glasshouse-picture', part(dim.input), part(dim.pictureMode), data.created.slice(0, 10)].filter(Boolean).join('-') + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch (e) {
+    pictureError(e.message);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 // The tab is shown only where the TV offers picture settings, as the Game tab
@@ -87,6 +118,8 @@ function renderPicture(d, fromPoll) {
   pictureShown = shown;
 
   const rows = d.rows || [];
+  // Shown once the settings are on the page, not alone while they load.
+  if (q('pic-export-table')) q('pic-export-table').hidden = !rows.length;
   const mode = rows.find(r => r.id === 'pictureMode');
   const dim = d.dimension || {};
   q('pic-now').hidden = !mode;
