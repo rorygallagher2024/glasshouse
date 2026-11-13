@@ -2,6 +2,7 @@
  "pic.export": {"text": "Exportar JSON", "from": "Export JSON"},
  "pic.exportDesc": {"text": "Descarga los ajustes de imagen actuales como JSON sin cambiarlos. Este archivo no se puede restaurar.", "from": "Downloads the current picture settings as JSON without changing them. This file cannot be restored."},
  "pic.exportTitle": {"text": "Exportar los ajustes actuales", "from": "Export current settings"},
+ "pic.group.export": {"text": "Exportar", "from": "Export"},
  "search.clear": {"text": "Borrar búsqueda", "from": "Clear search"},
  "search.category": {"text": "Categoría: {category}", "from": "Category: {category}"},
  "search.count": {"text": "{n} resultados", "from": "{n} results"},

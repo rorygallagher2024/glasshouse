@@ -828,6 +828,7 @@
  "pic.export": {"text": "تصدير JSON", "from": "Export JSON"},
  "pic.exportDesc": {"text": "ينزّل إعدادات الصورة الحالية بصيغة JSON دون تغييرها. لا يمكن استعادة هذا الملف.", "from": "Downloads the current picture settings as JSON without changing them. This file cannot be restored."},
  "pic.exportTitle": {"text": "تصدير الإعدادات الحالية", "from": "Export current settings"},
+ "pic.group.export": {"text": "تصدير", "from": "Export"},
  "pv.acr.consents": {"text": "موافقات التعرف على المحتوى", "from": "Recognition consents"},
  "pv.acr.consents.desc": {"text": "ما إذا كان مسموحاً لنظام التعرف التلقائي (ACR) من LG بالعمل: {names}.", "from": "Whether LG’s ACR is allowed: {names}."},
  "pv.acr.consents.none": {"text": "لا يحتوي هذا التلفاز على مفاتيح موافقة ACR المعتادة.", "from": "This TV has none of the switches LG’s ACR reads."},

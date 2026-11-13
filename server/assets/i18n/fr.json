@@ -456,6 +456,7 @@
  "pic.export": {"text": "Exporter en JSON", "from": "Export JSON"},
  "pic.exportDesc": {"text": "Télécharge les réglages d'image actuels en JSON sans les modifier. Ce fichier ne peut pas être restauré.", "from": "Downloads the current picture settings as JSON without changing them. This file cannot be restored."},
  "pic.exportTitle": {"text": "Exporter les réglages actuels", "from": "Export current settings"},
+ "pic.group.export": {"text": "Exporter", "from": "Export"},
  "server.experimental.pointer": {"from": "Pointer input", "text": "Entrée du pointeur"},
  "server.experimental.pointer.short": {"from": "Adds a trackpad under Control for moving, clicking and scrolling the TV cursor.", "text": "Ajoute un pavé tactile dans Contrôle pour déplacer le curseur du téléviseur, cliquer et faire défiler."},
  "server.experimental.pointer.transport.desc": {"from": "WebSocket sends without waiting for HTTP answers and opens only while Pointer is open. HTTP sends separate requests and may feel less smooth.", "text": "WebSocket envoie sans attendre de réponses HTTP et ne s'ouvre que lorsque Pointeur est ouvert. HTTP envoie des requêtes distinctes et peut être moins fluide."},

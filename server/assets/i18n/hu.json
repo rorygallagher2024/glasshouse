@@ -729,6 +729,7 @@
  "pic.export": {"text": "JSON exportálása", "from": "Export JSON"},
  "pic.exportDesc": {"text": "Letölti a jelenlegi képbeállításokat JSON formátumban, módosítás nélkül. Ez a fájl nem állítható vissza.", "from": "Downloads the current picture settings as JSON without changing them. This file cannot be restored."},
  "pic.exportTitle": {"text": "Jelenlegi beállítások exportálása", "from": "Export current settings"},
+ "pic.group.export": {"text": "Exportálás", "from": "Export"},
  "pv.acr.consents": {"text": "Felismerési hozzájárulások", "from": "Recognition consents"},
  "pv.acr.consents.desc": {"text": "Engedélyezett-e az LG ACR funkciója: {names}.", "from": "Whether LG’s ACR is allowed: {names}."},
  "pv.acr.consents.none": {"text": "Ezen a TV-n nincs egyik olyan kapcsoló sem, amelyet az LG ACR funkciója figyel.", "from": "This TV has none of the switches LG’s ACR reads."},

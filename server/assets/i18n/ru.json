@@ -729,6 +729,7 @@
  "pic.export": {"text": "Экспорт в JSON", "from": "Export JSON"},
  "pic.exportDesc": {"text": "Скачивает текущие настройки изображения в формате JSON, не изменяя их. Этот файл нельзя восстановить.", "from": "Downloads the current picture settings as JSON without changing them. This file cannot be restored."},
  "pic.exportTitle": {"text": "Экспорт текущих настроек", "from": "Export current settings"},
+ "pic.group.export": {"text": "Экспорт", "from": "Export"},
  "pv.acr.consents": {"text": "Согласия на распознавание", "from": "Recognition consents"},
  "pv.acr.consents.desc": {"text": "Разрешен ли LG ACR: {names}.", "from": "Whether LG’s ACR is allowed: {names}."},
  "pv.acr.consents.none": {"text": "На этом телевизоре нет ни одного переключателя, который читает LG ACR.", "from": "This TV has none of the switches LG’s ACR reads."},
