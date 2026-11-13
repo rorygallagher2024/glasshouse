@@ -3231,6 +3231,6 @@
  "ss.noSignal": {"text": "Экран «Нет сигнала»", "from": "No Signal screen"},
  "ss.noSignal.plain": {"text": "Только «Нет сигнала»", "from": "Just “No Signal”"},
  "ss.noSignal.desc": {"text": "Убирает анимированную картинку и подсказку под ней, так что вход без сигнала показывает только «Нет сигнала».", "from": "Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only “No Signal”."},
- "ss.noSignal.pending": {"text": "Вступит в силу, когда на экране не будет входа, например на главном экране.", "from": "It takes effect once no input is on screen, such as at the Home screen."},
+ "ss.noSignal.pending": {"text": "Вступит в силу, когда на экране не будет входа, например на главном экране.", "from": "It takes effect once no input with a picture is on screen, such as at the Home screen."},
  "tv.noSignal.on": {"text": "Нажмите OK, чтобы включить", "from": "Press OK to switch on"}
 }

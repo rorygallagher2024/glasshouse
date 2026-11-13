@@ -3563,5 +3563,11 @@ of advice under the heading a `ScreensaverSubText` with
 `visible: text.length > 0`; both lines are the same on the two TVs. A copy
 bind-mounted over the file takes effect once the input app is restarted
 (`killall com.webos.app.inputcommon`): it starts again at the next input
-launch, and while an input is in front, restarting it blanks that input for a
-moment.
+launch. With an input in front, the B8 keeps the input and draws it again after
+a moment; the C2 closes the input and opens Home.
+
+A TV boots onto its last input, and the input app is started early in the boot
+(5 s in on the C2, 7 s on the B8), before the Homebrew Channel's start-up runs.
+`com.webos.service.eim/getAllInputStatus` lists each input with `activate`:
+false for an empty HDMI port on both TVs, and on the C2 for a port with a device
+connected (`connected: true`, a field the B8 does not have) that sends nothing.

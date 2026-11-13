@@ -16,9 +16,12 @@
  * nothing is mounted: a firmware that changed them keeps LG's screen.
  *
  * The input app holds the file it loaded until it starts again, so it is
- * restarted, and only while no input is on screen, as restarting it blanks
- * the input in front for a moment. A mount does not outlive a reboot; the
- * server mounts it again at start.
+ * restarted, and only while no input with a picture is on screen, as
+ * restarting it blanks the input in front for a moment. A mount does not
+ * outlive a reboot; the server mounts it again at start. A TV boots onto its
+ * last input with the input app started before the server (5 s into a C2's
+ * boot, 7 s into a B8's), so an input with nothing coming in does not hold the
+ * restart back: its No Signal screen is drawn again, plain, with nothing lost.
  *
  * Strict ES5: runs on node 0.12 (0.10 on webOS 2).
  */
@@ -48,6 +51,8 @@ var stateDir = '/var/lib/tvweb';
 var appQml = APP_QML;
 var retryMs = RETRY_MS;
 var mountinfo = '/proc/self/mountinfo';
+// A restart still owed, kept where a reboot clears it, so a server restart takes it up again.
+var pendingFile = '/var/run/tvweb-nosignal-restart';
 var retryTimer = null;
 var restartPending = false;
 var lastProblem = '';
@@ -60,6 +65,7 @@ function init(opts) {
   appQml = opts.appQml || APP_QML;
   retryMs = opts.retryMs || RETRY_MS;
   mountinfo = opts.mountinfo || '/proc/self/mountinfo';
+  pendingFile = opts.pendingFile || '/var/run/tvweb-nosignal-restart';
   restartPending = false;
   if (retryTimer) clearTimeout(retryTimer);
   retryTimer = null;
@@ -108,24 +114,54 @@ function problem(text) {
   lastProblem = text;
 }
 
-// Restarts the input app, now if no input is in front, otherwise once none is.
+/*
+ * Whether the input an app shows has nothing coming in: the input manager's
+ * `activate` for it is false (an empty HDMI port on a B8 and a C2, and a C2's
+ * port with a device connected but sending nothing). Anything else, a failed
+ * call included, counts as a picture.
+ */
+function nothingComingIn(reply, appId) {
+  var devices = reply && Array.isArray(reply.devices) ? reply.devices : [];
+  for (var i = 0; i < devices.length; i++) {
+    if (devices[i] && devices[i].appId === appId) return devices[i].activate === false;
+  }
+  return false;
+}
+
+/*
+ * Restarts the input app: now if no input is in front or the one in front has
+ * nothing coming in, otherwise once that is so.
+ */
 function restartWhenFree() {
   restartPending = true;
+  try { fs.writeFileSync(pendingFile, '1\n', 'utf8'); } catch (e) { /* asked again only until the server restarts */ }
   if (retryTimer) return;
+  var ask = luna ? luna : function (uri, params, cb) { cb(null); };
+  var later = function () {
+    retryTimer = setTimeout(check, retryMs);
+    if (retryTimer.unref) retryTimer.unref();
+  };
+  // reopen: the input in front. On webOS 9 (a C2) the input closes with the
+  // input app and Home opens; on webOS 4 (a B8) it stays, and opening it again
+  // changes nothing.
+  var restart = function (reopen) {
+    restartPending = false;
+    try { fs.unlinkSync(pendingFile); } catch (e) { /* not there */ }
+    execFn('/usr/bin/killall', [INPUT_APP], { timeout: 5000 }, function () {
+      console.log('nosignal: the input app restarted, so its No Signal screen is ' + (wanted() ? 'plain' : 'LG\'s'));
+      if (reopen) ask('com.webos.applicationManager/launch', { id: reopen }, function () {});
+    });
+  };
   var check = function () {
     retryTimer = null;
     if (!restartPending) return;
-    var ask = luna ? luna : function (uri, params, cb) { cb(null); };
     ask('com.webos.applicationManager/getForegroundAppInfo', {}, function (r) {
       var appId = r && typeof r.appId === 'string' ? r.appId : '';
-      if (INPUT_IN_FRONT.test(appId)) {
-        retryTimer = setTimeout(check, retryMs);
-        if (retryTimer.unref) retryTimer.unref();
-        return;
-      }
-      restartPending = false;
-      execFn('/usr/bin/killall', [INPUT_APP], { timeout: 5000 }, function () {
-        console.log('nosignal: the input app restarted, so its No Signal screen is ' + (wanted() ? 'plain' : 'LG\'s'));
+      if (!INPUT_IN_FRONT.test(appId)) return restart(null);
+      ask('com.webos.service.eim/getAllInputStatus', {}, function (inputs) {
+        if (!restartPending) return;
+        if (nothingComingIn(inputs, appId)) restart(appId);
+        else later();
       });
     });
   };
@@ -172,6 +208,7 @@ function apply(cb) {
       cb(status());
     });
   }
+  if (!restartPending && fs.existsSync(pendingFile)) restartWhenFree();
   cb(status());
 }
 

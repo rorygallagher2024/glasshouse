@@ -718,7 +718,7 @@ function renderSsNoSignal(d) {
   row.hidden = !ns.available;
   if (!ns.available) return;
   q('ss-nosignal-desc').textContent = ns.on && ns.restartPending
-    ? t('ss.noSignal.pending', 'It takes effect once no input is on screen, such as at the Home screen.')
+    ? t('ss.noSignal.pending', 'It takes effect once no input with a picture is on screen, such as at the Home screen.')
     : t('ss.noSignal.desc', 'Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only \u201cNo Signal\u201d.');
   updateToggle('ss-nosignal-btn', {
     cls: ns.on ? 'good' : 'idle',

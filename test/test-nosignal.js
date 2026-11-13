@@ -38,15 +38,21 @@ var LG = [
 fs.writeFileSync(file, LG);
 fs.writeFileSync(mountinfo, '');
 
-var execs = [], foreground = 'com.webos.app.hdmi1';
+var execs = [], launched = [], foreground = 'com.webos.app.hdmi1', sending = true;
 function exec(cmd, args, opts, cb) {
   execs.push([cmd].concat(args).join(' '));
   if (cmd === '/bin/mount') fs.writeFileSync(mountinfo, '1 2 179:59 ' + state + '/nosignal/Screensaver.qml ' + args[2] + ' rw - ext4 x rw\n');
   if (cmd === '/bin/umount') fs.writeFileSync(mountinfo, '');
   setTimeout(function () { cb(null, '', ''); }, 0);
 }
-function luna(uri, params, cb) { setTimeout(function () { cb({ returnValue: true, appId: foreground }); }, 0); }
-nosignal.init({ luna: luna, exec: exec, stateDir: state, appQml: qml, mountinfo: mountinfo, retryMs: 20 });
+function luna(uri, params, cb) {
+  if (uri === 'com.webos.applicationManager/launch') launched.push(params.id);
+  var reply = uri === 'com.webos.service.eim/getAllInputStatus'
+    ? { returnValue: true, devices: [{ appId: 'com.webos.app.hdmi1', activate: sending }, { appId: 'com.webos.app.hdmi2', activate: true }] }
+    : { returnValue: true, appId: foreground };
+  setTimeout(function () { cb(reply); }, 0);
+}
+nosignal.init({ luna: luna, exec: exec, stateDir: state, appQml: qml, mountinfo: mountinfo, pendingFile: path.join(root, 'pending'), retryMs: 20 });
 
 // The patch.
 var plain = nosignal.patch(LG);
@@ -85,11 +91,26 @@ var steps = [
     nosignal.apply(function (r) {
       assert.strictEqual(r.applied, true);
       assert.deepEqual(execs, []);
-      next();
+      // But a restart the last server still owed is taken up.
+      foreground = 'com.webos.app.hdmi1';
+      nosignal.set(false, function () {
+        assert.strictEqual(nosignal.status().restartPending, true);
+        nosignal.init({ luna: luna, exec: exec, stateDir: state, appQml: qml, mountinfo: mountinfo, pendingFile: path.join(root, 'pending'), retryMs: 20 });
+        assert.strictEqual(nosignal.status().restartPending, false);
+        execs = []; foreground = 'com.webos.app.home';
+        nosignal.set(true, function () {
+          waitFor(function () { return execs.length === 2; }, function () {
+            assert.strictEqual(execs[1], '/usr/bin/killall com.webos.app.inputcommon');
+            console.log('  ✓ a restart owed when the server stopped is made by the next one');
+            next();
+          }, 'the owed restart', 2000);
+        });
+      });
     });
   },
   function (next) {
     // Switched off: unmounted and restarted, Home in front.
+    execs = [];
     nosignal.set(false, function (r) {
       assert.strictEqual(r.on, false);
       assert.strictEqual(r.applied, false);
@@ -98,6 +119,22 @@ var steps = [
         console.log('  ✓ switched off, LG\'s screen is back and the input app restarted');
         next();
       }, 'the unmount and restart', 2000);
+    });
+  },
+  function (next) {
+    // An input in front with nothing coming in, as after a boot onto an empty
+    // one: there is no picture to blank, so the restart does not wait.
+    execs = []; foreground = 'com.webos.app.hdmi1'; sending = false;
+    nosignal.set(true, function () {
+      waitFor(function () { return launched.length === 1; }, function () {
+        assert.strictEqual(execs[1], '/usr/bin/killall com.webos.app.inputcommon');
+        assert.deepEqual(launched, ['com.webos.app.hdmi1'], 'the input is opened again, as webOS 9 closes it');
+        console.log('  ✓ an input with nothing coming in does not hold the restart back, and is opened again');
+        foreground = 'com.webos.app.home'; sending = true;
+        nosignal.set(false, function () {
+          waitFor(function () { return execs.length === 4; }, next, 'the restart on switching off', 2000);
+        });
+      }, 'the restart over an empty input', 2000);
     });
   },
   function (next) {
