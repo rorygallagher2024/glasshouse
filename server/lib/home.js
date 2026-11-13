@@ -2801,7 +2801,8 @@ function init(opts) {
     exec: opts.exec,
     kill: opts.kill,
     blankAtStart: function () { return startLayoutAvailable() && readConfig().hideLgHomeAtStart === true; },
-    blockFirst: function () { return /^1[01]\./.test(String(webosVersion || '')); }
+    blockFirst: function () { return /^1[01]\./.test(String(webosVersion || '')); },
+    restartAllowed: function () { return /^7\./.test(String(webosVersion || '')); }
   });
   webosVersion = opts.webosVersion || null;
   lgHomeWatchMs = opts.lgHomeWatchMs || LG_HOME_WATCH_MS;
