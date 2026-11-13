@@ -51,8 +51,8 @@ function init(watch, recheckMs) {
   appHosts.init({ jailRoot: jails, hostFile: hostFile, watch: watch || fakeWatch, recheckMs: recheckMs || 10000, debounceMs: 1 });
 }
 function step(name, fn) { steps.push({ name: name, fn: fn }); }
-function equalSoon(id, text, done) {
-  waitFor(function () { return read(id) === text; }, done, id + ' hosts updated', 500);
+function equalSoon(id, text, done, what) {
+  waitFor(function () { return read(id) === text; }, done, what || id + ' hosts updated', 500);
 }
 
 remove(dir);
@@ -199,6 +199,39 @@ step('startup with blocking off clears copies left by an earlier server', functi
   assert.equal(read('com.webos.chromecast'), BASE);
   assert.equal(watches.filter(function (w) { return !w.closed; }).length, 0);
   done();
+});
+
+step('late events after stop cannot restart watching or rewrite a jail', function (done) {
+  fs.writeFileSync(hostFile, FULL);
+  init();
+  appHosts.sync();
+  var old = watches.filter(function (w) { return !w.closed; });
+  appHosts.stop();
+  fs.writeFileSync(fileOf('com.webos.chromecast'), EARLY);
+  old.forEach(function (w) { w.callback('rename', 'hosts'); });
+  // A negative check: no queued copy may happen after the debounce period.
+  setTimeout(function () {
+    assert.equal(read('com.webos.chromecast'), EARLY);
+    assert.equal(watches.filter(function (w) { return !w.closed; }).length, 0);
+    done();
+  }, 15);
+});
+
+step('real filesystem watches see new jails, launch copies and replaced etc directories', function (done) {
+  init(fs.watch);
+  appHosts.sync();
+  makeJail('real-watch-app', BASE);
+  equalSoon('real-watch-app', FULL, function () {
+    fs.writeFileSync(fileOf('real-watch-app'), EARLY);
+    equalSoon('real-watch-app', FULL, function () {
+      remove(path.dirname(fileOf('real-watch-app')));
+      makeJail('real-watch-app', BASE);
+      equalSoon('real-watch-app', FULL, function () {
+        fs.writeFileSync(fileOf('real-watch-app'), EARLY);
+        equalSoon('real-watch-app', FULL, done, 'real watch after etc replacement');
+      }, 'real watch sees replaced etc');
+    }, 'real watch sees launch copy');
+  }, 'real watch discovers new jail');
 });
 
 step('a jail root created after startup is discovered by the fallback', function (done) {

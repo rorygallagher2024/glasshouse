@@ -19,6 +19,7 @@ var rootWatcher = null;
 var rootKey = '';
 var recheckTimer = null;
 var pending = null;
+var watching = false;
 var SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 function init(opts) {
@@ -55,6 +56,7 @@ function unwatch(id) {
 }
 
 function stop() {
+  watching = false;
   Object.keys(watchers).forEach(unwatch);
   close(rootWatcher);
   rootWatcher = null;
@@ -66,7 +68,7 @@ function stop() {
 }
 
 function queue() {
-  if (pending) return;
+  if (!watching || pending) return;
   pending = setTimeout(function () { pending = null; sync(); }, debounceMs);
   if (pending.unref) pending.unref();
 }
@@ -74,7 +76,7 @@ function queue() {
 function watch(dir, changed, lost) {
   try {
     var w = watchFn(dir, changed);
-    if (w && w.on) w.on('error', function () { close(w); lost(); });
+    if (w && w.on) w.on('error', function () { close(w); lost(w); });
     return w;
   } catch (e) { return null; }
 }
@@ -90,7 +92,7 @@ function watchApp(id, etcInfo) {
   if (!w.jail) w.jail = watch(jail, function (event, name) {
     name = String(name || '');
     if (!name || name === 'etc' || name.indexOf('jail-reset') === 0) queue();
-  }, function () { w.jail = null; });
+  }, function (failed) { if (w.jail === failed) w.jail = null; });
   var key = etcInfo && etcInfo.isDirectory() ? inode(etcInfo) : '';
   if (key !== w.etcKey || !w.etc) {
     close(w.etc);
@@ -98,7 +100,7 @@ function watchApp(id, etcInfo) {
     w.etcKey = key;
     if (key) w.etc = watch(path.join(jail, 'etc'), function (event, name) {
       if (!name || String(name) === 'hosts') queue();
-    }, function () { w.etc = null; });
+    }, function (failed) { if (w.etc === failed) w.etc = null; });
   }
 }
 
@@ -149,16 +151,17 @@ function syncJails(text, active) {
 }
 
 function watchRoot() {
+  watching = true;
   var info = stat(jailRoot);
   var key = info && info.isDirectory() ? inode(info) : '';
   if (key !== rootKey || !rootWatcher) {
     close(rootWatcher);
     rootWatcher = null;
     rootKey = key;
-    if (key) rootWatcher = watch(jailRoot, queue, function () { rootWatcher = null; });
+    if (key) rootWatcher = watch(jailRoot, queue, function (failed) { if (rootWatcher === failed) rootWatcher = null; });
   }
   if (!recheckTimer) {
-    recheckTimer = setInterval(sync, recheckMs);
+    recheckTimer = setInterval(function () { if (watching) sync(); }, recheckMs);
     if (recheckTimer.unref) recheckTimer.unref();
   }
 }

@@ -2001,6 +2001,17 @@ A 55SJ800V-ZB (webOS 3.9.3) answered the same way, with nothing, for
 
 ## LG's device scans (webOS 9.2.2, C2; #244)
 
+On 13 November 2026, an OLED65C43LA owner (webOS 10.3.1, firmware 33.31.61)
+reported periodic scans despite **Network device scans** being off, separately
+from Auto device detection and Privacy's Everything tier. This is an unresolved
+enforcement report, not a verified capture identifying the scanner. The switch
+in stats reflects the saved disabled-services list, not the process or stub's
+current state. `services.isStubbed()` checks for a mount at the executable's
+path without checking its contents; enforcement retries after 30 s and every
+five minutes. The report alone cannot distinguish a missing or ineffective
+stub from another scanning process. No further TV tests were performed for
+this report.
+
 `iconnectivity` (UEI QuickSet) reverse-looks-up every address on the TV's
 /24. On a C2 with `other.ueiEnable` off, opening the Home Hub's page for
 connecting other devices sent 759 PTR queries in two minutes (three passes),
@@ -2770,6 +2781,39 @@ every region's TVs. They remain in Everything because account, store and
 ThinQ features may depend on them. New names under `nextlgsdp.com` keep the
 existing wait for a valid clock. `lgtvonline.lge.com` remains the connectivity
 check described below; `wpad.fritz.box` is outside the LG cloud service list.
+
+### Additional hostnames reported on the C4
+
+On 13 November 2026 the same owner reported these names after updating main
+and restarting the TV. DNS activity alone does not identify a request's
+payload or prove that a connection succeeded. The app-jail synchronization
+change has not been tried on this TV.
+
+| Reported names | Coverage and evidence |
+| :--- | :--- |
+| `de.nextlgsdp.com`, `de.lgeapi.com`, `eic.tv.wiselg.com` | Already in Everything. SDP and WiseLG names wait for the clock; stale jail copies can omit them after that wait ends. |
+| `eic-ngfts.lge.com` | Added to Everything alongside `aic-ngfts.lge.com`; Home search's poster URLs above use this European host. |
+| `www.ueiwsp.com` | Added to Everything alongside the bare domain; also observed alongside the device scans above. Blocking this cloud host does not stop the LAN PTR sweep. |
+| `eic-ocp.lgtviot.com` | Added as an exact reported alias. A read-only string search on the C4 found `ocp.lgtviot.com` in `/usr/sbin/ocpservice`; this does not establish the regional endpoint's payload. |
+| `eic-gfts.tv.wiselg.com` | Added as an exact reported alias, with the WiseLG clock gate. Its function has not been independently established. |
+| `device-provisioning.googleapis.com` | Added to Everything: Google's FCM network documentation lists it alongside `mtalk.google.com`. The lookup does not identify which TV component used it. |
+| `clients3.google.com`, `clients4.google.com` | Left out: shared Google services, including clock synchronization and crash reporting, rather than a dedicated LG tracking endpoint. |
+| `tools.google.com` | Left out: Google documents update configuration for Omaha here. Its use on this TV is unverified. |
+| `www.gstatic.com` | Left out: Google documents shared sign-in assets and connectivity probes here. |
+| `clients3` | Left out: a bare label is a different query from `clients3.google.com`; its origin is unknown. |
+
+[Google's FCM network requirements](https://firebase.google.com/docs/cloud-messaging/network-configuration)
+identify the provisioning endpoint. Its
+[Android Enterprise requirements](https://support.google.com/work/android/answer/10513641?hl=en)
+describe the shared `clients` hosts, and the
+[Chrome endpoint reference](https://support.google.com/chrome/a/answer/6334001?hl=en)
+describes Omaha, static assets and connectivity checks. These describe Google's
+platforms, not captured webOS request paths. Earlier reported
+`connectivitycheck.gstatic.com` and `www.google.com` remain outside the list as
+connectivity/shared service hosts. The earlier `lgtvonline.lge.com` and
+`wpad.fritz.box` exclusions still apply. Owners can add exact names to a custom
+list, with the risk of breaking services that share them; Everything is not a
+firewall or a wildcard DNS policy.
 
 ## Report and store log hosts (C4, webOS 10.3.1)
 

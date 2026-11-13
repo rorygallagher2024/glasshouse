@@ -86,7 +86,7 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 * **SIMPLINK (HDMI-CEC):** Enables CEC control and auto power synchronization with connected devices over HDMI.
 * **IP control:** Enables external IP control protocol support.
 * **Auto device detection:** LG's own setting. Finds devices the TV can show on its Home Dashboard and control, from set-top boxes to smart lights, plugs, and switches. To do it, the TV looks up every address on the home network, which a network-wide ad blocker such as Pi-hole records as hundreds of requests. On some TVs, webOS 11 among them, those lookups carry on with this off.
-* **Network device scans:** Glasshouse's own switch for those lookups. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG's device setup. Off also stops the Magic Remote controlling a set-top box through LG's universal control. Leave it on if you use one. It stays off across restarts.
+* **Network device scans:** Glasshouse's own switch for those lookups. Off, Glasshouse replaces the scanner's program with a script that exits, and the TV cannot use it to find new devices for the Home Hub or LG's device setup. Off also stops the Magic Remote controlling a set-top box through LG's universal control. Leave it on if you use one. The preference stays off across restarts. The switch shows the saved preference, not a live verification that scanning has stopped; a C4 owner reports periodic scans with it off on webOS 10.3.1, which remains unresolved ([research](../development/TV-RESEARCH.md#lgs-device-scans-webos-922-c2-244)).
 
 ## Front lights
 

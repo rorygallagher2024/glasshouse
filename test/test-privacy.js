@@ -207,13 +207,18 @@ test('Everything covers regional LG cloud services without blocking network dete
      'eic.push.lgtviot.com', 'eic.sports.lgtviot.com', 'eic.buddy.lgtviot.com',
      'connect-client.lgthinq.com', 'aic-connect-client.lgthinq.com',
      'eic-connect-client.lgthinq.com', 'kic-connect-client.lgthinq.com',
-     'common.lgthinq.com', 'eic-common.lgthinq.com'].forEach(function (host) {
+     'common.lgthinq.com', 'eic-common.lgthinq.com', 'www.ueiwsp.com',
+     'eic-ocp.lgtviot.com', 'eic-ngfts.lge.com', 'eic-gfts.tv.wiselg.com',
+     'device-provisioning.googleapis.com'].forEach(function (host) {
       assert.ok(sinkholed(table, host), host + ': both address families');
       ['ads', 'off'].forEach(function (mode) {
         assert.strictEqual(privacy.adBlockHostsTable(mode).indexOf(host), -1, mode + ': ' + host);
       });
     });
-    ['lgtvonline.lge.com', 'wpad.fritz.box', 'eic.connect-client.lgthinq.com',
+    ['lgtvonline.lge.com', 'wpad.fritz.box', 'tools.google.com',
+     'www.gstatic.com', 'connectivitycheck.gstatic.com', 'www.google.com',
+     'clients3.google.com', 'clients4.google.com', 'clients3',
+     'eic.connect-client.lgthinq.com',
      'nl.lgeapi.com'].forEach(function (host) {
       assert.strictEqual(table.indexOf(host), -1, host + ': not a selected service host');
     });
@@ -294,7 +299,7 @@ test('nextlgsdp.com is omitted while SDP grace period is active', function () {
   assert.strictEqual(list.indexOf('nextlgsdp.com'), -1, 'nextlgsdp omitted during grace period');
   assert.strictEqual(list.indexOf('gb.nextlgsdp.com'), -1, 'regional nextlgsdp omitted during grace period');
   assert.strictEqual(privacy.adBlockHostsTable('full').indexOf('de.nextlgsdp.com'), -1, 'German nextlgsdp stays reachable while the clock is invalid');
-  ['de.ibs.nextlgsdp.com', 'de.ibsstat.nextlgsdp.com'].forEach(function (host) {
+  ['de.ibs.nextlgsdp.com', 'de.ibsstat.nextlgsdp.com', 'eic-gfts.tv.wiselg.com'].forEach(function (host) {
     assert.strictEqual(privacy.adBlockHostsTable('full').indexOf(host), -1, host + ': waits for clock sync');
   });
   assert.strictEqual(list.indexOf('tv.wiselg.com'), -1, 'the webOS 11 platform, also the clock source, omitted during grace period');
@@ -345,7 +350,7 @@ test('SDP grace period stays open on cold boot until timeValid with source sdp i
   assert.strictEqual(privacy.isSdpGracePeriodActive(), false, 'grace period closes once sdp time is valid');
   assert.ok(privacy.adBlockList('full').indexOf('nextlgsdp.com') !== -1, 'nextlgsdp blocked once synced');
   assert.ok(sinkholed(privacy.adBlockHostsTable('full'), 'de.nextlgsdp.com'), 'German nextlgsdp blocked on both address families after cold-boot clock sync');
-  ['de.ibs.nextlgsdp.com', 'de.ibsstat.nextlgsdp.com'].forEach(function (host) {
+  ['de.ibs.nextlgsdp.com', 'de.ibsstat.nextlgsdp.com', 'eic-gfts.tv.wiselg.com'].forEach(function (host) {
     assert.ok(sinkholed(privacy.adBlockHostsTable('full'), host), host + ': both address families after clock sync');
   });
   privacy._clearSdpTimer();

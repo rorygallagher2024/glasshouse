@@ -10,6 +10,8 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 `test-apphosts.js` checks old jail copies, launch resets, new jails and
 recreated `etc` directories, missed watches, atomic writes, symlink refusal,
 write failures, file modes and restoring marked copies when blocking ends.
+It checks real filesystem notifications as well as injected watch events,
+and verifies that callbacks arriving after shutdown cannot restart watching.
 `test-privacy-apphosts.js` exercises the real synchronizer with simulated
 mounts: clock sync both before and after mounting, tier and custom-list
 changes, learned countries, update-only blocking, disabling and a failed
@@ -22,8 +24,11 @@ Regional platform checks cover the reported German and European hosts,
 ThinQ's hyphenated prefixes, a country outside the fallback list and an
 unknown or invalid country. They check IPv4/IPv6 blocking only in Everything,
 without duplicate names, and leave connectivity checks and local proxy
-discovery unblocked. The `nextlgsdp.com`, `ibs` and `ibsstat` hosts wait for
-clock sync, then enter the table on both address families.
+discovery unblocked. The reported UEI, OCP, content CDN aliases and Google's
+FCM provisioning endpoint are covered on both address families only in
+Everything; shared Google service hosts stay out. The `nextlgsdp.com`, `ibs`,
+`ibsstat` and `eic-gfts.tv.wiselg.com` hosts wait for clock sync, then enter
+the table on both address families.
 
 `test-appdns.js` checks that an app's DNS servers are written into its jail's
 `resolv.conf`, written again when a watch sees the jailer's copy, taken out

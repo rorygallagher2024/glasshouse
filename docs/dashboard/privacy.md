@@ -56,6 +56,8 @@ Apps started before the blocker or clock sync receive the updated list in
 their sandboxes too. Changes to the tier or custom list, and switching
 blocking off, also update those copies. This covers lookups that use the
 hosts file; apps that send DNS queries directly can still reach the DNS server.
+Repairing a jail copy happens after its files change, so a lookup before that
+repair can also escape.
 
 === "Ads & telemetry tier"
 
@@ -66,11 +68,20 @@ hosts file; apps that send DNS queries directly can still reach the DNS server.
     Adds the hosts that carry LG's platform services and Google push messaging:
 
     * **What stops working:** The LG ThinQ phone app, the Content Store, firmware updates, LG Channels, Alexa, and LG's search, so [Glasshouse Home's search](home.md#search) is hidden while it blocks it. (To block only firmware updates while keeping platform services, use **Block TV software updates** on the [System tab](advanced.md) instead.)
-    * **Google push messaging:** Blocks `mtalk.google.com`, a Firebase Cloud Messaging endpoint. Apps using it may lose push notifications. It stays reachable on **Ads & telemetry**.
+    * **Google push messaging:** Blocks `mtalk.google.com` and `device-provisioning.googleapis.com`, endpoints listed by Google for Firebase Cloud Messaging. Apps using them may lose push notifications. They stay reachable on **Ads & telemetry**.
     * **Regional LG services:** Covers LG's known regions and the TV's country for the `nextlgsdp.com`, `ibs.nextlgsdp.com`, `ibsstat.nextlgsdp.com`, `lgeapi.com` and ThinQ IoT service families, plus ThinQ Connect's regional names. This includes `de.ibs.nextlgsdp.com`, `de.lgeapi.com`, `eic.lgtviot.com` and `eic-connect-client.lgthinq.com`. Blocking these may affect account sign-in, ThinQ, push notifications and store services. The list matches exact names, not every subdomain of these domains.
     * **webOS 11:** LG's platform there is `tv.wiselg.com`, which also carries the diagnostics report upload and app usage statistics. This tier blocks it, with the Content Store's host, once the clock has synced.
+    * **Additional service hosts:** Includes the reported `www.ueiwsp.com`, `eic-ocp.lgtviot.com`, `eic-ngfts.lge.com` and `eic-gfts.tv.wiselg.com` aliases. The last waits for clock sync like the other `tv.wiselg.com` names.
     * **Clock sync after a power cut:** After a cold boot, the blocker waits for the TV to set its clock from LG's time servers before blocking them, including Germany's `de.nextlgsdp.com`. If the TV's date is still wrong and apps fail with certificate errors, set the time manually under **Settings › General › System › Time & Date** (with **Set Automatically** off).
     * **Switching back:** After switching away from **everything**, LG's built-in apps (such as Content Store or LG Channels) may take about a minute to reconnect while their browser engine's DNS cache expires.
+
+    **Everything** means the full built-in hosts list, not all network traffic.
+    Shared Google hosts such as `clients3.google.com`, `clients4.google.com`,
+    `tools.google.com` and `www.gstatic.com`, connectivity checks and local proxy
+    discovery (`wpad.fritz.box`) remain reachable. Individual names can be added
+    through a custom list, at the cost of the features sharing them. LAN device
+    scans have a separate [Network device scans](advanced.md#devices-and-connectivity)
+    switch; they are not controlled by the hosts list.
 
 === "Custom hosts file"
 

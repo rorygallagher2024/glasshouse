@@ -1085,8 +1085,10 @@ Writes are atomic, preserve the file's mode and are skipped when identical.
 Symlinks are not followed, and a mount point that cannot be renamed is left
 to its owner. No read-only bind mount is added: LG must be able to copy the
 file during launch. With the main table removed, marked jail copies receive
-the TV's ordinary file and watching stops. This does not flush app DNS caches
-or intercept clients that send DNS queries without consulting hosts.
+the TV's ordinary file and watching stops. Repair follows filesystem events,
+so a lookup before repair can still escape; the fallback can take 30 s.
+This does not flush app DNS caches or intercept clients that send DNS queries
+without consulting hosts.
 
 The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
 the TV needs. The platform tier's are **service infrastructure rather than
@@ -1094,19 +1096,21 @@ advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
 | :--- | :--- |
-| `ngfts.lge.com`, `aic-ngfts.lge.com` | Content and firmware delivery CDN |
+| `ngfts.lge.com`, `aic-ngfts.lge.com`, `eic-ngfts.lge.com` | Content and firmware delivery CDN; the European host also serves Home search posters |
 | `cdplauncher.lgtvcommon.com`, `lgchhomeapp.lgtvcommon.com` | The Home launcher's recommendations and usage reports; needed by the Content Store after a factory reset |
 | `lgtviot.com`, `api.lgtviot.com`, `push.lgtviot.com`, `sports.lgtviot.com`, `buddy.lgtviot.com` (bare, with LG's regional prefixes and the TV's country) | The ThinQ cloud, API, push, sports and buddy services; blocking them can prevent ThinQ control and notifications |
+| `eic-ocp.lgtviot.com` | Reported regional service alias; `ocpservice` names `ocp.lgtviot.com`, but the traffic's purpose has not been established |
 | `lgeapi.com` (bare, with LG's regional prefixes and the TV's country) | LG account/API service family; sign-in or store services may depend on it |
 | `connect-client.lgthinq.com`, `common.lgthinq.com` (bare and with `aic-`/`eic-`/`kic-`) | ThinQ Connect and common cloud services; the prefix uses a hyphen rather than a separate DNS label |
-| `ueiwsp.com` | Universal Electronics' identification of devices connected over HDMI-CEC |
+| `ueiwsp.com`, `www.ueiwsp.com` | Universal Electronics' device identification; the `www` name is reported alongside LAN discovery |
 | `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
-| `mtalk.google.com` | [Google Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/network-configuration), used for push messages; apps using this endpoint may lose push notifications |
+| `mtalk.google.com`, `device-provisioning.googleapis.com` | Endpoints listed for [Google Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/network-configuration); apps using them may lose push notifications |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
 | `nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country, plus `us.`/`gb.`/`de.`/`eu.`) | The same on webOS 9 |
 | `ibs.nextlgsdp.com`, `ibsstat.nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country) | The SDX `ibis_secure` and `ibis_stat_secure` services; blocked only in Everything, after the clock is valid |
 | `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
 | `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
+| `eic-gfts.tv.wiselg.com` | Reported service alias on a C4; exact function unverified, blocked after clock sync like the other `tv.wiselg.com` names |
 
 `com.webos.appInstallService` names the one its own set installs from:
 `http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,

@@ -127,20 +127,27 @@ var ADBLOCK_PLATFORM = [
   'eu.lgtvsdp.com',
   'ngfts.lge.com',
   'aic-ngfts.lge.com',
+  'eic-ngfts.lge.com',
   // From Huttunen's blocklist (docs/IMPLEMENTATION.md), not a capture of ours.
   // lgtviot.com is the ThinQ cloud, so the ThinQ app loses the TV on this tier.
   'cdplauncher.lgtvcommon.com',
   'lgchhomeapp.lgtvcommon.com',
   'lgtviot.com',
+  // Reported by an owner; ocpservice names ocp.lgtviot.com in its binary.
+  'eic-ocp.lgtviot.com',
   'ueiwsp.com',
+  'www.ueiwsp.com',
   // Amazon's Alexa SDK (libAVSCommon) fetches /generate_204 from it on a timer
   // to tell whether the TV is online, while Alexa runs; blocked, Alexa reads
   // the TV as offline.
   'avsxappcaptiveportal.com',
   // Google push messaging is a service endpoint, not an ad or telemetry host.
   'mtalk.google.com',
+  'device-provisioning.googleapis.com',
   // The content CDN on webOS 11, from sdx's server list (OLED77C5PUA, 11.2.0).
-  'ngfts.tv.wiselg.com'
+  'ngfts.tv.wiselg.com',
+  // Regional alias reported on a C4 running webOS 10.3.1.
+  'eic-gfts.tv.wiselg.com'
 ];
 
 // These carry ThinQ and account services, so regional coverage belongs only
