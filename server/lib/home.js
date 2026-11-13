@@ -280,6 +280,16 @@ var escaped = false;
 var foreground = '';
 // When something other than the view last came to the front, for the open watch.
 var otherOpenedAt = 0;
+/*
+ * An app opened from the view, and when. Hidden for it, the view stops beating
+ * while the app has no window in front yet: Nuvio on a 55NANO756PR (webOS
+ * 6.5.3) showed LG's loading screen for about 6.5 s, and the view, taken for
+ * hung 6 s after the open, was opened again over it, which ended Nuvio's
+ * launch (#1408). Until the app is in front, or this long after the open, a
+ * view that stops beating is waited for.
+ */
+var LAUNCH_GRACE_MS = 30000;
+var launchedAt = 0;
 var lastSource = null;
 // What ha.js's 'weather' text entity last received over MQTT (setWeather
 // below), kept in home-weather.json so a restart does not hide it.
@@ -1469,7 +1479,10 @@ function open(body, cb) {
 // A tile's callback that first records it as opened, if it opened.
 function opened(row, id, cb) {
   return function (r) {
-    if (r && r.ok) noteOpened(row, id);
+    if (r && r.ok) {
+      noteOpened(row, id);
+      launchedAt = nowMs();
+    }
     cb(r);
   };
 }
@@ -2300,6 +2313,11 @@ function watchBeat(ms) {
       recoverView('view not answering', false);
     }
     if (webAppMgrRunning() !== true) return hung();
+    var starting = launchedAt ? LAUNCH_GRACE_MS - (nowMs() - launchedAt) : 0;
+    if (starting > 0) {
+      console.log('home: the view is hidden for an app still starting; waiting for it');
+      return watchBeat(starting);
+    }
     behindAnother(function (app) {
       if (!app) return hung();
       console.log('home: the view is behind ' + app + ', not hung');
@@ -2825,6 +2843,7 @@ function init(opts) {
   lastSource = null;
   powerActive = true;
   powerState = null;
+  launchedAt = 0;
   saverEndedAt = 0;
   homeDownInSaver = false;
   lastBeatAt = 0;

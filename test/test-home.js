@@ -3087,4 +3087,37 @@ step('a Home press that only ends the screen saver opens nothing, however tvpowe
   });
 });
 
+// #1408: Nuvio on a 55NANO756PR (webOS 6.5.3) had LG's loading screen up for
+// 6.5 s, and the view, beating no more behind it, was opened again over it.
+step('an app opened from the view has time to start before the hidden view counts as hung', function (done) {
+  start({ enabled: true });
+  home.start(function () {
+    foreground(LG_HOME);
+    home.beat();
+    tv.windows = [];   // the app's loading screen: no card window yet
+    tv.launched = [];
+    home.open({ kind: 'app', id: 'netflix' }, function (r) {
+      assert.ok(r.ok, r.error);
+      wait(12000, function () {
+        assert.deepEqual(tv.launched, ['netflix'], 'nothing opened over the app while it starts');
+        foreground('netflix');
+        wait(40000, function () {
+          assert.deepEqual(tv.launched, ['netflix'], 'and nothing once it is in front');
+          // An app that never comes up: the view is checked once the grace is over.
+          foreground(LG_HOME);
+          home.beat();
+          home.open({ kind: 'app', id: 'cdp-30' }, function (r2) {
+            assert.ok(r2.ok, r2.error);
+            tv.launched = [];
+            wait(45000, function () {
+              assert.ok(tv.launched.length > 0, 'past the grace, a view that stays silent is opened again');
+              home.disable(function () { done(); });
+            });
+          });
+        });
+      });
+    });
+  });
+});
+
 next();
