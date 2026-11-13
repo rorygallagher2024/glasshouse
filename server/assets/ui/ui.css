@@ -304,6 +304,7 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
 .tabs button:focus-visible{outline:2px solid var(--w80);outline-offset:-2px}
 .tabs button[aria-selected="true"]{color:var(--w100);background:var(--w10)}
 .tabs button[aria-selected="true"]::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:2px;background:var(--w100)}
+.nav-grp{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--w40);padding:16px 12px 4px}
 .nav-rule{height:1px;background:var(--w12);margin:10px 12px}
 /* Help, at the sidebar's foot: in the tabs' columns but quieter, as it leaves
    the dashboard. Its baseline sits as far from the bottom as the mark's ink is
@@ -810,7 +811,6 @@ select.pill-sel.ss-sel{display:block;width:100%;max-width:340px;height:48px;marg
 .ss-ent-label-row input:focus,.ss-li-label input:focus{border-color:var(--w100)}
 .ss-ent-label-row input::placeholder,.ss-li-label input::placeholder{color:var(--w60)}
 .ss-ent-label-row input:disabled,.ss-li-label input:disabled{opacity:.45}
-.ss-switch-line{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:340px;margin-bottom:6px}
 .ss-pool-actions{display:flex;gap:8px;margin-bottom:8px;max-width:340px}
 .ss-pool-btn{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;min-height:0;
   color:var(--w60);border:1px solid var(--w12);border-radius:2px;background:transparent;cursor:pointer}
@@ -1032,6 +1032,10 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
    keep their larger titles. A group whose sections this TV has none of goes. */
 .apps-grp+.apps-grp{margin-top:clamp(34px,4.5vw,48px)}
 .apps-grp:not(:has(>details:not([hidden]))){display:none}
+/* A group on a tab with no lists to open, as the Inputs tab's. */
+.tab-grp{margin-top:clamp(34px,4.5vw,48px)}
+.tab-grp[hidden]{display:none}
+.inputs-pair{display:flex;gap:8px}
 .apps-grp-h{font-weight:500;font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--w80);margin:0 0 6px}
 .apps-grp-d{margin-bottom:6px}
 /* The Advanced tab's settings, side by side in at most two columns where

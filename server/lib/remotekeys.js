@@ -378,7 +378,7 @@ function writeMap(map, home, starting) {
  */
 function filterSource() {
   var lines = [
-    '/* Written by Glasshouse: the remote keys set on its Apps tab, read from the',
+    '/* Written by Glasshouse: the remote keys set on its Remote tab, read from the',
     ' * configd value ' + MAP_KEY + '. First in ' + CONFIG_KEY + ',',
     ' * so a key set there never reaches LG\'s filters. */',
     'var glasshouseKeyIds = {};',

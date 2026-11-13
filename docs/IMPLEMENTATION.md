@@ -1008,7 +1008,7 @@ on from it.
 
 ## The input bar
 
-The [input bar](dashboard/apps.md#input-bar) is a web app of its own,
+The [input bar](dashboard/inputs.md#input-bar) is a web app of its own,
 `com.tvweb.inputbar` (`assets/inputbar-app/`), whose `appinfo.json` asks for
 an overlay window (`"defaultWindowType": "overlay"`, `"transparent": true`)
 with no splash (`"noSplashOnLaunch": true`, `"spinnerOnLaunch": false`). The
