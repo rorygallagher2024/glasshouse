@@ -147,7 +147,9 @@ var ADBLOCK_PLATFORM = [
   // The content CDN on webOS 11, from sdx's server list (OLED77C5PUA, 11.2.0).
   'ngfts.tv.wiselg.com',
   // Regional alias reported on a C4 running webOS 10.3.1.
-  'eic-gfts.tv.wiselg.com'
+  'eic-gfts.tv.wiselg.com',
+  // Present in C5 firmware strings (webOS 10.3.1); no traffic captured.
+  'dev-ruc-ngfts.tv.wiselg.com'
 ];
 
 // These carry ThinQ and account services, so regional coverage belongs only

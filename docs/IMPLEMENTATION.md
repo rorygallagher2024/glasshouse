@@ -1111,6 +1111,7 @@ advertising**, which is why they are a separate tier:
 | `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
 | `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
 | `eic-gfts.tv.wiselg.com` | Reported service alias on a C4; exact function unverified, blocked after clock sync like the other `tv.wiselg.com` names |
+| `dev-ruc-ngfts.tv.wiselg.com` | Present in C5 firmware strings on webOS 10.3.1; no traffic captured, blocked only in Everything after clock sync |
 
 `com.webos.appInstallService` names the one its own set installs from:
 `http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,

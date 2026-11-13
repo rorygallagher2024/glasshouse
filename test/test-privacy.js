@@ -215,15 +215,44 @@ test('Everything covers regional LG cloud services without blocking network dete
         assert.strictEqual(privacy.adBlockHostsTable(mode).indexOf(host), -1, mode + ': ' + host);
       });
     });
-    ['lgtvonline.lge.com', 'wpad.fritz.box', 'tools.google.com',
+    ['lgtvonline.lge.com', 'tools.google.com', 'www.googleapis.com',
      'www.gstatic.com', 'connectivitycheck.gstatic.com', 'www.google.com',
-     'clients3.google.com', 'clients4.google.com', 'clients3',
+     'clients1.google.com', 'clients2.google.com', 'clients3.google.com',
+     'clients4.google.com', 'clients3',
      'eic.connect-client.lgthinq.com',
      'nl.lgeapi.com'].forEach(function (host) {
       assert.strictEqual(table.indexOf(host), -1, host + ': not a selected service host');
     });
     var list = privacy.adBlockList('full');
     assert.strictEqual(list.length, list.filter(function (host, i) { return list.indexOf(host) === i; }).length, 'no duplicate hosts');
+  } finally {
+    if (savedCountry === undefined) delete mockEnv.files[countryFile];
+    else mockEnv.files[countryFile] = savedCountry;
+    privacy._setSdpGraceActive(savedGrace);
+  }
+});
+
+test('known WiseLG platform and CDN names are blocked only in Everything after clock sync', function () {
+  var countryFile = '/var/lib/tvweb/country';
+  var savedCountry = mockEnv.files[countryFile];
+  var savedGrace = privacy.isSdpGracePeriodActive();
+  var names = ['tv.wiselg.com', 'aic.tv.wiselg.com', 'eic.tv.wiselg.com',
+    'kic.tv.wiselg.com', 'eu.tv.wiselg.com', 'de.tv.wiselg.com',
+    'ngfts.tv.wiselg.com', 'eic-gfts.tv.wiselg.com', 'dev-ruc-ngfts.tv.wiselg.com'];
+  try {
+    mockEnv.files[countryFile] = 'de';
+    privacy._setSdpGraceActive(false);
+    var table = privacy.adBlockHostsTable('full');
+    names.forEach(function (host) {
+      assert.ok(sinkholed(table, host), host + ': both address families');
+      ['ads', 'off'].forEach(function (mode) {
+        assert.strictEqual(privacy.adBlockList(mode).indexOf(host), -1, mode + ': ' + host);
+      });
+    });
+    privacy._setSdpGraceActive(true);
+    names.forEach(function (host) {
+      assert.strictEqual(privacy.adBlockList('full').indexOf(host), -1, host + ': waits for clock sync');
+    });
   } finally {
     if (savedCountry === undefined) delete mockEnv.files[countryFile];
     else mockEnv.files[countryFile] = savedCountry;

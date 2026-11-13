@@ -23,12 +23,14 @@ only in the Everything tier, and stays out of the Ads & telemetry and off tables
 Regional platform checks cover the reported German and European hosts,
 ThinQ's hyphenated prefixes, a country outside the fallback list and an
 unknown or invalid country. They check IPv4/IPv6 blocking only in Everything,
-without duplicate names, and leave connectivity checks and local proxy
-discovery unblocked. The reported UEI, OCP, content CDN aliases and Google's
+without duplicate names, and leave connectivity checks unblocked.
+The reported UEI, OCP, content CDN aliases and Google's
 FCM provisioning endpoint are covered on both address families only in
-Everything; shared Google service hosts stay out. The `nextlgsdp.com`, `ibs`,
-`ibsstat` and `eic-gfts.tv.wiselg.com` hosts wait for clock sync, then enter
-the table on both address families.
+Everything; shared Google service hosts, including `www.googleapis.com` and
+`clients1.google.com` through `clients4.google.com`, stay out. The
+`nextlgsdp.com`, `ibs`, `ibsstat` and known WiseLG platform and CDN names,
+including `dev-ruc-ngfts.tv.wiselg.com`, wait for clock sync, then enter the
+table on both address families.
 
 `test-appdns.js` checks that an app's DNS servers are written into its jail's
 `resolv.conf`, written again when a watch sees the jailer's copy, taken out

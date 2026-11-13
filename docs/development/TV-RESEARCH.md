@@ -2780,7 +2780,7 @@ siblings are coverage derived from those patterns, not observed traffic on
 every region's TVs. They remain in Everything because account, store and
 ThinQ features may depend on them. New names under `nextlgsdp.com` keep the
 existing wait for a valid clock. `lgtvonline.lge.com` remains the connectivity
-check described below; `wpad.fritz.box` is outside the LG cloud service list.
+check described below.
 
 ### Additional hostnames reported on the C4
 
@@ -2789,7 +2789,7 @@ and restarting the TV. DNS activity alone does not identify a request's
 payload or prove that a connection succeeded. The app-jail synchronization
 change has not been tried on this TV.
 
-| Reported names | Coverage and evidence |
+| Names reviewed | Coverage and evidence |
 | :--- | :--- |
 | `de.nextlgsdp.com`, `de.lgeapi.com`, `eic.tv.wiselg.com` | Already in Everything. SDP and WiseLG names wait for the clock; stale jail copies can omit them after that wait ends. |
 | `eic-ngfts.lge.com` | Added to Everything alongside `aic-ngfts.lge.com`; Home search's poster URLs above use this European host. |
@@ -2797,6 +2797,9 @@ change has not been tried on this TV.
 | `eic-ocp.lgtviot.com` | Added as an exact reported alias. A read-only string search on the C4 found `ocp.lgtviot.com` in `/usr/sbin/ocpservice`; this does not establish the regional endpoint's payload. |
 | `eic-gfts.tv.wiselg.com` | Added as an exact reported alias, with the WiseLG clock gate. Its function has not been independently established. |
 | `device-provisioning.googleapis.com` | Added to Everything: Google's FCM network documentation lists it alongside `mtalk.google.com`. The lookup does not identify which TV component used it. |
+| `clients1.google.com` | Left out: Google lists certificate-revocation checks and app approval among its uses. No request path was captured on this TV. |
+| `clients2.google.com` | Left out: Google documents both crash/WebRTC update logs and extension downloads here. No request path was captured on this TV. |
+| `www.googleapis.com` | A later reported lookup; left out because Google documents shared APIs and connectivity probes here. The hostname alone does not establish telemetry. |
 | `clients3.google.com`, `clients4.google.com` | Left out: shared Google services, including clock synchronization and crash reporting, rather than a dedicated LG tracking endpoint. |
 | `tools.google.com` | Left out: Google documents update configuration for Omaha here. Its use on this TV is unverified. |
 | `www.gstatic.com` | Left out: Google documents shared sign-in assets and connectivity probes here. |
@@ -2807,13 +2810,28 @@ identify the provisioning endpoint. Its
 [Android Enterprise requirements](https://support.google.com/work/android/answer/10513641?hl=en)
 describe the shared `clients` hosts, and the
 [Chrome endpoint reference](https://support.google.com/chrome/a/answer/6334001?hl=en)
-describes Omaha, static assets and connectivity checks. These describe Google's
+describes Omaha, static assets and connectivity checks. The
+[Chrome proxy endpoint list](https://support.google.com/chrome/a/answer/14113552?hl=en)
+also documents shared API, extension-download and logging uses. These describe Google's
 platforms, not captured webOS request paths. Earlier reported
 `connectivitycheck.gstatic.com` and `www.google.com` remain outside the list as
-connectivity/shared service hosts. The earlier `lgtvonline.lge.com` and
-`wpad.fritz.box` exclusions still apply. Owners can add exact names to a custom
+connectivity/shared service hosts. The earlier `lgtvonline.lge.com` exclusion
+still applies. Owners can add exact names to a custom
 list, with the risk of breaking services that share them; Everything is not a
 firewall or a wildcard DNS policy.
+
+### WiseLG names beyond the reported alias
+
+The existing list generates `tv.wiselg.com`, LG's dotted regional names
+(`aic.`, `eic.`, `kic.`, `eu.`) and the TV's country, and blocks
+`ngfts.tv.wiselg.com`. The owner's `eic-gfts.tv.wiselg.com` is a separate
+hyphenated name; neither the bare host nor `eic.tv.wiselg.com` covers it.
+The firmware search above also found `dev-ruc-ngfts.tv.wiselg.com` on a C5
+running webOS 10.3.1. It is now an exact Everything entry, with the same clock
+gate. Its presence in firmware does not establish use on the owner's C4.
+Other guessed `gfts` or `ngfts` regional and development combinations are not
+added without a firmware name or traffic report. No exhaustive inventory of
+all WiseLG subdomains has been established.
 
 ## Report and store log hosts (C4, webOS 10.3.1)
 
