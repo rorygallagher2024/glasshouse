@@ -742,6 +742,14 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // Held this long, OK arranges the tiles rather than opening one.
   var LONG_PRESS_MS = 800;
   var BEAT_MS = 5000;
+  /*
+   * Under the screen saver the page is covered, not hidden: no visibilitychange
+   * or relaunch says when it ends, so the heartbeat is how the page hears it,
+   * and comes this often meanwhile. At BEAT_MS the background stayed hidden up
+   * to 5 s after the screen saver ended (a C4, webOS 10.3).
+   */
+  var SAVER_BEAT_MS = 1000;
+  var beatTimer = null;
   var CLOSE_BEHIND_MS = 120000;
   var coveredSince = 0;
   function rest(on) {
@@ -5758,7 +5766,14 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return out;
   }
 
+  // Each beat schedules the next, sooner while the screen saver covers the page.
+  function scheduleBeat(ms) {
+    clearTimeout(beatTimer);
+    beatTimer = setTimeout(beat, ms);
+  }
+
   function beat() {
+    scheduleBeat(BEAT_MS);
     // With no usable catalogue, let the server's ten-second watchdog recover Home.
     if (!data || !layout) return;
     // Whether the page has the keyboard: after a wake on webOS 11 it can be
@@ -5774,6 +5789,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
         // webOS 4: switched off, the standalone view closes itself, as Back does.
         if (r.enabled === false && standalone) return window.close();
         rest(!!r.covered);
+        if (r.saver) scheduleBeat(SAVER_BEAT_MS);
         renderWeather(r.weather || null);
         // webOS 4: two minutes behind another app, not the screen saver, the
         // view closes itself to give its memory back; Home opens it afresh.
@@ -5890,7 +5906,6 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   guideLaunch(true);
   load();
   refreshWeather();
-  setInterval(beat, BEAT_MS);
   setInterval(function () {
     renderNow(); updateWall(); if (!document.hidden) refreshPicture();
     if (guide.open) {
