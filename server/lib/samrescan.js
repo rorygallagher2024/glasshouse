@@ -349,6 +349,52 @@ function rereadApps(ids, makeCheck, cb) {
 }
 
 /*
+ * Restarts sam, and cb(true) once check(done) says sam has read the apps
+ * again. Only for Glasshouse Home on webOS 7 where sam took neither the nudge
+ * nor a block and release (#1412): an A2 (webOS 7.3.0) had Home only through
+ * this until 0.145.0 stopped it. The start limit of sam and the units that
+ * require it is cleared first, LunaExecutable is killed since it ignores
+ * SIGTERM, and the unit is killed so systemd starts it again at once. A
+ * foreground app that is neither Home nor the screen saver is opened again
+ * afterwards, where it is an HDMI input only with a signal.
+ */
+function restart(check, cb) {
+  if (!check) return cb(false);
+  var saved = null;
+  function run() {
+    // sam and every unit that requires it, as lib/apps.js lists them: their
+    // start limit is cleared too, or a run of restarts leaves the input
+    // manager (eim) failed and the TV with no inputs.
+    var units = 'sam.service $(systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null | ' +
+                'sed -n "s/^[^A-Za-z0-9]*\\([A-Za-z0-9@._-]*\\.service\\)$/\\1/p")';
+    var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
+              'systemctl reset-failed ' + units + ' >/dev/null 2>&1 || true; ' +
+              'killall -9 LunaExecutable >/dev/null 2>&1 || true; ' +
+              'systemctl kill -s 9 sam.service >/dev/null 2>&1 || systemctl restart --no-block sam >/dev/null 2>&1 || true; ' +
+              'elif command -v initctl >/dev/null 2>&1; then ' +
+              'initctl restart sam >/dev/null 2>&1 || pkill -9 -x sam >/dev/null 2>&1 || true; ' +
+              'else ' +
+              'pkill -9 -x sam >/dev/null 2>&1 || true; ' +
+              'fi';
+    execFn('/bin/sh', ['-c', cmd], { timeout: 6000 }, function () {
+      waitFor(check, 'the restart', function (ok) {
+        startDependents(function () {
+          if (!ok || !saved) return cb(ok);
+          if (!hasHdmiSignal(saved)) return cb(ok);
+          lunaFn('com.webos.applicationManager/launch', { id: saved }, function () { cb(ok); });
+        });
+      });
+    });
+  }
+  if (!lunaFn) return run();
+  lunaFn('com.webos.applicationManager/getForegroundAppInfo', {}, function (r) {
+    var id = r && r.returnValue && typeof r.appId === 'string' ? r.appId : null;
+    if (id && id !== 'com.webos.app.home' && id !== 'com.webos.app.screensaver') saved = id;
+    run();
+  });
+}
+
+/*
  * LG's HDMI input service subscribes to sam's foreground app once, when it
  * starts, and never again: after sam is restarted it sees no app in front for
  * the rest of the boot. Its EDID control then refuses every update for the
@@ -361,6 +407,24 @@ function rereadApps(ids, makeCheck, cb) {
 var RESUBSCRIBE_HDMI_INPUTS = 'if systemctl cat extinput-integration.service >/dev/null 2>&1; then ' +
                               'systemctl restart --no-block extinput-integration.service && echo extinput-integration.service; fi';
 
+/*
+ * A unit that requires sam and hit its restart limit is started again, as
+ * lib/apps.js does after a restart for tile hiding, and the HDMI input
+ * service subscribes to sam again. On Upstart TVs, Upstart does not restart
+ * dependent jobs, so eim is restarted here.
+ */
+function startDependents(cb) {
+  var cmd = 'if command -v systemctl >/dev/null 2>&1; then ' +
+            'for u in $(systemctl list-dependencies --reverse --plain --no-legend sam.service 2>/dev/null | ' +
+            'sed -n "s/^[^A-Za-z0-9]*\\([A-Za-z0-9@._-]*\\.service\\)$/\\1/p"); do ' +
+            'if systemctl is-failed --quiet "$u"; then systemctl reset-failed "$u"; systemctl start --no-block "$u"; fi; ' +
+            'done; ' + RESUBSCRIBE_HDMI_INPUTS + '; ' +
+            'elif command -v initctl >/dev/null 2>&1; then ' +
+            'initctl restart eim >/dev/null 2>&1 || true; ' +
+            'fi';
+  execFn('/bin/sh', ['-c', cmd], { timeout: 6000 }, function () { cb(); });
+}
+
 module.exports = {
   init: init,
   refresh: refresh,
@@ -368,6 +432,7 @@ module.exports = {
   canRereadApp: canRereadApp,
   rereadApp: rereadApp,
   rereadApps: rereadApps,
+  restart: restart,
   hasHdmiSignal: hasHdmiSignal,
   RESUBSCRIBE_HDMI_INPUTS: RESUBSCRIBE_HDMI_INPUTS,
   KEY: KEY,
