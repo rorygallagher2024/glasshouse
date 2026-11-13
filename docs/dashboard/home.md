@@ -15,7 +15,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    Installed applications with native icons, saved web pages, and quick tiles for **Notifications**, **Search**, and **LG Home**. Promotional clutter starts hidden, and apps can be reordered, hidden, or grouped into a **More apps** folder.
+    Installed applications with native icons, saved web pages, and quick tiles for **Notifications**, **Search**, **AirPlay** and **LG Home**. **AirPlay** is there wherever the TV has LG's AirPlay app, which LG's own Home has no tile for on webOS 9 and 10; it opens AirPlay's page, which also holds its settings, such as Require Code. Promotional clutter starts hidden, and apps can be reordered, hidden, or grouped into a **More apps** folder.
 
 -   **Magic Remote & navigation**
 

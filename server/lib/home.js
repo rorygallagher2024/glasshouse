@@ -102,9 +102,16 @@ var TUNER_TILE = 'tv';
  * sam. Search's own icon on a G3 (webOS 9.2) is a pair of arrows, so its tile
  * shows a letter instead.
  */
+var AIRPLAY_APP = 'airplay';
 var LG_SIDEBAR_APPS = [
-  { id: 'com.webos.app.notificationcenter', icon: true },
-  { id: 'com.webos.app.voice', icon: false }
+  { id: 'com.webos.app.notificationcenter', icon: true, overlay: true },
+  { id: 'com.webos.app.voice', icon: false, overlay: true },
+  /*
+   * AirPlay has no launch point on webOS 9 (a C2, 9.2.2) or 10 (a B4, 10.3.2),
+   * where only LG's Home Hub opens it, and on webOS 4 its tile is a bookmark,
+   * which this list leaves out. Its page also holds AirPlay's settings (#1435).
+   */
+  { id: AIRPLAY_APP, icon: true, overlay: false }
 ];
 var MAX_CHANNELS = 40;
 /*
@@ -850,16 +857,20 @@ function launchPoints(cb) {
   }, cb);
 }
 
-// Each of LG_SIDEBAR_APPS that this TV has, on the end of the list.
+// Each of LG_SIDEBAR_APPS that this TV has and has no tile for, on the end of the list.
 function sidebarApps(todo, out, done) {
   var app = todo.shift();
   if (!app) return done(out);
   luna('com.webos.applicationManager/getAppInfo', { id: app.id }, function (r) {
     var info = r && r.returnValue && r.appInfo;
-    if (info && info.id === app.id) {
-      var icon = app.icon && info.icon && info.folderPath ? info.folderPath + '/' + info.icon : '';
-      // Both open over Home rather than in its place, so the view stays as it is.
-      out.push({ id: app.id, title: String(info.title || app.id), icon: icon, overlay: true });
+    var listed = out.some(function (a) { return a.id === app.id; });
+    if (info && info.id === app.id && !listed) {
+      var file = info.mediumLargeIcon || info.icon;
+      var icon = app.icon && file && info.folderPath ? info.folderPath + '/' + file : '';
+      var entry = { id: app.id, title: String(info.title || app.id), icon: icon };
+      // Notifications and voice open over Home rather than in its place, so the view stays as it is.
+      if (app.overlay) entry.overlay = true;
+      out.push(entry);
     }
     sidebarApps(todo, out, done);
   });
@@ -1400,6 +1411,17 @@ function launch(id, params, cb) {
 }
 
 /*
+ * AirPlay as LG's Home Hub opens it (webOS 10.3.2), and by launching its app
+ * where the TV refuses that: both open the same page on a C2 (webOS 9.2.2).
+ */
+function openAirPlay(cb) {
+  luna('airplay.service/showAirplayPage', {}, function (r) {
+    if (r && r.returnValue) return cb({ ok: true });
+    launch(AIRPLAY_APP, null, cb);
+  });
+}
+
+/*
  * Opens a tile: { kind: 'app'|'dev'|'ch'|'lg', id }. Only what the catalogue
  * lists can be opened, so this is not a way to launch anything at all. A
  * device opens its HDMI input with LG's CEC selection parameters where known.
@@ -1428,6 +1450,7 @@ function open(body, cb) {
       if (!hit) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
       // A saved page opens as LG's tile opens it: the browser, at its address.
       if (hit.page) return launch(BROWSER_APP, { target: hit.page }, opened('app', id, cb));
+      if (id === AIRPLAY_APP) return openAirPlay(opened('app', id, cb));
       launch(id, null, opened('app', id, cb));
     });
   }
