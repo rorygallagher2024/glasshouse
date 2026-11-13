@@ -33,9 +33,10 @@ body{font-family:'Manrope',sans-serif;color:#ece7df;-webkit-font-smoothing:antia
 #wall .layer{position:absolute;left:-3%;top:-3%;right:-3%;bottom:-3%;background-position:center;background-size:cover;
   background-repeat:no-repeat;opacity:0;-webkit-transition:opacity 2.4s ease;transition:opacity 2.4s ease;
   -webkit-animation:drift 180s steps(360) infinite alternate;animation:drift 180s steps(360) infinite alternate}
-/* At rest while covered: the wallpaper is not drawn or animated under the screen
-   saver or another app. */
-html.resting #wall{visibility:hidden}
+/* At rest while covered: the wallpaper is not animated under the screen saver or
+   another app. It stays shown, still, so that it is there the moment Home is
+   uncovered rather than coming in over a black screen a beat later; paused, it
+   is not drawn again. */
 html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-state:paused}
 @-webkit-keyframes drift{from{-webkit-transform:scale(1) translate(0,0)}to{-webkit-transform:scale(1.04) translate(-1.2%,-.8%)}}
 @keyframes drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.04) translate(-1.2%,-.8%)}}
