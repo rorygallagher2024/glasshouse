@@ -3162,7 +3162,7 @@
  "ha.url": {"text": "Dirección de Home Assistant", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "Dirección y puerto de tu instancia de Home Assistant.", "from": "Address and port of your Home Assistant instance."},
  "srv.saver.badEntities": {"text": "{file}: entities necesita nombres cortos, cada uno con un ID de entidad de Home Assistant como sensor.outdoor_temperature, hasta un máximo de {max}.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
- "srv.saver.haUses": {"text": "{file}: entities y \"ha\" en uses van juntos.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.haUses": {"text": "{file}: entities y \"ha\" o \"ha-all\" en uses van juntos.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "{main} usa {placeholder}, y saver.json no nombra esa entidad bajo entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
  "ss.entities": {"text": "Entidades de Home Assistant", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "Elige qué entidades de Home Assistant lee este salvapantallas y nombres cortos opcionales. Deja la entidad vacía para ocultarla.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},

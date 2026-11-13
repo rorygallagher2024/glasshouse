@@ -808,7 +808,7 @@
  "ha.url": {"text": "Home Assistant-Adresse", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "Adresse und Port Ihrer Home Assistant-Instanz.", "from": "Address and port of your Home Assistant instance."},
  "srv.saver.badEntities": {"text": "{file}: entities benötigt kurze Namen mit jeweils einer Home Assistant-Entitäts-ID wie sensor.outdoor_temperature, bis zu {max} Stück.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
- "srv.saver.haUses": {"text": "{file}: entities und „ha“ in uses gehören zusammen.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.haUses": {"text": "{file}: entities und „ha“ oder „ha-all“ in uses gehören zusammen.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "{main} verwendet {placeholder}, und saver.json nennt diese Entität nicht unter entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
  "ss.entities": {"text": "Home Assistant-Entitäten", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "Wählen Sie die Home Assistant-Entitäten und optional kurze Anzeigenamen aus. Lassen Sie eine Entität leer, um sie auszublenden.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},

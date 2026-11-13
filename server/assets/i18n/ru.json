@@ -3162,7 +3162,7 @@
  "ha.url": {"text": "Адрес Home Assistant", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "Адрес и порт вашего сервера Home Assistant.", "from": "Address and port of your Home Assistant instance."},
  "srv.saver.badEntities": {"text": "{file}: entities требует коротких имен, каждое с ID сущности Home Assistant, например sensor.outdoor_temperature, до {max} штук.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
- "srv.saver.haUses": {"text": "{file}: entities и \"ha\" в uses используются вместе.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.haUses": {"text": "{file}: entities и \"ha\" или \"ha-all\" в uses используются вместе.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "{main} использует {placeholder}, а saver.json не указывает эту сущность в entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
  "ss.entities": {"text": "Сущности Home Assistant", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "Выберите сущности Home Assistant и при желании короткие подписи. Оставьте сущность пустой, чтобы скрыть ее.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},

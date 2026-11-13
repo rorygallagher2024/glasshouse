@@ -3162,7 +3162,7 @@
  "ha.url": {"text": "عنوان Home Assistant", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "عنوان ومنفذ مثيل Home Assistant الخاص بك.", "from": "Address and port of your Home Assistant instance."},
  "srv.saver.badEntities": {"text": "{file}: يتطلب entities أسماء قصيرة، يحتوي كل منها على معرّف كيان في Home Assistant مثل sensor.outdoor_temperature، بحد أقصى {max}.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
- "srv.saver.haUses": {"text": "{file}: يترابط entities و \"ha\" في uses معاً.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.haUses": {"text": "{file}: يترابط entities و \"ha\" أو \"ha-all\" في uses معاً.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "يستخدم {main} العنصر {placeholder}، بينما لا يذكر saver.json هذا الكيان ضمن entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
  "ss.entities": {"text": "كيانات Home Assistant", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "اختر كيانات Home Assistant التي تقرأها شاشة التوقف هذه مع أسماء عرض اختيارية مختصرة. اترك الكيان فارغاً لإخفائه.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},

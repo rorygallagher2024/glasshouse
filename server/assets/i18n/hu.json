@@ -3176,7 +3176,7 @@
  "ha.url": {"text": "Home Assistant címe", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "A Home Assistant példány címe és portja.", "from": "Address and port of your Home Assistant instance."},
  "srv.saver.badEntities": {"text": "{file}: az entities mező rövid neveket igényel, mindegyikhez egy Home Assistant entitás-azonosítóval (pl. sensor.outdoor_temperature), legfeljebb {max} darabot.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
- "srv.saver.haUses": {"text": "{file}: az entities és a \"ha\" a uses listában összetartoznak.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.haUses": {"text": "{file}: az entities és a \"ha\" vagy a \"ha-all\" a uses listában összetartoznak.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "A(z) {main} a(z) {placeholder} értéket használja, de a saver.json nem nevezi meg az entities alatt.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
  "ss.entities": {"text": "Home Assistant entitások", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "Válassza ki a kiolvasandó Home Assistant entitásokat és opcionális rövid feliratokat. Hagyjon üresen egy entitást az elrejtéshez.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},

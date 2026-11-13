@@ -3162,7 +3162,7 @@
  "ha.url": {"text": "Adres Home Assistant", "from": "Home Assistant address"},
  "ha.url.hint": {"text": "Adres i port Twojej instancji Home Assistant.", "from": "Address and port of your Home Assistant instance."},
  "srv.saver.badEntities": {"text": "{file}: entities wymaga krótkich nazw, każda z identyfikatorem encji Home Assistant, np. sensor.outdoor_temperature, maksymalnie {max}.", "from": "{file}: entities needs short names, each with a Home Assistant entity id such as sensor.outdoor_temperature, up to {max} of them."},
- "srv.saver.haUses": {"text": "{file}: entities i \"ha\" w uses muszą występować razem.", "from": "{file}: entities and \"ha\" in uses go together."},
+ "srv.saver.haUses": {"text": "{file}: entities i \"ha\" lub \"ha-all\" w uses muszą występować razem.", "from": "{file}: entities and \"ha\" or \"ha-all\" in uses go together."},
  "srv.saver.undeclaredHa": {"text": "{main} używa {placeholder}, a saver.json nie definiuje tej encji pod entities.", "from": "{main} uses {placeholder}, and saver.json does not name that entity under entities."},
  "ss.entities": {"text": "Encje Home Assistant", "from": "Home Assistant Entities"},
  "ss.entities.desc": {"text": "Wybierz encje Home Assistant oraz opcjonalne krótkie etykiety. Pozostaw encję pustą, aby ją ukryć.", "from": "Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it."},
