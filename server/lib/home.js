@@ -1358,6 +1358,9 @@ function now(cb) {
         if (chosen.length) on = chosen;
         cb({
           kind: 'input', appId: id, since: since, port: port,
+          // Under a Home screen or launcher, so not on screen: choosing it
+          // in the input bar must still switch to it.
+          behindHome: foreground === HOME_APP || foreground === LG_HOME,
           title: on.length ? on.map(function (d) { return d.name; }).join(' / ') : null,
           via: on.length === 1 ? on[0].via : null,
           devices: on.map(function (d) { return d.id; })

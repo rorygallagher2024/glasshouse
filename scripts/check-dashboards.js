@@ -278,6 +278,43 @@ async function visitHomePicture(browser, base, problems) {
 }
 
 // The weather badge: Home Assistant's last push or Open-Meteo's, brought by the heartbeat.
+// The input bar over a Home screen: the input last watched is under it, not
+// on screen, so OK on it switches to it rather than closing the bar.
+async function visitInputBarBehindHome(browser, base, problems) {
+  for (const behindHome of [true, false]) {
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    const name = 'Input bar ' + (behindHome ? 'over Home' : 'over HDMI 2') + ': ';
+    page.on('pageerror', e => problems.push(name + e.message));
+    await page.addInitScript(() => {
+      window.launches = [];
+      window.PalmServiceBridge = function () {};
+      window.PalmServiceBridge.prototype.call = function (uri, body) { window.launches.push(JSON.parse(body).id); };
+      window.close = function () { window.closed = true; };
+    });
+    await page.route('http://localhost:8080/**', route => {
+      const url = new URL(route.request().url());
+      if (url.pathname === '/assets/devicons.js') return route.continue({ url: base + '/assets/devicons.js' });
+      if (url.pathname === '/api/home/now') return route.fulfill({ json: { kind: 'input', port: 2, devices: ['hdmi2'], behindHome } });
+      if (url.pathname === '/api/home/catalogue') return route.fulfill({ json: { ok: true, layout: {}, order: { dev: ['hdmi1', 'hdmi2'] },
+        devices: [{ id: 'hdmi1', name: 'HDMI 1', input: 'hdmi1', port: 1 }, { id: 'hdmi2', name: 'Mac', input: 'hdmi2', port: 2 }] } });
+      return route.fulfill({ json: {} });
+    });
+    try {
+      await page.goto(base + '/assets/inputbar-app/index.html');
+      await page.waitForSelector('.tile.focus');
+      const focused = await page.textContent('.tile.focus .nm');
+      if (focused !== 'Mac') problems.push(name + 'the bar opened on ' + focused + ', not the input last watched');
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(300);
+      const launches = await page.evaluate(() => window.launches);
+      if (behindHome && launches.indexOf('com.webos.app.hdmi2') === -1) problems.push(name + 'OK on HDMI 2 did not switch to it');
+      if (!behindHome && launches.length) problems.push(name + 'OK on the input on screen launched ' + launches.join(', '));
+    } finally {
+      await page.close();
+    }
+  }
+}
+
 async function visitHomeWeather(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home weather: ' + e.message));
@@ -3398,7 +3435,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitInputBarBehindHome, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

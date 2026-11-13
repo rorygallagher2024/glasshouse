@@ -112,7 +112,7 @@ On webOS 11 (LG's webOS 26), LG manages button assignments natively:
 
 A strip of the HDMI inputs over the picture, in place of LG's list of inputs, opened by a key set to **Input bar** under [Remote keys](#remote-keys), usually **Input**. Each input shows its device's name, its port and an icon for the kind of device it is, from the name: a console, a handheld, a streaming box, a sound bar, a disc player, a computer or a cable box, or an HDMI plug for any other. The one on screen is marked with a dot.
 
-* The first press opens it on the input on screen. Each further press moves to the next input, round to the first, and the TV switches to it a second after the last press, as LG's does.
+* The first press opens it on the input on screen. Over Glasshouse Home or a launcher, it opens on the input last watched, which is not marked, and **OK** switches to it. Each further press moves to the next input, round to the first, and the TV switches to it a second after the last press, as LG's does.
 * **Left** and **Right** move too, **OK** switches at once and **Back** closes it. With the Magic Remote's pointer, hovering an input picks it and clicking switches, without the second's wait.
 * Left alone, it closes after 3 seconds on the input already on screen, or after 6 on another one the pointer left it on.
 * A device behind a receiver is switched to as Glasshouse Home's tile does, waking it through the receiver.
