@@ -1655,6 +1655,16 @@ function handleRequest(req, res) {
     return send(res, 405, JSON.stringify({ ok: false, error: 'method not allowed' }));
   }
 
+  // The Inputs tab: the No Signal screen and where the input bar stands.
+  if (pathname === '/api/inputs') {
+    return send(res, 200, JSON.stringify({
+      ok: true,
+      writable: !!config.allowControl,
+      noSignal: nosignal.status(),
+      inputBar: inputBarModule ? inputBarModule.summary() : null
+    }));
+  }
+
   if (pathname === '/api/screensaver') {
     var ssList = screensaversModule.screensaverList();
     ssList.noSignal = nosignal.status();

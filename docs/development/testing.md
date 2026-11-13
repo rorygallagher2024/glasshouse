@@ -665,7 +665,12 @@ missing JSON properties become `none` rather than undefined.
 The Hue Sync event tests also verify that internal readiness and busy status
 create no Home Assistant diagnostic entities or diagnostic MQTT publications.
 
-Ambient Light dashboard checks cover the web page below Home, the TV menu
+The Inputs and Remote dashboard check covers the inputs and their switches, the
+Input key's choice of LG's list or the input bar, the No Signal switch, remote
+keys on the Remote tab and not the Apps tab, and no Remote tab on a TV with no
+keys to set.
+
+Ambient Light dashboard checks cover the web page below OLED Care, the TV menu
 between Audio and Screen Saver, every Hue Sync setting directly accessible, and
 independent PicCap/Hue Sync switches. The
 web Control shortcuts stay below Playback and share state and write permissions

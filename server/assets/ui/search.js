@@ -18,7 +18,7 @@
   const TAB_ALIASES = window.GLASSHOUSE_SEARCH_ALIASES || {};
 
   const TAB_NAMES = {
-    control: 'Control', metrics: 'Metrics', apps: 'Apps', home: 'Home', ambient: 'Ambient Light',
+    control: 'Control', metrics: 'Metrics', apps: 'Apps', home: 'Home', inputs: 'Inputs', remote: 'Remote', ambient: 'Ambient Light',
     oledcare: 'OLED Care', game: 'Game', servicemenu: 'Service menu',
     screensaver: 'Screensaver', privacy: 'Privacy', advanced: 'System',
     mqtt: 'MQTT', server: 'Server', tools: 'Tools'
@@ -84,7 +84,7 @@
     if (!panel) return null;
     const tabMap = {
       'tab-control': 'control', 'tab-metrics': 'metrics', 'appspane': 'apps',
-      'homepane': 'home', 'ambientpane': 'ambient', 'oledpane': 'oledcare', 'gamepane': 'game', 'audiopane': 'audio', 'picpane': 'picture',
+      'homepane': 'home', 'inputspane': 'inputs', 'remotepane': 'remote', 'ambientpane': 'ambient', 'oledpane': 'oledcare', 'gamepane': 'game', 'audiopane': 'audio', 'picpane': 'picture',
       'svcpane': 'servicemenu', 'sspane': 'screensaver', 'privpane': 'privacy',
       'advpane': 'advanced', 'mqttpane': 'mqtt', 'serverpane': 'server', 'toolspane': 'tools'
     };

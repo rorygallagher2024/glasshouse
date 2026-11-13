@@ -24,7 +24,19 @@ The top of every tab shows what the TV is doing: its state (On, Screen off, Scre
 
     ---
 
-    Install, uninstall, background services and remote button remapping.
+    Install, uninstall and background services.
+
+-   **[Inputs](inputs.md)**
+
+    ---
+
+    Which HDMI inputs are offered, the input bar and the No Signal screen.
+
+-   **[Remote](remote.md)**
+
+    ---
+
+    What the remote's buttons and held number keys do.
 
 -   **[Home](home.md)**
 

@@ -3226,6 +3226,88 @@ async function visitIptvChannels(browser, base, problems) {
 }
 
 /*
+ * The Inputs and Remote tabs: the inputs with their switches, the Input key's
+ * choice of LG's list or the input bar and the No Signal switch on Inputs; the remote's keys on
+ * Remote, which is left out where a TV has none to set.
+ */
+async function visitInputsAndRemote(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('Inputs and Remote: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  const noSignal = { ok: true, available: true, on: false, applied: false, restartPending: false };
+  const layout = { hidden: { dev: [] }, hideUnused: false };
+  const keys = [{ key: 'input', title: 'Input', action: 'lg' }, { key: 'netflix', title: 'Netflix', action: 'open', id: 'com.tvweb.inputbar', opens: 'Input bar' }];
+  let hasKeys = true;
+  const writes = [];
+  try {
+    await page.route('**/api/inputs', route => route.fulfill({ json: { ok: true, writable: true, noSignal, inputBar: { standing: 'tried', allowed: true, experimental: false } } }));
+    await page.route('**/api/home/catalogue', route => route.fulfill({ json: { ok: true, layout, order: { dev: ['HDMI_1', 'HDMI_2'] },
+      devices: [{ id: 'HDMI_1', name: 'Console', port: 1 }, { id: 'HDMI_2', name: 'HDMI 2', port: 2, unused: true }] } }));
+    await page.route('**/api/home/layout', async route => {
+      const patch = route.request().postDataJSON();
+      writes.push(patch);
+      if (patch.hidden) layout.hidden = patch.hidden;
+      await route.fulfill({ json: { ok: true } });
+    });
+    await page.route('**/api/apps', async route => {
+      // The page may close with this still on its way.
+      try {
+        const apps = await (await route.fetch()).json();
+        apps.writable = true;
+        apps.quickAccess = null;
+        apps.remoteKeys = hasKeys ? { ok: true, supported: true, keys, choices: [] } : null;
+        await route.fulfill({ json: apps });
+      } catch (e) { /* closed */ }
+    });
+    await page.route('**/api/remotekeys', async route => {
+      const set = route.request().postDataJSON();
+      writes.push(set);
+      keys[0] = set.action === 'lg' ? { key: 'input', title: 'Input', action: 'lg' }
+        : { key: 'input', title: 'Input', action: 'open', id: set.id, opens: 'Input bar' };
+      await route.fulfill({ json: { ok: true } });
+    });
+    await page.route('**/api/control', async route => {
+      const command = route.request().postDataJSON();
+      writes.push(command);
+      if (command.action === 'plainNoSignal') noSignal.on = command.value;
+      await route.fulfill({ json: Object.assign({ ok: true }, noSignal) });
+    });
+    await page.goto(base + '/?tab=inputs');
+    await page.locator('#inputs-list .prot-row').first().waitFor();
+    if (await page.locator('#inputs-list .prot-row').count() !== 3) fail('the inputs and their switch are not listed');
+    await page.locator('#inputs-list [data-dev="HDMI_2"]').click();
+    await page.locator('#inputs-list [data-dev="HDMI_2"].idle').waitFor();
+    if (JSON.stringify(writes[0]) !== JSON.stringify({ hidden: { dev: ['HDMI_2'] } })) fail('hiding an input did not save it');
+    // The Input key: LG's list or the bar, chosen here; another key that opens it is named.
+    await page.locator('#inputs-bar-lg.good').waitFor();
+    if (!/Netflix/.test(await page.locator('#inputs-bar-note').textContent())) fail('another key that opens the input bar is not named');
+    await page.locator('#inputs-bar-ours').click();
+    await page.locator('#inputs-bar-ours.good').waitFor();
+    if (JSON.stringify(writes[writes.length - 1]) !== JSON.stringify({ key: 'input', action: 'open', id: 'com.tvweb.inputbar' })) fail('choosing the input bar did not set the Input key');
+    await page.locator('#inputs-bar-lg').click();
+    await page.locator('#inputs-bar-lg.good').waitFor();
+    if (writes[writes.length - 1].action !== 'lg') fail('choosing LG\'s list did not put the Input key back');
+    await page.locator('#inputs-nosignal-btn').click();
+    await page.locator('#inputs-nosignal-btn.good').waitFor();
+    if (writes[writes.length - 1].action !== 'plainNoSignal' || writes[writes.length - 1].value !== true) fail('the No Signal switch did not send it');
+    await page.locator('#inputs-grp-bar button', { hasText: 'Remote keys' }).click();
+    if (await page.evaluate(() => activeTab) !== 'remote') fail('the input bar\'s button did not open Remote');
+    if (!await page.locator('#remotepane #disc-remotekeys').isVisible()) fail('Remote keys are not on the Remote tab');
+    if (await page.locator('#appspane #disc-remotekeys, #sspane [id*="nosignal"]').count()) fail('remote keys or No Signal remain on their old tabs');
+    // A TV with no keys to set: no Remote tab, and no input bar on Inputs.
+    hasKeys = false;
+    await page.goto(base + '/?tab=inputs');
+    await page.locator('#inputs-list .prot-row').first().waitFor();
+    await page.locator('#tab-btn-remote').waitFor({ state: 'hidden' });
+    if (await page.locator('#inputs-grp-bar').isVisible()) fail('the input bar is offered with no keys to open it');
+  } catch (e) {
+    fail(e.message);
+  } finally {
+    await page.close();
+  }
+}
+
+/*
  * Groups side by side, each against its own server and fake TV, as the Home
  * checks change the layout and uploads they read back. Within a group the
  * checks run in their order here, and the slowest group sets the run's
@@ -3263,8 +3345,9 @@ async function visitHuesyncSettings(browser, base, problems) {
     });
     await page.goto(base + '/?tab=advanced');
     if (await page.locator('#advpane #row-piccap, #advpane #row-huesync').count()) fail('ambient controls remain in System');
-    const followsHome = await page.locator('#tabs [data-tab="ambient"]').evaluate(el => el.previousElementSibling.dataset.tab === 'home');
-    if (!followsHome) fail('Ambient Light does not follow Home');
+    // With the TV's own settings in the sidebar, after OLED Care.
+    const followsOled = await page.locator('#tabs [data-tab="ambient"]').evaluate(el => el.previousElementSibling.dataset.tab === 'oledcare');
+    if (!followsOled) fail('Ambient Light does not follow OLED Care');
     await page.locator('#tabs [data-tab="ambient"]').click();
     await page.waitForSelector('#huesync-settings:not([hidden])');
     for (const key of ['background_lightning_video', 'background_lightning_games', 'auto_start', 'auto_start_notification']) {
@@ -3512,7 +3595,7 @@ async function visitTvHuesync(browser, base, problems) {
 
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
