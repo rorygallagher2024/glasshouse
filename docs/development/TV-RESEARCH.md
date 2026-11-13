@@ -981,6 +981,14 @@ Measured on 22 October 2026 on an LCD 65UQ801C0SB, firmware 04.60.90.
   in front about 6 s later, against 2 to 3 s on a G3; the screen is black
   meanwhile.
 
+## The screen saver and the Magic Remote's pointer (webOS 9.2, C2)
+
+Checked on an OLED42C24LA, webOS 9.2.2, with the screen saver started by tvpower over an app (#1364):
+
+- LG's own screen saver (`com.webos.app.screensaver`, QML) ends when the pointer moves. Its `UIController` handles every key, including the `webOS.Key_webOS_CursorShow` the pointer appearing sends, by calling `com.webos.service.tvpower/power/turnOnScreen` through `WebOSServices`' `Service`; it has no `MouseArea`.
+- A screen saver mounted in its place with no key handler is not ended by the pointer moving. tvpower ends it on a remote key and, on this TV, on a click; on a C3 with webOS 11.2.0 a click did not end it either.
+- The pointer device (`ClickableMouse`, `/dev/input/event8` here) sends `EV_REL` movement and `BTN_LEFT` (272), which an evdev reader such as `remotebuttons.py` sees whatever is in front.
+
 ## Methods and keys a TV does not have (webOS 6, A1; webOS 9.2, C2)
 
 - An OLED55A16LA (webOS 6, firmware 03.53.45) answers `com.webos.service.audio/tv/getAudioInputProperty` with an unknown-method refusal; audiod logs `LS_NO_METH ... Couldn't find method` for each call (#1418).

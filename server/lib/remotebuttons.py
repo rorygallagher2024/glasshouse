@@ -33,6 +33,10 @@ BUTTON_CODES = {
 # The Home button, reported going down and up: Glasshouse Home opens LG's
 # Home when it is held. remotebuttons.js has the source of the code.
 HOME_CODE = 773
+EV_REL = 2
+# Pointer movement comes as a stream of relative events; once a second is enough
+# to say the pointer is in use.
+POINTER_EVERY_SEC = 1.0
 
 QT_KEY_CODES = {
     18874385: 'red',
@@ -89,6 +93,7 @@ def main():
 
     last_press = {}
     debounce_sec = 0.2
+    last_pointer = [0.0]
 
     def emit_button(color, code):
         now = time.time()
@@ -157,6 +162,14 @@ def main():
                 elif len(chunk) == 24:
                     _, _, type_, code, val = struct.unpack('QQHHi', chunk)
                 else:
+                    continue
+
+                if type_ == EV_REL:
+                    now = time.time()
+                    if now - last_pointer[0] >= POINTER_EVERY_SEC:
+                        last_pointer[0] = now
+                        sys.stdout.write('pointer\n')
+                        sys.stdout.flush()
                     continue
 
                 if type_ == 1 and code == HOME_CODE and val in (0, 1):
