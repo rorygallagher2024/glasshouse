@@ -426,7 +426,7 @@ The Home tab's **Home customisation** section holds what applies to whichever Ho
     * **Starting up:** Open Home at power-on, Hide LG's Home while the TV starts.
     * **Layout:** Alternative View, Rows along the bottom.
     * **Shown on Home:** Clock and date, Last watched, App count, CEC addresses, Channel logos, Weather, Picture details.
-    * **Live preview:** Live preview, with Preview sound, Keep the preview on and Preview in the tile once it is on.
+    * **Live preview:** Live preview, with Preview sound, Keep the preview on, Preview in the tile and Preview size once it is on.
     * **Search.**
     * **Animations:** Fade in and out, Wallpaper drift, Wallpaper cross-fade, Smooth scrolling, Sliding panels.
 * While LG's Home is: **Open Home at power-on**, **Home screen layout** and **Hide home screen system apps**.
@@ -483,6 +483,7 @@ When enabled, resting on an input or a TV channel for a moment shows it live in 
 * **AV receiver handling:** Devices connected behind an AV receiver share its HDMI input, so each shows what that input shows. Moving to another input takes the TV's HDMI receiver off the active input without sending CEC commands.
 * **Tuner channels:** Previewing a channel does not make it the TV's last-watched channel, except on webOS 4, whose browser plays channels only the way that does. An input with no incoming signal or a channel off-air displays a status notice; on webOS 4, which reports no signal for a channel, a channel that plays stays up.
 * **Screen saver:** The preview pauses while the screen saver runs over Home, and resumes when dismissed. Pressing **OK** releases the preview while the input or channel opens full screen.
+* **Preview size:** Small (356×200, the default), Medium (512×288) or Large (640×360) on the 1920×1080 view, in both the standard and Alternative views. Medium and Large keep the small preview's top right corner and grow down and left; the rows start lower to make room, and the picture details plate stays level with the clock. Not offered with Preview in the tile, where the tile sets the size. On the TV app, **OK** steps through the sizes.
 * **Additional options (webOS 5+):**
     * **Preview sound (off by default):** Plays the sound of the input or channel in the preview. Off, the preview is silent. Switching it from a dashboard changes a preview already playing. Opening a channel full screen always has sound.
     * **Preview in the tile:** Renders the preview inside the hovered tile itself, under the tile's name, rather than beside the clock.

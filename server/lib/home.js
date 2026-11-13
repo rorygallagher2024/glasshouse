@@ -54,6 +54,8 @@ var SORTS = ['custom', 'recent'];
 var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos', 'showPointer'];
 // Where the weather badge's weather comes from: nowhere, Home Assistant's pushes, or Open-Meteo.
 var WEATHER_SOURCES = ['off', 'ha', 'internet'];
+// The live preview beside the clock: 356x200, 512x288 or 640x360 on the 1920x1080 view.
+var PREVIEW_SIZES = ['small', 'medium', 'large'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
 // slow drift and its cross-fade between parts of the day, rows easing to the
 // chosen tile, and Recent apps, search and the folder sliding in.
@@ -436,6 +438,8 @@ function defaults() {
     previewAlways: false,
     // The live preview in the tile it shows, rather than beside the clock.
     previewInTile: false,
+    // Its size beside the clock, one of PREVIEW_SIZES.
+    previewSize: 'small',
     // The live preview's sound: muted unless switched on, as Home is often
     // passed through on the way to something else.
     previewSound: false,
@@ -539,6 +543,7 @@ function normalise(raw) {
   d.view = raw.view === 'alternative' ? 'alternative' : 'standard';
   d.previewAlways = raw.previewAlways === true;
   d.previewInTile = raw.previewInTile === true;
+  d.previewSize = PREVIEW_SIZES.indexOf(raw.previewSize) !== -1 ? raw.previewSize : 'small';
   d.previewSound = raw.previewSound === true;
   d.wallAnim = WALL_ANIMS.indexOf(raw.wallAnim) !== -1 ? raw.wallAnim : 'off';
   d.animTheme = raw.animTheme === 'custom' || ANIM_THEMES.some(function (th) { return th.id === raw.animTheme; }) ? raw.animTheme : 'auto';
@@ -699,6 +704,7 @@ function setLayout(body, cb) {
     weatherPlace: body.weatherPlace !== undefined ? body.weatherPlace : c.weatherPlace,
     previewAlways: typeof body.previewAlways === 'boolean' ? body.previewAlways : c.previewAlways,
     previewInTile: typeof body.previewInTile === 'boolean' ? body.previewInTile : c.previewInTile,
+    previewSize: body.previewSize !== undefined ? body.previewSize : c.previewSize,
     previewSound: typeof body.previewSound === 'boolean' ? body.previewSound : c.previewSound,
     wallAnim: body.wallAnim !== undefined ? body.wallAnim : c.wallAnim,
     animTheme: body.animTheme !== undefined ? body.animTheme : c.animTheme,
@@ -746,7 +752,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSize: c.previewSize, previewSound: c.previewSound, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).
