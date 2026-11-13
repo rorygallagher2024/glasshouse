@@ -157,8 +157,18 @@ behind them may change.
     itself over HDMI-CEC, channels tuned. An input's id can change with its
     name, so a launcher should ask again rather than keep the ids it had.
 
+`Glasshouse.storage.get(key, cb)`, `.set(key, value, cb)`, `.all(cb)`
+:   Values the launcher keeps, such as its tile order or settings, saved by
+    Glasshouse on the TV. The page's own `localStorage` and IndexedDB can come
+    back empty after the TV is switched fully off and on (a G5 on webOS 11.2
+    lost them at every power-on), so keep anything that matters here.
+    `get` calls `cb(err, value)`, with `undefined` where nothing is kept;
+    `set` keeps any JSON value, and `null` removes it; `all` calls
+    `cb(err, { key: value })`. Up to 256 KB in all, for this launcher only.
+    Kept when a new version of the launcher is uploaded, and removed with it.
+
 `Glasshouse.version`
-:   1. Raised if a call is added.
+:   2: `storage` was added in 2. Raised if a call is added.
 
 The page runs as a webOS app, so `window.PalmSystem` and `PalmServiceBridge`
 are there too, for a launcher that already uses them. Glasshouse's calls work

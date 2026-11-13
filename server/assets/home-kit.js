@@ -42,6 +42,17 @@
 
   function done(cb) { return typeof cb === 'function' ? cb : function () {}; }
 
+  // Read once, then kept in step by storage.set.
+  var store = null;
+  function loadStore(cb) {
+    if (store) return cb(null, store);
+    request('GET', '/api/home/store', null, function (err, r) {
+      if (err) return cb(err);
+      store = (r && r.values) || {};
+      cb(null, store);
+    });
+  }
+
   function setCovered(now) {
     if (now === covered) return;
     covered = now;
@@ -79,7 +90,7 @@
   var KINDS = { app: 'app', input: 'dev', channel: 'ch' };
 
   /** @type {any} */ (window).Glasshouse = {
-    version: 1,
+    version: 2,
 
     /*
      * cb(err, { apps: [{ id, title, icon, hidden, folder }],
@@ -161,7 +172,35 @@
     onChanged: function (fn) { if (typeof fn === 'function') changedFns.push(fn); },
 
     // fn() when Home is pressed with the launcher on screen, or it is opened again from an app.
-    onHome: function (fn) { if (typeof fn === 'function') document.addEventListener('webOSRelaunch', function () { fn(); }); }
+    onHome: function (fn) { if (typeof fn === 'function') document.addEventListener('webOSRelaunch', function () { fn(); }); },
+
+    /*
+     * Values kept by Glasshouse for this launcher, which survive a power-on
+     * where the page's own localStorage and IndexedDB may not (#1427). Up to
+     * 256 KB of JSON in all. get(key, cb) answers cb(err, value), undefined
+     * where nothing is kept; set(key, value, cb) keeps a JSON value, null
+     * removing it; all(cb) answers cb(err, { key: value }).
+     */
+    storage: {
+      get: function (key, cb) {
+        cb = done(cb);
+        loadStore(function (err, values) { cb(err || null, values ? values[key] : undefined); });
+      },
+      set: function (key, value, cb) {
+        cb = done(cb);
+        request('POST', '/api/home/store', { key: String(key), value: value === undefined ? null : value }, function (err) {
+          if (!err && store) {
+            if (value === null || value === undefined) delete store[key];
+            else store[key] = JSON.parse(JSON.stringify(value));
+          }
+          cb(err || null);
+        });
+      },
+      all: function (cb) {
+        cb = done(cb);
+        loadStore(function (err, values) { cb(err || null, values ? JSON.parse(JSON.stringify(values)) : {}); });
+      }
+    }
   };
 
   beat();

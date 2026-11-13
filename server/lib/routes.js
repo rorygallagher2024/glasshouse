@@ -1254,6 +1254,8 @@ function handleHomeRoute(req, res, u, pathname) {
     if (pathname === '/api/home/channels') {
       return homeModule.channelList(function (list) { reply({ ok: true, channels: list, tuner: !!list }); });
     }
+    // A custom launcher's own saved values (Glasshouse.storage).
+    if (pathname === '/api/home/store' && homeLauncherModule) return homeLauncherModule.store(reply);
     if (pathname === '/api/home/guide') return homeModule.guide(function (g) { reply({ ok: true, guide: g }); });
     if (pathname === '/api/home/now') return homeModule.now(reply);
     if (pathname === '/api/home/weather') return homeModule.weather(reply);
@@ -1319,6 +1321,10 @@ function handleHomeRoute(req, res, u, pathname) {
         beatBody.launcher = homeLauncherModule ? homeLauncherModule.revision() : '';
         reply(beatBody);
       });
+    }
+    // A launcher's values, up to its store's cap in one go rather than the usual 8 KB.
+    if (pathname === '/api/home/store' && homeLauncherModule) {
+      return readJsonBody(req, res, function (body) { homeLauncherModule.setStore(body, reply); }, homeLauncherModule.MAX_STORE + 1024);
     }
     return readJsonBody(req, res, function (body) {
       if (pathname === '/api/home/layout') return homeModule.setLayout(body, reply);
