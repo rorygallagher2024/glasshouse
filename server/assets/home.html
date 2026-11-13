@@ -117,16 +117,26 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #preview.intile video{object-fit:cover}
 #preview.intile #pvInfo,#preview.intile.blank{display:none}
 /* Medium and Large (#1210): the preview keeps the small one's top and right
-   edges and grows down and left, the plate stays level with the strip's foot,
-   and the rows start the same 34px below the picture as below the strip. */
+   edges and grows down and left, and the rows start the same 34px below the
+   picture as below the strip. With the clock, the weather, Last watched and
+   the picture details beside it, the strip (1696px across) has not the room:
+   on a C2 the source had 28px and the details were cut off. So under it go
+   what it shows, on the left, in place of Last watched, and the details on
+   the right, and the rows start lower to make room. */
 .pv-medium #now #preview:not(.full){width:512px;height:288px;-webkit-align-self:flex-start;align-self:flex-start;margin-top:62px}
 .pv-large #now #preview:not(.full){width:640px;height:360px;-webkit-align-self:flex-start;align-self:flex-start;margin-top:62px}
 .pv-medium #preview:not(.full) #pvNote{line-height:288px}
 .pv-large #preview:not(.full) #pvNote{line-height:360px}
-.pv-medium #pvInfo{bottom:88px}
-.pv-large #pvInfo{bottom:160px}
-.pv-medium #rows{top:384px}
-.pv-large #rows{top:456px}
+.pv-medium #pvInfo,.pv-large #pvInfo{right:0;bottom:auto;top:100%;width:58%;margin:12px 0 0;padding:0}
+#pvName{display:none;position:absolute;left:0;top:100%;width:40%;margin-top:12px}
+.pv-medium #preview.on:not(.full) #pvName,.pv-large #preview.on:not(.full) #pvName{display:block}
+#pvNameTitle{font-family:'Outfit',sans-serif;font-size:27px;line-height:1.1;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pvNameVia{margin-top:5px;font-size:19px;color:#a39d93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-medium #now.previewing #source,.pv-large #now.previewing #source{visibility:hidden}
+.pv-medium #now #preview.info:not(.full),.pv-large #now #preview.info:not(.full){margin-left:56px}
+.alternative.pv-medium #now #preview.info:not(.full),.alternative.pv-large #now #preview.info:not(.full){margin-left:auto}
+.pv-medium #rows{top:454px}
+.pv-large #rows{top:526px}
 #rows .tile.live{background:transparent}
 .tile.live>div{position:relative;z-index:1}
 .row .tile.live{opacity:1}
@@ -638,6 +648,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       <div id="plStrip"></div>
     </div>
     <div id="preview"><video id="pvVideo" muted></video>
+      <div id="pvName"><div id="pvNameTitle"></div><div id="pvNameVia"></div></div>
       <div id="pvInfo"><div id="pvTop"><div id="pvMode"></div><div id="pvLight"></div></div><div id="pvSig"></div></div>
       <div id="pvNote" data-t="home.preview.noPicture">No picture</div></div>
     <div id="weather" class="none">
@@ -1634,6 +1645,9 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       via = t('home.now.app', 'App on this TV');
     }
     $('source').className = title ? '' : 'none';
+    // A Medium or Large preview names what it shows under itself (#1210).
+    $('pvNameTitle').textContent = pv ? title : '';
+    $('pvNameVia').textContent = pv ? via : '';
     $('srcKind').textContent = kind || ' ';
     $('srcTitle').textContent = title || ' ';
     $('srcVia').textContent = via || ' ';
