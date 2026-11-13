@@ -62,11 +62,16 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   // A press landing on another input switches to it this long after, as
   // LG's input bar does, unless another press moves on first.
   var SWITCH_MS = 1000;
-  var list = [], focus = 0, onPort = null, onDevs = null, idle = null, switchTimer = null, closing = false;
+  var list = [], focus = 0, onPort = null, onDevs = null, underHome = false, idle = null, switchTimer = null, closing = false;
 
   function $(id) { return document.getElementById(id); }
-  function isOn(e) {
+  // The input last watched; under a Home screen it is not on screen, so
+  // choosing it still switches to it.
+  function isLast(e) {
     return !!e && e.port === onPort && (!onDevs || onDevs.indexOf(e.id) !== -1);
+  }
+  function isOn(e) {
+    return !underHome && isLast(e);
   }
   function isSoleOn(e) {
     return isOn(e) && (!onDevs || onDevs.length <= 1);
@@ -191,7 +196,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
   var moved = false, waiting = 0, now = null, cat = null;
   function focusOn() {
     focus = 0;
-    for (var i = 0; i < list.length; i++) if (isOn(list[i])) { focus = i; break; }
+    for (var i = 0; i < list.length; i++) if (isLast(list[i])) { focus = i; break; }
   }
   function show() {
     render();
@@ -208,14 +213,16 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
     if (!fresh.length) return close();
     var port = now && now.kind === 'input' ? now.port : null;
     var devs = now && now.kind === 'input' && Array.isArray(now.devices) ? now.devices : null;
-    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && JSON.stringify(devs) === JSON.stringify(onDevs);
-    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, onDevs: devs })); } catch (e) {}
+    var under = !!now && now.behindHome === true;
+    var same = JSON.stringify(fresh) === JSON.stringify(list) && port === onPort && JSON.stringify(devs) === JSON.stringify(onDevs) && under === underHome;
+    try { window.localStorage.setItem(CACHE, JSON.stringify({ list: fresh, onPort: port, onDevs: devs, underHome: under })); } catch (e) {}
     if (same && document.body.className === 'on') return;
     // Moved already: the focus stays on the same input where it is still there.
     var keepId = moved && list[focus] ? list[focus].id : null;
     list = fresh;
     onPort = port;
     onDevs = devs;
+    underHome = under;
     focusOn();
     if (keepId) for (var i = 0; i < list.length; i++) if (list[i].id === keepId) focus = i;
     show();
@@ -236,6 +243,7 @@ html,body{width:1920px;height:1080px;background:transparent;overflow:hidden;font
         list = kept.list;
         onPort = kept.onPort;
         onDevs = Array.isArray(kept.onDevs) ? kept.onDevs : null;
+        underHome = kept.underHome === true;
         focusOn();
         show();
       }
