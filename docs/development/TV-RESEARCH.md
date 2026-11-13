@@ -480,6 +480,14 @@ muted `<video>` with one `<source>`:
 How a busy tuner (a recording) or an encrypted channel shows to the page was
 not tried.
 
+
+On a C8 (webOS 4.4.3, #1208) the browser has no `service/webos-broadcast-preview`:
+the `service/webos-*` types in `/usr/lib/libcbe.so` are `broadcast`,
+`broadcast-cable`, `camera`, `dvr`, `external`, `photo` and `photo-camera`.
+`service/webos-broadcast` with `tv://<channelId>` played the channel in 1.5 to
+2 s. There is no `com.webos.service.videooutput` either, so a channel playing
+in the page reports no signal.
+
 ## IPTV streams in a web page (G3, webOS 9.2.2)
 
 Measured on 31 October 2026 on an OLED55G36LA from Glasshouse Home's page,
