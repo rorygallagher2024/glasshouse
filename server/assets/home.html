@@ -1872,8 +1872,45 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     });
   }
 
+  /*
+   * Up and down go to the tile above or below on screen (#1213), not to the
+   * tile last focused in that row, which may be across the screen: the one
+   * the focused tile overlaps most, the left one where two overlap it within
+   * OVERLAP_TIE_PX (a wide input tile under two narrower ones), else the one
+   * whose middle is nearest. Each row is placed where it is headed, as in
+   * inView, not where its glide has it this frame.
+   */
+  var OVERLAP_TIE_PX = 8;
+  function tileSpans(key) {
+    var m = measure(key), tr = trackOf(key), out = [];
+    if (!m) return out;
+    var shift = Math.max(0, Math.min(tr.max, tr.target)), tiles = m.track.querySelectorAll('.tile[data-c]');
+    for (var i = 0; i < tiles.length; i++) {
+      var left = tiles[i].offsetLeft - shift;
+      out.push({ c: +tiles[i].getAttribute('data-c'), left: left, right: left + tiles[i].offsetWidth });
+    }
+    return out;
+  }
+  function columnUnder(fromKey, fromCol, toKey) {
+    var from = null, spans = tileSpans(fromKey);
+    for (var i = 0; i < spans.length; i++) if (spans[i].c === fromCol) from = spans[i];
+    if (!from) return -1;
+    var best = -1, bestOver = 0, near = -1, nearD = Infinity, mid = (from.left + from.right) / 2;
+    var to = tileSpans(toKey);
+    for (var j = 0; j < to.length; j++) {
+      var over = Math.min(to[j].right, from.right) - Math.max(to[j].left, from.left);
+      // Tiles come left to right, so a near tie keeps the left one.
+      if (over > 0 && over > bestOver + (best < 0 ? 0 : OVERLAP_TIE_PX)) { best = to[j].c; bestOver = over; }
+      var d = Math.abs((to[j].left + to[j].right) / 2 - mid);
+      if (d < nearD) { nearD = d; near = to[j].c; }
+    }
+    var c = best >= 0 ? best : near;
+    return c >= 0 && c < items(toKey).length ? c : -1;
+  }
+
   function move(dr, dc) {
     var onSort = colOf(rowKey()) === -1;
+    var fromKey = rowKey(), fromCol = colOf(fromKey), fromRow = state.row;
     // Left of any row's first tile is the search rail, outside arranging;
     // right goes back to the tile it came from.
     if (state.rail) {
@@ -1894,7 +1931,11 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // view, not pulled back to the tile focused before.
     var kind = rowKey(), span = state.arranging ? null : inView(kind), c = colOf(kind);
     var outside = span && c >= 0 && (c < span[0] || c > span[1]);
-    if (outside && dr) state.col[kind] = c < span[0] ? span[0] : span[1];
+    var under = dr && !onSort && !state.arranging && state.row !== fromRow && fromCol >= 0 ? columnUnder(fromKey, fromCol, kind) : -1;
+    if (under >= 0) {
+      state.col[kind] = under;
+      outside = false;
+    } else if (outside && dr) state.col[kind] = c < span[0] ? span[0] : span[1];
     if (dc) {
       if (outside) state.col[kind] = dc > 0 ? span[0] : span[1];
       else state.col[kind] = Math.max(state.arranging ? -1 : 0, Math.min(items(kind).length - 1, c + dc));

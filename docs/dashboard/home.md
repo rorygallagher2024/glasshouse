@@ -21,7 +21,7 @@ Glasshouse Home displays a clock and date (following the TV's 12-hour or 24-hour
 
     ---
 
-    Hover to focus, click to open, and rest near row edges to glide smoothly across off-screen tiles. The scroll wheel and arrow keys navigate seamlessly, preserving focused tiles and scroll positions when returning from an app.
+    Hover to focus, click to open, and rest near row edges to glide smoothly across off-screen tiles. The scroll wheel and arrow keys navigate seamlessly, preserving focused tiles and scroll positions when returning from an app. **Up** and **Down** go to the tile directly above or below on screen, the left one where two sit equally under it.
 
 -   **Inputs & HDMI-CEC devices**
 
