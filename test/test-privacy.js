@@ -190,6 +190,67 @@ test("with only updates blocked, the table keeps another blocker's sinkholes, an
   }
 });
 
+// #1434: AirPlay's key check with LG is skipped while the table blocks the
+// time servers' domain, and runs again once it does not.
+test("AirPlay's MFi key check is skipped while the table blocks LG's time servers, and only then", function () {
+  // An in-memory filesystem for the flag: entries are 'file' or 'dir'.
+  var disk = {};
+  var FLAG = '/tmp/mfi_key_requested', MINE = FLAG + '/glasshouse';
+  function enoent() { var e = new Error('ENOENT'); e.code = 'ENOENT'; return e; }
+  var airplayFs = {
+    lstatSync: function (p) { if (!disk[p]) throw enoent(); return { isDirectory: function () { return disk[p] === 'dir'; } }; },
+    existsSync: function (p) { return !!disk[p]; },
+    unlinkSync: function (p) { if (disk[p] !== 'file') throw enoent(); delete disk[p]; },
+    mkdirSync: function (p) { if (disk[p]) throw new Error('EEXIST'); disk[p] = 'dir'; },
+    rmdirSync: function (p) {
+      if (disk[p] !== 'dir') throw enoent();
+      if (Object.keys(disk).some(function (k) { return k.indexOf(p + '/') === 0; })) throw new Error('ENOTEMPTY');
+      delete disk[p];
+    }
+  };
+  var saved = mockEnv.files['/etc/hosts'];
+  var TABLE = '/var/lib/tvweb/adblock_hosts', ENABLED = '/var/lib/tvweb/adblock_enabled';
+  function set(mode) {
+    var result;
+    privacy.setAdBlock(mode, function (r) { result = r; });
+    assert.ok(result && result.ok, mode + ': ' + JSON.stringify(result));
+    // As mounted, then once more so the check sees the table in place.
+    mockEnv.files['/etc/hosts'] = mode === 'off' ? '127.0.0.1 localhost\n' : mockEnv.files[TABLE];
+    privacy.clearCache();
+    privacy.setAdBlock(mode, function () {});
+  }
+  // umount and mount answer at once, so switching off is done when set returns.
+  privacy.init({ airplayFs: airplayFs, exec: function (file, args, opts, cb) { cb(null, '', ''); } });
+  privacy._setSdpGraceActive(false);
+  try {
+    // The daemon's own marker, a file a power-on deletes, gives way to the directory.
+    disk[FLAG] = 'file';
+    set('full');
+    assert.strictEqual(disk[FLAG], 'dir', 'the marker is a directory while Everything blocks the time servers');
+    assert.strictEqual(disk[MINE], 'dir');
+    set('ads');
+    assert.ok(!disk[FLAG], 'gone with a tier that leaves them reachable, so LG checks again');
+    set('full');
+    disk[FLAG + '/other'] = 'dir';
+    set('off');
+    assert.ok(!disk[MINE], 'its folder goes when blocking is off');
+    assert.strictEqual(disk[FLAG], 'dir', "a directory still holding another tool's is left");
+    delete disk[FLAG + '/other'];
+    delete disk[FLAG];
+    // While the clock is still unset the time servers are reachable, so the check runs.
+    privacy._setSdpGraceActive(true);
+    set('full');
+    assert.ok(!disk[FLAG], 'not before the clock is set');
+  } finally {
+    privacy._setSdpGraceActive(false);
+    privacy.init({ airplayFs: require('fs'), exec: require('child_process').execFile });
+    delete mockEnv.files[ENABLED];
+    delete mockEnv.files[TABLE];
+    if (saved === undefined) delete mockEnv.files['/etc/hosts'];
+    else mockEnv.files['/etc/hosts'] = saved;
+  }
+});
+
 test("rewriting the mounted table keeps what other tools added to it", function () {
   var TABLE = '/var/lib/tvweb/adblock_hosts';
   var saved = mockEnv.files['/etc/hosts'];
