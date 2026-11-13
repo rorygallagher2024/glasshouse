@@ -1410,6 +1410,16 @@ function setupHomeAssistant() {
       conf.default_entity_id = ha.defaultEntityId(item.type, devId, item.id);
       conf.device = devInfo;
       ha.withAvailability(item, mqttTopics.status);
+      if (item.type === 'media_player') {
+        /*
+         * The integration reads payload_not_available literally, with no
+         * availability_template support - status is "asleep" once nothing
+         * is listening on the command topic, "off" while the TV is off but
+         * the server still answers (see setTvOff), "online" otherwise.
+         */
+        delete conf.availability_template;
+        conf.payload_not_available = 'asleep';
+      }
 
       /*
        * grzegorz914/homeassistant-mqtt-media-player subscribes to
