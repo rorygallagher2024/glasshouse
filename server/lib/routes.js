@@ -22,6 +22,7 @@ var ha = require('./ha');
 var fetchLib = require('./fetch');
 var devtools = require('./devtools');
 var names = require('./names');
+var nosignal = require('./nosignal');
 
 var HA_CATEGORIES = ha.HA_CATEGORIES;
 var HA_ENTITIES = ha.HA_ENTITIES;
@@ -1655,7 +1656,9 @@ function handleRequest(req, res) {
   }
 
   if (pathname === '/api/screensaver') {
-    return send(res, 200, JSON.stringify(screensaversModule.screensaverList()));
+    var ssList = screensaversModule.screensaverList();
+    ssList.noSignal = nosignal.status();
+    return send(res, 200, JSON.stringify(ssList));
   }
 
   /* Everything the staged screen saver declared, in one answer. The saver is

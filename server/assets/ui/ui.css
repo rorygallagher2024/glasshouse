@@ -810,6 +810,7 @@ select.pill-sel.ss-sel{display:block;width:100%;max-width:340px;height:48px;marg
 .ss-ent-label-row input:focus,.ss-li-label input:focus{border-color:var(--w100)}
 .ss-ent-label-row input::placeholder,.ss-li-label input::placeholder{color:var(--w60)}
 .ss-ent-label-row input:disabled,.ss-li-label input:disabled{opacity:.45}
+.ss-switch-line{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:340px;margin-bottom:6px}
 .ss-pool-actions{display:flex;gap:8px;margin-bottom:8px;max-width:340px}
 .ss-pool-btn{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;min-height:0;
   color:var(--w60);border:1px solid var(--w12);border-radius:2px;background:transparent;cursor:pointer}

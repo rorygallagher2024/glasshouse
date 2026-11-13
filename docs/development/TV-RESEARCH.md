@@ -3548,3 +3548,26 @@ services and Promotions & tips among them, restarted it, which killed all three
 until the TV was unplugged. On a C2 (webOS 9.2.2) they are in
 `ls-hubd.service`, the Luna hub. `systemd-run --scope` (systemd 250 on the C2)
 moves a command into a transient scope of its own.
+
+## The No Signal screen (B8, webOS 4.4.3; C2, webOS 9.2.2)
+
+An input with nothing coming in shows a screen drawn by the input app,
+`com.webos.app.inputcommon`, a native QML app, in `Screensaver.qml`: under
+`qml/UserInterfaceLayer/Containers/BgViewLayer/` on the C2 and
+`qml/TvComponent/ScreenSaver/` on the B8. The same file draws the other
+messages an input shows there, keyed by `currentKey` (`"noSignal"` for No
+Signal). The animated picture above the heading is an `AnimatedImage`
+(`screensaver12frame.gif`) with
+`visible: element.isDynamic && (headerText.text || bodyText.text)`, and the line
+of advice under the heading a `ScreensaverSubText` with
+`visible: text.length > 0`; both lines are the same on the two TVs. A copy
+bind-mounted over the file takes effect once the input app is restarted
+(`killall com.webos.app.inputcommon`): it starts again at the next input
+launch. With an input in front, the B8 keeps the input and draws it again after
+a moment; the C2 closes the input and opens Home.
+
+A TV boots onto its last input, and the input app is started early in the boot
+(5 s in on the C2, 7 s on the B8), before the Homebrew Channel's start-up runs.
+`com.webos.service.eim/getAllInputStatus` lists each input with `activate`:
+false for an empty HDMI port on both TVs, and on the C2 for a port with a device
+connected (`connected: true`, a field the B8 does not have) that sends nothing.

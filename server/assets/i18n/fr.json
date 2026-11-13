@@ -3227,5 +3227,10 @@
  "srv.saver.color.purple": {"text": "Violet", "from": "Purple"},
  "srv.saver.color.red": {"text": "Rouge", "from": "Red"},
  "srv.saver.color.white": {"text": "Blanc", "from": "White"},
- "ss.valueColor": {"text": "Couleur de la valeur", "from": "Value colour"}
+ "ss.valueColor": {"text": "Couleur de la valeur", "from": "Value colour"},
+ "ss.noSignal": {"text": "Écran « Aucun signal »", "from": "No Signal screen"},
+ "ss.noSignal.plain": {"text": "Juste « Aucun signal »", "from": "Just “No Signal”"},
+ "ss.noSignal.desc": {"text": "Supprime l’image animée et la ligne de conseil en dessous : une entrée sans signal affiche seulement « Aucun signal ».", "from": "Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only “No Signal”."},
+ "ss.noSignal.pending": {"text": "Prend effet dès qu’aucune entrée n’est à l’écran, par exemple sur l’écran d’accueil.", "from": "It takes effect once no input with a picture is on screen, such as at the Home screen."},
+ "tv.noSignal.on": {"text": "Appuyez sur OK pour activer", "from": "Press OK to switch on"}
 }

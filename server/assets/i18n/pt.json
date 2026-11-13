@@ -3227,5 +3227,10 @@
  "srv.saver.color.purple": {"text": "Roxo", "from": "Purple"},
  "srv.saver.color.red": {"text": "Vermelho", "from": "Red"},
  "srv.saver.color.white": {"text": "Branco", "from": "White"},
- "ss.valueColor": {"text": "Cor do valor", "from": "Value colour"}
+ "ss.valueColor": {"text": "Cor do valor", "from": "Value colour"},
+ "ss.noSignal": {"text": "Ecrã «Sem sinal»", "from": "No Signal screen"},
+ "ss.noSignal.plain": {"text": "Apenas «Sem sinal»", "from": "Just “No Signal”"},
+ "ss.noSignal.desc": {"text": "Retira a imagem animada e a linha de conselho por baixo, para que uma entrada sem sinal mostre apenas «Sem sinal».", "from": "Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only “No Signal”."},
+ "ss.noSignal.pending": {"text": "Tem efeito quando nenhuma entrada estiver no ecrã, por exemplo no ecrã inicial.", "from": "It takes effect once no input with a picture is on screen, such as at the Home screen."},
+ "tv.noSignal.on": {"text": "Prima OK para ativar", "from": "Press OK to switch on"}
 }

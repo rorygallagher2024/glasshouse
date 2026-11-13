@@ -878,5 +878,10 @@
  "server.experimental.pointer.rate": {"text": "Aktualisierungsrate", "from": "Update rate"},
  "server.experimental.pointer.rate.desc": {"text": "Wie oft das Dashboard Bewegungspakete sendet. Niedrigere Raten entlasten TV und Netzwerk; höhere Raten können flüssiger wirken. Standardmäßig und empfohlen sind 120 Aktualisierungen pro Sekunde.", "from": "How often the dashboard sends movement batches. Lower rates reduce TV and network work; higher rates can feel smoother. The default and recommended rate is 120 updates per second."},
  "server.experimental.pointer.rate.value": {"text": "{n} Aktualisierungen pro Sekunde", "from": "{n} updates per second"},
- "ctl.pointer.click": {"text": "Klicken", "from": "Click"}
+ "ctl.pointer.click": {"text": "Klicken", "from": "Click"},
+ "ss.noSignal": {"text": "Bildschirm „Kein Signal“", "from": "No Signal screen"},
+ "ss.noSignal.plain": {"text": "Nur „Kein Signal“", "from": "Just “No Signal”"},
+ "ss.noSignal.desc": {"text": "Lässt das animierte Bild und den Hinweis darunter weg, sodass ein Eingang ohne Signal nur „Kein Signal“ zeigt.", "from": "Leaves out the animated picture and the line of advice under it, so an input with nothing coming in shows only “No Signal”."},
+ "ss.noSignal.pending": {"text": "Wirkt, sobald kein Eingang auf dem Bildschirm ist, etwa auf dem Home-Bildschirm.", "from": "It takes effect once no input with a picture is on screen, such as at the Home screen."},
+ "tv.noSignal.on": {"text": "OK drücken zum Einschalten", "from": "Press OK to switch on"}
 }
