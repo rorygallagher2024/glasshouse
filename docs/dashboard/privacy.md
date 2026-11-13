@@ -52,21 +52,16 @@ The **Privacy** tab (`/?tab=privacy`) surfaces the TV's telemetry, advertising, 
 
 The built-in blocker runs directly on the TV without needing an external DNS sinkhole (such as Pi-hole), and automatically re-applies on boot.
 
-Apps started before the blocker or clock sync receive the updated list in
-their sandboxes too. Changes to the tier or custom list, and switching
-blocking off, also update those copies. This covers lookups that use the
-hosts file; apps that send DNS queries directly can still reach the DNS server.
-Repairing a jail copy happens after its files change, so a lookup before that
-repair can also escape.
-If restoring a sandbox's hosts file fails after blocking is switched off,
-Glasshouse retries every 30 seconds until it succeeds.
+Apps already running, and those started before the clock synced, get the
+current list in their sandboxes too, and lose it again when blocking is
+switched off. It covers lookups through the hosts file; an app that asks a DNS
+server directly is not blocked.
 
 === "Ads & telemetry tier"
 
     Blocks LG's advertising, diagnostics, remote-diagnostics, customer-data and Alphonso screen-recognition servers, and the host LG's ad log script reports to, while leaving LG's core service platform reachable (so the Content Store, app updates, and LG ThinQ continue to work). On webOS 11 the diagnostics report upload shares its host with the Content Store, so it stays reachable on this tier; the Everything tier takes it.
 
-    Includes country-specific SmartAd names, regional video-ad and beacon
-    hosts, the Alphonso/LG Ads endpoints and dedicated APM reporting hosts.
+    It includes LG's regional ad, video-ad and beacon hosts, and Alphonso's and LG Ads' endpoints.
 
 === "Everything tier"
 
@@ -84,13 +79,7 @@ Glasshouse retries every 30 seconds until it succeeds.
     * **Additional time-server variants:** Known macro-region SDP names, `ruc.tv.wiselg.com` and documented country variants such as `us7.nextlgsdp.com` also wait for clock sync. Country variants follow the saved TV country; undocumented names such as `de7.nextlgsdp.com` are not generated.
     * **Switching back:** After switching away from **everything**, LG's built-in apps (such as Content Store or LG Channels) may take about a minute to reconnect while their browser engine's DNS cache expires.
 
-    **Everything** means the full built-in hosts list, not all network traffic.
-    Shared Google hosts such as `clients1.google.com` through `clients4.google.com`,
-    `www.googleapis.com`, `tools.google.com` and `www.gstatic.com`, and connectivity
-    checks remain reachable. Individual names can be added
-    through a custom list, at the cost of the features sharing them. LAN device
-    scans have a separate [Network device scans](advanced.md#devices-and-connectivity)
-    switch; they are not controlled by the hosts list.
+    Google hosts that other services share, such as `www.googleapis.com` and `www.gstatic.com`, stay reachable; a custom list can add them. Scans of the local network have their own [Network device scans](advanced.md#devices-and-connectivity) switch.
 
 === "Custom hosts file"
 

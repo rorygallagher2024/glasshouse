@@ -20,7 +20,9 @@ Unreadable jail-root metadata leaves the active fallback running.
 Initial source read failures (`EIO`, `ENOENT`), empty files and incomplete
 tables recover through the fallback with blocking on or off, without changing
 jail copies before recovery. Successful restoration stops the recovery timer.
-It checks real filesystem notifications as well as injected watch events,
+It checks real filesystem notifications as well as injected watch events
+(on macOS with a 1 s recheck behind them, as FSEvents can drop an event that
+comes just after a watch starts),
 including `etc` and jail resets that reuse their inodes, and verifies that callbacks
 arriving after shutdown cannot restart watching.
 `test-privacy-apphosts.js` exercises the real synchronizer with simulated

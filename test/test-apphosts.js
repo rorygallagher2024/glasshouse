@@ -51,9 +51,13 @@ function init(watch, recheckMs) {
   appHosts.init({ jailRoot: jails, hostFile: hostFile, watch: watch || fakeWatch, recheckMs: recheckMs || 10000, debounceMs: 1 });
 }
 function step(name, fn) { steps.push({ name: name, fn: fn }); }
-function equalSoon(id, text, done, what) {
-  waitFor(function () { return read(id) === text; }, done, what || id + ' hosts updated', 500);
+// ms: how long to wait, 500 ms for the fake watches. The real ones are the
+// system's and can come late on a loaded machine: a full parallel run on
+// macOS took over 500 ms. Waiting ends as soon as the file matches.
+function equalSoon(id, text, done, what, ms) {
+  waitFor(function () { return read(id) === text; }, done, what || id + ' hosts updated', ms || 500);
 }
+var REAL_WATCH_MS = 5000;
 
 remove(dir);
 mkdirs(jails);
@@ -433,7 +437,10 @@ step('late events after stop cannot restart watching or rewrite a jail', functio
 });
 
 step('real filesystem watches see new jails, launch copies and replaced etc directories', function (done) {
-  init(fs.watch);
+  // macOS's FSEvents can drop an event that comes just after a watch starts,
+  // which a full parallel run there did. The TV's inotify does not; the
+  // server's own recheck covers such a miss, here sooner than its 30 s.
+  init(fs.watch, process.platform === 'darwin' ? 1000 : 0);
   appHosts.sync();
   makeJail('real-watch-app', BASE);
   equalSoon('real-watch-app', FULL, function () {
@@ -443,10 +450,10 @@ step('real filesystem watches see new jails, launch copies and replaced etc dire
       makeJail('real-watch-app', BASE);
       equalSoon('real-watch-app', FULL, function () {
         fs.writeFileSync(fileOf('real-watch-app'), EARLY);
-        equalSoon('real-watch-app', FULL, done, 'real watch after etc replacement');
-      }, 'real watch sees replaced etc');
-    }, 'real watch sees launch copy');
-  }, 'real watch discovers new jail');
+        equalSoon('real-watch-app', FULL, done, 'real watch after etc replacement', REAL_WATCH_MS);
+      }, 'real watch sees replaced etc', REAL_WATCH_MS);
+    }, 'real watch sees launch copy', REAL_WATCH_MS);
+  }, 'real watch discovers new jail', REAL_WATCH_MS);
 });
 
 step('a jail root created after startup is discovered by the fallback', function (done) {
