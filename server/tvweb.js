@@ -1376,7 +1376,8 @@ function setupHomeAssistant() {
       huesync: huesyncWanted() && huesync.getState() !== null,
       huesyncSettings: huesync.getSettings(),
       iconBaseUrl: iconServer.baseUrl(),
-      universalMediaPlayer: universalMediaPlayer
+      universalMediaPlayer: universalMediaPlayer,
+      mac: devInfo.connections && devInfo.connections[0][1]
     });
 
     entities = ha.filterWithholds(entities, {

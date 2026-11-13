@@ -544,11 +544,14 @@ function mediaPlayerConfig(opts, topic) {
     return commands;
   }
 
-  return {
+  var config = {
     platform: 'mqtt_universal_media_player',
     device_class: 'tv',
     state_topic: topic.state('media_player'),
     command_topic: topic.command('media_player'),
+    // The one way to reach the TV once it is asleep, for the integration's own
+    // Wake-on-LAN: the command topic has nobody listening then.
+    mac: opts.mac || undefined,
     commands: withPlayMedia({
       power: { key: 'power' },
       volume_set: { key: 'volume' },
@@ -578,6 +581,7 @@ function mediaPlayerConfig(opts, topic) {
     ].concat(channels.length ? [{ name: 'Channels', type: 'channel', items: channels }] : []),
     icon: 'mdi:television'
   };
+  return config;
 }
 
 /*
