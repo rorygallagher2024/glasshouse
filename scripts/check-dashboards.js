@@ -1443,6 +1443,46 @@ async function visitHomeRecentsHidden(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// #1212: with the pointer switched off, the cursor is hidden, moving it
+// focuses nothing, and a click opens the tile in focus, once.
+async function visitHomePointerOff(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home pointer off: ' + e.message));
+  const layout = { rows: ['app'], order: { app: [] }, hidden: { app: [] }, channels: [], hintSeen: true, searchHintSeen: true,
+    showPointer: false };
+  const apps = [0, 1, 2, 3].map(i => ({ id: 'app' + i, title: 'App ' + i }));
+  const opened = [];
+  await page.addInitScript(() => {
+    window.__cursor = [];
+    window.PalmSystem = { setCursor: function (c) { window.__cursor.push(c); }, launchParams: '{}' };
+  });
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1, apps, channels: [], devices: [],
+      order: { app: apps.map(a => a.id) } });
+    if (url.pathname.endsWith('/open')) { opened.push(route.request().postDataJSON().id); return reply({ ok: true }); }
+    if (url.pathname.endsWith('/now')) return reply({});
+    return reply({ ok: true, build: 'pointer', layoutVersion: 1 });
+  });
+  const focused = () => page.evaluate(() => { const t = document.querySelector('#rows .tile.focus'); return t ? +t.getAttribute('data-c') : -1; });
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('#rows .tile.focus');
+    const cursor = await page.evaluate(() => window.__cursor.slice());
+    if (cursor[cursor.length - 1] !== 'blank') problems.push('Home pointer off: the cursor was not hidden (' + cursor.join(', ') + ')');
+    const last = await page.locator('#rows .tile[data-c="3"]').boundingBox();
+    await page.mouse.move(last.x + last.width / 2, last.y + last.height / 2);
+    await page.waitForTimeout(300);
+    if (await focused() !== 0) problems.push('Home pointer off: moving the pointer moved the focus to tile ' + await focused());
+    await page.mouse.click(last.x + last.width / 2, last.y + last.height / 2);
+    await page.waitForTimeout(500);
+    if (opened.join() !== 'app0') problems.push('Home pointer off: a click opened ' + (opened.join() || 'nothing') + ', not the tile in focus (app0)');
+  } finally {
+    await page.close();
+  }
+}
+
 // #1213: Up and Down go to the tile above or below on screen, not to the
 // tile last focused in that row: app tiles over wider input tiles.
 async function visitHomeUpDown(browser, base, problems) {
@@ -3304,7 +3344,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomeUpDown, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
