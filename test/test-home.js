@@ -562,10 +562,17 @@ step('last watched on a receiver\'s port is the device the TV last selected ther
   ];
   (function nextCase() {
     var c = cases.shift();
-    if (!c) return done();
+    if (!c) {
+      // Under a Home screen the input is still what was on, but not on screen.
+      foreground('com.webos.app.home');
+      return home.now(function (r) {
+        assert.deepEqual([r.kind, r.port, r.behindHome], ['input', 2, true], 'an input under Home is said to be behind it');
+        done();
+      });
+    }
     hdmi2.lastUniqueId = c.last;
     home.now(function (r) {
-      assert.deepEqual([r.kind, r.port, r.title, r.via, r.devices], ['input', 2, c.title, c.via, c.devices], 'lastUniqueId ' + c.last);
+      assert.deepEqual([r.kind, r.port, r.title, r.via, r.devices, r.behindHome], ['input', 2, c.title, c.via, c.devices, false], 'lastUniqueId ' + c.last);
       nextCase();
     });
   })();
