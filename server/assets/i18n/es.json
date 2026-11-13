@@ -2492,6 +2492,8 @@
  "home.showAppCountDesc": {"text": "Junto a la fila Apps: cuántas de las apps de la TV muestra.", "from": "Beside the Apps row: how many of the TV’s apps it shows."},
  "home.showCec": {"text": "Direcciones CEC", "from": "CEC addresses"},
  "home.showCecDesc": {"text": "En el icono de cada entrada: la dirección HDMI-CEC del dispositivo conectado.", "from": "On each input’s tile: the HDMI-CEC address of the device behind it."},
+ "home.showPointer": {"text": "Puntero del Magic Remote", "from": "Magic Remote pointer"},
+ "home.showPointerDesc": {"text": "Al mover el mando aparece su puntero en Glasshouse Home. Desactivado, solo las flechas se mueven por Home, y OK y un clic abren el mosaico seleccionado.", "from": "Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus."},
  "home.showLast": {"text": "Lo último visto", "from": "Last watched"},
  "home.showLastDesc": {"text": "Arriba en Glasshouse Home y en la entrada en la que estaba: lo último que mostró la TV.", "from": "At the top of Glasshouse Home and on the input it was on: what the TV last showed."},
  "pv.adblock.full.search": {"text": "Donde bloquea la búsqueda de LG, la búsqueda de Glasshouse Home se oculta hasta que el bloqueador vuelva a Anuncios y telemetría o se desactive.", "from": "Where it blocks LG's search, Glasshouse Home's search is hidden until the blocker is back on Ads & telemetry or off."},

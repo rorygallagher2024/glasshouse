@@ -739,6 +739,8 @@
  "home.showAppCountDesc": {"text": "Ao lado da fileira Apps: quantos dos apps da TV ela mostra.", "from": "Beside the Apps row: how many of the TV’s apps it shows."},
  "home.showCec": {"text": "Endereços CEC", "from": "CEC addresses"},
  "home.showCecDesc": {"text": "No bloco de cada entrada: o endereço HDMI-CEC do dispositivo conectado.", "from": "On each input’s tile: the HDMI-CEC address of the device behind it."},
+ "home.showPointer": {"text": "Ponteiro do Magic Remote", "from": "Magic Remote pointer"},
+ "home.showPointerDesc": {"text": "Mover o controle mostra o ponteiro no Glasshouse Home. Desligado, só as setas se movem pelo Home, e OK e um clique abrem o bloco selecionado.", "from": "Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus."},
  "home.showClock": {"text": "Relógio e data", "from": "Clock and date"},
  "home.showClockDesc": {"text": "No topo do Glasshouse Home. Desligado, o espaço fica vazio.", "from": "At the top of Glasshouse Home. Switched off, the space stays empty."},
  "home.showLast": {"text": "Assistido por último", "from": "Last watched"},

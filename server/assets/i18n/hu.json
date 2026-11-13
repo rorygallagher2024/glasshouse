@@ -2057,6 +2057,8 @@
  "home.showAppCountAlt": {"text": "Alternatív nézetben nem látszik, mert ott a soroknak nincs címük.", "from": "Not shown in Alternative View, whose rows have no titles."},
  "home.showCec": {"text": "CEC-címek", "from": "CEC addresses"},
  "home.showCecDesc": {"text": "Minden bemenet csempéjén: a mögötte lévő eszköz HDMI-CEC címe.", "from": "On each input’s tile: the HDMI-CEC address of the device behind it."},
+ "home.showPointer": {"text": "Magic Remote mutató", "from": "Magic Remote pointer"},
+ "home.showPointerDesc": {"text": "A távirányító mozgatása megjeleníti a mutatót a Glasshouse Home-on. Kikapcsolva csak a nyilak mozognak a Home-on, és az OK és a kattintás is a kijelölt csempét nyitja meg.", "from": "Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus."},
  "home.showLast": {"text": "Legutóbb nézett", "from": "Last watched"},
  "home.showLastDesc": {"text": "A Glasshouse Home tetején és azon a bemeneten, amelyen volt: amit a TV legutóbb mutatott.", "from": "At the top of Glasshouse Home and on the input it was on: what the TV last showed."},
  "lang.partial": {"text": "{name} (részleges)", "from": "{name} (partial)"},
