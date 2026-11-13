@@ -7,6 +7,30 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 
 ## On every pull request
 
+`test-apphosts.js` checks old jail copies, launch resets, new jails and
+recreated `etc` directories, missed watches, atomic writes, symlink refusal,
+write failures, file modes and restoring marked copies when blocking ends.
+It covers restrictive umasks, short writes, descriptor and temporary-file
+cleanup after a partial write fails, and restoration retries both when blocking
+ends and at startup with it off. Rechecking stops once restoration succeeds.
+Metadata failures (`EIO` and `EACCES`) at the jail, `etc` and hosts file keep
+restoration pending without delaying other jails; missing paths (`ENOENT`
+and `ENOTDIR`) do not keep retries running.
+Unreadable jail-root metadata leaves the active fallback running.
+Initial source read failures (`EIO`, `ENOENT`), empty files and incomplete
+tables recover through the fallback with blocking on or off, without changing
+jail copies before recovery. Successful restoration stops the recovery timer.
+It checks real filesystem notifications as well as injected watch events
+(on macOS with a 1 s recheck behind them, as FSEvents can drop an event that
+comes just after a watch starts),
+including `etc` and jail resets that reuse their inodes, and verifies that callbacks
+arriving after shutdown cannot restart watching.
+`test-privacy-apphosts.js` exercises the real synchronizer with simulated
+mounts: clock sync both before and after mounting, tier and custom-list
+changes, learned countries, update-only blocking, disabling and a failed
+mount. It never runs a mount command. Debounce and fallback timings come
+through `init`; the filesystem checks wait for the changed file.
+
 `test-picture-export.js` checks the read-only picture export through the LG
 settings module and the HTTP handler: values kept as read, keys the TV left
 out omitted, the per-app settings read for the app on screen and left out
@@ -22,9 +46,30 @@ only in the Everything tier, and stays out of the Ads & telemetry and off tables
 Regional platform checks cover the reported German and European hosts,
 ThinQ's hyphenated prefixes, a country outside the fallback list and an
 unknown or invalid country. They check IPv4/IPv6 blocking only in Everything,
-without duplicate names, and leave connectivity checks and local proxy
-discovery unblocked. The `nextlgsdp.com`, `ibs` and `ibsstat` hosts wait for
-clock sync, then enter the table on both address families.
+without duplicate names, and leave connectivity checks unblocked.
+The reported UEI, OCP, content CDN aliases and Google's
+FCM provisioning endpoint are covered on both address families only in
+Everything; shared Google service hosts, including `www.googleapis.com` and
+`clients1.google.com` through `clients4.google.com`, stay out. The
+`nextlgsdp.com`, `ibs`, `ibsstat` and known WiseLG platform and CDN names,
+including `dev-ruc-ngfts.tv.wiselg.com`, wait for clock sync, then enter the
+table on both address families.
+
+Content Store interface and recommendation hosts are blocked on both address
+families only in Everything, before and after clock sync. Tests cover bare
+hosts, the saved country, uppercase country codes, missing or invalid country
+fallbacks, and the absence of unselected countries and LG region prefixes.
+The privacy/app-hosts integration check verifies that tier and country changes
+also replace these entries in running app copies.
+
+Additional domain coverage checks advertising, ACR and APM hosts on both tiers,
+and Home, ThinQ and LG Channels dependencies only in Everything, on IPv4 and
+IPv6. SmartAd country entries follow the saved country. SDP macro-regions,
+WiseLG's RUC name and documented `country7` variants remain reachable until
+clock sync; tests cover US, Australian and German settings, uppercase codes,
+missing or invalid countries and the omission of undocumented variants.
+The integration check verifies that the new service and clock entries reach
+existing jail copies, leave them on a tier change and follow a country change.
 
 `test-appdns.js` checks that an app's DNS servers are written into its jail's
 `resolv.conf`, written again when a watch sees the jailer's copy, taken out

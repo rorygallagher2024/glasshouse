@@ -5,6 +5,7 @@ var list = say.list;
 var fs = require('fs');
 var readTrimmed = require('./util').readTrimmed;
 var execFile = require('child_process').execFile;
+var execFn = execFile;
 
 var ADBLOCK_HOSTS_FILE = '/var/lib/tvweb/adblock_hosts';
 // The repository's old name, kept: TVs' hosts files already carry this line,
@@ -14,7 +15,10 @@ var ADBLOCK_LEGACY_MARKER = '# LG Ad & Telemetry Blackhole (lg-webos-mqtt)';
 var ADBLOCK_FLAG_FILE = '/var/lib/tvweb/adblock_enabled';
 
 var ADBLOCK_ADS = [
+  'ad.lgappstv.com',
   'ad.lgsmartad.com',
+  'info.lgsmartad.net',
+  'lgad.cjpowercast.com',
   'ibis.lgappstv.com',
   'ibs.lgappstv.com',
   'lgsmartad.com',
@@ -27,6 +31,9 @@ var ADBLOCK_ADS = [
   // Alphonso is LG Ad Solutions' screen recognition (ACR) service. The TV asks
   // prov-lg for its setup and eulacheck for consent before anything else.
   'alphonso.tv',
+  'lgads.tv',
+  'ad-inserter.alphonso.tv',
+  'config-overlay-ads.alphonso.tv',
   'prov-lg.alphonso.tv',
   'prov.alphonso.tv',
   'eulacheck.alphonso.tv',
@@ -44,6 +51,12 @@ var ADBLOCK_ADS = [
   // Seen on port 4433 from a factory-reset TV, while its setup still showed
   // the agreements unanswered (docs/ACR.md). Numbered siblings are not known.
   'eu-acr86.alphonso.tv',
+  // Additional ad and APM endpoints in Life's Good Without Spying's lists;
+  // their classification is upstream evidence, not a traffic capture here.
+  'ruc.cdpbeacon.lgtvcommon.com',
+  'eic-rum.elsa.lgecloudapm.com',
+  'lgecloudapm.com',
+  'tracking.lgtvsdp.com',
   // LG's remote diagnostics (/usr/sbin/remotediag on an OLED77C5PUA, webOS
   // 11.2.0): the servers it sends screen captures and logs to once LG support
   // starts a session. Nothing else names them.
@@ -72,13 +85,17 @@ var ADBLOCK_ADS = [
  * apart from the catalog.
  */
 var ADBLOCK_REGIONAL = [
+  'ad.lgsmartad.com',
   'info.lgsmartad.com',
+  'ads.lgtvcommon.com',
+  'videoads.lgtvcommon.com',
   'rdx2.lgtvsdp.com',
   'rdx2.nextlgsdp.com',
   'elastic.lgwebostv.com',
   'ibs.lgappstv.com',
   'ibsstat.lgappstv.com',
   'cdpbeacon.lgtvcommon.com',
+  'cdpbeacon2.lgtvcommon.com',
   'cdpsvc.lgtvcommon.com',
   'wau.lgtvcommon.com',
   // adlogservice, a Python script LG updates over the air and runs through
@@ -92,9 +109,13 @@ var ADBLOCK_REGION_PREFIXES = ['aic', 'eic', 'kic', 'eu'];
 var ADBLOCK_FALLBACK_COUNTRIES = ['us', 'gb', 'au', 'br', 'ca', 'de', 'fr'];
 var COUNTRY_FILE = '/var/lib/tvweb/country';
 
-function regionPrefixes() {
+function countryPrefixes() {
   var country = (readTrimmed(COUNTRY_FILE) || '').toLowerCase();
-  return ADBLOCK_REGION_PREFIXES.concat(/^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES);
+  return /^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES;
+}
+
+function regionPrefixes() {
+  return ADBLOCK_REGION_PREFIXES.concat(countryPrefixes());
 }
 
 /**
@@ -126,20 +147,58 @@ var ADBLOCK_PLATFORM = [
   'eu.lgtvsdp.com',
   'ngfts.lge.com',
   'aic-ngfts.lge.com',
+  'eic-ngfts.lge.com',
   // From Huttunen's blocklist (docs/IMPLEMENTATION.md), not a capture of ours.
   // lgtviot.com is the ThinQ cloud, so the ThinQ app loses the TV on this tier.
-  'cdplauncher.lgtvcommon.com',
   'lgchhomeapp.lgtvcommon.com',
   'lgtviot.com',
+  // These also carry Home, account and pairing features, so they belong only
+  // to Everything even where an upstream list groups them with tracking.
+  'config.lgtvsdp.com',
+  'thetake.com',
+  'pnv.lgtvcommon.com',
+  'wiseresource.lgtvcommon.com',
+  'qcardservice.lgtvcommon.com',
+  'ruc.homeprv.lgtvcommon.com',
+  'ruc.nudge.lgtvcommon.com',
+  'ruc.recommend.lgtvcommon.com',
+  'ruc.service.lgtvcommon.com',
+  'ruc.wiseconfig.lgtvcommon.com',
+  'ruc.api.lgtviot.com',
+  'ruc.commonpush.lgtviot.com',
+  'ruc.push.lgtviot.com',
+  'ruc.sports.lgtviot.com',
+  'qt2-kic.lgtviot.com',
+  'ruc-op-lss.lgthinq.com',
+  'it-service.lgthinq.com',
+  'lgthinq.com',
+  'lss.lgthinq.com',
+  'noti.lgthinq.com',
+  'prd-api.lgthinq.com',
+  // LG Channels depends on Pluto/Xumo as well as LG's own hosts.
+  'eic.lgchhomeapp.lgtvcommon.com',
+  'app-lgwebos.pluto.tv',
+  'sp.pluto.tv',
+  'tags.tiqcdn.com',
+  'lg-channelplus-eu-beacons.xumo.com',
+  'lg-channelplus-eu-mds.xumo.com',
+  'bss.lgechannel.com',
+  'lgechannel.com',
   'ueiwsp.com',
+  'www.ueiwsp.com',
   // Amazon's Alexa SDK (libAVSCommon) fetches /generate_204 from it on a timer
   // to tell whether the TV is online, while Alexa runs; blocked, Alexa reads
   // the TV as offline.
   'avsxappcaptiveportal.com',
   // Google push messaging is a service endpoint, not an ad or telemetry host.
   'mtalk.google.com',
+  'device-provisioning.googleapis.com',
   // The content CDN on webOS 11, from sdx's server list (OLED77C5PUA, 11.2.0).
-  'ngfts.tv.wiselg.com'
+  'ngfts.tv.wiselg.com',
+  // Regional alias reported on a C4 running webOS 10.3.1.
+  'eic-gfts.tv.wiselg.com',
+  // Present in C5 firmware strings (webOS 10.3.1); no traffic captured.
+  'dev-ruc-ngfts.tv.wiselg.com'
 ];
 
 // These carry ThinQ and account services, so regional coverage belongs only
@@ -147,22 +206,42 @@ var ADBLOCK_PLATFORM = [
 var ADBLOCK_PLATFORM_REGIONAL = [
   'lgtviot.com',
   'api.lgtviot.com',
+  'ocp.lgtviot.com',
+  'commonpush.lgtviot.com',
   'push.lgtviot.com',
   'sports.lgtviot.com',
   'buddy.lgtviot.com',
   'lgeapi.com'
 ];
-var ADBLOCK_THINQ_REGIONAL = ['connect-client.lgthinq.com', 'common.lgthinq.com'];
-// ThinQ uses a hyphen before the service name, rather than a DNS label.
-var ADBLOCK_THINQ_PREFIXES = ['aic', 'eic', 'kic'];
+// Blocking the Content Store's interface and recommendations breaks the store.
+// Their documented variants use country prefixes (TV-RESEARCH.md).
+var ADBLOCK_STORE_HOSTS = ['app.lgwebostv.com', 'lgrecommends.lgappstv.com'];
+var ADBLOCK_HOME_HOSTS = ['cdplauncher.lgtvcommon.com', 'homeprv.lgtvcommon.com',
+  'nudge.lgtvcommon.com', 'rdl.lgtvcommon.com', 'recommend.lgtvcommon.com',
+  'service.lgtvcommon.com', 'wiseconfig.lgtvcommon.com'];
+var ADBLOCK_THINQ_REGIONAL = ['connect-client.lgthinq.com', 'common.lgthinq.com',
+  'iotservice.lgthinq.com', 'service.lgthinq.com', 'op-lss.lgthinq.com'];
+// Home uses dotted service regions; ThinQ and OCP also use hyphenated ones.
+var ADBLOCK_SERVICE_PREFIXES = ['aic', 'eic', 'kic'];
 
 var ADBLOCK_SDP = [
   'nextlgsdp.com',
   'us.nextlgsdp.com',
   'gb.nextlgsdp.com',
   'de.nextlgsdp.com',
-  'eu.nextlgsdp.com'
+  'eu.nextlgsdp.com',
+  // Documented macro-regions and WiseLG's RUC host share the clock gate.
+  'af.nextlgsdp.com',
+  'as.nextlgsdp.com',
+  'la.nextlgsdp.com',
+  'me.nextlgsdp.com',
+  'na.nextlgsdp.com',
+  'eu7.nextlgsdp.com',
+  'ruc.tv.wiselg.com'
 ];
+// Only these country7 names are documented upstream; do not invent de7 or gb7.
+var ADBLOCK_SDP_VARIANT_COUNTRIES = ['au', 'br', 'cn', 'hk', 'id', 'il', 'jp',
+  'kr', 'my', 'sg', 'tw', 'us', 'vn', 'za'];
 /*
  * webOS 11 moved the service platform to tv.wiselg.com: on an OLED77C5PUA
  * (11.2.0) sdx's server list names <country>.tv.wiselg.com (US) for sign-in,
@@ -176,7 +255,10 @@ var ADBLOCK_SDP_REGIONAL = ['tv.wiselg.com', 'nextlgsdp.com',
                             'ibs.nextlgsdp.com', 'ibsstat.nextlgsdp.com'];
 
 function adBlockSdp() {
-  return ADBLOCK_SDP.concat(withPrefixes(ADBLOCK_SDP_REGIONAL));
+  var variants = countryPrefixes().filter(function (country) {
+    return ADBLOCK_SDP_VARIANT_COUNTRIES.indexOf(country) !== -1;
+  }).map(function (country) { return country + '7.nextlgsdp.com'; });
+  return ADBLOCK_SDP.concat(withPrefixes(ADBLOCK_SDP_REGIONAL), variants);
 }
 var SDP_POLL_INTERVAL_MS = 3000;
 var SDP_SLOW_POLL_INTERVAL_MS = 30000;
@@ -383,7 +465,7 @@ function wouldStart(service, psText) {
 }
 
 var psArgs = function (cb) {
-  execFile('/bin/ps', ['-eo', 'args'], { timeout: 4000 }, function (err, stdout) {
+  execFn('/bin/ps', ['-eo', 'args'], { timeout: 4000 }, function (err, stdout) {
     cb(String(stdout || ''));
   });
 };
@@ -410,6 +492,8 @@ var lastAdBlockCheck = 0;
 var cachedPrivacy = null;
 /** @type {typeof import('./lgsettings')} */
 var lgSettingsModule = null;
+/** @type {typeof import('./apphosts')} */
+var appHostsModule = null;
 var lastPrivacyCheck = 0;
 var consentGroups = null;
 var consentMapFound = false;
@@ -417,6 +501,10 @@ var consentMapFound = false;
 function clearCache() {
   cachedPrivacy = null;
   cachedAdBlockActive = null;
+}
+
+function syncAppHosts() {
+  if (appHostsModule) appHostsModule.sync();
 }
 
 function storeHost() {
@@ -433,7 +521,10 @@ function isSdpGracePeriodActive() {
 
 function adBlockPlatformBase() {
   return ADBLOCK_PLATFORM.concat(withPrefixes(ADBLOCK_PLATFORM_REGIONAL),
-    withPrefixes(ADBLOCK_THINQ_REGIONAL, ADBLOCK_THINQ_PREFIXES, '-'));
+    withPrefixes(ADBLOCK_STORE_HOSTS, countryPrefixes()),
+    withPrefixes(ADBLOCK_HOME_HOSTS, ADBLOCK_SERVICE_PREFIXES),
+    withPrefixes(['ocp.lgtviot.com'], ADBLOCK_SERVICE_PREFIXES, '-'),
+    withPrefixes(ADBLOCK_THINQ_REGIONAL, ADBLOCK_SERVICE_PREFIXES, '-'));
 }
 
 function adBlockPlatform() {
@@ -792,10 +883,11 @@ function finalizeSdpBlock(logMsg) {
   if (!sdpGraceActive) return;
   sdpGraceActive = false;
   if (logMsg) console.log(logMsg);
-  if (waitsForSdp(flagMode()) && isTableMounted()) {
+  if (waitsForSdp(flagMode())) {
     try {
       writeHostsTable(flagMode());
       clearCache();
+      if (isTableMounted()) syncAppHosts();
     } catch (e) {}
   }
 }
@@ -896,7 +988,7 @@ function scheduleSdpBlock() {
 function applyHostsTable(cb) {
   var mode = flagMode();
   var mounted = isTableMounted();
-  var done = function () { clearCache(); cb(null); };
+  var done = function () { clearCache(); syncAppHosts(); cb(null); };
   if (tableWanted(mode)) {
     try {
       writeHostsTable(mode);
@@ -906,8 +998,8 @@ function applyHostsTable(cb) {
     if (waitsForSdp(mode)) scheduleSdpBlock();
     else clearSdpTimer();
     if (mounted) return done();
-    return execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
-      function (err) { clearCache(); cb(err ? 'could not mount the hosts table' : null); });
+    return execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
+      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   }
   clearSdpTimer();
   // Other tools' lines went into the table while it was up, and the
@@ -919,13 +1011,13 @@ function applyHostsTable(cb) {
     var below = currentForeignHostsLines();
     var lost = foreign.filter(function (line) { return below.indexOf(line) === -1; });
     if (!lost.length) return done();
-    execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
-      function (err) { clearCache(); cb(err ? 'could not mount the hosts table' : null); });
+    execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 },
+      function (err) { if (!err) return done(); clearCache(); cb('could not mount the hosts table'); });
   };
   var liftHbc = function () {
     var hosts = readTrimmed('/etc/hosts') || '';
     if (hosts.indexOf('webosbrew startup script') === -1) return settle();
-    execFile('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { settle(); });
+    execFn('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { settle(); });
   };
   if (!mounted) return liftHbc();
   if (foreign.length) {
@@ -935,7 +1027,7 @@ function applyHostsTable(cb) {
       return cb('could not write the hosts table: ' + e.message);
     }
   }
-  execFile('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { clearCache(); liftHbc(); });
+  execFn('/bin/umount', ['/etc/hosts'], { timeout: 3000 }, function () { clearCache(); liftHbc(); });
 }
 
 function setAdBlock(mode, cb) {
@@ -982,11 +1074,14 @@ function checkBootAdBlock(cliMode) {
     var need = tableWanted(mode);
     if (need) writeHostsTable(mode);
     if (need && !isTableMounted()) {
-      execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
+      execFn('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
         clearCache();
-        if (!err) console.log('adblock: restored /etc/hosts bind-mount from previous boot');
+        if (!err) {
+          syncAppHosts();
+          console.log('adblock: restored /etc/hosts bind-mount from previous boot');
+        }
       });
-    }
+    } else syncAppHosts();
     if (waitsForSdp(mode)) scheduleSdpBlock();
   } catch (e) {}
 }
@@ -1537,6 +1632,8 @@ function init(opts) {
   opts = opts || {};
   if (opts.lgSettings) lgSettingsModule = opts.lgSettings;
   if (opts.services) servicesModule = opts.services;
+  if (opts.appHosts !== undefined) appHostsModule = opts.appHosts;
+  execFn = opts.exec || execFile;
   if (opts.luna) luna = opts.luna;
   if (opts.lunaCached) lunaCached = opts.lunaCached;
   if (opts.config) config = opts.config;
@@ -1551,7 +1648,7 @@ function learnCountry() {
     if (!/^[a-z]{2}$/.test(cc) || cc === (readTrimmed(COUNTRY_FILE) || '').toLowerCase()) return;
     try {
       fs.writeFileSync(COUNTRY_FILE, cc, 'utf8');
-      if (isTableMounted()) writeHostsTable(flagMode());
+      if (isTableMounted()) { writeHostsTable(flagMode()); syncAppHosts(); }
     } catch (e) {}
   });
 }

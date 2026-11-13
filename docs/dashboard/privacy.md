@@ -52,20 +52,34 @@ The **Privacy** tab (`/?tab=privacy`) surfaces the TV's telemetry, advertising, 
 
 The built-in blocker runs directly on the TV without needing an external DNS sinkhole (such as Pi-hole), and automatically re-applies on boot.
 
+Apps already running, and those started before the clock synced, get the
+current list in their sandboxes too, and lose it again when blocking is
+switched off. It covers lookups through the hosts file; an app that asks a DNS
+server directly is not blocked.
+
 === "Ads & telemetry tier"
 
     Blocks LG's advertising, diagnostics, remote-diagnostics, customer-data and Alphonso screen-recognition servers, and the host LG's ad log script reports to, while leaving LG's core service platform reachable (so the Content Store, app updates, and LG ThinQ continue to work). On webOS 11 the diagnostics report upload shares its host with the Content Store, so it stays reachable on this tier; the Everything tier takes it.
+
+    It includes LG's regional ad, video-ad and beacon hosts, and Alphonso's and LG Ads' endpoints.
 
 === "Everything tier"
 
     Adds the hosts that carry LG's platform services and Google push messaging:
 
     * **What stops working:** The LG ThinQ phone app, the Content Store, firmware updates, LG Channels, Alexa, and LG's search, so [Glasshouse Home's search](home.md#search) is hidden while it blocks it. (To block only firmware updates while keeping platform services, use **Block TV software updates** on the [System tab](advanced.md) instead.)
-    * **Google push messaging:** Blocks `mtalk.google.com`, a Firebase Cloud Messaging endpoint. Apps using it may lose push notifications. It stays reachable on **Ads & telemetry**.
+    * **Google push messaging:** Blocks `mtalk.google.com` and `device-provisioning.googleapis.com`, endpoints listed by Google for Firebase Cloud Messaging. Apps using them may lose push notifications. They stay reachable on **Ads & telemetry**.
+    * **Content Store:** Blocks its interface at `app.lgwebostv.com` and recommendations at `lgrecommends.lgappstv.com`, including the TV's country variants such as `de.app.lgwebostv.com`. These stay reachable on **Ads & telemetry**; blocking them prevents the store from opening.
+    * **Home and ThinQ:** Also blocks Home's recommendation and configuration services, additional ThinQ IoT, push and OCP hosts, and their documented regional names. Home recommendations, device pairing and smart-home features may stop working.
+    * **LG Channels:** Includes its LG, Pluto and Xumo dependencies. Blocking these may also affect related Pluto features on the TV.
     * **Regional LG services:** Covers LG's known regions and the TV's country for the `nextlgsdp.com`, `ibs.nextlgsdp.com`, `ibsstat.nextlgsdp.com`, `lgeapi.com` and ThinQ IoT service families, plus ThinQ Connect's regional names. This includes `de.ibs.nextlgsdp.com`, `de.lgeapi.com`, `eic.lgtviot.com` and `eic-connect-client.lgthinq.com`. Blocking these may affect account sign-in, ThinQ, push notifications and store services. The list matches exact names, not every subdomain of these domains.
-    * **webOS 11:** LG's platform there is `tv.wiselg.com`, which also carries the diagnostics report upload and app usage statistics. This tier blocks it, with the Content Store's host, once the clock has synced.
+    * **WiseLG:** LG's platform on webOS 11 is `tv.wiselg.com`, which also carries the diagnostics report upload and app usage statistics. This tier blocks the bare host, regional names such as `aic.tv.wiselg.com` and `eic.tv.wiselg.com`, and the TV's country such as `de.tv.wiselg.com`. It also covers `ngfts.tv.wiselg.com`, `eic-gfts.tv.wiselg.com` and the firmware-listed `dev-ruc-ngfts.tv.wiselg.com`. All wait for clock sync. Some of these names are also reported on webOS 10.3.1.
+    * **Additional service hosts:** Includes the reported `www.ueiwsp.com`, `eic-ocp.lgtviot.com`, `eic-ngfts.lge.com` and `eic-gfts.tv.wiselg.com` aliases. The last waits for clock sync like the other `tv.wiselg.com` names.
     * **Clock sync after a power cut:** After a cold boot, the blocker waits for the TV to set its clock from LG's time servers before blocking them, including Germany's `de.nextlgsdp.com`. If the TV's date is still wrong and apps fail with certificate errors, set the time manually under **Settings › General › System › Time & Date** (with **Set Automatically** off).
+    * **Additional time-server variants:** Known macro-region SDP names, `ruc.tv.wiselg.com` and documented country variants such as `us7.nextlgsdp.com` also wait for clock sync. Country variants follow the saved TV country; undocumented names such as `de7.nextlgsdp.com` are not generated.
     * **Switching back:** After switching away from **everything**, LG's built-in apps (such as Content Store or LG Channels) may take about a minute to reconnect while their browser engine's DNS cache expires.
+
+    Google hosts that other services share, such as `www.googleapis.com` and `www.gstatic.com`, stay reachable; a custom list can add them. Scans of the local network have their own [Network device scans](advanced.md#devices-and-connectivity) switch.
 
 === "Custom hosts file"
 

@@ -2009,6 +2009,24 @@ A 55SJ800V-ZB (webOS 3.9.3) answered the same way, with nothing, for
 
 ## LG's device scans (webOS 9.2.2, C2; #244)
 
+On 13 November 2026, an OLED65C43LA owner (webOS 10.3.1, firmware 33.31.61)
+reported periodic scans despite **Network device scans** being off, separately
+from Auto device detection and Privacy's Everything tier. This is an unresolved
+enforcement report, not a verified capture identifying the scanner. The switch
+in stats reflects the saved disabled-services list, not the process or stub's
+current state. `services.isStubbed()` checks for a mount at the executable's
+path without checking its contents; enforcement retries after 30 s and every
+five minutes. The report alone cannot distinguish a missing or ineffective
+stub from another scanning process.
+
+The owner's later Pi-hole log recorded 253 PTR queries at 11:40:17–18 CET on
+13 November. The TV's boot-hook log started at 11:40:14, the server listened at
+11:40:24 and its clock gate closed at 11:40:25. A later read-only check found
+the scanner executable byte-for-byte equal to Glasshouse's stub. That snapshot
+does not identify the process responsible for the earlier sweep. A
+`de.nextlgsdp.com` query at 11:41:17 was after the gate closed; its originating
+process and resolver path remain unidentified.
+
 `iconnectivity` (UEI QuickSet) reverse-looks-up every address on the TV's
 /24. On a C2 with `other.ueiEnable` off, opening the Home Hub's page for
 connecting other devices sent 759 PTR queries in two minutes (three passes),
@@ -2743,6 +2761,33 @@ name.
   `lgtviot.com`; `ad`, `info` under `lgsmartad.com`.
 - No `lggalleryplus.com` in either.
 
+## Stale hosts copies across clock sync (C4, webOS 10.3.1)
+
+On 12 November 2026, an OLED65C43LA running Glasshouse 0.143.1 with Everything
+enabled held a correct 9,799-byte `/etc/hosts`. `getent hosts` answered `::`
+for `de.nextlgsdp.com`, `eic.tv.wiselg.com` and `ngfts.tv.wiselg.com`.
+Chromecast's running jail held an 8,104-byte ordinary copy, byte-for-byte the
+pre-clock table, missing all 33 clock-delayed names. Its copy was dated six
+seconds before the server reported the clock already valid and skipped the
+grace period. A separate Python process chrooted into that jail resolved
+`de.nextlgsdp.com` to public IPv4 addresses; the main hosts file blocked it.
+This proves a resolver bypass through the stale copy, not which app caused
+each earlier Pi-hole entry or that an HTTPS upload succeeded.
+
+The running `lg.thinqai.adapter` and voice performer's jails held LG's
+234-byte file with no blocker entries. YouTube's copy matched the current
+table. Reboots can repeat the ordering: copying before the blocker starts
+or the clock gate closes leaves a running app behind. Synchronization must
+cover existing copies after each table change and the jailer's later resets,
+including jails for background services.
+
+Read-only owner checks of build `681736d5` on 13 November found all ten listed
+jail hosts files equal to the TV's table, including Chromecast, ThinQ, voice,
+YouTube and Netflix. `getent hosts` returned `::` for `www.ueiwsp.com`,
+`de.lgeapi.com`, `de.nextlgsdp.com` and `eic.tv.wiselg.com`. These establish the
+copies and the queried resolver's state at that time; they do not establish
+that every running client consults them or prevent requests before startup.
+
 ## Regional service coverage
 
 An owner's Pi-hole log reports `de.ibs.nextlgsdp.com`, `de.lgeapi.com`,
@@ -2765,7 +2810,114 @@ siblings are coverage derived from those patterns, not observed traffic on
 every region's TVs. They remain in Everything because account, store and
 ThinQ features may depend on them. New names under `nextlgsdp.com` keep the
 existing wait for a valid clock. `lgtvonline.lge.com` remains the connectivity
-check described below; `wpad.fritz.box` is outside the LG cloud service list.
+check described below.
+
+### Additional hostnames reported on the C4
+
+On 13 November 2026 the same owner reported these names after updating main
+and restarting the TV. DNS activity alone does not identify a request's
+payload or prove that a connection succeeded. Post-startup checks of the
+synchronization are described above; the earlier DNS activity does not identify
+an individual app's resolver behavior.
+
+| Names reviewed | Coverage and evidence |
+| :--- | :--- |
+| `de.nextlgsdp.com`, `de.lgeapi.com`, `eic.tv.wiselg.com` | Already in Everything. SDP and WiseLG names wait for the clock; stale jail copies can omit them after that wait ends. |
+| `eic-ngfts.lge.com` | Added to Everything alongside `aic-ngfts.lge.com`; Home search's poster URLs above use this European host. |
+| `www.ueiwsp.com` | Added to Everything alongside the bare domain; also observed alongside the device scans above. Blocking this cloud host does not stop the LAN PTR sweep. |
+| `eic-ocp.lgtviot.com` | Added as an exact reported alias. A read-only string search on the C4 found `ocp.lgtviot.com` in `/usr/sbin/ocpservice`; this does not establish the regional endpoint's payload. |
+| `eic-gfts.tv.wiselg.com` | Added as an exact reported alias, with the WiseLG clock gate. Its function has not been independently established. |
+| `device-provisioning.googleapis.com` | Added to Everything: Google's FCM network documentation lists it alongside `mtalk.google.com`. The lookup does not identify which TV component used it. |
+| `clients1.google.com` | Left out: Google lists certificate-revocation checks and app approval among its uses. No request path was captured on this TV. |
+| `clients2.google.com` | Left out: Google documents both crash/WebRTC update logs and extension downloads here. No request path was captured on this TV. |
+| `www.googleapis.com` | A later reported lookup; left out because Google documents shared APIs and connectivity probes here. The hostname alone does not establish telemetry. |
+| `clients3.google.com`, `clients4.google.com` | Left out: shared Google services, including clock synchronization and crash reporting, rather than a dedicated LG tracking endpoint. |
+| `tools.google.com` | Left out: Google documents update configuration for Omaha here. Its use on this TV is unverified. |
+| `www.gstatic.com` | Left out: Google documents shared sign-in assets and connectivity probes here. |
+| `clients3` | Left out: a bare label is a different query from `clients3.google.com`; its origin is unknown. |
+
+[Google's FCM network requirements](https://firebase.google.com/docs/cloud-messaging/network-configuration)
+identify the provisioning endpoint. Its
+[Android Enterprise requirements](https://support.google.com/work/android/answer/10513641?hl=en)
+describe the shared `clients` hosts, and the
+[Chrome endpoint reference](https://support.google.com/chrome/a/answer/6334001?hl=en)
+describes Omaha, static assets and connectivity checks. The
+[Chrome proxy endpoint list](https://support.google.com/chrome/a/answer/14113552?hl=en)
+also documents shared API, extension-download and logging uses. These describe Google's
+platforms, not captured webOS request paths. Earlier reported
+`connectivitycheck.gstatic.com` and `www.google.com` remain outside the list as
+connectivity/shared service hosts. The earlier `lgtvonline.lge.com` exclusion
+still applies. Owners can add exact names to a custom
+list, with the risk of breaking services that share them; Everything is not a
+firewall or a wildcard DNS policy.
+
+### Content Store interface and recommendations
+
+On 13 November 2026 the C4 owner also reported `de.app.lgwebostv.com`.
+[Life's Good Without Spying's Content Store list](https://github.com/lewisdoesstuff/lifesgoodwithoutspying/blob/0057ce44d5b4494ad85cf5975d599c58d5f25871/app/init/blocklist.d/32-lgrecommends.txt)
+identifies `app.lgwebostv.com` as the store interface and
+`lgrecommends.lgappstv.com` as app recommendations. It lists both bare hosts
+and 71 country variants of each, and reports store errors 202 or -102 when
+blocked. This is that project's evidence; the C4 lookup does not establish
+its request path or payload, and the other variants were not captured on it.
+
+Both families are blocked only in Everything, using the bare host and saved
+TV country, or the existing fallback countries before it is known. No LG
+region prefixes are inferred for these families. They do not carry the known
+SDP clock endpoints, so they are blocked before clock sync too. The store's
+request-log family, `elastic.lgwebostv.com`, remains in Ads & telemetry.
+
+### WiseLG names beyond the reported alias
+
+The existing list generates `tv.wiselg.com`, LG's dotted regional names
+(`aic.`, `eic.`, `kic.`, `eu.`) and the TV's country, and blocks
+`ngfts.tv.wiselg.com`. The owner's `eic-gfts.tv.wiselg.com` is a separate
+hyphenated name; neither the bare host nor `eic.tv.wiselg.com` covers it.
+The firmware search above also found `dev-ruc-ngfts.tv.wiselg.com` on a C5
+running webOS 10.3.1. It is now an exact Everything entry, with the same clock
+gate. Its presence in firmware does not establish use on the owner's C4.
+Other guessed `gfts` or `ngfts` regional and development combinations are not
+added without a firmware name or traffic report. No exhaustive inventory of
+all WiseLG subdomains has been established.
+
+### Additional categorized domain coverage
+
+[Life's Good Without Spying's domain lists at `0057ce44`](https://github.com/lewisdoesstuff/lifesgoodwithoutspying/tree/0057ce44d5b4494ad85cf5975d599c58d5f25871/app/init/blocklist.d)
+identify additional SmartAd, ACR, APM, Home, ThinQ, SDP and LG Channels endpoints.
+This is upstream classification and reported resolution testing, not a capture
+establishing the payloads or users of every name on a Glasshouse test TV. The
+upstream [MIT notice](../licenses/lifesgoodwithoutspying-MIT.txt) is retained.
+
+Glasshouse adds SmartAd's country family, regional ad/video-ad and second beacon
+families, the legacy `lgad.cjpowercast.com`, Alphonso's `ad-inserter` and
+`config-overlay-ads`, `lgads.tv`, `tracking.lgtvsdp.com` and dedicated APM names
+to Ads & telemetry. Home configuration/recommendations, additional ThinQ
+services, OCP and common push remain Everything-only because they can carry
+features as well as reporting. LG Channels' exact LG, Pluto and Xumo names
+also belong only to Everything, including the shared analytics name
+`tags.tiqcdn.com`; this can affect related Pluto features.
+
+Country and regional families use bounded prefix generation rather than the
+upstream list's full country enumeration. Home uses the bare names and
+`aic`/`eic`/`kic`; additional RUC and development aliases are exact entries.
+Generated siblings are inferred coverage, not traffic observed on every region.
+The classification does not import generic shared Google or streaming domains.
+Firmware-update names remain under the existing separate update-block switch.
+
+The SDP list documents `af`, `as`, `la`, `me`, `na` and `eu7` macro-region names
+and these `country7` names: `au`, `br`, `cn`, `hk`, `id`, `il`, `jp`, `kr`, `my`,
+`sg`, `tw`, `us`, `vn` and `za`. Glasshouse includes only the saved country's
+documented variant, or applicable fallback countries before it is known.
+It does not infer a variant for every country: no `de7` or `gb7` is listed.
+Those names and the exact `ruc.tv.wiselg.com` also remain reachable until the
+existing clock gate closes. Unlike the upstream project's fixed 60-second
+SDP delay, this gate requires valid time.
+
+The C4 owner subsequently reported testing the expanded coverage with no
+functional problems observed so far. Domains and the LAN-wide scan still
+appeared in Pi-hole during boot; no further queries were observed after
+Glasshouse was fully started during that test. This does not identify the
+requesting processes or establish the behavior of other TVs and webOS versions.
 
 ## Report and store log hosts (C4, webOS 10.3.1)
 
