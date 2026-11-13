@@ -6,6 +6,8 @@
  * Its own suite: controls.js keeps its init state at module level.
  *
  * Strict ES5: runs on node 0.12.
+ *
+ * @slow: started first by run-all.js, which runs a few suites at a time.
  */
 var assert = require('assert');
 var controls = require('../server/lib/controls');

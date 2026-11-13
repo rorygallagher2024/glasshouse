@@ -1,6 +1,9 @@
 // Strict ES5 - node v0.12.2 on webOS 4 (LG OLED B8) has no ES6 support.
+var waitFor = require('./wait-for').waitFor;
 var assert = require('assert');
 var events = require('events');
+var StringDecoder = require('string_decoder').StringDecoder;
+var toBuffer = require('../server/lib/util').toBuffer;
 var fs = require('fs');
 var os = require('os');
 var path = require('path');
@@ -16,6 +19,11 @@ function createMockReq(opts) {
   req.headers = opts.headers || {};
   req.connection = { remoteAddress: opts.remoteAddress !== undefined ? opts.remoteAddress : '127.0.0.1' };
   req.destroy = function () { req.destroyed = true; };
+  // As http's: Buffers emitted as data are decoded across chunk boundaries once an encoding is set.
+  req.setEncoding = function (enc) {
+    var decoder = new StringDecoder(enc), emit = req.emit;
+    req.emit = function (ev, d) { return emit.call(req, ev, ev === 'data' && Buffer.isBuffer(d) ? decoder.write(d) : d); };
+  };
   return req;
 }
 
@@ -83,6 +91,28 @@ function createMockRes(cb) {
   assert.deepEqual(u3.query, {});
 
   console.log('  ✓ parseUrl handles query strings and missing paths cleanly');
+})();
+
+// Both ambient-light dashboards need the same PicCap write permissions.
+(function testAmbientWritePermissions() {
+  var cfg = { allowControl: false, web: { enabled: false }, port: 8080 };
+  routes.init({ config: cfg,
+    telemetry: { collectStats: function (cb) { cb({ ok: true }); } },
+    piccapStatus: function (cb) { cb({ running: true }); },
+    huesyncStatus: function (cb) { cb({ streaming: true }); }
+  });
+  [false, true].forEach(function (writable) {
+    cfg.allowControl = writable;
+    routes.handleRequest(createMockReq({ url: '/api/stats' }), createMockRes(function (res) {
+      var state = JSON.parse(res.body);
+      assert.strictEqual(state.piccapCapture.running, true);
+      assert.strictEqual(state.huesyncStreaming.streaming, true);
+      assert.strictEqual(state.piccapCapture.writable, writable);
+      assert.strictEqual(state.huesyncStreaming.writable, writable);
+    }));
+  });
+  routes.init({ piccapStatus: function (cb) { cb(null); }, huesyncStatus: function (cb) { cb(null); } });
+  console.log('  \u2713 ambient integration state and write permissions');
 })();
 
 // The setup state gives the local addresses and the name, each with the port.
@@ -381,7 +411,31 @@ function createMockRes(cb) {
   reqValid.emit('end');
   assert.deepEqual(parsedResult, { action: 'volume', value: 20 });
 
-  console.log('  ✓ readJsonBody enforces Content-Type, Origin matching, and JSON parsing');
+  // A character split between two chunks arrives whole.
+  var reqSplit = createMockReq({ method: 'POST', headers: { 'content-type': 'application/json' } });
+  var splitResult = null;
+  routes.readJsonBody(reqSplit, createMockRes(), function (data) { splitResult = data; });
+  var bytes = toBuffer(JSON.stringify({ name: 'Первый канал ᴴᴰ' }), 'utf8');
+  var cut = 0;
+  while (cut < bytes.length && bytes[cut] < 128) cut++;
+  cut++;
+  reqSplit.emit('data', bytes.slice(0, cut));
+  reqSplit.emit('data', bytes.slice(cut));
+  reqSplit.emit('end');
+  assert.deepEqual(splitResult, { name: 'Первый канал ᴴᴰ' });
+
+  // Past its limit: answered 413, read to the end rather than the connection dropped.
+  var reqBig = createMockReq({ method: 'POST', headers: { 'content-type': 'application/json' } });
+  var bigStatus = null;
+  routes.readJsonBody(reqBig, createMockRes(function (res) { bigStatus = res.statusCode; }), function () {
+    assert.fail('Should not be called past the limit');
+  }, 100);
+  reqBig.emit('data', JSON.stringify({ pad: new Array(200).join('x') }));
+  reqBig.emit('end');
+  assert.strictEqual(bigStatus, 413);
+  assert.ok(!reqBig.destroyed);
+
+  console.log('  ✓ readJsonBody enforces Content-Type, Origin matching, JSON parsing, whole characters and its limit');
 })();
 
 // 5b. The dashboard's stylesheet and scripts are put back inline
@@ -1001,8 +1055,20 @@ function createMockRes(cb) {
         }
       }, 15);
     })(0);
+    return req;
   }
-  function later(fn) { setTimeout(fn, 120); }
+  /*
+   * After an upload: once the route's installer job or clean-up has emptied the
+   * staging directory, up to 5 s. A fixed 120 ms wait failed on a slow CI
+   * runner with the previous upload still staged.
+   */
+  function later(fn) {
+    var deadline = Date.now() + 5000;
+    setTimeout(function poll() {
+      if (staged().length && Date.now() < deadline) return setTimeout(poll, 20);
+      fn();
+    }, 120);
+  }
   var FILE = new Buffer('0123456789');
   var ok = { url: 'https://example.org/app.ipk' };
 
@@ -1266,15 +1332,16 @@ function createMockRes(cb) {
   }
 
   function oneAtATime() {
-    upload({ length: 10, chunks: [new Buffer(3)], then: 'none' }, function () {});
-    setTimeout(function () {
+    var firstReq = upload({ length: 10, chunks: [new Buffer(3)], then: 'none' }, function () {});
+    waitFor(function () { return staged().length > 0; }, function () {
       upload({ length: 10, chunks: [FILE] }, function (r) {
         assert.strictEqual(r.statusCode, 409, 'a second upload is refused while one is streaming');
+        firstReq.emit('close');
         initInstaller();
         try { childProcess.execSync('rm -rf "' + root + '"'); } catch (e) {}
         console.log('  ✓ sideload routes: opt-in gating, Host check first, URL checks, upload streaming and cleanup');
       });
-    }, 60);
+    }, 'the first upload to start streaming');
   }
 })();
 
@@ -1483,6 +1550,39 @@ function createMockRes(cb) {
   console.log('  ✓ setup emulation: safe dry-run responses without restart or persistent writes');
 })();
 
+// The phone's setup link serves its page and the page's translation, each
+// only with the one-time code (#1039).
+(function testHandoffTranslation() {
+  var assets = path.join(__dirname, '..', 'server', 'assets');
+  routes.init({ assetDirs: [assets], assetPath: function (sub) { var p = path.join(assets, sub); return fs.existsSync(p) ? p : null; } });
+  routes._setHandoffCode('abc123');
+  var pending = 4;
+  function get(url, check) {
+    routes.handoffRequest({ method: 'GET', url: url, headers: {} }, createMockRes(function (res) {
+      check(res);
+      if (--pending === 0) {
+        routes._setHandoffCode(null);
+        console.log('  ✓ the phone link serves the page and its translation with the code, and refuses them without');
+      }
+    }));
+  }
+  get('/?c=abc123', function (res) {
+    assert.strictEqual(res.statusCode, 200);
+    assert.ok(res.body.indexOf('src="/assets/i18n.js?c=abc123"') !== -1, 'the page asks for i18n.js with the code');
+  });
+  get('/assets/i18n.js?c=abc123', function (res) {
+    assert.strictEqual(res.statusCode, 200);
+    assert.ok(res.body.indexOf('root.t = t') !== -1, 'the translation script, so the page has t()');
+  });
+  get('/assets/i18n/es.json?c=abc123', function (res) {
+    assert.strictEqual(res.statusCode, 200);
+    assert.ok(JSON.parse(res.body)['phone.title'], 'a language file');
+  });
+  get('/assets/i18n.js', function (res) {
+    assert.strictEqual(res.statusCode, 403, 'not without the code');
+  });
+})();
+
 // The dashboard's icon route answers through the icon server's shared reply.
 (function testAppIconRoute() {
   var iconFile = path.join(os.tmpdir(), 'routes-icon-' + process.pid + '.png');
@@ -1509,3 +1609,4 @@ function createMockRes(cb) {
 })();
 
 console.log('ALL test-routes.js assertions passed!');
+process.exit(0);

@@ -1,7 +1,7 @@
 /**
  * test/test-home-lg-options.js - the Home tab is offered for LG's Home's own
  * options (its layout, system apps hidden from it, and Open Home at power-on)
- * on a TV without Glasshouse Home, as a B8 (webOS 4.4) is, and ?with=lghome
+ * on a TV without Glasshouse Home, as a webOS 3.8 TV is, and ?with=lghome
  * carries them. Under Glasshouse Home, hiding system apps is left out.
  *
  * Strict ES5: runs on node 0.12.
@@ -20,7 +20,7 @@ var dir = path.join(os.tmpdir(), 'home-lg-options-' + process.pid);
 fs.mkdirSync(dir);
 // The TV has LG's Open Home at power-on only where powerOn is set.
 var powerOn = false;
-home.init({ stateDir: dir, webosVersion: '4.4.3', port: 8080, luna: function (uri, params, cb) {
+home.init({ stateDir: dir, webosVersion: '3.8.0', port: 8080, luna: function (uri, params, cb) {
   if (powerOn && /getSystemSettings$/.test(uri) && params.keys && params.keys.indexOf('homeAutoLaunch') !== -1) {
     return cb({ returnValue: true, settings: { homeAutoLaunch: 'off' } });
   }
@@ -42,7 +42,7 @@ routes.init({ config: { allowControl: true }, home: home, apps: apps, homeScreen
 
 var server = http.createServer(routes.handleRequest), port;
 function get(url, cb) {
-  http.get({ hostname: '127.0.0.1', port: port, path: url }, function (res) {
+  http.get({ hostname: '127.0.0.1', port: port, path: url, agent: false }, function (res) {
     var body = '';
     res.on('data', function (d) { body += d; });
     res.on('end', function () { cb(JSON.parse(body)); });
@@ -50,7 +50,7 @@ function get(url, cb) {
 }
 
 function post(url, body, cb) {
-  var req = http.request({ hostname: '127.0.0.1', port: port, path: url, method: 'POST',
+  var req = http.request({ hostname: '127.0.0.1', port: port, path: url, method: 'POST', agent: false,
     headers: { 'Content-Type': 'application/json' } }, function (res) {
     var text = '';
     res.on('data', function (d) { text += d; });
@@ -63,7 +63,7 @@ function post(url, body, cb) {
 server.listen(0, '127.0.0.1', function () {
   port = server.address().port;
   get('/api/home', function (st) {
-    assert.strictEqual(st.supported.ok, false, 'no Glasshouse Home on webOS 4.4');
+    assert.strictEqual(st.supported.ok, false, 'no Glasshouse Home on webOS 3.8');
     assert.strictEqual(st.available, true, 'the tab is there for LG\'s Home\'s options');
     assert.strictEqual(st.lgHomeAvailable, true);
     assert.strictEqual(st.lgHome, undefined, 'the options themselves only when asked for');
@@ -92,6 +92,7 @@ server.listen(0, '127.0.0.1', function () {
               console.log('  ✓ under Glasshouse Home tile hiding is neither shown nor switched on');
               server.close();
               console.log('ALL test-home-lg-options.js assertions passed!');
+              process.exit(0);
             });
           });
         });

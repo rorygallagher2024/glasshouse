@@ -124,6 +124,7 @@ function reply(request, serverMs, fields) {
   var refuse = false;
   var lunaSilent = false;
   var syncDuringSet = false;
+  var notTaken = false;
   var calls = [];
   var queries = 0;
   var deadline = setTimeout(function () { assert.fail('timed out'); }, 15000);
@@ -136,6 +137,12 @@ function reply(request, serverMs, fields) {
   });
 
   function fakeLuna(uri, payload, cb) {
+    // The read-back after a set: the server's time where the set took, the
+    // TV's own where it did not (#1201). Not counted among the sets.
+    if (uri === 'com.webos.service.systemservice/time/getSystemTime') {
+      var utc = Math.floor((Date.now() + (notTaken ? 0 : aheadMs)) / 1000);
+      return setTimeout(function () { cb({ returnValue: true, utc: utc, systemTimeSource: notTaken ? 'broadcast' : 'sdp' }); }, 0);
+    }
     calls.push({ uri: uri, payload: payload });
     // The luna wrapper gives null when luna-send timed out or printed no JSON.
     var res = { returnValue: true };
@@ -166,7 +173,22 @@ function reply(request, serverMs, fields) {
       why: 'a sync while the first set is pending: one query, one set' },
     { ahead: 5000, refuse: true, syncDuringSet: true, calls: 6, queries: 9,
       why: 'a sync while a refused set is pending: one query, one set' },
-    { ahead: 5000, calls: 7, queries: 10, why: 'and the next sync after the refusal sets it' }
+    { ahead: 5000, calls: 7, queries: 10, why: 'and the next sync after the refusal sets it' },
+    { start: true, ahead: 7000000, notTaken: true, calls: 8, counted: [0, 1],
+      status: function (st) {
+        assert.ok(Math.abs(st.notTakenS - 7000) < 5, 'how far out it stayed: ' + st.notTakenS);
+        // The number is checked above: the TV's whole-second clock puts it either side of 7000.
+        assert.ok(/stayed \+\d+\.\d+ s out, on its broadcast time/.test(st.error), st.error);
+        assert.strictEqual(st.setAgoS, null, 'not counted as set');
+      },
+      why: 'the service accepts the time and the clock stays out: reported, not counted as set' },
+    { ahead: 7000000, notTaken: true, calls: 9, counted: [0, 2], why: 'tried again at the next sync' },
+    { ahead: 5000, calls: 10, counted: [1, 2],
+      status: function (st) {
+        assert.strictEqual(st.notTakenS, null);
+        assert.strictEqual(st.error, null);
+      },
+      why: 'once the clock takes it, it is set' }
   ];
 
   function run(i) {
@@ -177,6 +199,7 @@ function reply(request, serverMs, fields) {
     refuse = !!step.refuse;
     lunaSilent = !!step.lunaSilent;
     syncDuringSet = !!step.syncDuringSet;
+    notTaken = !!step.notTaken;
     function check() {
       assert.strictEqual(calls.length, step.calls, step.why);
       if (step.queries) assert.strictEqual(queries, step.queries, step.why);
@@ -184,6 +207,7 @@ function reply(request, serverMs, fields) {
         var st = ntp.getStatus();
         assert.deepEqual([st.sets, st.errors], step.counted, step.why);
       }
+      if (step.status) step.status(ntp.getStatus());
       run(i + 1);
     }
     if (step.start) assert.strictEqual(ntp.start(check), true);
@@ -197,7 +221,7 @@ function reply(request, serverMs, fields) {
     assert.ok(Math.abs(calls[0].payload.utc - serverSec) < 5, 'to the server time');
 
     var st = ntp.getStatus();
-    assert.deepEqual([st.sets, st.errors], [2, 1], 'counted since the last start');
+    assert.deepEqual([st.sets, st.errors], [1, 2], 'counted since the last start');
     assert.ok(Math.abs(st.last.offsetMs - 5000) < 100, String(st.last.offsetMs));
     assert.strictEqual(st.last.stratum, 2);
     assert.strictEqual(st.server, '127.0.0.1');
@@ -209,6 +233,7 @@ function reply(request, serverMs, fields) {
     server.close();
     clearTimeout(deadline);
     console.log('  ✓ against a server: set when out by a second or more, once at each start, one sync at a time');
+    console.log('  ✓ a time the service accepts and the clock does not take is reported, not counted as set, and tried again');
   }
 
   server.bind(0, '127.0.0.1', function () {

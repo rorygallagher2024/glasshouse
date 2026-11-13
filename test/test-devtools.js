@@ -16,19 +16,28 @@ childProcess.execFile = function (file, args, opts, cb) {
   cb(answer(file, args));
 };
 
+// Each call's turn (lib/children) comes at once, so the tests stay synchronous;
+// its spacing between starts is lib/children's own test's.
+require('../server/lib/children').launch = function (fn) { fn(); };
 var devtools = require('../server/lib/devtools');
 
 var FLAG = '/var/luna/preferences/devmode_enabled';
 var TABLES = '/proc/net/ip_tables_names';
 var FILES = [FLAG, '/usr/sbin/iptables', '/usr/sbin/ip6tables', '/sbin/iptables', '/sbin/ip6tables', TABLES];
 
+// devtools.js waits a moment before a retry; it runs here at once, as execFile
+// answers.
+var realSetTimeout = setTimeout;
+
 function tv(present, fn) {
   FILES.forEach(function (f) { mockEnv.files[f] = present.indexOf(f) !== -1 ? '' : null; });
   calls = [];
   var log = console.log, warn = console.warn, error = console.error;
   console.log = console.warn = console.error = function () {};
+  global.setTimeout = function (f) { f(); };
   try { return fn(); } finally {
     console.log = log; console.warn = warn; console.error = error;
+    global.setTimeout = realSetTimeout;
     answer = function () { return null; };
   }
 }
@@ -64,6 +73,35 @@ test('a rule already in place is not added twice', function () {
   tv([FLAG, '/usr/sbin/iptables'], function () {
     assert.deepEqual(run(), ['/usr/sbin/iptables']);
     assert.deepEqual(calls, ['iptables -C']);
+  });
+});
+
+// Node 8.12.0 on webOS 6.5.3 aborts some children before they exec.
+test('a check that dies of a signal is tried again, not read as no rule', function () {
+  tv([FLAG, '/usr/sbin/iptables'], function () {
+    var aborted = false;
+    answer = function () {
+      if (aborted) return null;
+      aborted = true;
+      var err = new Error('Command failed');
+      err.signal = 'SIGABRT';
+      return err;
+    };
+    assert.deepEqual(run(), ['/usr/sbin/iptables']);
+    assert.deepEqual(calls, ['iptables -C', 'iptables -C']);
+  });
+});
+
+test('a call that hits its timeout is not tried again', function () {
+  tv([FLAG, '/usr/sbin/iptables'], function () {
+    answer = function () {
+      var err = new Error('Command failed');
+      err.signal = 'SIGTERM';
+      err.killed = true;
+      return err;
+    };
+    run();
+    assert.deepEqual(calls, ['iptables -C', 'iptables -I']);
   });
 });
 

@@ -18,6 +18,12 @@ It does not hold all night. For five hours every night, 01:00 to 06:00 unless ch
 
 The switch is under **System &rarr; Power** in the web dashboard and **System &rarr; Power** on the TV, and setup offers it as a third step. TVs without the setting, such as webOS 4 models, do not show it; Wake-on-LAN still wakes them from standby.
 
+### Nightly refresh reboot
+
+On webOS 7 and later, LG's power management service (`tvpowerd`) automatically reboots the TV two minutes after switch-off once uptime passes 24 hours (`rebootByOnRegular`). When this reboot occurs outside the nightly power-down window, the TV starts up directly into Active Standby and arms a four-hour forced shutdown timer before the Always-on setting has loaded from disk. Because the setting arriving does not cancel the timer, the TV cuts power completely four hours later (at 14,411 seconds of uptime), dropping into cold standby.
+
+When **Nightly refresh reboot** is enabled, Glasshouse adjusts the TV's in-memory refresh threshold (`com.webos.service.qbd/setResetTime`) on boot and around power transitions so that the maintenance reboot only fires inside your scheduled Nightly power-down window. When the reboot occurs inside the window, the TV enters deep sleep (Suspend) two minutes later, which properly clears the four-hour countdown timer and avoids daytime cold power-offs. Off by default; offered only on TVs supporting `qbd/getResetTime` with Stay connected on.
+
 ### Quick Boot
 
 Switching off puts the TV into a light sleep rather than shutting it down completely, so it starts up faster. LG calls this Quick Start+.
@@ -60,14 +66,12 @@ The limits are counted by [watch time](metrics.md#watch-time), so they apply onl
 
 * **Block TV software updates:** Stops the TV installing LG's system updates, which can take away the access Glasshouse runs with. Apps and Glasshouse's own updates are unaffected.
 
-## Display and ambient light
+## Display
 
 ![Display: the LG logo switch](../screenshots/advanced-display.png)
 
 * **12-hour clock:** Shows the time as `9:40 PM` rather than `21:40` on the TV dashboard, Glasshouse Home and the clock screen savers. Sets the TV's `timeFormat` preference (`HH12` or `HH24`), which webOS seeds as `HH12` by default and gives no menu switch for.
 * **LG logo:** Controls whether the LG logo animation displays during power-on and power-off (LG Logo Display).
-* **Ambient light (PicCap):** When PicCap is installed, captures on-screen content and streams it to a Hyperion server to drive ambient backlighting behind the TV. Turning it off stops video capture and the ambient lighting with it. See [PicCap and ambient light](../piccap.md) for how it works and setup details.
-* **Ambient light (Hue Sync):** When the Hue Sync app is installed, starts and stops its streaming of what is on screen to Philips Hue and Ambience lights. Turning it off stops the streaming and the light with it. See [Hue Sync](../huesync.md) for setup details.
 
 ## HDMI inputs
 
@@ -81,7 +85,8 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 
 * **SIMPLINK (HDMI-CEC):** Enables CEC control and auto power synchronization with connected devices over HDMI.
 * **IP control:** Enables external IP control protocol support.
-* **Auto device detection:** Finds devices the TV can show on its Home Dashboard and control, from set-top boxes to smart lights, plugs, and switches. On newer webOS versions, the TV looks up every address on the home network each time it boots, which local network ad blockers (such as Pi-hole) record as hundreds of requests. Turning this off stops the boot scans completely.
+* **Auto device detection:** LG's own setting. Finds devices the TV can show on its Home Dashboard and control, from set-top boxes to smart lights, plugs, and switches. To do it, the TV looks up every address on the home network, which a network-wide ad blocker such as Pi-hole records as hundreds of requests. On some TVs, webOS 11 among them, those lookups carry on with this off.
+* **Network device scans:** Glasshouse's own switch for those lookups. Off, they stop on every TV, whatever Auto device detection is set to, and the TV finds no new devices for the Home Hub or LG's device setup. Off also stops the Magic Remote controlling a set-top box through LG's universal control. Leave it on if you use one. It stays off across restarts.
 
 ## Front lights
 
@@ -92,3 +97,5 @@ Per-port settings for HDMI Deep Colour (extended bandwidth for 4K HDR). Each inp
 ![System tab: Quick Boot, Stay connected when off, Always Ready, nightly power-down and Wake-on-LAN, the On and Off Timers, screen-time limits, system updates, LG logo, sound, HDMI inputs, devices and the standby light](../screenshots/advanced.png)
 
 *The TV's own settings, grouped as Power & standby, Timers, Screen time, System updates, Display, Sound, HDMI inputs, Devices and Front lights.*
+
+PicCap and Hue Sync have their own [Ambient Light](ambient-light.md) page.

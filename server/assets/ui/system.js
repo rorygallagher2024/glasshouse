@@ -3,6 +3,7 @@
 let currentHdmiInputs = null;
 let currentHdmiDiag = null;
 let currentColSpace = null;
+let currentHdmiEarcPort = null;
 
 function renderHdmiJackSvg() {
   return `<svg class="port-jack" viewBox="0 0 26 15" width="22" height="13" aria-hidden="true">` +
@@ -19,13 +20,14 @@ function formatColorDepth(cd) {
 
 function renderHdmiPort(i, diag, colSpace) {
   const s = i.signal;
-  const isPort2 = i.port === 2;
-  const earcBadge = isPort2 ? '<span class="port-cap" translate="no">eARC</span>' : '';
+  const isEarc = i.earc !== undefined ? i.earc : (currentHdmiEarcPort ? i.port === currentHdmiEarcPort : i.port === 2);
+  const earcBadge = isEarc ? '<span class="port-cap" translate="no">eARC</span>' : '';
   const jackSvg = renderHdmiJackSvg();
 
   if (!s && !i.deviceSeen) {
-    const emptyState = t('metrics.hdmi.empty', 'Empty');
-    const unconnected = t('metrics.hdmi.unconnected', 'Unconnected');
+    // A cable in the port with nothing on its other end, where the TV can tell.
+    const emptyState = i.cableOnly ? t('metrics.hdmi.cableOnly', 'Cable only') : t('metrics.hdmi.empty', 'Empty');
+    const unconnected = i.cableOnly ? t('metrics.hdmi.noDevice', 'Nothing on the other end') : t('metrics.hdmi.unconnected', 'Unconnected');
     return `<div class="port empty">` +
            `<div class="ptop">` +
              `<span class="pn num">${i.port}</span>` +
@@ -97,6 +99,7 @@ async function loadHdmi() {
     const r = await fetch(api('/api/hdmi'), { cache: 'no-store' });
     const d = await r.json();
     currentHdmiInputs = d.inputs;
+    currentHdmiEarcPort = d.earcPort || null;
     const act = d.inputs.find(i => i.active);
     q('hdmi-cur').textContent = ': ' + (act ? act.label : t('metrics.hdmi.noInput', 'no active input'));
     renderHdmiGrid();

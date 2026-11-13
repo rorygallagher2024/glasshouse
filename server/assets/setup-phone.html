@@ -65,6 +65,12 @@ button:disabled{opacity:.5}
 
 <script src="/assets/i18n.js"></script>
 <script>
+// English if i18n.js did not load, so Save still sends.
+if (!window.t) {
+  window.t = function (key, english, vars) {
+    return english.replace(/\{(\w+)\}/g, function (whole, name) { return vars && vars[name] !== undefined ? String(vars[name]) : whole; });
+  };
+}
 (function () {
   var code = (location.search.match(/[?&]c=([0-9a-f]+)/) || [])[1] || '';
   var $ = function (id) { return document.getElementById(id); };

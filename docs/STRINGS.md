@@ -97,7 +97,10 @@ the check.
 3. Add the two-letter code to `LANGS` in `server/assets/i18n.js`, the
    language's name in its own words to `NAMES` there, and the file to `FILES`
    in `server/deploy.sh`. The Language list in the sidebar's Preferences is
-   built from `LANGS` and `NAMES`.
+   built from `LANGS` and `NAMES`. Where a region's language differs enough to
+   need its own file, the code is in lowercase with the region, as `pt-br`, for
+   the file and in `saver.json` too. Only that region's browsers follow it;
+   those of other regions take the two-letter code, if there is one.
 4. A language translated only in part goes in `PARTIAL` there too, with the
    pages it covers in full: `web` (the dashboard), `tv` (the TV app) and
    `home` (Glasshouse Home). Following the browser's language, it is used only

@@ -27,6 +27,10 @@ var OWN_REQUEST_MS = 5000;
 var lunaFn = null;
 /** @type {function(function(?{state: string, fullScreen: boolean}): void, boolean=): void} */
 var mediaStateFn = function (cb) { cb(null); };
+// Glasshouse Home playing Internet TV full screen: its <video> is not in the
+// TV's media state, which reads stopped while a stream plays there.
+/** @type {function(): boolean} */
+var watchingFn = function () { return false; };
 var requestSeenAt = 0;
 var ownRequestAt = 0;
 var lastState = '';
@@ -49,6 +53,7 @@ function init(opts) {
   opts = opts || {};
   lunaFn = opts.luna;
   mediaStateFn = opts.mediaState || function (cb) { cb(null); };
+  watchingFn = opts.watching || function () { return false; };
   liftedApp = readTrimmed(LIFTED_MARKER) || '';
   recovering = !!liftedApp;
 }
@@ -105,7 +110,7 @@ function restore() {
       if (!ok) return retryRestore();
       restoring = false;
       forgetLift();
-      console.log('idlesaver: panel care holds the screen saver again for ' + appId);
+      console.log('idlesaver: ' + appId + '\'s screen saver setting put back as LG had it');
     });
   });
 }
@@ -154,25 +159,58 @@ function lift(cb) {
   });
 }
 
+/*
+ * Non-preview video from the decoder on the main screen, which an app's video
+ * is while it plays and inputs never are. Previews on Home (com.webos.app.home,
+ * covered by watchingFn() when IPTV is full screen), broadcast tuner previews
+ * (contentType dtv), and inset preview tiles in browse menus (displayOutput
+ * inset from both left and top edges) do not count. cb(false) where
+ * videooutput does not answer.
+ */
+function appVideoShowing(cb) {
+  lunaFn('com.webos.service.videooutput/getStatus', {}, function (r) {
+    var sinks = r && Array.isArray(r.video) ? r.video : [];
+    cb(sinks.some(function (v) {
+      if (!v || v.sink !== 'MAIN' || v.connected !== true || v.connectedSource !== 'VDEC') return false;
+      if (v.appId === 'com.webos.app.home' || v.contentType === 'dtv') return false;
+      var box = v.displayOutput;
+      if (box && box.width > 0 && box.height > 0 && box.x > 0 && box.y > 0) return false;
+      return true;
+    }));
+  });
+}
+
 function idleRequestRefused() {
   var generation = powerGeneration;
   mediaStateFn(function (media) {
-    if (!media || media.state === 'playing' || lastState !== 'Active' || generation !== powerGeneration) return;
-    if (refusingApp) return foregroundApp(function (appId) {
-      if (!appId || appId === refusingApp || generation !== powerGeneration) return;
-      refusingApp = '';
-      idleRequestRefused();
-    });
-    lift(function (ok) {
-      if (!ok) return;
-      if (lastState !== 'Active' || generation !== powerGeneration) return restore();
-      console.log('idlesaver: panel care refused the idle screen saver; asking again without its hold on ' + liftedApp);
-      var policy = policyGeneration;
-      lunaFn(POWER + 'turnOnScreenSaver', {}, function () {
-        setTimeout(function () { checkRequest(policy, true); }, 1500);
-      });
+    if (!media || media.state === 'playing' || watchingFn() || lastState !== 'Active' || generation !== powerGeneration) return;
+    // A player the media service does not list leaves it reading idle while
+    // its video plays (and while paused too, since VDEC stays connected).
+    // Paused is a state it read, and the screen saver may come over a listed
+    // player's paused video as it does without the hold.
+    if (media.state === 'paused') return liftIdle(generation);
+    appVideoShowing(function (showing) {
+      if (showing || lastState !== 'Active' || generation !== powerGeneration) return;
+      liftIdle(generation);
     });
   }, true);
+}
+
+function liftIdle(generation) {
+  if (refusingApp) return foregroundApp(function (appId) {
+    if (!appId || appId === refusingApp || generation !== powerGeneration) return;
+    refusingApp = '';
+    idleRequestRefused();
+  });
+  lift(function (ok) {
+    if (!ok) return;
+    if (lastState !== 'Active' || generation !== powerGeneration) return restore();
+    console.log('idlesaver: panel care refused the idle screen saver; asking again without its hold on ' + liftedApp);
+    var policy = policyGeneration;
+    lunaFn(POWER + 'turnOnScreenSaver', {}, function () {
+      setTimeout(function () { checkRequest(policy, true); }, 1500);
+    });
+  });
 }
 
 // Every reply of the power state subscription, "processing" steps included.

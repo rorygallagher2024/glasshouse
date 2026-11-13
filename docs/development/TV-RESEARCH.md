@@ -178,6 +178,47 @@ pipeline returned output3 to LG's route; its idle orphaned module was removed
 when the next player acquired HD output. A subsequent native PCM Matroska clip
 reached the receiver as PCM at 48 kHz with no DTS module active.
 
+App switches on 8 November 2026, in HD mode with Plex, Disney+, YouTube,
+Netflix and live TV. When Plex resumed a title after another app had played,
+the forwarder's first frame arrived while the pipeline still held `fakevdec` in
+place of `lxvideodec` and playsink had no audio chain; the `audiosink` appeared
+100-300 ms later. Refusing then made Plex transcode to PCM in place of DTS. The
+same wait was needed, at 100 ms, on one ordinary start. When another app played
+while Plex was in the background, LG connected that app's source to output3
+and the module stood down, ending the lease. uMS paused Plex's pipeline and
+played the same one again when Plex returned, so its forwarder, which had
+failed for good once its lease ended, had to take the route again: doing that
+on the same sink, left in bypass, brought DTS-HD back. Plex twice stuck on a
+grey screen when reopened with no media pipeline at all; its cause was not
+established. Disney+ DD+, YouTube
+multichannel PCM, Netflix and live TV each took output3 from a held DTS route
+and played normally. The kernel log (`/var/log/legacy-log`) records each
+`audio_hal_earc_set_*` call with the calling thread, which separates LG's eARC
+set-up from the module's.
+
+## Native DTS playback on the B4 (webOS 10.3.2)
+
+Probed on an `OLED77B46LA` running webOS `10.3.2` (firmware `33.31.75`, Realtek
+`rtd2885p`) connected to a Sonos Arc Ultra over eARC (Glasshouse issue #1379).
+
+- **EDID and GStreamer elements**: `tv.model.edidType` reports `TrueHD+dts`.
+  GStreamer includes `dcaparse` and `omxdtsdec` / `omxdtsdec1` (`Rank primary + 1
+  (257)`), accepting `audio/x-dts`, `audio/x-dtsh`, `audio/x-dtsl`,
+  `audio/x-dtse`, `audio/x-dtsx` and `audio/x-raw`, and logs `../git/omx/gstomxaudiodec.c:788:
+  invalid property id 20 for "downmix"`.
+- **Direct GStreamer pipelines fail outside LG's media stack**: `matroskademux
+  ! decodebin` on a silent 6-channel 48 kHz `dts51.mkv` fails with `Missing
+  decoder: audio/x-unknown (audio/x-unknown, codec-id=(string)A_DTS, ...)`.
+  `dcaparse` stops with `Failed to get media type from upstream`, and feeding
+  framed `audio/x-dts,framed=(boolean)true,rate=(int)48000,channels=(int)6` into
+  `omxdtsdec` fails with `Could not initialize supporting library.`.
+- **Player path and kernel procfs**: Jellyfin direct-playing a 6-channel
+  1.5 Mbps DTS MKV outputs DTS to the Sonos Arc Ultra over eARC
+  (`starfish-media-pipeline`: `vdec: H264 high 4.1`, `adec: audio/x-dts`;
+  `audiooutputd`: `input_source: MEDIA`, `input_codec: dts`,
+  `earc_output_codec: 4`, `arc_output_codec: 4`, `sound_output: external_arc`).
+  `/proc/rtkaudio` holds only `debuginfo` (no DSP0 inventory).
+
 ## C9 HAWK2 audio EDID (webOS 4.10.2)
 
 OLED65C9PUA, firmware 05.50.00, reported in #1078 on 28 October 2026.
@@ -250,6 +291,16 @@ Idlegif's GIFs. Custom Screensaver's DVD logo is inside the QML. They use
 QtQuick 2.4, with QtMultimedia, `WebOSServices` and `iLib` for the Aerial
 ones. aabytt's also takes over `com.webos.app.videoads` on webOS 11.
 
+On a B4 (webOS 10.3.2) with Aerial Screensaver 3.0.4, its boot hook runs
+before Glasshouse's and bind-mounts its whole `assets` folder over
+`com.webos.app.screensaver`, in the same shared peer group (`shared:40`) as
+the `/media/developer` and `/mnt/lg/appstore` mounts of the developer apps.
+A mount made on top of it propagates to that group, so it also lands over
+Aerial's own
+`/media/developer/apps/usr/palm/applications/org.aabytt.webos.custom-screensaver-aerial/assets`
+and hides the QML there (#1378). Taking Aerial's mount off first, and then
+mounting, leaves its folder as it was.
+
 ## HDMI CEC devices (G3, webOS 9.2.2)
 
 `com.webos.service.eim/getAllInputStatus` returns CEC devices in each HDMI
@@ -262,6 +313,13 @@ On the same TV, unplugged HDMI 1 and HDMI 3 returned `connected: true`, but
 `hdmiPlugIn: false`, `hdmiSignalExist: false`, `lastUniqueId: -1` and empty
 sublists. Where present, `hdmiPlugIn` takes precedence over `connected` for
 plug detection. The device list does not report per-device power state.
+
+On a C2 (webOS 9.2.2), `connected` follows the cable: a cable with nothing on
+its other end read `connected: true`, `hdmiPlugIn: false`, ports with no cable
+`false` for both, and a PC switched off at the wall `hdmiPlugIn: true`. A B4
+(webOS 10.3.2) reported `connected: true` on all four ports, two with no cable
+(#1382), as the G3 does. So `connected` tells a cable apart only on a TV where
+some port reports it `false`; the Metrics tab shows such a port as Cable only.
 
 ### Selecting and waking a source through a receiver (G3, webOS 9.2.2)
 
@@ -288,6 +346,312 @@ standby; LG's service sent the CEC Power key itself. No separate power key
 is needed in Glasshouse. A DISPLAY capture showed the receiver's logo even
 while the PS5 reported On, so that picture alone does not establish console
 power state.
+
+## LG's recent-input preview (G3, webOS 9.2.2)
+
+Read from the installed QML on 29 October 2026. With Glasshouse mounted over
+LG's Home, the original app remained readable at
+`/var/palm/jail/com.webos.service.voice.performer/usr/palm/applications/com.webos.app.home`;
+no unmount was needed.
+
+**Recent Input embeds the input app through App View.** In Home's `qml/`,
+`UserInterfaceLayer/Containers/Sub/DeviceInfoTileComponent.qml` enables live
+preview only when `lastInput` equals `physicalLastInputApp` and both settings
+have arrived. For HDMI, its guest parameters are
+`{id: "deeplinkAppViewExt", sender: "home"}`, without a CEC device ID.
+`Interfaces/AppViewInterfaces/AppServices.js` maps its calls to
+`com.webos.service.multiviewcontroller`. `AppViewInterfaces.qml` subscribes
+to `getAppViewStatus`, then calls `createAppView` with:
+
+```json
+{
+  "hostAppId": "com.webos.app.home",
+  "guestAppId": "com.webos.app.hdmi4",
+  "guestAppParams": {"id": "deeplinkAppViewExt", "sender": "home"},
+  "mode": "pip",
+  "usageType": "appview",
+  "guestAppLayout": {"x": 35, "y": 636, "width": 338, "height": 190}
+}
+```
+
+The rectangle above is the service wrapper's default; the call uses the
+tile's current absolute rectangle. The subscription reports completion as
+`appViewStatus.eventStatus`: `appViewCreateCompleted` or
+`appViewChangeCompleted`. Showing and hiding use `setAppViewStatus` with
+`hostAppId`, `guestAppId` and `event: "focusInGuestApp"` or
+`"focusOutGuestApp"`; focus-in also carries `guestAppLayout`. Home destroys
+the view with `destroyAppView {}` on exit or power-off and handles
+`appViewDestroyCompleted`. A recent HDMI input has a 1000 ms focus delay
+followed by a 400 ms show delay. Other preview paths also wait for the
+subscription's `appPipelineStatus` to report a connected pipeline.
+
+**The HDMI app uses the external-input service.** `com.webos.app.hdmi4`
+runs `com.webos.app.inputcommon`. Its `Handlers/DeepLinkHandler.qml`
+recognises `appViewRole: "appViewGuest"`; `DisplayInterfaces.qml` opens
+`com.webos.service.utp.extinputs/open` with
+`{inputSourceType, options: {appId, windowId}}` and starts the port through
+`switchExternalInput {pipelineId, portId}`. The inspected Home path uses
+neither an `ext://` source nor `mediaOption`. This establishes LG's caller
+path, not that App View works unchanged with Glasshouse or avoids CEC,
+picture-mode and audio side effects; those need a live trial.
+
+**Live TV uses the same App View with channel parameters.** The Recent Input
+tile gives `guestAppId: "com.webos.app.livetv"` and
+`guestAppParams: {id: "channelChange", channelId: lastChannelId, sender: "home"}`.
+That app also runs `inputcommon`. Its `ChannelChangeInterfaces.qml` calls
+`com.webos.service.utp.broadcast/changeChannel` with
+`{broadcastId, channelId, connection_timeout: 500}` and adds `update: false`
+while `isAppViewLaunching` is true. The explicit-channel path also supplies
+`ignorable`, false by default. `checkEndAppView` commits an explicitly chosen
+channel through `com.webos.service.utp.channel/setLastChannelId` when returning
+from preview to normal viewing.
+
+**Updating channel history is separate from tuning.** The installed
+`/etc/palm/schemas/utp/utp.changeChannel.schema` defines `update`, default
+true, as whether to update the last channel. `utp.open.schema` also accepts
+`options.updateLastChannelId`, default true; false prevents that
+`broadcastId` from updating the last channel. These are channel-history
+controls, not evidence of a spare tuner or independent CI+ decoding.
+
+`ChannelChangeInterfaces.qml` classifies `BROADCAST_ERROR_1006` and
+`CHANNEL_ERROR_1011` as digital-TV recording conflicts, and
+`BROADCAST_ERROR_1007` and `CHANNEL_ERROR_1012` as analogue-TV recording
+conflicts. Its recording handlers can ask to stop recording before changing
+channel. `utp.play.schema` separately defines `resolveConflicts`, default
+false; true resolves recording conflicts and plays an available channel.
+Tuner-busy and CI+ behaviour, including the events received by a web-page
+preview, was not exercised during this source inspection.
+
+**AlwaysReadyPreview and Hero are separate players.**
+`Interfaces/AlwaysReadyInterfaces/AlwaysReadyInterfaces.qml` reads
+`com.webos.app.lifeonscreen/assets/builtin_theme.json`, taking each mood-wall
+theme's `themePlayInfo[0].previewPath` for its Qt Multimedia player. Hero's
+player takes the advert's `assetData.contentData`. Neither is the Recent
+Input preview.
+
+## An input or channel playing in a web page (G3, webOS 9.2.2)
+
+Measured on 29 October 2026 from a test web app and from Glasshouse Home, a
+muted `<video>` with one `<source>`:
+
+- `type="service/webos-external" src="ext://hdmi:4"`, the input behind Home
+  (3840x2160 at 24 Hz), played in about 150 ms. videooutput's `MAIN` sink
+  read `connectedSource: HDMI` with the page's app ID, `displayOutput`
+  followed the element's rectangle, and a `DISPLAY` capture included the
+  picture, unlike the HDMI app's. `/var/log/cecmessages` showed no Set Stream
+  Path, Active Source or other message beyond the TV's periodic ones, and the
+  sound output stayed `tv_speaker`.
+- HDMI 2, its receiver and PS5 asleep: `loadeddata`, `canplay` and `playing`
+  all fired over a black picture, nothing woke and nothing went out over CEC.
+  The events do not tell a live picture from none; the receiver's lock in
+  `/proc/lg/hdmi20` does.
+- Back to HDMI 4 from HDMI 2, its picture returned within about 0.7 s.
+- `pause()`, removing the source and `load()` set both sinks back to
+  `unknown`.
+- `type="service/webos-broadcast" src="tv://"` plays the last channel.
+  `src="tv://<channelId>"` tunes that channel and makes it the last channel
+  (`com.webos.service.utp.boot/getLastChannelId`).
+- `type="service/webos-broadcast-preview" src="tv://<channelId>"` tuned BBC
+  ONE in about 120 ms and left the last channel as it was, also after the
+  video was released.
+- While a channel plays in the page, videooutput's `getStatus` names it on
+  the `MAIN` sink with `contentType: dtv`: Sky News read 544x576,
+  `scanType: interlaced`, `frameRate: 2500` (hundredths of a hertz; an app's
+  video reads 23.976) and `hdrType: none`; BBC ONE HD 1920x1080 interlaced
+  at 2500. The format appears a moment after `playing`.
+- The test app on screen became Glasshouse Home's last source, as any app
+  does.
+- Setting the element's `muted` on a channel playing this way reaches the
+  tuner: on 10 November 2026 the page called
+  `com.webos.service.utp.broadcast/setAudioMute` with `isMuteOn` and
+  `muteOwner: com.webos.app.home`, which LG's legacy broadcast service turned
+  into `avmutemanager/setAvMute` with `muteType: audioMute` on the `adec`
+  port, in both directions, while the channel played on. On an
+  `ext://hdmi:N` source, changing `muted` sent nothing over the bus, and an
+  input started muted or not showed the same calls: audiod's own brief mute
+  while connecting, then the HDMI PCM on `tv_speaker`. That recording was
+  made at speaker volume 0. A listening check on the same G3 at volume 10
+  confirmed HDMI 4's preview was audible with Preview sound on, silent with
+  it off, and audible again when switched back on. By contrast, on a
+  `55NANO756PR` (`webOS 6.5.3`, standalone Home, #1359), an HDMI 1 preview
+  (`ext://hdmi:1`) still played sound through the TV speakers even with
+  `<video muted>` (`Preview sound` off).
+
+How a busy tuner (a recording) or an encrypted channel shows to the page was
+not tried.
+
+
+On a C8 (webOS 4.4.3, #1208) the browser has no `service/webos-broadcast-preview`:
+the `service/webos-*` types in `/usr/lib/libcbe.so` are `broadcast`,
+`broadcast-cable`, `camera`, `dvr`, `external`, `photo` and `photo-camera`.
+`service/webos-broadcast` with `tv://<channelId>` played the channel in 1.5 to
+2 s. There is no `com.webos.service.videooutput` either, so a channel playing
+in the page reports no signal.
+
+## IPTV streams in a web page (G3, webOS 9.2.2)
+
+Measured on 31 October 2026 on an OLED55G36LA from Glasshouse Home's page,
+with an Xtream account that allows one stream (53,463 live channels behind
+Cloudflare) and a fake provider on the same network (`scripts/fake-iptv.js`):
+
+- A plain `<video>` with `src` set to the account's `live/<user>/<pass>/<id>.m3u8`
+  played it natively: a 302 to a tokenised edge URL, then HLS version 3 with
+  10-second MPEG-TS segments, 1280x720. No MSE player was needed. Desktop
+  Chrome plays the same streams natively too. The provider sent
+  `Access-Control-Allow-Origin: *`, so an MSE player in the page would also
+  have been allowed to read them.
+- Unlike an HDMI app's picture, the stream's picture is included in a
+  `com.webos.service.capture/executeOneShot` `DISPLAY` capture, as an input
+  or channel playing in a page is.
+- The account's `active_cons` (`player_api.php` with no action) read 1 of 1
+  while a channel played, and still 1 of 1 after six channel changes in about
+  five seconds, each releasing the video (`pause()`, `src` removed, `load()`)
+  before the next channel's URL was set.
+- After playing and changing channels, neither `/var/log` (messages,
+  `legacy-log`, `dbg-log` and the rest), `/tmp`'s logs nor the journal held
+  the provider's host, the user name or the password.
+- The provider answered Python's default `User-Agent` with 403 and curl's,
+  and `Glasshouse/<version>`, normally.
+- Its `get_short_epg` left out the programme on now as it neared its end: at
+  19:49 the first listed for one channel started at 20:00, where at 19:07
+  it had listed 19:00 to 20:00. It also listed some programmes twice, with and
+  without "Live:" in front.
+- While a stream plays full screen, videooutput's `MAIN` sink reads
+  `connectedSource: VDEC` for `com.webos.app.home` with `contentType: movie`
+  and the stream's width, and the media state Glasshouse reads (as for an
+  app's video) is `playing`, full screen.
+- The TV's idle screen saver came on 13 minutes after the last key, after
+  the player had been left showing a stream: panel care (eplmanager) refused
+  it and Glasshouse's idle screen saver handling (`lib/idlesaver.js`) lifted
+  the hold and asked again, which it does only when the media state is not
+  `playing`. Whether the stream had stopped by then was not seen.
+- `tvwebctl watch` killed the worker process reading a 200 MB guide three
+  seconds into it, taking a server child still running node for one stuck
+  between fork and exec (`child 14217 stuck before exec` in
+  `tvweb.restarts`).
+
+- Leaving Home for an input while a channel previewed, the TV's one
+  established connection to the stream's edge server was closed within
+  3 seconds (only `TIME_WAIT` remained). The panel's `active_cons` took
+  about 10 seconds to count a new stream and kept counting it for about a
+  minute after it closed.
+- The remote's Guide button does not reach a web page: sent as evdev 362
+  (`IR_KEY_GUIDE` 370 in `/usr/share/X11/xkb/keycodes/lg`, less xkb's 8)
+  with Glasshouse Home in front, webOS opened LG's own broadcast guide.
+  With Glasshouse's key filter set to launch `com.webos.app.home` with
+  `{ "glasshouse": "guide" }` beside the Home key's own parameters, the
+  page got them in `PalmSystem.launchParams` at its `webOSRelaunch`, from
+  Home and from HDMI 4 alike. Info
+  (evdev 358, `IR_KEY_INFO` 366) reaches the page as keyCode 457, and CH+
+  (evdev 402) as 33.
+- Left full screen from 19:51, a stream played on with no screen saver at
+  20:26, 35 minutes after the last key, the media state reading `playing`
+  throughout.
+
+webOS 7 and 10 were not tried.
+
+On 2 November 2026, moving a playing IPTV preview's element from its tile
+back beside the clock for full-screen playback left the G3's picture black.
+The video still reported `paused: false` and `readyState: 4`, but its time
+returned to zero and `com.webos.media/getForegroundAppInfo` no longer listed
+its media session. Calling `play()` again did not recover that session.
+Keeping the element attached and positioning it over the tile preserved the
+same media ID through full screen and Back, with playback time advancing
+from 43.127 to 50.151 seconds. Internet TV uses that placement; the guide
+returns the picture beside the clock without moving its parent.
+
+RTÉ One, RTÉ2 and RTÉ News, as listed by the public Free-TV playlist (on
+5 November 2026), never played on a B8 (webOS 4.4.3) or a C2 (webOS 9.2.2):
+the preview showed no picture. Their master playlists carry no key, but each
+variant's playlist has `#EXT-X-KEY:METHOD=SAMPLE-AES` with
+`KEYFORMAT="com.apple.streamingkeydelivery"` (FairPlay, `skd://`), and their
+segments' stream types are `0xdb` and `0xcf`, SAMPLE-AES H.264 and AAC.
+The same master with its subtitles removed, with English audio only, or one
+video variant alone failed the same way, and both TVs' OpenSSL verified
+`live.rte.ie`'s certificate (GlobalSign ECC Root CA - R5, in both TVs' store).
+Their other Irish channels in the list carried no key.
+
+## Broadcast HDR and preview metadata (G3, webOS 9.2.2)
+
+Read on 29 October 2026 from the office OLED55G36LA, during an existing
+Glasshouse Home preview run. These probes did not open a pipeline or tune.
+
+LG's Live TV badge reads `com.webos.service.utp.broadcast/getVideoInfo`
+with the app's `broadcastId`. In inputcommon's
+`Interfaces/ChannelBannerInterfaces/`, `responseGetVideoInfo` takes
+`response.videoInfo.video`; `ChannelDetailBannerController.qml` reads
+`HDRType || hdrType`. It displays `HLG` as HLG HDR, `HDR10` as HDR, `Prime`
+as Advanced HDR by Technicolor, and `DOLBY` or `DolbyVision` as Dolby Vision.
+`IsBT2020` controls a separate colour-space badge.
+
+The no-ID method also works while the page owns the preview:
+
+```sh
+sleep 4 | luna-send -n 1 -f \
+  luna://com.webos.service.utp.broadcast/getCurrentVideoInfo '{}'
+```
+
+During a BBC ONE Lon HD preview it returned `appId: com.webos.app.home`,
+`videoInfo.content: dtv` and `videoInfo.video` with `width: 1920`,
+`height: 1080`, `frameRate: 25`, `hdrType: none`, `IsBT2020: false`.
+`videoInfo.context` matched videooutput's MAIN sink `context`. Unlike
+videooutput's broadcast rate of `2500`, this method reports hertz.
+`getCurrentVideoInfo` selects the active broadcast internally, as confirmed
+in `utp-dvb`'s `cb_getCurrentVideoInfo`; it does not select by a supplied
+app ID. A transition can return `No resource` or zero dimensions. Match
+the app and content, and wait for non-zero dimensions before using it.
+The observed `getChannelState` replies contained `videoSignalState` and
+`channelScreensaverType`, without an HDR field.
+
+The ID from `com.webos.media/getActivePipelines` (`type: tv`) is not a UTP
+`broadcastId`: passing it to `getVideoInfo` returned error `-106`.
+`ls-monitor -j -f com.webos.service.utp.broadcast` showed the page's
+`open` reply returning a UTP UUID, for example
+`000008df-9f29-5b3d-97e2-063de2a3770b`. UTP translates it to a different
+legacy-broadcast ID, which is also the decoder context. The service's
+private introspection lists no broadcast-ID enumeration method. The no-ID
+video read avoids needing either ID for the picture format.
+
+Do not repeat `ls-monitor` on this G3. Claude-HDMI-preview reported a
+15:02 entry in `/tmp/faultmanager/kernel` on 29 October 2026:
+`fd leak is happened on "process = ls-hubd(1750) ... max = 1024"`,
+coinciding with these monitor probes. `ps -ef` at 15:11 showed no monitor
+remaining. The [C5 monitor fault](#ls-monitor-restarts-the-tv-webos-1031-c5)
+was already known; the G3's leak mechanism was not independently measured.
+
+During the same SDR previews, `/proc/lg/pe/hdr_status` contained
+`VPQ_PQ_MODE_INFO` with `[0]{hdrStatus:sdr(sdr),colorimetry:bt709,...}`
+for HD and `bt601` for SD. The picture settings read still returned
+`dimension: {input: default, dynamicRange: sdr}`. The engine status describes
+the current display processing; settings with an explicit `dtv` dimension
+read a stored picture preset. Neither is a per-channel HDR declaration.
+Named `dtv` reads returned `filmMaker` for `sdr`, `hdrStandard` for `hdr`
+and `dolbyHdrCinemaBright` for `dolbyHdr`, without an HDR broadcast playing.
+Another read on 29 October 2026 returned `technicolorHdrTechnicolor` for
+`dynamicRange: technicolorHdr`. A broadcast reporting `Prime` needs that
+settings range rather than `sdr`; this is a stored preset read, not a
+Technicolor broadcast reception test.
+
+The API adapter's `tv/getChannelList` returned 183 terrestrial services,
+including data and radio, with no HDR/UHD field. Their DVB `serviceType`
+counts were `1: 96`, `2: 24`, `12: 37`, `22: 13`, `25: 13`. The HD entries
+were AVC (`25`, hexadecimal `0x19`); none declared HEVC (`0x1f` or
+`0x20`; [DVB service-type definitions](https://www.etsi.org/deliver/etsi_en/300400_300499/300468/01.18.00_20/en_300468v011800a.pdf),
+table 89). `iepg/getChannelList` additionally returned 354 IP services, all
+type 0, also without an HDR field. No catalogue entry had UHD, HDR or 4K
+in its name. A BBC ONE HD current-channel response reported
+`isHEVCChannel: false`. These results provide no known HDR broadcast
+test source; the IP catalogue does not establish its streams' live formats.
+
+For DVB signalling, VUI `transfer_characteristics: 16` identifies PQ.
+HLG10 can instead use VUI value `14` with
+`alternative_transfer_characteristics` SEI
+`preferred_transfer_characteristics: 18`. See DVB TS 101 154,
+[clauses 5.14.4.4.2.1 and 5.14.4.4.3.2](https://dvb.org/wp-content/uploads/2021/02/A001r18_Use-of-Video-and-Audio-Coding-in-Broadcast-and-Broadband-Applications_Draft_TS_101-154-v271_Nov-2021.pdf).
+Checking only `videoInfo.vui.transferCharacteristics === 18` would miss
+that signalling. Prefer LG's effective `hdrType`; BT.2020 or UHD alone
+does not establish HDR. Positive HLG/HDR10 broadcast detection in the page
+was not tested because no such source was identified.
 
 ## The picture of an input behind Home (G3, webOS 9.2.2)
 
@@ -411,6 +775,16 @@ the on-TV schema does not list it. A read-back preserved the field and the
 physical Home screen displayed the title immediately, without a Home restart
 or QML modification. Updating the title can therefore show the port and EIM's
 CEC names on LG's own Home screen. Long titles use LG's scrolling text.
+
+## Home after the boot hook's sam restart (webOS 6.5.3)
+
+On a 55NANO756PR (webOS 6.5.3, firmware 03.53.46) with Quick Start+ and Open
+Home at power-on off, the boot hook's sam restart, which makes sam read
+Glasshouse Home, was followed by `SAM NL_APP_LAUNCH_BEGIN
+{"app_id":"com.webos.app.home","caller_app_id":"last_input_handler","mode":"last_input"}`
+at 43 s, over HDMI 1, which bootd had put in front at 20.5 s. LG's own Home
+stays hidden when launched that way; Glasshouse Home's page opened as a card
+window over the input. A 48C11LB (6.5.3) showed the same (#1231).
 
 ## Taking over Home (G3, webOS 9.2.2)
 
@@ -625,6 +999,43 @@ Reported on PR #910 on 27 October 2026.
 - **Exiting an app lands on the last input**, from LG's Exit dialog or Back on
   LG's Apps, not on Home.
 
+## Glasshouse Home's frames (C2, webOS 9.2.2; B8, webOS 4.4.3)
+
+Measured with `scripts/tv.sh <tv> frames` (testing.md), in Alternative View:
+
+- **At rest and scrolling the rows,** the C2 had no frame over 17 ms; the B8
+  had 3 over 33 ms in 30 s of moving along and between rows, the longest
+  67 ms. Home's own work per key was under 5 ms on the C2 and under 15 ms on
+  the B8, once 30 ms.
+- **Opening Recent apps** held the C2's page for 300 to 350 ms each time,
+  one long task. The cards' script took about 10 ms; with the apps'
+  screenshots (480 × 270 JPEGs of about 19 KB, five of them) left out the
+  long task went, and with them decoded off the page's thread
+  (`decoding="async"`) too, the longest frame then being 67 to 100 ms.
+- A contributor's G3 (webOS 9.2.2) missed 25 of about 480 frames in 8 s of
+  continuous scrolling (#955), which the C2 did not reproduce.
+
+## Home pressed with Home in front (C2, webOS 9.2.2)
+
+- **The TV does nothing.** With Glasshouse Home in LG's Home's place and on
+  screen, a Home key press (code 773 on `/dev/input/event1`) logged
+  `IM NL_RCU_CONTROL_USE {"key_code":773}` from surface-manager and launched
+  nothing, so the page never heard of it and its folder stayed open (#1254).
+- **A launch from outside reaches the page as `webOSRelaunch`.**
+  `com.webos.applicationManager/launch` with `com.webos.app.home` while it was
+  in front did.
+- **webOS 4 differs:** the remote key filter launches `com.tvweb.home` on every
+  press, so the page hears each one (B8, 4.4.3).
+
+## Reopening webOS 4's Home app (B8, webOS 4.4.3)
+
+- **Launching `com.tvweb.home` while it runs only brings it to the front.**
+  A page in it that had navigated to another site (a custom launcher's start
+  page going to `https://example.com/`) stayed on that site through a launch
+  from the server and a press of Home.
+- **`com.palm.webappmanager/killApp` closes it,** and the next launch loads its
+  `index.html` afresh. HDMI 2 opened normally straight after.
+
 ## LG Home's recent apps (G3, webOS 9.2.2)
 
 Read on 19 October 2026 from LG's Home's QML under the Glasshouse Home
@@ -728,6 +1139,17 @@ G3 in the UK.
   `keyboardStateChange` with `detail.visibility` fires on the document, not
   the window. `com.webos.service.ime/insertText` and `sendEnterKey` type
   into it over SSH.
+- **webOS 4 (B8, 4.4.3) answers the same search** with less in each title:
+  no `type` (the result list's `domain`, `movie` or `tvshow`, gives it), no
+  `display_info` and no `action_on_click`. LG's Search there asks for the
+  detail of `content_set_id` and `content_id` joined by `|`, through
+  `serviceName` `sdp_secure`; `sdp_onnow` answers `code` `0`, `Error`, with no
+  response. On 1 November 2026 Disney+'s and Prime Video's The Office had
+  `exec_list` entries; Netflix's titles and a Prime Video film were `ERROR
+  ITEM NOT FOUND`. Netflix's `content_id` is its own launch string (`-Q
+  m=http://api-global.netflix.com/catalog/titles/...&source_type=4`). LG's
+  Search puts the `exec_id` into the app's `deeplinkingParams` itself, after
+  `getAppInfo`, or gives it as `contentTarget` where the app has none.
 
 ## Channels and the guide (G3, webOS 9.2.2)
 
@@ -736,6 +1158,8 @@ G3 in the UK.
   `channelNumber`, `channelName`, `Radio`, `skipped` and `Invisible`: 182
   terrestrial channels in London. `com.webos.service.iepg/getChannelList`
   answered with none.
+- On a 65SM8500PLA (webOS 4.10.1) with satellite channels tuned, the same
+  call took 3.6 s and answered with 4.6 MB through `luna-send -f`.
 - `com.webos.service.apiadapter/tv/openChannel { channelId }` tunes and
   brings Live TV to the front, from any app. Launching `com.webos.app.livetv`
   with `channelId` or `channelNumber` does not change the channel while Live
@@ -895,9 +1319,31 @@ and later have a Flutter one (its log lines come from `flutter-client`). The
 QML has code for LG's webOS 23 (`webOS23Test`, the `webOS23` app list style),
 so a webOS 8 TV may read the same layout file; that has not been tried.
 
+## The time service's sources (webOS 4.4.3, B8; webOS 9.2.2, C2)
+
+`com.webos.service.systemservice/clock/getTime` with `{ "source": name }`
+answers a source's time and priority: `manual` 0, `micom` 1, `broadcast` 2,
+`sdp` 4, with `system` the clock itself and `systemTimeSource` the source it
+follows; `ntp`, `rtc`, `local`, `network` and `user` are "not registered".
+The higher number wins: the B8, with an aerial and a `broadcast` time
+answering, followed `sdp`, as did the C2, which has no broadcast time.
+`clock/setTime` with `source: "sdp"` sets the clock on both. A reporter's TV
+answered every hourly `sdp` set and stayed about 6940 s out, the correction
+the same each hour bar a few seconds a day of drift (#1201); what it follows
+instead is not known yet.
+
 ## The clock since boot stops in suspend (webOS 4.4.3, B8)
 
 With Quick Start, the B8 suspends in standby, and `/proc/uptime` and `/proc/stat`'s `btime` leave the suspended time out: rebooted at 07:47 UTC and put in standby twice, it gave its boot as 18:18 the same day. Time since boot, and a boot time worked out from it, are wrong on such a TV after its first standby.
+
+## Timers stop in suspend (webOS 10.3.2, 75QNED80ARA)
+
+Node's timers stop while the TV is suspended, and the wall clock runs on. With
+Quick Start+, Glasshouse Home's page kept sending its heartbeat in Active
+Standby, so a heartbeat check was pending at the suspend. After five minutes
+off it fired as the TV resumed, 250 ms after the server saw the screen on in
+one wake and before it did in another, and took the view, which had not yet
+had a chance to beat, for hung (#1277).
 
 ## Keeping a TV awake while off (webOS 4.4.3, B8)
 
@@ -986,6 +1432,16 @@ reboot (`PowerOnReason: rebootByOnRegular`, next to "Instant Boot Refresh
 Timeout" in `tvpowerd`), which clears tmpfs and bind mounts; and sam came back
 as the same pid after it, so a pid check alone does not show a restart there:
 `ps -o etime` and `/proc/uptime` do.
+
+## Instant Boot Refresh and 4 h forced power-off (G4, C2, webOS 10.3.1, 9.2.2)
+
+In LG's `tvpowerd` (webOS 7 and later), when uptime passes 24 h (stock threshold `1440` min), switching the TV off initiates an Instant Boot Refresh reboot (`rebootByOnRegular`) roughly two minutes later.
+
+When the TV boots into Active Standby, `QuickBootdMgr::startActiveStandbyForcedOffTimer` checks whether `alwaysOn` is enabled. At ~11 s into boot, `settingsd` has not delivered the setting yet (which arrives at ~16.5 s). Because the in-memory flag is 0 at 11 s, `tvpowerd` arms a hardcoded 14,400 s (4-hour) forced power-off timer (`Forced Power Off Timer start(period:14400)`). When `alwaysOn: 1` arrives 5 s later, `setAlwaysOn` updates the flag but does not cancel the running timer. Exactly 14,400 s later (at 14,410 to 14,412 s of uptime), the timer fires and calls `powerOffActiveStandby("offByWarmWait")`, cutting power completely (`Active Standby -> Power Off`). This explains the 14,411 s cold power-off observed on the C4 below and on the C1 in #1199.
+
+Entering Suspend (`setPowerState`) clears the timer. When `rebootByOnRegular` occurs inside the 5-hour Nightly power-down window (e.g. 03:00–08:00), the TV transitions to Suspend roughly two minutes later, clearing the timer and preventing the 4 h forced shutdown.
+
+The refresh threshold is managed in memory via `luna://com.webos.service.qbd/getResetTime` and `com.webos.service.qbd/setResetTime {"timeMin": min}` (which forwards to `com.webos.service.aos`). Both answer `timeMin: 1440` by default. Raising `timeMin` dynamically pushes the threshold so that the reboot only fires during the nightly power-down window, avoiding daytime drops to Power Off (#1288).
 
 ## The TV's time zone (C5, webOS 10.3.1)
 
@@ -1095,6 +1551,24 @@ rebooted, through a night in standby. lginput2's luna methods include
 `enableLoggingMotion`, `getSensorData` and `enablePrintRfStatus`, none of which
 Glasshouse calls; `getConnectionStatus` and `getDeviceInfo` left it at 0%.
 
+## MR25GA battery (C5, webOS 11.2)
+
+OLED77C5PUA.DUSQLJR, firmware 43.21.31, read on 3 November 2026:
+`getDeviceInfo` with `deviceName: "MagicRemote_1"` returned `batteryLevel: "-"`
+and a zero address while asleep, then `batteryLevel: "MID"` and the paired
+address while awake. `lowStrength: false` is signal strength, not charge, and
+the pairing file's `52(M) 35(L)` is the remote model's thresholds.
+
+On the awake LGE MR25GA, bluetooth2 `gatt/connect` returned a `clientId`.
+After `gatt/discoverServices`, `gatt/getServices` listed service `180f` with
+characteristic `2a19` (`read: true, notify: true`), and
+`gatt/readCharacteristicValue` with that `clientId` returned `bytes: [46]`
+(and `[42]` on a later read). After `gatt/disconnect`, `gatt/getStatus`
+reported `connected: false` and `discoveringServices: false`, while LG's
+remote service still reported `connected: true`. Because standby/wake cycles
+have not been tested on webOS 11, the C5 uses `getDeviceInfo`'s `"HIGH"`,
+`"MID"` and `"LOW"` steps without opening a GATT connection.
+
 ## No firewall in the kernel (50QNED80A6A, webOS 10)
 
 A 50QNED80A6A on firmware 33.31.61 (LG's webOS 25, kernel 5.4.268, rooted
@@ -1115,7 +1589,52 @@ note here that a C2 did not listen on 9998 was mistaken. LG's browser engine,
 switch: without a firewall, only leaving out the port switch, which needs
 WebAppMgr restarted, or turning Developer Mode off closes it.
 
-## The compositor's key filters (webOS 4.4.3, B8; webOS 9.2.2, C2)
+A 50NANO753PR on firmware 03.53.45 (webOS 6.5.3, kernel 4.4.84) has no
+`ip_tables` either, and no `tcpdump` or `strace`.
+
+## App jails and DNS (50NANO753PR, webOS 6.5.3)
+
+Native apps run in a jail, `/var/palm/jail/<id>`, made by `/usr/bin/jailer`
+from `/etc/jail_*.conf`. YouTube (`youtube.leanback.v4`, Cobalt, `"type":
+"native"`, `"privilegedJail": true`) runs in one. `/var/palm/jail` also held
+jails for Netflix, Amazon, the web browser, Jellyfin's service, LG's voice and
+ThinQ adapters, and `wap`.
+
+- **A chroot, not a container.** YouTube's process has the jail as its root
+  (`/proc/<pid>/root`) and the same mount, network and UTS namespaces as PID 1,
+  so a mount made on the TV under the jail is what the app sees, and it reaches
+  connmand's relay at `127.0.0.1:53`.
+- **resolv.conf and hosts are copies.** The jail's `etc/resolv.conf` and
+  `etc/hosts` are plain files. `jail_native_builtin.conf` names
+  `copy /etc/hosts`; nothing there names `resolv.conf`, yet it is copied too.
+  Both are written each time the jailer resets the jail, which touches
+  `jail-reset.6.5.3-47` in it: at every launch, including the preload
+  manager's own relaunches in the background after the app was killed. The
+  jail's other directories persist between launches.
+- **The hosts copy can predate the ad blocker.** After a reboot, YouTube's jail
+  was reset at 21:47:58 and Glasshouse mounted its table over `/etc/hosts` at
+  21:48:17, so YouTube had LG's 237-byte file until its next launch, which
+  copied the 5617-byte table.
+- **Cobalt uses the jail's resolver.** Its binary calls `getaddrinfo` (glibc
+  2.28 in the jail) and holds no DNS-over-HTTPS or fixed resolver names. With
+  the jail's `resolv.conf` naming a logging relay on `127.0.0.53`, YouTube
+  sent it `www.youtube.com`, `www.gstatic.com`, `i.ytimg.com`,
+  `redirector.googlevideo.com` and others, and played normally.
+- **Only a write after the copy holds.** A writable bind mount over the jail's
+  `resolv.conf` stays mounted, but the next launch copies the TV's file through
+  it. A read-only one makes the copy fail: YouTube did not start, its
+  `jail-reset` marker was gone, and a launch sent after the mount came off was
+  not logged by sam; the next one, 2 minutes 47 seconds after the failed
+  launch, started it normally. Writing the file again right after the copy worked: the copy
+  came 1.5 s before YouTube's first lookup. Rewriting it while YouTube ran
+  brought no lookups to the new server in 70 s, so a running app is not
+  counted on to read it again.
+- **An app can open before the server.** In one boot, Glasshouse's boot hook
+  ran 34 s in, YouTube was opened from Home at 36 s (its jail reset then), and
+  the server was listening at 48 s. That YouTube kept the TV's DNS until it
+  left the screen 7 minutes later and a new YouTube process started.
+- **Web apps cannot be told apart.** They all run in WebAppMgr, one process
+  outside any jail. (webOS 4.4.3, B8; webOS 9.2.2, C2)
 
 The compositor (surface-manager) runs every remote key through a chain of
 JavaScript filters named in the configd key
@@ -1145,6 +1664,9 @@ app in front. Remote Keys puts its own filter first.
   down 114 and mute 113 acted as the remote's keys. A play/pause toggle that
   first asked `com.webos.service.acb/getForegroundAppInfo` (then
   `com.webos.media`'s) and sent pause or play did nothing.
+- **A mapped microphone button can switch the TV off.** Power off in Remote
+  keys was tested with the microphone button on an OLED65C43LA, webOS 10.3.1,
+  firmware 33.31.61. The filter requests standby through tvpower on release.
 - **A rebuild re-runs LG's `init()`s.** In Game mode each write of the key
   opened the Game Dashboard (`NL_GAMEDASHBOARD_ENTERED`,
   `"entered_by":"HotKey"` in `/var/log/messages`) on the C2. Launching an app
@@ -1160,6 +1682,11 @@ app in front. Remote Keys puts its own filter first.
   assistant's app on a press, while the microphone button
   (`Key_webOS_Voice`, RF 436) goes to voice control. The same file names about
   20 regional streaming buttons (Hotstar, Stan, Wavve, U-Next, TVer and others).
+  A 55QNED70A (webOS 10.3.1, Brazil) names the same set, among them
+  `Key_webOS_Globoplay`, which opens `globoplaywebos` and is on Brazilian
+  remotes. An OLED77B46LA (webOS 10.3.2, United Arab Emirates) names
+  `Key_webOS_Shahid` (IR 1092, Qt 18874462), which opens `net.mbc.shahid-lgapp`
+  and is on Middle East remotes (#1348).
   On a CX (webOS 5.5), the microphone button set to an app through the filter
   opened it on a press and on a hold alike, and set back to LG's own it started
   voice control again (#1034).
@@ -1191,6 +1718,42 @@ codes 428 (the microphone) and 1117 (Google Assistant), LG's xkb codes 436 and
 webOS 4.10.2 reports 428 for the microphone too. With either set in Remote keys,
 the compositor's filter keeps the press from LG and the device still delivers it.
 
+## Typing into apps that ignore LG's input method (55UM7290PTD, webOS 4.10.2, Glasshouse 0.132.0)
+
+The dashboard's keyboard box types through `com.webos.service.ime`
+(`insertText`, `deleteCharacters`, `sendEnterKey`), which only reaches LG's own
+text fields. `ime/registerRemoteKeyboard` with `{"subscribe":true}` answers at
+once with `currentWidget`; on a screen with no LG field it was
+`{"currentWidget":{"focus":false}}`. The answer on a focused LG field was not
+read on this TV.
+
+- **Native apps (Nuvio Legacy 2.0.8, SDL).** `networkinput/test/sendKeyCode`
+  with Linux evdev codes typed letters, space and backspace into its search
+  (`KEY_B` 48, `KEY_H` 35, `KEY_I` 23, `KEY_SPACE` 57, `KEY_M` 50,
+  `KEY_BACKSPACE` 14). The call takes one code and no modifier, so there is no
+  shift. Digits and unshifted punctuation were not tried. Nuvio treats `s`
+  as a shortcut for its Saved panel even while its search has focus, so `s`
+  cannot be typed this way; pressing OK on its search box opens LG's keyboard,
+  where the input method types everything. Back to back, a letter was
+  sometimes lost, so the keys go about 60 ms apart.
+- **YouTube (`youtube.leanback.v4`), a web app.** IME, `sendKeyCode`, writes to
+  the remote's evdev node and a uinput keyboard did nothing in its own
+  on-screen-keyboard search. The web app debugger on 127.0.0.1:9998 lists its
+  page in `/json` as type `page`, title "YouTube on TV", URL
+  `https://www.youtube.com/tv?...`. Chrome DevTools Protocol over the page's
+  `webSocketDebuggerUrl`, `Input.dispatchKeyEvent` with `{type: "keyDown",
+  key: "a", code: "KeyA", text: "a", unmodifiedText: "a",
+  windowsVirtualKeyCode: 65, nativeVirtualKeyCode: 65}` then the same as
+  `keyUp`, typed "a" into the search. Sent back to back, the results matched the
+  query but the box showed some letters missing; about 60 ms between keys
+  keeps them. Backspace (`rawKeyDown`, code 8) deletes, and on an empty box it
+  acts as Back. Chromium is 53 (WebKit 537.36), protocol
+  1.1. `devtools.js` only drops port 9998 for traffic that is not on loopback,
+  so this is not affected by closing the debugger to the network.
+
+Glasshouse picks between these by the app in front; docs/IMPLEMENTATION.md has
+the order.
+
 ## LG's Home started again behind Glasshouse Home (G3, webOS 11.2.0)
 
 Reported in #1042 by BlueSink from an OLED77G3PUA, firmware 43.21.71. A minute
@@ -1204,6 +1767,18 @@ by luna-send still drew the view. Stopping LG's Home every few seconds and
 `preloadmanager/setPreloadPolicy` with `{"application":{"id":"com.webos.app.home",
 "isEnabled":false}}`, sent again about once a minute, kept Home opening through
 reboots.
+
+## The preload manager launching Home during playback (B4, webOS 10.3.2)
+
+Reported in #1372 from an OLED77B46LA, with Glasshouse Home in LG's Home's
+place. While Jellyfin played a 4K Dolby Vision file at 94 Mbps, with
+`MemAvailable` under 200 MB, `com.webos.service.preloadmanager` launched
+`com.webos.app.home` three times in 90 s (`preloadType` `periodic`,
+`preloadMode` `criu`). After the third, surface-manager hid Jellyfin's window
+and showed Home's, and under four minutes later Jellyfin was no longer running.
+With `setPreloadPolicy` `isEnabled: false` for `com.webos.app.home` the preload
+manager launched only HDMI 4 in nine minutes of the same file, and set back to
+`true` it launched Home 8 s later.
 
 ## Native key filters (C5, webOS 11.2.0)
 
@@ -1240,6 +1815,10 @@ reboots.
   `com.webos.app.homeconnect-overlay` through `keyaction.inputHub`),
   `KEY_MULTIKEY` (?), `KEY_GUIDE`, `KEY_VOICE` (AI), `KEY_HOME`,
   `KEY_SCREEN_REMOTE` (123), `KEY_ALEXAVOICE`, `KEY_NETFLIX`, `KEY_AMAZON`.
+  The line comes as the button goes down, not up: with Screen off on the
+  Netflix button, 2 presses in 6 on a C5 (webOS 11.2.0) had the screen off
+  and back to Active 21 and 92 ms later, a black blink, where the screen
+  went off before the button was let go and its release woke the TV (#1143).
 - **The ? button is LG's custom button.** A press launches
   `other.customShortPress` (`{ id, type: "app", params }`, LG's default the
   input picker) with mode `customkey`, a hold `other.customLongPress`
@@ -1366,11 +1945,39 @@ and others' work on webOS 10
 - `com.webos.service.discovery/getRecommendationData` and
   `com.webos.service.prs/listRecommendations` gave no answer within 10 s.
 
+### On webOS 4.10.2 (43UM7100PLB, webOS TV Lite)
+
+- `getAllContents` answers in the same shape under both
+  `com.webos.service.applicationmanager` and `com.webos.applicationManager`:
+  54 cards, from Prime Video and YouTube (16 each), Netflix and Disney+ (11
+  each). Pictures are 390 x 219 to 480 x 270, with an `image_4k` of 960 x 540
+  except on Netflix. Only Netflix's cards carry `onShow`.
+- **LG's Home here is `com.webos.app.fullhome`**, the one running.
+  `PreviewInterfaces.qml` reads `getAllContents`, keeps at most 16 cards an app,
+  and shows only the apps in `contentPreviewMenu`, which `ShelfList.js` takes
+  from the shelf data's `parameter.appId`. `com.webos.app.home` is on the TV too
+  and not running; it asks `getContents` per `launchPointId`.
+- **Opening a card:** LG's Home uses `onClick.launchParam` if set, otherwise the
+  app's `deeplinkingParams` with `$CONTENTID` replaced, and bare `contentTarget`
+  for a stub app. No card here set `launchParam`. Netflix, Prime Video and
+  YouTube's `deeplinkingParams` are `{"contentTarget":"$CONTENTID"}`; Disney+
+  adds `"handledBy":"app"`.
+- Launched with only `contentTarget`, as Glasshouse Home does, a Netflix card
+  opens that title's page and a YouTube card plays that video, after YouTube's
+  account picker where it shows one. The cards are listed with no account signed
+  in to YouTube, Prime Video or Disney+.
+
 ## What the player is doing (webOS 4.4.3, B8; webOS 9.2.2, C2)
 
 - The B8 answers `com.webos.service.acb/getForegroundAppInfo` with an `acbs`
   pipeline list, each with `playStateNow` and `playerType` (`external input`
   for HDMI). The C2 has no such service ("Service does not exist").
+- A C1 (webOS 6.4.0) has no acb either. An app playing through Web Audio
+  (Afterglow, a music visualiser built as a web app) gets an empty
+  `foregroundAppInfo` from `com.webos.media`, so its state can't be read.
+  KEY_PLAYPAUSE (164) injected on the remote's device never reached it as a
+  key event; KEY_PAUSE and KEY_PLAY arrived as keyCode 19 and 415, and
+  paused and resumed it.
 - On the C2, `com.webos.media/getForegroundAppInfo` gives
   `foregroundAppInfo: [{ appId, playState, type: "media", mediaId, windowId }]`:
   YouTube read `playing`, then `paused` after the remote's Pause key, and the
@@ -1396,6 +2003,76 @@ to an unlisted one, such as `com.webos.service.audio` or
 `com.webos.service.videooutput`, gets no answer: luna-send waits out `-w` and
 logs "Shutting down with unsent QueryName message", and ls-hubd logs
 `LSHUB_NOT_LSTED` "Service not listed in service files" as an error (#1112).
+A 55SJ800V-ZB (webOS 3.9.3) answered the same way, with nothing, for
+`com.webos.service.settings`, where it lists only `com.webos.settingsservice`
+(#1137), so a TV that old never says "Service does not exist" for a renamed one.
+
+## LG's device scans (webOS 9.2.2, C2; #244)
+
+`iconnectivity` (UEI QuickSet) reverse-looks-up every address on the TV's
+/24. On a C2 with `other.ueiEnable` off, opening the Home Hub's page for
+connecting other devices sent 759 PTR queries in two minutes (three passes),
+and nothing periodic followed. A reporter's TV sent all 253 every 5 minutes
+(1.6 s each pass) alongside `www.ueiwsp.com`, and `discovery.meethue.com`
+every 1.5 to 3.5 minutes; the C2 asks for the latter too. Other C1 (webOS
+6.5.3) and C3 owners report the same with Auto device detection off.
+Its state is in `/mnt/lg/cmn_data/iconnectivity` (`environ.conf` holds
+`ueiEnable`; `qs_data/discovered_devices.db` is a SQLite table of the devices
+it found).
+
+- **A sweep is asked for.** One `luna://com.webos.service.ics/iot/getAllIoTDevices`
+  call, the Home Hub's, started a pass of all 253 addresses within 5 s, with
+  the stored device list intact, and nothing followed for 6.5 minutes. With
+  no such call, 12 minutes with the device list emptied and 12 minutes with
+  `ueiEnable` on each sent none; the emptied list refilled to 17 devices
+  from other discovery. A TV that sweeps every 5 minutes has something
+  asking every 5 minutes. `ls-monitor` shows the caller: the `TX call` lines
+  to `com.webos.service.ics` name the sender and the app it acts for.
+- **`/etc/hosts` does not answer them.** With the table naming all 253
+  addresses as themselves, mounted where `iconnectivity` sees it, and
+  `gethostbyaddr` answering from it, a sweep still sent 252 PTR queries.
+  `iconnectivity` sends them to the DNS relay in `/etc/resolv.conf`
+  (`connmand`, at `127.0.0.1` and `::1`), one socket per query, without the
+  name service lookup that reads `/etc/hosts`, and `connmand` forwards them.
+  Answer device scans on the TV (#1146) was built on the opposite reading,
+  and was taken out.
+- **The firewall cannot pick them out.** The C2's kernel offers only the
+  `icmp`, `udp`, `tcp` and similar matches, no `string`, `u32`, `owner` or
+  `bpf`, so a rule cannot tell a PTR query from any other DNS query, and
+  `iconnectivity` runs as root like the rest. Sending all DNS through a relay
+  on the TV would make every lookup depend on it.
+- **Its own controls.** `com.webos.service.ics/debug/setDebugCmd`
+  (`{ "debugCmd": "showTimerList" }` and others) answers `returnValue: true`
+  and logs nothing, even with the `ICS` log contexts at `debug`; its strings name IP discovery
+  methods (SubnetScan, Reverse DNS, mDNS, UPnP) and a device polling
+  interval, with no luna method found that switches one off.
+- **A stub holds it down.** `ls-hubd` starts it from
+  `/usr/share/dbus-1/system-services/com.webos.service.ics.service`
+  (`Type=dynamic`, `Exec=/usr/sbin/iconnectivity`) at each call, so killing
+  it lasts until the next one. With a script that exits at once bind-mounted
+  over `/usr/sbin/iconnectivity`, calls got no reply and nothing ran; the
+  mount reached the app jails' copies too, and one `umount` took them all
+  away, after which the next call started it again. `ps` and `pidof` do not
+  list it: its executable link in `/proc` does.
+- **What asks on webOS 11.** On an OLED65C2PUA (webOS 11.2.0, firmware
+  43.21.74), `com.webos.iotframework` called `/iot/getAllIoTDevices` every
+  300 s. It is started the same way (`Type=dynamic`,
+  `/usr/palm/services/com.webos.iotframework/com.webos.iotframework`). The
+  C2 on webOS 9.2.2 does not have it.
+- **An hourly sweep is left.** On an OLED65C34LA (webOS 11.2.0, firmware
+  43.21.71), with `iotframework` held down by a bind-mounted stub, the
+  5-minute sweeps stopped and a full one came an hour later, then none for
+  15 minutes. What asks for it, or whether `iconnectivity` keeps a timer of its
+  own, was not found. Holding `iconnectivity` down stops it as well.
+- **It is also universal control's IR blaster.** LG's settings and
+  connection apps ask `com.webos.service.ics/blaster/` (`getURLforUEIDevices`,
+  `deleteIPConnectionHistory`), and the input app reads a set-top box's set-up
+  from it. On the C2, `blaster/getURLforUEIDevices {}` answered at once with
+  QuickSet running (error 322, with no box set up) and not at all with it held
+  down. Two owners with it held down had a set-top box stop answering the
+  Magic Remote a few seconds after the TV started, and LG's Universal Remote
+  settings spin and fail, until it was back (an A1 on webOS 6.3.1, a C2;
+  #1266).
 
 ## Boot and app state (webOS 9.2.2, C2)
 
@@ -1525,7 +2202,9 @@ tvpower, which from Active refuses ("The current sub state must be 'screen
 off'"), so the remote did not close it. Start screensaver launches the app
 where tvpower drops the request, except over full-screen playback, tracks it
 through sam's `running` list, and closes it on any key the remote-button
-worker reads from `/dev/input`.
+worker reads from `/dev/input`. On an LCD TV (or when Screen Saver is disabled
+in LG's settings), tvpower refuses `turnOnScreenSaver` with `screenSaverEnabled value is off`;
+falling back to launching the screensaver app directly allows the manual trigger to start it.
 
 ## Panel care holding the screen saver back (webOS 9.2.2, G3)
 
@@ -1612,6 +2291,26 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
 - `homeAutoLaunch` and `checkHomeAutoLaunchValue` are in category `general`;
   asked for under `option` they come back as `errorKey`.
 
+## Widevine DRM and ESN with SAM takeover (webOS 5.6.2, CX)
+
+- Restarting `sam.service` (`killall -9 LunaExecutable` and `systemctl kill -s 9 sam.service`) or bind-mounting over `/usr/palm/applications/com.webos.app.home` breaks Widevine DRM and ESN initialization: Widevine and ESN show as "Unknown" in TV Information, and DRM streaming playback fails. Running Glasshouse Home as a standalone app (`com.tvweb.home`) directed by `remotekeys-filter.js` leaves `com.webos.app.home` and sam untouched, keeping Widevine DRM and ESN functional.
+
+## Widevine DRM and ESN with the bind mount (webOS 10.3.2, B4)
+
+Reported on an OLED77B46LA, webOS 10.3.2 (33.31.75), Glasshouse 0.146.2, with Glasshouse Home on (#1421).
+
+- With `/var/lib/tvweb/home-takeover` bind-mounted over `/usr/palm/applications/com.webos.app.home`, `com.webos.service.sm/crypto/checkSeStore` with `{"id":["esn","widevine"]}` reported both keys with `isOk: true`, and TV Information showed an ESN and a Widevine ID rather than "UNKNOWN", which it shows for a key that call does not return.
+- With the same mount on 0.143.1, Netflix, Prime Video and the Apple TV app played (#1315).
+- sam took the change through `blockSystemApp` and `releaseBlockSystemApp`, never a restart. Where the CX above (webOS 5.6.2) lost both keys with the mount, this TV kept them.
+
+## IPTV after Active Standby (webOS 5.6.2, CX)
+
+Measured on an OLED65CX9LA, Glasshouse 0.143.0, Quick Start+ off. Active Standby, for 8 seconds and for about 3.5 hours, left the server running. The power state went Active Standby to Active, on by `remoteKey`.
+
+- Wake put `com.webos.app.livetv` in front (`bootManager`), and Glasshouse opened `com.webos.app.home` over it 4.5 s later. Both windows are `_WEBOS_WINDOW_TYPE_CARD`. Live TV was hidden as Home was shown. The view answered in 1 s, so it was the page that had stayed up.
+- An IPTV channel then received an MPEG-TS URL and gave up after 12 s with no picture and no media error (`why=nopicture`, `tries=0`). Further channels did the same, including after the screen saver. Another app on the TV played, and the same stream played on another device at the same time.
+- `killApp` of `com.webos.app.home` and a launch loaded a new page. The next channel started in 1.2 s at 1920×1080. A reboot does the same. Closing the app while it was in front made `last_input_handler` open Live TV.
+
 ## Home's launch events (webOS 5.6.2, CX)
 
 - At power-on, `com.webos.app.inputcommon` launches the default home app with
@@ -1668,6 +2367,20 @@ Glasshouse Home on behind `allowExperimentalHome`.
   with WebAppMgr running: its page was loading from cold. A 5 s wait for its
   first heartbeat gave LG's Home the place every time, so Glasshouse Home
   never opened. With the wait at 20 s it opened.
+
+## Glasshouse Home without the remote after a wake (C5, webOS 11.2.0)
+
+On an OLED65C5PSA (firmware 43.21.77) with an MR25GA, after every wake from
+standby Glasshouse Home was drawn and kept beating, but arrows, OK and the
+pointer did nothing, while `lginput2` logged each press as `NL_BUTTON_CLICK`
+(#1122). It happened after a full restart too. Stuck, surface-manager's
+`getFocusedWindowInfo` named `com.webos.app.home` (`fullscreen`) and
+`getForegroundWindowInfo` it alone as the card; LG's Flutter Home was not
+running, WebAppMgr was, and `com.webos.app.starfish_flutter_systemui` was. So
+the compositor gave the view the keys and they were lost in the web engine.
+`closeByAppId` on `com.webos.app.home`, 2 s, then `launch` brought them back
+every time. On that TV `preloadmanager/setPreloadPolicy` failed each time it
+was asked.
 
 ## WebAppMgr stopped (G4, webOS 11.2.0)
 
@@ -1741,6 +2454,21 @@ webOS 4 next.
 - Device: 55UM7100PLB (2019 LCD), webOS 4.10.2, firmware 05.40.97,
   `core_os_kernel_version` `4.4.84-p.649.grampians.k5lp.1`, `core_os_name`
   `Rockhopper`, `webos_imagename` `starfish-dvb-secured`.
+
+## Glasshouse Home on webOS 4 (webOS 4.4.3, B8)
+
+Tested on an OLED65B8SLC (webOS 4.4.3, firmware 05.50.70) in October 2026.
+
+- **Standalone app rather than takeover:** On webOS 4 LG's launcher is an in-compositor ribbon rendered directly by LSM, triggered by Linux evdev 125 (`Qt.Key_Super_L`). Rather than mounting over an app, Glasshouse Home runs as a standalone web app `com.tvweb.home`.
+- **Compositor key filter:** Directing the remote's Home button to Glasshouse Home sets `glasshouse.remoteKeys.home` in configd. LSM's key filter (`remotekeys-filter.js`) intercepts `Qt.Key_Super_L` and launches `com.tvweb.home`.
+- **Escaping to LG ribbon:** Escaping to LG's native launcher (via the "LG Home" tile or holding Home) clears `glasshouse.remoteKeys.home` in configd and injects evdev key 125 after a 300 ms delay, and the ribbon opens over `com.tvweb.home`. If key 125 is injected while the filter is active, LSM catches it and relaunches `com.tvweb.home`. The app is not closed from outside: on 22 September 2026, closing the app in front from outside made this B8 relaunch the last input mid-teardown, after which HDMI opened no more until a reboot.
+- **Rearming:** the ribbon opens over the view, so sam's foreground stays `com.tvweb.home` while it is open, and whatever is picked from it, an input included, comes to the front after it. That change rearms the key filter, so the next Home press opens Glasshouse Home.
+- **Switching off:** the view closes itself with `window.close()` when its heartbeat answers `enabled: false`, as Back closes it.
+- **Under the screen saver:** it opens over the standalone view without hiding it, so the page went on drawing its drifting wallpaper: the web app manager at 22% and the page at 12%, the screen saver's `qml-runner` at 2% and stuttering. With the page resting while covered (wallpaper hidden and paused), they read 0.7%, 0.3% and 9.2%. With the view in front and idle, the two took about 40% between them.
+- **After a boot:** the remote key filter holds the Home key for 90 s while its `starting` notice is set, until `com.webos.app.home` is Glasshouse Home's web app, which on webOS 4 it never is; Home only showed the notice. The server then took the unanswered press for a stopped WebAppMgr, found no `systemctl` to start it with (webOS 4 runs upstart), and gave LG's ribbon the Home key. The notice is not set on webOS 4, and a press the view does not answer opens it once more before LG's ribbon is used. The boot hook opens the page before the server, which takes about a minute to answer on a B8 (4.4.3): the page's first load failed, it showed "not answering" and asked for LG's ribbon, which came up over it once the server did. On webOS 4 that request is ignored, and the page shows the fault only after a minute without the server.
+- **Which ports are plugged in:** `eim/getAllInputStatus` gives each HDMI port `activate`, `chosen`, `subCount` and `lastUniqueId`, but neither `hdmiPlugIn` nor `connected`, so Glasshouse Home showed all four as Connected with only HDMI 2 in use. The Metrics tab's reading, a CEC device behind the port (`lastUniqueId` other than 255, or `subCount`) or a link on its receiver, is used instead.
+- **Dismissal on Back:** `window.PalmSystem.platformBack()` is a no-op on standalone web apps on webOS 4; `window.close()` cleanly dismisses the app.
+- **Chromium 53 ICU locale:** `Date#toLocaleDateString(undefined, ...)` defaults to Korean (`ko`) in Chromium 53 on webOS 4; passing `'en-US'` explicitly produces English date strings.
 
 ## What the TV opens as it starts (G5, webOS 10.3.1)
 
@@ -2015,6 +2743,46 @@ name.
   `lgtviot.com`; `ad`, `info` under `lgsmartad.com`.
 - No `lggalleryplus.com` in either.
 
+## Regional service coverage
+
+An owner's Pi-hole log reports `de.ibs.nextlgsdp.com`, `de.lgeapi.com`,
+`eic.lgtviot.com` and `eic-connect-client.lgthinq.com` with Everything selected.
+These are reported DNS lookups, not a project network capture or proof of a
+successful connection. A hosts entry for `nextlgsdp.com` or `lgtviot.com`
+cannot cover their subdomains.
+
+The firmware string search above names `ibs`, `ibsstat`, the ThinQ API, push,
+sports and buddy families, and LG's dotted and hyphenated regional prefixes.
+[Own Your Glass's extracted SDX configuration](https://github.com/JulioFerrero/own-your-glass/blob/main/etc/blocklist-oyg.txt)
+also identifies `ibs.nextlgsdp.com` and `ibsstat.nextlgsdp.com` as the
+`ibis_secure` and `ibis_stat_secure` services, and names `common.lgthinq.com`
+and `connect-client.lgthinq.com` for ThinQ. This establishes service names,
+not the payloads sent by each regional endpoint.
+
+Everything expands these service families with LG's known regional prefixes
+and the TV's country; ThinQ Connect uses `aic-`, `eic-` and `kic-`. Generated
+siblings are coverage derived from those patterns, not observed traffic on
+every region's TVs. They remain in Everything because account, store and
+ThinQ features may depend on them. New names under `nextlgsdp.com` keep the
+existing wait for a valid clock. `lgtvonline.lge.com` remains the connectivity
+check described below; `wpad.fritz.box` is outside the LG cloud service list.
+
+## Report and store log hosts (C4, webOS 10.3.1)
+
+- **sdx uploads reports to `rdx2.nextlgsdp.com`.**
+  `com.webos.service.sdx/getRdxServerUrl` answers
+  `https://US.rdx2.nextlgsdp.com/rdx/9.0.0/` on a US C4, so the older
+  `rdx2.lgtvsdp.com` names no longer cover it. It is a different name from
+  `us.nextlgsdp.com`, which sdx signs in to and the Content Store uses.
+- **The Content Store logs its requests to `elastic.lgwebostv.com`.** LG's
+  store frontend (`com.webos.app.discovery`, loaded from LG's servers) posts
+  to `<first label of its API host>.elastic.lgwebostv.com/logs/<type>`:
+  `us.` on a US TV, with `st` and `qt` test hosts mapped to `qt2`. Each post
+  carries the TV's wired MAC address and a request id, and the request logs
+  also carry the device platform, language, SDK version and FCK headers. It
+  is fire-and-forget, and with it sinkholed the store still opens and lists
+  apps.
+
 ## ACR on a CX (webOS 5.6.2)
 
 - **`acr2` starts on demand.** Its D-Bus service file is `Type=dynamic`, so
@@ -2144,3 +2912,473 @@ came at 50 s: about 9 s from the server answering to the view drawn. The
 first Home press after a reboot took up to 13 s on a CX (webOS 5.6.2), so a
 fixed wait from the server's start is too short for slower TVs; the page's
 own requests to the server show it is running.
+
+## LG's cloud and its uploads on webOS 11.2 (OLED77C5PUA, firmware 43.21.31)
+
+- **The service platform is `tv.wiselg.com`.** sdx's server list,
+  `/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`, has one block, `11.0.0`,
+  naming `tv.wiselg.com` (and `tv.wiselg.cn`) for every service: `domainType`
+  `default` services (`sdp_auth`, `sdp_init`, `sdp_common`, `sdp_logging`,
+  `sdp_home`) are reached as `<country>.tv.wiselg.com`, `ric` services
+  (`sdp_apps`, `sdp_search`, `sdp_nlp`, `ibis_secure`, `ibis_stat_secure`,
+  `rdx_secure` at `rdx/10.0.0/`, `nudge_log_secure`, `cdpbeacon_secure`,
+  `lgshoplog_secure`) as `<region>.tv.wiselg.com`. `getServerUrl` answered
+  `http://US.tv.wiselg.com` and `getRdxServerUrl`
+  `https://AIC.tv.wiselg.com/rdx/10.0.0/`; `appInstallService`'s `serverInfo`
+  names `http://US.tv.wiselg.com`. `lgtvsdp.com` and `nextlgsdp.com` are not in
+  the list. `systemTimeSource` is `sdp`, so the clock comes from these hosts.
+- **uploadd is started by the bus, not its unit.**
+  `/usr/share/luna-service2/services.d/com.palm.uploadd.service` is
+  `Type=dynamic`, so a call to it runs `/usr/sbin/uploadd -v` whatever
+  `uploadd.service` is masked to; PmLogDaemon, faultmanager, prosense, rdxd,
+  alwaysready, arccontroller, iot-proxy and remotediag name it. With its unit
+  masked, it was found running 64 to 76 s after each of four boots and stopped
+  by the server's first check. It names no host: it asks sdx for
+  `getRdxServerUrl`, `getServerUrl`, `getHttpHeaderForServiceRequest` and
+  sends through `sdx/send`. It reads `option.dbgLogUpload` (true from the
+  factory) and `option.faultLogUpload` (false); PmLogDaemon, prosense and
+  remotediag read `faultLogUpload`. `/var/spool/uploadd/pending`,
+  `/var/spool/rdxd` and `/var/log/reports/librdx` were empty with rdxd masked.
+- **adlogservice.** `/mnt/lg/cmn_data/adlogservice/data/adlogservice.enc` is an
+  encrypted Python script (`script_version` 0.38, with a `backup/` record from
+  August), run by `com.webos.service.lsa` (`Type=dynamic`, which reads
+  `generalTermsAllowed`, `sdx/getHttpHeaderForServiceRequest` and the power
+  state). Its `adlogservice-config.json` enables it on `generalTermsAllowed`
+  alone. Its bytecode names `aic.api.adts.lgtvcommon.com/api/v2/advertisement`,
+  `https://{}{}.tv.wiselg.com/authr5`, `mac`, `app_id` and `channel`. Neither
+  host is in the tested blocklists of earlier releases.
+- **remotediag** (`/usr/sbin/remotediag`) names `rone-aic.lge.com`,
+  `rone-eic.lge.com`, `rone-kic.lge.com`, `rone-saic.lge.com` and `rone-tv-*`
+  siblings, and LG-internal addresses. Its unit has
+  `ConditionPathExists=/mnt/lg/cmn_data/remoteDebug/remoteDebug.sh`, absent
+  here, so it does not run.
+- **remotelogger** (`/usr/sbin/remotelogger`, running since first boot) names
+  no host or URL and holds one local socket; its strings name `/var/log/crashd`,
+  `/dev/mem`, `/dev/kmsg` and `/proc/thermalinfo/soc_temperature`.
+- **The updater** (`/usr/sbin/update`) checks `https://snu.lge.com/...laf`
+  (`snu-dev.lge.com` and an IP for test), which the Homebrew Channel's update
+  block covers; `http://nsu.lge.com:5100/` is the download CDN it uses after a
+  check answers (`responseUpdate.cdnUrl`).
+- **No preload list in configd.** `com.webos.service.preloadmanager.supportAppList`
+  is a missing config; `preloadmanager/getPreloadPolicy` answers the list, with
+  the same fields (`id`, `isEnabled`, `isAllowed`, `requiredMemory`,
+  `preloadMode`, `preloadType`, `staticPriority`), naming LG Channels, Home,
+  HDMI 2, YouTube, the browser, Prime Video and Live TV; sam's log shows the
+  preload manager launching them at each boot. The allow list is
+  `/var/preferences/webos-preload-manager-conf.json` (`version` 3).
+- **Other hosts in the firmware, not telemetry.** `lgtvonline.lge.com` is
+  connman's online check (`/etc/connman/main.conf`); `www.lge.com` and
+  `dlnadevicename.lge.com` are UPnP and DLNA descriptions; `hlm.lge.com`,
+  `dokdo.lge.com`, `wam.lge.com` and `collab.lge.com` are LG-internal
+  references in configuration; `lgthinq.com`, `lgeapi.com` and `lgtviot.com`
+  are the ThinQ account and IoT cloud (accountmanager, iot-client, iot-proxy,
+  the Matter service).
+- **No `/etc/issue`.** The release is in `/etc/starfish-release`
+  (`Rockhopper release 11.2.0-2901 (queue-qilian)`), `/etc/os-release`
+  (`VERSION_ID=11.2.0`) and `/var/run/nyx/os_info.json`; the kernel is
+  6.12.44, 64-bit, with 32-bit userspace.
+- **Usage events stay in `/var/log/messages`.** pqcontroller writes
+  `NL_PICTURE_PERIODIC_REPORT` (picture mode, backlight, `zip_code`, the app)
+  and sam `NL_APP_LAUNCH_BEGIN`; lginput2 logs each remote press. With the
+  uploaders stopped these go nowhere.
+- **LG switches `dbgLogUpload` on at boot.** `/etc/palm/defaultSettings.json`
+  has it false, yet it was true again after every start, with
+  `/var/luna/preferences/option` rewritten at boot. PmLogDaemon's strings have
+  the mechanism: `dbgWhitelist_update` asks sdx's `rdxdev_secure` service
+  (`fileInfo?version=`, on `tv.wiselg.com`), downloads `dbgWhitelist.enc`
+  through the download manager into `/mnt/lg/cmn_data/whitelist/` (version 6
+  here, `dbglogversion`), and writes
+  `{"category":"option", "settings":{"dbgLogUpload": %s}}` from the answer;
+  "UserReport Off" writes `faultLogUpload` false. uploadd subscribes to both
+  keys and answers "isDbgLogUpload flag is false" while it is off. A write of
+  false from the dashboard held until the next boot only.
+
+## C9 CEC receiver detection without the newer ARC service
+
+On an OLED65C9PUA, webOS 4.10.2/05.50.00, the 0.130 Audio view had no receiver
+name while audible DTS-HD-to-PCM 5.1 continued at Sonos. The firmware returned
+Service does not exist for `com.webos.service.arccontroller`, Unknown method
+for audio/tv/getAudioInputProperty, and exposed none of the newer
+`/proc/lgtv-driver/audio` files. `com.webos.service.eim/getAllInputStatus` did
+report `arcDevice: true` and a connected HDMI 2 with one SIMPLINK audio system
+(`cecpDevType: 5`) named Sonos Arc.
+
+The receiver reader can identify that unique connected CEC audio system and
+its port without assigning it an active return-channel type or codec list.
+Ambiguous, disconnected, non-audio or failed replies do not supply a fallback.
+A targeted read-only diagnostics deployment identified Sonos Arc on HDMI 2,
+retained the native HAWK2 DTS advertisement and six-channel source metadata,
+and the owner confirmed continued audible Multichannel PCM 5.1. All
+calibration-file hashes, white balance, OLED protections and HDMI EDIDs matched
+the pretest baseline. The TV app was not opened on the TV during the disc.
+## Where a cold start's time goes (B8, webOS 4.4.3; C2, webOS 9.2.2)
+
+Uptime in seconds from LG's `NL_APP_LAUNCH_BEGIN` and `NL_VSC` lines in
+`/var/log/messages`, the boot hook's log and the server's log:
+
+| | B8 | C2 |
+|---|---|---|
+| Home pressed, the view on screen (webOS 4) | 25.6, 28.1 | - |
+| webosbrew runs the boot hook | 41 | 23 to 26 |
+| Server listening, with the hook's 5 s wait | 50 | 40 |
+| Server listening, without it (#1171) | 43 | 29 |
+
+On webOS 4 the Home key opens the view before webosbrew runs the hook, and the
+view only shows the Glasshouse mark until the server answers. webosbrew's own
+start-up script decides when the hook runs; Glasshouse cannot move it.
+
+Once the server answered, the view's first catalogue took 7.9 s on the B8
+and 6.6 s on the C2, against 0.75 s and 0.35 s on later requests. Every
+child process start waits its turn 150 ms apart for the server's first 30 s
+(`lib/children.js`), so the catalogue's luna calls queued behind the
+start-up reads, and the route also waited on two uncached calls from
+`status()`, 3.7 s of the B8's 7.9 s. Answered from the lists saved in
+`home-lists.json`, it took 0.1 s on the B8 and 0.02 s on the C2.
+
+Loading every module in `server/lib` takes 0.9 s on the B8 (node 0.12.2),
+and node itself 0.4 s; neither is worth shortening.
+
+## Paired Bluetooth audio devices (55UM7290PTD, webOS 4.10.2)
+
+Read only, from `luna-send`:
+
+- `com.webos.service.btaudiosrc/getPairedDevices` with `{}` answered
+  `returnValue: true`, a `count` and `devices`, each with `address`, `name`,
+  `state` and `type`. The two paired devices, a soundbar and earbuds, were both
+  `type: "bt_audio"`; the one in use was `state: "connected"` and the other
+  `"disconnected"`.
+- `getConnectedDevice` with `{}` answered `connected: true` and the connected
+  device's `name`.
+- `getDeviceStatus` with `{}` was refused as not matching its schema; the
+  request it wants has not been found.
+- The service's permission list names `connect`, `disconnect`,
+  `getDeviceStatus`, `getConnectedDevice`, `getPairedDevices`,
+  `removePairedDevice`, `startDiscovery`, `cancelDiscovery` and
+  `notifyUserSelection`, among others.
+- Both `disconnect` and `connect` with `{address}` were tried through the
+  dashboard's Bluetooth endpoint. Each answered `returnValue: true` before
+  `getPairedDevices` reported the new state. Refreshing confirmed the soundbar
+  disconnected and then reconnected; `getConnectedDevice` named it again.
+  The other paired device remained disconnected. This verifies the request
+  shape on this firmware, not on other webOS versions.
+- After reconnecting, `audio/getSoundOut` again reported Bluetooth output and
+  the same volume, but mute was off rather than its original on state. Mute
+  was restored after the test. Audible playback was not checked.
+- `startDiscovery` with `{ "subscribe": true }` answers `{ returnValue: true,
+  timeOut: 90 }`, then one `{ state: "started", device: { address, name, type } }`
+  for each device it hears, `type: "bt_audio"` for speakers and headphones
+  (B8, webOS 4.4.3; C2, webOS 9.2.2). `cancelDiscovery` ends it. A
+  `startDiscovery` sent straight after a `cancelDiscovery` was once refused on
+  the C2 with error 1005, "The Bluetooth adapter(local device) is not ready".
+- `connect` with the `{address}` of a device the scan found pairs it, then
+  connects it: earbuds in pairing mode paired and connected on a C2, as in
+  LG's own device selection. The binary's strings ("Try to Pair", "No
+  discovered device. Check in paired list") show `connect` looks in the
+  discovered list first.
+- A device that is off reads `connecting` in `getPairedDevices` for over 12 s
+  after `connect` before going back to `disconnected` (B8).
+- On the C2, connecting switched the sound output to `bt_soundbar`, showed
+  LG's toast, and 2 s later `getSystemSettingValues` for `pictureMode` listed
+  `game` as `visible: false`; the picture mode changed, to `normal`, with a
+  second toast. Game Optimizer was offered again once the device
+  disconnected.
+- `removePairedDevice` takes `{address}` and answers error 1011, "There is no
+  device in paired list", for one that is not paired (C2).
+- `notifyDeviceSelectionMenuEntered` and `onDeviceSelectionMenu` refuse `{}`
+  and the payloads tried as not matching their schema; scanning works without
+  them.
+
+## Children that abort before exec (A1, webOS 6.5.3)
+
+On an OLED55A19LA (firmware 03.53.45, node 8.12.0), a child process can die
+of SIGABRT between fork and exec, printing ``uv_close: Assertion
+`!uv__is_closing(handle)' failed`` to the parent's log. A child started from
+inside another child's exit callback aborted every time; the same call a
+turn of the event loop later (`setImmediate` or `setTimeout 0`) did not. At
+server start, the first `iptables` call aborted on every start tried, even
+with that wait. execFile reports such a child with `err.signal` set and
+`err.killed` false, which tells it apart from one killed by its own timeout.
+The debugger rule in `devtools.js` tries an aborted call once more.
+
+Issue [#1248](https://github.com/rorygallagher2024/glasshouse/issues/1248)
+shows the same assertion on an OLED65CX9LA, from the curl or wget the
+Internet TV worker starts: the worker itself goes on and reports the failed
+download. A job's later downloads start from the previous one's exit
+callback, the case that aborted every time, and its first is the process's
+first child, as the first `iptables` call at server start was. The worker
+waits a turn before each one and tries one aborted before any of its body
+arrived once more.
+
+A CX (OLED55CX3LA, webOS 5.6.2, firmware 04.64.00, node 8.12.0, libuv
+1.19.2) aborted 24 luna calls in 45 minutes. A core of such a child shows
+why: LG's node registers a fork handler, not in libuv itself, that takes
+`uv_default_loop()`, calls `uv_close` on its handles and sets up its signal
+and async handles again. A handle already closing at fork time fails the
+assertion. A child that has just exited is one: node closes its process
+handle in the exit callback, and the close completes in the loop's closing
+phase. `setImmediate` runs before that phase, a timer after it. Of 900
+`/bin/true` starts, three running at a time, each started from another's
+callback: 9 aborted started at once, 8 from `setImmediate`, none from
+`setTimeout(fn, 0)`. Every start through `lib/children.js` now comes from a
+timer. A start that does not go through it can still abort.
+
+## Source EDIDs after sam restarts (55UP77006LB, webOS 6.5.3)
+
+LG's HDMI input service, `/usr/sbin/extinput-integration`, subscribes to
+`com.webos.service.applicationmanager/getForegroundAppInfo` once, from
+`AdapterApplicationManager::initialize`, and nothing subscribes again. When
+sam is killed and comes back, the service keeps an empty foreground app:
+its log printed `[getForegroundAppId] :: appId : ` while sam itself reported
+`com.webos.app.hdmi1`. `convertAppId` maps an unmatched id to app type
+`0x0d`.
+
+`EdidControl::decideEdidType`, run with port `0xff` when an input's audio
+format setting changes, takes the input from the app type and accepts only
+types 7 to 10. Otherwise it logs `[SKIP] Don't update EDID [Cause : Invalid
+App type] [app type : 0x0d]` and leaves the input on its basic EDID. With
+the service subscribed, the same change logged `Convert HDMI port index :
+'255' => '1'` and `request HDMI(1) edid update [type : 2]`, and HDMI 1's
+Bitstream EDID changed from checksum `(48,ba)` to `(48,2b)`; PCM stayed
+`(48,8e)`.
+
+With Glasshouse Home's boot hook restarting sam (webOS 5 and 6), an Apple TV
+on HDMI 1 sent only PCM all day, which the TV passed on as PCM to an eARC
+soundbar (`KHAL_AUDIO_SNDOUT_eARC_OutputType ... codec_type 1`). After
+`systemctl restart extinput-integration` it sent MAT (`StartDecoding ADEC1
+type MAT`), passed through over eARC (`codec_type 7`), and reported Atmos
+available. Nothing requires the unit; restarting it with HDMI 1 in front
+re-wrote that input's EDID and hot-plugged it, and the app stayed in front.
+
+## No remote key filters on webOS 3 (60UJ6519-ZA, webOS 3.9.3)
+
+- Neither `/usr/lib/qml/KeyFilters`, `/usr/lib/qt5/qml/KeyFilters` nor any
+  `KeyFilters` folder under `/usr/lib/qml` exists, and configd has no
+  `com.webos.surfacemanager.keyFilters` (`missingConfigs`, "No Entry Found").
+  Every Home press opens LG's ribbon (#1222).
+- The remote's Home is `IR_KEY_HOME`, 781 in `/usr/share/X11/xkb/keycodes/lg`
+  (773 as an evdev code), which LG maps to `Qt::Key_Super_L`, the key evdev's
+  125 (`KEY_LEFTMETA`) also gives. The same table is on webOS 4 and 9.
+- On a B8 (webOS 4.4.3), 773 written to the remote's input device
+  (`LGE RCU`, `event1`) reaches a reader of that device but opens nothing in
+  the compositor; 125 written there opens LG's ribbon.
+
+## A web app as the screen saver (OLED65C5PUA, webOS 10.3.1)
+
+Measured on 5 November 2026, with LG's screen saver app's folder bind-mounted
+over by Glasshouse's staged copy, its `appinfo.json` changed from `type: qml`
+to `type: web` and `main` to `web/index.html`, `defaultWindowType:
+screenSaver` kept.
+
+- **sam takes the type change.** The block and release of the one app that
+  moves it between Flutter and QML (`blockSystemApp`, `releaseBlockSystemApp`)
+  also moved it to `web`, without restarting sam.
+- **The web app manager runs it as the screen saver.** Launched through
+  `com.webos.applicationManager/launch`, the page drew full screen over Home,
+  `getPowerState` answered `Screen Saver`, and the app in front stayed
+  `com.webos.app.home`. A 1.3 MB single-file page with WebGL and WebAssembly ran
+  there.
+- **A key ends it, as it ends LG's.** One remote key (Down, sent through the
+  network input service) took the TV back to `Active` and Home; the page did
+  nothing to end itself.
+- **sam keeps the main file as well as the type.** Moving between two web
+  pages of different names (`web/index.html` to `web/probe.html`) left sam
+  opening the first, as `getAppInfo` still named it, until the block and
+  release; the type alone had not changed.
+- **A page in it can use the TV's services.** `PalmServiceBridge` is there,
+  and a page could read `com.webos.service.settings/getSystemSettings`,
+  `com.webos.applicationManager/running`, `getForegroundAppInfo` and
+  `listApps`, and `com.webos.service.tvpower/power/getPowerState`, from
+  `file://` and from a page loaded over `http://` alike. With
+  `requiredPermissions` staged as `[]` instead of LG's `["all"]`, and sam
+  having read it again, every one was still answered: the access comes with
+  the app being LG's own, not with its manifest.
+- **A frame does not shut it out.** A page loaded over `http://` in an
+  `<iframe sandbox="allow-scripts">` of a local page had `PalmServiceBridge`
+  too, and `running`, `listApps` and `getPowerState` were answered. The
+  bridge is put into every frame, so a website cannot be shown in the screen
+  saver without what it runs being able to use the TV's services. A frame
+  without `sandbox` kept the screen saver up as well.
+- **Rereading the app under a showing screen saver breaks tvpower.** A
+  block and release of `com.webos.app.screensaver` while one was on screen
+  killed it (`Screen Saver` to `Active` at once), and a `turnOnScreenSaver`
+  about 3 s later, from the Back, close and request Glasshouse then made,
+  launched the new one, whose window showed for under half a second. tvpower
+  then read `Active` with `processing: "Screen Saver Ready"` and answered
+  every `turnOnScreenSaver` with `Invalid State change Request` and
+  `turnOnScreen` with `power is busy`; nothing short of a reboot cleared it.
+  Reproduced on the first try from Clock to a web one; from a web one to
+  Clock the TV rebooted itself. In "Screen Saver Ready" tvpower waits on its
+  own `applicationManager/launch` of the app. Closing the showing one with
+  Back first, waiting for `Active`, then switching and asking 3 s later
+  worked in both directions, QML to QML and to and from web, every time.
+
+## Overlay web apps and the input bar (webOS 6.5.3, C1)
+
+Measured on an OLED77C1PUB with webOS 6.5.3, building the input bar, with
+HDMI 3 in front.
+
+- A developer web app with `"defaultWindowType": "overlay"` and
+  `"transparent": true` in its `appinfo.json` opens as
+  `_WEBOS_WINDOW_TYPE_OVERLAY` over the input: the picture shows through
+  where the page draws nothing, `getForegroundAppInfo` goes on naming
+  `com.webos.app.hdmi3`, and the remote's keys reach the page
+  (`WaylandKeyboard::OnKeyNotify` in WebAppMgr). LG's own overlays, Settings
+  and `com.webos.app.adhdmi1` to `4` among them, declare the same.
+- Without `"noSplashOnLaunch": true` and `"spinnerOnLaunch": false`, sam shows
+  its grey splash with a spinner over the picture until the page draws.
+- A page that goes on to another with `location.replace` (the
+  `http://localhost` page Glasshouse serves, as Glasshouse Home's app does)
+  was suspended after that load (`handleLoadFinished; m_suspendAtLoad : true`),
+  and its window was mapped 4.1 s later. The app's own page was mapped 0.3 to
+  0.4 s after it loaded, with its first frame: one that drew nothing until its
+  data came waited 1.4 s, one drawing what it had kept from before none.
+- `"keepAlive": true` in `appinfo.json`, and `PalmSystem.keepAlive = true`,
+  did not keep it: `window.close()` still ended it (`WEBAPP_CLOSED`).
+  WebAppMgr has `setKeepAlive`, apparently for LG's own apps only.
+- `PalmSystem.hide()` left the overlay on screen and holding the remote's
+  focus: no `NL_VSC` with `visible:false`, and focus stayed with
+  `overlaySurface`.
+- `applicationManager/launch` with `"preload": "full"` starts the app with no
+  window: `PalmSystem.launchParams` is `{"preload":"full"}` and
+  `document.hidden` true. A later launch reaches it as a relaunch
+  (`APP_RELAUNCH`), and the window was shown 0.35 s after it. WebAppMgr waits
+  for a new frame first (`Not PageFrameSwapped; Pending Show()`): a page with
+  nothing new to draw was shown 2.1 s later.
+- Launching a card window already on screen, as Glasshouse Home is, redraws
+  it, which shows as a flash on each press.
+- In the compositor's key filters, `global.isForegroundApp(id)` is true for
+  the overlay while it is up, and `global.sendKeyToFocusWindow(Qt.Key_Right,
+  pressed, 106)` reaches its page as `keyCode` 39. LG's `appLaunch.js` names
+  the Input key `WebOS.Key_webOS_InputSource` and opens
+  `com.webos.app.quickinputpicker` through `systemUIManager/launch`; the IR
+  remote (`LGE RCU`) sends it as key code 241.
+- From the app's `file://` page, a GET to `http://localhost:8080` reads its
+  answer; Glasshouse's POSTs refuse it on its `Origin` (`null`).
+  `PalmServiceBridge` calls `applicationManager/launch` for
+  `com.webos.app.hdmiN` with the app's default trust level.
+- `applicationManager/running` with `"subscribe": true` answers at once and
+  on every change to the running apps.
+
+## Hue Sync settings service
+
+A supplied Luna bus capture of retail Hue Sync 1.10.189 shows `/get` values
+as JSON encoded strings: brightness `50.000000`, intensity `2`, sync_mode `1`,
+current_ec as a quoted ID, and ec_list as an array containing Name and Id.
+Observed `/set` calls carry numeric brightness (40, 50, 60), numeric intensity
+(0, 1, 2), string sync_mode (`0`, `1`), and a plain entertainment-area ID.
+The capture also shows boolean reads for background_lightning_video,
+background_lightning_games and auto_start. Their setters were absent from that initial capture.
+The supplied follow-up confirms brightness 0–100, intensity 0–3 as Subtle,
+Moderate, High, Extreme, and mode 0 Video / 1 Game. Background-light and
+auto-start boolean write payloads were initially inferred. A subsequent full
+setup/settings capture confirms `/set` boolean data for both background-light
+keys, auto_start and auto_start_notification, each in both directions. `/sub`
+with `{"subscribe":true}` supplies `{returnValue,key,value}` deltas. Values may
+be native booleans/numbers or JSON-encoded strings. Area changes report busy
+and can take approximately 1–1.24 seconds before completion. Bridge reads expose
+Connected/Authorized independently of the service's ready/supported flags.
+Only these status fields belong in diagnostics; the other bridge fields and
+pairing/support/device data must not be copied into fixtures or logs.
+
+## Pausing a locally served MPEG-TS stream (webOS 5.6.2, CX)
+
+Measured on 9 November 2026 on an OLED65CX9LA, with a provider's MPEG-TS
+channel recorded by curl to a USB stick and served from the TV to a page in
+`com.webos.app.browser`:
+
+- A `<video>` playing a local MPEG-TS stream that is still growing paused
+  on the current picture, held it for a minute, and resumed at the same
+  position. No HLS playlist or segments were needed.
+- The provider answered curl's own User-Agent with HTTP 461 and
+  `VLC/3.0.18 LibVLC/3.0.18` with the stream, alongside the one the TV was
+  already playing: the 461 was the User-Agent, not a limit on streams.
+- curl wrote about 0.9 MB/s; the stick takes about 30 MB/s. The CPU stayed
+  idle and about 450 MB of memory was free.
+- The stick was mounted at `/tmp/usb/sda/sda1` (tfat), with 114 GB free.
+- A process started over SSH died when the session closed unless started
+  with `setsid nohup ... </dev/null &`.
+
+In Glasshouse Home on the same TV, the Magic Remote's (MR20) Pause and Play
+reached the page and paused and resumed a channel played from the
+recording; the page takes 19 as Pause and 415 as Play, and which code each
+key sent was not logged. The MR20 has no Stop key.
+
+The worker's first curl died there with ``uv_close: Assertion
+`!uv__is_closing(handle)' failed`` when started from the server socket's
+listen callback, as in "Children that abort before exec".
+
+A pause longer than a minute, which requests the player makes on resuming,
+and webOS 4 and 9 were not tried.
+
+## eARC port assignment across TV series (B4, webOS 10.3.2)
+
+Reported in #1336 from an OLED77B46LA, webOS 10.3.2 (firmware 33.31.75).
+While most LG OLEDs wire the eARC transceiver to HDMI 2 (B8, C9, CX, C1, C2,
+C3, G3, C4, G4), the B4 series places the physical eARC port on HDMI 3.
+
+`com.webos.service.arccontroller/getARCEDIDInfo` reports the hardware eARC port
+number in its `arcHDMIPort` field (`3` on the B4, `2` on the G3). On older
+firmware lacking that service (webOS 4), `com.webos.service.eim/getAllInputStatus`
+identifies a connected audio system (`cecpDevType: 5`) and its port when
+present, falling back to HDMI 2.
+
+## Network pointer input (C3, webOS 11.2.0)
+
+Read on 11 November 2026 on an OLED77C3RLA, firmware 43.21.71.
+`com.webos.service.networkinput/getPointerInputSocket`, called from the
+Glasshouse server, returned `/tmp/netinput.pointer.sock`. Its interface declares
+`LENGTH_PREFIX_32`; `InputSocketConnection::handleData` in the 32-bit ARM
+`network-input-service` reads a four-byte big-endian payload length, rejects a
+payload over 4096 bytes, then hands the bytes to the text-command parser. A move
+is `type:move\ndx:N\ndy:N\ndown:0\n\n`, click is `type:click\n\n`, and scroll is
+`type:scroll\ndx:N\ndy:N\n\n`. `down:drag` presses while moving and `down:0`
+releases.
+
+A batch of two moves followed by a click moved to YouTube's Play button and
+started playback. Screen captures often omitted the pointer even when it was
+visible on the TV, so a missing cursor in a capture is not evidence that no move
+occurred. A direct write to `/dev/uinput` created a kernel input device, but was
+not needed and was removed.
+
+The same `/tmp/netinput.pointer.sock` Unix socket was subsequently observed working on a B8 (webOS 4.4.3) and a C2 (webOS 9.2.2).
+
+## Realtek HDMI receiver status (55NANO756PR, webOS 6.5.3)
+
+Reported in #1359 from a 55NANO756PR (webOS 6.5.3, firmware `03.53.46`) with a
+3840x2160 50 Hz SDR YCbCr 4:2:2 source on HDMI 1. Realtek boards have no
+`/proc/lg/hdmi20`; instead, receiver status and EDID live in
+`/proc/lgtv-driver/hdmi_status/hdmi.p0` to `hdmi.p3`:
+
+- `hwport:1` to `4` in `hdmi.p0` to `hdmi.p3` match `configd`'s
+  `inputMap.videoInputMapIndexInfo0` (`{"hdmi1":"0","hdmi2":"1","hdmi3":"2","hdmi4":"3"}`).
+- `hpd_state : 1` remained high on empty `hdmi.p1` and `hdmi.p2`;
+  `phy_lock_status:1` indicates an active locked signal and `link_hdmi_5v:1`
+  indicates +5V present from a source.
+- With the 2160p50 source active (`avi_vic:96`), `hdmi.p0` reported
+  `timing_active_w:3840`, `timing_active_h:2160`, `timing_v_freq:500` (tenths of
+  Hz), `link_frame_rate_x100_hz:5000` (hundredths of Hz),
+  `pixel_clock_khz:594000`, `timing_scan_type:1` (progressive, with
+  `timing_v_total:2250`; empty ports read `0`), `color_depth:0` alongside
+  `link_color_depth:8`, `avi_pixel_encoding:1` (`link_color_space:1`, matching
+  CTA-861 AVI byte 1 `0x31` for YCbCr 4:2:2), `allm_mode:0`, `dolby_hdr_type:0`,
+  `drm_length:26` and `drm_eotf_type:0`.
+- `edid_data_block0` and `edid_data_block1` hold two checksummed 128-byte EDID
+  blocks in comma-separated `0x..` hex rows (`edid_size :2`) on active/linked
+  `hdmi.p0`, omitted when idle.
+- Under `/proc/lgtv-driver/audio/`, active HDMI decoding reported `Connect=HDMI0`
+  in `adec.p1` (rather than LG/MediaTek's `HDMI_PORT0`..`HDMI_PORT3`) and
+  `SamplingRate=48` in `hdmi` (in kHz rather than `48000` Hz).
+- Interlaced, HDR10/HLG/Dolby Vision, VRR and HDCP/FRL active samples were not
+  captured on this board (`phy_tmds_clk_khz:593500` tracked the pixel rate on
+  this TMDS link, and `hdcp_version` read `1` active vs `2` idle).
+
+## Which cgroup the Homebrew Channel's start-up runs in (webOS 6 and 9)
+
+Processes started by the Homebrew Channel's start-up (`/var/lib/webosbrew/startup.sh`
+and the hooks it runs) inherit the systemd cgroup of the LG service that ran it.
+On a 50NANO756PR (webOS 6, #1355) that was `webapp-mgr.service`, holding the
+Glasshouse server, dropbear and telnetd; changing some settings, background
+services and Promotions & tips among them, restarted it, which killed all three
+until the TV was unplugged. On a C2 (webOS 9.2.2) they are in
+`ls-hubd.service`, the Luna hub. `systemd-run --scope` (systemd 250 on the C2)
+moves a command into a transient scope of its own.

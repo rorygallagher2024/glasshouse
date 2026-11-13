@@ -2,6 +2,7 @@
  * test/test-controls.js - Unit tests for TV control dispatching and validation
  */
 
+require('./fake-clock').install();
 var assert = require('assert');
 var controls = require('../server/lib/controls');
 var INPUTS = require('../server/lib/names').INPUTS;
@@ -419,6 +420,28 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ the time server is saved and the client restarted, a mistyped one refused, and the switch keeps it');
 })();
 
+(function testDeviceName() {
+  var saved = [], republished = 0, renamed = [];
+  var config = { allowControl: true, device: { id: 'lg_c2', name: 'LG OLED42C24LA', model: 'OLED42C24LA' } };
+  controls.init({
+    config: config,
+    writeSettings: function (patch, cb) { saved.push(patch); cb(null); },
+    republishDiscovery: function () { republished++; },
+    deviceNameChanged: function (name) { renamed.push(name); }
+  });
+  controls.doControl('setDeviceName', '  Living   room ', function (res) { assert.deepEqual(res, { ok: true, name: 'Living room' }); });
+  assert.deepEqual(saved, [{ device: { name: 'Living room' } }]);
+  assert.strictEqual(config.device.name, 'Living room', 'shown at once');
+  assert.strictEqual(republished, 1, 'and sent to Home Assistant');
+  assert.deepEqual(renamed, ['Living room']);
+  controls.doControl('setDeviceName', '', function (res) { assert.strictEqual(res.name, 'LG OLED42C24LA'); });
+  assert.deepEqual(saved[1], { device: { name: '' } }, 'empty saved, so the next start names it from the model');
+  assert.strictEqual(config.device.name, 'LG OLED42C24LA', 'and LG and the model meanwhile');
+  controls.doControl('setDeviceName', new Array(66).join('x'), function (res) { assert.strictEqual(res.ok, false); });
+  assert.strictEqual(saved.length, 2, 'a name over 64 characters is not saved');
+  console.log('  ✓ the TV name is saved and applied at once, empty puts back LG and the model, and a long one is refused');
+})();
+
 // updateCheck and updateAutoCheck return unified updateSummary (including daemon health) (#712)
 (function testUpdateCheckSummary() {
   var checkedAge = null;
@@ -495,6 +518,46 @@ console.log('Running test-controls.js ...');
     assert.strictEqual(delegated, false);
   });
   console.log('  ✓ homeAutoLaunch and quickBoot coordinate with Glasshouse Home');
+})();
+
+(function testNightlyRefreshControl() {
+  var written = null;
+  var setEnabledVal = null;
+  var cacheCleared = 0;
+  var mockResettime = {
+    _supported: false,
+    supported: function () { return this._supported; },
+    setEnabled: function (val, cb) { setEnabledVal = val; cb({ ok: true }); }
+  };
+
+  controls.init({
+    config: { allowControl: true },
+    resettime: mockResettime,
+    writeSettings: function (patch, cb) { written = patch; cb(null); },
+    telemetry: { clearCache: function () { cacheCleared++; } }
+  });
+
+  // Unsupported TV
+  controls.doControl('nightlyRefresh', true, function (res) {
+    assert.strictEqual(res.ok, false);
+    assert.strictEqual(res.error.indexOf('not supported') !== -1, true);
+  });
+
+  // Supported TV
+  mockResettime._supported = true;
+  controls.doControl('nightlyRefresh', true, function (res) {
+    assert.strictEqual(res.ok, true);
+    assert.deepEqual(written, { nightlyRefresh: true });
+    assert.strictEqual(setEnabledVal, true);
+    assert.strictEqual(cacheCleared, 1);
+  });
+
+  controls.doControl('nightlyRefresh', false, function (res) {
+    assert.strictEqual(res.ok, true);
+    assert.deepEqual(written, { nightlyRefresh: false });
+    assert.strictEqual(setEnabledVal, false);
+  });
+  console.log('  ✓ nightlyRefresh control enforces support and toggles settings');
 })();
 
 // A notification's type is LG's toast type, and ":icon:" opening its text an icon
@@ -689,6 +752,87 @@ console.log('Running test-controls.js ...');
   console.log('  ✓ the keyboard box deletes and types through the input method, and refuses more than ' + controls.SEND_TEXT_MAX + ' characters at a time');
 })();
 
+// Play / Pause picks the key from what the foreground app's media reports
+(function testPlayPauseKey() {
+  var fs = require('fs');
+  var realOpen = fs.openSync;
+  var realWrite = fs.writeSync;
+  var realClose = fs.closeSync;
+  var pressed = [];
+  fs.openSync = function () { return 99; };
+  fs.closeSync = function () {};
+  fs.writeSync = function (fd, b) {
+    if (b.readUInt16LE(8) === 1 && b.readInt32LE(12) === 1) pressed.push(b.readUInt16LE(10));
+  };
+  var foreground = 'io.github.haydengriffin.afterglow';
+  controls.init({
+    config: { allowControl: true },
+    telemetry: { clearCache: function () {}, readMediaState: function (cb) { cb(reading.media, reading.noPipe); } },
+    luna: function (uri, payload, cb) {
+      cb(uri === 'com.webos.applicationManager/getForegroundAppInfo' ? { returnValue: true, appId: foreground } : { returnValue: true });
+    }
+  });
+  var reading = {};
+  function pressWith(media, noPipe) {
+    pressed = [];
+    reading = { media: media, noPipe: noPipe };
+    controls.sendMediaKey('playPause', function () {});
+    return pressed;
+  }
+  try {
+    assert.deepEqual(pressWith({ state: 'playing', playerType: 'MSE' }), [119], 'playing gets KEY_PAUSE');
+    assert.deepEqual(pressWith({ state: 'paused', playerType: 'MSE' }), [207], 'paused gets KEY_PLAY');
+    assert.deepEqual(pressWith({ state: 'playing', playerType: 'external input' }), [207],
+      'an external input gets KEY_PLAY, a toggle over CEC');
+    assert.deepEqual(pressWith({ state: 'idle', playerType: null }), [207], 'nothing playing in a pipe gets KEY_PLAY');
+    assert.deepEqual(pressWith(null), [207], 'no answer gets KEY_PLAY');
+
+    var idle = { state: 'idle', playerType: null };
+    assert.deepEqual(pressWith(idle, true), [119], 'no pipe (Web Audio): KEY_PAUSE first');
+    assert.deepEqual(pressWith(idle, true), [207], 'then KEY_PLAY');
+    assert.deepEqual(pressWith(idle, true), [119], 'then KEY_PAUSE again');
+    pressWith({ state: 'playing', playerType: 'MSE' });
+    assert.deepEqual(pressWith(idle, true), [119], 'a pipe read in between starts again from KEY_PAUSE');
+    foreground = 'another.webaudio.app';
+    assert.deepEqual(pressWith(idle, true), [119], 'another app in front starts again from KEY_PAUSE');
+
+    foreground = 'com.webos.app.hdmi3';
+    assert.deepEqual(pressWith(idle, true), [207], 'an input with nothing to read keeps KEY_PLAY');
+    assert.deepEqual(pressWith(idle, true), [207], 'every time');
+  } finally {
+    fs.openSync = realOpen;
+    fs.writeSync = realWrite;
+    fs.closeSync = realClose;
+  }
+  console.log('  ✓ Play / Pause sends pause or play from the pipe, and in turn with no pipe');
+})();
+
+// 5b. screensaverEntities control validation and delegation
+(function testScreensaverEntities() {
+  var savedArgs = null;
+  var cleared = 0;
+  controls.init({
+    config: { allowControl: true },
+    telemetry: { clearCache: function () { cleared++; } },
+    screensavers: {
+      setSaverEntities: function (id, ents, cb) {
+        savedArgs = { id: id, ents: ents };
+        cb({ ok: true });
+      }
+    }
+  });
+  controls.doControl('screensaverEntities', { saver: 'ambient' }, function (res) {
+    assert.strictEqual(res.ok, false);
+    assert.ok(/requires saver and entities/.test(res.error));
+  });
+  controls.doControl('screensaverEntities', { saver: 'ambient', entities: { climate: 'sensor.temp' } }, function (res) {
+    assert.strictEqual(res.ok, true);
+  });
+  assert.deepEqual(savedArgs, { id: 'ambient', ents: { climate: 'sensor.temp' } });
+  assert.strictEqual(cleared, 1);
+  console.log('  ✓ screensaverEntities validates arguments and delegates to screensavers');
+})();
+
 console.log('ALL test-controls.js assertions passed!\n');
 
 // 6. A powerOff answered with a failure is read back before trying again
@@ -703,7 +847,10 @@ console.log('ALL test-controls.js assertions passed!\n');
   function next(i) {
     if (i === cases.length) {
       done = i;
-      return console.log('  ✓ a powerOff answered with a failure counts as done once the TV is switching off');
+      console.log('  ✓ a powerOff answered with a failure counts as done once the TV is switching off');
+      assert.strictEqual(done, cases.length, 'every powerOff case answered');
+      process.exit(0);
+      return;
     }
     var c = cases[i], calls = [];
     controls.init({

@@ -11,6 +11,7 @@ var timers = require('./timers');
 var saverPowerOff = require('./saverpoweroff');
 var clock = require('./clock');
 var names = require('./names');
+var typing = require('./typing');
 
 /*
  * Measured on a B8 against the built-in player, watching playStateNow move:
@@ -19,6 +20,9 @@ var names = require('./names');
  * which is why it never worked.
  *
  * Over CEC to an external box, KEY_PLAY behaves as a toggle instead.
+ *
+ * On a C1 (webOS 6.4) KEY_PLAYPAUSE never reaches a web app either, while
+ * KEY_PAUSE and KEY_PLAY arrive as keyCode 19 and 415.
  */
 var RCU_KEY_CODES = {
   play: 207,
@@ -93,6 +97,8 @@ var huesync = null;
 var servicesModule = null;
 /** @type {typeof import('./screensavers')} */
 var screensavers = null;
+/** @type {typeof import('./inputbar')} */
+var inputBar = null;
 /** @type {typeof import('./apps')} */
 var appsModule = null;
 /** @type {typeof import('./lgsettings')} */
@@ -107,9 +113,12 @@ var ntpModule = null;
 var historyModule = null;
 /** @type {typeof import('./backup')} */
 var backupModule = null;
+/** @type {typeof import('./resettime')} */
+var resettimeModule = null;
 /** @type {typeof import('./home')} */
 var homeModule = null;
 var republishDiscoveryFn = null;
+var deviceNameChangedFn = null;
 var tvAppFn = null;
 var restartSelfFn = null;
 var updateSummaryFn = null;
@@ -121,6 +130,7 @@ var toastSourceId = null;
 var toastIconDir = path.join(__dirname, '..', 'toast-icons');
 var tileHidingOffMsg = null;
 var writeSettingsFn = null;
+var pointerChangedFn = function () {};
 // Whether LG's on-screen keyboard is up, from the live window list.
 var keyboardVisibleFn = function () { return false; };
 
@@ -214,13 +224,34 @@ function injectKey(code, cb, delayMs) {
  * No key toggles the built-in player, so this asks what it is doing and sends
  * the other one. An external input reports "playing" whatever the box on the
  * end is doing, and KEY_PLAY is a toggle over CEC, so that path just sends it;
- * so does nothing playing.
+ * so does nothing playing. An app with no media pipe (one playing through Web
+ * Audio) can't be read, so it gets pause and play in turn.
  */
 function sendPlayPause(cb) {
-  telemetry.readMediaState(function (media) {
+  telemetry.readMediaState(function (media, noPipe) {
+    if (noPipe) return sendUnreadPlayPause(cb);
+    lastUnreadKey = null;
     var playing = !!(media && media.state === 'playing' && media.playerType !== 'external input');
     sendMediaKey(playing ? 'pause' : 'play', cb);
   }, true);
+}
+
+/*
+ * The key Play / Pause last sent with no pipe to read, and to which app. Pause
+ * comes first, as Play / Pause is mostly pressed on something playing, and
+ * again for another app. com.webos.media gives nothing for an external input
+ * either, so one in front keeps KEY_PLAY.
+ */
+var lastUnreadKey = null;
+var lastUnreadApp = null;
+function sendUnreadPlayPause(cb) {
+  luna('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+    var app = fg && fg.appId;
+    if (names.isInputAppId(app)) return sendMediaKey('play', cb);
+    lastUnreadKey = lastUnreadKey === 'pause' && lastUnreadApp === app ? 'play' : 'pause';
+    lastUnreadApp = app;
+    sendMediaKey(lastUnreadKey, cb);
+  });
 }
 
 function sendMediaKey(cmd, cb) {
@@ -266,6 +297,23 @@ function portIsFree(port, cb) {
 
 function doTvApp(action, cb) { return tvAppFn(action, cb); }
 
+function imeResult(r) {
+  return { ok: !!(r && r.returnValue), error: r && r.errorText, method: 'ime' };
+}
+
+// Deletes delCount characters, then types typed, through LG's input method.
+function typeThroughIme(typed, delCount, cb) {
+  var insertRest = function () {
+    if (!typed) return cb({ ok: true, method: 'ime' });
+    lunaUrgent('com.webos.service.ime/insertText', { text: typed }, function (r) { cb(imeResult(r)); });
+  };
+  if (delCount <= 0) return insertRest();
+  lunaUrgent('com.webos.service.ime/deleteCharacters', { count: delCount }, function (r) {
+    if (!r || !r.returnValue) return cb(imeResult(r));
+    insertRest();
+  });
+}
+
 /*
  * The audio service's answer to a volume or mute change, as ok. A refusal
  * for where the sound goes now is passed to telemetry, which stops offering
@@ -273,6 +321,123 @@ function doTvApp(action, cb) { return tvAppFn(action, cb); }
  */
 function imeAnswer(cb) {
   return function (r) { cb({ ok: !!(r && r.returnValue), error: r && r.errorText }); };
+}
+
+/*
+ * Presses the keys in order, each once the one before has been taken: the
+ * order a field sees is the order of the calls. Stops at the first refusal and
+ * says how many went through.
+ */
+var KEY_PRESS_GAP_MS = 60;
+
+function pressKeyCodes(keyCodes, cb) {
+  var pressed = 0;
+  var pressNext = function () {
+    if (pressed >= keyCodes.length) return cb({ ok: true, sent: pressed });
+    lunaUrgent('com.webos.service.networkinput/test/sendKeyCode',
+               { keyCode: keyCodes[pressed] }, function (r) {
+      if (!r || !r.returnValue) {
+        return cb({ ok: false, error: (r && r.errorText) || msg('srv.typing.keyRefused', 'the TV did not take the key press'), sent: pressed });
+      }
+      pressed++;
+      // Back to back, Nuvio Legacy lost a letter now and then (webOS 4.10).
+      setTimeout(pressNext, KEY_PRESS_GAP_MS);
+    });
+  };
+  pressNext();
+}
+
+// How long the choice of where the keyboard box types holds: it costs a few
+// service calls, and a field does not move between two letters.
+var TYPING_ROUTE_TTL_MS = 2000;
+var typingRoute = null;
+var typingRouteAt = 0;
+
+function foregroundAppId(cb) {
+  lunaUrgent('com.webos.applicationManager/getForegroundAppInfo', {}, function (fg) {
+    cb(fg && fg.returnValue !== false && fg.appId ? String(fg.appId) : '');
+  });
+}
+
+/*
+ * Where the keyboard box types now: { method: 'ime' | 'page' | 'keys', ... }.
+ *  - ime: LG's input method, when it has a field in focus (the remote keyboard
+ *    answers focus true, or on webOS 6+ LG's keyboard window is up), and when
+ *    the foreground app cannot be told.
+ *  - page: the foreground web app's page, through the web app debugger.
+ *  - keys: key presses on the network input, for native apps.
+ *  - none: a web app whose page cannot be reached, as without Developer Mode,
+ *    where the web app debugger does not run, or an app on Cobalt, YouTube's
+ *    engine, a native app on a C2 (webOS 9.2.2). Neither took any of the key
+ *    presses, so they are not sent and the box says so.
+ * registerRemoteKeyboard is asked as a one-answer call: its subscription ends
+ * with the call, so nothing is left registered.
+ */
+function chooseTypingRoute(cb) {
+  if (typingRoute && monotonicMs() - typingRouteAt < TYPING_ROUTE_TTL_MS) return cb(typingRoute);
+  var choose = function (route) {
+    typingRoute = route;
+    typingRouteAt = monotonicMs();
+    cb(route);
+  };
+  if (keyboardVisibleFn()) return choose({ method: 'ime' });
+  lunaUrgent('com.webos.service.ime/registerRemoteKeyboard', { subscribe: true }, function (r) {
+    if (r && r.currentWidget && r.currentWidget.focus === true) return choose({ method: 'ime' });
+    foregroundAppId(function (appId) {
+      if (!appId) return choose({ method: 'ime' });
+      typing.listPages(function (pages) {
+        var page = typing.pickPage(pages, appId);
+        if (page) return choose({ method: 'page', pageUrl: page.webSocketDebuggerUrl });
+        lunaUrgent('com.webos.applicationManager/getAppInfo', { id: appId }, function (info) {
+          var isWebApp = !!(info && info.appInfo && info.appInfo.type === 'web');
+          if (info && info.appInfo && info.appInfo.main === 'cobalt') return choose({ method: 'none' });
+          if (!isWebApp) return choose({ method: 'keys' });
+          // The one page open is the app's only if the app is a web app.
+          choose(pages.length === 1 ? { method: 'page', pageUrl: pages[0].webSocketDebuggerUrl } : { method: 'none' });
+        });
+      });
+    });
+  });
+}
+
+/*
+ * The dashboard's keyboard box, typed where the TV can take it. text is what
+ * to add, replace how many characters to delete first, enter whether to submit
+ * afterwards. The answer names the route, and for a route that goes one key at
+ * a time says how many went through, as a key press cannot be read back.
+ */
+function typeFromBox(request, cb) {
+  chooseTypingRoute(function (route) {
+    var answer = function (r) {
+      r.method = route.method;
+      // Whatever went wrong, choose again next time.
+      if (!r.ok) typingRoute = null;
+      cb(r);
+    };
+    var pressEnter = function (r) {
+      if (!r.ok || !request.enter) return answer(r);
+      typingRoute = null;
+      if (route.method === 'ime') {
+        return lunaUrgent('com.webos.service.ime/sendEnterKey', {}, function (e) { answer(imeResult(e)); });
+      }
+      if (route.method === 'page') {
+        return typing.typeIntoPage(route.pageUrl, '', 0, true, answer);
+      }
+      pressKeyCodes([RCU_KEYS.ok], answer);
+    };
+    if (route.method === 'none') {
+      return answer({ ok: false, error: msg('srv.typing.noRoute', 'This app does not take typing from here. Use the keyboard it shows on the TV, or, where it opens LG\u2019s, the box types into that.') });
+    }
+    var hasText = !!request.text || request.replace > 0;
+    if (!hasText) return pressEnter({ ok: true });
+    if (route.method === 'ime') return typeThroughIme(request.text, request.replace, pressEnter);
+    if (route.method === 'page') {
+      return typing.typeIntoPage(route.pageUrl, request.text, request.replace, false, pressEnter);
+    }
+    var keys = typing.keyCodesFor(request.text, request.replace);
+    if (keys.error) return answer({ ok: false, error: keys.error, sent: 0 });
+    pressKeyCodes(keys.codes, pressEnter);
+  });
 }
 
 function volumeAnswer(r) {
@@ -366,32 +531,32 @@ function doControl(action, value, cb) {
       /*
        * The dashboard's keyboard box: types into the text field in focus on
        * the TV, as it is typed. value is a string to insert, or { text,
-       * replace } with the characters to delete first. Both go through LG's
+       * replace } with the characters to delete first. Those go through LG's
        * input method on the urgent path, as keyboardText does: typing queued
        * behind other calls stalled in Glasshouse Home's search, and a
        * backspace sent as a key on the remote's device closed LG's keyboard
-       * there instead (a C2, webOS 9.2.2).
+       * there instead (a C2, webOS 9.2.2). With full as well, the whole box,
+       * the dashboard is asking for the route that suits the app in front: see
+       * chooseTypingRoute. Without it the text goes through LG's input method
+       * only, as Home Assistant and older dashboards send it. The routes type
+       * what changed, so full itself is not read. enter submits what was typed.
        */
-      var typed, delCount;
+      var typed, delCount, fullLength = 0, routeByApp = false, pressesEnter = false;
       if (value && typeof value === 'object') {
         typed = String(value.text == null ? '' : value.text);
         delCount = Math.max(0, toInt(value.replace, 0));
+        routeByApp = typeof value.full === 'string';
+        if (routeByApp) fullLength = value.full.length;
+        pressesEnter = value.enter === true;
       } else {
         typed = String(value == null ? '' : value);
         delCount = 0;
       }
-      if (typed.length > SEND_TEXT_MAX || delCount > SEND_TEXT_MAX) {
+      if (typed.length > SEND_TEXT_MAX || delCount > SEND_TEXT_MAX || fullLength > SEND_TEXT_MAX) {
         return cb({ ok: false, error: 'at most ' + SEND_TEXT_MAX + ' characters at a time' });
       }
-      var insertRest = function () {
-        if (!typed) return cb({ ok: true });
-        lunaUrgent('com.webos.service.ime/insertText', { text: typed }, imeAnswer(cb));
-      };
-      if (delCount <= 0) return insertRest();
-      return lunaUrgent('com.webos.service.ime/deleteCharacters', { count: delCount }, function (r) {
-        if (!r || !r.returnValue) return imeAnswer(cb)(r);
-        insertRest();
-      });
+      if (!routeByApp) return typeThroughIme(typed, delCount, cb);
+      return typeFromBox({ text: typed, replace: delCount, enter: pressesEnter }, cb);
 
     case 'launch_app':
     case 'launchApp':
@@ -709,6 +874,16 @@ function doControl(action, value, cb) {
      * tvpowerd subscribes to the key, so writing it is all LG's menu does.
      * Only on firmware that has it: a C2 on webOS 9.2 does, a B8 on 4.4 does not.
      */
+    /*
+     * Glasshouse's own, beside LG's Auto device detection: the service that
+     * looks up every address on the network, held down where off (lib/services),
+     * which LG's setting does not do on webOS 11 (#1260).
+     */
+    case 'deviceScans':
+      if (!servicesModule || !servicesModule.available('iconnectivity')) return cb({ ok: false, error: 'not on this TV' });
+      var scansOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
+      return servicesModule.switchHidden('iconnectivity', !scansOn, function (r) { cb({ ok: !!(r && r.ok), error: r && r.error }); });
+
     // LG's universal control device detection (other/ueiEnable); see telemetry.
     case 'deviceDetection':
       var ddOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
@@ -766,8 +941,23 @@ function doControl(action, value, cb) {
                     alwaysOnDisableEndHour: String((offHour + 5) % 24), alwaysOnDisableEndMinute: '0' } },
                   function (r) {
                     telemetry.clearCache();
+                    if (resettimeModule) resettimeModule.apply();
                     cb({ ok: !!(r && r.returnValue) });
                   });
+
+    case 'nightlyRefresh':
+      var nrOn = (value === true || value === 'on' || value === 'ON' || value === 'true');
+      if (!resettimeModule || !resettimeModule.supported()) {
+        return cb({ ok: false, error: 'nightly refresh reboot is not supported on this TV' });
+      }
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ nightlyRefresh: nrOn }, function (err) {
+        if (err) return cb({ ok: false, error: err.message || String(err) });
+        if (config) config.nightlyRefresh = nrOn;
+        resettimeModule.setEnabled(nrOn, function () {
+          cb({ ok: true });
+        });
+      });
 
     // LG's On or Off Timer: { timer: 'on' or 'off', enabled, time, days }.
     case 'powerTimer':
@@ -788,6 +978,10 @@ function doControl(action, value, cb) {
       return piccap.setPower(capOn, function (r) {
         cb({ ok: !!(r && r.ok), error: r && !r.ok ? r.error : undefined });
       });
+
+    case 'huesyncSetting':
+      if (!huesync || !value || typeof value !== 'object') return cb({ ok: false, error: 'Invalid Hue Sync setting' });
+      return huesync.setSetting(value.key, value.value, cb);
 
     case 'huesync':
       // Hue Sync's streaming to a Philips Ambience light.
@@ -908,21 +1102,65 @@ function doControl(action, value, cb) {
        * written into the same file, so setting one without the other would
        * quietly reset it.
        */
-      var ssMode = value, ssLevel = screensavers.screensaverLevel();
+      var ssMode = value, ssLevel = screensavers.screensaverBrightness(), ssChoice, ssPool;
       if (value && typeof value === 'object') {
         ssMode = value.mode;
+        // brightness: a percentage. level: "dim" or "bright", as before it.
         if (value.level) ssLevel = value.level;
+        if (value.brightness !== undefined) ssLevel = value.brightness;
+        if (typeof value.choice === 'string') ssChoice = value.choice;
+        if (Array.isArray(value.pool)) ssPool = value.pool;
       }
-      return screensavers.setScreensaver(String(ssMode || '').trim(), ssLevel, function (r) {
+      ssMode = String(ssMode || '').trim();
+      if (ssPool && screensavers.setRandomPool) screensavers.setRandomPool(ssPool);
+      // The option in use stays with a change of level, as the level does with a change of option.
+      if (ssChoice === undefined && ssMode === screensavers.screensaverMode()) ssChoice = screensavers.screensaverChoice();
+      return screensavers.setScreensaver(ssMode, ssLevel, function (r) {
         telemetry.clearCache();
         cb(r);
-      });
+      }, ssChoice);
+
+    case 'screensaverRandomPool':
+      var newPool;
+      if (Array.isArray(value)) {
+        newPool = value;
+      } else if (value && Array.isArray(value.pool)) {
+        newPool = value.pool;
+      } else if (value && typeof value.toggle === 'string') {
+        var curPool = screensavers.getRandomPool();
+        var idx = curPool.indexOf(value.toggle);
+        if (idx === -1) {
+          curPool.push(value.toggle);
+        } else {
+          curPool.splice(idx, 1);
+        }
+        newPool = curPool;
+      } else {
+        return cb({ ok: false, error: 'pool must be an array of screen saver ids' });
+      }
+      screensavers.setRandomPool(newPool);
+      telemetry.clearCache();
+      return cb({ ok: true, pool: screensavers.getRandomPool() });
 
     case 'screensaver':
       return screensavers.trigger(function (r) {
         telemetry.clearCache();
         cb(r);
       });
+
+    case 'screensaverEntities':
+      if (!screensavers) return cb({ ok: false, error: 'screensavers module not available' });
+      if (!value || typeof value !== 'object' || !value.saver || !value.entities) {
+        return cb({ ok: false, error: 'screensaverEntities requires saver and entities' });
+      }
+      return screensavers.setSaverEntities(value.saver, value.entities, cb);
+
+    case 'screensaverColor':
+      if (!screensavers) return cb({ ok: false, error: 'screensavers module not available' });
+      if (!value || typeof value !== 'object' || !value.saver || !value.color) {
+        return cb({ ok: false, error: 'screensaverColor requires saver and color' });
+      }
+      return screensavers.setSaverColor(value.saver, value.color, cb);
 
     case 'toast':
       /* Both the payload's sourceId and luna-send's -a have to name an app the
@@ -1098,6 +1336,41 @@ function doControl(action, value, cb) {
         cb({ ok: true, minutes: offMin });
       });
 
+    case 'setPointerEnabled':
+      var pointerOn = value === true || value === 'on' || value === 'true';
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ pointer: { enabled: pointerOn } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        config.pointer = config.pointer || {};
+        config.pointer.enabled = pointerOn;
+        pointerChangedFn();
+        cb(getUpdateSummary());
+      });
+
+    case 'setPointerSettings':
+      var pointerSettings = value && typeof value === 'object' ? value : {};
+      var transport = pointerSettings.transport === 'http' ? 'http' : 'websocket';
+      var rate = Number(pointerSettings.updatesPerSecond);
+      if ([60, 120, 240].indexOf(rate) === -1) return cb({ ok: false, error: 'pointer update rate must be 60, 120 or 240' });
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
+      return writeSettingsFn({ pointer: { transport: transport, updatesPerSecond: rate } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        config.pointer = config.pointer || {};
+        config.pointer.transport = transport;
+        config.pointer.updatesPerSecond = rate;
+        pointerChangedFn();
+        cb(getUpdateSummary());
+      });
+
+    // The input bar where it is experimental; off sets its keys back to LG's.
+    case 'setInputBarAllowed':
+      if (!inputBar) return cb({ ok: false, error: 'input bar unavailable' });
+      var allowBar = (value === true || value === 'on' || value === 'true');
+      return inputBar.setAllowed(allowBar, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        cb(getUpdateSummary());
+      });
+
     case 'setWebos10ScreensaversAllowed':
       var allowSs = (value === true || value === 'on' || value === 'true');
       if (!writeSettingsFn) return cb({ ok: false, error: 'no writeSettings handler configured' });
@@ -1175,6 +1448,23 @@ function doControl(action, value, cb) {
       if (!writeSettingsFn || !ntpModule) return cb({ ok: false, error: 'no NTP client configured' });
       return saveNtp({ enabled: value === true || value === 'on' || value === 'true' }, cb);
 
+    /*
+     * The TV's name, under Glasshouse in the dashboards and as the device in
+     * Home Assistant. Empty puts back the one made at start from the model.
+     */
+    case 'setDeviceName':
+      if (!writeSettingsFn) return cb({ ok: false, error: 'no settings file configured' });
+      var deviceName = String(value === undefined || value === null ? '' : value).replace(/\s+/g, ' ').trim();
+      if (deviceName.length > 64) return cb({ ok: false, error: msg('srv.deviceName.tooLong', 'The name must be at most 64 characters') });
+      return writeSettingsFn({ device: { name: deviceName } }, function (err) {
+        if (err) return cb({ ok: false, error: 'could not save setting: ' + err.message });
+        config.device = config.device || {};
+        config.device.name = deviceName || (config.device.model ? 'LG ' + config.device.model : 'LG webOS TV');
+        if (deviceNameChangedFn) deviceNameChangedFn(config.device.name);
+        if (republishDiscoveryFn) republishDiscoveryFn();
+        cb({ ok: true, name: config.device.name });
+      });
+
     // Watch time. Home Assistant's watch-time entities come and go with it.
     case 'setHistoryEnabled':
       if (!writeSettingsFn || !historyModule) return cb({ ok: false, error: 'no history configured' });
@@ -1245,6 +1535,7 @@ function init(opts) {
   if (opts.clearLunaCache) clearLunaCache = opts.clearLunaCache;
   if (opts.config) config = opts.config;
   if (opts.writeSettings) writeSettingsFn = opts.writeSettings;
+  if (opts.pointerChanged) pointerChangedFn = opts.pointerChanged;
   if (opts.telemetry) telemetry = opts.telemetry;
   if (opts.oled) oled = opts.oled;
   if (opts.privacy) privacy = opts.privacy;
@@ -1252,6 +1543,7 @@ function init(opts) {
   if (opts.huesync) huesync = opts.huesync;
   if (opts.services) servicesModule = opts.services;
   if (opts.screensavers) screensavers = opts.screensavers;
+  if (opts.inputBar) inputBar = opts.inputBar;
   if (opts.apps) appsModule = opts.apps;
   if (opts.lgSettings) lgSettings = opts.lgSettings;
   if (opts.updater) updater = opts.updater;
@@ -1259,8 +1551,10 @@ function init(opts) {
   if (opts.ntp) ntpModule = opts.ntp;
   if (opts.history) historyModule = opts.history;
   if (opts.backup) backupModule = opts.backup;
+  if (opts.resettime) resettimeModule = opts.resettime;
   if (opts.home) homeModule = opts.home;
   if (opts.republishDiscovery) republishDiscoveryFn = opts.republishDiscovery;
+  if (opts.deviceNameChanged) deviceNameChangedFn = opts.deviceNameChanged;
   if (opts.tvApp) tvAppFn = opts.tvApp;
   if (opts.restartSelf) restartSelfFn = opts.restartSelf;
   if (opts.updateSummary) updateSummaryFn = opts.updateSummary;

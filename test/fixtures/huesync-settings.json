@@ -1,0 +1,16 @@
+{
+  "settings": {
+    "brightness": 50,
+    "intensity": 2,
+    "sync_mode": "0",
+    "current_ec": "area-example-a",
+    "ec_list": [
+      {"id": "area-example-a", "name": "Example area"},
+      {"id": "area-example-b", "name": "Example area"}
+    ],
+    "background_lightning_video": true,
+    "background_lightning_games": false,
+    "auto_start": true,
+    "auto_start_notification": false
+  }
+}

@@ -25,6 +25,7 @@
  */
 var fs = require('fs');
 var execFile = require('child_process').execFile;
+var children = require('./children');
 
 var DEVMODE_FLAG = '/var/luna/preferences/devmode_enabled';
 var RULE = ['INPUT', '-p', 'tcp', '--dport', '9998', '!', '-i', 'lo', '-j', 'DROP'];
@@ -48,13 +49,34 @@ function findTool(name) {
   return null;
 }
 
+/*
+ * Node 8.12.0 on webOS 6.5.3 can abort a child between fork and exec
+ * (uv_close: Assertion `!uv__is_closing(handle)' failed, the child dying of
+ * SIGABRT): every time when it is started from inside another child's exit
+ * callback, as each call here after the first would be, and now and then at
+ * server start whatever starts it. The shared turn (lib/children) starts
+ * each from a timer, after the loop has finished closing handles, and spaces
+ * starts out after the server starts. One that died before running is tried
+ * once more: an aborted -C read as "no rule" would stack a second copy.
+ */
+function iptables(tool, args, cb, retried) {
+  children.launch(function () {
+    execFile(tool, args.concat(RULE), { timeout: 5000 }, function (err) {
+      if (children.diedEarly(err) && !retried) {
+        return setTimeout(function () { iptables(tool, args, cb, true); }, 200);
+      }
+      cb(err);
+    });
+  });
+}
+
 // Checked first so a restart does not stack a second copy of the rule.
 // A C1 (webOS 6) has ip6tables but no ip6_tables in its kernel, so both calls
 // fail there and that family is skipped.
 function blockWith(tool, cb) {
-  execFile(tool, ['-C'].concat(RULE), { timeout: 5000 }, function (err) {
+  iptables(tool, ['-C'], function (err) {
     if (!err) return cb(true);
-    execFile(tool, ['-I'].concat(RULE), { timeout: 5000 }, function (err2) { cb(!err2); });
+    iptables(tool, ['-I'], function (err2) { cb(!err2); });
   });
 }
 
@@ -88,9 +110,9 @@ function blockFromNetwork(cb) {
 
 // Calls back with whether the rule is gone; a missing rule counts as gone.
 function unblockWith(tool, cb) {
-  execFile(tool, ['-C'].concat(RULE), { timeout: 5000 }, function (err) {
+  iptables(tool, ['-C'], function (err) {
     if (err) return cb(true);
-    execFile(tool, ['-D'].concat(RULE), { timeout: 5000 }, function (err2) { cb(!err2); });
+    iptables(tool, ['-D'], function (err2) { cb(!err2); });
   });
 }
 

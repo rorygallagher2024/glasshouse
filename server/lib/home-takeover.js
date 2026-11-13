@@ -68,6 +68,8 @@ var execFn = execFile;
 var killFn = function (pid) { process.kill(pid, 'SIGTERM'); };
 var blankWanted = function () { return false; };
 var blockFirst = function () { return false; };
+// Whether sam may be restarted when it takes neither the nudge nor a block and release.
+var restartAllowed = function () { return false; };
 
 function init(opts) {
   opts = opts || {};
@@ -85,6 +87,7 @@ function init(opts) {
   if (opts.kill) killFn = opts.kill;
   if (opts.blankAtStart) blankWanted = opts.blankAtStart;
   if (opts.blockFirst) blockFirst = opts.blockFirst;
+  if (opts.restartAllowed) restartAllowed = opts.restartAllowed;
 }
 
 function luna(uri, payload, cb) {
@@ -307,13 +310,12 @@ function samHasManifest(cb) {
 /*
  * sam reads the directory again and reports the type wanted. webOS 10 and 11
  * ignore the nudge, which costs its 8 s of polls before the block and release
- * there, so they go to the block and release first.
+ * there, so they go to the block and release first. Where neither works,
+ * take() fails clean and restores LG's Home, except where restartAllowed()
+ * says sam may be restarted: webOS 7, where an A2 (7.3.0) took Glasshouse Home
+ * only that way, and lost it when 0.145.0 stopped restarting sam (#1412).
  */
-// Whether the last reread had to restart sam, as only webOS 5 and 6 do.
-var restartedLast = false;
-
 function reread(wantWeb, cb, check) {
-  restartedLast = false;
   if (!samrescan) return cb(false);
   check = check || function (done) {
     samType(function (type) { done(type !== null && (type === 'web') === wantWeb); });
@@ -326,13 +328,9 @@ function reread(wantWeb, cb, check) {
   }
   call(first, function (ok) {
     if (ok) return cb(true);
-    call(then, function (ok) {
-      if (ok) return cb(true);
-      // webOS 5 and 6 have neither the configd nudge nor the block and
-      // release (a CX on 5.5.0-19, a C1 on 6.5.3): there sam reads the files
-      // again only by restarting it.
-      if (!samrescan.restart) return cb(false);
-      restartedLast = true;
+    call(then, function (ok2) {
+      if (ok2 || !restartAllowed() || !samrescan.restart) return cb(ok2);
+      console.log('home: sam took neither the nudge nor a block and release; restarting it (webOS 7)');
       samrescan.restart(check, cb);
     });
   });
@@ -446,7 +444,7 @@ module.exports = {
   stage: stage,
   mounted: mounted,
   samType: samType,
-  restartedSam: function () { return restartedLast; },
+  restartedSam: function () { return false; },
   take: take,
   release: release,
   stopLgHome: stopLgHome,

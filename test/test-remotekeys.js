@@ -7,6 +7,7 @@
  *
  * Strict ES5: runs on node 0.12.
  */
+require('./fake-clock').install();
 var assert = require('assert');
 var fs = require('fs');
 var os = require('os');
@@ -59,6 +60,8 @@ function luna(uri, params, cb) {
   } else if (uri === 'com.webos.applicationManager/getAppInfo') {
     // A CX has no quick input picker, so no input switcher choice.
     r.returnValue = false;
+  } else if (uri === 'com.webos.appInstallService/dev/remove') {
+    tv.removed = (tv.removed || []).concat(params.id);
   }
   process.nextTick(function () { cb(r); });
 }
@@ -70,7 +73,8 @@ function exists(p) { try { fs.statSync(p); return true; } catch (e) { return fal
 // kept, so tell() hands it a value as configd would on a change.
 // broken: 'launch' makes the launch throw, 'symbols' leaves WebOS undefined,
 // 'timer' leaves genericTimer undefined. expire() runs the timers it set.
-function loadFilter(broken) {
+// extra: more of the compositor's objects, put over the ones here.
+function loadFilter(broken, extra) {
   var launched = [];
   var sent = [];
   var subscribed = null;
@@ -102,6 +106,7 @@ function loadFilter(broken) {
     } },
     console: { info: function () {}, warn: function () {} }
   };
+  Object.keys(extra || {}).forEach(function (k) { ctx[k] = extra[k]; });
   if (broken === 'symbols') delete ctx.WebOS;
   if (broken === 'timer') delete ctx.genericTimer;
   vm.runInNewContext(fs.readFileSync(FILTER, 'utf8') + '\nthis.handler = ' + rk.HANDLER + '; this.init = init;', ctx);
@@ -143,7 +148,7 @@ step(function (next) {
     assert.ok(r.keys.every(function (k) { return k.action === 'lg' && k.id === ''; }));
     assert.strictEqual(r.inChain, false);
     assert.deepEqual(r.choices.map(function (c) { return c.id; }),
-      ['action:screenOff', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
+      ['action:screenOff', 'action:powerOff', 'media:play', 'media:pause', 'media:stop', 'media:rewind', 'media:fastForward',
        'media:volumeUp', 'media:volumeDown', 'media:mute',
        'com.webos.app.hdmi1', 'com.webos.app.hdmi2', 'com.webos.app.livetv',
        'com.webos.app.home', 'netflix', 'youtube.leanback.v4']);
@@ -315,6 +320,58 @@ step(function (next) {
   }));
 });
 
+step(function (next) {
+  rk.setRemoteKey('red', 'open', 'action:powerOff', guard(function (s) {
+    assert.strictEqual(s.ok, true);
+    var f = loadFilter();
+    var powerOffRequests = function () { return f.sent.filter(function (m) { return m.uri === 'com.webos.service.tvpower/power/powerOff'; }); };
+    f.power('Active');
+    assert.strictEqual(f.handle(1004, false, false), 'accepted');
+    assert.strictEqual(powerOffRequests().length, 0, 'a release without a press does nothing');
+    f.handle(1004, true, true);
+    f.handle(1004, false, false);
+    assert.strictEqual(powerOffRequests().length, 0, 'a repeat without a press does not arm the key');
+    assert.strictEqual(f.handle(1004, true, false), 'accepted');
+    assert.strictEqual(f.handle(1004, true, true), 'accepted');
+    assert.strictEqual(powerOffRequests().length, 0, 'not on the press or while held');
+    f.handle(1004, false, false);
+    f.handle(1004, false, false);
+    assert.strictEqual(powerOffRequests().length, 1, 'one power-off request on release');
+    assert.deepEqual(powerOffRequests()[0].payload, { reason: 'remoteKey' });
+    assert.strictEqual(f.launched.length, 0);
+    assert.strictEqual(f.handle(9999, true, false), 'next');
+    f.power('Screen Off');
+    f.handle(1004, true, false);
+    f.handle(1004, false, false);
+    assert.strictEqual(powerOffRequests().length, 2, 'also switches off with the panel already blank');
+    ['ScreenOff', 'Screen Saver', 'ScreenSaver', 'On'].forEach(function (state) {
+      var before = powerOffRequests().length;
+      f.power(state);
+      f.handle(1004, true, false);
+      f.handle(1004, false, false);
+      assert.strictEqual(powerOffRequests().length, before + 1, 'switches off in ' + state);
+    });
+    var beforeWake = powerOffRequests().length;
+    f.power('Active Standby');
+    f.handle(1004, true, false);
+    f.power('Active');
+    f.handle(1004, false, false);
+    assert.strictEqual(powerOffRequests().length, beforeWake, 'a press waking from standby does not switch off again');
+    f.handle(1004, true, false);
+    f.tell({ keys: { red: 'action:powerOff' } });
+    f.handle(1004, false, false);
+    assert.strictEqual(powerOffRequests().length, beforeWake, 'changing the mappings cancels a pending release');
+    rk.getRemoteKeys(guard(function (r) {
+      var red = r.keys.filter(function (k) { return k.key === 'red'; })[0];
+      assert.strictEqual(red.opens, 'Power off');
+      rk.setRemoteKey('red', 'lg', '', guard(function () {
+        console.log('  ✓ Power off requests standby once on release, including with a blank panel, and does not undo a wake');
+        next();
+      }));
+    }));
+  }));
+});
+
 // #1088: with MQTT on, a key whose presses Home Assistant receives can be set
 // to send them there; the filter keeps it from the TV and opens nothing.
 step(function (next) {
@@ -343,6 +400,56 @@ step(function (next) {
             console.log('  ✓ with MQTT on, a key Home Assistant receives can be set to send it there, which the TV then ignores');
             next();
           }));
+        }));
+      }));
+    }));
+  }));
+});
+
+// The Guide key can open Glasshouse Home's Internet TV guide, where Home is on
+// with a playlist: Home opens as the Home key opens it, asked for its guide.
+step(function (next) {
+  var on = false;
+  rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+            homeGuide: function () { return on; } });
+  rk.getRemoteKeys(guard(function (off) {
+    assert.ok(!off.choices.some(function (c) { return c.id === 'action:homeGuide'; }), 'not without Glasshouse Home and a playlist');
+    on = true;
+    rk.getRemoteKeys(guard(function (r) {
+      assert.ok(r.choices.some(function (c) { return c.id === 'action:homeGuide'; }));
+      rk.setRemoteKey('guide', 'open', 'action:homeGuide', guard(function (s) {
+        assert.strictEqual(s.ok, true);
+        var f = loadFilter();
+        assert.strictEqual(f.handle(1003, true, false), 'accepted', 'kept from LG\'s guide');
+        assert.strictEqual(f.handle(1003, true, true), 'accepted');
+        assert.strictEqual(f.handle(1003, false, false), 'accepted');
+        assert.strictEqual(f.launched.length, 1, 'once, on the press');
+        assert.strictEqual(f.launched[0].id, 'com.webos.app.home');
+        assert.deepEqual(JSON.parse(f.launched[0].params), { activateType: 'home', launchType: 'homeKey', glasshouse: 'guide' });
+        f.tell({ keys: { guide: 'action:homeGuide' }, home: 'com.tvweb.home' });
+        f.handle(1003, true, false);
+        assert.equal(f.launched[1].id, 'com.tvweb.home', 'webOS 4 opens the standalone Home app');
+        assert.equal(JSON.parse(f.launched[1].params).glasshouse, 'guide');
+        rk.getRemoteKeys(guard(function (after) {
+          var guide = after.keys.filter(function (k) { return k.key === 'guide'; })[0];
+          assert.strictEqual(guide.opens, 'Glasshouse Home\'s guide');
+          // Glasshouse Home switched off: Guide is LG's again, the choice kept for its return.
+          on = false;
+          rk.availabilityChanged();
+          setTimeout(function () {
+            assert.ok(!('guide' in tv.keys.keys), 'left to LG while unavailable');
+            assert.strictEqual(JSON.parse(fs.readFileSync(MAP, 'utf8')).keys.guide, 'action:homeGuide', 'still saved');
+            assert.strictEqual(loadFilter().handle(1003, true, false), 'next');
+            on = true;
+            rk.availabilityChanged();
+            setTimeout(function () {
+              assert.strictEqual(tv.keys.keys.guide, 'action:homeGuide', 'back once available');
+          rk.setRemoteKey('guide', 'lg', '', guard(function () {
+            console.log('  ✓ with Glasshouse Home on and a playlist, Guide can open its Internet TV guide instead of LG\'s, and is LG\'s again while it cannot');
+            next();
+          }));
+            }, 50);
+          }, 50);
         }));
       }));
     }));
@@ -463,7 +570,7 @@ step(function (next) {
 });
 
 step(function (next) {
-  fs.writeFileSync(path.join(filtersDir, 'regional.js'), 'case WebOS.Key_webOS_Hulu: case WebOS.Key_webOS_IPlayer:');
+  fs.writeFileSync(path.join(filtersDir, 'regional.js'), 'case WebOS.Key_webOS_Hulu: case WebOS.Key_webOS_IPlayer: case WebOS.Key_webOS_Globoplay: case WebOS.Key_webOS_Shahid:');
   rk.init({ luna: luna, stateDir: stateDir, filtersDir: filtersDir });
   var elsewhere = function (r) {
     return r.keys.filter(function (k) { return k.elsewhere; }).map(function (k) { return k.key; });
@@ -472,9 +579,17 @@ step(function (next) {
     assert.deepEqual(elsewhere(unknown), []);
     fs.writeFileSync(path.join(stateDir, 'country'), 'GB\n');
     rk.getRemoteKeys(guard(function (gb) {
-      assert.deepEqual(elsewhere(gb), ['hulu']);
-      console.log('  ✓ a key only another country\'s remotes have is marked as from elsewhere, and none is before the country is known');
-      next();
+      assert.deepEqual(elsewhere(gb), ['hulu', 'globoplay', 'shahid']);
+      fs.writeFileSync(path.join(stateDir, 'country'), 'BR\n');
+      rk.getRemoteKeys(guard(function (br) {
+        assert.deepEqual(elsewhere(br), ['hulu', 'iplayer', 'shahid']);
+        fs.writeFileSync(path.join(stateDir, 'country'), 'AE\n');
+        rk.getRemoteKeys(guard(function (ae) {
+          assert.deepEqual(elsewhere(ae), ['hulu', 'iplayer', 'globoplay']);
+          console.log('  ✓ a key only another country\'s remotes have is marked as from elsewhere, and none is before the country is known');
+          next();
+        }));
+      }));
     }));
   }));
 });
@@ -599,6 +714,100 @@ step(function (next) {
   }));
 });
 
+// ---------------------------------------------------------------- input bar
+// The Input key, which the CX's filters name too.
+var bar = { calls: [], installs: true, allowed: true, pokes: 0 };
+step(function (next) {
+  fs.appendFileSync(path.join(filtersDir, 'appLaunch.js'), ' case WebOS.Key_webOS_InputSource:');
+  rk.init({ luna: luna, inputNames: { hdmi1: 'HDMI 1', hdmi2: 'Apple TV' }, stateDir: stateDir, filtersDir: filtersDir,
+    inputBarAllowed: function () { return bar.allowed; },
+    inputBarApp: function (action, cb) {
+      bar.calls.push(action);
+      process.nextTick(function () { cb({ ok: action !== 'install' || bar.installs }); });
+    },
+    onInputBarKey: function () { bar.pokes++; } });
+  rk.getRemoteKeys(guard(function (r) {
+    assert.ok(r.keys.some(function (k) { return k.key === 'input'; }), 'the Input key is offered');
+    assert.ok(r.choices.some(function (c) { return c.id === 'com.tvweb.inputbar' && c.title === 'Input bar'; }), 'the bar is offered before its app is installed');
+    bar.allowed = false;
+    rk.getRemoteKeys(guard(function (r2) {
+      assert.ok(!r2.choices.some(function (c) { return c.id === 'com.tvweb.inputbar'; }), 'not offered where lib/inputbar.js does not allow it');
+      bar.allowed = true;
+      console.log('  ✓ the input bar is offered where allowed, whether or not its app is installed yet');
+      next();
+    }));
+  }));
+});
+
+step(function (next) {
+  bar.installs = false;
+  rk.setRemoteKey('input', 'open', 'com.tvweb.inputbar', guard(function (s) {
+    assert.strictEqual(s.ok, false, 'refused when its app cannot be installed');
+    assert.deepEqual(bar.calls, ['install']);
+    assert.strictEqual(rk.opensInputBar(), false, 'the key is left as it was');
+    bar.installs = true;
+    rk.setRemoteKey('input', 'open', 'com.tvweb.inputbar', guard(function (s2) {
+      assert.ok(s2.ok, s2.error);
+      assert.deepEqual(bar.calls, ['install', 'install']);
+      assert.strictEqual(rk.opensInputBar(), true);
+      assert.strictEqual(bar.pokes, 1, 'the preloader is told');
+      console.log('  ✓ choosing the bar installs its app first, and a failed install leaves the key as it was');
+      next();
+    }));
+  }));
+});
+
+step(function (next) {
+  var front = false, focusKeys = [];
+  var f = loadFilter(null, {
+    WebOS: { Key_webOS_Netflix: 1001, Key_webOS_Amazon: 1002, Key_webOS_TVGuide: 1003, Key_webOS_Red: 1004,
+             Key_webOS_USP: 1005, Key_webOS_InputSource: 1006 },
+    Qt: { Key_Super_L: 2001, Key_Right: 3001 },
+    global: {
+      isForegroundApp: function (id) { return front && id === 'com.tvweb.inputbar'; },
+      sendKeyToFocusWindow: function (key, pressed, code) { focusKeys.push([key, pressed, code]); }
+    }
+  });
+  assert.strictEqual(f.handle(1006, true, false), 'accepted');
+  f.handle(1006, false, false);
+  assert.deepEqual(f.launched.map(function (l) { return l.id; }), ['com.tvweb.inputbar'], 'opened while not in front');
+  front = true;
+  f.handle(1006, true, false);
+  f.handle(1006, true, true);
+  f.handle(1006, false, false);
+  assert.strictEqual(f.launched.length, 1, 'not opened again while in front');
+  assert.deepEqual(focusKeys, [[3001, true, 106], [3001, false, 106]], 'handed to it as Right, held repeats left out');
+  console.log('  ✓ the Input key opens the bar, and a press while it is in front goes to it as Right rather than relaunching it');
+  next();
+});
+
+step(function (next) {
+  rk.setRemoteKey('input', 'lg', '', guard(function (s) {
+    assert.ok(s.ok, s.error);
+    setImmediate(guard(function () {
+      assert.deepEqual(bar.calls.slice(-1), ['remove'], 'the last key leaving the bar removes its app');
+      rk.setRemoteKey('input', 'open', 'com.tvweb.inputbar', guard(function () {
+        rk.dropInputBar(guard(function (ok) {
+          assert.strictEqual(ok, true);
+          assert.strictEqual(rk.opensInputBar(), false, 'dropInputBar sets its keys back as LG has them');
+          setImmediate(guard(function () {
+            assert.deepEqual(bar.calls.slice(-1), ['remove']);
+            rk.setRemoteKey('input', 'open', 'com.tvweb.inputbar', guard(function () {
+              tv.removed = [];
+              rk.restore(guard(function (ok2) {
+                assert.ok(ok2);
+                assert.deepEqual(tv.removed, ['com.tvweb.inputbar'], 'restore() removes the bar app with the keys');
+                console.log('  ✓ the bar\'s app is removed when no key opens it any more, by dropInputBar(), and by restore() at uninstall');
+                next();
+              }));
+            }));
+          }));
+        }));
+      }));
+    }));
+  }));
+});
+
 function done() {
   fs.readdirSync(filtersDir).forEach(function (f) { fs.unlinkSync(path.join(filtersDir, f)); });
   fs.rmdirSync(filtersDir);
@@ -606,6 +815,7 @@ function done() {
   fs.rmdirSync(stateDir);
   fs.rmdirSync(dir);
   console.log('test-remotekeys.js passed');
+  process.exit(0);
 }
 
 run(0);

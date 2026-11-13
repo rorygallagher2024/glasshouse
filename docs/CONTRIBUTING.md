@@ -27,6 +27,106 @@ Focus on clarity and readability. Clearly state what changed and why, keeping pu
 
 If you are using AI coding assistants or automated agents, ensure they adhere to the repository conventions in `CLAUDE.md` (symlinked as `AGENTS.md`).
 
+## Rules for a pull request
+
+The rules and the guidelines below exist to keep the code good and to make
+pull requests quick to review, so they get merged sooner. A pull request that
+arrives tested, translated and documented, built the way the rest of the code
+is, needs fewer rounds of changes.
+
+Keep a pull request in draft while any of these that applies to it is unmet,
+and mark it ready for review once they are. Not every rule applies to every
+change: a docs-only change needs no TV testing or translation.
+
+* **Tried on a real TV,** with a [Testing section](#testing-details-in-the-pull-request)
+  in the description and a screenshot of anything that shows on a screen.
+* **All checks pass:** `scripts/check-all.sh`.
+* **Translated.** Every new or changed string has its translation in each
+  language file in `server/assets/i18n/` that covers the page it is on: Arabic,
+  Spanish, French, Hungarian, Italian, Polish, European and Brazilian
+  Portuguese and Russian for the dashboards, and German too for Glasshouse Home.
+  `python3 scripts/check-strings.py --missing` lists what is left.
+* **Docs updated:** the pages that describe what it changes, as in
+  [Docs](#docs).
+
+## Guidelines
+
+What reviews look for. Unlike the rules, these leave room for judgement: a
+pull request that departs from one says why in its description. This is a
+starting set, added to as reviews turn up more.
+
+### The dashboards' design
+
+* **Reuse what is there.** Buttons, dropdowns, rows, headings and notes use
+  the existing classes (`pill`, `pill-sel`, `prot-row`, `pv-sec`), not new
+  styles for the same thing. A new kind of element is the exception, and is
+  made to match the ones around it.
+* **Keep the design language.** Spacing, type sizes and lines between rows
+  follow the sections around a change. Check it in the dark and light themes
+  and at phone width.
+* **Colour means something.** Green is for the action that turns something on
+  or connects it, and red (`pill bad`) only for removing something. Other
+  buttons stay neutral.
+* **Every press gets an answer.** A button responds when pressed, and every
+  state says what is happening: loading, empty, in progress, failed. A button
+  is never greyed out without a visible reason.
+* **Say what the owner needs, not how it works.** Text on screen leaves out
+  services, timings and other mechanics.
+
+### Code
+
+* **One concern per file.** A server module in `server/lib/` and a dashboard
+  script in `server/assets/ui/` each handle one thing. A feature of its own,
+  or one that serves more than one tab, gets its own file rather than growing
+  another.
+* **Small functions.** A function does one job and reads without scrolling.
+  One that handles several cases in nested branches or callbacks is split, one
+  function per case, with the shared steps in helpers.
+* **A new setting goes in the settings backup, or says why not.** A control
+  added to `server/lib/controls.js` is either a part in
+  `server/lib/backup-parts.js` or listed in its `NOT_CARRIED` with the reason,
+  and the backup table in `docs/dashboard/server.md` follows.
+  `test/test-backup-parts.js` fails on one in neither.
+
+### Tests
+
+[Testing and CI](development/testing.md) says what each suite and check
+covers.
+
+* **Wait for the thing, not a time.** Wait for the reply, element or state a
+  check is about (`waitForResponse`, `waitForFunction`, or polling a
+  condition), not a fixed `waitForTimeout`, which a slow CI runner can
+  outlast. A fixed wait is only for showing that something *doesn't* happen.
+  In a unit test, `waitFor` from `test/wait-for.js` polls for it.
+* **Check before acting on something that may be absent.** An action on a
+  missing element waits out Playwright's 30 s before it fails, so `.catch()`
+  after one costs that whole wait. Use `count()` first.
+* **Don't wait on the server's real timers.** If a test needs a 10 s grace
+  period or a retry interval to pass, the module takes it from `init` and the
+  test passes a few milliseconds. Time that has to look as if it passed comes
+  from a faked clock (`now`). A suite with no real network, file or process
+  I/O can run all its timers on `test/fake-clock.js` instead, which takes no
+  real time and fires every timer in its order however slow the runner.
+* **Listen on port 0, or take a port from `test/ports.js`.** Suites run side
+  by side, so a port the system handed out and was closed again can be
+  another suite's by the time a server starts on it. A server the test starts
+  itself listens on 0 and reads its port back; one that is told its port
+  beforehand, such as the whole server in its own process, gets it from
+  `freePort` in `test/ports.js`.
+* **Never run a TV's commands for real.** A module that runs `systemctl`,
+  `mount` or `luna-send` takes the function that runs them from `init`, and
+  its tests pass one that records the command.
+* **Keep the run short.** A new unit test takes well under a second. A new
+  browser check goes in the group it shares state with, or the shortest, and
+  the pull request says how long it takes.
+
+### Docs
+
+* The page for a tab in `docs/dashboard/` says what each part does for the
+  owner, in a sentence or two, without how it works.
+* Findings about LG's software go in `docs/development/TV-RESEARCH.md`, and
+  anything the server changes on the TV in `docs/TV-CHANGES.md`.
+
 ## Code reviews
 
 We prefer code review comments to follow the [Conventional Comments](https://conventionalcomments.org/) standard (e.g. `praise:`, `suggestion:`, `issue:`, `nitpick:`, `question:`). This keeps feedback constructive, actionable, and makes it clear whether a comment is blocking or an optional suggestion. Refer to [conventionalcomments.org](https://conventionalcomments.org/) for the complete specification and examples.
@@ -151,7 +251,8 @@ Add a short **Testing** section to the pull request description:
 
 * the TV's model and webOS version, for example "OLED42C24LA, webOS 9.2";
 * what you did and what you saw;
-* what you didn't test, such as other webOS versions or something that needs hardware you don't have.
+* what you didn't test, such as other webOS versions or something that needs hardware you don't have;
+* where the change shows on a screen, a screenshot of it: the dashboard, the TV app, Glasshouse Home or the TV's own screen. `scripts/tv.sh <tv-ip> capture out.jpg` takes one from the TV.
 
 For example:
 

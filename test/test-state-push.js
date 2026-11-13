@@ -6,6 +6,7 @@
  *
  * Strict ES5: runs on node 0.12.
  */
+require('./fake-clock').install();
 var assert = require('assert');
 var stateModule = require('../server/lib/state');
 var mqttState = require('../server/lib/mqtt-state');

@@ -182,7 +182,10 @@ function catalogRow(a, writable, from) {
     <div class="prot-status">
       ${sizeBadge ? `<span class="app-badge" title="${esc(t('apps.installed.storageTooltip', 'Storage footprint'))}">${esc(sizeBadge)}</span>` : ''}
       ${a.installedVersion !== null && a.installedVersion !== undefined && a.state !== 'store' && !uninstalling[a.id] ? `<button type="button" class="pill good" onclick="sendCommand('launchApp','${jsq(a.id)}')" ${writable ? '' : 'disabled'}>${esc(t('apps.launch.button', 'Launch'))}</button>` : ''}
-      <button type="button" class="pill ${cls}" data-app="${esc(a.id)}" data-repo="${esc(a.repo || '')}" onclick="${clickFn}"${fill} ${off ? 'disabled' : ''}>${esc(label)}</button>
+      <div class="catalog-actions">
+        ${a.sourceUrl ? `<a class="pill idle catalog-source" href="${esc(a.sourceUrl)}" target="_blank" rel="noopener noreferrer">${esc(t('apps.install.viewSource', 'View source'))}</a>` : ''}
+        <button type="button" class="pill ${cls}" data-app="${esc(a.id)}" data-repo="${esc(a.repo || '')}" onclick="${clickFn}"${fill} ${off ? 'disabled' : ''}>${esc(label)}</button>
+      </div>
     </div>
   </div>`;
 }

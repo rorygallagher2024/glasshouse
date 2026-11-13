@@ -6,11 +6,13 @@ Branch, push the branch, open a PR. This applies to "commit and push" too.
 Push to an existing PR branch rather than opening a second one for the same
 line of work. Merging is the maintainer's call.
 
-## Draft until tried on a TV
+## Draft until ready
 
-A PR that has not been tried on a real TV stays a draft, even when feedback on
-it is wanted. Mark it ready for review once it has been, with the result in its
-Testing section.
+Keep a PR in draft while any rule in docs/CONTRIBUTING.md's "Rules for a pull
+request" that applies to it is unmet, even when feedback on it is wanted:
+tried on a real TV with the result in its Testing section, checks passing,
+translated, docs updated. Mark it ready for review then. Its "Guidelines" are
+followed too, and a PR that departs from one says why.
 
 ## Docs move with the change
 
@@ -46,10 +48,13 @@ use modern JavaScript.
   `devtools` (closing the web app debugger to the network),
   `oled` (panel care, service menu), `homescreen` and `homescreen-webos9`
   (LG's Home screen layout and input tiles, one module per home app), `home`
-  (Glasshouse Home, a home screen in place of LG's), `lgsettings` (LG's own settings as
+  (Glasshouse Home, a home screen in place of LG's), `home-launcher` (a launcher of
+  the owner's own in its place), `lgsettings` (LG's own settings as
   rows), `game`, `apps` (tiles, uninstall, saved pages), `installer` and
   `repo` (installing .ipk packages, the Homebrew Channel catalog),
-  `services` (background services), `screensavers`, `idlesaver` (lifting
+  `services` (background services), `appdns` (an app's own DNS servers,
+  written into its jail after each launch), `doh` (a DNS server on the TV
+  that sends each query on over HTTPS, for `appdns`), `screensavers`, `idlesaver` (lifting
   panel care's hold on LG's idle screen saver), `updater` and `fetch`
   (self-update over curl or wget), `piccap`, `say` (server-side strings),
   `names` (raw TV values as display strings and Prometheus labels),
@@ -79,6 +84,10 @@ by side. One at a time: `node test/run-all.js`, `npx tsc`, and
 `node scripts/check-upgrade.js`. A module
 handed to another through init() is typed with
 `/** @type {typeof import('./x')} */`, so check-module-calls.py follows it.
+
+Tests follow "Tests" in docs/CONTRIBUTING.md: wait for events rather than
+fixed times, take timings and commands through `init`, and keep a new test
+under a second.
 
 # Working with a TV
 
@@ -138,6 +147,11 @@ writing down.
 The exception is a PR's **Testing** section, which docs/CONTRIBUTING.md asks
 for: the TV and webOS version the change was tried on, what was done and seen,
 and what wasn't tested. State them as facts, briefly, not as a story.
+
+Where the change shows on a screen, put a screenshot of it in the Testing
+section: the dashboard, the TV app, Glasshouse Home or the TV's own screen.
+`scripts/tv.sh <tv> capture <out.jpg>` takes one from the TV; on webOS 4 it
+includes the HDMI picture, which webOS 5 and later capture black.
 
 Record decisions and their reasons, not the route taken to reach them.
 

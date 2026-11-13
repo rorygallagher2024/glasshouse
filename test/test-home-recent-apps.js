@@ -1,5 +1,6 @@
 /* Recent-app HTTP outcomes: a close is confirmed before its card is removed,
- * web apps stop too, and private snapshots cannot enter shared caches.
+ * web apps stop too, private snapshots cannot enter shared caches, and an
+ * unchanged one keeps its address and is not sent again.
  * Strict ES5: also runs on node 0.10. */
 var assert = require('assert');
 var http = require('http');
@@ -46,7 +47,7 @@ routes.init({ config: { allowControl: true, token: '' }, home: { recentApps: rec
 var server = http.createServer(routes.handleRequest);
 function request(body, cb, suffix) {
   var req = http.request({ host: '127.0.0.1', port: server.address().port,
-    path: '/api/home/recents' + (suffix || ''), method: body ? 'POST' : 'GET',
+    path: '/api/home/recents' + (suffix || ''), method: body ? 'POST' : 'GET', agent: false,
     headers: body ? { 'Content-Type': 'application/json' } : {} }, function (res) {
     var raw = '';
     res.on('data', function (d) { raw += d; });
@@ -120,9 +121,27 @@ var steps = [
       request(null, function (res) {
         assert.equal(res.statusCode, 200);
         assert.equal(res.headers['content-type'], 'image/jpeg');
-        assert.equal(res.headers['cache-control'], 'private, no-store');
-        next();
+        assert.equal(res.headers['cache-control'], 'private, no-cache');
+        var etag = res.headers.etag;
+        assert.ok(etag, 'an unchanged picture can be revalidated');
+        http.get({ host: '127.0.0.1', port: server.address().port, path: '/api/home/recents/image?id=netflix', agent: false,
+          headers: { 'If-None-Match': etag } }, function (res2) {
+          assert.equal(res2.statusCode, 304, 'an unchanged picture is not sent again');
+          res2.resume();
+          next();
+        });
       }, '/image?id=netflix');
+    });
+  },
+  function (next) {
+    reset();
+    request(null, function (res, r) {
+      var v = r.apps[0].imageVersion;
+      assert.ok(/^[0-9a-f]{12}$/.test(v), 'each picture has a version');
+      request(null, function (res2, r2) {
+        assert.equal(r2.apps[0].imageVersion, v, 'an unchanged picture keeps its address between openings');
+        next();
+      });
     });
   }
 ];
@@ -131,4 +150,5 @@ server.listen(0, '127.0.0.1', function next() {
   if (step) return step(next);
   server.close();
   console.log('Recent-app HTTP outcomes passed.');
+  process.exit(0);
 });

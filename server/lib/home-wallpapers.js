@@ -1,6 +1,7 @@
-/* Home wallpapers: black, one of the sets fetched when chosen, or the owner's
- * own images uploaded from the browser, one for each time of day. None are
- * packaged; with the owner's own, a time of day without one is black.
+/* Home wallpapers: black, one of the sets fetched when chosen, the owner's
+ * own images uploaded from the browser, one for each time of day, or a
+ * collection of the owner's own that Home shows in turn, in a random order.
+ * None are packaged; with the owner's own, a time of day without one is black.
  * Kept outside assets so updates do not carry them into the rollback copy.
  * Strict ES5 for the TV's Node 0.10/0.12. */
 var fs = require('fs');
@@ -17,11 +18,17 @@ var SLOTS = ['morning', 'afternoon', 'evening', 'night'];
 var MAX_WIDTH = 1920, MAX_HEIGHT = 1080;
 var uploadsDir = '/var/lib/tvweb/home-wallpaper-uploads';
 var setsDir = '/var/lib/tvweb/home-wallpaper-sets';
+var shuffleDir = '/var/lib/tvweb/home-wallpaper-shuffle';
 var choiceFile = '/var/lib/tvweb/home-wallpaper.json';
 var uploading = false;
 // The set being fetched, while it is.
 var fetching = null;
 var MAX_UPLOAD = 5 * 1024 * 1024;
+// How many pictures the shuffled collection holds: at 1920 x 1080 one is
+// usually well under a megabyte.
+var MAX_SHUFFLE = 50;
+// A shuffled picture's name, made here at upload: never from the browser.
+var PICTURE_ID = /^[0-9a-z]{8,24}$/;
 /*
  * The sets, from a tag of their own repo so that they are not in every
  * release's download. A tag's files never change: each is pinned here.
@@ -39,13 +46,14 @@ var SETS = {
     evening: '1ccb4bbc5b176f26f643c84cdd255bac36707515093b64892630d5b3925e18d1',
     night: '189e934db4b5aff8608110e3cd4562cb70d50c32a044a1f8c441ac924baa84a7' } }
 };
-// own is the owner's uploads; black, no picture at all.
-var CHOICES = ['black', 'landscape', 'abstract', 'own'];
+// own is the owner's uploads by time of day, shuffle their collection; black, no picture at all.
+var CHOICES = ['black', 'landscape', 'abstract', 'own', 'shuffle'];
 var choice = 'black';
 
 function init(stateDir) {
   uploadsDir = path.join(stateDir, 'home-wallpaper-uploads');
   setsDir = path.join(stateDir, 'home-wallpaper-sets');
+  shuffleDir = path.join(stateDir, 'home-wallpaper-shuffle');
   choiceFile = path.join(stateDir, 'home-wallpaper.json');
   var saved = util.readJson(choiceFile, null);
   if (saved && CHOICES.indexOf(saved.choice) !== -1) choice = saved.choice;
@@ -81,24 +89,58 @@ function saveChoice() {
   catch (e) { console.error('home: could not save the wallpaper choice: ' + e.message); }
 }
 
+/*
+ * The shuffled collection's pictures, oldest first: each a name made at its
+ * upload, which never changes, so its address needs no revision.
+ */
+function shufflePictures() {
+  var names;
+  try { names = fs.readdirSync(shuffleDir); } catch (e) { return []; }
+  var found = [];
+  names.forEach(function (name) {
+    var m = /^([0-9a-z]+)\.jpg$/.exec(name);
+    if (!m || !PICTURE_ID.test(m[1])) return;
+    try {
+      var st = fs.statSync(path.join(shuffleDir, name));
+      if (st.isFile()) found.push({ id: m[1], at: Number(st.mtime) });
+    } catch (e) {}
+  });
+  found.sort(function (a, b) { return a.at - b.at || (a.id < b.id ? -1 : 1); });
+  return found.map(function (p) { return p.id; });
+}
+
 function status() {
-  var slots = {}, revision = [choice];
+  var slots = {}, revision = [choice], pictures = shufflePictures();
   SLOTS.forEach(function (key) {
     var file = image(key), st = null;
     try { if (file) st = fs.statSync(file); } catch (e) {}
     slots[key] = !!st;
     revision.push(st ? String(Number(st.mtime)) + '-' + st.size : '0');
   });
-  return { available: SLOTS.some(function (key) { return slots[key]; }),
+  if (choice === 'shuffle') revision.push(pictures.length + '-' + (pictures[pictures.length - 1] || ''));
+  return { available: choice === 'shuffle' ? pictures.length > 0 : SLOTS.some(function (key) { return slots[key]; }),
     choice: choice, choices: CHOICES, fetching: fetching,
-    uploading: uploading || !!fetching, slots: slots, revision: revision.join('.') };
+    uploading: uploading || !!fetching, slots: slots, pictures: pictures, maxPictures: MAX_SHUFFLE,
+    revision: revision.join('.') };
 }
 
 function setFile(name, key) { return path.join(setsDir, name, key + '.jpg'); }
 
-// The picture for a time of day, from the chosen set or the owner's own.
-function image(key) {
-  if (SLOTS.indexOf(key) === -1 || choice === 'black') return null;
+function shuffleFile(id) {
+  if (!PICTURE_ID.test(String(id || ''))) return null;
+  var file = path.join(shuffleDir, id + '.jpg');
+  try { if (fs.statSync(file).isFile()) return file; } catch (e) {}
+  return null;
+}
+
+/*
+ * The picture for a time of day, from the chosen set or the owner's own; or,
+ * as shuffle with id, one picture of the collection, which the browser shows
+ * whatever is chosen.
+ */
+function image(key, id) {
+  if (key === 'shuffle') return shuffleFile(id);
+  if (SLOTS.indexOf(key) === -1 || choice === 'black' || choice === 'shuffle') return null;
   var file = choice === 'own' ? path.join(uploadsDir, key + '.jpg') : setFile(choice, key);
   try { if (fs.statSync(file).isFile()) return file; } catch (e) {}
   return null;
@@ -118,9 +160,27 @@ function removeUploads(cb, only) {
   cb({ ok: true, wallpapers: status() });
 }
 
+// One picture of the collection, or with id omitted, every one.
+function removePictures(cb, id) {
+  if (uploading) return cb({ ok: false, error: msg('srv.home.wallUploading', 'Wait for the wallpaper upload to finish.') });
+  if (id !== undefined && !shuffleFile(id)) return cb({ ok: false, error: msg('srv.home.wallPicture', 'unknown wallpaper picture') });
+  try {
+    (id !== undefined ? [id] : shufflePictures()).forEach(function (one) {
+      try { fs.unlinkSync(path.join(shuffleDir, one + '.jpg')); } catch (e) { if (e.code !== 'ENOENT') throw e; }
+    });
+  } catch (e) { return cb({ ok: false, error: e.message }); }
+  cb({ ok: true, wallpapers: status() });
+}
+
+function newPictureId() {
+  return (Date.now().toString(36) + crypto.randomBytes(4).toString('hex')).slice(0, 24);
+}
+
 // The browser re-encodes uploads as JPEG. Check the format and frame bounds
 // again here; no filename or image metadata becomes a filesystem path.
-function validJpeg(buf) {
+function validJpeg(buf, maxWidth, maxHeight) {
+  maxWidth = maxWidth || MAX_WIDTH;
+  maxHeight = maxHeight || MAX_HEIGHT;
   if (buf.length < 12 || buf.readUInt16BE(0) !== 65496 || buf.readUInt16BE(buf.length - 2) !== 65497) return false;
   var at = 2, components = 0, scanned = false, quantised = false, huffman = false;
   while (at + 2 <= buf.length) {
@@ -136,7 +196,7 @@ function validJpeg(buf) {
       var height = buf.readUInt16BE(at + 3), width = buf.readUInt16BE(at + 5);
       var count = buf[at + 7];
       if (components || buf[at + 2] !== 8 || (count !== 1 && count !== 3) || len !== 8 + 3 * count ||
-          !width || !height || width > MAX_WIDTH || height > MAX_HEIGHT) return false;
+          !width || !height || width > maxWidth || height > maxHeight) return false;
       components = count;
     }
     if (marker === 219) { if (len < 67) return false; quantised = true; }
@@ -163,49 +223,71 @@ function validJpeg(buf) {
   return false;
 }
 
-function upload(key, req, cb) {
-  function refused(text, code) { cb({ ok: false, error: text, status: code || 400 }); }
-  if (SLOTS.indexOf(key) === -1) return refused('unknown wallpaper slot');
-  if (uploading) return refused(msg('srv.home.wallUploading', 'Wait for the wallpaper upload to finish.'), 409);
+/*
+ * A JPEG sent as the request body, read whole: cb(null, buf), or cb(kind) with
+ * kind 'size', 'timeout' or 'image', or 'aborted' where the request was
+ * abandoned and there is no one to answer. opts: maxBytes, maxWidth, maxHeight.
+ */
+function receiveJpeg(req, opts, cb) {
   var length = String(req.headers['content-length'] || '');
-  if (req.headers['transfer-encoding'] || !/^\d{1,8}$/.test(length) || +length < 1 || +length > MAX_UPLOAD) {
-    return refused(msg('srv.home.wallUploadSize', 'The uploaded JPEG must be at most 5 MB and state its size.'), 413);
+  if (req.headers['transfer-encoding'] || !/^\d{1,8}$/.test(length) || +length < 1 || +length > opts.maxBytes) {
+    return cb('size');
   }
-  uploading = true;
   var chunks = [], got = 0, ended = false, finished = false;
-  var file = path.join(uploadsDir, key + '.jpg'), staging = file + '.part';
-  var timer = setTimeout(function () { finish(msg('srv.home.wallUploadTimeout', 'The wallpaper upload timed out.'), 408); }, 30000);
-  function finish(text, code, abandoned) {
+  var timer = setTimeout(function () { finish('timeout'); }, 30000);
+  function finish(kind, buf) {
     if (finished) return;
     finished = true;
     clearTimeout(timer);
     chunks = [];
-    uploading = false;
-    if (abandoned) return;
-    if (text) return refused(text, code);
-    cb({ ok: true, wallpapers: status() });
+    cb(kind, buf);
   }
-  req.on('aborted', function () { if (!ended) finish(null, null, true); });
-  req.on('error', function () { if (!ended) finish(null, null, true); });
-  req.on('close', function () { if (!ended) finish(null, null, true); });
+  req.on('aborted', function () { if (!ended) finish('aborted'); });
+  req.on('error', function () { if (!ended) finish('aborted'); });
+  req.on('close', function () { if (!ended) finish('aborted'); });
   req.on('data', function (chunk) {
     if (finished) return;
     got += chunk.length;
-    if (got > +length) return finish(msg('srv.home.wallUploadSize', 'The uploaded JPEG must be at most 5 MB and state its size.'), 413);
+    if (got > +length) return finish('size');
     chunks.push(chunk);
   });
   req.on('end', function () {
     if (finished) return;
     ended = true;
-    clearTimeout(timer);
     var buf = Buffer.concat(chunks);
-    chunks = [];
-    if (got !== +length || !validJpeg(buf)) {
-      return finish(msg('srv.home.wallUploadImage', 'Choose a valid JPEG up to 1920 × 1080 pixels.'));
-    }
-    try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir); }
+    if (got !== +length || !validJpeg(buf, opts.maxWidth, opts.maxHeight)) return finish('image');
+    finish(null, buf);
+  });
+}
+
+/*
+ * A picture for a time of day, replacing its last; or, as shuffle, one more
+ * for the collection, under a name of its own.
+ */
+function upload(key, req, cb) {
+  function refused(text, code) { cb({ ok: false, error: text, status: code || 400 }); }
+  var toShuffle = key === 'shuffle';
+  if (!toShuffle && SLOTS.indexOf(key) === -1) return refused('unknown wallpaper slot');
+  if (uploading) return refused(msg('srv.home.wallUploading', 'Wait for the wallpaper upload to finish.'), 409);
+  if (toShuffle && shufflePictures().length >= MAX_SHUFFLE) {
+    return refused(msg('srv.home.wallShuffleFull', 'The collection holds {max} pictures. Remove one to add another.', { max: MAX_SHUFFLE }), 409);
+  }
+  uploading = true;
+  var dir = toShuffle ? shuffleDir : uploadsDir;
+  var file = path.join(dir, (toShuffle ? newPictureId() : key) + '.jpg'), staging = file + '.part';
+  function finish(text, code) {
+    uploading = false;
+    if (text) return refused(text, code);
+    cb({ ok: true, wallpapers: status() });
+  }
+  receiveJpeg(req, { maxBytes: MAX_UPLOAD }, function (kind, buf) {
+    if (kind === 'size') return finish(msg('srv.home.wallUploadSize', 'The uploaded JPEG must be at most 5 MB and state its size.'), 413);
+    if (kind === 'timeout') return finish(msg('srv.home.wallUploadTimeout', 'The wallpaper upload timed out.'), 408);
+    if (kind === 'image') return finish(msg('srv.home.wallUploadImage', 'Choose a valid JPEG up to 1920 × 1080 pixels.'));
+    if (kind === 'aborted') { uploading = false; return; }
+    try { if (!fs.existsSync(dir)) fs.mkdirSync(dir); }
     catch (e) { return finish(e.message, 500); }
-    execFile('df', ['-k', uploadsDir], { timeout: 5000 }, function (err, out) {
+    execFile('df', ['-k', dir], { timeout: 5000 }, function (err, out) {
       var free = err ? null : installer.parseDf(out);
       if (free === null || free < buf.length + 5 * 1024 * 1024) {
         return finish(msg('srv.home.wallUploadSpace', 'Not enough confirmed free space for the wallpaper.'), 507);
@@ -215,7 +297,7 @@ function upload(key, req, cb) {
         fs.rename(staging, file, function (renameError) {
           if (renameError) util.unlinkQuiet(staging);
           // A picture of the owner's own is chosen by uploading it.
-          else if (choice !== 'own') ownChosen();
+          else if (choice !== (toShuffle ? 'shuffle' : 'own')) ownChosen(toShuffle ? 'shuffle' : 'own');
           finish(renameError && renameError.message, renameError ? 500 : null);
         });
       });
@@ -224,9 +306,10 @@ function upload(key, req, cb) {
 }
 
 /*
- * Black, a set or the owner's own. A set is fetched the first time it is
- * chosen, each picture checked against its pinned sum; only the chosen set is
- * kept, so the other is removed. The owner's own uploads are always kept.
+ * Black, a set, the owner's own or their shuffled collection. A set is
+ * fetched the first time it is chosen, each picture checked against its
+ * pinned sum; only the chosen set is kept, so the other is removed. The
+ * owner's own uploads, both kinds, are always kept.
  */
 function choose(name, cb) {
   if (CHOICES.indexOf(name) === -1) return cb({ ok: false, error: msg('srv.home.wallChoice', 'unknown wallpaper choice') });
@@ -274,8 +357,8 @@ function choose(name, cb) {
   });
 }
 
-function ownChosen() {
-  choice = 'own';
+function ownChosen(name) {
+  choice = name;
   saveChoice();
   Object.keys(SETS).forEach(removeSet);
 }
@@ -287,4 +370,4 @@ function removeSet(name) {
 }
 
 module.exports = { init: init, status: status, image: image, upload: upload, removeUploads: removeUploads,
-  choose: choose, SETS: SETS };
+  removePictures: removePictures, choose: choose, receiveJpeg: receiveJpeg, SETS: SETS, MAX_SHUFFLE: MAX_SHUFFLE };

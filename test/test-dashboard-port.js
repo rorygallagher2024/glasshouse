@@ -5,6 +5,7 @@
  * Strict ES5 and node 0.10 APIs: runs on the TV's node.
  */
 
+var waitFor = require('./wait-for').waitFor;
 var assert = require('assert');
 var fs = require('fs');
 var os = require('os');
@@ -15,13 +16,7 @@ var apps = require('../server/lib/apps');
 
 console.log('Running test-dashboard-port.js ...');
 
-function freePort(cb) {
-  var s = net.createServer();
-  s.listen(0, function () {
-    var p = s.address().port;
-    s.close(function () { cb(p); });
-  });
-}
+var freePort = require('./ports').freePort;
 
 function setup(config) {
   var h = { saved: [], restarts: 0 };
@@ -79,11 +74,11 @@ function testSaved(done) {
       assert.strictEqual(res.newPort, port);
       assert.deepEqual(h.saved, [{ port: port }]);
       assert.strictEqual(h.restarts, 0, 'the answer goes out before the restart');
-      setTimeout(function () {
+      waitFor(function () { return h.restarts > 0; }, function () {
         assert.strictEqual(h.restarts, 1, 'restarted to bind the new port');
         console.log('  ✓ a free port is saved, the answer announces the restart, then the server restarts');
         done();
-      }, 900);
+      }, 'the restart');
     });
   });
 }
@@ -177,11 +172,19 @@ function testShippedLaunchersCarryMarker() {
 }
 
 function testShippedAppinfoResolutions() {
-  var dashboardAppinfo = JSON.parse(fs.readFileSync(path.join(__dirname, '../server/assets/dashboard-app/appinfo.json'), 'utf8'));
-  assert.strictEqual(dashboardAppinfo.resolution, '1920x1080', 'dashboard-app appinfo declares 1920x1080');
-  var homeAppinfo = JSON.parse(fs.readFileSync(path.join(__dirname, '../server/assets/home-app/appinfo.json'), 'utf8'));
-  assert.strictEqual(homeAppinfo.resolution, '1920x1080', 'home-app appinfo declares 1920x1080');
-  console.log('  ✓ shipped appinfo.json files declare resolution 1920x1080');
+  var sharedSplash = path.join(__dirname, '../server/assets/dashboard-app/assets/splash.png');
+  assert.ok(fs.existsSync(sharedSplash), 'dashboard-app ships the shared splash.png');
+  assert.ok(!fs.existsSync(path.join(__dirname, '../server/assets/home-app/assets/splash.png')),
+    'home-app reuses the shared splash.png instead of duplicating it');
+  ['dashboard-app', 'home-app'].forEach(function (dir) {
+    var infoPath = path.join(__dirname, '../server/assets', dir, 'appinfo.json');
+    var info = JSON.parse(fs.readFileSync(infoPath, 'utf8'));
+    assert.strictEqual(info.resolution, '1920x1080', dir + ' appinfo declares 1920x1080');
+    assert.strictEqual(info.bgColor, '#000000', dir + ' appinfo declares black background');
+    assert.strictEqual(info.splashBackground, 'assets/splash.png', dir + ' appinfo declares splashBackground');
+    assert.strictEqual(info.spinnerOnLaunch, false, dir + ' appinfo disables LG spinner');
+  });
+  console.log('  ✓ shipped appinfo.json files declare 1920x1080 and share the black Glasshouse splash');
 }
 
 testLauncherSync();

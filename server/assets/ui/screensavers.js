@@ -4,6 +4,11 @@ let ssCurrent = 'stock';
 let ssWritable = true;
 let ssSwitching = false;
 let ssSwitchPoll = null;
+let ssBlockedReason = '';
+let ssPrevBlockedReason = '';
+let ssForceEntityRender = false;
+let ssListItems = [];
+let ssListMax = 100;
 
 const SS_SWITCHING = t('ss.switching',
   'The TV is switching screen savers. The screen may stay dark for up to a minute, then it comes back on its own.');
@@ -74,7 +79,7 @@ async function loadScreensavers() {
     <button class="ss-card${m.active ? ' on' : ''}" data-ss="${esc(m.id)}"
             ${(!m.available || locked) ? 'disabled' : ''}>
       <div class="ss-name"><span>${esc(m.label)}</span>${m.active ? `<span class="ss-tag">${t('ss.inUse', 'In use')}</span>` : ''}</div>
-      <div class="ss-desc">${esc(m.description)}</div>${ssMeta(m)}
+      <div class="ss-desc">${esc(m.description)}</div>${m.id === 'random' && m.active && d.staged ? `<div class="ss-meta">${t('ss.randomUpNext', 'Up next: {name}', { name: saverTitle(d.staged, d.modes) })}</div>` : ''}${ssMeta(m)}
     </button>`).join('');
   // The one in use in view, once: after that the list stays where it was scrolled to.
   const inUse = box.querySelector('.ss-card.on');
@@ -89,11 +94,47 @@ async function loadScreensavers() {
   const ours = d.current !== 'stock' && !d.modes.some(m => m.active && m.fromApp);
   q('ss-level-row').hidden = !ours;
   if (ours) {
-    q('ss-level').innerHTML = [['dim', t('ss.dim', 'Dim')], ['bright', t('ss.bright', 'Bright')]].map(([id, label]) =>
-      `<button class="ss-lvl${d.level === id ? ' on' : ''}" data-level="${id}"
-               ${locked ? 'disabled' : ''}>${label}</button>`).join('');
+    q('ss-bright-wrap').classList.toggle('disabled', !!locked);
+    if (!ssBrightDragging) showSsBrightness(typeof d.brightness === 'number' ? d.brightness : (d.level === 'bright' ? 100 : 65));
   }
 
+  // The option picked from the one in use's, where it has them.
+  const active = d.modes.find(m => m.active);
+  const choices = active && active.choices;
+  q('ss-choice-row').hidden = !choices;
+  if (choices) q('ss-choice-lbl').textContent = active.choicesLabel || t('ss.choice', 'Animation');
+  if (choices) renderSsPick(choices, d.choice, locked);
+  else ssPickOpen(false);
+
+  // Value colour customization using the shared .pill-sel select where supported.
+  const colors = active && active.colors;
+  if (q('ss-color-row')) {
+    q('ss-color-row').hidden = !(colors && colors.length);
+    if (colors && colors.length) renderSsColorPick(colors, active.color, locked);
+  }
+
+  // Entities or ordered entity list declared by the active screen saver:
+  const entities = active && active.entities;
+  const entityList = active && active.entityList;
+  const hasEnts = !!(entities && entities.length);
+  const hasList = !!entityList;
+  const entRow = q('ss-entities-row');
+  if (entRow) {
+    entRow.hidden = !hasEnts && !hasList;
+    if (hasEnts) renderSsEntities(active.id, entities, d.haConfigured, locked);
+    else if (hasList) renderSsEntityList(active.id, entityList, d.haConfigured, locked);
+  }
+  ssBlockedReason = (entityList && (!entityList.items || entityList.items.length < entityList.min))
+    ? t('ss.entities.tooFew', 'Add at least {min} entities before starting this screen saver (OLED burn-in protection).', { min: entityList.min })
+    : '';
+  syncSsBlockedUi();
+
+  const isRandom = d.current === 'random';
+  const poolRow = q('ss-pool-row');
+  if (poolRow) {
+    poolRow.hidden = !isRandom;
+    if (isRandom) renderSsPool(d, locked);
+  }
   /* Where LG's screen saver is built differently from ours, the TV has to
      restart its app manager to move between them, and nothing answers until it
      is back. Say so before, and hold the controls while it happens. */
@@ -113,6 +154,525 @@ async function loadScreensavers() {
 
   clearTimeout(ssSwitchPoll);
   if (ssSwitching) ssSwitchPoll = setTimeout(() => { if (activeTab === 'screensaver') loadScreensavers(); }, 4000);
+}
+
+/*
+ * The Animation picker. Options in a row under the same group go under its
+ * heading; the button names the group and the option picked.
+ */
+let ssPickKey_ = '';
+function renderSsPick(choices, current, locked) {
+  const btn = q('ss-choice'), list = q('ss-pick-list');
+  const cur = choices.find(c => c.id === current) || choices[0];
+  btn.innerHTML = (cur.group ? `<span class="grp">${esc(cur.group)}</span>` : '') + esc(cur.label);
+  btn.disabled = locked;
+  // Rebuilt only when the options or the pick change, so an open list keeps where it is scrolled.
+  const key = current + '|' + choices.length + '|' + (choices[0] && choices[0].id);
+  if (key === ssPickKey_) return;
+  ssPickKey_ = key;
+  let html = '', group = null;
+  choices.forEach(c => {
+    if ((c.group || null) !== group) {
+      group = c.group || null;
+      if (group) html += `<div class="ss-pick-head" role="presentation">${esc(group)}</div>`;
+    }
+    html += `<div class="ss-pick-opt" role="option" id="ss-opt-${esc(c.id)}" data-id="${esc(c.id)}"
+      aria-selected="${c.id === cur.id ? 'true' : 'false'}">${esc(c.label)}</div>`;
+  });
+  list.innerHTML = html;
+}
+
+let ssColorKey_ = '';
+function renderSsColorPick(colors, current, locked) {
+  const sel = q('ss-color');
+  if (!sel) return;
+  const cur = (colors.find(c => c.id === current) || colors[0]).id;
+  const key = cur + '|' + colors.map(c => c.id + ':' + c.label).join(',');
+  if (key !== ssColorKey_) {
+    ssColorKey_ = key;
+    sel.innerHTML = colors.map(c => `<option value="${esc(c.id)}">${esc(c.label)}</option>`).join('');
+    sel.value = cur;
+  }
+  sel.disabled = locked;
+}
+
+let ssEntitiesKey_ = '';
+let ssHaEntities = null;
+let ssHaLoading = false;
+// Why the list could not be read, shown in place of it until the cache is reset.
+let ssHaListError = '';
+
+function resetHaEntitiesCache() {
+  ssHaEntities = null;
+  ssHaListError = '';
+  ssEntitiesKey_ = '';
+}
+
+async function ensureHaEntities(onLoaded) {
+  // A failed read is not retried on each render: the list can be 8 MB.
+  if (ssHaEntities !== null || ssHaLoading || ssHaListError) return;
+  ssHaLoading = true;
+  try {
+    const r = await fetch(api('/api/ha/entities'));
+    const d = await r.json();
+    if (d && d.ok && d.configured && Array.isArray(d.entities)) {
+      ssHaEntities = d.entities;
+      ssEntitiesKey_ = '';
+      if (typeof onLoaded === 'function') onLoaded();
+      else loadScreensavers();
+    } else if (d && d.error) {
+      ssHaListError = d.error;
+      if (typeof onLoaded === 'function') onLoaded();
+    }
+  } catch (e) {} finally {
+    ssHaLoading = false;
+  }
+}
+
+function ssHaSlotLabel(e) {
+  const m = /^sensor_(\d+)$/.exec(e.id);
+  return m ? t('ss.sensorSlot', 'Sensor {n}', { n: m[1] }) : e.label;
+}
+
+function ssHaLookup(entityId) {
+  if (!entityId || !ssHaEntities) return null;
+  return ssHaEntities.find(x => x.id === entityId) || null;
+}
+
+function ssHaFriendlyHint(entityId) {
+  if (!entityId) return t('ss.entityHidden', 'Hidden');
+  const hit = ssHaLookup(entityId);
+  if (!hit) return '';
+  const parts = [];
+  if (hit.name) parts.push(hit.name);
+  if (hit.unit) parts.push('(' + hit.unit + ')');
+  return parts.join(' ');
+}
+
+function renderSsEntities(saverId, entities, haConfigured, locked) {
+  const container = q('ss-entities-list');
+  const note = q('ss-entities-note');
+  const setup = q('ss-entities-setup');
+  if (!container) return;
+
+  if (note) {
+    if (haConfigured === false) {
+      note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab.');
+      note.className = 'pv-sub warn';
+    } else {
+      note.textContent = t('ss.entities.desc', 'Choose which Home Assistant entities this screen saver reads and optional short display labels. Leave an entity blank to hide it.');
+      note.className = 'pv-sub';
+    }
+  }
+  if (setup) setup.hidden = haConfigured !== false;
+
+  if (haConfigured && ssHaEntities === null) ensureHaEntities();
+
+  // Do not rebuild inputs while the user is typing in or picking from them.
+  const active = document.activeElement;
+  if (active && container.contains(active)) return;
+
+  const key = (locked ? '1' : '0') + '|' + (haConfigured ? '1' : '0') + '|' +
+    (ssHaEntities ? ssHaEntities.length : -1) + '|' + saverId + '|' +
+    entities.map(e => e.id + '=' + e.entity + ':' + (e.customLabel || '')).join(',');
+  if (key === ssEntitiesKey_) return;
+  ssEntitiesKey_ = key;
+
+  let html = '';
+  const hidePlaceholder = t('ss.entityHidden', 'Hidden');
+  const chooseTitle = t('ss.chooseEntity', 'Choose entity');
+  const clearTitle = t('ss.clearEntity', 'Clear');
+  const labelTitle = t('ss.entityLabel', 'Label');
+  const labelFallback = t('ss.entityLabelPlaceholder', 'Home Assistant name (optional override)');
+  entities.forEach(e => {
+    const hit = ssHaLookup(e.entity);
+    const hint = ssHaFriendlyHint(e.entity);
+    const labelPlaceholder = (hit && hit.name) ? hit.name : labelFallback;
+    html += `
+      <div class="ss-entity-field">
+        <div class="ss-entity-head">
+          <label for="ss-ent-${esc(e.id)}">${esc(ssHaSlotLabel(e))}</label>
+          ${hint ? `<span class="ss-entity-hint">${esc(hint)}</span>` : ''}
+        </div>
+        <div class="ss-ent-wrap">
+          <input type="text" id="ss-ent-${esc(e.id)}" data-slot="${esc(e.id)}" data-saver="${esc(saverId)}"
+            value="${esc(e.entity || '')}" placeholder="${esc(hidePlaceholder)}"
+            autocomplete="off" spellcheck="false" ${locked ? 'disabled' : ''}
+            oninput="ssHaFilter('${esc(saverId)}', '${esc(e.id)}')"
+            onchange="saveSsEntity('${esc(saverId)}', '${esc(e.id)}', this.value)">
+          ${(haConfigured && !locked) ? `<button type="button" class="ss-ent-btn" title="${esc(chooseTitle)}" aria-label="${esc(chooseTitle)}" onclick="ssHaToggle('${esc(saverId)}', '${esc(e.id)}')">&#9662;</button>` : ''}
+          ${(!locked && e.entity) ? `<button type="button" class="ss-ent-btn" title="${esc(clearTitle)}" aria-label="${esc(clearTitle)}" onclick="saveSsEntity('${esc(saverId)}', '${esc(e.id)}', '')">&times;</button>` : ''}
+          <div class="ss-pick-list ss-ha-list" id="ss-ha-list-${esc(e.id)}" hidden></div>
+        </div>
+        ${e.entity ? `<div class="ss-ent-label-row">
+          <label for="ss-lbl-${esc(e.id)}">${esc(labelTitle)}</label>
+          <input type="text" id="ss-lbl-${esc(e.id)}" value="${esc(e.customLabel || '')}" maxlength="64"
+            placeholder="${esc(labelPlaceholder)}" autocomplete="off" ${locked ? 'disabled' : ''}
+            onchange="saveSsEntityLabel('${esc(saverId)}', '${esc(e.id)}', this.value)">
+        </div>` : ''}
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function ssHaCloseAll() {
+  document.querySelectorAll('.ss-ha-list').forEach(el => { el.hidden = true; });
+}
+
+function ssHaRenderList(saverId, slot, filterText, showAll) {
+  const list = document.getElementById('ss-ha-list-' + slot);
+  if (!list) return;
+  if (ssHaEntities === null && ssHaListError) {
+    list.innerHTML = `<div class="ss-ha-empty">${esc(ssHaListError)}</div>`;
+    list.hidden = false;
+    return;
+  }
+  if (ssHaEntities === null) {
+    list.innerHTML = `<div class="ss-ha-empty">${esc(t('ss.loadingEntities', 'Loading entities...'))}</div>`;
+    list.hidden = false;
+    ensureHaEntities(() => ssHaRenderList(saverId, slot, filterText, showAll));
+    return;
+  }
+  const tokens = showAll ? [] : String(filterText || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const matches = [];
+  for (let i = 0; i < ssHaEntities.length; i++) {
+    const item = ssHaEntities[i];
+    if (tokens.length) {
+      const hay = (item.id + ' ' + (item.name || '')).toLowerCase();
+      if (!tokens.every(tok => hay.indexOf(tok) !== -1)) continue;
+    }
+    matches.push(item);
+    if (matches.length >= 80) break;
+  }
+  if (!matches.length) {
+    list.innerHTML = `<div class="ss-ha-empty">${esc(t('ss.noEntitiesMatch', 'No matching entities'))}</div>`;
+  } else {
+    let html = '';
+    matches.forEach(item => {
+      const sub = item.name ? (item.id + (item.unit ? ' · ' + item.unit : '')) : (item.unit || '');
+      html += `<div class="ss-ha-opt" onmousedown="event.preventDefault(); ssHaPick('${esc(saverId)}', '${esc(slot)}', '${esc(item.id)}')">
+        <div class="ss-ha-opt-n">${esc(item.name || item.id)}</div>
+        ${sub ? `<div class="ss-ha-opt-id">${esc(sub)}</div>` : ''}
+      </div>`;
+    });
+    list.innerHTML = html;
+  }
+  list.hidden = false;
+}
+
+function ssHaToggle(saverId, slot) {
+  const list = document.getElementById('ss-ha-list-' + slot);
+  if (!list) return;
+  const wasHidden = list.hidden;
+  ssHaCloseAll();
+  if (wasHidden) {
+    ssHaRenderList(saverId, slot, '', true);
+    const input = document.getElementById('ss-ent-' + slot);
+    if (input) input.focus();
+  }
+}
+
+function ssHaFilter(saverId, slot) {
+  const input = document.getElementById('ss-ent-' + slot);
+  if (!input || !ssHaEntities) return;
+  ssHaCloseAll();
+  if (input.value.trim().length > 0) {
+    ssHaRenderList(saverId, slot, input.value, false);
+  }
+}
+
+function ssHaPick(saverId, slot, entityId) {
+  ssHaCloseAll();
+  if (slot === '_add') {
+    const input = document.getElementById('ss-ent-_add');
+    if (input) input.value = '';
+    addSsListEntity(saverId, entityId);
+    return;
+  }
+  const input = document.getElementById('ss-ent-' + slot);
+  if (input) input.value = entityId;
+  saveSsEntity(saverId, slot, entityId);
+}
+
+function syncSsBlockedUi() {
+  const btn = q('ss-toggle');
+  if (!btn) return;
+  const ssOn = btn.classList.contains('on');
+  if (!ssOn && ssBlockedReason) refuseScreensaver(btn, ssBlockedReason);
+  else if (!ssOn && ssPrevBlockedReason && btn.title === ssPrevBlockedReason) refuseScreensaver(btn, '');
+  ssPrevBlockedReason = ssBlockedReason;
+}
+
+function renderSsEntityList(saverId, entityList, haConfigured, locked) {
+  const container = q('ss-entities-list');
+  const note = q('ss-entities-note');
+  const setup = q('ss-entities-setup');
+  if (!container) return;
+
+  const items = Array.isArray(entityList.items) ? entityList.items : [];
+  ssListItems = items.map(it => ({ entity: it.entity || '', label: it.label || '' }));
+  ssListMax = entityList.max || 100;
+
+  if (note) {
+    if (haConfigured === false) {
+      note.textContent = t('ss.haNotConfigured', 'Home Assistant API is not configured. Save the address and access token in the HA and MQTT tab.');
+      note.className = 'pv-sub warn';
+    } else if (items.length < entityList.min) {
+      note.textContent = t('ss.entityList.statusNeedMore',
+        'Add at least {min} entities ({count} of {max} configured). Cycles in order and shifts pixels on every change to prevent OLED burn-in.',
+        { min: entityList.min, count: items.length, max: ssListMax });
+      note.className = 'pv-sub warn';
+    } else {
+      note.textContent = t('ss.entityList.statusReady',
+        'Cycling through {count} of {max} entities in order. Leave a label blank to use the Home Assistant name.',
+        { count: items.length, max: ssListMax });
+      note.className = 'pv-sub';
+    }
+  }
+  if (setup) setup.hidden = haConfigured !== false;
+
+  if (haConfigured && ssHaEntities === null) ensureHaEntities();
+
+  const active = document.activeElement;
+  if (!ssForceEntityRender && active && container.contains(active)) return;
+  ssForceEntityRender = false;
+
+  const key = 'list|' + (locked ? '1' : '0') + '|' + (haConfigured ? '1' : '0') + '|' +
+    (ssHaEntities ? ssHaEntities.length : -1) + '|' + saverId + '|' + ssListMax + '|' +
+    items.map(it => it.entity + ':' + (it.label || '')).join(',');
+  if (key === ssEntitiesKey_) return;
+  ssEntitiesKey_ = key;
+
+  const addLbl = t('ss.entityList.addLabel', 'Add entity');
+  const addPh = t('ss.entityList.addPlaceholder', 'Search or type entity ID...');
+  const addBtnLbl = t('ss.entityList.addBtn', 'Add');
+  const chooseTitle = t('ss.chooseEntity', 'Choose entity');
+  const upTitle = t('ss.entityList.moveUp', 'Move up');
+  const downTitle = t('ss.entityList.moveDown', 'Move down');
+  const rmTitle = t('ss.entityList.remove', 'Remove');
+  const labelTitle = t('ss.entityLabel', 'Label');
+  const customPh = t('ss.entityList.customLabelPlaceholder', 'Custom display label (optional)');
+  const full = items.length >= ssListMax;
+
+  let html = `
+    <div class="ss-li-head">
+      <label for="ss-ent-_add">${esc(addLbl)}</label>
+      <span class="ss-li-count num">${items.length} / ${ssListMax}</span>
+    </div>
+    <div class="ss-li-add">
+      <div class="ss-ent-wrap">
+        <input type="text" id="ss-ent-_add" data-saver="${esc(saverId)}" placeholder="${esc(addPh)}"
+          autocomplete="off" spellcheck="false" ${(locked || full) ? 'disabled' : ''}
+          oninput="ssHaFilter('${esc(saverId)}', '_add')"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addSsListEntity('${esc(saverId)}');}">
+        ${(haConfigured && !locked && !full) ? `<button type="button" class="ss-ent-btn" title="${esc(chooseTitle)}" aria-label="${esc(chooseTitle)}" onclick="ssHaToggle('${esc(saverId)}', '_add')">&#9662;</button>` : ''}
+        <div class="ss-pick-list ss-ha-list" id="ss-ha-list-_add" hidden></div>
+      </div>
+      <button type="button" class="ss-li-add-btn" ${(locked || full) ? 'disabled' : ''} onclick="addSsListEntity('${esc(saverId)}')">${esc(addBtnLbl)}</button>
+    </div>`;
+
+  if (items.length) {
+    html += '<div class="ss-li-scroll">';
+    items.forEach((it, idx) => {
+      const hit = ssHaLookup(it.entity);
+      const displayTitle = (hit && hit.name) ? hit.name : it.entity;
+      const subId = (hit && hit.name)
+        ? (it.entity + (hit.unit ? ' \u00b7 ' + hit.unit : ''))
+        : (hit && hit.unit ? hit.unit : '');
+      const lblPh = (hit && hit.name) ? hit.name : customPh;
+      html += `
+        <div class="ss-li-item">
+          <div class="ss-li-top">
+            <span class="ss-li-num num">${idx + 1}</span>
+            <div class="ss-li-info" title="${esc(it.entity)}">
+              <div class="ss-li-name">${esc(displayTitle)}</div>
+              ${subId ? `<div class="ss-li-id">${esc(subId)}</div>` : ''}
+            </div>
+            <div class="ss-li-acts">
+              <button type="button" title="${esc(upTitle)}" aria-label="${esc(upTitle)}" ${(locked || idx === 0) ? 'disabled' : ''} onclick="moveSsListEntity('${esc(saverId)}', ${idx}, -1)">&#8593;</button>
+              <button type="button" title="${esc(downTitle)}" aria-label="${esc(downTitle)}" ${(locked || idx === items.length - 1) ? 'disabled' : ''} onclick="moveSsListEntity('${esc(saverId)}', ${idx}, 1)">&#8595;</button>
+              <button type="button" title="${esc(rmTitle)}" aria-label="${esc(rmTitle)}" ${locked ? 'disabled' : ''} onclick="removeSsListEntity('${esc(saverId)}', ${idx})">&times;</button>
+            </div>
+          </div>
+          <div class="ss-li-label">
+            <label for="ss-li-lbl-${idx}">${esc(labelTitle)}</label>
+            <input type="text" id="ss-li-lbl-${idx}" value="${esc(it.label || '')}" maxlength="64"
+              placeholder="${esc(lblPh)}" autocomplete="off" ${locked ? 'disabled' : ''}
+              onchange="saveSsListLabel('${esc(saverId)}', ${idx}, this.value)">
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+async function commitSsEntityList(saverId, nextItems, forceRender) {
+  ssHaCloseAll();
+  const r = await sendCommand('screensaverEntities', { saver: saverId, entities: nextItems });
+  if (r && r.ok) {
+    ssListItems = nextItems;
+    ssEntitiesKey_ = '';
+    if (forceRender) ssForceEntityRender = true;
+    loadScreensavers();
+  }
+}
+
+function addSsListEntity(saverId, explicitId) {
+  const input = document.getElementById('ss-ent-_add');
+  const raw = explicitId !== undefined ? String(explicitId) : (input ? input.value : '');
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    if (input) input.focus();
+    if (ssHaEntities) ssHaToggle(saverId, '_add');
+    return;
+  }
+  if (ssListItems.length >= ssListMax) return;
+  const next = ssListItems.concat([{ entity: trimmed, label: '' }]);
+  if (input) input.value = '';
+  commitSsEntityList(saverId, next, true);
+}
+
+function moveSsListEntity(saverId, idx, dir) {
+  const target = idx + dir;
+  if (target < 0 || target >= ssListItems.length) return;
+  const next = ssListItems.slice();
+  const tmp = next[idx];
+  next[idx] = next[target];
+  next[target] = tmp;
+  commitSsEntityList(saverId, next, true);
+}
+
+function removeSsListEntity(saverId, idx) {
+  if (idx < 0 || idx >= ssListItems.length) return;
+  const next = ssListItems.slice();
+  next.splice(idx, 1);
+  commitSsEntityList(saverId, next, true);
+}
+
+function saveSsListLabel(saverId, idx, label) {
+  if (idx < 0 || idx >= ssListItems.length) return;
+  const next = ssListItems.slice();
+  next[idx] = { entity: next[idx].entity, label: String(label || '').trim() };
+  commitSsEntityList(saverId, next, false);
+}
+
+async function saveSsEntityPatch(saverId, slot, val) {
+  ssHaCloseAll();
+  const patch = {};
+  patch[slot] = val;
+  await sendCommand('screensaverEntities', { saver: saverId, entities: patch });
+  ssEntitiesKey_ = '';
+  loadScreensavers();
+}
+
+function saveSsEntity(saverId, slot, value) {
+  return saveSsEntityPatch(saverId, slot, { entity: value.trim(), label: '' });
+}
+
+function saveSsEntityLabel(saverId, slot, label) {
+  return saveSsEntityPatch(saverId, slot, { label: label.trim() });
+}
+
+function ssPickOpts() { return [...q('ss-pick-list').querySelectorAll('.ss-pick-opt')]; }
+
+function ssPickOpen(open) {
+  const list = q('ss-pick-list'), btn = q('ss-choice');
+  if (open && btn.disabled) return;
+  list.hidden = !open;
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (!open) return;
+  const sel = list.querySelector('[aria-selected="true"]') || ssPickOpts()[0];
+  ssPickActive(sel);
+  list.focus();
+}
+
+// The option the arrow keys are on, kept in view below its sticky heading.
+function ssPickActive(el) {
+  const list = q('ss-pick-list');
+  ssPickOpts().forEach(o => o.classList.toggle('act', o === el));
+  if (!el) return;
+  list.setAttribute('aria-activedescendant', el.id);
+  const head = 34, top = el.offsetTop - head, bottom = el.offsetTop + el.offsetHeight;
+  if (top < list.scrollTop) list.scrollTop = top;
+  else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
+}
+
+function ssPickKey(ev) {
+  const list = q('ss-pick-list'), open = !list.hidden;
+  const opts = ssPickOpts(), at = opts.indexOf(list.querySelector('.ss-pick-opt.act'));
+  const go = i => { ev.preventDefault(); ssPickActive(opts[Math.max(0, Math.min(opts.length - 1, i))]); };
+  if (!open) {
+    if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(ev.key)) { ev.preventDefault(); ssPickOpen(true); }
+    return;
+  }
+  if (ev.key === 'ArrowDown') return go(at + 1);
+  if (ev.key === 'ArrowUp') return go(at - 1);
+  if (ev.key === 'PageDown') return go(at + 10);
+  if (ev.key === 'PageUp') return go(at - 10);
+  if (ev.key === 'Home') return go(0);
+  if (ev.key === 'End') return go(opts.length - 1);
+  if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); if (opts[at]) pickSsChoice(opts[at].dataset.id); return; }
+  if (ev.key === 'Escape' || ev.key === 'Tab') { if (ev.key === 'Escape') ev.preventDefault(); ssPickOpen(false); q('ss-choice').focus(); }
+}
+
+async function pickSsChoice(id) {
+  ssPickOpen(false);
+  q('ss-choice').focus();
+  const cur = q('ss-pick-list').querySelector('[aria-selected="true"]');
+  if (cur && cur.dataset.id === id) return;
+  q('ss-choice').disabled = true;
+  await sendCommand('screensaverMode', { mode: ssCurrent, choice: id });
+  loadScreensavers();
+}
+
+async function pickSsColor(id) {
+  const sel = q('ss-color');
+  if (sel) sel.disabled = true;
+  await sendCommand('screensaverColor', { saver: ssCurrent, color: id });
+  loadScreensavers();
+}
+
+function saverTitle(id, modes) {
+  const m = (modes || []).find(x => x.id === id);
+  return m ? m.label : id;
+}
+
+function renderSsPool(d, locked) {
+  const box = q('ss-pool-box');
+  const countEl = q('ss-pool-count');
+  if (!box) return;
+  const pool = (d.random && d.random.pool) || [];
+  const candidates = (d.modes || []).filter(m => m.id !== 'stock' && m.id !== 'random' && !m.fromApp);
+  if (countEl) countEl.textContent = t('ss.poolCount', '{n} of {total} selected', { n: pool.length, total: candidates.length });
+  const allBtn = q('ss-pool-all'), noneBtn = q('ss-pool-none');
+  if (allBtn) allBtn.disabled = locked;
+  if (noneBtn) noneBtn.disabled = locked;
+  box.innerHTML = candidates.map(m => {
+    const inPool = pool.includes(m.id);
+    const dis = locked || !m.available;
+    return `<label class="ss-pool-item${dis ? ' dis' : ''}">
+      <input type="checkbox" data-id="${esc(m.id)}" ${inPool ? 'checked' : ''} ${dis ? 'disabled' : ''} onchange="ssPoolToggle('${esc(m.id)}')">
+      <span class="ss-pool-name">${esc(m.label)}</span>
+    </label>`;
+  }).join('');
+}
+
+async function ssPoolToggle(id) {
+  await sendCommand('screensaverRandomPool', { toggle: id });
+  loadScreensavers();
+}
+
+async function ssPoolSelectAll(selectAll) {
+  let d;
+  try {
+    d = await (await fetch(api('/api/screensaver'))).json();
+  } catch (e) { return; }
+  if (!d || !d.modes) return;
+  const candidates = d.modes.filter(m => m.id !== 'stock' && m.id !== 'random' && !m.fromApp && m.available !== false);
+  const ids = selectAll ? candidates.map(m => m.id) : [];
+  await sendCommand('screensaverRandomPool', ids);
+  loadScreensavers();
 }
 
 /*
@@ -191,12 +751,80 @@ document.addEventListener('click', async ev => {
     return;
   }
 
-  const lvl = ev.target.closest('button.ss-lvl[data-level]');
-  if (lvl && !lvl.disabled && !lvl.classList.contains('on')) {
-    lvl.disabled = true;
-    // The mode goes with it: both are staged into the same file.
-    const r = await sendCommand('screensaverMode', { mode: ssCurrent, level: lvl.dataset.level });
-    if (!r || !r.ok) lvl.disabled = false;
-    loadScreensavers();
-  }
+  // The Animation list: an option picks it; a click anywhere else closes it.
+  const opt = ev.target.closest('.ss-pick-opt[data-id]');
+  if (opt) { pickSsChoice(opt.dataset.id); return; }
+  if (!ev.target.closest('#ss-pick') && !q('ss-pick-list').hidden) ssPickOpen(false);
+  if (!ev.target.closest('.ss-ent-wrap')) ssHaCloseAll();
 });
+
+/* Brightness, in 5% steps from 5%, sent on release: each value restages the
+   screen saver, and one on screen is closed and shown again for it. 65% and
+   100% are the Dim and Bright each screen saver was drawn at before. */
+let ssBrightDragging = false;
+
+function showSsBrightness(v) {
+  q('ss-bright-slider').value = v;
+  q('ss-bright-fill').style.width = v + '%';
+  q('ss-bright-lbl').textContent = v + '%';
+}
+
+function initSsBrightSlider() {
+  const wrap = q('ss-bright-wrap'), slider = q('ss-bright-slider');
+  let active = false, keyTimer = 0;
+  const clamp = v => Math.max(5, Math.min(100, v));
+  const at = e => {
+    const r = wrap.getBoundingClientRect();
+    return clamp(Math.round(((e.clientX - r.left) / r.width) * 20) * 5);
+  };
+  const save = async v => {
+    showSsBrightness(v);
+    wrap.classList.add('disabled');
+    // The mode goes with it: both are staged into the same file.
+    await sendCommand('screensaverMode', { mode: ssCurrent, brightness: v });
+    loadScreensavers();
+  };
+  const stop = e => {
+    active = false;
+    ssBrightDragging = false;
+    wrap.classList.remove('dragging');
+    try { wrap.releasePointerCapture(e.pointerId); } catch (err) {}
+  };
+  wrap.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || wrap.classList.contains('disabled')) return;
+    active = true;
+    ssBrightDragging = true;
+    wrap.classList.add('dragging');
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    showSsBrightness(at(e));
+  });
+  wrap.addEventListener('pointermove', e => { if (active) showSsBrightness(at(e)); });
+  wrap.addEventListener('pointerup', e => {
+    if (!active) return;
+    stop(e);
+    save(at(e));
+  });
+  wrap.addEventListener('pointercancel', e => {
+    if (!active) return;
+    stop(e);
+    loadScreensavers();
+  });
+  slider.addEventListener('keydown', e => {
+    const steps = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5, PageUp: 25, PageDown: -25 };
+    let v;
+    if (steps[e.key]) v = Number(slider.value) + steps[e.key];
+    else if (e.key === 'Home') v = 5;
+    else if (e.key === 'End') v = 100;
+    else return;
+    e.preventDefault();
+    if (wrap.classList.contains('disabled')) return;
+    // Sent once the keys stop, not per step.
+    v = clamp(v);
+    showSsBrightness(v);
+    ssBrightDragging = true;
+    clearTimeout(keyTimer);
+    keyTimer = setTimeout(() => { ssBrightDragging = false; save(v); }, 700);
+  });
+}
+
+initSsBrightSlider();

@@ -1,19 +1,25 @@
 // LG's own settings as controls, used by the Privacy, Advanced, Game, Audio
 // and Picture tabs.
 
-/* LG's own settings from lgsettings.js, as switches. Only the rows the TV
-   reports come back, so a section with none stays hidden. */
+/* LG's own settings from lgsettings.js, as switches: its ads and promotions,
+   and what it may upload. Only the rows the TV reports come back, so a
+   section with none stays hidden. */
 function renderLgSettings(rows) {
-  const promo = rows.filter(r => r.section === 'promotions');
-  const d = q('pv-promo-d');
-  if (d) d.hidden = !promo.length;
-  const cur = q('pv-promo-cur');
+  renderLgSection(rows, 'promotions', 'pv-promo');
+  renderLgSection(rows, 'uploads', 'pv-uploads');
+}
+function renderLgSection(rows, section, box) {
+  const own = rows.filter(r => r.section === section);
+  const d = q(box + '-d');
+  if (d) d.hidden = !own.length;
+  const cur = q(box + '-cur');
   if (cur) {
-    const onCount = promo.filter(r => r.on).length;
-    cur.textContent = promo.length
-      ? t('pv.groupOn', '{on} of {total} on', { on: onCount, total: promo.length }) : '';
+    const onCount = own.filter(r => r.on).length;
+    cur.textContent = own.length
+      ? t('pv.groupOn', '{on} of {total} on', { on: onCount, total: own.length }) : '';
   }
-  q('pv-promo').innerHTML = promo.map(r =>
+  const table = q(box);
+  if (table) table.innerHTML = own.map(r =>
     `<div class="prot-row"><div class="prot-main"><div class="prot-title">${esc(r.title)}</div>` +
     `<div class="prot-desc">${esc(r.desc)}</div></div>` +
     `<div class="prot-status">${renderToggle({
@@ -24,7 +30,7 @@ function renderLgSettings(rows) {
     })}</div></div>`).join('');
 }
 document.addEventListener('click', async e => {
-  const b = e.target.closest('#pv-promo button[data-id]');
+  const b = e.target.closest('#pv-promo button[data-id], #pv-uploads button[data-id]');
   if (!b) return;
   b.disabled = true;
   await sendCommand('lgSetting', { id: b.dataset.id, on: b.dataset.next === '1' });

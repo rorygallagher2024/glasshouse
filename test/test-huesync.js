@@ -1,4 +1,5 @@
 /* Hue Sync MQTT state and ON/OFF power control. Strict ES5. */
+require('./fake-clock').install();
 var assert = require('assert');
 var huesyncModule = require('../server/lib/huesync');
 
@@ -38,7 +39,7 @@ function luna(uri, payload, cb) {
 }
 
 var availability = [];
-var huesync = huesyncModule.init({ luna: luna, installed: function () { return true; }, onAvailableChange: function (a) { availability.push(a); } });
+var huesync = huesyncModule.init({ settings: false, luna: luna, installed: function () { return true; }, onAvailableChange: function (a) { availability.push(a); } });
 huesync.attachMqtt({ client: client, prefix: 'room/tv', allowControl: true });
 
 function status(streaming) {
@@ -224,7 +225,7 @@ function testControlsDisabled(result) {
 function testPollingTimer() {
   var callsBeforeTimer = calls.length;
   replies.push(status(true));
-  huesyncModule.init({ luna: luna, pollIntervalMs: 1000 });
+  huesyncModule.init({ settings: false, luna: luna, pollIntervalMs: 1000 });
   huesync.attachMqtt({ client: client, prefix: 'room/tv', allowControl: true });
   setTimeout(function () {
     assert.strictEqual(calls.length, callsBeforeTimer + 1, 'periodic refresh checks Hue Sync status');

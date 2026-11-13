@@ -122,6 +122,47 @@ async def main():
                     logged.append('%s: %s' % (type(e).__name__, e))
                 for message in sorted(set(logged)):
                     problems.append('%s.%s %s with %s: %s' % (c['type'], c['id'], key, fixture.name, message))
+    # Hue Sync controls use their own settings topic, not telemetry.
+    # Exercise freshness and missing fields after ha.js's safeFields transform.
+    hue_fixture = json.loads((ROOT / 'test' / 'fixtures' / 'huesync-settings.json').read_text())
+    hue_checked = 0
+    for c in configs:
+        conf = c['conf']
+        topic = conf.get('state_topic')
+        if topic != 'tv/state/huesync/settings':
+            continue
+        state = hue_fixture['settings']
+        own = [a for a in conf.get('availability', []) if a.get('topic') == topic]
+        if len(own) != 1:
+            problems.append('%s lacks Hue Sync availability' % c['id'])
+            continue
+        for label, data, expected in [('fresh', state, 'online'), ('missing', {}, 'offline'),
+                                      ('stale', dict(state, _stale=list(state)), 'offline')]:
+            del logged[:]
+            try:
+                got = render(hass, own[0]['value_template'], json.dumps(data))
+                if got != expected:
+                    problems.append('%s %s availability: %s, expected %s' % (c['id'], label, got, expected))
+                render(hass, conf['value_template'], json.dumps(data))
+            except Exception as error:
+                logged.append(str(error))
+            for message in sorted(set(logged)):
+                problems.append('%s %s: %s' % (c['id'], label, message))
+        if 'command_template' in conf:
+            expected_commands = {
+                'huesync_intensity': {'Subtle': '0', 'Moderate': '1', 'High': '2', 'Extreme': '3'},
+                'huesync_sync_mode': {'Video': '0', 'Game': '1'},
+                'huesync_current_ec': {area['name'] + ' (' + area['id'] + ')': area['id']
+                                      for area in hue_fixture['settings']['ec_list']},
+            }
+            for choice, expected in expected_commands.get(c['id'], {}).items():
+                got = render(hass, conf['command_template'], choice)
+                if got != expected:
+                    problems.append('%s command for %s: %s, expected %s' % (c['id'], choice, got, expected))
+        hue_checked += 1
+    if hue_checked != 8:
+        problems.append('expected 8 Hue Sync controls, checked %s' % hue_checked)
+    print('%d Hue Sync templates checked with fresh, missing and stale state' % hue_checked)
     template_log.removeHandler(catch)
     print('%d telemetry templates rendered against %d fixture TVs' % (checked, len(fixtures)))
 

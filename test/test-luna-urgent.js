@@ -2,6 +2,7 @@
  * test/test-luna-urgent.js - Urgent luna calls go ahead of the queue with one extra slot, one at a time
  */
 
+require('./fake-clock').install();
 var assert = require('assert');
 var child = require('child_process');
 
@@ -30,7 +31,8 @@ function answer(n, err) {
 }
 function running() { return Object.keys(open).sort(); }
 
-// Lets the launch queue's 150ms start-up gaps run out before checking.
+// Lets the launch queue's 150ms start-up gaps run out before checking, on the
+// suite's own clock (test/fake-clock.js), which takes no real time.
 function settle(fn) { setTimeout(fn, 500); }
 
 normal('n1'); normal('n2'); normal('n3'); normal('n4');
@@ -93,6 +95,7 @@ function retryStaysUrgent() {
         assert.deepEqual(started, ['n5', 'u4', 'n6', 'u4', 'n7']);
         console.log('  ✓ an urgent call run again stays urgent');
         console.log('ALL test-luna-urgent.js assertions passed!\n');
+        process.exit(0);
       });
     });
   });

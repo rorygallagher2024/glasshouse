@@ -7,6 +7,7 @@
  *
  * Strict ES5: runs on node 0.12.
  */
+require('./fake-clock').install();
 var assert = require('assert');
 var huesyncModule = require('../server/lib/huesync');
 var controls = require('../server/lib/controls');
@@ -27,7 +28,7 @@ function luna(uri, payload, cb) {
 }
 var publishes = [];
 var availability = [];
-var huesync = huesyncModule.init({
+var huesync = huesyncModule.init({ settings: false,
   luna: luna,
   pollIntervalMs: 1000,
   installed: function () { return installed; },

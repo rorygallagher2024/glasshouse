@@ -45,13 +45,24 @@ function drainLaunches() {
   }
   nextLaunchAt = now + gap;
   if (urgentCount) urgentCount--;
-  launches.shift()();
+  /*
+   * Always from a timer. LG's node 8.12.0 (webOS 5 and 6) runs a fork handler
+   * in the child that calls uv_close on the default loop's handles, and aborts
+   * the child (see diedEarly) when one is already closing: the process handle
+   * of a child that just exited is, until the loop's closing phase. The luna
+   * queue starts its next call from an exit, so starts often came then. A
+   * timer runs after that phase; setImmediate runs before it and does not help.
+   * Of 900 starts, three at a time, on an OLED55CX3LA: 9 aborted started at
+   * once, 8 from setImmediate, none from setTimeout.
+   */
+  setTimeout(launches.shift(), 0);
   drainLaunches();
 }
 
 /**
- * Calls fn once it is this start's turn. An urgent start goes ahead of the
- * others waiting, behind earlier urgent ones; the gap still applies.
+ * Calls fn once it is this start's turn, from a timer of its own. An
+ * urgent start goes ahead of the others waiting, behind earlier urgent ones;
+ * the gap still applies.
  * @param {function(): void} fn starts the child
  * @param {boolean} [urgent]
  */
@@ -61,6 +72,30 @@ function launch(fn, urgent) {
   drainLaunches();
 }
 
+/*
+ * A child killed by a signal it was not sent by the timeout died before
+ * answering. On a 50UP81006LR (webOS 6.5, node v8.12.0) children aborted with
+ * libuv's "uv_close: Assertion `!uv__is_closing(handle)' failed" at start and
+ * the model name was lost; run by hand, the same call answered. Such a child
+ * never reached the program it was to run, so running it again is safe,
+ * writes included.
+ */
+function diedEarly(err) {
+  return !!(err && err.signal && !err.killed);
+}
+
+/*
+ * The gaps, for the fake TV the browser checks start: its luna-send is a node
+ * script with no lock to inherit, and the start-up gap held each tab's 59
+ * calls 150 ms apart. Never called on a TV.
+ */
+function setGaps(gap, startupGap) {
+  GAP_MS = gap;
+  STARTUP_GAP_MS = startupGap;
+}
+
 module.exports = {
-  launch: launch
+  launch: launch,
+  diedEarly: diedEarly,
+  setGaps: setGaps
 };

@@ -1,6 +1,6 @@
 // Public audio snapshots and the boundary before a privileged helper runs.
 var assert = require('assert');
-var events = require('events');
+var PassThrough = require('stream').PassThrough;
 var fs = require('fs');
 var os = require('os');
 var crypto = require('crypto');
@@ -33,14 +33,13 @@ audio.init({ luna: call, lunaCached: function (uri, params, ttl, cb) { call(uri,
   hdmiReceiverMap: function (cb) { cb({ 1: 3, 2: 2, 3: 1, 4: 0 }); } });
 
 function request(method, body, headers, callback) {
-  var req = new events.EventEmitter();
+  var req = new PassThrough();
   req.url = '/api/audio'; req.method = method;
   req.headers = headers || { host: '127.0.0.1', 'content-type': 'application/json' };
   req.connection = { remoteAddress: '127.0.0.1' };
-  req.destroy = function () {};
   var code;
   routes.handleRequest(req, { writeHead: function (n) { code = n; }, end: function (s) { callback(code, JSON.parse(s)); } });
-  if (method === 'POST') { req.emit('data', JSON.stringify(body)); req.emit('end'); }
+  if (method === 'POST') req.end(JSON.stringify(body));
 }
 function format(st, id) { return st.tv.formats.filter(function (f) { return f.id === id; })[0]; }
 function add(name, setup, check, body, headers) { cases.push({ name: name, setup: setup, check: check, body: body, headers: headers }); }
@@ -53,6 +52,7 @@ add('TV, receiver, local playback and negotiated transport stay separate', null,
   assert.strictEqual(format(st, 'mat').playback, false, 'HDMI MAT advertisement does not declare a local TrueHD decoder');
   assert.strictEqual(format(st, 'dtsx').advertised, null, 'a DTS-HD descriptor does not certify DTS:X');
   assert.strictEqual(st.live.input, null, 'AudioData with zero rate and an unstarted decoder is not live PCM');
+  assert.strictEqual(st.live.inputReadable, true, 'the driver can say what comes in, so no audio is reported, not unavailable');
   assert.strictEqual(st.live.output, null);
 });
 add('current output settings override whole-category defaults', function () {
@@ -140,6 +140,7 @@ add('C9 uses its input dimension and authoritative HAWK2 native EDID', c9Setup, 
   assert.strictEqual(st.live.hdmi.channelAllocation, 11);
   assert.strictEqual(st.live.hdmi.sampleRate, null, 'an unspecified frequency is not assumed to be 48 kHz');
   assert.strictEqual(st.live.input, null, 'an InfoFrame does not establish live audio or PCM decoding');
+  assert.strictEqual(st.live.inputReadable, false, 'with neither the input service nor the driver, what comes in cannot be read');
   assert.strictEqual(st.receiver.link, 'unknown', 'the eARC setting is not a negotiated link');
 });
 add('a failed HAWK2 read remains unknown instead of falling back to a family guess', function () {
@@ -173,6 +174,44 @@ add('non-HDMI C9 app playback does not query an arbitrary HDMI port', function (
   assert.strictEqual(st.tv.input, null); assert.strictEqual(st.live.hdmi, null); assert.strictEqual(format(st, 'dts').advertised, null);
   assert.strictEqual(calls.filter(function (entry) { return /getEdidData$/.test(entry.uri); }).length, 0);
 });
+function c9ReceiverSetup() {
+  c9Setup();
+  responses['com.webos.service.eim/getAllInputStatus'] = { returnValue: true, arcDevice: true, devices: [
+    { id: 'HDMI_2', port: 2, connected: true, hdmiPlugIn: true, subList: [
+      { id: 'SIMPLINK', cecpDevType: 5, portId: 2, osdName: 'Synthetic soundbar' }
+    ] }
+  ] };
+}
+add('C9 detects a CEC soundbar while negotiated transport stays unknown', c9ReceiverSetup, function (code, st) {
+  assert.strictEqual(st.receiver.name, 'Synthetic soundbar');
+  assert.strictEqual(st.receiver.port, 2);
+  assert.strictEqual(st.receiver.detected, true);
+  assert.strictEqual(st.receiver.connected, null);
+  assert.strictEqual(st.receiver.link, 'unknown');
+  assert.strictEqual(st.receiver.formatsKnown, false);
+  assert.strictEqual(format(st, 'dts').receiver, null);
+});
+add('a stale CEC name is not a detected receiver', function () {
+  c9ReceiverSetup(); responses['com.webos.service.eim/getAllInputStatus'].devices[0].connected = false;
+}, function (code, st) { assert.strictEqual(st.receiver.name, null); assert.strictEqual(st.receiver.detected, null); });
+add('a source player is not an audio system', function () {
+  c9ReceiverSetup(); responses['com.webos.service.eim/getAllInputStatus'].devices[0].subList[0].cecpDevType = 4;
+}, function (code, st) { assert.strictEqual(st.receiver.name, null); });
+add('unavailable EIM replies cannot identify a receiver', function () {
+  c9ReceiverSetup(); responses['com.webos.service.eim/getAllInputStatus'].returnValue = false;
+}, function (code, st) { assert.strictEqual(st.receiver.name, null); });
+add('a negative ARC-device flag cannot retain an old CEC receiver', function () {
+  c9ReceiverSetup(); responses['com.webos.service.eim/getAllInputStatus'].arcDevice = false;
+}, function (code, st) { assert.strictEqual(st.receiver.name, null); });
+add('ambiguous audio systems do not select an arbitrary port', function () {
+  c9ReceiverSetup(); var d = JSON.parse(JSON.stringify(responses['com.webos.service.eim/getAllInputStatus'].devices[0]));
+  d.id = 'HDMI_3'; d.port = 3; d.subList[0].portId = 3;
+  responses['com.webos.service.eim/getAllInputStatus'].devices.push(d);
+}, function (code, st) { assert.strictEqual(st.receiver.name, null); assert.strictEqual(st.receiver.port, null); });
+add('explicit inactive ARC state is preserved despite CEC presence', function () {
+  c9ReceiverSetup(); responses['com.webos.service.arccontroller/getARCState'] = { returnValue: true, arcActivation: 'None' };
+}, function (code, st) { assert.strictEqual(st.receiver.name, 'Synthetic soundbar'); assert.strictEqual(st.receiver.connected, false); assert.strictEqual(st.receiver.link, 'inactive'); });
+
 add('the G3 cannot execute a G5 override', null, function (code, st) {
   assert.strictEqual(code, 400);
   assert.strictEqual(st.ok, false);
@@ -374,6 +413,76 @@ add('a disable is not confirmed while changes remain to restore', function () {
   assert.strictEqual(st.status.override.needsRestore, true);
 }, { enabled: false });
 
+function realtekEdidStatus(sadBytes) {
+  var base = [], ext = [], i;
+  for (i = 0; i < 128; i++) { base.push(0); ext.push(0); }
+  [0, 255, 255, 255, 255, 255, 255, 0].forEach(function (n, idx) { base[idx] = n; });
+  base[126] = 1;
+  ext[0] = 2; ext[1] = 3; ext[2] = 4 + sadBytes.length; ext[3] = 0x40;
+  sadBytes.forEach(function (n, idx) { ext[idx + 4] = n; });
+  [base, ext].forEach(function (blk) {
+    var sum = 0;
+    for (var j = 0; j < 127; j++) sum += blk[j];
+    blk[127] = (-sum) & 255;
+  });
+  function formatBlock(name, blk) {
+    var lines = [name + ' :'];
+    for (var off = 0; off < blk.length; off += 16) {
+      lines.push(blk.slice(off, off + 16).map(function (b) {
+        return '0x' + ('0' + b.toString(16)).slice(-2);
+      }).join(',') + ',');
+    }
+    return lines.join('\n');
+  }
+  return ['===== HDMI STATUS =====', 'hwport:4', 'phy_lock_status:1',
+    formatBlock('edid_data_block0', base), formatBlock('edid_data_block1', ext)].join('\n');
+}
+
+add('Realtek reads checksummed EDID bytes from hdmi_status when hdmi20 is absent', function () {
+  mock.files['/proc/lg/hdmi20/port0/edid'] = null;
+  responses['com.webos.service.arccontroller/getARCEDIDInfo'].edidInfo = [];
+  responses['com.webos.service.config/getConfigs'].configs['tv.model.edidType'] = 'Unknown';
+  // Header 0x2f = audio tag (1) with 15 bytes: PCM, AC3, EAC3, TrueHD, DTS (no DTS-HD)
+  mock.files['/proc/lgtv-driver/hdmi_status/hdmi.p0'] = realtekEdidStatus([
+    0x2f, 0x09, 0x57, 0x07, 0x15, 0x07, 0x50, 0x55, 0x07, 0x00, 0x67, 0x04, 0x03, 0x3d, 0x07, 0x50
+  ]);
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(format(st, 'pcm').advertised, true);
+  assert.strictEqual(format(st, 'dts').advertised, true);
+  assert.strictEqual(format(st, 'dtshd').advertised, false);
+});
+
+add('Realtek bad EDID checksum stays unknown instead of reporting formats', function () {
+  mock.files['/proc/lg/hdmi20/port0/edid'] = null;
+  responses['com.webos.service.arccontroller/getARCEDIDInfo'].edidInfo = [];
+  responses['com.webos.service.config/getConfigs'].configs['tv.model.edidType'] = 'Unknown';
+  mock.files['/proc/lgtv-driver/hdmi_status/hdmi.p0'] =
+    realtekEdidStatus([0x23, 0x3d, 0x07, 0x50]).replace(/0x3d/, '0x3e');
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(format(st, 'dts').advertised, null);
+});
+
+add('Realtek reads HDMI incoming codec and kHz sample rate from driver files', function () {
+  c9Setup();
+  mock.files['/proc/lgtv-driver/audio/hdmi'] = 'HDMIConnected=1\nAudioData=1\nCodec=PCM\nSamplingRate=48\nN=6144\nCTS=148500\n';
+  mock.files['/proc/lgtv-driver/audio/adec.p1'] = 'AdecPortNum=1\nStart=1\nConnect=HDMI0\nSrcCodec=PCM\nSrcSamplingRate=48\nMute=0\n';
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.strictEqual(st.live.inputReadable, true);
+  assert.deepEqual(st.live.input, { codec: 'PCM', sampleRate: 48000 });
+});
+
+add('HDMI_PORT driver fallback preserves Hz sample rate', function () {
+  c9Setup();
+  mock.files['/proc/lgtv-driver/audio/hdmi'] = 'HDMIConnected=1\nAudioData=1\nCodec=PCM\nSamplingRate=48000\nN=6144\nCTS=148500\n';
+  mock.files['/proc/lgtv-driver/audio/adec.p1'] = 'AdecPortNum=1\nStart=1\nConnect=HDMI_PORT3\nMute=0\n';
+}, function (code, st) {
+  assert.strictEqual(code, 200);
+  assert.deepEqual(st.live.input, { codec: 'PCM', sampleRate: 48000 });
+});
+
 function restore() {
   os.release = originalRelease; child.execFile = originalExec; crypto.createHash = originalHash; fs.statSync = originalStat; mock.restore();
 }
@@ -385,7 +494,7 @@ function next() {
   calls = [];
   Object.keys(fixture.files).forEach(function (key) { mock.files[key] = fixture.files[key]; });
   Object.keys(mock.files).forEach(function (key) {
-    if (/^\/(var\/lib\/lg-dts-|sys\/module\/gh_dts_native|proc\/aaudio\/|run\/systemd\/)/.test(key)) delete mock.files[key];
+    if (/^\/(var\/lib\/lg-dts-|sys\/module\/gh_dts_native|proc\/aaudio\/|run\/systemd\/|proc\/lgtv-driver\/hdmi_status\/)/.test(key)) delete mock.files[key];
   });
   child.execFile = refuseLaunch;
   crypto.createHash = originalHash;

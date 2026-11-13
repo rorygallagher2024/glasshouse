@@ -260,6 +260,22 @@ function parseKernelLogs(raw, bootTimeMs) {
  * The cursor a poll sends back to be given only what is new:
  * "system:<end>:<ino>,glasshouse:<end>:<ino>,kernel:<last uptime>".
  */
+/*
+ * Numbers the boots in a run of tvweb.log entries, in the order written: the
+ * last is 0, the one before -1. tvweb.log outlives a reboot and its uptime
+ * starts again from 0, so uptime alone put an earlier boot's later lines after
+ * this boot's, and a limit kept those over the newest. A boot ends where the
+ * uptime goes back. The system log and the kernel's are this boot's only.
+ * @param {Array.<Object>} entries
+ */
+function markBoots(entries) {
+  var boot = 0;
+  for (var i = entries.length - 1; i >= 0; i--) {
+    if (i < entries.length - 1 && entries[i].mono > entries[i + 1].mono) boot--;
+    entries[i].boot = boot;
+  }
+}
+
 function parseCursor(since) {
   var out = {};
   String(since || '').split(',').forEach(function (part) {
@@ -330,7 +346,10 @@ function getLogs(opts, cb) {
     if (r.whole) incremental = false;
     cursor.push(name + ':' + r.end + ':' + r.ino);
     var entries = parse(r.text);
-    for (var e = 0; e < entries.length; e++) allEntries.push(entries[e]);
+    for (var e = 0; e < entries.length; e++) {
+      entries[e].boot = 0;
+      allEntries.push(entries[e]);
+    }
     return { whole: r.whole, count: entries.length };
   }
 
@@ -339,21 +358,25 @@ function getLogs(opts, cb) {
   }
 
   if (wantGlasshouse && ghAvailable) {
-    var gh = readSource('glasshouse', tvwebPath, function (text) { return parseGlasshouseLogs(text, bootTimeMs, uptime); });
+    var ghEntries = [];
+    var gh = readSource('glasshouse', tvwebPath, function (text) {
+      ghEntries = parseGlasshouseLogs(text, bootTimeMs, uptime);
+      return [];
+    });
     // Just after tvwebctl trims tvweb.log it holds a few lines: a whole read
     // that comes up short is topped up from the copy it kept, oldest first.
-    if (gh && gh.whole && gh.count < limit && fs.existsSync(rotPath)) {
+    if (gh && gh.whole && ghEntries.length < limit && fs.existsSync(rotPath)) {
       var rot = readLines(rotPath, null, '', MAX_FILE_READ);
-      if (rot) {
-        var rotEntries = parseGlasshouseLogs(rot.text, bootTimeMs, uptime);
-        for (var o = 0; o < rotEntries.length; o++) allEntries.push(rotEntries[o]);
-      }
+      if (rot) ghEntries = parseGlasshouseLogs(rot.text, bootTimeMs, uptime).concat(ghEntries);
     }
+    markBoots(ghEntries);
+    for (var o = 0; o < ghEntries.length; o++) allEntries.push(ghEntries[o]);
   }
 
   function finish() {
-    // Sort combined entries chronologically
+    // Sort combined entries chronologically: by boot, then uptime within it.
     allEntries.sort(function (a, b) {
+      if (a.boot !== b.boot) return a.boot - b.boot;
       if (a.mono !== b.mono) return a.mono - b.mono;
       return a.ts < b.ts ? -1 : (a.ts > b.ts ? 1 : 0);
     });
@@ -408,6 +431,7 @@ function getLogs(opts, cb) {
         var after = incremental && typeof since.kernel === 'number' ? since.kernel : -1;
         var lastMono = after;
         for (var k = 0; k < kEntries.length; k++) {
+          kEntries[k].boot = 0;
           if (kEntries[k].mono > after) allEntries.push(kEntries[k]);
           if (kEntries[k].mono > lastMono) lastMono = kEntries[k].mono;
         }
@@ -483,6 +507,7 @@ function redactEntry(entry) {
   return {
     ts: entry.ts,
     mono: entry.mono,
+    boot: entry.boot,
     source: entry.source,
     proc: redact(entry.proc),
     level: entry.level,
@@ -517,6 +542,7 @@ module.exports = {
   parseSystemLogs: parseSystemLogs,
   parseGlasshouseLogs: parseGlasshouseLogs,
   parseKernelLogs: parseKernelLogs,
+  markBoots: markBoots,
   detectLevel: detectLevel,
   formatFatalError: formatFatalError,
   redact: redact,

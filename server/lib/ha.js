@@ -17,11 +17,34 @@ var APP_ID_RE = require('./iconserver').APP_ID_RE;
 // [id, name] pairs, a name made unique with its id where two are the same.
 function ssChoices() {
   var seen = {};
-  return screensavers.catalog().filter(function (e) { return !e.problem; }).map(function (e) {
+  var list = screensavers.catalog().filter(function (e) { return !e.problem; });
+  if (screensavers.RANDOM) list.splice(1, 0, screensavers.RANDOM);
+  return list.map(function (e) {
     var name = seen[e.label] ? e.label + ' (' + e.id + ')' : e.label;
     seen[name] = true;
     return [e.id, name];
+  }).concat(renamedChoices());
+}
+/*
+ * A screen saver now one of another's options stays in the list under its old
+ * name, so an automation that picks it still works. It is sent by its old id,
+ * which the server takes as the other with that option, and is shown while
+ * that option is in use.
+ */
+function renamedChoices() {
+  var out = [];
+  Object.keys(screensavers.RENAMED).forEach(function (id) {
+    var r = screensavers.RENAMED[id], to = screensavers.catalog().filter(function (e) { return e.id === r.mode && !e.problem; })[0];
+    if (to) out.push([id, r.label, r.mode + '/' + r.choice]);
   });
+  return out;
+}
+// The name to show for what the TV reports: the mode, or the mode and option.
+function ssStateTemplate(choices) {
+  var m = {};
+  choices.forEach(function (c) { m[c[2] || c[0]] = c[1]; });
+  return '{% set m = ' + JSON.stringify(m) + ' %}' +
+    '{{ m.get(value_json.screensaverMode ~ "/" ~ (value_json.screensaverChoice or ""), m.get(value_json.screensaverMode, "LG default")) }}';
 }
 function ssMap(choices, byLabel) {
   var m = {};
@@ -58,7 +81,19 @@ var HA_ENTITIES = [
   { id: 'input_source', type: 'select', name: 'Input Source', cat: 'controls' },
   { id: 'piccap', type: 'switch', name: 'PicCap Capture', cat: 'controls' },
   { id: 'huesync', type: 'switch', name: 'Hue Sync', cat: 'controls' },
+  { id: 'huesync_brightness', type: 'number', name: 'Hue Sync Brightness', cat: 'controls' },
+  { id: 'huesync_intensity', type: 'select', name: 'Hue Sync Intensity', cat: 'controls' },
+  { id: 'huesync_sync_mode', type: 'select', name: 'Hue Sync Synchronization mode', cat: 'controls' },
+  { id: 'huesync_current_ec', type: 'select', name: 'Hue Sync Entertainment area', cat: 'controls' },
+  { id: 'huesync_background_lightning_video', type: 'switch', name: 'Hue Sync Background light (video)', cat: 'controls' },
+  { id: 'huesync_background_lightning_games', type: 'switch', name: 'Hue Sync Background light (game)', cat: 'controls' },
+  { id: 'huesync_auto_start', type: 'switch', name: 'Hue Sync Automatic start', cat: 'controls' },
+  { id: 'huesync_auto_start_notification', type: 'switch', name: 'Hue Sync Automatic start notification', cat: 'controls' },
   { id: 'screen_notification', type: 'text', name: 'Screen Notification', cat: 'controls' },
+  // Written to, never read back: an automation pushes a JSON string
+  // ({"condition":"partlycloudy","temp":14.2}) and Glasshouse Home shows it
+  // as the weather badge next to the clock. See docs/dashboard/home.md.
+  { id: 'weather', type: 'text', name: 'Weather Push', cat: 'controls' },
   { id: 'picture_mode', type: 'select', name: 'Picture Mode (Select)', cat: 'controls' },
   { id: 'energy_saving', type: 'select', name: 'Energy Saving Step', cat: 'controls' },
   { id: 'sound_output', type: 'select', name: 'Sound Output', cat: 'controls' },
@@ -173,6 +208,7 @@ var LG_SETTING_ENTITIES = [
   { type: 'select', id: 'game_genre', row: 'gameGenre', name: 'Game Genre', cat: 'video', enabled: true, icon: 'mdi:gamepad-variant' },
   { type: 'select', id: 'prevent_input_delay', row: 'inputOptimization', name: 'Prevent Input Delay', cat: 'video', enabled: true, icon: 'mdi:timer-outline' },
   { type: 'switch', id: 'allm_setting', row: 'enableALLM', name: 'ALLM', cat: 'video', enabled: true, icon: 'mdi:gamepad-square' },
+  { type: 'switch', id: 'reduce_blue_light', row: 'eyeComfortMode', name: 'Reduce Blue Light', cat: 'video', enabled: true, icon: 'mdi:eye-outline' },
   { type: 'select', id: 'digital_sound_output', row: 'soundOutputDigital', name: 'Digital Sound Output', cat: 'controls', icon: 'mdi:surround-sound' },
   { type: 'number', id: 'balance', row: 'audioBalance', name: 'Balance', cat: 'controls', icon: 'mdi:scale-balance' },
   { type: 'switch', id: 'automatic_volume', row: 'autoVolume', name: 'Automatic Volume', cat: 'controls', icon: 'mdi:volume-equal' },
@@ -883,6 +919,10 @@ function buildEntities(opts) {
           command_topic: topic.command('volume'),
           state_topic: topic.telemetry,
           value_template: '{{ value_json.volume }}',
+          // Home Assistant's universal media player takes a level from 0 to 1
+          // and cannot scale one: it reads this as number.x_volume|volume_level.
+          json_attributes_topic: topic.telemetry,
+          json_attributes_template: '{{ {"volume_level": value_json.volume / 100 if value_json.volume is number else none} | tojson }}',
           min: 0,
           max: 100,
           step: 1,
@@ -910,6 +950,18 @@ function buildEntities(opts) {
           command_topic: topic.command('toast'),
           icon: 'mdi:message-text-outline',
           mode: 'text'
+        }
+      },
+      {
+        type: 'text', id: 'weather',
+        payload: {
+          name: 'Weather Push',
+          command_topic: topic.command('weather'),
+          icon: 'mdi:weather-partly-cloudy',
+          mode: 'text',
+          // No state_topic: nothing to read back, so the entity never
+          // reports a value of its own in Home Assistant.
+          entity_category: 'config'
         }
       },
       {
@@ -1246,7 +1298,7 @@ function buildEntities(opts) {
           state_topic: topic.telemetry,
           options: ssc.map(function (c) { return c[1]; }),
           command_template: '{{ ' + JSON.stringify(ssMap(ssc, true)) + '[value] }}',
-          value_template: '{{ ' + JSON.stringify(ssMap(ssc, false)) + '.get(value_json.screensaverMode, "LG default") }}',
+          value_template: ssStateTemplate(ssc),
           icon: 'mdi:television-shimmer'
         }
       },
@@ -1521,6 +1573,54 @@ function buildEntities(opts) {
         payload_off: 'OFF',
         icon: 'mdi:television-ambient-light'
       }
+    });
+  }
+
+  if (opts.huesync && opts.huesyncSettings) {
+    var hueSettings = opts.huesyncSettings;
+    var hueFields = [["brightness", "number", "Brightness"], ["intensity", "select", "Intensity"], ["sync_mode", "select", "Synchronization mode"], ["current_ec", "select", "Entertainment area"], ["background_lightning_video", "switch", "Background light (video)"], ["background_lightning_games", "switch", "Background light (game)"], ["auto_start", "switch", "Automatic start"], ["auto_start_notification", "switch", "Automatic start notification"]];
+    hueFields.forEach(function (field) {
+      var key = field[0], type = field[1];
+      if (!Object.prototype.hasOwnProperty.call(hueSettings, key)) return;
+      var payload = {
+        name: 'Hue Sync ' + field[2],
+        command_topic: topic.command('huesync/' + key),
+        state_topic: topic.state('huesync/settings'),
+        value_template: '{{ value_json.' + key + ' | default(none) }}',
+        icon: 'mdi:television-ambient-light'
+      };
+      payload.availability = [{ topic: topic.state('huesync/settings'),
+        value_template: '{{ "online" if value_json.' + key + ' is not none and "' + key + '" not in (value_json.get("_stale") or [])' +
+          (key === 'current_ec' ? ' and "ec_list" not in (value_json.get("_stale") or [])' : '') + ' else "offline" }}' }];
+      if (type === 'number') { payload.min = 0; payload.max = 100; payload.step = 1; payload.unit_of_measurement = '%'; }
+      if (type === 'switch') {
+        payload.payload_on = 'ON'; payload.payload_off = 'OFF';
+        payload.value_template = '{{ "ON" if value_json.' + key + ' == true else "OFF" if value_json.' + key + ' == false else none }}';
+      }
+      if (key === 'intensity') {
+        payload.options = ['Subtle', 'Moderate', 'High', 'Extreme'];
+        payload.value_template = '{{ ["Subtle", "Moderate", "High", "Extreme"][value_json.intensity | int] if value_json.intensity is not none else none }}';
+        payload.command_template = '{{ {"Subtle": 0, "Moderate": 1, "High": 2, "Extreme": 3}[value] }}';
+      }
+      if (key === 'sync_mode') {
+        payload.options = ['Video', 'Game'];
+        payload.value_template = '{{ "Video" if value_json.sync_mode == "0" else "Game" if value_json.sync_mode == "1" else none }}';
+        payload.command_template = '{{ "0" if value == "Video" else "1" }}';
+      }
+      if (key === 'current_ec') {
+        if (!hueSettings.ec_list || !hueSettings.ec_list.length) return;
+        // IDs remain unambiguous even when two areas share a name.
+        var labels = {}, areaIds = {};
+        payload.options = hueSettings.ec_list.map(function (a) {
+          var label = a.name + ' (' + a.id + ')';
+          labels[a.id] = label;
+          areaIds[label] = a.id;
+          return label;
+        });
+        payload.value_template = '{{ ' + JSON.stringify(labels) + '[value_json.current_ec] | default(none) }}';
+        payload.command_template = '{{ ' + JSON.stringify(areaIds) + '[value] }}';
+      }
+      entities.push({ type: type, id: 'huesync_' + key, payload: payload });
     });
   }
 

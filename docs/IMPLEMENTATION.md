@@ -47,6 +47,14 @@ Older Linux kernels and Node 0.12 can encounter process deadlocks or child leaks
 4. **Memory Caching**: Telemetry is cached for 1.5 seconds, delivering sub-20ms HTTP responses with zero subprocess spawning during rapid UI updates.
 5. **Deterministic MQTT Client Session**: Uses a static client ID and periodic availability reaffirmation so TV reboots or network reconnects never leave entities trapped in an "Unavailable" state.
 
+### Serving the dashboard
+
+`ui.html` is served with its stylesheet and scripts put back inline, gzipped
+once at start (about 170 KB). It goes out with `Cache-Control: no-cache` and an
+ETag hashed from the page, so a browser keeps it and asks each time, and an
+unchanged page comes back as a 304 with no body. The ETag comes from the content
+rather than the version: a deploy of uncommitted changes keeps the version.
+
 ### What it costs the TV
 
 Measured with `scripts/footprint.sh` on 2026-10-03, over a minute each, with MQTT publishing every 10s and no dashboard open:
@@ -62,9 +70,188 @@ The children are the five subscriptions held open for live state, to which a TV 
 
 ---
 
+## Internet TV: worker processes and published snapshots
+
+Glasshouse Home's Internet TV row (`lib/iptv.js`) reads the owner's IPTV
+playlists, which run to tens of MB with films and series in them, and XMLTV
+guides of 50 to 200 MB. None of that is read in the server, whose one thread
+also answers the remote, the dashboards and MQTT. Each job is a process of
+its own, `lib/iptv-worker.js` with its readers in `lib/iptv-parse.js`:
+
+- **Started like every child**, through `children.launch`, as `nice -n 19 node
+  --max_old_space_size=64 iptv-worker.js` (24 MB for a search) in a process
+  group of its own (`detached`). The job is one JSON line on its stdin, which
+  stays open: the worker exits, killing its own curl, when it closes, so a
+  server that dies leaves no worker behind. Timeouts and cancelling kill the
+  whole group. The job line may be up to 4 MB, including a full lineup's
+  channel names and groups; its limit applies across chunks and to a complete line.
+- **Downloaders wait a turn** before starting curl or wget, as the debugger
+  firewall calls do. Node 8 on webOS can abort a child before exec. A downloader
+  killed by SIGABRT before any body bytes arrive is retried once after 200 ms,
+  and reported as `aborted` if it happens again;
+  a partial body is never replayed into the playlist or guide reader.
+- **Two lanes.** Background jobs (reading a playlist, the lineup's
+  play links and logos, the guide, now and next again) run one at a time, in
+  order, a kind for a playlist only once in the queue. Browse and search for
+  the add panels run beside them, one at a time, a new one replacing the last.
+- **Memory is measured by the server**, once a second while a worker runs:
+  the RSS in `/proc/<pid>/statm` of the worker and the curl it reports
+  starting. Over 160 MB for the background lane, 90 MB for search or 220 MB
+  between them, or with the TV's `MemAvailable` under its floor for three
+  measures in a row or 30 MB under it at once, the background job is stopped and
+  queued again for at least a minute; a search over its own share fails. The
+  floor and what a job needs to start depend on the mode, `lib/iptv-memory.js`,
+  which the server picks from the TV's memory; there is no setting.
+  **Normal**, from 1.5 GB of memory: a floor of 150 MB and 210 MB to
+  start, with a 64 MB heap; with less available the job runs in economy instead.
+  **Economy**, below that: a floor of 12% of the TV's memory, from
+  90 MB to 150 MB, and to start that floor and the job's cost: 125% of what it
+  last used on that playlist, else 30 MB and 0.7 MB per 1,000 channels for reading
+  a list or the lineup, else 60 MB. An edit the owner is waiting on asks at most
+  20 MB over the floor. The heap is 60% of the cost, from 24 MB to 64 MB, and a
+  worker that dies on it has the full one next time; a batch of logos is 40, not
+  300. In either mode a job also needs 70 MB free where the snapshots live (`df`). Its output is not known before it runs, so the
+  worker counts every byte it writes and stops with `disk` once only 50 MB
+  would be left.
+- **A stream that fails** is reconnected with a fresh URL, which opens a live
+  channel at the live point. A stall is the picture's `currentTime` not
+  moving for 8 s, whatever events the `<video>` sent, or for 3 s with under
+  half a second buffered past it, as every stall logged on a provider's
+  stream had under a second; a stream that ends reconnects at once. Stuck at a hole with
+  more buffered after it, Home steps over it after 2.5 s instead. Reconnects
+  wait 0.4, 1.5, 3, 5, 8 then 10 s; a channel that has played gets eight in
+  a row, about a minute, as a provider's CDN was seen sending nothing for 30
+  to 50 s at a time, and has them all back after 30 s of playing. One that
+  never played gets two, as a one-stream account can refuse a channel change
+  for a moment, and none for no picture at all. Each reconnect adds
+  `gh=<time>` to the URL, as a provider's CDN may be holding a copy of the
+  playlist the TV cannot read, such as one gzipped for a client with no
+  `Accept-Encoding`. Home sends no Referer, as `localhost` gets a 204 from the
+  same CDN. The message only mentions a limit on streams for a playlist with an
+  account, which `/api/iptv/stream` reports as `account`.
+- **Stream events go to the log**: Home posts each start, stall, error,
+  skipped hole, reconnect, recovery and give-up to `/api/iptv/event`, which
+  writes one `iptv: stream` line each (at most 120 an hour) with the
+  channel's key, never its URL.
+- **MPEG-TS instead of HLS**, a channel at a time: an Xtream panel serves a
+  live channel either way by the URL's extension. Yellow in Home's player
+  posts `/api/iptv/output`, which keeps the channel's key in the playlist's
+  `ts` list in `config.json`; `streamUrl` then turns its `.m3u8` into `.ts`,
+  one long download with no playlist to go stale. Offered (`switchable`) for
+  an Xtream channel unless the panel's `allowed_output_formats` lacks one of
+  the two.
+- **Pausing live TV** (`lib/iptv-timeshift.js`, the worker
+  `lib/iptv-timeshift-worker.js`), when switched on: Home's full-screen
+  player asks `/api/iptv/stream` with `full=1`, and for an MPEG-TS channel
+  the server starts a worker as `node --max_old_space_size=16`, through
+  `children.launch`, in a process group of its own. It records the channel
+  through curl (`-N`, with a VLC User-Agent, as a provider refused curl's own
+  with 461) to 8 MB chunk files in `glasshouse-timeshift` on a writable USB
+  stick under `/tmp/usb`, dropping the oldest past 2 GB, and serves them on
+  127.0.0.1 at a random port under a random token, which Home is given
+  instead of the provider's URL. Nothing is buffered in memory: each byte is
+  written to the stick and read back 64 KB at a time, as the TV has a few
+  hundred MB free. A paused `<video>` stops reading, TCP backpressure holds
+  the read place, and the recording goes on. A reconnect continues from the
+  place; the live point is started 6 s early (at least 256 KB), as the player
+  holds no more past the picture than it starts with and 0.3 s stalled at the
+  first hiccup; the time a pause can last is the buffer's capacity in seconds
+  (`maxBytes` over the recording's average rate, from `/api/iptv/timeshift`)
+  less the picture's own time behind live, which Home counts itself, as the
+  read place runs ahead of the picture by what the player buffers and moves
+  while it fills; `live=1` starts at the live point and `behind=<seconds>` that long
+  before it, by the recording's average byte rate, which is how Home's Back
+  (after asking) and Left and Right move: a live MPEG-TS stream cannot seek,
+  so each opens the recording again. The recording lives as
+  long as Home's lease: `lease(false)`, the lease running out, another
+  channel's play or the server stopping ends it and empties the folder.
+  While paused, Home renews the lease without `full`, so LG's screen saver
+  may come over the still picture. A provider that refuses the recorder
+  before any bytes gets a 502 passed on, and the channel plays directly for
+  ten minutes.
+- **One search at a time**: the lane is taken before the memory check
+  answers, so a search asked for meanwhile replaces it rather than starting
+  beside it.
+- **Downloads are parsed as they arrive**, through curl or wget, and never
+  saved: an M3U line by line, Xtream's JSON arrays an element at a time, an
+  XMLTV guide an element at a time, unzipped on the way when its first bytes
+  say gzip. A JSON list that never closes, or a guide that stops before
+  `</tv>`, is refused as cut off rather than its first part published. Ceilings: 300 MB downloaded, 1.5 GB unzipped, 64 KB an M3U entry
+  or JSON element, 2 MB an XMLTV element, 500,000 entries.
+- **Snapshots.** A job writes a candidate folder (`snap-`, `sel-`, `guide-`,
+  `nn-`) and reports it done; the server checks the playlist is still there
+  at the same generation, writes `current.json` pointing at it, and only once
+  that write succeeds uses it. A failed or stale candidate is deleted, so a failed refresh, an edit or a restart
+  leaves the last good snapshot published. Folders nothing points at go a
+  minute later.
+- **The server reads only small, bounded files**: `meta.json` (16 KB),
+  `groups.json` (384 KB, every group with its count), `added.json` (1 MB,
+  the lineup's channels), `nownext.json` (512 KB), a play link (4 KB) and a
+  browse or search result (96 KB), each held under its limit by the worker
+  before it reports.
+  `index.tsv`, `urls.tsv` and `keys.tsv` are read only by workers; logos and
+  guide shards are piped to Home unread.
+- **Keys.** An Xtream channel's key is its stream id. An M3U entry gets a
+  random key, carried to the next read by the SHA-1 of its full URL, else by
+  a hint (name, group, tvg-id, host and last path segment) only when exactly
+  one old key and one new entry share it: a channel whose token rotated keeps
+  its key; two whose links differ only in a token, both rotated, are not
+  guessed. A key gone after a refresh is matched again only to the one entry
+  with its name and group, else shown as gone.
+- **Schedule.** A playlist is read daily between 03:00 and 05:00, the guide
+  every six hours (an Xtream login's `xmltv.php` once the lineup goes beyond
+  the row's favourites, and its short EPG for the favourites every 30
+  minutes, each job linking the other's channels from the last guide rather
+  than dropping them), failures backing off 15 minutes, an hour, 6
+  and 24 hours, or a 429's `Retry-After` if longer. A refused login stops a
+  playlist's jobs until it is edited or refreshed. Times are kept in
+  `config.json`; overdue jobs run 3 to 8 minutes after a start or a wake.
+  While Home plays a stream it renews a 2-minute lease, and background jobs
+  wait for it, but none more than two hours past due.
+- **The lineup** (`lib/iptv-lineup.js`, pure functions over `selection.json`)
+  is sections in order: a group section names a provider group and the keys
+  taken out of it, and the select job reads the group's channels afresh each
+  time, so it follows the provider; a pick section lists channels by key, in
+  the owner's order. Channels are numbered through the sections, a section
+  starting at its own number where it has one; a channel in two sections is
+  in the first. Favourites (60, Home's row), renames and hidden groups are
+  kept beside them. The selection's generation moves only when which channels
+  are carried does, so a star, rename or new number reaches Home without the
+  select job running. At most 2,000 channels, 1,000 from a group, 100
+  sections. An edit can name many channels, groups or sections at once (a
+  lineup edit's body may be 512 KB, other POSTs 8 KB); one that is refused
+  part way leaves the selection as it was. Moving a channel out of a group
+  section adds it to the group's taken-out keys. The server keeps the
+  selection as it was before each of the last 20 edits, in memory, for Undo.
+  A failed save leaves both the selection and that history unchanged.
+- **Logos come in batches.** A select job the owner is waiting on fetches 12
+  new logos and publishes; later jobs, a minute apart, fetch 300 each (two a
+  second), carrying the rest by hard link, until none is left. One the owner
+  edits stops a batch rather than waiting for it. A logo that failed is not
+  asked for again for a day; 32 MB in all. Non-favourites keep 26 hours of
+  guide, 80 programmes and short descriptions, against two days for the row.
+- **The watchdog.** `tvwebctl watch` kills a child of the server still
+  running node's binary seconds later, taking it for one stuck between fork
+  and exec (node 0.12 on webOS 4). The workers run node on purpose, so it
+  passes over them, as over the remote's button reader.
+
+Measured on a G3 (webOS 9.2.2, node 16) reading from this Mac's fake provider
+and from a real one:
+
+| Job | Time | Worker and curl, peak RSS |
+| :-- | :-- | :-- |
+| Xtream account, 53,463 live channels in 860 groups | 6.8 s | 38 MB |
+| M3U, 100,008 entries (24 MB) | 13 to 15 s | 100 MB |
+| XMLTV, 202 MB (9 MB gzipped), 842,667 programmes | 48 s | 47 MB |
+| Search over the 100,008 | 0.7 to 0.8 s | 33 MB |
+
+`MemAvailable` stayed above 550 MB, and `/api/home/catalogue` answered in
+85 to 140 ms while each ran.
+
 ## Platform constraints
 
 - **Node.js v0.12 (2015)**: webOS 4.x ships Node v0.12.2. All code in `tvweb.js` is written in strict ES5 (no `let`/`const`, no arrow functions, no template literals, no `async`/`await`).
+- **Node 0.x keeps its heap at its peak.** On a B8 the server's live objects are about 20 MB, but its heap grew to 57 MB and stayed there, 73 MB resident. `tvwebctl` starts node 0.x with `--optimize_for_size --max_semi_space_size=1`, with which it rises from about 30 MB to 67 MB and falls back after each full collection, 47 MB on average, for the same CPU time.
 - **BusyBox `run-parts` Hook Naming**: The webosbrew startup system invokes user hooks with `run-parts /var/lib/webosbrew/init.d`. BusyBox `run-parts` strictly ignores any filename containing a dot (`.`), so the boot hook must be named `50-tvweb` without `.sh`.
 - **Luna Bus Introspection**: Control commands interact with webOS via native `luna-send` calls (`com.webos.audio`, `com.webos.service.tvpower`, `com.webos.applicationManager`, `com.webos.notification`, `com.webos.service.settings`, `com.webos.service.eim`).
 
@@ -102,6 +289,7 @@ instead:
 | `/sys/block/mmcblk0/device/pre_eol_info` | `01` Normal / `02` Warning / `03` Urgent |
 | `/mnt/lg/cmn_data/mrcu/mrcu1.info` | Magic Remote model, BDAddr, and firmware, as at pairing. Its `Battery = 52(M) 35(L)` is the remote's battery thresholds, not its charge, so the level comes from the remote (see [Reading the Magic Remote's battery](#reading-the-magic-remotes-battery)) |
 | `/proc/lg/hdmi20/port[0-3]/status` | Real-time HDMI receiver PHY mode (FRL 48 Gbps vs TMDS), chroma (RGB 4:4:4), HDCP, cable error counter, ALLM, VRR |
+| `/proc/lgtv-driver/hdmi_status/hdmi.p[0-3]` | Realtek SoCs without `/proc/lg/hdmi20`: HDMI receiver lock (`phy_lock_status`), +5V (`link_hdmi_5v`), timing, chroma, color depth, ALLM, HDR metadata, and EDID hex blocks |
 | `/proc/lg/pe/hdr_status` | Picture engine live video format, colorimetry standard (`BT.709`, `BT.2020`), and peak nit levels |
 | `/var/luna/preferences/environmentCondition` | Hardware configuration (SoC generation `_O22_`, DDR RAM, refresh rate, eye sensor) |
 
@@ -116,8 +304,9 @@ the sound outputs, logo dimming, the energy saving steps, the Pixel Refresher
 and compensation status, and the eMMC pre-end-of-life state. The dashboards'
 scripts run in the browser and keep their own translated names.
 
-The `port<n>` receivers are not numbered as the inputs are, and each keeps its
-link whichever input is on screen. configd holds the board's wiring as
+The `port<n>` receivers (or `/proc/lgtv-driver/hdmi_status/hdmi.p<n>` on Realtek
+boards) are not numbered as the inputs are, and each keeps its link whichever
+input is on screen. configd holds the board's wiring as
 `inputMap.videoInputMapIndexInfo0`, an `assignment` of `hdmi1` to `hdmi4` to a
 receiver number, or `none` for an input the board does not have. An input's
 signal is read from its own receiver only. Where configd has no map, the base
@@ -250,9 +439,10 @@ Panel-lifecycle features are gated on panel type, detected once via
 `/var/luna/preferences/paneltype_oled`, the model name (`OLED...`, or one of the OLED lines
 whose model numbers lack the prefix: Flex and Objet Posé `LX`, Easel `ART9x`), or pnwash
 filesystem records. The pnwash check also runs when the model name is known, so an unlisted
-OLED without the prefix is still found. `panelUsageTime` is not a signal: LCD TVs report it too. On an LCD/QNED TV they are
+OLED without the prefix is still found. `panelUsageTime` is not a signal: LCD TVs report it too,
+and `panelcontroller/getOledCellInfo` can return all zeros (`00/00/0/00`). On an LCD/QNED TV they are
 omitted from the dashboard and withheld from MQTT discovery, with retained discovery configs
-cleared so they do not linger in Home Assistant as orphans. Reporting `0 hours` would read as a real
+cleared so they do not linger in Home Assistant as orphans. Reporting `0 hours` or a dummy cell would read as a real
 measurement.
 
 ## Deploying over ssh
@@ -267,6 +457,16 @@ becomes the remote shell's own `argv`:
 - **`setsid ... &` does not detach.** The child inherits the ssh session's stdin
   and dies when the connection closes — the server starts, publishes discovery,
   then vanishes. `start-stop-daemon -b -m` survives.
+
+Where the TV has systemd, `tvwebctl start`, `restart`, `update` and `rollback`
+run again under `systemd-run --scope`, so the server and its watchdog are in a
+scope of their own. Otherwise they are in the cgroup of whatever started them,
+and an LG service's restart kills its whole cgroup: on a 50NANO756PR
+(webOS 6) the Homebrew Channel's start-up, and with it Glasshouse, its SSH and
+telnet, ran in `webapp-mgr.service`, which some settings changes restarted
+(#1355); on a C2 (webOS 9.2.2) they ran in `ls-hubd.service`. A scope is made
+first with `/bin/true`, so where none can be made the action runs where it is,
+once. The Homebrew Channel's own SSH and telnet stay where they are.
 
 `rsync` ships with the Homebrew Channel but is broken on-device: it cannot load
 `libcrypto.so.1.1`. Use `scp`, which works over the sftp subsystem.
@@ -283,7 +483,9 @@ not something to assume of other firmware, and a client the owner installed can
 be anywhere. Installed clients are tried before the stock one, each against the
 real release endpoint until one returns usable JSON. A client that does that has
 proved everything that matters. Certificate verification is never disabled: what
-comes back runs as root on the next restart.
+comes back runs as root on the next restart. If verification fails, the download
+fails immediately and is not passed to subsequent clients, preventing fallbacks
+to BusyBox `wget` implementations that bypass TLS certificate checks.
 
 **The directory is updated in place, not swapped.** `/var/lib/tvweb` holds more
 than code — `config.json`, `adblock_hosts`, `adblock_custom.json`, the staged screen saver the boot hook
@@ -572,6 +774,73 @@ together can finish out of order. A key schedules no telemetry read of its own;
 an app it opens reaches Home Assistant through the foreground-app subscription.
 Each key's wait and run time is logged at debug level.
 
+### Pointer input for API clients
+
+`POST /api/pointer` accepts relative pointer events under the usual API token
+and control switch. `move` is an array of up to 120 `{dx, dy}` objects, with an
+optional boolean `down` for dragging; `click`, `down` and `up` are booleans, and
+`scroll` is one `{dx, dy}` object. All deltas are integers between -10000 and
+10000. The whole request is checked before any event is sent. A successful reply
+is `{ "ok": true, "count": N }`. `/api/caps` exposes `pointer: true` where the
+TV registers LG's network-input service.
+
+`lib/pointer.js` opens the socket returned by
+`com.webos.service.networkinput/getPointerInputSocket` on the first event and
+reuses it. Modern TVs return a Unix socket, where each LG text command has a
+32-bit big-endian length prefix. Older implementations may return a WebSocket
+address instead; those commands go one per masked text frame. The socket is
+closed on a write error and on server shutdown.
+
+The dashboard uses the same address as a WebSocket, sending the same JSON
+objects without waiting for HTTP responses between batches. The upgrade uses
+the API token, `allowControl` and same-origin check. POST remains for other
+clients and as the browser's fallback. `pointer.enabled` (true by default) gates
+both forms; it, `pointer.transport` and `pointer.updatesPerSecond` are set
+under **Server → Advanced**. The rate controls the dashboard's batching only;
+the server does not throttle API clients. A dashboard WebSocket exists only
+while Pointer is open, and the last client closing drops the LG socket too
+(POST keeps it open for 5 seconds idle).
+
+### Where the dashboard's keyboard box types
+
+`sendText` with the box's whole content in `full` chooses a route per call
+(`chooseTypingRoute` in `controls.js`, the adapters in `typing.js`); without
+`full`, as Home Assistant and older dashboards call it, it is always LG's input
+method. The routes type only what changed (`text` and `replace`), so `full` is
+the dashboard's way of asking for a route; its content is not read. The choice is held for 2 s, and dropped after a failure or an Enter.
+
+1. LG's input method, when LG's keyboard window is up (webOS 6+) or
+   `ime/registerRemoteKeyboard` answers `currentWidget.focus` true. That call
+   is made with the subscription in the payload and `-n 1`, so `luna-send`
+   leaves with the first answer and nothing stays registered. Also the route
+   when the foreground app cannot be read.
+2. A web app's page: the page on 127.0.0.1:9998 whose address holds the app id,
+   `https://www.youtube.com/tv` for `youtube.leanback.v4`, or the only page when
+   `getAppInfo` says the app is a web app. The server speaks a minimal
+   WebSocket (masked client frames, 16-bit lengths) to the page and sends
+   `Input.dispatchKeyEvent` one command at a time, waiting for each answer
+   (3 s without one fails). Backspace is `rawKeyDown`/`keyUp` with key code 8,
+   a character a `keyDown` with its text, Enter code 13. `devtools.js` closes
+   the port to the network only, so loopback keeps working; with Developer Mode
+   off nothing listens. A web app is then sent nothing, nor an app whose
+   `getAppInfo` `main` is `cobalt` (YouTube, a native app on a C2 with webOS
+   9.2.2): it took none of the key presses below. The answer has `method: 'none'`,
+   and the dashboard shows its note rather than an error on each key.
+3. Key presses on `networkinput/test/sendKeyCode`, for native apps: lowercase
+   letters, digits and unshifted symbols, 50 at a time, Enter as OK.
+
+The answer is `{ ok, error, method, sent }`. `sent` is there for routes that go
+one key at a time (the page and key presses), and tells the dashboard to empty
+its box on a failure, since what the TV received is unknown.
+
+The box cannot read a custom field's content, so it tracks only what it has
+sent. Backspace in an empty box is stopped in the page (`kbIgnoreBackspaceInEmptyBox`
+in `assets/ui/controls.js`) and sends nothing, as a Backspace on YouTube's empty
+search acts as Back. Deleting the last character still goes out, as `replace` 1
+with an empty `text`, because the box is not empty when the key goes down. The
+dashboard notes "Typing as key presses; lowercase only." when the key-press route
+was used.
+
 ## Remote keys through the compositor's filter chain
 
 The compositor, `surface-manager`, does not act on remote keys itself. It reads
@@ -616,6 +885,12 @@ the same codes as the dashboard's media buttons (play 207, pause 119, stop 128,
 rewind 168, fast forward 208, volume up 115, volume down 114, mute 113;
 volume repeats while the key is held). Those keys go through the chain again, and the
 filter names none of them, so they reach LG's filters and the app in front.
+A key set to `action:powerOff` calls `com.webos.service.tvpower/power/powerOff`
+with `reason: "remoteKey"` on release, once per press begun while the TV is on,
+including with the panel blank or a screen saver. A press begun in standby
+does not arm it, so waking with the key does not immediately switch the TV off
+again. It sends no IR command;
+an IR press reaching two TVs can still trigger both mappings.
 LG's files are never written. configd has no way to
 delete a value, so **As LG has it** on every key leaves the filter in the
 chain, passing every key on, and `tvwebctl restore-keys` takes it out, deletes
@@ -731,6 +1006,41 @@ makes the service refuse new ones rather than queue them, and back on with
 in `/var/lib/tvweb` marks toasts off, and the server's start switches them back
 on from it.
 
+## The input bar
+
+The [input bar](dashboard/apps.md#input-bar) is a web app of its own,
+`com.tvweb.inputbar` (`assets/inputbar-app/`), whose `appinfo.json` asks for
+an overlay window (`"defaultWindowType": "overlay"`, `"transparent": true`)
+with no splash (`"noSplashOnLaunch": true`, `"spinnerOnLaunch": false`). The
+input stays the app in front and keeps playing under it, while the bar has
+the remote's keys. Its page is the app's own rather than one Glasshouse
+serves: it reads the inputs from `/api/home/catalogue` and what is on from
+`/api/home/now`, loads `assets/devicons.js` for the icons, and switches by
+launching the input's app itself through `PalmServiceBridge`, with the
+`uniqueId` launch parameter Glasshouse Home's tile sends for a device behind a
+receiver, since the server's POSTs refuse its `file://` origin. It keeps the
+last bar it drew in `localStorage` and draws that at once, before the server
+answers, as the window comes up only with the page's first frame.
+
+`lib/remotekeys.js` offers it as a choice where `lib/inputbar.js` allows it,
+and installs its app with `install-app.sh` before saving a key set to it; the
+last key leaving it removes the app, and so does `restore()`. The key filter
+opens it like any app, except that while it is in front
+(`global.isForegroundApp`) a further press goes to it as Right through
+`global.sendKeyToFocusWindow`, with Linux's `KEY_RIGHT` (106) as LG's
+`appLaunch.js` names it: launching a window already on screen redraws it,
+which shows as a flash. A relaunch that does reach the page moves it on too.
+
+`lib/inputbar.js` keeps the app loaded, hidden, while a key opens it and the
+TV is on: launched with `{ "preload": "full" }` 5 s after the server starts,
+5 s after each switch-on, and 0.3 s after it stops running, which it learns
+from `applicationManager/running` with `subscribe`. A preloaded page sees
+`preload` in its launch parameters, draws nothing and sets no timers until
+the press, which reaches it as a relaunch. A refused launch is tried again
+with a growing wait, five times at most until the server starts again. The
+measurements behind each choice are in
+[TV-RESEARCH.md](development/TV-RESEARCH.md#overlay-web-apps-and-the-input-bar-webos-653-c1).
+
 ## Older hardware capabilities (webOS 3.x and LCD models)
 
 Testing against 2016 hardware (such as 43UH610V-ZB and 55UH6030-UC on webOS 3.4.3) highlights several differences between older LCD platforms and modern OLED sets:
@@ -765,31 +1075,51 @@ the previous boot's, so a tool that is no longer started leaves nothing behind.
 The table is written in place rather than replaced, since app jails such as
 Amazon's bind-mount it as their own `tmp/hosts` while it is mounted.
 
-Nine of the nineteen domains are ad, tracking and diagnostics hosts that
-nothing on the TV needs. The other ten are **LG infrastructure rather than
+The ads tier's domains are ad, tracking and diagnostics hosts that nothing on
+the TV needs. The platform tier's are **service infrastructure rather than
 advertising**, which is why they are a separate tier:
 
 | Domain | What it actually serves |
 | :--- | :--- |
 | `ngfts.lge.com`, `aic-ngfts.lge.com` | Content and firmware delivery CDN |
 | `cdplauncher.lgtvcommon.com`, `lgchhomeapp.lgtvcommon.com` | The Home launcher's recommendations and usage reports; needed by the Content Store after a factory reset |
-| `lgtviot.com` | The ThinQ cloud: the LG ThinQ app can no longer control the TV with it blocked |
+| `lgtviot.com`, `api.lgtviot.com`, `push.lgtviot.com`, `sports.lgtviot.com`, `buddy.lgtviot.com` (bare, with LG's regional prefixes and the TV's country) | The ThinQ cloud, API, push, sports and buddy services; blocking them can prevent ThinQ control and notifications |
+| `lgeapi.com` (bare, with LG's regional prefixes and the TV's country) | LG account/API service family; sign-in or store services may depend on it |
+| `connect-client.lgthinq.com`, `common.lgthinq.com` (bare and with `aic-`/`eic-`/`kic-`) | ThinQ Connect and common cloud services; the prefix uses a hyphen rather than a separate DNS label |
 | `ueiwsp.com` | Universal Electronics' identification of devices connected over HDMI-CEC |
+| `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
+| `mtalk.google.com` | [Google Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/network-configuration), used for push messages; apps using this endpoint may lose push notifications |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
-| `nextlgsdp.com` (and `us.`/`gb.`/`eu.`) | The same on webOS 9 |
+| `nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country, plus `us.`/`gb.`/`de.`/`eu.`) | The same on webOS 9 |
+| `ibs.nextlgsdp.com`, `ibsstat.nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country) | The SDX `ibis_secure` and `ibis_stat_secure` services; blocked only in Everything, after the clock is valid |
+| `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
+| `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
 
 `com.webos.appInstallService` names the one its own set installs from:
-`http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2. The full
-tier adds whatever that file says, so a firmware using neither is still covered.
+`http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,
+`http://US.tv.wiselg.com` on a C5 on webOS 11.2. The full tier adds whatever
+that file says, so a firmware using none of them is still covered.
 
-`wiselg.com` is not on either list, though the full tier still blocks it if
-`appInstallService` names it as its store. On webOS 11 the Content Store's
-first request goes to `<country>.tv.wiselg.com`, and a factory-reset TV asks for
-`ngfts.tv.wiselg.com` during setup
+Regional service families use the same bounded prefix list as the ads tier:
+LG's `aic`, `eic`, `kic` and `eu`, plus the saved TV country. Before the country
+is learned, the existing fallback countries are used. ThinQ Connect uses
+`aic-`, `eic-` and `kic-` instead. This covers reported names such as
+`de.ibs.nextlgsdp.com` and `eic-connect-client.lgthinq.com`; it is still an exact
+hosts list, not wildcard DNS blocking. Sources and the limits of the evidence
+are in [TV research](development/TV-RESEARCH.md#regional-service-coverage).
+
+On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
+sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names
+`<country>.tv.wiselg.com` (`US.`) for sign-in, set-up, logging and Home, and
+`<region>.tv.wiselg.com` (`AIC.`) for the Content Store, search, app usage
+statistics and the diagnostics report upload, which `getRdxServerUrl` gives as
+`https://AIC.tv.wiselg.com/rdx/10.0.0/`. The clock comes from the same servers
+(`systemTimeSource` `sdp`), so the full tier blocks them, the store host
+included, only once the clock has synced, as it does `nextlgsdp.com`. A
+factory-reset TV asks for `ngfts.tv.wiselg.com` during setup
 ([Huttunen](https://fabricati-diem.inform.social/post/deshittification-as-a-service-part2-bypassing-the-app-store-gatekeeper/)),
-which suggests it is that release's service platform, in place of the SDP
-hosts. None of the tested TVs runs webOS 11, and Huttunen reports Netflix
-being interrupted after a cold boot with it blocked.
+who reports Netflix being interrupted after a cold boot with the host blocked
+outright.
 
 The `lgtvcommon.com`, `lgtviot.com` and `ueiwsp.com` rows, and
 `smartad.lge.com` on the ads tier, come from the blocklist in
@@ -833,6 +1163,9 @@ To prevent this while preserving full platform blocking:
   entirely, and `nextlgsdp.com` is blocked immediately.
 * With an [NTP server](#setting-the-clock-from-ntp) configured, the first answer it
   gives sets the time as `sdp`, which ends the wait at once.
+* The Ads & telemetry tier's `rdx2.nextlgsdp.com` names, sdx's report upload host, get
+  the same wait. They are not the time servers, but they share their domain, and the
+  boot hook's removal goes by the domain.
 * An owner's hosts list that names `nextlgsdp.com` or a name under it gets the same wait,
   on either tier.
 
@@ -1017,6 +1350,13 @@ the server's answer, and the service adds the time since then. Glasshouse logs
 one line when it starts, one each time it sets the clock, and one at each
 change of error state.
 
+The service can accept a time and leave the clock where it was: one TV took
+every hourly set and stayed about 6940 s out (#1201). So after each set
+`time/getSystemTime` is read back. A clock still 5 s or more from the time
+given is reported as not taking it, with the source the TV then reads from,
+and is not counted as set; it is tried again at the next hourly sync. With no
+answer from the read-back, the set counts as done.
+
 ---
 
 ## Counting watch time
@@ -1083,17 +1423,25 @@ minutes after a failed one. A check every 10 minutes covers a remote kept
 awake. The subscription's updates are trusted for whether the remote is a
 Bluetooth one: asked once, the same method says it is not. On webOS 4,
 `com.webos.service.mrcu/getDeviceInfo` has the charge in `batteryLevel`, so it
-is asked first, and no Bluetooth connection is made where it answers; webOS 9
-and later answer `"-"`. The Bluetooth read is made only on webOS 9 and 10, where
-it has been tried: on a webOS 5 TV the remote lost its pointer and some buttons
-after waking once it began, until a reboot. Elsewhere the remote's battery is
-not shown. lginput2 holds the remote's own connection, and the
+is asked first, and no Bluetooth connection is made where it answers with a
+number from 0 to 100, or with `"HIGH"`, `"MID"` or `"LOW"` (an MR19 on a C9 or
+an MR25GA on a C5, given as 100, 50 and 10). The Bluetooth read is made only on
+webOS 9 and 10, where `getDeviceInfo` answers `"-"` and where it has been
+tested across standby cycles: on a webOS 5 TV the remote lost its pointer and
+some buttons after waking once Bluetooth reads began, until a reboot. The
+pairing address identifies the remote even when its Bluetooth name differs from
+the model in LG's pairing file; without an address, a single paired `LGE MR*`
+BLE device is used. lginput2 holds the remote's own connection, and the
 Bluetooth service reads the service only over a GATT connection of its own, so
-each read there is
-`gatt/connect`, `gatt/discoverServices`, `gatt/readCharacteristicValue` by the
-`clientId` that connect returned, then `gatt/disconnect`, which is made
-whatever failed after connecting. A plain level in the pairing file, should
-an older TV write one, is used until the remote has given one.
+each read there is `gatt/connect`, `gatt/discoverServices`, `gatt/getServices`
+to check that the Battery Service (`180f`) and a readable Battery Level
+(`2a19`) are present (continuing to the read where the firmware does not list
+services), `gatt/readCharacteristicValue` by the `clientId` that connect
+returned, then `gatt/disconnect`, which is made whatever failed after
+connecting. The last level, timestamp and source are saved in
+`remote-battery.json` keyed by the remote's Bluetooth address; a plain level in
+the pairing file, should an older TV write one, is used until the remote has
+given one.
 TV-RESEARCH.md has how this was found.
 
 ## Settings backups
@@ -1191,7 +1539,7 @@ The package is hashed as a stream and read as a stream; it is never held in memo
 
 * The `ar` archive must hold exactly `debian-binary`, `control.tar.gz` and `data.tar.gz`, once each, every member inside the file. Odd-length members are padded to even, and the last may omit the pad.
 * Each tarball is gunzipped as a stream and abandoned once it unpacks past its cap: 1 MB for the control tarball, 2 GB for the data tarball. A header checksum is verified on every entry, at most 20,000 entries are read, and `appinfo.json` may be at most 64 KB.
-* Long-name (`L`, `K`), pax (`x`, `g`, `X`) and base-256 size entries are refused rather than interpreted, as are entry types other than files, directories and links, and any path that is absolute or contains `..`. A tar that has data after its end-of-archive blocks is refused, and so is an `ar` member of the tarballs under 18 bytes, which cannot be gzip.
+* A GNU long-name entry (`L` for a path, `K` for a link target, which GNU tar writes for anything over 100 characters) gives the next entry its path or target, and that entry is then checked like any other. One with nothing after it, or two of a kind in a row, is refused as damaged. Pax (`x`, `g`, `X`) and base-256 size entries are refused rather than interpreted, as are entry types other than files, directories and links, and any path that is absolute or contains `..`. A tar that has data after its end-of-archive blocks is refused, and so is an `ar` member of the tarballs under 18 bytes, which cannot be gzip.
 * A link (symbolic or hard) is accepted only at least one level inside `usr/palm/{applications,services}/<id>/`, with a target that stays in that `<id>` directory, and no later entry may sit at or below a link's path. The path rules look at names, so a link that left its directory would let a later entry land where they never looked.
 * Only `usr/palm/applications/<id>/` and `usr/palm/services/<name>/` are read. Of the data, only `appinfo.json` is kept, plus the first 20 bytes of binaries in a service or an app's `bin/`, whose ELF `e_machine` is compared with that of `luna-send` or node. `uname -m` is not used, because some models report aarch64 with a 32-bit armhf userspace.
 * Every app and service id must be the package name or begin with it followed by a dot, and none may be under `com.webos.`, `com.palm.` or `com.lge.`, protected, or already present in a system app directory.
@@ -1229,12 +1577,15 @@ Home screen bloatware tile hiding allows built-in or preloaded system apps (whic
 ### Non-Destructive Manifest Bind-Mounts
 1. **Manifest Overrides**: For each hidden app ID, `server/lib/apps.js` stages a modified `appinfo.json` in `/var/lib/tvweb/appinfo-overrides/<id>.json` with `"visible": false`.
 2. **Multi-Base Probing**: Overrides are bind-mounted over every discovered location for the target app manifest (prioritizing `/media/system/apps/usr/palm/applications` for OTA-updated system apps, followed by `/usr/palm/applications` and flash mounts `/mnt/otncabi` / `/mnt/otycabi`).
-3. **SAM Refresh**: SAM (Surface Application Manager) reads `appinfo.json` only when it scans. It also scans when configd's `profile.blockedAppList` changes, which LG uses to block apps by region, so `lib/samrescan.js` adds an id no app has and then puts the list back exactly as it was: nothing is blocked, and SAM rereads every `appinfo.json`, overlays included, in about 2 s without restarting (on a C2 running webOS 9.2, its pid was unchanged). configd saves the list back as a user-defined value, kept across reboots and with no call to remove it, so it stays at LG's value as of the nudge even if LG's own list later changes with a firmware update or a new country. Each caller then checks SAM reports the change (`getAppInfo` visibility, or the screen saver's type). Where the TV has no such list (webOS 4) or SAM does not catch up, `apps.js` restarts SAM as before (`killall -9 LunaExecutable` and `systemctl kill -s 9 sam.service` on systemd / `initctl restart sam` on Upstart). The boot hook does the same in shell. The restart was the one thing every black-picture report in #366 had in common. sam ignores that list on webOS 10 (a C2 on 10.3.1), where `samrescan.rereadApp` asks it for one app instead with `blockSystemApp` followed by `releaseBlockSystemApp`; the screen saver switch uses that first, tile hiding does not yet.
+3. **SAM Refresh**: SAM (Surface Application Manager) reads `appinfo.json` only when it scans. Glasshouse makes SAM reread manifests in place where the TV has a way, and never restarts it there (#366, #1315):
+   - **Per-app block and release (webOS 10–11)**: where `/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema` exists, `samrescan.rereadApps` (and `sam_reread_app` in `50-tvweb.sh`) calls `applicationManager/blockSystemApp` followed by `releaseBlockSystemApp` for each affected app (`"forceBlockSystemApp": false` where the schema asks for it).
+   - **Configd nudge (webOS 7–9)**: where configd holds LG's `profile.blockedAppList` region list, `samrescan.refresh` (and `sam_nudge` in `50-tvweb.sh`) briefly adds an unused id and puts LG's list back, causing SAM to reread every `appinfo.json` in ~2 s with its PID unchanged. configd keeps that value across reboots, so it stays at LG's value as of the nudge.
+   Each caller checks `getAppInfo` visibility afterwards. If SAM declines or times out on webOS 7 and later, the change is undone (`hideTile` unmounts and removes the override) rather than restarting SAM. Where neither mechanism exists (webOS 3–6), tile hiding restarts SAM as before (`killall -9 LunaExecutable`, `systemctl kill -s 9 sam.service` with the start limits of SAM and the units that require it cleared, `initctl restart sam` on Upstart TVs such as the B8), since it is the only way SAM reads a mounted manifest there. Apart from it, only Glasshouse Home's switch on webOS 7 restarts SAM, where neither mechanism took (#1412).
 
 ### Cold Boot vs. Quick Start+ (Standby)
 - **Normal Usage (Quick Start+)**: LG webOS defaults to Quick Start+ (Active Standby / Suspend-to-RAM). When the TV is powered off and on with the remote, the Linux kernel, active bind-mounts, and SAM remain running in memory. The overrides remain intact, and hidden tiles never appear.
 - **Cold Boot (Full Reboot / Power Loss)**: On a true cold boot, webOS boots from an early checkpoint/snapshot (CRIU), displaying the Home screen (`com.webos.app.home`) before late userland root hooks run. The Home screen briefly shows the stock tiles for a few seconds until `devmode.service` invokes `/var/lib/webosbrew/startup.sh` &rarr; `run-parts /var/lib/webosbrew/init.d/50-tvweb`.
-- `50-tvweb` reapplies the bind-mounts from `/var/lib/tvweb/hidden_apps` in ~50ms and respawns SAM, at which point the Home screen drops the tiles from view. This brief appearance on cold boot is architectural to webOS's read-only root partition: root hooks run safely in user space without modifying rootfs systemd units.
+- `50-tvweb` reapplies the bind-mounts from `/var/lib/tvweb/hidden_apps` and asks SAM to reread in place (`sam_reread_app` per app on webOS 10–11, or `sam_nudge` on webOS 7–9) without restarting SAM. If neither succeeds at boot on webOS 7 and later, the hook unmounts the overrides (`umount -l`) rather than restarting SAM. On webOS 3–6 it restarts SAM once, as before, since a cold boot restores SAM from a snapshot that has already read the stock manifests.
 
 ---
 
@@ -1260,14 +1611,29 @@ over that folder, leaving every other file LG's. The parts are the side buttons
 (`globalline`, shrunk to 0 by 0 after the banner: taking it out left the screen
 black), the Quick Cards (`qcardList`) and the recommended shelf
 (`recommendedShelf`); the banner takes the height of the rows taken out, so the
-apps row stays at the bottom. The home app runs as
+apps row stays at the bottom, and with the side buttons hidden it also takes
+their width and the gap above it, reaching the screen's edges. The banner's text and picture are files in the
+same folder: the text is looked up by its English in `i18n`, a symlink to LG's
+language files under `/mnt/lg/wee/ui_l10n`, so hiding it lays an `i18n` folder
+of its own over the symlink, copied from LG's each time it is mounted with the
+two strings blank (added where a file lacks them). The picture is
+`images/<size>/bg_banner_img.png`, laid in each size folder LG has, linked
+rather than copied since `/tmp` is memory: a small black PNG, or the owner's
+JPEG under the PNG's name, which the browser crops within 3840 across to each
+shape the banner takes with the side buttons, Quick Cards and Recommended
+shown or hidden. The home app fits the picture to the banner's height and
+centres it, so one crop fills only one shape: one made with all three hidden
+(about 2.2:1 on a C4, webOS 10.2.2) showed as a small window between black
+with them back (3492 x 900, #833). The shape shown is sent first and shown; the
+rest are kept, and a part shown or hidden mounts the one for the new shape. The home app runs as
 `flutter-client -i com.webos.app.home`, so it is found by that argument pair in
 `/proc/<pid>/cmdline`, checked again just before it is sent SIGTERM, and other
 Flutter apps are left alone; a failed restart is reported to the dashboard. The
 mount goes with a restart of the TV, so `reapply()` mounts it again when the
 server starts, and does nothing while it is still mounted. The choices and a
 copy of LG's `home.xml`, which cannot be read while the overlay covers it, are
-kept in `/var/lib/tvweb`. Offered only on 10.x, where `/proc/filesystems` lists
+kept in `/var/lib/tvweb`, with the owner's banner picture
+(`home-webos10-banner-<width>x<height>.jpg`, one for each shape). Offered only on 10.x, where `/proc/filesystems` lists
 overlay and the layout is one recognised from #612's dumps, and only once
 `allowHomeLayout` is set.
 
@@ -1278,7 +1644,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 5, 6, 7, 9 and 10; webOS 11 with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab (webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3, standalone as on webOS 4, webOS 8, and webOS 12 and later with `allowExperimentalHome`). The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 
@@ -1297,8 +1663,13 @@ stages it in `/var/lib/tvweb/home-takeover` with an `appinfo.json` naming
 `com.webos.app.home` (type `web`, `visible` false, `appCategory` `["home"]`
 as LG's has it), bind-mounts the directory over
 `/usr/palm/applications/com.webos.app.home`, and has sam read it again
-(`lib/samrescan.js`): with the nudge on webOS 9, and with a block and release
-of the one app on webOS 10, which ignores the nudge. On webOS 10 the Home
+(`lib/samrescan.js`): with the nudge on webOS 7 and 9, and with a block and release
+of the one app on webOS 10 and 11, which ignore the nudge. Neither `lib/home-takeover.js`
+nor the boot hook falls back to restarting `sam` (#366, #1315): if `sam` does not take
+the reread on takeover, LG's Home is put back and the switch fails cleanly. The one
+exception is webOS 7, where `lib/home-takeover.js` restarts `sam` when it took neither
+the nudge nor a block and release: an A2 (webOS 7.3.0) took Glasshouse Home only that
+way, as every release before 0.145.0 did it (#1412). On webOS 10 the Home
 button opens the default app of the `home` category, which sam takes from that
 `appCategory`; without it the button does nothing
 ([research](development/TV-RESEARCH.md#glasshouse-home-on-webos-10-g5-webos-1031)).
@@ -1385,7 +1756,10 @@ black for the server; being LG's Home's app, it cannot open LG's Home itself.
 `lib/home-takeover.js --release`, which unmounts without switching Glasshouse
 Home off, so the server takes the place again when it runs.
 The first-heartbeat watch is armed after taking Home even when the foreground
-id stays `com.webos.app.home`. A failed layout restore retains its backup and
+id stays `com.webos.app.home`. Switching the screen off ends the watch. A
+watch that fires more than 5 s later than it was set for has slept through a
+suspend, and gives the view the first heartbeat's 20 s rather than calling it
+hung. A failed layout restore retains its backup and
 reports failure for a later retry.
 
 Earlier builds made a separate app, `com.tvweb.home`, the TV's Home
@@ -1403,6 +1777,17 @@ off repeats this cleanup, including from the SSH recovery command.
 The layout lives in `home.json`, shared by the Home tab and the view's arrange
 mode, and is re-read when the file changes, so `tvwebctl
 restore-glasshouse-home` over SSH is seen by a running server.
+
+The apps, inputs, channels and cards the rows are built from are kept as last
+read in `home-lists.json`. Just after the server starts, every luna call waits
+its turn 150 ms apart (`lib/children.js`), and a view opened then waited 7.9 s
+for its first catalogue on a B8 (webOS 4.4.3). Until each list has been read in
+this run, the saved one is answered at once and read again behind it; a list
+that changed bumps `layoutVersion`, so the view reloads on its next heartbeat.
+The catalogue route takes the layout and wallpapers from `viewStatus()`, which
+makes no luna calls. While Glasshouse Home is on, the boot hook starts the
+server without its 5 s wait: on webOS 4 the Home key opens the view (25 s into
+a B8's boot) before webosbrew runs the hook (41 s).
 
 A row set to Last opened (`sort` in `home.json`) is ordered by
 `home-recent.json`, the time each tile id was last opened. sam's foreground
@@ -1427,7 +1812,9 @@ on the offered list, leaving Home and any newer cards alone
 A card shows the app's snapshot, or its splash where the TV has none since it
 restarted. Pictures are served only from the paths the last list named, and an
 app is opened or closed only while it is on the list. Snapshot responses use
-`private, no-store` caching. Back cancels a pending panel load; returning Home
+`private, no-cache` caching, and each card's picture address carries a version
+from the file's path, size and modification time, so an unchanged picture is
+revalidated (a 304) rather than downloaded and decoded again. Back cancels a pending panel load; returning Home
 discards replies from the previous visit. OK acts once on release.
 
 Left of any row's first tile is a search mark in the gutter, and OK there
@@ -1450,7 +1837,11 @@ Video and HBO Max open at the first season's page; other apps, whose season
 links do not open (Disney+) or which have only playback links (BBC iPlayer),
 play the first episode. Apple TV and Netflix list no seasons and keep LG's
 link. An LG item id less its first `|` and LG's service tag (`AMAZON_`) is the
-app's own id, used where the detail names none. Trailers are never listed or
+app's own id, used where the detail names none. webOS 4 lists the same
+titles with neither a type nor an item id: the type is the category each is
+listed under, the item id its `content_set_id|content_id`, its detail comes
+through `sdp_secure` where `sdp_onnow` does not answer, and the id is put
+into the app's template from `getAppInfo`, as LG's Search there does. Trailers are never listed or
 opened: LG marks none, and lists Prime Video's sneak peeks as films and its
 trailers as episodes, so a title or episode is taken for one by a promo word
 (trailer, teaser, sneak peek, preview, first look) with a running time of 15
@@ -1485,6 +1876,39 @@ the Search setting and blocker, so a pending lookup stops when either refuses.
 Search requests allow 12 seconds for the
 server's 10-second limit; launches allow 20 seconds for sequential detail reads.
 
+### Custom launchers
+
+`lib/home-launcher.js` puts another page in the view's place; everything that
+gets the view in front of the TV is unchanged. The app in LG's Home's place
+(or `com.tvweb.home` on webOS 3 to 6, refreshed on server start once it is not in front) opens
+`/assets/home.html` as before, and while a launcher is chosen
+and Glasshouse Home is on, the server answers that with a redirect to
+`/home/launcher/`. The heartbeat's reply carries `launcher`, a revision that
+changes with the choice or a new upload, so the page in front reloads into the
+right one within a beat.
+
+Glasshouse Minimal is one of these, built in: `assets/home-minimal.html`, served from
+Glasshouse's own files with the same script added, offered on every TV and
+never removed. Each other launcher is unpacked to
+`/var/lib/tvweb/home-launcher/apps/<id>`, with `launcher.json` naming those
+kept and the one chosen. Zips and `.ipk`s are read
+in JavaScript, the `.ipk` with the installer's ar and tar readers, as not every
+webOS has `unzip`. Paths outside the folder, links and native apps are refused.
+The start page is served with `/assets/home-kit.js?v=<release>` added first in
+its head: the release in the address because the TV's browser keeps scripts a
+day, and a launcher written against a newer kit would meet an older one. The
+kit sends the heartbeat (and on webOS 4 closes the page when switched off or
+two minutes behind another app, as the view does) and defines
+`window.Glasshouse`. A web address opens in a frame of `assets/home-web.html`,
+which carries the kit, so the site never runs as the Home app.
+
+The Home key with the view already in front launches nothing on webOS 9 (a
+C2), so the server launches the view again on a short press there, which
+reaches the page as `webOSRelaunch`; the kit's `onHome` passes it on. On
+webOS 4 a view that stops answering is closed with WebAppMgr's `killApp`
+before it is launched again, since a launch while it runs only brings back the
+page it is on.
+
 ## Apps kept ready in the background
 
 webOS's preload manager keeps apps loaded so they open quickly, including ones
@@ -1518,6 +1942,15 @@ TV is on lasts through standby and is gone at the next switch-on. So the server
 sends `setPreloadPolicy` again for each app switched off, at its start and at
 every switch-on. Sent within a second of the TV reporting Active, it left
 YouTube unloaded.
+
+A cold boot is a switch-on too, and there the server is late: on a B4 (webOS
+10.3.2) with Quick Start+ off, the preload manager loaded Netflix 59 s and the
+browser 61 s in, both switched off, while the server started at 52 s and sent
+its switches one by one from 58 s (#1374). So the boot hook sends them first,
+in the background, all at once as soon as the preload manager answers, before
+it starts the server; on a C2 (webOS 9.2.2) that was 6 s after the hook began.
+Each call has a 5 s timeout (`luna-send -w`), since the C2's preload manager
+never answers `setPreloadPolicy` and `luna-send -n 1` would wait for ever.
 
 `/var/preferences/webos-preload-manager-conf.json` is not used: the preload
 manager writes an app back into it about 3 seconds after the app comes to the
@@ -1568,14 +2001,54 @@ Custom QML screensavers are staged in `/var/lib/tvweb/screensaver` and bind-moun
 
 ## PicCap
 
-The server asks PicCap's service only where `/media/developer/apps/usr/palm/applications/org.webosbrew.piccap` exists and webOS is version 3 or later, so a TV without it or running webOS 2 starts no `luna-send` for it (querying PicCap's native service on webOS 2 stalled the Luna bus and tripped a watchdog reboot, #746). For Home Assistant it polls every `piccap.pollIntervalMs` milliseconds (30 seconds by default) while MQTT is connected and the `piccap` entity is not switched off in the entity settings. An old `"piccap": {"enabled": false}` is turned into exactly that at start-up, and the key removed. Telemetry includes boolean `piccap.power` while PicCap answers; the bridge publishes retained `ON` or `OFF` to `<prefix>/state/piccap/power`, and `<prefix>/command/piccap/power` accepts `ON` or `OFF` when `allowControl` is enabled. Discovery carries the `piccap` switch only while a status check has answered, and is republished when that changes. `/api/stats` adds `piccapCapture: {running}` where PicCap answers, for the System tab's switch, which sends the `piccap` control.
+The server asks PicCap's service only where `/media/developer/apps/usr/palm/applications/org.webosbrew.piccap` exists and webOS is version 3 or later, so a TV without it or running webOS 2 starts no `luna-send` for it (querying PicCap's native service on webOS 2 stalled the Luna bus and tripped a watchdog reboot, #746). For Home Assistant it polls every `piccap.pollIntervalMs` milliseconds (30 seconds by default) while MQTT is connected and the `piccap` entity is not switched off in the entity settings. An old `"piccap": {"enabled": false}` is turned into exactly that at start-up, and the key removed. Telemetry includes boolean `piccap.power` while PicCap answers; the bridge publishes retained `ON` or `OFF` to `<prefix>/state/piccap/power`, and `<prefix>/command/piccap/power` accepts `ON` or `OFF` when `allowControl` is enabled. Discovery carries the `piccap` switch only while a status check has answered, and is republished when that changes. `/api/stats` adds `piccapCapture: {running}` where PicCap answers, for the Ambient Light page and Control quick toggle, which send the `piccap` control; `writable` reflects `allowControl` on both dashboards.
 
 ## Hue Sync
 
-Hue Sync is offered where `/media/cryptofs/apps/usr/palm/services/com.lighting.huesync.service` exists, the retail install from LG's store, so a TV without the app starts no `luna-send` for it. For Home Assistant it polls `com.lighting.huesync.service/get` (`{"key":"streaming","data":""}`, the reply carries the state as `value`: `"0"` stopped, `"1"` streaming) every `huesync.pollIntervalMs` milliseconds (30 seconds by default) while MQTT is connected and the `huesync` entity is not switched off in the entity settings. Every call carries the app's ACL id `com.lighting.huesync`, the service's own. Toggling sends `com.lighting.huesync.service/set` with `{"key":"streaming","data":true|false}` and re-reads the state 400 ms later, like PicCap's start/stop; an enable instead waits 3 s after each `set` and is sent again until that re-read reports streaming, up to three attempts, because the app answers the first `set` with `returnValue` true while its own `get` still reads `"0"`, or reads `"1"` once and falls back to `"0"` seconds later. Telemetry includes boolean `huesync.streaming` while Hue Sync answers; the bridge publishes retained `ON` or `OFF` to `<prefix>/state/huesync/power`, and `<prefix>/command/huesync/power` accepts `ON` or `OFF` when `allowControl` is enabled. Discovery carries the `huesync` switch only while a status check has answered, and is republished when that changes. `/api/stats` adds `huesyncStreaming: {streaming}` where Hue Sync answers, for the System tab's switch, which sends the `huesync` control.
+Hue Sync is offered where `/media/cryptofs/apps/usr/palm/services/com.lighting.huesync.service` exists, the retail install from LG's store, so a TV without the app starts no `luna-send` for it. For Home Assistant it polls `com.lighting.huesync.service/get` (`{"key":"streaming","data":""}`, the reply carries the state as `value`: `"0"` stopped, `"1"` streaming) every `huesync.pollIntervalMs` milliseconds (30 seconds by default) while MQTT is connected and the `huesync` entity is not switched off in the entity settings. Every call carries the app's ACL id `com.lighting.huesync`, the service's own. Toggling sends `com.lighting.huesync.service/set` with `{"key":"streaming","data":true|false}` and re-reads the state 400 ms later, like PicCap's start/stop; an enable instead waits 3 s after each `set` and is sent again until that re-read reports streaming, up to three attempts, because the app answers the first `set` with `returnValue` true while its own `get` still reads `"0"`, or reads `"1"` once and falls back to `"0"` seconds later. Telemetry includes boolean `huesync.streaming` while Hue Sync answers; the bridge publishes retained `ON` or `OFF` to `<prefix>/state/huesync/power`, and `<prefix>/command/huesync/power` accepts `ON` or `OFF` when `allowControl` is enabled. Discovery carries the `huesync` switch only while a status check has answered, and is republished when that changes. `/api/stats` adds `huesyncStreaming: {streaming}` where Hue Sync answers, for the Ambient Light page and Control quick toggle, which send the `huesync` control.
 
 
 
-No Home wallpapers are packaged; the background is black until one is uploaded. The browser prepares personal JPEG/PNG/WebP images as JPEGs within 1920 × 1080 pixels, the `resolution` the Home app declares, which webOS web apps are drawn at. `/api/home/wallpapers/upload?slot=morning|afternoon|evening|night` accepts only `image/jpeg` with a declared size up to 5 MiB, under the usual authentication, control and Origin guards. One upload is buffered at a time, with a 30-second body deadline, frame/scan structure and dimension checks, a disk-space check and atomic replacement. The server does not decode JPEG pixels. `POST /api/home/wallpapers` with `{ "choose": "black" | "landscape" | "abstract" | "own" }` sets the wallpaper, kept in `home-wallpaper.json`. A set is downloaded the first time it is chosen, from the `v2` tag of `rorygallagher2024/glasshouse-wallpapers` into `home-wallpaper-sets/<set>/`, one picture at a time under the same lock, keeping each only if it matches the sha256 pinned in `lib/home-wallpapers.js` and passes the same JPEG checks; a failure leaves the choice as it was, and the other set is removed once one is chosen. A new set is a new tag. An upload chooses `own`. At the first start with the choice, four uploads that match the landscape set, as the earlier Add example pictures left them, are moved into it and it is chosen; any other uploads make `own` the choice. The Apps tab hides a system app by setting `visible: false` in its appinfo, and the TV's launch points, which the Apps row is built from, have no tile for such an app (AirPlay's appinfo has it from LG), so it is hidden on both Homes. On a G3 no launch point carries a `visible` field; the Apps row skips any that says `false` all the same. `home-wallpaper-uploads/<slot>.jpg`, outside the updater payload and rollback copy, is that slot's image. File revisions invalidate the browser and TV image URLs after replacement. Uploads are excluded from layout backups.
+No Home wallpapers are packaged; the background is black until one is uploaded. The browser prepares personal JPEG/PNG/WebP images as JPEGs within 1920 × 1080 pixels, the `resolution` the Home app declares, which webOS web apps are drawn at. `/api/home/wallpapers/upload?slot=morning|afternoon|evening|night` accepts only `image/jpeg` with a declared size up to 5 MiB, under the usual authentication, control and Origin guards. One upload is buffered at a time, with a 30-second body deadline, frame/scan structure and dimension checks, a disk-space check and atomic replacement. The server does not decode JPEG pixels. `POST /api/home/wallpapers` with `{ "choose": "black" | "landscape" | "abstract" | "own" | "shuffle" }` sets the wallpaper, kept in `home-wallpaper.json`. `slot=shuffle` adds a picture to the shuffled collection rather than replacing one: it is saved as `home-wallpaper-shuffle/<id>.jpg`, the id made on the TV from the time and four random bytes, at most 50 of them (a 51st is refused with 409), and the first chooses `shuffle`. The status lists them oldest first as `pictures`, with `maxPictures`; `GET /api/home/wallpaper?slot=shuffle&id=<id>` serves one, an id checked against `^[0-9a-z]{8,24}$` and never taken as a path, and as a picture's id never changes its address needs no revision. `{ "removePicture": id }` removes one and `{ "removePictures": true }` all. The layout's `wallShuffleMinutes` (1, 5, 10, 15, 30 or 60, sent as `shuffleMinutes`) is how long the view keeps each: it draws the next at random from those not shown since the collection last came round, never the one on screen, and only while it is on screen. A set is downloaded the first time it is chosen, from the `v2` tag of `rorygallagher2024/glasshouse-wallpapers` into `home-wallpaper-sets/<set>/`, one picture at a time under the same lock, keeping each only if it matches the sha256 pinned in `lib/home-wallpapers.js` and passes the same JPEG checks; a failure leaves the choice as it was, and the other set is removed once one is chosen. A new set is a new tag. An upload chooses `own`. At the first start with the choice, four uploads that match the landscape set, as the earlier Add example pictures left them, are moved into it and it is chosen; any other uploads make `own` the choice. The Apps tab hides a system app by setting `visible: false` in its appinfo, and the TV's launch points, which the Apps row is built from, have no tile for such an app (AirPlay's appinfo has it from LG), so it is hidden on both Homes. On a G3 no launch point carries a `visible` field; the Apps row skips any that says `false` all the same. `home-wallpaper-uploads/<slot>.jpg`, outside the updater payload and rollback copy, is that slot's image. File revisions invalidate the browser and TV image URLs after replacement. Uploads are excluded from layout backups.
 
 A failed Home restore persists `restorePending` with the guard stopped; both dashboards keep a retry action until all settings and the Home key are restored. HBC uninstall uses the same owner before removing the app, and skips Home service writes on TVs that never used it. App absence requires the specific `Invalid appId` response, including raw replies accompanying a non-zero luna-send exit. A failed Home layout restore makes the backup result report partial failure.
+
+Hue Sync settings use the same `/get` and `/set` endpoints and app ACL as
+streaming. The retail app's observed keys are `brightness` (numeric percent),
+`intensity` (numeric 0–3), `sync_mode` (string `0` video / `1` game),
+`current_ec` (string ID), `ec_list` (JSON array of `Id`/`Name` objects),
+`background_lightning_video`, `background_lightning_games` and `auto_start`.
+The spelling `lightning` is the service's own. Values returned as strings are
+JSON-decoded once; malformed or unsupported reads are omitted. Settings share
+a four-second read cache, coalesce concurrent reads, and invalidate overlapping
+pre-write reads. Writes are serialized and confirmed by fresh readback, without
+changing the streaming enable retry algorithm. The fuller retail-app trace confirms boolean writes for background light,
+automatic start and `auto_start_notification`. A live `/sub` stream carries native
+booleans/numbers alongside JSON-encoded strings. An allowlist accepts only sync
+settings and internal ready/bridge/busy status; it discards pairing,
+device and support identifiers. Per-field revisions prevent an older one-shot
+read from overwriting a newer event. Reconnects hydrate full state. A subscription
+is retained only for connected/wanted MQTT or an active dashboard and falls back
+to polling when unavailable.
+
+Temporary read failures preserve supported fields with `_stale` availability;
+explicit unknown-key replies remove a capability. Discovery fingerprints include
+supported keys and area choices, not changing setting values. Writes share one
+operation slot, check known busy/readiness blockers and confirm fresh readback
+with bounded retries. OFF requires fresh confirmation; ON retains its existing
+stable-read/retry strategy. MQTT failures log the allowlisted setting name only,
+without command values or raw service errors.
+
+Hue Sync ready/bridge/busy status is not published to MQTT or discovered in Home
+Assistant; it is used internally for control validation and dashboard write permissions.
+
+The TV app's Hue Sync rows are in `server/assets/dashboard.html`; both the
+Homebrew Channel launcher in `hbc/app/` and `assets/dashboard-app/` load that page.
+Its Ambient Light menu follows Home and reuses the existing remote adjustment
+bar and write queue for brightness, with native-value cycles for selects. Both
+dashboards have separate Hue Sync and PicCap categories, in that order, with
+Hue Sync Enabled and PicCap Enabled switches. Every supported setting appears
+directly. The web Control page has the same toggles below Playback; they share
+state and write permissions with Ambient Light. Status callbacks check the apps’
+install paths before calling Luna, and unavailable integrations are hidden as
+complete categories and shortcuts.

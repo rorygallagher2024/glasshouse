@@ -138,6 +138,7 @@ console.log('Running test-screensavers.js ...');
   var ids = all.map(function (e) { return e.id; });
   assert.ok(ids.indexOf('stock') !== -1, 'catalog must include stock');
   assert.ok(ids.indexOf('clock') !== -1, 'catalog must include clock');
+  assert.ok(ids.indexOf('ambient') !== -1, 'catalog must include ambient');
   assert.ok(ids.indexOf('starfield') !== -1, 'catalog must include starfield');
   assert.ok(ids.indexOf('fireworks') !== -1, 'catalog must include fireworks');
   assert.ok(ids.indexOf('vitals') !== -1, 'catalog must include vitals');
@@ -147,7 +148,8 @@ console.log('Running test-screensavers.js ...');
   assert.ok(ids.indexOf('currents') !== -1, 'catalog must include currents');
   assert.ok(ids.indexOf('veils') !== -1, 'catalog must include veils');
   assert.ok(ids.indexOf('tesseract') !== -1, 'catalog must include tesseract');
-  assert.strictEqual(ids.length, 15, 'catalog must have exactly 15 entries');
+  assert.strictEqual(ids.length, 17, 'catalog must have exactly 17 entries');
+  assert.ok(ids.indexOf('ha-display') !== -1, 'ha-display must be in catalog');
 
   // Each of Glasshouse's own reads cleanly from its folder
   for (var i = 0; i < all.length; i++) {
@@ -155,7 +157,7 @@ console.log('Running test-screensavers.js ...');
     assert.strictEqual(all[i].builtin, true);
   }
 
-  console.log('  ✓ the catalog has Glasshouse\'s 14 screen savers and LG\'s, each read from its folder');
+  console.log('  ✓ the catalog has Glasshouse\'s 15 screen savers and LG\'s, each read from its folder');
 })();
 
 // 8. trigger returns error when luna is not available
@@ -213,6 +215,10 @@ console.log('Running test-screensavers.js ...');
         assert.ok(sel.payload.options.indexOf(label) !== -1, label + ' missing from Home Assistant');
         assert.ok(sel.payload.value_template.indexOf('"' + k + '":"' + label + '"') !== -1, k + ' not mapped');
       });
+      // Clock with date stays offered, sent by its old id and shown for Clock's date option.
+      assert.ok(sel.payload.options.indexOf('Clock with date') !== -1, 'Clock with date kept');
+      assert.ok(sel.payload.command_template.indexOf('"Clock with date":"clock-date"') !== -1);
+      assert.ok(sel.payload.value_template.indexOf('"clock/date":"Clock with date"') !== -1);
       console.log('  ✓ Home Assistant offers every screen saver in the catalog');
     })();
 
@@ -242,10 +248,175 @@ console.log('Running test-screensavers.js ...');
         assert.strictEqual(result.ok, true);
         assert.strictEqual(appLaunched, 'com.webos.app.screensaver');
         console.log('  ✓ trigger falls back to launching screensaver when tvpower returns Invalid State change Request');
+
+        // 13. trigger falls back to applicationManager/launch when tvpower returns screenSaverEnabled value is off
+        (function testTriggerFallbackScreenSaverDisabled() {
+          var saverLaunched = null;
+          var disabledLuna = function (uri, params, cb) {
+            if (uri === 'com.webos.service.tvpower/power/getPowerState') return cb({ returnValue: true, state: 'Active' });
+            if (uri === 'com.webos.applicationManager/getForegroundAppInfo') return cb({ returnValue: true, appId: 'youtube' });
+            if (uri === 'com.webos.service.tvpower/power/turnOnScreenSaver') {
+              return cb({ returnValue: false, errorText: 'screenSaverEnabled value is off' });
+            }
+            if (uri === 'com.webos.applicationManager/launch') {
+              saverLaunched = params && params.id;
+              return cb({ returnValue: true });
+            }
+            cb({ returnValue: true });
+          };
+          screensavers.init({
+            luna: disabledLuna,
+            config: {},
+            injectKey: function () {},
+            KEY_BACK: 412,
+            mediaState: function (cb) { cb({ state: 'idle', fullScreen: false }); }
+          });
+          screensavers.trigger(function (result) {
+            assert.strictEqual(result.ok, true);
+            assert.strictEqual(saverLaunched, 'com.webos.app.screensaver');
+            console.log('  ✓ trigger falls back to launching screensaver when tvpower returns screenSaverEnabled value is off');
+
+            // 14. Random mode and pool functionality
+            (function testRandomScreensavers() {
+              var tmpConfig = '/tmp/test-random-config.json';
+              screensavers.init({
+                randomConfigFile: tmpConfig
+              });
+
+              // Default pool includes custom savers
+              var defPool = screensavers.defaultRandomPool();
+              assert.ok(defPool.indexOf('clock') !== -1);
+              assert.ok(defPool.indexOf('starfield') !== -1);
+              assert.strictEqual(defPool.indexOf('stock'), -1, 'stock must not be in default pool');
+              assert.strictEqual(defPool.indexOf('random'), -1, 'random must not be in default pool');
+
+              // Setting pool filters invalid entries
+              screensavers.setRandomPool(['clock', 'starfield', 'invalid-one']);
+              var pool = screensavers.getRandomPool();
+              assert.deepEqual(pool, ['clock', 'starfield']);
+
+              // Enable random mode
+              screensavers.saveRandomConfig({ enabled: true });
+              assert.strictEqual(screensavers.isRandomEnabled(), true);
+
+              // screensaverList contains random mode
+              var list = screensavers.screensaverList();
+              var rnd = list.modes.filter(function (m) { return m.id === 'random'; })[0];
+              assert.ok(rnd, 'Random mode must be present in screensaverList');
+              assert.strictEqual(rnd.label, 'Random');
+              assert.ok(list.random, 'list.random must exist');
+              assert.deepEqual(list.random.pool, ['clock', 'starfield']);
+
+              // pickNextRandomSaver avoids consecutive duplicate
+              var next = screensavers.pickNextRandomSaver('clock');
+              assert.strictEqual(next.id, 'starfield');
+              var next2 = screensavers.pickNextRandomSaver('starfield');
+              assert.strictEqual(next2.id, 'clock');
+
+              // advanceRandomSaver stages the selected saver
+              screensavers.advanceRandomSaver();
+              var staged = screensavers.stagedScreensaver();
+              assert.ok(staged === 'clock' || staged === 'starfield');
+
+              // onPowerChange: transition from Screen Saver to Active advances random saver
+              var curStaged = screensavers.stagedScreensaver();
+              screensavers.onPowerChange({ state: 'Screen Saver' });
+              screensavers.onPowerChange({ state: 'Active' });
+              var newStaged = screensavers.stagedScreensaver();
+              // With pool of 2, advancing must swap to the other saver
+              assert.notStrictEqual(newStaged, curStaged);
+
+              // Test controls doControl for screensaverRandomPool
+              var controls = require('../server/lib/controls');
+              controls.init({
+                screensavers: screensavers,
+                telemetry: { clearCache: function () {} },
+                config: { allowControl: true }
+              });
+
+              controls.doControl('screensaverRandomPool', { toggle: 'fireworks' }, function (r) {
+                assert.strictEqual(r.ok, true);
+                assert.ok(screensavers.getRandomPool().indexOf('fireworks') !== -1);
+
+                controls.doControl('screensaverRandomPool', { toggle: 'fireworks' }, function (r2) {
+                  assert.strictEqual(r2.ok, true);
+                  assert.strictEqual(screensavers.getRandomPool().indexOf('fireworks'), -1);
+
+                  // cleanup
+                  try { fs.unlinkSync(tmpConfig); } catch (e) {}
+                  console.log('  ✓ random mode, pool management, controls, and advance-on-dismiss work as expected');
+                  testHaScreensaverGating();
+                });
+              });
+            })();
+          });
+        })();
       });
     })();
 
-    console.log('ALL test-screensavers.js assertions passed!\n');
-    env.restore();
+    // 14. HA screen savers are unavailable when Home Assistant API is unconfigured, and available once configured
+    function testHaScreensaverGating() {
+      env.restore();
+      var configured = false;
+      var gateEnv = mockEnv.createMockEnv({
+        files: {
+          '/var/lib/tvweb/config.json': JSON.stringify({ allowControl: true }),
+          '/usr/palm/applications/com.webos.app.screensaver/appinfo.json': '{"id":"com.webos.app.screensaver","type":"qml"}',
+          '/usr/palm/applications/com.webos.app.screensaver/.tvweb-screensaver': 'clock'
+        }
+      });
+      gateEnv.install();
+      screensavers.init({
+        luna: gateEnv.mockLuna,
+        config: { allowControl: true },
+        haEntity: {
+          configured: function () { return configured; },
+          read: function (id, cb) { cb({ ok: true, entity_id: id, state: '1', attributes: {} }); }
+        },
+        injectKey: function (k, cb) { cb(true); },
+        KEY_BACK: 412,
+        mediaState: function (cb) { cb({ state: 'idle', fullScreen: false }); }
+      });
+
+      var listOff = screensavers.screensaverList();
+      assert.strictEqual(listOff.haConfigured, false);
+      assert.strictEqual(screensavers.getRandomPool().indexOf('ambient'), -1);
+      assert.strictEqual(screensavers.getRandomPool().indexOf('ha-display'), -1);
+      var ambOff = listOff.modes.filter(function (m) { return m.id === 'ambient'; })[0];
+      var dispOff = listOff.modes.filter(function (m) { return m.id === 'ha-display'; })[0];
+      var clkOff = listOff.modes.filter(function (m) { return m.id === 'clock'; })[0];
+      assert.strictEqual(ambOff.available, false);
+      assert.strictEqual(ambOff.needsHa, true);
+      assert.strictEqual(dispOff.available, false);
+      assert.strictEqual(dispOff.needsHa, true);
+      assert.strictEqual(clkOff.available, true);
+
+      screensavers.setScreensaver('ha-display', 'dim', function (res) {
+        assert.strictEqual(res.ok, false);
+        assert.ok(res.error.indexOf('Home Assistant API') !== -1);
+
+        configured = true;
+        var listOn = screensavers.screensaverList();
+        assert.strictEqual(listOn.haConfigured, true);
+        assert.notStrictEqual(screensavers.getRandomPool().indexOf('ambient'), -1);
+        assert.strictEqual(screensavers.getRandomPool().indexOf('ha-display'), -1);
+        var ambOn = listOn.modes.filter(function (m) { return m.id === 'ambient'; })[0];
+        var dispOn = listOn.modes.filter(function (m) { return m.id === 'ha-display'; })[0];
+        assert.strictEqual(ambOn.available, true);
+        assert.strictEqual(dispOn.available, true);
+        assert.strictEqual(dispOn.entityList.min, 2);
+        assert.strictEqual(dispOn.entityList.max, 100);
+
+        // Burn-in guard: trigger refuses when ha-display has fewer than min entities
+        gateEnv.files['/usr/palm/applications/com.webos.app.screensaver/.tvweb-screensaver'] = 'ha-display';
+        screensavers.trigger(function (trigErr) {
+          assert.strictEqual(trigErr.ok, false);
+          assert.ok(trigErr.error.indexOf('2') !== -1);
+          console.log('  ✓ HA screen savers gate availability on HA API and refuse <2 entities on start');
+          gateEnv.restore();
+          console.log('ALL test-screensavers.js assertions passed!\n');
+        });
+      });
+    }
   });
 })();

@@ -34,6 +34,12 @@ The **Privacy** tab (`/?tab=privacy`) surfaces the TV's telemetry, advertising, 
 
     Individual switches for screen saver ads, Home screen sponsored tiles and recommendations, promotions shown while watching, and Smart Tips (each shown on TVs that support it).
 
+-   **Log uploads to LG**
+
+    ---
+
+    Switches for whether the TV may send its debug logs and fault reports to LG, which LG's own menus don't have. Some TVs, such as a C5 on webOS 11.2, switch debug log upload back on at each start; an off chosen here is put back within a minute, and switching it on again leaves it to LG.
+
 -   **On-TV ad & telemetry blocker**
 
     ---
@@ -48,14 +54,17 @@ The built-in blocker runs directly on the TV without needing an external DNS sin
 
 === "Ads & telemetry tier"
 
-    Blocks LG's advertising, diagnostics, customer-data, and Alphonso screen-recognition servers while leaving LG's core service platform reachable (so the Content Store, app updates, and LG ThinQ continue to work).
+    Blocks LG's advertising, diagnostics, remote-diagnostics, customer-data and Alphonso screen-recognition servers, and the host LG's ad log script reports to, while leaving LG's core service platform reachable (so the Content Store, app updates, and LG ThinQ continue to work). On webOS 11 the diagnostics report upload shares its host with the Content Store, so it stays reachable on this tier; the Everything tier takes it.
 
 === "Everything tier"
 
-    Adds the hosts that carry LG's platform services:
+    Adds the hosts that carry LG's platform services and Google push messaging:
 
-    * **What stops working:** The LG ThinQ phone app, the Content Store, firmware updates, LG Channels, and LG's search, so [Glasshouse Home's search](home.md#search) is hidden while it blocks it. (To block only firmware updates while keeping platform services, use **Block TV software updates** on the [System tab](advanced.md) instead.)
-    * **Clock sync after a power cut:** After a cold boot, the blocker waits for the TV to set its clock from LG's time servers before blocking them. If the TV's date is still wrong and apps fail with certificate errors, set the time manually under **Settings › General › System › Time & Date** (with **Set Automatically** off).
+    * **What stops working:** The LG ThinQ phone app, the Content Store, firmware updates, LG Channels, Alexa, and LG's search, so [Glasshouse Home's search](home.md#search) is hidden while it blocks it. (To block only firmware updates while keeping platform services, use **Block TV software updates** on the [System tab](advanced.md) instead.)
+    * **Google push messaging:** Blocks `mtalk.google.com`, a Firebase Cloud Messaging endpoint. Apps using it may lose push notifications. It stays reachable on **Ads & telemetry**.
+    * **Regional LG services:** Covers LG's known regions and the TV's country for the `nextlgsdp.com`, `ibs.nextlgsdp.com`, `ibsstat.nextlgsdp.com`, `lgeapi.com` and ThinQ IoT service families, plus ThinQ Connect's regional names. This includes `de.ibs.nextlgsdp.com`, `de.lgeapi.com`, `eic.lgtviot.com` and `eic-connect-client.lgthinq.com`. Blocking these may affect account sign-in, ThinQ, push notifications and store services. The list matches exact names, not every subdomain of these domains.
+    * **webOS 11:** LG's platform there is `tv.wiselg.com`, which also carries the diagnostics report upload and app usage statistics. This tier blocks it, with the Content Store's host, once the clock has synced.
+    * **Clock sync after a power cut:** After a cold boot, the blocker waits for the TV to set its clock from LG's time servers before blocking them, including Germany's `de.nextlgsdp.com`. If the TV's date is still wrong and apps fail with certificate errors, set the time manually under **Settings › General › System › Time & Date** (with **Set Automatically** off).
     * **Switching back:** After switching away from **everything**, LG's built-in apps (such as Content Store or LG Channels) may take about a minute to reconnect while their browser engine's DNS cache expires.
 
 === "Custom hosts file"

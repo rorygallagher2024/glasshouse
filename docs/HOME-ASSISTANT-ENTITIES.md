@@ -15,7 +15,7 @@ Every entity the TV publishes, by category. Which categories are published is se
 | `switch` | `switch.lg_tv_huesync` | Hue Sync | Hue Sync's streaming to Philips Hue and Ambience lights, where the Hue Sync app is installed and answering |
 | `switch` | `switch.lg_tv_standby_light` | Standby LED | Toggle standby front indicator LED |
 | `switch` | `switch.lg_tv_logo_light` | Logo Light | Toggle front illuminated TV logo |
-| `number` | `number.lg_tv_volume` | Volume | Volume slider (0–100). Unavailable when the level is set on an external sound device |
+| `number` | `number.lg_tv_volume` | Volume | Volume slider (0–100), with the level from 0 to 1 as `volume_level` for a [universal media player](HOME-ASSISTANT.md#universal-media-player-setup). Unavailable when the level is set on an external sound device |
 | `select` | `select.lg_tv_input_source` | Input Source | Live TV, and HDMI 1–4 under the names the TV's settings give them (`Apple TV (HDMI2)`, as the Active App sensor shows them). The options update when an input is renamed; the `input_ids` attribute maps each option to its input (`hdmi1`–`hdmi4`, `livetv`), which stays the same |
 | `select` | `select.lg_tv_app` | Launch App | Installed apps and LG Settings; `app_ids` attribute maps option labels to stable app IDs. `app_colors` gives each app's `iconColor` from its `appinfo.json` as `#rrggbb`, where it has one, and with **Share app icons** on in the MQTT tab, `app_icons` gives each app's icon as `http://<tv-ip>:8082/icons/<appId>.png` |
 | `select` | `select.lg_tv_picture_mode` | Picture Mode | Switch profiles (ISF Dark/Bright, Cinema, Game, Standard) |
@@ -45,15 +45,16 @@ Every entity the TV publishes, by category. Which categories are published is se
 | `button` | `button.lg_tv_fast_forward` | Fast Forward | Presses Fast Forward on the remote |
 | `switch` | `switch.lg_tv_oled_screen_shift` | OLED Screen Shift | Pixel orbiting, on OLED TVs |
 | `select` | `select.lg_tv_oled_logo_dimming` | OLED Logo Dimming | Local logo dimming: Off, Light, High |
-| `select` | `select.lg_tv_screensaver_mode` | Screen Saver | Which screen saver the TV runs: LG default, Clock, Starfield, Fireworks, Bokeh, Harmonograph or Panel vitals. Brightness is set on the dashboard's Screensaver tab |
+| `select` | `select.lg_tv_screensaver_mode` | Screen Saver | Which screen saver the TV runs: LG default, Clock, Clock with date (Clock with its date option), Starfield, Fireworks, Bokeh, Harmonograph or Panel vitals. Brightness is set on the dashboard's Screensaver tab |
 | `button` | `button.lg_tv_screensaver` | Start Screensaver | Starts the webOS screensaver, or dismisses one that is showing. Where the TV refuses the request, it opens the screen saver itself, except while something is playing full screen or playback cannot be checked ([Screen savers](dashboard/screen-savers.md)) |
 | `text` | `text.lg_tv_screen_notification` | Screen Notification | Send custom toast messages to TV screen |
+| `text` | `text.lg_tv_weather` | Weather Push | Write-only: set to a JSON string, `{"condition":"partlycloudy","temp":14.2,"city":"Paris"}`, to show the weather badge next to the clock on Glasshouse Home, while its Weather setting is From Home Assistant. `condition` is any Home Assistant weather condition (`sunny`, `partlycloudy`, `rainy`, …); `city` is optional, shown under the temperature when set; a push with no numeric `temp` is ignored, an empty one clears it, and one older than 3 hours is no longer shown ([an automation](HOME-ASSISTANT.md#6-the-weather-on-glasshouse-home)) ([Home](dashboard/home.md#what-is-on-screen)) |
 | `button` | `button.lg_tv_restart` | Restart TV | Reboots the TV (not published when `allowPower` is false) |
 | `button` | `button.lg_tv_power_off` | Power Off TV | Powers off the TV (not published when `allowPower` is false) |
 | `button` | `button.lg_tv_power_on` | Power On TV | Turns the TV back on from Active Standby, while it is still finishing panel compensation; in plain standby the bridge is offline (not published when `allowPower` is false) |
 | `binary_sensor` | `binary_sensor.lg_tv_power` | Power | On while the TV is on, off while it is switched off or in standby |
 
-Playback reaches an HDMI source over CEC, where the TV has only one key for both halves of play/pause. Pause and Play / Pause behave as expected there; Play toggles rather than only resuming. On the built-in apps all four are exact.
+Playback reaches an HDMI source over CEC, where the TV has only one key for both halves of play/pause. Pause and Play / Pause behave as expected there; Play toggles rather than only resuming. On the built-in apps all four are exact. An app with no media pipe, one playing through Web Audio, can't say whether it is playing, so Play / Pause sends it Pause and Play in turn, starting with Pause.
 
 ## OLED Panel Health (OLED TVs only)
 | Domain | Entity ID | Name | Description |
@@ -98,7 +99,7 @@ of Unknowns.
 ## Hardware, Remote & System Diagnostics
 | Domain | Entity ID | Name | Description |
 | :--- | :--- | :--- | :--- |
-| `sensor` | `sensor.lg_tv_remote_battery` | Magic Remote Battery | Battery percentage of the paired Magic Remote (`%`), read when the remote is first used after the TV switches on, then at most hourly: from LG's remote service on webOS 4, over Bluetooth on webOS 9 and 10. Not read on other versions. Unknown until the remote has been read once; remembered across restarts |
+| `sensor` | `sensor.lg_tv_remote_battery` | Magic Remote Battery | Battery percentage of the paired Magic Remote (`%`); a remote that reports only high, medium or low (an MR19) reads 100, 50 or 10. Read when the remote is first used after the TV switches on, then at most hourly: from LG's remote service on webOS 4, over Bluetooth on webOS 9 and 10. Not read on other versions. Unknown until the remote has been read once; remembered across restarts |
 | `sensor` | `sensor.lg_tv_soc_architecture` | SoC Architecture | Processor platform (e.g. `Alpha 9 Gen 5 (O22)`) |
 | `sensor` | `sensor.lg_tv_oled_cell_type` | OLED Cell ID | Panel silicon cell identification (e.g. `08/00/1/03`) |
 | `sensor` | `sensor.lg_tv_tcon_firmware` | TCON Firmware | Timing Controller FPGA firmware version |
@@ -124,7 +125,7 @@ of Unknowns.
 
 ## LG settings
 
-The TV's own settings that the dashboard's System, Game and Privacy tabs change, as switches, selects and numbers. Each is published only on TVs that have it: a webOS 4 TV has no Game Optimizer, eARC or Bluetooth speaker mode, for example. Those marked disabled by default appear under the device's configuration and can be enabled in Home Assistant. An HDMI input's own settings, such as Deep Colour, are not published: LG changes them only while that input is on screen.
+The TV's own settings that the dashboard's Picture, System, Game and Privacy tabs change, as switches, selects and numbers. Each is published only on TVs that have it: a webOS 4 TV has no Game Optimizer, eARC or Bluetooth speaker mode, for example. Those marked disabled by default appear under the device's configuration and can be enabled in Home Assistant. An HDMI input's own settings, such as Deep Colour, are not published: LG changes them only while that input is on screen.
 
 | Domain | Entity ID | Name | Description |
 | :--- | :--- | :--- | :--- |
@@ -135,6 +136,7 @@ The TV's own settings that the dashboard's System, Game and Privacy tabs change,
 | `select` | `select.lg_tv_game_genre` | Game Genre | Game Optimizer genre: Standard, First-person shooter, Role-playing, Real-time strategy, Sports or User |
 | `select` | `select.lg_tv_prevent_input_delay` | Prevent Input Delay | Game Optimizer input lag reduction: Standard or Boost |
 | `switch` | `switch.lg_tv_allm_setting` | ALLM | Whether the TV switches to low-latency mode when a device starts a game |
+| `switch` | `switch.lg_tv_reduce_blue_light` | Reduce Blue Light | Warms the picture to cut blue light (LG calls this Eye Comfort Mode) |
 | `select` | `select.lg_tv_digital_sound_output` | Digital Sound Output | *Disabled by default.* Auto, PCM or Pass Through, where the TV offers them |
 | `number` | `number.lg_tv_balance` | Balance | *Disabled by default.* Left and right TV speaker balance, -50 to 50 |
 | `switch` | `switch.lg_tv_automatic_volume` | Automatic Volume | *Disabled by default.* Keeps the volume level when switching channels |
@@ -154,3 +156,21 @@ The TV's own settings that the dashboard's System, Game and Privacy tabs change,
 | `switch` | `switch.lg_tv_smart_tips_in_settings` | Smart Tips in Settings | *Disabled by default.* Suggested settings in LG's Settings menu |
 
 </div>
+
+### Hue Sync settings
+
+These entities accompany the existing Hue Sync streaming switch, only for
+settings the app can read. All belong to Controls & Media.
+
+| Type | ID | Setting |
+| --- | --- | --- |
+| `number` | `number.lg_tv_huesync_brightness` | Brightness, 0–100% |
+| `select` | `select.lg_tv_huesync_intensity` | Subtle, Moderate, High, Extreme |
+| `select` | `select.lg_tv_huesync_sync_mode` | Video or Game |
+| `select` | `select.lg_tv_huesync_current_ec` | Entertainment area name and ID |
+| `switch` | `switch.lg_tv_huesync_background_lightning_video` | Background light in video mode |
+| `switch` | `switch.lg_tv_huesync_background_lightning_games` | Background light in game mode |
+| `switch` | `switch.lg_tv_huesync_auto_start` | Automatic start |
+| `switch` | `switch.lg_tv_huesync_auto_start_notification` | Automatic-start notification |
+
+See [Hue Sync](huesync.md#sync-settings) for payloads and hardware-validation status.

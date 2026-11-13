@@ -8,6 +8,8 @@
  * is put in the filter chain
  *
  * Strict ES5: runs on node 0.12.
+ *
+ * @slow: started first by run-all.js, which runs a few suites at a time.
  */
 var assert = require('assert');
 var fs = require('fs');
@@ -108,6 +110,22 @@ function luna(uri, params, cb) {
     tv.blocked[params.id] = true;
   } else if (uri === 'com.webos.applicationManager/releaseBlockSystemApp') {
     delete tv.blocked[params.id];
+  } else if (uri === 'com.webos.service.tvpower/power/getPowerState') {
+    r.state = power.state;
+    if (power.processing) r.processing = power.processing;
+  } else if (uri === 'com.webos.service.tvpower/power/turnOffScreen') {
+    power.screenOffs++;
+    power.state = 'Screen Off';
+    // The button's release waking the TV just after, as on a C5 (#1143).
+    if (power.wakeOnRelease) {
+      power.wakeOnRelease = false;
+      setTimeout(function () {
+        power.state = 'Active';
+        // Still finishing the wake when Glasshouse looks again.
+        power.processing = 'Screen On';
+        setTimeout(function () { power.processing = ''; }, 700);
+      }, 30);
+    }
   } else {
     throw new Error('unexpected call ' + uri);
   }
@@ -116,6 +134,7 @@ function luna(uri, params, cb) {
 
 var launched = [];
 var toasts = [];
+var power = { state: 'Active', screenOffs: 0 };
 
 // lib/services.js as the TV has it: the voice assistant there and running.
 var voice = { off: false, switches: [] };
@@ -133,8 +152,24 @@ var servicesMock = {
 var LOG = path.join(dir, 'messages');
 fs.writeFileSync(LOG, 'boot\n');
 function logLine(text) { fs.appendFileSync(LOG, text); }
+// Setting a key starts the server watching the log from its end, and node's
+// watch takes its first look a moment later: a press written before that look
+// is part of what it first sees, so it never reads as a change. A press is
+// written a poll after.
+function afterWatching(fn) { setTimeout(fn, POLLED + 100); }
 // The follower polls every 200 ms.
 var POLLED = 500;
+
+// Calls back once ready() holds, or after ms: the press is read from a log the
+// server polls, then retried while the TV is busy, which a busy CI runner can
+// take longer over than a fixed wait allows.
+function until(ready, ms, cb) {
+  var end = Date.now() + ms;
+  (function poll() {
+    if (ready() || Date.now() >= end) return cb();
+    setTimeout(poll, 50);
+  })();
+}
 var AI_LINE = '2026-10-18T11:37:06.284Z [60] user.info lginput2 [] lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_VOICE"} \n';
 var ALEXA_LINE = '2026-10-18T11:59:12.600Z [60] user.info lginput2 [] lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_ALEXAVOICE"} \n';
 var NETFLIX_LINE = '2026-10-18T11:37:09.100Z [60] user.info lginput2 [] lginput2 NL_BUTTON_CLICK {"remote_type":"LGE MR25GA","button_type":"KEY_NETFLIX"} \n';
@@ -297,12 +332,16 @@ step('LG\'s input switcher is a choice of its own, first, for any key', function
   });
 });
 
-step('media controls are not offered where LG\'s native filters only launch apps', function (next) {
+step('media and power actions are not offered where LG\'s native filters only launch apps', function (next) {
   rk.getRemoteKeys(function (r) {
     assert.ok(!r.choices.some(function (c) { return c.kind === 'media'; }));
+    assert.ok(!r.choices.some(function (c) { return c.id === 'action:powerOff'; }));
     rk.setRemoteKey('netflix', 'open', 'media:play', function (s) {
       assert.strictEqual(s.ok, false);
-      next();
+      rk.setRemoteKey('netflix', 'open', 'action:powerOff', function (power) {
+        assert.strictEqual(power.ok, false);
+        next();
+      });
     });
   });
 });
@@ -436,6 +475,79 @@ step('the AI button set switches LG\'s voice assistant off and opens its app fro
       }, POLLED);
     }, POLLED);
   });
+});
+
+step('Screen off on a streaming button switches LG\'s entry off and turns the screen off from the log, with the picture on', function (next) {
+  rk.getRemoteKeys(function (r) {
+    assert.ok(r.choices.some(function (c) { return c.id === 'action:screenOff'; }), 'offered');
+    var by = {};
+    r.keys.forEach(function (k) { by[k.key] = k; });
+    assert.ok(!by.netflix.noScreenOff, 'on a key whose presses the TV logs');
+    assert.ok(by.guide.noScreenOff, 'not on Guide');
+    rk.setRemoteKey('guide', 'open', 'action:screenOff', function (g) {
+      assert.strictEqual(g.ok, false, 'refused on Guide');
+      set('netflix', 'open', 'action:screenOff', function () { afterWatching(function () {
+        assert.strictEqual(entry('netflix').isActive, false, 'LG\'s app switched off, as for Nothing');
+        assert.ok(rk.isFollowingLog());
+        power.screenOffs = 0;
+        launched = [];
+        // Still finishing a change: tried again rather than lost.
+        power.processing = 'Screen On';
+        setTimeout(function () { power.processing = ''; }, 250);
+        logLine(NETFLIX_LINE);
+        until(function () { return power.screenOffs >= 1; }, 5000, function () {
+          assert.strictEqual(power.screenOffs, 1, 'turned off once tvpower was done');
+          assert.deepEqual(launched, []);
+          // LG writes its list back at the power change, unannounced: set again unasked.
+          tv.mapping.forEach(function (e) { if (e.netflix) e.netflix.isActive = true; });
+          setTimeout(function () {
+            assert.strictEqual(entry('netflix').isActive, false, 'set again after the screen off');
+          // A press over LG's screen saver ends it, and the screen goes off after.
+          power.state = 'Screen Saver';
+          setTimeout(function () { power.state = 'Active'; }, 300);
+          logLine(NETFLIX_LINE);
+          until(function () { return power.screenOffs >= 2; }, 5000, function () {
+            assert.strictEqual(power.screenOffs, 2, 'turned off once the screen saver had gone');
+          // A press with the picture already off wakes the TV, and is left to.
+          power.state = 'Screen Off';
+          setTimeout(function () {
+            logLine(NETFLIX_LINE);
+            setTimeout(function () {
+              assert.strictEqual(power.screenOffs, 2);
+              power.state = 'Active';
+              set('netflix', 'lg', '', function () {
+                assert.strictEqual(entry('netflix').isActive, true, 'put back as LG had it');
+                assert.ok(!rk.isFollowingLog());
+                next();
+              });
+            }, POLLED);
+          }, 600);
+          });
+          }, 1700);
+        });
+      }); });
+    });
+  });
+});
+
+step('Screen off is turned off once more when the button\'s release wakes the TV, and only once', function (next) {
+  set('netflix', 'open', 'action:screenOff', function () { afterWatching(function () {
+    power.state = 'Active';
+    power.processing = '';
+    power.screenOffs = 0;
+    power.wakeOnRelease = true;
+    logLine(NETFLIX_LINE);
+    until(function () { return power.screenOffs >= 2 && power.state === 'Screen Off'; }, 6000, function () {
+      assert.strictEqual(power.screenOffs, 2, 'turned off again after the release woke it');
+      assert.strictEqual(power.state, 'Screen Off');
+      // Off and staying off: nothing more.
+      setTimeout(function () {
+        assert.strictEqual(power.screenOffs, 2);
+        power.state = 'Active';
+        set('netflix', 'lg', '', function () { next(); });
+      }, 900);
+    });
+  }); });
 });
 
 step('the Alexa button set blocks Amazon\'s view and opens its app from the log, apart from the AI button; As LG has it releases it', function (next) {

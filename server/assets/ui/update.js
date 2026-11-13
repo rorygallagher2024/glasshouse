@@ -162,6 +162,39 @@ function renderUpdate(d) {
     }
   }
 
+  const pointerRow = q('exp-pointer-row');
+  if (pointerRow && d.pointer) {
+    pointerRow.hidden = !d.pointer.supported;
+    updateToggle('exp-pointer', {
+      cls: d.pointer.enabled ? 'good' : 'idle',
+      label: d.pointer.enabled ? t('common.on', 'On') : t('common.off', 'Off'),
+      on: d.pointer.enabled,
+      disabled: !d.writable
+    });
+    q('exp-pointer-settings').hidden = !d.pointer.enabled;
+    q('exp-pointer-transport').value = d.pointer.transport;
+    q('exp-pointer-transport').disabled = !d.writable;
+    const rate = q('exp-pointer-rate');
+    if (!rate.options.length) [60, 120, 240].forEach(n => rate.add(new Option(t('server.experimental.pointer.rate.value', '{n} updates per second', { n }), String(n))));
+    rate.value = String(d.pointer.updatesPerSecond);
+    rate.disabled = !d.writable;
+    applyPointerSettings(Object.assign({ allowControl: !!d.writable }, d.pointer));
+  }
+
+  // Offered where the input bar has not been tried; where it has, it needs no switch.
+  const barRow = q('exp-inputbar-row');
+  if (barRow) {
+    barRow.hidden = !(d.inputBar && d.inputBar.standing === 'experimental');
+    if (d.inputBar) {
+      updateToggle('exp-inputbar', {
+        cls: d.inputBar.experimental ? 'good' : 'idle',
+        label: d.inputBar.experimental ? t('common.on', 'On') : t('common.off', 'Off'),
+        on: d.inputBar.experimental,
+        disabled: !d.writable
+      });
+    }
+  }
+
   msg.textContent = (d.state === 'error' || d.state === 'offline') ? (d.error || t('server.checkFailed', 'the check failed'))
     : d.state === 'installed' ? t('server.installed', 'Installed. The server is restarting - this page reconnects on its own.')
     : updArrival;
@@ -569,6 +602,13 @@ async function toggleExpTileHiding() {
 // the server is kept while off, so switching back on needs no retyping.
 let ntpEditing = false;
 
+// How far out the clock is, as a person would say it: 1 h 56 min, 12 min, 40 s.
+function ntpOut(s) {
+  if (s < 60) return t('server.ntp.outS', '{s} s', { s });
+  const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60);
+  return h ? t('server.ntp.outHM', '{h} h {m} min', { h, m }) : t('server.ntp.outM', '{m} min', { m });
+}
+
 function renderNtp(n, cfg, writable) {
   const toggle = q('ntp-toggle'), form = q('ntp-form'), status = q('ntp-status'), input = q('ntp-server');
   if (!toggle) return;
@@ -594,7 +634,11 @@ function renderNtp(n, cfg, writable) {
   }
   if (!on || !n) { status.hidden = true; return; }
   status.hidden = false;
-  if (n.error) {
+  if (n.notTakenS !== null && n.notTakenS !== undefined) {
+    status.classList.add('row-err');
+    status.textContent = t('server.ntp.notTaken', 'The TV is not taking the time from the server, so its clock is still {out} out. Glasshouse tries again every hour.',
+      { out: ntpOut(Math.abs(n.notTakenS)) });
+  } else if (n.error) {
     status.classList.add('row-err');
     status.textContent = t('server.ntp.failing', 'The time server has not answered, so the TV keeps the time it has. {error}', { error: n.error });
   } else {
@@ -627,6 +671,23 @@ async function toggleNtp() {
   b.disabled = true;
   const r = await sendCommand('setNtpEnabled', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
+// The TV's name, as the sidebar and Home Assistant show it. Empty puts back LG
+// and the model, which the server answers with.
+async function saveTvName() {
+  const input = q('tvname-input'), btn = q('tvname-save');
+  if (btn) { btn.disabled = true; btn.classList.add('busy'); }
+  try {
+    const r = await sendCommand('setDeviceName', input.value.trim());
+    if (r && r.ok) {
+      delete input.dataset.dirty;
+      input.value = r.name;
+      if (q('nav-tv')) q('nav-tv').textContent = r.name;
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.classList.remove('busy'); }
+  }
 }
 
 async function saveNtpServer() {
@@ -755,7 +816,7 @@ async function restoreBackupData(b) {
   }
   const from = (b.from && b.from.model) || t('server.backup.unknownTv', 'an unknown TV');
   const when = b.created ? new Date(b.created).toLocaleString() : '?';
-  if (!confirm(t('server.backup.confirm', 'Restore the settings saved from {tv} on {date}? This changes LG’s settings on this TV.', { tv: from, date: when }))) return;
+  if (!confirm(t('server.backup.confirmSettings', 'Restore the settings saved from {tv} on {date}? This changes settings on this TV.', { tv: from, date: when }))) return;
   backupMessage(t('server.backup.restoring', 'Restoring…'));
   try {
     const r = await fetch(api('/api/backup'), {
@@ -764,10 +825,13 @@ async function restoreBackupData(b) {
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || r.status);
     const lg = d.lg || {};
-    let text = t('server.backup.restored', 'Changed {changed} LG settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now.', {
-      changed: (lg.applied || []).length, same: lg.unchanged || 0, skipped: (lg.skipped || []).length
+    const skipped = lg.skipped || [];
+    const consent = skipped.filter(s => s.reason === 'consent');
+    let text = t('server.backup.restoredSettings', 'Changed {changed} settings, {same} were already so, {skipped} skipped as this TV does not have them or they are not available now.', {
+      changed: (lg.applied || []).length, same: lg.unchanged || 0, skipped: skipped.length - consent.length
     });
     if ((lg.failed || []).length) text += ' ' + t('server.backup.failedSome', '{count} could not be set.', { count: lg.failed.length });
+    if (consent.length) text += ' ' + t('server.backup.acrLeftOff', 'Live content recognition is left off: switching it on agrees to LG’s terms, so a backup never does.');
     const apps = d.apps || {};
     if ((apps.toInstall || []).length) text += ' ' + t('server.backup.appsToInstall', '{count} apps from the backup can be installed from the Apps tab.', { count: apps.toInstall.length });
     if ((apps.manual || []).length) text += ' ' + t('server.backup.appsManual', 'Not in the Homebrew Channel catalog, to install by hand: {names}.', { names: apps.manual.map(a => a.title).join(', ') });
@@ -834,6 +898,31 @@ async function toggleExpScreensaver() {
   const b = q('exp-screensaver');
   b.disabled = true;
   const r = await sendCommand('setWebos10ScreensaversAllowed', !b.dataset.on);
+  if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
+async function toggleExpPointer() {
+  const b = q('exp-pointer');
+  b.disabled = true;
+  const r = await sendCommand('setPointerEnabled', !b.dataset.on);
+  if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+
+async function savePointerSettings() {
+  const transport = q('exp-pointer-transport'), rate = q('exp-pointer-rate');
+  transport.disabled = rate.disabled = true;
+  const r = await sendCommand('setPointerSettings', {
+    transport: transport.value, updatesPerSecond: Number(rate.value)
+  });
+  if (r && r.ok) renderUpdate(r); else loadUpdate();
+}
+q('exp-pointer-transport').addEventListener('change', savePointerSettings);
+q('exp-pointer-rate').addEventListener('change', savePointerSettings);
+
+async function toggleExpInputBar() {
+  const b = q('exp-inputbar');
+  b.disabled = true;
+  const r = await sendCommand('setInputBarAllowed', !b.dataset.on);
   if (r && r.ok) renderUpdate(r); else loadUpdate();
 }
 

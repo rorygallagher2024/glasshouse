@@ -39,7 +39,7 @@ Connecting Glasshouse to Home Assistant takes only a few minutes.
 
 ### Setting it up from the dashboard
 
-1. Open the dashboard in a browser, then navigate to the **MQTT** tab (`/?tab=mqtt`).
+1. Open the dashboard in a browser, then navigate to the **HA & MQTT** tab (`/?tab=mqtt`).
 2. Fill in the broker address, port (`1883`), and credentials.
 3. Switch **MQTT bridge** to **On** and save.
 
@@ -69,9 +69,9 @@ For config-file deployments, `deploy.sh` checks for `server/config.<tv-ip>.json`
 
 ### Which settings live where?
 
-The dashboard can change the broker, credentials, topic prefix and device identity — the settings that decide *where* telemetry goes.
+The dashboard can change the broker, credentials, topic prefix and device identity — the settings that decide *where* telemetry goes — along with the Home Assistant API URL and token used by screen savers.
 
-`port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the MQTT tab ([App icons](#app-icons-for-launchers)).
+`port`, `host`, `allowControl`, `allowPower` and `token` are file-only. They decide *who can reach the server at all*, and a web UI able to widen its own exposure would defeat the point of setting them. `syslog` is file-only too. `allowTileHiding`, `allowExperimentalScreensavers`, `allowNetworkDebugger`, `prometheus.enabled` and `ntp` can be set in `config.json` or from the Server tab, and `iconServer` from the HA & MQTT tab ([App icons](#app-icons-for-launchers)).
 
 Edit those in `config.json` and redeploy, or edit `/var/lib/tvweb/config.json` on the TV and restart.
 
@@ -116,6 +116,33 @@ mosquitto_sub -h <broker> -t 'lgtv/#' -v
 
 Node-RED, Telegraf into InfluxDB, or scripts subscribing to that topic work the same way. The Home Assistant Discovery messages are simply ignored by non-Home Assistant clients.
 
+### Screen savers reading Home Assistant
+
+**Home Assistant API** and **MQTT bridge** do separate jobs and are arranged in two sections on the **HA & MQTT** tab (`/?tab=mqtt`):
+
+* **MQTT bridge** publishes the TV's telemetry, sensors, and settings to your broker and receives remote control commands from Home Assistant.
+* **Home Assistant API** connects straight from the TV to Home Assistant over HTTP/HTTPS (using Home Assistant's REST API, without MQTT) so built-in screen savers and custom QML screen savers can read live entities from your smart home.
+
+![HA & MQTT tab showing MQTT bridge and Home Assistant API separated](screenshots/mqtt.png)
+
+*The HA & MQTT tab cleanly separates the MQTT bridge (controlling and observing the TV) from the Home Assistant API (reading Home Assistant entities into screen savers).*
+
+#### Configuring the Home Assistant API
+
+1. In Home Assistant, open your profile (bottom-left) → **Security** → **Long-Lived Access Tokens** → **Create Token** and copy the token.
+2. Open Glasshouse in a browser and navigate to **HA & MQTT** → **Home Assistant API**.
+3. Enter your **Home Assistant address** (for example `http://192.168.1.10:8123` or `http://homeassistant.local:8123`) and paste the **Long-Lived Access Token** (or set `homeAssistant.url` and `homeAssistant.token` in `config.json`).
+4. Click **Save** — credentials apply immediately without restarting the server — and Glasshouse checks the connection. The **Connection** box beside the settings draws the TV and Home Assistant as the MQTT bridge's box draws the TV and its broker: the link reads **Reachable** with Home Assistant's response time and how long ago a screen saver last read an entity, **Off**, or **Unreachable** with the reason. You can switch the **Home Assistant API** button off at any time to disable Home Assistant screen savers while keeping your saved address and token.
+
+![Home Assistant API settings showing the toggle, address, saved token, and the Connection box with Home Assistant reachable](screenshots/ha-api.png)
+
+Once enabled and connected, two Home Assistant screen savers unlock on the **Screensaver** tab (while off or unconfigured, both stay greyed out so non-Home-Assistant setups cannot pick them by mistake):
+
+* [**Home Assistant: Ambient**](dashboard/screen-savers.md#home-assistant-ambient) — shows the TV clock, date, and up to three configurable entities with optional custom display labels.
+* [**Home Assistant: Data Display**](dashboard/screen-savers.md#home-assistant-data-display) — cycles sequentially through 2 to 100 entities one at a time on black.
+
+Custom QML screen savers added on the TV can read Home Assistant entities too. Each declares what it needs in `saver.json`, and Glasshouse serves only those entity IDs at local URLs, so the Home Assistant token never reaches a QML file. Those URLs carry Glasshouse's own dashboard token, where one is set, as the stats URL does. A saver that wants every value at once declares `ha-all` instead and is handed one address, `/api/homeassistant`, which answers with all of its entities in a single request. See [Screen saver design principles](development/SCREENSAVER-DESIGN.md#a-screen-savers-own-values) for the manifest and QML format.
+
 ---
 
 ## Entities
@@ -124,7 +151,7 @@ Once connected to the MQTT broker, Home Assistant discovers the TV as a single d
 
 ### Entity Selection
 
-You can choose which entity categories are published from the **MQTT** tab in the dashboard (`/?tab=mqtt`), or fine-tune individual entities. When a category or entity is disabled, `tvweb` publishes an empty discovery payload so Home Assistant unregisters the entity immediately, without leaving orphaned unavailable entities.
+You can choose which entity categories are published from the **HA & MQTT** tab in the dashboard (`/?tab=mqtt`), or fine-tune individual entities. When a category or entity is disabled, `tvweb` publishes an empty discovery payload so Home Assistant unregisters the entity immediately, without leaving orphaned unavailable entities.
 
 Categories:
 * **Controls & Media** (`controls`): Power, volume, mute, playback buttons, apps, and input sources.
@@ -324,13 +351,38 @@ action:
         {% for name, id in state_attr('select.lg_tv_input_source', 'input_ids').items() if id == 'hdmi2' %}{{ name }}{% endfor %}
 ```
 
+### 6. The weather on Glasshouse Home
+Glasshouse Home shows the weather next to the clock from what Home Assistant sends it, while the Home tab's **Weather** setting is **From Home Assistant**, as it is unless changed. **From the internet** shows the weather for a place you choose without Home Assistant ([Home tab](dashboard/home.md)). This sends a `weather` entity's condition and temperature whenever it changes, every 30 minutes, and when Home Assistant starts. Weather not updated for 3 hours is hidden, and sending an empty value takes it away at once.
+
+```yaml
+alias: "Weather on the TV"
+trigger:
+  - platform: state
+    entity_id: weather.home
+  - platform: time_pattern
+    minutes: "/30"
+  - platform: homeassistant
+    event: start
+action:
+  - service: text.set_value
+    target:
+      entity_id: text.lg_tv_weather
+    data:
+      value: >-
+        {{ {'condition': states('weather.home'),
+            'temp': state_attr('weather.home', 'temperature'),
+            'city': 'Glasgow'} | to_json }}
+```
+
+The temperature is shown as sent, in the unit the weather entity uses. `city` is optional.
+
 ---
 
 ## Universal Media Player Setup
 
-Home Assistant Core does not offer native MQTT discovery for `media_player` platforms. To group all the discovered volume, mute, power, playback, and source controls into a single native media player card:
+Home Assistant's MQTT discovery has no `media_player` platform, so Glasshouse cannot create one itself. Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, for a media control card on a dashboard. It takes a title only from another media player, so it shows none. Play and pause are sent as the remote's Play and Pause keys, so they work only in apps that act on those keys: the TV's own player does, and the Jellyfin app resumes with Play but ignores Pause.
 
-Add the following to `configuration.yaml`. Power uses the `LG TV` switch from [Switched off, and back on](#switched-off-and-back-on).
+Add the following to `configuration.yaml`. Power uses the `LG TV` switch from [Switched off, and back on](#switched-off-and-back-on). The entity IDs start with the TV's `device.id`: for one set to `lg_c9`, `select.lg_tv_input_source` is `select.lg_c9_input_source`.
 
 ```yaml
 media_player:
@@ -340,59 +392,63 @@ media_player:
     children: []
     commands:
       turn_on:
-        service: switch.turn_on
+        action: switch.turn_on
         target:
           entity_id: switch.lg_tv
       turn_off:
-        service: switch.turn_off
+        action: switch.turn_off
         target:
           entity_id: switch.lg_tv
       volume_up:
-        service: mqtt.publish
+        action: mqtt.publish
         data:
           topic: "lgtv/command/volume"
           payload: "+1"
       volume_down:
-        service: mqtt.publish
+        action: mqtt.publish
         data:
           topic: "lgtv/command/volume"
           payload: "-1"
       volume_set:
-        service: number.set_value
+        action: number.set_value
         target:
           entity_id: number.lg_tv_volume
         data:
-          value: "{{ volume * 100 }}"
+          # Home Assistant passes the level from 0 to 1 as volume_level.
+          value: "{{ (volume_level * 100) | round | int }}"
       volume_mute:
-        service: switch.toggle
+        action: switch.toggle
         target:
           entity_id: switch.lg_tv_mute
       media_play:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_play
       media_pause:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_pause
       media_play_pause:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_play_pause
       media_stop:
-        service: button.press
+        action: button.press
         target:
           entity_id: button.lg_tv_stop
       select_source:
-        service: select.select_option
+        action: select.select_option
         target:
           entity_id: select.lg_tv_input_source
         data:
           option: "{{ source }}"
+    state_template: >-
+      {% if not is_state('switch.lg_tv', 'on') %}off
+      {% elif states('sensor.lg_tv_play_state') in ['playing', 'paused'] %}{{ states('sensor.lg_tv_play_state') }}
+      {% else %}on{% endif %}
     attributes:
-      state: switch.lg_tv
       is_volume_muted: switch.lg_tv_mute
-      volume_level: number.lg_tv_volume
+      volume_level: number.lg_tv_volume|volume_level
       source: select.lg_tv_input_source
       source_list: select.lg_tv_input_source|options
 ```
@@ -408,15 +464,15 @@ A TV in standby is asleep and cannot receive commands, so it is switched back on
 1. Turn on **Wake-on-LAN** on the TV: in the web dashboard under **System &rarr; Power**, on the TV dashboard under **System &rarr; Power**, or in LG's menu under **Settings &rarr; General &rarr; Mobile TV On**. Wake-on-LAN works over Ethernet and, on most models, Wi-Fi.
 2. In Home Assistant, add the **Wake on LAN** integration (**Settings &rarr; Devices &amp; services &rarr; Add integration &rarr; Wake on LAN**) with the TV's MAC address. The address is listed under **Connections** on the TV's device page in Home Assistant, and as the **MAC Address** sensor.
 
-This creates a button that wakes the TV from standby. To make one switch that shows whether the TV is on and turns it on or off, add a template switch to `configuration.yaml`, with the TV's MAC address:
+This creates a button that wakes the TV from standby. To make one switch that shows whether the TV is on and turns it on or off, add a template switch to `configuration.yaml`, with the TV's MAC address. If it already has a `template:` key, add the `switch:` entry under it:
 
 ```yaml
-switch:
-  - platform: template
-    switches:
-      lg_tv:
-        friendly_name: "LG TV"
-        value_template: "{{ is_state('binary_sensor.lg_tv_power', 'on') }}"
+template:
+  - switch:
+      - name: "LG TV"
+        unique_id: lg_tv_power_switch
+        icon: mdi:television
+        state: "{{ is_state('binary_sensor.lg_tv_power', 'on') }}"
         turn_on:
           # Wakes a TV that is asleep in standby.
           - action: wake_on_lan.send_magic_packet
@@ -433,7 +489,12 @@ switch:
           - action: button.press
             target:
               entity_id: button.lg_tv_power_off
-        icon_template: mdi:television
 ```
 
 The `wake_on_lan.send_magic_packet` action needs `wake_on_lan:` in `configuration.yaml` if the integration was not added through the UI. Entity IDs start with the device name, `lg_tv` by default; a TV with its own name in `config.json` uses that instead.
+
+Hue Sync also discovers supported [sync settings](huesync.md#sync-settings):
+brightness, intensity, Video/Game mode, entertainment area, per-mode background
+light, automatic start and automatic-start notifications. Controls share retained
+JSON settings state and use
+separate command topics. The existing streaming entity and topics are preserved.

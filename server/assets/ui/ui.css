@@ -127,16 +127,21 @@ html::-webkit-scrollbar-thumb:hover,
 
 /* ---- masthead ---- */
 header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
-.hdr-left{display:flex;align-items:flex-start;gap:18px}
-/* The masthead: the TV in the page's two voices - the kind of TV as a tracked
-   label, the model in the thin display face the big readings use. The
-   Glasshouse mark is in the sidebar's head. */
-.mark{display:flex;align-items:center}
-.mark-tv{display:flex;flex-direction:column;gap:7px}
-.mark-tv #brand{font-family:'Manrope';font-weight:500;font-size:13px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--w60)}
-.mark-tv #model{font-family:'Outfit';font-weight:200;font-size:var(--mh-model);line-height:1;
+/* The masthead: what the TV is showing, in the page's two voices - a tracked
+   label, then the source in the thin display face the big readings use, with
+   its signal under it. The TV's state, volume and sleep timer sit opposite.
+   The model is in the footer, and the TV's name under the sidebar's mark. */
+.src.now{text-align:left;min-width:0}
+.src.now .st{justify-content:flex-start;margin-bottom:7px}
+.src.now .t{font-family:'Outfit';font-weight:200;font-size:var(--mh-model);line-height:1.1;
   letter-spacing:.01em;color:var(--w100)}
+.src.now .stream-primary{justify-content:flex-start;margin-top:6px}
+.hdr-status{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.hdr-line{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--w60)}
+.foot-tv{margin-right:auto}
+.sidenav-titles{display:flex;flex-direction:column;min-width:0}
+.sidenav-tv{font-size:12px;letter-spacing:.04em;color:var(--w60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidenav-tv:empty{display:none}
 
 /* Theme toggle, at the end of the footer: a set-and-forget control, which
    left the masthead room to stay on one line at narrower widths. */
@@ -158,8 +163,11 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
 /* Stale while the TV is off, so faded - but only to .8: at .55 the picture
    mode fell to 3.4:1 on black, under AA for small text. */
 .src.dim .t,.src.dim .stream-info{opacity:.8}
-/* Hidden rather than removed, so the masthead keeps its height. */
-.src.standby .t,.src.standby .stream-info{visibility:hidden}
+/* In standby, the last source seen, labelled Last on and faded like a blank
+   screen's; with none seen, just Standby, with no label or stale signal. */
+.src.last .t,.src.last .stream-info{opacity:.8}
+.src.blank .stream-info{visibility:hidden}
+.src.blank .t{color:var(--w60)}
 /* Panel state. A blanked screen is a normal state, not a fault, so it is
    carried by weight rather than by an alarm colour. */
 .st{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--w60);
@@ -201,6 +209,7 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:24p
   .st{justify-content:flex-start}
   .src{text-align:left}
   .stream-primary{justify-content:flex-start}
+  .hdr-status{align-items:flex-start;text-align:left}
 }
 
 /* ---- the spectacle ---- */
@@ -495,6 +504,9 @@ html.nav-hidden body.nav-open{overflow:hidden}
 #soundouts button.on:hover{color:var(--btn-on-fg);border-color:var(--w100)}
 #soundouts .span-full{grid-column:1 / -1}
 #soundouts .span-center{grid-column:1 / -1;justify-self:center;width:calc(50% - 4px)}
+/* The paired Bluetooth device chooser in Sound: the shared select, as wide and tall as the output buttons. */
+.bt-pick .pill-sel{display:block;width:100%;height:48px;margin-top:11px}
+.bt-pick-btns button[hidden]{display:none}
 #inputs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:11px}
 #inputs button{
   position:relative;display:inline-flex;align-items:center;justify-content:center;
@@ -520,6 +532,16 @@ html.nav-hidden body.nav-open{overflow:hidden}
 }
 #inputs .span-full{grid-column:1 / -1}
 #inputs .span-center{grid-column:1 / -1;justify-self:center;width:calc(50% - 4px)}
+.pointer-pad{
+  display:flex;align-items:center;justify-content:center;min-height:190px;padding:24px;
+  border:1px solid var(--edge);color:var(--w50);text-align:center;font-size:13px;line-height:1.6;
+  cursor:crosshair;user-select:none;-webkit-user-select:none;touch-action:none;overscroll-behavior:contain;
+  transition:border-color .16s ease,color .16s ease,background-color .16s ease;
+}
+.pointer-pad:hover{border-color:var(--w70);color:var(--w80)}
+.pointer-pad.dragging{border-color:var(--w100);background:var(--w06);color:var(--w100)}
+.pointer-setting{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px;font-size:13px;color:var(--w60)}
+.pointer-setting .pill-sel{max-width:100%}
 /* Collapsed groups. Picture mode, sound output and the app list are
    set-and-forget: they were taking the majority of the column's height for
    the things you would least often reach for from a phone. */
@@ -564,10 +586,11 @@ html.nav-hidden body.nav-open{overflow:hidden}
 button{
   font-family:'Manrope';font-weight:500;font-size:14px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--w80);background:transparent;border:1px solid var(--edge);
-  padding:16px 10px;min-height:48px;cursor:pointer;transition:.16s ease;
+  padding:16px 10px;min-height:48px;cursor:pointer;
+  transition:color .16s ease,border-color .16s ease,background-color .16s ease;
 }
 button:hover{color:var(--w100);border-color:var(--w70)}
-button:active{background:var(--w10)}
+button:active{background-color:var(--w10)}
 button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
 /* Selected, not "good". Green means healthy headroom elsewhere in this UI, so
    selection is shown by inversion instead of by borrowing that meaning. */
@@ -603,7 +626,7 @@ button.pill.busy:not([style*="--p"]){
   animation:btnPulse 1.2s ease-in-out infinite;
 }
 .dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,auto);
-      gap:8px;max-width:260px;margin:0 auto 14px}
+      gap:8px;max-width:260px;margin:0 auto 26px}
 /* Its arrows stay where they point in a page laid out right to left. */
 [dir=rtl] .dpad{direction:ltr}
 /* The arrows are glyphs, not words: the button voice everywhere else is
@@ -698,10 +721,8 @@ button.key-hit{background:var(--w10)}
 /* The long lists stay one column - a consent row is a sentence, not a tile -
    but capped so the pill stays near what it describes on a wide screen. */
 .priv.panel{max-width:1180px}
-/* One list that scrolls, a row per screen saver, so more fit without the tab
-   growing: the name, and what it shows under it. */
+/* A row per screen saver: the name, and what it shows under it. */
 .ss-list{position:relative;display:flex;flex-direction:column;margin-top:22px;max-width:760px;
-         max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain;
          border:1px solid var(--w12);border-radius:3px}
 /* A row is the control, not a container with a button in it: the whole thing
    is the click target, so there is nothing to hunt for. */
@@ -717,7 +738,9 @@ button.key-hit{background:var(--w10)}
 /* The one in use is marked, not dimmed: it is the answer to what is running,
    so it should read as the strongest thing on the panel. */
 .ss-card.on,.ss-card.on:hover{background:rgba(var(--fg),.03);color:inherit;font-weight:400;
-         box-shadow:inset 3px 0 0 var(--green);cursor:default;opacity:1}
+         box-shadow:inset 3px 0 0 var(--green);cursor:default;opacity:1;
+         /* Not the white edge of an "on" button: a row keeps its own rule. */
+         border-color:var(--w12)}
 .ss-name{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em}
 .ss-desc{font-size:14px;color:var(--w60);margin-top:3px;line-height:1.45;max-width:60ch}
 .ss-meta{font-size:12px;color:var(--w60);margin-top:4px;letter-spacing:.02em}
@@ -727,24 +750,105 @@ button.key-hit{background:var(--w10)}
 .ss-tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-left:10px}
 .ss-level-row{margin-top:22px;max-width:760px}
 /* The choice on the left, and what to do with it - brightness, starting it,
-   the firmware note - beside it on a wide screen rather than below the list. */
+   the firmware note - beside it on a wide screen rather than below the list.
+   Beside them, the list scrolls within the window so the controls stay in view. */
 @media(min-width:1020px){
   .ss-split{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(260px,1fr);gap:clamp(36px,4vw,56px);
             align-items:start}
-  .ss-split .ss-list{max-width:none}
+  .ss-split .ss-list{max-width:none;max-height:clamp(320px,60vh,620px);overflow-y:auto;overscroll-behavior:contain}
   .ss-side{margin-top:22px;display:flex;flex-direction:column;gap:22px}
   #sspane .ss-side>*{margin-top:0}
 }
 .ss-level-lbl{font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--w60);
               margin-bottom:8px}
 .ss-level-row .btns{display:flex;gap:10px;max-width:340px}
+.ss-bright-row{max-width:340px;grid-template-columns:1fr}
+.vol-wrap.disabled{opacity:.45;pointer-events:none}
 .ss-level-row .btns button{flex:1}
+/* The Animation picker: a button, and under it a list with each group's heading. */
+.ss-pick{position:relative;max-width:340px;margin-top:11px}
+.ss-pick-btn{display:block;width:100%;height:48px;text-align:left;text-transform:none;letter-spacing:.02em;
+  font:500 14px 'Manrope';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ss-pick-btn .grp{color:var(--w60);margin-right:6px}
+select.pill-sel.ss-sel{display:block;width:100%;max-width:340px;height:48px;margin-top:11px;
+  font:500 14px 'Manrope';letter-spacing:.02em}
+.ss-pick-list{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 4px);max-height:min(420px,60vh);overflow-y:auto;
+  overscroll-behavior:contain;background:var(--bg);border:1px solid var(--edge);border-radius:2px;
+  box-shadow:0 12px 32px rgba(0,0,0,.45);padding:0 0 6px}
+.ss-pick-list:focus{outline:none}
+.ss-pick-head{position:sticky;top:0;z-index:1;background:var(--bg);padding:14px 14px 6px;border-top:1px solid var(--w12);
+  font:700 11px 'Manrope';letter-spacing:.14em;text-transform:uppercase;color:var(--w60)}
+.ss-pick-head:first-child{border-top:0}
+.ss-pick-opt{padding:8px 14px 8px 24px;font-size:14px;color:var(--w90);cursor:pointer}
+.ss-pick-opt:hover,.ss-pick-opt.act{background:rgba(var(--fg),.07);color:var(--w100)}
+.ss-pick-opt[aria-selected="true"]{color:var(--green);box-shadow:inset 3px 0 0 var(--green)}
+.ss-entity-field{margin-top:14px;max-width:440px;display:flex;flex-direction:column;gap:6px}
+.ss-entity-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ss-entity-field label{font-size:14px;color:var(--w80);font-weight:500;letter-spacing:.02em}
+.ss-entity-hint{font-size:13px;color:var(--w70);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px}
+.ss-ent-wrap{position:relative;display:flex;align-items:stretch}
+.ss-ent-wrap input{
+  flex:1;min-width:0;box-sizing:border-box;font-family:'Manrope';font-weight:400;font-size:14px;letter-spacing:.03em;
+  color:var(--w100);background:transparent;border:1px solid var(--edge);padding:10px 12px;min-height:44px;border-radius:0;outline:none
+}
+.ss-ent-wrap input:focus{border-color:var(--w100)}
+.ss-ent-wrap input:disabled{opacity:.45}
+.ss-ent-wrap input::placeholder{color:var(--w60)}
+.ss-ent-btn{min-width:40px;padding:0;min-height:44px;border-left:0;font-size:14px;display:flex;align-items:center;justify-content:center}
+.ss-ha-list{max-height:260px;padding:4px 0}
+.ss-ha-opt{padding:9px 12px;cursor:pointer}
+.ss-ha-opt:hover{background:rgba(var(--fg),.07)}
+.ss-ha-opt-n{font-size:14px;color:var(--w100);line-height:1.35}
+.ss-ha-opt-id{font-size:13px;color:var(--w70);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:2px}
+.ss-ha-empty{padding:10px 12px;font-size:14px;color:var(--w70)}
+.ss-ent-label-row,.ss-li-label{display:flex;align-items:center;gap:10px;margin-top:6px}
+.ss-ent-label-row label,.ss-li-label label{font-size:14px;color:var(--w80);min-width:48px;flex-shrink:0}
+.ss-ent-label-row input,.ss-li-label input{
+  flex:1;min-width:0;box-sizing:border-box;font-family:'Manrope';font-size:14px;
+  color:var(--w100);background:transparent;border:1px solid var(--edge);padding:9px 12px;min-height:42px;border-radius:0;outline:none
+}
+.ss-ent-label-row input:focus,.ss-li-label input:focus{border-color:var(--w100)}
+.ss-ent-label-row input::placeholder,.ss-li-label input::placeholder{color:var(--w60)}
+.ss-ent-label-row input:disabled,.ss-li-label input:disabled{opacity:.45}
+.ss-pool-actions{display:flex;gap:8px;margin-bottom:8px;max-width:340px}
+.ss-pool-btn{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;min-height:0;
+  color:var(--w60);border:1px solid var(--w12);border-radius:2px;background:transparent;cursor:pointer}
+.ss-pool-btn:hover:not([disabled]){color:var(--w100);background:rgba(var(--fg),.04)}
+.ss-pool-btn[disabled]{opacity:.45;cursor:default}
+.ss-pool-box{max-height:260px;overflow-y:auto;border:1px solid var(--w12);border-radius:2px;padding:4px;
+  overscroll-behavior:contain;max-width:340px}
+.ss-pool-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:2px;
+  font-size:13.5px;color:var(--w90);cursor:pointer;user-select:none;transition:background .12s}
+.ss-pool-item:hover{background:rgba(var(--fg),.04)}
+.ss-pool-item.dis{cursor:default;opacity:.45}
+.ss-pool-item.dis:hover{background:transparent}
+.ss-pool-item input[type="checkbox"]{width:16px;height:16px;margin:0;cursor:pointer;flex-shrink:0;accent-color:var(--green)}
+.ss-pool-item.dis input[type="checkbox"]{cursor:default}
+.ss-pool-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .upd{max-width:760px;margin-top:22px}
 /* The update actions sit under the version, as small as the row's other
    controls. Rolling back is rarely wanted, so it is a link, not a button. */
 .upd-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 /* What each release since the installed one brings, from its notes' summary. */
 .upd-new{margin-top:12px;max-width:62ch}
+.ss-li-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;max-width:440px;margin:2px 0 6px}
+.ss-li-head label{font-size:14px;color:var(--w90);font-weight:500}
+.ss-li-count{font-size:13px;color:var(--w70)}
+.ss-li-add{display:flex;gap:8px;align-items:stretch;max-width:440px}
+.ss-li-add .ss-ent-wrap{flex:1;min-width:0}
+.ss-li-add-btn{min-height:44px;padding:0 16px;font-size:13px;letter-spacing:.08em;flex:none}
+.ss-li-scroll{margin-top:12px;max-width:440px;max-height:420px;overflow-y:auto;overscroll-behavior:contain;
+  border:1px solid var(--w12);border-radius:2px;background:rgba(var(--fg),.015)}
+.ss-li-item{padding:12px;border-bottom:1px solid var(--w12)}
+.ss-li-item:last-child{border-bottom:0}
+.ss-li-top{display:flex;align-items:flex-start;gap:8px}
+.ss-li-num{font-size:13px;color:var(--w70);min-width:20px;padding-top:2px;flex:none}
+.ss-li-info{flex:1;min-width:0}
+.ss-li-name{font-size:14px;color:var(--w100);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss-li-id{font-size:13px;color:var(--w70);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.ss-li-acts{display:flex;gap:4px;flex:none}
+.ss-li-acts button{width:34px;height:34px;min-height:0;padding:0;font-size:15px;line-height:1;text-transform:none;letter-spacing:0}
+.ss-li-label{margin-top:8px;padding-left:28px}
 .upd-new-h{font-weight:500;font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--w60);margin-bottom:6px}
 .upd-new-r{margin-bottom:10px;font-size:14px;color:var(--w80);line-height:1.5}
 .upd-new-r p{margin:0 0 4px;white-space:pre-line}
@@ -786,6 +890,7 @@ button.key-hit{background:var(--w10)}
 .pv-grp+.pv-grp .pv-g{margin-top:22px}
 .pv-h{font-family:'Outfit';font-weight:300;font-size:clamp(20px,2.4vw,26px);color:var(--w100);margin:22px 0 4px}
 .pv-sub{font-size:14px;color:var(--w60);max-width:62ch;margin-bottom:16px}
+.pv-sub.warn{color:var(--cand)}
 .pv-sub a{color:var(--w80);text-decoration:underline;text-underline-offset:2px}
 .pv-sub a:hover{color:var(--w100)}
 .pv-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;
@@ -811,6 +916,12 @@ span.pill.good::before,span.pill.warn::before,span.pill.bad::before{
   content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
 /* The arrow is drawn here, in the text's colour, with room to its right: the
    browser's own sat against the right edge. */
+/* A select's own background is transparent, and Chrome on Windows draws the
+   open list on white whatever the theme: the options carry the theme's colours. */
+select option,select optgroup{background-color:var(--bg);color:var(--w100)}
+/* A group's heading reads as a heading, not as one more option. */
+select optgroup{color:var(--w60);font-weight:700;font-style:normal}
+select optgroup option{color:var(--w100);font-weight:400}
 .pill-sel{font:500 12.5px 'Manrope';letter-spacing:.08em;height:32px;min-width:116px;padding:0 30px 0 10px;
           color:var(--w100);background-color:transparent;border:1px solid var(--edge);border-radius:2px;cursor:pointer;
           -webkit-appearance:none;appearance:none;
@@ -931,11 +1042,11 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
   grid-template-columns:repeat(auto-fill,minmax(min(100%,max(340px,calc((100% - clamp(30px,4vw,52px)) / 2))),1fr))}
 /* The Server tab and Home customisation keep one column, so every control,
    and each fold's count, lines up down the right. */
-#serverpane .prot-table,#home-custom-table{display:grid;grid-template-columns:1fr}
-#advpane .prot-row,#serverpane .prot-row,#home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
+#serverpane .prot-table,.home-custom-table{display:grid;grid-template-columns:1fr}
+#advpane .prot-row,#serverpane .prot-row,.home-custom-table .prot-row{align-items:flex-start;padding:16px 0}
 #advpane .prot-title,#serverpane .prot-title,#homepane .prot-title{font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--w90)}
 #advpane .prot-desc,#serverpane .prot-desc,#homepane .prot-desc{font-size:14px;line-height:1.5;margin-top:4px;max-width:none}
-#advpane .prot-status,#serverpane .prot-status,#home-custom-table .prot-status{padding-top:2px}
+#advpane .prot-status,#serverpane .prot-status,.home-custom-table .prot-status{padding-top:2px}
 #pv-adv{margin-top:clamp(36px,5vw,56px)}
 #pv-adv>summary{border-top:0;min-height:0;align-items:center}
 #pv-adv[open]>summary{margin-bottom:22px}
@@ -1006,6 +1117,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 /* ---- MQTT network flow diagram ---- */
 .mqtt-net{max-width:380px;margin-top:22px;border:1px solid var(--w06);
   background:rgba(var(--fg),.02);border-radius:6px;padding:16px 16px 14px}
+.ha-api-section{border-top:1px solid var(--w12);margin-top:44px;padding-top:32px}
 .mqtt-net.off .mqtt-net-node{opacity:.6}
 .mqtt-net.off .mqtt-net-link{opacity:.4}
 .mqtt-net.off .mqtt-dot{background:var(--w20)!important;border-color:var(--edge)!important;box-shadow:none!important}
@@ -1180,6 +1292,11 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
   padding:12px 0;border-bottom:1px solid var(--w06);
 }
 .prot-main{flex:1;min-width:0}
+.home-weather-place{padding:4px 0 16px;border-bottom:1px solid var(--w06)}
+.home-weather-place .toast-form{margin:12px 0}
+.home-weather-results{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.home-weather-results:empty{display:none}
+.home-weather-credit{opacity:.7;margin-top:6px}
 .prot-title{
   font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;
   color:var(--w90);letter-spacing:.02em;
@@ -1241,8 +1358,6 @@ footer{margin-top:38px;font-size:13px;letter-spacing:.08em;text-transform:upperc
 .page-edit button{min-height:38px;padding:0 16px}
 .page-acts{display:flex;gap:8px}
 .page-add{margin-top:16px;flex-wrap:wrap}
-.page-add-msg{margin-top:10px;color:var(--red)}
-.page-add-msg:empty{display:none}
 .page-add #page-add-url{flex:2 1 260px}
 .page-add #page-add-name{flex:1 1 160px}
 .page-add #catalog-url{flex:1 1 260px}
@@ -1433,9 +1548,16 @@ button.tools-jump:active{background:var(--w80)}
 .rk-opt.on{color:var(--btn-on-fg);background:var(--w100);border-color:var(--w100)}
 /* A catalog's address is one long word. */
 .catalog-url, #apps-others-list .prot-sub{overflow-wrap:anywhere}
+#apps-catalog-list .prot-main, #apps-others-list .prot-main{overflow-wrap:anywhere}
+.catalog-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;max-width:100%}
+.catalog-source{flex:1;max-width:100%;white-space:normal;text-align:center;text-decoration:none;transition:.16s ease}
+.catalog-source:hover{background:rgba(var(--fg),.08)}
+.catalog-source:active{background:var(--w10)}
+.catalog-source:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
 /* An error under a row, styled as the page's own error banner (#offline). */
-.err-note{font-size:14px;border-left:2px solid var(--red);padding:9px 13px;background:var(--w06);color:var(--w90);margin-top:8px;max-width:64ch;overflow-wrap:anywhere}
-.err-note b{font-weight:600;margin-right:6px}
+.err-note, .page-add-msg{font-size:14px;border-left:2px solid var(--red);padding:9px 13px;background:var(--w06);color:var(--w90);margin-top:8px;max-width:64ch;overflow-wrap:anywhere}
+.err-note:empty, .page-add-msg:empty{display:none}
+.err-note b, .page-add-msg b{font-weight:600;margin-right:6px}
 /* Under a long catalog list: how many show, and the button for more. */
 .catalog-more{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:16px 0 4px}
 /* Hide home screen system apps: a hidden app's tile is dimmed. */
@@ -1452,6 +1574,16 @@ button.tools-jump:active{background:var(--w80)}
 .audio-more[open]>summary{margin-bottom:6px}
 .audio-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin:0 0 18px}
 .audio-head .pill{flex-shrink:0;min-height:36px}
+/* The fold below draws the line that closes the list. */
+#audio-bt-list .prot-row:last-child,#audio-bt-found .prot-row:last-child{border-bottom:0}
+.audio-bt-btns{display:flex;gap:8px;flex-shrink:0}
+.audio-bt-btns .pill{min-height:36px}
+#audio-bt-scan{border-top:1px solid var(--w06);margin-top:0;padding-top:14px}
+#audio-bt-scan-note{margin:0 0 4px}
+#audio-bt-scan.none{padding-bottom:12px}
+#audio-bt-list .prot-status{display:flex;gap:8px}
+#audio-bt-note{margin:0;padding:12px 0;border-top:1px solid var(--w06)}
+#audio-bt-note:empty{display:none}
 .audio-path{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:20px 0 22px;border-block:1px solid var(--w12)}
 .audio-path>li{position:relative;padding:0 20px 0 0}
 .audio-path>li+li{padding-left:28px}
@@ -1559,9 +1691,10 @@ button.tools-jump:active{background:var(--w80)}
 }
 
 /* The Home tab */
-#home-hero{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px 24px;
-  padding:8px 0 0}
-#home-hero .ps-state{margin-bottom:0;flex:1 1 320px}
+/* The state above, then the choice of launcher across the width beneath it. */
+#home-hero{display:flex;flex-direction:column;align-items:stretch;gap:24px;padding:8px 0 0}
+#home-hero .ps-state{margin-bottom:0}
+#home-choose .lbl{margin-bottom:10px}
 #home-hero .pv-sub{margin:6px 0 0}
 /* The dot stays level with the heading's first line, however tall the
    experimental note beneath makes the block. */
@@ -1571,7 +1704,18 @@ button.tools-jump:active{background:var(--w80)}
 /* One section for whichever Home is the TV's. Its heading's rule is the only
    divider under the switch; Glasshouse Home's rows leave with it. */
 #home-hero+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
+#home-hero+#home-launcher{margin-top:clamp(34px,4.5vw,48px)}
+#home-launcher+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
+#home-launchers .prot-status{display:flex;gap:8px}
+/* With a custom launcher in Glasshouse Home's place, only the apps and inputs it shows. */
+#home-more.for-launcher > :not(.home-arrange), #home-more.for-launcher .home-gh-only,
+#home-more:not(.for-launcher) .home-launcher-only{display:none}
+#home-more.for-launcher .home-row:not([data-kind="app"]):not([data-kind="dev"]),
+#home-more.for-launcher .home-row-move{display:none}
 #home-custom.lg-home .home-gh-row{display:none}
+/* Each group's last row draws no line, as the next group's heading follows. */
+.home-custom-table .prot-row.last{border-bottom:0}
+.home-group+.home-group .pv-g{margin-top:34px}
 /* Its folding sections read as rows of the list above: a row's title, the
    count and the plus at the right, a row's rule beneath. */
 #home-custom .pv-d>summary{font-family:'Manrope',sans-serif;font-weight:600;font-size:14px;letter-spacing:.02em;
@@ -1579,8 +1723,12 @@ button.tools-jump:active{background:var(--w80)}
 #home-custom .pv-d>summary::after{font-size:18px}
 #home-custom .pv-d[open]>summary{border-bottom-color:transparent}
 #home-custom .pv-d[open]{padding-bottom:16px;border-bottom:1px solid var(--w06)}
-#home-mode-btns{display:flex;flex-wrap:wrap;gap:8px;flex:0 0 auto;width:auto}
-#home-mode-btns button{min-width:176px;padding:0 18px;white-space:nowrap}
+/* The choices in a row of equal boxes, a long name on two lines where the row
+   is narrow; two by two on a phone. */
+#home-mode-btns{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;max-width:880px}
+#home-mode-btns button{min-width:0;padding:6px 14px;line-height:1.3;white-space:normal}
+@media (max-width:640px){#home-mode-btns{display:grid;grid-auto-flow:row;grid-template-columns:repeat(2,1fr)}
+  #home-mode-btns button{padding:6px 10px}}
 #home-mode-btns button.warn{color:var(--cand);border-color:var(--cand)}
 #home-rows{margin-top:14px}
 .home-row{border-top:1px solid var(--edge);padding:10px 0}
@@ -1639,6 +1787,9 @@ button.wall-screen::before{content:'';position:absolute;inset:0;background:linea
 button.wall-screen:hover:not(:disabled){border-color:rgba(255,255,255,.45)}
 button.wall-screen:disabled{opacity:1;cursor:default}
 .wall-choice{max-width:560px;margin:14px 0 6px}
+/* Seven scenes with names of every length: each as wide as its name. */
+.wall-choice.scenes{display:flex;flex-wrap:wrap;max-width:none}
+.wall-choice.scenes button{flex:0 0 auto;padding:0 18px;white-space:nowrap}
 /* A set's or Black's empty time of day is not a place to add a picture. */
 .wall-card.fixed:not(.has) button.wall-screen{border-style:solid;border-color:rgba(255,255,255,.12)}
 .wall-card:not(.has) button.wall-screen{border-style:dashed;border-color:rgba(255,255,255,.22)}
@@ -1660,6 +1811,11 @@ button.wall-screen:disabled{opacity:1;cursor:default}
 .wall-actions{display:flex;gap:14px;margin-top:4px;min-height:18px}
 button.wall-link{min-height:0;padding:0;border:0;background:none;font-size:12px;letter-spacing:.02em;text-transform:none;color:var(--w60)}
 button.wall-link:hover:not(:disabled){color:var(--w100);text-decoration:underline;text-underline-offset:3px}
+/* The shuffled collection: how often it changes, then its pictures after a card to add more. */
+.shuffle-every{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0 18px;font-size:13px;color:var(--w80)}
+.wall-count{font-size:12px;color:var(--w60);font-variant-numeric:tabular-nums}
+/* Four picture choices, the last of them a longer name. */
+#home-wall-choice{max-width:760px}
 .wall-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 20px;margin-top:24px}
 .wall-foot .sub{max-width:64ch;margin:0}
 .wall-foot-btns{display:flex;gap:10px;flex-wrap:wrap}
@@ -1676,6 +1832,10 @@ button.home-look:active{background:none}
 .home-look-row{position:absolute;left:10px;bottom:9px;font-size:10px;color:var(--look-text);opacity:.69}
 .home-look-screen i{position:absolute;right:10px;bottom:11px;width:7px;height:7px;border-radius:50%;background:var(--look-accent)}
 .home-look-name{font-size:13px;opacity:.8}
+/* Eight choices: under the description, across the row, rather than beside it. */
+#home-anim-row{flex-direction:column;align-items:stretch;gap:10px}
+.home-anim-band{position:absolute;left:-10%;right:-10%;top:52%;height:9px;border-radius:50%;opacity:.75;transform:rotate(-8deg);
+  box-shadow:0 0 10px 2px currentColor}
 .home-look.picked .home-look-name{opacity:1;font-weight:600}
 .home-look:disabled{cursor:default;opacity:.6}
 .home-custom{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin:4px 0 8px}
@@ -1722,3 +1882,271 @@ button.home-look:active{background:none}
 .nav-shortcut-pin:hover{background:var(--w12);color:var(--w100)}
 .nav-shortcut-pin:focus-visible{outline:2px solid var(--w80);outline-offset:-2px}
 @media(max-width:700px){.global-search-backdrop{padding:24px 12px}.global-search-results{max-height:60vh}}
+/* Internet TV's add and edit form: the dashboard's search field, one per line. */
+.home-tv-form{margin-top:14px;padding-top:14px;border-top:1px dashed var(--edge);max-width:520px}
+.home-tv-field{display:block;margin:12px 0 0}
+.home-tv-field span{display:block;font-size:13px;color:var(--w60);margin-bottom:6px}
+.home-tv-field input{width:100%;box-sizing:border-box;font:400 14px 'Manrope';letter-spacing:.03em;color:var(--w100);
+  background:transparent;border:1px solid var(--edge);border-radius:0;padding:10px 12px;outline:0}
+.home-tv-field input:focus{border-color:var(--w100)}
+.home-tv-field input::placeholder{color:var(--w60)}
+
+/* ---- Internet TV channels (assets/ui/tvchannels.js) ----
+   A page of its own over the dashboard: the provider's groups, the channels
+   of one, and the lineup. The lineup is read as the TV numbers it, so its
+   numbers run down a ruler at the leading edge, a tick where each section starts;
+   the one colour is the favourites' green (Home's row), which changes with
+   a star. */
+html.tvm-on, html.tvm-on body{overflow:hidden}
+.tvm{position:fixed;inset:0;z-index:900;background:var(--bg);color:var(--w80);display:grid;grid-template-rows:auto auto minmax(0,1fr)}
+.tvm[hidden]{display:none}
+.tvm button{text-transform:none;letter-spacing:.01em;min-height:0}
+.tvm-top{display:flex;align-items:center;gap:20px;padding:18px var(--gut) 16px;border-bottom:1px solid var(--w10)}
+.tvm-back{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;padding-inline-start:10px;font-size:14px;text-transform:uppercase !important;letter-spacing:.08em !important}
+.tvm-titles{flex:1;min-width:0}
+.tvm-titles h2{font:300 clamp(22px,2.4vw,30px)/1.1 'Outfit';color:var(--w100);letter-spacing:-.005em}
+.tvm-sub{font-size:13.5px;color:var(--w60);margin-top:4px;line-height:1.45}
+.tvm-input{font:400 15px 'Manrope';color:var(--w100);background:transparent;border:1px solid var(--edge);height:40px;padding:0 12px;border-radius:2px;min-width:0}
+.tvm-input:focus{outline:none;border-color:var(--w100)}
+.tvm-input::placeholder{color:var(--w60)}
+.tvm-search{width:clamp(220px,28vw,380px)}
+.tvm-undo{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;padding-inline-start:11px;font-size:13.5px;border-color:var(--w25)}
+.tvm-undo[disabled]{opacity:.35}
+.tvm-tabs{display:none}
+.tvm-body{display:grid;grid-template-columns:minmax(240px,290px) minmax(0,1fr) minmax(420px,1.15fr);min-height:0}
+.tvm-pane{display:flex;flex-direction:column;min-height:0;border-inline-end:1px solid var(--w10)}
+.tvm-pane:last-child{border-inline-end:0}
+.tvm-pane-head{padding:18px 20px 10px;display:flex;flex-direction:column;gap:10px}
+.tvm-pane-head .tvm-input{height:36px;font-size:14px}
+.tvm-scroll{flex:1;overflow:auto;padding:0 20px 120px;scrollbar-width:thin;scrollbar-color:var(--w25) transparent;overscroll-behavior:contain}
+.tvm-list{list-style:none}
+.tvm-empty{color:var(--w60);font-size:14px;padding:14px 0}
+.tvm-start{max-width:46ch;padding-top:28px}
+.tvm-start p{margin-bottom:12px;line-height:1.6}
+.tvm-start p:first-child{font:300 22px/1.3 'Outfit';color:var(--w90)}
+.tvm-note{font-size:13px;color:var(--w60);margin-top:14px;line-height:1.5}
+.tvm-link{border:0;padding:10px 0;color:var(--w80);font-size:13.5px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--w35);background:none}
+.tvm-link:hover{text-decoration-color:var(--w100)}
+/* Small square buttons for a row's actions. */
+.tvm-ib{width:32px;height:32px;padding:0;display:inline-grid;place-items:center;border-color:transparent;color:var(--w60);flex:none}
+.tvm-ib:hover{border-color:var(--edge);color:var(--w100)}
+.tvm-textbtn{border:0;padding:6px 0;font-size:13px;color:var(--w60);background:none;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--w25)}
+.tvm-textbtn:hover{color:var(--w100);text-decoration-color:var(--w60)}
+.tvm-textbtn.warn{color:var(--red);text-decoration-color:var(--red)}
+
+/* Selection, shown by inversion as elsewhere on the dashboard: a filled box
+   with the tick cut out of it, and the row lifted. */
+.tvm-cb{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin:0;border:1.5px solid var(--w35);border-radius:3px;display:inline-grid;place-items:center;
+  cursor:pointer;flex:none;background:transparent;transition:background .12s,border-color .12s}
+.tvm-cb:hover{border-color:var(--w80)}
+.tvm-cb:checked,.tvm-cb:indeterminate{background:var(--w100);border-color:var(--w100)}
+.tvm-cb:checked::before{content:'';width:5px;height:9px;border:solid var(--btn-on-fg);border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+.tvm-cb:indeterminate::before{content:'';width:9px;height:2px;background:var(--btn-on-fg)}
+.tvm-cb:focus-visible{outline:2px solid var(--w80);outline-offset:2px}
+[data-sel].sel{background:var(--w10)}
+[data-sel].sel:hover{background:var(--w12)}
+.tvm-all{display:flex;align-items:center;gap:12px;padding:12px 6px 4px;font-size:13.5px;color:var(--w70);cursor:pointer;user-select:none}
+.tvm-all:hover{color:var(--w100)}
+.tvm-scroll > .tvm-all{padding-top:4px}
+.tvm-ib.starred{color:var(--green)}
+
+/* the provider's groups */
+.tvm-g{display:flex;align-items:center;gap:0;border-inline-start:2px solid transparent;padding-inline-start:6px}
+.tvm-g.on{border-inline-start-color:var(--w100);background:var(--w06)}
+.tvm-g-open{flex:1;min-width:0;display:flex;align-items:baseline;gap:10px;border:0;padding:8px;padding-inline-start:12px;text-align:start;font-size:14px;color:var(--w80)}
+.tvm-g .tvm-cb{opacity:0}
+.tvm-g:hover .tvm-cb,.tvm-g .tvm-cb:focus-visible,.tvm-g.sel .tvm-cb,.tvm[data-selecting="groups"] .tvm-g .tvm-cb{opacity:1}
+@media (pointer:coarse){.tvm-g .tvm-cb{opacity:1}}
+.tvm-g-open:hover{color:var(--w100)}
+.tvm-g-open .tvm-nm{flex:1;flex-wrap:nowrap}
+/* In the narrow list of groups the tags give way before the name does. */
+.tvm-g-open .tvm-nm .tvm-c-name{flex:0 0 auto;max-width:75%}
+.tvm-g-open .tvm-tags{flex:0 1 auto;min-width:0;overflow:hidden}
+/* A country or tier the provider puts before its groups, over the groups that have it. */
+.tvm-g-pre{font:500 11.5px 'Manrope';letter-spacing:.08em;color:var(--w50);padding:16px 8px 4px;padding-inline-start:32px;border-bottom:1px solid var(--w06)}
+.tvm-g-pre:first-child{padding-top:6px}
+/* Providers' names: a quiet prefix, the name, and quality tags (lib: tvmTidy). */
+/* Tags go under the name when there is no room beside it, rather than cutting the name short. */
+.tvm-nm{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 8px;min-width:0}
+.tvm-nm .tvm-c-name{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tvm-pre{flex:none;font-size:.78em;letter-spacing:.04em;color:var(--w50)}
+.tvm-tags{flex:none;display:inline-flex;gap:4px;align-self:center}
+.tvm-tags i{font:500 10px/1 'Manrope';font-style:normal;letter-spacing:.04em;color:var(--w60);border:1px solid var(--w25);border-radius:3px;padding:2px 4px 2px}
+h3 .tvm-nm .tvm-c-name{white-space:normal}
+h3 .tvm-tags i{font-size:11px}
+.tvm-g-count{color:var(--w50);font-size:12.5px}
+.tvm-g-count.all{color:var(--green)}
+.tvm-g-count.some{color:var(--w90)}
+.tvm-g.hid .tvm-g-name{color:var(--w50)}
+
+/* a group's channels, or a search */
+.tvm-ch-head{padding:20px 0 14px;position:sticky;top:0;background:var(--bg);z-index:1;border-bottom:1px solid var(--w10);margin-bottom:4px}
+.tvm-ch-head h3{font:400 22px/1.2 'Outfit';color:var(--w100);overflow-wrap:anywhere}
+.tvm-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}
+.tvm-actions .pill{padding:7px 12px;font-size:12px}
+.tvm-state{font-size:13.5px;color:var(--w80)}
+.tvm-state.all::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-inline-end:8px;vertical-align:1px}
+.tvm-check{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;color:var(--w80);cursor:pointer}
+.tvm-ch-head .tvm-all{padding:14px 6px 0}
+.tvm-c{display:grid;grid-template-columns:18px minmax(0,1fr) auto auto;align-items:center;gap:14px;border-bottom:1px solid var(--w06);
+  padding:9px 6px;font-size:15px;color:var(--w70);cursor:pointer;user-select:none;min-height:48px}
+.tvm-c:hover{color:var(--w100);background:var(--w06)}
+.tvm-c.in .tvm-c-name{color:var(--w100)}
+/* In the lineup: its number there, with the green of "in" and when starred. */
+.tvm-c-in{font:300 17px 'Outfit';color:var(--w80);display:inline-flex;align-items:center;gap:8px}
+.tvm-c-in::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green)}
+.tvm-c-in.fav{color:var(--green)}
+.tvm-quick{border:1px solid var(--w25);padding:5px 10px;font-size:12.5px;color:var(--w80);opacity:0;min-width:72px}
+.tvm-c:hover .tvm-quick,.tvm-quick:focus-visible{opacity:1}
+.tvm-quick.out:hover{color:var(--red);border-color:var(--red)}
+@media (pointer:coarse){.tvm-quick{opacity:1}}
+.tvm-c-main{min-width:0;display:flex;flex-direction:column}
+.tvm-c-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tvm-c-meta{font-size:12.5px;color:var(--w60);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tvm-c-num{font:300 17px 'Outfit';color:var(--w60)}
+.tvm-c.off .tvm-c-name{color:var(--w50)}
+
+/* the lineup: numbers on a ruler */
+.tvm-pane-lineup .tvm-scroll{padding-inline-start:0}
+.tvm-sec,.tvm-row-fav{--spine:92px;position:relative;margin-bottom:6px}
+.tvm-sec-head{display:grid;grid-template-columns:var(--spine) minmax(0,1fr);align-items:start;gap:0 16px;padding:22px 0 6px;
+  background:linear-gradient(var(--w25),var(--w25)) calc(var(--spine) + 8px) 0/1px 100% no-repeat}
+.tvm-sec-head::after{content:'';position:absolute;inset-inline-start:calc(var(--spine) + 1px);top:39px;width:8px;height:1px;background:var(--w60)}
+.tvm-row-fav .tvm-sec-head::after{display:none}
+.tvm-spine{text-align:end;grid-row:span 2}
+.tvm-range{border:0;padding:0;display:inline-flex;flex-direction:column;align-items:flex-end;color:var(--w100);background:none;text-align:end}
+.tvm-first{font:200 30px/1 'Outfit';letter-spacing:-.02em;white-space:nowrap}
+.tvm-last{font-size:12.5px;color:var(--w60);margin-top:5px;white-space:nowrap}
+.tvm-range:hover .tvm-first{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:6px;text-decoration-color:var(--w35)}
+/* A start the owner chose rather than one that follows on. */
+.tvm-range.set .tvm-first{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:6px;text-decoration-color:var(--w60)}
+.tvm-from{width:84px;height:36px;text-align:end;font:300 22px 'Outfit'}
+.tvm-star-big{color:var(--green);display:inline-block;transform:scale(1.6);transform-origin:right center;margin-top:8px}
+.tvm-sec-main{min-width:0}
+.tvm-sec-main h3{font:400 18px/1.25 'Manrope';color:var(--w100)}
+.tvm-h-btn{border:0;padding:0;font:inherit;color:inherit;text-align:start;background:none;overflow-wrap:break-word}
+.tvm-h-btn:hover{text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--w35)}
+.tvm-sec-acts{grid-column:2;display:flex;align-items:center;gap:2px;padding:4px 0 0;padding-inline-end:12px}
+.tvm-sec-acts > .tvm-cb{margin-inline-end:12px}
+.tvm-sec-acts .tvm-textbtn{margin-inline-start:14px}
+.tvm-sec-acts .tvm-ib{color:var(--w50)}
+.tvm-count{display:inline-flex;align-items:center;gap:6px;border:0;padding:6px 0;font-size:12.5px;color:var(--w60);margin-inline-end:auto;background:none}
+.tvm-count:hover{color:var(--w100)}
+.tvm-sec.wait .tvm-range{color:var(--w50)}
+.tvm-sec.flash{animation:tvmFlash 1.4s ease-out}
+@keyframes tvmFlash{from{background:var(--w10)}to{background:transparent}}
+@media (prefers-reduced-motion:reduce){.tvm-sec.flash{animation:none}}
+.tvm-lcs,.tvm-favs{list-style:none}
+.tvm-lc,.tvm-fav{display:grid;grid-template-columns:var(--spine) 18px 28px minmax(0,1fr) auto 32px;align-items:center;gap:0 12px;min-height:46px;padding-inline-end:12px;
+  background:linear-gradient(var(--w25),var(--w25)) calc(var(--spine) + 8px) 0/1px 100% no-repeat}
+.tvm-fav{grid-template-columns:var(--spine) 28px minmax(0,1fr) auto}
+.tvm-lc:not(:has(.tvm-logo)){grid-template-columns:var(--spine) 18px minmax(0,1fr) auto 32px}
+.tvm-fav:not(:has(.tvm-logo)){grid-template-columns:var(--spine) minmax(0,1fr) auto}
+.tvm-lc{cursor:pointer;user-select:none}
+.tvm-lc > .tvm-cb{margin-inline-start:4px;opacity:0}
+.tvm-lc:hover > .tvm-cb,.tvm-lc.sel > .tvm-cb,.tvm-lc > .tvm-cb:focus-visible,.tvm[data-selecting="lineup"] .tvm-lc > .tvm-cb{opacity:1}
+@media (pointer:coarse){.tvm-lc > .tvm-cb{opacity:1}}
+.tvm-fav > .tvm-logo{margin-inline-start:4px}
+.tvm-num{text-align:end;font:300 17px 'Outfit';color:var(--w60);padding-inline-end:4px}
+.tvm-lc.fav .tvm-num,.tvm-fav .tvm-num{color:var(--green)}
+.tvm-lc:hover,.tvm-fav:hover{background-color:var(--w06)}
+.tvm-lc-main{min-width:0;display:flex;flex-direction:column;padding:6px 0}
+.tvm-lc .tvm-c-name,.tvm-fav .tvm-c-name{color:var(--w90);font-size:14.5px}
+.tvm-lc.bad .tvm-c-name{color:var(--w50)}
+.tvm-lc .tvm-input{height:32px;font-size:14.5px;width:100%}
+.tvm-logo{width:28px;height:28px;object-fit:contain;border-radius:3px}
+.tvm-logo.none{background:var(--w06)}
+.tvm-row-acts{display:flex;gap:0;opacity:0}
+.tvm-lc:hover .tvm-row-acts,.tvm-lc:focus-within .tvm-row-acts,.tvm-fav:hover .tvm-row-acts,.tvm-fav:focus-within .tvm-row-acts{opacity:1}
+.tvm-fav .tvm-row-acts .star{opacity:1}
+@media (pointer:coarse){.tvm-row-acts{opacity:1}}
+.tvm-grip{position:absolute;inset-inline-start:8px;color:var(--w35);cursor:grab;display:none}
+.tvm-fav{position:relative}
+.tvm-fav[draggable="true"] .tvm-grip,.tvm-lc[draggable="true"]:hover .tvm-grip{display:block}
+.dragging{opacity:.4}
+.drop-before{box-shadow:inset 0 2px 0 var(--w100)}
+.tvm-row-fav{padding-bottom:10px;border-bottom:1px solid var(--w10);margin-bottom:0}
+/* Home's row folded: the starred channels in order, as a line of names. */
+/* Home's row folded: its tiles in order, as the TV shows them, scrolled sideways. */
+.tvm-tiles{list-style:none;display:flex;gap:10px;overflow-x:auto;padding:8px 12px 12px;padding-inline-start:calc(var(--spine) + 25px);scrollbar-width:thin;scrollbar-color:var(--w25) transparent;
+  overscroll-behavior-x:contain}
+.tvm-tile{width:92px;border:0;padding:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:start;background:none;color:var(--w80)}
+.tvm-tile:hover{color:var(--w100)}
+.tvm-tile-logo{width:92px;height:54px;border-radius:4px;background:var(--w06);display:grid;place-items:center;position:relative;overflow:hidden}
+.tvm-tile-logo img{max-width:78%;max-height:72%;object-fit:contain;position:relative}
+.tvm-tile-logo::before{content:attr(data-mono);position:absolute;inset:0;display:grid;place-items:center;font:300 20px 'Outfit';color:var(--w50)}
+.tvm-tile-logo:has(img)::before{display:none}
+.tvm-tile:hover .tvm-tile-logo{box-shadow:inset 0 0 0 1px var(--w35)}
+.tvm-tile-num{font:400 14px/1 'Outfit';color:var(--green)}
+.tvm-tile-name{font-size:12px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tvm-lc.flash{animation:tvmFlash 1.4s ease-out}
+@media (prefers-reduced-motion:reduce){.tvm-lc.flash{animation:none}}
+/* The keys, on the middle pane before anything is open. */
+.tvm-keys{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;margin-top:22px;font-size:13.5px;color:var(--w60);align-items:baseline}
+.tvm-keys dt{white-space:nowrap;text-align:end}
+.tvm-keys kbd{font:500 12px 'Manrope';color:var(--w90);border:1px solid var(--w25);border-bottom-width:2px;border-radius:4px;padding:2px 7px}
+.tvm-pane-head-row{flex-direction:row;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 18px}
+.tvm-tools{display:flex;gap:18px}
+
+/* The foot: what was just done (with Undo), and the bar for the selection,
+   inverted as the selection is. */
+.tvm-foot{position:absolute;inset-inline-start:0;inset-inline-end:0;bottom:22px;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;z-index:5;padding:0 16px}
+.tvm-foot > *{pointer-events:auto}
+.tvm-toast{display:flex;align-items:center;gap:18px;background:var(--bg);border:1px solid var(--w25);padding:10px 12px;padding-inline-start:16px;font-size:14px;color:var(--w90);
+  box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:min(640px,100%)}
+.tvm-toast.err{border-color:var(--red)}
+.tvm-toast[hidden],.tvm-dock[hidden]{display:none}
+.tvm-toast-btn{border:0;padding:4px 6px;font-size:14px;font-weight:600;color:var(--w100);text-decoration:underline;text-underline-offset:3px;background:none}
+.tvm-dock{display:flex;align-items:center;gap:6px;background:var(--w100);color:var(--btn-on-fg);padding:6px;padding-inline-start:18px;box-shadow:0 12px 36px rgba(0,0,0,.5);max-width:100%;
+  animation:tvmDockIn .18s ease-out}
+@keyframes tvmDockIn{from{transform:translateY(12px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.tvm-dock{animation:none}}
+.tvm-dock-n{font:400 15px 'Outfit';margin-inline-end:10px;white-space:nowrap}
+.tvm-dock-acts{display:flex;flex-wrap:wrap;gap:6px}
+.tvm .tvm-dock-btn{border:1px solid rgba(128,128,128,.45);color:var(--btn-on-fg);background:transparent;padding:9px 14px;font-size:13.5px;font-weight:500;white-space:nowrap}
+.tvm .tvm-dock-btn:hover{border-color:var(--btn-on-fg);color:var(--btn-on-fg)}
+.tvm .tvm-dock-btn.primary{background:var(--btn-on-fg);color:var(--w100);border-color:var(--btn-on-fg)}
+.tvm .tvm-dock-btn[aria-expanded="true"]{background:rgba(128,128,128,.2)}
+.tvm-dock-x{border:0;width:36px;height:36px;padding:0;display:grid;place-items:center;color:var(--btn-on-fg);background:none;margin-inline-start:4px}
+.tvm-dock-x:hover{color:var(--btn-on-fg);background:rgba(128,128,128,.2)}
+.tvm-dock-wrap{position:relative}
+.tvm-menu{position:absolute;bottom:calc(100% + 10px);inset-inline-start:0;min-width:260px;width:max-content;max-width:min(420px,90vw);max-height:50vh;overflow:auto;background:var(--bg);border:1px solid var(--w25);
+  box-shadow:0 12px 36px rgba(0,0,0,.5);display:flex;flex-direction:column;padding:4px 0}
+.tvm-menu button{border:0;text-align:start;padding:10px 14px;font-size:14px;color:var(--w80);display:flex;gap:12px;align-items:baseline}
+.tvm-menu button:hover{background:var(--w06);color:var(--w100)}
+.tvm-menu .num{font:300 16px 'Outfit';color:var(--w60);min-width:36px;text-align:end}
+
+/* The grid follows the page's direction; its number ruler must follow too. */
+[dir=rtl] .tvm-sec-head,[dir=rtl] .tvm-lc,[dir=rtl] .tvm-fav{background-position:right calc(var(--spine) + 8px) top 0}
+[dir=rtl] .tvm-star-big{transform-origin:left center}
+[dir=rtl] .tvm-back svg{transform:scaleX(-1)}
+
+/* One pane at a time below 980px, chosen by the tabs. */
+@media (max-width:980px){
+  .tvm-top{flex-wrap:wrap;gap:12px 16px;padding:14px 16px}
+  .tvm-search{order:3;width:100%}
+  .tvm-tabs{display:flex;border-bottom:1px solid var(--w10);padding:0 8px}
+  .tvm-tabs button{flex:1;border:0;padding:12px 6px;font-size:14px;color:var(--w60);border-bottom:2px solid transparent}
+  .tvm-tabs button[aria-selected="true"]{color:var(--w100);border-bottom-color:var(--w100)}
+  .tvm-tabs .num{color:var(--w50);font-size:12.5px}
+  .tvm-body{grid-template-columns:minmax(0,1fr)}
+  .tvm-pane{display:none;border-inline-end:0}
+  .tvm[data-pane="groups"] .tvm-pane[data-pane="groups"],
+  .tvm[data-pane="channels"] .tvm-pane[data-pane="channels"],
+  .tvm[data-pane="lineup"] .tvm-pane[data-pane="lineup"]{display:flex}
+  .tvm-scroll{padding:0 16px 48px}
+  .tvm-sec,.tvm-row-fav{--spine:68px}
+  .tvm-first{font-size:24px}
+  .tvm-lc,.tvm-fav{padding-inline-end:4px}
+  /* No room for a row's own buttons: the bar does it, renaming too. */
+  .tvm-lc .tvm-row-acts{display:none}
+  .tvm-lc{grid-template-columns:var(--spine) 18px 28px minmax(0,1fr) 0 32px}
+  #tvm-summary{display:none}
+  .tvm-titles h2{font-size:22px}
+  .tvm-foot{bottom:12px}
+  .tvm-dock{width:100%;flex-wrap:wrap;padding:8px 6px;padding-inline-start:14px}
+  .tvm-dock-acts{order:3;width:100%;padding:4px 0 2px}
+  .tvm-dock-x{margin-inline-start:auto}
+}
+/* Brightness is numeric, rather than a list of choices. */
+#huesync-brightness{background-image:none;padding-right:10px;width:116px}

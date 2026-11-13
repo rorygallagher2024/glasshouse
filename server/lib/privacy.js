@@ -43,7 +43,19 @@ var ADBLOCK_ADS = [
   'bwlkup.alphonso.tv',
   // Seen on port 4433 from a factory-reset TV, while its setup still showed
   // the agreements unanswered (docs/ACR.md). Numbered siblings are not known.
-  'eu-acr86.alphonso.tv'
+  'eu-acr86.alphonso.tv',
+  // LG's remote diagnostics (/usr/sbin/remotediag on an OLED77C5PUA, webOS
+  // 11.2.0): the servers it sends screen captures and logs to once LG support
+  // starts a session. Nothing else names them.
+  'rone-aic.lge.com',
+  'rone-eic.lge.com',
+  'rone-kic.lge.com',
+  'rone-saic.lge.com',
+  'rone-tv-aic.lge.com',
+  'rone-tv-cic.lge.com',
+  'rone-tv-eic.lge.com',
+  'rone-tv-kic.lge.com',
+  'rone-tv-saic.lge.com'
 ];
 
 /*
@@ -51,31 +63,59 @@ var ADBLOCK_ADS = [
  * aic.cdpbeacon.lgtvcommon.com), and a hosts file only matches whole names. A
  * TV uses its own country code and LG's regional ones, so those are listed
  * rather than every country, which would cost the B8 ~4ms a lookup (74KB
- * table). The bare lgtvsdp.com family also serves the Content Store, which is
- * why only its rdx2 ad subdomain is here.
+ * table). The bare lgtvsdp.com and nextlgsdp.com families also serve the
+ * Content Store, which is why only their rdx2 report subdomains are here: sdx
+ * hands out us.rdx2.nextlgsdp.com as its report upload URL (getRdxServerUrl)
+ * on a C4 on webOS 10.3.1. That one waits for the clock like the time servers
+ * (see scheduleSdpBlock). The Content Store posts its request logs, with the
+ * wired MAC address, to <store host's first label>.elastic.lgwebostv.com,
+ * apart from the catalog.
  */
 var ADBLOCK_REGIONAL = [
   'info.lgsmartad.com',
   'rdx2.lgtvsdp.com',
+  'rdx2.nextlgsdp.com',
+  'elastic.lgwebostv.com',
   'ibs.lgappstv.com',
   'ibsstat.lgappstv.com',
   'cdpbeacon.lgtvcommon.com',
   'cdpsvc.lgtvcommon.com',
-  'wau.lgtvcommon.com'
+  'wau.lgtvcommon.com',
+  // adlogservice, a Python script LG updates over the air and runs through
+  // com.webos.service.lsa, posts app and channel use with the TV's MAC address
+  // to aic.api.adts.lgtvcommon.com (OLED77C5PUA, webOS 11.2.0). Its own config
+  // gates it on the general terms alone, not on any advertising consent.
+  'api.adts.lgtvcommon.com'
 ];
 var ADBLOCK_REGION_PREFIXES = ['aic', 'eic', 'kic', 'eu'];
 // Until the TV has reported its country, the countries LG is seen using.
 var ADBLOCK_FALLBACK_COUNTRIES = ['us', 'gb', 'au', 'br', 'ca', 'de', 'fr'];
 var COUNTRY_FILE = '/var/lib/tvweb/country';
 
-function adBlockAds() {
+function regionPrefixes() {
   var country = (readTrimmed(COUNTRY_FILE) || '').toLowerCase();
-  var prefixes = ADBLOCK_REGION_PREFIXES.concat(/^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES);
-  var list = ADBLOCK_ADS.slice();
-  ADBLOCK_REGIONAL.forEach(function (name) {
-    [name].concat(prefixes.map(function (p) { return p + '.' + name; }))
-      .forEach(function (h) { if (list.indexOf(h) === -1) list.push(h); });
+  return ADBLOCK_REGION_PREFIXES.concat(/^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES);
+}
+
+/**
+ * @param {string[]} names
+ * @param {string[]} [prefixes]
+ * @param {string} [separator]
+ */
+function withPrefixes(names, prefixes, separator) {
+  prefixes = prefixes || regionPrefixes();
+  separator = separator || '.';
+  var out = [];
+  names.forEach(function (name) {
+    [name].concat(prefixes.map(function (p) { return p + separator + name; }))
+      .forEach(function (h) { if (out.indexOf(h) === -1) out.push(h); });
   });
+  return out;
+}
+
+function adBlockAds() {
+  var list = ADBLOCK_ADS.slice();
+  withPrefixes(ADBLOCK_REGIONAL).forEach(function (h) { if (list.indexOf(h) === -1) list.push(h); });
   return list;
 }
 
@@ -91,15 +131,53 @@ var ADBLOCK_PLATFORM = [
   'cdplauncher.lgtvcommon.com',
   'lgchhomeapp.lgtvcommon.com',
   'lgtviot.com',
-  'ueiwsp.com'
+  'ueiwsp.com',
+  // Amazon's Alexa SDK (libAVSCommon) fetches /generate_204 from it on a timer
+  // to tell whether the TV is online, while Alexa runs; blocked, Alexa reads
+  // the TV as offline.
+  'avsxappcaptiveportal.com',
+  // Google push messaging is a service endpoint, not an ad or telemetry host.
+  'mtalk.google.com',
+  // The content CDN on webOS 11, from sdx's server list (OLED77C5PUA, 11.2.0).
+  'ngfts.tv.wiselg.com'
 ];
+
+// These carry ThinQ and account services, so regional coverage belongs only
+// in Everything. The firmware names are recorded in TV-RESEARCH.md.
+var ADBLOCK_PLATFORM_REGIONAL = [
+  'lgtviot.com',
+  'api.lgtviot.com',
+  'push.lgtviot.com',
+  'sports.lgtviot.com',
+  'buddy.lgtviot.com',
+  'lgeapi.com'
+];
+var ADBLOCK_THINQ_REGIONAL = ['connect-client.lgthinq.com', 'common.lgthinq.com'];
+// ThinQ uses a hyphen before the service name, rather than a DNS label.
+var ADBLOCK_THINQ_PREFIXES = ['aic', 'eic', 'kic'];
 
 var ADBLOCK_SDP = [
   'nextlgsdp.com',
   'us.nextlgsdp.com',
   'gb.nextlgsdp.com',
+  'de.nextlgsdp.com',
   'eu.nextlgsdp.com'
 ];
+/*
+ * webOS 11 moved the service platform to tv.wiselg.com: on an OLED77C5PUA
+ * (11.2.0) sdx's server list names <country>.tv.wiselg.com (US) for sign-in,
+ * set-up, logging and Home, and <region>.tv.wiselg.com (AIC) for the Content
+ * Store, search, app usage statistics (ibs) and the diagnostics report upload,
+ * rdx/10.0.0/. One host serves them all, so it can only go with the platform,
+ * and the clock comes from it there too (systemTimeSource "sdp"), so it waits
+ * for the grace period as nextlgsdp.com does.
+ */
+var ADBLOCK_SDP_REGIONAL = ['tv.wiselg.com', 'nextlgsdp.com',
+                            'ibs.nextlgsdp.com', 'ibsstat.nextlgsdp.com'];
+
+function adBlockSdp() {
+  return ADBLOCK_SDP.concat(withPrefixes(ADBLOCK_SDP_REGIONAL));
+}
 var SDP_POLL_INTERVAL_MS = 3000;
 var SDP_SLOW_POLL_INTERVAL_MS = 30000;
 var SDP_SOURCE_WAIT_MS = 120000;
@@ -117,7 +195,10 @@ var sdpCapTimer = null;
  * update blocking off, silently, so its hosts go into this table too.
  */
 var HBC_BLOCK_UPDATES_FLAG = '/var/luna/preferences/webosbrew_block_updates';
-var HBC_UPDATE_HOSTS = ['snu.lge.com', 'su-dev.lge.com', 'su.lge.com', 'su-ssl.lge.com'];
+// The four names the Homebrew Channel's startup.sh blocks, plus /usr/sbin/update's
+// dev endpoint (snu-dev) and download CDN (nsu, docs/development/TV-RESEARCH.md).
+var HBC_UPDATE_HOSTS = ['snu.lge.com', 'su.lge.com', 'su-ssl.lge.com',
+                        'snu-dev.lge.com', 'su-dev.lge.com', 'nsu.lge.com'];
 
 /*
  * The owner's own list, uploaded from the dashboard. Only its names are kept,
@@ -350,25 +431,36 @@ function isSdpGracePeriodActive() {
   return sdpGraceActive;
 }
 
+function adBlockPlatformBase() {
+  return ADBLOCK_PLATFORM.concat(withPrefixes(ADBLOCK_PLATFORM_REGIONAL),
+    withPrefixes(ADBLOCK_THINQ_REGIONAL, ADBLOCK_THINQ_PREFIXES, '-'));
+}
+
 function adBlockPlatform() {
-  var list = ADBLOCK_PLATFORM.slice();
+  var list = adBlockPlatformBase();
   var host = storeHost();
-  if (host && list.indexOf(host) === -1) list.push(host);
-  // The TV sets its clock from nextlgsdp.com's X-Server-Time header, not NTP
-  // (systemTimeSource "sdp" on a C2), so after a power cut it is left
-  // reachable until the time is valid: see scheduleSdpBlock.
-  if (!isSdpGracePeriodActive()) list = list.concat(ADBLOCK_SDP);
-  return list;
+  // The TV sets its clock from the SDP servers' X-Server-Time header, not NTP
+  // (systemTimeSource "sdp" on a C2, and on a C5 on webOS 11.2), so after a
+  // power cut they are left reachable until the time is valid: see
+  // scheduleSdpBlock. On webOS 11 the store host is one of them.
+  var later = adBlockSdp();
+  if (host && isSdpName(host)) later.push(host);
+  else if (host) list.push(host);
+  if (!isSdpGracePeriodActive()) list = list.concat(later);
+  var out = [];
+  list.forEach(function (h) { if (out.indexOf(h) === -1) out.push(h); });
+  return out;
 }
 
 // This version's own names for a tier, without the owner's list.
 function ownBlockList(mode) {
   if (mode === 'off') return [];
-  return mode === 'full' ? adBlockAds().concat(adBlockPlatform()) : adBlockAds();
+  var list = mode === 'full' ? adBlockAds().concat(adBlockPlatform()) : adBlockAds();
+  return isSdpGracePeriodActive() ? list.filter(function (n) { return !isSdpName(n); }) : list;
 }
 
 function isSdpName(name) {
-  return /(^|\.)nextlgsdp\.com$/.test(name);
+  return /(^|\.)(nextlgsdp\.com|tv\.wiselg\.com)$/.test(name);
 }
 
 // What the table blocks for a tier, the owner's list included.
@@ -529,9 +621,9 @@ function applyCustom(cb, extra) {
   applyHostsTable(reply);
 }
 
-// Whether the clock wait applies: the Everything tier, or the owner's list naming the time servers.
+// Whether the clock wait applies: a tier or the owner's list naming a host under the time servers' domain.
 function waitsForSdp(mode) {
-  if (mode === 'full') return true;
+  if (mode === 'full' || (mode === 'ads' && adBlockAds().some(isSdpName))) return true;
   var c = customHosts();
   return mode !== 'off' && !!c && c.enabled && c.names.some(isSdpName);
 }
@@ -584,6 +676,36 @@ function tvUpdatesBlocked() {
   return fs.existsSync(HBC_BLOCK_UPDATES_FLAG);
 }
 
+/*
+ * Answer device scans on the TV, until 0.139: each address on the TV's network
+ * named as itself in the table. iconnectivity does not read the table (#244),
+ * so it was taken out. A flag left by it is removed at start and the table
+ * rebuilt without those lines, which are still told apart from other tools'.
+ */
+var OLD_LOCAL_LOOKUPS_FLAG = '/var/lib/tvweb/local_lookups';
+
+function ip4Number(ip) {
+  var p = String(ip).split('.');
+  if (p.length !== 4) return null;
+  var n = 0;
+  for (var i = 0; i < 4; i++) {
+    var b = +p[i];
+    if (!/^\d{1,3}$/.test(p[i]) || b > 255) return null;
+    n = n * 256 + b;
+  }
+  return n;
+}
+
+function isLocalLookupLine(line) {
+  var parts = String(line).trim().split(/\s+/);
+  return parts.length === 2 && parts[0] === parts[1] && ip4Number(parts[0]) !== null;
+}
+
+// Whether the table must be up: for a tier or update blocking.
+function tableWanted(mode) {
+  return mode !== 'off' || tvUpdatesBlocked();
+}
+
 // Both families for every name. A sinkhole with no AAAA record leaves the
 // resolver to ask DNS for one, and the connection goes through on IPv6.
 function sinkhole(lines, host) {
@@ -601,13 +723,13 @@ function sinkhole(lines, host) {
  * switched off. 50-tvweb.sh carries the rest over at boot the same way.
  */
 function foreignHostsLines(text) {
-  var managed = adBlockAds().concat(ADBLOCK_PLATFORM, ADBLOCK_SDP, HBC_UPDATE_HOSTS);
+  var managed = adBlockAds().concat(adBlockPlatformBase(), adBlockSdp(), HBC_UPDATE_HOSTS);
   var kept = [];
   var lines = String(text || '').split('\n');
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i].trim();
     if (!line || line.charAt(0) === '#') continue;
-    if (/^(0\.0\.0\.0|::)\s/.test(line) || /localhost|ip6-/.test(line)) continue;
+    if (/^(0\.0\.0\.0|::)\s/.test(line) || /localhost|ip6-/.test(line) || isLocalLookupLine(line)) continue;
     var names = line.split(/\s+/).slice(1);
     if (names.some(function (n) { return managed.indexOf(n.toLowerCase()) !== -1; })) continue;
     if (kept.indexOf(line) === -1) kept.push(line);
@@ -775,7 +897,7 @@ function applyHostsTable(cb) {
   var mode = flagMode();
   var mounted = isTableMounted();
   var done = function () { clearCache(); cb(null); };
-  if (mode !== 'off' || tvUpdatesBlocked()) {
+  if (tableWanted(mode)) {
     try {
       writeHostsTable(mode);
     } catch (e) {
@@ -850,10 +972,14 @@ function setTvUpdatesBlocked(on, cb) {
 function checkBootAdBlock(cliMode) {
   if (cliMode) return;
   try {
+    if (fs.existsSync(OLD_LOCAL_LOOKUPS_FLAG)) {
+      fs.unlinkSync(OLD_LOCAL_LOOKUPS_FLAG);
+      if (isTableMounted()) return applyHostsTable(function () {});
+    }
     // Rebuilt from the list in this version, so an update that adds names
     // takes effect without the mode being switched off and on.
     var mode = flagMode();
-    var need = mode !== 'off' || tvUpdatesBlocked();
+    var need = tableWanted(mode);
     if (need) writeHostsTable(mode);
     if (need && !isTableMounted()) {
       execFile('/bin/mount', ['--bind', ADBLOCK_HOSTS_FILE, '/etc/hosts'], { timeout: 3000 }, function (err) {
@@ -1193,7 +1319,7 @@ function collectPrivacy(cb) {
               acrSwitch(out.acr, out.consent, daemons, function () {
                 readMicSwitch(function (mic) {
                   if (mic) out.microphone = mic;
-                  lgSettingsModule.collect('promotions', function (ls) {
+                  lgSettingsModule.collect(['promotions', 'uploads'], function (ls) {
                     out.lgSettings = ls.rows;
                     out.simple = simpleSummary(out);
                     cachedPrivacy = out;
@@ -1250,6 +1376,11 @@ function simpleSummary(p) {
   (p.daemons || []).forEach(function (x) {
     // Only what is running: one that is merely allowed to start is not on.
     if (!x.onDemand && x.stoppable && x.running) reports.push({ label: msg('srv.privacy.item.running', '{name} is running', { name: x.label }), service: x.name });
+  });
+  // LG's log upload settings, from lgsettings.js: the uploader reads them
+  // before sending anything, and LG's own menus have no switch for them.
+  (p.lgSettings || []).forEach(function (r) {
+    if (r.section === 'uploads' && r.on && writable) reports.push({ label: msg('srv.privacy.item.upload', '{name} is on', { name: r.title }), action: 'lgSetting', value: { id: r.id, on: false } });
   });
 
   // LG's own ads and tips on screen, from lgsettings.js. Switching them off
@@ -1434,6 +1565,7 @@ module.exports = {
   adBlockList: adBlockList,
   ownBlockList: ownBlockList,
   parseCustomHosts: parseCustomHosts,
+  customHosts: customHosts,
   setCustomHosts: setCustomHosts,
   customSummary: customSummary,
   setAdBlock: setAdBlock,

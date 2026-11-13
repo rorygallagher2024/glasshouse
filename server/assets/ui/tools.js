@@ -133,7 +133,7 @@ async function loadLogs(silent = false) {
     if (useSince && res.incremental) {
       if (fresh.length) {
         toolsEntries = toolsEntries.concat(fresh)
-          .sort((a, b) => a.mono - b.mono)
+          .sort((a, b) => (a.boot || 0) - (b.boot || 0) || a.mono - b.mono)
           .slice(-toolsLimit);
       }
     } else {

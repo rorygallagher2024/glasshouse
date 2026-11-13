@@ -23,9 +23,13 @@ var ha = require(path.join(serverDir, 'lib', 'ha.js'));
 var rowsFile = args[0] || path.join(__dirname, '..', 'test', 'fixtures', 'lgsettings-c2-webos22.json');
 var lgRows = JSON.parse(fs.readFileSync(rowsFile, 'utf8')).rows || [];
 
+// Synthetic data only: never use a raw setup capture for discovery validation.
+var hueFixture = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'test', 'fixtures', 'huesync-settings.json'), 'utf8'));
+
 // No filterWithholds: it only removes entities, and every one is checked.
 var entities = ha.buildEntities({
   pfx: 'tv', allowPower: true, isOled: true, piccap: true, huesync: true,
+  huesyncSettings: hueFixture.settings,
   installedApps: [{ id: 'youtube.leanback.v4', title: 'YouTube' }],
   pictureModes: [{ value: 'hdrGame', label: 'HDR Game' }, { value: 'hdrVivid', label: 'HDR Vivid' }],
   lgRows: lgRows

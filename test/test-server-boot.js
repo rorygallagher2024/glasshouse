@@ -12,6 +12,8 @@
  * runs (default 15, seven telemetry rounds).
  *
  * Strict ES5: runs on node 0.12, the B8's version.
+ *
+ * @slow: started first by run-all.js, which runs a few suites at a time.
  */
 var child = require('child_process');
 var fs = require('fs');
@@ -42,10 +44,7 @@ function rmrf(p) {
   } else fs.unlinkSync(p);
 }
 
-function freePort(cb) {
-  var s = net.createServer();
-  s.listen(0, '127.0.0.1', function () { var p = s.address().port; s.close(function () { cb(p); }); });
-}
+var freePort = require('./ports').freePort;
 
 function bufFrom(bytes) {
   return (typeof Buffer.from === 'function') ? Buffer.from(bytes) : new Buffer(bytes);
@@ -94,7 +93,7 @@ Broker.prototype.last = function (re) {
 
 function get(port, p, cb) {
   var t0 = Date.now(), done = false;
-  var req = http.get({ host: '127.0.0.1', port: port, path: p }, function (res) {
+  var req = http.get({ host: '127.0.0.1', port: port, path: p, agent: false }, function (res) {
     var body = '';
     res.on('data', function (c) { body += c; });
     res.on('end', function () { if (!done) { done = true; cb(res.statusCode, body, Date.now() - t0); } });
@@ -140,6 +139,8 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
       env.FAKE_ROOT = root;
       env.TVWEB_LUNA_SEND = FAKE_LUNA;
       env.FAKE_LUNA_LOG = path.join(root, 'luna-calls.jsonl');
+      // Child starts without the TV's spacing between them, which nothing here is about.
+      env.FAKE_LAUNCH_GAP_MS = '0';
       if (chaos) env.FAKE_LUNA_CHAOS = '1';
       if (missingModule) env.BOOT_MISSING_MODULE = missingModule;
 
@@ -180,7 +181,10 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
         }
         var beat = path.join(root, 'var/run/tvweb.beat');
         waitFor('the heartbeat', function () { return fs.existsSync(beat); }, 5000, function () {
-          waitFor('telemetry at the broker', function () { return mqttDisabled ? out.indexOf('mqtt: disabled') !== -1 : broker.last(/^boot\/telemetry$/); }, 20000, function () {
+          // Nothing is published until a stats read finishes. With every
+          // call to a misbehaving TV cut off or retried, the first took over
+          // 40 s on CI's node 0.12 runner.
+          waitFor('telemetry at the broker', function () { return mqttDisabled ? out.indexOf('mqtt: disabled') !== -1 : broker.last(/^boot\/telemetry$/); }, chaos ? 90000 : 20000, function () {
             waitFor('discovery at the broker', function () { return mqttDisabled || broker.last(/^homeassistant\/.*\/config$/); }, 20000, function () {
 
             /*
@@ -211,7 +215,7 @@ function phase(name, chaos, next, mqttDisabled, missingModule) {
                     try { st = JSON.parse(ib); } catch (e) {}
                     if (ic !== 200 || !st || st.state !== 'idle') fail('install status answered ' + ic + ': ' + ib);
                   });
-                  http.get({ host: '127.0.0.1', port: port, path: '/api/apps/catalog', headers: { host: 'evil.example' } }, function (hr) {
+                  http.get({ host: '127.0.0.1', port: port, path: '/api/apps/catalog', headers: { host: 'evil.example' }, agent: false }, function (hr) {
                     hr.resume();
                     if (hr.statusCode !== 403) fail('a foreign Host reached the catalog route: ' + hr.statusCode);
                   }).on('error', function () {});

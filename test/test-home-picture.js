@@ -32,10 +32,10 @@ var MODES = {
   hdmi2: { sdr: 'filmMaker', hdr: 'hdrCinema', dolbyHdr: 'dolbyHdrCinema' },
   default: { sdr: 'filmMaker', hdr: 'hdrFilmMaker', dolbyHdr: 'dolbyHdrCinemaBright' },
   // Not read from the G3: the tuner input as a test case.
-  dtv: { sdr: 'cinema' }
+  dtv: { sdr: 'cinema', hdr: 'hdrCinema', dolbyHdr: 'dolbyHdrCinema', technicolorHdr: 'technicolorHdrTechnicolor' }
 };
 
-function setUp(files, Subscription) {
+function setUp(files, Subscription, channel) {
   var asked = [];
   homePicture.init({
     Subscription: Subscription,
@@ -47,6 +47,8 @@ function setUp(files, Subscription) {
     oled: { detectOled: function (cb) { cb(true); } },
     readFile: function (p) { return files.hasOwnProperty(p) ? files[p] : null; },
     luna: function (uri, payload, cb) {
+      if (/videooutput\/getStatus$/.test(uri)) return cb(channel ? channel.status : { returnValue: true, video: [] });
+      if (/broadcast\/getCurrentVideoInfo$/.test(uri)) return cb(channel.info);
       asked.push(payload);
       var dim = payload.dimension || {};
       if (payload.keys[0] === 'backlight') {
@@ -180,5 +182,117 @@ console.log('  ✓ HDR from the receiver: PQ, HLG, none, Dolby Vision');
 assert.equal(homePicture.refreshHz(status.replace('cvi_vfreq[2400]', 'cvi_vfreq[2397]'), 23), 23.97);
 assert.equal(homePicture.refreshHz('', 60), 60);
 console.log('  ✓ the rate in hundredths of a hertz, not the rounded Sig rate');
+
+setUp(FILES);
+var signals = [];
+[4, 2, 0].forEach(function (port) { homePicture.signal(port, function (r) { signals.push(r); }); });
+assert.deepEqual(signals[0], { ok: true, port: 4, signal: true }, 'HDMI 4, locked');
+assert.deepEqual(signals[1], { ok: true, port: 2, signal: false }, 'HDMI 2, nothing connected');
+assert.equal(signals[2].ok, false, 'no such input');
+console.log('  ✓ the preview asks whether an input has a picture, off its own receiver');
+
+setUp({});
+homePicture.signal(1, function (r) {
+  assert.deepEqual(r, { ok: true, port: 1, signal: null }, 'absent receiver proc reports unknown signal rather than false');
+});
+homePicture.picture('input', 1, function (r) {
+  assert.equal(r.ok, true);
+  assert.equal(r.signal, null);
+  assert.equal(r.signalKnown, false);
+});
+console.log('  ✓ boards without receiver proc files leave preview signal unknown instead of claiming no picture');
+
+// Sky News in Home's preview on the G3, as videooutput's getStatus answered.
+var skyNews = { video: [
+  { sink: 'MAIN', connected: true, connectedSource: 'VDEC', contentType: 'dtv', appId: 'com.webos.app.home', width: 544, height: 576,
+    frameRate: 2500, scanType: 'interlaced', videoInfo: { hdrType: 'none' } },
+  { sink: 'SUB0', connected: false, connectedSource: 'unknown', width: 0, height: 0 }
+] };
+skyNews.video[0].context = 'aB1b';
+
+// The broadcast service's reply for an SD channel in Home's preview on the G3.
+var sdInfo = { returnValue: true, appId: 'com.webos.app.home', videoInfo: { context: 'aB1b', content: 'dtv',
+  video: { width: 704, height: 576, frameRate: 25, IsBT2020: false, scanType: 'VIDEO_INTERLACED', hdrType: 'none' } } };
+[
+  ['hdrType', 'none', 'sdr', 'sdr'],
+  ['HDRType', 'HLG', 'hlg', 'hdr'],
+  ['hdrType', 'HDR10', 'hdr10', 'hdr'],
+  ['hdrType', 'DOLBY', 'dolby_vision', 'dolbyHdr'],
+  ['HDRType', 'DolbyVision', 'dolby_vision', 'dolbyHdr'],
+  ['HDRType', 'Prime', 'technicolor', 'technicolorHdr'],
+  ['HDRType', 'HLG', 'sdr', 'sdr', 'other']
+].forEach(function (c) {
+  var info = JSON.parse(JSON.stringify(sdInfo));
+  delete info.videoInfo.video.hdrType;
+  info.videoInfo.video[c[0]] = c[1];
+  if (c[4]) info.videoInfo.context = c[4];
+  setUp({}, null, { status: skyNews, info: info });
+  homePicture.picture('channel', null, function (r) {
+    assert.deepEqual(r.signal, { width: 544, height: 576, hz: 25, interlaced: true, broadcast: true,
+      chroma: null, bits: null, hdr: c[2], vrr: false, allm: false });
+    assert.equal(r.range, c[3], c[1] + ' selects its own settings range');
+    assert.equal(r.mode.raw, MODES.dtv[c[3]], c[1] + ' reads the matching stored picture mode');
+  });
+});
+setUp({}, null, { status: { video: [{ sink: 'MAIN', connected: true, contentType: 'vod', width: 3840, height: 2160 }] } });
+homePicture.picture('channel', null, function (r) { assert.equal(r.signal, null, 'an app\'s video is not a channel'); });
+console.log('  ✓ channel format, HDR context and the matching picture mode through the public picture read');
+
+var rtkActive = [
+  '===== HDMI STATUS =====',
+  'hpd_state : 1',
+  'hwport:1',
+  'timing_v_freq:500',
+  'timing_active_w:3840',
+  'timing_active_h:2160',
+  'timing_scan_type:1',
+  'color_depth:0',
+  'allm_mode:0',
+  'dolby_hdr_type:0',
+  'drm_version:1',
+  'drm_length:26',
+  'drm_eotf_type:0',
+  'avi_pixel_encoding:1',
+  'avi_vic:96',
+  'phy_lock_status:1',
+  'link_hdmi_5v:1',
+  'link_frame_rate_x100_hz:5000',
+  'link_color_depth:8',
+  'pixel_clock_khz:594000'
+].join('\n');
+var rtkIdle = [
+  '===== HDMI STATUS =====',
+  'hpd_state : 1',
+  'hwport:2',
+  'phy_lock_status:0',
+  'link_hdmi_5v:0'
+].join('\n');
+setUp({
+  '/proc/lgtv-driver/hdmi_status/hdmi.p0': rtkActive,
+  '/proc/lgtv-driver/hdmi_status/hdmi.p2': rtkIdle
+});
+homePicture.picture('input', 4, function (r) {
+  assert.notStrictEqual(r.signalKnown, false);
+  assert.deepEqual(r.signal, {
+    width: 3840, height: 2160, hz: 50,
+    chroma: 'YCbCr 4:2:2', bits: 8, hdr: 'sdr', vrr: false, allm: false
+  });
+  assert.equal(r.mode.raw, 'cinema');
+});
+homePicture.signal(4, function (r) {
+  assert.deepEqual(r, { ok: true, port: 4, signal: true }, 'locked Realtek reports active signal');
+});
+homePicture.picture('input', 2, function (r) {
+  assert.strictEqual(r.signal, null);
+  assert.notStrictEqual(r.signalKnown, false);
+});
+homePicture.signal(2, function (r) {
+  assert.deepEqual(r, { ok: true, port: 2, signal: false }, 'unlocked Realtek with hpd_state:1 reports no signal');
+});
+assert.equal(homePicture.sourceHdr(rtkActive, null), 'sdr', 'Realtek SDR from drm_eotf_type:0');
+assert.equal(homePicture.sourceHdr(rtkActive.replace('drm_eotf_type:0', 'drm_eotf_type:2'), null), 'hdr10', 'Realtek HDR10 from drm_eotf_type:2');
+assert.equal(homePicture.sourceHdr(rtkActive.replace('drm_eotf_type:0', 'drm_eotf_type:3'), null), 'hlg', 'Realtek HLG from drm_eotf_type:3');
+assert.equal(homePicture.sourceHdr(rtkActive.replace('dolby_hdr_type:0', 'dolby_hdr_type:1'), null), 'dolby_vision', 'Realtek Dolby Vision from dolby_hdr_type');
+console.log('  ✓ Realtek hdmi_status signal, refresh rate, bit depth, and HDR metadata');
 
 console.log('ALL test-home-picture.js assertions passed!');
