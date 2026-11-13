@@ -3087,4 +3087,23 @@ step('a Home press that only ends the screen saver opens nothing, however tvpowe
   });
 });
 
+// #1412: an A2 (webOS 7.3.0) took Glasshouse Home only through a sam restart,
+// and lost it when 0.145.0 stopped restarting sam.
+step('on webOS 7, where sam takes neither the nudge nor a block and release, Glasshouse Home takes its place through a restart', function (done) {
+  start(null, { webosVersion: '7.3.0' });
+  tv.rescanAbsent = true;
+  home.enable(function (r) {
+    assert.ok(r.ok, r.error);
+    assert.ok(tv.events.indexOf('restart') !== -1, 'sam restarted as the last way');
+    assert.ok(taken(), 'Glasshouse Home has LG\'s Home\'s place');
+    tv.events = [];
+    home.disable(function (d) {
+      assert.ok(d.ok, d.error);
+      assert.ok(tv.events.indexOf('restart') !== -1, 'and restarted to give it back');
+      assert.strictEqual(taken(), false, 'LG\'s Home has its place again');
+      done();
+    });
+  });
+});
+
 next();

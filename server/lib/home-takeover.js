@@ -68,6 +68,8 @@ var execFn = execFile;
 var killFn = function (pid) { process.kill(pid, 'SIGTERM'); };
 var blankWanted = function () { return false; };
 var blockFirst = function () { return false; };
+// Whether sam may be restarted when it takes neither the nudge nor a block and release.
+var restartAllowed = function () { return false; };
 
 function init(opts) {
   opts = opts || {};
@@ -85,6 +87,7 @@ function init(opts) {
   if (opts.kill) killFn = opts.kill;
   if (opts.blankAtStart) blankWanted = opts.blankAtStart;
   if (opts.blockFirst) blockFirst = opts.blockFirst;
+  if (opts.restartAllowed) restartAllowed = opts.restartAllowed;
 }
 
 function luna(uri, payload, cb) {
@@ -307,8 +310,10 @@ function samHasManifest(cb) {
 /*
  * sam reads the directory again and reports the type wanted. webOS 10 and 11
  * ignore the nudge, which costs its 8 s of polls before the block and release
- * there, so they go to the block and release first. sam is never restarted if
- * neither method works: take() fails clean and restores LG's Home.
+ * there, so they go to the block and release first. Where neither works,
+ * take() fails clean and restores LG's Home, except where restartAllowed()
+ * says sam may be restarted: webOS 7, where an A2 (7.3.0) took Glasshouse Home
+ * only that way, and lost it when 0.145.0 stopped restarting sam (#1412).
  */
 function reread(wantWeb, cb, check) {
   if (!samrescan) return cb(false);
@@ -323,7 +328,11 @@ function reread(wantWeb, cb, check) {
   }
   call(first, function (ok) {
     if (ok) return cb(true);
-    call(then, cb);
+    call(then, function (ok2) {
+      if (ok2 || !restartAllowed() || !samrescan.restart) return cb(ok2);
+      console.log('home: sam took neither the nudge nor a block and release; restarting it (webOS 7)');
+      samrescan.restart(check, cb);
+    });
   });
 }
 
