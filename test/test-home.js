@@ -185,6 +185,10 @@ function luna(uri, p, cb) {
       r.appInfo = { id: p.id, title: 'Notifications', icon: 'icon_notification.png', folderPath: '/usr/palm/applications/' + p.id };
     } else if (p.id === 'com.webos.app.voice' && tv.sidebarApps) {
       r.appInfo = { id: p.id, title: 'Search', icon: 'icon.png', folderPath: '/usr/palm/applications/' + p.id };
+    } else if (p.id === 'airplay' && tv.airplay) {
+      // As a C2 (webOS 9.2.2) has it: no launch point, visible false.
+      r.appInfo = { id: p.id, title: 'AirPlay', icon: 'AirPlay_Icon-77x77.png', mediumLargeIcon: 'AirPlay_Icon-115x115.png',
+                    visible: false, folderPath: '/usr/palm/applications/airplay' };
     }
     else if (!tv.oldAppInstalled) r = { returnValue: false, errorText: 'Invalid appId specified' };
   } else if (uri === 'com.palm.webappmanager/killApp') {
@@ -199,6 +203,9 @@ function luna(uri, p, cb) {
     r.reason = tv.powerOnReason || 'remoteKey';
   } else if (uri === 'com.webos.applicationManager/closeByAppId') {
     tv.events.push('close ' + p.id);
+  } else if (uri === 'airplay.service/showAirplayPage') {
+    tv.order.push('airplay page');
+    if (tv.airplayPageRefused) r = { returnValue: false, errorText: 'Denied method call' };
   } else if (uri === 'com.webos.applicationManager/launch') {
     tv.order.push('launch ' + p.id);
     tv.launched.push(p.id);
@@ -214,6 +221,8 @@ function luna(uri, p, cb) {
       { id: 'com.webos.app.hdmi1', title: 'HDMI 1', lptype: 'bookmark' }
     ];
     if (tv.newApp) r.launchPoints.push({ id: 'new.app', title: 'New', icon: '/x/new.png' });
+    // As a B8 (webOS 4.4.3) lists AirPlay's tile: a bookmark of its app.
+    if (tv.airplayBookmark) r.launchPoints.push({ id: 'airplay', launchPointId: '1001', lptype: 'bookmark', title: 'AirPlay', icon: '/x/airplay.png' });
     // Saved web pages as a C2 (webOS 9.2.2) lists them: bookmarks of the browser.
     if (tv.savedPages) r.launchPoints.push(
       { id: 'com.webos.app.browser', launchPointId: '576150', lptype: 'bookmark', title: 'home assistant',
@@ -1953,6 +1962,39 @@ step('LG\'s notifications and search are on the Apps row where the TV has them',
         assert.ok(r.ok, r.error);
         assert.deepEqual(tv.launched, ['com.webos.app.voice']);
         done();
+      });
+    });
+  });
+});
+
+step('AirPlay is on the Apps row where the TV has its app, and opens as LG\'s Home Hub opens it (#1435)', function (done) {
+  start(null);
+  tv.airplay = true;
+  tv.airplayBookmark = true;
+  home.catalogue(function (c) {
+    var airplay = c.apps.filter(function (a) { return a.id === 'airplay'; });
+    assert.strictEqual(airplay.length, 1, 'once, though webOS 4 also lists a bookmark of it');
+    assert.strictEqual(airplay[0].title, 'AirPlay');
+    assert.ok(!airplay[0].overlay, 'it opens in Home\'s place');
+    assert.ok(c.order.app.indexOf('airplay') !== -1, 'on the row, shown unless hidden on the Home tab');
+    home.iconPath('airplay', function (p) {
+      assert.strictEqual(p, '/usr/palm/applications/airplay/AirPlay_Icon-115x115.png', 'the larger of its icons');
+      home.open({ kind: 'app', id: 'airplay' }, function (r) {
+        assert.ok(r.ok, r.error);
+        assert.deepEqual(tv.order.slice(-1), ['airplay page']);
+        assert.deepEqual(tv.launched, [], 'not launched as an app where the page opens');
+        // Where the TV refuses the page, the app is launched.
+        tv.airplayPageRefused = true;
+        home.open({ kind: 'app', id: 'airplay' }, function (r2) {
+          assert.ok(r2.ok, r2.error);
+          assert.deepEqual(tv.launched, ['airplay']);
+          // Without the app, no tile.
+          start(null);
+          home.catalogue(function (c2) {
+            assert.strictEqual(c2.apps.filter(function (a) { return a.id === 'airplay'; }).length, 0);
+            done();
+          });
+        });
       });
     });
   });

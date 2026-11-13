@@ -3583,3 +3583,13 @@ of its own, `/var/lib/webosbrew/lifesgoodwithoutspying.hosts` on ext4, built
 from a copy of `/etc/hosts`, so it carries the same comment and update entries.
 The comment alone does not say whose layer is on top; the mount table's root
 and filesystem do (#1369).
+
+## AirPlay's app without a tile (C2, webOS 9.2.2)
+
+LG's AirPlay app, `airplay`, has `"visible": false` in its appinfo, and on the C2
+no launch point at all, as on a B4 with webOS 10.3.2 (#1435); on a B8 with
+webOS 4.4.3 its tile is a bookmark that `airplay-adaptor` adds. Home Hub opens
+it with `airplay.service/showAirplayPage`, which is in the public group. On the
+C2 that call and a plain `applicationManager/launch` of `airplay` open the same
+page: the Wi-Fi network, the TV's AirPlay name, How to Use AirPlay, and AirPlay
+and Apple Home, which holds its settings.
