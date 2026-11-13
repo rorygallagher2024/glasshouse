@@ -548,7 +548,7 @@ async function visitHomePreviewOptions(browser, base, problems) {
   const layout = { rows: ['app', 'dev', 'ch'], order: { app: [], dev: [], ch: [] },
     hidden: { app: [], dev: [], ch: [] }, channels: ['one'], hintSeen: true, searchHintSeen: true,
     livePreview: true, previewAlways: false, previewInTile: false, picture: false };
-  let version = 1, now = { kind: 'input', port: 1 }, covered = false;
+  let version = 1, now = { kind: 'input', port: 1 }, covered = false, signalOn = true;
   await page.addInitScript(() => {
     HTMLMediaElement.prototype.load = function () {};
     HTMLMediaElement.prototype.pause = function () {};
@@ -565,7 +565,7 @@ async function visitHomePreviewOptions(browser, base, problems) {
       order: { app: ['app', 'lg-home'], dev: ['tv', 'player'], ch: ['one'] } });
     if (url.pathname.endsWith('/now')) return reply(now);
     if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
-    if (url.pathname.endsWith('/signal')) return reply({ ok: true, signal: true });
+    if (url.pathname.endsWith('/signal')) return reply({ ok: true, signal: signalOn });
     if (url.pathname.endsWith('/picture')) return reply({ ok: true, signal: { width: 1920, height: 1080, hz: 25, hdr: 'sdr' } });
     return reply({ ok: true, build: 'preview', layoutVersion: version, covered, saver: covered });
   });
@@ -637,6 +637,25 @@ async function visitHomePreviewOptions(browser, base, problems) {
     await page.keyboard.press('ArrowRight');
     await rest();
     if (await source() !== 'service/webos-external ext://hdmi:1' || await shownIn() !== 'Player') problems.push('Home preview options: the input tile did not take the preview');
+    // Picture details arriving, and no picture, set the preview's state: it
+    // stays over its tile (#1436), and with no picture is hidden there.
+    await changeLayout({ picture: true });
+    await rest();
+    if (await shownIn() !== 'Player') problems.push('Home preview options: picture details moved the preview off its tile, ' + await shownIn());
+    await page.keyboard.press('ArrowLeft');
+    await rest();
+    signalOn = false;
+    await page.keyboard.press('ArrowRight');
+    await rest();
+    for (let i = 0; i < 20; i++) { await page.clock.fastForward(500); await page.waitForTimeout(20); }
+    const blank = await page.evaluate(() => {
+      const pv = document.getElementById('preview');
+      return { blank: pv.classList.contains('blank'), intile: pv.classList.contains('intile'), shown: getComputedStyle(pv).display !== 'none' };
+    });
+    if (!blank.blank) problems.push('Home preview options: an input with no signal did not go blank');
+    else if (!blank.intile || blank.shown) problems.push('Home preview options: with no picture the preview left its tile, ' + JSON.stringify(blank));
+    signalOn = true;
+    await changeLayout({ picture: false });
     await page.keyboard.press('ArrowUp');
     await rest();
     if (await source()) problems.push('Home preview options: the preview stayed with Keep the preview on off');

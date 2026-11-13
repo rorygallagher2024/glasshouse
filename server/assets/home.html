@@ -2242,23 +2242,35 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     });
   }
 
+  /*
+   * The preview's state, then its place: "on", "info" and "blank" replace the
+   * classes, "intile" among them, which placePreview puts back over the tile.
+   * Set alone, the in-tile size and position stayed while the preview was
+   * laid out beside the clock again, below and right of the tile, with "No
+   * picture" overflowing it (#1436).
+   */
+  function setPreviewState(cls) {
+    $('preview').className = cls;
+    placePreview();
+  }
+
   function renderPreviewInfo() {
     if (tilePreview.target && tilePreview.target.tv) return renderTvPreviewInfo();
     if (tilePreview.blank || !$('preview').className) return;
     var p = tilePreview.info;
-    if (!layout || layout.picture !== true || !p) { $('preview').className = 'on'; return; }
+    if (!layout || layout.picture !== true || !p) return setPreviewState('on');
     var sig = p.signal ? signalParts(p.signal) : [];
     $('pvMode').textContent = p.mode ? p.mode.display : '';
     $('pvLight').innerHTML = lightHtml(p);
     $('pvSig').innerHTML = spans(sig);
-    $('preview').className = 'on' + (p.mode || sig.length ? ' info' : '');
+    setPreviewState('on' + (p.mode || sig.length ? ' info' : ''));
   }
 
   function blankPreview() {
     if (tilePreview.target && tilePreview.target.tv) stopTvStream();
     else releaseVideo();
     tilePreview.blank = true;
-    $('preview').className = 'on blank';
+    setPreviewState('on blank');
     renderNow();
   }
 
@@ -2290,8 +2302,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     $('pvMode').textContent = t('home.tv.stream', 'Internet stream');
     $('pvLight').innerHTML = '';
     $('pvSig').innerHTML = spans(fmt);
-    $('preview').className = 'on' + (!guide.open && layout.picture === true && fmt.length ? ' info' : '');
-    placePreview();
+    setPreviewState('on' + (!guide.open && layout.picture === true && fmt.length ? ' info' : ''));
   }
   function startTvPreview(target) {
     var gen = tilePreview.gen;

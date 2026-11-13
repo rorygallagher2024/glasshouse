@@ -271,7 +271,8 @@ lists the fake TV's apps before the page's own script runs.
 A second browser check covers the TV tile and the preview's options: the TV
 tile previews its last channel as a broadcast preview, an app tile previews
 nothing, **Preview in the tile** puts the preview in the tile in focus and keeps
-it there when the rows are rebuilt, and **Keep the preview on** shows the input
+it there when the rows are rebuilt, when picture details arrive and when the
+input has no picture, where it is hidden on the tile, and **Keep the preview on** shows the input
 last watched with the focus on Apps. A heartbeat saying the screen saver is over
 the view stops the preview, and the next one without it brings it back. `test-home.js` checks the TV tile is first
 in the Inputs row on a TV with channels, absent without them, opens Live TV,
