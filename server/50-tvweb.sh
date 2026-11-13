@@ -58,15 +58,26 @@ fi
 # webOS 11 they are tv.wiselg.com (privacy.js isSdpName).
 if [ -f /var/lib/tvweb/adblock_enabled ] && [ -f /var/lib/tvweb/adblock_hosts ]; then
   sed -i '/nextlgsdp\.com/d; /tv\.wiselg\.com/d' /var/lib/tvweb/adblock_hosts 2>/dev/null || true
-  # Other tools' lines (AmazOff, whose boot hook runs before this one) are
-  # taken from this boot's /etc/hosts, and the last boot's are dropped. The
-  # table's own lines are comments, localhost and sinkholes, and the Homebrew
-  # Channel's update block points the update servers at 127.0.0.1: privacy.js
+  # Other tools' lines (AmazOff, whose boot hook runs before this one, and
+  # other blockers' sinkholes, #1370) are taken from this boot's /etc/hosts,
+  # and the last boot's are dropped. The table's own lines are comments,
+  # localhost and its sinkholes, up to KEPT; the Homebrew Channel's update
+  # block points the update servers at 127.0.0.1. privacy.js
   # foreignHostsLines tells them apart the same way.
   OWN='^[[:space:]]*(#|$)|^[[:space:]]*(0\.0\.0\.0|::)[[:space:]]|localhost|ip6-'
+  SINK='^[[:space:]]*(0\.0\.0\.0|::)[[:space:]]'
   UPDATES='[[:space:]](snu|snu-dev|su|su-dev|su-ssl|nsu)\.lge\.com([[:space:]]|$)'
-  { grep -E "$OWN" /var/lib/tvweb/adblock_hosts; grep -v -E "$OWN|$UPDATES" /etc/hosts; } \
-    > /var/lib/tvweb/adblock_hosts.new 2>/dev/null \
+  KEPT='# Kept from /etc/hosts, where other tools put them'
+  if grep -q -F 'LG Ad & Telemetry Blackhole' /etc/hosts 2>/dev/null; then
+    # This table, mounted already: other tools' sinkholes are under KEPT.
+    OTHERS=$(awk -v h="$KEPT" 'f; $0 == h { f = 1 }' /etc/hosts | grep -E "$SINK"; grep -v -E "$OWN|$UPDATES" /etc/hosts)
+  else
+    OTHERS=$(grep -E "$SINK" /etc/hosts; grep -v -E "$OWN|$UPDATES" /etc/hosts)
+  fi
+  {
+    awk -v h="$KEPT" '$0 == h { exit } { print }' /var/lib/tvweb/adblock_hosts | grep -E "$OWN"
+    if [ -n "$OTHERS" ]; then printf '%s\n%s\n' "$KEPT" "$OTHERS"; fi
+  } > /var/lib/tvweb/adblock_hosts.new 2>/dev/null \
     && cat /var/lib/tvweb/adblock_hosts.new > /var/lib/tvweb/adblock_hosts
   rm -f /var/lib/tvweb/adblock_hosts.new
   mount --bind /var/lib/tvweb/adblock_hosts /etc/hosts 2>/dev/null || true

@@ -1062,14 +1062,19 @@ working: `getent hosts ad.lgsmartad.com` returns `0.0.0.0`.
 
 Other tools edit `/etc/hosts` too: AmazOff points
 `cloudfront.xp-assets.aiv-cdn.net` at its local nginx. The table carries their
-lines over each time it is written. Switched off, the table comes down unless
-the file underneath lacks some of them: on a C4 on webOS 10.3.1 that file is on
-the read-only squashfs rootfs, so the table goes back up blocking nothing, and
-stays until the next reboot. A line is the blocker's own if it is a comment, a
-localhost line, a sinkhole (`0.0.0.0` or `::`) or names a host the table
-decides on, and anyone else's otherwise. The last rule is for the Homebrew
-Channel's update block, which points LG's update servers at `127.0.0.1` and
-`::1` and must not outlive update blocking being switched off. At boot,
+lines over each time it is written, other blockers' sinkholes included: Life's
+Good Without Spying and LG App Update Blocker write nothing else, and the table
+the Homebrew Channel's update block mounts would otherwise switch them off
+(#1370). They sit under a `# Kept from /etc/hosts` header, which tells them
+apart from the table's own sinkholes when it is written again. Switched off,
+the table comes down unless the file underneath lacks some of them: on a C4 on
+webOS 10.3.1 that file is on the read-only squashfs rootfs, so the table goes
+back up blocking nothing, and stays until the next reboot. A line is the
+blocker's own if it is a comment, a localhost line, one of its sinkholes above
+that header, or a non-sinkhole line naming a host the table decides on, and
+anyone else's otherwise. The last rule is for the Homebrew Channel's update
+block, which points LG's update servers at `127.0.0.1` and `::1` and must not
+outlive update blocking being switched off. At boot,
 `50-tvweb` takes them from that boot's `/etc/hosts` before mounting and drops
 the previous boot's, so a tool that is no longer started leaves nothing behind.
 The table is written in place rather than replaced, since app jails such as
