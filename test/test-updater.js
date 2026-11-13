@@ -130,12 +130,12 @@ console.log('Running test-updater.js ...');
   updater.installUpdate(function (r) {
     refused++;
     assert.strictEqual(r.ok, false);
-    assert.ok(/Homebrew Channel/.test(r.error));
+    assert.ok(/package install/.test(r.error));
   });
   updater.rollbackUpdate(function (r) {
     refused++;
     assert.strictEqual(r.ok, false);
-    assert.ok(/Homebrew Channel/.test(r.error));
+    assert.ok(/package install/.test(r.error));
   });
   assert.strictEqual(refused, 2);
 

@@ -38,6 +38,7 @@ var UNFINISHED = { downloading: 1, verifying: 1, 'awaiting-confirm': 1, installi
 // work in progress.
 var WORKING = { downloading: 1, verifying: 1, installing: 1, elevating: 1 };
 var GZIP_MIN = 18;
+var LONG_NAME_MAX = 4096;
 var NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$/;
 var VERSION_RE = /^[A-Za-z0-9][A-Za-z0-9.+~:_-]{0,63}$/;
 var ELF_MACHINES = { 3: 'x86', 8: 'mips', 40: 'arm', 62: 'x86_64', 183: 'aarch64', 243: 'riscv' };
@@ -187,6 +188,7 @@ function tarWalker(maxEntries, onEntry, onFile) {
   var mode = 'header';          // header | body | pad | end
   var entries = 0;
   var entry = null, left = 0, padLeft = 0, keep = null, keepLen = 0, junk = false;
+  var longName = null, longLink = null;   // from GNU 'L' and 'K' entries, for the next entry
 
   function zeroBlock() {
     for (var i = 0; i < 512; i++) if (hdr[i] !== 0) return false;
@@ -194,7 +196,13 @@ function tarWalker(maxEntries, onEntry, onFile) {
   }
 
   function header() {
-    if (zeroBlock()) { mode = 'end'; return; }
+    if (zeroBlock()) {
+      if (longName !== null || longLink !== null) {
+        throw reject(msg('srv.install.ipk.badTar', 'the ipk holds a damaged package archive'));
+      }
+      mode = 'end';
+      return;
+    }
     var sum = 0, i;
     for (i = 0; i < 512; i++) sum += (i >= 148 && i < 156) ? 32 : hdr[i];
     if (sum !== octal(hdr, 148, 156)) {
@@ -204,22 +212,41 @@ function tarWalker(maxEntries, onEntry, onFile) {
       throw reject(msg('srv.install.ipk.tooMany', 'the ipk holds too many files'));
     }
     var type = String.fromCharCode(hdr[156] || 48);
-    // Long names and extended attributes would need parsing that decides
-    // which path an entry really has; refusing them is safer than guessing.
-    if (type === 'L' || type === 'K' || type === 'x' || type === 'g' || type === 'X' ||
-        (hdr[124] & 0x80)) {
+    // pax headers can rewrite an entry's path, size and more; refusing them
+    // is safer than guessing which of those LG's installer honours.
+    if (type === 'x' || type === 'g' || type === 'X' || (hdr[124] & 0x80)) {
       throw reject(msg('srv.install.ipk.unsupported', 'the ipk uses a file format this installer does not read'));
     }
     var size = octal(hdr, 124, 136);
     if (isNaN(size)) {
       throw reject(msg('srv.install.ipk.badTar', 'the ipk holds a damaged package archive'));
     }
+    // GNU tar writes a path over 100 characters (Fruit Ninja has two of 101)
+    // as an 'L' entry whose body is the next entry's whole path, and a long
+    // link target as a 'K' entry. The next entry then goes through the same
+    // checks under that path, as LG's installer will unpack it there.
+    if (type === 'L' || type === 'K') {
+      if (size < 2 || size > LONG_NAME_MAX || (type === 'L' ? longName : longLink) !== null) {
+        throw reject(msg('srv.install.ipk.badTar', 'the ipk holds a damaged package archive'));
+      }
+      entry = { type: type, meta: true };
+      keepLen = 0;
+      keep = allocBuffer(size);
+      left = size;
+      padLeft = (512 - size % 512) % 512;
+      mode = 'body';
+      return;
+    }
     var name = cString(hdr, 0, 100);
     if (cString(hdr, 257, 262) === 'ustar') {
       var prefix = cString(hdr, 345, 500);
       if (prefix) name = prefix + '/' + name;
     }
-    entry = { name: name, type: type, size: size, link: cString(hdr, 157, 257) };
+    var link = cString(hdr, 157, 257);
+    if (longName !== null) name = longName;
+    if (longLink !== null) link = longLink;
+    longName = longLink = null;
+    entry = { name: name, type: type, size: size, link: link };
     var want = onEntry(entry);
     keepLen = 0;
     keep = want > 0 ? allocBuffer(want) : null;
@@ -229,7 +256,11 @@ function tarWalker(maxEntries, onEntry, onFile) {
   }
 
   function bodyDone() {
-    if (keep) onFile(entry, keep);
+    if (entry.meta) {
+      var text = cString(keep, 0, keep.length);
+      if (!text) throw reject(msg('srv.install.ipk.badTar', 'the ipk holds a damaged package archive'));
+      if (entry.type === 'L') longName = text; else longLink = text;
+    } else if (keep) onFile(entry, keep);
     keep = null;
     mode = padLeft ? 'pad' : 'header';
   }
@@ -271,7 +302,8 @@ function tarWalker(maxEntries, onEntry, onFile) {
       if (junk) {
         throw reject(msg('srv.install.ipk.badTar', 'the ipk holds a damaged package archive'));
       }
-      if (mode === 'body' || mode === 'pad' || (mode === 'header' && hdrLen > 0)) {
+      if (mode === 'body' || mode === 'pad' || (mode === 'header' && hdrLen > 0) ||
+          longName !== null || longLink !== null) {
         throw reject(msg('srv.install.ipk.truncated', 'the ipk is truncated'));
       }
     }
@@ -590,7 +622,7 @@ function checkIds(info) {
       return msg('srv.install.id.prefix', '{id} does not begin with the package name {package}', { id: id, package: pkg });
     }
     if (selfUpdating(id)) {
-      return msg('srv.install.id.self', '{id} must be updated from the Homebrew Channel', { id: id });
+      return msg('srv.install.id.self', '{id} updates itself, so it cannot be installed from here', { id: id });
     }
     var sys = (appsMod && appsMod.isProtected(id)) || false;
     for (var p = 0; p < SYSTEM_PREFIXES.length; p++) {

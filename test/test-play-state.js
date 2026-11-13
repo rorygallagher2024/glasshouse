@@ -101,9 +101,17 @@ function webos9() {
             assert.strictEqual(m2.state, 'idle');
             assert.strictEqual(none2, true, 'an empty list is no pipe');
             console.log('  ✓ without acb, an empty com.webos.media list says there is no pipe');
-            mockEnv.restore();
-            console.log('ALL test-play-state.js assertions passed!\n');
-            process.exit(0);
+            mockEnv.luna['com.webos.media/getForegroundAppInfo'] = { returnValue: true, foregroundAppInfo: [
+              { appId: 'org.jellyfin.webos', playState: 'paused', type: 'media', mediaId: 'a' },
+              { appId: 'org.jellyfin.webos', playState: 'playing', type: 'media', mediaId: 'b' }
+            ] };
+            t3.readMediaState(checked(function (m3) {
+              assert.strictEqual(m3.state, 'playing', 'the player playing, not the first listed');
+              console.log('  ✓ an app with two players reads playing while one plays');
+              mockEnv.restore();
+              console.log('ALL test-play-state.js assertions passed!\n');
+              process.exit(0);
+            }), true);
           }), true);
         }));
       }), true);

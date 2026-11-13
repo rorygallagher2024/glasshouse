@@ -1,6 +1,6 @@
 # Tested TVs
 
-Confirmed on **78 TVs across 52 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
+Confirmed on **79 TVs across 52 series** running **webOS 2.2 through 11** (LG's webOS 26). Any other rooted webOS model should work as well.
 
 * **Series & sizes:** Screen sizes and regional variants of a series run the same software, so the summary table groups them into one row per series. Years are LG's model years; many TVs have since been updated to a later webOS.
 * **Version numbers:** Versions here are what the TV reports itself, as the dashboard shows them; see [webOS version numbers](#webos-version-numbers) below for LG's marketing names (webOS 22–26).
@@ -45,7 +45,7 @@ Confirmed on **78 TVs across 52 series** running **webOS 2.2 through 11** (LG's 
     | UQ80          | 2022 | LCD   | 7.6               | 1       |
     | LX3           | 2022 | OLED  | —                 | 1       |
     | CS            | 2022 | OLED  | 10                | 1       |
-    | C3            | 2023 | OLED  | 10 – 11           | 3       |
+    | C3            | 2023 | OLED  | 8.3, 10 – 11      | 4       |
     | G3            | 2023 | OLED  | 11                | 1       |
     | UR80          | 2023 | LCD   | 10.3              | 1       |
     | QNED80        | 2022, 2023 | LCD   | 7.6, 10.3         | 2       |
@@ -63,7 +63,7 @@ Confirmed on **78 TVs across 52 series** running **webOS 2.2 through 11** (LG's 
     | NU80          | 2026 | LCD   | 11                | 1       |
     | QNED84        | 2026 | LCD   | 11.0              | 1       |
 
-=== "All reports (78)"
+=== "All reports (79)"
 
     | Model       | webOS        | Firmware | Panel | Notes                                                          |
     | :---------- | :----------- | :------- | :---- | :------------------------------------------------------------- |
@@ -108,6 +108,7 @@ Confirmed on **78 TVs across 52 series** running **webOS 2.2 through 11** (LG's 
     | 55QNED826QB | 7.6.0        | 04.60.90 | LCD   | Installed over SSH; MQTT bridge confirmed                      |
     | 50QNED80UQA | 7.6.0        | 04.60.85 | LCD   | Rooted with slopbro; SSH install; telemetry disabled and ad blocker confirmed |
     | 65UQ801C0SB | 7.6.0        | 04.60.90 | LCD   | Rooted with slopbro; SSH install; Glasshouse Home confirmed    |
+    | OLED42C3PUA | 8.3.1        | 03.33.25 | OLED  | First webOS 8 report                                           |
     | OLED42C24LA | 9.2.2        | 23.25.55 | OLED  | Rooted with jsbro-autoroot                                     |
     | OLED55C4PUA | 9.2.0        | 23.20.35 | OLED  | Rooted with faultmanager; SSH install; no internet access      |
     | OLED55B46LA | 9.24.8       | 23.23.30 | OLED  | Installed over telnet                                          |

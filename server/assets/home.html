@@ -111,12 +111,12 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
 #now.previewing #plate{display:none}
 /* With Preview in the tile, the preview fills the tile it shows: the tile's
    own text over a shade on the picture's left, nothing below it. */
-#rows #preview,#now #preview.intile{position:absolute;left:0;top:0;width:100%;height:100%;margin:0;box-shadow:none;border-radius:inherit;overflow:hidden;z-index:0}
-#rows #preview:after,#preview.intile:after{border:0;background:-webkit-linear-gradient(left,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15));
+#now #preview.intile{position:absolute;left:0;top:0;width:100%;height:100%;margin:0;box-shadow:none;border-radius:inherit;overflow:hidden;z-index:0}
+#preview.intile:after{border:0;background:-webkit-linear-gradient(left,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15));
   background:linear-gradient(90deg,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15))}
-#rows #preview video,#preview.intile video{object-fit:cover}
-#rows #preview.info #pvInfo,#rows #preview.blank,#preview.intile #pvInfo,#preview.intile.blank{display:none}
-.tile.tv.live{background:transparent}
+#preview.intile video{object-fit:cover}
+#preview.intile #pvInfo,#preview.intile.blank{display:none}
+#rows .tile.live{background:transparent}
 .tile.live>div{position:relative;z-index:1}
 .row .tile.live{opacity:1}
 
@@ -1249,12 +1249,12 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     box.className = y > firstRowTop(box) ? 'scrolled' : '';
     clearInterval(rowsScroll.timer);
     rowsScroll.timer = null;
-    if (instant) { box.scrollTop = y; return; }
+    if (instant) { box.scrollTop = y; if (liveTile) placeTilePreview(liveTile); return; }
     var from = box.scrollTop, start = Date.now();
     rowsScroll.timer = setInterval(function () {
       var k = Math.min(1, (Date.now() - start) / 200);
       box.scrollTop = from + (y - from) * (1 - Math.pow(1 - k, 3));
-      if (tvPreviewTile) placeTvPreview(tvPreviewTile);
+      if (liveTile) placeTilePreview(liveTile);
       if (k >= 1) { clearInterval(rowsScroll.timer); rowsScroll.timer = null; }
     }, 16);
   }
@@ -1325,6 +1325,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     // past where it is headed; never past its ends.
     var x = -Math.round(Math.max(0, Math.min(tr.max, tr.x)) * 10) / 10;
     track.style.webkitTransform = track.style.transform = 'translateX(' + x + 'px)';
+    if (liveTile && rowEl.contains(liveTile)) placeTilePreview(liveTile);
   }
 
   // Rows just rebuilt put back where they were, within their new length; one
@@ -1400,7 +1401,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (busy) nextFrame(tick);
       else animating = false;
     }
-    if (tvPreviewTile) placeTvPreview(tvPreviewTile);
+    if (liveTile) placeTilePreview(liveTile);
     if (busy) return;
     settle();
     // The minute's refresh, held back while a row moved (renderWhenStill).
@@ -1996,9 +1997,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   // ---- Preview in the tile
 
-  // Where the preview sits beside the clock, to go back to from a tile.
-  var previewHome = { parent: null, next: null };
-  var tvPreviewTile = null;
+  var liveTile = null;
 
   function inTile() { return !!layout && layout.previewInTile === true && !guide.open; }
 
@@ -2007,45 +2006,32 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return document.querySelector('.row[data-key="' + target.row + '"] .tile[data-c="' + target.col + '"]');
   }
 
-  // Back beside the clock: before the rows are rebuilt, and as it stops.
+  // Clear in-tile placement when leaving the tile, rebuilding rows, or stopping.
   function parkPreview() {
+    if (!liveTile) return;
+    liveTile.className = liveTile.className.replace(/ live\b/g, '');
+    liveTile = null;
     var pv = $('preview');
-    if (tvPreviewTile) {
-      tvPreviewTile.className = tvPreviewTile.className.replace(/ live\b/g, '');
-      tvPreviewTile = null;
-      pv.className = pv.className.replace(/ intile\b/g, '');
-      pv.style.left = pv.style.top = pv.style.width = pv.style.height = pv.style.borderRadius = pv.style.clip = '';
-    }
-    if (!previewHome.parent) return;
-    var tile = pv.parentNode;
-    if (tile === previewHome.parent) return;
-    if (tile && tile.className) tile.className = tile.className.replace(/ live\b/g, '');
-    previewHome.parent.insertBefore(pv, previewHome.next);
+    pv.className = pv.className.replace(/ intile\b/g, '');
+    pv.style.left = pv.style.top = pv.style.width = pv.style.height = pv.style.borderRadius = pv.style.clip = '';
   }
 
-  // Into the tile it shows, with Preview in the tile; beside the clock otherwise.
+  // Over the tile it shows, with Preview in the tile; beside the clock otherwise.
   function placePreview() {
     var pv = $('preview');
-    if (!previewHome.parent) { previewHome.parent = pv.parentNode; previewHome.next = pv.nextSibling; }
     var tile = inTile() && pv.className ? previewTile(tilePreview.target) : null;
     if (!tile) return parkPreview();
-    if (tilePreview.target.tv) {
-      if (tile !== tvPreviewTile) {
-        parkPreview();
-        tvPreviewTile = tile;
-        tile.className += ' live';
-      }
-      return placeTvPreview(tile);
+    if (tile !== liveTile) {
+      parkPreview();
+      liveTile = tile;
+      tile.className += ' live';
     }
-    if (pv.parentNode === tile) return;
-    parkPreview();
-    tile.appendChild(pv);
-    tile.className += ' live';
+    placeTilePreview(tile);
   }
 
-  // An IPTV video stays attached: moving it between parents loses its native
-  // player on webOS 9.2.2, even while paused is false and readyState is 4.
-  function placeTvPreview(tile) {
+  // Keep <video> attached in #now and track the tile's box: moving it between
+  // DOM parents or into a transformed track drops its native player on webOS.
+  function placeTilePreview(tile) {
     var pv = $('preview'), rect = tile.getBoundingClientRect(), strip = $('now').getBoundingClientRect(), scale = strip.width / 1920;
     var wrap = tile.parentNode.parentNode.getBoundingClientRect(), rows = $('rows').getBoundingClientRect();
     if (pv.className.indexOf(' intile') === -1) pv.className += ' intile';

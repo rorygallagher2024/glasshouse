@@ -196,6 +196,29 @@ and played normally. The kernel log (`/var/log/legacy-log`) records each
 `audio_hal_earc_set_*` call with the calling thread, which separates LG's eARC
 set-up from the module's.
 
+## Native DTS playback on the B4 (webOS 10.3.2)
+
+Probed on an `OLED77B46LA` running webOS `10.3.2` (firmware `33.31.75`, Realtek
+`rtd2885p`) connected to a Sonos Arc Ultra over eARC (Glasshouse issue #1379).
+
+- **EDID and GStreamer elements**: `tv.model.edidType` reports `TrueHD+dts`.
+  GStreamer includes `dcaparse` and `omxdtsdec` / `omxdtsdec1` (`Rank primary + 1
+  (257)`), accepting `audio/x-dts`, `audio/x-dtsh`, `audio/x-dtsl`,
+  `audio/x-dtse`, `audio/x-dtsx` and `audio/x-raw`, and logs `../git/omx/gstomxaudiodec.c:788:
+  invalid property id 20 for "downmix"`.
+- **Direct GStreamer pipelines fail outside LG's media stack**: `matroskademux
+  ! decodebin` on a silent 6-channel 48 kHz `dts51.mkv` fails with `Missing
+  decoder: audio/x-unknown (audio/x-unknown, codec-id=(string)A_DTS, ...)`.
+  `dcaparse` stops with `Failed to get media type from upstream`, and feeding
+  framed `audio/x-dts,framed=(boolean)true,rate=(int)48000,channels=(int)6` into
+  `omxdtsdec` fails with `Could not initialize supporting library.`.
+- **Player path and kernel procfs**: Jellyfin direct-playing a 6-channel
+  1.5 Mbps DTS MKV outputs DTS to the Sonos Arc Ultra over eARC
+  (`starfish-media-pipeline`: `vdec: H264 high 4.1`, `adec: audio/x-dts`;
+  `audiooutputd`: `input_source: MEDIA`, `input_codec: dts`,
+  `earc_output_codec: 4`, `arc_output_codec: 4`, `sound_output: external_arc`).
+  `/proc/rtkaudio` holds only `debuginfo` (no DSP0 inventory).
+
 ## C9 HAWK2 audio EDID (webOS 4.10.2)
 
 OLED65C9PUA, firmware 05.50.00, reported in #1078 on 28 October 2026.
@@ -268,6 +291,16 @@ Idlegif's GIFs. Custom Screensaver's DVD logo is inside the QML. They use
 QtQuick 2.4, with QtMultimedia, `WebOSServices` and `iLib` for the Aerial
 ones. aabytt's also takes over `com.webos.app.videoads` on webOS 11.
 
+On a B4 (webOS 10.3.2) with Aerial Screensaver 3.0.4, its boot hook runs
+before Glasshouse's and bind-mounts its whole `assets` folder over
+`com.webos.app.screensaver`, in the same shared peer group (`shared:40`) as
+the `/media/developer` and `/mnt/lg/appstore` mounts of the developer apps.
+A mount made on top of it propagates to that group, so it also lands over
+Aerial's own
+`/media/developer/apps/usr/palm/applications/org.aabytt.webos.custom-screensaver-aerial/assets`
+and hides the QML there (#1378). Taking Aerial's mount off first, and then
+mounting, leaves its folder as it was.
+
 ## HDMI CEC devices (G3, webOS 9.2.2)
 
 `com.webos.service.eim/getAllInputStatus` returns CEC devices in each HDMI
@@ -280,6 +313,13 @@ On the same TV, unplugged HDMI 1 and HDMI 3 returned `connected: true`, but
 `hdmiPlugIn: false`, `hdmiSignalExist: false`, `lastUniqueId: -1` and empty
 sublists. Where present, `hdmiPlugIn` takes precedence over `connected` for
 plug detection. The device list does not report per-device power state.
+
+On a C2 (webOS 9.2.2), `connected` follows the cable: a cable with nothing on
+its other end read `connected: true`, `hdmiPlugIn: false`, ports with no cable
+`false` for both, and a PC switched off at the wall `hdmiPlugIn: true`. A B4
+(webOS 10.3.2) reported `connected: true` on all four ports, two with no cable
+(#1382), as the G3 does. So `connected` tells a cable apart only on a TV where
+some port reports it `false`; the Metrics tab shows such a port as Cable only.
 
 ### Selecting and waking a source through a receiver (G3, webOS 9.2.2)
 
@@ -1719,6 +1759,18 @@ by luna-send still drew the view. Stopping LG's Home every few seconds and
 `preloadmanager/setPreloadPolicy` with `{"application":{"id":"com.webos.app.home",
 "isEnabled":false}}`, sent again about once a minute, kept Home opening through
 reboots.
+
+## The preload manager launching Home during playback (B4, webOS 10.3.2)
+
+Reported in #1372 from an OLED77B46LA, with Glasshouse Home in LG's Home's
+place. While Jellyfin played a 4K Dolby Vision file at 94 Mbps, with
+`MemAvailable` under 200 MB, `com.webos.service.preloadmanager` launched
+`com.webos.app.home` three times in 90 s (`preloadType` `periodic`,
+`preloadMode` `criu`). After the third, surface-manager hid Jellyfin's window
+and showed Home's, and under four minutes later Jellyfin was no longer running.
+With `setPreloadPolicy` `isEnabled: false` for `com.webos.app.home` the preload
+manager launched only HDMI 4 in nine minutes of the same file, and set back to
+`true` it launched Home 8 s later.
 
 ## Native key filters (C5, webOS 11.2.0)
 
@@ -3274,6 +3326,26 @@ firmware lacking that service (webOS 4), `com.webos.service.eim/getAllInputStatu
 identifies a connected audio system (`cecpDevType: 5`) and its port when
 present, falling back to HDMI 2.
 
+## Network pointer input (C3, webOS 11.2.0)
+
+Read on 11 November 2026 on an OLED77C3RLA, firmware 43.21.71.
+`com.webos.service.networkinput/getPointerInputSocket`, called from the
+Glasshouse server, returned `/tmp/netinput.pointer.sock`. Its interface declares
+`LENGTH_PREFIX_32`; `InputSocketConnection::handleData` in the 32-bit ARM
+`network-input-service` reads a four-byte big-endian payload length, rejects a
+payload over 4096 bytes, then hands the bytes to the text-command parser. A move
+is `type:move\ndx:N\ndy:N\ndown:0\n\n`, click is `type:click\n\n`, and scroll is
+`type:scroll\ndx:N\ndy:N\n\n`. `down:drag` presses while moving and `down:0`
+releases.
+
+A batch of two moves followed by a click moved to YouTube's Play button and
+started playback. Screen captures often omitted the pointer even when it was
+visible on the TV, so a missing cursor in a capture is not evidence that no move
+occurred. A direct write to `/dev/uinput` created a kernel input device, but was
+not needed and was removed.
+
+The same `/tmp/netinput.pointer.sock` Unix socket was subsequently observed working on a B8 (webOS 4.4.3) and a C2 (webOS 9.2.2).
+
 ## Realtek HDMI receiver status (55NANO756PR, webOS 6.5.3)
 
 Reported in #1359 from a 55NANO756PR (webOS 6.5.3, firmware `03.53.46`) with a
@@ -3297,6 +3369,20 @@ Reported in #1359 from a 55NANO756PR (webOS 6.5.3, firmware `03.53.46`) with a
 - `edid_data_block0` and `edid_data_block1` hold two checksummed 128-byte EDID
   blocks in comma-separated `0x..` hex rows (`edid_size :2`) on active/linked
   `hdmi.p0`, omitted when idle.
+- Under `/proc/lgtv-driver/audio/`, active HDMI decoding reported `Connect=HDMI0`
+  in `adec.p1` (rather than LG/MediaTek's `HDMI_PORT0`..`HDMI_PORT3`) and
+  `SamplingRate=48` in `hdmi` (in kHz rather than `48000` Hz).
 - Interlaced, HDR10/HLG/Dolby Vision, VRR and HDCP/FRL active samples were not
   captured on this board (`phy_tmds_clk_khz:593500` tracked the pixel rate on
   this TMDS link, and `hdcp_version` read `1` active vs `2` idle).
+
+## Which cgroup the Homebrew Channel's start-up runs in (webOS 6 and 9)
+
+Processes started by the Homebrew Channel's start-up (`/var/lib/webosbrew/startup.sh`
+and the hooks it runs) inherit the systemd cgroup of the LG service that ran it.
+On a 50NANO756PR (webOS 6, #1355) that was `webapp-mgr.service`, holding the
+Glasshouse server, dropbear and telnetd; changing some settings, background
+services and Promotions & tips among them, restarted it, which killed all three
+until the TV was unplugged. On a C2 (webOS 9.2.2) they are in
+`ls-hubd.service`, the Luna hub. `systemd-run --scope` (systemd 250 on the C2)
+moves a command into a transient scope of its own.

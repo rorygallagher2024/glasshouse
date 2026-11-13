@@ -226,6 +226,7 @@ var webosVersion = null;
  * manager is told not to keep LG's Home loaded (its setPreloadPolicy, not
  * configd, so a TV restarted without Glasshouse Home has LG's as it was), and
  * an LG Home that starts anyway is stopped. Both are undone with the place.
+ * The policy is also needed on webOS 10, see preloadHeld().
  */
 var LG_HOME_WATCH_MS = 10000;
 // The policy is told again once a minute: the preload manager loses it when it restarts.
@@ -314,6 +315,16 @@ var powerActive = true;
 var sleeps = 0;
 // tvpower's raw state, null until the first reading.
 var powerState = null;
+/*
+ * A Home press that ends the screen saver opens nothing: the TV only takes the
+ * screen saver down (a B4, webOS 10.3.2, #1377). Taken for a press that opens
+ * Home, it waited for a beat that never came and opened LG's Home over the app
+ * 20 s later. tvpowerd reported the screen saver over 170 ms after the button,
+ * so a press also counts if the screen saver ended up to this long before it.
+ */
+var SAVER_PRESS_MS = 1000;
+var saverEndedAt = 0;
+var homeDownInSaver = false;
 var wakeTimer = null;
 var wakeRequest = null;
 // The close-then-open still to finish, cleared when the wake is cancelled.
@@ -1577,10 +1588,21 @@ function switchTo(on, cb) {
   })();
 }
 
-// Where the preload manager was seen starting LG's Home again (#1042). webOS
-// 10's Home is Flutter too, but Glasshouse Home held its place there without this.
+// Where the preload manager was seen starting LG's Flutter Home again behind
+// the view (#1042), which is then stopped.
 function flutterHome() {
   return parseInt(String(webosVersion || ''), 10) >= 11;
+}
+
+/*
+ * Where the preload manager is told not to keep LG's Home loaded. On a B4
+ * (webOS 10.3.2) it launched com.webos.app.home three times in 90 s while an
+ * app played a 4K stream with under 200 MB free, and the third brought
+ * Glasshouse Home in front of the app, which was closed for memory minutes
+ * later (#1372). With the policy off it launched no Home in nine minutes.
+ */
+function preloadHeld() {
+  return parseInt(String(webosVersion || ''), 10) >= 10;
 }
 
 function preloadLgHome(enabled) {
@@ -1596,7 +1618,7 @@ function preloadLgHome(enabled) {
 
 // LG's Home kept from coming back while Glasshouse Home has its place, or let back.
 function holdLgHome(on) {
-  if (!flutterHome()) return;
+  if (!preloadHeld()) return;
   if (on === lgHomeHeld) {
     if (on) preloadLgHome(false);
     return;
@@ -1613,7 +1635,7 @@ function holdLgHome(on) {
 function watchLgHome() {
   // Not while a switch runs: giving LG's Home its place back opens it.
   if (switchBusy || !switchWant || !takeover.mounted()) return;
-  if (takeover.stopLgHome()) console.log('home: LG\'s Home was started again behind Glasshouse Home; stopped it');
+  if (flutterHome() && takeover.stopLgHome()) console.log('home: LG\'s Home was started again behind Glasshouse Home; stopped it');
   if (++lgHomeTicks % LG_PRELOAD_EVERY === 0) preloadLgHome(false);
 }
 
@@ -1699,8 +1721,9 @@ function supported() {
   if (/^4\./.test(v) || (/^3\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true, standalone: true, previewOptions: false };
   if (/^9\./.test(v)) return { ok: true, webos: v };
   // LG's Home is the same native app as on webOS 9; sam is nudged from the
-  // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0).
-  if (/^7\./.test(v)) return { ok: true, webos: v, experimental: true };
+  // country's blocked list (lib/samrescan). Tried on a 65UQ801C0SB (7.6.0);
+  // webOS 8 is untried and needs allowExperimentalHome.
+  if (/^7\./.test(v) || (/^8\./.test(v) && allowExperimentalFn())) return { ok: true, webos: v, experimental: true };
   // LG's Home is a Flutter app there, under the same id and folder (#612).
   // Tried on a G5 (webOS 10.3.1), and a C5, G3, G4 and C3 (11.2.0); a later
   // version, not tried, needs the setting.
@@ -2382,7 +2405,13 @@ function homeKey(down) {
      * Home once the view has its place makes the TV open the view.
      */
     var shortPress = homeDownAt && !wasHeld;
+    var endedSaver = homeDownInSaver || (saverEndedAt > 0 && homeDownAt > 0 && saverEndedAt >= homeDownAt - SAVER_PRESS_MS);
     homeDownAt = 0;
+    homeDownInSaver = false;
+    if (shortPress && endedSaver) {
+      console.log('home: the Home press ended the screen saver; the TV opens nothing for it');
+      return;
+    }
     if (shortPress && escaped) {
       escaped = false;
       if (isStandalone()) {
@@ -2411,6 +2440,7 @@ function homeKey(down) {
     return;
   }
   homeDownAt = nowMs();
+  homeDownInSaver = powerState === 'Screen Saver';
   if (escaped) return;
   holdTimer = setTimeout(function () {
     holdTimer = null;
@@ -2574,6 +2604,7 @@ function powerStateChanged(raw) {
   var was = powerState;
   powerState = String(raw || '');
   if (was === powerState) return;
+  if (was === 'Screen Saver') saverEndedAt = nowMs();
   cancelWake();
   if (was === null || names.powerState(was).systemOn || !names.powerState(powerState).systemOn) return;
   if (!readConfig().enabled) return;
@@ -2794,6 +2825,8 @@ function init(opts) {
   lastSource = null;
   powerActive = true;
   powerState = null;
+  saverEndedAt = 0;
+  homeDownInSaver = false;
   lastBeatAt = 0;
   wakeReopen = null;
   beats = 0;

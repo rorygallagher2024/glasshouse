@@ -134,7 +134,7 @@ Glasshouse can be configured either directly on the TV screen with the remote or
     | `ntp.server` | `""` | Hostname of an NTP server (e.g., `"pool.ntp.org"`) to synchronize the TV's clock on boot and hourly. |
     | `syslog.server` | `""` | Remote syslog server address to forward TV and Glasshouse logs over RFC 5424 UDP (port `514`). |
     | `allowTileHiding` | `false` | Experimental: allows hiding built-in LG system tiles and apps on the home screen. |
-    | `allowExperimentalHome` | `false` | Experimental: offers [Glasshouse Home](dashboard/home.md) on webOS 3, and on webOS 12 and later, where it is untried. |
+    | `allowExperimentalHome` | `false` | Experimental: offers [Glasshouse Home](dashboard/home.md) on webOS 3, webOS 8, and on webOS 12 and later, where it is untried. |
     | `allowExperimentalScreensavers` | `false` | Experimental: allows custom QML screensavers on webOS 12 and newer, which are untried there. Named `allowOnWebos10` before 0.105; that name is still read, and renamed when the server starts. |
     | `allowExperimentalInputBar` | `false` | Experimental: offers the [input bar](dashboard/apps.md#input-bar) under Remote keys on webOS 5, 7, 8 and 10, where it is untried. On webOS 4, 6 and 9 it is offered without it, and on webOS 11 never. Switched off, any key using it goes back to LG's. |
     | `screensaverPowerOffMinutes` | unset (off) | Puts the TV in standby once a screen saver has been on this many minutes (1 to 1440). Also set from the Screensaver tab as **Poweroff after**. |

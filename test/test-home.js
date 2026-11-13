@@ -1404,6 +1404,23 @@ step('webOS 11 is offered, experimental; webOS 12 and later only with allowExper
   });
 });
 
+step('webOS 8 is offered only with allowExperimentalHome, using takeover', function (done) {
+  start(null, { webosVersion: '8.3.1' });
+  home.status(function (st0) {
+    assert.strictEqual(st0.supported.ok, false, 'untried there, so not offered by default');
+    home.enable(function (errRes) {
+      assert.strictEqual(errRes.ok, false, 'enable rejected without allowExperimentalHome');
+      start(null, { webosVersion: '8.3.1', allowExperimental: function () { return true; } });
+      home.status(function (st) {
+        assert.strictEqual(st.supported.ok, true);
+        assert.strictEqual(st.supported.experimental, true);
+        assert.strictEqual(st.supported.standalone, undefined, 'uses takeover rather than standalone');
+        done();
+      });
+    });
+  });
+});
+
 step('webOS 5 and 6 are offered, experimental, standalone, without restarting sam; webOS 3 standalone only with allowExperimentalHome', function (done) {
   start(null, { webosVersion: '5.5.0' });
   home.status(function (st5) {
@@ -1730,18 +1747,30 @@ step('on webOS 11 LG\'s Flutter Home is kept from coming back while Glasshouse H
   });
 });
 
-step('on webOS 9 and 10 the preload manager is left as it is', function (done) {
+// #1372: on a B4 (webOS 10.3.2) the preload manager launched Home during
+// playback, and Glasshouse Home came in front of the app.
+step('on webOS 10 the preload manager is told not to keep Home loaded, without stopping LG\'s Home; webOS 9 is left as it is', function (done) {
   start(null, {});
   home.enable(function (r) {
     assert.ok(r.ok, r.error);
-    assert.deepEqual(tv.preload, []);
+    assert.deepEqual(tv.preload, [], 'webOS 9 is left as it is');
     home.disable(function () {
-      start(null, { webosVersion: '10.3.1' });
+      start(null, { webosVersion: '10.3.2', lgHomeWatchMs: 10 });
       tv.nudgeIgnored = true;
       home.enable(function (r10) {
         assert.ok(r10.ok, r10.error);
-        assert.deepEqual(tv.preload, [], 'webOS 10 held its place without it');
-        home.disable(function () { done(); });
+        assert.deepEqual(tv.preload, [LG_HOME + ' false'], 'webOS 10: the preload manager told not to keep it');
+        tv.events = [];
+        wait(80, function () {
+          assert.ok(tv.preload.length >= 2, 'told again, as the preload manager forgets it when it restarts');
+          assert.strictEqual(tv.events.filter(function (e) { return /^stop LG/.test(e); }).length, 0,
+            'the watch does not stop LG\'s Home on webOS 10');
+          home.disable(function (d) {
+            assert.ok(d.ok, d.error);
+            assert.strictEqual(tv.preload[tv.preload.length - 1], LG_HOME + ' true', 'let back with the place');
+            done();
+          });
+        });
       });
     });
   });
@@ -2972,6 +3001,34 @@ step('weather from the internet: asked for only with a place and the screen on, 
   });
 });
 
+step('where the TV can neither nudge nor blockSystemApp, Glasshouse Home never falls back to restarting sam', function (done) {
+  start(null);
+  tv.rescanAbsent = true;
+  home.enable(function (r) {
+    assert.strictEqual(r.ok, false, 'takeover refuses when sam cannot reread');
+    assert.strictEqual(tv.events.indexOf('restart'), -1, 'never falls back to restarting sam on enable');
+    assert.strictEqual(taken(), false, 'LG Home stays in place');
+
+    // Also when switching off after an active takeover: unmounts cleanly, never restarts sam.
+    tv.rescanAbsent = false;
+    home.enable(function (rOn) {
+      assert.ok(rOn.ok, rOn.error);
+      tv.events = [];
+      tv.rescanAbsent = true;
+      home.disable(function (rOff) {
+        assert.strictEqual(rOff.ok, false, 'reports that sam did not take LG Home back');
+        assert.strictEqual(tv.events.indexOf('restart'), -1, 'never restarts sam on disable');
+        assert.strictEqual(fs.realpathSync(appDir), fs.realpathSync(lgFiles), 'bind-mount removed cleanly');
+        tv.rescanAbsent = false;
+        home.disable(function (rClean) {
+          assert.ok(rClean.ok, rClean.error);
+          done();
+        });
+      });
+    });
+  });
+});
+
 step('on webOS 3 to 6 the app is refreshed only once it is not in front, since a reinstall closes it', function (done) {
   var actions = [];
   var install = function (action, cb) { actions.push(action); cb({ ok: true, refreshed: true }); };
@@ -2991,6 +3048,39 @@ step('on webOS 3 to 6 the app is refreshed only once it is not in front, since a
         wait(20, function () {
           assert.deepEqual(actions, ['refresh'], 'on webOS 9 Home has no app of its own to refresh');
           done();
+        });
+      });
+    });
+  });
+});
+
+// A B4 (webOS 10.3.2) with an app in front: Home ended the screen saver and
+// opened nothing, and LG's Home opened over the app 20 s later (#1377).
+step('a Home press that only ends the screen saver opens nothing, however tvpowerd orders it', function (done) {
+  start({ enabled: true });
+  home.start(function () {
+    foreground('org.jellyfin.webos');
+    powerState('Screen Saver');
+    tv.launched = [];
+    home.homeKey(true);
+    powerState('Active');   // tvpowerd, 170 ms after the button
+    home.homeKey(false);
+    wait(25000, function () {
+      assert.deepEqual(tv.launched, [], 'nothing opened over the app');
+      assert.ok(taken(), 'Glasshouse Home keeps LG\'s Home\'s place');
+      // The screen saver's end reported before the key is read.
+      powerState('Screen Saver');
+      powerState('Active');
+      home.homeKey(true);
+      home.homeKey(false);
+      wait(25000, function () {
+        assert.deepEqual(tv.launched, [], 'nor when the power change comes first');
+        // Long after the screen saver, a press over the app is a Home press as before.
+        home.homeKey(true);
+        home.homeKey(false);
+        wait(25000, function () {
+          assert.ok(tv.launched.indexOf(LG_HOME) !== -1, 'with no view opening, LG\'s Home is opened as before');
+          home.disable(function () { done(); });
         });
       });
     });

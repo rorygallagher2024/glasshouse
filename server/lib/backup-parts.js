@@ -395,7 +395,7 @@ var NOT_CARRIED = {
   tileHiding: 'choose',
   // Screen saver entity slots and colors can be chosen per TV.
   screensaverEntities: 'choose', screensaverColor: 'choose',
-  setTileHidingAllowed: 'experimental', setWebos10ScreensaversAllowed: 'experimental', setInputBarAllowed: 'experimental',
+  setTileHidingAllowed: 'experimental', setWebos10ScreensaversAllowed: 'experimental', setInputBarAllowed: 'experimental', setPointerEnabled: 'experimental', setPointerSettings: 'experimental',
   setNetworkDebuggerAllowed: 'access', setDashboardPort: 'access',
   setDeviceName: 'tvName',
   // config.json's, in backup.js's GLASSHOUSE.

@@ -458,6 +458,16 @@ becomes the remote shell's own `argv`:
   and dies when the connection closes — the server starts, publishes discovery,
   then vanishes. `start-stop-daemon -b -m` survives.
 
+Where the TV has systemd, `tvwebctl start`, `restart`, `update` and `rollback`
+run again under `systemd-run --scope`, so the server and its watchdog are in a
+scope of their own. Otherwise they are in the cgroup of whatever started them,
+and an LG service's restart kills its whole cgroup: on a 50NANO756PR
+(webOS 6) the Homebrew Channel's start-up, and with it Glasshouse, its SSH and
+telnet, ran in `webapp-mgr.service`, which some settings changes restarted
+(#1355); on a C2 (webOS 9.2.2) they ran in `ls-hubd.service`. A scope is made
+first with `/bin/true`, so where none can be made the action runs where it is,
+once. The Homebrew Channel's own SSH and telnet stay where they are.
+
 `rsync` ships with the Homebrew Channel but is broken on-device: it cannot load
 `libcrypto.so.1.1`. Use `scp`, which works over the sftp subsystem.
 
@@ -763,6 +773,33 @@ child starts. Keys run one at a time, since two `sendKeyCode` calls running
 together can finish out of order. A key schedules no telemetry read of its own;
 an app it opens reaches Home Assistant through the foreground-app subscription.
 Each key's wait and run time is logged at debug level.
+
+### Pointer input for API clients
+
+`POST /api/pointer` accepts relative pointer events under the usual API token
+and control switch. `move` is an array of up to 120 `{dx, dy}` objects, with an
+optional boolean `down` for dragging; `click`, `down` and `up` are booleans, and
+`scroll` is one `{dx, dy}` object. All deltas are integers between -10000 and
+10000. The whole request is checked before any event is sent. A successful reply
+is `{ "ok": true, "count": N }`. `/api/caps` exposes `pointer: true` where the
+TV registers LG's network-input service.
+
+`lib/pointer.js` opens the socket returned by
+`com.webos.service.networkinput/getPointerInputSocket` on the first event and
+reuses it. Modern TVs return a Unix socket, where each LG text command has a
+32-bit big-endian length prefix. Older implementations may return a WebSocket
+address instead; those commands go one per masked text frame. The socket is
+closed on a write error and on server shutdown.
+
+The dashboard uses the same address as a WebSocket, sending the same JSON
+objects without waiting for HTTP responses between batches. The upgrade uses
+the API token, `allowControl` and same-origin check. POST remains for other
+clients and as the browser's fallback. `pointer.enabled` (true by default) gates
+both forms; it, `pointer.transport` and `pointer.updatesPerSecond` are set
+under **Server → Advanced**. The rate controls the dashboard's batching only;
+the server does not throttle API clients. A dashboard WebSocket exists only
+while Pointer is open, and the last client closing drops the LG socket too
+(POST keeps it open for 5 seconds idle).
 
 ### Where the dashboard's keyboard box types
 
@@ -1515,7 +1552,7 @@ The package is hashed as a stream and read as a stream; it is never held in memo
 
 * The `ar` archive must hold exactly `debian-binary`, `control.tar.gz` and `data.tar.gz`, once each, every member inside the file. Odd-length members are padded to even, and the last may omit the pad.
 * Each tarball is gunzipped as a stream and abandoned once it unpacks past its cap: 1 MB for the control tarball, 2 GB for the data tarball. A header checksum is verified on every entry, at most 20,000 entries are read, and `appinfo.json` may be at most 64 KB.
-* Long-name (`L`, `K`), pax (`x`, `g`, `X`) and base-256 size entries are refused rather than interpreted, as are entry types other than files, directories and links, and any path that is absolute or contains `..`. A tar that has data after its end-of-archive blocks is refused, and so is an `ar` member of the tarballs under 18 bytes, which cannot be gzip.
+* A GNU long-name entry (`L` for a path, `K` for a link target, which GNU tar writes for anything over 100 characters) gives the next entry its path or target, and that entry is then checked like any other. One with nothing after it, or two of a kind in a row, is refused as damaged. Pax (`x`, `g`, `X`) and base-256 size entries are refused rather than interpreted, as are entry types other than files, directories and links, and any path that is absolute or contains `..`. A tar that has data after its end-of-archive blocks is refused, and so is an `ar` member of the tarballs under 18 bytes, which cannot be gzip.
 * A link (symbolic or hard) is accepted only at least one level inside `usr/palm/{applications,services}/<id>/`, with a target that stays in that `<id>` directory, and no later entry may sit at or below a link's path. The path rules look at names, so a link that left its directory would let a later entry land where they never looked.
 * Only `usr/palm/applications/<id>/` and `usr/palm/services/<name>/` are read. Of the data, only `appinfo.json` is kept, plus the first 20 bytes of binaries in a service or an app's `bin/`, whose ELF `e_machine` is compared with that of `luna-send` or node. `uname -m` is not used, because some models report aarch64 with a 32-bit armhf userspace.
 * Every app and service id must be the package name or begin with it followed by a dot, and none may be under `com.webos.`, `com.palm.` or `com.lge.`, protected, or already present in a system app directory.
@@ -1553,12 +1590,15 @@ Home screen bloatware tile hiding allows built-in or preloaded system apps (whic
 ### Non-Destructive Manifest Bind-Mounts
 1. **Manifest Overrides**: For each hidden app ID, `server/lib/apps.js` stages a modified `appinfo.json` in `/var/lib/tvweb/appinfo-overrides/<id>.json` with `"visible": false`.
 2. **Multi-Base Probing**: Overrides are bind-mounted over every discovered location for the target app manifest (prioritizing `/media/system/apps/usr/palm/applications` for OTA-updated system apps, followed by `/usr/palm/applications` and flash mounts `/mnt/otncabi` / `/mnt/otycabi`).
-3. **SAM Refresh**: SAM (Surface Application Manager) reads `appinfo.json` only when it scans. It also scans when configd's `profile.blockedAppList` changes, which LG uses to block apps by region, so `lib/samrescan.js` adds an id no app has and then puts the list back exactly as it was: nothing is blocked, and SAM rereads every `appinfo.json`, overlays included, in about 2 s without restarting (on a C2 running webOS 9.2, its pid was unchanged). configd saves the list back as a user-defined value, kept across reboots and with no call to remove it, so it stays at LG's value as of the nudge even if LG's own list later changes with a firmware update or a new country. Each caller then checks SAM reports the change (`getAppInfo` visibility, or the screen saver's type). Where the TV has no such list (webOS 4) or SAM does not catch up, `apps.js` restarts SAM as before (`killall -9 LunaExecutable` and `systemctl kill -s 9 sam.service` on systemd / `initctl restart sam` on Upstart). The boot hook does the same in shell. The restart was the one thing every black-picture report in #366 had in common. sam ignores that list on webOS 10 (a C2 on 10.3.1), where `samrescan.rereadApp` asks it for one app instead with `blockSystemApp` followed by `releaseBlockSystemApp`; the screen saver switch uses that first, tile hiding does not yet.
+3. **SAM Refresh**: SAM (Surface Application Manager) reads `appinfo.json` only when it scans. Glasshouse makes SAM reread manifests in place where the TV has a way, and never restarts it there (#366, #1315):
+   - **Per-app block and release (webOS 10–11)**: where `/etc/palm/schemas/sam/applicationManager.blockSystemApp.schema` exists, `samrescan.rereadApps` (and `sam_reread_app` in `50-tvweb.sh`) calls `applicationManager/blockSystemApp` followed by `releaseBlockSystemApp` for each affected app (`"forceBlockSystemApp": false` where the schema asks for it).
+   - **Configd nudge (webOS 7–9)**: where configd holds LG's `profile.blockedAppList` region list, `samrescan.refresh` (and `sam_nudge` in `50-tvweb.sh`) briefly adds an unused id and puts LG's list back, causing SAM to reread every `appinfo.json` in ~2 s with its PID unchanged. configd keeps that value across reboots, so it stays at LG's value as of the nudge.
+   Each caller checks `getAppInfo` visibility afterwards. If SAM declines or times out on webOS 7 and later, the change is undone (`hideTile` unmounts and removes the override) rather than restarting SAM. Where neither mechanism exists (webOS 3–6), tile hiding restarts SAM as before (`killall -9 LunaExecutable`, `systemctl kill -s 9 sam.service` with the start limits of SAM and the units that require it cleared, `initctl restart sam` on Upstart TVs such as the B8), since it is the only way SAM reads a mounted manifest there. That restart is the one left: Glasshouse Home never restarts SAM.
 
 ### Cold Boot vs. Quick Start+ (Standby)
 - **Normal Usage (Quick Start+)**: LG webOS defaults to Quick Start+ (Active Standby / Suspend-to-RAM). When the TV is powered off and on with the remote, the Linux kernel, active bind-mounts, and SAM remain running in memory. The overrides remain intact, and hidden tiles never appear.
 - **Cold Boot (Full Reboot / Power Loss)**: On a true cold boot, webOS boots from an early checkpoint/snapshot (CRIU), displaying the Home screen (`com.webos.app.home`) before late userland root hooks run. The Home screen briefly shows the stock tiles for a few seconds until `devmode.service` invokes `/var/lib/webosbrew/startup.sh` &rarr; `run-parts /var/lib/webosbrew/init.d/50-tvweb`.
-- `50-tvweb` reapplies the bind-mounts from `/var/lib/tvweb/hidden_apps` in ~50ms and respawns SAM, at which point the Home screen drops the tiles from view. This brief appearance on cold boot is architectural to webOS's read-only root partition: root hooks run safely in user space without modifying rootfs systemd units.
+- `50-tvweb` reapplies the bind-mounts from `/var/lib/tvweb/hidden_apps` and asks SAM to reread in place (`sam_reread_app` per app on webOS 10–11, or `sam_nudge` on webOS 7–9) without restarting SAM. If neither succeeds at boot on webOS 7 and later, the hook unmounts the overrides (`umount -l`) rather than restarting SAM. On webOS 3–6 it restarts SAM once, as before, since a cold boot restores SAM from a snapshot that has already read the stock manifests.
 
 ---
 
@@ -1617,7 +1657,7 @@ feature off, or `tvwebctl restore-home` before uninstalling, deletes the webOS
 ## Glasshouse Home
 
 `lib/home.js` runs a home screen of Glasshouse's own in place of LG's, opt-in
-from the dashboard's Home tab (webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3, standalone as on webOS 4, and later versions with `allowExperimentalHome`). The view is `assets/home.html`,
+from the dashboard's Home tab (webOS 4, 5, 6, 7, 9, 10 and 11; webOS 3, standalone as on webOS 4, webOS 8, and webOS 12 and later with `allowExperimentalHome`). The view is `assets/home.html`,
 opened by a small web app whose files are `assets/home-app/index.html` and its
 icons.
 
@@ -1636,8 +1676,10 @@ stages it in `/var/lib/tvweb/home-takeover` with an `appinfo.json` naming
 `com.webos.app.home` (type `web`, `visible` false, `appCategory` `["home"]`
 as LG's has it), bind-mounts the directory over
 `/usr/palm/applications/com.webos.app.home`, and has sam read it again
-(`lib/samrescan.js`): with the nudge on webOS 9, and with a block and release
-of the one app on webOS 10, which ignores the nudge. On webOS 10 the Home
+(`lib/samrescan.js`): with the nudge on webOS 7 and 9, and with a block and release
+of the one app on webOS 10 and 11, which ignore the nudge. Neither `lib/home-takeover.js`
+nor the boot hook falls back to restarting `sam` (#366, #1315): if `sam` does not take
+the reread on takeover, LG's Home is put back and the switch fails cleanly. On webOS 10 the Home
 button opens the default app of the `home` category, which sam takes from that
 `appCategory`; without it the button does nothing
 ([research](development/TV-RESEARCH.md#glasshouse-home-on-webos-10-g5-webos-1031)).
@@ -1910,6 +1952,15 @@ TV is on lasts through standby and is gone at the next switch-on. So the server
 sends `setPreloadPolicy` again for each app switched off, at its start and at
 every switch-on. Sent within a second of the TV reporting Active, it left
 YouTube unloaded.
+
+A cold boot is a switch-on too, and there the server is late: on a B4 (webOS
+10.3.2) with Quick Start+ off, the preload manager loaded Netflix 59 s and the
+browser 61 s in, both switched off, while the server started at 52 s and sent
+its switches one by one from 58 s (#1374). So the boot hook sends them first,
+in the background, all at once as soon as the preload manager answers, before
+it starts the server; on a C2 (webOS 9.2.2) that was 6 s after the hook began.
+Each call has a 5 s timeout (`luna-send -w`), since the C2's preload manager
+never answers `setPreloadPolicy` and `luna-send -n 1` would wait for ever.
 
 `/var/preferences/webos-preload-manager-conf.json` is not used: the preload
 manager writes an app back into it about 3 seconds after the app comes to the
