@@ -2057,6 +2057,8 @@
  "home.showAppCountAlt": {"text": "Не показывается в альтернативном виде: у его рядов нет названий.", "from": "Not shown in Alternative View, whose rows have no titles."},
  "home.showCec": {"text": "Адреса CEC", "from": "CEC addresses"},
  "home.showCecDesc": {"text": "На плитке каждого входа: адрес HDMI-CEC подключённого к нему устройства.", "from": "On each input’s tile: the HDMI-CEC address of the device behind it."},
+ "home.showPointer": {"text": "Указатель Magic Remote", "from": "Magic Remote pointer"},
+ "home.showPointerDesc": {"text": "При движении пульта на Glasshouse Home появляется указатель. Если выключено, по Home перемещаются только стрелки, а OK и щелчок открывают выбранную плитку.", "from": "Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus."},
  "home.showLast": {"text": "Смотрели последним", "from": "Last watched"},
  "home.showLastDesc": {"text": "Вверху Glasshouse Home и на входе, на котором это было: что телевизор показывал последним.", "from": "At the top of Glasshouse Home and on the input it was on: what the TV last showed."},
  "lang.partial": {"text": "{name} (частично)", "from": "{name} (partial)"},
