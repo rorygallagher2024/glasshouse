@@ -266,8 +266,6 @@ function list(cb) {
   });
 }
 
-function pad2(n) { return n < 10 ? '0' + n : '' + n; }
-
 /*
  * readMany(ids, cb) - cb({ ok, entities: { id: { state, attributes,
  * updated } }, errors: { id: message } }). One request per entity, all in

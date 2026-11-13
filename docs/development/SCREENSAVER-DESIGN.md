@@ -229,6 +229,30 @@ and `homeAssistant.token` configured via the **HA & MQTT** tab
 (**Home Assistant API**) or `config.json`; without them the address answers 503
 and the screen saver draws whatever it can without it.
 
+A saver with many readings can declare `ha-all` in `uses` instead, and read
+them all in one request from the single address put in for `__TVWEB_HA_ALL__`,
+this server's `/api/homeassistant` with the same token:
+
+```json
+{
+  "ok": true,
+  "entities": {
+    "daylight": { "id": "sensor.outdoor_daylight", "state": "9.11",
+                  "attributes": { "today_hms": "9:06:36" },
+                  "updated": "2026-11-12T20:00:00+00:00", "label": "Daylight" }
+  },
+  "errors": { "rain": "no entity sensor.rain_today (404)" }
+}
+```
+
+Each entity is under its short name from `entities`; `label` is there only
+where the owner set one on the **Screensaver** tab, and `errors` only where a
+read failed, under the same short names. The server reads the declared
+entities together, so the answer comes as soon as the slowest does, and serves
+only the screen saver on the TV's own entities, never one the request names.
+Without Home Assistant configured it answers `{ "ok": false, "configured":
+false, "entities": {} }`.
+
 What the `state` means is the screen saver's business, not the server's: `9.11`
 hours is `9h 07m` only because the saver says so.
 
