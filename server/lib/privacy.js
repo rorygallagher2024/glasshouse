@@ -15,7 +15,10 @@ var ADBLOCK_LEGACY_MARKER = '# LG Ad & Telemetry Blackhole (lg-webos-mqtt)';
 var ADBLOCK_FLAG_FILE = '/var/lib/tvweb/adblock_enabled';
 
 var ADBLOCK_ADS = [
+  'ad.lgappstv.com',
   'ad.lgsmartad.com',
+  'info.lgsmartad.net',
+  'lgad.cjpowercast.com',
   'ibis.lgappstv.com',
   'ibs.lgappstv.com',
   'lgsmartad.com',
@@ -28,6 +31,9 @@ var ADBLOCK_ADS = [
   // Alphonso is LG Ad Solutions' screen recognition (ACR) service. The TV asks
   // prov-lg for its setup and eulacheck for consent before anything else.
   'alphonso.tv',
+  'lgads.tv',
+  'ad-inserter.alphonso.tv',
+  'config-overlay-ads.alphonso.tv',
   'prov-lg.alphonso.tv',
   'prov.alphonso.tv',
   'eulacheck.alphonso.tv',
@@ -45,6 +51,12 @@ var ADBLOCK_ADS = [
   // Seen on port 4433 from a factory-reset TV, while its setup still showed
   // the agreements unanswered (docs/ACR.md). Numbered siblings are not known.
   'eu-acr86.alphonso.tv',
+  // Additional ad and APM endpoints in Life's Good Without Spying's lists;
+  // their classification is upstream evidence, not a traffic capture here.
+  'ruc.cdpbeacon.lgtvcommon.com',
+  'eic-rum.elsa.lgecloudapm.com',
+  'lgecloudapm.com',
+  'tracking.lgtvsdp.com',
   // LG's remote diagnostics (/usr/sbin/remotediag on an OLED77C5PUA, webOS
   // 11.2.0): the servers it sends screen captures and logs to once LG support
   // starts a session. Nothing else names them.
@@ -73,13 +85,17 @@ var ADBLOCK_ADS = [
  * apart from the catalog.
  */
 var ADBLOCK_REGIONAL = [
+  'ad.lgsmartad.com',
   'info.lgsmartad.com',
+  'ads.lgtvcommon.com',
+  'videoads.lgtvcommon.com',
   'rdx2.lgtvsdp.com',
   'rdx2.nextlgsdp.com',
   'elastic.lgwebostv.com',
   'ibs.lgappstv.com',
   'ibsstat.lgappstv.com',
   'cdpbeacon.lgtvcommon.com',
+  'cdpbeacon2.lgtvcommon.com',
   'cdpsvc.lgtvcommon.com',
   'wau.lgtvcommon.com',
   // adlogservice, a Python script LG updates over the air and runs through
@@ -134,11 +150,40 @@ var ADBLOCK_PLATFORM = [
   'eic-ngfts.lge.com',
   // From Huttunen's blocklist (docs/IMPLEMENTATION.md), not a capture of ours.
   // lgtviot.com is the ThinQ cloud, so the ThinQ app loses the TV on this tier.
-  'cdplauncher.lgtvcommon.com',
   'lgchhomeapp.lgtvcommon.com',
   'lgtviot.com',
-  // Reported by an owner; ocpservice names ocp.lgtviot.com in its binary.
-  'eic-ocp.lgtviot.com',
+  // These also carry Home, account and pairing features, so they belong only
+  // to Everything even where an upstream list groups them with tracking.
+  'config.lgtvsdp.com',
+  'thetake.com',
+  'pnv.lgtvcommon.com',
+  'wiseresource.lgtvcommon.com',
+  'qcardservice.lgtvcommon.com',
+  'ruc.homeprv.lgtvcommon.com',
+  'ruc.nudge.lgtvcommon.com',
+  'ruc.recommend.lgtvcommon.com',
+  'ruc.service.lgtvcommon.com',
+  'ruc.wiseconfig.lgtvcommon.com',
+  'ruc.api.lgtviot.com',
+  'ruc.commonpush.lgtviot.com',
+  'ruc.push.lgtviot.com',
+  'ruc.sports.lgtviot.com',
+  'qt2-kic.lgtviot.com',
+  'ruc-op-lss.lgthinq.com',
+  'it-service.lgthinq.com',
+  'lgthinq.com',
+  'lss.lgthinq.com',
+  'noti.lgthinq.com',
+  'prd-api.lgthinq.com',
+  // LG Channels depends on Pluto/Xumo as well as LG's own hosts.
+  'eic.lgchhomeapp.lgtvcommon.com',
+  'app-lgwebos.pluto.tv',
+  'sp.pluto.tv',
+  'tags.tiqcdn.com',
+  'lg-channelplus-eu-beacons.xumo.com',
+  'lg-channelplus-eu-mds.xumo.com',
+  'bss.lgechannel.com',
+  'lgechannel.com',
   'ueiwsp.com',
   'www.ueiwsp.com',
   // Amazon's Alexa SDK (libAVSCommon) fetches /generate_204 from it on a timer
@@ -161,6 +206,8 @@ var ADBLOCK_PLATFORM = [
 var ADBLOCK_PLATFORM_REGIONAL = [
   'lgtviot.com',
   'api.lgtviot.com',
+  'ocp.lgtviot.com',
+  'commonpush.lgtviot.com',
   'push.lgtviot.com',
   'sports.lgtviot.com',
   'buddy.lgtviot.com',
@@ -169,17 +216,32 @@ var ADBLOCK_PLATFORM_REGIONAL = [
 // Blocking the Content Store's interface and recommendations breaks the store.
 // Their documented variants use country prefixes (TV-RESEARCH.md).
 var ADBLOCK_STORE_HOSTS = ['app.lgwebostv.com', 'lgrecommends.lgappstv.com'];
-var ADBLOCK_THINQ_REGIONAL = ['connect-client.lgthinq.com', 'common.lgthinq.com'];
-// ThinQ uses a hyphen before the service name, rather than a DNS label.
-var ADBLOCK_THINQ_PREFIXES = ['aic', 'eic', 'kic'];
+var ADBLOCK_HOME_HOSTS = ['cdplauncher.lgtvcommon.com', 'homeprv.lgtvcommon.com',
+  'nudge.lgtvcommon.com', 'rdl.lgtvcommon.com', 'recommend.lgtvcommon.com',
+  'service.lgtvcommon.com', 'wiseconfig.lgtvcommon.com'];
+var ADBLOCK_THINQ_REGIONAL = ['connect-client.lgthinq.com', 'common.lgthinq.com',
+  'iotservice.lgthinq.com', 'service.lgthinq.com', 'op-lss.lgthinq.com'];
+// Home uses dotted service regions; ThinQ and OCP also use hyphenated ones.
+var ADBLOCK_SERVICE_PREFIXES = ['aic', 'eic', 'kic'];
 
 var ADBLOCK_SDP = [
   'nextlgsdp.com',
   'us.nextlgsdp.com',
   'gb.nextlgsdp.com',
   'de.nextlgsdp.com',
-  'eu.nextlgsdp.com'
+  'eu.nextlgsdp.com',
+  // Documented macro-regions and WiseLG's RUC host share the clock gate.
+  'af.nextlgsdp.com',
+  'as.nextlgsdp.com',
+  'la.nextlgsdp.com',
+  'me.nextlgsdp.com',
+  'na.nextlgsdp.com',
+  'eu7.nextlgsdp.com',
+  'ruc.tv.wiselg.com'
 ];
+// Only these country7 names are documented upstream; do not invent de7 or gb7.
+var ADBLOCK_SDP_VARIANT_COUNTRIES = ['au', 'br', 'cn', 'hk', 'id', 'il', 'jp',
+  'kr', 'my', 'sg', 'tw', 'us', 'vn', 'za'];
 /*
  * webOS 11 moved the service platform to tv.wiselg.com: on an OLED77C5PUA
  * (11.2.0) sdx's server list names <country>.tv.wiselg.com (US) for sign-in,
@@ -193,7 +255,10 @@ var ADBLOCK_SDP_REGIONAL = ['tv.wiselg.com', 'nextlgsdp.com',
                             'ibs.nextlgsdp.com', 'ibsstat.nextlgsdp.com'];
 
 function adBlockSdp() {
-  return ADBLOCK_SDP.concat(withPrefixes(ADBLOCK_SDP_REGIONAL));
+  var variants = countryPrefixes().filter(function (country) {
+    return ADBLOCK_SDP_VARIANT_COUNTRIES.indexOf(country) !== -1;
+  }).map(function (country) { return country + '7.nextlgsdp.com'; });
+  return ADBLOCK_SDP.concat(withPrefixes(ADBLOCK_SDP_REGIONAL), variants);
 }
 var SDP_POLL_INTERVAL_MS = 3000;
 var SDP_SLOW_POLL_INTERVAL_MS = 30000;
@@ -457,7 +522,9 @@ function isSdpGracePeriodActive() {
 function adBlockPlatformBase() {
   return ADBLOCK_PLATFORM.concat(withPrefixes(ADBLOCK_PLATFORM_REGIONAL),
     withPrefixes(ADBLOCK_STORE_HOSTS, countryPrefixes()),
-    withPrefixes(ADBLOCK_THINQ_REGIONAL, ADBLOCK_THINQ_PREFIXES, '-'));
+    withPrefixes(ADBLOCK_HOME_HOSTS, ADBLOCK_SERVICE_PREFIXES),
+    withPrefixes(['ocp.lgtviot.com'], ADBLOCK_SERVICE_PREFIXES, '-'),
+    withPrefixes(ADBLOCK_THINQ_REGIONAL, ADBLOCK_SERVICE_PREFIXES, '-'));
 }
 
 function adBlockPlatform() {

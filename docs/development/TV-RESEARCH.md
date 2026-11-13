@@ -2009,8 +2009,15 @@ in stats reflects the saved disabled-services list, not the process or stub's
 current state. `services.isStubbed()` checks for a mount at the executable's
 path without checking its contents; enforcement retries after 30 s and every
 five minutes. The report alone cannot distinguish a missing or ineffective
-stub from another scanning process. No further TV tests were performed for
-this report.
+stub from another scanning process.
+
+The owner's later Pi-hole log recorded 253 PTR queries at 11:40:17–18 CET on
+13 November. The TV's boot-hook log started at 11:40:14, the server listened at
+11:40:24 and its clock gate closed at 11:40:25. A later read-only check found
+the scanner executable byte-for-byte equal to Glasshouse's stub. That snapshot
+does not identify the process responsible for the earlier sweep. A
+`de.nextlgsdp.com` query at 11:41:17 was after the gate closed; its originating
+process and resolver path remain unidentified.
 
 `iconnectivity` (UEI QuickSet) reverse-looks-up every address on the TV's
 /24. On a C2 with `other.ueiEnable` off, opening the Home Hub's page for
@@ -2758,6 +2765,13 @@ or the clock gate closes leaves a running app behind. Synchronization must
 cover existing copies after each table change and the jailer's later resets,
 including jails for background services.
 
+Read-only owner checks of build `681736d5` on 13 November found all ten listed
+jail hosts files equal to the TV's table, including Chromecast, ThinQ, voice,
+YouTube and Netflix. `getent hosts` returned `::` for `www.ueiwsp.com`,
+`de.lgeapi.com`, `de.nextlgsdp.com` and `eic.tv.wiselg.com`. These establish the
+copies and the queried resolver's state at that time; they do not establish
+that every running client consults them or prevent requests before startup.
+
 ## Regional service coverage
 
 An owner's Pi-hole log reports `de.ibs.nextlgsdp.com`, `de.lgeapi.com`,
@@ -2786,8 +2800,9 @@ check described below.
 
 On 13 November 2026 the same owner reported these names after updating main
 and restarting the TV. DNS activity alone does not identify a request's
-payload or prove that a connection succeeded. The app-jail synchronization
-change has not been tried on this TV.
+payload or prove that a connection succeeded. Post-startup checks of the
+synchronization are described above; the earlier DNS activity does not identify
+an individual app's resolver behavior.
 
 | Names reviewed | Coverage and evidence |
 | :--- | :--- |
@@ -2848,6 +2863,40 @@ gate. Its presence in firmware does not establish use on the owner's C4.
 Other guessed `gfts` or `ngfts` regional and development combinations are not
 added without a firmware name or traffic report. No exhaustive inventory of
 all WiseLG subdomains has been established.
+
+### Additional categorized domain coverage
+
+[Life's Good Without Spying's domain lists at `0057ce44`](https://github.com/lewisdoesstuff/lifesgoodwithoutspying/tree/0057ce44d5b4494ad85cf5975d599c58d5f25871/app/init/blocklist.d)
+identify additional SmartAd, ACR, APM, Home, ThinQ, SDP and LG Channels endpoints.
+This is upstream classification and reported resolution testing, not a capture
+establishing the payloads or users of every name on a Glasshouse test TV. The
+upstream [MIT notice](../licenses/lifesgoodwithoutspying-MIT.txt) is retained.
+
+Glasshouse adds SmartAd's country family, regional ad/video-ad and second beacon
+families, the legacy `lgad.cjpowercast.com`, Alphonso's `ad-inserter` and
+`config-overlay-ads`, `lgads.tv`, `tracking.lgtvsdp.com` and dedicated APM names
+to Ads & telemetry. Home configuration/recommendations, additional ThinQ
+services, OCP and common push remain Everything-only because they can carry
+features as well as reporting. LG Channels' exact LG, Pluto and Xumo names
+also belong only to Everything, including the shared analytics name
+`tags.tiqcdn.com`; this can affect related Pluto features.
+
+Country and regional families use bounded prefix generation rather than the
+upstream list's full country enumeration. Home uses the bare names and
+`aic`/`eic`/`kic`; additional RUC and development aliases are exact entries.
+Generated siblings are inferred coverage, not traffic observed on every region.
+The classification does not import generic shared Google or streaming domains.
+Firmware-update names remain under the existing separate update-block switch.
+
+The SDP list documents `af`, `as`, `la`, `me`, `na` and `eu7` macro-region names
+and these `country7` names: `au`, `br`, `cn`, `hk`, `id`, `il`, `jp`, `kr`, `my`,
+`sg`, `tw`, `us`, `vn` and `za`. Glasshouse includes only the saved country's
+documented variant, or applicable fallback countries before it is known.
+It does not infer a variant for every country: no `de7` or `gb7` is listed.
+Those names and the exact `ruc.tv.wiselg.com` also remain reachable until the
+existing clock gate closes. Unlike the upstream project's fixed 60-second
+SDP delay, this gate requires valid time. The expanded coverage has not yet
+been tested on hardware.
 
 ## Report and store log hosts (C4, webOS 10.3.1)
 

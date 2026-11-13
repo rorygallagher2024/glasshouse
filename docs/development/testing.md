@@ -50,6 +50,15 @@ fallbacks, and the absence of unselected countries and LG region prefixes.
 The privacy/app-hosts integration check verifies that tier and country changes
 also replace these entries in running app copies.
 
+Additional domain coverage checks advertising, ACR and APM hosts on both tiers,
+and Home, ThinQ and LG Channels dependencies only in Everything, on IPv4 and
+IPv6. SmartAd country entries follow the saved country. SDP macro-regions,
+WiseLG's RUC name and documented `country7` variants remain reachable until
+clock sync; tests cover US, Australian and German settings, uppercase codes,
+missing or invalid countries and the omission of undocumented variants.
+The integration check verifies that the new service and clock entries reach
+existing jail copies, leave them on a tier change and follow a country change.
+
 `test-appdns.js` checks that an app's DNS servers are written into its jail's
 `resolv.conf`, written again when a watch sees the jailer's copy, taken out
 again for the TV's, and set at start for a jail made later; that the boot

@@ -1124,6 +1124,9 @@ advertising**, which is why they are a separate tier:
 | `ngfts.tv.wiselg.com` | The content CDN on webOS 11 |
 | `eic-gfts.tv.wiselg.com` | Reported service alias on a C4; exact function unverified, blocked after clock sync like the other `tv.wiselg.com` names |
 | `dev-ruc-ngfts.tv.wiselg.com` | Present in C5 firmware strings on webOS 10.3.1; no traffic captured, blocked only in Everything after clock sync |
+| Home's `homeprv`, `nudge`, `rdl`, `recommend`, `service` and `wiseconfig` under `lgtvcommon.com` | Home recommendations and configuration; bare and `aic`/`eic`/`kic` variants, plus exact documented RUC names |
+| ThinQ's `iotservice`, `service` and `op-lss` under `lgthinq.com`; OCP and `commonpush` under `lgtviot.com` | IoT, account, push and pairing services; Everything includes the dotted and hyphenated service regions and exact additional aliases |
+| `eic.lgchhomeapp.lgtvcommon.com`, `app-lgwebos.pluto.tv`, `sp.pluto.tv`, `tags.tiqcdn.com`, `lg-channelplus-eu-beacons.xumo.com`, `lg-channelplus-eu-mds.xumo.com`, `bss.lgechannel.com`, `lgechannel.com` | LG Channels and its Pluto/Xumo dependencies; blocking may affect related Pluto features |
 
 `com.webos.appInstallService` names the one its own set installs from:
 `http://GB.lgtvsdp.com` on a B8, `http://GB.nextlgsdp.com` on a C2,
@@ -1143,6 +1146,22 @@ use only the bare host and the TV's country, with the same fallback countries
 before it is learned. Their documented variants are country names, so no
 `aic`, `eic`, `kic` or `eu` prefixes are generated for them. They belong only
 to Everything and do not wait for clock sync.
+
+Additional coverage comes from Life's Good Without Spying's categorized lists:
+SmartAd's `ad.lgsmartad.com`, regional `ads`, `videoads` and `cdpbeacon2` under
+`lgtvcommon.com`, the Alphonso ad-inserter and overlay configuration, `lgads.tv`,
+and APM reporting are on Ads & telemetry. Home, account, ThinQ and LG Channels
+dependencies stay on Everything. Existing country/region generation is used
+instead of importing every country's names. Classification and unobserved
+variants are [documented as upstream evidence](development/TV-RESEARCH.md#additional-categorized-domain-coverage).
+
+The clock gate also covers the documented SDP macro-regions `af`, `as`, `la`,
+`me`, `na` and `eu7`, and WiseLG's `ruc` host. A saved country gets its `country7`
+SDP variant only where documented: `au`, `br`, `cn`, `hk`, `id`, `il`, `jp`, `kr`,
+`my`, `sg`, `tw`, `us`, `vn` and `za`. Before a country is known, the supported
+members of the existing country fallback list are used. No `de7` or `gb7` is
+invented. The separate TV software update block still owns its six update-server
+names; these additions do not change that switch.
 
 On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
 sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names
