@@ -542,6 +542,67 @@ async function visitHomePreviewSize(browser, base, problems) {
   }
 }
 
+// A Medium or Large preview has what it shows named under it on the left, in
+// place of Last watched, and the picture details on the right, rather than
+// beside it, where the strip had no room for them all.
+async function visitHomePreviewSizeDetails(browser, base, problems) {
+  for (const view of ['standard', 'alternative']) {
+    for (const size of ['medium', 'large']) {
+      const name = 'Home preview details, ' + view + ' ' + size + ': ';
+      const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+      page.on('pageerror', e => problems.push(name + e.message));
+      const layout = { rows: ['dev'], order: { dev: [] }, hidden: { dev: [] }, channels: [], hintSeen: true, searchHintSeen: true,
+        livePreview: true, previewAlways: false, previewInTile: false, previewSize: size, view, picture: true };
+      await page.addInitScript(() => {
+        HTMLMediaElement.prototype.load = function () {};
+        HTMLMediaElement.prototype.pause = function () {};
+        HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+      });
+      await page.route('**/api/home/**', route => {
+        const url = new URL(route.request().url());
+        const reply = body => route.fulfill({ json: body });
+        if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1,
+          supported: { ok: true, webos: '9.2.0' }, apps: [], channels: [], sources: { channels: 0 },
+          devices: [{ id: 'player', name: 'A long player name for the strip', input: 'hdmi1', port: 1 }],
+          order: { dev: ['player'] } });
+        if (url.pathname.endsWith('/now')) return reply({ kind: 'input', port: 1, title: 'A long player name for the strip', devices: ['player'] });
+        if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
+        if (url.pathname.endsWith('/signal')) return reply({ ok: true, signal: true });
+        if (url.pathname.endsWith('/picture')) return reply({ ok: true, signal: { width: 3840, height: 2160, hz: 60, hdr: 'hdr10' },
+          mode: { display: 'Filmmaker Mode' }, light: 80, oled: true });
+        return reply({ ok: true, build: 'details', layoutVersion: 1 });
+      });
+      try {
+        await page.clock.install();
+        await page.goto(base + '/assets/home.html');
+        await page.waitForSelector('.tile');
+        await page.clock.fastForward(400);
+        await page.waitForTimeout(100);
+        if (await page.locator('#pvVideo source').count()) await page.locator('#pvVideo').dispatchEvent('playing');
+        for (let i = 0; i < 6; i++) { await page.clock.fastForward(1000); await page.waitForTimeout(30); }
+        const box = await page.evaluate(() => {
+          const r = id => document.getElementById(id).getBoundingClientRect();
+          const pv = document.getElementById('preview');
+          return { cls: pv.className, pv: r('preview'), info: r('pvInfo'), name: r('pvName'), rows: r('rows').top,
+            title: document.getElementById('pvNameTitle').textContent,
+            sourceShown: getComputedStyle(document.getElementById('source')).visibility !== 'hidden',
+            infoShown: getComputedStyle(document.getElementById('pvInfo')).display !== 'none' };
+        });
+        if (!/\binfo\b/.test(box.cls) || !box.infoShown) { problems.push(name + 'the picture details did not show (' + box.cls + ')'); continue; }
+        if (box.info.top < box.pv.bottom) problems.push(name + 'the details are not under the preview');
+        if (box.info.left < box.pv.left - 1 || box.info.right > box.pv.right + 1) problems.push(name + 'the details reach past the preview');
+        if (box.title !== 'A long player name for the strip') problems.push(name + 'the preview is not named under it, ' + JSON.stringify(box.title));
+        if (Math.abs(box.name.left - box.pv.left) > 1 || box.name.top < box.pv.bottom) problems.push(name + 'the name is not under the preview on the left');
+        if (box.name.right > box.info.left) problems.push(name + 'the name runs into the details');
+        if (box.sourceShown) problems.push(name + 'Last watched is still shown beside the preview');
+        if (box.rows < Math.max(box.info.bottom, box.name.bottom) + 20) problems.push(name + 'the rows start at ' + box.rows + ', under the name and details');
+      } finally {
+        await page.close();
+      }
+    }
+  }
+}
+
 async function visitHomePreviewOptions(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home preview options: ' + e.message));
@@ -3454,7 +3515,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitInputBarBehindHome, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },
