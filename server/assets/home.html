@@ -4886,6 +4886,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
    * finds the last launch's parameters still there.
    */
   var guideAsked = false;
+  // A channel Home Assistant asked to play: { pl, key, at }, opened once the lineup has it.
+  var playAsked = null;
   var LOADED_KEY = 'glasshouse.home.loaded';
   /*
    * Each launch replaces the last one's request, so a Home press after Guide
@@ -4902,6 +4904,22 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       if (seen) return;
     }
     guideAsked = p.glasshouse === 'guide';
+    playAsked = p.glasshouse === 'play' && /^[0-9A-Za-z_-]{1,40}$/.test(String(p.pl || '')) && /^[a-z][0-9a-z]{1,24}$/.test(String(p.key || ''))
+      ? { pl: String(p.pl), key: String(p.key), at: Date.now() } : null;
+  }
+  function openAskedPlay() {
+    var want = playAsked;
+    if (!want || !data || !layout) return;
+    if (Date.now() - want.at > 20000) { playAsked = null; return; }
+    var found = null, items = lineupItems();
+    for (var i = 0; i < items.length; i++) if (items[i].pl === want.pl && items[i].key === want.key) { found = items[i]; break; }
+    // The lineup may still be on its way.
+    if (!found) return setTimeout(openAskedPlay, 700);
+    playAsked = null;
+    if (adder.open) closeAdder();
+    if (guide.open) closeGuide();
+    if (finder.open) { closeSearch(); state.rail = false; }
+    openPlayer(found);
   }
   function openAskedGuide() {
     if (!guideAsked || !data || !layout) return;
@@ -5723,6 +5741,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       refreshGuide();
       refreshTvGuide();
       openAskedGuide();
+      openAskedPlay();
       // The player keeps its frozen order; its channels' names and guide follow.
       if (player.open) { renderBand(); if (player.list) renderList(); }
       if (guide.open) renderGuide();

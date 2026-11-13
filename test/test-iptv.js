@@ -530,6 +530,12 @@ step('live TV pause is off by default, kept, and records only an MPEG-TS channel
         assert.equal(ts._session(), null);
         iptv.playUrl(xc, c.key, true, function (full) {
           assert.ok(!full.timeshift && /\.ts$/.test(full.url), 'without a stick, the provider\'s URL');
+          assert.strictEqual(iptv.nowPlaying(), null, 'no channel until Home holds its full screen lease');
+          iptv.lease(true, true);
+          assert.strictEqual(iptv.nowPlaying().name, c.name, 'the channel playing full screen, by name');
+          assert.strictEqual(iptv.nowPlaying().pl, xc);
+          iptv.lease(false, false);
+          assert.strictEqual(iptv.nowPlaying(), null, 'none once Home lets go');
           assert.equal(iptv.setOutput({ pl: xc, key: c.key, output: 'hls' }).ok, true);
           assert.equal(iptv.setTimeshift({ on: false }).ok, true);
           done();

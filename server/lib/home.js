@@ -1422,6 +1422,18 @@ function openAirPlay(cb) {
 }
 
 /*
+ * Plays an Internet TV channel full screen on Home: the view is launched with
+ * the channel in its parameters and opens its player on it.
+ */
+function playChannel(pl, key, cb) {
+  if (!/^[0-9A-Za-z_-]{1,40}$/.test(String(pl)) || !/^[a-z][0-9a-z]{1,24}$/.test(String(key))) {
+    return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
+  }
+  if (!readConfig().enabled) return cb({ ok: false, error: msg('srv.home.notInUse', 'Glasshouse Home is not in use') });
+  launch(LG_HOME, { glasshouse: 'play', pl: pl, key: key }, cb);
+}
+
+/*
  * Opens a tile: { kind: 'app'|'dev'|'ch'|'lg', id }. Only what the catalogue
  * lists can be opened, so this is not a way to launch anything at all. A
  * device opens its HDMI input with LG's CEC selection parameters where known.
@@ -3057,6 +3069,7 @@ function stop() {
 
 module.exports = {
   LG_HOME: LG_HOME,
+  playChannel: playChannel,
   init: init,
   start: start,
   stop: stop,

@@ -380,7 +380,15 @@ The temperature is shown as sent, in the unit the weather entity uses. `city` is
 
 ## Universal Media Player Setup
 
-Home Assistant's MQTT discovery has no `media_player` platform, so Glasshouse cannot create one itself. Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, for a media control card on a dashboard. It takes a title only from another media player, so it shows none. Play and pause are sent as the remote's Play and Pause keys, so they work only in apps that act on those keys: the TV's own player does, and the Jellyfin app resumes with Play but ignores Pause.
+Home Assistant's own MQTT discovery has no `media_player` platform, so Glasshouse cannot create one through discovery alone. Two ways to still get one media control card:
+
+### Through a separate integration
+
+With [grzegorz914/homeassistant-mqtt-media-player](https://github.com/grzegorz914/homeassistant-mqtt-media-player) installed through HACS, turning on `universalMediaPlayer` under `mqtt` in `config.json` (no dashboard switch yet) publishes one real `media_player` entity: power, volume, mute, sound output, play/pause/stop/skip, the current app or input's icon as the card's cover (through the icon server, so `iconServer` needs to be on too), and a media browser of the TV's inputs and installed apps with the same icons. Restart the server after changing the setting.
+
+### Through Home Assistant's own universal media player
+
+Home Assistant's `universal` media player puts the discovered power, volume, mute, playback and input controls together in one, for a media control card on a dashboard, with no other integration to install. It takes a title only from another media player, so it shows none. Play and pause are sent as the remote's Play and Pause keys, so they work only in apps that act on those keys: the TV's own player does, and the Jellyfin app resumes with Play but ignores Pause.
 
 Add the following to `configuration.yaml`. Power uses the `LG TV` switch from [Switched off, and back on](#switched-off-and-back-on). The entity IDs start with the TV's `device.id`: for one set to `lg_c9`, `select.lg_tv_input_source` is `select.lg_c9_input_source`.
 

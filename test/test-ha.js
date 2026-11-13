@@ -483,5 +483,60 @@ console.log('Running test-ha.js ...');
   console.log('  ✓ Input Source shows the names the TV gives its inputs, sends the port key, lists input_ids, and holds a chosen input');
 })();
 
+(function () {
+  var pub = { app: 'home', app_id: 'com.webos.app.home', app_name: 'Home', media: { state: 'playing' } };
+  var idle = ha.mediaPlayerState(pub, '');
+  assert.strictEqual(idle.media_title, null);
+  assert.strictEqual(idle.media_channel, null);
+  var live = ha.mediaPlayerState(pub, 'http://tv:8082/icons/', { id: 'p1:ab', name: 'TVP 1', logoUrl: 'http://tv:8082/logos/p1/0123456789abcdef' });
+  assert.strictEqual(live.media_title, 'TVP 1');
+  assert.strictEqual(live.media_channel, 'TVP 1');
+  assert.strictEqual(live.state, 'playing');
+  assert.strictEqual(live.source, 'IPTV');
+  assert.strictEqual(live.sound_mode_list, 'channels');
+  assert.strictEqual(live.sound_mode, 'p1:ab', 'the current channel, for the selector');
+  assert.strictEqual(idle.sound_mode_list, null);
+  assert.strictEqual(live.sound_mode_current, 'tv_speaker', 'the sound mode in use, for the second line');
+  assert.strictEqual(idle.sound_mode, 'tv_speaker');
+  assert.strictEqual(live.pausable, false, 'no pausing without the live TV pause setting');
+  assert.strictEqual(ha.mediaPlayerState(pub, '', { name: 'TVP 1', pausable: true }).pausable, true);
+  assert.strictEqual(idle.pausable, null, 'nothing to say without a channel');
+  assert.strictEqual(live.stoppable, false, 'Internet TV has no stop');
+  assert.strictEqual(idle.stoppable, null);
+  assert.strictEqual(live.app_name, 'IPTV');
+  assert.strictEqual(idle.source, 'home', 'the app, when no channel plays');
+  assert.strictEqual(live.media_image_url, 'http://tv:8082/logos/p1/0123456789abcdef');
+  ['media_content_type', 'media_series_title', 'media_duration', 'media_position', 'media_position_updated_at'].forEach(function (k) {
+    assert.ok(Object.prototype.hasOwnProperty.call(live, k) && live[k] === null, k + ' is sent as null without a programme, so none is left from the last channel');
+  });
+  var start = new Date(2026, 10, 13, 20, 15).getTime(), end = new Date(2026, 10, 13, 21, 5).getTime();
+  var show = ha.mediaPlayerState(pub, '', { name: 'TVP 1', logoUrl: null, at: start + 600000, programme: { title: 'Wiadomosci', start: start, end: end } });
+  assert.strictEqual(show.media_content_type, 'tvshow');
+  assert.strictEqual(show.media_series_title, 'Wiadomosci (20:15-21:05)');
+  assert.strictEqual(show.media_duration, 3000);
+  assert.strictEqual(show.media_position, 600);
+  assert.strictEqual(show.media_position_updated_at, Math.round((start + 600000) / 1000));
+  assert.strictEqual(ha.mediaPlayerState(pub, 'http://tv:8082/icons/', { name: 'TVP 1', logoUrl: null }).media_image_url, 'http://tv:8082/icons/com.webos.app.home.png');
+  console.log('  ✓ The media player state carries the Internet TV channel as its title, and none without one');
+})();
+
+(function () {
+  function player(channels) {
+    var list = ha.buildEntities({ pfx: 'test/tv', universalMediaPlayer: true, channels: channels });
+    return list.filter(function (e) { return e.type === 'media_player'; })[0].payload;
+  }
+  var without = player([]);
+  assert.strictEqual(without.commands.play_media, undefined, 'no play_media without channels');
+  assert.deepStrictEqual(without.browse.map(function (f) { return f.type; }), ['source', 'app']);
+  assert.deepStrictEqual([without.commands.next, without.commands.previous], [{ key: 'channel', value: 'up' }, { key: 'channel', value: 'down' }]);
+  var withList = player([{ id: 'p1:ab', name: 'TVP 1', image: 'http://tv:8082/logos/p1/0123456789abcdef' }]);
+  assert.deepStrictEqual(withList.commands.play_media, { key: 'playMedia' });
+  var folder = withList.browse[withList.browse.length - 1];
+  assert.strictEqual(folder.type, 'channel');
+  assert.strictEqual(folder.name, 'Channels');
+  assert.strictEqual(folder.items[0].id, 'p1:ab');
+  console.log('  ✓ the media browser lists the channels, picked through play_media, and next and previous change the channel');
+})();
+
 console.log('ALL test-ha.js assertions passed!\n');
 

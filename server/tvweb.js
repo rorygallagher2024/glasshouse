@@ -80,6 +80,7 @@ var homeLauncher = null;
 // Internet TV on Glasshouse Home (lib/iptv): where Home runs, and nowhere else.
 /** @type {typeof import('./lib/iptv')} */
 var iptv = null;
+var iptvLineupChanged = function () {};   // set once MQTT is up
 try {
   glasshouseHome = require('./lib/home');
   homePicture = require('./lib/home-picture');
@@ -277,6 +278,10 @@ var CONFIG = {
     topicPrefix: 'lgtv',
     discoveryPrefix: 'homeassistant',
     telemetryIntervalMs: 10000,
+    // A real media_player card, through a separate custom integration
+    // (grzegorz914/homeassistant-mqtt-media-player) most owners do not have
+    // installed - see docs/HOME-ASSISTANT.md. No dashboard switch yet.
+    universalMediaPlayer: false,
     entities: {
       controls: true,
       oled: true,
@@ -566,7 +571,13 @@ privacy.init({ luna: luna, lunaCached: lunaCached, config: CONFIG, lgSettings: l
 oled.init({ luna: luna, config: CONFIG });
 samrescan.init({ luna: luna });
 appsModule.init({ luna: luna, config: CONFIG });
-iconServer.init({ config: CONFIG, apps: appsModule });
+iconServer.init({ config: CONFIG, apps: appsModule, iptv: iptv });
+
+// The Internet TV channel playing full screen, as the media player shows it.
+function playingChannel() {
+  var c = iptv && iptv.nowPlaying();
+  return c ? { id: c.id, name: c.name, logoUrl: iconServer.logoUrl(c.pl, c.logo), programme: c.programme, at: c.at, pausable: c.pausable } : null;
+}
 servicesModule.init({ stateDir: __dirname });
 preload.init({ luna: luna, stateDir: __dirname });
 doh.init({});
@@ -1312,6 +1323,30 @@ function setupHomeAssistant() {
     }, 400);
   }
 
+  /*
+   * Internet TV's lineup for the media player's browser, with each channel's
+   * logo. The set last published is kept to tell a lineup that changed from
+   * the guide moving on, which also reports a change.
+   */
+  var channelsSig = null;
+  function playableChannels() {
+    if (!iptv || !(CONFIG.mqtt && CONFIG.mqtt.universalMediaPlayer)) return [];
+    var list = iptv.haChannels().map(function (c) {
+      var item = { id: c.id, name: c.name };
+      var logo = iconServer.logoUrl(c.pl, c.logo);
+      if (logo) item.image = logo;
+      return item;
+    });
+    channelsSig = JSON.stringify(list);
+    return list;
+  }
+  iptvLineupChanged = function () {
+    if (!iptv || !(CONFIG.mqtt && CONFIG.mqtt.universalMediaPlayer)) return;
+    var before = channelsSig;
+    var now = JSON.stringify(iptv.haChannels().map(function (c) { return { id: c.id, name: c.name, image: iconServer.logoUrl(c.pl, c.logo) || undefined }; }));
+    if (before !== null && now !== before) requestDiscoveryRepublish('Internet TV channels');
+  };
+
   function publishDiscovery() {
     // The Server tab renames the TV without a restart.
     devInfo.name = (CONFIG.device && CONFIG.device.name) || devInfo.name;
@@ -1319,9 +1354,18 @@ function setupHomeAssistant() {
       mqttClient.publish(topic, payload, retain);
     }, discPfx, devId);
 
+    var universalMediaPlayer = !!(CONFIG.mqtt && CONFIG.mqtt.universalMediaPlayer);
+    // media_player.config lives on its own single-level topic (see the
+    // publish loop below), so turning the setting off must clear it there
+    // too, or a retained config from while it was on would linger.
+    if (!universalMediaPlayer) {
+      mqttClient.publish(discPfx + '/media_player/' + devId + '/config', '', true);
+    }
+
     var entities = ha.buildEntities({
       pfx: pfx,
       installedApps: telemetry.getInstalledApps(),
+      channels: playableChannels(),
       inputNames: telemetry.inputNameMap,
       pictureModes: telemetry.getPictureModes(),
       soundOutputs: telemetry.getSoundOutputs(),
@@ -1331,7 +1375,8 @@ function setupHomeAssistant() {
       piccap: piccapWanted() && piccap.getState() !== null,
       huesync: huesyncWanted() && huesync.getState() !== null,
       huesyncSettings: huesync.getSettings(),
-      iconBaseUrl: iconServer.baseUrl()
+      iconBaseUrl: iconServer.baseUrl(),
+      universalMediaPlayer: universalMediaPlayer
     });
 
     entities = ha.filterWithholds(entities, {
@@ -1365,7 +1410,15 @@ function setupHomeAssistant() {
       conf.device = devInfo;
       ha.withAvailability(item, mqttTopics.status);
 
-      var discTopic = discPfx + '/' + item.type + '/' + devId + '/' + item.id + '/config';
+      /*
+       * grzegorz914/homeassistant-mqtt-media-player subscribes to
+       * <prefix>/media_player/+/config (one level, its own object id), not
+       * Home Assistant's own two-level <prefix>/<component>/<node>/<object>/
+       * config - the generic shape below would never match its subscription.
+       */
+      var discTopic = item.type === 'media_player'
+        ? discPfx + '/media_player/' + devId + '/config'
+        : discPfx + '/' + item.type + '/' + devId + '/' + item.id + '/config';
       mqttClient.publish(discTopic, JSON.stringify(conf), true);
     }
     console.log('mqtt: published ' + entities.length + ' Home Assistant discovery entities');
@@ -1593,6 +1646,9 @@ function setupHomeAssistant() {
       pub.input_source = pendingInput ? pendingInput.id : s.app;
       lastPub = pub;
       mqttClient.publish(mqttTopics.telemetry, JSON.stringify(pub), true);
+      if (CONFIG.mqtt.universalMediaPlayer) {
+        mqttClient.publish(mqttTopics.state('media_player'), JSON.stringify(ha.mediaPlayerState(pub, iconServer.baseUrl(), playingChannel())), true);
+      }
       MQTT_STATUS.lastPublish = Date.now();
       pusher.finished();
       /*
@@ -1695,6 +1751,37 @@ function setupHomeAssistant() {
     huesync.refreshAndPublishState(true);
     publishUpdate();
   });
+
+  /*
+   * One JSON command from the media_player integration (see ha.js,
+   * mediaPlayerConfig): {key: value}, one key at a time. Most of its keys are
+   * already a doControl action name, by design - power, screen and playback
+   * are the only ones that need translating into one of doControl's own.
+   */
+  function handleMediaPlayerCommand(key, value) {
+    var controlAction = key, controlValue = value;
+    // An item picked in the media browser: the integration sends it as play_media once a channel is listed.
+    if (key === 'playMedia') {
+      var pick = value && typeof value === 'object' ? value : {};
+      var pickId = String(pick.id || '');
+      if (pick.type === 'channel') {
+        var colon = pickId.indexOf(':');
+        return glasshouseHome.playChannel(pickId.slice(0, colon), pickId.slice(colon + 1), function (r) {
+          if (!r || r.ok === false) console.error('mqtt: could not play channel ' + pickId + ': ' + ((r && r.error) || 'unknown error'));
+          setTimeout(publishTelemetry, 1500);
+        });
+      }
+      if (pick.type === 'app') { controlAction = 'launch_app'; controlValue = pickId; }
+      else return console.error('mqtt: media player cannot play ' + String(pick.type));
+    } else if (key === 'power') { controlAction = value ? 'powerOn' : 'powerOff'; controlValue = null; }
+    else if (key === 'screen') { controlAction = value ? 'screenOn' : 'screenOff'; controlValue = null; }
+    doControl(controlAction, controlValue, function (r) {
+      if (!r || r.ok === false) {
+        console.error('mqtt: media player command ' + key + ' failed: ' + ((r && (r.error || r.errorText)) || 'unknown error'));
+      }
+      setTimeout(publishTelemetry, 400);
+    });
+  }
 
   mqttClient.on('message', function(topic, payload) {
     if (topic.indexOf(mqttTopics.commands) !== 0) return;
@@ -1872,6 +1959,19 @@ function setupHomeAssistant() {
       return;
     }
 
+    if (action === 'media_player') {
+      if (!CONFIG.mqtt.universalMediaPlayer) return;
+      var mpCommand;
+      try {
+        mpCommand = JSON.parse(String(payload));
+      } catch (e) {
+        console.error('mqtt: media player command was not valid JSON: ' + e.message);
+        return;
+      }
+      for (var mpKey in mpCommand) handleMediaPlayerCommand(mpKey, mpCommand[mpKey]);
+      return;
+    }
+
     doControl(action, val, function() {
       setTimeout(publishTelemetry, 400);
     });
@@ -1987,6 +2087,7 @@ function startGlasshouseHome() {
       return list.filter(function (c) { return typeof c === 'string' && c; });
     },
     version: TVWEB_VERSION,
+    onChange: function () { iptvLineupChanged(); },
     // File-only, for the emulator: how long after start overdue jobs wait.
     catchupMs: CONFIG.iptv && typeof CONFIG.iptv.catchupMs === 'number' ? CONFIG.iptv.catchupMs : undefined
   });

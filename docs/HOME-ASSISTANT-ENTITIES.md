@@ -53,6 +53,7 @@ Every entity the TV publishes, by category. Which categories are published is se
 | `button` | `button.lg_tv_power_off` | Power Off TV | Powers off the TV (not published when `allowPower` is false) |
 | `button` | `button.lg_tv_power_on` | Power On TV | Turns the TV back on from Active Standby, while it is still finishing panel compensation; in plain standby the bridge is offline (not published when `allowPower` is false) |
 | `binary_sensor` | `binary_sensor.lg_tv_power` | Power | On while the TV is on, off while it is switched off or in standby |
+| `media_player` | `media_player.lg_tv_media_player` | *(device name)* | Power, volume, mute, sound output, play/pause/stop/skip, a source list and media browser of the TV's inputs and installed apps with their icons, and the current app or input's icon as the card's cover, in one card. Published only with [grzegorz914/homeassistant-mqtt-media-player](HOME-ASSISTANT.md#through-a-separate-integration) installed and `universalMediaPlayer` on in `config.json`; the icons need `iconServer` on as well |
 
 Playback reaches an HDMI source over CEC, where the TV has only one key for both halves of play/pause. Pause and Play / Pause behave as expected there; Play toggles rather than only resuming. On the built-in apps all four are exact. An app with no media pipe, one playing through Web Audio, can't say whether it is playing, so Play / Pause sends it Pause and Play in turn, starting with Pause.
 

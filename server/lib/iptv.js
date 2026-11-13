@@ -120,6 +120,7 @@ var nownextTimer = null;
 var leaseUntil = 0;
 // The lease of a stream played full screen, rather than previewed.
 var fullUntil = 0;
+var playing = null;   // 'playlist:key' of the channel Home plays full screen
 // Background jobs waiting, and the one running, and the interactive one.
 var queue = [];
 var running = { background: null, interactive: null };
@@ -1469,6 +1470,7 @@ function playUrl(id, key, full, cb) {
   var s = streamUrl(id, key);
   if (!s) return cb(null);
   var at = id + ':' + key;
+  if (full) playing = at;
   timeshift.release(at);
   var local = timeshift.current(at);
   if (local) { s.url = local; s.timeshift = true; return cb(s); }
@@ -1477,6 +1479,46 @@ function playUrl(id, key, full, cb) {
     if (r) { s.url = r.url; s.timeshift = true; }
     cb(s);
   });
+}
+
+/*
+ * The channel Home is playing full screen, or null when none is: its name as
+ * the lineup gives it, the id of its logo and the guide's programme on now,
+ * when it has them. Home
+ * Assistant shows them as the media player's title and picture.
+ */
+function nowPlaying() {
+  if (!playing || nowMs() >= fullUntil) return null;
+  var cut = playing.indexOf(':');
+  var pl = playing.slice(0, cut);
+  var added = cache.added[pl];
+  var a = added && added.channels && added.channels[playing.slice(cut + 1)];
+  var l = getLineup().byId[playing];
+  var name = (l && l.name) || (a && a.name) || null;
+  if (!name) return null;
+  // The guide's programme on now, when the playlist has a guide: times in ms.
+  var nn = cache.nownext[pl];
+  var list = nn && nn.ch && nn.ch[playing.slice(cut + 1)];
+  var t = nowMs(), prog = null;
+  for (var i = 0; list && i < list.length; i++) {
+    if (list[i][0] <= t && list[i][1] > t) prog = { title: list[i][2], start: list[i][0], end: list[i][1] };
+  }
+  return { id: playing, name: name, pl: pl, logo: (a && a.logo) || null, programme: prog, at: t, pausable: config.timeshift === true };
+}
+
+/*
+ * The lineup's playable channels for Home Assistant's media browser: the id to
+ * play them by ('playlist:key'), the name, and the id of the logo.
+ */
+function haChannels() {
+  var out = [];
+  getLineup().channels.forEach(function (c) {
+    if (c.missing || c.unplayable || c.pending || out.length >= 500) return;
+    var added = cache.added[c.pl];
+    var a = added && added.channels && added.channels[c.key];
+    out.push({ id: c.pl + ':' + c.key, name: c.name, pl: c.pl, logo: (a && a.logo) || null });
+  });
+  return out;
 }
 
 // How far behind live the recording of a channel plays, and the room left; null without one.
@@ -1504,6 +1546,7 @@ function timeshiftStatus(cb) {
 }
 
 function lease(on, full) {
+  if (!on || !full) playing = null;
   leaseUntil = on ? nowMs() + LEASE_MS : 0;
   fullUntil = on && full ? leaseUntil : 0;
   timeshift.leased(leaseUntil);
@@ -1661,6 +1704,8 @@ module.exports = {
   setOutput: setOutput,
   // Home is showing a stream full screen: lib/idlesaver leaves the screen saver held off.
   watching: function () { return nowMs() < fullUntil; },
+  nowPlaying: nowPlaying,
+  haChannels: haChannels,
   revision: function () { return revision; },
   hasPlaylists: function () { return config.playlists.length > 0; },
   _state: function () { return { config: config, selection: selection, current: current, queue: queue, running: running, cache: cache }; },

@@ -51,7 +51,7 @@ function series(steps, done) {
 }
 
 function cleanup() {
-  try { fs.unlinkSync(ICON); fs.rmdirSync(dir); } catch (e) {}
+  try { fs.unlinkSync(ICON); try { fs.unlinkSync(path.join(dir, 'logo.png')); } catch (e2) {} fs.rmdirSync(dir); } catch (e) {}
 }
 
 // Off by default: no listener, no address for discovery.
@@ -72,7 +72,10 @@ iconServer.start(function (err, started) {
 
   freePort('0.0.0.0', function (basePort) {
     var config = { port: basePort - 2, iconServer: true, host: '0.0.0.0' };
-    iconServer.init({ config: config, apps: fakeApps });
+    var LOGO = path.join(dir, 'logo.png');
+    fs.writeFileSync(LOGO, Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47]), Buffer.from('logo, long enough')]));
+    var fakeIptv = { logoPath: function (pl, id) { return pl === 'p1' && id === '0123456789abcdef' ? LOGO : null; } };
+    iconServer.init({ config: config, apps: fakeApps, iptv: fakeIptv });
     iconServer.start(function (err2, started2) {
       assert.ifError(err2);
       assert.strictEqual(started2, true);
@@ -83,6 +86,23 @@ iconServer.start(function (err, started) {
       var etag;
 
       series([
+        function (next) {
+          request(port, 'GET', '/logos/p1/0123456789abcdef', null, function (res, body) {
+            assert.strictEqual(res.statusCode, 200);
+            assert.strictEqual(res.headers['content-type'], 'image/svg+xml');
+            assert.ok(/viewBox="0 0 100 100"/.test(body) && /preserveAspectRatio="xMidYMid meet"/.test(body) && /data:image\/png;base64,/.test(body), 'a square around the whole logo');
+            request(port, 'GET', '/logos/p1/fedcba9876543210', null, function (res2) {
+              assert.strictEqual(res2.statusCode, 404);
+              request(port, 'GET', '/logos/p1/..%2f..%2fx', null, function (res3) {
+                assert.strictEqual(res3.statusCode, 404);
+                var u = iconServer.logoUrl('p1', '0123456789abcdef');
+                assert.ok(u === null || /\/logos\/p1\/0123456789abcdef$/.test(u), u);
+                console.log('  ✓ serves the logo of a playing channel by playlist and id, nothing else');
+                next();
+              });
+            });
+          });
+        },
         function (next) {
           request(port, 'GET', '/icons/com.example.app.png', null, function (res, body) {
             assert.strictEqual(res.statusCode, 200);
