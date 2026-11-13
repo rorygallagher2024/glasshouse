@@ -7,6 +7,7 @@
  */
 var fs = require('fs');
 var path = require('path');
+var toBuffer = require('./util').toBuffer;
 
 var jailRoot = '/var/palm/jail';
 var hostFile = '/etc/hosts';
@@ -114,12 +115,25 @@ function watchApp(id, etcInfo) {
 // cannot be renamed; it is left to its owner rather than written through.
 function replace(file, text, mode) {
   var temporary = file + '.glasshouse-' + process.pid + '-' + Date.now();
+  var fd = null;
   var created = false;
   try {
-    fs.writeFileSync(temporary, text, { flag: 'wx', mode: mode });
+    fd = fs.openSync(temporary, 'wx', parseInt('600', 8));
     created = true;
+    var data = toBuffer(text, 'utf8');
+    var offset = 0;
+    while (offset < data.length) {
+      var written = fs.writeSync(fd, data, offset, data.length - offset, null);
+      if (!written) throw new Error('could not finish writing the hosts file');
+      offset += written;
+    }
+    // Creation modes are filtered by umask; existing jail permissions are not.
+    fs.fchmodSync(fd, mode);
+    fs.closeSync(fd);
+    fd = null;
     fs.renameSync(temporary, file);
   } finally {
+    if (fd !== null) try { fs.closeSync(fd); } catch (e) { /* already closed */ }
     if (created) try { fs.unlinkSync(temporary); } catch (e) { /* renamed */ }
   }
 }
@@ -127,21 +141,25 @@ function replace(file, text, mode) {
 function ensure(id, text, active) {
   var file = path.join(jailRoot, id, 'etc', 'hosts');
   var info = stat(file);
-  if (!info || !info.isFile()) return;
+  if (!info || !info.isFile()) return true;
   var current = readFile(file);
-  if (current === null || current === text || (!active && !managed(current))) return;
+  if (current === null) return false;
+  if (current === text || (!active && !managed(current))) return true;
   try {
     replace(file, text, info.mode & parseInt('777', 8));
     delete errors[id];
+    return true;
   } catch (e) {
     if (errors[id] !== e.message) console.error('apphosts: could not update ' + id + ': ' + e.message);
     errors[id] = e.message;
+    return false;
   }
 }
 
 function syncJails(text, active) {
   var ids;
-  try { ids = fs.readdirSync(jailRoot); } catch (e) { ids = []; }
+  var complete = true;
+  try { ids = fs.readdirSync(jailRoot); } catch (e) { ids = []; complete = e.code === 'ENOENT'; }
   var seen = Object.create(null);
   ids.forEach(function (id) {
     if (!SAFE_ID.test(id)) return;
@@ -151,9 +169,17 @@ function syncJails(text, active) {
     if (etcInfo && !etcInfo.isDirectory()) return;
     seen[id] = true;
     if (active) watchApp(id, etcInfo);
-    if (etcInfo) ensure(id, text, active);
+    if (etcInfo && !ensure(id, text, active)) complete = false;
   });
   Object.keys(watchers).forEach(function (id) { if (!seen[id]) unwatch(id); });
+  return complete;
+}
+
+function startRechecking() {
+  if (recheckTimer) return;
+  var timer = setInterval(function () { if (recheckTimer === timer) sync(); }, recheckMs);
+  recheckTimer = timer;
+  if (timer.unref) timer.unref();
 }
 
 function watchRoot() {
@@ -170,10 +196,7 @@ function watchRoot() {
       queue();
     }, function (failed) { if (rootWatcher === failed) rootWatcher = null; });
   }
-  if (!recheckTimer) {
-    recheckTimer = setInterval(function () { if (watching) sync(); }, recheckMs);
-    if (recheckTimer.unref) recheckTimer.unref();
-  }
+  startRechecking();
 }
 
 function sync() {
@@ -182,7 +205,8 @@ function sync() {
   var active = managed(text);
   if (active) watchRoot();
   else stop();
-  syncJails(text, active);
+  var complete = syncJails(text, active);
+  if (!active && !complete) startRechecking();
 }
 
 module.exports = { init: init, sync: sync, stop: stop };

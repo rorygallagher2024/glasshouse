@@ -115,6 +115,16 @@ step('an unchanged table is not rewritten, and permissions are preserved', funct
   done();
 });
 
+step('replacement preserves readable permissions under a restrictive umask', function (done) {
+  makeJail('restricted-mask', BASE);
+  fs.chmodSync(fileOf('restricted-mask'), parseInt('644', 8));
+  var previous = process.umask(parseInt('077', 8));
+  try { appHosts.sync(); } finally { process.umask(previous); }
+  assert.equal(read('restricted-mask'), FULL);
+  assert.equal(fs.statSync(fileOf('restricted-mask')).mode & parseInt('777', 8), parseInt('644', 8));
+  done();
+});
+
 step('an etc reset rearms watching even when its inode is unchanged', function (done) {
   var etc = path.dirname(fileOf('com.webos.chromecast'));
   var before = watches.filter(function (w) { return !w.closed && w.path === etc; })[0];
@@ -193,6 +203,42 @@ step('an unwritable or mounted target does not prevent another jail being repair
   done();
 });
 
+step('a partial write failure closes the file and removes only its temporary copy', function (done) {
+  makeJail('partial-write', BASE);
+  var open = fs.openSync, write = fs.writeSync, failedFd = null, writes = 0;
+  fs.openSync = function (file) {
+    var fd = open.apply(fs, arguments);
+    if (String(file).indexOf(fileOf('partial-write') + '.glasshouse-') === 0) failedFd = fd;
+    return fd;
+  };
+  fs.writeSync = function (fd, data, offset, length, position) {
+    if (fd !== failedFd) return write.apply(fs, arguments);
+    if (++writes === 1) return write.call(fs, fd, data, offset, Math.min(length, 7), position);
+    var error = new Error('no space left on device'); error.code = 'ENOSPC'; throw error;
+  };
+  try { appHosts.sync(); } finally { fs.openSync = open; fs.writeSync = write; }
+  assert.equal(writes, 2, 'the write failed after creating a partial file');
+  assert.equal(read('partial-write'), BASE, 'the live hosts file remains intact');
+  assert.deepEqual(fs.readdirSync(path.dirname(fileOf('partial-write'))).sort(), ['hosts', 'resolv.conf']);
+  assert.throws(function () { fs.fstatSync(failedFd); }, /EBADF/, 'the failed write descriptor was closed');
+  appHosts.sync();
+  assert.equal(read('partial-write'), FULL, 'the next attempt recovers');
+  done();
+});
+
+step('short writes still produce the complete hosts table', function (done) {
+  makeJail('short-writes', BASE);
+  var write = fs.writeSync, calls = 0;
+  fs.writeSync = function (fd, data, offset, length, position) {
+    calls++;
+    return write.call(fs, fd, data, offset, Math.min(length, 7), position);
+  };
+  try { appHosts.sync(); } finally { fs.writeSync = write; }
+  assert.ok(calls > 1);
+  assert.equal(read('short-writes'), FULL);
+  done();
+});
+
 step('missing or empty source files cannot erase a jail table', function (done) {
   fs.unlinkSync(hostFile);
   appHosts.sync();
@@ -230,6 +276,45 @@ step('startup with blocking off clears copies left by an earlier server', functi
   assert.equal(read('com.webos.chromecast'), BASE);
   assert.equal(watches.filter(function (w) { return !w.closed; }).length, 0);
   done();
+});
+
+step('failed restores are retried after blocking ends, then rechecking stops', function (done) {
+  fs.writeFileSync(hostFile, FULL);
+  init(null, 5);
+  appHosts.sync();
+  fs.writeFileSync(hostFile, BASE);
+  var rename = fs.renameSync;
+  fs.renameSync = function (from, to) {
+    if (to === fileOf('com.webos.chromecast')) { var error = new Error('temporary restore failure'); error.code = 'EACCES'; throw error; }
+    return rename.apply(fs, arguments);
+  };
+  try { appHosts.sync(); } finally { fs.renameSync = rename; }
+  assert.equal(read('com.webos.chromecast'), FULL);
+  assert.equal(read('lg.thinqai.adapter'), BASE, 'other jails restore immediately');
+  assert.equal(watches.filter(function (w) { return !w.closed; }).length, 0);
+  equalSoon('com.webos.chromecast', BASE, function () {
+    fs.writeFileSync(fileOf('com.webos.chromecast'), FULL);
+    // A negative check: successful cleanup must leave no retry timer running.
+    setTimeout(function () {
+      assert.equal(read('com.webos.chromecast'), FULL);
+      fs.writeFileSync(fileOf('com.webos.chromecast'), BASE);
+      done();
+    }, 15);
+  });
+});
+
+step('startup with blocking off retries a failed restore without opening watches', function (done) {
+  init(null, 5);
+  fs.writeFileSync(fileOf('com.webos.chromecast'), FULL);
+  var rename = fs.renameSync;
+  fs.renameSync = function (from, to) {
+    if (to === fileOf('com.webos.chromecast')) { var error = new Error('temporary startup restore failure'); error.code = 'EACCES'; throw error; }
+    return rename.apply(fs, arguments);
+  };
+  try { appHosts.sync(); } finally { fs.renameSync = rename; }
+  assert.equal(read('com.webos.chromecast'), FULL);
+  assert.equal(watches.filter(function (w) { return !w.closed; }).length, 0);
+  equalSoon('com.webos.chromecast', BASE, done);
 });
 
 step('late events after stop cannot restart watching or rewrite a jail', function (done) {

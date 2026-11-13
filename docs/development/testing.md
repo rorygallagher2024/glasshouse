@@ -10,6 +10,9 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 `test-apphosts.js` checks old jail copies, launch resets, new jails and
 recreated `etc` directories, missed watches, atomic writes, symlink refusal,
 write failures, file modes and restoring marked copies when blocking ends.
+It covers restrictive umasks, short writes, descriptor and temporary-file
+cleanup after a partial write fails, and restoration retries both when blocking
+ends and at startup with it off. Rechecking stops once restoration succeeds.
 It checks real filesystem notifications as well as injected watch events,
 including `etc` and jail resets that reuse their inodes, and verifies that callbacks
 arriving after shutdown cannot restart watching.

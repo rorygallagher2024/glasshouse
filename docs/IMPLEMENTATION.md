@@ -1084,11 +1084,16 @@ watches. It includes service jails that are not in the installed-app list.
 An `etc` or jail reset always reopens the affected watches: Linux can reuse a
 directory's inode while the watch attached before deletion no longer receives
 events. Directory identity alone cannot establish that a watch is still live.
-Writes are atomic, preserve the file's mode and are skipped when identical.
+Writes use an exclusively created temporary file, handle short writes, set the
+original mode independently of the server's umask, and rename the completed
+file atomically. Failed writes close the descriptor and remove the temporary
+copy. Identical files are not rewritten.
 Symlinks are not followed, and a mount point that cannot be renamed is left
 to its owner. No read-only bind mount is added: LG must be able to copy the
 file during launch. With the main table removed, marked jail copies receive
-the TV's ordinary file and watching stops. Repair follows filesystem events,
+the TV's ordinary file and watching stops. Failed restorations keep the 30 s
+recheck active until cleanup succeeds, including at startup with blocking off.
+Repair follows filesystem events,
 so a lookup before repair can still escape; the fallback can take 30 s.
 This does not flush app DNS caches or intercept clients that send DNS queries
 without consulting hosts.

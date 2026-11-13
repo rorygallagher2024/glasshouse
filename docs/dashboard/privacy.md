@@ -58,6 +58,8 @@ blocking off, also update those copies. This covers lookups that use the
 hosts file; apps that send DNS queries directly can still reach the DNS server.
 Repairing a jail copy happens after its files change, so a lookup before that
 repair can also escape.
+If restoring a sandbox's hosts file fails after blocking is switched off,
+Glasshouse retries every 30 seconds until it succeeds.
 
 === "Ads & telemetry tier"
 
