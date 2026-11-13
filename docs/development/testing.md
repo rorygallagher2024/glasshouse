@@ -17,6 +17,9 @@ Metadata failures (`EIO` and `EACCES`) at the jail, `etc` and hosts file keep
 restoration pending without delaying other jails; missing paths (`ENOENT`
 and `ENOTDIR`) do not keep retries running.
 Unreadable jail-root metadata leaves the active fallback running.
+Initial source read failures (`EIO`, `ENOENT`), empty files and incomplete
+tables recover through the fallback with blocking on or off, without changing
+jail copies before recovery. Successful restoration stops the recovery timer.
 It checks real filesystem notifications as well as injected watch events,
 including `etc` and jail resets that reuse their inodes, and verifies that callbacks
 arriving after shutdown cannot restart watching.

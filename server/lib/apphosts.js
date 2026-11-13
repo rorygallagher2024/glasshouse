@@ -205,7 +205,10 @@ function watchRoot() {
 
 function sync() {
   var text = readFile(hostFile);
-  if (!text || !/\blocalhost\b/.test(text)) return;
+  if (!text || !/\blocalhost\b/.test(text)) {
+    startRechecking();
+    return;
+  }
   var active = managed(text);
   if (active) watchRoot();
   else stop();

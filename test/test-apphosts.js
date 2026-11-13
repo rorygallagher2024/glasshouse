@@ -250,6 +250,40 @@ step('missing or empty source files cannot erase a jail table', function (done) 
   done();
 });
 
+['EIO', 'ENOENT', 'empty', 'incomplete'].forEach(function (failure) {
+  [true, false].forEach(function (active) {
+    step('startup recovers from a source ' + failure + ' with blocking ' + (active ? 'on' : 'off'), function (done) {
+      init(null, 5);
+      var wanted = active ? FULL : BASE;
+      var stale = active ? BASE : FULL;
+      fs.writeFileSync(hostFile, wanted);
+      fs.writeFileSync(fileOf('com.webos.chromecast'), stale);
+      var readFile = fs.readFileSync;
+      fs.readFileSync = function (file) {
+        if (file !== hostFile) return readFile.apply(fs, arguments);
+        if (failure === 'empty') return '';
+        if (failure === 'incomplete') return '# hosts table pending\n';
+        var error = new Error('temporary source read failure'); error.code = failure; throw error;
+      };
+      try { appHosts.sync(); } finally { fs.readFileSync = readFile; }
+      assert.equal(read('com.webos.chromecast'), stale, 'the failed source read leaves the jail intact');
+      assert.equal(watches.filter(function (w) { return !w.closed; }).length, 0);
+      equalSoon('com.webos.chromecast', wanted, function () {
+        var open = watches.filter(function (w) { return !w.closed; }).length;
+        assert.equal(open > 0, active, 'watching follows the recovered source');
+        if (active) return done();
+        fs.writeFileSync(fileOf('com.webos.chromecast'), FULL);
+        // A negative check: successful restoration must stop the recovery timer.
+        setTimeout(function () {
+          assert.equal(read('com.webos.chromecast'), FULL);
+          fs.writeFileSync(hostFile, FULL);
+          done();
+        }, 15);
+      });
+    });
+  });
+});
+
 step('the fallback repairs missed events and works without filesystem watches', function (done) {
   init(function () { throw new Error('watch unavailable'); }, 5);
   appHosts.sync();
