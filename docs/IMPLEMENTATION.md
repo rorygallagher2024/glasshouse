@@ -1117,6 +1117,7 @@ advertising**, which is why they are a separate tier:
 | `avsxappcaptiveportal.com` | Amazon's Alexa checking the TV is online: `libAVSCommon` asks it for `/generate_204` on a timer while Alexa runs, and with it blocked Alexa reads the TV as offline |
 | `mtalk.google.com`, `device-provisioning.googleapis.com` | Endpoints listed for [Google Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging/network-configuration); apps using them may lose push notifications |
 | `lgtvsdp.com` (and `us.`/`gb.`/`eu.`) | Service platform behind the Content Store on webOS 4 |
+| `app.lgwebostv.com`, `lgrecommends.lgappstv.com` (bare and with the TV's country) | Content Store interface and app recommendations; blocking them prevents the store from opening |
 | `nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country, plus `us.`/`gb.`/`de.`/`eu.`) | The same on webOS 9 |
 | `ibs.nextlgsdp.com`, `ibsstat.nextlgsdp.com` (bare, with LG's regional prefixes and the TV's country) | The SDX `ibis_secure` and `ibis_stat_secure` services; blocked only in Everything, after the clock is valid |
 | `tv.wiselg.com` (bare, with LG's regional prefixes and the TV's country) | The same on webOS 11, where it also carries the diagnostics report upload (`rdx/10.0.0/`) and app usage statistics (`ibs`), so neither can be blocked on its own there |
@@ -1136,6 +1137,12 @@ is learned, the existing fallback countries are used. ThinQ Connect uses
 `de.ibs.nextlgsdp.com` and `eic-connect-client.lgthinq.com`; it is still an exact
 hosts list, not wildcard DNS blocking. Sources and the limits of the evidence
 are in [TV research](development/TV-RESEARCH.md#regional-service-coverage).
+
+The Content Store's `app.lgwebostv.com` and `lgrecommends.lgappstv.com` families
+use only the bare host and the TV's country, with the same fallback countries
+before it is learned. Their documented variants are country names, so no
+`aic`, `eic`, `kic` or `eu` prefixes are generated for them. They belong only
+to Everything and do not wait for clock sync.
 
 On webOS 11 the service platform is `tv.wiselg.com`. On an OLED77C5PUA (11.2.0)
 sdx's server list (`/mnt/lg/cmn_data/sdp/sdx/server_addr_version.conf`) names

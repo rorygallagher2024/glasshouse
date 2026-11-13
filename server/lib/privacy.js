@@ -93,9 +93,13 @@ var ADBLOCK_REGION_PREFIXES = ['aic', 'eic', 'kic', 'eu'];
 var ADBLOCK_FALLBACK_COUNTRIES = ['us', 'gb', 'au', 'br', 'ca', 'de', 'fr'];
 var COUNTRY_FILE = '/var/lib/tvweb/country';
 
-function regionPrefixes() {
+function countryPrefixes() {
   var country = (readTrimmed(COUNTRY_FILE) || '').toLowerCase();
-  return ADBLOCK_REGION_PREFIXES.concat(/^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES);
+  return /^[a-z]{2}$/.test(country) ? [country] : ADBLOCK_FALLBACK_COUNTRIES;
+}
+
+function regionPrefixes() {
+  return ADBLOCK_REGION_PREFIXES.concat(countryPrefixes());
 }
 
 /**
@@ -162,6 +166,9 @@ var ADBLOCK_PLATFORM_REGIONAL = [
   'buddy.lgtviot.com',
   'lgeapi.com'
 ];
+// Blocking the Content Store's interface and recommendations breaks the store.
+// Their documented variants use country prefixes (TV-RESEARCH.md).
+var ADBLOCK_STORE_HOSTS = ['app.lgwebostv.com', 'lgrecommends.lgappstv.com'];
 var ADBLOCK_THINQ_REGIONAL = ['connect-client.lgthinq.com', 'common.lgthinq.com'];
 // ThinQ uses a hyphen before the service name, rather than a DNS label.
 var ADBLOCK_THINQ_PREFIXES = ['aic', 'eic', 'kic'];
@@ -449,6 +456,7 @@ function isSdpGracePeriodActive() {
 
 function adBlockPlatformBase() {
   return ADBLOCK_PLATFORM.concat(withPrefixes(ADBLOCK_PLATFORM_REGIONAL),
+    withPrefixes(ADBLOCK_STORE_HOSTS, countryPrefixes()),
     withPrefixes(ADBLOCK_THINQ_REGIONAL, ADBLOCK_THINQ_PREFIXES, '-'));
 }
 

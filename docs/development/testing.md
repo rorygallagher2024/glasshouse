@@ -43,6 +43,13 @@ Everything; shared Google service hosts, including `www.googleapis.com` and
 including `dev-ruc-ngfts.tv.wiselg.com`, wait for clock sync, then enter the
 table on both address families.
 
+Content Store interface and recommendation hosts are blocked on both address
+families only in Everything, before and after clock sync. Tests cover bare
+hosts, the saved country, uppercase country codes, missing or invalid country
+fallbacks, and the absence of unselected countries and LG region prefixes.
+The privacy/app-hosts integration check verifies that tier and country changes
+also replace these entries in running app copies.
+
 `test-appdns.js` checks that an app's DNS servers are written into its jail's
 `resolv.conf`, written again when a watch sees the jailer's copy, taken out
 again for the TV's, and set at start for a jail made later; that the boot

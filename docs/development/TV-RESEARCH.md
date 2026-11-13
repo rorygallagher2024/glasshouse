@@ -2820,6 +2820,22 @@ still applies. Owners can add exact names to a custom
 list, with the risk of breaking services that share them; Everything is not a
 firewall or a wildcard DNS policy.
 
+### Content Store interface and recommendations
+
+On 13 November 2026 the C4 owner also reported `de.app.lgwebostv.com`.
+[Life's Good Without Spying's Content Store list](https://github.com/lewisdoesstuff/lifesgoodwithoutspying/blob/0057ce44d5b4494ad85cf5975d599c58d5f25871/app/init/blocklist.d/32-lgrecommends.txt)
+identifies `app.lgwebostv.com` as the store interface and
+`lgrecommends.lgappstv.com` as app recommendations. It lists both bare hosts
+and 71 country variants of each, and reports store errors 202 or -102 when
+blocked. This is that project's evidence; the C4 lookup does not establish
+its request path or payload, and the other variants were not captured on it.
+
+Both families are blocked only in Everything, using the bare host and saved
+TV country, or the existing fallback countries before it is known. No LG
+region prefixes are inferred for these families. They do not carry the known
+SDP clock endpoints, so they are blocked before clock sync too. The store's
+request-log family, `elastic.lgwebostv.com`, remains in Ads & telemetry.
+
 ### WiseLG names beyond the reported alias
 
 The existing list generates `tv.wiselg.com`, LG's dotted regional names

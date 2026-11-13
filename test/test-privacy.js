@@ -232,6 +232,62 @@ test('Everything covers regional LG cloud services without blocking network dete
   }
 });
 
+test('Content Store interface and recommendations are blocked only in Everything, including before clock sync', function () {
+  var countryFile = '/var/lib/tvweb/country';
+  var savedCountry = mockEnv.files[countryFile];
+  var savedGrace = privacy.isSdpGracePeriodActive();
+  try {
+    mockEnv.files[countryFile] = 'de';
+    [true, false].forEach(function (grace) {
+      privacy._setSdpGraceActive(grace);
+      var table = privacy.adBlockHostsTable('full');
+      ['app.lgwebostv.com', 'lgrecommends.lgappstv.com'].forEach(function (host) {
+        [host, 'de.' + host].forEach(function (name) {
+          assert.ok(sinkholed(table, name), name + ': both address families');
+          ['ads', 'off'].forEach(function (mode) {
+            assert.strictEqual(privacy.adBlockList(mode).indexOf(name), -1, mode + ': ' + name);
+          });
+        });
+        ['aic', 'eic', 'kic', 'eu', 'nl'].forEach(function (prefix) {
+          assert.strictEqual(privacy.adBlockList('full').indexOf(prefix + '.' + host), -1,
+            prefix + '.' + host + ': not a selected country');
+        });
+      });
+    });
+  } finally {
+    if (savedCountry === undefined) delete mockEnv.files[countryFile];
+    else mockEnv.files[countryFile] = savedCountry;
+    privacy._setSdpGraceActive(savedGrace);
+  }
+});
+
+test('Content Store hosts follow the TV country and use fallback countries until it is known', function () {
+  var countryFile = '/var/lib/tvweb/country';
+  var savedCountry = mockEnv.files[countryFile];
+  try {
+    [{ country: 'NL', prefixes: ['nl'], absent: 'de' },
+     { country: undefined, prefixes: ['us', 'gb', 'au', 'br', 'ca', 'de', 'fr'], absent: 'nl' },
+     { country: 'invalid', prefixes: ['us', 'gb', 'au', 'br', 'ca', 'de', 'fr'], absent: 'invalid' }].forEach(function (sample) {
+      if (sample.country === undefined) delete mockEnv.files[countryFile];
+      else mockEnv.files[countryFile] = sample.country;
+      var table = privacy.adBlockHostsTable('full');
+      var list = privacy.adBlockList('full');
+      ['app.lgwebostv.com', 'lgrecommends.lgappstv.com'].forEach(function (host) {
+        assert.ok(sinkholed(table, host), 'bare host remains covered');
+        sample.prefixes.forEach(function (prefix) {
+          assert.ok(sinkholed(table, prefix + '.' + host), String(sample.country) + ': ' + prefix + '.' + host);
+        });
+        assert.strictEqual(list.indexOf(sample.absent + '.' + host), -1, 'unselected country stays out');
+      });
+      assert.strictEqual(list.length, list.filter(function (host, i) { return list.indexOf(host) === i; }).length,
+        'no duplicate hosts');
+    });
+  } finally {
+    if (savedCountry === undefined) delete mockEnv.files[countryFile];
+    else mockEnv.files[countryFile] = savedCountry;
+  }
+});
+
 test('known WiseLG platform and CDN names are blocked only in Everything after clock sync', function () {
   var countryFile = '/var/lib/tvweb/country';
   var savedCountry = mockEnv.files[countryFile];

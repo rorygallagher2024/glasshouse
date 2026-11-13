@@ -109,6 +109,8 @@ assert.ok(sinkholed(mock.files[TABLE], 'de.nextlgsdp.com'), 'clock completion up
 finishMount();
 assert.ok(jail() === mock.files[ROOT], 'jail follows the mounted table');
 assert.ok(sinkholed(jail(), 'de.nextlgsdp.com'));
+assert.ok(sinkholed(jail(), 'de.app.lgwebostv.com'));
+assert.ok(sinkholed(jail(), 'de.lgrecommends.lgappstv.com'));
 console.log('  ok - clock sync during a pending mount reaches existing jails');
 
 // The ordinary cold-boot ordering: mounted first, clock sync afterwards.
@@ -127,6 +129,8 @@ console.log('  ok - clock completion rewrites already mounted app copies');
 reply(privacy.setAdBlock, 'ads');
 assert.ok(sinkholed(jail(), 'ad.lgsmartad.com'));
 assert.ok(!sinkholed(jail(), 'de.nextlgsdp.com'));
+assert.ok(!sinkholed(jail(), 'de.app.lgwebostv.com'));
+assert.ok(!sinkholed(jail(), 'de.lgrecommends.lgappstv.com'));
 reply(privacy.setCustomHosts, { mode: 'replace', text: 'only.example.com\n' });
 assert.ok(sinkholed(jail(), 'only.example.com'));
 assert.ok(!sinkholed(jail(), 'ad.lgsmartad.com'));
@@ -138,6 +142,10 @@ country = 'fr';
 privacy.init({ luna: luna, appHosts: appHosts, exec: exec });
 assert.ok(sinkholed(jail(), 'fr.lgeapi.com'));
 assert.ok(!sinkholed(jail(), 'de.lgeapi.com'));
+['app.lgwebostv.com', 'lgrecommends.lgappstv.com'].forEach(function (host) {
+  assert.ok(sinkholed(jail(), 'fr.' + host));
+  assert.ok(!sinkholed(jail(), 'de.' + host));
+});
 console.log('  ok - learned country changes reach app copies');
 
 reply(privacy.setTvUpdatesBlocked, true);
