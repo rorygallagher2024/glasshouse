@@ -116,6 +116,17 @@ html.resting #wall .layer{-webkit-animation-play-state:paused;animation-play-sta
   background:linear-gradient(90deg,rgba(10,9,8,.82),rgba(10,9,8,.35) 70%,rgba(10,9,8,.15))}
 #preview.intile video{object-fit:cover}
 #preview.intile #pvInfo,#preview.intile.blank{display:none}
+/* Medium and Large (#1210): the preview keeps the small one's top and right
+   edges and grows down and left, the plate stays level with the strip's foot,
+   and the rows start the same 34px below the picture as below the strip. */
+.pv-medium #now #preview:not(.full){width:512px;height:288px;-webkit-align-self:flex-start;align-self:flex-start;margin-top:62px}
+.pv-large #now #preview:not(.full){width:640px;height:360px;-webkit-align-self:flex-start;align-self:flex-start;margin-top:62px}
+.pv-medium #preview:not(.full) #pvNote{line-height:288px}
+.pv-large #preview:not(.full) #pvNote{line-height:360px}
+.pv-medium #pvInfo{bottom:88px}
+.pv-large #pvInfo{bottom:160px}
+.pv-medium #rows{top:384px}
+.pv-large #rows{top:456px}
 #rows .tile.live{background:transparent}
 .tile.live>div{position:relative;z-index:1}
 .row .tile.live{opacity:1}
@@ -1972,12 +1983,18 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     applyFocus();
   }
 
+  // Medium or Large beside the clock; in the tile, the tile sets its size.
+  function previewSizeClass() {
+    if (!layout || layout.livePreview !== true || layout.previewInTile === true) return '';
+    return layout.previewSize === 'medium' ? ' pv-medium' : layout.previewSize === 'large' ? ' pv-large' : '';
+  }
+
   function stageClass() {
     $('stage').className = (state.arranging ? 'arranging' : '') + (recents.open ? ' recents' : '') +
       (finder.open ? ' finding' : '') + (finder.typing ? ' typing' : '') + (searchOn() ? '' : ' no-search') + (folder.open ? ' folder' : '') +
       (!layout || layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
       (layout && layout.view === 'alternative' ? ' alternative' : '') + (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
-      (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '');
+      (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '') + previewSizeClass();
     applyPointer(false);
     followPreview();
   }
