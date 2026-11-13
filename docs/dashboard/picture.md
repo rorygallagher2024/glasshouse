@@ -25,33 +25,7 @@ puts it back.
 
 ## Export current settings
 
-On the web dashboard, **Export JSON** downloads a read-only snapshot of the
-current picture settings. It also works with controls disabled. No picture
-setting, input or mode is changed. The file cannot be restored or imported.
-
-The version 1 format has `format: "glasshouse-picture-settings"`, `version: 1`,
-`created` (the TV's time in ISO format), `dimension` and `settings`.
-`dimension` contains the `input`, `pictureMode` and `dynamicRange` reported by
-LG, with `null` for any it did not report. The read is taken on request,
-without reusing the dashboard's cached values or display defaults.
-
-`settings` contains LG's keys from Glasshouse's Picture catalogue for the
-`picture` category, excluding settings kept per app. Each entry has a `status`
-and a `value`. `available` means LG returned a non-null value, kept exactly as
-read: numbers stored as text stay text. `unavailable` has `value: null` and
-means the key was absent or null. That alone cannot distinguish an unsupported
-setting from one unavailable in the current context. Readable settings may
-still be hidden or inactive in LG's menu; this export does not establish that
-they can be changed. If the whole read fails, no file is downloaded.
-
-This is one current context, not all inputs, modes or calibrations. Aspect
-ratio, Just Scan and TruMotion mode need per-app reads and are excluded, as
-are Game Optimizer settings in other categories, panel protections and keys
-outside the Picture catalogue. Keep the source and mode unchanged while
-exporting; it is a single service read, not a transaction across the TV.
-
-`GET /api/picture/export` returns the same JSON through the existing API
-authentication. It returns HTTP 503 if the read fails, and accepts only GET.
+On the web dashboard, **Export JSON** downloads the picture settings for what is on screen now, as the TV reports them, including aspect ratio, Just Scan and TruMotion for that app or input. Nothing on the TV changes. The file is for keeping or comparing; it cannot be loaded back.
 
 ## What each TV shows
 

@@ -51,7 +51,10 @@ async function loadPicture(fromPoll) {
     renderPicture(d, fromPoll === true);
     pictureError('');
   } catch (e) {
-    if (revision === pictureRevision && fromPoll !== true) pictureError(e.message);
+    if (revision === pictureRevision && fromPoll !== true) {
+      pictureError(e.message);
+      if (q('pic-export-table')) q('pic-export-table').hidden = true;
+    }
   } finally {
     if (revision === pictureRevision && activeTab === 'picture') picturePolling(true);
   }
@@ -76,7 +79,10 @@ async function downloadPicture() {
     }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-    a.download = `glasshouse-picture-${data.created.slice(0, 10)}.json`;
+    // The input and mode tell apart several exports from one day.
+    const part = v => String(v || '').replace(/^com\.webos\.app\./, '').replace(/[^A-Za-z0-9_-]+/g, '');
+    const dim = data.dimension || {};
+    a.download = ['glasshouse-picture', part(dim.input), part(dim.pictureMode), data.created.slice(0, 10)].filter(Boolean).join('-') + '.json';
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -112,6 +118,8 @@ function renderPicture(d, fromPoll) {
   pictureShown = shown;
 
   const rows = d.rows || [];
+  // Shown once the settings are on the page, not alone while they load.
+  if (q('pic-export-table')) q('pic-export-table').hidden = !rows.length;
   const mode = rows.find(r => r.id === 'pictureMode');
   const dim = d.dimension || {};
   q('pic-now').hidden = !mode;

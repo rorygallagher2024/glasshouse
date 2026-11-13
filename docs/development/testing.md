@@ -8,11 +8,13 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 ## On every pull request
 
 `test-picture-export.js` checks the read-only picture export through the LG
-settings module and the HTTP handler: raw values and missing keys, context,
-authentication, controls disabled, rejected methods and read failures. It
-asserts that only one current-picture read is made per export, without writes
-or cache invalidation. `test-picture-export-ui.js` checks the web download,
-duplicate clicks, object URL cleanup and error handling; it runs on Node 8
+settings module and the HTTP handler: values kept as read, keys the TV left
+out omitted, the per-app settings read for the app on screen and left out
+without one, context, authentication, controls disabled, rejected methods and
+read failures. It asserts that only one current-picture read is made per
+export, without writes or cache invalidation. `test-picture-export-ui.js`
+checks the web download and its file name, duplicate clicks, object URL
+cleanup and error handling; it runs on Node 8
 and later, where the web dashboard's JavaScript parses.
 
 `test-privacy.js` checks that `mtalk.google.com` is sinkholed on IPv4 and IPv6

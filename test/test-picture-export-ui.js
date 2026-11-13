@@ -44,7 +44,7 @@ vm.runInNewContext(source, context, { filename: 'picture.js' });
 
 var data = { format: 'glasshouse-picture-settings', version: 1, created: '2026-10-30T12:00:00.000Z',
   dimension: { input: 'hdmi4', pictureMode: 'cinema', dynamicRange: 'sdr' },
-  settings: { contrast: { status: 'available', value: 0 }, gamma: { status: 'unavailable', value: null } } };
+  settings: { contrast: 0, backlight: '80' } };
 var complete;
 fetchReply = function () { return new Promise(function (resolve) { complete = resolve; }); };
 var first = context.downloadPicture();
@@ -58,8 +58,8 @@ first.then(function () {
   assert.strictEqual(requests[0].options.cache, 'no-store');
   assert.strictEqual(requests[0].options.method, undefined, 'the browser uses GET');
   assert.strictEqual(files[0].type, 'application/json');
-  assert.deepEqual(JSON.parse(files[0].parts[0]), data, 'downloaded JSON preserves availability and values');
-  assert.deepEqual(clicks, ['glasshouse-picture-2026-10-30.json']);
+  assert.deepEqual(JSON.parse(files[0].parts[0]), data, 'downloaded JSON keeps the values as read');
+  assert.deepEqual(clicks, ['glasshouse-picture-hdmi4-cinema-2026-10-30.json'], 'the file names the input and mode');
   assert.strictEqual(removed.length, 1);
   assert.strictEqual(button.disabled, false);
   assert.strictEqual(error.hidden, true);

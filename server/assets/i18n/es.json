@@ -1,4 +1,7 @@
 {
+ "pic.export": {"text": "Exportar JSON", "from": "Export JSON"},
+ "pic.exportDesc": {"text": "Descarga los ajustes de imagen actuales como JSON sin cambiarlos. Este archivo no se puede restaurar.", "from": "Downloads the current picture settings as JSON without changing them. This file cannot be restored."},
+ "pic.exportTitle": {"text": "Exportar los ajustes actuales", "from": "Export current settings"},
  "search.clear": {"text": "Borrar búsqueda", "from": "Clear search"},
  "search.category": {"text": "Categoría: {category}", "from": "Category: {category}"},
  "search.count": {"text": "{n} resultados", "from": "{n} results"},
@@ -1084,6 +1087,7 @@
  "srv.lgs.ipControl.desc": {"text": "Permite que los sistemas domóticos controlen la TV por la red con el protocolo propio de LG. Desactivado salvo que algo lo necesite.", "from": "Lets home automation systems control the TV over the network with LG's own protocol. Off unless something needs it."},
  "srv.lgs.livePromotion": {"text": "Anuncios mientras ves contenido", "from": "Ads while watching"},
  "srv.lgs.livePromotion.desc": {"text": "Anuncios y ofertas que aparecen sobre lo que hay en pantalla, mientras Live Plus de LG está activado. LG lo llama Live Promotion.", "from": "Adverts and offers shown over what is on screen, while LG's Live Plus is on. LG calls this Live Promotion."},
+ "srv.lgs.pictureExportFailed": {"text": "No se pudieron exportar los ajustes de imagen actuales.", "from": "The current picture settings could not be exported."},
  "srv.lgs.screenSaverAd": {"text": "Anuncios en el salvapantallas", "from": "Screen saver ads"},
  "srv.lgs.screenSaverAd.desc": {"text": "Anuncios que algunas apps, como LG Channels, muestran en el salvapantallas. LG lo llama Screen Saver Promotion.", "from": "Adverts that some apps, such as LG Channels, show in the screen saver. LG calls this Screen Saver Promotion."},
  "srv.lgs.simplinkAutoPowerOn": {"text": "Sincronización de encendido", "from": "Auto power sync"},

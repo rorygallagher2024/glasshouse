@@ -575,12 +575,14 @@
     <div class="pic-mode-ctl" id="pic-mode-ctl" data-reload="loadPicture"></div>
   </div>
   <div id="pic-groups" data-reload="loadPicture"></div>
-  <div class="prot-row">
-    <div class="prot-info">
-      <div class="prot-title" data-t="pic.exportTitle">Export current settings</div>
-      <div class="prot-desc" data-t="pic.exportDesc">Downloads the current picture settings as JSON without changing them. This file cannot be restored.</div>
+  <div class="prot-table" id="pic-export-table" hidden>
+    <div class="prot-row">
+      <div class="prot-info">
+        <div class="prot-title" data-t="pic.exportTitle">Export current settings</div>
+        <div class="prot-desc" data-t="pic.exportDesc">Downloads the current picture settings as JSON without changing them. This file cannot be restored.</div>
+      </div>
+      <div class="prot-status"><button type="button" class="pill" id="pic-export" onclick="downloadPicture()" data-t="pic.export">Export JSON</button></div>
     </div>
-    <div class="prot-status"><button type="button" id="pic-export" onclick="downloadPicture()" data-t="pic.export">Export JSON</button></div>
   </div>
 </section>
 

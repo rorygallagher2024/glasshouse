@@ -561,27 +561,50 @@ function rowById(id) {
   return null;
 }
 
-// Read the current picture once, keeping LG's values rather than the UI's
-// defaults and conversions. Per-app settings need a different read and scope.
+// The current picture as LG reports it, without the dashboard's defaults or
+// conversions: each Picture key the TV returned, and the per-app ones
+// (aspect ratio, Just Scan, TruMotion) for the app or input on screen.
 function exportPicture(cb) {
   luna('com.webos.service.settings/getSystemSettings', { category: 'picture' }, function (r) {
     if (!r || r.returnValue !== true || !r.settings || typeof r.settings !== 'object' || Array.isArray(r.settings)) {
       return cb({ ok: false, error: msg('srv.lgs.pictureExportFailed', 'The current picture settings could not be exported.') });
     }
     var settings = {};
+    function keep(key, value) { if (value !== null && value !== undefined) settings[key] = value; }
+    var perApp = [];
     ROWS.forEach(function (row) {
-      if (row.section !== 'picture' || row.category !== 'picture' || row.perApp) return;
-      var value = r.settings[row.key];
-      var available = Object.prototype.hasOwnProperty.call(r.settings, row.key) && value !== null && value !== undefined;
-      settings[row.key] = { status: available ? 'available' : 'unavailable', value: available ? value : null };
+      if (row.section !== 'picture') return;
+      if (row.perApp) perApp.push(row);
+      else if (row.category === 'picture') keep(row.key, r.settings[row.key]);
     });
     var dimension = {};
     ['input', 'pictureMode', 'dynamicRange'].forEach(function (key) {
       var value = r.dimension && r.dimension[key];
       dimension[key] = typeof value === 'string' ? value : null;
     });
-    cb({ format: 'glasshouse-picture-settings', version: 1, created: new Date().toISOString(),
-      dimension: dimension, settings: settings });
+    function done(appId) {
+      dimension.app = appId || null;
+      cb({ format: 'glasshouse-picture-settings', version: 1, created: new Date().toISOString(),
+        dimension: dimension, settings: settings });
+    }
+    luna('com.webos.applicationManager/getForegroundAppInfo', {}, function (f) {
+      var appId = f && typeof f.appId === 'string' && f.appId ? f.appId : null;
+      if (!appId) return done(null);
+      // One read per category, naming the keys, as LG's Settings app asks; a
+      // key the TV lacks is left out rather than failing the export.
+      var categories = [];
+      perApp.forEach(function (row) { if (categories.indexOf(row.category) === -1) categories.push(row.category); });
+      (function next(i) {
+        if (i >= categories.length) return done(appId);
+        var own = perApp.filter(function (row) { return row.category === categories[i]; });
+        luna('com.webos.service.settings/getSystemSettings',
+          { category: categories[i], app_id: appId, keys: own.map(function (row) { return row.key; }) }, function (res) {
+            var got = (res && res.settings) || {};
+            own.forEach(function (row) { keep(row.key, got[row.key]); });
+            next(i + 1);
+          });
+      })(0);
+    });
   });
 }
 
