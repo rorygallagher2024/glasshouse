@@ -1497,6 +1497,52 @@ async function visitHomeRecentsHidden(browser, base, problems) {
   } finally { await page.close(); }
 }
 
+// #1213: Up and Down go to the tile above or below on screen, not to the
+// tile last focused in that row: app tiles over wider input tiles.
+async function visitHomeUpDown(browser, base, problems) {
+  const page = await browser.newPage();
+  page.on('pageerror', e => problems.push('Home up and down: ' + e.message));
+  const layout = { rows: ['app', 'dev'], order: { app: [], dev: [] }, hidden: { app: [], dev: [] }, channels: [],
+    hintSeen: true, searchHintSeen: true };
+  const apps = [];
+  for (let i = 0; i < 8; i++) apps.push({ id: 'app' + i, title: 'App ' + i });
+  await page.route('**/api/home/**', route => {
+    const url = new URL(route.request().url());
+    const reply = body => route.fulfill({ json: body });
+    if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1, apps, channels: [],
+      devices: [1, 2, 3, 4].map(p => ({ id: 'hdmi' + p, name: 'HDMI ' + p, input: 'hdmi' + p, port: p })),
+      order: { app: apps.map(a => a.id), dev: ['hdmi1', 'hdmi2', 'hdmi3', 'hdmi4'] } });
+    if (url.pathname.endsWith('/now')) return reply({});
+    return reply({ ok: true, build: 'updown', layoutVersion: 1 });
+  });
+  const focused = () => page.evaluate(() => {
+    const t = document.querySelector('#rows .tile.focus');
+    if (!t) return null;
+    const r = t.getBoundingClientRect();
+    return { row: t.closest('.row').getAttribute('data-key'), c: +t.getAttribute('data-c'), left: r.left, right: r.right };
+  });
+  const overlaps = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0;
+  const press = async key => { await page.keyboard.press(key); await page.waitForTimeout(700); };
+  try {
+    await page.goto(base + '/assets/home.html');
+    await page.waitForSelector('#rows .tile.focus');
+    // Remembered in the input row: its first tile.
+    await press('ArrowDown');
+    await press('ArrowUp');
+    for (let i = 0; i < 5; i++) await press('ArrowRight');
+    const above = await focused();
+    await press('ArrowDown');
+    const below = await focused();
+    if (!above || !below || below.row !== 'dev') problems.push('Home up and down: Down did not reach the input row');
+    else if (!overlaps(above, below)) problems.push('Home up and down: Down went to input ' + below.c + ', not the one under app ' + above.c);
+    await press('ArrowUp');
+    const back = await focused();
+    if (!back || back.row !== 'app' || !overlaps(back, below)) problems.push('Home up and down: Up did not go to the app above the input');
+  } finally {
+    await page.close();
+  }
+}
+
 async function visitHomeOrder(browser, base, problems) {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   page.on('pageerror', e => problems.push('Home order: ' + e.message));
@@ -3312,7 +3358,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomeUpDown, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

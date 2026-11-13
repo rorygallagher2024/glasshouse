@@ -2295,6 +2295,14 @@ The webOS 9 entries above describe the home app's CRIU checkpoint. On a CX:
 
 - Restarting `sam.service` (`killall -9 LunaExecutable` and `systemctl kill -s 9 sam.service`) or bind-mounting over `/usr/palm/applications/com.webos.app.home` breaks Widevine DRM and ESN initialization: Widevine and ESN show as "Unknown" in TV Information, and DRM streaming playback fails. Running Glasshouse Home as a standalone app (`com.tvweb.home`) directed by `remotekeys-filter.js` leaves `com.webos.app.home` and sam untouched, keeping Widevine DRM and ESN functional.
 
+## Widevine DRM and ESN with the bind mount (webOS 10.3.2, B4)
+
+Reported on an OLED77B46LA, webOS 10.3.2 (33.31.75), Glasshouse 0.146.2, with Glasshouse Home on (#1421).
+
+- With `/var/lib/tvweb/home-takeover` bind-mounted over `/usr/palm/applications/com.webos.app.home`, `com.webos.service.sm/crypto/checkSeStore` with `{"id":["esn","widevine"]}` reported both keys with `isOk: true`, and TV Information showed an ESN and a Widevine ID rather than "UNKNOWN", which it shows for a key that call does not return.
+- With the same mount on 0.143.1, Netflix, Prime Video and the Apple TV app played (#1315).
+- sam took the change through `blockSystemApp` and `releaseBlockSystemApp`, never a restart. Where the CX above (webOS 5.6.2) lost both keys with the mount, this TV kept them.
+
 ## IPTV after Active Standby (webOS 5.6.2, CX)
 
 Measured on an OLED65CX9LA, Glasshouse 0.143.0, Quick Start+ off. Active Standby, for 8 seconds and for about 3.5 hours, left the server running. The power state went Active Standby to Active, on by `remoteKey`.
