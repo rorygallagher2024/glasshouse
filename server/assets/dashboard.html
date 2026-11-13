@@ -1514,6 +1514,8 @@ function homeRowRows(kind, d) {
       t('home.hideUnusedDesc', 'Leaves inputs with nothing plugged in out of the Inputs row, instead of showing them greyed out. They still show while arranging.'), 'homeHideUnused', lay.hideUnused === true));
     r.push(homeSwitchRow(d, 'showCec', t('home.showCec', 'CEC addresses'),
       t('home.showCecDesc', 'On each input’s tile: the HDMI-CEC address of the device behind it.'), 'homeShow', lay.showCec !== false));
+    r.push(homeSwitchRow(d, 'showPointer', t('home.showPointer', 'Magic Remote pointer'),
+      t('home.showPointerDesc', 'Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus.'), 'homeShow', lay.showPointer !== false));
   }
   if (kind === 'ch') {
     var hasChannels = !!(d.channels && d.channels.length);

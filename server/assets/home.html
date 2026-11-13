@@ -1513,6 +1513,35 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     if (glide) kick();
   }
 
+  /*
+   * The pointer switched off on the Home tab (#1212): the Magic Remote's
+   * cursor is hidden while the view is in front, moving the remote focuses
+   * nothing, and a click is the OK it would be with the arrows, so the tile
+   * in focus opens rather than the one under the cursor. A click within
+   * OK_CLICK_MS of an OK key is that same press. The wheel still scrolls.
+   * PalmSystem.setCursor hid it on a C8 (webOS 4.4.3).
+   */
+  var OK_CLICK_MS = 400;
+  var lastOkKeyAt = 0;
+  var cursorHidden = false;
+  function pointerOff() { return !!layout && layout.showPointer === false; }
+  function applyPointer(again) {
+    var off = pointerOff();
+    if (off === cursorHidden && !(off && again)) return;
+    cursorHidden = off;
+    try {
+      if (window.PalmSystem && PalmSystem.setCursor) PalmSystem.setCursor(off ? 'blank' : 'default', 0, 0);
+    } catch (e) {}
+    if (off) stopPointing();
+  }
+  function clickAsOk() {
+    if (Date.now() - lastOkKeyAt < OK_CLICK_MS) return;
+    var press = { keyCode: KEY.ok, preventDefault: function () {}, stopPropagation: function () {} };
+    onKeyDown(press);
+    onKeyUp(press);
+  }
+  function noteOkKey(e) { if (e.keyCode === KEY.ok) lastOkKeyAt = Date.now(); }
+
   // The keys, or the pointer going away, end the pointer's scrolling; a
   // gliding row slows to a stop.
   function stopPointing() {
@@ -1949,6 +1978,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
       (!layout || layout.showClock === false ? ' no-clock' : '') + (layout && layout.rowsBottom === true ? ' rows-bottom' : '') +
       (layout && layout.view === 'alternative' ? ' alternative' : '') + (player.open ? ' playing' : '') + (adder.open ? ' adding' : '') +
       (adder.open && adder.typing ? ' adtyping' : '') + (guide.open ? ' guiding' : '');
+    applyPointer(false);
     followPreview();
   }
 
@@ -4709,6 +4739,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
     return null;
   }
   function onPointer(e) {
+    if (pointerOff()) return;
     pointerX = e.clientX;
     pointerY = e.clientY;
     pointing = true;
@@ -4761,6 +4792,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
   function onClick(e) {
     if (!data || !layout || layoutBusy) return;
+    if (pointerOff()) return clickAsOk();
     if (player.open) return playerClick(e.target);
     if (guide.open) return guideClick(e.target);
     if (adder.open) return adderClick(e.target);
@@ -5814,6 +5846,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
 
   function returned() {
     tilePreview.opened = null;
+    applyPointer(true);
     var dark = faded;
     if (!dark) fadeIn();
     initialEscape = false;
@@ -5849,6 +5882,8 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   }
 
   window.addEventListener('resize', fit);
+  document.addEventListener('keydown', noteOkKey, true);
+  document.addEventListener('keyup', noteOkKey, true);
   document.addEventListener('keydown', onKeyDown, true);
   document.addEventListener('keyup', onKeyUp, true);
   document.addEventListener('mousemove', onPointer);
@@ -5868,6 +5903,7 @@ body.no-slide #recents,body.no-slide #finder,body.no-slide #folder,body.no-slide
   // webOS says when the pointer hides, after a few still seconds or a key.
   document.addEventListener('cursorStateChange', function (e) {
     if (!(e.detail && e.detail.visibility)) stopPointing();
+    else applyPointer(true);
   });
   document.addEventListener('mouseout', function (e) { if (!e.relatedTarget) stopPointing(); });
   document.addEventListener('click', onClick);

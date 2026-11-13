@@ -51,7 +51,7 @@ var SETTINGS = 'com.webos.service.settings/';
 var ROWS = ['app', 'rec', 'dev', 'ch', 'iptv'];
 // How a row is ordered: as arranged ('custom'), or the tile opened last first ('recent').
 var SORTS = ['custom', 'recent'];
-var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos'];
+var SHOW_KEYS = ['showClock', 'showLastOn', 'showAppCount', 'showCec', 'showTvLogos', 'showPointer'];
 // Where the weather badge's weather comes from: nowhere, Home Assistant's pushes, or Open-Meteo.
 var WEATHER_SOURCES = ['off', 'ha', 'internet'];
 // Each kind of motion on the view, on unless switched off: the wallpaper's
@@ -426,6 +426,8 @@ function defaults() {
     showAppCount: true,
     showCec: true,
     showTvLogos: true,
+    // The Magic Remote's pointer on the view (#1212).
+    showPointer: true,
     // Where the weather comes from, and the place Open-Meteo is asked about.
     weather: 'ha',
     weatherPlace: null,
@@ -690,6 +692,7 @@ function setLayout(body, cb) {
     showAppCount: typeof body.showAppCount === 'boolean' ? body.showAppCount : c.showAppCount,
     showCec: typeof body.showCec === 'boolean' ? body.showCec : c.showCec,
     showTvLogos: typeof body.showTvLogos === 'boolean' ? body.showTvLogos : c.showTvLogos,
+    showPointer: typeof body.showPointer === 'boolean' ? body.showPointer : c.showPointer,
     // showWeather is the switch an older dashboard still sends.
     weather: body.weather !== undefined ? body.weather
       : typeof body.showWeather === 'boolean' ? (body.showWeather ? 'ha' : 'off') : c.weather,
@@ -743,7 +746,7 @@ function layoutOf(c) {
     searchHintSeen: c.searchHintSeen, picture: c.picture, livePreview: c.livePreview, search: c.search, recommended: c.recommended,
     fade: c.fade, wallDrift: c.wallDrift, wallCrossfade: c.wallCrossfade, smoothScroll: c.smoothScroll, slidePanels: c.slidePanels,
     darkening: c.darkening, hideUnused: c.hideUnused, showClock: c.showClock, rowsBottom: c.rowsBottom, view: c.view,
-    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSound: c.previewSound, wallAnim: c.wallAnim,
+    showLastOn: c.showLastOn, showAppCount: c.showAppCount, showCec: c.showCec, showTvLogos: c.showTvLogos, showPointer: c.showPointer, weather: c.weather, weatherPlace: c.weatherPlace, previewAlways: c.previewAlways, previewInTile: c.previewInTile, previewSound: c.previewSound, wallAnim: c.wallAnim,
     animTheme: c.animTheme, animSky: c.animSky, animLight: c.animLight, animThemes: ANIM_THEMES,
     wallShuffleMinutes: c.wallShuffleMinutes, shuffleMinutes: SHUFFLE_MINUTES, colours: c.colours,
     // Not saved: { host, by } while the ad blocker blocks LG's search (lib/home-search).

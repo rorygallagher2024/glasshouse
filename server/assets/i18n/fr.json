@@ -811,6 +811,8 @@
  "home.showAppCountDesc": {"from": "Beside the Apps row: how many of the TV’s apps it shows.", "text": "À côté de la rangée Apps : combien d'apps de la TV elle affiche."},
  "home.showCec": {"from": "CEC addresses", "text": "Adresses CEC"},
  "home.showCecDesc": {"from": "On each input’s tile: the HDMI-CEC address of the device behind it.", "text": "Sur la tuile de chaque entrée : l'adresse HDMI-CEC de l'appareil qui s'y trouve."},
+ "home.showPointer": {"text": "Pointeur de la Magic Remote", "from": "Magic Remote pointer"},
+ "home.showPointerDesc": {"text": "Bouger la télécommande affiche son pointeur sur Glasshouse Home. Désactivé, seules les flèches se déplacent dans Home, et OK comme un clic ouvrent la tuile sélectionnée.", "from": "Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus."},
  "home.showClock": {"from": "Clock and date", "text": "Horloge et date"},
  "home.showClockDesc": {"from": "At the top of Glasshouse Home. Switched off, the space stays empty.", "text": "En haut de Glasshouse Home. Désactivé, l'espace reste vide."},
  "home.showLast": {"from": "Last watched", "text": "Dernière lecture"},

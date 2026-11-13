@@ -586,6 +586,8 @@
  "home.showAppCountDesc": {"text": "يعرض بجانب عنوان صف التطبيقات عدد التطبيقات الظاهرة فيه.", "from": "Beside the Apps row: how many of the TV’s apps it shows."},
  "home.showCec": {"text": "عناوين CEC", "from": "CEC addresses"},
  "home.showCecDesc": {"text": "يعرض على أيقونة كل مدخل عنوان HDMI-CEC للجهاز المتصل به.", "from": "On each input’s tile: the HDMI-CEC address of the device behind it."},
+ "home.showPointer": {"text": "مؤشر Magic Remote", "from": "Magic Remote pointer"},
+ "home.showPointerDesc": {"text": "تحريك جهاز التحكم يُظهر مؤشره على Glasshouse Home. عند الإيقاف، تتنقّل الأسهم وحدها في Home، ويفتح زر OK والنقر كلاهما المربع المحدد.", "from": "Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus."},
  "home.showLast": {"text": "آخر ما شُوهد", "from": "Last watched"},
  "home.showLastDesc": {"text": "في أعلى واجهة Glasshouse وعلى أيقونة المدخل: يعرض آخر محتوى كان يعمل على التلفاز.", "from": "At the top of Glasshouse Home and on the input it was on: what the TV last showed."},
  "home.shown": {"text": "ظاهر", "from": "Shown"},

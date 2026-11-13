@@ -2571,6 +2571,24 @@ step('last watched, the app count, CEC addresses and channel logos show until sw
   });
 });
 
+// #1212: the Magic Remote's pointer on Glasshouse Home, on unless switched off.
+step('the pointer is on until switched off, takes only true or false, and is saved', function (done) {
+  start(null);
+  assert.strictEqual(home.layout().showPointer, true, 'on by default');
+  home.setLayout({ showPointer: 'off' }, function (r) {
+    assert.strictEqual(r.layout.showPointer, true, 'not a boolean, left as it was');
+    home.setLayout({ showPointer: false }, function (r2) {
+      assert.strictEqual(r2.layout.showPointer, false);
+      var saved = home.normalise(JSON.parse(fs.readFileSync(path.join(dir, 'home.json'), 'utf8')));
+      assert.strictEqual(saved.showPointer, false, 'saved off');
+      home.setLayout({ showPointer: true }, function (r3) {
+        assert.strictEqual(r3.layout.showPointer, true);
+        done();
+      });
+    });
+  });
+});
+
 step('the clock shows until switched off, the rows sit along the bottom only when switched on, and both are saved', function (done) {
   start(null);
   var l = home.layout();

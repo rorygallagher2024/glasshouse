@@ -618,6 +618,8 @@
  "home.showAppCountDesc": {"text": "Accanto alla riga App: quante delle app della TV mostra.", "from": "Beside the Apps row: how many of the TV’s apps it shows."},
  "home.showCec": {"text": "Indirizzi CEC", "from": "CEC addresses"},
  "home.showCecDesc": {"text": "Sul riquadro di ogni ingresso: l'indirizzo HDMI-CEC del dispositivo collegato.", "from": "On each input’s tile: the HDMI-CEC address of the device behind it."},
+ "home.showPointer": {"text": "Puntatore del Magic Remote", "from": "Magic Remote pointer"},
+ "home.showPointerDesc": {"text": "Muovendo il telecomando compare il suo puntatore su Glasshouse Home. Disattivato, solo le frecce si muovono in Home, e OK e un clic aprono il riquadro selezionato.", "from": "Moving the remote shows its pointer on Glasshouse Home. Off, only the arrow keys move around Home, and OK and a click both open the tile in focus."},
  "home.showLast": {"text": "Ultimo guardato", "from": "Last watched"},
  "home.showLastDesc": {"text": "In alto in Glasshouse Home e sull'ingresso su cui era: cosa ha mostrato la TV per ultimo.", "from": "At the top of Glasshouse Home and on the input it was on: what the TV last showed."},
  "home.shown": {"text": "Visibile", "from": "Shown"},
