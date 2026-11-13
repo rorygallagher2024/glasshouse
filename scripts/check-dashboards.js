@@ -451,6 +451,60 @@ async function visitHomePreviewWebos4(browser, base, problems) {
   }
 }
 
+// Preview size (#1210): Medium and Large keep the small preview's top and right
+// edges in both views, and the rows start below the picture.
+async function visitHomePreviewSize(browser, base, problems) {
+  const boxes = {};
+  for (const view of ['standard', 'alternative']) {
+    for (const size of ['small', 'medium', 'large']) {
+      const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+      page.on('pageerror', e => problems.push('Home preview size: ' + e.message));
+      const layout = { rows: ['dev'], order: { dev: [] }, hidden: { dev: [] }, channels: [], hintSeen: true, searchHintSeen: true,
+        livePreview: true, previewAlways: false, previewInTile: false, previewSize: size, view, picture: false };
+      await page.addInitScript(() => {
+        HTMLMediaElement.prototype.load = function () {};
+        HTMLMediaElement.prototype.pause = function () {};
+        HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+      });
+      await page.route('**/api/home/**', route => {
+        const url = new URL(route.request().url());
+        const reply = body => route.fulfill({ json: body });
+        if (url.pathname.endsWith('/catalogue')) return reply({ ok: true, layout, layoutVersion: 1,
+          supported: { ok: true, webos: '9.2.0' }, apps: [], channels: [], sources: { channels: 1 },
+          devices: [{ id: 'tv', name: 'TV', input: 'tv', tuner: true, port: 0, channel: { id: 'two', number: '2', name: 'Two' } }],
+          order: { dev: ['tv'] } });
+        if (url.pathname.endsWith('/now')) return reply({ kind: 'input', port: 1 });
+        if (url.pathname.endsWith('/guide')) return reply({ ok: true, guide: {} });
+        if (url.pathname.endsWith('/picture')) return reply({ ok: true, input: 'dtv', signal: 'ok', range: 'sdr', mode: null, light: null, oled: true });
+        return reply({ ok: true, build: 'preview', layoutVersion: 1 });
+      });
+      try {
+        await page.clock.install();
+        await page.goto(base + '/assets/home.html');
+        await page.waitForSelector('.tile');
+        await page.clock.fastForward(400);
+        await page.waitForTimeout(100);
+        boxes[view + ' ' + size] = await page.evaluate(() => {
+          const pv = document.getElementById('preview').getBoundingClientRect();
+          return { on: /\bon\b/.test(document.getElementById('preview').className), top: pv.top, right: pv.right, bottom: pv.bottom,
+                   width: pv.width, height: pv.height, rows: document.getElementById('rows').getBoundingClientRect().top };
+        });
+      } finally {
+        await page.close();
+      }
+    }
+    const small = boxes[view + ' small'];
+    [['small', 356, 200], ['medium', 512, 288], ['large', 640, 360]].forEach(([size, w, h]) => {
+      const b = boxes[view + ' ' + size];
+      const name = 'Home preview size, ' + view + ' ' + size + ': ';
+      if (!b.on) return problems.push(name + 'the preview did not show');
+      if (b.width !== w || b.height !== h) problems.push(name + 'the preview is ' + b.width + 'x' + b.height + ', not ' + w + 'x' + h);
+      if (Math.abs(b.top - small.top) > 1 || Math.abs(b.right - small.right) > 1) problems.push(name + 'the preview moved from the small one\'s top right corner');
+      if (b.rows < b.bottom + 30) problems.push(name + 'the rows start at ' + b.rows + ', under the preview, which ends at ' + b.bottom);
+    });
+  }
+}
+
 async function visitHomePreviewOptions(browser, base, problems) {
   const page = await browser.newPage();
   page.on('pageerror', e => problems.push('Home preview options: ' + e.message));
@@ -3258,7 +3312,7 @@ function groups(web, tv) {
     { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
-    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
+    { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },
     { job: 'home', tabs: [], visits: [visitHomeArrangement, visitHomeVisibility, visitHomeColours, visitHomeInputsEditor, visitHomeEditor,
       visitHomeRecentsHidden, visitHomeUploads, visitHomeShuffle, visitHomeLauncher, visitHomeReadiness, visitAudioOverride, visitHomeRecents, visitHomeGuide,
       visitHomeFadeAndInputs] },

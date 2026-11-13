@@ -1394,6 +1394,17 @@
       </div>
       <div class="prot-status"><button type="button" class="pill idle" id="home-preview-tile" onclick="homePreviewOption('previewInTile')">&mdash;</button></div>
     </div>
+    <div class="prot-row home-gh-row" id="home-preview-size-row" hidden>
+      <div class="prot-main">
+        <div class="prot-title" data-t="home.previewSize">Preview size</div>
+        <div class="prot-desc" data-t="home.previewSizeDesc">How big the preview is beside the clock. Medium and Large keep its top right corner where it is and move the rows down to make room.</div>
+      </div>
+      <div class="prot-status"><select class="pill-sel" id="home-preview-size-sel" onchange="homePreviewSize(this.value)" aria-label="Preview size" data-t-aria-label="home.previewSize">
+        <option value="small" data-t="home.previewSize.small">Small</option>
+        <option value="medium" data-t="home.previewSize.medium">Medium</option>
+        <option value="large" data-t="home.previewSize.large">Large</option>
+      </select></div>
+    </div>
   </div>
   </div>
   <div class="home-group" id="home-g-search">

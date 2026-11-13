@@ -203,6 +203,14 @@ function renderHome() {
     updateToggle(btn, { cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off') });
     btn.disabled = !homeWritable();
   });
+  // Its size, while it is on and beside the clock. Plain CSS, so offered on every webOS.
+  const sizeRow = q('home-preview-size-row');
+  if (sizeRow) sizeRow.hidden = !st.supported.ok || !st.layout || st.layout.livePreview !== true || st.layout.previewInTile === true;
+  const sizeSel = q('home-preview-size-sel');
+  if (sizeSel) {
+    sizeSel.value = (st.layout && st.layout.previewSize) || 'small';
+    sizeSel.disabled = !homeWritable();
+  }
   document.querySelectorAll('.home-show-row').forEach(row => { row.hidden = !st.supported.ok; });
   // Alternative View's rows have no titles, so no app count beside them.
   const altView = !!st.layout && st.layout.view === 'alternative';
@@ -896,6 +904,10 @@ function renderHomeWeather(st) {
     ? t('home.weather.showing', 'Showing the weather for {place}.', { place: placeLabel(place) })
     : t('home.weather.choose', 'Search for your town, then choose it from the list.');
   q('home-weather-go').disabled = !homeWritable();
+}
+
+function homePreviewSize(value) {
+  homeSaveLayout({ previewSize: value });
 }
 
 function homeWeatherSource(value) {

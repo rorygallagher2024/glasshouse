@@ -1261,6 +1261,15 @@ function glasshouseHomeRows(d) {
     for (var pi = 0; pi < pvRows.length; pi++) {
       r.push(homeSwitchRow(d, pvRows[pi][0], pvRows[pi][1], pvRows[pi][2], 'homeFlag', d.layout[pvRows[pi][0]] === true));
     }
+    // Its size beside the clock; OK steps through them.
+    if (d.layout.livePreview === true && d.layout.previewInTile !== true) {
+      var pvSizes = { small: t('home.previewSize.small', 'Small'), medium: t('home.previewSize.medium', 'Medium'), large: t('home.previewSize.large', 'Large') };
+      var pvSizeNow = pvSizes[d.layout.previewSize] ? d.layout.previewSize : 'small';
+      r.push({ label: t('home.previewSize', 'Preview size'), key: 'previewSize', value: pvSizes[pvSizeNow], cls: 'on',
+               act: can ? 'homePreviewSize' : null,
+               press: t('tv.press.change', 'Press OK to change'),
+               hint: t('home.previewSizeDesc', 'How big the preview is beside the clock. Medium and Large keep its top right corner where it is and move the rows down to make room.') });
+    }
     r.push(homeSwitchRow(d, 'showClock', t('home.showClock', 'Clock and date'), t('home.showClockDesc', 'At the top of Glasshouse Home. Switched off, the space stays empty.'), 'homeShow', d.layout.showClock !== false));
     r.push(homeSwitchRow(d, 'rowsBottom', t('home.rowsBottom', 'Rows along the bottom'), t('home.rowsBottomDesc', 'The rows of apps and inputs sit along the bottom of the screen, as on LG’s Home, rather than in the middle.'), 'homeShow', d.layout.rowsBottom === true));
     var altOn = d.layout.view === 'alternative';
@@ -3520,6 +3529,10 @@ function activate() {
       var wxOrder = ['off', 'ha', 'internet'];
       var wxAt = wxOrder.indexOf((homeData && homeData.layout && homeData.layout.weather) || 'ha');
       return homeLayout({ weather: wxOrder[(wxAt + 1) % wxOrder.length] });
+    case 'homePreviewSize':
+      var pvSizeOrder = ['small', 'medium', 'large'];
+      var pvSizeAt = pvSizeOrder.indexOf((homeData && homeData.layout && homeData.layout.previewSize) || 'small');
+      return homeLayout({ previewSize: pvSizeOrder[(pvSizeAt + 1) % pvSizeOrder.length] });
     case 'homeFade':
       return homeLayout({ fade: !r.on });
     case 'homeRecommended':
