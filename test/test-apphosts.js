@@ -115,6 +115,37 @@ step('an unchanged table is not rewritten, and permissions are preserved', funct
   done();
 });
 
+step('an etc reset rearms watching even when its inode is unchanged', function (done) {
+  var etc = path.dirname(fileOf('com.webos.chromecast'));
+  var before = watches.filter(function (w) { return !w.closed && w.path === etc; })[0];
+  assert.ok(before);
+  fs.writeFileSync(fileOf('com.webos.chromecast'), EARLY);
+  // Keeping the same directory models inode reuse without relying on the OS allocator.
+  fire(path.join(jails, 'com.webos.chromecast'), 'etc');
+  equalSoon('com.webos.chromecast', FULL, function () {
+    assert.ok(before.closed, 'the old inode watch is no longer usable');
+    var after = watches.filter(function (w) { return !w.closed && w.path === etc; })[0];
+    assert.ok(after && after !== before, 'the recreated path has its own watch');
+    fs.writeFileSync(fileOf('com.webos.chromecast'), EARLY);
+    fire(etc, 'hosts');
+    equalSoon('com.webos.chromecast', FULL, done);
+  });
+});
+
+step('a jail reset rearms both watches even when its inodes are unchanged', function (done) {
+  var jail = path.join(jails, 'com.webos.chromecast');
+  var before = watches.filter(function (w) { return !w.closed && (w.path === jail || w.path === path.join(jail, 'etc')); });
+  assert.equal(before.length, 2);
+  fs.writeFileSync(fileOf('com.webos.chromecast'), EARLY);
+  fire(jails, 'com.webos.chromecast');
+  equalSoon('com.webos.chromecast', FULL, function () {
+    assert.ok(before.every(function (w) { return w.closed; }), 'old watches must not follow reused inodes');
+    fs.writeFileSync(fileOf('com.webos.chromecast'), EARLY);
+    assert.ok(fire(path.join(jail, 'etc'), 'hosts'));
+    equalSoon('com.webos.chromecast', FULL, done);
+  });
+});
+
 step('tier and custom-list changes remove old entries as well as adding new ones', function (done) {
   fs.writeFileSync(hostFile, EARLY);
   appHosts.sync();

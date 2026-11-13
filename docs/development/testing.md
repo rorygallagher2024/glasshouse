@@ -11,7 +11,8 @@ something is wrong, and Home Assistant and the TV's own browser fail quietly.
 recreated `etc` directories, missed watches, atomic writes, symlink refusal,
 write failures, file modes and restoring marked copies when blocking ends.
 It checks real filesystem notifications as well as injected watch events,
-and verifies that callbacks arriving after shutdown cannot restart watching.
+including `etc` and jail resets that reuse their inodes, and verifies that callbacks
+arriving after shutdown cannot restart watching.
 `test-privacy-apphosts.js` exercises the real synchronizer with simulated
 mounts: clock sync both before and after mounting, tier and custom-list
 changes, learned countries, update-only blocking, disabling and a failed

@@ -91,7 +91,13 @@ function watchApp(id, etcInfo) {
   }
   if (!w.jail) w.jail = watch(jail, function (event, name) {
     name = String(name || '');
-    if (!name || name === 'etc' || name.indexOf('jail-reset') === 0) queue();
+    if (!name || name === 'etc' || name.indexOf('jail-reset') === 0) {
+      // Linux can reuse etc's inode after a reset while its old watch is dead.
+      close(w.etc);
+      w.etc = null;
+      w.etcKey = '';
+      queue();
+    }
   }, function (failed) { if (w.jail === failed) w.jail = null; });
   var key = etcInfo && etcInfo.isDirectory() ? inode(etcInfo) : '';
   if (key !== w.etcKey || !w.etc) {
@@ -158,7 +164,11 @@ function watchRoot() {
     close(rootWatcher);
     rootWatcher = null;
     rootKey = key;
-    if (key) rootWatcher = watch(jailRoot, queue, function (failed) { if (rootWatcher === failed) rootWatcher = null; });
+    if (key) rootWatcher = watch(jailRoot, function (event, name) {
+      if (name) unwatch(String(name));
+      else Object.keys(watchers).forEach(unwatch);
+      queue();
+    }, function (failed) { if (rootWatcher === failed) rootWatcher = null; });
   }
   if (!recheckTimer) {
     recheckTimer = setInterval(function () { if (watching) sync(); }, recheckMs);

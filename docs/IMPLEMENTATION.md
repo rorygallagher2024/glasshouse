@@ -1081,6 +1081,9 @@ clock sync, country, tier, custom-list and update-block changes. It watches
 the jail root, each jail and its `etc` directory for new copies and resets;
 events are coalesced for 25 ms, with a 30 s fallback for missed or unavailable
 watches. It includes service jails that are not in the installed-app list.
+An `etc` or jail reset always reopens the affected watches: Linux can reuse a
+directory's inode while the watch attached before deletion no longer receives
+events. Directory identity alone cannot establish that a watch is still live.
 Writes are atomic, preserve the file's mode and are skipped when identical.
 Symlinks are not followed, and a mount point that cannot be renamed is left
 to its owner. No read-only bind mount is added: LG must be able to copy the
