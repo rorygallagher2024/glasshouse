@@ -39,7 +39,10 @@ function readFile(file) {
 }
 
 function stat(file) {
-  try { return fs.lstatSync(file); } catch (e) { return null; }
+  try { return fs.lstatSync(file); } catch (e) {
+    if (e.code === 'ENOENT' || e.code === 'ENOTDIR') return null;
+    throw e;
+  }
 }
 
 function managed(text) {
@@ -145,15 +148,9 @@ function ensure(id, text, active) {
   var current = readFile(file);
   if (current === null) return false;
   if (current === text || (!active && !managed(current))) return true;
-  try {
-    replace(file, text, info.mode & parseInt('777', 8));
-    delete errors[id];
-    return true;
-  } catch (e) {
-    if (errors[id] !== e.message) console.error('apphosts: could not update ' + id + ': ' + e.message);
-    errors[id] = e.message;
-    return false;
-  }
+  replace(file, text, info.mode & parseInt('777', 8));
+  delete errors[id];
+  return true;
 }
 
 function syncJails(text, active) {
@@ -163,13 +160,19 @@ function syncJails(text, active) {
   var seen = Object.create(null);
   ids.forEach(function (id) {
     if (!SAFE_ID.test(id)) return;
-    var jailInfo = stat(path.join(jailRoot, id));
-    if (!jailInfo || !jailInfo.isDirectory()) return;
-    var etcInfo = stat(path.join(jailRoot, id, 'etc'));
-    if (etcInfo && !etcInfo.isDirectory()) return;
-    seen[id] = true;
-    if (active) watchApp(id, etcInfo);
-    if (etcInfo && !ensure(id, text, active)) complete = false;
+    try {
+      var jailInfo = stat(path.join(jailRoot, id));
+      if (!jailInfo || !jailInfo.isDirectory()) return;
+      var etcInfo = stat(path.join(jailRoot, id, 'etc'));
+      if (etcInfo && !etcInfo.isDirectory()) return;
+      seen[id] = true;
+      if (active) watchApp(id, etcInfo);
+      if (etcInfo && !ensure(id, text, active)) complete = false;
+    } catch (e) {
+      if (errors[id] !== e.message) console.error('apphosts: could not update ' + id + ': ' + e.message);
+      errors[id] = e.message;
+      complete = false;
+    }
   });
   Object.keys(watchers).forEach(function (id) { if (!seen[id]) unwatch(id); });
   return complete;
@@ -184,7 +187,9 @@ function startRechecking() {
 
 function watchRoot() {
   watching = true;
-  var info = stat(jailRoot);
+  startRechecking();
+  var info;
+  try { info = stat(jailRoot); } catch (e) { return; }
   var key = info && info.isDirectory() ? inode(info) : '';
   if (key !== rootKey || !rootWatcher) {
     close(rootWatcher);
@@ -196,7 +201,6 @@ function watchRoot() {
       queue();
     }, function (failed) { if (rootWatcher === failed) rootWatcher = null; });
   }
-  startRechecking();
 }
 
 function sync() {

@@ -317,6 +317,71 @@ step('startup with blocking off retries a failed restore without opening watches
   equalSoon('com.webos.chromecast', BASE, done);
 });
 
+['jail', 'etc', 'hosts'].forEach(function (target) {
+  ['EIO', 'EACCES'].forEach(function (code) {
+    [false, true].forEach(function (startup) {
+      step(target + ' metadata ' + code + ' retries restoration ' + (startup ? 'at startup' : 'after disabling'), function (done) {
+        init(null, 5);
+        fs.writeFileSync(hostFile, FULL);
+        if (!startup) appHosts.sync();
+        fs.writeFileSync(fileOf('com.webos.chromecast'), FULL);
+        fs.writeFileSync(fileOf('lg.thinqai.adapter'), FULL);
+        fs.writeFileSync(hostFile, BASE);
+        var file = fileOf('com.webos.chromecast');
+        var failedPath = target === 'hosts' ? file : target === 'etc' ? path.dirname(file) : path.dirname(path.dirname(file));
+        var lstat = fs.lstatSync, failures = 0;
+        fs.lstatSync = function (p) {
+          if (p === failedPath) { failures++; var error = new Error('temporary metadata failure'); error.code = code; throw error; }
+          return lstat.apply(fs, arguments);
+        };
+        try { appHosts.sync(); } finally { fs.lstatSync = lstat; }
+        assert.equal(failures, 1);
+        assert.equal(read('com.webos.chromecast'), FULL);
+        assert.equal(read('lg.thinqai.adapter'), BASE, 'other jails restore immediately');
+        assert.equal(watches.filter(function (w) { return !w.closed; }).length, 0);
+        equalSoon('com.webos.chromecast', BASE, done);
+      });
+    });
+  });
+});
+
+['ENOENT', 'ENOTDIR'].forEach(function (code) {
+  step(code + ' means no hosts copy remains to restore', function (done) {
+    init(null, 5);
+    fs.writeFileSync(hostFile, BASE);
+    var file = fileOf('com.webos.chromecast');
+    var lstat = fs.lstatSync;
+    fs.lstatSync = function (p) {
+      if (p === file) { var error = new Error('hosts path is gone'); error.code = code; throw error; }
+      return lstat.apply(fs, arguments);
+    };
+    try { appHosts.sync(); } finally { fs.lstatSync = lstat; }
+    fs.writeFileSync(file, FULL);
+    // A negative check: a missing path must not leave a retry timer running.
+    setTimeout(function () {
+      assert.equal(read('com.webos.chromecast'), FULL);
+      fs.writeFileSync(file, BASE);
+      done();
+    }, 15);
+  });
+});
+
+step('unreadable jail-root metadata leaves the active fallback running', function (done) {
+  init(null, 5);
+  fs.writeFileSync(hostFile, FULL);
+  var lstat = fs.lstatSync;
+  fs.lstatSync = function (p) {
+    if (p === jails) { var error = new Error('temporary root metadata failure'); error.code = 'EIO'; throw error; }
+    return lstat.apply(fs, arguments);
+  };
+  try { appHosts.sync(); } finally { fs.lstatSync = lstat; }
+  fs.writeFileSync(fileOf('com.webos.chromecast'), EARLY);
+  equalSoon('com.webos.chromecast', FULL, function () {
+    assert.ok(watches.some(function (w) { return !w.closed && w.path === jails; }), 'fallback rearms the root watch');
+    done();
+  });
+});
+
 step('late events after stop cannot restart watching or rewrite a jail', function (done) {
   fs.writeFileSync(hostFile, FULL);
   init();

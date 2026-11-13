@@ -13,6 +13,10 @@ write failures, file modes and restoring marked copies when blocking ends.
 It covers restrictive umasks, short writes, descriptor and temporary-file
 cleanup after a partial write fails, and restoration retries both when blocking
 ends and at startup with it off. Rechecking stops once restoration succeeds.
+Metadata failures (`EIO` and `EACCES`) at the jail, `etc` and hosts file keep
+restoration pending without delaying other jails; missing paths (`ENOENT`
+and `ENOTDIR`) do not keep retries running.
+Unreadable jail-root metadata leaves the active fallback running.
 It checks real filesystem notifications as well as injected watch events,
 including `etc` and jail resets that reuse their inodes, and verifies that callbacks
 arriving after shutdown cannot restart watching.

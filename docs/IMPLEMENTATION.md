@@ -1093,6 +1093,8 @@ to its owner. No read-only bind mount is added: LG must be able to copy the
 file during launch. With the main table removed, marked jail copies receive
 the TV's ordinary file and watching stops. Failed restorations keep the 30 s
 recheck active until cleanup succeeds, including at startup with blocking off.
+Unreadable jail, `etc` or hosts metadata keeps cleanup pending; a missing path
+has no copy to restore.
 Repair follows filesystem events,
 so a lookup before repair can still escape; the fallback can take 30 s.
 This does not flush app DNS caches or intercept clients that send DNS queries
