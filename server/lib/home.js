@@ -884,6 +884,7 @@ function layoutOf(c) {
  */
 var savedLists = null;
 var listsRevision = 0;
+var REDRAWN_LISTS = { dev: true, lp: true };
 var listLoading = {};
 
 function listsFile() { return path.join(stateDir, 'home-lists.json'); }
@@ -925,8 +926,13 @@ function cached(key, ttl, load, cb) {
   }
   load(function (value) {
     if (value) {
+      var known = savedList(key) !== null;
       listCache[key] = { at: nowMs(), value: value };
-      saveList(key, value);
+      // The inputs or apps changing after they were first read, as a port's
+      // tile when a CEC device appears on it, has the view draw its tiles
+      // again (#1462). Not the content cards or channels, whose changes would
+      // reload Home under someone browsing it.
+      if (saveList(key, value) && known && REDRAWN_LISTS[key]) listsRevision++;
     }
     cb(value);
   });
@@ -1632,6 +1638,22 @@ function launch(id, params, cb) {
 }
 
 /*
+ * A tile drawn before the TV's list of its port changed, as hdmi4 once a CEC
+ * device on it (hdmi4:xbox) is listed, or the other way round: the input on
+ * the same port, and nothing else, until the view draws its tiles again
+ * (#1462). With several devices on the port now, the port alone, with no
+ * device chosen.
+ */
+function samePort(devs, id) {
+  var m = /^(hdmi\d+)(?::|$)/.exec(String(id || ''));
+  if (!m) return null;
+  var onPort = (devs || []).filter(function (d) { return d && d.input === m[1] && !d.appId && d.kind !== 'airplay'; });
+  if (!onPort.length) return null;
+  console.log('home: tile ' + id + ' is no longer listed; opening ' + m[1] + ' instead');
+  return onPort.length === 1 ? onPort[0] : { id: onPort[0].id, input: m[1] };
+}
+
+/*
  * AirPlay as LG's Home Hub opens it (webOS 10.3.2), and by launching its app
  * where the TV refuses that: both open the same page on a C2 (webOS 9.2.2).
  */
@@ -1686,6 +1708,7 @@ function open(body, cb) {
       /** @type {any} */
       var hit = null;
       (devs || []).forEach(function (d) { if (d.id === id) hit = d; });
+      if (!hit) hit = samePort(devs, id);
       if (!hit) return cb({ ok: false, error: msg('srv.home.unknownTile', 'that is not on Glasshouse Home') });
       if (hit.kind === 'airplay') return openAirPlay(opened('dev', hit.id, cb));
       if (hit.appId) return launch(hit.appId, hit.deviceId ? { requestDevice: hit.deviceId } : null, opened('dev', hit.id, cb));

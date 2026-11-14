@@ -544,6 +544,39 @@ step('device tiles use LG\'s CEC selection contract, or open the port without a 
   })();
 });
 
+// An Xbox's tile drawn as the port, before eim listed the console on it (#1462).
+step('a port that gains a CEC device redraws the view, and its old tile still opens the port', function (done) {
+  var now = 1000;
+  start(null, { now: function () { return now; } });
+  tv.devices = [{ id: 'HDMI_4', label: 'XBOX Game Console', hdmiPlugIn: true, subList: [] }];
+  home.catalogue(function (before) {
+    assert.deepEqual(before.devices.map(function (d) { return d.id; }), ['hdmi4']);
+    var version = home.layoutVersion();
+    // The console appears on the port, and the list is read again.
+    tv.devices = [{ id: 'HDMI_4', label: 'XBOX Game Console', hdmiPlugIn: true,
+                    subList: [{ id: 'SIMPLINK', depth: 1, osdName: 'XBOX', uniqueId: 4 }] }];
+    now += 60000;
+    home.catalogue(function (after) {
+      assert.deepEqual(after.devices.map(function (d) { return d.id; }), ['hdmi4:xbox']);
+      assert.notStrictEqual(home.layoutVersion(), version, 'the view is told to draw its tiles again');
+      // The tile still on screen opens the port, with the console chosen.
+      tv.launches = [];
+      home.open({ kind: 'dev', id: 'hdmi4' }, function (r) {
+        assert.ok(r.ok, r.error);
+        assert.deepEqual(tv.launches, [{ id: 'com.webos.app.hdmi4', params: { id: 'uniqueId', value: '4' } }]);
+        // Another port's, or something not a port, is still refused.
+        home.open({ kind: 'dev', id: 'hdmi3' }, function (other) {
+          assert.strictEqual(other.ok, false);
+          home.open({ kind: 'dev', id: 'netflix' }, function (notPort) {
+            assert.strictEqual(notPort.ok, false);
+            done();
+          });
+        });
+      });
+    });
+  });
+});
+
 // A console that drops off the TV's CEC list when off is hdmi4 one moment and
 // hdmi4:xbox the next: its hiding, place and name go with it (#1462).
 step('an input keeps its hiding, place and name whether the TV lists its device or not', function (done) {
