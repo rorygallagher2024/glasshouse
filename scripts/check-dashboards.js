@@ -3784,9 +3784,48 @@ async function visitTvHuesync(browser, base, problems) {
   } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
 }
 
+async function visitAdblockCards(browser, base, problems) {
+  const page = await browser.newPage();
+  const fail = message => problems.push('adblock cards: ' + message);
+  page.on('pageerror', error => fail(error.message));
+  let mode = 'ads';
+  const writes = [];
+  let acceptDialog = false;
+  page.on('dialog', d => acceptDialog ? d.accept() : d.dismiss());
+  try {
+    await page.route('**/api/privacy', async route => {
+      const response = await route.fetch();
+      const data = await response.json();
+      data.adblock = { enabled: mode !== 'off', mode, custom: null };
+      await route.fulfill({ json: data });
+    });
+    await page.route('**/api/control', async route => {
+      const cmd = route.request().postDataJSON();
+      if (cmd.action === 'setAdBlock') { writes.push(cmd.value); mode = cmd.value; }
+      await route.fulfill({ json: { ok: true } });
+    });
+    await page.goto(base + '/?tab=privacy');
+    await page.locator('#pv-adv > summary').click();
+    await page.waitForSelector('#ab-cards #ab-ads.hm-card.on');
+    if (await page.locator('#ab-cards button.hm-card').count() !== 3) fail('expected 3 tier cards');
+    if (await page.locator('#ab-ads .ab-lrow').count() !== 3) fail('expected 3 ledger rows per card');
+    await page.locator('#ab-off').click();
+    await page.waitForFunction(() => document.getElementById('ab-off').classList.contains('on'));
+    acceptDialog = true;
+    await page.locator('#ab-full').click();
+    await page.waitForFunction(() => {
+      const el = document.getElementById('ab-full');
+      return el.classList.contains('on') && el.classList.contains('ab-warn');
+    });
+    await page.locator('#ab-ads').click();
+    await page.waitForFunction(() => !document.getElementById('adblock-reconnect').hidden);
+    if (JSON.stringify(writes) !== JSON.stringify(['off', 'full', 'ads'])) fail('unexpected tier writes: ' + JSON.stringify(writes));
+  } finally { await page.unrouteAll({ behavior: 'wait' }); await page.close(); }
+}
+
 function groups(web, tv) {
   return [
-    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitSaverEntitySlots] },
+    { job: 'tabs', tabs: web.map(t => ({ path: '/?tab=' + t, label: 'web ' + t })), visits: [visitHomeAnimations, visitHuesyncSettings, visitInputsAndRemote, visitAdblockCards, visitSaverEntitySlots] },
     { job: 'tabs', tabs: tv.map(t => ({ path: '/assets/dashboard.html?tab=' + t, label: 'TV ' + t })),
       visits: [visitTvDashboard, visitTvAudio, visitTvPictureWrites, visitPictureUnavailable, visitTvNonOled, visitTvHuesync] },
     { job: 'home', tabs: [], visits: [visitHomePicture, visitHomePreview, visitHomePreviewOptions, visitHomePreviewWebos4, visitHomePreviewSize, visitHomePreviewSizeDetails, visitInputBarBehindHome, visitHomeUpDown, visitHomePointerOff, visitHomeOrder, visitHomeAvailability, visitHomeSearch, visitHomeWeather, visitHomeWeatherSetting] },

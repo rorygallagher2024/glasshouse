@@ -2338,3 +2338,31 @@ h3 .tvm-tags i{font-size:11px}
 }
 /* Brightness is numeric, rather than a list of choices. */
 #huesync-brightness{background-image:none;padding-right:10px;width:116px}
+
+/* Privacy tab: Ad & telemetry blocker cards (matching .hm-card 16:9 tiles and Privacy tab 14px type) */
+.pv-ab{margin-bottom:clamp(28px,4vw,42px)}
+.pv-adid-sec{margin-bottom:clamp(24px,3vw,36px)}
+.pv-ab .pv-h:first-child{margin-top:0}
+#ab-cards{grid-template-columns:repeat(3,minmax(0,1fr));max-width:980px;gap:18px;margin-top:8px;align-items:stretch}
+@media (max-width:860px){#ab-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}}
+@media (max-width:740px){#ab-cards{grid-template-columns:1fr;max-width:460px;gap:22px}}
+#ab-cards button.hm-card{height:100%;gap:11px;border-radius:6px}
+#ab-cards button.hm-card:focus-visible{outline:2px solid var(--w90);outline-offset:6px}
+#ab-cards .hm-badge{font-size:11px;letter-spacing:.08em;padding:3px 9px}
+#ab-cards .hm-meta{flex:1;gap:5px}
+#ab-cards .hm-name{font-size:15px;font-weight:600;letter-spacing:.01em;line-height:1.35;color:var(--w90)}
+#ab-cards button.hm-card.on .hm-name{color:var(--green)}
+#ab-cards button.hm-card.on.ab-warn .hm-name{color:var(--cand)}
+#ab-cards .hm-sub{font-size:14px;line-height:1.5;color:var(--w60);margin-bottom:8px}
+.hm-card.on.ab-warn .hm-screen{border-color:transparent;outline-color:var(--cand)}
+.hm-card.on.ab-warn .hm-badge{background:#ffb04f;color:#000}
+.hm-s-ab{padding:0;background:#000;align-items:center;justify-content:center}
+.hm-s-ab.ab-ads{background:radial-gradient(circle at 74% 62%,rgba(48,222,97,.12),transparent 58%),#000}
+.hm-s-ab.ab-full{background:radial-gradient(circle at 58% 50%,rgba(255,176,79,.13),transparent 58%),#000}
+.hm-ab-svg{width:86%;height:78%;display:block}
+.ab-ledger{display:flex;flex-direction:column;gap:5px;margin-top:auto;padding-top:10px;border-top:1px solid var(--w12);font-size:14px;line-height:1.45}
+.ab-lrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;color:var(--w70)}
+.ab-lval{font-weight:600;white-space:nowrap}
+.ab-lval.good{color:var(--green)}
+.ab-lval.warn{color:var(--cand)}
+.ab-lval.muted{color:var(--w60)}

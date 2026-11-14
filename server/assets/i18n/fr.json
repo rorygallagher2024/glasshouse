@@ -3276,6 +3276,12 @@
  "compat.reportProblem": {"text": "Signaler un problème", "from": "Report a problem"},
  "compat.reportWorks": {"text": "Dites-nous que ça marche", "from": "Tell us it works"},
  "home.compat.untriedBoth": {"text": "Personne n’a encore signalé que Glasshouse Home, Minimal, les lanceurs personnalisés et la Glasshouse Bar fonctionnent sous webOS {version}. Si l’un d’eux se comporte mal, choisissez LG Home pour tout rétablir.", "from": "Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},
+ "pv.adblock.row.ads": {"text": "Pubs d’accueil et ACR", "from": "Home ads & ACR"},
+ "pv.adblock.row.diag": {"text": "Diagnostics et journaux", "from": "Diagnostics & logs"},
+ "pv.adblock.row.lg": {"text": "Store, ThinQ et Channels", "from": "Store, ThinQ & Channels"},
+ "pv.adblock.state.allowed": {"text": "Autorisé", "from": "Allowed"},
+ "pv.adblock.state.blocked": {"text": "Bloqué", "from": "Blocked"},
+ "pv.adblock.state.works": {"text": "Fonctionne", "from": "Works"},
  "compat.copyDetails": {"text": "Copier les détails", "from": "Copy details"},
  "compat.copied": {"text": "Copié", "from": "Copied"},
  "compat.copyFailed": {"text": "Copie impossible", "from": "Could not copy"}
