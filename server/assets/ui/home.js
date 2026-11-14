@@ -1235,13 +1235,14 @@ async function homeBgChoose(kind) {
 async function homeVideoSave() {
   if (!homeWritable() || homeWallUploading) return;
   const note = q('home-video-note');
+  const urls = q('home-video-urls').value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+  const shuffle = q('home-video-shuffle').checked;
   note.textContent = '';
   homeWallUploading = 'video';
   renderHomeBg();
   try {
-    const urls = q('home-video-urls').value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
     if (homeLayout && homeLayout.wallAnim && homeLayout.wallAnim !== 'off') await homeSaveLayout({ wallAnim: 'off' });
-    await homePost('/api/home/wallpapers', { videoUrls: urls, videoShuffle: q('home-video-shuffle').checked });
+    await homePost('/api/home/wallpapers', { videoUrls: urls, videoShuffle: shuffle });
   } catch (e) { note.textContent = e.message; }
   finally {
     homeWallUploading = false;
