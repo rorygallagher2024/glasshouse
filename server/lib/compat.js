@@ -76,17 +76,21 @@ function issueUrl(id, works, tv, part) {
   // A report about one part names it alone; the whole of a feature with parts is plural.
   var plural = !part && !!f.parts;
   var title = name + (works ? (plural ? ' work on ' : ' works on ') : (plural ? ' do not work on ' : ' does not work on ')) + where;
-  var body = [
-    'Feature: ' + name,
+  var body = details(id, tv, part) + '\n\n' + (works ? 'What I tried, and it worked:' : 'What happened:') + '\n';
+  return REPO + '/issues/new?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+}
+
+// What a report says about the TV, as the issue's body opens with it and as
+// the dashboard copies it for someone without a GitHub account.
+function details(id, tv, part) {
+  tv = tv || {};
+  return [
+    'Feature: ' + (part || FEATURES[id].title),
     'webOS: ' + (tv.webos || '?'),
     'Model: ' + (tv.model || '?'),
     'Firmware: ' + (tv.firmware || '?'),
-    'Glasshouse: ' + (tv.glasshouse || '?'),
-    '',
-    works ? 'What I tried, and it worked:' : 'What happened:',
-    ''
+    'Glasshouse: ' + (tv.glasshouse || '?')
   ].join('\n');
-  return REPO + '/issues/new?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
 }
 
 /*
@@ -103,8 +107,8 @@ function info(id, tv, part) {
     var m = major(tv.webos);
     out.reason = f.from !== undefined && m < f.from ? f.tooOld() : f.tooNew();
   }
-  if (s === 'untried') out.report = { problem: issueUrl(id, false, tv, part), works: issueUrl(id, true, tv, part) };
+  if (s === 'untried') out.report = { problem: issueUrl(id, false, tv, part), works: issueUrl(id, true, tv, part), details: details(id, tv, part) };
   return out;
 }
 
-module.exports = { FEATURES: FEATURES, standing: standing, info: info, issueUrl: issueUrl, REPO: REPO };
+module.exports = { FEATURES: FEATURES, standing: standing, info: info, issueUrl: issueUrl, details: details, REPO: REPO };

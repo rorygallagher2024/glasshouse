@@ -3275,5 +3275,8 @@
  "tv.compat.untried": {"text": "لم يُبلغ بعد أنه يعمل على webOS {version}. في تبويب الرئيسية في لوحة التحكم على الويب روابط للإبلاغ عن النتيجة.", "from": "Not yet reported working on webOS {version}. The Home tab of the web dashboard has links to report how it goes."},
  "compat.reportProblem": {"text": "الإبلاغ عن مشكلة", "from": "Report a problem"},
  "compat.reportWorks": {"text": "أخبرنا أنه يعمل", "from": "Tell us it works"},
- "home.compat.untriedBoth": {"text": "لم يُبلغ أحد بعد أن Glasshouse Home وMinimal والمشغّلات المخصصة وGlasshouse Bar تعمل على webOS {version}. إذا أساء أحدها التصرف، اختر LG Home لإعادة كل شيء.", "from": "Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."}
+ "home.compat.untriedBoth": {"text": "لم يُبلغ أحد بعد أن Glasshouse Home وMinimal والمشغّلات المخصصة وGlasshouse Bar تعمل على webOS {version}. إذا أساء أحدها التصرف، اختر LG Home لإعادة كل شيء.", "from": "Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},
+ "compat.copyDetails": {"text": "نسخ التفاصيل", "from": "Copy details"},
+ "compat.copied": {"text": "تم النسخ", "from": "Copied"},
+ "compat.copyFailed": {"text": "تعذّر النسخ", "from": "Could not copy"}
 }

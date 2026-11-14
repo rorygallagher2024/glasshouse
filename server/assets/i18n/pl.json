@@ -3275,5 +3275,8 @@
  "tv.compat.untried": {"text": "Jeszcze nie zgłoszono, że działa na webOS {version}. Karta Home panelu w przeglądarce ma linki do zgłoszenia, jak działa.", "from": "Not yet reported working on webOS {version}. The Home tab of the web dashboard has links to report how it goes."},
  "compat.reportProblem": {"text": "Zgłoś problem", "from": "Report a problem"},
  "compat.reportWorks": {"text": "Daj znać, że działa", "from": "Tell us it works"},
- "home.compat.untriedBoth": {"text": "Nikt jeszcze nie zgłosił, że Glasshouse Home, Minimal, własne launchery i Glasshouse Bar działają na webOS {version}. Jeśli któryś działa źle, wybierz LG Home, aby wszystko przywrócić.", "from": "Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."}
+ "home.compat.untriedBoth": {"text": "Nikt jeszcze nie zgłosił, że Glasshouse Home, Minimal, własne launchery i Glasshouse Bar działają na webOS {version}. Jeśli któryś działa źle, wybierz LG Home, aby wszystko przywrócić.", "from": "Glasshouse Home, Minimal, custom launchers and Glasshouse Bar have not yet been reported working on webOS {version}. If one misbehaves, choose LG Home to put everything back."},
+ "compat.copyDetails": {"text": "Kopiuj szczegóły", "from": "Copy details"},
+ "compat.copied": {"text": "Skopiowano", "from": "Copied"},
+ "compat.copyFailed": {"text": "Nie udało się skopiować", "from": "Could not copy"}
 }

@@ -780,12 +780,26 @@ function homeResetLayout() { homeSaveLayout({ reset: true }); }
 // A warning with links to report how it went: `report` is one feature's
 // { problem, works }, or a list of { name, report } where the note covers several.
 function homeCompatNote(text, report) {
+  // Copy details: the same lines the issue opens with, for someone without a
+  // GitHub account to post elsewhere.
   const links = (r) => `<a href="${esc(r.problem)}" target="_blank" rel="noopener">${esc(t('compat.reportProblem', 'Report a problem'))}</a>
-    &middot; <a href="${esc(r.works)}" target="_blank" rel="noopener">${esc(t('compat.reportWorks', 'Tell us it works'))}</a>`;
+    &middot; <a href="${esc(r.works)}" target="_blank" rel="noopener">${esc(t('compat.reportWorks', 'Tell us it works'))}</a>${r.details
+    ? ` &middot; <button type="button" class="link-btn" data-details="${esc(r.details)}" onclick="copyCompatDetails(this)">${esc(t('compat.copyDetails', 'Copy details'))}</button>` : ''}`;
   const rows = Array.isArray(report)
     ? report.map((x) => `<span class="home-compat-links">${esc(x.name)}: ${links(x.report)}</span>`).join('')
     : `<span class="home-compat-links">${links(report)}</span>`;
   return `<div class="pv-note warn home-compat-note">${esc(text)}${rows}</div>`;
+}
+
+async function copyCompatDetails(btn) {
+  const label = t('compat.copyDetails', 'Copy details');
+  try {
+    await copyToClipboard(btn.dataset.details);
+    btn.textContent = t('compat.copied', 'Copied');
+  } catch (e) {
+    btn.textContent = t('compat.copyFailed', 'Could not copy');
+  }
+  setTimeout(() => { btn.textContent = label; }, 2000);
 }
 
 function renderHomeCompat(st) {

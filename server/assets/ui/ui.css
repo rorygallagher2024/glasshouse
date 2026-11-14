@@ -1038,6 +1038,7 @@ button.pill.flash.idle[disabled]:hover{color:var(--w60);border-color:var(--edge)
 .home-compat-note{margin-top:10px}
 .home-compat-links{display:block;margin-top:6px}
 .home-compat-links a{color:inherit;text-decoration:underline}
+.home-compat-links .link-btn{margin-top:0;font-size:inherit;color:var(--w90);vertical-align:baseline}
 .tab-grp .pv-sec{margin-bottom:10px}
 #inputspane .pv-g{margin:20px 0 10px}
 #inputs-nosignal-cards{margin-top:16px}

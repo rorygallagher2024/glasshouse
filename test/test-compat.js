@@ -37,6 +37,8 @@ var bar = compat.info('inputBar', tv, 'Glasshouse Bar').report;
 assert.ok(decodeURIComponent(bar.problem).indexOf('title=Glasshouse Bar does not work on webOS 8.3.0') !== -1, 'names the bar it came from');
 assert.ok(decodeURIComponent(bar.works).indexOf('Feature: Glasshouse Bar\n') !== -1);
 assert.ok(decodeURIComponent(compat.issueUrl('inputBar', true, tv)).indexOf('Glasshouse Bar and the input bar work on') !== -1, 'both together, plural');
+assert.strictEqual(untried.report.details, 'Feature: Glasshouse Home\nwebOS: 8.3.0\nModel: OLED55C34LA\nFirmware: 33.20.75\nGlasshouse: 0.151.0', 'the details to copy');
+assert.strictEqual(body.indexOf(untried.report.details), 0, 'the issue opens with the same details');
 console.log('  ✓ report links carry the TV\'s webOS, model, firmware and Glasshouse version, and which bar');
 
 // docs/tested-tvs.md's table, row by row, against the code: each cell lists
