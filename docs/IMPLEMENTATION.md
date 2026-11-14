@@ -2115,3 +2115,67 @@ directly. The web Control page has the same toggles below Playback; they share
 state and write permissions with Ambient Light. Status callbacks check the apps’
 install paths before calling Luna, and unavailable integrations are hidden as
 complete categories and shortcuts.
+
+## One-shot screenshots
+
+`lib/screenshots.js` takes PNG captures through
+`com.webos.service.capture/executeOneShot`. Methods are `DISPLAY` (video and
+graphics), `VIDEO` or `GRAPHIC`; sizes are 3840x2160, 1920x1080 (default),
+or 960x540. Glasshouse always passes `width` and `height`; LG's service defaults
+to 960x540 when they are omitted. Both capture producers write
+`/tmp/capture_<timestamp>.png`, using a UTC ISO timestamp with milliseconds
+and colons and dots replaced by hyphens.
+Files are lost on restart. A failed capture removes its partial output;
+success requires a non-empty regular file. Dashboard captures are serialized.
+
+The existing Luna service map falls back to `com.webos.service.tv.capture`
+only for a missing newer service, remembering the legacy name even when its
+capture fails, for example with no video playing.
+
+Remote-key assignments hold `capture:<method>:<resolution>` in the existing
+mapping. The compositor filter calls the capture service directly, once on
+key-down, so screenshots work without the server. It remembers the legacy
+service after a missing-service reply and shows a saved-path or error
+toast after capture. webOS 11's native mappings do not offer screenshots.
+
+`GET /api/screenshots` returns `ok`, `writable` and `screenshots` entries with
+`id`, `size` and `modified`, newest first. Only non-empty regular
+`/tmp/capture_*.png` files are included. `GET` or `HEAD` on
+`/api/screenshots/image?id=<basename>` serves a private, uncached PNG using an
+opened descriptor, so replacing its path cannot redirect the read. Traversal,
+symlinks, directories and empty files are refused; disconnected clients release
+the descriptor. All endpoints use the dashboard's existing authentication.
+
+`POST /api/screenshots` takes `{action: "capture", method, resolution}`,
+`{action: "delete", id}` or `{action: "clear"}`. Clear lists the saved images
+once and removes them through the same checked deletion path, stopping and
+reporting an error if a deletion fails. Omitted capture values default to `DISPLAY` and
+1920x1080. Writes require controls enabled and the usual JSON and Origin guards;
+authenticated listing and image reads remain available with controls disabled.
+
+The Tools gallery (`assets/ui/screenshots.js`) polls every three seconds only
+while its section and the browser are visible, pausing during capture or
+deletion. An unchanged list keeps its loaded previews; manual Refresh reloads
+them, including failed previews. Hiding or replacing the gallery
+aborts pending work and releases preview blob URLs; request identities discard
+late replies. Image requests send the in-memory token in an Authorization
+header. Downloads use local blob URLs and the original filename. Valid method
+and resolution selections are remembered in browser storage.
+
+Loaded previews open a basic modal using their existing blob URL, with no new
+image request or conversion. Opening clears deletion confirmation and aborts
+list refreshes until closing. The close button, outside clicks and Escape
+dismiss it; Tab stays on Close and focus returns to the preview. Gallery cleanup
+closes the popup before revoking preview URLs.
+
+Gallery deletion and Clear all require two presses within five seconds,
+with one confirmation at a time. Hiding the gallery, losing write access or
+removing the target from the list clears it. Clear all is disabled when the
+gallery is empty. Capture and deletion share one busy state to prevent
+overlapping writes. Changed lists preserve focus on a
+surviving card's button; unchanged lists leave the cards in place.
+
+After capture verifies the saved file, it sends **Screenshot saved.** through
+the existing Screen notification action and its bus identity. The capture
+reply does not wait for the notice; refused, delayed or throwing notifications
+cannot fail a saved image. Failed captures send no success notice.

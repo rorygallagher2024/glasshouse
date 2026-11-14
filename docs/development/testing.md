@@ -708,3 +708,43 @@ integration. The web tab returns when an integration becomes available again.
 `test-routes.js` verifies both integrations' write permissions. Screenshots use
 synthetic data. The Hue Sync checks wait for intercepted requests to finish
 before closing each page, so pending stats replies cannot outlive the page.
+
+`test-screenshots.js` checks all capture methods and sizes, the 1080p default,
+invalid options, timestamp-only filenames, overlap refusal, malformed replies,
+missing or empty output, and partial-file cleanup. `test-luna-webos3.js` checks capture
+service fallback and remembers the legacy name even after a capture error.
+
+Capture notification checks use the Screen notification action and verify its
+source and bus identity, a verified image before the notice, successful replies
+despite refused, delayed or throwing notices, and no success notice after a
+failed capture.
+
+`test-remotekeys.js` checks screenshot mappings for every method and size,
+persisted assignments, one capture per press, saved-path and error notices,
+timestamp-only filenames, and legacy-service fallback including overlapping replies.
+The webOS 11 suite rejects screenshot assignments.
+`test-remotekeys-ui.js` checks that screenshot tiles use the translated choice
+title in both visible text and the accessible label, without changing the API response.
+
+`test-screenshots-api.js` exercises the HTTP routes with header authentication,
+listing order, private PNG reads, capture defaults and selected sizes, invalid
+options, capture error responses, individual deletion, clearing all and read-only
+access. It checks the JSON and Origin guards, unauthenticated network requests, traversal,
+symlinks, directories and empty files. Replacing a pathname after opening still
+serves the original bytes; disconnecting before streaming closes the descriptor.
+Clear-all checks cover partial failure, retry, an empty gallery and preservation
+of unrelated files, symlinks and directories. The server boot test confirms
+that the screenshot module is wired into the running process.
+
+`test-screenshots-ui.js` runs the complete gallery script with one DOM fixture
+and a controlled clock. It checks header-authenticated downloads with the
+original PNG filename, URL cleanup, invalid image replies, failed-preview
+retries, unchanged polling and keyboard focus after previews load.
+Viewer checks cover loaded-URL reuse, close/outside/Escape behavior, focus,
+polling pause/resume, late replies and closing before URL cleanup.
+
+Deletion checks cover two-press confirmation, five-second expiry, switching
+targets, cancellation on hide, read-only state or disappearance, feedback,
+refreshed lists and serialized writes. Clear all shares that confirmation,
+survives polling, needs fresh confirmation after failure and is disabled when
+empty. These VM checks do not verify browser layout or completed downloads.

@@ -255,3 +255,29 @@ Control page also has quick toggles below Playback, using the same commands and
 write permissions. Both dashboards hide the Ambient Light tab when neither
 integration is available; saved links then open Control on the web or Metrics
 in the TV app.
+
+The screenshot capture module writes PNGs only under `/tmp/capture_*.png`,
+removes partial output after failed captures, and changes no persistent TV
+settings. Captures disappear when the TV restarts.
+
+The screenshot API lists and reads these temporary images behind dashboard
+authentication. Taking a capture, deleting a selected image or clearing all
+images requires controls enabled and the existing JSON and Origin guards. Read access remains
+available with controls disabled. Image reads refuse symlinks and keep the
+opened file descriptor through serving, with private, uncached responses.
+The Tools gallery deletes a selected image or clears all listed screenshots
+after a second press within five seconds. Clearing uses the same file checks
+as individual deletion; other files, symlinks and directories are left alone.
+A failed deletion reports the error and refreshes the remaining images.
+
+A successful dashboard/API capture sends **Screenshot saved.** through the
+existing Screen notification action after the saved image is verified, so the
+notice is not in the image. Notification failure leaves the saved image and
+successful capture result intact; failed captures send no success notice.
+
+A remote key assigned to screenshots stores its capture method and size in
+the existing remote-key mapping. Each press calls the capture service from the
+compositor filter and shows a saved-path or error notice afterward; holding
+the key does not repeat. The assignment works without the server and is
+removed with **As LG has it** or `tvwebctl restore-keys`. Screenshot assignments
+are not offered through webOS 11's native mappings.

@@ -2226,7 +2226,36 @@
 </section>
 
 <section class="panel" id="toolspane" role="tabpanel" hidden>
-  <div class="pv-sec" data-t="tools.title">System logs</div>
+  <details class="pv-d" id="disc-screenshots">
+    <summary><span data-t="tools.screenshots.title">Screenshots</span> <span class="cur" id="screenshots-summary">&mdash;</span></summary>
+    <div class="pv-sub" data-t="tools.screenshots.desc">Take a screenshot or download images taken with the remote. Images disappear when the TV restarts.</div>
+    <div class="tools-toolbar">
+      <div class="tools-toolbar-grp">
+        <label for="screenshots-method" class="tools-toolbar-lbl" data-t="tools.screenshots.method">Capture</label>
+        <select id="screenshots-method" class="pill-sel" disabled>
+          <option value="DISPLAY" data-t="tools.screenshots.display">Full screen</option>
+          <option value="VIDEO" data-t="tools.screenshots.video">Video only</option>
+          <option value="GRAPHIC" data-t="tools.screenshots.graphic">Graphics only</option>
+        </select>
+      </div>
+      <div class="tools-toolbar-grp">
+        <label for="screenshots-resolution" class="tools-toolbar-lbl" data-t="tools.screenshots.resolution">Resolution</label>
+        <select id="screenshots-resolution" class="pill-sel" disabled>
+          <option value="3840x2160" translate="no">3840×2160</option>
+          <option value="1920x1080" translate="no" selected>1920×1080</option>
+          <option value="960x540" translate="no">960×540</option>
+        </select>
+      </div>
+      <button type="button" class="pill" id="screenshots-take" onclick="takeScreenshot()" disabled data-t="tools.screenshots.take">Take screenshot</button>
+      <button type="button" class="pill" id="screenshots-refresh" onclick="loadScreenshots(true)" data-t="tools.screenshots.refresh">Refresh</button>
+      <button type="button" class="pill bad" id="screenshots-clear" data-id="*" onclick="deleteScreenshot(this)" disabled hidden>&mdash;</button>
+    </div>
+    <div class="pv-note" id="screenshots-readonly" hidden data-t="tools.screenshots.readonly">Controls must be enabled to take or delete screenshots.</div>
+    <div class="sub" id="screenshots-message" role="status" aria-live="polite"></div>
+    <div class="screenshot-gallery" id="screenshots-gallery"></div>
+  </details>
+
+  <div class="pv-sec adv-sec" data-t="tools.title">System logs</div>
   <div class="pv-sub" data-t="tools.desc">Logs from the TV, Glasshouse and the TV's hardware, for troubleshooting.</div>
   <div class="pv-sub" id="tools-fwd" hidden></div>
 
@@ -2310,6 +2339,13 @@
   <span class="foot-tv" id="foot-tv" translate="no"></span>
   <span class="foot-end"><span id="activity-txrx" class="activity-txrx" aria-hidden="true"><span id="act-tx" class="txrx-pip"></span><span id="act-rx" class="txrx-pip"></span></span><span id="tv-name" hidden></span><a id="version" hidden target="_blank" rel="noopener noreferrer"></a><a id="version-new" hidden target="_blank" rel="noopener noreferrer"></a><button type="button" class="theme-toggle" id="theme-toggle">☾</button></span>
 </footer>
+
+<div id="screenshot-viewer" class="modal-backdrop" hidden onclick="if(event.target!==q('screenshot-viewer-image'))closeScreenshotViewer()">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="Screenshot preview" data-t-aria-label="tools.screenshots.previewTitle">
+    <button type="button" class="pill" id="screenshot-viewer-close" aria-label="Close screenshot" data-t-aria-label="tools.screenshots.close">&times;</button>
+    <img id="screenshot-viewer-image" alt="">
+  </div>
+</div>
 
 <!-- Offered on load when "Update pop-up" is on in the Server tab; see offerUpdatePopup in ui/update.js. -->
 <div id="updpop" class="modal-backdrop" hidden>
@@ -2398,6 +2434,7 @@
 <script src="/assets/ui/screensavers.js"></script>
 <script src="/assets/ui/mqtt.js"></script>
 <script src="/assets/ui/tools.js"></script>
+<script src="/assets/ui/screenshots.js"></script>
 <script src="/assets/ui/search-aliases.js"></script>
 <script src="/assets/ui/search.js"></script>
 <script src="/assets/ui/tabs.js"></script>
