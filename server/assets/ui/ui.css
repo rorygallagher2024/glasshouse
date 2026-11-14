@@ -1715,6 +1715,7 @@ button.tools-jump:active{background:var(--w80)}
 /* With a custom launcher in Glasshouse Home's place, only the apps and inputs it shows. */
 #home-more.for-launcher > :not(.home-arrange), #home-more.for-launcher .home-gh-only,
 #home-more:not(.for-launcher) .home-launcher-only{display:none}
+#home-more:not(.for-bar) .home-bar-only, #home-more.for-bar .home-launcher-only{display:none}
 #home-more.for-launcher .home-row:not([data-kind="app"]):not([data-kind="dev"]),
 #home-more.for-launcher .home-row-move{display:none}
 #home-custom.lg-home .home-gh-row{display:none}

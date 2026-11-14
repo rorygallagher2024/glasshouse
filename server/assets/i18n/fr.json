@@ -3259,5 +3259,6 @@
  "srv.homebar.homeOff": {"text": "Impossible de rendre sa place à l’accueil de LG.", "from": "Could not give LG's Home its place back."},
  "srv.homebar.install": {"text": "Impossible d’installer l’application de Glasshouse Bar.", "from": "Could not install Glasshouse Bar's app."},
  "srv.homebar.key": {"text": "Impossible de confier la touche Home à Glasshouse Bar.", "from": "Could not give the Home key to Glasshouse Bar."},
- "srv.homebar.keyBack": {"text": "Impossible de rendre la touche Home à LG.", "from": "Could not give the Home key back to LG."}
+ "srv.homebar.keyBack": {"text": "Impossible de rendre la touche Home à LG.", "from": "Could not give the Home key back to LG."},
+ "home.layoutDescBar": {"text": "Les applications et entrées du téléviseur que Glasshouse Bar affiche, et dans quel ordre. Les applications dans Plus d’apps n’y figurent pas.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."}
 }

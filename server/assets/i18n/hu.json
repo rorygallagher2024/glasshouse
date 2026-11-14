@@ -3273,5 +3273,6 @@
  "srv.homebar.homeOff": {"text": "Nem sikerült visszaadni a helyét az LG kezdőképernyőjének.", "from": "Could not give LG's Home its place back."},
  "srv.homebar.install": {"text": "Nem sikerült telepíteni a Glasshouse Bar alkalmazását.", "from": "Could not install Glasshouse Bar's app."},
  "srv.homebar.key": {"text": "Nem sikerült a Home gombot a Glasshouse Barhoz rendelni.", "from": "Could not give the Home key to Glasshouse Bar."},
- "srv.homebar.keyBack": {"text": "Nem sikerült visszaadni a Home gombot az LG-nek.", "from": "Could not give the Home key back to LG."}
+ "srv.homebar.keyBack": {"text": "Nem sikerült visszaadni a Home gombot az LG-nek.", "from": "Could not give the Home key back to LG."},
+ "home.layoutDescBar": {"text": "A TV mely alkalmazásait és bemeneteit mutatja a Glasshouse Bar, és milyen sorrendben. A További alkalmazásokban lévők kimaradnak.", "from": "Which of the TV’s apps and inputs Glasshouse Bar shows, and in what order. Apps in More apps are left out of it."}
 }

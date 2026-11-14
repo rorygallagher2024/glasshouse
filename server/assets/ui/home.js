@@ -158,8 +158,10 @@ function renderHome() {
   if (dot) dot.className = 'ps-dot' + (st.restorePending ? ' warn' : st.enabled ? (st.active || st.lgHomeOpen ? ' good' : ' warn') : '');
   const more = q('home-more');
   if (more) {
-    more.hidden = !st.supported.ok || !st.enabled;
-    more.classList.toggle('for-launcher', homeLauncherOn());
+    // Glasshouse Bar shows the same Apps and Inputs rows as a launcher does.
+    more.hidden = !st.supported.ok || !(st.enabled || homeBarOn());
+    more.classList.toggle('for-launcher', homeLauncherOn() || homeBarOn());
+    more.classList.toggle('for-bar', homeBarOn());
   }
   renderHomeLauncher();
   const autoRow = q('home-autolaunch-row');
