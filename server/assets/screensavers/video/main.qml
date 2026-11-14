@@ -78,10 +78,4 @@ WebOSWindow {
             wrapMode: Text.WordWrap
         }
     }
-    Rectangle {
-        anchors.fill: parent
-        color: "black"
-        opacity: 1 - (win.level / 100)
-        z: 1000000
-    }
 }
