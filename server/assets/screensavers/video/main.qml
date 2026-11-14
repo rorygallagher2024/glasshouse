@@ -57,6 +57,23 @@ WebOSWindow {
         return labels[condition] || "";
     }
 
+    function playerStatusName() {
+        if (player.status === MediaPlayer.NoMedia) return "No media";
+        if (player.status === MediaPlayer.Loading) return "Loading";
+        if (player.status === MediaPlayer.Loaded) return "Loaded";
+        if (player.status === MediaPlayer.Buffering) return "Buffering";
+        if (player.status === MediaPlayer.Buffered) return "Buffered";
+        if (player.status === MediaPlayer.Stalled) return "Stalled";
+        if (player.status === MediaPlayer.EndOfMedia) return "End of media";
+        if (player.status === MediaPlayer.InvalidMedia) return "Invalid media";
+        return "Unknown status " + player.status;
+    }
+
+    function streamDiagnostic(reason) {
+        var size = videoFrameSize || "output size unknown";
+        return reason + " (" + playerStatusName() + ", buffer " + Math.round(player.bufferProgress * 100) + "%, position " + Math.floor(player.position / 1000) + "s, " + size + (player.errorString ? "; " + player.errorString : "") + ").";
+    }
+
     function refreshWeather() {
         var request = new XMLHttpRequest();
         request.onreadystatechange = function() {
@@ -172,7 +189,7 @@ WebOSWindow {
                 videoWatch.restart();
             } else if (status === MediaPlayer.EndOfMedia) win.advance();
             else if (status === MediaPlayer.Stalled)
-                win.retryVideo(errorString || "The TV video player is busy or waiting for data.");
+                win.retryVideo(win.streamDiagnostic("Stream stopped while buffering"));
             else if (status === MediaPlayer.InvalidMedia)
                 win.retryVideo(errorString || "The TV cannot play this video format.");
         }
@@ -216,10 +233,9 @@ WebOSWindow {
         repeat: false
         onTriggered: {
             if (player.position <= 0) {
-                win.retryVideo(player.errorString || ("No playback progress (player status " + player.status + ")."));
+                win.retryVideo(win.streamDiagnostic("No playback progress"));
             } else if (win.videoFrameSize === "") {
-                win.playbackIssue = "No video frames reported by the TV player (status " + player.status + ", " + Math.floor(player.position / 1000) + "s" + (player.errorString ? ", " + player.errorString : "") + ").";
-                win.retryVideo(win.playbackIssue);
+                win.retryVideo(win.streamDiagnostic("No video size reported by TV output"));
             }
         }
     }
@@ -260,15 +276,15 @@ WebOSWindow {
             anchors.right: parent.right
             anchors.topMargin: 72
             anchors.rightMargin: 112
-            spacing: 20
+            spacing: 8
             visible: win.weatherTemp !== ""
             Item {
-                width: 80
+                width: 64
                 height: 150
                 Canvas {
                     id: weatherIcon
-                    width: 80
-                    height: 80
+                    width: 64
+                    height: 64
                     anchors.centerIn: parent
                     onPaint: {
                     var ctx = getContext("2d");
