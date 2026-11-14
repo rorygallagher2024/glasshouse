@@ -1393,6 +1393,7 @@ async function visitHomeInputsEditor(browser, base, problems) {
   const layout = { rows: ['dev', 'app', 'ch'], order: { app: [], dev: [], ch: [] }, sort: { app: 'custom', dev: 'custom', ch: 'custom' },
     hidden: { app: [], dev: [], ch: [] }, channels: [], hintSeen: true, searchHintSeen: true, hideUnused: false };
   const saves = [];
+  await page.route('**/api/inputs', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, writable: true }) }));
   await page.route('**/api/home**', async route => {
     const pathname = new URL(route.request().url()).pathname;
     let body;
@@ -1410,17 +1411,21 @@ async function visitHomeInputsEditor(browser, base, problems) {
   });
   try {
     await page.goto(base + '/?tab=home');
-    const row = page.locator('details.home-row[data-kind="dev"]');
-    await row.locator('summary').click();
-    await row.locator('.home-tile').first().waitFor();
-    if (await row.locator('button#home-hide-unused.pill').count() !== 1) problems.push('Home inputs editor: the Inputs row has no On and Off switch for inputs with nothing connected');
-    const toggles = await row.locator('.home-tile').getByText(/^(Shown|Hidden)$/).count();
+    await page.locator('.home-row[data-kind="dev"]').waitFor();
+    if (await page.locator('details.home-row[data-kind="dev"]').count()) {
+      problems.push('Home inputs editor: per-input list remained expandable on the Home tab');
+    }
+    await page.goto(base + '/?tab=inputs');
+    const list = page.locator('#inputs-list');
+    await list.locator('.home-tile').first().waitFor();
+    if (await list.locator('button#home-hide-unused.pill').count() !== 1) problems.push('Home inputs editor: the Inputs tab has no On and Off switch for inputs with nothing connected');
+    const toggles = await list.locator('.home-tile').getByText(/^(Shown|Hidden)$/).count();
     if (toggles !== 2) problems.push('Home inputs editor: inputs did not each offer show or hide beside the switch (' + toggles + ')');
-    await row.locator('#home-hide-unused').click();
+    await list.locator('#home-hide-unused').click();
     const until = Date.now() + 5000;
-    while (Date.now() < until && !/Left out/.test(await row.textContent())) await page.waitForTimeout(100);
+    while (Date.now() < until && !/Left out/.test(await list.textContent())) await page.waitForTimeout(100);
     if (!saves.some(p => p.hideUnused === true)) problems.push('Home inputs editor: the switch did not save hideUnused');
-    const out = await row.locator('.home-tile').filter({ hasText: 'HDMI 2' }).getByText('Left out').count();
+    const out = await list.locator('.home-tile').filter({ hasText: 'HDMI 2' }).getByText('Left out').count();
     if (out !== 1) problems.push('Home inputs editor: the input with nothing connected was not marked Left out');
   } finally { await page.close(); }
 }
@@ -3251,6 +3256,7 @@ async function visitInputsAndRemote(browser, base, problems) {
       const patch = route.request().postDataJSON();
       writes.push(patch);
       if (patch.hidden) layout.hidden = patch.hidden;
+      if (typeof patch.hideUnused === 'boolean') layout.hideUnused = patch.hideUnused;
       await route.fulfill({ json: { ok: true } });
     });
     await page.route('**/api/apps', async route => {
@@ -3278,7 +3284,7 @@ async function visitInputsAndRemote(browser, base, problems) {
     });
     await page.goto(base + '/?tab=inputs');
     await page.locator('#inputs-list .prot-row').first().waitFor();
-    if (await page.locator('#inputs-list .prot-row').count() !== 3) fail('the inputs and their switch are not listed');
+    if (await page.locator('#inputs-list .prot-row').count() !== 4) fail('the inputs and their controls are not listed');
     await page.locator('#inputs-list [data-dev="HDMI_2"]').click();
     await page.locator('#inputs-list [data-dev="HDMI_2"].idle').waitFor();
     if (JSON.stringify(writes[0]) !== JSON.stringify({ hidden: { dev: ['HDMI_2'] } })) fail('hiding an input did not save it');

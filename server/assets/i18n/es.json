@@ -3106,7 +3106,6 @@
  "srv.saver.notClosed": {"text": "el salvapantallas de la TV no se cerró, así que no se hizo el cambio", "from": "the screen saver on the TV did not close, so the switch was left undone"},
  "ss.choice": {"text": "Animación", "from": "Animation"},
  "apps.inputBar": {"text": "Barra de entradas", "from": "Input bar"},
- "apps.inputBar.hideUnused": {"text": "Ocultar entradas sin nada conectado", "from": "Hide inputs with nothing connected"},
  "server.experimental.inputBar": {"text": "Barra de entradas", "from": "Input bar"},
  "server.experimental.inputBar.short": {"text": "Ofrece la barra de entradas en Teclas del mando, en la pestaña Mando: una franja con las entradas HDMI sobre la imagen, por la que se avanza con el botón Entrada del mando.", "from": "Offers the input bar under Remote keys on the Remote tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Probado solo en webOS 4, 6 y 9. Desactivarlo devuelve a como lo tiene LG cualquier tecla que la use y elimina su aplicación.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},

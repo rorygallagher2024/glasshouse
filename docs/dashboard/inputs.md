@@ -4,7 +4,7 @@ The **Inputs** tab, `/?tab=inputs`, is about the TV's HDMI inputs: which ones ar
 
 ## Your inputs
 
-The inputs [Glasshouse Home](home.md)'s Inputs row and the [input bar](#input-bar) offer, in Glasshouse Home's order, each with **Shown** or **Hidden**, and **Hide inputs with nothing connected**. Hiding one here hides it on both, and a change made on the Home tab shows here. The order is set on the Home tab.
+The inputs [Glasshouse Home](home.md)'s Inputs row and the [input bar](#input-bar) offer, with **Order** (**Your order** or **Last opened**), **Hide inputs with nothing connected**, `↑` / `↓` buttons to reorder them, and **Shown** or **Hidden** for each input. Changes made here apply to the input bar, Glasshouse Home, [Glasshouse Bar](home.md#glasshouse-bar), and [Glasshouse Minimal](home.md#glasshouse-minimal).
 
 ## Input bar
 
@@ -15,7 +15,7 @@ A strip of the HDMI inputs over the picture, in place of LG's list of inputs, op
 * Left alone, it closes after 3 seconds on the input already on screen, or after 6 on another one the pointer left it on.
 * A device behind a receiver is switched to as Glasshouse Home's tile does, waking it through the receiver.
 
-It shows the inputs [Glasshouse Home](home.md)'s Inputs row shows, in its order, without the hidden ones, and without those with nothing connected where that row leaves them out. They are chosen under [Your inputs](#your-inputs), with Glasshouse Home switched off too. A change made either place is made in both.
+It shows the inputs chosen under [Your inputs](#your-inputs), in that order, without the hidden ones, and without those with nothing connected when **Hide inputs with nothing connected** is switched on. They are configured there with Glasshouse Home switched off too.
 
 Choosing it for a key installs its app, a web app with no tile on the Home screen, `com.tvweb.inputbar`; setting the last key that used it to anything else removes it, as does uninstalling Glasshouse. While a key opens it and the TV is on, Glasshouse keeps the app loaded in the background, hidden and taking no keys, so a press shows it in about 0.4 s on a C1 rather than 0.7 s or more.
 

@@ -3106,7 +3106,6 @@
  "srv.saver.notClosed": {"text": "a TV képernyővédője nem zárult be, ezért a váltás elmaradt", "from": "the screen saver on the TV did not close, so the switch was left undone"},
  "ss.choice": {"text": "Animáció", "from": "Animation"},
  "apps.inputBar": {"text": "Bemeneti sáv", "from": "Input bar"},
- "apps.inputBar.hideUnused": {"text": "Üres bemenetek elrejtése", "from": "Hide inputs with nothing connected"},
  "server.experimental.inputBar": {"text": "Bemeneti sáv", "from": "Input bar"},
  "server.experimental.inputBar.short": {"text": "Felkínálja a bemeneti sávot a Távirányító gombjai alatt az Távirányító lapon: a HDMI-bemenetek sávja a kép felett, amelyen a távirányító Bemenet gombjával lehet végiglépkedni.", "from": "Offers the input bar under Remote keys on the Remote tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "Csak webOS 4, 6 és 9 rendszeren próbálták ki. Kikapcsolásakor minden gomb, amely ezt használja, visszaáll az LG beállítására, és az alkalmazása törlődik.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},

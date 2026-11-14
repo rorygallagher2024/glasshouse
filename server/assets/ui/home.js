@@ -545,13 +545,9 @@ function homeItem(kind, id) {
     const showLogos = !homeLayout || homeLayout.showTvLogos !== false;
     return { title: tv.name, icon: showLogos ? tv.logo : '', sub: tv.missing ? t('home.tv.gone', 'Not in the playlist any more') : tv.group };
   }
-  const list = kind === 'app' ? homeCat.apps : kind === 'dev' ? homeCat.devices : homeCat.channels;
+  const list = kind === 'app' ? homeCat.apps : homeCat.channels;
   const it = list.find(x => x.id === id);
   if (!it) return null;
-  // The TV's own tuner: no HDMI port, as its tile on Glasshouse Home says.
-  if (kind === 'dev' && it.tuner) return { title: it.name, sub: t('ctl.liveTv', 'Live TV') };
-  if (kind === 'dev' && it.unused) return { title: it.name, sub: t('home.dev.unused', 'Nothing connected'), unused: true };
-  if (kind === 'dev') return { title: it.name, sub: it.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: it.port, via: it.via }) : t('home.dev.port', 'HDMI {port}', { port: it.port }) };
   if (kind === 'ch') return { title: it.number + ' ' + it.name };
   return { title: it.title, icon: it.icon };
 }
@@ -579,6 +575,10 @@ function renderHomeRows() {
       <div class="prot-table">${homeRecRow(usable)}</div>
     </details>`;
     }
+    // Inputs are configured on the Inputs tab; only row order and visibility stay here.
+    if (kind === 'dev') {
+      return `<div class="home-row" data-kind="dev"><div class="home-row-head"><span class="prot-title">${esc(HOME_ROWS.dev())}</span>${rowMove}</div></div>`;
+    }
     const order = homeCat.order[kind] || [];
     // A Last opened row is in the order the server sends; moving a tile means choosing Your order first.
     const recent = homeSort(kind) === 'recent';
@@ -590,14 +590,11 @@ function renderHomeRows() {
       if (id === 'lg-home' && homeLauncherOn()) return '';
       const hidden = kind !== 'ch' && homeLayout.hidden[kind].includes(id);
       const folded = kind === 'app' && (homeLayout.folder || []).includes(id);
-      // Hidden or not, an input with nothing plugged in is left out by the row's switch.
-      const leftOut = kind === 'dev' && it.unused && homeLayout.hideUnused === true;
       const icon = it.icon ? `<img class="rk-ico" src="${esc(api(it.icon))}" alt="">` : '';
-      return `<div class="prot-row home-tile${hidden || folded || leftOut ? ' home-hidden' : ''}">
+      return `<div class="prot-row home-tile${hidden || folded ? ' home-hidden' : ''}">
         <div class="prot-main"><div class="prot-title">${icon}<span translate="no">${esc(it.title)}</span></div>
           ${it.sub ? `<div class="prot-desc">${esc(it.sub)}</div>` : ''}</div>
         <div class="prot-status">
-          ${leftOut ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>` : ''}
           <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">↑</button>
           <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="homeMoveTile('${kind}', ${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">↓</button>
           ${kind === 'app' ? homePlaceSelect(id, hidden, folded, usable) :
@@ -610,7 +607,7 @@ function renderHomeRows() {
     return `<details class="home-row" data-kind="${kind}"${open.includes(kind) ? ' open' : ''}>
       <summary><span class="prot-title">${esc(HOME_ROWS[kind]())}</span>
         ${rowMove}</summary>
-      <div class="prot-table">${homeSortRow(kind, usable)}${kind === 'dev' ? homeUnusedRow(usable) : ''}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
+      <div class="prot-table">${homeSortRow(kind, usable)}${tiles || `<div class="sub">${esc(kind === 'ch' ? t('home.ch.empty', 'No channels yet. Add them below.') : kind === 'iptv' ? t('home.tv.rowEmpty', 'No channels yet. Add them in Internet TV below, or from the row on the TV.') : t('home.rowEmpty', 'Nothing to show in this row yet.'))}</div>`}</div>
       ${kind === 'ch' ? homeChannelPicker() : ''}
     </details>`;
   }).join('');
@@ -637,18 +634,6 @@ function homeRecRow(usable) {
 
 function homeRecommended() {
   homeSaveLayout({ recommended: homeLayout.recommended !== true });
-}
-
-// The Inputs row's one choice of what it shows.
-function homeUnusedRow(usable) {
-  const on = homeLayout.hideUnused === true;
-  // An On and Off pill, as the tab's other switches are.
-  return `<div class="prot-row">
-    <div class="prot-main"><div class="prot-title">${esc(t('home.hideUnused', 'Hide inputs with nothing connected'))}</div>
-      <div class="prot-desc">${esc(t('home.hideUnusedDesc', 'Leaves inputs with nothing plugged in out of the Inputs row, instead of showing them greyed out. They still show while arranging.'))}</div></div>
-    <div class="prot-status">${renderToggle({ id: 'home-hide-unused', cls: on ? 'good' : 'idle', label: on ? t('common.on', 'On') : t('common.off', 'Off'),
-      on, disabled: !usable, onclick: 'homeHideUnused()' })}</div>
-  </div>`;
 }
 
 function homeSort(kind) { return homeLayout.sort && homeLayout.sort[kind] === 'recent' ? 'recent' : 'custom'; }
@@ -1176,10 +1161,6 @@ function homeGroupsShown() {
     // Hidden rows can come last, so the last shown one is marked to drop its line.
     g.querySelectorAll('.prot-row').forEach(r => r.classList.toggle('last', r === shown[shown.length - 1]));
   });
-}
-
-function homeHideUnused() {
-  homeSaveLayout({ hideUnused: homeLayout.hideUnused !== true });
 }
 
 // Added channels are the Channels row; this finds more to add. Built once, then only its list redraws.

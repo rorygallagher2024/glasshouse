@@ -3106,7 +3106,6 @@
  "srv.saver.notClosed": {"text": "لم تُغلق شاشة التوقف على التلفاز، لذا لم يتم التبديل", "from": "the screen saver on the TV did not close, so the switch was left undone"},
  "ss.choice": {"text": "الحركة", "from": "Animation"},
  "apps.inputBar": {"text": "شريط المداخل", "from": "Input bar"},
- "apps.inputBar.hideUnused": {"text": "إخفاء المداخل غير المتصلة بأجهزة", "from": "Hide inputs with nothing connected"},
  "server.experimental.inputBar": {"text": "شريط المداخل", "from": "Input bar"},
  "server.experimental.inputBar.short": {"text": "يتيح شريط المداخل ضمن أزرار الريموت في تبويب الريموت: شريط لمداخل HDMI يظهر فوق الصورة، يُتنقّل بينها بزر المدخل في الريموت.", "from": "Offers the input bar under Remote keys on the Remote tab: a strip of the HDMI inputs over the picture, stepped through with the remote’s Input key."},
  "server.experimental.inputBar.warn": {"text": "جُرِّب على webOS 4 و6 و9 فقط. إيقافه يعيد أي زر يستخدمه إلى إعداد LG ويزيل تطبيقه.", "from": "Tried on webOS 4, 6 and 9 only. Switching it off sets any key using it back to LG’s and removes its app."},

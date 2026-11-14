@@ -32,27 +32,47 @@ function renderInputList() {
   const cat = inputsCat;
   const byId = {};
   ((cat && cat.devices) || []).forEach(d => { byId[d.id] = d; });
-  const order = cat ? ((cat.order && cat.order.dev) || (cat.devices || []).map(d => d.id)).filter(id => byId[id] && !byId[id].tuner) : [];
+  const order = cat ? ((cat.order && cat.order.dev) || (cat.devices || []).map(d => d.id)).filter(id => byId[id]) : [];
   grp.hidden = !order.length;
   if (!order.length) return false;
   const writable = !!(inputsData && inputsData.writable);
   const layout = cat.layout || {};
   const hidden = (layout.hidden && layout.hidden.dev) || [];
-  const pill = (on, label, attrs) => `<button type="button" class="pill ${on ? 'good' : 'idle'}" ${writable ? '' : 'disabled'} ${attrs}>${esc(label)}</button>`;
-  const rows = order.map(id => {
-    const d = byId[id], isShown = hidden.indexOf(id) === -1;
-    return `<div class="prot-row"><div class="prot-main">
-        <div class="prot-title" translate="no">${esc(d.name)}</div>
-        <div class="prot-desc">${esc(t('home.dev.port', 'HDMI {port}', { port: d.port }))}${d.unused ? ' · ' + esc(t('home.dev.unused', 'Nothing connected')) : ''}</div></div>
-      <div class="prot-status">${pill(isShown, isShown ? t('home.shown', 'Shown') : t('home.hidden', 'Hidden'),
-        `data-dev="${esc(id)}" onclick="inputsToggleInput(this)"`)}</div></div>`;
-  });
   const unusedOff = layout.hideUnused === true;
-  rows.push(`<div class="prot-row"><div class="prot-main">
-      <div class="prot-title">${esc(t('apps.inputBar.hideUnused', 'Hide inputs with nothing connected'))}</div></div>
-    <div class="prot-status">${pill(unusedOff, unusedOff ? t('common.on', 'On') : t('common.off', 'Off'),
-      `onclick="inputsSave({ hideUnused: ${unusedOff ? 'false' : 'true'} })"`)}</div></div>`);
-  q('inputs-list').innerHTML = rows.join('');
+  const sort = layout.sort && layout.sort.dev === 'recent' ? 'recent' : 'custom';
+  const movable = writable && sort !== 'recent';
+  const sortRow = `<div class="prot-row">
+    <div class="prot-main"><div class="prot-title"><label for="inputs-sort">${esc(t('home.sort', 'Order'))}</label></div>
+      <div class="prot-desc">${esc(sort === 'recent'
+        ? t('home.sortRecentDesc', 'The tile opened last comes first, whether it was opened from Glasshouse Home or not. Tiles not yet opened follow in this row’s own order.')
+        : t('home.sortCustomDesc', 'As arranged here, or by holding OK on Glasshouse Home.'))}</div></div>
+    <div class="prot-status"><select id="inputs-sort" class="pill-sel" ${writable ? '' : 'disabled'} onchange="inputsSetSort(this.value)">
+      <option value="custom"${sort === 'custom' ? ' selected' : ''}>${esc(t('home.sortCustom', 'Your order'))}</option>
+      <option value="recent"${sort === 'recent' ? ' selected' : ''}>${esc(t('home.sortRecent', 'Last opened'))}</option>
+    </select></div></div>`;
+  const unusedRow = `<div class="prot-row">
+    <div class="prot-main"><div class="prot-title">${esc(t('home.hideUnused', 'Hide inputs with nothing connected'))}</div>
+      <div class="prot-desc">${esc(t('home.hideUnusedDesc', 'Leaves inputs with nothing plugged in out of the Inputs row, instead of showing them greyed out. They still show while arranging.'))}</div></div>
+    <div class="prot-status">${renderToggle({ id: 'home-hide-unused', cls: unusedOff ? 'good' : 'idle', label: unusedOff ? t('common.on', 'On') : t('common.off', 'Off'),
+      on: unusedOff, disabled: !writable, onclick: `inputsSave({ hideUnused: ${unusedOff ? 'false' : 'true'} })` })}</div></div>`;
+  const rows = order.map((id, i) => {
+    const d = byId[id], isShown = hidden.indexOf(id) === -1;
+    const leftOut = !!(d.unused && unusedOff);
+    const sub = d.tuner
+      ? t('ctl.liveTv', 'Live TV')
+      : (d.via ? t('home.dev.through', 'HDMI {port}, through {via}', { port: d.port, via: d.via }) : t('home.dev.port', 'HDMI {port}', { port: d.port }))
+        + (d.unused ? ' · ' + t('home.dev.unused', 'Nothing connected') : '');
+    return `<div class="prot-row home-tile${!isShown || leftOut ? ' home-hidden' : ''}"><div class="prot-main">
+        <div class="prot-title" translate="no">${esc(d.name)}</div>
+        <div class="prot-desc">${esc(sub)}</div></div>
+      <div class="prot-status">
+        ${leftOut ? `<span class="pill idle">${esc(t('home.leftOut', 'Left out'))}</span>` : ''}
+        <button type="button" class="pill idle home-move" ${movable && i > 0 ? '' : 'disabled'} onclick="inputsMove(${i}, -1)" aria-label="${esc(t('home.earlier', 'Earlier'))}">↑</button>
+        <button type="button" class="pill idle home-move" ${movable && i < order.length - 1 ? '' : 'disabled'} onclick="inputsMove(${i}, 1)" aria-label="${esc(t('home.later', 'Later'))}">↓</button>
+        <button type="button" class="pill ${isShown ? 'good' : 'idle'}" ${writable ? '' : 'disabled'} data-dev="${esc(id)}" onclick="inputsToggleInput(this)">${esc(isShown ? t('home.shown', 'Shown') : t('home.hidden', 'Hidden'))}</button>
+      </div></div>`;
+  });
+  q('inputs-list').innerHTML = [sortRow, unusedRow].concat(rows).join('');
   return true;
 }
 
@@ -61,6 +81,26 @@ async function inputsSave(patch) {
   try { await homePost('/api/home/layout', patch); } catch (e) { showErr(e.message); }
   inputsSaving = false;
   loadInputs();
+  if (typeof homeStatus !== 'undefined' && homeStatus) loadHome(true);
+}
+
+function inputsSetSort(value) {
+  const layout = (inputsCat && inputsCat.layout) || {};
+  const cur = layout.sort && layout.sort.dev === 'recent' ? 'recent' : 'custom';
+  if (value === cur) return;
+  inputsSave({ sort: { dev: value } });
+}
+
+function inputsMove(i, d) {
+  const cat = inputsCat;
+  const byId = {};
+  ((cat && cat.devices) || []).forEach(x => { byId[x.id] = x; });
+  const order = cat ? ((cat.order && cat.order.dev) || (cat.devices || []).map(x => x.id)).filter(id => byId[id]) : [];
+  const j = i + d;
+  if (j < 0 || j >= order.length) return;
+  const next = order.slice();
+  [next[i], next[j]] = [next[j], next[i]];
+  inputsSave({ order: { dev: next } });
 }
 
 function inputsToggleInput(btn) {

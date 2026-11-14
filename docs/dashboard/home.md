@@ -115,8 +115,8 @@ The **Inputs** row displays the TV's tuner and video sources:
     * A soundbar, disc player, computer, or cable-box icon for those devices.
     * An HDMI plug for generic sources.
 * **CEC wake and receiver switching:** Selecting a CEC tile wakes the device and switches intermediary AV receivers to that source. Inactive ports appear dimmed.
-* **Hiding inputs:** Inputs can be hidden individually from the dashboard or in arrange mode.
-* **Hide inputs with nothing connected:** This switch in the Inputs row's settings on the dashboard and TV app completely omits ports with nothing plugged in instead of dimming them, marked **Left out**. They show dimmed while arranging, and return as soon as a cable or device is plugged in. An input is left out if it is hidden or, with that switch on, has nothing connected.
+* **Hiding and ordering inputs:** Inputs can be shown, hidden, and reordered from the [Inputs tab](inputs.md#your-inputs) or in arrange mode on the TV.
+* **Hide inputs with nothing connected:** This switch on the [Inputs tab](inputs.md#your-inputs) and the TV app completely omits ports with nothing plugged in instead of dimming them, marked **Left out**. They show dimmed while arranging, and return as soon as a cable or device is plugged in. An input is left out if it is hidden or, with that switch on, has nothing connected.
 
 ## Recommended row
 
@@ -384,7 +384,7 @@ Under **Choose your launcher** on the web dashboard's **Home** tab, choose **Cus
 
 You have one at a time: uploading another, or giving a web address, replaces it, and **Remove** deletes it. With Glasshouse Home already on, it takes Glasshouse Home's place as soon as it is set up. Once one is set up, **Custom** makes it the TV's Home, as the other choices do; from LG's Home it takes a second press. Its settings show only while **Custom** is chosen. Choosing **Glasshouse Home** goes back and keeps the launcher for later. The TV app's **Home** section has a switch for it.
 
-While Glasshouse Minimal or a custom launcher is the TV's Home, **Rows and tiles** stays on this tab with the Apps and Inputs rows: which apps and inputs it shows, and their order, including **Hide inputs with nothing connected**. Glasshouse Minimal follows them, as the example in the docs does; a launcher of your own follows them where it was written to. Glasshouse Home's other settings (its other rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
+While Glasshouse Minimal or a custom launcher is the TV's Home, **Rows and tiles** stays on this tab for the Apps row (which apps it shows and in what order); inputs and **Hide inputs with nothing connected** are configured on the [Inputs tab](inputs.md#your-inputs). Glasshouse Minimal follows them, as the example in the docs does; a launcher of your own follows them where it was written to. Glasshouse Home's other settings (its other rows, background, colours and the rest of this page) have no effect, and come back as they were with Glasshouse Home.
 
 > [!WARNING]
 > A launcher can do anything on the TV that Glasshouse can, so only use one you trust.
@@ -399,7 +399,7 @@ Rows and tiles can be arranged from the **web dashboard**, the **TV app**, or **
 * **Hiding a whole row:** In the web dashboard, each row under **Rows and tiles** has a **Shown** / **Hidden** switch beside **Row up** and **Row down**. A hidden row is left off Glasshouse Home whatever its tiles, and shows dimmed while arranging so it can still be moved. **Reset the layout** shows every row again.
 * **More apps:** Apps that should not take up the Apps row can go into a folder instead of being hidden. While arranging, focus an app and choose **Into or out of More apps** in the bottom bar (or press the green button). The Apps row then ends with a **More apps** tile showing the first four icons; **OK** opens every app in it as a grid, and **Back** or **Home** closes the grid. The LG Home tile can go into the folder too. Hiding an app takes it out of the folder, and **Reset** empties the folder. In the web dashboard's Home tab, each app in the Apps row has a choice of **Shown**, **In More apps** or **Hidden**.
 * **Row ordering (`Your order` vs `Last opened`):** Each row can be set to stay in a fixed custom order (**Your order**) or automatically move the most recently used app, input, or channel to the front (**Last opened**, keeping **LG Home** pinned at the end).
-* **Adding and removing channels:** Apps and inputs are discovered automatically from the TV and toggled between shown and hidden (inputs with nothing plugged in can also be left out with the Inputs row's **Hide inputs with nothing connected** switch); live TV channels are added by name or number under **Add channels** and removed when no longer needed.
+* **Adding and removing channels:** Apps are discovered automatically from the TV and toggled between shown and hidden on the **Home** tab, inputs are shown, hidden, and ordered on the [Inputs tab](inputs.md#your-inputs) (including **Hide inputs with nothing connected**), and live TV channels are added by name or number under **Add channels** and removed when no longer needed.
 
 In the TV app's Home section each row has one entry, in the rows' order, with
 what it holds beside it: **7 of 9 shown**, **10 on Home**. While an entry is

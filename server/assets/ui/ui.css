@@ -1712,11 +1712,11 @@ button.tools-jump:active{background:var(--w80)}
 #home-hero+#home-launcher{margin-top:clamp(34px,4.5vw,48px)}
 #home-launcher+#home-custom{margin-top:clamp(34px,4.5vw,48px)}
 #home-launchers .prot-status{display:flex;gap:8px}
-/* With a custom launcher in Glasshouse Home's place, only the apps and inputs it shows. */
+/* With a custom launcher or Glasshouse Bar in Glasshouse Home's place, only its apps stay here. */
 #home-more.for-launcher > :not(.home-arrange), #home-more.for-launcher .home-gh-only,
 #home-more:not(.for-launcher) .home-launcher-only{display:none}
 #home-more:not(.for-bar) .home-bar-only, #home-more.for-bar .home-launcher-only{display:none}
-#home-more.for-launcher .home-row:not([data-kind="app"]):not([data-kind="dev"]),
+#home-more.for-launcher .home-row:not([data-kind="app"]),
 #home-more.for-launcher .home-row-move{display:none}
 #home-custom.lg-home .home-gh-row{display:none}
 /* Each group's last row draws no line, as the next group's heading follows. */
@@ -1861,6 +1861,7 @@ button.hm-card.warn .hm-name{color:var(--cand)}
 #home-rows{margin-top:14px}
 .home-row{border-top:1px solid var(--edge);padding:10px 0}
 .home-row summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;padding:6px 0}
+.home-row-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 24px 6px 0}
 /* Folds as the dashboard's other sections do: a plus that turns to a minus. */
 .home-row summary::-webkit-details-marker{display:none}
 .home-row summary::after{content:'+';font-size:17px;line-height:1;color:var(--w60);width:12px;text-align:center;flex:none}
