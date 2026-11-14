@@ -96,4 +96,16 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
-      - run: node --version && node test/run-all.js
+      # In a memory cap of their own. Now and then a unit-test job's runner
+      # stops answering altogether, and its log is lost; a test that used up
+      # the machine's memory would do that. Over the cap the kernel kills a
+      # suite instead, and run-all names it.
+      - name: Unit tests, in a 6 GB memory cap
+        run: |
+          node --version
+          sudo -E systemd-run --scope --quiet --uid="$(id -u)" --gid="$(id -g)" \
+            -p MemoryMax=6G -p MemorySwapMax=0 \
+            env "PATH=$PATH" node test/run-all.js
+      - name: Memory kills, where the unit tests failed
+        if: failure()
+        run: sudo dmesg | grep -iE 'out of memory|oom-kill|killed process' || echo 'No memory kills.'

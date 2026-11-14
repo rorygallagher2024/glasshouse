@@ -120,6 +120,8 @@ function startRun(run) {
 
   proc.on('exit', function (code, sig) {
     var exitCode = (code !== null) ? code : (sig ? 128 : 1);
+    // SIGKILL from outside: in CI, the memory cap on the unit tests.
+    if (sig) run.out.signal = sig;
     closeTimer = setTimeout(function () {
       try { proc.kill('SIGKILL'); } catch (e) {}
       finish(exitCode);
@@ -150,7 +152,8 @@ function report() {
     process.stdout.write(run.out.stdout);
     if (run.out.stderr) process.stderr.write(run.out.stderr);
     if (run.out.code !== 0) {
-      console.error('FAIL: ' + run.suite + (run.shard ? ' (shard ' + run.shard + ')' : '') + ' exited with code ' + run.out.code);
+      console.error('FAIL: ' + run.suite + (run.shard ? ' (shard ' + run.shard + ')' : '') +
+        (run.out.signal ? ' was killed by ' + run.out.signal : ' exited with code ' + run.out.code));
       failed[run.suite] = true;
     }
   });
