@@ -596,6 +596,10 @@ step('an input keeps its hiding, place and name whether the TV lists its device 
     assert.strictEqual(xbox.name, 'Games', 'and its name');
     var layout = home.layout();
     assert.deepEqual(layout.hidden.dev, ['hdmi4:xbox'], 'and stays hidden');
+    // Renamed while listed: the new name, not the old, once it drops off again.
+    home.setLayout({ deviceNames: { 'hdmi4:xbox': 'Xbox One' } }, function (saved) {
+      assert.ok(saved.ok, saved.error);
+      assert.deepEqual(home.layout().deviceNames, { 'hdmi4:xbox': 'Xbox One' }, 'the port\'s old name is replaced');
     assert.deepEqual(layout.order.dev, ['hdmi4:xbox', 'hdmi1']);
     // Off the list again, the port's tile has them back.
     tv.devices = plain;
@@ -603,6 +607,7 @@ step('an input keeps its hiding, place and name whether the TV lists its device 
     home.catalogue(function (back) {
       assert.deepEqual(back.order.dev, ['hdmi4', 'hdmi1']);
       assert.deepEqual(home.layout().hidden.dev, ['hdmi4']);
+      assert.strictEqual(back.devices.filter(function (d) { return d.id === 'hdmi4'; })[0].name, 'Xbox One', 'with its new name');
       // With two devices on the port, each keeps only its own.
       tv.devices = [{ id: 'HDMI_4', label: 'AV', hdmiPlugIn: true, subList: [
         { id: 'SIMPLINK', depth: 1, osdName: 'Receiver', uniqueId: 5 },
@@ -612,6 +617,7 @@ step('an input keeps its hiding, place and name whether the TV lists its device 
         assert.deepEqual(home.layout().hidden.dev, ['hdmi4'], 'neither device takes the port\'s hiding');
         done();
       });
+    });
     });
   });
 });

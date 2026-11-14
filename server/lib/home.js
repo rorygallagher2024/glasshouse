@@ -764,7 +764,7 @@ function setLayout(body, cb) {
     darkening: body.darkening !== undefined ? body.darkening : c.darkening,
     hideUnused: typeof body.hideUnused === 'boolean' ? body.hideUnused : c.hideUnused,
     showMediaServers: typeof body.showMediaServers === 'boolean' ? body.showMediaServers : c.showMediaServers,
-    deviceNames: body.deviceNames !== undefined ? validDeviceNames(body.deviceNames, c.deviceNames) : c.deviceNames,
+    deviceNames: body.deviceNames !== undefined ? oneNamePerPort(validDeviceNames(body.deviceNames, c.deviceNames), body.deviceNames) : c.deviceNames,
     inputBarTransparent: typeof body.inputBarTransparent === 'boolean' ? body.inputBarTransparent : c.inputBarTransparent,
     // null puts the view's own colours back.
     colours: body.colours !== undefined ? body.colours : c.colours
@@ -850,6 +850,23 @@ function devNamesNow(names, devs) {
     if (now === id || !Object.prototype.hasOwnProperty.call(names, now)) out[now] = names[id];
   });
   return out;
+}
+
+/*
+ * A name set for a port's only tile replaces one kept under the port's other
+ * ID: renamed while its device is listed, it would otherwise show its old
+ * name again once the device dropped off.
+ */
+function oneNamePerPort(names, sent) {
+  var sole = soleTiles(knownDevices());
+  Object.keys(sent || {}).forEach(function (id) {
+    var port = hdmiPort(id);
+    if (!port || sole[port] !== id) return;
+    Object.keys(names).forEach(function (k) {
+      if (k !== id && hdmiPort(k) === port) delete names[k];
+    });
+  });
+  return names;
 }
 
 function withDevIdsNow(lists) {
