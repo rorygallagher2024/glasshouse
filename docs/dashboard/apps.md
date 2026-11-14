@@ -62,6 +62,8 @@ Switching an app off frees its memory once the app is next closed or the TV rest
 
 Stops background services that most TVs don't need, such as the connected-car listener, the USB camera watcher, and LG's diagnostics and telemetry uploaders. Only the services present on the TV are listed. A service switched off stays off across restarts, and is stopped again if something on the TV starts it.
 
+**LG Account** is LG's account client. Settings waits for it before it opens, which with LG's servers blocked took up to 30 seconds on a B4 (webOS 10.3.2); off, Settings opened in under 2 seconds rather than 8. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working. It is offered on webOS 10, where LG's own list of services not to start holds it down; webOS 9 has no such list, and held down any other way, Settings waited for it longer.
+
 The TV looking up every address on the home network, which a network-wide ad blocker such as Pi-hole shows as hundreds of requests, is switched off in [Devices and connectivity](advanced.md#devices-and-connectivity), as **Network device scans**.
 
 ## Network

@@ -3262,5 +3262,7 @@
  "inputs.bar.isLg": {"text": "Az LG saját bemenetlistája, ahogy a TV gyárilag érkezett.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "Másra van állítva a Távirányító lapon: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
  "inputs.bar.alsoBy": {"text": "Ez is megnyitja: {keys}. Bármely gomb beállítható a Bemeneti sáv értékre a Távirányító gombjai alatt.", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "Bármely más gomb is megnyithatja: állítsa a Bemeneti sáv értékre a Távirányító gombjai alatt.", "from": "Any other key can open it too: set it to Input bar under Remote keys."}
+ "inputs.bar.anyKey": {"text": "Bármely más gomb is megnyithatja: állítsa a Bemeneti sáv értékre a Távirányító gombjai alatt.", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
+ "srv.service.accountmanager": {"text": "LG-fiók", "from": "LG Account"},
+ "srv.service.accountmanager.desc": {"text": "Bejelentkezve tartja a TV-t egy LG-fiókba. A Beállítások megnyitás előtt megvárják, akár 30 mp-ig, ha az LG szerverei le vannak tiltva. Kikapcsolva minden leáll, amihez LG-fiók kell, például a bejelentkezés, a ThinQ és az LG Content Store.", "from": "Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG's servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working."}
 }

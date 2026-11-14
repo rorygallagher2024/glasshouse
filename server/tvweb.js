@@ -883,6 +883,8 @@ function checkHomebrewChannelApp() {
       remoteKeys.restore(function (keys) {
         if (!keys) return console.error('uninstall: remote key restore failed; server kept for retry');
         forgetHomeAssistant(function () {
+          // LG's block list outlives the server, so its entries come off it first.
+          servicesModule.releaseBlocked();
           // A stub stays mounted over LG's program, even with its file deleted, until unmounted.
           var unstub = servicesModule.stubTargets().map(function (t) { return 'umount ' + JSON.stringify(t) + ' 2>/dev/null; '; }).join('');
           child_process.spawn('/bin/sh', ['-c',

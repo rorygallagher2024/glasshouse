@@ -3248,5 +3248,7 @@
  "inputs.bar.isLg": {"text": "قائمة المداخل الخاصة بـ LG، كما جاء التلفزيون.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "معيَّن على شيء آخر في تبويب الريموت: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
  "inputs.bar.alsoBy": {"text": "يفتحه أيضاً {keys}. يمكن تعيين أي زر على شريط المداخل ضمن أزرار الريموت.", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "يمكن لأي زر آخر فتحه أيضاً: عيّنه على شريط المداخل ضمن أزرار الريموت.", "from": "Any other key can open it too: set it to Input bar under Remote keys."}
+ "inputs.bar.anyKey": {"text": "يمكن لأي زر آخر فتحه أيضاً: عيّنه على شريط المداخل ضمن أزرار الريموت.", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
+ "srv.service.accountmanager": {"text": "حساب LG", "from": "LG Account"},
+ "srv.service.accountmanager.desc": {"text": "يُبقي التلفزيون مسجَّل الدخول إلى حساب LG. تنتظره الإعدادات قبل أن تُفتح، حتى 30 ثانية عند حظر خوادم LG. عند إيقافه يتوقف كل ما يحتاج إلى حساب LG، مثل تسجيل الدخول وThinQ وLG Content Store.", "from": "Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG's servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working."}
 }

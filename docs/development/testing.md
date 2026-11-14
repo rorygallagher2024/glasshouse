@@ -218,6 +218,8 @@ before its first read.
 
 `test-screensaver-dropped.js` covers a refused request's fallback, remote dismissal and restart recovery, failed closes, delayed replies, and playback or source changes that must prevent a launch, and that the pointer moving or clicking ends a Glasshouse screen saver the TV started, once for a stream of movement, while LG's own is left to end itself. `test-remote-buttons.js` checks that Home, coloured buttons and ordinary keys reach the dismissal handler through both parsed events and the worker stream, including split lines, and that pointer reports reach their handler.
 
+`test-services-account.js` checks that LG Account is offered only where webOS 10's service block list is, that switching it off adds it to that list beside LG's own entries and switching it on or uninstalling takes it off, and that it is added again at start if gone.
+
 `test-saver-entity-slots.js` checks that a Home Assistant screen saver's entity slot declared blank, as Ambient's are, is saved, labelled and cleared, and that a slot the screen saver does not declare is refused.
 
 `test-nosignal.js` checks that the No Signal screen is patched only where both lines it changes are there exactly once, that switching it on mounts the copy and restarts the input app only once no input is in front or the one in front has nothing coming in, that a server start leaves a mounted copy alone, and that switching it off unmounts it.

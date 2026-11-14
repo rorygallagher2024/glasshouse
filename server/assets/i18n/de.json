@@ -901,5 +901,7 @@
  "inputs.bar.isLg": {"text": "Die eigene Eingangsliste von LG, wie ab Werk.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "Im Tab Fernbedienung auf etwas anderes gesetzt: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
  "inputs.bar.alsoBy": {"text": "Auch geöffnet mit {keys}. Jede Taste lässt sich unter Tasten der Fernbedienung auf Eingangsleiste setzen.", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "Auch jede andere Taste kann sie öffnen: unter Tasten der Fernbedienung auf Eingangsleiste setzen.", "from": "Any other key can open it too: set it to Input bar under Remote keys."}
+ "inputs.bar.anyKey": {"text": "Auch jede andere Taste kann sie öffnen: unter Tasten der Fernbedienung auf Eingangsleiste setzen.", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
+ "srv.service.accountmanager": {"text": "LG-Konto", "from": "LG Account"},
+ "srv.service.accountmanager.desc": {"text": "Hält den TV bei einem LG-Konto angemeldet. Die Einstellungen warten darauf, bevor sie sich öffnen, bis zu 30 s, wenn LGs Server blockiert sind. Aus funktioniert alles nicht mehr, was das LG-Konto braucht, etwa die Anmeldung, ThinQ und der LG Content Store.", "from": "Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG's servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working."}
 }

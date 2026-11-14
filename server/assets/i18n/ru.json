@@ -3248,5 +3248,7 @@
  "inputs.bar.isLg": {"text": "Собственный список входов LG, как было изначально.", "from": "LG’s own list of inputs, as the TV came."},
  "inputs.bar.isOther": {"text": "На вкладке «Пульт» назначено другое: {opens}.", "from": "Set to something else on the Remote tab: {opens}."},
  "inputs.bar.alsoBy": {"text": "Также открывается кнопкой {keys}. Любой кнопке можно назначить «Панель входов» в разделе «Кнопки пульта».", "from": "Also opened by {keys}. Any key can be set to Input bar under Remote keys."},
- "inputs.bar.anyKey": {"text": "Её может открывать и любая другая кнопка: назначьте ей «Панель входов» в разделе «Кнопки пульта».", "from": "Any other key can open it too: set it to Input bar under Remote keys."}
+ "inputs.bar.anyKey": {"text": "Её может открывать и любая другая кнопка: назначьте ей «Панель входов» в разделе «Кнопки пульта».", "from": "Any other key can open it too: set it to Input bar under Remote keys."},
+ "srv.service.accountmanager": {"text": "Учётная запись LG", "from": "LG Account"},
+ "srv.service.accountmanager.desc": {"text": "Поддерживает вход телевизора в учётную запись LG. Настройки ждут её перед открытием, до 30 с, если серверы LG заблокированы. Если выключить, перестаёт работать всё, что требует учётной записи LG: вход, ThinQ и LG Content Store.", "from": "Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG's servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working."}
 }

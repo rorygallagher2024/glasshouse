@@ -80,6 +80,26 @@ var CATALOG = [
     desc: msg('srv.service.remotelogger.desc', 'Ships system log messages to remote servers.')
   },
   /*
+   * LG's account client. Settings waits for its getLoginUserData before it
+   * shows, which took 6.8 to over 30 s with LG's servers blocked and an
+   * account signed in (an OLED77B46LA, webOS 10.3.2): off, Settings showed
+   * after 1.6 s rather than 8.1 s (#1456). It is held down by LG's own block
+   * list, which run-service reads at each start on webOS 10, so a call to it
+   * fails at once. A stub over its program instead left the call waiting
+   * past 90 s on a C2 (webOS 9.2.2), which has no such list, so it is not
+   * offered there.
+   */
+  {
+    id: 'accountmanager',
+    bin: 'accountmanager',
+    title: msg('srv.service.accountmanager', 'LG Account'),
+    unit: null,
+    upstart: null,
+    blocked: 'com.webos.service.accountmanager',
+    badge: msg('srv.service.badge.ram', '{mb} MB RAM', { mb: '2.3' }),
+    desc: msg('srv.service.accountmanager.desc', 'Keeps the TV signed in to an LG account. Settings waits for it before it opens, for up to 30 s where LG\'s servers are blocked. Off, anything that needs the LG account, such as signing in, ThinQ and the LG Content Store, stops working.')
+  },
+  /*
    * Started by the service hub whenever something calls it (Type=dynamic in
    * /usr/share/dbus-1/system-services), with no unit to stop or mask, so it is
    * held down by mounting a program that exits at once over its own: the hub
@@ -158,6 +178,48 @@ var transientDir = '/run/systemd/transient';
 var stubRoot = '';
 var mountsPath = '/proc/mounts';
 var run = execFile;
+
+// LG's list of services run-service refuses to start (webOS 10).
+var BLOCK_FILE = '/var/preferences/servicemanager/blocked-services.json';
+var RUN_SERVICE = '/usr/bin/run-service';
+var SERVICE_FILES = '/usr/share/luna-service2/services.d/';
+
+function blockFile() { return stubRoot + BLOCK_FILE; }
+
+function readBlockList() {
+  var data = null;
+  try { data = JSON.parse(fs.readFileSync(blockFile(), 'utf8')); } catch (e) { data = null; }
+  if (!data || typeof data !== 'object') data = {};
+  if (!Array.isArray(data.blockedServices)) data.blockedServices = [];
+  return data;
+}
+
+// Adds or removes a name, keeping LG's own entries and anything else in the file.
+function setBlocked(names, on) {
+  var data = readBlockList();
+  var list = data.blockedServices.filter(function (n) { return names.indexOf(n) === -1; });
+  if (on) list = list.concat(names);
+  // Nothing to take off: the file is left as LG wrote it.
+  if (!on && list.length === data.blockedServices.length) return true;
+  data.blockedServices = list;
+  try {
+    var dir = path.dirname(blockFile());
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, 493);
+    fs.writeFileSync(blockFile(), JSON.stringify(data), 'utf8');
+    return true;
+  } catch (e) {
+    console.error('services: could not write LG\'s service block list: ' + e.message);
+    return false;
+  }
+}
+
+function isBlocked(item) { return readBlockList().blockedServices.indexOf(item.blocked) !== -1; }
+
+// For the uninstall: every name this server may have put on LG's block list taken off it.
+function releaseBlocked() {
+  var names = CATALOG.filter(function (item) { return item.blocked; }).map(function (item) { return item.blocked; });
+  if (fs.existsSync(blockFile())) setBlocked(names, false);
+}
 
 function stubFile() { return path.join(stateDir, 'service-stub'); }
 function stubTarget(item) { return stubRoot + item.stub; }
@@ -363,6 +425,9 @@ function syncBootScript(disabledList) {
 
 function serviceExists(item, systemctl, initctl) {
   if (item.stub) return fs.existsSync(stubTarget(item));
+  if (item.blocked) {
+    return fs.existsSync(stubRoot + RUN_SERVICE) && fs.existsSync(stubRoot + SERVICE_FILES + item.blocked + '.service');
+  }
   if (systemctl && item.unit) {
     if (fs.existsSync('/etc/systemd/system/' + item.unit) ||
         fs.existsSync('/lib/systemd/system/' + item.unit) ||
@@ -412,6 +477,10 @@ function init(options) {
   syncBootScript(disabled);
   CATALOG.forEach(function (item) {
     if (item.stub && disabled.indexOf(item.id) !== -1 && fs.existsSync(stubTarget(item))) stub(item, function () {});
+    // Kept on LG's list, should anything have taken it off.
+    if (item.blocked && disabled.indexOf(item.id) !== -1 && serviceExists(item) && !isBlocked(item)) {
+      if (setBlocked([item.blocked], true)) stopPrograms(item, function () {});
+    }
   });
 
   var systemctl = getSystemctl();
@@ -460,7 +529,7 @@ function getServices(cb) {
   var systemctl = getSystemctl();
   var initctl = getInitctl();
 
-  var stubbable = CATALOG.some(function (item) { return item.stub && !item.hidden && serviceExists(item); });
+  var stubbable = CATALOG.some(function (item) { return (item.stub || item.blocked) && !item.hidden && serviceExists(item); });
   if (!systemctl && !initctl && !stubbable) {
     return cb({ ok: true, supported: false, services: [] });
   }
@@ -548,7 +617,7 @@ function switchService(id, disabled, cb, hiddenToo) {
 
   var systemctl = getSystemctl();
   var initctl = getInitctl();
-  if (!systemctl && !initctl && !catItem.stub) {
+  if (!systemctl && !initctl && !catItem.stub && !catItem.blocked) {
     return cb({ ok: false, error: msg('srv.service.unsupported', 'Service management is not supported on this platform') });
   }
 
@@ -562,6 +631,14 @@ function switchService(id, disabled, cb, hiddenToo) {
   }
   writeDisabledList(list);
 
+  if (catItem.blocked) {
+    if (!setBlocked([catItem.blocked], !!disabled)) {
+      return cb({ ok: false, error: msg('srv.service.stubFailed', 'The TV did not allow the change') });
+    }
+    // Back on, the next call starts it.
+    if (!disabled) return cb({ ok: true, id: id, disabled: false, running: false });
+    return stopPrograms(catItem, function () { cb({ ok: true, id: id, disabled: true, running: false }); });
+  }
   if (catItem.stub) {
     return (disabled ? stub : unstub)(catItem, function (ok) {
       if (!ok) return cb({ ok: false, error: msg('srv.service.stubFailed', 'The TV did not allow the change') });
@@ -621,5 +698,6 @@ module.exports = {
   isDisabled: isDisabled,
   available: available,
   stubTargets: stubTargets,
+  releaseBlocked: releaseBlocked,
   startEnforcing: startEnforcing
 };

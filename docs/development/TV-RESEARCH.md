@@ -3593,3 +3593,15 @@ it with `airplay.service/showAirplayPage`, which is in the public group. On the
 C2 that call and a plain `applicationManager/launch` of `airplay` open the same
 page: the Wi-Fi network, the TV's AirPlay name, How to Use AirPlay, and AirPlay
 and Apple Home, which holds its settings.
+
+## Holding down LG's account client (C2, webOS 9.2.2; B4, webOS 10.3.2)
+
+Settings waits for `com.webos.service.accountmanager/getLoginUserData` before it
+shows; with LG's servers blocked and an account signed in, that took 6.8 to
+over 30 s on a B4 with webOS 10.3.2 (#1456). There `/usr/bin/run-service`
+refuses to start any service named in
+`/var/preferences/servicemanager/blocked-services.json` (`{"blockedServices":
+[...]}`, holding `com.webos.service.signlanguageavatar` from LG), so a call to
+one that is not running fails at once. The C2 has neither file. On the C2 the
+hub starts `/usr/sbin/accountmanager` on demand, and with a program that exits
+at once mounted over it, the same call was still waiting after 90 s.
