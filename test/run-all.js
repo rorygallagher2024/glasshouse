@@ -128,8 +128,11 @@ function startRun(run) {
     }, 500);
   });
 
-  proc.on('close', function (code) {
-    finish(code !== null ? code : 0);
+  // A suite ended by a signal has no exit code: it failed, as killed by the
+  // memory cap in CI, though 'close' can come before 'exit' says so.
+  proc.on('close', function (code, sig) {
+    if (sig) run.out.signal = sig;
+    finish(code !== null ? code : (sig ? 128 : 0));
   });
 
   var suiteTimeoutMs = (run.suite.indexOf('boot') !== -1 ? Math.max(90, defaultTimeoutSecs) : defaultTimeoutSecs) * 1000;
