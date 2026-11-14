@@ -182,6 +182,7 @@ function renderAppsPanel() {
   renderAppDns(d);
   renderQuickAccess(d);
   renderRemoteKeys(d);
+  showRemoteTab();
 
   // Render Background Services
   const svcsList = q('apps-services-list');
@@ -373,7 +374,7 @@ window.addEventListener('resize', () => {
 // inputs and the apps.
 const RK_GROUPS = [
   { id: 'streaming', title: () => t('apps.remoteKeys.streaming', 'Streaming buttons'),
-    keys: ['netflix', 'amazon', 'disneyplus', 'rakutentv', 'lgchannels', 'hulu', 'iplayer', 'freeviewplay', 'slingtv', 'globoplay', 'shahid'] },
+    keys: ['netflix', 'amazon', 'disneyplus', 'rakutentv', 'lgchannels', 'ivi', 'okko', 'kinopoisk', 'shop', 'hulu', 'iplayer', 'freeviewplay', 'slingtv', 'globoplay', 'shahid'] },
   { id: 'assistant', title: () => t('apps.remoteKeys.assistant', 'Voice assistant buttons'), keys: ['voice', 'alexa', 'googleassistant'] },
   { id: 'colour', title: () => t('apps.remoteKeys.colour', 'Color keys'), keys: ['red', 'green', 'yellow', 'blue'] },
   // Anything else, including keys a later server offers.
@@ -428,8 +429,6 @@ function renderRemoteKeys(d) {
   }
   rkData = rk;
   rkWritable = !!d.writable;
-  // Neither on a TV: the tab has nothing to show.
-  showRemoteTab();
   renderInputs();
   // Left alone while a choice is being made in it.
   if (!list || (rkOpen && list.contains(document.activeElement))) return;

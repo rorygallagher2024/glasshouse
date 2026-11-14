@@ -209,6 +209,11 @@ var KEYS = [
   { key: 'slingtv', symbol: 'WebOS.Key_webOS_SlingTV', title: 'Sling TV', regions: ['us'] },
   { key: 'globoplay', symbol: 'WebOS.Key_webOS_Globoplay', title: 'Globoplay', regions: ['br'] },
   { key: 'shahid', symbol: 'WebOS.Key_webOS_Shahid', title: 'Shahid', regions: ['ae'] },
+  // Verified in a C3's webOS 11 mapping_info; older Qt key symbols are unverified.
+  { key: 'ivi', title: 'Ivi', nativeMapping: true },
+  { key: 'okko', title: 'Okko', nativeMapping: true },
+  { key: 'kinopoisk', title: 'Kinopoisk', nativeMapping: true },
+  { key: 'shop', title: 'LG Shop', nativeMapping: true },
   // The voice assistants' own buttons on recent Magic Remotes: LG's filters
   // launch Alexa or the Google Assistant on a press, as for a streaming
   // button. The microphone button (Key_webOS_Voice) drives voice control; set
@@ -326,7 +331,7 @@ function keysOnTv() {
   }
   var hasColor = KEYS.some(function (k) { return k.color && src.indexOf(k.symbol) !== -1; });
   tvKeys = KEYS.filter(function (k) {
-    return !k.nativeOnly && ((k.color && hasColor) || src.indexOf(k.symbol) !== -1);
+    return !k.nativeOnly && !k.nativeMapping && ((k.color && hasColor) || src.indexOf(k.symbol) !== -1);
   });
   return tvKeys;
 }
@@ -407,7 +412,7 @@ function filterSource() {
     '    var codes = {};'
   ];
   KEYS.forEach(function (k) {
-    if (k.nativeOnly) return;
+    if (k.nativeOnly || k.nativeMapping) return;
     lines.push('    try { codes[' + JSON.stringify(k.key) + '] = ' + k.symbol + '; } catch (e) {}');
   });
   lines.push(

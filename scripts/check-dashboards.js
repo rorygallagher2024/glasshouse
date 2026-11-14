@@ -3647,6 +3647,8 @@ async function visitInputsAndRemote(browser, base, problems) {
       }
       await route.fulfill({ json: Object.assign({ ok: true }, noSignal) });
     });
+    await page.goto(base + '/?tab=control');
+    await page.locator('#tab-btn-remote').waitFor({ state: 'visible' });
     await page.goto(base + '/?tab=inputs');
     await page.locator('#inputs-list .home-tile').first().waitFor();
     if (await page.locator('#inputs-list .home-tile').count() !== 3) fail('the inputs are not listed');
